@@ -1,3 +1,4 @@
+from core.corporate_filters.service import CorporateFilterService
 """
 EDARSA HUB - Utilidades de Migración MongoDB → SQL Server
 =========================================================

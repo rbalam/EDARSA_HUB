@@ -1,0 +1,674 @@
+"""
+FASE 1C-3I-B: Servicio de Benchmark Competitivo
+
+Este módulo gestiona:
+- Mapeo de productos propios vs productos de competencia
+- Validación humana de mapeos
+- Resumen de benchmark por unidad
+- Estado de preparación para IA
+
+TABLA: Comercial_PricingBenchmarkProducto
+
+REGLAS:
+- NO ejecutar IA en esta fase
+- Solo CRUD, consultas y estadísticas
+- DELETE es baja lógica (Activo = 0)
+- RBAC obligatorio
+"""
+
+from typing import Optional, List, Dict, Any, Tuple
+from datetime import datetime
+import logging
+import uuid
+
+from core.db import execute_sql_query
+from core.server_registry import EDARSAHUB_CONFIG
+
+from .pricing_schemas import (
+    PricingBenchmarkProductoCreate,
+    PricingBenchmarkProductoUpdate,
+    PricingBenchmarkProductoResponse,
+    BenchmarkResumenResponse,
+    BenchmarkEstadoPreparacionResponse,
+)
+from .perfil_unidad_service import verificar_perfil_completo, obtener_urls_perfil
+from .competidores_service import obtener_estadisticas_competidores, obtener_estadisticas_menu_items
+
+logger = logging.getLogger(__name__)
+
+
+def _get_conn() -> Tuple:
+    """Retorna parámetros de conexión a EDARSAHUB."""
+    return (
+        EDARSAHUB_CONFIG['host'],
+        EDARSAHUB_CONFIG['port'],
+        EDARSAHUB_CONFIG['database'],
+        EDARSAHUB_CONFIG['username'],
+        EDARSAHUB_CONFIG['password']
+    )
+
+
+def _row_to_benchmark(row: Dict) -> PricingBenchmarkProductoResponse:
+    """Convierte fila SQL a PricingBenchmarkProductoResponse."""
+    return PricingBenchmarkProductoResponse(
+        benchmark_producto_id=str(row.get('BenchmarkProductoID', '')),
+        empresa_id=row.get('EmpresaID', 0),
+        unidad_negocio_id=row.get('UnidadNegocioID', 0),
+        producto_id=str(row.get('ProductoID', '')) if row.get('ProductoID') else None,
+        codigo_producto=row.get('CodigoProducto', ''),
+        server_id=str(row.get('ServerID', '')),
+        competidor_id=str(row.get('CompetidorID', '')),
+        competidor_menu_item_id=str(row.get('CompetidorMenuItemID', '')),
+        similitud=float(row.get('Similitud', 0)),
+        tipo_comparacion=row.get('TipoComparacion', 'PRODUCTO_SIMILAR'),
+        comentario_ia=row.get('ComentarioIA'),
+        validado_por_usuario=bool(row.get('ValidadoPorUsuario', False)),
+        usuario_validacion=row.get('UsuarioValidacion'),
+        fecha_validacion=row.get('FechaValidacion'),
+        activo=bool(row.get('Activo', True)),
+        fecha_creacion=row.get('FechaCreacion') or datetime.now(),
+        usuario_creacion=row.get('UsuarioCreacion'),
+        fecha_modificacion=row.get('FechaModificacion'),
+        usuario_modificacion=row.get('UsuarioModificacion'),
+        # Datos agregados
+        nombre_competidor=row.get('NombreCompetidor'),
+        nombre_producto_competidor=row.get('NombreProductoCompetidor'),
+        precio_competidor=float(row['PrecioCompetidor']) if row.get('PrecioCompetidor') else None,
+    )
+
+
+# =============================================================================
+# CRUD BENCHMARK
+# =============================================================================
+
+def listar_benchmarks(
+    empresa_id: Optional[int] = None,
+    unidad_negocio_id: Optional[int] = None,
+    codigo_producto: Optional[str] = None,
+    competidor_id: Optional[str] = None,
+    solo_activos: bool = True,
+    solo_validados: Optional[bool] = None,
+    page: int = 1,
+    page_size: int = 50
+) -> Tuple[List[PricingBenchmarkProductoResponse], int]:
+    """
+    Lista mapeos de benchmark con filtros opcionales.
+    """
+    conn = _get_conn()
+    
+    where_clauses = []
+    if empresa_id:
+        where_clauses.append(f"b.EmpresaID = {empresa_id}")
+    if unidad_negocio_id:
+        where_clauses.append(f"b.UnidadNegocioID = {unidad_negocio_id}")
+    if codigo_producto:
+        where_clauses.append(f"b.CodigoProducto = '{codigo_producto}'")
+    if competidor_id:
+        where_clauses.append(f"b.CompetidorID = '{competidor_id}'")
+    if solo_activos:
+        where_clauses.append("b.Activo = 1")
+    if solo_validados is not None:
+        where_clauses.append(f"b.ValidadoPorUsuario = {1 if solo_validados else 0}")
+    
+    where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+    
+    # Contar total
+    count_query = f"""
+    SELECT COUNT(*) as total
+    FROM Comercial_PricingBenchmarkProducto b
+    {where_sql}
+    """
+    count_result = execute_sql_query(*conn, count_query)
+    total = count_result[0]['total'] if count_result else 0
+    
+    # Obtener página con info de competidor
+    offset = (page - 1) * page_size
+    query = f"""
+    SELECT 
+        CAST(b.BenchmarkProductoID AS NVARCHAR(36)) as BenchmarkProductoID,
+        b.EmpresaID,
+        b.UnidadNegocioID,
+        CAST(b.ProductoID AS NVARCHAR(36)) as ProductoID,
+        b.CodigoProducto,
+        CAST(b.ServerID AS NVARCHAR(36)) as ServerID,
+        CAST(b.CompetidorID AS NVARCHAR(36)) as CompetidorID,
+        CAST(b.CompetidorMenuItemID AS NVARCHAR(36)) as CompetidorMenuItemID,
+        b.Similitud,
+        b.TipoComparacion,
+        b.ComentarioIA,
+        b.ValidadoPorUsuario,
+        b.UsuarioValidacion,
+        b.FechaValidacion,
+        b.Activo,
+        b.FechaCreacion,
+        b.UsuarioCreacion,
+        b.FechaModificacion,
+        b.UsuarioModificacion,
+        c.NombreCompetidor,
+        mi.NombreProductoCompetidor,
+        mi.Precio as PrecioCompetidor
+    FROM Comercial_PricingBenchmarkProducto b
+    LEFT JOIN Comercial_Competidores c ON b.CompetidorID = c.CompetidorID
+    LEFT JOIN Comercial_CompetidoresMenuItems mi ON b.CompetidorMenuItemID = mi.CompetidorMenuItemID
+    {where_sql}
+    ORDER BY b.CodigoProducto, c.NombreCompetidor
+    OFFSET {offset} ROWS FETCH NEXT {page_size} ROWS ONLY
+    """
+    
+    result = execute_sql_query(*conn, query)
+    
+    benchmarks = [_row_to_benchmark(row) for row in (result or [])]
+    
+    return benchmarks, total
+
+
+def obtener_benchmark_por_id(benchmark_id: str) -> Optional[PricingBenchmarkProductoResponse]:
+    """
+    Obtiene un benchmark por su ID.
+    """
+    conn = _get_conn()
+    
+    query = f"""
+    SELECT 
+        CAST(b.BenchmarkProductoID AS NVARCHAR(36)) as BenchmarkProductoID,
+        b.EmpresaID,
+        b.UnidadNegocioID,
+        CAST(b.ProductoID AS NVARCHAR(36)) as ProductoID,
+        b.CodigoProducto,
+        CAST(b.ServerID AS NVARCHAR(36)) as ServerID,
+        CAST(b.CompetidorID AS NVARCHAR(36)) as CompetidorID,
+        CAST(b.CompetidorMenuItemID AS NVARCHAR(36)) as CompetidorMenuItemID,
+        b.Similitud,
+        b.TipoComparacion,
+        b.ComentarioIA,
+        b.ValidadoPorUsuario,
+        b.UsuarioValidacion,
+        b.FechaValidacion,
+        b.Activo,
+        b.FechaCreacion,
+        b.UsuarioCreacion,
+        b.FechaModificacion,
+        b.UsuarioModificacion,
+        c.NombreCompetidor,
+        mi.NombreProductoCompetidor,
+        mi.Precio as PrecioCompetidor
+    FROM Comercial_PricingBenchmarkProducto b
+    LEFT JOIN Comercial_Competidores c ON b.CompetidorID = c.CompetidorID
+    LEFT JOIN Comercial_CompetidoresMenuItems mi ON b.CompetidorMenuItemID = mi.CompetidorMenuItemID
+    WHERE b.BenchmarkProductoID = '{benchmark_id}'
+    """
+    
+    result = execute_sql_query(*conn, query)
+    
+    if result and len(result) > 0:
+        return _row_to_benchmark(result[0])
+    
+    return None
+
+
+def obtener_benchmarks_producto(
+    codigo_producto: str,
+    server_id: str
+) -> List[PricingBenchmarkProductoResponse]:
+    """
+    Obtiene todos los benchmarks activos de un producto.
+    """
+    conn = _get_conn()
+    
+    query = f"""
+    SELECT 
+        CAST(b.BenchmarkProductoID AS NVARCHAR(36)) as BenchmarkProductoID,
+        b.EmpresaID,
+        b.UnidadNegocioID,
+        CAST(b.ProductoID AS NVARCHAR(36)) as ProductoID,
+        b.CodigoProducto,
+        CAST(b.ServerID AS NVARCHAR(36)) as ServerID,
+        CAST(b.CompetidorID AS NVARCHAR(36)) as CompetidorID,
+        CAST(b.CompetidorMenuItemID AS NVARCHAR(36)) as CompetidorMenuItemID,
+        b.Similitud,
+        b.TipoComparacion,
+        b.ComentarioIA,
+        b.ValidadoPorUsuario,
+        b.UsuarioValidacion,
+        b.FechaValidacion,
+        b.Activo,
+        b.FechaCreacion,
+        b.UsuarioCreacion,
+        b.FechaModificacion,
+        b.UsuarioModificacion,
+        c.NombreCompetidor,
+        mi.NombreProductoCompetidor,
+        mi.Precio as PrecioCompetidor
+    FROM Comercial_PricingBenchmarkProducto b
+    LEFT JOIN Comercial_Competidores c ON b.CompetidorID = c.CompetidorID
+    LEFT JOIN Comercial_CompetidoresMenuItems mi ON b.CompetidorMenuItemID = mi.CompetidorMenuItemID
+    WHERE b.CodigoProducto = '{codigo_producto}'
+      AND b.ServerID = '{server_id}'
+      AND b.Activo = 1
+    ORDER BY c.NombreCompetidor
+    """
+    
+    result = execute_sql_query(*conn, query)
+    
+    return [_row_to_benchmark(row) for row in (result or [])]
+
+
+def crear_benchmark(data: PricingBenchmarkProductoCreate, usuario: str) -> PricingBenchmarkProductoResponse:
+    """
+    Crea un nuevo mapeo de benchmark.
+    """
+    conn = _get_conn()
+    
+    benchmark_id = str(uuid.uuid4())
+    
+    # Preparar valores SQL
+    producto_id_sql = f"'{data.producto_id}'" if data.producto_id else "NULL"
+    comentario_sql = f"N'{data.comentario_ia}'" if data.comentario_ia else "NULL"
+    
+    insert_query = f"""
+    INSERT INTO Comercial_PricingBenchmarkProducto (
+        BenchmarkProductoID,
+        ProductoID,
+        CodigoProducto,
+        ServerID,
+        EmpresaID,
+        UnidadNegocioID,
+        CompetidorID,
+        CompetidorMenuItemID,
+        Similitud,
+        TipoComparacion,
+        ComentarioIA,
+        ValidadoPorUsuario,
+        Activo,
+        FechaCreacion,
+        UsuarioCreacion
+    ) VALUES (
+        '{benchmark_id}',
+        {producto_id_sql},
+        '{data.codigo_producto}',
+        '{data.ServerID}',
+        {data.EmpresaID},
+        {data.UnidadNegocioID},
+        '{data.competidor_id}',
+        '{data.competidor_menu_item_id}',
+        {data.Similitud},
+        '{data.tipo_comparacion.value}',
+        {comentario_sql},
+        0,
+        1,
+        GETDATE(),
+        N'{usuario}'
+    )
+    """
+    
+    execute_sql_query(*conn, insert_query)
+    logger.info(f"[BENCHMARK] Creado {benchmark_id} para producto {data.codigo_producto} por {usuario}")
+    
+    return obtener_benchmark_por_id(benchmark_id)
+
+
+def actualizar_benchmark(
+    benchmark_id: str,
+    data: PricingBenchmarkProductoUpdate,
+    usuario: str
+) -> Optional[PricingBenchmarkProductoResponse]:
+    """
+    Actualiza un benchmark existente.
+    """
+    conn = _get_conn()
+    
+    benchmark_actual = obtener_benchmark_por_id(benchmark_id)
+    if not benchmark_actual:
+        return None
+    
+    set_clauses = []
+    
+    if data.similitud is not None:
+        set_clauses.append(f"Similitud = {data.similitud}")
+    if data.tipo_comparacion is not None:
+        set_clauses.append(f"TipoComparacion = '{data.tipo_comparacion.value}'")
+    if data.comentario_ia is not None:
+        set_clauses.append(f"ComentarioIA = N'{data.comentario_ia}'")
+    if data.validado_por_usuario is not None:
+        set_clauses.append(f"ValidadoPorUsuario = {1 if data.validado_por_usuario else 0}")
+        if data.validado_por_usuario:
+            set_clauses.append(f"UsuarioValidacion = N'{data.usuario_validacion or usuario}'")
+            set_clauses.append("FechaValidacion = GETDATE()")
+    
+    if not set_clauses:
+        return benchmark_actual
+    
+    set_clauses.append("FechaModificacion = GETDATE()")
+    set_clauses.append(f"UsuarioModificacion = N'{usuario}'")
+    
+    set_sql = ", ".join(set_clauses)
+    
+    update_query = f"""
+    UPDATE Comercial_PricingBenchmarkProducto
+    SET {set_sql}
+    WHERE BenchmarkProductoID = '{benchmark_id}'
+    """
+    
+    execute_sql_query(*conn, update_query)
+    logger.info(f"[BENCHMARK] Actualizado {benchmark_id} por {usuario}")
+    
+    return obtener_benchmark_por_id(benchmark_id)
+
+
+def validar_benchmark(benchmark_id: str, usuario: str) -> Optional[PricingBenchmarkProductoResponse]:
+    """
+    Marca un benchmark como validado por un usuario.
+    """
+    conn = _get_conn()
+    
+    update_query = f"""
+    UPDATE Comercial_PricingBenchmarkProducto
+    SET ValidadoPorUsuario = 1,
+        UsuarioValidacion = N'{usuario}',
+        FechaValidacion = GETDATE(),
+        FechaModificacion = GETDATE(),
+        UsuarioModificacion = N'{usuario}'
+    WHERE BenchmarkProductoID = '{benchmark_id}'
+    """
+    
+    execute_sql_query(*conn, update_query)
+    logger.info(f"[BENCHMARK] Validado {benchmark_id} por {usuario}")
+    
+    return obtener_benchmark_por_id(benchmark_id)
+
+
+def inactivar_benchmark(benchmark_id: str, usuario: str) -> bool:
+    """
+    Inactiva un benchmark (baja lógica).
+    """
+    conn = _get_conn()
+    
+    update_query = f"""
+    UPDATE Comercial_PricingBenchmarkProducto
+    SET Activo = 0,
+        FechaModificacion = GETDATE(),
+        UsuarioModificacion = N'{usuario}'
+    WHERE BenchmarkProductoID = '{benchmark_id}'
+    """
+    
+    execute_sql_query(*conn, update_query)
+    logger.info(f"[BENCHMARK] Inactivado {benchmark_id} por {usuario}")
+    
+    return True
+
+
+# =============================================================================
+# RESUMEN Y ESTADO DE PREPARACIÓN
+# =============================================================================
+
+def obtener_resumen_benchmark(unidad_negocio_id: int, empresa_id: int) -> BenchmarkResumenResponse:
+    """
+    Obtiene resumen de benchmark para una unidad de negocio.
+    
+    NO ejecuta IA - solo estadísticas de la BD.
+    """
+    conn = _get_conn()
+    
+    # Estadísticas de competidores
+    stats_competidores = obtener_estadisticas_competidores(unidad_negocio_id)
+    
+    # Estadísticas de items
+    stats_items = obtener_estadisticas_menu_items(unidad_negocio_id)
+    
+    # Estadísticas de benchmark
+    query_benchmark = f"""
+    SELECT 
+        COUNT(DISTINCT b.CodigoProducto) as productos_con_benchmark,
+        COUNT(*) as total_mapeos,
+        SUM(CASE WHEN b.ValidadoPorUsuario = 1 THEN 1 ELSE 0 END) as mapeos_validados,
+        MAX(b.FechaModificacion) as ultima_actualizacion
+    FROM Comercial_PricingBenchmarkProducto b
+    WHERE b.UnidadNegocioID = {UnidadNegocioID}
+      AND b.Activo = 1
+    """
+    
+    result_benchmark = execute_sql_query(*conn, query_benchmark)
+    
+    productos_con_benchmark = 0
+    fecha_actualizacion = None
+    
+    if result_benchmark and len(result_benchmark) > 0:
+        row = result_benchmark[0]
+        productos_con_benchmark = row.get('productos_con_benchmark', 0) or 0
+        fecha_actualizacion = row.get('ultima_actualizacion')
+    
+    # Contar productos propios (de Sync_Productos)
+    query_productos = f"""
+    SELECT COUNT(DISTINCT sp.CodigoFuente) as total_productos
+    FROM Sync_Productos sp
+    JOIN Sistema_EmpresasServidores ses ON sp.ServerID = ses.server_id
+    WHERE ses.empresa_id = {empresa_id}
+      AND ses.visible_operaciones = 1
+    """
+    
+    result_productos = execute_sql_query(*conn, query_productos)
+    total_productos = 0
+    
+    if result_productos and len(result_productos) > 0:
+        total_productos = result_productos[0].get('total_productos', 0) or 0
+    
+    productos_sin_benchmark = total_productos - productos_con_benchmark
+    cobertura = (productos_con_benchmark / total_productos * 100) if total_productos > 0 else 0
+    
+    # Determinar estado
+    if stats_competidores['total_competidores'] == 0:
+        estado = "SIN_CONFIGURAR"
+    elif stats_items['total_items'] == 0:
+        estado = "SIN_DATOS_COMPETENCIA"
+    elif productos_con_benchmark == 0:
+        estado = "SIN_MAPEOS"
+    elif cobertura < 50:
+        estado = "PARCIAL"
+    else:
+        estado = "COMPLETO"
+    
+    return BenchmarkResumenResponse(
+        unidad_negocio_id=unidad_negocio_id,
+        empresa_id=empresa_id,
+        competidores_configurados=stats_competidores['total_competidores'],
+        competidores_directos=stats_competidores['directos'],
+        competidores_aspiracionales=stats_competidores['aspiracionales'],
+        items_competencia_capturados=stats_items['total_items'],
+        items_alta_confianza=stats_items['alta_confianza'],
+        items_media_confianza=stats_items['media_confianza'],
+        items_baja_confianza=stats_items['baja_confianza'],
+        productos_propios_total=total_productos,
+        productos_con_benchmark=productos_con_benchmark,
+        productos_sin_benchmark=productos_sin_benchmark,
+        cobertura_benchmark=round(cobertura, 1),
+        fecha_ultima_actualizacion=fecha_actualizacion,
+        estado=estado,
+    )
+
+
+def obtener_estado_preparacion_ia(unidad_negocio_id: int, empresa_id: int) -> BenchmarkEstadoPreparacionResponse:
+    """
+    Verifica si una unidad está lista para análisis IA.
+    
+    NO ejecuta IA - solo verifica requisitos.
+    
+    Requisitos para estar listo:
+    1. Perfil digital completo (nombre, concepto, tipo, segmento, ciudad)
+    2. Al menos 3 competidores configurados
+    3. Al menos 10 items de competencia capturados
+    4. Al menos 1 mapeo de benchmark validado
+    """
+    # Verificar perfil
+    perfil_check = verificar_perfil_completo(unidad_negocio_id)
+    urls = obtener_urls_perfil(unidad_negocio_id)
+    
+    urls_disponibles = [k for k, v in urls.items() if v]
+    urls_faltantes = [k for k, v in urls.items() if not v]
+    
+    # Estadísticas
+    stats_competidores = obtener_estadisticas_competidores(unidad_negocio_id)
+    stats_items = obtener_estadisticas_menu_items(unidad_negocio_id)
+    
+    # Contar mapeos validados
+    conn = _get_conn()
+    query_validados = f"""
+    SELECT 
+        COUNT(DISTINCT CodigoProducto) as productos_mapeados,
+        SUM(CASE WHEN ValidadoPorUsuario = 1 THEN 1 ELSE 0 END) as mapeos_validados
+    FROM Comercial_PricingBenchmarkProducto
+    WHERE UnidadNegocioID = {UnidadNegocioID}
+      AND Activo = 1
+    """
+    
+    result = execute_sql_query(*conn, query_validados)
+    productos_mapeados = 0
+    mapeos_validados = 0
+    
+    if result and len(result) > 0:
+        productos_mapeados = result[0].get('productos_mapeados', 0) or 0
+        mapeos_validados = result[0].get('mapeos_validados', 0) or 0
+    
+    # Verificar requisitos
+    faltantes = []
+    razones_no_listo = []
+    recomendaciones = []
+    
+    # 1. Perfil digital
+    if not perfil_check.get('existe'):
+        faltantes.append("perfil_digital")
+        razones_no_listo.append("No existe perfil digital configurado")
+        recomendaciones.append("Crear perfil digital de la unidad con concepto, tipo y segmento")
+    elif not perfil_check.get('completo'):
+        for campo in perfil_check.get('faltantes_requeridos', []):
+            faltantes.append(f"perfil.{campo}")
+        razones_no_listo.append(f"Perfil digital incompleto: faltan {', '.join(perfil_check.get('faltantes_requeridos', []))}")
+        recomendaciones.append("Completar campos obligatorios del perfil digital")
+    
+    # 2. Competidores mínimos
+    min_competidores = 3
+    if stats_competidores['total_competidores'] < min_competidores:
+        faltantes.append("competidores")
+        razones_no_listo.append(f"Solo {stats_competidores['total_competidores']} competidores (mínimo: {min_competidores})")
+        recomendaciones.append(f"Configurar al menos {min_competidores - stats_competidores['total_competidores']} competidores más")
+    
+    # 3. Items de competencia mínimos
+    min_items = 10
+    if stats_items['total_items'] < min_items:
+        faltantes.append("items_competencia")
+        razones_no_listo.append(f"Solo {stats_items['total_items']} items de competencia (mínimo: {min_items})")
+        recomendaciones.append(f"Capturar al menos {min_items - stats_items['total_items']} precios de la competencia")
+    
+    # 4. Competidores con menú capturado
+    competidores_con_menu = 0
+    query_con_menu = f"""
+    SELECT COUNT(DISTINCT c.CompetidorID) as con_menu
+    FROM Comercial_Competidores c
+    JOIN Comercial_CompetidoresMenuItems mi ON c.CompetidorID = mi.CompetidorID
+    WHERE c.UnidadNegocioID = {unidad_negocio_id}
+      AND c.Activo = 1
+      AND mi.Activo = 1
+    """
+    result_menu = execute_sql_query(*conn, query_con_menu)
+    if result_menu and len(result_menu) > 0:
+        competidores_con_menu = result_menu[0].get('con_menu', 0) or 0
+    
+    # Determinar si está listo
+    listo = (
+        perfil_check.get('completo', False) and
+        stats_competidores['total_competidores'] >= min_competidores and
+        stats_items['total_items'] >= min_items
+    )
+    
+    # Agregar recomendaciones adicionales
+    if listo and mapeos_validados == 0:
+        recomendaciones.append("Validar al menos algunos mapeos de benchmark para mejorar confianza del análisis IA")
+    
+    if listo and 'menu_digital' in urls_faltantes:
+        recomendaciones.append("Agregar URL del menú digital para mejor análisis comparativo")
+    
+    return BenchmarkEstadoPreparacionResponse(
+        unidad_negocio_id=unidad_negocio_id,
+        empresa_id=empresa_id,
+        perfil_digital_completo=perfil_check.get('completo', False),
+        urls_disponibles=urls_disponibles,
+        urls_faltantes=urls_faltantes,
+        competidores_configurados=stats_competidores['total_competidores'],
+        minimo_competidores_recomendado=min_competidores,
+        competidores_con_menu=competidores_con_menu,
+        items_capturados=stats_items['total_items'],
+        minimo_items_recomendado=min_items,
+        productos_mapeados=productos_mapeados,
+        productos_validados=mapeos_validados,
+        faltantes=faltantes,
+        listo_para_ia=listo,
+        razones_no_listo=razones_no_listo,
+        recomendaciones=recomendaciones,
+    )
+
+
+# =============================================================================
+# HELPERS
+# =============================================================================
+
+def obtener_precios_competencia_producto(
+    codigo_producto: str,
+    server_id: str
+) -> Dict[str, Any]:
+    """
+    Obtiene estadísticas de precios de competencia para un producto.
+    
+    Útil para calcular posición vs competencia.
+    """
+    benchmarks = obtener_benchmarks_producto(codigo_producto, server_id)
+    
+    if not benchmarks:
+        return {
+            'tiene_datos': False,
+            'mensaje': 'Sin mapeos de benchmark para este producto'
+        }
+    
+    # Filtrar solo los que tienen precio
+    precios = [b.precio_competidor for b in benchmarks if b.precio_competidor and b.precio_competidor > 0]
+    
+    if not precios:
+        return {
+            'tiene_datos': False,
+            'mensaje': 'Mapeos sin precios de competidor'
+        }
+    
+    return {
+        'tiene_datos': True,
+        'total_comparables': len(precios),
+        'precio_minimo': min(precios),
+        'precio_maximo': max(precios),
+        'precio_promedio': sum(precios) / len(precios),
+        'competidores': [
+            {
+                'nombre': b.nombre_competidor,
+                'producto': b.nombre_producto_competidor,
+                'precio': b.precio_competidor,
+                'similitud': b.similitud,
+                'validado': b.validado_por_usuario
+            }
+            for b in benchmarks if b.precio_competidor and b.precio_competidor > 0
+        ]
+    }
+
+
+__all__ = [
+    # CRUD
+    'listar_benchmarks',
+    'obtener_benchmark_por_id',
+    'obtener_benchmarks_producto',
+    'crear_benchmark',
+    'actualizar_benchmark',
+    'validar_benchmark',
+    'inactivar_benchmark',
+    
+    # Resumen y Estado
+    'obtener_resumen_benchmark',
+    'obtener_estado_preparacion_ia',
+    
+    # Helpers
+    'obtener_precios_competencia_producto',
+]

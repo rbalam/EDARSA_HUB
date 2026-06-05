@@ -1,0 +1,149 @@
+import sqlite3
+import json
+import time
+from typing import Dict, Any, List
+
+class SuperCajaArquero:
+    def __init__(self, db_path: str = "edarsa_edge_device.db"):
+        self.db_path = db_path
+        self._inicializar_tabla_caja()
+
+    def _inicializar_tabla_caja(self) -> None:
+        """
+        Crea el contenedor inmutable de control de turnos y flujos de efectivo.
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS control_turnos_caja (
+                    id_turno TEXT PRIMARY KEY,
+                    usuario_cajero_id TEXT NOT NULL,
+                    monto_apertura REAL NOT NULL,
+                    monto_cierre_declarado REAL,
+                    monto_cierre_sistema REAL,
+                    estado_turno TEXT DEFAULT 'ABIERTO', -- ABIERTO, CERRADO
+                    abierto_at INTEGER NOT NULL,
+                    cerrado_at INTEGER
+                )
+            ''')
+            conn.commit()
+
+    # ============================================================================
+    # 1. ARQUEO AUTOMÁTICO EN FRÍO POR SEGMENTO (NÚMEROS REALES)
+    # ============================================================================
+    def calcular_corte_sistema_x(self, id_turno: str) -> Dict[str, Any]:
+        """
+        Lee todas las comandas en la cola FIFO local desde el inicio del turno.
+        Aísla los KPIs de forma quirúrgica para no distorsionar las finanzas.
+        """
+        query_tickets = "SELECT payload_json FROM cola_sincronizacion_offline"
+        
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(query_tickets)
+            rows = cursor.fetchall()
+
+        # Matrices de acumulación pura sin espejismos
+        acumulado_kpis = {
+            "venta_publico_neto": 0.0,
+            "iva_trasladado_publico": 0.0,
+            "consumo_socios_cava_costo": 0.0,
+            "gastos_representacion_inversionistas": 0.0,
+            "costo_comida_personal": 0.0,
+            "anticipos_aplicados": 0.0,
+            "propina_total_staff": 0.0,
+            "efectivo_esperado_caja": 0.0,
+            "pax_comerciales_totales": 0,
+            "tickets_comerciales_count": 0
+        }
+
+        for row in rows:
+            payload = json.loads(row["payload_json"])
+            tx = payload["registro_transaccion"]
+            totales = tx["totales_financieros"]
+            tipo_comensal = tx["segmentacion_kpi"]["tipo_comensal"]
+            
+            # Separación estricta de indicadores y cuentas ERP
+            if tipo_comensal == "PUBLICO":
+                acumulado_kpis["venta_publico_neto"] += totales["subtotal_neto"]
+                acumulado_kpis["iva_trasladado_publico"] += totales["total_iva"]
+                acumulado_kpis["efectivo_esperado_caja"] += totales["gran_total"]
+                acumulado_kpis["pax_comerciales_totales"] += payload.get("pax_count", 1)
+                acumulado_kpis["tickets_comerciales_count"] += 1
+            elif tipo_comensal == "SOCIO_CAVA":
+                acumulado_kpis["consumo_socios_cava_costo"] += totales["gran_total"]
+            elif tipo_comensal == "INVERSIONISTA":
+                acumulado_kpis["gastos_representacion_inversionistas"] += totales["gran_total"]
+            elif tipo_comensal == "PERSONAL":
+                acumulado_kpis["costo_comida_personal"] += totales["gran_total"]
+
+            # Rastreo paralelo de propinas e integraciones
+            acumulado_kpis["propina_total_staff"] += totales.get("propina_sugerida", 0.0)
+
+        # Cálculo matemático puro de Ticket Promedio y Cheque Promedio real
+        ticket_promedio = 0.0
+        pax_promedio = 0.0
+        if acumulado_kpis["tickets_comerciales_count"] > 0:
+            total_bruto_publico = acumulado_kpis["venta_publico_neto"] + acumulado_kpis["iva_trasladado_publico"]
+            ticket_promedio = total_bruto_publico / acumulado_kpis["tickets_comerciales_count"]
+            pax_promedio = total_bruto_publico / max(acumulado_kpis["pax_comerciales_totales"], 1)
+
+        return {
+            "id_turno": id_turno,
+            "metricas_puras_salon": {
+                "ticket_promedio_real": round(ticket_promedio, 2),
+                "consumo_pax_promedio_real": round(pax_promedio, 2),
+                "volumen_comercial_neto": round(acumulado_kpis["venta_publico_neto"], 2)
+            },
+            "cuentas_aisladas_costo": {
+                "egreso_cava_socios": round(acumulado_kpis["consumo_socios_cava_costo"], 2),
+                "gasto_inversionistas": round(acumulado_kpis["gastos_representacion_inversionistas"], 2),
+                "prestacion_comida_staff": round(acumulado_kpis["costo_comida_personal"], 2)
+            },
+            "efectivo_teorico_en_bancos_caja": round(acumulado_kpis["efectivo_esperado_caja"], 2),
+            "propinas_acumuladas_staff": round(acumulado_kpis["propina_total_staff"], 2)
+        }
+
+    # ============================================================================
+    # 2. AUDITORÍA CRÍTICA DE CIERRE (Z-READ) Y VALIDACIÓN DE INCIDENCIAS
+    # ============================================================================
+    def ejecutar_cierre_turno_z(self, id_turno: str, monto_declarado: float) -> Dict[str, Any]:
+        """
+        Cierra formalmente la caja de forma local. Cruza mermas reportadas e incidencias
+        generando el payload contable final sin discrepancias para el corporativo.
+        """
+        corte_sistema = self.calcular_corte_sistema_x(id_turno)
+        monto_sistema = corte_sistema["efectivo_teorico_en_bancos_caja"]
+        
+        # Identificación inmediata de faltantes o sobrantes (Anti-Fraude Activo)
+        desviacion = monto_declarado - monto_sistema
+        timestamp_cierre = int(time.time())
+
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE control_turnos_caja 
+                SET monto_cierre_declarado = ?, monto_cierre_sistema = ?, estado_turno = 'CERRADO', cerrado_at = ?
+                WHERE id_turno = ?
+            ''', (monto_declarado, monto_sistema, timestamp_cierre, id_turno))
+            conn.commit()
+
+        # Preparación de firma contable estructurada para el Bus Universal (Paso 4)
+        payload_z_final = {
+            "Z_Report_Header": {
+                "id_turno_global": id_turno,
+                "status_sincronizacion": "PENDING_SYNC",
+                "timestamp_consolidado": time.strftime("%Y-%m-%dT%H:%M:%SZ")
+            },
+            "auditoria_financiera": {
+                "monto_declarado_cajero": monto_declarado,
+                "monto_calculado_sistema": monto_sistema,
+                "desviacion_caja_neta": round(desviacion, 2),
+                "alerta_fraude_activa": abs(desviacion) > 0.01
+            },
+            "kpis_limpios_historico": corte_sistema["metricas_puras_salon"],
+            "contabilidad_costos": corte_sistema["cuentas_aisladas_costo"]
+        }
+        
+        return payload_z_final

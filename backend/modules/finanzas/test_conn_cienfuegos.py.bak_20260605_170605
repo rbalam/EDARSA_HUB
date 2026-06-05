@@ -1,0 +1,1332 @@
+#!/usr/bin/env python
+"""
+================================================================================
+DIAGNÓSTICO TÉCNICO FORMAL — CONEXIÓN CIENFUEGOS (SoftRestaurant)
+================================================================================
+
+Fase 2.2 Control de Ingresos - Script de diagnóstico aislado y de solo lectura.
+
+PROPÓSITO:
+- Identificar la causa exacta de fallo de conexión a CIENFUEGOS
+- NO modifica datos, NO inserta, NO actualiza
+- Solo pruebas de lectura y conectividad
+
+PRUEBAS INCLUIDAS:
+1. Existencia de CIENFUEGOS en EDARSAHUB (Unidades_Negocio)
+2. Existencia del server_id en Servidores_Conexiones
+3. Validación de configuración (host, port, database, user)
+4. Resolución DNS del host
+5. Apertura de puerto TCP
+6. Conexión SQL (pymssql y pytds)
+7. Existencia de database
+8. Existencia de tablas: turnos, movtoscaja
+9. Conteo de registros
+10. Rango de fechas disponible
+11. Muestra de registros
+12. Verificación de datos ya sincronizados en EDARSAHUB
+
+AUTOR: E1 Agent
+FECHA: Mayo 2026
+================================================================================
+"""
+
+import os
+import sys
+import socket
+import hashlib
+from datetime import datetime, timedelta
+from typing import Dict, Optional, Any, List
+from core.config.edarsahub_config import get_edarsahub_sql_config
+_edarsa_cfg = get_edarsahub_sql_config()
+
+
+# Configurar path para imports
+sys.path.insert(0, '/app/backend')
+
+# ==============================================================================
+# CONFIGURACIÓN EDARSAHUB (fuente de verdad)
+# ==============================================================================
+EDARSAHUB_CONFIG = {
+    'server': _edarsa_cfg.host,
+    'port': _edarsa_cfg.port,
+    'database': _edarsa_cfg.database,
+    'user': _edarsa_cfg.user,
+    'password': _edarsa_cfg.password
+}
+
+# ==============================================================================
+# CLASE DE RESULTADO DE DIAGNÓSTICO
+# ==============================================================================
+class DiagnosticResult:
+    """Resultado estructurado de cada prueba de diagnóstico"""
+    
+    def __init__(self, test_name: str):
+        self.test_name = test_name
+        self.success = False
+        self.status = "PENDING"
+        self.message = ""
+        self.data = {}
+        self.error = None
+        self.error_type = None
+        self.timestamp = datetime.now().isoformat()
+    
+    def set_success(self, message: str, data: dict = None):
+        self.success = True
+        self.status = "PASS"
+        self.message = message
+        self.data = data or {}
+    
+    def set_failure(self, message: str, error: str = None, error_type: str = None, data: dict = None):
+        self.success = False
+        self.status = "FAIL"
+        self.message = message
+        self.error = error
+        self.error_type = error_type
+        self.data = data or {}
+    
+    def set_warning(self, message: str, data: dict = None):
+        self.success = True  # Es warning, pero puede continuar
+        self.status = "WARNING"
+        self.message = message
+        self.data = data or {}
+    
+    def __str__(self):
+        icon = "✅" if self.success else "❌"
+        if self.status == "WARNING":
+            icon = "⚠️"
+        return f"{icon} [{self.test_name}] {self.status}: {self.message}"
+
+
+# ==============================================================================
+# FUNCIONES DE CONEXIÓN
+# ==============================================================================
+def get_edarsahub_connection():
+    """Obtiene conexión a EDARSAHUB"""
+    import pymssql
+    return pymssql.connect(
+        server=EDARSAHUB_CONFIG['server'],
+        port=EDARSAHUB_CONFIG['port'],
+        database=EDARSAHUB_CONFIG['database'],
+        user=EDARSAHUB_CONFIG['user'],
+        password=EDARSAHUB_CONFIG['password'],
+        login_timeout=30,
+        autocommit=False
+    )
+
+
+def parse_host_ddns(host_raw: str, default_port: int = 1433) -> Dict[str, Any]:
+    """
+    Parsea cadenas de conexión en varios formatos DDNS:
+    - hostname
+    - hostname,port
+    - hostname\\instance
+    - hostname,port\\instance
+    
+    Retorna dict con: host, port, instance
+    """
+    result = {
+        'host': host_raw,
+        'port': default_port,
+        'instance': None,
+        'original': host_raw
+    }
+    
+    if not host_raw:
+        return result
+    
+    host = host_raw.strip()
+    
+    # Caso: hostname,port\instance
+    if ',' in host and '\\' in host:
+        parts = host.split(',')
+        result['host'] = parts[0]
+        rest = parts[1]
+        if '\\' in rest:
+            port_str, instance = rest.split('\\', 1)
+            try:
+                result['port'] = int(port_str)
+            except ValueError:
+                pass
+            result['instance'] = instance
+        return result
+    
+    # Caso: hostname\instance
+    if '\\' in host:
+        parts = host.split('\\', 1)
+        result['host'] = parts[0]
+        result['instance'] = parts[1]
+        return result
+    
+    # Caso: hostname,port
+    if ',' in host:
+        parts = host.split(',')
+        result['host'] = parts[0]
+        try:
+            result['port'] = int(parts[1])
+        except ValueError:
+            pass
+        return result
+    
+    # Caso: hostname:port (alternativo)
+    if ':' in host:
+        parts = host.split(':')
+        result['host'] = parts[0]
+        try:
+            result['port'] = int(parts[1])
+        except ValueError:
+            pass
+    
+    return result
+
+
+# ==============================================================================
+# PRUEBAS DE DIAGNÓSTICO
+# ==============================================================================
+
+def test_01_cienfuegos_exists_in_edarsahub() -> DiagnosticResult:
+    """Prueba 1: Verificar existencia de CIENFUEGOS en Unidades_Negocio"""
+    result = DiagnosticResult("01_CIENFUEGOS_EXISTS")
+    
+    try:
+        conn = get_edarsahub_connection()
+        cursor = conn.cursor(as_dict=True)
+        
+        cursor.execute("""
+            SELECT 
+                id as unidad_negocio_id,
+                nombre,
+                codigo,
+                server_id,
+                activo,
+                created_at
+            FROM Unidades_Negocio
+            WHERE nombre = 'CIENFUEGOS'
+        """)
+        
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row:
+            result.set_success(
+                f"CIENFUEGOS encontrada en EDARSAHUB",
+                data={
+                    'unidad_negocio_id': str(row['unidad_negocio_id']),
+                    'nombre': row['nombre'],
+                    'codigo': row['codigo'],
+                    'server_id': str(row['server_id']) if row['server_id'] else None,
+                    'activo': bool(row['activo']),
+                    'created_at': str(row['created_at']) if row['created_at'] else None
+                }
+            )
+        else:
+            result.set_failure(
+                "CIENFUEGOS NO encontrada en tabla Unidades_Negocio",
+                error_type="NOT_FOUND"
+            )
+            
+    except Exception as e:
+        result.set_failure(
+            f"Error consultando EDARSAHUB: {str(e)}",
+            error=str(e),
+            error_type="EDARSAHUB_CONNECTION"
+        )
+    
+    return result
+
+
+def test_02_server_config_in_edarsahub(unidad_negocio_id: str) -> DiagnosticResult:
+    """Prueba 2: Obtener configuración del servidor desde Servidores_Conexiones"""
+    result = DiagnosticResult("02_SERVER_CONFIG")
+    
+    try:
+        conn = get_edarsahub_connection()
+        cursor = conn.cursor(as_dict=True)
+        
+        # Primero obtener el server_id de la unidad
+        cursor.execute("""
+            SELECT server_id FROM Unidades_Negocio WHERE id = %s
+        """, (unidad_negocio_id,))
+        
+        unidad_row = cursor.fetchone()
+        if not unidad_row or not unidad_row['server_id']:
+            conn.close()
+            result.set_failure(
+                "CIENFUEGOS no tiene server_id asignado",
+                error_type="NO_SERVER_ID"
+            )
+            return result
+        
+        server_id = str(unidad_row['server_id'])
+        
+        # Obtener configuración del servidor
+        cursor.execute("""
+            SELECT 
+                id,
+                nombre,
+                system_type,
+                host,
+                port,
+                database_name,
+                username,
+                password_encrypted,
+                activo
+            FROM Servidores_Conexiones
+            WHERE CAST(id AS NVARCHAR(100)) = %s
+        """, (server_id,))
+        
+        server_row = cursor.fetchone()
+        conn.close()
+        
+        if server_row:
+            # Parsear host DDNS
+            parsed = parse_host_ddns(server_row['host'] or '', server_row['port'] or 1433)
+            
+            # Verificar si tiene password (sin mostrarlo)
+            has_password = bool(server_row['password_encrypted'])
+            
+            result.set_success(
+                f"Configuración de servidor encontrada: {server_row['nombre']}",
+                data={
+                    'server_id': str(server_row['id']),
+                    'nombre': server_row['nombre'],
+                    'system_type': server_row['system_type'],
+                    'host_original': server_row['host'],
+                    'host_parsed': parsed['host'],
+                    'port_original': server_row['port'],
+                    'port_parsed': parsed['port'],
+                    'instance': parsed['instance'],
+                    'database': server_row['database_name'],
+                    'username': server_row['username'],
+                    'has_password': has_password,
+                    'activo': bool(server_row['activo']),
+                    'password_encrypted': server_row['password_encrypted']  # Para uso interno
+                }
+            )
+        else:
+            result.set_failure(
+                f"Servidor con ID {server_id} NO encontrado en Servidores_Conexiones",
+                error_type="SERVER_NOT_FOUND"
+            )
+            
+    except Exception as e:
+        result.set_failure(
+            f"Error consultando configuración de servidor: {str(e)}",
+            error=str(e),
+            error_type="EDARSAHUB_QUERY"
+        )
+    
+    return result
+
+
+def test_03_dns_resolution(hostname: str) -> DiagnosticResult:
+    """Prueba 3: Resolución DNS del host"""
+    result = DiagnosticResult("03_DNS_RESOLUTION")
+    
+    if not hostname:
+        result.set_failure("Hostname vacío", error_type="EMPTY_HOSTNAME")
+        return result
+    
+    try:
+        ip_address = socket.gethostbyname(hostname)
+        result.set_success(
+            f"DNS resuelto correctamente: {hostname} -> {ip_address}",
+            data={
+                'hostname': hostname,
+                'ip_address': ip_address
+            }
+        )
+    except socket.gaierror as e:
+        result.set_failure(
+            f"DNS NO resuelve: {hostname}",
+            error=str(e),
+            error_type="DNS_RESOLUTION_FAILED",
+            data={'hostname': hostname}
+        )
+    except socket.timeout:
+        result.set_failure(
+            f"Timeout resolviendo DNS: {hostname}",
+            error_type="DNS_TIMEOUT",
+            data={'hostname': hostname}
+        )
+    except Exception as e:
+        result.set_failure(
+            f"Error inesperado en resolución DNS: {str(e)}",
+            error=str(e),
+            error_type="DNS_UNKNOWN_ERROR"
+        )
+    
+    return result
+
+
+def test_04_tcp_port(hostname: str, port: int, timeout: int = 10) -> DiagnosticResult:
+    """Prueba 4: Verificar apertura de puerto TCP"""
+    result = DiagnosticResult("04_TCP_PORT")
+    
+    if not hostname:
+        result.set_failure("Hostname vacío", error_type="EMPTY_HOSTNAME")
+        return result
+    
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        
+        start_time = datetime.now()
+        conn_result = sock.connect_ex((hostname, port))
+        elapsed = (datetime.now() - start_time).total_seconds()
+        
+        sock.close()
+        
+        if conn_result == 0:
+            result.set_success(
+                f"Puerto TCP {port} ABIERTO en {hostname}",
+                data={
+                    'hostname': hostname,
+                    'port': port,
+                    'latency_seconds': round(elapsed, 3)
+                }
+            )
+        else:
+            result.set_failure(
+                f"Puerto TCP {port} CERRADO o no accesible en {hostname}",
+                error=f"connect_ex returned {conn_result}",
+                error_type="PORT_CLOSED",
+                data={
+                    'hostname': hostname,
+                    'port': port,
+                    'error_code': conn_result
+                }
+            )
+    except socket.timeout:
+        result.set_failure(
+            f"Timeout conectando a {hostname}:{port}",
+            error_type="TCP_TIMEOUT",
+            data={'hostname': hostname, 'port': port, 'timeout_seconds': timeout}
+        )
+    except Exception as e:
+        result.set_failure(
+            f"Error en prueba TCP: {str(e)}",
+            error=str(e),
+            error_type="TCP_ERROR"
+        )
+    
+    return result
+
+
+def test_05_sql_connection_pymssql(config: Dict) -> DiagnosticResult:
+    """Prueba 5a: Conexión SQL usando pymssql (driver oficial del sistema)"""
+    result = DiagnosticResult("05a_SQL_PYMSSQL")
+    
+    import pymssql
+    
+    # Descifrar password si es necesario
+    password = config.get('password', '')
+    if config.get('password_encrypted'):
+        try:
+            from core.secret_manager import decrypt_secret
+            password = decrypt_secret(config['password_encrypted'])
+        except Exception as decrypt_err:
+            # Si falla descifrado, usar valor directo (legacy)
+            password = config['password_encrypted']
+    
+    host = config.get('host_parsed', config.get('host', ''))
+    port = config.get('port_parsed', config.get('port', 1433))
+    database = config.get('database', '')
+    username = config.get('username', '')
+    instance = config.get('instance')
+    
+    # Construir server string
+    if instance:
+        server_string = f"{host}\\{instance}"
+    else:
+        server_string = host
+    
+    try:
+        start_time = datetime.now()
+        conn = pymssql.connect(
+            server=server_string,
+            port=port,
+            database=database,
+            user=username,
+            password=password,
+            login_timeout=15,
+            timeout=30
+        )
+        elapsed = (datetime.now() - start_time).total_seconds()
+        
+        # Ejecutar query de prueba
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1 AS test")
+        test_row = cursor.fetchone()
+        
+        conn.close()
+        
+        result.set_success(
+            f"Conexión pymssql EXITOSA a {server_string}:{port}/{database}",
+            data={
+                'driver': 'pymssql',
+                'server': server_string,
+                'port': port,
+                'database': database,
+                'latency_seconds': round(elapsed, 3),
+                'test_query_ok': test_row is not None
+            }
+        )
+        
+    except pymssql.OperationalError as e:
+        error_str = str(e)
+        
+        # Clasificar el error
+        error_type = "UNKNOWN"
+        if "login failed" in error_str.lower() or "inicio de sesión" in error_str.lower():
+            error_type = "LOGIN_FAILED"
+        elif "adaptive server" in error_str.lower() and "unavailable" in error_str.lower():
+            error_type = "CONNECTION_FAILED"
+        elif "timed out" in error_str.lower() or "timeout" in error_str.lower():
+            error_type = "TIMEOUT"
+        elif "network" in error_str.lower():
+            error_type = "NETWORK_ERROR"
+        elif "database" in error_str.lower() and "not exist" in error_str.lower():
+            error_type = "DATABASE_NOT_EXISTS"
+        
+        result.set_failure(
+            f"Conexión pymssql FALLIDA: {error_type}",
+            error=error_str,
+            error_type=error_type,
+            data={
+                'driver': 'pymssql',
+                'server': server_string,
+                'port': port,
+                'database': database
+            }
+        )
+        
+    except Exception as e:
+        result.set_failure(
+            f"Error inesperado en pymssql: {str(e)}",
+            error=str(e),
+            error_type="PYMSSQL_UNKNOWN"
+        )
+    
+    return result
+
+
+def test_05b_sql_connection_pytds(config: Dict) -> DiagnosticResult:
+    """Prueba 5b: Conexión SQL usando pytds (driver alternativo)"""
+    result = DiagnosticResult("05b_SQL_PYTDS")
+    
+    try:
+        import pytds
+    except ImportError:
+        result.set_warning("pytds no instalado - usando solo pymssql")
+        return result
+    
+    # Descifrar password
+    password = config.get('password', '')
+    if config.get('password_encrypted'):
+        try:
+            from core.secret_manager import decrypt_secret
+            password = decrypt_secret(config['password_encrypted'])
+        except Exception:
+            password = config['password_encrypted']
+    
+    host = config.get('host_parsed', config.get('host', ''))
+    port = config.get('port_parsed', config.get('port', 1433))
+    database = config.get('database', '')
+    username = config.get('username', '')
+    
+    try:
+        start_time = datetime.now()
+        conn = pytds.connect(
+            server=host,
+            port=port,
+            database=database,
+            user=username,
+            password=password,
+            login_timeout=15,
+            timeout=30
+        )
+        elapsed = (datetime.now() - start_time).total_seconds()
+        
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1 AS test")
+        test_row = cursor.fetchone()
+        
+        conn.close()
+        
+        result.set_success(
+            f"Conexión pytds EXITOSA a {host}:{port}/{database}",
+            data={
+                'driver': 'pytds',
+                'server': host,
+                'port': port,
+                'database': database,
+                'latency_seconds': round(elapsed, 3),
+                'test_query_ok': test_row is not None
+            }
+        )
+        
+    except Exception as e:
+        error_str = str(e)
+        error_type = "UNKNOWN"
+        
+        if "login" in error_str.lower() or "inicio de sesión" in error_str.lower():
+            error_type = "LOGIN_FAILED"
+        elif "timeout" in error_str.lower():
+            error_type = "TIMEOUT"
+        elif "connection" in error_str.lower():
+            error_type = "CONNECTION_FAILED"
+        
+        result.set_failure(
+            f"Conexión pytds FALLIDA: {error_type}",
+            error=error_str,
+            error_type=error_type,
+            data={'driver': 'pytds', 'server': host, 'port': port}
+        )
+    
+    return result
+
+
+def test_06_database_exists(config: Dict) -> DiagnosticResult:
+    """Prueba 6: Verificar existencia del database"""
+    result = DiagnosticResult("06_DATABASE_EXISTS")
+    
+    import pymssql
+    
+    # Descifrar password
+    password = config.get('password', '')
+    if config.get('password_encrypted'):
+        try:
+            from core.secret_manager import decrypt_secret
+            password = decrypt_secret(config['password_encrypted'])
+        except Exception:
+            password = config['password_encrypted']
+    
+    host = config.get('host_parsed', config.get('host', ''))
+    port = config.get('port_parsed', config.get('port', 1433))
+    database = config.get('database', '')
+    username = config.get('username', '')
+    instance = config.get('instance')
+    
+    server_string = f"{host}\\{instance}" if instance else host
+    
+    try:
+        # Conectar a master para verificar
+        conn = pymssql.connect(
+            server=server_string,
+            port=port,
+            database='master',
+            user=username,
+            password=password,
+            login_timeout=15
+        )
+        cursor = conn.cursor(as_dict=True)
+        
+        cursor.execute("""
+            SELECT name, state_desc 
+            FROM sys.databases 
+            WHERE name = %s
+        """, (database,))
+        
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row:
+            result.set_success(
+                f"Database '{database}' existe y está {row['state_desc']}",
+                data={
+                    'database': database,
+                    'state': row['state_desc']
+                }
+            )
+        else:
+            result.set_failure(
+                f"Database '{database}' NO existe en el servidor",
+                error_type="DATABASE_NOT_EXISTS",
+                data={'database': database}
+            )
+            
+    except Exception as e:
+        result.set_failure(
+            f"Error verificando database: {str(e)}",
+            error=str(e),
+            error_type="DATABASE_CHECK_FAILED"
+        )
+    
+    return result
+
+
+def test_07_tables_exist(config: Dict) -> DiagnosticResult:
+    """Prueba 7: Verificar existencia de tablas turnos y movtoscaja"""
+    result = DiagnosticResult("07_TABLES_EXIST")
+    
+    import pymssql
+    
+    password = config.get('password', '')
+    if config.get('password_encrypted'):
+        try:
+            from core.secret_manager import decrypt_secret
+            password = decrypt_secret(config['password_encrypted'])
+        except Exception:
+            password = config['password_encrypted']
+    
+    host = config.get('host_parsed', config.get('host', ''))
+    port = config.get('port_parsed', config.get('port', 1433))
+    database = config.get('database', '')
+    username = config.get('username', '')
+    instance = config.get('instance')
+    
+    server_string = f"{host}\\{instance}" if instance else host
+    tables_to_check = ['turnos', 'movtoscaja']
+    
+    try:
+        conn = pymssql.connect(
+            server=server_string,
+            port=port,
+            database=database,
+            user=username,
+            password=password,
+            login_timeout=15
+        )
+        cursor = conn.cursor(as_dict=True)
+        
+        tables_found = {}
+        for table in tables_to_check:
+            cursor.execute("""
+                SELECT TABLE_NAME, TABLE_TYPE
+                FROM INFORMATION_SCHEMA.TABLES
+                WHERE TABLE_NAME = %s
+            """, (table,))
+            
+            row = cursor.fetchone()
+            tables_found[table] = {
+                'exists': row is not None,
+                'type': row['TABLE_TYPE'] if row else None
+            }
+        
+        conn.close()
+        
+        all_exist = all(t['exists'] for t in tables_found.values())
+        missing = [t for t, v in tables_found.items() if not v['exists']]
+        
+        if all_exist:
+            result.set_success(
+                f"Todas las tablas requeridas existen: {', '.join(tables_to_check)}",
+                data={'tables': tables_found}
+            )
+        else:
+            result.set_failure(
+                f"Tablas faltantes: {', '.join(missing)}",
+                error_type="TABLES_MISSING",
+                data={'tables': tables_found, 'missing': missing}
+            )
+            
+    except Exception as e:
+        result.set_failure(
+            f"Error verificando tablas: {str(e)}",
+            error=str(e),
+            error_type="TABLE_CHECK_FAILED"
+        )
+    
+    return result
+
+
+def test_08_record_counts(config: Dict) -> DiagnosticResult:
+    """Prueba 8: Conteo de registros en tablas"""
+    result = DiagnosticResult("08_RECORD_COUNTS")
+    
+    import pymssql
+    
+    password = config.get('password', '')
+    if config.get('password_encrypted'):
+        try:
+            from core.secret_manager import decrypt_secret
+            password = decrypt_secret(config['password_encrypted'])
+        except Exception:
+            password = config['password_encrypted']
+    
+    host = config.get('host_parsed', config.get('host', ''))
+    port = config.get('port_parsed', config.get('port', 1433))
+    database = config.get('database', '')
+    username = config.get('username', '')
+    instance = config.get('instance')
+    
+    server_string = f"{host}\\{instance}" if instance else host
+    
+    try:
+        conn = pymssql.connect(
+            server=server_string,
+            port=port,
+            database=database,
+            user=username,
+            password=password,
+            login_timeout=15,
+            timeout=30
+        )
+        cursor = conn.cursor(as_dict=True)
+        
+        counts = {}
+        
+        # Conteo de turnos
+        cursor.execute("SELECT COUNT(*) as total FROM turnos")
+        row = cursor.fetchone()
+        counts['turnos_total'] = row['total'] if row else 0
+        
+        # Conteo de turnos cerrados (los que nos interesan)
+        cursor.execute("SELECT COUNT(*) as total FROM turnos WHERE cierre IS NOT NULL")
+        row = cursor.fetchone()
+        counts['turnos_cerrados'] = row['total'] if row else 0
+        
+        # Conteo de movtoscaja
+        cursor.execute("SELECT COUNT(*) as total FROM movtoscaja")
+        row = cursor.fetchone()
+        counts['movtoscaja_total'] = row['total'] if row else 0
+        
+        conn.close()
+        
+        result.set_success(
+            f"Conteos obtenidos: turnos={counts['turnos_cerrados']} cerrados, movtoscaja={counts['movtoscaja_total']}",
+            data=counts
+        )
+            
+    except Exception as e:
+        result.set_failure(
+            f"Error contando registros: {str(e)}",
+            error=str(e),
+            error_type="COUNT_FAILED"
+        )
+    
+    return result
+
+
+def test_09_date_range(config: Dict) -> DiagnosticResult:
+    """Prueba 9: Rango de fechas disponible en turnos"""
+    result = DiagnosticResult("09_DATE_RANGE")
+    
+    import pymssql
+    
+    password = config.get('password', '')
+    if config.get('password_encrypted'):
+        try:
+            from core.secret_manager import decrypt_secret
+            password = decrypt_secret(config['password_encrypted'])
+        except Exception:
+            password = config['password_encrypted']
+    
+    host = config.get('host_parsed', config.get('host', ''))
+    port = config.get('port_parsed', config.get('port', 1433))
+    database = config.get('database', '')
+    username = config.get('username', '')
+    instance = config.get('instance')
+    
+    server_string = f"{host}\\{instance}" if instance else host
+    
+    try:
+        conn = pymssql.connect(
+            server=server_string,
+            port=port,
+            database=database,
+            user=username,
+            password=password,
+            login_timeout=15,
+            timeout=30
+        )
+        cursor = conn.cursor(as_dict=True)
+        
+        cursor.execute("""
+            SELECT 
+                MIN(cierre) as fecha_min,
+                MAX(cierre) as fecha_max,
+                COUNT(*) as total_cerrados
+            FROM turnos
+            WHERE cierre IS NOT NULL
+        """)
+        
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row and row['fecha_min']:
+            result.set_success(
+                f"Rango de fechas: {row['fecha_min']} a {row['fecha_max']}",
+                data={
+                    'fecha_minima': str(row['fecha_min']) if row['fecha_min'] else None,
+                    'fecha_maxima': str(row['fecha_max']) if row['fecha_max'] else None,
+                    'total_cerrados': row['total_cerrados']
+                }
+            )
+        else:
+            result.set_warning(
+                "No hay turnos cerrados con fecha",
+                data={'total_cerrados': 0}
+            )
+            
+    except Exception as e:
+        result.set_failure(
+            f"Error obteniendo rango de fechas: {str(e)}",
+            error=str(e),
+            error_type="DATE_RANGE_FAILED"
+        )
+    
+    return result
+
+
+def test_10_sample_records(config: Dict) -> DiagnosticResult:
+    """Prueba 10: Muestra de 5 registros de turnos"""
+    result = DiagnosticResult("10_SAMPLE_RECORDS")
+    
+    import pymssql
+    
+    password = config.get('password', '')
+    if config.get('password_encrypted'):
+        try:
+            from core.secret_manager import decrypt_secret
+            password = decrypt_secret(config['password_encrypted'])
+        except Exception:
+            password = config['password_encrypted']
+    
+    host = config.get('host_parsed', config.get('host', ''))
+    port = config.get('port_parsed', config.get('port', 1433))
+    database = config.get('database', '')
+    username = config.get('username', '')
+    instance = config.get('instance')
+    
+    server_string = f"{host}\\{instance}" if instance else host
+    
+    try:
+        conn = pymssql.connect(
+            server=server_string,
+            port=port,
+            database=database,
+            user=username,
+            password=password,
+            login_timeout=15,
+            timeout=30
+        )
+        cursor = conn.cursor(as_dict=True)
+        
+        # Muestra de turnos (últimos 5)
+        cursor.execute("""
+            SELECT TOP 5
+                idturnointerno,
+                idturno,
+                cierre,
+                idestacion,
+                cajero,
+                efectivo,
+                tarjeta,
+                credito,
+                vales
+            FROM turnos
+            WHERE cierre IS NOT NULL
+            ORDER BY cierre DESC
+        """)
+        
+        turnos_sample = cursor.fetchall()
+        
+        # Muestra de movtoscaja (últimos 5)
+        cursor.execute("""
+            SELECT TOP 5
+                idmovtocaja,
+                fecha,
+                concepto,
+                importe,
+                formapago
+            FROM movtoscaja
+            ORDER BY fecha DESC
+        """)
+        
+        movtos_sample = cursor.fetchall()
+        conn.close()
+        
+        # Serializar para JSON
+        def serialize_row(row):
+            return {k: str(v) if v is not None else None for k, v in row.items()}
+        
+        result.set_success(
+            f"Muestras obtenidas: {len(turnos_sample)} turnos, {len(movtos_sample)} movtos",
+            data={
+                'turnos_sample': [serialize_row(r) for r in turnos_sample],
+                'movtoscaja_sample': [serialize_row(r) for r in movtos_sample]
+            }
+        )
+            
+    except Exception as e:
+        result.set_failure(
+            f"Error obteniendo muestras: {str(e)}",
+            error=str(e),
+            error_type="SAMPLE_FAILED"
+        )
+    
+    return result
+
+
+def test_11_edarsahub_sync_status(unidad_negocio_id: str, server_id: str) -> DiagnosticResult:
+    """Prueba 11: Verificar datos ya sincronizados en EDARSAHUB"""
+    result = DiagnosticResult("11_EDARSAHUB_SYNC_STATUS")
+    
+    try:
+        conn = get_edarsahub_connection()
+        cursor = conn.cursor(as_dict=True)
+        
+        # Verificar registros existentes de CIENFUEGOS
+        cursor.execute("""
+            SELECT 
+                COUNT(*) as total_registros,
+                SUM(CASE WHEN EsDemo = 0 THEN 1 ELSE 0 END) as registros_reales,
+                SUM(CASE WHEN EsDemo = 1 THEN 1 ELSE 0 END) as registros_demo,
+                SUM(TotalEfectivo + ISNULL(TotalTarjetaDebito, 0) + ISNULL(TotalTarjetaCredito, 0)) as total_ingresos,
+                MIN(FechaCorte) as fecha_min,
+                MAX(FechaCorte) as fecha_max
+            FROM Finanzas_CortesCaja
+            WHERE UnidadNegocioID = %s
+              AND SistemaOrigen = 'SoftRestaurant'
+        """, (unidad_negocio_id,))
+        
+        stats = cursor.fetchone()
+        
+        # Verificar último SyncLog
+        cursor.execute("""
+            SELECT TOP 1
+                LogID,
+                FechaInicio,
+                Estatus,
+                RegistrosInsertados,
+                RegistrosOmitidos,
+                ErrorMensaje
+            FROM Finanzas_CortesCaja_SyncLog
+            WHERE UnidadNegocioID = %s
+              AND SistemaOrigen = 'SoftRestaurant'
+            ORDER BY FechaInicio DESC
+        """, (unidad_negocio_id,))
+        
+        last_sync = cursor.fetchone()
+        
+        # Muestra de HashOrigen si existe
+        cursor.execute("""
+            SELECT TOP 1 HashOrigen
+            FROM Finanzas_CortesCaja
+            WHERE UnidadNegocioID = %s
+              AND EsDemo = 0
+              AND HashOrigen IS NOT NULL
+        """, (unidad_negocio_id,))
+        
+        hash_sample = cursor.fetchone()
+        conn.close()
+        
+        result.set_success(
+            f"Estado de sincronización verificado en EDARSAHUB",
+            data={
+                'total_registros': stats['total_registros'] or 0,
+                'registros_reales': stats['registros_reales'] or 0,
+                'registros_demo': stats['registros_demo'] or 0,
+                'total_ingresos': float(stats['total_ingresos'] or 0),
+                'fecha_minima': str(stats['fecha_min']) if stats['fecha_min'] else None,
+                'fecha_maxima': str(stats['fecha_max']) if stats['fecha_max'] else None,
+                'ultimo_sync': {
+                    'log_id': last_sync['LogID'] if last_sync else None,
+                    'fecha': str(last_sync['FechaInicio']) if last_sync else None,
+                    'estatus': last_sync['Estatus'] if last_sync else None,
+                    'insertados': last_sync['RegistrosInsertados'] if last_sync else None,
+                    'error': last_sync['ErrorMensaje'] if last_sync else None
+                } if last_sync else None,
+                'hash_sample': hash_sample['HashOrigen'][:16] + '...' if hash_sample and hash_sample['HashOrigen'] else None
+            }
+        )
+            
+    except Exception as e:
+        result.set_failure(
+            f"Error verificando sync status: {str(e)}",
+            error=str(e),
+            error_type="SYNC_STATUS_FAILED"
+        )
+    
+    return result
+
+
+# ==============================================================================
+# EJECUCIÓN PRINCIPAL
+# ==============================================================================
+
+def run_full_diagnostic() -> Dict[str, Any]:
+    """
+    Ejecuta todas las pruebas de diagnóstico secuencialmente.
+    Retorna un reporte completo con todos los resultados.
+    """
+    print("=" * 80)
+    print("DIAGNÓSTICO TÉCNICO FORMAL — CONEXIÓN CIENFUEGOS")
+    print("=" * 80)
+    print(f"Fecha/Hora: {datetime.now().isoformat()}")
+    print(f"Ambiente: Preview Emergent")
+    print("=" * 80)
+    print()
+    
+    report = {
+        'timestamp': datetime.now().isoformat(),
+        'ambiente': 'Preview Emergent',
+        'unidad': 'CIENFUEGOS',
+        'sistema_origen': 'SoftRestaurant',
+        'results': [],
+        'summary': {
+            'total_tests': 0,
+            'passed': 0,
+            'failed': 0,
+            'warnings': 0
+        },
+        'diagnostico_final': None,
+        'causa_raiz_probable': None,
+        'recomendacion': None
+    }
+    
+    # Variables acumuladas entre pruebas
+    unidad_negocio_id = None
+    server_id = None
+    server_config = {}
+    
+    # =========================================================================
+    # PRUEBA 1: Existencia en EDARSAHUB
+    # =========================================================================
+    print("\n--- PRUEBA 1: CIENFUEGOS en EDARSAHUB ---")
+    r1 = test_01_cienfuegos_exists_in_edarsahub()
+    print(r1)
+    report['results'].append(r1.__dict__)
+    
+    if not r1.success:
+        report['diagnostico_final'] = "BLOQUEO - CIENFUEGOS no existe en EDARSAHUB"
+        report['causa_raiz_probable'] = "La unidad no está registrada en Unidades_Negocio"
+        report['recomendacion'] = "Verificar que CIENFUEGOS esté dada de alta en EDARSAHUB.Unidades_Negocio"
+        return report
+    
+    unidad_negocio_id = r1.data.get('unidad_negocio_id')
+    server_id = r1.data.get('server_id')
+    
+    # =========================================================================
+    # PRUEBA 2: Configuración del servidor
+    # =========================================================================
+    print("\n--- PRUEBA 2: Configuración del Servidor ---")
+    r2 = test_02_server_config_in_edarsahub(unidad_negocio_id)
+    print(r2)
+    report['results'].append(r2.__dict__)
+    
+    if not r2.success:
+        report['diagnostico_final'] = "BLOQUEO - Configuración de servidor no encontrada"
+        report['causa_raiz_probable'] = r2.error_type
+        report['recomendacion'] = "Verificar server_id en Servidores_Conexiones"
+        return report
+    
+    server_config = r2.data
+    server_id = server_config.get('server_id')
+    
+    # Mostrar configuración sanitizada
+    print(f"\n  Configuración recuperada:")
+    print(f"    - server_id: {server_config.get('server_id')}")
+    print(f"    - nombre: {server_config.get('nombre')}")
+    print(f"    - system_type: {server_config.get('system_type')}")
+    print(f"    - host_original: {server_config.get('host_original')}")
+    print(f"    - host_parsed: {server_config.get('host_parsed')}")
+    print(f"    - port_parsed: {server_config.get('port_parsed')}")
+    print(f"    - instance: {server_config.get('instance')}")
+    print(f"    - database: {server_config.get('database')}")
+    print(f"    - username: {server_config.get('username')}")
+    print(f"    - has_password: {server_config.get('has_password')}")
+    
+    # =========================================================================
+    # PRUEBA 3: Resolución DNS
+    # =========================================================================
+    print("\n--- PRUEBA 3: Resolución DNS ---")
+    hostname = server_config.get('host_parsed', '')
+    r3 = test_03_dns_resolution(hostname)
+    print(r3)
+    report['results'].append(r3.__dict__)
+    
+    if not r3.success:
+        report['diagnostico_final'] = "BLOQUEO - DNS no resuelve"
+        report['causa_raiz_probable'] = "DNS_RESOLUTION_FAILED"
+        report['recomendacion'] = (
+            f"El hostname '{hostname}' no resuelve a ninguna IP. "
+            "Posibles causas:\n"
+            "1. El servicio DDNS no está activo\n"
+            "2. El dominio expiró\n"
+            "3. Error de configuración en el DDNS\n"
+            "Acción: Verificar desde el servidor local que el DDNS esté funcionando"
+        )
+        # Continuar con las demás pruebas para documentar
+    
+    # =========================================================================
+    # PRUEBA 4: Puerto TCP
+    # =========================================================================
+    print("\n--- PRUEBA 4: Puerto TCP ---")
+    port = server_config.get('port_parsed', 1433)
+    r4 = test_04_tcp_port(hostname, port)
+    print(r4)
+    report['results'].append(r4.__dict__)
+    
+    if not r4.success and r3.success:
+        # DNS resolvió pero puerto cerrado
+        report['diagnostico_final'] = "BLOQUEO - Puerto cerrado o firewall"
+        report['causa_raiz_probable'] = r4.error_type
+        report['recomendacion'] = (
+            f"El puerto {port} está cerrado en {hostname}. "
+            "Posibles causas:\n"
+            "1. Firewall bloqueando conexiones externas\n"
+            "2. SQL Server no configurado para conexiones TCP\n"
+            "3. Puerto incorrecto en la configuración\n"
+            "Acción: Verificar reglas de firewall y configuración de red de SQL Server"
+        )
+    
+    # =========================================================================
+    # PRUEBAS 5a y 5b: Conexión SQL
+    # =========================================================================
+    print("\n--- PRUEBA 5a: Conexión SQL (pymssql) ---")
+    r5a = test_05_sql_connection_pymssql(server_config)
+    print(r5a)
+    report['results'].append(r5a.__dict__)
+    
+    print("\n--- PRUEBA 5b: Conexión SQL (pytds) ---")
+    r5b = test_05b_sql_connection_pytds(server_config)
+    print(r5b)
+    report['results'].append(r5b.__dict__)
+    
+    # Si ninguno de los drivers conecta
+    if not r5a.success and not r5b.success:
+        if not report['diagnostico_final']:
+            report['diagnostico_final'] = "BLOQUEO - Conexión SQL fallida"
+            
+            # Determinar causa específica
+            error_type_a = r5a.error_type or ""
+            error_type_b = r5b.error_type or ""
+            error_a = r5a.error or ""
+            error_b = r5b.error or ""
+            
+            # Verificar si es error de login (credenciales)
+            is_login_error = (
+                "LOGIN_FAILED" in error_type_a or "LOGIN_FAILED" in error_type_b or
+                "inicio de sesión" in error_a.lower() or "inicio de sesión" in error_b.lower() or
+                "login failed" in error_a.lower() or "login failed" in error_b.lower()
+            )
+            
+            if is_login_error:
+                report['causa_raiz_probable'] = "CREDENTIALS_INVALID"
+                report['recomendacion'] = (
+                    "Las credenciales (usuario/contraseña) almacenadas en EDARSAHUB para CIENFUEGOS son incorrectas. "
+                    "El servidor SQL Server SÍ está accesible (DNS resuelve, puerto abierto), pero rechaza el login. "
+                    "Acción: Actualizar las credenciales correctas en Servidores_Conexiones."
+                )
+            elif "TIMEOUT" in error_type_a or "TIMEOUT" in error_type_b:
+                report['causa_raiz_probable'] = "CONNECTION_TIMEOUT"
+                report['recomendacion'] = "Timeout de conexión - servidor lento o inaccesible"
+            elif "CONNECTION_FAILED" in error_type_a or "CONNECTION_FAILED" in error_type_b:
+                report['causa_raiz_probable'] = "CONNECTION_REFUSED"
+                report['recomendacion'] = "Conexión rechazada - verificar red y firewall"
+            else:
+                report['causa_raiz_probable'] = "SQL_CONNECTION_UNKNOWN"
+                report['recomendacion'] = f"Error: {r5a.error or r5b.error}"
+    
+    # Si al menos uno conectó, continuar con pruebas de schema
+    sql_connected = r5a.success or r5b.success
+    
+    if sql_connected:
+        # =====================================================================
+        # PRUEBA 6: Database existe
+        # =====================================================================
+        print("\n--- PRUEBA 6: Existencia de Database ---")
+        r6 = test_06_database_exists(server_config)
+        print(r6)
+        report['results'].append(r6.__dict__)
+        
+        if not r6.success:
+            report['diagnostico_final'] = "BLOQUEO - Database no existe"
+            report['causa_raiz_probable'] = "DATABASE_NOT_EXISTS"
+            report['recomendacion'] = f"La base de datos '{server_config.get('database')}' no existe en el servidor"
+        else:
+            # =================================================================
+            # PRUEBA 7: Tablas existen
+            # =================================================================
+            print("\n--- PRUEBA 7: Tablas turnos y movtoscaja ---")
+            r7 = test_07_tables_exist(server_config)
+            print(r7)
+            report['results'].append(r7.__dict__)
+            
+            if r7.success:
+                # =============================================================
+                # PRUEBA 8: Conteo de registros
+                # =============================================================
+                print("\n--- PRUEBA 8: Conteo de Registros ---")
+                r8 = test_08_record_counts(server_config)
+                print(r8)
+                report['results'].append(r8.__dict__)
+                
+                # =============================================================
+                # PRUEBA 9: Rango de fechas
+                # =============================================================
+                print("\n--- PRUEBA 9: Rango de Fechas ---")
+                r9 = test_09_date_range(server_config)
+                print(r9)
+                report['results'].append(r9.__dict__)
+                
+                # =============================================================
+                # PRUEBA 10: Muestra de registros
+                # =============================================================
+                print("\n--- PRUEBA 10: Muestra de Registros ---")
+                r10 = test_10_sample_records(server_config)
+                print(r10)
+                report['results'].append(r10.__dict__)
+    
+    # =========================================================================
+    # PRUEBA 11: Estado de sincronización en EDARSAHUB
+    # =========================================================================
+    print("\n--- PRUEBA 11: Estado Sync en EDARSAHUB ---")
+    r11 = test_11_edarsahub_sync_status(unidad_negocio_id, server_id)
+    print(r11)
+    report['results'].append(r11.__dict__)
+    
+    # =========================================================================
+    # RESUMEN FINAL
+    # =========================================================================
+    print("\n" + "=" * 80)
+    print("RESUMEN DE DIAGNÓSTICO")
+    print("=" * 80)
+    
+    for r in report['results']:
+        report['summary']['total_tests'] += 1
+        if r['status'] == 'PASS':
+            report['summary']['passed'] += 1
+        elif r['status'] == 'FAIL':
+            report['summary']['failed'] += 1
+        elif r['status'] == 'WARNING':
+            report['summary']['warnings'] += 1
+    
+    print(f"\nTotal pruebas: {report['summary']['total_tests']}")
+    print(f"Exitosas: {report['summary']['passed']}")
+    print(f"Fallidas: {report['summary']['failed']}")
+    print(f"Advertencias: {report['summary']['warnings']}")
+    
+    # Determinar diagnóstico final si no se estableció antes
+    if not report['diagnostico_final']:
+        if report['summary']['failed'] == 0:
+            report['diagnostico_final'] = "CONEXIÓN EXITOSA - Puede reintentar sincronización"
+            report['causa_raiz_probable'] = "TRANSIENT_ERROR"
+            report['recomendacion'] = "El error anterior pudo ser transitorio. Autorizar reintento de sync."
+        else:
+            report['diagnostico_final'] = "DIAGNÓSTICO INCOMPLETO"
+            report['recomendacion'] = "Revisar pruebas fallidas específicas"
+    
+    print(f"\n** DIAGNÓSTICO FINAL: {report['diagnostico_final']}")
+    print(f"** CAUSA RAÍZ PROBABLE: {report['causa_raiz_probable']}")
+    print(f"** RECOMENDACIÓN: {report['recomendacion']}")
+    
+    return report
+
+
+# ==============================================================================
+# PUNTO DE ENTRADA
+# ==============================================================================
+
+if __name__ == "__main__":
+    report = run_full_diagnostic()
+    
+    # Guardar reporte en JSON
+    import json
+    output_path = "/app/docs/reports/diagnostico_cienfuegos.json"
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(report, f, indent=2, ensure_ascii=False, default=str)
+    
+    print(f"\n\nReporte guardado en: {output_path}")

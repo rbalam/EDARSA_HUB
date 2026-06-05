@@ -1,0 +1,249 @@
+"""
+Schemas para Simulación de Precios y Solicitudes de Cambio
+FASE 1C-3F - Costos y Márgenes
+"""
+
+from pydantic import BaseModel, Field
+from typing import Optional, List
+from datetime import datetime
+from decimal import Decimal
+from enum import Enum
+
+
+class EstatusSolicitud(str, Enum):
+    """Estados del flujo de solicitud de cambio de precio."""
+    BORRADOR = "BORRADOR"
+    SOLICITADA = "SOLICITADA"
+    EN_REVISION = "EN_REVISION"
+    APROBADA = "APROBADA"
+    RECHAZADA = "RECHAZADA"
+    CANCELADA = "CANCELADA"
+    APLICADA = "APLICADA"
+    ERROR_APLICACION = "ERROR_APLICACION"
+
+
+class AccionSolicitud(str, Enum):
+    """Acciones disponibles en el flujo."""
+    CREAR = "CREAR"
+    EDITAR = "EDITAR"
+    ENVIAR = "ENVIAR"
+    APROBAR = "APROBAR"
+    RECHAZAR = "RECHAZAR"
+    CANCELAR = "CANCELAR"
+    APLICAR = "APLICAR"
+    REVERTIR = "REVERTIR"
+
+
+class RecomendacionPrecio(str, Enum):
+    """Recomendaciones basadas en análisis de margen."""
+    MANTENER = "MANTENER"
+    AUMENTAR = "AUMENTAR"
+    REDUCIR = "REDUCIR"
+    REVISAR_COSTO = "REVISAR_COSTO"
+    MARGEN_BAJO = "MARGEN_BAJO"
+    MARGEN_NEGATIVO = "MARGEN_NEGATIVO"
+    SIN_DATOS = "SIN_DATOS"
+
+
+# ==================== SIMULACIÓN ====================
+
+class SimulacionPrecioRequest(BaseModel):
+    """Request para simular un cambio de precio."""
+    producto_id: str = Field(..., description="ID del producto")
+    server_id: str = Field(..., description="ID del servidor")
+    precio_nuevo: float = Field(..., gt=0, description="Precio nuevo a simular")
+    guardar_simulacion: bool = Field(default=False, description="Guardar simulación en BD")
+
+
+class SimulacionPrecioResponse(BaseModel):
+    """Respuesta de simulación de precio."""
+    # Producto
+    producto_id: str
+    codigo_producto: str
+    nombre_producto: str
+    server_id: str
+    system_type: str
+    familia: Optional[str] = None
+    
+    # Valores actuales
+    precio_actual: float
+    costo_actual: float
+    margen_actual_pesos: float
+    margen_actual_porcentaje: float
+    
+    # Valores simulados
+    precio_simulado: float
+    margen_simulado_pesos: float
+    margen_simulado_porcentaje: float
+    
+    # Variación
+    variacion_pesos: float
+    variacion_porcentaje: float
+    
+    # Análisis
+    margen_objetivo: Optional[float] = None
+    recomendacion: RecomendacionPrecio
+    impacto_estimado: Optional[str] = None
+    
+    # Metadata
+    sync_run_id: Optional[str] = None
+    fecha_datos_costo: Optional[datetime] = None
+    simulacion_id: Optional[str] = None
+    source_type: str = "EDARSAHUB_SQL"
+
+
+# ==================== SOLICITUD ====================
+
+class SolicitudCambioPrecioCreate(BaseModel):
+    """Request para crear una solicitud de cambio de precio."""
+    producto_id: str = Field(..., description="ID del producto")
+    server_id: str = Field(..., description="ID del servidor")
+    precio_solicitado: float = Field(..., gt=0, description="Precio solicitado")
+    motivo: str = Field(..., min_length=5, max_length=200, description="Motivo del cambio")
+    justificacion: Optional[str] = Field(None, max_length=2000, description="Justificación detallada")
+    simulacion_id: Optional[str] = Field(None, description="ID de simulación previa")
+
+
+class SolicitudCambioPrecioUpdate(BaseModel):
+    """Request para actualizar borrador."""
+    precio_solicitado: Optional[float] = Field(None, gt=0)
+    motivo: Optional[str] = Field(None, min_length=5, max_length=200)
+    justificacion: Optional[str] = Field(None, max_length=2000)
+
+
+class SolicitudCambioPrecioResponse(BaseModel):
+    """Respuesta completa de una solicitud."""
+    solicitud_id: str
+    folio_solicitud: str
+    
+    # Producto
+    producto_id: str
+    codigo_producto: str
+    nombre_producto: str
+    server_id: str
+    system_type: str
+    familia_codigo: Optional[str] = None
+    familia_nombre: Optional[str] = None
+    
+    # Precios
+    precio_actual: float
+    precio_solicitado: float
+    variacion_pesos: float
+    variacion_porcentaje: float
+    
+    # Costos y márgenes
+    costo_actual: float
+    margen_actual_pesos: float
+    margen_actual_porcentaje: float
+    margen_solicitado_pesos: float
+    margen_solicitado_porcentaje: float
+    margen_objetivo: Optional[float] = None
+    
+    # Referencia
+    sync_run_id: Optional[str] = None
+    fecha_datos_costo: Optional[datetime] = None
+    
+    # Solicitud
+    motivo: str
+    justificacion: Optional[str] = None
+    estatus: EstatusSolicitud
+    
+    # Solicitante
+    solicitante_usuario_id: str
+    solicitante_email: str
+    solicitante_nombre: Optional[str] = None
+    fecha_solicitud: Optional[datetime] = None
+    
+    # Autorización
+    autorizador_usuario_id: Optional[str] = None
+    autorizador_email: Optional[str] = None
+    autorizador_nombre: Optional[str] = None
+    fecha_autorizacion: Optional[datetime] = None
+    comentario_autorizacion: Optional[str] = None
+    
+    # Aplicación
+    modificador_usuario_id: Optional[str] = None
+    modificador_email: Optional[str] = None
+    modificador_nombre: Optional[str] = None
+    fecha_aplicacion: Optional[datetime] = None
+    comentario_aplicacion: Optional[str] = None
+    precio_aplicado: Optional[float] = None
+    
+    # Auditoría
+    fecha_creacion: datetime
+    fecha_modificacion: datetime
+    
+    # Acciones disponibles según estado y permisos
+    acciones_disponibles: List[str] = []
+    
+    source_type: str = "EDARSAHUB_SQL"
+
+
+class SolicitudCambioPrecioListItem(BaseModel):
+    """Item resumido para lista de solicitudes."""
+    solicitud_id: str
+    folio_solicitud: str
+    codigo_producto: str
+    nombre_producto: str
+    system_type: str
+    precio_actual: float
+    precio_solicitado: float
+    variacion_porcentaje: float
+    estatus: EstatusSolicitud
+    solicitante_email: str
+    fecha_solicitud: Optional[datetime] = None
+    fecha_autorizacion: Optional[datetime] = None
+    autorizador_email: Optional[str] = None
+
+
+class SolicitudesListResponse(BaseModel):
+    """Respuesta paginada de solicitudes."""
+    solicitudes: List[SolicitudCambioPrecioListItem]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+    source_type: str = "EDARSAHUB_SQL"
+
+
+# ==================== ACCIONES ====================
+
+class AccionSolicitudRequest(BaseModel):
+    """Request para ejecutar acción en solicitud."""
+    comentario: Optional[str] = Field(None, max_length=2000)
+
+
+class AccionSolicitudResponse(BaseModel):
+    """Respuesta de acción ejecutada."""
+    solicitud_id: str
+    accion: AccionSolicitud
+    estatus_anterior: EstatusSolicitud
+    estatus_nuevo: EstatusSolicitud
+    mensaje: str
+    fecha_accion: datetime
+    source_type: str = "EDARSAHUB_SQL"
+
+
+# ==================== HISTORIAL ====================
+
+class HistorialSolicitudItem(BaseModel):
+    """Item del historial de una solicitud."""
+    historial_id: str
+    accion: str
+    estatus_anterior: Optional[str] = None
+    estatus_nuevo: str
+    usuario_email: str
+    usuario_nombre: Optional[str] = None
+    comentario: Optional[str] = None
+    valor_anterior: Optional[str] = None
+    valor_nuevo: Optional[str] = None
+    fecha_accion: datetime
+
+
+class HistorialSolicitudResponse(BaseModel):
+    """Respuesta de historial de solicitud."""
+    solicitud_id: str
+    folio_solicitud: str
+    historial: List[HistorialSolicitudItem]
+    total_acciones: int
+    source_type: str = "EDARSAHUB_SQL"

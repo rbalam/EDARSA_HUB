@@ -1,0 +1,300 @@
+"""
+FASE 1C-3I-B v2: Endpoints Enterprise de Competidores por Unidad de Negocio
+
+ARQUITECTURA:
+- /api/comercial/competidores-catalogo: CRUD del catálogo maestro
+- /api/comercial/competidores-unidad: Relaciones competidor-unidad
+- /api/comercial/competidores: Consultas por unidad (OBLIGATORIO unidad_negocio_id)
+
+REGLAS:
+- TODAS las consultas de competidores DEBEN incluir unidad_negocio_id
+- No existe endpoint que retorne competidores globales
+- RBAC limita acceso por unidad
+"""
+
+from fastapi import APIRouter, HTTPException, Query, Depends
+from typing import Optional, List
+from pydantic import BaseModel, Field
+
+from core.security import get_current_user
+from .services.competidores_enterprise_service import (
+    crear_competidor_catalogo,
+    buscar_competidor_catalogo,
+    relacionar_competidor_unidad,
+    desrelacionar_competidor_unidad,
+    listar_competidores_por_unidad,
+    obtener_competidor_por_unidad,
+    obtener_unidades_del_competidor,
+    estadisticas_competidores_unidad,
+    validar_acceso_unidad
+)
+
+router = APIRouter(prefix="/comercial", tags=["Competidores Enterprise"])
+
+
+# =============================================================================
+# SCHEMAS
+# =============================================================================
+
+class CompetidorCatalogoCreate(BaseModel):
+    nombre_competidor: str = Field(..., max_length=200)
+    tipo_restaurante: Optional[str] = None
+    segmento_precio: Optional[str] = None
+    ciudad: Optional[str] = None
+    estado: Optional[str] = None
+    pais: str = "México"
+    zona_comercial: Optional[str] = None
+    sitio_web: Optional[str] = None
+    url_menu: Optional[str] = None
+    url_google_maps: Optional[str] = None
+    url_instagram: Optional[str] = None
+    url_facebook: Optional[str] = None
+    url_tripadvisor: Optional[str] = None
+    url_opentable: Optional[str] = None
+    notas: Optional[str] = None
+
+
+class CompetidorUnidadRelacionar(BaseModel):
+    competidor_catalogo_id: str
+    empresa_id: int = 1
+    unidad_negocio_id: int
+    es_competencia_directa: bool = True
+    es_benchmark_aspiracional: bool = False
+    prioridad: int = 0
+    distancia_km: Optional[float] = None
+    comentarios: Optional[str] = None
+
+
+class CompetidorUnidadDesrelacionar(BaseModel):
+    competidor_catalogo_id: str
+    unidad_negocio_id: int
+
+
+# =============================================================================
+# CATÁLOGO MAESTRO
+# =============================================================================
+
+@router.post("/competidores-catalogo", summary="Crear competidor en catálogo maestro")
+async def crear_competidor_catalogo_endpoint(
+    data: CompetidorCatalogoCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Crea un competidor en el catálogo maestro.
+    
+    NOTA: Esto NO lo asigna a ninguna unidad. 
+    Usar /competidores-unidad/relacionar para asignarlo.
+    """
+    usuario = current_user.get('email', 'sistema')
+    
+    result = crear_competidor_catalogo(
+        nombre_competidor=data.nombre_competidor,
+        tipo_restaurante=data.tipo_restaurante,
+        segmento_precio=data.segmento_precio,
+        ciudad=data.ciudad,
+        estado=data.estado,
+        pais=data.pais,
+        zona_comercial=data.zona_comercial,
+        sitio_web=data.sitio_web,
+        url_menu=data.url_menu,
+        url_google_maps=data.url_google_maps,
+        url_instagram=data.url_instagram,
+        url_facebook=data.url_facebook,
+        url_tripadvisor=data.url_tripadvisor,
+        url_opentable=data.url_opentable,
+        notas=data.notas,
+        usuario=usuario
+    )
+    
+    return result
+
+
+@router.get("/competidores-catalogo", summary="Buscar en catálogo maestro")
+async def buscar_competidores_catalogo_endpoint(
+    nombre: Optional[str] = None,
+    ciudad: Optional[str] = None,
+    solo_activos: bool = True,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Busca competidores en el catálogo maestro.
+    
+    Útil para ver qué competidores existen antes de relacionarlos con una unidad.
+    """
+    return buscar_competidor_catalogo(
+        nombre=nombre,
+        ciudad=ciudad,
+        solo_activos=solo_activos,
+        page=page,
+        page_size=page_size
+    )
+
+
+# =============================================================================
+# RELACIONES COMPETIDOR-UNIDAD
+# =============================================================================
+
+@router.post("/competidores-unidad/relacionar", summary="Relacionar competidor con unidad")
+async def relacionar_competidor_endpoint(
+    data: CompetidorUnidadRelacionar,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Relaciona un competidor del catálogo con una unidad de negocio.
+    
+    El mismo competidor puede estar en múltiples unidades con diferente:
+    - Prioridad
+    - Tipo de relación (competencia directa vs benchmark)
+    - Distancia
+    - Comentarios
+    """
+    usuario = current_user.get('email', 'sistema')
+    es_superadmin = current_user.get('rol') == 'SuperAdministrador'
+    
+    # Validar acceso RBAC
+    if not validar_acceso_unidad(current_user.get('id'), data.unidad_negocio_id, es_superadmin):
+        raise HTTPException(status_code=403, detail="Sin acceso a esta unidad de negocio")
+    
+    result = relacionar_competidor_unidad(
+        competidor_catalogo_id=data.competidor_catalogo_id,
+        empresa_id=data.empresa_id,
+        unidad_negocio_id=data.unidad_negocio_id,
+        es_competencia_directa=data.es_competencia_directa,
+        es_benchmark_aspiracional=data.es_benchmark_aspiracional,
+        prioridad=data.prioridad,
+        distancia_km=data.distancia_km,
+        comentarios=data.comentarios,
+        usuario=usuario
+    )
+    
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result)
+    
+    return result
+
+
+@router.post("/competidores-unidad/desrelacionar", summary="Desrelacionar competidor de unidad")
+async def desrelacionar_competidor_endpoint(
+    data: CompetidorUnidadDesrelacionar,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Elimina (soft delete) la relación de un competidor con una unidad.
+    
+    El competidor sigue existiendo en:
+    - El catálogo maestro
+    - Otras unidades donde esté relacionado
+    """
+    usuario = current_user.get('email', 'sistema')
+    es_superadmin = current_user.get('rol') == 'SuperAdministrador'
+    
+    if not validar_acceso_unidad(current_user.get('id'), data.unidad_negocio_id, es_superadmin):
+        raise HTTPException(status_code=403, detail="Sin acceso a esta unidad de negocio")
+    
+    return desrelacionar_competidor_unidad(
+        competidor_catalogo_id=data.competidor_catalogo_id,
+        unidad_negocio_id=data.unidad_negocio_id,
+        usuario=usuario
+    )
+
+
+@router.get("/competidores-unidad/{competidor_catalogo_id}/unidades", summary="Unidades donde está el competidor")
+async def obtener_unidades_competidor_endpoint(
+    competidor_catalogo_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Obtiene todas las unidades de negocio donde está relacionado un competidor.
+    
+    Responde: "¿En qué unidades compite este restaurante?"
+    """
+    return obtener_unidades_del_competidor(competidor_catalogo_id)
+
+
+# =============================================================================
+# CONSULTAS POR UNIDAD (PRINCIPAL - OBLIGATORIO unidad_negocio_id)
+# =============================================================================
+
+@router.get("/competidores", summary="Listar competidores por unidad (OBLIGATORIO)")
+async def listar_competidores_unidad_endpoint(
+    unidad_negocio_id: int = Query(..., description="ID de unidad de negocio (OBLIGATORIO)"),
+    empresa_id: Optional[int] = None,
+    solo_competencia_directa: bool = False,
+    solo_benchmark: bool = False,
+    solo_activos: bool = True,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Lista competidores de UNA unidad de negocio específica.
+    
+    REGLA CRÍTICA: unidad_negocio_id es OBLIGATORIO.
+    No existe forma de obtener competidores "globales".
+    
+    Cada unidad tiene sus propios competidores según:
+    - Ciudad
+    - Zona
+    - Mercado local
+    - Segmento
+    - Concepto
+    """
+    es_superadmin = current_user.get('rol') == 'SuperAdministrador'
+    
+    if not validar_acceso_unidad(current_user.get('id'), unidad_negocio_id, es_superadmin):
+        raise HTTPException(status_code=403, detail="Sin acceso a esta unidad de negocio")
+    
+    return listar_competidores_por_unidad(
+        unidad_negocio_id=unidad_negocio_id,
+        empresa_id=empresa_id,
+        solo_competencia_directa=solo_competencia_directa,
+        solo_benchmark=solo_benchmark,
+        solo_activos=solo_activos,
+        page=page,
+        page_size=page_size
+    )
+
+
+@router.get("/competidores/{competidor_catalogo_id}", summary="Obtener competidor en contexto de unidad")
+async def obtener_competidor_unidad_endpoint(
+    competidor_catalogo_id: str,
+    unidad_negocio_id: int = Query(..., description="ID de unidad de negocio (OBLIGATORIO)"),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Obtiene un competidor específico en el contexto de una unidad.
+    
+    Retorna datos del catálogo + datos de la relación con la unidad.
+    """
+    es_superadmin = current_user.get('rol') == 'SuperAdministrador'
+    
+    if not validar_acceso_unidad(current_user.get('id'), unidad_negocio_id, es_superadmin):
+        raise HTTPException(status_code=403, detail="Sin acceso a esta unidad de negocio")
+    
+    result = obtener_competidor_por_unidad(competidor_catalogo_id, unidad_negocio_id)
+    
+    if not result:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Competidor no encontrado en unidad {unidad_negocio_id}"
+        )
+    
+    return result
+
+
+@router.get("/competidores-estadisticas", summary="Estadísticas de competidores por unidad")
+async def estadisticas_competidores_endpoint(
+    unidad_negocio_id: int = Query(..., description="ID de unidad de negocio (OBLIGATORIO)"),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Estadísticas de competidores para una unidad específica.
+    """
+    es_superadmin = current_user.get('rol') == 'SuperAdministrador'
+    
+    if not validar_acceso_unidad(current_user.get('id'), unidad_negocio_id, es_superadmin):
+        raise HTTPException(status_code=403, detail="Sin acceso a esta unidad de negocio")
+    
+    return estadisticas_competidores_unidad(unidad_negocio_id)

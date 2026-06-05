@@ -1,3 +1,5 @@
+from core.unidades_service import UnidadesService
+from core.corporate_filters.service import CorporateFilterService
 #!/usr/bin/env python3
 """
 EDARSA HUB - CRM Enterprise Migration Executor

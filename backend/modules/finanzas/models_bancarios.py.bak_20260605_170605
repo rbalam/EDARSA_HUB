@@ -1,0 +1,198 @@
+"""
+P1-FASE5A.1 - Modelos Pydantic para Cuentas y Saldos Bancarios
+===============================================================
+Request/Response models para validación y documentación OpenAPI.
+"""
+
+from pydantic import BaseModel, Field, validator
+from typing import Optional, List
+from datetime import date, datetime
+from decimal import Decimal
+
+
+# =============================================================================
+# REQUEST MODELS - CUENTAS BANCARIAS
+# =============================================================================
+
+class CuentaBancariaCreate(BaseModel):
+    """Request para crear cuenta bancaria"""
+    banco_id: int = Field(..., description="ID del banco (debe existir en Global_Cat_Bancos)")
+    numero_cuenta: str = Field(..., min_length=10, max_length=20, description="Número de cuenta (10-20 dígitos)")
+    clabe: Optional[str] = Field(None, min_length=18, max_length=18, description="CLABE interbancaria (18 dígitos)")
+    alias: str = Field(..., min_length=3, max_length=50, description="Alias de la cuenta")
+    moneda: str = Field("MXN", description="Moneda: MXN, USD, EUR, CAD")
+    es_cuenta_principal: bool = Field(False, description="¿Es cuenta principal?")
+    empresa_id: Optional[int] = Field(None, description="ID de empresa (opcional)")
+    
+    @validator('moneda')
+    def validar_moneda(cls, v):
+        monedas_validas = ['MXN', 'USD', 'EUR', 'CAD']
+        if v.upper() not in monedas_validas:
+            raise ValueError(f"Moneda inválida. Valores permitidos: {', '.join(monedas_validas)}")
+        return v.upper()
+    
+    @validator('numero_cuenta')
+    def validar_numero_cuenta(cls, v):
+        if not v.strip().isdigit():
+            raise ValueError("Número de cuenta solo debe contener dígitos")
+        return v.strip()
+    
+    @validator('clabe')
+    def validar_clabe(cls, v):
+        if v is None:
+            return v
+        v = v.strip()
+        if not v.isdigit():
+            raise ValueError("CLABE solo debe contener dígitos")
+        if len(v) != 18:
+            raise ValueError("CLABE debe tener exactamente 18 dígitos")
+        return v
+
+
+class CuentaBancariaUpdate(BaseModel):
+    """Request para actualizar cuenta bancaria (solo campos editables)"""
+    alias: Optional[str] = Field(None, min_length=3, max_length=50)
+    es_cuenta_principal: Optional[bool] = None
+    empresa_id: Optional[int] = None
+
+
+class CuentaBancariaDesactivar(BaseModel):
+    """Request para desactivar cuenta bancaria"""
+    motivo: str = Field(..., min_length=10, max_length=500, description="Motivo de desactivación")
+
+
+# =============================================================================
+# REQUEST MODELS - SALDOS BANCARIOS
+# =============================================================================
+
+class SaldoBancarioCreate(BaseModel):
+    """Request para capturar saldo bancario"""
+    cuenta_bancaria_id: int = Field(..., description="ID de la cuenta bancaria")
+    fecha_saldo: date = Field(..., description="Fecha del saldo (YYYY-MM-DD)")
+    saldo_final: float = Field(..., description="Saldo al cierre")
+    observaciones: Optional[str] = Field(None, max_length=500, description="Observaciones opcionales")
+    
+    @validator('fecha_saldo')
+    def validar_fecha_no_futura(cls, v):
+        if v > date.today():
+            raise ValueError("La fecha del saldo no puede ser futura")
+        return v
+
+
+class SaldoBancarioCorregir(BaseModel):
+    """Request para corregir saldo bancario"""
+    saldo_final_correcto: float = Field(..., description="Saldo corregido")
+    motivo_correccion: str = Field(..., min_length=10, max_length=500, description="Motivo de la corrección")
+
+
+class SaldoBancarioCancelar(BaseModel):
+    """Request para cancelar saldo bancario"""
+    motivo_cancelacion: str = Field(..., min_length=10, max_length=500, description="Motivo de cancelación")
+
+
+# =============================================================================
+# RESPONSE MODELS
+# =============================================================================
+
+class BancoResponse(BaseModel):
+    """Response de banco"""
+    banco_id: int
+    codigo: str
+    nombre: str
+    nombre_corto: Optional[str]
+
+
+class UltimoSaldoResponse(BaseModel):
+    """Response de último saldo"""
+    saldo_bancario_id: Optional[int]
+    fecha_saldo: Optional[str]
+    saldo_final: Optional[float]
+    moneda: str = "MXN"
+    dias_desde_actualizacion: Optional[int]
+
+
+class CuentaBancariaResponse(BaseModel):
+    """Response de cuenta bancaria (con datos enmascarados)"""
+    cuenta_bancaria_id: int
+    empresa_id: Optional[int]
+    banco_id: int
+    banco_nombre: Optional[str]
+    banco_codigo: Optional[str]
+    numero_cuenta: str  # Siempre enmascarado: ****6789
+    clabe: Optional[str]  # Siempre enmascarado: ****4567
+    alias: str
+    moneda: str
+    es_cuenta_principal: bool
+    activo: bool
+    fecha_alta: Optional[datetime]
+    ultimo_saldo: Optional[UltimoSaldoResponse] = None
+
+
+class SaldoBancarioResponse(BaseModel):
+    """Response de saldo bancario"""
+    saldo_bancario_id: int
+    cuenta_bancaria_id: int
+    fecha_saldo: str
+    saldo_final: float
+    moneda: str
+    tipo_cambio: Optional[float]
+    fuente_datos: str
+    observaciones: Optional[str]
+    es_vigente: bool
+    activo: bool
+    estatus: str
+    fecha_creacion: Optional[datetime]
+    usuario_creacion: Optional[str]
+    fecha_cancelacion: Optional[datetime]
+    usuario_cancelacion: Optional[str]
+    motivo_cancelacion: Optional[str]
+
+
+class ListaCuentasResponse(BaseModel):
+    """Response de lista de cuentas"""
+    cuentas: List[CuentaBancariaResponse]
+    total: int
+    mensaje: Optional[str] = None
+    accion_sugerida: Optional[str] = None
+    _fuente: str = "EDARSAHUB"
+
+
+class ListaSaldosResponse(BaseModel):
+    """Response de lista de saldos"""
+    cuenta_bancaria_id: int
+    alias: str
+    saldos: List[SaldoBancarioResponse]
+    total: int
+
+
+class SaldoTotalResponse(BaseModel):
+    """Response de saldo bancario total"""
+    fecha_consulta: str
+    saldo_bancario_total: float
+    moneda: str = "MXN"
+    cuentas_con_saldo: int
+    cuentas_sin_saldo: int
+    cuentas_desactualizadas: int
+    detalle_por_banco: Optional[List[dict]] = None
+    mensaje: Optional[str] = None
+    accion_sugerida: Optional[str] = None
+    _fuente: str = "EDARSAHUB"
+
+
+class HistorialAccion(BaseModel):
+    """Acción en historial de auditoría"""
+    accion: str
+    fecha: datetime
+    usuario: Optional[str]
+    saldo_final: Optional[float]
+    saldo_final_anterior: Optional[float] = None
+    saldo_final_nuevo: Optional[float] = None
+    motivo: Optional[str]
+
+
+class HistorialSaldoResponse(BaseModel):
+    """Response de historial de saldo"""
+    saldo_bancario_id: int
+    cuenta_bancaria_id: int
+    fecha_saldo: str
+    historial: List[HistorialAccion]

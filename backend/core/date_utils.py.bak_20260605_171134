@@ -1,0 +1,192 @@
+"""
+Utilidades de Fecha para Queries SQL
+=====================================
+
+Este módulo proporciona funciones para formatear fechas de manera
+segura e independiente de la configuración regional del servidor SQL.
+
+REGLA ARQUITECTÓNICA:
+- Usar formato 112 (YYYYMMDD) para comparaciones de fecha en SQL Server
+- Nunca usar formatos ambiguos como DD/MM/YYYY o MM-DD-YYYY
+- Ver /app/docs/NORMAS_TECNICAS.md para detalles completos
+
+Fecha: Abril 2026
+"""
+
+from datetime import datetime, date
+from typing import Union, Optional
+
+
+def to_sql_date(fecha: Union[str, datetime, date]) -> str:
+    """
+    Convierte una fecha a formato SQL seguro (YYYYMMDD).
+    
+    Este formato (estilo 112 en SQL Server) es independiente
+    de la configuración regional y SIEMPRE funciona.
+    
+    Args:
+        fecha: Fecha como string ISO, datetime o date
+        
+    Returns:
+        String en formato YYYYMMDD
+        
+    Examples:
+        >>> to_sql_date('2026-04-21')
+        '20260421'
+        >>> to_sql_date(datetime(2026, 4, 21))
+        '20260421'
+    """
+    if isinstance(fecha, str):
+        # Intentar parsear varios formatos comunes
+        for fmt in ['%Y-%m-%d', '%Y%m%d', '%d/%m/%Y', '%m/%d/%Y']:
+            try:
+                fecha = datetime.strptime(fecha, fmt)
+                break
+            except ValueError:
+                continue
+        else:
+            raise ValueError(f"Formato de fecha no reconocido: {fecha}")
+    
+    if isinstance(fecha, datetime):
+        return fecha.strftime('%Y%m%d')
+    elif isinstance(fecha, date):
+        return fecha.strftime('%Y%m%d')
+    else:
+        raise TypeError(f"Tipo de fecha no soportado: {type(fecha)}")
+
+
+def to_sql_date_iso(fecha: Union[str, datetime, date]) -> str:
+    """
+    Convierte una fecha a formato ISO (YYYY-MM-DD).
+    
+    Útil para algunas comparaciones y logging.
+    
+    Args:
+        fecha: Fecha como string, datetime o date
+        
+    Returns:
+        String en formato YYYY-MM-DD
+    """
+    if isinstance(fecha, str):
+        # Si ya está en formato ISO, validar y retornar
+        if len(fecha) == 10 and fecha[4] == '-' and fecha[7] == '-':
+            return fecha
+        # Convertir desde formato YYYYMMDD
+        if len(fecha) == 8 and fecha.isdigit():
+            return f"{fecha[:4]}-{fecha[4:6]}-{fecha[6:]}"
+        # Intentar parsear
+        return to_sql_date(fecha)[:4] + '-' + to_sql_date(fecha)[4:6] + '-' + to_sql_date(fecha)[6:]
+    
+    if isinstance(fecha, (datetime, date)):
+        return fecha.strftime('%Y-%m-%d')
+    
+    raise TypeError(f"Tipo de fecha no soportado: {type(fecha)}")
+
+
+def sql_date_column_convert(column_name: str) -> str:
+    """
+    Genera la expresión SQL para convertir una columna de fecha
+    al formato seguro YYYYMMDD.
+    
+    Args:
+        column_name: Nombre de la columna de fecha
+        
+    Returns:
+        Expresión SQL con CONVERT
+        
+    Example:
+        >>> sql_date_column_convert('co_fecha')
+        "CONVERT(varchar, co_fecha, 112)"
+    """
+    return f"CONVERT(varchar, {column_name}, 112)"
+
+
+def sql_date_equals(column_name: str, fecha: Union[str, datetime, date]) -> str:
+    """
+    Genera condición SQL para igualdad de fecha.
+    
+    Args:
+        column_name: Nombre de la columna
+        fecha: Fecha a comparar
+        
+    Returns:
+        Condición SQL segura
+        
+    Example:
+        >>> sql_date_equals('co_fecha', '2026-04-21')
+        "CONVERT(varchar, co_fecha, 112) = '20260421'"
+    """
+    fecha_sql = to_sql_date(fecha)
+    return f"CONVERT(varchar, {column_name}, 112) = '{fecha_sql}'"
+
+
+def sql_date_range(
+    column_name: str, 
+    fecha_inicio: Union[str, datetime, date],
+    fecha_fin: Union[str, datetime, date]
+) -> str:
+    """
+    Genera condición SQL para rango de fechas.
+    
+    Args:
+        column_name: Nombre de la columna
+        fecha_inicio: Fecha inicial (inclusiva)
+        fecha_fin: Fecha final (inclusiva)
+        
+    Returns:
+        Condición SQL segura para rango
+        
+    Example:
+        >>> sql_date_range('co_fecha', '2026-04-01', '2026-04-30')
+        "CONVERT(varchar, co_fecha, 112) >= '20260401' AND CONVERT(varchar, co_fecha, 112) <= '20260430'"
+    """
+    inicio_sql = to_sql_date(fecha_inicio)
+    fin_sql = to_sql_date(fecha_fin)
+    col_convert = sql_date_column_convert(column_name)
+    return f"{col_convert} >= '{inicio_sql}' AND {col_convert} <= '{fin_sql}'"
+
+
+def sql_date_today(column_name: str) -> str:
+    """
+    Genera condición SQL para comparar con la fecha actual del servidor.
+    
+    Args:
+        column_name: Nombre de la columna
+        
+    Returns:
+        Condición SQL que compara con GETDATE()
+        
+    Example:
+        >>> sql_date_today('co_fecha')
+        "CONVERT(varchar, co_fecha, 112) = CONVERT(varchar, GETDATE(), 112)"
+    """
+    return f"CONVERT(varchar, {column_name}, 112) = CONVERT(varchar, GETDATE(), 112)"
+
+
+def sql_date_between_python(
+    column_name: str,
+    fecha_inicio: Union[str, datetime, date],
+    fecha_fin: Union[str, datetime, date]
+) -> str:
+    """
+    Genera condición SQL BETWEEN con fechas formateadas desde Python.
+    
+    Alternativa a sql_date_range usando BETWEEN.
+    
+    Args:
+        column_name: Nombre de la columna
+        fecha_inicio: Fecha inicial
+        fecha_fin: Fecha final
+        
+    Returns:
+        Condición SQL con BETWEEN
+    """
+    inicio_sql = to_sql_date(fecha_inicio)
+    fin_sql = to_sql_date(fecha_fin)
+    col_convert = sql_date_column_convert(column_name)
+    return f"{col_convert} BETWEEN '{inicio_sql}' AND '{fin_sql}'"
+
+
+# Aliases para compatibilidad
+format_sql_date = to_sql_date
+format_sql_date_iso = to_sql_date_iso

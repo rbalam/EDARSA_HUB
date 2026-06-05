@@ -1,0 +1,216 @@
+"""
+Schemas para Manuales Operativos - Modelo Cienfuegos
+
+EDARSA HUB genera automáticamente manuales operativos cuando un proceso
+llega a estado COMPLETADA o CERRADO, usando datos reales del proceso.
+
+Estructura del Manual (Modelo Cienfuegos):
+1. Nombre del proceso
+2. Objetivo
+3. Alcance
+4. Responsables
+5. Procedimiento paso a paso (basado en eventos reales)
+6. Políticas/reglas aplicadas
+7. Evidencia generada
+8. Observaciones y áreas de mejora
+"""
+
+from pydantic import BaseModel, Field
+from typing import Optional, List, Dict, Any
+from datetime import datetime
+from enum import Enum
+
+
+class ModuloOrigen(str, Enum):
+    """Módulos que pueden generar manuales."""
+    COMPRAS = "compras"
+    OPERACIONES = "operaciones"
+    FINANZAS = "finanzas"
+    COMERCIAL = "comercial"
+    RH = "rh"
+    AUDITORIA = "auditoria"
+
+
+class FormatoManual(str, Enum):
+    """Formatos disponibles para manuales."""
+    CIENFUEGOS = "cienfuegos"  # Formato estándar EDARSA
+
+
+class ResponsableManual(BaseModel):
+    """Responsable involucrado en el proceso."""
+    rol: str = Field(..., description="Rol del responsable")
+    usuario_id: Optional[str] = Field(None, description="ID del usuario")
+    usuario_nombre: Optional[str] = Field(None, description="Nombre del usuario")
+    accion: str = Field(..., description="Acción realizada")
+    fecha: Optional[datetime] = Field(None, description="Fecha de la acción")
+
+
+class PasoOperativo(BaseModel):
+    """Paso del procedimiento operativo."""
+    numero: int = Field(..., description="Número de paso")
+    accion: str = Field(..., description="Descripción de la acción")
+    responsable: Optional[str] = Field(None, description="Responsable del paso")
+    resultado: Optional[str] = Field(None, description="Resultado obtenido")
+    fecha: Optional[datetime] = Field(None, description="Fecha de ejecución")
+    evento_origen: Optional[str] = Field(None, description="Evento de bitácora que generó este paso")
+
+
+class EvidenciaGenerada(BaseModel):
+    """Evidencia generada durante el proceso."""
+    tipo: str = Field(..., description="Tipo de evidencia (documento, reporte, etc.)")
+    descripcion: str = Field(..., description="Descripción de la evidencia")
+    referencia: Optional[str] = Field(None, description="Referencia o ID del documento")
+    fecha: Optional[datetime] = Field(None, description="Fecha de generación")
+
+
+class ContenidoManualCienfuegos(BaseModel):
+    """
+    Contenido estructurado del manual en formato Cienfuegos.
+    
+    Este es el formato estándar de EDARSA para documentación operativa.
+    """
+    # 1. Nombre del proceso
+    nombre_proceso: str = Field(..., description="Nombre descriptivo del proceso")
+    
+    # 2. Objetivo
+    objetivo: str = Field(..., description="Objetivo del proceso")
+    
+    # 3. Alcance
+    alcance: str = Field(..., description="Alcance y límites del proceso")
+    
+    # 4. Responsables
+    responsables: List[ResponsableManual] = Field(
+        default_factory=list,
+        description="Lista de responsables y sus acciones"
+    )
+    
+    # 5. Procedimiento paso a paso
+    procedimiento: List[PasoOperativo] = Field(
+        default_factory=list,
+        description="Pasos del procedimiento basados en eventos reales"
+    )
+    
+    # 6. Políticas/reglas aplicadas
+    politicas: List[str] = Field(
+        default_factory=list,
+        description="Políticas y reglas que se aplicaron"
+    )
+    
+    # 7. Evidencia generada
+    evidencias: List[EvidenciaGenerada] = Field(
+        default_factory=list,
+        description="Evidencias generadas durante el proceso"
+    )
+    
+    # 8. Observaciones y áreas de mejora
+    observaciones: List[str] = Field(
+        default_factory=list,
+        description="Observaciones relevantes"
+    )
+    areas_mejora: List[str] = Field(
+        default_factory=list,
+        description="Áreas identificadas para mejora"
+    )
+    
+    # Métricas del proceso
+    metricas: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Métricas cuantitativas del proceso"
+    )
+
+
+class ManualOperativoBase(BaseModel):
+    """Campos base de un manual operativo."""
+    modulo: ModuloOrigen = Field(..., description="Módulo origen del proceso")
+    proceso_id: str = Field(..., description="ID del proceso que generó el manual")
+    proceso_tipo: str = Field(..., description="Tipo de proceso (auditoria_compras, etc.)")
+    empresa_id: str = Field(..., description="ID de la empresa")
+    empresa_nombre: Optional[str] = Field(None, description="Nombre de la empresa")
+    sucursal_id: Optional[str] = Field(None, description="ID de la sucursal")
+    sucursal_nombre: Optional[str] = Field(None, description="Nombre de la sucursal")
+    nombre_proceso: str = Field(..., description="Nombre descriptivo del proceso")
+    formato: FormatoManual = Field(default=FormatoManual.CIENFUEGOS)
+
+
+class ManualOperativoCreate(ManualOperativoBase):
+    """Schema para crear un manual operativo."""
+    contenido: ContenidoManualCienfuegos = Field(..., description="Contenido estructurado")
+    estado_proceso_final: str = Field(..., description="Estado final del proceso")
+    generado_por: str = Field(default="sistema", description="Quién generó el manual")
+
+
+class ManualOperativoDB(ManualOperativoBase):
+    """Schema del manual como está almacenado en MongoDB."""
+    id: str = Field(..., description="ID único del manual")
+    contenido: ContenidoManualCienfuegos
+    estado_proceso_final: str
+    generado_por: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now())
+    updated_at: Optional[datetime] = None
+    
+    # Metadatos de auditoría
+    version: int = Field(default=1, description="Versión del manual")
+    activo: bool = Field(default=True, description="Si el manual está activo")
+
+
+class ManualOperativoResponse(ManualOperativoDB):
+    """Schema de respuesta para API."""
+    pass
+
+
+class ManualOperativoListResponse(BaseModel):
+    """Respuesta para listado de manuales."""
+    total: int
+    manuales: List[ManualOperativoResponse]
+
+
+class ManualOperativoTextoPlano(BaseModel):
+    """Representación en texto plano del manual para exportación."""
+    titulo: str
+    contenido_texto: str
+    fecha_generacion: datetime
+
+
+# Mapeo de eventos de bitácora a descripciones de pasos operativos
+EVENTO_A_PASO_OPERATIVO = {
+    # Eventos de Auditoría de Compras
+    "CREADA": "Se inició el proceso de auditoría operativa",
+    "PENDIENTE_INVENTARIO": "Se detectó que falta inventario físico para continuar",
+    "INVENTARIO_CAPTURADO": "Se capturó el inventario físico requerido",
+    "AUDITORIA_EN_PROCESO": "Se está ejecutando el análisis de auditoría",
+    "AUDITORIA_COMPLETADA": "Se completó el análisis de auditoría",
+    "ENVIADA_GERENCIA": "Se envió a gerencia para revisión y autorización",
+    "APROBADA_GERENCIA": "Gerencia aprobó la auditoría",
+    "RECHAZADA_GERENCIA": "Gerencia rechazó la auditoría",
+    "ENVIADA_TESORERIA": "Se envió a tesorería para autorización de pago",
+    "APROBADA_TESORERIA": "Tesorería autorizó el pago",
+    "RECHAZADA_TESORERIA": "Tesorería rechazó la autorización",
+    "COMPLETADA": "El proceso se completó exitosamente",
+    "CERRADO": "El proceso fue cerrado",
+    "CANCELADA": "El proceso fue cancelado",
+    
+    # Eventos genéricos
+    "INICIADO": "Se inició el proceso",
+    "EN_PROCESO": "El proceso está en ejecución",
+    "PENDIENTE_APROBACION": "Pendiente de aprobación",
+    "APROBADO": "Proceso aprobado",
+    "RECHAZADO": "Proceso rechazado",
+    "FINALIZADO": "Proceso finalizado",
+}
+
+
+__all__ = [
+    'ModuloOrigen',
+    'FormatoManual',
+    'ResponsableManual',
+    'PasoOperativo',
+    'EvidenciaGenerada',
+    'ContenidoManualCienfuegos',
+    'ManualOperativoBase',
+    'ManualOperativoCreate',
+    'ManualOperativoDB',
+    'ManualOperativoResponse',
+    'ManualOperativoListResponse',
+    'ManualOperativoTextoPlano',
+    'EVENTO_A_PASO_OPERATIVO',
+]

@@ -1,0 +1,359 @@
+from core.unidades_service import UnidadesService
+from core.corporate_filters.service import CorporateFilterService
+"""
+FASE 1C-3I-E: Servicio de Métricas del Dashboard IA Pricing
+
+Este módulo provee métricas agregadas desde EDARSAHUB SQL para:
+- Total de análisis IA realizados
+- Análisis por día
+- Productos más analizados
+- Distribución de confianza (ALTA/MEDIA/BAJA)
+- Análisis que requieren revisión humana
+- Competidores más usados
+- Últimos análisis realizados
+- Promedio precio sugerido vs actual
+
+REGLAS:
+- Solo lectura desde EDARSAHUB SQL
+- NO usar MongoDB
+- NO modificar datos
+"""
+
+from typing import Dict, Any, List, Tuple
+from datetime import datetime, timedelta
+import logging
+import json
+
+from core.db import execute_sql_query
+from core.server_registry import EDARSAHUB_CONFIG
+
+logger = logging.getLogger(__name__)
+
+
+def _get_conn() -> Tuple:
+    """Retorna parámetros de conexión a EDARSAHUB."""
+    return (
+        EDARSAHUB_CONFIG['host'],
+        EDARSAHUB_CONFIG['port'],
+        EDARSAHUB_CONFIG['database'],
+        EDARSAHUB_CONFIG['username'],
+        EDARSAHUB_CONFIG['password']
+    )
+
+
+def obtener_metricas_dashboard_ia(
+    empresa_id: int = None,
+    unidad_negocio_id: int = None,
+    dias_historial: int = 30
+) -> Dict[str, Any]:
+    """
+    Obtiene todas las métricas del dashboard IA Pricing.
+    
+    Args:
+        empresa_id: Filtrar por empresa (opcional)
+        unidad_negocio_id: Filtrar por unidad (opcional)
+        dias_historial: Días hacia atrás para análisis por día (default 30)
+    
+    Returns:
+        Dict con todas las métricas agregadas
+    """
+    conn = _get_conn()
+    
+    # Filtros base
+    filtro_empresa = f"AND EmpresaID = {empresa_id}" if empresa_id else ""
+    filtro_unidad = f"AND UnidadNegocioID = {unidad_negocio_id}" if unidad_negocio_id else ""
+    filtros = f"{filtro_empresa} {filtro_unidad}"
+    
+    metricas = {
+        "total_analisis": 0,
+        "analisis_hoy": 0,
+        "analisis_semana": 0,
+        "analisis_mes": 0,
+        "distribucion_confianza": {
+            "ALTA": 0,
+            "MEDIA": 0,
+            "BAJA": 0
+        },
+        "porcentaje_confianza_alta": 0.0,
+        "total_revision_humana": 0,
+        "porcentaje_revision_humana": 0.0,
+        "analisis_por_dia": [],
+        "productos_mas_analizados": [],
+        "competidores_mas_usados": [],
+        "ultimos_analisis": [],
+        "promedio_precio_sugerido": None,
+        "promedio_precio_actual": None,
+        "variacion_promedio_porcentaje": None,
+        "tipos_analisis": {},
+        "fecha_actualizacion": datetime.utcnow().isoformat()
+    }
+    
+    try:
+        # 1. Total de análisis y distribución de confianza
+        query_totales = f"""
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN ConfianzaIA = 'ALTA' THEN 1 ELSE 0 END) as confianza_alta,
+            SUM(CASE WHEN ConfianzaIA = 'MEDIA' THEN 1 ELSE 0 END) as confianza_media,
+            SUM(CASE WHEN ConfianzaIA = 'BAJA' THEN 1 ELSE 0 END) as confianza_baja,
+            SUM(CASE WHEN RequiereRevisionHumana = 1 THEN 1 ELSE 0 END) as revision_humana,
+            SUM(CASE WHEN CAST(FechaCreacion AS DATE) = CAST(GETDATE() AS DATE) THEN 1 ELSE 0 END) as hoy,
+            SUM(CASE WHEN FechaCreacion >= DATEADD(day, -7, GETDATE()) THEN 1 ELSE 0 END) as semana,
+            SUM(CASE WHEN FechaCreacion >= DATEADD(day, -30, GETDATE()) THEN 1 ELSE 0 END) as mes
+        FROM Comercial_PricingAnalisisIA
+        WHERE 1=1 {filtros}
+        """
+        
+        result = execute_sql_query(*conn, query_totales)
+        if result and len(result) > 0:
+            row = result[0]
+            total = row.get('total', 0) or 0
+            metricas["total_analisis"] = total
+            metricas["analisis_hoy"] = row.get('hoy', 0) or 0
+            metricas["analisis_semana"] = row.get('semana', 0) or 0
+            metricas["analisis_mes"] = row.get('mes', 0) or 0
+            
+            alta = row.get('confianza_alta', 0) or 0
+            media = row.get('confianza_media', 0) or 0
+            baja = row.get('confianza_baja', 0) or 0
+            
+            metricas["distribucion_confianza"]["ALTA"] = alta
+            metricas["distribucion_confianza"]["MEDIA"] = media
+            metricas["distribucion_confianza"]["BAJA"] = baja
+            
+            metricas["total_revision_humana"] = row.get('revision_humana', 0) or 0
+            
+            if total > 0:
+                metricas["porcentaje_confianza_alta"] = round((alta / total) * 100, 1)
+                metricas["porcentaje_revision_humana"] = round((metricas["total_revision_humana"] / total) * 100, 1)
+        
+        # 2. Análisis por día (últimos N días)
+        query_por_dia = f"""
+        SELECT 
+            CAST(FechaCreacion AS DATE) as fecha,
+            COUNT(*) as cantidad
+        FROM Comercial_PricingAnalisisIA
+        WHERE FechaCreacion >= DATEADD(day, -{dias_historial}, GETDATE())
+        {filtros}
+        GROUP BY CAST(FechaCreacion AS DATE)
+        ORDER BY fecha DESC
+        """
+        
+        result = execute_sql_query(*conn, query_por_dia)
+        if result:
+            metricas["analisis_por_dia"] = [
+                {
+                    "fecha": row['fecha'].strftime('%Y-%m-%d') if hasattr(row['fecha'], 'strftime') else str(row['fecha']),
+                    "cantidad": row['cantidad']
+                }
+                for row in result
+            ]
+        
+        # 3. Productos más analizados (top 10)
+        query_productos = f"""
+        SELECT TOP 10
+            CodigoProducto,
+            COUNT(*) as cantidad_analisis,
+            MAX(ConfianzaIA) as ultima_confianza,
+            MAX(FechaCreacion) as ultimo_analisis
+        FROM Comercial_PricingAnalisisIA
+        WHERE 1=1 {filtros}
+        GROUP BY CodigoProducto
+        ORDER BY cantidad_analisis DESC
+        """
+        
+        result = execute_sql_query(*conn, query_productos)
+        if result:
+            metricas["productos_mas_analizados"] = [
+                {
+                    "codigo_producto": row['CodigoProducto'],
+                    "cantidad_analisis": row['cantidad_analisis'],
+                    "ultima_confianza": row['ultima_confianza'],
+                    "ultimo_analisis": row['ultimo_analisis'].isoformat() if hasattr(row['ultimo_analisis'], 'isoformat') else str(row['ultimo_analisis'])
+                }
+                for row in result
+            ]
+        
+        # 4. Competidores más usados en análisis
+        query_competidores = f"""
+        SELECT TOP 10
+            CompetidoresUsadosJSON
+        FROM Comercial_PricingAnalisisIA
+        WHERE CompetidoresUsadosJSON IS NOT NULL
+        {filtros}
+        ORDER BY FechaCreacion DESC
+        """
+        
+        result = execute_sql_query(*conn, query_competidores)
+        competidores_count = {}
+        if result:
+            for row in result:
+                try:
+                    comps = json.loads(row['CompetidoresUsadosJSON'] or '[]')
+                    for comp in comps:
+                        nombre = comp.get('nombre', comp) if isinstance(comp, dict) else str(comp)
+                        competidores_count[nombre] = competidores_count.get(nombre, 0) + 1
+                except (json.JSONDecodeError, TypeError, AttributeError):
+                    pass
+        
+        metricas["competidores_mas_usados"] = [
+            {"nombre": k, "veces_usado": v}
+            for k, v in sorted(competidores_count.items(), key=lambda x: x[1], reverse=True)[:10]
+        ]
+        
+        # 5. Últimos análisis realizados (top 15)
+        query_ultimos = f"""
+        SELECT TOP 15
+            AnalisisIAID,
+            CodigoProducto,
+            TipoAnalisis,
+            ConfianzaIA,
+            RequiereRevisionHumana,
+            PrecioActual,
+            PrecioSugerido,
+            EstadoAnalisis,
+            UsuarioEjecucion,
+            FechaCreacion
+        FROM Comercial_PricingAnalisisIA
+        WHERE 1=1 {filtros}
+        ORDER BY FechaCreacion DESC
+        """
+        
+        result = execute_sql_query(*conn, query_ultimos)
+        if result:
+            metricas["ultimos_analisis"] = [
+                {
+                    "analisis_id": str(row['AnalisisIAID']),
+                    "codigo_producto": row['CodigoProducto'],
+                    "tipo_analisis": row['TipoAnalisis'],
+                    "confianza": row['ConfianzaIA'],
+                    "requiere_revision": bool(row['RequiereRevisionHumana']),
+                    "precio_actual": float(row['PrecioActual']) if row['PrecioActual'] else None,
+                    "precio_sugerido": float(row['PrecioSugerido']) if row['PrecioSugerido'] else None,
+                    "estado": row['EstadoAnalisis'],
+                    "usuario": row['UsuarioEjecucion'],
+                    "fecha": row['FechaCreacion'].isoformat() if hasattr(row['FechaCreacion'], 'isoformat') else str(row['FechaCreacion'])
+                }
+                for row in result
+            ]
+        
+        # 6. Promedios de precios
+        query_promedios = f"""
+        SELECT 
+            AVG(PrecioActual) as promedio_actual,
+            AVG(PrecioSugerido) as promedio_sugerido,
+            COUNT(*) as total_con_precios
+        FROM Comercial_PricingAnalisisIA
+        WHERE PrecioActual IS NOT NULL 
+          AND PrecioSugerido IS NOT NULL
+          AND PrecioActual > 0
+        {filtros}
+        """
+        
+        result = execute_sql_query(*conn, query_promedios)
+        if result and len(result) > 0:
+            row = result[0]
+            if row.get('promedio_actual') and row.get('promedio_sugerido'):
+                prom_actual = float(row['promedio_actual'])
+                prom_sugerido = float(row['promedio_sugerido'])
+                metricas["promedio_precio_actual"] = round(prom_actual, 2)
+                metricas["promedio_precio_sugerido"] = round(prom_sugerido, 2)
+                
+                if prom_actual > 0:
+                    variacion = ((prom_sugerido - prom_actual) / prom_actual) * 100
+                    metricas["variacion_promedio_porcentaje"] = round(variacion, 2)
+        
+        # 7. Distribución por tipo de análisis
+        query_tipos = f"""
+        SELECT 
+            TipoAnalisis,
+            COUNT(*) as cantidad
+        FROM Comercial_PricingAnalisisIA
+        WHERE 1=1 {filtros}
+        GROUP BY TipoAnalisis
+        """
+        
+        result = execute_sql_query(*conn, query_tipos)
+        if result:
+            metricas["tipos_analisis"] = {
+                row['TipoAnalisis']: row['cantidad']
+                for row in result
+            }
+        
+        logger.info(f"[METRICAS-IA] Dashboard generado: {metricas['total_analisis']} análisis totales")
+        
+    except Exception as e:
+        logger.error(f"[METRICAS-IA] Error obteniendo métricas: {e}")
+        metricas["error"] = str(e)
+    
+    return metricas
+
+
+def obtener_estadisticas_competidores_benchmark(
+    empresa_id: int = None,
+    unidad_negocio_id: int = None
+) -> Dict[str, Any]:
+    """
+    Obtiene estadísticas de competidores y benchmark para el dashboard.
+    """
+    conn = _get_conn()
+    
+    filtro_empresa = f"AND EmpresaID = {empresa_id}" if empresa_id else ""
+    filtro_unidad = f"AND UnidadNegocioID = {unidad_negocio_id}" if unidad_negocio_id else ""
+    filtros = f"{filtro_empresa} {filtro_unidad}"
+    
+    stats = {
+        "total_competidores": 0,
+        "competidores_directos": 0,
+        "competidores_aspiracionales": 0,
+        "total_items_capturados": 0,
+        "items_ultima_semana": 0,
+        "promedio_precio_competencia": None,
+        "categorias_cubiertas": 0
+    }
+    
+    try:
+        # Competidores
+        query_comp = f"""
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN EsCompetenciaDirecta = 1 THEN 1 ELSE 0 END) as directos,
+            SUM(CASE WHEN EsBenchmarkAspiracional = 1 THEN 1 ELSE 0 END) as aspiracionales
+        FROM Comercial_Competidores
+        WHERE Activo = 1 {filtros}
+        """
+        
+        result = execute_sql_query(*conn, query_comp)
+        if result and len(result) > 0:
+            row = result[0]
+            stats["total_competidores"] = row.get('total', 0) or 0
+            stats["competidores_directos"] = row.get('directos', 0) or 0
+            stats["competidores_aspiracionales"] = row.get('aspiracionales', 0) or 0
+        
+        # Items de menú
+        query_items = f"""
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN cmi.FechaCreacion >= DATEADD(day, -7, GETDATE()) THEN 1 ELSE 0 END) as ultima_semana,
+            AVG(cmi.Precio) as promedio_precio,
+            COUNT(DISTINCT cmi.CategoriaCompetidor) as categorias
+        FROM Comercial_CompetidoresMenuItems cmi
+        INNER JOIN Comercial_Competidores cc ON cmi.CompetidorID = cc.CompetidorID
+        WHERE cmi.Activo = 1 AND cc.Activo = 1
+        {filtros.replace('EmpresaID', 'cc.EmpresaID').replace('UnidadNegocioID', 'cc.UnidadNegocioID')}
+        """
+        
+        result = execute_sql_query(*conn, query_items)
+        if result and len(result) > 0:
+            row = result[0]
+            stats["total_items_capturados"] = row.get('total', 0) or 0
+            stats["items_ultima_semana"] = row.get('ultima_semana', 0) or 0
+            stats["categorias_cubiertas"] = row.get('categorias', 0) or 0
+            if row.get('promedio_precio'):
+                stats["promedio_precio_competencia"] = round(float(row['promedio_precio']), 2)
+        
+    except Exception as e:
+        logger.error(f"[METRICAS-IA] Error estadísticas competidores: {e}")
+        stats["error"] = str(e)
+    
+    return stats

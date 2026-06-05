@@ -1,0 +1,269 @@
+modules/comercial/service.py:92:# CÓDIGOS OFICIALES: 130MID, 130QRO, CIENFUEGOS, ESTELAR, ORIGEN
+modules/comercial/service.py:278:        '0021': ('130QRO', '130° QUERETARO'),
+modules/comercial/service.py:279:        '0023': ('ORIGEN', 'ORIGEN'),
+modules/comercial/service.py:280:        'ORIGEN': ('ORIGEN', 'ORIGEN'),
+modules/comercial/service.py:281:        '130_QRO': ('130QRO', '130° QUERETARO'),
+modules/comercial/service.py:299:    - La identidad principal es unidad_negocio_id CANÓNICO (130MID, 130QRO, etc.)
+modules/comercial/service.py:305:    - 130MID (130° MÉRIDA)
+modules/comercial/service.py:306:    - 130QRO (130° QUERÉTARO)  
+modules/comercial/service.py:307:    - CIENFUEGOS
+modules/comercial/service.py:308:    - ESTELAR (LA ESTELAR)
+modules/comercial/service.py:309:    - ORIGEN
+modules/comercial/service.py:331:        # Mérida - todas las variantes resuelven a 130MID
+modules/comercial/service.py:332:        '130-MER': '130MID',
+modules/comercial/service.py:333:        '130-MID': '130MID',
+modules/comercial/service.py:334:        '130MER': '130MID',
+modules/comercial/service.py:335:        '130 MERIDA': '130MID',
+modules/comercial/service.py:336:        '130 MÉRIDA': '130MID',
+modules/comercial/service.py:337:        '130° MERIDA': '130MID',
+modules/comercial/service.py:338:        '130° MÉRIDA': '130MID',
+modules/comercial/service.py:339:        'MERIDA': '130MID',
+modules/comercial/service.py:340:        'MÉRIDA': '130MID',
+modules/comercial/service.py:341:        # Querétaro - todas las variantes resuelven a 130QRO
+modules/comercial/service.py:342:        '130-QRO': '130QRO',
+modules/comercial/service.py:343:        '130 QRO': '130QRO',
+modules/comercial/service.py:344:        '130 QUERETARO': '130QRO',
+modules/comercial/service.py:345:        '130 QUERÉTARO': '130QRO',
+modules/comercial/service.py:346:        '130° QUERETARO': '130QRO',
+modules/comercial/service.py:347:        '130° QUERÉTARO': '130QRO',
+modules/comercial/service.py:348:        'QUERETARO': '130QRO',
+modules/comercial/service.py:349:        'QUERÉTARO': '130QRO',
+modules/comercial/service.py:351:        'LA-ESTELAR': 'ESTELAR',
+modules/comercial/service.py:352:        'LA ESTELAR': 'ESTELAR',
+modules/comercial/service.py:354:        '130MID': '130MID',
+modules/comercial/service.py:355:        '130QRO': '130QRO',
+modules/comercial/service.py:356:        'CIENFUEGOS': 'CIENFUEGOS',
+modules/comercial/service.py:357:        'ESTELAR': 'ESTELAR',
+modules/comercial/service.py:358:        'ORIGEN': 'ORIGEN',
+modules/comercial/service.py:456:            "codigo": "ORIGEN",
+modules/comercial/service.py:463:            "codigo": "130QRO",
+modules/comercial/service.py:818:        unidad_negocio_id: ID de unidad (130MID, CIENFUEGOS, etc.)
+modules/comercial/service.py:1036:# - NUNCA usar aliases legacy (130-MER, 130-QRO, LA-ESTELAR)
+modules/comercial/service.py:1037:# - Los códigos canónicos son: 130MID, 130QRO, CIENFUEGOS, ESTELAR, ORIGEN
+modules/comercial/service.py:1041:    "a5547321-1139-4d2b-9d53-182ca737b6b6": {"unidad_negocio_id": "130MID", "nombre": "130° MÉRIDA", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+modules/comercial/service.py:1042:    "6d053c22-523e-48c0-b72b-96081e2d781b": {"unidad_negocio_id": "CIENFUEGOS", "nombre": "CIENFUEGOS", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+modules/comercial/service.py:1043:    "a5ff0e25-f029-43db-b634-d4ac814c904f": {"unidad_negocio_id": "ESTELAR", "nombre": "LA ESTELAR", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+modules/comercial/service.py:1047:            "0021": {"unidad_negocio_id": "130QRO", "nombre": "130° QUERÉTARO"},
+modules/comercial/service.py:1048:            "0023": {"unidad_negocio_id": "ORIGEN", "nombre": "ORIGEN"}
+modules/comercial/service.py:1410:    # El mapeo traduce códigos canónicos (130MID) a formatos legacy (130-MER)
+modules/comercial/service.py:1509:    NOTA: MPRO tiene múltiples sucursales (0021 = 130° QUERETARO, 0023 = ORIGEN).
+modules/comercial/service.py:1816:    # - NO consultar servidores MPRO directamente (bases QUERETARO, ORIGEN)
+modules/comercial/service.py:1820:    # Las bases MPRO (QUERETARO, ORIGEN) son fuentes de extracción, no de lectura.
+modules/comercial/service.py:2008:    # ORIGEN ANTERIOR: SQL directo líneas 862-875 (ahora en queries/mpro.py)
+modules/comercial/service.py:2540:    # corresponde a la unidad correcta (ORIGEN, 130QRO, etc.)
+modules/comercial/service.py:2600:    - ORIGEN LOCAL -> ['ORIGEN']
+modules/comercial/service.py:2601:    - 130° QRO LOCAL -> ['130QRO', '130-QRO']
+modules/comercial/service.py:2606:        # ORIGEN LOCAL
+modules/comercial/service.py:2607:        '817a0aa8-6170-4738-a8f6-a72ac36ba0df': ['ORIGEN'],
+modules/comercial/service.py:2609:        '72f6e9a7-8ea2-4eb2-802e-4ee31753435e': ['130QRO', '130-QRO'],
+modules/comercial/queries/mpro.py:126:    ORIGEN: Extraída de service.py líneas 871-884 (get_kpis_mpro_por_sucursal)
+modules/comercial/queries/mpro.py:258:    ORIGEN: Extraída de routes.py endpoint /comercial/dashboard/{server_id}
+modules/comercial/queries/mpro.py:478:    - Alias de empresa (ORIGEN, QRO, 130-QRO, etc.)
+modules/comercial/queries/mpro.py:484:    - ORIGEN → EmpresaID=1 → CodigoSucursalSistema=0023
+modules/comercial/queries/mpro.py:485:    - 130QRO → EmpresaID=2 → CodigoSucursalSistema=0021
+modules/comercial/queries/mpro.py:534:        'ORIGEN': '0023',
+modules/comercial/queries/mpro.py:538:        '130QRO': '0021',
+modules/comercial/queries/mpro.py:617:    ORIGEN: Extraída de service.py líneas 862-884 (get_kpis_mpro_por_sucursal)
+modules/comercial/queries/softrestaurant.py:106:    ORIGEN: Extraída de service.py líneas 341-363 (get_kpis_softrestaurant)
+modules/comercial/queries/softrestaurant.py:240:    - Para bases de datos con una sola sucursal (CIENFUEGOS, LA ESTELAR), no aplicar filtro.
+modules/comercial/queries/softrestaurant.py:262:    # Esto aplica para CIENFUEGOS, LA ESTELAR, ORIGEN, QUERETARO, MERIDA, ESTELAR, etc.
+modules/comercial/adapters.py:64:        "nombre": "ORIGEN LOCAL",
+modules/comercial/adapters.py:65:        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query"),
+modules/comercial/adapters.py:67:        "empresa_id": 1,  # ORIGEN
+modules/comercial/adapters.py:75:        "empresa_id": 2,  # 130QRO
+modules/comercial/adapters.py:90:        alias: Cualquier variante de nombre (130-MER, QRO, LA ESTELAR, etc.)
+modules/comercial/adapters.py:149:            if empresa.codigo_empresa == 'ORIGEN':
+modules/comercial/adapters.py:150:                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query")
+modules/comercial/adapters.py:151:            elif empresa.codigo_empresa == '130QRO':
+modules/comercial/adapters.py:318:        sucursal_nombre: Nombre o código de la sucursal a buscar (ej: "ORIGEN", "0023", "130-QRO", etc.)
+modules/comercial/adapters.py:415:        "0023": 1,  # ORIGEN
+modules/comercial/adapters.py:416:        "0021": 2,  # 130QRO
+modules/comercial/adapters.py:417:        "ORIGEN": 1,
+modules/comercial/adapters.py:418:        "130QRO": 2,
+modules/comercial/routes.py:575:                {"id": "cienfuegos", "unidad": "CIENFUEGOS", "ventas": 4130000, "proyeccion": 4410000, "var_vs_mes_ant": 8.8, "var_vs_año_ant": -14.5, "pax": 3177, "cheques": 1052, "cheque_promedio": 3926, "pax_promedio": 1300, "data_status": "DATA_OK"},
+modules/comercial/routes.py:578:                {"id": "estelar", "unidad": "LA ESTELAR", "ventas": 2470000, "proyeccion": 2640000, "var_vs_mes_ant": 2.3, "var_vs_año_ant": 0.0, "pax": 4520, "cheques": 1658, "cheque_promedio": 1490, "pax_promedio": 546, "data_status": "DATA_OK"},
+modules/comercial/routes.py:579:                {"id": "origen", "unidad": "ORIGEN", "ventas": 2070000, "proyeccion": 2220000, "var_vs_mes_ant": 15.6, "var_vs_año_ant": 16.6, "pax": 2930, "cheques": 1015, "cheque_promedio": 2039, "pax_promedio": 706, "data_status": "DATA_OK"}
+modules/comercial/routes.py:1400:                        if 'ORIGEN' in server_name_upper:
+modules/comercial/routes.py:1401:                            unidad_codigo_mpro = 'ORIGEN'
+modules/comercial/routes.py:1403:                            unidad_codigo_mpro = '130QRO'
+modules/comercial/routes.py:1674:    # CASO: LA ESTELAR aparecía 2 veces (caché válido + error de conexión)
+modules/comercial/routes.py:2219:                'ORIGEN': '0023',
+modules/comercial/routes.py:4199:    if "CIENFUEGOS" in clean_id:
+modules/comercial/routes.py:4201:    elif any(x in clean_id for x in ["MERIDA", "130MID", "MID"]):
+modules/comercial/routes.py:4203:    elif any(x in clean_id for x in ["QUERETARO", "130QRO", "QRO"]):
+modules/comercial/routes.py:4205:    elif "ESTELAR" in clean_id:
+modules/comercial/routes.py:4207:    elif "ORIGEN" in clean_id:
+modules/consultas_sql/service.py:375:                    'tipo': 'CONFIG_ORIGEN_VACIO',
+modules/consultas_sql/validator.py:353:                code="CATALOG_NO_ORIGEN",
+modules/consultas_sql/models.py:12:TABLAS ORIGEN:
+modules/inteligencia_comercial/routes.py:13:- 130MID (130° MERIDA)
+modules/inteligencia_comercial/routes.py:14:- 130QRO (130° QUERETARO)
+modules/inteligencia_comercial/routes.py:15:- CIENFUEGOS
+modules/inteligencia_comercial/routes.py:16:- ESTELAR (LA ESTELAR)
+modules/inteligencia_comercial/routes.py:17:- ORIGEN
+modules/inteligencia_comercial/routes.py:179:    unidad: Optional[str] = Query(None, description="Unidad de negocio (130MID, CIENFUEGOS, etc.)"),
+modules/comercial_v2/sync_comercial_edarsahub.py:578:    Unidad de prueba: LA ESTELAR (SoftRestaurant)
+modules/comercial_v2/sync_comercial_edarsahub.py:580:    FASE P0 (2026-05-13): Actualizado a código canónico ESTELAR
+modules/comercial_v2/sync_comercial_edarsahub.py:585:    # Configuración de LA ESTELAR con código canónico
+modules/comercial_v2/sync_comercial_edarsahub.py:587:        unidad_negocio_id='ESTELAR',  # FASE P0: Código canónico oficial
+modules/comercial_v2/sync_comercial_edarsahub.py:588:        unidad_negocio_nombre='LA ESTELAR',
+modules/comercial_v2/sync_comercial_edarsahub.py:591:        sucursal_nombre='LA ESTELAR',
+modules/comercial_v2/sync_comercial_edarsahub.py:608:    FASE P0 (2026-05-13): Actualizado a código canónico 130QRO
+modules/comercial_v2/sync_comercial_edarsahub.py:615:        unidad_negocio_id='130QRO',  # FASE P0: Código canónico oficial
+modules/comercial_v2/carga_historica_abril_2026.py:9:- Unidades: CIENFUEGOS, LA ESTELAR, 130° MÉRIDA, 130° QRO, ORIGEN
+modules/comercial_v2/carga_historica_abril_2026.py:19:- CIENFUEGOS: $172,765 / 45 cheques / 125 PAX
+modules/comercial_v2/carga_historica_abril_2026.py:20:- LA ESTELAR: $78,795 / 59 cheques / 160 PAX
+modules/comercial_v2/carga_historica_abril_2026.py:23:- ORIGEN: $50,411 / 25 folios / 73 PAX
+modules/comercial_v2/carga_historica_abril_2026.py:78:    'CIENFUEGOS': {'ventas': 172765.00, 'cheques': 45, 'pax': 125},
+modules/comercial_v2/carga_historica_abril_2026.py:79:    'LA-ESTELAR': {'ventas': 78795.00, 'cheques': 59, 'pax': 160},
+modules/comercial_v2/carga_historica_abril_2026.py:82:    'ORIGEN': {'ventas': 50411.00, 'cheques': 25, 'pax': 73},
+modules/comercial_v2/carga_historica_abril_2026.py:88:        'unidad_negocio_id': 'CIENFUEGOS',
+modules/comercial_v2/carga_historica_abril_2026.py:89:        'unidad_negocio_nombre': 'CIENFUEGOS',
+modules/comercial_v2/carga_historica_abril_2026.py:95:        'unidad_negocio_id': 'LA-ESTELAR',
+modules/comercial_v2/carga_historica_abril_2026.py:96:        'unidad_negocio_nombre': 'LA ESTELAR',
+modules/comercial_v2/carga_historica_abril_2026.py:116:        'unidad_negocio_id': 'ORIGEN',
+modules/comercial_v2/carga_historica_abril_2026.py:117:        'unidad_negocio_nombre': 'ORIGEN',
+modules/comercial_v2/carga_historica_abril_2026.py:888:    print("Unidades: CIENFUEGOS, LA ESTELAR, 130° MÉRIDA, 130° QRO, ORIGEN")
+modules/comercial_v2/repository_readonly.py:172:    - Días 10-12 mayo tienen registros con 130MID y 130-MER (mismo monto duplicado)
+modules/comercial_v2/repository_readonly.py:187:            if uid == '130MID':
+modules/comercial_v2/repository_readonly.py:189:            elif uid == '130QRO':
+modules/comercial_v2/repository_readonly.py:191:            elif uid == 'ESTELAR':
+modules/comercial_v2/repository_readonly.py:192:                expanded_ids.extend(['LA-ESTELAR'])
+modules/comercial_v2/repository_readonly.py:215:                  OR UPPER(unidad_negocio_nombre) LIKE '%MÉRIDA%' THEN '130MID'
+modules/comercial_v2/repository_readonly.py:217:                  OR UPPER(unidad_negocio_nombre) LIKE '%QUERÉTARO%' THEN '130QRO'
+modules/comercial_v2/repository_readonly.py:218:                WHEN UPPER(unidad_negocio_nombre) LIKE '%CIENFUEGOS%' THEN 'CIENFUEGOS'
+modules/comercial_v2/repository_readonly.py:219:                WHEN UPPER(unidad_negocio_nombre) LIKE '%ESTELAR%' THEN 'ESTELAR'
+modules/comercial_v2/repository_readonly.py:220:                WHEN UPPER(unidad_negocio_nombre) LIKE '%ORIGEN%' THEN 'ORIGEN'
+modules/comercial_v2/repository_comercial_edarsahub.py:87:            WHEN nombre LIKE '%MERIDA%' OR nombre LIKE '%MID%' THEN '130MID'
+modules/comercial_v2/repository_comercial_edarsahub.py:88:            WHEN nombre LIKE '%CIENFUEGOS%' AND nombre NOT LIKE '%TABLAJERIA%' THEN 'CIENFUEGOS'
+modules/comercial_v2/repository_comercial_edarsahub.py:89:            WHEN nombre LIKE '%ESTELAR%' THEN 'ESTELAR'
+modules/comercial_v2/repository_comercial_edarsahub.py:129:    Para MPRO, obtiene las sucursales específicas (QRO=0021, ORIGEN=0023).
+modules/comercial_v2/repository_comercial_edarsahub.py:136:        {'sucursal_id': '0021', 'nombre': '130° QUERÉTARO', 'unidad_id': '130QRO'},
+modules/comercial_v2/repository_comercial_edarsahub.py:137:        {'sucursal_id': '0023', 'nombre': 'ORIGEN', 'unidad_id': 'ORIGEN'},
+modules/comercial_v2/mappers.py:29:# CÁLCULO DE HASH ORIGEN
+modules/comercial_v2/carga_historica_24_meses.py:9:- Unidades: CIENFUEGOS, LA ESTELAR, 130° MÉRIDA, 130° QRO, ORIGEN
+modules/comercial_v2/carga_historica_24_meses.py:21:DATOS DE ORIGEN DISPONIBLES (verificado):
+modules/comercial_v2/carga_historica_24_meses.py:23:- CIENFUEGOS: desde 2019-12-24
+modules/comercial_v2/carga_historica_24_meses.py:24:- LA ESTELAR: desde 2025-06-12 (solo ~11 meses disponibles)
+modules/comercial_v2/carga_historica_24_meses.py:26:- ORIGEN (MPRO 0023): desde 2022-05-20
+modules/comercial_v2/carga_historica_24_meses.py:101:        'unidad_negocio_id': 'CIENFUEGOS',
+modules/comercial_v2/carga_historica_24_meses.py:102:        'unidad_negocio_nombre': 'CIENFUEGOS',
+modules/comercial_v2/carga_historica_24_meses.py:109:        'unidad_negocio_id': 'LA-ESTELAR',
+modules/comercial_v2/carga_historica_24_meses.py:110:        'unidad_negocio_nombre': 'LA ESTELAR',
+modules/comercial_v2/carga_historica_24_meses.py:133:        'unidad_negocio_id': 'ORIGEN',
+modules/comercial_v2/carga_historica_24_meses.py:134:        'unidad_negocio_nombre': 'ORIGEN',
+modules/comercial_v2/routes.py:196:        unidad_negocio_id: ID en tabla KPI (ej: '130-MER', 'LA-ESTELAR')
+modules/comercial_v2/routes.py:1037:                    {"unidad_negocio_id": "cienfuegos", "unidad_negocio_nombre": UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS', "ventas_total": 4130000, "tickets_total": 1052, "pax_total": 3177},
+modules/comercial_v2/routes.py:1040:                    {"unidad_negocio_id": "estelar", "unidad_negocio_nombre": "LA ESTELAR", "ventas_total": 2470000, "tickets_total": 1658, "pax_total": 4520},
+modules/comercial_v2/routes.py:1041:                    {"unidad_negocio_id": "origen", "unidad_negocio_nombre": UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', "ventas_total": 2070000, "tickets_total": 1015, "pax_total": 2930}
+modules/comercial_v2/routes.py:1044:                    {"tag": UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS', "total": 4130000, "transacciones": 1052},
+modules/comercial_v2/routes.py:1047:                    {"tag": "LA ESTELAR", "total": 2470000, "transacciones": 1658},
+modules/comercial_v2/routes.py:1048:                    {"tag": UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', "total": 2070000, "transacciones": 1015}
+modules/tablajeria/sync_service.py:37:    Soporta MPRO TABLAJERIA y CIENFUEGOS TABLAJERIA.
+modules/tablajeria/sync_service.py:106:            elif 'SOFTRESTAURANT' in sistema or 'CIENFUEGOS' in servidor_config.get('nombre', '').upper():
+modules/tablajeria/sync_service.py:564:    # SYNC CIENFUEGOS (SOFTRESTAURANT)
+modules/tablajeria/sync_service.py:574:        """Sincroniza desde CIENFUEGOS TABLAJERIA (SoftRestaurant)"""
+modules/tablajeria/sync_service.py:575:        logger.info(f"[TablajeriaSync] Iniciando sync CIENFUEGOS: {servidor_config['nombre']}")
+modules/tablajeria/sync_service.py:604:            result.errores.append(f"Error conectando a CIENFUEGOS: {e}")
+modules/tablajeria/sync_service.py:605:            logger.error(f"[TablajeriaSync] No se pudo conectar a CIENFUEGOS: {e}")
+modules/tablajeria/sync_service.py:614:                result.errores.append("Sync CIENFUEGOS pendiente de implementación (servidor offline)")
+modules/tablajeria/schemas.py:19:    LEGACY_CIENFUEGOS_TABLAJERIA = "LEGACY_CIENFUEGOS_TABLAJERIA"
+modules/finanzas/carga_historica_propinas_tpv.py:53:UNIDADES_SOFTRESTAURANT = ['130° MERIDA', 'CIENFUEGOS', 'LA ESTELAR']
+modules/finanzas/carga_historica_propinas_tpv.py:54:UNIDADES_MPRO = ['130° QUERETARO', 'ORIGEN']
+modules/finanzas/tesoreria.py:50:    como 'CIENFUEGOS', 'LA_ESTELAR', etc.
+modules/finanzas/sync_propinas_mpro.py:9:- ORIGEN
+modules/finanzas/sync_propinas_mpro.py:78:UNIDADES_MPRO_AUTORIZADAS = ['130° QUERETARO', 'ORIGEN']
+modules/finanzas/sync_propinas_mpro.py:142:        # 0006 = ORIGEN (Sucursal 0023)
+modules/finanzas/sync_propinas_mpro.py:145:            'ORIGEN': '0006',           # Código empresa en CENTRAL2020
+modules/finanzas/sync_propinas_mpro.py:558:        unidad_nombre: Nombre de la unidad (130° QUERETARO, ORIGEN)
+modules/finanzas/sync_cortes_softrestaurant.py:9:- CIENFUEGOS
+modules/finanzas/sync_cortes_softrestaurant.py:10:- LA ESTELAR
+modules/finanzas/sync_cortes_softrestaurant.py:54:UNIDADES_SR_AUTORIZADAS = ['130° MERIDA', 'CIENFUEGOS', 'LA ESTELAR']
+modules/finanzas/sync_propinas_softrestaurant.py:9:- CIENFUEGOS
+modules/finanzas/sync_propinas_softrestaurant.py:10:- LA ESTELAR
+modules/finanzas/sync_propinas_softrestaurant.py:76:UNIDADES_SR_AUTORIZADAS = ['130° MERIDA', 'CIENFUEGOS', 'LA ESTELAR']
+modules/finanzas/sync_propinas_softrestaurant.py:617:        unidad_nombre: Nombre de la unidad (130° MERIDA, CIENFUEGOS, LA ESTELAR)
+modules/finanzas/cuentas_por_pagar.py:148:        {"id": 2, "nombre": "ORIGEN"},
+modules/finanzas/cuentas_por_pagar.py:226:    sucursal_id: Optional[str] = None,  # CIENFUEGOS, ESTELAR, 130MID o código MPRO
+modules/finanzas/cuentas_por_pagar.py:260:            for alias in ['ORIGEN', '130QRO', '130 QRO', '130° QRO', '130° QUERETARO', '0021', '0023']
+modules/finanzas/cuentas_por_pagar.py:321:        softrest_sucursales = ['CIENFUEGOS', 'ESTELAR', '130MID', 'CF', 'EST', '130M', 'LA ESTELAR', '130 MERIDA', '130° MERIDA', 'CIEN FUEGOS']
+modules/finanzas/cuentas_por_pagar.py:322:        mpro_sucursales = ['ORIGEN', '130QRO', '130 QRO', '130° QRO', '130° QUERETARO', '0021', '0023']
+modules/finanzas/cuentas_por_pagar.py:339:                    if sucursal_id and ('ORIGEN' in sucursal_id.upper() or sucursal_id == '0023'):
+modules/finanzas/cuentas_por_pagar.py:355:                    '0023': 'ORIGEN',
+modules/finanzas/cuentas_por_pagar.py:822:    - SoftRestaurant: CIENFUEGOS, LA ESTELAR, 130° MERIDA
+modules/finanzas/cuentas_por_pagar.py:823:    - ManagementPro: ORIGEN (0023), 130° QRO (0021)
+modules/finanzas/cuentas_por_pagar.py:840:        softrest_sucursales = ['CIENFUEGOS', 'ESTELAR', '130MID', 'CF', 'EST', '130M', 
+modules/finanzas/cuentas_por_pagar.py:841:                               'LA ESTELAR', '130 MERIDA', '130° MERIDA', 'CIEN FUEGOS']
+modules/finanzas/cuentas_por_pagar.py:842:        mpro_sucursales = ['ORIGEN', '130QRO', '130 QRO', '130° QRO', '130° QUERETARO', 
+modules/finanzas/cuentas_por_pagar.py:877:                    if sucursal_id and ('ORIGEN' in sucursal_id.upper() or sucursal_id == '0023'):
+modules/finanzas/cuentas_por_pagar.py:1064:    - SoftRestaurant: CIENFUEGOS, LA ESTELAR, 130° MERIDA
+modules/finanzas/cuentas_por_pagar.py:1065:    - ManagementPro: ORIGEN (0023), 130° QRO (0021)
+modules/finanzas/cuentas_por_pagar.py:1100:                    '0023': 'ORIGEN',
+modules/finanzas/cuentas_por_pagar.py:1163:    factura_id: str,  # Cambiado a str para soportar IDs compuestos (ej: "MPRO_12345", "CIENFUEGOS_xxx")
+modules/finanzas/cuentas_por_pagar.py:1203:    # ID compuesto de SoftRestaurant (CIENFUEGOS_xxx, ESTELAR_xxx, 130MID_xxx)
+modules/finanzas/cuentas_por_pagar.py:1204:    softrest_prefixes = ['CIENFUEGOS_', 'ESTELAR_', '130MID_']
+modules/finanzas/repository_cortes_z.py:319:        Soporta filtro por sucursal (ORIGEN, QUERETARO).
+modules/finanzas/ingresos.py:205:        {"id": 2, "nombre": "ORIGEN"},
+modules/finanzas/propinas_tpv/sql_scripts.py:43:        -- CONTEXTO DEL ORIGEN
+modules/finanzas/propinas_tpv/sql_scripts.py:64:        -- TRAZABILIDAD AL ORIGEN (SoftRestaurant)
+modules/finanzas/propinas_tpv/sql_scripts.py:70:        -- ORIGEN DEL DATO
+modules/finanzas/propinas_tpv/models.py:48:# SCHEMAS DE ORIGEN (Datos leídos de SQL Server)
+modules/finanzas/repository_softrestaurant.py:8:- CIENFUEGOS: servercienfuegos.ddns.net:6669 / softrestaurant95pro (Vista: AC_vwSaldoCxp)
+modules/finanzas/repository_softrestaurant.py:9:- LA ESTELAR: serverestelar.ddns.net:6969 / softrestaurant12 (Vista: AC_vwSaldoCxp)
+modules/finanzas/repository_softrestaurant.py:33:    "CIENFUEGOS": {
+modules/finanzas/repository_softrestaurant.py:43:    "ESTELAR": {
+modules/finanzas/repository_softrestaurant.py:45:        "name": "LA ESTELAR",
+modules/finanzas/repository_softrestaurant.py:53:    "130MID": {
+modules/finanzas/repository_softrestaurant.py:164:        # CIENFUEGOS aliases
+modules/finanzas/repository_softrestaurant.py:165:        'CIENFUEGOS': 'CIENFUEGOS',
+modules/finanzas/repository_softrestaurant.py:166:        'CIEN FUEGOS': 'CIENFUEGOS',
+modules/finanzas/repository_softrestaurant.py:167:        'CF': 'CIENFUEGOS',
+modules/finanzas/repository_softrestaurant.py:168:        'CIENFUEGOS_SR': 'CIENFUEGOS',
+modules/finanzas/repository_softrestaurant.py:169:        # ESTELAR aliases
+modules/finanzas/repository_softrestaurant.py:170:        'ESTELAR': 'ESTELAR',
+modules/finanzas/repository_softrestaurant.py:171:        'LA ESTELAR': 'ESTELAR',
+modules/finanzas/repository_softrestaurant.py:172:        'EST': 'ESTELAR',
+modules/finanzas/repository_softrestaurant.py:173:        'LAESTELAR': 'ESTELAR',
+modules/finanzas/repository_softrestaurant.py:174:        'LA_ESTELAR': 'ESTELAR',
+modules/finanzas/repository_softrestaurant.py:176:        '130MID': '130MID',
+modules/finanzas/repository_softrestaurant.py:177:        '130 MERIDA': '130MID',
+modules/finanzas/repository_softrestaurant.py:178:        '130° MERIDA': '130MID',
+modules/finanzas/repository_softrestaurant.py:179:        '130_MERIDA': '130MID',
+modules/finanzas/repository_softrestaurant.py:180:        '130M': '130MID',
+modules/finanzas/repository_softrestaurant.py:181:        'MERIDA': '130MID',
+modules/finanzas/carga_historica_ingresos.py:112:        unidad_nombre: Nombre de la unidad (130° MERIDA, CIENFUEGOS, LA ESTELAR)
+modules/finanzas/carga_historica_ingresos.py:231:        unidad_nombre: Nombre de la unidad (130° QUERETARO, ORIGEN)
+modules/finanzas/carga_historica_ingresos.py:347:    1. SoftRestaurant: 130° MERIDA, CIENFUEGOS, LA ESTELAR
+modules/finanzas/carga_historica_ingresos.py:348:    2. MPRO: 130° QUERETARO, ORIGEN
+modules/finanzas/carga_historica_ingresos.py:382:    unidades_sr = ['130° MERIDA', 'CIENFUEGOS', 'LA ESTELAR']
+modules/finanzas/carga_historica_ingresos.py:418:    unidades_mpro = ['130° QUERETARO', 'ORIGEN']
+modules/finanzas/test_conn_cienfuegos.py:4:DIAGNÓSTICO TÉCNICO FORMAL — CONEXIÓN CIENFUEGOS (SoftRestaurant)
+modules/finanzas/test_conn_cienfuegos.py:10:- Identificar la causa exacta de fallo de conexión a CIENFUEGOS
+modules/finanzas/test_conn_cienfuegos.py:15:1. Existencia de CIENFUEGOS en EDARSAHUB (Unidades_Negocio)
+modules/finanzas/test_conn_cienfuegos.py:187:    """Prueba 1: Verificar existencia de CIENFUEGOS en Unidades_Negocio"""
+modules/finanzas/test_conn_cienfuegos.py:188:    result = DiagnosticResult("01_CIENFUEGOS_EXISTS")
+modules/finanzas/test_conn_cienfuegos.py:203:            WHERE nombre = 'CIENFUEGOS'
+modules/finanzas/test_conn_cienfuegos.py:211:                f"CIENFUEGOS encontrada en EDARSAHUB",
+modules/finanzas/test_conn_cienfuegos.py:223:                "CIENFUEGOS NO encontrada en tabla Unidades_Negocio",
+modules/finanzas/test_conn_cienfuegos.py:254:                "CIENFUEGOS no tiene server_id asignado",
+modules/finanzas/test_conn_cienfuegos.py:970:        # Verificar registros existentes de CIENFUEGOS
+modules/finanzas/test_conn_cienfuegos.py:1055:    print("DIAGNÓSTICO TÉCNICO FORMAL — CONEXIÓN CIENFUEGOS")
+modules/finanzas/test_conn_cienfuegos.py:1065:        'unidad': 'CIENFUEGOS',
+modules/finanzas/test_conn_cienfuegos.py:1087:    print("\n--- PRUEBA 1: CIENFUEGOS en EDARSAHUB ---")
+modules/finanzas/test_conn_cienfuegos.py:1093:        report['diagnostico_final'] = "BLOQUEO - CIENFUEGOS no existe en EDARSAHUB"
+modules/finanzas/test_conn_cienfuegos.py:1095:        report['recomendacion'] = "Verificar que CIENFUEGOS esté dada de alta en EDARSAHUB.Unidades_Negocio"
+modules/finanzas/test_conn_cienfuegos.py:1209:                    "Las credenciales (usuario/contraseña) almacenadas en EDARSAHUB para CIENFUEGOS son incorrectas. "
+modules/finanzas/sync_cortes_mpro.py:9:- ORIGEN (Sc_Cve_Sucursal = '0023')
+modules/finanzas/sync_cortes_mpro.py:53:    'ORIGEN': '0023'
+modules/manuales_operativos/service.py:165:                "formato": FormatoManual.CIENFUEGOS.value,
+modules/manuales_operativos/service.py:520:MANUAL OPERATIVO - MODELO CIENFUEGOS
+modules/manuales_operativos/triggers.py:359:        "formato": FormatoManual.CIENFUEGOS.value,
+modules/manuales_operativos/schemas.py:36:    CIENFUEGOS = "cienfuegos"  # Formato estándar EDARSA
+modules/manuales_operativos/schemas.py:132:    formato: FormatoManual = Field(default=FormatoManual.CIENFUEGOS)
+modules/compras/adapters/mpro_adapter.py:8:ORIGEN = "MPRO"
+modules/compras/adapters/softrestaurant_pro_adapter.py:7:MAPEO ORIGEN → DESTINO:
+modules/compras/adapters/softrestaurant_pro_adapter.py:24:ORIGEN = "SOFTRESTAURANT_PRO"
+modules/compras/adapters/softrestaurant_pro_adapter.py:27:TABLES_ORIGEN = {
+modules/compras/sync_service.py:2:# REGLA CRÍTICA SYNC ORIGEN → EDARSAHUB:
+modules/compras/sync_service.py:105:    proveedor_nombre = str(proveedor_nombre or proveedor_origen_id or "PROVEEDOR ORIGEN SIN NOMBRE").strip()
+modules/compras/sync_service.py:135:    codigo = proveedor_origen_id or f"ORIGEN_SIN_CODIGO_{proveedor_nombre[:20]}"

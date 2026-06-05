@@ -1,0 +1,104 @@
+modules/dashboard_ejecutivo/routes.py:29:    FROM vw_Comercial_KPIs_Diarios_v2_Runtime k
+modules/comercial/service.py:76:# Tablero Ejecutivo lee exclusivamente de Comercial_KPIs_Diarios_v2.
+modules/comercial/service.py:302:    - Los datos en Comercial_KPIs_Diarios_v2 deben usar códigos canónicos
+modules/comercial/service.py:476:    Fuente: Comercial_KPIs_Diarios_v2 y Comercial_Ventas_Dia_Abiertas_v2.
+modules/comercial/service.py:496:    Obtiene el último día con ventas registradas en Comercial_KPIs_Diarios_v2.
+modules/comercial/service.py:501:    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial/service.py:521:    Obtiene KPIs agregados de Comercial_KPIs_Diarios_v2 para un período.
+modules/comercial/service.py:527:    RAZÓN: Para MPRO, los datos en Comercial_KPIs_Diarios_v2 tienen un server_id
+modules/comercial/service.py:556:    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial/service.py:805:    - Lee de Comercial_KPIs_Diarios_v2
+modules/comercial/service.py:841:    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial/service.py:1018:            "tabla": "Comercial_KPIs_Diarios_v2",
+modules/comercial/service.py:1364:# - Fuente: Comercial_KPIs_Diarios_v2
+modules/comercial/service.py:1375:    - Lee EXCLUSIVAMENTE de EDARSAHUB (Comercial_KPIs_Diarios_v2)
+modules/comercial/service.py:1411:    # usados en Comercial_KPIs_Diarios_v2
+modules/comercial/service.py:1468:    # MODO KPIs HISTÓRICOS/ACUMULADOS: Leer de Comercial_KPIs_Diarios_v2
+modules/comercial/service.py:1505:    - Lee EXCLUSIVAMENTE de EDARSAHUB (Comercial_KPIs_Diarios_v2)
+modules/comercial/service.py:1817:    # - Usar la misma fuente que SoftRestaurant: Comercial_KPIs_Diarios_v2
+modules/comercial/service.py:1840:        # Mapear código a unidad_negocio_id usado en Comercial_KPIs_Diarios_v2
+modules/comercial/service.py:2349:# EDARSAHUB SÍ tiene datos en Comercial_KPIs_Diarios_v2.
+modules/comercial/service.py:2355:# SOLUCIÓN: Usar la MISMA fuente que Tablero Ejecutivo (Comercial_KPIs_Diarios_v2)
+modules/comercial/service.py:2372:    DASHBOARD COMERCIAL - KPIs desde EDARSAHUB (Comercial_KPIs_Diarios_v2)
+modules/comercial/service.py:2377:    FUENTE: Comercial_KPIs_Diarios_v2 en EDARSAHUB
+modules/comercial/service.py:2472:        'source_table': 'Comercial_KPIs_Diarios_v2',
+modules/comercial/service.py:2507:        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial/service.py:2538:    # Este fallback maneja el caso donde los datos MPRO en Comercial_KPIs_Diarios_v2
+modules/comercial/service.py:2557:        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial/service.py:2622:    Busca en Comercial_KPIs_Diarios_v2 el registro más reciente para el servidor,
+modules/comercial/service.py:2655:            FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial/routes.py:194:# - /comercial/tablero-ejecutivo - Usa Comercial_KPIs_Diarios_v2
+modules/comercial/routes.py:3258:    Este endpoint ahora lee de Comercial_KPIs_Diarios_v2 en EDARSAHUB SQL.
+modules/comercial/routes.py:3322:        # Query para obtener totales (columnas reales de Comercial_KPIs_Diarios_v2)
+modules/comercial/routes.py:3329:        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial/routes.py:3351:        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial/routes.py:3933:            # PERO EDARSAHUB sí tiene datos en Comercial_KPIs_Diarios_v2.
+modules/backfill_corporativo/service.py:25:    "VENTAS": ["Comercial_KPIs_Diarios_v2"],
+modules/backfill_corporativo/service.py:128:    Backfill VENTAS (Comercial_KPIs_Diarios_v2).
+modules/backfill_corporativo/service.py:131:    tabla = "Comercial_KPIs_Diarios_v2"
+modules/backfill_corporativo/service.py:760:    LEFT JOIN Comercial_KPIs_Diarios_v2 k
+modules/backfill_corporativo/service.py:799:    Si existe fuente autorizada y trae datos, actualiza Comercial_KPIs_Diarios_v2.
+modules/backfill_corporativo/service.py:966:        FROM Comercial_KPIs_Diarios_v2
+modules/backfill_corporativo/service.py:975:            UPDATE Comercial_KPIs_Diarios_v2
+modules/backfill_corporativo/service.py:989:            INSERT INTO Comercial_KPIs_Diarios_v2 (
+modules/inteligencia_comercial/routes.py:7:- KPIs Dashboard: Comercial_KPIs_Diarios_v2 (pre-calculada)
+modules/inteligencia_comercial/routes.py:175:# Fuente: Comercial_KPIs_Diarios_v2
+modules/inteligencia_comercial/routes.py:185:    Fuente: Comercial_KPIs_Diarios_v2
+modules/inteligencia_comercial/routes.py:212:            FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/inteligencia_comercial/routes.py:228:                FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/inteligencia_comercial/routes.py:326:# Fuente: Comercial_KPIs_Diarios_v2
+modules/inteligencia_comercial/routes.py:336:    Fuente: Comercial_KPIs_Diarios_v2
+modules/inteligencia_comercial/routes.py:361:            FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/inteligencia_comercial/routes.py:470:            FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/inteligencia_comercial/routes.py:719:        kpi_sql = f"SELECT SUM(ventas_total) AS total FROM vw_Comercial_KPIs_Diarios_v2_Runtime WHERE {' AND '.join(where_kpi)}"
+modules/inteligencia_comercial/routes.py:781:        kpi_sql = f"SELECT SUM(ventas_total) AS total FROM vw_Comercial_KPIs_Diarios_v2_Runtime WHERE {' AND '.join(where_kpi)}"
+modules/comercial_v2/__init__.py:16:- Comercial_KPIs_Diarios_v2
+modules/comercial_v2/__init__.py:17:- Comercial_KPIs_Mensuales_v2
+modules/comercial_v2/carga_historica_abril_2026.py:10:- Destino: Comercial_KPIs_Diarios_v2 en EDARSAHUB
+modules/comercial_v2/carga_historica_abril_2026.py:639:    FROM Comercial_KPIs_Diarios_v2
+modules/comercial_v2/carga_historica_abril_2026.py:714:    FROM Comercial_KPIs_Diarios_v2
+modules/comercial_v2/carga_historica_abril_2026.py:845:    FROM Comercial_KPIs_Diarios_v2
+modules/comercial_v2/repository_readonly.py:14:- Comercial_KPIs_Diarios_v2
+modules/comercial_v2/repository_readonly.py:15:- Comercial_KPIs_Mensuales_v2
+modules/comercial_v2/repository_readonly.py:70:    Obtiene KPIs diarios desde Comercial_KPIs_Diarios_v2.
+modules/comercial_v2/repository_readonly.py:118:    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial_v2/repository_readonly.py:154:    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial_v2/repository_readonly.py:171:    - Se detectaron datos DUPLICADOS en Comercial_KPIs_Diarios_v2 para Mérida
+modules/comercial_v2/repository_readonly.py:242:        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial_v2/repository_readonly.py:280:    Obtiene KPIs mensuales desde Comercial_KPIs_Mensuales_v2.
+modules/comercial_v2/repository_readonly.py:306:    FROM vw_Comercial_KPIs_Mensuales_v2_Runtime
+modules/comercial_v2/repository_readonly.py:500:    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial_v2/repository_readonly.py:531:            FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial_v2/repository_readonly.py:539:                "table": "Comercial_KPIs_Diarios_v2",
+modules/comercial_v2/repository_readonly.py:567:    - Día anterior (de Comercial_KPIs_Diarios_v2)
+modules/comercial_v2/repository_readonly.py:568:    - Mismo día año anterior (de Comercial_KPIs_Diarios_v2)
+modules/comercial_v2/repository_readonly.py:617:    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial_v2/repository_readonly.py:652:    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial_v2/repository_comercial_edarsahub.py:142:# OPERACIONES EN Comercial_KPIs_Diarios_v2
+modules/comercial_v2/repository_comercial_edarsahub.py:147:    Inserta o actualiza un KPI diario en Comercial_KPIs_Diarios_v2.
+modules/comercial_v2/repository_comercial_edarsahub.py:167:    FROM Comercial_KPIs_Diarios_v2
+modules/comercial_v2/repository_comercial_edarsahub.py:184:            UPDATE Comercial_KPIs_Diarios_v2 SET
+modules/comercial_v2/repository_comercial_edarsahub.py:208:        INSERT INTO Comercial_KPIs_Diarios_v2 (
+modules/comercial_v2/repository_comercial_edarsahub.py:252:    FROM Comercial_KPIs_Diarios_v2
+modules/comercial_v2/repository_comercial_edarsahub.py:531:    FROM Comercial_KPIs_Diarios_v2
+modules/comercial_v2/repository_comercial_edarsahub.py:549:    FROM Comercial_KPIs_Diarios_v2
+modules/comercial_v2/schemas_api.py:41:    _v2_tabla: str = "Comercial_KPIs_Diarios_v2"
+modules/comercial_v2/schemas_api.py:58:    tabla_principal: str = "Comercial_KPIs_Diarios_v2"
+modules/comercial_v2/carga_historica_24_meses.py:10:- Destino: Comercial_KPIs_Diarios_v2 en EDARSAHUB
+modules/comercial_v2/carga_historica_24_meses.py:703:    FROM Comercial_KPIs_Diarios_v2
+modules/comercial_v2/carga_historica_24_meses.py:734:    FROM Comercial_KPIs_Diarios_v2
+modules/comercial_v2/carga_historica_24_meses.py:772:    FROM Comercial_KPIs_Diarios_v2
+modules/comercial_v2/routes.py:187:    FUENTE: EDARSAHUB.Comercial_KPIs_Diarios_v2
+modules/comercial_v2/routes.py:250:        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial_v2/routes.py:273:        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial_v2/routes.py:299:        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial_v2/routes.py:451:        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial_v2/routes.py:473:        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial_v2/routes.py:648:    - Comercial_KPIs_Diarios_v2 (ventas cerradas)
+modules/comercial_v2/routes.py:982:                    "_v2_tabla": "Comercial_KPIs_Diarios_v2" if u.get('dias', 0) > 0 else "Comercial_Ventas_Dia_Abiertas_v2",
+modules/comercial_v2/routes.py:1069:    Lee desde: Comercial_KPIs_Diarios_v2
+modules/comercial_v2/routes.py:1117:    Lee desde: Comercial_KPIs_Diarios_v2 (EDARSAHUB SQL)
+modules/comercial_v2/routes.py:1138:        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+modules/comercial_v2/routes.py:1196:    Lee desde: Comercial_KPIs_Mensuales_v2
+modules/comercial_v2/routes.py:1431:    Lee desde: Comercial_KPIs_Diarios_v2 (DISTINCT)
+modules/comercial_v2/schemas.py:102:    """Registro completo para Comercial_KPIs_Diarios_v2"""

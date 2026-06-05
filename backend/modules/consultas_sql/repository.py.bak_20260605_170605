@@ -1,0 +1,708 @@
+"""
+EDARSA HUB - Consultas SQL: Repository SQL-First
+================================================
+FASE 3: Acceso a datos desde tablas ConsultasSQL_* de EDARSAHUB.
+
+TABLAS:
+- ConsultasSQL_Catalogo
+- ConsultasSQL_Parametros
+- ConsultasSQL_Versiones
+- ConsultasSQL_Servidores
+- ConsultasSQL_EjecucionesLog (preparación futura)
+- ConsultasSQL_Permisos (preparación futura)
+
+PATRÓN DE CONEXIÓN:
+Usa core.server_registry.EDARSAHUB_CONFIG para conexión.
+Usa core.db.execute_sql_query para ejecución.
+
+SEGURIDAD:
+- NO ejecuta consultas contra servidores LIVE en esta fase
+- Solo lee metadatos del catálogo
+- Valida SQL antes de devolverlo
+"""
+
+import logging
+from typing import List, Optional, Dict, Any
+from datetime import datetime, timezone
+
+from core.db import execute_sql_query
+from core.server_registry import EDARSAHUB_CONFIG
+
+from .models import (
+    ConsultaSQLCatalogo,
+    ConsultaSQLParametro,
+    ConsultaSQLVersion,
+    ConsultaSQLServidor,
+    ConsultaSQLFilter,
+    ConsultaSQLValidationResult,
+)
+from .validator import SQLValidator, get_validator
+
+logger = logging.getLogger(__name__)
+
+
+class ConsultasSQLRepository:
+    """
+    Repository SQL-First para el catálogo de consultas.
+    Lee directamente de EDARSAHUB SQL.
+    """
+    
+    def __init__(self, connection_provider: Optional[Dict] = None):
+        """
+        Inicializa el repository.
+        
+        Args:
+            connection_provider: Dict con credenciales de conexión.
+                                Si None, usa EDARSAHUB_CONFIG.
+        """
+        self._config = connection_provider or EDARSAHUB_CONFIG
+        self._validator = get_validator()
+    
+    def _execute(self, query: str) -> List[Dict]:
+        """Ejecuta una query contra EDARSAHUB."""
+        return execute_sql_query(
+            host=self._config['host'],
+            port=self._config['port'],
+            database=self._config['database'],
+            username=self._config['username'],
+            password=self._config['password'],
+            query=query
+        )
+    
+    def _escape_sql(self, value: str) -> str:
+        """Escapa valores para SQL (prevención de inyección)."""
+        if value is None:
+            return "NULL"
+        return str(value).replace("'", "''")
+    
+    # ========================================================================
+    # CONSULTAS - LECTURA
+    # ========================================================================
+    
+    def list_consultas(self, filters: Optional[ConsultaSQLFilter] = None) -> List[ConsultaSQLCatalogo]:
+        """
+        Lista consultas del catálogo con filtros opcionales.
+        
+        Args:
+            filters: Filtros a aplicar
+            
+        Returns:
+            Lista de ConsultaSQLCatalogo
+        """
+        filters = filters or ConsultaSQLFilter()
+        
+        where_clauses = []
+        
+        # Construir filtros
+        if filters.sistema_tipo_id is not None:
+            where_clauses.append(f"c.SistemaTipoID = {int(filters.sistema_tipo_id)}")
+        
+        if filters.codigo_sistema:
+            # Mapeo de código a ID (actualizado Mayo 2026)
+            sistema_map = {
+                'SOFTRESTAURANT': 1,  # Alias de compatibilidad
+                'SOFTRESTAURANT_PRO': 1,
+                'MPRO': 2,
+                'API': 3,
+                'ENTERPRISE': 6,
+            }
+            sistema_id = sistema_map.get(filters.codigo_sistema.upper())
+            if sistema_id:
+                where_clauses.append(f"c.SistemaTipoID = {sistema_id}")
+        
+        if filters.modulo:
+            where_clauses.append(f"c.Modulo = '{self._escape_sql(filters.modulo)}'")
+        
+        if filters.activo is not None:
+            where_clauses.append(f"c.Activo = {1 if filters.activo else 0}")
+        
+        if filters.solo_lectura is not None:
+            where_clauses.append(f"c.SoloLectura = {1 if filters.solo_lectura else 0}")
+        
+        if filters.es_sistema is not None:
+            where_clauses.append(f"c.EsSistema = {1 if filters.es_sistema else 0}")
+        
+        if filters.es_personalizada is not None:
+            where_clauses.append(f"c.EsPersonalizada = {1 if filters.es_personalizada else 0}")
+        
+        if filters.es_sincronizable is not None:
+            where_clauses.append(f"c.EsSincronizable = {1 if filters.es_sincronizable else 0}")
+        
+        if filters.permite_ejecucion_manual is not None:
+            where_clauses.append(f"c.PermiteEjecucionManual = {1 if filters.permite_ejecucion_manual else 0}")
+        
+        if filters.buscar:
+            buscar = self._escape_sql(filters.buscar)
+            where_clauses.append(
+                f"(c.NombreConsulta LIKE '%{buscar}%' OR c.Descripcion LIKE '%{buscar}%' OR c.CodigoConsulta LIKE '%{buscar}%')"
+            )
+        
+        where_sql = ""
+        if where_clauses:
+            where_sql = "WHERE " + " AND ".join(where_clauses)
+        
+        limit = min(filters.limit, 500)  # Máximo 500
+        
+        query = f"""
+            SELECT TOP {limit}
+                c.ConsultaID,
+                LOWER(CAST(c.PublicUUID AS VARCHAR(36))) as PublicUUID,
+                c.CodigoConsulta,
+                c.NombreConsulta,
+                c.Descripcion,
+                c.Modulo,
+                c.TipoConsulta,
+                c.SistemaTipoID,
+                c.ConsultaSQL,
+                c.EsSistema,
+                c.EsPersonalizada,
+                c.EsSincronizable,
+                c.PermiteEjecucionManual,
+                c.SoloLectura,
+                c.RequiereAutorizacion,
+                c.Activo,
+                c.Version,
+                c.ConfigOrigen,
+                c.FechaCreacion,
+                c.UsuarioCreacionID,
+                c.FechaModificacion,
+                c.UsuarioModificacionID
+            FROM ConsultasSQL_Catalogo c
+            {where_sql}
+            ORDER BY c.Modulo, c.NombreConsulta
+        """
+        
+        try:
+            rows = self._execute(query)
+            return [ConsultaSQLCatalogo.from_sql_row(row) for row in rows]
+        except Exception as e:
+            logger.error(f"[CONSULTAS-SQL-REPO] Error listando consultas: {e}")
+            raise
+    
+    def get_by_id(self, consulta_id: int) -> Optional[ConsultaSQLCatalogo]:
+        """
+        Obtiene una consulta por su ConsultaID.
+        
+        Args:
+            consulta_id: ID interno de la consulta
+            
+        Returns:
+            ConsultaSQLCatalogo o None si no existe
+        """
+        query = f"""
+            SELECT 
+                c.ConsultaID,
+                LOWER(CAST(c.PublicUUID AS VARCHAR(36))) as PublicUUID,
+                c.CodigoConsulta,
+                c.NombreConsulta,
+                c.Descripcion,
+                c.Modulo,
+                c.TipoConsulta,
+                c.SistemaTipoID,
+                c.ConsultaSQL,
+                c.EsSistema,
+                c.EsPersonalizada,
+                c.EsSincronizable,
+                c.PermiteEjecucionManual,
+                c.SoloLectura,
+                c.RequiereAutorizacion,
+                c.Activo,
+                c.Version,
+                c.ConfigOrigen,
+                c.FechaCreacion,
+                c.UsuarioCreacionID,
+                c.FechaModificacion,
+                c.UsuarioModificacionID
+            FROM ConsultasSQL_Catalogo c
+            WHERE c.ConsultaID = {int(consulta_id)}
+        """
+        
+        try:
+            rows = self._execute(query)
+            if rows:
+                return ConsultaSQLCatalogo.from_sql_row(rows[0])
+            return None
+        except Exception as e:
+            logger.error(f"[CONSULTAS-SQL-REPO] Error obteniendo consulta {consulta_id}: {e}")
+            raise
+    
+    def get_by_uuid(self, public_uuid: str) -> Optional[ConsultaSQLCatalogo]:
+        """
+        Obtiene una consulta por su PublicUUID.
+        
+        Args:
+            public_uuid: UUID público de la consulta
+            
+        Returns:
+            ConsultaSQLCatalogo o None si no existe
+        """
+        # Sanitizar UUID
+        uuid_clean = self._escape_sql(public_uuid.strip().lower())
+        
+        query = f"""
+            SELECT 
+                c.ConsultaID,
+                LOWER(CAST(c.PublicUUID AS VARCHAR(36))) as PublicUUID,
+                c.CodigoConsulta,
+                c.NombreConsulta,
+                c.Descripcion,
+                c.Modulo,
+                c.TipoConsulta,
+                c.SistemaTipoID,
+                c.ConsultaSQL,
+                c.EsSistema,
+                c.EsPersonalizada,
+                c.EsSincronizable,
+                c.PermiteEjecucionManual,
+                c.SoloLectura,
+                c.RequiereAutorizacion,
+                c.Activo,
+                c.Version,
+                c.ConfigOrigen,
+                c.FechaCreacion,
+                c.UsuarioCreacionID,
+                c.FechaModificacion,
+                c.UsuarioModificacionID
+            FROM ConsultasSQL_Catalogo c
+            WHERE LOWER(CAST(c.PublicUUID AS VARCHAR(36))) = '{uuid_clean}'
+        """
+        
+        try:
+            rows = self._execute(query)
+            if rows:
+                return ConsultaSQLCatalogo.from_sql_row(rows[0])
+            return None
+        except Exception as e:
+            logger.error(f"[CONSULTAS-SQL-REPO] Error obteniendo consulta UUID {public_uuid}: {e}")
+            raise
+    
+    def get_by_codigo(self, codigo_consulta: str) -> Optional[ConsultaSQLCatalogo]:
+        """
+        Obtiene una consulta por su CodigoConsulta.
+        
+        Args:
+            codigo_consulta: Código único de la consulta (ej: 'SR_VENTAS_DIA')
+            
+        Returns:
+            ConsultaSQLCatalogo o None si no existe
+        """
+        codigo_clean = self._escape_sql(codigo_consulta.strip().upper())
+        
+        query = f"""
+            SELECT 
+                c.ConsultaID,
+                LOWER(CAST(c.PublicUUID AS VARCHAR(36))) as PublicUUID,
+                c.CodigoConsulta,
+                c.NombreConsulta,
+                c.Descripcion,
+                c.Modulo,
+                c.TipoConsulta,
+                c.SistemaTipoID,
+                c.ConsultaSQL,
+                c.EsSistema,
+                c.EsPersonalizada,
+                c.EsSincronizable,
+                c.PermiteEjecucionManual,
+                c.SoloLectura,
+                c.RequiereAutorizacion,
+                c.Activo,
+                c.Version,
+                c.ConfigOrigen,
+                c.FechaCreacion,
+                c.UsuarioCreacionID,
+                c.FechaModificacion,
+                c.UsuarioModificacionID
+            FROM ConsultasSQL_Catalogo c
+            WHERE UPPER(c.CodigoConsulta) = '{codigo_clean}'
+        """
+        
+        try:
+            rows = self._execute(query)
+            if rows:
+                return ConsultaSQLCatalogo.from_sql_row(rows[0])
+            return None
+        except Exception as e:
+            logger.error(f"[CONSULTAS-SQL-REPO] Error obteniendo consulta código {codigo_consulta}: {e}")
+            raise
+    
+    # ========================================================================
+    # PARÁMETROS
+    # ========================================================================
+    
+    def get_parametros(self, consulta_id: int) -> List[ConsultaSQLParametro]:
+        """
+        Obtiene los parámetros de una consulta.
+        
+        Args:
+            consulta_id: ID de la consulta
+            
+        Returns:
+            Lista de ConsultaSQLParametro
+        """
+        query = f"""
+            SELECT 
+                p.ParametroID,
+                p.ConsultaID,
+                p.NombreParametro,
+                p.NombreMostrar,
+                p.TipoDato,
+                p.Requerido,
+                p.ValorDefault,
+                p.RegexValidacion,
+                p.ValorMinimo,
+                p.ValorMaximo,
+                p.ListaValoresJSON,
+                p.OrdenMostrar,
+                p.ComponenteUI,
+                p.Activo
+            FROM ConsultasSQL_Parametros p
+            WHERE p.ConsultaID = {int(consulta_id)}
+              AND p.Activo = 1
+            ORDER BY p.OrdenMostrar, p.NombreParametro
+        """
+        
+        try:
+            rows = self._execute(query)
+            return [ConsultaSQLParametro.from_sql_row(row) for row in rows]
+        except Exception as e:
+            logger.error(f"[CONSULTAS-SQL-REPO] Error obteniendo parámetros de consulta {consulta_id}: {e}")
+            raise
+    
+    # ========================================================================
+    # VERSIONES
+    # ========================================================================
+    
+    def get_versiones(self, consulta_id: int) -> List[ConsultaSQLVersion]:
+        """
+        Obtiene el historial de versiones de una consulta.
+        
+        Args:
+            consulta_id: ID de la consulta
+            
+        Returns:
+            Lista de ConsultaSQLVersion (ordenadas por versión DESC)
+        """
+        query = f"""
+            SELECT 
+                v.VersionID,
+                v.ConsultaID,
+                v.Version,
+                v.ConsultaSQL,
+                v.ParametrosJSON,
+                v.MotivoCambio,
+                v.FechaCreacion,
+                v.UsuarioCreacionID
+            FROM ConsultasSQL_Versiones v
+            WHERE v.ConsultaID = {int(consulta_id)}
+            ORDER BY v.Version DESC
+        """
+        
+        try:
+            rows = self._execute(query)
+            return [ConsultaSQLVersion.from_sql_row(row) for row in rows]
+        except Exception as e:
+            logger.error(f"[CONSULTAS-SQL-REPO] Error obteniendo versiones de consulta {consulta_id}: {e}")
+            raise
+    
+    # ========================================================================
+    # SERVIDORES ASOCIADOS
+    # ========================================================================
+    
+    def get_servidores_asociados(self, consulta_id: int) -> List[ConsultaSQLServidor]:
+        """
+        Obtiene los servidores asociados a una consulta.
+        
+        Args:
+            consulta_id: ID de la consulta
+            
+        Returns:
+            Lista de ConsultaSQLServidor
+        """
+        query = f"""
+            SELECT 
+                s.ConsultaServidorID,
+                s.ConsultaID,
+                LOWER(CAST(s.ServidorID AS VARCHAR(36))) as ServidorID,
+                s.EmpresaID,
+                s.SucursalID,
+                s.Activo,
+                s.Prioridad,
+                s.FechaCreacion
+            FROM ConsultasSQL_Servidores s
+            WHERE s.ConsultaID = {int(consulta_id)}
+              AND s.Activo = 1
+            ORDER BY s.Prioridad DESC
+        """
+        
+        try:
+            rows = self._execute(query)
+            return [ConsultaSQLServidor.from_sql_row(row) for row in rows]
+        except Exception as e:
+            logger.error(f"[CONSULTAS-SQL-REPO] Error obteniendo servidores de consulta {consulta_id}: {e}")
+            raise
+    
+    # ========================================================================
+    # VALIDACIÓN
+    # ========================================================================
+    
+    def validate_catalog_query(self, consulta_id: int) -> ConsultaSQLValidationResult:
+        """
+        Valida una consulta del catálogo por su ID.
+        
+        Args:
+            consulta_id: ID de la consulta
+            
+        Returns:
+            ConsultaSQLValidationResult
+        """
+        # Obtener consulta
+        consulta = self.get_by_id(consulta_id)
+        if not consulta:
+            result = ConsultaSQLValidationResult(is_valid=False)
+            result.add_error(
+                code="QUERY_NOT_FOUND",
+                message=f"Consulta ID {consulta_id} no encontrada",
+                severity="CRITICAL"
+            )
+            return result
+        
+        # Obtener parámetros
+        parametros = self.get_parametros(consulta_id)
+        
+        # Validar usando el validador
+        return self._validator.validate_catalog_query(
+            consulta_sql=consulta.consulta_sql,
+            solo_lectura=consulta.solo_lectura,
+            activo=consulta.activo,
+            config_origen=consulta.config_origen,
+            parametros=parametros
+        )
+    
+    def validate_sql_text(
+        self, 
+        sql_text: str, 
+        parametros: Optional[List[ConsultaSQLParametro]] = None
+    ) -> ConsultaSQLValidationResult:
+        """
+        Valida un texto SQL arbitrario.
+        
+        Args:
+            sql_text: Texto SQL a validar
+            parametros: Parámetros esperados (opcional)
+            
+        Returns:
+            ConsultaSQLValidationResult
+        """
+        return self._validator.validate_sql_text(sql_text, parametros)
+    
+    # ========================================================================
+    # CONTEXTO DE EJECUCIÓN (preparación futura)
+    # ========================================================================
+    
+    def build_execution_context(
+        self, 
+        consulta_id: int, 
+        parametros: Dict[str, Any],
+        usuario_contexto: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Prepara el contexto para ejecución futura de una consulta.
+        
+        NOTA: Esta fase NO ejecuta la consulta contra servidores LIVE.
+        Solo prepara y valida el contexto.
+        
+        Args:
+            consulta_id: ID de la consulta
+            parametros: Valores de parámetros proporcionados
+            usuario_contexto: Información del usuario (id, email, rol, etc.)
+            
+        Returns:
+            Dict con contexto preparado
+        """
+        # Obtener consulta
+        consulta = self.get_by_id(consulta_id)
+        if not consulta:
+            return {
+                'ready': False,
+                'error': f"Consulta ID {consulta_id} no encontrada",
+                'error_code': 'QUERY_NOT_FOUND'
+            }
+        
+        # Obtener parámetros registrados
+        params_registrados = self.get_parametros(consulta_id)
+        
+        # Validar consulta
+        validation = self._validator.validate_catalog_query(
+            consulta_sql=consulta.consulta_sql,
+            solo_lectura=consulta.solo_lectura,
+            activo=consulta.activo,
+            config_origen=consulta.config_origen,
+            parametros=params_registrados
+        )
+        
+        if not validation.is_valid:
+            return {
+                'ready': False,
+                'error': 'Consulta no pasó validación de seguridad',
+                'error_code': 'VALIDATION_FAILED',
+                'validation_errors': validation.errors
+            }
+        
+        # Verificar parámetros requeridos
+        parametros_faltantes = []
+        for p in params_registrados:
+            if p.requerido and p.nombre_parametro not in parametros:
+                if p.valor_default is None:
+                    parametros_faltantes.append(p.nombre_parametro)
+        
+        if parametros_faltantes:
+            return {
+                'ready': False,
+                'error': f"Parámetros requeridos faltantes: {', '.join(parametros_faltantes)}",
+                'error_code': 'MISSING_PARAMS',
+                'missing_params': parametros_faltantes
+            }
+        
+        # Construir contexto
+        context = {
+            'ready': True,
+            'consulta_id': consulta_id,
+            'codigo_consulta': consulta.codigo_consulta,
+            'nombre_consulta': consulta.nombre_consulta,
+            'sistema_tipo_id': consulta.sistema_tipo_id,
+            'codigo_sistema': consulta.get_codigo_sistema(),
+            'parametros_validados': parametros,
+            'parametros_registrados': [p.to_dict() for p in params_registrados],
+            'validation': validation.to_dict(),
+            'usuario': {
+                'id': usuario_contexto.get('id'),
+                'email': usuario_contexto.get('email'),
+            },
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+            # NOTA: No incluir consulta_sql en contexto por seguridad
+            # Se resolverá en momento de ejecución real
+        }
+        
+        return context
+    
+    # ========================================================================
+    # AUDITORÍA (preparación futura)
+    # ========================================================================
+    
+    def register_execution_log_prepare(
+        self,
+        consulta_id: int,
+        servidor_id: Optional[str],
+        usuario_id: str,
+        parametros_json: Optional[str] = None,
+        estado: str = "PENDING"
+    ) -> Dict[str, Any]:
+        """
+        Prepara estructura para log de ejecución futura.
+        
+        NOTA: Esta fase NO inserta en ConsultasSQL_EjecucionesLog.
+        Solo devuelve la estructura que se insertará.
+        
+        Args:
+            consulta_id: ID de la consulta
+            servidor_id: UUID del servidor destino
+            usuario_id: ID del usuario que ejecuta
+            parametros_json: JSON de parámetros
+            estado: Estado inicial
+            
+        Returns:
+            Dict con estructura del log (no insertado)
+        """
+        return {
+            '_action': 'PREPARE_ONLY',
+            '_note': 'Log no insertado - solo preparación para fase futura',
+            'ConsultaID': consulta_id,
+            'ServidorID': servidor_id,
+            'UsuarioID': usuario_id,
+            'ParametrosJSON': parametros_json,
+            'Estado': estado,
+            'FechaEjecucion': datetime.now(timezone.utc).isoformat(),
+        }
+    
+    # ========================================================================
+    # ESTADÍSTICAS
+    # ========================================================================
+    
+    def get_counts(self) -> Dict[str, int]:
+        """
+        Obtiene conteos del catálogo.
+        
+        Returns:
+            Dict con conteos por categoría
+        """
+        query = """
+            SELECT 
+                'total_consultas' as metrica, COUNT(*) as valor
+            FROM ConsultasSQL_Catalogo
+            UNION ALL
+            SELECT 
+                'total_parametros', COUNT(*)
+            FROM ConsultasSQL_Parametros
+            UNION ALL
+            SELECT 
+                'consultas_softrestaurant', COUNT(*)
+            FROM ConsultasSQL_Catalogo WHERE SistemaTipoID = 1
+            UNION ALL
+            SELECT 
+                'consultas_mpro', COUNT(*)
+            FROM ConsultasSQL_Catalogo WHERE SistemaTipoID = 2
+            UNION ALL
+            SELECT 
+                'consultas_activas', COUNT(*)
+            FROM ConsultasSQL_Catalogo WHERE Activo = 1
+            UNION ALL
+            SELECT 
+                'consultas_solo_lectura', COUNT(*)
+            FROM ConsultasSQL_Catalogo WHERE SoloLectura = 1
+        """
+        
+        try:
+            rows = self._execute(query)
+            return {row['metrica']: row['valor'] for row in rows}
+        except Exception as e:
+            logger.error(f"[CONSULTAS-SQL-REPO] Error obteniendo conteos: {e}")
+            return {}
+    
+    def get_modulos(self) -> List[str]:
+        """
+        Obtiene lista de módulos únicos.
+        
+        Returns:
+            Lista de nombres de módulos
+        """
+        query = """
+            SELECT DISTINCT Modulo
+            FROM ConsultasSQL_Catalogo
+            WHERE Activo = 1
+            ORDER BY Modulo
+        """
+        
+        try:
+            rows = self._execute(query)
+            return [row['Modulo'] for row in rows if row.get('Modulo')]
+        except Exception as e:
+            logger.error(f"[CONSULTAS-SQL-REPO] Error obteniendo módulos: {e}")
+            return []
+
+
+# Instancia singleton opcional
+_repository_instance: Optional[ConsultasSQLRepository] = None
+
+
+def get_repository() -> ConsultasSQLRepository:
+    """Obtiene instancia singleton del repository."""
+    global _repository_instance
+    if _repository_instance is None:
+        _repository_instance = ConsultasSQLRepository()
+    return _repository_instance
+
+
+__all__ = [
+    'ConsultasSQLRepository',
+    'get_repository',
+]

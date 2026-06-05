@@ -1,0 +1,341 @@
+"""
+COSTOS-ALERTAS-001-C: Routes para Reglas de Margen Esperado
+
+EDARSAHUB SQL es el cerebro. CERO MongoDB.
+
+Endpoints bajo /api/comercial/alertas-margen:
+- GET /reglas - Listar reglas
+- POST /reglas - Crear regla
+- GET /reglas/{regla_id} - Obtener regla
+- PUT /reglas/{regla_id} - Actualizar regla
+- DELETE /reglas/{regla_id} - Desactivar regla
+- GET /resolver-regla - Resolver regla aplicable (prueba de jerarquía)
+- POST /evaluar - Evaluar margen de un producto (prueba)
+- GET /umbrales - Obtener umbrales de severidad
+- GET /estadisticas - Estadísticas de reglas
+"""
+
+from datetime import datetime
+from typing import Optional, List
+from fastapi import APIRouter, Query, Depends, HTTPException
+from pydantic import BaseModel, Field
+import logging
+
+from core.security import get_current_user
+from modules.comercial.alertas_margen_service import (
+    listar_reglas_margen,
+    obtener_regla,
+    crear_regla_margen,
+    actualizar_regla_margen,
+    desactivar_regla_margen,
+    resolver_margen_esperado,
+    evaluar_margen_producto,
+    obtener_umbrales,
+    obtener_estadisticas,
+    AlertasMargenError
+)
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/comercial/alertas-margen", tags=["Alertas de Margen"])
+
+
+# =============================================================================
+# MODELOS PYDANTIC
+# =============================================================================
+
+class ReglaMargenCreate(BaseModel):
+    """Modelo para crear una regla de margen."""
+    nivel_aplicacion: str = Field(..., description="GRUPO, FAMILIA, SUBFAMILIA, PRODUCTO")
+    entidad_codigo: str = Field(..., description="Código de la entidad según el nivel")
+    margen_esperado: float = Field(..., ge=0, le=100, description="Margen esperado (%)")
+    costo_maximo: Optional[float] = Field(None, ge=0, le=100, description="Costo máximo (%)")
+    utilidad_minima: Optional[float] = Field(None, ge=-100, le=100, description="Utilidad mínima (%)")
+    severidad_base: str = Field('MEDIA', description="INFORMATIVA, MEDIA, ALTA, CRITICA")
+    descripcion: Optional[str] = Field(None, max_length=500)
+    empresa_id: Optional[int] = None
+    sucursal_id: Optional[int] = None
+    server_id: Optional[str] = None
+    fecha_inicio: Optional[datetime] = None
+    fecha_fin: Optional[datetime] = None
+
+
+class ReglaMargenUpdate(BaseModel):
+    """Modelo para actualizar una regla de margen."""
+    margen_esperado: Optional[float] = Field(None, ge=0, le=100)
+    costo_maximo: Optional[float] = Field(None, ge=0, le=100)
+    utilidad_minima: Optional[float] = Field(None, ge=-100, le=100)
+    severidad_base: Optional[str] = None
+    descripcion: Optional[str] = Field(None, max_length=500)
+    fecha_fin: Optional[datetime] = None
+
+
+class EvaluarMargenRequest(BaseModel):
+    """Modelo para evaluar margen de un producto."""
+    margen_actual: float = Field(..., description="Margen actual del producto (%)")
+    producto_clave: Optional[str] = None
+    subfamilia_codigo: Optional[str] = None
+    familia_codigo: Optional[str] = None
+    grupo_codigo: Optional[str] = None
+    precio_venta: Optional[float] = None
+    costo_receta: Optional[float] = None
+    empresa_id: Optional[int] = None
+    sucursal_id: Optional[int] = None
+    server_id: Optional[str] = None
+
+
+# =============================================================================
+# ENDPOINTS CRUD DE REGLAS
+# =============================================================================
+
+@router.get("/reglas")
+async def listar_reglas_endpoint(
+    nivel_aplicacion: Optional[str] = Query(None, description="GRUPO, FAMILIA, SUBFAMILIA, PRODUCTO"),
+    solo_activas: bool = Query(True, description="Solo reglas activas"),
+    empresa_id: Optional[int] = Query(None),
+    sucursal_id: Optional[int] = Query(None),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Lista reglas de margen esperado.
+    
+    Permite filtrar por nivel de aplicación, estado, empresa y sucursal.
+    """
+    try:
+        resultado = listar_reglas_margen(
+            nivel_aplicacion=nivel_aplicacion,
+            solo_activas=solo_activas,
+            empresa_id=empresa_id,
+            sucursal_id=sucursal_id,
+            page=page,
+            page_size=page_size
+        )
+        return resultado
+    except AlertasMargenError as e:
+        raise HTTPException(status_code=400, detail={'error': e.codigo, 'mensaje': e.mensaje})
+    except Exception as e:
+        logger.error(f"[ALERTAS_MARGEN] Error listando reglas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/reglas")
+async def crear_regla_endpoint(
+    regla: ReglaMargenCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Crea una nueva regla de margen esperado.
+    
+    Valida:
+    - Nivel de aplicación válido
+    - Porcentajes en rango
+    - No duplicados activos
+    - Vigencias coherentes
+    """
+    try:
+        resultado = crear_regla_margen(
+            nivel_aplicacion=regla.nivel_aplicacion,
+            entidad_codigo=regla.entidad_codigo,
+            margen_esperado=regla.margen_esperado,
+            costo_maximo=regla.costo_maximo,
+            utilidad_minima=regla.utilidad_minima,
+            severidad_base=regla.severidad_base,
+            descripcion=regla.descripcion,
+            empresa_id=regla.empresa_id,
+            sucursal_id=regla.sucursal_id,
+            server_id=regla.server_id,
+            fecha_inicio=regla.fecha_inicio,
+            fecha_fin=regla.fecha_fin,
+            creado_por=current_user.get('email', 'SISTEMA')
+        )
+        return resultado
+    except AlertasMargenError as e:
+        raise HTTPException(status_code=400, detail={'error': e.codigo, 'mensaje': e.mensaje})
+    except Exception as e:
+        logger.error(f"[ALERTAS_MARGEN] Error creando regla: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/reglas/{regla_id}")
+async def obtener_regla_endpoint(
+    regla_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Obtiene una regla por su ID."""
+    try:
+        return obtener_regla(regla_id)
+    except AlertasMargenError as e:
+        raise HTTPException(status_code=404, detail={'error': e.codigo, 'mensaje': e.mensaje})
+    except Exception as e:
+        logger.error(f"[ALERTAS_MARGEN] Error obteniendo regla: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/reglas/{regla_id}")
+async def actualizar_regla_endpoint(
+    regla_id: str,
+    regla: ReglaMargenUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Actualiza una regla de margen existente.
+    
+    Solo actualiza los campos proporcionados.
+    """
+    try:
+        resultado = actualizar_regla_margen(
+            regla_id=regla_id,
+            margen_esperado=regla.margen_esperado,
+            costo_maximo=regla.costo_maximo,
+            utilidad_minima=regla.utilidad_minima,
+            severidad_base=regla.severidad_base,
+            descripcion=regla.descripcion,
+            fecha_fin=regla.fecha_fin,
+            modificado_por=current_user.get('email', 'SISTEMA')
+        )
+        return resultado
+    except AlertasMargenError as e:
+        status = 404 if e.codigo == 'REGLA_NO_ENCONTRADA' else 400
+        raise HTTPException(status_code=status, detail={'error': e.codigo, 'mensaje': e.mensaje})
+    except Exception as e:
+        logger.error(f"[ALERTAS_MARGEN] Error actualizando regla: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/reglas/{regla_id}")
+async def desactivar_regla_endpoint(
+    regla_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Desactiva una regla de margen (no la elimina).
+    
+    La regla desactivada ya no participa en la resolución de jerarquía.
+    """
+    try:
+        return desactivar_regla_margen(regla_id, current_user.get('email', 'SISTEMA'))
+    except AlertasMargenError as e:
+        raise HTTPException(status_code=404, detail={'error': e.codigo, 'mensaje': e.mensaje})
+    except Exception as e:
+        logger.error(f"[ALERTAS_MARGEN] Error desactivando regla: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# =============================================================================
+# ENDPOINTS DE RESOLUCIÓN Y EVALUACIÓN
+# =============================================================================
+
+@router.get("/resolver-regla")
+async def resolver_regla_endpoint(
+    producto_clave: Optional[str] = Query(None, description="Clave del producto"),
+    subfamilia_codigo: Optional[str] = Query(None, description="Código de subfamilia"),
+    familia_codigo: Optional[str] = Query(None, description="Código de familia"),
+    grupo_codigo: Optional[str] = Query(None, description="Código de grupo"),
+    empresa_id: Optional[int] = Query(None),
+    sucursal_id: Optional[int] = Query(None),
+    server_id: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Resuelve la regla de margen aplicable usando la jerarquía:
+    Producto > Subfamilia > Familia > Grupo
+    
+    Este endpoint es útil para probar la resolución de reglas.
+    Devuelve la regla que se aplicaría y desde qué nivel.
+    
+    Ejemplos:
+    - Si hay regla para el producto específico, se usa esa
+    - Si no, busca en subfamilia
+    - Si no, busca en familia
+    - Si no, busca en grupo
+    - Si no hay ninguna, devuelve SIN_REGLA_MARGEN_ESPERADO
+    """
+    try:
+        return resolver_margen_esperado(
+            producto_clave=producto_clave,
+            subfamilia_codigo=subfamilia_codigo,
+            familia_codigo=familia_codigo,
+            grupo_codigo=grupo_codigo,
+            empresa_id=empresa_id,
+            sucursal_id=sucursal_id,
+            server_id=server_id
+        )
+    except Exception as e:
+        logger.error(f"[ALERTAS_MARGEN] Error resolviendo regla: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/evaluar")
+async def evaluar_margen_endpoint(
+    request: EvaluarMargenRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Evalúa el margen de un producto contra su margen esperado.
+    
+    Este endpoint es útil para probar la evaluación de alertas.
+    Determina si hay alerta, la severidad y la pérdida estimada.
+    
+    NOTA: Este es un endpoint de prueba. El motor de evaluación masiva
+    se implementará en COSTOS-ALERTAS-001-E.
+    """
+    try:
+        return evaluar_margen_producto(
+            margen_actual=request.margen_actual,
+            producto_clave=request.producto_clave,
+            subfamilia_codigo=request.subfamilia_codigo,
+            familia_codigo=request.familia_codigo,
+            grupo_codigo=request.grupo_codigo,
+            precio_venta=request.precio_venta,
+            costo_receta=request.costo_receta,
+            empresa_id=request.empresa_id,
+            sucursal_id=request.sucursal_id,
+            server_id=request.server_id
+        )
+    except Exception as e:
+        logger.error(f"[ALERTAS_MARGEN] Error evaluando margen: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# =============================================================================
+# ENDPOINTS DE UMBRALES Y ESTADÍSTICAS
+# =============================================================================
+
+@router.get("/umbrales")
+async def obtener_umbrales_endpoint(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Obtiene los umbrales de severidad configurados.
+    
+    Los umbrales determinan qué severidad se asigna a una alerta
+    basado en la diferencia de puntos porcentuales entre
+    el margen esperado y el margen actual.
+    """
+    try:
+        return {'umbrales': obtener_umbrales()}
+    except Exception as e:
+        logger.error(f"[ALERTAS_MARGEN] Error obteniendo umbrales: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/estadisticas")
+async def obtener_estadisticas_endpoint(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Obtiene estadísticas de las reglas configuradas.
+    
+    Incluye:
+    - Total de reglas
+    - Reglas activas
+    - Distribución por nivel (Grupo, Familia, Subfamilia, Producto)
+    - Margen promedio configurado
+    """
+    try:
+        return obtener_estadisticas()
+    except Exception as e:
+        logger.error(f"[ALERTAS_MARGEN] Error obteniendo estadísticas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

@@ -1,0 +1,17 @@
+modules/comercial/historical_kpis_repository.py:57:    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+modules/comercial/historical_kpis_repository.py:492:    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+modules/fase2_operativo/repositories/workflow_repository.py:20:# Constante para ordenamiento descendente (reemplaza pymongo.DESCENDING)
+modules/fase2_operativo/repositories/tarea_repository.py:20:# Constantes para ordenamiento (reemplazan pymongo.ASCENDING/DESCENDING)
+modules/finanzas/repository_cuadres_z.py:19:        pass  # P2-07: MongoDB eliminado (MongoClient)
+modules/manuales_operativos/triggers.py:169:        db_sync: Conexión pymongo (síncrona)
+core/auditoria.py:225:                pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+core/sql_first/no_mongo.py:5:Importar en lugar de pymongo para forzar migración a SQL.
+core/sql_first/no_mongo.py:19:# Stubs para reemplazar imports de pymongo
+core/sql_first/no_mongo.py:20:MongoClient = mongo_disabled
+core/sql_first/no_mongo.py:21:AsyncIOMotorClient = mongo_disabled
+core/config.py:11:    # print(settings.MONGO_URL)  # P2-07: MongoDB eliminado
+core/config.py:26:    MONGO_URL: str = ""  # P2-07: MongoDB eliminado
+core/centro_control/recipients_manager.py:28:MONGO_URL = None  # P2-07: MongoDB eliminado
+core/auth/user_repository_sql.py:354:    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+core/health_checker.py:151:            pass  # P2-07: MongoDB eliminado (MongoClient)
+core/health_checker.py:179:            pass  # P2-07: MongoDB eliminado (MongoClient)

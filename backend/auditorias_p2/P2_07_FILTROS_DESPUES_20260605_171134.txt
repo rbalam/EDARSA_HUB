@@ -1,0 +1,347 @@
+modules/comercial/inteligencia_comercial_routes.py:401:        unidad_negocio_id,
+modules/comercial/inteligencia_comercial_routes.py:413:    GROUP BY unidad_negocio_nombre, unidad_negocio_id, sistema_origen
+modules/comercial/historical_kpis_repository.py:202:    unidad_negocio_id = record.get('unidad_negocio_id', '')
+modules/comercial/historical_kpis_repository.py:258:                unidad_negocio_id = {_escape_sql_string(unidad_negocio_id)},
+modules/comercial/historical_kpis_repository.py:292:                empresa_id, unidad_negocio_id, system_type_normalized,
+modules/comercial/historical_kpis_repository.py:303:                {_escape_sql_string(unidad_negocio_id)},
+modules/comercial/historical_kpis_repository.py:529:                'unidad_negocio_id': doc.get('unidad_negocio_id'),
+modules/comercial/services/impuestos_service.py:133:          OR (TipoOverride = 'UNIDAD' AND UnidadNegocioID = '{UnidadNegocioID}' AND '{UnidadNegocioID}' IS NOT NULL)
+modules/comercial/services/listas_competidores_service.py:54:            UnidadNegocioID INT NULL,
+modules/comercial/services/listas_competidores_service.py:66:        CREATE INDEX IX_CompetidoresListas_Unidad ON Comercial_CompetidoresListas(UnidadNegocioID);
+modules/comercial/services/listas_competidores_service.py:138:        filtros.append(f"l.UnidadNegocioID = {unidad_negocio_pk}")
+modules/comercial/services/listas_competidores_service.py:152:        l.UnidadNegocioID,
+modules/comercial/services/listas_competidores_service.py:197:                'unidad_negocio_pk': row['UnidadNegocioID'],
+modules/comercial/services/listas_competidores_service.py:240:        UnidadNegocioID, Segmento, Categoria, ColorIdentificador,
+modules/comercial/services/listas_competidores_service.py:247:        {UnidadNegocioID if UnidadNegocioID else 'NULL'},
+modules/comercial/services/listas_competidores_service.py:358:        l.UnidadNegocioID,
+modules/comercial/services/listas_competidores_service.py:394:            'unidad_negocio_pk': row['UnidadNegocioID'],
+modules/comercial/services/competidores_service.py:58:        unidad_negocio_pk=row.get('UnidadNegocioID', 0),
+modules/comercial/services/competidores_service.py:141:        where_clauses.append(f"c.UnidadNegocioID = {unidad_negocio_pk}")
+modules/comercial/services/competidores_service.py:166:        c.UnidadNegocioID,
+modules/comercial/services/competidores_service.py:221:        c.UnidadNegocioID,
+modules/comercial/services/competidores_service.py:295:        UnidadNegocioID,
+modules/comercial/services/competidores_service.py:321:        {data.UnidadNegocioID},
+modules/comercial/services/competidores_service.py:723:    WHERE UnidadNegocioID = {UnidadNegocioID}
+modules/comercial/services/competidores_service.py:757:    WHERE c.UnidadNegocioID = {unidad_negocio_pk}
+modules/comercial/services/competidores_enterprise_service.py:15:- TODAS las consultas DEBEN filtrar por UnidadNegocioID
+modules/comercial/services/competidores_enterprise_service.py:244:      AND UnidadNegocioID = {UnidadNegocioID}
+modules/comercial/services/competidores_enterprise_service.py:267:        UnidadNegocioID,
+modules/comercial/services/competidores_enterprise_service.py:281:        {UnidadNegocioID},
+modules/comercial/services/competidores_enterprise_service.py:324:      AND UnidadNegocioID = {UnidadNegocioID}
+modules/comercial/services/competidores_enterprise_service.py:359:    where_clauses = [f"UnidadNegocioID = {unidad_negocio_pk}"]
+modules/comercial/services/competidores_enterprise_service.py:384:        UnidadNegocioID,
+modules/comercial/services/competidores_enterprise_service.py:421:            "unidad_negocio_pk": row.get('UnidadNegocioID'),
+modules/comercial/services/competidores_enterprise_service.py:467:        UnidadNegocioID,
+modules/comercial/services/competidores_enterprise_service.py:492:      AND UnidadNegocioID = {unidad_negocio_pk}
+modules/comercial/services/competidores_enterprise_service.py:505:        "unidad_negocio_pk": row.get('UnidadNegocioID'),
+modules/comercial/services/competidores_enterprise_service.py:529:        cu.UnidadNegocioID,
+modules/comercial/services/competidores_enterprise_service.py:549:            "unidad_negocio_pk": row.get('UnidadNegocioID'),
+modules/comercial/services/competidores_enterprise_service.py:578:    WHERE UnidadNegocioID = {unidad_negocio_pk}
+modules/comercial/services/competidores_enterprise_service.py:632:        query = "SELECT DISTINCT UnidadNegocioID FROM Comercial_CompetidoresUnidad WHERE Activo = 1"
+modules/comercial/services/competidores_enterprise_service.py:635:        query = "SELECT DISTINCT UnidadNegocioID FROM Comercial_CompetidoresUnidad WHERE Activo = 1"
+modules/comercial/services/competidores_enterprise_service.py:638:    return [row['UnidadNegocioID'] for row in result]
+modules/comercial/services/benchmark_service.py:58:        unidad_negocio_pk=row.get('UnidadNegocioID', 0),
+modules/comercial/services/benchmark_service.py:105:        where_clauses.append(f"b.UnidadNegocioID = {unidad_negocio_pk}")
+modules/comercial/services/benchmark_service.py:132:        b.UnidadNegocioID,
+modules/comercial/services/benchmark_service.py:177:        b.UnidadNegocioID,
+modules/comercial/services/benchmark_service.py:224:        b.UnidadNegocioID,
+modules/comercial/services/benchmark_service.py:277:        UnidadNegocioID,
+modules/comercial/services/benchmark_service.py:293:        {data.UnidadNegocioID},
+modules/comercial/services/benchmark_service.py:428:    WHERE b.UnidadNegocioID = {UnidadNegocioID}
+modules/comercial/services/benchmark_service.py:521:    WHERE UnidadNegocioID = {UnidadNegocioID}
+modules/comercial/services/benchmark_service.py:569:    WHERE c.UnidadNegocioID = {unidad_negocio_pk}
+modules/comercial/services/pricing_ai_service.py:128:            UnidadNegocioID INT NOT NULL,
+modules/comercial/services/pricing_ai_service.py:428:        UnidadNegocioID,
+modules/comercial/services/pricing_ai_service.py:455:        {UnidadNegocioID},
+modules/comercial/services/pricing_ai_service.py:503:        UnidadNegocioID,
+modules/comercial/services/pricing_ai_service.py:570:        'unidad_negocio_pk': row.get('UnidadNegocioID'),
+modules/comercial/services/perfil_unidad_service.py:50:        unidad_negocio_pk=row.get('UnidadNegocioID', 0),
+modules/comercial/services/perfil_unidad_service.py:105:        where_clauses.append(f"UnidadNegocioID = {unidad_negocio_pk}")
+modules/comercial/services/perfil_unidad_service.py:126:        UnidadNegocioID,
+modules/comercial/services/perfil_unidad_service.py:178:        UnidadNegocioID,
+modules/comercial/services/perfil_unidad_service.py:208:    WHERE UnidadNegocioID = {UnidadNegocioID}
+modules/comercial/services/perfil_unidad_service.py:230:        UnidadNegocioID,
+modules/comercial/services/perfil_unidad_service.py:284:    WHERE UnidadNegocioID = {data.UnidadNegocioID}
+modules/comercial/services/perfil_unidad_service.py:327:        UnidadNegocioID,
+modules/comercial/services/perfil_unidad_service.py:357:        {data.UnidadNegocioID},
+modules/comercial/services/metricas_ia_service.py:64:    filtro_unidad = f"AND UnidadNegocioID = {unidad_negocio_pk}" if unidad_negocio_pk else ""
+modules/comercial/services/metricas_ia_service.py:302:    filtro_unidad = f"AND UnidadNegocioID = {unidad_negocio_pk}" if unidad_negocio_pk else ""
+modules/comercial/services/metricas_ia_service.py:343:        {filtros.replace('EmpresaID', 'cc.EmpresaID').replace('UnidadNegocioID', 'cc.UnidadNegocioID')}
+modules/corporate_filters/router.py:127:    unidad_candidates = unidad_candidates or ["id_unidad_negocio", "UnidadNegocioID", "unidad_negocio_pk"]
+modules/corporate_filters/router.py:196:        id_candidates=["id", "UnidadNegocioID", "id_unidad_negocio"],
+modules/corporate_filters/router.py:197:        name_candidates=["nombre", "NombreUnidad", "NombreUnidadNegocio", "descripcion"],
+modules/corporate_filters/router.py:198:        code_candidates=["codigo", "CodigoUnidad", "CodigoUnidadNegocio"],
+modules/costos_margenes/repository.py:138:        where_clauses.append(f"p.UnidadNegocioID = {unidad_negocio_pk}")
+modules/costos_margenes/repository.py:205:        p.UnidadNegocioID as unidad_negocio_pk,
+modules/configuracion/repositories/config_asignaciones_repository.py:119:            where_clauses.append("UnidadNegocioID = %s")
+modules/configuracion/repositories/config_asignaciones_repository.py:136:                UnidadNegocioID as UnidadNegocioID,
+modules/configuracion/repositories/config_asignaciones_repository.py:137:                UnidadNegocioNombre as unidad_negocio_nombre,
+modules/configuracion/repositories/config_asignaciones_repository.py:151:            ORDER BY UnidadNegocioNombre, Prioridad DESC
+modules/configuracion/repositories/config_asignaciones_repository.py:169:                UnidadNegocioID as UnidadNegocioID,
+modules/configuracion/repositories/config_asignaciones_repository.py:170:                UnidadNegocioNombre as unidad_negocio_nombre,
+modules/configuracion/repositories/config_asignaciones_repository.py:200:            WHERE UnidadNegocioID = %s AND AlmacenID = %s
+modules/configuracion/repositories/config_asignaciones_repository.py:239:                ConfigID, UnidadNegocioID, UnidadNegocioNombre,
+modules/configuracion/repositories/config_asignaciones_repository.py:283:            updates.append("UnidadNegocioID = %s")
+modules/configuracion/services/almacenes_sync_service.py:10:1. El endpoint solo pasa unidad_negocio_id y usuario_sync
+modules/configuracion/services/almacenes_sync_service.py:42:    unidad_negocio_id: str
+modules/configuracion/services/almacenes_sync_service.py:69:            "unidad_negocio_id": self.unidad_negocio_id,
+modules/configuracion/services/almacenes_sync_service.py:85:    unidad_negocio_id: str,
+modules/configuracion/services/almacenes_sync_service.py:100:        unidad_negocio_id: ID de la unidad de negocio a sincronizar
+modules/configuracion/services/almacenes_sync_service.py:108:        unidad_negocio_id=unidad_negocio_id
+modules/configuracion/services/almacenes_sync_service.py:116:            context = await resolve_unidad_context(user, unidad_negocio_id)
+modules/configuracion/services/almacenes_sync_service.py:121:            logger.warning(f"[Sync Almacenes] Error resolviendo contexto {unidad_negocio_id}: {e}")
+modules/configuracion/services/almacenes_sync_service.py:168:        logger.info(f"[Sync Almacenes] Ejecutando query {system_type} para {unidad_negocio_id}")
+modules/configuracion/services/almacenes_sync_service.py:194:            logger.error(f"[Sync Almacenes] Error SQL {unidad_negocio_id}: {e}")
+modules/configuracion/services/almacenes_sync_service.py:222:                "unidad_negocio_id": unidad_negocio_id,
+modules/configuracion/services/almacenes_sync_service.py:230:                        {"unidad_negocio_id": unidad_negocio_id, "id": alm_id},
+modules/configuracion/services/almacenes_sync_service.py:243:                    "unidad_negocio_id": unidad_negocio_id,
+modules/configuracion/services/almacenes_sync_service.py:260:                    "unidad_negocio_id": unidad_negocio_id,
+modules/configuracion/services/almacenes_sync_service.py:289:        logger.exception(f"[Sync Almacenes] Error inesperado sincronizando {unidad_negocio_id}")
+modules/inteligencia_comercial/routes.py:651:            where_parts.append(f"UnidadNegocio = '{unidad_db}'")
+modules/sync_historicos/service.py:391:                        unidad_negocio_id=server.get('unidad_negocio_id'),
+modules/sync_historicos/service.py:738:                            unidad_negocio_id=server.get('unidad_negocio_id'),
+modules/sync_historicos/service.py:975:                        unidad_negocio_id=server.get('unidad_negocio_id'),
+modules/sync_historicos/repository.py:100:                UnidadNegocioID NVARCHAR(50) NULL,
+modules/sync_historicos/repository.py:172:                UnidadNegocioID NVARCHAR(50) NULL,
+modules/sync_historicos/repository.py:234:                UnidadNegocioID NVARCHAR(50) NULL,
+modules/sync_historicos/repository.py:389:                UnidadNegocioID = {f"'{venta.unidad_negocio_id}'" if venta.unidad_negocio_id else 'NULL'},
+modules/sync_historicos/repository.py:410:                ServerID, EmpresaID, SucursalID, UnidadNegocioID, SystemType,
+modules/sync_historicos/repository.py:420:                {f"'{venta.unidad_negocio_id}'" if venta.unidad_negocio_id else 'NULL'},
+modules/sync_historicos/repository.py:548:                UnidadNegocioID = {f"'{venta.unidad_negocio_id}'" if venta.unidad_negocio_id else 'NULL'},
+modules/sync_historicos/repository.py:565:                ServerID, EmpresaID, SucursalID, UnidadNegocioID, SystemType,
+modules/sync_historicos/repository.py:575:                {f"'{venta.unidad_negocio_id}'" if venta.unidad_negocio_id else 'NULL'},
+modules/sync_historicos/repository.py:640:                UnidadNegocioID = {f"'{venta.unidad_negocio_id}'" if venta.unidad_negocio_id else 'NULL'},
+modules/sync_historicos/repository.py:657:                ServerID, EmpresaID, SucursalID, UnidadNegocioID, SystemType,
+modules/sync_historicos/repository.py:666:                {f"'{venta.unidad_negocio_id}'" if venta.unidad_negocio_id else 'NULL'},
+modules/sync_historicos/models.py:57:    unidad_negocio_id: Optional[str]
+modules/sync_historicos/models.py:116:    unidad_negocio_id: Optional[str]
+modules/sync_historicos/models.py:170:    unidad_negocio_id: Optional[str]
+modules/comercial_v2/sync_comercial_edarsahub.py:35:    UnidadNegocioConfig,
+modules/comercial_v2/sync_comercial_edarsahub.py:270:    config: UnidadNegocioConfig,
+modules/comercial_v2/sync_comercial_edarsahub.py:282:        unidad_negocio_id=config.unidad_negocio_id
+modules/comercial_v2/sync_comercial_edarsahub.py:305:                unidad_negocio_id=config.unidad_negocio_id,
+modules/comercial_v2/sync_comercial_edarsahub.py:351:            unidad_negocio_id=config.unidad_negocio_id,
+modules/comercial_v2/sync_comercial_edarsahub.py:375:    config: UnidadNegocioConfig,
+modules/comercial_v2/sync_comercial_edarsahub.py:389:        unidad_negocio_id=config.unidad_negocio_id
+modules/comercial_v2/sync_comercial_edarsahub.py:413:                unidad_negocio_id=config.unidad_negocio_id,
+modules/comercial_v2/sync_comercial_edarsahub.py:427:        config_with_sucursal = UnidadNegocioConfig(
+modules/comercial_v2/sync_comercial_edarsahub.py:428:            unidad_negocio_id=config.unidad_negocio_id,
+modules/comercial_v2/sync_comercial_edarsahub.py:471:            unidad_negocio_id=config.unidad_negocio_id,
+modules/comercial_v2/sync_comercial_edarsahub.py:500:    unidad_config: UnidadNegocioConfig,
+modules/comercial_v2/sync_comercial_edarsahub.py:526:            unidad_negocio_id=unidad_config.unidad_negocio_id,
+modules/comercial_v2/sync_comercial_edarsahub.py:549:                suc_config = UnidadNegocioConfig(
+modules/comercial_v2/sync_comercial_edarsahub.py:550:                    unidad_negocio_id=suc['unidad_id'],
+modules/comercial_v2/sync_comercial_edarsahub.py:586:    config = UnidadNegocioConfig(
+modules/comercial_v2/sync_comercial_edarsahub.py:587:        unidad_negocio_id='ESTELAR',  # FASE P0: Código canónico oficial
+modules/comercial_v2/sync_comercial_edarsahub.py:614:    config = UnidadNegocioConfig(
+modules/comercial_v2/sync_comercial_edarsahub.py:615:        unidad_negocio_id='130QRO',  # FASE P0: Código canónico oficial
+modules/comercial_v2/carga_historica_abril_2026.py:54:    UnidadNegocioConfig,
+modules/comercial_v2/carga_historica_abril_2026.py:88:        'unidad_negocio_id': 'CIENFUEGOS',
+modules/comercial_v2/carga_historica_abril_2026.py:95:        'unidad_negocio_id': 'LA-ESTELAR',
+modules/comercial_v2/carga_historica_abril_2026.py:102:        'unidad_negocio_id': '130-MER',
+modules/comercial_v2/carga_historica_abril_2026.py:109:        'unidad_negocio_id': '130-QRO',
+modules/comercial_v2/carga_historica_abril_2026.py:116:        'unidad_negocio_id': 'ORIGEN',
+modules/comercial_v2/carga_historica_abril_2026.py:132:    unidad_negocio_id: str
+modules/comercial_v2/carga_historica_abril_2026.py:292:        unidad_negocio_id=unidad['unidad_negocio_id'],
+modules/comercial_v2/carga_historica_abril_2026.py:372:                unidad_negocio_id=unidad['unidad_negocio_id'],
+modules/comercial_v2/carga_historica_abril_2026.py:431:        unidad_negocio_id=unidad['unidad_negocio_id'],
+modules/comercial_v2/carga_historica_abril_2026.py:460:        unidad_negocio_id=unidad['unidad_negocio_id'],
+modules/comercial_v2/carga_historica_abril_2026.py:541:                unidad_negocio_id=unidad['unidad_negocio_id'],
+modules/comercial_v2/carga_historica_abril_2026.py:600:        unidad_negocio_id=unidad['unidad_negocio_id'],
+modules/comercial_v2/carga_historica_abril_2026.py:627:    unidad_id = reporte.unidad_negocio_id
+modules/comercial_v2/carga_historica_abril_2026.py:640:    WHERE unidad_negocio_id = '{unidad_id}'
+modules/comercial_v2/carga_historica_abril_2026.py:715:    WHERE unidad_negocio_id = '{unidad_id}'
+modules/comercial_v2/carga_historica_abril_2026.py:770:        print(f"\n[{unidad['unidad_negocio_id']}] Procesando {unidad['unidad_negocio_nombre']}...")
+modules/comercial_v2/carga_historica_abril_2026.py:783:        datos_edarsahub = verificar_datos_edarsahub_v2(unidad['unidad_negocio_id'])
+modules/comercial_v2/carga_historica_abril_2026.py:841:        unidad_negocio_id,
+modules/comercial_v2/carga_historica_abril_2026.py:847:    GROUP BY unidad_negocio_id, sucursal_id, fecha_operacion
+modules/comercial_v2/repository_comercial_edarsahub.py:33:    UnidadNegocioConfig,
+modules/comercial_v2/repository_comercial_edarsahub.py:74:def get_unidades_negocio_config() -> List[UnidadNegocioConfig]:
+modules/comercial_v2/repository_comercial_edarsahub.py:79:    Retorna lista de UnidadNegocioConfig con las 5 unidades activas.
+modules/comercial_v2/repository_comercial_edarsahub.py:116:        configs.append(UnidadNegocioConfig(
+modules/comercial_v2/mappers.py:26:    UnidadNegocioConfig
+modules/comercial_v2/mappers.py:73:    config: UnidadNegocioConfig,
+modules/comercial_v2/mappers.py:150:    config: UnidadNegocioConfig,
+modules/comercial_v2/mappers.py:205:    config: UnidadNegocioConfig,
+modules/comercial_v2/mappers.py:281:    config: UnidadNegocioConfig,
+modules/comercial_v2/carga_historica_24_meses.py:101:        'unidad_negocio_id': 'CIENFUEGOS',
+modules/comercial_v2/carga_historica_24_meses.py:109:        'unidad_negocio_id': 'LA-ESTELAR',
+modules/comercial_v2/carga_historica_24_meses.py:117:        'unidad_negocio_id': '130-MER',
+modules/comercial_v2/carga_historica_24_meses.py:125:        'unidad_negocio_id': '130-QRO',
+modules/comercial_v2/carga_historica_24_meses.py:133:        'unidad_negocio_id': 'ORIGEN',
+modules/comercial_v2/carga_historica_24_meses.py:150:    unidad_negocio_id: str
+modules/comercial_v2/carga_historica_24_meses.py:300:        unidad_negocio_id=unidad['unidad_negocio_id'],
+modules/comercial_v2/carga_historica_24_meses.py:390:                unidad_negocio_id=unidad['unidad_negocio_id'],
+modules/comercial_v2/carga_historica_24_meses.py:450:        unidad_negocio_id=unidad['unidad_negocio_id'],
+modules/comercial_v2/carga_historica_24_meses.py:538:                unidad_negocio_id=unidad['unidad_negocio_id'],
+modules/comercial_v2/carga_historica_24_meses.py:619:        print(f"\n[{unidad['unidad_negocio_id']}] Procesando {unidad['unidad_negocio_nombre']}...")
+modules/comercial_v2/carga_historica_24_meses.py:660:        unidad_negocio_id="TODAS",
+modules/comercial_v2/carga_historica_24_meses.py:698:        unidad_negocio_id,
+modules/comercial_v2/carga_historica_24_meses.py:706:    GROUP BY unidad_negocio_id
+modules/comercial_v2/carga_historica_24_meses.py:707:    ORDER BY unidad_negocio_id
+modules/comercial_v2/carga_historica_24_meses.py:733:        COUNT(DISTINCT unidad_negocio_id) as unidades
+modules/comercial_v2/carga_historica_24_meses.py:768:        unidad_negocio_id,
+modules/comercial_v2/carga_historica_24_meses.py:773:    GROUP BY unidad_negocio_id, sucursal_id, fecha_operacion
+modules/comercial_v2/carga_historica_24_meses.py:820:        print(f"  {u['unidad_negocio_id']}: {u['registros']} registros, ${float(u['ventas']):,.2f}")
+modules/comercial_v2/schemas.py:218:class UnidadNegocioConfig(BaseModel):
+modules/tablajeria/ordenes_service.py:140:                    OrdenID, EmpresaID, UnidadNegocioID, SucursalID,
+modules/tablajeria/ordenes_service.py:319:                    OrdenID, EmpresaID, UnidadNegocioID, SucursalID,
+modules/tablajeria/ordenes_service.py:427:            for field in ['OrdenID', 'EmpresaID', 'UnidadNegocioID', 'PlantillaID',
+modules/tablajeria/ordenes_service.py:859:                        RendimientoID, OrdenID, EmpresaID, UnidadNegocioID,
+modules/tablajeria/ordenes_service.py:866:                        NEWID(), OrdenID, EmpresaID, UnidadNegocioID,
+modules/tablajeria/ordenes_service.py:886:                        MermaID, OrdenID, EmpresaID, UnidadNegocioID,
+modules/tablajeria/ordenes_service.py:897:                    str(orden['UnidadNegocioID']) if orden['UnidadNegocioID'] else None,
+modules/tablajeria/routes.py:82:                PlantillaID, EmpresaID, UnidadNegocioID,
+modules/tablajeria/routes.py:118:            for field in ['PlantillaID', 'EmpresaID', 'UnidadNegocioID']:
+modules/tablajeria/routes.py:165:        for field in ['PlantillaID', 'EmpresaID', 'UnidadNegocioID', 'PlantillaPadreID',
+modules/finanzas/repository_cuadres_z_edarsahub.py:202:                    UnidadNegocioID, UnidadNegocioNombre, EmpresaID,
+modules/finanzas/repository_cuadres_z_edarsahub.py:575:                where_clauses.append(f'cz.UnidadNegocioID IN ({placeholders})')
+modules/finanzas/repository_cuadres_z_edarsahub.py:578:                where_clauses.append('cz.UnidadNegocioID = %s')
+modules/finanzas/repository_cuadres_z_edarsahub.py:669:                where_clauses.append(f'cz.UnidadNegocioID IN ({placeholders})')
+modules/finanzas/repository_cuadres_z_edarsahub.py:672:                where_clauses.append('cz.UnidadNegocioID = %s')
+modules/finanzas/repository_cuadres_z_edarsahub.py:741:            'unidad_negocio_pk': row['UnidadNegocioID'],
+modules/finanzas/repository_cuadres_z_edarsahub.py:742:            'unidad_negocio_nombre': row['UnidadNegocioNombre'],
+modules/finanzas/repository_cuadres_z_edarsahub.py:853:                    JobName, TipoOperacion, UnidadNegocioID, UnidadNegocioNombre,
+modules/finanzas/repository_cuadres_z_edarsahub.py:904:        Resuelve server_id (UUID) a UnidadNegocioID usando EDARSAHUB SQL.
+modules/finanzas/repository_cuadres_z_edarsahub.py:923:            # Primero buscar si el server_id coincide directamente con UnidadNegocioID
+modules/finanzas/repository_cuadres_z_edarsahub.py:927:                    cz.UnidadNegocioID,
+modules/finanzas/repository_cuadres_z_edarsahub.py:928:                    cz.UnidadNegocioNombre,
+modules/finanzas/repository_cuadres_z_edarsahub.py:938:                    'unidad_negocio_pk': row['UnidadNegocioID'],
+modules/finanzas/repository_cuadres_z_edarsahub.py:939:                    'nombre': row['UnidadNegocioNombre'],
+modules/finanzas/sync_propinas_mpro.py:114:                u.id as unidad_negocio_id,
+modules/finanzas/sync_propinas_mpro.py:151:            'unidad_negocio_id': str(unidad['unidad_negocio_id']),
+modules/finanzas/sync_propinas_mpro.py:303:                'UnidadNegocioID': conn_info['unidad_negocio_id'],
+modules/finanzas/sync_propinas_mpro.py:304:                'UnidadNegocioNombre': conn_info['unidad_nombre'],
+modules/finanzas/sync_propinas_mpro.py:420:                            UnidadNegocioID, UnidadNegocioNombre, SistemaOrigen,
+modules/finanzas/sync_propinas_mpro.py:451:                        registro['UnidadNegocioID'],
+modules/finanzas/sync_propinas_mpro.py:452:                        registro['UnidadNegocioNombre'],
+modules/finanzas/sync_propinas_mpro.py:502:                FechaInicio, FechaFin, UnidadNegocioID, UnidadNegocioNombre,
+modules/finanzas/sync_propinas_mpro.py:513:            conn_info['unidad_negocio_id'],
+modules/finanzas/sync_propinas_mpro.py:592:        'unidad_negocio_id': conn_info['unidad_negocio_id'],
+modules/finanzas/sync_cortes_softrestaurant.py:108:                u.id as unidad_negocio_id,
+modules/finanzas/sync_cortes_softrestaurant.py:152:            'unidad_negocio_id': str(unidad['unidad_negocio_id']),
+modules/finanzas/sync_cortes_softrestaurant.py:340:                'UnidadNegocioID': conn_info['unidad_negocio_id'],
+modules/finanzas/sync_cortes_softrestaurant.py:341:                'UnidadNegocioNombre': conn_info['unidad_nombre'],
+modules/finanzas/sync_cortes_softrestaurant.py:479:                            UnidadNegocioID, UnidadNegocioNombre, EmpresaID, ServerID,
+modules/finanzas/sync_cortes_softrestaurant.py:504:                        reg['UnidadNegocioID'], reg['UnidadNegocioNombre'], reg['EmpresaID'], reg['ServerID'],
+modules/finanzas/sync_cortes_softrestaurant.py:554:                UnidadNegocioID, ServerID, SistemaOrigen,
+modules/finanzas/sync_cortes_softrestaurant.py:645:        resultado['unidad_negocio_id'] = conn_info['unidad_negocio_id']
+modules/finanzas/sync_cortes_softrestaurant.py:665:            unidad_id=conn_info['unidad_negocio_id'],
+modules/finanzas/sync_cortes_softrestaurant.py:686:                    unidad_id=resultado.get('unidad_negocio_id', ''),
+modules/finanzas/sync_propinas_softrestaurant.py:121:                u.id as unidad_negocio_id,
+modules/finanzas/sync_propinas_softrestaurant.py:161:            'unidad_negocio_id': str(unidad['unidad_negocio_id']),
+modules/finanzas/sync_propinas_softrestaurant.py:355:                'UnidadNegocioID': conn_info['unidad_negocio_id'],
+modules/finanzas/sync_propinas_softrestaurant.py:356:                'UnidadNegocioNombre': conn_info['unidad_nombre'],
+modules/finanzas/sync_propinas_softrestaurant.py:477:                            UnidadNegocioID, UnidadNegocioNombre, SistemaOrigen,
+modules/finanzas/sync_propinas_softrestaurant.py:508:                        registro['UnidadNegocioID'],
+modules/finanzas/sync_propinas_softrestaurant.py:509:                        registro['UnidadNegocioNombre'],
+modules/finanzas/sync_propinas_softrestaurant.py:559:                FechaInicio, FechaFin, UnidadNegocioID, UnidadNegocioNombre,
+modules/finanzas/sync_propinas_softrestaurant.py:571:            conn_info['unidad_negocio_id'],
+modules/finanzas/sync_propinas_softrestaurant.py:654:        'unidad_negocio_id': conn_info['unidad_negocio_id'],
+modules/finanzas/repository_ingresos_edarsahub.py:179:                where_clauses.append("UnidadNegocioID = %s")
+modules/finanzas/repository_ingresos_edarsahub.py:185:                where_clauses.append(f"UnidadNegocioID IN ({placeholders})")
+modules/finanzas/repository_ingresos_edarsahub.py:237:                    UnidadNegocioID,
+modules/finanzas/repository_ingresos_edarsahub.py:238:                    UnidadNegocioNombre,
+modules/finanzas/repository_ingresos_edarsahub.py:326:            "sucursal_nombre": row.get('UnidadNegocioNombre') or f"Unidad {row.get('UnidadNegocioID', '')[:8]}",
+modules/finanzas/repository_ingresos_edarsahub.py:327:            "unidad_negocio_pk": str(row.get('UnidadNegocioID') or ''),
+modules/finanzas/repository_ingresos_edarsahub.py:328:            "unidad_nombre": row.get('UnidadNegocioNombre'),
+modules/finanzas/repository_ingresos_edarsahub.py:441:                where_clauses.append(f"UnidadNegocioID IN ({placeholders})")
+modules/finanzas/repository_ingresos_edarsahub.py:448:                    UnidadNegocioID,
+modules/finanzas/repository_ingresos_edarsahub.py:449:                    UnidadNegocioNombre,
+modules/finanzas/repository_ingresos_edarsahub.py:464:                GROUP BY UnidadNegocioID, UnidadNegocioNombre, SistemaOrigen
+modules/finanzas/repository_ingresos_edarsahub.py:465:                ORDER BY UnidadNegocioNombre
+modules/finanzas/repository_ingresos_edarsahub.py:488:                    'unidad_negocio_pk': str(row['UnidadNegocioID']),
+modules/finanzas/repository_ingresos_edarsahub.py:489:                    'unidad_nombre': row['UnidadNegocioNombre'],
+modules/finanzas/repository_ingresos_edarsahub.py:526:                where_clauses.append("UnidadNegocioID = %s")
+modules/finanzas/repository_ingresos_edarsahub.py:531:                where_clauses.append(f"UnidadNegocioID IN ({placeholders})")
+modules/finanzas/ingresos.py:14:- Respeta RBAC por UnidadNegocioID
+modules/finanzas/ingresos.py:65:    RBAC: Obtiene los UUIDs de UnidadNegocioID permitidas para el usuario.
+modules/finanzas/ingresos.py:339:    - Respeta RBAC por UnidadNegocioID
+modules/finanzas/propinas_tpv/repository_edarsahub.py:120:            unidad_negocio_pk: Filtrar por UnidadNegocioID
+modules/finanzas/propinas_tpv/repository_edarsahub.py:151:                    where_clauses.append("UnidadNegocioID = %s")
+modules/finanzas/propinas_tpv/repository_edarsahub.py:154:                    where_clauses.append("(UPPER(UnidadNegocioNombre) = UPPER(%s) OR UPPER(sucursal_nombre) = UPPER(%s))")
+modules/finanzas/propinas_tpv/repository_edarsahub.py:169:                where_clauses.append(f"UnidadNegocioID IN ({placeholders})")
+modules/finanzas/propinas_tpv/repository_edarsahub.py:194:                    UnidadNegocioID, UnidadNegocioNombre, SistemaOrigen,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:266:            unidad_negocio_pk: Filtrar por UnidadNegocioID
+modules/finanzas/propinas_tpv/repository_edarsahub.py:292:                    where_clauses.append("UnidadNegocioID = %s")
+modules/finanzas/propinas_tpv/repository_edarsahub.py:295:                    where_clauses.append("(UPPER(UnidadNegocioNombre) = UPPER(%s) OR UPPER(sucursal_nombre) = UPPER(%s))")
+modules/finanzas/propinas_tpv/repository_edarsahub.py:306:                where_clauses.append(f"UnidadNegocioID IN ({placeholders})")
+modules/finanzas/propinas_tpv/repository_edarsahub.py:318:                    COUNT(DISTINCT UnidadNegocioID) as unidades_incluidas,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:330:                    UnidadNegocioID,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:331:                    UnidadNegocioNombre,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:341:                GROUP BY UnidadNegocioID, UnidadNegocioNombre, SistemaOrigen
+modules/finanzas/propinas_tpv/repository_edarsahub.py:342:                ORDER BY UnidadNegocioNombre
+modules/finanzas/propinas_tpv/repository_edarsahub.py:350:                    'unidad_negocio_pk': str(row['UnidadNegocioID']) if row['UnidadNegocioID'] else None,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:351:                    'unidad_negocio_nombre': row['UnidadNegocioNombre'],
+modules/finanzas/propinas_tpv/repository_edarsahub.py:364:                    LogID, FechaInicio, UnidadNegocioNombre, SistemaOrigen,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:389:                    'ultima_unidad': last_sync['UnidadNegocioNombre'] if last_sync else None,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:443:                    where_clauses.append("UnidadNegocioID = %s")
+modules/finanzas/propinas_tpv/repository_edarsahub.py:446:                    where_clauses.append("(UPPER(UnidadNegocioNombre) = UPPER(%s) OR UPPER(sucursal_nombre) = UPPER(%s))")
+modules/finanzas/propinas_tpv/repository_edarsahub.py:461:                where_clauses.append(f"UnidadNegocioID IN ({placeholders})")
+modules/finanzas/propinas_tpv/repository_edarsahub.py:489:                    UnidadNegocioID,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:490:                    UnidadNegocioNombre,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:516:                    'unidad_negocio_pk': str(row['UnidadNegocioID']) if row['UnidadNegocioID'] else None,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:517:                    'unidad_negocio_nombre': row['UnidadNegocioNombre'],
+modules/finanzas/propinas_tpv/repository_edarsahub.py:575:                    UnidadNegocioID, UnidadNegocioNombre, SistemaOrigen,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:640:                    UnidadNegocioID,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:641:                    UnidadNegocioNombre,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:647:                  AND UnidadNegocioID IS NOT NULL
+modules/finanzas/propinas_tpv/repository_edarsahub.py:648:                GROUP BY UnidadNegocioID, UnidadNegocioNombre, SistemaOrigen
+modules/finanzas/propinas_tpv/repository_edarsahub.py:649:                ORDER BY UnidadNegocioNombre
+modules/finanzas/propinas_tpv/repository_edarsahub.py:654:                    'unidad_negocio_pk': str(row['UnidadNegocioID']),
+modules/finanzas/propinas_tpv/repository_edarsahub.py:655:                    'unidad_negocio_nombre': row['UnidadNegocioNombre'],
+modules/finanzas/propinas_tpv/repository_edarsahub.py:680:                    LogID, FechaInicio, FechaFin, UnidadNegocioNombre, SistemaOrigen,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:693:                        UnidadNegocioNombre,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:697:                    GROUP BY UnidadNegocioNombre, SistemaOrigen
+modules/finanzas/propinas_tpv/repository_edarsahub.py:700:                    l.LogID, l.FechaInicio, l.UnidadNegocioNombre, l.SistemaOrigen,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:705:                ORDER BY l.UnidadNegocioNombre
+modules/finanzas/propinas_tpv/repository_edarsahub.py:713:                    COUNT(DISTINCT UnidadNegocioID) as total_unidades,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:723:                    'unidad': ultima_global['UnidadNegocioNombre'] if ultima_global else None,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:731:                        'unidad': row['UnidadNegocioNombre'],
+modules/finanzas/propinas_tpv/repository_edarsahub.py:798:            'unidad_negocio_pk': str(row['UnidadNegocioID']) if row['UnidadNegocioID'] else None,
+modules/finanzas/propinas_tpv/repository_edarsahub.py:799:            'unidad_negocio_nombre': row['UnidadNegocioNombre'],
+modules/finanzas/propinas_tpv/routes_edarsahub.py:62:        Lista de UnidadNegocioID si tiene restricciones
+modules/finanzas/propinas_tpv/routes_edarsahub.py:76:    # Mapear empresas a UnidadNegocioID
+modules/finanzas/propinas_tpv/routes_edarsahub.py:135:    unidad_negocio_pk: Optional[str] = Query(None, description="Filtrar por UnidadNegocioID (o 'TODAS')"),
+modules/finanzas/propinas_tpv/routes_edarsahub.py:182:    unidad_negocio_pk: Optional[str] = Query(None, description="Filtrar por UnidadNegocioID"),
+modules/finanzas/propinas_tpv/routes_edarsahub.py:230:    unidad_negocio_pk: Optional[str] = Query(None, description="Filtrar por UnidadNegocioID"),
+modules/finanzas/test_conn_cienfuegos.py:982:            WHERE UnidadNegocioID = %s
+modules/finanzas/test_conn_cienfuegos.py:998:            WHERE UnidadNegocioID = %s
+modules/finanzas/test_conn_cienfuegos.py:1009:            WHERE UnidadNegocioID = %s
+modules/finanzas/sync_cortes_mpro.py:90:                u.id as unidad_negocio_id,
+modules/finanzas/sync_cortes_mpro.py:137:            'unidad_negocio_id': str(unidad['unidad_negocio_id']),
+modules/finanzas/sync_cortes_mpro.py:270:                'UnidadNegocioID': conn_info['unidad_negocio_id'],
+modules/finanzas/sync_cortes_mpro.py:271:                'UnidadNegocioNombre': conn_info['unidad_nombre'],
+modules/finanzas/sync_cortes_mpro.py:405:                            UnidadNegocioID, UnidadNegocioNombre, EmpresaID, ServerID,
+modules/finanzas/sync_cortes_mpro.py:430:                        reg['UnidadNegocioID'], reg['UnidadNegocioNombre'], reg['EmpresaID'], reg['ServerID'],
+modules/finanzas/sync_cortes_mpro.py:484:                UnidadNegocioID, ServerID, SistemaOrigen,
+modules/finanzas/sync_cortes_mpro.py:565:        resultado['unidad_negocio_id'] = conn_info['unidad_negocio_id']
+modules/finanzas/sync_cortes_mpro.py:586:            unidad_id=conn_info['unidad_negocio_id'],
+modules/finanzas/sync_cortes_mpro.py:606:                    unidad_id=resultado.get('unidad_negocio_id', ''),
+modules/finanzas/repository_cortes_caja_edarsahub.py:79:                # Buscar por ServerID o UnidadNegocioID
+modules/finanzas/repository_cortes_caja_edarsahub.py:80:                where_clauses.append('(cc.ServerID = %s OR cc.UnidadNegocioID = %s)')
+modules/finanzas/repository_cortes_caja_edarsahub.py:85:                where_clauses.append('cc.UnidadNegocioNombre LIKE %s')
+modules/finanzas/repository_cortes_caja_edarsahub.py:108:                    cc.UnidadNegocioID,
+modules/finanzas/repository_cortes_caja_edarsahub.py:109:                    cc.UnidadNegocioNombre,
+modules/finanzas/repository_cortes_caja_edarsahub.py:288:                where_clauses.append('(ServerID = %s OR UnidadNegocioID = %s)')
+modules/finanzas/repository_cortes_caja_edarsahub.py:351:            'sucursal_id': row.get('UnidadNegocioID') or row.get('ServerID'),
+modules/finanzas/repository_cortes_caja_edarsahub.py:352:            'sucursal_nombre': row.get('UnidadNegocioNombre') or 'Sin nombre',
+modules/finanzas/repository_cortes_caja_edarsahub.py:353:            'server_id': row.get('ServerID') or row.get('UnidadNegocioID'),
+modules/compras/eventos_compras.py:165:                    EventoTipo, ServerID, UnidadNegocioID, Folio, Fecha,
+modules/compras/eventos_compras.py:195:                    EventoID, EventoTipo, ServerID, UnidadNegocioID,
+modules/compras/eventos_compras.py:217:                    "unidad_negocio_pk": e['UnidadNegocioID'],
+modules/compras/sync_service.py:245:    unidad_negocio_id: str = None,
+modules/compras/sync_service.py:262:                tipo, estatus, total_productos, unidad_negocio_id, 
+modules/compras/sync_service.py:270:        if unidad_negocio_id:
+modules/compras/sync_service.py:271:            query += " AND unidad_negocio_id = %s"
+modules/compras/sync_service.py:272:            params.append(unidad_negocio_id)
+modules/compras/sync_service.py:308:    unidad_negocio_id: str = None,
+modules/compras/sync_service.py:325:                unidad_negocio_id, unidad_negocio_codigo, server_id, system_type,
+modules/compras/sync_service.py:332:        if unidad_negocio_id:
+modules/compras/sync_service.py:333:            query += " AND unidad_negocio_id = %s"
+modules/compras/sync_service.py:334:            params.append(unidad_negocio_id)
+modules/compras/sync_service.py:468:                    (unidad_negocio_id, unidad_negocio_codigo, server_id, system_type,
+modules/compras/sync_service.py:601:                    (unidad_negocio_id, unidad_negocio_codigo, server_id, system_type,
+modules/compras/sync_service.py:636:    unidad_negocio_id: str,
+modules/compras/sync_service.py:651:            (unidad_negocio_id, server_id, sync_type, sync_start, sync_end, 
+modules/compras/sync_service.py:655:            unidad_negocio_id, server_id, sync_type,

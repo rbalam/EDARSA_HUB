@@ -1,3 +1,5 @@
+from core.unidades_service import UnidadesService
+from core.corporate_filters.service import CorporateFilterService
 """
 Universal Query Tester - Módulo Backend
 =======================================
