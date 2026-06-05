@@ -1,8 +1,8 @@
 # EDARSA HUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-05 (Sesión 7 - P2-01 a P2-05 CENTRALIZACIÓN CREDENCIALES COMPLETADA)
-**Estado:** P0/P1/P2 CERRADOS - SQL-First ✅ | Auth/RBAC SQL ✅ | Config Centralizado ✅
+**Última actualización:** 2026-06-05 (Sesión 7 - P2-01 a P2-08 CERRADO)
+**Estado:** P0/P1/P2 CERRADOS | SQL-First ✅ | MongoDB ELIMINADO ✅ | Config Centralizado ✅
 
 ---
 
@@ -426,16 +426,15 @@ bash /app/scripts/validate_sync_sales_softrestaurant_legacy_rules.sh /app
 - [ ] Motor de Rentabilidad (Costos y Márgenes)
 
 ### P2 - Media Prioridad
-- [x] **P2-01 a P2-05 Centralizar configuración EDARSAHUB** - COMPLETADO (2026-06-05)
+- [x] **P2-01 a P2-08 Arquitectura SQL-First COMPLETADA** (2026-06-05)
   - ✅ Singleton: `core/config/edarsahub_config.py`
-  - ✅ Helper SQL: `core/config/edarsahub_sql.py`
-  - ✅ ~45 archivos migrados a config centralizado
-  - ✅ Referencias productivas hardcodeadas: **0**
-  - ✅ `connection_resolver.py` migrado a SQL-only
-  - ✅ `rbac/middleware.py` limpiado de MongoDB
-  - Scripts legacy: 125 referencias documentadas (no productivas)
+  - ✅ ~70 archivos migrados a config centralizado
+  - ✅ **Credenciales hardcodeadas productivas: 0**
+  - ✅ **MongoDB: COMPLETAMENTE ELIMINADO** (38 archivos en cuarentena)
+  - ✅ Endpoint `/api/sqlfirst-health` creado
+  - ✅ Tipos `AsyncIOMotorDatabase` → `Any`
+  - ✅ Dependencias pymongo/motor eliminadas de requirements.txt
 - [ ] Validar columnas destino de `sync_compras` en SSMS (bloqueante para dry_run=false)
-- [ ] Eliminación física de colecciones MongoDB restantes
 
 ### P3 - Backlog
 - [ ] Módulo Pricing IA / Competidores Enterprise
