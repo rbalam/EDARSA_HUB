@@ -19132,6 +19132,7 @@ logger.info("Módulo Configuración registrado")
 # Sistema de control de acceso basado en roles
 from core.rbac.routes import router as rbac_router
 from core.rbac.service import RBACService
+from modules.pricing_ai.routes import router as pricing_ai_router
 # Inicializar RBAC (sembrar permisos y roles si no existen)
 try:
     rbac_service = RBACService(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad
@@ -19354,6 +19355,14 @@ try:
     logger.info("✓ SQL-First Health router registrado")
 except Exception as e:
     logger.warning(f"Error registrando SQL-First Health router: {e}")
+
+# PRICING IA (P3-05)
+# =============================================================================
+try:
+    app.include_router(pricing_ai_router)
+    logger.info("✓ Pricing IA router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Pricing IA router: {e}")
 
 
 # Startup: Iniciar scheduler
