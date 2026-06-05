@@ -1,0 +1,139 @@
+============================================================
+P1 - ESTABILIZACION ESTRUCTURA SQL EDARSAHUB 20260605_150651
+============================================================
+
+### 1. TABLAS CRITICAS EXISTENTES
+Unidades_Negocio                    = EXISTE
+Comercial_KPIs_Diarios_v2           = EXISTE
+Comercial_KPIs_Mensuales_v2         = EXISTE
+Sync_Sales                          = EXISTE
+Usuario_Roles                       = EXISTE
+Usuario_Catalogo                    = EXISTE
+Servidores_Conexiones               = EXISTE
+
+### 2. COLUMNAS CRITICAS
+
+[Unidades_Negocio]
+  id                             uniqueidentifier NO
+  nombre                         nvarchar        NO
+  codigo                         nvarchar        NO
+  server_id                      nvarchar        NO
+  sucursal_origen_id             nvarchar        YES
+  system_type                    nvarchar        NO
+  activo                         bit             YES
+  orden                          int             YES
+  created_at                     datetime        YES
+  updated_at                     datetime        YES
+
+[Comercial_KPIs_Diarios_v2]
+  id                             uniqueidentifier NO
+  unidad_negocio_id              nvarchar        NO
+  unidad_negocio_nombre          nvarchar        NO
+  server_id                      nvarchar        NO
+  sucursal_id                    nvarchar        NO
+  sucursal_nombre                nvarchar        YES
+  sistema_origen                 nvarchar        NO
+  fecha_operacion                date            NO
+  anio                           int             NO
+  mes                            int             NO
+  dia                            int             NO
+  ventas_total                   decimal         YES
+  ventas_sin_propina             decimal         YES
+  propinas_total                 decimal         YES
+  tickets_total                  int             YES
+  pax_total                      int             YES
+  ticket_promedio                decimal         YES
+  pax_promedio                   decimal         YES
+  ventas_cerradas                decimal         YES
+  ventas_abiertas                decimal         YES
+  total_estimado_dia             decimal         YES
+  es_venta_abierta               bit             YES
+  es_corte_cerrado               bit             YES
+  es_demo                        bit             YES
+  activo                         bit             YES
+  fuente_original                nvarchar        NO
+  id_origen                      nvarchar        YES
+  hash_origen                    nvarchar        YES
+  sync_run_id                    nvarchar        YES
+  fecha_sincronizacion           datetime2       YES
+  fecha_alta                     datetime2       YES
+  fecha_ultima_actualizacion     datetime2       YES
+  version                        int             YES
+
+### 3. TIPO DE DATOS unidad_negocio_id
+  Comercial_KPIs_Diarios_v2           id                   uniqueidentifier
+  Comercial_KPIs_Diarios_v2           unidad_negocio_id    nvarchar
+  Comercial_KPIs_Mensuales_v2         id                   uniqueidentifier
+  Comercial_KPIs_Mensuales_v2         unidad_negocio_id    nvarchar
+  Unidades_Negocio                    id                   uniqueidentifier
+
+### 4. VALIDAR JOINS POR CODIGO (ya que los tipos son diferentes)
+  KPI_UnidadID       | Catalog_ID                           | Codigo     | Nombre            | Registros
+  ----------------------------------------------------------------------------------------------------
+  130MID               19e076fb-c6de-4ea5-84ab-1caa9e86082c   130MID     130° MERIDA        4
+  130QRO               9bc05ced-6b2b-4a0a-aa90-ce649b78e12c   130QRO     130° QUERETARO     4
+  CIENFUEGOS           b06ee652-0370-4267-b0a8-da6fc39b590a   CIENFUEGOS CIENFUEGOS         3
+  ESTELAR              dfb86008-1b81-472a-9e50-8a0821dec4b2   ESTELAR    LA ESTELAR         5
+  ORIGEN               23ca0b76-6580-4874-ba9b-672b122ca197   ORIGEN     ORIGEN             4
+
+### 5. HUERFANOS (KPIs sin match en Unidades_Negocio)
+  ✅ Sin huérfanos - Todos los KPIs tienen match por código
+
+### 6. TOTALES POR VISTA CANONICA (JOIN por codigo)
+  VentaNeta: $1,432,184.36
+  Cheques: 475
+  PAX: 1,298
+  Unidades (catálogo): 5
+
+============================================================
+FIN P1 - ESTABILIZACION ESTRUCTURA SQL
+Reporte: /app/backend/auditorias_p1/P1_ESTABILIZACION_SQL_SCHEMA_20260605_150651.txt
+============================================================
+
+### 7. INDICES EXISTENTES EN TABLAS CRITICAS
+  Comercial_KPIs_Diarios_v2           IX_KPIs_Diarios_v2_AnioMes                         NONCLUSTERED
+  Comercial_KPIs_Diarios_v2           IX_KPIs_Diarios_v2_Fecha                           NONCLUSTERED
+  Comercial_KPIs_Diarios_v2           IX_KPIs_Diarios_v2_Hash                            NONCLUSTERED
+  Comercial_KPIs_Diarios_v2           IX_KPIs_Diarios_v2_Unidad                          NONCLUSTERED
+  Comercial_KPIs_Diarios_v2           PK__Comercia__3213E83F6AD04994                     CLUSTERED
+  Comercial_KPIs_Diarios_v2           UQ_KPIs_Diarios_v2                                 NONCLUSTERED
+  Comercial_KPIs_Mensuales_v2         IX_KPIs_Mensuales_v2_AnioMes                       NONCLUSTERED
+  Comercial_KPIs_Mensuales_v2         IX_KPIs_Mensuales_v2_Unidad                        NONCLUSTERED
+  Comercial_KPIs_Mensuales_v2         PK__Comercia__3213E83F250489E7                     CLUSTERED
+  Comercial_KPIs_Mensuales_v2         UQ_KPIs_Mensuales_v2                               NONCLUSTERED
+  Unidades_Negocio                    IX_Unidades_Codigo                                 NONCLUSTERED
+  Unidades_Negocio                    IX_Unidades_ServerID                               NONCLUSTERED
+  Unidades_Negocio                    PK__Unidades__3213E83FD5638C07                     CLUSTERED
+  Unidades_Negocio                    UQ_Unidades_Server_Sucursal                        NONCLUSTERED
+
+### 8. DUPLICADOS LOGICOS EN KPIS DIARIOS (por unidad+fecha)
+  ✅ Sin duplicados lógicos por unidad_negocio_id + fecha_operacion
+
+### 9. RESUMEN ESTRUCTURA
+
+  HALLAZGOS:
+  ──────────────────────────────────────────────────────────
+  ✅ Unidades_Negocio.id es UNIQUEIDENTIFIER (PK real)
+  ✅ Comercial_KPIs_*.unidad_negocio_id es NVARCHAR (contiene CODIGO)
+  ✅ El JOIN correcto es: k.unidad_negocio_id = u.codigo
+  ✅ NO hay huérfanos (todos los KPIs tienen unidad válida)
+  ✅ NO hay duplicados lógicos por unidad+fecha
+  
+  RECOMENDACIONES (P2/P3):
+  ──────────────────────────────────────────────────────────
+  1. Renombrar k.unidad_negocio_id → k.unidad_codigo para claridad
+  2. Añadir columna k.unidad_negocio_uuid que referencie u.id
+  3. Crear FK formal cuando el esquema esté estabilizado
+  
+  RELACION ACTUAL:
+  ──────────────────────────────────────────────────────────
+  Comercial_KPIs_Diarios_v2.unidad_negocio_id (VARCHAR)
+        ↓ JOIN por valor
+  Unidades_Negocio.codigo (VARCHAR)
+        ↓ Catalogo
+  Unidades_Negocio.id (UNIQUEIDENTIFIER) - PK real
+
+
+============================================================
+FIN P1 - ESTABILIZACION ESTRUCTURA SQL (COMPLETO)
+============================================================
