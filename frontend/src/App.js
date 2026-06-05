@@ -78,6 +78,7 @@ import PortalProveedoresApp from '@/portal/App';
 
 // Portal de Inteligencia Comercial IA (Subproyecto separado)
 import PortalInteligenciaApp from '@/portal-inteligencia/App';
+import DashboardEjecutivo from './pages/DashboardEjecutivo';
 
 function App() {
   return (
@@ -85,6 +86,7 @@ function App() {
       <BrowserRouter>
         <div className="App">
           <Routes>
+          <Route path="/admin/dashboard-ejecutivo" element={<DashboardEjecutivo />} />
             {/* Portales Externos (sin auth del CRM) - DEBEN IR PRIMERO */}
             <Route path="/portal-proveedores/*" element={<PortalProveedoresApp />} />
             <Route path="/inteligencia-comercial/*" element={<PortalInteligenciaApp />} />
