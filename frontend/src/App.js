@@ -80,6 +80,7 @@ import PortalProveedoresApp from '@/portal/App';
 import PortalInteligenciaApp from '@/portal-inteligencia/App';
 import DashboardEjecutivo from './pages/DashboardEjecutivo';
 import CentroExcepciones from './pages/CentroExcepciones';
+import AdminHub from './pages/AdminHub';
 
 function App() {
   return (
@@ -87,6 +88,7 @@ function App() {
       <BrowserRouter>
         <div className="App">
           <Routes>
+          <Route path="/admin" element={<AdminHub />} />
           <Route path="/admin/centro-excepciones" element={<CentroExcepciones />} />
           <Route path="/admin/dashboard-ejecutivo" element={<DashboardEjecutivo />} />
             {/* Portales Externos (sin auth del CRM) - DEBEN IR PRIMERO */}
