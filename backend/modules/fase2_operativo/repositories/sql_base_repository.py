@@ -18,6 +18,9 @@ import uuid
 import json
 import pymssql
 import os
+from core.config.edarsahub_config import get_edarsahub_sql_config
+_edarsa_cfg = get_edarsahub_sql_config()
+
 
 logger = logging.getLogger(__name__)
 
@@ -305,10 +308,10 @@ class SQLBaseRepository:
         # Configuración de conexión SQL (de variables de entorno)
         self._sql_config = {
             "server": os.environ.get("EDARSAHUB_SQL_SERVER", "54.39.104.176"),
-            "port": int(os.environ.get("EDARSAHUB_SQL_PORT", "1433")),
-            "database": os.environ.get("EDARSAHUB_SQL_DATABASE", "EDARSAHUB"),
-            "user": os.environ.get("EDARSAHUB_SQL_USER", "HRLectura"),
-            "password": os.environ.get("EDARSAHUB_SQL_PASSWORD", "National09$"),
+            "port": int(_edarsa_cfg.port),
+            "database": _edarsa_cfg.database,
+            "user": _edarsa_cfg.user,
+            "password": _edarsa_cfg.password,
         }
         
         logger.info(f"[SQL_REPO] Inicializado {collection_name} → {self.table_name}")

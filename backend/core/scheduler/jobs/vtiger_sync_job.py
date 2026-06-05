@@ -14,6 +14,9 @@ import pymssql
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 import json
+from core.config.edarsahub_config import get_edarsahub_sql_config
+_edarsa_cfg = get_edarsahub_sql_config()
+
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +24,11 @@ logger = logging.getLogger(__name__)
 def _get_sql_connection():
     """Obtiene conexión a EDARSAHUB SQL Server"""
     return pymssql.connect(
-        server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        server=_edarsa_cfg.host,
         port=int(os.environ.get('EDARSAHUB_PORT', 1433)),
-        user=os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        password=os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
-        database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB')
+        user=_edarsa_cfg.user,
+        password=_edarsa_cfg.password,
+        database=_edarsa_cfg.database
     )
 
 

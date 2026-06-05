@@ -99,3 +99,42 @@ VALIDACIÓN:
 - Health endpoint: OK
 
 ================================================================================
+
+================================================================================
+P2-04: MIGRACIÓN BATCH CREDENCIALES - COMPLETADA
+================================================================================
+Fecha: 2026-06-05 04:00 UTC
+
+MÓDULOS MIGRADOS (30 archivos):
+Batch 1:
+- modules/finanzas/* (8 archivos)
+- modules/compras/* (3 archivos)
+- modules/sistema/* (1 archivo)
+- modules/fase2_operativo/* (1 archivo)
+
+Batch 2:
+- modules/crm/* (6 archivos, 1 restaurado)
+- modules/tablajeria/* (3 archivos, 1 restaurado)
+- modules/rh/* (1 archivo - corrección manual)
+- modules/inteligencia_comercial/* (1 archivo)
+- modules/api_connections/* (1 archivo)
+- core/scheduler/jobs/* (4 archivos, 3 restaurados)
+- tools/* (1 archivo)
+
+ARCHIVOS RESTAURADOS (5 - import insertado en posición incorrecta):
+- modules/crm/integration_routes.py
+- modules/tablajeria/sync_service.py
+- core/scheduler/jobs/detect_nuevos_compras_job.py
+- core/scheduler/jobs/sync_comercial_abiertas_v2_job.py
+- core/scheduler/jobs/sync_compras_job.py
+
+CORRECCIÓN MANUAL:
+- modules/rh/repository.py (faltaba _edarsa_cfg inicializado)
+
+ESTADO FINAL:
+- Archivos migrados exitosamente: ~25
+- Referencias legacy restantes: ~162 (mayoría en scripts de auditoría)
+
+HEALTH: OK
+
+================================================================================

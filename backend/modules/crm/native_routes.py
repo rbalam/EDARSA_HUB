@@ -21,6 +21,9 @@ from .schemas import (
     PipelineResponse, PipelineKanban, CatalogoItem, CRMDashboardResponse
 )
 from .native_service import CRMNativeService
+from core.config.edarsahub_config import get_edarsahub_sql_config
+_edarsa_cfg = get_edarsahub_sql_config()
+
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/crm/native", tags=["CRM - Native (EDARSAHUB SQL)"])
@@ -79,11 +82,11 @@ async def _get_vtiger_leads_as_native(busqueda: Optional[str], page: int, page_s
     
     try:
         conn = pymssql.connect(
-            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+            server=_edarsa_cfg.host,
             port=int(os.environ.get('EDARSAHUB_PORT', 1433)),
-            user=os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-            password=os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
-            database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB')
+            user=_edarsa_cfg.user,
+            password=_edarsa_cfg.password,
+            database=_edarsa_cfg.database
         )
         cursor = conn.cursor(as_dict=True)
         
@@ -309,11 +312,11 @@ async def _get_vtiger_oportunidades(busqueda: Optional[str], page: int, page_siz
     
     try:
         conn = pymssql.connect(
-            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+            server=_edarsa_cfg.host,
             port=int(os.environ.get('EDARSAHUB_PORT', 1433)),
-            user=os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-            password=os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
-            database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB')
+            user=_edarsa_cfg.user,
+            password=_edarsa_cfg.password,
+            database=_edarsa_cfg.database
         )
         cursor = conn.cursor(as_dict=True)
         
@@ -420,11 +423,11 @@ async def _get_vtiger_contactos(busqueda: Optional[str], page: int, page_size: i
     
     try:
         conn = pymssql.connect(
-            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+            server=_edarsa_cfg.host,
             port=int(os.environ.get('EDARSAHUB_PORT', 1433)),
-            user=os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-            password=os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
-            database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB')
+            user=_edarsa_cfg.user,
+            password=_edarsa_cfg.password,
+            database=_edarsa_cfg.database
         )
         cursor = conn.cursor(as_dict=True)
         

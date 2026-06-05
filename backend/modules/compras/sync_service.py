@@ -31,16 +31,19 @@ import pymssql
 import logging
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Callable
+from core.config.edarsahub_config import get_edarsahub_sql_config
+_edarsa_cfg = get_edarsahub_sql_config()
+
 
 logger = logging.getLogger(__name__)
 
 # Configuración EDARSAHUB - Usa variables de entorno con fallback
 EDARSAHUB_CONFIG = {
-    'host': os.environ.get('EDARSAHUB_HOST', os.environ.get('EDARSAHUB_SQL_HOST', '54.39.104.176')),
-    'port': int(os.environ.get('EDARSAHUB_PORT', os.environ.get('EDARSAHUB_SQL_PORT', '1433'))),
-    'database': os.environ.get('EDARSAHUB_DATABASE', os.environ.get('EDARSAHUB_SQL_DATABASE', 'EDARSAHUB')),
-    'username': os.environ.get('EDARSAHUB_USERNAME', os.environ.get('EDARSAHUB_SQL_USER', 'HRLectura')),
-    'password': os.environ.get('EDARSAHUB_PASSWORD', os.environ.get('EDARSAHUB_SQL_PASSWORD', 'National09$'))
+    'host': os.environ.get('EDARSAHUB_HOST', _edarsa_cfg.host),
+    'port': int(os.environ.get('EDARSAHUB_PORT', _edarsa_cfg.port)),
+    'database': os.environ.get('EDARSAHUB_DATABASE', _edarsa_cfg.database),
+    'username': os.environ.get('EDARSAHUB_USERNAME', _edarsa_cfg.user),
+    'password': os.environ.get('EDARSAHUB_PASSWORD', _edarsa_cfg.password)
 }
 
 

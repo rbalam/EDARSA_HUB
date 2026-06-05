@@ -23,6 +23,9 @@ from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Query, HTTPException
 import pymssql
 import os
+from core.config.edarsahub_config import get_edarsahub_sql_config
+_edarsa_cfg = get_edarsahub_sql_config()
+
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/inteligencia", tags=["Inteligencia Comercial"])
@@ -31,11 +34,11 @@ router = APIRouter(prefix="/inteligencia", tags=["Inteligencia Comercial"])
 # CONFIGURACIÓN DE CONEXIÓN A EDARSAHUB
 # ============================================================================
 EDARSAHUB_CONFIG = {
-    "host": os.environ.get("EDARSAHUB_HOST", "54.39.104.176"),
+    "host": _edarsa_cfg.host,
     "port": int(os.environ.get("EDARSAHUB_PORT", "1433")),
-    "database": os.environ.get("EDARSAHUB_DATABASE", "EDARSAHUB"),
-    "user": os.environ.get("EDARSAHUB_USERNAME", "HRLectura"),
-    "password": os.environ.get("EDARSAHUB_PASSWORD", "National09$"),
+    "database": _edarsa_cfg.database,
+    "user": _edarsa_cfg.user,
+    "password": _edarsa_cfg.password,
 }
 
 # ============================================================================

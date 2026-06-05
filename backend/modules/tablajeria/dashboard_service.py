@@ -13,6 +13,9 @@ import logging
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Dict, List, Optional, Any
+from core.config.edarsahub_config import get_edarsahub_sql_config
+_edarsa_cfg = get_edarsahub_sql_config()
+
 
 logger = logging.getLogger(__name__)
 
@@ -387,10 +390,10 @@ class TablajeriaDashboardService:
 def get_tablajeria_dashboard_service() -> TablajeriaDashboardService:
     """Factory para obtener instancia del servicio."""
     db_config = {
-        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'host': _edarsa_cfg.host,
         'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
-        'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        'password': os.environ.get('EDARSAHUB_PASSWORD', '')
+        'database': _edarsa_cfg.database,
+        'username': _edarsa_cfg.user,
+        'password': _edarsa_cfg.password
     }
     return TablajeriaDashboardService(db_config)

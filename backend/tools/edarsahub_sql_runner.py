@@ -24,6 +24,9 @@ import sys
 from pathlib import Path
 
 import pymssql
+from core.config.edarsahub_config import get_edarsahub_sql_config
+_edarsa_cfg = get_edarsahub_sql_config()
+
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -193,7 +196,7 @@ def write_report(script_path: Path, mode: str, sql: str, result: dict | None, er
     report_path = REPORT_DIR / f"{timestamp}_{mode}_{script_path.stem}.md"
 
     server = os.getenv("EDARSAHUB_SQL_SERVER", "NO_DEFINIDO")
-    database = os.getenv("EDARSAHUB_SQL_DATABASE", "NO_DEFINIDO")
+    database = _edarsa_cfg.database
 
     content = []
     content.append(f"# EDARSAHUB SQL Runner Report\n")

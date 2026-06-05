@@ -21,6 +21,9 @@ from enum import Enum
 import pymssql
 import os
 import uuid
+from core.config.edarsahub_config import get_edarsahub_sql_config
+_edarsa_cfg = get_edarsahub_sql_config()
+
 
 logger = logging.getLogger(__name__)
 
@@ -62,10 +65,10 @@ class CRMTriggerService:
     
     def _default_config(self) -> Dict[str, Any]:
         return {
-            'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
-            'user': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-            'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
-            'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
+            'host': _edarsa_cfg.host,
+            'user': _edarsa_cfg.user,
+            'password': _edarsa_cfg.password,
+            'database': _edarsa_cfg.database,
             'port': int(os.environ.get('EDARSAHUB_PORT', 1433))
         }
     

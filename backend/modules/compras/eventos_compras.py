@@ -32,6 +32,9 @@ from typing import Dict, List, Any, Optional, Callable
 from zoneinfo import ZoneInfo
 from dataclasses import dataclass, asdict
 from enum import Enum
+from core.config.edarsahub_config import get_edarsahub_sql_config
+_edarsa_cfg = get_edarsahub_sql_config()
+
 
 logger = logging.getLogger(__name__)
 
@@ -40,11 +43,11 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 
 EDARSAHUB_CONFIG = {
-    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+    'host': _edarsa_cfg.host,
     'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
-    'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-    'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-    'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+    'database': _edarsa_cfg.database,
+    'username': _edarsa_cfg.user,
+    'password': _edarsa_cfg.password
 }
 
 # Intervalo de polling en segundos (2-3 minutos recomendado)

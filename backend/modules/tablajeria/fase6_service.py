@@ -16,6 +16,9 @@ from datetime import datetime, date, timezone
 from decimal import Decimal
 from dataclasses import dataclass
 from enum import Enum
+from core.config.edarsahub_config import get_edarsahub_sql_config
+_edarsa_cfg = get_edarsahub_sql_config()
+
 
 logger = logging.getLogger(__name__)
 
@@ -68,11 +71,11 @@ class TablajeriaFase6Service:
     def __init__(self, db_config: Dict = None):
         """Inicializa el servicio con configuración de BD."""
         self.db_config = db_config or {
-            'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+            'host': _edarsa_cfg.host,
             'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
-            'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-            'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-            'password': os.environ.get('EDARSAHUB_PASSWORD', '')
+            'database': _edarsa_cfg.database,
+            'username': _edarsa_cfg.user,
+            'password': _edarsa_cfg.password
         }
         self._config_cache: Dict[str, ConfigContable] = {}
     
