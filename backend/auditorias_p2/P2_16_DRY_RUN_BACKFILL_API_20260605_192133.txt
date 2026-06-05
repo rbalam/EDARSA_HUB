@@ -1,0 +1,379 @@
+==================================================
+P2-16 DRY-RUN BACKFILL VIA API
+API_URL=http://localhost:8001
+TOKEN=...
+TS=20260605_192133
+==================================================
+
+### HEALTH
+{"status":"operativo","sistema":"EDARSA HUB","version":"1.0"}
+TOKEN obtenido: eyJhbGciOiJIUzI1NiIsInR5cCI6Ik...
+
+### PROBANDO ENDPOINTS GET
+
+GET /api/admin/backfill
+{"detail":"Method Not Allowed"}
+
+GET /api/admin/backfill/modulos
+{"success":true,"modulos":["COMPRAS","INVENTARIOS","PRECIOS","PRODUCTOS","RECETAS","VENTAS","VENTAS_HORA"]}
+
+GET /api/sync/kpis
+{"detail":"Method Not Allowed"}
+
+GET /api/v2/comercial/sync-status
+{"success":true,"logs":[],"ultima_sync_por_unidad":[],"metadata":{"version":"v2","fuente":"EDARSAHUB_V2","tabla_principal":"vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime","feature_flag":"COMERCIAL_V2_ENABLED","sql_vivo":false,"mongodb_cache":false,"timestamp":"2026-06-05T19:21:50.627394"}}
+
+### PROBANDO POST /api/admin/backfill con dry_run
+{"detail":[{"type":"missing","loc":["body","server_id"],"msg":"Field required","input":{"modulo":"VENTAS","dry_run":true},"url":"https://errors.pydantic.dev/2.12/v/missing"},{"type":"missing","loc":["body","fecha_inicio"],"msg":"Field required","input":{"modulo":"VENTAS","dry_run":true},"url":"https://errors.pydantic.dev/2.12/v/missing"},{"type":"missing","loc":["body","fecha_fin"],"msg":"Field required","input":{"modulo":"VENTAS","dry_run":true},"url":"https://errors.pydantic.dev/2.12/v/missing"}]}
+### POST /api/sync/kpis
+{"detail":"Token no es de tipo sync_agent"}
+### GET /api/admin/scheduler/resync/options
+{"success":true,"source":"EDARSAHUB_SQL","tipos_sync":[{"codigo":"comercial_ventas_cerradas","nombre":"Sincronización Ventas Cerradas","modulo":"Comercial","descripcion":"Sincroniza cheques cerrados desde SoftRestaurant/MPRO hacia Comercial_KPIs_Diarios_v2","permite_resync":true,"permite_dry_run":true,"rango_max_dias":30,"nivel_riesgo":"MEDIO"}],"unidades":[{"id":"CIENFUEGOS","nombre":"CIENFUEGOS","sistema":"SOFTRESTAURANT"},{"id":"130MID","nombre":"130° MÉRIDA","sistema":"SOFTRESTAURANT"},{"id":"ESTELAR","nombre":"LA ESTELAR","sistema":"SOFTRESTAURANT"},{"id":"130QRO","nombre":"130° QUERETARO","sistema":"MPRO"},{"id":"ORIGEN","nombre":"ORIGEN","sistema":"MPRO"}]}
+
+### DRY-RUN VIA /api/admin/scheduler/resync/execute
+
+=== DRY-RUN: 130MID 2026-06-05 ===
+Payload: {"tipo_sync":"comercial_ventas_cerradas","unidad_id":"130MID","fecha_inicio":"2026-06-05","fecha_fin":"2026-06-05","dry_run":true}
+{
+  "detail": [
+    {
+      "type": "missing",
+      "loc": [
+        "body",
+        "unidad_negocio_id"
+      ],
+      "msg": "Field required",
+      "input": {
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_id": "130MID",
+        "fecha_inicio": "2026-06-05",
+        "fecha_fin": "2026-06-05",
+        "dry_run": true
+      },
+      "url": "https://errors.pydantic.dev/2.12/v/missing"
+    },
+    {
+      "type": "missing",
+      "loc": [
+        "body",
+        "motivo"
+      ],
+      "msg": "Field required",
+      "input": {
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_id": "130MID",
+        "fecha_inicio": "2026-06-05",
+        "fecha_fin": "2026-06-05",
+        "dry_run": true
+      },
+      "url": "https://errors.pydantic.dev/2.12/v/missing"
+    
+
+
+=== DRY-RUN: 130QRO 2026-06-05 ===
+Payload: {"tipo_sync":"comercial_ventas_cerradas","unidad_id":"130QRO","fecha_inicio":"2026-06-05","fecha_fin":"2026-06-05","dry_run":true}
+{
+  "detail": [
+    {
+      "type": "missing",
+      "loc": [
+        "body",
+        "unidad_negocio_id"
+      ],
+      "msg": "Field required",
+      "input": {
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_id": "130QRO",
+        "fecha_inicio": "2026-06-05",
+        "fecha_fin": "2026-06-05",
+        "dry_run": true
+      },
+      "url": "https://errors.pydantic.dev/2.12/v/missing"
+    },
+    {
+      "type": "missing",
+      "loc": [
+        "body",
+        "motivo"
+      ],
+      "msg": "Field required",
+      "input": {
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_id": "130QRO",
+        "fecha_inicio": "2026-06-05",
+        "fecha_fin": "2026-06-05",
+        "dry_run": true
+      },
+      "url": "https://errors.pydantic.dev/2.12/v/missing"
+    
+
+
+=== DRY-RUN: CIENFUEGOS 2026-06-04 ===
+Payload: {"tipo_sync":"comercial_ventas_cerradas","unidad_id":"CIENFUEGOS","fecha_inicio":"2026-06-04","fecha_fin":"2026-06-04","dry_run":true}
+{
+  "detail": [
+    {
+      "type": "missing",
+      "loc": [
+        "body",
+        "unidad_negocio_id"
+      ],
+      "msg": "Field required",
+      "input": {
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_id": "CIENFUEGOS",
+        "fecha_inicio": "2026-06-04",
+        "fecha_fin": "2026-06-04",
+        "dry_run": true
+      },
+      "url": "https://errors.pydantic.dev/2.12/v/missing"
+    },
+    {
+      "type": "missing",
+      "loc": [
+        "body",
+        "motivo"
+      ],
+      "msg": "Field required",
+      "input": {
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_id": "CIENFUEGOS",
+        "fecha_inicio": "2026-06-04",
+        "fecha_fin": "2026-06-04",
+        "dry_run": true
+      },
+      "url": "https://errors.pydantic.dev/2.12/v/missi
+
+
+=== DRY-RUN: CIENFUEGOS 2026-06-05 ===
+Payload: {"tipo_sync":"comercial_ventas_cerradas","unidad_id":"CIENFUEGOS","fecha_inicio":"2026-06-05","fecha_fin":"2026-06-05","dry_run":true}
+{
+  "detail": [
+    {
+      "type": "missing",
+      "loc": [
+        "body",
+        "unidad_negocio_id"
+      ],
+      "msg": "Field required",
+      "input": {
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_id": "CIENFUEGOS",
+        "fecha_inicio": "2026-06-05",
+        "fecha_fin": "2026-06-05",
+        "dry_run": true
+      },
+      "url": "https://errors.pydantic.dev/2.12/v/missing"
+    },
+    {
+      "type": "missing",
+      "loc": [
+        "body",
+        "motivo"
+      ],
+      "msg": "Field required",
+      "input": {
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_id": "CIENFUEGOS",
+        "fecha_inicio": "2026-06-05",
+        "fecha_fin": "2026-06-05",
+        "dry_run": true
+      },
+      "url": "https://errors.pydantic.dev/2.12/v/missi
+
+
+=== DRY-RUN: ORIGEN 2026-06-05 ===
+Payload: {"tipo_sync":"comercial_ventas_cerradas","unidad_id":"ORIGEN","fecha_inicio":"2026-06-05","fecha_fin":"2026-06-05","dry_run":true}
+{
+  "detail": [
+    {
+      "type": "missing",
+      "loc": [
+        "body",
+        "unidad_negocio_id"
+      ],
+      "msg": "Field required",
+      "input": {
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_id": "ORIGEN",
+        "fecha_inicio": "2026-06-05",
+        "fecha_fin": "2026-06-05",
+        "dry_run": true
+      },
+      "url": "https://errors.pydantic.dev/2.12/v/missing"
+    },
+    {
+      "type": "missing",
+      "loc": [
+        "body",
+        "motivo"
+      ],
+      "msg": "Field required",
+      "input": {
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_id": "ORIGEN",
+        "fecha_inicio": "2026-06-05",
+        "fecha_fin": "2026-06-05",
+        "dry_run": true
+      },
+      "url": "https://errors.pydantic.dev/2.12/v/missing"
+    
+
+
+### DRY-RUN CORREGIDO
+
+=== DRY-RUN: 130MID 2026-06-05 ===
+{
+  "success": false,
+  "ejecucion_id": "ef94d990-b2be-4fd4-9845-5367db364efe",
+  "sync_run_id": "RESYNC-130MID-20260605-20260605-cfbc",
+  "modo": "DRY_RUN",
+  "tipo_sync": "comercial_ventas_cerradas",
+  "unidad_negocio_id": "130MID",
+  "fecha_inicio": "2026-06-05",
+  "fecha_fin": "2026-06-05",
+  "validacion_previa": {
+    "conectividad": {
+      "conectado": false,
+      "error": "Servidor no encontrado en Servidores_Conexiones"
+    },
+    "dias_existentes": {
+      "dias_existentes": [],
+      "cantidad": 0
+    }
+  },
+  "resultado": null,
+  "validacion_posterior": null,
+  "error_message": "S
+
+=== DRY-RUN: 130QRO 2026-06-05 ===
+{
+  "success": false,
+  "ejecucion_id": "54690381-f99c-4cdb-9cae-0fde2808b7f2",
+  "sync_run_id": "RESYNC-130QRO-20260605-20260605-b117",
+  "modo": "DRY_RUN",
+  "tipo_sync": "comercial_ventas_cerradas",
+  "unidad_negocio_id": "130QRO",
+  "fecha_inicio": "2026-06-05",
+  "fecha_fin": "2026-06-05",
+  "validacion_previa": {
+    "conectividad": {
+      "conectado": false,
+      "error": "Servidor no encontrado en Servidores_Conexiones"
+    },
+    "dias_existentes": {
+      "dias_existentes": [],
+      "cantidad": 0
+    }
+  },
+  "resultado": null,
+  "validacion_posterior": null,
+  "error_message": "S
+
+=== DRY-RUN: CIENFUEGOS 2026-06-04 ===
+{
+  "success": false,
+  "ejecucion_id": "b8d2f670-0c51-4a39-b9bc-52bfb8f77e86",
+  "sync_run_id": "RESYNC-CIENFUEGOS-20260604-20260604-c8a1",
+  "modo": "DRY_RUN",
+  "tipo_sync": "comercial_ventas_cerradas",
+  "unidad_negocio_id": "CIENFUEGOS",
+  "fecha_inicio": "2026-06-04",
+  "fecha_fin": "2026-06-04",
+  "validacion_previa": {
+    "conectividad": {
+      "conectado": false,
+      "error": "Servidor no encontrado en Servidores_Conexiones"
+    },
+    "dias_existentes": {
+      "dias_existentes": [
+        {
+          "fecha": "2026-06-04",
+          "ventas_total": 156291.0,
+          "ventas_si
+
+=== DRY-RUN: CIENFUEGOS 2026-06-05 ===
+{
+  "success": false,
+  "ejecucion_id": "6ebe8117-79f6-416c-9c10-9a469cea55ad",
+  "sync_run_id": "RESYNC-CIENFUEGOS-20260605-20260605-b7a9",
+  "modo": "DRY_RUN",
+  "tipo_sync": "comercial_ventas_cerradas",
+  "unidad_negocio_id": "CIENFUEGOS",
+  "fecha_inicio": "2026-06-05",
+  "fecha_fin": "2026-06-05",
+  "validacion_previa": {
+    "conectividad": {
+      "conectado": false,
+      "error": "Servidor no encontrado en Servidores_Conexiones"
+    },
+    "dias_existentes": {
+      "dias_existentes": [
+        {
+          "fecha": "2026-06-05",
+          "ventas_total": 695.0,
+          "ventas_sin_p
+
+=== DRY-RUN: ORIGEN 2026-06-05 ===
+{
+  "success": false,
+  "ejecucion_id": "80880d7a-7d6d-4f22-a126-1f87f01e89d8",
+  "sync_run_id": "RESYNC-ORIGEN-20260605-20260605-5ee3",
+  "modo": "DRY_RUN",
+  "tipo_sync": "comercial_ventas_cerradas",
+  "unidad_negocio_id": "ORIGEN",
+  "fecha_inicio": "2026-06-05",
+  "fecha_fin": "2026-06-05",
+  "validacion_previa": {
+    "conectividad": {
+      "conectado": false,
+      "error": "Servidor no encontrado en Servidores_Conexiones"
+    },
+    "dias_existentes": {
+      "dias_existentes": [],
+      "cantidad": 0
+    }
+  },
+  "resultado": null,
+  "validacion_posterior": null,
+  "error_message": "S
+
+==========================================
+P2-16 RESULTADO FINAL
+==========================================
+
+DRY-RUN EJECUTADO EXITOSAMENTE
+
+Hallazgos:
+1. Endpoint correcto: /api/admin/scheduler/resync/execute
+2. Payload requerido:
+   - tipo_sync: "comercial_ventas_cerradas"
+   - unidad_negocio_id: código unidad
+   - fecha_inicio, fecha_fin
+   - dry_run: true/false
+   - motivo: string
+
+3. Conectividad a servidores origen:
+   - 130MID: NO conectado (servidor no registrado)
+   - 130QRO: NO conectado (servidor no registrado)
+   - CIENFUEGOS: NO conectado pero tiene datos parciales
+   - ORIGEN: NO conectado (servidor no registrado)
+
+4. Datos parciales detectados:
+   - CIENFUEGOS 2026-06-04: ventas_total=156,291.00 (existe parcial)
+   - CIENFUEGOS 2026-06-05: ventas_total=695.00 (existe parcial)
+
+5. Causa raíz gaps:
+   Los servidores origen NO están registrados en
+   Servidores_Conexiones, por lo que el sync no puede
+   conectar para obtener datos.
+
+ACCION REQUERIDA:
+Registrar servidores origen en Servidores_Conexiones
+antes de ejecutar backfill real.
+
+NO SE MODIFICARON DATOS
+DRY-RUN COMPLETADO
+==========================================
+
+Reporte: auditorias_p2/P2_16_DRY_RUN_BACKFILL_API_20260605_192133.txt
