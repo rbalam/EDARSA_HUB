@@ -1,0 +1,52 @@
+================================================================================
+P0 FIX REGRESIÓN /api/unidades-negocio - COMPLETADO
+================================================================================
+Fecha: $(date)
+
+PROBLEMA ORIGINAL:
+- El endpoint /api/unidades-negocio retornaba [] (array vacío)
+- Error SQL: "Invalid object name 'Sistema_UnidadesNegocio'" o "Invalid column name 'empresa_id'"
+- Causa probable: Efecto secundario del script de canonización P3-06A
+
+SOLUCIÓN APLICADA:
+- El backend requería un reinicio completo después de los cambios
+- El endpoint ya estaba correctamente configurado para SQL-First
+- Después del reinicio, funciona correctamente devolviendo 5 unidades
+
+RESULTADOS:
+- ✅ /api/unidades-negocio retorna 5 unidades de negocio
+  - 130° MERIDA (SoftRestaurant)
+  - CIENFUEGOS (SoftRestaurant)
+  - LA ESTELAR (SoftRestaurant)
+  - 130° QUERETARO (MPRO)
+  - ORIGEN (MPRO)
+
+FUENTE DE DATOS: EDARSAHUB_SQL (Tablas: Unidades_Negocio + Servidores_Conexiones)
+
+================================================================================
+P1 MIGRACIÓN USUARIOS/ROLES/PERMISOS SQL-FIRST - COMPLETADO
+================================================================================
+
+NUEVOS ENDPOINTS CREADOS:
+- GET /api/admin-sql/users → 11 usuarios desde Usuario_Catalogo
+- GET /api/admin-sql/roles → 21 roles desde Usuario_Roles
+- GET /api/admin-sql/roles/modulos → 56 módulos desde Usuario_Modulos
+- GET /api/admin-sql/servers → 14 servidores desde Servidores_Conexiones
+- GET /api/admin-sql/usuarios-asignables → 11 usuarios
+- GET /api/admin-sql/catalogos-disponibles → 56 catálogos
+- POST /api/admin-sql/permisos-catalogos → Recepción de permisos
+
+ARCHIVOS CREADOS:
+- /app/backend/modules/admin_sql/__init__.py
+- /app/backend/modules/admin_sql/routes.py
+
+ARCHIVOS MODIFICADOS:
+- /app/backend/server.py (registro del router admin_sql)
+- /app/frontend/src/pages/Usuarios.js (redirigido a endpoints admin-sql)
+
+ARQUITECTURA:
+- MongoDB: ELIMINADO del flujo productivo de usuarios/roles
+- SQL Server: FUENTE ÚNICA (EDARSAHUB_SQL)
+- Patrón: SQL-FIRST / NO-LIVE
+
+================================================================================

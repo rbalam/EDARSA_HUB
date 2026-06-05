@@ -1,7 +1,7 @@
 # EDARSA HUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-05 (Sesión 8 - P3 BACKFILL CORPORATIVO)
+**Última actualización:** 2026-06-05 (Sesión 9 - P0 FIX + P1 USUARIOS SQL-FIRST)
 **Estado:** P0/P1/P2 CERRADOS | P3 EN PROGRESO | SQL-First ✅ | MongoDB ELIMINADO ✅
 
 ---
@@ -71,6 +71,16 @@ Vistas/Agregados EDARSAHUB SQL
 - [x] `GET /api/comercial/inteligencia/unidades`
 - [x] `GET /api/comercial/inteligencia/sync-status`
 - [x] `GET /api/comercial/inteligencia/pax`
+
+### 3.4b Endpoints Admin SQL-First (Sesión 9)
+- [x] `GET /api/unidades-negocio` - 5 unidades desde EDARSAHUB_SQL
+- [x] `GET /api/admin-sql/users` - 11 usuarios desde Usuario_Catalogo
+- [x] `GET /api/admin-sql/roles` - 21 roles desde Usuario_Roles
+- [x] `GET /api/admin-sql/roles/modulos` - 56 módulos desde Usuario_Modulos
+- [x] `GET /api/admin-sql/servers` - 14 servidores desde Servidores_Conexiones
+- [x] `GET /api/admin-sql/usuarios-asignables` - 11 usuarios
+- [x] `GET /api/admin-sql/catalogos-disponibles` - 56 catálogos
+- [x] `POST /api/admin-sql/permisos-catalogos` - Recepción de permisos
 
 ### 3.5 Herramientas
 - [x] `edarsahub_sql_runner.py` - Runner SQL controlado
@@ -142,11 +152,17 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
   - $309,092.31 MXN
   - 0 duplicados, 100% JSON válido
   - Validación cruzada vs KPIs aprobada
+- [x] ~~**FIX REGRESIÓN /api/unidades-negocio**~~ ✅ **COMPLETADO 2026-06-05**
+  - Endpoint devolvía [] por falta de reinicio del backend
+  - Ahora retorna 5 unidades correctamente desde EDARSAHUB_SQL
 
-### P1 (Alto) - AWAITING USER APPROVAL
+### P1 (Alto) - EN PROGRESO
+- [x] ~~**Migrar usuarios/roles a SQL-First**~~ ✅ **COMPLETADO 2026-06-05**
+  - Router `/api/admin-sql/*` creado
+  - 11 usuarios, 21 roles, 56 módulos, 14 servidores desde SQL
+  - Frontend Usuarios.js redirigido a admin-sql
 - [ ] **Ejecutar inserción real Sync_Sales** - Dry-run exitoso, pendiente aprobación
 - [ ] Activar poblado de `Sync_PAX_Detalle` - Siguiente tabla de granularidad
-- [ ] Migrar usuarios MongoDB → SQL (`Usuario_Catalogo`) - Dry-run pendiente
 - [ ] Módulo Pricing IA / Competidores Enterprise
 - [ ] Motor de Rentabilidad (Costos y Márgenes)
 

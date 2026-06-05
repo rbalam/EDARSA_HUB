@@ -725,6 +725,13 @@ from modules.backfill_corporativo import router as backfill_corporativo_router
 api_router.include_router(backfill_corporativo_router)
 
 # ============================================================================
+# P3: ADMIN SQL-FIRST - Usuarios, Roles, Permisos desde EDARSAHUB SQL
+# Endpoints: /api/admin-sql/users, /api/admin-sql/roles, etc.
+# ============================================================================
+from modules.admin_sql.routes import router as admin_sql_router
+app.include_router(admin_sql_router)
+
+# ============================================================================
 # FASE 4E: Cache Management Endpoints (Admin Only)
 # ============================================================================
 from modules.comercial.cache_service import cleanup_expired_cache, get_cache_stats, init_cache_service
@@ -3414,6 +3421,8 @@ async def get_unidades_negocio(
             EDARSAHUB_CONFIG['password'],
             query
         )
+        
+        logging.info(f"[UNIDADES_NEGOCIO] execute_sql_query retornó: {len(unidades_sql) if unidades_sql else 'None'} registros")
         
         if unidades_sql is None:
             logging.error("[UNIDADES_NEGOCIO] EDARSAHUB_SQL_ERROR: Sin respuesta de la base de datos")

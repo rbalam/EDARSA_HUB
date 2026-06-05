@@ -106,7 +106,8 @@ const Usuarios = () => {
 
   const loadUsers = useCallback(async () => {
     try {
-      const response = await api.get('/users');
+      // SQL-FIRST: Usuarios desde EDARSAHUB SQL
+      const response = await api.get('/admin-sql/users');
       setUsers(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       toast.error('Error al cargar usuarios');
@@ -118,7 +119,8 @@ const Usuarios = () => {
 
   const loadServers = useCallback(async () => {
     try {
-      const response = await api.get('/servers');
+      // SQL-FIRST: Servidores desde EDARSAHUB SQL
+      const response = await api.get('/admin-sql/servers');
       const data = Array.isArray(response.data) ? response.data : [];
       setServers(data);
     } catch (error) {
@@ -248,8 +250,9 @@ const Usuarios = () => {
   // ============= FUNCIONES PERMISOS CATÁLOGOS =============
   const loadUsuariosCatalogos = async () => {
     try {
-      const response = await api.get('/sistema/usuarios-asignables');
-      setUsuariosCatalogos(response.data.usuarios || []);
+      // SQL-FIRST: Usuarios asignables desde EDARSAHUB SQL
+      const response = await api.get('/admin-sql/usuarios-asignables');
+      setUsuariosCatalogos(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       logger.error('Error cargando usuarios para catálogos:', error);
     }
@@ -257,8 +260,9 @@ const Usuarios = () => {
 
   const loadCatalogosDisponibles = async () => {
     try {
-      const response = await api.get('/sistema/catalogos-disponibles');
-      setCatalogosDisponibles(response.data.catalogos || []);
+      // SQL-FIRST: Catálogos desde EDARSAHUB SQL
+      const response = await api.get('/admin-sql/catalogos-disponibles');
+      setCatalogosDisponibles(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       logger.error('Error cargando catálogos:', error);
     }
@@ -278,7 +282,8 @@ const Usuarios = () => {
   const handleGuardarPermisosCatalogos = async () => {
     setSavingPermisosCat(true);
     try {
-      await api.post('/sistema/permisos-catalogos', {
+      // SQL-FIRST: Guardar permisos en EDARSAHUB SQL
+      await api.post('/admin-sql/permisos-catalogos', {
         user_id: usuarioSeleccionadoCat.id,
         ...formPermisosCat
       });
@@ -308,7 +313,8 @@ const Usuarios = () => {
   const loadRoles = async () => {
     setRolesLoading(true);
     try {
-      const response = await api.get('/roles');
+      // SQL-FIRST: Roles desde EDARSAHUB SQL
+      const response = await api.get('/admin-sql/roles');
       setRoles(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       logger.error('Error loading roles:', error);
@@ -320,7 +326,8 @@ const Usuarios = () => {
 
   const loadModulos = async () => {
     try {
-      const response = await api.get('/roles/modulos');
+      // SQL-FIRST: Módulos desde EDARSAHUB SQL
+      const response = await api.get('/admin-sql/roles/modulos');
       setModulos(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       logger.error('Error loading modulos:', error);
