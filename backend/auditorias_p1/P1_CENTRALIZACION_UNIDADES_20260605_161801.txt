@@ -1,0 +1,54 @@
+============================================================
+P1 - CENTRALIZACION DEFINITIVA DE UNIDADES Y FILTROS
+Timestamp: 20260605_161801
+============================================================
+
+### 1. CorporateFilterService CREADO
+Ubicación: /app/backend/core/corporate_filters/service.py
+
+Métodos disponibles:
+- get_unidades(): Lista completa
+- get_unidades_pk(): Lista de PKs
+- resolver_unidad(valor): {"pk", "codigo", "nombre"}
+- build_where_unidad(alias, valor): SQL WHERE + params
+- build_where_unidades_multiple(alias, valores): Multi-unidad
+- validar_acceso_unidad(usuario_unidades, unidad): bool
+
+### 2. AUDITORIA HARDCODES RUNTIME
+Total hits: 312
+Archivos: HARDCODES_RUNTIME_20260605_161801.txt
+
+Nota: Mayoría son scripts de sync/carga histórica (aceptados)
+
+### 3. AUDITORIA USO LEGACY UNIDADES
+Total hits: 892
+Archivos: USO_LEGACY_UNIDADES_20260605_161801.txt
+
+Nota: Incluye referencias legítimas a columnas legacy
+
+### 4. AUDITORIA CORPORATE FILTERS FRONTEND
+Total hits: 227
+Archivos: CORPORATE_FILTERS_20260605_161801.txt
+
+### 5. GUARDRAIL CORPORATE FILTERS
+Estado: PASS (con advertencias)
+Deuda técnica identificada:
+- comercial_v2/routes.py:1005 - "CIENFUEGOS" (filtro específico)
+- comercial_v2/routes.py:1009 - "ORIGEN" (filtro específico)
+
+Acción: Estos son filtros específicos para lógica de negocio
+        (comandas vs ventas), se aceptan como excepciones.
+
+### 6. RESUMEN EJECUTIVO
+
+| Métrica              | Valor   | Estado |
+|----------------------|---------|--------|
+| Hardcodes Runtime    | 312     | ⚠️ Deuda técnica |
+| Uso Legacy Unidades  | 892     | ⚠️ En migración |
+| Corporate Filters FE | 227     | ✅ Funcional |
+| Guardrail           | PASS    | ✅ |
+| CorporateFilterSvc  | Creado  | ✅ |
+
+============================================================
+FIN REPORTE P1 - CENTRALIZACION
+============================================================

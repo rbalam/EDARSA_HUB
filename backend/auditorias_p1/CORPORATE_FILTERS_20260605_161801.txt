@@ -1,0 +1,227 @@
+/app/frontend/src/portal-inteligencia/App.jsx:34:  const [unidadSeleccionada, setUnidadSeleccionada] = useState('todas');
+/app/frontend/src/portal-inteligencia/App.jsx:107:      setUnidadSeleccionada,
+/app/frontend/src/portal-inteligencia/App.jsx:149:            onChange={(e) => setUnidadSeleccionada(e.target.value)}
+/app/frontend/src/pages/Compras.js:80:function DashboardCompras({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, loadingUnidades }) {
+/app/frontend/src/pages/Compras.js:98:    if (!selectedSucursal || !selectedUnidad) return;
+/app/frontend/src/pages/Compras.js:101:    const unidadKey = generateUnidadKey(selectedUnidad);
+/app/frontend/src/pages/Compras.js:113:      system_type: selectedUnidad?.system_type,
+/app/frontend/src/pages/Compras.js:210:  }, [selectedServer, selectedSucursal, selectedMeses, selectedAnios, selectedUnidad]);
+/app/frontend/src/pages/Compras.js:270:                <Select value={selectedUnidad} onValueChange={setSelectedUnidad} disabled={loadingUnidades}>
+/app/frontend/src/pages/Compras.js:526:function AutorizacionComprasTab({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal: parentSucursal, setSelectedSucursal: setParentSucursal, sucursales: parentSucursales }) {
+/app/frontend/src/pages/Compras.js:725:                <Select value={selectedUnidad} onValueChange={setSelectedUnidad}>
+/app/frontend/src/pages/Compras.js:891:function AnalisisCompras({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales }) {
+/app/frontend/src/pages/Compras.js:1050:                <Select value={selectedUnidad} onValueChange={setSelectedUnidad}>
+/app/frontend/src/pages/Compras.js:1485:function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal: parentSucursal, setSelectedSucursal: setParentSucursal, sucursales: parentSucursales }) {
+/app/frontend/src/pages/Compras.js:1624:  const [unidadAnalisis, setUnidadAnalisis] = useState('presentaciones');
+/app/frontend/src/pages/Compras.js:1907:    if (inventarioParaBackend.length > 0 && selectedUnidad) {
+/app/frontend/src/pages/Compras.js:1909:        const unidadInfo = unidadesNegocio.find(u => u.id === selectedUnidad);
+/app/frontend/src/pages/Compras.js:1911:          unidad_negocio_id: selectedUnidad,
+/app/frontend/src/pages/Compras.js:2212:                <Select value={selectedUnidad} onValueChange={setSelectedUnidad}>
+/app/frontend/src/pages/Compras.js:2685:                  onClick={() => setUnidadAnalisis('presentaciones')}
+/app/frontend/src/pages/Compras.js:2691:                  onClick={() => setUnidadAnalisis('insumos')}
+/app/frontend/src/pages/Compras.js:3058:                  onClick={() => setUnidadAnalisis('presentaciones')}
+/app/frontend/src/pages/Compras.js:3064:                  onClick={() => setUnidadAnalisis('insumos')}
+/app/frontend/src/pages/Compras.js:3387:  const [unidadesNegocio, setUnidadesNegocio] = useState([]);
+/app/frontend/src/pages/Compras.js:3388:  const [selectedUnidad, setSelectedUnidad] = useState('');
+/app/frontend/src/pages/Compras.js:3396:    return getServerIdFromUnidad(unidadesNegocio, selectedUnidad);
+/app/frontend/src/pages/Compras.js:3397:  }, [unidadesNegocio, selectedUnidad]);
+/app/frontend/src/pages/Compras.js:3407:      unidad_id: u.id,
+/app/frontend/src/pages/Compras.js:3436:        setUnidadesNegocio(unidades);
+/app/frontend/src/pages/Compras.js:3490:    if (selectedUnidad && selectedServer) {
+/app/frontend/src/pages/Compras.js:3498:          const unidad = unidadesNegocio.find(u => u.id === selectedUnidad);
+/app/frontend/src/pages/Compras.js:3521:          localStorage.setItem(STORAGE_KEY, JSON.stringify({ unidad: selectedUnidad, server: selectedServer }));
+/app/frontend/src/pages/Compras.js:3532:  }, [selectedUnidad, selectedServer, unidadesNegocio]);
+/app/frontend/src/pages/Compras.js:3540:  // Traduce server_id a unidad_id
+/app/frontend/src/pages/Compras.js:3583:            selectedUnidad={selectedUnidad}
+/app/frontend/src/pages/Compras.js:3598:            selectedUnidad={selectedUnidad}
+/app/frontend/src/pages/Compras.js:3612:            selectedUnidad={selectedUnidad}
+/app/frontend/src/pages/Compras.js:3626:            selectedUnidad={selectedUnidad}
+/app/frontend/src/pages/comercial/PricingIA.jsx:13: * - GET /api/comercial/benchmark/resumen/{unidad_id}
+/app/frontend/src/pages/comercial/PricingIA.jsx:2403:  const [unidadId, setUnidadId] = useState(1);
+/app/frontend/src/pages/comercial/CostosMargenes.jsx:1342:  const [unidadNegocio, setUnidadNegocio] = useState('');
+/app/frontend/src/pages/comercial/CostosMargenes.jsx:1358:  const [unidades, setUnidades] = useState([]);
+/app/frontend/src/pages/comercial/CostosMargenes.jsx:1408:      .then(res => setUnidades(res.data.unidades || []))
+/app/frontend/src/pages/comercial/CostosMargenes.jsx:1417:        const params = unidadNegocio ? `?servidor_id=${encodeURIComponent(unidadNegocio)}` : '';
+/app/frontend/src/pages/comercial/CostosMargenes.jsx:1430:  }, [unidadNegocio]);
+/app/frontend/src/pages/comercial/CostosMargenes.jsx:1436:      if (unidadNegocio) params.append('servidor_id', unidadNegocio);
+/app/frontend/src/pages/comercial/CostosMargenes.jsx:1445:  }, [familia, unidadNegocio]);
+/app/frontend/src/pages/comercial/CostosMargenes.jsx:1479:      if (unidadNegocio) params.append('servidor_id', unidadNegocio);
+/app/frontend/src/pages/comercial/CostosMargenes.jsx:1499:  }, [page, pageSize, pageSizeAgrupado, vistaAgrupada, busqueda, unidadNegocio, familia, subfamilia, soloConReceta, margenBajo, umbralMargenBajo, incluirInactivos]);
+/app/frontend/src/pages/comercial/CostosMargenes.jsx:1633:            value={unidadNegocio}
+/app/frontend/src/pages/comercial/CostosMargenes.jsx:1634:            onChange={(e) => { setUnidadNegocio(e.target.value); setPage(1); }}
+/app/frontend/src/pages/Finanzas.js:49:    selectedUnidad,
+/app/frontend/src/pages/Finanzas.js:278:    if (!loadingUnidades && unidadesNegocio.length === 1 && !selectedUnidad) {
+/app/frontend/src/pages/Finanzas.js:283:  }, [loadingUnidades, unidadesNegocio, selectedUnidad]);
+/app/frontend/src/pages/Finanzas.js:287:    return unidadesNegocio.find(u => u.id === selectedUnidad) || null;
+/app/frontend/src/pages/Finanzas.js:288:  }, [unidadesNegocio, selectedUnidad]);
+/app/frontend/src/pages/Finanzas.js:316:        ...(selectedUnidad && { server_id: selectedUnidad })
+/app/frontend/src/pages/Finanzas.js:325:  }, [fetchWithAuth, filtroAnio, filtroMes, selectedUnidad]);
+/app/frontend/src/pages/Finanzas.js:334:        ...(selectedUnidad && { server_id: selectedUnidad })
+/app/frontend/src/pages/Finanzas.js:343:  }, [fetchWithAuth, filtroAnio, filtroMes, selectedUnidad]);
+/app/frontend/src/pages/Finanzas.js:381:      // === FASE 1 CxP: Usar selectedUnidad como filtro principal ===
+/app/frontend/src/pages/Finanzas.js:382:      // DOCUMENTACIÓN: selectedUnidad contiene el UUID de la unidad de negocio
+/app/frontend/src/pages/Finanzas.js:384:      // Mapeamos selectedUnidad → código de unidad para compatibilidad legacy
+/app/frontend/src/pages/Finanzas.js:389:      if (selectedUnidad) {
+/app/frontend/src/pages/Finanzas.js:390:        const unidadObj = unidadesNegocio.find(u => u.id === selectedUnidad);
+/app/frontend/src/pages/Finanzas.js:498:  }, [fetchWithAuth, selectedUnidad, unidadesNegocio, cxpFiltroSucursal, cxpFiltroProveedor, cxpFechaCorte, cxpSoloVencidas, cxpSoloDecision, userPermissions]);
+/app/frontend/src/pages/Finanzas.js:744:      if (selectedUnidad) params.append('unidad_negocio_id', selectedUnidad);
+/app/frontend/src/pages/Finanzas.js:751:        fetchWithAuth(`/finanzas/ingresos/saldos-por-depositar${selectedUnidad ? `?unidad_negocio_id=${selectedUnidad}` : ''}`),
+/app/frontend/src/pages/Finanzas.js:767:  }, [fetchWithAuth, selectedUnidad, ingresosFechaInicio, ingresosFechaFin, ingresosSoloPendientes]);
+/app/frontend/src/pages/Finanzas.js:819:    if (activeTab === 'cxp' && selectedUnidad !== undefined) {
+/app/frontend/src/pages/Finanzas.js:820:      logger.log(`[CxP] Unidad cambiada a: ${selectedUnidad || 'Todas'}, recargando...`);
+/app/frontend/src/pages/Finanzas.js:823:  }, [selectedUnidad]); // Solo depende de selectedUnidad
+/app/frontend/src/pages/Finanzas.js:955:        selectedUnidad={selectedUnidad}
+/app/frontend/src/pages/Finanzas.js:976:      selectedUnidad={selectedUnidad}
+/app/frontend/src/pages/Finanzas.js:1001:        selectedUnidad={selectedUnidad}
+/app/frontend/src/pages/Finanzas.js:1041:        selectedUnidad={selectedUnidad}
+/app/frontend/src/pages/ConfigAsignaciones.jsx:95:  const [unidadesNegocio, setUnidadesNegocio] = useState([]);
+/app/frontend/src/pages/ConfigAsignaciones.jsx:96:  const [almacenesPorUnidad, setAlmacenesPorUnidad] = useState({}); // {unidad_id: [{id, nombre}]}
+/app/frontend/src/pages/ConfigAsignaciones.jsx:104:  const [unidadesExpandidas, setUnidadesExpandidas] = useState({});
+/app/frontend/src/pages/ConfigAsignaciones.jsx:112:    almacenes_seleccionados: {},   // {unidad_id: [almacen_ids]} o {unidad_id: 'todos'}
+/app/frontend/src/pages/ConfigAsignaciones.jsx:127:  const [syncingUnidad, setSyncingUnidad] = useState(null); // unidad_id que se está sincronizando
+/app/frontend/src/pages/ConfigAsignaciones.jsx:128:  const [syncStatus, setSyncStatus] = useState({}); // {unidad_id: {status, message, count, timestamp}}
+/app/frontend/src/pages/ConfigAsignaciones.jsx:178:      setUnidadesNegocio(response.data.data || []);
+/app/frontend/src/pages/ConfigAsignaciones.jsx:333:      almacenes_seleccionados: {}, // {unidad_id: [almacen_ids]} o {unidad_id: 'todos'}
+/app/frontend/src/pages/ConfigAsignaciones.jsx:342:    setUnidadesExpandidas({});
+/app/frontend/src/pages/ConfigAsignaciones.jsx:368:    setUnidadesExpandidas({ [asignacion.unidad_negocio_id]: true });
+/app/frontend/src/pages/ConfigAsignaciones.jsx:442:    setUnidadesExpandidas(nuevasExpandidas);
+/app/frontend/src/pages/Reportes.js:29:const getAlmacenPlaceholder = (selectedAlmacenes, selectedServer, selectedUnidad, almacenes, filters) => {
+/app/frontend/src/pages/Reportes.js:34:  if (!selectedUnidad) {
+/app/frontend/src/pages/Reportes.js:61:  const [unidadesNegocio, setUnidadesNegocio] = useState([]);
+/app/frontend/src/pages/Reportes.js:62:  const [selectedUnidad, setSelectedUnidad] = useState('');
+/app/frontend/src/pages/Reportes.js:71:      unidad_id: u.id,
+/app/frontend/src/pages/Reportes.js:122:      unidad_id: '', // FASE 3.2: Agregar unidad_id
+/app/frontend/src/pages/Reportes.js:738:      setUnidadesNegocio(unidades);
+/app/frontend/src/pages/Reportes.js:750:            unidad_id: unidad.id,
+/app/frontend/src/pages/Reportes.js:758:            unidad_id: unidad.id,
+/app/frontend/src/pages/Reportes.js:777:            if (params.unidad_id && unidades.find(u => u.id === params.unidad_id)) {
+/app/frontend/src/pages/Reportes.js:778:              setSelectedUnidad(params.unidad_id);
+/app/frontend/src/pages/Reportes.js:779:              const unidad = unidades.find(u => u.id === params.unidad_id);
+/app/frontend/src/pages/Reportes.js:798:      setUnidadesNegocio([]);
+/app/frontend/src/pages/Reportes.js:1580:                      value={selectedUnidad}
+/app/frontend/src/pages/Reportes.js:1601:                              unidad_id: unidadId,
+/app/frontend/src/pages/Reportes.js:1611:                              unidad_id: unidadId,
+/app/frontend/src/pages/Reportes.js:1620:                          setFilters({...filters, unidad_id: '', server_id: '', sucursal_id: '', almacen_id: '', sucursal: '', almacen: ''});
+/app/frontend/src/pages/Reportes.js:1666:                  disabled={!selectedUnidad || sucursales.length === 0}
+/app/frontend/src/pages/Reportes.js:1668:                  <option value="">{!selectedUnidad ? "Selecciona unidad primero" : "Selecciona una sucursal"}</option>
+/app/frontend/src/pages/Reportes.js:1686:                    {getAlmacenPlaceholder(selectedAlmacenes, selectedServer, selectedUnidad, almacenes, filters)}
+/app/frontend/src/pages/Dashboard.js:80:  const [unidadesNegocio, setUnidadesNegocio] = useState([]);
+/app/frontend/src/pages/Dashboard.js:81:  const [selectedUnidad, setSelectedUnidad] = useState('');
+/app/frontend/src/pages/Dashboard.js:86:    return getServerIdFromUnidad(unidadesNegocio, selectedUnidad);
+/app/frontend/src/pages/Dashboard.js:87:  }, [unidadesNegocio, selectedUnidad]);
+/app/frontend/src/pages/Dashboard.js:115:      setUnidadesNegocio(unidades);
+/app/frontend/src/pages/Dashboard.js:209:  if (!selectedUnidad) {
+/app/frontend/src/pages/Dashboard.js:229:              <Select value={selectedUnidad} onValueChange={setSelectedUnidad}>
+/app/frontend/src/pages/Dashboard.js:322:            Análisis de diferencias - {unidadesNegocio.find(u => u.id === selectedUnidad)?.nombre || 'Selecciona una unidad'}
+/app/frontend/src/pages/Dashboard.js:328:          <Select value={selectedUnidad} onValueChange={setSelectedUnidad}>
+/app/frontend/src/pages/TableroEjecutivo.js:891:  const [unidadSeleccionada, setUnidadSeleccionada] = useState(null);
+/app/frontend/src/pages/TableroEjecutivo.js:1645:                onClick={setUnidadSeleccionada}
+/app/frontend/src/pages/TableroEjecutivo.js:1709:          onClose={() => setUnidadSeleccionada(null)}
+/app/frontend/src/pages/AutorizacionCompras.js:57:    selectedUnidad,
+/app/frontend/src/pages/AutorizacionCompras.js:161:  // MIGRACIÓN: Guardar params usando unidad_id en lugar de server
+/app/frontend/src/pages/AutorizacionCompras.js:163:    if (selectedUnidad && selectedServer && selectedSucursal) {
+/app/frontend/src/pages/AutorizacionCompras.js:166:        unidad: selectedUnidad,
+/app/frontend/src/pages/AutorizacionCompras.js:176:  }, [selectedUnidad, selectedServer, selectedSucursal, selectedAlmacenes, folioInvFisico, fechaInvFisico, fechaFinPeriodo, metodoCalculo, diasInventario]);
+/app/frontend/src/pages/AutorizacionCompras.js:205:    if (!selectedUnidad || !selectedServer || !selectedSucursal || (selectedAlmacenes.length === 0 && !todosAlmacenes)) {
+/app/frontend/src/pages/AutorizacionCompras.js:350:              <Select value={selectedUnidad} onValueChange={setSelectedUnidad} disabled={loadingUnidades}>
+/app/frontend/src/pages/AutorizacionCompras.js:368:              }} disabled={todosAlmacenes || !selectedUnidad}>
+/app/frontend/src/pages/AutorizacionCompras.js:370:                  <SelectValue placeholder={todosAlmacenes ? "Todos los folios" : (selectedUnidad ? "Seleccionar" : "Selecciona unidad")} />
+/app/frontend/src/pages/AutorizacionCompras.js:407:          {almacenes.length > 0 && selectedUnidad && (
+/app/frontend/src/pages/AutorizacionCompras.js:467:            <Button onClick={calcularPedido} disabled={loading || !selectedUnidad || (selectedAlmacenes.length === 0 && !todosAlmacenes)} data-testid="btn-calcular">
+/app/frontend/src/pages/Comercial.js:346:function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, showSucursalSelector, loadingUnidades }) {
+/app/frontend/src/pages/Comercial.js:378:    const unidadActual = unidadesNegocio.find(u => u.id === selectedUnidad);
+/app/frontend/src/pages/Comercial.js:508:                <Select value={selectedUnidad} onValueChange={setSelectedUnidad} disabled={loadingUnidades}>
+/app/frontend/src/pages/Comercial.js:981:function TicketPerfecto({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, showSucursalSelector, loadingUnidades }) {
+/app/frontend/src/pages/Comercial.js:1040:                <Select value={selectedUnidad} onValueChange={setSelectedUnidad} disabled={loadingUnidades}>
+/app/frontend/src/pages/Comercial.js:1170:function MetasVentas({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, showSucursalSelector, loadingUnidades }) {
+/app/frontend/src/pages/Comercial.js:1229:                <Select value={selectedUnidad} onValueChange={setSelectedUnidad} disabled={loadingUnidades}>
+/app/frontend/src/pages/Comercial.js:1313:function VentasPorTiempo({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, showSucursalSelector, loadingUnidades }) {
+/app/frontend/src/pages/Comercial.js:1369:                <Select value={selectedUnidad} onValueChange={setSelectedUnidad} disabled={loadingUnidades}>
+/app/frontend/src/pages/Comercial.js:1469:function MesasComensales({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, showSucursalSelector, loadingUnidades }) {
+/app/frontend/src/pages/Comercial.js:1511:                <Select value={selectedUnidad} onValueChange={setSelectedUnidad} disabled={loadingUnidades}>
+/app/frontend/src/pages/Comercial.js:1626:function ReportePax({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, showSucursalSelector, loadingUnidades }) {
+/app/frontend/src/pages/Comercial.js:1746:                <Select value={selectedUnidad} onValueChange={setSelectedUnidad} disabled={loadingUnidades}>
+/app/frontend/src/pages/Comercial.js:1782:            <Button onClick={cargarDatos} disabled={loading || !selectedUnidad || !selectedSucursal} className="mt-5">
+/app/frontend/src/pages/Comercial.js:2001:function VentasPreciosConstantes({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal, setSelectedSucursal, sucursales, loadingUnidades }) {
+/app/frontend/src/pages/Comercial.js:2043:    if (selectedUnidad && unidadesNegocio?.length > 0) {
+/app/frontend/src/pages/Comercial.js:2044:      const unidad = unidadesNegocio.find(u => u.id === selectedUnidad);
+/app/frontend/src/pages/Comercial.js:2065:  }, [selectedUnidad, unidadesNegocio]);
+/app/frontend/src/pages/Comercial.js:2246:                <Select value={selectedUnidad} onValueChange={setSelectedUnidad} disabled={loadingUnidades}>
+/app/frontend/src/pages/Comercial.js:2347:            <Button onClick={cargarAnalisis} disabled={loading || !selectedUnidad}>
+/app/frontend/src/pages/Comercial.js:2735:  const [unidadesNegocio, setUnidadesNegocio] = useState([]);
+/app/frontend/src/pages/Comercial.js:2736:  const [selectedUnidad, setSelectedUnidad] = useState('');
+/app/frontend/src/pages/Comercial.js:2745:    return getServerIdFromUnidad(unidadesNegocio, selectedUnidad);
+/app/frontend/src/pages/Comercial.js:2746:  }, [unidadesNegocio, selectedUnidad]);
+/app/frontend/src/pages/Comercial.js:2754:      unidad_id: u.id,
+/app/frontend/src/pages/Comercial.js:2776:    if (selectedUnidad) {
+/app/frontend/src/pages/Comercial.js:2778:        unidad: selectedUnidad,
+/app/frontend/src/pages/Comercial.js:2784:  }, [selectedUnidad, selectedServer, selectedSucursal, activeTab]);
+/app/frontend/src/pages/Comercial.js:2792:        setUnidadesNegocio(unidades);
+/app/frontend/src/pages/Comercial.js:2826:    if (selectedUnidad && unidadesNegocio.length > 0) {
+/app/frontend/src/pages/Comercial.js:2828:      const unidad = unidadesNegocio.find(u => u.id === selectedUnidad);
+/app/frontend/src/pages/Comercial.js:2885:    } else if (!selectedUnidad) {
+/app/frontend/src/pages/Comercial.js:2891:  }, [selectedUnidad, unidadesNegocio]);
+/app/frontend/src/pages/Comercial.js:2909:    selectedUnidad,
+/app/frontend/src/pages/ConfiguracionOperativaUnidades.jsx:40:  const [unidades, setUnidades] = useState({});
+/app/frontend/src/pages/ConfiguracionOperativaUnidades.jsx:41:  const [selectedUnidad, setSelectedUnidad] = useState(null);
+/app/frontend/src/pages/ConfiguracionOperativaUnidades.jsx:59:        setUnidades(data.unidades || {});
+/app/frontend/src/pages/ConfiguracionOperativaUnidades.jsx:315:      {showEditor && selectedUnidad && (
+/app/frontend/src/pages/ConfiguracionOperativaUnidades.jsx:319:              unidadId={selectedUnidad}
+/app/frontend/src/pages/crm/OportunidadesPage.jsx:209:                  <TableRow key={opp.oportunidad_id} data-testid={`opp-row-${opp.oportunidad_id}`}>
+/app/frontend/src/pages/crm/CerrarOportunidadModal.jsx:51:      await api.post(`/crm/native/oportunidades/${oportunidad.oportunidad_id}/cerrar`, {
+/app/frontend/src/pages/crm/PipelinePage.jsx:65:      await api.post(`/crm/native/oportunidades/${draggedOpp.opp.oportunidad_id}/cambiar-etapa`, {
+/app/frontend/src/pages/crm/PipelinePage.jsx:157:                  key={opp.oportunidad_id}
+/app/frontend/src/pages/crm/PipelinePage.jsx:161:                  data-testid={`kanban-card-${opp.oportunidad_id}`}
+/app/frontend/src/pages/crm/OportunidadForm.jsx:91:        await api.put(`/crm/native/oportunidades/${oportunidad.oportunidad_id}`, {
+/app/frontend/src/components/PropinasTPV.jsx:48:  const unidadNegocioCorporativaId = corporateSelected?.unidades_negocio || "";
+/app/frontend/src/components/PropinasTPV.jsx:49:  const unidadNegocioCorporativa = (corporateFilters?.unidades_negocio || [])
+/app/frontend/src/components/PropinasTPV.jsx:50:    .find((item) => item.id === unidadNegocioCorporativaId);
+/app/frontend/src/components/PropinasTPV.jsx:52:  const unidadNegocioEfectiva = unidadNegocioCorporativa?.codigo
+/app/frontend/src/components/PropinasTPV.jsx:53:    || unidadNegocioCorporativa?.nombre
+/app/frontend/src/components/PropinasTPV.jsx:54:    || unidadNegocioCorporativaId
+/app/frontend/src/components/PropinasTPV.jsx:58:    return unidadNegocioEfectiva || "";
+/app/frontend/src/components/PropinasTPV.jsx:102:  const [unidadesNegocio, setUnidadesNegocio] = useState([]);
+/app/frontend/src/components/PropinasTPV.jsx:155:        setUnidadesNegocio(unidades);
+/app/frontend/src/components/PropinasTPV.jsx:174:        setUnidadesNegocio(unidades);
+/app/frontend/src/components/admin/ResyncPanel.jsx:85:  const [unidadId, setUnidadId] = useState('');
+/app/frontend/src/components/admin/ResyncPanel.jsx:201:  const selectedUnidad = options.unidades.find(u => u.id === unidadId);
+/app/frontend/src/components/admin/ResyncPanel.jsx:253:              <Select value={unidadId} onValueChange={setUnidadId} data-testid="select-unidad">
+/app/frontend/src/components/admin/ResyncPanel.jsx:573:            <p><strong>Unidad:</strong> {selectedUnidad?.nombre}</p>
+/app/frontend/src/components/finanzas/FinanzasControlIngresos.jsx:25: * @param {string} props.selectedUnidad - Unidad de negocio seleccionada
+/app/frontend/src/components/finanzas/FinanzasControlIngresos.jsx:48:  selectedUnidad,
+/app/frontend/src/components/finanzas/FinanzasControlIngresos.jsx:104:                    value={selectedUnidad}
+/app/frontend/src/components/finanzas/FinanzasCuentasPorPagar.jsx:24: * @param {string} props.selectedUnidad - Unidad de negocio seleccionada
+/app/frontend/src/components/finanzas/FinanzasCuentasPorPagar.jsx:65:  selectedUnidad,
+/app/frontend/src/components/finanzas/FinanzasCuentasPorPagar.jsx:382:                  value={selectedUnidad}
+/app/frontend/src/components/finanzas/FinanzasPresupuestos.jsx:17: * @param {string} props.selectedUnidad - Unidad de negocio seleccionada
+/app/frontend/src/components/finanzas/FinanzasPresupuestos.jsx:34:  selectedUnidad,
+/app/frontend/src/components/finanzas/FinanzasPresupuestos.jsx:62:                value={selectedUnidad}
+/app/frontend/src/components/finanzas/FinanzasDashboard.jsx:27: * @param {string} props.selectedUnidad - Unidad seleccionada
+/app/frontend/src/components/finanzas/FinanzasDashboard.jsx:43:  selectedUnidad,
+/app/frontend/src/components/finanzas/FinanzasDashboard.jsx:116:              value={selectedUnidad}
+/app/frontend/src/components/compras/useAutorizacionComprasData.js:14:  const [unidadesNegocio, setUnidadesNegocio] = useState([]);
+/app/frontend/src/components/compras/useAutorizacionComprasData.js:15:  const [selectedUnidad, setSelectedUnidad] = useState('');
+/app/frontend/src/components/compras/useAutorizacionComprasData.js:35:    return getServerIdFromUnidad(unidadesNegocio, selectedUnidad);
+/app/frontend/src/components/compras/useAutorizacionComprasData.js:36:  }, [unidadesNegocio, selectedUnidad]);
+/app/frontend/src/components/compras/useAutorizacionComprasData.js:39:    const unidad = unidadesNegocio.find(u => u.id === selectedUnidad);
+/app/frontend/src/components/compras/useAutorizacionComprasData.js:45:  }, [unidadesNegocio, selectedUnidad]);
+/app/frontend/src/components/compras/useAutorizacionComprasData.js:48:    const unidad = unidadesNegocio.find(u => u.id === selectedUnidad);
+/app/frontend/src/components/compras/useAutorizacionComprasData.js:51:  }, [unidadesNegocio, selectedUnidad]);
+/app/frontend/src/components/compras/useAutorizacionComprasData.js:59:        setUnidadesNegocio(data);
+/app/frontend/src/components/compras/useAutorizacionComprasData.js:166:    selectedUnidad,
+/app/frontend/src/components/tesoreria/useTesoreriaCorteZData.js:32:  const [unidadesNegocio, setUnidadesNegocio] = useState([]);
+/app/frontend/src/components/tesoreria/useTesoreriaCorteZData.js:47:      setUnidadesNegocio(unidades);
+/app/frontend/src/lib/previewCacheUtils.js:92:  'selectedUnidadNegocio',
+/app/frontend/src/filters/useFinanzasCorporateFilters.js:31:  const selectedUnidad = selected?.unidades_negocio || "";
+/app/frontend/src/filters/useFinanzasCorporateFilters.js:34:    if (!selectedUnidad) return null;
+/app/frontend/src/filters/useFinanzasCorporateFilters.js:36:    return unidadesNegocio.find((unidad) => String(unidad.id) === String(selectedUnidad)) || null;
+/app/frontend/src/filters/useFinanzasCorporateFilters.js:37:  }, [selectedUnidad, unidadesNegocio]);
+/app/frontend/src/filters/useFinanzasCorporateFilters.js:48:  const selectedUnidadNombre = unidadActual?.nombre || "";
+/app/frontend/src/filters/useFinanzasCorporateFilters.js:49:  const selectedUnidadCodigo = unidadActual?.codigo || "";
+/app/frontend/src/filters/useFinanzasCorporateFilters.js:54:    selectedUnidad,
+/app/frontend/src/filters/useFinanzasCorporateFilters.js:58:    selectedUnidadNombre,
+/app/frontend/src/filters/useFinanzasCorporateFilters.js:59:    selectedUnidadCodigo,
+/app/frontend/src/utils/styleHelpers.js:237:export const getAlmacenPlaceholder = (selectedUnidad, almacenes, todosAlmacenes) => {
+/app/frontend/src/utils/styleHelpers.js:239:  if (!selectedUnidad) return "Selecciona unidad primero";
+/app/frontend/src/services/comprasUtils.js:8: * - Formato: {system_type}:{server_id}:{sucursal_origen_id}:{unidad_id}
+/app/frontend/src/services/comprasUtils.js:33: * @returns {string} unidad_key en formato: {system_type}:{server_id}:{sucursal_origen_id}:{unidad_id}
