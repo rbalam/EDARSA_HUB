@@ -185,9 +185,9 @@ def _get_unidad_config(unidad_negocio_id: str) -> Optional[Dict[str, Any]]:
         
         return {
             'server_id': str(server_data.get('server_id', '')),
-            'sistema': server_data.get('servidor_system_type') or server_data.get('system_type') or 'UNKNOWN',
-            'sucursal_id': server_data.get('sucursal_origen_id') or server_data.get('sucursal_id') or 'DEFAULT',
-            'nombre': server_data.get('unidad_negocio_nombre') or unidad_negocio_id,
+            'sistema': server_data.get('servidor_system_type', server_data.get('tipo_sistema', 'UNKNOWN')),
+            'sucursal_id': server_data.get('sucursal_id', 'DEFAULT'),
+            'nombre': server_data.get('unidad_nombre', unidad_negocio_id),
             'host': server_data.get('host'),
             'activo': server_data.get('servidor_activo', True)
         }

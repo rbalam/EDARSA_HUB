@@ -185,9 +185,9 @@ def _get_unidad_config(unidad_negocio_id: str) -> Optional[Dict[str, Any]]:
         
         return {
             'server_id': str(server_data.get('server_id', '')),
-            'sistema': server_data.get('servidor_system_type') or server_data.get('system_type') or 'UNKNOWN',
-            'sucursal_id': server_data.get('sucursal_origen_id') or server_data.get('sucursal_id') or 'DEFAULT',
-            'nombre': server_data.get('unidad_negocio_nombre') or unidad_negocio_id,
+            'sistema': server_data.get('servidor_system_type', server_data.get('tipo_sistema', 'UNKNOWN')),
+            'sucursal_id': server_data.get('sucursal_id', 'DEFAULT'),
+            'nombre': server_data.get('unidad_nombre', unidad_negocio_id),
             'host': server_data.get('host'),
             'activo': server_data.get('servidor_activo', True)
         }
@@ -385,12 +385,12 @@ async def validar_resync(
     if not tipo_sync.get('permite_resync'):
         raise HTTPException(status_code=400, detail=f"Tipo de sync '{request.tipo_sync}' no permite re-sincronización")
     
-    # Validar unidad usando catálogo central
+    # Validar unidad
     unidad = _get_unidad_config(request.unidad_negocio_id)
     if not unidad:
         raise HTTPException(
             status_code=400, 
-            detail=f"Unidad '{request.unidad_negocio_id}' no encontrada en catálogo central. Verificar Unidades_Negocio + Servidores_Conexiones."
+            detail=f"Unidad '{request.unidad_negocio_id}' no encontrada. Disponibles: {list(UNIDADES_CONFIG.keys())}"
         )
     
     # Validar rango

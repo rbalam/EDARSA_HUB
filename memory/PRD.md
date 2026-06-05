@@ -1,8 +1,8 @@
 # EDARSA HUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-05 (Sesión 12 - P2-06 a P2-09 ELIMINACIÓN DEUDA TÉCNICA)
-**Estado:** P0/P1 CERRADOS | P2 85% | SQL-First ✅ | MongoDB 99.9% ELIMINADO ✅ | Hardcodes Centralizados ✅
+**Última actualización:** 2026-06-05 (Sesión 13 - P0/P2-19 Corrección Catálogo Real + ENV)
+**Estado:** P0/P1 CERRADOS | P2 90% | SQL-First ✅ | MongoDB 99.9% ELIMINADO ✅ | Hardcodes Centralizados ✅
 
 ---
 
@@ -228,6 +228,10 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-06-05 (S13) | **✅ P0/P2-19 CORRECCIÓN CATÁLOGO REAL + ENV** |
+| 2026-06-05 (S13) | core/sql_first/db.py: Soporte pymssql fallback para preview |
+| 2026-06-05 (S13) | api/admin_scheduler_resync.py: Corregido tipo_sistema→system_type |
+| 2026-06-05 (S13) | Validación resolver: 5/5 unidades OK |
 | 2026-06-05 (S12) | **✅ P2-06 CIERRE ACELERADO DEUDA TÉCNICA COMPLETADO** |
 | 2026-06-05 (S12) | 6 archivos migrados a vistas `vw_Comercial_KPIs_*_Runtime` |
 | 2026-06-05 (S12) | MongoDB Elimination: 99.9%, No-Live: 99% |
