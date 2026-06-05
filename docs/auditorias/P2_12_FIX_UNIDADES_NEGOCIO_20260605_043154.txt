@@ -1,0 +1,179 @@
+P2-12 FIX /api/unidades-negocio
+Fecha: Fri Jun  5 04:31:54 UTC 2026
+
+=== 1) Ubicar endpoint actual ===
+3336:@api_router.get("/unidades-negocio")
+
+=== 2) Extraer bloque cercano ===
+    if server_id:
+        filtro["server_id"] = server_id
+    if activas:
+        filtro["activa"] = True
+    
+    cursor = db.server_sucursales_config.find(filtro, {"_id": 0})
+    sucursales = await cursor.to_list(500)
+    
+    # Enriquecer con nombre de servidor usando registry
+    # ANTES: server_cursor = db.servers.find({"id": {"$in": server_ids}}, {"_id": 0, "id": 1, "name": 1})
+    from core.server_registry import list_servers
+    server_ids = list(set(s.get("server_id") for s in sucursales if s.get("server_id")))
+    servers = {}
+    if server_ids:
+        all_servers = await list_servers(db=db, prefer_sql=True)
+        for srv in all_servers:
+            if srv.get("id") in server_ids:
+                servers[srv["id"]] = srv.get("name", srv["id"])
+    
+    for suc in sucursales:
+        suc["server_nombre"] = servers.get(suc.get("server_id"), "")
+    
+    return sucursales
+# ============= FIN ENDPOINT GLOBAL DE SUCURSALES =============
+
+# ============= ENDPOINT UNIDADES DE NEGOCIO (FASE 3.2) =============
+# Reemplaza el selector "Servidor" por "Unidad de Negocio" en módulos de negocio
+# El backend traduce unidad → server_id internamente
+# ==================================================================
+
+@api_router.get("/unidades-negocio")
+async def get_unidades_negocio(
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    ============================================================================
+    CORRECCIÓN AUDITORIA-UNIDADES-NEGOCIO-01 (2026-04-29):
+    
+    MANDATO ARQUITECTÓNICO: EDARSAHUB SQL es la ÚNICA fuente maestra de verdad
+    para la resolución de unidades de negocio, servidores, empresas y sucursales.
+    
+    MongoDB NO se usa como fuente, ni como fallback, ni como respaldo.
+    Si EDARSAHUB SQL no tiene el dato, retornamos error controlado.
+    
+    TABLA FUENTE: EDARSAHUB.dbo.Unidades_Negocio
+    ============================================================================
+    
+    Returns:
+        Lista de unidades con:
+        - id: ID de la unidad de negocio (UUID)
+        - codigo: Código corto (130MID, 130QRO, etc.)
+        - nombre: Nombre visible ("130° MERIDA", "130° QUERETARO", etc.)
+        - server_id: ID técnico del servidor
+        - system_type: Tipo de sistema (MPRO, SoftRestaurant)
+        - sucursal_origen_id: Código de sucursal en sistema externo (solo MPRO)
+        - connection_type: SQL_SERVER | API
+    """
+    from core.server_registry import EDARSAHUB_CONFIG
+    from core.db import execute_sql_query
+    
+    try:
+        # ============================================================================
+        # FUENTE ÚNICA: EDARSAHUB SQL
+        # ============================================================================
+        query = """
+        SELECT 
+            CAST(un.id AS VARCHAR(50)) as id,
+            un.nombre,
+            un.codigo,
+            CAST(un.server_id AS VARCHAR(50)) as server_id,
+            un.sucursal_origen_id,
+            un.system_type,
+            un.activo,
+            un.orden,
+            -- Datos del servidor relacionado
+            sc.nombre as server_nombre,
+            sc.host as server_host,
+            sc.database_name as database_name,
+            sc.tipo_conexion as connection_type
+        FROM Unidades_Negocio un
+        INNER JOIN Servidores_Conexiones sc ON CAST(un.server_id AS VARCHAR(50)) = CAST(sc.id AS VARCHAR(50))
+        WHERE un.activo = 1
+          AND sc.activo = 1
+        ORDER BY un.orden, un.nombre
+        """
+        
+        unidades_sql = execute_sql_query(
+            EDARSAHUB_CONFIG['host'],
+            EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'],
+            EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password'],
+            query
+        )
+        
+        if unidades_sql is None:
+            logging.error("[UNIDADES_NEGOCIO] EDARSAHUB_SQL_ERROR: Sin respuesta de la base de datos")
+            raise HTTPException(
+                status_code=503,
+                detail="Error de conexión con la base de datos central. No se usa fallback por política arquitectónica."
+            )
+        
+        logging.info(f"[UNIDADES_NEGOCIO] Obtenidas {len(unidades_sql)} unidades desde EDARSAHUB SQL")
+        
+        # ============================================================================
+        # APLICAR RBAC: Filtrar por permisos del usuario
+        # ============================================================================
+        user_role = current_user.get('role', '')
+        
+        # SuperAdministrador y Administrador ven todas las unidades
+        if user_role in ['SuperAdministrador', 'Administrador']:
+            unidades_filtradas = unidades_sql
+        else:
+            # Otros roles: filtrar por empresas permitidas
+            empresas_permitidas = await get_user_empresas_permitidas(current_user)
+            allowed_servers = set(current_user.get('allowed_servers', []))
+            
+            # Filtrar unidades cuyos server_id estén en allowed_servers
+            # o cuyo ID esté en empresas_permitidas (para compatibilidad)
+            unidades_filtradas = [
+                u for u in unidades_sql 
+                if u.get('server_id') in allowed_servers or u.get('id') in empresas_permitidas
+            ]
+            
+            if not unidades_filtradas:
+                logging.warning(f"[UNIDADES_NEGOCIO] Usuario {current_user.get('email')} sin unidades permitidas")
+        
+        # ============================================================================
+        # CONSTRUIR RESPUESTA
+        # ============================================================================
+        resultado = []
+        for u in unidades_filtradas:
+            sucursal_origen_id = u.get('sucursal_origen_id')
+            system_type = u.get('system_type', '')
+            
+            # Para SoftRestaurant (single-tenant), sucursal_origen_id debe ser null
+            if system_type == 'SoftRestaurant' and sucursal_origen_id:
+                logging.warning(
+                    f"[UNIDADES_NEGOCIO] Inconsistencia: {u['nombre']} es SoftRestaurant pero tiene sucursal_origen_id={sucursal_origen_id}"
+                )
+                sucursal_origen_id = None  # Forzar null para SR
+            
+            resultado.append({
+                "id": u['id'],
+                "codigo": u.get('codigo', ''),
+                "nombre": u.get('nombre', ''),
+                "server_id": u.get('server_id'),
+                "server_nombre": u.get('server_nombre', ''),
+                "system_type": system_type,
+                "connection_type": u.get('connection_type', 'SQL_SERVER'),
+                "database_name": u.get('database_name', ''),
+                "sucursal_origen_id": sucursal_origen_id,
+                # Sucursal en formato legacy para compatibilidad frontend
+                "sucursales": [{
+                    "id": sucursal_origen_id or u.get('codigo'),
+                    "nombre": u.get('nombre')
+                }],
+                # Metadatos
+                "config_origin": "EDARSAHUB_SQL",
+                "orden": u.get('orden', 999)
+            })
+        
+        return resultado
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"[UNIDADES_NEGOCIO] Error crítico: {type(e).__name__}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error obteniendo unidades de negocio desde EDARSAHUB SQL: {str(e)}"
+
