@@ -144,7 +144,7 @@ def get_api_connection_raw_for_auth(connection_id: str) -> Optional[Dict]:
     try:
         conn = pymssql.connect(
             server=_edarsa_cfg.host,
-            port=int(os.environ.get('EDARSAHUB_PORT', '1433')),
+            port=_edarsa_cfg.port,
             database=_edarsa_cfg.database,
             user=_edarsa_cfg.user,
             password=_edarsa_cfg.password,
@@ -183,7 +183,7 @@ def get_api_connection_with_secret(connection_id: str) -> Optional[Dict]:
     try:
         conn = pymssql.connect(
             server=_edarsa_cfg.host,
-            port=int(os.environ.get('EDARSAHUB_PORT', '1433')),
+            port=_edarsa_cfg.port,
             database=_edarsa_cfg.database,
             user=_edarsa_cfg.user,
             password=_edarsa_cfg.password,

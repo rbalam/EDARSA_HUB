@@ -83,7 +83,7 @@ async def _get_vtiger_leads_as_native(busqueda: Optional[str], page: int, page_s
     try:
         conn = pymssql.connect(
             server=_edarsa_cfg.host,
-            port=int(os.environ.get('EDARSAHUB_PORT', 1433)),
+            port=_edarsa_cfg.port,
             user=_edarsa_cfg.user,
             password=_edarsa_cfg.password,
             database=_edarsa_cfg.database
@@ -313,7 +313,7 @@ async def _get_vtiger_oportunidades(busqueda: Optional[str], page: int, page_siz
     try:
         conn = pymssql.connect(
             server=_edarsa_cfg.host,
-            port=int(os.environ.get('EDARSAHUB_PORT', 1433)),
+            port=_edarsa_cfg.port,
             user=_edarsa_cfg.user,
             password=_edarsa_cfg.password,
             database=_edarsa_cfg.database
@@ -424,7 +424,7 @@ async def _get_vtiger_contactos(busqueda: Optional[str], page: int, page_size: i
     try:
         conn = pymssql.connect(
             server=_edarsa_cfg.host,
-            port=int(os.environ.get('EDARSAHUB_PORT', 1433)),
+            port=_edarsa_cfg.port,
             user=_edarsa_cfg.user,
             password=_edarsa_cfg.password,
             database=_edarsa_cfg.database

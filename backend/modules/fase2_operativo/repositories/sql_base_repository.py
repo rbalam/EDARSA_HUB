@@ -307,7 +307,7 @@ class SQLBaseRepository:
         
         # Configuración de conexión SQL (de variables de entorno)
         self._sql_config = {
-            "server": os.environ.get("EDARSAHUB_SQL_SERVER", "54.39.104.176"),
+            "server": _edarsa_cfg.host,
             "port": int(_edarsa_cfg.port),
             "database": _edarsa_cfg.database,
             "user": _edarsa_cfg.user,

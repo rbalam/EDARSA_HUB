@@ -391,7 +391,7 @@ def get_tablajeria_dashboard_service() -> TablajeriaDashboardService:
     """Factory para obtener instancia del servicio."""
     db_config = {
         'host': _edarsa_cfg.host,
-        'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+        'port': _edarsa_cfg.port,
         'database': _edarsa_cfg.database,
         'username': _edarsa_cfg.user,
         'password': _edarsa_cfg.password

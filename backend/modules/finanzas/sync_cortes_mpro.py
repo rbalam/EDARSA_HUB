@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 EDARSAHUB_CONFIG = {
     'server': _edarsa_cfg.host,
-    'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+    'port': _edarsa_cfg.port,
     'database': _edarsa_cfg.database,
     'user': _edarsa_cfg.user,
     'password': _edarsa_cfg.password

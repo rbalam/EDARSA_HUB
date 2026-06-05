@@ -27,22 +27,21 @@ from .schemas import (
 from .sync_service import TablajeriaSyncService
 from .ordenes_service import TablajeriaOrdenesService
 from core.security import get_current_user
+from core.config.edarsahub_config import get_edarsahub_sql_config
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/tablajeria", tags=["Tablajería"])
 
-# Configuración DB desde variables de entorno
+# P2-01: Configuración DB centralizada
+_edarsa_cfg = get_edarsahub_sql_config()
 DB_CONFIG = {
     'host': _edarsa_cfg.host,
-    'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+    'port': _edarsa_cfg.port,
     'database': _edarsa_cfg.database,
     'username': _edarsa_cfg.user,
     'password': _edarsa_cfg.password
 }
-
-# P2-01: Config centralizado - No se requiere validar password aquí
-# (el singleton ya valida que las variables existan)
 
 
 def get_connection():
@@ -1082,9 +1081,6 @@ async def guardar_config_contable(
 # ============================================================================
 
 from .dashboard_service import get_tablajeria_dashboard_service
-from core.config.edarsahub_config import get_edarsahub_sql_config
-_edarsa_cfg = get_edarsahub_sql_config()
-
 
 
 @router.get("/dashboard/kpis")

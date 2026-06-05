@@ -420,6 +420,6 @@ def get_pipeline_automation_service() -> PipelineAutomationService:
         'user': _edarsa_cfg.user,
         'password': _edarsa_cfg.password,
         'database': _edarsa_cfg.database,
-        'port': int(os.environ.get('EDARSAHUB_PORT', 1433))
+        'port': _edarsa_cfg.port
     }
     return PipelineAutomationService(db_config)

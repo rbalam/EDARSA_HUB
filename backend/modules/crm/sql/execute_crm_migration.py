@@ -14,7 +14,7 @@ _edarsa_cfg = get_edarsahub_sql_config()
 # Configuración EDARSAHUB
 EDARSAHUB_CONFIG = {
     'host': _edarsa_cfg.host,
-    'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+    'port': _edarsa_cfg.port,
     'database': _edarsa_cfg.database,
     'username': _edarsa_cfg.user,
     'password': _edarsa_cfg.password

@@ -72,7 +72,7 @@ class TablajeriaFase6Service:
         """Inicializa el servicio con configuración de BD."""
         self.db_config = db_config or {
             'host': _edarsa_cfg.host,
-            'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
+            'port': _edarsa_cfg.port,
             'database': _edarsa_cfg.database,
             'username': _edarsa_cfg.user,
             'password': _edarsa_cfg.password
