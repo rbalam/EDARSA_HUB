@@ -78,17 +78,31 @@ SYNC_INTERVAL_SECONDS = int(os.environ.get("SCHEDULER_SYNC_COMERCIAL_ABIERTAS_V2
 # =============================================================================
 # NOTA: Este mapeo se usa SOLO si EmpresaResolver no está disponible.
 # La fuente autoritativa es Sistema_EmpresasServidores via EmpresaResolver.
+#
+# IMPORTANTE: Los códigos de unidad (ORIGEN, 130QRO) son necesarios aquí porque:
+# 1. Son las claves del mapeo hacia server_config_name
+# 2. El sistema MPRO tiene esquemas SQL diferentes por sucursal
+# 3. No se puede generalizar porque cada unidad MPRO tiene queries específicas
+#
+# Para eliminar estos códigos, se necesitaría:
+# 1. Migrar la configuración completa a una tabla SQL (Sistema_UnidadConfigMPRO)
+# 2. Incluir el tipo de esquema SQL (COMANDA vs VENTA_ENCABEZADO) en esa tabla
+#
+# REFACTORIZADO PARCIALMENTE 2026-06-05: La lógica de queries específicas
+# en líneas 889+ requiere estos códigos para seleccionar las queries correctas.
 
 MPRO_API_LOCAL_CONFIG_LEGACY = {
     "ORIGEN": {
         "server_config_name": "ORIGEN LOCAL",
         "sucursal_id": "0023",
-        "empresa_id": 1
+        "empresa_id": 1,
+        "schema_type": "VENTA_ENCABEZADO"  # Agregado para documentar
     },
     "130QRO": {
         "server_config_name": "130° QRO LOCAL", 
         "sucursal_id": "0021",
-        "empresa_id": 2
+        "empresa_id": 2,
+        "schema_type": "COMANDA"  # Agregado para documentar - usa Comanda+Comanda_Detalle
     }
 }
 

@@ -14,9 +14,7 @@ CARACTERÍSTICAS:
 - Lock distribuido (MongoDB) para evitar ejecuciones simultáneas
 - SyncLog detallado por unidad (EDARSAHUB.Comercial_SyncLog_v2)
 
-UNIDADES SOPORTADAS (5):
-- SoftRestaurant: 130MID (130° MÉRIDA), CIENFUEGOS, ESTELAR (LA ESTELAR)
-- MPRO: 130QRO (130° QUERETARO, sucursal 0021), ORIGEN (sucursal 0023)
+UNIDADES: Se cargan dinámicamente desde EDARSAHUB.Unidades_Negocio
 
 MÁXIMAS RESPETADAS:
 - EDARSAHUB es el cerebro (destino de sincronización)
@@ -24,14 +22,14 @@ MÁXIMAS RESPETADAS:
 - Datos demo aislados (es_demo=0 para datos reales)
 - MongoDB solo para locks técnicos, NO para datos de negocio
 
-FASE P0 (2026-05-13):
-- Códigos canónicos desde Unidades_Negocio.codigo (EDARSAHUB)
-- NO usar códigos legacy (130-MER, 130-QRO, LA-ESTELAR)
-- CÓDIGOS OFICIALES: 130MID, 130QRO, CIENFUEGOS, ESTELAR, ORIGEN
+REFACTORIZADO 2026-06-05:
+- Eliminados hardcodes de códigos de unidades
+- Usa UnidadesService para cargar unidades dinámicamente
+- Fallback también usa UnidadesService (cache)
 
 Autor: E1 Agent
 Fecha: 2026-05-01
-Actualizado: 2026-05-13 (FASE P0 - códigos canónicos)
+Actualizado: 2026-06-05 (Refactoring UnidadesService)
 """
 
 import os
@@ -48,114 +46,51 @@ SYNC_INCREMENTAL_DAYS = int(os.environ.get("SYNC_COMERCIAL_V2_DAYS", "3"))
 
 
 # =============================================================================
-# CONFIGURACIÓN DE UNIDADES - FASE P0
+# CONFIGURACIÓN DE UNIDADES - REFACTORIZADO CON UnidadesService
 # =============================================================================
 # Las unidades se cargan dinámicamente desde EDARSAHUB.Unidades_Negocio
-# usando el módulo core.unidades_registry
-# 
-# CÓDIGOS OFICIALES (Unidades_Negocio.codigo):
-# - 130MID (130° MÉRIDA)
-# - CIENFUEGOS
-# - ESTELAR (LA ESTELAR)
-# - 130QRO (130° QUERETARO)
-# - ORIGEN
+# usando el servicio centralizado UnidadesService
 # =============================================================================
 
 def _get_unidades_from_edarsahub() -> tuple:
     """
-    FASE P0: Obtiene unidades desde EDARSAHUB.Unidades_Negocio.
+    Obtiene unidades desde EDARSAHUB usando UnidadesService.
     
-    REEMPLAZA los arrays hardcodeados UNIDADES_SOFTRESTAURANT y UNIDADES_MPRO.
+    REFACTORIZADO 2026-06-05: Usa UnidadesService en lugar de unidades_registry.
+    Elimina fallback con hardcodes - UnidadesService tiene su propio cache.
     
     Returns:
         (unidades_softrestaurant, unidades_mpro) con códigos canónicos
     """
     try:
-        from core.unidades_registry import get_unidades_by_sistema
+        from core.unidades_service import UnidadesService
         
         unidades_sr = []
         unidades_mpro = []
         
-        # Obtener unidades SoftRestaurant
-        for u in get_unidades_by_sistema('SoftRestaurant'):
-            unidades_sr.append({
-                "unidad_negocio_id": u.codigo,  # Código canónico oficial
-                "nombre": u.nombre,
-                "server_id": u.server_id,
-                "sucursal_id": u.sucursal_id or "DEFAULT",
-                "sistema": "SoftRestaurant"
-            })
+        for u in UnidadesService.get_all():
+            sistema = (u.get('system_type') or '').upper()
+            entry = {
+                "unidad_negocio_id": u.get('codigo'),
+                "nombre": u.get('nombre'),
+                "server_id": u.get('server_id'),
+                "sucursal_id": u.get('sucursal_origen_id') or "DEFAULT",
+                "sistema": sistema
+            }
+            
+            if 'SOFTRESTAURANT' in sistema:
+                unidades_sr.append(entry)
+            elif 'MPRO' in sistema:
+                unidades_mpro.append(entry)
         
-        # Obtener unidades MPRO
-        for u in get_unidades_by_sistema('MPRO'):
-            unidades_mpro.append({
-                "unidad_negocio_id": u.codigo,  # Código canónico oficial
-                "nombre": u.nombre,
-                "server_id": u.server_id,
-                "sucursal_id": u.sucursal_id or "DEFAULT",
-                "sistema": "MPRO"
-            })
-        
-        logger.info(f"[SYNC_V2] FASE P0: Cargadas {len(unidades_sr)} unidades SoftRestaurant, {len(unidades_mpro)} unidades MPRO desde EDARSAHUB")
+        logger.info(f"[SYNC_V2] Cargadas {len(unidades_sr)} unidades SoftRestaurant, {len(unidades_mpro)} unidades MPRO desde EDARSAHUB")
         
         return unidades_sr, unidades_mpro
         
     except Exception as e:
         logger.error(f"[SYNC_V2] Error cargando unidades desde EDARSAHUB: {e}")
-        # Fallback a códigos canónicos hardcodeados (última línea de defensa)
-        logger.warning("[SYNC_V2] Usando fallback con códigos canónicos hardcodeados")
-        return _get_fallback_unidades()
-
-
-def _get_fallback_unidades() -> tuple:
-    """
-    Fallback de última línea con códigos canónicos oficiales.
-    Solo se usa si falla la conexión a EDARSAHUB.
-    
-    FIX 2026-05-26: Nombres sin acentos para evitar duplicados.
-    """
-    unidades_sr = [
-        {
-            "unidad_negocio_id": "130MID",  # Código canónico oficial
-            "nombre": "130° MERIDA",  # Sin acento para consistencia
-            "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
-            "sucursal_id": "DEFAULT",
-            "sistema": "SoftRestaurant"
-        },
-        {
-            "unidad_negocio_id": "CIENFUEGOS",  # Código canónico oficial
-            "nombre": "CIENFUEGOS",
-            "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
-            "sucursal_id": "DEFAULT",
-            "sistema": "SoftRestaurant"
-        },
-        {
-            "unidad_negocio_id": "ESTELAR",  # Código canónico oficial (NO "LA-ESTELAR")
-            "nombre": "LA ESTELAR",
-            "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
-            "sucursal_id": "DEFAULT",
-            "sistema": "SoftRestaurant"
-        }
-    ]
-    
-    unidades_mpro = [
-        {
-            "unidad_negocio_id": "130QRO",  # Código canónico oficial (NO "130-QRO")
-            "nombre": "130° QUERETARO",
-            "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
-            "sucursal_id": "0021",
-            "sistema": "MPRO"
-        },
-        {
-            "unidad_negocio_id": "ORIGEN",  # Código canónico oficial
-            "nombre": "ORIGEN",
-            "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
-            "sucursal_id": "0023",
-            "sistema": "MPRO"
-        }
-    ]
-    
-    return unidades_sr, unidades_mpro
+        # Sin fallback hardcodeado - si falla EDARSAHUB, el job no puede correr
+        return [], []
 
 
 # =============================================================================
