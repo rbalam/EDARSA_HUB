@@ -1,0 +1,465 @@
+from core.unidades_service import UnidadesService
+from core.corporate_filters.service import CorporateFilterService
+"""
+EDARSA HUB - Finanzas Health Check
+==================================
+
+Endpoint de diagnóstico para verificar:
+1. Conectividad a servidores SQL (SoftRestaurant, MPRO)
+2. Existencia de tablas requeridas en EDARSAHUB
+3. Estado general del módulo Finanzas
+
+CREADO: 2025-12-27
+"""
+import logging
+import asyncio
+from datetime import datetime
+from typing import Dict, List, Optional, Any
+from fastapi import APIRouter, Depends
+
+from core.security import get_current_user
+from core.server_registry import list_servers, get_server_connection_info, EDARSAHUB_CONFIG
+from core.db import execute_sql_query, sql_health_check
+
+router = APIRouter(prefix="/finanzas/health", tags=["Finanzas Health"])
+logger = logging.getLogger(__name__)
+
+# Tablas requeridas por submódulo de Finanzas
+REQUIRED_TABLES = {
+    "Dashboard": ["Finanzas_Presupuestos", "Finanzas_KPIs_Historico"],
+    "CxP": ["Finanzas_CuentasPorPagar"],
+    "Control Ingresos": ["Finanzas_CortesCaja"],
+    "Tesorería": [],  # Usa datos de SoftRestaurant/MPRO directamente
+    "Propinas TPV": ["Finanzas_ConfiguracionTPV_Sucursal"],
+    "Presupuestos": ["Finanzas_Presupuestos"],
+    "Depósitos": ["Finanzas_Depositos", "Finanzas_Cat_CuentasBancarias"]
+}
+
+# Queries de prueba por tipo de sistema
+TEST_QUERIES = {
+    "SOFTRESTAURANT": "SELECT TOP 1 idcheque FROM cheques",
+    "MANAGEMENTPRO": "SELECT TOP 1 id_venta FROM Venta_Encabezado"
+}
+
+
+async def check_edarsahub_tables() -> Dict[str, Any]:
+    """
+    Verifica existencia de tablas requeridas en EDARSAHUB.
+    """
+    result = {
+        "status": "checking",
+        "tables": {},
+        "missing_tables": [],
+        "summary": {}
+    }
+    
+    try:
+        # Obtener lista de tablas existentes
+        query = """
+        SELECT TABLE_NAME 
+        FROM INFORMATION_SCHEMA.TABLES 
+        WHERE TABLE_NAME LIKE 'Finanzas%'
+        """
+        
+        existing = execute_sql_query(
+            EDARSAHUB_CONFIG['host'],
+            EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'],
+            EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password'],
+            query
+        )
+        
+        existing_names = {r['TABLE_NAME'] for r in existing} if existing else set()
+        
+        # Verificar cada tabla requerida
+        all_required = set()
+        for module, tables in REQUIRED_TABLES.items():
+            for table in tables:
+                all_required.add(table)
+                exists = table in existing_names
+                result["tables"][table] = {
+                    "exists": exists,
+                    "module": module
+                }
+                if not exists:
+                    result["missing_tables"].append(table)
+        
+        # Resumen
+        total = len(all_required)
+        found = total - len(result["missing_tables"])
+        result["summary"] = {
+            "total_required": total,
+            "found": found,
+            "missing": len(result["missing_tables"]),
+            "percentage": round((found / total) * 100, 1) if total > 0 else 100
+        }
+        
+        result["status"] = "ok" if not result["missing_tables"] else "incomplete"
+        
+    except Exception as e:
+        logger.error(f"Error verificando tablas EDARSAHUB: {e}")
+        result["status"] = "error"
+        result["error"] = str(e)[:200]
+    
+    return result
+
+
+async def check_server_connectivity(server_id: str, server_name: str, system_type: str) -> Dict[str, Any]:
+    """
+    Verifica conectividad a un servidor específico.
+    """
+    from server import db
+    
+    result = {
+        "server_id": server_id,
+        "server_name": server_name,
+        "system_type": system_type,
+        "status": "checking",
+        "latency_ms": None,
+        "test_query": None,
+        "error": None
+    }
+    
+    try:
+        # Obtener configuración de conexión
+        config = await get_server_connection_info(server_id, db=db)
+        
+        if not config:
+            result["status"] = "not_configured"
+            result["error"] = "Servidor no encontrado en registry"
+            return result
+        
+        # Ejecutar health check
+        health = sql_health_check(
+            config['host'],
+            config['port'],
+            config['database'],
+            config['username'],
+            config['password']
+        )
+        
+        result["latency_ms"] = health.get("latency_ms")
+        result["driver_used"] = health.get("driver_used")
+        
+        if health.get("healthy"):
+            result["status"] = "online"
+            
+            # Ejecutar query de prueba según tipo de sistema
+            test_query = TEST_QUERIES.get(system_type.upper())
+            if test_query:
+                try:
+                    test_result = execute_sql_query(
+                        config['host'],
+                        config['port'],
+                        config['database'],
+                        config['username'],
+                        config['password'],
+                        test_query,
+                        timeout_seconds=10
+                    )
+                    result["test_query"] = {
+                        "success": True,
+                        "records": len(test_result) if test_result else 0
+                    }
+                except Exception as qe:
+                    result["test_query"] = {
+                        "success": False,
+                        "error": str(qe)[:100]
+                    }
+        else:
+            result["status"] = "offline"
+            result["error"] = health.get("error", "Connection failed")
+            result["error_type"] = health.get("error_type")
+            result["recommendations"] = health.get("recommendations", [])
+    
+    except Exception as e:
+        logger.error(f"Error verificando servidor {server_id}: {e}")
+        result["status"] = "error"
+        result["error"] = str(e)[:200]
+    
+    return result
+
+
+@router.get("")
+async def get_finanzas_health(
+    include_server_details: bool = True,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Diagnóstico completo del módulo Finanzas.
+    
+    Verifica:
+    - Conectividad a EDARSAHUB (base de datos central)
+    - Tablas requeridas por cada submódulo
+    - Conectividad a servidores de datos (SoftRestaurant, MPRO)
+    - Estado general del módulo
+    
+    Returns:
+        Dict con estado de salud detallado
+    """
+    from server import db
+    
+    start_time = datetime.now()
+    
+    health = {
+        "timestamp": start_time.isoformat(),
+        "overall_status": "checking",
+        "edarsahub": {
+            "status": "checking"
+        },
+        "tables": {},
+        "servers": [],
+        "summary": {
+            "servers_online": 0,
+            "servers_offline": 0,
+            "tables_found": 0,
+            "tables_missing": 0
+        },
+        "recommendations": []
+    }
+    
+    # 1. Verificar EDARSAHUB
+    try:
+        edarsahub_health = sql_health_check(
+            EDARSAHUB_CONFIG['host'],
+            EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'],
+            EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password']
+        )
+        
+        health["edarsahub"] = {
+            "status": "online" if edarsahub_health.get("healthy") else "offline",
+            "latency_ms": edarsahub_health.get("latency_ms"),
+            "host": EDARSAHUB_CONFIG['host'],
+            "database": EDARSAHUB_CONFIG['database']
+        }
+        
+        if not edarsahub_health.get("healthy"):
+            health["edarsahub"]["error"] = edarsahub_health.get("error")
+            health["recommendations"].append("EDARSAHUB no accesible - verificar conectividad de red")
+    except Exception as e:
+        health["edarsahub"]["status"] = "error"
+        health["edarsahub"]["error"] = str(e)[:200]
+    
+    # 2. Verificar tablas requeridas
+    if health["edarsahub"]["status"] == "online":
+        tables_check = await check_edarsahub_tables()
+        health["tables"] = tables_check
+        health["summary"]["tables_found"] = tables_check["summary"].get("found", 0)
+        health["summary"]["tables_missing"] = tables_check["summary"].get("missing", 0)
+        
+        # Agregar recomendaciones por tablas faltantes
+        for table in tables_check.get("missing_tables", []):
+            module = next(
+                (m for m, tables in REQUIRED_TABLES.items() if table in tables),
+                "Desconocido"
+            )
+            health["recommendations"].append(
+                f"Tabla '{table}' no existe - requerida por {module}. Contactar DBA."
+            )
+    
+    # 3. Verificar servidores de datos
+    if include_server_details:
+        try:
+            servers = await list_servers(db=db, filter_active=True, mask_secrets=True)
+            
+            # Filtrar solo servidores de datos (no CORE)
+            data_servers = [
+                s for s in servers 
+                if s.get('tipo_conexion') != 'CORE' 
+                and s.get('system_type_normalized', s.get('system_type', '')).upper() in ['SOFTRESTAURANT', 'SR', 'MANAGEMENTPRO', 'MPRO']
+            ]
+            
+            # Verificar cada servidor en paralelo
+            tasks = []
+            for s in data_servers:
+                system_type = s.get('system_type_normalized', s.get('system_type', 'UNKNOWN'))
+                tasks.append(check_server_connectivity(
+                    s.get('id'),
+                    s.get('name', s.get('nombre', 'N/A')),
+                    system_type
+                ))
+            
+            server_results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            for result in server_results:
+                if isinstance(result, Exception):
+                    health["servers"].append({
+                        "status": "error",
+                        "error": str(result)[:200]
+                    })
+                    health["summary"]["servers_offline"] += 1
+                else:
+                    health["servers"].append(result)
+                    if result.get("status") == "online":
+                        health["summary"]["servers_online"] += 1
+                    else:
+                        health["summary"]["servers_offline"] += 1
+                        if result.get("server_name"):
+                            health["recommendations"].append(
+                                f"Servidor '{result['server_name']}' offline - verificar configuración en Servidores"
+                            )
+        
+        except Exception as e:
+            logger.error(f"Error listando servidores: {e}")
+            health["servers_error"] = str(e)[:200]
+    
+    # 4. Determinar estado general
+    edarsahub_ok = health["edarsahub"]["status"] == "online"
+    tables_ok = health["summary"]["tables_missing"] == 0
+    servers_ok = health["summary"]["servers_offline"] == 0
+    
+    if edarsahub_ok and tables_ok and servers_ok:
+        health["overall_status"] = "healthy"
+    elif not edarsahub_ok:
+        health["overall_status"] = "critical"
+    elif health["summary"]["servers_online"] > 0:
+        health["overall_status"] = "degraded"
+    else:
+        health["overall_status"] = "unhealthy"
+    
+    # 5. Agregar tiempo de ejecución
+    health["execution_time_ms"] = int((datetime.now() - start_time).total_seconds() * 1000)
+    
+    return health
+
+
+@router.get("/quick")
+async def get_finanzas_health_quick(
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Verificación rápida del módulo Finanzas (sin detalles de servidores).
+    Útil para dashboards y monitoreo ligero.
+    """
+    start_time = datetime.now()
+    
+    # Solo verificar EDARSAHUB y tablas
+    health = {
+        "timestamp": start_time.isoformat(),
+        "overall_status": "checking",
+        "edarsahub_online": False,
+        "tables_complete": False,
+        "missing_tables": []
+    }
+    
+    try:
+        # Verificar EDARSAHUB
+        edarsahub_health = sql_health_check(
+            EDARSAHUB_CONFIG['host'],
+            EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'],
+            EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password']
+        )
+        
+        health["edarsahub_online"] = edarsahub_health.get("healthy", False)
+        health["edarsahub_latency_ms"] = edarsahub_health.get("latency_ms")
+        
+        if health["edarsahub_online"]:
+            # Verificar tablas críticas
+            tables_check = await check_edarsahub_tables()
+            health["tables_complete"] = len(tables_check.get("missing_tables", [])) == 0
+            health["missing_tables"] = tables_check.get("missing_tables", [])
+        
+        # Estado general
+        if health["edarsahub_online"] and health["tables_complete"]:
+            health["overall_status"] = "healthy"
+        elif health["edarsahub_online"]:
+            health["overall_status"] = "degraded"
+        else:
+            health["overall_status"] = "unhealthy"
+    
+    except Exception as e:
+        health["overall_status"] = "error"
+        health["error"] = str(e)[:200]
+    
+    health["execution_time_ms"] = int((datetime.now() - start_time).total_seconds() * 1000)
+    
+    return health
+
+
+@router.get("/tables")
+async def get_tables_status(
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Detalle de tablas requeridas por el módulo Finanzas.
+    Muestra qué tablas existen y cuáles faltan, agrupadas por submódulo.
+    """
+    tables_check = await check_edarsahub_tables()
+    
+    # Agrupar por submódulo
+    by_module = {}
+    for module, tables in REQUIRED_TABLES.items():
+        by_module[module] = {
+            "required_tables": tables,
+            "status": "ok",
+            "details": []
+        }
+        
+        missing_in_module = 0
+        for table in tables:
+            exists = tables_check.get("tables", {}).get(table, {}).get("exists", False)
+            by_module[module]["details"].append({
+                "table": table,
+                "exists": exists
+            })
+            if not exists:
+                missing_in_module += 1
+        
+        if missing_in_module > 0:
+            by_module[module]["status"] = "incomplete"
+            by_module[module]["missing_count"] = missing_in_module
+    
+    return {
+        "edarsahub_status": tables_check.get("status"),
+        "summary": tables_check.get("summary"),
+        "by_module": by_module,
+        "ddl_required": [
+            f"CREATE TABLE {t} (...)" for t in tables_check.get("missing_tables", [])
+        ] if tables_check.get("missing_tables") else []
+    }
+
+
+@router.get("/servers/{server_id}")
+async def get_server_health(
+    server_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Diagnóstico detallado de un servidor específico.
+    """
+    from server import db
+    
+    # Obtener información del servidor
+    config = await get_server_connection_info(server_id, db=db)
+    
+    if not config:
+        return {
+            "server_id": server_id,
+            "status": "not_found",
+            "error": "Servidor no encontrado en registry"
+        }
+    
+    system_type = config.get('system_type_normalized', config.get('system_type', 'UNKNOWN'))
+    
+    # Ejecutar diagnóstico
+    result = await check_server_connectivity(
+        server_id,
+        config.get('name', 'N/A'),
+        system_type
+    )
+    
+    # Agregar información adicional
+    result["config"] = {
+        "host": config.get('host'),
+        "port": config.get('port'),
+        "database": config.get('database'),
+        "system_type": system_type,
+        "config_origin": config.get('config_origin')
+    }
+    
+    return result

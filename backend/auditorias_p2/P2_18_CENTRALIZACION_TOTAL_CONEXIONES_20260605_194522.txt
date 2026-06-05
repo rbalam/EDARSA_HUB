@@ -1,0 +1,55 @@
+==================================================
+P2-18 CENTRALIZACION TOTAL DE CONEXIONES
+==================================================
+Direct connections en runtime: 49
+/app/backend/modules/comercial/service.py:415:                JOIN Servidores_Conexiones sc ON es.ServidorID = sc.id
+/app/backend/modules/comercial/service.py:531:    diferente al que está configurado en Servidores_Conexiones. Usar unidad_negocio_pk
+/app/backend/modules/comercial/service.py:1341:        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+/app/backend/modules/comercial/service.py:2494:    tienen un server_id diferente al de Servidores_Conexiones.
+/app/backend/modules/comercial/adapters.py:137:            # NOTA: La URL y API key vienen de Servidores_Conexiones o variables de entorno
+/app/backend/modules/comercial/repository.py:14:- Servidores: Tabla Servidores_Conexiones
+/app/backend/modules/comercial/repository.py:91:    Convierte una fila de Servidores_Conexiones (SQL) al formato esperado por el sistema.
+/app/backend/modules/comercial/repository.py:162:        SELECT * FROM Servidores_Conexiones
+/app/backend/modules/comercial/repository.py:190:        SELECT * FROM Servidores_Conexiones
+/app/backend/modules/comercial/services/impuestos_service.py:336:    JOIN Servidores_Conexiones sc ON m.ServerID = sc.id
+/app/backend/modules/comercial/services/precios_sugeridos_consolidado_service.py:214:    LEFT JOIN Servidores_Conexiones sc ON CAST(p.ServerID AS NVARCHAR(36)) = CAST(sc.id AS NVARCHAR(36))
+/app/backend/modules/comercial/routes.py:1931:        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+/app/backend/modules/comercial/routes.py:2038:            source_message="Servidor no encontrado"
+/app/backend/modules/comercial/routes.py:2375:            source_message="Servidor no encontrado"
+/app/backend/modules/comercial/routes.py:2662:        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+/app/backend/modules/comercial/routes.py:2894:            source_message="Servidor no encontrado"
+/app/backend/modules/comercial/routes.py:3268:        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+/app/backend/modules/comercial/routes.py:3446:        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+/app/backend/modules/comercial/routes.py:3589:            source_message="Servidor no encontrado"
+/app/backend/modules/comercial/routes.py:3718:            "source_message": "Servidor no encontrado en configuración",
+
+==================================================
+P2-18 RESULTADO
+==================================================
+Conexiones refs ANTES: 239
+Conexiones refs DESPUES: 239
+Direct connections runtime: 49
+
+Archivos target: 53
+
+Health: {"status":"operativo","sistema":"EDARSA HUB","version":"1.0"}
+
+Hallazgos:
+- get_server_by_unidad_codigo() ya existe en server_registry.py
+- 49 referencias a conexiones directas en módulos runtime
+- Mayoría son JOINs a Servidores_Conexiones (esperado)
+- Mensajes "Servidor no encontrado" en comercial/routes.py
+
+scheduler_resync_routes.py:
+- Import agregado: get_server_by_unidad_codigo
+- Mensajes actualizados a "catalogo central"
+
+Reportes:
+auditorias_p2/P2_18_CONEXIONES_ANTES_20260605_194522.txt
+auditorias_p2/P2_18_CONEXIONES_DESPUES_20260605_194522.txt
+auditorias_p2/P2_18_DIRECT_CONNECTIONS_RUNTIME_20260605_194522.txt
+auditorias_p2/P2_18_TARGETS_20260605_194522.txt
+
+NO SE EJECUTO BACKFILL REAL
+NO SE IMPRIMIERON CREDENCIALES
+==================================================
