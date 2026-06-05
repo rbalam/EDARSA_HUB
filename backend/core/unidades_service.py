@@ -1,303 +1,162 @@
 """
-EDARSA HUB - Servicio Centralizado de Unidades de Negocio
-=========================================================
+UnidadesService - Servicio centralizado de Unidades de Negocio
+=============================================================
+P1 (2026-06-05): Actualizado para usar unidad_negocio_pk real (UNIQUEIDENTIFIER)
 
-FUENTE ÚNICA: Tabla Unidades_Negocio en EDARSAHUB SQL
-
-Este servicio reemplaza todos los hardcodes de códigos/nombres de unidades.
-Cualquier módulo que necesite información de unidades debe usar este servicio.
-
-Uso:
-    from core.unidades_service import UnidadesService
-    
-    # Obtener todas las unidades activas
-    unidades = UnidadesService.get_all()
-    
-    # Obtener códigos canónicos
-    codigos = UnidadesService.get_codigos()  # ['130MID', '130QRO', ...]
-    
-    # Resolver variante a código canónico
-    codigo = UnidadesService.resolver_codigo('130 MERIDA')  # '130MID'
-    
-    # Obtener nombre display
-    nombre = UnidadesService.get_nombre('130MID')  # '130° MERIDA'
+Proporciona:
+- get_all(): Lista completa con PK, código y nombre
+- get_pks(): Lista de PKs reales (UNIQUEIDENTIFIER)
+- get_codigos(): Lista de códigos (para compatibilidad legacy)
+- get_by_pk(): Buscar por PK real
+- get_by_codigo(): Buscar por código
+- resolver_pk(): Resolver PK desde cualquier valor (PK, código o nombre)
+- resolver_codigo(): Resolver código desde cualquier valor
 """
-
-import logging
-from typing import Dict, List, Optional, Set
-from functools import lru_cache
+import os
 import time
+import logging
 
 logger = logging.getLogger(__name__)
 
-# Cache TTL en segundos (5 minutos)
-_CACHE_TTL = 300
-_cache_timestamp: float = 0
-_unidades_cache: List[Dict] = []
-
-
-def _load_unidades_from_sql() -> List[Dict]:
-    """Carga unidades desde EDARSAHUB SQL."""
-    try:
-        from core.config.edarsahub_sql import get_edarsahub_connection
-        
-        conn = get_edarsahub_connection()
-        cur = conn.cursor(as_dict=True)
-        
-        cur.execute("""
-        SELECT 
-            CAST(id AS NVARCHAR(100)) AS id,
-            codigo,
-            nombre,
-            CAST(server_id AS NVARCHAR(100)) AS server_id,
-            sucursal_origen_id,
-            system_type,
-            activo,
-            orden
-        FROM Unidades_Negocio
-        WHERE activo = 1
-        ORDER BY orden, nombre
-        """)
-        
-        unidades = cur.fetchall()
-        conn.close()
-        
-        logger.info(f"[UNIDADES_SERVICE] Cargadas {len(unidades)} unidades desde SQL")
-        return unidades
-        
-    except Exception as e:
-        logger.error(f"[UNIDADES_SERVICE] Error cargando unidades: {e}")
-        return []
-
-
-def _get_cached_unidades() -> List[Dict]:
-    """Obtiene unidades con cache."""
-    global _cache_timestamp, _unidades_cache
-    
-    now = time.time()
-    if now - _cache_timestamp > _CACHE_TTL or not _unidades_cache:
-        _unidades_cache = _load_unidades_from_sql()
-        _cache_timestamp = now
-    
-    return _unidades_cache
-
+_CACHE = {
+    "ts": 0,
+    "ttl": 300,
+    "data": None
+}
 
 class UnidadesService:
-    """Servicio centralizado para gestión de unidades de negocio."""
-    
-    # Mapeo de variantes a código canónico (para compatibilidad legacy)
-    # Esto es temporal hasta que todos los sistemas usen códigos canónicos
-    _VARIANTES_MAP = {
-        # Mérida
-        '130-MER': '130MID',
-        '130-MID': '130MID',
-        '130MER': '130MID',
-        '130 MERIDA': '130MID',
-        '130 MÉRIDA': '130MID',
-        '130° MERIDA': '130MID',
-        '130° MÉRIDA': '130MID',
-        'MERIDA': '130MID',
-        'MÉRIDA': '130MID',
-        '130MID': '130MID',
-        # Querétaro
-        '130-QRO': '130QRO',
-        '130 QRO': '130QRO',
-        '130 QUERETARO': '130QRO',
-        '130 QUERÉTARO': '130QRO',
-        '130° QUERETARO': '130QRO',
-        '130° QUERÉTARO': '130QRO',
-        'QUERETARO': '130QRO',
-        'QUERÉTARO': '130QRO',
-        '130QRO': '130QRO',
-        # La Estelar
-        'LA-ESTELAR': 'ESTELAR',
-        'LA ESTELAR': 'ESTELAR',
-        'ESTELAR': 'ESTELAR',
-        # Cienfuegos y Origen (sin variantes)
-        'CIENFUEGOS': 'CIENFUEGOS',
-        'ORIGEN': 'ORIGEN',
-    }
-    
+    @staticmethod
+    def _get_connection():
+        """Obtiene conexión usando el pool del backend"""
+        from modules.comercial_v2.repository_comercial_edarsahub import EDARSAHUB_CONFIG
+        from core.db import execute_sql_query
+        return EDARSAHUB_CONFIG, execute_sql_query
+
     @classmethod
-    def get_all(cls) -> List[Dict]:
-        """
-        Obtiene todas las unidades activas.
-        
-        Returns:
-            Lista de dicts con: id, codigo, nombre, server_id, system_type, etc.
-        """
-        return _get_cached_unidades()
-    
+    def clear_cache(cls):
+        _CACHE["data"] = None
+        _CACHE["ts"] = 0
+
     @classmethod
-    def get_codigos(cls) -> List[str]:
-        """
-        Obtiene lista de códigos canónicos.
-        
-        Returns:
-            Lista de códigos: ['130MID', '130QRO', 'CIENFUEGOS', 'ESTELAR', 'ORIGEN']
-        """
-        return [u['codigo'] for u in cls.get_all() if u.get('codigo')]
-    
+    def get_all(cls):
+        """Retorna todas las unidades activas con PK real"""
+        now = time.time()
+        if _CACHE["data"] is not None and now - _CACHE["ts"] < _CACHE["ttl"]:
+            return _CACHE["data"]
+
+        try:
+            config, execute_sql = cls._get_connection()
+            sql = """
+                SELECT
+                    CONVERT(varchar(36), id) AS unidad_negocio_pk,
+                    CONVERT(varchar(36), id) AS unidad_negocio_id_real,
+                    codigo AS unidad_negocio_codigo,
+                    codigo,
+                    nombre AS unidad_negocio_nombre,
+                    nombre,
+                    activo
+                FROM dbo.Unidades_Negocio
+                WHERE ISNULL(activo, 1) = 1
+                ORDER BY nombre
+            """
+            rows = execute_sql(
+                config['host'],
+                config['port'],
+                config['database'],
+                config['username'],
+                config['password'],
+                sql
+            )
+            _CACHE["data"] = rows
+            _CACHE["ts"] = now
+            return rows
+        except Exception as e:
+            logger.error(f"[UNIDADES_SERVICE] Error cargando unidades: {e}")
+            # Fallback a caché si existe
+            if _CACHE["data"]:
+                return _CACHE["data"]
+            return []
+
     @classmethod
-    def get_codigos_set(cls) -> Set[str]:
-        """
-        Obtiene set de códigos canónicos (para búsquedas O(1)).
-        
-        Returns:
-            Set de códigos
-        """
-        return set(cls.get_codigos())
-    
+    def get_pks(cls):
+        """Retorna lista de PKs reales (UNIQUEIDENTIFIER como string)"""
+        return [u.get("unidad_negocio_pk") for u in cls.get_all() if u.get("unidad_negocio_pk")]
+
     @classmethod
-    def get_nombres(cls) -> List[str]:
-        """
-        Obtiene lista de nombres display.
-        
-        Returns:
-            Lista de nombres: ['130° MERIDA', '130° QUERETARO', ...]
-        """
-        return [u['nombre'] for u in cls.get_all() if u.get('nombre')]
-    
+    def get_ids(cls):
+        """Compatibilidad: devuelve PKs reales"""
+        return cls.get_pks()
+
     @classmethod
-    def get_by_codigo(cls, codigo: str) -> Optional[Dict]:
-        """
-        Obtiene unidad por código canónico.
-        
-        Args:
-            codigo: Código canónico (130MID, CIENFUEGOS, etc.)
-            
-        Returns:
-            Dict con datos de la unidad o None
-        """
-        codigo_upper = codigo.upper().strip()
-        for u in cls.get_all():
-            if u.get('codigo', '').upper() == codigo_upper:
-                return u
-        return None
-    
+    def get_codigos(cls):
+        """Retorna lista de códigos (para compatibilidad legacy)"""
+        return [u.get("codigo") for u in cls.get_all() if u.get("codigo")]
+
     @classmethod
-    def get_by_server_id(cls, server_id: str) -> Optional[Dict]:
-        """
-        Obtiene unidad por server_id (UUID).
-        
-        Args:
-            server_id: UUID del servidor
-            
-        Returns:
-            Dict con datos de la unidad o None
-        """
-        for u in cls.get_all():
-            if u.get('server_id') == server_id:
-                return u
-        return None
-    
-    @classmethod
-    def get_nombre(cls, codigo: str) -> Optional[str]:
-        """
-        Obtiene nombre display para un código.
-        
-        Args:
-            codigo: Código canónico
-            
-        Returns:
-            Nombre display o None
-        """
-        unidad = cls.get_by_codigo(codigo)
-        return unidad.get('nombre') if unidad else None
-    
-    @classmethod
-    def resolver_codigo(cls, variante: str) -> Optional[str]:
-        """
-        Resuelve cualquier variante de nombre a código canónico.
-        
-        Args:
-            variante: Cualquier variante ('130 MERIDA', 'LA ESTELAR', etc.)
-            
-        Returns:
-            Código canónico o None si no se reconoce
-        """
-        if not variante:
+    def get_by_pk(cls, unidad_negocio_pk):
+        """Buscar unidad por PK real"""
+        if not unidad_negocio_pk:
             return None
-        
-        variante_upper = variante.upper().strip()
-        
-        # Buscar en mapeo de variantes
-        if variante_upper in cls._VARIANTES_MAP:
-            return cls._VARIANTES_MAP[variante_upper]
-        
-        # Buscar directo en códigos
-        if variante_upper in cls.get_codigos_set():
-            return variante_upper
-        
-        # Buscar por nombre
+        uid = str(unidad_negocio_pk).strip()
+        return next((u for u in cls.get_all() if str(u.get("unidad_negocio_pk", "")).strip() == uid), None)
+
+    @classmethod
+    def get_by_id(cls, unidad_negocio_id):
+        """Compatibilidad: acepta PK real"""
+        return cls.get_by_pk(unidad_negocio_id)
+
+    @classmethod
+    def get_by_codigo(cls, codigo):
+        """Buscar unidad por código"""
+        if not codigo:
+            return None
+        c = str(codigo).strip().upper()
+        return next((u for u in cls.get_all() if str(u.get("codigo", "")).strip().upper() == c), None)
+
+    @classmethod
+    def resolver_pk(cls, valor):
+        """Resolver PK desde cualquier valor (PK, código o nombre)"""
+        if valor is None:
+            return None
+        v = str(valor).strip()
+        vu = v.upper()
         for u in cls.get_all():
-            if u.get('nombre', '').upper() == variante_upper:
-                return u.get('codigo')
-        
+            if str(u.get("unidad_negocio_pk", "")).strip() == v:
+                return u["unidad_negocio_pk"]
+            if str(u.get("codigo", "")).strip().upper() == vu:
+                return u["unidad_negocio_pk"]
+            if str(u.get("nombre", "")).strip().upper() == vu:
+                return u["unidad_negocio_pk"]
         return None
-    
+
     @classmethod
-    def es_codigo_valido(cls, codigo: str) -> bool:
-        """
-        Verifica si un código es válido.
-        
-        Args:
-            codigo: Código a verificar
-            
-        Returns:
-            True si es un código canónico válido
-        """
-        return codigo.upper().strip() in cls.get_codigos_set()
-    
+    def resolver_codigo(cls, valor):
+        """Resolver código desde cualquier valor"""
+        if valor is None:
+            return None
+        v = str(valor).strip()
+        vu = v.upper()
+        for u in cls.get_all():
+            if str(u.get("unidad_negocio_pk", "")).strip() == v:
+                return u["codigo"]
+            if str(u.get("codigo", "")).strip().upper() == vu:
+                return u["codigo"]
+            if str(u.get("nombre", "")).strip().upper() == vu:
+                return u["codigo"]
+        return None
+
     @classmethod
-    def get_mapeo_codigo_nombre(cls) -> Dict[str, str]:
-        """
-        Obtiene diccionario código -> nombre.
-        
-        Returns:
-            {'130MID': '130° MERIDA', ...}
-        """
-        return {u['codigo']: u['nombre'] for u in cls.get_all() if u.get('codigo')}
-    
-    @classmethod
-    def get_mapeo_nombre_codigo(cls) -> Dict[str, str]:
-        """
-        Obtiene diccionario nombre -> código.
-        
-        Returns:
-            {'130° MERIDA': '130MID', ...}
-        """
-        return {u['nombre']: u['codigo'] for u in cls.get_all() if u.get('nombre')}
-    
-    @classmethod
-    def get_mapeo_server_id_codigo(cls) -> Dict[str, str]:
-        """
-        Obtiene diccionario server_id -> código.
-        
-        Returns:
-            {'uuid-xxx': '130MID', ...}
-        """
-        return {u['server_id']: u['codigo'] for u in cls.get_all() if u.get('server_id')}
-    
-    @classmethod
-    def invalidate_cache(cls) -> None:
-        """Invalida el cache forzando recarga en siguiente llamada."""
-        global _cache_timestamp
-        _cache_timestamp = 0
-        logger.info("[UNIDADES_SERVICE] Cache invalidado")
-
-
-# Funciones de conveniencia (para compatibilidad)
-def get_unidades_canonicas() -> List[str]:
-    """Alias para UnidadesService.get_codigos()"""
-    return UnidadesService.get_codigos()
-
-
-def resolver_unidad(variante: str) -> Optional[str]:
-    """Alias para UnidadesService.resolver_codigo()"""
-    return UnidadesService.resolver_codigo(variante)
-
-
-def get_nombre_unidad(codigo: str) -> Optional[str]:
-    """Alias para UnidadesService.get_nombre()"""
-    return UnidadesService.get_nombre(codigo)
+    def get_nombre(cls, valor):
+        """Obtener nombre legible desde cualquier valor"""
+        if valor is None:
+            return None
+        v = str(valor).strip()
+        vu = v.upper()
+        for u in cls.get_all():
+            if str(u.get("unidad_negocio_pk", "")).strip() == v:
+                return u["nombre"]
+            if str(u.get("codigo", "")).strip().upper() == vu:
+                return u["nombre"]
+            if str(u.get("nombre", "")).strip().upper() == vu:
+                return u["nombre"]
+        return v  # Retornar valor original si no encuentra
