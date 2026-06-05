@@ -338,7 +338,7 @@ async def get_all_roles() -> List[Dict]:
         # Query simplificada sin columna NivelAcceso que puede no existir
         cursor.execute('''
             SELECT RolID as id, CodigoRol as codigo, NombreRol as nombre, 
-                   Descripcion as descripcion, Activo as activo
+                   Descripcion as Descripcion, Activo as Activo
             FROM Usuario_Roles WHERE Activo = 1 ORDER BY RolID
         ''')
         roles = []
@@ -365,7 +365,7 @@ async def find_role_by_id(role_id: str) -> Optional[Dict]:
         cursor = conn.cursor(as_dict=True)
         cursor.execute('''
             SELECT RolID as id, CodigoRol as codigo, NombreRol as nombre, 
-                   Descripcion as descripcion, Activo as activo
+                   Descripcion as Descripcion, Activo as Activo
             FROM Usuario_Roles WHERE RolID = %s
         ''', (int(role_id) if role_id.isdigit() else 0,))
         row = cursor.fetchone()
@@ -392,7 +392,7 @@ async def find_role_by_name(nombre: str) -> Optional[Dict]:
         cursor = conn.cursor(as_dict=True)
         cursor.execute('''
             SELECT RolID as id, CodigoRol as codigo, NombreRol as nombre, 
-                   Descripcion as descripcion, Activo as activo
+                   Descripcion as Descripcion, Activo as Activo
             FROM Usuario_Roles WHERE NombreRol = %s OR CodigoRol = %s
         ''', (nombre, nombre))
         row = cursor.fetchone()

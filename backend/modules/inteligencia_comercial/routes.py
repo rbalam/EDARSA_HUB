@@ -160,7 +160,7 @@ async def get_dashboard_data(
                 SELECT 
                     unidad_negocio_nombre AS unidad,
                     SUM(ventas_total) AS ventas,
-                    SUM(pax_total) AS pax,
+                    SUM(pax_total) AS pax_total,
                     SUM(tickets_total) AS tickets,
                     SUM(propinas_total) AS propinas
                 FROM Comercial_KPIs_Diarios_v2
@@ -290,7 +290,7 @@ async def get_tendencia_diaria(
             SELECT 
                 fecha_operacion AS fecha,
                 SUM(ventas_total) AS ventas,
-                SUM(pax_total) AS pax,
+                SUM(pax_total) AS pax_total,
                 SUM(tickets_total) AS tickets,
                 SUM(propinas_total) AS propinas,
                 CASE WHEN SUM(tickets_total) > 0 
@@ -404,7 +404,7 @@ async def get_ventas_horario(
             where_kpi.append(f"unidad_negocio_nombre = '{unidad_db}'")
         
         kpi_sql = f"""
-            SELECT SUM(ventas_total) AS total, SUM(pax_total) AS pax, SUM(tickets_total) AS tickets
+            SELECT SUM(ventas_total) AS total, SUM(pax_total) AS pax_total, SUM(tickets_total) AS tickets
             FROM Comercial_KPIs_Diarios_v2
             WHERE {" AND ".join(where_kpi)}
         """

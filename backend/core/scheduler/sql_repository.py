@@ -400,7 +400,7 @@ async def get_empresas_activas(empresa_id_filter: str = None) -> List[Dict]:
         SELECT 
             CAST(EmpresaID AS VARCHAR(50)) as id,
             NombreEmpresa as nombre,
-            RFC as rfc,
+            RFC as RFC,
             Activo as active
         FROM Sistema_Empresas
         WHERE Activo = 1

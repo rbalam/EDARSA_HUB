@@ -203,7 +203,7 @@ def obtener_perfil_por_unidad(unidad_negocio_id: int) -> Optional[PerfilDigitalR
         FechaModificacion,
         UsuarioModificacion
     FROM Sistema_UnidadesNegocioPerfilDigital
-    WHERE UnidadNegocioID = {unidad_negocio_id}
+    WHERE UnidadNegocioID = {UnidadNegocioID}
       AND Activo = 1
     """
     
@@ -279,7 +279,7 @@ def crear_perfil_digital(data: PerfilDigitalCreate, usuario: str) -> PerfilDigit
     check_query = f"""
     SELECT COUNT(*) as existe
     FROM Sistema_UnidadesNegocioPerfilDigital
-    WHERE UnidadNegocioID = {data.unidad_negocio_id}
+    WHERE UnidadNegocioID = {data.UnidadNegocioID}
       AND Activo = 1
     """
     check_result = execute_sql_query(*conn, check_query)
@@ -351,8 +351,8 @@ def crear_perfil_digital(data: PerfilDigitalCreate, usuario: str) -> PerfilDigit
         UsuarioCreacion
     ) VALUES (
         '{perfil_id}',
-        {data.empresa_id},
-        {data.unidad_negocio_id},
+        {data.EmpresaID},
+        {data.UnidadNegocioID},
         {server_id_sql},
         N'{data.nombre_comercial}',
         {concepto_sql},
@@ -360,7 +360,7 @@ def crear_perfil_digital(data: PerfilDigitalCreate, usuario: str) -> PerfilDigit
         {segmento_sql},
         {ciudad_sql},
         {estado_sql},
-        N'{data.pais}',
+        N'{data.Pais}',
         {zona_sql},
         {sitio_web_sql},
         {url_menu_sql},
@@ -373,7 +373,7 @@ def crear_perfil_digital(data: PerfilDigitalCreate, usuario: str) -> PerfilDigit
         {url_delivery_sql},
         {ticket_sql},
         {rango_sql},
-        '{data.moneda}',
+        '{data.Moneda}',
         {desc_sql},
         {keywords_sql},
         1,

@@ -365,8 +365,8 @@ async def aprobar_y_cargar_maestro(
                     OUTPUT INSERTED.ColaboradorID
                     VALUES (
                         N'{nombre}',
-                        {f"'{curp}'" if curp else 'NULL'},
-                        {f"'{rfc}'" if rfc else 'NULL'},
+                        {f"'{CURP}'" if CURP else 'NULL'},
+                        {f"'{RFC}'" if RFC else 'NULL'},
                         {f"'{clabe}'" if clabe else 'NULL'},
                         {suc_id},
                         {puesto_id},

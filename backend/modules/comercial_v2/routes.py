@@ -167,7 +167,7 @@ def _get_variaciones_comparativas(
         query_actual = f"""
         SELECT 
             SUM(ventas_total) as ventas,
-            SUM(pax_total) as pax,
+            SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques
         FROM Comercial_KPIs_Diarios_v2
         WHERE unidad_negocio_id = '{unidad_negocio_id}'
@@ -189,7 +189,7 @@ def _get_variaciones_comparativas(
         query_mes_ant = f"""
         SELECT 
             SUM(ventas_total) as ventas,
-            SUM(pax_total) as pax,
+            SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques,
             COUNT(*) as dias
         FROM Comercial_KPIs_Diarios_v2
@@ -215,7 +215,7 @@ def _get_variaciones_comparativas(
         query_año_ant = f"""
         SELECT 
             SUM(ventas_total) as ventas,
-            SUM(pax_total) as pax,
+            SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques,
             COUNT(*) as dias
         FROM Comercial_KPIs_Diarios_v2
@@ -367,7 +367,7 @@ def _calcular_totales_variaciones(
         query_mes_ant = f"""
         SELECT 
             SUM(ventas_total) as ventas,
-            SUM(pax_total) as pax,
+            SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques,
             COUNT(DISTINCT fecha_operacion) as dias
         FROM Comercial_KPIs_Diarios_v2
@@ -389,7 +389,7 @@ def _calcular_totales_variaciones(
         query_año_ant = f"""
         SELECT 
             SUM(ventas_total) as ventas,
-            SUM(pax_total) as pax,
+            SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques,
             COUNT(DISTINCT fecha_operacion) as dias
         FROM Comercial_KPIs_Diarios_v2

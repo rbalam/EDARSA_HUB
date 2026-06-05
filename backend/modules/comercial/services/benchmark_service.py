@@ -286,12 +286,12 @@ def crear_benchmark(data: PricingBenchmarkProductoCreate, usuario: str) -> Prici
         '{benchmark_id}',
         {producto_id_sql},
         '{data.codigo_producto}',
-        '{data.server_id}',
-        {data.empresa_id},
-        {data.unidad_negocio_id},
+        '{data.ServerID}',
+        {data.EmpresaID},
+        {data.UnidadNegocioID},
         '{data.competidor_id}',
         '{data.competidor_menu_item_id}',
-        {data.similitud},
+        {data.Similitud},
         '{data.tipo_comparacion.value}',
         {comentario_sql},
         0,
@@ -423,7 +423,7 @@ def obtener_resumen_benchmark(unidad_negocio_id: int, empresa_id: int) -> Benchm
         SUM(CASE WHEN b.ValidadoPorUsuario = 1 THEN 1 ELSE 0 END) as mapeos_validados,
         MAX(b.FechaModificacion) as ultima_actualizacion
     FROM Comercial_PricingBenchmarkProducto b
-    WHERE b.UnidadNegocioID = {unidad_negocio_id}
+    WHERE b.UnidadNegocioID = {UnidadNegocioID}
       AND b.Activo = 1
     """
     
@@ -516,7 +516,7 @@ def obtener_estado_preparacion_ia(unidad_negocio_id: int, empresa_id: int) -> Be
         COUNT(DISTINCT CodigoProducto) as productos_mapeados,
         SUM(CASE WHEN ValidadoPorUsuario = 1 THEN 1 ELSE 0 END) as mapeos_validados
     FROM Comercial_PricingBenchmarkProducto
-    WHERE UnidadNegocioID = {unidad_negocio_id}
+    WHERE UnidadNegocioID = {UnidadNegocioID}
       AND Activo = 1
     """
     

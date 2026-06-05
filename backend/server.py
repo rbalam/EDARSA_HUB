@@ -13387,7 +13387,7 @@ async def execute_edarsa_hub_query(query: str):
 #         (Descripcion, Departamento, Sueldo_Base_Seman_SBC, NomiPAQ_ID, MPRO_ID, Fecha_Creacion, Creado_Por)
 #         OUTPUT INSERTED.PuestoID
 #         VALUES 
-#         ('{descripcion}', '{departamento}', {sueldo_base}, '{nomipaq_id}', '{mpro_id}', GETDATE(), '{current_user.get("email", "")}')
+#         ('{Descripcion}', '{Departamento}', {sueldo_base}, '{nomipaq_id}', '{mpro_id}', GETDATE(), '{current_user.get("email", "")}')
 #     """
 #     
 #     await execute_edarsa_hub_query(query)
@@ -13850,7 +13850,7 @@ async def execute_edarsa_hub_query(query: str):
 #     # Verificar si ya existe
 #     check_query = f"""
 #         SELECT FlujoID FROM RH_Flujo_Nomina_Sucursal 
-#         WHERE SucursalID = {sucursal_id} AND Semana_Anio = {semana_anio}
+#         WHERE SucursalID = {SucursalID} AND Semana_Anio = {Semana_Anio}
 #     """
 #     existing = await execute_edarsa_hub_query(check_query)
 #     
@@ -13862,7 +13862,7 @@ async def execute_edarsa_hub_query(query: str):
 #         (SucursalID, Semana_Anio, Estatus_Flujo, Intentos_Reenvio)
 #         OUTPUT INSERTED.FlujoID
 #         VALUES 
-#         ({sucursal_id}, {semana_anio}, 'Captura', 0)
+#         ({SucursalID}, {Semana_Anio}, 'Captura', 0)
 #     """
 #     
 #     result = await execute_edarsa_hub_query(query)
@@ -16572,7 +16572,7 @@ async def aprobar_solicitud(solicitud_id: str, body: Dict, current_user: Dict = 
             if catalogo_id == "puestos":
                 query = f"""
                     INSERT INTO RH_Cat_Puestos (Descripcion, Departamento, Sueldo_Base_Seman_SBC, NomiPAQ_ID, MPRO_ID, Fecha_Creacion, Creado_Por)
-                    VALUES ('{datos.get("descripcion", "")}', '{datos.get("departamento", "")}', {datos.get("sueldo_base", 0)}, 
+                    VALUES ('{datos.get("Descripcion", "")}', '{datos.get("Departamento", "")}', {datos.get("sueldo_base", 0)}, 
                             '{datos.get("nomipaq_id", "")}', '{datos.get("mpro_id", "")}', GETDATE(), '{current_user.get("email")}')
                 """
                 await execute_edarsa_hub_query(query)

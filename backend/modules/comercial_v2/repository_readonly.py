@@ -611,7 +611,7 @@ def get_comparativos_diarios(
     query_anterior = f"""
     SELECT TOP 1
         ISNULL(ventas_total, 0) as ventas,
-        ISNULL(pax_total, 0) as pax,
+        ISNULL(pax_total, 0) as pax_total,
         ISNULL(tickets_total, 0) as cheques,
         anio, mes, dia
     FROM Comercial_KPIs_Diarios_v2
@@ -646,7 +646,7 @@ def get_comparativos_diarios(
     query_anio_ant = f"""
     SELECT TOP 1
         ISNULL(ventas_total, 0) as ventas,
-        ISNULL(pax_total, 0) as pax,
+        ISNULL(pax_total, 0) as pax_total,
         ISNULL(tickets_total, 0) as cheques,
         anio, mes, dia
     FROM Comercial_KPIs_Diarios_v2

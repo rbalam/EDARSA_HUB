@@ -315,14 +315,14 @@ def crear_competidor(data: CompetidorCreate, usuario: str) -> CompetidorResponse
         UsuarioCreacion
     ) VALUES (
         '{competidor_id}',
-        {data.empresa_id},
-        {data.unidad_negocio_id},
+        {data.EmpresaID},
+        {data.UnidadNegocioID},
         N'{data.nombre_competidor}',
         {tipo_rest_sql},
         {segmento_sql},
         {ciudad_sql},
         {estado_sql},
-        N'{data.pais}',
+        N'{data.Pais}',
         {zona_sql},
         {sitio_web_sql},
         {url_menu_sql},
@@ -335,7 +335,7 @@ def crear_competidor(data: CompetidorCreate, usuario: str) -> CompetidorResponse
         {1 if data.es_competencia_directa else 0},
         {1 if data.es_benchmark_aspiracional else 0},
         {distancia_sql},
-        {data.prioridad},
+        {data.Prioridad},
         1,
         GETDATE(),
         N'{usuario}'
@@ -604,8 +604,8 @@ def crear_menu_item(data: CompetidorMenuItemCreate, usuario: str) -> CompetidorM
         N'{data.nombre_producto_competidor}',
         {categoria_sql},
         {descripcion_sql},
-        {data.precio},
-        '{data.moneda}',
+        {data.Precio},
+        '{data.Moneda}',
         {fuente_sql},
         {fecha_consulta_sql},
         '{data.metodo_obtencion.value}',
@@ -718,7 +718,7 @@ def obtener_estadisticas_competidores(unidad_negocio_id: int) -> Dict[str, Any]:
         SUM(CASE WHEN EsCompetenciaDirecta = 1 THEN 1 ELSE 0 END) as directos,
         SUM(CASE WHEN EsBenchmarkAspiracional = 1 THEN 1 ELSE 0 END) as aspiracionales
     FROM Comercial_Competidores
-    WHERE UnidadNegocioID = {unidad_negocio_id}
+    WHERE UnidadNegocioID = {UnidadNegocioID}
       AND Activo = 1
     """
     

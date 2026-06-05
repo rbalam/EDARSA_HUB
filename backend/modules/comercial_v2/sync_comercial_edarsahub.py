@@ -87,7 +87,7 @@ def get_server_connection_config(server_id: str) -> Optional[Dict[str, Any]]:
         system_type,
         activo
     FROM Servidores_Conexiones
-    WHERE id = '{server_id}'
+    WHERE id = '{id}'
     """
     
     try:

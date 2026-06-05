@@ -550,7 +550,7 @@ def _get_kpis_periodo_edarsahub(
     query = f"""
     SELECT 
         ISNULL(SUM(ventas_total), 0) as ventas,
-        ISNULL(SUM(pax_total), 0) as pax,
+        ISNULL(SUM(pax_total), 0) as pax_total,
         ISNULL(SUM(tickets_total), 0) as cheques,
         COUNT(*) as registros
     FROM Comercial_KPIs_Diarios_v2
@@ -2501,7 +2501,7 @@ def _get_kpis_periodo_edarsahub_flexible(
         query = f"""
         SELECT 
             ISNULL(SUM(ventas_total), 0) as ventas,
-            ISNULL(SUM(pax_total), 0) as pax,
+            ISNULL(SUM(pax_total), 0) as pax_total,
             ISNULL(SUM(tickets_total), 0) as cheques,
             COUNT(*) as registros
         FROM Comercial_KPIs_Diarios_v2
@@ -2551,7 +2551,7 @@ def _get_kpis_periodo_edarsahub_flexible(
         query_mpro = f"""
         SELECT 
             ISNULL(SUM(ventas_total), 0) as ventas,
-            ISNULL(SUM(pax_total), 0) as pax,
+            ISNULL(SUM(pax_total), 0) as pax_total,
             ISNULL(SUM(tickets_total), 0) as cheques,
             COUNT(*) as registros
         FROM Comercial_KPIs_Diarios_v2

@@ -130,16 +130,16 @@ class ConfigAsignacionesRepository:
         # Obtener datos
         data_query = f"""
             SELECT 
-                ConfigID as id,
-                UnidadNegocioID as unidad_negocio_id,
+                ConfigID as ID,
+                UnidadNegocioID as UnidadNegocioID,
                 UnidadNegocioNombre as unidad_negocio_nombre,
-                AlmacenID as almacen_id,
+                AlmacenID as AlmacenID,
                 AlmacenNombre as almacen_nombre,
                 UsuarioResponsableID as usuario_responsable_id,
                 UsuarioResponsableNombre as usuario_responsable_nombre,
                 UsuarioResponsableEmail as usuario_responsable_email,
-                Activa as activa,
-                Prioridad as prioridad,
+                Activa as Activa,
+                Prioridad as Prioridad,
                 FechaCreacion as fecha_creacion,
                 UsuarioCreacion as usuario_creacion,
                 FechaModificacion as fecha_modificacion,
@@ -163,16 +163,16 @@ class ConfigAsignacionesRepository:
         """Obtiene una configuración por su ID."""
         query = """
             SELECT 
-                ConfigID as id,
-                UnidadNegocioID as unidad_negocio_id,
+                ConfigID as ID,
+                UnidadNegocioID as UnidadNegocioID,
                 UnidadNegocioNombre as unidad_negocio_nombre,
-                AlmacenID as almacen_id,
+                AlmacenID as AlmacenID,
                 AlmacenNombre as almacen_nombre,
                 UsuarioResponsableID as usuario_responsable_id,
                 UsuarioResponsableNombre as usuario_responsable_nombre,
                 UsuarioResponsableEmail as usuario_responsable_email,
-                Activa as activa,
-                Prioridad as prioridad
+                Activa as Activa,
+                Prioridad as Prioridad
             FROM Config_Asignaciones
             WHERE ConfigID = %s
         """
@@ -203,7 +203,7 @@ class ConfigAsignacionesRepository:
         
         # 2. Obtener datos de la unidad de negocio desde Servidores_Conexiones
         empresa_query = """
-            SELECT nombre, CAST(id AS VARCHAR(50)) as server_id
+            SELECT nombre, CAST(id AS VARCHAR(50)) as id
             FROM Servidores_Conexiones
             WHERE activo = 1 AND (
                 CAST(id AS VARCHAR(50)) = %s 
@@ -345,7 +345,7 @@ class ConfigAsignacionesRepository:
         """
         query = """
             SELECT TOP 1
-                UsuarioResponsableID as id,
+                UsuarioResponsableID as ID,
                 UsuarioResponsableNombre as nombre,
                 UsuarioResponsableEmail as email,
                 ConfigID as config_id

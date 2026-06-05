@@ -361,8 +361,8 @@ class SyncHistoricosRepository:
         # Verificar si existe con mismo hash
         check_query = f"""
         SELECT RowHash FROM Sync_Ventas_Historicas
-        WHERE ServerID = '{venta.server_id}'
-          AND EmpresaID = {venta.empresa_id}
+        WHERE ServerID = '{venta.ServerID}'
+          AND EmpresaID = {venta.EmpresaID}
           AND FechaOperacion = '{venta.fecha_operacion}'
         """
         existing = self._execute(check_query)
@@ -449,8 +449,8 @@ class SyncHistoricosRepository:
             IsDryRun, Status, StartedAtMexico
         ) VALUES (
             '{ejecucion.sync_run_id}', '{ejecucion.sync_type}',
-            {f"'{ejecucion.server_id}'" if ejecucion.server_id else 'NULL'},
-            {ejecucion.empresa_id if ejecucion.empresa_id else 'NULL'},
+            {f"'{ejecucion.ServerID}'" if ejecucion.ServerID else 'NULL'},
+            {ejecucion.EmpresaID if ejecucion.EmpresaID else 'NULL'},
             '{ejecucion.fecha_inicio}', '{ejecucion.fecha_fin}',
             {ejecucion.ventana_inicio_hora_config}, {ejecucion.ventana_fin_hora_config},
             {1 if ejecucion.is_dry_run else 0}, 'RUNNING',
@@ -476,7 +476,7 @@ class SyncHistoricosRepository:
         query = f"""
         UPDATE Sync_Control_Ejecuciones
         SET 
-            Status = '{status}',
+            Status = '{Status}',
             RegistrosProcesados = {registros_procesados},
             RegistrosInsertados = {registros_insertados},
             RegistrosActualizados = {registros_actualizados},
@@ -493,7 +493,7 @@ class SyncHistoricosRepository:
         query = f"""
         SELECT TOP 1 *
         FROM Sync_Control_Ejecuciones
-        WHERE ServerID = '{server_id}'
+        WHERE ServerID = '{ServerID}'
           AND SyncType = '{sync_type}'
           AND Status = 'SUCCESS'
         ORDER BY FinishedAtMexico DESC
@@ -518,10 +518,10 @@ class SyncHistoricosRepository:
         # Verificar si existe con mismo hash
         check_query = f"""
         SELECT RowHash FROM Sync_Ventas_PorHora
-        WHERE ServerID = '{venta.server_id}'
-          AND EmpresaID = {venta.empresa_id}
+        WHERE ServerID = '{venta.ServerID}'
+          AND EmpresaID = {venta.EmpresaID}
           AND FechaOperacion = '{venta.fecha_operacion}'
-          AND Hora = {venta.hora}
+          AND Hora = {venta.Hora}
         """
         existing = self._execute(check_query)
         
@@ -607,8 +607,8 @@ class SyncHistoricosRepository:
         # Verificar si existe con mismo hash
         check_query = f"""
         SELECT RowHash FROM Sync_Ventas_PorDiaSemana
-        WHERE ServerID = '{venta.server_id}'
-          AND EmpresaID = {venta.empresa_id}
+        WHERE ServerID = '{venta.ServerID}'
+          AND EmpresaID = {venta.EmpresaID}
           AND FechaInicioPeriodo = '{venta.fecha_inicio_periodo}'
           AND FechaFinPeriodo = '{venta.fecha_fin_periodo}'
           AND DiaSemana = {venta.dia_semana}

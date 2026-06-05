@@ -101,7 +101,7 @@ def get_server_connection_config(server_id: str) -> Optional[Dict[str, Any]]:
         id, nombre, host, port, database_name,
         username, password_encrypted, system_type, activo
     FROM Servidores_Conexiones
-    WHERE id = '{server_id}'
+    WHERE id = '{id}'
     """
     
     rows = _execute_query(query)
@@ -806,7 +806,7 @@ def insert_sales_to_sync_sales(sales: List[Dict], unidad_codigo: str) -> Dict[st
                 '{numero_ticket}',
                 N'{unidad_codigo}',
                 {monto_total},
-                {pax},
+                {Pax},
                 '{numero_ticket}',
                 '{fecha_str}'
             )

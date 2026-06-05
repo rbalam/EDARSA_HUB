@@ -95,9 +95,9 @@ def crear_competidor_catalogo(
         N'{nombre_competidor}',
         {sql_str(tipo_restaurante)},
         {sql_str(segmento_precio)},
-        {sql_str(ciudad)},
-        {sql_str(estado)},
-        {sql_str(pais)},
+        {sql_str(Ciudad)},
+        {sql_str(Estado)},
+        {sql_str(Pais)},
         {sql_str(zona_comercial)},
         {sql_str(sitio_web)},
         {sql_str(url_menu)},
@@ -106,7 +106,7 @@ def crear_competidor_catalogo(
         {sql_str(url_facebook)},
         {sql_str(url_tripadvisor)},
         {sql_str(url_opentable)},
-        {sql_str(notas)},
+        {sql_str(Notas)},
         1,
         GETDATE(),
         N'{usuario}'
@@ -239,7 +239,7 @@ def relacionar_competidor_unidad(
     existe_query = f"""
     SELECT CompetidorUnidadID FROM Comercial_CompetidoresUnidad
     WHERE CompetidorCatalogoID = '{competidor_catalogo_id}' 
-      AND UnidadNegocioID = {unidad_negocio_id}
+      AND UnidadNegocioID = {UnidadNegocioID}
       AND Activo = 1
     """
     existe_result = execute_sql_query(*conn, existe_query)
@@ -275,12 +275,12 @@ def relacionar_competidor_unidad(
     ) VALUES (
         '{relacion_id}',
         '{competidor_catalogo_id}',
-        {empresa_id},
-        {unidad_negocio_id},
+        {EmpresaID},
+        {UnidadNegocioID},
         {1 if es_competencia_directa else 0},
         {1 if es_benchmark_aspiracional else 0},
         '{tipo_relacion}',
-        {prioridad},
+        {Prioridad},
         {distancia_sql},
         {comentarios_sql},
         1,
@@ -319,7 +319,7 @@ def desrelacionar_competidor_unidad(
         FechaModificacion = GETDATE(),
         UsuarioModificacion = N'{usuario}'
     WHERE CompetidorCatalogoID = '{competidor_catalogo_id}'
-      AND UnidadNegocioID = {unidad_negocio_id}
+      AND UnidadNegocioID = {UnidadNegocioID}
       AND Activo = 1
     """
     

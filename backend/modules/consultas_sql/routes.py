@@ -423,7 +423,7 @@ async def listar_servidores_asociados(
         SELECT 
             CS.ConsultaServidorID,
             CAST(CS.ServidorID AS NVARCHAR(36)) as ServidorID,
-            SC.Nombre as ServidorNombre,
+            SC.nombre as ServidorNombre,
             CASE SC.SistemaTipoID 
                 WHEN 1 THEN 'SOFTRESTAURANT_PRO'
                 WHEN 2 THEN 'MPRO'
@@ -437,7 +437,7 @@ async def listar_servidores_asociados(
         INNER JOIN Servidores_Conexiones SC ON SC.ServidorID = CS.ServidorID
         LEFT JOIN Sistema_Empresas E ON E.EmpresaID = CS.EmpresaID
         WHERE CS.ConsultaID = {consulta.consulta_id}
-        ORDER BY CS.Prioridad, SC.Nombre
+        ORDER BY CS.Prioridad, SC.nombre
         """
         
         from core.db import execute_sql_query

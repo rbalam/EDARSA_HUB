@@ -164,7 +164,7 @@ async def solicitar_sistema(
     # Verificar duplicados
     check_query = f"""
         SELECT COUNT(*) as cnt FROM Sistema_Catalogo 
-        WHERE Descripcion = '{descripcion.replace("'", "''")}'
+        WHERE Descripcion = '{Descripcion.replace("'", "''")}'
     """
     try:
         result = execute_sql_query(
@@ -180,7 +180,7 @@ async def solicitar_sistema(
         insert_query = f"""
             INSERT INTO Sistema_Catalogo (Codigo, Descripcion, Activo, Estado, SolicitadoPorEmail, FechaSolicitud)
             OUTPUT INSERTED.SistemaID
-            VALUES ('{codigo}', '{descripcion.replace("'", "''")}', 0, 'PENDIENTE', '{user_email}', SYSDATETIME())
+            VALUES ('{Codigo}', '{Descripcion.replace("'", "''")}', 0, 'PENDIENTE', '{user_email}', SYSDATETIME())
         """
         result = execute_sql_query(
             '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
@@ -229,7 +229,7 @@ async def crear_sistema(
     # Verificar duplicados
     check_query = f"""
         SELECT COUNT(*) as cnt FROM Sistema_Catalogo 
-        WHERE Codigo = '{codigo}' OR Descripcion = '{descripcion.replace("'", "''")}'
+        WHERE Codigo = '{Codigo}' OR Descripcion = '{Descripcion.replace("'", "''")}'
     """
     try:
         result = execute_sql_query(
@@ -245,7 +245,7 @@ async def crear_sistema(
         insert_query = f"""
             INSERT INTO Sistema_Catalogo (Codigo, Descripcion, Activo, Estado, SolicitadoPorEmail, FechaSolicitud, AutorizadoPorEmail, FechaAutorizacion)
             OUTPUT INSERTED.SistemaID, INSERTED.Codigo, INSERTED.Descripcion
-            VALUES ('{codigo}', '{descripcion.replace("'", "''")}', 1, 'ACTIVO', '{user_email}', SYSDATETIME(), '{user_email}', SYSDATETIME())
+            VALUES ('{Codigo}', '{Descripcion.replace("'", "''")}', 1, 'ACTIVO', '{user_email}', SYSDATETIME(), '{user_email}', SYSDATETIME())
         """
         result = execute_sql_query(
             '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
@@ -296,7 +296,7 @@ async def actualizar_sistema(
     # Verificar duplicados (excepto el actual)
     check_query = f"""
         SELECT COUNT(*) as cnt FROM Sistema_Catalogo 
-        WHERE Descripcion = '{descripcion}' AND SistemaID <> {sistema_id}
+        WHERE Descripcion = '{Descripcion}' AND SistemaID <> {sistema_id}
     """
     try:
         result = execute_sql_query(
@@ -309,7 +309,7 @@ async def actualizar_sistema(
         # Actualizar
         update_query = f"""
             UPDATE Sistema_Catalogo 
-            SET Descripcion = '{descripcion}', FechaActualizacion = SYSDATETIME()
+            SET Descripcion = '{Descripcion}', FechaActualizacion = SYSDATETIME()
             WHERE SistemaID = {sistema_id}
         """
         execute_sql_query(

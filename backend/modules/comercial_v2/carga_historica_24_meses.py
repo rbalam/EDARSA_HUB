@@ -228,7 +228,7 @@ def get_server_connection(server_id: str) -> Optional[Dict[str, Any]]:
     SELECT 
         id, nombre, host, port, database_name, username, password_encrypted, system_type, activo
     FROM Servidores_Conexiones
-    WHERE id = '{server_id}'
+    WHERE id = '{id}'
     """
     
     try:

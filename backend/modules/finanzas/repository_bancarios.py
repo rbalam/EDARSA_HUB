@@ -260,7 +260,7 @@ def crear_cuenta_bancaria(
     OUTPUT INSERTED.CuentaBancariaID
     VALUES (
         {empresa_sql}, {banco_id}, '{numero_cuenta}', {clabe_sql}, '{alias_escaped}',
-        '{moneda}', {1 if es_cuenta_principal else 0}, 1, GETDATE(), {usuario_sql}
+        '{Moneda}', {1 if es_cuenta_principal else 0}, 1, GETDATE(), {usuario_sql}
     )
     """
     result = _execute_edarsahub(query)
@@ -501,7 +501,7 @@ def crear_saldo_bancario(
     )
     OUTPUT INSERTED.SaldoBancarioID
     VALUES (
-        {cuenta_id}, '{fecha_saldo.isoformat()}', {saldo_final}, '{moneda}',
+        {cuenta_id}, '{fecha_saldo.isoformat()}', {saldo_final}, '{Moneda}',
         '{fuente_datos}', {obs_sql}, 1, 1, 'VIGENTE',
         {usuario_sql}, GETDATE()
     )

@@ -293,7 +293,7 @@ def update_kpis_diarios(conn, unidad: str, fecha: str) -> bool:
             SELECT 
                 COUNT(DISTINCT NumeroTicket) AS tickets,
                 SUM(MontoTotal) AS ventas,
-                SUM(Pax) AS pax
+                SUM(Pax) AS Pax
             FROM Sync_Sales
             WHERE UnidadNegocio = %s
               AND CAST(FechaHora AS DATE) = %s

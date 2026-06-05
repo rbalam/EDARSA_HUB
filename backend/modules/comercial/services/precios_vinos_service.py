@@ -251,7 +251,7 @@ def obtener_costo_base_vino(codigo_producto: str, server_id: str) -> Tuple[Optio
     SELECT 
         sp.CostoReceta
     FROM Sync_Productos sp
-    WHERE sp.ServerID = '{server_id}'
+    WHERE sp.ServerID = '{ServerID}'
       AND sp.CodigoFuente = '{codigo_producto}'
     """
     
@@ -271,7 +271,7 @@ def obtener_costo_base_vino(codigo_producto: str, server_id: str) -> Tuple[Optio
         i.CostoPromedio,
         i.CostoEstandar
     FROM Sync_Productos_Insumos i
-    WHERE i.ServerID = '{server_id}'
+    WHERE i.ServerID = '{ServerID}'
       AND i.CodigoFuente = '{codigo_producto}'
     """
     
@@ -346,7 +346,7 @@ def obtener_tasa_impuesto(codigo_producto: str, server_id: str) -> Tuple[Optiona
         CAST(m.MapeoProductoID AS NVARCHAR(36)) as MapeoID,
         m.EstadoFiscal
     FROM Comercial_ImpuestosMapeo m
-    WHERE m.ServerID = '{server_id}'
+    WHERE m.ServerID = '{ServerID}'
       AND m.CodigoProducto = '{codigo_producto}'
     """
     

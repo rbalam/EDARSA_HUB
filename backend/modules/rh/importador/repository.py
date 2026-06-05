@@ -306,20 +306,20 @@ async def insertar_staging(
         VALUES (
             N'{nombre}',
             {f"'{curp}'" if curp else 'NULL'},
-            {f"'{rfc}'" if rfc else 'NULL'},
+            {f"'{RFC}'" if RFC else 'NULL'},
             {f"'{clabe}'" if clabe else 'NULL'},
             {f"'{num_emp}'" if num_emp else 'NULL'},
             {f"N'{suc_nombre}'" if suc_nombre else 'NULL'},
             {suc_id},
-            {f"N'{puesto_nombre}'" if puesto_nombre else 'NULL'},
+            {f"N'{Puesto_Nombre}'" if Puesto_Nombre else 'NULL'},
             {puesto_id},
             {f"N'{area}'" if area else 'NULL'},
             {f"'{sexo}'" if sexo else 'NULL'},
-            {edad},
-            {f"N'{antiguedad}'" if antiguedad else 'NULL'},
+            {Edad},
+            {f"N'{Antiguedad}'" if Antiguedad else 'NULL'},
             {sueldo},
-            {f"N'{metodo_pago}'" if metodo_pago else 'NULL'},
-            '{fuente}',
+            {f"N'{Metodo_Pago}'" if Metodo_Pago else 'NULL'},
+            '{Fuente}',
             {f"N'{archivo}'" if archivo else 'NULL'},
             {linea},
             N'{usuario_safe}',
@@ -366,34 +366,34 @@ async def listar_staging(
     query = f"""
         SELECT 
             StagingID as staging_id,
-            Nombre_Completo as nombre_completo,
+            Nombre_Completo as Nombre_Completo,
             CURP as curp,
-            RFC as rfc,
+            RFC as RFC,
             CLABE_Bancaria as clabe_bancaria,
-            Numero_Empleado_Externo as numero_empleado_externo,
-            Sucursal_Nombre as sucursal_nombre,
-            SucursalID as sucursal_id,
-            Puesto_Nombre as puesto_nombre,
+            Numero_Empleado_Externo as Numero_Empleado_Externo,
+            Sucursal_Nombre as Sucursal_Nombre,
+            SucursalID as SucursalID,
+            Puesto_Nombre as Puesto_Nombre,
             PuestoID as puesto_id,
-            Area_Departamento as area_departamento,
+            Area_Departamento as Area_Departamento,
             Sexo as sexo,
-            Edad as edad,
-            Antiguedad as antiguedad,
-            Sueldo_Diario as sueldo_diario,
-            Metodo_Pago as metodo_pago,
-            Fuente as fuente,
-            Archivo_Origen as archivo_origen,
-            Linea_Origen as linea_origen,
-            Fecha_Importacion as fecha_importacion,
-            Usuario_Importador as usuario_importador,
-            Estado as estado,
-            Clasificacion as clasificacion,
-            Nivel_Confianza as nivel_confianza,
-            Accion_Realizada as accion_realizada,
+            Edad as Edad,
+            Antiguedad as Antiguedad,
+            Sueldo_Diario as Sueldo_Diario,
+            Metodo_Pago as Metodo_Pago,
+            Fuente as Fuente,
+            Archivo_Origen as Archivo_Origen,
+            Linea_Origen as Linea_Origen,
+            Fecha_Importacion as Fecha_Importacion,
+            Usuario_Importador as Usuario_Importador,
+            Estado as Estado,
+            Clasificacion as Clasificacion,
+            Nivel_Confianza as Nivel_Confianza,
+            Accion_Realizada as Accion_Realizada,
             ColaboradorID_Destino as colaborador_id_destino,
             ColaboradorID_Match as colaborador_id_match,
-            Mensaje_Error as mensaje_error,
-            Observaciones as observaciones
+            Mensaje_Error as Mensaje_Error,
+            Observaciones as Observaciones
         FROM RH_Importacion_Staging
         WHERE {where_sql}
         ORDER BY Fecha_Importacion DESC
@@ -520,17 +520,17 @@ async def insertar_bitacora(
         )
         OUTPUT INSERTED.BitacoraID
         VALUES (
-            '{fuente}',
+            '{Fuente}',
             {f"N'{archivo}'" if archivo else 'NULL'},
-            {int(datos.get('total_registros_leidos', 0))},
-            {int(datos.get('total_insertados', 0))},
-            {int(datos.get('total_actualizados', 0))},
-            {int(datos.get('total_duplicados_omitidos', 0))},
-            {int(datos.get('total_incompletos', 0))},
-            {int(datos.get('total_errores', 0))},
+            {int(datos.get('Total_Registros_Leidos', 0))},
+            {int(datos.get('Total_Insertados', 0))},
+            {int(datos.get('Total_Actualizados', 0))},
+            {int(datos.get('Total_Duplicados_Omitidos', 0))},
+            {int(datos.get('Total_Incompletos', 0))},
+            {int(datos.get('Total_Errores', 0))},
             {f"N'{usuario}'" if usuario else 'NULL'},
-            {int(datos.get('duracion_segundos')) if datos.get('duracion_segundos') else 'NULL'},
-            '{estado}',
+            {int(datos.get('Duracion_Segundos')) if datos.get('Duracion_Segundos') else 'NULL'},
+            '{Estado}',
             {f"N'{detalle_str}'" if detalle_str else 'NULL'}
         )
     """
@@ -613,18 +613,18 @@ async def listar_bitacora(
     query = f"""
         SELECT 
             BitacoraID as bitacora_id,
-            Fecha_Ejecucion as fecha_ejecucion,
-            Fuente as fuente,
-            Archivo_Origen as archivo_origen,
-            Total_Registros_Leidos as total_registros_leidos,
-            Total_Insertados as total_insertados,
-            Total_Actualizados as total_actualizados,
-            Total_Duplicados_Omitidos as total_duplicados_omitidos,
-            Total_Incompletos as total_incompletos,
-            Total_Errores as total_errores,
-            Usuario_Ejecutor as usuario_ejecutor,
-            Duracion_Segundos as duracion_segundos,
-            Estado as estado
+            Fecha_Ejecucion as Fecha_Ejecucion,
+            Fuente as Fuente,
+            Archivo_Origen as Archivo_Origen,
+            Total_Registros_Leidos as Total_Registros_Leidos,
+            Total_Insertados as Total_Insertados,
+            Total_Actualizados as Total_Actualizados,
+            Total_Duplicados_Omitidos as Total_Duplicados_Omitidos,
+            Total_Incompletos as Total_Incompletos,
+            Total_Errores as Total_Errores,
+            Usuario_Ejecutor as Usuario_Ejecutor,
+            Duracion_Segundos as Duracion_Segundos,
+            Estado as Estado
         FROM RH_Importacion_Bitacora
         ORDER BY Fecha_Ejecucion DESC
         OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
@@ -674,7 +674,7 @@ async def buscar_duplicados_por_nombre_sucursal(
         SELECT ColaboradorID, Nombre_Completo, CURP, RFC, SucursalID, PuestoID
         FROM RH_Colaboradores_Expediente
         WHERE UPPER(Nombre_Completo) = '{nombre_safe}' 
-          AND SucursalID = {int(sucursal_id)}
+          AND SucursalID = {int(SucursalID)}
           AND Colaborador_Activo = 1
     """
     return execute_hub_query(server, query)

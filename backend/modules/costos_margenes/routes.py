@@ -95,7 +95,7 @@ def _get_user_allowed_servers(user: dict) -> tuple[List[str], bool]:
         user_query = f"""
         SELECT UsuarioID 
         FROM Usuario_Catalogo 
-        WHERE (Email = '{email}' OR LOWER(CAST(PublicUUID AS VARCHAR(36))) = '{user_id.lower()}')
+        WHERE (Email = '{Email}' OR LOWER(CAST(PublicUUID AS VARCHAR(36))) = '{user_id.lower()}')
         AND Activo = 1
         """
         user_result = execute_sql_query(*conn, user_query)

@@ -169,7 +169,7 @@ class SyncComercialEndpointsJob:
             cursor = conn.cursor()
             
             cursor.execute("""
-                SELECT DISTINCT id as ServerID, nombre as ServerNombre
+                SELECT DISTINCT id as id, nombre as ServerNombre
                 FROM Servidores_Conexiones
                 WHERE activo = 1
             """)
@@ -333,7 +333,7 @@ class SyncComercialEndpointsJob:
                 try:
                     cursor.execute("""
                         SELECT 
-                            fecha_operacion as FechaOperacion,
+                            fecha_operacion as fecha_operacion,
                             ISNULL(tickets_total, 0) as TotalCuentas,
                             ISNULL(pax_total, 0) as TotalComensales,
                             ISNULL(ventas_total, 0) as VentaTotal,

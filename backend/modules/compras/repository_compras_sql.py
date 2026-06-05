@@ -148,7 +148,7 @@ def get_compras_params_sql(server_id: str, sucursal: str) -> Optional[Dict]:
         query = """
             SELECT 
                 ParametroID,
-                ServerID as server_id,
+                ServerID as ServerID,
                 SucursalID as sucursal,
                 DiasInventario as dias_inventario,
                 ExcluirDomingos as excluir_domingos,
@@ -289,7 +289,7 @@ def get_all_compras_params_sql() -> List[Dict]:
         query = """
             SELECT 
                 ParametroID,
-                ServerID as server_id,
+                ServerID as ServerID,
                 SucursalID as sucursal,
                 DiasInventario as dias_inventario,
                 ExcluirDomingos as excluir_domingos,

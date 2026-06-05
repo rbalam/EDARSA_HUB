@@ -79,7 +79,7 @@ def get_unidades_negocio_config() -> List[UnidadNegocioConfig]:
     # FIX IDENTIDAD CANÓNICA (2026-05-16): Usar códigos CANÓNICOS, no aliases legacy
     query = """
     SELECT 
-        id as server_id,
+        id as id,
         nombre as unidad_nombre,
         system_type,
         host,

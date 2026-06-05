@@ -158,7 +158,7 @@ def _get_server_by_id_sql(server_id: str) -> Optional[Dict]:
     try:
         query = f"""
         SELECT * FROM Servidores_Conexiones
-        WHERE (id = '{server_id}' OR mongodb_id = '{server_id}')
+        WHERE (id = '{id}' OR mongodb_id = '{id}')
           AND activo = 1
         """
         results = execute_sql_query(
@@ -469,7 +469,7 @@ async def get_metas_sucursal(server_id: str, sucursal: str, mes: int, anio: int)
     MIGRACIÓN SQL-ONLY (Mayo 2026).
     """
     query = """
-        SELECT ServerID as server_id, Sucursal as sucursal, Mes as mes, Anio as anio,
+        SELECT ServerID as ServerID, Sucursal as Sucursal, Mes as Mes, Anio as Anio,
                MetaVentas as meta_ventas, MetaCheques as meta_cheques, MetaPax as meta_pax,
                MetaTicketPromedio as meta_ticket_promedio
         FROM Comercial_Metas
@@ -524,8 +524,8 @@ async def save_metas_sucursal(server_id: str, sucursal: str, mes: int, anio: int
 async def get_cached_kpis(server_id: str, periodo_key: str) -> Optional[Dict]:
     """Obtiene los KPIs cacheados de un servidor desde SQL."""
     query = """
-        SELECT ServerID as server_id, PeriodoKey as periodo_key, KPIsJSON as kpis,
-               UpdatedAt as updated_at, Status as status
+        SELECT ServerID as ServerID, PeriodoKey as periodo_key, KPIsJSON as kpis,
+               UpdatedAt as updated_at, Status as Status
         FROM Comercial_KPIs_Cache
         WHERE LOWER(ServerID) = LOWER(%s) AND PeriodoKey = %s
     """
@@ -567,8 +567,8 @@ async def save_kpis_cache(server_id: str, periodo_key: str, kpis: dict) -> None:
 async def get_cached_kpis_by_prefix(server_id: str, periodo_prefix: str) -> List[Dict]:
     """Obtiene KPIs cacheados por prefijo de período."""
     query = """
-        SELECT ServerID as server_id, PeriodoKey as periodo_key, KPIsJSON as kpis,
-               UpdatedAt as updated_at, Status as status
+        SELECT ServerID as ServerID, PeriodoKey as periodo_key, KPIsJSON as kpis,
+               UpdatedAt as updated_at, Status as Status
         FROM Comercial_KPIs_Cache
         WHERE LOWER(ServerID) = LOWER(%s) AND PeriodoKey LIKE %s
     """
@@ -609,7 +609,7 @@ async def save_server_connection_status(server_id: str, is_online: bool, respons
 async def get_server_connection_status(server_id: str) -> Optional[Dict]:
     """Obtiene el estado de conexión de un servidor desde SQL."""
     query = """
-        SELECT ServerID as server_id, IsOnline as is_online, ResponseTimeMs as response_time_ms,
+        SELECT ServerID as ServerID, IsOnline as is_online, ResponseTimeMs as response_time_ms,
                LastCheck as last_check
         FROM Servidores_Status
         WHERE LOWER(ServerID) = LOWER(%s)
@@ -728,7 +728,7 @@ async def save_dashboard_cache(server_id: str, periodo_key: str, dashboard_data:
 async def get_dashboard_cache(server_id: str, periodo_key: str) -> Optional[Dict]:
     """Obtiene el resultado del Dashboard desde caché SQL."""
     query = """
-        SELECT ServerID as server_id, PeriodoKey as periodo_key, DataJSON as data, UpdatedAt as updated_at
+        SELECT ServerID as ServerID, PeriodoKey as periodo_key, DataJSON as data, UpdatedAt as updated_at
         FROM Comercial_Dashboard_Cache
         WHERE LOWER(ServerID) = LOWER(%s) AND PeriodoKey = %s
     """

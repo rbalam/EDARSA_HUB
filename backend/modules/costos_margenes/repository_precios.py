@@ -219,11 +219,11 @@ def guardar_simulacion(
         SyncRunID, UsuarioID, UsuarioEmail, IPSimulacion
     ) VALUES (
         '{simulacion_id}',
-        '{producto_id}',
+        '{ProductoID}',
         '{datos_producto["codigo_producto"]}',
         N'{nombre_escaped}',
-        '{server_id}',
-        '{datos_producto["system_type"]}',
+        '{ServerID}',
+        '{datos_producto["SystemType"]}',
         {datos_producto["precio_actual"]},
         {datos_producto["costo_actual"]},
         {datos_producto["margen_actual_pesos"]},
@@ -234,7 +234,7 @@ def guardar_simulacion(
         {datos_simulacion["variacion_pesos"]},
         {datos_simulacion["variacion_porcentaje"]},
         {margen_obj_sql},
-        '{datos_simulacion["recomendacion"]}',
+        '{datos_simulacion["Recomendacion"]}',
         N'{impacto_escaped}',
         {sync_run},
         '{usuario_id}',
@@ -310,9 +310,9 @@ def crear_solicitud_cambio_precio(
         IPCreacion
     ) VALUES (
         '{solicitud_id}', '{folio}',
-        '{producto_id}', '{datos_producto["codigo_producto"]}',
+        '{ProductoID}', '{datos_producto["codigo_producto"]}',
         N'{nombre_prod}',
-        '{server_id}', '{datos_producto["system_type"]}',
+        '{ServerID}', '{datos_producto["SystemType"]}',
         {familia_codigo}, {familia_nombre},
         {datos_producto["precio_actual"]}, {precio_solicitado},
         {simulacion["variacion_pesos"]}, {simulacion["variacion_porcentaje"]},
@@ -639,7 +639,7 @@ def _registrar_historial(
         UsuarioID, UsuarioEmail, UsuarioNombre,
         Comentario, ValorAnterior, ValorNuevo, IPAccion
     ) VALUES (
-        '{historial_id}', '{solicitud_id}', '{accion}',
+        '{historial_id}', '{solicitud_id}', '{Accion}',
         {estatus_ant_sql}, '{estatus_nuevo}',
         '{usuario_id}', '{usuario_email}', {nombre_sql},
         {comentario_sql}, {val_ant_sql}, {val_nuevo_sql}, {ip_sql}

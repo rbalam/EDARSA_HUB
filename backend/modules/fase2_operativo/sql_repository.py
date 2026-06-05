@@ -191,12 +191,12 @@ async def obtener_workflow(workflow_id: str) -> Optional[Dict]:
     
     query = """
         SELECT 
-            WorkflowID as id, ProcesadoID as procesado_id, FolioInventario as folio_inventario,
-            ServerID as server_id, ServerName as server_name,
-            SucursalID as sucursal_id, SucursalNombre as sucursal_nombre,
-            AlmacenID as almacen_id, AlmacenNombre as almacen_nombre,
+            WorkflowID as ID, ProcesadoID as procesado_id, FolioInventario as folio_inventario,
+            ServerID as ServerID, ServerName as server_name,
+            SucursalID as SucursalID, SucursalNombre as sucursal_nombre,
+            AlmacenID as AlmacenID, AlmacenNombre as almacen_nombre,
             FolioFinalKey as folio_final_key,
-            Estado as estado, EstadoWorkflow as estado_workflow,
+            Estado as Estado, EstadoWorkflow as estado_workflow,
             CicloActual as ciclo_actual,
             TotalProductosDiferencia as total_productos_diferencia,
             ValorTotalDiferencias as valor_total_diferencias,
@@ -252,16 +252,16 @@ async def obtener_tareas_activas() -> List[Dict]:
     """Obtiene todas las tareas activas."""
     query = """
         SELECT 
-            TareaID as id, WorkflowID as workflow_id,
-            TipoTarea as tipo_tarea, Titulo as titulo, Descripcion as descripcion,
-            EstadoTarea as estado_tarea, Prioridad as prioridad,
+            TareaID as ID, WorkflowID as workflow_id,
+            TipoTarea as tipo_tarea, Titulo as Titulo, Descripcion as Descripcion,
+            EstadoTarea as estado_tarea, Prioridad as Prioridad,
             UsuarioAsignadoID as usuario_asignado_id,
             UsuarioAsignadoNombre as usuario_asignado_nombre,
             FechaCreacion as fecha_creacion, FechaAsignacion as fecha_asignacion,
             FechaLimite as fecha_limite, FechaActualizacion as fecha_actualizacion,
             FechaPrimeraAccion as fecha_primera_accion,
             FechaCompletada as fecha_completada,
-            Ciclo as ciclo, Vencida as vencida, EstadoSLA as estado_sla,
+            Ciclo as Ciclo, Vencida as Vencida, EstadoSLA as estado_sla,
             NotificacionWarningEnviada as notificacion_warning_enviada,
             NotificacionVencidoEnviada as notificacion_vencido_enviada,
             NotificacionEscaladoEnviada as notificacion_escalado_enviada
@@ -324,7 +324,7 @@ async def obtener_tareas_completadas() -> List[Dict]:
     """Obtiene todas las tareas completadas."""
     query = """
         SELECT 
-            TareaID as id, WorkflowID as workflow_id,
+            TareaID as ID, WorkflowID as workflow_id,
             TipoTarea as tipo_tarea, EstadoTarea as estado_tarea,
             FechaCreacion as fecha_creacion, FechaLimite as fecha_limite,
             FechaPrimeraAccion as fecha_primera_accion,
@@ -523,8 +523,8 @@ async def obtener_config_asignacion(server_id: str, almacen_id: str) -> Optional
     """
     query = """
         SELECT TOP 1
-            ConfigID as id, ServerID as server_id, AlmacenID as almacen_id,
-            UsuarioResponsableID as usuario_responsable_id, Prioridad as prioridad
+            ConfigID as ID, ServerID as ServerID, AlmacenID as AlmacenID,
+            UsuarioResponsableID as usuario_responsable_id, Prioridad as Prioridad
         FROM Config_Asignaciones
         WHERE ServerID = %s
           AND (AlmacenID = %s OR AlmacenID = '')

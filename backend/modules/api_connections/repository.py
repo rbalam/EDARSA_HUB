@@ -289,7 +289,7 @@ async def create_api_connection(data: Dict, created_by: str = "system") -> Dict:
         id, nombre, system_type, tipo_conexion, host, port, database_name,
         api_url, api_key_encrypted, activo, visible_en_operaciones,
         visible_en_listado, es_editable_ui, es_eliminable_ui,
-        empresa_id, sucursales, queries_configured,
+        EmpresaID, sucursales, queries_configured,
         created_at, updated_at, created_by
     ) VALUES (
         '{api_id}',

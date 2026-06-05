@@ -126,11 +126,11 @@ def resolver_tasa_impuesto(
       AND VigenciaDesde <= GETDATE()
       AND (
           -- Override por producto específico
-          (TipoOverride = 'PRODUCTO' AND CodigoProducto = '{codigo_producto}' AND ServerID = '{server_id}')
+          (TipoOverride = 'PRODUCTO' AND CodigoProducto = '{codigo_producto}' AND ServerID = '{ServerID}')
           -- Override por unidad
-          OR (TipoOverride = 'UNIDAD' AND UnidadNegocioID = '{unidad_negocio_id}' AND '{unidad_negocio_id}' IS NOT NULL)
+          OR (TipoOverride = 'UNIDAD' AND UnidadNegocioID = '{UnidadNegocioID}' AND '{UnidadNegocioID}' IS NOT NULL)
           -- Override por sucursal
-          OR (TipoOverride = 'SUCURSAL' AND SucursalID = '{sucursal_id}' AND '{sucursal_id}' IS NOT NULL)
+          OR (TipoOverride = 'SUCURSAL' AND SucursalID = '{SucursalID}' AND '{SucursalID}' IS NOT NULL)
           -- Override por familia
           OR (TipoOverride = 'FAMILIA' AND FamiliaCodigoFuente = '{familia_codigo}' AND '{familia_codigo}' IS NOT NULL)
           -- Override por región
@@ -175,7 +175,7 @@ def resolver_tasa_impuesto(
         CAST(ImpuestoCanonicoID AS NVARCHAR(36)) as ImpuestoCanonicoID,
         FuenteOrigen
     FROM Comercial_ImpuestosMapeo
-    WHERE ServerID = '{server_id}'
+    WHERE ServerID = '{ServerID}'
       AND CodigoProducto = '{codigo_producto}'
     """
     
@@ -218,7 +218,7 @@ def resolver_tasa_impuesto(
     SELECT TOP 1
         TasaImpuesto
     FROM Sync_Productos
-    WHERE ServerID = '{server_id}'
+    WHERE ServerID = '{ServerID}'
       AND CodigoFuente = '{codigo_producto}'
     """
     

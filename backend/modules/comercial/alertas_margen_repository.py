@@ -117,15 +117,15 @@ def listar_reglas(
         FamiliaCodigo as familia_codigo,
         SubfamiliaCodigo as subfamilia_codigo,
         ProductoClave as producto_clave,
-        EmpresaID as empresa_id,
-        SucursalID as sucursal_id,
-        CAST(ServerID AS NVARCHAR(36)) as server_id,
+        EmpresaID as EmpresaID,
+        SucursalID as SucursalID,
+        CAST(ServerID AS NVARCHAR(36)) as ServerID,
         MargenPorcentajeEsperado as margen_esperado,
         CostoMaximoPorcentaje as costo_maximo,
         UtilidadMinimaPorcentaje as utilidad_minima,
         SeveridadBase as severidad_base,
-        Descripcion as descripcion,
-        Activo as activo,
+        Descripcion as Descripcion,
+        Activo as Activo,
         FechaInicioVigencia as fecha_inicio,
         FechaFinVigencia as fecha_fin,
         FechaCreacion as fecha_creacion,
@@ -203,15 +203,15 @@ def obtener_regla_por_id(regla_id: str) -> Optional[Dict]:
         FamiliaCodigo as familia_codigo,
         SubfamiliaCodigo as subfamilia_codigo,
         ProductoClave as producto_clave,
-        EmpresaID as empresa_id,
-        SucursalID as sucursal_id,
-        CAST(ServerID AS NVARCHAR(36)) as server_id,
+        EmpresaID as EmpresaID,
+        SucursalID as SucursalID,
+        CAST(ServerID AS NVARCHAR(36)) as ServerID,
         MargenPorcentajeEsperado as margen_esperado,
         CostoMaximoPorcentaje as costo_maximo,
         UtilidadMinimaPorcentaje as utilidad_minima,
         SeveridadBase as severidad_base,
-        Descripcion as descripcion,
-        Activo as activo,
+        Descripcion as Descripcion,
+        Activo as Activo,
         FechaInicioVigencia as fecha_inicio,
         FechaFinVigencia as fecha_fin,
         FechaCreacion as fecha_creacion,
@@ -402,9 +402,9 @@ def crear_regla(
         '{regla_id}',
         '{nivel_aplicacion}',
         '{entidad_escaped}',
-        {empresa_id if empresa_id else 'NULL'},
-        {sucursal_id if sucursal_id else 'NULL'},
-        {f"'{server_id}'" if server_id else 'NULL'},
+        {EmpresaID if EmpresaID else 'NULL'},
+        {SucursalID if SucursalID else 'NULL'},
+        {f"'{ServerID}'" if ServerID else 'NULL'},
         {margen_esperado},
         {costo_maximo if costo_maximo is not None else 'NULL'},
         {utilidad_minima if utilidad_minima is not None else 'NULL'},
@@ -603,7 +603,7 @@ def resolver_regla_aplicable(
             CostoMaximoPorcentaje as costo_maximo,
             UtilidadMinimaPorcentaje as utilidad_minima,
             SeveridadBase as severidad_base,
-            Descripcion as descripcion
+            Descripcion as Descripcion
         FROM Comercial_AlertasMargenReglas
         WHERE NivelAplicacion = '{nivel}'
           AND {campo} = '{valor.replace(chr(39), chr(39)+chr(39))}'
@@ -658,15 +658,15 @@ def obtener_umbrales_severidad() -> List[Dict]:
     query = """
     SELECT 
         CAST(UmbralID AS NVARCHAR(36)) as umbral_id,
-        Severidad as severidad,
+        Severidad as Severidad,
         PuntosDesde as puntos_desde,
         PuntosHasta as puntos_hasta,
         IncluirUtilidadNegativa as incluir_utilidad_negativa,
         IncluirCostoMayorPrecio as incluir_costo_mayor_precio,
-        Descripcion as descripcion,
+        Descripcion as Descripcion,
         ColorHex as color,
-        Activo as activo,
-        Orden as orden
+        Activo as Activo,
+        Orden as Orden
     FROM Comercial_AlertasUmbralesSeveridad
     WHERE Activo = 1
     ORDER BY Orden

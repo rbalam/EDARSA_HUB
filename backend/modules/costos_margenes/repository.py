@@ -303,17 +303,17 @@ def get_producto_by_id(producto_id: str) -> Optional[Dict]:
     
     query = f"""
     SELECT 
-        CAST(ProductoID AS NVARCHAR(36)) as producto_id,
+        CAST(ProductoID AS NVARCHAR(36)) as ProductoID,
         CodigoFuente,
         Nombre,
         SystemType,
-        CAST(ServerID AS NVARCHAR(36)) as server_id,
+        CAST(ServerID AS NVARCHAR(36)) as ServerID,
         CostoReceta,
         SyncRunID,
         SyncedAtMexico
     FROM Sync_Productos
-    WHERE ProductoID = '{producto_id}'
-    OR CodigoFuente = '{producto_id}'
+    WHERE ProductoID = '{ProductoID}'
+    OR CodigoFuente = '{ProductoID}'
     """
     result = execute_sql_query(*conn, query)
     return result[0] if result else None
@@ -333,17 +333,17 @@ def get_receta_producto(producto_id: str, server_id: Optional[str] = None) -> Tu
         if server_id:
             query = f"""
             SELECT 
-                CAST(ProductoID AS NVARCHAR(36)) as producto_id,
+                CAST(ProductoID AS NVARCHAR(36)) as ProductoID,
                 CodigoFuente,
                 Nombre,
                 SystemType,
-                CAST(ServerID AS NVARCHAR(36)) as server_id,
+                CAST(ServerID AS NVARCHAR(36)) as ServerID,
                 CostoReceta,
                 SyncRunID,
                 SyncedAtMexico
             FROM Sync_Productos
-            WHERE CodigoFuente = '{producto_id}'
-            AND ServerID = '{server_id}'
+            WHERE CodigoFuente = '{ProductoID}'
+            AND ServerID = '{ServerID}'
             """
             result = execute_sql_query(*conn, query)
             producto = result[0] if result else None
@@ -361,7 +361,7 @@ def get_receta_producto(producto_id: str, server_id: Optional[str] = None) -> Tu
         r.ComponenteCodigoFuente as codigo_fuente,
         r.ComponenteNombre as nombre,
         COALESCE(r.TipoComponente, 'INSUMO_DIRECTO') as tipo_componente,
-        r.Cantidad as cantidad,
+        r.Cantidad as Cantidad,
         COALESCE(r.UnidadMedida, 'PZA') as unidad_medida,
         r.CostoUnitario as costo_unitario,
         r.CostoTotal as costo_total,
@@ -431,7 +431,7 @@ def get_receta_elaborado(codigo_elaborado: str, server_id: Optional[str] = None)
         CodigoFuente,
         Nombre,
         SystemType,
-        CAST(ServerID AS NVARCHAR(36)) as server_id,
+        CAST(ServerID AS NVARCHAR(36)) as ServerID,
         Costo,
         EsElaborado,
         RendimientoElaborado,
@@ -447,11 +447,11 @@ def get_receta_elaborado(codigo_elaborado: str, server_id: Optional[str] = None)
         # Intentar buscar en Sync_Productos (algunos elaborados pueden estar ahí)
         producto_query = f"""
         SELECT TOP 1
-            CAST(ProductoID AS NVARCHAR(36)) as producto_id,
+            CAST(ProductoID AS NVARCHAR(36)) as ProductoID,
             CodigoFuente,
             Nombre,
             SystemType,
-            CAST(ServerID AS NVARCHAR(36)) as server_id,
+            CAST(ServerID AS NVARCHAR(36)) as ServerID,
             CostoReceta as Costo,
             1 as EsElaborado,
             SyncRunID,

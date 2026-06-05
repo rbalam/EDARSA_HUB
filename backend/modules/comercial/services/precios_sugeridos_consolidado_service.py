@@ -463,7 +463,7 @@ def crear_rango_vino(
         FechaCreacion, UsuarioCreacion
     ) VALUES (
         '{rango_id}', '{regla_id}', {limite_inferior}, {limite_superior},
-        {multiplicador}, {orden}, N'{descripcion}', 1,
+        {multiplicador}, {Orden}, N'{Descripcion}', 1,
         GETDATE(), N'{usuario}'
     )
     """
