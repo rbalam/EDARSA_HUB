@@ -767,8 +767,10 @@ async def _ejecutar_dry_run(
 ) -> Dict[str, Any]:
     """
     Ejecuta simulación de sync (extrae datos pero NO escribe).
+    P2-21: Usa catálogo central de queries.
     """
     from modules.comercial_v2.sync_comercial_edarsahub import get_server_connection_config
+    from core.query_catalog import get_query_for_server
     import pymssql
     
     try:
@@ -776,6 +778,51 @@ async def _ejecutar_dry_run(
         
         if not config:
             return {'success': False, 'error_message': 'Config de servidor no encontrada'}
+        
+        # P2-21: Obtener query desde catálogo central
+        query_template = get_query_for_server(config, 'comercial_ventas_cerradas')
+        
+        if not query_template:
+            # Fallback a queries legacy si no está en catálogo
+            sistema = unidad_config.get('sistema', '').upper()
+            if 'SOFT' in sistema:
+                query_template = """
+                SELECT 
+                    CAST(fecha AS DATE) AS fecha_operacion,
+                    SUM(total) AS ventas_total,
+                    SUM(total - ISNULL(propina, 0)) AS ventas_sin_propina,
+                    SUM(ISNULL(propina, 0)) AS propinas_total,
+                    COUNT(DISTINCT folio) AS tickets_total,
+                    SUM(ISNULL(nopersonas, 1)) AS pax_total
+                FROM cheques
+                WHERE CAST(fecha AS DATE) BETWEEN @fecha_inicio AND @fecha_fin
+                  AND cancelado = 0
+                  AND cierre IS NOT NULL
+                GROUP BY CAST(fecha AS DATE)
+                ORDER BY fecha_operacion
+                """
+            else:  # MPRO
+                query_template = """
+                SELECT 
+                    CAST(ve.Vn_Fecha AS DATE) AS fecha_operacion,
+                    SUM(ve.Vn_Precio_Neto_Importe) AS ventas_total,
+                    SUM(ve.Vn_Precio_Neto_Importe) AS ventas_sin_propina,
+                    0 AS propinas_total,
+                    COUNT(DISTINCT ve.Vn_Folio) AS tickets_total,
+                    SUM(ISNULL(c.Co_Personas, 1)) AS pax_total
+                FROM Venta_Encabezado ve
+                LEFT JOIN Comanda c ON ve.Vn_Documento = c.Co_Folio AND ve.Sc_Cve_Sucursal = c.Sc_Cve_Sucursal
+                WHERE CAST(ve.Vn_Fecha AS DATE) BETWEEN @fecha_inicio AND @fecha_fin
+                  AND ve.Sc_Cve_Sucursal = @sucursal_id
+                GROUP BY CAST(ve.Vn_Fecha AS DATE)
+                ORDER BY fecha_operacion
+                """
+        
+        # Reemplazar parámetros
+        query = query_template.replace('@fecha_inicio', f"'{fecha_inicio}'")
+        query = query.replace('@fecha_fin', f"'{fecha_fin}'")
+        sucursal_id = unidad_config.get('sucursal_id', 'DEFAULT')
+        query = query.replace('@sucursal_id', f"'{sucursal_id}'")
         
         conn = pymssql.connect(
             server=config['host'],
@@ -787,42 +834,6 @@ async def _ejecutar_dry_run(
         )
         cursor = conn.cursor(as_dict=True)
         
-        # Query para extraer datos (sin modificar)
-        # SoftRestaurant
-        if unidad_config['sistema'] == 'SOFTRESTAURANT':
-            query = f"""
-            SELECT 
-                CAST(fecha AS DATE) AS fecha_operacion,
-                SUM(total) AS ventas_total,
-                SUM(total - ISNULL(propina, 0)) AS ventas_sin_propina,
-                SUM(ISNULL(propina, 0)) AS propinas_total,
-                COUNT(DISTINCT folio) AS tickets_total,
-                SUM(ISNULL(nopersonas, 1)) AS pax_total
-            FROM cheques
-            WHERE CAST(fecha AS DATE) BETWEEN '{fecha_inicio}' AND '{fecha_fin}'
-              AND cancelado = 0
-              AND cierre IS NOT NULL
-            GROUP BY CAST(fecha AS DATE)
-            ORDER BY fecha_operacion
-            """
-        else:  # MPRO
-            sucursal_id = unidad_config.get('sucursal_id', 'DEFAULT')
-            query = f"""
-            SELECT 
-                CAST(ve.Vn_Fecha AS DATE) AS fecha_operacion,
-                SUM(ve.Vn_Precio_Neto_Importe) AS ventas_total,
-                SUM(ve.Vn_Precio_Neto_Importe) AS ventas_sin_propina,
-                0 AS propinas_total,
-                COUNT(DISTINCT ve.Vn_Folio) AS tickets_total,
-                SUM(ISNULL(c.Co_Personas, 1)) AS pax_total
-            FROM Venta_Encabezado ve
-            LEFT JOIN Comanda c ON ve.Vn_Documento = c.Co_Folio AND ve.Sc_Cve_Sucursal = c.Sc_Cve_Sucursal
-            WHERE CAST(ve.Vn_Fecha AS DATE) BETWEEN '{fecha_inicio}' AND '{fecha_fin}'
-              AND ve.Sc_Cve_Sucursal = '{sucursal_id}'
-            GROUP BY CAST(ve.Vn_Fecha AS DATE)
-            ORDER BY fecha_operacion
-            """
-        
         cursor.execute(query)
         datos = cursor.fetchall()
         conn.close()
@@ -831,7 +842,7 @@ async def _ejecutar_dry_run(
         for d in datos:
             detalle.append({
                 'fecha': str(d['fecha_operacion']),
-                'accion': 'INSERT/UPDATE',  # En dry_run siempre mostramos como posible acción
+                'accion': 'INSERT/UPDATE',
                 'ventas_total': float(d['ventas_total'] or 0),
                 'ventas_sin_propina': float(d['ventas_sin_propina'] or 0),
                 'propinas_total': float(d['propinas_total'] or 0),
@@ -845,6 +856,9 @@ async def _ejecutar_dry_run(
             'mensaje': 'Simulación completada - NO se modificaron datos',
             'records_processed': len(detalle),
             'registros_que_se_sincronizarian': len(detalle),
+            'registros_extraidos': len(detalle),
+            'registros_afectados': 0,
+            'query_source': 'CATALOGO' if get_query_for_server(config, 'comercial_ventas_cerradas') else 'LEGACY_FALLBACK',
             'detalle': detalle
         }
         

@@ -1,0 +1,42 @@
+==================================================
+P2-21 CATALOGO CENTRAL DE QUERIES - COMPLETADO
+==================================================
+
+### IMPLEMENTADO:
+
+1. TABLA Sistema_Queries
+   - Creada en EDARSAHUB SQL
+   - Columnas: Id, SistemaCodigo, QueryCodigo, QuerySQL, Descripcion, TablaDestino, Activo
+
+2. QUERIES REGISTRADOS:
+   - SOFTRESTAURANT_PRO/comercial_ventas_cerradas → cheques
+   - SOFTRESTAURANT/comercial_ventas_cerradas (alias)
+   - MPRO/comercial_ventas_cerradas → Venta_Encabezado
+   - MANAGEMENTPRO/comercial_ventas_cerradas (alias)
+
+3. MÓDULO core/query_catalog.py
+   - get_query(sistema, codigo) → Obtiene SQL desde catálogo
+   - get_query_for_server(config, codigo) → Resuelve por system_type
+   - list_queries() → Lista queries disponibles
+   - Cache en memoria para performance
+
+4. API RESYNC ACTUALIZADA
+   - _ejecutar_dry_run() ahora usa catálogo
+   - Fallback a queries legacy si no está en catálogo
+   - Response incluye 'query_source': 'CATALOGO' o 'LEGACY_FALLBACK'
+
+### VALIDACIÓN:
+- DRY-RUN 130MID (SOFTRESTAURANT): OK, 4 registros extraídos
+- Query Source: CATALOGO
+- Datos Junio 1-4: $301,862 en 76 tickets
+
+### REDUCCIÓN DEUDA TÉCNICA:
+- SQL hardcodeado movido a tabla central
+- Fácil mantenimiento sin modificar código
+- Auditable (quién/cuándo modificó queries)
+- Extensible para futuros sync (ventas_hora, productos, etc.)
+
+### NOTA CONECTIVIDAD:
+Servidores remotos (CIENFUEGOS, etc.) no accesibles desde preview.
+El backfill real debe ejecutarse desde ambiente de producción.
+==================================================
