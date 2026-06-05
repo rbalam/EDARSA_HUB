@@ -1,7 +1,7 @@
 # EDARSA HUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-05 (Sesión 9 - P0 FIX + P1 USUARIOS SQL-FIRST)
+**Última actualización:** 2026-06-05 (Sesión 9 - FIX TABLERO EJECUTIVO + USUARIOS SQL-FIRST)
 **Estado:** P0/P1/P2 CERRADOS | P3 EN PROGRESO | SQL-First ✅ | MongoDB ELIMINADO ✅
 
 ---
@@ -161,6 +161,11 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
   - Router `/api/admin-sql/*` creado
   - 11 usuarios, 21 roles, 56 módulos, 14 servidores desde SQL
   - Frontend Usuarios.js redirigido a admin-sql
+- [x] ~~**FIX Tablero Ejecutivo Comercial - Race Conditions**~~ ✅ **COMPLETADO 2026-06-05**
+  - Protección requestId incremental contra race conditions
+  - Bloqueo de sobrescritura de datos válidos con ceros
+  - Loading/error no borran datos existentes
+  - Eliminado fallback - V2 es fuente única
 - [ ] **Ejecutar inserción real Sync_Sales** - Dry-run exitoso, pendiente aprobación
 - [ ] Activar poblado de `Sync_PAX_Detalle` - Siguiente tabla de granularidad
 - [ ] Módulo Pricing IA / Competidores Enterprise

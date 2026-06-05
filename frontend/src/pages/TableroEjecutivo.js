@@ -893,6 +893,8 @@ export default function TableroEjecutivo() {
   // P0 TAREA 1 & 4: Control de request_id y TTL para evitar race conditions
   const [lastRefreshTime, setLastRefreshTime] = useState(null);
   const [requestId, setRequestId] = useState(0);
+  const [latestRequestId, setLatestRequestId] = useState(0); // Para validar respuestas
+  const [refreshError, setRefreshError] = useState(null); // Error sin borrar datos
   const STATUS_TTL_SECONDS = 120; // TTL de 2 minutos para considerar datos stale
 
   // Guardar filtros cuando cambien
@@ -957,27 +959,30 @@ export default function TableroEjecutivo() {
   const esMultiMes = selectedMeses.length > 1;
 
   const cargarDatos = useCallback(async (retry = 0, forceRefresh = false) => {
-    // P0 TAREA 8: Control de race conditions con request_id
+    // =========================================================================
+    // PROTECCIÓN RACE CONDITION: requestId incremental
+    // Solo aplicar respuesta si requestId === latestRequestId
+    // =========================================================================
     const currentRequestId = requestId + 1;
     setRequestId(currentRequestId);
+    setLatestRequestId(currentRequestId);
+    setRefreshError(null); // Limpiar error previo
     
+    // REGLA: Loading NO limpia datos existentes
     if (retry === 0) {
       setLoading(true);
-      logger.log(`[P0-LOG] tablero_refresh_start: requestId=${currentRequestId}, forceRefresh=${forceRefresh}, useV2=${USE_COMERCIAL_V2}`);
+      logger.log(`[REFRESH_LOG] START: requestId=${currentRequestId}, forceRefresh=${forceRefresh}, dataExists=${!!data}, source=V2_ONLY`);
     }
     
     try {
       let responseData = null;
       let usedV2 = false;
       
-      // SUBFASE 5: Si v2 está habilitado, intentar primero
-      // CAMBIO ARQUITECTÓNICO (14-May-2026): También usar V2 para Ventas del Día
+      // =========================================================================
+      // V2 ES FUENTE ÚNICA - NO HAY FALLBACK A V1 NI MONGO
+      // =========================================================================
       if (USE_COMERCIAL_V2) {
         try {
-          // =========================================================================
-          // VENTAS DEL DÍA: Usar endpoint específico V2
-          // Lee desde Comercial_Ventas_Dia_Abiertas_v2 (EDARSAHUB SQL)
-          // =========================================================================
           if (esVentasDelDia) {
             logger.log('[COMERCIAL_V2] Consultando ventas-dia desde EDARSAHUB SQL...');
             
@@ -988,87 +993,77 @@ export default function TableroEjecutivo() {
               const resumen = ventasDiaData.resumen || {};
               const porUnidad = ventasDiaData.por_unidad || [];
               
-              // Transformar a formato esperado por el frontend
               responseData = {
                 totales: {
                   ventas: resumen.total_estimado_dia || 0,
                   pax: resumen.total_pax || 0,
                   cheques: resumen.total_tickets || 0,
-                  // CORRECCIÓN GLOBAL: Nomenclatura correcta
                   cheque_promedio: resumen.total_tickets > 0 
                     ? (resumen.total_estimado_dia / resumen.total_tickets) 
                     : 0,
                   pax_prom: resumen.total_pax > 0
                     ? (resumen.total_estimado_dia / resumen.total_pax)
                     : 0,
-                  var_vs_mes_ant: null,  // No aplica para Ventas del Día
-                  var_vs_año_ant: null,  // No aplica para Ventas del Día
-                  proyeccion: null  // No aplica para Ventas del Día
+                  var_vs_mes_ant: null,
+                  var_vs_año_ant: null,
+                  proyeccion: null
                 },
                 periodo: {
                   mes: new Date().getMonth() + 1,
                   anio: new Date().getFullYear(),
                   dias_transcurridos: new Date().getDate(),
                   dias_mes: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate(),
-                  modo_ventas_dia: true  // Flag para indicar modo Ventas del Día
+                  modo_ventas_dia: true
                 },
                 unidades: porUnidad
                   .sort((a, b) => (b.total_estimado_dia || 0) - (a.total_estimado_dia || 0))
                   .map(u => ({
-                    // ID de la unidad (necesario para consultas al backend)
                     unidad_negocio_id: u.unidad_negocio_id,
-                    id: u.unidad_negocio_id, // Alias para compatibilidad
-                    // Campos requeridos por el componente de tarjeta
+                    id: u.unidad_negocio_id,
                     sucursal_id: u.unidad_negocio_id,
                     sucursal_nombre: u.unidad_negocio_nombre,
                     unidad_negocio_codigo: u.unidad_negocio_id,
                     unidad: u.unidad_negocio_nombre,
                     server_id: u.server_id,
                     sistema_tipo: u.sistema_origen,
-                    // Métricas - nombres exactos que usa el componente
                     ventas: u.total_estimado_dia || 0,
                     pax: (u.pax_abiertos || 0) + (u.pax_cerrados_dia || 0),
                     cheques: (u.tickets_abiertos || 0) + (u.tickets_cerrados_dia || 0),
-                    // CORRECCIÓN GLOBAL: Nomenclatura correcta
                     cheque_promedio: ((u.tickets_abiertos || 0) + (u.tickets_cerrados_dia || 0)) > 0
                       ? u.total_estimado_dia / ((u.tickets_abiertos || 0) + (u.tickets_cerrados_dia || 0))
                       : 0,
                     pax_promedio: ((u.pax_abiertos || 0) + (u.pax_cerrados_dia || 0)) > 0
                       ? u.total_estimado_dia / ((u.pax_abiertos || 0) + (u.pax_cerrados_dia || 0))
                       : 0,
-                    proyeccion: 0,  // No aplica para Ventas del Día
-                    // Comparativos diarios desde EDARSAHUB SQL
+                    proyeccion: 0,
                     ventas_ant: u.dia_anterior_ventas || 0,
                     pax_ant: u.dia_anterior_pax || 0,
                     cheques_ant: u.dia_anterior_cheques || 0,
                     ventas_año: u.dia_anio_ant_ventas || 0,
                     pax_año: u.dia_anio_ant_pax || 0,
                     cheques_año: u.dia_anio_ant_cheques || 0,
-                    var_vs_mes_ant: null,  // No aplica
-                    var_vs_año_ant: null,  // No aplica
-                    // Estado de datos - CRÍTICO para que no muestre "Error de conexión"
+                    var_vs_mes_ant: null,
+                    var_vs_año_ant: null,
                     data_status: u.dato_vencido ? 'DATA_FROM_CACHE' : 'DATA_OK',
-                    live_status: 'NOT_APPLICABLE',  // Ventas del Día no usa live
+                    live_status: 'NOT_APPLICABLE',
                     source_used: 'EDARSAHUB_SQL_V2',
-                    // Campos de última actualización
                     snapshot_timestamp: u.snapshot_timestamp,
                     minutos_desde_ultima_actualizacion: u.minutos_desde_ultima_actualizacion,
                     dato_vencido: u.dato_vencido,
                     fuente_original: u.fuente_original,
                     _fuente: 'EDARSAHUB_SQL_V2'
-                  }))
+                  })),
+                _v2_source: true
               };
               usedV2 = true;
-              logger.log(`[VENTAS_DIA_V2] Cargadas ${responseData.unidades.length} unidades desde EDARSAHUB SQL, ordenadas por venta DESC`);
+              logger.log(`[VENTAS_DIA_V2] Cargadas ${responseData.unidades.length} unidades desde EDARSAHUB SQL`);
             } else {
               throw new Error('Respuesta ventas-dia v2 no exitosa');
             }
             
           } else {
-            // VENTAS MES/AÑO: Usar endpoint dashboard V2
-            logger.log('[COMERCIAL_V2] Consultando endpoints v2...');
+            logger.log('[COMERCIAL_V2] Consultando dashboard V2...');
           
-            // Calcular fechas para v2
             const anioActual = parseInt(selectedAnios[0]) || new Date().getFullYear();
             const mesInicio = Math.min(...selectedMeses.map(m => parseInt(m)));
             const mesFin = Math.max(...selectedMeses.map(m => parseInt(m)));
@@ -1087,96 +1082,113 @@ export default function TableroEjecutivo() {
             if (v2Response.data?.success) {
               responseData = transformV2ToV1Format(v2Response.data, selectedMeses, selectedAnios, logger);
               
-              // ORDENAR POR VENTA DESC
               if (responseData.unidades && responseData.unidades.length > 0) {
                 responseData.unidades.sort((a, b) => (b.ventas || 0) - (a.ventas || 0));
-                logger.log('[COMERCIAL_V2] Unidades ordenadas por venta DESC');
               }
               
               usedV2 = true;
-              logger.log(`[FASE3] Tablero Ejecutivo Comercial: V2 es fuente ÚNICA (${responseData.unidades?.length} unidades desde EDARSAHUB)`);
+              responseData._v2_source = true;
+              logger.log(`[FASE3] V2 fuente ÚNICA: ${responseData.unidades?.length} unidades desde EDARSAHUB`);
             } else {
               throw new Error('Respuesta v2 no exitosa');
             }
           }
           
         } catch (v2Error) {
-          logger.warn(`[COMERCIAL_V2] Error consultando v2, usando fallback v1: ${v2Error.message}`);
-          usedV2 = false;
-          // Continuar con v1
+          logger.error(`[COMERCIAL_V2] Error V2: ${v2Error.message}`);
+          throw v2Error; // NO hay fallback, propagar error
         }
-      }
-      
-      // V1: Si no se usó v2 o v2 falló
-      if (!usedV2) {
-        // AUDITORIA-TABLEROS-KPIS-FILTROS-01: Migrado a api centralizado
-        const response = await api.get(`/comercial/tablero-ejecutivo`, {
-          params: { 
-            meses: selectedMeses.join(','),
-            anios: selectedAnios.join(','),
-            tipo_comparacion: tipoComparacion
-          },
-          timeout: 60000  // Aumentado a 60s para conexiones lentas
-        });
-        responseData = response.data;
-        
-        // FIX UI 15-May-2026: Calcular promedios si V1 no los incluye
-        // cheque_promedio = ventas / cheques
-        // pax_promedio = ventas / pax
-        if (responseData?.unidades) {
-          responseData.unidades = responseData.unidades.map(u => ({
-            ...u,
-            cheque_promedio: u.cheque_promedio ?? (u.cheques > 0 ? u.ventas / u.cheques : null),
-            pax_promedio: u.pax_promedio ?? (u.pax > 0 ? u.ventas / u.pax : null)
-          }));
-        }
-        
-        logger.log(`[P0-LOG] tablero_using_v1: unidades=${responseData?.unidades?.length}`);
-      }
-      
-      // P0 TAREA 8: Verificar que esta respuesta corresponde al request actual
-      if (currentRequestId === requestId + 1 || forceRefresh) {
-        setData(responseData);
-        setLastRefreshTime(new Date());
-        logger.log(`[P0-LOG] tablero_refresh_success: requestId=${currentRequestId}, unidades=${responseData?.unidades?.length}, source=${usedV2 ? 'V2' : 'V1'}`);
       } else {
-        logger.log(`[P0-LOG] tablero_refresh_stale_ignored: requestId=${currentRequestId}, currentId=${requestId}`);
+        // V2 deshabilitado - error
+        throw new Error('V2 deshabilitado. No hay fuente de datos alternativa.');
       }
+      
+      // =========================================================================
+      // VALIDACIÓN RACE CONDITION: Solo aplicar si es el request más reciente
+      // =========================================================================
+      if (currentRequestId !== latestRequestId) {
+        logger.log(`[REFRESH_LOG] IGNORED_STALE: requestId=${currentRequestId}, latestRequestId=${latestRequestId}, applied=false, reason=stale_request`);
+        setLoading(false);
+        return;
+      }
+      
+      // =========================================================================
+      // PROTECCIÓN CONTRA CEROS: No sobrescribir datos válidos con respuesta vacía
+      // Si: source=V2, unidades.length > 0, pero totales=0 y ya hay datos > 0
+      // =========================================================================
+      const newVentasTotal = responseData?.totales?.ventas || 0;
+      const newPaxTotal = responseData?.totales?.pax || 0;
+      const newChequesTotal = responseData?.totales?.cheques || 0;
+      const newUnidadesCount = responseData?.unidades?.length || 0;
+      const existingVentasTotal = data?.totales?.ventas || 0;
+      
+      const isResponseEmpty = newVentasTotal === 0 && newPaxTotal === 0 && newChequesTotal === 0;
+      const hasUnidadesButEmpty = newUnidadesCount > 0 && isResponseEmpty;
+      const existingDataHasValue = existingVentasTotal > 0;
+      
+      if (hasUnidadesButEmpty && existingDataHasValue && responseData?._v2_source) {
+        // BLOQUEAR: No sobrescribir datos válidos con ceros
+        logger.warn(`[REFRESH_LOG] BLOCKED_ZERO_OVERWRITE: requestId=${currentRequestId}, newVentas=${newVentasTotal}, existingVentas=${existingVentasTotal}, unidades=${newUnidadesCount}, applied=false, reason=v2_returned_zeros_existing_data_valid`);
+        setRefreshError('Respuesta V2 vacía detectada. Manteniendo datos anteriores.');
+        toast.warning('La actualización devolvió datos vacíos. Se mantienen los datos anteriores.', { duration: 4000 });
+        setLoading(false);
+        return;
+      }
+      
+      // =========================================================================
+      // APLICAR DATOS: Respuesta válida
+      // =========================================================================
+      setData(responseData);
+      setLastRefreshTime(new Date());
+      setRefreshError(null);
+      
+      logger.log(`[REFRESH_LOG] APPLIED: requestId=${currentRequestId}, ventasTotal=${newVentasTotal}, unidades=${newUnidadesCount}, source=V2, applied=true, reason=valid_response`);
       setLoading(false);
+      
     } catch (error) {
       logger.error('Error cargando tablero:', error);
       const statusCode = error.response?.status;
       
+      // =========================================================================
+      // VALIDACIÓN RACE CONDITION EN ERROR
+      // =========================================================================
+      if (currentRequestId !== latestRequestId) {
+        logger.log(`[REFRESH_LOG] ERROR_IGNORED_STALE: requestId=${currentRequestId}, error=${error.message}, applied=false, reason=stale_request`);
+        setLoading(false);
+        return;
+      }
+      
       if (statusCode === 401) {
-        // P0-AUTH-COOKIE-FRONTEND-01: Redirigir a login sin mostrar $0 falso
         clearSession();
         window.location.href = '/login';
         setLoading(false);
       } else if (retry < 2 && statusCode !== 404 && statusCode !== 502 && statusCode !== 503) {
-        // Reintentar solo si no es error de red permanente
         logger.log(`Reintentando (${retry + 1}/2)...`);
         setTimeout(() => cargarDatos(retry + 1, forceRefresh), 1000);
-        // No apagar loading durante reintentos
+        // REGLA: No apagar loading durante reintentos, NO limpiar datos
       } else {
-        // ============================================================================
-        // FALLBACK SILENCIOSO: En caso de error 404, 502, 503 o agotados reintentos
-        // Usar datos mockeados de EDARSA para mantener la UI funcional
-        // ============================================================================
-        logger.warn(`[P0-LOG] tablero_using_fallback: statusCode=${statusCode}, usando datos de respaldo`);
+        // =========================================================================
+        // ERROR FINAL: NO usar fallback, NO limpiar datos
+        // V2 es fuente única - si falla, mantener datos anteriores
+        // =========================================================================
+        const errorMsg = `Error al actualizar: ${error.message || 'Conexión no disponible'}`;
+        setRefreshError(errorMsg);
         
-        const fallbackData = transformFallbackToTableroFormat();
-        setData(fallbackData);
-        setLastRefreshTime(new Date());
+        // NO setData(null) - mantener datos anteriores
+        // NO usar transformFallbackToTableroFormat()
         
-        // Toast informativo (no de error) para indicar que se usan datos offline
-        toast.info('Mostrando datos de respaldo. La conexión al servidor no está disponible.', {
-          duration: 5000,
-          icon: '📊'
-        });
+        logger.warn(`[REFRESH_LOG] ERROR_PRESERVED_DATA: requestId=${currentRequestId}, statusCode=${statusCode}, error=${error.message}, existingDataPreserved=${!!data}, applied=false, reason=error_no_fallback`);
+        
+        if (data) {
+          toast.error('Error al actualizar. Se mantienen los datos anteriores.', { duration: 5000 });
+        } else {
+          toast.error('No se pudieron cargar los datos. Intente nuevamente.', { duration: 5000 });
+        }
+        
         setLoading(false);
       }
     }
-  }, [selectedMeses, selectedAnios, tipoComparacion, requestId, esVentasDelDia]);
+  }, [selectedMeses, selectedAnios, tipoComparacion, requestId, latestRequestId, esVentasDelDia, data]);
 
   // P0 TAREA 1: Carga inicial
   useEffect(() => {
@@ -1398,6 +1410,33 @@ export default function TableroEjecutivo() {
             </CardContent>
           </Card>
 
+      {/* Banner de Error de Refresh (sin borrar datos) */}
+      {refreshError && data && (
+        <Card className="border-2 border-amber-400 bg-amber-50">
+          <CardContent className="py-3 px-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <div>
+                <p className="text-sm font-medium text-amber-800">{refreshError}</p>
+                <p className="text-xs text-amber-600">Los datos mostrados son de la última actualización exitosa.</p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="border-amber-500 text-amber-700 hover:bg-amber-100"
+              onClick={() => {
+                setRefreshError(null);
+                cargarDatos(0, true);
+              }}
+            >
+              <RefreshCw className="h-4 w-4 mr-1" />
+              Reintentar
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* TOTALES - Vista Ejecutiva Grande */}
       {data?.totales && (
         <Card className="border-2 border-zinc-300 bg-gradient-to-br from-zinc-900 to-zinc-800 text-white">
@@ -1612,11 +1651,19 @@ export default function TableroEjecutivo() {
         </div>
       )}
 
-      {/* Loading State */}
+      {/* Loading State - Solo mostrar spinner si NO hay datos */}
       {loading && !data && (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
           <span className="ml-2 text-zinc-500">Consultando todas las unidades...</span>
+        </div>
+      )}
+      
+      {/* Loading Overlay - Mostrar indicador sutil cuando hay datos y está recargando */}
+      {loading && data && (
+        <div className="fixed bottom-4 right-4 bg-white shadow-lg rounded-lg px-4 py-2 flex items-center gap-2 z-50 border">
+          <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+          <span className="text-sm text-zinc-600">Actualizando...</span>
         </div>
       )}
         </TabsContent>
