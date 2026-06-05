@@ -1,0 +1,48 @@
+"""
+Schemas Pydantic para Configuración Operativa
+CAB-003 | EDARSA HUB - Fase 2A
+
+Define los modelos de datos para la configuración del módulo.
+"""
+from pydantic import BaseModel, Field
+from typing import Optional, List
+from datetime import datetime
+
+
+class ConfiguracionBase(BaseModel):
+    """Campos base de configuración."""
+    clave: str = Field(..., description="Clave única de configuración")
+    valor: str = Field(..., description="Valor de la configuración")
+    descripcion: Optional[str] = Field(None, description="Descripción de la configuración")
+
+
+class ConfiguracionCreate(ConfiguracionBase):
+    """Schema para crear una configuración."""
+    pass
+
+
+class ConfiguracionUpdate(BaseModel):
+    """Schema para actualizar una configuración."""
+    valor: str = Field(..., description="Nuevo valor")
+    descripcion: Optional[str] = None
+
+
+class ConfiguracionInDB(ConfiguracionBase):
+    """Schema de configuración como está almacenada en BD."""
+    id: str = Field(..., alias="_id")
+    fecha_creacion: Optional[datetime] = None
+
+    class Config:
+        populate_by_name = True
+        from_attributes = True
+
+
+class ConfiguracionResponse(ConfiguracionInDB):
+    """Schema de respuesta para configuración."""
+    pass
+
+
+class ConfiguracionListResponse(BaseModel):
+    """Schema de respuesta para lista de configuraciones."""
+    total: int
+    items: List[ConfiguracionResponse] = Field(default_factory=list)

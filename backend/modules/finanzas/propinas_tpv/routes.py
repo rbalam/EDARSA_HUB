@@ -31,7 +31,6 @@ conflictos con paths específicos como /config, /health, etc.
 import logging
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends, Query
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from core.security import get_current_user, get_user_empresas_permitidas, get_servers_for_empresas
 from .service import PropinasTPVService
@@ -164,7 +163,7 @@ async def get_user_server_ids_permitidos(current_user: Dict[str, Any]) -> List[s
     description="Verifica que el módulo esté funcionando correctamente"
 )
 async def health_check(
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     try:
         await db.command('ping')
@@ -210,7 +209,7 @@ async def health_check(
 async def sincronizar_propinas(
     request: SincronizarRequest,
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     try:
         service = PropinasTPVService(db)
@@ -239,7 +238,7 @@ async def sincronizar_propinas(
 )
 async def inicializar_modulo(
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     try:
         if current_user.get('role') not in ['admin', 'superadmin', 'Admin']:
@@ -279,7 +278,7 @@ async def inicializar_modulo(
 async def detectar_esquema(
     server_id: str,
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     try:
         # FASE T2.3: Usar server_registry en lugar de db.servers
@@ -319,7 +318,7 @@ async def detectar_esquema(
 )
 async def detectar_esquema_todos(
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     try:
         # FASE T2.3: Usar server_registry en lugar de db.servers
@@ -408,7 +407,7 @@ async def preview_propinas(
     fecha_fin: str = Query(..., description="Fecha fin YYYY-MM-DD"),
     server_id: Optional[str] = Query(None, description="Filtrar por servidor"),
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     try:
         # FASE T2.3: Usar server_registry en lugar de db.servers
@@ -478,7 +477,7 @@ async def resumen_propinas(
     fecha_fin: str = Query(..., description="Fecha fin YYYY-MM-DD"),
     server_id: Optional[str] = Query(None, description="Filtrar por servidor"),
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     try:
         service = PropinasTPVService(db)
@@ -507,7 +506,7 @@ async def listar_propinas(
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     try:
         service = PropinasTPVService(db)
@@ -537,7 +536,7 @@ async def listar_propinas(
 )
 async def listar_configs(
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     try:
         service = PropinasTPVService(db)
@@ -557,7 +556,7 @@ async def obtener_config(
     server_id: Optional[str] = Query(None),
     sucursal_id: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     try:
         service = PropinasTPVService(db)
@@ -579,7 +578,7 @@ async def obtener_config(
 async def crear_config(
     config: PropinasConfigCreate,
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     try:
         service = PropinasTPVService(db)
@@ -602,7 +601,7 @@ async def actualizar_config(
     config_id: str,
     config: PropinasConfigCreate,
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     try:
         service = PropinasTPVService(db)
@@ -633,7 +632,7 @@ async def actualizar_config(
 async def obtener_propina(
     propina_id: str,
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     try:
         service = PropinasTPVService(db)
@@ -657,7 +656,7 @@ async def registrar_pago(
     propina_id: str,
     request: RegistrarPagoRequest,
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     try:
         service = PropinasTPVService(db)

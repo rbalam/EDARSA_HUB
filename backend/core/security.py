@@ -72,7 +72,7 @@ def init_security(database) -> None:
     Debe llamarse desde server.py después de crear la conexión.
     
     Args:
-        database: Instancia de AsyncIOMotorDatabase o None para usar stub
+        database: Instancia de Any o None para usar stub
     """
     global _db
     if database is None:

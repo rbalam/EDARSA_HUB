@@ -1,3 +1,4 @@
+from typing import Any
 """
 EDARSA HUB - Módulo de Catálogos
 ================================
@@ -23,19 +24,18 @@ DOMINIOS:
 Diciembre 2025
 """
 
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
 # Referencia global a MongoDB (para logging/auditoría)
-_db: AsyncIOMotorDatabase = None
+_db: Any = None
 
 
-def init_catalogos_module(db: AsyncIOMotorDatabase):
+def init_catalogos_module(db: Any):
     """Inicializa el módulo de catálogos con la conexión a MongoDB."""
     global _db
     _db = db
 
 
-def get_db() -> AsyncIOMotorDatabase:
+def get_db() -> Any:
     """Obtiene la conexión a MongoDB."""
     if _db is None:
         raise RuntimeError("Módulo de catálogos no inicializado. Llama a init_catalogos_module() primero.")

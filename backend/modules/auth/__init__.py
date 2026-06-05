@@ -35,7 +35,7 @@ def init_auth_module(database) -> None:
     Inicializa el módulo de auth con la conexión a MongoDB.
     
     Args:
-        database: Instancia de AsyncIOMotorDatabase
+        database: Instancia de Any
     """
     init_auth_repository(database)
 

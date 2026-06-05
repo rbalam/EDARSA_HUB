@@ -29,7 +29,6 @@ from datetime import datetime, timezone, timedelta
 import hashlib
 import json
 
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +49,7 @@ class PropinasCacheManager:
     TTL_CONFIG = 3600      # 1 hora
     TTL_DETALLE = 600      # 10 minutos
     
-    def __init__(self, db: AsyncIOMotorDatabase):
+    def __init__(self, db: Any):
         """
         Inicializa el gestor de cache.
         

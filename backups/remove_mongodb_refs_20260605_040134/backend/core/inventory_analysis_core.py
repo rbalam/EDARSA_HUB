@@ -1,0 +1,231 @@
+# -*- coding: utf-8 -*-
+"""
+EDARSA HUB - Core Service: Análisis de Inventarios
+===================================================
+CAB-003 - Fase 1A
+
+Este Core Service permite reutilizar la lógica de análisis de inventarios
+desde otros contextos (scheduler, batch processing) sin modificar el
+endpoint HTTP original.
+
+ESTRATEGIA DE FASE 1A (Wrapper Delgado):
+- NO se modifica la lógica del endpoint original
+- El Core Service delega al endpoint existente
+- Garantiza CERO regresión
+
+DEPENDENCIAS:
+- server.py: Contiene la lógica original del endpoint
+- db: Cliente MongoDB (inyectado)
+
+Fecha: Abril 2026
+"""
+
+import logging
+from typing import Dict, Any, Optional
+from pydantic import BaseModel, Field
+from fastapi import HTTPException
+
+
+# =============================================================================
+# MODELO PYDANTIC DE PARÁMETROS
+# =============================================================================
+
+class InventoryAnalysisParams(BaseModel):
+    """
+    Parámetros para generar análisis de inventario.
+    
+    POLÍTICA DE VALORES:
+    - NO se introducen valores vacíos artificiales
+    - Los campos opcionales son Optional[str] = None, NO = ''
+    - El Core preserva exactamente lo que recibe del request original
+    """
+    
+    # Identificación
+    server_id: str
+    sucursal: Optional[str] = None
+    almacen: Optional[str] = None
+    almacenes: list = Field(default_factory=list)
+    
+    # Fechas
+    fecha_ini: Optional[str] = None
+    fecha_fin: Optional[str] = None
+    
+    # Folios individuales
+    folio_inicial: Optional[str] = None
+    folio_final: Optional[str] = None
+    
+    # Folios múltiples
+    folios_iniciales: list = Field(default_factory=list)
+    folios_finales: list = Field(default_factory=list)
+    
+    # Info completa de inventarios
+    inventarios_iniciales_info: list = Field(default_factory=list)
+    inventarios_finales_info: list = Field(default_factory=list)
+    
+    # Filtros
+    categorias: list = Field(default_factory=list)
+    familias: list = Field(default_factory=list)
+    subfamilias: list = Field(default_factory=list)
+    
+    # Opciones
+    agrupar_insumos: bool = False
+    
+    model_config = {
+        "extra": "ignore"
+    }
+    
+    def to_report_params(self) -> Dict[str, Any]:
+        """Convierte a formato Dict compatible con el endpoint."""
+        return {
+            'server_id': self.server_id,
+            'sucursal': self.sucursal,
+            'almacen': self.almacen,
+            'almacenes': self.almacenes,
+            'fecha_ini': self.fecha_ini,
+            'fecha_fin': self.fecha_fin,
+            'folio_inicial': self.folio_inicial,
+            'folio_final': self.folio_final,
+            'folios_iniciales': self.folios_iniciales,
+            'folios_finales': self.folios_finales,
+            'inventarios_iniciales_info': self.inventarios_iniciales_info,
+            'inventarios_finales_info': self.inventarios_finales_info,
+            'categorias': self.categorias,
+            'familias': self.familias,
+            'subfamilias': self.subfamilias,
+            'agrupar_insumos': self.agrupar_insumos,
+        }
+
+
+# =============================================================================
+# CORE SERVICE
+# =============================================================================
+
+class InventoryAnalysisCore:
+    """
+    Core Service para análisis de inventarios.
+    
+    CAB-003 Fase 1A (Wrapper Delgado):
+    - Este servicio delega al endpoint existente en server.py
+    - NO modifica ni duplica la lógica del endpoint
+    - Permite reutilización desde scheduler/batch sin pasar por HTTP
+    
+    NOTA SOBRE db_client:
+    - Es una dependencia PROVISIONAL y ACOTADA
+    - Solo se usa para obtener el servidor y pasar al endpoint
+    - En fases futuras, se podría inyectar de forma diferente
+    """
+    
+    def __init__(
+        self,
+        db_client: Any,
+        mock_user: Optional[Dict] = None
+    ):
+        """
+        Inicializa el Core Service.
+        
+        Args:
+            db_client: Cliente de base de datos MongoDB
+            mock_user: Usuario simulado para llamadas internas (opcional)
+        """
+        self._db = db_client
+        self._mock_user = mock_user or {
+            "id": "system",
+            "role": "Administrador", 
+            "email": "system@edarsa.hub",
+            "nombre": "Sistema Automático"
+        }
+    
+    async def generar_analisis(
+        self,
+        params: InventoryAnalysisParams
+    ) -> Dict[str, Any]:
+        """
+        Genera el análisis de inventario.
+        
+        Args:
+            params: Parámetros del análisis (Pydantic model)
+            
+        Returns:
+            Dict con estructura: {"data": [...], "count": int, "errores_captura": [...]}
+            
+        NOTA: La estructura de respuesta es IDÉNTICA al endpoint original.
+        """
+        logging.info(f"[Core Service] Iniciando análisis para server_id={params.server_id}")
+        
+        # Convertir parámetros a formato del endpoint
+        report_params = params.to_report_params()
+        
+        # Importar la referencia al endpoint
+        # NOTA: Import tardío para evitar circular imports
+        try:
+            from server import _inventory_analysis_endpoint_ref
+            
+            if _inventory_analysis_endpoint_ref is None:
+                raise ImportError("Referencia al endpoint no inicializada")
+            
+            # Llamar al endpoint directamente (sin HTTP)
+            # El endpoint espera (report_params, current_user)
+            result = await _inventory_analysis_endpoint_ref(
+                report_params=report_params,
+                current_user=self._mock_user
+            )
+            
+            logging.info(f"[Core Service] Análisis completado. Registros: {result.get('count', 0)}")
+            return result
+            
+        except ImportError as e:
+            logging.error(f"[Core Service] Error de import: {e}")
+            raise HTTPException(
+                status_code=500, 
+                detail="Core Service no pudo acceder al endpoint de análisis"
+            )
+        except Exception as e:
+            logging.error(f"[Core Service] Error en análisis: {e}")
+            raise
+    
+    async def generar_analisis_dict(
+        self,
+        report_params: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Genera el análisis de inventario usando Dict directamente.
+        
+        Método alternativo que acepta Dict en lugar de Pydantic model.
+        Útil para compatibilidad con código existente.
+        
+        Args:
+            report_params: Parámetros en formato Dict
+            
+        Returns:
+            Dict con estructura: {"data": [...], "count": int, ...}
+        """
+        # Validar y convertir a Pydantic
+        params = InventoryAnalysisParams(**report_params)
+        return await self.generar_analisis(params)
+
+
+# =============================================================================
+# FUNCIÓN DE CONVENIENCIA
+# =============================================================================
+
+async def ejecutar_analisis_inventario(
+    server_id: str,
+    report_params: Dict[str, Any],
+    db_client: Any
+) -> Dict[str, Any]:
+    """
+    Función de conveniencia para ejecutar análisis de inventario.
+    
+    Esta función simplifica el uso del Core Service para casos simples.
+    
+    Args:
+        server_id: ID del servidor
+        report_params: Parámetros del análisis
+        db_client: Cliente MongoDB
+        
+    Returns:
+        Resultado del análisis
+    """
+    params = {**report_params, 'server_id': server_id}
+    core = InventoryAnalysisCore(db_client=db_client)
+    return await core.generar_analisis_dict(params)

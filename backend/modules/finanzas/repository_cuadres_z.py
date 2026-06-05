@@ -15,10 +15,10 @@ _db = None
 def get_db():
     global _db
     if _db is None:
-        from pymongo import MongoClient
-        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+        pass  # P2-07: MongoDB eliminado (MongoClient)
+        mongo_url = None  # P2-07: MongoDB eliminado
         db_name = os.environ.get('DB_NAME', 'edarsahub')
-        client = MongoClient(mongo_url)
+        client = None  # P2-07: MongoDB eliminado
         _db = client[db_name]
     return _db
 

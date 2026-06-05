@@ -28,7 +28,7 @@ def init_mongo_compat(db) -> None:
     Inicializa el módulo con la conexión MongoDB.
     
     Args:
-        db: Instancia de AsyncIOMotorDatabase o None
+        db: Instancia de Any o None
     """
     global _mongo_db
     _mongo_db = db

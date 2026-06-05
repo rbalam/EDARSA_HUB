@@ -5,7 +5,6 @@ Contiene ÚNICAMENTE la función para verificar permisos granulares.
 NO es un framework general - es un helper específico para FASE 9.
 """
 
-from motor.motor_asyncio import AsyncIOMotorClient
 import os
 
 # Conexión a MongoDB (reutiliza la existente del entorno)
@@ -17,7 +16,7 @@ def _get_db():
     """Obtiene conexión a MongoDB de forma lazy."""
     global _client, _db
     if _db is None:
-        _client = AsyncIOMotorClient(os.environ.get('MONGO_URL'))
+        _client = None  # P2-07: MongoDB eliminado)
         _db = _client[os.environ.get('DB_NAME', 'edarsa_hub')]
     return _db
 

@@ -16,9 +16,7 @@ Uso:
 
 import logging
 import asyncio
-from typing import Optional
-from motor.motor_asyncio import AsyncIOMotorDatabase
-from pymongo.database import Database as PyMongoDatabase
+from typing import Any,  Optional
 
 from .service import ManualOperativoService
 
@@ -29,7 +27,7 @@ ESTADOS_TRIGGER = ["APROBADO", "RECHAZADO", "COMPLETADA", "CERRADO", "FINALIZADO
 
 
 async def trigger_generar_manual(
-    db: AsyncIOMotorDatabase,
+    db: Any,
     proceso_id: str,
     modulo: str = "compras",
     forzar: bool = False
@@ -70,7 +68,7 @@ async def trigger_generar_manual(
 
 
 async def _generar_manual_compras(
-    db: AsyncIOMotorDatabase,
+    db: Any,
     service: ManualOperativoService,
     proceso_id: str
 ) -> Optional[str]:
@@ -118,7 +116,7 @@ async def _generar_manual_compras(
     return None
 
 
-async def verificar_y_generar_manuales_pendientes(db: AsyncIOMotorDatabase):
+async def verificar_y_generar_manuales_pendientes(db: Any):
     """
     Verifica procesos cerrados que no tienen manual y los genera.
     
@@ -158,7 +156,7 @@ async def verificar_y_generar_manuales_pendientes(db: AsyncIOMotorDatabase):
 
 
 def trigger_generar_manual_sync(
-    db_sync: PyMongoDatabase,
+    db_sync: Any,
     proceso_id: str,
     modulo: str = "compras"
 ) -> Optional[str]:
@@ -186,7 +184,7 @@ def trigger_generar_manual_sync(
         return None
 
 
-def _generar_manual_compras_sync(db_sync: PyMongoDatabase, proceso_id: str) -> Optional[str]:
+def _generar_manual_compras_sync(db_sync: Any, proceso_id: str) -> Optional[str]:
     """Genera manual para compras de forma síncrona."""
     import uuid
     from datetime import datetime, timezone

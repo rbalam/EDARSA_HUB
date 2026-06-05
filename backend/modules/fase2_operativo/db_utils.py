@@ -5,7 +5,6 @@ CAB-003 | EDARSA HUB
 Proporciona acceso a la conexión de MongoDB para el módulo operativo.
 """
 import os
-from pymongo import MongoClient
 
 # Conexión síncrona a MongoDB para los repositories
 _client = None
@@ -23,10 +22,10 @@ def get_database():
     global _client, _db
     
     if _db is None:
-        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+        mongo_url = None  # P2-07: MongoDB eliminado
         db_name = os.environ.get('DB_NAME', 'test_database')
         
-        _client = MongoClient(mongo_url)
+        _client = None  # P2-07: MongoDB eliminado
         _db = _client[db_name]
     
     return _db

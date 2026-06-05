@@ -20,13 +20,12 @@ import os
 import logging
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
-from pymongo import MongoClient
 from bson import ObjectId
 
 logger = logging.getLogger(__name__)
 
 # MongoDB connection
-MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+MONGO_URL = None  # P2-07: MongoDB eliminado
 DB_NAME = os.environ.get('DB_NAME', 'edarsa_hub')
 
 _db = None
@@ -36,7 +35,7 @@ def get_db():
     """Obtiene la conexión a la base de datos"""
     global _db
     if _db is None:
-        client = MongoClient(MONGO_URL)
+        client = None  # P2-07: MongoDB eliminado
         _db = client[DB_NAME]
     return _db
 

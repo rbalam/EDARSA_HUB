@@ -8,7 +8,7 @@ La configuración actual sigue en server.py hasta que se autorice la migración.
 
 USO FUTURO:
     from core.config import settings
-    print(settings.MONGO_URL)
+    # print(settings.MONGO_URL)  # P2-07: MongoDB eliminado
 """
 
 import os
@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     """
     
     # MongoDB
-    MONGO_URL: str = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
+    MONGO_URL: str = ""  # P2-07: MongoDB eliminado
     DB_NAME: str = os.environ.get("DB_NAME", "test_database")
     
     # JWT

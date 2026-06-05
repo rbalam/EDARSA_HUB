@@ -57,7 +57,7 @@ def init_compras_module(database) -> None:
     Inicializa el módulo de compras con la conexión a MongoDB.
     
     Args:
-        database: Instancia de AsyncIOMotorDatabase
+        database: Instancia de Any
     """
     init_compras_repository(database)
 

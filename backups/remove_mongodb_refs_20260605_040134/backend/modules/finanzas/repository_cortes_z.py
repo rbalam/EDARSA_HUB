@@ -1,0 +1,634 @@
+"""
+Repositorio para obtener Cortes Z de SoftRestaurant y MPRO
+
+REFACTORIZADO 2025-12-27: Usa server_registry centralizado en lugar de IPs hardcodeadas.
+
+FASE 4.4: Aplica SourceQueryResult para distinguir:
+- SUCCESS_WITH_DATA: Consulta exitosa con cortes encontrados
+- SUCCESS_EMPTY: Consulta exitosa, cero cortes (resultado real)
+- SOURCE_UNREACHABLE: Fuente no accesible (NUNCA se reporta como cero)
+"""
+import logging
+import asyncio
+from typing import List, Dict, Optional
+from datetime import datetime
+import time
+
+from core.source_resolver import (
+    QueryStatus,
+    SourceQueryResult,
+    classify_sql_error
+)
+from core.db import execute_sql_query
+
+logger = logging.getLogger(__name__)
+
+
+class RepositoryCortesZ:
+    """
+    Repositorio para consultar Cortes Z de múltiples fuentes.
+    
+    REFACTORIZADO: Usa server_registry para obtener conexiones dinámicamente,
+    en lugar de IPs hardcodeadas.
+    """
+    
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+    
+    async def _get_server_config(self, server_id: str) -> Optional[Dict]:
+        """
+        Obtiene la configuración de conexión de un servidor desde el registry centralizado.
+        
+        Args:
+            server_id: UUID del servidor en MongoDB/EDARSAHUB
+            
+        Returns:
+            Dict con host, port, database, username, password, system_type
+            o None si no se encuentra
+        """
+        try:
+            from core.server_registry import get_server_connection_info
+            from server import db
+            
+            # Obtener configuración con credenciales descifradas
+            config = await get_server_connection_info(server_id, db=db)
+            
+            if not config:
+                self.logger.warning(f"Servidor {server_id} no encontrado en registry")
+                return None
+            
+            return config
+        except Exception as e:
+            self.logger.error(f"Error obteniendo config de servidor {server_id}: {e}")
+            return None
+    
+    async def _execute_query_with_server_id(
+        self,
+        server_id: str,
+        query: str,
+        timeout_seconds: int = 30
+    ) -> SourceQueryResult:
+        """
+        Ejecuta una query usando el server_id para obtener configuración del registry.
+        
+        Args:
+            server_id: UUID del servidor
+            query: Query SQL a ejecutar
+            timeout_seconds: Timeout de la query
+            
+        Returns:
+            SourceQueryResult con el estado y datos
+        """
+        start_time = time.time()
+        
+        # Obtener configuración del servidor
+        config = await self._get_server_config(server_id)
+        
+        if not config:
+            return SourceQueryResult.source_not_configured(
+                source_type="SQL_SERVER",
+                source_id=server_id,
+                error_message=f"Servidor {server_id} no encontrado en registry centralizado"
+            )
+        
+        try:
+            # Ejecutar query usando el sistema centralizado
+            results = execute_sql_query(
+                host=config['host'],
+                port=config['port'],
+                database=config['database'],
+                username=config['username'],
+                password=config['password'],
+                query=query,
+                timeout_seconds=timeout_seconds
+            )
+            
+            duration_ms = int((time.time() - start_time) * 1000)
+            system_type = config.get('system_type_normalized', config.get('system_type', 'SQL'))
+            
+            if results and len(results) > 0:
+                return SourceQueryResult.success_with_data(
+                    data=results,
+                    source_type=system_type,
+                    source_id=server_id,
+                    duration_ms=duration_ms
+                )
+            else:
+                return SourceQueryResult.success_empty(
+                    source_type=system_type,
+                    source_id=server_id,
+                    duration_ms=duration_ms
+                )
+                
+        except Exception as e:
+            duration_ms = int((time.time() - start_time) * 1000)
+            status = classify_sql_error(e)
+            
+            self.logger.error(f"Error ejecutando query en servidor {server_id}: {e}")
+            
+            if status == QueryStatus.AUTH_ERROR:
+                return SourceQueryResult.auth_error(
+                    source_type="SQL_SERVER",
+                    source_id=server_id,
+                    error_message=str(e)
+                )
+            elif status == QueryStatus.QUERY_TIMEOUT:
+                return SourceQueryResult.query_timeout(
+                    source_type="SQL_SERVER",
+                    source_id=server_id,
+                    timeout_seconds=timeout_seconds
+                )
+            else:
+                return SourceQueryResult.source_unreachable(
+                    source_type="SQL_SERVER",
+                    source_id=server_id,
+                    error_message=str(e)
+                )
+    
+    async def get_cortes_z_by_server_id(
+        self, 
+        server_id: str,
+        fecha_inicio: Optional[str] = None,
+        fecha_fin: Optional[str] = None,
+        folio: Optional[str] = None
+    ) -> SourceQueryResult:
+        """
+        Obtiene Cortes Z de un servidor específico usando su server_id.
+        Detecta automáticamente si es SoftRestaurant o MPRO.
+        
+        Args:
+            server_id: UUID del servidor
+            fecha_inicio: Fecha inicio YYYY-MM-DD
+            fecha_fin: Fecha fin YYYY-MM-DD
+            folio: Filtrar por folio específico
+            
+        Returns:
+            SourceQueryResult con los cortes encontrados
+        """
+        # Obtener configuración para determinar el tipo de sistema
+        config = await self._get_server_config(server_id)
+        
+        if not config:
+            return SourceQueryResult.source_not_configured(
+                source_type="SQL_SERVER",
+                source_id=server_id,
+                error_message=f"Servidor {server_id} no encontrado"
+            )
+        
+        system_type = config.get('system_type_normalized', config.get('system_type', '')).upper()
+        server_name = config.get('name', server_id)
+        
+        # Determinar query según tipo de sistema
+        if system_type in ['SOFTRESTAURANT', 'SR']:
+            return await self._get_cortes_softrest_by_server(
+                server_id, server_name, config, fecha_inicio, fecha_fin, folio
+            )
+        elif system_type in ['MANAGEMENTPRO', 'MPRO']:
+            return await self._get_cortes_mpro_by_server(
+                server_id, server_name, config, fecha_inicio, fecha_fin
+            )
+        else:
+            return SourceQueryResult.source_not_configured(
+                source_type=system_type,
+                source_id=server_id,
+                error_message=f"Tipo de sistema '{system_type}' no soportado para Cortes Z"
+            )
+    
+    async def _get_cortes_softrest_by_server(
+        self,
+        server_id: str,
+        server_name: str,
+        config: Dict,
+        fecha_inicio: Optional[str],
+        fecha_fin: Optional[str],
+        folio: Optional[str]
+    ) -> SourceQueryResult:
+        """Obtiene Cortes Z de un servidor SoftRestaurant."""
+        
+        # Construir filtros
+        where_clauses = ["mc.idtipomovtocaja = 3"]  # 3 = Corte Z
+        
+        if fecha_inicio:
+            where_clauses.append(f"CAST(mc.fecha AS DATE) >= '{fecha_inicio}'")
+        if fecha_fin:
+            where_clauses.append(f"CAST(mc.fecha AS DATE) <= '{fecha_fin}'")
+        if folio:
+            where_clauses.append(f"mc.folio = '{folio}'")
+        
+        where_sql = " AND ".join(where_clauses)
+        
+        query = f"""
+        SELECT 
+            mc.idmovtocaja AS CorteID,
+            mc.folio AS FolioCorte,
+            mc.fecha AS FechaCorte,
+            mc.idestacion AS EstacionID,
+            e.descripcion AS EstacionNombre,
+            ISNULL((SELECT SUM(d.importe) FROM movtoscajadetalles d 
+                    WHERE d.idmovtocaja = mc.idmovtocaja 
+                    AND d.idconcepto = 1), 0) AS EfectivoInicial,
+            ISNULL((SELECT SUM(d.importe) FROM movtoscajadetalles d 
+                    WHERE d.idmovtocaja = mc.idmovtocaja 
+                    AND d.idconcepto = 2), 0) AS EfectivoVentas,
+            ISNULL((SELECT SUM(d.importe) FROM movtoscajadetalles d 
+                    WHERE d.idmovtocaja = mc.idmovtocaja 
+                    AND d.idconcepto IN (10, 11, 12)), 0) AS Tarjeta,
+            ISNULL((SELECT SUM(d.importe) FROM movtoscajadetalles d 
+                    WHERE d.idmovtocaja = mc.idmovtocaja 
+                    AND d.idconcepto = 5), 0) AS Vales,
+            ISNULL((SELECT SUM(d.importe) FROM movtoscajadetalles d 
+                    WHERE d.idmovtocaja = mc.idmovtocaja 
+                    AND d.idconcepto = 6), 0) AS Otros,
+            ISNULL((SELECT SUM(d.importe) FROM movtoscajadetalles d 
+                    WHERE d.idmovtocaja = mc.idmovtocaja 
+                    AND d.idconcepto = 7), 0) AS DepositosEf,
+            ISNULL((SELECT SUM(d.importe) FROM movtoscajadetalles d 
+                    WHERE d.idmovtocaja = mc.idmovtocaja 
+                    AND d.idconcepto = 8), 0) AS RetirosEf,
+            ISNULL((SELECT SUM(d.importe) FROM movtoscajadetalles d 
+                    WHERE d.idmovtocaja = mc.idmovtocaja 
+                    AND d.idconcepto = 9), 0) AS PropinasPagadas,
+            mc.saldo AS SaldoFinal,
+            mc.efectivo AS EfectivoFinal,
+            ISNULL((SELECT SUM(d.importe) FROM movtoscajadetalles d 
+                    WHERE d.idmovtocaja = mc.idmovtocaja), 0) AS TotalVentas
+        FROM movtoscaja mc
+        LEFT JOIN estaciones e ON mc.idestacion = e.idestacion
+        WHERE {where_sql}
+        ORDER BY mc.fecha DESC
+        """
+        
+        result = await self._execute_query_with_server_id(server_id, query)
+        
+        if result.query_executed and result.status.is_success():
+            # Transformar resultados
+            cortes = []
+            for r in result.data:
+                efectivo_ventas = float(r.get('EfectivoVentas', 0) or 0)
+                propinas = float(r.get('PropinasPagadas', 0) or 0)
+                
+                corte = {
+                    'folio_corte': str(r.get('FolioCorte', '')),
+                    'fecha_corte': r.get('FechaCorte') if isinstance(r.get('FechaCorte'), str) else (r.get('FechaCorte').isoformat() if r.get('FechaCorte') else None),
+                    'sucursal_id': server_id,
+                    'sucursal_nombre': server_name,
+                    'server_id': server_id,
+                    'fuente': 'SOFTRESTAURANT',
+                    'efectivo_inicial': float(r.get('EfectivoInicial', 0) or 0),
+                    'efectivo_ventas': efectivo_ventas,
+                    'tarjeta': float(r.get('Tarjeta', 0) or 0),
+                    'vales': float(r.get('Vales', 0) or 0),
+                    'otros': float(r.get('Otros', 0) or 0),
+                    'depositos_ef': float(r.get('DepositosEf', 0) or 0),
+                    'retiros_ef': float(r.get('RetirosEf', 0) or 0),
+                    'propinas_pagadas': propinas,
+                    'saldo_final': float(r.get('SaldoFinal', 0) or 0),
+                    'efectivo_final': float(r.get('EfectivoFinal', 0) or 0),
+                    'total_ventas': float(r.get('TotalVentas', 0) or 0),
+                    'monto_a_depositar': efectivo_ventas - propinas
+                }
+                cortes.append(corte)
+            
+            if cortes:
+                return SourceQueryResult.success_with_data(
+                    data=cortes,
+                    source_type="SOFTRESTAURANT",
+                    source_id=server_id,
+                    duration_ms=result.duration_ms
+                )
+            else:
+                return SourceQueryResult.success_empty(
+                    source_type="SOFTRESTAURANT",
+                    source_id=server_id,
+                    duration_ms=result.duration_ms
+                )
+        
+        return result
+    
+    async def _get_cortes_mpro_by_server(
+        self,
+        server_id: str,
+        server_name: str,
+        config: Dict,
+        fecha_inicio: Optional[str],
+        fecha_fin: Optional[str],
+        sucursal_codigo: Optional[str] = None
+    ) -> SourceQueryResult:
+        """
+        Obtiene Cortes Z de un servidor MPRO.
+        Soporta filtro por sucursal (ORIGEN, QUERETARO).
+        """
+        where_clauses = ["c.tipo_movimiento = 'CIERRE'"]
+        
+        if fecha_inicio:
+            where_clauses.append(f"CAST(c.fecha AS DATE) >= '{fecha_inicio}'")
+        if fecha_fin:
+            where_clauses.append(f"CAST(c.fecha AS DATE) <= '{fecha_fin}'")
+        if sucursal_codigo:
+            where_clauses.append(f"s.codigo = '{sucursal_codigo}'")
+        
+        where_sql = " AND ".join(where_clauses)
+        
+        query = f"""
+        SELECT 
+            c.id_caja AS CorteID,
+            c.folio AS FolioCorte,
+            c.fecha AS FechaCorte,
+            c.id_sucursal AS SucursalID,
+            s.codigo AS SucursalCodigo,
+            s.nombre AS SucursalNombre,
+            ISNULL(c.fondo_inicial, 0) AS EfectivoInicial,
+            ISNULL(c.efectivo, 0) AS EfectivoVentas,
+            ISNULL(c.tarjeta_credito, 0) + ISNULL(c.tarjeta_debito, 0) AS Tarjeta,
+            ISNULL(c.vales, 0) AS Vales,
+            ISNULL(c.otros, 0) AS Otros,
+            ISNULL(c.depositos, 0) AS DepositosEf,
+            ISNULL(c.retiros, 0) AS RetirosEf,
+            ISNULL(c.propinas, 0) AS PropinasPagadas,
+            ISNULL(c.total, 0) AS SaldoFinal,
+            ISNULL(c.efectivo_final, 0) AS EfectivoFinal,
+            ISNULL(c.total_ventas, 0) AS TotalVentas
+        FROM caja c
+        LEFT JOIN sucursales s ON c.id_sucursal = s.id_sucursal
+        WHERE {where_sql}
+        ORDER BY c.fecha DESC
+        """
+        
+        result = await self._execute_query_with_server_id(server_id, query)
+        
+        if result.query_executed and result.status.is_success():
+            cortes = []
+            for r in result.data:
+                efectivo_ventas = float(r.get('EfectivoVentas', 0) or 0)
+                propinas = float(r.get('PropinasPagadas', 0) or 0)
+                suc_codigo = r.get('SucursalCodigo', '')
+                suc_nombre = r.get('SucursalNombre', server_name)
+                
+                corte = {
+                    'folio_corte': str(r.get('FolioCorte', '')),
+                    'fecha_corte': r.get('FechaCorte') if isinstance(r.get('FechaCorte'), str) else (r.get('FechaCorte').isoformat() if r.get('FechaCorte') else None),
+                    'sucursal_id': f"{server_id}_{suc_codigo}" if suc_codigo else server_id,
+                    'sucursal_nombre': suc_nombre,
+                    'sucursal_codigo': suc_codigo,
+                    'server_id': server_id,
+                    'fuente': 'MPRO',
+                    'efectivo_inicial': float(r.get('EfectivoInicial', 0) or 0),
+                    'efectivo_ventas': efectivo_ventas,
+                    'tarjeta': float(r.get('Tarjeta', 0) or 0),
+                    'vales': float(r.get('Vales', 0) or 0),
+                    'otros': float(r.get('Otros', 0) or 0),
+                    'depositos_ef': float(r.get('DepositosEf', 0) or 0),
+                    'retiros_ef': float(r.get('RetirosEf', 0) or 0),
+                    'propinas_pagadas': propinas,
+                    'saldo_final': float(r.get('SaldoFinal', 0) or 0),
+                    'efectivo_final': float(r.get('EfectivoFinal', 0) or 0),
+                    'total_ventas': float(r.get('TotalVentas', 0) or 0),
+                    'monto_a_depositar': efectivo_ventas - propinas
+                }
+                cortes.append(corte)
+            
+            if cortes:
+                return SourceQueryResult.success_with_data(
+                    data=cortes,
+                    source_type="MPRO",
+                    source_id=server_id,
+                    duration_ms=result.duration_ms
+                )
+            else:
+                return SourceQueryResult.success_empty(
+                    source_type="MPRO",
+                    source_id=server_id,
+                    duration_ms=result.duration_ms
+                )
+        
+        return result
+    
+    async def get_all_cortes_z_from_servers(
+        self,
+        server_ids: List[str],
+        fecha_inicio: Optional[str] = None,
+        fecha_fin: Optional[str] = None
+    ) -> Dict:
+        """
+        Obtiene Cortes Z de múltiples servidores en paralelo.
+        
+        Args:
+            server_ids: Lista de UUIDs de servidores
+            fecha_inicio: Fecha inicio YYYY-MM-DD
+            fecha_fin: Fecha fin YYYY-MM-DD
+            
+        Returns:
+            Dict con cortes, fuentes_detalle, estado_general, etc.
+        """
+        from core.source_resolver import AggregatedQueryResult
+        
+        aggregated = AggregatedQueryResult()
+        aggregated.started_at = datetime.now().isoformat()
+        
+        all_cortes = []
+        fuentes_detalle = []
+        
+        # Consultar cada servidor
+        tasks = []
+        for server_id in server_ids:
+            tasks.append(self.get_cortes_z_by_server_id(server_id, fecha_inicio, fecha_fin))
+        
+        # Ejecutar en paralelo
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        for i, result in enumerate(results):
+            server_id = server_ids[i]
+            
+            if isinstance(result, Exception):
+                self.logger.error(f"Error consultando servidor {server_id}: {result}")
+                fuentes_detalle.append({
+                    'source_id': server_id,
+                    'status': 'ERROR',
+                    'error': str(result)
+                })
+                continue
+            
+            if isinstance(result, SourceQueryResult):
+                aggregated.add_result(result)
+                fuentes_detalle.append(result.to_dict())
+                
+                if result.query_executed and result.status.is_data_available():
+                    all_cortes.extend(result.data)
+        
+        # Ordenar por fecha
+        all_cortes.sort(key=lambda x: x.get('fecha_corte', ''), reverse=True)
+        
+        aggregated.completed_at = datetime.now().isoformat()
+        
+        return {
+            "cortes": all_cortes,
+            "total_cortes": len(all_cortes),
+            "estado_general": aggregated.get_overall_status().value,
+            "fuentes_consultadas": {
+                "total": aggregated.total_sources,
+                "exitosas": aggregated.sources_success + aggregated.sources_empty,
+                "sin_conexion": aggregated.sources_unreachable,
+                "con_error": aggregated.sources_error
+            },
+            "fuentes_detalle": fuentes_detalle,
+            "advertencia": (
+                f"{aggregated.sources_unreachable} fuentes no pudieron consultarse"
+                if aggregated.sources_unreachable > 0 else None
+            ),
+            "data_source": "SQL_REAL"
+        }
+    
+    # =========================================================================
+    # MÉTODOS LEGACY - Mantener compatibilidad con código existente
+    # =========================================================================
+    
+    async def get_cortes_z_softrestaurant(
+        self, 
+        server_name: str,
+        fecha_inicio: Optional[str] = None,
+        fecha_fin: Optional[str] = None,
+        folio: Optional[str] = None
+    ) -> List[Dict]:
+        """
+        LEGACY: Obtiene Cortes Z usando nombre de servidor (para compatibilidad).
+        Preferir usar get_cortes_z_by_server_id con el UUID.
+        """
+        self.logger.warning(f"Uso de método legacy get_cortes_z_softrestaurant con nombre '{server_name}'. Migrar a get_cortes_z_by_server_id.")
+        
+        # Buscar server_id por nombre
+        server_id = await self._find_server_id_by_name(server_name)
+        
+        if not server_id:
+            self.logger.error(f"No se encontró servidor con nombre '{server_name}'")
+            return []
+        
+        result = await self.get_cortes_z_by_server_id(server_id, fecha_inicio, fecha_fin, folio)
+        
+        if result.query_executed and result.status.is_success():
+            return result.data
+        return []
+    
+    async def get_cortes_z_mpro(
+        self, 
+        server_name: str,
+        fecha_inicio: Optional[str] = None,
+        fecha_fin: Optional[str] = None
+    ) -> List[Dict]:
+        """
+        LEGACY: Obtiene Cortes Z de MPRO usando nombre de servidor.
+        Preferir usar get_cortes_z_by_server_id con el UUID.
+        """
+        self.logger.warning(f"Uso de método legacy get_cortes_z_mpro con nombre '{server_name}'. Migrar a get_cortes_z_by_server_id.")
+        
+        server_id = await self._find_server_id_by_name(server_name)
+        
+        if not server_id:
+            self.logger.error(f"No se encontró servidor MPRO con nombre '{server_name}'")
+            return []
+        
+        result = await self.get_cortes_z_by_server_id(server_id, fecha_inicio, fecha_fin)
+        
+        if result.query_executed and result.status.is_success():
+            return result.data
+        return []
+    
+    async def get_all_cortes_z(
+        self,
+        fecha_inicio: Optional[str] = None,
+        fecha_fin: Optional[str] = None
+    ) -> List[Dict]:
+        """
+        LEGACY: Obtiene Cortes Z de TODOS los servidores activos.
+        Este método consulta el registry para obtener la lista de servidores.
+        """
+        # Obtener lista de servidores activos
+        server_ids = await self._get_active_server_ids()
+        
+        if not server_ids:
+            self.logger.warning("No hay servidores activos configurados para Cortes Z")
+            return []
+        
+        result = await self.get_all_cortes_z_from_servers(server_ids, fecha_inicio, fecha_fin)
+        return result.get('cortes', [])
+    
+    async def get_all_cortes_z_with_status(
+        self,
+        fecha_inicio: Optional[str] = None,
+        fecha_fin: Optional[str] = None
+    ) -> Dict:
+        """
+        FASE 4.4: Obtiene Cortes Z de todas las fuentes con estado de cada una.
+        Ahora usa el registry centralizado.
+        """
+        server_ids = await self._get_active_server_ids()
+        
+        if not server_ids:
+            return {
+                "cortes": [],
+                "total_cortes": 0,
+                "estado_general": "NO_SERVERS",
+                "fuentes_consultadas": {"total": 0, "exitosas": 0, "sin_conexion": 0, "con_error": 0},
+                "fuentes_detalle": [],
+                "advertencia": "No hay servidores activos configurados",
+                "data_source": "NO_CONFIG"
+            }
+        
+        return await self.get_all_cortes_z_from_servers(server_ids, fecha_inicio, fecha_fin)
+    
+    async def _find_server_id_by_name(self, name: str) -> Optional[str]:
+        """
+        Busca un servidor por nombre y retorna su ID.
+        Usado para compatibilidad con código legacy que usa nombres.
+        """
+        try:
+            from core.server_registry import list_servers
+            from server import db
+            
+            servers = await list_servers(db=db, filter_active=True, mask_secrets=True)
+            
+            name_upper = name.upper().replace('_', ' ')
+            
+            for server in servers:
+                server_name = (server.get('name') or server.get('nombre', '')).upper().replace('_', ' ')
+                if name_upper in server_name or server_name in name_upper:
+                    return server.get('id')
+            
+            return None
+        except Exception as e:
+            self.logger.error(f"Error buscando servidor por nombre '{name}': {e}")
+            return None
+    
+    async def _get_active_server_ids(self) -> List[str]:
+        """
+        Obtiene IDs de todos los servidores activos configurados para Finanzas.
+        """
+        try:
+            from core.server_registry import list_servers
+            from server import db
+            
+            servers = await list_servers(db=db, filter_active=True, mask_secrets=True)
+            
+            # Filtrar solo servidores de tipo DATA_SOURCE (no CORE)
+            server_ids = []
+            for s in servers:
+                tipo = s.get('tipo_conexion', 'DATA_SOURCE')
+                system_type = s.get('system_type_normalized', s.get('system_type', '')).upper()
+                
+                # Solo incluir SoftRestaurant y MPRO
+                if tipo != 'CORE' and system_type in ['SOFTRESTAURANT', 'SR', 'MANAGEMENTPRO', 'MPRO']:
+                    server_ids.append(s.get('id'))
+            
+            return server_ids
+        except Exception as e:
+            self.logger.error(f"Error obteniendo servidores activos: {e}")
+            return []
+
+
+# Singleton
+_repository_instance = None
+
+async def get_cortes_z_repository() -> RepositoryCortesZ:
+    global _repository_instance
+    if _repository_instance is None:
+        _repository_instance = RepositoryCortesZ()
+    return _repository_instance

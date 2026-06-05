@@ -25,7 +25,6 @@ import uuid
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
 
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from .sql_repository import PropinasTPVSQLRepository
 from .cache_manager import PropinasCacheManager
@@ -58,7 +57,7 @@ class PropinasTPVSQLService:
     - Modificar: Escribe SQL → Invalida Cache
     """
     
-    def __init__(self, db: AsyncIOMotorDatabase):
+    def __init__(self, db: Any):
         self.db = db
         self.sql_repo = PropinasTPVSQLRepository(db)
         self.cache = PropinasCacheManager(db)

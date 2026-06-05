@@ -351,16 +351,16 @@ async def compare_user_mongo_vs_sql(email: str) -> Dict:
     Returns:
         Dict con comparación detallada
     """
-    from motor.motor_asyncio import AsyncIOMotorClient
+    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
     
     # Obtener de SQL
     repo_sql = AuthRepositorySQL()
     user_sql = repo_sql.get_user_by_email_sql(email)
     
     # Obtener de MongoDB
-    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+    mongo_url = None  # P2-07: MongoDB eliminado
     db_name = os.environ.get('DB_NAME', 'edarsa_hub')
-    mongo_client = AsyncIOMotorClient(mongo_url)
+    mongo_client = None  # P2-07: MongoDB eliminado
     mongo_db = mongo_client[db_name]
     
     user_mongo = await mongo_db.users.find_one({'email': email}, {'_id': 0})

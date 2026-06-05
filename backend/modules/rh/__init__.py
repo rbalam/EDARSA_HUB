@@ -100,7 +100,7 @@ def init_rh_module(database) -> None:
     Inicializa el módulo de Recursos Humanos.
     
     Args:
-        database: Instancia de AsyncIOMotorDatabase
+        database: Instancia de Any
     """
     init_rh_repository(database)
     init_importador_repository(database)

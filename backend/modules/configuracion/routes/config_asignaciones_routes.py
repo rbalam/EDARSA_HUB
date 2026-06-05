@@ -22,7 +22,6 @@ import logging
 import os
 
 # Motor para conexión a MongoDB
-from motor.motor_asyncio import AsyncIOMotorClient
 
 from core.security import get_current_user
 from core.alcance_helper import resolver_alcance_usuarios
@@ -40,9 +39,9 @@ def get_db():
     """Obtiene la conexión a la base de datos MongoDB."""
     global _db
     if _db is None:
-        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+        mongo_url = None  # P2-07: MongoDB eliminado
         db_name = os.environ.get('DB_NAME', 'edarsa_hub')
-        client = AsyncIOMotorClient(mongo_url)
+        client = None  # P2-07: MongoDB eliminado
         _db = client[db_name]
     return _db
 

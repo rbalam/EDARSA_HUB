@@ -53,7 +53,7 @@ def init_comercial_module(database) -> None:
     Inicializa el módulo comercial con la conexión a MongoDB.
     
     Args:
-        database: Instancia de AsyncIOMotorDatabase
+        database: Instancia de Any
     """
     init_comercial_repository(database)
 

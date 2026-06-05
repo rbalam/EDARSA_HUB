@@ -1115,55 +1115,34 @@ def _execute_sql_query_direct(
 
 # ============================================================================
 # FUNCIONES DE MONGODB (Placeholders para fases futuras)
-# ============================================================================
-
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from pymongo import MongoClient
-
-# Variables globales para conexiones MongoDB (se inicializarán en migración futura)
-_mongo_client: Optional[AsyncIOMotorClient] = None
-_mongo_db: Optional[AsyncIOMotorDatabase] = None
-_sync_mongo_client: Optional[MongoClient] = None
+# =============================================================================
+# P2-07: MongoDB ELIMINADO - Funciones stub para compatibilidad
+# =============================================================================
 
 
-async def get_mongo_client() -> AsyncIOMotorClient:
-    """
-    Obtiene el cliente MongoDB async.
-    NOTA: No implementado aún - usar conexión de server.py
-    """
-    global _mongo_client
-    if _mongo_client is None:
-        raise RuntimeError("MongoDB client not initialized. Use server.py connection.")
-    return _mongo_client
+# Variables globales stub (MongoDB eliminado)
+_mongo_client: Optional[Any] = None
+_mongo_db: Optional[Any] = None  # P2-07: Any eliminado
+_sync_mongo_client: Optional[Any] = None
 
 
-async def get_mongo_db() -> AsyncIOMotorDatabase:
-    """
-    Obtiene la base de datos MongoDB async.
-    NOTA: No implementado aún - usar conexión de server.py
-    """
-    global _mongo_db
-    if _mongo_db is None:
-        raise RuntimeError("MongoDB database not initialized. Use server.py connection.")
-    return _mongo_db
+async def get_mongo_client() -> Any:
+    """P2-07: MongoDB eliminado. Retorna None."""
+    return None
 
 
-def get_sync_mongo_db():
-    """
-    Obtiene la base de datos MongoDB síncrona.
-    NOTA: No implementado aún - usar conexión de server.py
-    """
-    global _sync_mongo_client
-    if _sync_mongo_client is None:
-        raise RuntimeError("Sync MongoDB client not initialized. Use server.py connection.")
-    return _sync_mongo_client
+async def get_mongo_db() -> Any:
+    """P2-07: MongoDB eliminado. Retorna None."""
+    return None
 
 
-def init_db_connections(mongo_url: str, db_name: str):
-    """
-    Inicializa las conexiones a bases de datos.
-    NOTA: Se usará cuando se migre MongoDB desde server.py (fase futura)
-    """
+def get_sync_mongo_db() -> Any:
+    """P2-07: MongoDB eliminado. Retorna None."""
+    return None
+
+
+def init_db_connections(mongo_url: str = "", db_name: str = ""):
+    """P2-07: MongoDB eliminado. No-op."""
     pass
 
 

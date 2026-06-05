@@ -25,7 +25,6 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 import logging
 import os
-from pymongo import MongoClient
 
 from core.security import verify_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -45,9 +44,9 @@ security = HTTPBearer()
 
 def _get_db():
     """Obtiene conexión a MongoDB de forma síncrona."""
-    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+    mongo_url = None  # P2-07: MongoDB eliminado
     db_name = os.environ.get('DB_NAME', 'edarsahub')
-    client = MongoClient(mongo_url)
+    client = None  # P2-07: MongoDB eliminado
     return client[db_name]
 
 

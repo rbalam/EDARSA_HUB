@@ -1,0 +1,352 @@
+"""
+Servicio de Tareas de Inventario
+CAB-003 | EDARSA HUB - Fase 2A
+
+Encapsula la lógica de negocio para gestión de tareas operativas.
+"""
+from typing import Optional, List, Dict
+from datetime import datetime, timezone, timedelta
+from ..repositories.tarea_repository import TareaRepository
+from ..repositories.historial_repository import HistorialAsignacionRepository
+from ..repositories.configuracion_repository import ConfiguracionRepository
+from ..schemas.enums import TipoTarea, EstadoTarea
+
+
+class TareaServiceError(Exception):
+    """Excepción base para errores del servicio de tareas."""
+    pass
+
+
+class TareaNoEncontradaError(TareaServiceError):
+    """La tarea solicitada no existe."""
+    pass
+
+
+class TareaYaCompletadaError(TareaServiceError):
+    """La tarea ya está completada."""
+    pass
+
+
+class TareaService:
+    """
+    Servicio para gestión de tareas de inventario.
+    
+    Maneja la lógica de negocio relacionada con asignación,
+    seguimiento y completación de tareas.
+    """
+    
+    def __init__(self, db):
+        """
+        Inicializa el servicio con conexión a BD.
+        
+        Args:
+            db: Instancia de la base de datos MongoDB
+        """
+        self.tarea_repo = TareaRepository(db)
+        self.historial_repo = HistorialAsignacionRepository(db)
+        self.config_repo = ConfiguracionRepository(db)
+    
+    async def _calcular_fecha_limite(self) -> datetime:
+        """Calcula la fecha límite basada en configuración."""
+        dias = await self.config_repo.get_dias_limite_tarea()
+        return datetime.now(timezone.utc) + timedelta(days=dias)
+    
+    async def crear_tarea(
+        self,
+        workflow_id: str,
+        tipo_tarea: TipoTarea,
+        usuario_asignado_id: Optional[str] = None,
+        fecha_limite: Optional[datetime] = None
+    ) -> Dict:
+        """
+        Crea una nueva tarea.
+        
+        Args:
+            workflow_id: ID del workflow asociado
+            tipo_tarea: Tipo de tarea
+            usuario_asignado_id: Usuario a asignar (opcional)
+            fecha_limite: Fecha límite (opcional, se calcula si no se proporciona)
+            
+        Returns:
+            Tarea creada
+        """
+        tarea_data = {
+            "workflow_id": workflow_id,
+            "tipo_tarea": tipo_tarea.value,
+            "estado_tarea": EstadoTarea.PENDIENTE.value,
+            "es_reasignacion": False
+        }
+        
+        if usuario_asignado_id:
+            tarea_data["usuario_asignado_id"] = usuario_asignado_id
+            tarea_data["fecha_asignacion"] = datetime.now(timezone.utc)
+            tarea_data["fecha_limite"] = fecha_limite or await self._calcular_fecha_limite()
+        
+        return await self.tarea_repo.create(tarea_data)
+    
+    async def obtener_tarea(self, tarea_id: str) -> Optional[Dict]:
+        """
+        Obtiene una tarea por su ID.
+        
+        Args:
+            tarea_id: ID de la tarea
+            
+        Returns:
+            Tarea o None
+        """
+        return await self.tarea_repo.get_by_id(tarea_id)
+    
+    async def obtener_tareas_workflow(self, workflow_id: str) -> List[Dict]:
+        """
+        Obtiene todas las tareas de un workflow.
+        
+        Args:
+            workflow_id: ID del workflow
+            
+        Returns:
+            Lista de tareas
+        """
+        return await self.tarea_repo.get_by_workflow(workflow_id)
+    
+    async def asignar_tarea(
+        self,
+        tarea_id: str,
+        usuario_asignado_id: str,
+        asignado_por_id: str,
+        fecha_limite: Optional[datetime] = None
+    ) -> Dict:
+        """
+        Asigna una tarea a un usuario.
+        
+        Args:
+            tarea_id: ID de la tarea
+            usuario_asignado_id: Usuario a asignar
+            asignado_por_id: Usuario que realiza la asignación
+            fecha_limite: Fecha límite opcional
+            
+        Returns:
+            Tarea actualizada
+            
+        Raises:
+            TareaNoEncontradaError: Si la tarea no existe
+        """
+        tarea = await self.tarea_repo.get_by_id(tarea_id)
+        if not tarea:
+            raise TareaNoEncontradaError(f"Tarea no encontrada: {tarea_id}")
+        
+        # Calcular fecha límite si no se proporciona
+        if not fecha_limite:
+            fecha_limite = await self._calcular_fecha_limite()
+        
+        # Asignar tarea
+        tarea_actualizada = await self.tarea_repo.asignar(
+            tarea_id, 
+            usuario_asignado_id, 
+            fecha_limite
+        )
+        
+        # Registrar en historial
+        await self.historial_repo.create({
+            "tarea_id": tarea_id,
+            "usuario_anterior_id": tarea.get("usuario_asignado_id"),
+            "usuario_nuevo_id": usuario_asignado_id,
+            "motivo_cambio": "Asignación inicial",
+            "cambiado_por_id": asignado_por_id
+        })
+        
+        return tarea_actualizada
+    
+    async def reasignar_tarea(
+        self,
+        tarea_id: str,
+        usuario_nuevo_id: str,
+        motivo: str,
+        cambiado_por_id: str
+    ) -> Dict:
+        """
+        Reasigna una tarea a otro usuario.
+        
+        Args:
+            tarea_id: ID de la tarea
+            usuario_nuevo_id: Nuevo usuario
+            motivo: Motivo de la reasignación (obligatorio)
+            cambiado_por_id: Usuario que realiza el cambio
+            
+        Returns:
+            Tarea actualizada
+            
+        Raises:
+            TareaNoEncontradaError: Si la tarea no existe
+            TareaYaCompletadaError: Si la tarea ya está completada
+        """
+        tarea = await self.tarea_repo.get_by_id(tarea_id)
+        if not tarea:
+            raise TareaNoEncontradaError(f"Tarea no encontrada: {tarea_id}")
+        
+        if tarea["estado_tarea"] == EstadoTarea.COMPLETADA.value:
+            raise TareaYaCompletadaError("No se puede reasignar una tarea completada")
+        
+        usuario_anterior = tarea.get("usuario_asignado_id")
+        
+        # Calcular nueva fecha límite
+        fecha_limite = await self._calcular_fecha_limite()
+        
+        # Actualizar tarea
+        await self.tarea_repo.update(tarea_id, {
+            "usuario_asignado_id": usuario_nuevo_id,
+            "fecha_asignacion": datetime.now(timezone.utc),
+            "fecha_limite": fecha_limite,
+            "es_reasignacion": True
+        })
+        
+        # Registrar en historial
+        await self.historial_repo.create({
+            "tarea_id": tarea_id,
+            "usuario_anterior_id": usuario_anterior,
+            "usuario_nuevo_id": usuario_nuevo_id,
+            "motivo_cambio": motivo,
+            "cambiado_por_id": cambiado_por_id
+        })
+        
+        return await self.tarea_repo.get_by_id(tarea_id)
+    
+    async def completar_tarea(self, tarea_id: str) -> Dict:
+        """
+        Marca una tarea como completada.
+        
+        Args:
+            tarea_id: ID de la tarea
+            
+        Returns:
+            Tarea actualizada
+            
+        Raises:
+            TareaNoEncontradaError: Si la tarea no existe
+            TareaYaCompletadaError: Si ya está completada
+        """
+        tarea = await self.tarea_repo.get_by_id(tarea_id)
+        if not tarea:
+            raise TareaNoEncontradaError(f"Tarea no encontrada: {tarea_id}")
+        
+        if tarea["estado_tarea"] == EstadoTarea.COMPLETADA.value:
+            raise TareaYaCompletadaError("La tarea ya está completada")
+        
+        return await self.tarea_repo.completar(tarea_id)
+    
+    async def marcar_en_progreso(self, tarea_id: str) -> Dict:
+        """
+        Marca una tarea como en progreso.
+        
+        Args:
+            tarea_id: ID de la tarea
+            
+        Returns:
+            Tarea actualizada
+        """
+        tarea = await self.tarea_repo.get_by_id(tarea_id)
+        if not tarea:
+            raise TareaNoEncontradaError(f"Tarea no encontrada: {tarea_id}")
+        
+        return await self.tarea_repo.marcar_en_progreso(tarea_id)
+    
+    async def marcar_vencidas(self) -> int:
+        """
+        Marca como vencidas todas las tareas que excedieron su fecha límite.
+        
+        Returns:
+            Número de tareas marcadas como vencidas
+        """
+        tareas_vencidas = await self.tarea_repo.get_vencidas()
+        
+        for tarea in tareas_vencidas:
+            await self.tarea_repo.marcar_vencida(tarea["_id"])
+        
+        return len(tareas_vencidas)
+    
+    async def obtener_tareas_por_usuario(
+        self,
+        usuario_id: str,
+        solo_pendientes: bool = True
+    ) -> List[Dict]:
+        """
+        Obtiene tareas asignadas a un usuario.
+        
+        Args:
+            usuario_id: ID del usuario
+            solo_pendientes: Si True, solo tareas pendientes/en progreso
+            
+        Returns:
+            Lista de tareas
+        """
+        return await self.tarea_repo.get_by_usuario(usuario_id, solo_pendientes)
+    
+    async def obtener_tareas_pendientes(self, limit: int = 100) -> List[Dict]:
+        """
+        Obtiene todas las tareas pendientes del sistema.
+        
+        Args:
+            limit: Límite de resultados
+            
+        Returns:
+            Lista de tareas pendientes
+        """
+        return await self.tarea_repo.get_pendientes_globales(limit)
+    
+    async def obtener_tareas_sin_asignar(self, limit: int = 100) -> List[Dict]:
+        """
+        Obtiene tareas que no tienen usuario asignado.
+        
+        Returns:
+            Lista de tareas sin asignar
+        """
+        return await self.tarea_repo.get_sin_asignar(limit)
+    
+    async def obtener_tareas_vencidas(self, server_ids: Optional[List[str]] = None) -> List[Dict]:
+        """
+        Obtiene tareas que han excedido su fecha límite.
+        FASE 3.1: Soporta filtrado por server_ids para RBAC.
+        
+        Args:
+            server_ids: Lista opcional de server_ids permitidos para filtrar
+        
+        Returns:
+            Lista de tareas vencidas
+        """
+        return await self.tarea_repo.get_vencidas(server_ids=server_ids)
+    
+    async def obtener_historial_tarea(self, tarea_id: str) -> List[Dict]:
+        """
+        Obtiene el historial de asignaciones de una tarea.
+        
+        Args:
+            tarea_id: ID de la tarea
+            
+        Returns:
+            Lista de registros de historial
+        """
+        return await self.historial_repo.get_by_tarea(tarea_id)
+    
+    async def resumen_por_estado(self, server_ids: Optional[List[str]] = None) -> Dict[str, int]:
+        """
+        Obtiene resumen de tareas por estado.
+        FASE 3.1: Soporta filtrado por server_ids para RBAC.
+        
+        Args:
+            server_ids: Lista opcional de server_ids permitidos para filtrar
+        
+        Returns:
+            Diccionario con conteos por estado
+        """
+        return await self.tarea_repo.contar_por_estado(server_ids=server_ids)
+    
+    async def resumen_por_usuario(self, usuario_id: str) -> Dict[str, int]:
+        """
+        Obtiene resumen de tareas de un usuario por estado.
+        
+        Args:
+            usuario_id: ID del usuario
+            
+        Returns:
+            Diccionario con conteos por estado
+        """
+        return await self.tarea_repo.contar_por_usuario(usuario_id)

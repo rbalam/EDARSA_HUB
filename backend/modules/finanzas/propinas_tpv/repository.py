@@ -17,7 +17,6 @@ Fix Encoding: 2026-12-27
 import logging
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from core.db import execute_sql_query
 from .schema_detector import SoftRestaurantSchemaDetector, get_schema_summary
@@ -37,7 +36,7 @@ class PropinasTPVRepository:
     3. NO modifica colecciones existentes
     """
     
-    def __init__(self, db: AsyncIOMotorDatabase):
+    def __init__(self, db: Any):
         self.db = db
         self.collection_control = db['propinas_control']
         self.collection_config = db['propinas_config']

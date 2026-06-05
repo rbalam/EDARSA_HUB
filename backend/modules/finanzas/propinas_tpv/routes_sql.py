@@ -27,9 +27,8 @@ IMPORTANTE - AISLAMIENTO:
 """
 
 import logging
-from typing import Optional, Dict, List
+from typing import Any,  Optional, Dict, List
 from fastapi import APIRouter, HTTPException, Depends, Query
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from core.security import get_current_user
 from .service_sql import PropinasTPVSQLService
@@ -125,7 +124,7 @@ async def get_db():
     "/health",
     summary="Health check del módulo SQL"
 )
-async def health_check_sql(db: AsyncIOMotorDatabase = Depends(get_db)):
+async def health_check_sql(db: Any = Depends(get_db)):
     """Verifica el estado del módulo con arquitectura SQL + Cache."""
     try:
         # Verificar MongoDB (cache)
@@ -174,7 +173,7 @@ async def health_check_sql(db: AsyncIOMotorDatabase = Depends(get_db)):
 )
 async def inicializar_modulo_sql(
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     try:
         if current_user.get('role') not in ['admin', 'superadmin', 'Admin']:
@@ -207,7 +206,7 @@ async def inicializar_modulo_sql(
 async def sincronizar_propinas_sql(
     request: SincronizarRequest,
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     """
     Sincroniza propinas desde SoftRestaurant a SQL Server EDARSA HUB.
@@ -245,7 +244,7 @@ async def resumen_propinas_sql(
     fecha_fin: str = Query(..., description="Fecha fin YYYY-MM-DD"),
     server_id: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     """Obtiene resumen agregado desde SQL Server (con cache)."""
     try:
@@ -274,7 +273,7 @@ async def listar_propinas_sql(
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     """Obtiene listado de propinas desde SQL Server (con cache)."""
     try:
@@ -306,7 +305,7 @@ async def obtener_config_sql(
     server_id: Optional[str] = Query(None),
     sucursal_id: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     """Obtiene configuración vigente desde SQL Server (con cache)."""
     try:
@@ -327,7 +326,7 @@ async def obtener_config_sql(
 )
 async def listar_configs_sql(
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     """Lista todas las configuraciones (activas e inactivas)."""
     try:
@@ -346,7 +345,7 @@ async def listar_configs_sql(
 async def crear_config_sql(
     request: PropinasConfigCreate,
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     """
     Crea una nueva configuración de % de descuento para propinas.
@@ -384,7 +383,7 @@ async def actualizar_config_sql(
     config_id: str,
     request: PropinasConfigCreate,
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     """
     Actualiza una configuración existente.
@@ -421,7 +420,7 @@ async def actualizar_config_sql(
 )
 async def cache_stats(
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     """Obtiene estadísticas del cache MongoDB."""
     try:
@@ -437,7 +436,7 @@ async def cache_stats(
 )
 async def invalidar_cache(
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     """Invalida todo el cache de propinas."""
     try:
@@ -463,7 +462,7 @@ async def invalidar_cache(
 async def detectar_esquema(
     server_id: str,
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     """Detecta el esquema de tablas de un servidor SoftRestaurant."""
     try:
@@ -496,7 +495,7 @@ async def detectar_esquema(
 )
 async def detectar_esquema_todos(
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     """Detecta esquema en todos los servidores SoftRestaurant."""
     try:
@@ -566,7 +565,7 @@ async def preview_propinas(
     fecha_fin: str = Query(...),
     server_id: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     """Consulta propinas de SoftRestaurant sin guardar."""
     try:
@@ -628,7 +627,7 @@ async def preview_propinas(
 async def obtener_propina_sql(
     propina_id: str,
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     """Obtiene detalle de una propina desde SQL Server."""
     try:
@@ -652,7 +651,7 @@ async def registrar_pago_sql(
     propina_id: str,
     request: RegistrarPagoRequest,
     current_user: dict = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: Any = Depends(get_db)
 ):
     """Registra pago de propinas en SQL Server."""
     try:

@@ -13,7 +13,6 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from .schemas import (
     ModuloOrigen,
@@ -45,7 +44,7 @@ class ManualOperativoService:
     COLLECTION_NAME = "manuales_operativos"
     ESTADOS_TRIGGER = ["COMPLETADA", "CERRADO", "FINALIZADO"]
     
-    def __init__(self, db: AsyncIOMotorDatabase):
+    def __init__(self, db: Any):
         self.db = db
         self.collection = db[self.COLLECTION_NAME]
     
@@ -615,7 +614,7 @@ Generado automáticamente por EDARSA HUB
 _service_instance: Optional[ManualOperativoService] = None
 
 
-def get_manual_service(db: AsyncIOMotorDatabase) -> ManualOperativoService:
+def get_manual_service(db: Any) -> ManualOperativoService:
     """Obtiene o crea la instancia del servicio."""
     global _service_instance
     if _service_instance is None:

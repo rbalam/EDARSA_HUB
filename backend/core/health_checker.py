@@ -148,11 +148,11 @@ class SystemHealthChecker:
         """Verifica conexión a MongoDB"""
         start = time.time()
         try:
-            from pymongo import MongoClient
+            pass  # P2-07: MongoDB eliminado (MongoClient)
             import os
             
-            mongo_url = os.environ.get('MONGO_URL')
-            client = MongoClient(mongo_url, serverSelectionTimeoutMS=5000)
+            mongo_url = None  # P2-07: MongoDB eliminado
+            client = None  # P2-07: MongoDB eliminado
             client.admin.command('ping')
             
             response_time = (time.time() - start) * 1000
@@ -176,11 +176,11 @@ class SystemHealthChecker:
         """Verifica conexión a servidores SQL"""
         results = []
         try:
-            from pymongo import MongoClient
+            pass  # P2-07: MongoDB eliminado (MongoClient)
             import os
             
-            mongo_url = os.environ.get('MONGO_URL')
-            client = MongoClient(mongo_url)
+            mongo_url = None  # P2-07: MongoDB eliminado
+            client = None  # P2-07: MongoDB eliminado
             db = client['edarsa_hub']
             
             servers = list(db.servers.find(

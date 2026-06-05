@@ -15,7 +15,6 @@ import uuid
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from .repository import PropinasTPVRepository
 from .models import (
@@ -42,7 +41,7 @@ class PropinasTPVService:
     - MPRO
     """
     
-    def __init__(self, db: AsyncIOMotorDatabase):
+    def __init__(self, db: Any):
         self.db = db
         self.repository = PropinasTPVRepository(db)
     

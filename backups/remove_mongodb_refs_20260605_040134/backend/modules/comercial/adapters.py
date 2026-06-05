@@ -1,0 +1,479 @@
+"""
+╔════════════════════════════════════════════════════════════════════════════╗
+║              MÓDULO REFACTORIZADO - FASE 5A (Mayo 2026)                    ║
+╠════════════════════════════════════════════════════════════════════════════╣
+║ ESTADO: REFACTORIZADO CON EmpresaResolver                                  ║
+║                                                                            ║
+║ Este módulo contiene la lógica de mapeo de sucursales usando               ║
+║ EmpresaResolver para resolución canónica desde EDARSAHUB SQL.              ║
+║                                                                            ║
+║ ELIMINADO:                                                                 ║
+║ - Matching textual tipo 'sucursal_destino in sucursal_actual'              ║
+║ - Hardcoding de códigos de sucursal                                        ║
+║ - Comparaciones flexibles por nombre                                       ║
+║                                                                            ║
+║ IMPLEMENTADO:                                                              ║
+║ - Resolución por EmpresaResolver (alias → EmpresaID)                       ║
+║ - Resolución por RolConexion (EmpresaID + VENTAS_DIA_API_LOCAL)            ║
+║ - Contexto canónico desde Sistema_EmpresasServidores                       ║
+║                                                                            ║
+║ ÚLTIMA REFACTORIZACIÓN: 16-Mayo-2026 (FASE 5A)                             ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+EDARSA HUB - Comercial Module Adapters
+======================================
+Adaptadores para integración con APIs locales MPRO.
+
+FASE 5A DEL REFACTOR CANÓNICO (Mayo 2026):
+- Resolución de empresas/sucursales usando EmpresaResolver
+- Eliminación de matching textual riesgoso
+- Uso de Sistema_EmpresasServidores para conexiones
+"""
+
+import os
+import logging
+import requests
+from datetime import datetime, timezone, timedelta
+from typing import Dict, Optional, Any
+
+# ============================================================================
+# IMPORTAR EmpresaResolver (FUENTE CANÓNICA)
+# ============================================================================
+try:
+    from core.empresa_resolver import (
+        normalize_alias,
+        resolve_empresa_by_alias,
+        resolve_empresa_by_id,
+        get_connection_for_role,
+        get_empresa_connections,
+        get_system_branch_context
+    )
+    EMPRESA_RESOLVER_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"EmpresaResolver no disponible: {e}. Usando fallback.")
+    EMPRESA_RESOLVER_AVAILABLE = False
+
+# ============================================================================
+# CONFIGURACIÓN APIs LOCALES MPRO (FALLBACK LEGACY - SOLO SI EmpresaResolver FALLA)
+# ============================================================================
+# NOTA: Este diccionario se mantiene SOLO como fallback de emergencia.
+# La fuente autoritativa es Sistema_EmpresasServidores via EmpresaResolver.
+
+APIS_MPRO_LOCALES_LEGACY = {
+    "origen": {
+        "nombre": "ORIGEN LOCAL",
+        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query"),
+        "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
+        "empresa_id": 1,  # ORIGEN
+        "hora_replica": 4,
+        "activo": True
+    },
+    "130_qro": {
+        "nombre": "130° QRO LOCAL",
+        "url": os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query"),
+        "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
+        "empresa_id": 2,  # 130QRO
+        "hora_replica": 4,
+        "activo": True
+    }
+}
+
+# Alias para compatibilidad con código existente
+APIS_MPRO_LOCALES = APIS_MPRO_LOCALES_LEGACY
+
+
+def _resolver_empresa_id_desde_alias(alias: str) -> Optional[int]:
+    """
+    Resuelve un alias a EmpresaID usando EmpresaResolver.
+    
+    Args:
+        alias: Cualquier variante de nombre (130-MER, QRO, LA ESTELAR, etc.)
+        
+    Returns:
+        EmpresaID si se encuentra, None si no
+    """
+    if not EMPRESA_RESOLVER_AVAILABLE:
+        return None
+    
+    try:
+        empresa = resolve_empresa_by_alias(alias)
+        if empresa:
+            logging.debug(f"EmpresaResolver: '{alias}' -> EmpresaID={empresa.empresa_id} ({empresa.codigo_empresa})")
+            return empresa.empresa_id
+    except Exception as e:
+        logging.warning(f"Error resolviendo alias '{alias}': {e}")
+    
+    return None
+
+
+def _obtener_api_local_por_empresa_id(empresa_id: int) -> Optional[Dict[str, Any]]:
+    """
+    Obtiene la configuración de API local para una empresa usando EmpresaResolver.
+    
+    Busca la conexión con RolConexion = 'VENTAS_DIA_API_LOCAL'.
+    
+    Args:
+        empresa_id: ID de la empresa
+        
+    Returns:
+        dict con configuración de API o None
+    """
+    if not EMPRESA_RESOLVER_AVAILABLE:
+        return None
+    
+    try:
+        # Buscar conexión con rol VENTAS_DIA_API_LOCAL
+        connection = get_connection_for_role(empresa_id, 'VENTAS_DIA_API_LOCAL')
+        
+        if connection:
+            # Obtener datos de la empresa
+            empresa = resolve_empresa_by_id(empresa_id)
+            if not empresa:
+                return None
+            
+            # Construir configuración de API
+            # NOTA: La URL y API key vienen de Servidores_Conexiones o variables de entorno
+            api_config = {
+                "nombre": connection.nombre_servidor,
+                "empresa_id": empresa_id,
+                "codigo_empresa": empresa.codigo_empresa,
+                "servidor_id": connection.servidor_id,
+                "numero_sucursal": connection.numero_sucursal_sistema,
+                "codigo_sucursal": connection.codigo_sucursal_sistema,
+                "nombre_sucursal": connection.nombre_sucursal_sistema,
+                "hora_replica": 4,  # Configurable en el futuro
+                "activo": connection.activo
+            }
+            
+            # Obtener URL desde variables de entorno según la empresa
+            if empresa.codigo_empresa == 'ORIGEN':
+                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query")
+            elif empresa.codigo_empresa == '130QRO':
+                api_config["url"] = os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query")
+            else:
+                # Fallback genérico
+                api_config["url"] = None
+            
+            api_config["api_key"] = os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY")
+            
+            logging.info(f"EmpresaResolver: API Local para EmpresaID={empresa_id} ({empresa.codigo_empresa}): {connection.nombre_servidor}")
+            return api_config
+            
+    except Exception as e:
+        logging.warning(f"Error obteniendo API local para EmpresaID={empresa_id}: {e}")
+    
+    return None
+
+
+def query_api_mpro_local(api_config: dict, sql_query: str, timeout: int = 3) -> dict:
+    """
+    Consulta una API MPRO local y retorna los resultados.
+    
+    Args:
+        api_config: Configuración de la API (nombre, url, api_key, etc.)
+        sql_query: Query SQL a ejecutar
+        timeout: Timeout en segundos (default: 3)
+    
+    Returns:
+        dict con 'success', 'data' o 'error'
+    """
+    print(f"*** query_api_mpro_local: Iniciando query a {api_config.get('nombre', 'N/A')} ***")
+    print(f"*** query_api_mpro_local: URL = {api_config.get('url', 'N/A')} ***")
+    print(f"*** query_api_mpro_local: activo = {api_config.get('activo', 'N/A')} ***")
+    
+    if not api_config.get("activo", False):
+        print("*** query_api_mpro_local: API desactivada, omitiendo ***")
+        return {"success": False, "error": "API desactivada", "data": None}
+    
+    if not api_config.get("url"):
+        print("*** query_api_mpro_local: URL no configurada, omitiendo ***")
+        return {"success": False, "error": "URL no configurada", "data": None}
+    
+    try:
+        headers = {"x-api-key": api_config.get("api_key", "")}
+        params = {"sql": sql_query}
+        
+        print("*** query_api_mpro_local: Enviando request... ***")
+        response = requests.get(
+            api_config["url"],
+            headers=headers,
+            params=params,
+            timeout=timeout
+        )
+        
+        print(f"*** query_api_mpro_local: Response status = {response.status_code} ***")
+        
+        if response.status_code == 200:
+            data = response.json()
+            logging.info(f"API Local {api_config['nombre']}: Query exitoso")
+            return {"success": True, "data": data, "error": None}
+        else:
+            logging.warning(f"API Local {api_config['nombre']}: HTTP {response.status_code}")
+            print(f"*** query_api_mpro_local: Response body = {response.text[:200]} ***")
+            return {"success": False, "error": f"HTTP {response.status_code}", "data": None}
+            
+    except requests.exceptions.Timeout:
+        logging.warning(f"API Local {api_config['nombre']}: Timeout")
+        return {"success": False, "error": "Timeout", "data": None}
+    except requests.exceptions.ConnectionError:
+        logging.warning(f"API Local {api_config['nombre']}: Error de conexión")
+        return {"success": False, "error": "Sin conexión", "data": None}
+    except Exception as e:
+        logging.warning(f"API Local {api_config['nombre']}: Error - {str(e)}")
+        return {"success": False, "error": str(e), "data": None}
+
+
+def obtener_ventas_dia_api_local(api_config: dict, forzar_consulta: bool = False) -> dict:
+    """
+    Obtiene las ventas del día actual desde una API MPRO local.
+    
+    Args:
+        api_config: Configuración de la API
+        forzar_consulta: Si True (modo Ventas del Día), ignora la restricción de hora de réplica
+    
+    Returns:
+        dict con ventas, cheques, pax
+    """
+    # Usar zona horaria de México (UTC-6) para determinar si ya pasó la hora de réplica
+    mexico_tz = timezone(timedelta(hours=-6))
+    ahora_mexico = datetime.now(timezone.utc).astimezone(mexico_tz)
+    hora_actual = ahora_mexico.hour
+    hora_replica = api_config.get("hora_replica", 4)
+    
+    logging.info(f"API Local {api_config['nombre']}: Hora México = {ahora_mexico.strftime('%H:%M')}, Hora réplica = {hora_replica}:00, forzar={forzar_consulta}")
+    
+    # Si ya pasó la hora de réplica EN MÉXICO Y no es modo forzado, los datos ya están en la nube
+    if hora_actual >= hora_replica and not forzar_consulta:
+        logging.info(f"API Local {api_config['nombre']}: Hora actual ({hora_actual}) >= hora réplica ({hora_replica}), omitiendo (datos ya replicados)")
+        return {"ventas": 0, "cheques": 0, "pax": 0, "omitido": True, "razon": "post_replica"}
+    
+    if forzar_consulta:
+        logging.info(f"API Local {api_config['nombre']}: FORZANDO consulta (modo Ventas del Día)")
+    else:
+        logging.info(f"API Local {api_config['nombre']}: Consultando ventas del día (hora {hora_actual} < {hora_replica})")
+    
+    # Query para obtener ventas del día actual
+    # IMPORTANTE: Usar formato 112 (YYYYMMDD) que es independiente de configuración regional
+    sql_ventas_hoy = """
+    SELECT 
+        ISNULL(SUM(cd_importe), 0) as ventas,
+        COUNT(DISTINCT Comanda.co_folio) as cheques,
+        (SELECT ISNULL(SUM(co_personas), 0) FROM Comanda WHERE CONVERT(varchar, co_fecha, 112) = CONVERT(varchar, GETDATE(), 112)) as pax
+    FROM Comanda 
+    INNER JOIN Comanda_Detalle ON Comanda.co_folio = Comanda_Detalle.co_folio 
+    WHERE CONVERT(varchar, co_fecha, 112) = CONVERT(varchar, GETDATE(), 112)
+    """
+    
+    result = query_api_mpro_local(api_config, sql_ventas_hoy)
+    
+    if result["success"] and result["data"]:
+        data = result["data"]
+        
+        # Manejar diferentes formatos de respuesta
+        if isinstance(data, dict) and "data" in data:
+            inner_data = data.get("data", [])
+            if isinstance(inner_data, list) and len(inner_data) > 0:
+                row = inner_data[0]
+            else:
+                row = {}
+        elif isinstance(data, list) and len(data) > 0:
+            row = data[0]
+        elif isinstance(data, dict):
+            row = data
+        else:
+            row = {}
+        
+        ventas = float(row.get("ventas", 0) or 0)
+        cheques = int(row.get("cheques", 0) or 0)
+        pax = int(row.get("pax", 0) or 0)
+        
+        logging.info(f"API Local {api_config['nombre']}: Ventas HOY = ${ventas:,.2f}, Cheques = {cheques}, PAX = {pax}")
+        print(f"*** API Local {api_config['nombre']}: Ventas HOY = ${ventas:,.2f}, Cheques = {cheques}, PAX = {pax} ***")
+        return {"ventas": ventas, "cheques": cheques, "pax": pax, "omitido": False}
+    else:
+        error_msg = result.get('error', 'desconocido')
+        logging.warning(f"API Local {api_config['nombre']}: Error obteniendo ventas - {error_msg}")
+        print(f"*** API Local {api_config['nombre']}: ERROR - {error_msg} ***")
+        return {"ventas": 0, "cheques": 0, "pax": 0, "omitido": True, "razon": "error", "error": error_msg}
+
+
+def sumar_ventas_api_local_a_sucursal(
+    server_host: str, 
+    sucursal_nombre: str, 
+    fecha_fin: str, 
+    mes_solicitado: int = None, 
+    anio_solicitado: int = None, 
+    solo_ventas_dia: bool = False
+) -> dict:
+    """
+    Busca si hay una API local asociada a esta sucursal y servidor,
+    y si el período solicitado incluye HOY, suma las ventas del día.
+    
+    REFACTORIZADO FASE 5A: Usa EmpresaResolver para resolución canónica.
+    
+    Cuando solo_ventas_dia=True, las ventas de API local REEMPLAZAN (no suman) las de la nube.
+    
+    Args:
+        server_host: Host del servidor padre (ej: "54.39.104.176") - LEGACY, se mantiene por compatibilidad
+        sucursal_nombre: Nombre o código de la sucursal a buscar (ej: "ORIGEN", "0023", "130-QRO", etc.)
+        fecha_fin: Fecha fin del período (YYYY-MM-DD)
+        mes_solicitado: Mes del período (opcional)
+        anio_solicitado: Año del período (opcional)
+        solo_ventas_dia: Si True, modo "Ventas del Día" - reemplazar datos nube
+    
+    Returns:
+        dict con ventas_adicionales, cheques_adicionales, pax_adicionales
+    """
+    # Usar zona horaria de México para determinar "hoy"
+    mexico_tz = timezone(timedelta(hours=-6))
+    ahora_mexico = datetime.now(timezone.utc).astimezone(mexico_tz)
+    hoy = ahora_mexico.strftime("%Y-%m-%d")
+    mes_actual = ahora_mexico.month
+    anio_actual = ahora_mexico.year
+    
+    print(f"*** API Local Check: server_host={server_host}, sucursal={sucursal_nombre}, fecha_fin={fecha_fin}, hoy_mexico={hoy}, MODO_VENTAS_DIA={solo_ventas_dia} ***")
+    print(f"*** API Local: mes_solicitado={mes_solicitado}, anio_solicitado={anio_solicitado}, mes_actual={mes_actual}, anio_actual={anio_actual} ***")
+    
+    # Determinar si el período incluye HOY
+    periodo_incluye_hoy = False
+    
+    if fecha_fin >= hoy:
+        periodo_incluye_hoy = True
+        print("*** API Local: fecha_fin >= hoy, período incluye HOY ***")
+    elif mes_solicitado and anio_solicitado:
+        if mes_solicitado == mes_actual and anio_solicitado == anio_actual:
+            periodo_incluye_hoy = True
+            print("*** API Local: mes/año solicitado = mes/año actual, período incluye HOY ***")
+    
+    if not periodo_incluye_hoy:
+        print("*** API Local: período NO incluye hoy, omitiendo ***")
+        return {"ventas": 0, "cheques": 0, "pax": 0, "aplicado": False, "reemplazar": False, "razon": "fecha_no_incluye_hoy"}
+    
+    # ========== FASE 5A: RESOLUCIÓN CANÓNICA CON EmpresaResolver ==========
+    empresa_id = None
+    api_config = None
+    
+    if EMPRESA_RESOLVER_AVAILABLE:
+        print(f"*** API Local: Usando EmpresaResolver para resolver '{sucursal_nombre}' ***")
+        
+        # Paso 1: Resolver alias → EmpresaID
+        empresa_id = _resolver_empresa_id_desde_alias(sucursal_nombre)
+        
+        if empresa_id:
+            print(f"*** API Local: EmpresaResolver resolvió '{sucursal_nombre}' -> EmpresaID={empresa_id} ***")
+            
+            # Paso 2: Obtener API local para esta empresa (RolConexion = VENTAS_DIA_API_LOCAL)
+            api_config = _obtener_api_local_por_empresa_id(empresa_id)
+            
+            if api_config:
+                print(f"*** API Local: EmpresaResolver encontró API '{api_config['nombre']}' para EmpresaID={empresa_id} ***")
+                
+                # Ejecutar consulta a la API
+                ventas_api = obtener_ventas_dia_api_local(api_config, forzar_consulta=solo_ventas_dia)
+                
+                if not ventas_api.get("omitido", True):
+                    modo = "REEMPLAZANDO" if solo_ventas_dia else "SUMANDO"
+                    print(f"*** API Local {modo}: +${ventas_api['ventas']:,.2f} de {api_config['nombre']} (via EmpresaResolver) ***")
+                    return {
+                        "ventas": ventas_api["ventas"],
+                        "cheques": ventas_api["cheques"],
+                        "pax": ventas_api["pax"],
+                        "aplicado": True,
+                        "reemplazar": solo_ventas_dia,
+                        "api": api_config["nombre"],
+                        "empresa_id": empresa_id,
+                        "resuelto_por": "EmpresaResolver"
+                    }
+                else:
+                    razon = ventas_api.get("razon", "omitido")
+                    print(f"*** API Local OMITIDO: {razon} (via EmpresaResolver) ***")
+                    return {
+                        "ventas": 0, "cheques": 0, "pax": 0,
+                        "aplicado": False,
+                        "reemplazar": solo_ventas_dia,
+                        "razon": razon,
+                        "api": api_config["nombre"],
+                        "empresa_id": empresa_id,
+                        "resuelto_por": "EmpresaResolver"
+                    }
+            else:
+                print(f"*** API Local: EmpresaID={empresa_id} no tiene API local configurada (VENTAS_DIA_API_LOCAL) ***")
+        else:
+            print(f"*** API Local: EmpresaResolver no pudo resolver '{sucursal_nombre}' ***")
+    else:
+        print("*** API Local: EmpresaResolver no disponible, usando fallback legacy ***")
+    
+    # ========== FALLBACK LEGACY: Buscar en APIS_MPRO_LOCALES_LEGACY ==========
+    # NOTA: Este fallback solo se usa si EmpresaResolver no está disponible o falla
+    print("*** API Local: Intentando fallback legacy (APIS_MPRO_LOCALES_LEGACY) ***")
+    
+    # Normalizar el nombre de sucursal para comparación
+    sucursal_upper = sucursal_nombre.upper().strip()
+    
+    # Mapeo simple de códigos conocidos a empresa_id
+    CODIGO_A_EMPRESA_ID = {
+        "0023": 1,  # ORIGEN
+        "0021": 2,  # 130QRO
+        "ORIGEN": 1,
+        "130QRO": 2,
+        "QRO": 2,
+        "QUERETARO": 2,
+    }
+    
+    # Intentar resolver por código/nombre conocido
+    empresa_id_fallback = CODIGO_A_EMPRESA_ID.get(sucursal_upper)
+    
+    if not empresa_id_fallback:
+        # Buscar coincidencia parcial en el mapeo
+        for key, eid in CODIGO_A_EMPRESA_ID.items():
+            if key in sucursal_upper or sucursal_upper in key:
+                empresa_id_fallback = eid
+                break
+    
+    if empresa_id_fallback:
+        print(f"*** API Local LEGACY: Código '{sucursal_nombre}' -> EmpresaID={empresa_id_fallback} ***")
+        
+        # Buscar configuración legacy por empresa_id
+        for api_id, api_cfg in APIS_MPRO_LOCALES_LEGACY.items():
+            if api_cfg.get("empresa_id") == empresa_id_fallback and api_cfg.get("activo", False):
+                print(f"*** API Local LEGACY MATCH: {api_cfg['nombre']} ***")
+                
+                ventas_api = obtener_ventas_dia_api_local(api_cfg, forzar_consulta=solo_ventas_dia)
+                
+                if not ventas_api.get("omitido", True):
+                    modo = "REEMPLAZANDO" if solo_ventas_dia else "SUMANDO"
+                    print(f"*** API Local LEGACY {modo}: +${ventas_api['ventas']:,.2f} de {api_cfg['nombre']} ***")
+                    return {
+                        "ventas": ventas_api["ventas"],
+                        "cheques": ventas_api["cheques"],
+                        "pax": ventas_api["pax"],
+                        "aplicado": True,
+                        "reemplazar": solo_ventas_dia,
+                        "api": api_cfg["nombre"],
+                        "empresa_id": empresa_id_fallback,
+                        "resuelto_por": "LEGACY_FALLBACK"
+                    }
+                else:
+                    razon = ventas_api.get("razon", "omitido")
+                    print(f"*** API Local LEGACY OMITIDO: {razon} ***")
+                    return {
+                        "ventas": 0, "cheques": 0, "pax": 0,
+                        "aplicado": False,
+                        "reemplazar": solo_ventas_dia,
+                        "razon": razon,
+                        "api": api_cfg["nombre"],
+                        "empresa_id": empresa_id_fallback,
+                        "resuelto_por": "LEGACY_FALLBACK"
+                    }
+    
+    # No se encontró API local para esta sucursal
+    print(f"*** API Local: No se encontró API para '{sucursal_nombre}' ***")
+    return {"ventas": 0, "cheques": 0, "pax": 0, "aplicado": False, "reemplazar": False, "razon": "sin_api_local"}
+
+
+__all__ = [
+    'APIS_MPRO_LOCALES',
+    'query_api_mpro_local',
+    'obtener_ventas_dia_api_local',
+    'sumar_ventas_api_local_a_sucursal',
+]

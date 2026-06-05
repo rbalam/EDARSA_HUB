@@ -1,0 +1,63 @@
+# ============================================================================
+# EDARSA Sync Agent - Configuración Piloto
+# ============================================================================
+#
+# INSTRUCCIONES:
+# 1. Renombrar este archivo a config.yaml
+# 2. Completar TODOS los valores marcados con <COMPLETAR>
+# 3. NO compartir este archivo con credenciales reales
+#
+# ============================================================================
+
+# Identificador único del agente
+# Formato: agent-{nombre_servidor_sin_espacios}-001
+agent_id: "<COMPLETAR: Ej. agent-cienfuegos-001>"
+
+# URL de EDARSA HUB (sin trailing slash)
+# Obtener de la barra de direcciones del navegador al acceder a HUB
+hub_url: "<COMPLETAR: Ej. https://stock-tracker-990.preview.emergentagent.com>"
+
+# Token JWT generado desde HUB para este agente
+# Seguir instrucciones de GUIA_PILOTO.md para generarlo
+hub_token: "<COMPLETAR: Token largo que empieza con eyJ...>"
+
+# ID del servidor en EDARSA HUB (UUID)
+# Obtener desde: Menú Servidores > [Tu servidor] > Copiar ID
+# o de la respuesta al generar el token
+server_id: "<COMPLETAR: UUID del servidor, ej. 6d053c22-523e-48c0-b72b-96081e2d781b>"
+
+# Configuración de conexión al SQL Server local de SoftRestaurant
+sql_local:
+  # Host del SQL Server
+  # Si el agente corre en la misma máquina: localhost
+  # Si está en otra máquina de la red: IP o hostname
+  host: "<COMPLETAR: Ej. localhost o 192.168.1.100>"
+  
+  # Puerto SQL Server (default: 1433)
+  port: 1433
+  
+  # Nombre de la base de datos SoftRestaurant
+  database: "<COMPLETAR: Nombre de la BD>"
+  
+  # Usuario SQL (preferiblemente de solo lectura)
+  username: "<COMPLETAR: Usuario SQL>"
+  
+  # Contraseña SQL
+  password: "<COMPLETAR: Contraseña>"
+
+# ============================================================================
+# EJEMPLO COMPLETO (reemplazar con datos reales):
+# ============================================================================
+#
+# agent_id: "agent-cienfuegos-001"
+# hub_url: "https://stock-tracker-990.preview.emergentagent.com"
+# hub_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+# server_id: "6d053c22-523e-48c0-b72b-96081e2d781b"
+# sql_local:
+#   host: "localhost"
+#   port: 1433
+#   database: "CIENFUEGOS_SR"
+#   username: "sync_user"
+#   password: "MiPassword123"
+#
+# ============================================================================

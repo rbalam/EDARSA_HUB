@@ -19,7 +19,6 @@ Uso:
 import asyncio
 import logging
 from datetime import datetime, timezone
-from motor.motor_asyncio import AsyncIOMotorClient
 import os
 
 logger = logging.getLogger(__name__)
@@ -377,10 +376,10 @@ async def main():
     """Ejecuta la inicialización standalone."""
     logging.basicConfig(level=logging.INFO)
     
-    mongo_url = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
+    mongo_url = None  # P2-07: MongoDB eliminado
     db_name = os.environ.get("DB_NAME", "edarsa_hub")
     
-    client = AsyncIOMotorClient(mongo_url)
+    client = None  # P2-07: MongoDB eliminado
     db = client[db_name]
     
     try:

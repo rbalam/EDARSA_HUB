@@ -54,9 +54,9 @@ async def _get_edarsahub_credentials() -> Dict:
     if _edarsahub_credentials:
         return _edarsahub_credentials
     
-    from motor.motor_asyncio import AsyncIOMotorClient
+    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
     
-    client = AsyncIOMotorClient(os.environ.get('MONGO_URL'))
+    client = None  # P2-07: MongoDB eliminado)
     db = client['edarsa_hub']
     
     server = await db.servers.find_one({'id': EDARSAHUB_SERVER_ID})
@@ -489,9 +489,9 @@ async def migrate_staging_mongo_kpis_to_sql(
     Returns:
         Dict con resultados de migración
     """
-    from motor.motor_asyncio import AsyncIOMotorClient
+    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
     
-    client = AsyncIOMotorClient(os.environ.get('MONGO_URL'))
+    client = None  # P2-07: MongoDB eliminado)
     db = client['edarsa_hub']
     
     # Filtro

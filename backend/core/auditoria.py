@@ -222,9 +222,9 @@ class ServicioAuditoria:
         """Obtiene conexión a MongoDB para fallback"""
         if self._mongo_db is None:
             try:
-                from motor.motor_asyncio import AsyncIOMotorClient
-                mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-                client = AsyncIOMotorClient(mongo_url)
+                pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+                mongo_url = None  # P2-07: MongoDB eliminado
+                client = None  # P2-07: MongoDB eliminado
                 db_name = os.environ.get('DB_NAME', 'edarsa_hub')
                 self._mongo_db = client[db_name]
             except Exception as e:

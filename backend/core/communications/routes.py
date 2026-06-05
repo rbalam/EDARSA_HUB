@@ -20,7 +20,7 @@ Endpoints:
 - /api/v2/notificaciones-whatsapp/provider-status - Estado de providers
 """
 
-from typing import Optional, List
+from typing import Any,  Optional, List
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
@@ -49,7 +49,7 @@ def init_notifications_routes(database) -> None:
     que retorna valores vacíos sin fallar.
     
     Args:
-        database: Instancia de AsyncIOMotorDatabase o StubDatabase
+        database: Instancia de Any o StubDatabase
     """
     global _db
     _db = database
