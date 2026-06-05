@@ -167,33 +167,14 @@ def has_full_access(user: Dict) -> bool:
     - role (nombre legacy)
     - _sql_rol_codigo (código SQL)
     - sec_roles (array de códigos)
-    - email (usuarios especiales)
     
     Args:
         user: Dict con datos del usuario
         
     Returns:
-        True si el usuario tiene un rol con acceso total
+        True si el usuario tiene un rol con acceso total (NivelJerarquia >= 80)
     """
-    # =========================================================================
-    # FIX 2026-06-05: Usuarios especiales con acceso total explícito
-    # Estos usuarios siempre tienen acceso a todas las unidades
-    # =========================================================================
-    USUARIOS_ACCESO_TOTAL = [
-        'admin@edarsa.com',
-        'ricardo@edarsa.com.mx',
-        'direccion@edarsa.com.mx'
-    ]
-    
-    user_email = str(user.get('email', '') or user.get('correo', '')).lower().strip()
-    if user_email in USUARIOS_ACCESO_TOTAL:
-        return True
-    
-    # =========================================================================
-    # Verificar por rol con jerarquía >= 80
-    # =========================================================================
-    
-    # Cargar roles dinámicamente
+    # Cargar roles dinámicamente desde SQL (cacheado)
     roles_full_access_codes = get_roles_with_full_access()
     roles_full_access_names = get_role_names_with_full_access()
     
