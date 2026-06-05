@@ -1,0 +1,18 @@
+
+### 2. HITS DESPUES
+578:    Unidad de prueba: LA ESTELAR (SoftRestaurant)
+580:    FASE P0 (2026-05-13): Actualizado a código canónico ESTELAR
+585:    # Configuración de LA ESTELAR con código canónico
+587:        unidad_negocio_id='ESTELAR',  # FASE P0: Código canónico oficial
+588:        unidad_negocio_nombre='LA ESTELAR',
+591:        sucursal_nombre='LA ESTELAR',
+606:    Unidad de prueba: 130° QUERETARO (MPRO sucursal 0021)
+608:    FASE P0 (2026-05-13): Actualizado a código canónico 130QRO
+615:        unidad_negocio_id='130QRO',  # FASE P0: Código canónico oficial
+616:        unidad_negocio_nombre='130° QUERETARO',
+619:        sucursal_nombre='130° QUERETARO',
+
+### 3. USO UnidadesService
+46:from core.unidades_service import UnidadesService
+654:def _sync_codigos_unidades_activas():
+655:    return UnidadesService.get_codigos()

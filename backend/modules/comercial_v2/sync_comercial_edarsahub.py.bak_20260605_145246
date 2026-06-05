@@ -42,7 +42,6 @@ from .mappers import (
     map_mpro_ventas_cerradas,
     map_mpro_ventas_abiertas
 )
-from core.unidades_service import UnidadesService
 from .repository_comercial_edarsahub import (
     EDARSAHUB_CONFIG,
     get_unidades_negocio_config,
@@ -644,13 +643,3 @@ if __name__ == "__main__":
     print("\nDisponibles:")
     print("  - test_sync_una_unidad_softrestaurant(fecha)")
     print("  - test_sync_una_unidad_mpro(fecha)")
-
-
-# ============================================================
-# P1 - Unidades dinámicas desde SQL
-# No usar códigos hardcodeados como llave operativa.
-# ============================================================
-
-def _sync_codigos_unidades_activas():
-    return UnidadesService.get_codigos()
-

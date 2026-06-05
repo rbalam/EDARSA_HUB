@@ -24,35 +24,10 @@ from fastapi import APIRouter, Query, HTTPException
 import pymssql
 import os
 from core.config.edarsahub_config import get_edarsahub_sql_config
-from core.unidades_service import UnidadesService
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
 logger = logging.getLogger(__name__)
-
-# ============================================================
-# P1 - Helpers centralizados de unidades (refactorizado 2026-06-05)
-# Regla: No usar nombres/códigos hardcodeados como llave operativa.
-# Unidades se resuelven desde SQL mediante UnidadesService.
-# ============================================================
-
-def _pic_unidades_activas():
-    """Obtiene todas las unidades activas desde SQL."""
-    return UnidadesService.get_all()
-
-def _pic_codigos_activos():
-    """Obtiene lista de códigos canónicos activos."""
-    return UnidadesService.get_codigos()
-
-def _pic_codigo_to_nombre(codigo):
-    """Resuelve código a nombre display."""
-    return UnidadesService.get_nombre(codigo)
-
-def _pic_mapeo_codigo_nombre():
-    """Obtiene diccionario codigo -> nombre para display."""
-    return UnidadesService.get_mapeo_codigo_nombre()
-
-
 router = APIRouter(prefix="/inteligencia", tags=["Inteligencia Comercial"])
 
 # ============================================================================
@@ -67,43 +42,38 @@ EDARSAHUB_CONFIG = {
 }
 
 # ============================================================================
-# MAPEO DE UNIDADES DE NEGOCIO - REFACTORIZADO P1 (2026-06-05)
-# Ahora se construye dinámicamente desde UnidadesService
+# MAPEO DE UNIDADES DE NEGOCIO
 # ============================================================================
+UNIDADES_VALIDAS = {
+    # Código corto -> Nombre en BD
+    "todas": None,
+    "130mid": "130° MERIDA",
+    "130merida": "130° MERIDA",
+    "merida": "130° MERIDA",
+    "130qro": "130° QUERETARO",
+    "130queretaro": "130° QUERETARO",
+    "queretaro": "130° QUERETARO",
+    "cienfuegos": "CIENFUEGOS",
+    "estelar": "LA ESTELAR",
+    "laestelar": "LA ESTELAR",
+    "origen": "ORIGEN",
+}
 
-def _build_unidades_validas():
-    """Construye mapeo de aliases a nombres desde SQL."""
-    mapeo = {"todas": None}
-    for u in UnidadesService.get_all():
-        codigo = u.get("codigo", "").lower()
-        nombre = u.get("nombre", "")
-        if codigo and nombre:
-            mapeo[codigo] = nombre
-            # Agregar variantes comunes
-            mapeo[codigo.replace("°", "")] = nombre
-            nombre_lower = nombre.lower().replace("°", "").replace(" ", "")
-            mapeo[nombre_lower] = nombre
-    return mapeo
-
-def _build_unidad_to_sucursal():
-    """Construye mapeo nombre -> sucursal (identidad para compatibilidad)."""
-    return {u.get("nombre"): u.get("nombre") for u in UnidadesService.get_all() if u.get("nombre")}
-
-# Cache dinámico (se recarga con UnidadesService.get_all que tiene TTL)
-UNIDADES_VALIDAS = _build_unidades_validas()
-UNIDAD_TO_SUCURSAL = _build_unidad_to_sucursal()
+# Mapeo inverso para SucursalNombre en Sync_PAX_Detalle
+UNIDAD_TO_SUCURSAL = {
+    "130° MERIDA": "130° MERIDA",
+    "130° QUERETARO": "130° QUERETARO",
+    "CIENFUEGOS": "CIENFUEGOS",
+    "LA ESTELAR": "LA ESTELAR",
+    "ORIGEN": "ORIGEN",
+}
 
 
 def normalizar_unidad(unidad: str) -> Optional[str]:
     """Normaliza el código de unidad al nombre real en BD."""
     if not unidad:
         return None
-    # Primero intentar resolver via UnidadesService
-    nombre = UnidadesService.get_nombre(unidad)
-    if nombre:
-        return nombre
-    # Fallback a mapeo local
-    key = unidad.lower().replace("°", "").replace(" ", "")
+    key = unidad.lower().replace("°", "").replace(" ", "").replace("130", "130")
     return UNIDADES_VALIDAS.get(key)
 
 
@@ -788,36 +758,39 @@ async def get_ventas_casas(
 async def get_unidades_negocio():
     """Lista de unidades de negocio activas."""
     try:
-        # P1 REFACTORIZADO: Usar UnidadesService (SQL-First)
-        unidades = _pic_unidades_activas()
+        sql = """
+            SELECT codigo, nombre, system_type
+            FROM Unidades_Negocio
+            WHERE activo = 1
+            ORDER BY orden, nombre
+        """
+        unidades = execute_query(sql)
         
         return {
             "success": True,
             "unidades": [
                 {
-                    "codigo": u.get("codigo"),
-                    "nombre": u.get("nombre"),
-                    "sistema": u.get("system_type", "N/A")
+                    "codigo": u["codigo"],
+                    "nombre": u["nombre"],
+                    "sistema": u["system_type"]
                 }
                 for u in unidades
             ]
         }
     except Exception as e:
         logger.error(f"[INTELIGENCIA] Error unidades: {e}")
-        # Fallback también usa UnidadesService (cache interno)
-        try:
-            from core.unidades_service import UnidadesService
-            unidades = UnidadesService.get_all()
-            return {
-                "success": True,
-                "_source": "FALLBACK_UNIDADES_SERVICE",
-                "unidades": [
-                    {"codigo": u.get("codigo"), "nombre": u.get("nombre"), "sistema": u.get("system_type", "N/A")}
-                    for u in unidades
-                ]
-            }
-        except:
-            return {"success": False, "unidades": [], "error": str(e)}
+        # Fallback hardcodeado
+        return {
+            "success": True,
+            "_source": "FALLBACK",
+            "unidades": [
+                {"codigo": "130MID", "nombre": "130° MERIDA", "sistema": "SoftRestaurant"},
+                {"codigo": "130QRO", "nombre": "130° QUERETARO", "sistema": "MPRO"},
+                {"codigo": "CIENFUEGOS", "nombre": "CIENFUEGOS", "sistema": "SoftRestaurant"},
+                {"codigo": "ESTELAR", "nombre": "LA ESTELAR", "sistema": "SoftRestaurant"},
+                {"codigo": "ORIGEN", "nombre": "ORIGEN", "sistema": "MPRO"},
+            ]
+        }
 
 
 # ============================================================================

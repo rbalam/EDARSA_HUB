@@ -1,8 +1,8 @@
 # EDARSA HUB - PRD (Product Requirements Document)
 ## CRM Comercial Enterprise + Módulos Satélite
 
-**Última actualización:** 2026-06-05 (Sesión 9 - FIX TABLERO EJECUTIVO + USUARIOS SQL-FIRST)
-**Estado:** P0/P1/P2 CERRADOS | P3 EN PROGRESO | SQL-First ✅ | MongoDB ELIMINADO ✅
+**Última actualización:** 2026-06-05 (Sesión 10 - REFACTOR sync_comercial_edarsahub.py + UnidadesService)
+**Estado:** P0/P1 CERRADOS | P2 EN PROGRESO | SQL-First ✅ | MongoDB ELIMINADO ✅
 
 ---
 
@@ -209,6 +209,12 @@ python tools/sync_sales_dry_run.py --unidad CIENFUEGOS --fecha-inicio 2026-06-01
 
 | Fecha | Cambio |
 |-------|--------|
+| 2026-06-05 (S10) | **✅ REFACTOR sync_comercial_edarsahub.py - UnidadesService** |
+| 2026-06-05 (S10) | Eliminados hardcodes de listas de unidades en runtime |
+| 2026-06-05 (S10) | Añadido `_sync_codigos_unidades_activas()` → `UnidadesService.get_codigos()` |
+| 2026-06-05 (S9) | Fix Race Condition en TableroEjecutivo.js |
+| 2026-06-05 (S9) | RBAC: NivelJerarquia=90 para rol Administrador |
+| 2026-06-05 (S9) | Creación `/api/admin-sql/*` endpoints SQL-First |
 | 2026-06-03 (S5) | **✅ SYNC_SALES PILOTO 2026-06-01 COMPLETADO Y VALIDADO** |
 | 2026-06-03 (S5) | Insertados 79 tickets en 5 unidades ($309,092.31 MXN) |
 | 2026-06-03 (S5) | Validación post-insert aprobada (0 duplicados, 100% JSON válido) |
