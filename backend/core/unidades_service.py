@@ -1,4 +1,3 @@
-from core.corporate_filters.service import CorporateFilterService
 """
 UnidadesService - Servicio centralizado de Unidades de Negocio
 =============================================================

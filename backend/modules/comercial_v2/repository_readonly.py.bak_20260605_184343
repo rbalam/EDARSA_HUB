@@ -13,8 +13,8 @@ NO consulta:
 - Datos demo
 
 FUENTES ÚNICAS:
-- vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
-- vw_vw_vw_Comercial_KPIs_Mensuales_v2_Runtime_Runtime_Runtime
+- vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+- vw_vw_Comercial_KPIs_Mensuales_v2_Runtime_Runtime
 - Comercial_Ventas_Dia_Abiertas_v2
 - Comercial_SyncLog_v2
 """
@@ -25,7 +25,6 @@ from typing import Dict, Any, Optional, List
 import logging
 
 from core.db import execute_sql_query
-from core.sql_first.db import get_sql_connection
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +69,7 @@ def get_kpis_diarios(
     unidades_permitidas: Optional[List[str]] = None
 ) -> List[Dict]:
     """
-    Obtiene KPIs diarios desde vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime.
+    Obtiene KPIs diarios desde vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime.
     
     Args:
         fecha_inicio: Fecha de inicio del período
@@ -118,7 +117,7 @@ def get_kpis_diarios(
         hash_origen,
         fecha_alta,
         fecha_sincronizacion
-    FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+    FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
     WHERE {' AND '.join(where_clauses)}
     ORDER BY fecha_operacion DESC, unidad_negocio_pk
     """
@@ -154,7 +153,7 @@ def get_kpis_diarios_agregados(
         SUM(pax_total) as pax_total,
         MIN(fecha_operacion) as fecha_min,
         MAX(fecha_operacion) as fecha_max
-    FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+    FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
     WHERE {' AND '.join(where_clauses)}
     """
     
@@ -171,7 +170,7 @@ def get_kpis_por_unidad(
     Obtiene KPIs agregados por unidad para el dashboard.
     
     CORRECCIÓN BUG 14-May-2026 (v2):
-    - Se detectaron datos DUPLICADOS en vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime para Mérida
+    - Se detectaron datos DUPLICADOS en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime para Mérida
     - Días 10-12 mayo tienen registros con 130MID y 130-MER (mismo monto duplicado)
     - La solución es usar ROW_NUMBER para eliminar duplicados por fecha+nombre normalizado
     - El valor correcto validado desde fuente: $1,577,253 (no $1.99M)
@@ -242,7 +241,7 @@ def get_kpis_por_unidad(
                     END
                 ORDER BY id DESC  -- Preferir el ID más reciente
             ) as rn
-        FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
         WHERE {' AND '.join(base_where)}
     ),
     datos_sin_duplicados AS (
@@ -280,7 +279,7 @@ def get_kpis_mensuales(
     unidades_permitidas: Optional[List[str]] = None
 ) -> List[Dict]:
     """
-    Obtiene KPIs mensuales desde vw_vw_vw_Comercial_KPIs_Mensuales_v2_Runtime_Runtime_Runtime.
+    Obtiene KPIs mensuales desde vw_vw_Comercial_KPIs_Mensuales_v2_Runtime_Runtime.
     """
     where_clauses = [
         f"anio = {anio}",
@@ -306,7 +305,7 @@ def get_kpis_mensuales(
         pax_promedio,
         dias_con_venta,
         fecha_ultima_actualizacion
-    FROM vw_vw_vw_vw_Comercial_KPIs_Mensuales_v2_Runtime_Runtime_Runtime_Runtime
+    FROM vw_vw_vw_Comercial_KPIs_Mensuales_v2_Runtime_Runtime_Runtime
     WHERE {' AND '.join(where_clauses)}
     ORDER BY anio DESC, mes DESC, unidad_negocio_pk
     """
@@ -500,7 +499,7 @@ def get_unidades_disponibles(
         MAX(fecha_operacion) as fecha_max,
         COUNT(*) as total_dias,
         SUM(ventas_total) as ventas_historicas
-    FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+    FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
     WHERE {' AND '.join(where_clauses)}
     GROUP BY unidad_negocio_pk, unidad_negocio_nombre, sistema_origen, server_id
     ORDER BY unidad_negocio_pk
@@ -531,7 +530,7 @@ def check_v2_health() -> Dict:
                 COUNT(DISTINCT unidad_negocio_pk) as total_unidades,
                 MIN(fecha_operacion) as fecha_min,
                 MAX(fecha_operacion) as fecha_max
-            FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+            FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
             WHERE activo = 1 AND es_demo = 0
         """)
         
@@ -539,7 +538,7 @@ def check_v2_health() -> Dict:
             return {
                 "status": "ok",
                 "source": "EDARSAHUB_V2",
-                "table": "vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime",
+                "table": "vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime",
                 "total_registros": stats[0].get('total_registros', 0),
                 "total_unidades": stats[0].get('total_unidades', 0),
                 "rango_datos": {
@@ -567,8 +566,8 @@ def get_comparativos_diarios(
     """
     Obtiene datos comparativos diarios para una unidad:
     - Día actual (de Comercial_Ventas_Dia_Abiertas_v2)
-    - Día anterior (de vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime)
-    - Mismo día año anterior (de vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime)
+    - Día anterior (de vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime)
+    - Mismo día año anterior (de vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime)
     
     Si no existe dato, retorna 0 (no error).
     """
@@ -617,7 +616,7 @@ def get_comparativos_diarios(
         ISNULL(pax_total, 0) as pax_total,
         ISNULL(tickets_total, 0) as cheques,
         anio, mes, dia
-    FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+    FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
     WHERE unidad_negocio_pk = '{unidad_negocio_pk}'
       AND activo = 1 AND es_demo = 0
       AND (
@@ -652,7 +651,7 @@ def get_comparativos_diarios(
         ISNULL(pax_total, 0) as pax_total,
         ISNULL(tickets_total, 0) as cheques,
         anio, mes, dia
-    FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+    FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
     WHERE unidad_negocio_pk = '{unidad_negocio_pk}'
       AND activo = 1 AND es_demo = 0
       AND (

@@ -49,7 +49,6 @@ from core.server_registry import resolve_unidad_by_server_sucursal
 # BLOQUE 4: Import de queries centralizadas (Fase 1 Plan Migración)
 from modules.comercial.queries.softrestaurant import query_ventas_periodo_sr
 from modules.comercial.queries.mpro import query_ventas_periodo_mpro, query_ventas_por_sucursal_mpro
-from core.sql_first.db import get_sql_connection
 
 # ============================================================================
 # FASE 5B: INTEGRACIÓN CON EmpresaResolver (Mayo 2026)
@@ -76,7 +75,7 @@ except ImportError as e:
 # CONFIGURACIÓN EDARSAHUB - TABLERO EJECUTIVO (Mayo 2026)
 # ============================================================================
 # MÁXIMA: EDARSAHUB es el cerebro del sistema.
-# Tablero Ejecutivo lee exclusivamente de vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime.
+# Tablero Ejecutivo lee exclusivamente de vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime.
 # NO consulta servidores locales ni MongoDB para KPIs.
 
 EDARSAHUB_TABLERO_CONFIG = {
@@ -302,7 +301,7 @@ def _mapear_codigo_a_unidad_negocio_pk(codigo_empresa: str) -> str:
     - La identidad principal es unidad_negocio_pk CANÓNICO (130MID, 130QRO, etc.)
     - Los aliases (130-MER, 130-QRO) son solo para compatibilidad de lectura histórica
     - NUNCA traducir el código canónico a un alias para ESCRITURA
-    - Los datos en vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime deben usar códigos canónicos
+    - Los datos en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime deben usar códigos canónicos
     
     CÓDIGOS CANÓNICOS OFICIALES (según Unidades_Negocio en EDARSAHUB):
     - 130MID (130° MÉRIDA)
@@ -476,7 +475,7 @@ def _obtener_sucursales_mpro_desde_resolver() -> List[Dict[str, Any]]:
 def _query_edarsahub_tablero(query: str) -> List[Dict]:
     """
     Ejecuta query de SOLO LECTURA en EDARSAHUB para Tablero Ejecutivo.
-    Fuente: vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime y Comercial_Ventas_Dia_Abiertas_v2.
+    Fuente: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime y Comercial_Ventas_Dia_Abiertas_v2.
     NO usa MongoDB. NO usa servidores locales.
     """
     try:
@@ -496,12 +495,12 @@ def _query_edarsahub_tablero(query: str) -> List[Dict]:
 
 def _get_ultimo_dia_con_datos_edarsahub(server_id: str, mes: int, anio: int) -> Optional[int]:
     """
-    Obtiene el último día con ventas registradas en vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime.
+    Obtiene el último día con ventas registradas en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime.
     Retorna el día (1-31) o None si no hay datos.
     """
     query = f"""
     SELECT MAX(dia) as ultimo_dia
-    FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+    FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
     WHERE server_id = '{server_id}'
       AND anio = {anio}
       AND mes = {mes}
@@ -521,13 +520,13 @@ def _get_kpis_periodo_edarsahub(
     unidad_negocio_pk: str = None  # FIX: Agregar unidad_negocio_pk como parámetro opcional
 ) -> Dict:
     """
-    Obtiene KPIs agregados de vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime para un período.
+    Obtiene KPIs agregados de vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime para un período.
     
     FIX CIRCUIT BREAKER HUB (17-May-2026):
     - Si se proporciona unidad_negocio_pk, filtrar por unidad_negocio_pk + sucursal_id
     - Si no, usar server_id + sucursal_id (comportamiento legacy)
     
-    RAZÓN: Para MPRO, los datos en vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime tienen un server_id
+    RAZÓN: Para MPRO, los datos en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime tienen un server_id
     diferente al que está configurado en Servidores_Conexiones. Usar unidad_negocio_pk
     es más confiable.
     
@@ -556,7 +555,7 @@ def _get_kpis_periodo_edarsahub(
         ISNULL(SUM(pax_total), 0) as pax_total,
         ISNULL(SUM(tickets_total), 0) as cheques,
         COUNT(*) as registros
-    FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+    FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
     WHERE {filtro_principal}
       AND sucursal_id = '{sucursal_id}'
       AND fecha_operacion >= '{fecha_ini}'
@@ -805,7 +804,7 @@ def _obtener_kpis_tablero_desde_edarsahub(
     MÁXIMA: EDARSAHUB es el cerebro del sistema.
     - NO consulta servidores locales
     - NO consulta MongoDB
-    - Lee de vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+    - Lee de vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
     
     ACTUALIZACIÓN 16-May-2026: REGLA CANÓNICA DE PROYECCIÓN
     - dias_transcurridos = FechaOperacionActual.day (con corte 06:00 AM)
@@ -841,7 +840,7 @@ def _obtener_kpis_tablero_desde_edarsahub(
     # 1. DETECTAR ÚLTIMO DÍA CON VENTAS EN EL PERÍODO ACTUAL
     query_ultimo_dia = f"""
     SELECT MAX(fecha_operacion) as ultimo_dia_venta, MAX(dia) as dia_max
-    FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+    FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
     WHERE unidad_negocio_pk = '{unidad_negocio_pk}'
       AND sucursal_id = '{sucursal_id}'
       AND fecha_operacion >= '{fecha_ini}'
@@ -1018,7 +1017,7 @@ def _obtener_kpis_tablero_desde_edarsahub(
         "cheque_prom": cheque_prom,
         "fuente": "EDARSAHUB",
         "_meta": {
-            "tabla": "vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime",
+            "tabla": "vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime",
             "ultimo_dia_con_datos": f"{anio_ultimo}-{mes_ultimo:02d}-{dia_ultimo:02d}",
             "mes_completo": mes_completo,
             "dias_transcurridos": dias_transcurridos,
@@ -1364,7 +1363,7 @@ async def guardar_metas(server_id: str, sucursal: str, mes: int, anio: int, meta
 # ============================================================================
 # ACTUALIZACIÓN MAYO 2026 - MIGRACIÓN A EDARSAHUB:
 # Estas funciones ahora leen EXCLUSIVAMENTE de EDARSAHUB SQL Server.
-# - Fuente: vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+# - Fuente: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
 # - NO consultan servidores locales para KPIs del Tablero Ejecutivo
 # - NO consultan MongoDB como fuente de datos
 # MÁXIMA: EDARSAHUB es el cerebro del sistema.
@@ -1375,7 +1374,7 @@ def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_f
     =======================================================
     
     ACTUALIZACIÓN MAYO 2026:
-    - Lee EXCLUSIVAMENTE de EDARSAHUB (vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime)
+    - Lee EXCLUSIVAMENTE de EDARSAHUB (vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime)
     - NO consulta servidores SQL locales para históricos
     - NO consulta MongoDB
     
@@ -1411,7 +1410,7 @@ def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_f
     # =========================================================================
     # FASE 5B: Usar EmpresaResolver para obtener mapeo de unidad_negocio_pk
     # El mapeo traduce códigos canónicos (130MID) a formatos legacy (130-MER)
-    # usados en vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+    # usados en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
     # =========================================================================
     unidad_negocio_pk = _mapear_codigo_a_unidad_negocio_pk(unidad_negocio_codigo)
     
@@ -1468,7 +1467,7 @@ def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_f
             return None
     
     # ============================================================================
-    # MODO KPIs HISTÓRICOS/ACUMULADOS: Leer de vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+    # MODO KPIs HISTÓRICOS/ACUMULADOS: Leer de vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
     # ============================================================================
     
     # VALIDACIÓN DE RANGO DE FECHAS
@@ -1505,7 +1504,7 @@ def get_kpis_mpro(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fe
     ==============================================
     
     ACTUALIZACIÓN MAYO 2026:
-    - Lee EXCLUSIVAMENTE de EDARSAHUB (vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime)
+    - Lee EXCLUSIVAMENTE de EDARSAHUB (vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime)
     - NO consulta servidores SQL locales para históricos
     - NO consulta MongoDB
     
@@ -1817,7 +1816,7 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
     # REGLA ARQUITECTÓNICA:
     # - Para modo HUB (Tablero Ejecutivo), MPRO debe leer de EDARSAHUB SQL
     # - NO consultar servidores MPRO directamente (bases QUERETARO, ORIGEN)
-    # - Usar la misma fuente que SoftRestaurant: vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+    # - Usar la misma fuente que SoftRestaurant: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
     # 
     # RAZÓN: EDARSAHUB SQL es la fuente consolidada y canónica.
     # Las bases MPRO (QUERETARO, ORIGEN) son fuentes de extracción, no de lectura.
@@ -1840,7 +1839,7 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
         nombre_canonico = unidad_edarsahub.get('nombre', suc['codigo']) if unidad_edarsahub else suc['codigo']
         sucursal_id = suc['sucursal_id']
         
-        # Mapear código a unidad_negocio_pk usado en vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+        # Mapear código a unidad_negocio_pk usado en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
         unidad_negocio_pk = _mapear_codigo_a_unidad_negocio_pk(codigo_canonico)
         
         # Usar la misma función que SoftRestaurant para leer de EDARSAHUB
@@ -2349,13 +2348,13 @@ __all__ = [
 # FASE 7-FIX: Dashboard Comercial desde EDARSAHUB
 # ============================================================================
 # OBJETIVO: Corregir Dashboard Comercial que mostraba "Sin Datos" cuando
-# EDARSAHUB SÍ tiene datos en vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime.
+# EDARSAHUB SÍ tiene datos en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime.
 # 
 # PROBLEMA: Dashboard Comercial consultaba directamente al servidor remoto
 # SoftRestaurant. Si la conexión fallaba, mostraba "Sin Datos" aunque EDARSAHUB
 # tiene datos consolidados.
 #
-# SOLUCIÓN: Usar la MISMA fuente que Tablero Ejecutivo (vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime)
+# SOLUCIÓN: Usar la MISMA fuente que Tablero Ejecutivo (vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime)
 # como fuente PRINCIPAL para Dashboard Comercial.
 #
 # MÁXIMA: EDARSAHUB SQL es el cerebro del sistema.
@@ -2372,12 +2371,12 @@ def get_dashboard_kpis_from_edarsahub(
     sucursal_id: str = 'DEFAULT'
 ) -> Dict:
     """
-    DASHBOARD COMERCIAL - KPIs desde EDARSAHUB (vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime)
+    DASHBOARD COMERCIAL - KPIs desde EDARSAHUB (vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime)
     ======================================================================
     
     Usa la MISMA fuente que el Tablero Ejecutivo para garantizar consistencia.
     
-    FUENTE: vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime en EDARSAHUB
+    FUENTE: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime en EDARSAHUB
     NO consulta: Servidores remotos SoftRestaurant
     NO consulta: MongoDB
     
@@ -2472,7 +2471,7 @@ def get_dashboard_kpis_from_edarsahub(
         'vs_presupuesto': 0,  # No disponible en EDARSAHUB
         # Metadata
         'source': 'EDARSAHUB_SQL',
-        'source_table': 'vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime',
+        'source_table': 'vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime',
         'registros_consultados': kpis_actual['registros'],
     }
 
@@ -2507,7 +2506,7 @@ def _get_kpis_periodo_edarsahub_flexible(
             ISNULL(SUM(pax_total), 0) as pax_total,
             ISNULL(SUM(tickets_total), 0) as cheques,
             COUNT(*) as registros
-        FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
         WHERE server_id = '{server_id}'
           AND fecha_operacion >= '{fecha_ini}'
           AND fecha_operacion <= '{fecha_fin}'
@@ -2538,7 +2537,7 @@ def _get_kpis_periodo_edarsahub_flexible(
     # =========================================================================
     # FIX MPRO: Buscar por unidad_negocio_pk si no encontramos por server_id
     # =========================================================================
-    # Este fallback maneja el caso donde los datos MPRO en vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+    # Este fallback maneja el caso donde los datos MPRO en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
     # tienen un server_id diferente (ej: ManagmentPro) pero el unidad_negocio_pk
     # corresponde a la unidad correcta (ORIGEN, 130QRO, etc.)
     
@@ -2557,7 +2556,7 @@ def _get_kpis_periodo_edarsahub_flexible(
             ISNULL(SUM(pax_total), 0) as pax_total,
             ISNULL(SUM(tickets_total), 0) as cheques,
             COUNT(*) as registros
-        FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
         WHERE unidad_negocio_pk IN ({ids_str})
           AND fecha_operacion >= '{fecha_ini}'
           AND fecha_operacion <= '{fecha_fin}'
@@ -2622,7 +2621,7 @@ def get_last_valid_snapshot_edarsahub(server_id: str) -> Dict:
     """
     FASE 1B-R1: Obtener último snapshot válido de EDARSAHUB aunque sea antiguo (STALE)
     
-    Busca en vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime el registro más reciente para el servidor,
+    Busca en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime el registro más reciente para el servidor,
     sin importar la fecha. Usado como fallback cuando no hay datos del período actual.
     
     Returns:
@@ -2655,7 +2654,7 @@ def get_last_valid_snapshot_edarsahub(server_id: str) -> Dict:
                 pax_total,
                 ticket_promedio,
                 pax_promedio
-            FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+            FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
             WHERE server_id = %s
             ORDER BY fecha_operacion DESC
         """, (server_id,))

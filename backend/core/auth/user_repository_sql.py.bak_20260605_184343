@@ -25,7 +25,6 @@ import os
 import pymssql
 from typing import Optional, Dict, List, Any
 from datetime import datetime
-from core.sql_first.db import get_sql_connection
 
 
 class AuthRepositorySQL:

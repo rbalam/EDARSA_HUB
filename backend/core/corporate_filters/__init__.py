@@ -1,4 +1,3 @@
-from core.unidades_service import UnidadesService
 from .service import CorporateFilterService
 
 __all__ = ['CorporateFilterService']

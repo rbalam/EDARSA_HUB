@@ -126,7 +126,6 @@ router = APIRouter(prefix="/comercial", tags=["Comercial V2"])
 
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
-from core.sql_first.db import get_sql_connection
 
 def get_mapeo_kpi_a_canonico() -> dict:
     """
@@ -185,7 +184,7 @@ def _get_variaciones_comparativas(
     """
     FASE 2: Calcula variaciones vs mes anterior y año anterior.
     
-    FUENTE: EDARSAHUB.vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+    FUENTE: EDARSAHUB.vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
     
     REGLAS:
     - Usa rangos semiabiertos: fecha >= inicio AND fecha < fin_exclusiva
@@ -248,7 +247,7 @@ def _get_variaciones_comparativas(
             SUM(ventas_total) as ventas,
             SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques
-        FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
         WHERE unidad_negocio_pk = '{unidad_negocio_pk}'
           AND fecha_operacion >= '{fecha_inicio.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_efectiva + timedelta(days=1)).isoformat()}'
@@ -271,7 +270,7 @@ def _get_variaciones_comparativas(
             SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques,
             COUNT(*) as dias
-        FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
         WHERE unidad_negocio_pk = '{unidad_negocio_pk}'
           AND fecha_operacion >= '{fecha_inicio_mes_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_mes_ant + timedelta(days=1)).isoformat()}'
@@ -297,7 +296,7 @@ def _get_variaciones_comparativas(
             SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques,
             COUNT(*) as dias
-        FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
         WHERE unidad_negocio_pk = '{unidad_negocio_pk}'
           AND fecha_operacion >= '{fecha_inicio_año_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_año_ant + timedelta(days=1)).isoformat()}'
@@ -449,7 +448,7 @@ def _calcular_totales_variaciones(
             SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques,
             COUNT(DISTINCT fecha_operacion) as dias
-        FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
         WHERE unidad_negocio_pk IN ({ids_quoted})
           AND fecha_operacion >= '{fecha_inicio_mes_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_mes_ant + timedelta(days=1)).isoformat()}'
@@ -471,7 +470,7 @@ def _calcular_totales_variaciones(
             SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques,
             COUNT(DISTINCT fecha_operacion) as dias
-        FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
         WHERE unidad_negocio_pk IN ({ids_quoted})
           AND fecha_operacion >= '{fecha_inicio_año_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_año_ant + timedelta(days=1)).isoformat()}'
@@ -646,7 +645,7 @@ async def comercial_v2_dashboard(
     Dashboard de KPIs comerciales v2.
     
     Lee desde: 
-    - vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime (ventas cerradas)
+    - vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime (ventas cerradas)
     - Comercial_Ventas_Dia_Abiertas_v2 (ventas del día en curso)
     
     Fuente: EDARSAHUB (NO SQL vivo, NO MongoDB)
@@ -980,7 +979,7 @@ async def comercial_v2_dashboard(
                     "_status_v2": u.get('_status_v2', 'DESCONOCIDO'),
                     "_status_v2_desc": u.get('_status_v2_desc', ''),
                     "_v2_fuente": "EDARSAHUB",
-                    "_v2_tabla": "vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime" if u.get('dias', 0) > 0 else "Comercial_Ventas_Dia_Abiertas_v2",
+                    "_v2_tabla": "vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime" if u.get('dias', 0) > 0 else "Comercial_Ventas_Dia_Abiertas_v2",
                     "_meta_variaciones": u.get('_meta_variaciones', {})  # FASE 2
                 }
                 for u in por_unidad
@@ -1067,7 +1066,7 @@ async def comercial_v2_kpis_diarios(
     """
     KPIs diarios detallados v2.
     
-    Lee desde: vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+    Lee desde: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
     """
     try:
         unidades_permitidas = await get_unidades_permitidas_v2(current_user)
@@ -1115,7 +1114,7 @@ async def comercial_v2_kpis_diarios_unidad(
     """
     KPIs diarios de una unidad específica.
     
-    Lee desde: vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime (EDARSAHUB SQL)
+    Lee desde: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime (EDARSAHUB SQL)
     NO consulta en vivo.
     
     Usado para: Modal de detalle - Ventas por Día de Semana
@@ -1136,7 +1135,7 @@ async def comercial_v2_kpis_diarios_unidad(
         
         query_ultima_fecha = f"""
         SELECT MAX(fecha_operacion) as ultima_fecha
-        FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
+        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
         WHERE unidad_negocio_pk = '{unidad_negocio_pk}'
           AND activo = 1 AND es_demo = 0
         """
@@ -1194,7 +1193,7 @@ async def comercial_v2_kpis_mensuales(
     """
     KPIs mensuales v2.
     
-    Lee desde: vw_vw_vw_Comercial_KPIs_Mensuales_v2_Runtime_Runtime_Runtime
+    Lee desde: vw_vw_Comercial_KPIs_Mensuales_v2_Runtime_Runtime
     """
     try:
         unidades_permitidas = await get_unidades_permitidas_v2(current_user)
@@ -1429,7 +1428,7 @@ async def comercial_v2_unidades(
     """
     Unidades de negocio disponibles en v2.
     
-    Lee desde: vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime (DISTINCT)
+    Lee desde: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime (DISTINCT)
     """
     try:
         unidades_permitidas = await get_unidades_permitidas_v2(current_user)

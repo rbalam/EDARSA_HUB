@@ -29,7 +29,6 @@ from decimal import Decimal
 
 # Importar helper de subprocess para queries con encoding correcto
 from .sql_subprocess_helper import execute_sql_subprocess
-from core.sql_first.db import get_sql_connection
 
 # Configuración de servidores SoftRestaurant (desde menú de servidores)
 SOFTRESTAURANT_SERVERS = {

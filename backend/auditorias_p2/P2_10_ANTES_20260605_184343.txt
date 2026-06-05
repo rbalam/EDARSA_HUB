@@ -1,0 +1,255 @@
+modules/comercial/service.py:78:# Tablero Ejecutivo lee exclusivamente de vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime.
+modules/comercial/service.py:94:# CÓDIGOS OFICIALES: 130MID, 130QRO, CIENFUEGOS, ESTELAR, ORIGEN
+modules/comercial/service.py:280:        '0021': (UnidadesService.resolver_codigo('130QRO') or '130QRO', '130° QUERETARO'),
+modules/comercial/service.py:281:        '0023': (UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN'),
+modules/comercial/service.py:282:        UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN': (UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN'),
+modules/comercial/service.py:283:        '130_QRO': (UnidadesService.resolver_codigo('130QRO') or '130QRO', '130° QUERETARO'),
+modules/comercial/service.py:301:    - La identidad principal es unidad_negocio_pk CANÓNICO (130MID, 130QRO, etc.)
+modules/comercial/service.py:304:    - Los datos en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime deben usar códigos canónicos
+modules/comercial/service.py:307:    - 130MID (130° MÉRIDA)
+modules/comercial/service.py:308:    - 130QRO (130° QUERÉTARO)  
+modules/comercial/service.py:309:    - CIENFUEGOS
+modules/comercial/service.py:310:    - ESTELAR (LA ESTELAR)
+modules/comercial/service.py:311:    - ORIGEN
+modules/comercial/service.py:333:        # Mérida - todas las variantes resuelven a 130MID
+modules/comercial/service.py:334:        '130-MER': UnidadesService.resolver_codigo('130MID') or '130MID',
+modules/comercial/service.py:335:        '130-MID': UnidadesService.resolver_codigo('130MID') or '130MID',
+modules/comercial/service.py:336:        '130MER': UnidadesService.resolver_codigo('130MID') or '130MID',
+modules/comercial/service.py:337:        '130 MERIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
+modules/comercial/service.py:338:        '130 MÉRIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
+modules/comercial/service.py:339:        '130° MERIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
+modules/comercial/service.py:340:        '130° MÉRIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
+modules/comercial/service.py:341:        'MERIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
+modules/comercial/service.py:342:        'MÉRIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
+modules/comercial/service.py:343:        # Querétaro - todas las variantes resuelven a 130QRO
+modules/comercial/service.py:344:        '130-QRO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+modules/comercial/service.py:345:        '130 QRO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+modules/comercial/service.py:346:        '130 QUERETARO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+modules/comercial/service.py:347:        '130 QUERÉTARO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+modules/comercial/service.py:348:        '130° QUERETARO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+modules/comercial/service.py:349:        '130° QUERÉTARO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+modules/comercial/service.py:350:        'QUERETARO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+modules/comercial/service.py:351:        'QUERÉTARO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+modules/comercial/service.py:353:        'LA-ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
+modules/comercial/service.py:354:        'LA ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
+modules/comercial/service.py:356:        UnidadesService.resolver_codigo('130MID') or '130MID': UnidadesService.resolver_codigo('130MID') or '130MID',
+modules/comercial/service.py:357:        UnidadesService.resolver_codigo('130QRO') or '130QRO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+modules/comercial/service.py:358:        UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS': UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS',
+modules/comercial/service.py:359:        UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
+modules/comercial/service.py:360:        UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN': UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN',
+modules/comercial/service.py:458:            "codigo": UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN",
+modules/comercial/service.py:465:            "codigo": UnidadesService.resolver_codigo("130QRO") or "130QRO",
+modules/comercial/service.py:478:    Fuente: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime y Comercial_Ventas_Dia_Abiertas_v2.
+modules/comercial/service.py:498:    Obtiene el último día con ventas registradas en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime.
+modules/comercial/service.py:503:    FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial/service.py:523:    Obtiene KPIs agregados de vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime para un período.
+modules/comercial/service.py:529:    RAZÓN: Para MPRO, los datos en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime tienen un server_id
+modules/comercial/service.py:558:    FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial/service.py:807:    - Lee de vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/comercial/service.py:820:        unidad_negocio_pk: ID de unidad (130MID, CIENFUEGOS, etc.)
+modules/comercial/service.py:843:    FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial/service.py:1020:            "tabla": "vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime",
+modules/comercial/service.py:1038:# - NUNCA usar aliases legacy (130-MER, 130-QRO, LA-ESTELAR)
+modules/comercial/service.py:1039:# - Los códigos canónicos son: 130MID, 130QRO, CIENFUEGOS, ESTELAR, ORIGEN
+modules/comercial/service.py:1043:    "a5547321-1139-4d2b-9d53-182ca737b6b6": {"unidad_negocio_pk": UnidadesService.resolver_codigo("130MID") or "130MID", "nombre": "130° MÉRIDA", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+modules/comercial/service.py:1044:    "6d053c22-523e-48c0-b72b-96081e2d781b": {"unidad_negocio_pk": UnidadesService.resolver_codigo("CIENFUEGOS") or "CIENFUEGOS", "nombre": UnidadesService.resolver_codigo("CIENFUEGOS") or "CIENFUEGOS", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+modules/comercial/service.py:1045:    "a5ff0e25-f029-43db-b634-d4ac814c904f": {"unidad_negocio_pk": UnidadesService.resolver_codigo("ESTELAR") or "ESTELAR", "nombre": "LA ESTELAR", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+modules/comercial/service.py:1049:            "0021": {"unidad_negocio_pk": UnidadesService.resolver_codigo("130QRO") or "130QRO", "nombre": "130° QUERÉTARO"},
+modules/comercial/service.py:1050:            "0023": {"unidad_negocio_pk": UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN", "nombre": UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN"}
+modules/comercial/service.py:1366:# - Fuente: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/comercial/service.py:1377:    - Lee EXCLUSIVAMENTE de EDARSAHUB (vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime)
+modules/comercial/service.py:1412:    # El mapeo traduce códigos canónicos (130MID) a formatos legacy (130-MER)
+modules/comercial/service.py:1413:    # usados en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/comercial/service.py:1470:    # MODO KPIs HISTÓRICOS/ACUMULADOS: Leer de vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/comercial/service.py:1507:    - Lee EXCLUSIVAMENTE de EDARSAHUB (vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime)
+modules/comercial/service.py:1511:    NOTA: MPRO tiene múltiples sucursales (0021 = 130° QUERETARO, 0023 = ORIGEN).
+modules/comercial/service.py:1818:    # - NO consultar servidores MPRO directamente (bases QUERETARO, ORIGEN)
+modules/comercial/service.py:1819:    # - Usar la misma fuente que SoftRestaurant: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/comercial/service.py:1822:    # Las bases MPRO (QUERETARO, ORIGEN) son fuentes de extracción, no de lectura.
+modules/comercial/service.py:1842:        # Mapear código a unidad_negocio_pk usado en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/comercial/service.py:2010:    # ORIGEN ANTERIOR: SQL directo líneas 862-875 (ahora en queries/mpro.py)
+modules/comercial/service.py:2351:# EDARSAHUB SÍ tiene datos en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime.
+modules/comercial/service.py:2357:# SOLUCIÓN: Usar la MISMA fuente que Tablero Ejecutivo (vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime)
+modules/comercial/service.py:2374:    DASHBOARD COMERCIAL - KPIs desde EDARSAHUB (vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime)
+modules/comercial/service.py:2379:    FUENTE: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime en EDARSAHUB
+modules/comercial/service.py:2474:        'source_table': 'vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime',
+modules/comercial/service.py:2509:        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial/service.py:2540:    # Este fallback maneja el caso donde los datos MPRO en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/comercial/service.py:2542:    # corresponde a la unidad correcta (ORIGEN, 130QRO, etc.)
+modules/comercial/service.py:2559:        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial/service.py:2602:    - ORIGEN LOCAL -> [UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN']
+modules/comercial/service.py:2603:    - 130° QRO LOCAL -> [UnidadesService.resolver_codigo('130QRO') or '130QRO', '130-QRO']
+modules/comercial/service.py:2608:        # ORIGEN LOCAL
+modules/comercial/service.py:2609:        '817a0aa8-6170-4738-a8f6-a72ac36ba0df': [UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN'],
+modules/comercial/service.py:2611:        '72f6e9a7-8ea2-4eb2-802e-4ee31753435e': [UnidadesService.resolver_codigo('130QRO') or '130QRO', '130-QRO'],
+modules/comercial/service.py:2624:    Busca en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime el registro más reciente para el servidor,
+modules/comercial/service.py:2657:            FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial/routes.py:196:# - /comercial/tablero-ejecutivo - Usa vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/comercial/routes.py:577:                {"id": "cienfuegos", "unidad": UnidadesService.resolver_codigo("CIENFUEGOS") or "CIENFUEGOS", "ventas": 4130000, "proyeccion": 4410000, "var_vs_mes_ant": 8.8, "var_vs_año_ant": -14.5, "pax": 3177, "cheques": 1052, "cheque_promedio": 3926, "pax_promedio": 1300, "data_status": "DATA_OK"},
+modules/comercial/routes.py:580:                {"id": "estelar", "unidad": "LA ESTELAR", "ventas": 2470000, "proyeccion": 2640000, "var_vs_mes_ant": 2.3, "var_vs_año_ant": 0.0, "pax": 4520, "cheques": 1658, "cheque_promedio": 1490, "pax_promedio": 546, "data_status": "DATA_OK"},
+modules/comercial/routes.py:581:                {"id": "origen", "unidad": UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN", "ventas": 2070000, "proyeccion": 2220000, "var_vs_mes_ant": 15.6, "var_vs_año_ant": 16.6, "pax": 2930, "cheques": 1015, "cheque_promedio": 2039, "pax_promedio": 706, "data_status": "DATA_OK"}
+modules/comercial/routes.py:1402:                        if UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN' in server_name_upper:
+modules/comercial/routes.py:1403:                            unidad_codigo_mpro = UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN'
+modules/comercial/routes.py:1405:                            unidad_codigo_mpro = UnidadesService.resolver_codigo('130QRO') or '130QRO'
+modules/comercial/routes.py:1676:    # CASO: LA ESTELAR aparecía 2 veces (caché válido + error de conexión)
+modules/comercial/routes.py:2221:                UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN': '0023',
+modules/comercial/routes.py:3260:    Este endpoint ahora lee de vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime en EDARSAHUB SQL.
+modules/comercial/routes.py:3324:        # Query para obtener totales (columnas reales de vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime)
+modules/comercial/routes.py:3331:        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial/routes.py:3353:        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial/routes.py:3935:            # PERO EDARSAHUB sí tiene datos en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime.
+modules/comercial/routes.py:4201:    if UnidadesService.resolver_codigo("CIENFUEGOS") or "CIENFUEGOS" in clean_id:
+modules/comercial/routes.py:4203:    elif any(x in clean_id for x in ["MERIDA", UnidadesService.resolver_codigo("130MID") or "130MID", "MID"]):
+modules/comercial/routes.py:4205:    elif any(x in clean_id for x in ["QUERETARO", UnidadesService.resolver_codigo("130QRO") or "130QRO", "QRO"]):
+modules/comercial/routes.py:4207:    elif UnidadesService.resolver_codigo("ESTELAR") or "ESTELAR" in clean_id:
+modules/comercial/routes.py:4209:    elif UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN" in clean_id:
+modules/comercial_v2/repository_readonly.py:16:- vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/comercial_v2/repository_readonly.py:17:- vw_vw_Comercial_KPIs_Mensuales_v2_Runtime_Runtime
+modules/comercial_v2/repository_readonly.py:72:    Obtiene KPIs diarios desde vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime.
+modules/comercial_v2/repository_readonly.py:120:    FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial_v2/repository_readonly.py:156:    FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial_v2/repository_readonly.py:173:    - Se detectaron datos DUPLICADOS en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime para Mérida
+modules/comercial_v2/repository_readonly.py:174:    - Días 10-12 mayo tienen registros con 130MID y 130-MER (mismo monto duplicado)
+modules/comercial_v2/repository_readonly.py:189:            if uid == UnidadesService.resolver_codigo('130MID') or '130MID':
+modules/comercial_v2/repository_readonly.py:191:            elif uid == UnidadesService.resolver_codigo('130QRO') or '130QRO':
+modules/comercial_v2/repository_readonly.py:193:            elif uid == UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR':
+modules/comercial_v2/repository_readonly.py:194:                expanded_ids.extend(['LA-ESTELAR'])
+modules/comercial_v2/repository_readonly.py:217:                  OR UPPER(unidad_negocio_nombre) LIKE '%MÉRIDA%' THEN UnidadesService.resolver_codigo('130MID') or '130MID'
+modules/comercial_v2/repository_readonly.py:219:                  OR UPPER(unidad_negocio_nombre) LIKE '%QUERÉTARO%' THEN UnidadesService.resolver_codigo('130QRO') or '130QRO'
+modules/comercial_v2/repository_readonly.py:220:                WHEN UPPER(unidad_negocio_nombre) LIKE '%CIENFUEGOS%' THEN UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS'
+modules/comercial_v2/repository_readonly.py:221:                WHEN UPPER(unidad_negocio_nombre) LIKE '%ESTELAR%' THEN UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR'
+modules/comercial_v2/repository_readonly.py:222:                WHEN UPPER(unidad_negocio_nombre) LIKE '%ORIGEN%' THEN UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN'
+modules/comercial_v2/repository_readonly.py:244:        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial_v2/repository_readonly.py:282:    Obtiene KPIs mensuales desde vw_vw_Comercial_KPIs_Mensuales_v2_Runtime_Runtime.
+modules/comercial_v2/repository_readonly.py:308:    FROM vw_vw_vw_Comercial_KPIs_Mensuales_v2_Runtime_Runtime_Runtime
+modules/comercial_v2/repository_readonly.py:502:    FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial_v2/repository_readonly.py:533:            FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial_v2/repository_readonly.py:541:                "table": "vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime",
+modules/comercial_v2/repository_readonly.py:569:    - Día anterior (de vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime)
+modules/comercial_v2/repository_readonly.py:570:    - Mismo día año anterior (de vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime)
+modules/comercial_v2/repository_readonly.py:619:    FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial_v2/repository_readonly.py:654:    FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial_v2/repository_comercial_edarsahub.py:33:    UnidadNegocioConfig,
+modules/comercial_v2/repository_comercial_edarsahub.py:74:def get_unidades_negocio_config() -> List[UnidadNegocioConfig]:
+modules/comercial_v2/repository_comercial_edarsahub.py:79:    Retorna lista de UnidadNegocioConfig con las 5 unidades activas.
+modules/comercial_v2/repository_comercial_edarsahub.py:89:            WHEN nombre LIKE '%MERIDA%' OR nombre LIKE '%MID%' THEN '130MID'
+modules/comercial_v2/repository_comercial_edarsahub.py:90:            WHEN nombre LIKE '%CIENFUEGOS%' AND nombre NOT LIKE '%TABLAJERIA%' THEN 'CIENFUEGOS'
+modules/comercial_v2/repository_comercial_edarsahub.py:91:            WHEN nombre LIKE '%ESTELAR%' THEN 'ESTELAR'
+modules/comercial_v2/repository_comercial_edarsahub.py:116:        configs.append(UnidadNegocioConfig(
+modules/comercial_v2/repository_comercial_edarsahub.py:131:    Para MPRO, obtiene las sucursales específicas (QRO=0021, ORIGEN=0023).
+modules/comercial_v2/repository_comercial_edarsahub.py:138:        {'sucursal_id': '0021', 'nombre': '130° QUERÉTARO', 'unidad_id': '130QRO'},
+modules/comercial_v2/repository_comercial_edarsahub.py:139:        {'sucursal_id': '0023', 'nombre': 'ORIGEN', 'unidad_id': 'ORIGEN'},
+modules/comercial_v2/repository_comercial_edarsahub.py:144:# OPERACIONES EN vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/comercial_v2/repository_comercial_edarsahub.py:149:    Inserta o actualiza un KPI diario en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime.
+modules/comercial_v2/repository_comercial_edarsahub.py:169:    FROM vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/comercial_v2/repository_comercial_edarsahub.py:186:            UPDATE vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime SET
+modules/comercial_v2/repository_comercial_edarsahub.py:210:        INSERT INTO vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime (
+modules/comercial_v2/repository_comercial_edarsahub.py:254:    FROM vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/comercial_v2/repository_comercial_edarsahub.py:533:    FROM vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/comercial_v2/repository_comercial_edarsahub.py:551:    FROM vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/comercial_v2/routes.py:187:    FUENTE: EDARSAHUB.vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/comercial_v2/routes.py:196:        unidad_negocio_pk: ID en tabla KPI (ej: '130-MER', 'LA-ESTELAR')
+modules/comercial_v2/routes.py:250:        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial_v2/routes.py:273:        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial_v2/routes.py:299:        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial_v2/routes.py:451:        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial_v2/routes.py:473:        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial_v2/routes.py:648:    - vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime (ventas cerradas)
+modules/comercial_v2/routes.py:982:                    "_v2_tabla": "vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime" if u.get('dias', 0) > 0 else "Comercial_Ventas_Dia_Abiertas_v2",
+modules/comercial_v2/routes.py:1037:                    {"unidad_negocio_pk": "cienfuegos", "unidad_negocio_nombre": UnidadesService.resolver_codigo(UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS') or UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS', "ventas_total": 4130000, "tickets_total": 1052, "pax_total": 3177},
+modules/comercial_v2/routes.py:1040:                    {"unidad_negocio_pk": "estelar", "unidad_negocio_nombre": "LA ESTELAR", "ventas_total": 2470000, "tickets_total": 1658, "pax_total": 4520},
+modules/comercial_v2/routes.py:1041:                    {"unidad_negocio_pk": "origen", "unidad_negocio_nombre": UnidadesService.resolver_codigo(UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN') or UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', "ventas_total": 2070000, "tickets_total": 1015, "pax_total": 2930}
+modules/comercial_v2/routes.py:1044:                    {"tag": UnidadesService.resolver_codigo(UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS') or UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS', "total": 4130000, "transacciones": 1052},
+modules/comercial_v2/routes.py:1047:                    {"tag": "LA ESTELAR", "total": 2470000, "transacciones": 1658},
+modules/comercial_v2/routes.py:1048:                    {"tag": UnidadesService.resolver_codigo(UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN') or UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', "total": 2070000, "transacciones": 1015}
+modules/comercial_v2/routes.py:1069:    Lee desde: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/comercial_v2/routes.py:1117:    Lee desde: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime (EDARSAHUB SQL)
+modules/comercial_v2/routes.py:1138:        FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/comercial_v2/routes.py:1196:    Lee desde: vw_vw_Comercial_KPIs_Mensuales_v2_Runtime_Runtime
+modules/comercial_v2/routes.py:1431:    Lee desde: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime (DISTINCT)
+modules/finanzas/repository_softrestaurant.py:10:- CIENFUEGOS: servercienfuegos.ddns.net:6669 / softrestaurant95pro (Vista: AC_vwSaldoCxp)
+modules/finanzas/repository_softrestaurant.py:11:- LA ESTELAR: serverestelar.ddns.net:6969 / softrestaurant12 (Vista: AC_vwSaldoCxp)
+modules/finanzas/repository_softrestaurant.py:35:    UnidadesService.resolver_codigo("CIENFUEGOS") or "CIENFUEGOS": {
+modules/finanzas/repository_softrestaurant.py:45:    UnidadesService.resolver_codigo("ESTELAR") or "ESTELAR": {
+modules/finanzas/repository_softrestaurant.py:47:        "name": "LA ESTELAR",
+modules/finanzas/repository_softrestaurant.py:55:    UnidadesService.resolver_codigo("130MID") or "130MID": {
+modules/finanzas/repository_softrestaurant.py:166:        # CIENFUEGOS aliases
+modules/finanzas/repository_softrestaurant.py:167:        UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS': UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS',
+modules/finanzas/repository_softrestaurant.py:168:        'CIEN FUEGOS': UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS',
+modules/finanzas/repository_softrestaurant.py:169:        'CF': UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS',
+modules/finanzas/repository_softrestaurant.py:170:        'CIENFUEGOS_SR': UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS',
+modules/finanzas/repository_softrestaurant.py:171:        # ESTELAR aliases
+modules/finanzas/repository_softrestaurant.py:172:        UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
+modules/finanzas/repository_softrestaurant.py:173:        'LA ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
+modules/finanzas/repository_softrestaurant.py:174:        'EST': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
+modules/finanzas/repository_softrestaurant.py:175:        'LAESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
+modules/finanzas/repository_softrestaurant.py:176:        'LA_ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
+modules/finanzas/repository_softrestaurant.py:178:        UnidadesService.resolver_codigo('130MID') or '130MID': UnidadesService.resolver_codigo('130MID') or '130MID',
+modules/finanzas/repository_softrestaurant.py:179:        '130 MERIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
+modules/finanzas/repository_softrestaurant.py:180:        '130° MERIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
+modules/finanzas/repository_softrestaurant.py:181:        '130_MERIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
+modules/finanzas/repository_softrestaurant.py:182:        '130M': UnidadesService.resolver_codigo('130MID') or '130MID',
+modules/finanzas/repository_softrestaurant.py:183:        'MERIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
+modules/finanzas/cuentas_por_pagar.py:150:        {"id": 2, "nombre": UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN"},
+modules/finanzas/cuentas_por_pagar.py:228:    sucursal_id: Optional[str] = None,  # CIENFUEGOS, ESTELAR, 130MID o código MPRO
+modules/finanzas/cuentas_por_pagar.py:262:            for alias in [UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', UnidadesService.resolver_codigo('130QRO') or '130QRO', '130 QRO', '130° QRO', '130° QUERETARO', '0021', '0023']
+modules/finanzas/cuentas_por_pagar.py:323:        softrest_sucursales = [UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS', UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR', UnidadesService.resolver_codigo('130MID') or '130MID', 'CF', 'EST', '130M', 'LA ESTELAR', '130 MERIDA', '130° MERIDA', 'CIEN FUEGOS']
+modules/finanzas/cuentas_por_pagar.py:324:        mpro_sucursales = [UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', UnidadesService.resolver_codigo('130QRO') or '130QRO', '130 QRO', '130° QRO', '130° QUERETARO', '0021', '0023']
+modules/finanzas/cuentas_por_pagar.py:341:                    if sucursal_id and (UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN' in sucursal_id.upper() or sucursal_id == '0023'):
+modules/finanzas/cuentas_por_pagar.py:357:                    '0023': UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN',
+modules/finanzas/cuentas_por_pagar.py:824:    - SoftRestaurant: CIENFUEGOS, LA ESTELAR, 130° MERIDA
+modules/finanzas/cuentas_por_pagar.py:825:    - ManagementPro: ORIGEN (0023), 130° QRO (0021)
+modules/finanzas/cuentas_por_pagar.py:842:        softrest_sucursales = [UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS', UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR', UnidadesService.resolver_codigo('130MID') or '130MID', 'CF', 'EST', '130M', 
+modules/finanzas/cuentas_por_pagar.py:843:                               'LA ESTELAR', '130 MERIDA', '130° MERIDA', 'CIEN FUEGOS']
+modules/finanzas/cuentas_por_pagar.py:844:        mpro_sucursales = [UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', UnidadesService.resolver_codigo('130QRO') or '130QRO', '130 QRO', '130° QRO', '130° QUERETARO', 
+modules/finanzas/cuentas_por_pagar.py:879:                    if sucursal_id and (UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN' in sucursal_id.upper() or sucursal_id == '0023'):
+modules/finanzas/cuentas_por_pagar.py:1066:    - SoftRestaurant: CIENFUEGOS, LA ESTELAR, 130° MERIDA
+modules/finanzas/cuentas_por_pagar.py:1067:    - ManagementPro: ORIGEN (0023), 130° QRO (0021)
+modules/finanzas/cuentas_por_pagar.py:1102:                    '0023': UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN',
+modules/finanzas/cuentas_por_pagar.py:1165:    factura_id: str,  # Cambiado a str para soportar IDs compuestos (ej: "MPRO_12345", "CIENFUEGOS_xxx")
+modules/finanzas/cuentas_por_pagar.py:1205:    # ID compuesto de SoftRestaurant (CIENFUEGOS_xxx, ESTELAR_xxx, 130MID_xxx)
+modules/finanzas/cuentas_por_pagar.py:1206:    softrest_prefixes = ['CIENFUEGOS_', 'ESTELAR_', '130MID_']
+modules/dashboard_ejecutivo/routes.py:31:    FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime k
+modules/inteligencia_comercial/routes.py:7:- KPIs Dashboard: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime (pre-calculada)
+modules/inteligencia_comercial/routes.py:13:- 130MID (130° MERIDA)
+modules/inteligencia_comercial/routes.py:14:- 130QRO (130° QUERETARO)
+modules/inteligencia_comercial/routes.py:15:- CIENFUEGOS
+modules/inteligencia_comercial/routes.py:16:- ESTELAR (LA ESTELAR)
+modules/inteligencia_comercial/routes.py:17:- ORIGEN
+modules/inteligencia_comercial/routes.py:175:# Fuente: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/inteligencia_comercial/routes.py:179:    unidad: Optional[str] = Query(None, description="Unidad de negocio (130MID, CIENFUEGOS, etc.)"),
+modules/inteligencia_comercial/routes.py:185:    Fuente: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/inteligencia_comercial/routes.py:212:            FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/inteligencia_comercial/routes.py:228:                FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/inteligencia_comercial/routes.py:326:# Fuente: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/inteligencia_comercial/routes.py:336:    Fuente: vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+modules/inteligencia_comercial/routes.py:361:            FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/inteligencia_comercial/routes.py:470:            FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
+modules/inteligencia_comercial/routes.py:651:            where_parts.append(f"UnidadNegocio = '{unidad_db}'")
+modules/inteligencia_comercial/routes.py:719:        kpi_sql = f"SELECT SUM(ventas_total) AS total FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime WHERE {' AND '.join(where_kpi)}"
+modules/inteligencia_comercial/routes.py:781:        kpi_sql = f"SELECT SUM(ventas_total) AS total FROM vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime WHERE {' AND '.join(where_kpi)}"
+core/server_registry.py:1807:    '130-MER': UnidadesService.resolver_codigo('130MID') or '130MID',
+core/server_registry.py:1808:    '130-QRO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+core/server_registry.py:1809:    'LA-ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
+core/server_registry.py:1811:    UnidadesService.resolver_codigo('130MID') or '130MID': UnidadesService.resolver_codigo('130MID') or '130MID',
+core/server_registry.py:1812:    UnidadesService.resolver_codigo('130QRO') or '130QRO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+core/server_registry.py:1813:    UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS': UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS',
+core/server_registry.py:1814:    UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
+core/server_registry.py:1815:    UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN': UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN',
+core/server_registry.py:1819:CODIGOS_CANONICOS_OFICIALES = [UnidadesService.resolver_codigo('130MID') or '130MID', UnidadesService.resolver_codigo('130QRO') or '130QRO', UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS', UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR', UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN']
+core/server_registry.py:1836:        normalize_unidad_codigo('130-MER') -> UnidadesService.resolver_codigo('130MID') or '130MID'
+core/server_registry.py:1837:        normalize_unidad_codigo('LA-ESTELAR') -> UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR'
+core/server_registry.py:1838:        normalize_unidad_codigo(UnidadesService.resolver_codigo('130MID') or '130MID') -> UnidadesService.resolver_codigo('130MID') or '130MID'
+core/server_registry.py:1939:        UnidadesService.resolver_codigo('130MID') or '130MID'
+core/server_registry.py:1957:        >>> server = get_server_by_unidad_codigo(UnidadesService.resolver_codigo('130MID') or '130MID')
+core/server_registry.py:1959:        UnidadesService.resolver_codigo('130MID') or '130MID'
+core/server_registry.py:2062:        {'codigo': UnidadesService.resolver_codigo('130MID') or '130MID', ...}
+core/server_registry.py:2066:        {'codigo': UnidadesService.resolver_codigo('130QRO') or '130QRO', ...}
+core/server_registry.py:2070:        {'codigo': UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', ...}
+core/server_registry.py:2192:    - MPRO tiene sucursal_origen_id correcta (130QRO=0021, ORIGEN=0023)
+core/server_registry.py:2233:        codigos_legacy = ['130-MER', '130-QRO', 'LA-ESTELAR']
+core/server_registry.py:2247:            if u['codigo'] == UnidadesService.resolver_codigo('130QRO') or '130QRO' and u.get('sucursal_origen_id') != '0021':
+core/server_registry.py:2248:                result['errors'].append(f"130QRO debe tener sucursal_origen_id='0021', tiene '{u.get('sucursal_origen_id')}'")
+core/server_registry.py:2251:            if u['codigo'] == UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN' and u.get('sucursal_origen_id') != '0023':
+core/server_registry.py:2252:                result['errors'].append(f"ORIGEN debe tener sucursal_origen_id='0023', tiene '{u.get('sucursal_origen_id')}'")
+core/auth/user_repository_sql.py:88:            # Para SUPERADMIN, empresa_default es la primera (ORIGEN) o None

@@ -1,0 +1,29 @@
+==========================================
+P2-10 CONSOLIDACION REPOSITORY LAYER
+==========================================
+BACKUP modules/comercial/service.py
+BACKUP modules/comercial/routes.py
+BACKUP modules/comercial_v2/repository_readonly.py
+BACKUP modules/comercial_v2/repository_comercial_edarsahub.py
+BACKUP modules/comercial_v2/routes.py
+BACKUP modules/finanzas/repository_softrestaurant.py
+BACKUP modules/finanzas/cuentas_por_pagar.py
+BACKUP modules/dashboard_ejecutivo/routes.py
+BACKUP modules/inteligencia_comercial/routes.py
+BACKUP core/server_registry.py
+BACKUP core/auth/user_repository_sql.py
+OK_SINTAXIS modules/comercial/service.py
+OK_SINTAXIS modules/comercial/routes.py
+OK_SINTAXIS modules/comercial_v2/repository_readonly.py
+  File "modules/comercial_v2/repository_comercial_edarsahub.py", line 28
+    from core.sql_first.db import get_sql_connection
+    ^^^^
+SyntaxError: invalid syntax
+ERROR_SINTAXIS modules/comercial_v2/repository_comercial_edarsahub.py - RESTAURANDO
+OK_SINTAXIS modules/comercial_v2/routes.py
+OK_SINTAXIS modules/finanzas/repository_softrestaurant.py
+OK_SINTAXIS modules/finanzas/cuentas_por_pagar.py
+OK_SINTAXIS modules/dashboard_ejecutivo/routes.py
+OK_SINTAXIS modules/inteligencia_comercial/routes.py
+OK_SINTAXIS core/server_registry.py
+OK_SINTAXIS core/auth/user_repository_sql.py

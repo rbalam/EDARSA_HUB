@@ -33,7 +33,6 @@ import secrets  # Reemplaza random para generación de datos demo
 
 # Importar función de filtrado de visibilidad
 from modules.comercial.repository import get_sucursales_visibles_config
-from core.sql_first.db import get_sql_connection
 
 router = APIRouter(prefix="/finanzas/cuentas-por-pagar", tags=["Cuentas por Pagar"])
 

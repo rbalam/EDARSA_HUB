@@ -1,50 +1,44 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
-"""
-SQL-First Database Helper
-=========================
-P2-05: Centraliza conexiones a EDARSAHUB SQL Server.
-Usar en lugar de pyodbc.connect() directo.
-"""
 import os
-import pymssql
-import logging
 
-logger = logging.getLogger(__name__)
+try:
+    import pyodbc
+    PYODBC_AVAILABLE = True
+except ImportError:
+    pyodbc = None
+    PYODBC_AVAILABLE = False
 
 def get_sql_connection():
-    """
-    Obtiene conexión a EDARSAHUB SQL Server.
-    Usar pymssql en lugar de pyodbc para compatibilidad.
-    """
+    if not PYODBC_AVAILABLE:
+        raise RuntimeError("pyodbc no disponible en este entorno")
+    
     server = os.getenv("EDARSAHUB_SQL_HOST")
     database = os.getenv("EDARSAHUB_SQL_DATABASE")
     user = os.getenv("EDARSAHUB_SQL_USER")
     password = os.getenv("EDARSAHUB_SQL_PASSWORD")
-    port = int(os.getenv("EDARSAHUB_SQL_PORT", "1433"))
+    port = os.getenv("EDARSAHUB_SQL_PORT", "1433")
 
     if not all([server, database, user, password]):
-        raise RuntimeError("Faltan variables SQL EDARSAHUB en .env")
+        raise RuntimeError("Faltan variables SQL EDARSAHUB")
 
-    return pymssql.connect(
-        server=server,
-        port=port,
-        user=user,
-        password=password,
-        database=database,
-        autocommit=False
+    return pyodbc.connect(
+        f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+        f"SERVER={server},{port};"
+        f"DATABASE={database};"
+        f"UID={user};"
+        f"PWD={password};"
+        "TrustServerCertificate=yes;"
+        "Encrypt=no;"
     )
 
-def execute_query(sql, params=None):
-    """Ejecuta query y retorna resultados como lista de dicts."""
+def fetch_all_dict(sql, params=None):
     conn = get_sql_connection()
-    try:
-        cur = conn.cursor(as_dict=True)
-        if params:
-            cur.execute(sql, params)
-        else:
-            cur.execute(sql)
-        results = cur.fetchall()
-        return results
-    finally:
-        conn.close()
+    cur = conn.cursor()
+    cur.execute(sql, params or [])
+    cols = [d[0] for d in cur.description]
+    rows = [dict(zip(cols, row)) for row in cur.fetchall()]
+    conn.close()
+    return rows
+
+def fetch_one_dict(sql, params=None):
+    rows = fetch_all_dict(sql, params)
+    return rows[0] if rows else None
