@@ -179,3 +179,27 @@ MongoDB: DEPRECADO (Auth/RBAC 100% SQL)
 SQL Server: FUENTE ÚNICA PRODUCTIVA
 
 ================================================================================
+
+================================================================================
+P2-06: ENDPOINT SQL-FIRST HEALTH - COMPLETADO
+================================================================================
+Fecha: 2026-06-05 04:25 UTC
+
+ENDPOINTS CREADOS:
+- GET /api/sqlfirst-health (resumen)
+- GET /api/sqlfirst-health/details (hallazgos completos)
+
+VERIFICACIONES:
+- productive_hardcoded_credentials: 0 ✅
+- productive_live_connections: 0 ✅
+- productive_mongo_imports: 336 (legacy/comentarios - documentado)
+
+MÓDULO:
+- /app/backend/modules/sqlfirst_health/
+
+ARQUITECTURA DECLARADA:
+- sql_server: FUENTE_UNICA_PRODUCTIVA
+- mongodb: LEGACY_CACHE_ONLY
+- credentials: CENTRALIZED_CONFIG
+
+================================================================================

@@ -19328,6 +19328,16 @@ try:
 except Exception as e:
     logger.warning(f"Error registrando Cava de Socios router: {e}")
 
+# =============================================================================
+# SQL-FIRST HEALTH (P2-06)
+# =============================================================================
+try:
+    from modules.sqlfirst_health.routes import router as sqlfirst_health_router
+    app.include_router(sqlfirst_health_router)
+    logger.info("✓ SQL-First Health router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando SQL-First Health router: {e}")
+
 
 # Startup: Iniciar scheduler
 @app.on_event("startup")
