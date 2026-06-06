@@ -125,6 +125,12 @@ STATIC_DIR = ROOT_DIR / "static"
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
+# Descargas accesibles vía ingress externo (solo /api/* se enruta al backend).
+# Sirve /app/backend/static/downloads en /api/downloads para exportaciones/backups.
+DOWNLOADS_DIR = STATIC_DIR / "downloads"
+DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/api/downloads", StaticFiles(directory=str(DOWNLOADS_DIR)), name="api-downloads")
+
 # ==========================================
 # ESCUDO GLOBAL CONTRA CRASHEOS (Evita Errores 502)
 # ==========================================
