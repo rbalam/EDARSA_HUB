@@ -40,7 +40,7 @@ SOFTRESTAURANT_SERVERS = {
         "port": 6669,
         "database": "softrestaurant95pro",
         "username": "CFLectura",
-        "password": "National09",
+        "password": os.getenv('EDARSAHUB_SQL_PASSWORD'),
         "view": "AC_vwSaldoCxp"
     },
     UnidadesService.resolver_codigo("ESTELAR") or "ESTELAR": {

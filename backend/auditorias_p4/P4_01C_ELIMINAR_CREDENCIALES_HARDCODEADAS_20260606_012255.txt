@@ -1,0 +1,74 @@
+==================================================
+P4-01C ELIMINAR CREDENCIALES HARDCODEADAS LEGACY
+Timestamp: 20260606_012255
+==================================================
+### INVENTARIO CREDENCIALES ANTES
+Archivos con credenciales detectados:
+134 auditorias_p4/P4_01C_CREDENCIALES_ANTES_20260606_012255.txt
+Archivos a procesar:
+./modules/comercial/service.py
+./modules/comercial/routes.py
+./modules/fase2_operativo/sql_repository.py
+./modules/api_connections/repository.py
+./modules/configuracion/repositories/config_asignaciones_repository.py
+./modules/catalogos/routes.py
+./modules/auth/service.py
+./modules/auth/password_reset.py
+./modules/auth/repository.py
+./modules/auth/context_service.py
+./modules/comercial_v2/repository_readonly.py
+./modules/comercial_v2/repository_comercial_edarsahub.py
+./modules/finanzas/sync_propinas_mpro.py
+./modules/finanzas/repository_softrestaurant.py
+./modules/compras/repository_pedidos_sql.py
+./scripts/correccion_sistema_menus_y_fallbacks.py
+./scripts/consultar_cache_finops.py
+./scripts/create_sesiones_tables.py
+./scripts/audit_edarsahub_credentials_references.py
+./scripts/create_cava_socios_rbac.py
+./scripts/create_cava_socios_tables.py
+./scripts/update_proyeccion_con_funcion.py
+./scripts/create_crm_automation_tables.py
+./scripts/seed_inteligencia_demo.py
+./scripts/sync_response_cache_finops.py
+./scripts/create_tablajeria_rbac.py
+./scripts/seed_ventas_consolidadas.py
+./scripts/create_scheduler_tables.py
+./scripts/audit_fecha_operativa_0600.py
+./scripts/create_workflow_tables.py
+./scripts/actualizacion_kpi_proyeccion_comercial.py
+./scripts/create_unidades_negocio_table.py
+./scripts/backfill_cienfuegos_mayo_2026.py
+./api/configuracion_operativa_unidades.py
+./api/admin_data_quality.py
+./core/empresa_resolver.py
+./core/unidades_registry.py
+./core/security.py
+./core/scheduler/sql_repository.py
+./core/scheduler/jobs/sync_comercial_endpoints_job.py
+./core/scheduler/jobs/inteligencia_comercial_sync_job.py
+./core/scheduler/jobs/sync_comercial_abiertas_v2_job.py
+./core/context_resolver.py
+./core/user_access_context.py
+./core/auth/user_repository_sql.py
+./core/utils/operational_window.py
+./core/rbac/repository_sql.py
+./core/alcance_helper.py
+./core/system_capability_resolver.py
+./tools/test_sql_connection_from_servidores.py
+./tools/sync_sales_dry_run.py
+./tools/validate_server_secret_key.py
+Backup creado en: auditorias_p4/backup_p4_01c_20260606_012255
+=== VALIDAR SINTAXIS PYTHON ===
+ERROR: ./scripts/audit_edarsahub_credentials_references.py
+✗ 1 archivos con errores de sintaxis
+=== GUARDRAIL CREDENCIALES CRITICAS ===
+PASS - Sin credenciales SQL críticas hardcodeadas
+=== HEALTH CHECK ===
+{"status":"operativo","sistema":"EDARSA HUB","version":"1.0"}==================================================
+P4-01C RESULTADO
+==================================================
+✓ 51 archivos procesados
+✓ Credenciales SQL reemplazadas por os.getenv()
+✓ Backup en: auditorias_p4/backup_p4_01c_20260606_012255
+Nota: IPs en scripts de documentación/MPRO se mantienen (diferentes sistemas)

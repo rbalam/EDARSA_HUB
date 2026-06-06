@@ -492,8 +492,8 @@ async def get_user_empresas_permitidas(user: Dict[str, Any]) -> List[str]:
     def _get_all_empresas_sql() -> List[str]:
         """Obtiene todas las empresas activas desde SQL."""
         conn = pymssql.connect(
-            server='54.39.104.176', port=1433,
-            user='HRLectura', password='National09$',
+            server=os.getenv('EDARSAHUB_SQL_HOST'), port=1433,
+            user=os.getenv('EDARSAHUB_SQL_USER'), password=os.getenv('EDARSAHUB_SQL_PASSWORD'),
             database='EDARSAHUB'
         )
         try:
@@ -539,8 +539,8 @@ async def get_servers_for_empresas(empresa_ids: List[str]) -> List[str]:
     import pymssql
     
     conn = pymssql.connect(
-        server='54.39.104.176', port=1433,
-        user='HRLectura', password='National09$',
+        server=os.getenv('EDARSAHUB_SQL_HOST'), port=1433,
+        user=os.getenv('EDARSAHUB_SQL_USER'), password=os.getenv('EDARSAHUB_SQL_PASSWORD'),
         database='EDARSAHUB'
     )
     try:

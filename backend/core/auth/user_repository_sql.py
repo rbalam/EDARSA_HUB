@@ -35,11 +35,11 @@ class AuthRepositorySQL:
     """
     
     def __init__(self):
-        self.sql_host = '54.39.104.176'
+        self.sql_host = os.getenv('EDARSAHUB_SQL_HOST')
         self.sql_port = 1433
         self.sql_db = 'EDARSAHUB'
-        self.sql_user = 'HRLectura'
-        self.sql_pass = 'National09$'
+        self.sql_user = os.getenv('EDARSAHUB_SQL_USER')
+        self.sql_pass = os.getenv('EDARSAHUB_SQL_PASSWORD')
     
     def _get_connection(self):
         """Obtiene conexión a EDARSAHUB"""

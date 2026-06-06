@@ -65,11 +65,11 @@ def verificar_prerequisitos():
     try:
         import pymssql
         conn = pymssql.connect(
-            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+            server=os.environ.get('EDARSAHUB_HOST', os.getenv('EDARSAHUB_SQL_HOST')),
             port=int(os.environ.get('EDARSAHUB_PORT', 1433)),
             database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-            user=os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-            password=os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
+            user=os.environ.get('EDARSAHUB_USERNAME', os.getenv('EDARSAHUB_SQL_USER')),
+            password=os.environ.get('EDARSAHUB_PASSWORD', os.getenv('EDARSAHUB_SQL_PASSWORD')),
             login_timeout=30
         )
         conn.close()
@@ -170,11 +170,11 @@ def verificar_no_duplicados():
     
     import pymssql
     conn = pymssql.connect(
-        server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        server=os.environ.get('EDARSAHUB_HOST', os.getenv('EDARSAHUB_SQL_HOST')),
         port=int(os.environ.get('EDARSAHUB_PORT', 1433)),
         database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        user=os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        password=os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
+        user=os.environ.get('EDARSAHUB_USERNAME', os.getenv('EDARSAHUB_SQL_USER')),
+        password=os.environ.get('EDARSAHUB_PASSWORD', os.getenv('EDARSAHUB_SQL_PASSWORD')),
         login_timeout=30
     )
     cursor = conn.cursor(as_dict=True)
@@ -247,11 +247,11 @@ def validar_resultado():
     
     import pymssql
     conn = pymssql.connect(
-        server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        server=os.environ.get('EDARSAHUB_HOST', os.getenv('EDARSAHUB_SQL_HOST')),
         port=int(os.environ.get('EDARSAHUB_PORT', 1433)),
         database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        user=os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        password=os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
+        user=os.environ.get('EDARSAHUB_USERNAME', os.getenv('EDARSAHUB_SQL_USER')),
+        password=os.environ.get('EDARSAHUB_PASSWORD', os.getenv('EDARSAHUB_SQL_PASSWORD')),
         login_timeout=30
     )
     cursor = conn.cursor(as_dict=True)

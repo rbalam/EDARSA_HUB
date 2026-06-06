@@ -12,9 +12,9 @@ def create_automation_tables():
     """Crea las tablas de automatización CRM si no existen."""
     
     conn = pymssql.connect(
-        server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
-        user=os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        password=os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
+        server=os.environ.get('EDARSAHUB_HOST', os.getenv('EDARSAHUB_SQL_HOST')),
+        user=os.environ.get('EDARSAHUB_USERNAME', os.getenv('EDARSAHUB_SQL_USER')),
+        password=os.environ.get('EDARSAHUB_PASSWORD', os.getenv('EDARSAHUB_SQL_PASSWORD')),
         database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
         port=int(os.environ.get('EDARSAHUB_PORT', 1433))
     )

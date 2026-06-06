@@ -10,10 +10,10 @@ from datetime import datetime, timedelta
 import random
 
 # Configuración
-EDARSAHUB_HOST = '54.39.104.176'
+EDARSAHUB_HOST = os.getenv('EDARSAHUB_SQL_HOST')
 EDARSAHUB_PORT = 1433
 EDARSAHUB_DB = 'EDARSAHUB'
-EDARSAHUB_USER = 'HRLectura'
+EDARSAHUB_USER = os.getenv('EDARSAHUB_SQL_USER')
 EDARSAHUB_PASS = os.environ.get('EDARSAHUB_PASSWORD', '')
 
 def seed_ventas():

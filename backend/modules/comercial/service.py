@@ -80,11 +80,11 @@ except ImportError as e:
 # NO consulta servidores locales ni MongoDB para KPIs.
 
 EDARSAHUB_TABLERO_CONFIG = {
-    'host': '54.39.104.176',
+    'host': os.getenv('EDARSAHUB_SQL_HOST'),
     'port': 1433,
     'database': 'EDARSAHUB',
-    'username': 'HRLectura',
-    'password': 'National09$'
+    'username': os.getenv('EDARSAHUB_SQL_USER'),
+    'password': os.getenv('EDARSAHUB_SQL_PASSWORD')
 }
 
 
@@ -2633,9 +2633,9 @@ def get_last_valid_snapshot_edarsahub(server_id: str) -> Dict:
     
     try:
         conn = pymssql.connect(
-            server='54.39.104.176',
-            user='HRLectura',
-            password='National09$',
+            server=os.getenv('EDARSAHUB_SQL_HOST'),
+            user=os.getenv('EDARSAHUB_SQL_USER'),
+            password=os.getenv('EDARSAHUB_SQL_PASSWORD'),
             database='EDARSAHUB',
             port=1433,
             timeout=10

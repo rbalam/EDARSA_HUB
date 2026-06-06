@@ -40,11 +40,11 @@ EMPRESA_RESOLVER_AVAILABLE = True
 # =============================================================================
 
 EDARSAHUB_CONFIG = {
-    'host': '54.39.104.176',
+    'host': os.getenv('EDARSAHUB_SQL_HOST'),
     'port': 1433,
     'database': 'EDARSAHUB',
-    'username': 'HRLectura',
-    'password': 'National09$'
+    'username': os.getenv('EDARSAHUB_SQL_USER'),
+    'password': os.getenv('EDARSAHUB_SQL_PASSWORD')
 }
 
 

@@ -374,10 +374,10 @@ async def update_user_permissions(user_id: str, permissions: Dict, current_user:
     # RBAC-SCOPE-E: Escribir permisos en EDARSAHUB SQL
     try:
         conn = pymssql.connect(
-            server='54.39.104.176',
+            server=os.getenv('EDARSAHUB_SQL_HOST'),
             port=1433,
-            user='HRLectura',
-            password='National09$',
+            user=os.getenv('EDARSAHUB_SQL_USER'),
+            password=os.getenv('EDARSAHUB_SQL_PASSWORD'),
             database='EDARSAHUB'
         )
         cursor = conn.cursor()

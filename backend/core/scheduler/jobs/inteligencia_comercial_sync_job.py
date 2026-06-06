@@ -64,19 +64,19 @@ UNIDADES_CONFIG = {
     },
     "130QRO": {
         "system_type": "MPRO",
-        "host": "54.39.104.176",
+        "host": os.getenv('EDARSAHUB_SQL_HOST'),
         "port": 1433,
         "database": "QUERETARO",
-        "username": os.environ.get("130QRO_DB_USER", "HRLectura"),
-        "password": os.environ.get("130QRO_DB_PASS", "National09$"),
+        "username": os.environ.get("130QRO_DB_USER", os.getenv('EDARSAHUB_SQL_USER')),
+        "password": os.environ.get("130QRO_DB_PASS", os.getenv('EDARSAHUB_SQL_PASSWORD')),
     },
     "ORIGEN": {
         "system_type": "MPRO",
-        "host": "54.39.104.176",
+        "host": os.getenv('EDARSAHUB_SQL_HOST'),
         "port": 1433,
         "database": "ORIGEN",
-        "username": os.environ.get("ORIGEN_DB_USER", "HRLectura"),
-        "password": os.environ.get("ORIGEN_DB_PASS", "National09$"),
+        "username": os.environ.get("ORIGEN_DB_USER", os.getenv('EDARSAHUB_SQL_USER')),
+        "password": os.environ.get("ORIGEN_DB_PASS", os.getenv('EDARSAHUB_SQL_PASSWORD')),
     },
 }
 

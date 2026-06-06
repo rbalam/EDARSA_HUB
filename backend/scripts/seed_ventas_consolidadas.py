@@ -31,9 +31,9 @@ import random
 
 def seed_ventas_consolidadas():
     conn = pymssql.connect(
-        server='54.39.104.176',
+        server=os.getenv('EDARSAHUB_SQL_HOST'),
         port=1433,
-        user='HRLectura',
+        user=os.getenv('EDARSAHUB_SQL_USER'),
         password=os.environ.get('EDARSAHUB_PASSWORD', ''),
         database='EDARSAHUB',
         timeout=60
