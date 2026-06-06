@@ -1,0 +1,682 @@
+==================================================
+P0 AUDITORIA MONGO RESIDUAL VIVO  |  Sat Jun  6 18:00:06 UTC 2026
+==================================================
+
+===== 1) IMPORTS / CLIENTES MONGO ACTIVOS =====
+./auditorias_p4/backup_p4_02g_20260606_015931/core/auth/user_repository_sql.py:351:    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+./auditorias_p4/backup_p4_04_05_20260606_041128/core/auth/user_repository_sql.py:351:    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+./auditorias_p4/backup_p4_01c_20260606_012255/core/auth/user_repository_sql.py:357:    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+./auditorias_p4/backup_p4_02_20260606_012636/core/auth/user_repository_sql.py:357:    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+./tests_guardrails/test_p5_auth_no_mongo_fallback.py:15:    if "pymongo" in txt or "mongoclient" in txt or "users.find" in txt:
+./tests_guardrails/test_p2_10_repository_layer.py:26:    if "mongodb://" in txt or "MONGO_URL" in txt or "import pymongo" in txt:
+./tests_guardrails/test_p2_07_runtime.py:20:        mongo += txt.count("MongoClient(")
+./tests_guardrails/test_p2_sql_first_runtime_activo.py:12:# Solo verificar MongoClient directo (no stubs)
+./tests_guardrails/test_p2_sql_first_runtime_activo.py:13:forbidden = ["from pymongo import MongoClient", "import pymongo"]
+./modules/comercial/routes_pricing_ia.py:631:        f"motor={request.tipo_motor.value} estado={resultado.estado.value}"
+./modules/comercial/historical_kpis_repository.py:57:    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+./modules/comercial/historical_kpis_repository.py:492:    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+./modules/finanzas/repository_cuadres_z.py:20:        pass  # P2-07: MongoDB eliminado (MongoClient)
+./scripts/p5_audit_cleanup_mongo.py:22:    if re.search(r'from pymongo|import pymongo|MongoClient', txt):
+./scripts/p5_audit_cleanup_mongo.py:28:print("=== IMPORTS PYMONGO / MONGOCLIENT ===")
+./scripts/migrate_legacy_mongo_to_sql.py:8:# from pymongo import MongoClient  # P5: legacy migration only
+./scripts/migrate_legacy_mongo_to_sql.py:18:def get_mongo_client() -> MongoClient:
+./scripts/migrate_legacy_mongo_to_sql.py:22:    return MongoClient(mongo_uri)
+./auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/core/security.py:372:        from pymongo import MongoClient
+./auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/core/security.py:379:            client = MongoClient(mongo_url)
+./core/auditoria.py:227:                pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+./core/sql_first/no_mongo.py:22:MongoClient = mongo_disabled
+./core/sql_first/no_mongo.py:23:AsyncIOMotorClient = mongo_disabled
+./core/auth/user_repository_sql.py:351:    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
+./core/health_checker.py:153:            pass  # P2-07: MongoDB eliminado (MongoClient)
+./core/health_checker.py:181:            pass  # P2-07: MongoDB eliminado (MongoClient)
+
+===== 6) MONGO RESIDUAL POR MODULO (db.<col>) =====
+[api/admin_core_connections.py]
+  - auditoria_core_admin
+  - servidores_conexiones
+[api/sync_receiver.py]
+  - sql_servers
+  - sync_agent_registry
+[auditorias_p4/backup_p4_01b_20260606_011251/core/server_registry.py]
+  - server_sucursales_config
+  - servers
+[auditorias_p4/backup_p4_01b_20260606_011251/server.py]
+  - alerts
+  - config_catalogos
+  - consultas_custom
+  - informes_auditoria
+  - inventario_diferencias_detalle
+  - kpis_cache
+  - nomina_ciclos
+  - nomina_configuracion
+  - nomina_kpis_puestos
+  - nomina_movimientos
+  - permisos_catalogos
+  - portal_proveedores
+  - py
+  - queries
+  - roles
+  - script_logs
+  - scripts_pendientes
+  - sec_bitacora_admin
+  - sec_empresas
+  - sec_perfiles
+  - sec_permisos_catalogo
+  - sec_roles
+  - sec_sucursales
+  - sec_unidades_negocio
+  - server_status
+  - server_sucursales_config
+  - servers
+  - solicitudes_catalogos
+  - tareas_sistema
+  - users
+[auditorias_p4/backup_p4_01c_20260606_012255/core/auth/user_repository_sql.py]
+  - users
+[auditorias_p4/backup_p4_01c_20260606_012255/modules/api_connections/repository.py]
+  - api_connections_cache
+  - api_health_logs
+[auditorias_p4/backup_p4_02_20260606_012636/api/admin_core_connections.py]
+  - auditoria_core_admin
+  - servidores_conexiones
+[auditorias_p4/backup_p4_02_20260606_012636/core/auth/user_repository_sql.py]
+  - users
+[auditorias_p4/backup_p4_02_20260606_012636/core/db.py]
+  - py
+[auditorias_p4/backup_p4_02_20260606_012636/core/resilient_sql.py]
+  - servers
+[auditorias_p4/backup_p4_02_20260606_012636/core/server_registry.py]
+  - server_sucursales_config
+  - servers
+[auditorias_p4/backup_p4_02_20260606_012636/modules/finanzas/sync_cortes_softrestaurant.py]
+  - parse_sql_server_host
+[auditorias_p4/backup_p4_02_20260606_012636/modules/universal_query/routes.py]
+  - servers
+[auditorias_p4/backup_p4_02_20260606_012636/server.py]
+  - alerts
+  - config_catalogos
+  - consultas_custom
+  - informes_auditoria
+  - inventario_diferencias_detalle
+  - kpis_cache
+  - nomina_ciclos
+  - nomina_configuracion
+  - nomina_kpis_puestos
+  - nomina_movimientos
+  - permisos_catalogos
+  - portal_proveedores
+  - py
+  - queries
+  - roles
+  - script_logs
+  - scripts_pendientes
+  - sec_bitacora_admin
+  - sec_empresas
+  - sec_perfiles
+  - sec_permisos_catalogo
+  - sec_roles
+  - sec_sucursales
+  - sec_unidades_negocio
+  - server_status
+  - server_sucursales_config
+  - servers
+  - solicitudes_catalogos
+  - tareas_sistema
+  - users
+[auditorias_p4/backup_p4_02b_20260606_013125/api/admin_core_connections.py]
+  - auditoria_core_admin
+  - servidores_conexiones
+[auditorias_p4/backup_p4_02b_20260606_013125/core/db.py]
+  - py
+[auditorias_p4/backup_p4_02b_20260606_013125/core/resilient_sql.py]
+  - servers
+[auditorias_p4/backup_p4_02b_20260606_013125/core/sql_first/connection_factory.py]
+  - get_sql_connection
+[auditorias_p4/backup_p4_02b_20260606_013125/modules/universal_query/routes.py]
+  - servers
+[auditorias_p4/backup_p4_02b_20260606_013125/server.py]
+  - alerts
+  - config_catalogos
+  - consultas_custom
+  - informes_auditoria
+  - inventario_diferencias_detalle
+  - kpis_cache
+  - nomina_ciclos
+  - nomina_configuracion
+  - nomina_kpis_puestos
+  - nomina_movimientos
+  - permisos_catalogos
+  - portal_proveedores
+  - py
+  - queries
+  - roles
+  - script_logs
+  - scripts_pendientes
+  - sec_bitacora_admin
+  - sec_empresas
+  - sec_perfiles
+  - sec_permisos_catalogo
+  - sec_roles
+  - sec_sucursales
+  - sec_unidades_negocio
+  - server_status
+  - server_sucursales_config
+  - servers
+  - solicitudes_catalogos
+  - tareas_sistema
+  - users
+[auditorias_p4/backup_p4_02c_20260606_014232/core/db.py]
+  - py
+[auditorias_p4/backup_p4_02c_20260606_014232/core/resilient_sql.py]
+  - servers
+[auditorias_p4/backup_p4_02d_20260606_014556/server.py]
+  - alerts
+  - config_catalogos
+  - consultas_custom
+  - informes_auditoria
+  - inventario_diferencias_detalle
+  - kpis_cache
+  - nomina_ciclos
+  - nomina_configuracion
+  - nomina_kpis_puestos
+  - nomina_movimientos
+  - permisos_catalogos
+  - portal_proveedores
+  - py
+  - queries
+  - roles
+  - script_logs
+  - scripts_pendientes
+  - sec_bitacora_admin
+  - sec_empresas
+  - sec_perfiles
+  - sec_permisos_catalogo
+  - sec_roles
+  - sec_sucursales
+  - sec_unidades_negocio
+  - server_status
+  - server_sucursales_config
+  - servers
+  - solicitudes_catalogos
+  - tareas_sistema
+  - users
+[auditorias_p4/backup_p4_02g_20260606_015931/core/auth/user_repository_sql.py]
+  - users
+[auditorias_p4/backup_p4_02g_20260606_015931/core/server_registry.py]
+  - server_sucursales_config
+  - servers
+[auditorias_p4/backup_p4_02g_20260606_015931/server.py]
+  - alerts
+  - config_catalogos
+  - consultas_custom
+  - informes_auditoria
+  - inventario_diferencias_detalle
+  - kpis_cache
+  - nomina_ciclos
+  - nomina_configuracion
+  - nomina_kpis_puestos
+  - nomina_movimientos
+  - permisos_catalogos
+  - portal_proveedores
+  - py
+  - queries
+  - roles
+  - script_logs
+  - scripts_pendientes
+  - sec_bitacora_admin
+  - sec_empresas
+  - sec_perfiles
+  - sec_permisos_catalogo
+  - sec_roles
+  - sec_sucursales
+  - sec_unidades_negocio
+  - server_status
+  - server_sucursales_config
+  - servers
+  - solicitudes_catalogos
+  - tareas_sistema
+  - users
+[auditorias_p4/backup_p4_02h_20260606_020653/server.py]
+  - alerts
+  - config_catalogos
+  - consultas_custom
+  - informes_auditoria
+  - inventario_diferencias_detalle
+  - kpis_cache
+  - nomina_ciclos
+  - nomina_configuracion
+  - nomina_kpis_puestos
+  - nomina_movimientos
+  - permisos_catalogos
+  - portal_proveedores
+  - py
+  - queries
+  - roles
+  - script_logs
+  - scripts_pendientes
+  - sec_bitacora_admin
+  - sec_empresas
+  - sec_perfiles
+  - sec_permisos_catalogo
+  - sec_roles
+  - sec_sucursales
+  - sec_unidades_negocio
+  - server_status
+  - server_sucursales_config
+  - servers
+  - solicitudes_catalogos
+  - tareas_sistema
+  - users
+[auditorias_p4/backup_p4_02i_20260606_021615/server.py]
+  - alerts
+  - config_catalogos
+  - consultas_custom
+  - informes_auditoria
+  - inventario_diferencias_detalle
+  - kpis_cache
+  - nomina_ciclos
+  - nomina_configuracion
+  - nomina_kpis_puestos
+  - nomina_movimientos
+  - permisos_catalogos
+  - portal_proveedores
+  - py
+  - queries
+  - roles
+  - script_logs
+  - scripts_pendientes
+  - sec_bitacora_admin
+  - sec_empresas
+  - sec_perfiles
+  - sec_permisos_catalogo
+  - sec_roles
+  - sec_sucursales
+  - sec_unidades_negocio
+  - server_status
+  - server_sucursales_config
+  - servers
+  - solicitudes_catalogos
+  - tareas_sistema
+  - users
+[auditorias_p4/backup_p4_02j_20260606_022445/server.py]
+  - alerts
+  - config_catalogos
+  - consultas_custom
+  - informes_auditoria
+  - inventario_diferencias_detalle
+  - kpis_cache
+  - nomina_ciclos
+  - nomina_configuracion
+  - nomina_kpis_puestos
+  - nomina_movimientos
+  - permisos_catalogos
+  - portal_proveedores
+  - py
+  - queries
+  - roles
+  - script_logs
+  - scripts_pendientes
+  - sec_bitacora_admin
+  - sec_empresas
+  - sec_perfiles
+  - sec_permisos_catalogo
+  - sec_roles
+  - sec_sucursales
+  - sec_unidades_negocio
+  - server_status
+  - server_sucursales_config
+  - servers
+  - solicitudes_catalogos
+  - tareas_sistema
+  - users
+[auditorias_p4/backup_p4_02k_20260606_022856/api/admin_core_connections.py]
+  - auditoria_core_admin
+  - servidores_conexiones
+[auditorias_p4/backup_p4_02k_20260606_022856/modules/universal_query/routes.py]
+  - servers
+[auditorias_p4/backup_p4_02l_20260606_023252/api/admin_core_connections.py]
+  - auditoria_core_admin
+  - servidores_conexiones
+[auditorias_p4/backup_p4_02l_20260606_023252/modules/universal_query/routes.py]
+  - servers
+[auditorias_p4/backup_p4_04_05_20260606_041128/core/auth/user_repository_sql.py]
+  - users
+[auditorias_p4/backup_p4_04_05_20260606_041128/server.py]
+  - alerts
+  - config_catalogos
+  - consultas_custom
+  - informes_auditoria
+  - inventario_diferencias_detalle
+  - kpis_cache
+  - nomina_ciclos
+  - nomina_configuracion
+  - nomina_kpis_puestos
+  - nomina_movimientos
+  - permisos_catalogos
+  - portal_proveedores
+  - py
+  - queries
+  - roles
+  - script_logs
+  - scripts_pendientes
+  - sec_bitacora_admin
+  - sec_empresas
+  - sec_perfiles
+  - sec_permisos_catalogo
+  - sec_roles
+  - sec_sucursales
+  - sec_unidades_negocio
+  - server_status
+  - server_sucursales_config
+  - servers
+  - solicitudes_catalogos
+  - tareas_sistema
+  - users
+[auditorias_p4/backup_p4_17b_core_db_20260606_054813/core/db.py]
+  - py
+[auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/core/security.py]
+  - users
+[core/__init__.py]
+  - py
+[core/auditoria.py]
+  - auditoria_financiera
+[core/auth/user_repository_sql.py]
+  - users
+[core/communications/audit/audit_service.py]
+  - notification_log
+[core/communications/dispatcher/dispatcher.py]
+  - notification_provider_config
+[core/communications/notifications/dedup.py]
+  - notification_log
+[core/communications/notifications/repository.py]
+  - notification_config
+  - notification_log
+  - notification_provider_config
+  - notification_queue
+  - notification_templates
+[core/communications/notifications/service.py]
+  - users
+[core/communications/routes.py]
+  - __class__
+  - notification_config
+  - notification_provider_config
+[core/communications/scripts/__init__.py]
+  - notification_config
+  - notification_provider_config
+  - notification_templates
+[core/communications/templates/template_service.py]
+  - notification_templates
+[core/db.py]
+  - py
+[core/health_checker.py]
+  - servers
+[core/pool.py]
+  - collection
+  - servers
+  - ventas
+[core/rbac_helper.py]
+  - sec_roles
+[core/scheduler/job_logger.py]
+  - __class__
+[core/scheduler/jobs/inventarios_detector_job.py]
+  - __class__
+[core/scheduler/jobs/notifications_job.py]
+  - notification_queue
+[core/scheduler/jobs/pedidos_detector_job.py]
+  - __class__
+[core/scheduler/locks/distributed_lock.py]
+  - __class__
+[core/scheduler/routes.py]
+  - __class__
+[core/scheduler/scheduler_manager.py]
+  - __class__
+[core/server_registry.py]
+  - server_sucursales_config
+  - servers
+[limpiar_tests_dns.py]
+  - py
+[modules/api_connections/repository.py]
+  - api_connections_cache
+  - api_health_logs
+[modules/catalogos/repository.py]
+  - servers
+[modules/comercial/cache_service.py]
+  - comercial_cache
+[modules/comercial/historical_kpis_repository.py]
+  - kpis_comercial
+  - servers
+[modules/comercial/inteligencia_repository.py]
+  - execute
+[modules/comercial/queries/mpro.py]
+  - py
+[modules/comercial/queries/softrestaurant.py]
+  - py
+[modules/compras/historical_kpis_repository.py]
+  - servers
+[modules/compras/repository.py]
+  - servers
+[modules/compras/sql_first_repository.py]
+  - cursor
+[modules/configuracion/services/almacenes_sync_service.py]
+  - almacenes_catalogo
+  - servers
+[modules/fase2_operativo/routes/automatizacion_compras_routes.py]
+  - auditoria_compras_bitacora
+  - pedidos_procesados_automatizacion
+  - scheduler_job_logs
+  - tareas_operativas_compras
+  - users
+[modules/fase2_operativo/routes/documentos_routes.py]
+  - documentos_generados
+[modules/fase2_operativo/routes/notificaciones_routes.py]
+  - notificaciones_log
+  - tareas_inventario
+  - users
+[modules/fase2_operativo/routes/sla_routes.py]
+  - tareas_inventario
+[modules/finanzas/cuentas_por_pagar.py]
+  - empresas
+[modules/finanzas/historical_kpis_repository.py]
+  - servers
+[modules/finanzas/ingresos.py]
+  - copy
+  - extend
+[modules/finanzas/propinas_tpv/routes.py]
+  - command
+  - empresas
+  - list_collection_names
+  - servers
+[modules/finanzas/propinas_tpv/routes_edarsahub.py]
+  - empresas
+[modules/finanzas/propinas_tpv/routes_sql.py]
+  - command
+  - servers
+[modules/finanzas/propinas_tpv/sql_repository.py]
+  - servers
+[modules/finanzas/repository_real.py]
+  - servers
+[modules/finanzas/sync_cortes_softrestaurant.py]
+  - parse_sql_server_host
+[modules/finanzas/tesoreria.py]
+  - empresas
+[modules/inventarios/repository.py]
+  - inventarios
+[modules/manuales_operativos/routes.py]
+  - automatizaciones_bitacora
+  - automatizaciones_operativas_compras
+[modules/manuales_operativos/triggers.py]
+  - automatizaciones_bitacora
+  - automatizaciones_operativas_compras
+  - users
+[modules/rh/routes.py]
+  - empresas
+[modules/rh/solicitudes_catalogo.py]
+  - append
+  - copy
+[modules/sistema/estructura_service.py]
+  - sec_bitacora_acceso
+  - sec_empresas
+  - sec_mapeo_servidor_sucursal
+  - sec_permisos_catalogo
+  - sec_sucursales
+  - sec_unidades_negocio
+[modules/universal_query/routes.py]
+  - servers
+[routes/portal_proveedores.py]
+  - portal_invoices
+  - portal_suppliers
+  - servers
+[scripts/rotate_server_secret_key.py]
+  - servidores_conexiones
+[server.py]
+  - alerts
+  - consultas_custom
+  - inventario_diferencias_detalle
+  - kpis_cache
+  - nomina_ciclos
+  - nomina_configuracion
+  - nomina_kpis_puestos
+  - nomina_movimientos
+  - portal_proveedores
+  - py
+  - script_logs
+  - scripts_pendientes
+  - sec_bitacora_admin
+  - sec_empresas
+  - sec_perfiles
+  - sec_permisos_catalogo
+  - sec_roles
+  - sec_sucursales
+  - sec_unidades_negocio
+  - server_status
+  - server_sucursales_config
+  - servers
+  - solicitudes_catalogos
+  - tareas_sistema
+  - users
+  - zip
+[tests/test_auth_mocks.py]
+  - users
+[tests/test_bloque4_paridad.py]
+  - py
+[tests/test_core_db.py]
+  - py
+[tests/test_dashboard_comercial.py]
+  - execute_sql_query
+  - servers
+[tests/test_repositories.py]
+  - execute_sql_query
+[tests_guardrails/test_p4_conexiones_sql_centralizadas.py]
+  - py
+[tests_guardrails/test_p4_no_sql_direct_runtime.py]
+  - py
+[tests_guardrails/test_p4_runtime_critico_sin_conexiones_directas.py]
+  - py
+[tests_guardrails/test_p4_runtime_sql_directas_sin_scripts.py]
+  - py
+[utils/migration_helpers.py]
+  - accounts
+  - clientes
+  - cotizaciones
+  - cuentas
+  - dashboard_cache
+  - inventarios
+  - kpis_cache
+  - leads
+  - metas
+  - pedidos
+  - remisiones
+  - roles
+  - server_status
+  - servers
+  - solicitudes_alta
+  - users
+  - ventas
+
+===== 7) COLECCIONES MAS REFERENCIADAS =====
+servers: 1050
+informes_auditoria: 234
+users: 222
+nomina_ciclos: 150
+solicitudes_catalogos: 127
+server_sucursales_config: 104
+consultas_custom: 102
+sec_bitacora_admin: 100
+tareas_sistema: 82
+alerts: 70
+scripts_pendientes: 56
+nomina_configuracion: 50
+queries: 45
+permisos_catalogos: 45
+sec_roles: 42
+server_status: 41
+nomina_movimientos: 40
+inventario_diferencias_detalle: 30
+py: 29
+config_catalogos: 27
+kpis_cache: 21
+script_logs: 20
+nomina_kpis_puestos: 20
+sec_perfiles: 20
+portal_suppliers: 16
+comercial_cache: 12
+sec_permisos_catalogo: 11
+sec_empresas: 11
+sec_unidades_negocio: 11
+sec_sucursales: 11
+portal_proveedores: 10
+roles: 10
+__class__: 7
+notification_provider_config: 7
+servidores_conexiones: 6
+execute: 6
+tareas_operativas_compras: 6
+notification_config: 6
+portal_invoices: 6
+auditoria_core_admin: 5
+copy: 5
+empresas: 5
+api_connections_cache: 4
+documentos_generados: 4
+notification_templates: 4
+tareas_inventario: 3
+notificaciones_log: 3
+inventarios: 3
+automatizaciones_operativas_compras: 3
+ventas: 3
+sync_agent_registry: 3
+auditoria_financiera: 3
+notification_log: 3
+api_health_logs: 2
+parse_sql_server_host: 2
+command: 2
+automatizaciones_bitacora: 2
+execute_sql_query: 2
+leads: 2
+accounts: 2
+metas: 2
+sql_servers: 2
+notification_queue: 2
+zip: 1
+get_sql_connection: 1
+kpis_comercial: 1
+scheduler_job_logs: 1
+auditoria_compras_bitacora: 1
+pedidos_procesados_automatizacion: 1
+sec_mapeo_servidor_sucursal: 1
+sec_bitacora_acceso: 1
+append: 1
+almacenes_catalogo: 1
+extend: 1
+list_collection_names: 1
+cursor: 1
+cuentas: 1
+dashboard_cache: 1
+clientes: 1
+cotizaciones: 1
+pedidos: 1
+remisiones: 1
+solicitudes_alta: 1
+collection: 1
+
+===== FIN =====
