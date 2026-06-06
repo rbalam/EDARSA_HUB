@@ -1,5 +1,16 @@
 from core.sql_first.db import get_sql_connection
 
+def _safe_user_id(user_id):
+    """Convierte user_id a INT si es posible, o retorna None"""
+    if user_id is None:
+        return None
+    try:
+        return int(user_id)
+    except (ValueError, TypeError):
+        return None
+
+
+
 class CatalogosWorkflowSQLRepository:
     # =========================================================
     # CONFIG / PERMISOS
@@ -189,7 +200,7 @@ class CatalogosWorkflowSQLRepository:
                 body.get("registro_objetivo_id"),
                 body.get("datos_solicitud_json"),
                 body.get("comentarios"),
-                current_user.get("id"),
+                _safe_user_id(current_user.get("id")),
                 body.get("nivel_aprobacion_actual"),
                 body.get("total_niveles_aprobacion"),
                 current_user.get("email") or str(current_user.get("id"))
@@ -207,7 +218,7 @@ class CatalogosWorkflowSQLRepository:
                 solicitud_id,
                 body.get("estado_solicitud", "PENDIENTE"),
                 body.get("comentarios"),
-                current_user.get("id"),
+                _safe_user_id(current_user.get("id")),
                 current_user.get("email") or str(current_user.get("id"))
             ))
 
@@ -293,7 +304,7 @@ class CatalogosWorkflowSQLRepository:
             """, (
                 estado_nuevo,
                 nuevo_nivel,
-                current_user.get("id"),
+                _safe_user_id(current_user.get("id")),
                 body.get("metadata_json"),
                 estado_nuevo,
                 current_user.get("email") or str(current_user.get("id")),
@@ -310,7 +321,7 @@ class CatalogosWorkflowSQLRepository:
                 estado_anterior,
                 estado_nuevo,
                 body.get("comentarios"),
-                current_user.get("id"),
+                _safe_user_id(current_user.get("id")),
                 current_user.get("email") or str(current_user.get("id"))
             ))
 
@@ -351,7 +362,7 @@ class CatalogosWorkflowSQLRepository:
                 WHERE CatalogoSolicitudID = %s
             """, (
                 body.get("motivo_rechazo") or body.get("comentarios"),
-                current_user.get("id"),
+                _safe_user_id(current_user.get("id")),
                 current_user.get("email") or str(current_user.get("id")),
                 solicitud_id
             ))
@@ -365,7 +376,7 @@ class CatalogosWorkflowSQLRepository:
                 solicitud_id,
                 estado_anterior,
                 body.get("motivo_rechazo") or body.get("comentarios"),
-                current_user.get("id"),
+                _safe_user_id(current_user.get("id")),
                 current_user.get("email") or str(current_user.get("id"))
             ))
 
@@ -405,7 +416,7 @@ class CatalogosWorkflowSQLRepository:
                 WHERE CatalogoSolicitudID = %s
             """, (
                 body.get("motivo_correccion"),
-                current_user.get("id"),
+                _safe_user_id(current_user.get("id")),
                 body.get("datos_solicitud_json"),
                 body.get("comentarios"),
                 current_user.get("email") or str(current_user.get("id")),
@@ -421,7 +432,7 @@ class CatalogosWorkflowSQLRepository:
                 solicitud_id,
                 estado_anterior,
                 body.get("motivo_correccion") or body.get("comentarios"),
-                current_user.get("id"),
+                _safe_user_id(current_user.get("id")),
                 current_user.get("email") or str(current_user.get("id"))
             ))
 
@@ -459,7 +470,7 @@ class CatalogosWorkflowSQLRepository:
                 body.get("unidad_negocio_id"),
                 body.get("sucursal_id"),
                 body.get("asignado_a_usuario_id"),
-                current_user.get("id"),
+                _safe_user_id(current_user.get("id")),
                 body.get("fecha_limite"),
                 body.get("metadata_json"),
                 current_user.get("email") or str(current_user.get("id"))
