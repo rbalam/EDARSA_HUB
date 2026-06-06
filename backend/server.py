@@ -16816,6 +16816,13 @@ except Exception as e:
     logger.warning(f"Error registrando Sistema Users SQL router: {e}")
 
 try:
+    from modules.rbac_context_sql.routes import router as rbac_context_sql_router
+    app.include_router(rbac_context_sql_router, tags=["RBAC Context SQL"])
+    logger.info("✓ RBAC Context SQL router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando RBAC Context SQL router: {e}")
+
+try:
     from modules.scripts_pendientes.routes import router as scripts_pendientes_sql_router
     app.include_router(scripts_pendientes_sql_router, tags=["Scripts Pendientes SQL"])
     logger.info("✓ Scripts Pendientes SQL router registrado")
