@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 import pymssql
 import os
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -87,30 +88,13 @@ UNIDADES_CONFIG = {
 
 def get_edarsahub_connection():
     """Conexión a EDARSAHUB (destino)."""
-    return pymssql.connect(
-        server=EDARSAHUB_CONFIG["host"],
-        port=EDARSAHUB_CONFIG["port"],
-        user=EDARSAHUB_CONFIG["user"],
-        password=EDARSAHUB_CONFIG["password"],
-        database=EDARSAHUB_CONFIG["database"],
-        timeout=60,
-        login_timeout=15,
-        autocommit=False
-    )
+    return get_sql_connection()
 
 
 def get_pos_connection(config: Dict) -> Optional[pymssql.Connection]:
     """Conexión a servidor POS origen."""
     try:
-        return pymssql.connect(
-            server=config["host"],
-            port=config["port"],
-            user=config["username"],
-            password=config["password"],
-            database=config["database"],
-            timeout=30,
-            login_timeout=10
-        )
+        return get_sql_connection()
     except Exception as e:
         logger.error(f"[SYNC] Error conectando a {config['host']}: {e}")
         return None

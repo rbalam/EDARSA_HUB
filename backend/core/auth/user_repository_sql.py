@@ -43,13 +43,7 @@ class AuthRepositorySQL:
     
     def _get_connection(self):
         """Obtiene conexión a EDARSAHUB"""
-        return pymssql.connect(
-            server=self.sql_host,
-            port=self.sql_port,
-            user=self.sql_user,
-            password=self.sql_pass,
-            database=self.sql_db
-        )
+        return get_sql_connection()
     
     def _get_all_active_empresas(self, cursor) -> List[Dict]:
         """Obtiene todas las empresas activas (para SUPERADMIN)"""

@@ -15,6 +15,7 @@ from datetime import datetime
 from uuid import UUID
 from zoneinfo import ZoneInfo
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -34,16 +35,7 @@ MEXICO_TZ = ZoneInfo("America/Mexico_City")
 
 def get_connection():
     """Obtiene conexión a EDARSAHUB"""
-    return pymssql.connect(
-        server=EDARSAHUB_CONFIG['host'],
-        port=EDARSAHUB_CONFIG['port'],
-        database=EDARSAHUB_CONFIG['database'],
-        user=EDARSAHUB_CONFIG['username'],
-        password=EDARSAHUB_CONFIG['password'],
-        login_timeout=30,
-        timeout=60,
-        autocommit=False
-    )
+    return get_sql_connection()
 
 
 def now_mexico() -> datetime:

@@ -21,6 +21,7 @@ import uuid
 from typing import Optional, Dict, List, Any
 from datetime import datetime, date
 from decimal import Decimal
+from core.sql_first.db import get_sql_connection
 
 logger = logging.getLogger(__name__)
 
@@ -32,16 +33,7 @@ class CRMComercialService:
         self.db_config = db_config
         
     def _get_connection(self):
-        return pymssql.connect(
-            server=self.db_config['host'],
-            port=self.db_config['port'],
-            database=self.db_config['database'],
-            user=self.db_config['username'],
-            password=self.db_config['password'],
-            login_timeout=30,
-            timeout=60,
-            autocommit=False
-        )
+        return get_sql_connection()
     
     def _now_utc(self) -> datetime:
         return datetime.utcnow()

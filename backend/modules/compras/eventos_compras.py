@@ -35,6 +35,7 @@ from zoneinfo import ZoneInfo
 from dataclasses import dataclass, asdict
 from enum import Enum
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -143,14 +144,7 @@ class PollingEventDispatcher(EventDispatcher):
         self._handlers: Dict[EventoTipo, List[Callable]] = {}
     
     def _get_connection(self):
-        return pymssql.connect(
-            server=EDARSAHUB_CONFIG['host'],
-            port=EDARSAHUB_CONFIG['port'],
-            database=EDARSAHUB_CONFIG['database'],
-            user=EDARSAHUB_CONFIG['username'],
-            password=EDARSAHUB_CONFIG['password'],
-            login_timeout=15
-        )
+        return get_sql_connection()
     
     def dispatch(self, evento: EventoCompras) -> bool:
         """
@@ -311,14 +305,7 @@ class CheckpointManager:
         pass
     
     def _get_connection(self):
-        return pymssql.connect(
-            server=EDARSAHUB_CONFIG['host'],
-            port=EDARSAHUB_CONFIG['port'],
-            database=EDARSAHUB_CONFIG['database'],
-            user=EDARSAHUB_CONFIG['username'],
-            password=EDARSAHUB_CONFIG['password'],
-            login_timeout=15
-        )
+        return get_sql_connection()
     
     def get_checkpoint(self, server_id: str, sync_type: SyncType) -> Dict:
         """Obtiene el último checkpoint para un servidor y tipo de sync."""

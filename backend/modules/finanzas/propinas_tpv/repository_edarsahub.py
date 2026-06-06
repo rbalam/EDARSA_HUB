@@ -27,6 +27,7 @@ from pathlib import Path
 
 import pymssql
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -86,15 +87,7 @@ class PropinasTPVRepositoryEdarsahub:
     
     def _get_connection(self):
         """Obtiene conexión a EDARSAHUB"""
-        return pymssql.connect(
-            server=self.config['server'],
-            port=self.config['port'],
-            database=self.config['database'],
-            user=self.config['user'],
-            password=self.config['password'],
-            login_timeout=30,
-            autocommit=False
-        )
+        return get_sql_connection()
     
     # ========================================================================
     # CONSULTAS DE PROPINAS

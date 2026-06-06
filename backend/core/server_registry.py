@@ -1004,14 +1004,7 @@ def _execute_sql_write(query: str, params: tuple = None) -> bool:
     """
     try:
         import pymssql
-        conn = pymssql.connect(
-            EDARSAHUB_CONFIG['host'],
-            EDARSAHUB_CONFIG['username'],
-            EDARSAHUB_CONFIG['password'],
-            EDARSAHUB_CONFIG['database'],
-            port=EDARSAHUB_CONFIG['port'],
-            timeout=30
-        )
+        conn = get_sql_connection()
         cursor = conn.cursor()
         if params:
             cursor.execute(query, params)

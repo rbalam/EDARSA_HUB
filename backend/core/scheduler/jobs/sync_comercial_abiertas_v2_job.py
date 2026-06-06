@@ -118,6 +118,7 @@ LOCK_TIMEOUT_MINUTES = 30
 
 # P2-01: Config centralizado
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 EDARSAHUB_LOCK_CONFIG = {
     'host': _edarsa_cfg.host,
@@ -135,14 +136,7 @@ def _acquire_sync_lock_sync(run_id: str, pid: int) -> bool:
     from zoneinfo import ZoneInfo
     
     try:
-        conn = pymssql.connect(
-            server=EDARSAHUB_LOCK_CONFIG['host'],
-            port=EDARSAHUB_LOCK_CONFIG['port'],
-            database=EDARSAHUB_LOCK_CONFIG['database'],
-            user=EDARSAHUB_LOCK_CONFIG['username'],
-            password=EDARSAHUB_LOCK_CONFIG['password'],
-            login_timeout=15, autocommit=False
-        )
+        conn = get_sql_connection()
         cursor = conn.cursor(as_dict=True)
         now_mx = datetime.now(ZoneInfo("America/Mexico_City"))
         timeout_threshold = now_mx - timedelta(minutes=LOCK_TIMEOUT_MINUTES)
@@ -193,14 +187,7 @@ def _release_sync_lock_sync(run_id: str, status: str, processed: int, errors: in
     from zoneinfo import ZoneInfo
     
     try:
-        conn = pymssql.connect(
-            server=EDARSAHUB_LOCK_CONFIG['host'],
-            port=EDARSAHUB_LOCK_CONFIG['port'],
-            database=EDARSAHUB_LOCK_CONFIG['database'],
-            user=EDARSAHUB_LOCK_CONFIG['username'],
-            password=EDARSAHUB_LOCK_CONFIG['password'],
-            login_timeout=15
-        )
+        conn = get_sql_connection()
         cursor = conn.cursor()
         now_mx = datetime.now(ZoneInfo("America/Mexico_City"))
         

@@ -18,6 +18,7 @@ from enum import Enum
 from zoneinfo import ZoneInfo
 
 from .base_connector import SyncStatus
+from core.sql_first.db import get_sql_connection
 
 logger = logging.getLogger(__name__)
 
@@ -75,16 +76,7 @@ class StagingProcessor:
         self.db_config = db_config
     
     def _get_connection(self):
-        return pymssql.connect(
-            server=self.db_config['host'],
-            port=self.db_config['port'],
-            database=self.db_config['database'],
-            user=self.db_config['username'],
-            password=self.db_config['password'],
-            login_timeout=30,
-            timeout=60,
-            autocommit=False
-        )
+        return get_sql_connection()
     
     def _now(self) -> datetime:
         return datetime.now(MEXICO_TZ).replace(tzinfo=None)

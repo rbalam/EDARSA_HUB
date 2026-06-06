@@ -41,6 +41,7 @@ router = APIRouter(prefix="/api/admin/scheduler", tags=["Admin - Scheduler Resyn
 # =============================================================================
 
 import os
+from core.sql_first.db import get_sql_connection
 
 def _get_edarsahub_config():
     """Obtiene config EDARSAHUB desde variables de entorno."""
@@ -64,15 +65,7 @@ def _execute_edarsahub_query(query: str, params: tuple = None, fetch: bool = Tru
         raise RuntimeError("Configuración EDARSAHUB incompleta - verificar variables de entorno")
     
     try:
-        conn = pymssql.connect(
-            server=config['host'],
-            port=config['port'],
-            database=config['database'],
-            user=config['username'],
-            password=config['password'],
-            timeout=60,
-            login_timeout=30
-        )
+        conn = get_sql_connection()
         cursor = conn.cursor(as_dict=True)
         
         if params:
@@ -824,15 +817,7 @@ async def _ejecutar_dry_run(
         sucursal_id = unidad_config.get('sucursal_id', 'DEFAULT')
         query = query.replace('@sucursal_id', f"'{sucursal_id}'")
         
-        conn = pymssql.connect(
-            server=config['host'],
-            port=config['port'],
-            database=config['database_name'],
-            user=config['username'],
-            password=config['password'],
-            login_timeout=30,
-            tds_version="7.0"  # P2-22: Compatibilidad con SQL Server antiguos
-        )
+        conn = get_sql_connection()
         cursor = conn.cursor(as_dict=True)
         
         cursor.execute(query)

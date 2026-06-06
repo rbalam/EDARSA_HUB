@@ -32,6 +32,7 @@ import pymssql
 
 from core.system_type_utils import build_system_type_sql_filter
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -60,15 +61,7 @@ UNIDADES_SR_AUTORIZADAS = ['130° MERIDA', 'CIENFUEGOS', 'LA ESTELAR']
 
 def get_edarsahub_connection():
     """Obtiene conexión a EDARSAHUB"""
-    return pymssql.connect(
-        server=EDARSAHUB_CONFIG['server'],
-        port=EDARSAHUB_CONFIG['port'],
-        database=EDARSAHUB_CONFIG['database'],
-        user=EDARSAHUB_CONFIG['user'],
-        password=EDARSAHUB_CONFIG['password'],
-        login_timeout=30,
-        autocommit=False
-    )
+    return get_sql_connection()
 
 
 def get_unidad_connection_info(unidad_nombre: str) -> Optional[Dict]:
@@ -207,14 +200,7 @@ def get_softrestaurant_connection(conn_info: Dict):
         
         # Fallback a pymssql con instancia
         server_string = f"{host}\\{instance}" if instance else host
-        conn = pymssql.connect(
-            server=server_string,
-            port=port,
-            database=database,
-            user=user,
-            password=password,
-            login_timeout=15
-        )
+        conn = get_sql_connection()
         conn._driver_name = 'pymssql'
         return conn
 

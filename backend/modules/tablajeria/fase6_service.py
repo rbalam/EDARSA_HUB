@@ -19,6 +19,7 @@ from decimal import Decimal
 from dataclasses import dataclass
 from enum import Enum
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -83,15 +84,7 @@ class TablajeriaFase6Service:
     
     def _get_connection(self):
         """Obtiene conexión a la BD."""
-        return pymssql.connect(
-            server=self.db_config['host'],
-            port=self.db_config['port'],
-            database=self.db_config['database'],
-            user=self.db_config['username'],
-            password=self.db_config['password'],
-            timeout=30,
-            login_timeout=15
-        )
+        return get_sql_connection()
     
     def _now_utc(self) -> datetime:
         return datetime.now(timezone.utc)

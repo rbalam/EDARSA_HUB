@@ -23,6 +23,7 @@ import os
 from .comercial_service import CRMComercialService
 from core.security import get_current_user
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -186,13 +187,7 @@ async def _get_vtiger_cuentas(search: Optional[str], limit: int, offset: int):
     logger.info(f"[CRM] _get_vtiger_cuentas (SQL-First) llamado con search={search}, limit={limit}, offset={offset}")
     
     try:
-        conn = pymssql.connect(
-            server=_edarsa_cfg.host,
-            port=_edarsa_cfg.port,
-            user=_edarsa_cfg.user,
-            password=_edarsa_cfg.password,
-            database=_edarsa_cfg.database
-        )
+        conn = get_sql_connection()
         cursor = conn.cursor(as_dict=True)
         
         # Construir query con filtro de búsqueda

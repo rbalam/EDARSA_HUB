@@ -25,6 +25,7 @@ import json
 from datetime import datetime, timezone
 from typing import Optional, Dict, List, Any
 import uuid
+from core.sql_first.db import get_sql_connection
 
 logger = logging.getLogger(__name__)
 
@@ -47,15 +48,7 @@ def _execute_edarsahub_query(query: str, params: tuple = None, fetch: bool = Tru
     import pymssql
     
     try:
-        conn = pymssql.connect(
-            server=EDARSAHUB_CONFIG['host'],
-            port=EDARSAHUB_CONFIG['port'],
-            database=EDARSAHUB_CONFIG['database'],
-            user=EDARSAHUB_CONFIG['username'],
-            password=EDARSAHUB_CONFIG['password'],
-            timeout=60,
-            login_timeout=30
-        )
+        conn = get_sql_connection()
         cursor = conn.cursor(as_dict=True)
         
         if params:
@@ -86,15 +79,7 @@ def _execute_edarsahub_insert(query: str, params: tuple) -> bool:
     import pymssql
     
     try:
-        conn = pymssql.connect(
-            server=EDARSAHUB_CONFIG['host'],
-            port=EDARSAHUB_CONFIG['port'],
-            database=EDARSAHUB_CONFIG['database'],
-            user=EDARSAHUB_CONFIG['username'],
-            password=EDARSAHUB_CONFIG['password'],
-            timeout=60,
-            login_timeout=30
-        )
+        conn = get_sql_connection()
         cursor = conn.cursor()
         cursor.execute(query, params)
         conn.commit()

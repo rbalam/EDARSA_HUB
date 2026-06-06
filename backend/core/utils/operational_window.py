@@ -35,6 +35,7 @@ from datetime import date, datetime, time, timedelta
 from typing import Optional, Tuple, Dict, Any, List
 from zoneinfo import ZoneInfo
 from dataclasses import dataclass
+from core.sql_first.db import get_sql_connection
 
 logger = logging.getLogger(__name__)
 
@@ -94,14 +95,7 @@ def _get_turnos_unidad(unidad_negocio_pk: str) -> List[Dict]:
     # Consultar BD
     import pymssql
     try:
-        conn = pymssql.connect(
-            server=EDARSAHUB_CONFIG['host'],
-            port=EDARSAHUB_CONFIG['port'],
-            database=EDARSAHUB_CONFIG['database'],
-            user=EDARSAHUB_CONFIG['username'],
-            password=EDARSAHUB_CONFIG['password'],
-            as_dict=True
-        )
+        conn = get_sql_connection()
         cursor = conn.cursor()
         
         # Query sin dependencia de columnas de tolerancia (pueden no existir)

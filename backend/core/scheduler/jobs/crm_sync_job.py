@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 import os
 import pymssql
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -24,13 +25,7 @@ logger = logging.getLogger(__name__)
 
 def _get_connection():
     """Obtiene conexión a EDARSAHUB SQL Server."""
-    return pymssql.connect(
-        server=_edarsa_cfg.host,
-        user=_edarsa_cfg.user,
-        password=_edarsa_cfg.password,
-        database=_edarsa_cfg.database,
-        port=_edarsa_cfg.port
-    )
+    return get_sql_connection()
 
 
 async def execute_crm_sync(db) -> Dict[str, Any]:

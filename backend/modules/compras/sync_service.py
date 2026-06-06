@@ -32,6 +32,7 @@ import logging
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Callable
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -192,14 +193,7 @@ def get_compras_adapter(system_type: str):
 
 def get_edarsahub_connection():
     """Obtiene conexión a EDARSAHUB usando configuración de variables de entorno"""
-    return pymssql.connect(
-        server=EDARSAHUB_CONFIG['host'],
-        user=EDARSAHUB_CONFIG['username'],
-        password=EDARSAHUB_CONFIG['password'],
-        database=EDARSAHUB_CONFIG['database'],
-        port=EDARSAHUB_CONFIG['port'],
-        timeout=30
-    )
+    return get_sql_connection()
 
 
 # =============================================================================

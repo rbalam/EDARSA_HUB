@@ -27,6 +27,7 @@ import pymssql
 from datetime import datetime, date
 from typing import Dict, List, Optional, Any
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -47,15 +48,7 @@ EDARSAHUB_CONFIG = {
 
 def get_edarsahub_connection():
     """Obtiene conexión a EDARSAHUB"""
-    return pymssql.connect(
-        server=EDARSAHUB_CONFIG['server'],
-        port=EDARSAHUB_CONFIG['port'],
-        database=EDARSAHUB_CONFIG['database'],
-        user=EDARSAHUB_CONFIG['user'],
-        password=EDARSAHUB_CONFIG['password'],
-        login_timeout=30,
-        autocommit=False
-    )
+    return get_sql_connection()
 
 
 # ============================================================================

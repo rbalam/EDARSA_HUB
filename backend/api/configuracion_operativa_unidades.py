@@ -25,6 +25,7 @@ from zoneinfo import ZoneInfo
 import logging
 import pymssql
 import os
+from core.sql_first.db import get_sql_connection
 
 logger = logging.getLogger(__name__)
 
@@ -95,14 +96,7 @@ class PruebaFechaOperacionResponse(BaseModel):
 
 def get_connection():
     """Obtiene conexión a EDARSAHUB."""
-    return pymssql.connect(
-        server=EDARSAHUB_CONFIG['host'],
-        port=EDARSAHUB_CONFIG['port'],
-        database=EDARSAHUB_CONFIG['database'],
-        user=EDARSAHUB_CONFIG['user'],
-        password=EDARSAHUB_CONFIG['password'],
-        as_dict=True
-    )
+    return get_sql_connection()
 
 
 def get_turnos_por_unidad(unidad_negocio_id: str) -> List[Dict]:

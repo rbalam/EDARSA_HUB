@@ -17,6 +17,7 @@ from typing import List, Dict, Optional, Set
 from datetime import datetime, timezone
 import pymssql
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 
 logger = logging.getLogger(__name__)
 
@@ -45,15 +46,7 @@ _CACHE_TTL_SECONDS = 300  # 5 minutos
 
 def _get_connection():
     """Obtiene conexión a EDARSAHUB SQL."""
-    return pymssql.connect(
-        server=_EDARSAHUB_CONFIG['host'],
-        port=_EDARSAHUB_CONFIG['port'],
-        database=_EDARSAHUB_CONFIG['database'],
-        user=_EDARSAHUB_CONFIG['username'],
-        password=_EDARSAHUB_CONFIG['password'],
-        timeout=30,
-        login_timeout=15
-    )
+    return get_sql_connection()
 
 
 def _is_cache_valid() -> bool:

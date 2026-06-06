@@ -15,6 +15,7 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 import json
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -23,13 +24,7 @@ logger = logging.getLogger(__name__)
 
 def _get_sql_connection():
     """Obtiene conexión a EDARSAHUB SQL Server"""
-    return pymssql.connect(
-        server=_edarsa_cfg.host,
-        port=_edarsa_cfg.port,
-        user=_edarsa_cfg.user,
-        password=_edarsa_cfg.password,
-        database=_edarsa_cfg.database
-    )
+    return get_sql_connection()
 
 
 # ==================== MAPEO VTIGER → SQL ====================

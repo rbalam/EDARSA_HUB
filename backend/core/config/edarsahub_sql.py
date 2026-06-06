@@ -8,6 +8,7 @@ Funciones de utilidad para conectar a EDARSAHUB SQL.
 import pymssql
 from typing import List, Dict, Any, Optional
 from .edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 
 
 def get_edarsahub_connection(timeout: int = 30):
@@ -18,15 +19,7 @@ def get_edarsahub_connection(timeout: int = 30):
         pymssql.Connection
     """
     cfg = get_edarsahub_sql_config()
-    return pymssql.connect(
-        server=cfg.host,
-        port=cfg.port,
-        database=cfg.database,
-        user=cfg.user,
-        password=cfg.password,
-        login_timeout=timeout,
-        as_dict=True
-    )
+    return get_sql_connection()
 
 
 def execute_edarsahub_query(query: str, timeout: int = 30) -> List[Dict[str, Any]]:

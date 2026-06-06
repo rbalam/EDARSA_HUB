@@ -10,6 +10,7 @@ import sys
 import pymssql
 from datetime import datetime
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -70,16 +71,7 @@ def execute_sql_script(script_path: str, description: str) -> dict:
     }
     
     try:
-        conn = pymssql.connect(
-            server=EDARSAHUB_CONFIG['host'],
-            port=EDARSAHUB_CONFIG['port'],
-            database=EDARSAHUB_CONFIG['database'],
-            user=EDARSAHUB_CONFIG['username'],
-            password=EDARSAHUB_CONFIG['password'],
-            login_timeout=30,
-            timeout=120,
-            autocommit=True  # Importante para DDL
-        )
+        conn = get_sql_connection()
         cursor = conn.cursor()
         
         print(f"\n✅ Conectado a EDARSAHUB ({EDARSAHUB_CONFIG['host']})")
@@ -168,15 +160,7 @@ def validate_tables_created() -> dict:
     ]
     
     try:
-        conn = pymssql.connect(
-            server=EDARSAHUB_CONFIG['host'],
-            port=EDARSAHUB_CONFIG['port'],
-            database=EDARSAHUB_CONFIG['database'],
-            user=EDARSAHUB_CONFIG['username'],
-            password=EDARSAHUB_CONFIG['password'],
-            login_timeout=30,
-            timeout=60
-        )
+        conn = get_sql_connection()
         cursor = conn.cursor(as_dict=True)
         
         # Verificar tablas

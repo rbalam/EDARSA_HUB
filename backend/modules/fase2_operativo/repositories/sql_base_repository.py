@@ -21,6 +21,7 @@ import json
 import pymssql
 import os
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -320,15 +321,7 @@ class SQLBaseRepository:
     
     def _get_connection(self) -> pymssql.Connection:
         """Obtiene conexión a EDARSAHUB SQL Server."""
-        return pymssql.connect(
-            server=self._sql_config["server"],
-            port=self._sql_config["port"],
-            database=self._sql_config["database"],
-            user=self._sql_config["user"],
-            password=self._sql_config["password"],
-            timeout=30,
-            as_dict=True
-        )
+        return get_sql_connection()
     
     def _get_timestamp(self) -> datetime:
         """Retorna timestamp actual en UTC."""

@@ -25,6 +25,7 @@ router = APIRouter(prefix="/api/crm/integration", tags=["CRM Integration"])
 
 # P2-01: Configuración DB centralizada
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 DB_CONFIG = {
     'host': _edarsa_cfg.host,
@@ -86,16 +87,7 @@ class ResolveConflictRequest(BaseModel):
 # ============================================================
 
 def get_connection():
-    return pymssql.connect(
-        server=DB_CONFIG['host'],
-        port=DB_CONFIG['port'],
-        database=DB_CONFIG['database'],
-        user=DB_CONFIG['username'],
-        password=DB_CONFIG['password'],
-        login_timeout=30,
-        timeout=60,
-        autocommit=False
-    )
+    return get_sql_connection()
 
 
 # ============================================================

@@ -1,0 +1,133 @@
+core/sql_host_parser.py:109:    Genera parámetros para pymssql.connect() a partir de host raw.
+core/sql_host_parser.py:120:        Dict con parámetros para pymssql.connect()
+core/sql_host_parser.py:144:    Genera connection string para pyodbc.connect() a partir de host raw.
+core/sql_host_parser.py:206:        conn = pymssql.connect(**params)
+core/server_registry.py:1007:        conn = pymssql.connect(
+core/policies/no_live_dashboard_policy.py:15:    "pyodbc.connect(",
+core/policies/no_live_dashboard_policy.py:16:    "pymssql.connect(",
+core/unidades_registry.py:53:    return pymssql.connect(
+core/security.py:494:        conn = pymssql.connect(
+core/security.py:541:    conn = pymssql.connect(
+core/scheduler/sql_repository.py:40:        conn = pymssql.connect(
+core/scheduler/jobs/sync_comercial_endpoints_job.py:76:            self._conn = pymssql.connect(
+core/scheduler/jobs/vtiger_sync_job.py:26:    return pymssql.connect(
+core/scheduler/jobs/sync_compras_job.py:81:        conn = pymssql.connect(
+core/scheduler/jobs/sync_compras_job.py:141:        conn = pymssql.connect(
+core/scheduler/jobs/inteligencia_comercial_sync_job.py:90:    return pymssql.connect(
+core/scheduler/jobs/inteligencia_comercial_sync_job.py:105:        return pymssql.connect(
+core/scheduler/jobs/detect_nuevos_compras_job.py:69:        conn = pymssql.connect(
+core/scheduler/jobs/detect_nuevos_compras_job.py:121:        conn = pymssql.connect(
+core/scheduler/jobs/detect_nuevos_compras_job.py:162:        conn = pymssql.connect(
+core/scheduler/jobs/crm_sync_job.py:27:    return pymssql.connect(
+core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:138:        conn = pymssql.connect(
+core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:196:        conn = pymssql.connect(
+core/sql_first/db.py:9:        return pyodbc.connect(
+core/sql_first/db.py:19:        return pymssql.connect(
+core/context_resolver.py:60:    return pymssql.connect(
+core/user_access_context.py:71:    return pymssql.connect(
+core/rbac_helper_sql.py:48:    return pymssql.connect(
+core/auth/user_repository_sql.py:46:        return pymssql.connect(
+core/resilient_sql.py:170:        conn = pymssql.connect(
+core/resilient_sql.py:214:        conn = pymssql.connect(
+core/resilient_sql.py:280:            conn = pymssql.connect(
+core/resilient_sql.py:357:            conn = pymssql.connect(
+core/utils/operational_window.py:97:        conn = pymssql.connect(
+core/rbac/repository_sql.py:51:        return pymssql.connect(
+core/alcance_helper.py:75:        conn = pymssql.connect(
+core/alcance_helper.py:120:        conn = pymssql.connect(
+core/config/edarsahub_sql.py:21:    return pymssql.connect(
+core/db.py:541:        conn = pymssql.connect(
+core/db.py:918:        conn = pymssql.connect(
+core/db.py:1062:            conn = pymssql.connect(
+core/db.py:1253:        conn = pymssql.connect(
+modules/comercial/service.py:2635:        conn = pymssql.connect(
+modules/comercial/routes.py:2047:        conn = pymssql.connect(
+modules/comercial/routes.py:2384:        conn = pymssql.connect(
+modules/comercial/routes.py:2686:            conn = pymssql.connect(
+modules/comercial/routes.py:2794:                conn_hoy = pymssql.connect(
+modules/comercial/routes.py:2903:        conn = pymssql.connect(
+modules/comercial/routes.py:3598:        conn = pymssql.connect(
+modules/backfill_corporativo/service.py:869:        src = pymssql.connect(
+modules/fase2_operativo/sql_repository.py:43:    return pymssql.connect(
+modules/fase2_operativo/repositories/sql_base_repository.py:323:        return pymssql.connect(
+modules/api_connections/universal_test_routes.py:147:        conn = pymssql.connect(
+modules/api_connections/universal_test_routes.py:186:        conn = pymssql.connect(
+modules/sistema/menu_service.py:34:        return pymssql.connect(
+modules/rh/importador/homologacion_service.py:32:    return pymssql.connect(
+modules/rh/importador/aprobacion_service.py:49:    return pymssql.connect(
+modules/configuracion/repositories/config_asignaciones_repository.py:39:    return pymssql.connect(
+modules/inteligencia_comercial/routes.py:145:    return pymssql.connect(
+modules/automatizacion/repository.py:346:        conn = pymssql.connect(
+modules/auth/service.py:376:        conn = pymssql.connect(
+modules/auth/password_reset.py:57:    return pymssql.connect(
+modules/auth/repository.py:103:        conn = pymssql.connect(
+modules/auth/repository.py:315:    return pymssql.connect(
+modules/auth/context_service.py:49:    return pymssql.connect(
+modules/tablajeria/ordenes_service.py:41:        return pymssql.connect(
+modules/tablajeria/dashboard_service.py:32:        return pymssql.connect(
+modules/tablajeria/fase6_service.py:86:        return pymssql.connect(
+modules/tablajeria/sync_service.py:45:        return pymssql.connect(
+modules/tablajeria/sync_service.py:163:            conn_mpro = pymssql.connect(
+modules/tablajeria/sync_service.py:594:            conn_cf = pymssql.connect(
+modules/tablajeria/routes.py:50:    return pymssql.connect(
+modules/universal_query/routes.py:186:        conn = pymssql.connect(
+modules/crm/automation_service.py:36:        return pymssql.connect(
+modules/crm/comercial_routes.py:189:        conn = pymssql.connect(
+modules/crm/trigger_service.py:78:        return pymssql.connect(
+modules/crm/comercial_service.py:35:        return pymssql.connect(
+modules/crm/repository.py:37:    return pymssql.connect(
+modules/crm/native_routes.py:86:        conn = pymssql.connect(
+modules/crm/native_routes.py:316:        conn = pymssql.connect(
+modules/crm/native_routes.py:427:        conn = pymssql.connect(
+modules/crm/sql/execute_crm_migration.py:73:        conn = pymssql.connect(
+modules/crm/sql/execute_crm_migration.py:171:        conn = pymssql.connect(
+modules/crm/integration/staging_processor.py:78:        return pymssql.connect(
+modules/crm/integration/staging_service.py:35:        return pymssql.connect(
+modules/crm/integration_routes.py:89:    return pymssql.connect(
+modules/finanzas/repository_cuadres_z_edarsahub.py:42:    return pymssql.connect(**config, login_timeout=30)
+modules/finanzas/sync_propinas_mpro.py:90:    return pymssql.connect(
+modules/finanzas/sync_propinas_mpro.py:173:    return pymssql.connect(
+modules/finanzas/sync_cortes_softrestaurant.py:63:    return pymssql.connect(
+modules/finanzas/sync_cortes_softrestaurant.py:210:        conn = pymssql.connect(
+modules/finanzas/sync_propinas_softrestaurant.py:85:    return pymssql.connect(
+modules/finanzas/sync_propinas_softrestaurant.py:211:        conn = pymssql.connect(
+modules/finanzas/repository_ingresos_edarsahub.py:50:    return pymssql.connect(
+modules/finanzas/propinas_tpv/repository_edarsahub.py:89:        return pymssql.connect(
+modules/finanzas/test_conn_cienfuegos.py:108:    return pymssql.connect(
+modules/finanzas/test_conn_cienfuegos.py:447:        conn = pymssql.connect(
+modules/finanzas/test_conn_cienfuegos.py:616:        conn = pymssql.connect(
+modules/finanzas/test_conn_cienfuegos.py:684:        conn = pymssql.connect(
+modules/finanzas/test_conn_cienfuegos.py:758:        conn = pymssql.connect(
+modules/finanzas/test_conn_cienfuegos.py:826:        conn = pymssql.connect(
+modules/finanzas/test_conn_cienfuegos.py:897:        conn = pymssql.connect(
+modules/finanzas/sync_cortes_mpro.py:63:    return pymssql.connect(
+modules/finanzas/sync_cortes_mpro.py:157:    return pymssql.connect(
+modules/cava_socios/service.py:34:        return pymssql.connect(
+modules/compras/repository_compras_sql.py:47:    return pymssql.connect(
+modules/compras/eventos_compras.py:146:        return pymssql.connect(
+modules/compras/eventos_compras.py:314:        return pymssql.connect(
+modules/compras/sync_service.py:195:    return pymssql.connect(
+modules/compras/repository_pedidos_sql.py:50:        conn = pymssql.connect(
+modules/compras/repository_pedidos_sql.py:89:        conn = pymssql.connect(
+api/configuracion_operativa_unidades.py:98:    return pymssql.connect(
+api/admin_scheduler_resync.py:67:        conn = pymssql.connect(
+api/admin_scheduler_resync.py:827:        conn = pymssql.connect(
+api/admin_core_connections.py:320:        connection = pymssql.connect(
+api/dba_credential_p0d.py:369:        conn = pymssql.connect(
+api/dba_credential_p0d.py:484:        conn = pymssql.connect(
+server.py:825:        conn = pymssql.connect(
+server.py:906:        conn = pymssql.connect(
+server.py:984:        conn = pymssql.connect(
+server.py:1059:        conn = pymssql.connect(
+server.py:7690:        conn = pymssql.connect(
+server.py:7984:        conn = pymssql.connect(
+server.py:8920:        conn = pymssql.connect(
+server.py:9758:        conn = pymssql.connect(
+server.py:9824:        conn = pymssql.connect(
+server.py:9883:        conn = pymssql.connect(
+server.py:9928:        conn = pymssql.connect(
+server.py:10204:        conn = pymssql.connect(
+server.py:11033:        conn = pymssql.connect(
+server.py:11114:        conn = pymssql.connect(
+server.py:11179:        conn = pymssql.connect(
+server.py:11272:        conn = pymssql.connect(

@@ -19,6 +19,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from core.sql_first.db import get_sql_connection
 
 logger = logging.getLogger(__name__)
 
@@ -37,15 +38,7 @@ def _execute_sql(query: str, params: tuple = None, fetch: bool = True) -> List[D
     import pymssql
     
     try:
-        conn = pymssql.connect(
-            server=EDARSAHUB_CONFIG['host'],
-            port=EDARSAHUB_CONFIG['port'],
-            database=EDARSAHUB_CONFIG['database'],
-            user=EDARSAHUB_CONFIG['username'],
-            password=EDARSAHUB_CONFIG['password'],
-            timeout=30,
-            login_timeout=15
-        )
+        conn = get_sql_connection()
         cursor = conn.cursor(as_dict=True)
         
         if params:

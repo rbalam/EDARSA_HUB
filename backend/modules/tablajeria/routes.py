@@ -47,16 +47,7 @@ DB_CONFIG = {
 
 
 def get_connection():
-    return pymssql.connect(
-        server=DB_CONFIG['host'],
-        port=DB_CONFIG['port'],
-        database=DB_CONFIG['database'],
-        user=DB_CONFIG['username'],
-        password=DB_CONFIG['password'],
-        login_timeout=30,
-        timeout=60,
-        autocommit=False
-    )
+    return get_sql_connection()
 
 
 # ============================================================
@@ -1083,6 +1074,7 @@ async def guardar_config_contable(
 # ============================================================================
 
 from .dashboard_service import get_tablajeria_dashboard_service
+from core.sql_first.db import get_sql_connection
 
 
 @router.get("/dashboard/kpis")

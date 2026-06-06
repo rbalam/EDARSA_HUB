@@ -38,6 +38,7 @@ import pymssql
 
 from core.system_type_utils import build_system_type_sql_filter
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -87,15 +88,7 @@ FORMAS_PAGO_TARJETA = ['0004', '0005', '0006']  # Crédito, Débito, AMEX
 
 def get_edarsahub_connection():
     """Obtiene conexión a EDARSAHUB"""
-    return pymssql.connect(
-        server=EDARSAHUB_CONFIG['server'],
-        port=EDARSAHUB_CONFIG['port'],
-        database=EDARSAHUB_CONFIG['database'],
-        user=EDARSAHUB_CONFIG['user'],
-        password=EDARSAHUB_CONFIG['password'],
-        login_timeout=30,
-        autocommit=False
-    )
+    return get_sql_connection()
 
 
 def get_unidad_mpro_connection_info(unidad_nombre: str) -> Optional[Dict]:
@@ -170,15 +163,7 @@ def get_unidad_mpro_connection_info(unidad_nombre: str) -> Optional[Dict]:
 
 def get_mpro_connection(conn_info: Dict):
     """Obtiene conexión a MPRO (CENTRAL2020)"""
-    return pymssql.connect(
-        server=conn_info['host'],
-        port=conn_info['port'],
-        database=conn_info['database'],
-        user=conn_info['user'],
-        password=conn_info['password'],
-        login_timeout=30,
-        autocommit=False
-    )
+    return get_sql_connection()
 
 
 # ============================================================================

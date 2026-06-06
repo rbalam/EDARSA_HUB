@@ -142,15 +142,7 @@ def normalizar_unidad(unidad: str) -> Optional[str]:
 
 def get_connection():
     """Obtiene conexión a EDARSAHUB SQL Server."""
-    return pymssql.connect(
-        server=EDARSAHUB_CONFIG["host"],
-        port=EDARSAHUB_CONFIG["port"],
-        user=EDARSAHUB_CONFIG["user"],
-        password=EDARSAHUB_CONFIG["password"],
-        database=EDARSAHUB_CONFIG["database"],
-        timeout=30,
-        login_timeout=15
-    )
+    return get_sql_connection()
 
 
 def execute_query(sql: str, params: tuple = None) -> List[Dict]:

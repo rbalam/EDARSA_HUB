@@ -39,6 +39,7 @@ import time
 import logging
 import re
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -144,14 +145,7 @@ def get_api_connection_raw_for_auth(connection_id: str) -> Optional[Dict]:
     import os
     
     try:
-        conn = pymssql.connect(
-            server=_edarsa_cfg.host,
-            port=_edarsa_cfg.port,
-            database=_edarsa_cfg.database,
-            user=_edarsa_cfg.user,
-            password=_edarsa_cfg.password,
-            login_timeout=30
-        )
+        conn = get_sql_connection()
         cursor = conn.cursor(as_dict=True)
         
         # CONSULTA PARAMETRIZADA - NO f-string
@@ -183,14 +177,7 @@ def get_api_connection_with_secret(connection_id: str) -> Optional[Dict]:
     import os
     
     try:
-        conn = pymssql.connect(
-            server=_edarsa_cfg.host,
-            port=_edarsa_cfg.port,
-            database=_edarsa_cfg.database,
-            user=_edarsa_cfg.user,
-            password=_edarsa_cfg.password,
-            login_timeout=30
-        )
+        conn = get_sql_connection()
         cursor = conn.cursor(as_dict=True)
         
         # CONSULTA PARAMETRIZADA

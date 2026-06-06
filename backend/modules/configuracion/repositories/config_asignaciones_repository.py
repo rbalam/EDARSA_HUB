@@ -20,6 +20,7 @@ import logging
 import uuid
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from core.sql_first.db import get_sql_connection
 
 logger = logging.getLogger(__name__)
 
@@ -36,15 +37,7 @@ EDARSAHUB_CONFIG = {
 def _get_sql_connection():
     """Obtiene conexión a EDARSAHUB."""
     import pymssql
-    return pymssql.connect(
-        server=EDARSAHUB_CONFIG['host'],
-        port=EDARSAHUB_CONFIG['port'],
-        database=EDARSAHUB_CONFIG['database'],
-        user=EDARSAHUB_CONFIG['username'],
-        password=EDARSAHUB_CONFIG['password'],
-        timeout=30,
-        login_timeout=15
-    )
+    return get_sql_connection()
 
 
 def _execute_sql(query: str, params: tuple = None, fetch: bool = True) -> List[Dict]:

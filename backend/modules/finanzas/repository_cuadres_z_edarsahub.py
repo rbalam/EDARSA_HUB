@@ -24,6 +24,7 @@ from typing import Dict, List, Any, Optional
 from decimal import Decimal
 import pymssql
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -39,7 +40,7 @@ def get_edarsahub_connection():
         'user': _edarsa_cfg.user,
         'password': _edarsa_cfg.password
     }
-    return pymssql.connect(**config, login_timeout=30)
+    return get_sql_connection()
 
 
 def calcular_hash_origen(data: Dict) -> str:

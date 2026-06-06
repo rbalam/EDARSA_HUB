@@ -22,6 +22,7 @@ import logging
 from typing import Dict, Optional, List
 from datetime import datetime, timezone
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -44,15 +45,7 @@ def _get_edarsahub_connection():
     username = _edarsa_cfg.user
     password = _edarsa_cfg.password
     
-    return pymssql.connect(
-        server=host,
-        port=port,
-        database=database,
-        user=username,
-        password=password,
-        timeout=30,
-        login_timeout=15
-    )
+    return get_sql_connection()
 
 
 # ============================================================================

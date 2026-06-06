@@ -25,6 +25,7 @@ import logging
 import os
 import json
 import pymssql
+from core.sql_first.db import get_sql_connection
 
 logger = logging.getLogger(__name__)
 
@@ -48,13 +49,7 @@ class RBACRepositorySQL:
     
     def _get_connection(self):
         """Obtiene conexión a EDARSAHUB"""
-        return pymssql.connect(
-            server=self.sql_host,
-            port=self.sql_port,
-            user=self.sql_user,
-            password=self.sql_pass,
-            database=self.sql_db
-        )
+        return get_sql_connection()
     
     def _is_cache_valid(self) -> bool:
         """Verifica si el cache sigue válido"""

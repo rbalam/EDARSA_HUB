@@ -17,6 +17,7 @@ import logging
 from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 import pymssql
+from core.sql_first.db import get_sql_connection
 
 logger = logging.getLogger(__name__)
 
@@ -46,15 +47,7 @@ ACCION_REJECTED = "REJECTED"
 
 def get_hub_connection(server: Dict):
     """Obtiene conexión directa a EDARSA HUB con autocommit."""
-    return pymssql.connect(
-        server=server['host'],
-        port=server['port'],
-        database=server['database'],
-        user=server['username'],
-        password=server['password'],
-        login_timeout=30,
-        autocommit=True
-    )
+    return get_sql_connection()
 
 def escape_sql(value) -> str:
     """Escapa una cadena para SQL Server."""

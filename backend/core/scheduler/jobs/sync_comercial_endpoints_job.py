@@ -24,6 +24,7 @@ import uuid
 import pymssql
 
 from ..config import JobConfig
+from core.sql_first.db import get_sql_connection
 
 logger = logging.getLogger(__name__)
 
@@ -73,15 +74,7 @@ class SyncComercialEndpointsJob:
     def _get_edarsahub_connection(self):
         """Obtiene conexión a EDARSAHUB."""
         if self._conn is None:
-            self._conn = pymssql.connect(
-                server=EDARSAHUB_CONFIG["server"],
-                port=EDARSAHUB_CONFIG["port"],
-                database=EDARSAHUB_CONFIG["database"],
-                user=EDARSAHUB_CONFIG["user"],
-                password=EDARSAHUB_CONFIG["password"],
-                timeout=60,
-                as_dict=True
-            )
+            self._conn = get_sql_connection()
         return self._conn
     
     def _close_connection(self):
