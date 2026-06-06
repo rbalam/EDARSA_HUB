@@ -7,7 +7,8 @@
  */
 
 import { useState, useEffect } from 'react';
-// FASE AUTH-SECURITY-01 / FASE 4.1: getToken eliminado, auth viaja en cookie httpOnly
+// FASE AUTH-V2-ALIGN: auth canónica vía Bearer (authedFetch) + cookie httpOnly
+import { authedFetch } from '../../services/operativoApi';
 import { 
   Gauge,
   Clock,
@@ -80,9 +81,7 @@ const SLACard = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE}/api/v2/sla/metricas`, {
-        credentials: 'include'
-      });
+      const response = await authedFetch(`${API_BASE}/api/v2/sla/metricas`);
       if (!response.ok) throw new Error('Error al cargar métricas SLA');
       const data = await response.json();
       setMetricas(data.data);

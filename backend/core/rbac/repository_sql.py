@@ -442,7 +442,7 @@ class RBACRepositorySQL:
                         "permisos": permisos,
                     },
                     "sucursal_id": None,  # Por ahora no manejamos sucursales
-                    "fecha_asignacion": fecha.isoformat() if fecha else None,
+                    "fecha_asignacion": fecha.isoformat() if hasattr(fecha, "isoformat") else (fecha or None),
                 })
             
             return roles
@@ -690,7 +690,7 @@ class RBACRepositorySQL:
                     "metodo_http": row[7],
                     "ip_address": row[8],
                     "detalles": detalles,
-                    "fecha": row[10].isoformat() if row[10] else None,
+                    "fecha": row[10].isoformat() if hasattr(row[10], "isoformat") else (row[10] or None),
                 })
             
             return logs

@@ -60,6 +60,29 @@ def _get_sql_connection():
 # FUNCIONES DE UTILIDAD
 # =========================================================================
 
+def _coerce_aware_dt(val):
+    """Convierte un valor a datetime aware UTC.
+
+    FreeTDS (tds_version 7.0) devuelve las columnas DATETIME2 de SQL Server como
+    string (ej. '2026-06-06 00:22:04.2100000', con hasta 7 decimales). Esta
+    función acepta tanto datetime como string y siempre retorna datetime aware
+    en UTC (o None).
+    """
+    if val is None:
+        return None
+    if isinstance(val, str):
+        s = val.strip()
+        # Python no parsea 7 decimales; recortar la fracción a 6 dígitos
+        s = re.sub(r'(\.\d{6})\d+', r'\1', s)
+        try:
+            val = datetime.fromisoformat(s)
+        except ValueError:
+            val = datetime.strptime(s[:19], '%Y-%m-%d %H:%M:%S')
+    if val.tzinfo is None:
+        val = val.replace(tzinfo=timezone.utc)
+    return val
+
+
 def generate_token() -> str:
     """Generar token seguro de 256 bits"""
     return secrets.token_urlsafe(32)
@@ -134,8 +157,9 @@ def check_rate_limit_sql(tipo: str, valor: str, limit: int) -> Tuple[bool, int]:
         if row:
             rate_limit_id, contador, ventana_exp = row
             
-            # Verificar si la ventana expiró
-            if ventana_exp and ventana_exp.replace(tzinfo=timezone.utc) > now:
+            # Verificar si la ventana expiró (ventana_exp puede venir como string desde SQL)
+            ventana_exp = _coerce_aware_dt(ventana_exp)
+            if ventana_exp and ventana_exp > now:
                 # Ventana activa
                 if contador >= limit:
                     return False, 0

@@ -24,7 +24,7 @@ let memoryToken = null;
 /**
  * Obtener token (sessionStorage primero, luego memoria)
  */
-const getToken = () => {
+export const getToken = () => {
   // Primero intentar sessionStorage (persiste entre pestañas)
   try {
     const storedToken = sessionStorage.getItem(TOKEN_STORAGE_KEY);

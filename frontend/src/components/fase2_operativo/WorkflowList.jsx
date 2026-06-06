@@ -5,6 +5,8 @@
  */
 
 import { useState } from 'react';
+// FASE AUTH-V2-ALIGN: auth canónica vía Bearer (authedFetch) + cookie httpOnly
+import { authedFetch } from '../../services/operativoApi';
 import { 
   Activity, 
   Clock, 
@@ -183,7 +185,7 @@ const WorkflowList = ({
     try {
       setDownloadingId(`${tipo}-${workflowId}`);
       
-      const response = await fetch(
+      const response = await authedFetch(
         `${API_BASE}/api/v2/documentos/workflow/${workflowId}/${tipo}`
       );
       

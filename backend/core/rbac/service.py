@@ -49,14 +49,19 @@ class RBACService:
         "Visor": "OPERADOR",                  # Sin rol específico -> OPERADOR
     }
     
+    # FASE AUTH-V2-ALIGN (Capa 2): el seeding RBAC debe ocurrir UNA sola vez por
+    # proceso. middleware.py instancia RBACService(db) en cada request; con un flag
+    # de instancia el seed corría en CADA petición, abriendo decenas de conexiones
+    # a EDARSAHUB (lento ~6s + timeouts intermitentes => 500). Flag a nivel de clase.
+    _seeded = False
+
     def __init__(self, db):
         self.db = db
         self.repo = RBACRepository(db)
-        self._initialized = False
     
     async def initialize(self):
         """Inicializa el sistema RBAC, sembrando datos si es necesario."""
-        if self._initialized:
+        if RBACService._seeded:
             return
         
         # Sembrar permisos del sistema
@@ -69,12 +74,12 @@ class RBACService:
         if roles_count > 0:
             logger.info(f"RBAC: {roles_count} roles del sistema sembrados")
         
-        self._initialized = True
+        RBACService._seeded = True
         logger.info("RBAC Service inicializado")
     
     def ensure_initialized(self):
-        """Asegura que el servicio esté inicializado (sync)."""
-        if self._initialized:
+        """Asegura que el servicio esté inicializado (sync). Una vez por proceso."""
+        if RBACService._seeded:
             return
         
         permisos_count = self.repo.seed_permisos(PERMISOS_SISTEMA)
@@ -83,7 +88,7 @@ class RBACService:
         if permisos_count > 0 or roles_count > 0:
             logger.info(f"RBAC: Sembrados {permisos_count} permisos, {roles_count} roles")
         
-        self._initialized = True
+        RBACService._seeded = True
     
     # =========================================================================
     # MOTOR DE AUTORIZACIÓN

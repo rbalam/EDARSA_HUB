@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import ResponsabilidadAccionesModal from './ResponsabilidadAccionesModal';
 import logger from '../../services/logger';
+// FASE AUTH-V2-ALIGN: auth canónica vía Bearer (authedFetch) + cookie httpOnly
+import { authedFetch } from '../../services/operativoApi';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -168,7 +170,7 @@ const HistorialPanel = ({ responsabilidadId, onClose }) => {
   useEffect(() => {
     const cargar = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/v2/responsabilidad/${responsabilidadId}/historial`);
+        const res = await authedFetch(`${API_BASE}/api/v2/responsabilidad/${responsabilidadId}/historial`);
         const data = await res.json();
         setHistorial(data);
       } catch (err) {
@@ -244,8 +246,8 @@ const ResponsabilidadPendientesPanel = () => {
     setError(null);
     try {
       const [resPendientes, resDisputa] = await Promise.all([
-        fetch(`${API_BASE}/api/v2/responsabilidad/pendientes-aprobacion`),
-        fetch(`${API_BASE}/api/v2/responsabilidad/en-disputa`)
+        authedFetch(`${API_BASE}/api/v2/responsabilidad/pendientes-aprobacion`),
+        authedFetch(`${API_BASE}/api/v2/responsabilidad/en-disputa`)
       ]);
       
       if (!resPendientes.ok || !resDisputa.ok) {

@@ -10,23 +10,42 @@
  */
 
 import logger from './logger';
+import { getToken } from '../lib/api';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 const API_V2 = `${API_BASE}/api/v2`;
 
 /**
+ * fetch canónico autenticado para Operaciones v2.
+ * Inyecta el Authorization Bearer usando getToken() de lib/api.js (FUENTE ÚNICA
+ * del token; no se duplica lógica de auth) y mantiene credentials:'include'.
+ * Retorna el Response crudo (para JSON o blob).
+ */
+export function authedFetch(url, options = {}) {
+  const token = getToken();
+  const headers = { ...(options.headers || {}) };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return fetch(url, {
+    credentials: 'include',
+    ...options,
+    headers,
+  });
+}
+
+/**
  * Helper para hacer requests con manejo de errores y autenticación
- * FASE AUTH-SECURITY-01: Auth viaja en cookie httpOnly
+ * FASE AUTH-V2-ALIGN: Auth viaja en header Bearer canónico (+ cookie httpOnly)
  */
 async function apiRequest(url, options = {}) {
   try {
-    const response = await fetch(url, {
-      credentials: 'include',
+    const response = await authedFetch(url, {
+      ...options,
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers,
+        ...(options.headers || {}),
       },
-      ...options,
     });
 
     if (!response.ok) {

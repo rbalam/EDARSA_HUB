@@ -7,6 +7,8 @@
  */
 
 import { useState } from 'react';
+// FASE AUTH-V2-ALIGN: auth canónica vía Bearer (authedFetch) + cookie httpOnly
+import { authedFetch } from '../../services/operativoApi';
 import { 
   X, 
   CheckCircle, 
@@ -135,7 +137,7 @@ const ResponsabilidadAccionesModal = ({
     setError(null);
 
     try {
-      const response = await fetch(
+      const response = await authedFetch(
         `${API_BASE}/api/v2/responsabilidad/${responsabilidad.id}/${config.endpoint}`,
         {
           method: 'POST',
