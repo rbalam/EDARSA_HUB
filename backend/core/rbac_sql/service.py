@@ -2,50 +2,69 @@ from core.sql_first.db import fetch_all_dict, fetch_one_dict
 
 class RBACSQLService:
     """
-    RBAC SQL usando modelo canónico existente:
-    - Sys_Usuarios
-    - Sys_Roles / Usuario_Roles
-    - Usuario_RolesAsignacion
-    - Usuario_EmpresasAsignacion
-    - Usuario_SucursalesAsignacion
+    Modelo canónico:
+    - Sys_Usuarios = usuarios/login
+    - Usuario_Roles = catálogo canónico de roles
+    - Usuario_RolesAsignacion = asignación usuario-rol
+    - Usuario_EmpresasAsignacion = alcance empresa
+    - Usuario_SucursalesAsignacion = alcance sucursal
+    - Usuario_ServidoresAsignacion = alcance servidor
+
+    NO usar Sys_Roles ni RBAC_* como fuente final.
     """
 
     @staticmethod
     def get_roles(usuario_id):
         return fetch_all_dict("""
             SELECT
-                COALESCE(r.CodigoRol, r.Codigo, r.NombreRol, r.Nombre) AS CodigoRol,
-                COALESCE(r.NombreRol, r.Nombre, r.CodigoRol, r.Codigo) AS NombreRol,
-                COALESCE(TRY_CONVERT(INT, r.NivelJerarquia), 10) AS NivelJerarquia
+                r.CodigoRol,
+                r.NombreRol,
+                r.NivelJerarquia
             FROM dbo.Usuario_RolesAsignacion ura
             INNER JOIN dbo.Usuario_Roles r
-                ON TRY_CONVERT(NVARCHAR(100), r.RolID) = TRY_CONVERT(NVARCHAR(100), ura.RolID)
-                OR TRY_CONVERT(NVARCHAR(100), r.Id) = TRY_CONVERT(NVARCHAR(100), ura.RolID)
-            WHERE TRY_CONVERT(NVARCHAR(100), ura.UsuarioID) = %s
-              AND COALESCE(TRY_CONVERT(BIT, ura.Activo), 1) = 1
-              AND COALESCE(TRY_CONVERT(BIT, r.Activo), 1) = 1
-        """, [str(usuario_id)])
+                ON r.RolID = ura.RolID
+            WHERE ura.UsuarioID = %s
+              AND ISNULL(ura.Activo, 1) = 1
+              AND ISNULL(r.Activo, 1) = 1
+        """, [usuario_id])
 
     @staticmethod
     def get_empresas(usuario_id):
         return fetch_all_dict("""
-            SELECT TRY_CONVERT(NVARCHAR(100), EmpresaID) AS EmpresaID
+            SELECT EmpresaID
             FROM dbo.Usuario_EmpresasAsignacion
-            WHERE TRY_CONVERT(NVARCHAR(100), UsuarioID) = %s
-              AND COALESCE(TRY_CONVERT(BIT, Activo), 1) = 1
-        """, [str(usuario_id)])
+            WHERE UsuarioID = %s
+              AND ISNULL(Activo, 1) = 1
+        """, [usuario_id])
 
     @staticmethod
     def get_sucursales(usuario_id):
         return fetch_all_dict("""
-            SELECT TRY_CONVERT(NVARCHAR(100), SucursalID) AS SucursalID
+            SELECT
+                UsuarioID,
+                EmpresaID,
+                ServidorID,
+                SucursalCodigo
             FROM dbo.Usuario_SucursalesAsignacion
-            WHERE TRY_CONVERT(NVARCHAR(100), UsuarioID) = %s
-              AND COALESCE(TRY_CONVERT(BIT, Activo), 1) = 1
-        """, [str(usuario_id)])
+            WHERE UsuarioID = %s
+              AND ISNULL(Activo, 1) = 1
+        """, [usuario_id])
+
+    @staticmethod
+    def get_servidores(usuario_id):
+        return fetch_all_dict("""
+            SELECT ServidorID
+            FROM dbo.Usuario_ServidoresAsignacion
+            WHERE UsuarioID = %s
+              AND ISNULL(Activo, 1) = 1
+        """, [usuario_id])
 
     @staticmethod
     def get_unidades(usuario_id):
+        """
+        Unidad de negocio derivada desde sucursales/servidores.
+        No crear Usuario_UnidadesAsignacion si el modelo actual usa sucursales/servidores.
+        """
         return fetch_all_dict("""
             SELECT DISTINCT
                 COALESCE(
@@ -54,26 +73,27 @@ class RBACSQLService:
                     TRY_CONVERT(NVARCHAR(100), sc.unidad_negocio_pk)
                 ) AS UnidadNegocioID
             FROM dbo.Usuario_SucursalesAsignacion usa
-            LEFT JOIN dbo.Sucursales_Catalogo sc
-                ON TRY_CONVERT(NVARCHAR(100), sc.SucursalID) = TRY_CONVERT(NVARCHAR(100), usa.SucursalID)
-                OR TRY_CONVERT(NVARCHAR(100), sc.Id) = TRY_CONVERT(NVARCHAR(100), usa.SucursalID)
-            WHERE TRY_CONVERT(NVARCHAR(100), usa.UsuarioID) = %s
-              AND COALESCE(TRY_CONVERT(BIT, usa.Activo), 1) = 1
+            LEFT JOIN dbo.Sistema_Sucursales sc
+                ON TRY_CONVERT(NVARCHAR(100), sc.ServidorID) = TRY_CONVERT(NVARCHAR(100), usa.ServidorID)
+               AND TRY_CONVERT(NVARCHAR(100), sc.SucursalCodigo) = TRY_CONVERT(NVARCHAR(100), usa.SucursalCodigo)
+            WHERE usa.UsuarioID = %s
+              AND ISNULL(usa.Activo, 1) = 1
               AND COALESCE(
                     TRY_CONVERT(NVARCHAR(100), sc.UnidadNegocioID),
                     TRY_CONVERT(NVARCHAR(100), sc.unidad_negocio_id),
                     TRY_CONVERT(NVARCHAR(100), sc.unidad_negocio_pk)
               ) IS NOT NULL
-        """, [str(usuario_id)])
+        """, [usuario_id])
 
     @staticmethod
     def build_context(usuario_id):
         return {
             "roles": RBACSQLService.get_roles(usuario_id),
             "empresas": RBACSQLService.get_empresas(usuario_id),
-            "unidades_negocio": RBACSQLService.get_unidades(usuario_id),
             "sucursales": RBACSQLService.get_sucursales(usuario_id),
-            "source": "SQL_CANONICO_SYS_USUARIO"
+            "servidores": RBACSQLService.get_servidores(usuario_id),
+            "unidades_negocio": RBACSQLService.get_unidades(usuario_id),
+            "source": "SQL_CANONICO_SYS_USUARIOS_USUARIO_ROLES"
         }
 
     @staticmethod
@@ -81,20 +101,31 @@ class RBACSQLService:
         return bool(fetch_one_dict("""
             SELECT TOP 1 1 AS permitido
             FROM dbo.Usuario_EmpresasAsignacion
-            WHERE TRY_CONVERT(NVARCHAR(100), UsuarioID) = %s
-              AND TRY_CONVERT(NVARCHAR(100), EmpresaID) = %s
-              AND COALESCE(TRY_CONVERT(BIT, Activo), 1) = 1
-        """, [str(usuario_id), str(empresa_id)]))
+            WHERE UsuarioID = %s
+              AND EmpresaID = %s
+              AND ISNULL(Activo, 1) = 1
+        """, [usuario_id, empresa_id]))
 
     @staticmethod
-    def can_access_sucursal(usuario_id, sucursal_id):
+    def can_access_sucursal(usuario_id, servidor_id, sucursal_codigo):
         return bool(fetch_one_dict("""
             SELECT TOP 1 1 AS permitido
             FROM dbo.Usuario_SucursalesAsignacion
-            WHERE TRY_CONVERT(NVARCHAR(100), UsuarioID) = %s
-              AND TRY_CONVERT(NVARCHAR(100), SucursalID) = %s
-              AND COALESCE(TRY_CONVERT(BIT, Activo), 1) = 1
-        """, [str(usuario_id), str(sucursal_id)]))
+            WHERE UsuarioID = %s
+              AND ServidorID = %s
+              AND SucursalCodigo = %s
+              AND ISNULL(Activo, 1) = 1
+        """, [usuario_id, servidor_id, sucursal_codigo]))
+
+    @staticmethod
+    def can_access_servidor(usuario_id, servidor_id):
+        return bool(fetch_one_dict("""
+            SELECT TOP 1 1 AS permitido
+            FROM dbo.Usuario_ServidoresAsignacion
+            WHERE UsuarioID = %s
+              AND ServidorID = %s
+              AND ISNULL(Activo, 1) = 1
+        """, [usuario_id, servidor_id]))
 
     @staticmethod
     def can_access_unidad(usuario_id, unidad_id):
@@ -102,18 +133,19 @@ class RBACSQLService:
             SELECT TOP 1 1 AS permitido
             FROM (
                 SELECT DISTINCT
-                    TRY_CONVERT(NVARCHAR(100), usa.UsuarioID) AS UsuarioID,
+                    usa.UsuarioID,
                     COALESCE(
                         TRY_CONVERT(NVARCHAR(100), sc.UnidadNegocioID),
                         TRY_CONVERT(NVARCHAR(100), sc.unidad_negocio_id),
                         TRY_CONVERT(NVARCHAR(100), sc.unidad_negocio_pk)
-                    ) AS UnidadID
+                    ) AS UnidadNegocioID
                 FROM dbo.Usuario_SucursalesAsignacion usa
-                LEFT JOIN dbo.Sucursales_Catalogo sc
-                    ON TRY_CONVERT(NVARCHAR(100), sc.SucursalID) = TRY_CONVERT(NVARCHAR(100), usa.SucursalID)
-                    OR TRY_CONVERT(NVARCHAR(100), sc.Id) = TRY_CONVERT(NVARCHAR(100), usa.SucursalID)
-                WHERE COALESCE(TRY_CONVERT(BIT, usa.Activo), 1) = 1
+                LEFT JOIN dbo.Sistema_Sucursales sc
+                    ON TRY_CONVERT(NVARCHAR(100), sc.ServidorID) = TRY_CONVERT(NVARCHAR(100), usa.ServidorID)
+                   AND TRY_CONVERT(NVARCHAR(100), sc.SucursalCodigo) = TRY_CONVERT(NVARCHAR(100), usa.SucursalCodigo)
+                WHERE ISNULL(usa.Activo, 1) = 1
             ) x
-            WHERE x.UsuarioID = %s AND x.UnidadID = %s
-        """, [str(usuario_id), str(unidad_id)])
+            WHERE x.UsuarioID = %s
+              AND x.UnidadNegocioID = %s
+        """, [usuario_id, str(unidad_id)])
         return bool(row)

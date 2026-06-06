@@ -1,0 +1,1 @@
+PASS roles canónicos usan Usuario_Roles y asignaciones Usuario_*

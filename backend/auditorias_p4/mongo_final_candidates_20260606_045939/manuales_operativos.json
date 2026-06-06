@@ -1,0 +1,147 @@
+[
+  {
+    "_id": {
+      "$oid": "69e4a8d9130ad13b95f135a0"
+    },
+    "id": "fc1f5a29-1681-4058-befe-93bff918aa25",
+    "modulo": "compras",
+    "proceso_id": "25954231-8786-4bb0-9be3-2095a71bcf0e",
+    "proceso_tipo": "auditoria_compras",
+    "empresa_id": "EDARSA",
+    "empresa_nombre": "Sucursal Centro",
+    "sucursal_id": "SUC001",
+    "sucursal_nombre": "Sucursal Centro",
+    "nombre_proceso": "Auditor\u00eda Operativa de Compras - Sucursal Centro - Almac\u00e9n Principal",
+    "formato": "cienfuegos",
+    "contenido": {
+      "nombre_proceso": "Auditor\u00eda Operativa de Compras - Sucursal Centro - Almac\u00e9n Principal",
+      "objetivo": "Validar y auditar el proceso de compras para Sucursal Centro, asegurando la correcta recepci\u00f3n de productos, verificaci\u00f3n de inventarios y autorizaci\u00f3n de pagos seg\u00fan las pol\u00edticas de EDARSA.",
+      "alcance": "Este proceso cubre la auditor\u00eda de compras del per\u00edodo 04/04/2026 al 19/04/2026 para la sucursal Sucursal Centro, almac\u00e9n Almac\u00e9n Principal. Incluye validaci\u00f3n de inventarios y autorizaciones requeridas.",
+      "responsables": [
+        {
+          "rol": "Iniciador del proceso",
+          "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+          "usuario_nombre": "admin@edarsa.com",
+          "accion": "Cre\u00f3 la auditor\u00eda operativa",
+          "fecha": {
+            "$date": "2026-04-19T01:24:02.617Z"
+          }
+        },
+        {
+          "rol": "Gerencia",
+          "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+          "usuario_nombre": "Gerencia",
+          "accion": "Autoriz\u00f3 la auditor\u00eda",
+          "fecha": {
+            "$date": "2026-04-19T01:24:08.571Z"
+          }
+        },
+        {
+          "rol": "Tesorer\u00eda",
+          "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+          "usuario_nombre": "Tesorer\u00eda",
+          "accion": "Autoriz\u00f3 el pago",
+          "fecha": {
+            "$date": "2026-04-19T01:24:14.066Z"
+          }
+        }
+      ],
+      "procedimiento": [
+        {
+          "numero": 1,
+          "accion": "Se complet\u00f3 el an\u00e1lisis de auditor\u00eda. Recomendaci\u00f3n: URGENTE",
+          "responsable": "Sistema",
+          "resultado": "Productos cr\u00edticos: 1, Faltantes: 1",
+          "fecha": {
+            "$date": "2026-04-19T01:24:02.619Z"
+          },
+          "evento_origen": "AUDITORIA_COMPLETADA"
+        },
+        {
+          "numero": 2,
+          "accion": "Se ejecut\u00f3: AUTORIZADO_GERENCIA",
+          "responsable": "Sistema",
+          "resultado": null,
+          "fecha": {
+            "$date": "2026-04-19T01:24:08.571Z"
+          },
+          "evento_origen": "AUTORIZADO_GERENCIA"
+        },
+        {
+          "numero": 3,
+          "accion": "Se ejecut\u00f3: APROBADO_FINAL",
+          "responsable": "Sistema",
+          "resultado": null,
+          "fecha": {
+            "$date": "2026-04-19T01:24:14.066Z"
+          },
+          "evento_origen": "APROBADO_FINAL"
+        }
+      ],
+      "politicas": [
+        "Doble autorizaci\u00f3n requerida: Gerencia y Tesorer\u00eda",
+        "Per\u00edodo de an\u00e1lisis de inventarios: 15 d\u00edas",
+        "D\u00edas objetivo de inventario: 10 d\u00edas",
+        "Se requiere inventario f\u00edsico para validaci\u00f3n"
+      ],
+      "evidencias": [
+        {
+          "tipo": "Inventario Final",
+          "descripcion": "Inventario f\u00edsico de cierre de per\u00edodo",
+          "referencia": "INV-2026-001",
+          "fecha": {
+            "$date": "2026-04-19T01:23:54.636Z"
+          }
+        },
+        {
+          "tipo": "Reporte de Auditor\u00eda",
+          "descripcion": "Resultado del an\u00e1lisis de auditor\u00eda operativa",
+          "referencia": "25954231-8786-4bb0-9be3-2095a71bcf0e",
+          "fecha": {
+            "$date": "2026-04-19T01:24:14.066Z"
+          }
+        },
+        {
+          "tipo": "Autorizaci\u00f3n Gerencia",
+          "descripcion": "Aprobaci\u00f3n de gerencia. Comentario: Aprobado por Gerencia",
+          "referencia": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+          "fecha": {
+            "$date": "2026-04-19T01:24:08.571Z"
+          }
+        },
+        {
+          "tipo": "Autorizaci\u00f3n Tesorer\u00eda",
+          "descripcion": "Aprobaci\u00f3n de tesorer\u00eda. Comentario: Aprobaci\u00f3n final Tesorer\u00eda",
+          "referencia": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+          "fecha": {
+            "$date": "2026-04-19T01:24:14.066Z"
+          }
+        }
+      ],
+      "observaciones": [
+        "Recomendaci\u00f3n general: URGENTE"
+      ],
+      "areas_mejora": [],
+      "metricas": {
+        "total_productos": 3,
+        "dias_proceso": 0,
+        "total_eventos": 3,
+        "productos_criticos": 0,
+        "productos_faltantes": 1,
+        "productos_ok": 0,
+        "autorizado_gerencia": true,
+        "autorizado_tesoreria": true
+      }
+    },
+    "estado_proceso_final": "APROBADO",
+    "generado_por": "sistema",
+    "created_at": {
+      "$date": "2026-04-19T10:05:13.659Z"
+    },
+    "updated_at": {
+      "$date": "2026-04-19T10:05:13.659Z"
+    },
+    "version": 1,
+    "activo": true
+  }
+]

@@ -1,0 +1,167 @@
+[
+  {
+    "_id": {
+      "$oid": "69e75f79e288072c3af9ed91"
+    },
+    "user_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "asignado_por": "ricardo@edarsa.com.mx",
+    "catalogos_permitidos": [
+      "puestos",
+      "departamentos"
+    ],
+    "fecha_asignacion": "2026-04-21T11:44:36.170687+00:00",
+    "puede_solicitar": true,
+    "puede_autorizar": true,
+    "puede_liberar": false
+  },
+  {
+    "_id": {
+      "$oid": "69e760abe288072c3af9ee41"
+    },
+    "user_id": "e200de9e-0f3e-43a7-a4ea-1b47a1e9bbaf",
+    "asignado_por": "ricardo@edarsa.com.mx",
+    "catalogos_permitidos": [
+      "puestos",
+      "sucursales",
+      "proveedores",
+      "almacenes",
+      "categorias",
+      "tipos_incidencias",
+      "departamentos",
+      "categorias_presupuesto",
+      "familias"
+    ],
+    "fecha_asignacion": "2026-04-22T09:03:18.555917+00:00",
+    "puede_solicitar": true,
+    "puede_autorizar": true,
+    "puede_liberar": true
+  },
+  {
+    "_id": {
+      "$oid": "69e760bae288072c3af9ee52"
+    },
+    "user_id": "f3ba4a2f-9cb9-4982-be09-31fbb67866b5",
+    "asignado_por": "ricardo@edarsa.com.mx",
+    "catalogos_permitidos": [
+      "puestos",
+      "sucursales",
+      "proveedores",
+      "almacenes",
+      "categorias",
+      "tipos_incidencias",
+      "departamentos",
+      "categorias_presupuesto",
+      "familias"
+    ],
+    "fecha_asignacion": "2026-04-21T11:46:59.102668+00:00",
+    "puede_solicitar": true,
+    "puede_autorizar": true,
+    "puede_liberar": false
+  },
+  {
+    "_id": {
+      "$oid": "69e760cfe288072c3af9ee65"
+    },
+    "user_id": "57dbb5ad-ed23-4ed6-8d60-f590a7622994",
+    "asignado_por": "ricardo@edarsa.com.mx",
+    "catalogos_permitidos": [
+      "puestos",
+      "sucursales",
+      "proveedores",
+      "almacenes",
+      "categorias",
+      "tipos_incidencias",
+      "departamentos",
+      "categorias_presupuesto",
+      "familias"
+    ],
+    "fecha_asignacion": "2026-04-22T18:16:31.415041+00:00",
+    "puede_solicitar": true,
+    "puede_autorizar": true,
+    "puede_liberar": false
+  },
+  {
+    "_id": {
+      "$oid": "69e765afe288072c3afa0e48"
+    },
+    "user_id": "0da77b7b-fe88-4e23-98bc-9cbf543d5ee3",
+    "asignado_por": "ricardo@edarsa.com.mx",
+    "catalogos_permitidos": [
+      "puestos",
+      "sucursales",
+      "proveedores",
+      "almacenes",
+      "categorias",
+      "tipos_incidencias",
+      "departamentos",
+      "categorias_presupuesto",
+      "familias"
+    ],
+    "fecha_asignacion": "2026-04-21T11:55:27.175807+00:00",
+    "puede_autorizar": false,
+    "puede_liberar": false,
+    "puede_solicitar": true
+  },
+  {
+    "_id": {
+      "$oid": "69e7661ae288072c3afa163d"
+    },
+    "user_id": "a5e56ed0-89b2-4d50-92f4-568a2106ab50",
+    "asignado_por": "ricardo@edarsa.com.mx",
+    "catalogos_permitidos": [
+      "puestos",
+      "sucursales",
+      "proveedores",
+      "almacenes",
+      "categorias",
+      "tipos_incidencias",
+      "departamentos",
+      "categorias_presupuesto",
+      "familias"
+    ],
+    "fecha_asignacion": "2026-05-14T01:18:14.452106+00:00",
+    "puede_autorizar": true,
+    "puede_liberar": true,
+    "puede_solicitar": true
+  },
+  {
+    "_id": {
+      "$oid": "69e76628e288072c3afa176d"
+    },
+    "user_id": "a72b325b-662f-4777-83ed-4dda6e8398a8",
+    "asignado_por": "ricardo@edarsa.com.mx",
+    "catalogos_permitidos": [
+      "puestos",
+      "sucursales",
+      "proveedores",
+      "almacenes",
+      "categorias",
+      "tipos_incidencias",
+      "departamentos",
+      "categorias_presupuesto",
+      "familias"
+    ],
+    "fecha_asignacion": "2026-04-21T11:57:28.820821+00:00",
+    "puede_autorizar": true,
+    "puede_liberar": false,
+    "puede_solicitar": true
+  },
+  {
+    "_id": {
+      "$oid": "69e90ae4f646e5db59dd5c47"
+    },
+    "user_id": "30702651-10a5-4e3a-9f83-245e2a52feb7",
+    "asignado_por": "ricardo@edarsa.com.mx",
+    "catalogos_permitidos": [
+      "proveedores",
+      "almacenes",
+      "familias",
+      "categorias_presupuesto",
+      "categorias"
+    ],
+    "fecha_asignacion": "2026-04-22T17:52:36.884521+00:00",
+    "puede_autorizar": false,
+    "puede_liberar": false,
+    "puede_solicitar": true
+  }
+]

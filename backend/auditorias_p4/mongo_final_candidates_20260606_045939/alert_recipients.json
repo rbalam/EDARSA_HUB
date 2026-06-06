@@ -1,0 +1,28 @@
+[
+  {
+    "_id": {
+      "$oid": "69e565f2c389a4cb1880d89c"
+    },
+    "tipo": "email",
+    "destinatario": "director@edarsa.com.mx",
+    "nombre": "Director General",
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T23:32:02.342Z"
+    },
+    "created_by": "admin@edarsa.com"
+  },
+  {
+    "_id": {
+      "$oid": "69e565f8c389a4cb1880d89d"
+    },
+    "tipo": "whatsapp",
+    "destinatario": "+521234567890",
+    "nombre": "Gerente Operaciones",
+    "activo": true,
+    "created_at": {
+      "$date": "2026-04-19T23:32:08.056Z"
+    },
+    "created_by": "admin@edarsa.com"
+  }
+]

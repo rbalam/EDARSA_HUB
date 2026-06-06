@@ -9,8 +9,5 @@ def can_access_empresa_sql(usuario_id, empresa_id):
 def can_access_unidad_sql(usuario_id, unidad_id):
     return RBACSQLService.can_access_unidad(usuario_id, unidad_id)
 
-def can_access_servidor_sql(usuario_id, servidor_id):
-    return RBACSQLService.can_access_servidor(usuario_id, servidor_id)
-
-def can_access_sucursal_sql(usuario_id, servidor_id, sucursal_codigo):
-    return RBACSQLService.can_access_sucursal(usuario_id, servidor_id, sucursal_codigo)
+def can_access_sucursal_sql(usuario_id, sucursal_id):
+    return RBACSQLService.can_access_sucursal(usuario_id, sucursal_id)

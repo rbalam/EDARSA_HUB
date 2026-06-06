@@ -1,0 +1,32 @@
+==================================================
+P4-12 INTEGRIDAD CANONICA
+==================================================
+
+=== NULL CHECKS ===
+✓ Usuario_RolesAsignacion.UsuarioID: 0 nulls de 27
+✓ Usuario_RolesAsignacion.RolID: 0 nulls de 27
+✓ Usuario_EmpresasAsignacion.UsuarioID: 0 nulls de 38
+✓ Usuario_EmpresasAsignacion.EmpresaID: 0 nulls de 38
+✓ Usuario_SucursalesAsignacion.UsuarioID: 0 nulls de 216
+✓ Usuario_SucursalesAsignacion.ServidorID: 0 nulls de 216
+✓ Usuario_SucursalesAsignacion.SucursalCodigo: 0 nulls de 216
+✓ Usuario_ServidoresAsignacion.UsuarioID: 0 nulls de 194
+✓ Usuario_ServidoresAsignacion.ServidorID: 0 nulls de 194
+
+=== DUPLICADOS ===
+⚠️ Usuario_RolesAsignacion (UsuarioID, RolID): 6 duplicados
+✓ Usuario_EmpresasAsignacion (UsuarioID, EmpresaID): 0 duplicados
+⚠️ Usuario_ServidoresAsignacion (UsuarioID, ServidorID): 28 duplicados
+⚠️ Usuario_SucursalesAsignacion (UsuarioID, ServidorID, SucursalCodigo): 27 duplicados
+
+=== HUÉRFANOS ===
+⚠️ Usuario_RolesAsignacion -> Sys_Usuarios: 27 huérfanos
+✓ Usuario_RolesAsignacion -> Usuario_Roles: 0 huérfanos
+⚠️ Usuario_EmpresasAsignacion -> Sys_Usuarios: 38 huérfanos
+⚠️ Usuario_SucursalesAsignacion -> Sys_Usuarios: 216 huérfanos
+⚠️ Usuario_ServidoresAsignacion -> Sys_Usuarios: 194 huérfanos
+
+ERRORES_INTEGRIDAD: 7
+⚠️ HAY ERRORES DE INTEGRIDAD (no fatal)
+
+Reporte: auditorias_p4/P4_12_INTEGRIDAD_CANONICA_20260606_045859.txt
