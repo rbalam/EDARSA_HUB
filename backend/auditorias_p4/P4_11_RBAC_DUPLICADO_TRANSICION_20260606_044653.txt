@@ -1,0 +1,10 @@
+==================================================
+P4-11 MARCAR RBAC_* COMO DUPLICADO / TRANSICION
+==================================================
+
+==================================================
+P4-11 RESULTADO
+==================================================
+Reporte: auditorias_p4/P4_11_RBAC_DUPLICADO_TRANSICION_20260606_044653.txt
+Health: auditorias_p4/P4_11_HEALTH_20260606_044653.json
+NO SE ELIMINARON TABLAS
