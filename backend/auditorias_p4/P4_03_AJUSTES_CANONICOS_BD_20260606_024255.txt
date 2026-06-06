@@ -1,0 +1,79 @@
+==================================================
+P4-03 AJUSTES CANONICOS BD SQL
+==================================================
+EXISTE_TABLA Sistema_Queries
+CREADA_TABLA Sistema_MigracionMongoColecciones
+=== TABLAS CENTRALES OK ===
+CREADA_TABLA Servidores_ConexionEstado
+EXISTE_TABLA Sistema_NotificacionesConfig
+EXISTE_TABLA Sistema_AlertasDestinatarios
+CREADA_TABLA ConsultasSQL_Custom
+EXISTE_TABLA Finanzas_AuditoriaFinanciera
+EXISTE_TABLA Compras_AutomatizacionesOperativas
+CREADA_TABLA Proveedor_PortalSuppliers
+EXISTE_TABLA Manuales_Operativos
+=== TABLAS FALTANTES CREADAS ===
+AGREGADA_COLUMNA Scheduler_InventariosProcesados MongoId
+AGREGADA_COLUMNA Scheduler_InventariosProcesados ColeccionOrigen
+AGREGADA_COLUMNA Scheduler_InventariosProcesados PayloadMongo
+AGREGADA_COLUMNA Scheduler_InventariosProcesados MigradoDesdeMongo
+AGREGADA_COLUMNA Scheduler_InventariosProcesados FechaMigracionMongo
+AGREGADA_COLUMNA Servidores_Status MongoId
+AGREGADA_COLUMNA Servidores_Status ColeccionOrigen
+AGREGADA_COLUMNA Servidores_Status PayloadMongo
+AGREGADA_COLUMNA Servidores_Status MigradoDesdeMongo
+AGREGADA_COLUMNA Servidores_Status FechaMigracionMongo
+AGREGADA_COLUMNA Sistema_ServidorSucursalesConfig MongoId
+AGREGADA_COLUMNA Sistema_ServidorSucursalesConfig ColeccionOrigen
+AGREGADA_COLUMNA Sistema_ServidorSucursalesConfig PayloadMongo
+AGREGADA_COLUMNA Sistema_ServidorSucursalesConfig MigradoDesdeMongo
+AGREGADA_COLUMNA Sistema_ServidorSucursalesConfig FechaMigracionMongo
+AGREGADA_COLUMNA Workflow_DetalleDiferencias MongoId
+AGREGADA_COLUMNA Workflow_DetalleDiferencias ColeccionOrigen
+AGREGADA_COLUMNA Workflow_DetalleDiferencias PayloadMongo
+AGREGADA_COLUMNA Workflow_DetalleDiferencias MigradoDesdeMongo
+AGREGADA_COLUMNA Workflow_DetalleDiferencias FechaMigracionMongo
+AGREGADA_COLUMNA propinas_tpv_config MongoId
+AGREGADA_COLUMNA propinas_tpv_config ColeccionOrigen
+AGREGADA_COLUMNA propinas_tpv_config PayloadMongo
+AGREGADA_COLUMNA propinas_tpv_config MigradoDesdeMongo
+AGREGADA_COLUMNA propinas_tpv_config FechaMigracionMongo
+AGREGADA_COLUMNA Configuracion_Operativa MongoId
+AGREGADA_COLUMNA Configuracion_Operativa ColeccionOrigen
+AGREGADA_COLUMNA Configuracion_Operativa PayloadMongo
+AGREGADA_COLUMNA Configuracion_Operativa MigradoDesdeMongo
+AGREGADA_COLUMNA Configuracion_Operativa FechaMigracionMongo
+AGREGADA_COLUMNA Scheduler_PedidosProcesados MongoId
+AGREGADA_COLUMNA Scheduler_PedidosProcesados ColeccionOrigen
+AGREGADA_COLUMNA Scheduler_PedidosProcesados PayloadMongo
+AGREGADA_COLUMNA Scheduler_PedidosProcesados MigradoDesdeMongo
+AGREGADA_COLUMNA Scheduler_PedidosProcesados FechaMigracionMongo
+AGREGADA_COLUMNA Compras_Inventarios_Fisicos_Sync MongoId
+AGREGADA_COLUMNA Compras_Inventarios_Fisicos_Sync ColeccionOrigen
+AGREGADA_COLUMNA Compras_Inventarios_Fisicos_Sync PayloadMongo
+AGREGADA_COLUMNA Compras_Inventarios_Fisicos_Sync MigradoDesdeMongo
+AGREGADA_COLUMNA Compras_Inventarios_Fisicos_Sync FechaMigracionMongo
+=== TRAZABILIDAD AGREGADA ===
+MAPEOS_INSERTADOS 16
+TOTAL_MAPEOS 16
+VISTA_CREADA vw_Sistema_MigracionMongoColecciones_Control
+
+=== VALIDACION FINAL ===
+VALIDA_TABLA Sistema_Queries OK
+VALIDA_TABLA Sistema_MigracionMongoColecciones OK
+VALIDA_TABLA Servidores_ConexionEstado OK
+VALIDA_TABLA Sistema_NotificacionesConfig OK
+VALIDA_TABLA Sistema_AlertasDestinatarios OK
+VALIDA_TABLA ConsultasSQL_Custom OK
+VALIDA_TABLA Finanzas_AuditoriaFinanciera OK
+VALIDA_TABLA Compras_AutomatizacionesOperativas OK
+VALIDA_TABLA Proveedor_PortalSuppliers OK
+VALIDA_TABLA Manuales_Operativos OK
+
+TOTAL_MAPEOS_MONGO_SQL 16
+
+==================================================
+P4-03 RESULTADO
+==================================================
+Reporte: auditorias_p4/P4_03_AJUSTES_CANONICOS_BD_20260606_024255.txt
+Health: auditorias_p4/P4_03_HEALTH_20260606_024255.json
