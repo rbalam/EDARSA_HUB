@@ -106,5 +106,22 @@ EDARSAHUB_SQL_PASSWORD=******
 ---
 
 *Last Updated: 2026-06-06*
-*Phase: P4 Complete, P5-10B Complete (Menu SQL)*
+*Phase: P4 Complete, P5-10B Complete (Menu SQL + Enterprise Menu)*
 *Pending: Final MongoDB Sunset*
+
+## Enterprise Menu System
+El sistema ahora tiene un menú Enterprise organizado por grupos:
+- **Operación**: Ventas, Compras, Inventarios, Producción
+- **Finanzas**: Flujo, Bancos, Contabilidad, Comisiones
+- **Personas**: RH, CRM, Cava de Socios
+- **Inteligencia**: Dirección, BI, IA, Auditoría
+- **Gestión**: Proyectos, Marketing
+- **Corporativo**: Activos, Catálogos
+- **Integraciones**: Conectores, APIs
+- **Administración/Sistema**: Control, Infraestructura, Seguridad
+- **Satélites**: Comandero, Super Caja, PIC
+
+Archivos clave:
+- `/app/frontend/src/config/enterpriseMenuConfig.js` - Configuración canónica
+- `/app/frontend/src/components/navigation/EnterpriseSidebarMenu.jsx` - Componente visual
+- Flag `USE_ENTERPRISE_MENU` en Layout.js para activar/desactivar

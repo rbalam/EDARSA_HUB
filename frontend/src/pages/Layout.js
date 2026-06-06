@@ -1,7 +1,8 @@
-import { Outlet, useLocation, Link } from 'react-router-dom';
+import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import logger from '@/services/logger';
 import { Button } from '@/components/ui/button';
+import EnterpriseSidebarMenu from '@/components/navigation/EnterpriseSidebarMenu';
 import { 
   LayoutDashboard, 
   Server, 
@@ -110,6 +111,10 @@ const ICON_MAP = {
 
 // P5-10B: Desactivar fallback hardcodeado - SQL canónico es la única fuente
 const ENABLE_HARDCODED_MENU_FALLBACK = false;
+
+// ENTERPRISE MENU: Flag para usar el nuevo menú Enterprise (agrupado y buscable)
+// Cuando esté en true, usa EnterpriseSidebarMenu en lugar del sidebar actual
+const USE_ENTERPRISE_MENU = true; // Activado para probar
 
 const Layout = () => {
   const location = useLocation();
@@ -651,6 +656,14 @@ const Layout = () => {
           </div>
 
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto" data-testid="sidebar-nav">
+            {/* P5-10B: Menú Enterprise (agrupado y buscable) */}
+            {USE_ENTERPRISE_MENU ? (
+              <EnterpriseSidebarMenu 
+                user={user}
+                collapsed={false}
+              />
+            ) : (
+              <>
             {/* Indicador de fuente de menús (solo dev) */}
             {process.env.NODE_ENV === 'development' && (
               <div className="px-4 py-1 text-[9px] text-zinc-600">
@@ -914,6 +927,8 @@ const Layout = () => {
                 );
               })}
             </div>
+              </>
+            )}
           </nav>
 
           <div className="p-4 border-t border-zinc-800">
