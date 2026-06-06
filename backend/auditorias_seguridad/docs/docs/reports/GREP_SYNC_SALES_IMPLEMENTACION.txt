@@ -1,0 +1,21 @@
+backend/core/scheduler/jobs/inteligencia_comercial_status_job.py:98:                'Sync_Sales' AS Fuente,
+backend/core/scheduler/jobs/inteligencia_comercial_status_job.py:102:            FROM dbo.Sync_Sales
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:11:- Sync_Sales (detalle de transacciones con items JSON)
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:124:        CONVERT(VARCHAR(64), ch.folio) AS NumeroTicket,
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:125:        CONVERT(VARCHAR(64), NEWID()) AS IdTransaccion,
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:156:        CONVERT(VARCHAR(64), v.Vn_Folio) AS NumeroTicket,
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:157:        CONVERT(VARCHAR(64), NEWID()) AS IdTransaccion,
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:231:    """Inserta registros en Sync_Sales."""
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:240:            # Verificar si ya existe (por NumeroTicket + UnidadNegocio + FechaHora)
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:242:                SELECT COUNT(*) FROM Sync_Sales 
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:243:                WHERE NumeroTicket = %s AND UnidadNegocio = %s 
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:245:            """, (sale["NumeroTicket"], sale["UnidadNegocio"], sale["FechaHora"]))
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:252:                INSERT INTO Sync_Sales (
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:253:                    id, branch, UnidadNegocio, NumeroTicket, 
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:262:                sale.get("IdTransaccion", str(datetime.now().timestamp())),
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:265:                sale["NumeroTicket"],
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:277:            logger.warning(f"[SYNC] Error insertando ticket {sale.get('NumeroTicket')}: {e}")
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:288:        # Calcular KPIs desde Sync_Sales
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:291:                COUNT(DISTINCT NumeroTicket) AS tickets,
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:294:            FROM Sync_Sales
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:434:                # 2. Insertar en Sync_Sales

@@ -1,0 +1,21 @@
+P3-06B VALIDACIÓN SECUNDARIA POST-CANONIZACIÓN
+Fecha: Fri Jun  5 06:30:26 UTC 2026
+
+=== 1) HEALTH ===
+{"status":"operativo","sistema":"EDARSA HUB","version":"1.0"}
+=== 2) COMPILE BACKEND ===
+OK compileall
+
+=== 3) ENDPOINTS CRÍTICOS ===
+--- /api/admin/sync-monitor ---
+SUCCESS - Servidores: 14
+--- /api/unidades-negocio ---
+SUCCESS - 5 unidades
+--- /api/pricing-ai/resumen ---
+SUCCESS - Productos: 5642
+--- /api/dashboard-ejecutivo/resumen ---
+SUCCESS - Ventas: 1224212.33
+--- BACKFILL COMPRAS DRY_RUN ---
+SUCCESS - Registros: 17
+--- BACKFILL INVENTARIOS DRY_RUN ---
+SUCCESS - Registros: 82

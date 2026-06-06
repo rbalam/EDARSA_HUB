@@ -1,0 +1,44 @@
+{
+  "edaras_hub_metadata": {
+    "ecosistema_version": "2.0.0_enterprise",
+    "politica_conexion": "async_batch_processing",
+    "modulos_activos": ["finanzas", "contabilidad", "recursos_humanos", "crm_lealtad"]
+  },
+  "registro_transaccion_prueba": {
+    "id_transaccion": "TX-2026-00598",
+    "id_mesa": "MESA-05",
+    "vendedor": {
+      "id_empleado": "EMP-882",
+      "rol": "vendedor_premium",
+      "meta_turno_actual": 5000.00,
+      "acumulado_turno": 3850.00
+    },
+    "cliente_crm": {
+      "id_cliente": "CRM-9941",
+      "nivel_lealtad": "Gold",
+      "preferencia_tag": "cortes_premium"
+    },
+    "items_comandados": [
+      {
+        "id_producto": "ALPH-001",
+        "nombre": "Tomahawk Prime (800g)",
+        "precio_neto": 1077.59,
+        "impuesto_iva": 172.41,
+        "precio_final": 1250.00,
+        "unidad_negocio": "Cocina - Parrilla",
+        "maridaje_aplicado": "BAR-501"
+      }
+    ],
+    "totales_financieros": {
+      "subtotal_neto": 1077.59,
+      "total_impuestos": 172.41,
+      "propina_sugerida_15": 187.50,
+      "gran_total_cuenta": 1437.50
+    },
+    "mapeo_contable_erp": {
+      "cuenta_ingresos": "401.01_ventas_alimentos",
+      "cuenta_impuestos": "219.01_iva_trasladado",
+      "cuenta_caja_bancos": "102.02_terminal_bancaria_visa"
+    }
+  }
+}

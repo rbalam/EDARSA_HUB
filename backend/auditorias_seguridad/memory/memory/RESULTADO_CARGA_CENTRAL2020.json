@@ -1,0 +1,50 @@
+{
+  "fecha": "2026-04-12T14:50:35.966017",
+  "bitacora_id": 3,
+  "fuente": "MPro_CENTRAL2020",
+  "estadisticas": {
+    "total": 484,
+    "insertados": 484,
+    "con_curp": 474,
+    "con_rfc": 453,
+    "incompletos": 2,
+    "errores": 0,
+    "por_empresa": {
+      "130 TULUM": {
+        "total": 40,
+        "activos": 0,
+        "bajas": 40
+      },
+      "CERVEZA PATITO PENINSULAR S.A.P.I. DE C.V.": {
+        "total": 28,
+        "activos": 25,
+        "bajas": 3
+      },
+      "EMPRESA DE AUTOMATIZACION DE RESTAURANTES": {
+        "total": 3,
+        "activos": 2,
+        "bajas": 1
+      },
+      "MECA OPERADORA RESTAURANTERA": {
+        "total": 14,
+        "activos": 8,
+        "bajas": 6
+      },
+      "QUEYUKA": {
+        "total": 208,
+        "activos": 57,
+        "bajas": 151
+      },
+      "SIBARITAS RESTAURANTEROS": {
+        "total": 163,
+        "activos": 41,
+        "bajas": 122
+      },
+      "DESARROLLOS AMARILLOS DE LA PENINSULA": {
+        "total": 28,
+        "activos": 27,
+        "bajas": 1
+      }
+    }
+  }
+}

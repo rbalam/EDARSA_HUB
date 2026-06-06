@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-04-25T15:11:47.089002+00:00",
+  "mode": "DRY_RUN",
+  "status": "SUCCESS",
+  "sql_count": 11,
+  "mongo_count": 11,
+  "matched": 11,
+  "sql_only": [],
+  "mongo_only": [],
+  "diffs": [],
+  "synced": [],
+  "warnings": [],
+  "errors": []
+}

@@ -1,0 +1,279 @@
+P3-01 SYNC_COMPRAS DRY-RUN
+Fecha: 2026-06-05 04:45:21.161973
+Base: EDARSAHUB
+Modo: DRY-RUN, NO INSERTA
+
+=== 1) TABLAS DESTINO ===
+Compras_Sync: NO EXISTE
+Compras_Pedidos: OK registros=172
+  - PedidoCompraID | bigint | nullable=NO
+  - Serie | varchar | nullable=YES
+  - FolioPedido | varchar | nullable=NO
+  - EmpresaID | int | nullable=YES
+  - SucursalID | int | nullable=NO
+  - AlmacenID | int | nullable=YES
+  - FechaPedido | datetime2 | nullable=NO
+  - FechaRequerida | date | nullable=YES
+  - SolicitanteUsuarioID | int | nullable=NO
+  - CompradorUsuarioID | int | nullable=YES
+  - ProveedorSugeridoID | int | nullable=YES
+  - MonedaID | smallint | nullable=YES
+  - TipoCambio | decimal | nullable=NO
+  - Prioridad | varchar | nullable=NO
+  - CentroCosto | varchar | nullable=YES
+  - Proyecto | varchar | nullable=YES
+  - MotivoCompra | varchar | nullable=NO
+  - RequiereAutorizacion | bit | nullable=NO
+  - AutorizacionID | bigint | nullable=YES
+  - EstatusPedidoCompraID | tinyint | nullable=NO
+  - Subtotal | decimal | nullable=NO
+  - DescuentoTotal | decimal | nullable=NO
+  - ImpuestoTotal | decimal | nullable=NO
+  - Total | decimal | nullable=NO
+  - Observaciones | varchar | nullable=YES
+  - ReferenciaExterna | varchar | nullable=YES
+  - Activo | bit | nullable=NO
+  - CreatedAt | datetime2 | nullable=NO
+  - CreatedBy | varchar | nullable=YES
+  - ModifiedAt | datetime2 | nullable=YES
+  - ModifiedBy | varchar | nullable=YES
+  - RowVer | timestamp | nullable=NO
+Compras_PedidosDetalle: OK registros=0
+  - DetallePedidoCompraID | bigint | nullable=NO
+  - PedidoCompraID | bigint | nullable=NO
+  - Renglon | int | nullable=NO
+  - ProductoID | int | nullable=NO
+  - PresentacionProductoID | bigint | nullable=YES
+  - Cantidad | decimal | nullable=NO
+  - CantidadAtendida | decimal | nullable=NO
+  - CantidadCancelada | decimal | nullable=NO
+  - CantidadPendiente | decimal | nullable=YES
+  - PrecioEstimado | decimal | nullable=NO
+  - DescuentoPorcentaje | decimal | nullable=NO
+  - DescuentoImporte | numeric | nullable=YES
+  - TasaImpuesto | decimal | nullable=NO
+  - SubtotalLinea | numeric | nullable=YES
+  - ImpuestoImporte | numeric | nullable=YES
+  - TotalLinea | numeric | nullable=YES
+  - FechaNecesaria | date | nullable=YES
+  - Observaciones | varchar | nullable=YES
+  - Activo | bit | nullable=NO
+  - CreatedAt | datetime2 | nullable=NO
+  - CreatedBy | varchar | nullable=YES
+  - RowVer | timestamp | nullable=NO
+Compras_Ordenes: OK registros=12
+  - OrdenCompraID | bigint | nullable=NO
+  - Serie | varchar | nullable=YES
+  - FolioOrden | varchar | nullable=NO
+  - PedidoCompraID | bigint | nullable=YES
+  - EmpresaID | int | nullable=YES
+  - SucursalID | int | nullable=NO
+  - AlmacenID | int | nullable=YES
+  - FechaOrden | datetime2 | nullable=NO
+  - FechaEntregaPrometida | date | nullable=YES
+  - ProveedorID | int | nullable=NO
+  - CompradorUsuarioID | int | nullable=NO
+  - SolicitanteUsuarioID | int | nullable=YES
+  - CondicionPagoID | smallint | nullable=YES
+  - MonedaID | smallint | nullable=NO
+  - TipoCambio | decimal | nullable=NO
+  - RequiereAutorizacion | bit | nullable=NO
+  - AutorizacionID | bigint | nullable=YES
+  - EstatusOrdenCompraID | tinyint | nullable=NO
+  - AtencionA | varchar | nullable=YES
+  - DireccionEntrega | varchar | nullable=YES
+  - ReferenciaProveedor | varchar | nullable=YES
+  - Observaciones | varchar | nullable=YES
+  - TerminosCondiciones | varchar | nullable=YES
+  - ReferenciaExterna | varchar | nullable=YES
+  - Subtotal | decimal | nullable=NO
+  - DescuentoTotal | decimal | nullable=NO
+  - ImpuestoTotal | decimal | nullable=NO
+  - Total | decimal | nullable=NO
+  - Activo | bit | nullable=NO
+  - CreatedAt | datetime2 | nullable=NO
+  - CreatedBy | varchar | nullable=YES
+  - ModifiedAt | datetime2 | nullable=YES
+  - ModifiedBy | varchar | nullable=YES
+  - RowVer | timestamp | nullable=NO
+Compras_Recepciones: OK registros=0
+  - RecepcionCompraID | bigint | nullable=NO
+  - FolioRecepcion | varchar | nullable=NO
+  - CompraID | bigint | nullable=YES
+  - OrdenCompraID | bigint | nullable=YES
+  - EmpresaID | int | nullable=YES
+  - SucursalID | int | nullable=NO
+  - AlmacenID | int | nullable=NO
+  - ProveedorID | int | nullable=NO
+  - FechaRecepcion | datetime2 | nullable=NO
+  - FechaDocumentoProveedor | date | nullable=YES
+  - DocumentoProveedor | varchar | nullable=YES
+  - EstatusRecepcionID | tinyint | nullable=NO
+  - RecibioUsuarioID | int | nullable=YES
+  - RevisoUsuarioID | int | nullable=YES
+  - MovimientoInventarioID | bigint | nullable=YES
+  - Subtotal | decimal | nullable=NO
+  - ImpuestoTotal | decimal | nullable=NO
+  - Total | decimal | nullable=NO
+  - Observaciones | varchar | nullable=YES
+  - TieneIncidencias | bit | nullable=NO
+  - Activo | bit | nullable=NO
+  - CreatedAt | datetime2 | nullable=NO
+  - ModifiedAt | datetime2 | nullable=YES
+
+=== 2) FUENTES SQL DISPONIBLES PARA COMPRAS ===
+dbo.ActivoFijo_OrdenesTrabajo
+dbo.ActivoFijo_OrdenTrabajoCostos
+dbo.Comercial_SyncLog_v2
+dbo.Comercial_SyncLog_v2_backup_migracion_codigos_20260513_0558
+dbo.Compras
+dbo.Compras_ConciliacionSAT
+dbo.Compras_ConciliacionSATDetalle
+dbo.Compras_ConciliacionSATEstatus
+dbo.Compras_Detalle
+dbo.Compras_DocumentosFiscales
+dbo.Compras_DocumentosFiscalesDetalle
+dbo.Compras_DocumentosFiscalesEstatus
+dbo.Compras_Estatus
+dbo.Compras_Eventos_Pendientes
+dbo.Compras_Informes_Config
+dbo.Compras_Inventarios_Fisicos_Sync
+dbo.Compras_KPIs_Historico
+dbo.Compras_Ordenes
+dbo.Compras_OrdenesDetalle
+dbo.Compras_OrdenesEstatus
+dbo.Compras_Parametros_Sucursal
+dbo.Compras_Pedidos
+dbo.Compras_PedidosDetalle
+dbo.Compras_PedidosEstatus
+dbo.Compras_Recepciones
+dbo.Compras_RecepcionesDetalle
+dbo.Compras_RecepcionesEstatus
+dbo.Compras_Requisiciones_Sync
+dbo.Compras_Sync_Checkpoint
+dbo.Compras_Sync_Log
+dbo.CRM_ERPSyncLog
+dbo.CRM_Integracion_SyncLog
+dbo.CRM_IntegracionesSyncLog
+dbo.Finanzas_CortesCaja_SyncLog
+dbo.Finanzas_CuadresZ_SyncLog
+dbo.Finanzas_PropinasTPV_SyncLog
+dbo.Operaciones_Tablaje_Ordenes
+dbo.Operaciones_Tablaje_OrdenesDetalle
+dbo.Operaciones_Tablaje_SyncErrores
+dbo.Operaciones_Tablaje_SyncLog
+dbo.Operativo_BitacoraCompras
+dbo.Operativo_PedidosProcesados
+dbo.Operativo_TareasCompras
+dbo.Proveedor_Bancos
+dbo.Proveedor_Catalogo
+dbo.Proveedor_Categorias
+dbo.Proveedor_CategoriasCatalogo
+dbo.Proveedor_Contactos
+dbo.Proveedor_CuentasBancarias
+dbo.Proveedor_Documentos
+dbo.Proveedor_EstatusProveedor
+dbo.Proveedor_EstatusSAT
+dbo.Proveedor_EstatusSincronizacion
+dbo.Proveedor_Evaluaciones
+dbo.Proveedor_Integracion
+dbo.Proveedor_Monedas
+dbo.Proveedor_RegimenFiscal
+dbo.Proveedor_RiesgoProveedor
+dbo.Proveedor_RolUsuarioPortal
+dbo.Proveedor_SistemasIntegracion
+dbo.Proveedor_TipoContacto
+dbo.Proveedor_TipoDocumento
+dbo.Proveedor_TipoProveedor
+dbo.Proveedor_UsuariosPortal
+dbo.Scheduler_PedidosProcesados
+dbo.Sync_Control_Ejecuciones
+dbo.Sync_Customers
+dbo.Sync_Impuestos_Origen
+dbo.Sync_Inventory
+dbo.Sync_KPI_Ventas_Unidades
+dbo.Sync_Logs
+dbo.Sync_Menus
+dbo.Sync_Mesas
+dbo.Sync_Metas_Comerciales
+dbo.Sync_Movimientos_Detalle
+dbo.Sync_PAX_Detalle
+dbo.Sync_Precios_Historicos
+dbo.Sync_Productos
+dbo.Sync_Productos_Elaborados
+dbo.Sync_Productos_Familias
+dbo.Sync_Productos_Insumos
+dbo.Sync_Productos_Recetas
+dbo.Sync_Productos_SubFamilias
+dbo.Sync_Purchases
+dbo.Sync_Response_Cache
+dbo.Sync_Sales
+dbo.Sync_Ticket_Perfecto
+dbo.Sync_Token_Ledger
+dbo.Sync_Ventas_Historicas
+dbo.Sync_Ventas_PorDiaSemana
+dbo.Sync_Ventas_PorHora
+dbo.Sync_Vtiger_Contactos
+dbo.Sync_Vtiger_Cuentas
+dbo.Sync_Vtiger_Leads
+dbo.Sync_Vtiger_Log
+dbo.Sync_Vtiger_Oportunidades
+dbo.Venta_Pedidos
+dbo.Venta_PedidosDetalle
+dbo.Venta_PedidosEstatus
+
+=== 3) SERVIDORES ACTIVOS FUENTE ===
+{'id': UUID('a5547321-1139-4d2b-9d53-182ca737b6b6'), 'nombre': '130° MERIDA', 'system_type': 'SOFTRESTAURANT_PRO', 'tipo_conexion': 'DATA_SOURCE', 'EmpresaID': 5, 'database_name': 'softrestaurant10'}
+{'id': UUID('72f6e9a7-8ea2-4eb2-802e-4ee31753435e'), 'nombre': '130° QRO LOCAL', 'system_type': 'MPRO', 'tipo_conexion': 'API_LOCAL', 'EmpresaID': 2, 'database_name': 'QUERETARO'}
+{'id': UUID('b597d88a-ab37-4b4e-897b-efe68c9b3732'), 'nombre': 'API ManagmentPro', 'system_type': 'MPRO', 'tipo_conexion': 'API_LOCAL', 'EmpresaID': None, 'database_name': 'CLOUD'}
+{'id': UUID('8cbdcc89-6495-49c3-be9c-a965db82c77f'), 'nombre': 'CHAPUR BACKOFFICE', 'system_type': 'ENTERPRISE', 'tipo_conexion': 'API_LOCAL', 'EmpresaID': None, 'database_name': 'CHAPUR'}
+{'id': UUID('d8b2d1eb-2e1f-4e43-b7d9-822bf671e315'), 'nombre': 'CHAPUR NORTE', 'system_type': 'ENTERPRISE', 'tipo_conexion': 'API_LOCAL', 'EmpresaID': None, 'database_name': 'CHAPUR'}
+{'id': UUID('6d053c22-523e-48c0-b72b-96081e2d781b'), 'nombre': 'CIENFUEGOS', 'system_type': 'SOFTRESTAURANT_PRO', 'tipo_conexion': 'DATA_SOURCE', 'EmpresaID': 3, 'database_name': 'softrestaurant95pro'}
+{'id': UUID('6d859026-710a-4920-9a44-6da98fabc690'), 'nombre': 'CIENFUEGOS TABLAJERIA', 'system_type': 'SOFTRESTAURANT_PRO', 'tipo_conexion': 'DATA_SOURCE', 'EmpresaID': 3, 'database_name': 'Tablajeria'}
+{'id': UUID('f8a9049a-96e8-4210-84ae-595ffa2822fa'), 'nombre': 'EDARSA HUB', 'system_type': 'EDARSA_HUB', 'tipo_conexion': 'CORE', 'EmpresaID': None, 'database_name': 'EDARSAHUB'}
+{'id': UUID('b5175237-5e57-41f3-ab6d-b5ae2f5e780b'), 'nombre': 'HR2020 ESCRITURA', 'system_type': 'MPRO', 'tipo_conexion': 'DATA_SOURCE', 'EmpresaID': None, 'database_name': 'HR2020'}
+{'id': UUID('a5ff0e25-f029-43db-b634-d4ac814c904f'), 'nombre': 'LA ESTELAR', 'system_type': 'SOFTRESTAURANT_PRO', 'tipo_conexion': 'DATA_SOURCE', 'EmpresaID': 4, 'database_name': 'softrestaurant12'}
+{'id': UUID('1b230a06-ffaf-4c70-bd27-b1be3579dea6'), 'nombre': 'ManagmentPro', 'system_type': 'MPRO', 'tipo_conexion': 'DATA_SOURCE', 'EmpresaID': None, 'database_name': 'CENTRAL2020'}
+{'id': UUID('d1d8c70f-c3d0-4407-ae50-f09e8e5992ee'), 'nombre': 'MPRO TABLAJERIA', 'system_type': 'MPRO', 'tipo_conexion': 'DATA_SOURCE', 'EmpresaID': None, 'database_name': 'tablajeria_mpro'}
+{'id': UUID('817a0aa8-6170-4738-a8f6-a72ac36ba0df'), 'nombre': 'ORIGEN LOCAL', 'system_type': 'MPRO', 'tipo_conexion': 'API_LOCAL', 'EmpresaID': 1, 'database_name': 'ORIGEN'}
+{'id': UUID('d8425038-5e57-42d9-8f3a-62e287888874'), 'nombre': 'PRUEBAS SOFTRESTAURANT', 'system_type': 'SOFTRESTAURANT_PRO', 'tipo_conexion': 'DATA_SOURCE', 'EmpresaID': None, 'database_name': 'softrestaurant12'}
+
+=== 4) VALIDAR TABLAS DESTINO POR CAMPOS CLAVE ===
+
+--- Compras_Pedidos ---
+Columnas: ['PedidoCompraID', 'Serie', 'FolioPedido', 'EmpresaID', 'SucursalID', 'AlmacenID', 'FechaPedido', 'FechaRequerida', 'SolicitanteUsuarioID', 'CompradorUsuarioID', 'ProveedorSugeridoID', 'MonedaID', 'TipoCambio', 'Prioridad', 'CentroCosto', 'Proyecto', 'MotivoCompra', 'RequiereAutorizacion', 'AutorizacionID', 'EstatusPedidoCompraID', 'Subtotal', 'DescuentoTotal', 'ImpuestoTotal', 'Total', 'Observaciones', 'ReferenciaExterna', 'Activo', 'CreatedAt', 'CreatedBy', 'ModifiedAt', 'ModifiedBy', 'RowVer']
+Proveedor: ['ProveedorSugeridoID']
+Fecha: ['FechaPedido', 'FechaRequerida']
+Total: ['Subtotal', 'DescuentoTotal', 'ImpuestoTotal', 'Total']
+Estado: NO_DETECTADO
+Empresa: ['EmpresaID']
+Sucursal: ['SucursalID']
+Server: NO_DETECTADO
+
+--- Compras_PedidosDetalle ---
+Columnas: ['DetallePedidoCompraID', 'PedidoCompraID', 'Renglon', 'ProductoID', 'PresentacionProductoID', 'Cantidad', 'CantidadAtendida', 'CantidadCancelada', 'CantidadPendiente', 'PrecioEstimado', 'DescuentoPorcentaje', 'DescuentoImporte', 'TasaImpuesto', 'SubtotalLinea', 'ImpuestoImporte', 'TotalLinea', 'FechaNecesaria', 'Observaciones', 'Activo', 'CreatedAt', 'CreatedBy', 'RowVer']
+Producto: ['ProductoID', 'PresentacionProductoID']
+Cantidad: ['Cantidad', 'CantidadAtendida', 'CantidadCancelada', 'CantidadPendiente']
+Costo: NO_DETECTADO
+Pedido: ['DetallePedidoCompraID', 'PedidoCompraID']
+
+--- Compras_Ordenes ---
+Columnas: ['OrdenCompraID', 'Serie', 'FolioOrden', 'PedidoCompraID', 'EmpresaID', 'SucursalID', 'AlmacenID', 'FechaOrden', 'FechaEntregaPrometida', 'ProveedorID', 'CompradorUsuarioID', 'SolicitanteUsuarioID', 'CondicionPagoID', 'MonedaID', 'TipoCambio', 'RequiereAutorizacion', 'AutorizacionID', 'EstatusOrdenCompraID', 'AtencionA', 'DireccionEntrega', 'ReferenciaProveedor', 'Observaciones', 'TerminosCondiciones', 'ReferenciaExterna', 'Subtotal', 'DescuentoTotal', 'ImpuestoTotal', 'Total', 'Activo', 'CreatedAt', 'CreatedBy', 'ModifiedAt', 'ModifiedBy', 'RowVer']
+Proveedor: ['ProveedorID', 'ReferenciaProveedor']
+Fecha: ['FechaOrden', 'FechaEntregaPrometida']
+Total: ['Subtotal', 'DescuentoTotal', 'ImpuestoTotal', 'Total']
+Estado: NO_DETECTADO
+Empresa: ['EmpresaID']
+Sucursal: ['SucursalID']
+
+--- Compras_Recepciones ---
+Columnas: ['RecepcionCompraID', 'FolioRecepcion', 'CompraID', 'OrdenCompraID', 'EmpresaID', 'SucursalID', 'AlmacenID', 'ProveedorID', 'FechaRecepcion', 'FechaDocumentoProveedor', 'DocumentoProveedor', 'EstatusRecepcionID', 'RecibioUsuarioID', 'RevisoUsuarioID', 'MovimientoInventarioID', 'Subtotal', 'ImpuestoTotal', 'Total', 'Observaciones', 'TieneIncidencias', 'Activo', 'CreatedAt', 'ModifiedAt']
+Proveedor: ['ProveedorID', 'FechaDocumentoProveedor', 'DocumentoProveedor']
+Fecha: ['FechaRecepcion', 'FechaDocumentoProveedor']
+Total: ['Subtotal', 'ImpuestoTotal', 'Total']
+Almacen: ['AlmacenID']
+Orden: ['OrdenCompraID']
+
+=== 5) DICTAMEN DRY-RUN ===
+No se insertó información.
+Si tablas destino existen y campos clave están presentes, siguiente paso: script de sync incremental por servidor.

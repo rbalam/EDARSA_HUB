@@ -1,0 +1,6 @@
+# Dependencias para el Piloto Sync Agent
+# Instalar con: pip install -r requirements.txt
+
+pymssql>=2.2.0
+requests>=2.28.0
+pyyaml>=6.0

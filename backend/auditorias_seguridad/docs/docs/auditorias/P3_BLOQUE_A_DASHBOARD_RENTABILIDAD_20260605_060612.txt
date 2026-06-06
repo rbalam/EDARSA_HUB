@@ -1,0 +1,5 @@
+=== P3-BLOQUE-A Test Fri Jun  5 06:06:12 UTC 2026 ===
+{
+    "detail": "Error interno del servidor. Proceso recuperado autom\u00e1ticamente.",
+    "data": []
+}

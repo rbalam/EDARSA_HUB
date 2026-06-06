@@ -1,0 +1,89 @@
+{
+  "phase": "MACROFASE_2_3C",
+  "status": "SUCCESS",
+  "report_date": "2026-04-26T00:55:00Z",
+  "period": "2024-05",
+  
+  "objective": "Completar mayo 2024 para servidores validados",
+  
+  "servers_processed": [
+    {
+      "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+      "server_name": "ManagmentPro",
+      "system_type": "MANAGEMENTPRO",
+      "run_ids": ["HL_20260426_004303", "HL_20260426_004649", "HL_20260426_005229"],
+      "fecha_min": "2024-05-06",
+      "fecha_max": "2024-05-31",
+      "dias_cubiertos": 26,
+      "total_registros": 53,
+      "sucursales": 3
+    },
+    {
+      "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+      "server_name": "130° MERIDA",
+      "system_type": "SOFTRESTAURANT",
+      "run_ids": ["HL_20260426_005005", "HL_20260426_005246"],
+      "fecha_min": "2024-05-06",
+      "fecha_max": "2024-05-31",
+      "dias_cubiertos": 26,
+      "total_registros": 26,
+      "sucursales": 1
+    }
+  ],
+  
+  "summary": {
+    "total_sql_registros_mayo_2024": 79,
+    "total_sql_registros_global": 79,
+    "duplicates_found": 0,
+    "mongo_final_inserted": 0
+  },
+  
+  "by_system_type": {
+    "MANAGEMENTPRO": {
+      "registros": 53,
+      "dias": 26,
+      "servidores": 1,
+      "sucursales": 3
+    },
+    "SOFTRESTAURANT": {
+      "registros": 26,
+      "dias": 26,
+      "servidores": 1,
+      "sucursales": 1
+    }
+  },
+  
+  "validation": {
+    "duplicates_check": "PASSED",
+    "may_2024_complete": true,
+    "sql_integrity": "VERIFIED",
+    "mongo_not_final": "CONFIRMED",
+    "backend_running": true
+  },
+  
+  "acceptance_criteria": {
+    "may_complete_managmentpro": true,
+    "may_complete_130_merida": true,
+    "mongo_final_zero": true,
+    "sql_duplicates_zero": true,
+    "checkpoints_updated": true,
+    "comercial_working": true,
+    "backend_running": true,
+    "report_generated": true,
+    "no_other_servers_touched": true,
+    "no_secrets_exposed": true
+  },
+  
+  "final_destination": "EDARSAHUB_SQL",
+  "destination_table": "Comercial_KPIs_Historico",
+  "mongo_role": "checkpoint_log_cache_only",
+  
+  "next_steps": [
+    "Junio 2024 para ManagmentPro y 130° MERIDA",
+    "Agregar más servidores SoftRestaurant (CIENFUEGOS, LA ESTELAR)",
+    "Considerar carga paralela para acelerar"
+  ],
+  
+  "errors": [],
+  "warnings": []
+}

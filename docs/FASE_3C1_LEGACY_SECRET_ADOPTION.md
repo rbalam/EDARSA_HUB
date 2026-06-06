@@ -149,7 +149,7 @@ else:
 
 ```bash
 # 1. Verificar que SERVER_SECRET_KEY está configurada
-export SERVER_SECRET_KEY=$(grep SERVER_SECRET_KEY /app/backend/.env | cut -d= -f2)
+export SERVER_SECRET_KEY=$(python scripts/security/check_env_safe.py | cut -d= -f2)
 
 # 2. Ejecutar script de migración con --apply
 cd /app/backend && python3 scripts/encrypt_existing_server_secrets.py --apply

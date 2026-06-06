@@ -1,0 +1,115 @@
+{
+  "timestamp": "2026-04-25T15:59:00.429564+00:00",
+  "mode": "RUN",
+  "status": "PARTIAL",
+  "servers_checked": 8,
+  "connectivity_ok": 5,
+  "source_unreachable": 3,
+  "auth_failed": 0,
+  "secret_decryption_error": 0,
+  "query_error": 0,
+  "configuration_missing": 0,
+  "skipped": 0,
+  "results": [
+    {
+      "server_id": "A5547321-1139-4D2B-9D53-182CA737B6B6",
+      "name": "130\u00b0 MERIDA",
+      "system_type_normalized": "SOFTRESTAURANT",
+      "connection_type": "DATA_SOURCE",
+      "config_origin": "EDARSAHUB_SQL",
+      "secret_status": "ENCRYPTED",
+      "decrypt_ok": true,
+      "connectivity_status": "SUCCESS",
+      "duration_ms": 812,
+      "safe_error": null
+    },
+    {
+      "server_id": "6D053C22-523E-48C0-B72B-96081E2D781B",
+      "name": "CIENFUEGOS",
+      "system_type_normalized": "SOFTRESTAURANT",
+      "connection_type": "DATA_SOURCE",
+      "config_origin": "EDARSAHUB_SQL",
+      "secret_status": "ENCRYPTED",
+      "decrypt_ok": true,
+      "connectivity_status": "SOURCE_UNREACHABLE",
+      "duration_ms": 0,
+      "safe_error": "Server unavailable (network/VPN)"
+    },
+    {
+      "server_id": "6D859026-710A-4920-9A44-6DA98FABC690",
+      "name": "CIENFUEGOS TABLAJERIA",
+      "system_type_normalized": "SOFTRESTAURANT",
+      "connection_type": "DATA_SOURCE",
+      "config_origin": "EDARSAHUB_SQL",
+      "secret_status": "ENCRYPTED",
+      "decrypt_ok": true,
+      "connectivity_status": "SOURCE_UNREACHABLE",
+      "duration_ms": 0,
+      "safe_error": "Server unavailable (network/VPN)"
+    },
+    {
+      "server_id": "B5175237-5E57-41F3-AB6D-B5AE2F5E780B",
+      "name": "HR2020 ESCRITURA",
+      "system_type_normalized": "MANAGEMENTPRO",
+      "connection_type": "DATA_SOURCE",
+      "config_origin": "EDARSAHUB_SQL",
+      "secret_status": "ENCRYPTED",
+      "decrypt_ok": true,
+      "connectivity_status": "SUCCESS",
+      "duration_ms": 326,
+      "safe_error": null
+    },
+    {
+      "server_id": "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+      "name": "LA ESTELAR",
+      "system_type_normalized": "SOFTRESTAURANT",
+      "connection_type": "DATA_SOURCE",
+      "config_origin": "EDARSAHUB_SQL",
+      "secret_status": "ENCRYPTED",
+      "decrypt_ok": true,
+      "connectivity_status": "SOURCE_UNREACHABLE",
+      "duration_ms": 0,
+      "safe_error": "Server unavailable (network/VPN)"
+    },
+    {
+      "server_id": "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+      "name": "ManagmentPro",
+      "system_type_normalized": "MANAGEMENTPRO",
+      "connection_type": "DATA_SOURCE",
+      "config_origin": "EDARSAHUB_SQL",
+      "secret_status": "ENCRYPTED",
+      "decrypt_ok": true,
+      "connectivity_status": "SUCCESS",
+      "duration_ms": 321,
+      "safe_error": null
+    },
+    {
+      "server_id": "D1D8C70F-C3D0-4407-AE50-F09E8E5992EE",
+      "name": "MPRO TABLAJERIA",
+      "system_type_normalized": "MANAGEMENTPRO",
+      "connection_type": "DATA_SOURCE",
+      "config_origin": "EDARSAHUB_SQL",
+      "secret_status": "ENCRYPTED",
+      "decrypt_ok": true,
+      "connectivity_status": "SUCCESS",
+      "duration_ms": 331,
+      "safe_error": null
+    },
+    {
+      "server_id": "D8425038-5E57-42D9-8F3A-62E287888874",
+      "name": "PRUEBAS SOFTRESTAURANT",
+      "system_type_normalized": "SOFTRESTAURANT",
+      "connection_type": "DATA_SOURCE",
+      "config_origin": "EDARSAHUB_SQL",
+      "secret_status": "ENCRYPTED",
+      "decrypt_ok": true,
+      "connectivity_status": "SUCCESS",
+      "duration_ms": 360,
+      "safe_error": null
+    }
+  ],
+  "warnings": [
+    "Algunos servidores son inaccesibles (red/VPN)"
+  ],
+  "errors": []
+}

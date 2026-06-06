@@ -1,0 +1,46 @@
+P2-10 VALIDACIÓN POST-GITHUB / STAGING READY
+Fecha: Fri Jun  5 04:19:46 UTC 2026
+
+=== 1) RAMA Y ÚLTIMO COMMIT ===
+Edarsahub_Desarrollo
+4571c880 auto-commit for dc8b53f9-e420-4059-8b39-7f61d4e1db98
+
+=== 2) ESTADO GIT ===
+?? docs/auditorias/P2_10_VALIDACION_POST_GITHUB_20260605_041946.txt
+?? docs/reports/sync_sales_dry_run_backfill_7_dias/
+?? docs/reports/sync_sales_dry_runs/
+
+=== 3) VALIDAR BACKEND ===
+OK compileall backend
+{"status":"operativo","sistema":"EDARSA HUB","version":"1.0"}
+=== 4) VALIDAR SQL-FIRST HEALTH ===
+{
+    "status": "WARNING",
+    "message": "Referencias MongoDB en c\u00f3digo productivo (revisar si son legacy)",
+    "generated_at": "2026-06-05T03:58:27.040893",
+    "counts": {
+        "productive_live_connections": 0,
+        "productive_mongo_imports": 336,
+        "productive_hardcoded_credentials": 0
+    },
+    "architecture": {
+        "sql_server": "FUENTE_UNICA_PRODUCTIVA",
+        "mongodb": "LEGACY_CACHE_ONLY",
+        "credentials": "CENTRALIZED_CONFIG"
+    }
+}
+
+=== 5) VALIDAR AUTH ME ===
+User: admin@edarsa.com | Role: Administrador
+
+=== 6) VALIDAR UNIDADES NEGOCIO ===
+Unidades: 0 items
+
+=== 7) VALIDAR FILTROS CORPORATIVOS ===
+Filtros bootstrap: ['success', 'source', 'mode', 'scope', 'filters', 'dependencies', 'status']
+
+=== 8) VALIDAR PRECIOS CONSTANTES SQL-FIRST ===
+Source: ?
+Products: 0
+Server: ?
+

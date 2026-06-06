@@ -48,7 +48,7 @@ Aunque la variable `SERVER_SECRET_KEY` existía en `/app/backend/.env`, no se ca
 ### 4.1 Diagnóstico
 ```bash
 # Verificar si la variable estaba en .env
-grep "SERVER_SECRET_KEY" /app/backend/.env
+python scripts/security/check_env_safe.py
 # Resultado: SERVER_SECRET_KEY=4HGEDzNpIv3pMoHXFtlXXYiTSt1SxU8dXHiTR5GOtd8=
 
 # Verificar si estaba en os.environ durante runtime

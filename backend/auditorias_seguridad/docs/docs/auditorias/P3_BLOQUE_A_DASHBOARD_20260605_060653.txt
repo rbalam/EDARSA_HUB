@@ -1,0 +1,123 @@
+{
+    "detail": "Error interno del servidor. Proceso recuperado autom\u00e1ticamente.",
+    "data": []
+}
+{
+    "success": true,
+    "source": "EDARSAHUB_SQL",
+    "modo": "RENTABILIDAD_BASE_SIN_COSTO",
+    "total": 10,
+    "data": [
+        {
+            "ServerID": "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+            "servidor": "ManagmentPro",
+            "ProductoID": "4FC8B682-88D7-4710-A046-EF451F8C8CDC",
+            "ProductoCodigo": "0000004412",
+            "ProductoNombre": "(C) Tomahawk Escorpion kg*",
+            "precio_final": 0.6798,
+            "costo_estimado": null,
+            "margen_estimado": null,
+            "status_margen": "PENDIENTE_COSTO_RECETA"
+        },
+        {
+            "ServerID": "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+            "servidor": "ManagmentPro",
+            "ProductoID": "F54EAB18-1797-4C21-84BC-1F970ED9B1D1",
+            "ProductoCodigo": "0000004239",
+            "ProductoNombre": "(L) Costilla Short Rib p/Rib Eye Colgante Lonja Procesada kg",
+            "precio_final": 0.3775,
+            "costo_estimado": null,
+            "margen_estimado": null,
+            "status_margen": "PENDIENTE_COSTO_RECETA"
+        },
+        {
+            "ServerID": "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+            "servidor": "ManagmentPro",
+            "ProductoID": "97A45A02-4B69-43BD-B489-D8CDE1F189D4",
+            "ProductoCodigo": "0000007028",
+            "ProductoNombre": "(L) Rib Eye Selec Lonja kg",
+            "precio_final": 188.0,
+            "costo_estimado": null,
+            "margen_estimado": null,
+            "status_margen": "PENDIENTE_COSTO_RECETA"
+        },
+        {
+            "ServerID": "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+            "servidor": "ManagmentPro",
+            "ProductoID": "0E8BBA30-8359-4EAD-919C-1D9CBEAEC531",
+            "ProductoCodigo": "0000008257",
+            "ProductoNombre": "(L) Salmon c/Piel Lonja Procesada kg",
+            "precio_final": 0.317,
+            "costo_estimado": null,
+            "margen_estimado": null,
+            "status_margen": "PENDIENTE_COSTO_RECETA"
+        },
+        {
+            "ServerID": "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+            "servidor": "ManagmentPro",
+            "ProductoID": "D7E79963-63F5-4BC4-8F99-745CA72C525D",
+            "ProductoCodigo": "0000006790",
+            "ProductoNombre": "(L) Tomahawk Angus Lonja Procesada kg",
+            "precio_final": 0.586,
+            "costo_estimado": null,
+            "margen_estimado": null,
+            "status_margen": "PENDIENTE_COSTO_RECETA"
+        },
+        {
+            "ServerID": "A5547321-1139-4D2B-9D53-182CA737B6B6",
+            "servidor": "130\u00b0 MERIDA",
+            "ProductoID": "C4CD4739-4AA5-4608-92C8-67F4835C00BA",
+            "ProductoCodigo": "30049",
+            "ProductoNombre": "(S) AJO ROSTIZADO KG",
+            "precio_final": 150.0,
+            "costo_estimado": null,
+            "margen_estimado": null,
+            "status_margen": "PENDIENTE_COSTO_RECETA"
+        },
+        {
+            "ServerID": "A5547321-1139-4D2B-9D53-182CA737B6B6",
+            "servidor": "130\u00b0 MERIDA",
+            "ProductoID": "D0DE872E-824E-48A4-BE73-F1A865BDB911",
+            "ProductoCodigo": "30055",
+            "ProductoNombre": "(S) ATUN COWBOY",
+            "precio_final": 885.0,
+            "costo_estimado": null,
+            "margen_estimado": null,
+            "status_margen": "PENDIENTE_COSTO_RECETA"
+        },
+        {
+            "ServerID": "A5547321-1139-4D2B-9D53-182CA737B6B6",
+            "servidor": "130\u00b0 MERIDA",
+            "ProductoID": "A993D30A-70FD-40C4-8EB0-060913964ECD",
+            "ProductoCodigo": "30053",
+            "ProductoNombre": "(S) CARBON BULTO",
+            "precio_final": 275.0,
+            "costo_estimado": null,
+            "margen_estimado": null,
+            "status_margen": "PENDIENTE_COSTO_RECETA"
+        },
+        {
+            "ServerID": "A5547321-1139-4D2B-9D53-182CA737B6B6",
+            "servidor": "130\u00b0 MERIDA",
+            "ProductoID": "10DB99C1-8691-460E-9CD4-877540102D9A",
+            "ProductoCodigo": "30025",
+            "ProductoNombre": "(S) CHICHARRON DE RIB EYE KG",
+            "precio_final": 200.0,
+            "costo_estimado": null,
+            "margen_estimado": null,
+            "status_margen": "PENDIENTE_COSTO_RECETA"
+        },
+        {
+            "ServerID": "A5547321-1139-4D2B-9D53-182CA737B6B6",
+            "servidor": "130\u00b0 MERIDA",
+            "ProductoID": "F6FDE74A-2996-4B9C-A635-E18DF6EC45C4",
+            "ProductoCodigo": "30034",
+            "ProductoNombre": "(S) COWBOY OZ",
+            "precio_final": 29.97,
+            "costo_estimado": null,
+            "margen_estimado": null,
+            "status_margen": "PENDIENTE_COSTO_RECETA"
+        }
+    ],
+    "nota": "Base lista. Para margen real se requiere tabla/campo de costo receta can\u00f3nico."
+}

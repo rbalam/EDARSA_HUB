@@ -11,12 +11,12 @@ FORBIDDEN_PATTERNS = [
     re.compile(r"\bgrep\b.*TOKEN.*\.env", re.IGNORECASE),
     re.compile(r"\bgrep\b.*EDARSAHUB_SQL.*\.env", re.IGNORECASE),
     re.compile(r"\bprintenv\b"),
-    re.compile(r"\benv\s*$"),
+    re.compile(r"(^|[;&|]\s*)env\s*($|[;&|])", re.M),
 ]
 
 ALLOW = [
     "tests_guardrails/test_p0_no_secret_dump_commands.py",
-    "auditorias_",
+    "auditorias_seguridad",
     "venv",
     "__pycache__",
     ".git",
@@ -33,19 +33,19 @@ for p in ROOT.rglob("*"):
     if any(a in sp for a in ALLOW):
         continue
 
-    if p.suffix not in [".py", ".sh", ".md", ".txt"]:
+    if p.suffix.lower() not in [".py", ".sh", ".md", ".txt"]:
         continue
 
     txt = p.read_text(errors="ignore")
 
     for pattern in FORBIDDEN_PATTERNS:
-        for m in pattern.finditer(txt):
-            hits.append((sp, m.group(0)))
+        for _ in pattern.finditer(txt):
+            hits.append((sp, pattern.pattern))
 
 if hits:
-    print("FAIL comandos que exponen secretos:")
-    for h in hits:
-        print(h[0], "=>", h[1])
+    print("FAIL comandos que pueden exponer secretos:")
+    for sp, pattern in hits:
+        print(sp, "=>", pattern)
     sys.exit(1)
 
 print("PASS no hay comandos de exposición de secretos")

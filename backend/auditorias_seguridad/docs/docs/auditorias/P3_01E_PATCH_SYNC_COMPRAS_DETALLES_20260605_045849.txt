@@ -1,0 +1,56 @@
+P3-01E PATCH SYNC COMPRAS DETALLES
+Fecha: Fri Jun  5 04:58:49 UTC 2026
+
+=== 1) Contexto líneas 1100-1150 ===
+        result_det = execute_sql_fn(
+            server_info['host'], server_info['port'], server_info['database'],
+            server_info['username'], server_info['password'], query_detalle
+        ) or []
+        
+        conn = get_edarsahub_connection()
+        cursor = conn.cursor()
+        
+        enc_synced = 0
+        det_synced = 0
+        
+        for enc in result_enc:
+            try:
+                folio = str(enc.get('folio_pedido', ''))[:50]
+                fecha = enc.get('fecha_pedido')
+                total = float(enc.get('total') or 0)
+                
+                # MERGE encabezado
+                cursor.execute("""
+                    MERGE INTO Compras_Pedidos AS target
+                    USING (SELECT %s AS EmpresaID, %s AS SucursalID, %s AS FolioPedido) AS source 
+                    ON target.EmpresaID = source.EmpresaID 
+                       AND target.SucursalID = source.SucursalID 
+                       AND target.FolioPedido = source.FolioPedido
+                    WHEN MATCHED THEN 
+                        UPDATE SET Total = %s, ModifiedAt = GETDATE()
+                    WHEN NOT MATCHED THEN 
+                        INSERT (FolioPedido, EmpresaID, SucursalID, FechaPedido, SolicitanteUsuarioID, 
+                                Prioridad, MotivoCompra, EstatusPedidoCompraID, Total, Activo, CreatedAt, TipoCambio, Subtotal, DescuentoTotal, ImpuestoTotal)
+                        VALUES (%s, %s, %s, %s, 1, 'MEDIA', 'SYNC', 1, %s, 1, GETDATE(), 1, %s, 0, 0);
+                """, (
+                    empresa_id, sucursal_id, folio,
+                    total,
+                    folio, empresa_id, sucursal_id, fecha, total, total
+                ))
+                enc_synced += 1
+                
+            except Exception as e:
+                logger.warning(f"[SYNC] Error insertando pedido {enc.get('folio_pedido')}: {e}")
+        
+        conn.commit()
+        conn.close()
+        
+        return {"status": "OK", "encabezados_synced": enc_synced, "detalles_synced": det_synced}
+        
+    except Exception as e:
+        logger.error(f"[SYNC] Error en sync_pedidos: {e}")
+        return {"status": "ERROR", "error": str(e), "encabezados_synced": 0, "detalles_synced": 0}
+
+
+
+

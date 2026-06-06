@@ -1,0 +1,24 @@
+backend/modules/comercial_v2/repository_comercial_edarsahub.py:184:            UPDATE Comercial_KPIs_Diarios_v2 SET
+backend/modules/comercial_v2/repository_comercial_edarsahub.py:208:        INSERT INTO Comercial_KPIs_Diarios_v2 (
+backend/api/admin_data_quality.py:191:UPDATE Comercial_KPIs_Diarios_v2
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:316:                UPDATE Comercial_KPIs_Diarios_v2
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:332:                INSERT INTO Comercial_KPIs_Diarios_v2 (
+docs/reports/FIX_IDENTIDAD_CANONICA_130_MERIDA_TABLERO_EJECUTIVO.md:190:   UPDATE Comercial_KPIs_Diarios_v2
+docs/reports/PROPUESTA_BACKFILL_CIENFUEGOS_DIAS_19_20_MAYO_2026.md:177:INSERT INTO Comercial_KPIs_Diarios_v2 (
+docs/reports/GREP_ORIGEN_KPIS_SYNC_SALES_PAX.txt:332:backend/modules/comercial_v2/repository_comercial_edarsahub.py:184:            UPDATE Comercial_KPIs_Diarios_v2 SET
+docs/reports/GREP_ORIGEN_KPIS_SYNC_SALES_PAX.txt:337:backend/modules/comercial_v2/repository_comercial_edarsahub.py:208:        INSERT INTO Comercial_KPIs_Diarios_v2 (
+docs/reports/GREP_ORIGEN_KPIS_SYNC_SALES_PAX.txt:666:backend/api/admin_data_quality.py:191:UPDATE Comercial_KPIs_Diarios_v2
+docs/reports/GREP_ORIGEN_KPIS_SYNC_SALES_PAX.txt:828:backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:316:                UPDATE Comercial_KPIs_Diarios_v2
+docs/reports/GREP_ORIGEN_KPIS_SYNC_SALES_PAX.txt:831:backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:332:                INSERT INTO Comercial_KPIs_Diarios_v2 (
+docs/reports/GREP_ORIGEN_KPIS_SYNC_SALES_PAX.txt:854:docs/reports/FIX_IDENTIDAD_CANONICA_130_MERIDA_TABLERO_EJECUTIVO.md:190:   UPDATE Comercial_KPIs_Diarios_v2
+docs/reports/GREP_ORIGEN_KPIS_SYNC_SALES_PAX.txt:973:docs/reports/PROPUESTA_BACKFILL_CIENFUEGOS_DIAS_19_20_MAYO_2026.md:177:INSERT INTO Comercial_KPIs_Diarios_v2 (
+docs/reports/GREP_ORIGEN_KPIS_SYNC_SALES_PAX.txt:1042:docs/reports/RECONCILIACION_CIENFUEGOS_MAYO_2026_DIAS_FALTANTES.md:268:INSERT INTO Comercial_KPIs_Diarios_v2 (
+docs/reports/GREP_ORIGEN_KPIS_SYNC_SALES_PAX.txt:1069:docs/reports/RECONCILIACION_CIENFUEGOS_MAYO_2026_DIAS_FALTANTES.md:644:INSERT INTO Comercial_KPIs_Diarios_v2 (
+docs/reports/GREP_ORIGEN_KPIS_SYNC_SALES_PAX.txt:1113:docs/reports/DATA_QUALITY_130MID_001_MERIDA_DUPLICADOS.md:71:UPDATE Comercial_KPIs_Diarios_v2
+docs/reports/GREP_ORIGEN_KPIS_SYNC_SALES_PAX.txt:1482:docs/reports/DISENO_BACKFILL_OFICIAL_CIENFUEGOS_20260519_20.md:192:INSERT INTO Comercial_KPIs_Diarios_v2 (
+docs/reports/GREP_ORIGEN_KPIS_SYNC_SALES_PAX.txt:1489:docs/reports/DISENO_BACKFILL_OFICIAL_CIENFUEGOS_20260519_20.md:257:UPDATE Comercial_KPIs_Diarios_v2
+docs/reports/RECONCILIACION_CIENFUEGOS_MAYO_2026_DIAS_FALTANTES.md:268:INSERT INTO Comercial_KPIs_Diarios_v2 (
+docs/reports/RECONCILIACION_CIENFUEGOS_MAYO_2026_DIAS_FALTANTES.md:644:INSERT INTO Comercial_KPIs_Diarios_v2 (
+docs/reports/DATA_QUALITY_130MID_001_MERIDA_DUPLICADOS.md:71:UPDATE Comercial_KPIs_Diarios_v2
+docs/reports/DISENO_BACKFILL_OFICIAL_CIENFUEGOS_20260519_20.md:192:INSERT INTO Comercial_KPIs_Diarios_v2 (
+docs/reports/DISENO_BACKFILL_OFICIAL_CIENFUEGOS_20260519_20.md:257:UPDATE Comercial_KPIs_Diarios_v2

@@ -1,0 +1,67 @@
+{
+  "phase": "MACROFASE_2_3B",
+  "status": "SUCCESS",
+  "report_date": "2026-04-26T00:48:00Z",
+  
+  "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+  "server_name": "ManagmentPro",
+  "system_type": "MANAGEMENTPRO",
+  "module": "comercial",
+  
+  "final_destination": "EDARSAHUB_SQL",
+  "destination_table": "Comercial_KPIs_Historico",
+  "mongo_role": "checkpoint_log_cache_only",
+  
+  "scaling_summary": {
+    "initial_safe_mode": {
+      "run_id": "HL_20260426_004303",
+      "batch": "2024-05-06 to 2024-05-12",
+      "sql_inserted": 14
+    },
+    "first_scaling_batch": {
+      "run_id": "HL_20260426_004649",
+      "batch": "2024-05-13 to 2024-05-19",
+      "sql_inserted": 14
+    }
+  },
+  
+  "totals": {
+    "batches_executed": 2,
+    "total_sql_inserted": 28,
+    "total_sql_updated": 0,
+    "total_sql_skipped": 0,
+    "total_sql_errors": 0,
+    "mongo_final_inserted": 0,
+    "duplicates_sql": 0
+  },
+  
+  "date_coverage": {
+    "fecha_min": "2024-05-06",
+    "fecha_max": "2024-05-19",
+    "days_covered": 14,
+    "sucursales": 2
+  },
+  
+  "checkpoint_status": "SUCCESS",
+  
+  "validation": {
+    "duplicates_check": "PASSED",
+    "sql_integrity": "VERIFIED",
+    "mongo_not_final": "CONFIRMED",
+    "backend_running": true
+  },
+  
+  "mongodb_staging_records": {
+    "run_id": "HL_20260426_003155",
+    "count": 14,
+    "status": "DOCUMENTED_NOT_DELETED"
+  },
+  
+  "next_batch_suggested": {
+    "start_date": "2024-05-20",
+    "end_date": "2024-05-26"
+  },
+  
+  "errors": [],
+  "warnings": []
+}

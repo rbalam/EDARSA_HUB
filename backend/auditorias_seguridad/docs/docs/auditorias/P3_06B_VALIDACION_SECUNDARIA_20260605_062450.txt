@@ -1,0 +1,177 @@
+P3-06B VALIDACIÓN SECUNDARIA POST-CANONIZACIÓN
+Fecha: Fri Jun  5 06:24:50 UTC 2026
+
+=== 1) HEALTH ===
+{"status":"operativo","sistema":"EDARSA HUB","version":"1.0"}
+=== 2) COMPILE BACKEND ===
+OK compileall
+
+=== 3) ENDPOINTS PROTEGIDOS ===
+
+--- /api/admin/sync-monitor ---
+{
+    "success": false,
+    "source": "EDARSAHUB_SQL",
+    "error": "'server_id'",
+    "servidores": [],
+    "procesos": [],
+    "errores": [],
+    "ultimos_syncs": [],
+    "kpis": {}
+}
+
+--- /api/unidades-negocio ---
+[
+    {
+        "id": "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+        "codigo": "130MID",
+        "nombre": "130\u00b0 MERIDA",
+        "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+        "server_nombre": "130\u00b0 MERIDA",
+        "system_type": "SoftRestaurant",
+        "connection_type": "DATA_SOURCE",
+        "database_name": "softrestaurant10",
+        "sucursal_origen_id": null,
+        "sucursales": [
+            {
+                "id": "130MID",
+                "nombre": "130\u00b0 MERIDA"
+            }
+        ],
+        "config_origin": "EDARSAHUB_SQL",
+        "orden": 1
+    },
+    {
+        "id": "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+        "codigo": "CIENFUEGOS",
+        "nombre": "CIENFUEGOS",
+        "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+        "server_nombre": "CIENFUEGOS",
+        "system_type": "SoftRestaurant",
+        "connection_type": "DATA_SOURCE",
+        "database_name": "softrestaurant95pro",
+        "sucursal_origen_id": null,
+        "sucursales": [
+            {
+                "id": "CIENFUEGOS",
+                "nombre": "CIENFUEGOS"
+            }
+        ],
+        "config_origin": "EDARSAHUB_SQL",
+        "orden": 2
+    },
+    {
+        "id": "DFB86008-1B81-472A-9E50-8A0821DEC4B2",
+        "codigo": "ESTELAR",
+        "nombre": "LA ESTELAR",
+        "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+        "server_nombre": "LA ESTELAR",
+        "system_type": "SoftRestaurant",
+        "connection_type": "DATA_SOURCE",
+        "database_name": "softrestaurant12",
+        "sucursal_origen_id": null,
+        "sucursales": [
+
+--- /api/pricing-ai/resumen ---
+{
+    "success": true,
+    "source": "EDARSAHUB_SQL",
+    "modo": "BASE_SIN_IA_EXTERNA",
+    "resumen": {
+        "productos_precio": 5642,
+        "servidores": 4,
+        "primera_fecha": "2026-06-04",
+        "ultima_fecha": "2026-06-04"
+    },
+    "precios": [
+        {
+            "ServerID": "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+            "ProductoID": "4FC8B682-88D7-4710-A046-EF451F8C8CDC",
+            "ProductoCodigo": "0000004412",
+            "ProductoNombre": "(C) Tomahawk Escorpion kg*",
+            "PrecioFinal": 0.6798,
+            "FechaVigencia": "2026-06-04",
+            "servidor_nombre": "ManagmentPro"
+        },
+        {
+            "ServerID": "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+            "ProductoID": "F54EAB18-1797-4C21-84BC-1F970ED9B1D1",
+            "ProductoCodigo": "0000004239",
+            "ProductoNombre": "(L) Costilla Short Rib p/Rib Eye Colgante Lonja Procesada kg",
+            "PrecioFinal": 0.3775,
+            "FechaVigencia": "2026-06-04",
+            "servidor_nombre": "ManagmentPro"
+        },
+        {
+            "ServerID": "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+            "ProductoID": "97A45A02-4B69-43BD-B489-D8CDE1F189D4",
+            "ProductoCodigo": "0000007028",
+            "ProductoNombre": "(L) Rib Eye Selec Lonja kg",
+            "PrecioFinal": 188.0,
+            "FechaVigencia": "2026-06-04",
+            "servidor_nombre": "ManagmentPro"
+        }
+    ],
+    "nota": "Base Pricing IA creada. No usa scraping, no usa APIs externas, no usa Mongo."
+
+--- /api/dashboard-ejecutivo/resumen ---
+{
+    "success": true,
+    "source": "EDARSAHUB_SQL",
+    "periodo": {
+        "inicio": "2026-06-01",
+        "fin": "2026-06-30"
+    },
+    "kpis": {
+        "ventas": 1224212.33,
+        "tickets": 355,
+        "pax": 1018,
+        "ticket_promedio": 3448.4854366197187,
+        "consumo_promedio_pax": 1202.5661394891945
+    },
+    "ventas_por_unidad": [
+        {
+            "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+            "unidad": "ManagmentPro",
+            "dias": 6,
+            "ventas": 533187.33,
+            "tickets": 136,
+            "pax": 398
+        },
+        {
+            "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+            "unidad": "CIENFUEGOS",
+            "dias": 3,
+            "ventas": 374556.0,
+            "tickets": 98,
+            "pax": 341
+        },
+        {
+            "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+            "unidad": "130\u00b0 MERIDA",
+            "dias": 3,
+            "ventas": 247024.0,
+            "tickets": 60,
+            "pax": 154
+        },
+        {
+            "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+            "unidad": "LA ESTELAR",
+            "dias": 3,
+            "ventas": 69445.0,
+            "tickets": 61,
+            "pax": 125
+        }
+    ],
+    "precios": {
+        "productos_con_precio": 5642,
+        "servidores_precio": 4,
+        "precio_promedio": 2580.514570311946
+    },
+    "productos": {
+        "productos": 9905,
+        "servidores_producto": 4
+    },
+    "compras": {
+        "pedidos": 172,
+        "detalles": 0,

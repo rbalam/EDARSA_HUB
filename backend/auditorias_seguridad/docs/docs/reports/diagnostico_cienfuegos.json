@@ -1,0 +1,139 @@
+{
+  "timestamp": "2026-05-01T02:29:07.098442",
+  "ambiente": "Preview Emergent",
+  "unidad": "CIENFUEGOS",
+  "sistema_origen": "SoftRestaurant",
+  "results": [
+    {
+      "test_name": "01_CIENFUEGOS_EXISTS",
+      "success": true,
+      "status": "PASS",
+      "message": "CIENFUEGOS encontrada en EDARSAHUB",
+      "data": {
+        "unidad_negocio_id": "b06ee652-0370-4267-b0a8-da6fc39b590a",
+        "nombre": "CIENFUEGOS",
+        "codigo": "CIENFUEGOS",
+        "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+        "activo": true,
+        "created_at": "2026-04-24 19:25:42.820000"
+      },
+      "error": null,
+      "error_type": null,
+      "timestamp": "2026-05-01T02:29:07.098448"
+    },
+    {
+      "test_name": "02_SERVER_CONFIG",
+      "success": true,
+      "status": "PASS",
+      "message": "Configuración de servidor encontrada: CIENFUEGOS",
+      "data": {
+        "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+        "nombre": "CIENFUEGOS",
+        "system_type": "SoftRestaurant",
+        "host_original": "servercienfuegos.ddns.net,6669\\nationalsoft",
+        "host_parsed": "servercienfuegos.ddns.net",
+        "port_original": 1433,
+        "port_parsed": 6669,
+        "instance": "nationalsoft",
+        "database": "softrestaurant95pro",
+        "username": "CFLectura",
+        "has_password": true,
+        "activo": true,
+        "password_encrypted": "enc:v1:gAAAAABp7N2KSL8JCKxBkkx-NfHbG1dSpyDUZluhUAH0ShADmeQQ0MjEo7H37cdVniBYRPa8qosjBnTpXOuQgiKtfqwqxe-QWw=="
+      },
+      "error": null,
+      "error_type": null,
+      "timestamp": "2026-05-01T02:29:07.431503"
+    },
+    {
+      "test_name": "03_DNS_RESOLUTION",
+      "success": true,
+      "status": "PASS",
+      "message": "DNS resuelto correctamente: servercienfuegos.ddns.net -> 189.172.160.234",
+      "data": {
+        "hostname": "servercienfuegos.ddns.net",
+        "ip_address": "189.172.160.234"
+      },
+      "error": null,
+      "error_type": null,
+      "timestamp": "2026-05-01T02:29:07.825106"
+    },
+    {
+      "test_name": "04_TCP_PORT",
+      "success": true,
+      "status": "PASS",
+      "message": "Puerto TCP 6669 ABIERTO en servercienfuegos.ddns.net",
+      "data": {
+        "hostname": "servercienfuegos.ddns.net",
+        "port": 6669,
+        "latency_seconds": 0.075
+      },
+      "error": null,
+      "error_type": null,
+      "timestamp": "2026-05-01T02:29:07.876780"
+    },
+    {
+      "test_name": "05a_SQL_PYMSSQL",
+      "success": false,
+      "status": "FAIL",
+      "message": "Conexión pymssql FALLIDA: CONNECTION_FAILED",
+      "data": {
+        "driver": "pymssql",
+        "server": "servercienfuegos.ddns.net\\nationalsoft",
+        "port": 6669,
+        "database": "softrestaurant95pro"
+      },
+      "error": "(20009, b'DB-Lib error message 20009, severity 9:\\nUnable to connect: Adaptive Server is unavailable or does not exist (servercienfuegos.ddns.net)\\nDB-Lib error message 20009, severity 9:\\nUnable to connect: Adaptive Server is unavailable or does not exist (servercienfuegos.ddns.net)\\n')",
+      "error_type": "CONNECTION_FAILED",
+      "timestamp": "2026-05-01T02:29:07.952092"
+    },
+    {
+      "test_name": "05b_SQL_PYTDS",
+      "success": false,
+      "status": "FAIL",
+      "message": "Conexión pytds FALLIDA: LOGIN_FAILED",
+      "data": {
+        "driver": "pytds",
+        "server": "servercienfuegos.ddns.net",
+        "port": 6669
+      },
+      "error": "(\"Error de inicio de sesión del usuario 'CFLectura'.\", None)",
+      "error_type": "LOGIN_FAILED",
+      "timestamp": "2026-05-01T02:29:24.107933"
+    },
+    {
+      "test_name": "11_EDARSAHUB_SYNC_STATUS",
+      "success": true,
+      "status": "PASS",
+      "message": "Estado de sincronización verificado en EDARSAHUB",
+      "data": {
+        "total_registros": 0,
+        "registros_reales": 0,
+        "registros_demo": 0,
+        "total_ingresos": 0.0,
+        "fecha_minima": null,
+        "fecha_maxima": null,
+        "ultimo_sync": {
+          "log_id": 2,
+          "fecha": "2026-04-30 19:53:34.170000",
+          "estatus": "ERROR",
+          "insertados": 0,
+          "error": "(20002, b'DB-Lib error message 20002, severity 9:\\nAdaptive Server connection failed (servercienfuegos.ddns.net)\\nDB-Lib error message 20002, severity 9:\\nAdaptive Server connection failed (servercienfuegos.ddns.net)\\n')"
+        },
+        "hash_sample": null
+      },
+      "error": null,
+      "error_type": null,
+      "timestamp": "2026-05-01T02:29:24.374545"
+    }
+  ],
+  "summary": {
+    "total_tests": 7,
+    "passed": 5,
+    "failed": 2,
+    "warnings": 0
+  },
+  "diagnostico_final": "BLOQUEO - Conexión SQL fallida",
+  "causa_raiz_probable": "CREDENTIALS_INVALID",
+  "recomendacion": "Las credenciales (usuario/contraseña) almacenadas en EDARSAHUB para CIENFUEGOS son incorrectas. El servidor SQL Server SÍ está accesible (DNS resuelve, puerto abierto), pero rechaza el login. Acción: Actualizar las credenciales correctas en Servidores_Conexiones."
+}
