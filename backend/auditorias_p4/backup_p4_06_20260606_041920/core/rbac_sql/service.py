@@ -2,7 +2,7 @@ from core.sql_first.db import fetch_all_dict, fetch_one_dict
 
 class RBACSQLService:
     @staticmethod
-    def get_roles(usuario_id):
+    def get_user_roles(usuario_id):
         return fetch_all_dict("""
             SELECT r.CodigoRol, r.NombreRol, r.NivelJerarquia
             FROM dbo.RBAC_UsuariosRoles ur
@@ -11,7 +11,7 @@ class RBACSQLService:
         """, [usuario_id])
 
     @staticmethod
-    def get_empresas(usuario_id):
+    def get_user_empresas(usuario_id):
         return fetch_all_dict("""
             SELECT EmpresaID
             FROM dbo.RBAC_UsuariosEmpresas
@@ -19,7 +19,7 @@ class RBACSQLService:
         """, [usuario_id])
 
     @staticmethod
-    def get_unidades(usuario_id):
+    def get_user_unidades(usuario_id):
         return fetch_all_dict("""
             SELECT UnidadNegocioID
             FROM dbo.RBAC_UsuariosUnidadesNegocio
@@ -27,22 +27,12 @@ class RBACSQLService:
         """, [usuario_id])
 
     @staticmethod
-    def get_sucursales(usuario_id):
+    def get_user_sucursales(usuario_id):
         return fetch_all_dict("""
             SELECT SucursalID
             FROM dbo.RBAC_UsuariosSucursales
             WHERE UsuarioID = %s AND Activo = 1
         """, [usuario_id])
-
-    @staticmethod
-    def build_context(usuario_id):
-        return {
-            "roles": RBACSQLService.get_roles(usuario_id),
-            "empresas": RBACSQLService.get_empresas(usuario_id),
-            "unidades_negocio": RBACSQLService.get_unidades(usuario_id),
-            "sucursales": RBACSQLService.get_sucursales(usuario_id),
-            "source": "SQL_RBAC"
-        }
 
     @staticmethod
     def can_access_empresa(usuario_id, empresa_id):
