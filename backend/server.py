@@ -17494,6 +17494,13 @@ except Exception as e:
     logger.warning(f"Error registrando Consultas SQL router: {e}")
 
 try:
+    from modules.catalogos_workflow_sql.routes import router as catalogos_workflow_sql_router
+    app.include_router(catalogos_workflow_sql_router, tags=["Catalogos Workflow SQL"])
+    logger.info("✓ Catalogos Workflow SQL router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Catalogos Workflow SQL router: {e}")
+
+try:
     from modules.scripts_pendientes.routes import router as scripts_pendientes_sql_router
     app.include_router(scripts_pendientes_sql_router, tags=["Scripts Pendientes SQL"])
     logger.info("✓ Scripts Pendientes SQL router registrado")
