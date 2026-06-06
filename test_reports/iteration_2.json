@@ -29,7 +29,7 @@
   "seed_data_creation": "No seed data created - used existing servers",
   "retest_needed": false,
   "should_main_agent_self_test": false,
-  "context_for_next_testing_agent": "All 3 servers work correctly. MPRO issue from iteration_1 has been resolved - FisicoDetalle table error is fixed. Server IDs: MPRO=1b230a06-ffaf-4c70-bd27-b1be3579dea6, Cienfuegos=6d053c22-523e-48c0-b72b-96081e2d781b, LA_ESTELAR=a5ff0e25-f029-43db-b634-d4ac814c904f",
+  "context_for_next_testing_agent": "All 3 servers work correctly. MPRO issue from iteration_1 has been resolved - FisicoDetalle table error is fixed. Server IDs: MPRO=erp-crm-enterprise-1, Cienfuegos=erp-crm-enterprise-1, LA_ESTELAR=erp-crm-enterprise-1",
   "features_tested": {
     "dashboard_mpro": {
       "status": "PASS",

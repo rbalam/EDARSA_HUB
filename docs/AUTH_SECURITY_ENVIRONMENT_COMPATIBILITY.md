@@ -68,7 +68,7 @@ El proxy/ingress de Emergent **sobreescribe** los headers CORS:
 
 ```
 Respuesta del Backend:
-  Access-Control-Allow-Origin: https://[app].preview.emergentagent.com
+  Access-Control-Allow-Origin: https://erp-crm-enterprise-1.preview.emergentagent.com
   Access-Control-Allow-Credentials: true
 
 Respuesta después del Proxy:

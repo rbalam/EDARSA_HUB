@@ -2474,7 +2474,7 @@ backend/scripts/run_historical_load_finanzas.py:515:                data = query
 backend/scripts/run_historical_load_finanzas.py:521:            elif is_mpro_system(system_type):
 backend/scripts/run_historical_load_finanzas.py:522:                data = query_cxp_mpro(server, fecha_inicio, fecha_fin)
 backend/scripts/motor_consolidacion_circuit_breaker.py:39:        response = requests.get(
-backend/scripts/validate_catalogo_sistemas_endpoints.py:31:API_URL = os.environ.get('API_URL', 'https://g0049-ldnv-u959.preview.emergentagent.com')
+backend/scripts/validate_catalogo_sistemas_endpoints.py:31:API_URL = os.environ.get('API_URL', 'https://erp-crm-enterprise-1.preview.emergentagent.com')
 backend/scripts/validate_catalogo_sistemas_endpoints.py:55:        response = requests.post(
 backend/scripts/validate_catalogo_sistemas_endpoints.py:56:            f"{API_URL}/api/auth/login",
 backend/scripts/validate_catalogo_sistemas_endpoints.py:80:    print(f"API URL: {API_URL}")
@@ -5086,7 +5086,7 @@ backend/htmlcov/z_342fa9d1c388b58c___init___py.html:122:    <p class="run run2">
 backend/htmlcov/z_342fa9d1c388b58c___init___py.html:148:    <p class="run run2"><span class="n"><a id="t66" href="#t66">66</a></span><span class="t">    <span class="com"># Adapters (APIs locales MPRO)</span>&nbsp;</span><span class="r"></span></p>
 backend/htmlcov/z_342fa9d1c388b58c___init___py.html:149:    <p class="run run2"><span class="n"><a id="t67" href="#t67">67</a></span><span class="t">    <span class="str">'APIS_MPRO_LOCALES'</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
 backend/htmlcov/z_342fa9d1c388b58c___init___py.html:150:    <p class="run run2"><span class="n"><a id="t68" href="#t68">68</a></span><span class="t">    <span class="str">'query_api_mpro_local'</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-backend/.env.test.example:30:TEST_API_URL=https://stock-tracker-990.preview.emergentagent.com
+backend/.env.test.example:30:TEST_API_URL=https://erp-crm-enterprise-1.preview.emergentagent.com
 backend/sql/inteligencia_comercial_validacion_fuentes.sql:16:    sistema_origen,
 backend/sql/inteligencia_comercial_validacion_fuentes.sql:22:GROUP BY unidad_negocio_nombre, sistema_origen
 backend/sql/automatizacion_inventarios_ddl.sql:15:-- origen (SoftRestaurant/MPRO) y enviará análisis automáticamente.
@@ -7733,7 +7733,7 @@ docs/reports/AUDITORIA_CONEXIONES_LIVE.md:2728:/app/backend/scripts/run_historic
 docs/reports/AUDITORIA_CONEXIONES_LIVE.md:2731:/app/backend/scripts/run_historical_load_finanzas.py:521:            elif is_mpro_system(system_type):
 docs/reports/AUDITORIA_CONEXIONES_LIVE.md:2732:/app/backend/scripts/run_historical_load_finanzas.py:522:                data = query_cxp_mpro(server, fecha_inicio, fecha_fin)
 docs/reports/AUDITORIA_CONEXIONES_LIVE.md:2736:/app/backend/scripts/motor_consolidacion_circuit_breaker.py:39:        response = requests.get(
-docs/reports/AUDITORIA_CONEXIONES_LIVE.md:2745:/app/backend/scripts/validate_catalogo_sistemas_endpoints.py:31:API_URL = os.environ.get('API_URL', 'https://g0049-ldnv-u959.preview.emergentagent.com')
+docs/reports/AUDITORIA_CONEXIONES_LIVE.md:2745:/app/backend/scripts/validate_catalogo_sistemas_endpoints.py:31:API_URL = os.environ.get('API_URL', 'https://erp-crm-enterprise-1.preview.emergentagent.com')
 docs/reports/AUDITORIA_CONEXIONES_LIVE.md:2746:/app/backend/scripts/validate_catalogo_sistemas_endpoints.py:55:        response = requests.post(
 docs/reports/AUDITORIA_CONEXIONES_LIVE.md:2747:/app/backend/scripts/validate_catalogo_sistemas_endpoints.py:56:            f"{API_URL}/api/auth/login",
 docs/reports/AUDITORIA_CONEXIONES_LIVE.md:2748:/app/backend/scripts/validate_catalogo_sistemas_endpoints.py:80:    print(f"API URL: {API_URL}")
@@ -9533,7 +9533,7 @@ docs/reports/AUDITORIA_CONEXIONES_LIVE.md:5511:/app/backend/htmlcov/z_342fa9d1c3
 docs/reports/AUDITORIA_CONEXIONES_LIVE.md:5512:/app/backend/htmlcov/z_342fa9d1c388b58c___init___py.html:148:    <p class="run run2"><span class="n"><a id="t66" href="#t66">66</a></span><span class="t">    <span class="com"># Adapters (APIs locales MPRO)</span>&nbsp;</span><span class="r"></span></p>
 docs/reports/AUDITORIA_CONEXIONES_LIVE.md:5513:/app/backend/htmlcov/z_342fa9d1c388b58c___init___py.html:149:    <p class="run run2"><span class="n"><a id="t67" href="#t67">67</a></span><span class="t">    <span class="str">'APIS_MPRO_LOCALES'</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
 docs/reports/AUDITORIA_CONEXIONES_LIVE.md:5514:/app/backend/htmlcov/z_342fa9d1c388b58c___init___py.html:150:    <p class="run run2"><span class="n"><a id="t68" href="#t68">68</a></span><span class="t">    <span class="str">'query_api_mpro_local'</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-docs/reports/AUDITORIA_CONEXIONES_LIVE.md:5515:/app/backend/.env.test.example:30:TEST_API_URL=https://stock-tracker-990.preview.emergentagent.com
+docs/reports/AUDITORIA_CONEXIONES_LIVE.md:5515:/app/backend/.env.test.example:30:TEST_API_URL=https://erp-crm-enterprise-1.preview.emergentagent.com
 docs/reports/AUDITORIA_CONEXIONES_LIVE.md:5517:/app/backend/sql/automatizacion_inventarios_ddl.sql:15:-- origen (SoftRestaurant/MPRO) y enviará análisis automáticamente.
 docs/reports/AUDITORIA_CONEXIONES_LIVE.md:5519:/app/backend/sql/automatizacion_inventarios_ddl.sql:40:--     ❌ NO ejecutar en MPRO
 docs/reports/AUDITORIA_CONEXIONES_LIVE.md:5520:/app/backend/sql/automatizacion_inventarios_ddl.sql:208:        CONSTRAINT [CK_folios_sistema] CHECK ([sistema_origen] IN ('SOFTRESTAURANT', 'MPRO')),
@@ -15472,7 +15472,7 @@ docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md:2060:| PERMITIDO | `/app/back
 docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md:2063:| PERMITIDO | `/app/backend/scripts/run_historical_load_finanzas.py` | 521 | `            elif is_mpro_system(system_type):` | Herramienta/test; no endpoint productivo |
 docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md:2064:| PERMITIDO | `/app/backend/scripts/run_historical_load_finanzas.py` | 522 | `                data = query_cxp_mpro(server, fecha_inicio, fecha_fin)` | Herramienta/test; no endpoint productivo |
 docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md:2068:| PERMITIDO | `/app/backend/scripts/motor_consolidacion_circuit_breaker.py` | 39 | `        response = requests.get(` | Herramienta/test; no endpoint productivo |
-docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md:2071:| PERMITIDO | `/app/backend/scripts/validate_catalogo_sistemas_endpoints.py` | 31 | `API_URL = os.environ.get('API_URL', 'https://g0049-ldnv-u959.preview.emergentagent.com')` | Herramienta/test; no endpoint productivo |
+docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md:2071:| PERMITIDO | `/app/backend/scripts/validate_catalogo_sistemas_endpoints.py` | 31 | `API_URL = os.environ.get('API_URL', 'https://erp-crm-enterprise-1.preview.emergentagent.com')` | Herramienta/test; no endpoint productivo |
 docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md:2072:| PERMITIDO | `/app/backend/scripts/validate_catalogo_sistemas_endpoints.py` | 55 | `        response = requests.post(` | Herramienta/test; no endpoint productivo |
 docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md:2073:| PERMITIDO | `/app/backend/scripts/validate_catalogo_sistemas_endpoints.py` | 56 | `            f"{API_URL}/api/auth/login",` | Herramienta/test; no endpoint productivo |
 docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md:2074:| PERMITIDO | `/app/backend/scripts/validate_catalogo_sistemas_endpoints.py` | 80 | `    print(f"API URL: {API_URL}")` | Herramienta/test; no endpoint productivo |
@@ -17218,7 +17218,7 @@ docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md:4302:| P2 | `/app/backend/htm
 docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md:4303:| P2 | `/app/backend/htmlcov/z_342fa9d1c388b58c___init___py.html` | 122 | `    <p class="run run2"><span class="n"><a id="t40" href="#t40">40</a></span><span class="t">    <span class="nam">query_api_mpro_local</spa` | Documentar |
 docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md:4306:| P2 | `/app/backend/htmlcov/z_342fa9d1c388b58c___init___py.html` | 149 | `    <p class="run run2"><span class="n"><a id="t67" href="#t67">67</a></span><span class="t">    <span class="str">'APIS_MPRO_LOCALES'</span` | Documentar |
 docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md:4307:| P2 | `/app/backend/htmlcov/z_342fa9d1c388b58c___init___py.html` | 150 | `    <p class="run run2"><span class="n"><a id="t68" href="#t68">68</a></span><span class="t">    <span class="str">'query_api_mpro_local'</s` | Documentar |
-docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md:4308:| P2 | `/app/backend/.env.test.example` | 30 | `TEST_API_URL=https://stock-tracker-990.preview.emergentagent.com` | Documentar |
+docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md:4308:| P2 | `/app/backend/.env.test.example` | 30 | `TEST_API_URL=https://erp-crm-enterprise-1.preview.emergentagent.com` | Documentar |
 docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md:4309:| P2 | `/app/backend/sql/automatizacion_inventarios_ddl.sql` | 15 | `-- origen (SoftRestaurant/MPRO) y enviará análisis automáticamente.` | Documentar |
 docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md:4311:| P2 | `/app/backend/sql/automatizacion_inventarios_ddl.sql` | 40 | `--     ❌ NO ejecutar en MPRO` | Documentar |
 docs/reports/MATRIZ_NO_LIVE_DASHBOARD_EDARSAHUB.md:4312:| P2 | `/app/backend/sql/automatizacion_inventarios_ddl.sql` | 208 | `        CONSTRAINT [CK_folios_sistema] CHECK ([sistema_origen] IN ('SOFTRESTAURANT', 'MPRO')),` | Documentar |

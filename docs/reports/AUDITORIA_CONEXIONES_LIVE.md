@@ -2742,7 +2742,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/scripts/create_cava_socios_tables.py:19:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
 /app/backend/scripts/create_cava_socios_tables.py:28:    return pymssql.connect(
 /app/backend/scripts/create_cava_socios_tables.py:29:        server=DB_CONFIG['host'],
-/app/backend/scripts/validate_catalogo_sistemas_endpoints.py:31:API_URL = os.environ.get('API_URL', 'https://g0049-ldnv-u959.preview.emergentagent.com')
+/app/backend/scripts/validate_catalogo_sistemas_endpoints.py:31:API_URL = os.environ.get('API_URL', 'https://erp-crm-enterprise-1.preview.emergentagent.com')
 /app/backend/scripts/validate_catalogo_sistemas_endpoints.py:55:        response = requests.post(
 /app/backend/scripts/validate_catalogo_sistemas_endpoints.py:56:            f"{API_URL}/api/auth/login",
 /app/backend/scripts/validate_catalogo_sistemas_endpoints.py:80:    print(f"API URL: {API_URL}")
@@ -5512,7 +5512,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/htmlcov/z_342fa9d1c388b58c___init___py.html:148:    <p class="run run2"><span class="n"><a id="t66" href="#t66">66</a></span><span class="t">    <span class="com"># Adapters (APIs locales MPRO)</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c___init___py.html:149:    <p class="run run2"><span class="n"><a id="t67" href="#t67">67</a></span><span class="t">    <span class="str">'APIS_MPRO_LOCALES'</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c___init___py.html:150:    <p class="run run2"><span class="n"><a id="t68" href="#t68">68</a></span><span class="t">    <span class="str">'query_api_mpro_local'</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-/app/backend/.env.test.example:30:TEST_API_URL=https://stock-tracker-990.preview.emergentagent.com
+/app/backend/.env.test.example:30:TEST_API_URL=https://erp-crm-enterprise-1.preview.emergentagent.com
 /app/backend/.env.test.example:33:# MONGO_URL=mongodb://localhost:27017
 /app/backend/sql/automatizacion_inventarios_ddl.sql:15:-- origen (SoftRestaurant/MPRO) y enviará análisis automáticamente.
 /app/backend/sql/automatizacion_inventarios_ddl.sql:39:--     ❌ NO ejecutar en SoftRestaurant
@@ -5563,7 +5563,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/sql/auditoria_financiera.sql:37:            -- MPRO = Acción relacionada con datos de MPRO
 /app/backend/sql/auditoria_financiera.sql:160:        CHECK (origen_sistema IN ('EDARSA_HUB', 'SOFT', 'MPRO'));
 /app/backend/.env:1:MONGO_URL="mongodb://localhost:27017"
-/app/backend/.env:3:CORS_ORIGINS="https://stock-tracker-990.emergent.host,https://stock-tracker-990.preview.emergentagent.com,https://hub.edarsa.com.mx,http://localhost:3000"
+/app/backend/.env:3:CORS_ORIGINS="https://stock-tracker-990.emergent.host,https://erp-crm-enterprise-1.preview.emergentagent.com,https://hub.edarsa.com.mx,http://localhost:3000"
 /app/backend/.env:7:EMAIL_HOST=mail.edarsa.com.mx
 /app/backend/.env:18:API_MPRO_QRO_URL=http://54.39.104.176:8001/query
 /app/backend/.env:19:API_MPRO_ORIGEN_URL=http://54.39.104.176:8000/query
@@ -11974,7 +11974,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/P0_USUARIOS_VISIBILIDAD_FIX_REPORT.md:82:curl -s "$API_URL/api/users" -H "Authorization: Bearer $TOKEN"
 /app/docs/AUTH_SECURITY_PHASE_1_BACKEND_DUAL_REPORT.md:90:    for origin in os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(',')
 /app/docs/AUTH_SECURITY_PHASE_1_BACKEND_DUAL_REPORT.md:92:] or ["http://localhost:3000"]
-/app/docs/AUTH_SECURITY_PHASE_1_BACKEND_DUAL_REPORT.md:104:CORS_ORIGINS="https://stock-tracker-990.preview.emergentagent.com,http://localhost:3000"
+/app/docs/AUTH_SECURITY_PHASE_1_BACKEND_DUAL_REPORT.md:104:CORS_ORIGINS="https://erp-crm-enterprise-1.preview.emergentagent.com,http://localhost:3000"
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_C_LOTE1_REPORT.md:56:**Campos utilizados:** `host`, `port`, `database`, `username`, `password`  
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_C_LOTE1_REPORT.md:96:**Campos utilizados:** `host`, `port`, `database`, `username`, `password`, `system_type`, `name`  
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_C_LOTE1_REPORT.md:116:**Campos utilizados:** `host`, `port`, `database`, `username`, `password`, `system_type`  

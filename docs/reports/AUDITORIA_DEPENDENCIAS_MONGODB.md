@@ -4856,7 +4856,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/docs/reports/FASE2F_OBSERVACION_SQL_FIRST_AUTH.md:67:## 6. Comparativa SQL-First vs MongoDB-First
 /app/docs/reports/FASE2F_OBSERVACION_SQL_FIRST_AUTH.md:71:| Campo | SQL-First | MongoDB-First |
 /app/docs/reports/FASE2F_OBSERVACION_SQL_FIRST_AUTH.md:86:| MongoDB-First | 4 | ORIGEN, 130QRO, CIENFUEGOS, 130MID |
-/app/docs/reports/FASE2F_OBSERVACION_SQL_FIRST_AUTH.md:143:- ✓ Tiene mapeo en `Sistema_EmpresasMongoMap` (UUID=e302e16f-2d97-4119-9ad9-bb5b00b71367)
+/app/docs/reports/FASE2F_OBSERVACION_SQL_FIRST_AUTH.md:143:- ✓ Tiene mapeo en `Sistema_EmpresasMongoMap` (UUID=erp-crm-enterprise-1)
 /app/docs/reports/FASE2F_OBSERVACION_SQL_FIRST_AUTH.md:194:### ¿Se puede eliminar el fallback MongoDB?
 /app/docs/reports/FASE2F_OBSERVACION_SQL_FIRST_AUTH.md:198:1. **Usuarios @test.com:** Aún existen usuarios @test.com activos en MongoDB que no fueron migrados (por diseño). Si se elimina el fallback, perderían acceso.
 /app/docs/reports/FASE2F_OBSERVACION_SQL_FIRST_AUTH.md:225:| 3 | Fallback MongoDB funciona | ✅ |

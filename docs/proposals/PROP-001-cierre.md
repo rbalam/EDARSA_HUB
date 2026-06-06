@@ -87,7 +87,7 @@ TEST 4: Login con nueva contraseña → SUCCESS
 ### 4.1 Ambiente de implementación
 
 ```
-URL: https://stock-tracker-990.preview.emergentagent.com
+URL: https://erp-crm-enterprise-1.preview.emergentagent.com
 Ambiente: PREVIEW
 Producción: NO TOCADA
 ```

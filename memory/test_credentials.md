@@ -19,7 +19,7 @@
 - SUPERADMIN detectado por CodigoRol='SUPERADMIN' o NivelJerarquia >= 100
 
 ## URLs de Prueba
-- **Frontend:** `https://stock-tracker-990.preview.emergentagent.com`
-- **Backend Health:** `https://stock-tracker-990.preview.emergentagent.com/api/health`
-- **Login:** `https://stock-tracker-990.preview.emergentagent.com/api/auth/login`
-- **Menús:** `https://stock-tracker-990.preview.emergentagent.com/api/sistema/menus/usuario`
+- **Frontend:** `https://erp-crm-enterprise-1.preview.emergentagent.com`
+- **Backend Health:** `https://erp-crm-enterprise-1.preview.emergentagent.com/api/health`
+- **Login:** `https://erp-crm-enterprise-1.preview.emergentagent.com/api/auth/login`
+- **Menús:** `https://erp-crm-enterprise-1.preview.emergentagent.com/api/sistema/menus/usuario`

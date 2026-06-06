@@ -1,0 +1,141 @@
+<analysis><analysis>
+**original_problem_statement:**
+Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosistema EDARSA HUB.
+PRODUCT REQUIREMENTS:
+- ESTRICTA PROHIBICIÓN: Uso del subagente  totalmente prohibido. Pruebas exclusivas vía cURL, bash, python -c y screenshots.
+- NUEVA REGLA ARQUITECTÓNICA (MÁXIMA INQUEBRANTABLE - NO-LIVE): EDARSAHUB SQL será la ÚNICA fuente de verdad productiva. Ninguna pantalla, reporte o dashboard puede consultar bases externas en vivo.
+- NO CALCULAR PORCENTAJES, estimaciones, ni roadmaps. El asistente solo Ejecuta, Corrige, Valida y Reporta.
+- **MÁXIMA DE ORO (NUEVA):** NO DUPLICAR TABLAS, CONEXIONES, FILTROS, FLUJOS, USUARIOS, NI UNIDADES DE NEGOCIO. No hardcodear. El agente DEBE validar los scripts proporcionados por el usuario antes de ejecutarlos y detenerse si detectan violaciones a la arquitectura canónica.
+
+**User's preferred language**: Spanish (INSTRUCT NEXT AGENT: YOU MUST RESPOND TO THE USER EXCLUSIVELY IN SPANISH. STRICTLY ABIDE BY THE NO  RULE. ALWAYS VALIDATE SCRIPTS AGAINST THE MÁXIMA DE ORO BEFORE EXECUTING).
+
+**what currently exists?**:
+La aplicación está en una fase avanzada de migración de MongoDB a SQL (Fase 5). Se ha implementado el Catalogos Workflow (Subbloques A, B y C) en SQL con routers de compatibilidad para el frontend. Se implementó el módulo Sistema Users SQL con resolución de identidad (UUID vs INT). Se ha construido e integrado exitosamente el sistema RBAC Context (Backend y Frontend) que soporta roles contextuales multi-unidad con vistas SQL canónicas, y se limpiaron exitosamente las rutas legacy de Mongo correspondientes a estos módulos en .
+
+**Last working item**:
+    - Last item agent was working: Implementación, ejecución de scripts SQL en base de datos y validación del sistema RBAC Context (Roles contextuales por unidad de negocio), incluyendo endpoints backend, hooks y componentes de React en frontend.
+    - Status: RESOLVED
+    - Agent Testing Done: Y
+    - Which testing method agent to use?: bash/curl
+    - User Testing Done: N
+
+**All Pending/In progress Issue list**:
+  - Ningún issue técnico bloqueante. El sistema está estable y listo para recibir el siguiente script de migración por parte del usuario. (P0)
+
+**In progress Task List**:
+  - Task 1: Complete Sunset of MongoDB.
+     - Where to resume: Quedan llamadas legacy  en  por migrar. Se debe esperar el siguiente bloque de scripts del usuario.
+     - What will be achieved with this?: 100% remoción de MongoDB del stack.
+     - Status: IN PROGRESS
+     - Should Test frontend/backend/both after fix?: Backend.
+     - Blocked on something: A la espera de los siguientes scripts de migración SQL del usuario.
+
+**Upcoming and Future Tasks**:
+    - P0: Recibir, validar (MÁXIMA DE ORO) y ejecutar el próximo script de migración SQL del usuario.
+    - P1: Continuar el cleanup de rutas legacy en  conforme se habilitan las rutas de compatibilidad SQL.
+
+**Completed work in this session**:
+- Implementación de Subbloque C Catalogos Workflow (Permisos, Solicitudes, Tareas) en SQL ( y  compat). (DONE)
+- Creación de la vista SQL  y módulo . (DONE)
+- Creación del helper  para resolver conflictos de JWT UUID vs INT ID. (DONE)
+- Ejecución de Scripts SQL 64 y 66: Creación de tabla , índices, migración de datos y vistas. (DONE)
+- Implementación del sistema RBAC Context en backend (, ). (DONE)
+- Creación de hooks y servicios frontend para selector multi-unidad (, , ). (DONE)
+- Limpieza de 5 rutas legacy Mongo de Catálogos y Usuarios en . (DONE)
+- Corrección estructural de sintaxis  (reemplazo de  por  y uso de tuplas). (DONE)
+- Resolución de discrepancias de esquema entre scripts y base de datos real (ej.  a , adaptaciones en tabla ). (DONE)
+
+**Earlier issues found/mentioned but not fixed**:
+  - Ninguno. Todos los errores de sintaxis y de esquema encontrados durante la ejecución fueron resueltos y probados.
+
+**Known issue recurrence from previous fork**:
+  - Issue recurrence in previous fork: Ninguno. Agente respetó estrictamente la prohibición del testing agent y la MÁXIMA DE ORO.
+  - Recurrence count: 0
+  - Status: RESOLVED
+
+**Code Architecture**:
+- STRICTLY NO-LIVE / SQL-FIRST.
+- FastAPI backend con PyMSSQL.
+- Frontend React.
+- Mantenimiento estricto de retrocompatibilidad Frontend mediante  routers.
+- Los módulos nuevos se estructuran en carpetas separadas (ej. ) y se conectan modularmente en .
+
+**Key Technical Concepts**:
+- **MÁXIMA DE ORO**: Validar SIEMPRE que los scripts no dupliquen tablas o lógica antes de ejecutar.
+- **PyMSSQL Parametrización**: Las queries a SQL Server obligatoriamente deben usar  en lugar de  como placeholders, y los parámetros deben pasarse siempre como tuplas .
+- **Identidad**:  desde el JWT devuelve un UUID string. Para queries SQL usar  o invocar .
+
+**key DB schema**:
+  - : {UsuarioRolContextoID, UsuarioID, RolID, UnidadNegocioID, EmpresaID, EsRolPrimario, Activo}
+  - : Vista canónica para joins de contexto.
+  - , , .
+
+**changes in tech stack**:
+  - Transición profunda hacia SQL. Nuevos helpers de contexto y seguridad dependientes exclusivamente de .
+
+**All files of reference**:
+  -  (Actualizado Subbloque C)
+  -  (Actualizado Subbloque C)
+  -  (Helper de identidad UUID/INT)
+  - 
+  -  & 
+  - 
+  - 
+  -  (Modificado para registrar routers y limpiar legacy)
+
+**Areas that need refactoring**:
+  - Continuar eliminando las llamadas  (MongoDB) restantes en  conforme el usuario envíe scripts.
+
+**key api endpoints**:
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+
+**Critical Info for New Agent**:
+  - **LENGUAJE EXCLUSIVO:** ESPAÑOL.
+  - **PROHIBICIÓN ESTRICTA:** NUNCA uses . Usa bash, cURL y python -c.
+  - Al ejecutar scripts proporcionados por el usuario, valida primero que los nombres de columnas coincidan con la DB real. En esta sesión hubo desajustes como  (real: ) o  (real: ) que debieron corregirse en los scripts Python.
+  - Si el usuario te da scripts SQL, y te dice ejecútalos, no solo los guardes; debes usar  para correrlos en la DB a través de un heredoc o  (en este caso el agente los ejecutó usando python script pasados por bash).
+  - Espera el siguiente script del usuario para continuar la migración.
+
+**documents and test reports created in this job**:
+  - 
+  - 
+  - 
+
+**Last 10 User Messages and any pending HUMAN messages**:
+ 1. User provided Python code for  (Subbloque C). (Agent validated Maxima de Oro, executed).
+ 2. User provided  compat and bash to clean Mongo routes. (Agent executed).
+ 3. User provided SQL Script and Python logic for . (Agent executed, fixed missing router content issue with user help, fixed schema mismatches).
+ 4. User provided massive SQL scripts and Python/React code for . (Agent validated, created files).
+ 5. Agent stored SQL scripts thinking they were for reference.
+ 6. User demanded: Ejecuta esto, NO LO GUARDES SOLAMENTE,,,CORRELOS. (Agent ran the SQL scripts directly on DB, debugged schema mismatches in permissions table, all tests passed).
+ *Pending*: None. Awaiting next user instruction/script.
+
+**Project Health Check**:
+- Broken: None.
+- Mocked: None.
+
+**3rd Party Integrations**:
+- N/A
+
+**Testing status**:
+  - Testing agent used after significant changes: NO (ESTRICTAMENTE PROHIBIDO).
+  - Troubleshoot agent used after agent stuck in loop: NO.
+  - Test files created: None.
+  - Known regressions: None.
+
+**Credentials to test flow**:
+  - Email: 
+  - Password: 
+
+**What agent forgot to execute**:
+  - Nothing. Everything requested was executed, validated, and successfully tested.
+
+**Debugging checklist for current issue**:
+    Issue: No pending issue. Awaiting next user script.
+    
+</analysis></analysis>

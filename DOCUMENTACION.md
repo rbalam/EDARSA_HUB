@@ -21,13 +21,13 @@ Este es un sistema completo de análisis de inventarios multi-sucursal que permi
 
 ### Backend (FastAPI + Python)
 - **Puerto:** 8001 (interno)
-- **URL Externa:** https://stock-tracker-990.preview.emergentagent.com/api
+- **URL Externa:** https://erp-crm-enterprise-1.preview.emergentagent.com/api
 - **Base de Datos Local:** MongoDB (usuarios, configuraciones)
 - **Conexiones Externas:** SQL Server (inventarios)
 
 ### Frontend (React)
 - **Puerto:** 3000 (interno)
-- **URL:** https://stock-tracker-990.preview.emergentagent.com
+- **URL:** https://erp-crm-enterprise-1.preview.emergentagent.com
 
 ## Consultas SQL Predeterminadas
 
@@ -105,7 +105,7 @@ db.queries.insertOne({
 ### Opción 2: Usando la API
 
 ```bash
-curl -X POST "https://stock-tracker-990.preview.emergentagent.com/api/queries" \\
+curl -X POST "https://erp-crm-enterprise-1.preview.emergentagent.com/api/queries" \\
   -H "Authorization: Bearer TU_TOKEN_AQUI" \\
   -H "Content-Type: application/json" \\
   -d '{

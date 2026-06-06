@@ -213,7 +213,7 @@ Si se detectan problemas:
 
 ```bash
 # Variables
-export API="https://stock-tracker-990.preview.emergentagent.com"
+export API="https://erp-crm-enterprise-1.preview.emergentagent.com"
 
 # Test 1: Login portal
 curl -s -c portal_cookies.txt -X POST "$API/api/portal/auth/login" \

@@ -99,7 +99,7 @@ OK - Total usuarios: 13
 
 ### Screenshot de la página Usuarios:
 
-- **URL:** `https://stock-tracker-990.preview.emergentagent.com`
+- **URL:** `https://erp-crm-enterprise-1.preview.emergentagent.com`
 - **Ruta:** `/usuarios`
 - **Resultado visual:** 13 usuario(s) registrado(s) mostrados en tarjetas
 - **Elementos visibles por usuario:**

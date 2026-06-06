@@ -419,7 +419,7 @@ Recuperación de contraseña - EDARSA HUB
 ### 7.4 URL de reset
 
 ```
-https://stock-tracker-990.preview.emergentagent.com/reset-password?token={{TOKEN}}
+https://erp-crm-enterprise-1.preview.emergentagent.com/reset-password?token={{TOKEN}}
 ```
 
 **Nota:** El token va en la URL (query param), NO en el path.

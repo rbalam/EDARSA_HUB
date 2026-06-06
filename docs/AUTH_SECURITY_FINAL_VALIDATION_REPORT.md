@@ -419,7 +419,7 @@ El riesgo identificado en la sección 2.2 ("Authorization header activo desde fe
 
 El proxy/ingress de Emergent sobreescribe headers CORS:
 ```
-Backend responde: Access-Control-Allow-Origin: https://[app].preview.emergentagent.com
+Backend responde: Access-Control-Allow-Origin: https://erp-crm-enterprise-1.preview.emergentagent.com
 Proxy responde:   Access-Control-Allow-Origin: *
 ```
 

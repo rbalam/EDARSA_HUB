@@ -20,7 +20,7 @@ import requests
 from datetime import datetime
 
 # Configuración
-API_BASE = "https://a416fcd5-32f5-4c1e-9c95-aa9ffe6ee45b.preview.emergentagent.com"
+API_BASE = "https://erp-crm-enterprise-1.preview.emergentagent.com"
 CREDENTIALS = {
     "email": "admin@inventario.com",
     "password": "<TEST_PASSWORD>"

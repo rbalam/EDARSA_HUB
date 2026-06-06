@@ -18,7 +18,7 @@ agent_id: "agent-piloto-sr-001"
 
 # URL de EDARSA HUB (sin trailing slash)
 # Ejemplo producción: https://edarsa-hub.example.com
-# Ejemplo preview: https://stock-tracker-990.preview.emergentagent.com
+# Ejemplo preview: https://erp-crm-enterprise-1.preview.emergentagent.com
 hub_url: "https://TU_HUB_URL_AQUI"
 
 # Token JWT generado desde HUB

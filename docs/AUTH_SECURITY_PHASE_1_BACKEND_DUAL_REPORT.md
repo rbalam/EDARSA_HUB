@@ -101,7 +101,7 @@ CORS_ORIGINS="*"
 
 **Despues:**
 ```
-CORS_ORIGINS="https://stock-tracker-990.preview.emergentagent.com,http://localhost:3000"
+CORS_ORIGINS="https://erp-crm-enterprise-1.preview.emergentagent.com,http://localhost:3000"
 ```
 
 ---
@@ -208,7 +208,7 @@ Si se detectan problemas:
 
 ```bash
 # Variables
-export API="https://stock-tracker-990.preview.emergentagent.com"
+export API="https://erp-crm-enterprise-1.preview.emergentagent.com"
 
 # Test 1: Sin auth
 curl -s "$API/api/auth/me"

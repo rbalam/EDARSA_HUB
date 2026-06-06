@@ -28,7 +28,7 @@ from datetime import datetime
 from typing import Tuple, List, Dict, Any
 
 # Configuración
-API_URL = os.environ.get('API_URL', 'https://g0049-ldnv-u959.preview.emergentagent.com')
+API_URL = os.environ.get('API_URL', 'https://erp-crm-enterprise-1.preview.emergentagent.com')
 TEST_EMAIL = "admin@inventario.com"
 TEST_PASSWORD = "<TEST_PASSWORD>"
 

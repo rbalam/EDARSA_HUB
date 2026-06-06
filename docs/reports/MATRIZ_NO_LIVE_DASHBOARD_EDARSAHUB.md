@@ -2068,7 +2068,7 @@ Generado: 2026-06-02T16:25:16+00:00
 | PERMITIDO | `/app/backend/scripts/motor_consolidacion_circuit_breaker.py` | 39 | `        response = requests.get(` | Herramienta/test; no endpoint productivo |
 | PERMITIDO | `/app/backend/scripts/create_cava_socios_rbac.py` | 27 | `    return pymssql.connect(` | Herramienta/test; no endpoint productivo |
 | PERMITIDO | `/app/backend/scripts/create_cava_socios_tables.py` | 28 | `    return pymssql.connect(` | Herramienta/test; no endpoint productivo |
-| PERMITIDO | `/app/backend/scripts/validate_catalogo_sistemas_endpoints.py` | 31 | `API_URL = os.environ.get('API_URL', 'https://g0049-ldnv-u959.preview.emergentagent.com')` | Herramienta/test; no endpoint productivo |
+| PERMITIDO | `/app/backend/scripts/validate_catalogo_sistemas_endpoints.py` | 31 | `API_URL = os.environ.get('API_URL', 'https://erp-crm-enterprise-1.preview.emergentagent.com')` | Herramienta/test; no endpoint productivo |
 | PERMITIDO | `/app/backend/scripts/validate_catalogo_sistemas_endpoints.py` | 55 | `        response = requests.post(` | Herramienta/test; no endpoint productivo |
 | PERMITIDO | `/app/backend/scripts/validate_catalogo_sistemas_endpoints.py` | 56 | `            f"{API_URL}/api/auth/login",` | Herramienta/test; no endpoint productivo |
 | PERMITIDO | `/app/backend/scripts/validate_catalogo_sistemas_endpoints.py` | 80 | `    print(f"API URL: {API_URL}")` | Herramienta/test; no endpoint productivo |
@@ -4305,7 +4305,7 @@ Generado: 2026-06-02T16:25:16+00:00
 | P2 | `/app/backend/htmlcov/z_342fa9d1c388b58c___init___py.html` | 148 | `    <p class="run run2"><span class="n"><a id="t66" href="#t66">66</a></span><span class="t">    <span class="com"># Adapters (APIs locales ` | Documentar |
 | P2 | `/app/backend/htmlcov/z_342fa9d1c388b58c___init___py.html` | 149 | `    <p class="run run2"><span class="n"><a id="t67" href="#t67">67</a></span><span class="t">    <span class="str">'APIS_MPRO_LOCALES'</span` | Documentar |
 | P2 | `/app/backend/htmlcov/z_342fa9d1c388b58c___init___py.html` | 150 | `    <p class="run run2"><span class="n"><a id="t68" href="#t68">68</a></span><span class="t">    <span class="str">'query_api_mpro_local'</s` | Documentar |
-| P2 | `/app/backend/.env.test.example` | 30 | `TEST_API_URL=https://stock-tracker-990.preview.emergentagent.com` | Documentar |
+| P2 | `/app/backend/.env.test.example` | 30 | `TEST_API_URL=https://erp-crm-enterprise-1.preview.emergentagent.com` | Documentar |
 | P2 | `/app/backend/sql/automatizacion_inventarios_ddl.sql` | 15 | `-- origen (SoftRestaurant/MPRO) y enviará análisis automáticamente.` | Documentar |
 | P2 | `/app/backend/sql/automatizacion_inventarios_ddl.sql` | 39 | `--     ❌ NO ejecutar en SoftRestaurant` | Documentar |
 | P2 | `/app/backend/sql/automatizacion_inventarios_ddl.sql` | 40 | `--     ❌ NO ejecutar en MPRO` | Documentar |

@@ -29,8 +29,8 @@
 
 | Componente | URL |
 |------------|-----|
-| Frontend | `https://stock-tracker-990.preview.emergentagent.com` |
-| Backend/API | `https://stock-tracker-990.preview.emergentagent.com/api` |
+| Frontend | `https://erp-crm-enterprise-1.preview.emergentagent.com` |
+| Backend/API | `https://erp-crm-enterprise-1.preview.emergentagent.com/api` |
 | Dominio | Mismo dominio (subdominio de `emergentagent.com`) |
 
 ### 2.2 Tipo de Ambiente
@@ -51,7 +51,7 @@ Probado directamente al backend (sin proxy):
 access-control-allow-methods: DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT
 access-control-max-age: 600
 access-control-allow-credentials: true
-access-control-allow-origin: https://stock-tracker-990.preview.emergentagent.com
+access-control-allow-origin: https://erp-crm-enterprise-1.preview.emergentagent.com
 ```
 
 ✅ **Backend configurado correctamente** con origen explícito (no wildcard).

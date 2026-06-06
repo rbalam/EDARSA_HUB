@@ -140,7 +140,7 @@ ORDER BY fecha_operacion DESC
 
 **LA ESTELAR está correctamente configurada:**
 - ✓ Existe en `Sistema_Empresas` (ID=4, Código=ESTELAR)
-- ✓ Tiene mapeo en `Sistema_EmpresasMongoMap` (UUID=e302e16f-2d97-4119-9ad9-bb5b00b71367)
+- ✓ Tiene mapeo en `Sistema_EmpresasMongoMap` (UUID=erp-crm-enterprise-1)
 - ✓ SUPERADMIN tiene acceso a ella
 - ✗ No tiene datos cargados en `Comercial_KPIs_Diarios_v2` para dic 2024
 

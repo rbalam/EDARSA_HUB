@@ -21,7 +21,7 @@ import uuid
 # Import centralized test credentials
 from conftest import TEST_SUPERADMIN_EMAIL, TEST_SUPERADMIN_PASSWORD
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://stock-tracker-990.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://erp-crm-enterprise-1.preview.emergentagent.com').rstrip('/')
 
 # Test credentials (centralized)
 SUPERADMIN_EMAIL = os.environ.get("TEST_SUPERADMIN_EMAIL", TEST_SUPERADMIN_EMAIL)

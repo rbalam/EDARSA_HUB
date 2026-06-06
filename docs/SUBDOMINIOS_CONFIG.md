@@ -126,9 +126,9 @@ Para agregar más subdominios en el futuro:
 
 Mientras configuras los subdominios, puedes acceder directamente:
 
-- **Portal Inteligencia**: `https://stock-tracker-990.preview.emergentagent.com/inteligencia-comercial`
-- **Portal Proveedores**: `https://stock-tracker-990.preview.emergentagent.com/portal-proveedores`
-- **CRM Principal**: `https://stock-tracker-990.preview.emergentagent.com/login`
+- **Portal Inteligencia**: `https://erp-crm-enterprise-1.preview.emergentagent.com/inteligencia-comercial`
+- **Portal Proveedores**: `https://erp-crm-enterprise-1.preview.emergentagent.com/portal-proveedores`
+- **CRM Principal**: `https://erp-crm-enterprise-1.preview.emergentagent.com/login`
 
 ---
 

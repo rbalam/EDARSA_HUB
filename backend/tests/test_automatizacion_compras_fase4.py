@@ -26,7 +26,7 @@ import os
 from conftest import TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD
 
 # Base URL from environment
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://stock-tracker-990.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://erp-crm-enterprise-1.preview.emergentagent.com').rstrip('/')
 
 # Test credentials (centralized)
 TEST_CREDENTIALS = {

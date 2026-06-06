@@ -153,7 +153,7 @@ Las siguientes pruebas no se pueden ejecutar hasta que existan las tablas en EDA
 ```bash
 # Prueba pendiente
 curl -c cookies.txt -X POST \
-  https://stock-tracker-990.preview.emergentagent.com/api/auth/login \
+  https://erp-crm-enterprise-1.preview.emergentagent.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@inventario.com","password":"xxx"}'
 
@@ -166,7 +166,7 @@ curl -c cookies.txt -X POST \
 ```bash
 # Prueba pendiente
 curl -b cookies.txt -X POST \
-  https://stock-tracker-990.preview.emergentagent.com/api/auth/refresh
+  https://erp-crm-enterprise-1.preview.emergentagent.com/api/auth/refresh
 ```
 
 **Comportamiento esperado con tablas:**
@@ -183,7 +183,7 @@ curl -b cookies.txt -X POST \
 ```bash
 # Prueba pendiente
 curl -b cookies.txt -X POST \
-  https://stock-tracker-990.preview.emergentagent.com/api/auth/logout-all
+  https://erp-crm-enterprise-1.preview.emergentagent.com/api/auth/logout-all
 ```
 
 ### 4.4 Detección de replay

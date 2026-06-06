@@ -326,7 +326,7 @@ Antes de escribir código, verificar:
 ## 10. CONTACTO Y SOPORTE
 
 **Proyecto:** Edarsa Hub (stock-tracker-990)
-**Preview:** https://stock-tracker-990.preview.emergentagent.com
+**Preview:** https://erp-crm-enterprise-1.preview.emergentagent.com
 **Credenciales:** admin@inventario.com / admin123
 
 **Archivos clave:**

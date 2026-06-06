@@ -15,7 +15,7 @@ agent_id: "<COMPLETAR: Ej. agent-cienfuegos-001>"
 
 # URL de EDARSA HUB (sin trailing slash)
 # Obtener de la barra de direcciones del navegador al acceder a HUB
-hub_url: "<COMPLETAR: Ej. https://stock-tracker-990.preview.emergentagent.com>"
+hub_url: "<COMPLETAR: Ej. https://erp-crm-enterprise-1.preview.emergentagent.com>"
 
 # Token JWT generado desde HUB para este agente
 # Seguir instrucciones de GUIA_PILOTO.md para generarlo
@@ -50,7 +50,7 @@ sql_local:
 # ============================================================================
 #
 # agent_id: "agent-cienfuegos-001"
-# hub_url: "https://stock-tracker-990.preview.emergentagent.com"
+# hub_url: "https://erp-crm-enterprise-1.preview.emergentagent.com"
 # hub_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 # server_id: "6d053c22-523e-48c0-b72b-96081e2d781b"
 # sql_local:

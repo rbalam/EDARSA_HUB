@@ -20,7 +20,7 @@ import os
 # Import centralized test credentials
 from conftest import TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://stock-tracker-990.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://erp-crm-enterprise-1.preview.emergentagent.com')
 
 # Test credentials (centralized)
 # Note: For scheduler UI tests, we use specific RBAC test accounts

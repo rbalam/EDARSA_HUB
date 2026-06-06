@@ -15,7 +15,7 @@ from conftest import TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://stock-tracker-990.preview.emergentagent.com"
+    BASE_URL = "https://erp-crm-enterprise-1.preview.emergentagent.com"
 
 # Test credentials (centralized)
 ADMIN_EMAIL = os.environ.get("TEST_ADMIN_EMAIL", TEST_ADMIN_EMAIL)

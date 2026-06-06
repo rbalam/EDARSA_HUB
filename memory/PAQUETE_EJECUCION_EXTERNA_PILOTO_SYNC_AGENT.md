@@ -48,7 +48,7 @@ Si no existe en HUB:
 
 ```bash
 # Desde máquina con acceso a HUB
-HUB_URL="https://stock-tracker-990.preview.emergentagent.com"
+HUB_URL="https://erp-crm-enterprise-1.preview.emergentagent.com"
 USER_EMAIL="admin@edarsa.com"
 USER_PASSWORD="EDARSA2025"
 SERVER_ID="<UUID_DEL_SERVIDOR_REAL>"

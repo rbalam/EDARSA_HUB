@@ -1154,7 +1154,7 @@ OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
 | Campo | Valor |
 |-------|-------|
 | UnidadNegocioID | 19e076fb-c6de-4ea5-84ab-1caa9e86082c |
-| Request | `GET /v2/resumen?fecha_inicio=2026-04-24&fecha_fin=2026-04-30&unidad_negocio_id=19e076fb-c6de-4ea5-84ab-1caa9e86082c` |
+| Request | `GET /v2/resumen?fecha_inicio=2026-04-24&fecha_fin=2026-04-30&unidad_negocio_id=erp-crm-enterprise-1` |
 | Total registros | 87 |
 | Suma propinas TPV | $65,756.05 |
 | Fuente | EDARSAHUB_REAL |
@@ -1167,7 +1167,7 @@ OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
 | Campo | Valor |
 |-------|-------|
 | UnidadNegocioID | b06ee652-0370-4267-b0a8-da6fc39b590a |
-| Request | `GET /v2/resumen?...&unidad_negocio_id=b06ee652-0370-4267-b0a8-da6fc39b590a` |
+| Request | `GET /v2/resumen?...&unidad_negocio_id=erp-crm-enterprise-1` |
 | Total registros | 149 |
 | Suma propinas TPV | $98,103.25 |
 | Fuente | EDARSAHUB_REAL |
@@ -1180,7 +1180,7 @@ OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
 | Campo | Valor |
 |-------|-------|
 | UnidadNegocioID | dfb86008-1b81-472a-9e50-8a0821dec4b2 |
-| Request | `GET /v2/resumen?...&unidad_negocio_id=dfb86008-1b81-472a-9e50-8a0821dec4b2` |
+| Request | `GET /v2/resumen?...&unidad_negocio_id=erp-crm-enterprise-1` |
 | Total registros | 211 |
 | Suma propinas TPV | $34,280.77 |
 | Fuente | EDARSAHUB_REAL |
@@ -1193,7 +1193,7 @@ OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
 | Campo | Valor |
 |-------|-------|
 | UnidadNegocioID | 9bc05ced-6b2b-4a0a-aa90-ce649b78e12c |
-| Request | `GET /v2/resumen?...&unidad_negocio_id=9bc05ced-6b2b-4a0a-aa90-ce649b78e12c` |
+| Request | `GET /v2/resumen?...&unidad_negocio_id=erp-crm-enterprise-1` |
 | Total registros | 71 |
 | Suma propinas TPV | $48,852.00 |
 | Fuente | EDARSAHUB_REAL |
@@ -1206,7 +1206,7 @@ OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
 | Campo | Valor |
 |-------|-------|
 | UnidadNegocioID | 23ca0b76-6580-4874-ba9b-672b122ca197 |
-| Request | `GET /v2/resumen?...&unidad_negocio_id=23ca0b76-6580-4874-ba9b-672b122ca197` |
+| Request | `GET /v2/resumen?...&unidad_negocio_id=erp-crm-enterprise-1` |
 | Total registros | 83 |
 | Suma propinas TPV | $25,184.37 |
 | Fuente | EDARSAHUB_REAL |

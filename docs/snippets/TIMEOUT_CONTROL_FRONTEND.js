@@ -5,7 +5,7 @@
 
 // 1. CONTROL DE TIEMPO LIMITE (TIMEOUT) EN LAS PETICIONES API (Axios Ejemplo)
 const apiCliente = axios.create({
-  baseURL: 'https://stock-tracker-990.preview.emergentagent.com/api',
+  baseURL: 'https://erp-crm-enterprise-1.preview.emergentagent.com/api',
   timeout: 10000 // 🛑 Si el servidor no responde en 10 segundos, aborta la petición.
 });
 

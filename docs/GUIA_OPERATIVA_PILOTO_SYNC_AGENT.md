@@ -16,7 +16,7 @@
 |-----------|----------------|
 | Computadora con Windows o Linux | - |
 | Python 3.9 o superior | Ejecutar: `python --version` |
-| Acceso a internet | Poder abrir https://stock-tracker-990.preview.emergentagent.com |
+| Acceso a internet | Poder abrir https://erp-crm-enterprise-1.preview.emergentagent.com |
 | Acceso al SQL Server de SoftRestaurant | Poder conectarte con SSMS o similar |
 | Credenciales de admin en EDARSA HUB | Email y contraseña de admin |
 | Credenciales SQL del servidor SR | Host, puerto, base de datos, usuario, contraseña |
@@ -24,7 +24,7 @@
 ## URLs que usarás:
 
 ```
-HUB_URL = https://stock-tracker-990.preview.emergentagent.com
+HUB_URL = https://erp-crm-enterprise-1.preview.emergentagent.com
 ```
 
 ---
@@ -36,7 +36,7 @@ HUB_URL = https://stock-tracker-990.preview.emergentagent.com
 ## 1.1 Acceder a EDARSA HUB
 
 1. Abre tu navegador
-2. Ve a: `https://stock-tracker-990.preview.emergentagent.com`
+2. Ve a: `https://erp-crm-enterprise-1.preview.emergentagent.com`
 3. Inicia sesión con tu cuenta de administrador:
    - Email: `admin@edarsa.com`
    - Contraseña: `EDARSA2025`
@@ -109,7 +109,7 @@ Esto permite identificar qué datos fueron generados por el piloto sin duplicar 
 Antes de ejecutar los comandos, prepara estos valores:
 
 ```
-HUB_URL=https://stock-tracker-990.preview.emergentagent.com
+HUB_URL=https://erp-crm-enterprise-1.preview.emergentagent.com
 USER_EMAIL=admin@edarsa.com
 USER_PASSWORD=EDARSA2025
 SERVER_ID=<EL_UUID_QUE_COPIASTE_EN_PASO_1>
@@ -123,7 +123,7 @@ Abre una terminal (CMD en Windows, Terminal en Linux/Mac) y ejecuta:
 
 ```bash
 # Definir variables (REEMPLAZA EL SERVER_ID CON EL TUYO)
-HUB_URL="https://stock-tracker-990.preview.emergentagent.com"
+HUB_URL="https://erp-crm-enterprise-1.preview.emergentagent.com"
 USER_EMAIL="admin@edarsa.com"
 USER_PASSWORD="EDARSA2025"
 SERVER_ID="PEGAR_AQUI_TU_SERVER_ID"
@@ -150,7 +150,7 @@ curl -s -X POST "$HUB_URL/api/admin/agents/generate-token" \
 
 ```powershell
 # Definir variables (REEMPLAZA EL SERVER_ID CON EL TUYO)
-$HUB_URL = "https://stock-tracker-990.preview.emergentagent.com"
+$HUB_URL = "https://erp-crm-enterprise-1.preview.emergentagent.com"
 $USER_EMAIL = "admin@edarsa.com"
 $USER_PASSWORD = "EDARSA2025"
 $SERVER_ID = "PEGAR_AQUI_TU_SERVER_ID"
@@ -336,7 +336,7 @@ agent_id: "agent-sr-piloto-001"
 # ----------
 # URL de EDARSA HUB (sin / al final)
 # Esta es la URL del preview actual
-hub_url: "https://stock-tracker-990.preview.emergentagent.com"
+hub_url: "https://erp-crm-enterprise-1.preview.emergentagent.com"
 
 # 3. HUB_TOKEN
 # ------------
@@ -378,7 +378,7 @@ sql_local:
 | Campo | De dónde viene | Ejemplo |
 |-------|----------------|---------|
 | `agent_id` | Respuesta del paso 2 | `agent-sr-piloto-001` |
-| `hub_url` | URL fija del HUB | `https://stock-tracker-990.preview.emergentagent.com` |
+| `hub_url` | URL fija del HUB | `https://erp-crm-enterprise-1.preview.emergentagent.com` |
 | `hub_token` | Respuesta del paso 2 (campo `token`) | `eyJhbGciOiJIUzI1NiIs...` (muy largo) |
 | `server_id` | Paso 1 (UUID del servidor) o respuesta del paso 2 | `329d337f-bb4f-4f33-974a-47b916cc832f` |
 | `host` | Tu configuración SQL local | `localhost` o `192.168.1.100` |
@@ -425,10 +425,10 @@ python sync_agent_piloto.py --config config.yaml --test-only
 2026-04-23 12:00:00 INFO [SYNC_AGENT_PILOTO] [1/6] Cargando configuración de config.yaml
 2026-04-23 12:00:00 INFO [SYNC_AGENT_PILOTO]   Agent ID: agent-sr-piloto-001
 2026-04-23 12:00:00 INFO [SYNC_AGENT_PILOTO]   Server ID: 329d337f-bb4f-4f33-974a-47b916cc832f
-2026-04-23 12:00:00 INFO [SYNC_AGENT_PILOTO]   HUB URL: https://stock-tracker-990.preview.emergentagent.com
+2026-04-23 12:00:00 INFO [SYNC_AGENT_PILOTO]   HUB URL: https://erp-crm-enterprise-1.preview.emergentagent.com
 
 2026-04-23 12:00:00 INFO [SYNC_AGENT_PILOTO] [2/6] Verificando autenticación con HUB
-2026-04-23 12:00:01 INFO [SYNC_AGENT_PILOTO] ✅ Autenticación OK: agent_id=agent-sr-piloto-001, server_id=329d337f-bb4f-4f33-974a-47b916cc832f
+2026-04-23 12:00:01 INFO [SYNC_AGENT_PILOTO] ✅ Autenticación OK: agent_id=agent-sr-piloto-001, server_id=erp-crm-enterprise-1
 
 2026-04-23 12:00:01 INFO [SYNC_AGENT_PILOTO] ✅ Modo test-only: Solo se verificó autenticación
 ```
@@ -464,7 +464,7 @@ python sync_agent_piloto.py --config config.yaml --test-only
 **Causa**: No hay conexión a internet o HUB está caído.  
 **Solución**: 
 1. Verificar conexión a internet
-2. Probar abrir `https://stock-tracker-990.preview.emergentagent.com` en navegador
+2. Probar abrir `https://erp-crm-enterprise-1.preview.emergentagent.com` en navegador
 3. Si HUB está caído, esperar
 
 ### Error: No se puede conectar a HUB
@@ -507,7 +507,7 @@ python sync_agent_piloto.py --config config.yaml
 [1/6] Cargando configuración de config.yaml          <-- Carga config
   Agent ID: agent-sr-piloto-001
   Server ID: 329d337f-bb4f-4f33-974a-47b916cc832f
-  HUB URL: https://stock-tracker-990.preview.emergentagent.com
+  HUB URL: https://erp-crm-enterprise-1.preview.emergentagent.com
 
 [2/6] Verificando autenticación con HUB              <-- Verifica token
 ✅ Autenticación OK: agent_id=agent-sr-piloto-001

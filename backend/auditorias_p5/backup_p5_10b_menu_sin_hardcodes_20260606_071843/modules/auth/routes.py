@@ -747,7 +747,7 @@ async def forgot_password(request_data: ForgotPasswordRequest, request: Request)
     # Default a preview URL si no hay origin
     if not origin:
         import os
-        origin = os.environ.get("FRONTEND_URL", "https://stock-tracker-990.preview.emergentagent.com")
+        origin = os.environ.get("FRONTEND_URL", "https://erp-crm-enterprise-1.preview.emergentagent.com")
     
     result = request_password_reset(
         email=request_data.email,

@@ -162,7 +162,7 @@ PORTAL_COOKIE_CONFIG = {
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://edarsa-hub.preview.emergentagent.com",
+        "https://erp-crm-enterprise-1.preview.emergentagent.com",
         "http://localhost:3000"  # Para desarrollo
     ],
     allow_credentials=True,  # CRITICO: Permitir cookies cross-origin
