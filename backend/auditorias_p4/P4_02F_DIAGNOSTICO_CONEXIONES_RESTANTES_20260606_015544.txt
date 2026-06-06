@@ -1,0 +1,212 @@
+==================================================
+P4-02F DIAGNOSTICO CONEXIONES SQL RESTANTES
+Timestamp: 20260606_015544
+==================================================
+TOTAL_HITS: 106
+
+============================================================
+RESUMEN POR TIPO:
+============================================================
+  EDARSAHUB_INTERNO: 68
+  PRUEBA_SCRIPT: 21
+  SIN_CLASIFICAR: 10
+  SERVIDOR_EXTERNO: 7
+
+============================================================
+RESUMEN POR ARCHIVO:
+============================================================
+   16 server.py
+    7 scripts/diagnostico_conexiones/test_conn_cienfuegos_20260606_014556.py
+    6 modules/comercial/routes.py
+    4 scripts/backfill_cienfuegos_mayo_2026.py
+    3 modules/tablajeria/sync_service.py
+    2 modules/auth/repository.py
+    2 scripts/sync_agent_piloto.py
+    2 api/dba_credential_p0d.py
+    2 core/security.py
+    2 core/alcance_helper.py
+    2 core/policies/no_live_dashboard_policy.py
+    1 audit_kpis_junio_2026.py
+    1 tests_guardrails/test_p4_runtime_critico_sin_conexiones_directas.py
+    1 tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py
+    1 tests_guardrails/test_p4_conexiones_sql_centralizadas.py
+    1 tests_guardrails/test_p1_kpis_unidad_pk_real.py
+    1 tests_guardrails/test_p1_kpis_pk_completo.py
+    1 tests_guardrails/test_p1_vistas_runtime_existen.py
+    1 modules/comercial/service.py
+    1 modules/backfill_corporativo/service.py
+    1 modules/sistema/menu_service.py
+    1 modules/automatizacion/repository.py
+    1 modules/auth/service.py
+    1 modules/auth/password_reset.py
+    1 modules/auth/context_service.py
+    1 modules/tablajeria/ordenes_service.py
+    1 modules/tablajeria/dashboard_service.py
+    1 modules/universal_query/routes.py
+    1 modules/crm/automation_service.py
+    1 modules/crm/trigger_service.py
+    1 modules/crm/integration/staging_service.py
+    1 modules/cava_socios/service.py
+    1 scripts/correccion_sistema_menus_y_fallbacks.py
+    1 scripts/backfill_sync_precios_historicos_from_productos.py
+    1 scripts/consultar_cache_finops.py
+    1 scripts/create_sesiones_tables.py
+    1 scripts/p3_01f_validate_patch_compras_no_live.py
+    1 scripts/validate_sync_compras_schema.py
+    1 scripts/create_cava_socios_rbac.py
+    1 scripts/create_cava_socios_tables.py
+    1 scripts/p3_07b_poblar_costo_receta_sqlfirst.py
+    1 scripts/p3_01_sync_compras_dryrun.py
+    1 scripts/update_proyeccion_con_funcion.py
+    1 scripts/p2_13_audit_precios_constantes_lookup.py
+    1 scripts/p3_01c_bloqueo_compras_sin_live.py
+    1 scripts/create_crm_automation_tables.py
+    1 scripts/validate_encrypted_server_connectivity.py
+    1 scripts/seed_inteligencia_demo.py
+    1 scripts/export_critical_sqlfirst_tables.py
+    1 scripts/sync_response_cache_finops.py
+    1 scripts/p3_02_analisis_sync_monitor.py
+    1 scripts/create_tablajeria_rbac.py
+    1 scripts/p3_01c_sync_compras_detalle_dryrun.py
+    1 scripts/seed_ventas_consolidadas.py
+    1 scripts/audit_sync_precios_historicos_dryrun.py
+    1 scripts/p2_11_auditar_unidades_servidores.py
+    1 scripts/create_scheduler_tables.py
+    1 scripts/audit_fecha_operativa_0600.py
+    1 scripts/create_workflow_tables.py
+    1 scripts/p3_01b_analizar_sync_purchases.py
+    1 scripts/actualizacion_kpi_proyeccion_comercial.py
+    1 scripts/audit_db_direct_sqlfirst.py
+    1 scripts/paquete_piloto_sync_agent/sync_agent_piloto.py
+    1 api/admin_core_connections.py
+    1 core/unidades_registry.py
+    1 core/context_resolver.py
+    1 core/user_access_context.py
+    1 tools/edarsahub_sql_runner.py
+    1 tools/check_mpro_server_config.py
+
+============================================================
+ACCIONES RECOMENDADAS:
+============================================================
+  REEMPLAZAR_POR_get_edarsahub_connection: 68
+  MOVER_A_scripts_o_excluir_runtime: 21
+  REQUIERE_REVISION_DIRIGIDA: 10
+  REEMPLAZAR_POR_get_external_sql_connection: 7
+
+============================================================
+DETALLE POR TIPO:
+============================================================
+
+### EDARSAHUB_INTERNO (68 hits):
+  audit_kpis_junio_2026.py:22
+  server.py:825
+  server.py:906
+  server.py:984
+  server.py:1059
+  server.py:7690
+  server.py:7984
+  server.py:8920
+  server.py:9758
+  server.py:9824
+  server.py:9883
+  server.py:9928
+  server.py:10204
+  server.py:11033
+  server.py:11114
+  server.py:11179
+  server.py:11272
+  tests_guardrails/test_p1_kpis_unidad_pk_real.py:14
+  tests_guardrails/test_p1_kpis_pk_completo.py:12
+  tests_guardrails/test_p1_vistas_runtime_existen.py:12
+  modules/comercial/service.py:2636
+  modules/comercial/routes.py:2047
+  modules/comercial/routes.py:2384
+  modules/comercial/routes.py:2686
+  modules/comercial/routes.py:2794
+  modules/comercial/routes.py:2903
+  modules/comercial/routes.py:3598
+  modules/auth/service.py:376
+  modules/auth/password_reset.py:57
+  modules/auth/repository.py:103
+  modules/auth/repository.py:315
+  modules/auth/context_service.py:49
+  modules/tablajeria/ordenes_service.py:41
+  modules/tablajeria/sync_service.py:45
+  scripts/backfill_sync_precios_historicos_from_productos.py:11
+  scripts/create_sesiones_tables.py:81
+  scripts/p3_01f_validate_patch_compras_no_live.py:18
+  scripts/validate_sync_compras_schema.py:24
+  scripts/p3_07b_poblar_costo_receta_sqlfirst.py:18
+  scripts/p3_01_sync_compras_dryrun.py:17
+  scripts/p2_13_audit_precios_constantes_lookup.py:17
+  scripts/p3_01c_bloqueo_compras_sin_live.py:18
+  scripts/create_crm_automation_tables.py:14
+  scripts/seed_inteligencia_demo.py:22
+  scripts/export_critical_sqlfirst_tables.py:25
+  scripts/p3_02_analisis_sync_monitor.py:17
+  scripts/p3_01c_sync_compras_detalle_dryrun.py:19
+  scripts/seed_ventas_consolidadas.py:33
+  scripts/audit_sync_precios_historicos_dryrun.py:13
+  scripts/p2_11_auditar_unidades_servidores.py:46
+  scripts/create_scheduler_tables.py:110
+  scripts/audit_fecha_operativa_0600.py:48
+  scripts/create_workflow_tables.py:43
+  scripts/p3_01b_analizar_sync_purchases.py:18
+  scripts/backfill_cienfuegos_mayo_2026.py:67
+  scripts/backfill_cienfuegos_mayo_2026.py:172
+  scripts/backfill_cienfuegos_mayo_2026.py:249
+  scripts/audit_db_direct_sqlfirst.py:10
+  scripts/diagnostico_conexiones/test_conn_cienfuegos_20260606_014556.py:108
+  core/unidades_registry.py:53
+  core/security.py:494
+  core/security.py:541
+  core/context_resolver.py:60
+  core/user_access_context.py:71
+  core/alcance_helper.py:75
+  core/alcance_helper.py:120
+  tools/edarsahub_sql_runner.py:64
+  tools/check_mpro_server_config.py:20
+
+### SERVIDOR_EXTERNO (7 hits):
+  modules/tablajeria/dashboard_service.py:32
+  modules/tablajeria/sync_service.py:163
+  modules/tablajeria/sync_service.py:594
+  modules/cava_socios/service.py:34
+  scripts/backfill_cienfuegos_mayo_2026.py:123
+  api/dba_credential_p0d.py:369
+  api/dba_credential_p0d.py:484
+
+### PRUEBA_SCRIPT (21 hits):
+  tests_guardrails/test_p4_runtime_critico_sin_conexiones_directas.py:39
+  tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:34
+  tests_guardrails/test_p4_conexiones_sql_centralizadas.py:29
+  scripts/sync_agent_piloto.py:96
+  scripts/sync_agent_piloto.py:123
+  scripts/correccion_sistema_menus_y_fallbacks.py:23
+  scripts/consultar_cache_finops.py:16
+  scripts/create_cava_socios_rbac.py:27
+  scripts/create_cava_socios_tables.py:28
+  scripts/update_proyeccion_con_funcion.py:15
+  scripts/validate_encrypted_server_connectivity.py:283
+  scripts/sync_response_cache_finops.py:16
+  scripts/create_tablajeria_rbac.py:27
+  scripts/actualizacion_kpi_proyeccion_comercial.py:25
+  scripts/diagnostico_conexiones/test_conn_cienfuegos_20260606_014556.py:447
+  scripts/diagnostico_conexiones/test_conn_cienfuegos_20260606_014556.py:616
+  scripts/diagnostico_conexiones/test_conn_cienfuegos_20260606_014556.py:684
+  scripts/diagnostico_conexiones/test_conn_cienfuegos_20260606_014556.py:758
+  scripts/diagnostico_conexiones/test_conn_cienfuegos_20260606_014556.py:826
+  scripts/diagnostico_conexiones/test_conn_cienfuegos_20260606_014556.py:897
+  scripts/paquete_piloto_sync_agent/sync_agent_piloto.py:101
+
+### SIN_CLASIFICAR (10 hits):
+  modules/backfill_corporativo/service.py:869
+  modules/sistema/menu_service.py:34
+  modules/automatizacion/repository.py:346
+  modules/universal_query/routes.py:186
+  modules/crm/automation_service.py:36
+  modules/crm/trigger_service.py:78
+  modules/crm/integration/staging_service.py:35
+  api/admin_core_connections.py:320
+  core/policies/no_live_dashboard_policy.py:15
+  core/policies/no_live_dashboard_policy.py:16
