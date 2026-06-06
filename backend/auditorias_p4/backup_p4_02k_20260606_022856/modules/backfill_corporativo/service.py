@@ -1,4 +1,3 @@
-from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
 """
 P3-03 Backfill Corporativo Service - SQL-First
 Re-sincronización histórica controlada.

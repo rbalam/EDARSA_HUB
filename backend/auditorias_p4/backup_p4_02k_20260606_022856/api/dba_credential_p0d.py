@@ -1,4 +1,3 @@
-from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
 """
 EDARSA HUB - Endpoint Seguro para Credencial DBA
 =================================================
@@ -367,7 +366,14 @@ async def test_dba_connection(request: Request):
     import pymssql
     
     try:
-        conn = get_external_sql_connection(server_config)
+        conn = pymssql.connect(
+            server=DBA_SERVER_CONFIG['host'],
+            port=DBA_SERVER_CONFIG['port'],
+            database='msdb',  # Conectar a msdb para validar permisos
+            user=DBA_SERVER_CONFIG['username'],
+            password=decrypted_password,  # NUNCA loguear
+            as_dict=True
+        )
         cursor = conn.cursor()
         
         # Validar identidad
@@ -475,7 +481,14 @@ async def execute_dba_diagnostic(request: Request):
     results = {}
     
     try:
-        conn = get_external_sql_connection(server_config)
+        conn = pymssql.connect(
+            server=DBA_SERVER_CONFIG['host'],
+            port=DBA_SERVER_CONFIG['port'],
+            database='msdb',
+            user=DBA_SERVER_CONFIG['username'],
+            password=decrypted_password,
+            as_dict=True
+        )
         cursor = conn.cursor()
         
         # CONSULTA 1: Jobs activos

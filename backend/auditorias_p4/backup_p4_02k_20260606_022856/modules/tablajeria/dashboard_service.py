@@ -1,4 +1,3 @@
-from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
 """
@@ -30,7 +29,14 @@ class TablajeriaDashboardService:
         self.db_config = db_config
     
     def _get_connection(self):
-        return get_external_sql_connection(self.db_config)
+        return pymssql.connect(
+            server=self.db_config.get('host'),
+            port=self.db_config.get('port', 1433),
+            database=self.db_config.get('database'),
+            user=self.db_config.get('username'),
+            password=self.db_config.get('password'),
+            autocommit=False
+        )
     
     def get_kpis_generales(self, empresa_id: Optional[str] = None, 
                            fecha_inicio: Optional[str] = None,

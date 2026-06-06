@@ -1,4 +1,3 @@
-from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
 """
@@ -374,7 +373,13 @@ async def update_user_permissions(user_id: str, permissions: Dict, current_user:
     
     # RBAC-SCOPE-E: Escribir permisos en EDARSAHUB SQL
     try:
-        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+        conn = pymssql.connect(
+            server=os.getenv('EDARSAHUB_SQL_HOST'),
+            port=1433,
+            user=os.getenv('EDARSAHUB_SQL_USER'),
+            password=os.getenv('EDARSAHUB_SQL_PASSWORD'),
+            database='EDARSAHUB'
+        )
         cursor = conn.cursor()
         
         # Resolver UsuarioID SQL desde PublicUUID

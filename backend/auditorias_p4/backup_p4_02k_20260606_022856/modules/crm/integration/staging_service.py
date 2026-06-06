@@ -1,4 +1,3 @@
-from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
 """
@@ -33,7 +32,16 @@ class StagingService:
     
     def _get_connection(self):
         """Obtiene conexión a SQL Server"""
-        return get_external_sql_connection(self.db_config)
+        return pymssql.connect(
+            server=self.db_config['host'],
+            port=self.db_config['port'],
+            database=self.db_config['database'],
+            user=self.db_config['username'],
+            password=self.db_config['password'],
+            login_timeout=30,
+            timeout=60,
+            autocommit=False
+        )
     
     def _now(self) -> datetime:
         """Retorna datetime actual en zona horaria México"""
