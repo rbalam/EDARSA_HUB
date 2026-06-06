@@ -54,8 +54,7 @@ RATE_LIMIT_WINDOW_HOURS = 1
 
 def _get_sql_connection():
     """Obtener conexión a EDARSAHUB SQL (fuente única)."""
-    return pymssql.connect(
-        server=os.getenv('EDARSAHUB_SQL_HOST'),
+    return get_edarsahub_connection(),
         port=1433,
         user=os.getenv('EDARSAHUB_SQL_USER'),
         password=os.getenv('EDARSAHUB_SQL_PASSWORD'),

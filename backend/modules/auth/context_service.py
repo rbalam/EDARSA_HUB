@@ -46,8 +46,7 @@ logger = logging.getLogger(__name__)
 
 def _get_sql_connection():
     """Obtiene conexión a EDARSAHUB SQL."""
-    return pymssql.connect(
-        server=os.getenv('EDARSAHUB_SQL_HOST'),
+    return get_edarsahub_connection(),
         port=1433,
         user=os.getenv('EDARSAHUB_SQL_USER'),
         password=os.getenv('EDARSAHUB_SQL_PASSWORD'),
