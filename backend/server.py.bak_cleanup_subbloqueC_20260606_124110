@@ -14314,6 +14314,124 @@ async def sql_server_test_query(
         }
 
 
+@api_router.get("/sistema/permisos-catalogos/{user_id}")
+async def obtener_permisos_catalogos_usuario(user_id: str, current_user: Dict = Depends(get_current_user)):
+    """Obtiene los permisos de catálogos de un usuario específico"""
+    # Solo Supervisor o Administrador pueden ver permisos
+    if current_user.get('role') not in ['Supervisor', 'Administrador', 'SuperAdministrador']:
+        raise HTTPException(status_code=403, detail="No autorizado")
+    
+    permisos = await db.permisos_catalogos.find_one({"user_id": user_id})
+    if not permisos:
+        return {"user_id": user_id, "catalogos_permitidos": [], "puede_solicitar": False}
+    
+    return {
+        "user_id": user_id,
+        "catalogos_permitidos": permisos.get("catalogos_permitidos", []),
+        "puede_solicitar": permisos.get("puede_solicitar", False),
+        "asignado_por": permisos.get("asignado_por"),
+        "fecha_asignacion": permisos.get("fecha_asignacion")
+    }
+
+
+@api_router.get("/sistema/mis-permisos-catalogos")
+async def obtener_mis_permisos_catalogos(current_user: Dict = Depends(get_current_user)):
+    """Obtiene los permisos de catálogos del usuario actual"""
+    user_id = current_user.get("id")
+    
+    # Administradores tienen todos los permisos
+    if current_user.get('role') == 'Administrador':
+        return {
+            "puede_solicitar": True,
+            "puede_aprobar": True,
+            "catalogos_permitidos": [c["id"] for c in CATALOGOS_SISTEMA]
+        }
+    
+    # Supervisores pueden aprobar
+    puede_aprobar = current_user.get('role') == 'Supervisor'
+    
+    permisos = await db.permisos_catalogos.find_one({"user_id": user_id})
+    if not permisos:
+        return {"puede_solicitar": False, "puede_aprobar": puede_aprobar, "catalogos_permitidos": []}
+    
+    return {
+        "puede_solicitar": permisos.get("puede_solicitar", False),
+        "puede_aprobar": puede_aprobar,
+        "catalogos_permitidos": permisos.get("catalogos_permitidos", [])
+    }
+
+
+@api_router.get("/sistema/solicitudes")
+async def listar_solicitudes(
+    estatus: str = None,
+    catalogo_id: str = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista solicitudes de catálogos"""
+    filtro = {}
+    
+    # Usuarios normales solo ven sus propias solicitudes
+    if current_user.get('role') not in ['Supervisor', 'Administrador', 'SuperAdministrador']:
+        filtro["solicitante_id"] = current_user.get("id")
+    
+    if estatus:
+        filtro["estatus"] = estatus
+    if catalogo_id:
+        filtro["catalogo_id"] = catalogo_id
+    
+    solicitudes = await db.solicitudes_catalogos.find(filtro, {"_id": 0}).sort("fecha_solicitud", -1).to_list(100)
+    
+    return {"solicitudes": solicitudes, "total": len(solicitudes)}
+
+
+@api_router.get("/sistema/solicitudes/{solicitud_id}")
+async def obtener_solicitud(solicitud_id: str, current_user: Dict = Depends(get_current_user)):
+    """Obtiene detalle de una solicitud"""
+    solicitud = await db.solicitudes_catalogos.find_one({"id": solicitud_id}, {"_id": 0})
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    
+    # Verificar acceso
+    if current_user.get('role') not in ['Supervisor', 'Administrador', 'SuperAdministrador']:
+        if solicitud.get("solicitante_id") != current_user.get("id"):
+            raise HTTPException(status_code=403, detail="No autorizado")
+    
+    return solicitud
+
+
+@api_router.get("/sistema/solicitudes/{solicitud_id}/historial")
+async def obtener_historial_solicitud(solicitud_id: str, current_user: Dict = Depends(get_current_user)):
+    """Obtiene el historial completo de trazabilidad de una solicitud"""
+    solicitud = await db.solicitudes_catalogos.find_one({"id": solicitud_id}, {"_id": 0})
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    
+    # Verificar acceso
+    if current_user.get('role') not in ['Supervisor', 'Administrador', 'SuperAdministrador']:
+        if solicitud.get("solicitante_id") != current_user.get("id"):
+            raise HTTPException(status_code=403, detail="No autorizado")
+    
+    historial = solicitud.get("historial", [])
+    aprobaciones = solicitud.get("aprobaciones", [])
+    
+    return {
+        "solicitud_id": solicitud_id,
+        "catalogo": solicitud.get("catalogo_nombre"),
+        "version_actual": solicitud.get("version", 1),
+        "estatus_actual": solicitud.get("estatus"),
+        "nivel_actual": solicitud.get("nivel_actual", 1),
+        "niveles_requeridos": solicitud.get("niveles_requeridos", 1),
+        "solicitante": {
+            "id": solicitud.get("solicitante_id"),
+            "email": solicitud.get("solicitante_email"),
+            "nombre": solicitud.get("solicitante_nombre")
+        },
+        "aprobaciones": aprobaciones,
+        "historial": sorted(historial, key=lambda x: x.get("timestamp", ""), reverse=True),
+        "total_eventos": len(historial)
+    }
+
+
 @api_router.get("/sistema/pendientes-unificados")
 async def obtener_pendientes_unificados(current_user: Dict = Depends(get_current_user)):
     """
