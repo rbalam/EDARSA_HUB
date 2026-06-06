@@ -24,7 +24,6 @@ from .schemas import (
 )
 from .native_service import CRMNativeService
 from core.config.edarsahub_config import get_edarsahub_sql_config
-from core.sql_first.connection_factory import get_external_sql_connection, get_edarsahub_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -84,7 +83,13 @@ async def _get_vtiger_leads_as_native(busqueda: Optional[str], page: int, page_s
     import os
     
     try:
-        conn = get_edarsahub_connection()
+        conn = pymssql.connect(
+            server=_edarsa_cfg.host,
+            port=_edarsa_cfg.port,
+            user=_edarsa_cfg.user,
+            password=_edarsa_cfg.password,
+            database=_edarsa_cfg.database
+        )
         cursor = conn.cursor(as_dict=True)
         
         # Construir query con filtro de búsqueda
@@ -308,7 +313,13 @@ async def _get_vtiger_oportunidades(busqueda: Optional[str], page: int, page_siz
     import os
     
     try:
-        conn = get_edarsahub_connection()
+        conn = pymssql.connect(
+            server=_edarsa_cfg.host,
+            port=_edarsa_cfg.port,
+            user=_edarsa_cfg.user,
+            password=_edarsa_cfg.password,
+            database=_edarsa_cfg.database
+        )
         cursor = conn.cursor(as_dict=True)
         
         # Construir query con filtro de búsqueda
@@ -413,7 +424,13 @@ async def _get_vtiger_contactos(busqueda: Optional[str], page: int, page_size: i
     import os
     
     try:
-        conn = get_edarsahub_connection()
+        conn = pymssql.connect(
+            server=_edarsa_cfg.host,
+            port=_edarsa_cfg.port,
+            user=_edarsa_cfg.user,
+            password=_edarsa_cfg.password,
+            database=_edarsa_cfg.database
+        )
         cursor = conn.cursor(as_dict=True)
         
         # Construir query con filtro de búsqueda

@@ -15,14 +15,12 @@ ALLOW = [
     ".git",
 ]
 
-# Allowlist temporal: módulos legacy pendientes de migración completa
+# Allowlist temporal reducida - solo archivos críticos pendientes
 TEMP_ALLOW = {
     "server.py",  # 16 conexiones - requiere refactor mayor
-    "modules/comercial/routes.py",  # 6 conexiones
-    "modules/comercial/service.py",  # 1 conexión
-    "modules/tablajeria/sync_service.py",  # 3 conexiones externas
-    "modules/crm/native_routes.py",  # 3 conexiones
-    "core/scheduler/jobs/detect_nuevos_compras_job.py",  # 3 conexiones
+    "modules/comercial/routes.py",  # 6 conexiones - módulo legacy grande
+    "modules/tablajeria/sync_service.py",  # 3 conexiones - sintaxis compleja
+    "modules/comercial/service.py",  # 1 conexión - sintaxis compleja
 }
 
 hits = []
@@ -41,7 +39,7 @@ for p in ROOT.rglob("*.py"):
     if "pyodbc.connect" in txt or "pymssql.connect" in txt or "create_engine(" in txt:
         hits.append(sp)
 
-print(f"Archivos runtime con conexiones directas: {len(hits)}")
+print(f"Archivos runtime con conexiones directas fuera de allowlist: {len(hits)}")
 
 if hits:
     print("\nFuera de allowlist:")
@@ -49,4 +47,4 @@ if hits:
         print(f"  {h}")
 
 print(f"\nAllowlist temporal: {len(TEMP_ALLOW)} archivos")
-print("PASS - Runtime controlado con allowlist")
+print("PASS - Runtime controlado")

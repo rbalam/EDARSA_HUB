@@ -47,7 +47,6 @@ LOCK_TIMEOUT_MINUTES = 5
 
 # P2-01: Config centralizado
 from core.config.edarsahub_config import get_edarsahub_sql_config
-from core.sql_first.connection_factory import get_external_sql_connection, get_edarsahub_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 EDARSAHUB_CONFIG = {
     'host': _edarsa_cfg.host,
@@ -67,7 +66,14 @@ def _acquire_detect_lock(run_id: str) -> bool:
     from datetime import timedelta
     
     try:
-        conn = get_edarsahub_connection()
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=10
+        )
         cursor = conn.cursor(as_dict=True)
         now_mx = datetime.now(ZoneInfo("America/Mexico_City"))
         timeout_threshold = now_mx - timedelta(minutes=LOCK_TIMEOUT_MINUTES)
@@ -112,7 +118,14 @@ def _acquire_detect_lock(run_id: str) -> bool:
 def _release_detect_lock(run_id: str, status: str, detected: int, eventos: int):
     """Libera el lock de detección."""
     try:
-        conn = get_edarsahub_connection()
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=10
+        )
         cursor = conn.cursor()
         now_mx = datetime.now(ZoneInfo("America/Mexico_City"))
         
@@ -146,7 +159,14 @@ def _get_servers_for_detection() -> List[Dict]:
     from core.secret_manager import decrypt_secret
     
     try:
-        conn = get_edarsahub_connection()
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
         cursor = conn.cursor(as_dict=True)
         
         cursor.execute("""
