@@ -19383,3 +19383,17 @@ async def download_backup_db_completo():
             media_type="application/zip"
         )
     raise HTTPException(status_code=404, detail="Archivo de backup no encontrado")
+
+@app.get("/api/download/backup-codigo-fuente")
+async def download_backup_codigo_fuente():
+    """Descarga del código fuente completo de EDARSAHUB (backend + frontend)."""
+    import os
+    zip_path = "/app/backend/static/backup_codigo.zip"
+    if os.path.exists(zip_path):
+        return FileResponse(
+            path=zip_path,
+            filename="EDARSAHUB_CODIGO_FUENTE_COMPLETO.zip",
+            media_type="application/zip"
+        )
+    raise HTTPException(status_code=404, detail="Archivo de código fuente no encontrado")
+
