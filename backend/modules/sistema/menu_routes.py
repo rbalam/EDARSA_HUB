@@ -76,19 +76,29 @@ async def obtener_menus_usuario(
     
     # Verificar si es SuperAdmin por email o rol
     roles = current_user.get('roles', [])
+    role = current_user.get('role', '')  # Rol directo del usuario
     es_super_admin = False
     
     # Verificar por email de admin conocido
-    if email in ['admin@edarsa.com', 'superadmin@edarsa.com']:
+    admin_emails = ['admin@edarsa.com', 'superadmin@edarsa.com', 'ricardo@edarsa.com.mx']
+    if email.lower() in [e.lower() for e in admin_emails]:
         es_super_admin = True
     
-    # Verificar por rol
+    # Verificar por rol directo (SUPERADMIN, Administrador, etc.)
+    admin_roles = ['SUPERADMIN', 'SuperAdministrador', 'Administrador', 'ADMIN', 'Admin']
+    if role in admin_roles or (isinstance(role, str) and role.upper() in [r.upper() for r in admin_roles]):
+        es_super_admin = True
+    
+    # Verificar por lista de roles
     if isinstance(roles, list):
         for r in roles:
-            if isinstance(r, dict) and r.get('nombre') in ['SuperAdministrador', 'Administrador']:
-                es_super_admin = True
-                break
-            elif isinstance(r, str) and r in ['SuperAdministrador', 'Administrador']:
+            rol_nombre = None
+            if isinstance(r, dict):
+                rol_nombre = r.get('nombre') or r.get('CodigoRol') or r.get('NombreRol')
+            elif isinstance(r, str):
+                rol_nombre = r
+            
+            if rol_nombre and (rol_nombre in admin_roles or rol_nombre.upper() in [ar.upper() for ar in admin_roles]):
                 es_super_admin = True
                 break
     

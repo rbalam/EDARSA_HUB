@@ -355,18 +355,19 @@ async def resolve_user_access_context(user: Dict[str, Any]) -> UserAccessContext
     )
     
     role_legacy = user.get('role', '')
+    role_upper = str(role_legacy).upper() if role_legacy else ''
     
     # =========================================================================
     # PASO 1: Verificar acceso global (SuperAdministrador / Administrador)
     # =========================================================================
-    if role_legacy == 'SuperAdministrador':
+    if role_legacy == 'SuperAdministrador' or role_upper == 'SUPERADMIN':
         context.tiene_acceso_global = True
         context.fuente_acceso = "SUPERADMIN"
         _resolver_acceso_global_sql(context)
         logger.info(f"[AccessContext] {context.email}: Acceso GLOBAL (SuperAdmin)")
         return context
     
-    if role_legacy == 'Administrador':
+    if role_legacy == 'Administrador' or role_upper == 'ADMIN':
         context.tiene_acceso_global = True
         context.fuente_acceso = "ADMIN"
         _resolver_acceso_global_sql(context)
