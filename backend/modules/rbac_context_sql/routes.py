@@ -149,17 +149,16 @@ async def obtener_permisos_efectivos_usuario(
             urc.UnidadNegocioID,
             urc.SucursalID,
             prm.ModuloID,
-            sm.CodigoModulo,
-            sm.NombreModulo,
-            prm.PuedeVer,
-            prm.PuedeCrear,
-            prm.PuedeEditar,
-            prm.PuedeEliminar,
-            prm.PuedeAutorizar,
-            prm.PuedeExportar
+            sm.Codigo AS CodigoModulo,
+            sm.Nombre AS NombreModulo,
+            prm.AccionID,
+            prm.Permitido,
+            prm.RestriccionPropietario,
+            prm.RestriccionSucursal,
+            prm.RequiereAutorizacion
         FROM vw_Usuario_RolesContexto urc
         INNER JOIN Usuario_PermisosRolModulo prm
-            ON urc.RolID = prm.RolID
+            ON urc.RolID = prm.RolID AND prm.Activo = 1
         LEFT JOIN Sistema_Modulos sm
             ON prm.ModuloID = sm.ModuloID
         WHERE urc.UsuarioID = %s
@@ -167,7 +166,7 @@ async def obtener_permisos_efectivos_usuario(
           AND (%s IS NULL OR urc.UnidadNegocioID = %s)
           AND (%s IS NULL OR urc.EmpresaID = %s)
           AND (%s IS NULL OR urc.SucursalID = %s)
-        ORDER BY sm.NombreModulo, urc.NombreRol
+        ORDER BY sm.Nombre, urc.NombreRol
     """
     return _fetch_all(sql, (
         usuario_id,

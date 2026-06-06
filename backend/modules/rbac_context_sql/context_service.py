@@ -89,25 +89,24 @@ class RBACContextService:
                     r.NombreRol,
                     urc.UnidadNegocioID,
                     prm.ModuloID,
-                    sm.CodigoModulo,
-                    sm.NombreModulo,
-                    prm.PuedeVer,
-                    prm.PuedeCrear,
-                    prm.PuedeEditar,
-                    prm.PuedeEliminar,
-                    prm.PuedeAutorizar,
-                    prm.PuedeExportar
+                    sm.Codigo AS CodigoModulo,
+                    sm.Nombre AS NombreModulo,
+                    prm.AccionID,
+                    prm.Permitido,
+                    prm.RestriccionPropietario,
+                    prm.RestriccionSucursal,
+                    prm.RequiereAutorizacion
                 FROM Usuario_RolesContexto urc
                 INNER JOIN Usuario_Roles r
                     ON urc.RolID = r.RolID
                 INNER JOIN Usuario_PermisosRolModulo prm
-                    ON urc.RolID = prm.RolID
+                    ON urc.RolID = prm.RolID AND prm.Activo = 1
                 LEFT JOIN Sistema_Modulos sm
                     ON prm.ModuloID = sm.ModuloID
                 WHERE urc.UsuarioID = %s
                   AND urc.Activo = 1
                   AND (%s IS NULL OR CONVERT(NVARCHAR(100), urc.UnidadNegocioID) = %s)
-                ORDER BY sm.NombreModulo, r.NombreRol
+                ORDER BY sm.Nombre, r.NombreRol
             """, (usuario_id, unidad_activa, unidad_activa))
             perm_cols = [c[0] for c in cur.description]
             permisos = [dict(zip(perm_cols, r)) for r in cur.fetchall()]
