@@ -559,7 +559,7 @@ from modules.finanzas.saldos_bancarios import router as saldos_bancarios_router
 # - FASE 1 MVP: Solo SoftRestaurant (La Estelar, Cienfuegos, 130 Mérida)
 # - FUERA DE ALCANCE: MPRO (pendiente para fase posterior)
 # - Documentos: /app/docs/CAB_MODULO_PROPINAS_TPV.md
-# - ARQUITECTURA: SQL Server (persistencia) + MongoDB (cache)
+# - ARQUITECTURA: SQL Server como fuente única productiva
 # - IMPORTANTE: NO interfiere con /api/finanzas/tesoreria/* (tab Cuadre Z protegido)
 from modules.finanzas.propinas_tpv import get_router_sql as get_propinas_tpv_router
 
@@ -647,7 +647,7 @@ api_router.include_router(catalogos_sistemas_router)
 
 # MÓDULO PROPINAS TPV: Registrar router de propinas TPV (FASE 1 MVP - Solo SoftRestaurant)
 # Endpoints bajo /api/finanzas/propinas/*
-# ARQUITECTURA: SQL Server EDARSA HUB (persistencia) + MongoDB (cache)
+# ARQUITECTURA: SQL Server EDARSA HUB como fuente única productiva
 # AISLAMIENTO: NO interfiere con /api/finanzas/tesoreria/* (Tab Cuadre Z PROTEGIDO)
 api_router.include_router(get_propinas_tpv_router())
 
@@ -1854,11 +1854,11 @@ async def send_email_with_attachment(recipient_emails: List[str], subject: str, 
 @api_router.post("/servers")
 async def create_server(server_data: ServerCreate, current_user: Dict = Depends(get_current_user)):
     """
-    FASE 3B.1: Crea servidor en EDARSAHUB SQL primero, sincroniza a MongoDB.
+    FASE 3B.1: Crea servidor en EDARSAHUB SQL primero, NO sincroniza a MongoDB.
     
     - SQL es la fuente principal
-    - MongoDB queda como espejo legacy
-    - Si MongoDB sync falla, devuelve PARTIAL_SYNC
+    - MongoDB no se usa en flujo productivo
+    - No existe sync Mongo en flujo productivo
     
     RBAC: Solo SuperAdministrador o Administrador pueden crear servidores.
     """
@@ -1887,7 +1887,7 @@ async def create_server(server_data: ServerCreate, current_user: Dict = Depends(
         payload=payload,
         db=db,
         user=current_user,
-        sync_mongo=True
+        sync_mongo=False  # P5: MongoDB sync deshabilitado
     )
     
     if not result.get('success'):
@@ -1915,7 +1915,7 @@ async def get_servers(current_user: Dict = Depends(get_current_user)):
     
     ORDEN DE CONSULTA:
     1. EDARSAHUB SQL (fuente primaria)
-    2. MongoDB (fallback legacy)
+    2. Sin fallback MongoDB
     
     CORRECCIÓN 2026-05-20: Las conexiones CORE (ej. EDARSAHUB SQL) ahora aparecen
     en el listado del menú administrativo de servidores.
@@ -1926,7 +1926,7 @@ async def get_servers(current_user: Dict = Depends(get_current_user)):
         db=db,
         user=current_user,
         prefer_sql=True,
-        allow_mongo_fallback=True,
+        allow_mongo_fallback=False,  # P5: Fallback MongoDB deshabilitado
         filter_active=True,
         filter_visible_listado=True,
         exclude_core=False,
@@ -1942,7 +1942,7 @@ async def get_server(server_id: str, current_user: Dict = Depends(get_current_us
     
     ORDEN DE CONSULTA:
     1. EDARSAHUB SQL (fuente primaria)
-    2. MongoDB (fallback legacy)
+    2. Sin fallback MongoDB
     """
     from core.server_registry import get_server_by_id as registry_get_server
     
@@ -1953,7 +1953,7 @@ async def get_server(server_id: str, current_user: Dict = Depends(get_current_us
         server_id,
         db=db,
         prefer_sql=True,
-        allow_mongo_fallback=True,
+        allow_mongo_fallback=False,  # P5: Fallback MongoDB deshabilitado
         mask_secrets=True
     )
     
@@ -1965,11 +1965,11 @@ async def get_server(server_id: str, current_user: Dict = Depends(get_current_us
 @api_router.put("/servers/{server_id}")
 async def update_server(server_id: str, server_data: Dict, current_user: Dict = Depends(get_current_user)):
     """
-    FASE 3B.1: Actualiza servidor en EDARSAHUB SQL primero, sincroniza a MongoDB.
+    FASE 3B.1: Actualiza servidor en EDARSAHUB SQL primero, NO sincroniza a MongoDB.
     
     - SQL es la fuente principal
-    - MongoDB queda como espejo legacy
-    - Si MongoDB sync falla, devuelve PARTIAL_SYNC
+    - MongoDB no se usa en flujo productivo
+    - No existe sync Mongo en flujo productivo
     - Passwords enmascarados no sobrescriben el real
     
     RBAC: Solo SuperAdministrador o Administrador pueden actualizar servidores.
@@ -2003,7 +2003,7 @@ async def update_server(server_id: str, server_data: Dict, current_user: Dict = 
         payload=server_data,
         db=db,
         user=current_user,
-        sync_mongo=True
+        sync_mongo=False  # P5: MongoDB sync deshabilitado
     )
     
     if not result.get('success'):
@@ -2023,12 +2023,12 @@ async def update_server(server_id: str, server_data: Dict, current_user: Dict = 
 @api_router.delete("/servers/{server_id}")
 async def delete_server(server_id: str, current_user: Dict = Depends(get_current_user)):
     """
-    FASE 3B.1: Desactiva servidor en EDARSAHUB SQL primero, sincroniza a MongoDB.
+    FASE 3B.1: Desactiva servidor en EDARSAHUB SQL primero, NO sincroniza a MongoDB.
     
     - Usa soft delete (activo=false), no borrado físico
     - SQL es la fuente principal
-    - MongoDB queda como espejo legacy
-    - Si MongoDB sync falla, devuelve PARTIAL_SYNC
+    - MongoDB no se usa en flujo productivo
+    - No existe sync Mongo en flujo productivo
     
     RBAC: Solo SuperAdministrador o Administrador pueden eliminar servidores.
     Protección CORE: Ni SuperAdministrador ni Administrador pueden eliminar conexiones CORE.
@@ -2056,7 +2056,7 @@ async def delete_server(server_id: str, current_user: Dict = Depends(get_current
         server_id=server_id,
         db=db,
         user=current_user,
-        sync_mongo=True,
+        sync_mongo=False,  # P5: MongoDB sync deshabilitado
         soft_delete=True  # Mantener soft delete como comportamiento actual
     )
     
@@ -2445,7 +2445,7 @@ async def save_server_query(
         payload={field_name: query_config},
         db=db,
         user=current_user,
-        sync_mongo=True  # Mantener espejo MongoDB para compatibilidad
+        sync_mongo=False  # P5: MongoDB sync deshabilitado  # Mantener espejo MongoDB para compatibilidad
     )
     
     if not result.get('success'):
@@ -2467,7 +2467,7 @@ async def save_server_query(
             payload={"queries_configured": all_configured},
             db=db,
             user=current_user,
-            sync_mongo=True
+            sync_mongo=False  # P5: MongoDB sync deshabilitado
         )
     else:
         all_configured = False
@@ -2567,7 +2567,7 @@ async def delete_server_query(
         payload={field_name: None, "queries_configured": False},
         db=db,
         user=current_user,
-        sync_mongo=True
+        sync_mongo=False  # P5: MongoDB sync deshabilitado
     )
     
     if not result.get('success'):
