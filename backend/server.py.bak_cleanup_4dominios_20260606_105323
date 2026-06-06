@@ -2168,6 +2168,130 @@ async def ping_server(server_id: str, credentials: HTTPAuthorizationCredentials 
 
 # ============= QUERIES =============
 
+@api_router.post("/queries")
+async def create_query(query_data: QueryTemplateCreate, current_user: Dict = Depends(get_current_user)):
+    if current_user['role'] != 'Administrador':
+        raise HTTPException(status_code=403, detail="No autorizado")
+    
+    query = QueryTemplate(**query_data.model_dump())
+    doc = query.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.queries.insert_one(doc)
+    
+    return query.model_dump()
+
+@api_router.get("/queries", response_model=List[QueryTemplate])
+async def get_queries(system_type: Optional[str] = None, current_user: Dict = Depends(get_current_user)):
+    filter_query = {}
+    if system_type:
+        filter_query['system_type'] = system_type
+    
+    queries = await db.queries.find(filter_query, {"_id": 0}).to_list(1000)
+    return queries
+
+@api_router.put("/queries/{query_id}")
+async def update_query(query_id: str, query_data: Dict, current_user: Dict = Depends(get_current_user)):
+    if current_user['role'] != 'Administrador':
+        raise HTTPException(status_code=403, detail="No autorizado")
+    
+    await db.queries.update_one({"id": query_id}, {"$set": query_data})
+    return {"message": "Consulta actualizada"}
+
+@api_router.delete("/queries/{query_id}")
+async def delete_query(query_id: str, current_user: Dict = Depends(get_current_user)):
+    if current_user['role'] != 'Administrador':
+        raise HTTPException(status_code=403, detail="No autorizado")
+    
+    await db.queries.delete_one({"id": query_id})
+    return {"message": "Consulta eliminada"}
+
+# ============= SERVER QUERY CONFIGURATION =============
+
+# Columnas requeridas para cada tipo de consulta
+REQUIRED_COLUMNS = {
+    "inventario": {
+        "required": ["codigo", "descripcion", "cantidad"],
+        "optional": ["fecha", "sucursal", "almacen", "costo", "unidad", "grupo", "categoria"],
+        "description": "Consulta de inventarios (inicial y final). Obtiene el stock de productos en una fecha determinada."
+    },
+    "ventas": {
+        "required": ["codigo", "descripcion", "cantidad"],
+        "optional": ["fecha", "precio", "importe", "sucursal", "almacen", "folio"],
+        "description": "Consulta de ventas del período. Obtiene los productos vendidos entre dos fechas."
+    },
+    "movimientos": {
+        "required": ["codigo", "descripcion", "cantidad"],
+        "optional": ["fecha", "tipo_movimiento", "sucursal", "almacen", "referencia", "costo"],
+        "description": "Consulta de movimientos (entradas, compras, traspasos, ajustes). Obtiene las entradas de productos al inventario."
+    }
+}
+
+# Mapeo de alias de columnas (para flexibilidad)
+COLUMN_ALIASES = {
+    "codigo": ["codigo", "clave", "code", "producto_codigo", "codigo_producto", "idinsumo", "idproducto", "sku", "cve_producto", "pr_cve_producto"],
+    "cantidad": ["cantidad", "qty", "quantity", "existencia", "stock", "unidades", "cant", "movimiento_neto"],
+    "descripcion": ["descripcion", "description", "nombre", "name", "producto", "producto_nombre"],
+    "fecha": ["fecha", "date", "fecha_movimiento", "fecha_venta", "fecha_inventario"],
+    "sucursal": ["sucursal", "branch", "tienda", "sucursal_id", "idsucursal"],
+    "almacen": ["almacen", "warehouse", "bodega", "almacen_id", "idalmacen"],
+    "costo": ["costo", "cost", "precio_costo", "costo_unitario", "costo_promedio"],
+    "precio": ["precio", "price", "precio_venta", "precio_unitario"],
+    "importe": ["importe", "total", "importe_total", "monto"],
+    "tipo_movimiento": ["tipo_movimiento", "tipo", "movement_type", "concepto", "idconcepto"],
+    "unidad": ["unidad", "unit", "unidad_medida"],
+    "referencia": ["referencia", "reference", "documento", "folio"],
+    "grupo": ["grupo", "group", "categoria", "category", "idgrupo"],
+    "categoria": ["categoria", "category", "familia", "family"]
+}
+
+
+def normalize_column_name(column: str) -> str:
+    """Normaliza el nombre de una columna buscando en los alias conocidos"""
+    column_lower = column.lower().strip()
+    for standard_name, aliases in COLUMN_ALIASES.items():
+        if column_lower in [a.lower() for a in aliases]:
+            return standard_name
+    return column_lower
+
+
+def validate_query_columns(columns: List[str], query_type: str) -> Dict:
+    """
+    Valida que las columnas de una consulta cumplan con los requisitos.
+    Retorna información sobre columnas encontradas, faltantes, etc.
+    """
+    required = REQUIRED_COLUMNS.get(query_type, {}).get("required", [])
+    optional = REQUIRED_COLUMNS.get(query_type, {}).get("optional", [])
+    
+    # Normalizar columnas encontradas
+    normalized_columns = {normalize_column_name(col): col for col in columns}
+    found_normalized = set(normalized_columns.keys())
+    
+    # Verificar columnas requeridas
+    columns_found = []
+    columns_missing = []
+    
+    for req_col in required:
+        if req_col in found_normalized:
+            columns_found.append({"standard": req_col, "actual": normalized_columns[req_col], "required": True})
+        else:
+            columns_missing.append(req_col)
+    
+    # Verificar columnas opcionales encontradas
+    for opt_col in optional:
+        if opt_col in found_normalized:
+            columns_found.append({"standard": opt_col, "actual": normalized_columns[opt_col], "required": False})
+    
+    return {
+        "valid": len(columns_missing) == 0,
+        "columns_found": columns_found,
+        "columns_missing": columns_missing,
+        "columns_required": required,
+        "columns_optional": optional,
+        "all_columns": columns
+    }
+
+
 @api_router.post("/servers/{server_id}/queries/validate")
 async def validate_server_query(
     server_id: str, 
@@ -3780,6 +3904,53 @@ async def get_insumos_pendientes(
         logging.error(f"Error obteniendo insumos pendientes: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
+
+@api_router.post("/reports/inventory")
+async def generate_inventory_report(report_params: Dict, current_user: Dict = Depends(get_current_user)):
+    """
+    Genera un reporte de inventario usando queries predefinidas.
+    
+    FASE P1.4-C (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+    FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
+    NO FUENTE: MongoDB db.servers
+    """
+    from core.server_registry import get_server_connection_info_with_secrets
+    
+    server_id = report_params.get('server_id')
+    query_type = report_params.get('query_type')  # ventas, movimientos, productos, inventarios
+    params = report_params.get('params', {})
+    
+    # FASE P1.4-C: Obtener servidor desde EDARSAHUB SQL via server_registry
+    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+    server = decrypt_server_secrets(get_server_connection_info_with_secrets(server_id))
+    if not server or not server.get('active', True):
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    # Get query template
+    query_template = await db.queries.find_one({
+        "system_type": server['system_type'],
+        "query_type": query_type
+    }, {"_id": 0})
+    
+    if not query_template:
+        raise HTTPException(status_code=404, detail="Consulta no encontrada")
+    
+    # Replace parameters in query
+    sql_query = query_template['sql_query']
+    for key, value in params.items():
+        sql_query = sql_query.replace(f"@{key}", f"'{value}'")
+    
+    # Execute query
+    results = execute_sql_query(
+        server['host'],
+        server['port'],
+        server['database'],
+        server['username'],
+        server['password'],
+        sql_query
+    )
+    
+    return {"data": results, "count": len(results)}
 
 @api_router.get("/servers/{server_id}/report-filters")
 async def get_report_filters(server_id: str, current_user: Dict = Depends(get_current_user)):
@@ -12259,7 +12430,793 @@ class InformeAuditoriaResponse(BaseModel):
     estatus: str
 
 
-@api_router.get("/rrhh/catalogos/puestos")
+@api_router.post("/auditoria/informes")
+async def crear_informe_auditoria(
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Crea un nuevo informe de auditoría y lo guarda en MongoDB"""
+    try:
+        informe_id = str(uuid.uuid4())
+        ahora = datetime.now(timezone.utc)
+        
+        # Construir documento del informe
+        informe_doc = {
+            "id": informe_id,
+            "fecha_creacion": ahora.isoformat(),
+            "fecha_actualizacion": ahora.isoformat(),
+            "estatus": "borrador",
+            
+            # Ubicación
+            "sucursal_id": body.get("sucursal_id"),
+            "sucursal_nombre": body.get("sucursal_nombre"),
+            "almacen_id": body.get("almacen_id"),
+            "almacen_nombre": body.get("almacen_nombre"),
+            "servidor_id": body.get("servidor_id"),
+            "servidor_nombre": body.get("servidor_nombre"),
+            
+            # Periodo
+            "inventario_inicial_id": body.get("inventario_inicial_id"),
+            "inventario_inicial_fecha": body.get("inventario_inicial_fecha"),
+            "inventario_final_id": body.get("inventario_final_id"),
+            "inventario_final_fecha": body.get("inventario_final_fecha"),
+            "fecha_inicio_movimientos": body.get("fecha_inicio_movimientos"),
+            "fecha_fin_movimientos": body.get("fecha_fin_movimientos"),
+            
+            # Resumen numérico
+            "total_productos": body.get("total_productos", 0),
+            "productos_con_diferencia": body.get("productos_con_diferencia", 0),
+            "valor_total_diferencias": body.get("valor_total_diferencias", 0),
+            "porcentaje_precision": body.get("porcentaje_precision", 0),
+            
+            # Contenido textual
+            "comentarios": body.get("comentarios", ""),
+            "conclusiones": body.get("conclusiones", ""),
+            "recomendaciones": body.get("recomendaciones", ""),
+            
+            # Datos del reporte
+            "incluir_comparativo_4_cortes": body.get("incluir_comparativo_4_cortes", False),
+            "datos_comparativo": body.get("datos_comparativo"),
+            "productos_diferencias": body.get("productos_diferencias"),
+            "errores_captura": body.get("errores_captura", []),
+            
+            # Auditor
+            "auditor": body.get("auditor") or current_user.get("name", ""),
+            "cargo_auditor": body.get("cargo_auditor", ""),
+            "usuario_id": current_user.get("id"),
+            
+            # Evidencias (se agregan después)
+            "evidencias": []
+        }
+        
+        # Guardar en MongoDB
+        result = await db.informes_auditoria.insert_one(informe_doc)
+        
+        return {
+            "success": True,
+            "message": "Informe creado exitosamente",
+            "informe_id": informe_id,
+            "mongo_id": str(result.inserted_id)
+        }
+        
+    except Exception as e:
+        logging.error(f"Error creando informe de auditoría: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/auditoria/informes")
+async def listar_informes_auditoria(
+    sucursal_id: Optional[str] = None,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+    estatus: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista informes de auditoría con filtros opcionales"""
+    try:
+        # Construir filtro
+        filtro = {}
+        if sucursal_id:
+            filtro["sucursal_id"] = sucursal_id
+        if estatus:
+            filtro["estatus"] = estatus
+        if fecha_desde:
+            filtro["fecha_creacion"] = {"$gte": fecha_desde}
+        if fecha_hasta:
+            if "fecha_creacion" in filtro:
+                filtro["fecha_creacion"]["$lte"] = fecha_hasta
+            else:
+                filtro["fecha_creacion"] = {"$lte": fecha_hasta}
+        
+        # Contar total
+        total = await db.informes_auditoria.count_documents(filtro)
+        
+        # Obtener informes paginados
+        skip = (page - 1) * limit
+        cursor = db.informes_auditoria.find(
+            filtro,
+            {"_id": 0}  # Excluir _id de MongoDB
+        ).sort("fecha_creacion", -1).skip(skip).limit(limit)
+        
+        informes = await cursor.to_list(length=limit)
+        
+        # Formatear respuesta
+        informes_response = []
+        for inf in informes:
+            informes_response.append({
+                "id": inf.get("id"),
+                "fecha_creacion": inf.get("fecha_creacion"),
+                "sucursal_nombre": inf.get("sucursal_nombre"),
+                "almacen_nombre": inf.get("almacen_nombre"),
+                "periodo": f"{inf.get('inventario_inicial_fecha', '')} - {inf.get('inventario_final_fecha', '')}",
+                "auditor": inf.get("auditor"),
+                "total_productos": inf.get("total_productos", 0),
+                "productos_con_diferencia": inf.get("productos_con_diferencia", 0),
+                "valor_diferencias": inf.get("valor_total_diferencias", 0),
+                "tiene_evidencias": len(inf.get("evidencias", [])) > 0,
+                "num_evidencias": len(inf.get("evidencias", [])),
+                "num_errores_captura": len(inf.get("errores_captura", [])),
+                "estatus": inf.get("estatus", "borrador")
+            })
+        
+        return {
+            "informes": informes_response,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "pages": (total + limit - 1) // limit if total > 0 else 1
+        }
+        
+    except Exception as e:
+        logging.error(f"Error listando informes: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/auditoria/informes/{informe_id}")
+async def obtener_informe_auditoria(
+    informe_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Obtiene un informe de auditoría completo por su ID"""
+    try:
+        informe = await db.informes_auditoria.find_one(
+            {"id": informe_id},
+            {"_id": 0}
+        )
+        
+        if not informe:
+            raise HTTPException(status_code=404, detail="Informe no encontrado")
+        
+        return informe
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error obteniendo informe: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.put("/auditoria/informes/{informe_id}")
+async def actualizar_informe_auditoria(
+    informe_id: str,
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Actualiza un informe de auditoría existente"""
+    try:
+        # Campos actualizables
+        update_fields = {
+            "fecha_actualizacion": datetime.now(timezone.utc).isoformat()
+        }
+        
+        campos_permitidos = [
+            "comentarios", "conclusiones", "recomendaciones",
+            "auditor", "cargo_auditor", "estatus"
+        ]
+        
+        for campo in campos_permitidos:
+            if campo in body:
+                update_fields[campo] = body[campo]
+        
+        result = await db.informes_auditoria.update_one(
+            {"id": informe_id},
+            {"$set": update_fields}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Informe no encontrado")
+        
+        return {"success": True, "message": "Informe actualizado"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error actualizando informe: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.delete("/auditoria/informes/{informe_id}")
+async def eliminar_informe_auditoria(
+    informe_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Elimina un informe de auditoría"""
+    try:
+        # Primero obtener el informe para eliminar evidencias
+        informe = await db.informes_auditoria.find_one({"id": informe_id})
+        
+        if not informe:
+            raise HTTPException(status_code=404, detail="Informe no encontrado")
+        
+        # Eliminar archivos de evidencias
+        for evidencia in informe.get("evidencias", []):
+            filepath = evidencia.get("filepath")
+            if filepath and os.path.exists(filepath):
+                try:
+                    os.remove(filepath)
+                except Exception:
+                    pass
+        
+        # Eliminar de MongoDB
+        await db.informes_auditoria.delete_one({"id": informe_id})
+        
+        return {"success": True, "message": "Informe eliminado"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error eliminando informe: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/auditoria/informes/{informe_id}/evidencias")
+async def subir_evidencia(
+    informe_id: str,
+    file: UploadFile = File(...),
+    descripcion: str = Form(""),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Sube una evidencia (foto, PDF, documento) a un informe"""
+    try:
+        # Verificar que el informe existe
+        informe = await db.informes_auditoria.find_one({"id": informe_id})
+        if not informe:
+            raise HTTPException(status_code=404, detail="Informe no encontrado")
+        
+        # Validar tipo de archivo
+        allowed_types = [
+            "image/jpeg", "image/png", "image/gif", "image/webp",
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ]
+        
+        if file.content_type not in allowed_types:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Tipo de archivo no permitido: {file.content_type}"
+            )
+        
+        # Generar nombre único para el archivo
+        ext = os.path.splitext(file.filename)[1]
+        unique_filename = f"{informe_id}_{uuid.uuid4().hex[:8]}{ext}"
+        filepath = os.path.join(EVIDENCIAS_DIR, unique_filename)
+        
+        # Guardar archivo
+        content = await file.read()
+        with open(filepath, "wb") as f:
+            f.write(content)
+        
+        # Crear registro de evidencia
+        evidencia = {
+            "id": str(uuid.uuid4()),
+            "filename": file.filename,
+            "filepath": filepath,
+            "content_type": file.content_type,
+            "size": len(content),
+            "descripcion": descripcion,
+            "fecha_subida": datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Agregar al informe
+        await db.informes_auditoria.update_one(
+            {"id": informe_id},
+            {
+                "$push": {"evidencias": evidencia},
+                "$set": {"fecha_actualizacion": datetime.now(timezone.utc).isoformat()}
+            }
+        )
+        
+        return {
+            "success": True,
+            "message": "Evidencia subida exitosamente",
+            "evidencia": {
+                "id": evidencia["id"],
+                "filename": evidencia["filename"],
+                "size": evidencia["size"]
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error subiendo evidencia: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.delete("/auditoria/informes/{informe_id}/evidencias/{evidencia_id}")
+async def eliminar_evidencia(
+    informe_id: str,
+    evidencia_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Elimina una evidencia de un informe"""
+    try:
+        # Obtener informe
+        informe = await db.informes_auditoria.find_one({"id": informe_id})
+        if not informe:
+            raise HTTPException(status_code=404, detail="Informe no encontrado")
+        
+        # Buscar evidencia
+        evidencia_encontrada = None
+        for ev in informe.get("evidencias", []):
+            if ev.get("id") == evidencia_id:
+                evidencia_encontrada = ev
+                break
+        
+        if not evidencia_encontrada:
+            raise HTTPException(status_code=404, detail="Evidencia no encontrada")
+        
+        # Eliminar archivo físico
+        filepath = evidencia_encontrada.get("filepath")
+        if filepath and os.path.exists(filepath):
+            os.remove(filepath)
+        
+        # Eliminar de MongoDB
+        await db.informes_auditoria.update_one(
+            {"id": informe_id},
+            {
+                "$pull": {"evidencias": {"id": evidencia_id}},
+                "$set": {"fecha_actualizacion": datetime.now(timezone.utc).isoformat()}
+            }
+        )
+        
+        return {"success": True, "message": "Evidencia eliminada"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error eliminando evidencia: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.put("/auditoria/informes/{informe_id}/finalizar")
+async def finalizar_informe(
+    informe_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Marca un informe como finalizado"""
+    try:
+        result = await db.informes_auditoria.update_one(
+            {"id": informe_id},
+            {
+                "$set": {
+                    "estatus": "finalizado",
+                    "fecha_finalizacion": datetime.now(timezone.utc).isoformat(),
+                    "finalizado_por": current_user.get("name", "")
+                }
+            }
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Informe no encontrado")
+        
+        return {"success": True, "message": "Informe finalizado"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error finalizando informe: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/auditoria/informes/{informe_id}/pdf")
+async def generar_pdf_informe(
+    informe_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Genera un PDF profesional del informe de auditoría"""
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
+    from io import BytesIO
+    
+    try:
+        # Obtener informe
+        informe = await db.informes_auditoria.find_one({"id": informe_id}, {"_id": 0})
+        if not informe:
+            raise HTTPException(status_code=404, detail="Informe no encontrado")
+        
+        # Crear buffer para el PDF
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=letter,
+            rightMargin=0.75*inch,
+            leftMargin=0.75*inch,
+            topMargin=0.75*inch,
+            bottomMargin=0.75*inch
+        )
+        
+        # Estilos
+        styles = getSampleStyleSheet()
+        
+        styles.add(ParagraphStyle(
+            name='TitleCustom',
+            parent=styles['Heading1'],
+            fontSize=18,
+            spaceAfter=12,
+            alignment=TA_CENTER,
+            textColor=colors.HexColor('#1a1a1a')
+        ))
+        
+        styles.add(ParagraphStyle(
+            name='Subtitle',
+            parent=styles['Heading2'],
+            fontSize=12,
+            spaceAfter=6,
+            textColor=colors.HexColor('#666666'),
+            alignment=TA_CENTER
+        ))
+        
+        styles.add(ParagraphStyle(
+            name='SectionTitle',
+            parent=styles['Heading2'],
+            fontSize=13,
+            spaceBefore=16,
+            spaceAfter=8,
+            textColor=colors.HexColor('#2563eb'),
+            borderColor=colors.HexColor('#2563eb'),
+            borderWidth=0,
+            borderPadding=0
+        ))
+        
+        styles.add(ParagraphStyle(
+            name='BodyJustified',
+            parent=styles['Normal'],
+            fontSize=10,
+            spaceAfter=8,
+            alignment=TA_JUSTIFY,
+            leading=14
+        ))
+        
+        styles.add(ParagraphStyle(
+            name='SmallGray',
+            parent=styles['Normal'],
+            fontSize=8,
+            textColor=colors.HexColor('#666666')
+        ))
+        
+        # Contenido del PDF
+        elements = []
+        
+        # === ENCABEZADO ===
+        elements.append(Paragraph("INFORME DE AUDITORÍA DE INVENTARIOS", styles['TitleCustom']))
+        elements.append(Paragraph("EDARSA HUB - Sistema de Gestión", styles['Subtitle']))
+        elements.append(Spacer(1, 20))
+        
+        # === DATOS GENERALES ===
+        fecha_creacion = informe.get('fecha_creacion', '')[:10] if informe.get('fecha_creacion') else ''
+        
+        datos_generales = [
+            ['INFORMACIÓN GENERAL', ''],
+            ['Sucursal:', informe.get('sucursal_nombre', 'N/A')],
+            ['Almacén:', informe.get('almacen_nombre', 'N/A')],
+            ['Fecha del Informe:', fecha_creacion],
+            ['Auditor:', informe.get('auditor', 'N/A')],
+            ['Cargo:', informe.get('cargo_auditor', 'N/A')],
+        ]
+        
+        table_datos = Table(datos_generales, colWidths=[2*inch, 4.5*inch])
+        table_datos.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e3a5f')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('SPAN', (0, 0), (-1, 0)),
+            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 11),
+            ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f8f9fa')),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
+            ('PADDING', (0, 0), (-1, -1), 8),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        elements.append(table_datos)
+        elements.append(Spacer(1, 15))
+        
+        # === PERIODO ANALIZADO ===
+        periodo_data = [
+            ['PERIODO ANALIZADO', ''],
+            ['Inventario Inicial:', f"{informe.get('inventario_inicial_fecha', 'N/A')}"],
+            ['Inventario Final:', f"{informe.get('inventario_final_fecha', 'N/A')}"],
+            ['Inicio Movimientos:', f"{informe.get('fecha_inicio_movimientos', 'N/A')}"],
+            ['Fin Movimientos:', f"{informe.get('fecha_fin_movimientos', 'N/A')}"],
+        ]
+        
+        table_periodo = Table(periodo_data, colWidths=[2*inch, 4.5*inch])
+        table_periodo.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0d6efd')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('SPAN', (0, 0), (-1, 0)),
+            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
+            ('PADDING', (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(table_periodo)
+        elements.append(Spacer(1, 15))
+        
+        # === RESUMEN EJECUTIVO ===
+        total_prod = informe.get('total_productos', 0)
+        prod_dif = informe.get('productos_con_diferencia', 0)
+        valor_dif = informe.get('valor_total_diferencias', 0)
+        precision = informe.get('porcentaje_precision', 0)
+        
+        resumen_data = [
+            ['RESUMEN EJECUTIVO', '', '', ''],
+            ['Total Productos', 'Con Diferencia', 'Valor Diferencias', '% Precisión'],
+            [str(total_prod), str(prod_dif), f"${valor_dif:,.2f}", f"{precision:.1f}%"],
+        ]
+        
+        table_resumen = Table(resumen_data, colWidths=[1.625*inch]*4)
+        table_resumen.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#198754')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('SPAN', (0, 0), (-1, 0)),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 11),
+            ('FONTSIZE', (0, 1), (-1, 1), 9),
+            ('FONTSIZE', (0, 2), (-1, 2), 14),
+            ('BACKGROUND', (0, 1), (-1, 1), colors.HexColor('#e9ecef')),
+            ('BACKGROUND', (0, 2), (-1, 2), colors.white),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
+            ('PADDING', (0, 0), (-1, -1), 10),
+        ]))
+        elements.append(table_resumen)
+        elements.append(Spacer(1, 20))
+        
+        # === COMENTARIOS ===
+        if informe.get('comentarios'):
+            elements.append(Paragraph("COMENTARIOS DEL AUDITOR", styles['SectionTitle']))
+            elements.append(Paragraph(informe.get('comentarios', ''), styles['BodyJustified']))
+            elements.append(Spacer(1, 10))
+        
+        # === CONCLUSIONES ===
+        if informe.get('conclusiones'):
+            elements.append(Paragraph("CONCLUSIONES", styles['SectionTitle']))
+            elements.append(Paragraph(informe.get('conclusiones', ''), styles['BodyJustified']))
+            elements.append(Spacer(1, 10))
+        
+        # === RECOMENDACIONES ===
+        if informe.get('recomendaciones'):
+            elements.append(Paragraph("RECOMENDACIONES", styles['SectionTitle']))
+            elements.append(Paragraph(informe.get('recomendaciones', ''), styles['BodyJustified']))
+            elements.append(Spacer(1, 10))
+        
+        # === PRODUCTOS CON DIFERENCIAS (Top 20) ===
+        productos = informe.get('productos_diferencias', [])
+        if productos and len(productos) > 0:
+            elements.append(PageBreak())
+            elements.append(Paragraph("DETALLE DE PRODUCTOS CON DIFERENCIAS", styles['SectionTitle']))
+            elements.append(Paragraph(f"Mostrando los primeros {min(20, len(productos))} productos con mayor diferencia", styles['SmallGray']))
+            elements.append(Spacer(1, 10))
+            
+            # Encabezados de tabla
+            prod_headers = ['Código', 'Producto', 'Inv. Ini', 'Inv. Fin', 'Diferencia', 'Valor']
+            prod_data = [prod_headers]
+            
+            # Top 20 productos
+            for prod in productos[:20]:
+                prod_data.append([
+                    str(prod.get('codigo', ''))[:10],
+                    str(prod.get('producto', ''))[:25],
+                    str(prod.get('inv_inicial', 0)),
+                    str(prod.get('inv_final', 0)),
+                    str(prod.get('diferencia', 0)),
+                    f"${prod.get('valor_diferencia', 0):,.2f}"
+                ])
+            
+            col_widths = [0.8*inch, 2.5*inch, 0.7*inch, 0.7*inch, 0.8*inch, 1*inch]
+            table_prod = Table(prod_data, colWidths=col_widths)
+            table_prod.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#343a40')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 8),
+                ('FONTSIZE', (0, 1), (-1, -1), 7),
+                ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                ('ALIGN', (2, 1), (-1, -1), 'RIGHT'),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
+                ('PADDING', (0, 0), (-1, -1), 5),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
+            ]))
+            elements.append(table_prod)
+        
+        # === ERRORES DE CAPTURA DE INVENTARIO ===
+        errores_captura = informe.get('errores_captura', [])
+        if errores_captura and len(errores_captura) > 0:
+            elements.append(Spacer(1, 20))
+            elements.append(Paragraph(
+                f"ERRORES DE CAPTURA DE INVENTARIO ({len(errores_captura)} detectados)", 
+                styles['SectionTitle']
+            ))
+            
+            # Encabezados
+            err_headers = ['Código', 'Producto', 'Tipo Error', 'Cantidad', 'Detalle']
+            err_data = [err_headers]
+            
+            # Mostrar hasta 15 errores
+            for err in errores_captura[:15]:
+                err_data.append([
+                    str(err.get('codigo', ''))[:12],
+                    str(err.get('producto', ''))[:30],
+                    str(err.get('tipo_error', 'Error'))[:15],
+                    str(err.get('inv_capturado', '')),
+                    str(err.get('detalle', ''))[:25]
+                ])
+            
+            err_col_widths = [0.9*inch, 2.2*inch, 1*inch, 0.7*inch, 1.7*inch]
+            table_err = Table(err_data, colWidths=err_col_widths)
+            table_err.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#dc3545')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 8),
+                ('FONTSIZE', (0, 1), (-1, -1), 7),
+                ('ALIGN', (3, 1), (3, -1), 'RIGHT'),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#fff5f5')),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#f5c6cb')),
+                ('PADDING', (0, 0), (-1, -1), 5),
+            ]))
+            elements.append(table_err)
+            
+            if len(errores_captura) > 15:
+                elements.append(Paragraph(
+                    f"... y {len(errores_captura) - 15} errores adicionales no mostrados en este documento.",
+                    styles['SmallGray']
+                ))
+        
+        # === EVIDENCIAS ===
+        evidencias = informe.get('evidencias', [])
+        if evidencias:
+            elements.append(Spacer(1, 20))
+            elements.append(Paragraph("EVIDENCIAS ADJUNTAS", styles['SectionTitle']))
+            
+            ev_data = [['#', 'Archivo', 'Descripción', 'Fecha']]
+            for i, ev in enumerate(evidencias, 1):
+                fecha_ev = ev.get('fecha_subida', '')[:10] if ev.get('fecha_subida') else ''
+                ev_data.append([
+                    str(i),
+                    ev.get('filename', '')[:30],
+                    ev.get('descripcion', '')[:40],
+                    fecha_ev
+                ])
+            
+            table_ev = Table(ev_data, colWidths=[0.4*inch, 2.5*inch, 2.5*inch, 1.1*inch])
+            table_ev.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6c757d')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 8),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
+                ('PADDING', (0, 0), (-1, -1), 6),
+            ]))
+            elements.append(table_ev)
+        
+        # === PIE DE PÁGINA ===
+        elements.append(Spacer(1, 30))
+        elements.append(Paragraph("_" * 80, styles['SmallGray']))
+        elements.append(Paragraph(
+            f"Documento generado el {datetime.now().strftime('%d/%m/%Y %H:%M')} | EDARSA HUB | Confidencial",
+            styles['SmallGray']
+        ))
+        
+        # Generar PDF
+        doc.build(elements)
+        
+        # Preparar respuesta
+        buffer.seek(0)
+        filename = f"Informe_Auditoria_{informe.get('sucursal_nombre', 'X')}_{fecha_creacion}.pdf"
+        
+        from fastapi.responses import StreamingResponse
+        return StreamingResponse(
+            buffer,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error generando PDF: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+# ============================================================================
+# MÓDULO DE RECURSOS HUMANOS - Endpoints
+# Conecta con tablas RH_* en EDARSAHUB SQL Server
+# ============================================================================
+
+# ID del servidor EDARSA HUB
+EDARSA_HUB_SERVER_ID = "bea40259-35f1-4693-bda2-d2d10e13e56a"
+
+async def execute_edarsa_hub_query(query: str):
+    """
+    Helper para ejecutar queries en EDARSA HUB.
+    
+    CONEXIONES-SQL-EDARSAHUB-01 / SUBFASE C / LOTE 1:
+    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+    para usar EDARSAHUB SQL como fuente primaria.
+    """
+    from core.server_registry import get_server_connection_info
+    
+    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": EDARSA_HUB_SERVER_ID, "active": True}))
+    # AHORA: Usar registry que prioriza EDARSAHUB SQL
+    conn_info = await get_server_connection_info(EDARSA_HUB_SERVER_ID, db=db)
+    
+    if not conn_info:
+        logging.error(f"[EDARSA_HUB_QUERY] Servidor EDARSA HUB no encontrado via registry. ID={EDARSA_HUB_SERVER_ID}")
+        raise HTTPException(status_code=404, detail="Servidor EDARSA HUB no configurado")
+    
+    logging.debug(f"[EDARSA_HUB_QUERY] Conexión obtenida via registry. Origin={conn_info.get('config_origin', 'UNKNOWN')}")
+    
+    try:
+        result = execute_sql_query(
+            conn_info['host'], 
+            conn_info['port'], 
+            conn_info['database'], 
+            conn_info['username'], 
+            conn_info['password'], 
+            query
+        )
+        return {"datos": result, "registros": len(result)}
+    except Exception as e:
+        logging.error(f"Error en query EDARSA HUB: {e}")
+        raise HTTPException(status_code=500, detail=f"Error en consulta: {str(e)}")
+
+
+# ------------ CATÁLOGOS RH - MIGRADO A modules/rh/ ------------
+# FASE 6B (Diciembre 2025): Los siguientes 10 endpoints fueron migrados a modules/rh/
+# con queries parametrizados y validación Pydantic:
+# - GET    /rrhh/catalogos/puestos -> modules/rh/routes.py
+# - POST   /rrhh/catalogos/puestos -> modules/rh/routes.py
+# - PUT    /rrhh/catalogos/puestos/{id} -> modules/rh/routes.py
+# - DELETE /rrhh/catalogos/puestos/{id} -> modules/rh/routes.py
+# - GET    /rrhh/catalogos/sucursales -> modules/rh/routes.py
+# - GET    /rrhh/catalogos/tipos-incidencias -> modules/rh/routes.py
+# - POST   /rrhh/catalogos/tipos-incidencias -> modules/rh/routes.py
+# - PUT    /rrhh/catalogos/tipos-incidencias/{id} -> modules/rh/routes.py
+# - DELETE /rrhh/catalogos/tipos-incidencias/{id} -> modules/rh/routes.py
+# - GET    /rrhh/catalogos/script-inicializacion -> modules/rh/routes.py
+
+# ENDPOINT /rrhh/catalogos/puestos - MIGRADO A modules/rh/routes.py
+# @api_router.get("/rrhh/catalogos/puestos")
 # async def rrhh_listar_puestos(current_user: Dict = Depends(get_current_user)):
 #     """Lista catálogo de puestos desde RH_Cat_Puestos"""
 #     query = """
@@ -13053,6 +14010,141 @@ class InformeAuditoriaResponse(BaseModel):
 
 # ============ SCRIPTS PENDIENTES (STAND-BY) ============
 
+@api_router.post("/explorador/guardar-script/{server_id}")
+async def guardar_script_pendiente(
+    server_id: str,
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Guarda un script SQL en stand-by para ejecución posterior.
+    Permite que un administrador de BD lo ejecute con sus credenciales.
+    
+    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+    CONEXIONES-SQL-EDARSAHUB-01 / LOTE 6
+    
+    NOTA: La escritura del script pendiente permanece en MongoDB como documento
+    operativo temporal (cola/workflow), NO como catálogo maestro.
+    El documento NO contiene credenciales, solo referencia al server_id y nombre.
+    """
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden guardar scripts")
+    
+    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+    from core.server_registry import get_server_connection_info
+    conn_info = await get_server_connection_info(server_id, db=db)
+    if not conn_info:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado o sin acceso")
+    
+    script = body.get('script', '').strip()
+    titulo = body.get('titulo', '').strip()
+    
+    if not script:
+        raise HTTPException(status_code=400, detail="El script está vacío")
+    if not titulo:
+        raise HTTPException(status_code=400, detail="El título es requerido")
+    
+    # Contar statements
+    import re
+    script_normalizado = re.sub(r'\bGO\b', ';', script, flags=re.IGNORECASE)
+    statements = [s.strip() for s in script_normalizado.split(';') if s.strip() and not s.strip().startswith('--')]
+    
+    # Guardar en MongoDB como documento operativo temporal
+    # IMPORTANTE: No incluir credenciales, solo server_id y nombre para referencia
+    result = await db.scripts_pendientes.insert_one({
+        "server_id": server_id,
+        "server_name": conn_info.get('name'),  # Solo nombre, sin credenciales
+        "titulo": titulo,
+        "script": script,
+        "num_statements": len(statements),
+        "creado_por": current_user.get('email'),
+        "fecha_creacion": datetime.now(timezone.utc),
+        "estado": "pendiente"
+    })
+    
+    return {"message": "Script guardado en stand-by", "id": str(result.inserted_id)}
+
+
+@api_router.get("/explorador/scripts-pendientes/{server_id}")
+async def listar_scripts_pendientes(
+    server_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista los scripts pendientes de ejecución para un servidor."""
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden ver scripts pendientes")
+    
+    scripts = await db.scripts_pendientes.find(
+        {"server_id": server_id, "estado": "pendiente"},
+        {"_id": 1, "titulo": 1, "script": 1, "num_statements": 1, "creado_por": 1, "fecha_creacion": 1}
+    ).sort("fecha_creacion", -1).to_list(100)
+    
+    # Convertir ObjectId a string
+    for s in scripts:
+        s['_id'] = str(s['_id'])
+    
+    return scripts
+
+
+@api_router.delete("/explorador/script-pendiente/{script_id}")
+async def eliminar_script_pendiente(
+    script_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Elimina un script pendiente."""
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden eliminar scripts")
+    
+    from bson import ObjectId
+    result = await db.scripts_pendientes.delete_one({"_id": ObjectId(script_id)})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Script no encontrado")
+    
+    return {"message": "Script eliminado"}
+
+
+@api_router.put("/explorador/script-pendiente/{script_id}")
+async def actualizar_script_pendiente(
+    script_id: str,
+    body: Dict,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Actualiza un script pendiente (título y/o contenido)."""
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden editar scripts")
+    
+    titulo = body.get('titulo', '').strip()
+    script = body.get('script', '').strip()
+    
+    if not titulo:
+        raise HTTPException(status_code=400, detail="El título es requerido")
+    if not script:
+        raise HTTPException(status_code=400, detail="El script no puede estar vacío")
+    
+    # Contar statements actualizados
+    import re
+    script_normalizado = re.sub(r'\bGO\b', ';', script, flags=re.IGNORECASE)
+    statements = [s.strip() for s in script_normalizado.split(';') if s.strip() and not s.strip().startswith('--')]
+    
+    from bson import ObjectId
+    result = await db.scripts_pendientes.update_one(
+        {"_id": ObjectId(script_id)},
+        {"$set": {
+            "titulo": titulo,
+            "script": script,
+            "num_statements": len(statements),
+            "modificado_por": current_user.get('email'),
+            "fecha_modificacion": datetime.now(timezone.utc)
+        }}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Script no encontrado")
+    
+    return {"message": "Script actualizado", "num_statements": len(statements)}
+
+
 @api_router.post("/explorador/ejecutar-con-credenciales/{server_id}")
 async def ejecutar_script_con_credenciales(
     server_id: str,
@@ -13087,10 +14179,13 @@ async def ejecutar_script_con_credenciales(
     if not admin_username or not admin_password:
         raise HTTPException(status_code=400, detail="Credenciales de administrador requeridas")
     
-    # FASE P5: MongoDB deprecado - scripts_pendientes migrado a SQL
-    # Si hay script_id, se ignora (debe venir en body.script)
+    # Si hay script_id, cargar el script de MongoDB
     if script_id:
-        pass  # P5: db.scripts_pendientes eliminado - usar API SQL
+        from bson import ObjectId
+        script_doc = await db.scripts_pendientes.find_one({"_id": ObjectId(script_id)})
+        if script_doc:
+            script = script_doc.get('script', '')
+            titulo = script_doc.get('titulo', titulo)
     
     if not script:
         raise HTTPException(status_code=400, detail="El script está vacío")
@@ -13226,9 +14321,17 @@ async def ejecutar_script_con_credenciales(
     })
     
     # Si se ejecutó exitosamente y era un script pendiente, marcarlo como ejecutado
-    # FASE P5: MongoDB deprecado - scripts_pendientes migrado a SQL
     if script_id and exitosos > 0:
-        pass  # P5: db.scripts_pendientes.update_one eliminado - usar API SQL
+        from bson import ObjectId
+        await db.scripts_pendientes.update_one(
+            {"_id": ObjectId(script_id)},
+            {"$set": {
+                "estado": "ejecutado",
+                "fecha_ejecucion": datetime.now(timezone.utc),
+                "ejecutado_por": current_user.get('email'),
+                "resultado": {"exitosos": exitosos, "fallidos": fallidos}
+            }}
+        )
     
     return {
         "servidor": server['name'],
@@ -13895,13 +14998,32 @@ async def listar_consultas_rich(
             "tipo": "predefinida"
         })
     
-    # FASE P5: MongoDB deprecado - consultas_custom migrado a SQL
-    # Las consultas personalizadas ahora se obtienen de Sistema_ConsultasSQL
-    # consultas_custom = await db.consultas_custom.find(filtro).to_list(500)
-    consultas_custom = []  # P5: db.consultas_custom eliminado - usar API SQL
+    # Agregar consultas personalizadas desde MongoDB
+    filtro = {"active": True}
+    if sistema:
+        filtro["sistema"] = sistema
+    if categoria:
+        filtro["categoria"] = categoria
     
-    # Obtener categorías (solo del catálogo base)
+    consultas_custom = await db.consultas_custom.find(filtro).to_list(500)
+    for c in consultas_custom:
+        resultado.append({
+            "id": c["id"],
+            "nombre": c["nombre"],
+            "descripcion": c["descripcion"],
+            "sistema": c["sistema"],
+            "categoria": c["categoria"],
+            "parametros": c["parametros"],
+            "sql": c.get("sql", ""),  # Incluir el SQL
+            "tipo": "personalizada",
+            "created_by": c.get("created_by"),
+            "created_at": c.get("created_at")
+        })
+    
+    # Obtener categorías (incluyendo las de consultas personalizadas)
     categorias_base = set(catalogo_get_categorias())
+    for c in consultas_custom:
+        categorias_base.add(c.get("categoria", ""))
     
     return {
         "consultas": resultado,
@@ -13934,9 +15056,11 @@ async def ejecutar_consulta_catalogo(
     if consulta_id in CATALOGO_CONSULTAS:
         consulta = CATALOGO_CONSULTAS[consulta_id]
     else:
-        # FASE P5: MongoDB deprecado - consultas_custom migrado a SQL
-        # Buscar en Sistema_ConsultasSQL via API
-        consulta_custom = None  # P5: db.consultas_custom eliminado
+        # Buscar en consultas personalizadas
+        consulta_custom = await db.consultas_custom.find_one({"id": consulta_id})
+        if consulta_custom:
+            consulta = consulta_custom
+            es_custom = True
     
     if not consulta:
         raise HTTPException(status_code=404, detail=f"Consulta '{consulta_id}' no encontrada en el catálogo")
@@ -14046,15 +15170,180 @@ async def ejecutar_consulta_catalogo(
 
 
 # ============================================================================
-# CRUD CONSULTAS PERSONALIZADAS - FASE P5: MongoDB deprecado
+# CRUD CONSULTAS PERSONALIZADAS (MongoDB)
 # ============================================================================
+
+@api_router.get("/catalogo/consultas-custom")
+async def listar_consultas_custom(current_user: Dict = Depends(get_current_user)):
+    """Lista todas las consultas personalizadas guardadas en MongoDB"""
+    consultas = await db.consultas_custom.find().to_list(1000)
+    for c in consultas:
+        c['_id'] = str(c['_id'])
+    return consultas
+
+
+@api_router.post("/catalogo/consultas-custom")
+async def crear_consulta_custom(body: Dict, current_user: Dict = Depends(get_current_user)):
+    """
+    Crea una nueva consulta personalizada.
+    FASE 1B: Validación SQL obligatoria antes de guardar.
+    """
+    from core.security import SQLSanitizer, log_blocked_sql
+    
+    # Solo admin puede crear consultas
+    if current_user.get('role') not in ['Administrador', 'SuperAdministrador']:
+        raise HTTPException(status_code=403, detail="Solo administradores pueden crear consultas")
+    
+    # Validar campos requeridos
+    required = ['nombre', 'descripcion', 'sistema', 'categoria', 'parametros', 'sql']
+    for field in required:
+        if field not in body or not body[field]:
+            raise HTTPException(status_code=400, detail=f"Campo requerido: {field}")
+    
+    # FASE 1B: Validar SQL antes de guardar
+    sql_to_validate = body['sql']
+    validation = SQLSanitizer.validate_for_catalog(sql_to_validate)
+    if not validation.is_safe:
+        log_blocked_sql(validation, endpoint="/catalogo/consultas-custom", user_email=current_user.get('email'))
+        raise HTTPException(
+            status_code=400, 
+            detail=f"SQL no permitido: {validation.blocked_reason}. Solo se permiten consultas SELECT/WITH."
+        )
+    
+    # Generar ID único
+    import uuid
+    consulta_id = f"CUSTOM_{body['sistema']}_{uuid.uuid4().hex[:8].upper()}"
+    
+    consulta = {
+        "id": consulta_id,
+        "nombre": body['nombre'],
+        "descripcion": body['descripcion'],
+        "sistema": body['sistema'],
+        "categoria": body['categoria'],
+        "parametros": body['parametros'] if isinstance(body['parametros'], list) else body['parametros'].split(','),
+        "sql": body['sql'],
+        "created_by": current_user.get('email'),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "active": True,
+        "validated": True,  # FASE 1B: Marcamos como validada
+        "validation_timestamp": validation.validation_timestamp
+    }
+    
+    await db.consultas_custom.insert_one(consulta)
+    consulta.pop('_id', None)
+    
+    logging.info(f"[CATALOGO-CUSTOM] Consulta creada: {consulta_id} por {current_user.get('email')}")
+    return {"message": "Consulta creada exitosamente", "consulta": consulta}
+
+
+@api_router.put("/catalogo/consultas-custom/{consulta_id}")
+async def actualizar_consulta_custom(consulta_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
+    """
+    Actualiza una consulta personalizada.
+    FASE 1B: Validación SQL obligatoria si se actualiza el campo sql.
+    """
+    from core.security import SQLSanitizer, log_blocked_sql
+    
+    if current_user.get('role') not in ['Administrador', 'SuperAdministrador']:
+        raise HTTPException(status_code=403, detail="Solo administradores pueden editar consultas")
+    
+    consulta = await db.consultas_custom.find_one({"id": consulta_id})
+    if not consulta:
+        raise HTTPException(status_code=404, detail="Consulta no encontrada")
+    
+    update_data = {}
+    for field in ['nombre', 'descripcion', 'categoria', 'parametros', 'sql']:
+        if field in body:
+            if field == 'parametros' and isinstance(body[field], str):
+                update_data[field] = body[field].split(',')
+            else:
+                update_data[field] = body[field]
+    
+    # FASE 1B: Si se actualiza el SQL, validarlo
+    if 'sql' in update_data:
+        validation = SQLSanitizer.validate_for_catalog(update_data['sql'])
+        if not validation.is_safe:
+            log_blocked_sql(validation, endpoint=f"/catalogo/consultas-custom/{consulta_id}", user_email=current_user.get('email'))
+            raise HTTPException(
+                status_code=400, 
+                detail=f"SQL no permitido: {validation.blocked_reason}. Solo se permiten consultas SELECT/WITH."
+            )
+        update_data['validated'] = True
+        update_data['validation_timestamp'] = validation.validation_timestamp
+    
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    update_data['updated_by'] = current_user.get('email')
+    
+    await db.consultas_custom.update_one({"id": consulta_id}, {"$set": update_data})
+    
+    logging.info(f"[CATALOGO-CUSTOM] Consulta actualizada: {consulta_id} por {current_user.get('email')}")
+    return {"message": "Consulta actualizada"}
+
 
 @api_router.put("/catalogo/consultas/{consulta_id}")
 async def actualizar_consulta_sql(consulta_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
     """
-    FASE P5: MongoDB deprecado - usar Sistema_ConsultasSQL via API SQL
+    Actualiza el SQL de cualquier consulta.
+    Para consultas predefinidas, guarda una versión modificada en consultas_custom.
     """
-    raise HTTPException(status_code=501, detail="P5: Endpoint deprecado - usar API /api/sql/consultas")
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden editar consultas")
+    
+    sql_nuevo = body.get('sql')
+    if not sql_nuevo:
+        raise HTTPException(status_code=400, detail="Se requiere el campo 'sql'")
+    
+    # Verificar si es consulta custom
+    consulta_custom = await db.consultas_custom.find_one({"id": consulta_id})
+    if consulta_custom:
+        # Actualizar consulta custom existente
+        await db.consultas_custom.update_one(
+            {"id": consulta_id},
+            {"$set": {
+                "sql": sql_nuevo,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_by": current_user.get('email')
+            }}
+        )
+        return {"message": "Consulta personalizada actualizada"}
+    
+    # Si es predefinida, verificar que existe y crear versión custom
+    if consulta_id in CATALOGO_CONSULTAS:
+        original = CATALOGO_CONSULTAS[consulta_id]
+        # Guardar como versión modificada
+        import uuid
+        consulta_mod = {
+            "id": f"{consulta_id}_mod_{uuid.uuid4().hex[:6]}",
+            "original_id": consulta_id,
+            "nombre": f"{original['nombre']} (Modificada)",
+            "descripcion": original['descripcion'],
+            "sistema": original['sistema'],
+            "categoria": original['categoria'],
+            "parametros": original['parametros'],
+            "sql": sql_nuevo,
+            "created_by": current_user.get('email'),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "active": True
+        }
+        await db.consultas_custom.insert_one(consulta_mod)
+        consulta_mod.pop('_id', None)
+        return {"message": "Versión modificada guardada", "consulta": consulta_mod}
+    
+    raise HTTPException(status_code=404, detail="Consulta no encontrada")
+
+
+@api_router.delete("/catalogo/consultas-custom/{consulta_id}")
+async def eliminar_consulta_custom(consulta_id: str, current_user: Dict = Depends(get_current_user)):
+    """Elimina una consulta personalizada"""
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden eliminar consultas")
+    
+    result = await db.consultas_custom.delete_one({"id": consulta_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Consulta no encontrada")
+    
+    return {"message": "Consulta eliminada"}
+
 
 @api_router.post("/catalogo/ejecutar-custom/{consulta_id}")
 async def ejecutar_consulta_custom(
@@ -14064,9 +15353,24 @@ async def ejecutar_consulta_custom(
     current_user: Dict = Depends(get_current_user)
 ):
     """
-    FASE P5: MongoDB deprecado - usar Sistema_ConsultasSQL via API SQL
+    Ejecuta una consulta personalizada guardada en el catálogo.
+    
+    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+    CONEXIONES-SQL-EDARSAHUB-01 / LOTE 5
     """
-    raise HTTPException(status_code=501, detail="P5: Endpoint deprecado - usar API /api/sql/consultas")
+    # Buscar consulta en MongoDB
+    consulta = await db.consultas_custom.find_one({"id": consulta_id})
+    if not consulta:
+        raise HTTPException(status_code=404, detail="Consulta no encontrada")
+    
+    # Verificar servidor usando registry
+    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+    from core.server_registry import get_server_connection_info
+    conn_info = await get_server_connection_info(server_id, db=db)
+    if not conn_info:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado o sin acceso")
+    
+    # Verificar que el sistema coincida
     if normalize_system_type(conn_info.get('system_type')) != normalize_system_type(consulta.get('sistema')):
         raise HTTPException(status_code=400, detail=f"Esta consulta es para {consulta['sistema']}, no para {conn_info.get('system_type')}")
     
@@ -14101,6 +15405,518 @@ async def ejecutar_consulta_custom(
 # ============================================================================
 # INFORMES DE AUDITORÍA
 # ============================================================================
+
+@api_router.post("/informes-auditoria")
+async def crear_informe_auditoria(
+    informe: InformeAuditoriaCreate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Crea un nuevo informe de auditoría"""
+    # Verificar rol
+    if current_user.get('role') not in ['Administrador', 'Auditor']:
+        raise HTTPException(status_code=403, detail="Solo administradores y auditores pueden crear informes")
+    
+    # Crear documento
+    informe_doc = {
+        "id": str(uuid.uuid4()),
+        "server_id": informe.server_id,
+        "sucursal_id": informe.sucursal_id,
+        "sucursal_nombre": informe.sucursal_nombre,
+        "establecimiento": informe.establecimiento,
+        "gerente_responsable": informe.gerente_responsable,
+        "auditor": informe.auditor,
+        "auditor_id": current_user.get('user_id'),
+        "periodo_inicio": informe.periodo_inicio,
+        "periodo_fin": informe.periodo_fin,
+        "fecha_emision": datetime.now(timezone.utc).isoformat(),
+        "datos_inventario": informe.datos_inventario,
+        "resumen_situacion": informe.resumen_situacion,
+        "ajustes_tecnicos": informe.ajustes_tecnicos,
+        "incluir_comparativo": informe.incluir_comparativo,
+        "datos_comparativo": informe.datos_comparativo,
+        "comentarios": informe.comentarios,
+        "conclusiones": informe.conclusiones,
+        "recomendaciones": informe.recomendaciones,
+        "dictamen_economico": informe.dictamen_economico,
+        "compromisos_almacen": informe.compromisos_almacen,
+        "compromisos_personal": informe.compromisos_personal,
+        "compromisos_gerencia": informe.compromisos_gerencia,
+        "evidencias": [],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "estado": "borrador"
+    }
+    
+    await db.informes_auditoria.insert_one(informe_doc)
+    informe_doc.pop('_id', None)
+    
+    return {"message": "Informe creado exitosamente", "informe": informe_doc}
+
+
+@api_router.get("/informes-auditoria")
+async def listar_informes_auditoria(
+    server_id: Optional[str] = None,
+    sucursal_id: Optional[str] = None,
+    auditor_id: Optional[str] = None,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+    estado: Optional[str] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista informes de auditoría con filtros opcionales, agrupados por sucursal"""
+    # Verificar rol
+    if current_user.get('role') not in ['Administrador', 'Auditor', 'Supervisor']:
+        raise HTTPException(status_code=403, detail="No tiene permisos para ver informes")
+    
+    # Construir filtro
+    filtro = {}
+    if server_id:
+        filtro["server_id"] = server_id
+    if sucursal_id:
+        filtro["sucursal_id"] = sucursal_id
+    if auditor_id:
+        filtro["auditor_id"] = auditor_id
+    if estado:
+        filtro["estado"] = estado
+    if fecha_desde:
+        filtro["fecha_emision"] = {"$gte": fecha_desde}
+    if fecha_hasta:
+        if "fecha_emision" in filtro:
+            filtro["fecha_emision"]["$lte"] = fecha_hasta
+        else:
+            filtro["fecha_emision"] = {"$lte": fecha_hasta}
+    
+    # Obtener informes
+    cursor = db.informes_auditoria.find(filtro, {"_id": 0, "datos_inventario": 0, "datos_comparativo": 0, "evidencias": 0}).sort("fecha_emision", -1)
+    informes = await cursor.to_list(500)
+    
+    # Agrupar por sucursal
+    por_sucursal = {}
+    for inf in informes:
+        suc = inf.get('sucursal_nombre', 'Sin Sucursal')
+        if suc not in por_sucursal:
+            por_sucursal[suc] = []
+        por_sucursal[suc].append(inf)
+    
+    return {
+        "total": len(informes),
+        "informes": informes,
+        "por_sucursal": por_sucursal
+    }
+
+
+@api_router.get("/informes-auditoria/{informe_id}")
+async def obtener_informe_auditoria(
+    informe_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Obtiene un informe de auditoría específico"""
+    informe = await db.informes_auditoria.find_one({"id": informe_id}, {"_id": 0})
+    if not informe:
+        raise HTTPException(status_code=404, detail="Informe no encontrado")
+    
+    return informe
+
+
+@api_router.put("/informes-auditoria/{informe_id}")
+async def actualizar_informe_auditoria(
+    informe_id: str,
+    datos: InformeAuditoriaUpdate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Actualiza un informe de auditoría"""
+    # Verificar rol
+    if current_user.get('role') not in ['Administrador', 'Auditor']:
+        raise HTTPException(status_code=403, detail="No tiene permisos para editar informes")
+    
+    # Verificar que existe
+    informe = await db.informes_auditoria.find_one({"id": informe_id})
+    if not informe:
+        raise HTTPException(status_code=404, detail="Informe no encontrado")
+    
+    # Solo el auditor que lo creó o un admin puede editarlo
+    if current_user.get('role') != 'Administrador' and informe.get('auditor_id') != current_user.get('user_id'):
+        raise HTTPException(status_code=403, detail="Solo puede editar sus propios informes")
+    
+    # Construir actualización
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    for field, value in datos.model_dump(exclude_unset=True).items():
+        if value is not None:
+            update_data[field] = value
+    
+    await db.informes_auditoria.update_one({"id": informe_id}, {"$set": update_data})
+    
+    # Retornar actualizado
+    informe_updated = await db.informes_auditoria.find_one({"id": informe_id}, {"_id": 0})
+    return {"message": "Informe actualizado", "informe": informe_updated}
+
+
+@api_router.delete("/informes-auditoria/{informe_id}")
+async def eliminar_informe_auditoria(
+    informe_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Elimina un informe de auditoría"""
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo administradores pueden eliminar informes")
+    
+    result = await db.informes_auditoria.delete_one({"id": informe_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Informe no encontrado")
+    
+    return {"message": "Informe eliminado"}
+
+
+@api_router.post("/informes-auditoria/{informe_id}/evidencias")
+async def subir_evidencia(
+    informe_id: str,
+    archivo: UploadFile = File(...),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Sube una evidencia al informe de auditoría"""
+    # Verificar rol
+    if current_user.get('role') not in ['Administrador', 'Auditor']:
+        raise HTTPException(status_code=403, detail="No tiene permisos")
+    
+    # Verificar informe existe
+    informe = await db.informes_auditoria.find_one({"id": informe_id})
+    if not informe:
+        raise HTTPException(status_code=404, detail="Informe no encontrado")
+    
+    # Verificar cantidad de evidencias (máximo 5)
+    if len(informe.get('evidencias', [])) >= 5:
+        raise HTTPException(status_code=400, detail="Máximo 5 evidencias por informe")
+    
+    # Verificar tamaño (máximo 10MB)
+    contenido = await archivo.read()
+    if len(contenido) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="El archivo excede 10MB")
+    
+    # Determinar tipo
+    extension = archivo.filename.split('.')[-1].lower() if '.' in archivo.filename else ''
+    tipo_archivo = "otro"
+    if extension in ['jpg', 'jpeg', 'png', 'gif', 'webp']:
+        tipo_archivo = "image"
+    elif extension == 'pdf':
+        tipo_archivo = "pdf"
+    elif extension in ['doc', 'docx']:
+        tipo_archivo = "word"
+    elif extension in ['xls', 'xlsx']:
+        tipo_archivo = "excel"
+    
+    # Crear evidencia
+    evidencia = {
+        "id": str(uuid.uuid4()),
+        "nombre_archivo": archivo.filename,
+        "tipo_archivo": tipo_archivo,
+        "mime_type": archivo.content_type or "application/octet-stream",
+        "tamanio": len(contenido),
+        "data_base64": base64.b64encode(contenido).decode('utf-8'),
+        "fecha_subida": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Agregar al informe
+    await db.informes_auditoria.update_one(
+        {"id": informe_id},
+        {
+            "$push": {"evidencias": evidencia},
+            "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
+        }
+    )
+    
+    # Retornar sin el data_base64 para no sobrecargar
+    evidencia_response = {k: v for k, v in evidencia.items() if k != 'data_base64'}
+    return {"message": "Evidencia subida", "evidencia": evidencia_response}
+
+
+@api_router.delete("/informes-auditoria/{informe_id}/evidencias/{evidencia_id}")
+async def eliminar_evidencia(
+    informe_id: str,
+    evidencia_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Elimina una evidencia del informe"""
+    if current_user.get('role') not in ['Administrador', 'Auditor']:
+        raise HTTPException(status_code=403, detail="No tiene permisos")
+    
+    result = await db.informes_auditoria.update_one(
+        {"id": informe_id},
+        {
+            "$pull": {"evidencias": {"id": evidencia_id}},
+            "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
+        }
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Evidencia no encontrada")
+    
+    return {"message": "Evidencia eliminada"}
+
+
+@api_router.get("/informes-auditoria/{informe_id}/evidencias/{evidencia_id}")
+async def descargar_evidencia(
+    informe_id: str,
+    evidencia_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Descarga una evidencia"""
+    informe = await db.informes_auditoria.find_one({"id": informe_id})
+    if not informe:
+        raise HTTPException(status_code=404, detail="Informe no encontrado")
+    
+    evidencia = next((e for e in informe.get('evidencias', []) if e['id'] == evidencia_id), None)
+    if not evidencia:
+        raise HTTPException(status_code=404, detail="Evidencia no encontrada")
+    
+    contenido = base64.b64decode(evidencia['data_base64'])
+    
+    return StreamingResponse(
+        io.BytesIO(contenido),
+        media_type=evidencia['mime_type'],
+        headers={"Content-Disposition": f"attachment; filename={evidencia['nombre_archivo']}"}
+    )
+
+
+@api_router.put("/informes-auditoria/{informe_id}/estado")
+async def cambiar_estado_informe(
+    informe_id: str,
+    estado: str = Query(..., regex="^(borrador|finalizado)$"),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Cambia el estado del informe (borrador/finalizado)"""
+    if current_user.get('role') not in ['Administrador', 'Auditor']:
+        raise HTTPException(status_code=403, detail="No tiene permisos")
+    
+    result = await db.informes_auditoria.update_one(
+        {"id": informe_id},
+        {"$set": {"estado": estado, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Informe no encontrado")
+    
+    return {"message": f"Estado cambiado a {estado}"}
+
+
+@api_router.get("/informes-auditoria/{informe_id}/export-pdf")
+async def exportar_informe_pdf(
+    informe_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Exporta el informe de auditoría a PDF"""
+    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+    from reportlab.lib.units import inch, cm
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+    
+    informe = await db.informes_auditoria.find_one({"id": informe_id}, {"_id": 0})
+    if not informe:
+        raise HTTPException(status_code=404, detail="Informe no encontrado")
+    
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=1.5*cm, leftMargin=1.5*cm, topMargin=1.5*cm, bottomMargin=1.5*cm)
+    
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='TitleCustom', fontSize=16, fontName='Helvetica-Bold', alignment=TA_CENTER, spaceAfter=20))
+    styles.add(ParagraphStyle(name='Subtitle', fontSize=12, fontName='Helvetica-Bold', spaceAfter=10, spaceBefore=15))
+    styles.add(ParagraphStyle(name='BodyCustom', fontSize=10, fontName='Helvetica', alignment=TA_JUSTIFY, spaceAfter=8))
+    styles.add(ParagraphStyle(name='SmallText', fontSize=9, fontName='Helvetica', spaceAfter=5))
+    
+    elements = []
+    
+    # Título
+    elements.append(Paragraph("INFORME DE AUDITORÍA DE INVENTARIO", styles['TitleCustom']))
+    elements.append(Paragraph("EDARSA HUB", styles['TitleCustom']))
+    elements.append(Spacer(1, 20))
+    
+    # Información del encabezado
+    header_data = [
+        ["Establecimiento:", informe.get('establecimiento', '')],
+        ["Gerente Responsable:", informe.get('gerente_responsable', '')],
+        ["Auditor:", informe.get('auditor', '')],
+        ["Fecha de Emisión:", informe.get('fecha_emision', '')[:10] if informe.get('fecha_emision') else ''],
+        ["Período:", f"{informe.get('periodo_inicio', '')} a {informe.get('periodo_fin', '')}"],
+    ]
+    header_table = Table(header_data, colWidths=[4*cm, 12*cm])
+    header_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    elements.append(header_table)
+    elements.append(Spacer(1, 20))
+    
+    # 1. Resumen de Situación
+    if informe.get('resumen_situacion'):
+        elements.append(Paragraph("1. RESUMEN DE SITUACIÓN", styles['Subtitle']))
+        elements.append(Paragraph(informe.get('resumen_situacion', '').replace('\n', '<br/>'), styles['BodyCustom']))
+        elements.append(Spacer(1, 10))
+    
+    # 2. Ajustes Técnicos y Operativos
+    if informe.get('ajustes_tecnicos'):
+        elements.append(Paragraph("2. AJUSTES TÉCNICOS Y OPERATIVOS", styles['Subtitle']))
+        elements.append(Paragraph(informe.get('ajustes_tecnicos', '').replace('\n', '<br/>'), styles['BodyCustom']))
+        elements.append(Spacer(1, 10))
+    
+    # 3. Cuadro de Diferencias
+    datos_inv = informe.get('datos_inventario', [])
+    if datos_inv:
+        elements.append(Paragraph("3. CUADRO INFORMATIVO DE DIFERENCIAS", styles['Subtitle']))
+        
+        # Crear tabla de inventario (simplificada)
+        table_data = [["Producto", "Unidad", "Inv.Ini", "Mov", "Ventas", "Teórico", "Final", "Dif", "Importe"]]
+        for item in datos_inv[:50]:  # Limitar a 50 productos para no sobrecargar el PDF
+            dif = item.get('Diferencia_Cantidad', 0)
+            if dif != 0:  # Solo mostrar productos con diferencia
+                table_data.append([
+                    str(item.get('Producto', ''))[:30],
+                    str(item.get('Unidad', ''))[:5],
+                    str(round(item.get('Inv_Inicial', 0), 2)),
+                    str(round(item.get('Movimientos', 0), 2)),
+                    str(round(item.get('Ventas', 0), 2)),
+                    str(round(item.get('Inv_Teorico', 0), 2)),
+                    str(round(item.get('Inv_Final', 0), 2)),
+                    str(round(dif, 2)),
+                    f"${round(item.get('Diferencia_Costo', 0), 2)}"
+                ])
+        
+        if len(table_data) > 1:
+            inv_table = Table(table_data, colWidths=[4.5*cm, 1.2*cm, 1.5*cm, 1.5*cm, 1.5*cm, 1.5*cm, 1.5*cm, 1.2*cm, 2*cm])
+            inv_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e3a5f')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 7),
+                ('ALIGN', (2, 0), (-1, -1), 'RIGHT'),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f5f5f5')]),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ]))
+            elements.append(inv_table)
+        elements.append(Spacer(1, 10))
+    
+    # Dictamen Económico
+    dictamen = informe.get('dictamen_economico', {})
+    if dictamen:
+        elements.append(Paragraph("DICTAMEN ECONÓMICO", styles['Subtitle']))
+        dictamen_text = f"Total a comandear: ${dictamen.get('total_diferencia', 0):,.2f} MXN"
+        if dictamen.get('responsable'):
+            dictamen_text += f"<br/>Responsable: {dictamen.get('responsable')}"
+        if dictamen.get('observaciones'):
+            dictamen_text += f"<br/>Observaciones: {dictamen.get('observaciones')}"
+        elements.append(Paragraph(dictamen_text, styles['BodyCustom']))
+        elements.append(Spacer(1, 10))
+    
+    # 4. Comentarios del Auditor
+    if informe.get('comentarios'):
+        elements.append(Paragraph("4. COMENTARIOS DEL AUDITOR", styles['Subtitle']))
+        elements.append(Paragraph(informe.get('comentarios', '').replace('\n', '<br/>'), styles['BodyCustom']))
+        elements.append(Spacer(1, 10))
+    
+    # 5. Conclusiones
+    if informe.get('conclusiones'):
+        elements.append(Paragraph("5. CONCLUSIONES", styles['Subtitle']))
+        elements.append(Paragraph(informe.get('conclusiones', '').replace('\n', '<br/>'), styles['BodyCustom']))
+        elements.append(Spacer(1, 10))
+    
+    # 6. Recomendaciones
+    if informe.get('recomendaciones'):
+        elements.append(Paragraph("6. RECOMENDACIONES", styles['Subtitle']))
+        elements.append(Paragraph(informe.get('recomendaciones', '').replace('\n', '<br/>'), styles['BodyCustom']))
+        elements.append(Spacer(1, 10))
+    
+    # 7. Compromisos
+    if informe.get('compromisos_almacen') or informe.get('compromisos_personal') or informe.get('compromisos_gerencia'):
+        elements.append(Paragraph("7. COMPROMISOS", styles['Subtitle']))
+        if informe.get('compromisos_almacen'):
+            elements.append(Paragraph(f"<b>Almacén:</b> {informe.get('compromisos_almacen')}", styles['SmallText']))
+        if informe.get('compromisos_personal'):
+            elements.append(Paragraph(f"<b>Personal de Barra:</b> {informe.get('compromisos_personal')}", styles['SmallText']))
+        if informe.get('compromisos_gerencia'):
+            elements.append(Paragraph(f"<b>Gerencia:</b> {informe.get('compromisos_gerencia')}", styles['SmallText']))
+        elements.append(Spacer(1, 10))
+    
+    # Comparativo 4 Cortes
+    if informe.get('incluir_comparativo') and informe.get('datos_comparativo'):
+        elements.append(Paragraph("ANEXO: COMPARATIVO DE 4 CORTES", styles['Subtitle']))
+        comp_data = informe.get('datos_comparativo', [])
+        if comp_data:
+            # Simplificar para el PDF
+            comp_table_data = [["Producto", "Corte 1", "Corte 2", "Corte 3", "Corte 4", "Total"]]
+            for item in comp_data[:30]:
+                comp_table_data.append([
+                    str(item.get('Producto', ''))[:25],
+                    str(item.get('corte_1', 0)),
+                    str(item.get('corte_2', 0)),
+                    str(item.get('corte_3', 0)),
+                    str(item.get('corte_4', 0)),
+                    str(item.get('total', 0))
+                ])
+            if len(comp_table_data) > 1:
+                comp_table = Table(comp_table_data, colWidths=[5*cm, 2*cm, 2*cm, 2*cm, 2*cm, 2*cm])
+                comp_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d4a6f')),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, -1), 8),
+                    ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ]))
+                elements.append(comp_table)
+    
+    # Firma
+    elements.append(Spacer(1, 30))
+    elements.append(Paragraph("_" * 40, styles['BodyCustom']))
+    elements.append(Paragraph(f"{informe.get('auditor', '')}<br/>Auditor EDARSA HUB", styles['SmallText']))
+    
+    # Generar PDF
+    doc.build(elements)
+    buffer.seek(0)
+    
+    filename = f"Informe_Auditoria_{informe.get('sucursal_nombre', 'SN').replace(' ', '_')}_{informe.get('periodo_fin', 'fecha')}.pdf"
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+# ============================================================================
+# SISTEMA DE SOLICITUDES Y TAREAS
+# ============================================================================
+
+# Lista de catálogos del sistema disponibles para solicitudes
+# niveles_aprobacion: 1 = Solo Supervisor/Admin, 2 = Supervisor + Admin, etc.
+CATALOGOS_SISTEMA = [
+    {"id": "puestos", "nombre": "Puestos", "modulo": "RRHH", "tabla": "RH_Cat_Puestos", "niveles_aprobacion": 1},
+    {"id": "tipos_incidencias", "nombre": "Tipos de Incidencias", "modulo": "RRHH", "tabla": "RH_Cat_Tipos_Incidencias", "niveles_aprobacion": 1},
+    {"id": "sucursales", "nombre": "Sucursales", "modulo": "RRHH", "tabla": "RH_Cat_Sucursales", "niveles_aprobacion": 2},
+    {"id": "departamentos", "nombre": "Departamentos", "modulo": "RRHH", "tabla": "RH_Cat_Departamentos", "niveles_aprobacion": 1},
+    {"id": "proveedores", "nombre": "Proveedores", "modulo": "Compras", "tabla": "Proveedores", "niveles_aprobacion": 2},
+    {"id": "categorias_presupuesto", "nombre": "Categorías Presupuesto", "modulo": "Finanzas", "tabla": "Finanzas_Categorias", "niveles_aprobacion": 2},
+    {"id": "almacenes", "nombre": "Almacenes", "modulo": "Inventarios", "tabla": "Almacenes", "niveles_aprobacion": 1},
+    {"id": "familias", "nombre": "Familias de Productos", "modulo": "Inventarios", "tabla": "Familias", "niveles_aprobacion": 1},
+    {"id": "categorias", "nombre": "Categorías de Productos", "modulo": "Inventarios", "tabla": "Categorias", "niveles_aprobacion": 1},
+]
+
+# Función para agregar evento al historial de una solicitud
+async def agregar_evento_historial(solicitud_id: str, evento: Dict):
+    """Agrega un evento al historial de trazabilidad de una solicitud"""
+    evento["id"] = str(uuid.uuid4())
+    evento["timestamp"] = datetime.now(timezone.utc).isoformat()
+    await db.solicitudes_catalogos.update_one(
+        {"id": solicitud_id},
+        {"$push": {"historial": evento}}
+    )
+
+# ============= ENDPOINTS DE DIAGNÓSTICO DEL SISTEMA =============
+# Añadidos en Prioridad 1 - Connection Pooling (Abril 2026)
 
 @api_router.get("/sistema/pool-stats")
 async def get_pool_statistics(current_user: Dict = Depends(get_current_user)):
