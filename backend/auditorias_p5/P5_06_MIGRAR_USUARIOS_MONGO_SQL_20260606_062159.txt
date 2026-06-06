@@ -1,0 +1,17 @@
+P5-06 MIGRAR USUARIOS MONGO A SQL CANONICO (v4)
+USUARIOS_MONGO_DETECTADOS 17
+USUARIOS_INSERTADOS 6
+USUARIOS_ACTUALIZADOS 11
+ROLES_ASIGNADOS 17
+USUARIOS_SALTADOS 0
+TOTAL_USUARIO_CATALOGO 18
+TOTAL_ROLES_ASIGNACION_ACTIVOS 6
+
+=== MUESTRA USUARIOS MIGRADOS ===
+{'UsuarioID': 1, 'Username': 'admin@edarsa.com', 'Email': 'admin@edarsa.com', 'Nombre': 'Admin', 'Activo': True, 'MongoLegacyID': '69d88ca7cca4dfb4d14b930e'}
+{'UsuarioID': 2, 'Username': 'admin@inventario.com', 'Email': 'admin@inventario.com', 'Nombre': 'Administrador', 'Activo': True, 'MongoLegacyID': '69e4576bbfb5f31d056664f0'}
+{'UsuarioID': 3, 'Username': 'carlosruz@edarsa.com.mx', 'Email': 'carlosruz@edarsa.com.mx', 'Nombre': 'Carlos', 'Activo': True, 'MongoLegacyID': '69e4576bbfb5f31d056664f1'}
+
+PASS P5-06 usuarios migrados a Usuario_Catalogo SQL canónico
+Reporte: auditorias_p5/P5_06_MIGRAR_USUARIOS_MONGO_SQL_20260606_062159.txt
+NO SE ELIMINO MONGO
