@@ -14314,6 +14314,53 @@ async def sql_server_test_query(
         }
 
 
+@api_router.get("/sistema/catalogos-disponibles")
+async def listar_catalogos_sistema(current_user: Dict = Depends(get_current_user)):
+    """Lista todos los catálogos del sistema disponibles para solicitudes"""
+    # Obtener configuración personalizada de niveles desde MongoDB
+    config = await db.config_catalogos.find_one({"tipo": "niveles_aprobacion"})
+    config_niveles = config.get("niveles", {}) if config else {}
+    
+    catalogos_con_config = []
+    for cat in CATALOGOS_SISTEMA:
+        cat_copy = cat.copy()
+        # Usar configuración personalizada si existe, sino usar el default
+        cat_copy["niveles_aprobacion"] = config_niveles.get(cat["id"], cat.get("niveles_aprobacion", 1))
+        catalogos_con_config.append(cat_copy)
+    
+    return {"catalogos": catalogos_con_config}
+
+
+@api_router.put("/sistema/catalogos/{catalogo_id}/niveles")
+async def configurar_niveles_catalogo(catalogo_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
+    """Configura los niveles de aprobación de un catálogo (Solo Admin)"""
+    if current_user.get('role') != 'Administrador':
+        raise HTTPException(status_code=403, detail="Solo Administradores pueden configurar niveles")
+    
+    niveles = body.get("niveles_aprobacion", 1)
+    if niveles < 1 or niveles > 3:
+        raise HTTPException(status_code=400, detail="Niveles debe ser entre 1 y 3")
+    
+    # Guardar/actualizar configuración
+    await db.config_catalogos.update_one(
+        {"tipo": "niveles_aprobacion"},
+        {"$set": {f"niveles.{catalogo_id}": niveles}},
+        upsert=True
+    )
+    
+    # Registrar en log
+    await agregar_evento_historial("CONFIG", {
+        "accion": "CONFIGURACION_NIVELES",
+        "usuario_id": current_user.get("id"),
+        "usuario_email": current_user.get("email"),
+        "catalogo_id": catalogo_id,
+        "niveles_nuevos": niveles,
+        "descripcion": f"Configuración de {niveles} nivel(es) de aprobación para {catalogo_id}"
+    })
+    
+    return {"success": True, "message": f"Niveles de aprobación actualizados a {niveles}"}
+
+
 @api_router.get("/sistema/permisos-catalogos/{user_id}")
 async def obtener_permisos_catalogos_usuario(user_id: str, current_user: Dict = Depends(get_current_user)):
     """Obtiene los permisos de catálogos de un usuario específico"""
