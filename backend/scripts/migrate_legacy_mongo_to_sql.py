@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 import pymssql
-from pymongo import MongoClient
+# from pymongo import MongoClient  # P5: legacy migration only
 
 
 def env(name: str, default: Optional[str] = None) -> str:
