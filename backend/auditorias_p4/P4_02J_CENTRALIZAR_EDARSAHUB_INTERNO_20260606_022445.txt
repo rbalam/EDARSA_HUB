@@ -1,0 +1,75 @@
+==================================================
+P4-02J CENTRALIZAR CONEXIONES INTERNAS EDARSAHUB
+==================================================
+✓ connection_factory.py compilado OK
+PATCHED_FILES: 6
+PATCHED server.py internal_connections_replaced 16
+PATCHED modules/comercial/routes.py internal_connections_replaced 6
+PATCHED modules/comercial/service.py internal_connections_replaced 1
+PATCHED core/security.py internal_connections_replaced 2
+PATCHED core/alcance_helper.py internal_connections_replaced 2
+PATCHED modules/auth/repository.py internal_connections_replaced 2
+
+=== VALIDACIÓN SINTAXIS ===
+✓ SYNTAX_OK server.py
+✓ SYNTAX_OK modules/comercial/routes.py
+✓ SYNTAX_OK modules/comercial/service.py
+✓ SYNTAX_OK core/security.py
+✓ SYNTAX_OK core/alcance_helper.py
+✓ SYNTAX_OK modules/auth/repository.py
+
+=== INVENTARIO CONEXIONES RESTANTES ===
+Conexiones runtime restantes sin scripts:
+24 auditorias_p4/P4_02J_RUNTIME_CONEXIONES_RESTANTES_20260606_022445.txt
+
+Top archivos:
+      3 core/sql_first/connection_factory.py
+      2 core/sql_first/db.py
+      2 core/policies/no_live_dashboard_policy.py
+      2 api/dba_credential_p0d.py
+      1 modules/universal_query/routes.py
+      1 modules/tablajeria/ordenes_service.py
+      1 modules/tablajeria/dashboard_service.py
+      1 modules/sistema/menu_service.py
+      1 modules/crm/trigger_service.py
+      1 modules/crm/integration/staging_service.py
+      1 modules/crm/automation_service.py
+      1 modules/cava_socios/service.py
+      1 modules/backfill_corporativo/service.py
+      1 modules/automatizacion/repository.py
+      1 modules/auth/service.py
+      1 core/user_access_context.py
+      1 core/unidades_registry.py
+      1 core/context_resolver.py
+      1 api/admin_core_connections.py
+
+=== GUARDRAIL ===
+FAIL runtime SQL directo:
+audit_kpis_junio_2026.py
+modules/backfill_corporativo/service.py
+modules/sistema/menu_service.py
+modules/automatizacion/repository.py
+modules/auth/service.py
+modules/tablajeria/ordenes_service.py
+modules/tablajeria/dashboard_service.py
+modules/universal_query/routes.py
+modules/crm/automation_service.py
+modules/crm/trigger_service.py
+modules/crm/integration/staging_service.py
+modules/cava_socios/service.py
+api/admin_core_connections.py
+api/dba_credential_p0d.py
+core/unidades_registry.py
+core/context_resolver.py
+core/user_access_context.py
+core/policies/no_live_dashboard_policy.py
+tools/edarsahub_sql_runner.py
+tools/check_mpro_server_config.py
+
+==================================================
+P4-02J RESULTADO
+==================================================
+Backup: auditorias_p4/backup_p4_02j_20260606_022445
+Restantes: auditorias_p4/P4_02J_RUNTIME_CONEXIONES_RESTANTES_20260606_022445.txt
+Guardrail: auditorias_p4/P4_02J_GUARDRAIL_RUNTIME_20260606_022445.txt
+Health: auditorias_p4/P4_02J_HEALTH_20260606_022445.json

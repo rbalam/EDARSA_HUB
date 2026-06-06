@@ -101,7 +101,13 @@ async def get_all_users() -> List[Dict]:
         
         # RBAC-SCOPE-D: Obtener permisos operativos desde EDARSAHUB SQL
         # Conexión directa para queries de permisos
-        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+        conn = pymssql.connect(
+            server=os.getenv('EDARSAHUB_SQL_HOST'),
+            port=1433,
+            user=os.getenv('EDARSAHUB_SQL_USER'),
+            password=os.getenv('EDARSAHUB_SQL_PASSWORD'),
+            database='EDARSAHUB'
+        )
         cursor = conn.cursor()
         
         # Obtener mapeo UsuarioID SQL → permisos
@@ -307,7 +313,15 @@ async def deactivate_user(user_id: str) -> None:
 def _get_sql_connection():
     """Conexión a EDARSAHUB SQL para roles"""
     import pymssql
-    return get_edarsahub_pymssql_connection(timeout=10, login_timeout=10)
+    return pymssql.connect(
+        server=os.getenv('EDARSAHUB_SQL_HOST'),
+        port=1433,
+        database='EDARSAHUB',
+        user=os.getenv('EDARSAHUB_SQL_USER'),
+        password=os.getenv('EDARSAHUB_SQL_PASSWORD'),
+        login_timeout=10,
+        timeout=30
+    )
 
 
 async def get_all_roles() -> List[Dict]:

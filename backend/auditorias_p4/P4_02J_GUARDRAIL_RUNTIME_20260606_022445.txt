@@ -1,0 +1,21 @@
+FAIL runtime SQL directo:
+audit_kpis_junio_2026.py
+modules/backfill_corporativo/service.py
+modules/sistema/menu_service.py
+modules/automatizacion/repository.py
+modules/auth/service.py
+modules/tablajeria/ordenes_service.py
+modules/tablajeria/dashboard_service.py
+modules/universal_query/routes.py
+modules/crm/automation_service.py
+modules/crm/trigger_service.py
+modules/crm/integration/staging_service.py
+modules/cava_socios/service.py
+api/admin_core_connections.py
+api/dba_credential_p0d.py
+core/unidades_registry.py
+core/context_resolver.py
+core/user_access_context.py
+core/policies/no_live_dashboard_policy.py
+tools/edarsahub_sql_runner.py
+tools/check_mpro_server_config.py

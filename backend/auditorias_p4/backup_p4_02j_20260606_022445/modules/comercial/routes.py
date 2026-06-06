@@ -2044,7 +2044,10 @@ async def comercial_metas(
     # SQL-FIRST: Consultar tabla sincronizada
     try:
         import pymssql
-        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+        conn = pymssql.connect(
+            server=os.getenv('EDARSAHUB_SQL_HOST'), port=1433, database='EDARSAHUB',
+            user=os.getenv('EDARSAHUB_SQL_USER'), password=os.getenv('EDARSAHUB_SQL_PASSWORD'), timeout=30, as_dict=True
+        )
         cursor = conn.cursor()
         
         now = datetime.now()
@@ -2378,7 +2381,10 @@ async def comercial_ticket_perfecto(
     # SQL-FIRST: Consultar tabla sincronizada
     try:
         import pymssql
-        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+        conn = pymssql.connect(
+            server=os.getenv('EDARSAHUB_SQL_HOST'), port=1433, database='EDARSAHUB',
+            user=os.getenv('EDARSAHUB_SQL_USER'), password=os.getenv('EDARSAHUB_SQL_PASSWORD'), timeout=30, as_dict=True
+        )
         cursor = conn.cursor()
         
         # Determinar rango de fechas (default últimos 7 días)
@@ -2677,7 +2683,14 @@ async def comercial_ventas_tiempo(
         logging.info(f"[NO-LIVE] ventas-tiempo {server.get('name')}: Consultando EDARSAHUB SQL, período {fecha_ini} a {fecha_fin}")
         
         try:
-            conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=10)
+            conn = pymssql.connect(
+                server=os.getenv('EDARSAHUB_SQL_HOST'),
+                user=os.getenv('EDARSAHUB_SQL_USER'),
+                password=os.getenv('EDARSAHUB_SQL_PASSWORD'),
+                database='EDARSAHUB',
+                port=1433,
+                timeout=15
+            )
             cursor = conn.cursor(as_dict=True)
             
             # Ventas por hora desde Sync_Ventas_PorHora
@@ -2778,7 +2791,14 @@ async def comercial_ventas_tiempo(
             hoy_str = hoy.strftime('%Y-%m-%d')
             cursor_hoy = None
             try:
-                conn_hoy = get_edarsahub_pymssql_connection(timeout=10, login_timeout=10)
+                conn_hoy = pymssql.connect(
+                    server=os.getenv('EDARSAHUB_SQL_HOST'),
+                    user=os.getenv('EDARSAHUB_SQL_USER'),
+                    password=os.getenv('EDARSAHUB_SQL_PASSWORD'),
+                    database='EDARSAHUB',
+                    port=1433,
+                    timeout=10
+                )
                 cursor_hoy = conn_hoy.cursor(as_dict=True)
                 cursor_hoy.execute("""
                     SELECT 
@@ -2880,7 +2900,10 @@ async def comercial_mesas(
     # SQL-FIRST: Consultar tabla sincronizada
     try:
         import pymssql
-        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+        conn = pymssql.connect(
+            server=os.getenv('EDARSAHUB_SQL_HOST'), port=1433, database='EDARSAHUB',
+            user=os.getenv('EDARSAHUB_SQL_USER'), password=os.getenv('EDARSAHUB_SQL_PASSWORD'), timeout=30, as_dict=True
+        )
         cursor = conn.cursor()
         
         # Determinar fecha (default hoy)
@@ -3572,7 +3595,10 @@ async def comercial_reporte_pax(
     # SQL-FIRST: Consultar tabla sincronizada
     try:
         import pymssql
-        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+        conn = pymssql.connect(
+            server=os.getenv('EDARSAHUB_SQL_HOST'), port=1433, database='EDARSAHUB',
+            user=os.getenv('EDARSAHUB_SQL_USER'), password=os.getenv('EDARSAHUB_SQL_PASSWORD'), timeout=30, as_dict=True
+        )
         cursor = conn.cursor()
         
         # Determinar rango de fechas (default últimos 7 días)

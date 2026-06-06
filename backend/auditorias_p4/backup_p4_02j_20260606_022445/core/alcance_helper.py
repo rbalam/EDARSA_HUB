@@ -73,7 +73,11 @@ async def _resolver_unidad(alcance_data: Dict, _db) -> Set[str]:
     unidades_ids = alcance_data.get('unidades_ids', [])
     
     if unidades_ids:
-        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+        conn = pymssql.connect(
+            server=os.getenv('EDARSAHUB_SQL_HOST'), port=1433,
+            user=os.getenv('EDARSAHUB_SQL_USER'), password=os.getenv('EDARSAHUB_SQL_PASSWORD'),
+            database='EDARSAHUB'
+        )
         try:
             cursor = conn.cursor()
             
@@ -114,7 +118,11 @@ async def _resolver_sucursal(alcance_data: Dict, _db) -> Set[str]:
     sucursales_ids = alcance_data.get('sucursales_ids', [])
     
     if sucursales_ids:
-        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+        conn = pymssql.connect(
+            server=os.getenv('EDARSAHUB_SQL_HOST'), port=1433,
+            user=os.getenv('EDARSAHUB_SQL_USER'), password=os.getenv('EDARSAHUB_SQL_PASSWORD'),
+            database='EDARSAHUB'
+        )
         try:
             cursor = conn.cursor()
             

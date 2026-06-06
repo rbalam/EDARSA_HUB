@@ -822,7 +822,14 @@ async def admin_sync_compras_force_unlock(
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
     
     try:
-        conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
         cursor = conn.cursor(as_dict=True)
         now_mx = datetime.now(ZoneInfo("America/Mexico_City"))
         
@@ -896,7 +903,14 @@ async def admin_sync_compras_table_counts(
     """
     
     try:
-        conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
         cursor = conn.cursor(as_dict=True)
         cursor.execute(query)
         results = cursor.fetchall()
@@ -967,7 +981,14 @@ async def admin_sync_compras_validate_columns(
     }
     
     try:
-        conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
         cursor = conn.cursor(as_dict=True)
         cursor.execute(query)
         results = cursor.fetchall()
@@ -1035,7 +1056,14 @@ async def admin_sync_compras_logs(
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
     
     try:
-        conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
         cursor = conn.cursor(as_dict=True)
         
         # Obtener logs
@@ -7659,7 +7687,14 @@ async def obtener_inventarios_fisicos_sql_first(
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
     
     try:
-        conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
         cursor = conn.cursor(as_dict=True)
         
         # Construir filtros opcionales
@@ -7946,7 +7981,14 @@ async def obtener_pedidos_vigentes_sql_first(
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
     
     try:
-        conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
         cursor = conn.cursor(as_dict=True)
         
         # Construir filtros
@@ -8875,7 +8917,14 @@ async def obtener_productos_para_captura_sql_first(
     productos = {}
     
     try:
-        conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
         cursor = conn.cursor(as_dict=True)
         
         # Obtener productos de pedidos/requisiciones sincronizados
@@ -9706,7 +9755,14 @@ async def guardar_inventario_provisional(
         usuario_id = current_user.get('_sql_usuario_id', current_user.get('id'))
         usuario_email = current_user.get('email', 'unknown')
         
-        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+        conn = pymssql.connect(
+            server=EDARSAHUB_TABLERO_CONFIG['host'],
+            user=EDARSAHUB_TABLERO_CONFIG['username'],
+            password=EDARSAHUB_TABLERO_CONFIG['password'],
+            database=EDARSAHUB_TABLERO_CONFIG['database'],
+            port=EDARSAHUB_TABLERO_CONFIG['port'],
+            timeout=30
+        )
         cursor = conn.cursor()
         
         items_guardados = 0
@@ -9765,7 +9821,14 @@ async def obtener_inventarios_provisionales(
     from modules.comercial.service import EDARSAHUB_TABLERO_CONFIG
     
     try:
-        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+        conn = pymssql.connect(
+            server=EDARSAHUB_TABLERO_CONFIG['host'],
+            user=EDARSAHUB_TABLERO_CONFIG['username'],
+            password=EDARSAHUB_TABLERO_CONFIG['password'],
+            database=EDARSAHUB_TABLERO_CONFIG['database'],
+            port=EDARSAHUB_TABLERO_CONFIG['port'],
+            timeout=30
+        )
         cursor = conn.cursor(as_dict=True)
         
         query = """
@@ -9817,7 +9880,14 @@ async def eliminar_inventario_provisional(
     from modules.comercial.service import EDARSAHUB_TABLERO_CONFIG
     
     try:
-        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+        conn = pymssql.connect(
+            server=EDARSAHUB_TABLERO_CONFIG['host'],
+            user=EDARSAHUB_TABLERO_CONFIG['username'],
+            password=EDARSAHUB_TABLERO_CONFIG['password'],
+            database=EDARSAHUB_TABLERO_CONFIG['database'],
+            port=EDARSAHUB_TABLERO_CONFIG['port'],
+            timeout=30
+        )
         cursor = conn.cursor()
         
         # Verificar que existe y está en estado PROVISIONAL
@@ -9855,7 +9925,14 @@ async def limpiar_inventarios_provisionales(
     from modules.comercial.service import EDARSAHUB_TABLERO_CONFIG
     
     try:
-        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+        conn = pymssql.connect(
+            server=EDARSAHUB_TABLERO_CONFIG['host'],
+            user=EDARSAHUB_TABLERO_CONFIG['username'],
+            password=EDARSAHUB_TABLERO_CONFIG['password'],
+            database=EDARSAHUB_TABLERO_CONFIG['database'],
+            port=EDARSAHUB_TABLERO_CONFIG['port'],
+            timeout=30
+        )
         cursor = conn.cursor()
         
         if fecha_auditoria:
@@ -10124,7 +10201,14 @@ async def obtener_detalle_movimientos_sql_first(
     totales = {'entradas': 0, 'salidas': 0, 'neto': 0}
     
     try:
-        conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
         cursor = conn.cursor(as_dict=True)
         
         codigo_limpio = request.codigo.strip()
@@ -10946,7 +11030,14 @@ async def obtener_facturas_proveedor_sql_first(
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
     
     try:
-        conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
         cursor = conn.cursor(as_dict=True)
         
         filtros = ["ServerID = %s"]
@@ -11020,7 +11111,14 @@ async def obtener_detalle_factura_sql_first(
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
     
     try:
-        conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
         cursor = conn.cursor(as_dict=True)
         
         query = """
@@ -11078,7 +11176,14 @@ async def obtener_detalle_consumos_sql_first(
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
     
     try:
-        conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
         cursor = conn.cursor(as_dict=True)
         
         codigo_limpio = request.codigo.strip()
@@ -11164,7 +11269,14 @@ async def obtener_dashboard_compras_sql_first(
         fecha_inicio = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
     
     try:
-        conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
+        conn = pymssql.connect(
+            server=EDARSAHUB_CONFIG['host'],
+            port=EDARSAHUB_CONFIG['port'],
+            database=EDARSAHUB_CONFIG['database'],
+            user=EDARSAHUB_CONFIG['username'],
+            password=EDARSAHUB_CONFIG['password'],
+            login_timeout=15
+        )
         cursor = conn.cursor(as_dict=True)
         
         # Pedidos pendientes

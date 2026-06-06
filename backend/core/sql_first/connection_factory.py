@@ -7,10 +7,12 @@ def get_edarsahub_connection():
 def get_edarsahub_pymssql_connection(timeout: int = 30, login_timeout: int = 10, autocommit: bool = False):
     """
     Conexión EDARSAHUB centralizada vía pymssql.
-    Se conserva para código legacy que usa cursor(as_dict=True).
+    Se conserva para módulos legacy que usan cursor(as_dict=True).
     """
     import pymssql
+
     cfg = get_edarsahub_sql_config()
+
     return pymssql.connect(
         server=cfg.host,
         port=cfg.port,
