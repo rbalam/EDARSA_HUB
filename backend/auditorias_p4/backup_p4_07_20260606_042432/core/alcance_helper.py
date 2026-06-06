@@ -1,11 +1,3 @@
-
-# P4-07 SQL-FIRST RBAC HELPERS
-from core.access_context.sql_context import (
-    can_access_empresa as can_access_empresa_sql,
-    can_access_unidad as can_access_unidad_sql,
-    can_access_sucursal as can_access_sucursal_sql,
-)
-
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
 """

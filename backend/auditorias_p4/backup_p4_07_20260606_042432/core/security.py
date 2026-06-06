@@ -1,9 +1,3 @@
-
-# P4-07 SQL-FIRST RBAC SECURITY
-from core.access_context.sql_context import (
-    build_user_access_context as build_user_access_context_sql,
-)
-
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
 """

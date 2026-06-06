@@ -1,9 +1,3 @@
-
-# P4-07 SQL-FIRST CONTEXT RESOLVER
-from core.access_context.sql_context import (
-    build_user_access_context as build_user_access_context_sql,
-)
-
 from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
