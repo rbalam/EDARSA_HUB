@@ -1,0 +1,13 @@
+==================================================
+P3-04 ELIMINAR COLECCIONES MONGO HUERFANAS
+==================================================
+OK - SQL-First runtime activo sin Mongo directo
+PASS sin admin123
+SIN_MONGO_URL: no se elimina nada
+
+==================================================
+P3-04 RESULTADO
+==================================================
+Reporte: auditorias_p3/P3_04_ELIMINAR_MONGO_HUERFANAS_20260606_000621.txt
+Backup JSON: auditorias_p3/mongo_huerfanas_backup_20260606_000621
+Health: auditorias_p3/P3_04_HEALTH_20260606_000621.json
