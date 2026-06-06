@@ -1,11 +1,3 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
-"""
-EDARSA HUB - Configuración Central
-==================================
-Centraliza todas las configuraciones de conexión.
-"""
-from .edarsahub_config import (
-    get_edarsahub_sql_config,
-    EdarsaHubSQLConfig,
-)
+from .edarsahub_config import EdarsaHubSQLConfig, get_edarsahub_sql_config
+
+__all__ = ["EdarsaHubSQLConfig", "get_edarsahub_sql_config"]

@@ -9,6 +9,12 @@ REQUIRED = [
 ]
 
 print("VALIDACION SEGURA DE VARIABLES")
+missing = []
 for key in REQUIRED:
-    value = os.getenv(key)
-    print(f"{key}: {'OK' if value else 'FALTA'}")
+    ok = bool(os.getenv(key))
+    print(f"{key}: {'OK' if ok else 'FALTA'}")
+    if not ok:
+        missing.append(key)
+
+if missing:
+    raise SystemExit(1)
