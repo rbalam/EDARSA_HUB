@@ -28,7 +28,6 @@ Esto es seguro porque no amplía más allá de lo asignado explícitamente.
 from typing import Dict, List, Set
 from dataclasses import dataclass
 import logging
-from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
 
 logger = logging.getLogger(__name__)
 

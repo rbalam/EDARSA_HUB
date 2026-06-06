@@ -19146,7 +19146,6 @@ from modules.dashboard_ejecutivo.routes import router as dashboard_ejecutivo_rou
 from modules.rentabilidad.routes import router as rentabilidad_router
 from modules.alertas_estrategicas.routes import router as alertas_estrategicas_router
 from core.sql_first.db import get_sql_connection
-from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
 # Inicializar RBAC (sembrar permisos y roles si no existen)
 try:
     rbac_service = RBACService(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad

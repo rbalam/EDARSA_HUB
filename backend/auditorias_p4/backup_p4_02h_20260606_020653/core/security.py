@@ -909,7 +909,6 @@ Valida y bloquea SQL peligroso antes de ejecución.
 
 import re
 from dataclasses import dataclass, field
-from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
 
 # Palabras clave peligrosas (operaciones de escritura/admin)
 DANGEROUS_SQL_KEYWORDS = [

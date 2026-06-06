@@ -1,0 +1,77 @@
+==================================================
+P4-02H REFACTOR DIRIGIDO SQL RUNTIME
+Timestamp: 20260606_020653
+==================================================
+Backup: server.py
+Backup: core/security.py
+Backup: core/alcance_helper.py
+Backup: modules/auth/repository.py
+Backup: modules/comercial/routes.py
+Backup: modules/tablajeria/sync_service.py
+
+=== ACTUALIZANDO FACTORY CENTRAL ===
+✓ connection_factory.py actualizada
+
+=== PARCHEANDO ARCHIVOS (conservador) ===
+IMPORTS_ADDED: 5
+  server.py
+  core/security.py
+  core/alcance_helper.py
+  modules/auth/repository.py
+  modules/tablajeria/sync_service.py
+
+=== VALIDANDO SINTAXIS ===
+OK: server.py
+OK: core/security.py
+OK: core/alcance_helper.py
+OK: modules/auth/repository.py
+OK: modules/comercial/routes.py
+OK: modules/tablajeria/sync_service.py
+✓ Todos compilan correctamente
+
+=== INVENTARIO RUNTIME ===
+Conexiones runtime restantes (sin scripts/tools):
+57 auditorias_p4/P4_02H_RUNTIME_CONEXIONES_RESTANTES_20260606_020653.txt
+
+Top archivos runtime:
+     16 server.py
+      6 modules/comercial/routes.py
+      4 core/sql_first/connection_factory.py
+      3 modules/tablajeria/sync_service.py
+      2 modules/auth/repository.py
+      2 core/sql_first/db.py
+      2 core/security.py
+      2 core/policies/no_live_dashboard_policy.py
+      2 core/alcance_helper.py
+      2 api/dba_credential_p0d.py
+      1 modules/universal_query/routes.py
+      1 modules/tablajeria/ordenes_service.py
+      1 modules/tablajeria/dashboard_service.py
+      1 modules/sistema/menu_service.py
+      1 modules/crm/trigger_service.py
+      1 modules/crm/integration/staging_service.py
+      1 modules/crm/automation_service.py
+      1 modules/comercial/service.py
+      1 modules/cava_socios/service.py
+      1 modules/backfill_corporativo/service.py
+      1 modules/automatizacion/repository.py
+      1 modules/auth/service.py
+      1 core/user_access_context.py
+      1 core/unidades_registry.py
+      1 core/context_resolver.py
+
+=== HEALTH CHECK ===
+{"status":"operativo","sistema":"EDARSA HUB","version":"1.0"}
+==================================================
+P4-02H RESULTADO
+==================================================
+
+Factory central actualizada con:
+  - get_edarsahub_connection()
+  - get_edarsahub_pymssql_connection()
+  - get_external_sql_connection(config)
+
+Imports agregados a archivos críticos
+Conexiones directas pendientes para refactor manual
+
+Backup: auditorias_p4/backup_p4_02h_20260606_020653

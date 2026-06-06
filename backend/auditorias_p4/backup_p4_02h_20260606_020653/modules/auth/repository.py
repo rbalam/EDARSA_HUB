@@ -17,7 +17,6 @@ from typing import Dict, List, Optional, Any
 import uuid
 import logging
 from datetime import datetime, timezone
-from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
 
 logger = logging.getLogger(__name__)
 

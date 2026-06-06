@@ -7,6 +7,7 @@ FASE 6 (Mayo 2026): Migrado a usar variables de entorno para credenciales.
 """
 
 import logging
+import pymssql
 import hashlib
 import json
 import os
@@ -26,7 +27,6 @@ MEXICO_TZ = ZoneInfo("America/Mexico_City")
 
 # P2-01: Credenciales desde config centralizado
 from core.config.edarsahub_config import get_edarsahub_sql_config
-from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
 _edarsa_cfg = get_edarsahub_sql_config()
 DEFAULT_DB_PASSWORD = _edarsa_cfg.password
 
@@ -42,7 +42,16 @@ class TablajeriaSyncService:
         
     def _get_hub_connection(self):
         """Conexión a EDARSAHUB SQL"""
-        return get_external_sql_connection(self.db_config)
+        return pymssql.connect(
+            server=self.db_config['host'],
+            port=self.db_config['port'],
+            database=self.db_config['database'],
+            user=self.db_config['username'],
+            password=self.db_config['password'],
+            login_timeout=30,
+            timeout=60,
+            autocommit=False
+        )
     
     def _now_utc(self) -> datetime:
         return datetime.utcnow()
@@ -151,7 +160,15 @@ class TablajeriaSyncService:
                 result.errores.append("Password no configurado para servidor MPRO")
                 return
             
-            conn_mpro = get_external_sql_connection({**servidor_config, 'password_decrypted': password})
+            conn_mpro = pymssql.connect(
+                server=servidor_config['host'],
+                port=servidor_config.get('port', 1433),
+                database=servidor_config['database_name'],
+                user=servidor_config['username'],
+                password=password,
+                login_timeout=30,
+                timeout=60
+            )
         except Exception as e:
             result.success = False
             result.errores.append(f"Error conectando a MPRO: {e}")
@@ -574,7 +591,14 @@ class TablajeriaSyncService:
                 server = host
                 port = servidor_config.get('port', 1433)
             
-            conn_cf = get_external_sql_connection({**servidor_config, 'password_decrypted': password})
+            conn_cf = pymssql.connect(
+                server=f"{server},{port}",
+                database=servidor_config['database_name'],
+                user=servidor_config['username'],
+                password=servidor_config.get('password_decrypted') or DEFAULT_DB_PASSWORD,
+                login_timeout=15,
+                timeout=30
+            )
         except Exception as e:
             result.success = False
             result.errores.append(f"Error conectando a CIENFUEGOS: {e}")
