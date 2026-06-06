@@ -327,41 +327,82 @@ async def get_current_user(
 
 async def _get_user_sql_only(email: str, user_id_from_token: str = None) -> tuple:
     """
-    P5-07: Obtiene usuario SOLO de SQL (Usuario_Catalogo).
-    Sin fallback a MongoDB.
+    FASE 2-G: Obtiene usuario de EDARSAHUB SQL con fallback MongoDB temporal.
     
     Args:
         email: Email del usuario
-        user_id_from_token: user_id del JWT (PublicUUID o MongoLegacyID)
+        user_id_from_token: user_id del JWT (PublicUUID)
         
     Returns:
         tuple: (user_dict, auth_source)
+        
+    auth_source puede ser:
+        - EDARSAHUB_SQL: Usuario obtenido exitosamente de SQL
+        - MONGODB_FALLBACK: Usuario obtenido de MongoDB (temporal)
+        - SQL_NOT_FOUND: Usuario no existe
+        - SQL_ERROR: Error al consultar SQL
     """
-    from modules.auth.repository import AuthRepository
+    from core.auth.user_repository_sql import AuthRepositorySQL
     
     user = None
     auth_source = "SQL_NOT_FOUND"
     
     try:
-        # Primero intentar por user_id si existe
+        repo_sql = AuthRepositorySQL()
+        
+        # Primero intentar por user_id (PublicUUID) si existe
         if user_id_from_token:
-            user = AuthRepository.get_user_by_id(user_id_from_token)
+            user = repo_sql.get_user_by_public_uuid_sql(user_id_from_token)
         
-        # Si no encontró por ID, intentar por email
+        # Si no encontró por UUID, intentar por email
         if not user and email:
-            user = AuthRepository.get_user_by_email(email)
+            user = repo_sql.get_user_by_email_sql(email)
         
-        if user:
-            auth_source = user.get("auth_source", "SQL_USUARIO_CATALOGO")
+        if user and _validate_sql_user_structure(user):
+            auth_source = "EDARSAHUB_SQL"
             logging.debug(f"[AUTH-SQL] Usuario resuelto desde SQL: {email}")
             return user, auth_source
-        
-        logging.info(f"[AUTH-SQL] Usuario no encontrado en SQL: {email}")
-        return None, "SQL_NOT_FOUND"
             
     except Exception as e:
-        logging.error(f"[AUTH-SQL] Error SQL: {str(e)[:200]}")
-        return None, "SQL_ERROR"
+        # Error en SQL - intentar fallback MongoDB
+        logging.warning(f"[AUTH-SQL] Error SQL: {str(e)[:100]} - intentando fallback MongoDB")
+    
+    # P5-05: FALLBACK TEMPORAL A MONGODB mientras migración no esté completa
+    try:
+        from pymongo import MongoClient
+        import os
+        
+        mongo_url = os.getenv("MONGO_URL")
+        db_name = os.getenv("DB_NAME") or "edarsa_hub"
+        
+        if mongo_url:
+            client = MongoClient(mongo_url)
+            db = client[db_name]
+            
+            mongo_user = None
+            if email:
+                mongo_user = db.users.find_one({"email": email})
+            
+            if mongo_user:
+                # Convertir a formato esperado
+                user = {
+                    "id": str(mongo_user.get("_id")),
+                    "email": mongo_user.get("email"),
+                    "nombre": mongo_user.get("nombre"),
+                    "role": mongo_user.get("role", mongo_user.get("rol", "Usuario")),
+                    "active": mongo_user.get("active", True),
+                    "empresas_permitidas": mongo_user.get("empresas_permitidas", []),
+                    "sucursales": mongo_user.get("sucursales", []),
+                    "servidores_permitidos": mongo_user.get("servidores_permitidos", []),
+                }
+                logging.info(f"[AUTH-MONGO-FALLBACK] Usuario obtenido de MongoDB: {email}")
+                return user, "MONGODB_FALLBACK"
+                
+    except Exception as mongo_error:
+        logging.error(f"[AUTH-MONGO-FALLBACK] Error MongoDB: {str(mongo_error)[:100]}")
+    
+    logging.info(f"[AUTH-SQL] Usuario no encontrado en SQL ni MongoDB: {email}")
+    return None, "SQL_NOT_FOUND"
 
 
 def _validate_sql_user_structure(user: Dict[str, Any]) -> bool:
