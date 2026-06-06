@@ -1,6 +1,9 @@
 from core.sql_first.db import get_sql_connection
 
 class CatalogosWorkflowSQLRepository:
+    # =========================================================
+    # CONFIG / PERMISOS
+    # =========================================================
     def get_catalogos_disponibles(self):
         sql = """
         SELECT CatalogoConfigID, CodigoCatalogo, NombreCatalogo, Descripcion, TipoConfiguracion, ConfigJSON,
@@ -82,6 +85,7 @@ class CatalogosWorkflowSQLRepository:
           AND ISNULL(RolID, -1) = ISNULL(%s, -1)
           AND ISNULL(EmpresaID, -1) = ISNULL(%s, -1)
           AND ISNULL(SucursalID, -1) = ISNULL(%s, -1)
+          AND Activo = 1
         """
         sql_insert = """
         INSERT INTO Sistema_CatalogosPermisos (
@@ -136,19 +140,44 @@ class CatalogosWorkflowSQLRepository:
             conn.commit()
             return 1
 
-    def crear_solicitud_catalogo(self, body, current_user):
+    def listar_usuarios_asignables(self):
         sql = """
-        INSERT INTO Sistema_CatalogosSolicitudes (
-            CodigoSolicitud, CodigoCatalogo, TipoSolicitud, EstadoSolicitud, Prioridad,
-            EmpresaID, UnidadNegocioID, SucursalID, RegistroObjetivoID,
-            DatosSolicitudJSON, Comentarios, SolicitadoPorUsuarioID, FechaSolicitud,
-            CreatedAt, CreatedBy
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, GETDATE(), GETDATE(), %s)
+        SELECT
+            u.UsuarioID,
+            u.NombreCompleto,
+            u.Email,
+            r.NombreRol
+        FROM Usuario_Catalogo u
+        LEFT JOIN Usuario_RolesAsignacion ura
+            ON u.UsuarioID = ura.UsuarioID AND ura.Activo = 1
+        LEFT JOIN Usuario_Roles r
+            ON ura.RolID = r.RolID
+        WHERE u.Activo = 1
+        ORDER BY u.NombreCompleto
         """
         with get_sql_connection() as conn:
             cur = conn.cursor()
-            cur.execute(sql, (
+            cur.execute(sql)
+            cols = [c[0] for c in cur.description]
+            return [dict(zip(cols, r)) for r in cur.fetchall()]
+
+    # =========================================================
+    # SOLICITUDES
+    # =========================================================
+    def crear_solicitud_catalogo(self, body, current_user):
+        with get_sql_connection() as conn:
+            cur = conn.cursor()
+
+            cur.execute("""
+                INSERT INTO Sistema_CatalogosSolicitudes (
+                    CodigoSolicitud, CodigoCatalogo, TipoSolicitud, EstadoSolicitud, Prioridad,
+                    EmpresaID, UnidadNegocioID, SucursalID, RegistroObjetivoID,
+                    DatosSolicitudJSON, Comentarios, SolicitadoPorUsuarioID, FechaSolicitud,
+                    NivelAprobacionActual, TotalNivelesAprobacion,
+                    CreatedAt, CreatedBy
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, GETDATE(), %s, %s, GETDATE(), %s)
+            """, (
                 body.get("codigo_solicitud"),
                 body.get("codigo_catalogo"),
                 body.get("tipo_solicitud"),
@@ -161,10 +190,58 @@ class CatalogosWorkflowSQLRepository:
                 body.get("datos_solicitud_json"),
                 body.get("comentarios"),
                 current_user.get("id"),
+                body.get("nivel_aprobacion_actual"),
+                body.get("total_niveles_aprobacion"),
                 current_user.get("email") or str(current_user.get("id"))
             ))
+
+            cur.execute("SELECT @@IDENTITY")
+            solicitud_id = int(cur.fetchone()[0])
+
+            cur.execute("""
+                INSERT INTO Sistema_CatalogosSolicitudesHistorial (
+                    CatalogoSolicitudID, EstadoAnterior, EstadoNuevo, EventoTipo, Observaciones, UsuarioID, CreatedBy
+                )
+                VALUES (%s, NULL, %s, 'CREACION', %s, %s, %s)
+            """, (
+                solicitud_id,
+                body.get("estado_solicitud", "PENDIENTE"),
+                body.get("comentarios"),
+                current_user.get("id"),
+                current_user.get("email") or str(current_user.get("id"))
+            ))
+
+            # Crear tarea inicial si viene asignación
+            if body.get("asignado_a_usuario_id"):
+                cur.execute("""
+                    INSERT INTO Sistema_Tareas (
+                        CodigoTarea, TipoTarea, EstadoTarea, Prioridad, TituloTarea, Descripcion,
+                        Modulo, EntidadTipo, EntidadID, CatalogoSolicitudID,
+                        EmpresaID, UnidadNegocioID, SucursalID,
+                        AsignadoAUsuarioID, CreadoPorUsuarioID, FechaLimite, MetadataJSON,
+                        CreatedAt, CreatedBy
+                    )
+                    VALUES (%s, 'SOLICITUD_CATALOGO', 'PENDIENTE', %s, %s, %s, 'CATALOGOS_WORKFLOW',
+                            'SOLICITUD_CATALOGO', %s, %s, %s, %s, %s, %s, %s, %s, GETDATE(), %s)
+                """, (
+                    body.get("codigo_tarea"),
+                    body.get("prioridad"),
+                    body.get("titulo_tarea") or f"Solicitud {body.get('codigo_catalogo')}",
+                    body.get("descripcion_tarea") or body.get("comentarios"),
+                    str(solicitud_id),
+                    solicitud_id,
+                    body.get("empresa_id"),
+                    body.get("unidad_negocio_id"),
+                    body.get("sucursal_id"),
+                    body.get("asignado_a_usuario_id"),
+                    current_user.get("id"),
+                    body.get("fecha_limite"),
+                    body.get("metadata_tarea_json"),
+                    current_user.get("email") or str(current_user.get("id"))
+                ))
+
             conn.commit()
-            return 1
+            return solicitud_id
 
     def listar_solicitudes_catalogo(self, limit=100):
         sql = f"""
@@ -172,6 +249,7 @@ class CatalogosWorkflowSQLRepository:
                EstadoSolicitud, Prioridad, EmpresaID, UnidadNegocioID, SucursalID,
                RegistroObjetivoID, DatosSolicitudJSON, Comentarios,
                SolicitadoPorUsuarioID, RevisadoPorUsuarioID, AprobadoPorUsuarioID,
+               NivelAprobacionActual, TotalNivelesAprobacion, MotivoRechazo, MotivoCorreccion,
                FechaSolicitud, FechaResolucion, CreatedAt
         FROM Sistema_CatalogosSolicitudes
         ORDER BY CreatedAt DESC
@@ -182,7 +260,76 @@ class CatalogosWorkflowSQLRepository:
             cols = [c[0] for c in cur.description]
             return [dict(zip(cols, r)) for r in cur.fetchall()]
 
-    def actualizar_estado_solicitud(self, solicitud_id, body, current_user):
+    def aprobar_solicitud(self, solicitud_id, body, current_user):
+        with get_sql_connection() as conn:
+            cur = conn.cursor()
+
+            cur.execute("""
+                SELECT EstadoSolicitud, NivelAprobacionActual, TotalNivelesAprobacion
+                FROM Sistema_CatalogosSolicitudes
+                WHERE CatalogoSolicitudID = %s
+            """, (solicitud_id,))
+            row = cur.fetchone()
+            if not row:
+                return 0
+
+            estado_anterior, nivel_actual, total_niveles = row
+            nivel_actual = nivel_actual or 0
+            total_niveles = total_niveles or 1
+
+            nuevo_nivel = nivel_actual + 1
+            estado_nuevo = 'APROBADO' if nuevo_nivel >= total_niveles else 'EN_REVISION'
+
+            cur.execute("""
+                UPDATE Sistema_CatalogosSolicitudes
+                SET EstadoSolicitud = %s,
+                    NivelAprobacionActual = %s,
+                    AprobadoPorUsuarioID = %s,
+                    AprobacionMetadataJSON = %s,
+                    FechaResolucion = CASE WHEN %s = 'APROBADO' THEN GETDATE() ELSE FechaResolucion END,
+                    UpdatedAt = GETDATE(),
+                    UpdatedBy = %s
+                WHERE CatalogoSolicitudID = %s
+            """, (
+                estado_nuevo,
+                nuevo_nivel,
+                current_user.get("id"),
+                body.get("metadata_json"),
+                estado_nuevo,
+                current_user.get("email") or str(current_user.get("id")),
+                solicitud_id
+            ))
+
+            cur.execute("""
+                INSERT INTO Sistema_CatalogosSolicitudesHistorial (
+                    CatalogoSolicitudID, EstadoAnterior, EstadoNuevo, EventoTipo, Observaciones, UsuarioID, CreatedBy
+                )
+                VALUES (%s, %s, %s, 'APROBACION', %s, %s, %s)
+            """, (
+                solicitud_id,
+                estado_anterior,
+                estado_nuevo,
+                body.get("comentarios"),
+                current_user.get("id"),
+                current_user.get("email") or str(current_user.get("id"))
+            ))
+
+            # cerrar tareas pendientes asociadas si quedó aprobado
+            if estado_nuevo == 'APROBADO':
+                cur.execute("""
+                    UPDATE Sistema_Tareas
+                    SET EstadoTarea = 'CERRADA',
+                        FechaCierre = GETDATE(),
+                        UpdatedAt = GETDATE(),
+                        UpdatedBy = %s
+                    WHERE CatalogoSolicitudID = %s
+                      AND EstadoTarea IN ('PENDIENTE','EN_PROCESO')
+                """, (current_user.get("email") or str(current_user.get("id")), solicitud_id))
+
+            conn.commit()
+            return 1
+
+    def rechazar_solicitud(self, solicitud_id, body, current_user):
         with get_sql_connection() as conn:
             cur = conn.cursor()
 
@@ -192,16 +339,18 @@ class CatalogosWorkflowSQLRepository:
                 return 0
 
             estado_anterior = row[0]
-            estado_nuevo = body.get("estado_nuevo")
 
             cur.execute("""
                 UPDATE Sistema_CatalogosSolicitudes
-                SET EstadoSolicitud = %s, Comentarios = %s, RevisadoPorUsuarioID = %s, FechaResolucion = GETDATE(),
-                    UpdatedAt = GETDATE(), UpdatedBy = %s
+                SET EstadoSolicitud = 'RECHAZADA',
+                    MotivoRechazo = %s,
+                    RevisadoPorUsuarioID = %s,
+                    FechaResolucion = GETDATE(),
+                    UpdatedAt = GETDATE(),
+                    UpdatedBy = %s
                 WHERE CatalogoSolicitudID = %s
             """, (
-                estado_nuevo,
-                body.get("comentarios"),
+                body.get("motivo_rechazo") or body.get("comentarios"),
                 current_user.get("id"),
                 current_user.get("email") or str(current_user.get("id")),
                 solicitud_id
@@ -211,13 +360,67 @@ class CatalogosWorkflowSQLRepository:
                 INSERT INTO Sistema_CatalogosSolicitudesHistorial (
                     CatalogoSolicitudID, EstadoAnterior, EstadoNuevo, EventoTipo, Observaciones, UsuarioID, CreatedBy
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, 'RECHAZADA', 'RECHAZO', %s, %s, %s)
             """, (
                 solicitud_id,
                 estado_anterior,
-                estado_nuevo,
-                body.get("evento_tipo", "CAMBIO_ESTADO"),
+                body.get("motivo_rechazo") or body.get("comentarios"),
+                current_user.get("id"),
+                current_user.get("email") or str(current_user.get("id"))
+            ))
+
+            cur.execute("""
+                UPDATE Sistema_Tareas
+                SET EstadoTarea = 'CERRADA',
+                    FechaCierre = GETDATE(),
+                    UpdatedAt = GETDATE(),
+                    UpdatedBy = %s
+                WHERE CatalogoSolicitudID = %s
+                  AND EstadoTarea IN ('PENDIENTE','EN_PROCESO')
+            """, (current_user.get("email") or str(current_user.get("id")), solicitud_id))
+
+            conn.commit()
+            return 1
+
+    def corregir_solicitud(self, solicitud_id, body, current_user):
+        with get_sql_connection() as conn:
+            cur = conn.cursor()
+
+            cur.execute("SELECT EstadoSolicitud FROM Sistema_CatalogosSolicitudes WHERE CatalogoSolicitudID = %s", (solicitud_id,))
+            row = cur.fetchone()
+            if not row:
+                return 0
+
+            estado_anterior = row[0]
+
+            cur.execute("""
+                UPDATE Sistema_CatalogosSolicitudes
+                SET EstadoSolicitud = 'CORREGIDA',
+                    MotivoCorreccion = %s,
+                    CorregidoPorUsuarioID = %s,
+                    DatosSolicitudJSON = %s,
+                    Comentarios = %s,
+                    UpdatedAt = GETDATE(),
+                    UpdatedBy = %s
+                WHERE CatalogoSolicitudID = %s
+            """, (
+                body.get("motivo_correccion"),
+                current_user.get("id"),
+                body.get("datos_solicitud_json"),
                 body.get("comentarios"),
+                current_user.get("email") or str(current_user.get("id")),
+                solicitud_id
+            ))
+
+            cur.execute("""
+                INSERT INTO Sistema_CatalogosSolicitudesHistorial (
+                    CatalogoSolicitudID, EstadoAnterior, EstadoNuevo, EventoTipo, Observaciones, UsuarioID, CreatedBy
+                )
+                VALUES (%s, %s, 'CORREGIDA', 'CORRECCION', %s, %s, %s)
+            """, (
+                solicitud_id,
+                estado_anterior,
+                body.get("motivo_correccion") or body.get("comentarios"),
                 current_user.get("id"),
                 current_user.get("email") or str(current_user.get("id"))
             ))
@@ -225,15 +428,19 @@ class CatalogosWorkflowSQLRepository:
             conn.commit()
             return 1
 
+    # =========================================================
+    # TAREAS
+    # =========================================================
     def crear_tarea(self, body, current_user):
         sql = """
         INSERT INTO Sistema_Tareas (
             CodigoTarea, TipoTarea, EstadoTarea, Prioridad, TituloTarea, Descripcion,
-            Modulo, EntidadTipo, EntidadID, EmpresaID, UnidadNegocioID, SucursalID,
+            Modulo, EntidadTipo, EntidadID, CatalogoSolicitudID,
+            EmpresaID, UnidadNegocioID, SucursalID,
             AsignadoAUsuarioID, CreadoPorUsuarioID, FechaLimite, MetadataJSON,
             CreatedAt, CreatedBy
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, GETDATE(), %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, GETDATE(), %s)
         """
         with get_sql_connection() as conn:
             cur = conn.cursor()
@@ -247,6 +454,7 @@ class CatalogosWorkflowSQLRepository:
                 body.get("modulo"),
                 body.get("entidad_tipo"),
                 body.get("entidad_id"),
+                body.get("catalogo_solicitud_id"),
                 body.get("empresa_id"),
                 body.get("unidad_negocio_id"),
                 body.get("sucursal_id"),
@@ -262,7 +470,7 @@ class CatalogosWorkflowSQLRepository:
     def listar_tareas(self, limit=100):
         sql = f"""
         SELECT TOP {limit} TareaSistemaID, CodigoTarea, TipoTarea, EstadoTarea, Prioridad,
-               TituloTarea, Descripcion, Modulo, EntidadTipo, EntidadID,
+               TituloTarea, Descripcion, Modulo, EntidadTipo, EntidadID, CatalogoSolicitudID,
                EmpresaID, UnidadNegocioID, SucursalID,
                AsignadoAUsuarioID, CreadoPorUsuarioID, FechaLimite, FechaCierre,
                MetadataJSON, CreatedAt
@@ -272,5 +480,24 @@ class CatalogosWorkflowSQLRepository:
         with get_sql_connection() as conn:
             cur = conn.cursor()
             cur.execute(sql)
+            cols = [c[0] for c in cur.description]
+            return [dict(zip(cols, r)) for r in cur.fetchall()]
+
+    def listar_mis_tareas(self, user_id):
+        # user_id puede ser INT o UUID string
+        sql = """
+        SELECT TareaSistemaID, CodigoTarea, TipoTarea, EstadoTarea, Prioridad,
+               TituloTarea, Descripcion, Modulo, EntidadTipo, EntidadID, CatalogoSolicitudID,
+               EmpresaID, UnidadNegocioID, SucursalID,
+               AsignadoAUsuarioID, CreadoPorUsuarioID, FechaLimite, FechaCierre,
+               MetadataJSON, CreatedAt
+        FROM Sistema_Tareas
+        WHERE (AsignadoAUsuarioID = TRY_CONVERT(INT, %s) OR CONVERT(NVARCHAR(50), AsignadoAUsuarioID) = %s)
+          AND EstadoTarea IN ('PENDIENTE','EN_PROCESO')
+        ORDER BY CreatedAt DESC
+        """
+        with get_sql_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(sql, (str(user_id), str(user_id)))
             cols = [c[0] for c in cur.description]
             return [dict(zip(cols, r)) for r in cur.fetchall()]
