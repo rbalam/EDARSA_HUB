@@ -1,0 +1,20 @@
+P4-09 RBAC CANONICO SYS_USUARIOS / USUARIO_*
+✓ Backup completado
+
+=== VALIDAR MODELO CANÓNICO ===
+CANONICA Sys_Usuarios OK
+CANONICA Usuario_Roles OK
+CANONICA Usuario_RolesAsignacion OK
+CANONICA Usuario_EmpresasAsignacion OK
+CANONICA Usuario_SucursalesAsignacion OK
+RBAC_DUPLICADAS_REGISTRADAS 8
+
+=== GUARDRAIL RBAC CANÓNICO ===
+PASS RBAC runtime usa Usuario_* canónico
+
+==================================================
+P4-09 RESULTADO
+==================================================
+Reporte: auditorias_p4/P4_09_RBAC_CANONICO_SYS_USUARIO_20260606_044158.txt
+Backup: auditorias_p4/backup_p4_09_rbac_duplicado_20260606_044158
+Health: auditorias_p4/P4_09_HEALTH_20260606_044158.json
