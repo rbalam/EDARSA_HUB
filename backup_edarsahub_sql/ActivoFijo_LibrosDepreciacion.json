@@ -1,0 +1,26 @@
+[
+  {
+    "LibroDepreciacionID": 1,
+    "CodigoLibro": "CONTABLE",
+    "NombreLibro": "LIBRO CONTABLE",
+    "TipoLibro": "CONTABLE",
+    "MonedaID": 1,
+    "Activo": true
+  },
+  {
+    "LibroDepreciacionID": 2,
+    "CodigoLibro": "FISCAL",
+    "NombreLibro": "LIBRO FISCAL",
+    "TipoLibro": "FISCAL",
+    "MonedaID": 1,
+    "Activo": true
+  },
+  {
+    "LibroDepreciacionID": 3,
+    "CodigoLibro": "GERENCIAL",
+    "NombreLibro": "LIBRO GERENCIAL",
+    "TipoLibro": "GERENCIAL",
+    "MonedaID": 1,
+    "Activo": true
+  }
+]

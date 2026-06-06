@@ -1,0 +1,32 @@
+[
+  {
+    "EstatusVentaID": 1,
+    "Descripcion": "BORRADOR",
+    "Activo": true
+  },
+  {
+    "EstatusVentaID": 2,
+    "Descripcion": "PENDIENTE",
+    "Activo": true
+  },
+  {
+    "EstatusVentaID": 3,
+    "Descripcion": "CONFIRMADA",
+    "Activo": true
+  },
+  {
+    "EstatusVentaID": 4,
+    "Descripcion": "PARCIAL",
+    "Activo": true
+  },
+  {
+    "EstatusVentaID": 5,
+    "Descripcion": "PAGADA",
+    "Activo": true
+  },
+  {
+    "EstatusVentaID": 6,
+    "Descripcion": "CANCELADA",
+    "Activo": true
+  }
+]

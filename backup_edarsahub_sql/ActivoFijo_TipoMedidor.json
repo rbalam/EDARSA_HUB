@@ -1,0 +1,17 @@
+[
+  {
+    "TipoMedidorID": 1,
+    "Nombre": "CONTINUO",
+    "Activo": true
+  },
+  {
+    "TipoMedidorID": 2,
+    "Nombre": "GAUGE",
+    "Activo": true
+  },
+  {
+    "TipoMedidorID": 3,
+    "Nombre": "CARACTERISTICO",
+    "Activo": true
+  }
+]

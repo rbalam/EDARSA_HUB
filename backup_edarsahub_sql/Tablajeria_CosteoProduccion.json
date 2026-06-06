@@ -1,0 +1,42 @@
+[
+  {
+    "CosteoID": "33703754-a7fc-444a-bd9f-37498ae6a4c2",
+    "OrdenID": "0bfe585c-bec4-4d38-8ca8-215208b424c7",
+    "FechaCosteo": "2026-05-24T03:05:25.401000",
+    "InsumoBaseCodigo": "INS-POLLO-001",
+    "InsumoBaseNombre": "Pollo entero",
+    "CantidadInsumoConsumida": 10.0,
+    "CostoUnitarioInsumo": 45.0,
+    "CostoTotalInsumo": 450.0,
+    "CostoManoObra": 50.0,
+    "CostoIndirectos": 20.0,
+    "CostoEnergia": 10.0,
+    "OtrosCostos": 5.0,
+    "CostoTotalProduccion": 535.0,
+    "CostoUnitarioPromedio": 100.9434,
+    "ReglaCosteoAplicada": "PROPORCIONAL",
+    "UsuarioID": "F648DD3F-2232-4245-AE5C-CF5108F6F6E9",
+    "Observaciones": null,
+    "EsEstimado": false
+  },
+  {
+    "CosteoID": "cfeaec50-f3eb-4e5d-a9cc-d7303e78da0c",
+    "OrdenID": "bd058149-d42f-424c-a83a-b30a41dc3a8b",
+    "FechaCosteo": "2026-05-24T03:06:19.420000",
+    "InsumoBaseCodigo": "INS-SALMON-001",
+    "InsumoBaseNombre": "Salmón fresco",
+    "CantidadInsumoConsumida": 5.0,
+    "CostoUnitarioInsumo": 180.0,
+    "CostoTotalInsumo": 900.0,
+    "CostoManoObra": 30.0,
+    "CostoIndirectos": 0.0,
+    "CostoEnergia": 0.0,
+    "OtrosCostos": 0.0,
+    "CostoTotalProduccion": 930.0,
+    "CostoUnitarioPromedio": 273.5294,
+    "ReglaCosteoAplicada": "PROPORCIONAL",
+    "UsuarioID": "F648DD3F-2232-4245-AE5C-CF5108F6F6E9",
+    "Observaciones": null,
+    "EsEstimado": false
+  }
+]

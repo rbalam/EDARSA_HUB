@@ -1,0 +1,42 @@
+[
+  {
+    "BancoID": 1,
+    "CodigoBanco": "002",
+    "NombreBanco": "BANAMEX",
+    "NombreCorto": "BANAMEX",
+    "Activo": true,
+    "FechaAlta": "2026-04-12T21:07:05.533333"
+  },
+  {
+    "BancoID": 2,
+    "CodigoBanco": "012",
+    "NombreBanco": "BBVA BANCOMER",
+    "NombreCorto": "BBVA",
+    "Activo": true,
+    "FechaAlta": "2026-04-12T21:07:05.533333"
+  },
+  {
+    "BancoID": 3,
+    "CodigoBanco": "014",
+    "NombreBanco": "SANTANDER",
+    "NombreCorto": "SANTANDER",
+    "Activo": true,
+    "FechaAlta": "2026-04-12T21:07:05.533333"
+  },
+  {
+    "BancoID": 4,
+    "CodigoBanco": "021",
+    "NombreBanco": "HSBC",
+    "NombreCorto": "HSBC",
+    "Activo": true,
+    "FechaAlta": "2026-04-12T21:07:05.533333"
+  },
+  {
+    "BancoID": 5,
+    "CodigoBanco": "072",
+    "NombreBanco": "BANORTE",
+    "NombreCorto": "BANORTE",
+    "Activo": true,
+    "FechaAlta": "2026-04-12T21:07:05.533333"
+  }
+]

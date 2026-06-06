@@ -1,0 +1,42 @@
+[
+  {
+    "EstatusOrdenCompraID": 1,
+    "Descripcion": "BORRADOR",
+    "Activo": true
+  },
+  {
+    "EstatusOrdenCompraID": 2,
+    "Descripcion": "POR_AUTORIZAR",
+    "Activo": true
+  },
+  {
+    "EstatusOrdenCompraID": 3,
+    "Descripcion": "AUTORIZADA",
+    "Activo": true
+  },
+  {
+    "EstatusOrdenCompraID": 4,
+    "Descripcion": "ENVIADA",
+    "Activo": true
+  },
+  {
+    "EstatusOrdenCompraID": 5,
+    "Descripcion": "SURTIDO_PARCIAL",
+    "Activo": true
+  },
+  {
+    "EstatusOrdenCompraID": 6,
+    "Descripcion": "SURTIDA_TOTAL",
+    "Activo": true
+  },
+  {
+    "EstatusOrdenCompraID": 7,
+    "Descripcion": "CANCELADA",
+    "Activo": true
+  },
+  {
+    "EstatusOrdenCompraID": 8,
+    "Descripcion": "CERRADA",
+    "Activo": true
+  }
+]

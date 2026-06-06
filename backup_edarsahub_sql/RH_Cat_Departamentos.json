@@ -1,0 +1,101 @@
+[
+  {
+    "DepartamentoID": 1,
+    "CodigoDepartamento": "ADMINISTRACION",
+    "NombreDepartamento": "ADMINISTRACION",
+    "Descripcion": null,
+    "Activo": true,
+    "FechaAlta": "2026-04-12T09:49:34.990432",
+    "FechaModificacion": null
+  },
+  {
+    "DepartamentoID": 2,
+    "CodigoDepartamento": "AUDITORIA",
+    "NombreDepartamento": "AUDITORIA",
+    "Descripcion": null,
+    "Activo": true,
+    "FechaAlta": "2026-04-12T09:49:35.147974",
+    "FechaModificacion": null
+  },
+  {
+    "DepartamentoID": 3,
+    "CodigoDepartamento": "CAJAS",
+    "NombreDepartamento": "CAJAS",
+    "Descripcion": null,
+    "Activo": true,
+    "FechaAlta": "2026-04-12T09:49:35.272987",
+    "FechaModificacion": null
+  },
+  {
+    "DepartamentoID": 4,
+    "CodigoDepartamento": "CAPITAL HUMANO",
+    "NombreDepartamento": "CAPITAL HUMANO",
+    "Descripcion": null,
+    "Activo": true,
+    "FechaAlta": "2026-04-12T09:49:35.398000",
+    "FechaModificacion": null
+  },
+  {
+    "DepartamentoID": 5,
+    "CodigoDepartamento": "COCINA",
+    "NombreDepartamento": "COCINA",
+    "Descripcion": null,
+    "Activo": true,
+    "FechaAlta": "2026-04-12T09:49:35.538642",
+    "FechaModificacion": null
+  },
+  {
+    "DepartamentoID": 6,
+    "CodigoDepartamento": "CONTABILIDAD",
+    "NombreDepartamento": "CONTABILIDAD",
+    "Descripcion": null,
+    "Activo": true,
+    "FechaAlta": "2026-04-12T09:49:35.662145",
+    "FechaModificacion": null
+  },
+  {
+    "DepartamentoID": 7,
+    "CodigoDepartamento": "MARKETING",
+    "NombreDepartamento": "MARKETING",
+    "Descripcion": null,
+    "Activo": true,
+    "FechaAlta": "2026-04-12T09:49:35.804008",
+    "FechaModificacion": null
+  },
+  {
+    "DepartamentoID": 8,
+    "CodigoDepartamento": "OPERACIONES",
+    "NombreDepartamento": "OPERACIONES",
+    "Descripcion": null,
+    "Activo": true,
+    "FechaAlta": "2026-04-12T09:49:35.930259",
+    "FechaModificacion": null
+  },
+  {
+    "DepartamentoID": 9,
+    "CodigoDepartamento": "PISO",
+    "NombreDepartamento": "PISO",
+    "Descripcion": null,
+    "Activo": true,
+    "FechaAlta": "2026-04-12T09:49:36.070902",
+    "FechaModificacion": null
+  },
+  {
+    "DepartamentoID": 10,
+    "CodigoDepartamento": "TECNOLOGIAS DE LA IN",
+    "NombreDepartamento": "TECNOLOGIAS DE LA INFORMACION",
+    "Descripcion": null,
+    "Activo": true,
+    "FechaAlta": "2026-04-12T09:49:36.245575",
+    "FechaModificacion": null
+  },
+  {
+    "DepartamentoID": 11,
+    "CodigoDepartamento": "TESORERIA",
+    "NombreDepartamento": "TESORERIA",
+    "Descripcion": null,
+    "Activo": true,
+    "FechaAlta": "2026-04-12T09:49:36.370588",
+    "FechaModificacion": null
+  }
+]

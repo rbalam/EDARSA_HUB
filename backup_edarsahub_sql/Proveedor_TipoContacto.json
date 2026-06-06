@@ -1,0 +1,27 @@
+[
+  {
+    "TipoContactoID": 1,
+    "Descripcion": "COMPRAS",
+    "Activo": true
+  },
+  {
+    "TipoContactoID": 2,
+    "Descripcion": "FACTURACION",
+    "Activo": true
+  },
+  {
+    "TipoContactoID": 3,
+    "Descripcion": "COBRANZA",
+    "Activo": true
+  },
+  {
+    "TipoContactoID": 4,
+    "Descripcion": "LOGISTICA",
+    "Activo": true
+  },
+  {
+    "TipoContactoID": 5,
+    "Descripcion": "GENERAL",
+    "Activo": true
+  }
+]

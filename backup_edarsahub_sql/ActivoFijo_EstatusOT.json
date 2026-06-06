@@ -1,0 +1,27 @@
+[
+  {
+    "EstatusOTID": 1,
+    "Nombre": "PROGRAMADO",
+    "Activo": true
+  },
+  {
+    "EstatusOTID": 2,
+    "Nombre": "EN_PROCESO",
+    "Activo": true
+  },
+  {
+    "EstatusOTID": 3,
+    "Nombre": "COMPLETADO",
+    "Activo": true
+  },
+  {
+    "EstatusOTID": 4,
+    "Nombre": "CANCELADO",
+    "Activo": true
+  },
+  {
+    "EstatusOTID": 5,
+    "Nombre": "PENDIENTE_AUTORIZACION",
+    "Activo": true
+  }
+]

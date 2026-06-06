@@ -1,0 +1,2336 @@
+{
+  "fecha": "2026-06-06T08:31:33.508169",
+  "total_tablas": 466,
+  "tablas": [
+    {
+      "tabla": "ActivoFijo_ActivoMedidores",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ActivoFijo_Activos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ActivoFijo_ActivosLibros",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ActivoFijo_Alertas",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ActivoFijo_Archivos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ActivoFijo_Autorizaciones",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ActivoFijo_BajasActivos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ActivoFijo_ClaseActivo",
+      "registros": 8,
+      "exportados": 8
+    },
+    {
+      "tabla": "ActivoFijo_Cotizaciones",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ActivoFijo_DepreciacionMovimientos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ActivoFijo_EstadoUsoActivo",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "ActivoFijo_EstatusActivo",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "ActivoFijo_EstatusOT",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "ActivoFijo_HistorialAsignaciones",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ActivoFijo_LecturasMedidor",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ActivoFijo_LibrosDepreciacion",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "ActivoFijo_Medidores",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ActivoFijo_MetodosDepreciacion",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "ActivoFijo_MovimientosActivo",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ActivoFijo_OrdenesTrabajo",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ActivoFijo_OrdenTrabajoCostos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ActivoFijo_PlanesMantenimiento",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ActivoFijo_PrioridadOT",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "ActivoFijo_ReemplazosActivos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ActivoFijo_ReglasClaseLibro",
+      "registros": 9,
+      "exportados": 9
+    },
+    {
+      "tabla": "ActivoFijo_TipoActivo",
+      "registros": 9,
+      "exportados": 9
+    },
+    {
+      "tabla": "ActivoFijo_TipoBaja",
+      "registros": 7,
+      "exportados": 7
+    },
+    {
+      "tabla": "ActivoFijo_TipoMedidor",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "ActivoFijo_TipoOT",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "ActivoFijo_TipoUbicacion",
+      "registros": 9,
+      "exportados": 9
+    },
+    {
+      "tabla": "ActivoFijo_Ubicaciones",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Alertas_Sistema",
+      "registros": 16,
+      "exportados": 16
+    },
+    {
+      "tabla": "Auditoria_Inventario_Provisional",
+      "registros": 9,
+      "exportados": 9
+    },
+    {
+      "tabla": "automatizacion_inventarios_config",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "automatizacion_inventarios_destinatarios",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "automatizacion_inventarios_ejecuciones",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "automatizacion_inventarios_envios",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "automatizacion_inventarios_folios_procesados",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "automatizacion_inventarios_ultimo_folio_conocido",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Backup_P4_14_20260606_Dups_Usuario_EmpresasAsignacion",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Backup_P4_14_20260606_Dups_Usuario_RolesAsignacion",
+      "registros": 19,
+      "exportados": 19
+    },
+    {
+      "tabla": "Backup_P4_14_20260606_Dups_Usuario_ServidoresAsignacion",
+      "registros": 184,
+      "exportados": 184
+    },
+    {
+      "tabla": "Backup_P4_14_20260606_Dups_Usuario_SucursalesAsignacion",
+      "registros": 206,
+      "exportados": 206
+    },
+    {
+      "tabla": "Backup_P4_14_20260606_Orphans_Usuario_EmpresasAsignacion",
+      "registros": 38,
+      "exportados": 38
+    },
+    {
+      "tabla": "Backup_P4_14_20260606_Orphans_Usuario_RolesAsignacion",
+      "registros": 27,
+      "exportados": 27
+    },
+    {
+      "tabla": "Backup_P4_14_20260606_Orphans_Usuario_ServidoresAsignacion",
+      "registros": 194,
+      "exportados": 194
+    },
+    {
+      "tabla": "Backup_P4_14_20260606_Orphans_Usuario_SucursalesAsignacion",
+      "registros": 216,
+      "exportados": 216
+    },
+    {
+      "tabla": "Backup_P5_RBAC_Permisos",
+      "registros": 9,
+      "exportados": 9
+    },
+    {
+      "tabla": "Backup_P5_RBAC_Roles",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "CavaSocios_Botellas",
+      "registros": 2,
+      "exportados": 2
+    },
+    {
+      "tabla": "CavaSocios_Cargos",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "CavaSocios_Configuracion",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CavaSocios_Movimientos",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "CavaSocios_Socios",
+      "registros": 2,
+      "exportados": 2
+    },
+    {
+      "tabla": "Cliente_Catalogo",
+      "registros": 2,
+      "exportados": 2
+    },
+    {
+      "tabla": "Cliente_Contactos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Cliente_Direcciones",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Cliente_Grupos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Cliente_RolUsuarioPortal",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "Cliente_UsuariosPortal",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Comercial_AlertasMargenDestinatarios",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Comercial_AlertasMargenEnvios",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Comercial_AlertasMargenEventos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Comercial_AlertasMargenReglas",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "Comercial_AlertasUmbralesSeveridad",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "Comercial_Competidores",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "Comercial_CompetidoresCatalogo",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "Comercial_CompetidoresListas",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "Comercial_CompetidoresListasDetalle",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "Comercial_CompetidoresMenuItems",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "Comercial_CompetidoresUnidad",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "Comercial_Dashboard_Cache",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Comercial_ImpuestosCatalogo",
+      "registros": 8,
+      "exportados": 8
+    },
+    {
+      "tabla": "Comercial_ImpuestosMapeo",
+      "registros": 9905,
+      "exportados": 9905
+    },
+    {
+      "tabla": "Comercial_ImpuestosOverrides",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Comercial_ImpuestosTasas",
+      "registros": 7,
+      "exportados": 7
+    },
+    {
+      "tabla": "Comercial_Inteligencia_VentasDetalleProducto",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Comercial_KPIs_Cache",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Comercial_KPIs_Diarios_v2",
+      "registros": 3392,
+      "exportados": 3392
+    },
+    {
+      "tabla": "Comercial_KPIs_Diarios_v2_backup_migracion_codigos_20260513_0558",
+      "registros": 1801,
+      "exportados": 1801
+    },
+    {
+      "tabla": "Comercial_KPIs_Historico",
+      "registros": 3647,
+      "exportados": 3647
+    },
+    {
+      "tabla": "Comercial_KPIs_Mensuales_v2",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Comercial_Metas",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Comercial_PreciosSugeridos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Comercial_PricingAnalisisIA",
+      "registros": 2,
+      "exportados": 2
+    },
+    {
+      "tabla": "Comercial_PricingBenchmarkProducto",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "Comercial_RecetasSnapshot",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Comercial_RecetasSnapshotDetalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Comercial_ReglasPrecio",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "Comercial_ReglasPrecioRangos",
+      "registros": 13,
+      "exportados": 13
+    },
+    {
+      "tabla": "Comercial_SimulacionesPrecios",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Comercial_SolicitudesCambioPrecio",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "Comercial_SolicitudesCambioPrecioHistorial",
+      "registros": 12,
+      "exportados": 12
+    },
+    {
+      "tabla": "Comercial_SyncLog_v2",
+      "registros": 46808,
+      "exportados": 46808
+    },
+    {
+      "tabla": "Comercial_SyncLog_v2_backup_migracion_codigos_20260513_0558",
+      "registros": 2647,
+      "exportados": 2647
+    },
+    {
+      "tabla": "Comercial_Ventas_Dia_Abiertas_v2",
+      "registros": 8,
+      "exportados": 8
+    },
+    {
+      "tabla": "Comercial_Ventas_Dia_Abiertas_v2_Backup_FechaOperacion_20260521",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "Comercial_Ventas_Dia_Abiertas_v2_backup_migracion_codigos_20260513_0558",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "Compras",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Compras_AutomatizacionesOperativas",
+      "registros": 8,
+      "exportados": 8
+    },
+    {
+      "tabla": "Compras_ConciliacionSAT",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Compras_ConciliacionSATDetalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Compras_ConciliacionSATEstatus",
+      "registros": 11,
+      "exportados": 11
+    },
+    {
+      "tabla": "Compras_Detalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Compras_DocumentosFiscales",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Compras_DocumentosFiscalesDetalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Compras_DocumentosFiscalesEstatus",
+      "registros": 7,
+      "exportados": 7
+    },
+    {
+      "tabla": "Compras_Estatus",
+      "registros": 8,
+      "exportados": 8
+    },
+    {
+      "tabla": "Compras_Eventos_Pendientes",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Compras_Informes_Config",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Compras_Inventarios_Fisicos_Sync",
+      "registros": 748,
+      "exportados": 748
+    },
+    {
+      "tabla": "Compras_KPIs_Historico",
+      "registros": 7035,
+      "exportados": 7035
+    },
+    {
+      "tabla": "Compras_Ordenes",
+      "registros": 12,
+      "exportados": 12
+    },
+    {
+      "tabla": "Compras_OrdenesDetalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Compras_OrdenesEstatus",
+      "registros": 8,
+      "exportados": 8
+    },
+    {
+      "tabla": "Compras_Parametros_Sucursal",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "Compras_Pedidos",
+      "registros": 172,
+      "exportados": 172
+    },
+    {
+      "tabla": "Compras_PedidosDetalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Compras_PedidosEstatus",
+      "registros": 8,
+      "exportados": 8
+    },
+    {
+      "tabla": "Compras_PedidosProcesadosAutomatizacion",
+      "registros": 2,
+      "exportados": 2
+    },
+    {
+      "tabla": "Compras_Recepciones",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Compras_RecepcionesDetalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Compras_RecepcionesEstatus",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "Compras_Requisiciones_Sync",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Compras_Sync_Checkpoint",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Compras_Sync_Log",
+      "registros": 387,
+      "exportados": 387
+    },
+    {
+      "tabla": "Config_Asignaciones",
+      "registros": 2,
+      "exportados": 2
+    },
+    {
+      "tabla": "Config_Horarios",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "Configuracion_Operativa",
+      "registros": 9,
+      "exportados": 9
+    },
+    {
+      "tabla": "ConsultasSQL_Catalogo",
+      "registros": 20,
+      "exportados": 20
+    },
+    {
+      "tabla": "ConsultasSQL_Custom",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ConsultasSQL_EjecucionesLog",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ConsultasSQL_Parametros",
+      "registros": 38,
+      "exportados": 38
+    },
+    {
+      "tabla": "ConsultasSQL_Permisos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ConsultasSQL_Servidores",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "ConsultasSQL_Versiones",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_Actividades",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_ActividadesHistorial",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_Automation_Log",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_Automation_Reglas",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "CRM_Cat_EstatusActividad",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "CRM_Cat_EstatusContrato",
+      "registros": 7,
+      "exportados": 7
+    },
+    {
+      "tabla": "CRM_Cat_EstatusLead",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "CRM_Cat_EstatusOportunidad",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "CRM_Cat_EstatusPropuesta",
+      "registros": 7,
+      "exportados": 7
+    },
+    {
+      "tabla": "CRM_Cat_MotivosGanada",
+      "registros": 8,
+      "exportados": 8
+    },
+    {
+      "tabla": "CRM_Cat_MotivosPerdida",
+      "registros": 9,
+      "exportados": 9
+    },
+    {
+      "tabla": "CRM_Cat_OrigenLead",
+      "registros": 11,
+      "exportados": 11
+    },
+    {
+      "tabla": "CRM_Cat_Prioridades",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "CRM_Cat_Sectores",
+      "registros": 9,
+      "exportados": 9
+    },
+    {
+      "tabla": "CRM_Cat_TamanosCliente",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "CRM_Cat_TiposActividad",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "CRM_Cat_TiposPipeline",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "CRM_ClientesSolicitudesAlta",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_ClientesSolicitudesAltaHistorial",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_Config_PipelineEtapas",
+      "registros": 7,
+      "exportados": 7
+    },
+    {
+      "tabla": "CRM_Config_Pipelines",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "CRM_Contratos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_Cuentas",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_ERPSyncLog",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_Implementaciones",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_ImplementacionesEntregables",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_Integracion_Conectores",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "CRM_Integracion_MapeoEtapas",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_Integracion_SyncLog",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "CRM_IntegracionesConflictos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_IntegracionesSyncLog",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_Leads",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_Oportunidad_Contactos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_Oportunidad_Documentos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_Oportunidades",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_Oportunidades_HistorialEtapas",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "CRM_OportunidadesHistorial",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_PostventaEncuestas",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_PostventaTickets",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_Propuestas",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_Staging_Cuentas",
+      "registros": 2,
+      "exportados": 2
+    },
+    {
+      "tabla": "CRM_Staging_Leads",
+      "registros": 2,
+      "exportados": 2
+    },
+    {
+      "tabla": "CRM_Staging_Oportunidades",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_Tareas",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_Trigger_Log",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "CRM_Triggers",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "Fact_Ventas_Consolidadas",
+      "registros": 3322,
+      "exportados": 3322
+    },
+    {
+      "tabla": "Finanzas_AuditoriaFinanciera",
+      "registros": 73,
+      "exportados": 73
+    },
+    {
+      "tabla": "Finanzas_Cat_CuentasBancarias",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "Finanzas_Cat_EstatusCuadreZ",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "Finanzas_Cat_EstatusTesoreria",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "Finanzas_ConfiguracionTPV_Sucursal",
+      "registros": 8,
+      "exportados": 8
+    },
+    {
+      "tabla": "Finanzas_CortesCaja",
+      "registros": 4129,
+      "exportados": 4129
+    },
+    {
+      "tabla": "Finanzas_CortesCaja_Backup_Demo_20260501",
+      "registros": 70,
+      "exportados": 70
+    },
+    {
+      "tabla": "Finanzas_CortesCaja_DetallePagos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Finanzas_CortesCaja_SyncLog",
+      "registros": 9323,
+      "exportados": 9323
+    },
+    {
+      "tabla": "Finanzas_CuadresZ",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Finanzas_CuadresZ_SyncLog",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Finanzas_CuentasPorPagar",
+      "registros": 25,
+      "exportados": 25
+    },
+    {
+      "tabla": "Finanzas_Depositos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Finanzas_EstatusCierre",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "Finanzas_EstatusPago",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "Finanzas_KPIs_Historico",
+      "registros": 4707,
+      "exportados": 4707
+    },
+    {
+      "tabla": "Finanzas_Pagos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Finanzas_Presupuestos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Finanzas_PropinasConfig",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "Finanzas_PropinasTPV_SyncLog",
+      "registros": 9580,
+      "exportados": 9580
+    },
+    {
+      "tabla": "Finanzas_SaldosBancarios",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Global_Cat_Bancos",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "Global_Cat_FormaPagoSAT",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "Inventario_Almacenes",
+      "registros": 39,
+      "exportados": 39
+    },
+    {
+      "tabla": "Inventario_Existencias",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Inventario_Movimientos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Inventario_MovimientosDetalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Inventario_TipoMovimiento",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "Inventarios_DiferenciasDetalle",
+      "registros": 24,
+      "exportados": 24
+    },
+    {
+      "tabla": "Inventarios_FisicosProcesados",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "Inventarios_ProcesadosAuto",
+      "registros": 158,
+      "exportados": 158
+    },
+    {
+      "tabla": "Inventarios_SinAsignar",
+      "registros": 16,
+      "exportados": 16
+    },
+    {
+      "tabla": "Manuales_Operativos",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "Operaciones_Tablaje_Auditoria",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Operaciones_Tablaje_Autorizaciones",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Operaciones_Tablaje_Costos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Operaciones_Tablaje_Documentos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Operaciones_Tablaje_EventosContables",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Operaciones_Tablaje_Mermas",
+      "registros": 7,
+      "exportados": 7
+    },
+    {
+      "tabla": "Operaciones_Tablaje_Ordenes",
+      "registros": 8,
+      "exportados": 8
+    },
+    {
+      "tabla": "Operaciones_Tablaje_OrdenesDetalle",
+      "registros": 22,
+      "exportados": 22
+    },
+    {
+      "tabla": "Operaciones_Tablaje_Plantillas",
+      "registros": 37,
+      "exportados": 37
+    },
+    {
+      "tabla": "Operaciones_Tablaje_PlantillasDetalle",
+      "registros": 151,
+      "exportados": 151
+    },
+    {
+      "tabla": "Operaciones_Tablaje_PlantillasVersiones",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Operaciones_Tablaje_Rendimientos",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "Operaciones_Tablaje_SyncErrores",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Operaciones_Tablaje_SyncLog",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "Operativo_AuditoriasProgramadas",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Operativo_BitacoraCompras",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Operativo_CargosResponsabilidad",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Operativo_DocumentosGenerados",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Operativo_HistorialAsignaciones",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Operativo_HistorialCargos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Operativo_Notificaciones_Log",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Operativo_PedidosProcesados",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Operativo_ResponsabilidadEconomica",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Operativo_TareasCompras",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "P4_14_Backup_Dups_Usuario_EmpresasAsignacion_20260606_P4_14",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "P4_14_Backup_Dups_Usuario_RolesAsignacion_20260606_P4_14",
+      "registros": 19,
+      "exportados": 19
+    },
+    {
+      "tabla": "P4_14_Backup_Dups_Usuario_ServidoresAsignacion_20260606_P4_14",
+      "registros": 184,
+      "exportados": 184
+    },
+    {
+      "tabla": "P4_14_Backup_Dups_Usuario_SucursalesAsignacion_20260606_P4_14",
+      "registros": 206,
+      "exportados": 206
+    },
+    {
+      "tabla": "P4_14_Backup_Orphans_Usuario_EmpresasAsignacion_20260606_P4_14",
+      "registros": 38,
+      "exportados": 38
+    },
+    {
+      "tabla": "P4_14_Backup_Orphans_Usuario_RolesAsignacion_20260606_P4_14",
+      "registros": 27,
+      "exportados": 27
+    },
+    {
+      "tabla": "P4_14_Backup_Orphans_Usuario_ServidoresAsignacion_20260606_P4_14",
+      "registros": 194,
+      "exportados": 194
+    },
+    {
+      "tabla": "P4_14_Backup_Orphans_Usuario_SucursalesAsignacion_20260606_P4_14",
+      "registros": 216,
+      "exportados": 216
+    },
+    {
+      "tabla": "Portal_Proveedores",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "Producto_Catalogo",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Producto_Equivalentes",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Producto_Familias",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Producto_Lineas",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Producto_Marcas",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Producto_Presentaciones",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Producto_SubFamilias",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Producto_Sustitutos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Products",
+      "registros": 37,
+      "exportados": 37
+    },
+    {
+      "tabla": "propinas_tpv_config",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "propinas_tpv_control",
+      "registros": 75114,
+      "exportados": 50000
+    },
+    {
+      "tabla": "propinas_tpv_historial",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Proveedor_Bancos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Proveedor_Catalogo",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "Proveedor_Categorias",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Proveedor_CategoriasCatalogo",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Proveedor_Contactos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Proveedor_CuentasBancarias",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Proveedor_Documentos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Proveedor_EstatusProveedor",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "Proveedor_EstatusSAT",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "Proveedor_EstatusSincronizacion",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "Proveedor_Evaluaciones",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Proveedor_Integracion",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Proveedor_Monedas",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "Proveedor_PortalSuppliers",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Proveedor_RegimenFiscal",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Proveedor_RiesgoProveedor",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "Proveedor_RolUsuarioPortal",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "Proveedor_SistemasIntegracion",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "Proveedor_TipoContacto",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "Proveedor_TipoDocumento",
+      "registros": 8,
+      "exportados": 8
+    },
+    {
+      "tabla": "Proveedor_TipoProveedor",
+      "registros": 7,
+      "exportados": 7
+    },
+    {
+      "tabla": "Proveedor_UsuariosPortal",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RBAC_Permisos",
+      "registros": 9,
+      "exportados": 9
+    },
+    {
+      "tabla": "RH_Auditoria_Fiscal",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Ausencias",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Calendario_Laboral",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Cat_Areas",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Cat_Beneficios",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Cat_ConceptosNomina",
+      "registros": 10,
+      "exportados": 10
+    },
+    {
+      "tabla": "RH_Cat_Departamentos",
+      "registros": 11,
+      "exportados": 11
+    },
+    {
+      "tabla": "RH_Cat_EstatusPeriodoNomina",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "RH_Cat_Jornadas",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Cat_MotivosBaja",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "RH_Cat_Puestos",
+      "registros": 37,
+      "exportados": 37
+    },
+    {
+      "tabla": "RH_Cat_RegimenContratacion",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Cat_Sucursales",
+      "registros": 8,
+      "exportados": 8
+    },
+    {
+      "tabla": "RH_Cat_SucursalesFiscal",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Cat_TiposAusencia",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "RH_Cat_TiposConceptoNomina",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "RH_Cat_TiposContrato",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "RH_Cat_TiposPeriodoNomina",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "RH_Cat_Turnos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Colaboradores_Beneficios",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Colaboradores_ContactosEmergencia",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Colaboradores_Dependientes",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Colaboradores_Documentos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Colaboradores_Domicilios",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Colaboradores_Expediente",
+      "registros": 510,
+      "exportados": 510
+    },
+    {
+      "tabla": "RH_Contratos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Finiquitos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Finiquitos_Detalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Flujo_Nomina_Sucursal",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_GruposNomina",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Historial_Puestos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Historial_Salarios",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Homologacion_Equivalencias",
+      "registros": 56,
+      "exportados": 56
+    },
+    {
+      "tabla": "RH_Importacion_Bitacora",
+      "registros": 7,
+      "exportados": 7
+    },
+    {
+      "tabla": "RH_Importacion_Staging",
+      "registros": 571,
+      "exportados": 571
+    },
+    {
+      "tabla": "RH_IMSS_Movimientos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Incidencias_Nomina",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Nomina",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Nomina_Detalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Nomina_Dispersion",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Nomina_Recibos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Periodos_Nomina",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Prestamos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Prestamos_Detalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Reloj_Checador",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Vacaciones_Movimientos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "RH_Vacaciones_Saldos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Scheduler_BitacoraJobs",
+      "registros": 116599,
+      "exportados": 50000
+    },
+    {
+      "tabla": "Scheduler_InventariosProcesados",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Scheduler_PedidosProcesados",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Servidores_Conexiones",
+      "registros": 23,
+      "exportados": 23
+    },
+    {
+      "tabla": "Servidores_Conexiones_backup_tipos_enriq_20260513_0840",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "Servidores_Conexiones_backup_tipos_mov_20260513_0729",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "Servidores_Conexiones_Log",
+      "registros": 40,
+      "exportados": 40
+    },
+    {
+      "tabla": "Servidores_ConexionEstado",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Servidores_Status",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Sesiones",
+      "registros": 988,
+      "exportados": 988
+    },
+    {
+      "tabla": "SesionesHistorico",
+      "registros": 977,
+      "exportados": 977
+    },
+    {
+      "tabla": "Sistema_AlertasDestinatarios",
+      "registros": 2,
+      "exportados": 2
+    },
+    {
+      "tabla": "Sistema_Capacidades",
+      "registros": 40,
+      "exportados": 40
+    },
+    {
+      "tabla": "Sistema_Catalogo",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "Sistema_ConfiguracionOperativa",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "Sistema_ConsultasCustom",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "Sistema_DeudaTecnica_TablasDuplicadas",
+      "registros": 9,
+      "exportados": 9
+    },
+    {
+      "tabla": "Sistema_Empresas",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "Sistema_EmpresasAlias",
+      "registros": 12,
+      "exportados": 12
+    },
+    {
+      "tabla": "Sistema_EmpresasMongoMap",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "Sistema_EmpresasServidores",
+      "registros": 7,
+      "exportados": 7
+    },
+    {
+      "tabla": "Sistema_Gobierno_Tablas",
+      "registros": 428,
+      "exportados": 428
+    },
+    {
+      "tabla": "Sistema_HorariosServicioUnidad",
+      "registros": 35,
+      "exportados": 35
+    },
+    {
+      "tabla": "Sistema_MapeoColumnasVersion",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Sistema_MapeoTablasVersion",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Sistema_Migracion_MongoSQL_Mapeo",
+      "registros": 8,
+      "exportados": 8
+    },
+    {
+      "tabla": "Sistema_MigracionMongoColecciones",
+      "registros": 16,
+      "exportados": 16
+    },
+    {
+      "tabla": "Sistema_Modulos",
+      "registros": 28,
+      "exportados": 28
+    },
+    {
+      "tabla": "Sistema_ModulosMenus",
+      "registros": 52,
+      "exportados": 52
+    },
+    {
+      "tabla": "Sistema_ModulosPermisos",
+      "registros": 13,
+      "exportados": 13
+    },
+    {
+      "tabla": "Sistema_ModulosVisibilidad",
+      "registros": 16,
+      "exportados": 16
+    },
+    {
+      "tabla": "Sistema_NotificacionesConfig",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "Sistema_Queries",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "Sistema_RBAC_Permisos",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "Sistema_RBAC_Roles",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "Sistema_RBAC_RolesPermisos",
+      "registros": 18,
+      "exportados": 18
+    },
+    {
+      "tabla": "Sistema_ServidoresConexionEstado",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "Sistema_ServidoresEstado",
+      "registros": 13,
+      "exportados": 13
+    },
+    {
+      "tabla": "Sistema_ServidoresSucursalesConfig",
+      "registros": 7,
+      "exportados": 7
+    },
+    {
+      "tabla": "Sistema_ServidorSucursalesConfig",
+      "registros": 7,
+      "exportados": 7
+    },
+    {
+      "tabla": "Sistema_Sucursales",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "Sistema_SucursalServidorConfig",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Sistema_SucursalServidorMapeo",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "Sistema_Tipos",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "Sistema_TiposVariantes",
+      "registros": 19,
+      "exportados": 19
+    },
+    {
+      "tabla": "Sistema_TurnosOperativosUnidad",
+      "registros": 20,
+      "exportados": 20
+    },
+    {
+      "tabla": "Sistema_UnidadesNegocioPerfilDigital",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "Sistema_VersionesSistemas",
+      "registros": 7,
+      "exportados": 7
+    },
+    {
+      "tabla": "Sync_Control_Ejecuciones",
+      "registros": 3398,
+      "exportados": 3398
+    },
+    {
+      "tabla": "Sync_Customers",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Sync_Impuestos_Origen",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Sync_Inventory",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Sync_KPI_Ventas_Unidades",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Sync_Logs",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "Sync_Menus",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "Sync_Mesas",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Sync_Metas_Comerciales",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Sync_Movimientos_Detalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Sync_PAX_Detalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Sync_Precios_Historicos",
+      "registros": 5642,
+      "exportados": 5642
+    },
+    {
+      "tabla": "Sync_Productos",
+      "registros": 9905,
+      "exportados": 9905
+    },
+    {
+      "tabla": "Sync_Productos_Elaborados",
+      "registros": 3893,
+      "exportados": 3893
+    },
+    {
+      "tabla": "Sync_Productos_Familias",
+      "registros": 189,
+      "exportados": 189
+    },
+    {
+      "tabla": "Sync_Productos_Insumos",
+      "registros": 11735,
+      "exportados": 11735
+    },
+    {
+      "tabla": "Sync_Productos_Recetas",
+      "registros": 13313,
+      "exportados": 13313
+    },
+    {
+      "tabla": "Sync_Productos_SubFamilias",
+      "registros": 264,
+      "exportados": 264
+    },
+    {
+      "tabla": "Sync_Purchases",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Sync_Response_Cache",
+      "registros": 2,
+      "exportados": 2
+    },
+    {
+      "tabla": "Sync_Sales",
+      "registros": 79,
+      "exportados": 79
+    },
+    {
+      "tabla": "Sync_Ticket_Perfecto",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Sync_Token_Ledger",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Sync_Ventas_Historicas",
+      "registros": 33,
+      "exportados": 33
+    },
+    {
+      "tabla": "Sync_Ventas_PorDiaSemana",
+      "registros": 28,
+      "exportados": 28
+    },
+    {
+      "tabla": "Sync_Ventas_PorHora",
+      "registros": 605,
+      "exportados": 605
+    },
+    {
+      "tabla": "Sync_Vtiger_Contactos",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "Sync_Vtiger_Cuentas",
+      "registros": 2,
+      "exportados": 2
+    },
+    {
+      "tabla": "Sync_Vtiger_Leads",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "Sync_Vtiger_Log",
+      "registros": 1124,
+      "exportados": 1124
+    },
+    {
+      "tabla": "Sync_Vtiger_Oportunidades",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "Sys_Roles",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "Sys_Scheduler_Jobs",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "Sys_Usuarios",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Tablajeria_ConfigContable",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Tablajeria_CosteoDetalle",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "Tablajeria_CosteoProduccion",
+      "registros": 2,
+      "exportados": 2
+    },
+    {
+      "tabla": "Tablajeria_MovimientosInventario",
+      "registros": 3,
+      "exportados": 3
+    },
+    {
+      "tabla": "Tablajeria_PolizasContables",
+      "registros": 2,
+      "exportados": 2
+    },
+    {
+      "tabla": "Tablajeria_PolizasDetalle",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "Tareas_Inventario",
+      "registros": 18,
+      "exportados": 18
+    },
+    {
+      "tabla": "Unidades_Negocio",
+      "registros": 5,
+      "exportados": 5
+    },
+    {
+      "tabla": "Usuario_Acciones",
+      "registros": 16,
+      "exportados": 16
+    },
+    {
+      "tabla": "Usuario_AlmacenesAsignacion",
+      "registros": 129,
+      "exportados": 129
+    },
+    {
+      "tabla": "Usuario_Autorizaciones",
+      "registros": 2,
+      "exportados": 2
+    },
+    {
+      "tabla": "Usuario_AutorizacionesDetalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Usuario_Catalogo",
+      "registros": 18,
+      "exportados": 18
+    },
+    {
+      "tabla": "Usuario_EmpresasAsignacion",
+      "registros": 38,
+      "exportados": 38
+    },
+    {
+      "tabla": "Usuario_LogAccesos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Usuario_LogActividades",
+      "registros": 10,
+      "exportados": 10
+    },
+    {
+      "tabla": "Usuario_LogRBACVerificacion",
+      "registros": 1600,
+      "exportados": 1600
+    },
+    {
+      "tabla": "Usuario_LogRecuperacion",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "Usuario_MatrizAutorizacion",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Usuario_MigracionMongoTrace",
+      "registros": 11,
+      "exportados": 11
+    },
+    {
+      "tabla": "Usuario_Modulos",
+      "registros": 56,
+      "exportados": 56
+    },
+    {
+      "tabla": "Usuario_PermisosRolModulo",
+      "registros": 459,
+      "exportados": 459
+    },
+    {
+      "tabla": "Usuario_PortalConfiguracion",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Usuario_RateLimitRecuperacion",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "Usuario_Roles",
+      "registros": 22,
+      "exportados": 22
+    },
+    {
+      "tabla": "Usuario_RolesAsignacion",
+      "registros": 33,
+      "exportados": 33
+    },
+    {
+      "tabla": "Usuario_ServidoresAsignacion",
+      "registros": 194,
+      "exportados": 194
+    },
+    {
+      "tabla": "Usuario_Sesiones",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Usuario_SucursalesAsignacion",
+      "registros": 216,
+      "exportados": 216
+    },
+    {
+      "tabla": "Usuario_TiposAutorizacion",
+      "registros": 7,
+      "exportados": 7
+    },
+    {
+      "tabla": "Usuario_TokensRecuperacion",
+      "registros": 2,
+      "exportados": 2
+    },
+    {
+      "tabla": "Venta_Cat_EstatusRemision",
+      "registros": 7,
+      "exportados": 7
+    },
+    {
+      "tabla": "Venta_CondicionesPago",
+      "registros": 2,
+      "exportados": 2
+    },
+    {
+      "tabla": "Venta_Cotizaciones",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Venta_CotizacionesDetalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Venta_CotizacionesEstatus",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "Venta_Detalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Venta_Encabezado",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Venta_Estatus",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "Venta_FormaPago",
+      "registros": 4,
+      "exportados": 4
+    },
+    {
+      "tabla": "Venta_ListasPrecios",
+      "registros": 1,
+      "exportados": 1
+    },
+    {
+      "tabla": "Venta_ListasPreciosDetalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Venta_Pagos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Venta_Pedidos",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Venta_PedidosDetalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Venta_PedidosEstatus",
+      "registros": 6,
+      "exportados": 6
+    },
+    {
+      "tabla": "Venta_Remisiones",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Venta_RemisionesDetalle",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Venta_RemisionesHistorial",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Workflow_DecisionesAuditoria",
+      "registros": 0,
+      "exportados": 0
+    },
+    {
+      "tabla": "Workflow_DetalleDiferencias",
+      "registros": 1960,
+      "exportados": 1960
+    },
+    {
+      "tabla": "Workflow_Inventarios",
+      "registros": 18,
+      "exportados": 18
+    },
+    {
+      "tabla": "Workflow_Justificaciones",
+      "registros": 0,
+      "exportados": 0
+    }
+  ]
+}

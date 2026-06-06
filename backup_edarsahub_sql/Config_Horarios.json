@@ -1,0 +1,23 @@
+[
+  {
+    "Id": 1,
+    "TenantID": 1,
+    "NombrePeriodo": "DESAYUNO",
+    "HoraInicio": "07:00:00",
+    "HoraFin": "12:59:59"
+  },
+  {
+    "Id": 2,
+    "TenantID": 1,
+    "NombrePeriodo": "COMIDA",
+    "HoraInicio": "13:00:00",
+    "HoraFin": "18:59:59"
+  },
+  {
+    "Id": 3,
+    "TenantID": 1,
+    "NombrePeriodo": "CENA",
+    "HoraInicio": "19:00:00",
+    "HoraFin": "23:59:59"
+  }
+]

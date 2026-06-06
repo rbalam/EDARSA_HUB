@@ -1,0 +1,68 @@
+[
+  {
+    "SistemaTipoID": 1,
+    "CodigoSistema": "SOFTRESTAURANT_PRO",
+    "NombreSistema": "SoftRestaurant Pro",
+    "Descripcion": "Sistema POS SoftRestaurant para restaurantes",
+    "Activo": true,
+    "FechaCreacion": "2026-05-15T02:46:31.620000",
+    "FechaActualizacion": null,
+    "CreatedBy": "DML_FASE_CATALOGO",
+    "UpdatedBy": null
+  },
+  {
+    "SistemaTipoID": 2,
+    "CodigoSistema": "MPRO",
+    "NombreSistema": "ManagementPro",
+    "Descripcion": "Sistema ManagementPro para gestión centralizada",
+    "Activo": true,
+    "FechaCreacion": "2026-05-15T02:46:31.653333",
+    "FechaActualizacion": null,
+    "CreatedBy": "DML_FASE_CATALOGO",
+    "UpdatedBy": null
+  },
+  {
+    "SistemaTipoID": 3,
+    "CodigoSistema": "API_LOCAL",
+    "NombreSistema": "API Local",
+    "Descripcion": "API local para sincronización en tiempo real de ventas del día",
+    "Activo": true,
+    "FechaCreacion": "2026-05-15T02:46:31.683333",
+    "FechaActualizacion": null,
+    "CreatedBy": "DML_FASE_CATALOGO",
+    "UpdatedBy": null
+  },
+  {
+    "SistemaTipoID": 4,
+    "CodigoSistema": "EDARSAHUB_SQL",
+    "NombreSistema": "EDARSAHUB SQL Server",
+    "Descripcion": "Base de datos centralizada EDARSAHUB",
+    "Activo": true,
+    "FechaCreacion": "2026-05-15T02:46:31.716666",
+    "FechaActualizacion": null,
+    "CreatedBy": "DML_FASE_CATALOGO",
+    "UpdatedBy": null
+  },
+  {
+    "SistemaTipoID": 5,
+    "CodigoSistema": "OTRO",
+    "NombreSistema": "Otro",
+    "Descripcion": "Otros sistemas no clasificados",
+    "Activo": true,
+    "FechaCreacion": "2026-05-15T02:46:31.746666",
+    "FechaActualizacion": null,
+    "CreatedBy": "DML_FASE_CATALOGO",
+    "UpdatedBy": null
+  },
+  {
+    "SistemaTipoID": 6,
+    "CodigoSistema": "ENTERPRISE",
+    "NombreSistema": "Enterprise",
+    "Descripcion": "Sofrestaurant Enterprise",
+    "Activo": true,
+    "FechaCreacion": "2026-05-18T20:18:34.170000",
+    "FechaActualizacion": null,
+    "CreatedBy": null,
+    "UpdatedBy": null
+  }
+]

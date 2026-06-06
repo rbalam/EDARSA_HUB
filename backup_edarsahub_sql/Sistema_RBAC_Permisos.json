@@ -1,0 +1,52 @@
+[
+  {
+    "permiso_id": "88355c9b-3203-4bc5-aae0-3984daea9dfb",
+    "codigo": "INTELIGENCIA_COMERCIAL_EXPORTAR",
+    "nombre": "Exportar Inteligencia Comercial",
+    "modulo": "Comercial",
+    "descripcion": null,
+    "activo": true,
+    "fecha_alta": "2026-06-02T03:48:41.475444",
+    "fecha_ultima_actualizacion": "2026-06-02T03:48:41.475444"
+  },
+  {
+    "permiso_id": "65f44317-377c-492b-83ea-6362b254c07f",
+    "codigo": "INTELIGENCIA_COMERCIAL_VER",
+    "nombre": "Ver Inteligencia Comercial",
+    "modulo": "Comercial",
+    "descripcion": null,
+    "activo": true,
+    "fecha_alta": "2026-06-02T03:48:41.475444",
+    "fecha_ultima_actualizacion": "2026-06-02T03:48:41.475444"
+  },
+  {
+    "permiso_id": "ca22146b-a741-4f3a-b3a6-7c61d852a04a",
+    "codigo": "INTELIGENCIA_COMERCIAL_ADMIN",
+    "nombre": "Administrar Inteligencia Comercial",
+    "modulo": "Comercial",
+    "descripcion": null,
+    "activo": true,
+    "fecha_alta": "2026-06-02T03:48:41.475444",
+    "fecha_ultima_actualizacion": "2026-06-02T03:48:41.475444"
+  },
+  {
+    "permiso_id": "733f2780-5515-448c-bf74-96aa9264cd17",
+    "codigo": "INTELIGENCIA_COMERCIAL_SYNC",
+    "nombre": "Ejecutar Sincronización Inteligencia Comercial",
+    "modulo": "Comercial",
+    "descripcion": null,
+    "activo": true,
+    "fecha_alta": "2026-06-02T03:48:41.475444",
+    "fecha_ultima_actualizacion": "2026-06-02T03:48:41.475444"
+  },
+  {
+    "permiso_id": "01d997a1-45c1-41ab-8455-9f9e1d54473d",
+    "codigo": "INTELIGENCIA_COMERCIAL_CONFIGURAR",
+    "nombre": "Configurar Inteligencia Comercial",
+    "modulo": "Comercial",
+    "descripcion": null,
+    "activo": true,
+    "fecha_alta": "2026-06-02T03:48:41.475444",
+    "fecha_ultima_actualizacion": "2026-06-02T03:48:41.475444"
+  }
+]

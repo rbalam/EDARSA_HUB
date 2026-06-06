@@ -1,0 +1,23 @@
+[
+  {
+    "procesado_id": "7aff2cfb-9dcb-4288-a9f8-7abff46aeafe",
+    "sistema_origen": "MPRO",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "sucursal_id": "0021",
+    "almacen_id": "0001",
+    "folio_inventario": "QR-0000952",
+    "fecha_inventario": "2026-04-12",
+    "hash_verificacion": "56f557469c7dbb4802cecac99e6862126ccdd481a987e1b26cb55f5da2d77061",
+    "estado": "EN_PROCESO",
+    "heartbeat_at": null,
+    "fecha_procesado": null,
+    "error_detalle": null,
+    "ruta_archivo_excel": null,
+    "created_at": "2026-04-17T03:05:31.710000",
+    "updated_at": null,
+    "created_by": "CAB003_FASE1B3B_LOTE_20260417_030531",
+    "updated_by": null,
+    "comentario": "INVENTARIO FÍSICO CONSOLIDADO",
+    "estado_inventario_origen": "AP"
+  }
+]

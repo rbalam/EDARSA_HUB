@@ -1,0 +1,37 @@
+[
+  {
+    "EstatusPagoID": 1,
+    "Codigo": "PENDIENTE",
+    "Descripcion": "Pendiente de pago",
+    "ColorHex": "#EAB308",
+    "Activo": true
+  },
+  {
+    "EstatusPagoID": 2,
+    "Codigo": "PARCIAL",
+    "Descripcion": "Pago parcial",
+    "ColorHex": "#3B82F6",
+    "Activo": true
+  },
+  {
+    "EstatusPagoID": 3,
+    "Codigo": "PAGADO",
+    "Descripcion": "Pagado totalmente",
+    "ColorHex": "#22C55E",
+    "Activo": true
+  },
+  {
+    "EstatusPagoID": 4,
+    "Codigo": "CANCELADO",
+    "Descripcion": "Cancelado",
+    "ColorHex": "#EF4444",
+    "Activo": true
+  },
+  {
+    "EstatusPagoID": 5,
+    "Codigo": "VENCIDO",
+    "Descripcion": "Vencido",
+    "ColorHex": "#DC2626",
+    "Activo": true
+  }
+]

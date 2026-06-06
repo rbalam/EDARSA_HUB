@@ -1,0 +1,57 @@
+[
+  {
+    "EstatusID": 1,
+    "Codigo": "NUEVO",
+    "Nombre": "Nuevo",
+    "Descripcion": null,
+    "Orden": 1,
+    "ColorHex": "#3B82F6",
+    "EsFinal": false,
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.653000"
+  },
+  {
+    "EstatusID": 2,
+    "Codigo": "CONTACTADO",
+    "Nombre": "Contactado",
+    "Descripcion": null,
+    "Orden": 2,
+    "ColorHex": "#8B5CF6",
+    "EsFinal": false,
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.653000"
+  },
+  {
+    "EstatusID": 3,
+    "Codigo": "CALIFICADO",
+    "Nombre": "Calificado",
+    "Descripcion": null,
+    "Orden": 3,
+    "ColorHex": "#10B981",
+    "EsFinal": false,
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.653000"
+  },
+  {
+    "EstatusID": 4,
+    "Codigo": "DESCALIFICADO",
+    "Nombre": "Descalificado",
+    "Descripcion": null,
+    "Orden": 4,
+    "ColorHex": "#EF4444",
+    "EsFinal": true,
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.653000"
+  },
+  {
+    "EstatusID": 5,
+    "Codigo": "CONVERTIDO",
+    "Nombre": "Convertido",
+    "Descripcion": null,
+    "Orden": 5,
+    "ColorHex": "#059669",
+    "EsFinal": true,
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.653000"
+  }
+]

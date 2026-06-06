@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"codigo":{"$numberInt":"1"}},"name":"codigo_1","unique":true}],"uuid":"20be556411d84213a410fabd70724685","collectionName":"sec_modulos_sistema","type":"collection"}

@@ -1,0 +1,57 @@
+[
+  {
+    "TamanoID": 1,
+    "Codigo": "MICRO",
+    "Nombre": "Micro (1-10)",
+    "Descripcion": null,
+    "RangoEmpleadosMin": 1,
+    "RangoEmpleadosMax": 10,
+    "Orden": 1,
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.927000"
+  },
+  {
+    "TamanoID": 2,
+    "Codigo": "PEQUENA",
+    "Nombre": "Pequeña (11-50)",
+    "Descripcion": null,
+    "RangoEmpleadosMin": 11,
+    "RangoEmpleadosMax": 50,
+    "Orden": 2,
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.927000"
+  },
+  {
+    "TamanoID": 3,
+    "Codigo": "MEDIANA",
+    "Nombre": "Mediana (51-250)",
+    "Descripcion": null,
+    "RangoEmpleadosMin": 51,
+    "RangoEmpleadosMax": 250,
+    "Orden": 3,
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.927000"
+  },
+  {
+    "TamanoID": 4,
+    "Codigo": "GRANDE",
+    "Nombre": "Grande (251-1000)",
+    "Descripcion": null,
+    "RangoEmpleadosMin": 251,
+    "RangoEmpleadosMax": 1000,
+    "Orden": 4,
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.927000"
+  },
+  {
+    "TamanoID": 5,
+    "Codigo": "ENTERPRISE",
+    "Nombre": "Enterprise (1000+)",
+    "Descripcion": null,
+    "RangoEmpleadosMin": 1001,
+    "RangoEmpleadosMax": null,
+    "Orden": 5,
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.927000"
+  }
+]

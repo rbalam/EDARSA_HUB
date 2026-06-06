@@ -1,0 +1,23 @@
+[
+  {
+    "MonedaID": 1,
+    "ClaveMoneda": "MXN",
+    "Descripcion": "PESO MEXICANO",
+    "Simbolo": "$",
+    "Activo": true
+  },
+  {
+    "MonedaID": 2,
+    "ClaveMoneda": "USD",
+    "Descripcion": "DOLAR AMERICANO",
+    "Simbolo": "$",
+    "Activo": true
+  },
+  {
+    "MonedaID": 3,
+    "ClaveMoneda": "EUR",
+    "Descripcion": "EURO",
+    "Simbolo": "€",
+    "Activo": true
+  }
+]

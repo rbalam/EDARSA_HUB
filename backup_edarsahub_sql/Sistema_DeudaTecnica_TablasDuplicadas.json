@@ -1,0 +1,83 @@
+[
+  {
+    "Id": "963f2351-ea26-4490-b171-1a6eeaf8dd4a",
+    "TablaDuplicada": "RBAC_UsuariosRoles",
+    "TablaCanonica": "Usuario_RolesAsignacion",
+    "Motivo": "Duplicada/transición.",
+    "Estado": "DUPLICADA_NO_USAR_COMO_FUENTE_FINAL",
+    "FechaRegistro": "2026-06-05T22:42:34.730000",
+    "FechaActualizacion": "2026-06-05T23:08:46.753000"
+  },
+  {
+    "Id": "52ce61fb-2515-4463-bffc-3d1415250ce2",
+    "TablaDuplicada": "RBAC_UsuariosSucursales",
+    "TablaCanonica": "Usuario_SucursalesAsignacion",
+    "Motivo": "Duplicada/transición.",
+    "Estado": "DUPLICADA_NO_USAR_COMO_FUENTE_FINAL",
+    "FechaRegistro": "2026-06-05T22:42:34.797000",
+    "FechaActualizacion": "2026-06-05T23:08:46.950000"
+  },
+  {
+    "Id": "17f02c02-5379-4374-ac86-5aeddb1fbb8d",
+    "TablaDuplicada": "RBAC_Permisos",
+    "TablaCanonica": "Usuario_Roles / permisos canónicos existentes",
+    "Motivo": "Tabla creada en P4; no usar como fuente final.",
+    "Estado": "PENDIENTE_DEFINIR_TABLA_CANONICA_PERMISOS",
+    "FechaRegistro": "2026-06-05T22:42:34.663000",
+    "FechaActualizacion": "2026-06-06T00:01:30.430000"
+  },
+  {
+    "Id": "5f1d85fc-6d49-442d-8474-9449d2e48176",
+    "TablaDuplicada": "RBAC_AuditLog",
+    "TablaCanonica": "Auditoría canónica del sistema",
+    "Motivo": "Duplicada/transición.",
+    "Estado": "DUPLICADA_NO_USAR_COMO_FUENTE_FINAL",
+    "FechaRegistro": "2026-06-05T22:42:34.857000",
+    "FechaActualizacion": "2026-06-05T23:08:47.147000"
+  },
+  {
+    "Id": "247dc17b-c070-4401-9971-9bb256ee12c2",
+    "TablaDuplicada": "RBAC_Roles",
+    "TablaCanonica": "Usuario_Roles",
+    "Motivo": "Tabla creada en P4; duplicada frente a Usuario_Roles.",
+    "Estado": "DUPLICADA_NO_USAR_COMO_FUENTE_FINAL",
+    "FechaRegistro": "2026-06-05T22:42:34.627000",
+    "FechaActualizacion": "2026-06-05T23:08:46.463000"
+  },
+  {
+    "Id": "4652fb87-3aeb-4488-b7e8-a32e58adbb8b",
+    "TablaDuplicada": "Sys_Roles",
+    "TablaCanonica": "Usuario_Roles",
+    "Motivo": "Sys_Roles es catálogo legacy/simple; Usuario_Roles es catálogo canónico moderno.",
+    "Estado": "DUPLICADA_NO_USAR_COMO_FUENTE_FINAL",
+    "FechaRegistro": "2026-06-05T23:08:46.367000",
+    "FechaActualizacion": null
+  },
+  {
+    "Id": "95021dea-7d77-4eba-b38d-b3a9d1199819",
+    "TablaDuplicada": "RBAC_RolesPermisos",
+    "TablaCanonica": "Usuario_RolesAsignacion",
+    "Motivo": "Duplicada/transición.",
+    "Estado": "DUPLICADA_NO_USAR_COMO_FUENTE_FINAL",
+    "FechaRegistro": "2026-06-05T22:42:34.697000",
+    "FechaActualizacion": "2026-06-05T23:08:46.657000"
+  },
+  {
+    "Id": "1bd64e98-b1c7-4bf3-9a77-ea60bb0ee0cf",
+    "TablaDuplicada": "RBAC_UsuariosEmpresas",
+    "TablaCanonica": "Usuario_EmpresasAsignacion",
+    "Motivo": "Duplicada/transición.",
+    "Estado": "DUPLICADA_NO_USAR_COMO_FUENTE_FINAL",
+    "FechaRegistro": "2026-06-05T22:42:34.760000",
+    "FechaActualizacion": "2026-06-05T23:08:46.850000"
+  },
+  {
+    "Id": "1d33ec78-9479-4e2c-bbc5-fbd170f8d524",
+    "TablaDuplicada": "RBAC_UsuariosUnidadesNegocio",
+    "TablaCanonica": "Derivado de Usuario_SucursalesAsignacion + catálogo sucursales",
+    "Motivo": "Duplicada/transición.",
+    "Estado": "DUPLICADA_NO_USAR_COMO_FUENTE_FINAL",
+    "FechaRegistro": "2026-06-05T22:42:34.823000",
+    "FechaActualizacion": "2026-06-05T23:08:47.050000"
+  }
+]

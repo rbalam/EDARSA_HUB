@@ -1,0 +1,30 @@
+[
+  {
+    "TipoPeriodoNominaID": 1,
+    "CodigoTipoPeriodo": "SEMANAL",
+    "Descripcion": "Semanal",
+    "DiasPeriodo": 7,
+    "Activo": true
+  },
+  {
+    "TipoPeriodoNominaID": 2,
+    "CodigoTipoPeriodo": "CATORCENAL",
+    "Descripcion": "Catorcenal",
+    "DiasPeriodo": 14,
+    "Activo": true
+  },
+  {
+    "TipoPeriodoNominaID": 3,
+    "CodigoTipoPeriodo": "QUINCENAL",
+    "Descripcion": "Quincenal",
+    "DiasPeriodo": 15,
+    "Activo": true
+  },
+  {
+    "TipoPeriodoNominaID": 4,
+    "CodigoTipoPeriodo": "MENSUAL",
+    "Descripcion": "Mensual",
+    "DiasPeriodo": 30,
+    "Activo": true
+  }
+]

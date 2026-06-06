@@ -1,0 +1,17 @@
+[
+  {
+    "RolPortalClienteID": 1,
+    "Descripcion": "ADMINISTRADOR",
+    "Activo": true
+  },
+  {
+    "RolPortalClienteID": 2,
+    "Descripcion": "COMPRADOR",
+    "Activo": true
+  },
+  {
+    "RolPortalClienteID": 3,
+    "Descripcion": "CONSULTA",
+    "Activo": true
+  }
+]

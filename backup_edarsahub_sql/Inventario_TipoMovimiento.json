@@ -1,0 +1,50 @@
+[
+  {
+    "TipoMovimientoID": 1,
+    "Codigo": "ENTRADA_COMPRA",
+    "Descripcion": "Entrada por recepción de compra",
+    "Naturaleza": "E",
+    "AfectaCostoPromedio": true,
+    "Activo": true
+  },
+  {
+    "TipoMovimientoID": 2,
+    "Codigo": "SALIDA_DEV_PROV",
+    "Descripcion": "Salida por devolución a proveedor",
+    "Naturaleza": "S",
+    "AfectaCostoPromedio": true,
+    "Activo": true
+  },
+  {
+    "TipoMovimientoID": 3,
+    "Codigo": "AJUSTE_ENTRADA",
+    "Descripcion": "Ajuste de inventario de entrada",
+    "Naturaleza": "E",
+    "AfectaCostoPromedio": true,
+    "Activo": true
+  },
+  {
+    "TipoMovimientoID": 4,
+    "Codigo": "AJUSTE_SALIDA",
+    "Descripcion": "Ajuste de inventario de salida",
+    "Naturaleza": "S",
+    "AfectaCostoPromedio": true,
+    "Activo": true
+  },
+  {
+    "TipoMovimientoID": 5,
+    "Codigo": "TRASPASO_ENTRADA",
+    "Descripcion": "Entrada por traspaso",
+    "Naturaleza": "E",
+    "AfectaCostoPromedio": false,
+    "Activo": true
+  },
+  {
+    "TipoMovimientoID": 6,
+    "Codigo": "TRASPASO_SALIDA",
+    "Descripcion": "Salida por traspaso",
+    "Naturaleza": "S",
+    "AfectaCostoPromedio": false,
+    "Activo": true
+  }
+]

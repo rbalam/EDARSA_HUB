@@ -1,0 +1,13 @@
+[
+  {
+    "Id": "f22ace40-d89e-43cc-9d0e-2d994a688f40",
+    "MongoId": "69df277d8d075e7f605af276",
+    "ColeccionOrigen": "propinas_config",
+    "PayloadMongo": "{\"_id\": {\"$oid\": \"69df277d8d075e7f605af276\"}, \"id\": \"ac19db9a-380b-41b1-89d0-e95cdb81e768\", \"alcance\": {\"tipo\": \"GLOBAL\", \"server_id\": null, \"empresa_id\": null, \"sucursal_id\": null}, \"vigencia\": {\"fecha_inicio\": {\"$date\": \"2026-04-15T05:51:57.557Z\"}, \"fecha_fin\": null, \"activa\": true}, \"parametros\": {\"porcentaje_comision\": 0.02, \"tolerancia_descuadre\": 5.0, \"dias_para_cuadrar\": 1}, \"formas_pago_tpv_softrestaurant\": {\"conceptos\": [10, 11, 12], \"nombres\": [\"VISA\", \"MASTERCARD\", \"AMEX\"]}, \"created_at\": {\"$date\": \"2026-04-15T05:51:57.557Z\"}, \"created_by\": \"sistema\", \"updated_at\": {\"$date\": \"2026-04-15T05:51:57.557Z\"}, \"updated_by\": \"sistema\", \"motivo_cambio\": \"Configuración inicial del módulo\"}",
+    "MigradoDesdeMongo": true,
+    "Activo": true,
+    "FechaMigracion": "2026-06-05T19:13:42.977000",
+    "FechaCreacion": "2026-06-05T19:13:42.977000",
+    "FechaActualizacion": null
+  }
+]

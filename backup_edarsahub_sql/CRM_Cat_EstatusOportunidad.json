@@ -1,0 +1,67 @@
+[
+  {
+    "EstatusID": 1,
+    "Codigo": "ABIERTA",
+    "Nombre": "Abierta",
+    "Descripcion": null,
+    "Orden": 1,
+    "ColorHex": "#3B82F6",
+    "EsFinal": false,
+    "EsGanada": false,
+    "EsPerdida": false,
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.710000"
+  },
+  {
+    "EstatusID": 2,
+    "Codigo": "GANADA",
+    "Nombre": "Ganada",
+    "Descripcion": null,
+    "Orden": 2,
+    "ColorHex": "#059669",
+    "EsFinal": true,
+    "EsGanada": true,
+    "EsPerdida": false,
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.710000"
+  },
+  {
+    "EstatusID": 3,
+    "Codigo": "PERDIDA",
+    "Nombre": "Perdida",
+    "Descripcion": null,
+    "Orden": 3,
+    "ColorHex": "#EF4444",
+    "EsFinal": true,
+    "EsGanada": false,
+    "EsPerdida": true,
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.710000"
+  },
+  {
+    "EstatusID": 4,
+    "Codigo": "PAUSADA",
+    "Nombre": "Pausada",
+    "Descripcion": null,
+    "Orden": 4,
+    "ColorHex": "#F59E0B",
+    "EsFinal": false,
+    "EsGanada": false,
+    "EsPerdida": false,
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.710000"
+  },
+  {
+    "EstatusID": 5,
+    "Codigo": "CANCELADA",
+    "Nombre": "Cancelada",
+    "Descripcion": null,
+    "Orden": 5,
+    "ColorHex": "#6B7280",
+    "EsFinal": true,
+    "EsGanada": false,
+    "EsPerdida": false,
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.710000"
+  }
+]

@@ -1,0 +1,22 @@
+[
+  {
+    "EstatusSATID": 1,
+    "Descripcion": "PENDIENTE",
+    "Activo": true
+  },
+  {
+    "EstatusSATID": 2,
+    "Descripcion": "OK",
+    "Activo": true
+  },
+  {
+    "EstatusSATID": 3,
+    "Descripcion": "OBSERVADO",
+    "Activo": true
+  },
+  {
+    "EstatusSATID": 4,
+    "Descripcion": "BLOQUEADO",
+    "Activo": true
+  }
+]

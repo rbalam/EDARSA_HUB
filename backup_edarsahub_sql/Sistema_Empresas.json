@@ -1,0 +1,62 @@
+[
+  {
+    "EmpresaID": 1,
+    "CodigoEmpresa": "ORIGEN",
+    "NombreEmpresa": "ORIGEN",
+    "NombreComercial": "Restaurante Origen S.A. de C.V.",
+    "RFC": null,
+    "Activo": true,
+    "FechaAlta": "2026-05-08T20:06:32.280000",
+    "FechaModificacion": null,
+    "CreatedBy": "MIGRACION_FASE_A2",
+    "UpdatedBy": null
+  },
+  {
+    "EmpresaID": 2,
+    "CodigoEmpresa": "130QRO",
+    "NombreEmpresa": "130 QRO",
+    "NombreComercial": "130 Grados Querétaro S.A. de C.V.",
+    "RFC": null,
+    "Activo": true,
+    "FechaAlta": "2026-05-08T20:06:32.426666",
+    "FechaModificacion": null,
+    "CreatedBy": "MIGRACION_FASE_A2",
+    "UpdatedBy": null
+  },
+  {
+    "EmpresaID": 3,
+    "CodigoEmpresa": "CIENFUEGOS",
+    "NombreEmpresa": "CIENFUEGOS",
+    "NombreComercial": "Restaurante Cienfuegos S.A. de C.V.",
+    "RFC": null,
+    "Activo": true,
+    "FechaAlta": "2026-05-08T20:06:32.553333",
+    "FechaModificacion": null,
+    "CreatedBy": "MIGRACION_FASE_A2",
+    "UpdatedBy": null
+  },
+  {
+    "EmpresaID": 4,
+    "CodigoEmpresa": "ESTELAR",
+    "NombreEmpresa": "LA ESTELAR",
+    "NombreComercial": "La Estelar S.A. de C.V.",
+    "RFC": null,
+    "Activo": true,
+    "FechaAlta": "2026-05-08T20:06:32.683333",
+    "FechaModificacion": null,
+    "CreatedBy": "MIGRACION_FASE_A2",
+    "UpdatedBy": null
+  },
+  {
+    "EmpresaID": 5,
+    "CodigoEmpresa": "130MID",
+    "NombreEmpresa": "130 MID",
+    "NombreComercial": "130 Grados Mérida S.A. de C.V.",
+    "RFC": null,
+    "Activo": true,
+    "FechaAlta": "2026-05-08T20:06:32.813333",
+    "FechaModificacion": null,
+    "CreatedBy": "MIGRACION_FASE_A2",
+    "UpdatedBy": null
+  }
+]

@@ -1,0 +1,68 @@
+[
+  {
+    "id": 1,
+    "titulo": "Tablero Ejecutivo",
+    "label": "Tablero Ejecutivo",
+    "icon": "LayoutDashboard",
+    "route": "kpis",
+    "active": true,
+    "orden": 1,
+    "rol_permitido": "OPERADOR_EDARSA",
+    "ultima_actualizacion": "2026-05-31T21:19:17.400000"
+  },
+  {
+    "id": 2,
+    "titulo": "Marketing CRM",
+    "label": "Marketing CRM",
+    "icon": "Users",
+    "route": "crm",
+    "active": true,
+    "orden": 2,
+    "rol_permitido": "OPERADOR_EDARSA",
+    "ultima_actualizacion": "2026-05-31T21:19:17.430000"
+  },
+  {
+    "id": 3,
+    "titulo": "Ventas & Flujos (Emergent)",
+    "label": "Ventas (Emergent)",
+    "icon": "Cpu",
+    "route": "flows",
+    "active": true,
+    "orden": 3,
+    "rol_permitido": "OPERADOR_EDARSA",
+    "ultima_actualizacion": "2026-05-31T21:19:17.463000"
+  },
+  {
+    "id": 4,
+    "titulo": "Inventarios FinOps",
+    "label": "Inventarios FinOps",
+    "icon": "Database",
+    "route": "costos-placeholder",
+    "active": true,
+    "orden": 4,
+    "rol_permitido": "OPERADOR_EDARSA",
+    "ultima_actualizacion": "2026-05-31T21:19:17.497000"
+  },
+  {
+    "id": 5,
+    "titulo": "Soporte (Tickets)",
+    "label": "Soporte Tareas",
+    "icon": "LifeBuoy",
+    "route": "tickets",
+    "active": true,
+    "orden": 5,
+    "rol_permitido": "OPERADOR_EDARSA",
+    "ultima_actualizacion": "2026-05-31T21:19:17.530000"
+  },
+  {
+    "id": 6,
+    "titulo": "Inteligencia Comercial IA",
+    "label": "Inteligencia IA",
+    "icon": "BarChart3",
+    "route": "inteligencia-comercial",
+    "active": true,
+    "orden": 6,
+    "rol_permitido": "OPERADOR_EDARSA",
+    "ultima_actualizacion": "2026-06-01T10:28:08.080000"
+  }
+]

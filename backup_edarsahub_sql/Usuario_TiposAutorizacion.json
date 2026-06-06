@@ -1,0 +1,65 @@
+[
+  {
+    "TipoAutorizacionID": 1,
+    "CodigoTipoAutorizacion": "AUT_COMPRA_COT",
+    "NombreTipoAutorizacion": "Autorizacion cotizacion compra",
+    "Descripcion": "Autorizacion de cotizaciones de compra",
+    "ModuloID": 2,
+    "AccionID": 7,
+    "Activo": true
+  },
+  {
+    "TipoAutorizacionID": 2,
+    "CodigoTipoAutorizacion": "AUT_COMPRA_OC",
+    "NombreTipoAutorizacion": "Autorizacion orden de compra",
+    "Descripcion": "Autorizacion de ordenes de compra",
+    "ModuloID": 3,
+    "AccionID": 7,
+    "Activo": true
+  },
+  {
+    "TipoAutorizacionID": 3,
+    "CodigoTipoAutorizacion": "AUT_COMPRA_FACT",
+    "NombreTipoAutorizacion": "Autorizacion compra",
+    "Descripcion": "Autorizacion de compras",
+    "ModuloID": 4,
+    "AccionID": 7,
+    "Activo": true
+  },
+  {
+    "TipoAutorizacionID": 4,
+    "CodigoTipoAutorizacion": "AUT_TES_PAGOS",
+    "NombreTipoAutorizacion": "Autorizacion pago",
+    "Descripcion": "Autorizacion de pagos",
+    "ModuloID": 5,
+    "AccionID": 7,
+    "Activo": true
+  },
+  {
+    "TipoAutorizacionID": 5,
+    "CodigoTipoAutorizacion": "AUT_VENTA_LISTAS",
+    "NombreTipoAutorizacion": "Autorizacion lista de precios",
+    "Descripcion": "Autorizacion de listas de precios",
+    "ModuloID": 6,
+    "AccionID": 7,
+    "Activo": true
+  },
+  {
+    "TipoAutorizacionID": 6,
+    "CodigoTipoAutorizacion": "AUT_VENTA_COT",
+    "NombreTipoAutorizacion": "Autorizacion cotizacion de venta",
+    "Descripcion": "Autorizacion de cotizaciones de venta",
+    "ModuloID": 7,
+    "AccionID": 7,
+    "Activo": true
+  },
+  {
+    "TipoAutorizacionID": 7,
+    "CodigoTipoAutorizacion": "AUT_VENTA_PED",
+    "NombreTipoAutorizacion": "Autorizacion pedido de venta",
+    "Descripcion": "Autorizacion de pedidos de venta",
+    "ModuloID": 8,
+    "AccionID": 7,
+    "Activo": true
+  }
+]

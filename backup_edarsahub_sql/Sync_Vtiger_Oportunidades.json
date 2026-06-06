@@ -1,0 +1,27 @@
+[
+  {
+    "SyncID": "38276001-5ad5-4013-b4c1-a34bfeb2714d",
+    "VtigerID": "13x23",
+    "OportunidadNo": "POT1",
+    "NombreOportunidad": "EDARSA HUB",
+    "Monto": 0.0,
+    "CuentaVtigerID": "",
+    "ContactoVtigerID": "",
+    "FechaCierre": "2026-05-28",
+    "EtapaVenta": "Prospecting",
+    "Probabilidad": 10,
+    "FuenteLead": "",
+    "SiguientePaso": "",
+    "Descripcion": "",
+    "UsuarioAsignadoVtiger": null,
+    "FechaCreacionVtiger": "2026-05-28T18:45:26",
+    "FechaModificacionVtiger": "2026-05-29T17:42:27",
+    "FechaCreacionLocal": "2026-05-28T15:26:53.413000",
+    "FechaUltimaSync": "2026-06-06T02:24:52.977000",
+    "PendientePush": false,
+    "OrigenLocal": null,
+    "PendienteDelete": null,
+    "PushError": null,
+    "FechaUltimoPush": "2026-05-29T11:42:27.247000"
+  }
+]

@@ -1,0 +1,58 @@
+[
+  {
+    "TipoDocumentoID": 1,
+    "Descripcion": "CONSTANCIA DE SITUACION FISCAL",
+    "RequiereVigencia": true,
+    "EsObligatorio": true,
+    "Activo": true
+  },
+  {
+    "TipoDocumentoID": 2,
+    "Descripcion": "CARATULA BANCARIA",
+    "RequiereVigencia": false,
+    "EsObligatorio": true,
+    "Activo": true
+  },
+  {
+    "TipoDocumentoID": 3,
+    "Descripcion": "CONTRATO",
+    "RequiereVigencia": true,
+    "EsObligatorio": false,
+    "Activo": true
+  },
+  {
+    "TipoDocumentoID": 4,
+    "Descripcion": "IDENTIFICACION OFICIAL",
+    "RequiereVigencia": true,
+    "EsObligatorio": false,
+    "Activo": true
+  },
+  {
+    "TipoDocumentoID": 5,
+    "Descripcion": "COMPROBANTE DE DOMICILIO",
+    "RequiereVigencia": true,
+    "EsObligatorio": false,
+    "Activo": true
+  },
+  {
+    "TipoDocumentoID": 6,
+    "Descripcion": "ACTA CONSTITUTIVA",
+    "RequiereVigencia": false,
+    "EsObligatorio": false,
+    "Activo": true
+  },
+  {
+    "TipoDocumentoID": 7,
+    "Descripcion": "PODER LEGAL",
+    "RequiereVigencia": false,
+    "EsObligatorio": false,
+    "Activo": true
+  },
+  {
+    "TipoDocumentoID": 8,
+    "Descripcion": "OPINION DE CUMPLIMIENTO",
+    "RequiereVigencia": true,
+    "EsObligatorio": false,
+    "Activo": true
+  }
+]

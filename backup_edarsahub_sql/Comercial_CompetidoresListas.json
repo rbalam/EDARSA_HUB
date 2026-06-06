@@ -1,0 +1,17 @@
+[
+  {
+    "ListaCompetidoresID": "ec66cb9a-9fea-4b61-9593-e27bd5bf7413",
+    "NombreLista": "Competidores Merida Premium",
+    "Descripcion": "Lista de competidores premium en Merida",
+    "EmpresaID": 1,
+    "UnidadNegocioID": 1,
+    "Segmento": "Premium",
+    "Categoria": "Restaurantes",
+    "ColorIdentificador": "#8B5CF6",
+    "Activo": true,
+    "FechaCreacion": "2026-05-25T00:22:42.680000",
+    "FechaModificacion": null,
+    "CreadoPor": "admin@inventario.com",
+    "ModificadoPor": null
+  }
+]

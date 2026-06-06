@@ -1,0 +1,42 @@
+[
+  {
+    "PrioridadID": 1,
+    "Codigo": "BAJA",
+    "Nombre": "Baja",
+    "Descripcion": null,
+    "Orden": 1,
+    "ColorHex": "#6B7280",
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.793000"
+  },
+  {
+    "PrioridadID": 2,
+    "Codigo": "MEDIA",
+    "Nombre": "Media",
+    "Descripcion": null,
+    "Orden": 2,
+    "ColorHex": "#3B82F6",
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.793000"
+  },
+  {
+    "PrioridadID": 3,
+    "Codigo": "ALTA",
+    "Nombre": "Alta",
+    "Descripcion": null,
+    "Orden": 3,
+    "ColorHex": "#F59E0B",
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.793000"
+  },
+  {
+    "PrioridadID": 4,
+    "Codigo": "CRITICA",
+    "Nombre": "Crítica",
+    "Descripcion": null,
+    "Orden": 4,
+    "ColorHex": "#EF4444",
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.793000"
+  }
+]

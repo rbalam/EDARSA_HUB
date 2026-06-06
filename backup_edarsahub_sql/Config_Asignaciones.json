@@ -1,0 +1,40 @@
+[
+  {
+    "ID": 4,
+    "ConfigID": "ba78848e-0cd5-4f6e-83fa-cc7e4f1f6357",
+    "ServerID": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "AlmacenID": null,
+    "UsuarioResponsableID": "1e18a085-4092-40d8-aefa-bbafd1cdb939",
+    "Prioridad": 10,
+    "Activa": true,
+    "FechaCreacion": "2026-04-22T07:25:11.013295",
+    "FechaActualizacion": null,
+    "UnidadNegocioID": "1118f83c-fd45-4681-8006-5e92dd6d01c1",
+    "UnidadNegocioNombre": "130 QRO",
+    "AlmacenNombre": null,
+    "UsuarioResponsableNombre": "Ricardo Balam Garcia",
+    "UsuarioResponsableEmail": "ricardo@edarsa.com.mx",
+    "UsuarioCreacion": null,
+    "FechaModificacion": null,
+    "UsuarioModificacion": null
+  },
+  {
+    "ID": 5,
+    "ConfigID": "237d2684-a240-45ce-986d-bdbad6a9e618",
+    "ServerID": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "AlmacenID": null,
+    "UsuarioResponsableID": "1e18a085-4092-40d8-aefa-bbafd1cdb939",
+    "Prioridad": 10,
+    "Activa": false,
+    "FechaCreacion": "2026-04-22T09:02:08.175313",
+    "FechaActualizacion": null,
+    "UnidadNegocioID": "a4d8b5e7-de51-4ba4-9d2c-0e1996ac82ff",
+    "UnidadNegocioNombre": "130 MID",
+    "AlmacenNombre": null,
+    "UsuarioResponsableNombre": "Ricardo Balam Garcia",
+    "UsuarioResponsableEmail": "ricardo@edarsa.com.mx",
+    "UsuarioCreacion": null,
+    "FechaModificacion": null,
+    "UsuarioModificacion": null
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "TipoUbicacionID": 1,
+    "Nombre": "SUCURSAL",
+    "Activo": true
+  },
+  {
+    "TipoUbicacionID": 2,
+    "Nombre": "AREA",
+    "Activo": true
+  },
+  {
+    "TipoUbicacionID": 3,
+    "Nombre": "CUARTO TECNICO",
+    "Activo": true
+  },
+  {
+    "TipoUbicacionID": 4,
+    "Nombre": "ALMACEN",
+    "Activo": true
+  },
+  {
+    "TipoUbicacionID": 5,
+    "Nombre": "EXTERIOR",
+    "Activo": true
+  },
+  {
+    "TipoUbicacionID": 6,
+    "Nombre": "OFICINA",
+    "Activo": true
+  },
+  {
+    "TipoUbicacionID": 7,
+    "Nombre": "COCINA",
+    "Activo": true
+  },
+  {
+    "TipoUbicacionID": 8,
+    "Nombre": "BAR",
+    "Activo": true
+  },
+  {
+    "TipoUbicacionID": 9,
+    "Nombre": "COMEDOR",
+    "Activo": true
+  }
+]

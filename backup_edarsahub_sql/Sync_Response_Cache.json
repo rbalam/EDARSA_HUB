@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "RequestHash": "58588de8f160b6c97975e2c3fca086e1687b5f6c2a5237db3cea621b4b4e35f4",
+    "ServiceSource": "TEST_SERVICE",
+    "RequestPayload": "{\"test\": \"payload\", \"action\": \"verify_cache\"}",
+    "ResponsePayload": "{\"status\": \"generated\", \"source\": \"TEST_SERVICE\"}",
+    "TokenCostFraction": 0.001,
+    "CacheDurationMinutes": 120,
+    "CreatedAt": "2026-05-31T21:06:04.343000",
+    "ExpiresAt": "2026-05-31T23:06:04.343000",
+    "HitCount": 0
+  },
+  {
+    "id": 2,
+    "RequestHash": "c245090037ebe8bcd9bcee5ffcb5a9fff803b9607ea61705cf30a611200ad72c",
+    "ServiceSource": "TEST_FINOPS_MODULE",
+    "RequestPayload": "{\"action\": \"test_finops\"}",
+    "ResponsePayload": "{\"generated\": true, \"payload_len\": 25}",
+    "TokenCostFraction": 0.002,
+    "CacheDurationMinutes": 120,
+    "CreatedAt": "2026-05-31T21:06:35.747000",
+    "ExpiresAt": "2026-05-31T23:06:35.747000",
+    "HitCount": 0
+  }
+]

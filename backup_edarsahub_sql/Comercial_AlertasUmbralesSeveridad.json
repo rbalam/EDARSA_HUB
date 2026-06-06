@@ -1,0 +1,58 @@
+[
+  {
+    "UmbralID": "6df93157-1ba3-439c-a911-036558de8c0b",
+    "Severidad": "INFORMATIVA",
+    "PuntosDesde": 0.0,
+    "PuntosHasta": 1.99,
+    "IncluirUtilidadNegativa": false,
+    "IncluirCostoMayorPrecio": false,
+    "Descripcion": "Margen debajo del esperado por menos de 2 puntos porcentuales",
+    "ColorHex": "#3B82F6",
+    "Activo": true,
+    "Orden": 1,
+    "FechaCreacion": "2026-05-25T01:46:42.867000",
+    "FechaModificacion": null
+  },
+  {
+    "UmbralID": "9c310167-5784-4450-89e7-15f809d3f29f",
+    "Severidad": "CRITICA",
+    "PuntosDesde": 10.0,
+    "PuntosHasta": 999.0,
+    "IncluirUtilidadNegativa": true,
+    "IncluirCostoMayorPrecio": true,
+    "Descripcion": "Margen debajo por mas de 10 puntos, utilidad negativa o costo mayor a precio",
+    "ColorHex": "#EF4444",
+    "Activo": true,
+    "Orden": 4,
+    "FechaCreacion": "2026-05-25T01:46:42.867000",
+    "FechaModificacion": null
+  },
+  {
+    "UmbralID": "4d3a10cc-7cf9-470f-b59d-95850ca78ec6",
+    "Severidad": "ALTA",
+    "PuntosDesde": 5.0,
+    "PuntosHasta": 9.99,
+    "IncluirUtilidadNegativa": false,
+    "IncluirCostoMayorPrecio": false,
+    "Descripcion": "Margen debajo del esperado entre 5 y 10 puntos porcentuales",
+    "ColorHex": "#F97316",
+    "Activo": true,
+    "Orden": 3,
+    "FechaCreacion": "2026-05-25T01:46:42.867000",
+    "FechaModificacion": null
+  },
+  {
+    "UmbralID": "3ac637c4-b0c2-49d3-b7b1-fbbbe9649b32",
+    "Severidad": "MEDIA",
+    "PuntosDesde": 2.0,
+    "PuntosHasta": 4.99,
+    "IncluirUtilidadNegativa": false,
+    "IncluirCostoMayorPrecio": false,
+    "Descripcion": "Margen debajo del esperado entre 2 y 5 puntos porcentuales",
+    "ColorHex": "#F59E0B",
+    "Activo": true,
+    "Orden": 2,
+    "FechaCreacion": "2026-05-25T01:46:42.867000",
+    "FechaModificacion": null
+  }
+]

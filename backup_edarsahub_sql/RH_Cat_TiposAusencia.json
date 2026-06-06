@@ -1,0 +1,52 @@
+[
+  {
+    "TipoAusenciaID": 1,
+    "CodigoTipoAusencia": "VACACIONES",
+    "Descripcion": "Vacaciones",
+    "GoceSueldo": true,
+    "AfectaNomina": false,
+    "AfectaAsistencia": true,
+    "ClaveSAT": null,
+    "Activo": true
+  },
+  {
+    "TipoAusenciaID": 2,
+    "CodigoTipoAusencia": "INCAPACIDAD",
+    "Descripcion": "Incapacidad",
+    "GoceSueldo": false,
+    "AfectaNomina": true,
+    "AfectaAsistencia": true,
+    "ClaveSAT": null,
+    "Activo": true
+  },
+  {
+    "TipoAusenciaID": 3,
+    "CodigoTipoAusencia": "FALTA",
+    "Descripcion": "Falta injustificada",
+    "GoceSueldo": false,
+    "AfectaNomina": true,
+    "AfectaAsistencia": true,
+    "ClaveSAT": null,
+    "Activo": true
+  },
+  {
+    "TipoAusenciaID": 4,
+    "CodigoTipoAusencia": "PERMISO_GS",
+    "Descripcion": "Permiso con goce",
+    "GoceSueldo": true,
+    "AfectaNomina": false,
+    "AfectaAsistencia": true,
+    "ClaveSAT": null,
+    "Activo": true
+  },
+  {
+    "TipoAusenciaID": 5,
+    "CodigoTipoAusencia": "PERMISO_SGS",
+    "Descripcion": "Permiso sin goce",
+    "GoceSueldo": false,
+    "AfectaNomina": true,
+    "AfectaAsistencia": true,
+    "ClaveSAT": null,
+    "Activo": true
+  }
+]

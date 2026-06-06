@@ -1,0 +1,132 @@
+[
+  {
+    "PermisoID": 1,
+    "ModuloID": 1,
+    "Codigo": "comercial.perfil_unidad.ver",
+    "Nombre": "Ver Perfil Digital Unidad",
+    "Descripcion": "Permite ver el perfil digital de la unidad de negocio",
+    "Categoria": "Pricing IA",
+    "Activo": true,
+    "FechaCreacion": "2026-05-24T22:56:32.913000"
+  },
+  {
+    "PermisoID": 2,
+    "ModuloID": 1,
+    "Codigo": "comercial.perfil_unidad.editar",
+    "Nombre": "Editar Perfil Digital Unidad",
+    "Descripcion": "Permite editar el perfil digital de la unidad de negocio",
+    "Categoria": "Pricing IA",
+    "Activo": true,
+    "FechaCreacion": "2026-05-24T22:56:32.917000"
+  },
+  {
+    "PermisoID": 3,
+    "ModuloID": 1,
+    "Codigo": "comercial.competidores.ver",
+    "Nombre": "Ver Competidores",
+    "Descripcion": "Permite ver el catálogo de competidores",
+    "Categoria": "Pricing IA",
+    "Activo": true,
+    "FechaCreacion": "2026-05-24T22:56:32.923000"
+  },
+  {
+    "PermisoID": 4,
+    "ModuloID": 1,
+    "Codigo": "comercial.competidores.crear",
+    "Nombre": "Crear Competidores",
+    "Descripcion": "Permite agregar competidores al catálogo",
+    "Categoria": "Pricing IA",
+    "Activo": true,
+    "FechaCreacion": "2026-05-24T22:56:32.927000"
+  },
+  {
+    "PermisoID": 5,
+    "ModuloID": 1,
+    "Codigo": "comercial.competidores.editar",
+    "Nombre": "Editar Competidores",
+    "Descripcion": "Permite editar competidores existentes",
+    "Categoria": "Pricing IA",
+    "Activo": true,
+    "FechaCreacion": "2026-05-24T22:56:32.937000"
+  },
+  {
+    "PermisoID": 6,
+    "ModuloID": 1,
+    "Codigo": "comercial.competidores.inactivar",
+    "Nombre": "Inactivar Competidores",
+    "Descripcion": "Permite inactivar competidores",
+    "Categoria": "Pricing IA",
+    "Activo": true,
+    "FechaCreacion": "2026-05-24T22:56:32.937000"
+  },
+  {
+    "PermisoID": 7,
+    "ModuloID": 1,
+    "Codigo": "comercial.benchmark.ver",
+    "Nombre": "Ver Benchmark",
+    "Descripcion": "Permite ver análisis de benchmark competitivo",
+    "Categoria": "Pricing IA",
+    "Activo": true,
+    "FechaCreacion": "2026-05-24T22:56:32.937000"
+  },
+  {
+    "PermisoID": 8,
+    "ModuloID": 1,
+    "Codigo": "comercial.benchmark.validar",
+    "Nombre": "Validar Benchmark",
+    "Descripcion": "Permite validar comparables de benchmark",
+    "Categoria": "Pricing IA",
+    "Activo": true,
+    "FechaCreacion": "2026-05-24T22:56:32.940000"
+  },
+  {
+    "PermisoID": 9,
+    "ModuloID": 1,
+    "Codigo": "comercial.benchmark.exportar",
+    "Nombre": "Exportar Benchmark",
+    "Descripcion": "Permite exportar datos de benchmark",
+    "Categoria": "Pricing IA",
+    "Activo": true,
+    "FechaCreacion": "2026-05-24T22:56:32.940000"
+  },
+  {
+    "PermisoID": 10,
+    "ModuloID": 1,
+    "Codigo": "comercial.precios_sugeridos.ver",
+    "Nombre": "Ver Precios Sugeridos",
+    "Descripcion": "Permite ver precios sugeridos del menú",
+    "Categoria": "Pricing IA",
+    "Activo": true,
+    "FechaCreacion": "2026-05-24T22:56:32.940000"
+  },
+  {
+    "PermisoID": 11,
+    "ModuloID": 1,
+    "Codigo": "comercial.precios_sugeridos.generar",
+    "Nombre": "Generar Precios Sugeridos",
+    "Descripcion": "Permite generar cálculo de precios sugeridos",
+    "Categoria": "Pricing IA",
+    "Activo": true,
+    "FechaCreacion": "2026-05-24T22:56:32.940000"
+  },
+  {
+    "PermisoID": 12,
+    "ModuloID": 1,
+    "Codigo": "comercial.precios_sugeridos.ver_ia",
+    "Nombre": "Ver Análisis IA",
+    "Descripcion": "Permite ver justificaciones y análisis de IA",
+    "Categoria": "Pricing IA",
+    "Activo": true,
+    "FechaCreacion": "2026-05-24T22:56:32.940000"
+  },
+  {
+    "PermisoID": 13,
+    "ModuloID": 1,
+    "Codigo": "comercial.precios_sugeridos.crear_solicitud",
+    "Nombre": "Crear Solicitud de Precio",
+    "Descripcion": "Permite crear solicitud de cambio de precio desde precio sugerido",
+    "Categoria": "Pricing IA",
+    "Activo": true,
+    "FechaCreacion": "2026-05-24T22:56:32.940000"
+  }
+]

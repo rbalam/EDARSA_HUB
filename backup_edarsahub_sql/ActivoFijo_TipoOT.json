@@ -1,0 +1,17 @@
+[
+  {
+    "TipoOTID": 1,
+    "Nombre": "PREVENTIVO",
+    "Activo": true
+  },
+  {
+    "TipoOTID": 2,
+    "Nombre": "CORRECTIVO",
+    "Activo": true
+  },
+  {
+    "TipoOTID": 3,
+    "Nombre": "EMERGENCIA",
+    "Activo": true
+  }
+]

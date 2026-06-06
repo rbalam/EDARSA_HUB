@@ -1,0 +1,26 @@
+[
+  {
+    "IDRol": 1,
+    "NombreRol": "Super Administrador",
+    "NivelAcceso": 1,
+    "EsInterno": true
+  },
+  {
+    "IDRol": 2,
+    "NombreRol": "Gerente Comercial",
+    "NivelAcceso": 2,
+    "EsInterno": true
+  },
+  {
+    "IDRol": 3,
+    "NombreRol": "Auditor",
+    "NivelAcceso": 3,
+    "EsInterno": true
+  },
+  {
+    "IDRol": 4,
+    "NombreRol": "Proveedor Externo",
+    "NivelAcceso": 4,
+    "EsInterno": false
+  }
+]

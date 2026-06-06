@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"3c0b8d4ec4704dc2abbc8eabc9bba4da","collectionName":"sec_bitacora_admin","type":"collection"}

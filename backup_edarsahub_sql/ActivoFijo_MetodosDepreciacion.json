@@ -1,0 +1,26 @@
+[
+  {
+    "MetodoDepreciacionID": 1,
+    "CodigoMetodo": "SL",
+    "NombreMetodo": "LINEA RECTA",
+    "TipoCalculo": "LINEA_RECTA",
+    "PermiteValorResidual": true,
+    "Activo": true
+  },
+  {
+    "MetodoDepreciacionID": 2,
+    "CodigoMetodo": "PF",
+    "NombreMetodo": "PORCENTAJE FIJO",
+    "TipoCalculo": "PORCENTAJE_FIJO",
+    "PermiteValorResidual": true,
+    "Activo": true
+  },
+  {
+    "MetodoDepreciacionID": 3,
+    "CodigoMetodo": "MAN",
+    "NombreMetodo": "MANUAL",
+    "TipoCalculo": "MANUAL",
+    "PermiteValorResidual": true,
+    "Activo": true
+  }
+]

@@ -1,0 +1,72 @@
+[
+  {
+    "MapeoID": 1,
+    "SucursalID": 1,
+    "ServidorID": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "SucursalOrigenID": null,
+    "MongoSucursalUUID": "0f04556d-ae9d-47a9-814a-104cc53f8050",
+    "MongoServidorUUID": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "FuenteMigracion": "MongoDB:sucursal_servidor_map",
+    "Activo": true,
+    "FechaCreacion": "2026-05-13T22:51:18.720000",
+    "FechaModificacion": null,
+    "CreatedBy": "FASE3B",
+    "Observaciones": null
+  },
+  {
+    "MapeoID": 2,
+    "SucursalID": 2,
+    "ServidorID": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "SucursalOrigenID": null,
+    "MongoSucursalUUID": "7a9a350c-8da1-496e-b06c-5f7233eccebe",
+    "MongoServidorUUID": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "FuenteMigracion": "MongoDB:sucursal_servidor_map",
+    "Activo": true,
+    "FechaCreacion": "2026-05-13T22:51:18.810000",
+    "FechaModificacion": null,
+    "CreatedBy": "FASE3B",
+    "Observaciones": null
+  },
+  {
+    "MapeoID": 3,
+    "SucursalID": 3,
+    "ServidorID": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "SucursalOrigenID": null,
+    "MongoSucursalUUID": "268cee46-41b9-4c55-8cd9-eb3b63bcd5c9",
+    "MongoServidorUUID": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "FuenteMigracion": "MongoDB:sucursal_servidor_map",
+    "Activo": true,
+    "FechaCreacion": "2026-05-13T22:51:18.903333",
+    "FechaModificacion": null,
+    "CreatedBy": "FASE3B",
+    "Observaciones": null
+  },
+  {
+    "MapeoID": 4,
+    "SucursalID": 4,
+    "ServidorID": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "SucursalOrigenID": null,
+    "MongoSucursalUUID": "aab5721a-c650-4715-9197-3c8f07c70dc7",
+    "MongoServidorUUID": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "FuenteMigracion": "MongoDB:sucursal_servidor_map",
+    "Activo": true,
+    "FechaCreacion": "2026-05-13T22:51:18.996666",
+    "FechaModificacion": null,
+    "CreatedBy": "FASE3B",
+    "Observaciones": null
+  },
+  {
+    "MapeoID": 5,
+    "SucursalID": 5,
+    "ServidorID": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "SucursalOrigenID": null,
+    "MongoSucursalUUID": "fdb7580f-ac8b-4f21-9444-bbd2604889ca",
+    "MongoServidorUUID": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "FuenteMigracion": "MongoDB:sucursal_servidor_map",
+    "Activo": true,
+    "FechaCreacion": "2026-05-13T22:51:19.090000",
+    "FechaModificacion": null,
+    "CreatedBy": "FASE3B",
+    "Observaciones": null
+  }
+]

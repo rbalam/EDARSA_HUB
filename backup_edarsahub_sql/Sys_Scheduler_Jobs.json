@@ -1,0 +1,50 @@
+[
+  {
+    "JobID": "backup-db",
+    "JobName": "Respaldo Completo EDARSAHUB",
+    "CronExpression": "0 2 * * 0",
+    "JobType": "Sys",
+    "Status": "activo",
+    "LastRunDate": null
+  },
+  {
+    "JobID": "recalc-kpis",
+    "JobName": "Recálculo de KPIs Globales",
+    "CronExpression": "*/30 * * * *",
+    "JobType": "App",
+    "Status": "activo",
+    "LastRunDate": null
+  },
+  {
+    "JobID": "sync-inteligencia",
+    "JobName": "Actualizar Vista Inteligencia",
+    "CronExpression": "0 */6 * * *",
+    "JobType": "DB",
+    "Status": "activo",
+    "LastRunDate": null
+  },
+  {
+    "JobID": "SYNC-INTELIGENCIA-01",
+    "JobName": "inteligencia_comercial_sync",
+    "CronExpression": "0 * * * *",
+    "JobType": "DATA_SYNC",
+    "Status": "ACTIVE",
+    "LastRunDate": "2026-06-05T21:00:02.033000"
+  },
+  {
+    "JobID": "sync-sales",
+    "JobName": "Sincronización de Ventas SQL",
+    "CronExpression": "0 * * * *",
+    "JobType": "DB",
+    "Status": "activo",
+    "LastRunDate": "2026-06-01T16:21:19.863000"
+  },
+  {
+    "JobID": "sync-vtiger",
+    "JobName": "Importación Vtiger CRM",
+    "CronExpression": "0 0 * * *",
+    "JobType": "API",
+    "Status": "activo",
+    "LastRunDate": null
+  }
+]

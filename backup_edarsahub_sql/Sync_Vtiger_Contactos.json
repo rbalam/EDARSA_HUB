@@ -1,0 +1,29 @@
+[
+  {
+    "SyncID": "96886fa8-96a3-4665-9ab6-52b2a6baec99",
+    "VtigerID": "12x21",
+    "ContactoNo": "CON1",
+    "Nombre": "Test",
+    "Apellido": "Emergent API",
+    "Email": "test@emergent.com",
+    "Telefono": "555-1234",
+    "Celular": "",
+    "Titulo": "",
+    "Departamento": "",
+    "CuentaVtigerID": "",
+    "Descripcion": "",
+    "Ciudad": "",
+    "Estado": "",
+    "Pais": "",
+    "UsuarioAsignadoVtiger": null,
+    "FechaCreacionVtiger": "2026-05-22T19:46:22",
+    "FechaModificacionVtiger": "2026-05-22T19:46:22",
+    "FechaCreacionLocal": "2026-05-28T15:26:52.950000",
+    "FechaUltimaSync": "2026-06-06T02:24:49.970000",
+    "PendientePush": null,
+    "OrigenLocal": null,
+    "PendienteDelete": null,
+    "PushError": null,
+    "FechaUltimoPush": null
+  }
+]

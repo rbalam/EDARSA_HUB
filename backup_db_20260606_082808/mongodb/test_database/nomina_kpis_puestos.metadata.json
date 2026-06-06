@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"18af13602fcc42b9b76d19aea385af14","collectionName":"nomina_kpis_puestos","type":"collection"}

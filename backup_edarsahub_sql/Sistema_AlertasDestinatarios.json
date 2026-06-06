@@ -1,0 +1,24 @@
+[
+  {
+    "Id": "25627518-1486-4a3e-be2c-40b3ca2d1d7e",
+    "MongoId": "69e565f2c389a4cb1880d89c",
+    "ColeccionOrigen": "alert_recipients",
+    "PayloadMongo": "{\"_id\": {\"$oid\": \"69e565f2c389a4cb1880d89c\"}, \"tipo\": \"email\", \"destinatario\": \"director@edarsa.com.mx\", \"nombre\": \"Director General\", \"activo\": true, \"created_at\": {\"$date\": \"2026-04-19T23:32:02.342Z\"}, \"created_by\": \"admin@edarsa.com\"}",
+    "MigradoDesdeMongo": true,
+    "Activo": true,
+    "FechaMigracion": "2026-06-05T19:13:42.783000",
+    "FechaCreacion": "2026-06-05T19:13:42.783000",
+    "FechaActualizacion": null
+  },
+  {
+    "Id": "69d47e6d-1537-4760-9c82-f6c1d7df0020",
+    "MongoId": "69e565f8c389a4cb1880d89d",
+    "ColeccionOrigen": "alert_recipients",
+    "PayloadMongo": "{\"_id\": {\"$oid\": \"69e565f8c389a4cb1880d89d\"}, \"tipo\": \"whatsapp\", \"destinatario\": \"+521234567890\", \"nombre\": \"Gerente Operaciones\", \"activo\": true, \"created_at\": {\"$date\": \"2026-04-19T23:32:08.056Z\"}, \"created_by\": \"admin@edarsa.com\"}",
+    "MigradoDesdeMongo": true,
+    "Activo": true,
+    "FechaMigracion": "2026-06-05T19:13:42.880000",
+    "FechaCreacion": "2026-06-05T19:13:42.880000",
+    "FechaActualizacion": null
+  }
+]

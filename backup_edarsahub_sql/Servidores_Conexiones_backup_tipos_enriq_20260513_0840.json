@@ -1,0 +1,23 @@
+[
+  {
+    "mongodb_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "nombre": "130° MERIDA",
+    "tipos_movimiento_anterior": "[\"E\", \"ECA\", \"ECI\", \"EDE\", \"EDF\", \"EIT\", \"EPC\", \"EPD\", \"EPP\", \"EPT\", \"ETA\", \"SCS\", \"SCP\", \"SDA\", \"SDV\", \"SPC\", \"SPD\", \"STM\"]",
+    "fecha_backup": "2026-05-13T02:40:29.797000",
+    "fase": "P1_ENRIQUECIMIENTO_TIPOS_MOVIMIENTO"
+  },
+  {
+    "mongodb_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "nombre": "CIENFUEGOS",
+    "tipos_movimiento_anterior": "[\"EAL\", \"ECA\", \"ECS\", \"ECO\", \"EDE\", \"EEH\", \"EPB\", \"EPC\", \"EPL\", \"EPR\", \"ETA\", \"ETR\", \"SCP\", \"SCS\", \"SDE\", \"SDV\", \"SPC\", \"SPM\", \"SPR\", \"SPV\", \"STA\", \"STR\"]",
+    "fecha_backup": "2026-05-13T02:40:29.797000",
+    "fase": "P1_ENRIQUECIMIENTO_TIPOS_MOVIMIENTO"
+  },
+  {
+    "mongodb_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "nombre": "ManagmentPro",
+    "tipos_movimiento_anterior": "[\"050\", \"100\", \"106\", \"108\", \"112\", \"202\", \"400\", \"500\", \"506\", \"508\", \"510\", \"512\", \"051\", \"052\", \"053\", \"060\", \"061\", \"101\", \"104\", \"105\", \"107\", \"113\", \"114\", \"115\", \"203\", \"401\", \"501\", \"507\", \"509\", \"511\", \"513\", \"514\", \"515\", \"942\", \"943\"]",
+    "fecha_backup": "2026-05-13T02:40:29.797000",
+    "fase": "P1_ENRIQUECIMIENTO_TIPOS_MOVIMIENTO"
+  }
+]

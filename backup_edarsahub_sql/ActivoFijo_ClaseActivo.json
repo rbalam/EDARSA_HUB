@@ -1,0 +1,98 @@
+[
+  {
+    "ClaseActivoID": 1,
+    "Nombre": "MINISPLIT",
+    "Descripcion": "Equipo de aire acondicionado tipo minisplit",
+    "TipoActivoID": 1,
+    "Capitalizable": true,
+    "RequiereSerie": true,
+    "RequiereEtiqueta": true,
+    "RequiereMantenimiento": true,
+    "RequiereDepreciacion": true,
+    "Activo": true
+  },
+  {
+    "ClaseActivoID": 2,
+    "Nombre": "PAQUETE HVAC",
+    "Descripcion": "Unidad paquete HVAC",
+    "TipoActivoID": 1,
+    "Capitalizable": true,
+    "RequiereSerie": true,
+    "RequiereEtiqueta": true,
+    "RequiereMantenimiento": true,
+    "RequiereDepreciacion": true,
+    "Activo": true
+  },
+  {
+    "ClaseActivoID": 3,
+    "Nombre": "CAMARA FRIA",
+    "Descripcion": "Equipo de refrigeración / cuarto frío",
+    "TipoActivoID": 2,
+    "Capitalizable": true,
+    "RequiereSerie": true,
+    "RequiereEtiqueta": true,
+    "RequiereMantenimiento": true,
+    "RequiereDepreciacion": true,
+    "Activo": true
+  },
+  {
+    "ClaseActivoID": 4,
+    "Nombre": "REFRIGERADOR COMERCIAL",
+    "Descripcion": "Refrigerador de operación",
+    "TipoActivoID": 2,
+    "Capitalizable": true,
+    "RequiereSerie": true,
+    "RequiereEtiqueta": true,
+    "RequiereMantenimiento": true,
+    "RequiereDepreciacion": true,
+    "Activo": true
+  },
+  {
+    "ClaseActivoID": 5,
+    "Nombre": "EQUIPO DE COCINA",
+    "Descripcion": "Activo de cocina",
+    "TipoActivoID": 3,
+    "Capitalizable": true,
+    "RequiereSerie": false,
+    "RequiereEtiqueta": true,
+    "RequiereMantenimiento": true,
+    "RequiereDepreciacion": true,
+    "Activo": true
+  },
+  {
+    "ClaseActivoID": 6,
+    "Nombre": "MOBILIARIO",
+    "Descripcion": "Mesas, sillas, anaqueles",
+    "TipoActivoID": 5,
+    "Capitalizable": true,
+    "RequiereSerie": false,
+    "RequiereEtiqueta": true,
+    "RequiereMantenimiento": false,
+    "RequiereDepreciacion": true,
+    "Activo": true
+  },
+  {
+    "ClaseActivoID": 7,
+    "Nombre": "EQUIPO DE COMPUTO",
+    "Descripcion": "PC, impresoras, tablets",
+    "TipoActivoID": 6,
+    "Capitalizable": true,
+    "RequiereSerie": true,
+    "RequiereEtiqueta": true,
+    "RequiereMantenimiento": true,
+    "RequiereDepreciacion": true,
+    "Activo": true
+  },
+  {
+    "ClaseActivoID": 8,
+    "Nombre": "OTRO",
+    "Descripcion": "Otros activos fijos",
+    "TipoActivoID": 9,
+    "Capitalizable": true,
+    "RequiereSerie": false,
+    "RequiereEtiqueta": true,
+    "RequiereMantenimiento": false,
+    "RequiereDepreciacion": true,
+    "Activo": true
+  }
+]

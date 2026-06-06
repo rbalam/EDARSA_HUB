@@ -1,0 +1,27 @@
+[
+  {
+    "EstadoUsoActivoID": 1,
+    "Nombre": "EN_USO",
+    "Activo": true
+  },
+  {
+    "EstadoUsoActivoID": 2,
+    "Nombre": "STANDBY",
+    "Activo": true
+  },
+  {
+    "EstadoUsoActivoID": 3,
+    "Nombre": "EN_REPARACION",
+    "Activo": true
+  },
+  {
+    "EstadoUsoActivoID": 4,
+    "Nombre": "FUERA_SERVICIO",
+    "Activo": true
+  },
+  {
+    "EstadoUsoActivoID": 5,
+    "Nombre": "DESCARTADO",
+    "Activo": true
+  }
+]

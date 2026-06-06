@@ -1,0 +1,22 @@
+[
+  {
+    "EstatusProveedorID": 1,
+    "Descripcion": "ACTIVO",
+    "Activo": true
+  },
+  {
+    "EstatusProveedorID": 2,
+    "Descripcion": "BLOQUEADO",
+    "Activo": true
+  },
+  {
+    "EstatusProveedorID": 3,
+    "Descripcion": "BAJA",
+    "Activo": true
+  },
+  {
+    "EstatusProveedorID": 4,
+    "Descripcion": "EN REVISION",
+    "Activo": true
+  }
+]

@@ -1,0 +1,17 @@
+[
+  {
+    "EstatusSincronizacionID": 1,
+    "Descripcion": "PENDIENTE",
+    "Activo": true
+  },
+  {
+    "EstatusSincronizacionID": 2,
+    "Descripcion": "OK",
+    "Activo": true
+  },
+  {
+    "EstatusSincronizacionID": 3,
+    "Descripcion": "ERROR",
+    "Activo": true
+  }
+]

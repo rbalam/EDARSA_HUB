@@ -1,0 +1,37 @@
+[
+  {
+    "TipoBajaID": 1,
+    "Nombre": "VENTA",
+    "Activo": true
+  },
+  {
+    "TipoBajaID": 2,
+    "Nombre": "SINIESTRO",
+    "Activo": true
+  },
+  {
+    "TipoBajaID": 3,
+    "Nombre": "OBSOLESCENCIA",
+    "Activo": true
+  },
+  {
+    "TipoBajaID": 4,
+    "Nombre": "CHATARRA",
+    "Activo": true
+  },
+  {
+    "TipoBajaID": 5,
+    "Nombre": "ROBO",
+    "Activo": true
+  },
+  {
+    "TipoBajaID": 6,
+    "Nombre": "DONACION",
+    "Activo": true
+  },
+  {
+    "TipoBajaID": 7,
+    "Nombre": "REEMPLAZO",
+    "Activo": true
+  }
+]

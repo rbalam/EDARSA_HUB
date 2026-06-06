@@ -1,0 +1,32 @@
+[
+  {
+    "EstatusPedidoID": 1,
+    "Descripcion": "BORRADOR",
+    "Activo": true
+  },
+  {
+    "EstatusPedidoID": 2,
+    "Descripcion": "CONFIRMADO",
+    "Activo": true
+  },
+  {
+    "EstatusPedidoID": 3,
+    "Descripcion": "SURTIDO_PARCIAL",
+    "Activo": true
+  },
+  {
+    "EstatusPedidoID": 4,
+    "Descripcion": "SURTIDO_TOTAL",
+    "Activo": true
+  },
+  {
+    "EstatusPedidoID": 5,
+    "Descripcion": "FACTURADO",
+    "Activo": true
+  },
+  {
+    "EstatusPedidoID": 6,
+    "Descripcion": "CANCELADO",
+    "Activo": true
+  }
+]

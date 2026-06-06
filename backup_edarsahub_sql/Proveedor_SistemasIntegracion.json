@@ -1,0 +1,22 @@
+[
+  {
+    "SistemaID": 1,
+    "Descripcion": "SAP",
+    "Activo": true
+  },
+  {
+    "SistemaID": 2,
+    "Descripcion": "MPRO",
+    "Activo": true
+  },
+  {
+    "SistemaID": 3,
+    "Descripcion": "SOFTRESTAURANT",
+    "Activo": true
+  },
+  {
+    "SistemaID": 4,
+    "Descripcion": "OTRO",
+    "Activo": true
+  }
+]

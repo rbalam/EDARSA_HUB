@@ -1,0 +1,62 @@
+[
+  {
+    "id": "19e076fb-c6de-4ea5-84ab-1caa9e86082c",
+    "nombre": "130° MERIDA",
+    "codigo": "130MID",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "sucursal_origen_id": null,
+    "system_type": "SoftRestaurant",
+    "activo": true,
+    "orden": 1,
+    "created_at": "2026-04-24T19:25:42.753000",
+    "updated_at": "2026-04-24T19:46:18.740000"
+  },
+  {
+    "id": "23ca0b76-6580-4874-ba9b-672b122ca197",
+    "nombre": "ORIGEN",
+    "codigo": "ORIGEN",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "sucursal_origen_id": "0023",
+    "system_type": "MPRO",
+    "activo": true,
+    "orden": 5,
+    "created_at": "2026-04-24T19:25:43.070000",
+    "updated_at": "2026-04-24T19:25:43.070000"
+  },
+  {
+    "id": "dfb86008-1b81-472a-9e50-8a0821dec4b2",
+    "nombre": "LA ESTELAR",
+    "codigo": "ESTELAR",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "sucursal_origen_id": null,
+    "system_type": "SoftRestaurant",
+    "activo": true,
+    "orden": 3,
+    "created_at": "2026-04-24T19:25:42.937000",
+    "updated_at": "2026-04-24T19:25:42.937000"
+  },
+  {
+    "id": "9bc05ced-6b2b-4a0a-aa90-ce649b78e12c",
+    "nombre": "130° QUERETARO",
+    "codigo": "130QRO",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "sucursal_origen_id": "0021",
+    "system_type": "MPRO",
+    "activo": true,
+    "orden": 4,
+    "created_at": "2026-04-24T19:25:43.003000",
+    "updated_at": "2026-04-24T19:25:43.003000"
+  },
+  {
+    "id": "b06ee652-0370-4267-b0a8-da6fc39b590a",
+    "nombre": "CIENFUEGOS",
+    "codigo": "CIENFUEGOS",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "sucursal_origen_id": null,
+    "system_type": "SoftRestaurant",
+    "activo": true,
+    "orden": 2,
+    "created_at": "2026-04-24T19:25:42.820000",
+    "updated_at": "2026-04-24T19:25:42.820000"
+  }
+]

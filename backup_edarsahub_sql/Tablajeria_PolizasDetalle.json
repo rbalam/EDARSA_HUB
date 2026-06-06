@@ -1,0 +1,68 @@
+[
+  {
+    "AsientoID": "1b9fcc5a-51fd-4643-a2f4-dd4b1b23cc13",
+    "PolizaID": "fe508dd9-b5b1-4355-93b4-9fab93c162cc",
+    "NumeroLinea": 3,
+    "CuentaContable": "1151-001",
+    "NombreCuenta": "Almacén Materia Prima",
+    "Concepto": "Salida insumo Salmón fresco",
+    "Debe": 0.0,
+    "Haber": 930.0,
+    "Referencia": "TBJ-20260523-0005"
+  },
+  {
+    "AsientoID": "460a133e-6fdb-4cb8-a454-65130833f7fe",
+    "PolizaID": "9eada2ff-e8d3-4663-b03d-266ff52ec10d",
+    "NumeroLinea": 1,
+    "CuentaContable": "1152-001",
+    "NombreCuenta": "Almacén Productos Terminados",
+    "Concepto": "Entrada producción TBJ-20260523-0004",
+    "Debe": 520.0,
+    "Haber": 0.0,
+    "Referencia": "TBJ-20260523-0004"
+  },
+  {
+    "AsientoID": "906f567f-7efa-4ff0-92da-0641df62040d",
+    "PolizaID": "fe508dd9-b5b1-4355-93b4-9fab93c162cc",
+    "NumeroLinea": 2,
+    "CuentaContable": "5102-001",
+    "NombreCuenta": "Merma Operativa",
+    "Concepto": "Merma tablaje TBJ-20260523-0005",
+    "Debe": 180.0,
+    "Haber": 0.0,
+    "Referencia": "TBJ-20260523-0005"
+  },
+  {
+    "AsientoID": "9ce20b0a-4d83-4d79-9abf-cfcd899f3d1d",
+    "PolizaID": "9eada2ff-e8d3-4663-b03d-266ff52ec10d",
+    "NumeroLinea": 3,
+    "CuentaContable": "1151-001",
+    "NombreCuenta": "Almacén Materia Prima",
+    "Concepto": "Salida insumo Pollo entero",
+    "Debe": 0.0,
+    "Haber": 535.0,
+    "Referencia": "TBJ-20260523-0004"
+  },
+  {
+    "AsientoID": "a796b6ae-49de-433a-ad95-ab74baf167aa",
+    "PolizaID": "9eada2ff-e8d3-4663-b03d-266ff52ec10d",
+    "NumeroLinea": 2,
+    "CuentaContable": "5102-001",
+    "NombreCuenta": "Merma Operativa",
+    "Concepto": "Merma tablaje TBJ-20260523-0004",
+    "Debe": 67.5,
+    "Haber": 0.0,
+    "Referencia": "TBJ-20260523-0004"
+  },
+  {
+    "AsientoID": "d5893d01-5a10-4c92-bef0-900541d16f5d",
+    "PolizaID": "fe508dd9-b5b1-4355-93b4-9fab93c162cc",
+    "NumeroLinea": 1,
+    "CuentaContable": "1152-001",
+    "NombreCuenta": "Almacén Productos Terminados",
+    "Concepto": "Entrada producción TBJ-20260523-0005",
+    "Debe": 920.0,
+    "Haber": 0.0,
+    "Referencia": "TBJ-20260523-0005"
+  }
+]

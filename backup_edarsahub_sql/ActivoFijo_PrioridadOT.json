@@ -1,0 +1,22 @@
+[
+  {
+    "PrioridadOTID": 1,
+    "Nombre": "BAJA",
+    "Activo": true
+  },
+  {
+    "PrioridadOTID": 2,
+    "Nombre": "MEDIA",
+    "Activo": true
+  },
+  {
+    "PrioridadOTID": 3,
+    "Nombre": "ALTA",
+    "Activo": true
+  },
+  {
+    "PrioridadOTID": 4,
+    "Nombre": "CRITICA",
+    "Activo": true
+  }
+]

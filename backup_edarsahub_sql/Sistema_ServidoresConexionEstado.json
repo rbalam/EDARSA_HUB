@@ -1,0 +1,13 @@
+[
+  {
+    "Id": "5dd82b80-9e2f-427a-b484-f25cba701ad2",
+    "MongoId": "69e964cd3a9a8fa604757402",
+    "ColeccionOrigen": "server_connection_status",
+    "PayloadMongo": "{\"_id\": {\"$oid\": \"69e964cd3a9a8fa604757402\"}, \"server_id\": \"6d053c22-523e-48c0-b72b-96081e2d781b\", \"error\": \"Simulación de falla para prueba de fallback\", \"is_online\": true, \"last_check\": \"2026-04-23T00:16:52.175054+00:00\"}",
+    "MigradoDesdeMongo": true,
+    "Activo": true,
+    "FechaMigracion": "2026-06-05T19:13:40.710000",
+    "FechaCreacion": "2026-06-05T19:13:40.710000",
+    "FechaActualizacion": null
+  }
+]

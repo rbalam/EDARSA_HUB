@@ -1,0 +1,18 @@
+[
+  {
+    "CondicionPagoID": 1,
+    "CodigoCondicionPago": "CONTADO",
+    "Descripcion": "CONTADO",
+    "DiasCredito": 0,
+    "RequiereCredito": false,
+    "Activo": true
+  },
+  {
+    "CondicionPagoID": 2,
+    "CodigoCondicionPago": "CRED30",
+    "Descripcion": "CREDITO 30 DIAS",
+    "DiasCredito": 30,
+    "RequiereCredito": true,
+    "Activo": true
+  }
+]

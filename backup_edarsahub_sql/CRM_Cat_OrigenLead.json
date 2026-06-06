@@ -1,0 +1,112 @@
+[
+  {
+    "OrigenID": 1,
+    "Codigo": "REFERIDO",
+    "Nombre": "Referido",
+    "Descripcion": null,
+    "Orden": 1,
+    "ColorHex": "#6B7280",
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.370000"
+  },
+  {
+    "OrigenID": 2,
+    "Codigo": "LLAMADA",
+    "Nombre": "Llamada entrante",
+    "Descripcion": null,
+    "Orden": 2,
+    "ColorHex": "#6B7280",
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.370000"
+  },
+  {
+    "OrigenID": 3,
+    "Codigo": "VISITA",
+    "Nombre": "Visita comercial",
+    "Descripcion": null,
+    "Orden": 3,
+    "ColorHex": "#6B7280",
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.370000"
+  },
+  {
+    "OrigenID": 4,
+    "Codigo": "WEB",
+    "Nombre": "Formulario web",
+    "Descripcion": null,
+    "Orden": 4,
+    "ColorHex": "#6B7280",
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.370000"
+  },
+  {
+    "OrigenID": 5,
+    "Codigo": "CAMPANA",
+    "Nombre": "Campaña marketing",
+    "Descripcion": null,
+    "Orden": 5,
+    "ColorHex": "#6B7280",
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.370000"
+  },
+  {
+    "OrigenID": 6,
+    "Codigo": "CLIENTE",
+    "Nombre": "Cliente actual",
+    "Descripcion": null,
+    "Orden": 6,
+    "ColorHex": "#6B7280",
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.370000"
+  },
+  {
+    "OrigenID": 7,
+    "Codigo": "WHATSAPP",
+    "Nombre": "WhatsApp",
+    "Descripcion": null,
+    "Orden": 7,
+    "ColorHex": "#6B7280",
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.370000"
+  },
+  {
+    "OrigenID": 8,
+    "Codigo": "EVENTO",
+    "Nombre": "Evento/Feria",
+    "Descripcion": null,
+    "Orden": 8,
+    "ColorHex": "#6B7280",
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.370000"
+  },
+  {
+    "OrigenID": 9,
+    "Codigo": "LINKEDIN",
+    "Nombre": "LinkedIn",
+    "Descripcion": null,
+    "Orden": 9,
+    "ColorHex": "#6B7280",
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.370000"
+  },
+  {
+    "OrigenID": 10,
+    "Codigo": "CRM_EXTERNO",
+    "Nombre": "CRM Externo",
+    "Descripcion": null,
+    "Orden": 10,
+    "ColorHex": "#6B7280",
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.370000"
+  },
+  {
+    "OrigenID": 11,
+    "Codigo": "OTRO",
+    "Nombre": "Otro",
+    "Descripcion": null,
+    "Orden": 99,
+    "ColorHex": "#6B7280",
+    "Activo": true,
+    "CreatedAt": "2026-05-22T19:40:28.370000"
+  }
+]

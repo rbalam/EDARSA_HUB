@@ -1,0 +1,24 @@
+[
+  {
+    "CargoID": "c5170d37-0a76-4ae3-b082-175eb9ceabd2",
+    "EmpresaID": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+    "SocioID": "2c08dc5c-d050-4377-8d92-e31e6f5f53b9",
+    "TipoCargo": "SERVICIO_DESCORCHE",
+    "ConceptoCargo": "Descorche: Marqués de Riscal Reserva 2018",
+    "Monto": 400.0,
+    "Impuesto": 64.0,
+    "Total": 464.0,
+    "EstatusCargo": "PENDIENTE",
+    "BotellaID": "6821e7f4-c3c7-4027-88fb-9369bc56a3f4",
+    "MovimientoID": "59b30335-f619-4f60-94f2-0920f22cb72f",
+    "ReservacionID": null,
+    "FacturaID": null,
+    "FechaCargo": "2026-05-24T03:47:19.640000",
+    "FechaPago": null,
+    "FechaCreacion": "2026-05-24T03:47:19.640000",
+    "UsuarioCreacionID": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9",
+    "FechaModificacion": null,
+    "UsuarioModificacionID": null,
+    "Observaciones": null
+  }
+]

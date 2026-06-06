@@ -1,0 +1,46 @@
+[
+  {
+    "Id": "ecf7ee54-d581-4e40-9bff-5df8712a561f",
+    "SistemaCodigo": "SOFTRESTAURANT_PRO",
+    "QueryCodigo": "comercial_ventas_cerradas",
+    "QuerySQL": "SELECT \n            CAST(fecha AS DATE) AS fecha_operacion,\n            SUM(total) AS ventas_total,\n            SUM(total - ISNULL(propina, 0)) AS ventas_sin_propina,\n            SUM(ISNULL(propina, 0)) AS propinas_total,\n            COUNT(DISTINCT folio) AS tickets_total,\n            SUM(ISNULL(nopersonas, 1)) AS pax_total\n        FROM cheques\n        WHERE CAST(fecha AS DATE) BETWEEN @fecha_inicio AND @fecha_fin\n          AND cancelado = 0\n          AND cierre IS NOT NULL\n        GROUP BY CAST(fecha AS DATE)\n        ORDER BY fecha_operacion",
+    "Descripcion": "Ventas cerradas agregadas por día desde SoftRestaurant (cheques)",
+    "TablaDestino": "Comercial_KPIs_Diarios_v2",
+    "Activo": true,
+    "FechaCreacion": "2026-06-05T16:10:08.437000",
+    "FechaModificacion": null
+  },
+  {
+    "Id": "0193239e-5a05-4e76-bc61-a29a8f117f4e",
+    "SistemaCodigo": "MPRO",
+    "QueryCodigo": "comercial_ventas_cerradas",
+    "QuerySQL": "SELECT \n    CAST(ve.Vn_Fecha AS DATE) AS fecha_operacion,\n    SUM(ve.Vn_Precio_Neto_Importe) AS ventas_total,\n    SUM(ve.Vn_Precio_Neto_Importe) AS ventas_sin_propina,\n    0 AS propinas_total,\n    COUNT(DISTINCT ve.Vn_Folio) AS tickets_total,\n    0 AS pax_total\nFROM Venta_Encabezado ve\nWHERE CAST(ve.Vn_Fecha AS DATE) BETWEEN @fecha_inicio AND @fecha_fin\n  AND ve.Sc_Cve_Sucursal = @sucursal_id\n  AND ve.Es_Cve_Estado NOT IN ('CA', 'AN')\nGROUP BY CAST(ve.Vn_Fecha AS DATE)\nORDER BY fecha_operacion",
+    "Descripcion": "Ventas cerradas agregadas por día desde ManagementPro (Venta_Encabezado)",
+    "TablaDestino": "Comercial_KPIs_Diarios_v2",
+    "Activo": true,
+    "FechaCreacion": "2026-06-05T16:10:08.533000",
+    "FechaModificacion": "2026-06-05T16:53:40.960000"
+  },
+  {
+    "Id": "9305ca79-0232-4a9d-9825-ba1db42d1e1e",
+    "SistemaCodigo": "MANAGEMENTPRO",
+    "QueryCodigo": "comercial_ventas_cerradas",
+    "QuerySQL": "SELECT \n    CAST(ve.Vn_Fecha AS DATE) AS fecha_operacion,\n    SUM(ve.Vn_Precio_Neto_Importe) AS ventas_total,\n    SUM(ve.Vn_Precio_Neto_Importe) AS ventas_sin_propina,\n    0 AS propinas_total,\n    COUNT(DISTINCT ve.Vn_Folio) AS tickets_total,\n    0 AS pax_total\nFROM Venta_Encabezado ve\nWHERE CAST(ve.Vn_Fecha AS DATE) BETWEEN @fecha_inicio AND @fecha_fin\n  AND ve.Sc_Cve_Sucursal = @sucursal_id\n  AND ve.Es_Cve_Estado NOT IN ('CA', 'AN')\nGROUP BY CAST(ve.Vn_Fecha AS DATE)\nORDER BY fecha_operacion",
+    "Descripcion": "Ventas cerradas agregadas por día desde ManagementPro (Venta_Encabezado)",
+    "TablaDestino": "Comercial_KPIs_Diarios_v2",
+    "Activo": true,
+    "FechaCreacion": "2026-06-05T16:10:08.727000",
+    "FechaModificacion": "2026-06-05T16:53:41.053000"
+  },
+  {
+    "Id": "61da01f2-6046-44bc-922a-bd1c3a94b175",
+    "SistemaCodigo": "SOFTRESTAURANT",
+    "QueryCodigo": "comercial_ventas_cerradas",
+    "QuerySQL": "SELECT \n            CAST(fecha AS DATE) AS fecha_operacion,\n            SUM(total) AS ventas_total,\n            SUM(total - ISNULL(propina, 0)) AS ventas_sin_propina,\n            SUM(ISNULL(propina, 0)) AS propinas_total,\n            COUNT(DISTINCT folio) AS tickets_total,\n            SUM(ISNULL(nopersonas, 1)) AS pax_total\n        FROM cheques\n        WHERE CAST(fecha AS DATE) BETWEEN @fecha_inicio AND @fecha_fin\n          AND cancelado = 0\n          AND cierre IS NOT NULL\n        GROUP BY CAST(fecha AS DATE)\n        ORDER BY fecha_operacion",
+    "Descripcion": "Ventas cerradas agregadas por día desde SoftRestaurant (cheques)",
+    "TablaDestino": "Comercial_KPIs_Diarios_v2",
+    "Activo": true,
+    "FechaCreacion": "2026-06-05T16:10:08.630000",
+    "FechaModificacion": null
+  }
+]

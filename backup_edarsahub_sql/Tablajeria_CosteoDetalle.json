@@ -1,0 +1,67 @@
+[
+  {
+    "DetalleID": "08d35bcf-b2a6-48a1-b6ff-c7f28e06cea3",
+    "CosteoID": "cfeaec50-f3eb-4e5d-a9cc-d7303e78da0c",
+    "OrdenDetalleID": "44fd383d-4f6d-445c-8f06-3086eea22efc",
+    "ProductoCodigo": "PROD-001",
+    "ProductoNombre": "Filete de salmón",
+    "TipoDerivado": "PRINCIPAL",
+    "CantidadProducida": 3.4,
+    "PorcentajeCostoAsignado": 100.0,
+    "CostoAsignado": 930.0,
+    "CostoUnitario": 273.5294,
+    "EsInventariable": true
+  },
+  {
+    "DetalleID": "3364e2e1-48a0-44df-b461-2800e8604a62",
+    "CosteoID": "33703754-a7fc-444a-bd9f-37498ae6a4c2",
+    "OrdenDetalleID": "b1d658e3-e6e1-4a93-81de-2db70dfea932",
+    "ProductoCodigo": "PROD-001",
+    "ProductoNombre": "Pechuga",
+    "TipoDerivado": "PRINCIPAL",
+    "CantidadProducida": 2.9,
+    "PorcentajeCostoAsignado": 54.717,
+    "CostoAsignado": 292.74,
+    "CostoUnitario": 100.9434,
+    "EsInventariable": true
+  },
+  {
+    "DetalleID": "a4eac0d5-4e61-4ab5-8bae-ad0d04c5c42c",
+    "CosteoID": "33703754-a7fc-444a-bd9f-37498ae6a4c2",
+    "OrdenDetalleID": "4404e83c-ed75-4953-a41c-4258f38583aa",
+    "ProductoCodigo": "PROD-002",
+    "ProductoNombre": "Pierna",
+    "TipoDerivado": "PRINCIPAL",
+    "CantidadProducida": 2.4,
+    "PorcentajeCostoAsignado": 45.283,
+    "CostoAsignado": 242.26,
+    "CostoUnitario": 100.9434,
+    "EsInventariable": true
+  },
+  {
+    "DetalleID": "c476e7c8-8a88-4a09-8827-82c748f380fd",
+    "CosteoID": "33703754-a7fc-444a-bd9f-37498ae6a4c2",
+    "OrdenDetalleID": "9d0d4c26-486c-43f1-8fc1-7bdac84cae93",
+    "ProductoCodigo": "PROD-003",
+    "ProductoNombre": "Hueso y visceras",
+    "TipoDerivado": "MERMA",
+    "CantidadProducida": 1.5,
+    "PorcentajeCostoAsignado": 28.3019,
+    "CostoAsignado": 151.42,
+    "CostoUnitario": 100.9434,
+    "EsInventariable": false
+  },
+  {
+    "DetalleID": "e112f332-647c-4c80-8c8d-5d37392ac4b8",
+    "CosteoID": "cfeaec50-f3eb-4e5d-a9cc-d7303e78da0c",
+    "OrdenDetalleID": "eb66c60f-55b3-4772-952d-76e275a5197d",
+    "ProductoCodigo": "PROD-002",
+    "ProductoNombre": "Recortes",
+    "TipoDerivado": "MERMA",
+    "CantidadProducida": 1.0,
+    "PorcentajeCostoAsignado": 29.4118,
+    "CostoAsignado": 273.53,
+    "CostoUnitario": 273.5294,
+    "EsInventariable": false
+  }
+]
