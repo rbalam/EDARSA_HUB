@@ -1,5 +1,3 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
 """
 Password Reset Module - 100% EDARSAHUB SQL
 ===========================================
@@ -38,6 +36,7 @@ import pymssql
 import bcrypt
 import os
 import logging
+from core.sql_first.db import get_sql_connection
 
 logger = logging.getLogger(__name__)
 
@@ -53,13 +52,8 @@ RATE_LIMIT_WINDOW_HOURS = 1
 # =========================================================================
 
 def _get_sql_connection():
-    """Obtener conexión a EDARSAHUB SQL (fuente única)."""
-    return get_edarsahub_connection(),
-        port=1433,
-        user=os.getenv('EDARSAHUB_SQL_USER'),
-        password=os.getenv('EDARSAHUB_SQL_PASSWORD'),
-        database='EDARSAHUB'
-    )
+    """Obtener conexión a EDARSAHUB SQL (fuente única, canónica)."""
+    return get_sql_connection()
 
 
 # =========================================================================
