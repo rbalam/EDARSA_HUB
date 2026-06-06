@@ -1,0 +1,76 @@
+==================================================
+P3-06 ELIMINAR MONGO MIGRADAS CERTIFICADAS
+Timestamp: 20260606_001110
+==================================================
+MongoDB: mongodb://localhost:27017/edarsa_hub
+Backup dir: /app/backend/auditorias_p3/mongo_migradas_backup_20260606_001110
+
+ANTES_TARGETS:
+  kpis_comercial: 188 docs
+  empresas: 5 docs
+
+ELIMINADAS:
+  kpis_comercial: 188 docs -> /app/backend/auditorias_p3/mongo_migradas_backup_20260606_001110/kpis_comercial.json
+  empresas: 5 docs -> /app/backend/auditorias_p3/mongo_migradas_backup_20260606_001110/empresas.json
+
+DESPUES_TARGETS:
+  kpis_comercial: ELIMINADA
+  empresas: ELIMINADA
+
+TOTAL_COLECCIONES: 46
+TOTAL_DOCUMENTOS: 3300
+
+COLECCIONES_RESTANTES:
+  - alert_recipients: 2 docs
+  - alertas_sistema: 9 docs
+  - audit_password_reset: 3 docs
+  - auditoria_financiera: 73 docs
+  - automatizaciones_operativas_compras: 8 docs
+  - config_asignaciones: 2 docs
+  - configuracion_operativo: 1 docs
+  - consultas_custom: 6 docs
+  - detalle_diferencias: 1960 docs
+  - inventario_diferencias_detalle: 24 docs
+  - inventarios_fisicos_procesados: 1 docs
+  - inventarios_procesados_auto: 158 docs
+  - inventarios_sin_asignar: 9 docs
+  - manuales_operativos: 1 docs
+  - notification_config: 6 docs
+  - password_reset_tokens: 0 docs
+  - pedidos_procesados_automatizacion: 2 docs
+  - permisos_catalogos: 8 docs
+  - portal_suppliers: 3 docs
+  - propinas_config: 1 docs
+  - propinas_control: 0 docs
+  - rate_limit_password_reset: 0 docs
+  - rbac_audit_log: 598 docs
+  - rbac_permisos: 43 docs
+  - rbac_roles: 6 docs
+  - rbac_usuarios_roles: 72 docs
+  - responsabilidad_historial: 0 docs
+  - roles: 4 docs
+  - sec_bitacora_acceso: 27 docs
+  - sec_bitacora_admin: 61 docs
+  - sec_empresas: 1 docs
+  - sec_mapeo_servidor_sucursal: 7 docs
+  - sec_metadata: 1 docs
+  - sec_modulos_sistema: 10 docs
+  - sec_perfiles: 5 docs
+  - sec_permisos_catalogo: 90 docs
+  - sec_roles: 5 docs
+  - sec_sucursales: 7 docs
+  - sec_unidades_negocio: 7 docs
+  - server_connection_status: 1 docs
+  - server_status: 13 docs
+  - server_sucursales_config: 7 docs
+  - sucursal_servidor_map: 5 docs
+  - tareas_inventario: 18 docs
+  - users: 17 docs
+  - workflow_inventarios: 18 docs
+
+==================================================
+P3-06 RESULTADO FINAL
+==================================================
+Reporte: auditorias_p3/P3_06_ELIMINAR_MONGO_MIGRADAS_CERTIFICADAS_20260606_001110.txt
+Backup JSON: auditorias_p3/mongo_migradas_backup_20260606_001110
+Health: auditorias_p3/P3_06_HEALTH_20260606_001110.json
