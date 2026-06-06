@@ -78,6 +78,7 @@ class AuthRepository:
         cur = conn.cursor()
         
         try:
+            # P5-10B: Usar TRY_CONVERT para manejar tanto INT como UUID
             cur.execute("""
                 SELECT TOP 1
                     uc.UsuarioID,
@@ -97,9 +98,9 @@ class AuthRepository:
                     ON ura.UsuarioID = uc.UsuarioID AND ISNULL(ura.Activo,1)=1 AND ISNULL(ura.EsPrincipal,0)=1
                 LEFT JOIN dbo.Usuario_Roles ur 
                     ON ur.RolID = ura.RolID
-                WHERE uc.UsuarioID = %s
-                   OR uc.PublicUUID = %s
-                   OR uc.MongoLegacyID = %s
+                WHERE uc.UsuarioID = TRY_CONVERT(INT, %s)
+                   OR LOWER(uc.PublicUUID) = LOWER(%s)
+                   OR LOWER(uc.MongoLegacyID) = LOWER(%s)
             """, (str(usuario_id), str(usuario_id), str(usuario_id)))
             
             row = cur.fetchone()
@@ -262,7 +263,8 @@ async def update_user(user_id: str, update_data: Dict[str, Any]) -> bool:
         sets.append("FechaModificacion = GETDATE()")
         params.append(user_id)
         
-        sql = f"UPDATE dbo.Usuario_Catalogo SET {', '.join(sets)} WHERE UsuarioID = %s OR MongoLegacyID = %s OR PublicUUID = %s"
+        # P5-10B: Usar TRY_CONVERT para manejar tanto INT como UUID
+        sql = f"UPDATE dbo.Usuario_Catalogo SET {', '.join(sets)} WHERE UsuarioID = TRY_CONVERT(INT, %s) OR LOWER(MongoLegacyID) = LOWER(%s) OR LOWER(PublicUUID) = LOWER(%s)"
         params.extend([user_id, user_id])
         
         cur.execute(sql, tuple(params))
@@ -281,10 +283,11 @@ async def delete_user(user_id: str) -> bool:
     cur = conn.cursor()
     
     try:
+        # P5-10B: Usar TRY_CONVERT para manejar tanto INT como UUID
         cur.execute("""
         UPDATE dbo.Usuario_Catalogo 
         SET Activo = 0, FechaModificacion = GETDATE()
-        WHERE UsuarioID = %s OR MongoLegacyID = %s OR PublicUUID = %s
+        WHERE UsuarioID = TRY_CONVERT(INT, %s) OR LOWER(MongoLegacyID) = LOWER(%s) OR LOWER(PublicUUID) = LOWER(%s)
         """, (user_id, user_id, user_id))
         conn.commit()
         return cur.rowcount > 0

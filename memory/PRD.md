@@ -25,12 +25,17 @@ Spanish (Español)
 ### Canonical SQL Tables
 | Tabla | Propósito |
 |-------|-----------|
-| `Sys_Usuarios` | Fuente única de usuarios |
+| `Usuario_Catalogo` | Fuente única de usuarios (reemplaza Sys_Usuarios) |
 | `Usuario_Roles` | Catálogo de roles |
 | `Usuario_RolesAsignacion` | Asignación usuario-rol |
 | `Usuario_EmpresasAsignacion` | Asignación usuario-empresa |
 | `Usuario_SucursalesAsignacion` | Asignación usuario-sucursal |
 | `Usuario_ServidoresAsignacion` | Asignación usuario-servidor |
+| `Usuario_Modulos` | Catálogo de módulos para permisos |
+| `Usuario_Acciones` | Catálogo de acciones RBAC |
+| `Usuario_PermisosRolModulo` | Permisos rol-módulo-acción |
+| `Sistema_Modulos` | Módulos del sistema (para menú) |
+| `Sistema_ModulosMenus` | Menús por módulo |
 | `Sistema_DeudaTecnica_TablasDuplicadas` | Registro de tablas obsoletas |
 
 ### Technical Debt (Tracked)
@@ -53,11 +58,19 @@ Spanish (Español)
 - [x] P4-16: Eliminación tablas RBAC_* vacías (6 eliminadas)
 - [x] P4-17/17B: Dictamen Final APROBADO, core/db.py refactorizado
 
-### Phase P5 - MongoDB Sunset (PENDING)
-- [ ] Migrar 7 colecciones Mongo pendientes a SQL
-- [ ] Eliminar colecciones Mongo candidatas respaldadas
-- [ ] Resolver RBAC_Roles/RBAC_Permisos
-- [ ] Desconectar PyMongo
+### Phase P5 - MongoDB Sunset ✅ IN PROGRESS
+- [x] P5-01: Backup controlado y eliminación de 9 colecciones Mongo
+- [x] P5-02: Consolidación RBAC_Roles en Usuario_Roles
+- [x] P5-05: Fix /auth/me token parsing
+- [x] P5-06: Migración completa de usuarios Mongo a Usuario_Catalogo
+- [x] P5-07: Cierre migración Auth SQL (AuthRepository creado, MongoDB fallback eliminado)
+- [x] P5-10B: Menú 100% SQL canónico sin hardcodes (2026-06-06)
+  - MenuService lee de Sistema_Modulos + Sistema_ModulosMenus
+  - SUPERADMIN detectado por CodigoRol o NivelJerarquia >= 100
+  - Frontend delegado al backend SQL
+  - password_hash eliminado de respuestas API
+- [ ] Eliminar 28 colecciones Mongo restantes (pendiente script usuario)
+- [ ] Remover pymongo de dependencias
 
 ---
 
@@ -73,7 +86,11 @@ Spanish (Español)
 - `/app/backend/core/db.py` (wrapper legacy)
 - `/app/backend/core/rbac_sql/service.py`
 - `/app/backend/core/config/edarsahub_config.py`
-- `/app/backend/auditorias_p4/` (logs y backups)
+- `/app/backend/modules/auth/repository.py` (AuthRepository SQL-only)
+- `/app/backend/modules/sistema/menu_service.py` (MenuService SQL canónico)
+- `/app/backend/modules/sistema/menu_routes.py` (Rutas de menú)
+- `/app/backend/auditorias_p4/` (logs y backups P4)
+- `/app/backend/auditorias_p5/` (logs y backups P5)
 
 ---
 
@@ -89,4 +106,5 @@ EDARSAHUB_SQL_PASSWORD=******
 ---
 
 *Last Updated: 2026-06-06*
-*Phase: P4 Complete, P5 Pending*
+*Phase: P4 Complete, P5-10B Complete (Menu SQL)*
+*Pending: Final MongoDB Sunset*

@@ -173,12 +173,9 @@ async def login(credentials: UserLogin, request: Request, response: Response):
     # Retornar respuesta LEGACY para compatibilidad con frontend actual
     # NOTA: El campo "token" seguirá siendo el access token corto
     # El frontend actual lo guarda en memoryToken como fallback
-    # P5-10B: Sanitizar user_data para no exponer password_hash
-    safe_user_data = {k: v for k, v in user_data.items() if k not in ('password_hash', 'password', 'PasswordHashTexto')}
-    
     return {
         "token": access_token,
-        "user": safe_user_data,
+        "user": user_data,
         "expires_in": ACCESS_TOKEN_MINUTES * 60  # Nuevo campo informativo
     }
 
@@ -383,24 +380,20 @@ async def get_me(request: Request):
     
     FASE AUTH-SECURITY-01: Soporta autenticación dual (Header O Cookie).
     FASE FILTRO-FIX: También retorna token para setear en memoria (CORS fallback).
-    P5-10B: No expone password_hash.
     """
     current_user = await get_current_user_dual(request)
     
-    # P5-10B: Sanitizar - nunca exponer password
-    safe_user = {k: v for k, v in current_user.items() if k not in ('password_hash', 'password', 'PasswordHashTexto')}
-    
     # Generar token fresco para que el frontend pueda usarlo en memoria
     # Esto soluciona el problema donde al recargar la página el token no está en memoria
-    user_id = safe_user.get("id", safe_user.get("_id", ""))
-    email = safe_user.get("email", "")
-    role = safe_user.get("role", safe_user.get("rol", ""))
+    user_id = current_user.get("id", current_user.get("_id", ""))
+    email = current_user.get("email", "")
+    role = current_user.get("role", current_user.get("rol", ""))
     
     from core.security import create_access_token
     fresh_token = create_access_token(str(user_id), email, role, token_type="internal")
     
     return {
-        **safe_user,
+        **current_user,
         "token": fresh_token  # Token para setear en memoria
     }
 

@@ -554,29 +554,51 @@ const Usuarios = () => {
     setEditUserId(null);
   };
 
+  // P5-10B: Helper para normalizar comparaciones de rol (SQL usa SUPERADMIN, legacy usa SuperAdministrador)
+  const isSuperAdmin = (role) => {
+    const normalized = (role || '').toUpperCase().replace(/[^A-Z]/g, '');
+    return normalized === 'SUPERADMIN' || normalized === 'SUPERADMINISTRADOR';
+  };
+
+  const isAdmin = (role) => {
+    const normalized = (role || '').toUpperCase().replace(/[^A-Z]/g, '');
+    return normalized === 'ADMIN' || normalized === 'ADMINISTRADOR' || isSuperAdmin(role);
+  };
+
   const getRoleBadge = (role) => {
     const variants = {
       'SuperAdministrador': 'bg-purple-100 text-purple-700 border-purple-200',
+      'SUPERADMIN': 'bg-purple-100 text-purple-700 border-purple-200',
       'Administrador': 'bg-red-100 text-red-700 border-red-200',
+      'ADMIN': 'bg-red-100 text-red-700 border-red-200',
       'Supervisor': 'bg-blue-100 text-blue-700 border-blue-200',
-      'Usuario': 'bg-green-100 text-green-700 border-green-200'
+      'SUPERVISOR': 'bg-blue-100 text-blue-700 border-blue-200',
+      'Usuario': 'bg-green-100 text-green-700 border-green-200',
+      'USUARIO': 'bg-green-100 text-green-700 border-green-200'
     };
     return variants[role] || 'bg-zinc-100 text-zinc-700';
   };
 
   const getRoleIcon = (role) => {
-    if (role === 'SuperAdministrador') return <Shield className="h-4 w-4 text-purple-600" />;
-    if (role === 'Administrador') return <Shield className="h-4 w-4" />;
-    if (role === 'Supervisor') return <Eye className="h-4 w-4" />;
+    if (isSuperAdmin(role)) return <Shield className="h-4 w-4 text-purple-600" />;
+    if (isAdmin(role)) return <Shield className="h-4 w-4" />;
+    if ((role || '').toUpperCase().includes('SUPERVISOR')) return <Eye className="h-4 w-4" />;
     return <User className="h-4 w-4" />;
   };
 
   // Jerarquía de roles - SuperAdministrador es el máximo
+  // P5-10B: Incluir variantes de nombres de rol (SQL usa SUPERADMIN, legacy usa SuperAdministrador)
   const ROLE_HIERARCHY = {
     'Usuario': 1,
+    'USUARIO': 1,
     'Supervisor': 2,
+    'SUPERVISOR': 2,
     'Administrador': 3,
-    'SuperAdministrador': 100
+    'ADMINISTRADOR': 3,
+    'ADMIN': 3,
+    'SuperAdministrador': 100,
+    'SUPERADMIN': 100,
+    'SUPER_ADMIN': 100
   };
 
   const getCurrentUserRole = () => {
@@ -616,7 +638,7 @@ const Usuarios = () => {
     }
     
     // 2. FALLBACK LEGACY: SuperAdmin siempre puede ver
-    if (userData.role === 'SuperAdministrador') {
+    if (isSuperAdmin(userData.role)) {
       return true;
     }
     
@@ -630,13 +652,13 @@ const Usuarios = () => {
     const permisosNuevos = userData.sec_permisos || [];
     
     // SuperAdmin siempre puede
-    if (userData.role === 'SuperAdministrador') return true;
+    if (isSuperAdmin(userData.role)) return true;
     
     // Permiso RBAC específico
     if (permisosNuevos.includes('SISTEMA_USUARIOS_VER')) return true;
     
     // Fallback legacy: Administrador y Supervisor
-    if (['Administrador', 'Supervisor'].includes(userData.role)) return true;
+    if (isAdmin(userData.role) || (userData.role || '').toUpperCase().includes('SUPERVISOR')) return true;
     
     return false;
   };
@@ -647,13 +669,13 @@ const Usuarios = () => {
     const permisosNuevos = userData.sec_permisos || [];
     
     // SuperAdmin siempre puede
-    if (userData.role === 'SuperAdministrador') return true;
+    if (isSuperAdmin(userData.role)) return true;
     
     // Permiso RBAC específico
     if (permisosNuevos.includes('SISTEMA_ROLES_VER')) return true;
     
     // Fallback legacy: solo Administrador
-    if (userData.role === 'Administrador') return true;
+    if (isAdmin(userData.role)) return true;
     
     return false;
   };
@@ -663,10 +685,10 @@ const Usuarios = () => {
     const userData = getSessionUser() || {};
     
     // SuperAdmin siempre puede
-    if (userData.role === 'SuperAdministrador') return true;
+    if (isSuperAdmin(userData.role)) return true;
     
     // Administrador y Supervisor pueden
-    if (['Administrador', 'Supervisor'].includes(userData.role)) return true;
+    if (isAdmin(userData.role) || (userData.role || '').toUpperCase().includes('SUPERVISOR')) return true;
     
     return false;
   };
@@ -675,7 +697,7 @@ const Usuarios = () => {
   const canViewBitacora = () => {
     const userData = getSessionUser() || {};
     // Solo SuperAdministrador
-    return userData.role === 'SuperAdministrador';
+    return isSuperAdmin(userData.role);
   };
 
   // ============= FASE 7/8/10/11: FUNCIONES RBAC PILOTO =============
@@ -704,7 +726,7 @@ const Usuarios = () => {
 
   // Verifica si el usuario actual puede administrar RBAC piloto
   const canAdminRBACPiloto = () => {
-    return getCurrentUserRole() === 'SuperAdministrador';
+    return isSuperAdmin(getCurrentUserRole());
   };
 
   // Verifica si se debe mostrar la sección RBAC para un usuario
@@ -712,7 +734,7 @@ const Usuarios = () => {
     // Solo SuperAdmin puede ver la sección
     if (!canAdminRBACPiloto()) return false;
     // No mostrar en la propia tarjeta del SuperAdmin
-    if (targetUser.role === 'SuperAdministrador') return false;
+    if (isSuperAdmin(targetUser.role)) return false;
     return true;
   };
 
@@ -925,7 +947,7 @@ const Usuarios = () => {
                           {user.allowed_servers.length} servidor(es) asignado(s)
                         </div>
                       )}
-                      {user.role === 'SuperAdministrador' && (
+                      {isSuperAdmin(user.role) && (
                         <div className="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded font-medium">
                           Rol máximo del sistema
                         </div>
@@ -938,15 +960,15 @@ const Usuarios = () => {
                             <Edit className="h-4 w-4 mr-1" />
                             Editar
                           </Button>
-                          {user.role !== 'SuperAdministrador' && (
+                          {!isSuperAdmin(user.role) && (
                             <Button variant="outline" size="sm" className="flex-1" onClick={() => openPermissionsDialog(user)} data-testid="permissions-button">
                               <Settings className="h-4 w-4 mr-1" />
                               Permisos
                             </Button>
                           )}
                           <Button variant="outline" size="sm" className="flex-1" onClick={() => handleDelete(user.id)} 
-                            disabled={(user.role === 'Administrador' && users.filter(u => u.role === 'Administrador').length === 1) || 
-                                      (user.role === 'SuperAdministrador' && users.filter(u => u.role === 'SuperAdministrador').length === 1)}
+                            disabled={(isAdmin(user.role) && !isSuperAdmin(user.role) && users.filter(u => isAdmin(u.role) && !isSuperAdmin(u.role)).length === 1) || 
+                                      (isSuperAdmin(user.role) && users.filter(u => isSuperAdmin(u.role)).length === 1)}
                             data-testid="delete-user-button">
                             <Trash2 className="h-4 w-4 mr-1" />
                             Eliminar
@@ -1121,7 +1143,7 @@ const Usuarios = () => {
                           <Button variant="ghost" size="sm" onClick={() => openEditDialog(user)}>
                             <Edit className="h-3 w-3" />
                           </Button>
-                          {user.role !== 'SuperAdministrador' && (
+                          {!isSuperAdmin(user.role) && (
                             <Button variant="ghost" size="sm" onClick={() => openPermissionsDialog(user)}>
                               <Settings className="h-3 w-3" />
                             </Button>
@@ -1361,7 +1383,7 @@ const Usuarios = () => {
                             )}
                           </td>
                           <td className="py-3 px-4">
-                            {usuario.role === 'SuperAdministrador' ? (
+                            {isSuperAdmin(usuario.role) ? (
                               <Badge className="bg-amber-100 text-amber-700">👑 Acceso Total</Badge>
                             ) : (
                               <span className="text-xs text-zinc-500">
@@ -1587,7 +1609,7 @@ const Usuarios = () => {
 
         {/* ============= TAB BITÁCORA RBAC (FASE 12) ============= */}
         {/* Solo visible para SuperAdministrador */}
-        {currentUser?.role === 'SuperAdministrador' && (
+        {isSuperAdmin(currentUser?.role) && (
           <TabsContent value="bitacora" className="mt-6" data-testid="bitacora-content">
             <BitacoraRBAC />
           </TabsContent>
@@ -1612,7 +1634,7 @@ const Usuarios = () => {
             
             <div className="p-6 space-y-4 overflow-y-auto flex-1">
               {/* SuperAdministrador tiene acceso total automático */}
-              {usuarioSeleccionadoCat?.role === 'SuperAdministrador' ? (
+              {isSuperAdmin(usuarioSeleccionadoCat?.role) ? (
                 <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg p-6 text-center">
                   <div className="text-4xl mb-3">👑</div>
                   <h3 className="font-bold text-amber-800 text-lg mb-2">Acceso Total</h3>
@@ -1743,7 +1765,7 @@ const Usuarios = () => {
                     roles
                       .filter(role => {
                         // Si no es SuperAdministrador, no puede asignar ese rol
-                        if (role.nombre === 'SuperAdministrador' && !canAssignSuperAdmin()) {
+                        if (isSuperAdmin(role.nombre) && !canAssignSuperAdmin()) {
                           return false;
                         }
                         return true;

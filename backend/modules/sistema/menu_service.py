@@ -1,264 +1,188 @@
-from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
-"""
-EDARSA HUB - Servicio de Menús Gobernados
-==========================================
-Sistema de menús dinámicos basados en SQL Server.
-Los menús se muestran según permisos del usuario.
-"""
-
 import logging
-from typing import Dict, Any, List, Optional
-import pymssql
-import os
-from core.config.edarsahub_config import get_edarsahub_sql_config
-_edarsa_cfg = get_edarsahub_sql_config()
-
+from typing import Dict, Any, List
+from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
 
 logger = logging.getLogger(__name__)
 
 
 class MenuService:
-    """Servicio para gestión de menús gobernados desde SQL Server."""
-    
-    def __init__(self):
-        self.db_config = {
-            'host': _edarsa_cfg.host,
-            'user': _edarsa_cfg.user,
-            'password': _edarsa_cfg.password,
-            'database': _edarsa_cfg.database,
-            'port': _edarsa_cfg.port
-        }
-    
     def _get_connection(self):
-        return get_external_sql_connection(self.db_config)
-    
-    def obtener_modulos(self, solo_activos: bool = True) -> List[Dict[str, Any]]:
-        """
-        Obtiene todos los módulos del sistema.
-        
-        Returns:
-            Lista de módulos con su configuración
-        """
+        return get_edarsahub_pymssql_connection()
+
+    @staticmethod
+    def _norm(value):
+        return str(value or "").strip().upper().replace("-", "_").replace(" ", "_")
+
+    def obtener_roles_usuario(self, usuario_id: str) -> List[Dict[str, Any]]:
         conn = self._get_connection()
         try:
-            cursor = conn.cursor(as_dict=True)
-            
-            query = """
-                SELECT 
-                    ModuloID, Codigo, Nombre, Descripcion, Icono,
-                    Orden, EsPrincipal, EsSatelite, EsPortal, URLExterna, Activo
-                FROM Sistema_Modulos
-            """
-            if solo_activos:
-                query += " WHERE Activo = 1"
-            query += " ORDER BY Orden"
-            
-            cursor.execute(query)
-            return cursor.fetchall() or []
-            
+            cur = conn.cursor(as_dict=True)
+            cur.execute("""
+                SELECT r.RolID, r.CodigoRol, r.NombreRol, r.NivelJerarquia
+                FROM dbo.Usuario_RolesAsignacion ura
+                INNER JOIN dbo.Usuario_Roles r ON r.RolID = ura.RolID
+                WHERE TRY_CONVERT(NVARCHAR(100), ura.UsuarioID) = %s
+                  AND ISNULL(ura.Activo,1)=1
+                  AND ISNULL(r.Activo,1)=1
+            """, (str(usuario_id),))
+            return cur.fetchall() or []
         finally:
             conn.close()
-    
-    def obtener_menus_modulo(self, modulo_id: int) -> List[Dict[str, Any]]:
-        """
-        Obtiene los menús de un módulo específico.
-        
-        Args:
-            modulo_id: ID del módulo
-            
-        Returns:
-            Lista de menús del módulo
-        """
+
+    def es_superadmin(self, usuario_id: str) -> bool:
+        for r in self.obtener_roles_usuario(usuario_id):
+            code = self._norm(r.get("CodigoRol") or r.get("NombreRol"))
+            nivel = int(r.get("NivelJerarquia") or 0)
+            if code in {"SUPERADMIN", "SUPERADMINISTRADOR", "SUPER_ADMIN"} or nivel >= 100:
+                return True
+        return False
+
+    def obtener_permisos_usuario(self, usuario_id: str) -> List[Dict[str, Any]]:
         conn = self._get_connection()
         try:
-            cursor = conn.cursor(as_dict=True)
-            
-            cursor.execute("""
-                SELECT 
-                    MenuID, ModuloID, MenuPadreID, Codigo, Nombre,
-                    Descripcion, Icono, Ruta, Orden, RequierePermiso, Activo
-                FROM Sistema_ModulosMenus
-                WHERE ModuloID = %s AND Activo = 1
-                ORDER BY Orden
-            """, (modulo_id,))
-            
-            return cursor.fetchall() or []
-            
+            cur = conn.cursor(as_dict=True)
+
+            if self.es_superadmin(usuario_id):
+                cur.execute("""
+                    SELECT DISTINCT
+                        m.ModuloID,
+                        m.CodigoModulo,
+                        m.NombreModulo,
+                        a.AccionID,
+                        a.CodigoAccion,
+                        a.NombreAccion,
+                        CAST(1 AS BIT) AS Permitido
+                    FROM dbo.Usuario_Modulos m
+                    CROSS JOIN dbo.Usuario_Acciones a
+                    WHERE ISNULL(m.Activo,1)=1
+                      AND ISNULL(a.Activo,1)=1
+                """)
+                return cur.fetchall() or []
+
+            cur.execute("""
+                SELECT DISTINCT
+                    m.ModuloID,
+                    m.CodigoModulo,
+                    m.NombreModulo,
+                    a.AccionID,
+                    a.CodigoAccion,
+                    a.NombreAccion,
+                    prm.Permitido
+                FROM dbo.Usuario_RolesAsignacion ura
+                INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID = ura.RolID
+                INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID = prm.ModuloID
+                INNER JOIN dbo.Usuario_Acciones a ON a.AccionID = prm.AccionID
+                WHERE TRY_CONVERT(NVARCHAR(100), ura.UsuarioID) = %s
+                  AND ISNULL(ura.Activo,1)=1
+                  AND ISNULL(prm.Activo,1)=1
+                  AND ISNULL(prm.Permitido,1)=1
+                  AND ISNULL(m.Activo,1)=1
+                  AND ISNULL(a.Activo,1)=1
+            """, (str(usuario_id),))
+            return cur.fetchall() or []
         finally:
             conn.close()
-    
-    def obtener_menus_usuario(
-        self, 
-        usuario_id: str, 
-        permisos_usuario: List[str]
-    ) -> List[Dict[str, Any]]:
-        """
-        Obtiene los menús visibles para un usuario según sus permisos.
-        
-        Args:
-            usuario_id: ID del usuario
-            permisos_usuario: Lista de códigos de permiso del usuario
-            
-        Returns:
-            Lista de módulos con sus menús filtrados por permisos
-        """
+
+    def obtener_menus_usuario(self, usuario_id: str) -> List[Dict[str, Any]]:
+        permisos = self.obtener_permisos_usuario(usuario_id)
+        superadmin = self.es_superadmin(usuario_id)
+
+        permisos_modulo = set()
+        for p in permisos:
+            cod = p.get("CodigoModulo")
+            if cod:
+                permisos_modulo.add(self._norm(cod))
+
         conn = self._get_connection()
         try:
-            cursor = conn.cursor(as_dict=True)
-            
-            # Obtener módulos activos
-            cursor.execute("""
-                SELECT 
-                    m.ModuloID, m.Codigo, m.Nombre, m.Descripcion, m.Icono,
-                    m.Orden, m.EsPrincipal, m.EsSatelite, m.EsPortal, m.URLExterna
-                FROM Sistema_Modulos m
-                WHERE m.Activo = 1
-                ORDER BY m.Orden
+            cur = conn.cursor(as_dict=True)
+
+            cur.execute("""
+                SELECT
+                    ModuloID,
+                    Codigo,
+                    Nombre,
+                    Descripcion,
+                    Icono,
+                    Orden,
+                    EsPrincipal,
+                    EsSatelite,
+                    EsPortal,
+                    URLExterna,
+                    Activo
+                FROM dbo.Sistema_Modulos
+                WHERE ISNULL(Activo,1)=1
+                ORDER BY Orden, Nombre
             """)
-            modulos = cursor.fetchall() or []
-            
+            modulos = cur.fetchall() or []
+
             resultado = []
-            
+
             for modulo in modulos:
-                # Obtener menús del módulo
-                cursor.execute("""
-                    SELECT 
-                        MenuID, MenuPadreID, Codigo, Nombre, Descripcion,
-                        Icono, Ruta, Orden, RequierePermiso
-                    FROM Sistema_ModulosMenus
-                    WHERE ModuloID = %s AND Activo = 1
-                    ORDER BY Orden
-                """, (modulo['ModuloID'],))
-                
-                menus = cursor.fetchall() or []
-                
-                # Filtrar menús por permisos
-                menus_filtrados = []
-                for menu in menus:
-                    permiso_requerido = menu.get('RequierePermiso')
-                    
-                    # Si no requiere permiso específico o el usuario lo tiene
-                    if not permiso_requerido or permiso_requerido in permisos_usuario:
-                        menus_filtrados.append({
-                            'id': menu['MenuID'],
-                            'codigo': menu['Codigo'],
-                            'nombre': menu['Nombre'],
-                            'descripcion': menu['Descripcion'],
-                            'icono': menu['Icono'],
-                            'ruta': menu['Ruta'],
-                            'orden': menu['Orden'],
-                            'padre_id': menu['MenuPadreID']
-                        })
-                
-                # Solo incluir módulo si tiene menús visibles
-                if menus_filtrados:
-                    resultado.append({
-                        'id': modulo['ModuloID'],
-                        'codigo': modulo['Codigo'],
-                        'nombre': modulo['Nombre'],
-                        'descripcion': modulo['Descripcion'],
-                        'icono': modulo['Icono'],
-                        'es_principal': modulo['EsPrincipal'],
-                        'es_satelite': modulo['EsSatelite'],
-                        'es_portal': modulo['EsPortal'],
-                        'url_externa': modulo['URLExterna'],
-                        'menus': menus_filtrados
-                    })
-            
-            return resultado
-            
-        finally:
-            conn.close()
-    
-    def obtener_arbol_menus(self) -> List[Dict[str, Any]]:
-        """
-        Obtiene el árbol completo de módulos y menús.
-        
-        Returns:
-            Árbol jerárquico de módulos y menús
-        """
-        conn = self._get_connection()
-        try:
-            cursor = conn.cursor(as_dict=True)
-            
-            # Obtener todos los módulos
-            cursor.execute("""
-                SELECT 
-                    m.ModuloID, m.Codigo, m.Nombre, m.Descripcion, m.Icono,
-                    m.Orden, m.EsPrincipal, m.EsSatelite, m.EsPortal
-                FROM Sistema_Modulos m
-                WHERE m.Activo = 1
-                ORDER BY m.Orden
-            """)
-            modulos = cursor.fetchall() or []
-            
-            resultado = []
-            
-            for modulo in modulos:
-                # Obtener menús del módulo
-                cursor.execute("""
-                    SELECT 
-                        MenuID, MenuPadreID, Codigo, Nombre, Descripcion,
-                        Icono, Ruta, Orden, RequierePermiso
-                    FROM Sistema_ModulosMenus
-                    WHERE ModuloID = %s AND Activo = 1
-                    ORDER BY Orden
-                """, (modulo['ModuloID'],))
-                
-                menus = cursor.fetchall() or []
-                
-                # Construir árbol de menús (padres e hijos)
-                menus_raiz = []
-                menus_hijos = {}
-                
-                for menu in menus:
-                    menu_item = {
-                        'id': menu['MenuID'],
-                        'codigo': menu['Codigo'],
-                        'nombre': menu['Nombre'],
-                        'descripcion': menu['Descripcion'],
-                        'icono': menu['Icono'],
-                        'ruta': menu['Ruta'],
-                        'orden': menu['Orden'],
-                        'permiso': menu['RequierePermiso'],
-                        'hijos': []
-                    }
-                    
-                    if menu['MenuPadreID']:
-                        if menu['MenuPadreID'] not in menus_hijos:
-                            menus_hijos[menu['MenuPadreID']] = []
-                        menus_hijos[menu['MenuPadreID']].append(menu_item)
-                    else:
-                        menus_raiz.append(menu_item)
-                
-                # Asignar hijos a padres
-                for menu in menus_raiz:
-                    if menu['id'] in menus_hijos:
-                        menu['hijos'] = menus_hijos[menu['id']]
-                
+                modulo_codigo = self._norm(modulo.get("Codigo"))
+
+                # Si no es superadmin, solo mostrar módulos autorizados por SQL.
+                if not superadmin and modulo_codigo not in permisos_modulo:
+                    continue
+
+                cur.execute("""
+                    SELECT
+                        MenuID,
+                        ModuloID,
+                        MenuPadreID,
+                        Codigo,
+                        Nombre,
+                        Descripcion,
+                        Icono,
+                        Ruta,
+                        Orden,
+                        RequierePermiso,
+                        Activo
+                    FROM dbo.Sistema_ModulosMenus
+                    WHERE ModuloID = %s
+                      AND ISNULL(Activo,1)=1
+                    ORDER BY Orden, Nombre
+                """, (modulo["ModuloID"],))
+                menus = cur.fetchall() or []
+
                 resultado.append({
-                    'id': modulo['ModuloID'],
-                    'codigo': modulo['Codigo'],
-                    'nombre': modulo['Nombre'],
-                    'descripcion': modulo['Descripcion'],
-                    'icono': modulo['Icono'],
-                    'tipo': 'principal' if modulo['EsPrincipal'] else ('satelite' if modulo['EsSatelite'] else 'portal'),
-                    'menus': menus_raiz
+                    "id": modulo["ModuloID"],
+                    "codigo": modulo.get("Codigo"),
+                    "nombre": modulo.get("Nombre"),
+                    "descripcion": modulo.get("Descripcion"),
+                    "icono": modulo.get("Icono"),
+                    "ruta": modulo.get("URLExterna"),
+                    "orden": modulo.get("Orden"),
+                    "es_principal": modulo.get("EsPrincipal"),
+                    "es_satelite": modulo.get("EsSatelite"),
+                    "es_portal": modulo.get("EsPortal"),
+                    "url_externa": modulo.get("URLExterna"),
+                    "visible": True,
+                    "menus": [
+                        {
+                            "id": m.get("MenuID"),
+                            "codigo": m.get("Codigo"),
+                            "nombre": m.get("Nombre"),
+                            "descripcion": m.get("Descripcion"),
+                            "icono": m.get("Icono"),
+                            "ruta": m.get("Ruta"),
+                            "orden": m.get("Orden"),
+                            "padre_id": m.get("MenuPadreID"),
+                            "requiere_permiso": m.get("RequierePermiso"),
+                            "visible": True,
+                        }
+                        for m in menus
+                    ],
                 })
-            
+
             return resultado
-            
         finally:
             conn.close()
 
 
-# Singleton
 _menu_service = None
 
 def get_menu_service() -> MenuService:
-    """Factory para obtener el servicio de menús."""
     global _menu_service
     if _menu_service is None:
         _menu_service = MenuService()

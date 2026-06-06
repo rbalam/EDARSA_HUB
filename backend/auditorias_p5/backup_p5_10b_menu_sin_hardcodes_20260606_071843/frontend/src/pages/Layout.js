@@ -108,9 +108,6 @@ const ICON_MAP = {
   'Activity': Activity,
 };
 
-// P5-10B: Desactivar fallback hardcodeado - SQL canónico es la única fuente
-const ENABLE_HARDCODED_MENU_FALLBACK = false;
-
 const Layout = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -202,21 +199,57 @@ const Layout = () => {
   }, [user]);
 
   // Función para verificar si el usuario tiene acceso a un módulo
-  // P5-10B: Backend SQL canónico decide visibilidad
+  // Ahora usa permisos del backend (RBAC centralizado)
   const hasAccess = (item) => {
-    // Si el ítem viene del backend SQL con visible=true, confiar en eso
-    if (item && Object.prototype.hasOwnProperty.call(item, 'visible')) {
-      return item.visible === true;
+    // Mapeo de nombres de módulo a claves de permisos
+    const moduleKeyMap = {
+      'Mis Tareas': 'mis_tareas',
+      'Tablero Ejecutivo': 'tablero_ejecutivo',
+      'Comercial': 'comercial',
+      'CRM': 'crm',
+      'Dashboard CRM': 'crm',
+      'Leads': 'crm',
+      'Oportunidades': 'crm',
+      'Pipeline': 'crm',
+      'Compras': 'compras',
+      'Operaciones': 'operaciones',
+      'Finanzas': 'finanzas',
+      'Producción': 'produccion',
+      'Tablajería': 'produccion',
+      'Plantillas': 'produccion',
+      'Órdenes': 'produccion',
+      'Cava de Socios': 'cava_socios',
+      'Socios': 'cava_socios',
+      'Recursos Humanos': 'recursos_humanos',
+      'Reportes BI': 'reportes_bi',
+      'Catálogos': 'catalogos',
+      'Centro de Control': 'centro_control',
+      'Servidores': 'servidores',
+      'Programación': 'programacion',
+      'Automatizaciones': 'automatizaciones',
+      'Asignaciones': 'asignaciones',
+      'Catálogo SQL': 'catalogo_sql',
+      'Explorador BD': 'explorador_bd',
+      'Alertas': 'alertas',
+      'Usuarios': 'usuarios',
+      'Importador RH': 'recursos_humanos', // Submenu hereda del padre
+    };
+    
+    const moduleKey = moduleKeyMap[item.name];
+    
+    // Si tenemos permisos del backend, usarlos
+    if (permissionsLoaded && moduleKey && menuPermissions[moduleKey] !== undefined) {
+      return menuPermissions[moduleKey];
     }
     
-    // Si usamos menús SQL, todos los ítems retornados ya están autorizados
-    if (useSqlMenus) {
+    // Fallback legacy mientras cargan los permisos
+    if (item.roles && item.roles.includes(user?.role)) {
       return true;
     }
     
-    // Fallback desactivado por máxima de oro
-    if (!ENABLE_HARDCODED_MENU_FALLBACK) {
-      return false;
+    // Para roles con 'admin' o 'super' en el nombre, dar acceso amplio
+    if (user?.role?.toLowerCase().includes('admin') || user?.role?.toLowerCase().includes('super')) {
+      return true;
     }
     
     return false;
@@ -519,7 +552,7 @@ const Layout = () => {
   const filteredSistema = sistema.filter(item => hasAccess(item));
 
   // ==================================================
-  // MENÚS DINÁMICOS DESDE SQL (P5-10B)
+  // MENÚS DINÁMICOS DESDE SQL (FASE 0.6)
   // ==================================================
   
   // Transformar menús SQL a estructura renderizable
@@ -532,45 +565,40 @@ const Layout = () => {
     const sistemaItems = [];
     
     sqlMenus.forEach(modulo => {
+      const tipo = modulo.tipo || 'principal';
       const menus = modulo.menus || [];
-      const esSatelite = modulo.es_satelite === true;
-      const esPortal = modulo.es_portal === true;
-      const codigo = modulo.codigo || '';
       
       // Mapear a estructura del componente
       const moduloTransformado = {
-        name: modulo.nombre || codigo,
+        name: modulo.nombre || modulo.codigo,
         href: menus[0]?.ruta || '#',
         icon: ICON_MAP[modulo.icono] || LayoutDashboard,
-        codigo: codigo,
-        visible: modulo.visible !== false,
+        codigo: modulo.codigo,
         submenus: menus.length > 1 ? menus.map(m => ({
           name: m.nombre,
           href: m.ruta,
-          icon: ICON_MAP[m.icono] || ChevronRight,
-          visible: m.visible !== false
+          icon: ICON_MAP[m.icono] || ChevronRight
         })) : [],
         // Si solo tiene 1 menú, usar su ruta directamente
         ...(menus.length === 1 && { href: menus[0].ruta })
       };
       
-      // P5-10B: Clasificar usando los campos que envía el backend SQL
-      if (codigo === 'SISTEMA' || codigo.startsWith('SISTEMA_') || codigo === 'CENTRO_CONTROL') {
-        // Extraer ítems de sistema del módulo SISTEMA/Administración
+      // Clasificar por tipo
+      if (tipo === 'satelite') {
+        satelites.push(moduloTransformado);
+      } else if (tipo === 'portal') {
+        portales.push(moduloTransformado);
+      } else if (modulo.codigo?.startsWith('SISTEMA_') || modulo.codigo === 'CENTRO_CONTROL') {
+        // Extraer ítems de sistema del módulo SISTEMA
         if (menus.length > 0) {
           menus.forEach(m => {
             sistemaItems.push({
               name: m.nombre,
               href: m.ruta,
-              icon: ICON_MAP[m.icono] || Settings,
-              visible: m.visible !== false
+              icon: ICON_MAP[m.icono] || Settings
             });
           });
         }
-      } else if (esSatelite) {
-        satelites.push(moduloTransformado);
-      } else if (esPortal) {
-        portales.push(moduloTransformado);
       } else {
         principales.push(moduloTransformado);
       }

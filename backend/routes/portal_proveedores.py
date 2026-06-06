@@ -42,8 +42,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # ============================================================================
 # P0-PORTAL-PROVEEDORES-AUTH-01: Helper para endpoints admin
+# P5-10B: Incluir variantes de nombres de rol (SQL usa SUPERADMIN, legacy usa SuperAdministrador)
 # ============================================================================
-ADMIN_ROLES = ['SuperAdministrador', 'Administrador']
+ADMIN_ROLES = ['SuperAdministrador', 'Administrador', 'SUPERADMIN', 'ADMIN', 'ADMINISTRADOR']
 
 
 async def require_portal_admin(
