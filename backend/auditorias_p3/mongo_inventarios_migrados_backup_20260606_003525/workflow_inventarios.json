@@ -1,0 +1,608 @@
+[
+  {
+    "_id": {
+      "$oid": "69e4b98fc74b8aec1448fdf5"
+    },
+    "id": "940ff676-3d1d-4970-9ed6-6966ef7e6d98",
+    "procesado_id": "173",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "server_name": "LA ESTELAR",
+    "sucursal_id": "SoftRestaurant",
+    "sucursal_nombre": "SoftRestaurant",
+    "almacen_id": "001 BODEGA",
+    "almacen_nombre": "001 BODEGA",
+    "folios_iniciales": [
+      "161"
+    ],
+    "folios_finales": [
+      "173"
+    ],
+    "folio_final_key": "173",
+    "fecha_analisis_ini": "2026-04-01 09:54:06",
+    "fecha_analisis_fin": "2026-04-13 11:05:53",
+    "estado_workflow": "PENDIENTE_ASIGNACION",
+    "estado": "pendiente",
+    "ciclo_actual": 1,
+    "total_productos_diferencia": 38,
+    "valor_total_diferencias": 32749.84,
+    "fecha_creacion": "2026-04-19T11:16:31.976257+00:00",
+    "fecha_ultima_actualizacion": "2026-04-19T11:16:31.976257+00:00",
+    "usuario_creador_id": "0da77b7b-fe88-4e23-98bc-9cbf543d5ee3",
+    "notas": [],
+    "correccion_historicos": true,
+    "fecha_correccion_historicos": "2026-04-22T05:33:18.832746+00:00",
+    "folio_inventario": "173",
+    "servidor_id": "a5ff0e25-f029-43db-b634-d4ac814c904f"
+  },
+  {
+    "_id": {
+      "$oid": "69e4c218194e699f107df372"
+    },
+    "id": "3eb51330-494a-4518-990c-9d849784e1f3",
+    "procesado_id": "2411",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_name": "CIENFUEGOS",
+    "sucursal_id": "SoftRestaurant",
+    "sucursal_nombre": "SoftRestaurant",
+    "almacen_id": "004 BODEGA",
+    "almacen_nombre": "004 BODEGA",
+    "folios_iniciales": [
+      "2397"
+    ],
+    "folios_finales": [
+      "2411"
+    ],
+    "folio_final_key": "2411",
+    "fecha_analisis_ini": "2026-04-01 11:17:58",
+    "fecha_analisis_fin": "2026-04-13 11:36:33",
+    "estado_workflow": "PENDIENTE_ASIGNACION",
+    "estado": "pendiente",
+    "ciclo_actual": 1,
+    "total_productos_diferencia": 187,
+    "valor_total_diferencias": 662763.37,
+    "fecha_creacion": "2026-04-19T11:52:56.878933+00:00",
+    "fecha_ultima_actualizacion": "2026-04-19T11:52:56.878933+00:00",
+    "usuario_creador_id": "0da77b7b-fe88-4e23-98bc-9cbf543d5ee3",
+    "notas": [],
+    "correccion_historicos": true,
+    "fecha_correccion_historicos": "2026-04-22T05:33:18.833172+00:00",
+    "folio_inventario": "2411",
+    "servidor_id": "6d053c22-523e-48c0-b72b-96081e2d781b"
+  },
+  {
+    "_id": {
+      "$oid": "69e6f14aa9e9fa3414f63524"
+    },
+    "id": "3471ab20-c335-4a22-b2b0-8f163f55b6b4",
+    "procesado_id": "176",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "server_name": "LA ESTELAR",
+    "sucursal_id": "SoftRestaurant",
+    "sucursal_nombre": "SoftRestaurant",
+    "almacen_id": "001 BODEGA",
+    "almacen_nombre": "001 BODEGA",
+    "folios_iniciales": [
+      "161"
+    ],
+    "folios_finales": [
+      "176"
+    ],
+    "folio_final_key": "176",
+    "fecha_analisis_ini": "2026-04-01 09:54:06",
+    "fecha_analisis_fin": "2026-04-20 11:36:39",
+    "estado_workflow": "PENDIENTE_ASIGNACION",
+    "estado": "pendiente",
+    "ciclo_actual": 1,
+    "total_productos_diferencia": 36,
+    "valor_total_diferencias": 12992.2,
+    "fecha_creacion": "2026-04-21T03:38:50.470807+00:00",
+    "fecha_ultima_actualizacion": "2026-04-21T03:38:50.470807+00:00",
+    "usuario_creador_id": "0da77b7b-fe88-4e23-98bc-9cbf543d5ee3",
+    "notas": [],
+    "correccion_historicos": true,
+    "fecha_correccion_historicos": "2026-04-22T05:33:18.833445+00:00",
+    "folio_inventario": "176",
+    "servidor_id": "a5ff0e25-f029-43db-b634-d4ac814c904f"
+  },
+  {
+    "_id": {
+      "$oid": "69e6f181a9e9fa3414f6354d"
+    },
+    "id": "20c03a2c-1991-46e8-b951-4502f5ebce8d",
+    "procesado_id": "2397",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_name": "CIENFUEGOS",
+    "sucursal_id": "SoftRestaurant",
+    "sucursal_nombre": "SoftRestaurant",
+    "almacen_id": "004 BODEGA",
+    "almacen_nombre": "004 BODEGA",
+    "folios_iniciales": [
+      "2411"
+    ],
+    "folios_finales": [
+      "2397"
+    ],
+    "folio_final_key": "2397",
+    "fecha_analisis_ini": "2026-04-01 11:17:58",
+    "fecha_analisis_fin": "2026-04-13 11:36:33",
+    "estado_workflow": "PENDIENTE_ASIGNACION",
+    "estado": "pendiente",
+    "ciclo_actual": 1,
+    "total_productos_diferencia": 316,
+    "valor_total_diferencias": 819112.44,
+    "fecha_creacion": "2026-04-21T03:39:45.830239+00:00",
+    "fecha_ultima_actualizacion": "2026-04-21T03:39:45.830239+00:00",
+    "usuario_creador_id": "0da77b7b-fe88-4e23-98bc-9cbf543d5ee3",
+    "notas": [],
+    "correccion_historicos": true,
+    "fecha_correccion_historicos": "2026-04-22T05:33:18.833691+00:00",
+    "folio_inventario": "2397",
+    "servidor_id": "6d053c22-523e-48c0-b72b-96081e2d781b"
+  },
+  {
+    "_id": {
+      "$oid": "69e6f1caa9e9fa3414f6368d"
+    },
+    "id": "869ed63b-e38e-461d-a317-3130332590f0",
+    "procesado_id": "SB-0001026",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "server_name": "ManagmentPro",
+    "sucursal_id": "ORIGEN",
+    "sucursal_nombre": "ORIGEN",
+    "almacen_id": "BODEGA",
+    "almacen_nombre": "BODEGA",
+    "folios_iniciales": [
+      "SB-0001011"
+    ],
+    "folios_finales": [
+      "SB-0001026"
+    ],
+    "folio_final_key": "SB-0001026",
+    "fecha_analisis_ini": "2026-03-31",
+    "fecha_analisis_fin": "2026-04-19",
+    "estado_workflow": "PENDIENTE_ASIGNACION",
+    "estado": "pendiente",
+    "ciclo_actual": 1,
+    "total_productos_diferencia": 4,
+    "valor_total_diferencias": 220.71,
+    "fecha_creacion": "2026-04-21T03:40:58.963382+00:00",
+    "fecha_ultima_actualizacion": "2026-04-21T03:40:58.963382+00:00",
+    "usuario_creador_id": "0da77b7b-fe88-4e23-98bc-9cbf543d5ee3",
+    "notas": [],
+    "correccion_historicos": true,
+    "fecha_correccion_historicos": "2026-04-22T05:33:18.833929+00:00",
+    "folio_inventario": "SB-0001026",
+    "servidor_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6"
+  },
+  {
+    "_id": {
+      "$oid": "69e6f203a9e9fa3414f63696"
+    },
+    "id": "1f23be91-fc93-40a6-9a7f-4d3fce3a51a4",
+    "procesado_id": "QR-0000956",
+    "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+    "server_name": "ManagmentPro",
+    "sucursal_id": "130\u00b0 QUERETARO",
+    "sucursal_nombre": "130\u00b0 QUERETARO",
+    "almacen_id": "",
+    "almacen_nombre": "",
+    "folios_iniciales": [
+      "QR-0000945"
+    ],
+    "folios_finales": [
+      "QR-0000956"
+    ],
+    "folio_final_key": "QR-0000956",
+    "fecha_analisis_ini": "2026-03-31",
+    "fecha_analisis_fin": "2026-04-19",
+    "estado_workflow": "PENDIENTE_ASIGNACION",
+    "estado": "pendiente",
+    "ciclo_actual": 1,
+    "total_productos_diferencia": 57,
+    "valor_total_diferencias": 11970.37,
+    "fecha_creacion": "2026-04-21T03:41:55.864687+00:00",
+    "fecha_ultima_actualizacion": "2026-04-21T03:41:55.864687+00:00",
+    "usuario_creador_id": "0da77b7b-fe88-4e23-98bc-9cbf543d5ee3",
+    "notas": [],
+    "correccion_historicos": true,
+    "fecha_correccion_historicos": "2026-04-22T05:33:18.834147+00:00",
+    "folio_inventario": "QR-0000956",
+    "servidor_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6"
+  },
+  {
+    "_id": {
+      "$oid": "69e859b4e85f830662a28e60"
+    },
+    "id": "1d7e56f9-e632-4d79-ba64-cbbef9fed241",
+    "procesado_id": "2414",
+    "folio_inventario": "2414",
+    "servidor_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_name": "CIENFUEGOS",
+    "sucursal_id": "CIENFUEGOS",
+    "sucursal_nombre": "CIENFUEGOS",
+    "almacen_id": "100 PRODUCCION",
+    "almacen_nombre": "100 PRODUCCION",
+    "folios_iniciales": [
+      "2309"
+    ],
+    "folios_finales": [
+      "2414"
+    ],
+    "folio_final_key": "2414",
+    "fecha_analisis_ini": "2026-01-12 12:10:15",
+    "fecha_analisis_fin": "2026-04-20 12:27:44",
+    "estado_workflow": "PENDIENTE_ASIGNACION",
+    "estado": "pendiente",
+    "ciclo_actual": 1,
+    "total_productos_diferencia": 173,
+    "valor_total_diferencias": 3173725.08,
+    "fecha_creacion": "2026-04-22T05:16:36.773653+00:00",
+    "fecha_ultima_actualizacion": "2026-04-22T05:16:36.773653+00:00",
+    "usuario_creador_id": "system",
+    "notas": []
+  },
+  {
+    "_id": {
+      "$oid": "69e859fec28aa47934e0e444"
+    },
+    "id": "60186940-6664-4b23-a51c-0fe79508c705",
+    "procesado_id": "2369",
+    "folio_inventario": "2369",
+    "servidor_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_name": "CIENFUEGOS",
+    "sucursal_id": "CIENFUEGOS",
+    "sucursal_nombre": "CIENFUEGOS",
+    "almacen_id": "002  CONGELADOR",
+    "almacen_nombre": "002  CONGELADOR",
+    "folios_iniciales": [
+      "2307"
+    ],
+    "folios_finales": [
+      "2369"
+    ],
+    "folio_final_key": "2369",
+    "fecha_analisis_ini": "2026-01-12 10:25:58",
+    "fecha_analisis_fin": "2026-03-01 12:39:59",
+    "estado_workflow": "PENDIENTE_ASIGNACION",
+    "estado": "pendiente",
+    "ciclo_actual": 1,
+    "total_productos_diferencia": 31,
+    "valor_total_diferencias": 40070.48,
+    "fecha_creacion": "2026-04-22T05:17:50.989609+00:00",
+    "fecha_ultima_actualizacion": "2026-04-22T05:17:50.989609+00:00",
+    "usuario_creador_id": "system",
+    "notas": []
+  },
+  {
+    "_id": {
+      "$oid": "69e85a00c28aa47934e0e465"
+    },
+    "id": "ba17b7d6-de3f-4438-902f-f44ae1825626",
+    "procesado_id": "2368",
+    "folio_inventario": "2368",
+    "servidor_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_name": "CIENFUEGOS",
+    "sucursal_id": "CIENFUEGOS",
+    "sucursal_nombre": "CIENFUEGOS",
+    "almacen_id": "003 CONSIGNA",
+    "almacen_nombre": "003 CONSIGNA",
+    "folios_iniciales": [
+      "2306"
+    ],
+    "folios_finales": [
+      "2368"
+    ],
+    "folio_final_key": "2368",
+    "fecha_analisis_ini": "2026-01-12 10:26:24",
+    "fecha_analisis_fin": "2026-03-01 12:39:07",
+    "estado_workflow": "PENDIENTE_ASIGNACION",
+    "estado": "pendiente",
+    "ciclo_actual": 1,
+    "total_productos_diferencia": 6,
+    "valor_total_diferencias": 14941.35,
+    "fecha_creacion": "2026-04-22T05:17:52.023015+00:00",
+    "fecha_ultima_actualizacion": "2026-04-22T05:17:52.023015+00:00",
+    "usuario_creador_id": "system",
+    "notas": []
+  },
+  {
+    "_id": {
+      "$oid": "69e85a34c28aa47934e0e46d"
+    },
+    "id": "5fd9f6ce-7fd4-4bb6-97f2-4cb1d9d28490",
+    "procesado_id": "2360",
+    "folio_inventario": "2360",
+    "servidor_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_name": "CIENFUEGOS",
+    "sucursal_id": "CIENFUEGOS",
+    "sucursal_nombre": "CIENFUEGOS",
+    "almacen_id": "100 PRODUCCION",
+    "almacen_nombre": "100 PRODUCCION",
+    "folios_iniciales": [
+      "2301"
+    ],
+    "folios_finales": [
+      "2360"
+    ],
+    "folio_final_key": "2360",
+    "fecha_analisis_ini": "2026-01-02 10:37:10",
+    "fecha_analisis_fin": "2026-02-28 12:41:04",
+    "estado_workflow": "PENDIENTE_ASIGNACION",
+    "estado": "pendiente",
+    "ciclo_actual": 1,
+    "total_productos_diferencia": 285,
+    "valor_total_diferencias": 2620768.09,
+    "fecha_creacion": "2026-04-22T05:18:44.971231+00:00",
+    "fecha_ultima_actualizacion": "2026-04-22T05:18:44.971231+00:00",
+    "usuario_creador_id": "system",
+    "notas": []
+  },
+  {
+    "_id": {
+      "$oid": "69e85a37c28aa47934e0e58c"
+    },
+    "id": "d287cd12-870f-4c35-8873-2a7d20e32864",
+    "procesado_id": "178",
+    "folio_inventario": "178",
+    "servidor_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "server_name": "LA ESTELAR",
+    "sucursal_id": "LA ESTELAR",
+    "sucursal_nombre": "LA ESTELAR",
+    "almacen_id": "100 PRODUCCION",
+    "almacen_nombre": "100 PRODUCCION",
+    "folios_iniciales": [
+      "119"
+    ],
+    "folios_finales": [
+      "178"
+    ],
+    "folio_final_key": "178",
+    "fecha_analisis_ini": "2026-02-01 16:19:41",
+    "fecha_analisis_fin": "2026-04-20 21:17:01",
+    "estado_workflow": "PENDIENTE_ASIGNACION",
+    "estado": "pendiente",
+    "ciclo_actual": 1,
+    "total_productos_diferencia": 157,
+    "valor_total_diferencias": 509425.38,
+    "fecha_creacion": "2026-04-22T05:18:47.584011+00:00",
+    "fecha_ultima_actualizacion": "2026-04-22T05:18:47.584011+00:00",
+    "usuario_creador_id": "system",
+    "notas": []
+  },
+  {
+    "_id": {
+      "$oid": "69e85c75c28aa47934e0e63a"
+    },
+    "id": "1c9e88f7-732d-4795-9a01-79725d861608",
+    "procesado_id": "2359",
+    "folio_inventario": "2359",
+    "servidor_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "server_name": "CIENFUEGOS",
+    "sucursal_id": "CIENFUEGOS",
+    "sucursal_nombre": "CIENFUEGOS",
+    "almacen_id": "400 CAVA",
+    "almacen_nombre": "400 CAVA",
+    "folios_iniciales": [
+      "2303"
+    ],
+    "folios_finales": [
+      "2359"
+    ],
+    "folio_final_key": "2359",
+    "fecha_analisis_ini": "2026-01-02 12:09:02",
+    "fecha_analisis_fin": "2026-02-28 11:08:10",
+    "estado_workflow": "PENDIENTE_ASIGNACION",
+    "estado": "pendiente",
+    "ciclo_actual": 1,
+    "total_productos_diferencia": 107,
+    "valor_total_diferencias": 381055.88,
+    "fecha_creacion": "2026-04-22T05:28:21.186233+00:00",
+    "fecha_ultima_actualizacion": "2026-04-22T05:28:21.186233+00:00",
+    "usuario_creador_id": "system",
+    "notas": []
+  },
+  {
+    "_id": {
+      "$oid": "69e85dd4947c72388d9eaf00"
+    },
+    "id": "11d97725-7327-4a27-96f0-feeb45aa6b6a",
+    "procesado_id": "143",
+    "folio_inventario": "143",
+    "servidor_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "server_name": "LA ESTELAR",
+    "sucursal_id": "LA ESTELAR",
+    "sucursal_nombre": "LA ESTELAR",
+    "almacen_id": "100 PRODUCCION",
+    "almacen_nombre": "100 PRODUCCION",
+    "folios_iniciales": [
+      "119"
+    ],
+    "folios_finales": [
+      "143"
+    ],
+    "folio_final_key": "143",
+    "fecha_analisis_ini": "2026-02-01 16:19:41",
+    "fecha_analisis_fin": "2026-03-01 12:54:28",
+    "estado_workflow": "PENDIENTE_ASIGNACION",
+    "estado": "pendiente",
+    "ciclo_actual": 1,
+    "total_productos_diferencia": 155,
+    "valor_total_diferencias": 196777.84,
+    "fecha_creacion": "2026-04-22T05:34:12.541824+00:00",
+    "fecha_ultima_actualizacion": "2026-04-22T05:34:12.541824+00:00",
+    "usuario_creador_id": "system",
+    "notas": []
+  },
+  {
+    "_id": {
+      "$oid": "69e85dd7947c72388d9eaf9d"
+    },
+    "id": "7745e5f4-3805-4f4c-b51a-3a8f00bbdb65",
+    "procesado_id": "3791",
+    "folio_inventario": "3791",
+    "servidor_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "server_name": "130\u00b0 MERIDA",
+    "sucursal_id": "130\u00b0 MERIDA",
+    "sucursal_nombre": "130\u00b0 MERIDA",
+    "almacen_id": "PRODUCCION",
+    "almacen_nombre": "PRODUCCION",
+    "folios_iniciales": [
+      "3703"
+    ],
+    "folios_finales": [
+      "3791"
+    ],
+    "folio_final_key": "3791",
+    "fecha_analisis_ini": "2026-01-13 12:36:13",
+    "fecha_analisis_fin": "2026-04-21 19:52:16",
+    "estado_workflow": "PENDIENTE_ASIGNACION",
+    "estado": "pendiente",
+    "ciclo_actual": 1,
+    "total_productos_diferencia": 90,
+    "valor_total_diferencias": 115620.3,
+    "fecha_creacion": "2026-04-22T05:34:15.562813+00:00",
+    "fecha_ultima_actualizacion": "2026-04-22T05:34:15.562813+00:00",
+    "usuario_creador_id": "system",
+    "notas": []
+  },
+  {
+    "_id": {
+      "$oid": "69e85e43c9a66f9de29012d9"
+    },
+    "id": "d08d3f2a-9655-49ce-9a65-a723e5f4d480",
+    "procesado_id": "136",
+    "folio_inventario": "136",
+    "servidor_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+    "server_name": "LA ESTELAR",
+    "sucursal_id": "LA ESTELAR",
+    "sucursal_nombre": "LA ESTELAR",
+    "almacen_id": "200 BARRA",
+    "almacen_nombre": "200 BARRA",
+    "folios_iniciales": [
+      "110"
+    ],
+    "folios_finales": [
+      "136"
+    ],
+    "folio_final_key": "136",
+    "fecha_analisis_ini": "2026-01-12 12:49:08",
+    "fecha_analisis_fin": "2026-02-23 12:21:11",
+    "estado_workflow": "PENDIENTE_ASIGNACION",
+    "estado": "pendiente",
+    "ciclo_actual": 1,
+    "total_productos_diferencia": 214,
+    "valor_total_diferencias": 147553.61,
+    "fecha_creacion": "2026-04-22T05:36:03.603318+00:00",
+    "fecha_ultima_actualizacion": "2026-04-22T05:36:03.603318+00:00",
+    "usuario_creador_id": "system",
+    "notas": []
+  },
+  {
+    "_id": {
+      "$oid": "69e85e46c9a66f9de29013b1"
+    },
+    "id": "95ba2265-8160-4215-b26c-cf5aa933ba13",
+    "procesado_id": "3790",
+    "folio_inventario": "3790",
+    "servidor_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "server_name": "130\u00b0 MERIDA",
+    "sucursal_id": "130\u00b0 MERIDA",
+    "sucursal_nombre": "130\u00b0 MERIDA",
+    "almacen_id": "CAVA VINOS",
+    "almacen_nombre": "CAVA VINOS",
+    "folios_iniciales": [
+      "3700"
+    ],
+    "folios_finales": [
+      "3790"
+    ],
+    "folio_final_key": "3790",
+    "fecha_analisis_ini": "2026-01-12 12:59:22",
+    "fecha_analisis_fin": "2026-04-20 12:59:30",
+    "estado_workflow": "PENDIENTE_ASIGNACION",
+    "estado": "pendiente",
+    "ciclo_actual": 1,
+    "total_productos_diferencia": 16,
+    "valor_total_diferencias": 11274.0,
+    "fecha_creacion": "2026-04-22T05:36:06.321751+00:00",
+    "fecha_ultima_actualizacion": "2026-04-22T05:36:06.321751+00:00",
+    "usuario_creador_id": "system",
+    "notas": []
+  },
+  {
+    "_id": {
+      "$oid": "69e85f50fbc2e5f9f64e65b8"
+    },
+    "id": "213f0cb1-cb60-4bcc-a397-8040d89025bf",
+    "procesado_id": "3747",
+    "folio_inventario": "3747",
+    "servidor_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "server_name": "130\u00b0 MERIDA",
+    "sucursal_id": "130\u00b0 MERIDA",
+    "sucursal_nombre": "130\u00b0 MERIDA",
+    "almacen_id": "ALMACEN CONSIGNACION",
+    "almacen_nombre": "ALMACEN CONSIGNACION",
+    "folios_iniciales": [
+      "3702"
+    ],
+    "folios_finales": [
+      "3747"
+    ],
+    "folio_final_key": "3747",
+    "fecha_analisis_ini": "2026-01-12 13:27:36",
+    "fecha_analisis_fin": "2026-03-01 09:34:06",
+    "estado_workflow": "PENDIENTE_ASIGNACION",
+    "estado": "pendiente",
+    "ciclo_actual": 1,
+    "total_productos_diferencia": 4,
+    "valor_total_diferencias": 2502.07,
+    "fecha_creacion": "2026-04-22T05:40:32.833686+00:00",
+    "fecha_ultima_actualizacion": "2026-04-22T05:40:32.833686+00:00",
+    "usuario_creador_id": "system",
+    "notas": []
+  },
+  {
+    "_id": {
+      "$oid": "69e85f53fbc2e5f9f64e65be"
+    },
+    "id": "85d333d1-b929-4e1d-bca3-97e06114ce70",
+    "procesado_id": "3744",
+    "folio_inventario": "3744",
+    "servidor_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+    "server_name": "130\u00b0 MERIDA",
+    "sucursal_id": "130\u00b0 MERIDA",
+    "sucursal_nombre": "130\u00b0 MERIDA",
+    "almacen_id": "PRODUCCION",
+    "almacen_nombre": "PRODUCCION",
+    "folios_iniciales": [
+      "3696"
+    ],
+    "folios_finales": [
+      "3744"
+    ],
+    "folio_final_key": "3744",
+    "fecha_analisis_ini": "2026-01-02 14:29:02",
+    "fecha_analisis_fin": "2026-02-24 13:45:06",
+    "estado_workflow": "PENDIENTE_ASIGNACION",
+    "estado": "pendiente",
+    "ciclo_actual": 1,
+    "total_productos_diferencia": 84,
+    "valor_total_diferencias": 66407.27,
+    "fecha_creacion": "2026-04-22T05:40:35.335015+00:00",
+    "fecha_ultima_actualizacion": "2026-04-22T05:40:35.335015+00:00",
+    "usuario_creador_id": "system",
+    "notas": []
+  }
+]
