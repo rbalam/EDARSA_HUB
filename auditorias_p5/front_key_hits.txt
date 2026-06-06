@@ -1,0 +1,1567 @@
+src/portal-inteligencia/pages/VentasFamiliaPage.jsx:78:          const familiasData = data.ventas_familia.map((f, idx) => ({
+src/portal-inteligencia/pages/VentasFamiliaPage.jsx:129:        {familias.map((fam, idx) => {
+src/portal-inteligencia/pages/VentasFamiliaPage.jsx:133:              key={fam.familia}
+src/portal-inteligencia/pages/VentasFamiliaPage.jsx:164:          {familias.map((fam, famIdx) => {
+src/portal-inteligencia/pages/VentasFamiliaPage.jsx:169:              <div key={fam.familia}>
+src/portal-inteligencia/pages/VentasFamiliaPage.jsx:205:                    {fam.subfamilias.map((sub, subIdx) => (
+src/portal-inteligencia/pages/VentasFamiliaPage.jsx:207:                        key={sub.nombre}
+src/portal-inteligencia/pages/VentasPax.jsx:28:                {data.map((item, i) => (
+src/portal-inteligencia/pages/VentasPax.jsx:29:                    <div key={i} className="flex justify-between items-center border-b border-gray-50 pb-3">
+src/portal-inteligencia/pages/DashboardIA.jsx:79:              topProductos: (result.top_productos || []).map(p => ({
+src/portal-inteligencia/pages/DashboardIA.jsx:84:              topCasas: (result.casas_distribuidoras || []).map(c => ({
+src/portal-inteligencia/pages/DashboardIA.jsx:154:          {['dia', 'semana', 'mes', 'año'].map((p) => (
+src/portal-inteligencia/pages/DashboardIA.jsx:156:              key={p}
+src/portal-inteligencia/pages/DashboardIA.jsx:179:        {kpiCards.map((kpi, idx) => {
+src/portal-inteligencia/pages/DashboardIA.jsx:183:              key={idx}
+src/portal-inteligencia/pages/DashboardIA.jsx:222:            {horarioData.map((h, idx) => (
+src/portal-inteligencia/pages/DashboardIA.jsx:223:              <div key={idx} className="flex items-center gap-4">
+src/portal-inteligencia/pages/DashboardIA.jsx:259:            {data.topProductos.map((prod, idx) => (
+src/portal-inteligencia/pages/DashboardIA.jsx:260:              <div key={idx} className="flex items-center justify-between py-2 border-b border-slate-700/50 last:border-0">
+src/portal-inteligencia/pages/DashboardIA.jsx:294:            {data.topCasas.map((casa, idx) => (
+src/portal-inteligencia/pages/DashboardIA.jsx:295:              <div key={idx} className="space-y-1">
+src/portal-inteligencia/pages/VentasHorarioPage.jsx:156:        {Object.entries(data).map(([key, periodo]) => {
+src/portal-inteligencia/pages/VentasHorarioPage.jsx:162:              key={key}
+src/portal-inteligencia/pages/VentasHorarioPage.jsx:234:            {data[selectedPeriodo].topProductos.map((prod, idx) => (
+src/portal-inteligencia/pages/VentasHorarioPage.jsx:236:                key={idx}
+src/portal-inteligencia/pages/VentasHorarioPage.jsx:280:          {Object.entries(data).map(([key, periodo]) => {
+src/portal-inteligencia/pages/VentasHorarioPage.jsx:283:              <div key={key} className="flex items-center gap-4">
+src/portal-inteligencia/pages/VentasProductoPage.jsx:52:  const familias = [...new Set(productos.map(p => p.familia))];
+src/portal-inteligencia/pages/VentasProductoPage.jsx:99:            {familias.map(f => (
+src/portal-inteligencia/pages/VentasProductoPage.jsx:100:              <option key={f} value={f}>{f}</option>
+src/portal-inteligencia/pages/VentasProductoPage.jsx:144:              {filteredProducts.map((prod, idx) => (
+src/portal-inteligencia/pages/VentasProductoPage.jsx:146:                  key={prod.id}
+src/portal-inteligencia/pages/VentasCasaPage.jsx:103:          const casasData = data.casas_distribuidoras.map((c, idx) => ({
+src/portal-inteligencia/pages/VentasCasaPage.jsx:179:          {casas.map((casa, idx) => {
+src/portal-inteligencia/pages/VentasCasaPage.jsx:184:                key={casa.casa}
+src/portal-inteligencia/pages/VentasCasaPage.jsx:254:              {casas.map((casa, idx) => {
+src/portal-inteligencia/pages/VentasCasaPage.jsx:257:                  <tr key={casa.casa} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+src/portal-inteligencia/pages/VentasCasaPage.jsx:302:          {casas.map((casa, idx) => {
+src/portal-inteligencia/pages/VentasCasaPage.jsx:306:                key={casa.casa}
+src/portal-inteligencia/pages/VentasCasaPage.jsx:321:          {casas.map((casa) => {
+src/portal-inteligencia/pages/VentasCasaPage.jsx:324:              <div key={casa.casa} className="flex items-center gap-2">
+src/portal-inteligencia/pages/VentasCasas.jsx:28:                {data.map((item, i) => (
+src/portal-inteligencia/pages/VentasCasas.jsx:29:                    <div key={i} className="flex justify-between items-center border-b border-gray-50 pb-3">
+src/portal-inteligencia/pages/AnalisisPAXPage.jsx:82:  const maxPaxDia = Math.max(...data.tendenciaSemanal.map(d => d.pax));
+src/portal-inteligencia/pages/AnalisisPAXPage.jsx:140:            {data.porUnidad.map((unidad, idx) => {
+src/portal-inteligencia/pages/AnalisisPAXPage.jsx:143:                <div key={unidad.unidad}>
+src/portal-inteligencia/pages/AnalisisPAXPage.jsx:177:            {data.tendenciaSemanal.map((dia, idx) => {
+src/portal-inteligencia/pages/AnalisisPAXPage.jsx:182:                <div key={dia.dia} className="flex-1 flex flex-col items-center">
+src/portal-inteligencia/pages/AnalisisPAXPage.jsx:233:            {data.porUnidad.map((unidad) => {
+src/portal-inteligencia/pages/AnalisisPAXPage.jsx:238:                <tr key={unidad.unidad} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+src/portal-inteligencia/App.jsx:163:          {menuItems.map((item) => {
+src/portal-inteligencia/App.jsx:168:                key={item.id}
+src/pages/Compras.js:275:                    {unidadesNegocio?.map(u => (
+src/pages/Compras.js:276:                      <SelectItem key={u.id} value={u.id}>
+src/pages/Compras.js:304:                      onClick={() => setSelectedMeses(MESES.map(m => m.value))}
+src/pages/Compras.js:317:                  {MESES.map(mes => (
+src/pages/Compras.js:319:                      key={mes.value}
+src/pages/Compras.js:366:                  {ANIOS.map(anio => (
+src/pages/Compras.js:368:                      key={anio.value}
+src/pages/Compras.js:479:            {alertas.map((alerta, idx) => (
+src/pages/Compras.js:480:              <div key={alerta.codigo || `alerta-${idx}`} className="flex items-center gap-3 p-2 bg-white rounded border border-red-200">
+src/pages/Compras.js:511:              {topProveedores.map((prov, idx) => (
+src/pages/Compras.js:512:                <div key={prov.nombre || `prov-${idx}`} className="flex items-center justify-between p-2 bg-zinc-50 rounded">
+src/pages/Compras.js:559:      const unique = [...new Map(response.data.map(a => [a.nombre, a])).values()];
+src/pages/Compras.js:605:      const consolidated = Object.entries(grouped).map(([fecha, data]) => ({
+src/pages/Compras.js:697:        errorMsg = errorDetail.map(e => e.msg || e.message || JSON.stringify(e)).join(', ');
+src/pages/Compras.js:730:                    {unidadesNegocio?.map(u => (
+src/pages/Compras.js:731:                      <SelectItem key={u.id} value={u.id}>
+src/pages/Compras.js:754:                  {inventariosFiltrados.map(inv => (
+src/pages/Compras.js:755:                    <SelectItem key={inv.folio} value={inv.folio}>
+src/pages/Compras.js:785:                {almacenes.map(alm => (
+src/pages/Compras.js:786:                  <div key={alm.nombre} className="flex items-center gap-1">
+src/pages/Compras.js:815:                  {pedidosVigentes.map(p => (
+src/pages/Compras.js:816:                    <SelectItem key={`${p.tipo}-${p.folio}`} value={p.folio}>
+src/pages/Compras.js:867:                  {pedidoData.slice(0, 100).map((row, idx) => (
+src/pages/Compras.js:868:                    <tr key={row.Codigo || `pedido-${idx}`} className="border-b hover:bg-zinc-50">
+src/pages/Compras.js:993:      const anioPrincipal = Math.max(...aniosSeleccionados.map(a => parseInt(a)));
+src/pages/Compras.js:1055:                    {unidadesNegocio?.map(u => (
+src/pages/Compras.js:1056:                      <SelectItem key={u.id} value={u.id}>
+src/pages/Compras.js:1073:                {aniosDisponibles.slice(0, 4).map(a => (
+src/pages/Compras.js:1075:                    key={a.value}
+src/pages/Compras.js:1091:                {meses.map(m => (
+src/pages/Compras.js:1093:                    key={m.value}
+src/pages/Compras.js:1156:              {alertasDesviacion.map((a, idx) => (
+src/pages/Compras.js:1157:                <div key={a.producto || `desv-${idx}`} className="flex items-center gap-2 text-sm">
+src/pages/Compras.js:1195:                    {mesesSeleccionados.map(m => (
+src/pages/Compras.js:1196:                      <th key={m} className="py-2 px-3 text-right">{meses.find(x => x.value === m)?.label}</th>
+src/pages/Compras.js:1202:                  {comprasPorProveedor.map((prov, idx) => (
+src/pages/Compras.js:1203:                    <React.Fragment key={prov.proveedor || `compra-prov-${idx}`}>
+src/pages/Compras.js:1220:                        {mesesSeleccionados.map(m => (
+src/pages/Compras.js:1221:                          <td key={m} className="py-2 px-3 text-right">
+src/pages/Compras.js:1263:                                    {detalleFacturas.map((fac, fidx) => (
+src/pages/Compras.js:1264:                                      <React.Fragment key={fidx}>
+src/pages/Compras.js:1315:                                                    {detalleProductos.map((prod, pidx) => (
+src/pages/Compras.js:1316:                                                      <tr key={pidx} className="border-b hover:bg-blue-50/50">
+src/pages/Compras.js:1362:                    {mesesSeleccionados.map(m => {
+src/pages/Compras.js:1365:                        <td key={m} className="py-2 px-3 text-right font-semibold">
+src/pages/Compras.js:1603:      .map(inv => inv.fecha?.split('T')[0])
+src/pages/Compras.js:1769:      const capturaInicial = resultados.map(r => ({
+src/pages/Compras.js:1797:          const capturaInicial = response.data.productos.map(p => ({
+src/pages/Compras.js:1820:        const foliosIni = selectedInvIniciales.map(inv => inv.folio);
+src/pages/Compras.js:1829:          const capturaInicial = response.data.productos.map(p => ({
+src/pages/Compras.js:1872:    setInventarioManualCaptura(prev => prev.map(item => {
+src/pages/Compras.js:1897:      .map(item => ({
+src/pages/Compras.js:1916:          items: inventarioParaBackend.map(item => ({
+src/pages/Compras.js:2091:        ? selectedInvIniciales.map(inv => inv.folio)
+src/pages/Compras.js:2096:        ? selectedInvFinales.map(inv => inv.folio)
+src/pages/Compras.js:2119:      const resultadosCorregidos = response.data.resultados.map(r => {
+src/pages/Compras.js:2174:        errorMsg = errorDetail.map(e => e.msg || e.message || JSON.stringify(e)).join(', ');
+src/pages/Compras.js:2217:                    {unidadesNegocio?.map(u => (
+src/pages/Compras.js:2218:                      <SelectItem key={u.id} value={u.id}>
+src/pages/Compras.js:2269:                      pedidosVigentes.map(p => (
+src/pages/Compras.js:2270:                        <label key={`${p.tipo}-${p.folio}`} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
+src/pages/Compras.js:2293:                  {folioPedido.map(folio => (
+src/pages/Compras.js:2295:                      key={folio}
+src/pages/Compras.js:2396:                            .map(inv => (
+src/pages/Compras.js:2398:                                key={inv.folio} 
+src/pages/Compras.js:2441:                  {selectedInvIniciales.slice(0, 3).map(inv => (
+src/pages/Compras.js:2442:                    <span key={inv.folio} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
+src/pages/Compras.js:2533:                              .map(inv => (
+src/pages/Compras.js:2535:                                  key={inv.folio} 
+src/pages/Compras.js:2579:                  {selectedInvFinales.slice(0, 3).map(inv => (
+src/pages/Compras.js:2580:                    <span key={inv.folio} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-800">
+src/pages/Compras.js:2760:                    return resultados.map((r, idx) => {
+src/pages/Compras.js:2780:                        <tr key={`${r.codigo}-${r.folio_pedido || idx}`} className={`border-b ${r.tipo_diferencia === 'contra' ? 'bg-red-50' : ''} ${isNewProveedor ? 'border-t-2 border-t-zinc-400' : ''}`}>
+src/pages/Compras.js:2996:                      {detalleMovimientos.movimientos.map((m, idx) => (
+src/pages/Compras.js:2997:                        <tr key={`mov-${m.fecha}-${m.concepto}-${idx}`} className={`border-b ${m.tipo === 'E' ? 'bg-green-50' : 'bg-red-50'}`}>
+src/pages/Compras.js:3121:                  return resultados.map((r, idx) => {
+src/pages/Compras.js:3147:                      <tr key={`${r.codigo}-${r.folio_pedido || ''}-${idx}`} className={`border-b hover:bg-zinc-50 ${r.tipo_diferencia === 'contra' ? 'bg-red-50' : ''} ${isNewProveedor ? 'border-t-2 border-t-zinc-400' : ''}`}>
+src/pages/Compras.js:3250:                  {inventarioManualCaptura.map((item, idx) => {
+src/pages/Compras.js:3255:                      <tr key={item.codigo} className={`border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-zinc-50'}`} data-row-index={idx}>
+src/pages/Compras.js:3265:                              setInventarioManualCaptura(prev => prev.map(i => {
+src/pages/Compras.js:3301:                              setInventarioManualCaptura(prev => prev.map(i => {
+src/pages/Compras.js:3402:    return unidadesNegocio.map(u => ({
+src/pages/Nominas.js:370:          {tabs.filter(t => !t.adminOnly || isAdmin).map(tab => (
+src/pages/Nominas.js:372:              key={tab.id}
+src/pages/Nominas.js:402:                {sucursales.map(s => (
+src/pages/Nominas.js:403:                  <option key={s.SucursalID || s.id} value={s.SucursalID || s.id}>
+src/pages/Nominas.js:426:            {ETAPAS_NOMINA.map(etapa => {
+src/pages/Nominas.js:432:                  key={etapa.id} 
+src/pages/Nominas.js:457:                      ciclosEtapa.map(ciclo => {
+src/pages/Nominas.js:463:                            key={ciclo.id} 
+src/pages/Nominas.js:592:                    ciclos.map(ciclo => {
+src/pages/Nominas.js:597:                        <tr key={ciclo.id} className="border-b hover:bg-zinc-50">
+src/pages/Nominas.js:675:                  {diasSemana.map((dia, idx) => (
+src/pages/Nominas.js:676:                    <option key={`corte-${dia}`} value={idx}>{dia}</option>
+src/pages/Nominas.js:689:                  {diasSemana.map((dia, idx) => (
+src/pages/Nominas.js:690:                    <option key={`pago-${dia}`} value={idx}>{dia}</option>
+src/pages/Nominas.js:764:                {ETAPAS_NOMINA.map((etapa, idx) => {
+src/pages/Nominas.js:767:                    <div key={etapa.id} className="flex items-center gap-3">
+src/pages/Nominas.js:823:                  {kpis.map(kpi => (
+src/pages/Nominas.js:824:                    <div key={kpi.id} className="p-3 border rounded-lg">
+src/pages/Nominas.js:856:                  {sucursales.map(s => (
+src/pages/Nominas.js:857:                    <option key={s.SucursalID || s.id} value={s.SucursalID || s.id}>
+src/pages/Nominas.js:1082:                    {historialCiclo.map((evento, idx) => (
+src/pages/Nominas.js:1083:                      <div key={evento.id || idx} className="relative pl-10">
+src/pages/Nominas.js:1170:                      {movimientos.map((mov, idx) => (
+src/pages/Nominas.js:1171:                        <tr key={mov.id || idx} className="border-b hover:bg-zinc-50">
+src/pages/ReportesBI.js:34:        {modulos.map((modulo) => {
+src/pages/ReportesBI.js:37:            <Card key={modulo.nombre} className="border opacity-60 hover:opacity-80 transition-opacity">
+src/pages/AuditoriasProgramadas.jsx:482:                {filteredAuditorias.map((auditoria) => (
+src/pages/AuditoriasProgramadas.jsx:483:                  <div key={auditoria.id} className="border rounded-lg p-4 bg-white hover:bg-zinc-50 transition-colors" data-testid={`auditoria-card-${auditoria.id}`}>
+src/pages/AuditoriasProgramadas.jsx:609:                  {calendario.eventos.map((evento) => (
+src/pages/AuditoriasProgramadas.jsx:610:                    <div key={evento.fecha} className="border rounded-lg p-3">
+src/pages/AuditoriasProgramadas.jsx:613:                        {evento.auditorias.map((a, idx) => (
+src/pages/AuditoriasProgramadas.jsx:614:                          <div key={a.id || `aud-${evento.fecha}-${idx}`} className="flex items-center gap-2 text-sm text-zinc-600">
+src/pages/AuditoriasProgramadas.jsx:666:                  {historial.map((log) => (
+src/pages/AuditoriasProgramadas.jsx:667:                    <TableRow key={log.id}>
+src/pages/AuditoriasProgramadas.jsx:721:                  {historial.map((log) => (
+src/pages/AuditoriasProgramadas.jsx:722:                    <TableRow key={log.id}>
+src/pages/AuditoriasProgramadas.jsx:788:                    {Object.entries(TIPOS_AUDITORIA).map(([k, v]) => (
+src/pages/AuditoriasProgramadas.jsx:789:                      <SelectItem key={k} value={k}>{v}</SelectItem>
+src/pages/AuditoriasProgramadas.jsx:799:                    {Object.entries(FRECUENCIAS).map(([k, v]) => (
+src/pages/AuditoriasProgramadas.jsx:800:                      <SelectItem key={k} value={k}>{v}</SelectItem>
+src/pages/AuditoriasProgramadas.jsx:811:                      {DIAS_SEMANA.map((dia, idx) => (
+src/pages/AuditoriasProgramadas.jsx:812:                        <SelectItem key={`dia-${dia}`} value={String(idx)}>{dia}</SelectItem>
+src/pages/comercial/TabReglasMargen.jsx:200:              {NIVELES_APLICACION.map((nivel) => {
+src/pages/comercial/TabReglasMargen.jsx:205:                    key={nivel.value}
+src/pages/comercial/TabReglasMargen.jsx:286:              {SEVERIDADES.map((sev) => {
+src/pages/comercial/TabReglasMargen.jsx:296:                    key={sev.value}
+src/pages/comercial/TabReglasMargen.jsx:821:          {umbrales.map((u) => (
+src/pages/comercial/TabReglasMargen.jsx:823:              key={u.severidad}
+src/pages/comercial/TabReglasMargen.jsx:858:              {NIVELES_APLICACION.map((n) => (
+src/pages/comercial/TabReglasMargen.jsx:859:                <option key={n.value} value={n.value}>{n.label}</option>
+src/pages/comercial/TabReglasMargen.jsx:923:              reglasFiltradas.map((regla) => (
+src/pages/comercial/TabReglasMargen.jsx:924:                <tr key={regla.regla_id} className="hover:bg-gray-50">
+src/pages/comercial/PricingIA.jsx:745:              {servidores.map(s => (
+src/pages/comercial/PricingIA.jsx:746:                <option key={s.id || s.uuid} value={s.id || s.uuid}>
+src/pages/comercial/PricingIA.jsx:804:              {listasCompetidores.map(lista => (
+src/pages/comercial/PricingIA.jsx:805:                <option key={lista.lista_id} value={lista.lista_id}>
+src/pages/comercial/PricingIA.jsx:1080:              {listasCompetidores.map(lista => (
+src/pages/comercial/PricingIA.jsx:1081:                <option key={lista.lista_id} value={lista.lista_id}>
+src/pages/comercial/PricingIA.jsx:1261:          {competidoresFiltrados.map((comp) => (
+src/pages/comercial/PricingIA.jsx:1263:              key={comp.competidor_id} 
+src/pages/comercial/PricingIA.jsx:1469:            {competidores.map(c => (
+src/pages/comercial/PricingIA.jsx:1470:              <option key={c.competidor_id} value={c.competidor_id}>
+src/pages/comercial/PricingIA.jsx:1545:              {itemsFiltrados.map((item) => (
+src/pages/comercial/PricingIA.jsx:1546:                <tr key={item.menu_item_id} className="border-b hover:bg-gray-50">
+src/pages/comercial/PricingIA.jsx:1877:              {analisis.map((a) => (
+src/pages/comercial/PricingIA.jsx:1878:                <tr key={a.analisis_id} className="border-b hover:bg-gray-50">
+src/pages/comercial/PricingIA.jsx:2274:                {metricas.productos_mas_analizados.slice(0, 5).map((p, idx) => (
+src/pages/comercial/PricingIA.jsx:2275:                  <tr key={p.codigo_producto} className="border-b">
+src/pages/comercial/PricingIA.jsx:2304:            {metricas.competidores_mas_usados.map((c) => (
+src/pages/comercial/PricingIA.jsx:2306:                key={c.nombre}
+src/pages/comercial/PricingIA.jsx:2340:                {metricas.ultimos_analisis.slice(0, 10).map((a) => (
+src/pages/comercial/PricingIA.jsx:2341:                  <tr key={a.analisis_id} className="border-b hover:bg-gray-50">
+src/pages/comercial/PricingIA.jsx:2374:            {Object.entries(metricas.tipos_analisis).map(([tipo, cantidad]) => (
+src/pages/comercial/PricingIA.jsx:2375:              <div key={tipo} className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
+src/pages/comercial/CostosMargenes.jsx:311:            {historialProductos.map((p, idx) => (
+src/pages/comercial/CostosMargenes.jsx:312:              <span key={idx} className="flex items-center">
+src/pages/comercial/CostosMargenes.jsx:420:                    {sortedComponentes?.map((comp, idx) => (
+src/pages/comercial/CostosMargenes.jsx:422:                        key={idx} 
+src/pages/comercial/CostosMargenes.jsx:615:                    {sortedInsumos?.map((ins, idx) => (
+src/pages/comercial/CostosMargenes.jsx:616:                      <tr key={idx} className="border-b hover:bg-gray-50">
+src/pages/comercial/CostosMargenes.jsx:906:                  {simulacion.advertencias.map((adv, idx) => (
+src/pages/comercial/CostosMargenes.jsx:907:                    <div key={idx} className={`flex items-center gap-2 text-sm p-2 rounded ${
+src/pages/comercial/CostosMargenes.jsx:1213:                    {historial.map((h, idx) => (
+src/pages/comercial/CostosMargenes.jsx:1214:                      <div key={idx} className="flex items-start gap-3 text-sm border-l-2 border-gray-200 pl-3 py-1">
+src/pages/comercial/CostosMargenes.jsx:1639:            {unidades.map(u => (
+src/pages/comercial/CostosMargenes.jsx:1640:              <option key={u.server_id} value={u.server_id}>{u.nombre}</option>
+src/pages/comercial/CostosMargenes.jsx:1652:            {familias.map(f => (
+src/pages/comercial/CostosMargenes.jsx:1653:              <option key={f.familia} value={f.familia}>{f.familia} ({f.total_productos})</option>
+src/pages/comercial/CostosMargenes.jsx:1666:              {subfamilias.map(sf => (
+src/pages/comercial/CostosMargenes.jsx:1667:                <option key={sf.subfamilia} value={sf.subfamilia}>{sf.subfamilia} ({sf.total_productos})</option>
+src/pages/comercial/CostosMargenes.jsx:1758:            {productosAgrupados.map(([fam, prods]) => (
+src/pages/comercial/CostosMargenes.jsx:1759:              <div key={fam}>
+src/pages/comercial/CostosMargenes.jsx:1826:                        {prods.map((prod) => (
+src/pages/comercial/CostosMargenes.jsx:1827:                          <tr key={prod.producto_id} className="border-b hover:bg-gray-50">
+src/pages/comercial/CostosMargenes.jsx:1976:                    sortedProductos.map((prod) => (
+src/pages/comercial/CostosMargenes.jsx:1977:                      <tr key={prod.producto_id} className="border-b hover:bg-gray-50" data-testid={`producto-row-${prod.producto_id}`}>
+src/pages/comercial/CostosMargenes.jsx:2272:      const margenes = g.productos.filter(p => p.margen_porcentaje != null).map(p => p.margen_porcentaje);
+src/pages/comercial/CostosMargenes.jsx:2444:                productosAgrupados.map(grupo => (
+src/pages/comercial/CostosMargenes.jsx:2445:                  <React.Fragment key={grupo.familia}>
+src/pages/comercial/CostosMargenes.jsx:2478:                    {familiasExpandidas.has(grupo.familia) && grupo.productos.map((p, idx) => (
+src/pages/comercial/CostosMargenes.jsx:2479:                      <tr key={`${p.producto_id}-${idx}`} className="hover:bg-gray-50 bg-white">
+src/pages/comercial/CostosMargenes.jsx:2548:                productos.map((p, idx) => (
+src/pages/comercial/CostosMargenes.jsx:2549:                  <tr key={`${p.producto_id}-${idx}`} className="hover:bg-gray-50">
+src/pages/comercial/CostosMargenes.jsx:2824:            {traslapes.map((t, i) => (
+src/pages/comercial/CostosMargenes.jsx:2825:              <li key={i}>{t.rango1} se traslapa con {t.rango2}</li>
+src/pages/comercial/CostosMargenes.jsx:2879:              rangos.map((r) => (
+src/pages/comercial/CostosMargenes.jsx:2880:                <tr key={r.rango_id} className={`hover:bg-gray-50 ${!r.activo ? 'opacity-50' : ''}`}>
+src/pages/comercial/CostosMargenes.jsx:3166:                    solicitudes.map((sol) => (
+src/pages/comercial/CostosMargenes.jsx:3167:                      <tr key={sol.solicitud_id} className="border-b hover:bg-gray-50" data-testid={`solicitud-row-${sol.solicitud_id}`}>
+src/pages/comercial/PricingIACharts.jsx:68:    .map(item => ({
+src/pages/comercial/PricingIACharts.jsx:145:              {chartData.map((entry, index) => (
+src/pages/comercial/PricingIACharts.jsx:146:                <Cell key={`cell-${index}`} fill={entry.color} />
+src/pages/comercial/PricingIACharts.jsx:156:        {chartData.map((item) => (
+src/pages/comercial/PricingIACharts.jsx:157:          <div key={item.name} className="flex items-center gap-2">
+src/pages/comercial/PricingIACharts.jsx:183:  const chartData = data.slice(0, 7).map(item => ({
+src/pages/comercial/PricingIACharts.jsx:257:      ...metricas.analisis_por_dia.map(a => [a.fecha, a.cantidad])
+src/pages/comercial/PricingIACharts.jsx:267:      ...metricas.productos_mas_analizados.map(p => [
+src/pages/comercial/PricingIACharts.jsx:282:      ...metricas.ultimos_analisis.map(a => [
+src/pages/comercial/PricingIACharts.jsx:469:              {colores.map((c) => (
+src/pages/comercial/PricingIACharts.jsx:471:                  key={c}
+src/pages/comercial/PricingIACharts.jsx:514:  const idsEnLista = new Set(competidoresEnLista.map(c => c.competidor_id));
+src/pages/comercial/PricingIACharts.jsx:559:                {competidoresEnLista.map((c) => (
+src/pages/comercial/PricingIACharts.jsx:561:                    key={c.competidor_id} 
+src/pages/comercial/PricingIACharts.jsx:594:                {competidoresFiltrados.slice(0, 20).map((c) => (
+src/pages/comercial/PricingIACharts.jsx:596:                    key={c.competidor_id} 
+src/pages/comercial/PricingIACharts.jsx:740:      setListas(prev => prev.map(l => 
+src/pages/comercial/PricingIACharts.jsx:759:      setListas(prev => prev.map(l => 
+src/pages/comercial/PricingIACharts.jsx:834:          {listasFiltradas.map((lista) => (
+src/pages/comercial/PricingIACharts.jsx:836:              key={lista.lista_id}
+src/pages/Finanzas.js:187:    const resultado = Object.values(categorias).map(cat => ({
+src/pages/Finanzas.js:189:      proveedores: Object.values(cat.proveedores).map(prov => ({
+src/pages/Finanzas.js:241:    return Object.values(proveedores).map(prov => ({
+src/pages/Finanzas.js:440:        proveedores: (dataFacturas.proveedores || []).map(proveedor => ({
+src/pages/Finanzas.js:442:          facturas: (proveedor.facturas || []).map(factura => {
+src/pages/Finanzas.js:513:        const nuevosProveedores = prevData.proveedores.map(proveedor => ({
+src/pages/Finanzas.js:515:          facturas: proveedor.facturas.map(factura => {
+src/pages/Finanzas.js:661:    const facturasIdsSet = new Set(proveedor.facturas.map(f => f.factura_id));
+src/pages/Finanzas.js:669:      const nuevosProveedores = prevData.proveedores.map(categoria => {
+src/pages/Finanzas.js:671:        const nuevasFacturas = categoria.facturas.map(f => {
+src/pages/Finanzas.js:700:      const facturasIds = proveedor.facturas.map(f => f.factura_id);
+src/pages/Finanzas.js:1143:                  <BarChart data={porSucursal.map(s => ({
+src/pages/Finanzas.js:1183:                {porSucursal.map((s) => {
+src/pages/Finanzas.js:1189:                      <tr key={`presupuesto-${s.Codigo_Sucursal || s.Nombre_Sucursal}`} className="border-b">
+src/pages/Finanzas.js:1244:        {tabs.map(tab => {
+src/pages/Finanzas.js:1248:              key={tab.id}
+src/pages/Finanzas.js:1308:                  {sucursales.map(s => (
+src/pages/Finanzas.js:1309:                    <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
+src/pages/Finanzas.js:1337:                      .map((c) => (
+src/pages/Finanzas.js:1338:                        <option key={`cat-${c.Categoria}`} value={c.Categoria}>{c.Categoria}</option>
+src/pages/Finanzas.js:1363:                    {meses.map((m, i) => (
+src/pages/Finanzas.js:1364:                      <option key={`form-mes-${i + 1}`} value={i + 1}>{m}</option>
+src/pages/Finanzas.js:1376:                    {[2024, 2025, 2026, 2027].map(a => (
+src/pages/Finanzas.js:1377:                      <option key={a} value={a}>{a}</option>
+src/pages/Finanzas.js:1439:                  {scriptData.instrucciones?.map((inst, i) => (
+src/pages/Finanzas.js:1440:                    <li key={`inst-${i}-${inst.slice(0, 20)}`}>{inst}</li>
+src/pages/ConfigAsignaciones.jsx:447:    const allIds = unidadesNegocio.map(u => u.id);
+src/pages/ConfigAsignaciones.jsx:528:    const allIds = almacenesUnidad.map(a => a.id);
+src/pages/ConfigAsignaciones.jsx:563:    const filteredIds = usuariosFiltrados.map(u => u.id);
+src/pages/ConfigAsignaciones.jsx:781:                  {unidadesNegocio.map((u) => (
+src/pages/ConfigAsignaciones.jsx:782:                    <SelectItem key={u.id} value={u.id}>
+src/pages/ConfigAsignaciones.jsx:856:                {asignacionesFiltradas.map((a) => (
+src/pages/ConfigAsignaciones.jsx:858:                    key={a.id}
+src/pages/ConfigAsignaciones.jsx:970:                {unidadesNegocio.map((u) => {
+src/pages/ConfigAsignaciones.jsx:978:                      <div key={u.id} className="border-b border-slate-700/50 last:border-b-0">
+src/pages/ConfigAsignaciones.jsx:1086:                                {almacenesUnidad.map((alm) => {
+src/pages/ConfigAsignaciones.jsx:1090:                                      key={alm.id}
+src/pages/ConfigAsignaciones.jsx:1167:                  {usuariosFiltrados.map((u) => (
+src/pages/ConfigAsignaciones.jsx:1169:                      key={u.id}
+src/pages/ExploradorBD.js:381:                    {logs.map((log, idx) => (
+src/pages/ExploradorBD.js:383:                        key={`${log.timestamp}-${idx}`} 
+src/pages/ExploradorBD.js:480:                  {scriptsPendientes.map((sp) => (
+src/pages/ExploradorBD.js:481:                    <div key={sp._id} className="border rounded-lg p-4 bg-zinc-50 hover:bg-zinc-100 transition-colors">
+src/pages/ExploradorBD.js:715:                  {resultados.tablas.map((t) => (
+src/pages/ExploradorBD.js:717:                      key={`tabla-${t.tabla}`}
+src/pages/ExploradorBD.js:744:                      {resultados.columnas.map((c) => (
+src/pages/ExploradorBD.js:745:                        <tr key={`col-${c.tabla}-${c.columna}`} className="border-b hover:bg-zinc-50 cursor-pointer" onClick={() => onSelectTabla(c.tabla)}>
+src/pages/ExploradorBD.js:764:                  {resultados.datos.map((d, i) => (
+src/pages/ExploradorBD.js:765:                    <div key={`dato-${d.tabla}-${i}`} className="p-2 bg-white border rounded text-xs">
+src/pages/ExploradorBD.js:770:                        {Object.entries(d.fila).slice(0, 8).map(([key, val]) => (
+src/pages/ExploradorBD.js:771:                          <div key={`${d.tabla}-${key}`} className="truncate">
+src/pages/ExploradorBD.js:820:    return conexionesFiltradas.map(c => ({
+src/pages/ExploradorBD.js:1019:      ...datos.map(row => 
+src/pages/ExploradorBD.js:1020:        headers.map(h => {
+src/pages/ExploradorBD.js:1176:                {sistemasDisponibles.map(s => (
+src/pages/ExploradorBD.js:1177:                  <SelectItem key={s.Codigo} value={s.Codigo}>
+src/pages/ExploradorBD.js:1208:                    conexionesFiltradas.map(c => (
+src/pages/ExploradorBD.js:1209:                      <SelectItem key={c.id} value={c.id}>
+src/pages/ExploradorBD.js:1327:                  Object.entries(tablasAgrupadas).map(([grupo, tablasGrupo]) => (
+src/pages/ExploradorBD.js:1328:                    <div key={grupo} className="mb-2">
+src/pages/ExploradorBD.js:1343:                          {tablasGrupo.map(t => (
+src/pages/ExploradorBD.js:1345:                              key={t.tabla}
+src/pages/ExploradorBD.js:1399:                            {columnas.map((c) => (
+src/pages/ExploradorBD.js:1400:                              <tr key={`col-${c.columna}`} className="border-b hover:bg-zinc-50">
+src/pages/ExploradorBD.js:1425:                        {relaciones.map((r) => (
+src/pages/ExploradorBD.js:1426:                          <div key={`rel-${r.tabla_padre}-${r.columna_padre}-${r.tabla_referenciada}`} className="text-xs p-2 bg-zinc-50 rounded flex items-center gap-2">
+src/pages/ExploradorBD.js:1454:                              {preview.datos.length > 0 && Object.keys(preview.datos[0]).map(col => (
+src/pages/ExploradorBD.js:1455:                                <th key={col} className="py-2 px-2 text-left whitespace-nowrap">{col}</th>
+src/pages/ExploradorBD.js:1460:                            {preview.datos.map((row, i) => (
+src/pages/ExploradorBD.js:1461:                              <tr key={`row-${i}-${Object.values(row)[0]}`} className="border-b hover:bg-zinc-50">
+src/pages/ExploradorBD.js:1462:                                {Object.entries(row).map(([colName, colVal]) => (
+src/pages/ExploradorBD.js:1463:                                  <td key={`${i}-${colName}`} className="py-1 px-2 whitespace-nowrap max-w-[200px] truncate">
+src/pages/ExploradorBD.js:1518:                          {resultadoQuery.datos.length > 0 && Object.keys(resultadoQuery.datos[0]).map(col => (
+src/pages/ExploradorBD.js:1519:                            <th key={col} className="py-2 px-2 text-left">{col}</th>
+src/pages/ExploradorBD.js:1524:                        {resultadoQuery.datos.map((row, i) => (
+src/pages/ExploradorBD.js:1525:                          <tr key={`qrow-${i}-${Object.values(row)[0]}`} className="border-b">
+src/pages/ExploradorBD.js:1526:                            {Object.entries(row).map(([colName, colVal]) => (
+src/pages/ExploradorBD.js:1527:                              <td key={`q${i}-${colName}`} className="py-1 px-2">{colVal?.toString() || '-'}</td>
+src/pages/Servidores.js:199:        const sistemas = response.data.data.map(s => ({
+src/pages/Servidores.js:311:        const formatted = response.data.data.map(conn => ({
+src/pages/Servidores.js:1075:      setSucursalesConfig(prev => prev.map(s => 
+src/pages/Servidores.js:1092:      const updates = sucursalesConfig.map((s, idx) => ({
+src/pages/Servidores.js:1156:      [type]: items.map(item => item.codigo)
+src/pages/Servidores.js:1329:                      {servers.map((server) => (
+src/pages/Servidores.js:1330:                        <tr key={server.id} className="border-b border-zinc-100 hover:bg-zinc-50">
+src/pages/Servidores.js:1453:              {servers.map((server) => (
+src/pages/Servidores.js:1454:            <Card key={server.id} className="border border-zinc-200 shadow-sm hover:border-zinc-300 transition-colors" data-testid="server-card">
+src/pages/Servidores.js:1748:                    {apiConnections.map((apiConn) => (
+src/pages/Servidores.js:1749:                      <tr key={apiConn.id} className="border-b border-zinc-100 hover:bg-zinc-50">
+src/pages/Servidores.js:1879:            {apiConnections.map((apiConn) => (
+src/pages/Servidores.js:1880:              <Card key={apiConn.id} className="border border-zinc-200 shadow-sm hover:border-zinc-300 transition-colors">
+src/pages/Servidores.js:1977:                              setApiConnections(prev => prev.map(a => 
+src/pages/Servidores.js:2214:              {vtigerConnections.map((conn) => (
+src/pages/Servidores.js:2215:                <Card key={conn.id} className="border-purple-100 hover:border-purple-300 transition-colors">
+src/pages/Servidores.js:2267:                      {conn.sync_modules?.map((mod) => (
+src/pages/Servidores.js:2268:                        <Badge key={mod} variant="secondary" className="text-xs bg-purple-50 text-purple-700">
+src/pages/Servidores.js:2452:                    {tiposSistema.map((tipo) => (
+src/pages/Servidores.js:2453:                      <SelectItem key={tipo.Codigo} value={tipo.Codigo}>
+src/pages/Servidores.js:2488:                    {servers.map(s => (
+src/pages/Servidores.js:2489:                      <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+src/pages/Servidores.js:2545:                        {TIPOS_USO.map(tipo => (
+src/pages/Servidores.js:2546:                          <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+src/pages/Servidores.js:2657:                                  {queryTestResult.columns?.map((col, i) => (
+src/pages/Servidores.js:2658:                                    <th key={i} className="px-2 py-1 text-left font-medium text-zinc-700 border-b">
+src/pages/Servidores.js:2665:                                {queryTestResult.preview_data.slice(0, 5).map((row, rowIdx) => (
+src/pages/Servidores.js:2666:                                  <tr key={rowIdx} className="border-b border-zinc-100">
+src/pages/Servidores.js:2667:                                    {queryTestResult.columns?.map((col, colIdx) => (
+src/pages/Servidores.js:2668:                                      <td key={colIdx} className="px-2 py-1 text-zinc-600 truncate max-w-32">
+src/pages/Servidores.js:2688:                            {queryTestResult.validation_errors.map((err, i) => (
+src/pages/Servidores.js:2689:                              <li key={i}>{err}</li>
+src/pages/Servidores.js:2811:                {['Leads', 'Contacts', 'Accounts', 'Potentials'].map((mod) => (
+src/pages/Servidores.js:2813:                    key={mod}
+src/pages/Servidores.js:3007:                    {tiposSistema.map((tipo) => (
+src/pages/Servidores.js:3008:                      <SelectItem key={tipo.Codigo} value={tipo.Codigo}>
+src/pages/Servidores.js:3179:                  {tiposMovimiento.map((tipo) => (
+src/pages/Servidores.js:3181:                      key={tipo.codigo} 
+src/pages/Servidores.js:3221:                  {categorias.map((cat) => (
+src/pages/Servidores.js:3223:                      key={cat.codigo} 
+src/pages/Servidores.js:3256:                  {departamentos.map((dept) => (
+src/pages/Servidores.js:3258:                      key={dept.codigo} 
+src/pages/Servidores.js:3373:                {sucursalesConfig.map((sucursal, index) => (
+src/pages/Servidores.js:3375:                    key={sucursal.sucursal_origen_id}
+src/pages/Produccion.js:34:        {modulos.map((modulo) => {
+src/pages/Produccion.js:37:            <Card key={modulo.nombre} className="border opacity-60 hover:opacity-80 transition-opacity">
+src/pages/Catalogos.js:249:        {camposEditables.map((campo) => {
+src/pages/Catalogos.js:257:            <div key={campo} className="space-y-2">
+src/pages/Catalogos.js:329:              {Object.entries(dominios).map(([dominioId, dominio]) => {
+src/pages/Catalogos.js:337:                    key={dominioId}
+src/pages/Catalogos.js:383:                  {dominios[dominioActivo].catalogos?.map((catalogo) => (
+src/pages/Catalogos.js:385:                      key={catalogo.tabla}
+src/pages/Catalogos.js:477:                          {estructura && estructura.campos?.slice(0, 6).map((campo) => (
+src/pages/Catalogos.js:478:                            <TableHead key={campo} className="whitespace-nowrap">
+src/pages/Catalogos.js:486:                        {registros.map((registro, idx) => {
+src/pages/Catalogos.js:493:                              key={pk ? registro[pk] : idx}
+src/pages/Catalogos.js:496:                              {estructura?.campos?.slice(0, 6).map((campo) => (
+src/pages/Catalogos.js:497:                                <TableCell key={campo} className="whitespace-nowrap">
+src/pages/Catalogos.js:639:                  Object.entries(estadoTablas).map(([tabla, existe]) => (
+src/pages/Catalogos.js:641:                      key={tabla}
+src/pages/cava-socios/SocioForm.jsx:235:                    {TIPOS_MEMBRESIA.map(tipo => (
+src/pages/cava-socios/SocioForm.jsx:236:                      <SelectItem key={tipo.value} value={tipo.value}>
+src/pages/cava-socios/SociosList.jsx:194:                  {filteredSocios.map((socio) => (
+src/pages/cava-socios/SociosList.jsx:195:                    <TableRow key={socio.socio_id}>
+src/pages/cava-socios/CavaSociosDashboard.jsx:265:                  .map((socio) => (
+src/pages/cava-socios/CavaSociosDashboard.jsx:266:                  <TableRow key={socio.socio_id}>
+src/pages/cava-socios/SocioDetail.jsx:598:                          {TIPOS_BEBIDA.map(t => (
+src/pages/cava-socios/SocioDetail.jsx:599:                            <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+src/pages/cava-socios/SocioDetail.jsx:669:                {botellasActivas.map((botella) => (
+src/pages/cava-socios/SocioDetail.jsx:670:                  <TableRow key={botella.botella_id}>
+src/pages/cava-socios/SocioDetail.jsx:792:                {botellasConsumidas.map((botella) => (
+src/pages/cava-socios/SocioDetail.jsx:793:                  <TableRow key={botella.botella_id} className="opacity-60">
+src/pages/RecursosHumanos.js:525:      const deptosUnicos = [...new Set(activos.map(c => c.Departamento).filter(Boolean))];
+src/pages/RecursosHumanos.js:1064:    ...tiposIncidenciaIngresos.map(t => t.value), 
+src/pages/RecursosHumanos.js:1065:    ...tiposIncidenciaDescuentos.map(t => t.value)
+src/pages/RecursosHumanos.js:1406:        {tabs.map(tab => {
+src/pages/RecursosHumanos.js:1410:              key={tab.id}
+src/pages/RecursosHumanos.js:1514:                    {sucursales.map(s => (
+src/pages/RecursosHumanos.js:1515:                      <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
+src/pages/RecursosHumanos.js:1528:                    {puestos.map(p => (
+src/pages/RecursosHumanos.js:1529:                      <option key={p.PuestoID} value={p.PuestoID}>{p.Nombre_Puesto}</option>
+src/pages/RecursosHumanos.js:1588:                  {colaboradores.map(c => (
+src/pages/RecursosHumanos.js:1589:                    <option key={c.ColaboradorID} value={c.ColaboradorID}>{c.Nombre_Completo}</option>
+src/pages/RecursosHumanos.js:1609:                    {tiposIncidenciaIngresos.map(t => (
+src/pages/RecursosHumanos.js:1610:                      <option key={t.value} value={t.value} className="text-green-700">+ {t.label}</option>
+src/pages/RecursosHumanos.js:1614:                    {tiposIncidenciaDescuentos.map(t => (
+src/pages/RecursosHumanos.js:1615:                      <option key={t.value} value={t.value} className="text-red-700">- {t.label}</option>
+src/pages/RecursosHumanos.js:1758:                            {detalleColaborador.incidencias?.slice(0, 5).map((inc) => (
+src/pages/RecursosHumanos.js:1759:                              <tr key={`det-inc-${inc.Tipo_Incidencia}-${inc.Fecha_Incidencia}`} className="border-t">
+src/pages/RecursosHumanos.js:1789:                            {detalleColaborador.asistencias?.slice(0, 5).map((a) => (
+src/pages/RecursosHumanos.js:1790:                              <tr key={`det-asist-${a.FechaHora}-${a.Tipo_Registro}`} className="border-t">
+src/pages/RecursosHumanos.js:1893:                        {importResult.errores.map((err, i) => (
+src/pages/RecursosHumanos.js:1894:                          <li key={`err-${i}-${err.slice(0, 20)}`}>{err}</li>
+src/pages/RecursosHumanos.js:1967:                    {sucursales.map(s => (
+src/pages/RecursosHumanos.js:1968:                      <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
+src/pages/RecursosHumanos.js:1980:                    {puestos.map(p => (
+src/pages/RecursosHumanos.js:1981:                      <option key={p.PuestoID} value={p.PuestoID}>{p.Nombre_Puesto}</option>
+src/pages/RecursosHumanos.js:2081:                  {vacantes.filter(v => v.Estatus === 'Abierta').map(v => (
+src/pages/RecursosHumanos.js:2082:                    <option key={v.VacanteID} value={v.VacanteID}>{v.Titulo} - {v.Nombre_Sucursal}</option>
+src/pages/RecursosHumanos.js:2158:                  {scriptRecl.instrucciones?.map((inst, i) => (
+src/pages/RecursosHumanos.js:2159:                    <li key={`inst-${i}-${inst.slice(0, 15)}`}>{inst}</li>
+src/pages/RecursosHumanos.js:2456:                  {sucursales.map(s => <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>)}
+src/pages/RecursosHumanos.js:2566:                    {(cicloSeleccionado.historial || []).map((evento, idx) => (
+src/pages/RecursosHumanos.js:2567:                      <div key={evento.id || idx} className="relative pl-10">
+src/pages/RecursosHumanos.js:2617:                      {movimientosCiclo.map((mov, idx) => (
+src/pages/RecursosHumanos.js:2618:                        <tr key={mov.id || idx} className="border-b hover:bg-zinc-50">
+src/pages/Reportes.js:67:    return unidadesNegocio.map(u => ({
+src/pages/Reportes.js:209:      .map(inv => inv.fecha?.split('T')[0])
+src/pages/Reportes.js:316:        .map(p => ({
+src/pages/Reportes.js:350:        errores_captura: erroresCaptura.map(e => ({
+src/pages/Reportes.js:648:          const inventariosConAlmacen = inventariosData.map(inv => ({
+src/pages/Reportes.js:912:          ? selectedInventariosIni.map(i => i.folio) 
+src/pages/Reportes.js:915:          ? selectedInventariosFin.map(i => i.folio) 
+src/pages/Reportes.js:928:        const inventariosIniInfo = selectedInventariosIni.map(i => ({ 
+src/pages/Reportes.js:934:        const inventariosFinInfo = selectedInventariosFin.map(i => ({ 
+src/pages/Reportes.js:946:          almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes.map(a => a.nombre) : undefined,
+src/pages/Reportes.js:1185:        : reportData.map(row => {
+src/pages/Reportes.js:1256:      const data = reportData.map(row => columns.map(col => {
+src/pages/Reportes.js:1321:      const almacenesParaComparativo = selectedAlmacenes.map(almacen => {
+src/pages/Reportes.js:1627:                      {unidadesNegocio.map((unidad) => (
+src/pages/Reportes.js:1628:                        <option key={unidad.id} value={unidad.id}>
+src/pages/Reportes.js:1669:                  {sucursales.map((sucursal) => (
+src/pages/Reportes.js:1670:                    <option key={sucursal.id} value={sucursal.id}>
+src/pages/Reportes.js:1706:                    {almacenes.map((almacen) => (
+src/pages/Reportes.js:1707:                      <label key={almacen.id} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
+src/pages/Reportes.js:1746:                  {selectedAlmacenes.map(alm => (
+src/pages/Reportes.js:1747:                    <span key={alm.id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">
+src/pages/Reportes.js:1818:                      .map((inv) => (
+src/pages/Reportes.js:1820:                        key={inv.folio} 
+src/pages/Reportes.js:1849:                  {selectedInventariosIni.map(inv => (
+src/pages/Reportes.js:1850:                    <span key={inv.folio} className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded-full">
+src/pages/Reportes.js:1920:                      .map((inv) => (
+src/pages/Reportes.js:1922:                        key={inv.folio} 
+src/pages/Reportes.js:1955:                  {selectedInventariosFin.map(inv => (
+src/pages/Reportes.js:1956:                    <span key={inv.folio} className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-50 text-orange-700 text-xs rounded-full">
+src/pages/Reportes.js:2072:                          .map((cat) => (
+src/pages/Reportes.js:2073:                          <label key={cat.id} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
+src/pages/Reportes.js:2136:                          .map((fam) => (
+src/pages/Reportes.js:2137:                          <label key={fam.id} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
+src/pages/Reportes.js:2200:                          .map((sf) => (
+src/pages/Reportes.js:2201:                          <label key={sf.id} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
+src/pages/Reportes.js:2229:                  {selectedCategorias.map(id => {
+src/pages/Reportes.js:2232:                      <span key={id} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full">
+src/pages/Reportes.js:2241:                  {selectedFamilias.map(id => {
+src/pages/Reportes.js:2244:                      <span key={id} className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full">
+src/pages/Reportes.js:2253:                  {selectedSubfamilias.map(id => {
+src/pages/Reportes.js:2256:                      <span key={id} className="inline-flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded-full">
+src/pages/Reportes.js:2406:                  {erroresCaptura.map((error, idx) => (
+src/pages/Reportes.js:2407:                    <li key={error.codigo || `error-${idx}`} className="list-disc">
+src/pages/Reportes.js:2426:                      .map((key) => (
+src/pages/Reportes.js:2427:                      <th key={key} className="text-xs uppercase tracking-wider font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-left">
+src/pages/Reportes.js:2434:                  {reportData.slice(0, 2000).map((row, idx) => (
+src/pages/Reportes.js:2435:                    <tr key={row.id || row.codigo || row.folio || `row-${idx}`} className="border-b hover:bg-zinc-50/50">
+src/pages/Reportes.js:2438:                        .map(([key, value], cellIdx) => {
+src/pages/Reportes.js:2482:                            key={cellIdx} 
+src/pages/Reportes.js:2544:                    {pendientesData.almacenes.map(alm => (
+src/pages/Reportes.js:2546:                        key={alm}
+src/pages/Reportes.js:2605:                        .map((item, idx) => (
+src/pages/Reportes.js:2607:                          key={item.codigo || item.producto || `abc-${idx}`} 
+src/pages/Reportes.js:2741:                      {detailModal.data.map((item, idx) => (
+src/pages/Reportes.js:2742:                        <TableRow key={item.folio || item.codigo || `detail-${idx}`} className="hover:bg-zinc-50/50">
+src/pages/Reportes.js:2831:                      {sucursales.map(s => (
+src/pages/Reportes.js:2832:                        <option key={s.id} value={s.id}>{s.nombre}</option>
+src/pages/Reportes.js:2886:                        informesList.map((informe) => (
+src/pages/Reportes.js:2887:                          <TableRow key={informe.id} className="hover:bg-zinc-50">
+src/pages/Reportes.js:3100:                    {erroresCaptura.slice(0, 10).map((error, idx) => (
+src/pages/Reportes.js:3101:                      <div key={error.codigo || `cap-err-${idx}`} className="text-sm text-red-700 flex items-start gap-2">
+src/pages/Reportes.js:3155:                    {evidenciasTemp.map((file, idx) => (
+src/pages/Reportes.js:3156:                      <div key={`file-${file.name}-${file.size}`} className="flex items-center gap-3 p-2 bg-zinc-50 rounded-lg">
+src/pages/Reportes.js:3346:                    {selectedInforme.evidencias.map((ev, idx) => (
+src/pages/Reportes.js:3347:                      <div key={ev.url || `ev-${idx}`} className="border rounded-lg p-3 flex items-center gap-3">
+src/pages/Reportes.js:3382:                        {selectedInforme.errores_captura.slice(0, 15).map((error, idx) => (
+src/pages/Reportes.js:3383:                          <TableRow key={error.codigo || `inf-err-${idx}`} className="bg-red-50/50">
+src/pages/Reportes.js:3425:                        {selectedInforme.productos_diferencias.slice(0, 10).map((prod, idx) => (
+src/pages/Reportes.js:3426:                          <TableRow key={prod.codigo || `prod-diff-${idx}`}>
+src/pages/Reportes.js:3491:                      .map((key) => (
+src/pages/Reportes.js:3492:                      <th key={key} className="text-xs uppercase tracking-wider font-semibold whitespace-nowrap py-3 px-3 text-left">
+src/pages/Reportes.js:3499:                  {reportData.map((row, idx) => (
+src/pages/Reportes.js:3500:                    <tr key={row.id || row.codigo || row.folio || `data-${idx}`} className="border-b hover:bg-zinc-50">
+src/pages/Reportes.js:3503:                        .map(([key, value], cellIdx) => {
+src/pages/Reportes.js:3533:                          <td key={cellIdx} className={className}>
+src/pages/Scheduler.jsx:504:            {schedulerStatus?.jobs?.map((job) => {
+src/pages/Scheduler.jsx:512:                  key={job.id}
+src/pages/Scheduler.jsx:641:                  {schedulerStatus?.jobs?.map(job => (
+src/pages/Scheduler.jsx:642:                    <SelectItem key={job.id} value={job.id}>{job.name}</SelectItem>
+src/pages/Scheduler.jsx:700:                {filteredLogs.map((log) => (
+src/pages/Scheduler.jsx:701:                  <TableRow key={log.id} data-testid={`log-row-${log.id}`}>
+src/pages/AdminHub.js:36:        {cards.map((c) => (
+src/pages/AdminHub.js:38:            key={c.path}
+src/pages/DBACredentialManager.jsx:531:                {diagnosticResults.suspects.map((suspect, idx) => (
+src/pages/DBACredentialManager.jsx:532:                  <div key={idx} className="bg-white rounded-lg p-3 border border-red-200">
+src/pages/DBACredentialManager.jsx:578:                    {diagnosticResults.diagnostic_results.frequent_schedules_5_10_min.map((sched, idx) => (
+src/pages/DBACredentialManager.jsx:579:                      <tr key={idx} className={`border-t ${sched.freq_subday_interval === 5 ? 'bg-red-50' : ''}`}>
+src/pages/DBACredentialManager.jsx:604:                {diagnosticResults.diagnostic_results.suspicious_job_steps.map((step, idx) => (
+src/pages/DBACredentialManager.jsx:605:                  <div key={idx} className="bg-red-50 rounded-lg p-3 border border-red-200">
+src/pages/SyncMonitor.js:144:          {procesos.map((p, idx) => (
+src/pages/SyncMonitor.js:146:              key={`${p.server_id}-${p.sync_type}-${idx}`}
+src/pages/SyncMonitor.js:200:      {errores.map((e, idx) => (
+src/pages/SyncMonitor.js:202:          key={idx}
+src/pages/SyncMonitor.js:240:      {ultimos.slice(0, 15).map((s, idx) => {
+src/pages/SyncMonitor.js:244:            key={idx}
+src/pages/Dashboard.js:64:        {payload.map((entry) => (
+src/pages/Dashboard.js:65:          <p key={`${entry.name}-${entry.dataKey || entry.value}`} style={{ color: entry.color }} className="text-sm">
+src/pages/Dashboard.js:234:                  {unidadesNegocio.map((unidad) => (
+src/pages/Dashboard.js:235:                    <SelectItem key={unidad.id} value={unidad.id}>
+src/pages/Dashboard.js:275:  const topFaltantesCostoData = dashboardData?.top_faltantes_costo?.map(item => ({
+src/pages/Dashboard.js:283:  const topFaltantesCantidadData = dashboardData?.top_faltantes_cantidad?.map(item => ({
+src/pages/Dashboard.js:291:  const comparativoAlmacenData = dashboardData?.comparativo_almacen?.map(item => ({
+src/pages/Dashboard.js:298:  const resumenGrupoData = dashboardData?.resumen_por_grupo?.map(item => ({
+src/pages/Dashboard.js:304:  const resumenAlmacenData = dashboardData?.resumen_por_almacen?.map(item => ({
+src/pages/Dashboard.js:333:              {unidadesNegocio.map(unidad => (
+src/pages/Dashboard.js:334:                <SelectItem key={unidad.id} value={unidad.id}>
+src/pages/Dashboard.js:537:                  {resumenGrupoData.map((entry) => (
+src/pages/Dashboard.js:538:                    <Cell key={`cell-${entry.name}`} fill={COLORS[resumenGrupoData.indexOf(entry) % COLORS.length]} />
+src/pages/Dashboard.js:593:                {dashboardData?.resumen_por_almacen?.map((item) => (
+src/pages/Dashboard.js:594:                  <tr key={`almacen-${item.idalmacen || item.almacen}`} className="border-b border-zinc-100 hover:bg-zinc-50">
+src/pages/Dashboard.js:665:                    {pendientesData.almacenes.map(alm => (
+src/pages/Dashboard.js:667:                        key={alm}
+src/pages/Dashboard.js:705:                    .map((item, idx) => (
+src/pages/Dashboard.js:707:                      key={item.codigo || `pend-${idx}`} 
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:252:                  {data.movimientos.map((mov, idx) => (
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:253:                    <tr key={mov.folio || `mov-${idx}`} className="border-b hover:bg-zinc-50 transition-colors">
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:513:                    {unidadesNegocio?.map(u => (
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:514:                      <SelectItem key={u.id} value={u.id}>
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:553:                      onClick={() => setSelectedMeses(MESES.map(m => m.value))}
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:566:                  {MESES.map(mes => (
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:568:                      key={mes.value}
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:615:                  {ANIOS.map(anio => (
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:617:                      key={anio.value}
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:680:            {alertas.map((a, idx) => (
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:681:              <div key={`alerta-${a.tipo}-${a.producto || idx}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded border border-red-200">
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1042:                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1138:                  {rentabilidad.map((prod, idx) => (
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1139:                    <tr key={prod.producto || `rent-${idx}`} className="border-b hover:bg-zinc-50">
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1231:                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1266:            {metasProducto.map((m, idx) => (
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1267:              <div key={m.producto || `meta-prod-${idx}`} className="p-3 bg-zinc-50 rounded">
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1290:            {metasVendedor.map((m, idx) => (
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1291:              <div key={m.vendedor || `meta-vend-${idx}`} className="p-3 bg-zinc-50 rounded">
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1353:  const maxVentaHora = Math.max(...ventasPorHora.map(v => v.ventas), 1);
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1354:  const maxVentaDia = Math.max(...ventasPorDia.map(v => v.ventas), 1);
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1371:                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1423:            {ventasPorHora.map((v, idx) => (
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1424:              <div key={v.hora || `hora-${idx}`} className="flex items-center gap-3">
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1448:            {ventasPorDia.map((v, idx) => (
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1449:              <div key={v.dia || `dia-${idx}`} className="flex items-center gap-3">
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1513:                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1600:                  {rotacionPorMesa.map((m, idx) => (
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1601:                    <tr key={m.mesa || `mesa-${idx}`} className="border-b">
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1748:                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1914:                  {filteredData.map((item, idx) => (
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1915:                    <React.Fragment key={item.id || idx}>
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1960:                      {expandedRows.has(item.id) && item.detalle?.map((det, detIdx) => (
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:1961:                        <tr key={`${item.id}-${detIdx}`} className="bg-zinc-50 border-b border-zinc-100">
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2112:        pActual = mesesActual.map(m => `${anioActual}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2113:        pBase = mesesActual.map(m => `${anioActual - 1}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2116:        pActual = mesesActual.map(m => `${anioActual}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2117:        pBase = mesesBase.map(m => `${anioBase}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2139:      const pAnioAnterior = mesesActual.map(m => `${anioActual - 1}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2140:      const pBaseAnterior = mesesActual.map(m => `${anioActual - 2}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2180:        const pPeriodo = mesesActual.map(m => `${anio}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2181:        const pRef = mesesActual.map(m => `${anioBase}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2249:                    {unidadesNegocio?.map(u => (
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2250:                      <SelectItem key={u.id} value={u.id}>
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2292:                  {aniosDisponibles.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2297:              {meses.map(m => (
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2299:                  key={m.num}
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2319:                    {aniosDisponibles.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2324:                {meses.map(m => (
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2326:                    key={m.num}
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2341:              <strong>Modo Automático:</strong> Se compararán las ventas de {mesesActual.map(m => meses[m-1].nombre).join(', ')} {anioActual} 
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2342:              {' '}usando precios de {mesesActual.map(m => meses[m-1].nombre).join(', ')} {anioActual - 1}
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2603:                  {serieHistorica.filter(s => s.ventas_actuales > 0).slice(-3).map((item, idx) => (
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2604:                    <div key={item.anio || `serie-${idx}`} className="p-3 bg-zinc-50 rounded-lg">
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2657:                    {data.datos?.map((item, idx) => (
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2658:                      <tr key={item.nombre || item.producto || `dato-${idx}`} className="border-b hover:bg-zinc-50">
+src/pages/Comercial.js.bak_fix_unidad_serverid_20260605_125205:2750:    return unidadesNegocio.map(u => ({
+src/pages/CentroExcepciones.js:103:              {Object.entries(data.resumen?.por_perspectiva || {}).map(([k, v]) => (
+src/pages/CentroExcepciones.js:104:                <Metric key={k} label={k} value={v} />
+src/pages/CentroExcepciones.js:109:              {Object.entries(data.resumen?.por_tipo || {}).map(([k, v]) => (
+src/pages/CentroExcepciones.js:110:                <Metric key={k} label={k} value={v} />
+src/pages/CentroExcepciones.js:132:                  {alertas.map((a, i) => (
+src/pages/CentroExcepciones.js:133:                    <tr key={i} className="border-b hover:bg-gray-50">
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:381:                    {logs.map((log, idx) => (
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:383:                        key={`${log.timestamp}-${idx}`} 
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:480:                  {scriptsPendientes.map((sp) => (
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:481:                    <div key={sp._id} className="border rounded-lg p-4 bg-zinc-50 hover:bg-zinc-100 transition-colors">
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:715:                  {resultados.tablas.map((t) => (
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:717:                      key={`tabla-${t.tabla}`}
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:744:                      {resultados.columnas.map((c) => (
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:745:                        <tr key={`col-${c.tabla}-${c.columna}`} className="border-b hover:bg-zinc-50 cursor-pointer" onClick={() => onSelectTabla(c.tabla)}>
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:764:                  {resultados.datos.map((d, i) => (
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:765:                    <div key={`dato-${d.tabla}-${i}`} className="p-2 bg-white border rounded text-xs">
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:770:                        {Object.entries(d.fila).slice(0, 8).map(([key, val]) => (
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:771:                          <div key={`${d.tabla}-${key}`} className="truncate">
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:820:    return conexionesFiltradas.map(c => ({
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1019:      ...datos.map(row => 
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1020:        headers.map(h => {
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1176:                {sistemasDisponibles.map(s => (
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1177:                  <SelectItem key={s.Codigo} value={s.Codigo}>
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1208:                    conexionesFiltradas.map(c => (
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1209:                      <SelectItem key={c.id} value={c.id}>
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1327:                  Object.entries(tablasAgrupadas).map(([grupo, tablasGrupo]) => (
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1328:                    <div key={grupo} className="mb-2">
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1343:                          {tablasGrupo.map(t => (
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1345:                              key={t.tabla}
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1399:                            {columnas.map((c) => (
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1400:                              <tr key={`col-${c.columna}`} className="border-b hover:bg-zinc-50">
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1425:                        {relaciones.map((r) => (
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1426:                          <div key={`rel-${r.tabla_padre}-${r.columna_padre}-${r.tabla_referenciada}`} className="text-xs p-2 bg-zinc-50 rounded flex items-center gap-2">
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1454:                              {preview.datos.length > 0 && Object.keys(preview.datos[0]).map(col => (
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1455:                                <th key={col} className="py-2 px-2 text-left whitespace-nowrap">{col}</th>
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1460:                            {preview.datos.map((row, i) => (
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1461:                              <tr key={`row-${i}-${Object.values(row)[0]}`} className="border-b hover:bg-zinc-50">
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1462:                                {Object.entries(row).map(([colName, colVal]) => (
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1463:                                  <td key={`${i}-${colName}`} className="py-1 px-2 whitespace-nowrap max-w-[200px] truncate">
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1518:                          {resultadoQuery.datos.length > 0 && Object.keys(resultadoQuery.datos[0]).map(col => (
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1519:                            <th key={col} className="py-2 px-2 text-left">{col}</th>
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1524:                        {resultadoQuery.datos.map((row, i) => (
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1525:                          <tr key={`qrow-${i}-${Object.values(row)[0]}`} className="border-b">
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1526:                            {Object.entries(row).map(([colName, colVal]) => (
+src/pages/ExploradorBD.js.bak_seguridad_20260605_190748:1527:                              <td key={`q${i}-${colName}`} className="py-1 px-2">{colVal?.toString() || '-'}</td>
+src/pages/ImportadorRH.js:376:              {estadisticas.por_empresa.map((e, idx) => (
+src/pages/ImportadorRH.js:378:                  key={e.empresa || `empresa-${idx}`} 
+src/pages/ImportadorRH.js:536:                  {activeTab === 'pendientes' && pendientesFiltrados.map((r) => (
+src/pages/ImportadorRH.js:537:                    <tr key={r.StagingID} className="border-b hover:bg-gray-50">
+src/pages/ImportadorRH.js:573:                  {activeTab === 'incompletos' && incompletos.map((r) => (
+src/pages/ImportadorRH.js:574:                    <tr key={r.StagingID} className="border-b hover:bg-gray-50">
+src/pages/ImportadorRH.js:590:                  {activeTab === 'excluidos' && excluidos.map((r) => (
+src/pages/ImportadorRH.js:591:                    <tr key={r.StagingID} className="border-b hover:bg-gray-50 bg-gray-50">
+src/pages/ImportadorRH.js:741:                          {equivalencias.map((eq) => (
+src/pages/ImportadorRH.js:742:                            <tr key={eq.EquivalenciaID} className="border-b hover:bg-gray-50">
+src/pages/TableroEjecutivo.js:73:    unidades: data.units.map(u => ({
+src/pages/TableroEjecutivo.js:172:    const unidadesTransformadas = unidades.map(u => ({
+src/pages/TableroEjecutivo.js:565:              ventasPorDia = Object.entries(ventasPorDiaSemana).map(([dia, data]) => ({
+src/pages/TableroEjecutivo.js:782:                    {detalleData.ventasTiempo.por_hora.slice(0, 6).map((h) => (
+src/pages/TableroEjecutivo.js:783:                      <div key={`hora-${h.hora}`} className="text-center p-2 bg-zinc-50 rounded">
+src/pages/TableroEjecutivo.js:825:                      const diasCompletos = diasSemana.map(dia => ({
+src/pages/TableroEjecutivo.js:831:                      const maxVenta = Math.max(...diasCompletos.map(x => x.ventas), 1);
+src/pages/TableroEjecutivo.js:833:                      return diasCompletos.map((d) => {
+src/pages/TableroEjecutivo.js:836:                          <div key={`dia-${d.dia}`} className="text-center">
+src/pages/TableroEjecutivo.js:1020:                  .map(u => ({
+src/pages/TableroEjecutivo.js:1068:            const mesInicio = Math.min(...selectedMeses.map(m => parseInt(m)));
+src/pages/TableroEjecutivo.js:1069:            const mesFin = Math.max(...selectedMeses.map(m => parseInt(m)));
+src/pages/TableroEjecutivo.js:1295:                          onClick={() => setSelectedMeses(MESES.map(m => m.value))}
+src/pages/TableroEjecutivo.js:1308:                      {MESES.map(mes => (
+src/pages/TableroEjecutivo.js:1310:                          key={mes.value}
+src/pages/TableroEjecutivo.js:1358:                      {ANIOS.map(anio => (
+src/pages/TableroEjecutivo.js:1360:                          key={anio.value}
+src/pages/TableroEjecutivo.js:1641:            {data.unidades.map((unidad, idx) => (
+src/pages/TableroEjecutivo.js:1643:                key={unidad.id || unidad.nombre || `unidad-${idx}`} 
+src/pages/CatalogoConsultas.js:114:                  {categorias.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+src/pages/CatalogoConsultas.js:124:                  {sistemasDisponibles.map(s => (
+src/pages/CatalogoConsultas.js:125:                    <SelectItem key={s.Codigo} value={s.Codigo}>
+src/pages/CatalogoConsultas.js:140:                consultas.map(c => {
+src/pages/CatalogoConsultas.js:146:                      key={c.id}
+src/pages/CatalogoConsultas.js:224:                          serversDisponibles.map(s => (
+src/pages/CatalogoConsultas.js:225:                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+src/pages/CatalogoConsultas.js:243:                  {(Array.isArray(consultaSeleccionada.parametros) ? consultaSeleccionada.parametros : []).map(param => (
+src/pages/CatalogoConsultas.js:244:                    <div key={param}>
+src/pages/CatalogoConsultas.js:438:                                      {Object.keys(resultadosTest.datos[0]).map(col => (
+src/pages/CatalogoConsultas.js:439:                                        <th key={col} className="py-1 px-2 text-left text-blue-300 font-medium">
+src/pages/CatalogoConsultas.js:446:                                    {resultadosTest.datos.slice(0, 5).map((row, i) => (
+src/pages/CatalogoConsultas.js:447:                                      <tr key={`test-row-${i}-${Object.values(row)[0]}`} className="border-t border-blue-800/50">
+src/pages/CatalogoConsultas.js:448:                                        {Object.entries(row).map(([colName, colVal]) => (
+src/pages/CatalogoConsultas.js:449:                                          <td key={`test-${i}-${colName}`} className="py-1 px-2 text-zinc-300 truncate max-w-[150px]">
+src/pages/CatalogoConsultas.js:487:                          Object.keys(resultados.datos[0]).map(col => (
+src/pages/CatalogoConsultas.js:488:                            <th key={col} className="py-2 px-3 text-left font-semibold text-xs">
+src/pages/CatalogoConsultas.js:496:                      {resultados.datos.map((row, idx) => (
+src/pages/CatalogoConsultas.js:497:                        <tr key={`res-row-${idx}-${Object.values(row)[0]}`} className="border-b hover:bg-zinc-50">
+src/pages/CatalogoConsultas.js:498:                          {Object.entries(row).map(([colName, colVal]) => (
+src/pages/CatalogoConsultas.js:499:                            <td key={`res-${idx}-${colName}`} className="py-2 px-3">
+src/pages/CatalogoConsultas.js:556:                      {sistemasDisponibles.map(s => (
+src/pages/CatalogoConsultas.js:557:                        <SelectItem key={s.Codigo} value={s.Codigo}>
+src/pages/Finanzas.js.backup:137:    const resultado = Object.values(categorias).map(cat => ({
+src/pages/Finanzas.js.backup:139:      proveedores: Object.values(cat.proveedores).map(prov => ({
+src/pages/Finanzas.js.backup:191:    return Object.values(proveedores).map(prov => ({
+src/pages/Finanzas.js.backup:441:        proveedores: (dataFacturas.proveedores || []).map(proveedor => ({
+src/pages/Finanzas.js.backup:443:          facturas: (proveedor.facturas || []).map(factura => {
+src/pages/Finanzas.js.backup:527:        const nuevosProveedores = prevData.proveedores.map(proveedor => ({
+src/pages/Finanzas.js.backup:529:          facturas: proveedor.facturas.map(factura => {
+src/pages/Finanzas.js.backup:975:                {unidadesNegocio.map(u => (
+src/pages/Finanzas.js.backup:976:                  <option key={u.id} value={u.id}>{u.nombre}</option>
+src/pages/Finanzas.js.backup:988:              {meses.map((m, i) => (
+src/pages/Finanzas.js.backup:989:                <option key={i} value={i + 1}>{m}</option>
+src/pages/Finanzas.js.backup:997:              {[2024, 2025, 2026, 2027].map(a => (
+src/pages/Finanzas.js.backup:998:                <option key={a} value={a}>{a}</option>
+src/pages/Finanzas.js.backup:1008:            {sucursales.map(s => (
+src/pages/Finanzas.js.backup:1009:              <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
+src/pages/Finanzas.js.backup:1094:                  <BarChart data={porSucursal.map(s => ({
+src/pages/Finanzas.js.backup:1129:                      data={porSucursal.map(s => ({
+src/pages/Finanzas.js.backup:1141:                      {porSucursal.map((entry, index) => (
+src/pages/Finanzas.js.backup:1142:                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+src/pages/Finanzas.js.backup:1170:                  .map((s, i) => {
+src/pages/Finanzas.js.backup:1174:                      <div key={i} className="flex items-center justify-between text-sm">
+src/pages/Finanzas.js.backup:1217:                    porSucursal.map((suc, i) => {
+src/pages/Finanzas.js.backup:1224:                        <tr key={suc.SucursalID || i} className="border-b hover:bg-zinc-50">
+src/pages/Finanzas.js.backup:1266:            {[2024, 2025, 2026, 2027].map(a => (
+src/pages/Finanzas.js.backup:1267:              <option key={a} value={a}>{a}</option>
+src/pages/Finanzas.js.backup:1276:            {meses.map((m, i) => (
+src/pages/Finanzas.js.backup:1277:              <option key={i} value={i + 1}>{m}</option>
+src/pages/Finanzas.js.backup:1286:            {sucursales.map(s => (
+src/pages/Finanzas.js.backup:1287:              <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
+src/pages/Finanzas.js.backup:1328:                  presupuestos.map((pres, i) => {
+src/pages/Finanzas.js.backup:1334:                      <tr key={pres.PresupuestoID || i} className="border-b hover:bg-zinc-50">
+src/pages/Finanzas.js.backup:1397:          {['cortes', 'pendientes', 'comisiones', 'conciliacion'].map(tab => (
+src/pages/Finanzas.js.backup:1399:              key={tab}
+src/pages/Finanzas.js.backup:1428:                  {sucursales.map(s => <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>)}
+src/pages/Finanzas.js.backup:1504:                      {(cortesData?.cortes || []).map(corte => (
+src/pages/Finanzas.js.backup:1505:                        <tr key={corte.corte_id} className={`border-b hover:bg-zinc-50 ${corte.conciliado ? 'bg-green-50' : ''}`}>
+src/pages/Finanzas.js.backup:1583:                {(saldos.efectivo?.por_fecha || []).map(grupo => (
+src/pages/Finanzas.js.backup:1584:                  <div key={grupo.fecha} className="border-b p-3">
+src/pages/Finanzas.js.backup:1590:                      {grupo.cortes.map(c => (
+src/pages/Finanzas.js.backup:1591:                        <div key={c.corte_id} className="flex justify-between text-xs text-zinc-500">
+src/pages/Finanzas.js.backup:1620:                {(saldos.tarjetas?.por_fecha || []).map(grupo => (
+src/pages/Finanzas.js.backup:1621:                  <div key={grupo.fecha} className="border-b p-3">
+src/pages/Finanzas.js.backup:1630:                      {grupo.cortes.map(c => (
+src/pages/Finanzas.js.backup:1631:                        <div key={c.corte_id} className="flex justify-between text-xs text-zinc-500">
+src/pages/Finanzas.js.backup:1670:                  {Object.entries(comisiones).map(([tipo, config]) => (
+src/pages/Finanzas.js.backup:1671:                    <div key={tipo} className="p-4 border rounded-lg">
+src/pages/Finanzas.js.backup:1711:                      {Object.entries(resumenComisiones.por_tipo || {}).map(([tipo, data]) => (
+src/pages/Finanzas.js.backup:1712:                        <tr key={tipo} className="border-b">
+src/pages/Finanzas.js.backup:1817:                    {unidadesNegocio.map(u => (
+src/pages/Finanzas.js.backup:1818:                      <option key={u.id} value={u.id}>{u.nombre}</option>
+src/pages/Finanzas.js.backup:1854:                    .map(s => (
+src/pages/Finanzas.js.backup:1855:                      <option key={s.SucursalID} value={s.SucursalID}>
+src/pages/Finanzas.js.backup:1883:                      .map(p => (
+src/pages/Finanzas.js.backup:1885:                          key={p.proveedor_id}
+src/pages/Finanzas.js.backup:2106:            reagruparCxPPorProveedores(cxpData?.proveedores || []).map(categoria => (
+src/pages/Finanzas.js.backup:2107:              <Card key={categoria.tipo} className="overflow-hidden border-2" data-testid={`categoria-${categoria.tipo}`}>
+src/pages/Finanzas.js.backup:2145:                    {categoria.proveedores.map(proveedor => {
+src/pages/Finanzas.js.backup:2148:                        <div key={provKey} className="bg-white">
+src/pages/Finanzas.js.backup:2201:                                  {proveedor.facturas.map((factura, idx) => (
+src/pages/Finanzas.js.backup:2202:                                    <tr key={factura.factura_id || idx} className={`border-b hover:bg-zinc-50 ${factura.dias_vencida > 0 ? 'bg-red-50' : ''}`}>
+src/pages/Finanzas.js.backup:2274:            reagruparCxPPorProveedores(cxpData?.proveedores || []).map(categoria => {
+src/pages/Finanzas.js.backup:2283:                <Card key={categoria.tipo} className={`overflow-hidden ${colorCategoria.border} border-l-4`} data-testid={`categoria-prov-${categoria.tipo}`}>
+src/pages/Finanzas.js.backup:2312:                      {categoria.proveedores.map(proveedor => {
+src/pages/Finanzas.js.backup:2315:                          <div key={provKey} className="bg-white">
+src/pages/Finanzas.js.backup:2368:                                    {proveedor.facturas.map((factura, idx) => (
+src/pages/Finanzas.js.backup:2369:                                      <tr key={factura.factura_id || idx} className={`border-b hover:bg-zinc-50 ${factura.dias_vencida > 0 ? 'bg-red-50' : ''}`}>
+src/pages/Finanzas.js.backup:2545:                  <BarChart data={porSucursal.map(s => ({
+src/pages/Finanzas.js.backup:2585:                  {porSucursal.map((s, i) => {
+src/pages/Finanzas.js.backup:2591:                      <tr key={i} className="border-b">
+src/pages/Finanzas.js.backup:2646:        {tabs.map(tab => {
+src/pages/Finanzas.js.backup:2650:              key={tab.id}
+src/pages/Finanzas.js.backup:2709:                  {sucursales.map(s => (
+src/pages/Finanzas.js.backup:2710:                    <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
+src/pages/Finanzas.js.backup:2738:                      .map((c, i) => (
+src/pages/Finanzas.js.backup:2739:                        <option key={i} value={c.Categoria}>{c.Categoria}</option>
+src/pages/Finanzas.js.backup:2764:                    {meses.map((m, i) => (
+src/pages/Finanzas.js.backup:2765:                      <option key={i} value={i + 1}>{m}</option>
+src/pages/Finanzas.js.backup:2777:                    {[2024, 2025, 2026, 2027].map(a => (
+src/pages/Finanzas.js.backup:2778:                      <option key={a} value={a}>{a}</option>
+src/pages/Finanzas.js.backup:2840:                  {scriptData.instrucciones?.map((inst, i) => (
+src/pages/Finanzas.js.backup:2841:                    <li key={i}>{inst}</li>
+src/pages/tablajeria/OrdenesPage.jsx:158:      detalles: orden.detalles?.map(d => ({
+src/pages/tablajeria/OrdenesPage.jsx:180:        .map(d => ({
+src/pages/tablajeria/OrdenesPage.jsx:314:                  {ordenes.map((o) => (
+src/pages/tablajeria/OrdenesPage.jsx:315:                    <TableRow key={o.OrdenID} className="hover:bg-zinc-50">
+src/pages/tablajeria/OrdenesPage.jsx:413:                {plantillas.map(p => (
+src/pages/tablajeria/OrdenesPage.jsx:414:                  <option key={p.PlantillaID} value={p.PlantillaID}>
+src/pages/tablajeria/OrdenesPage.jsx:519:                        {selectedOrden.detalles.map((d, idx) => (
+src/pages/tablajeria/OrdenesPage.jsx:520:                          <TableRow key={idx}>
+src/pages/tablajeria/OrdenesPage.jsx:611:                  {formResultados.detalles.map((d, idx) => (
+src/pages/tablajeria/OrdenesPage.jsx:612:                    <div key={idx} className="p-3 bg-zinc-50 rounded flex items-center gap-4">
+src/pages/tablajeria/TablajeriaDashboard.jsx:200:              {alertas.slice(0, 3).map((alerta, idx) => (
+src/pages/tablajeria/TablajeriaDashboard.jsx:202:                  key={idx}
+src/pages/tablajeria/TablajeriaDashboard.jsx:241:                {rendimientosPorPlantilla.map((plantilla, idx) => (
+src/pages/tablajeria/TablajeriaDashboard.jsx:242:                  <div key={idx} className="space-y-2">
+src/pages/tablajeria/TablajeriaDashboard.jsx:294:                  {topMermas.map((merma, idx) => (
+src/pages/tablajeria/TablajeriaDashboard.jsx:295:                    <TableRow key={idx}>
+src/pages/tablajeria/PlantillasPage.jsx:173:                      {filteredPlantillas.map((p) => (
+src/pages/tablajeria/PlantillasPage.jsx:175:                          key={p.PlantillaID}
+src/pages/tablajeria/PlantillasPage.jsx:286:                        {selectedPlantilla.detalles.map((d, idx) => (
+src/pages/tablajeria/PlantillasPage.jsx:287:                          <div key={idx} className="p-2 bg-zinc-50 rounded text-sm">
+src/pages/tablajeria/CapturaDirectaPage.jsx:150:        detalles: detalles.map(d => ({
+src/pages/tablajeria/CapturaDirectaPage.jsx:237:                    {empresas.map(emp => (
+src/pages/tablajeria/CapturaDirectaPage.jsx:239:                        key={emp.EmpresaID || emp.id} 
+src/pages/tablajeria/CapturaDirectaPage.jsx:406:              {detalles.map((detalle, index) => (
+src/pages/tablajeria/CapturaDirectaPage.jsx:407:                <TableRow key={index} data-testid={`detalle-row-${index}`}>
+src/pages/tablajeria/CapturaDirectaPage.jsx:435:                        {TIPOS_DERIVADO.map(tipo => (
+src/pages/tablajeria/CapturaDirectaPage.jsx:436:                          <SelectItem key={tipo} value={tipo}>
+src/pages/AutorizacionCompras.js:136:      const consolidated = Object.entries(grouped).map(([fecha, data]) => ({
+src/pages/AutorizacionCompras.js:303:    setPedidoData(prev => prev.map(row => {
+src/pages/AutorizacionCompras.js:319:    setPedidoData(prev => prev.map(row => {
+src/pages/AutorizacionCompras.js:355:                  {unidadesNegocio.map(unidad => (
+src/pages/AutorizacionCompras.js:356:                    <SelectItem key={unidad.id} value={unidad.id}>{unidad.nombre}</SelectItem>
+src/pages/AutorizacionCompras.js:373:                  {inventariosFiltrados.map(inv => (
+src/pages/AutorizacionCompras.js:374:                    <SelectItem key={inv.folio} value={inv.folio}>
+src/pages/AutorizacionCompras.js:416:                {almacenes.map(alm => (
+src/pages/AutorizacionCompras.js:417:                  <div key={alm.nombre} className="flex items-center gap-1">
+src/pages/AutorizacionCompras.js:449:                    {pedidosVigentes.map(p => (
+src/pages/AutorizacionCompras.js:450:                      <SelectItem key={`${p.tipo}-${p.folio}`} value={p.folio}>
+src/pages/AutorizacionCompras.js:530:                  {pedidoData.map((row, idx) => {
+src/pages/AutorizacionCompras.js:533:                      <tr key={row.Codigo || `pedido-row-${idx}`} className={`border-b hover:bg-zinc-50 ${row.Sin_Inventario_Inicial ? 'bg-orange-50' : ''} ${stockBajo ? 'bg-red-50' : ''}`}>
+src/pages/AutorizacionCompras.js:599:                {detalleModal.data.map((item) => (
+src/pages/AutorizacionCompras.js:600:                  <tr key={`det-${item.fecha}-${item.documento}`} className="border-b">
+src/pages/Dashboard.js.backup:62:        {payload.map((entry, index) => (
+src/pages/Dashboard.js.backup:63:          <p key={index} style={{ color: entry.color }} className="text-sm">
+src/pages/Dashboard.js.backup:230:                  {servers.map((server) => (
+src/pages/Dashboard.js.backup:231:                    <SelectItem key={server.id} value={server.id}>
+src/pages/Dashboard.js.backup:271:  const topFaltantesCostoData = dashboardData?.top_faltantes_costo?.map(item => ({
+src/pages/Dashboard.js.backup:279:  const topFaltantesCantidadData = dashboardData?.top_faltantes_cantidad?.map(item => ({
+src/pages/Dashboard.js.backup:287:  const comparativoAlmacenData = dashboardData?.comparativo_almacen?.map(item => ({
+src/pages/Dashboard.js.backup:294:  const resumenGrupoData = dashboardData?.resumen_por_grupo?.map(item => ({
+src/pages/Dashboard.js.backup:300:  const resumenAlmacenData = dashboardData?.resumen_por_almacen?.map(item => ({
+src/pages/Dashboard.js.backup:328:              {servers.map(server => (
+src/pages/Dashboard.js.backup:329:                <SelectItem key={server.id} value={server.id}>
+src/pages/Dashboard.js.backup:532:                  {resumenGrupoData.map((entry, index) => (
+src/pages/Dashboard.js.backup:533:                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+src/pages/Dashboard.js.backup:588:                {dashboardData?.resumen_por_almacen?.map((item, index) => (
+src/pages/Dashboard.js.backup:589:                  <tr key={index} className="border-b border-zinc-100 hover:bg-zinc-50">
+src/pages/Dashboard.js.backup:663:                    {pendientesData.almacenes.map(alm => (
+src/pages/Dashboard.js.backup:665:                        key={alm}
+src/pages/Dashboard.js.backup:703:                    .map((item, idx) => (
+src/pages/Dashboard.js.backup:705:                      key={idx} 
+src/pages/Comercial.js:252:                  {data.movimientos.map((mov, idx) => (
+src/pages/Comercial.js:253:                    <tr key={mov.folio || `mov-${idx}`} className="border-b hover:bg-zinc-50 transition-colors">
+src/pages/Comercial.js:513:                    {unidadesNegocio?.map(u => (
+src/pages/Comercial.js:514:                      <SelectItem key={u.id} value={u.id}>
+src/pages/Comercial.js:553:                      onClick={() => setSelectedMeses(MESES.map(m => m.value))}
+src/pages/Comercial.js:566:                  {MESES.map(mes => (
+src/pages/Comercial.js:568:                      key={mes.value}
+src/pages/Comercial.js:615:                  {ANIOS.map(anio => (
+src/pages/Comercial.js:617:                      key={anio.value}
+src/pages/Comercial.js:680:            {alertas.map((a, idx) => (
+src/pages/Comercial.js:681:              <div key={`alerta-${a.tipo}-${a.producto || idx}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded border border-red-200">
+src/pages/Comercial.js:1042:                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+src/pages/Comercial.js:1138:                  {rentabilidad.map((prod, idx) => (
+src/pages/Comercial.js:1139:                    <tr key={prod.producto || `rent-${idx}`} className="border-b hover:bg-zinc-50">
+src/pages/Comercial.js:1231:                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+src/pages/Comercial.js:1266:            {metasProducto.map((m, idx) => (
+src/pages/Comercial.js:1267:              <div key={m.producto || `meta-prod-${idx}`} className="p-3 bg-zinc-50 rounded">
+src/pages/Comercial.js:1290:            {metasVendedor.map((m, idx) => (
+src/pages/Comercial.js:1291:              <div key={m.vendedor || `meta-vend-${idx}`} className="p-3 bg-zinc-50 rounded">
+src/pages/Comercial.js:1353:  const maxVentaHora = Math.max(...ventasPorHora.map(v => v.ventas), 1);
+src/pages/Comercial.js:1354:  const maxVentaDia = Math.max(...ventasPorDia.map(v => v.ventas), 1);
+src/pages/Comercial.js:1371:                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+src/pages/Comercial.js:1423:            {ventasPorHora.map((v, idx) => (
+src/pages/Comercial.js:1424:              <div key={v.hora || `hora-${idx}`} className="flex items-center gap-3">
+src/pages/Comercial.js:1448:            {ventasPorDia.map((v, idx) => (
+src/pages/Comercial.js:1449:              <div key={v.dia || `dia-${idx}`} className="flex items-center gap-3">
+src/pages/Comercial.js:1513:                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+src/pages/Comercial.js:1600:                  {rotacionPorMesa.map((m, idx) => (
+src/pages/Comercial.js:1601:                    <tr key={m.mesa || `mesa-${idx}`} className="border-b">
+src/pages/Comercial.js:1748:                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+src/pages/Comercial.js:1914:                  {filteredData.map((item, idx) => (
+src/pages/Comercial.js:1915:                    <React.Fragment key={item.id || idx}>
+src/pages/Comercial.js:1960:                      {expandedRows.has(item.id) && item.detalle?.map((det, detIdx) => (
+src/pages/Comercial.js:1961:                        <tr key={`${item.id}-${detIdx}`} className="bg-zinc-50 border-b border-zinc-100">
+src/pages/Comercial.js:2112:        pActual = mesesActual.map(m => `${anioActual}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js:2113:        pBase = mesesActual.map(m => `${anioActual - 1}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js:2116:        pActual = mesesActual.map(m => `${anioActual}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js:2117:        pBase = mesesBase.map(m => `${anioBase}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js:2139:      const pAnioAnterior = mesesActual.map(m => `${anioActual - 1}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js:2140:      const pBaseAnterior = mesesActual.map(m => `${anioActual - 2}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js:2180:        const pPeriodo = mesesActual.map(m => `${anio}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js:2181:        const pRef = mesesActual.map(m => `${anioBase}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js:2249:                    {unidadesNegocio?.map(u => (
+src/pages/Comercial.js:2250:                      <SelectItem key={u.id} value={u.id}>
+src/pages/Comercial.js:2292:                  {aniosDisponibles.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
+src/pages/Comercial.js:2297:              {meses.map(m => (
+src/pages/Comercial.js:2299:                  key={m.num}
+src/pages/Comercial.js:2319:                    {aniosDisponibles.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
+src/pages/Comercial.js:2324:                {meses.map(m => (
+src/pages/Comercial.js:2326:                    key={m.num}
+src/pages/Comercial.js:2341:              <strong>Modo Automático:</strong> Se compararán las ventas de {mesesActual.map(m => meses[m-1].nombre).join(', ')} {anioActual} 
+src/pages/Comercial.js:2342:              {' '}usando precios de {mesesActual.map(m => meses[m-1].nombre).join(', ')} {anioActual - 1}
+src/pages/Comercial.js:2603:                  {serieHistorica.filter(s => s.ventas_actuales > 0).slice(-3).map((item, idx) => (
+src/pages/Comercial.js:2604:                    <div key={item.anio || `serie-${idx}`} className="p-3 bg-zinc-50 rounded-lg">
+src/pages/Comercial.js:2657:                    {data.datos?.map((item, idx) => (
+src/pages/Comercial.js:2658:                      <tr key={item.nombre || item.producto || `dato-${idx}`} className="border-b hover:bg-zinc-50">
+src/pages/Comercial.js:2750:    return unidadesNegocio.map(u => ({
+src/pages/MisTareas.js:131:          catalogos: [...(unificadosData.catalogos || []), ...catalogosPendientes.map(s => ({
+src/pages/MisTareas.js:773:              {pendientesUnificados.urgentes.map((item) => (
+src/pages/MisTareas.js:774:                <div key={`${item.tipo}-${item.id}`} className="p-4 hover:bg-red-50 transition-colors">
+src/pages/MisTareas.js:852:                {tareas.pendientes.map((t) => (
+src/pages/MisTareas.js:853:                  <div key={t.id} className="p-4 hover:bg-zinc-50 flex items-start gap-3">
+src/pages/MisTareas.js:904:                  {solicitudesPendientes.map((s) => (
+src/pages/MisTareas.js:905:                    <div key={s.id} className="p-4 hover:bg-zinc-50">
+src/pages/MisTareas.js:985:                {pendientesUnificados.catalogos.map((item) => (
+src/pages/MisTareas.js:986:                  <div key={item.id} className="p-3 hover:bg-purple-50/50">
+src/pages/MisTareas.js:1023:                {pendientesUnificados.proveedores.map((item) => (
+src/pages/MisTareas.js:1024:                  <div key={item.id} className="p-3 hover:bg-blue-50/50">
+src/pages/MisTareas.js:1058:                {pendientesUnificados.nominas.map((item) => (
+src/pages/MisTareas.js:1059:                  <div key={item.id} className="p-3 hover:bg-amber-50/50">
+src/pages/MisTareas.js:1109:                  {misSolicitudes.map((s) => (
+src/pages/MisTareas.js:1110:                    <tr key={s.id} className="hover:bg-zinc-50">
+src/pages/MisTareas.js:1122:                          {Array.from({length: s.niveles_requeridos || 1}).map((_, i) => (
+src/pages/MisTareas.js:1123:                            <div key={`nivel-${s.id}-${i}`} className={`w-2 h-2 rounded-full ${
+src/pages/MisTareas.js:1184:              {proveedores.filter(p => p.status === 'pending').map(supplier => (
+src/pages/MisTareas.js:1185:                <div key={supplier.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-yellow-200">
+src/pages/MisTareas.js:1262:                    {serversDisponibles.map(server => (
+src/pages/MisTareas.js:1263:                      <div key={server.id}>
+src/pages/MisTareas.js:1266:                          {(server.sucursales || []).map(suc => (
+src/pages/MisTareas.js:1267:                            <label key={suc.codigo} className="flex items-center gap-2 text-sm cursor-pointer">
+src/pages/MisTareas.js:1332:                  {Object.entries(catalogosPorModulo).map(([modulo, cats]) => (
+src/pages/MisTareas.js:1333:                    <optgroup key={modulo} label={modulo}>
+src/pages/MisTareas.js:1334:                      {cats.filter(c => isAdmin || misPermisos.catalogos_permitidos.includes(c.id)).map((c) => (
+src/pages/MisTareas.js:1335:                        <option key={c.id} value={c.id}>{c.nombre}</option>
+src/pages/MisTareas.js:1573:                    {Array.from({length: historialSolicitud.niveles_requeridos}).map((_, i) => (
+src/pages/MisTareas.js:1574:                      <div key={`historial-nivel-${i}`} className={`w-3 h-3 rounded-full ${
+src/pages/MisTareas.js:1590:                  {historialSolicitud.historial.map((evento, idx) => (
+src/pages/MisTareas.js:1591:                    <div key={evento.id} className="flex gap-4 pb-6 relative">
+src/pages/Proveedores.js.bak_seguridad_20260605_190748:216:          {['all', 'pending', 'approved', 'rejected'].map(f => (
+src/pages/Proveedores.js.bak_seguridad_20260605_190748:218:              key={f}
+src/pages/Proveedores.js.bak_seguridad_20260605_190748:267:              filteredSuppliers.map(supplier => (
+src/pages/Proveedores.js.bak_seguridad_20260605_190748:268:                <tr key={supplier.id} className="hover:bg-zinc-50">
+src/pages/Proveedores.js.bak_seguridad_20260605_190748:428:                    {servers.map(server => (
+src/pages/Proveedores.js.bak_seguridad_20260605_190748:430:                        key={server.id}
+src/pages/AutorizacionCompras.js.backup:174:      const consolidated = Object.entries(grouped).map(([fecha, data]) => ({
+src/pages/AutorizacionCompras.js.backup:233:      const unique = [...new Map(response.data.map(a => [a.nombre, a])).values()];
+src/pages/AutorizacionCompras.js.backup:420:    setPedidoData(prev => prev.map(row => {
+src/pages/AutorizacionCompras.js.backup:436:    setPedidoData(prev => prev.map(row => {
+src/pages/AutorizacionCompras.js.backup:472:                  {servers.map(server => (
+src/pages/AutorizacionCompras.js.backup:473:                    <SelectItem key={server.id} value={server.id}>{server.name}</SelectItem>
+src/pages/AutorizacionCompras.js.backup:485:                  {sucursales.map(suc => (
+src/pages/AutorizacionCompras.js.backup:486:                    <SelectItem key={suc.codigo || suc.nombre} value={suc.nombre}>{suc.nombre}</SelectItem>
+src/pages/AutorizacionCompras.js.backup:502:                  {inventariosFiltrados.map(inv => (
+src/pages/AutorizacionCompras.js.backup:503:                    <SelectItem key={inv.folio} value={inv.folio}>
+src/pages/AutorizacionCompras.js.backup:534:                {almacenes.map(alm => (
+src/pages/AutorizacionCompras.js.backup:535:                  <div key={alm.nombre} className="flex items-center gap-1">
+src/pages/AutorizacionCompras.js.backup:567:                    {pedidosVigentes.map(p => (
+src/pages/AutorizacionCompras.js.backup:568:                      <SelectItem key={`${p.tipo}-${p.folio}`} value={p.folio}>
+src/pages/AutorizacionCompras.js.backup:648:                  {pedidoData.map((row, idx) => {
+src/pages/AutorizacionCompras.js.backup:651:                      <tr key={idx} className={`border-b hover:bg-zinc-50 ${row.Sin_Inventario_Inicial ? 'bg-orange-50' : ''} ${stockBajo ? 'bg-red-50' : ''}`}>
+src/pages/AutorizacionCompras.js.backup:717:                {detalleModal.data.map((item, i) => (
+src/pages/AutorizacionCompras.js.backup:718:                  <tr key={i} className="border-b">
+src/pages/ConfiguracionOperativaUnidades.jsx:168:        {Object.entries(unidades).map(([unidadId, config]) => {
+src/pages/ConfiguracionOperativaUnidades.jsx:173:              key={unidadId}
+src/pages/ConfiguracionOperativaUnidades.jsx:271:                  {config.turnos?.map(turno => (
+src/pages/ConfiguracionOperativaUnidades.jsx:273:                      key={turno.turno_codigo}
+src/pages/crm/OportunidadesPage.jsx:208:                oportunidades.map((opp) => (
+src/pages/crm/OportunidadesPage.jsx:209:                  <TableRow key={opp.oportunidad_id} data-testid={`opp-row-${opp.oportunidad_id}`}>
+src/pages/crm/CRMDashboard.jsx:133:              {dashboard?.leads?.por_estatus?.map((item, idx) => (
+src/pages/crm/CRMDashboard.jsx:134:                <div key={idx} className="flex items-center justify-between">
+src/pages/crm/CRMDashboard.jsx:166:              {dashboard?.oportunidades?.por_etapa?.map((item, idx) => (
+src/pages/crm/CRMDashboard.jsx:167:                <div key={idx} className="flex items-center justify-between">
+src/pages/crm/CRMDashboard.jsx:199:              dashboard.actividad_reciente.map((item, idx) => (
+src/pages/crm/CRMDashboard.jsx:200:                <div key={idx} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+src/pages/crm/CuentasPage.jsx:230:          {cuentas.map((cuenta) => (
+src/pages/crm/CuentasPage.jsx:231:            <Card key={cuenta.CuentaID} className="hover:shadow-md transition-shadow">
+src/pages/crm/ImplementacionesPage.jsx:74:          implementaciones.map((impl) => (
+src/pages/crm/ImplementacionesPage.jsx:75:            <Card key={impl.id}>
+src/pages/crm/PedidosPage.jsx:140:                  {clientes.map((c) => (
+src/pages/crm/PedidosPage.jsx:141:                    <option key={c.ClienteID} value={c.ClienteID}>
+src/pages/crm/PedidosPage.jsx:224:          {pedidos.map((ped) => (
+src/pages/crm/PedidosPage.jsx:225:            <Card key={ped.PedidoID} className="hover:shadow-md transition-shadow">
+src/pages/crm/CerrarOportunidadModal.jsx:171:                    {motivos.map((item) => (
+src/pages/crm/CerrarOportunidadModal.jsx:172:                      <SelectItem key={item.id} value={item.id.toString()}>
+src/pages/crm/CotizacionesPage.jsx:150:                  {clientes.map((c) => (
+src/pages/crm/CotizacionesPage.jsx:151:                    <option key={c.ClienteID} value={c.ClienteID}>
+src/pages/crm/CotizacionesPage.jsx:238:          {cotizaciones.map((cot) => (
+src/pages/crm/CotizacionesPage.jsx:239:            <Card key={cot.CotizacionID} className="hover:shadow-md transition-shadow">
+src/pages/crm/RemisionesPage.jsx:147:                  {clientes.map((c) => (
+src/pages/crm/RemisionesPage.jsx:148:                    <option key={c.ClienteID} value={c.ClienteID}>
+src/pages/crm/RemisionesPage.jsx:225:          {remisiones.map((rem) => (
+src/pages/crm/RemisionesPage.jsx:226:            <Card key={rem.RemisionID} className="hover:shadow-md transition-shadow">
+src/pages/crm/LeadForm.jsx:240:                      {catalogos.origenes_lead?.map((item) => (
+src/pages/crm/LeadForm.jsx:241:                        <SelectItem key={item.id} value={item.id.toString()}>
+src/pages/crm/LeadForm.jsx:258:                      {catalogos.prioridades?.map((item) => (
+src/pages/crm/LeadForm.jsx:259:                        <SelectItem key={item.id} value={item.id.toString()}>
+src/pages/crm/PostventaPage.jsx:83:          tickets.map((ticket) => (
+src/pages/crm/PostventaPage.jsx:84:            <Card key={ticket.id}>
+src/pages/crm/SolicitudesAltaPage.jsx:338:          {solicitudes.map((sol) => (
+src/pages/crm/SolicitudesAltaPage.jsx:339:            <Card key={sol.SolicitudID} className="hover:shadow-md transition-shadow">
+src/pages/crm/ConvertirLeadModal.jsx:214:                        {pipelines.map((pipeline) => (
+src/pages/crm/ConvertirLeadModal.jsx:215:                          <SelectItem key={pipeline.pipeline_id} value={pipeline.pipeline_id.toString()}>
+src/pages/crm/PipelinePage.jsx:115:        {kanban?.columnas?.map((columna) => (
+src/pages/crm/PipelinePage.jsx:117:            key={columna.etapa.etapa_id}
+src/pages/crm/PipelinePage.jsx:155:              {columna.oportunidades?.map((opp) => (
+src/pages/crm/PipelinePage.jsx:157:                  key={opp.oportunidad_id}
+src/pages/crm/OportunidadForm.jsx:206:                        {pipelines.map((pipeline) => (
+src/pages/crm/OportunidadForm.jsx:207:                          <SelectItem key={pipeline.pipeline_id} value={pipeline.pipeline_id.toString()}>
+src/pages/crm/OportunidadForm.jsx:224:                        {selectedPipeline?.etapas?.map((etapa) => (
+src/pages/crm/OportunidadForm.jsx:225:                          <SelectItem key={etapa.etapa_id} value={etapa.etapa_id.toString()}>
+src/pages/crm/LeadsPage.jsx:216:                leads.map((lead) => (
+src/pages/crm/LeadsPage.jsx:217:                  <TableRow key={lead.lead_id} data-testid={`lead-row-${lead.lead_id}`}>
+src/pages/DashboardEjecutivo.js:100:                  {(data.ventas_por_unidad || []).map((r, i) => (
+src/pages/DashboardEjecutivo.js:101:                    <tr key={i} className="border-b hover:bg-gray-50">
+src/pages/DashboardEjecutivo.js:140:                {(rentabilidad?.data || []).map((r, i) => (
+src/pages/DashboardEjecutivo.js:141:                  <tr key={i} className="border-b hover:bg-gray-50">
+src/pages/DashboardEjecutivo.js:164:                {(data.sync_24h || []).map((r, i) => (
+src/pages/DashboardEjecutivo.js:165:                  <tr key={i} className="border-b hover:bg-gray-50">
+src/pages/Layout.js:552:        submenus: menus.length > 1 ? menus.map(m => ({
+src/pages/Layout.js:677:              {menusFinal.modulos.map((item) => {
+src/pages/Layout.js:688:                  <div key={item.name}>
+src/pages/Layout.js:755:                        {filteredSubmenus.map((submenu) => {
+src/pages/Layout.js:761:                              key={submenu.name}
+src/pages/Layout.js:789:                {menusFinal.satelites.map((item) => {
+src/pages/Layout.js:796:                    <div key={item.name}>
+src/pages/Layout.js:847:                          {item.submenus.map((submenu) => {
+src/pages/Layout.js:853:                                key={submenu.name}
+src/pages/Layout.js:881:                {menusFinal.portales.map((item) => {
+src/pages/Layout.js:887:                      key={item.name}
+src/pages/Layout.js:908:              {menusFinal.sistema.map((item) => {
+src/pages/Layout.js:914:                    key={item.name}
+src/pages/Alertas.js:45:      product_codes: formData.product_codes ? formData.product_codes.split(',').map(s => s.trim()) : [],
+src/pages/Alertas.js:49:      notify_emails: formData.notify_emails.split(',').map(s => s.trim())
+src/pages/Alertas.js:121:          {alerts.map((alert) => (
+src/pages/Alertas.js:122:            <Card key={alert.id} className="border border-zinc-200 shadow-sm hover:border-zinc-300 transition-colors" data-testid="alert-card">
+src/pages/CentroControl.jsx:516:                  alertasActivas.slice(0, 3).map((alerta, idx) => (
+src/pages/CentroControl.jsx:517:                    <div key={alerta.id || `alerta-activa-${idx}`} className="flex items-center gap-2 p-2 bg-zinc-800/50 rounded">
+src/pages/CentroControl.jsx:540:                {fuentes.slice(0, 4).map((fuente, idx) => (
+src/pages/CentroControl.jsx:541:                  <FuenteCard key={fuente.id || fuente.nombre || `fuente-${idx}`} fuente={fuente} />
+src/pages/CentroControl.jsx:564:                    {historial.slice(0, 5).map((evento, idx) => (
+src/pages/CentroControl.jsx:565:                      <EventoRow key={evento.id || evento.timestamp || `evento-${idx}`} evento={evento} />
+src/pages/CentroControl.jsx:588:                {(healthData?.modules_summary || []).map((modulo, idx) => (
+src/pages/CentroControl.jsx:590:                    key={modulo.nombre || `modulo-card-${idx}`} 
+src/pages/CentroControl.jsx:611:            {(healthData?.modules_summary || []).map((modulo, idx) => (
+src/pages/CentroControl.jsx:613:                key={modulo.nombre || `modulo-${idx}`} 
+src/pages/CentroControl.jsx:736:                  .map((alerta, idx) => (
+src/pages/CentroControl.jsx:738:                      key={alerta.id || `alerta-row-${idx}`}
+src/pages/CentroControl.jsx:795:                {fuentes.map((fuente, idx) => (
+src/pages/CentroControl.jsx:797:                    key={fuente.id || fuente.nombre || `fuente-detail-${idx}`}
+src/pages/CentroControl.jsx:843:                      {matrizResolucion.principios.map((p, idx) => (
+src/pages/CentroControl.jsx:844:                        <li key={`principio-${idx}`} className="text-sm text-zinc-400 flex items-center gap-2">
+src/pages/CentroControl.jsx:907:                  {jobs.jobs.map((job, idx) => (
+src/pages/CentroControl.jsx:908:                    <div key={job.id || job.name || `job-${idx}`} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
+src/pages/CentroControl.jsx:959:                  {cambiosRecientes.map((cambio, idx) => {
+src/pages/CentroControl.jsx:969:                      <div key={regresion.id || `regresion-${idx}`} className={`p-4 rounded-lg ${cfg.bg} border ${cfg.border}`}>
+src/pages/CentroControl.jsx:1013:                  {historial.map((evento, idx) => (
+src/pages/CentroControl.jsx:1014:                    <EventoRow key={evento.id || evento.timestamp || `hist-${idx}`} evento={evento} />
+src/pages/CentroControl.jsx:1201:                      {destinatarios.filter(d => d.tipo === 'email').map((dest) => (
+src/pages/CentroControl.jsx:1203:                          key={dest.id} 
+src/pages/CentroControl.jsx:1247:                      {destinatarios.filter(d => d.tipo === 'whatsapp').map((dest) => (
+src/pages/CentroControl.jsx:1249:                          key={dest.id} 
+src/pages/CentroControl.jsx:1326:              {modulosBlindados.map((modulo, idx) => (
+src/pages/CentroControl.jsx:1327:                <div key={modulo.nombre || `blindado-${idx}`} className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+src/pages/CentroControl.jsx:1358:                ].map((item, idx) => (
+src/pages/CentroControl.jsx:1359:                  <div key={`paso-${idx}`} className="flex items-start gap-3 p-3 bg-zinc-800/50 rounded-lg">
+src/pages/CentroControl.jsx:1388:                ].map((doc, idx) => (
+src/pages/CentroControl.jsx:1389:                  <div key={`doc-${doc}`} className="flex items-center gap-2 p-2 hover:bg-zinc-800/50 rounded">
+src/pages/Usuarios.js:402:      setSucursalesMap(prev => ({ ...prev, [serverId]: data }));
+src/pages/Usuarios.js:405:      setSucursalesMap(prev => ({ ...prev, [serverId]: [] }));
+src/pages/Usuarios.js:414:      setDepartamentosMap(prev => ({ ...prev, [serverId]: data }));
+src/pages/Usuarios.js:417:      setDepartamentosMap(prev => ({ ...prev, [serverId]: [] }));
+src/pages/Usuarios.js:918:                .map((user) => (
+src/pages/Usuarios.js:919:                <Card key={user.id} className="border border-zinc-200 shadow-sm" data-testid="user-card">
+src/pages/Usuarios.js:1025:                                    {RBAC_PERFILES_PILOTO.map(p => (
+src/pages/Usuarios.js:1026:                                      <SelectItem key={p.codigo} value={p.codigo}>
+src/pages/Usuarios.js:1045:                                {RBAC_PERMISOS_PILOTO.map(permiso => {
+src/pages/Usuarios.js:1048:                                    <label key={permiso} className="flex items-center gap-2 cursor-pointer">
+src/pages/Usuarios.js:1067:                                {RBAC_ROLES_PILOTO.map(rol => {
+src/pages/Usuarios.js:1070:                                    <label key={rol} className="flex items-center gap-2 cursor-pointer">
+src/pages/Usuarios.js:1127:                    .map((user) => (
+src/pages/Usuarios.js:1128:                    <tr key={user.id} className="border-b hover:bg-zinc-50">
+src/pages/Usuarios.js:1216:                .map((role) => (
+src/pages/Usuarios.js:1217:                <Card key={role.id} className="border border-zinc-200 shadow-sm" data-testid="role-card">
+src/pages/Usuarios.js:1244:                        {(role.permisos || []).slice(0, 5).map(p => {
+src/pages/Usuarios.js:1247:                            <Badge key={p} variant="outline" className="text-xs">
+src/pages/Usuarios.js:1296:                    .map((role) => (
+src/pages/Usuarios.js:1297:                    <tr key={role.id} className="border-b hover:bg-zinc-50">
+src/pages/Usuarios.js:1364:                      usuariosCatalogos.map((usuario) => (
+src/pages/Usuarios.js:1365:                        <tr key={usuario.id} className="border-b hover:bg-zinc-50">
+src/pages/Usuarios.js:1424:                {catalogosDisponibles.map((cat) => (
+src/pages/Usuarios.js:1425:                  <div key={cat.id} className="border rounded-lg p-4 hover:bg-zinc-50">
+src/pages/Usuarios.js:1444:                      {Array.from({length: cat.niveles_aprobacion || 1}).map((_, i) => (
+src/pages/Usuarios.js:1445:                        <div key={`aprobacion-${cat.codigo}-${i}`} className={`flex-1 h-1 rounded ${getNivelAprobacionClass(i)}`} />
+src/pages/Usuarios.js:1517:                    {(estructuraData.empresas || []).map((empresa) => (
+src/pages/Usuarios.js:1518:                      <div key={empresa.id} className="p-4">
+src/pages/Usuarios.js:1534:                          {(empresa.unidades_negocio || []).map((unidad) => (
+src/pages/Usuarios.js:1535:                            <div key={unidad.id} className="bg-zinc-50 p-3 rounded-lg">
+src/pages/Usuarios.js:1554:                                  {(unidad.sucursales || []).map((sucursal) => (
+src/pages/Usuarios.js:1556:                                      key={sucursal.id}
+src/pages/Usuarios.js:1580:                        {mapeoData.mapeos.slice(0, 9).map((m) => (
+src/pages/Usuarios.js:1581:                          <div key={`${m.server_id}-${m.sucursal_id}`} className="text-xs bg-zinc-50 p-2 rounded flex items-center gap-2">
+src/pages/Usuarios.js:1700:                  {catalogosDisponibles.map((cat) => (
+src/pages/Usuarios.js:1701:                    <label key={cat.id} className="flex items-center gap-2 p-2 hover:bg-zinc-50 rounded cursor-pointer">
+src/pages/Usuarios.js:1773:                      .map((role) => (
+src/pages/Usuarios.js:1774:                        <SelectItem key={role.id || role.nombre} value={role.nombre}>
+src/pages/Usuarios.js:1808:              servers.map((server) => {
+src/pages/Usuarios.js:1814:                  <div key={server.id} className="border rounded-lg p-4">
+src/pages/Usuarios.js:1838:                              {serverSucursales.map((suc) => (
+src/pages/Usuarios.js:1839:                                <div key={suc.id} className="flex items-center gap-2">
+src/pages/Usuarios.js:1862:                              {serverDepartamentos.map((dep) => (
+src/pages/Usuarios.js:1863:                                <div key={dep.codigo} className="flex items-center gap-2">
+src/pages/Usuarios.js:1933:                {modulos.map((modulo) => (
+src/pages/Usuarios.js:1934:                  <div key={modulo.id} className="flex items-start gap-2 p-2 rounded hover:bg-zinc-50">
+src/pages/Proveedores.js:216:          {['all', 'pending', 'approved', 'rejected'].map(f => (
+src/pages/Proveedores.js:218:              key={f}
+src/pages/Proveedores.js:267:              filteredSuppliers.map(supplier => (
+src/pages/Proveedores.js:268:                <tr key={supplier.id} className="hover:bg-zinc-50">
+src/pages/Proveedores.js:428:                    {servers.map(server => (
+src/pages/Proveedores.js:430:                        key={server.id}
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:245:                  {data.movimientos.map((mov, idx) => (
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:246:                    <tr key={mov.folio || `mov-${idx}`} className="border-b hover:bg-zinc-50 transition-colors">
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:506:                    {unidadesNegocio?.map(u => (
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:507:                      <SelectItem key={u.id} value={u.id}>
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:546:                      onClick={() => setSelectedMeses(MESES.map(m => m.value))}
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:559:                  {MESES.map(mes => (
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:561:                      key={mes.value}
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:608:                  {ANIOS.map(anio => (
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:610:                      key={anio.value}
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:673:            {alertas.map((a, idx) => (
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:674:              <div key={`alerta-${a.tipo}-${a.producto || idx}`} className="flex items-center gap-2 text-sm p-2 bg-white rounded border border-red-200">
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1035:                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1131:                  {rentabilidad.map((prod, idx) => (
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1132:                    <tr key={prod.producto || `rent-${idx}`} className="border-b hover:bg-zinc-50">
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1224:                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1259:            {metasProducto.map((m, idx) => (
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1260:              <div key={m.producto || `meta-prod-${idx}`} className="p-3 bg-zinc-50 rounded">
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1283:            {metasVendedor.map((m, idx) => (
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1284:              <div key={m.vendedor || `meta-vend-${idx}`} className="p-3 bg-zinc-50 rounded">
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1346:  const maxVentaHora = Math.max(...ventasPorHora.map(v => v.ventas), 1);
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1347:  const maxVentaDia = Math.max(...ventasPorDia.map(v => v.ventas), 1);
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1364:                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1416:            {ventasPorHora.map((v, idx) => (
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1417:              <div key={v.hora || `hora-${idx}`} className="flex items-center gap-3">
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1441:            {ventasPorDia.map((v, idx) => (
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1442:              <div key={v.dia || `dia-${idx}`} className="flex items-center gap-3">
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1506:                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1593:                  {rotacionPorMesa.map((m, idx) => (
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1594:                    <tr key={m.mesa || `mesa-${idx}`} className="border-b">
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1741:                  <SelectContent>{unidadesNegocio?.map(u => <SelectItem key={u.id} value={u.id}><span className="flex items-center gap-2"><Building2 className="h-3 w-3" />{u.nombre}</span></SelectItem>)}</SelectContent>
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1907:                  {filteredData.map((item, idx) => (
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1908:                    <React.Fragment key={item.id || idx}>
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1953:                      {expandedRows.has(item.id) && item.detalle?.map((det, detIdx) => (
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:1954:                        <tr key={`${item.id}-${detIdx}`} className="bg-zinc-50 border-b border-zinc-100">
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2105:        pActual = mesesActual.map(m => `${anioActual}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2106:        pBase = mesesActual.map(m => `${anioActual - 1}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2109:        pActual = mesesActual.map(m => `${anioActual}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2110:        pBase = mesesBase.map(m => `${anioBase}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2132:      const pAnioAnterior = mesesActual.map(m => `${anioActual - 1}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2133:      const pBaseAnterior = mesesActual.map(m => `${anioActual - 2}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2173:        const pPeriodo = mesesActual.map(m => `${anio}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2174:        const pRef = mesesActual.map(m => `${anioBase}-${String(m).padStart(2, '0')}`).join(',');
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2242:                    {unidadesNegocio?.map(u => (
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2243:                      <SelectItem key={u.id} value={u.id}>
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2285:                  {aniosDisponibles.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2290:              {meses.map(m => (
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2292:                  key={m.num}
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2312:                    {aniosDisponibles.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2317:                {meses.map(m => (
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2319:                    key={m.num}
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2334:              <strong>Modo Automático:</strong> Se compararán las ventas de {mesesActual.map(m => meses[m-1].nombre).join(', ')} {anioActual} 
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2335:              {' '}usando precios de {mesesActual.map(m => meses[m-1].nombre).join(', ')} {anioActual - 1}
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2596:                  {serieHistorica.filter(s => s.ventas_actuales > 0).slice(-3).map((item, idx) => (
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2597:                    <div key={item.anio || `serie-${idx}`} className="p-3 bg-zinc-50 rounded-lg">
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2650:                    {data.datos?.map((item, idx) => (
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2651:                      <tr key={item.nombre || item.producto || `dato-${idx}`} className="border-b hover:bg-zinc-50">
+src/pages/Comercial.js.bak_precios_serverid_20260605_043900:2743:    return unidadesNegocio.map(u => ({
+src/components/PropinasTPV.jsx.backup_script_3_20260604_162548:90:        const unidades = (dataV2.unidades || []).map(u => ({
+src/components/PropinasTPV.jsx.backup_script_3_20260604_162548:114:          .map(s => ({ id: s.id, nombre: s.name || s.nombre || s.id }));
+src/components/PropinasTPV.jsx.backup_script_3_20260604_162548:195:        const propinasTransformadas = (data.detalle || []).map(p => ({
+src/components/PropinasTPV.jsx.backup_script_3_20260604_162548:377:                        {unidadesNegocio.map(u => (
+src/components/PropinasTPV.jsx.backup_script_3_20260604_162548:378:                          <option key={u.id} value={u.id}>
+src/components/recursos-humanos/RhDashboard.jsx:109:                {porDepto.slice(0, 8).map((d, idx) => (
+src/components/recursos-humanos/RhDashboard.jsx:110:                  <div key={d.departamento || `dept-${idx}`} className="flex items-center justify-between py-1.5 border-b last:border-0">
+src/components/recursos-humanos/RhDashboard.jsx:133:                {incMes.slice(0, 6).map((inc, idx) => (
+src/components/recursos-humanos/RhDashboard.jsx:134:                  <div key={inc.tipo || `inc-${idx}`} className="flex items-center justify-between py-1.5 border-b last:border-0">
+src/components/recursos-humanos/RhDashboard.jsx:163:              {flujosPend.slice(0, 6).map((flujo, idx) => (
+src/components/recursos-humanos/RhDashboard.jsx:165:                  key={flujo.id || `flujo-${idx}`} 
+src/components/recursos-humanos/shared/RhSharedComponents.jsx:92:        {sucursales.map(s => (
+src/components/recursos-humanos/shared/RhSharedComponents.jsx:93:          <option key={s.SucursalID} value={s.SucursalID}>
+src/components/recursos-humanos/RhColaboradores.jsx:71:          {sucursales.map(s => (
+src/components/recursos-humanos/RhColaboradores.jsx:72:            <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
+src/components/recursos-humanos/RhColaboradores.jsx:108:                  colaboradores.map((col) => (
+src/components/recursos-humanos/RhColaboradores.jsx:109:                    <tr key={col.ColaboradorID} className="border-b hover:bg-zinc-50">
+src/components/recursos-humanos/RhCatalogos.jsx:217:                catalogoPuestos.map((p) => (
+src/components/recursos-humanos/RhCatalogos.jsx:218:                  <tr key={p.PuestoID} className="hover:bg-zinc-50">
+src/components/recursos-humanos/RhCatalogos.jsx:316:                catalogoIncidencias.map((t) => (
+src/components/recursos-humanos/RhCatalogos.jsx:317:                  <tr key={t.TipoIncidenciaID} className="hover:bg-zinc-50">
+src/components/recursos-humanos/RhNominas.jsx:135:          {['kanban', 'captura', 'lista', 'config'].map(tab => (
+src/components/recursos-humanos/RhNominas.jsx:137:              key={tab}
+src/components/recursos-humanos/RhNominas.jsx:257:        {ETAPAS_NOMINA.map(etapa => {
+src/components/recursos-humanos/RhNominas.jsx:261:            <div key={etapa.id} className="w-64 bg-zinc-50 rounded-xl p-3 flex-shrink-0">
+src/components/recursos-humanos/RhNominas.jsx:278:                  ciclosEtapa.map(ciclo => {
+src/components/recursos-humanos/RhNominas.jsx:281:                      <Card key={ciclo.id} className={`cursor-pointer hover:shadow-md transition-shadow ${
+src/components/recursos-humanos/RhNominas.jsx:384:                {sucursales.map(s => (
+src/components/recursos-humanos/RhNominas.jsx:385:                  <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
+src/components/recursos-humanos/RhNominas.jsx:397:                {departamentos.map(d => (
+src/components/recursos-humanos/RhNominas.jsx:398:                  <option key={d} value={d}>{d}</option>
+src/components/recursos-humanos/RhNominas.jsx:432:              {SIMBOLOS_INCIDENCIA.map(s => (
+src/components/recursos-humanos/RhNominas.jsx:433:                <span key={s.codigo} className={`px-2 py-1 rounded ${s.color}`} title={s.nombre}>
+src/components/recursos-humanos/RhNominas.jsx:471:                    {DIAS_SEMANA_LABELS.map((dia, i) => (
+src/components/recursos-humanos/RhNominas.jsx:472:                      <th key={`dia-${i}`} className="text-center p-2 font-medium w-14">{dia}</th>
+src/components/recursos-humanos/RhNominas.jsx:483:                  {colaboradoresFiltrados.map((col, idx) => {
+src/components/recursos-humanos/RhNominas.jsx:488:                      <tr key={col.ColaboradorID} className="border-b hover:bg-zinc-50">
+src/components/recursos-humanos/RhNominas.jsx:500:                        {DIAS_SEMANA_CAPTURA.map((dia, i) => (
+src/components/recursos-humanos/RhNominas.jsx:501:                          <td key={`${col.ColaboradorID}-${dia}`} className="p-1 text-center">
+src/components/recursos-humanos/RhNominas.jsx:507:                              {SIMBOLOS_INCIDENCIA.map(s => (
+src/components/recursos-humanos/RhNominas.jsx:508:                                <option key={s.codigo} value={s.codigo}>{s.codigo}</option>
+src/components/recursos-humanos/RhNominas.jsx:526:                    {DIAS_SEMANA_LABELS.map((_, i) => <td key={`footer-${i}`} className="p-2"></td>)}
+src/components/recursos-humanos/RhNominas.jsx:593:                ciclosNomina.map(ciclo => {
+src/components/recursos-humanos/RhNominas.jsx:597:                    <tr key={ciclo.id} className="border-b hover:bg-zinc-50">
+src/components/recursos-humanos/RhNominas.jsx:655:                {diasSemana.map((dia, idx) => <option key={`rh-corte-${dia}`} value={idx}>{dia}</option>)}
+src/components/recursos-humanos/RhNominas.jsx:665:                {diasSemana.map((dia, idx) => <option key={`rh-pago-${dia}`} value={idx}>{dia}</option>)}
+src/components/recursos-humanos/RhNominas.jsx:698:            {ETAPAS_NOMINA.map((etapa, idx) => {
+src/components/recursos-humanos/RhNominas.jsx:701:                <div key={etapa.id} className="flex items-center gap-3">
+src/components/recursos-humanos/RhReclutamiento.jsx:157:            {vacantes.map((vac) => (
+src/components/recursos-humanos/RhReclutamiento.jsx:158:              <div key={vac.VacanteID} className="p-4 hover:bg-zinc-50">
+src/components/recursos-humanos/RhReclutamiento.jsx:251:                candidatos.map((cand) => {
+src/components/recursos-humanos/RhReclutamiento.jsx:254:                    <tr key={cand.CandidatoID} className="border-b hover:bg-zinc-50">
+src/components/recursos-humanos/RhReclutamiento.jsx:289:                          {ESTATUS_CANDIDATO.map(e => (
+src/components/recursos-humanos/RhReclutamiento.jsx:290:                            <option key={e.value} value={e.value}>{e.value}</option>
+src/components/recursos-humanos/RhIncidencias.jsx:40:          {sucursales.map(s => (
+src/components/recursos-humanos/RhIncidencias.jsx:41:            <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
+src/components/recursos-humanos/RhIncidencias.jsx:78:                  incidencias.map((inc) => {
+src/components/recursos-humanos/RhIncidencias.jsx:81:                      <tr key={inc.IncidenciaID} className="border-b hover:bg-zinc-50">
+src/components/PropinasTPV.jsx:148:        const unidades = (dataV2.unidades || []).map(u => ({
+src/components/PropinasTPV.jsx:167:        const unidades = unidadesCF.map(u => ({
+src/components/PropinasTPV.jsx:229:        const propinasTransformadas = (data.detalle || []).map(p => ({
+src/components/BarraLateral.jsx:85:          {[1, 2, 3, 4, 5].map(i => (
+src/components/BarraLateral.jsx:86:            <div key={i} className="h-10 bg-zinc-700 rounded" />
+src/components/BarraLateral.jsx:102:      {menus.map((menu) => {
+src/components/BarraLateral.jsx:110:          <div key={menuId} className="menu-item-container">
+src/components/BarraLateral.jsx:160:                {subMenus.map((item) => {
+src/components/BarraLateral.jsx:164:                      key={item.id}
+src/components/solicitudes-catalogo/SolicitudesComponents.jsx:50:    ].map(({ key, label, icon: Icon, color }) => (
+src/components/solicitudes-catalogo/SolicitudesComponents.jsx:51:      <Card key={key} className="p-3">
+src/components/solicitudes-catalogo/SolicitudesComponents.jsx:100:          {acciones.map(accion => (
+src/components/solicitudes-catalogo/SolicitudesComponents.jsx:102:              key={accion.id}
+src/components/navigation/EnterpriseSidebarMenu.jsx:189:        key={`${compact ? "compact" : "item"}-${item.id}`}
+src/components/navigation/EnterpriseSidebarMenu.jsx:214:        {groups.map(group => {
+src/components/navigation/EnterpriseSidebarMenu.jsx:218:              key={group.id}
+src/components/navigation/EnterpriseSidebarMenu.jsx:257:              searchResults.map(item => renderItem(item, true))
+src/components/navigation/EnterpriseSidebarMenu.jsx:275:              {favorites.map(item => renderItem(item, true))}
+src/components/navigation/EnterpriseSidebarMenu.jsx:285:            {groups.map(group => {
+src/components/navigation/EnterpriseSidebarMenu.jsx:291:                <div key={group.id} className="rounded-2xl overflow-hidden" data-testid={`menu-group-${group.id}`}>
+src/components/navigation/EnterpriseSidebarMenu.jsx:318:                      {Object.entries(sections).map(([section, items]) => (
+src/components/navigation/EnterpriseSidebarMenu.jsx:319:                        <div key={`${group.id}-${section}`} className="space-y-1">
+src/components/navigation/EnterpriseSidebarMenu.jsx:326:                          {items.map(item => renderItem(item))}
+src/components/fase2_operativo/ResponsabilidadPendientesPanel.jsx:118:            {accionesDisponibles.map(accion => {
+src/components/fase2_operativo/ResponsabilidadPendientesPanel.jsx:132:                  key={accion}
+src/components/fase2_operativo/ResponsabilidadPendientesPanel.jsx:204:              {historial?.items?.map((t, idx) => (
+src/components/fase2_operativo/ResponsabilidadPendientesPanel.jsx:205:                <div key={t.id || idx} className="border-l-2 border-zinc-200 pl-3">
+src/components/fase2_operativo/ResponsabilidadPendientesPanel.jsx:361:          items?.map(item => (
+src/components/fase2_operativo/ResponsabilidadPendientesPanel.jsx:363:              key={item.id}
+src/components/fase2_operativo/ResponsabilidadCard.jsx:163:          {[...Array(4)].map((_, i) => (
+src/components/fase2_operativo/ResponsabilidadCard.jsx:164:            <div key={`skeleton-resp-${i}`} className="h-16 bg-zinc-100 rounded-lg"></div>
+src/components/fase2_operativo/ResponsabilidadCard.jsx:283:            {top_sucursales.slice(0, 3).map((sucursal, index) => (
+src/components/fase2_operativo/ResponsabilidadCard.jsx:284:              <SucursalRow key={sucursal.sucursal_id} sucursal={sucursal} index={index} />
+src/components/fase2_operativo/ResponsabilidadCard.jsx:307:            {ultimos_calculos.map((workflow) => (
+src/components/fase2_operativo/ResponsabilidadCard.jsx:308:              <WorkflowRow key={workflow.workflow_id} workflow={workflow} />
+src/components/fase2_operativo/ResponsabilidadAccionesModal.jsx:243:              {ROLES.map(rol => (
+src/components/fase2_operativo/ResponsabilidadAccionesModal.jsx:244:                <option key={rol.value} value={rol.value}>{rol.label}</option>
+src/components/fase2_operativo/TareaList.jsx:155:          {[...Array(5)].map((_, i) => (
+src/components/fase2_operativo/TareaList.jsx:156:            <div key={`skeleton-tarea-${i}`} className="h-12 bg-zinc-100 rounded animate-pulse"></div>
+src/components/fase2_operativo/TareaList.jsx:264:            {sortedTareas.map((tarea, idx) => (
+src/components/fase2_operativo/TareaList.jsx:266:                key={tarea.id || tarea._id || idx} 
+src/components/fase2_operativo/WorkflowList.jsx:235:          {[...Array(5)].map((_, i) => (
+src/components/fase2_operativo/WorkflowList.jsx:236:            <div key={`skeleton-workflow-${i}`} className="h-12 bg-zinc-100 rounded animate-pulse"></div>
+src/components/fase2_operativo/WorkflowList.jsx:325:            {workflows.map((workflow, idx) => (
+src/components/fase2_operativo/WorkflowList.jsx:327:                key={workflow.id || workflow._id || idx} 
+src/components/fase2_operativo/KPICards.jsx:52:        {[...Array(6)].map((_, i) => (
+src/components/fase2_operativo/KPICards.jsx:53:          <div key={`skeleton-kpi-${i}`} className="rounded-lg border border-zinc-200 p-4 animate-pulse">
+src/components/fase2_operativo/KPICards.jsx:139:      {kpis.map((kpi) => (
+src/components/fase2_operativo/KPICards.jsx:140:        <KPICard key={kpi.title} {...kpi} />
+src/components/fase2_operativo/AlertasBanner.jsx:181:        {sortedAlertas.map((alerta, idx) => (
+src/components/fase2_operativo/AlertasBanner.jsx:183:            key={alerta.id || alerta._id || idx} 
+src/components/UniversalQueryTester.jsx:382:              {columns.map((col, i) => (
+src/components/UniversalQueryTester.jsx:383:                <th key={i} className="border-b p-2 text-left font-medium text-zinc-700 whitespace-nowrap">
+src/components/UniversalQueryTester.jsx:390:            {result.preview.map((row, rowIndex) => (
+src/components/UniversalQueryTester.jsx:391:              <tr key={rowIndex} className="hover:bg-zinc-50">
+src/components/UniversalQueryTester.jsx:392:                {columns.map((col, colIndex) => (
+src/components/UniversalQueryTester.jsx:393:                  <td key={colIndex} className="border-b p-2 text-zinc-600 whitespace-nowrap">
+src/components/UniversalQueryTester.jsx:514:                          ?{apiParams.filter(p => p.key).map(p => `${p.key}=${p.value || '...'}`).join('&')}
+src/components/UniversalQueryTester.jsx:537:                        {apiHeaders.map((header, index) => (
+src/components/UniversalQueryTester.jsx:538:                          <div key={index} className="flex gap-2 items-center">
+src/components/UniversalQueryTester.jsx:581:                        {apiParams.map((param, index) => (
+src/components/UniversalQueryTester.jsx:582:                          <div key={index} className="flex gap-2 items-center">
+src/components/UniversalQueryTester.jsx:613:                        {TIMEOUT_OPTIONS.map((n) => (
+src/components/UniversalQueryTester.jsx:614:                          <SelectItem key={n} value={String(n)}>{n} segundos</SelectItem>
+src/components/UniversalQueryTester.jsx:650:                      {TEST_TYPES.map((type) => (
+src/components/UniversalQueryTester.jsx:651:                        <SelectItem key={type.key} value={type.key}>
+src/components/UniversalQueryTester.jsx:698:                      {parameters.map((param, index) => (
+src/components/UniversalQueryTester.jsx:699:                        <div key={index} className="flex gap-2 items-center">
+src/components/UniversalQueryTester.jsx:747:                        {MAX_ROWS_OPTIONS.map((n) => (
+src/components/UniversalQueryTester.jsx:748:                          <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+src/components/UniversalQueryTester.jsx:760:                        {TIMEOUT_OPTIONS.map((n) => (
+src/components/UniversalQueryTester.jsx:761:                          <SelectItem key={n} value={String(n)}>{n}s</SelectItem>
+src/components/UniversalQueryTester.jsx:832:                  {apiHeaders.map((header, index) => (
+src/components/UniversalQueryTester.jsx:833:                    <div key={index} className="flex gap-2 items-center">
+src/components/UniversalQueryTester.jsx:862:                  {apiParams.map((param, index) => (
+src/components/UniversalQueryTester.jsx:863:                    <div key={index} className="flex gap-2 items-center">
+src/components/UniversalQueryTester.jsx:890:                      {TIMEOUT_OPTIONS.map((n) => (
+src/components/UniversalQueryTester.jsx:891:                        <SelectItem key={n} value={String(n)}>{n}s</SelectItem>
+src/components/ModalSolicitudCatalogo.jsx:178:            {config.campos.map(campo => (
+src/components/ModalSolicitudCatalogo.jsx:179:              <div key={campo.id}>
+src/components/ModalSolicitudCatalogo.jsx:211:                    {campo.opciones?.map(op => (
+src/components/ModalSolicitudCatalogo.jsx:212:                      <option key={op} value={op}>{op}</option>
+src/components/auditorias/AuditoriasComponents.jsx:21:        {[...Array(6)].map((_, i) => (
+src/components/auditorias/AuditoriasComponents.jsx:22:          <Card key={`kpi-skeleton-${i}`} className="animate-pulse">
+src/components/auditorias/AuditoriasComponents.jsx:46:      {items.map((item) => (
+src/components/auditorias/AuditoriasComponents.jsx:47:        <Card key={item.label}>
+src/components/auditorias/AuditoriasComponents.jsx:111:          {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(d => (
+src/components/auditorias/AuditoriasComponents.jsx:112:            <div key={d} className="text-center text-xs text-zinc-500 py-1 font-medium">
+src/components/auditorias/AuditoriasComponents.jsx:116:          {dias.map((d, idx) => (
+src/components/auditorias/AuditoriasComponents.jsx:118:              key={`dia-${idx}`}
+src/components/auditorias/AuditoriasComponents.jsx:126:                  {d.eventos.slice(0, 2).map((e, i) => (
+src/components/auditorias/AuditoriasComponents.jsx:128:                      key={`evento-${d.dia}-${i}`}
+src/components/TabOperativasCompras.jsx:502:                        {selectedItem.detalle_productos.map((prod) => (
+src/components/TabOperativasCompras.jsx:503:                          <TableRow key={prod.codigo || prod.nombre}>
+src/components/GestionSolicitudesCatalogo.jsx:198:              {solicitudes.map(solicitud => (
+src/components/GestionSolicitudesCatalogo.jsx:200:                  key={solicitud.id}
+src/components/GestionSolicitudesCatalogo.jsx:247:                    {Object.entries(modalDetalle.datos_adicionales).map(([key, value]) => (
+src/components/GestionSolicitudesCatalogo.jsx:248:                      <div key={key} className="flex justify-between py-1">
+src/components/GestionSolicitudesCatalogo.jsx:291:                    {modalDetalle.comentarios.map((com, i) => (
+src/components/GestionSolicitudesCatalogo.jsx:292:                      <div key={com.fecha || `comentario-${i}`} className="bg-zinc-50 rounded-lg p-3 text-sm">
+src/components/catalogos/ConfiguracionOperativaUnidad.jsx:72:      turnos: prev.turnos.map(t =>
+src/components/UnidadNegocioContextSelector.jsx:30:        {unidades.map((u) => (
+src/components/UnidadNegocioContextSelector.jsx:32:            key={u.UnidadNegocioID || `${u.EmpresaID}-${u.SucursalID}`} 
+src/components/TesoreriaCorteZ.jsx:73:        {pendientes.map(corte => (
+src/components/TesoreriaCorteZ.jsx:75:            key={`${corte.sucursal_id}_${corte.folio_corte}`}
+src/components/TesoreriaCorteZ.jsx:92:        {cuadres.map(cuadre => (
+src/components/TesoreriaCorteZ.jsx:94:            key={cuadre.id} 
+src/components/TesoreriaCorteZ.jsx:293:                  {unidadesNegocio.map(u => (
+src/components/TesoreriaCorteZ.jsx:294:                    <option key={u.id} value={u.id}>{u.nombre}</option>
+src/components/TesoreriaCorteZ.jsx:326:        ].map(tab => (
+src/components/TesoreriaCorteZ.jsx:328:            key={tab.id}
+src/components/PropinasTPV.jsx.backup_visual_corporate_filters_20260604_165748:97:        const unidades = (dataV2.unidades || []).map(u => ({
+src/components/PropinasTPV.jsx.backup_visual_corporate_filters_20260604_165748:116:        const unidades = unidadesCF.map(u => ({
+src/components/PropinasTPV.jsx.backup_visual_corporate_filters_20260604_165748:178:        const propinasTransformadas = (data.detalle || []).map(p => ({
+src/components/PropinasTPV.jsx.backup_visual_corporate_filters_20260604_165748:360:                        {unidadesNegocio.map(u => (
+src/components/PropinasTPV.jsx.backup_visual_corporate_filters_20260604_165748:361:                          <option key={u.id} value={u.id}>
+src/components/crm/CuentasPanel.jsx:42:                        {cuentas.map(cuenta => (
+src/components/crm/CuentasPanel.jsx:43:                            <tr key={cuenta.CuentaID} className="hover:bg-slate-800/50">
+src/components/crm/PipelineKanban.jsx:27:      setOportunidades(prev => prev.map(op => op.OportunidadID === oportunidadId ? { ...op, Etapa: etapaDestino } : op));
+src/components/crm/PipelineKanban.jsx:47:        {ETAPAS_MAESTRAS.map(etapa => (
+src/components/crm/PipelineKanban.jsx:48:          <div key={etapa} className="bg-slate-850 p-3 rounded-xl border border-slate-800 min-w-[260px] flex flex-col shadow-lg">
+src/components/crm/PipelineKanban.jsx:57:              {oportunidades.filter(o => o.Etapa === etapa).map(op => (
+src/components/crm/PipelineKanban.jsx:59:                  key={op.OportunidadID}
+src/components/crm/SolicitudesAltaPanel.jsx:42:                        {solicitudes.map(sol => (
+src/components/crm/SolicitudesAltaPanel.jsx:43:                            <tr key={sol.SolicitudID} className="hover:bg-slate-800/50">
+src/components/crm/ActividadesPanel.jsx:25:      setActividades(prev => prev.map(act => act.ActividadID === actividadId ? { ...act, Estatus: estatusDestino } : act));
+src/components/crm/ActividadesPanel.jsx:58:              actividades.map(act => (
+src/components/crm/ActividadesPanel.jsx:59:                <tr key={act.ActividadID} className="hover:bg-slate-750 transition-colors">
+src/components/crm/OperacionesFlujoPanel.jsx:52:              {cotizaciones.map(cot => (
+src/components/crm/OperacionesFlujoPanel.jsx:53:                <tr key={cot.CotizacionID} className="hover:bg-slate-750 transition-colors">
+src/components/crm/OperacionesFlujoPanel.jsx:77:          {proyectos.map(proy => (
+src/components/crm/OperacionesFlujoPanel.jsx:78:            <div key={proy.ImplementacionID} className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md">
+src/components/admin/RolesList.jsx:149:            roles.map((rol) => (
+src/components/admin/RolesList.jsx:151:                key={rol.id} 
+src/components/admin/ResyncPanel.jsx:236:                  {options.tipos_sync.map(tipo => (
+src/components/admin/ResyncPanel.jsx:237:                    <SelectItem key={tipo.codigo} value={tipo.codigo}>
+src/components/admin/ResyncPanel.jsx:258:                  {options.unidades.map(unidad => (
+src/components/admin/ResyncPanel.jsx:259:                    <SelectItem key={unidad.id} value={unidad.id}>
+src/components/admin/ResyncPanel.jsx:385:                    {validationResult.dias_existentes.dias_existentes.map((dia, idx) => (
+src/components/admin/ResyncPanel.jsx:386:                      <div key={idx} className="flex gap-4 py-1 border-b last:border-0">
+src/components/admin/ResyncPanel.jsx:466:                        {executionResult.resultado.detalle.map((item, idx) => (
+src/components/admin/ResyncPanel.jsx:467:                          <div key={idx} className="text-sm py-1 border-b last:border-0">
+src/components/admin/ResyncPanel.jsx:519:                {history.map((item) => (
+src/components/admin/ResyncPanel.jsx:520:                  <TableRow key={item.id}>
+src/components/admin/bitacora/BitacoraComponents.jsx:218:          {eventos.map((evento, idx) => (
+src/components/admin/bitacora/BitacoraComponents.jsx:219:            <tr key={evento.id || idx} className="border-b hover:bg-zinc-50">
+src/components/finanzas/cuentas-bancarias/saldos/HistorialSaldos.jsx:109:        {[1, 2, 3, 4, 5].map((i) => (
+src/components/finanzas/cuentas-bancarias/saldos/HistorialSaldos.jsx:110:          <div key={i} className="flex items-center space-x-4 p-3 border rounded">
+src/components/finanzas/cuentas-bancarias/saldos/HistorialSaldos.jsx:135:          {saldos.map((saldo) => {
+src/components/finanzas/cuentas-bancarias/saldos/HistorialSaldos.jsx:142:                key={saldo.saldo_bancario_id}
+src/components/finanzas/cuentas-bancarias/FormularioCuentaBancaria.jsx:187:                  {bancos.map((banco) => (
+src/components/finanzas/cuentas-bancarias/FormularioCuentaBancaria.jsx:188:                    <SelectItem key={banco.banco_id} value={String(banco.banco_id)}>
+src/components/finanzas/cuentas-bancarias/FormularioCuentaBancaria.jsx:289:                  {MONEDAS.map((moneda) => (
+src/components/finanzas/cuentas-bancarias/FormularioCuentaBancaria.jsx:290:                    <SelectItem key={moneda.value} value={moneda.value}>
+src/components/finanzas/cuentas-bancarias/TablaCuentasBancarias.jsx:67:        {[1, 2, 3].map((i) => (
+src/components/finanzas/cuentas-bancarias/TablaCuentasBancarias.jsx:68:          <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg">
+src/components/finanzas/cuentas-bancarias/TablaCuentasBancarias.jsx:97:          {cuentas.map((cuenta) => (
+src/components/finanzas/cuentas-bancarias/TablaCuentasBancarias.jsx:99:              key={cuenta.cuenta_bancaria_id}
+src/components/finanzas/FinanzasControlIngresos.jsx:73:        {['cortes', 'pendientes', 'comisiones', 'conciliacion'].map(tab => (
+src/components/finanzas/FinanzasControlIngresos.jsx:75:            key={tab}
+src/components/finanzas/FinanzasControlIngresos.jsx:111:                    {unidadesNegocio.map(u => (
+src/components/finanzas/FinanzasControlIngresos.jsx:112:                      <option key={u.id} value={u.id}>{u.nombre}</option>
+src/components/finanzas/FinanzasControlIngresos.jsx:217:                    {(cortesData?.cortes || []).map(corte => (
+src/components/finanzas/FinanzasControlIngresos.jsx:218:                      <tr key={corte.corte_id} className={`border-b hover:bg-zinc-50 ${corte.conciliado ? 'bg-green-50' : ''}`}>
+src/components/finanzas/FinanzasControlIngresos.jsx:296:              {(saldos.efectivo?.por_fecha || []).map(grupo => (
+src/components/finanzas/FinanzasControlIngresos.jsx:297:                <div key={grupo.fecha} className="border-b p-3">
+src/components/finanzas/FinanzasControlIngresos.jsx:303:                    {grupo.cortes.map(c => (
+src/components/finanzas/FinanzasControlIngresos.jsx:304:                      <div key={c.corte_id} className="flex justify-between text-xs text-zinc-500">
+src/components/finanzas/FinanzasControlIngresos.jsx:333:              {(saldos.tarjetas?.por_fecha || []).map(grupo => (
+src/components/finanzas/FinanzasControlIngresos.jsx:334:                <div key={grupo.fecha} className="border-b p-3">
+src/components/finanzas/FinanzasControlIngresos.jsx:343:                    {grupo.cortes.map(c => (
+src/components/finanzas/FinanzasControlIngresos.jsx:344:                      <div key={c.corte_id} className="flex justify-between text-xs text-zinc-500">
+src/components/finanzas/FinanzasControlIngresos.jsx:383:                {Object.entries(comisiones).map(([tipo, config]) => (
+src/components/finanzas/FinanzasControlIngresos.jsx:384:                  <div key={tipo} className="p-4 border rounded-lg">
+src/components/finanzas/FinanzasControlIngresos.jsx:424:                    {Object.entries(resumenComisiones.por_tipo || {}).map(([tipo, data]) => (
+src/components/finanzas/FinanzasControlIngresos.jsx:425:                      <tr key={tipo} className="border-b">
+src/components/finanzas/FinanzasCuentasPorPagar.jsx:266:            {proveedor.facturas.map((factura, idx) => (
+src/components/finanzas/FinanzasCuentasPorPagar.jsx:267:              <tr key={factura.factura_id || idx} className={`border-b hover:bg-zinc-50 ${factura.dias_vencida > 0 ? 'bg-red-50' : ''}`}>
+src/components/finanzas/FinanzasCuentasPorPagar.jsx:389:                  {unidadesNegocio.map(u => (
+src/components/finanzas/FinanzasCuentasPorPagar.jsx:390:                    <option key={u.id} value={u.id}>{u.nombre}</option>
+src/components/finanzas/FinanzasCuentasPorPagar.jsx:421:                  {sucursalesFiltradas.map(s => (
+src/components/finanzas/FinanzasCuentasPorPagar.jsx:422:                    <option key={s.SucursalID} value={s.SucursalID}>
+src/components/finanzas/FinanzasCuentasPorPagar.jsx:442:                    proveedoresFiltrados.map((p, idx) => (
+src/components/finanzas/FinanzasCuentasPorPagar.jsx:444:                        key={p.proveedor_id || `prov-${idx}`}
+src/components/finanzas/FinanzasCuentasPorPagar.jsx:671:          reagruparCxPPorProveedores(cxpData?.proveedores || []).map(categoria => (
+src/components/finanzas/FinanzasCuentasPorPagar.jsx:672:            <Card key={categoria.tipo} className="overflow-hidden border-2" data-testid={`categoria-${categoria.tipo}`}>
+src/components/finanzas/FinanzasCuentasPorPagar.jsx:710:                  {categoria.proveedores.map(proveedor => {
+src/components/finanzas/FinanzasCuentasPorPagar.jsx:713:                      <div key={provKey} className="bg-white">
+src/components/finanzas/FinanzasCuentasPorPagar.jsx:716:                          provKey={provKey} 
+src/components/finanzas/FinanzasCuentasPorPagar.jsx:731:          reagruparCxPPorProveedores(cxpData?.proveedores || []).map(categoria => {
+src/components/finanzas/FinanzasCuentasPorPagar.jsx:740:              <Card key={categoria.tipo} className={`overflow-hidden ${colorCategoria.border} border-l-4`} data-testid={`categoria-prov-${categoria.tipo}`}>
+src/components/finanzas/FinanzasCuentasPorPagar.jsx:769:                    {categoria.proveedores.map(proveedor => {
+src/components/finanzas/FinanzasCuentasPorPagar.jsx:772:                        <div key={provKey} className="bg-white">
+src/components/finanzas/FinanzasCuentasPorPagar.jsx:775:                            provKey={provKey} 
+src/components/finanzas/FinanzasPresupuestos.jsx:69:                {unidadesNegocio.map(u => (
+src/components/finanzas/FinanzasPresupuestos.jsx:70:                  <option key={u.id} value={u.id}>{u.nombre}</option>
+src/components/finanzas/FinanzasPresupuestos.jsx:81:            {[2024, 2025, 2026, 2027].map(a => (
+src/components/finanzas/FinanzasPresupuestos.jsx:82:              <option key={a} value={a}>{a}</option>
+src/components/finanzas/FinanzasPresupuestos.jsx:92:            {meses.map((m, i) => (
+src/components/finanzas/FinanzasPresupuestos.jsx:93:              <option key={`mes-select-${i + 1}`} value={i + 1}>{m}</option>
+src/components/finanzas/FinanzasPresupuestos.jsx:134:                  presupuestos.map((pres, i) => {
+src/components/finanzas/FinanzasPresupuestos.jsx:140:                      <tr key={pres.PresupuestoID || i} className="border-b hover:bg-zinc-50">
+src/components/finanzas/FinanzasDashboard.jsx:63:    porSucursal.map(s => ({
+src/components/finanzas/FinanzasDashboard.jsx:74:      .map(s => ({
+src/components/finanzas/FinanzasDashboard.jsx:123:              {unidadesNegocio.map(u => (
+src/components/finanzas/FinanzasDashboard.jsx:124:                <option key={u.id} value={u.id}>{u.nombre}</option>
+src/components/finanzas/FinanzasDashboard.jsx:137:            {meses.map((m, i) => (
+src/components/finanzas/FinanzasDashboard.jsx:138:              <option key={`mes-${i + 1}`} value={i + 1}>{m}</option>
+src/components/finanzas/FinanzasDashboard.jsx:147:            {[2024, 2025, 2026, 2027].map(a => (
+src/components/finanzas/FinanzasDashboard.jsx:148:              <option key={a} value={a}>{a}</option>
+src/components/finanzas/FinanzasDashboard.jsx:234:                <BarChart data={porSucursal.map(s => ({
+src/components/finanzas/FinanzasDashboard.jsx:278:                    {pieChartData.map((entry, index) => (
+src/components/finanzas/FinanzasDashboard.jsx:279:                      <Cell key={`cell-${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
+src/components/finanzas/FinanzasDashboard.jsx:305:              {sucursalesConSobregiro.map((s) => (
+src/components/finanzas/FinanzasDashboard.jsx:306:                <div key={`alerta-${s.Codigo_Sucursal || s.Nombre_Sucursal}`} className="flex items-center justify-between text-sm">
+src/components/finanzas/FinanzasDashboard.jsx:348:                  porSucursal.map((suc, i) => {
+src/components/finanzas/FinanzasDashboard.jsx:355:                      <tr key={suc.SucursalID || i} className="border-b hover:bg-zinc-50">
+src/components/finanzas/propinas/PropinasTable.jsx:56:                {propinas.map((propina, idx) => (
+src/components/finanzas/propinas/PropinasTable.jsx:57:                  <tr key={propina.id || idx} className="border-b hover:bg-zinc-50">
+src/components/finanzas/propinas/PropinasConfigList.jsx:49:            {configs.map((config, idx) => (
+src/components/finanzas/propinas/PropinasConfigList.jsx:51:                key={config.id || idx} 
+src/components/finanzas/propinas/PropinasConfigForm.jsx:89:                {empresas.map(emp => (
+src/components/finanzas/propinas/PropinasConfigForm.jsx:90:                  <option key={emp} value={emp}>{emp}</option>
+src/components/finanzas/propinas/PropinasConfigForm.jsx:107:                {sucursales.map(suc => (
+src/components/finanzas/propinas/PropinasConfigForm.jsx:108:                  <option key={suc.id || suc.name} value={suc.id || suc.name}>
+src/components/PropinasTPV.jsx.backup_before_corporate_filters_20260604_162032:90:        const unidades = (dataV2.unidades || []).map(u => ({
+src/components/PropinasTPV.jsx.backup_before_corporate_filters_20260604_162032:114:          .map(s => ({ id: s.id, nombre: s.name || s.nombre || s.id }));
+src/components/PropinasTPV.jsx.backup_before_corporate_filters_20260604_162032:195:        const propinasTransformadas = (data.detalle || []).map(p => ({
+src/components/PropinasTPV.jsx.backup_before_corporate_filters_20260604_162032:377:                        {unidadesNegocio.map(u => (
+src/components/PropinasTPV.jsx.backup_before_corporate_filters_20260604_162032:378:                          <option key={u.id} value={u.id}>
+src/components/ui/toaster.jsx:16:      {toasts.map(function ({ id, title, description, action, ...props }) {
+src/components/ui/toaster.jsx:18:          <Toast key={id} {...props}>
+src/components/catalogo-consultas/ConsultasComponents.jsx:24:    {consultas.map(consulta => {
+src/components/catalogo-consultas/ConsultasComponents.jsx:30:          key={consulta.id}
+src/components/catalogo-consultas/ConsultasComponents.jsx:69:              {resultados.columnas.map((col) => (
+src/components/catalogo-consultas/ConsultasComponents.jsx:70:                <th key={`col-${col}`} className="px-3 py-2 text-left font-medium text-zinc-700">
+src/components/catalogo-consultas/ConsultasComponents.jsx:77:            {datos.map((row, rowIdx) => (
+src/components/catalogo-consultas/ConsultasComponents.jsx:78:              <tr key={`row-${rowIdx}`} className="border-t hover:bg-zinc-50">
+src/components/catalogo-consultas/ConsultasComponents.jsx:79:                {resultados.columnas.map((col) => (
+src/components/catalogo-consultas/ConsultasComponents.jsx:80:                  <td key={`cell-${rowIdx}-${col}`} className="px-3 py-2 text-zinc-600">
+src/components/catalogo-consultas/ConsultasComponents.jsx:151:      {parametros.map(param => (
+src/components/catalogo-consultas/ConsultasComponents.jsx:152:        <div key={param.nombre}>
+src/components/catalogo-consultas/useCatalogoConsultasData.js:100:      const serversTransformados = conexionesExplorables.map(c => ({
+src/components/catalogo-consultas/useCatalogoConsultasData.js:252:      setConsultas(prev => prev.map(c => 
+src/components/catalogo-consultas/useCatalogoConsultasData.js:270:      ...resultados.datos.map(row => 
+src/components/catalogo-consultas/useCatalogoConsultasData.js:271:        headers.map(h => {
+src/components/catalogo-consultas/useCatalogoConsultasData.js:299:        parametros: nuevaConsulta.parametros.split(',').map(p => p.trim()).filter(p => p)
+src/components/QueryConfigWizard.js:339:          {QUERY_TYPES.map((qt, index) => {
+src/components/QueryConfigWizard.js:345:              <div key={qt.key} className="flex items-center">
+src/components/QueryConfigWizard.js:383:                        {currentQuery.requiredColumns.map((col) => (
+src/components/QueryConfigWizard.js:384:                          <code key={`req-${col}`} className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-medium">
+src/components/QueryConfigWizard.js:393:                        {currentQuery.optionalColumns.map((col) => (
+src/components/QueryConfigWizard.js:394:                          <code key={`opt-${col}`} className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-200">
+src/components/QueryConfigWizard.js:466:                          {queryState.result.columns_found.map((col) => (
+src/components/QueryConfigWizard.js:467:                            <code key={`found-${col}`} className="text-xs bg-white px-2 py-0.5 rounded border">
+src/components/QueryConfigWizard.js:480:                          {queryState.result.columns_missing.map((col) => (
+src/components/QueryConfigWizard.js:481:                            <code key={`missing-${col}`} className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded border border-red-200">
+src/components/QueryConfigWizard.js:502:                                {Object.keys(queryState.result.sample_data[0]).map((key) => (
+src/components/QueryConfigWizard.js:503:                                  <th key={key} className="border border-zinc-200 px-2 py-1 text-left font-medium">
+src/components/QueryConfigWizard.js:510:                              {queryState.result.sample_data.slice(0, 3).map((row, i) => (
+src/components/QueryConfigWizard.js:511:                                <tr key={`sample-row-${i}`} className="bg-white">
+src/components/QueryConfigWizard.js:512:                                  {Object.entries(row).map(([key, val]) => (
+src/components/QueryConfigWizard.js:513:                                    <td key={`sample-${i}-${key}`} className="border border-zinc-200 px-2 py-1 truncate max-w-[150px]">
+src/components/centro-control/DestinatariosManager.jsx:218:              {destinatarios.map((d) => (
+src/components/centro-control/DestinatariosManager.jsx:220:                  key={d.id} 
+src/components/compras/useAutorizacionComprasData.js:105:        ? almacenes.map(a => a.id).join(',')
+src/components/compras/useAutorizacionComprasData.js:155:        setSelectedAlmacenes(almacenes.map(a => a.id));
+src/components/compras/operativas/BitacoraList.jsx:26:        {bitacora.map((entry) => (
+src/components/compras/operativas/BitacoraList.jsx:27:          <div key={`${entry.fecha}-${entry.evento}`} className="text-xs bg-zinc-50 p-2 rounded flex justify-between items-start">
+src/components/compras/operativas/AutomatizacionesTable.jsx:44:        {automatizaciones.map((item) => (
+src/components/compras/operativas/AutomatizacionesTable.jsx:45:          <TableRow key={item.id} data-testid={`row-${item.id}`}>
+src/components/compras/AutorizacionComprasComponents.jsx:50:        {almacenes.map(almacen => (
+src/components/compras/AutorizacionComprasComponents.jsx:51:          <div key={almacen.id} className="flex items-center gap-2">
+src/components/compras/AutorizacionComprasComponents.jsx:88:      {items.map(item => (
+src/components/compras/AutorizacionComprasComponents.jsx:89:        <Card key={item.label}>
+src/components/compras/AutorizacionComprasComponents.jsx:172:        {[...Array(4)].map((_, i) => (
+src/components/compras/AutorizacionComprasComponents.jsx:173:          <div key={`skeleton-${i}`} className="h-24 bg-zinc-100 rounded"></div>
+src/components/tesoreria/useTesoreriaCorteZData.js:43:        .map(s => ({ 
+src/components/tesoreria/TesoreriaCorteZComponents.jsx:97:          {BILLETES.map(b => (
+src/components/tesoreria/TesoreriaCorteZComponents.jsx:98:            <div key={b.key} className={`p-2 rounded border ${b.color}`}>
+src/components/tesoreria/TesoreriaCorteZComponents.jsx:126:          {MONEDAS.map(m => (
+src/components/tesoreria/TesoreriaCorteZComponents.jsx:127:            <div key={m.key} className="p-2 rounded border bg-amber-50 border-amber-200">
+src/components/tesoreria/TesoreriaCorteZComponents.jsx:175:      {cards.map(({ key, label, color, icon: Icon, field }) => (
+src/components/tesoreria/TesoreriaCorteZComponents.jsx:176:        <Card key={key} className={`border-l-4 border-l-${color}-500`}>
+src/lib/formatSucursal.js:52:  return data.map(item => ({
+src/lib/dashboardLoader.js:16:  const resultados = await Promise.allSettled(endpoints.map(e => e.promise));
+src/lib/dashboardLoader.js:59:  const promesas = configuracion.map(async ({ key, endpoint, fallback = [] }) => {
+src/hooks/use-toast.js:22:const toastTimeouts = new Map()
+src/hooks/use-toast.js:51:        toasts: state.toasts.map((t) =>
+src/hooks/use-toast.js:70:        toasts: state.toasts.map((t) =>
+src/filters/CorporateFilterBar.jsx:42:        {filters.map((filter) => (
+src/filters/CorporateFilterBar.jsx:44:            key={filter.key}
+src/filters/CorporateFilterBar.jsx:45:            filterKey={filter.key}
+src/filters/CorporateFiltersProvider.jsx:128:      .map(([child]) => child);
+src/filters/CorporateFilterSelect.jsx:43:        {options.map((option) => (
+src/filters/CorporateFilterSelect.jsx:44:          <option key={option.id} value={option.id}>
+src/config/enterpriseMenuConfig.js:406:  return groups.flatMap(group =>
+src/config/enterpriseMenuConfig.js:407:    group.children.map(item => ({
+src/config/enterpriseMenuConfig.js:427:    .map(group => ({
+src/portal/pages/DashboardPage.jsx:220:              {saldosData.sistemas.filter(s => s.facturas > 0 || s.status === 'connected').map(s => (
+src/portal/pages/DashboardPage.jsx:222:                  key={s.id}
+src/portal/pages/DashboardPage.jsx:251:                {sucursalesFiltradas.map(s => (
+src/portal/pages/DashboardPage.jsx:253:                    key={s.id}
+src/portal/pages/DashboardPage.jsx:275:              {sistemasFiltrados.map((s) => {
+src/portal/pages/DashboardPage.jsx:280:                    key={s.id} 
+src/portal/pages/DashboardPage.jsx:313:              {saldosData.sistemas.map(s => (
+src/portal/pages/DashboardPage.jsx:314:                <span key={s.id} className="inline-flex items-center gap-1.5">
+src/portal/pages/DashboardPage.jsx:332:            {sucursalesFiltradas.map(s => (
+src/portal/pages/DashboardPage.jsx:334:                key={s.id} 
+src/portal/pages/DashboardPage.jsx:401:            {sucursalesFiltradas.map(suc => (
+src/portal/pages/DashboardPage.jsx:402:              <div key={suc.id} className="border border-gray-200 rounded-lg overflow-hidden">
+src/portal/pages/DashboardPage.jsx:451:                          .map((f) => (
+src/portal/pages/DashboardPage.jsx:452:                          <tr key={`factura-${f.folio}-${f.documento}`} className="border-t border-gray-100">
+src/portal/pages/DashboardPage.jsx:513:              {recentInvoices.map((inv) => (
+src/portal/pages/DashboardPage.jsx:514:                <tr key={inv.uuid || `${inv.serie}${inv.folio}`} className="border-b border-gray-100 hover:bg-gray-50">
+src/portal/pages/InvoicesPage.jsx:153:                {filteredInvoices.map((invoice) => (
+src/portal/pages/InvoicesPage.jsx:154:                  <tr key={invoice.id} className="hover:bg-zinc-50">
+src/portal/pages/PaymentsPage.jsx:166:              {payments.map((payment) => (
+src/portal/pages/PaymentsPage.jsx:167:                <tr key={payment.referencia || payment.id} className="border-b hover:bg-zinc-50">
+src/portal/App.jsx:167:          {menuItems.map((item) => {
+src/portal/App.jsx:172:                key={item.id}
+src/services/comprasUtils.js:119:const requestIdMap = new Map();
+src/services/prefetchManager.js:11:const prefetchQueue = new Map();
+src/services/prefetchManager.js:134:  const promises = items.map(({ key, fetchFn, options }) => {
+src/services/exploradorService.js:74:      const sistemas = response.data.data.map(s => ({
+src/services/exploradorService.js:120:      const sistemas = response.data.data.map(s => ({
