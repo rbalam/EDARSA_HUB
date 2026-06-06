@@ -1,1 +1,0 @@
-{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"estatus":{"$numberInt":"1"}},"name":"idx_tareas_estatus"}],"uuid":"a89a327f8c0947588493938e50b29039","collectionName":"tareas_sistema","type":"collection"}

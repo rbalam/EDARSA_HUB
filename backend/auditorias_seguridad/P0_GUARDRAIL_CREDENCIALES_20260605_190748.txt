@@ -1,2 +1,0 @@
-WARN - Credenciales detectadas (revisar si son productivas):
-  /app/frontend/src/pages/Login.js: admin123

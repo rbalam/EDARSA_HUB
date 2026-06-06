@@ -1,2 +1,0 @@
--- Comercial_CompetidoresListasDetalle - 1 registros
-INSERT INTO [Comercial_CompetidoresListasDetalle] ([ListaDetalleID], [ListaCompetidoresID], [CompetidorID], [Orden], [Notas], [Activo], [FechaCreacion], [FechaModificacion], [CreadoPor], [ModificadoPor]) VALUES ('a28e85d2-ddfa-4bf6-9450-bd369ae6c2c5', 'ec66cb9a-9fea-4b61-9593-e27bd5bf7413', '148f60ce-e767-4c3f-9a1c-cd08cf0ac2ad', 1, N'Competidor principal', 1, N'2026-05-25T00:23:06.440000', NULL, N'admin@inventario.com', NULL);

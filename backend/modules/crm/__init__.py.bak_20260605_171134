@@ -1,8 +1,0 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
-# Módulo CRM Enterprise - EDARSA HUB
-# SQL-First Architecture (Sin dependencias externas)
-
-from .service import CRMService
-
-__all__ = ['CRMService']

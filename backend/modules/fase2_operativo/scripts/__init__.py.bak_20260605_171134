@@ -1,4 +1,0 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
-# Scripts de inicialización para Fase 2A - Módulo Operativo
-# Se implementarán en Subfase 2A.3

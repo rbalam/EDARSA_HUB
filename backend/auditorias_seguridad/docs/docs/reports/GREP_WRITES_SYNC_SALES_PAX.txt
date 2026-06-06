@@ -1,4 +1,0 @@
-backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:490:                                INSERT INTO Sync_PAX_Detalle
-backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:252:                INSERT INTO Sync_Sales (
-docs/reports/GREP_ORIGEN_KPIS_SYNC_SALES_PAX.txt:811:backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:490:                                INSERT INTO Sync_PAX_Detalle
-docs/reports/GREP_ORIGEN_KPIS_SYNC_SALES_PAX.txt:824:backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:252:                INSERT INTO Sync_Sales (

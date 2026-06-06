@@ -1,4 +1,0 @@
-Completado: 2026-06-03T00:47:21.754648
-Exportadas: 215
-Vacias: 207
-Errores: 0

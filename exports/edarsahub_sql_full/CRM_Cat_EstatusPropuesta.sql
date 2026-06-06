@@ -1,8 +1,0 @@
--- CRM_Cat_EstatusPropuesta - 7 registros
-INSERT INTO [CRM_Cat_EstatusPropuesta] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [EsFinal], [Activo], [CreatedAt]) VALUES (1, N'BORRADOR', N'Borrador', NULL, 1, N'#6B7280', 0, 1, N'2026-05-22T19:40:28.940000');
-INSERT INTO [CRM_Cat_EstatusPropuesta] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [EsFinal], [Activo], [CreatedAt]) VALUES (2, N'REVISION', N'En revisión', NULL, 2, N'#F59E0B', 0, 1, N'2026-05-22T19:40:28.940000');
-INSERT INTO [CRM_Cat_EstatusPropuesta] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [EsFinal], [Activo], [CreatedAt]) VALUES (3, N'APROBADA', N'Aprobada', NULL, 3, N'#10B981', 0, 1, N'2026-05-22T19:40:28.940000');
-INSERT INTO [CRM_Cat_EstatusPropuesta] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [EsFinal], [Activo], [CreatedAt]) VALUES (4, N'ENVIADA', N'Enviada', NULL, 4, N'#3B82F6', 0, 1, N'2026-05-22T19:40:28.940000');
-INSERT INTO [CRM_Cat_EstatusPropuesta] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [EsFinal], [Activo], [CreatedAt]) VALUES (5, N'ACEPTADA', N'Aceptada', NULL, 5, N'#059669', 1, 1, N'2026-05-22T19:40:28.940000');
-INSERT INTO [CRM_Cat_EstatusPropuesta] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [EsFinal], [Activo], [CreatedAt]) VALUES (6, N'RECHAZADA', N'Rechazada', NULL, 6, N'#EF4444', 1, 1, N'2026-05-22T19:40:28.940000');
-INSERT INTO [CRM_Cat_EstatusPropuesta] ([EstatusID], [Codigo], [Nombre], [Descripcion], [Orden], [ColorHex], [EsFinal], [Activo], [CreatedAt]) VALUES (7, N'VENCIDA', N'Vencida', NULL, 7, N'#9CA3AF', 1, 1, N'2026-05-22T19:40:28.940000');

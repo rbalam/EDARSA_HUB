@@ -1,1 +1,0 @@
-{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"codigo":{"$numberInt":"1"}},"name":"codigo_1","unique":true}],"uuid":"108639588ae947e0adde85a2c7747a94","collectionName":"sec_sucursales","type":"collection"}

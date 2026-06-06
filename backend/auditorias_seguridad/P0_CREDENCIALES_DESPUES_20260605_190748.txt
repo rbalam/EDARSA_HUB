@@ -1,3 +1,0 @@
-/app/backend/tests_guardrails/test_p0_no_credenciales_hardcodeadas.py:11:    "admin123",
-/app/backend/tests/test_sucursales_permissions.py:66:        """Admin login with admin@inventario.com / admin123"""
-/app/frontend/src/pages/Login.js:204:                    <span className="font-mono text-slate-700">admin123</span>

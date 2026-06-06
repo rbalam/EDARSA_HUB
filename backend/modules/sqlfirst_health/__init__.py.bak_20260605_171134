@@ -1,4 +1,0 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
-"""SQL-First Health Module"""
-from .routes import router

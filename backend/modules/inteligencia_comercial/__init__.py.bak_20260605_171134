@@ -1,4 +1,0 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
-# Módulo Portal Inteligencia Comercial IA
-# EDARSA HUB - Junio 2026
