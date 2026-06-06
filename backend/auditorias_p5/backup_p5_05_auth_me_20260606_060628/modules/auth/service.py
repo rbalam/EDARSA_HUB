@@ -1,16 +1,3 @@
-
-# P5-05 Auth token compatibility helper
-def _p5_extract_usuario_id_from_payload(payload):
-    if not isinstance(payload, dict):
-        return None
-    return (
-        _p5_extract_usuario_id_from_payload(payload)
-        or payload.get("user_id")
-        or payload.get("usuario_id")
-        or payload.get("IDUsuario")
-        or payload.get("id")
-    )
-
 from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService

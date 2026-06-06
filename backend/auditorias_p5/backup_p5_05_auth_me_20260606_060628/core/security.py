@@ -1,17 +1,4 @@
 
-# P5-05 Auth token compatibility helper
-def _p5_extract_usuario_id_from_payload(payload):
-    if not isinstance(payload, dict):
-        return None
-    return (
-        _p5_extract_usuario_id_from_payload(payload)
-        or payload.get("user_id")
-        or payload.get("usuario_id")
-        or payload.get("IDUsuario")
-        or payload.get("id")
-    )
-
-
 # P4-07 SQL-FIRST RBAC SECURITY
 from core.access_context.sql_context import (
     build_user_access_context as build_user_access_context_sql,

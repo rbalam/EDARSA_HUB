@@ -1,0 +1,33 @@
+P5-05 FIX AUTH ME TOKEN
+PATCHED core/security.py
+PATCHED modules/auth/routes.py
+PATCHED modules/auth/service.py
+Validando sintaxis backend...
+SYNTAX_OK core/security.py
+SYNTAX_OK modules/auth/routes.py
+SYNTAX_OK modules/auth/service.py
+SYNTAX_OK modules/auth/repository.py
+Rebuilding frontend...
+  20.88 kB   build/static/css/main.d11e6286.css
+  8.73 kB    build/static/js/977.8591a78c.chunk.js
+
+The bundle size is significantly larger than recommended.
+Consider reducing it with code splitting: https://goo.gl/9VhYWB
+You can also analyze the project dependencies: https://goo.gl/LeUzfb
+
+The project was built assuming it is hosted at /.
+You can control this with the homepage field in your package.json.
+
+The build folder is ready to be deployed.
+You may serve it with a static server:
+
+  yarn global add serve
+  serve -s build
+
+Find out more about deployment here:
+
+  https://cra.link/deployment
+
+
+Reporte: auditorias_p5/P5_05_FIX_AUTH_ME_TOKEN_20260606_060628.txt
+Backup: auditorias_p5/backup_p5_05_auth_me_20260606_060628
