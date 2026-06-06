@@ -17047,3 +17047,22 @@ async def download_backup_codigo_fuente():
         )
     raise HTTPException(status_code=404, detail="Archivo de código fuente no encontrado")
 
+
+
+@app.get("/api/descargar/codigo")
+async def descargar_codigo_simple():
+    """Descarga directa del código - endpoint simplificado"""
+    from fastapi.responses import FileResponse
+    import os
+    zip_path = "/app/backend/static/backup_codigo.zip"
+    if os.path.exists(zip_path):
+        return FileResponse(
+            path=zip_path,
+            filename="codigo_edarsahub.zip",
+            media_type="application/octet-stream",
+            headers={
+                "Content-Disposition": "attachment; filename=codigo_edarsahub.zip",
+                "Cache-Control": "no-cache"
+            }
+        )
+    raise HTTPException(status_code=404, detail="Archivo no encontrado")
