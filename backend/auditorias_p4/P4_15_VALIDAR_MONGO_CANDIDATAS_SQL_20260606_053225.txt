@@ -1,0 +1,21 @@
+P4-15 VALIDAR MONGO CANDIDATAS CONTRA SQL
+inventarios_procesados_auto | mongo 158 | sql Scheduler_InventariosProcesados 0 | MANTENER_REVISAR
+server_status | mongo 13 | sql Servidores_Status 0 | MANTENER_REVISAR
+server_connection_status | mongo 1 | sql Servidores_ConexionEstado 0 | MANTENER_REVISAR
+server_sucursales_config | mongo 7 | sql Sistema_ServidorSucursalesConfig 7 | CANDIDATA_ELIMINAR_POST_BACKUP
+inventario_diferencias_detalle | mongo 24 | sql Workflow_DetalleDiferencias 1960 | CANDIDATA_ELIMINAR_POST_BACKUP
+notification_config | mongo 6 | sql Sistema_NotificacionesConfig 6 | CANDIDATA_ELIMINAR_POST_BACKUP
+propinas_config | mongo 1 | sql propinas_tpv_config 0 | MANTENER_REVISAR
+configuracion_operativo | mongo 1 | sql Configuracion_Operativa 9 | CANDIDATA_ELIMINAR_POST_BACKUP
+consultas_custom | mongo 6 | sql ConsultasSQL_Custom 0 | MANTENER_REVISAR
+auditoria_financiera | mongo 73 | sql Finanzas_AuditoriaFinanciera 73 | CANDIDATA_ELIMINAR_POST_BACKUP
+alert_recipients | mongo 2 | sql Sistema_AlertasDestinatarios 2 | CANDIDATA_ELIMINAR_POST_BACKUP
+automatizaciones_operativas_compras | mongo 8 | sql Compras_AutomatizacionesOperativas 8 | CANDIDATA_ELIMINAR_POST_BACKUP
+pedidos_procesados_automatizacion | mongo 2 | sql Scheduler_PedidosProcesados 0 | MANTENER_REVISAR
+inventarios_fisicos_procesados | mongo 1 | sql Compras_Inventarios_Fisicos_Sync 748 | CANDIDATA_ELIMINAR_POST_BACKUP
+portal_suppliers | mongo 3 | sql Proveedor_PortalSuppliers 0 | MANTENER_REVISAR
+manuales_operativos | mongo 1 | sql Manuales_Operativos 1 | CANDIDATA_ELIMINAR_POST_BACKUP
+CANDIDATAS_ELIMINAR 9 ['server_sucursales_config', 'inventario_diferencias_detalle', 'notification_config', 'configuracion_operativo', 'auditoria_financiera', 'alert_recipients', 'automatizaciones_operativas_compras', 'inventarios_fisicos_procesados', 'manuales_operativos']
+MANTENER_REVISAR 7 ['inventarios_procesados_auto', 'server_status', 'server_connection_status', 'propinas_config', 'consultas_custom', 'pedidos_procesados_automatizacion', 'portal_suppliers']
+P4-15_CON_ADVERTENCIAS
+Reporte: auditorias_p4/P4_15_VALIDAR_MONGO_CANDIDATAS_SQL_20260606_053225.txt

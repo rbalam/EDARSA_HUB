@@ -1,3 +1,4 @@
+import os
 """
 EDARSA HUB - Sync Comercial Endpoints Job
 ==========================================

@@ -1,0 +1,17 @@
+P4-16 ELIMINAR RBAC_* DUPLICADAS VACIAS
+NO_DROP_CON_DATOS_TRANSICION RBAC_Roles exists 1 rows 6
+NO_DROP_CON_DATOS_TRANSICION RBAC_Permisos exists 1 rows 9
+DROP_OK RBAC_RolesPermisos
+DROP_OK RBAC_UsuariosRoles
+DROP_OK RBAC_UsuariosEmpresas
+DROP_OK RBAC_UsuariosSucursales
+DROP_OK RBAC_UsuariosUnidadesNegocio
+DROP_OK RBAC_AuditLog
+VALIDA_POST RBAC_RolesPermisos 0
+VALIDA_POST RBAC_UsuariosRoles 0
+VALIDA_POST RBAC_UsuariosEmpresas 0
+VALIDA_POST RBAC_UsuariosSucursales 0
+VALIDA_POST RBAC_UsuariosUnidadesNegocio 0
+VALIDA_POST RBAC_AuditLog 0
+PASS P4-16
+Reporte: auditorias_p4/P4_16_ELIMINAR_RBAC_DUPLICADAS_VACIAS_20260606_053240.txt

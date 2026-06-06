@@ -1,0 +1,24 @@
+P4-14 CORREGIR DUPLICADOS/HUERFANOS CANONICOS
+BACKUP Usuario_RolesAsignacion -> Backup_P4_14_20260606_Orphans_Usuario_RolesAsignacion
+BACKUP Usuario_EmpresasAsignacion -> Backup_P4_14_20260606_Orphans_Usuario_EmpresasAsignacion
+BACKUP Usuario_SucursalesAsignacion -> Backup_P4_14_20260606_Orphans_Usuario_SucursalesAsignacion
+BACKUP Usuario_ServidoresAsignacion -> Backup_P4_14_20260606_Orphans_Usuario_ServidoresAsignacion
+('Usuario_RolesAsignacion', 'HUERFANOS_DESACTIVADOS', 0)
+('Usuario_EmpresasAsignacion', 'HUERFANOS_DESACTIVADOS', 0)
+('Usuario_SucursalesAsignacion', 'HUERFANOS_DESACTIVADOS', 0)
+('Usuario_ServidoresAsignacion', 'HUERFANOS_DESACTIVADOS', 0)
+('Usuario_RolesAsignacion', 'DUPLICADOS_DESACTIVADOS', 0)
+('Usuario_EmpresasAsignacion', 'DUPLICADOS_DESACTIVADOS', 0)
+('Usuario_ServidoresAsignacion', 'DUPLICADOS_DESACTIVADOS', 0)
+('Usuario_SucursalesAsignacion', 'DUPLICADOS_DESACTIVADOS', 0)
+DUP_ACTIVOS Usuario_RolesAsignacion 0
+DUP_ACTIVOS Usuario_EmpresasAsignacion 0
+DUP_ACTIVOS Usuario_ServidoresAsignacion 0
+DUP_ACTIVOS Usuario_SucursalesAsignacion 0
+HUERFANOS_ACTIVOS Usuario_RolesAsignacion 0
+HUERFANOS_ACTIVOS Usuario_EmpresasAsignacion 0
+HUERFANOS_ACTIVOS Usuario_SucursalesAsignacion 0
+HUERFANOS_ACTIVOS Usuario_ServidoresAsignacion 0
+ERRORES_POST 0
+PASS P4-14
+Reporte: auditorias_p4/P4_14_CORREGIR_DUPLICADOS_HUERFANOS_CANONICOS_20260606_053151.txt

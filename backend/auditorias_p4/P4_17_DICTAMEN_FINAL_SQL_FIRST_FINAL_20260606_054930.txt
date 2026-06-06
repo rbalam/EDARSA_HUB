@@ -1,0 +1,26 @@
+P4-17 DICTAMEN FINAL SQL-FIRST (FINAL)
+SQL_DIRECT_RUNTIME_HITS 0
+RBAC_CANONICO_TOKEN Usuario_Roles True
+RBAC_CANONICO_TOKEN Usuario_RolesAsignacion True
+RBAC_CANONICO_TOKEN Usuario_EmpresasAsignacion True
+RBAC_CANONICO_TOKEN Usuario_SucursalesAsignacion True
+RBAC_CANONICO_TOKEN Usuario_ServidoresAsignacion True
+RBAC_FORBIDDEN FROM dbo.RBAC_ False
+RBAC_FORBIDDEN JOIN dbo.RBAC_ False
+RBAC_FORBIDDEN FROM dbo.Sys_Roles False
+RBAC_FORBIDDEN JOIN dbo.Sys_Roles False
+TABLE Sys_Usuarios 1
+TABLE Usuario_Roles 1
+TABLE Usuario_RolesAsignacion 1
+TABLE Usuario_EmpresasAsignacion 1
+TABLE Usuario_SucursalesAsignacion 1
+TABLE Usuario_ServidoresAsignacion 1
+TABLE Sistema_DeudaTecnica_TablasDuplicadas 1
+DUP_ACTIVOS Usuario_RolesAsignacion 0
+DUP_ACTIVOS Usuario_EmpresasAsignacion 0
+DUP_ACTIVOS Usuario_ServidoresAsignacion 0
+DUP_ACTIVOS Usuario_SucursalesAsignacion 0
+==================================================
+ERRORES_DICTAMEN 0
+✅ PASS DICTAMEN FINAL SQL-FIRST
+Reporte: auditorias_p4/P4_17_DICTAMEN_FINAL_SQL_FIRST_FINAL_20260606_054930.txt

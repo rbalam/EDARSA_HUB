@@ -29,6 +29,7 @@ FASE 4.4 (Abril 2026):
 - REGLA: "Un cero solo es válido si hubo consulta real exitosa"
 """
 
+import os
 from typing import Dict, List, Any, Optional
 import logging
 import calendar

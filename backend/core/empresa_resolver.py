@@ -21,6 +21,7 @@ FASE 4 - Implementación Read-Only
 Fecha: 2026-05-16
 """
 
+import os
 import unicodedata
 import re
 import logging

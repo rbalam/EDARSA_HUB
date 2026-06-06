@@ -1,3 +1,4 @@
+import os
 """
 Script para crear tablas de tracking de jobs del scheduler en EDARSAHUB SQL Server.
 Reemplaza las colecciones MongoDB para los jobs de detección.

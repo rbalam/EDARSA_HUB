@@ -1,0 +1,4 @@
+==================================================
+P4-17B core/db.py SQL-FIRST WRAPPER
+==================================================
+FAIL: core/db.py todavía tiene conexiones directas

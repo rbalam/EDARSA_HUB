@@ -1,3 +1,4 @@
+import os
 """
 EDARSA HUB - Scheduler SQL Repository
 =====================================
