@@ -1,0 +1,13 @@
+[
+  {
+    "_id": {
+      "$oid": "69e42eaac8732494fcd0c07d"
+    },
+    "id": "INV-TEST-001",
+    "folio": "INV-2026-001",
+    "server_id": "EDARSA",
+    "almacen_id": "ALM001",
+    "fecha": "2026-04-19T01:23:54.636790+00:00",
+    "productos": []
+  }
+]

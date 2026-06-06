@@ -1,0 +1,11 @@
+[
+  {
+    "_id": {
+      "$oid": "69e964cd3a9a8fa604757402"
+    },
+    "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+    "error": "Simulaci\u00f3n de falla para prueba de fallback",
+    "is_online": true,
+    "last_check": "2026-04-23T00:16:52.175054+00:00"
+  }
+]
