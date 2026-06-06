@@ -58,6 +58,8 @@ import {
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import api from '@/lib/api';
+import { useAccessContext } from '@/hooks/useAccessContext';
+import { useMenusByContext } from '@/hooks/useMenusByContext';
 
 // Mapeo de nombres de iconos a componentes Lucide
 const ICON_MAP = {
@@ -129,30 +131,28 @@ const Layout = () => {
   const [sqlMenusLoaded, setSqlMenusLoaded] = useState(false);
   const [useSqlMenus, setUseSqlMenus] = useState(false);
 
-  // NUEVO: Cargar menús desde SQL Server
+  // Contexto activo (unidad de negocio) y menús filtrados por esa unidad.
+  // La fuente de datos del menú es el MISMO endpoint canónico; solo cambia
+  // que ahora respeta la unidad activa. NO se rompe el menú Enterprise.
+  const { context: accessContext } = useAccessContext();
+  const unidadActiva = accessContext?.unidad_activa || null;
+  const { menus: ctxMenus, error: ctxMenusError } = useMenusByContext(unidadActiva);
+
+  // NUEVO: Sincronizar menús SQL por contexto -> estado del Layout (con fallback)
   useEffect(() => {
-    const loadSqlMenus = async () => {
-      try {
-        const response = await api.get('/sistema/menus/usuario');
-        const data = response.data || {};
-        
-        if (data.modulos && data.modulos.length > 0) {
-          setSqlMenus(data.modulos);
-          setUseSqlMenus(true);
-          logger.info('Menús SQL cargados:', data.total, 'módulos');
-        }
-      } catch (error) {
-        logger.warn('Menús SQL no disponibles, usando fallback hardcoded:', error.message);
-        setUseSqlMenus(false);
-      } finally {
-        setSqlMenusLoaded(true);
-      }
-    };
-    
-    if (user) {
-      loadSqlMenus();
+    if (!user) return;
+
+    if (Array.isArray(ctxMenus) && ctxMenus.length > 0) {
+      setSqlMenus(ctxMenus);
+      setUseSqlMenus(true);
+      logger.info('Menús SQL (contexto) cargados:', ctxMenus.length, 'módulos | unidad:', unidadActiva);
+    } else if (ctxMenusError) {
+      // Regla #4: fallback visual solo si el endpoint falla.
+      logger.warn('Menús SQL no disponibles, usando fallback hardcoded:', ctxMenusError.message);
+      setUseSqlMenus(false);
     }
-  }, [user]);
+    setSqlMenusLoaded(true);
+  }, [user, ctxMenus, ctxMenusError, unidadActiva]);
 
   // Cargar permisos de menú desde el backend (RBAC centralizado)
   useEffect(() => {

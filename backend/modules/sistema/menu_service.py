@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
 
 logger = logging.getLogger(__name__)
@@ -83,9 +83,49 @@ class MenuService:
         finally:
             conn.close()
 
-    def obtener_menus_usuario(self, usuario_id: str) -> List[Dict[str, Any]]:
-        permisos = self.obtener_permisos_usuario(usuario_id)
+    def obtener_permisos_usuario_por_unidad(self, usuario_id: str, unidad_negocio_id: str) -> List[Dict[str, Any]]:
+        """
+        Permisos efectivos del usuario EN UNA UNIDAD DE NEGOCIO específica,
+        resueltos desde el contexto canónico (Usuario_RolesContexto).
+        Sin hardcodes: los roles aplicables salen del contexto activo.
+        """
+        conn = self._get_connection()
+        try:
+            cur = conn.cursor(as_dict=True)
+            cur.execute("""
+                SELECT DISTINCT
+                    m.ModuloID,
+                    m.CodigoModulo,
+                    m.NombreModulo,
+                    a.AccionID,
+                    a.CodigoAccion,
+                    a.NombreAccion,
+                    prm.Permitido
+                FROM dbo.Usuario_RolesContexto urc
+                INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID = urc.RolID
+                INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID = prm.ModuloID
+                INNER JOIN dbo.Usuario_Acciones a ON a.AccionID = prm.AccionID
+                WHERE TRY_CONVERT(NVARCHAR(100), urc.UsuarioID) = %s
+                  AND ISNULL(urc.Activo,1)=1
+                  AND CONVERT(NVARCHAR(100), urc.UnidadNegocioID) = %s
+                  AND ISNULL(prm.Activo,1)=1
+                  AND ISNULL(prm.Permitido,1)=1
+                  AND ISNULL(m.Activo,1)=1
+                  AND ISNULL(a.Activo,1)=1
+            """, (str(usuario_id), str(unidad_negocio_id)))
+            return cur.fetchall() or []
+        finally:
+            conn.close()
+
+    def obtener_menus_usuario(self, usuario_id: str, unidad_negocio_id: Optional[str] = None) -> List[Dict[str, Any]]:
         superadmin = self.es_superadmin(usuario_id)
+
+        # Menú por CONTEXTO ACTIVO: si llega unidad y NO es superadmin, los módulos
+        # visibles se filtran por los roles del usuario en esa unidad de negocio.
+        if unidad_negocio_id and not superadmin:
+            permisos = self.obtener_permisos_usuario_por_unidad(usuario_id, unidad_negocio_id)
+        else:
+            permisos = self.obtener_permisos_usuario(usuario_id)
 
         permisos_modulo = set()
         for p in permisos:
