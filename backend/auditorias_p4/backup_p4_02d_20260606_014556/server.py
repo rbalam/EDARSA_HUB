@@ -19145,7 +19145,6 @@ from modules.pricing_ai.routes import router as pricing_ai_router
 from modules.dashboard_ejecutivo.routes import router as dashboard_ejecutivo_router
 from modules.rentabilidad.routes import router as rentabilidad_router
 from modules.alertas_estrategicas.routes import router as alertas_estrategicas_router
-from core.sql_first.db import get_sql_connection
 # Inicializar RBAC (sembrar permisos y roles si no existen)
 try:
     rbac_service = RBACService(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad

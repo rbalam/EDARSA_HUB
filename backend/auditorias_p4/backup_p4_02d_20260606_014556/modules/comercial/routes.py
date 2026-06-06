@@ -4181,7 +4181,6 @@ import math
 import random
 from core.config.edarsahub_config import get_edarsahub_sql_config
 from core.sql_first.db import get_sql_connection
-from core.sql_first.connection_factory import get_external_sql_connection, get_edarsahub_connection
 
 # P2-01 Config Central
 def _get_edarsahub_config_dict() -> dict:

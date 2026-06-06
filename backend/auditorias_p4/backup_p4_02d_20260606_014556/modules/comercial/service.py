@@ -50,7 +50,6 @@ from core.server_registry import resolve_unidad_by_server_sucursal
 from modules.comercial.queries.softrestaurant import query_ventas_periodo_sr
 from modules.comercial.queries.mpro import query_ventas_periodo_mpro, query_ventas_por_sucursal_mpro
 from core.sql_first.db import get_sql_connection
-from core.sql_first.connection_factory import get_external_sql_connection, get_edarsahub_connection
 
 # ============================================================================
 # FASE 5B: INTEGRACIÓN CON EmpresaResolver (Mayo 2026)
