@@ -19369,3 +19369,17 @@ async def download_manual_desarrollo():
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
     raise HTTPException(status_code=404, detail="Archivo no encontrado")
+
+
+@app.get("/api/download/backup-db-completo")
+async def download_backup_db_completo():
+    """Descarga del respaldo completo de EDARSAHUB SQL (466 tablas en JSON)."""
+    import os
+    zip_path = "/app/backend/static/backup_db.zip"
+    if os.path.exists(zip_path):
+        return FileResponse(
+            path=zip_path,
+            filename="EDARSAHUB_SQL_BACKUP_COMPLETO.zip",
+            media_type="application/zip"
+        )
+    raise HTTPException(status_code=404, detail="Archivo de backup no encontrado")
