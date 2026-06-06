@@ -867,7 +867,15 @@ def _backfill_ventas_real(cur, server_id: str, fecha_inicio: str, fecha_fin: str
         }
 
     try:
-        src = get_edarsahub_pymssql_connection()
+        src = pymssql.connect(
+            server=host,
+            port=int(port or 1433),
+            user=username,
+            password=password,
+            database=database_name,
+            login_timeout=10,
+            timeout=30
+        )
         scur = src.cursor(as_dict=True)
     except Exception as e:
         _log_backfill(cur, server_id, "VENTAS_REAL", fecha_inicio, fecha_fin, "ERROR", 0, f"No conecta fuente: {e}")

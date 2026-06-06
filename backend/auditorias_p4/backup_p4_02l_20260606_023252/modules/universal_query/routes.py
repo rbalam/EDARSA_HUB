@@ -184,7 +184,15 @@ def execute_sql_on_server(server: Dict, sql: str, timeout: int) -> tuple:
     """Ejecuta SQL en el servidor y retorna (rows, columns)."""
     conn = None
     try:
-        conn = get_edarsahub_pymssql_connection()
+        conn = pymssql.connect(
+            server=server.get('host'),
+            port=int(server.get('port', 1433)),
+            user=server.get('username'),
+            password=server.get('password'),
+            database=server.get('database'),
+            login_timeout=timeout,
+            timeout=timeout
+        )
         cursor = conn.cursor()
         cursor.execute(sql)
         

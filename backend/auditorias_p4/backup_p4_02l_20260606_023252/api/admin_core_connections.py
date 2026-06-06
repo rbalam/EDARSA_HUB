@@ -318,7 +318,15 @@ def test_core_connectivity(conn: Dict, timeout: int = 10) -> Dict:
     try:
         import pymssql
         
-        connection = get_edarsahub_pymssql_connection()
+        connection = pymssql.connect(
+            conn.get('host'),
+            conn.get('username'),
+            password,
+            conn.get('database_name', 'master'),
+            port=conn.get('port', 1433),
+            timeout=timeout,
+            login_timeout=timeout
+        )
         
         cursor = connection.cursor()
         cursor.execute("SELECT 1 AS connectivity_ok")

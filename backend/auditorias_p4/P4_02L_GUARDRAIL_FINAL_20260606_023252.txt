@@ -1,0 +1,4 @@
+FAIL conexiones SQL directas fuera de core/sql_first:
+audit_kpis_junio_2026.py:22
+tools/edarsahub_sql_runner.py:64
+tools/check_mpro_server_config.py:20

@@ -344,7 +344,14 @@ def execute_sql_parametrized(
         else:
             host_clean = host
         
-        conn = get_edarsahub_pymssql_connection()
+        conn = pymssql.connect(
+            server=host_clean,
+            port=port,
+            user=username,
+            password=password,
+            database=database,
+            timeout=30
+        )
         
         cursor = conn.cursor(as_dict=True)
         cursor.execute(query, params)
