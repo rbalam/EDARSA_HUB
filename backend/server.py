@@ -19316,6 +19316,13 @@ try:
 except Exception as e:
     logger.warning(f"Error registrando Scripts Pendientes SQL router: {e}")
 
+try:
+    from modules.sql_compat_bridge.routes import router as sql_compat_bridge_router
+    app.include_router(sql_compat_bridge_router, tags=["SQL Compat Bridge"])
+    logger.info("✓ SQL Compat Bridge router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando SQL Compat Bridge router: {e}")
+
 
 # Startup: Iniciar scheduler
 @app.on_event("startup")
