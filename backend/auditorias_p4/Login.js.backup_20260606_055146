@@ -201,7 +201,7 @@ const Login = () => {
                   </p>
                   <p className="text-sm text-slate-600">
                     <span className="text-slate-400">Contraseña:</span>{' '}
-                    <span className="font-mono text-slate-700">CONFIGURAR_PASSWORD_SEGURA</span>
+                    <span className="font-mono text-slate-700"><CONFIGURAR_PASSWORD_SEGURA></span>
                   </p>
                 </div>
               </div>
