@@ -1,10 +1,10 @@
 """
-Factory centralizada para conexiones SQL.
+Factory centralizada de conexiones SQL EDARSAHUB.
 
-Regla EDARSAHUB:
-- EDARSAHUB SQL usa core.sql_first.db.get_sql_connection()
-- Conexiones a servidores origen usan get_external_sql_connection(config)
-- Ningún módulo debe llamar pymssql.connect/pyodbc.connect directamente.
+Reglas:
+- EDARSAHUB SQL: get_edarsahub_connection()
+- Servidores externos: get_external_sql_connection(config)
+- No imprimir secretos.
 """
 
 from core.sql_first.db import get_sql_connection
@@ -13,12 +13,6 @@ def get_edarsahub_connection():
     return get_sql_connection()
 
 def get_external_sql_connection(config: dict):
-    """
-    Conexión centralizada a servidores externos SoftRestaurant/MPRO.
-    Recibe config ya resuelta desde Servidores_Conexiones/server_registry.
-    No lee variables de entorno.
-    No imprime secretos.
-    """
     if not config:
         raise ValueError("Config de servidor externo requerida")
 
