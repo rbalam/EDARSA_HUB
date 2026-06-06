@@ -702,10 +702,11 @@ api_router.include_router(universal_query_router)
 
 # ============================================================================
 # FASE 4: Consultas SQL - Endpoints /api/consultas-sql/*
-# Expone módulo SQL-First de forma controlada y segura
 # ============================================================================
-from modules.consultas_sql import get_consultas_sql_router
-api_router.include_router(get_consultas_sql_router())
+# P3-01: CONSULTAS SQL MODULE (Módulo legacy reubicado a línea 19305)
+# ============================================================================
+# NOTA: El router de consultas_sql ahora se registra al final del archivo
+# junto con los otros módulos SQL-first migrados de MongoDB
 
 # ============================================================================
 # P3-02: SYNC MONITOR SQL-First - Monitor de Sincronizaciones
@@ -19289,6 +19290,31 @@ try:
     logger.info("✓ Alertas Estratégicas router registrado")
 except Exception as e:
     logger.warning(f"Error registrando Alertas Estratégicas router: {e}")
+
+
+# =============================================================================
+# MÓDULOS SQL-FIRST (Migración MongoDB Legacy)
+# =============================================================================
+try:
+    from modules.informes_auditoria.routes import router as informes_auditoria_sql_router
+    app.include_router(informes_auditoria_sql_router, tags=["Informes Auditoría SQL"])
+    logger.info("✓ Informes Auditoría SQL router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Informes Auditoría SQL router: {e}")
+
+try:
+    from modules.consultas_sql.routes import router as consultas_sql_router
+    app.include_router(consultas_sql_router, tags=["Consultas SQL"])
+    logger.info("✓ Consultas SQL router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Consultas SQL router: {e}")
+
+try:
+    from modules.scripts_pendientes.routes import router as scripts_pendientes_sql_router
+    app.include_router(scripts_pendientes_sql_router, tags=["Scripts Pendientes SQL"])
+    logger.info("✓ Scripts Pendientes SQL router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Scripts Pendientes SQL router: {e}")
 
 
 # Startup: Iniciar scheduler
