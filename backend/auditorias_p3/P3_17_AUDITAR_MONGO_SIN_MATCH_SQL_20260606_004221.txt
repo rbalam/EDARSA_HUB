@@ -1,0 +1,139 @@
+==================================================
+P3-17 AUDITAR MONGO SIN MATCH SQL
+Timestamp: 20260606_004221
+==================================================
+Total colecciones a auditar: 16
+
+====================================================================================================
+COLECCION: alert_recipients
+DOCS: 2
+FIELDS: ['tipo', 'destinatario', 'nombre', 'activo', 'created_at', 'created_by']
+SAMPLE:
+  {"tipo": "email", "destinatario": "director@edarsa.com.mx", "nombre": "Director General", "activo": true, "created_at": "2026-04-19 23:32:02.342000", "created_by": "admin@edarsa.com"}
+
+====================================================================================================
+COLECCION: auditoria_financiera
+DOCS: 73
+FIELDS: ['created_at', 'usuario_id', 'usuario_email', 'session_id', 'ip_origen', 'empresa_id', 'sucursal_id', 'origen_sistema', 'modulo', 'entidad', 'entidad_origen', 'accion', 'registro_id', 'registro_folio', 'campo_modificado']
+SAMPLE:
+  {"created_at": "2026-04-15 10:12:19.477000", "usuario_id": "test_user", "usuario_email": "test@test.com", "session_id": null, "ip_origen": null, "empresa_id": null, "sucursal_id": null, "origen_sistema": "EDARSA_HUB", "modulo": "CXP", "entidad": "factura", "entidad_origen": null, "accion": "EDIT", "registro_id": "TEST_001", "registro_folio": null, "campo_modificado": null, "valor_anterior": null, 
+
+====================================================================================================
+COLECCION: configuracion_operativo
+DOCS: 1
+FIELDS: ['clave', 'fecha_actualizacion', 'tipo', 'valor', 'migrated_from', 'migrated_at']
+SAMPLE:
+  {"clave": "SLA_JUSTIFICACION_SIMPLE_HORAS", "fecha_actualizacion": "2026-04-18T19:51:38.146412+00:00", "tipo": "number", "valor": "24", "migrated_from": "test_database", "migrated_at": "2026-04-19 04:33:40.121000"}
+
+====================================================================================================
+COLECCION: consultas_custom
+DOCS: 6
+FIELDS: ['id', 'nombre', 'descripcion', 'sistema', 'categoria', 'parametros', 'sql', 'created_by', 'created_at', 'active', 'validated', 'validation_timestamp']
+SAMPLE:
+  {"id": "CUSTOM_SOFRESATAURANT_ENTER_14F42D7D", "nombre": "ALMACENCES", "descripcion": "RELACION DE ALMACENCES", "sistema": "SOFRESATAURANT_ENTER", "categoria": "Inventarios", "parametros": ["EMPRESA", "IDALMACEN"], "sql": "SELECT \nCOMPANIES.LegalName AS EMPRESA,\nWarehouses.Code AS CODIGO,\nWarehouses.Name AS DESCRIPCION,\nCASE WHEN \n    Warehouses.IsConsumption = '1' \n    THEN 'CONSUMO' \n    
+
+====================================================================================================
+COLECCION: inventario_diferencias_detalle
+DOCS: 24
+FIELDS: ['server_id', 'sucursal_id', 'comentario', 'folio', 'almacen_id', 'fecha_cache', 'fecha_inventario', 'productos']
+SAMPLE:
+  {"server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f", "sucursal_id": "", "comentario": "", "folio": "173", "almacen_id": "001 BODEGA", "fecha_cache": "2026-04-22T05:27:09.878366+00:00", "fecha_inventario": "2026-04-13 11:05:53", "productos": [{"codigo": "A100176", "producto": "A TOSTADA ENTERA 01 PQ 20                                   ", "diferencia_cantidad": -3.0, "diferencia_costo": -75.0}, {"
+
+====================================================================================================
+COLECCION: inventarios_fisicos_procesados
+DOCS: 1
+FIELDS: ['id', 'folio', 'server_id', 'almacen_id', 'fecha', 'productos']
+SAMPLE:
+  {"id": "INV-TEST-001", "folio": "INV-2026-001", "server_id": "EDARSA", "almacen_id": "ALM001", "fecha": "2026-04-19T01:23:54.636790+00:00", "productos": []}
+
+====================================================================================================
+COLECCION: inventarios_procesados_auto
+DOCS: 158
+FIELDS: ['id', 'clave', 'server_name', 'almacen_nombre', 'fecha_inventario', 'folio_inicial', 'fecha_inicial', 'estado', 'fecha_deteccion', 'fecha_procesado', 'analisis_resultado', 'workflow_id', 'workflow_creado', 'error', 'intentos']
+SAMPLE:
+  {"id": "e297b453-2efe-4e94-9ce8-589c40e2fd30", "clave": {"sistema_origen": "SOFTRESTAURANT", "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b", "sucursal_id": "CIENFUEGOS", "almacen_id": "100", "folio_inventario": "2414"}, "server_name": "CIENFUEGOS", "almacen_nombre": "100 PRODUCCION", "fecha_inventario": "2026-04-20", "folio_inicial": "2309", "fecha_inicial": "2026-01-12", "estado": "COMPLETAD
+
+====================================================================================================
+COLECCION: manuales_operativos
+DOCS: 1
+FIELDS: ['id', 'modulo', 'proceso_id', 'proceso_tipo', 'empresa_id', 'empresa_nombre', 'sucursal_id', 'sucursal_nombre', 'nombre_proceso', 'formato', 'contenido', 'estado_proceso_final', 'generado_por', 'created_at', 'updated_at']
+SAMPLE:
+  {"id": "fc1f5a29-1681-4058-befe-93bff918aa25", "modulo": "compras", "proceso_id": "25954231-8786-4bb0-9be3-2095a71bcf0e", "proceso_tipo": "auditoria_compras", "empresa_id": "EDARSA", "empresa_nombre": "Sucursal Centro", "sucursal_id": "SUC001", "sucursal_nombre": "Sucursal Centro", "nombre_proceso": "Auditoría Operativa de Compras - Sucursal Centro - Almacén Principal", "formato": "cienfuegos", "c
+
+====================================================================================================
+COLECCION: notification_config
+DOCS: 6
+FIELDS: ['id', 'canal', 'modulo', 'evento', 'activo', 'provider', 'modo_envio', 'template_codigo', 'enviar_a_responsable', 'enviar_a_supervisor', 'enviar_a_gerente', 'permite_reintentos', 'max_reintentos', 'ventana_duplicidad_minutos', 'created_at']
+SAMPLE:
+  {"id": "cfg_asignacion_tarea", "canal": "whatsapp", "modulo": "inventarios", "evento": "ASIGNACION_TAREA", "activo": true, "provider": "mock", "modo_envio": "mock", "template_codigo": "inventarios_asignacion_tarea", "enviar_a_responsable": true, "enviar_a_supervisor": false, "enviar_a_gerente": false, "permite_reintentos": true, "max_reintentos": 3, "ventana_duplicidad_minutos": 120, "created_at":
+
+====================================================================================================
+COLECCION: pedidos_procesados_automatizacion
+DOCS: 2
+FIELDS: ['origen', 'pedido_id', 'server_id', 'automatizacion_id', 'fecha_procesado', 'pedido_folio']
+SAMPLE:
+  {"origen": "MPRO", "pedido_id": "PED-AUTO-001", "server_id": "EDARSA", "automatizacion_id": "1299aa6f-4633-46c9-9a51-980ae36226ce", "fecha_procesado": "2026-04-19T01:49:34.787700+00:00"}
+
+====================================================================================================
+COLECCION: portal_suppliers
+DOCS: 3
+FIELDS: ['id', 'rfc', 'razon_social', 'nombre_contacto', 'email', 'telefono', 'password', 'banco', 'clabe', 'cuenta', 'status', 'sucursales_asignadas', 'created_at', 'approved_at', 'approved_by']
+SAMPLE:
+  {"id": "968179e3-eeb6-41b4-9dfe-9f6fc3f9201f", "rfc": "DUBM820810NK1", "razon_social": "MARISOL JOSEFINA DZUL BALDERAS", "nombre_contacto": "MARISOL JOSEFINA DZUL BALDERAS", "email": "administracion@cienfuegos.mx", "telefono": "2711956757", "password": "$2b$12$mLBP2y8HBiEL2zumNLN6ZuW3AjfOkSfL45WsT1tSMHAnP4aZNGTqe", "banco": "BANREGIO", "clabe": "058910000153609597", "cuenta": "0015360959", "status
+
+====================================================================================================
+COLECCION: propinas_config
+DOCS: 1
+FIELDS: ['id', 'alcance', 'vigencia', 'parametros', 'formas_pago_tpv_softrestaurant', 'created_at', 'created_by', 'updated_at', 'updated_by', 'motivo_cambio']
+SAMPLE:
+  {"id": "ac19db9a-380b-41b1-89d0-e95cdb81e768", "alcance": {"tipo": "GLOBAL", "server_id": null, "empresa_id": null, "sucursal_id": null}, "vigencia": {"fecha_inicio": "2026-04-15 05:51:57.557000", "fecha_fin": null, "activa": true}, "parametros": {"porcentaje_comision": 0.02, "tolerancia_descuadre": 5.0, "dias_para_cuadrar": 1}, "formas_pago_tpv_softrestaurant": {"conceptos": [10, 11, 12], "nombre
+
+====================================================================================================
+COLECCION: server_connection_status
+DOCS: 1
+FIELDS: ['server_id', 'error', 'is_online', 'last_check']
+SAMPLE:
+  {"server_id": "6d053c22-523e-48c0-b72b-96081e2d781b", "error": "Simulación de falla para prueba de fallback", "is_online": true, "last_check": "2026-04-23T00:16:52.175054+00:00"}
+
+====================================================================================================
+COLECCION: server_status
+DOCS: 13
+FIELDS: ['server_id', 'is_online', 'last_check', 'response_time_ms']
+SAMPLE:
+  {"server_id": "6d053c22-523e-48c0-b72b-96081e2d781b", "is_online": true, "last_check": "2026-05-19T03:32:05.239736+00:00", "response_time_ms": 76.75}
+
+====================================================================================================
+COLECCION: server_sucursales_config
+DOCS: 7
+FIELDS: ['server_id', 'sucursal_id', 'activa', 'fecha_alta', 'fecha_modificacion', 'fecha_modificacion_responsable', 'id', 'nombre_visible', 'orden', 'sucursal_nombre', 'sucursal_origen_id', 'usuario_alta', 'usuario_modificacion', 'usuario_responsable_id', 'visible_en_operaciones']
+SAMPLE:
+  {"server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6", "sucursal_id": null, "activa": true, "fecha_alta": "2026-04-14 05:23:55.175000", "fecha_modificacion": "2026-04-14 05:27:32.892000", "fecha_modificacion_responsable": "2026-04-17T06:18:10.597082+00:00", "id": "d772a96a-964c-4e03-b729-b3f5ce019172", "nombre_visible": null, "orden": 6, "sucursal_nombre": "CIEN FUEGOS", "sucursal_origen_id": "0027
+
+====================================================================================================
+COLECCION: automatizaciones_operativas_compras
+DOCS: 8
+FIELDS: ['id', 'pedido_id', 'server_id', 'sucursal_id', 'sucursal_nombre', 'almacen_id', 'almacen_nombre', 'usuario_id', 'usuario_nombre', 'origen_sistema', 'estado', 'fecha_pedido', 'fecha_inicio_periodo', 'fecha_fin_periodo', 'dias_periodo_analisis']
+SAMPLE:
+  {"id": "07295f0e-4adc-403c-a9a3-d1b2915cfe22", "pedido_id": "PED-TEST-001", "server_id": "EDARSA", "sucursal_id": "SUC001", "sucursal_nombre": "Sucursal Centro", "almacen_id": "ALM001", "almacen_nombre": "Almacén Principal", "usuario_id": "f648dd3f-2232-4245-ae5c-cf5108f6f6e9", "usuario_nombre": "admin@edarsa.com", "origen_sistema": "MPRO", "estado": "PENDIENTE_INVENTARIO_FISICO", "fecha_pedido": 
+
+====================================================================================================
+RESUMEN COLECCIONES SIN MATCH SQL:
+====================================================================================================
+  alert_recipients: 2 docs
+  auditoria_financiera: 73 docs
+  configuracion_operativo: 1 docs
+  consultas_custom: 6 docs
+  inventario_diferencias_detalle: 24 docs
+  inventarios_fisicos_procesados: 1 docs
+  inventarios_procesados_auto: 158 docs
+  manuales_operativos: 1 docs
+  notification_config: 6 docs
+  pedidos_procesados_automatizacion: 2 docs
+  portal_suppliers: 3 docs
+  propinas_config: 1 docs
+  server_connection_status: 1 docs
+  server_status: 13 docs
+  server_sucursales_config: 7 docs
+  automatizaciones_operativas_compras: 8 docs
+
+TOTAL: 16 colecciones, 307 documentos
