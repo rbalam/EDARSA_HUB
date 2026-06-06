@@ -1218,7 +1218,7 @@ const Reportes = () => {
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
-      if (link && link.parentNode) { link.parentNode.removeChild(link); }
+      document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
       toast.success(`Archivo "${fileName}" descargado correctamente.`);
@@ -1289,7 +1289,7 @@ const Reportes = () => {
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
-      if (link && link.parentNode) { link.parentNode.removeChild(link); }
+      document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
       toast.success(`Archivo "${fileName}" descargado correctamente.`);
@@ -1379,7 +1379,7 @@ const Reportes = () => {
       link.download = `comparativo_4cortes_${new Date().toISOString().split('T')[0]}.xlsx`;
       document.body.appendChild(link);
       link.click();
-      if (link && link.parentNode) { link.parentNode.removeChild(link); }
+      document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
       toast.success('Reporte comparativo descargado correctamente (desde cache)');

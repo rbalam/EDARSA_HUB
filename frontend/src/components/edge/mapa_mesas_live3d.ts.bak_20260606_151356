@@ -78,9 +78,7 @@ export class MapaMesasLive3D {
             </div>
         `;
 
-        if (!document.body.contains(microModal)) {
-            document.body.appendChild(microModal);
-        }
+        document.body.appendChild(microModal);
 
         // Captura del Toque 1 definitivo y conmutación de reglas del backend
         microModal.querySelectorAll(".btn-seg").forEach(boton => {
@@ -89,7 +87,7 @@ export class MapaMesasLive3D {
                 console.log(`[UI TOQUE 1]: Mesa ${mesa.id_mesa} ruteada a segmento: ${tipoSeleccionado}`);
                 
                 // Cerrar modal y dar paso inmediato al Toque 2 (Captura de Comanda)
-                if (microModal && microModal.parentNode) { microModal.parentNode.removeChild(microModal); }
+                microModal.remove();
                 this.cargarInterfazCapturaMenu(mesa.id_mesa, tipoSeleccionado!);
             });
         });
