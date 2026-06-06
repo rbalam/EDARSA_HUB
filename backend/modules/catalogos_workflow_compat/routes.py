@@ -1,3 +1,4 @@
+from core.auth.sql_user_identity import enrich_current_user_with_sql_id
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict
 from core.security import get_current_user

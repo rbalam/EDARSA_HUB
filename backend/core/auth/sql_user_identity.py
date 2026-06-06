@@ -6,7 +6,7 @@ def resolve_sql_usuario_id(current_user: Dict) -> Optional[int]:
     Regla:
     1. Si ya viene UsuarioID entero, usarlo.
     2. Si viene _sql_usuario_id, usarlo como compat temporal.
-    3. Si viene UUIDPublico / uuid / public_id, resolver en SQL.
+    3. Si viene PublicUUID / uuid / public_id, resolver en SQL.
     4. Si viene email, resolver en SQL.
     """
     if not current_user:
@@ -21,7 +21,7 @@ def resolve_sql_usuario_id(current_user: Dict) -> Optional[int]:
                 pass
 
     uuid_value = (
-        current_user.get("UUIDPublico")
+        current_user.get("PublicUUID")
         or current_user.get("uuid")
         or current_user.get("public_id")
         or current_user.get("user_uuid")
@@ -36,7 +36,7 @@ def resolve_sql_usuario_id(current_user: Dict) -> Optional[int]:
             cur.execute("""
                 SELECT TOP 1 UsuarioID
                 FROM Usuario_Catalogo
-                WHERE UUIDPublico = %s
+                WHERE PublicUUID = %s
             """, (str(uuid_value),))
             row = cur.fetchone()
             if row:
