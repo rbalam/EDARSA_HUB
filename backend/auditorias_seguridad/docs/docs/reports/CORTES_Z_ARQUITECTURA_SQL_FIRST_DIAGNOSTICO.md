@@ -13,7 +13,7 @@ El endpoint de Cortes Z (`GET /api/finanzas/tesoreria/cortes-z`) **YA ESTÁ MIGR
 
 ### Causa Raíz del Timeout Anterior
 El dictamen anterior de "timeout por latencia de red" fue **INCORRECTO** en su atribución. La causa raíz identificada es:
-- **INFRAESTRUCTURA**: El servidor EDARSAHUB SQL (54.39.104.176:1433) tiene intermitencias de conectividad
+- **INFRAESTRUCTURA**: El servidor EDARSAHUB SQL (<REDACTED_EDARSAHUB_SQL_HOST>:1433) tiene intermitencias de conectividad
 - **NO ES ARQUITECTURA**: El código del endpoint Cortes Z ya estaba correctamente implementado
 
 ### Mejoras Implementadas (2026-05-25)
@@ -37,7 +37,7 @@ El dictamen anterior de "timeout por latencia de red" fue **INCORRECTO** en su a
 | `/app/backend/modules/finanzas/sync_cortes_softrestaurant.py` | Job de sincronización hacia EDARSAHUB |
 | `/app/backend/modules/finanzas/sync_cortes_mpro.py` | Job de sincronización hacia EDARSAHUB |
 
-### 2.2 Búsqueda: IP `54.39.104.176`
+### 2.2 Búsqueda: IP `<REDACTED_EDARSAHUB_SQL_HOST>`
 
 **Hallazgos:**
 - Esta IP corresponde al **servidor EDARSAHUB SQL Server** (base de datos central)
@@ -46,7 +46,7 @@ El dictamen anterior de "timeout por latencia de red" fue **INCORRECTO** en su a
 
 Los servidores POS externos son:
 - SoftRestaurant: `189.162.155.142:6669` (Cienfuegos, Estelar, etc.)
-- MPRO: APIs en `54.39.104.176:8000` y `54.39.104.176:8001`
+- MPRO: APIs en `<REDACTED_EDARSAHUB_SQL_HOST>:8000` y `<REDACTED_EDARSAHUB_SQL_HOST>:8001`
 
 ### 2.3 Búsqueda: `source_type`, `EDARSAHUB_SQL`
 
@@ -80,7 +80,7 @@ fuentes_detalle = [{
 │                                                                      │
 │  ┌──────────────┐         ┌─────────────────────────┐               │
 │  │  Frontend    │         │   EDARSAHUB SQL Server  │               │
-│  │  (React)     │         │   54.39.104.176:1433    │               │
+│  │  (React)     │         │   <REDACTED_EDARSAHUB_SQL_HOST>:1433    │               │
 │  └──────┬───────┘         │   DB: EDARSAHUB         │               │
 │         │                 └───────────┬─────────────┘               │
 │         │ GET /api/finanzas/           │                            │
@@ -114,7 +114,7 @@ fuentes_detalle = [{
 │            v                         v                               │
 │  ┌────────────────────┐    ┌────────────────────┐                   │
 │  │ SoftRestaurant DBs │    │ MPRO APIs          │                   │
-│  │ (189.162.155.142)  │    │ (54.39.104.176:    │                   │
+│  │ (189.162.155.142)  │    │ (<REDACTED_EDARSAHUB_SQL_HOST>:    │                   │
 │  │                    │    │  8000/8001)        │                   │
 │  └────────────────────┘    └────────────────────┘                   │
 │                                                                      │

@@ -87,7 +87,7 @@ Si estamos ANTES de las 13:00 (hora de apertura):
 | PID | 51 (único proceso backend) |
 | Frecuencia | Cada 5 minutos (configurado en scheduler) |
 | sync_run_id | `ABIERTA-YYYYMMDD-HHMMSS-xxxx` |
-| Usuario SQL | HRLectura |
+| Usuario SQL | <REDACTED_EDARSAHUB_SQL_USER> |
 | Host | Contenedor Docker (agent-env-...) |
 
 ---

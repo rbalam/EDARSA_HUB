@@ -11,7 +11,7 @@
 
 ### Base de Datos MongoDB
 ```
-MONGO_URL=mongodb://localhost:27017
+MONGO_URL=<REDACTED_MONGO_URL>
 DB_NAME=edarsa_hub
 ```
 > ⚠️ Si usas MongoDB Atlas u otro servicio externo, cambia MONGO_URL
@@ -62,8 +62,8 @@ ALERT_WHATSAPP_TO=[CAMBIAR] Número destino (+521234567890)
 ## 🖥️ API MPRO (ManagementPro)
 
 ```
-API_MPRO_QRO_URL=http://54.39.104.176:8001/query
-API_MPRO_ORIGEN_URL=http://54.39.104.176:8000/query
+API_MPRO_QRO_URL=http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query
+API_MPRO_ORIGEN_URL=http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query
 API_MPRO_KEY=EDARSA_2026_SECURE_KEY
 ```
 > Estas APIs deben ser accesibles desde el servidor de producción
@@ -88,7 +88,7 @@ No son variables de entorno, sino registros en la base de datos.
 
 | Servidor | Host | Puerto | Base de Datos | Tipo |
 |----------|------|--------|---------------|------|
-| ManagmentPro | 54.39.104.176 | 1433 | CENTRAL2020 | MPRO |
+| ManagmentPro | <REDACTED_EDARSAHUB_SQL_HOST> | 1433 | CENTRAL2020 | MPRO |
 | CIENFUEGOS | servercien....n... | 1433 | softrestaurant95pro | SoftRestaurant |
 | LA ESTELAR | serverestelar.ddns.net | 6969 | softrestaurant12 | SoftRestaurant |
 | 130° MERIDA | 130mid.ddns.net | 1433 | softrestaurant10 | SoftRestaurant |

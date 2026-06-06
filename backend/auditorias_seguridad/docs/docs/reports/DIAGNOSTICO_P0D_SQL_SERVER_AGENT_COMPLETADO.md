@@ -1,8 +1,8 @@
 # DIAGNÓSTICO P0D - SQL SERVER AGENT COMPLETADO
 
 **Fecha**: 2025-12-19  
-**Ejecutado por**: HRLectura  
-**Servidor**: ns559627 (54.39.104.176)
+**Ejecutado por**: <REDACTED_EDARSAHUB_SQL_USER>  
+**Servidor**: ns559627 (<REDACTED_EDARSAHUB_SQL_HOST>)
 
 ---
 
@@ -19,17 +19,17 @@ Después de un diagnóstico exhaustivo con acceso completo a SQL Server Agent, s
 | Jobs cada 5-10 minutos | 0 |
 | Stored Procedures que mencionan tablas | 0 |
 | Triggers en tablas afectadas | 0 |
-| Usuarios con permisos de escritura | 1 (HRLectura con db_owner) |
+| Usuarios con permisos de escritura | 1 (<REDACTED_EDARSAHUB_SQL_USER> con db_owner) |
 
 ---
 
 ## 1. VALIDACIÓN DE IDENTIDAD
 
 ```
-SYSTEM_USER:      HRLectura ✓
-SUSER_SNAME():    HRLectura ✓
-ORIGINAL_LOGIN(): HRLectura ✓
-CURRENT_USER:     HRLectura ✓
+SYSTEM_USER:      <REDACTED_EDARSAHUB_SQL_USER> ✓
+SUSER_SNAME():    <REDACTED_EDARSAHUB_SQL_USER> ✓
+ORIGINAL_LOGIN(): <REDACTED_EDARSAHUB_SQL_USER> ✓
+CURRENT_USER:     <REDACTED_EDARSAHUB_SQL_USER> ✓
 DB_NAME():        EDARSAHUB ✓
 @@SERVERNAME:     ns559627 ✓
 ```
@@ -37,7 +37,7 @@ DB_NAME():        EDARSAHUB ✓
 ## 2. VALIDACIÓN DE PERMISOS EN msdb
 
 ```
-current_db_user:        HRLectura
+current_db_user:        <REDACTED_EDARSAHUB_SQL_USER>
 is_SQLAgentReaderRole:  1 ✓
 is_SQLAgentUserRole:    1 ✓
 is_SQLAgentOperatorRole:1 ✓
@@ -83,7 +83,7 @@ Solo existe **1 usuario** con permisos de escritura en EDARSAHUB:
 
 | Usuario | Roles |
 |---------|-------|
-| HRLectura | db_owner, db_datawriter, db_datareader, etc. |
+| <REDACTED_EDARSAHUB_SQL_USER> | db_owner, db_datawriter, db_datareader, etc. |
 
 ---
 
@@ -93,7 +93,7 @@ Dado que el Ejecutor B:
 1. NO es un SQL Server Agent Job
 2. NO es un Stored Procedure
 3. NO es un Trigger
-4. Escribe usando las credenciales de HRLectura (único usuario con permisos)
+4. Escribe usando las credenciales de <REDACTED_EDARSAHUB_SQL_USER> (único usuario con permisos)
 5. Escribe cada ~5 minutos
 6. No genera logs en el backend Python
 
@@ -118,7 +118,7 @@ Para identificar el Ejecutor B, se debe:
 
 1. **Monitorear conexiones activas** al servidor SQL cuando ocurre la escritura
 2. **Revisar Task Scheduler** en el servidor Windows donde está SQL Server
-3. **Buscar otros servicios** que usen las credenciales HRLectura
+3. **Buscar otros servicios** que usen las credenciales <REDACTED_EDARSAHUB_SQL_USER>
 4. **Implementar auditoría SQL** (si está disponible) para capturar el hostname de origen
 
 ---
@@ -137,7 +137,7 @@ SELECT
     login_time,
     last_request_start_time
 FROM sys.dm_exec_sessions
-WHERE login_name = 'HRLectura'
+WHERE login_name = '<REDACTED_EDARSAHUB_SQL_USER>'
 ORDER BY last_request_start_time DESC;
 ```
 
@@ -154,4 +154,4 @@ ORDER BY last_request_start_time DESC;
 
 **Estado**: DIAGNÓSTICO SQL SERVER AGENT COMPLETADO  
 **Resultado**: El Ejecutor B NO es un SQL Server Agent Job  
-**Siguiente paso**: Identificar proceso externo que usa credenciales HRLectura
+**Siguiente paso**: Identificar proceso externo que usa credenciales <REDACTED_EDARSAHUB_SQL_USER>

@@ -2,7 +2,7 @@
 
 - Fecha: 2026-06-02T16:31:22.666730
 - Modo: `migrate`
-- Servidor: `54.39.104.176`
+- Servidor: `<REDACTED_EDARSAHUB_SQL_HOST>`
 - Base de datos: `EDARSAHUB`
 - Script: `/app/backend/database/migrations/020_marcar_sistema_rbac_transicion.sql`
 

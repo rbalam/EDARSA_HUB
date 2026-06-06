@@ -45,8 +45,8 @@
 
 | Nombre | System | api_url |
 |--------|--------|---------|
-| ORIGEN LOCAL | MPRO | http://54.39.104.176:8000/query |
-| 130° QRO LOCAL | MPRO | http://54.39.104.176:8001/query |
+| ORIGEN LOCAL | MPRO | http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query |
+| 130° QRO LOCAL | MPRO | http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query |
 
 ### Conexiones DATA_SOURCE (SoftRestaurant):
 
@@ -146,7 +146,7 @@
 **Líneas 74-84:**
 ```python
 rows = execute_sql_query(
-    '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+    '<REDACTED_EDARSAHUB_SQL_HOST>', 1433, 'EDARSAHUB', '<REDACTED_EDARSAHUB_SQL_USER>', '<REDACTED_EDARSAHUB_SQL_PASSWORD>',
     f'''
     SELECT id, nombre, api_url, api_key_encrypted
     FROM Servidores_Conexiones

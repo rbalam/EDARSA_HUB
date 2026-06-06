@@ -19,7 +19,7 @@ GET /api/admin/sync/compras/logs?limit=50
 
 ## ¿Por qué quedó pendiente?
 
-El firewall de EDARSAHUB SQL Server (`4.255.36.175`) no permite conexiones desde la IP de salida del pod de Emergent (`54.39.104.176`).
+El firewall de EDARSAHUB SQL Server (`4.255.36.175`) no permite conexiones desde la IP de salida del pod de Emergent (`<REDACTED_EDARSAHUB_SQL_HOST>`).
 
 ---
 

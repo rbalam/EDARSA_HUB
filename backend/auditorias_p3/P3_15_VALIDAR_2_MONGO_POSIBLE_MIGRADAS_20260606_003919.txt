@@ -3,7 +3,7 @@ P3-15 VALIDAR 2 MONGO POSIBLE MIGRADAS
 Timestamp: 20260606_003919
 ==================================================
 MongoDB: edarsa_hub
-SQL: 54.39.104.176:1433/EDARSAHUB
+SQL: <REDACTED_EDARSAHUB_SQL_HOST>:1433/EDARSAHUB
 
 ====================================================================================================
 MONGO: automatizaciones_operativas_compras | SQL: Compras

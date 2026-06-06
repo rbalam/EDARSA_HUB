@@ -2,8 +2,8 @@
 P3-07 CLASIFICAR MONGO RESTANTE
 Timestamp: 20260606_001300
 ==================================================
-MongoDB: mongodb://localhost:27017/edarsa_hub
-SQL Server: 54.39.104.176:1433/EDARSAHUB
+MongoDB: <REDACTED_MONGO_URL>/edarsa_hub
+SQL Server: <REDACTED_EDARSAHUB_SQL_HOST>:1433/EDARSAHUB
 
 COLECCION | DOCS | CLASIFICACION | SQL_MATCH | ACCION_RECOMENDADA
 ------------------------------------------------------------------------------------------------------------------------

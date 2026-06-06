@@ -31,7 +31,7 @@ Fecha: Fri Jun  5 04:07:49 UTC 2026
 OK: 0 dependencias MongoDB
 
 === 5) CREDENCIALES HARDCODEADAS PRODUCTIVAS ===
-/app/backend/modules/fase2_operativo/repositories/sql_base_repository.py:310:            "server": os.environ.get("EDARSAHUB_SQL_SERVER", "54.39.104.176"),
+/app/backend/modules/fase2_operativo/repositories/sql_base_repository.py:310:            "server": os.environ.get("EDARSAHUB_SQL_SERVER", "<REDACTED_EDARSAHUB_SQL_HOST>"),
 /app/backend/modules/api_connections/universal_test_routes.py:147:            port=int(os.environ.get('EDARSAHUB_PORT', '1433')),
 /app/backend/modules/api_connections/universal_test_routes.py:186:            port=int(os.environ.get('EDARSAHUB_PORT', '1433')),
 /app/backend/modules/sistema/menu_service.py:28:            'port': int(os.environ.get('EDARSAHUB_PORT', 1433))

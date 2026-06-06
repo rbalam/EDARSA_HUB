@@ -55,13 +55,13 @@ Este es un problema de configuración del entorno (`SERVER_SECRET_KEY` faltante 
 | a5547321-1139-4d2b-9d53-182ca737b6b6 | 130° MERIDA | 130mid.ddns.net | 1433 | SoftRestaurant | Sí | Sí | No | No |
 | 6d053c22-523e-48c0-b72b-96081e2d781b | CIENFUEGOS | servercienfuegos.ddns.net,6669\nationalsoft | 1433 | SoftRestaurant | Sí | Sí | No | Sí |
 | 6d859026-710a-4920-9a44-6da98fabc690 | CIENFUEGOS TABLAJERIA | servercienfuegos.ddns.net,6669\nationalsoft | 1433 | SoftRestaurant | Sí | Sí | No | No |
-| f8a9049a-96e8-4210-84ae-595ffa2822fa | EDARSA HUB | 54.39.104.176 | 1433 | EDARSA_HUB | Sí | Sí | No | No |
-| b5175237-5e57-41f3-ab6d-b5ae2f5e780b | HR2020 ESCRITURA | 54.39.104.176 | 1433 | MPRO | Sí | Sí | No | No |
+| f8a9049a-96e8-4210-84ae-595ffa2822fa | EDARSA HUB | <REDACTED_EDARSAHUB_SQL_HOST> | 1433 | EDARSA_HUB | Sí | Sí | No | No |
+| b5175237-5e57-41f3-ab6d-b5ae2f5e780b | HR2020 ESCRITURA | <REDACTED_EDARSAHUB_SQL_HOST> | 1433 | MPRO | Sí | Sí | No | No |
 | a5ff0e25-f029-43db-b634-d4ac814c904f | LA ESTELAR | serverestelar.ddns.net,6969 | 6969 | SoftRestaurant | Sí | Sí | No | Sí |
-| 1b230a06-ffaf-4c70-bd27-b1be3579dea6 | ManagmentPro | 54.39.104.176 | 1433 | MPRO | Sí | Sí | No | Sí |
-| d1d8c70f-c3d0-4407-ae50-f09e8e5992ee | MPRO TABLAJERIA | 54.39.104.176 | 1433 | MPRO | Sí | Sí | No | No |
-| d8425038-5e57-42d9-8f3a-62e287888874 | PRUEBAS SOFTRESTAURANT | 54.39.104.176\SOFTRESTAURANT | 1433 | SoftRestaurant | Sí | Sí | No | No |
-| bea40259-35f1-4693-bda2-d2d10e13e56a | EDARSA HUB (duplicado) | 54.39.104.176 | 1433 | Otro | No | Sí | No | No |
+| 1b230a06-ffaf-4c70-bd27-b1be3579dea6 | ManagmentPro | <REDACTED_EDARSAHUB_SQL_HOST> | 1433 | MPRO | Sí | Sí | No | Sí |
+| d1d8c70f-c3d0-4407-ae50-f09e8e5992ee | MPRO TABLAJERIA | <REDACTED_EDARSAHUB_SQL_HOST> | 1433 | MPRO | Sí | Sí | No | No |
+| d8425038-5e57-42d9-8f3a-62e287888874 | PRUEBAS SOFTRESTAURANT | <REDACTED_EDARSAHUB_SQL_HOST>\SOFTRESTAURANT | 1433 | SoftRestaurant | Sí | Sí | No | No |
+| bea40259-35f1-4693-bda2-d2d10e13e56a | EDARSA HUB (duplicado) | <REDACTED_EDARSAHUB_SQL_HOST> | 1433 | Otro | No | Sí | No | No |
 | 90a62591-65cf-439f-ae8e-d505b50fcc07 | TEST_ENCRYPTED_PASSWORD_UPDATED | 127.0.0.2 | 1433 | MPRO | No | Sí | No | No |
 | 7452d373-7350-4193-b819-e36ffa800724 | TEST_RBAC_ADMIN_CHECK | 127.0.0.1 | 1433 | MPRO | No | Sí | No | No |
 | 3f6ffbdf-1288-423d-aa42-3878b48e5022 | TEST_SQL_FIRST_TEMP_UPDATED | 127.0.0.2 | 1433 | MANAGEMENTPRO | No | Sí | No | No |
@@ -91,7 +91,7 @@ Este es un problema de configuración del entorno (`SERVER_SECRET_KEY` faltante 
 ### 3.5 Servidores con ID Distinto pero Mismo Host
 | Host | Servidores | Observación |
 |------|------------|-------------|
-| 54.39.104.176 | EDARSA HUB, HR2020 ESCRITURA, ManagmentPro, MPRO TABLAJERIA, PRUEBAS SOFTRESTAURANT | Mismo host físico pero diferentes bases de datos. Configuración válida. |
+| <REDACTED_EDARSAHUB_SQL_HOST> | EDARSA HUB, HR2020 ESCRITURA, ManagmentPro, MPRO TABLAJERIA, PRUEBAS SOFTRESTAURANT | Mismo host físico pero diferentes bases de datos. Configuración válida. |
 | servercienfuegos.ddns.net,6669\nationalsoft | CIENFUEGOS, CIENFUEGOS TABLAJERIA | Mismo host físico pero diferentes bases de datos. Configuración válida. |
 
 **Acción recomendada:** No requiere acción. Es normal tener múltiples conexiones al mismo host con diferentes bases de datos.
@@ -165,10 +165,10 @@ Este es un problema de configuración del entorno (`SERVER_SECRET_KEY` faltante 
 | nombre | HR2020 ESCRITURA | *(no existe)* |
 | system_type | MPRO | *(no existe)* |
 | tipo_conexion | DATA_SOURCE | *(no existe)* |
-| host | 54.39.104.176 | *(no existe)* |
+| host | <REDACTED_EDARSAHUB_SQL_HOST> | *(no existe)* |
 | port | 1433 | *(no existe)* |
 | database_name | HR2020 | *(no existe)* |
-| username | HRLectura | *(no existe)* |
+| username | <REDACTED_EDARSAHUB_SQL_USER> | *(no existe)* |
 | password_encrypted | [CONFIGURADO] | *(no existe)* |
 | activo | True | *(no existe)* |
 

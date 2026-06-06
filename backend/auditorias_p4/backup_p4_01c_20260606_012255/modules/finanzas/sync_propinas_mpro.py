@@ -156,11 +156,11 @@ def get_unidad_mpro_connection_info(unidad_nombre: str) -> Optional[Dict]:
             'empresa_id': None,
             'empresa_codigo': empresa_codigo,
             'empresa_nombre': unidad_nombre,
-            'host': unidad['host'] or '54.39.104.176',
+            'host': unidad['host'] or '<REDACTED_EDARSAHUB_SQL_HOST>',
             'port': unidad['port'] or 1433,
             'database': unidad['database_name'] or 'CENTRAL2020',
-            'user': unidad['username'] or 'HRLectura',
-            'password': 'National09$',
+            'user': unidad['username'] or '<REDACTED_EDARSAHUB_SQL_USER>',
+            'password': '<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             'system_type': 'MPRO'
         }
         

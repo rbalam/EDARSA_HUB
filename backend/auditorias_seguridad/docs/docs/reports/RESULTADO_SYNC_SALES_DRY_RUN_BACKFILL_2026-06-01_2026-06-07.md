@@ -117,20 +117,20 @@ FROM dbo.Sync_PAX_Detalle;
 2026-06-03 06:39:05 [INFO] Rango: 2026-06-01 a 2026-06-07
 2026-06-03 06:39:05 [INFO] 
 2026-06-03 06:39:05 [INFO] Paso 1: Capturando estado ANTES...
-2026-06-03 06:39:05 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:05 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:05 [INFO] ConnectionPoolManager inicializado con aislamiento por contexto (web/jobs)
-2026-06-03 06:39:05 [INFO] Creando pool pymssql para 54.39.104.176:1433/EDARSAHUB
-2026-06-03 06:39:05 [INFO] Pool pymssql [web] creado para 54.39.104.176:1433/EDARSAHUB
-2026-06-03 06:39:05 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:05 [INFO] Creando pool pymssql para <REDACTED_EDARSAHUB_SQL_HOST>:1433/EDARSAHUB
+2026-06-03 06:39:05 [INFO] Pool pymssql [web] creado para <REDACTED_EDARSAHUB_SQL_HOST>:1433/EDARSAHUB
+2026-06-03 06:39:05 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:05 [INFO]    Sync_Sales: 79 registros
 2026-06-03 06:39:05 [INFO]    KPIs_Diarios_v2: 3377 registros
 2026-06-03 06:39:05 [INFO] 
 2026-06-03 06:39:05 [INFO] Paso 2: Obteniendo configuración (Unidades_Negocio -> Servidores_Conexiones)...
-2026-06-03 06:39:05 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:05 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:05 [INFO] Unidad encontrada: CIENFUEGOS (ID: b06ee652-0370-4267-b0a8-da6fc39b590a)
 2026-06-03 06:39:05 [INFO] Server ID: 6d053c22-523e-48c0-b72b-96081e2d781b
 2026-06-03 06:39:05 [INFO] Sistema: SoftRestaurant
-2026-06-03 06:39:05 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:05 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:06 [INFO] Parsed DDNS format: hostname=189.162.155.142, port=6669, instance=nationalsoft
 2026-06-03 06:39:06 [INFO]    Servidor: CIENFUEGOS
 2026-06-03 06:39:06 [INFO]    Host: servercienfuegos.ddns.net,6669\nationalsoft
@@ -169,33 +169,33 @@ FROM dbo.Sync_PAX_Detalle;
 2026-06-03 06:39:32 [INFO]    Registros: 27
 2026-06-03 06:39:32 [INFO] 
 2026-06-03 06:39:32 [INFO] Paso 4: Verificando duplicados en Sync_Sales...
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:32 [INFO]    Nuevos: 0
 2026-06-03 06:39:32 [INFO]    Duplicados: 27
 2026-06-03 06:39:32 [INFO] 
@@ -213,8 +213,8 @@ FROM dbo.Sync_PAX_Detalle;
 2026-06-03 06:39:32 [INFO]    Items sin importe: 108
 2026-06-03 06:39:32 [INFO] 
 2026-06-03 06:39:32 [INFO] Paso 7: Verificando estado de tablas...
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:32 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:32 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:32 [INFO]    KPIs_Diarios_v2 ANTES: 3377 registros
 2026-06-03 06:39:32 [INFO]    KPIs_Diarios_v2 DESPUÉS: 3377 registros
 2026-06-03 06:39:32 [INFO]    KPIs SIN CAMBIOS: ✅ SÍ
@@ -325,20 +325,20 @@ Timestamp: 2026-06-03T06:39:32.970802
 2026-06-03 06:39:33 [INFO] Rango: 2026-06-01 a 2026-06-07
 2026-06-03 06:39:33 [INFO] 
 2026-06-03 06:39:33 [INFO] Paso 1: Capturando estado ANTES...
-2026-06-03 06:39:33 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:33 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:33 [INFO] ConnectionPoolManager inicializado con aislamiento por contexto (web/jobs)
-2026-06-03 06:39:33 [INFO] Creando pool pymssql para 54.39.104.176:1433/EDARSAHUB
-2026-06-03 06:39:33 [INFO] Pool pymssql [web] creado para 54.39.104.176:1433/EDARSAHUB
-2026-06-03 06:39:33 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:33 [INFO] Creando pool pymssql para <REDACTED_EDARSAHUB_SQL_HOST>:1433/EDARSAHUB
+2026-06-03 06:39:33 [INFO] Pool pymssql [web] creado para <REDACTED_EDARSAHUB_SQL_HOST>:1433/EDARSAHUB
+2026-06-03 06:39:33 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:33 [INFO]    Sync_Sales: 79 registros
 2026-06-03 06:39:33 [INFO]    KPIs_Diarios_v2: 3377 registros
 2026-06-03 06:39:33 [INFO] 
 2026-06-03 06:39:33 [INFO] Paso 2: Obteniendo configuración (Unidades_Negocio -> Servidores_Conexiones)...
-2026-06-03 06:39:33 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:33 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:33 [INFO] Unidad encontrada: 130° MERIDA (ID: 19e076fb-c6de-4ea5-84ab-1caa9e86082c)
 2026-06-03 06:39:33 [INFO] Server ID: a5547321-1139-4d2b-9d53-182ca737b6b6
 2026-06-03 06:39:33 [INFO] Sistema: SoftRestaurant
-2026-06-03 06:39:33 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:33 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:33 [INFO] Using simple hostname: 187.155.40.145
 2026-06-03 06:39:33 [INFO]    Servidor: 130° MERIDA
 2026-06-03 06:39:33 [INFO]    Host: 130mid.ddns.net
@@ -361,50 +361,50 @@ Timestamp: 2026-06-03T06:39:32.970802
 2026-06-03 06:39:34 [INFO]    Registros: 44
 2026-06-03 06:39:34 [INFO] 
 2026-06-03 06:39:34 [INFO] Paso 4: Verificando duplicados en Sync_Sales...
-2026-06-03 06:39:34 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:34 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:34 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:34 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:34 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:34 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:34 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:34 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:34 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:34 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:34 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:34 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:35 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:34 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:34 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:34 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:34 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:34 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:34 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:34 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:34 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:34 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:34 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:34 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:34 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:35 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:36 [INFO]    Nuevos: 25
 2026-06-03 06:39:36 [INFO]    Duplicados: 19
 2026-06-03 06:39:36 [INFO] 
@@ -422,8 +422,8 @@ Timestamp: 2026-06-03T06:39:32.970802
 2026-06-03 06:39:36 [INFO]    Items sin importe: 164
 2026-06-03 06:39:36 [INFO] 
 2026-06-03 06:39:36 [INFO] Paso 7: Verificando estado de tablas...
-2026-06-03 06:39:36 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:36 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:36 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:36 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:36 [INFO]    KPIs_Diarios_v2 ANTES: 3377 registros
 2026-06-03 06:39:36 [INFO]    KPIs_Diarios_v2 DESPUÉS: 3377 registros
 2026-06-03 06:39:36 [INFO]    KPIs SIN CAMBIOS: ✅ SÍ
@@ -534,20 +534,20 @@ Timestamp: 2026-06-03T06:39:36.100636
 2026-06-03 06:39:36 [INFO] Rango: 2026-06-01 a 2026-06-07
 2026-06-03 06:39:36 [INFO] 
 2026-06-03 06:39:36 [INFO] Paso 1: Capturando estado ANTES...
-2026-06-03 06:39:36 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:36 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:36 [INFO] ConnectionPoolManager inicializado con aislamiento por contexto (web/jobs)
-2026-06-03 06:39:36 [INFO] Creando pool pymssql para 54.39.104.176:1433/EDARSAHUB
-2026-06-03 06:39:36 [INFO] Pool pymssql [web] creado para 54.39.104.176:1433/EDARSAHUB
-2026-06-03 06:39:36 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:36 [INFO] Creando pool pymssql para <REDACTED_EDARSAHUB_SQL_HOST>:1433/EDARSAHUB
+2026-06-03 06:39:36 [INFO] Pool pymssql [web] creado para <REDACTED_EDARSAHUB_SQL_HOST>:1433/EDARSAHUB
+2026-06-03 06:39:36 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:36 [INFO]    Sync_Sales: 79 registros
 2026-06-03 06:39:36 [INFO]    KPIs_Diarios_v2: 3377 registros
 2026-06-03 06:39:36 [INFO] 
 2026-06-03 06:39:36 [INFO] Paso 2: Obteniendo configuración (Unidades_Negocio -> Servidores_Conexiones)...
-2026-06-03 06:39:36 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:36 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:36 [INFO] Unidad encontrada: LA ESTELAR (ID: dfb86008-1b81-472a-9e50-8a0821dec4b2)
 2026-06-03 06:39:36 [INFO] Server ID: a5ff0e25-f029-43db-b634-d4ac814c904f
 2026-06-03 06:39:36 [INFO] Sistema: SoftRestaurant
-2026-06-03 06:39:36 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:36 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:36 [INFO] Parsed host,port format: hostname=187.149.174.93, port=6969
 2026-06-03 06:39:36 [INFO]    Servidor: LA ESTELAR
 2026-06-03 06:39:36 [INFO]    Host: serverestelar.ddns.net,6969
@@ -570,46 +570,46 @@ Timestamp: 2026-06-03T06:39:36.100636
 2026-06-03 06:39:37 [INFO]    Registros: 40
 2026-06-03 06:39:37 [INFO] 
 2026-06-03 06:39:37 [INFO] Paso 4: Verificando duplicados en Sync_Sales...
-2026-06-03 06:39:37 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:37 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:37 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:37 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:37 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:37 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:37 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:37 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:37 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:37 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:37 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:37 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:37 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:37 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:37 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:37 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:37 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:37 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:37 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:37 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:38 [INFO]    Nuevos: 38
 2026-06-03 06:39:38 [INFO]    Duplicados: 2
 2026-06-03 06:39:38 [INFO] 
@@ -627,8 +627,8 @@ Timestamp: 2026-06-03T06:39:36.100636
 2026-06-03 06:39:38 [INFO]    Items sin importe: 79
 2026-06-03 06:39:38 [INFO] 
 2026-06-03 06:39:38 [INFO] Paso 7: Verificando estado de tablas...
-2026-06-03 06:39:38 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:39 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:38 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:39 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:39 [INFO]    KPIs_Diarios_v2 ANTES: 3377 registros
 2026-06-03 06:39:39 [INFO]    KPIs_Diarios_v2 DESPUÉS: 3377 registros
 2026-06-03 06:39:39 [INFO]    KPIs SIN CAMBIOS: ✅ SÍ
@@ -739,23 +739,23 @@ Timestamp: 2026-06-03T06:39:39.057475
 2026-06-03 06:39:39 [INFO] Rango: 2026-06-01 a 2026-06-07
 2026-06-03 06:39:39 [INFO] 
 2026-06-03 06:39:39 [INFO] Paso 1: Capturando estado ANTES...
-2026-06-03 06:39:39 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:39 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:39 [INFO] ConnectionPoolManager inicializado con aislamiento por contexto (web/jobs)
-2026-06-03 06:39:39 [INFO] Creando pool pymssql para 54.39.104.176:1433/EDARSAHUB
-2026-06-03 06:39:39 [INFO] Pool pymssql [web] creado para 54.39.104.176:1433/EDARSAHUB
-2026-06-03 06:39:39 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:39 [INFO] Creando pool pymssql para <REDACTED_EDARSAHUB_SQL_HOST>:1433/EDARSAHUB
+2026-06-03 06:39:39 [INFO] Pool pymssql [web] creado para <REDACTED_EDARSAHUB_SQL_HOST>:1433/EDARSAHUB
+2026-06-03 06:39:39 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:39 [INFO]    Sync_Sales: 79 registros
 2026-06-03 06:39:39 [INFO]    KPIs_Diarios_v2: 3377 registros
 2026-06-03 06:39:39 [INFO] 
 2026-06-03 06:39:39 [INFO] Paso 2: Obteniendo configuración (Unidades_Negocio -> Servidores_Conexiones)...
-2026-06-03 06:39:39 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:39 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:39 [INFO] Unidad encontrada: 130° QUERETARO (ID: 9bc05ced-6b2b-4a0a-aa90-ce649b78e12c)
 2026-06-03 06:39:39 [INFO] Server ID: 1b230a06-ffaf-4c70-bd27-b1be3579dea6
 2026-06-03 06:39:39 [INFO] Sistema: MPRO
-2026-06-03 06:39:39 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:39 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:39 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:39 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:39 [INFO]    Servidor: ManagmentPro
-2026-06-03 06:39:39 [INFO]    Host: 54.39.104.176
+2026-06-03 06:39:39 [INFO]    Host: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:39 [INFO]    Database: CENTRAL2020
 2026-06-03 06:39:39 [INFO]    Sistema: MPRO
 2026-06-03 06:39:39 [INFO]    Usuario: CONFIGURADO
@@ -764,28 +764,28 @@ Timestamp: 2026-06-03T06:39:39.057475
 2026-06-03 06:39:39 [INFO] Paso 3: Extrayendo datos del POS (usando execute_query_on_server)...
 2026-06-03 06:39:39 [INFO] Sistema: MPRO (Sucursal: 0021)
 2026-06-03 06:39:39 [INFO] Ejecutando query en ManagmentPro...
-2026-06-03 06:39:39 [INFO] Host: 54.39.104.176
+2026-06-03 06:39:39 [INFO] Host: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:39 [INFO] Database: CENTRAL2020
-2026-06-03 06:39:39 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:39 [INFO] Creando pool pymssql para 54.39.104.176:1433/CENTRAL2020
-2026-06-03 06:39:40 [INFO] Pool pymssql [web] creado para 54.39.104.176:1433/CENTRAL2020
+2026-06-03 06:39:39 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:39 [INFO] Creando pool pymssql para <REDACTED_EDARSAHUB_SQL_HOST>:1433/CENTRAL2020
+2026-06-03 06:39:40 [INFO] Pool pymssql [web] creado para <REDACTED_EDARSAHUB_SQL_HOST>:1433/CENTRAL2020
 2026-06-03 06:39:40 [INFO] Filas planas recibidas: 221
 2026-06-03 06:39:40 [INFO] ✅ 11 tickets agrupados con items JSON
 2026-06-03 06:39:40 [INFO]    Estado: OK
 2026-06-03 06:39:40 [INFO]    Registros: 11
 2026-06-03 06:39:40 [INFO] 
 2026-06-03 06:39:40 [INFO] Paso 4: Verificando duplicados en Sync_Sales...
-2026-06-03 06:39:40 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:40 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:40 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:40 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:40 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:40 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:40 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:40 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:40 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:40 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:40 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:40 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:40 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:40 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:40 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:40 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:40 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:40 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:40 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:40 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:40 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:40 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:40 [INFO]    Nuevos: 0
 2026-06-03 06:39:40 [INFO]    Duplicados: 11
 2026-06-03 06:39:40 [INFO] 
@@ -803,8 +803,8 @@ Timestamp: 2026-06-03T06:39:39.057475
 2026-06-03 06:39:40 [INFO]    Items sin importe: 91
 2026-06-03 06:39:40 [INFO] 
 2026-06-03 06:39:40 [INFO] Paso 7: Verificando estado de tablas...
-2026-06-03 06:39:40 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:40 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:40 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:40 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:40 [INFO]    KPIs_Diarios_v2 ANTES: 3377 registros
 2026-06-03 06:39:40 [INFO]    KPIs_Diarios_v2 DESPUÉS: 3377 registros
 2026-06-03 06:39:40 [INFO]    KPIs SIN CAMBIOS: ✅ SÍ
@@ -828,7 +828,7 @@ Timestamp: 2026-06-03T06:39:40.493183
 2. SERVIDOR ORIGEN
 ----------------------------------------
    Nombre: ManagmentPro
-   Host: 54.39.104.176
+   Host: <REDACTED_EDARSAHUB_SQL_HOST>
    Database: CENTRAL2020
    Sistema: MPRO
    Usuario: USUARIO_CONFIGURADO
@@ -915,23 +915,23 @@ Timestamp: 2026-06-03T06:39:40.493183
 2026-06-03 06:39:40 [INFO] Rango: 2026-06-01 a 2026-06-07
 2026-06-03 06:39:40 [INFO] 
 2026-06-03 06:39:40 [INFO] Paso 1: Capturando estado ANTES...
-2026-06-03 06:39:40 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:40 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:40 [INFO] ConnectionPoolManager inicializado con aislamiento por contexto (web/jobs)
-2026-06-03 06:39:40 [INFO] Creando pool pymssql para 54.39.104.176:1433/EDARSAHUB
-2026-06-03 06:39:41 [INFO] Pool pymssql [web] creado para 54.39.104.176:1433/EDARSAHUB
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:40 [INFO] Creando pool pymssql para <REDACTED_EDARSAHUB_SQL_HOST>:1433/EDARSAHUB
+2026-06-03 06:39:41 [INFO] Pool pymssql [web] creado para <REDACTED_EDARSAHUB_SQL_HOST>:1433/EDARSAHUB
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:41 [INFO]    Sync_Sales: 79 registros
 2026-06-03 06:39:41 [INFO]    KPIs_Diarios_v2: 3377 registros
 2026-06-03 06:39:41 [INFO] 
 2026-06-03 06:39:41 [INFO] Paso 2: Obteniendo configuración (Unidades_Negocio -> Servidores_Conexiones)...
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:41 [INFO] Unidad encontrada: ORIGEN (ID: 23ca0b76-6580-4874-ba9b-672b122ca197)
 2026-06-03 06:39:41 [INFO] Server ID: 1b230a06-ffaf-4c70-bd27-b1be3579dea6
 2026-06-03 06:39:41 [INFO] Sistema: MPRO
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:41 [INFO]    Servidor: ManagmentPro
-2026-06-03 06:39:41 [INFO]    Host: 54.39.104.176
+2026-06-03 06:39:41 [INFO]    Host: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:41 [INFO]    Database: CENTRAL2020
 2026-06-03 06:39:41 [INFO]    Sistema: MPRO
 2026-06-03 06:39:41 [INFO]    Usuario: CONFIGURADO
@@ -940,37 +940,37 @@ Timestamp: 2026-06-03T06:39:40.493183
 2026-06-03 06:39:41 [INFO] Paso 3: Extrayendo datos del POS (usando execute_query_on_server)...
 2026-06-03 06:39:41 [INFO] Sistema: MPRO (Sucursal: 0023)
 2026-06-03 06:39:41 [INFO] Ejecutando query en ManagmentPro...
-2026-06-03 06:39:41 [INFO] Host: 54.39.104.176
+2026-06-03 06:39:41 [INFO] Host: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:41 [INFO] Database: CENTRAL2020
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:41 [INFO] Creando pool pymssql para 54.39.104.176:1433/CENTRAL2020
-2026-06-03 06:39:41 [INFO] Pool pymssql [web] creado para 54.39.104.176:1433/CENTRAL2020
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:41 [INFO] Creando pool pymssql para <REDACTED_EDARSAHUB_SQL_HOST>:1433/CENTRAL2020
+2026-06-03 06:39:41 [INFO] Pool pymssql [web] creado para <REDACTED_EDARSAHUB_SQL_HOST>:1433/CENTRAL2020
 2026-06-03 06:39:41 [INFO] Filas planas recibidas: 430
 2026-06-03 06:39:41 [INFO] ✅ 20 tickets agrupados con items JSON
 2026-06-03 06:39:41 [INFO]    Estado: OK
 2026-06-03 06:39:41 [INFO]    Registros: 20
 2026-06-03 06:39:41 [INFO] 
 2026-06-03 06:39:41 [INFO] Paso 4: Verificando duplicados en Sync_Sales...
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:41 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:42 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:42 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:42 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:42 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:42 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:42 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:41 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:42 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:42 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:42 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:42 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:42 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:42 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:42 [INFO]    Nuevos: 0
 2026-06-03 06:39:42 [INFO]    Duplicados: 20
 2026-06-03 06:39:42 [INFO] 
@@ -988,8 +988,8 @@ Timestamp: 2026-06-03T06:39:40.493183
 2026-06-03 06:39:42 [INFO]    Items sin importe: 101
 2026-06-03 06:39:42 [INFO] 
 2026-06-03 06:39:42 [INFO] Paso 7: Verificando estado de tablas...
-2026-06-03 06:39:42 [INFO] Using simple hostname: 54.39.104.176
-2026-06-03 06:39:42 [INFO] Using simple hostname: 54.39.104.176
+2026-06-03 06:39:42 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
+2026-06-03 06:39:42 [INFO] Using simple hostname: <REDACTED_EDARSAHUB_SQL_HOST>
 2026-06-03 06:39:42 [INFO]    KPIs_Diarios_v2 ANTES: 3377 registros
 2026-06-03 06:39:42 [INFO]    KPIs_Diarios_v2 DESPUÉS: 3377 registros
 2026-06-03 06:39:42 [INFO]    KPIs SIN CAMBIOS: ✅ SÍ
@@ -1013,7 +1013,7 @@ Timestamp: 2026-06-03T06:39:42.287505
 2. SERVIDOR ORIGEN
 ----------------------------------------
    Nombre: ManagmentPro
-   Host: 54.39.104.176
+   Host: <REDACTED_EDARSAHUB_SQL_HOST>
    Database: CENTRAL2020
    Sistema: MPRO
    Usuario: USUARIO_CONFIGURADO

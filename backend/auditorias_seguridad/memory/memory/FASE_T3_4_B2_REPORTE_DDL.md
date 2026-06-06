@@ -13,9 +13,9 @@ ALTER TABLE Servidores_Conexiones
 ADD tipos_movimiento NVARCHAR(MAX) NULL
 ```
 
-**Usuario ejecutor:** HRLectura  
+**Usuario ejecutor:** <REDACTED_EDARSAHUB_SQL_USER>  
 **Base de datos:** EDARSAHUB  
-**Servidor:** 54.39.104.176
+**Servidor:** <REDACTED_EDARSAHUB_SQL_HOST>
 
 ---
 

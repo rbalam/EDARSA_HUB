@@ -40,7 +40,7 @@ La causa real es:
 | **Unidad** | ORIGEN |
 | **ServidorID** | 817a0aa8-d570-4738-a8f6-a72ac36ba0df |
 | **Sistema** | MPRO (ManagementPro) |
-| **Host** | 54.39.104.176 |
+| **Host** | <REDACTED_EDARSAHUB_SQL_HOST> |
 | **Puerto** | 8000 |
 | **Protocolo** | HTTP |
 | **DNS** | N/A (IP directa) |
@@ -59,7 +59,7 @@ La causa real es:
 | **Código** | 130QRO |
 | **ServidorID** | 72f6e9a7-4a4f-4c15-beee-54c55e62b9e9 |
 | **Sistema** | MPRO (ManagementPro) |
-| **Host** | 54.39.104.176 |
+| **Host** | <REDACTED_EDARSAHUB_SQL_HOST> |
 | **Puerto** | 8001 |
 | **Protocolo** | HTTP |
 | **DNS** | N/A (IP directa) |
@@ -74,13 +74,13 @@ La causa real es:
 
 | Campo | Valor |
 |-------|-------|
-| **Host** | 54.39.104.176 |
+| **Host** | <REDACTED_EDARSAHUB_SQL_HOST> |
 | **Puerto** | 1433 |
 | **Database** | EDARSAHUB |
 | **Protocolo** | TDS (SQL Server) |
 | **TCP** | ✅ ABIERTO |
 | **SQL** | ✅ CONECTADO (0.496s) |
-| **Credenciales** | HRLectura / National09$ |
+| **Credenciales** | <REDACTED_EDARSAHUB_SQL_USER> / <REDACTED_EDARSAHUB_SQL_PASSWORD> |
 
 ### 2.4 Servidores SoftRestaurant
 

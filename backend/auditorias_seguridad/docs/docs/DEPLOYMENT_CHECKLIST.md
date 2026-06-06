@@ -33,7 +33,7 @@
   - `servercien...` (CIENFUEGOS)
   - `serverestelar.ddns.net` (LA ESTELAR)
   - `130mid.ddns.net` (130° MERIDA)
-  - `54.39.104.176` (ManagementPro)
+  - `<REDACTED_EDARSAHUB_SQL_HOST>` (ManagementPro)
 - [ ] Verificar puertos abiertos (1433, 6969)
 - [ ] Si usas VPN, tener configuración lista
 
@@ -51,7 +51,7 @@ Durante o después del deploy, configurar:
 
 ```env
 # Base de Datos
-MONGO_URL=mongodb://localhost:27017
+MONGO_URL=<REDACTED_MONGO_URL>
 DB_NAME=edarsa_hub
 
 # Seguridad
@@ -71,8 +71,8 @@ EMAIL_ENABLED=true
 ALERT_EMAIL_TO=admin@edarsa.com.mx
 
 # APIs MPRO
-API_MPRO_QRO_URL=http://54.39.104.176:8001/query
-API_MPRO_ORIGEN_URL=http://54.39.104.176:8000/query
+API_MPRO_QRO_URL=http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query
+API_MPRO_ORIGEN_URL=http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query
 API_MPRO_KEY=EDARSA_2026_SECURE_KEY
 
 # WhatsApp (opcional)

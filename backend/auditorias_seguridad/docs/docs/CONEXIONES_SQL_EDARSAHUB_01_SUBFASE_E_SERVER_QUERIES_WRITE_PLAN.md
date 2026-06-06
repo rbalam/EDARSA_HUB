@@ -413,7 +413,7 @@ async def rollback_server_query(
 
 | Usuario | Permisos |
 |---------|----------|
-| `HRLectura` | **SOLO LECTURA** |
+| `<REDACTED_EDARSAHUB_SQL_USER>` | **SOLO LECTURA** |
 
 ### 11.2 Requerimiento
 
@@ -518,7 +518,7 @@ WHERE TABLE_NAME = 'Servidores_Conexiones_Log';
 
 ### Bloqueador Principal
 
-**Usuario `HRLectura` es solo lectura.** Se requiere:
+**Usuario `<REDACTED_EDARSAHUB_SQL_USER>` es solo lectura.** Se requiere:
 1. Usar/solicitar usuario con permisos de escritura
 2. O verificar si existe otro usuario en variables de entorno
 

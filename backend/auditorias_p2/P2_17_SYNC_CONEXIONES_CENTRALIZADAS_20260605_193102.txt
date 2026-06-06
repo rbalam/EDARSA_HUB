@@ -45,7 +45,7 @@ Endpoints servidores:
     "nombre": "130° QRO LOCAL",
     "system_type": "MPRO",
     "tipo_conexion": "API_LOCAL",
-    "host": "54.39.104.176",
+    "host": "<REDACTED_EDARSAHUB_SQL_HOST>",
     "port": 4,
     "database_name": "QUERETARO",
     "EmpresaID": 2,
@@ -212,7 +212,7 @@ HALLAZGOS:
 
 1. Servidores registrados en Servidores_Conexiones:
    - 130° MERIDA (SoftRestaurant) - host: 130mid.ddns.net
-   - 130° QRO LOCAL (MPRO) - host: 54.39.104.176
+   - 130° QRO LOCAL (MPRO) - host: <REDACTED_EDARSAHUB_SQL_HOST>
    - CIENFUEGOS (SoftRestaurant) - host: servercienfuegos.ddns.net
    - ORIGEN (MPRO) - via API ManagmentPro
 

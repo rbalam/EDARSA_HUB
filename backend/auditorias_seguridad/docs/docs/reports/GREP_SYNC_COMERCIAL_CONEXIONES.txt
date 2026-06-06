@@ -311,9 +311,9 @@ backend/modules/comercial/adapters.py:47:        get_connection_for_role,
 backend/modules/comercial/adapters.py:48:        get_empresa_connections,
 backend/modules/comercial/adapters.py:57:# CONFIGURACIÓN APIs LOCALES MPRO (FALLBACK LEGACY - SOLO SI EmpresaResolver FALLA)
 backend/modules/comercial/adapters.py:62:APIS_MPRO_LOCALES_LEGACY = {
-backend/modules/comercial/adapters.py:65:        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query"),
+backend/modules/comercial/adapters.py:65:        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query"),
 backend/modules/comercial/adapters.py:66:        "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
-backend/modules/comercial/adapters.py:73:        "url": os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query"),
+backend/modules/comercial/adapters.py:73:        "url": os.environ.get("API_MPRO_QRO_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query"),
 backend/modules/comercial/adapters.py:74:        "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
 backend/modules/comercial/adapters.py:82:APIS_MPRO_LOCALES = APIS_MPRO_LOCALES_LEGACY
 backend/modules/comercial/adapters.py:113:    Busca la conexión con RolConexion = 'VENTAS_DIA_API_LOCAL'.
@@ -326,8 +326,8 @@ backend/modules/comercial/adapters.py:141:                "numero_sucursal": con
 backend/modules/comercial/adapters.py:142:                "codigo_sucursal": connection.codigo_sucursal_sistema,
 backend/modules/comercial/adapters.py:143:                "nombre_sucursal": connection.nombre_sucursal_sistema,
 backend/modules/comercial/adapters.py:145:                "activo": connection.activo
-backend/modules/comercial/adapters.py:150:                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query")
-backend/modules/comercial/adapters.py:152:                api_config["url"] = os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query")
+backend/modules/comercial/adapters.py:150:                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query")
+backend/modules/comercial/adapters.py:152:                api_config["url"] = os.environ.get("API_MPRO_QRO_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query")
 backend/modules/comercial/adapters.py:157:            api_config["api_key"] = os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY")
 backend/modules/comercial/adapters.py:159:            logging.info(f"EmpresaResolver: API Local para EmpresaID={empresa_id} ({empresa.codigo_empresa}): {connection.nombre_servidor}")
 backend/modules/comercial/adapters.py:168:def query_api_mpro_local(api_config: dict, sql_query: str, timeout: int = 3) -> dict:
@@ -1008,7 +1008,7 @@ backend/modules/fase2_operativo/repositories/historial_responsabilidad_repositor
 backend/modules/fase2_operativo/repositories/sql_base_repository.py:11:- CERO conexiones LIVE a servidores remotos
 backend/modules/fase2_operativo/repositories/sql_base_repository.py:19:import pymssql
 backend/modules/fase2_operativo/repositories/sql_base_repository.py:280:    - CERO conexiones LIVE
-backend/modules/fase2_operativo/repositories/sql_base_repository.py:307:            "server": os.environ.get("EDARSAHUB_SQL_SERVER", "54.39.104.176"),
+backend/modules/fase2_operativo/repositories/sql_base_repository.py:307:            "server": os.environ.get("EDARSAHUB_SQL_SERVER", "<REDACTED_EDARSAHUB_SQL_HOST>"),
 backend/modules/fase2_operativo/repositories/sql_base_repository.py:316:    def _get_connection(self) -> pymssql.Connection:
 backend/modules/fase2_operativo/repositories/sql_base_repository.py:318:        return pymssql.connect(
 backend/modules/fase2_operativo/repositories/sql_base_repository.py:351:            conn = self._get_connection()
@@ -6055,9 +6055,9 @@ backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:94:    <p class="pln"><span 
 backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:95:    <p class="pln"><span class="n"><a id="t13" href="#t13">13</a></span><span class="t"><span class="str">- query_api_mpro_local()</span>&nbsp;</span><span class="r"></span></p>
 backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:107:    <p class="pln"><span class="n"><a id="t25" href="#t25">25</a></span><span class="t"><span class="com"># CONFIGURACI&#211;N APIs LOCALES MPRO (HARDCODED - FALLBACK)</span>&nbsp;</span><span class="r"></span></p>
 backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:113:    <p class="run"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t"><span class="nam">APIS_MPRO_LOCALES</span> <span class="op">=</span> <span class="op">{</span>&nbsp;</span><span class="r"></span></p>
-backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:116:    <p class="run run2"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t">        <span class="str">"url"</span><span class="op">:</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"API_MPRO_QRO_URL"</span><span class="op">,</span> <span class="str">"http://54.39.104.176:8001/query"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:116:    <p class="run run2"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t">        <span class="str">"url"</span><span class="op">:</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"API_MPRO_QRO_URL"</span><span class="op">,</span> <span class="str">"http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
 backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:117:    <p class="run run2"><span class="n"><a id="t35" href="#t35">35</a></span><span class="t">        <span class="str">"api_key"</span><span class="op">:</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"API_MPRO_KEY"</span><span class="op">,</span> <span class="str">"EDARSA_2026_SECURE_KEY"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:125:    <p class="run run2"><span class="n"><a id="t43" href="#t43">43</a></span><span class="t">        <span class="str">"url"</span><span class="op">:</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"API_MPRO_ORIGEN_URL"</span><span class="op">,</span> <span class="str">"http://54.39.104.176:8000/query"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:125:    <p class="run run2"><span class="n"><a id="t43" href="#t43">43</a></span><span class="t">        <span class="str">"url"</span><span class="op">:</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"API_MPRO_ORIGEN_URL"</span><span class="op">,</span> <span class="str">"http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
 backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:126:    <p class="run run2"><span class="n"><a id="t44" href="#t44">44</a></span><span class="t">        <span class="str">"api_key"</span><span class="op">:</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"API_MPRO_KEY"</span><span class="op">,</span> <span class="str">"EDARSA_2026_SECURE_KEY"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
 backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:135:    <p class="run"><span class="n"><a id="t53" href="#t53">53</a></span><span class="t"><span class="key">def</span> <span class="nam">query_api_mpro_local</span><span class="op">(</span><span class="nam">api_config</span><span class="op">:</span> <span class="nam">dict</span><span class="op">,</span> <span class="nam">sql_query</span><span class="op">:</span> <span class="nam">str</span><span class="op">,</span> <span class="nam">timeout</span><span class="op">:</span> <span class="nam">int</span> <span class="op">=</span> <span class="num">3</span><span class="op">)</span> <span class="op">-></span> <span class="nam">dict</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
 backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:137:    <p class="pln"><span class="n"><a id="t55" href="#t55">55</a></span><span class="t"><span class="str">    Consulta una API MPRO local y retorna los resultados.</span>&nbsp;</span><span class="r"></span></p>
@@ -6271,8 +6271,8 @@ backend/sql/migrations/prepare_consultas_sql_catalogo_seed.sql:696:    PRINT 'IN
 backend/sql/auditoria_financiera.sql:36:            -- SOFT = Acción relacionada con datos de SoftRestaurant
 backend/sql/auditoria_financiera.sql:37:            -- MPRO = Acción relacionada con datos de MPRO
 backend/sql/auditoria_financiera.sql:160:        CHECK (origen_sistema IN ('EDARSA_HUB', 'SOFT', 'MPRO'));
-backend/.env:18:API_MPRO_QRO_URL=http://54.39.104.176:8001/query
-backend/.env:19:API_MPRO_ORIGEN_URL=http://54.39.104.176:8000/query
+backend/.env:18:API_MPRO_QRO_URL=http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query
+backend/.env:19:API_MPRO_ORIGEN_URL=http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query
 backend/.env:20:API_MPRO_KEY=EDARSA_2026_SECURE_KEY
 backend/api/admin_cache.py:101:    """Limpia cooldowns del pool de conexiones."""
 backend/api/catalogos_sistemas.py:24:- NO exponer secrets (passwords, api_keys, connection strings)

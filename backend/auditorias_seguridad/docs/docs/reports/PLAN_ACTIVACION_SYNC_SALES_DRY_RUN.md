@@ -335,17 +335,17 @@ Solo son accesibles desde la red corporativa o VPN.
 
 | Base | Estado | Razón |
 |------|--------|-------|
-| QUERETARO | ❌ Login failed | Usuario HRLectura sin permisos |
-| ORIGEN | ❌ Login failed | Usuario HRLectura sin permisos |
+| QUERETARO | ❌ Login failed | Usuario <REDACTED_EDARSAHUB_SQL_USER> sin permisos |
+| ORIGEN | ❌ Login failed | Usuario <REDACTED_EDARSAHUB_SQL_USER> sin permisos |
 
-**Nota:** Las bases MPRO están en 54.39.104.176 pero el usuario `HRLectura` solo tiene acceso a `EDARSAHUB`, no a `QUERETARO`/`ORIGEN`.
+**Nota:** Las bases MPRO están en <REDACTED_EDARSAHUB_SQL_HOST> pero el usuario `<REDACTED_EDARSAHUB_SQL_USER>` solo tiene acceso a `EDARSAHUB`, no a `QUERETARO`/`ORIGEN`.
 
 ### 11.3 Acciones Requeridas
 
 Para ejecutar el dry-run desde este entorno se necesita:
 
 1. **Opción A:** Ejecutar desde servidor con acceso a red corporativa
-2. **Opción B:** Habilitar usuario HRLectura en bases QUERETARO/ORIGEN
+2. **Opción B:** Habilitar usuario <REDACTED_EDARSAHUB_SQL_USER> en bases QUERETARO/ORIGEN
 3. **Opción C:** Proporcionar credenciales alternativas para MPRO
 
 ### 11.4 Alternativa: Usar Datos Ya Existentes

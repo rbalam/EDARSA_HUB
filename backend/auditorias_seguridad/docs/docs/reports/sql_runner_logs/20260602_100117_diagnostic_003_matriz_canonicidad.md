@@ -2,7 +2,7 @@
 
 - Fecha: 2026-06-02T10:01:17.566344
 - Modo: `diagnostic`
-- Servidor: `54.39.104.176`
+- Servidor: `<REDACTED_EDARSAHUB_SQL_HOST>`
 - Base de datos: `EDARSAHUB`
 - Script: `/app/backend/database/diagnostics/003_matriz_canonicidad.sql`
 

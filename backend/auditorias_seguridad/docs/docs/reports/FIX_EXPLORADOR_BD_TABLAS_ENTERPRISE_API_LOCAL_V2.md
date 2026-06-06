@@ -31,7 +31,7 @@ Se completó la corrección del Explorador de Base de Datos para soportar conexi
 
 | # | Punto | Estado | Detalle |
 |---|-------|--------|---------|
-| 1 | PRUEBAS SOFTRESTAURANT devuelve tablas | ⚠️ | Error DBA: Usuario 'HRLectura' sin acceso (no es bug del código) |
+| 1 | PRUEBAS SOFTRESTAURANT devuelve tablas | ⚠️ | Error DBA: Usuario '<REDACTED_EDARSAHUB_SQL_USER>' sin acceso (no es bug del código) |
 | 2 | CHAPUR NORTE devuelve tablas | ✅ | 356 tablas listadas correctamente |
 | 3 | CHAPUR NORTE BACKOFICE devuelve tablas | ✅ | 186 tablas listadas correctamente |
 | 4 | Columnas funcionan (API_LOCAL) | ✅ | 6 columnas para 'almacen', 19 para 'Accounting' |
@@ -84,7 +84,7 @@ El servidor "PRUEBAS SOFTRESTAURANT" retorna error:
 "Error de autenticación: El usuario no tiene acceso a la base de datos 'softrestaurant12'"
 ```
 
-**Esto NO es un defecto del código**. Es una restricción de permisos del usuario `HRLectura` en el servidor SQL remoto. El DBA debe otorgar permisos de lectura sobre esa base de datos.
+**Esto NO es un defecto del código**. Es una restricción de permisos del usuario `<REDACTED_EDARSAHUB_SQL_USER>` en el servidor SQL remoto. El DBA debe otorgar permisos de lectura sobre esa base de datos.
 
 ---
 

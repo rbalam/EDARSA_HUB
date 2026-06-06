@@ -12,22 +12,22 @@
 **Antes (hardcoded):**
 ```python
 EDARSAHUB_CONFIG = {
-    'host': '54.39.104.176',
+    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
     'port': 1433,
     'database': 'EDARSAHUB',
-    'username': 'HRLectura',
-    'password': 'National09$'
+    'username': '<REDACTED_EDARSAHUB_SQL_USER>',
+    'password': '<REDACTED_EDARSAHUB_SQL_PASSWORD>'
 }
 ```
 
 **Después (usa ENV):**
 ```python
 EDARSAHUB_CONFIG = {
-    'host': os.environ.get('EDARSAHUB_HOST', os.environ.get('EDARSAHUB_SQL_HOST', '54.39.104.176')),
+    'host': os.environ.get('EDARSAHUB_HOST', os.environ.get('EDARSAHUB_SQL_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>')),
     'port': int(os.environ.get('EDARSAHUB_PORT', os.environ.get('EDARSAHUB_SQL_PORT', '1433'))),
     'database': os.environ.get('EDARSAHUB_DATABASE', os.environ.get('EDARSAHUB_SQL_DATABASE', 'EDARSAHUB')),
-    'username': os.environ.get('EDARSAHUB_USERNAME', os.environ.get('EDARSAHUB_SQL_USER', 'HRLectura')),
-    'password': os.environ.get('EDARSAHUB_PASSWORD', os.environ.get('EDARSAHUB_SQL_PASSWORD', 'National09$'))
+    'username': os.environ.get('EDARSAHUB_USERNAME', os.environ.get('EDARSAHUB_SQL_USER', '<REDACTED_EDARSAHUB_SQL_USER>')),
+    'password': os.environ.get('EDARSAHUB_PASSWORD', os.environ.get('EDARSAHUB_SQL_PASSWORD', '<REDACTED_EDARSAHUB_SQL_PASSWORD>'))
 }
 ```
 
@@ -40,9 +40,9 @@ EDARSAHUB_CONFIG = {
 - Variable: `EDARSAHUB_USER`
 
 **Después (unificado):**
-- Host: `54.39.104.176`
-- Username: `HRLectura`
-- Password: `National09$`
+- Host: `<REDACTED_EDARSAHUB_SQL_HOST>`
+- Username: `<REDACTED_EDARSAHUB_SQL_USER>`
+- Password: `<REDACTED_EDARSAHUB_SQL_PASSWORD>`
 - Variable: `EDARSAHUB_USERNAME`
 
 ---
@@ -51,11 +51,11 @@ EDARSAHUB_CONFIG = {
 
 | Variable ENV | Valor |
 |--------------|-------|
-| `EDARSAHUB_HOST` | `54.39.104.176` |
+| `EDARSAHUB_HOST` | `<REDACTED_EDARSAHUB_SQL_HOST>` |
 | `EDARSAHUB_PORT` | `1433` |
 | `EDARSAHUB_DATABASE` | `EDARSAHUB` |
-| `EDARSAHUB_USERNAME` | `HRLectura` |
-| `EDARSAHUB_PASSWORD` | `National09$` |
+| `EDARSAHUB_USERNAME` | `<REDACTED_EDARSAHUB_SQL_USER>` |
+| `EDARSAHUB_PASSWORD` | `<REDACTED_EDARSAHUB_SQL_PASSWORD>` |
 
 ---
 

@@ -89,7 +89,7 @@ async def listar_sistemas(
     
     try:
         rows = execute_sql_query(
-            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            '<REDACTED_EDARSAHUB_SQL_HOST>', 1433, 'EDARSAHUB', '<REDACTED_EDARSAHUB_SQL_USER>', '<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             query
         )
         return {"success": True, "data": rows or []}
@@ -118,7 +118,7 @@ async def listar_sistemas_activos(
     
     try:
         rows = execute_sql_query(
-            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            '<REDACTED_EDARSAHUB_SQL_HOST>', 1433, 'EDARSAHUB', '<REDACTED_EDARSAHUB_SQL_USER>', '<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             query
         )
         
@@ -170,7 +170,7 @@ async def solicitar_sistema(
     """
     try:
         result = execute_sql_query(
-            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            '<REDACTED_EDARSAHUB_SQL_HOST>', 1433, 'EDARSAHUB', '<REDACTED_EDARSAHUB_SQL_USER>', '<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             check_query
         )
         if result and result[0].get('cnt', 0) > 0:
@@ -185,7 +185,7 @@ async def solicitar_sistema(
             VALUES ('{Codigo}', '{Descripcion.replace("'", "''")}', 0, 'PENDIENTE', '{user_email}', SYSDATETIME())
         """
         result = execute_sql_query(
-            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            '<REDACTED_EDARSAHUB_SQL_HOST>', 1433, 'EDARSAHUB', '<REDACTED_EDARSAHUB_SQL_USER>', '<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             insert_query
         )
         nuevo_id = result[0].get('SistemaID') if result else None
@@ -235,7 +235,7 @@ async def crear_sistema(
     """
     try:
         result = execute_sql_query(
-            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            '<REDACTED_EDARSAHUB_SQL_HOST>', 1433, 'EDARSAHUB', '<REDACTED_EDARSAHUB_SQL_USER>', '<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             check_query
         )
         if result and result[0].get('cnt', 0) > 0:
@@ -250,7 +250,7 @@ async def crear_sistema(
             VALUES ('{Codigo}', '{Descripcion.replace("'", "''")}', 1, 'ACTIVO', '{user_email}', SYSDATETIME(), '{user_email}', SYSDATETIME())
         """
         result = execute_sql_query(
-            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            '<REDACTED_EDARSAHUB_SQL_HOST>', 1433, 'EDARSAHUB', '<REDACTED_EDARSAHUB_SQL_USER>', '<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             insert_query
         )
         
@@ -302,7 +302,7 @@ async def actualizar_sistema(
     """
     try:
         result = execute_sql_query(
-            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            '<REDACTED_EDARSAHUB_SQL_HOST>', 1433, 'EDARSAHUB', '<REDACTED_EDARSAHUB_SQL_USER>', '<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             check_query
         )
         if result and result[0].get('cnt', 0) > 0:
@@ -315,7 +315,7 @@ async def actualizar_sistema(
             WHERE SistemaID = {sistema_id}
         """
         execute_sql_query(
-            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            '<REDACTED_EDARSAHUB_SQL_HOST>', 1433, 'EDARSAHUB', '<REDACTED_EDARSAHUB_SQL_USER>', '<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             update_query
         )
         
@@ -346,7 +346,7 @@ async def toggle_sistema_activo(
         # Obtener estado actual
         get_query = f"SELECT Activo, Estado FROM Sistema_Catalogo WHERE SistemaID = {sistema_id}"
         result = execute_sql_query(
-            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            '<REDACTED_EDARSAHUB_SQL_HOST>', 1433, 'EDARSAHUB', '<REDACTED_EDARSAHUB_SQL_USER>', '<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             get_query
         )
         
@@ -367,7 +367,7 @@ async def toggle_sistema_activo(
             WHERE SistemaID = {sistema_id}
         """
         execute_sql_query(
-            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            '<REDACTED_EDARSAHUB_SQL_HOST>', 1433, 'EDARSAHUB', '<REDACTED_EDARSAHUB_SQL_USER>', '<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             update_query
         )
         
@@ -399,7 +399,7 @@ async def autorizar_sistema(
         # Verificar que existe y está pendiente
         get_query = f"SELECT Estado, Descripcion FROM Sistema_Catalogo WHERE SistemaID = {sistema_id}"
         result = execute_sql_query(
-            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            '<REDACTED_EDARSAHUB_SQL_HOST>', 1433, 'EDARSAHUB', '<REDACTED_EDARSAHUB_SQL_USER>', '<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             get_query
         )
         
@@ -423,7 +423,7 @@ async def autorizar_sistema(
             WHERE SistemaID = {sistema_id}
         """
         execute_sql_query(
-            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            '<REDACTED_EDARSAHUB_SQL_HOST>', 1433, 'EDARSAHUB', '<REDACTED_EDARSAHUB_SQL_USER>', '<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             update_query
         )
         
@@ -458,7 +458,7 @@ async def rechazar_sistema(
         # Verificar que existe y está pendiente
         get_query = f"SELECT Estado, Descripcion FROM Sistema_Catalogo WHERE SistemaID = {sistema_id}"
         result = execute_sql_query(
-            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            '<REDACTED_EDARSAHUB_SQL_HOST>', 1433, 'EDARSAHUB', '<REDACTED_EDARSAHUB_SQL_USER>', '<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             get_query
         )
         
@@ -482,7 +482,7 @@ async def rechazar_sistema(
             WHERE SistemaID = {sistema_id}
         """
         execute_sql_query(
-            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            '<REDACTED_EDARSAHUB_SQL_HOST>', 1433, 'EDARSAHUB', '<REDACTED_EDARSAHUB_SQL_USER>', '<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             update_query
         )
         

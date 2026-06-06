@@ -2,7 +2,7 @@
 
 - Fecha: 2026-06-02T10:11:12.027406
 - Modo: `migrate`
-- Servidor: `54.39.104.176`
+- Servidor: `<REDACTED_EDARSAHUB_SQL_HOST>`
 - Base de datos: `EDARSAHUB`
 - Script: `/app/backend/database/migrations/010_crear_rbac_roles_inteligencia_comercial.sql`
 

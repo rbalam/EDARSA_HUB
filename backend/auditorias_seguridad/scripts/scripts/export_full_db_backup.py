@@ -14,11 +14,11 @@ from decimal import Decimal
 # Configuración
 BACKUP_DIR = sys.argv[1] if len(sys.argv) > 1 else "/app/downloads/EDARSAHUB_BACKUP"
 
-HOST = os.environ.get("EDARSAHUB_HOST", "54.39.104.176")
+HOST = os.environ.get("EDARSAHUB_HOST", "<REDACTED_EDARSAHUB_SQL_HOST>")
 PORT = int(os.environ.get("EDARSAHUB_PORT", "1433"))
 DATABASE = os.environ.get("EDARSAHUB_DATABASE", "EDARSAHUB")
-USER = os.environ.get("EDARSAHUB_USERNAME", "HRLectura")
-PASSWORD = os.environ.get("EDARSAHUB_PASSWORD", "National09$")
+USER = os.environ.get("EDARSAHUB_USERNAME", "<REDACTED_EDARSAHUB_SQL_USER>")
+PASSWORD = os.environ.get("EDARSAHUB_PASSWORD", "<REDACTED_EDARSAHUB_SQL_PASSWORD>")
 
 def get_connection():
     return pymssql.connect(

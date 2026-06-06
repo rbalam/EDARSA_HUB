@@ -105,8 +105,8 @@ db.api_connections_cache.find()
 
 | Conexión | URL | Estado |
 |----------|-----|--------|
-| 130° QRO LOCAL | http://54.39.104.176:8001/query | ✅ Activa |
-| ORIGEN LOCAL | http://54.39.104.176:8000/query | ✅ Activa |
+| 130° QRO LOCAL | http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query | ✅ Activa |
+| ORIGEN LOCAL | http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query | ✅ Activa |
 
 ## Endpoints Disponibles
 

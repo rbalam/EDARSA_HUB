@@ -22,11 +22,11 @@ except Exception as exc:
 from core.db import execute_sql_query
 
 EDARSAHUB = {
-    "host": "54.39.104.176",
+    "host": "<REDACTED_EDARSAHUB_SQL_HOST>",
     "port": 1433,
     "database": "EDARSAHUB",
-    "user": "HRLectura",
-    "password": "National09$"
+    "user": "<REDACTED_EDARSAHUB_SQL_USER>",
+    "password": "<REDACTED_EDARSAHUB_SQL_PASSWORD>"
 }
 
 

@@ -10,8 +10,8 @@ Se identificaron **DOS fuentes válidas** de empleados en las bases de datos MPr
 
 | Base de Datos | Servidor | Empleados | Activos | Con CURP | Con RFC |
 |---------------|----------|-----------|---------|----------|---------|
-| **CENTRAL2020** (ManagmentPro) | 54.39.104.176 | 484 | 160 | 484 (100%) | 463 (96%) |
-| **HR2020** (HR2020 ESCRITURA) | 54.39.104.176 | 42 | 32 | 42 (100%) | 42 (100%) |
+| **CENTRAL2020** (ManagmentPro) | <REDACTED_EDARSAHUB_SQL_HOST> | 484 | 160 | 484 (100%) | 463 (96%) |
+| **HR2020** (HR2020 ESCRITURA) | <REDACTED_EDARSAHUB_SQL_HOST> | 42 | 32 | 42 (100%) | 42 (100%) |
 | **TOTAL** | - | **526** | **192** | **526** | **505** |
 
 ### Por Qué CENTRAL2020 Devolvió 0 Antes

@@ -58,10 +58,10 @@ _security_module = None
 def _get_sql_connection():
     """Obtiene conexión a EDARSAHUB SQL"""
     return pymssql.connect(
-        server='54.39.104.176',
+        server='<REDACTED_EDARSAHUB_SQL_HOST>',
         port=1433,
-        user='HRLectura',
-        password='National09$',
+        user='<REDACTED_EDARSAHUB_SQL_USER>',
+        password='<REDACTED_EDARSAHUB_SQL_PASSWORD>',
         database='EDARSAHUB'
     )
 

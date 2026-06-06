@@ -216,8 +216,8 @@ mensaje = "Producto MPRO sin tasa de impuesto homologada"
 
 | Sistema | Host | Base de Datos | Usuario |
 |---------|------|---------------|---------|
-| MPRO | 54.39.104.176:1433 | CENTRAL2020 | HRLectura |
-| EDARSAHUB | 54.39.104.176:1433 | EDARSAHUB | HRLectura |
+| MPRO | <REDACTED_EDARSAHUB_SQL_HOST>:1433 | CENTRAL2020 | <REDACTED_EDARSAHUB_SQL_USER> |
+| EDARSAHUB | <REDACTED_EDARSAHUB_SQL_HOST>:1433 | EDARSAHUB | <REDACTED_EDARSAHUB_SQL_USER> |
 
 ---
 

@@ -195,8 +195,8 @@ Esto permitirá:
 
 | Sistema | Host | Base de Datos | Modo |
 |---------|------|---------------|------|
-| MPRO | 54.39.104.176:1433 | CENTRAL2020 | LECTURA |
-| EDARSAHUB | 54.39.104.176:1433 | EDARSAHUB | ESCRITURA |
+| MPRO | <REDACTED_EDARSAHUB_SQL_HOST>:1433 | CENTRAL2020 | LECTURA |
+| EDARSAHUB | <REDACTED_EDARSAHUB_SQL_HOST>:1433 | EDARSAHUB | ESCRITURA |
 
 ---
 

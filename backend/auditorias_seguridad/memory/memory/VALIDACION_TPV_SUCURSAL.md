@@ -86,7 +86,7 @@ FechaModificacion     datetime2     NULL
 ## 5. Problemas Detectados
 
 ### Problema de Conexión SQL Server
-- **Descripción**: El servidor SQL Server remoto (54.39.104.176) presenta timeouts intermitentes
+- **Descripción**: El servidor SQL Server remoto (<REDACTED_EDARSAHUB_SQL_HOST>) presenta timeouts intermitentes
 - **Error**: "Adaptive Server connection timed out" / "DBPROCESS is dead or not enabled"
 - **Impacto**: La conexión es inestable, causando que algunos queries no retornen datos
 - **Mitigación**: La lógica de reintentos está implementada, pero el servidor remoto necesita estabilización

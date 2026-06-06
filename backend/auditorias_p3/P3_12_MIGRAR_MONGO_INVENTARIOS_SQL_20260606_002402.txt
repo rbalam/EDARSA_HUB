@@ -3,7 +3,7 @@ P3-12 MIGRAR MONGO INVENTARIOS COMPATIBLES A SQL
 Timestamp: 20260606_002402
 ==================================================
 MongoDB: edarsa_hub
-SQL: 54.39.104.176:1433/EDARSAHUB
+SQL: <REDACTED_EDARSAHUB_SQL_HOST>:1433/EDARSAHUB
 
 === config_asignaciones -> Config_Asignaciones ===
   + Columna añadida: Config_Asignaciones.MongoId

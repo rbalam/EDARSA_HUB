@@ -15,7 +15,7 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | Archivo | Línea | Código |
 |---|---:|---|
 | `backend/init_queries.py` | 4 | `from motor.motor_asyncio import AsyncIOMotorClient` |
-| `backend/init_queries.py` | 10 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/init_queries.py` | 10 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/init_queries.py` | 266 | `client = AsyncIOMotorClient(mongo_url)` |
 | `backend/migrar_a_sql.py` | 24 | `if 'pymongo' not in linea and 'motor' not in linea:` |
 | `backend/migrar_a_sql.py` | 26 | `print("✅ Limpiado: requirements.txt (eliminado pymongo/motor)")` |
@@ -227,7 +227,7 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/modules/fase2_operativo/db_utils.py` | 10 | `# Conexión síncrona a MongoDB para los repositories` |
 | `backend/modules/fase2_operativo/db_utils.py` | 17 | `Obtiene la conexión a la base de datos MongoDB.` |
 | `backend/modules/fase2_operativo/db_utils.py` | 21 | `Database MongoDB` |
-| `backend/modules/fase2_operativo/db_utils.py` | 26 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/modules/fase2_operativo/db_utils.py` | 26 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/modules/fase2_operativo/db_utils.py` | 29 | `_client = MongoClient(mongo_url)` |
 | `backend/modules/fase2_operativo/repositories/__init__.py` | 6 | `- CERO MongoDB productivo` |
 | `backend/modules/fase2_operativo/repositories/base_repository.py` | 7 | `- CERO MongoDB productivo` |
@@ -290,7 +290,7 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/modules/fase2_operativo/repositories/sql_base_repository.py` | 1222 | `# Ignoramos db (MongoDB) - Usamos SQL` |
 | `backend/modules/fase2_operativo/repositories/sql_base_repository.py` | 1232 | `f"(MongoDB db ignorado, usando EDARSAHUB SQL)"` |
 | `backend/modules/fase2_operativo/scripts/init_notificaciones.py` | 9 | `from motor.motor_asyncio import AsyncIOMotorClient` |
-| `backend/modules/fase2_operativo/scripts/init_notificaciones.py` | 20 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/modules/fase2_operativo/scripts/init_notificaciones.py` | 20 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/modules/fase2_operativo/scripts/init_notificaciones.py` | 23 | `client = AsyncIOMotorClient(mongo_url)` |
 | `backend/modules/fase2_operativo/scripts/init_responsabilidad.py` | 65 | `db: Conexión a MongoDB` |
 | `backend/modules/fase2_operativo/scripts/init_responsabilidad.py` | 117 | `db: Conexión a MongoDB` |
@@ -381,7 +381,7 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/modules/configuracion/routes/config_asignaciones_routes.py` | 25 | `from motor.motor_asyncio import AsyncIOMotorClient` |
 | `backend/modules/configuracion/routes/config_asignaciones_routes.py` | 36 | `# Conexión a MongoDB` |
 | `backend/modules/configuracion/routes/config_asignaciones_routes.py` | 40 | `"""Obtiene la conexión a la base de datos MongoDB."""` |
-| `backend/modules/configuracion/routes/config_asignaciones_routes.py` | 43 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/modules/configuracion/routes/config_asignaciones_routes.py` | 43 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/modules/configuracion/routes/config_asignaciones_routes.py` | 45 | `client = AsyncIOMotorClient(mongo_url)` |
 | `backend/modules/inventarios/repository.py` | 7 | `- ELIMINADA dependencia de MongoDB` |
 | `backend/modules/consultas_sql/__init__.py` | 10 | `- Leer consultas desde EDARSAHUB SQL (no desde código/MongoDB)` |
@@ -457,7 +457,7 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/modules/finanzas/repository_cuadres_z.py` | 2 | `Repositorio MongoDB para Cuadres de Cortes Z` |
 | `backend/modules/finanzas/repository_cuadres_z.py` | 12 | `# MongoDB connection` |
 | `backend/modules/finanzas/repository_cuadres_z.py` | 18 | `from pymongo import MongoClient` |
-| `backend/modules/finanzas/repository_cuadres_z.py` | 19 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/modules/finanzas/repository_cuadres_z.py` | 19 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/modules/finanzas/repository_cuadres_z.py` | 21 | `client = MongoClient(mongo_url)` |
 | `backend/modules/finanzas/repository_real.py` | 21 | `# FASE T2.1: Usar EDARSAHUB_CONFIG desde server_registry en lugar de MongoDB` |
 | `backend/modules/finanzas/repository_real.py` | 39 | `db: Instancia de MongoDB (conservada por compatibilidad, no usada para conexión EDARSAHUB)` |
@@ -580,12 +580,12 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/scripts/solucion_operaciones_analisis.py` | 63 | `# --- MOTOR DE CASCADA SIMULADO ---` |
 | `backend/scripts/run_historical_load_finanzas.py` | 82 | `"""Obtiene conexión a MongoDB."""` |
 | `backend/scripts/run_historical_load_finanzas.py` | 87 | `from motor.motor_asyncio import AsyncIOMotorClient` |
-| `backend/scripts/run_historical_load_finanzas.py` | 88 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/scripts/run_historical_load_finanzas.py` | 88 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/scripts/run_historical_load_finanzas.py` | 89 | `client = AsyncIOMotorClient(mongo_url)` |
 | `backend/scripts/motor_consolidacion_circuit_breaker.py` | 30 | `Simula el motor lógico del tablero ejecutivo, integrando:` |
 | `backend/scripts/precheck_conectividad.py` | 13 | `- Acceso a la colección 'servers' en MongoDB` |
 | `backend/scripts/precheck_conectividad.py` | 20 | `from pymongo import MongoClient` |
-| `backend/scripts/precheck_conectividad.py` | 23 | `MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/scripts/precheck_conectividad.py` | 23 | `MONGO_URL = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/scripts/precheck_conectividad.py` | 32 | `# Conectar a MongoDB` |
 | `backend/scripts/precheck_conectividad.py` | 34 | `client = MongoClient(MONGO_URL, serverSelectionTimeoutMS=5000)` |
 | `backend/scripts/precheck_conectividad.py` | 37 | `print(f"\n✅ MongoDB conectado: {DB_NAME}")` |
@@ -601,7 +601,7 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/scripts/reconcile_servers_sql_mongo.py` | 103 | `sql_by_mongodb_id = {s['mongodb_id']: s for s in sql_servers if s.get('mongodb_id')}` |
 | `backend/scripts/reconcile_servers_sql_mongo.py` | 105 | `# 2. Obtener servidores desde MongoDB` |
 | `backend/scripts/reconcile_servers_sql_mongo.py` | 106 | `print("Obteniendo servidores desde MongoDB...")` |
-| `backend/scripts/reconcile_servers_sql_mongo.py` | 107 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/scripts/reconcile_servers_sql_mongo.py` | 107 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/scripts/reconcile_servers_sql_mongo.py` | 110 | `client = AsyncIOMotorClient(mongo_url)` |
 | `backend/scripts/reconcile_servers_sql_mongo.py` | 115 | `print(f"  → {len(mongo_servers)} servidores en MongoDB")` |
 | `backend/scripts/reconcile_servers_sql_mongo.py` | 120 | `# 3. Comparar SQL → MongoDB` |
@@ -624,7 +624,7 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/scripts/consolidado_general_sistema_comercial.py` | 361 | `SET @LogMessage = 'Ventas intermedias vacías. El motor comercial preserva los valores de respaldo de EDARSA.';` |
 | `backend/scripts/carga_historica_fase23.py` | 52 | `from motor.motor_asyncio import AsyncIOMotorClient` |
 | `backend/scripts/carga_historica_fase23.py` | 53 | `from pymongo import MongoClient` |
-| `backend/scripts/carga_historica_fase23.py` | 56 | `MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/scripts/carga_historica_fase23.py` | 56 | `MONGO_URL = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/scripts/carga_historica_fase23.py` | 102 | `"""Establece conexión a MongoDB."""` |
 | `backend/scripts/carga_historica_fase23.py` | 103 | `self.client = AsyncIOMotorClient(MONGO_URL)` |
 | `backend/scripts/carga_historica_fase23.py` | 105 | `logger.info(f"Conectado a MongoDB: {DB_NAME}")` |
@@ -637,15 +637,15 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/scripts/setup_kpis_indexes.py` | 22 | `from motor.motor_asyncio import AsyncIOMotorClient` |
 | `backend/scripts/setup_kpis_indexes.py` | 46 | `db: Conexión a MongoDB` |
 | `backend/scripts/setup_kpis_indexes.py` | 212 | `# Obtener configuración de MongoDB` |
-| `backend/scripts/setup_kpis_indexes.py` | 213 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/scripts/setup_kpis_indexes.py` | 213 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/scripts/setup_kpis_indexes.py` | 216 | `logging.info(f"[SETUP-INDEX] Conectando a MongoDB: {db_name}")` |
 | `backend/scripts/setup_kpis_indexes.py` | 218 | `client = AsyncIOMotorClient(mongo_url)` |
 | `backend/scripts/validar_post_carga.py` | 18 | `from pymongo import MongoClient` |
-| `backend/scripts/validar_post_carga.py` | 21 | `MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/scripts/validar_post_carga.py` | 21 | `MONGO_URL = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/scripts/validar_post_carga.py` | 32 | `client = MongoClient(MONGO_URL)` |
 | `backend/scripts/encrypt_existing_server_secrets.py` | 34 | `from motor.motor_asyncio import AsyncIOMotorClient` |
 | `backend/scripts/encrypt_existing_server_secrets.py` | 211 | `"""Cifra los secretos de un servidor en MongoDB."""` |
-| `backend/scripts/encrypt_existing_server_secrets.py` | 212 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/scripts/encrypt_existing_server_secrets.py` | 212 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/scripts/encrypt_existing_server_secrets.py` | 215 | `client = AsyncIOMotorClient(mongo_url)` |
 | `backend/scripts/encrypt_existing_server_secrets.py` | 222 | `return {'success': True, 'message': 'Server not in MongoDB'}` |
 | `backend/scripts/encrypt_existing_server_secrets.py` | 328 | `# Cifrar en MongoDB` |
@@ -676,7 +676,7 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/scripts/encrypt_core_server_secrets.py` | 254 | `Note: MongoDB generalmente no tiene secretos de CORE, solo metadatos.` |
 | `backend/scripts/encrypt_core_server_secrets.py` | 257 | `if not mongodb_id:` |
 | `backend/scripts/encrypt_core_server_secrets.py` | 258 | `return {'success': True, 'message': 'No mongodb_id'}` |
-| `backend/scripts/encrypt_core_server_secrets.py` | 260 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/scripts/encrypt_core_server_secrets.py` | 260 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/scripts/encrypt_core_server_secrets.py` | 263 | `client = AsyncIOMotorClient(mongo_url)` |
 | `backend/scripts/encrypt_core_server_secrets.py` | 267 | `server = await db.servers.find_one({'id': mongodb_id})` |
 | `backend/scripts/encrypt_core_server_secrets.py` | 270 | `return {'success': True, 'message': 'CORE not in MongoDB (normal)'}` |
@@ -690,12 +690,12 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/scripts/encrypt_core_server_secrets.py` | 436 | `print(f"MongoDB sincronizado: {report['mongo_synced']}")` |
 | `backend/scripts/run_historical_load_compras.py` | 111 | `"""Obtiene conexión a MongoDB."""` |
 | `backend/scripts/run_historical_load_compras.py` | 116 | `from motor.motor_asyncio import AsyncIOMotorClient` |
-| `backend/scripts/run_historical_load_compras.py` | 117 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/scripts/run_historical_load_compras.py` | 117 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/scripts/run_historical_load_compras.py` | 118 | `client = AsyncIOMotorClient(mongo_url)` |
 | `backend/scripts/run_historical_load_24_months.py` | 67 | `DESTINATION_MONGO = "MONGODB"               # Solo checkpoint/log/staging` |
 | `backend/scripts/run_historical_load_24_months.py` | 86 | `"""Obtiene conexión a MongoDB."""` |
 | `backend/scripts/run_historical_load_24_months.py` | 91 | `from motor.motor_asyncio import AsyncIOMotorClient` |
-| `backend/scripts/run_historical_load_24_months.py` | 92 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/scripts/run_historical_load_24_months.py` | 92 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/scripts/run_historical_load_24_months.py` | 93 | `client = AsyncIOMotorClient(mongo_url)` |
 | `backend/scripts/run_historical_load_24_months.py` | 194 | `FASE 2.3: Necesario para carga histórica que lee directamente de MongoDB.` |
 | `backend/scripts/run_historical_load_24_months.py` | 332 | `DESTINO FINAL - MongoDB queda solo como checkpoint/log.` |
@@ -814,7 +814,7 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/core/auditoria.py` | 200 | `Fallback a MongoDB si SQL no está disponible.` |
 | `backend/core/auditoria.py` | 222 | `"""Obtiene conexión a MongoDB para fallback"""` |
 | `backend/core/auditoria.py` | 225 | `from motor.motor_asyncio import AsyncIOMotorClient` |
-| `backend/core/auditoria.py` | 226 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/core/auditoria.py` | 226 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/core/auditoria.py` | 227 | `client = AsyncIOMotorClient(mongo_url)` |
 | `backend/core/auditoria.py` | 231 | `logger.error(f"Error conectando a MongoDB: {e}")` |
 | `backend/core/auditoria.py` | 403 | `"""Guarda en MongoDB como fallback."""` |
@@ -848,7 +848,7 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/core/rbac_helper.py` | 17 | `"""Obtiene conexión a MongoDB de forma lazy."""` |
 | `backend/core/rbac_helper.py` | 20 | `_client = AsyncIOMotorClient(os.environ.get('MONGO_URL'))` |
 | `backend/core/config.py` | 25 | `# MongoDB` |
-| `backend/core/config.py` | 26 | `MONGO_URL: str = os.environ.get("MONGO_URL", "mongodb://localhost:27017")` |
+| `backend/core/config.py` | 26 | `MONGO_URL: str = os.environ.get("MONGO_URL", "<REDACTED_MONGO_URL>")` |
 | `backend/core/context_resolver.py` | 27 | `Este módulo ha sido migrado de MongoDB a EDARSAHUB SQL.` |
 | `backend/core/context_resolver.py` | 35 | `MongoDB ya no es fuente de datos para resolución de contexto.` |
 | `backend/core/context_resolver.py` | 82 | `por UUIDs de MongoDB (empresas_permitidas del usuario).` |
@@ -1031,7 +1031,7 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/core/communications/audit/audit_service.py` | 26 | `- Operaciones de MongoDB pasan por StubDatabase` |
 | `backend/core/communications/scripts/__init__.py` | 22 | `from motor.motor_asyncio import AsyncIOMotorClient` |
 | `backend/core/communications/scripts/__init__.py` | 362 | `db: Conexión a MongoDB` |
-| `backend/core/communications/scripts/__init__.py` | 380 | `mongo_url = os.environ.get("MONGO_URL", "mongodb://localhost:27017")` |
+| `backend/core/communications/scripts/__init__.py` | 380 | `mongo_url = os.environ.get("MONGO_URL", "<REDACTED_MONGO_URL>")` |
 | `backend/core/communications/scripts/__init__.py` | 383 | `client = AsyncIOMotorClient(mongo_url)` |
 | `backend/core/centro_control/email_notifications.py` | 7 | `1. MongoDB (colección alert_recipients) - Prioridad` |
 | `backend/core/centro_control/email_notifications.py` | 56 | `Prioridad: MongoDB > Variable de entorno` |
@@ -1040,7 +1040,7 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/core/centro_control/recipients_manager.py` | 4 | `Almacena y gestiona los destinatarios de notificaciones en MongoDB.` |
 | `backend/core/centro_control/recipients_manager.py` | 23 | `from pymongo import MongoClient` |
 | `backend/core/centro_control/recipients_manager.py` | 28 | `# MongoDB connection` |
-| `backend/core/centro_control/recipients_manager.py` | 29 | `MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/core/centro_control/recipients_manager.py` | 29 | `MONGO_URL = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/core/centro_control/recipients_manager.py` | 39 | `client = MongoClient(MONGO_URL)` |
 | `backend/core/centro_control/whatsapp_notifications.py` | 7 | `1. MongoDB (colección alert_recipients) - Prioridad` |
 | `backend/core/centro_control/whatsapp_notifications.py` | 65 | `Prioridad: MongoDB > Variable de entorno` |
@@ -1060,7 +1060,7 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/core/auth/user_repository_sql.py` | 346 | `Compara usuario entre MongoDB y SQL.` |
 | `backend/core/auth/user_repository_sql.py` | 354 | `from motor.motor_asyncio import AsyncIOMotorClient` |
 | `backend/core/auth/user_repository_sql.py` | 360 | `# Obtener de MongoDB` |
-| `backend/core/auth/user_repository_sql.py` | 361 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/core/auth/user_repository_sql.py` | 361 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/core/auth/user_repository_sql.py` | 363 | `mongo_client = AsyncIOMotorClient(mongo_url)` |
 | `backend/core/auth/user_repository_sql.py` | 473 | `Lista diferencias de migración Auth entre MongoDB y SQL para todos los usuarios SQL.` |
 | `backend/core/auth/user_repository_sql.py` | 585 | `# Mapeo de rol MongoDB a SQL` |
@@ -1075,11 +1075,11 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/core/rbac/repository.py` | 7 | `MongoDB ya NO es fuente de datos para RBAC.` |
 | `backend/core/rbac/routes.py` | 28 | `from pymongo import MongoClient` |
 | `backend/core/rbac/routes.py` | 47 | `"""Obtiene conexión a MongoDB de forma síncrona."""` |
-| `backend/core/rbac/routes.py` | 48 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/core/rbac/routes.py` | 48 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/core/rbac/routes.py` | 50 | `client = MongoClient(mongo_url)` |
 | `backend/core/rbac/middleware.py` | 34 | `"""Obtiene conexión a MongoDB de forma síncrona."""` |
 | `backend/core/rbac/middleware.py` | 36 | `from pymongo import MongoClient` |
-| `backend/core/rbac/middleware.py` | 37 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/core/rbac/middleware.py` | 37 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/core/rbac/middleware.py` | 39 | `client = MongoClient(mongo_url)` |
 | `backend/core/rbac/schemas.py` | 6 | `Colecciones MongoDB:` |
 | `backend/routes/portal_proveedores.py` | 4 | `Usa la misma conexión MongoDB y los servidores configurados en EDARSA HUB` |
@@ -1164,10 +1164,10 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/scripts/run_historical_load_24_months.py` | 442 | `# DEPRECATED: MongoDB staging` |
 | `backend/tests/test_automatizacion_compras_fase4.py` | 15 | `COLECCIONES MONGODB:` |
 | `backend/tests/test_config.py` | 33 | `# MongoDB` |
-| `backend/tests/test_config.py` | 34 | `TEST_MONGO_URL = os.getenv('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/tests/test_config.py` | 34 | `TEST_MONGO_URL = os.getenv('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/tests/test_simulacion_controlada.py` | 136 | `from motor.motor_asyncio import AsyncIOMotorClient` |
 | `backend/tests/test_simulacion_controlada.py` | 153 | `"""Obtiene servidores activos de MongoDB."""` |
-| `backend/tests/test_simulacion_controlada.py` | 154 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/tests/test_simulacion_controlada.py` | 154 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/tests/test_simulacion_controlada.py` | 161 | `client = AsyncIOMotorClient(mongo_url)` |
 | `backend/tests/test_simulacion_controlada.py` | 219 | `print("FASE 1: Obteniendo servidores de MongoDB...")` |
 | `backend/tests/test_migracion_servidores_sql.py` | 2 | `Test de Validación: Migración de Servidores MongoDB -> EDARSAHUB SQL` |
@@ -1179,12 +1179,12 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/tests/test_migracion_servidores_sql.py` | 80 | `"""Verifica paridad entre datos de SQL y MongoDB."""` |
 | `backend/tests/test_migracion_servidores_sql.py` | 81 | `print("\n=== TEST: Paridad SQL vs MongoDB ===")` |
 | `backend/tests/test_migracion_servidores_sql.py` | 87 | `# Obtener de MongoDB` |
-| `backend/tests/test_migracion_servidores_sql.py` | 88 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/tests/test_migracion_servidores_sql.py` | 88 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/tests/test_migracion_servidores_sql.py` | 89 | `client = MongoClient(mongo_url)` |
 | `backend/tests/test_migracion_servidores_sql.py` | 105 | `print(f"  MongoDB: {len(mongo_servers)} servidores")` |
 | `backend/tests/test_migracion_servidores_sql.py` | 114 | `print(f"  ⚠ Solo en MongoDB: {solo_mongo}")` |
 | `backend/tests/test_migracion_servidores_sql.py` | 129 | `# Inicializar MongoDB` |
-| `backend/tests/test_migracion_servidores_sql.py` | 130 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/tests/test_migracion_servidores_sql.py` | 130 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/tests/test_migracion_servidores_sql.py` | 131 | `client = AsyncIOMotorClient(mongo_url)` |
 | `backend/tests/test_migracion_servidores_sql.py` | 179 | `results.append(("Paridad SQL/MongoDB", test_paridad_sql_mongodb()))` |
 | `backend/tests/test_migracion_servidores_sql.py` | 182 | `results.append(("Paridad SQL/MongoDB", False))` |
@@ -1192,7 +1192,7 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/tests/test_e2e_flujo_completo.py` | 7 | `Las referencias a self.db.* y conexiones directas a MongoDB ya no funcionan en producción.` |
 | `backend/tests/test_e2e_flujo_completo.py` | 30 | `# Importar PyMongo` |
 | `backend/tests/test_e2e_flujo_completo.py` | 31 | `from pymongo import MongoClient` |
-| `backend/tests/test_e2e_flujo_completo.py` | 79 | `self.mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/tests/test_e2e_flujo_completo.py` | 79 | `self.mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/tests/test_e2e_flujo_completo.py` | 95 | `"""Conecta a MongoDB."""` |
 | `backend/tests/test_e2e_flujo_completo.py` | 96 | `print_info(f"Conectando a MongoDB: {self.mongo_url[:30]}...")` |
 | `backend/tests/test_e2e_flujo_completo.py` | 97 | `self.client = MongoClient(self.mongo_url)` |
@@ -1209,7 +1209,7 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/tests/test_comercial_adapters.py` | 383 | `with patch("pymongo.MongoClient", side_effect=Exception("DB Error")):` |
 | `backend/tests/test_comercial_adapters.py` | 427 | `with patch("pymongo.MongoClient") as mock_mongo:` |
 | `backend/tests/conftest.py` | 11 | `- Base para mocks de MongoDB, SQL, Auth y APIs externas` |
-| `backend/tests/conftest.py` | 36 | `os.environ.setdefault("MONGO_URL", "mongodb://localhost:27017")` |
+| `backend/tests/conftest.py` | 36 | `os.environ.setdefault("MONGO_URL", "<REDACTED_MONGO_URL>")` |
 | `backend/tests/conftest.py` | 182 | `# FIXTURES: MOCKS BASE PARA MONGODB` |
 | `backend/tests/conftest.py` | 188 | `Mock básico de la base de datos MongoDB.` |
 | `backend/tests/conftest.py` | 208 | `"""Mock de una colección MongoDB individual"""` |
@@ -1244,7 +1244,7 @@ Objetivo: localizar referencias MongoDB/pymongo/motor y clasificarlas para elimi
 | `backend/tests/test_recipients_manager.py` | 414 | `print("✓ All notification services configured with MongoDB recipients")` |
 | `backend/tests/test_recipients_manager.py` | 418 | `"""Verify seeded recipients exist in MongoDB"""` |
 | `backend/tests/test_macrofase2_kpis.py` | 33 | `from motor.motor_asyncio import AsyncIOMotorClient` |
-| `backend/tests/test_macrofase2_kpis.py` | 35 | `mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')` |
+| `backend/tests/test_macrofase2_kpis.py` | 35 | `mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')` |
 | `backend/tests/test_macrofase2_kpis.py` | 38 | `client = AsyncIOMotorClient(mongo_url)` |
 | `backend/utils/migration_helpers.py` | 2 | `EDARSA HUB - Utilidades de Migración MongoDB → SQL Server` |
 | `backend/utils/migration_helpers.py` | 4 | `Funciones helper para convertir código legacy MongoDB a SQL-First.` |

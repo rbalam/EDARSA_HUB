@@ -5,11 +5,11 @@ import hashlib
 import os
 
 DATABASE_CONFIG = {
-    "server": os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+    "server": os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
     "port": int(os.environ.get('EDARSAHUB_PORT', 1433)),
     "database": os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-    "username": os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-    "password": os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
+    "username": os.environ.get('EDARSAHUB_USERNAME', '<REDACTED_EDARSAHUB_SQL_USER>'),
+    "password": os.environ.get('EDARSAHUB_PASSWORD', '<REDACTED_EDARSAHUB_SQL_PASSWORD>'),
 }
 
 def get_connection():

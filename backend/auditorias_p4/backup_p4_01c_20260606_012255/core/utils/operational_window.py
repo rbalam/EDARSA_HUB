@@ -43,11 +43,11 @@ MEXICO_TZ = ZoneInfo("America/Mexico_City")
 
 # Configuración de conexión EDARSAHUB
 EDARSAHUB_CONFIG = {
-    'host': '54.39.104.176',
+    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
     'port': 1433,
     'database': 'EDARSAHUB',
-    'username': 'HRLectura',
-    'password': 'National09$'
+    'username': '<REDACTED_EDARSAHUB_SQL_USER>',
+    'password': '<REDACTED_EDARSAHUB_SQL_PASSWORD>'
 }
 
 # Cache de configuración de turnos

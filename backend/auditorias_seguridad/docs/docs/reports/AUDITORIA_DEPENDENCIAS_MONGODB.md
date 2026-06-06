@@ -6,7 +6,7 @@ Generado: 2026-06-02T09:33:47+00:00
 
 ```text
 /app/backend/init_queries.py:4:from motor.motor_asyncio import AsyncIOMotorClient
-/app/backend/init_queries.py:10:mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/init_queries.py:10:mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/init_queries.py:266:    client = AsyncIOMotorClient(mongo_url)
 /app/backend/init_queries.py:270:    existing = await db.queries.count_documents({})
 /app/backend/init_queries.py:287:        await db.queries.insert_one(query_doc)
@@ -206,7 +206,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/modules/fase2_operativo/db_utils.py:10:# Conexión síncrona a MongoDB para los repositories
 /app/backend/modules/fase2_operativo/db_utils.py:17:    Obtiene la conexión a la base de datos MongoDB.
 /app/backend/modules/fase2_operativo/db_utils.py:21:        Database MongoDB
-/app/backend/modules/fase2_operativo/db_utils.py:26:        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/modules/fase2_operativo/db_utils.py:26:        mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/modules/fase2_operativo/db_utils.py:29:        _client = MongoClient(mongo_url)
 /app/backend/modules/fase2_operativo/repositories/__init__.py:6:- CERO MongoDB productivo
 /app/backend/modules/fase2_operativo/repositories/__init__.py:17:    COLLECTION_TO_TABLE_MAP,
@@ -299,7 +299,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/modules/fase2_operativo/repositories/sql_base_repository.py:1232:            f"(MongoDB db ignorado, usando EDARSAHUB SQL)"
 /app/backend/modules/fase2_operativo/scripts/init_notificaciones.py:9:from motor.motor_asyncio import AsyncIOMotorClient
 /app/backend/modules/fase2_operativo/scripts/init_notificaciones.py:17:async def init_notificaciones_collections():
-/app/backend/modules/fase2_operativo/scripts/init_notificaciones.py:20:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/modules/fase2_operativo/scripts/init_notificaciones.py:20:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/modules/fase2_operativo/scripts/init_notificaciones.py:23:    client = AsyncIOMotorClient(mongo_url)
 /app/backend/modules/fase2_operativo/scripts/init_notificaciones.py:30:        await db.create_collection("notificaciones_log")
 /app/backend/modules/fase2_operativo/scripts/init_notificaciones.py:48:    for collection_name, index_spec in indices:
@@ -494,7 +494,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/modules/configuracion/routes/config_asignaciones_routes.py:25:from motor.motor_asyncio import AsyncIOMotorClient
 /app/backend/modules/configuracion/routes/config_asignaciones_routes.py:36:# Conexión a MongoDB
 /app/backend/modules/configuracion/routes/config_asignaciones_routes.py:40:    """Obtiene la conexión a la base de datos MongoDB."""
-/app/backend/modules/configuracion/routes/config_asignaciones_routes.py:43:        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/modules/configuracion/routes/config_asignaciones_routes.py:43:        mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/modules/configuracion/routes/config_asignaciones_routes.py:45:        client = AsyncIOMotorClient(mongo_url)
 /app/backend/modules/inventarios/repository.py:7:- ELIMINADA dependencia de MongoDB
 /app/backend/modules/inventarios/repository.py:21:    Reemplaza: mongo_db.inventarios.find(filtro)
@@ -629,7 +629,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/modules/finanzas/repository_cuadres_z.py:2:Repositorio MongoDB para Cuadres de Cortes Z
 /app/backend/modules/finanzas/repository_cuadres_z.py:12:# MongoDB connection
 /app/backend/modules/finanzas/repository_cuadres_z.py:18:        from pymongo import MongoClient
-/app/backend/modules/finanzas/repository_cuadres_z.py:19:        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/modules/finanzas/repository_cuadres_z.py:19:        mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/modules/finanzas/repository_cuadres_z.py:21:        client = MongoClient(mongo_url)
 /app/backend/modules/finanzas/repository_cuadres_z.py:66:        self.collection_name = "tesoreria_cuadres_z"
 /app/backend/modules/finanzas/repository_cuadres_z.py:69:    def collection(self):
@@ -884,7 +884,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/scripts/run_historical_load_finanzas.py:61:COLLECTION_CHECKPOINTS = "finanzas_historical_load_checkpoints"
 /app/backend/scripts/run_historical_load_finanzas.py:82:    """Obtiene conexión a MongoDB."""
 /app/backend/scripts/run_historical_load_finanzas.py:87:    from motor.motor_asyncio import AsyncIOMotorClient
-/app/backend/scripts/run_historical_load_finanzas.py:88:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/run_historical_load_finanzas.py:88:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/run_historical_load_finanzas.py:89:    client = AsyncIOMotorClient(mongo_url)
 /app/backend/scripts/run_historical_load_finanzas.py:106:    checkpoint = await db[COLLECTION_CHECKPOINTS].find_one({
 /app/backend/scripts/run_historical_load_finanzas.py:131:    await db[COLLECTION_CHECKPOINTS].insert_one(new_checkpoint)
@@ -895,7 +895,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/scripts/precheck_conectividad.py:11:    - Variable MONGO_URL configurada
 /app/backend/scripts/precheck_conectividad.py:13:    - Acceso a la colección 'servers' en MongoDB
 /app/backend/scripts/precheck_conectividad.py:20:from pymongo import MongoClient
-/app/backend/scripts/precheck_conectividad.py:23:MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/precheck_conectividad.py:23:MONGO_URL = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/precheck_conectividad.py:32:    # Conectar a MongoDB
 /app/backend/scripts/precheck_conectividad.py:34:        client = MongoClient(MONGO_URL, serverSelectionTimeoutMS=5000)
 /app/backend/scripts/precheck_conectividad.py:37:        print(f"\n✅ MongoDB conectado: {DB_NAME}")
@@ -916,7 +916,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/scripts/reconcile_servers_sql_mongo.py:103:        sql_by_mongodb_id = {s['mongodb_id']: s for s in sql_servers if s.get('mongodb_id')}
 /app/backend/scripts/reconcile_servers_sql_mongo.py:105:        # 2. Obtener servidores desde MongoDB
 /app/backend/scripts/reconcile_servers_sql_mongo.py:106:        print("Obteniendo servidores desde MongoDB...")
-/app/backend/scripts/reconcile_servers_sql_mongo.py:107:        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/reconcile_servers_sql_mongo.py:107:        mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/reconcile_servers_sql_mongo.py:110:        client = AsyncIOMotorClient(mongo_url)
 /app/backend/scripts/reconcile_servers_sql_mongo.py:113:        mongo_servers = await db.servers.find({}, {'_id': 0}).to_list(1000)
 /app/backend/scripts/reconcile_servers_sql_mongo.py:114:        report['mongo_count'] = len(mongo_servers)
@@ -975,7 +975,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/scripts/carga_historica_fase23.py:6:Las referencias a self.db.* ya no funcionan en producción. Este archivo se mantiene
 /app/backend/scripts/carga_historica_fase23.py:52:from motor.motor_asyncio import AsyncIOMotorClient
 /app/backend/scripts/carga_historica_fase23.py:53:from pymongo import MongoClient
-/app/backend/scripts/carga_historica_fase23.py:56:MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/carga_historica_fase23.py:56:MONGO_URL = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/carga_historica_fase23.py:96:                "comando": f"db.kpis_comercial.deleteMany({{created_by: '{UPDATED_BY}'}})",
 /app/backend/scripts/carga_historica_fase23.py:102:        """Establece conexión a MongoDB."""
 /app/backend/scripts/carga_historica_fase23.py:103:        self.client = AsyncIOMotorClient(MONGO_URL)
@@ -1010,12 +1010,12 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/scripts/setup_kpis_indexes.py:184:    collection = db[COLLECTION_NAME]
 /app/backend/scripts/setup_kpis_indexes.py:185:    indexes = await collection.index_information()
 /app/backend/scripts/setup_kpis_indexes.py:212:    # Obtener configuración de MongoDB
-/app/backend/scripts/setup_kpis_indexes.py:213:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/setup_kpis_indexes.py:213:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/setup_kpis_indexes.py:216:    logging.info(f"[SETUP-INDEX] Conectando a MongoDB: {db_name}")
 /app/backend/scripts/setup_kpis_indexes.py:218:    client = AsyncIOMotorClient(mongo_url)
 /app/backend/scripts/create_workflow_tables.sql:3:-- Migración de MongoDB a SQL Server
 /app/backend/scripts/validar_post_carga.py:18:from pymongo import MongoClient
-/app/backend/scripts/validar_post_carga.py:21:MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/validar_post_carga.py:21:MONGO_URL = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/validar_post_carga.py:32:    client = MongoClient(MONGO_URL)
 /app/backend/scripts/validar_post_carga.py:51:    duplicados = list(db.kpis_comercial.aggregate(pipeline))
 /app/backend/scripts/validar_post_carga.py:64:    total = db.kpis_comercial.count_documents({})
@@ -1027,7 +1027,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/scripts/encrypt_existing_server_secrets.py:34:from motor.motor_asyncio import AsyncIOMotorClient
 /app/backend/scripts/encrypt_existing_server_secrets.py:210:async def encrypt_server_secrets_mongo(server_id: str, encrypt_password: bool, encrypt_api_key: bool) -> dict:
 /app/backend/scripts/encrypt_existing_server_secrets.py:211:    """Cifra los secretos de un servidor en MongoDB."""
-/app/backend/scripts/encrypt_existing_server_secrets.py:212:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/encrypt_existing_server_secrets.py:212:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/encrypt_existing_server_secrets.py:215:    client = AsyncIOMotorClient(mongo_url)
 /app/backend/scripts/encrypt_existing_server_secrets.py:219:        server = await db.servers.find_one({'id': server_id})
 /app/backend/scripts/encrypt_existing_server_secrets.py:222:            return {'success': True, 'message': 'Server not in MongoDB'}
@@ -1081,7 +1081,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/scripts/encrypt_core_server_secrets.py:254:    Note: MongoDB generalmente no tiene secretos de CORE, solo metadatos.
 /app/backend/scripts/encrypt_core_server_secrets.py:257:    if not mongodb_id:
 /app/backend/scripts/encrypt_core_server_secrets.py:258:        return {'success': True, 'message': 'No mongodb_id'}
-/app/backend/scripts/encrypt_core_server_secrets.py:260:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/encrypt_core_server_secrets.py:260:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/encrypt_core_server_secrets.py:263:    client = AsyncIOMotorClient(mongo_url)
 /app/backend/scripts/encrypt_core_server_secrets.py:267:        server = await db.servers.find_one({'id': mongodb_id})
 /app/backend/scripts/encrypt_core_server_secrets.py:270:            return {'success': True, 'message': 'CORE not in MongoDB (normal)'}
@@ -1102,7 +1102,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/scripts/run_historical_load_compras.py:60:COLLECTION_CHECKPOINTS = "compras_historical_load_checkpoints"
 /app/backend/scripts/run_historical_load_compras.py:111:    """Obtiene conexión a MongoDB."""
 /app/backend/scripts/run_historical_load_compras.py:116:    from motor.motor_asyncio import AsyncIOMotorClient
-/app/backend/scripts/run_historical_load_compras.py:117:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/run_historical_load_compras.py:117:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/run_historical_load_compras.py:118:    client = AsyncIOMotorClient(mongo_url)
 /app/backend/scripts/run_historical_load_compras.py:135:    checkpoint = await db[COLLECTION_CHECKPOINTS].find_one({
 /app/backend/scripts/run_historical_load_compras.py:160:    await db[COLLECTION_CHECKPOINTS].insert_one(new_checkpoint)
@@ -1113,7 +1113,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/scripts/run_historical_load_24_months.py:67:DESTINATION_MONGO = "MONGODB"               # Solo checkpoint/log/staging
 /app/backend/scripts/run_historical_load_24_months.py:86:    """Obtiene conexión a MongoDB."""
 /app/backend/scripts/run_historical_load_24_months.py:91:    from motor.motor_asyncio import AsyncIOMotorClient
-/app/backend/scripts/run_historical_load_24_months.py:92:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/run_historical_load_24_months.py:92:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/run_historical_load_24_months.py:93:    client = AsyncIOMotorClient(mongo_url)
 /app/backend/scripts/run_historical_load_24_months.py:139:    await db[COLLECTION_CHECKPOINTS].insert_one(checkpoint)
 /app/backend/scripts/run_historical_load_24_months.py:153:    await db[COLLECTION_CHECKPOINTS].update_one(
@@ -1144,13 +1144,13 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/tests/test_automatizacion_compras_fase4.py:15:COLECCIONES MONGODB:
 /app/backend/tests/test_tablero_ejecutivo.py:7:NO conecta a servicios reales (Mongo, SQL, APIs).
 /app/backend/tests/test_config.py:33:    # MongoDB
-/app/backend/tests/test_config.py:34:    TEST_MONGO_URL = os.getenv('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/tests/test_config.py:34:    TEST_MONGO_URL = os.getenv('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/tests/test_auth_mocks.py:42:            mock_db.users.find_one = AsyncMock(return_value=mock_user_db)
 /app/backend/tests/test_auth_mocks.py:45:            assert mock_db.users.find_one is not None
 /app/backend/tests/test_simulacion_controlada.py:136:    from motor.motor_asyncio import AsyncIOMotorClient
 /app/backend/tests/test_simulacion_controlada.py:152:async def get_servers_from_mongo():
 /app/backend/tests/test_simulacion_controlada.py:153:    """Obtiene servidores activos de MongoDB."""
-/app/backend/tests/test_simulacion_controlada.py:154:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/tests/test_simulacion_controlada.py:154:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/tests/test_simulacion_controlada.py:155:    mongo_url = mongo_url.strip('"').strip("'")
 /app/backend/tests/test_simulacion_controlada.py:157:    if not mongo_url:
 /app/backend/tests/test_simulacion_controlada.py:158:        print("✗ MONGO_URL no configurada")
@@ -1168,7 +1168,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/tests/test_migracion_servidores_sql.py:80:    """Verifica paridad entre datos de SQL y MongoDB."""
 /app/backend/tests/test_migracion_servidores_sql.py:81:    print("\n=== TEST: Paridad SQL vs MongoDB ===")
 /app/backend/tests/test_migracion_servidores_sql.py:87:    # Obtener de MongoDB
-/app/backend/tests/test_migracion_servidores_sql.py:88:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/tests/test_migracion_servidores_sql.py:88:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/tests/test_migracion_servidores_sql.py:89:    client = MongoClient(mongo_url)
 /app/backend/tests/test_migracion_servidores_sql.py:92:    mongo_cursor = db.servers.find({
 /app/backend/tests/test_migracion_servidores_sql.py:100:    mongo_servers = list(mongo_cursor)
@@ -1181,7 +1181,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/tests/test_migracion_servidores_sql.py:114:        print(f"  ⚠ Solo en MongoDB: {solo_mongo}")
 /app/backend/tests/test_migracion_servidores_sql.py:116:    if sql_names == mongo_names:
 /app/backend/tests/test_migracion_servidores_sql.py:129:    # Inicializar MongoDB
-/app/backend/tests/test_migracion_servidores_sql.py:130:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/tests/test_migracion_servidores_sql.py:130:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/tests/test_migracion_servidores_sql.py:131:    client = AsyncIOMotorClient(mongo_url)
 /app/backend/tests/test_migracion_servidores_sql.py:179:        results.append(("Paridad SQL/MongoDB", test_paridad_sql_mongodb()))
 /app/backend/tests/test_migracion_servidores_sql.py:182:        results.append(("Paridad SQL/MongoDB", False))
@@ -1192,7 +1192,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/tests/test_e2e_flujo_completo.py:7:Las referencias a self.db.* y conexiones directas a MongoDB ya no funcionan en producción.
 /app/backend/tests/test_e2e_flujo_completo.py:30:# Importar PyMongo
 /app/backend/tests/test_e2e_flujo_completo.py:31:from pymongo import MongoClient
-/app/backend/tests/test_e2e_flujo_completo.py:79:        self.mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/tests/test_e2e_flujo_completo.py:79:        self.mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/tests/test_e2e_flujo_completo.py:95:        """Conecta a MongoDB."""
 /app/backend/tests/test_e2e_flujo_completo.py:96:        print_info(f"Conectando a MongoDB: {self.mongo_url[:30]}...")
 /app/backend/tests/test_e2e_flujo_completo.py:97:        self.client = MongoClient(self.mongo_url)
@@ -1231,7 +1231,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/tests/test_comercial_adapters.py:431:            mock_db.servers.find.return_value = [mock_api_doc]
 /app/backend/tests/test_comercial_adapters.py:432:            mock_mongo.return_value = mock_client
 /app/backend/tests/conftest.py:11:- Base para mocks de MongoDB, SQL, Auth y APIs externas
-/app/backend/tests/conftest.py:36:os.environ.setdefault("MONGO_URL", "mongodb://localhost:27017")
+/app/backend/tests/conftest.py:36:os.environ.setdefault("MONGO_URL", "<REDACTED_MONGO_URL>")
 /app/backend/tests/conftest.py:182:# FIXTURES: MOCKS BASE PARA MONGODB
 /app/backend/tests/conftest.py:186:def mock_mongo_db():
 /app/backend/tests/conftest.py:188:    Mock básico de la base de datos MongoDB.
@@ -1309,7 +1309,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/tests/test_recipients_manager.py:414:        print("✓ All notification services configured with MongoDB recipients")
 /app/backend/tests/test_recipients_manager.py:418:    """Verify seeded recipients exist in MongoDB"""
 /app/backend/tests/test_macrofase2_kpis.py:33:    from motor.motor_asyncio import AsyncIOMotorClient
-/app/backend/tests/test_macrofase2_kpis.py:35:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/tests/test_macrofase2_kpis.py:35:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/tests/test_macrofase2_kpis.py:38:    client = AsyncIOMotorClient(mongo_url)
 /app/backend/tests/test_macrofase2_kpis.py:48:        COLLECTION_NAME,
 /app/backend/tests/test_macrofase2_kpis.py:89:    await db[COLLECTION_NAME].delete_many({
@@ -1803,7 +1803,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/htmlcov/z_342fa9d1c388b58c_routes_py.html:121:    <p class="pln"><span class="n"><a id="t39" href="#t39">39</a></span><span class="t"><span class="str">los helpers que usan la conexi&#243;n global a MongoDB.</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_57760688d1f824db_config_py.html:93:    <p class="pln"><span class="n"><a id="t11" href="#t11">11</a></span><span class="t"><span class="str">    print(settings.MONGO_URL)</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_57760688d1f824db_config_py.html:107:    <p class="pln"><span class="n"><a id="t25" href="#t25">25</a></span><span class="t">    <span class="com"># MongoDB</span>&nbsp;</span><span class="r"></span></p>
-/app/backend/htmlcov/z_57760688d1f824db_config_py.html:108:    <p class="mis show_mis"><span class="n"><a id="t26" href="#t26">26</a></span><span class="t">    <span class="nam">MONGO_URL</span><span class="op">:</span> <span class="nam">str</span> <span class="op">=</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"MONGO_URL"</span><span class="op">,</span> <span class="str">"mongodb://localhost:27017"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+/app/backend/htmlcov/z_57760688d1f824db_config_py.html:108:    <p class="mis show_mis"><span class="n"><a id="t26" href="#t26">26</a></span><span class="t">    <span class="nam">MONGO_URL</span><span class="op">:</span> <span class="nam">str</span> <span class="op">=</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"MONGO_URL"</span><span class="op">,</span> <span class="str">"<REDACTED_MONGO_URL>"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_repository_py.html:90:    <p class="pln"><span class="n"><a id="t8" href="#t8">8</a></span><span class="t"><span class="str">- Acceso a MongoDB para configuraci&#243;n de servidores</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_repository_py.html:105:    <p class="pln"><span class="n"><a id="t23" href="#t23">23</a></span><span class="t"><span class="com"># INYECCI&#211;N DE DEPENDENCIA: MongoDB</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_repository_py.html:112:    <p class="pln"><span class="n"><a id="t30" href="#t30">30</a></span><span class="t">    <span class="str">"""Inicializa el repositorio con la conexi&#243;n a MongoDB."""</span>&nbsp;</span><span class="r"></span></p>
@@ -1814,7 +1814,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:316:    <p class="pln"><span class="n"><a id="t234" href="#t234">234</a></span><span class="t">    <span class="com"># ========== BUSCAR APIs LOCALES DESDE MONGODB ==========</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:317:    <p class="mis show_mis"><span class="n"><a id="t235" href="#t235">235</a></span><span class="t">    <span class="nam">print</span><span class="op">(</span><span class="str">f"*** API Local: Buscando APIs tipo 'api_mpro' en MongoDB ***"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:319:    <p class="mis show_mis"><span class="n"><a id="t237" href="#t237">237</a></span><span class="t">        <span class="key">from</span> <span class="nam">pymongo</span> <span class="key">import</span> <span class="nam">MongoClient</span>&nbsp;</span><span class="r"></span></p>
-/app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:320:    <p class="mis show_mis"><span class="n"><a id="t238" href="#t238">238</a></span><span class="t">        <span class="nam">sync_client</span> <span class="op">=</span> <span class="nam">MongoClient</span><span class="op">(</span><span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">'MONGO_URL'</span><span class="op">,</span> <span class="str">'mongodb://localhost:27017'</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+/app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:320:    <p class="mis show_mis"><span class="n"><a id="t238" href="#t238">238</a></span><span class="t">        <span class="nam">sync_client</span> <span class="op">=</span> <span class="nam">MongoClient</span><span class="op">(</span><span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">'MONGO_URL'</span><span class="op">,</span> <span class="str">'<REDACTED_MONGO_URL>'</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:324:    <p class="mis show_mis"><span class="n"><a id="t242" href="#t242">242</a></span><span class="t">        <span class="nam">print</span><span class="op">(</span><span class="str">f"*** API Local: Encontradas {len(apis_locales_db)} APIs en MongoDB ***"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:326:    <p class="mis show_mis"><span class="n"><a id="t244" href="#t244">244</a></span><span class="t">        <span class="nam">print</span><span class="op">(</span><span class="str">f"*** API Local: Error buscando en MongoDB: {e} ***"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:388:    <p class="mis show_mis"><span class="n"><a id="t306" href="#t306">306</a></span><span class="t">    <span class="nam">print</span><span class="op">(</span><span class="str">f"*** API Local: No encontrada en MongoDB, buscando en config hardcodeada ***"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -1864,9 +1864,9 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/htmlcov/z_342fa9d1c388b58c___init___py.html:130:    <p class="pln"><span class="n"><a id="t48" href="#t48">48</a></span><span class="t"><span class="str">    Inicializa el m&#243;dulo comercial con la conexi&#243;n a MongoDB.</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c___init___py.html:133:    <p class="pln"><span class="n"><a id="t51" href="#t51">51</a></span><span class="t"><span class="str">        database: Instancia de AsyncIOMotorDatabase</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/.env.test.example:32:# MongoDB para tests (opcional, usa mock por defecto)
-/app/backend/.env.test.example:33:# MONGO_URL=mongodb://localhost:27017
+/app/backend/.env.test.example:33:# MONGO_URL=<REDACTED_MONGO_URL>
 /app/backend/sql/auditoria_financiera.sql:6:-- Ubicación: SQL Server EDARSA HUB (fuente oficial, NO MongoDB)
-/app/backend/.env:1:MONGO_URL="mongodb://localhost:27017"
+/app/backend/.env:1:MONGO_URL="<REDACTED_MONGO_URL>"
 /app/backend/.env:39:# FASE 2-E: ACTIVADO - SQL es fuente primaria con fallback MongoDB
 /app/backend/.env:42:# Jobs deshabilitados temporalmente - Migración MongoDB->SQL incompleta
 /app/backend/api/catalogos_sistemas.py:23:- NO usar MongoDB
@@ -2335,7 +2335,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/core/auditoria.py:222:        """Obtiene conexión a MongoDB para fallback"""
 /app/backend/core/auditoria.py:223:        if self._mongo_db is None:
 /app/backend/core/auditoria.py:225:                from motor.motor_asyncio import AsyncIOMotorClient
-/app/backend/core/auditoria.py:226:                mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/core/auditoria.py:226:                mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/core/auditoria.py:227:                client = AsyncIOMotorClient(mongo_url)
 /app/backend/core/auditoria.py:229:                self._mongo_db = client[db_name]
 /app/backend/core/auditoria.py:231:                logger.error(f"Error conectando a MongoDB: {e}")
@@ -2530,7 +2530,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/core/cache_key_builder.py:174:        server_id: ID del servidor (SQL id o mongodb_id)
 /app/backend/core/config.py:11:    print(settings.MONGO_URL)
 /app/backend/core/config.py:25:    # MongoDB
-/app/backend/core/config.py:26:    MONGO_URL: str = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
+/app/backend/core/config.py:26:    MONGO_URL: str = os.environ.get("MONGO_URL", "<REDACTED_MONGO_URL>")
 /app/backend/core/communications/dispatcher/dispatcher.py:46:    - Operaciones de MongoDB pasan por StubDatabase
 /app/backend/core/communications/dispatcher/dispatcher.py:63:            from core.mongo_stub import StubDatabase
 /app/backend/core/communications/dispatcher/dispatcher.py:104:            logger.info("[DISPATCHER] Modo SQL-only: omitiendo carga de providers desde MongoDB")
@@ -2597,7 +2597,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/core/communications/scripts/__init__.py:348:        existing = await db.notification_templates.find_one({"id": template["id"]})
 /app/backend/core/communications/scripts/__init__.py:351:            await db.notification_templates.insert_one(template)
 /app/backend/core/communications/scripts/__init__.py:362:        db: Conexión a MongoDB
-/app/backend/core/communications/scripts/__init__.py:380:    mongo_url = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
+/app/backend/core/communications/scripts/__init__.py:380:    mongo_url = os.environ.get("MONGO_URL", "<REDACTED_MONGO_URL>")
 /app/backend/core/communications/scripts/__init__.py:383:    client = AsyncIOMotorClient(mongo_url)
 /app/backend/core/communications/routes.py:38:# INYECCIÓN DE DEPENDENCIA: MongoDB
 /app/backend/core/communications/routes.py:46:    Inicializa las rutas con la conexión a MongoDB.
@@ -2673,7 +2673,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/core/centro_control/recipients_manager.py:4:Almacena y gestiona los destinatarios de notificaciones en MongoDB.
 /app/backend/core/centro_control/recipients_manager.py:23:from pymongo import MongoClient
 /app/backend/core/centro_control/recipients_manager.py:28:# MongoDB connection
-/app/backend/core/centro_control/recipients_manager.py:29:MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/core/centro_control/recipients_manager.py:29:MONGO_URL = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/core/centro_control/recipients_manager.py:39:        client = MongoClient(MONGO_URL)
 /app/backend/core/centro_control/recipients_manager.py:44:def get_collection():
 /app/backend/core/centro_control/recipients_manager.py:65:    collection = get_collection()
@@ -2748,7 +2748,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/core/auth/user_repository_sql.py:346:    Compara usuario entre MongoDB y SQL.
 /app/backend/core/auth/user_repository_sql.py:354:    from motor.motor_asyncio import AsyncIOMotorClient
 /app/backend/core/auth/user_repository_sql.py:360:    # Obtener de MongoDB
-/app/backend/core/auth/user_repository_sql.py:361:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/core/auth/user_repository_sql.py:361:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/core/auth/user_repository_sql.py:363:    mongo_client = AsyncIOMotorClient(mongo_url)
 /app/backend/core/auth/user_repository_sql.py:364:    mongo_db = mongo_client[db_name]
 /app/backend/core/auth/user_repository_sql.py:366:    user_mongo = await mongo_db.users.find_one({'email': email}, {'_id': 0})
@@ -2968,11 +2968,11 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/backend/core/rbac/repository.py:7:MongoDB ya NO es fuente de datos para RBAC.
 /app/backend/core/rbac/routes.py:28:from pymongo import MongoClient
 /app/backend/core/rbac/routes.py:47:    """Obtiene conexión a MongoDB de forma síncrona."""
-/app/backend/core/rbac/routes.py:48:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/core/rbac/routes.py:48:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/core/rbac/routes.py:50:    client = MongoClient(mongo_url)
 /app/backend/core/rbac/middleware.py:34:    """Obtiene conexión a MongoDB de forma síncrona."""
 /app/backend/core/rbac/middleware.py:36:    from pymongo import MongoClient
-/app/backend/core/rbac/middleware.py:37:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/core/rbac/middleware.py:37:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/core/rbac/middleware.py:39:    client = MongoClient(mongo_url)
 /app/backend/core/rbac/schemas.py:6:Colecciones MongoDB:
 /app/backend/core/alcance_helper.py:86:                SELECT DISTINCT m.EmpresaMongoUUID
@@ -3160,7 +3160,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/docs/PROPUESTA_DDL_AUTH_RBAC_EDARSAHUB.md:350:2. ✅ **IDs de MongoDB ≠ IDs de EDARSAHUB** (requiere mapeo)
 /app/docs/FASE4_EVIDENCIA.md:180:3. Opcional: db.sec_bitacora_admin.drop()
 /app/docs/DEPLOYMENT_ENV_VARS.md:12:### Base de Datos MongoDB
-/app/docs/DEPLOYMENT_ENV_VARS.md:14:MONGO_URL=mongodb://localhost:27017
+/app/docs/DEPLOYMENT_ENV_VARS.md:14:MONGO_URL=<REDACTED_MONGO_URL>
 /app/docs/DEPLOYMENT_ENV_VARS.md:17:> ⚠️ Si usas MongoDB Atlas u otro servicio externo, cambia MONGO_URL
 /app/docs/DEPLOYMENT_ENV_VARS.md:84:Los servidores SQL están configurados en MongoDB (colección `servers`).
 /app/docs/DEPLOYMENT_ENV_VARS.md:105:1. **MongoDB**: El deployment de Emergent incluye MongoDB local. Si prefieres usar MongoDB Atlas, actualiza MONGO_URL.
@@ -3182,7 +3182,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/docs/CENTRO_DE_CONTROL_EDARSA_WIREFRAME.md:798:│  │  │   MONGODB     │  │  SCHEDULER    │                            │ │
 /app/docs/CENTRO_DE_CONTROL_EDARSA_WIREFRAME.md:818:│  │ MongoDB         │ TODOS              │ Config, Auth      │ CRÍTICO││
 /app/docs/CENTRO_DE_CONTROL_EDARSA_WIREFRAME.md:923:│  │ • MongoDB (configuración)                                         │ │
-/app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md:16:- Las credenciales en MongoDB eran válidas (HRLectura/National09$)
+/app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md:16:- Las credenciales en MongoDB eran válidas (<REDACTED_EDARSAHUB_SQL_USER>/<REDACTED_EDARSAHUB_SQL_PASSWORD>)
 /app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md:69:### Fuente central (MongoDB - Menú Servidores):
 /app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md:85:**Conclusión**: Ambas credenciales funcionan, pero la fuente autoritativa debe ser MongoDB.
 /app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md:159:│ 6. Ejecutar query SQL con credenciales de MongoDB       │
@@ -3373,7 +3373,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/docs/CAB_MODULO_PROPINAS_TPV.md:929:db.propinas_pagos.drop()
 /app/docs/CAB_MODULO_PROPINAS_TPV.md:930:db.propinas_cuadres.drop()
 /app/docs/CAB_MODULO_PROPINAS_TPV.md:952:2. Modelo de datos en MongoDB (4 colecciones)
-/app/docs/DEPLOYMENT_CHECKLIST.md:54:MONGO_URL=mongodb://localhost:27017
+/app/docs/DEPLOYMENT_CHECKLIST.md:54:MONGO_URL=<REDACTED_MONGO_URL>
 /app/docs/DEPLOYMENT_CHECKLIST.md:178:4. Revisar credenciales SQL en MongoDB (colección `servers`)
 /app/docs/ddl/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_DDL_FASE2.sql:6:-- OBJETIVO: Crear infraestructura SQL para motor de capacidades por sistema.
 /app/docs/PLAN_CORRECCION_HISTORICOS_NULL.md:91:db.workflow_inventarios.updateOne(
@@ -4032,7 +4032,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/docs/reports/AUDITORIA_MENUS_FUENTES_DATOS_Y_CONEXIONES_EDARSAHUB.md:131:### Endpoints con MongoDB (VIOLACIÓN 🔴)
 /app/docs/reports/AUDITORIA_MENUS_FUENTES_DATOS_Y_CONEXIONES_EDARSAHUB.md:227:- `db_utils.py` - `MongoClient` directo
 /app/docs/reports/AUDITORIA_MENUS_FUENTES_DATOS_Y_CONEXIONES_EDARSAHUB.md:228:- `repositories/*.py` - Todos usan MongoDB
-/app/docs/reports/AUDITORIA_MENUS_FUENTES_DATOS_Y_CONEXIONES_EDARSAHUB.md:233:mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/docs/reports/AUDITORIA_MENUS_FUENTES_DATOS_Y_CONEXIONES_EDARSAHUB.md:233:mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/docs/reports/AUDITORIA_MENUS_FUENTES_DATOS_Y_CONEXIONES_EDARSAHUB.md:234:_client = MongoClient(mongo_url)
 /app/docs/reports/AUDITORIA_MENUS_FUENTES_DATOS_Y_CONEXIONES_EDARSAHUB.md:309:### FASE B: Eliminar MongoDB en módulos críticos (P0-P1)
 /app/docs/reports/AUDITORIA_MENUS_FUENTES_DATOS_Y_CONEXIONES_EDARSAHUB.md:310:1. Migrar `fase2_operativo` de MongoDB a SQL
@@ -4597,7 +4597,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/docs/reports/FINANZAS_TESORERIA_MONGO_DEPENDENCIA_CUADRES_DIAGNOSTICO.md:9:## 1. DEPENDENCIAS MONGODB ENCONTRADAS
 /app/docs/reports/FINANZAS_TESORERIA_MONGO_DEPENDENCIA_CUADRES_DIAGNOSTICO.md:15:# Línea 18-21: Conexión MongoDB
 /app/docs/reports/FINANZAS_TESORERIA_MONGO_DEPENDENCIA_CUADRES_DIAGNOSTICO.md:16:from pymongo import MongoClient
-/app/docs/reports/FINANZAS_TESORERIA_MONGO_DEPENDENCIA_CUADRES_DIAGNOSTICO.md:17:mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/docs/reports/FINANZAS_TESORERIA_MONGO_DEPENDENCIA_CUADRES_DIAGNOSTICO.md:17:mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/docs/reports/FINANZAS_TESORERIA_MONGO_DEPENDENCIA_CUADRES_DIAGNOSTICO.md:19:client = MongoClient(mongo_url)
 /app/docs/reports/FINANZAS_TESORERIA_MONGO_DEPENDENCIA_CUADRES_DIAGNOSTICO.md:21:# Línea 66: Colección MongoDB
 /app/docs/reports/FINANZAS_TESORERIA_MONGO_DEPENDENCIA_CUADRES_DIAGNOSTICO.md:22:self.collection_name = "tesoreria_cuadres_z"
@@ -6196,7 +6196,7 @@ Generado: 2026-06-02T09:33:47+00:00
 /app/docs/ENTREGABLES_AUDITORIA_RBAC.md:98:- ✅ Fallback a MongoDB funciona cuando SQL Server no está disponible
 /app/docs/ENTREGABLES_AUDITORIA_RBAC.md:149:- [ ] Sincronizar registros de MongoDB → SQL Server
 /app/docs/ENTREGABLES_AUDITORIA_RBAC.md:170:from motor.motor_asyncio import AsyncIOMotorClient
-/app/docs/ENTREGABLES_AUDITORIA_RBAC.md:172:    db = AsyncIOMotorClient('mongodb://localhost:27017')['edarsa_hub']
+/app/docs/ENTREGABLES_AUDITORIA_RBAC.md:172:    db = AsyncIOMotorClient('<REDACTED_MONGO_URL>')['edarsa_hub']
 /app/docs/ENTREGABLES_AUDITORIA_RBAC.md:173:    async for doc in db.auditoria_financiera.find().sort('created_at', -1).limit(10):
 /app/docs/FASE2_ALCANCE_CONTROLADO.md:308:- [ ] Backup de MongoDB
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_C_LOTE4_REPORT.md:14:**10 de 10 endpoints migrados exitosamente** de `db.servers.find_one()` a `server_registry.get_server_connection_info()`.

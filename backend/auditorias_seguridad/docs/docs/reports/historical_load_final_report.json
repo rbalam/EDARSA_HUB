@@ -55,7 +55,7 @@
       "system_type": "SOFTRESTAURANT",
       "error": "AUTH_FAILED",
       "error_code": 18456,
-      "user": "HRLectura",
+      "user": "<REDACTED_EDARSAHUB_SQL_USER>",
       "action": "Corregir credenciales"
     }
   ],

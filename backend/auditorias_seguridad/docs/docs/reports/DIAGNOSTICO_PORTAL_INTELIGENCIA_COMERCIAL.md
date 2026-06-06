@@ -31,7 +31,7 @@
 | `/api/inteligencia/scheduler/force/{id}` | POST | Trigger manual de job | ✅ |
 
 **Conexión SQL:**
-- Host: `54.39.104.176` (EDARSAHUB)
+- Host: `<REDACTED_EDARSAHUB_SQL_HOST>` (EDARSAHUB)
 - Puerto: `1433`
 - Base de datos: `EDARSAHUB`
 - Usuario: Variables de entorno `EDARSAHUB_USERNAME`, `EDARSAHUB_PASSWORD`
@@ -218,10 +218,10 @@ SELECT Vn_Folio, Vn_Precio_Neto_Importe FROM Venta_Encabezado
 
 ```bash
 # Backend .env
-EDARSAHUB_HOST=54.39.104.176
+EDARSAHUB_HOST=<REDACTED_EDARSAHUB_SQL_HOST>
 EDARSAHUB_PORT=1433
 EDARSAHUB_DATABASE=EDARSAHUB
-EDARSAHUB_USERNAME=HRLectura
+EDARSAHUB_USERNAME=<REDACTED_EDARSAHUB_SQL_USER>
 EDARSAHUB_PASSWORD=***
 ```
 

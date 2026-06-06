@@ -101,7 +101,7 @@
 
 | Sucursal | Servidor | Base de Datos | Tabla |
 |----------|----------|---------------|-------|
-| **EDARSA HUB** | 54.39.104.176:1433 | EDARSAHUB | Finanzas_CortesCaja |
+| **EDARSA HUB** | <REDACTED_EDARSAHUB_SQL_HOST>:1433 | EDARSAHUB | Finanzas_CortesCaja |
 
 ### Campos Disponibles
 
@@ -153,22 +153,22 @@ SOFTRESTAURANT_SERVERS = {
 ### MPRO (Central)
 ```python
 MPRO_SERVER = {
-    "host": "54.39.104.176",
+    "host": "<REDACTED_EDARSAHUB_SQL_HOST>",
     "port": 1433,
     "database": "CENTRAL2020",
-    "username": "HRLectura",
-    "password": "National09$"
+    "username": "<REDACTED_EDARSAHUB_SQL_USER>",
+    "password": "<REDACTED_EDARSAHUB_SQL_PASSWORD>"
 }
 ```
 
 ### EDARSA HUB (RH y Catálogos)
 ```python
 EDARSA_HUB_SERVER = {
-    "host": "54.39.104.176",
+    "host": "<REDACTED_EDARSAHUB_SQL_HOST>",
     "port": 1433,
     "database": "EDARSAHUB",
-    "username": "HRLectura",
-    "password": "National09$"
+    "username": "<REDACTED_EDARSAHUB_SQL_USER>",
+    "password": "<REDACTED_EDARSAHUB_SQL_PASSWORD>"
 }
 ```
 

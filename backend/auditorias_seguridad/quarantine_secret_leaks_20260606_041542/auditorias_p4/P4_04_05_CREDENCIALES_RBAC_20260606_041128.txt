@@ -1,0 +1,100 @@
+==================================================
+P4-04 + P4-05 CREDENCIALES + RBAC
+==================================================
+✓ Backup: auditorias_p4/backup_p4_04_05_20260606_041128
+
+=== VALIDACIÓN VARIABLES ===
+VALIDACION SEGURA DE VARIABLES
+EDARSAHUB_SQL_HOST: OK
+EDARSAHUB_SQL_PORT: OK
+EDARSAHUB_SQL_DATABASE: OK
+EDARSAHUB_SQL_USER: OK
+EDARSAHUB_SQL_PASSWORD: OK
+✓ Config central actualizado
+
+=== GUARDRAIL CREDENCIALES ===
+FAIL credenciales/defaults hardcodeados:
+('audit_kpis_junio_2026.py', 'os\\.getenv\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.getenv("EDARSAHUB_SQL_PORT", "1433")')
+('server.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false')")
+('server.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false')")
+('server.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false')")
+('server.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false')")
+('server.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false')")
+('server.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false')")
+('server.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false')")
+('server.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false')")
+('server.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('CORS_ORIGINS', 'http://localhost:3000')")
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query")')
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query")')
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('SOFTREST_CIENFUEGOS_HOST', '187.188.198.241')")
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('SOFTREST_CIENFUEGOS_PORT', '51741')")
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('SOFTREST_CIENFUEGOS_DB', 'Abordo')")
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('SOFTREST_CIENFUEGOS_USER', 'sa')")
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('SOFTREST_CIENFUEGOS_PASS', 'Sr2022$')")
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('SOFTREST_ESTELAR_HOST', '187.188.198.241')")
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('SOFTREST_ESTELAR_PORT', '51742')")
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('SOFTREST_ESTELAR_DB', 'Bordo')")
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('SOFTREST_ESTELAR_USER', 'sa')")
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('SOFTREST_ESTELAR_PASS', 'Sr2022$')")
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('SOFTREST_130MID_HOST', '187.188.198.241')")
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('SOFTREST_130MID_PORT', '51743')")
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('SOFTREST_130MID_DB', 'Abordo')")
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('SOFTREST_130MID_USER', 'sa')")
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('SOFTREST_130MID_PASS', 'Sr2022$')")
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.environ.get("CIENFUEGOS_DB_USER", "sa")')
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.environ.get("130MID_DB_USER", "sa")')
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.environ.get("ESTELAR_DB_USER", "sa")')
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.environ.get("130QRO_DB_USER", "HRLectura")')
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.environ.get("130QRO_DB_PASS", "National09$")')
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.environ.get("ORIGEN_DB_USER", "HRLectura")')
+('auditoria_unidades_hardcodeadas.txt', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.environ.get("ORIGEN_DB_PASS", "National09$")')
+('modules/comercial/adapters.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query")')
+('modules/comercial/adapters.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY")')
+('modules/comercial/adapters.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query")')
+('modules/comercial/adapters.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY")')
+('modules/comercial/adapters.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query")')
+('modules/comercial/adapters.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query")')
+('modules/comercial/adapters.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY")')
+('modules/fase2_operativo/db_utils.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('DB_NAME', 'test_database')")
+('modules/fase2_operativo/services/email_service.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('EMAIL_ENABLED', 'true')")
+('modules/fase2_operativo/services/email_service.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('EMAIL_PORT', '587')")
+('modules/fase2_operativo/services/email_service.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('EMAIL_USE_TLS', 'true')")
+('modules/fase2_operativo/services/email_service.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('EMAIL_FROM_NAME', 'EDARSA HUB')")
+('modules/configuracion/routes/config_asignaciones_routes.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('DB_NAME', 'edarsa_hub')")
+('modules/auth/password_reset.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.environ.get("EMAIL_HOST", "mail.edarsa.com.mx")')
+('modules/auth/password_reset.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', 'os.environ.get("EMAIL_FROM", "notificaciones@edarsa.com.mx")')
+...
+('core/centro_control/email_notifications.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('EMAIL_PORT', '587')")
+('core/centro_control/email_notifications.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('EMAIL_FROM_NAME', 'EDARSA HUB')")
+('core/centro_control/email_notifications.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('EMAIL_USE_TLS', 'true')")
+('core/centro_control/email_notifications.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('EMAIL_ENABLED', 'true')")
+('core/centro_control/recipients_manager.py', 'os\\.environ\\.get\\([^,\\)]*,\\s*[\'\\"][^\'\\"]+[\'\\"]\\)', "os.environ.get('DB_NAME', 'edarsa_hub')")
+
+=== CREACIÓN TABLAS RBAC ===
+VALIDA_TABLA_RBAC RBAC_Roles OK
+VALIDA_TABLA_RBAC RBAC_Permisos OK
+VALIDA_TABLA_RBAC RBAC_RolesPermisos OK
+VALIDA_TABLA_RBAC RBAC_UsuariosRoles OK
+VALIDA_TABLA_RBAC RBAC_UsuariosEmpresas OK
+VALIDA_TABLA_RBAC RBAC_UsuariosUnidadesNegocio OK
+VALIDA_TABLA_RBAC RBAC_UsuariosSucursales OK
+VALIDA_TABLA_RBAC RBAC_AuditLog OK
+
+=== SEED ROLES Y PERMISOS ===
+ROLES_ACTIVOS 6
+PERMISOS_ACTIVOS 9
+✓ Servicio RBAC SQL-First creado
+
+=== GUARDRAIL RBAC ===
+
+==================================================
+P4-04 + P4-05 RESULTADO
+==================================================
+Backup: auditorias_p4/backup_p4_04_05_20260606_041128
+Reporte: auditorias_p4/P4_04_05_CREDENCIALES_RBAC_20260606_041128.txt
+Guardrail credenciales: auditorias_seguridad/P4_04_GUARDRAIL_CREDENCIALES_20260606_041128.txt
+Guardrail RBAC: auditorias_p4/P4_05_GUARDRAIL_RBAC_20260606_041128.txt
+Health: auditorias_p4/P4_04_05_HEALTH_20260606_041128.json
+=== GUARDRAIL RBAC (corregido) ===
+PASS RBAC SQL empresa/unidad/sucursal base listo
+  Roles: 6, Permisos: 9

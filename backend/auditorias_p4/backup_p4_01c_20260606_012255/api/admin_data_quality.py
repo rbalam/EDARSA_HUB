@@ -14,7 +14,7 @@ MÁXIMAS CUMPLIDAS:
 - Trazabilidad: Logs detallados de auditoría
 - Idempotente: Scripts generados son seguros de re-ejecutar
 
-NOTA: El usuario HRLectura es de solo lectura.
+NOTA: El usuario <REDACTED_EDARSAHUB_SQL_USER> es de solo lectura.
 Los scripts UPDATE deben ejecutarse con credenciales de escritura.
 """
 
@@ -224,7 +224,7 @@ GROUP BY unidad_negocio_nombre;
         consolidation_script=consolidation_script,
         script_notes=(
             "IMPORTANTE: Este script debe ejecutarse con un usuario que tenga permisos "
-            "de escritura en EDARSAHUB (no HRLectura). El script incluye backup automático "
+            "de escritura en EDARSAHUB (no <REDACTED_EDARSAHUB_SQL_USER>). El script incluye backup automático "
             "y es idempotente (seguro de re-ejecutar)."
         )
     )

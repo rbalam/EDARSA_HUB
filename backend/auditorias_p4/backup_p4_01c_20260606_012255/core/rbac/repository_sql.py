@@ -36,11 +36,11 @@ class RBACRepositorySQL:
     """
     
     def __init__(self):
-        self.sql_host = '54.39.104.176'
+        self.sql_host = '<REDACTED_EDARSAHUB_SQL_HOST>'
         self.sql_port = 1433
         self.sql_db = 'EDARSAHUB'
-        self.sql_user = 'HRLectura'
-        self.sql_pass = 'National09$'
+        self.sql_user = '<REDACTED_EDARSAHUB_SQL_USER>'
+        self.sql_pass = '<REDACTED_EDARSAHUB_SQL_PASSWORD>'
         self._permisos_cache = None
         self._roles_cache = None
         self._cache_timestamp = None

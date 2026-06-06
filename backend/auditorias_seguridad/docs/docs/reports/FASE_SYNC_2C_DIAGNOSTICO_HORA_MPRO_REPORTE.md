@@ -50,7 +50,7 @@ Expandir a 8 servidores con datos MPRO incorrectos (todo en hora 0) contaminarí
 |-------|-------|
 | ID | `1b230a06-ffaf-4c70-bd27-b1be3579dea6` |
 | Nombre | ManagmentPro |
-| Host | 54.39.104.176 |
+| Host | <REDACTED_EDARSAHUB_SQL_HOST> |
 | Base de datos | CENTRAL2020 |
 | Sistema | MPRO |
 

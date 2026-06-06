@@ -2045,8 +2045,8 @@ async def comercial_metas(
     try:
         import pymssql
         conn = pymssql.connect(
-            server='54.39.104.176', port=1433, database='EDARSAHUB',
-            user='HRLectura', password='National09$', timeout=30, as_dict=True
+            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433, database='EDARSAHUB',
+            user='<REDACTED_EDARSAHUB_SQL_USER>', password='<REDACTED_EDARSAHUB_SQL_PASSWORD>', timeout=30, as_dict=True
         )
         cursor = conn.cursor()
         
@@ -2382,8 +2382,8 @@ async def comercial_ticket_perfecto(
     try:
         import pymssql
         conn = pymssql.connect(
-            server='54.39.104.176', port=1433, database='EDARSAHUB',
-            user='HRLectura', password='National09$', timeout=30, as_dict=True
+            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433, database='EDARSAHUB',
+            user='<REDACTED_EDARSAHUB_SQL_USER>', password='<REDACTED_EDARSAHUB_SQL_PASSWORD>', timeout=30, as_dict=True
         )
         cursor = conn.cursor()
         
@@ -2684,9 +2684,9 @@ async def comercial_ventas_tiempo(
         
         try:
             conn = pymssql.connect(
-                server='54.39.104.176',
-                user='HRLectura',
-                password='National09$',
+                server='<REDACTED_EDARSAHUB_SQL_HOST>',
+                user='<REDACTED_EDARSAHUB_SQL_USER>',
+                password='<REDACTED_EDARSAHUB_SQL_PASSWORD>',
                 database='EDARSAHUB',
                 port=1433,
                 timeout=15
@@ -2792,9 +2792,9 @@ async def comercial_ventas_tiempo(
             cursor_hoy = None
             try:
                 conn_hoy = pymssql.connect(
-                    server='54.39.104.176',
-                    user='HRLectura',
-                    password='National09$',
+                    server='<REDACTED_EDARSAHUB_SQL_HOST>',
+                    user='<REDACTED_EDARSAHUB_SQL_USER>',
+                    password='<REDACTED_EDARSAHUB_SQL_PASSWORD>',
                     database='EDARSAHUB',
                     port=1433,
                     timeout=10
@@ -2901,8 +2901,8 @@ async def comercial_mesas(
     try:
         import pymssql
         conn = pymssql.connect(
-            server='54.39.104.176', port=1433, database='EDARSAHUB',
-            user='HRLectura', password='National09$', timeout=30, as_dict=True
+            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433, database='EDARSAHUB',
+            user='<REDACTED_EDARSAHUB_SQL_USER>', password='<REDACTED_EDARSAHUB_SQL_PASSWORD>', timeout=30, as_dict=True
         )
         cursor = conn.cursor()
         
@@ -3596,8 +3596,8 @@ async def comercial_reporte_pax(
     try:
         import pymssql
         conn = pymssql.connect(
-            server='54.39.104.176', port=1433, database='EDARSAHUB',
-            user='HRLectura', password='National09$', timeout=30, as_dict=True
+            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433, database='EDARSAHUB',
+            user='<REDACTED_EDARSAHUB_SQL_USER>', password='<REDACTED_EDARSAHUB_SQL_PASSWORD>', timeout=30, as_dict=True
         )
         cursor = conn.cursor()
         

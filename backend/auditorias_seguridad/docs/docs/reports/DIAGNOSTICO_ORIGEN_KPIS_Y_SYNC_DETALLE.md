@@ -120,12 +120,12 @@ UNIDADES_CONFIG = {
     },
     "130QRO": {
         "system_type": "MPRO",
-        "host": "54.39.104.176",
+        "host": "<REDACTED_EDARSAHUB_SQL_HOST>",
         "database": "QUERETARO",
     },
     "ORIGEN": {
         "system_type": "MPRO",
-        "host": "54.39.104.176",
+        "host": "<REDACTED_EDARSAHUB_SQL_HOST>",
         "database": "ORIGEN",
     },
 }
@@ -264,8 +264,8 @@ WHERE ch.cancelado = 0
 | **CIENFUEGOS** | SoftRestaurant | servercienfuegos.ddns.net:6669 | softrestaurant95pro | ✅ Activo |
 | **130° MERIDA** | SoftRestaurant | 130mid.ddns.net:1433 | softrestaurant10 | ✅ Activo |
 | **LA ESTELAR** | SoftRestaurant | serverestelar.ddns.net:6969 | softrestaurant12 | ✅ Activo |
-| **130° QUERÉTARO** | MPRO | 54.39.104.176:1433 | QUERETARO (Suc: 0021) | ✅ Activo |
-| **ORIGEN** | MPRO | 54.39.104.176:1433 | ORIGEN (Suc: 0023) | ✅ Activo |
+| **130° QUERÉTARO** | MPRO | <REDACTED_EDARSAHUB_SQL_HOST>:1433 | QUERETARO (Suc: 0021) | ✅ Activo |
+| **ORIGEN** | MPRO | <REDACTED_EDARSAHUB_SQL_HOST>:1433 | ORIGEN (Suc: 0023) | ✅ Activo |
 
 ### Datos Actuales por Unidad
 
@@ -285,11 +285,11 @@ WHERE ch.cancelado = 0
 
 ```bash
 # EDARSAHUB (Destino)
-EDARSAHUB_HOST=54.39.104.176
+EDARSAHUB_HOST=<REDACTED_EDARSAHUB_SQL_HOST>
 EDARSAHUB_PORT=1433
 EDARSAHUB_DATABASE=EDARSAHUB
-EDARSAHUB_USERNAME=HRLectura
-EDARSAHUB_PASSWORD=National09$
+EDARSAHUB_USERNAME=<REDACTED_EDARSAHUB_SQL_USER>
+EDARSAHUB_PASSWORD=<REDACTED_EDARSAHUB_SQL_PASSWORD>
 
 # POS Origen (Opcionales - se leen de Servidores_Conexiones si no están)
 CIENFUEGOS_DB_USER=sa
@@ -298,10 +298,10 @@ CIENFUEGOS_DB_PASS=********
 130MID_DB_PASS=********
 ESTELAR_DB_USER=sa
 ESTELAR_DB_PASS=********
-130QRO_DB_USER=HRLectura
-130QRO_DB_PASS=National09$
-ORIGEN_DB_USER=HRLectura
-ORIGEN_DB_PASS=National09$
+130QRO_DB_USER=<REDACTED_EDARSAHUB_SQL_USER>
+130QRO_DB_PASS=<REDACTED_EDARSAHUB_SQL_PASSWORD>
+ORIGEN_DB_USER=<REDACTED_EDARSAHUB_SQL_USER>
+ORIGEN_DB_PASS=<REDACTED_EDARSAHUB_SQL_PASSWORD>
 
 # Cifrado de secretos
 SERVER_SECRET_KEY=4HGEDzNpIv3pMoHXFtlXXYiTSt1SxU8dXHiTR5GOtd8=
@@ -323,11 +323,11 @@ WHERE activo = 1
 
 ```python
 EDARSAHUB_CONFIG = {
-    'host': '54.39.104.176',
+    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
     'port': 1433,
     'database': 'EDARSAHUB',
-    'username': 'HRLectura',
-    'password': 'National09$'
+    'username': '<REDACTED_EDARSAHUB_SQL_USER>',
+    'password': '<REDACTED_EDARSAHUB_SQL_PASSWORD>'
 }
 ```
 

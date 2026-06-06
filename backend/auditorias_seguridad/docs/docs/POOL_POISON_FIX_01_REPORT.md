@@ -97,7 +97,7 @@ Resultado: ✅ 510 colaboradores retornados correctamente
 ### Test 2: Estado del Servidor Post-Error
 
 ```
-Servidor 54.39.104.176: ONLINE
+Servidor <REDACTED_EDARSAHUB_SQL_HOST>: ONLINE
 Estado: ✅ CORRECTO - servidor permanece online después de error de query
 ```
 

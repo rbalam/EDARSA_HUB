@@ -2,7 +2,7 @@
 
 - Fecha: 2026-06-02T08:39:37.867936
 - Modo: `diagnostic`
-- Servidor: `54.39.104.176`
+- Servidor: `<REDACTED_EDARSAHUB_SQL_HOST>`
 - Base de datos: `EDARSAHUB`
 - Script: `/app/backend/sql/inteligencia_comercial_validacion_fuentes.sql`
 

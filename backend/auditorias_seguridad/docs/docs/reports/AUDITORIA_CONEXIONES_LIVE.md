@@ -5,7 +5,7 @@ Generado: 2026-06-02T09:33:51+00:00
 ## Posibles conexiones live
 
 ```text
-/app/backend/init_queries.py:10:mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/init_queries.py:10:mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/init_queries.py:13:# Consultas MPRO
 /app/backend/init_queries.py:14:MPRO_QUERIES = {
 /app/backend/init_queries.py:276:    # Insert MPRO queries
@@ -22,7 +22,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/comercial/service.py:17:- query_api_mpro_local() -> modules/comercial/adapters.py
 /app/backend/modules/comercial/service.py:48:from modules.comercial.queries.softrestaurant import query_ventas_periodo_sr
 /app/backend/modules/comercial/service.py:49:from modules.comercial.queries.mpro import query_ventas_periodo_mpro, query_ventas_por_sucursal_mpro
-/app/backend/modules/comercial/service.py:80:    'host': '54.39.104.176',
+/app/backend/modules/comercial/service.py:80:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/modules/comercial/service.py:129:            EDARSAHUB_TABLERO_CONFIG['host'],
 /app/backend/modules/comercial/service.py:153:            # Mapeo por server_id (para SoftRestaurant sin sucursal)
 /app/backend/modules/comercial/service.py:157:            # Mapeo por server_id:sucursal (para MPRO con sucursal)
@@ -277,14 +277,14 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/comercial/adapters.py:25:Adaptadores para integración con APIs locales MPRO.
 /app/backend/modules/comercial/adapters.py:57:# CONFIGURACIÓN APIs LOCALES MPRO (FALLBACK LEGACY - SOLO SI EmpresaResolver FALLA)
 /app/backend/modules/comercial/adapters.py:62:APIS_MPRO_LOCALES_LEGACY = {
-/app/backend/modules/comercial/adapters.py:65:        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query"),
+/app/backend/modules/comercial/adapters.py:65:        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query"),
 /app/backend/modules/comercial/adapters.py:66:        "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
-/app/backend/modules/comercial/adapters.py:73:        "url": os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query"),
+/app/backend/modules/comercial/adapters.py:73:        "url": os.environ.get("API_MPRO_QRO_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query"),
 /app/backend/modules/comercial/adapters.py:74:        "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
 /app/backend/modules/comercial/adapters.py:82:APIS_MPRO_LOCALES = APIS_MPRO_LOCALES_LEGACY
 /app/backend/modules/comercial/adapters.py:135:            # NOTA: La URL y API key vienen de Servidores_Conexiones o variables de entorno
-/app/backend/modules/comercial/adapters.py:150:                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query")
-/app/backend/modules/comercial/adapters.py:152:                api_config["url"] = os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query")
+/app/backend/modules/comercial/adapters.py:150:                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query")
+/app/backend/modules/comercial/adapters.py:152:                api_config["url"] = os.environ.get("API_MPRO_QRO_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query")
 /app/backend/modules/comercial/adapters.py:157:            api_config["api_key"] = os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY")
 /app/backend/modules/comercial/adapters.py:168:def query_api_mpro_local(api_config: dict, sql_query: str, timeout: int = 3) -> dict:
 /app/backend/modules/comercial/adapters.py:170:    Consulta una API MPRO local y retorna los resultados.
@@ -300,7 +300,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/comercial/adapters.py:228:    Obtiene las ventas del día actual desde una API MPRO local.
 /app/backend/modules/comercial/adapters.py:267:    result = query_api_mpro_local(api_config, sql_ventas_hoy)
 /app/backend/modules/comercial/adapters.py:301:    server_host: str, 
-/app/backend/modules/comercial/adapters.py:317:        server_host: Host del servidor padre (ej: "54.39.104.176") - LEGACY, se mantiene por compatibilidad
+/app/backend/modules/comercial/adapters.py:317:        server_host: Host del servidor padre (ej: "<REDACTED_EDARSAHUB_SQL_HOST>") - LEGACY, se mantiene por compatibilidad
 /app/backend/modules/comercial/adapters.py:334:    print(f"*** API Local Check: server_host={server_host}, sucursal={sucursal_nombre}, fecha_fin={fecha_fin}, hoy_mexico={hoy}, MODO_VENTAS_DIA={solo_ventas_dia} ***")
 /app/backend/modules/comercial/adapters.py:406:    # ========== FALLBACK LEGACY: Buscar en APIS_MPRO_LOCALES_LEGACY ==========
 /app/backend/modules/comercial/adapters.py:408:    print("*** API Local: Intentando fallback legacy (APIS_MPRO_LOCALES_LEGACY) ***")
@@ -382,7 +382,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/comercial/routes.py.bak:1688:            if sid and not suc:  # SoftRestaurant
 /app/backend/modules/comercial/routes.py.bak:1700:        2. Resolver desde EDARSAHUB por server_id (SoftRestaurant)
 /app/backend/modules/comercial/routes.py.bak:1809:                    'system_type': snapshot.get('sistema_origen', 'MPRO'),
-/app/backend/modules/comercial/routes.py.bak:1938:        edarsahub_host = os.environ.get('EDARSAHUB_HOST', '54.39.104.176')
+/app/backend/modules/comercial/routes.py.bak:1938:        edarsahub_host = os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>')
 /app/backend/modules/comercial/routes.py.bak:1962:            edarsahub_host,
 /app/backend/modules/comercial/routes.py.bak:2043:        import pymssql
 /app/backend/modules/comercial/routes.py.bak:2044:        conn = pymssql.connect(
@@ -525,7 +525,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/comercial/routes.py.bak:5051:                        "mensaje": f"Datos históricos. Última sincronización: {stale_snapshot_mpro['fecha_snapshot']}"
 /app/backend/modules/comercial/routes.py.bak:5057:            logging.warning(f"[DASHBOARD-NO-LIVE-MPRO] {server['name']}: Sin datos en EDARSAHUB, retornando SIN_DATOS_EDARSAHUB")
 /app/backend/modules/comercial/repository.py:12:- Servidores: Tabla Servidores_Conexiones
-/app/backend/modules/comercial/repository.py:33:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/comercial/repository.py:33:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/comercial/repository.py:81:    Convierte una fila de Servidores_Conexiones (SQL) al formato esperado por el sistema.
 /app/backend/modules/comercial/repository.py:122:        'host': row.get('host', ''),
 /app/backend/modules/comercial/repository.py:124:        'database': row.get('database_name', ''),
@@ -636,7 +636,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/comercial/routes.py:1688:            if sid and not suc:  # SoftRestaurant
 /app/backend/modules/comercial/routes.py:1700:        2. Resolver desde EDARSAHUB por server_id (SoftRestaurant)
 /app/backend/modules/comercial/routes.py:1809:                    'system_type': snapshot.get('sistema_origen', 'MPRO'),
-/app/backend/modules/comercial/routes.py:1938:        edarsahub_host = os.environ.get('EDARSAHUB_HOST', '54.39.104.176')
+/app/backend/modules/comercial/routes.py:1938:        edarsahub_host = os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>')
 /app/backend/modules/comercial/routes.py:1962:            edarsahub_host,
 /app/backend/modules/comercial/routes.py:2043:        import pymssql
 /app/backend/modules/comercial/routes.py:2044:        conn = pymssql.connect(
@@ -760,17 +760,17 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/comercial/routes.py:4659:                    "comparativo": stale_snapshot_mpro.get('comparativo'),
 /app/backend/modules/comercial/routes.py:4662:                        "mensaje": f"Datos históricos. Última sincronización: {stale_snapshot_mpro['fecha_snapshot']}"
 /app/backend/modules/comercial/routes.py:4668:            logging.warning(f"[DASHBOARD-NO-LIVE-MPRO] {server['name']}: Sin datos en EDARSAHUB, retornando SIN_DATOS_EDARSAHUB")
-/app/backend/modules/fase2_operativo/sql_repository.py:30:    'host': '54.39.104.176',
+/app/backend/modules/fase2_operativo/sql_repository.py:30:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/modules/fase2_operativo/sql_repository.py:40:    import pymssql
 /app/backend/modules/fase2_operativo/sql_repository.py:41:    return pymssql.connect(
 /app/backend/modules/fase2_operativo/sql_repository.py:42:        server=EDARSAHUB_CONFIG['host'],
-/app/backend/modules/fase2_operativo/db_utils.py:26:        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/modules/fase2_operativo/db_utils.py:26:        mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/modules/fase2_operativo/repositories/tarea_repository.py:349:        import pymssql
 /app/backend/modules/fase2_operativo/repositories/sql_base_repository.py:19:import pymssql
 /app/backend/modules/fase2_operativo/repositories/sql_base_repository.py:316:    def _get_connection(self) -> pymssql.Connection:
 /app/backend/modules/fase2_operativo/repositories/sql_base_repository.py:318:        return pymssql.connect(
 /app/backend/modules/fase2_operativo/repositories/sql_base_repository.py:519:        pero internamente usa operaciones síncronas de pymssql.
-/app/backend/modules/fase2_operativo/scripts/init_notificaciones.py:20:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/modules/fase2_operativo/scripts/init_notificaciones.py:20:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/modules/fase2_operativo/schemas/justificacion_schemas.py:94:    cantidad_mpro: float = Field(..., description="Cantidad en MPRO")
 /app/backend/modules/fase2_operativo/schemas/justificacion_schemas.py:109:    cantidad_mpro: float
 /app/backend/modules/fase2_operativo/services/automatizacion_compras_service.py:107:        origen_sistema: str = "MPRO",
@@ -784,7 +784,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/api_connections/__init__.py:8:- Fuente primaria: EDARSAHUB SQL (Servidores_Conexiones con tipo_conexion='API_LOCAL')
 /app/backend/modules/api_connections/repository.py:5:- Fuente primaria de verdad: EDARSAHUB SQL (tabla Servidores_Conexiones)
 /app/backend/modules/api_connections/repository.py:13:4. Toda operación se registra en Servidores_Conexiones_Log
-/app/backend/modules/api_connections/repository.py:27:    'host': '54.39.104.176',
+/app/backend/modules/api_connections/repository.py:27:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/modules/api_connections/repository.py:59:    Registra operación en la bitácora Servidores_Conexiones_Log.
 /app/backend/modules/api_connections/repository.py:67:        INSERT INTO Servidores_Conexiones_Log 
 /app/backend/modules/api_connections/repository.py:80:            EDARSAHUB_CONFIG['host'], EDARSAHUB_CONFIG['port'],
@@ -829,12 +829,12 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/api_connections/universal_test_routes.py:35:import httpx
 /app/backend/modules/api_connections/universal_test_routes.py:138:    import pymssql
 /app/backend/modules/api_connections/universal_test_routes.py:142:        conn = pymssql.connect(
-/app/backend/modules/api_connections/universal_test_routes.py:143:            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/api_connections/universal_test_routes.py:143:            server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/api_connections/universal_test_routes.py:154:            SELECT id, nombre, system_type, tipo_conexion, api_url, 
 /app/backend/modules/api_connections/universal_test_routes.py:156:            FROM Servidores_Conexiones
 /app/backend/modules/api_connections/universal_test_routes.py:177:    import pymssql
 /app/backend/modules/api_connections/universal_test_routes.py:181:        conn = pymssql.connect(
-/app/backend/modules/api_connections/universal_test_routes.py:182:            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/api_connections/universal_test_routes.py:182:            server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/api_connections/universal_test_routes.py:193:            SELECT id, nombre, system_type, tipo_conexion, api_url, 
 /app/backend/modules/api_connections/universal_test_routes.py:195:            FROM Servidores_Conexiones
 /app/backend/modules/api_connections/universal_test_routes.py:225:            'url': row.get('api_url', ''),
@@ -849,7 +849,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/api_connections/universal_test_routes.py:999:    except httpx.TimeoutException:
 /app/backend/modules/api_connections/universal_test_routes.py:1010:    except httpx.ConnectError:
 /app/backend/modules/sistema/menu_service.py:10:import pymssql
-/app/backend/modules/sistema/menu_service.py:21:            'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/sistema/menu_service.py:21:            'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/sistema/menu_service.py:29:        return pymssql.connect(
 /app/backend/modules/sistema/menu_service.py:30:            server=self.db_config['host'],
 /app/backend/modules/costos_margenes/repository.py:17:        EDARSAHUB_CONFIG['host'],
@@ -911,7 +911,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/rh/importador/routes.py:624:    - Solo registros de MPro_CENTRAL2020
 /app/backend/modules/rh/importador/routes.py:710:    - Solo registros de MPro_CENTRAL2020
 /app/backend/modules/rh/importador/schemas.py:97:    fuente: str = Field(..., description="Origen: Excel_CF, MPro_Origen, MPro_QRO")
-/app/backend/modules/rh/repository.py:43:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/rh/repository.py:43:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/rh/repository.py:151:    if not EDARSAHUB_CONFIG.get('host') or not EDARSAHUB_CONFIG.get('database'):
 /app/backend/modules/rh/repository.py:152:        logging.error("EDARSAHUB_CONFIG incompleto: falta host o database")
 /app/backend/modules/rh/repository.py:165:    if not EDARSAHUB_CONFIG.get('host') or not EDARSAHUB_CONFIG.get('database'):
@@ -940,7 +940,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/rh/schemas.py:112:    mpro_id: str = Field(default="", max_length=50, description="ID de mapeo con MPRO")
 /app/backend/modules/rh/schemas.py:149:    mpro_id: Optional[str] = Field(None, max_length=50)
 /app/backend/modules/rh/schemas.py:178:    MPRO_ID: Optional[str] = None
-/app/backend/modules/configuracion/repositories/config_asignaciones_repository.py:26:    'host': '54.39.104.176',
+/app/backend/modules/configuracion/repositories/config_asignaciones_repository.py:26:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/modules/configuracion/repositories/config_asignaciones_repository.py:36:    import pymssql
 /app/backend/modules/configuracion/repositories/config_asignaciones_repository.py:37:    return pymssql.connect(
 /app/backend/modules/configuracion/repositories/config_asignaciones_repository.py:38:        server=EDARSAHUB_CONFIG['host'],
@@ -959,7 +959,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/configuracion/services/almacenes_sync_service.py:175:                server['host'],
 /app/backend/modules/configuracion/services/almacenes_sync_service.py:208:            if system_type == "SoftRestaurant":
 /app/backend/modules/configuracion/services/almacenes_sync_service.py:211:            else:  # MPRO
-/app/backend/modules/configuracion/routes/config_asignaciones_routes.py:43:        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/modules/configuracion/routes/config_asignaciones_routes.py:43:        mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/modules/consultas_sql/service.py:69:            sistema: 'SOFTRESTAURANT', 'MPRO' o None para todos
 /app/backend/modules/consultas_sql/service.py:340:            'sistemas': ['SOFTRESTAURANT', 'MPRO'],
 /app/backend/modules/consultas_sql/repository.py:64:            host=self._config['host'],
@@ -990,7 +990,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/consultas_sql/models.py:342:    codigo_sistema: Optional[str] = None  # 'SOFTRESTAURANT', 'MPRO'
 /app/backend/modules/consultas_sql/schemas.py:23:    sistema: Optional[str] = Field(None, description="Sistema: SOFTRESTAURANT, MPRO")
 /app/backend/modules/inteligencia_comercial/routes.py:24:import pymssql
-/app/backend/modules/inteligencia_comercial/routes.py:34:    "host": os.environ.get("EDARSAHUB_HOST", "54.39.104.176"),
+/app/backend/modules/inteligencia_comercial/routes.py:34:    "host": os.environ.get("EDARSAHUB_HOST", "<REDACTED_EDARSAHUB_SQL_HOST>"),
 /app/backend/modules/inteligencia_comercial/routes.py:79:    return pymssql.connect(
 /app/backend/modules/inteligencia_comercial/routes.py:80:        server=EDARSAHUB_CONFIG["host"],
 /app/backend/modules/inteligencia_comercial/routes.py:784:                {"codigo": "130MID", "nombre": "130° MERIDA", "sistema": "SoftRestaurant"},
@@ -1233,9 +1233,9 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/comercial_v2/carga_historica_abril_2026.py:778:            reporte_unidad = cargar_unidad_mpro(
 /app/backend/modules/comercial_v2/carga_historica_abril_2026.py:853:            EDARSAHUB_CONFIG['host'],
 /app/backend/modules/comercial_v2/repository_readonly.py:9:- SQL vivo a SoftRestaurant/MPRO
-/app/backend/modules/comercial_v2/repository_readonly.py:35:    'host': '54.39.104.176',
+/app/backend/modules/comercial_v2/repository_readonly.py:35:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/modules/comercial_v2/repository_readonly.py:47:            EDARSAHUB_CONFIG['host'],
-/app/backend/modules/comercial_v2/repository_comercial_edarsahub.py:43:    'host': '54.39.104.176',
+/app/backend/modules/comercial_v2/repository_comercial_edarsahub.py:43:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/modules/comercial_v2/repository_comercial_edarsahub.py:55:            EDARSAHUB_CONFIG['host'],
 /app/backend/modules/comercial_v2/repository_comercial_edarsahub.py:75:    Lee de Servidores_Conexiones para no hardcodear.
 /app/backend/modules/comercial_v2/repository_comercial_edarsahub.py:85:        host,
@@ -1327,9 +1327,9 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/tablajeria/dashboard_service.py:10:import pymssql
 /app/backend/modules/tablajeria/dashboard_service.py:27:        return pymssql.connect(
 /app/backend/modules/tablajeria/dashboard_service.py:28:            server=self.db_config.get('host'),
-/app/backend/modules/tablajeria/dashboard_service.py:390:        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/tablajeria/dashboard_service.py:390:        'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/tablajeria/fase6_service.py:11:import pymssql
-/app/backend/modules/tablajeria/fase6_service.py:71:            'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/tablajeria/fase6_service.py:71:            'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/tablajeria/fase6_service.py:81:        return pymssql.connect(
 /app/backend/modules/tablajeria/fase6_service.py:82:            server=self.db_config['host'],
 /app/backend/modules/tablajeria/sync_service.py:10:import pymssql
@@ -1398,7 +1398,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/tablajeria/sync_service.py:610:                # TODO: Implementar lógica específica de SoftRestaurant
 /app/backend/modules/tablajeria/sync_service.py:639:                'MPRO' if 'MPRO' in (result.servidor_nombre or '') else 'SOFTRESTAURANT',
 /app/backend/modules/tablajeria/routes.py:18:import pymssql
-/app/backend/modules/tablajeria/routes.py:37:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/tablajeria/routes.py:37:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/tablajeria/routes.py:50:    return pymssql.connect(
 /app/backend/modules/tablajeria/routes.py:51:        server=DB_CONFIG['host'],
 /app/backend/modules/tablajeria/routes.py:237:            SELECT id, nombre, system_type, host, port, database_name, activo
@@ -1499,15 +1499,15 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/crm/automation_service.py:16:import pymssql
 /app/backend/modules/crm/automation_service.py:31:        return pymssql.connect(
 /app/backend/modules/crm/automation_service.py:32:            server=self.db_config['host'],
-/app/backend/modules/crm/automation_service.py:416:        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
-/app/backend/modules/crm/comercial_routes.py:30:    'host': os.environ.get('EDARSAHUB_SQL_HOST', '54.39.104.176'),
+/app/backend/modules/crm/automation_service.py:416:        'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
+/app/backend/modules/crm/comercial_routes.py:30:    'host': os.environ.get('EDARSAHUB_SQL_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/crm/comercial_routes.py:178:    import pymssql
 /app/backend/modules/crm/comercial_routes.py:184:        conn = pymssql.connect(
-/app/backend/modules/crm/comercial_routes.py:185:            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/crm/comercial_routes.py:185:            server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/crm/comercial_routes.py:743:    fecha_compromiso: Optional[date] = None
 /app/backend/modules/crm/comercial_routes.py:867:    fecha_compromiso_entrega: Optional[date] = None
 /app/backend/modules/crm/trigger_service.py:21:import pymssql
-/app/backend/modules/crm/trigger_service.py:65:            'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/crm/trigger_service.py:65:            'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/crm/trigger_service.py:73:        return pymssql.connect(
 /app/backend/modules/crm/trigger_service.py:74:            server=self.db_config['host'],
 /app/backend/modules/crm/trigger_service.py:451:            response = requests.post(
@@ -1527,20 +1527,20 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/crm/vtiger_client.py:83:            self._client = httpx.AsyncClient(
 /app/backend/modules/crm/vtiger_client.py:528:        base_url: URL de la instancia (ej: https://micrm.hostw3b.com)
 /app/backend/modules/crm/repository.py:9:import pymssql
-/app/backend/modules/crm/repository.py:20:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/crm/repository.py:20:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/crm/repository.py:32:    return pymssql.connect(
 /app/backend/modules/crm/repository.py:33:        server=EDARSAHUB_CONFIG['host'],
 /app/backend/modules/crm/native_routes.py:77:    import pymssql
 /app/backend/modules/crm/native_routes.py:81:        conn = pymssql.connect(
-/app/backend/modules/crm/native_routes.py:82:            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/crm/native_routes.py:82:            server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/crm/native_routes.py:307:    import pymssql
 /app/backend/modules/crm/native_routes.py:311:        conn = pymssql.connect(
-/app/backend/modules/crm/native_routes.py:312:            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/crm/native_routes.py:312:            server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/crm/native_routes.py:418:    import pymssql
 /app/backend/modules/crm/native_routes.py:422:        conn = pymssql.connect(
-/app/backend/modules/crm/native_routes.py:423:            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/crm/native_routes.py:423:            server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/crm/sql/execute_crm_migration.py:8:import pymssql
-/app/backend/modules/crm/sql/execute_crm_migration.py:13:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/crm/sql/execute_crm_migration.py:13:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/crm/sql/execute_crm_migration.py:33:    # Nota: pymssql no soporta GO, hay que ejecutar cada batch por separado
 /app/backend/modules/crm/sql/execute_crm_migration.py:68:        conn = pymssql.connect(
 /app/backend/modules/crm/sql/execute_crm_migration.py:69:            server=EDARSAHUB_CONFIG['host'],
@@ -1555,7 +1555,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/crm/integration/staging_service.py:33:        return pymssql.connect(
 /app/backend/modules/crm/integration/staging_service.py:34:            server=self.db_config['host'],
 /app/backend/modules/crm/integration_routes.py:14:import pymssql
-/app/backend/modules/crm/integration_routes.py:26:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/crm/integration_routes.py:26:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/crm/integration_routes.py:85:    return pymssql.connect(
 /app/backend/modules/crm/integration_routes.py:86:        server=DB_CONFIG['host'],
 /app/backend/modules/finanzas/sql_subprocess_helper.py:9:DICIEMBRE 2026 - FINANZAS-CXP-MPRO-CREDENTIALS-SECURITY-01:
@@ -1572,7 +1572,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/finanzas/sql_subprocess_helper.py:317:            result['connection'] = conn.get('name', conn['host'])
 /app/backend/modules/finanzas/repository_bancarios.py:51:            EDARSAHUB_CONFIG['host'],
 /app/backend/modules/finanzas/repository_cuadres_z_edarsahub.py:23:import pymssql
-/app/backend/modules/finanzas/repository_cuadres_z_edarsahub.py:31:        'server': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/finanzas/repository_cuadres_z_edarsahub.py:31:        'server': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/finanzas/repository_cuadres_z_edarsahub.py:37:    return pymssql.connect(**config, login_timeout=30)
 /app/backend/modules/finanzas/repository_cuadres_z_edarsahub.py:902:        server_id → Servidores_Conexiones → Sistema_SucursalServidorMapeo → Sistema_Sucursales
 /app/backend/modules/finanzas/repository_cuadres_z_edarsahub.py:938:            # Si no hay cuadres, buscar en Servidores_Conexiones
@@ -1626,11 +1626,11 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/finanzas/tesoreria.py:848:                fuente = 'SOFTRESTAURANT'
 /app/backend/modules/finanzas/tesoreria.py:849:            elif system_type in ['MANAGEMENTPRO', 'MPRO']:
 /app/backend/modules/finanzas/tesoreria.py:850:                fuente = 'MPRO'
-/app/backend/modules/finanzas/repository_cuadres_z.py:19:        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/modules/finanzas/repository_cuadres_z.py:19:        mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/modules/finanzas/sync_propinas_mpro.py:2:SUBFASE 3.3 - Sincronización de Propinas TPV desde MPRO hacia EDARSAHUB
 /app/backend/modules/finanzas/sync_propinas_mpro.py:4:Este módulo extrae propinas pagadas con tarjeta de MPRO (ManagementPro)
 /app/backend/modules/finanzas/sync_propinas_mpro.py:37:import pymssql
-/app/backend/modules/finanzas/sync_propinas_mpro.py:65:    'server': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/finanzas/sync_propinas_mpro.py:65:    'server': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/finanzas/sync_propinas_mpro.py:72:# Unidades MPRO autorizadas
 /app/backend/modules/finanzas/sync_propinas_mpro.py:73:UNIDADES_MPRO_AUTORIZADAS = ['130° QUERETARO', 'ORIGEN']
 /app/backend/modules/finanzas/sync_propinas_mpro.py:75:# Formas de pago tarjeta en MPRO (Tipo '04')
@@ -1644,7 +1644,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/finanzas/sync_propinas_mpro.py:125:              AND s.system_type IN ('MPRO', 'ManagementPro')
 /app/backend/modules/finanzas/sync_propinas_mpro.py:131:            logger.warning(f"[SYNC_PROPINAS_MPRO] Unidad MPRO no encontrada: {unidad_nombre}")
 /app/backend/modules/finanzas/sync_propinas_mpro.py:134:        # Mapeo de unidades MPRO a códigos de empresa en CENTRAL2020
-/app/backend/modules/finanzas/sync_propinas_mpro.py:154:            'host': unidad['host'] or '54.39.104.176',
+/app/backend/modules/finanzas/sync_propinas_mpro.py:154:            'host': unidad['host'] or '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/modules/finanzas/sync_propinas_mpro.py:156:            'database': unidad['database_name'] or 'CENTRAL2020',
 /app/backend/modules/finanzas/sync_propinas_mpro.py:159:            'system_type': 'MPRO'
 /app/backend/modules/finanzas/sync_propinas_mpro.py:166:def get_mpro_connection(conn_info: Dict):
@@ -1700,7 +1700,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/finanzas/sync_cortes_softrestaurant.py:4:Este módulo extrae cortes de caja (turnos cerrados) de SoftRestaurant 
 /app/backend/modules/finanzas/sync_cortes_softrestaurant.py:13:- tabla `turnos` (SoftRestaurant)
 /app/backend/modules/finanzas/sync_cortes_softrestaurant.py:31:import pymssql
-/app/backend/modules/finanzas/sync_cortes_softrestaurant.py:41:    'server': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/finanzas/sync_cortes_softrestaurant.py:41:    'server': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/finanzas/sync_cortes_softrestaurant.py:48:# Unidades SoftRestaurant autorizadas
 /app/backend/modules/finanzas/sync_cortes_softrestaurant.py:58:    return pymssql.connect(
 /app/backend/modules/finanzas/sync_cortes_softrestaurant.py:71:    Obtiene información de conexión para una unidad SoftRestaurant desde EDARSAHUB.
@@ -1775,7 +1775,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/finanzas/sync_propinas_softrestaurant.py:4:Este módulo extrae propinas pagadas con tarjeta (propinatarjeta) de SoftRestaurant
 /app/backend/modules/finanzas/sync_propinas_softrestaurant.py:19:NOTA: NO MODIFICA repository_softrestaurant.py ni CxP (BLINDADOS)
 /app/backend/modules/finanzas/sync_propinas_softrestaurant.py:34:import pymssql
-/app/backend/modules/finanzas/sync_propinas_softrestaurant.py:63:    'server': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/finanzas/sync_propinas_softrestaurant.py:63:    'server': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/finanzas/sync_propinas_softrestaurant.py:70:# Unidades SoftRestaurant autorizadas para Propinas TPV
 /app/backend/modules/finanzas/sync_propinas_softrestaurant.py:80:    return pymssql.connect(
 /app/backend/modules/finanzas/sync_propinas_softrestaurant.py:93:    Obtiene información de conexión para una unidad SoftRestaurant desde EDARSAHUB.
@@ -1824,7 +1824,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/finanzas/sync_propinas_softrestaurant.py:778:    'sincronizar_propinas_softrestaurant',
 /app/backend/modules/finanzas/repository_ingresos_edarsahub.py:8:NO depende de conexiones en vivo a SoftRestaurant/MPRO.
 /app/backend/modules/finanzas/repository_ingresos_edarsahub.py:24:import pymssql
-/app/backend/modules/finanzas/repository_ingresos_edarsahub.py:35:    'server': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/finanzas/repository_ingresos_edarsahub.py:35:    'server': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/finanzas/repository_ingresos_edarsahub.py:45:    return pymssql.connect(
 /app/backend/modules/finanzas/repository_ingresos_edarsahub.py:128:    Fuente: Finanzas_CortesCaja (datos sincronizados de SoftRestaurant y MPRO)
 /app/backend/modules/finanzas/repository_ingresos_edarsahub.py:156:            sistema_origen: 'SoftRestaurant', 'MPRO', None = todos
@@ -2105,7 +2105,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/finanzas/propinas_tpv/sql_repository.py:631:            'formas_pago_tpv_softrestaurant': {
 /app/backend/modules/finanzas/propinas_tpv/sql_repository.py:657:            'formas_pago_tpv_softrestaurant': {
 /app/backend/modules/finanzas/propinas_tpv/repository_edarsahub.py:26:import pymssql
-/app/backend/modules/finanzas/propinas_tpv/repository_edarsahub.py:54:    'server': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/finanzas/propinas_tpv/repository_edarsahub.py:54:    'server': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/finanzas/propinas_tpv/repository_edarsahub.py:84:        return pymssql.connect(
 /app/backend/modules/finanzas/propinas_tpv/repository_edarsahub.py:116:            sistema_origen: Filtrar por SistemaOrigen (SoftRestaurant, MPRO)
 /app/backend/modules/finanzas/propinas_tpv/schema_detector.py:2:Detector de esquema para SoftRestaurant.
@@ -2257,7 +2257,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/finanzas/test_conn_cienfuegos.py:17:3. Validación de configuración (host, port, database, user)
 /app/backend/modules/finanzas/test_conn_cienfuegos.py:18:4. Resolución DNS del host
 /app/backend/modules/finanzas/test_conn_cienfuegos.py:20:6. Conexión SQL (pymssql y pytds)
-/app/backend/modules/finanzas/test_conn_cienfuegos.py:47:    'server': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/finanzas/test_conn_cienfuegos.py:47:    'server': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/finanzas/test_conn_cienfuegos.py:102:    import pymssql
 /app/backend/modules/finanzas/test_conn_cienfuegos.py:103:    return pymssql.connect(
 /app/backend/modules/finanzas/test_conn_cienfuegos.py:114:def parse_host_ddns(host_raw: str, default_port: int = 1433) -> Dict[str, Any]:
@@ -2375,7 +2375,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/finanzas/sync_cortes_mpro.py:2:SUBFASE 2.3 - Sincronización de Cortes de Caja desde MPRO/ManagementPro hacia EDARSAHUB
 /app/backend/modules/finanzas/sync_cortes_mpro.py:4:Este módulo extrae cortes de caja de MPRO (CENTRAL2020.Comanda_Corte) 
 /app/backend/modules/finanzas/sync_cortes_mpro.py:30:import pymssql
-/app/backend/modules/finanzas/sync_cortes_mpro.py:40:    'server': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/finanzas/sync_cortes_mpro.py:40:    'server': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/finanzas/sync_cortes_mpro.py:47:# Unidades MPRO autorizadas con su mapeo de sucursal
 /app/backend/modules/finanzas/sync_cortes_mpro.py:48:UNIDADES_MPRO_AUTORIZADAS = {
 /app/backend/modules/finanzas/sync_cortes_mpro.py:60:    return pymssql.connect(
@@ -2477,7 +2477,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/cava_socios/service.py:14:import pymssql
 /app/backend/modules/cava_socios/service.py:32:        return pymssql.connect(
 /app/backend/modules/cava_socios/service.py:33:            server=self.db_config.get('host'),
-/app/backend/modules/cava_socios/service.py:570:        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/cava_socios/service.py:570:        'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/cava_socios/notification_service.py:30:        self.email_host = os.environ.get('EMAIL_HOST', 'mail.edarsa.com.mx')
 /app/backend/modules/cava_socios/notification_service.py:115:                with smtplib.SMTP(self.email_host, self.email_port) as server:
 /app/backend/modules/cava_socios/notification_service.py:120:                with smtplib.SMTP(self.email_host, self.email_port) as server:
@@ -2506,7 +2506,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/compras/service.py:301:            result = repo.query_facturas_proveedor_mpro(server, sucursal_id, meses, anio)
 /app/backend/modules/compras/service.py:320:            detail=f"Las facturas de proveedor solo están disponibles para sistemas MPRO. Sistema actual: {system_type}"
 /app/backend/modules/compras/repository_compras_sql.py:34:    import pymssql
-/app/backend/modules/compras/repository_compras_sql.py:36:    host = os.environ.get('EDARSAHUB_HOST', '54.39.104.176')
+/app/backend/modules/compras/repository_compras_sql.py:36:    host = os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>')
 /app/backend/modules/compras/repository_compras_sql.py:42:    return pymssql.connect(
 /app/backend/modules/compras/repository_compras_sql.py:43:        server=host,
 /app/backend/modules/compras/__init__.py:38:    is_mpro_system,
@@ -2514,7 +2514,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/compras/__init__.py:88:    'is_mpro_system',
 /app/backend/modules/compras/__init__.py:89:    'is_softrestaurant_system',
 /app/backend/modules/compras/eventos_compras.py:28:import pymssql
-/app/backend/modules/compras/eventos_compras.py:43:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/compras/eventos_compras.py:43:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/compras/eventos_compras.py:141:        return pymssql.connect(
 /app/backend/modules/compras/eventos_compras.py:142:            server=EDARSAHUB_CONFIG['host'],
 /app/backend/modules/compras/eventos_compras.py:309:        return pymssql.connect(
@@ -2562,7 +2562,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/compras/historical_kpis_repository.py:38:        "host": EDARSAHUB_CONFIG['host'],
 /app/backend/modules/compras/historical_kpis_repository.py:51:        server=config["host"],
 /app/backend/modules/compras/sync_service.py:13:import pymssql
-/app/backend/modules/compras/sync_service.py:22:    'host': '54.39.104.176',
+/app/backend/modules/compras/sync_service.py:22:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/modules/compras/sync_service.py:32:    return pymssql.connect(
 /app/backend/modules/compras/sync_service.py:33:        server=EDARSAHUB_CONFIG['host'],
 /app/backend/modules/compras/sync_service.py:180:        server_info: Diccionario con host, port, database, username, password, system_type
@@ -2576,7 +2576,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/modules/compras/sync_service.py:319:        if is_mpro_system(system_type):
 /app/backend/modules/compras/sync_service.py:344:        elif is_softrestaurant_system(system_type):
 /app/backend/modules/compras/sync_service.py:374:            server_info['host'],
-/app/backend/modules/compras/repository_pedidos_sql.py:35:    'host': '54.39.104.176',
+/app/backend/modules/compras/repository_pedidos_sql.py:35:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/modules/compras/repository_pedidos_sql.py:45:    import pymssql
 /app/backend/modules/compras/repository_pedidos_sql.py:48:        conn = pymssql.connect(
 /app/backend/modules/compras/repository_pedidos_sql.py:49:            server=EDARSAHUB_CONFIG['host'],
@@ -2620,7 +2620,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/scripts/sync_agent_piloto.py:307:    parser = argparse.ArgumentParser(description='EDARSA Sync Agent Piloto - SoftRestaurant')
 /app/backend/scripts/sync_agent_piloto.py:353:        records = extract_kpis_softrestaurant(conn, driver_type, fecha)
 /app/backend/scripts/correccion_sistema_menus_y_fallbacks.py:3:import pymssql
-/app/backend/scripts/correccion_sistema_menus_y_fallbacks.py:7:    "server": os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/correccion_sistema_menus_y_fallbacks.py:7:    "server": os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/correccion_sistema_menus_y_fallbacks.py:23:    conn = pymssql.connect(
 /app/backend/scripts/recuperacion_ui_fallback.py:24:def obtener_unidades_comerciales_robust(api_url="http://localhost:3000/api/comercial/units", timeout_seconds=8):
 /app/backend/scripts/recuperacion_ui_fallback.py:29:    logger.info(f"Iniciando solicitud a {api_url} con límite de tiempo estricto de {timeout_seconds}s...")
@@ -2628,7 +2628,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/scripts/recuperacion_ui_fallback.py:59:        # Fallo de Red Crítico, Host Apagado o Errores HTTP no predecibles
 /app/backend/scripts/recuperacion_ui_fallback.py:67:    # 1. Llamada a un host inexistente/fuera de línea para detonar la recarga forzada
 /app/backend/scripts/consultar_cache_finops.py:4:import pymssql
-/app/backend/scripts/consultar_cache_finops.py:8:    "server": os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/consultar_cache_finops.py:8:    "server": os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/consultar_cache_finops.py:16:    return pymssql.connect(
 /app/backend/scripts/consultar_cache_finops.py:35:        # 1. Comprobar caché
 /app/backend/scripts/finops_shield_mitigacion.py:5:TECNOLOGÍA: Python 3.8+ / pyodbc o pymssql
@@ -2667,7 +2667,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/scripts/validate_system_capability_integration_fase6.py:189:    result = validate_server_for_sync({'system_type': 'ManagmentPro', 'nombre': 'TestMPRO'})
 /app/backend/scripts/validate_system_capability_integration_fase6.py:287:        print("   - SOFTRESTAURANT y MPRO en Sync")
 /app/backend/scripts/create_sesiones_tables.py:6:import pymssql
-/app/backend/scripts/create_sesiones_tables.py:11:    'host': '54.39.104.176',
+/app/backend/scripts/create_sesiones_tables.py:11:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/scripts/create_sesiones_tables.py:78:    print(f"Conectando a {EDARSAHUB_CONFIG['host']}:{EDARSAHUB_CONFIG['port']}/{EDARSAHUB_CONFIG['database']}...")
 /app/backend/scripts/create_sesiones_tables.py:81:        conn = pymssql.connect(
 /app/backend/scripts/create_sesiones_tables.py:82:            server=EDARSAHUB_CONFIG['host'],
@@ -2682,7 +2682,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/scripts/carga_historica_runner.py:161:        {'nombre': 'ORIGEN', 'sistema': 'MPRO', 'meses': 24}
 /app/backend/scripts/carga_historica_runner.py:200:                resultado = procesar_mes_mpro(nombre, periodo)
 /app/backend/scripts/run_historical_load_finanzas.py:11:- SOFTRESTAURANT: Cortes Z y CxP
-/app/backend/scripts/run_historical_load_finanzas.py:88:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/run_historical_load_finanzas.py:88:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/run_historical_load_finanzas.py:154:def parse_server_host(server: Dict) -> tuple:
 /app/backend/scripts/run_historical_load_finanzas.py:156:    Parsea hosts complejos con formatos como:
 /app/backend/scripts/run_historical_load_finanzas.py:157:    - hostname
@@ -2735,11 +2735,11 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/scripts/run_historical_load_finanzas.py:614:        if normalized in ["SOFTRESTAURANT", "MANAGEMENTPRO"]:
 /app/backend/scripts/motor_consolidacion_circuit_breaker.py:39:        response = requests.get(
 /app/backend/scripts/create_cava_socios_rbac.py:13:import pymssql
-/app/backend/scripts/create_cava_socios_rbac.py:18:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/create_cava_socios_rbac.py:18:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/create_cava_socios_rbac.py:27:    return pymssql.connect(
 /app/backend/scripts/create_cava_socios_rbac.py:28:        server=DB_CONFIG['host'],
 /app/backend/scripts/create_cava_socios_tables.py:14:import pymssql
-/app/backend/scripts/create_cava_socios_tables.py:19:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/create_cava_socios_tables.py:19:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/create_cava_socios_tables.py:28:    return pymssql.connect(
 /app/backend/scripts/create_cava_socios_tables.py:29:        server=DB_CONFIG['host'],
 /app/backend/scripts/validate_catalogo_sistemas_endpoints.py:31:API_URL = os.environ.get('API_URL', 'https://g0049-ldnv-u959.preview.emergentagent.com')
@@ -2783,9 +2783,9 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/scripts/validate_catalogo_sistemas_endpoints.py:376:    print(f"API URL: {API_URL}")
 /app/backend/scripts/fn_calcular_proyeccion_mensual.py:5:TECNOLOGÍA: Python 3.8+ / pyodbc o pymssql
 /app/backend/scripts/update_proyeccion_con_funcion.py:3:import pymssql
-/app/backend/scripts/update_proyeccion_con_funcion.py:7:    "server": os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/update_proyeccion_con_funcion.py:7:    "server": os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/update_proyeccion_con_funcion.py:15:    conn = pymssql.connect(
-/app/backend/scripts/precheck_conectividad.py:23:MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/precheck_conectividad.py:23:MONGO_URL = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/precheck_conectividad.py:44:        "system_type": {"$in": ["SoftRestaurant", "MPRO"]}
 /app/backend/scripts/precheck_conectividad.py:64:        host = srv.get('host', '')
 /app/backend/scripts/precheck_conectividad.py:75:        if not all([host, port, database, username, password]):
@@ -2794,13 +2794,13 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/scripts/precheck_conectividad.py:124:            "host": f"{host}:{port}",
 /app/backend/scripts/create_crm_automation_tables.py:7:import pymssql
 /app/backend/scripts/create_crm_automation_tables.py:14:    conn = pymssql.connect(
-/app/backend/scripts/create_crm_automation_tables.py:15:        server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/create_crm_automation_tables.py:15:        server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/reconcile_servers_sql_mongo.py:59:        'host': server.get('host', 'N/A'),
-/app/backend/scripts/reconcile_servers_sql_mongo.py:107:        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/reconcile_servers_sql_mongo.py:107:        mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/reconcile_servers_sql_mongo.py:159:                if sql_server.get('host') != mongo_server.get('host'):
 /app/backend/scripts/reconcile_servers_sql_mongo.py:160:                    diffs.append(f"host: SQL='{sql_server.get('host')}' vs Mongo='{mongo_server.get('host')}'")
 /app/backend/scripts/correccion_proyeccion_y_moneda_final.py:6:TECNOLOGÍA: Python 3.8+ / pyodbc o pymssql
-/app/backend/scripts/correccion_proyeccion_y_moneda_final.py:29:    "server": os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/correccion_proyeccion_y_moneda_final.py:29:    "server": os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/correccion_proyeccion_y_moneda_final.py:84:    import pymssql
 /app/backend/scripts/correccion_proyeccion_y_moneda_final.py:90:        conn = pymssql.connect(
 /app/backend/scripts/validate_encrypted_server_connectivity.py:15:    --system-type <type>    Filtrar por SOFTRESTAURANT|MANAGEMENTPRO|API
@@ -2832,20 +2832,20 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/scripts/validate_encrypted_server_connectivity.py:542:        print(f"{active} {id_short:<8} | {name:<25} | {sys_type:<15} | {host:<22} | {secret:<12}")
 /app/backend/scripts/validate_encrypted_server_connectivity.py:609:    parser.add_argument('--system-type', type=str, help='Filtrar por SOFTRESTAURANT|MANAGEMENTPRO|API')
 /app/backend/scripts/seed_inteligencia_demo.py:7:import pymssql
-/app/backend/scripts/seed_inteligencia_demo.py:13:EDARSAHUB_HOST = '54.39.104.176'
+/app/backend/scripts/seed_inteligencia_demo.py:13:EDARSAHUB_HOST = '<REDACTED_EDARSAHUB_SQL_HOST>'
 /app/backend/scripts/seed_inteligencia_demo.py:22:    conn = pymssql.connect(
 /app/backend/scripts/seed_inteligencia_demo.py:23:        server=EDARSAHUB_HOST,
 /app/backend/scripts/fase_sync_3a_r2_pordiasemana.py:89:            EDARSAHUB_CONFIG['host'],
 /app/backend/scripts/fase_sync_3a_r2_pordiasemana.py:239:                        EDARSAHUB_CONFIG['host'],
 /app/backend/scripts/sync_response_cache_finops.py:3:import pymssql
-/app/backend/scripts/sync_response_cache_finops.py:8:    "server": os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/sync_response_cache_finops.py:8:    "server": os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/sync_response_cache_finops.py:16:    return pymssql.connect(
 /app/backend/scripts/sync_response_cache_finops.py:149:        # 1. Comprobar caché
 /app/backend/scripts/consolidado_general_sistema_comercial.py:6:TECNOLOGÍA: Python 3.8+ / pyodbc o pymssql
 /app/backend/scripts/consolidado_general_sistema_comercial.py:409:import pymssql
 /app/backend/scripts/consolidado_general_sistema_comercial.py:414:    return pymssql.connect(
-/app/backend/scripts/consolidado_general_sistema_comercial.py:415:        server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
-/app/backend/scripts/carga_historica_fase23.py:56:MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/consolidado_general_sistema_comercial.py:415:        server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
+/app/backend/scripts/carga_historica_fase23.py:56:MONGO_URL = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/carga_historica_fase23.py:140:        Solo SoftRestaurant y MPRO.
 /app/backend/scripts/carga_historica_fase23.py:143:            "system_type": {"$in": ["SoftRestaurant", "MPRO"]}
 /app/backend/scripts/carga_historica_fase23.py:218:        Procesa un mes de datos para SoftRestaurant.
@@ -2878,7 +2878,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/scripts/validate_consultas_sql_endpoints_fase_4b.py:257:        resp = requests.post(
 /app/backend/scripts/validate_consultas_sql_endpoints_fase_4b.py:274:        resp = requests.get(f"{API_BASE}/api/consultas-sql/catalogo/SR_VENTAS_DIA/servidores", headers=headers, timeout=30)
 /app/backend/scripts/create_tablajeria_rbac.py:12:import pymssql
-/app/backend/scripts/create_tablajeria_rbac.py:18:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/create_tablajeria_rbac.py:18:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/create_tablajeria_rbac.py:27:    return pymssql.connect(
 /app/backend/scripts/create_tablajeria_rbac.py:28:        server=DB_CONFIG['host'],
 /app/backend/scripts/integracion_unidades_sin_duplicar.py:5:TECNOLOGÍA: Python 3.8+ / pyodbc o pymssql
@@ -2929,38 +2929,38 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/scripts/sync_agent_config_template.yaml:39:  # Nombre de la base de datos SoftRestaurant
 /app/backend/scripts/sync_agent_config_template.yaml:50:# 1. El token JWT expira en 1 año. Rotarlo antes si hay sospecha de compromiso.
 /app/backend/scripts/consolidado_general_sistema_comercial_v2.py:6:TECNOLOGÍA: Python 3.8+ / pyodbc o pymssql
-/app/backend/scripts/consolidado_general_sistema_comercial_v2.py:32:    "server": os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/consolidado_general_sistema_comercial_v2.py:32:    "server": os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/consolidado_general_sistema_comercial_v2.py:192:    import pymssql
 /app/backend/scripts/consolidado_general_sistema_comercial_v2.py:196:    conn = pymssql.connect(
 /app/backend/scripts/create_scheduler_tables.py:6:import pymssql
-/app/backend/scripts/create_scheduler_tables.py:10:    'host': '54.39.104.176',
+/app/backend/scripts/create_scheduler_tables.py:10:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/scripts/create_scheduler_tables.py:107:    print(f"Conectando a {EDARSAHUB_CONFIG['host']}:{EDARSAHUB_CONFIG['port']}/{EDARSAHUB_CONFIG['database']}...")
 /app/backend/scripts/create_scheduler_tables.py:110:        conn = pymssql.connect(
 /app/backend/scripts/create_scheduler_tables.py:111:            server=EDARSAHUB_CONFIG['host'],
-/app/backend/scripts/setup_kpis_indexes.py:213:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/setup_kpis_indexes.py:213:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/audit_fecha_operativa_0600.py:28:import pymssql
 /app/backend/scripts/audit_fecha_operativa_0600.py:48:    return pymssql.connect(
 /app/backend/scripts/create_workflow_tables.py:5:import pymssql
-/app/backend/scripts/create_workflow_tables.py:10:    'host': '54.39.104.176',
+/app/backend/scripts/create_workflow_tables.py:10:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/scripts/create_workflow_tables.py:41:    print(f"Conectando a {EDARSAHUB_CONFIG['host']}:{EDARSAHUB_CONFIG['database']}...")
 /app/backend/scripts/create_workflow_tables.py:43:    conn = pymssql.connect(
 /app/backend/scripts/create_workflow_tables.py:44:        server=EDARSAHUB_CONFIG['host'],
-/app/backend/scripts/validar_post_carga.py:21:MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/validar_post_carga.py:21:MONGO_URL = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/encrypt_existing_server_secrets.py:77:    FROM Servidores_Conexiones
 /app/backend/scripts/encrypt_existing_server_secrets.py:81:        EDARSAHUB_CONFIG['host'],
 /app/backend/scripts/encrypt_existing_server_secrets.py:161:    FROM Servidores_Conexiones 
 /app/backend/scripts/encrypt_existing_server_secrets.py:166:        EDARSAHUB_CONFIG['host'],
 /app/backend/scripts/encrypt_existing_server_secrets.py:200:    UPDATE Servidores_Conexiones
-/app/backend/scripts/encrypt_existing_server_secrets.py:212:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/encrypt_existing_server_secrets.py:212:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/rotate_server_secret_key.py:182:    FROM Servidores_Conexiones
 /app/backend/scripts/rotate_server_secret_key.py:188:        EDARSAHUB_CONFIG['host'],
 /app/backend/scripts/rotate_server_secret_key.py:352:                UPDATE Servidores_Conexiones
 /app/backend/scripts/rotate_server_secret_key.py:358:                    EDARSAHUB_CONFIG['host'],
 /app/backend/scripts/rotate_server_secret_key.py:413:        db.servidores_conexiones.update_one(
 /app/backend/scripts/actualizacion_kpi_proyeccion_comercial.py:5:import pymssql
-/app/backend/scripts/actualizacion_kpi_proyeccion_comercial.py:9:    "server": os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/actualizacion_kpi_proyeccion_comercial.py:9:    "server": os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/actualizacion_kpi_proyeccion_comercial.py:25:    conn = pymssql.connect(
-/app/backend/scripts/create_unidades_negocio_table.py:18:    'host': '54.39.104.176',
+/app/backend/scripts/create_unidades_negocio_table.py:18:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/scripts/create_unidades_negocio_table.py:28:        EDARSAHUB_CONFIG['host'],
 /app/backend/scripts/create_unidades_negocio_table.py:60:            system_type NVARCHAR(50) NOT NULL DEFAULT 'SoftRestaurant',
 /app/backend/scripts/create_unidades_negocio_table.py:94:    # REGLA: SoftRestaurant -> sucursal_origen_id = NULL (1 servidor = 1 unidad)
@@ -2990,7 +2990,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/scripts/encrypt_core_server_secrets.py:175:    FROM Servidores_Conexiones 
 /app/backend/scripts/encrypt_core_server_secrets.py:181:        EDARSAHUB_CONFIG['host'],
 /app/backend/scripts/encrypt_core_server_secrets.py:221:    UPDATE Servidores_Conexiones
-/app/backend/scripts/encrypt_core_server_secrets.py:260:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/encrypt_core_server_secrets.py:260:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/run_historical_load_compras.py:13:- SOFTRESTAURANT: Inventarios, Pedidos
 /app/backend/scripts/run_historical_load_compras.py:79:def parse_server_host(host_str: str, default_port: int = 1433) -> tuple:
 /app/backend/scripts/run_historical_load_compras.py:81:    Parsea host complejo de SQL Server.
@@ -3003,7 +3003,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/scripts/run_historical_load_compras.py:91:        server_host = parts[0]
 /app/backend/scripts/run_historical_load_compras.py:99:        server_host = host_str
 /app/backend/scripts/run_historical_load_compras.py:101:    return server_host, port
-/app/backend/scripts/run_historical_load_compras.py:117:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/run_historical_load_compras.py:117:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/run_historical_load_compras.py:178:def query_inventarios_historico_mpro(server: Dict, fecha_inicio: str, fecha_fin: str) -> List[Dict]:
 /app/backend/scripts/run_historical_load_compras.py:179:    """Consulta inventarios físicos históricos de MPRO (PDA_Inventario)."""
 /app/backend/scripts/run_historical_load_compras.py:182:    # MPRO usa PDA_Inventario para conteos de inventario
@@ -3057,7 +3057,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:57:    required_vars = ['JWT_SECRET', 'SERVER_SECRET_KEY', 'EDARSAHUB_HOST']
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:66:        import pymssql
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:67:        conn = pymssql.connect(
-/app/backend/scripts/backfill_cienfuegos_mayo_2026.py:68:            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/backfill_cienfuegos_mayo_2026.py:68:            server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:83:            sync_softrestaurant_ventas_cerradas,
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:102:    """Verifica conectividad al servidor SoftRestaurant de CIENFUEGOS."""
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:115:    print(f'  Host: {server_config.get("host")}')
@@ -3068,13 +3068,13 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:126:            database=server_config['database_name'],
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:171:    import pymssql
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:172:    conn = pymssql.connect(
-/app/backend/scripts/backfill_cienfuegos_mayo_2026.py:173:        server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/backfill_cienfuegos_mayo_2026.py:173:        server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:210:    from modules.comercial_v2.sync_comercial_edarsahub import sync_softrestaurant_ventas_cerradas
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:219:        sistema_origen=SistemaOrigen.SOFTRESTAURANT,
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:232:    resultado = sync_softrestaurant_ventas_cerradas(
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:248:    import pymssql
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:249:    conn = pymssql.connect(
-/app/backend/scripts/backfill_cienfuegos_mayo_2026.py:250:        server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/backfill_cienfuegos_mayo_2026.py:250:        server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/validate_consultas_sql_repository.py:203:        # Validar SoftRestaurant = 14
 /app/backend/scripts/validate_consultas_sql_repository.py:204:        sr_count = counts.get('consultas_softrestaurant', 0)
 /app/backend/scripts/validate_consultas_sql_repository.py:206:            name="Consultas SoftRestaurant = 14",
@@ -3085,7 +3085,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/scripts/validate_consultas_sql_repository.py:216:            passed=mpro_count == 6,
 /app/backend/scripts/validate_consultas_sql_repository.py:217:            message=f"Encontradas {mpro_count} consultas MPRO (esperadas: 6)",
 /app/backend/scripts/validate_consultas_sql_repository.py:218:            details={'actual': mpro_count, 'expected': 6}
-/app/backend/scripts/run_historical_load_24_months.py:92:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/run_historical_load_24_months.py:92:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/run_historical_load_24_months.py:212:    Solo servidores con system_type válido (SOFTRESTAURANT o MANAGEMENTPRO).
 /app/backend/scripts/run_historical_load_24_months.py:225:        if normalized in ["SOFTRESTAURANT", "MANAGEMENTPRO"]:
 /app/backend/scripts/run_historical_load_24_months.py:250:        get_kpis_softrestaurant,
@@ -3273,7 +3273,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/tests/test_catalogos_rrhh.py:297:                "mpro_id": "TEST001"
 /app/backend/tests/test_catalogos_rrhh.py:315:        response = requests.post(
 /app/backend/tests/test_config.py:31:    TEST_BASE_URL = os.getenv('TEST_BASE_URL', 'http://localhost:8001')
-/app/backend/tests/test_config.py:34:    TEST_MONGO_URL = os.getenv('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/tests/test_config.py:34:    TEST_MONGO_URL = os.getenv('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/tests/test_compras_analisis.py:21:        response = requests.post(f"{BASE_URL}/api/auth/login", json={
 /app/backend/tests/test_compras_analisis.py:30:        servers_response = requests.get(f"{BASE_URL}/api/servers", headers=self.headers)
 /app/backend/tests/test_compras_analisis.py:34:        # Find SoftRestaurant server (130° MERIDA or CIENFUEGOS)
@@ -3442,7 +3442,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/tests/test_sucursales_permissions.py:252:        response = requests.post(
 /app/backend/tests/test_sucursales_permissions.py:268:        response = requests.get(
 /app/backend/tests/test_sucursales_permissions.py:269:            f"{BASE_URL}/api/servers/{MPRO_SERVER_ID}/sucursales",
-/app/backend/tests/test_simulacion_controlada.py:63:    'host': '54.39.104.176',
+/app/backend/tests/test_simulacion_controlada.py:63:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/tests/test_simulacion_controlada.py:89:parser.add_argument('--sistema', type=str, choices=['SOFT', 'MPRO'],
 /app/backend/tests/test_simulacion_controlada.py:95:parser.add_argument('--persistir-lote-mpro', action='store_true',
 /app/backend/tests/test_simulacion_controlada.py:96:                    help='Fase 1B.3B: Persistir lote de 1 registro MPRO con confirmación obligatoria')
@@ -3453,7 +3453,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/tests/test_simulacion_controlada.py:117:elif args.persistir_lote_mpro_2:
 /app/backend/tests/test_simulacion_controlada.py:118:    MODO = 'PERSISTIR_LOTE_MPRO_2'
 /app/backend/tests/test_simulacion_controlada.py:139:        detectar_inventarios_mpro,
-/app/backend/tests/test_simulacion_controlada.py:154:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/tests/test_simulacion_controlada.py:154:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/tests/test_simulacion_controlada.py:177:    if inv['sistema_origen'] == 'MPRO':
 /app/backend/tests/test_simulacion_controlada.py:225:    soft_servers = [s for s in servers if s.get('system_type') == 'SoftRestaurant']
 /app/backend/tests/test_simulacion_controlada.py:226:    mpro_servers = [s for s in servers if s.get('system_type') == 'MPRO']
@@ -3690,11 +3690,11 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/tests/test_nominas.py:492:        response = requests.get(f"{BASE_URL}/api/nomina/ciclos?periodo=todos", headers=self.headers)
 /app/backend/tests/test_nominas.py:501:        response = requests.get(f"{BASE_URL}/api/nomina/ciclos/{ciclo_id}", headers=self.headers)
 /app/backend/tests/test_bloque5_paridad.py:9:Migración: SoftRestaurant - queries de período actual, anterior y año anterior
-/app/backend/tests/test_migracion_servidores_sql.py:40:    assert EDARSAHUB_CONFIG['host'] == '54.39.104.176', "Host incorrecto"
+/app/backend/tests/test_migracion_servidores_sql.py:40:    assert EDARSAHUB_CONFIG['host'] == '<REDACTED_EDARSAHUB_SQL_HOST>', "Host incorrecto"
 /app/backend/tests/test_migracion_servidores_sql.py:45:    print(f"  ✓ Host: {EDARSAHUB_CONFIG['host']}")
 /app/backend/tests/test_migracion_servidores_sql.py:64:    required_fields = ['id', 'name', 'system_type', 'host', 'port', 'database', 'active']
-/app/backend/tests/test_migracion_servidores_sql.py:88:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/backend/tests/test_migracion_servidores_sql.py:130:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/tests/test_migracion_servidores_sql.py:88:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/backend/tests/test_migracion_servidores_sql.py:130:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/tests/test_migracion_servidores_sql.py:147:    for field in ['id', 'name', 'system_type', 'host', 'database', 'active']:
 /app/backend/tests/test_pool.py:72:        key = manager._generate_pool_key("host.com", 1433, "mydb")
 /app/backend/tests/test_pool.py:74:        assert key == "host.com:1433/mydb"
@@ -3873,7 +3873,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/tests/test_cargos_economicos.py:776:            elig = requests.get(f"{BASE_URL}/api/v2/cargos/elegibilidad/{resp_id}")
 /app/backend/tests/test_cargos_economicos.py:784:                create_resp = requests.post(f"{BASE_URL}/api/v2/cargos", json=payload)
 /app/backend/tests/test_cargos_economicos.py:797:        response = requests.post(f"{BASE_URL}/api/v2/cargos/{cargo_para_cancelar}/cancelar", json=payload)
-/app/backend/tests/test_e2e_flujo_completo.py:79:        self.mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/tests/test_e2e_flujo_completo.py:79:        self.mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/tests/test_comercial_adapters.py:4:Tests de cobertura para adaptadores de APIs locales MPRO.
 /app/backend/tests/test_comercial_adapters.py:16:class TestApisMproLocalesConfig:
 /app/backend/tests/test_comercial_adapters.py:17:    """Tests de configuración de APIs MPRO locales"""
@@ -3908,15 +3908,15 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/tests/test_comercial_adapters.py:223:        with patch("modules.comercial.adapters.requests.get", return_value=mock_response):
 /app/backend/tests/test_comercial_adapters.py:247:        with patch("modules.comercial.adapters.requests.get", return_value=mock_response):
 /app/backend/tests/test_comercial_adapters.py:269:        with patch("modules.comercial.adapters.requests.get", return_value=mock_response):
-/app/backend/tests/test_comercial_adapters.py:288:            server_host="54.39.104.176",
+/app/backend/tests/test_comercial_adapters.py:288:            server_host="<REDACTED_EDARSAHUB_SQL_HOST>",
 /app/backend/tests/test_comercial_adapters.py:318:                server_host="no-existe.com",
-/app/backend/tests/test_comercial_adapters.py:344:            "servidor_padre_host": "54.39.104.176",
+/app/backend/tests/test_comercial_adapters.py:344:            "servidor_padre_host": "<REDACTED_EDARSAHUB_SQL_HOST>",
 /app/backend/tests/test_comercial_adapters.py:359:            with patch("modules.comercial.adapters.requests.get", return_value=mock_response):
-/app/backend/tests/test_comercial_adapters.py:361:                    server_host="54.39.104.176",
-/app/backend/tests/test_comercial_adapters.py:385:                server_host="54.39.104.176",
+/app/backend/tests/test_comercial_adapters.py:361:                    server_host="<REDACTED_EDARSAHUB_SQL_HOST>",
+/app/backend/tests/test_comercial_adapters.py:385:                server_host="<REDACTED_EDARSAHUB_SQL_HOST>",
 /app/backend/tests/test_comercial_adapters.py:411:    def test_server_host_mismatch_skips(self):
 /app/backend/tests/test_comercial_adapters.py:423:            "servidor_padre_host": "otro.servidor.com",  # Diferente
-/app/backend/tests/test_comercial_adapters.py:435:                server_host="54.39.104.176",  # No coincide
+/app/backend/tests/test_comercial_adapters.py:435:                server_host="<REDACTED_EDARSAHUB_SQL_HOST>",  # No coincide
 /app/backend/tests/test_comercial_adapters.py:441:        # Debe omitir por mismatch de host - el resultado depende del fallback hardcoded
 /app/backend/tests/test_comercial_adapters.py:452:            APIS_MPRO_LOCALES,
 /app/backend/tests/test_comercial_adapters.py:453:            query_api_mpro_local,
@@ -4143,7 +4143,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/tests/test_responsabilidad_aprobaciones_v2.py:614:        response = requests.post(
 /app/backend/tests/test_responsabilidad_aprobaciones_v2.py:630:        response = requests.get(f"{BASE_URL}/api/v2/responsabilidad/{fake_id}/historial")
 /app/backend/tests/conftest.py:9:- Cliente HTTP para tests de integración (httpx)
-/app/backend/tests/conftest.py:36:os.environ.setdefault("MONGO_URL", "mongodb://localhost:27017")
+/app/backend/tests/conftest.py:36:os.environ.setdefault("MONGO_URL", "<REDACTED_MONGO_URL>")
 /app/backend/tests/conftest.py:77:        "TEST_API_URL", 
 /app/backend/tests/conftest.py:136:    import httpx
 /app/backend/tests/conftest.py:137:    async with httpx.AsyncClient(timeout=30.0) as client:
@@ -4691,7 +4691,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/tests/dry_run_result.json:3004:      "sistema_origen": "MPRO",
 /app/backend/tests/dry_run_result.json:3021:      "sistema_origen": "MPRO",
 /app/backend/tests/dry_run_result.json:3038:      "sistema_origen": "MPRO",
-/app/backend/tests/test_macrofase2_kpis.py:35:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/tests/test_macrofase2_kpis.py:35:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/tests/test_email_notifications.py:115:        assert "smtp_host" in config, "Config should have 'smtp_host' field"
 /app/backend/tests/test_email_notifications.py:122:        assert config.get("smtp_host") == "mail.edarsa.com.mx", f"SMTP host should be mail.edarsa.com.mx, got {config.get('smtp_host')}"
 /app/backend/tests/test_email_notifications.py:125:        print(f"✅ Email config OK - Configured: {config.get('configured')}, Host: {config.get('smtp_host')}, Recipients: {config.get('recipients_count')}")
@@ -4740,7 +4740,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/server.py:82:import pymssql
 /app/backend/server.py:96:from catalogo.consultas_mpro import CONSULTAS_MPRO, ESTRUCTURA_TABLAS_MPRO
 /app/backend/server.py:97:from catalogo.consultas_softrestaurant import CONSULTAS_SOFTRESTAURANT, ESTRUCTURA_TABLAS_SOFTRESTAURANT
-/app/backend/server.py:350:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/server.py:350:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/server.py:424:    is_mpro_system,
 /app/backend/server.py:425:    is_softrestaurant_system,
 /app/backend/server.py:443:# - Adapters (APIs locales MPRO) migrados a modules/comercial/adapters.py
@@ -5354,7 +5354,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/htmlcov/z_342fa9d1c388b58c_routes_py.html:97:    <p class="pln"><span class="n"><a id="t15" href="#t15">15</a></span><span class="t"><span class="str">   - query_api_mpro_local()</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_routes_py.html:114:    <p class="pln"><span class="n"><a id="t32" href="#t32">32</a></span><span class="t"><span class="str">- get_kpis_softrestaurant()</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_routes_py.html:115:    <p class="pln"><span class="n"><a id="t33" href="#t33">33</a></span><span class="t"><span class="str">- get_kpis_mpro_por_sucursal()</span>&nbsp;</span><span class="r"></span></p>
-/app/backend/htmlcov/z_57760688d1f824db_config_py.html:108:    <p class="mis show_mis"><span class="n"><a id="t26" href="#t26">26</a></span><span class="t">    <span class="nam">MONGO_URL</span><span class="op">:</span> <span class="nam">str</span> <span class="op">=</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"MONGO_URL"</span><span class="op">,</span> <span class="str">"mongodb://localhost:27017"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+/app/backend/htmlcov/z_57760688d1f824db_config_py.html:108:    <p class="mis show_mis"><span class="n"><a id="t26" href="#t26">26</a></span><span class="t">    <span class="nam">MONGO_URL</span><span class="op">:</span> <span class="nam">str</span> <span class="op">=</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"MONGO_URL"</span><span class="op">,</span> <span class="str">"<REDACTED_MONGO_URL>"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_57760688d1f824db_config_py.html:116:    <p class="pln"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t">    <span class="com"># APIs MPRO Locales (configuraci&#243;n base)</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_57760688d1f824db_config_py.html:117:    <p class="mis show_mis"><span class="n"><a id="t35" href="#t35">35</a></span><span class="t">    <span class="nam">API_MPRO_KEY</span><span class="op">:</span> <span class="nam">str</span> <span class="op">=</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"API_MPRO_KEY"</span><span class="op">,</span> <span class="str">""</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_57760688d1f824db_config_py.html:118:    <p class="mis show_mis"><span class="n"><a id="t36" href="#t36">36</a></span><span class="t">    <span class="nam">API_MPRO_QRO_URL</span><span class="op">:</span> <span class="nam">str</span> <span class="op">=</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"API_MPRO_QRO_URL"</span><span class="op">,</span> <span class="str">""</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -5382,12 +5382,12 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:95:    <p class="pln"><span class="n"><a id="t13" href="#t13">13</a></span><span class="t"><span class="str">- query_api_mpro_local()</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:107:    <p class="pln"><span class="n"><a id="t25" href="#t25">25</a></span><span class="t"><span class="com"># CONFIGURACI&#211;N APIs LOCALES MPRO (HARDCODED - FALLBACK)</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:113:    <p class="run"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t"><span class="nam">APIS_MPRO_LOCALES</span> <span class="op">=</span> <span class="op">{</span>&nbsp;</span><span class="r"></span></p>
-/app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:116:    <p class="run run2"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t">        <span class="str">"url"</span><span class="op">:</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"API_MPRO_QRO_URL"</span><span class="op">,</span> <span class="str">"http://54.39.104.176:8001/query"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+/app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:116:    <p class="run run2"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t">        <span class="str">"url"</span><span class="op">:</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"API_MPRO_QRO_URL"</span><span class="op">,</span> <span class="str">"http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:117:    <p class="run run2"><span class="n"><a id="t35" href="#t35">35</a></span><span class="t">        <span class="str">"api_key"</span><span class="op">:</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"API_MPRO_KEY"</span><span class="op">,</span> <span class="str">"EDARSA_2026_SECURE_KEY"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-/app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:119:    <p class="run run2"><span class="n"><a id="t37" href="#t37">37</a></span><span class="t">        <span class="str">"servidor_padre_host"</span><span class="op">:</span> <span class="str">"54.39.104.176"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-/app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:125:    <p class="run run2"><span class="n"><a id="t43" href="#t43">43</a></span><span class="t">        <span class="str">"url"</span><span class="op">:</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"API_MPRO_ORIGEN_URL"</span><span class="op">,</span> <span class="str">"http://54.39.104.176:8000/query"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+/app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:119:    <p class="run run2"><span class="n"><a id="t37" href="#t37">37</a></span><span class="t">        <span class="str">"servidor_padre_host"</span><span class="op">:</span> <span class="str">"<REDACTED_EDARSAHUB_SQL_HOST>"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+/app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:125:    <p class="run run2"><span class="n"><a id="t43" href="#t43">43</a></span><span class="t">        <span class="str">"url"</span><span class="op">:</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"API_MPRO_ORIGEN_URL"</span><span class="op">,</span> <span class="str">"http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:126:    <p class="run run2"><span class="n"><a id="t44" href="#t44">44</a></span><span class="t">        <span class="str">"api_key"</span><span class="op">:</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"API_MPRO_KEY"</span><span class="op">,</span> <span class="str">"EDARSA_2026_SECURE_KEY"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-/app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:128:    <p class="run run2"><span class="n"><a id="t46" href="#t46">46</a></span><span class="t">        <span class="str">"servidor_padre_host"</span><span class="op">:</span> <span class="str">"54.39.104.176"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+/app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:128:    <p class="run run2"><span class="n"><a id="t46" href="#t46">46</a></span><span class="t">        <span class="str">"servidor_padre_host"</span><span class="op">:</span> <span class="str">"<REDACTED_EDARSAHUB_SQL_HOST>"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:135:    <p class="run"><span class="n"><a id="t53" href="#t53">53</a></span><span class="t"><span class="key">def</span> <span class="nam">query_api_mpro_local</span><span class="op">(</span><span class="nam">api_config</span><span class="op">:</span> <span class="nam">dict</span><span class="op">,</span> <span class="nam">sql_query</span><span class="op">:</span> <span class="nam">str</span><span class="op">,</span> <span class="nam">timeout</span><span class="op">:</span> <span class="nam">int</span> <span class="op">=</span> <span class="num">3</span><span class="op">)</span> <span class="op">-></span> <span class="nam">dict</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:137:    <p class="pln"><span class="n"><a id="t55" href="#t55">55</a></span><span class="t"><span class="str">    Consulta una API MPRO local y retorna los resultados.</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:147:    <p class="mis show_mis"><span class="n"><a id="t65" href="#t65">65</a></span><span class="t">    <span class="nam">print</span><span class="op">(</span><span class="str">f"*** query_api_mpro_local: Iniciando query a {api_config.get('nombre', 'N/A')} ***"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -5400,10 +5400,10 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:191:    <p class="pln"><span class="n"><a id="t109" href="#t109">109</a></span><span class="t"><span class="str">    Obtiene las ventas del d&#237;a actual desde una API MPRO local.</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:229:    <p class="mis show_mis"><span class="n"><a id="t147" href="#t147">147</a></span><span class="t">    <span class="nam">result</span> <span class="op">=</span> <span class="nam">query_api_mpro_local</span><span class="op">(</span><span class="nam">api_config</span><span class="op">,</span> <span class="nam">sql_ventas_hoy</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:267:    <p class="run run2"><span class="n"><a id="t185" href="#t185">185</a></span><span class="t">    <span class="nam">server_host</span><span class="op">:</span> <span class="nam">str</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-/app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:281:    <p class="pln"><span class="n"><a id="t199" href="#t199">199</a></span><span class="t"><span class="str">        server_host: Host del servidor padre (ej: "54.39.104.176")</span>&nbsp;</span><span class="r"></span></p>
+/app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:281:    <p class="pln"><span class="n"><a id="t199" href="#t199">199</a></span><span class="t"><span class="str">        server_host: Host del servidor padre (ej: "<REDACTED_EDARSAHUB_SQL_HOST>")</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:298:    <p class="mis show_mis"><span class="n"><a id="t216" href="#t216">216</a></span><span class="t">    <span class="nam">print</span><span class="op">(</span><span class="str">f"*** API Local Check: server_host={server_host}, sucursal={sucursal_nombre}, fecha_fin={fecha_fin}, hoy_mexico={hoy}, MODO_VENTAS_DIA={solo_ventas_dia} ***"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:317:    <p class="mis show_mis"><span class="n"><a id="t235" href="#t235">235</a></span><span class="t">    <span class="nam">print</span><span class="op">(</span><span class="str">f"*** API Local: Buscando APIs tipo 'api_mpro' en MongoDB ***"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-/app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:320:    <p class="mis show_mis"><span class="n"><a id="t238" href="#t238">238</a></span><span class="t">        <span class="nam">sync_client</span> <span class="op">=</span> <span class="nam">MongoClient</span><span class="op">(</span><span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">'MONGO_URL'</span><span class="op">,</span> <span class="str">'mongodb://localhost:27017'</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+/app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:320:    <p class="mis show_mis"><span class="n"><a id="t238" href="#t238">238</a></span><span class="t">        <span class="nam">sync_client</span> <span class="op">=</span> <span class="nam">MongoClient</span><span class="op">(</span><span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">'MONGO_URL'</span><span class="op">,</span> <span class="str">'<REDACTED_MONGO_URL>'</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:322:    <p class="mis show_mis"><span class="n"><a id="t240" href="#t240">240</a></span><span class="t">        <span class="nam">apis_locales_db</span> <span class="op">=</span> <span class="nam">list</span><span class="op">(</span><span class="nam">sync_db</span><span class="op">.</span><span class="nam">servers</span><span class="op">.</span><span class="nam">find</span><span class="op">(</span><span class="op">{</span><span class="str">"tipo"</span><span class="op">:</span> <span class="str">"api_mpro"</span><span class="op">,</span> <span class="str">"active"</span><span class="op">:</span> <span class="key">True</span><span class="op">}</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:334:    <p class="mis show_mis"><span class="n"><a id="t252" href="#t252">252</a></span><span class="t">        <span class="nam">servidor_padre_host</span> <span class="op">=</span> <span class="nam">api_doc</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"servidor_padre_host"</span><span class="op">,</span> <span class="str">""</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:340:    <p class="mis show_mis"><span class="n"><a id="t258" href="#t258">258</a></span><span class="t">        <span class="key">if</span> <span class="nam">servidor_padre_host</span> <span class="key">and</span> <span class="nam">servidor_padre_host</span> <span class="op">!=</span> <span class="nam">server_host</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -5513,7 +5513,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/htmlcov/z_342fa9d1c388b58c___init___py.html:149:    <p class="run run2"><span class="n"><a id="t67" href="#t67">67</a></span><span class="t">    <span class="str">'APIS_MPRO_LOCALES'</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/htmlcov/z_342fa9d1c388b58c___init___py.html:150:    <p class="run run2"><span class="n"><a id="t68" href="#t68">68</a></span><span class="t">    <span class="str">'query_api_mpro_local'</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
 /app/backend/.env.test.example:30:TEST_API_URL=https://stock-tracker-990.preview.emergentagent.com
-/app/backend/.env.test.example:33:# MONGO_URL=mongodb://localhost:27017
+/app/backend/.env.test.example:33:# MONGO_URL=<REDACTED_MONGO_URL>
 /app/backend/sql/automatizacion_inventarios_ddl.sql:15:-- origen (SoftRestaurant/MPRO) y enviará análisis automáticamente.
 /app/backend/sql/automatizacion_inventarios_ddl.sql:39:--     ❌ NO ejecutar en SoftRestaurant
 /app/backend/sql/automatizacion_inventarios_ddl.sql:40:--     ❌ NO ejecutar en MPRO
@@ -5562,15 +5562,15 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/sql/auditoria_financiera.sql:36:            -- SOFT = Acción relacionada con datos de SoftRestaurant
 /app/backend/sql/auditoria_financiera.sql:37:            -- MPRO = Acción relacionada con datos de MPRO
 /app/backend/sql/auditoria_financiera.sql:160:        CHECK (origen_sistema IN ('EDARSA_HUB', 'SOFT', 'MPRO'));
-/app/backend/.env:1:MONGO_URL="mongodb://localhost:27017"
+/app/backend/.env:1:MONGO_URL="<REDACTED_MONGO_URL>"
 /app/backend/.env:3:CORS_ORIGINS="https://stock-tracker-990.emergent.host,https://stock-tracker-990.preview.emergentagent.com,https://hub.edarsa.com.mx,http://localhost:3000"
 /app/backend/.env:7:EMAIL_HOST=mail.edarsa.com.mx
-/app/backend/.env:18:API_MPRO_QRO_URL=http://54.39.104.176:8001/query
-/app/backend/.env:19:API_MPRO_ORIGEN_URL=http://54.39.104.176:8000/query
+/app/backend/.env:18:API_MPRO_QRO_URL=http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query
+/app/backend/.env:19:API_MPRO_ORIGEN_URL=http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query
 /app/backend/.env:20:API_MPRO_KEY=EDARSA_2026_SECURE_KEY
-/app/backend/.env:45:EDARSAHUB_HOST=54.39.104.176
+/app/backend/.env:45:EDARSAHUB_HOST=<REDACTED_EDARSAHUB_SQL_HOST>
 /app/backend/.env:55:VTIGER_BASE_URL=https://saligula.hostw3b.com
-/app/backend/.env:61:EDARSAHUB_SQL_HOST=54.39.104.176
+/app/backend/.env:61:EDARSAHUB_SQL_HOST=<REDACTED_EDARSAHUB_SQL_HOST>
 /app/backend/api/admin_cache.py:36:    3. Hostname contiene 'preview' o 'staging'
 /app/backend/api/catalogos_sistemas.py:201:    este endpoint lee directamente de Servidores_Conexiones (datos reales).
 /app/backend/api/catalogos_sistemas.py:204:    - MPRO: ManagementPro
@@ -5587,13 +5587,13 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/api/catalogos_sistemas.py:350:    - SoftRestaurant -> SOFTRESTAURANT
 /app/backend/api/catalogos_sistemas.py:351:    - SR -> SOFTRESTAURANT
 /app/backend/api/configuracion_operativa_unidades.py:26:import pymssql
-/app/backend/api/configuracion_operativa_unidades.py:41:    'host': '54.39.104.176',
+/app/backend/api/configuracion_operativa_unidades.py:41:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/api/configuracion_operativa_unidades.py:98:    return pymssql.connect(
 /app/backend/api/configuracion_operativa_unidades.py:99:        server=EDARSAHUB_CONFIG['host'],
-/app/backend/api/admin_data_quality.py:43:        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/api/admin_data_quality.py:43:        'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/api/admin_data_quality.py:56:            cfg['host'],
 /app/backend/api/admin_scheduler_resync.py:12:- #14: Credenciales desde Servidores_Conexiones
-/app/backend/api/admin_scheduler_resync.py:43:    'host': '54.39.104.176',
+/app/backend/api/admin_scheduler_resync.py:43:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/api/admin_scheduler_resync.py:53:    import pymssql
 /app/backend/api/admin_scheduler_resync.py:56:        conn = pymssql.connect(
 /app/backend/api/admin_scheduler_resync.py:57:            server=EDARSAHUB_CONFIG['host'],
@@ -5646,7 +5646,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/api/admin_core_connections.py:320:        connection = pymssql.connect(
 /app/backend/api/admin_core_connections.py:321:            conn.get('host'),
 /app/backend/api/admin_core_connections.py:324:            conn.get('database_name', 'master'),
-/app/backend/api/dba_credential_p0d.py:56:    'host': '54.39.104.176',
+/app/backend/api/dba_credential_p0d.py:56:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/api/dba_credential_p0d.py:62:# ID del servidor EDARSA HUB en Servidores_Conexiones
 /app/backend/api/dba_credential_p0d.py:210:        'dba_server': DBA_SERVER_CONFIG['host'],
 /app/backend/api/dba_credential_p0d.py:272:        'host': DBA_SERVER_CONFIG['host'],
@@ -6028,7 +6028,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/database/migrations/004_poblar_sistema_gobierno_tablas.sql:24:    UNION ALL SELECT 'Sync_Productos', 'Comercial', 'SINCRONIZADA', 'ACTIVA', 'SoftRestaurant/MPRO sincronizado'
 /app/backend/database/migrations/004_poblar_sistema_gobierno_tablas.sql:25:    UNION ALL SELECT 'Sync_Productos_Familias', 'Comercial', 'SINCRONIZADA', 'ACTIVA', 'SoftRestaurant/MPRO sincronizado'
 /app/backend/database/migrations/004_poblar_sistema_gobierno_tablas.sql:26:    UNION ALL SELECT 'Sync_Productos_SubFamilias', 'Comercial', 'SINCRONIZADA', 'ACTIVA', 'SoftRestaurant/MPRO sincronizado'
-/app/backend/core/server_registry.py:33:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/core/server_registry.py:33:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/core/server_registry.py:63:        if st_upper in ['MPRO', 'MANAGMENTPRO', 'MANAGEMENTPRO', 'MANAGEMENT_PRO']:
 /app/backend/core/server_registry.py:65:        elif st_upper in ['SOFTRESTAURANT', 'SR', 'SOFT']:
 /app/backend/core/server_registry.py:66:            return "SOFTRESTAURANT"
@@ -6196,8 +6196,8 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/core/pool.py:593:        host: Hostname
 /app/backend/core/pool.py:599:    pool_key = manager._generate_pool_key(host, port, database)
 /app/backend/core/pool.py:622:        results = execute_hub_query("SELECT * FROM Servidores_Conexiones WHERE activo = 1")
-/app/backend/core/pool.py:629:        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
-/app/backend/core/pool.py:666:        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/core/pool.py:629:        'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
+/app/backend/core/pool.py:666:        'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/core/providers.py:74:# SQL CLASSIC PROVIDER (SoftRestaurant: CIENFUEGOS, LA ESTELAR, 130 MID)
 /app/backend/core/providers.py:79:    Provider para SoftRestaurant (SQL clásico).
 /app/backend/core/providers.py:94:        host: str, port: int, database: str, 
@@ -6241,13 +6241,13 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/core/source_resolver.py:425:        "no route to host",
 /app/backend/core/source_resolver.py:432:        "host not found",
 /app/backend/core/auditoria.py:82:    MPRO = "MPRO"
-/app/backend/core/auditoria.py:226:                mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/core/auditoria.py:226:                mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/core/auditoria.py:240:            host = os.environ.get('EDARSA_HUB_SQL_HOST')
 /app/backend/core/auditoria.py:241:            if not host:
 /app/backend/core/auditoria.py:245:                server=host,
 /app/backend/core/auditoria.py:305:                return request.client.host if hasattr(request, 'client') else None
 /app/backend/core/empresa_resolver.py:16:- Servidores_Conexiones
-/app/backend/core/empresa_resolver.py:41:    'host': '54.39.104.176',
+/app/backend/core/empresa_resolver.py:41:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/core/empresa_resolver.py:53:            EDARSAHUB_CONFIG['host'],
 /app/backend/core/empresa_resolver.py:345:    JOIN Servidores_Conexiones sc ON es.ServidorID = sc.id
 /app/backend/core/empresa_resolver.py:416:    JOIN Servidores_Conexiones sc ON es.ServidorID = sc.id
@@ -6283,7 +6283,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/core/scheduler/config.py:215:                description="Sincronización de ventas del día en curso (abiertas) desde SoftRestaurant y MPRO hacia EDARSAHUB cada 5 minutos",
 /app/backend/core/scheduler/config.py:276:                description="Extrae ventas de SoftRestaurant/MPRO y las consolida en Sync_Sales y KPIs diarios (cada hora)",
 /app/backend/core/scheduler/sql_repository.py:10:- Servidores_Conexiones (lectura)
-/app/backend/core/scheduler/sql_repository.py:27:    'host': '54.39.104.176',
+/app/backend/core/scheduler/sql_repository.py:27:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/core/scheduler/sql_repository.py:37:    import pymssql
 /app/backend/core/scheduler/sql_repository.py:40:        conn = pymssql.connect(
 /app/backend/core/scheduler/sql_repository.py:41:            server=EDARSAHUB_CONFIG['host'],
@@ -6319,7 +6319,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/core/scheduler/jobs/inteligencia_comercial_status_job.py:41:        server=host,
 /app/backend/core/scheduler/jobs/vtiger_sync_job.py:13:import pymssql
 /app/backend/core/scheduler/jobs/vtiger_sync_job.py:23:    return pymssql.connect(
-/app/backend/core/scheduler/jobs/vtiger_sync_job.py:24:        server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/core/scheduler/jobs/vtiger_sync_job.py:24:        server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/core/scheduler/jobs/sync_comercial_v2_job.py:7:Este job sincroniza KPIs de ventas comerciales desde SoftRestaurant y MPRO 
 /app/backend/core/scheduler/jobs/sync_comercial_v2_job.py:18:- SoftRestaurant: 130MID (130° MÉRIDA), CIENFUEGOS, ESTELAR (LA ESTELAR)
 /app/backend/core/scheduler/jobs/sync_comercial_v2_job.py:19:- MPRO: 130QRO (130° QUERETARO, sucursal 0021), ORIGEN (sucursal 0023)
@@ -6391,7 +6391,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/core/scheduler/jobs/sync_propinas_tpv_job.py:219:                "sistema": "MPRO",
 /app/backend/core/scheduler/jobs/sync_compras_job.py:7:físicos (SoftRestaurant, MPRO) hacia las tablas intermedias en EDARSAHUB SQL.
 /app/backend/core/scheduler/jobs/sync_compras_job.py:30:import pymssql
-/app/backend/core/scheduler/jobs/sync_compras_job.py:52:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/core/scheduler/jobs/sync_compras_job.py:52:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/core/scheduler/jobs/sync_compras_job.py:72:        conn = pymssql.connect(
 /app/backend/core/scheduler/jobs/sync_compras_job.py:73:            server=EDARSAHUB_CONFIG['host'],
 /app/backend/core/scheduler/jobs/sync_compras_job.py:132:        conn = pymssql.connect(
@@ -6419,7 +6419,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:7:- SoftRestaurant: 130MID, CIENFUEGOS, ESTELAR
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:8:- MPRO: 130QRO, ORIGEN
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:19:import pymssql
-/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:29:    "host": os.environ.get("EDARSAHUB_HOST", "54.39.104.176"),
+/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:29:    "host": os.environ.get("EDARSAHUB_HOST", "<REDACTED_EDARSAHUB_SQL_HOST>"),
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:39:        "system_type": "SoftRestaurant",
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:40:        "host": "servercienfuegos.ddns.net,6669\\nationalsoft",
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:42:        "database": "softrestaurant95pro",
@@ -6430,9 +6430,9 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:56:        "host": "serverestelar.ddns.net,6969",
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:58:        "database": "softrestaurant12",
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:63:        "system_type": "MPRO",
-/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:64:        "host": "54.39.104.176",
+/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:64:        "host": "<REDACTED_EDARSAHUB_SQL_HOST>",
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:71:        "system_type": "MPRO",
-/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:72:        "host": "54.39.104.176",
+/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:72:        "host": "<REDACTED_EDARSAHUB_SQL_HOST>",
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:87:    return pymssql.connect(
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:88:        server=EDARSAHUB_CONFIG["host"],
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:99:def get_pos_connection(config: Dict) -> Optional[pymssql.Connection]:
@@ -6448,7 +6448,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:208:        else:  # MPRO
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:209:            query = get_mpro_query(fecha_inicio, fecha_fin)
 /app/backend/core/scheduler/jobs/detect_nuevos_compras_job.py:28:import pymssql
-/app/backend/core/scheduler/jobs/detect_nuevos_compras_job.py:49:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/core/scheduler/jobs/detect_nuevos_compras_job.py:49:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/core/scheduler/jobs/detect_nuevos_compras_job.py:66:        conn = pymssql.connect(
 /app/backend/core/scheduler/jobs/detect_nuevos_compras_job.py:67:            server=EDARSAHUB_CONFIG['host'],
 /app/backend/core/scheduler/jobs/detect_nuevos_compras_job.py:118:        conn = pymssql.connect(
@@ -6467,7 +6467,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/core/scheduler/jobs/detect_nuevos_compras_job.py:286:                'host': server['host'],
 /app/backend/core/scheduler/jobs/crm_sync_job.py:17:import pymssql
 /app/backend/core/scheduler/jobs/crm_sync_job.py:24:    return pymssql.connect(
-/app/backend/core/scheduler/jobs/crm_sync_job.py:25:        server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/core/scheduler/jobs/crm_sync_job.py:25:        server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/core/scheduler/jobs/inventarios_detector_job.py:4:Detecta nuevos inventarios físicos en sistemas origen (SoftRestaurant/MPRO),
 /app/backend/core/scheduler/jobs/inventarios_detector_job.py:82:    "SoftRestaurant": ["invfisico", "almacen"],
 /app/backend/core/scheduler/jobs/inventarios_detector_job.py:83:    "MPRO": []  # MPRO no tiene estructura de inventarios compatible
@@ -6528,7 +6528,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:77:# CONFIGURACIÓN DE APIs LOCALES MPRO - FALLBACK LEGACY
 /app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:82:MPRO_API_LOCAL_CONFIG_LEGACY = {
 /app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:96:MPRO_API_LOCAL_CONFIG = MPRO_API_LOCAL_CONFIG_LEGACY
-/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:106:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:106:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:116:    import pymssql
 /app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:121:        conn = pymssql.connect(
 /app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:122:            server=EDARSAHUB_LOCK_CONFIG['host'],
@@ -6604,7 +6604,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/core/cache_key_builder.py:12:- Datos pegados entre sistemas origen (SoftRestaurant vs MPRO)
 /app/backend/core/cache_key_builder.py:178:        system_type: Tipo de sistema (MPRO, SoftRestaurant, etc.)
 /app/backend/core/cache_key_builder.py:222:    # Sistema origen (crítico para no mezclar SR y MPRO)
-/app/backend/core/config.py:26:    MONGO_URL: str = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
+/app/backend/core/config.py:26:    MONGO_URL: str = os.environ.get("MONGO_URL", "<REDACTED_MONGO_URL>")
 /app/backend/core/config.py:34:    # APIs MPRO Locales (configuración base)
 /app/backend/core/config.py:35:    API_MPRO_KEY: str = os.environ.get("API_MPRO_KEY", "")
 /app/backend/core/config.py:36:    API_MPRO_QRO_URL: str = os.environ.get("API_MPRO_QRO_URL", "")
@@ -6669,7 +6669,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/core/communications/providers/email_smtp_provider.py:356:        masked_host = self.host or "N/A"
 /app/backend/core/communications/providers/email_smtp_provider.py:368:            "host": masked_host,
 /app/backend/core/communications/providers/email_smtp_provider.py:373:            "has_credentials": bool(self.host and self.user and self.password)
-/app/backend/core/communications/scripts/__init__.py:380:    mongo_url = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
+/app/backend/core/communications/scripts/__init__.py:380:    mongo_url = os.environ.get("MONGO_URL", "<REDACTED_MONGO_URL>")
 /app/backend/core/regression_checker.py:172:            from modules.comercial.service import get_kpis_softrestaurant
 /app/backend/core/regression_checker.py:225:            expected_systems = ["SoftRestaurant", "MPRO"]
 /app/backend/core/regression_checker.py:281:            from modules.comercial.service import get_kpis_softrestaurant, get_kpis_mpro
@@ -6701,7 +6701,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/core/centro_control/email_notifications.py:245:            server = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT, timeout=30)
 /app/backend/core/centro_control/email_notifications.py:292:    if not EMAIL_HOST or not EMAIL_USER or not EMAIL_PASSWORD:
 /app/backend/core/centro_control/email_notifications.py:368:        "smtp_host": EMAIL_HOST if EMAIL_HOST else None,
-/app/backend/core/centro_control/recipients_manager.py:29:MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/core/centro_control/recipients_manager.py:29:MONGO_URL = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/core/centro_control/websocket.py:13:- ws://host/api/centro-control/ws → Conexión WebSocket
 /app/backend/core/centro_control/routes.py:428:    - APIs locales MPRO
 /app/backend/core/centro_control/routes.py:561:    - Por tipo de sistema (SoftRestaurant, MPRO)
@@ -6711,14 +6711,14 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/core/cerebro.py:29:    SOFTRESTAURANT = "SoftRestaurant"
 /app/backend/core/cerebro.py:196:    host: str
 /app/backend/core/rbac_helper_sql.py:16:import pymssql
-/app/backend/core/rbac_helper_sql.py:25:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/core/rbac_helper_sql.py:25:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/core/rbac_helper_sql.py:44:    return pymssql.connect(
 /app/backend/core/rbac_helper_sql.py:45:        server=_EDARSAHUB_CONFIG['host'],
 /app/backend/core/auth/user_repository_sql.py:23:import pymssql
-/app/backend/core/auth/user_repository_sql.py:35:        self.sql_host = '54.39.104.176'
+/app/backend/core/auth/user_repository_sql.py:35:        self.sql_host = '<REDACTED_EDARSAHUB_SQL_HOST>'
 /app/backend/core/auth/user_repository_sql.py:43:        return pymssql.connect(
 /app/backend/core/auth/user_repository_sql.py:44:            server=self.sql_host,
-/app/backend/core/auth/user_repository_sql.py:361:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/core/auth/user_repository_sql.py:361:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/core/resilient_sql.py:30:import pymssql
 /app/backend/core/resilient_sql.py:153:def create_connection(server: Dict, timeout_override: int = None) -> Optional[pymssql.Connection]:
 /app/backend/core/resilient_sql.py:162:        Conexión pymssql o None si falla
@@ -6733,16 +6733,16 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/core/resilient_sql.py:356:                server=server['host'],
 /app/backend/core/resilient_sql.py:419:        "host": server['host'],
 /app/backend/core/health_checker.py:188:                {"_id": 0, "id": 1, "name": 1, "host": 1, "system_type": 1}
-/app/backend/core/utils/operational_window.py:44:    'host': '54.39.104.176',
+/app/backend/core/utils/operational_window.py:44:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/core/utils/operational_window.py:93:    import pymssql
 /app/backend/core/utils/operational_window.py:95:        conn = pymssql.connect(
 /app/backend/core/utils/operational_window.py:96:            server=EDARSAHUB_CONFIG['host'],
 /app/backend/core/rbac/repository_sql.py:25:import pymssql
-/app/backend/core/rbac/repository_sql.py:37:        self.sql_host = '54.39.104.176'
+/app/backend/core/rbac/repository_sql.py:37:        self.sql_host = '<REDACTED_EDARSAHUB_SQL_HOST>'
 /app/backend/core/rbac/repository_sql.py:49:        return pymssql.connect(
 /app/backend/core/rbac/repository_sql.py:50:            server=self.sql_host,
-/app/backend/core/rbac/routes.py:48:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/backend/core/rbac/middleware.py:37:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/core/rbac/routes.py:48:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/backend/core/rbac/middleware.py:37:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/core/rbac/middleware.py:122:        ip_address = request.client.host if request.client else None
 /app/backend/core/alcance_helper.py:67:    import pymssql
 /app/backend/core/alcance_helper.py:73:        conn = pymssql.connect(
@@ -6751,7 +6751,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/backend/core/system_capability_resolver.py:29:    # {'codigo_sistema': 'MPRO', 'nombre_sistema': 'ManagementPro', ...}
 /app/backend/core/system_capability_resolver.py:32:    if resolver.system_supports("SOFTRESTAURANT", Capability.SYNC_VENTAS_HISTORICAS):
 /app/backend/core/system_capability_resolver.py:88:    # Exclusivas MPRO
-/app/backend/core/system_capability_resolver.py:111:    'host': '54.39.104.176',
+/app/backend/core/system_capability_resolver.py:111:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/core/system_capability_resolver.py:207:                host=self._config['host'],
 /app/backend/core/system_capability_resolver.py:368:            codigo_sistema: Código del sistema (ej: "SOFTRESTAURANT", "MPRO")
 /app/backend/core/db.py:34:import pymssql
@@ -7509,15 +7509,15 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/AUDITORIA_COMPRAS_AUTORIZACION_01.md:17:- ⚠️ **Facturas Proveedor:** Solo disponible para MPRO (SoftRestaurant no soportado)
 /app/docs/AUDITORIA_COMPRAS_AUTORIZACION_01.md:36:| Facturas Proveedor | LA ESTELAR | proveedor, año, mes | `/compras/facturas-proveedor/{id}` | N/A | — | ⚠️ NO DISPONIBLE | Solo MPRO, SR no soportado |
 /app/docs/AUDITORIA_COMPRAS_AUTORIZACION_01.md:104:| Facturas Proveedor SR | ⚠️ NO SOPORTADO | Endpoint solo para MPRO |
-/app/docs/DEPLOYMENT_ENV_VARS.md:14:MONGO_URL=mongodb://localhost:27017
+/app/docs/DEPLOYMENT_ENV_VARS.md:14:MONGO_URL=<REDACTED_MONGO_URL>
 /app/docs/DEPLOYMENT_ENV_VARS.md:37:EMAIL_HOST=mail.edarsa.com.mx
 /app/docs/DEPLOYMENT_ENV_VARS.md:62:## 🖥️ API MPRO (ManagementPro)
-/app/docs/DEPLOYMENT_ENV_VARS.md:65:API_MPRO_QRO_URL=http://54.39.104.176:8001/query
-/app/docs/DEPLOYMENT_ENV_VARS.md:66:API_MPRO_ORIGEN_URL=http://54.39.104.176:8000/query
+/app/docs/DEPLOYMENT_ENV_VARS.md:65:API_MPRO_QRO_URL=http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query
+/app/docs/DEPLOYMENT_ENV_VARS.md:66:API_MPRO_ORIGEN_URL=http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query
 /app/docs/DEPLOYMENT_ENV_VARS.md:67:API_MPRO_KEY=EDARSA_2026_SECURE_KEY
 /app/docs/DEPLOYMENT_ENV_VARS.md:82:## 🗄️ SERVIDORES SQL (SoftRestaurant, MPRO)
 /app/docs/DEPLOYMENT_ENV_VARS.md:89:| Servidor | Host | Puerto | Base de Datos | Tipo |
-/app/docs/DEPLOYMENT_ENV_VARS.md:91:| ManagmentPro | 54.39.104.176 | 1433 | CENTRAL2020 | MPRO |
+/app/docs/DEPLOYMENT_ENV_VARS.md:91:| ManagmentPro | <REDACTED_EDARSAHUB_SQL_HOST> | 1433 | CENTRAL2020 | MPRO |
 /app/docs/DEPLOYMENT_ENV_VARS.md:92:| CIENFUEGOS | servercien....n... | 1433 | softrestaurant95pro | SoftRestaurant |
 /app/docs/DEPLOYMENT_ENV_VARS.md:93:| LA ESTELAR | serverestelar.ddns.net | 6969 | softrestaurant12 | SoftRestaurant |
 /app/docs/DEPLOYMENT_ENV_VARS.md:94:| 130° MERIDA | 130mid.ddns.net | 1433 | softrestaurant10 | SoftRestaurant |
@@ -7583,7 +7583,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md:13:- Modo normal: MPRO mostraba $0.00
 /app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md:14:- Modo "Ventas del Día": MPRO mostraba $0.00
 /app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md:15:- SoftRestaurant funcionaba correctamente
-/app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md:74:| Host | 54.39.104.176 |
+/app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md:74:| Host | <REDACTED_EDARSAHUB_SQL_HOST> |
 /app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md:128:- ✅ MPRO 130° QUERETARO: $1,602,503.00
 /app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md:129:- ✅ MPRO ORIGEN: $913,840.71
 /app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md:133:- ✅ MPRO muestra datos del mes actual
@@ -7852,11 +7852,11 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/CAB_MODULO_PROPINAS_TPV.md:1049:-- Ejecutar en servidores MPRO
 /app/docs/CAB_MODULO_PROPINAS_TPV.md:1070:1. Acceso a servidor SoftRestaurant con datos reales de propinas
 /app/docs/DEPLOYMENT_CHECKLIST.md:32:- [ ] Confirmar que los hosts DDNS están activos:
-/app/docs/DEPLOYMENT_CHECKLIST.md:54:MONGO_URL=mongodb://localhost:27017
+/app/docs/DEPLOYMENT_CHECKLIST.md:54:MONGO_URL=<REDACTED_MONGO_URL>
 /app/docs/DEPLOYMENT_CHECKLIST.md:63:EMAIL_HOST=mail.edarsa.com.mx
 /app/docs/DEPLOYMENT_CHECKLIST.md:73:# APIs MPRO
-/app/docs/DEPLOYMENT_CHECKLIST.md:74:API_MPRO_QRO_URL=http://54.39.104.176:8001/query
-/app/docs/DEPLOYMENT_CHECKLIST.md:75:API_MPRO_ORIGEN_URL=http://54.39.104.176:8000/query
+/app/docs/DEPLOYMENT_CHECKLIST.md:74:API_MPRO_QRO_URL=http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query
+/app/docs/DEPLOYMENT_CHECKLIST.md:75:API_MPRO_ORIGEN_URL=http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query
 /app/docs/DEPLOYMENT_CHECKLIST.md:76:API_MPRO_KEY=EDARSA_2026_SECURE_KEY
 /app/docs/DEPLOYMENT_CHECKLIST.md:135:  - Verificar conectividad de red a los hosts
 /app/docs/DEPLOYMENT_CHECKLIST.md:175:1. Verificar que el servidor de producción puede alcanzar los hosts
@@ -8018,7 +8018,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/HOMOLOGACION_CACHE_COMERCIAL.md:55:  "server_type": "SoftRestaurant",
 /app/docs/HOMOLOGACION_CACHE_COMERCIAL.md:112:  server_type: "SoftRestaurant"
 /app/docs/HOMOLOGACION_CACHE_COMERCIAL.md:123:| Dashboard MPRO | ✅ source_status: SUCCESS (sin regresión) |
-/app/docs/FASE_3C3_CORE_SECRET_ENCRYPTION.md:133:Host: 54.39.104.176
+/app/docs/FASE_3C3_CORE_SECRET_ENCRYPTION.md:133:Host: <REDACTED_EDARSAHUB_SQL_HOST>
 /app/docs/FASE_3C3_CORE_SECRET_ENCRYPTION.md:148:curl -X POST "$API_URL/api/auth/login" \
 /app/docs/ARQUITECTURA_AUTOMATIZACION_INVENTARIOS_v1.md:55:- **IN SCOPE**: SoftRestaurant, MPRO
 /app/docs/ARQUITECTURA_AUTOMATIZACION_INVENTARIOS_v1.md:66:| R-001 | No crear tablas en SoftRestaurant ni MPRO | BLOQUEANTE |
@@ -8121,7 +8121,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/FIX_EXPLORADOR_BD_MULTISISTEMA_TABLAS.md:222:| 5 | MPRO aparece e intenta cargar tablas | ✅ |
 /app/docs/reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE4_RESOLVER_REPORTE.md:58:# {'codigo_sistema': 'MPRO', 'nombre_sistema': 'ManagementPro', 'found': True, 'source': 'sql'}
 /app/docs/reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE4_RESOLVER_REPORTE.md:71:if resolver.system_supports("SOFTRESTAURANT", "SYNC_VENTAS_HISTORICAS"):
-/app/docs/reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE4_RESOLVER_REPORTE.md:113:    host='54.39.104.176',
+/app/docs/reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE4_RESOLVER_REPORTE.md:113:    host='<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/docs/reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE4_RESOLVER_REPORTE.md:178:| ManagmentPro | MPRO | ✅ |
 /app/docs/reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE4_RESOLVER_REPORTE.md:179:| ManagementPro | MPRO | ✅ |
 /app/docs/reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE4_RESOLVER_REPORTE.md:180:| MPRO | MPRO | ✅ |
@@ -8201,7 +8201,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/FASE_SYNC_3A_R2_PORDIASEMANA_CONFIG_PENDIENTES_REPORTE.md:199:1. ✅ **PorDiaSemana sincronizado** para los 3 SoftRestaurant (130° MERIDA, CIENFUEGOS, LA ESTELAR)
 /app/docs/reports/FASE_SYNC_3A_R2_PORDIASEMANA_CONFIG_PENDIENTES_REPORTE.md:202:4. ✅ **MPRO/Enterprise documentados** - CHAPUR NORTE correctamente excluido por Catálogo Maestro
 /app/docs/reports/FASE_SYNC_3A_R2_PORDIASEMANA_CONFIG_PENDIENTES_REPORTE.md:211:| P2 | Completar PorDiaSemana MPRO pendientes | 130° QRO LOCAL, ORIGEN LOCAL |
-/app/docs/reports/INCIDENTE_CRITICO_VENTAS_DIA_DOBLE_RUTA_FECHAOPERACION_ANTI_CERO.md:213:| host | 54.39.104.176 |
+/app/docs/reports/INCIDENTE_CRITICO_VENTAS_DIA_DOBLE_RUTA_FECHAOPERACION_ANTI_CERO.md:213:| host | <REDACTED_EDARSAHUB_SQL_HOST> |
 /app/docs/reports/INCIDENTE_CRITICO_VENTAS_DIA_DOBLE_RUTA_FECHAOPERACION_ANTI_CERO.md:215:| database_name | EDARSAHUB |
 /app/docs/reports/FIX_REGLA_NEGOCIO_FECHA_TURNO_CAJA_VENTAS_DIA.md:17:3. **NO usar GETDATE()** del servidor SoftRestaurant/MPRO
 /app/docs/reports/FIX_REGLA_NEGOCIO_FECHA_TURNO_CAJA_VENTAS_DIA.md:52:### SoftRestaurant - Ventas Abiertas (tempcheques)
@@ -8225,7 +8225,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/DIAGNOSTICO_TABLERO_EJECUTIVO_VENTAS_MAYO_2026_CIENFUEGOS_ORIGEN.md:327:   - Sistema origen (SoftRestaurant)
 /app/docs/reports/VALIDACION_CONEXION_EDARSAHUB_PERMISOS_MSDB.md:4:**Objetivo**: Validar acceso real de la conexión EDARSAHUB registrada en Servidores_Conexiones
 /app/docs/reports/VALIDACION_CONEXION_EDARSAHUB_PERMISOS_MSDB.md:8:## 1. CONEXIÓN REGISTRADA EN Servidores_Conexiones
-/app/docs/reports/VALIDACION_CONEXION_EDARSAHUB_PERMISOS_MSDB.md:14:| host | 54.39.104.176 |
+/app/docs/reports/VALIDACION_CONEXION_EDARSAHUB_PERMISOS_MSDB.md:14:| host | <REDACTED_EDARSAHUB_SQL_HOST> |
 /app/docs/reports/VALIDACION_CONEXION_EDARSAHUB_PERMISOS_MSDB.md:16:| database_name | EDARSAHUB |
 /app/docs/reports/VALIDACION_CONEXION_EDARSAHUB_PERMISOS_MSDB.md:25:**Fuente**: `SELECT * FROM EDARSAHUB.dbo.Servidores_Conexiones WHERE id = 'f8a9049a-96e8-4210-84ae-595ffa2822fa'`
 /app/docs/reports/VALIDACION_CONEXION_EDARSAHUB_PERMISOS_MSDB.md:149:| Conexión usada | Servidores_Conexiones.id = `f8a9049a-...` |
@@ -8245,7 +8245,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/DIAGNOSTICO_IDENTIDAD_CANONICA_130_MERIDA.md:97:### 3.4 Tabla `Servidores_Conexiones`:
 /app/docs/reports/DIAGNOSTICO_IDENTIDAD_CANONICA_130_MERIDA.md:102:| system_type | `SoftRestaurant` |
 /app/docs/reports/DIAGNOSTICO_IDENTIDAD_CANONICA_130_MERIDA.md:115:| **sistema_origen** | `SoftRestaurant` |
-/app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_ENTERPRISE_API_LOCAL_V2.md:34:| 1 | PRUEBAS SOFTRESTAURANT devuelve tablas | ⚠️ | Error DBA: Usuario 'HRLectura' sin acceso (no es bug del código) |
+/app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_ENTERPRISE_API_LOCAL_V2.md:34:| 1 | PRUEBAS SOFTRESTAURANT devuelve tablas | ⚠️ | Error DBA: Usuario '<REDACTED_EDARSAHUB_SQL_USER>' sin acceso (no es bug del código) |
 /app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_ENTERPRISE_API_LOCAL_V2.md:41:| 8 | No se rompe SoftRestaurant ni MPRO | ✅ | 130° MERIDA: 365 tablas, MPRO: 1076 tablas |
 /app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_ENTERPRISE_API_LOCAL_V2.md:63:curl -s "$API_URL/api/explorador/conexiones-explorables" -H "Authorization: Bearer $TOKEN"
 /app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_ENTERPRISE_API_LOCAL_V2.md:66:curl -s "$API_URL/api/explorador/tablas/d8b2d1eb-2e1f-4e43-b7d9-822bf671e315" -H "Authorization: Bearer $TOKEN"
@@ -8310,13 +8310,13 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/REVISION_DML_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md:329:-- SoftRestaurant Principal (NumeroSucursalSistema = NULL para SR)
 /app/docs/reports/REVISION_DML_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md:413:## 9. Mapeo MPRO Propuesto
 /app/docs/reports/REVISION_DML_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md:415:### 9.1 Servidor MPRO Compartido
-/app/docs/reports/REVISION_DML_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md:420:**Host**: 54.39.104.176
+/app/docs/reports/REVISION_DML_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md:420:**Host**: <REDACTED_EDARSAHUB_SQL_HOST>
 /app/docs/reports/REVISION_DML_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md:424:| Empresa | EmpresaID | NumeroSucursalSistema | CodigoSucursalSistema | Confirmado en MPRO |
 /app/docs/reports/REVISION_DML_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md:440:## 10. Mapeo SoftRestaurant Propuesto
 /app/docs/reports/REVISION_DML_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md:448:**NOTA**: SoftRestaurant tiene servidor dedicado por unidad. NumeroSucursalSistema es NULL.
 /app/docs/reports/REVISION_DML_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md:517:| Códigos sucursal MPRO verificados en origen | ✅ CONFIRMADO |
 /app/docs/reports/DIAGNOSTICO_PORTAL_INTELIGENCIA_COMERCIAL.md:12:| Host Router | ✅ Implementado | `/app/frontend/src/HostRouter.jsx` | Subdominios → Portal |
-/app/docs/reports/DIAGNOSTICO_PORTAL_INTELIGENCIA_COMERCIAL.md:34:- Host: `54.39.104.176` (EDARSAHUB)
+/app/docs/reports/DIAGNOSTICO_PORTAL_INTELIGENCIA_COMERCIAL.md:34:- Host: `<REDACTED_EDARSAHUB_SQL_HOST>` (EDARSAHUB)
 /app/docs/reports/DIAGNOSTICO_PORTAL_INTELIGENCIA_COMERCIAL.md:38:- Driver: `pymssql`
 /app/docs/reports/DIAGNOSTICO_PORTAL_INTELIGENCIA_COMERCIAL.md:76:### 2.3 Host Router (`/app/frontend/src/HostRouter.jsx`)
 /app/docs/reports/DIAGNOSTICO_PORTAL_INTELIGENCIA_COMERCIAL.md:103:4. `pedidos_detector` - Detecta pedidos en MPRO/Soft
@@ -8329,7 +8329,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/DIAGNOSTICO_PORTAL_INTELIGENCIA_COMERCIAL.md:198:- `Venta_Encabezado` (MPRO)
 /app/docs/reports/DIAGNOSTICO_PORTAL_INTELIGENCIA_COMERCIAL.md:199:- `Venta_Detalle` (MPRO)
 /app/docs/reports/DIAGNOSTICO_PORTAL_INTELIGENCIA_COMERCIAL.md:201:- `Servidores_Conexiones` (EDARSAHUB)
-/app/docs/reports/DIAGNOSTICO_PORTAL_INTELIGENCIA_COMERCIAL.md:221:EDARSAHUB_HOST=54.39.104.176
+/app/docs/reports/DIAGNOSTICO_PORTAL_INTELIGENCIA_COMERCIAL.md:221:EDARSAHUB_HOST=<REDACTED_EDARSAHUB_SQL_HOST>
 /app/docs/reports/DIAGNOSTICO_PORTAL_INTELIGENCIA_COMERCIAL.md:249:| SoftRestaurant | POS | 130° MÉRIDA, CIENFUEGOS, LA ESTELAR |
 /app/docs/reports/DIAGNOSTICO_PORTAL_INTELIGENCIA_COMERCIAL.md:250:| MPRO | POS | 130° QRO, ORIGEN |
 /app/docs/reports/DIAGNOSTICO_PORTAL_INTELIGENCIA_COMERCIAL.md:272:1. Crear queries para extraer de SoftRestaurant/MPRO
@@ -8410,17 +8410,17 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/FASE_1B_R2_NO_LIVE_VENTAS_TIEMPO_SYNC_VENTAS_PORHORA.md:233:- Lógica de fallback con `execute_sql_query(server['host'], ...)`
 /app/docs/reports/FASE_1B_R2_NO_LIVE_VENTAS_TIEMPO_SYNC_VENTAS_PORHORA.md:243:1. ✅ **Eliminadas** conexiones remotas SoftRestaurant
 /app/docs/reports/FASE_1B_R2_NO_LIVE_VENTAS_TIEMPO_SYNC_VENTAS_PORHORA.md:244:2. ✅ **Eliminadas** conexiones remotas MPRO
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:9:/app/backend/init_queries.py:10:mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:9:/app/backend/init_queries.py:10:mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:24:/app/backend/limpiar_tests_dns.py:30:print("✅ Eliminada lógica obsoleta de hosts externos en db.py")
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:76:/app/backend/modules/comercial/queries/mpro.py:24:- Todas retornan SafeQueryResult del core/db.py
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:77:/app/backend/modules/comercial/queries/softrestaurant.py:26:- Todas retornan SafeQueryResult del core/db.py
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:97:/app/backend/modules/comercial/routes.py.bak:3159:            # BLINDAJE MPRO: Usar nombre de MongoDB (ya obtenido arriba), con fallback a SQL si no se encontró
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:199:/app/backend/modules/comercial/routes.py:3159:            # BLINDAJE MPRO: Usar nombre de MongoDB (ya obtenido arriba), con fallback a SQL si no se encontró
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:209:/app/backend/modules/fase2_operativo/db_utils.py:26:        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:302:/app/backend/modules/fase2_operativo/scripts/init_notificaciones.py:20:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:209:/app/backend/modules/fase2_operativo/db_utils.py:26:        mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:302:/app/backend/modules/fase2_operativo/scripts/init_notificaciones.py:20:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:482:/app/backend/modules/configuracion/services/almacenes_sync_service.py:6:Sincroniza almacenes desde sistemas origen (SoftRestaurant/MPRO) al catálogo local MongoDB.
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:497:/app/backend/modules/configuracion/routes/config_asignaciones_routes.py:43:        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:632:/app/backend/modules/finanzas/repository_cuadres_z.py:19:        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:497:/app/backend/modules/configuracion/routes/config_asignaciones_routes.py:43:        mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:632:/app/backend/modules/finanzas/repository_cuadres_z.py:19:        mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:644:/app/backend/modules/finanzas/sync_cortes_softrestaurant.py:74:    - Usa core.db.parse_sql_server_host() para parsear correctamente instancias nombradas
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:666:/app/backend/modules/finanzas/propinas_tpv/routes_sql.py:82:    FASE T2.3: Reemplaza db.servers.find({system_type: 'SoftRestaurant'})
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:741:/app/backend/modules/finanzas/propinas_tpv/service_sql.py:51:    SoftRestaurant (Lectura) → SQL Server (Persistencia) → MongoDB (Cache)
@@ -8437,25 +8437,25 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:869:/app/backend/.pytest_cache/v/cache/nodeids:16:  "tests/test_core_db.py::TestParseSqlServerHost::test_instance_then_port",
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:870:/app/backend/.pytest_cache/v/cache/nodeids:17:  "tests/test_core_db.py::TestParseSqlServerHost::test_simple_hostname",
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:871:/app/backend/.pytest_cache/v/cache/nodeids:18:  "tests/test_core_db.py::TestParseSqlServerHost::test_with_spaces",
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:887:/app/backend/scripts/run_historical_load_finanzas.py:88:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:898:/app/backend/scripts/precheck_conectividad.py:23:MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:919:/app/backend/scripts/reconcile_servers_sql_mongo.py:107:        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:887:/app/backend/scripts/run_historical_load_finanzas.py:88:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:898:/app/backend/scripts/precheck_conectividad.py:23:MONGO_URL = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:919:/app/backend/scripts/reconcile_servers_sql_mongo.py:107:        mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:941:/app/backend/scripts/reconcile_servers_sql_mongo.py:159:                if sql_server.get('host') != mongo_server.get('host'):
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:942:/app/backend/scripts/reconcile_servers_sql_mongo.py:160:                    diffs.append(f"host: SQL='{sql_server.get('host')}' vs Mongo='{mongo_server.get('host')}'")
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:978:/app/backend/scripts/carga_historica_fase23.py:56:MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1013:/app/backend/scripts/setup_kpis_indexes.py:213:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1018:/app/backend/scripts/validar_post_carga.py:21:MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1030:/app/backend/scripts/encrypt_existing_server_secrets.py:212:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:978:/app/backend/scripts/carga_historica_fase23.py:56:MONGO_URL = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1013:/app/backend/scripts/setup_kpis_indexes.py:213:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1018:/app/backend/scripts/validar_post_carga.py:21:MONGO_URL = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1030:/app/backend/scripts/encrypt_existing_server_secrets.py:212:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1065:/app/backend/scripts/rotate_server_secret_key.py:413:        db.servidores_conexiones.update_one(
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1084:/app/backend/scripts/encrypt_core_server_secrets.py:260:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1105:/app/backend/scripts/run_historical_load_compras.py:117:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1116:/app/backend/scripts/run_historical_load_24_months.py:92:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1147:/app/backend/tests/test_config.py:34:    TEST_MONGO_URL = os.getenv('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1153:/app/backend/tests/test_simulacion_controlada.py:154:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1171:/app/backend/tests/test_migracion_servidores_sql.py:88:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1184:/app/backend/tests/test_migracion_servidores_sql.py:130:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1195:/app/backend/tests/test_e2e_flujo_completo.py:79:        self.mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1234:/app/backend/tests/conftest.py:36:os.environ.setdefault("MONGO_URL", "mongodb://localhost:27017")
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1084:/app/backend/scripts/encrypt_core_server_secrets.py:260:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1105:/app/backend/scripts/run_historical_load_compras.py:117:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1116:/app/backend/scripts/run_historical_load_24_months.py:92:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1147:/app/backend/tests/test_config.py:34:    TEST_MONGO_URL = os.getenv('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1153:/app/backend/tests/test_simulacion_controlada.py:154:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1171:/app/backend/tests/test_migracion_servidores_sql.py:88:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1184:/app/backend/tests/test_migracion_servidores_sql.py:130:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1195:/app/backend/tests/test_e2e_flujo_completo.py:79:        self.mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1234:/app/backend/tests/conftest.py:36:os.environ.setdefault("MONGO_URL", "<REDACTED_MONGO_URL>")
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1281:/app/backend/tests/test_bloque2_paridad.py:42:    """Obtiene un servidor SoftRestaurant de prueba desde MongoDB."""
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1284:/app/backend/tests/test_bloque3_paridad_mpro.py:28:from pymongo import MongoClient
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1285:/app/backend/tests/test_bloque3_paridad_mpro.py:41:def get_mongo_db():
@@ -8464,32 +8464,32 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1288:/app/backend/tests/test_bloque3_paridad_mpro.py:47:    """Obtiene un servidor MPRO de prueba desde MongoDB."""
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1289:/app/backend/tests/test_bloque3_paridad_mpro.py:48:    db = get_mongo_db()
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1290:/app/backend/tests/test_bloque3_paridad_mpro.py:49:    server = db.servers.find_one({
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1312:/app/backend/tests/test_macrofase2_kpis.py:35:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1312:/app/backend/tests/test_macrofase2_kpis.py:35:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1370:/app/backend/server.py:593:_mpro_repo = FinanzasRepositoryMPRO(None)  # MongoDB eliminado
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1371:/app/backend/server.py:597:_softrest_repo = FinanzasRepositorySoftRestaurant(None)  # MongoDB eliminado
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1716:/app/backend/utils/migration_helpers.py:16:    "mongo_db.servers": "Servidores_Conexiones",
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1741:/app/backend/utils/migration_helpers.py:102:    - mongo_db.servers     → Servidores_Conexiones
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1806:/app/backend/htmlcov/z_57760688d1f824db_config_py.html:108:    <p class="mis show_mis"><span class="n"><a id="t26" href="#t26">26</a></span><span class="t">    <span class="nam">MONGO_URL</span><span class="op">:</span> <span class="nam">str</span> <span class="op">=</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"MONGO_URL"</span><span class="op">,</span> <span class="str">"mongodb://localhost:27017"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1806:/app/backend/htmlcov/z_57760688d1f824db_config_py.html:108:    <p class="mis show_mis"><span class="n"><a id="t26" href="#t26">26</a></span><span class="t">    <span class="nam">MONGO_URL</span><span class="op">:</span> <span class="nam">str</span> <span class="op">=</span> <span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"MONGO_URL"</span><span class="op">,</span> <span class="str">"<REDACTED_MONGO_URL>"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1815:/app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:317:    <p class="mis show_mis"><span class="n"><a id="t235" href="#t235">235</a></span><span class="t">    <span class="nam">print</span><span class="op">(</span><span class="str">f"*** API Local: Buscando APIs tipo 'api_mpro' en MongoDB ***"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1817:/app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:320:    <p class="mis show_mis"><span class="n"><a id="t238" href="#t238">238</a></span><span class="t">        <span class="nam">sync_client</span> <span class="op">=</span> <span class="nam">MongoClient</span><span class="op">(</span><span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">'MONGO_URL'</span><span class="op">,</span> <span class="str">'mongodb://localhost:27017'</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1867:/app/backend/.env.test.example:33:# MONGO_URL=mongodb://localhost:27017
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1869:/app/backend/.env:1:MONGO_URL="mongodb://localhost:27017"
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1817:/app/backend/htmlcov/z_342fa9d1c388b58c_adapters_py.html:320:    <p class="mis show_mis"><span class="n"><a id="t238" href="#t238">238</a></span><span class="t">        <span class="nam">sync_client</span> <span class="op">=</span> <span class="nam">MongoClient</span><span class="op">(</span><span class="nam">os</span><span class="op">.</span><span class="nam">environ</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">'MONGO_URL'</span><span class="op">,</span> <span class="str">'<REDACTED_MONGO_URL>'</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1867:/app/backend/.env.test.example:33:# MONGO_URL=<REDACTED_MONGO_URL>
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1869:/app/backend/.env:1:MONGO_URL="<REDACTED_MONGO_URL>"
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:1890:/app/backend/api/admin_core_connections.py:250:                mongo_server = db.servidores_conexiones.find_one({'id': conn.get('id')})
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:2220:/app/backend/core/server_registry.py:1343:            if 'database_name' in mongo_update:
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:2221:/app/backend/core/server_registry.py:1344:                mongo_update['database'] = mongo_update.pop('database_name')
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:2327:/app/backend/core/source_resolver.py:96:        source_type: Tipo de fuente (MPRO, SoftRestaurant, MongoDB, API)
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:2338:/app/backend/core/auditoria.py:226:                mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:2533:/app/backend/core/config.py:26:    MONGO_URL: str = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:2600:/app/backend/core/communications/scripts/__init__.py:380:    mongo_url = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:2676:/app/backend/core/centro_control/recipients_manager.py:29:MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:2751:/app/backend/core/auth/user_repository_sql.py:361:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:2971:/app/backend/core/rbac/routes.py:48:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:2975:/app/backend/core/rbac/middleware.py:37:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:2338:/app/backend/core/auditoria.py:226:                mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:2533:/app/backend/core/config.py:26:    MONGO_URL: str = os.environ.get("MONGO_URL", "<REDACTED_MONGO_URL>")
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:2600:/app/backend/core/communications/scripts/__init__.py:380:    mongo_url = os.environ.get("MONGO_URL", "<REDACTED_MONGO_URL>")
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:2676:/app/backend/core/centro_control/recipients_manager.py:29:MONGO_URL = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:2751:/app/backend/core/auth/user_repository_sql.py:361:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:2971:/app/backend/core/rbac/routes.py:48:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:2975:/app/backend/core/rbac/middleware.py:37:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:2991:/app/backend/core/db.py:697:    # parse_sql_server_host está en este mismo módulo (db.py)
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3151:/app/docs/PROPUESTA_DDL_AUTH_RBAC_EDARSAHUB.md:127:│  │ Servidores_Conexiones│  ← Existe, 17 registros, IDs coinciden con MongoDB│
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3163:/app/docs/DEPLOYMENT_ENV_VARS.md:14:MONGO_URL=mongodb://localhost:27017
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3163:/app/docs/DEPLOYMENT_ENV_VARS.md:14:MONGO_URL=<REDACTED_MONGO_URL>
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3171:/app/docs/AUDITORIA_RH_NOMINAS_02.md:82:**Causa raíz:** En `/app/backend/core/db.py`, cuando `execute_sql_query_direct()` fallaba con un error de query (tabla no existe), marcaba el servidor completo como offline con `mark_server_offline(host)`.
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3185:/app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md:16:- Las credenciales en MongoDB eran válidas (HRLectura/National09$)
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3185:/app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md:16:- Las credenciales en MongoDB eran válidas (<REDACTED_EDARSAHUB_SQL_USER>/<REDACTED_EDARSAHUB_SQL_PASSWORD>)
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3186:/app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md:69:### Fuente central (MongoDB - Menú Servidores):
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3187:/app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md:85:**Conclusión**: Ambas credenciales funcionan, pero la fuente autoritativa debe ser MongoDB.
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3188:/app/docs/DIAGNOSTICO_MPRO_FALLBACK_FECHAS_Y_CREDENCIALES.md:159:│ 6. Ejecutar query SQL con credenciales de MongoDB       │
@@ -8504,7 +8504,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3336:/app/docs/CONEXIONES_SQL_EDARSAHUB_01_LOTE2_PLAN.md:142:| **Dato tomado de MongoDB** | host, port, database, username, password, system_type |
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3340:/app/docs/CONEXIONES_SQL_EDARSAHUB_01_LOTE2_PLAN.md:178:| **Dato tomado de MongoDB** | host, port, database, username, password, system_type, name |
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3342:/app/docs/CONEXIONES_SQL_EDARSAHUB_01_LOTE2_PLAN.md:196:| **Dato tomado de MongoDB** | host, port, database, username, password, system_type |
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3376:/app/docs/DEPLOYMENT_CHECKLIST.md:54:MONGO_URL=mongodb://localhost:27017
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3376:/app/docs/DEPLOYMENT_CHECKLIST.md:54:MONGO_URL=<REDACTED_MONGO_URL>
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3422:/app/docs/PROPUESTA_MIGRACION_AUTH_RBAC_SERVIDORES_EDARSAHUB.md:195:| Campo MongoDB (servers) | Campo EDARSAHUB (Servidores_Conexiones) | Paridad |
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3797:/app/docs/reports/auditoria_fuente_datos_tablero_ejecutivo_comercial.md:81:| Configuración de servidores | EDARSAHUB SQL → MongoDB fallback | Tabla `Servidores_Conexiones` |
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3803:/app/docs/reports/auditoria_fuente_datos_tablero_ejecutivo_comercial.md:255:**Respuesta**: SQL vivo directo a cada servidor de sucursal (SoftRestaurant/MPRO), con fallback a MongoDB cache. **NO usa EDARSAHUB para KPIs.**
@@ -8513,12 +8513,12 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3881:/app/docs/reports/historical_load_softrestaurant_validation_report.json:48:    "mongo_not_final": "CONFIRMED"
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3882:/app/docs/reports/historical_load_softrestaurant_validation_report.json:67:    "mongo_final_zero": true,
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:3972:/app/docs/reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md:55:| `db.servers` | CONEXIONES | 5 activas, 82 total | ✅ `Servidores_Conexiones` | N/A | **MEDIO** (en migración) |
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:4035:/app/docs/reports/AUDITORIA_MENUS_FUENTES_DATOS_Y_CONEXIONES_EDARSAHUB.md:233:mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:4035:/app/docs/reports/AUDITORIA_MENUS_FUENTES_DATOS_Y_CONEXIONES_EDARSAHUB.md:233:mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:4050:/app/docs/reports/FASE3FG_AUDITORIA_FINAL_EMPRESAS_SUCURSALES_CONTEXTO_SQL.md:42:| `db.servers` | context_resolver | `Servidores_Conexiones` |
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:4095:/app/docs/reports/RBAC_SCOPE_C_MIGRACION_PERMISOS_LEGACY_SQL.md:22:# Mapeo de servidores: MongoDB UUID → SQL Servidores_Conexiones.id
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:4422:/app/docs/reports/auditoria_finanzas_fase3_propinas_tpv.md:146:SoftRestaurant → Service → MongoDB (propinas_control)
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:4593:/app/docs/reports/MATRIZ_DEFINITIVA_VENTAS_DIA_SOFTRESTAURANT_MPRO_TURNOS.md:400:| No usa MongoDB | ⚠️ Usa para caché/circuit breaker | ✅ SÍ |
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:4600:/app/docs/reports/FINANZAS_TESORERIA_MONGO_DEPENDENCIA_CUADRES_DIAGNOSTICO.md:17:mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:4600:/app/docs/reports/FINANZAS_TESORERIA_MONGO_DEPENDENCIA_CUADRES_DIAGNOSTICO.md:17:mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:4674:/app/docs/reports/FIX_P0_VENTAS_DIA_MPRO_EDARSAHUB_SQL.md:247:- [x] MongoDB NO fue usado como fuente autoritativa
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:4779:/app/docs/reports/FASE_ESTANDARIZACION_NOMBRES_UNIDADES_NEGOCIO.md:211:    OrigenAlias NVARCHAR(50),                -- De dónde vino: 'MONGO', 'SOFTRESTAURANT', 'MPRO', 'MANUAL'
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:4783:/app/docs/reports/auditoria_parseo_conexiones_sqlserver.md:41:**Solución:** Usar `core.db.parse_sql_server_host()` que preserva hostname, puerto e instancia.
@@ -8557,7 +8557,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:6110:/app/docs/CONEXIONES_SQL_EDARSAHUB_01_LOTE6_PLAN.md:18:| 2 | `delete_server_query()` | Eliminación config | MongoDB `db.servers` | **EDARSAHUB** (`Servidores_Conexiones.query_*`) | ⚠️ REQUIERE ANÁLISIS |
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:6134:/app/docs/CONEXIONES_SQL_EDARSAHUB_01_LOTE6_PLAN.md:222:| `save_server_query()` | Config queries SQL | MongoDB `db.servers.query_*` | EDARSAHUB `Servidores_Conexiones.query_*` | `Servidores_Conexiones` | Usuario autenticado | **ALTO** | REQUIERE FUNCIÓN ESCRITURA | Restaurar de backup |
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:6135:/app/docs/CONEXIONES_SQL_EDARSAHUB_01_LOTE6_PLAN.md:223:| `delete_server_query()` | Eliminación config | MongoDB `db.servers.query_*` | EDARSAHUB `Servidores_Conexiones.query_*` | `Servidores_Conexiones` | Usuario autenticado | **MEDIO** | DEPENDE DE save_server_query | Restaurar de backup |
-/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:6199:/app/docs/ENTREGABLES_AUDITORIA_RBAC.md:172:    db = AsyncIOMotorClient('mongodb://localhost:27017')['edarsa_hub']
+/app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:6199:/app/docs/ENTREGABLES_AUDITORIA_RBAC.md:172:    db = AsyncIOMotorClient('<REDACTED_MONGO_URL>')['edarsa_hub']
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:6235:/app/docs/DIAGNOSTICO_COMERCIAL_TABLERO.md:70:│  (SoftRest/MPRO)│     │  (Caché MongoDB) │     │  (Dashboard)    │
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:6237:/app/docs/FINANZAS_CXP_MPRO_COMBINE_01_REPORT.md:24:| Fuente de credenciales | **MongoDB** (`db.servers`) | `repository_mpro.py:45-48` | BAJO | Servidor definido en MongoDB con ID fijo |
 /app/docs/reports/AUDITORIA_DEPENDENCIAS_MONGODB.md:6238:/app/docs/FINANZAS_CXP_MPRO_COMBINE_01_REPORT.md:25:| EDARSAHUB/server_registry usado | NO directamente | MPRO usa MongoDB, no server_registry | BAJO | Documentado |
@@ -8681,7 +8681,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/FASE_SYNC_2C_DIAGNOSTICO_HORA_MPRO_REPORTE.md:26:MPRO registraba todas las ventas en hora 0 en `Sync_Ventas_PorHora`, generando distribución horaria inútil.
 /app/docs/reports/FASE_SYNC_2C_DIAGNOSTICO_HORA_MPRO_REPORTE.md:43:Expandir a 8 servidores con datos MPRO incorrectos (todo en hora 0) contaminaría `Sync_Ventas_PorHora` con información no útil, haciendo imposible análisis de distribución horaria real.
 /app/docs/reports/FASE_SYNC_2C_DIAGNOSTICO_HORA_MPRO_REPORTE.md:47:## 3. SERVIDOR MPRO REVISADO
-/app/docs/reports/FASE_SYNC_2C_DIAGNOSTICO_HORA_MPRO_REPORTE.md:53:| Host | 54.39.104.176 |
+/app/docs/reports/FASE_SYNC_2C_DIAGNOSTICO_HORA_MPRO_REPORTE.md:53:| Host | <REDACTED_EDARSAHUB_SQL_HOST> |
 /app/docs/reports/FASE_SYNC_2C_DIAGNOSTICO_HORA_MPRO_REPORTE.md:55:| Sistema | MPRO |
 /app/docs/reports/FASE_SYNC_2C_DIAGNOSTICO_HORA_MPRO_REPORTE.md:59:## 4. TABLAS MPRO REVISADAS
 /app/docs/reports/FASE_SYNC_2C_DIAGNOSTICO_HORA_MPRO_REPORTE.md:178:### Últimos 7 Días MPRO
@@ -8722,7 +8722,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/AUDITORIA_MENUS_FUENTES_DATOS_Y_CONEXIONES_EDARSAHUB.md:202:- `service.py` - `pymssql.connect()` directo a servidores remotos
 /app/docs/reports/AUDITORIA_MENUS_FUENTES_DATOS_Y_CONEXIONES_EDARSAHUB.md:208:conn = pymssql.connect(
 /app/docs/reports/AUDITORIA_MENUS_FUENTES_DATOS_Y_CONEXIONES_EDARSAHUB.md:215:conn_hoy = pymssql.connect(...)
-/app/docs/reports/AUDITORIA_MENUS_FUENTES_DATOS_Y_CONEXIONES_EDARSAHUB.md:233:mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/docs/reports/AUDITORIA_MENUS_FUENTES_DATOS_Y_CONEXIONES_EDARSAHUB.md:233:mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/docs/reports/FASE3FG_AUDITORIA_FINAL_EMPRESAS_SUCURSALES_CONTEXTO_SQL.md:42:| `db.servers` | context_resolver | `Servidores_Conexiones` |
 /app/docs/reports/FASE3FG_AUDITORIA_FINAL_EMPRESAS_SUCURSALES_CONTEXTO_SQL.md:149:| `Servidores_Conexiones` | Catálogo de servidores | 8 (visible) |
 /app/docs/reports/FASE3FG_AUDITORIA_FINAL_EMPRESAS_SUCURSALES_CONTEXTO_SQL.md:169:| Servidores_Conexiones (visible) = 8 | ✅ |
@@ -8768,7 +8768,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/FASE_1B_R3_SYNC_VENTAS_PORHORA_JOB_VALIDACION.md:84:| SoftRestaurant | `_obtener_ventas_por_hora_softrestaurant()` | ✓ Implementado |
 /app/docs/reports/FASE_1B_R3_SYNC_VENTAS_PORHORA_JOB_VALIDACION.md:85:| MPRO | `_obtener_ventas_por_hora_mpro()` | ✓ Implementado |
 /app/docs/reports/FASE_1B_R3_SYNC_VENTAS_PORHORA_JOB_VALIDACION.md:125:Los servidores configurados en `Servidores_Conexiones` tienen datos de conexión que apuntan a EDARSAHUB en lugar de los servidores remotos reales.
-/app/docs/reports/FASE_1B_R3_SYNC_VENTAS_PORHORA_JOB_VALIDACION.md:129:| Host | 54.39.104.176 (EDARSAHUB) | IP real del servidor MPRO/SR |
+/app/docs/reports/FASE_1B_R3_SYNC_VENTAS_PORHORA_JOB_VALIDACION.md:129:| Host | <REDACTED_EDARSAHUB_SQL_HOST> (EDARSAHUB) | IP real del servidor MPRO/SR |
 /app/docs/reports/FASE_1B_R3_SYNC_VENTAS_PORHORA_JOB_VALIDACION.md:208:#### LA ESTELAR (SoftRestaurant)
 /app/docs/reports/FASE_1B_R3_SYNC_VENTAS_PORHORA_JOB_VALIDACION.md:224:#### ManagmentPro (MPRO)
 /app/docs/reports/FASE_1B_R3_SYNC_VENTAS_PORHORA_JOB_VALIDACION.md:317:1. **Configuración de servidores incorrecta**: Los datos de conexión en `Servidores_Conexiones` apuntan a EDARSAHUB, no a los servidores remotos reales (SoftRestaurant/MPRO)
@@ -8803,7 +8803,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/INCIDENTE_CACHE_PREVIEW_ESTADO_CORRUPTO_DIAGNOSTICO.md:33:Servidores_Conexiones         → 13 servidores activos
 /app/docs/reports/INCIDENTE_CACHE_PREVIEW_ESTADO_CORRUPTO_DIAGNOSTICO.md:87:- `localhost` / `127.0.0.1`
 /app/docs/reports/INCIDENTE_EDARSAHUB_SQL_DESAPARECIDO_MENU_SERVIDORES_DIAGNOSTICO.md:11:EDARSAHUB SQL **SÍ EXISTE** en la base de datos `Servidores_Conexiones` con `activo=True` y `visible_en_listado=True`, pero está siendo **EXCLUIDO INTENCIONALMENTE** por la lógica del backend.
-/app/docs/reports/INCIDENTE_EDARSAHUB_SQL_DESAPARECIDO_MENU_SERVIDORES_DIAGNOSTICO.md:57:| host | 54.39.104.176 |
+/app/docs/reports/INCIDENTE_EDARSAHUB_SQL_DESAPARECIDO_MENU_SERVIDORES_DIAGNOSTICO.md:57:| host | <REDACTED_EDARSAHUB_SQL_HOST> |
 /app/docs/reports/INCIDENTE_EDARSAHUB_SQL_DESAPARECIDO_MENU_SERVIDORES_DIAGNOSTICO.md:59:| database_name | EDARSAHUB |
 /app/docs/reports/FASE3H_SECURITY_ALCANCE_HELPER_SQL.md:207:| Conexiones pymssql inline | BAJO | Considerar refactor a helper centralizado en futuro |
 /app/docs/reports/FASE_1C_3I_B_SERVICIOS_BACKEND_PRICING_BENCHMARK.md:173:curl -X POST "$API_URL/api/auth/login" \
@@ -8819,7 +8819,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE2_DDL_EJECUCION.md:208:3. **Sistema_TiposVariantes**: Cargar variantes de nombres (MPRO, ManagementPro, SR, SOFT, etc.)
 /app/docs/reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE2_DDL_EJECUCION.md:212:- ✅ Sistema_Tipos tiene IDs 1 (SR) y 2 (MPRO)
 /app/docs/reports/FASE_1C_3G_E3_SYNC_COSTO_BASE_VINOS_ORIGEN.md:27:| Servidor | Sistema | Host | Estado |
-/app/docs/reports/FASE_1C_3G_E3_SYNC_COSTO_BASE_VINOS_ORIGEN.md:29:| ManagmentPro | MPRO | 54.39.104.176 | ✅ Datos sincronizados |
+/app/docs/reports/FASE_1C_3G_E3_SYNC_COSTO_BASE_VINOS_ORIGEN.md:29:| ManagmentPro | MPRO | <REDACTED_EDARSAHUB_SQL_HOST> | ✅ Datos sincronizados |
 /app/docs/reports/FASE_1C_3G_E3_SYNC_COSTO_BASE_VINOS_ORIGEN.md:30:| CIENFUEGOS | SoftRestaurant | servercienfuegos.ddns.net | ✅ Datos sincronizados |
 /app/docs/reports/FASE_1C_3G_E3_SYNC_COSTO_BASE_VINOS_ORIGEN.md:31:| 130° MERIDA | SoftRestaurant | 130mid.ddns.net | ✅ Datos sincronizados |
 /app/docs/reports/FASE_1C_3G_E3_SYNC_COSTO_BASE_VINOS_ORIGEN.md:32:| LA ESTELAR | SoftRestaurant | serverestelar.ddns.net | ✅ Datos sincronizados |
@@ -8855,7 +8855,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/DIAGNOSTICO_QRO_VENTAS_DIA_FECHA_OPERACION_INCORRECTA.md:81:| 703 | `get_operational_window(unidad_id)` | Operativa (MPRO) |
 /app/docs/reports/DIAGNOSTICO_QRO_VENTAS_DIA_FECHA_OPERACION_INCORRECTA.md:294:WARNING:[FIX-HUB] MPRO 130QRO: Sin datos en EDARSAHUB SQL para período
 /app/docs/reports/DIAGNOSTICO_QRO_VENTAS_DIA_FECHA_OPERACION_INCORRECTA.md:481:| system_type | MPRO ✅ | MPRO ✅ |
-/app/docs/reports/DIAGNOSTICO_QRO_VENTAS_DIA_FECHA_OPERACION_INCORRECTA.md:483:| api_url | http://54.39.104.176:8000/query ✅ | http://54.39.104.176:8001/query ✅ |
+/app/docs/reports/DIAGNOSTICO_QRO_VENTAS_DIA_FECHA_OPERACION_INCORRECTA.md:483:| api_url | http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query ✅ | http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query ✅ |
 /app/docs/reports/FASE_0_5_VALIDACION_ARQUITECTURA_MENUS_Y_COMERCIAL.md:61:| 9 | HOST_TO_HOST | PRINCIPAL | ✅ |
 /app/docs/reports/auditoria_finanzas_fase3_propinas_tpv.md:15:3. **Solo soporta SoftRestaurant** (MPRO no implementado).
 /app/docs/reports/auditoria_finanzas_fase3_propinas_tpv.md:16:4. **MPRO tiene datos de propinas** perfectamente identificables en `Comanda_Pago`.
@@ -8904,18 +8904,18 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:16:**IMPORTANTE:** Las conexiones PRUEBAS SOFTRESTAURANT y CHAPUR NORTE tienen **problemas de infraestructura/permisos**, no del código.
 /app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:48:| PRUEBAS SOFTRESTAURANT | d8425038-5e57-42d9-8f3a-62e287888874 | SoftRestaurant | DATA_SOURCE | Usuario SQL sin permisos |
 /app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:56:- **PRUEBAS SOFTRESTAURANT**: `SoftRestaurant` (correcto)
-/app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:66:1. **PRUEBAS SOFTRESTAURANT**: El usuario SQL `HRLectura` no tiene permisos para la base de datos `softrestaurant12`
+/app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:66:1. **PRUEBAS SOFTRESTAURANT**: El usuario SQL `<REDACTED_EDARSAHUB_SQL_USER>` no tiene permisos para la base de datos `softrestaurant12`
 /app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:92:### A) PRUEBAS SOFTRESTAURANT
 /app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:94:Servidor: PRUEBAS SOFTRESTAURANT
 /app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:95:Sistema: SoftRestaurant
 /app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:96:Database: softrestaurant12
 /app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:98:ERROR: Error de autenticación: El usuario no tiene acceso a la base de datos 'softrestaurant12'
-/app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:100:**Diagnóstico:** El usuario SQL `HRLectura` necesita permisos `db_datareader` en `softrestaurant12`.
+/app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:100:**Diagnóstico:** El usuario SQL `<REDACTED_EDARSAHUB_SQL_USER>` necesita permisos `db_datareader` en `softrestaurant12`.
 /app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:128:| 130° MERIDA (SoftRestaurant) | 365 tablas | ✅ 365 tablas |
 /app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:129:| ManagementPro (MPRO) | 1076 tablas | ✅ 1076 tablas |
 /app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:135:## 10. CONFIRMACIÓN: PRUEBAS SOFTRESTAURANT
 /app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:138:> "Error de autenticación: El usuario no tiene acceso a la base de datos 'softrestaurant12'"
-/app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:140:**Acción requerida por DBA:** Otorgar permisos al usuario `HRLectura` en `softrestaurant12`:
+/app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:140:**Acción requerida por DBA:** Otorgar permisos al usuario `<REDACTED_EDARSAHUB_SQL_USER>` en `softrestaurant12`:
 /app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:142:USE softrestaurant12;
 /app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:170:| PRUEBAS SOFTRESTAURANT sin acceso | Requiere acción DBA (permisos SQL) |
 /app/docs/reports/FIX_EXPLORADOR_BD_TABLAS_PRUEBAS_ENTERPRISE.md:179:| 1 | PRUEBAS SOFTRESTAURANT devuelve tablas | ⚠️ | Error claro mostrado - requiere permisos SQL |
@@ -9153,8 +9153,8 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE7_FRONTEND_DINAMICO_REPORTE.md:263:| `Servidores.js:1414` | Botón sucursales MPRO | Funcionalidad exclusiva MPRO |
 /app/docs/reports/DIAGNOSTICO_VENTAS_DIA_MES_14MAY2026.md:15:### Query de Ventas del Día (SoftRestaurant - tempcheques):
 /app/docs/reports/DIAGNOSTICO_VENTAS_DIA_MES_14MAY2026.md:28:### Query de Ventas del Día (MPRO - API_LOCAL):
-/app/docs/reports/DIAGNOSTICO_VENTAS_DIA_MES_14MAY2026.md:116:| **ORIGEN** | MPRO | API_LOCAL | `http://54.39.104.176:8000/query` |
-/app/docs/reports/DIAGNOSTICO_VENTAS_DIA_MES_14MAY2026.md:117:| **130° QRO** | MPRO | API_LOCAL | `http://54.39.104.176:8001/query` |
+/app/docs/reports/DIAGNOSTICO_VENTAS_DIA_MES_14MAY2026.md:116:| **ORIGEN** | MPRO | API_LOCAL | `http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query` |
+/app/docs/reports/DIAGNOSTICO_VENTAS_DIA_MES_14MAY2026.md:117:| **130° QRO** | MPRO | API_LOCAL | `http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query` |
 /app/docs/reports/DIAGNOSTICO_VENTAS_DIA_MES_14MAY2026.md:122:- ✅ **NO** usan SQL Server MPRO central
 /app/docs/reports/DIAGNOSTICO_VENTAS_DIA_MES_14MAY2026.md:135:| **130° MÉRIDA** | SOFTRESTAURANT | TEMPCHEQUES | $4,441.00 | 2026-05-14 19:42:13 |
 /app/docs/reports/DIAGNOSTICO_VENTAS_DIA_MES_14MAY2026.md:136:| LA ESTELAR | SOFTRESTAURANT | TEMPCHEQUES | $395.00 | 2026-05-14 19:42:14 |
@@ -9325,8 +9325,8 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/DIAGNOSTICO_ARQUITECTURA_VENTAS_DIA_14MAY2026.md:38:| database_name | nvarchar | Nombre de BD |
 /app/docs/reports/DIAGNOSTICO_ARQUITECTURA_VENTAS_DIA_14MAY2026.md:39:| api_url | nvarchar | URL de API local (si aplica) |
 /app/docs/reports/DIAGNOSTICO_ARQUITECTURA_VENTAS_DIA_14MAY2026.md:46:| Nombre | System | api_url |
-/app/docs/reports/DIAGNOSTICO_ARQUITECTURA_VENTAS_DIA_14MAY2026.md:48:| ORIGEN LOCAL | MPRO | http://54.39.104.176:8000/query |
-/app/docs/reports/DIAGNOSTICO_ARQUITECTURA_VENTAS_DIA_14MAY2026.md:49:| 130° QRO LOCAL | MPRO | http://54.39.104.176:8001/query |
+/app/docs/reports/DIAGNOSTICO_ARQUITECTURA_VENTAS_DIA_14MAY2026.md:48:| ORIGEN LOCAL | MPRO | http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query |
+/app/docs/reports/DIAGNOSTICO_ARQUITECTURA_VENTAS_DIA_14MAY2026.md:49:| 130° QRO LOCAL | MPRO | http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query |
 /app/docs/reports/DIAGNOSTICO_ARQUITECTURA_VENTAS_DIA_14MAY2026.md:51:### Conexiones DATA_SOURCE (SoftRestaurant):
 /app/docs/reports/DIAGNOSTICO_ARQUITECTURA_VENTAS_DIA_14MAY2026.md:53:| Nombre | Host | Database |
 /app/docs/reports/DIAGNOSTICO_ARQUITECTURA_VENTAS_DIA_14MAY2026.md:55:| 130° MERIDA | 130mid.ddns.net | softrestaurant10 |
@@ -9386,7 +9386,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/DIAGNOSTICO_P0_SCHEDULER_ZOMBIE_VENTAS_DIA.md:310:curl -X POST http://localhost:8001/api/v2/comercial/sync-abiertas \
 /app/docs/reports/DIAGNOSTICO_P0_SCHEDULER_ZOMBIE_VENTAS_DIA.md:319:1. **SERVER_SECRET_KEY para MPRO**: Verificar que las APIs locales (ORIGEN, QRO) descifren correctamente
 /app/docs/reports/DIAGNOSTICO_P0_SCHEDULER_ZOMBIE_VENTAS_DIA.md:320:2. **Conexión SoftRestaurant**: CIENFUEGOS y ESTELAR reportan timeouts/errores de conexión
-/app/docs/reports/FINANZAS_TESORERIA_MONGO_DEPENDENCIA_CUADRES_DIAGNOSTICO.md:17:mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/docs/reports/FINANZAS_TESORERIA_MONGO_DEPENDENCIA_CUADRES_DIAGNOSTICO.md:17:mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/docs/reports/FINANZAS_TESORERIA_MONGO_DEPENDENCIA_CUADRES_DIAGNOSTICO.md:116:| SistemaOrigen | nvarchar(20) | SoftRestaurant/MPRO |
 /app/docs/reports/FINANZAS_TESORERIA_MONGO_DEPENDENCIA_CUADRES_DIAGNOSTICO.md:214:Sin necesidad de JOINs a `Servidores_Conexiones` o `Sistema_SucursalServidorMapeo` para filtrar cuadres.
 /app/docs/reports/FASE_1_CONSULTAS_SQL_DDL_EJECUCION.md:19:- `Servidores_Conexiones` ✅ (No afectada)
@@ -9415,7 +9415,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/RECONCILIACION_CIENFUEGOS_MAYO_2026_DIAS_FALTANTES.md:468:# SoftRestaurant CIENFUEGOS (fuente)
 /app/docs/reports/RECONCILIACION_CIENFUEGOS_MAYO_2026_DIAS_FALTANTES.md:469:SR_HOST = 'servercienfuegos.ddns.net'
 /app/docs/reports/RECONCILIACION_CIENFUEGOS_MAYO_2026_DIAS_FALTANTES.md:471:SR_DATABASE = 'softrestaurant95pro'
-/app/docs/reports/RECONCILIACION_CIENFUEGOS_MAYO_2026_DIAS_FALTANTES.md:476:HUB_HOST = '54.39.104.176'
+/app/docs/reports/RECONCILIACION_CIENFUEGOS_MAYO_2026_DIAS_FALTANTES.md:476:HUB_HOST = '<REDACTED_EDARSAHUB_SQL_HOST>'
 /app/docs/reports/RECONCILIACION_CIENFUEGOS_MAYO_2026_DIAS_FALTANTES.md:491:SISTEMA_ORIGEN = 'SOFTRESTAURANT'
 /app/docs/reports/RECONCILIACION_CIENFUEGOS_MAYO_2026_DIAS_FALTANTES.md:494:# PASO 1: EXTRAER DATOS DE SOFTRESTAURANT
 /app/docs/reports/RECONCILIACION_CIENFUEGOS_MAYO_2026_DIAS_FALTANTES.md:497:def extraer_datos_softrestaurant():
@@ -9469,7 +9469,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/FASE_SYNC_2_PRUEBA_REAL_HISTORICOS_REPORTE.md:37:| Base de datos | softrestaurant10 |
 /app/docs/reports/FASE_SYNC_2_PRUEBA_REAL_HISTORICOS_REPORTE.md:38:| Tipo | SoftRestaurant |
 /app/docs/reports/FASE_SYNC_2_PRUEBA_REAL_HISTORICOS_REPORTE.md:40:### MPRO
-/app/docs/reports/FASE_SYNC_2_PRUEBA_REAL_HISTORICOS_REPORTE.md:45:| Host | 54.39.104.176 |
+/app/docs/reports/FASE_SYNC_2_PRUEBA_REAL_HISTORICOS_REPORTE.md:45:| Host | <REDACTED_EDARSAHUB_SQL_HOST> |
 /app/docs/reports/FASE_SYNC_2_PRUEBA_REAL_HISTORICOS_REPORTE.md:47:| Tipo | MPRO |
 /app/docs/reports/FASE_SYNC_2_PRUEBA_REAL_HISTORICOS_REPORTE.md:102:**SoftRestaurant (130° MERIDA):**
 /app/docs/reports/FASE_SYNC_2_PRUEBA_REAL_HISTORICOS_REPORTE.md:114:**MPRO (ManagmentPro):**
@@ -9713,7 +9713,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/auditoria_parseo_conexiones_sqlserver.md:167:    parts = host_raw.split(':')
 /app/docs/reports/auditoria_parseo_conexiones_sqlserver.md:168:    host = parts[0]
 /app/docs/reports/auditoria_parseo_conexiones_sqlserver.md:173:**Recomendación:** Migrar a `parse_sql_server_host()` para consistencia.
-/app/docs/reports/auditoria_parseo_conexiones_sqlserver.md:175:**Nota:** Actualmente funciona porque MPRO (54.39.104.176) no usa instancias nombradas.
+/app/docs/reports/auditoria_parseo_conexiones_sqlserver.md:175:**Nota:** Actualmente funciona porque MPRO (<REDACTED_EDARSAHUB_SQL_HOST>) no usa instancias nombradas.
 /app/docs/reports/auditoria_parseo_conexiones_sqlserver.md:187:| **Función** | `parse_server_host()` |
 /app/docs/reports/auditoria_parseo_conexiones_sqlserver.md:194:elif '\\' in host_str:
 /app/docs/reports/auditoria_parseo_conexiones_sqlserver.md:195:    host = host_str.split('\\')[0]  # ❌ Descarta instancia
@@ -9735,7 +9735,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/auditoria_parseo_conexiones_sqlserver.md:300:| CIENFUEGOS | servercienfuegos.ddns.net | 6669 | nationalsoft | SoftRestaurant |
 /app/docs/reports/auditoria_parseo_conexiones_sqlserver.md:301:| 130° MÉRIDA | server130merida.ddns.net | 6669 | nationalsoft | SoftRestaurant |
 /app/docs/reports/auditoria_parseo_conexiones_sqlserver.md:302:| LA ESTELAR | serverestelar.ddns.net | 6969 | (ninguna) | SoftRestaurant |
-/app/docs/reports/auditoria_parseo_conexiones_sqlserver.md:303:| MPRO | 54.39.104.176 | 1433 | (ninguna) | MPRO |
+/app/docs/reports/auditoria_parseo_conexiones_sqlserver.md:303:| MPRO | <REDACTED_EDARSAHUB_SQL_HOST> | 1433 | (ninguna) | MPRO |
 /app/docs/reports/auditoria_parseo_conexiones_sqlserver.md:311:1. **Todos los módulos** deben usar `core.db.parse_sql_server_host()` para parsear hosts SQL Server.
 /app/docs/reports/auditoria_parseo_conexiones_sqlserver.md:315:3. **Migrar credenciales hardcodeadas** a EDARSAHUB.Servidores_Conexiones.
 /app/docs/reports/auditoria_parseo_conexiones_sqlserver.md:323:| P0 | repository_softrestaurant.py | Credenciales hardcodeadas |
@@ -9999,11 +9999,11 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/DIAGNOSTICO_SERVIDORES_CONSULTAS_SQL_EDARSAHUB.md:147:username, password_encrypted, api_url, api_key_encrypted,
 /app/docs/reports/DIAGNOSTICO_SERVIDORES_CONSULTAS_SQL_EDARSAHUB.md:155:| Nombre | Tipo | TipoConexion | Host | Activo |
 /app/docs/reports/DIAGNOSTICO_SERVIDORES_CONSULTAS_SQL_EDARSAHUB.md:157:| 130° MERIDA | SoftRestaurant | DATA_SOURCE | 130mid.ddns.net | ✅ |
-/app/docs/reports/DIAGNOSTICO_SERVIDORES_CONSULTAS_SQL_EDARSAHUB.md:158:| 130° QRO LOCAL | MPRO | API_LOCAL | 54.39.104.176 | ✅ |
+/app/docs/reports/DIAGNOSTICO_SERVIDORES_CONSULTAS_SQL_EDARSAHUB.md:158:| 130° QRO LOCAL | MPRO | API_LOCAL | <REDACTED_EDARSAHUB_SQL_HOST> | ✅ |
 /app/docs/reports/DIAGNOSTICO_SERVIDORES_CONSULTAS_SQL_EDARSAHUB.md:159:| CIENFUEGOS | SoftRestaurant | DATA_SOURCE | servercienfuegos.ddns.net | ✅ |
 /app/docs/reports/DIAGNOSTICO_SERVIDORES_CONSULTAS_SQL_EDARSAHUB.md:160:| LA ESTELAR | SoftRestaurant | DATA_SOURCE | serverestelar.ddns.net | ✅ |
-/app/docs/reports/DIAGNOSTICO_SERVIDORES_CONSULTAS_SQL_EDARSAHUB.md:161:| ManagmentPro | MPRO | DATA_SOURCE | 54.39.104.176 | ✅ |
-/app/docs/reports/DIAGNOSTICO_SERVIDORES_CONSULTAS_SQL_EDARSAHUB.md:162:| ORIGEN LOCAL | MPRO | API_LOCAL | 54.39.104.176 | ✅ |
+/app/docs/reports/DIAGNOSTICO_SERVIDORES_CONSULTAS_SQL_EDARSAHUB.md:161:| ManagmentPro | MPRO | DATA_SOURCE | <REDACTED_EDARSAHUB_SQL_HOST> | ✅ |
+/app/docs/reports/DIAGNOSTICO_SERVIDORES_CONSULTAS_SQL_EDARSAHUB.md:162:| ORIGEN LOCAL | MPRO | API_LOCAL | <REDACTED_EDARSAHUB_SQL_HOST> | ✅ |
 /app/docs/reports/DIAGNOSTICO_SERVIDORES_CONSULTAS_SQL_EDARSAHUB.md:167:| 1 | SOFTRESTAURANT | SoftRestaurant | ✅ |
 /app/docs/reports/DIAGNOSTICO_SERVIDORES_CONSULTAS_SQL_EDARSAHUB.md:168:| 2 | MPRO | ManagementPro | ✅ |
 /app/docs/reports/DIAGNOSTICO_SERVIDORES_CONSULTAS_SQL_EDARSAHUB.md:182:  system_type: String,  // SoftRestaurant, MPRO, etc.
@@ -10037,7 +10037,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/FASE_1C_3G_B_DIAGNOSTICO_CORRECCION_IMPUESTOS_MPRO.md:196:2. **Precios negativos (-1)**: Algunos productos tienen precio -1, posible marcador especial de MPRO
 /app/docs/reports/FASE_1C_3G_B_DIAGNOSTICO_CORRECCION_IMPUESTOS_MPRO.md:205:   - `Sync_Impuestos_Origen`: Trazabilidad MPRO/SR
 /app/docs/reports/FASE_1C_3G_B_DIAGNOSTICO_CORRECCION_IMPUESTOS_MPRO.md:217:| Sistema | Host | Base de Datos | Usuario |
-/app/docs/reports/FASE_1C_3G_B_DIAGNOSTICO_CORRECCION_IMPUESTOS_MPRO.md:219:| MPRO | 54.39.104.176:1433 | CENTRAL2020 | HRLectura |
+/app/docs/reports/FASE_1C_3G_B_DIAGNOSTICO_CORRECCION_IMPUESTOS_MPRO.md:219:| MPRO | <REDACTED_EDARSAHUB_SQL_HOST>:1433 | CENTRAL2020 | <REDACTED_EDARSAHUB_SQL_USER> |
 /app/docs/reports/FASE_1C_3G_B_SYNC_REAL_IMPUESTOS_MPRO.md:1:# FASE 1C-3G-B: SYNC REAL - Corrección Fiscal Productos MPRO
 /app/docs/reports/FASE_1C_3G_B_SYNC_REAL_IMPUESTOS_MPRO.md:11:Se ejecutó el SYNC REAL de productos MPRO para persistir las tasas de impuesto corregidas desde ManagementPro hacia EDARSAHUB SQL.
 /app/docs/reports/FASE_1C_3G_B_SYNC_REAL_IMPUESTOS_MPRO.md:17:- **NO se hardcodeó 16%** - Todas las tasas provienen de MPRO
@@ -10051,7 +10051,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/FASE_1C_3G_B_SYNC_REAL_IMPUESTOS_MPRO.md:173:2. **Algunos productos con precio -1**: Marcador especial de MPRO (no afecta cálculos)
 /app/docs/reports/FASE_1C_3G_B_SYNC_REAL_IMPUESTOS_MPRO.md:185:3. **`Sync_Impuestos_Origen`**: Trazabilidad de mapeo MPRO/SR
 /app/docs/reports/FASE_1C_3G_B_SYNC_REAL_IMPUESTOS_MPRO.md:196:| Sistema | Host | Base de Datos | Modo |
-/app/docs/reports/FASE_1C_3G_B_SYNC_REAL_IMPUESTOS_MPRO.md:198:| MPRO | 54.39.104.176:1433 | CENTRAL2020 | LECTURA |
+/app/docs/reports/FASE_1C_3G_B_SYNC_REAL_IMPUESTOS_MPRO.md:198:| MPRO | <REDACTED_EDARSAHUB_SQL_HOST>:1433 | CENTRAL2020 | LECTURA |
 /app/docs/reports/debug_tablero_ejecutivo_stability_1.json:1:{"periodo":{"mes":0,"anio":-1,"dias_transcurridos":20,"dias_mes":31,"modo_ventas_dia":true,"label":"Ventas del Día (sin corte)"},"comparativo_con":{"mes_anterior":"4-4/2026","año_anterior":"5-5/2025"},"unidades":[{"unidad_key":"1b230a06-ffaf-4c70-bd27-b1be3579dea6:MANAGMENTPRO","unidad_negocio_id":"1b230a06-ffaf-4c70-bd27-b1be3579dea6","unidad_negocio_codigo":"","unidad_negocio_nombre":"","server_id":"1b230a06-ffaf-4c70-bd27-b1be3579dea6","unidad":"MANAGMENTPRO","nombre":"MANAGMENTPRO","system_type":"MPRO","connection_type":"LOCAL_API","data_status":"NO_DATA_CONFIRMED","live_status":"LIVE_NOT_APPLICABLE","cache_status":"MISSING","source_used":"NONE","source_real_attempted":true,"source_real_status":"SUCCESS","source_period":"EDARSAHUB_SQL","source_live":"EDARSAHUB_SQL","last_data_refresh_at":"2026-05-21T02:02:41.336770+00:00","last_live_check_at":null,"status_ttl_seconds":120,"updated_at":"2026-05-21T02:02:41.336770+00:00","ventas":0,"ventas_ant":0,"ventas_año":0,"pax":0,"pax_ant":0,"pax_año":0,"cheques":0,"cheques_ant":0,"cheques_año":0,"ticket_prom":0,"proyeccion":0,"var_vs_mes_ant":0,"var_vs_año_ant":0,"cache_warning":null,"error_code":null,"error_message":null,"status":"no_data","source_status":"FALLBACK","config_origin":"EDARSAHUB_SQL"}],"totales":{"ventas":0,"ventas_ant":0,"ventas_año":0,"ventas_año_completo":0,"pax":0,"pax_ant":0,"pax_año":0,"cheques":0,"cheques_ant":0,"cheques_año":0,"proyeccion":0,"pendiente_cerrar":0,"tickets_abiertos":0,"var_vs_mes_ant":0,"var_vs_año_ant":0,"var_pax_mes":0,"var_pax_año":0,"var_cheques_mes":0,"var_cheques_año":0,"ticket_prom":0,"cheque_prom":0,"var_proy_vs_año":0,"unidades_año_ant":0},"status_summary":{"total_unidades":1,"unidades_data_ok":0,"unidades_data_cache":0,"unidades_data_error":0,"unidades_no_data":1,"unidades_live_connected":0,"unidades_live_unreachable":0,"unidades_source_real":0,"unidades_source_cache":0,"timestamp":"2026-05-21T02:02:41.369181+00:00"}}
 /app/docs/reports/FASE_1B_R1_NO_LIVE_DASHBOARD_COMERCIAL_CORRECCION.md:18:### 2.1 Fallback SoftRestaurant (ELIMINADO)
 /app/docs/reports/FASE_1B_R1_NO_LIVE_DASHBOARD_COMERCIAL_CORRECCION.md:22:**Violación:** Cuando EDARSAHUB no tenía datos, el código abría conexión remota a SoftRestaurant con `query_ventas_periodo_sr(server, ...)`.
@@ -10087,7 +10087,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/auditoria_finanzas_fase2_control_ingresos.md:120:| `a5547321-...` | 130° MÉRIDA | SoftRestaurant | 130mid.ddns.net | 1433 | softrestaurant10 |
 /app/docs/reports/auditoria_finanzas_fase2_control_ingresos.md:121:| `6d053c22-...` | CIENFUEGOS | SoftRestaurant | servercienfuegos.ddns.net,6669 | 1433 | softrestaurant95pro |
 /app/docs/reports/auditoria_finanzas_fase2_control_ingresos.md:122:| `a5ff0e25-...` | LA ESTELAR | SoftRestaurant | serverestelar.ddns.net,6969 | 6969 | softrestaurant12 |
-/app/docs/reports/auditoria_finanzas_fase2_control_ingresos.md:123:| `1b230a06-...` | ManagementPro | MPRO | 54.39.104.176 | 1433 | CENTRAL2020 |
+/app/docs/reports/auditoria_finanzas_fase2_control_ingresos.md:123:| `1b230a06-...` | ManagementPro | MPRO | <REDACTED_EDARSAHUB_SQL_HOST> | 1433 | CENTRAL2020 |
 /app/docs/reports/auditoria_finanzas_fase2_control_ingresos.md:170:│  MPRO   │   │SoftRest │
 /app/docs/reports/auditoria_finanzas_fase2_control_ingresos.md:185:| 130° QRO | `1b230a06-...` | CENTRAL2020 | MPRO | `sucursal_id` o `almacen_id` |
 /app/docs/reports/auditoria_finanzas_fase2_control_ingresos.md:186:| 130° MÉRIDA | `a5547321-...` | softrestaurant10 | SoftRestaurant | Consulta directa |
@@ -10339,10 +10339,10 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/DIAGNOSTICO_CONECTIVIDAD_PREVIEW_SINCRONIZACION_REAL.md:20:| 130° MERIDA | SoftRestaurant | ✅ TCP ABIERTO | Pendiente validación |
 /app/docs/reports/DIAGNOSTICO_CONECTIVIDAD_PREVIEW_SINCRONIZACION_REAL.md:21:| LA ESTELAR | SoftRestaurant | ✅ TCP ABIERTO | Pendiente validación |
 /app/docs/reports/DIAGNOSTICO_CONECTIVIDAD_PREVIEW_SINCRONIZACION_REAL.md:42:| **Sistema** | MPRO (ManagementPro) |
-/app/docs/reports/DIAGNOSTICO_CONECTIVIDAD_PREVIEW_SINCRONIZACION_REAL.md:43:| **Host** | 54.39.104.176 |
+/app/docs/reports/DIAGNOSTICO_CONECTIVIDAD_PREVIEW_SINCRONIZACION_REAL.md:43:| **Host** | <REDACTED_EDARSAHUB_SQL_HOST> |
 /app/docs/reports/DIAGNOSTICO_CONECTIVIDAD_PREVIEW_SINCRONIZACION_REAL.md:61:| **Sistema** | MPRO (ManagementPro) |
-/app/docs/reports/DIAGNOSTICO_CONECTIVIDAD_PREVIEW_SINCRONIZACION_REAL.md:62:| **Host** | 54.39.104.176 |
-/app/docs/reports/DIAGNOSTICO_CONECTIVIDAD_PREVIEW_SINCRONIZACION_REAL.md:77:| **Host** | 54.39.104.176 |
+/app/docs/reports/DIAGNOSTICO_CONECTIVIDAD_PREVIEW_SINCRONIZACION_REAL.md:62:| **Host** | <REDACTED_EDARSAHUB_SQL_HOST> |
+/app/docs/reports/DIAGNOSTICO_CONECTIVIDAD_PREVIEW_SINCRONIZACION_REAL.md:77:| **Host** | <REDACTED_EDARSAHUB_SQL_HOST> |
 /app/docs/reports/DIAGNOSTICO_CONECTIVIDAD_PREVIEW_SINCRONIZACION_REAL.md:85:### 2.4 Servidores SoftRestaurant
 /app/docs/reports/DIAGNOSTICO_CONECTIVIDAD_PREVIEW_SINCRONIZACION_REAL.md:87:| Servidor | Host | Puerto | TCP | SQL |
 /app/docs/reports/DIAGNOSTICO_CONECTIVIDAD_PREVIEW_SINCRONIZACION_REAL.md:252:**Cambio requerido:** Al construir la query para APIs MPRO, usar `fecha_operativa` calculada por `get_operational_window()` en lugar de `fecha_calendario`.
@@ -10442,7 +10442,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/FASE_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md:384:| 4 | ESTELAR | La Estelar | SoftRestaurant |
 /app/docs/reports/FASE_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md:385:| 5 | 130MID | 130 Grados Mérida | SoftRestaurant |
 /app/docs/reports/FASE_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md:435:## 15. Mapeo Especial MPRO
-/app/docs/reports/FASE_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md:440:- Host: 54.39.104.176
+/app/docs/reports/FASE_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md:440:- Host: <REDACTED_EDARSAHUB_SQL_HOST>
 /app/docs/reports/FASE_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md:449:| Empresa | Servidor API | Host | Port |
 /app/docs/reports/FASE_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md:456:## 16. Mapeo Especial SoftRestaurant
 /app/docs/reports/FASE_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md:466:SoftRestaurant normalmente tiene un servidor por unidad de negocio, sin necesidad de NumeroSucursalSistema para diferenciar.
@@ -10509,7 +10509,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/CORTES_Z_ARQUITECTURA_SQL_FIRST_DIAGNOSTICO.md:38:| `/app/backend/modules/finanzas/sync_cortes_mpro.py` | Job de sincronización hacia EDARSAHUB |
 /app/docs/reports/CORTES_Z_ARQUITECTURA_SQL_FIRST_DIAGNOSTICO.md:45:- **NO** es un servidor POS externo (SoftRestaurant/MPRO)
 /app/docs/reports/CORTES_Z_ARQUITECTURA_SQL_FIRST_DIAGNOSTICO.md:48:- SoftRestaurant: `189.162.155.142:6669` (Cienfuegos, Estelar, etc.)
-/app/docs/reports/CORTES_Z_ARQUITECTURA_SQL_FIRST_DIAGNOSTICO.md:49:- MPRO: APIs en `54.39.104.176:8000` y `54.39.104.176:8001`
+/app/docs/reports/CORTES_Z_ARQUITECTURA_SQL_FIRST_DIAGNOSTICO.md:49:- MPRO: APIs en `<REDACTED_EDARSAHUB_SQL_HOST>:8000` y `<REDACTED_EDARSAHUB_SQL_HOST>:8001`
 /app/docs/reports/CORTES_Z_ARQUITECTURA_SQL_FIRST_DIAGNOSTICO.md:111:│  │ softrestaurant.py  │    │ mpro.py            │                   │
 /app/docs/reports/CORTES_Z_ARQUITECTURA_SQL_FIRST_DIAGNOSTICO.md:116:│  │ SoftRestaurant DBs │    │ MPRO APIs          │                   │
 /app/docs/reports/correccion_comercial_ventas_dia_fuentes_por_unidad.md:25:- **ANTES**: pytds primero → pymssql fallback
@@ -10518,8 +10518,8 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/correccion_comercial_ventas_dia_fuentes_por_unidad.md:32:| 130° MERIDA | SoftRestaurant | softrestaurant10 | 130mid.ddns.net:1433 | ✅ CONNECTED |
 /app/docs/reports/correccion_comercial_ventas_dia_fuentes_por_unidad.md:33:| CIENFUEGOS | SoftRestaurant | softrestaurant95pro | servercienfuegos.ddns.net,6669\nationalsoft | ✅ CONNECTED |
 /app/docs/reports/correccion_comercial_ventas_dia_fuentes_por_unidad.md:34:| LA ESTELAR | SoftRestaurant | softrestaurant12 | serverestelar.ddns.net,6969 | ✅ CONNECTED |
-/app/docs/reports/correccion_comercial_ventas_dia_fuentes_por_unidad.md:35:| 130° QUERETARO | MPRO | CENTRAL2020 (API Local) | 54.39.104.176:8001 | ✅ CONNECTED |
-/app/docs/reports/correccion_comercial_ventas_dia_fuentes_por_unidad.md:36:| ORIGEN | MPRO | CENTRAL2020 (API Local) | 54.39.104.176:8000 | ✅ CONNECTED |
+/app/docs/reports/correccion_comercial_ventas_dia_fuentes_por_unidad.md:35:| 130° QUERETARO | MPRO | CENTRAL2020 (API Local) | <REDACTED_EDARSAHUB_SQL_HOST>:8001 | ✅ CONNECTED |
+/app/docs/reports/correccion_comercial_ventas_dia_fuentes_por_unidad.md:36:| ORIGEN | MPRO | CENTRAL2020 (API Local) | <REDACTED_EDARSAHUB_SQL_HOST>:8000 | ✅ CONNECTED |
 /app/docs/reports/correccion_comercial_ventas_dia_fuentes_por_unidad.md:42:- **Servidores**: `EDARSAHUB.dbo.Servidores_Conexiones`
 /app/docs/reports/correccion_comercial_ventas_dia_fuentes_por_unidad.md:54:| 130° MERIDA | SoftRestaurant | SQL_SERVER | tempcheques | tempcheques | online | $4.01M | - | ✅ PASS CON DATOS |
 /app/docs/reports/correccion_comercial_ventas_dia_fuentes_por_unidad.md:55:| CIENFUEGOS | SoftRestaurant | SQL_SERVER | tempcheques | tempcheques | online | $3.66M | - | ✅ PASS CON DATOS |
@@ -10732,7 +10732,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/FASE_SYNC_2B_VENTAS_HORA_DIASEMANA_REPORTE.md:41:| Host | 130mid.ddns.net → 187.155.29.240 |
 /app/docs/reports/FASE_SYNC_2B_VENTAS_HORA_DIASEMANA_REPORTE.md:42:| Base de datos | softrestaurant10 |
 /app/docs/reports/FASE_SYNC_2B_VENTAS_HORA_DIASEMANA_REPORTE.md:46:### MPRO: ManagmentPro
-/app/docs/reports/FASE_SYNC_2B_VENTAS_HORA_DIASEMANA_REPORTE.md:50:| Host | 54.39.104.176 |
+/app/docs/reports/FASE_SYNC_2B_VENTAS_HORA_DIASEMANA_REPORTE.md:50:| Host | <REDACTED_EDARSAHUB_SQL_HOST> |
 /app/docs/reports/FASE_SYNC_2B_VENTAS_HORA_DIASEMANA_REPORTE.md:103:| `/app/backend/modules/sync_historicos/service.py` | +`_obtener_ventas_por_hora_softrestaurant()`, +`_obtener_ventas_por_hora_mpro()`, +`sync_ventas_por_hora()`, +`sync_ventas_por_dia_semana()` |
 /app/docs/reports/FASE_SYNC_2B_VENTAS_HORA_DIASEMANA_REPORTE.md:118:def _obtener_ventas_por_hora_softrestaurant(self, server_info, fecha_operacion) -> Optional[List[Dict]]
 /app/docs/reports/FASE_SYNC_2B_VENTAS_HORA_DIASEMANA_REPORTE.md:119:def _obtener_ventas_por_hora_mpro(self, server_info, fecha_operacion) -> Optional[List[Dict]]
@@ -10832,7 +10832,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/FASE_0_6_MIGRACION_LAYOUT_MENUS_SQL.md:94:- Host to Host Bancario presente en Sistema
 /app/docs/reports/FASE_0_6_MIGRACION_LAYOUT_MENUS_SQL.md:160:| Host to Host Bancario | Dentro de Administración Sistema |
 /app/docs/reports/FASE_0_6_MIGRACION_LAYOUT_MENUS_SQL.md:181:| Host to Host contemplado | PASS |
-/app/docs/reports/FASE_3_REPOSITORY_CONSULTAS_SQL_SQLFIRST.md:122:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/docs/reports/FASE_3_REPOSITORY_CONSULTAS_SQL_SQLFIRST.md:122:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/docs/reports/FASE_3_REPOSITORY_CONSULTAS_SQL_SQLFIRST.md:186:| 5 | Consultas SoftRestaurant = 14 | ✅ PASS | 14/14 |
 /app/docs/reports/FASE_3_REPOSITORY_CONSULTAS_SQL_SQLFIRST.md:187:| 6 | Consultas MPRO = 6 | ✅ PASS | 6/6 |
 /app/docs/reports/FASE_3_REPOSITORY_CONSULTAS_SQL_SQLFIRST.md:209:| Consultas SoftRestaurant | 14 | 14 | ✅ |
@@ -11097,8 +11097,8 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/FIX_P0_SCHEDULER_FECHA_OPERACION_ORIGEN.md:172:  Sistema: MPRO
 /app/docs/reports/FIX_P0_SCHEDULER_FECHA_OPERACION_ORIGEN.md:218:| sistema_origen | MPRO |
 /app/docs/reports/FIX_P0_SCHEDULER_FECHA_OPERACION_ORIGEN.md:232:| sistema_origen | MPRO |
-/app/docs/reports/FIX_P0_SCHEDULER_FECHA_OPERACION_ORIGEN.md:287:- **ORIGEN**: API Local MPRO real (http://54.39.104.176:8000/query)
-/app/docs/reports/FIX_P0_SCHEDULER_FECHA_OPERACION_ORIGEN.md:288:- **130QRO**: API Local MPRO real (http://54.39.104.176:8001/query)
+/app/docs/reports/FIX_P0_SCHEDULER_FECHA_OPERACION_ORIGEN.md:287:- **ORIGEN**: API Local MPRO real (http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query)
+/app/docs/reports/FIX_P0_SCHEDULER_FECHA_OPERACION_ORIGEN.md:288:- **130QRO**: API Local MPRO real (http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query)
 /app/docs/reports/FIX_P0_SCHEDULER_FECHA_OPERACION_ORIGEN.md:289:- **SoftRestaurant**: Conexión SQL Server directa a cada sucursal
 /app/docs/reports/FIX_P0_SCHEDULER_FECHA_OPERACION_ORIGEN.md:316:| FechaOperacion correcta para MPRO | ✅ |
 /app/docs/reports/INCIDENTE_FILTROS_UNIDAD_NEGOCIO_ROTOS_DIAGNOSTICO.md:31:### 2.2 Servidores_Conexiones
@@ -11284,7 +11284,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/reports/FASE_SYNC_3A_EXPANSION_8_SERVIDORES_7_DIAS_REPORTE.md:52:| PRUEBAS SOFTRESTAURANT | SoftRestaurant | EXCLUIDO_PRUEBAS |
 /app/docs/reports/FASE_SYNC_3A_EXPANSION_8_SERVIDORES_7_DIAS_REPORTE.md:58:### ManagmentPro (MPRO)
 /app/docs/reports/FASE_SYNC_3A_EXPANSION_8_SERVIDORES_7_DIAS_REPORTE.md:63:| Sistema | MPRO |
-/app/docs/reports/FASE_SYNC_3A_EXPANSION_8_SERVIDORES_7_DIAS_REPORTE.md:64:| Host | 54.39.104.176:1433 |
+/app/docs/reports/FASE_SYNC_3A_EXPANSION_8_SERVIDORES_7_DIAS_REPORTE.md:64:| Host | <REDACTED_EDARSAHUB_SQL_HOST>:1433 |
 /app/docs/reports/FASE_SYNC_3A_EXPANSION_8_SERVIDORES_7_DIAS_REPORTE.md:79:| MPRO | 9 | 2026-05-07 | 2026-05-15 | $1,666,270.37 |
 /app/docs/reports/FASE_SYNC_3A_EXPANSION_8_SERVIDORES_7_DIAS_REPORTE.md:80:| SoftRestaurant | 8 | 2026-05-07 | 2026-05-14 | $1,026,819.00 |
 /app/docs/reports/FASE_SYNC_3A_EXPANSION_8_SERVIDORES_7_DIAS_REPORTE.md:82:**Registro agregado:** 2026-05-15 (MPRO) - $18,273.99, 10 tickets
@@ -11385,7 +11385,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/proposals/PROPUESTA_TECNICA_ESTANDARIZACION_UNIDADES_NEGOCIO.md:541:-- CIENFUEGOS: Servidor SoftRestaurant + Tablajería
 /app/docs/proposals/PROPUESTA_TECNICA_ESTANDARIZACION_UNIDADES_NEGOCIO.md:548:-- ESTELAR: Servidor SoftRestaurant
 /app/docs/proposals/PROPUESTA_TECNICA_ESTANDARIZACION_UNIDADES_NEGOCIO.md:554:-- 130MID: Servidor SoftRestaurant
-/app/docs/proposals/PROPUESTA_TECNICA_ESTANDARIZACION_UNIDADES_NEGOCIO.md:617:    'host': '54.39.104.176',
+/app/docs/proposals/PROPUESTA_TECNICA_ESTANDARIZACION_UNIDADES_NEGOCIO.md:617:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/docs/proposals/PROPUESTA_TECNICA_ESTANDARIZACION_UNIDADES_NEGOCIO.md:688:            EDARSAHUB_CONFIG['host'],
 /app/docs/proposals/PROPUESTA_TECNICA_ESTANDARIZACION_UNIDADES_NEGOCIO.md:794:            EDARSAHUB_CONFIG['host'],
 /app/docs/proposals/PROPUESTA_TECNICA_ESTANDARIZACION_UNIDADES_NEGOCIO.md:835:        sc.api_url,
@@ -11434,7 +11434,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/proposals/P1-FASE5-DASHBOARD-FINANZAS-TESORERIA-CONSOLIDADO.md:252:ratio_liquidez = efectivo_disponible / compromisos_proximos_30_dias
 /app/docs/modules/TABLAJERIA_FASE0_DIAGNOSTICO.md:43:| ID | Nombre | Sistema | Host | Base de Datos | Activo |
 /app/docs/modules/TABLAJERIA_FASE0_DIAGNOSTICO.md:45:| 6d859026... | **CIENFUEGOS TABLAJERIA** | SOFTRESTAURANT_PRO | servercienfuegos.ddns.net,6669\nationalsoft | Tablajeria | ✅ Sí |
-/app/docs/modules/TABLAJERIA_FASE0_DIAGNOSTICO.md:46:| d1d8c70f... | **MPRO TABLAJERIA** | MPRO | 54.39.104.176:1433 | tablajeria_mpro | ✅ Sí |
+/app/docs/modules/TABLAJERIA_FASE0_DIAGNOSTICO.md:46:| d1d8c70f... | **MPRO TABLAJERIA** | MPRO | <REDACTED_EDARSAHUB_SQL_HOST>:1433 | tablajeria_mpro | ✅ Sí |
 /app/docs/modules/TABLAJERIA_FASE0_DIAGNOSTICO.md:51:| 130° MERIDA | SOFTRESTAURANT_PRO | softrestaurant10 | ✅ |
 /app/docs/modules/TABLAJERIA_FASE0_DIAGNOSTICO.md:52:| 130° QRO LOCAL | MPRO | QUERETARO | ✅ |
 /app/docs/modules/TABLAJERIA_FASE0_DIAGNOSTICO.md:53:| LA ESTELAR | SOFTRESTAURANT_PRO | softrestaurant12 | ✅ |
@@ -11444,7 +11444,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/modules/TABLAJERIA_FASE0_DIAGNOSTICO.md:196:2. **MPRO puede tener múltiples sucursales**: Diseñar con UnidadNegocioID/SucursalID
 /app/docs/modules/TABLAJERIA_DDL_FASE1.sql:57:        ServidorOrigenID NVARCHAR(100) NULL, -- ID del servidor en Servidores_Conexiones
 /app/docs/modules/TABLAJERIA_SPEC.md:51:| CIENFUEGOS TABLAJERIA | SOFTRESTAURANT_PRO | Tablajeria | CFLectura | 1433 | Offline |
-/app/docs/modules/TABLAJERIA_SPEC.md:52:| MPRO TABLAJERIA | MPRO | tablajeria_mpro | HRLectura | 1433 | Offline |
+/app/docs/modules/TABLAJERIA_SPEC.md:52:| MPRO TABLAJERIA | MPRO | tablajeria_mpro | <REDACTED_EDARSAHUB_SQL_USER> | 1433 | Offline |
 /app/docs/modules/TABLAJERIA_SPEC.md:56:**Nota**: MPRO puede contener información de ORIGEN y QUERÉTARO (múltiples sucursales).
 /app/docs/modules/TABLAJERIA_SPEC.md:64:- MPRO Origen
 /app/docs/modules/TABLAJERIA_SPEC.md:65:- MPRO Querétaro
@@ -11465,8 +11465,8 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/ENTREGA_FASE1A_PROPINAS_TPV.md:373:### FASE 3 - MPRO (Pendiente Aprobación)
 /app/docs/ENTREGA_FASE1A_PROPINAS_TPV.md:374:1. Investigar tabla exacta de propinas en MPRO
 /app/docs/ENTREGA_FASE1A_PROPINAS_TPV.md:375:2. Implementar lectura de MPRO
-/app/docs/FASE_4D_ADMIN_CORE_CONNECTIONS.md:37:      "host": "54.39.104.176",
-/app/docs/FASE_4D_ADMIN_CORE_CONNECTIONS.md:142:Host: 54.39.104.176
+/app/docs/FASE_4D_ADMIN_CORE_CONNECTIONS.md:37:      "host": "<REDACTED_EDARSAHUB_SQL_HOST>",
+/app/docs/FASE_4D_ADMIN_CORE_CONNECTIONS.md:142:Host: <REDACTED_EDARSAHUB_SQL_HOST>
 /app/docs/FASE_4D_ADMIN_CORE_CONNECTIONS.md:193:- id, name, host, port, database_name, username
 /app/docs/CIERRE_FASE_4_SOURCE_RESOLVER.md:96:- `get_kpis_mpro_con_estado()` — Comercial
 /app/docs/NORMAS_TECNICAS.md:26:1. CONSULTAR SQL SERVER EXTERNO EN VIVO (SoftRestaurant, MPRO)
@@ -11634,7 +11634,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/FINANZAS_CXP_MPRO_CREDENTIALS_SECURITY_01_REPORT.md:32:| CxP Todas | SR+MPRO combinado | 2,851 facturas, $48,897,056.58 | ✅ CUMPLE |
 /app/docs/FINANZAS_CXP_MPRO_CREDENTIALS_SECURITY_01_REPORT.md:41:# repository_mpro.py - _get_credentials()
 /app/docs/FINANZAS_CXP_MPRO_CREDENTIALS_SECURITY_01_REPORT.md:45:    server_id=MPRO_SERVER_ID,
-/app/docs/FINANZAS_CXP_MPRO_CREDENTIALS_SECURITY_01_REPORT.md:57:Host: 54.39.104.176
+/app/docs/FINANZAS_CXP_MPRO_CREDENTIALS_SECURITY_01_REPORT.md:57:Host: <REDACTED_EDARSAHUB_SQL_HOST>
 /app/docs/FINANZAS_CXP_MPRO_CREDENTIALS_SECURITY_01_REPORT.md:63:Proceso durante query MPRO:
 /app/docs/FINANZAS_CXP_MPRO_CREDENTIALS_SECURITY_01_REPORT.md:68:**NO hay host, usuario, ni password en los argumentos.**
 /app/docs/FINANZAS_CXP_MPRO_CREDENTIALS_SECURITY_01_REPORT.md:74:    'host': host,
@@ -11661,11 +11661,11 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_LOTE6_PLAN.md:223:| `delete_server_query()` | Eliminación config | MongoDB `db.servers.query_*` | EDARSAHUB `Servidores_Conexiones.query_*` | `Servidores_Conexiones` | Usuario autenticado | **MEDIO** | DEPENDE DE save_server_query | Restaurar de backup |
 /app/docs/ENTREGABLES_AUDITORIA_RBAC.md:83:  "registro_id": "MPRO_FAC_999",
 /app/docs/ENTREGABLES_AUDITORIA_RBAC.md:87:  "origen_sistema": "MPRO",
-/app/docs/ENTREGABLES_AUDITORIA_RBAC.md:172:    db = AsyncIOMotorClient('mongodb://localhost:27017')['edarsa_hub']
+/app/docs/ENTREGABLES_AUDITORIA_RBAC.md:172:    db = AsyncIOMotorClient('<REDACTED_MONGO_URL>')['edarsa_hub']
 /app/docs/ENTREGABLES_AUDITORIA_RBAC.md:183:curl -X PUT "$API_URL/api/finanzas/cuentas-por-pagar/MPRO_123/decision-pago" \
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_C_LOTE4_REPORT.md:55:| Variable | `server['host']` | `conn_info['host']` |
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_C_LOTE4_REPORT.md:160:| "El nombre de objeto 'Sucursal' no es válido" | Tabla no existe en BD SoftRestaurant | NO ES BUG — Esquema de BD diferente |
-/app/docs/CLASIFICACION_SERVIDORES_CORE_VS_DATASOURCE.md:16:- Host: 54.39.104.176
+/app/docs/CLASIFICACION_SERVIDORES_CORE_VS_DATASOURCE.md:16:- Host: <REDACTED_EDARSAHUB_SQL_HOST>
 /app/docs/CLASIFICACION_SERVIDORES_CORE_VS_DATASOURCE.md:20:Estas conexiones NO deben tratarse como fuentes externas operativas iguales a SoftRestaurant o MPRO.
 /app/docs/CLASIFICACION_SERVIDORES_CORE_VS_DATASOURCE.md:45:| MPRO TABLAJERIA | DATA_SOURCE | True | True | True | null |
 /app/docs/CLASIFICACION_SERVIDORES_CORE_VS_DATASOURCE.md:100:| Dashboard Comercial MPRO funciona | ✅ EXITOSO |
@@ -11935,10 +11935,10 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_DIAGNOSTICO.md:451:`/app/docs/FINANZAS_CXP_MPRO_CREDENTIALS_SECURITY_01_REPORT.md`
 /app/docs/AUTH_SECURITY_PHASE_3_6_FETCH_MIGRATION_REPORT.md:84:const response = await fetch(`${API_URL}/api/endpoint`, {
 /app/docs/AUTH_SECURITY_PHASE_3_6_FETCH_MIGRATION_REPORT.md:96:const response = await fetch(`${API_URL}/api/endpoint`, {
-/app/docs/AUDITORIA_RH_NOMINAS_FUENTE_DATOS_01.md:53:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/docs/AUDITORIA_RH_NOMINAS_FUENTE_DATOS_01.md:53:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/docs/AUDITORIA_RH_NOMINAS_FUENTE_DATOS_01.md:61:**Uso:** Consulta `Servidores_Conexiones` para listar servidores externos.  
-/app/docs/AUDITORIA_RH_NOMINAS_FUENTE_DATOS_01.md:89:  "host": "54.39.104.176",
-/app/docs/AUDITORIA_RH_NOMINAS_FUENTE_DATOS_01.md:164:        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/docs/AUDITORIA_RH_NOMINAS_FUENTE_DATOS_01.md:89:  "host": "<REDACTED_EDARSAHUB_SQL_HOST>",
+/app/docs/AUDITORIA_RH_NOMINAS_FUENTE_DATOS_01.md:164:        'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/docs/COMERCIAL_SYSTEM_TYPE_NORMALIZATION_3A2.md:12:Migrar todas las comparaciones directas de `system_type` en el módulo Comercial hacia las funciones centralizadas de normalización, eliminando fragilidad por variantes de strings (`MPRO`, `ManagmentPro`, `ManagementPro`, `SoftRestaurant`, `SR`, etc.).
 /app/docs/COMERCIAL_SYSTEM_TYPE_NORMALIZATION_3A2.md:20:| `is_softrestaurant_system(system_type)` | Detecta SoftRestaurant y variantes (SR, SOFT, etc.) |
 /app/docs/COMERCIAL_SYSTEM_TYPE_NORMALIZATION_3A2.md:21:| `is_mpro_system(system_type)` | Detecta ManagementPro/MPRO y variantes |
@@ -11968,7 +11968,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/COMERCIAL_SYSTEM_TYPE_NORMALIZATION_3A2.md:133:| `queries/softrestaurant.py` | 1 | 0 |
 /app/docs/COMERCIAL_SYSTEM_TYPE_NORMALIZATION_3A2.md:154:- SoftRestaurant y MPRO NUNCA compartirán caché
 /app/docs/COMERCIAL_SYSTEM_TYPE_NORMALIZATION_3A2.md:155:- Variantes de system_type (MPRO, ManagmentPro, etc.) se normalizan automáticamente
-/app/docs/snapshots/servers_pre_clasificacion_20260420_164945.json:1:[{"id":"1b230a06-ffaf-4c70-bd27-b1be3579dea6","name":"ManagmentPro","host":"54.39.104.176","port":1433,"database":"CENTRAL2020","username":"HRLectura","system_type":"MPRO","date_calculation_method":"inventory_dates","sucursales":[],"tipos_movimiento":["050","100","106","108","112","202","400","500","506","508","510","512","051","052","053","060","061","101","104","105","107","113","114","115","203","401","501","507","509","511","513","514","515","942","943"],"categorias":["0001","0002","0004"],"departamentos":["0002","0003","0004","0007"],"query_inventario":{"sql":"SELECT F.Pr_Cve_Producto as Codigo, P.Pr_Descripcion as Descripcion, F.Fi_Cantidad_Control_1 as Cantidad, F.Fi_Costo as Costo, A.Al_Descripcion as Almacen FROM Fisico F INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen INNER JOIN Producto P ON P.Pr_Cve_Producto = F.Pr_Cve_Producto WHERE F.Fi_Folio = @folio ORDER BY P.Pr_Descripcion","validated":true,"last_validated":"2026-03-11T05:46:25.166100+00:00","validation_message":"Validada correctamente"},"query_ventas":{"sql":"SELECT V.Pr_Cve_Producto as Codigo, P.Pr_Descripcion as Descripcion, SUM(V.Vn_Cantidad_Control_1) as Cantidad, SUM(V.Vn_Importe) as Importe FROM Venta V INNER JOIN Producto P ON P.Pr_Cve_Producto = V.Pr_Cve_Producto WHERE V.Es_Cve_Estado <> 'CA' AND V.Vn_Fecha BETWEEN @fecha_ini AND @fecha_fin GROUP BY V.Pr_Cve_Producto, P.Pr_Descripcion","validated":true,"last_validated":"2026-03-11T05:46:25.286866+00:00","validation_message":"Validada correctamente"},"query_movimientos":{"sql":"SELECT M.Pr_Cve_Producto as Codigo, P.Pr_Descripcion as Descripcion, SUM(M.Mv_Cantidad_Control_1) as Cantidad, TM.Tm_Descripcion as Tipo_Movimiento FROM Movimiento M INNER JOIN Producto P ON P.Pr_Cve_Producto = M.Pr_Cve_Producto INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento WHERE M.Es_Cve_Estado <> 'CA' AND M.Mv_Fecha BETWEEN @fecha_ini AND @fecha_fin GROUP BY M.Pr_Cve_Producto, P.Pr_Descripcion, TM.Tm_Descripcion","validated":true,"last_validated":"2026-03-11T05:46:25.411407+00:00","validation_message":"Validada correctamente"},"queries_configured":true,"visible_en_operaciones":true,"active":true,"created_at":"2026-03-09T21:24:04.041051Z"},{"id":"6d053c22-523e-48c0-b72b-96081e2d781b","name":"CIENFUEGOS","host":"servercienfuegos.ddns.net,6669\\nationalsoft","port":1433,"database":"softrestaurant95pro","username":"CFLectura","system_type":"SoftRestaurant","date_calculation_method":"inventory_dates","sucursales":[],"tipos_movimiento":["EAL","ECA","ECS","ECO","EDE","EEH","EPB","EPC","EPL","EPR","ETA","ETR","SCP","SCS","SDE","SDV","SPC","SPM","SPR","SPV","STA","STR"],"categorias":["A100","127","A700","A400","A600","B070","B040","B020","B131","B090","B500","B140","B130","B120","B150","B160","B170","B190","C001","C050","I060","P001"],"departamentos":["002","003","100","004","200","400"],"query_inventario":{"sql":"SELECT I.idinsumo as Codigo, INS.descripcion as Descripcion, I.existencia as Cantidad, I.idalmacen as Almacen FROM acumuladoinsumos I INNER JOIN insumos INS ON INS.idinsumo = I.idinsumo WHERE I.existencia > 0","validated":true,"last_validated":"2026-03-31T19:04:00.550444+00:00","validation_message":"Validada correctamente"},"query_ventas":{"sql":"SELECT CD.idproducto as Codigo, P.descripcion as Descripcion, SUM(CD.cantidad) as Cantidad FROM cheqdet CD INNER JOIN productos P ON P.idproducto = CD.idproducto GROUP BY CD.idproducto, P.descripcion","validated":true,"last_validated":"2026-03-31T19:04:00.686875+00:00","validation_message":"Validada correctamente"},"query_movimientos":{"sql":"SELECT CM.idinsumo as Codigo, I.descripcion as Descripcion, SUM(CM.cantidad) as Cantidad FROM comprasmovtos CM INNER JOIN insumos I ON I.idinsumo = CM.idinsumo INNER JOIN compras C ON C.idcompra = CM.idcompra WHERE C.cancelado = 0 GROUP BY CM.idinsumo, I.descripcion","validated":true,"last_validated":"2026-03-31T19:04:00.824769+00:00","validation_message":"Validada correctamente"},"queries_configured":true,"visible_en_operaciones":true,"active":true,"created_at":"2026-03-11T05:04:26.515348Z"},{"id":"a5ff0e25-f029-43db-b634-d4ac814c904f","name":"LA ESTELAR","host":"serverestelar.ddns.net,6969","port":6969,"database":"softrestaurant12","username":"SCedarsa","system_type":"SoftRestaurant","date_calculation_method":"inventory_dates","sucursales":[],"tipos_movimiento":["ECA","ECS","ECI","EDA","EPC","EPD","EPP","EPT","ETA","SCS","SCP","SDA","SDV","SPC","SPM","SPD","SPP","SPT","STA"],"categorias":["A100","A400","A600","A300","A500","A700","A116","B020","B085","B040","B070","B500","B131","B090","B130","B140","B150","B190","B170","B160","C050","P001"],"departamentos":[],"query_inventario":{"sql":"SELECT I.idinsumo as Codigo, INS.descripcion as Descripcion, I.existencia as Cantidad, I.idalmacen as Almacen FROM acumuladoinsumos I INNER JOIN insumos INS ON INS.idinsumo = I.idinsumo WHERE I.existencia > 0","validated":true,"last_validated":"2026-03-12T00:44:54.673274+00:00","validation_message":"Validada correctamente"},"query_ventas":{"sql":"SELECT CD.idproducto as Codigo, P.descripcion as Descripcion, SUM(CD.cantidad) as Cantidad FROM cheqdet CD INNER JOIN productos P ON P.idproducto = CD.idproducto GROUP BY CD.idproducto, P.descripcion","validated":true,"last_validated":"2026-03-12T00:44:54.832507+00:00","validation_message":"Validada correctamente"},"query_movimientos":{"sql":"SELECT CM.idinsumo as Codigo, I.descripcion as Descripcion, SUM(CM.cantidad) as Cantidad FROM comprasmovtos CM INNER JOIN insumos I ON I.idinsumo = CM.idinsumo INNER JOIN compras C ON C.idcompra = CM.idcompra WHERE C.cancelado = 0 GROUP BY CM.idinsumo, I.descripcion","validated":true,"last_validated":"2026-03-12T00:44:54.996381+00:00","validation_message":"Validada correctamente"},"queries_configured":true,"visible_en_operaciones":true,"active":true,"created_at":"2026-03-11T05:13:03.206492Z"},{"id":"a5547321-1139-4d2b-9d53-182ca737b6b6","name":"130° MERIDA","host":"130mid.ddns.net","port":1433,"database":"softrestaurant10","username":"SCedarsa","system_type":"SoftRestaurant","date_calculation_method":"inventory_dates","sucursales":[],"tipos_movimiento":["ECA","EDE","EIE","EPA","EPB","EPC","EPCON","EPL","ETA","ETB","SCP","SDE","SIE","SPC","SPD","SPM","STA","STB"],"categorias":[],"departamentos":[],"query_inventario":null,"query_ventas":null,"query_movimientos":null,"queries_configured":false,"visible_en_operaciones":true,"active":true,"created_at":"2026-04-01T19:37:10.710397Z"},{"id":"bea40259-35f1-4693-bda2-d2d10e13e56a","name":"EDARSA HUB","host":"54.39.104.176","port":1433,"database":"EDARSAHUB","username":"HRLectura","system_type":"Otro","date_calculation_method":"inventory_dates","sucursales":[],"tipos_movimiento":[],"categorias":[],"departamentos":[],"query_inventario":null,"query_ventas":null,"query_movimientos":null,"queries_configured":false,"visible_en_operaciones":false,"active":true,"created_at":"2026-04-01T23:39:52.265397Z"},{"id":"d1d8c70f-c3d0-4407-ae50-f09e8e5992ee","name":"MPRO TABLAJERIA","host":"54.39.104.176","port":1433,"database":"tablajeria_mpro","username":"HRLectura","system_type":"MPRO","date_calculation_method":"inventory_dates","sucursales":[],"tipos_movimiento":[],"categorias":[],"departamentos":[],"query_inventario":null,"query_ventas":null,"query_movimientos":null,"queries_configured":false,"visible_en_operaciones":false,"active":true,"created_at":"2026-04-07T15:45:54.827592Z"},{"id":"6d859026-710a-4920-9a44-6da98fabc690","name":"CIENFUEGOS TABLAJERIA","host":"servercienfuegos.ddns.net,6669\\nationalsoft","port":1433,"database":"Tablajeria","username":"CFLectura","system_type":"SoftRestaurant","date_calculation_method":"inventory_dates","sucursales":[],"tipos_movimiento":[],"categorias":[],"departamentos":[],"query_inventario":null,"query_ventas":null,"query_movimientos":null,"queries_configured":false,"visible_en_operaciones":false,"active":true,"created_at":"2026-04-07T16:40:01.912412Z"},{"id":"b5175237-5e57-41f3-ab6d-b5ae2f5e780b","name":"HR2020 ESCRITURA","host":"54.39.104.176","port":1433,"database":"HR2020","username":"HRLectura","system_type":"MPRO","date_calculation_method":"inventory_dates","sucursales":[],"tipos_movimiento":[],"categorias":[],"departamentos":[],"query_inventario":null,"query_ventas":null,"query_movimientos":null,"queries_configured":false,"visible_en_operaciones":false,"active":true,"created_at":"2026-04-08T20:58:01.417608Z"},{"id":"f8a9049a-96e8-4210-84ae-595ffa2822fa","name":"EDARSA HUB","host":"54.39.104.176","port":1433,"database":"EDARSAHUB","username":"HRLectura","system_type":"EDARSA_HUB","date_calculation_method":"inventory_dates","sucursales":[],"tipos_movimiento":[],"categorias":[],"departamentos":[],"query_inventario":null,"query_ventas":null,"query_movimientos":null,"queries_configured":false,"visible_en_operaciones":true,"active":true,"created_at":"2026-04-13T06:36:04.466210Z"}]
+/app/docs/snapshots/servers_pre_clasificacion_20260420_164945.json:1:[{"id":"1b230a06-ffaf-4c70-bd27-b1be3579dea6","name":"ManagmentPro","host":"<REDACTED_EDARSAHUB_SQL_HOST>","port":1433,"database":"CENTRAL2020","username":"<REDACTED_EDARSAHUB_SQL_USER>","system_type":"MPRO","date_calculation_method":"inventory_dates","sucursales":[],"tipos_movimiento":["050","100","106","108","112","202","400","500","506","508","510","512","051","052","053","060","061","101","104","105","107","113","114","115","203","401","501","507","509","511","513","514","515","942","943"],"categorias":["0001","0002","0004"],"departamentos":["0002","0003","0004","0007"],"query_inventario":{"sql":"SELECT F.Pr_Cve_Producto as Codigo, P.Pr_Descripcion as Descripcion, F.Fi_Cantidad_Control_1 as Cantidad, F.Fi_Costo as Costo, A.Al_Descripcion as Almacen FROM Fisico F INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen INNER JOIN Producto P ON P.Pr_Cve_Producto = F.Pr_Cve_Producto WHERE F.Fi_Folio = @folio ORDER BY P.Pr_Descripcion","validated":true,"last_validated":"2026-03-11T05:46:25.166100+00:00","validation_message":"Validada correctamente"},"query_ventas":{"sql":"SELECT V.Pr_Cve_Producto as Codigo, P.Pr_Descripcion as Descripcion, SUM(V.Vn_Cantidad_Control_1) as Cantidad, SUM(V.Vn_Importe) as Importe FROM Venta V INNER JOIN Producto P ON P.Pr_Cve_Producto = V.Pr_Cve_Producto WHERE V.Es_Cve_Estado <> 'CA' AND V.Vn_Fecha BETWEEN @fecha_ini AND @fecha_fin GROUP BY V.Pr_Cve_Producto, P.Pr_Descripcion","validated":true,"last_validated":"2026-03-11T05:46:25.286866+00:00","validation_message":"Validada correctamente"},"query_movimientos":{"sql":"SELECT M.Pr_Cve_Producto as Codigo, P.Pr_Descripcion as Descripcion, SUM(M.Mv_Cantidad_Control_1) as Cantidad, TM.Tm_Descripcion as Tipo_Movimiento FROM Movimiento M INNER JOIN Producto P ON P.Pr_Cve_Producto = M.Pr_Cve_Producto INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento WHERE M.Es_Cve_Estado <> 'CA' AND M.Mv_Fecha BETWEEN @fecha_ini AND @fecha_fin GROUP BY M.Pr_Cve_Producto, P.Pr_Descripcion, TM.Tm_Descripcion","validated":true,"last_validated":"2026-03-11T05:46:25.411407+00:00","validation_message":"Validada correctamente"},"queries_configured":true,"visible_en_operaciones":true,"active":true,"created_at":"2026-03-09T21:24:04.041051Z"},{"id":"6d053c22-523e-48c0-b72b-96081e2d781b","name":"CIENFUEGOS","host":"servercienfuegos.ddns.net,6669\\nationalsoft","port":1433,"database":"softrestaurant95pro","username":"CFLectura","system_type":"SoftRestaurant","date_calculation_method":"inventory_dates","sucursales":[],"tipos_movimiento":["EAL","ECA","ECS","ECO","EDE","EEH","EPB","EPC","EPL","EPR","ETA","ETR","SCP","SCS","SDE","SDV","SPC","SPM","SPR","SPV","STA","STR"],"categorias":["A100","127","A700","A400","A600","B070","B040","B020","B131","B090","B500","B140","B130","B120","B150","B160","B170","B190","C001","C050","I060","P001"],"departamentos":["002","003","100","004","200","400"],"query_inventario":{"sql":"SELECT I.idinsumo as Codigo, INS.descripcion as Descripcion, I.existencia as Cantidad, I.idalmacen as Almacen FROM acumuladoinsumos I INNER JOIN insumos INS ON INS.idinsumo = I.idinsumo WHERE I.existencia > 0","validated":true,"last_validated":"2026-03-31T19:04:00.550444+00:00","validation_message":"Validada correctamente"},"query_ventas":{"sql":"SELECT CD.idproducto as Codigo, P.descripcion as Descripcion, SUM(CD.cantidad) as Cantidad FROM cheqdet CD INNER JOIN productos P ON P.idproducto = CD.idproducto GROUP BY CD.idproducto, P.descripcion","validated":true,"last_validated":"2026-03-31T19:04:00.686875+00:00","validation_message":"Validada correctamente"},"query_movimientos":{"sql":"SELECT CM.idinsumo as Codigo, I.descripcion as Descripcion, SUM(CM.cantidad) as Cantidad FROM comprasmovtos CM INNER JOIN insumos I ON I.idinsumo = CM.idinsumo INNER JOIN compras C ON C.idcompra = CM.idcompra WHERE C.cancelado = 0 GROUP BY CM.idinsumo, I.descripcion","validated":true,"last_validated":"2026-03-31T19:04:00.824769+00:00","validation_message":"Validada correctamente"},"queries_configured":true,"visible_en_operaciones":true,"active":true,"created_at":"2026-03-11T05:04:26.515348Z"},{"id":"a5ff0e25-f029-43db-b634-d4ac814c904f","name":"LA ESTELAR","host":"serverestelar.ddns.net,6969","port":6969,"database":"softrestaurant12","username":"SCedarsa","system_type":"SoftRestaurant","date_calculation_method":"inventory_dates","sucursales":[],"tipos_movimiento":["ECA","ECS","ECI","EDA","EPC","EPD","EPP","EPT","ETA","SCS","SCP","SDA","SDV","SPC","SPM","SPD","SPP","SPT","STA"],"categorias":["A100","A400","A600","A300","A500","A700","A116","B020","B085","B040","B070","B500","B131","B090","B130","B140","B150","B190","B170","B160","C050","P001"],"departamentos":[],"query_inventario":{"sql":"SELECT I.idinsumo as Codigo, INS.descripcion as Descripcion, I.existencia as Cantidad, I.idalmacen as Almacen FROM acumuladoinsumos I INNER JOIN insumos INS ON INS.idinsumo = I.idinsumo WHERE I.existencia > 0","validated":true,"last_validated":"2026-03-12T00:44:54.673274+00:00","validation_message":"Validada correctamente"},"query_ventas":{"sql":"SELECT CD.idproducto as Codigo, P.descripcion as Descripcion, SUM(CD.cantidad) as Cantidad FROM cheqdet CD INNER JOIN productos P ON P.idproducto = CD.idproducto GROUP BY CD.idproducto, P.descripcion","validated":true,"last_validated":"2026-03-12T00:44:54.832507+00:00","validation_message":"Validada correctamente"},"query_movimientos":{"sql":"SELECT CM.idinsumo as Codigo, I.descripcion as Descripcion, SUM(CM.cantidad) as Cantidad FROM comprasmovtos CM INNER JOIN insumos I ON I.idinsumo = CM.idinsumo INNER JOIN compras C ON C.idcompra = CM.idcompra WHERE C.cancelado = 0 GROUP BY CM.idinsumo, I.descripcion","validated":true,"last_validated":"2026-03-12T00:44:54.996381+00:00","validation_message":"Validada correctamente"},"queries_configured":true,"visible_en_operaciones":true,"active":true,"created_at":"2026-03-11T05:13:03.206492Z"},{"id":"a5547321-1139-4d2b-9d53-182ca737b6b6","name":"130° MERIDA","host":"130mid.ddns.net","port":1433,"database":"softrestaurant10","username":"SCedarsa","system_type":"SoftRestaurant","date_calculation_method":"inventory_dates","sucursales":[],"tipos_movimiento":["ECA","EDE","EIE","EPA","EPB","EPC","EPCON","EPL","ETA","ETB","SCP","SDE","SIE","SPC","SPD","SPM","STA","STB"],"categorias":[],"departamentos":[],"query_inventario":null,"query_ventas":null,"query_movimientos":null,"queries_configured":false,"visible_en_operaciones":true,"active":true,"created_at":"2026-04-01T19:37:10.710397Z"},{"id":"bea40259-35f1-4693-bda2-d2d10e13e56a","name":"EDARSA HUB","host":"<REDACTED_EDARSAHUB_SQL_HOST>","port":1433,"database":"EDARSAHUB","username":"<REDACTED_EDARSAHUB_SQL_USER>","system_type":"Otro","date_calculation_method":"inventory_dates","sucursales":[],"tipos_movimiento":[],"categorias":[],"departamentos":[],"query_inventario":null,"query_ventas":null,"query_movimientos":null,"queries_configured":false,"visible_en_operaciones":false,"active":true,"created_at":"2026-04-01T23:39:52.265397Z"},{"id":"d1d8c70f-c3d0-4407-ae50-f09e8e5992ee","name":"MPRO TABLAJERIA","host":"<REDACTED_EDARSAHUB_SQL_HOST>","port":1433,"database":"tablajeria_mpro","username":"<REDACTED_EDARSAHUB_SQL_USER>","system_type":"MPRO","date_calculation_method":"inventory_dates","sucursales":[],"tipos_movimiento":[],"categorias":[],"departamentos":[],"query_inventario":null,"query_ventas":null,"query_movimientos":null,"queries_configured":false,"visible_en_operaciones":false,"active":true,"created_at":"2026-04-07T15:45:54.827592Z"},{"id":"6d859026-710a-4920-9a44-6da98fabc690","name":"CIENFUEGOS TABLAJERIA","host":"servercienfuegos.ddns.net,6669\\nationalsoft","port":1433,"database":"Tablajeria","username":"CFLectura","system_type":"SoftRestaurant","date_calculation_method":"inventory_dates","sucursales":[],"tipos_movimiento":[],"categorias":[],"departamentos":[],"query_inventario":null,"query_ventas":null,"query_movimientos":null,"queries_configured":false,"visible_en_operaciones":false,"active":true,"created_at":"2026-04-07T16:40:01.912412Z"},{"id":"b5175237-5e57-41f3-ab6d-b5ae2f5e780b","name":"HR2020 ESCRITURA","host":"<REDACTED_EDARSAHUB_SQL_HOST>","port":1433,"database":"HR2020","username":"<REDACTED_EDARSAHUB_SQL_USER>","system_type":"MPRO","date_calculation_method":"inventory_dates","sucursales":[],"tipos_movimiento":[],"categorias":[],"departamentos":[],"query_inventario":null,"query_ventas":null,"query_movimientos":null,"queries_configured":false,"visible_en_operaciones":false,"active":true,"created_at":"2026-04-08T20:58:01.417608Z"},{"id":"f8a9049a-96e8-4210-84ae-595ffa2822fa","name":"EDARSA HUB","host":"<REDACTED_EDARSAHUB_SQL_HOST>","port":1433,"database":"EDARSAHUB","username":"<REDACTED_EDARSAHUB_SQL_USER>","system_type":"EDARSA_HUB","date_calculation_method":"inventory_dates","sucursales":[],"tipos_movimiento":[],"categorias":[],"departamentos":[],"query_inventario":null,"query_ventas":null,"query_movimientos":null,"queries_configured":false,"visible_en_operaciones":true,"active":true,"created_at":"2026-04-13T06:36:04.466210Z"}]
 /app/docs/snapshots/diff_clasificacion_servidores.md:45:-    system_type: str  # "MPRO", "SoftRestaurant", "Otro"
 /app/docs/snapshots/diff_clasificacion_servidores.md:46:+    system_type: str  # "MPRO", "SoftRestaurant", "Otro", "EDARSA_HUB"
 /app/docs/P0_USUARIOS_VISIBILIDAD_FIX_REPORT.md:82:curl -s "$API_URL/api/users" -H "Authorization: Bearer $TOKEN"
@@ -12317,7 +12317,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/AUTH_HTTPONLY_COOKIE_MIGRATION_PLAN.md:166:        "http://localhost:3000"  # Para desarrollo
 /app/docs/AUTH_HTTPONLY_COOKIE_MIGRATION_PLAN.md:281:  baseURL: API_URL,
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_C_LOTE5_REPORT.md:64:| Variable | `server['host']` | `conn_info['host']` |
-/app/docs/AUDITORIA_RH_NOMINAS_01.md:194:   - Host: `54.39.104.176`
+/app/docs/AUDITORIA_RH_NOMINAS_01.md:194:   - Host: `<REDACTED_EDARSAHUB_SQL_HOST>`
 /app/docs/FASE_ASIGNACIONES_PROPUESTA.md:294:    if server["system_type"] == "SoftRestaurant":
 /app/docs/FASE_ASIGNACIONES_PROPUESTA.md:296:    elif server["system_type"] == "MPRO":
 /app/docs/SUBDOMINIOS_CONFIG.md:3:## Arquitectura Implementada: Host-based Routing
@@ -12343,7 +12343,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/FASE_3B_MIGRACION_SERVERS_EDARSAHUB.md:29:| d1d8c70f-c3d0-4... | d1d8c70f... | MPRO TABLAJERIA | MPRO | ✅ Sincronizado |
 /app/docs/FASE_3B_MIGRACION_SERVERS_EDARSAHUB.md:30:| d8425038-5e57-4... | d8425038... | PRUEBAS SOFTRESTAURANT | SoftRestaurant | ✅ Sincronizado |
 /app/docs/FASE_3B_MIGRACION_SERVERS_EDARSAHUB.md:53:**Nombre:** `Servidores_Conexiones`  
-/app/docs/FASE_3B_MIGRACION_SERVERS_EDARSAHUB.md:55:**Host:** `54.39.104.176`
+/app/docs/FASE_3B_MIGRACION_SERVERS_EDARSAHUB.md:55:**Host:** `<REDACTED_EDARSAHUB_SQL_HOST>`
 /app/docs/FASE_3B_MIGRACION_SERVERS_EDARSAHUB.md:63:| system_type | varchar | Tipo de sistema (MPRO, SoftRestaurant, etc.) |
 /app/docs/FASE_3B_MIGRACION_SERVERS_EDARSAHUB.md:65:| host | varchar | Host SQL Server |
 /app/docs/FASE_3B_MIGRACION_SERVERS_EDARSAHUB.md:67:| database_name | varchar | Nombre de la base de datos |
@@ -12373,7 +12373,7 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/CIERRE_Y_BLINDAJE_TABLERO_EJECUTIVO.md:205:1. **SoftRestaurant**: TODO por SQL (acumulados + día)
 /app/docs/CIERRE_Y_BLINDAJE_TABLERO_EJECUTIVO.md:206:2. **MPRO Acumulados**: SOLO por SQL MPRO
 /app/docs/CIERRE_Y_BLINDAJE_TABLERO_EJECUTIVO.md:207:3. **MPRO Día**: SOLO por API local (si disponible)
-/app/docs/RH_NOMINAS_EDARSAHUB_CONNECTION_01_REPORT.md:72:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/docs/RH_NOMINAS_EDARSAHUB_CONNECTION_01_REPORT.md:72:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/docs/RH_NOMINAS_EDARSAHUB_CONNECTION_01_REPORT.md:86:    if not EDARSAHUB_CONFIG.get('host') or not EDARSAHUB_CONFIG.get('database'):
 /app/docs/RH_NOMINAS_EDARSAHUB_CONNECTION_01_REPORT.md:87:        logging.error("EDARSAHUB_CONFIG incompleto: falta host o database")
 /app/docs/VALIDACION_TECNICA_PROPINAS_TPV.md:2:## Informe de Validación contra SoftRestaurant
@@ -12460,8 +12460,8 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/FASE_3D_VALIDACION_CONECTIVIDAD_SECRETOS_CIFRADOS.md:43:| 6D053C22... | CIENFUEGOS | SOFTRESTAURANT | servercienfuegos.ddns | ENCRYPTED | SOURCE_UNREACHABLE |
 /app/docs/FASE_3D_VALIDACION_CONECTIVIDAD_SECRETOS_CIFRADOS.md:44:| 6D859026... | CIENFUEGOS TABLAJERIA | SOFTRESTAURANT | servercienfuegos.ddns | ENCRYPTED | SOURCE_UNREACHABLE |
 /app/docs/FASE_3D_VALIDACION_CONECTIVIDAD_SECRETOS_CIFRADOS.md:46:| A5FF0E25... | LA ESTELAR | SOFTRESTAURANT | serverestelar.ddns.net | ENCRYPTED | SOURCE_UNREACHABLE |
-/app/docs/FASE_3D_VALIDACION_CONECTIVIDAD_SECRETOS_CIFRADOS.md:48:| D1D8C70F... | MPRO TABLAJERIA | MANAGEMENTPRO | 54.39.104.176 | ENCRYPTED | SUCCESS |
-/app/docs/FASE_3D_VALIDACION_CONECTIVIDAD_SECRETOS_CIFRADOS.md:49:| D8425038... | PRUEBAS SOFTRESTAURANT | SOFTRESTAURANT | 54.39.104.176\SOFTREST | ENCRYPTED | SUCCESS |
+/app/docs/FASE_3D_VALIDACION_CONECTIVIDAD_SECRETOS_CIFRADOS.md:48:| D1D8C70F... | MPRO TABLAJERIA | MANAGEMENTPRO | <REDACTED_EDARSAHUB_SQL_HOST> | ENCRYPTED | SUCCESS |
+/app/docs/FASE_3D_VALIDACION_CONECTIVIDAD_SECRETOS_CIFRADOS.md:49:| D8425038... | PRUEBAS SOFTRESTAURANT | SOFTRESTAURANT | <REDACTED_EDARSAHUB_SQL_HOST>\SOFTREST | ENCRYPTED | SUCCESS |
 /app/docs/FASE_3D_VALIDACION_CONECTIVIDAD_SECRETOS_CIFRADOS.md:51:**Nota:** Los servidores CIENFUEGOS, CIENFUEGOS TABLAJERIA y LA ESTELAR usan hosts externos (ddns.net) que no son alcanzables desde el ambiente preview sin VPN. Esto es un problema de red, NO de cifrado.
 /app/docs/FASE_3D_VALIDACION_CONECTIVIDAD_SECRETOS_CIFRADOS.md:102:python validate_encrypted_server_connectivity.py --run --system-type SOFTRESTAURANT
 /app/docs/FASE_3D_VALIDACION_CONECTIVIDAD_SECRETOS_CIFRADOS.md:115:| `--system-type <type>` | Filtrar por SOFTRESTAURANT\|MANAGEMENTPRO\|API |
@@ -12510,23 +12510,23 @@ Generado: 2026-06-02T09:33:51+00:00
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:55:| a5547321-1139-4d2b-9d53-182ca737b6b6 | 130° MERIDA | 130mid.ddns.net | 1433 | SoftRestaurant | Sí | Sí | No | No |
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:56:| 6d053c22-523e-48c0-b72b-96081e2d781b | CIENFUEGOS | servercienfuegos.ddns.net,6669\nationalsoft | 1433 | SoftRestaurant | Sí | Sí | No | Sí |
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:57:| 6d859026-710a-4920-9a44-6da98fabc690 | CIENFUEGOS TABLAJERIA | servercienfuegos.ddns.net,6669\nationalsoft | 1433 | SoftRestaurant | Sí | Sí | No | No |
-/app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:59:| b5175237-5e57-41f3-ab6d-b5ae2f5e780b | HR2020 ESCRITURA | 54.39.104.176 | 1433 | MPRO | Sí | Sí | No | No |
+/app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:59:| b5175237-5e57-41f3-ab6d-b5ae2f5e780b | HR2020 ESCRITURA | <REDACTED_EDARSAHUB_SQL_HOST> | 1433 | MPRO | Sí | Sí | No | No |
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:60:| a5ff0e25-f029-43db-b634-d4ac814c904f | LA ESTELAR | serverestelar.ddns.net,6969 | 6969 | SoftRestaurant | Sí | Sí | No | Sí |
-/app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:61:| 1b230a06-ffaf-4c70-bd27-b1be3579dea6 | ManagmentPro | 54.39.104.176 | 1433 | MPRO | Sí | Sí | No | Sí |
-/app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:62:| d1d8c70f-c3d0-4407-ae50-f09e8e5992ee | MPRO TABLAJERIA | 54.39.104.176 | 1433 | MPRO | Sí | Sí | No | No |
-/app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:63:| d8425038-5e57-42d9-8f3a-62e287888874 | PRUEBAS SOFTRESTAURANT | 54.39.104.176\SOFTRESTAURANT | 1433 | SoftRestaurant | Sí | Sí | No | No |
+/app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:61:| 1b230a06-ffaf-4c70-bd27-b1be3579dea6 | ManagmentPro | <REDACTED_EDARSAHUB_SQL_HOST> | 1433 | MPRO | Sí | Sí | No | Sí |
+/app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:62:| d1d8c70f-c3d0-4407-ae50-f09e8e5992ee | MPRO TABLAJERIA | <REDACTED_EDARSAHUB_SQL_HOST> | 1433 | MPRO | Sí | Sí | No | No |
+/app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:63:| d8425038-5e57-42d9-8f3a-62e287888874 | PRUEBAS SOFTRESTAURANT | <REDACTED_EDARSAHUB_SQL_HOST>\SOFTRESTAURANT | 1433 | SoftRestaurant | Sí | Sí | No | No |
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:65:| 90a62591-65cf-439f-ae8e-d505b50fcc07 | TEST_ENCRYPTED_PASSWORD_UPDATED | 127.0.0.2 | 1433 | MPRO | No | Sí | No | No |
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:66:| 7452d373-7350-4193-b819-e36ffa800724 | TEST_RBAC_ADMIN_CHECK | 127.0.0.1 | 1433 | MPRO | No | Sí | No | No |
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:91:### 3.5 Servidores con ID Distinto pero Mismo Host
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:92:| Host | Servidores | Observación |
-/app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:94:| 54.39.104.176 | EDARSA HUB, HR2020 ESCRITURA, ManagmentPro, MPRO TABLAJERIA, PRUEBAS SOFTRESTAURANT | Mismo host físico pero diferentes bases de datos. Configuración válida. |
+/app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:94:| <REDACTED_EDARSAHUB_SQL_HOST> | EDARSA HUB, HR2020 ESCRITURA, ManagmentPro, MPRO TABLAJERIA, PRUEBAS SOFTRESTAURANT | Mismo host físico pero diferentes bases de datos. Configuración válida. |
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:95:| servercienfuegos.ddns.net,6669\nationalsoft | CIENFUEGOS, CIENFUEGOS TABLAJERIA | Mismo host físico pero diferentes bases de datos. Configuración válida. |
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:97:**Acción recomendada:** No requiere acción. Es normal tener múltiples conexiones al mismo host con diferentes bases de datos.
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:148:| system_type | SoftRestaurant | *(no existe)* |
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:150:| host | 130mid.ddns.net | *(no existe)* |
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:152:| database_name | softrestaurant10 | *(no existe)* |
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:166:| system_type | MPRO | *(no existe)* |
-/app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:168:| host | 54.39.104.176 | *(no existe)* |
+/app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:168:| host | <REDACTED_EDARSAHUB_SQL_HOST> | *(no existe)* |
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:170:| database_name | HR2020 | *(no existe)* |
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:185:| `Servidores_Conexiones` | Catálogo maestro de servidores | ✅ Sí |
 /app/docs/CONEXIONES_SQL_EDARSAHUB_01_SUBFASE_D_CATALOGO_SERVIDORES_PLAN.md:186:| `Servidores_Conexiones_Log` | Auditoría de cambios | No (solo auditoría) |

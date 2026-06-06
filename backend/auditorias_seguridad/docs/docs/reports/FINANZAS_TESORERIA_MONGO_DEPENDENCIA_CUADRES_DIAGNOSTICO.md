@@ -14,7 +14,7 @@
 ```python
 # Línea 18-21: Conexión MongoDB
 from pymongo import MongoClient
-mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 db_name = os.environ.get('DB_NAME', 'edarsahub')
 client = MongoClient(mongo_url)
 

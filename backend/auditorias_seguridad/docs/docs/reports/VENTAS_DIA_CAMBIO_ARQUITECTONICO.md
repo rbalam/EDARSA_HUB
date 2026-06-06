@@ -15,8 +15,8 @@
 ### ORIGEN y 130° QRO (usaban SQL MPRO central):
 - **Problema:** El job anterior usaba conexión SQL directa a `ManagmentPro` (server `1b230a06-ffaf-4c70-bd27-b1be3579dea6`)
 - **Solución:** Ahora usan APIs locales configuradas en EDARSAHUB:
-  - ORIGEN LOCAL: `http://54.39.104.176:8000/query`
-  - 130° QRO LOCAL: `http://54.39.104.176:8001/query`
+  - ORIGEN LOCAL: `http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query`
+  - 130° QRO LOCAL: `http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query`
 
 ---
 
@@ -56,11 +56,11 @@ SoftRestaurant (CIENFUEGOS, LA ESTELAR, 130° MÉRIDA):
   → EDARSAHUB SQL.Comercial_Ventas_Dia_Abiertas_v2 → Tablero
 
 MPRO (ORIGEN):
-  API Local http://54.39.104.176:8000/query → [Si falla: NO escribir $0]
+  API Local http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query → [Si falla: NO escribir $0]
   → EDARSAHUB SQL.Comercial_Ventas_Dia_Abiertas_v2 → Tablero
 
 MPRO (130° QRO):
-  API Local http://54.39.104.176:8001/query → [Si falla: NO escribir $0]
+  API Local http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query → [Si falla: NO escribir $0]
   → EDARSAHUB SQL.Comercial_Ventas_Dia_Abiertas_v2 → Tablero
 ```
 
@@ -129,11 +129,11 @@ CIENFUEGOS         | $      0.00 | SOFTRESTAURANT | TEMPCHEQUES  | 2026-05-14T18
 
 ```bash
 # Prueba de API local ORIGEN
-curl -s "http://54.39.104.176:8000/query?sql=SELECT 1" -H "X-API-Key: ..."
+curl -s "http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query?sql=SELECT 1" -H "X-API-Key: ..."
 # Response: {"data":[{"test":1}]} ✅
 
 # Prueba de API local 130° QRO
-curl -s "http://54.39.104.176:8001/query?sql=SELECT 1" -H "X-API-Key: ..."
+curl -s "http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query?sql=SELECT 1" -H "X-API-Key: ..."
 # Response: {"data":[{"test":1}]} ✅
 ```
 

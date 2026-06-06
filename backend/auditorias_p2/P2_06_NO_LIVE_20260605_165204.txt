@@ -31,8 +31,8 @@
 /app/backend/modules/comercial_v2/carga_historica_abril_2026.py:773:        if unidad['sistema_origen'] == SistemaOrigen.SOFTRESTAURANT:
 /app/backend/modules/comercial_v2/carga_historica_abril_2026.py:774:            reporte_unidad = cargar_unidad_softrestaurant(
 /app/backend/modules/comercial_v2/repository_readonly.py:9:- SQL vivo a SoftRestaurant/MPRO
-/app/backend/modules/comercial_v2/repository_readonly.py:35:    'host': '54.39.104.176',
-/app/backend/modules/comercial_v2/repository_comercial_edarsahub.py:43:    'host': '54.39.104.176',
+/app/backend/modules/comercial_v2/repository_readonly.py:35:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
+/app/backend/modules/comercial_v2/repository_comercial_edarsahub.py:43:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/modules/comercial_v2/repository_comercial_edarsahub.py:108:            sistema = SistemaOrigen.SOFTRESTAURANT
 /app/backend/modules/comercial_v2/mappers.py:5:Funciones de mapeo para transformar datos desde SoftRestaurant y MPRO
 /app/backend/modules/comercial_v2/mappers.py:66:# MAPEO SOFTRESTAURANT → EDARSAHUB V2

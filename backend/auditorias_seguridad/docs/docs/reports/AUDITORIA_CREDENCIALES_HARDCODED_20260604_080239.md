@@ -208,7 +208,7 @@ def get_edarsahub_connection():
 ### Opción B: Eliminar Fallbacks
 Cambiar todos los:
 ```python
-os.environ.get('EDARSAHUB_HOST', '54.39.104.176')
+os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>')
 ```
 Por:
 ```python

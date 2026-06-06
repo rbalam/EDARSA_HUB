@@ -61,7 +61,7 @@ Se evaluaron los servidores candidatos para FASE SYNC-3A. Se actualizó MPRO (Ma
 |-------|-------|
 | ID | 1b230a06-ffaf-4c70-bd27-b1be3579dea6 |
 | Sistema | MPRO |
-| Host | 54.39.104.176:1433 |
+| Host | <REDACTED_EDARSAHUB_SQL_HOST>:1433 |
 | Database | CENTRAL2020 |
 | Status | ✅ SINCRONIZADO |
 | Query hora | `DATEPART(HOUR, Fecha_Alta)` |

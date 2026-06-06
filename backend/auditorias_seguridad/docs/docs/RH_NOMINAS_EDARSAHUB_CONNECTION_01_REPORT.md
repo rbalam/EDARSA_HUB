@@ -69,11 +69,11 @@ from core.db import execute_sql_query
 
 # Configuración EDARSAHUB interna (fuente maestra para RH/Nóminas)
 EDARSAHUB_CONFIG = {
-    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
     'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
     'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-    'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-    'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+    'username': os.environ.get('EDARSAHUB_USERNAME', '<REDACTED_EDARSAHUB_SQL_USER>'),
+    'password': os.environ.get('EDARSAHUB_PASSWORD', '<REDACTED_EDARSAHUB_SQL_PASSWORD>')
 }
 
 # ...
@@ -95,7 +95,7 @@ async def get_edarsa_hub_server() -> Optional[Dict]:
 ## 5. Patrón de Conexión Usado
 
 ```
-RH/Nóminas → EDARSAHUB_CONFIG → SQL Server directo (54.39.104.176:1433)
+RH/Nóminas → EDARSAHUB_CONFIG → SQL Server directo (<REDACTED_EDARSAHUB_SQL_HOST>:1433)
 ```
 
 Mismo patrón que `server_registry.py`, consistente con la arquitectura del sistema.

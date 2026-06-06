@@ -2,7 +2,7 @@
 
 - Fecha: 2026-06-02T19:55:22.976345
 - Modo: `migrate`
-- Servidor: `54.39.104.176`
+- Servidor: `<REDACTED_EDARSAHUB_SQL_HOST>`
 - Base de datos: `EDARSAHUB`
 - Script: `/app/backend/database/migrations/030_diagnostico_mapeo_rbac_mongo_a_sql.sql`
 

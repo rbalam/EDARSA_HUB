@@ -46,7 +46,7 @@ async def comercial_ventas_tiempo(...):
     """
     # ...
     conn = pymssql.connect(
-        server='54.39.104.176',  # EDARSAHUB
+        server='<REDACTED_EDARSAHUB_SQL_HOST>',  # EDARSAHUB
         ...
     )
     

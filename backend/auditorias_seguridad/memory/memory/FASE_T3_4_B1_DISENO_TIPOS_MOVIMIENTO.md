@@ -190,7 +190,7 @@ async def migrate_tipos_movimiento():
     mongo_db = mongo_client.edarsa_hub
     
     sql_conn = pymssql.connect(
-        server='54.39.104.176',
+        server='<REDACTED_EDARSAHUB_SQL_HOST>',
         user='<USER_ESCRITURA>',  # Requiere usuario con permisos UPDATE
         password='<PASSWORD>',
         database='EDARSAHUB'

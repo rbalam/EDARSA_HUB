@@ -2,7 +2,7 @@
 P3-04 ELIMINAR COLECCIONES MONGO HUERFANAS
 Timestamp: 20260606_000726
 ==================================================
-MONGO_URL: mongodb://localhost:27017
+MONGO_URL: <REDACTED_MONGO_URL>
 DB_NAME: edarsa_hub
 
 ANTES_TARGETS:

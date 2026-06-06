@@ -2,7 +2,7 @@
 P3-04 ELIMINAR COLECCIONES MONGO HUERFANAS
 Timestamp: 20260606_000709
 ==================================================
-MONGO_URL detectada: mongodb://localhost:27017...
+MONGO_URL detectada: <REDACTED_MONGO_URL>...
 
 ==================================================
 P3-04 RESULTADO

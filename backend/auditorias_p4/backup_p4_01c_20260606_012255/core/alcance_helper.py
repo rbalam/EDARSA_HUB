@@ -73,8 +73,8 @@ async def _resolver_unidad(alcance_data: Dict, _db) -> Set[str]:
     
     if unidades_ids:
         conn = pymssql.connect(
-            server='54.39.104.176', port=1433,
-            user='HRLectura', password='National09$',
+            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433,
+            user='<REDACTED_EDARSAHUB_SQL_USER>', password='<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             database='EDARSAHUB'
         )
         try:
@@ -118,8 +118,8 @@ async def _resolver_sucursal(alcance_data: Dict, _db) -> Set[str]:
     
     if sucursales_ids:
         conn = pymssql.connect(
-            server='54.39.104.176', port=1433,
-            user='HRLectura', password='National09$',
+            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433,
+            user='<REDACTED_EDARSAHUB_SQL_USER>', password='<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             database='EDARSAHUB'
         )
         try:

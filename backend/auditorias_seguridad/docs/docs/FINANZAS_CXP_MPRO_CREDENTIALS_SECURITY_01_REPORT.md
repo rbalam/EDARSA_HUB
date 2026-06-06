@@ -54,7 +54,7 @@ Resultado de test directo:
 ```
 Server encontrado: ManagmentPro
 config_origin: EDARSAHUB_SQL  ✅
-Host: 54.39.104.176
+Host: <REDACTED_EDARSAHUB_SQL_HOST>
 Database: CENTRAL2020
 ```
 

@@ -172,7 +172,7 @@ if ':' in host_raw:
 
 **Recomendación:** Migrar a `parse_sql_server_host()` para consistencia.
 
-**Nota:** Actualmente funciona porque MPRO (54.39.104.176) no usa instancias nombradas.
+**Nota:** Actualmente funciona porque MPRO (<REDACTED_EDARSAHUB_SQL_HOST>) no usa instancias nombradas.
 
 ---
 
@@ -300,7 +300,7 @@ return pymssql.connect(
 | CIENFUEGOS | servercienfuegos.ddns.net | 6669 | nationalsoft | SoftRestaurant |
 | 130° MÉRIDA | server130merida.ddns.net | 6669 | nationalsoft | SoftRestaurant |
 | LA ESTELAR | serverestelar.ddns.net | 6969 | (ninguna) | SoftRestaurant |
-| MPRO | 54.39.104.176 | 1433 | (ninguna) | MPRO |
+| MPRO | <REDACTED_EDARSAHUB_SQL_HOST> | 1433 | (ninguna) | MPRO |
 
 ---
 

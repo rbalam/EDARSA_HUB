@@ -56,7 +56,7 @@ class ResilientConfig:
 | Métrica | Resultado |
 |---------|-----------|
 | Healthy | ✅ True |
-| Server | 54.39.104.176:1433 |
+| Server | <REDACTED_EDARSAHUB_SQL_HOST>:1433 |
 | Database | EDARSAHUB |
 | Latency | ~160ms |
 | Driver | pytds |
@@ -98,7 +98,7 @@ Realiza health check de conexión SQL con diagnóstico detallado.
 ```json
 {
     "healthy": true,
-    "server": "54.39.104.176:1433",
+    "server": "<REDACTED_EDARSAHUB_SQL_HOST>:1433",
     "database": "EDARSAHUB",
     "latency_ms": 160.0,
     "error": null,

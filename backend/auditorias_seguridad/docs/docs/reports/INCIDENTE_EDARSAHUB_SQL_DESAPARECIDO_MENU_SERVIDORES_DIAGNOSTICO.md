@@ -54,10 +54,10 @@ Esto **EXCLUYE** a EDARSA HUB porque su `tipo_conexion = 'CORE'`.
 | nombre | EDARSA HUB |
 | system_type | **EDARSA_HUB** |
 | tipo_conexion | **CORE** |
-| host | 54.39.104.176 |
+| host | <REDACTED_EDARSAHUB_SQL_HOST> |
 | port | 1433 |
 | database_name | EDARSAHUB |
-| username | HRLectura |
+| username | <REDACTED_EDARSAHUB_SQL_USER> |
 | **activo** | **True** ✅ |
 | **visible_en_operaciones** | **True** ✅ |
 | **visible_en_listado** | **True** ✅ |

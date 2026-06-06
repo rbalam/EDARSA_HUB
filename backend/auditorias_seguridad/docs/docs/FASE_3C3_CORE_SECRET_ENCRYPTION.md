@@ -130,10 +130,10 @@ MongoDB sincronizado: 2
 ```
 === VALIDACIÓN DE DESCIFRADO INTERNO ===
 Servidor: EDARSA HUB (ID: f8a9049a-96e8-4210-84ae-595ffa2822fa)
-Host: 54.39.104.176
+Host: <REDACTED_EDARSAHUB_SQL_HOST>
 Port: 1433
 Database: EDARSAHUB
-Username: HRLectura
+Username: <REDACTED_EDARSAHUB_SQL_USER>
 Password descifrado OK: YES
 Was encrypted: True
 Password length (descifrado): 11

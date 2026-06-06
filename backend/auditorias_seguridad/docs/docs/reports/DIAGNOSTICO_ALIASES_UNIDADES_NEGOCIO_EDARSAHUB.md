@@ -239,8 +239,8 @@ CASE
 ### 7.2 Tabla `Servidores_Conexiones` (APIs Locales)
 | nombre | tipo_conexion | api_url |
 |--------|---------------|---------|
-| `130° QRO LOCAL` | `API_LOCAL` | http://54.39.104.176:8001/query |
-| `ORIGEN LOCAL` | `API_LOCAL` | http://54.39.104.176:8000/query |
+| `130° QRO LOCAL` | `API_LOCAL` | http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query |
+| `ORIGEN LOCAL` | `API_LOCAL` | http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query |
 
 ### 7.3 Tabla `Sistema_EmpresasMongoMap`
 | CodigoEmpresa | NombreEmpresa | EmpresaMongoUUID |
@@ -258,8 +258,8 @@ CASE
 ### 8.1 Configuración en EDARSAHUB SQL
 | ID | Nombre | URL | Destino |
 |----|--------|-----|---------|
-| `72f6e9a7-...` | 130° QRO LOCAL | http://54.39.104.176:8001/query | QUERETARO |
-| `817a0aa8-...` | ORIGEN LOCAL | http://54.39.104.176:8000/query | ORIGEN |
+| `72f6e9a7-...` | 130° QRO LOCAL | http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query | QUERETARO |
+| `817a0aa8-...` | ORIGEN LOCAL | http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query | ORIGEN |
 
 ### 8.2 Configuración Hardcodeada en sync_comercial_abiertas_v2_job.py
 ```python

@@ -13,7 +13,7 @@ El tablero ejecutivo devolvía **$0.00** para unidades MPRO (130° QUERETARO, OR
 - Modo normal: MPRO mostraba $0.00
 - Modo "Ventas del Día": MPRO mostraba $0.00
 - SoftRestaurant funcionaba correctamente
-- Las credenciales en MongoDB eran válidas (HRLectura/National09$)
+- Las credenciales en MongoDB eran válidas (<REDACTED_EDARSAHUB_SQL_USER>/<REDACTED_EDARSAHUB_SQL_PASSWORD>)
 
 ---
 
@@ -71,11 +71,11 @@ elif solo_ventas_dia:
 |-------|-------|
 | Server ID | 1b230a06-ffaf-4c70-bd27-b1be3579dea6 |
 | Name | ManagmentPro |
-| Host | 54.39.104.176 |
+| Host | <REDACTED_EDARSAHUB_SQL_HOST> |
 | Port | 1433 |
 | Database | CENTRAL2020 |
-| Username | HRLectura |
-| Password | National09$ |
+| Username | <REDACTED_EDARSAHUB_SQL_USER> |
+| Password | <REDACTED_EDARSAHUB_SQL_PASSWORD> |
 
 ### Credenciales hardcodeadas encontradas (legacy):
 | Archivo | Usuario | Password |

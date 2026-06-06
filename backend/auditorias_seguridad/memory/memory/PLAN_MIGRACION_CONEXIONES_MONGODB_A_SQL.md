@@ -66,7 +66,7 @@ Campos: id, name, host, port, database, username, password,
 ### 3.2 Destino (EDARSAHUB SQL)
 
 ```
-Servidor: 54.39.104.176:1433
+Servidor: <REDACTED_EDARSAHUB_SQL_HOST>:1433
 Base de datos: EDARSAHUB
 Tablas actuales: 180 (ninguna específica para conexiones de servidores)
 Conectividad: ✅ Verificada desde preview
@@ -335,7 +335,7 @@ Para iniciar la **FASE 0** (preparación), necesito:
 
 1. ✅ Confirmación de que EDARSAHUB SQL es el destino correcto
 2. ⬜ Aprobación del usuario para crear las tablas en EDARSAHUB
-3. ⬜ Confirmación de permisos de escritura en EDARSAHUB (usuario actual es `HRLectura`)
+3. ⬜ Confirmación de permisos de escritura en EDARSAHUB (usuario actual es `<REDACTED_EDARSAHUB_SQL_USER>`)
 
 ---
 

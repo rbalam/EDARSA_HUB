@@ -29,11 +29,11 @@ logger = logging.getLogger(__name__)
 
 # Configuración de conexión EDARSAHUB
 EDARSAHUB_CONFIG = {
-    "server": "54.39.104.176",
+    "server": "<REDACTED_EDARSAHUB_SQL_HOST>",
     "port": 1433,
     "database": "EDARSAHUB",
-    "user": "HRLectura",
-    "password": "National09$",
+    "user": "<REDACTED_EDARSAHUB_SQL_USER>",
+    "password": "<REDACTED_EDARSAHUB_SQL_PASSWORD>",
 }
 
 

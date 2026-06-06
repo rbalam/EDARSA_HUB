@@ -113,8 +113,8 @@ ORDER BY ventas_total DESC
 
 | Unidad | Sistema | Fuente | URL API_LOCAL |
 |--------|---------|--------|---------------|
-| **ORIGEN** | MPRO | API_LOCAL | `http://54.39.104.176:8000/query` |
-| **130° QRO** | MPRO | API_LOCAL | `http://54.39.104.176:8001/query` |
+| **ORIGEN** | MPRO | API_LOCAL | `http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query` |
+| **130° QRO** | MPRO | API_LOCAL | `http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query` |
 
 ### ✅ CONFIRMACIONES:
 - ✅ ORIGEN usa `API_LOCAL` configurada en EDARSAHUB SQL

@@ -3380,7 +3380,7 @@ SyncLog:    ✅ Registrado en Comercial_SyncLog_v2
 **Prueba 2: 130° QRO (MPRO)**
 ```
 Fecha:      2026-04-30
-Resultado:  Conexión fallida (HRLectura sin permisos a CENTRAL2020)
+Resultado:  Conexión fallida (<REDACTED_EDARSAHUB_SQL_USER> sin permisos a CENTRAL2020)
 SyncLog:    ✅ Registrado en Comercial_SyncLog_v2
 ```
 

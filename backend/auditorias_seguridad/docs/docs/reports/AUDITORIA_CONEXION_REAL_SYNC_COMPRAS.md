@@ -8,11 +8,11 @@ Fecha: Thu Jun  4 07:43:17 UTC 2026
 ### 1.1 Configuración EDARSAHUB en el job
 ```python
 57:EDARSAHUB_CONFIG = {
-58-    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+58-    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 59-    'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
 60-    'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-61-    'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-62-    'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+61-    'username': os.environ.get('EDARSAHUB_USERNAME', '<REDACTED_EDARSAHUB_SQL_USER>'),
+62-    'password': os.environ.get('EDARSAHUB_PASSWORD', '<REDACTED_EDARSAHUB_SQL_PASSWORD>')
 63-}
 64-
 65-
@@ -167,11 +167,11 @@ Fecha: Thu Jun  4 07:43:17 UTC 2026
 ### 2.2 Configuración EDARSAHUB en service
 ```python
 21:EDARSAHUB_CONFIG = {
-22-    'host': '54.39.104.176',
+22-    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 23-    'port': 1433,
 24-    'database': 'EDARSAHUB',
-25-    'username': 'HRLectura',
-26-    'password': 'National09$'
+25-    'username': '<REDACTED_EDARSAHUB_SQL_USER>',
+26-    'password': '<REDACTED_EDARSAHUB_SQL_PASSWORD>'
 27-}
 28-
 29-
@@ -223,36 +223,36 @@ Fecha: Thu Jun  4 07:43:17 UTC 2026
 
 ## 3. Variables de entorno relacionadas
 ```text
-/app/backend/modules/comercial/repository.py:33:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/comercial/repository.py:33:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/comercial/repository.py:34:    'port': int(os.environ.get('EDARSAHUB_PORT', 1433)),
 /app/backend/modules/comercial/repository.py:35:    'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-/app/backend/modules/comercial/repository.py:36:    'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-/app/backend/modules/comercial/repository.py:37:    'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
-/app/backend/modules/comercial/routes.py:1938:        edarsahub_host = os.environ.get('EDARSAHUB_HOST', '54.39.104.176')
+/app/backend/modules/comercial/repository.py:36:    'username': os.environ.get('EDARSAHUB_USERNAME', '<REDACTED_EDARSAHUB_SQL_USER>'),
+/app/backend/modules/comercial/repository.py:37:    'password': os.environ.get('EDARSAHUB_PASSWORD', '<REDACTED_EDARSAHUB_SQL_PASSWORD>')
+/app/backend/modules/comercial/routes.py:1938:        edarsahub_host = os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>')
 /app/backend/modules/comercial/routes.py:1939:        edarsahub_port = int(os.environ.get('EDARSAHUB_PORT', '1433'))
 /app/backend/modules/comercial/routes.py:1940:        edarsahub_database = os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB')
-/app/backend/modules/comercial/routes.py:1941:        edarsahub_username = os.environ.get('EDARSAHUB_USERNAME', 'HRLectura')
-/app/backend/modules/comercial/routes.py:1942:        edarsahub_password = os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
-/app/backend/modules/api_connections/universal_test_routes.py:143:            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/comercial/routes.py:1941:        edarsahub_username = os.environ.get('EDARSAHUB_USERNAME', '<REDACTED_EDARSAHUB_SQL_USER>')
+/app/backend/modules/comercial/routes.py:1942:        edarsahub_password = os.environ.get('EDARSAHUB_PASSWORD', '<REDACTED_EDARSAHUB_SQL_PASSWORD>')
+/app/backend/modules/api_connections/universal_test_routes.py:143:            server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/api_connections/universal_test_routes.py:144:            port=int(os.environ.get('EDARSAHUB_PORT', '1433')),
 /app/backend/modules/api_connections/universal_test_routes.py:145:            database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-/app/backend/modules/api_connections/universal_test_routes.py:146:            user=os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-/app/backend/modules/api_connections/universal_test_routes.py:147:            password=os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
-/app/backend/modules/api_connections/universal_test_routes.py:182:            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/api_connections/universal_test_routes.py:146:            user=os.environ.get('EDARSAHUB_USERNAME', '<REDACTED_EDARSAHUB_SQL_USER>'),
+/app/backend/modules/api_connections/universal_test_routes.py:147:            password=os.environ.get('EDARSAHUB_PASSWORD', '<REDACTED_EDARSAHUB_SQL_PASSWORD>'),
+/app/backend/modules/api_connections/universal_test_routes.py:182:            server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/api_connections/universal_test_routes.py:183:            port=int(os.environ.get('EDARSAHUB_PORT', '1433')),
 /app/backend/modules/api_connections/universal_test_routes.py:184:            database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-/app/backend/modules/api_connections/universal_test_routes.py:185:            user=os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-/app/backend/modules/api_connections/universal_test_routes.py:186:            password=os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
-/app/backend/modules/sistema/menu_service.py:21:            'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
-/app/backend/modules/sistema/menu_service.py:22:            'user': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-/app/backend/modules/sistema/menu_service.py:23:            'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$'),
+/app/backend/modules/api_connections/universal_test_routes.py:185:            user=os.environ.get('EDARSAHUB_USERNAME', '<REDACTED_EDARSAHUB_SQL_USER>'),
+/app/backend/modules/api_connections/universal_test_routes.py:186:            password=os.environ.get('EDARSAHUB_PASSWORD', '<REDACTED_EDARSAHUB_SQL_PASSWORD>'),
+/app/backend/modules/sistema/menu_service.py:21:            'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
+/app/backend/modules/sistema/menu_service.py:22:            'user': os.environ.get('EDARSAHUB_USERNAME', '<REDACTED_EDARSAHUB_SQL_USER>'),
+/app/backend/modules/sistema/menu_service.py:23:            'password': os.environ.get('EDARSAHUB_PASSWORD', '<REDACTED_EDARSAHUB_SQL_PASSWORD>'),
 /app/backend/modules/sistema/menu_service.py:24:            'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
 /app/backend/modules/sistema/menu_service.py:25:            'port': int(os.environ.get('EDARSAHUB_PORT', 1433))
-/app/backend/modules/rh/repository.py:43:    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/rh/repository.py:43:    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/rh/repository.py:44:    'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
 /app/backend/modules/rh/repository.py:45:    'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-/app/backend/modules/rh/repository.py:46:    'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-/app/backend/modules/rh/repository.py:47:    'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+/app/backend/modules/rh/repository.py:46:    'username': os.environ.get('EDARSAHUB_USERNAME', '<REDACTED_EDARSAHUB_SQL_USER>'),
+/app/backend/modules/rh/repository.py:47:    'password': os.environ.get('EDARSAHUB_PASSWORD', '<REDACTED_EDARSAHUB_SQL_PASSWORD>')
 ```
 
 ---
@@ -291,8 +291,8 @@ WHERE s.activo = 1
 
 | Archivo | Usa ENV? | Fallback Hardcoded |
 |---------|----------|-------------------|
-| `sync_compras_job.py` (línea 57) | ✅ SÍ | `54.39.104.176` |
-| `sync_service.py` (línea 21) | ❌ NO | `54.39.104.176` (hardcoded) |
+| `sync_compras_job.py` (línea 57) | ✅ SÍ | `<REDACTED_EDARSAHUB_SQL_HOST>` |
+| `sync_service.py` (línea 21) | ❌ NO | `<REDACTED_EDARSAHUB_SQL_HOST>` (hardcoded) |
 
 **⚠️ INCONSISTENCIA DETECTADA:** `sync_service.py` tiene los valores hardcodeados sin usar `os.environ.get()`.
 
@@ -313,12 +313,12 @@ Esta función está definida en `sync_service.py` línea 30.
 
 | Componente | Host |
 |------------|------|
-| `sync_compras_job.py` EDARSAHUB_CONFIG | `os.environ.get('EDARSAHUB_HOST', '54.39.104.176')` |
-| `sync_service.py` get_edarsahub_connection() | `54.39.104.176` (hardcoded) |
+| `sync_compras_job.py` EDARSAHUB_CONFIG | `os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>')` |
+| `sync_service.py` get_edarsahub_connection() | `<REDACTED_EDARSAHUB_SQL_HOST>` (hardcoded) |
 | `server.py` endpoint validate-columns | `os.environ.get('EDARSAHUB_HOST', '4.255.36.175')` |
 
 **⚠️ INCONSISTENCIA CRÍTICA:**
-- `sync_compras_job.py` → `54.39.104.176`
+- `sync_compras_job.py` → `<REDACTED_EDARSAHUB_SQL_HOST>`
 - `server.py` endpoints admin → `4.255.36.175`
 
 ---
@@ -331,12 +331,12 @@ Esta función está definida en `sync_service.py` línea 30.
 
 ### Pregunta 6: Usuario final utilizado
 
-**`HRLectura`** en todos los casos (excepto `server.py` que usa `eloyk`).
+**`<REDACTED_EDARSAHUB_SQL_USER>`** en todos los casos (excepto `server.py` que usa `eloyk`).
 
 | Archivo | Usuario | Password |
 |---------|---------|----------|
-| `sync_compras_job.py` | `HRLectura` | `National09$` |
-| `sync_service.py` | `HRLectura` | `National09$` |
+| `sync_compras_job.py` | `<REDACTED_EDARSAHUB_SQL_USER>` | `<REDACTED_EDARSAHUB_SQL_PASSWORD>` |
+| `sync_service.py` | `<REDACTED_EDARSAHUB_SQL_USER>` | `<REDACTED_EDARSAHUB_SQL_PASSWORD>` |
 | `server.py` admin endpoints | `eloyk` | `Tijuana2020$` |
 
 ---
@@ -355,7 +355,7 @@ La tabla `Servidores_Conexiones` solo se usa para obtener los servidores **ORIGE
 ```
 execute_sync_compras()
         │
-        ├─► [1] get_edarsahub_connection() → EDARSAHUB (54.39.104.176)
+        ├─► [1] get_edarsahub_connection() → EDARSAHUB (<REDACTED_EDARSAHUB_SQL_HOST>)
         │       └── Para obtener lista de servidores desde Servidores_Conexiones
         │
         ├─► [2] _get_servers_to_sync() → Lista de {host, port, database, user, password}
@@ -366,7 +366,7 @@ execute_sync_compras()
                 ├─► execute_sql_fn() → Servidor Origen (SoftRestaurant/MPRO)
                 │       └── Lee datos a sincronizar
                 │
-                └─► get_edarsahub_connection() → EDARSAHUB (54.39.104.176)
+                └─► get_edarsahub_connection() → EDARSAHUB (<REDACTED_EDARSAHUB_SQL_HOST>)
                         └── Escribe datos con MERGE
 ```
 
@@ -378,8 +378,8 @@ execute_sync_compras()
 
 | # | Problema | Archivos Afectados |
 |---|----------|-------------------|
-| 1 | Host inconsistente: `54.39.104.176` vs `4.255.36.175` | sync_*.py vs server.py |
-| 2 | Usuario inconsistente: `HRLectura` vs `eloyk` | sync_*.py vs server.py |
+| 1 | Host inconsistente: `<REDACTED_EDARSAHUB_SQL_HOST>` vs `4.255.36.175` | sync_*.py vs server.py |
+| 2 | Usuario inconsistente: `<REDACTED_EDARSAHUB_SQL_USER>` vs `eloyk` | sync_*.py vs server.py |
 | 3 | sync_service.py no usa ENV, tiene credenciales hardcodeadas | sync_service.py |
 
 ### ✅ Recomendación
@@ -387,7 +387,7 @@ execute_sync_compras()
 1. **Unificar configuración EDARSAHUB** en un solo archivo de configuración.
 2. **Usar variables de entorno** en todos los archivos.
 3. **Verificar cuál host es el correcto** para producción:
-   - `54.39.104.176` (sync jobs)
+   - `<REDACTED_EDARSAHUB_SQL_HOST>` (sync jobs)
    - `4.255.36.175` (endpoints admin)
 
 ---
@@ -399,9 +399,9 @@ execute_sync_compras()
 | 1. ¿Usa Servidores_Conexiones? | ✅ SÍ - Para obtener servidores ORIGEN |
 | 2. ¿Usa variables .env? | ⚠️ PARCIAL - sync_compras_job.py sí, sync_service.py no |
 | 3. ¿Usa get_edarsahub_connection()? | ✅ SÍ |
-| 4. Host final | `54.39.104.176` (hardcoded en sync_service.py) |
+| 4. Host final | `<REDACTED_EDARSAHUB_SQL_HOST>` (hardcoded en sync_service.py) |
 | 5. Base de datos final | `EDARSAHUB` |
-| 6. Usuario final | `HRLectura` (sync) / `eloyk` (admin endpoints) |
+| 6. Usuario final | `<REDACTED_EDARSAHUB_SQL_USER>` (sync) / `eloyk` (admin endpoints) |
 | 7. ¿Conexión de registro "EDARSA HUB"? | ❌ NO - Configuración hardcodeada/ENV |
 
 ---

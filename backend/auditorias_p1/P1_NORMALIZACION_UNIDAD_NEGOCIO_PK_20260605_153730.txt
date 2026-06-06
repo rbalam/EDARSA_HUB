@@ -20,7 +20,7 @@ P1 - NORMALIZACION UNIDAD_NEGOCIO PK 20260605_153730
   Comercial_KPIs_Diarios_v2: unidad_negocio_pk NO EXISTE
   Comercial_KPIs_Mensuales_v2: unidad_negocio_pk NO EXISTE
 
-### 3. CONECTANDO A 54.39.104.176:1433/EDARSAHUB
+### 3. CONECTANDO A <REDACTED_EDARSAHUB_SQL_HOST>:1433/EDARSAHUB
 
 ### 4. AGREGAR unidad_negocio_pk A TABLAS KPI
   ✅ Columna unidad_negocio_pk agregada a Comercial_KPIs_Diarios_v2

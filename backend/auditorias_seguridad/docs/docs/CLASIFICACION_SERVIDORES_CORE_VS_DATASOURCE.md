@@ -13,9 +13,9 @@ Separar conceptualmente EDARSA HUB (cerebro del sistema) del catálogo de servid
 ## 2. PROBLEMA RESUELTO
 
 Existían conexiones en el módulo de servidores que correspondían al cerebro del sistema:
-- Host: 54.39.104.176
+- Host: <REDACTED_EDARSAHUB_SQL_HOST>
 - Base de datos: EDARSAHUB
-- Usuario: HRLectura
+- Usuario: <REDACTED_EDARSAHUB_SQL_USER>
 
 Estas conexiones NO deben tratarse como fuentes externas operativas iguales a SoftRestaurant o MPRO.
 

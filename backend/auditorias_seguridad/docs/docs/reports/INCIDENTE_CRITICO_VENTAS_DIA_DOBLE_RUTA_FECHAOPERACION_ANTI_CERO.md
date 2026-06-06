@@ -121,8 +121,8 @@ Evidencia:
 
 ### Login SQL y Permisos Actuales
 
-- **Login SQL**: `HRLectura`
-- **Usuario BD**: `HRLectura`
+- **Login SQL**: `<REDACTED_EDARSAHUB_SQL_USER>`
+- **Usuario BD**: `<REDACTED_EDARSAHUB_SQL_USER>`
 - **Base de datos**: `EDARSAHUB`
 
 ### Permisos Disponibles vs Denegados
@@ -146,10 +146,10 @@ database 'msdb', schema 'dbo'.")
 
 ```sql
 USE msdb;
-GRANT SELECT ON dbo.sysjobs TO HRLectura;
-GRANT SELECT ON dbo.sysjobsteps TO HRLectura;
-GRANT SELECT ON dbo.sysjobhistory TO HRLectura;
-GRANT VIEW SERVER PERFORMANCE STATE TO HRLectura;
+GRANT SELECT ON dbo.sysjobs TO <REDACTED_EDARSAHUB_SQL_USER>;
+GRANT SELECT ON dbo.sysjobsteps TO <REDACTED_EDARSAHUB_SQL_USER>;
+GRANT SELECT ON dbo.sysjobhistory TO <REDACTED_EDARSAHUB_SQL_USER>;
+GRANT VIEW SERVER PERFORMANCE STATE TO <REDACTED_EDARSAHUB_SQL_USER>;
 ```
 
 ### Resultados de Consultas Diagnósticas
@@ -210,20 +210,20 @@ WHERE s.command LIKE '%Comercial_Ventas_Dia_Abiertas_v2%'
 |-------|-------|
 | servidor_conexion_id | `f8a9049a-96e8-4210-84ae-595ffa2822fa` |
 | nombre | EDARSA HUB |
-| host | 54.39.104.176 |
+| host | <REDACTED_EDARSAHUB_SQL_HOST> |
 | port | 1433 |
 | database_name | EDARSAHUB |
-| username | HRLectura |
+| username | <REDACTED_EDARSAHUB_SQL_USER> |
 | system_type | EDARSA_HUB |
 | tipo_conexion | CORE |
 
 ### Identidad SQL Real
 
 ```
-SYSTEM_USER: HRLectura
-SUSER_SNAME(): HRLectura
-ORIGINAL_LOGIN(): HRLectura
-CURRENT_USER: HRLectura
+SYSTEM_USER: <REDACTED_EDARSAHUB_SQL_USER>
+SUSER_SNAME(): <REDACTED_EDARSAHUB_SQL_USER>
+ORIGINAL_LOGIN(): <REDACTED_EDARSAHUB_SQL_USER>
+CURRENT_USER: <REDACTED_EDARSAHUB_SQL_USER>
 DB_NAME(): EDARSAHUB
 @@SERVERNAME: ns559627
 ```
@@ -245,7 +245,7 @@ Error: (229, b"The SELECT permission was denied on the object 'sysjobs',
 database 'msdb', schema 'dbo'.")
 ```
 
-**EXPLICACIÓN**: El login `HRLectura` es `db_owner` en EDARSAHUB pero **NO tiene permisos en msdb**. Solo existen 2 logins en el servidor: `HRLectura` y `sa`.
+**EXPLICACIÓN**: El login `<REDACTED_EDARSAHUB_SQL_USER>` es `db_owner` en EDARSAHUB pero **NO tiene permisos en msdb**. Solo existen 2 logins en el servidor: `<REDACTED_EDARSAHUB_SQL_USER>` y `sa`.
 
 ### Timeline de Runs Confirmado (03:33-03:52 UTC)
 
@@ -259,9 +259,9 @@ database 'msdb', schema 'dbo'.")
 ### Conclusión Técnica
 
 1. ✅ Se usó la conexión EDARSAHUB del menú de servidores
-2. ✅ El login real es `HRLectura`
-3. ✅ HRLectura es db_owner en EDARSAHUB
-4. ❌ HRLectura NO tiene permisos en msdb
+2. ✅ El login real es `<REDACTED_EDARSAHUB_SQL_USER>`
+3. ✅ <REDACTED_EDARSAHUB_SQL_USER> es db_owner en EDARSAHUB
+4. ❌ <REDACTED_EDARSAHUB_SQL_USER> NO tiene permisos en msdb
 5. ❌ El Ejecutor B sigue activo (no se puede identificar sin acceso a msdb)
 
 ### Permisos Requeridos para Continuar
@@ -269,13 +269,13 @@ database 'msdb', schema 'dbo'.")
 El DBA/Admin debe ejecutar con `sa` u otro login con permisos:
 
 ```sql
--- Opción 1: Otorgar permisos a HRLectura
+-- Opción 1: Otorgar permisos a <REDACTED_EDARSAHUB_SQL_USER>
 USE msdb;
-GRANT SELECT ON dbo.sysjobs TO HRLectura;
-GRANT SELECT ON dbo.sysjobsteps TO HRLectura;
-GRANT SELECT ON dbo.sysjobhistory TO HRLectura;
-GRANT SELECT ON dbo.sysschedules TO HRLectura;
-GRANT SELECT ON dbo.sysjobschedules TO HRLectura;
+GRANT SELECT ON dbo.sysjobs TO <REDACTED_EDARSAHUB_SQL_USER>;
+GRANT SELECT ON dbo.sysjobsteps TO <REDACTED_EDARSAHUB_SQL_USER>;
+GRANT SELECT ON dbo.sysjobhistory TO <REDACTED_EDARSAHUB_SQL_USER>;
+GRANT SELECT ON dbo.sysschedules TO <REDACTED_EDARSAHUB_SQL_USER>;
+GRANT SELECT ON dbo.sysjobschedules TO <REDACTED_EDARSAHUB_SQL_USER>;
 
 -- Opción 2: Ejecutar las consultas de diagnóstico directamente
 -- Ver archivo: /app/docs/reports/CONSULTAS_DBA_EJECUTOR_EXTERNO_P0D.md
@@ -307,15 +307,15 @@ GRANT SELECT ON dbo.sysjobschedules TO HRLectura;
 **Opción B**: Formulario visual seguro en el panel de Administración
 
 ### 2. Validación de Identidad SQL
-- **SYSTEM_USER**: HRLectura
-- **ORIGINAL_LOGIN()**: HRLectura  
+- **SYSTEM_USER**: <REDACTED_EDARSAHUB_SQL_USER>
+- **ORIGINAL_LOGIN()**: <REDACTED_EDARSAHUB_SQL_USER>  
 - **@@SERVERNAME**: ns559627
 - **Base de datos**: EDARSAHUB
 
 ### 3. Validación de Permisos
 | Base de Datos | Usuario | Acceso |
 |---------------|---------|--------|
-| EDARSAHUB | HRLectura | ✅ FULL ACCESS (db_owner) |
+| EDARSAHUB | <REDACTED_EDARSAHUB_SQL_USER> | ✅ FULL ACCESS (db_owner) |
 | msdb | guest | ❌ Sin acceso a SQL Agent |
 
 ### 4. Solución Implementada
@@ -380,7 +380,7 @@ Al presionar "Ejecutar Diagnóstico", se ejecutan automáticamente:
 
 ### 13. Plan de Rollback
 1. Eliminar credencial de memoria: `DELETE /api/admin/dba-credential/clear`
-2. Revocar permisos si se otorgaron a HRLectura
+2. Revocar permisos si se otorgaron a <REDACTED_EDARSAHUB_SQL_USER>
 3. Documentar cualquier cambio realizado
 
 ---

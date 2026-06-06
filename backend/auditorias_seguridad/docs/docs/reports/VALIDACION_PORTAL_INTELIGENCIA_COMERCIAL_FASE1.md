@@ -572,13 +572,13 @@ Validar que Inteligencia Comercial Fase 1 opera con EDARSAHUB SQL y sin conexió
 /app/backend/modules/comercial/adapters.py:25:Adaptadores para integración con APIs locales MPRO.
 /app/backend/modules/comercial/adapters.py:57:# CONFIGURACIÓN APIs LOCALES MPRO (FALLBACK LEGACY - SOLO SI EmpresaResolver FALLA)
 /app/backend/modules/comercial/adapters.py:62:APIS_MPRO_LOCALES_LEGACY = {
-/app/backend/modules/comercial/adapters.py:65:        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query"),
+/app/backend/modules/comercial/adapters.py:65:        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query"),
 /app/backend/modules/comercial/adapters.py:66:        "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
-/app/backend/modules/comercial/adapters.py:73:        "url": os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query"),
+/app/backend/modules/comercial/adapters.py:73:        "url": os.environ.get("API_MPRO_QRO_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query"),
 /app/backend/modules/comercial/adapters.py:74:        "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
 /app/backend/modules/comercial/adapters.py:82:APIS_MPRO_LOCALES = APIS_MPRO_LOCALES_LEGACY
-/app/backend/modules/comercial/adapters.py:150:                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query")
-/app/backend/modules/comercial/adapters.py:152:                api_config["url"] = os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query")
+/app/backend/modules/comercial/adapters.py:150:                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query")
+/app/backend/modules/comercial/adapters.py:152:                api_config["url"] = os.environ.get("API_MPRO_QRO_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query")
 /app/backend/modules/comercial/adapters.py:157:            api_config["api_key"] = os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY")
 /app/backend/modules/comercial/adapters.py:168:def query_api_mpro_local(api_config: dict, sql_query: str, timeout: int = 3) -> dict:
 /app/backend/modules/comercial/adapters.py:170:    Consulta una API MPRO local y retorna los resultados.

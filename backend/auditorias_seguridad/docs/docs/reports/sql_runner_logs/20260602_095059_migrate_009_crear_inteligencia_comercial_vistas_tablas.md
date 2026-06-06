@@ -2,7 +2,7 @@
 
 - Fecha: 2026-06-02T09:50:59.124313
 - Modo: `migrate`
-- Servidor: `54.39.104.176`
+- Servidor: `<REDACTED_EDARSAHUB_SQL_HOST>`
 - Base de datos: `EDARSAHUB`
 - Script: `/app/backend/database/migrations/009_crear_inteligencia_comercial_vistas_tablas.sql`
 

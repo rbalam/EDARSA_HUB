@@ -1,0 +1,69 @@
+==================================================
+P3-05 VALIDAR MONGO MIGRADAS VS SQL
+Timestamp: 20260606_000909
+==================================================
+MongoDB: mongodb://localhost:27017/edarsa_hub
+SQL Server: 54.39.104.176:1433/EDARSAHUB
+
+COLECCION | MONGO_DOCS | SQL_TABLE | SQL_ROWS | DICTAMEN
+----------------------------------------------------------------------------------------------------
+kpis_comercial | 188 | Comercial_KPIs_Diarios_v2 | 3392 | CANDIDATA_ELIMINAR_POST_BACKUP
+kpis_comercial | 188 | Comercial_KPIs_Mensuales_v2 | 0 | NO_ELIMINAR_REVISAR
+empresas | 5 | Sistema_Empresas | 5 | CANDIDATA_ELIMINAR_POST_BACKUP
+inventarios_procesados_auto | 158 | Scheduler_InventariosProcesados | 0 | NO_ELIMINAR_REVISAR
+
+COLECCIONES_RESTANTES_MONGO:
+  alert_recipients: 2 docs
+  alertas_sistema: 9 docs
+  audit_password_reset: 3 docs
+  auditoria_financiera: 73 docs
+  automatizaciones_operativas_compras: 8 docs
+  config_asignaciones: 2 docs
+  configuracion_operativo: 1 docs
+  consultas_custom: 6 docs
+  detalle_diferencias: 1960 docs
+  empresas: 5 docs
+  inventario_diferencias_detalle: 24 docs
+  inventarios_fisicos_procesados: 1 docs
+  inventarios_procesados_auto: 158 docs
+  inventarios_sin_asignar: 9 docs
+  kpis_comercial: 188 docs
+  manuales_operativos: 1 docs
+  notification_config: 6 docs
+  password_reset_tokens: 0 docs
+  pedidos_procesados_automatizacion: 2 docs
+  permisos_catalogos: 8 docs
+  portal_suppliers: 3 docs
+  propinas_config: 1 docs
+  propinas_control: 0 docs
+  rate_limit_password_reset: 0 docs
+  rbac_audit_log: 598 docs
+  rbac_permisos: 43 docs
+  rbac_roles: 6 docs
+  rbac_usuarios_roles: 72 docs
+  responsabilidad_historial: 0 docs
+  roles: 4 docs
+  sec_bitacora_acceso: 27 docs
+  sec_bitacora_admin: 61 docs
+  sec_empresas: 1 docs
+  sec_mapeo_servidor_sucursal: 7 docs
+  sec_metadata: 1 docs
+  sec_modulos_sistema: 10 docs
+  sec_perfiles: 5 docs
+  sec_permisos_catalogo: 90 docs
+  sec_roles: 5 docs
+  sec_sucursales: 7 docs
+  sec_unidades_negocio: 7 docs
+  server_connection_status: 1 docs
+  server_status: 13 docs
+  server_sucursales_config: 7 docs
+  sucursal_servidor_map: 5 docs
+  tareas_inventario: 18 docs
+  users: 17 docs
+  workflow_inventarios: 18 docs
+
+==================================================
+P3-05 RESULTADO
+==================================================
+Reporte: auditorias_p3/P3_05_VALIDAR_MONGO_MIGRADAS_VS_SQL_20260606_000909.txt
+NO SE ELIMINO NADA - SOLO VALIDACION

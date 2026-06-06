@@ -67,12 +67,12 @@
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:62:        "username": os.environ.get("ESTELAR_DB_USER", "sa"),
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:63:        "password": os.environ.get("ESTELAR_DB_PASS", ""),
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:65:    "130QRO": {
-/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:70:        "username": os.environ.get("130QRO_DB_USER", "HRLectura"),
-/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:71:        "password": os.environ.get("130QRO_DB_PASS", "National09$"),
+/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:70:        "username": os.environ.get("130QRO_DB_USER", "<REDACTED_EDARSAHUB_SQL_USER>"),
+/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:71:        "password": os.environ.get("130QRO_DB_PASS", "<REDACTED_EDARSAHUB_SQL_PASSWORD>"),
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:73:    "ORIGEN": {
 /app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:77:        "database": "ORIGEN",
-/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:78:        "username": os.environ.get("ORIGEN_DB_USER", "HRLectura"),
-/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:79:        "password": os.environ.get("ORIGEN_DB_PASS", "National09$"),
+/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:78:        "username": os.environ.get("ORIGEN_DB_USER", "<REDACTED_EDARSAHUB_SQL_USER>"),
+/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:79:        "password": os.environ.get("ORIGEN_DB_PASS", "<REDACTED_EDARSAHUB_SQL_PASSWORD>"),
 /app/backend/core/scheduler/jobs/sync_ingresos_job.py:77:        {"nombre": "130° MERIDA", "sistema": "SoftRestaurant"},
 /app/backend/core/scheduler/jobs/sync_ingresos_job.py:78:        {"nombre": "CIENFUEGOS", "sistema": "SoftRestaurant"},
 /app/backend/core/scheduler/jobs/sync_ingresos_job.py:79:        {"nombre": "LA ESTELAR", "sistema": "SoftRestaurant"}
@@ -212,12 +212,12 @@
 /app/backend/modules/comercial/queries/softrestaurant.py:242:    - Para bases de datos con una sola sucursal (CIENFUEGOS, LA ESTELAR), no aplicar filtro.
 /app/backend/modules/comercial/queries/softrestaurant.py:264:    # Esto aplica para CIENFUEGOS, LA ESTELAR, ORIGEN, QUERETARO, MERIDA, ESTELAR, etc.
 /app/backend/modules/comercial/adapters.py:66:        "nombre": "ORIGEN LOCAL",
-/app/backend/modules/comercial/adapters.py:67:        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query"),
+/app/backend/modules/comercial/adapters.py:67:        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query"),
 /app/backend/modules/comercial/adapters.py:69:        "empresa_id": 1,  # ORIGEN
 /app/backend/modules/comercial/adapters.py:77:        "empresa_id": 2,  # 130QRO
 /app/backend/modules/comercial/adapters.py:92:        alias: Cualquier variante de nombre (130-MER, QRO, LA ESTELAR, etc.)
 /app/backend/modules/comercial/adapters.py:151:            if empresa.codigo_empresa == 'ORIGEN':
-/app/backend/modules/comercial/adapters.py:152:                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query")
+/app/backend/modules/comercial/adapters.py:152:                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query")
 /app/backend/modules/comercial/adapters.py:153:            elif empresa.codigo_empresa == '130QRO':
 /app/backend/modules/comercial/adapters.py:320:        sucursal_nombre: Nombre o código de la sucursal a buscar (ej: "ORIGEN", "0023", "130-QRO", etc.)
 /app/backend/modules/comercial/adapters.py:417:        "0023": 1,  # ORIGEN

@@ -119,10 +119,10 @@ from core.db import execute_sql_query
 
 # Configuración desde variables de entorno
 EDARSAHUB_CONFIG = {
-    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
     'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
     'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-    'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
+    'username': os.environ.get('EDARSAHUB_USERNAME', '<REDACTED_EDARSAHUB_SQL_USER>'),
     'password': os.environ.get('EDARSAHUB_PASSWORD', '...')
 }
 ```

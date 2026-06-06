@@ -155,11 +155,11 @@ tipos_movimiento, created_at, updated_at, created_by, updated_by
 | Nombre | Tipo | TipoConexion | Host | Activo |
 |--------|------|--------------|------|--------|
 | 130° MERIDA | SoftRestaurant | DATA_SOURCE | 130mid.ddns.net | ✅ |
-| 130° QRO LOCAL | MPRO | API_LOCAL | 54.39.104.176 | ✅ |
+| 130° QRO LOCAL | MPRO | API_LOCAL | <REDACTED_EDARSAHUB_SQL_HOST> | ✅ |
 | CIENFUEGOS | SoftRestaurant | DATA_SOURCE | servercienfuegos.ddns.net | ✅ |
 | LA ESTELAR | SoftRestaurant | DATA_SOURCE | serverestelar.ddns.net | ✅ |
-| ManagmentPro | MPRO | DATA_SOURCE | 54.39.104.176 | ✅ |
-| ORIGEN LOCAL | MPRO | API_LOCAL | 54.39.104.176 | ✅ |
+| ManagmentPro | MPRO | DATA_SOURCE | <REDACTED_EDARSAHUB_SQL_HOST> | ✅ |
+| ORIGEN LOCAL | MPRO | API_LOCAL | <REDACTED_EDARSAHUB_SQL_HOST> | ✅ |
 
 #### `Sistema_Tipos` (5 registros)
 | ID | Código | Nombre | Activo |

@@ -2,7 +2,7 @@
 
 - Fecha: 2026-06-02T09:45:43.172648
 - Modo: `migrate`
-- Servidor: `54.39.104.176`
+- Servidor: `<REDACTED_EDARSAHUB_SQL_HOST>`
 - Base de datos: `EDARSAHUB`
 - Script: `/app/backend/database/migrations/006_crear_vista_servidores_conexiones_publico.sql`
 

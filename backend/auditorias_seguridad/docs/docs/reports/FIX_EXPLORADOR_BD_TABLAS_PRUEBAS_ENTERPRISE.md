@@ -63,7 +63,7 @@ La función `execute_sql_query()` en `core/db.py` **ocultaba los errores** retor
 
 No se requirió normalización de system_type. El problema NO era de mapeo de sistema, sino de:
 
-1. **PRUEBAS SOFTRESTAURANT**: El usuario SQL `HRLectura` no tiene permisos para la base de datos `softrestaurant12`
+1. **PRUEBAS SOFTRESTAURANT**: El usuario SQL `<REDACTED_EDARSAHUB_SQL_USER>` no tiene permisos para la base de datos `softrestaurant12`
 2. **CHAPUR NORTE/BACKOFICE**: Las APIs remotas responden HTTP 500
 
 ---
@@ -97,7 +97,7 @@ Database: softrestaurant12
 Tablas: 0
 ERROR: Error de autenticación: El usuario no tiene acceso a la base de datos 'softrestaurant12'
 ```
-**Diagnóstico:** El usuario SQL `HRLectura` necesita permisos `db_datareader` en `softrestaurant12`.
+**Diagnóstico:** El usuario SQL `<REDACTED_EDARSAHUB_SQL_USER>` necesita permisos `db_datareader` en `softrestaurant12`.
 
 ### B) CHAPUR NORTE
 ```
@@ -107,7 +107,7 @@ Tipo: API_LOCAL
 Tablas: 0
 ERROR: Error de API: HTTP 500
 ```
-**Diagnóstico:** La API remota `http://54.39.104.176:8007/query` tiene problemas internos.
+**Diagnóstico:** La API remota `http://<REDACTED_EDARSAHUB_SQL_HOST>:8007/query` tiene problemas internos.
 
 ### C) CHAPUR NORTE BACKOFICE
 ```
@@ -137,10 +137,10 @@ ERROR: Error de API: HTTP 500
 ✅ El Explorador ahora muestra error claro:
 > "Error de autenticación: El usuario no tiene acceso a la base de datos 'softrestaurant12'"
 
-**Acción requerida por DBA:** Otorgar permisos al usuario `HRLectura` en `softrestaurant12`:
+**Acción requerida por DBA:** Otorgar permisos al usuario `<REDACTED_EDARSAHUB_SQL_USER>` en `softrestaurant12`:
 ```sql
 USE softrestaurant12;
-EXEC sp_addrolemember 'db_datareader', 'HRLectura';
+EXEC sp_addrolemember 'db_datareader', '<REDACTED_EDARSAHUB_SQL_USER>';
 ```
 
 ---

@@ -43,7 +43,7 @@
 | ID | Nombre | Sistema | Host | Base de Datos | Activo |
 |----|--------|---------|------|---------------|--------|
 | 6d859026... | **CIENFUEGOS TABLAJERIA** | SOFTRESTAURANT_PRO | servercienfuegos.ddns.net,6669\nationalsoft | Tablajeria | ✅ Sí |
-| d1d8c70f... | **MPRO TABLAJERIA** | MPRO | 54.39.104.176:1433 | tablajeria_mpro | ✅ Sí |
+| d1d8c70f... | **MPRO TABLAJERIA** | MPRO | <REDACTED_EDARSAHUB_SQL_HOST>:1433 | tablajeria_mpro | ✅ Sí |
 
 ### Servidores Relacionados (para contexto)
 | Nombre | Sistema | Base de Datos | Activo |

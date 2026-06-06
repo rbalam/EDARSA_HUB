@@ -34,7 +34,7 @@ La unidad de negocio **130MID (Mérida)** tiene datos partidos en dos variantes 
 ## 3. SOLUCIÓN: SCRIPT DE CONSOLIDACIÓN
 
 ### Prerequisitos
-- Usuario SQL Server con **permisos de escritura** en EDARSAHUB (no usar `HRLectura`)
+- Usuario SQL Server con **permisos de escritura** en EDARSAHUB (no usar `<REDACTED_EDARSAHUB_SQL_USER>`)
 
 ### Script a Ejecutar
 

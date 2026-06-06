@@ -437,7 +437,7 @@ VALUES
 ### Servidor compartido:
 `ManagmentPro` (ID: 1b230a06-ffaf-4c70-bd27-b1be3579dea6)
 - Database: CENTRAL2020
-- Host: 54.39.104.176
+- Host: <REDACTED_EDARSAHUB_SQL_HOST>
 
 ### Diferenciación por NumeroSucursalSistema:
 | Empresa | NumeroSucursalSistema | CodigoSucursalSistema |
@@ -448,8 +448,8 @@ VALUES
 ### APIs Locales:
 | Empresa | Servidor API | Host | Port |
 |---------|--------------|------|------|
-| ORIGEN | ORIGEN LOCAL | 54.39.104.176 | 8000 |
-| 130QRO | 130° QRO LOCAL | 54.39.104.176 | 8001 |
+| ORIGEN | ORIGEN LOCAL | <REDACTED_EDARSAHUB_SQL_HOST> | 8000 |
+| 130QRO | 130° QRO LOCAL | <REDACTED_EDARSAHUB_SQL_HOST> | 8001 |
 
 ---
 

@@ -369,7 +369,7 @@ Todos los endpoints de RH/Nóminas (`/api/rrhh/*`) retornan error "Servidor EDAR
 El servidor `EDARSA HUB` está marcado como `active: False` en MongoDB:
 ```
 ID: bea40259-35f1-4693-bda2-d2d10e13e56a
-Host: 54.39.104.176
+Host: <REDACTED_EDARSAHUB_SQL_HOST>
 Database: EDARSAHUB
 active: FALSE  ← PROBLEMA
 ```

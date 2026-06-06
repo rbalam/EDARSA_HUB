@@ -2,7 +2,7 @@
 
 - Fecha: 2026-06-02T16:31:17.134251
 - Modo: `migrate`
-- Servidor: `54.39.104.176`
+- Servidor: `<REDACTED_EDARSAHUB_SQL_HOST>`
 - Base de datos: `EDARSAHUB`
 - Script: `/app/backend/database/migrations/019_clasificacion_masiva_por_familia.sql`
 

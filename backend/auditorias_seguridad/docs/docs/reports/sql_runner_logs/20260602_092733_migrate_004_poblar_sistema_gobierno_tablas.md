@@ -2,7 +2,7 @@
 
 - Fecha: 2026-06-02T09:27:33.830395
 - Modo: `migrate`
-- Servidor: `54.39.104.176`
+- Servidor: `<REDACTED_EDARSAHUB_SQL_HOST>`
 - Base de datos: `EDARSAHUB`
 - Script: `/app/backend/database/migrations/004_poblar_sistema_gobierno_tablas.sql`
 

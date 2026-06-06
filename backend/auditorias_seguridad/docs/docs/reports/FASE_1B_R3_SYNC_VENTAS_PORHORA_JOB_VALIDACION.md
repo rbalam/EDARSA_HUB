@@ -126,14 +126,14 @@ Los servidores configurados en `Servidores_Conexiones` tienen datos de conexión
 
 | Campo | Valor Encontrado | Valor Esperado |
 |-------|------------------|----------------|
-| Host | 54.39.104.176 (EDARSAHUB) | IP real del servidor MPRO/SR |
+| Host | <REDACTED_EDARSAHUB_SQL_HOST> (EDARSAHUB) | IP real del servidor MPRO/SR |
 | Database | CENTRAL2020 | Base de datos del POS |
-| Username | HRLectura | Usuario del POS remoto |
-| Password | National09$ (descifrado) | Password del POS remoto |
+| Username | <REDACTED_EDARSAHUB_SQL_USER> | Usuario del POS remoto |
+| Password | <REDACTED_EDARSAHUB_SQL_PASSWORD> (descifrado) | Password del POS remoto |
 
 **Evidencia:**
 ```
-ERROR: Error de inicio de sesión del usuario 'HRLectura' 
+ERROR: Error de inicio de sesión del usuario '<REDACTED_EDARSAHUB_SQL_USER>' 
        para base de datos CENTRAL2020
 ```
 

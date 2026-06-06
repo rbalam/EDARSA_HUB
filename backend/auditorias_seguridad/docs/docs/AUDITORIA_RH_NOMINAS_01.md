@@ -191,7 +191,7 @@ Para habilitar el módulo RH/Nóminas, el usuario debe:
    - Marcar como `activo = true`
 
 2. **Verificar conectividad** al servidor SQL:
-   - Host: `54.39.104.176`
+   - Host: `<REDACTED_EDARSAHUB_SQL_HOST>`
    - Database: `EDARSAHUB`
 
 3. **Agregar EDARSA HUB a `allowed_servers`** del usuario administrador si es necesario.

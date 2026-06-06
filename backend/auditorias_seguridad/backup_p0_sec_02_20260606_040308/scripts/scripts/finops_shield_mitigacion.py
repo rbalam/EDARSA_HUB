@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]: %(m
 logger = logging.getLogger("finops_shield")
 
 DATABASE_CONFIG = {
-    "server": "54.39.104.176",
+    "server": "<REDACTED_EDARSAHUB_SQL_HOST>",
     "port": 1433,
     "database": "EDARSAHUB",
     "username": "sa",

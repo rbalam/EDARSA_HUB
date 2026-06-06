@@ -53,7 +53,7 @@ router = APIRouter(prefix="/admin/dba-credential", tags=["Admin DBA P0D"])
 
 # Servidor EDARSAHUB para DBA
 DBA_SERVER_CONFIG = {
-    'host': '54.39.104.176',
+    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
     'port': 1433,
     'database': 'EDARSAHUB',
     'username': 'sa'  # Usuario DBA

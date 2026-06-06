@@ -68,12 +68,12 @@ modules/comercial/queries/softrestaurant.py:108:    ORIGEN: Extraída de service
 modules/comercial/queries/softrestaurant.py:242:    - Para bases de datos con una sola sucursal (CIENFUEGOS, LA ESTELAR), no aplicar filtro.
 modules/comercial/queries/softrestaurant.py:264:    # Esto aplica para CIENFUEGOS, LA ESTELAR, ORIGEN, QUERETARO, MERIDA, ESTELAR, etc.
 modules/comercial/adapters.py:66:        "nombre": "ORIGEN LOCAL",
-modules/comercial/adapters.py:67:        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query"),
+modules/comercial/adapters.py:67:        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query"),
 modules/comercial/adapters.py:69:        "empresa_id": 1,  # ORIGEN
 modules/comercial/adapters.py:77:        "empresa_id": 2,  # 130QRO
 modules/comercial/adapters.py:92:        alias: Cualquier variante de nombre (130-MER, QRO, LA ESTELAR, etc.)
 modules/comercial/adapters.py:151:            if empresa.codigo_empresa == 'ORIGEN':
-modules/comercial/adapters.py:152:                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query")
+modules/comercial/adapters.py:152:                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query")
 modules/comercial/adapters.py:153:            elif empresa.codigo_empresa == '130QRO':
 modules/comercial/adapters.py:320:        sucursal_nombre: Nombre o código de la sucursal a buscar (ej: "ORIGEN", "0023", "130-QRO", etc.)
 modules/comercial/adapters.py:417:        "0023": 1,  # ORIGEN

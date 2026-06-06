@@ -87,7 +87,7 @@ scripts_pendientes     | 58   | Scripts SQL pendientes       | ✅ OK
 ```
 SISTEMA         | SERVIDOR              | TIPO          | USO
 ----------------|----------------------|---------------|------------------
-MPRO            | 54.39.104.176        | Cloud OVH     | Ventas principal
+MPRO            | <REDACTED_EDARSAHUB_SQL_HOST>        | Cloud OVH     | Ventas principal
 MPRO            | API Local QRO        | On-premise    | Tiempo real
 MPRO            | API Local Origen     | On-premise    | Tiempo real
 SoftRestaurant  | CIENFUEGOS           | DDNS dinámica | Ventas sucursal

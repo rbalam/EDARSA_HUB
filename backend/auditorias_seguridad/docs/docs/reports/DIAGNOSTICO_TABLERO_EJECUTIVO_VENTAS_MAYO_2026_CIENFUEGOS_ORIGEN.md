@@ -88,7 +88,7 @@ El Tablero Ejecutivo Comercial muestra ventas incorrectas para Mayo 2026:
 │                                                                              │
 │                            ▼                                                 │
 │                                                                              │
-│  EDARSAHUB SQL Server (54.39.104.176:1433)                                  │
+│  EDARSAHUB SQL Server (<REDACTED_EDARSAHUB_SQL_HOST>:1433)                                  │
 │  ├─ Comercial_KPIs_Diarios_v2 (ventas cerradas por día)                     │
 │  ├─ Comercial_Ventas_Dia_Abiertas_v2 (ventas del día en curso)              │
 │  ├─ Sync_Ventas_Historicas (tabla staging)                                  │
@@ -313,7 +313,7 @@ else:
 | 2 | Duplicados de Mérida | MEDIA | La deduplicación funciona pero indica problema en sincronización |
 | 3 | Endpoint no probado | MEDIA | Timeout de red impidió verificar respuesta real |
 | 4 | Discrepancia inexplicada ORIGEN | ALTA | SQL tiene $1.88M pero tablero muestra $1.64M |
-| 5 | Puerto incorrecto en logs | BAJA | 54.39.104.176:4 en lugar de :1433 (datos de configuración) |
+| 5 | Puerto incorrecto en logs | BAJA | <REDACTED_EDARSAHUB_SQL_HOST>:4 en lugar de :1433 (datos de configuración) |
 
 ---
 

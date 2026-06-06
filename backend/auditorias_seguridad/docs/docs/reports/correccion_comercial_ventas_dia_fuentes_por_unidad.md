@@ -32,8 +32,8 @@ Cambio de prioridad de drivers:
 | 130° MERIDA | SoftRestaurant | softrestaurant10 | 130mid.ddns.net:1433 | ✅ CONNECTED |
 | CIENFUEGOS | SoftRestaurant | softrestaurant95pro | servercienfuegos.ddns.net,6669\nationalsoft | ✅ CONNECTED |
 | LA ESTELAR | SoftRestaurant | softrestaurant12 | serverestelar.ddns.net,6969 | ✅ CONNECTED |
-| 130° QUERETARO | MPRO | CENTRAL2020 (API Local) | 54.39.104.176:8001 | ✅ CONNECTED |
-| ORIGEN | MPRO | CENTRAL2020 (API Local) | 54.39.104.176:8000 | ✅ CONNECTED |
+| 130° QUERETARO | MPRO | CENTRAL2020 (API Local) | <REDACTED_EDARSAHUB_SQL_HOST>:8001 | ✅ CONNECTED |
+| ORIGEN | MPRO | CENTRAL2020 (API Local) | <REDACTED_EDARSAHUB_SQL_HOST>:8000 | ✅ CONNECTED |
 
 ## Validación EDARSAHUB SQL como Fuente Maestra
 

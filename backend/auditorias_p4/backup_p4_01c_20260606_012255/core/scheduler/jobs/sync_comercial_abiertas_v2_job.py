@@ -242,7 +242,7 @@ def _get_api_local_config(unidad_codigo: str) -> Optional[Dict]:
     
     try:
         rows = execute_sql_query(
-            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            '<REDACTED_EDARSAHUB_SQL_HOST>', 1433, 'EDARSAHUB', '<REDACTED_EDARSAHUB_SQL_USER>', '<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             f'''
             SELECT id, nombre, api_url, api_key_encrypted
             FROM Servidores_Conexiones
@@ -353,7 +353,7 @@ def _get_existing_ventas_dia(unidad_negocio_id: str, sucursal_id: str) -> Option
     
     try:
         rows = execute_sql_query(
-            '54.39.104.176', 1433, 'EDARSAHUB', 'HRLectura', 'National09$',
+            '<REDACTED_EDARSAHUB_SQL_HOST>', 1433, 'EDARSAHUB', '<REDACTED_EDARSAHUB_SQL_USER>', '<REDACTED_EDARSAHUB_SQL_PASSWORD>',
             query
         )
         if rows:

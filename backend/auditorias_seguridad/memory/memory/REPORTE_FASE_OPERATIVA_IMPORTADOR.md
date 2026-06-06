@@ -10,10 +10,10 @@
 |-------|-------|
 | **ID** | `bea40259-35f1-4693-bda2-d2d10e13e56a` |
 | **Nombre** | EDARSA HUB |
-| **Host** | 54.39.104.176 |
+| **Host** | <REDACTED_EDARSAHUB_SQL_HOST> |
 | **Puerto** | 1433 |
 | **Base de datos** | EDARSAHUB |
-| **Usuario** | HRLectura |
+| **Usuario** | <REDACTED_EDARSAHUB_SQL_USER> |
 | **Estado** | ✅ Conectado |
 
 ### Resultado de Conexión
@@ -32,7 +32,7 @@ Fecha servidor: 2026-04-12 07:50:27
 | INSERT | ❌ NO Disponible | No puede insertar datos |
 | UPDATE | ❌ NO Disponible | No puede actualizar datos |
 
-> **BLOQUEO CRÍTICO**: El usuario `HRLectura` en la base de datos `EDARSAHUB` solo tiene permisos de lectura. Se requiere un usuario con permisos de escritura para crear las tablas de staging y bitácora.
+> **BLOQUEO CRÍTICO**: El usuario `<REDACTED_EDARSAHUB_SQL_USER>` en la base de datos `EDARSAHUB` solo tiene permisos de lectura. Se requiere un usuario con permisos de escritura para crear las tablas de staging y bitácora.
 
 ---
 
@@ -175,7 +175,7 @@ SUELDO DIARIO, MÉTODO DE PAGO, FISCAL
 ### 1. PERMISOS DE BASE DE DATOS (URGENTE)
 ```sql
 -- Ejecutar como administrador en EDARSAHUB
-GRANT CREATE TABLE, INSERT, UPDATE, SELECT ON DATABASE::EDARSAHUB TO HRLectura;
+GRANT CREATE TABLE, INSERT, UPDATE, SELECT ON DATABASE::EDARSAHUB TO <REDACTED_EDARSAHUB_SQL_USER>;
 -- O crear un usuario específico para importación
 CREATE USER ImportadorRH FOR LOGIN [usuario_con_permisos];
 GRANT CREATE TABLE, INSERT, UPDATE, DELETE, SELECT TO ImportadorRH;

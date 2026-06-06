@@ -4,7 +4,7 @@ modules/comercial/service.py:15:- Migrado: get_kpis_mpro_por_sucursal() desde se
 modules/comercial/service.py:19:- query_api_mpro_local() -> modules/comercial/adapters.py
 modules/comercial/service.py:50:from modules.comercial.queries.softrestaurant import query_ventas_periodo_sr
 modules/comercial/service.py:51:from modules.comercial.queries.mpro import query_ventas_periodo_mpro, query_ventas_por_sucursal_mpro
-modules/comercial/service.py:83:    'host': '54.39.104.176',
+modules/comercial/service.py:83:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 modules/comercial/service.py:156:            # Mapeo por server_id (para SoftRestaurant sin sucursal)
 modules/comercial/service.py:160:            # Mapeo por server_id:sucursal (para MPRO con sucursal)
 modules/comercial/service.py:187:        sucursal: ID de sucursal (para MPRO)
@@ -118,7 +118,7 @@ modules/comercial/service.py:2569:        if result_mpro and len(result_mpro) > 
 modules/comercial/service.py:2570:            row = result_mpro[0]
 modules/comercial/service.py:2578:                    f"[DASHBOARD-EDARSAHUB-MPRO-FIX] Datos MPRO encontrados por unidad_negocio_pk: "
 modules/comercial/service.py:2613:        # ManagmentPro (servidor MPRO principal) - no necesita fallback
-modules/comercial/service.py:2636:            server='54.39.104.176',
+modules/comercial/service.py:2636:            server='<REDACTED_EDARSAHUB_SQL_HOST>',
 modules/comercial/cache_service.py:16:entre SoftRestaurant y MPRO.
 modules/comercial/cache_service.py:91:    SoftRestaurant y MPRO. Esto garantiza que:
 modules/comercial/cache_service.py:92:    - SoftRestaurant NO comparta caché con MPRO
@@ -238,13 +238,13 @@ modules/comercial/queries/softrestaurant.py:265:    # La columna idestacion en S
 modules/comercial/adapters.py:27:Adaptadores para integración con APIs locales MPRO.
 modules/comercial/adapters.py:59:# CONFIGURACIÓN APIs LOCALES MPRO (FALLBACK LEGACY - SOLO SI EmpresaResolver FALLA)
 modules/comercial/adapters.py:64:APIS_MPRO_LOCALES_LEGACY = {
-modules/comercial/adapters.py:67:        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query"),
+modules/comercial/adapters.py:67:        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query"),
 modules/comercial/adapters.py:68:        "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
-modules/comercial/adapters.py:75:        "url": os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query"),
+modules/comercial/adapters.py:75:        "url": os.environ.get("API_MPRO_QRO_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query"),
 modules/comercial/adapters.py:76:        "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
 modules/comercial/adapters.py:84:APIS_MPRO_LOCALES = APIS_MPRO_LOCALES_LEGACY
-modules/comercial/adapters.py:152:                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query")
-modules/comercial/adapters.py:154:                api_config["url"] = os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query")
+modules/comercial/adapters.py:152:                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query")
+modules/comercial/adapters.py:154:                api_config["url"] = os.environ.get("API_MPRO_QRO_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query")
 modules/comercial/adapters.py:159:            api_config["api_key"] = os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY")
 modules/comercial/adapters.py:170:def query_api_mpro_local(api_config: dict, sql_query: str, timeout: int = 3) -> dict:
 modules/comercial/adapters.py:172:    Consulta una API MPRO local y retorna los resultados.
@@ -258,7 +258,7 @@ modules/comercial/adapters.py:206:        print(f"*** query_api_mpro_local: Resp
 modules/comercial/adapters.py:214:            print(f"*** query_api_mpro_local: Response body = {response.text[:200]} ***")
 modules/comercial/adapters.py:230:    Obtiene las ventas del día actual desde una API MPRO local.
 modules/comercial/adapters.py:269:    result = query_api_mpro_local(api_config, sql_ventas_hoy)
-modules/comercial/adapters.py:319:        server_host: Host del servidor padre (ej: "54.39.104.176") - LEGACY, se mantiene por compatibilidad
+modules/comercial/adapters.py:319:        server_host: Host del servidor padre (ej: "<REDACTED_EDARSAHUB_SQL_HOST>") - LEGACY, se mantiene por compatibilidad
 modules/comercial/adapters.py:408:    # ========== FALLBACK LEGACY: Buscar en APIS_MPRO_LOCALES_LEGACY ==========
 modules/comercial/adapters.py:410:    print("*** API Local: Intentando fallback legacy (APIS_MPRO_LOCALES_LEGACY) ***")
 modules/comercial/adapters.py:439:        for api_id, api_cfg in APIS_MPRO_LOCALES_LEGACY.items():
@@ -345,7 +345,7 @@ modules/comercial/routes.py:1689:            # Para MPRO: usar server_id + sucur
 modules/comercial/routes.py:1690:            if sid and not suc:  # SoftRestaurant
 modules/comercial/routes.py:1702:        2. Resolver desde EDARSAHUB por server_id (SoftRestaurant)
 modules/comercial/routes.py:1811:                    'system_type': snapshot.get('sistema_origen', 'MPRO'),
-modules/comercial/routes.py:2048:            server='54.39.104.176', port=1433, database='EDARSAHUB',
+modules/comercial/routes.py:2048:            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433, database='EDARSAHUB',
 modules/comercial/routes.py:2112:    # FASE 3A.3: Incluir system_type para evitar colisiones MPRO/SoftRestaurant
 modules/comercial/routes.py:2136:        if is_softrestaurant_system(server.get('system_type')):
 modules/comercial/routes.py:2213:        elif is_mpro_system(server.get('system_type')):
@@ -353,14 +353,14 @@ modules/comercial/routes.py:2214:            # IMPLEMENTACIÓN MPRO (Abril 2026)
 modules/comercial/routes.py:2219:            # Filtro de sucursal para MPRO
 modules/comercial/routes.py:2232:            # NOTA: En MPRO, la tabla Venta tiene Vn_Cantidad_1 y Vn_Precio_Neto_Importe
 modules/comercial/routes.py:2266:            # Ventas por vendedor (top 10) - En MPRO usar tabla Vendedor
-modules/comercial/routes.py:2385:            server='54.39.104.176', port=1433, database='EDARSAHUB',
+modules/comercial/routes.py:2385:            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433, database='EDARSAHUB',
 modules/comercial/routes.py:2458:    # FASE 3A.3: Incluir system_type para evitar colisiones MPRO/SoftRestaurant
 modules/comercial/routes.py:2484:        if is_softrestaurant_system(server.get('system_type')):
 modules/comercial/routes.py:2491:            # clasificacionventa puede no existir en algunas versiones de SoftRestaurant
 modules/comercial/routes.py:2671:        # PROHIBIDO: Abrir conexión a SoftRestaurant/MPRO/Enterprise
-modules/comercial/routes.py:2687:                server='54.39.104.176',
-modules/comercial/routes.py:2795:                    server='54.39.104.176',
-modules/comercial/routes.py:2904:            server='54.39.104.176', port=1433, database='EDARSAHUB',
+modules/comercial/routes.py:2687:                server='<REDACTED_EDARSAHUB_SQL_HOST>',
+modules/comercial/routes.py:2795:                    server='<REDACTED_EDARSAHUB_SQL_HOST>',
+modules/comercial/routes.py:2904:            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433, database='EDARSAHUB',
 modules/comercial/routes.py:2998:        if is_softrestaurant_system(server.get('system_type')):
 modules/comercial/routes.py:3106:        elif is_mpro_system(server.get('system_type')):
 modules/comercial/routes.py:3107:            # BLINDAJE: Definir f_fin para MPRO
@@ -374,7 +374,7 @@ modules/comercial/routes.py:3182:                "nombre": nombre_final_mpro,
 modules/comercial/routes.py:3195:            # Rotación por hora para MPRO
 modules/comercial/routes.py:3261:    Ya no usa conexiones LIVE a SoftRestaurant/MPRO.
 modules/comercial/routes.py:3442:    Prohibido conexión LIVE a SoftRestaurant/MPRO.
-modules/comercial/routes.py:3599:            server='54.39.104.176', port=1433, database='EDARSAHUB',
+modules/comercial/routes.py:3599:            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433, database='EDARSAHUB',
 modules/comercial/routes.py:3705:    Soporta SoftRestaurant y MPRO.
 modules/comercial/routes.py:3907:        if is_softrestaurant_system(server.get('system_type')):
 modules/comercial/routes.py:3919:            # PROHIBIDO: Abrir conexión remota a SoftRestaurant para obtener "último día"
@@ -415,8 +415,8 @@ modules/comercial/routes.py:4128:                    "comparativo": stale_snapsh
 modules/comercial/routes.py:4131:                        "mensaje": f"Datos históricos. Última sincronización: {stale_snapshot_mpro['fecha_snapshot']}"
 modules/comercial/routes.py:4137:            logging.warning(f"[DASHBOARD-NO-LIVE-MPRO] {server['name']}: Sin datos en EDARSAHUB, retornando SIN_DATOS_EDARSAHUB")
 modules/comercial_v2/repository_readonly.py:11:- SQL vivo a SoftRestaurant/MPRO
-modules/comercial_v2/repository_readonly.py:38:    'host': '54.39.104.176',
-modules/comercial_v2/repository_comercial_edarsahub.py:45:    'host': '54.39.104.176',
+modules/comercial_v2/repository_readonly.py:38:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
+modules/comercial_v2/repository_comercial_edarsahub.py:45:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 modules/comercial_v2/repository_comercial_edarsahub.py:92:            WHEN nombre = 'ManagmentPro' THEN 'MPRO-MULTI'
 modules/comercial_v2/repository_comercial_edarsahub.py:110:            sistema = SistemaOrigen.SOFTRESTAURANT
 modules/comercial_v2/repository_comercial_edarsahub.py:111:        elif 'MPRO' in system_type or 'MANAG' in system_type:
@@ -912,15 +912,15 @@ core/__init__.py:85:    get_mpro_sql_provider,
 core/source_resolver.py:98:        source_type: Tipo de fuente (MPRO, SoftRestaurant, MongoDB, API)
 core/policies/no_live_dashboard_policy.py:5:Los dashboards y reportes ejecutivos no deben consultar SoftRestaurant, MPRO,
 core/auditoria.py:84:    MPRO = "MPRO"
-core/empresa_resolver.py:43:    'host': '54.39.104.176',
+core/empresa_resolver.py:43:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 core/auditoria_helpers.py:78:        if factura_id.startswith('MPRO_'):
 core/auditoria_helpers.py:79:            return audit_module['OrigenSistema'].MPRO
 core/unidades_registry.py:46:    sistema: str                    # SoftRestaurant, MPRO
-core/unidades_registry.py:54:        server='54.39.104.176',
+core/unidades_registry.py:54:        server='<REDACTED_EDARSAHUB_SQL_HOST>',
 core/unidades_registry.py:186:    Obtiene unidades filtradas por sistema (SoftRestaurant, MPRO).
 core/unidades_registry.py:189:        sistema: "SoftRestaurant" o "MPRO"
-core/security.py:495:            server='54.39.104.176', port=1433,
-core/security.py:542:        server='54.39.104.176', port=1433,
+core/security.py:495:            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433,
+core/security.py:542:        server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433,
 core/cache_key_builder.py:14:- Datos pegados entre sistemas origen (SoftRestaurant vs MPRO)
 core/cache_key_builder.py:180:        system_type: Tipo de sistema (MPRO, SoftRestaurant, etc.)
 core/cache_key_builder.py:202:            system_type_normalized="MANAGEMENTPRO",
@@ -1000,7 +1000,7 @@ core/regression_checker.py:283:            from modules.comercial.service import
 core/regression_checker.py:293:                evidence={"functions_available": ["get_kpis_softrestaurant", "get_kpis_mpro"]},
 core/context_resolver.py:11:- system_type (MPRO/SoftRestaurant)
 core/context_resolver.py:12:- sucursal_origen_id (para MPRO)
-core/context_resolver.py:61:        server='54.39.104.176',
+core/context_resolver.py:61:        server='<REDACTED_EDARSAHUB_SQL_HOST>',
 core/context_resolver.py:390:        - system_type: Tipo de sistema (MPRO/SoftRestaurant)
 core/context_resolver.py:391:        - sucursal_origen_id: ID de sucursal en sistema externo (MPRO)
 core/context_resolver.py:618:    Para MPRO: usa sucursal_origen_id (código como "0025")
@@ -1008,16 +1008,16 @@ core/context_resolver.py:619:    Para SoftRestaurant: usa "default" o nombre de 
 core/context_resolver.py:629:    if system_type == 'MPRO':
 core/context_resolver.py:630:        # MPRO usa sucursal_origen_id (código numérico)
 core/context_resolver.py:633:        # SoftRestaurant usa default o nombre
-core/user_access_context.py:72:        server='54.39.104.176',
+core/user_access_context.py:72:        server='<REDACTED_EDARSAHUB_SQL_HOST>',
 core/centro_control/routes.py:430:    - APIs locales MPRO
 core/centro_control/routes.py:563:    - Por tipo de sistema (SoftRestaurant, MPRO)
 core/centro_control/routes.py:576:                "MPRO usa SQL para acumulados, API local para diarios",
 core/centro_control/routes.py:577:                "SoftRestaurant usa SQL para todo"
 core/cerebro.py:30:    MPRO = "MPRO"
 core/cerebro.py:31:    SOFTRESTAURANT = "SoftRestaurant"
-core/auth/user_repository_sql.py:38:        self.sql_host = '54.39.104.176'
-core/utils/operational_window.py:46:    'host': '54.39.104.176',
-core/rbac/repository_sql.py:39:        self.sql_host = '54.39.104.176'
+core/auth/user_repository_sql.py:38:        self.sql_host = '<REDACTED_EDARSAHUB_SQL_HOST>'
+core/utils/operational_window.py:46:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
+core/rbac/repository_sql.py:39:        self.sql_host = '<REDACTED_EDARSAHUB_SQL_HOST>'
 core/corporate_identity_resolver.py:87:    "SOFTRESTAURANT_PRO": [
 core/corporate_identity_resolver.py:88:        "SOFTRESTAURANT_PRO",
 core/corporate_identity_resolver.py:89:        "SOFTRESTAURANT",
@@ -1034,13 +1034,13 @@ core/corporate_identity_resolver.py:120:        "SOFTRESTAURANT ENTERPRISE",
 core/corporate_identity_resolver.py:121:        "SOFTRESTAURANT_ENTERPRISE",
 core/corporate_identity_resolver.py:189:            "130 MERIDA SOFTRESTAURANT",
 core/corporate_identity_resolver.py:198:            "130 QUERETARO MPRO",
-core/alcance_helper.py:76:            server='54.39.104.176', port=1433,
-core/alcance_helper.py:121:            server='54.39.104.176', port=1433,
+core/alcance_helper.py:76:            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433,
+core/alcance_helper.py:121:            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433,
 core/system_capability_resolver.py:31:    # {'codigo_sistema': 'MPRO', 'nombre_sistema': 'ManagementPro', ...}
 core/system_capability_resolver.py:90:    # Exclusivas MPRO
-core/system_capability_resolver.py:113:    'host': '54.39.104.176',
+core/system_capability_resolver.py:113:    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
 core/system_capability_resolver.py:370:            codigo_sistema: Código del sistema (ej: "SOFTRESTAURANT", "MPRO")
-core/config/edarsahub_config.py:91:        host=os.environ.get('EDARSAHUB_SQL_HOST', '54.39.104.176'),
+core/config/edarsahub_config.py:91:        host=os.environ.get('EDARSAHUB_SQL_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 core/db.py:189:    # Caso 1: hostname,port\instance (ej: server.ddns.net,6669\nationalsoft)
 core/db.py:197:        logging.info(f"Parsed DDNS format: hostname={hostname}, port={port}, instance={instance}")
 core/db.py:235:# RESOLUCIÓN DINÁMICA DE HOSTNAMES DDNS

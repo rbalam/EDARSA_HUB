@@ -11,7 +11,7 @@
 | **Fase** | 0 - Infraestructura Base |
 | **Estado** | ✅ CERRADA |
 | **Fecha/Hora de Ejecución** | 2026-04-15 23:14:32 UTC |
-| **Base Objetivo** | `EDARSAHUB` @ `54.39.104.176:1433` |
+| **Base Objetivo** | `EDARSAHUB` @ `<REDACTED_EDARSAHUB_SQL_HOST>:1433` |
 | **Responsable de Ejecución** | Agente E1 (Emergent) bajo autorización del usuario |
 | **Método de Ejecución** | Conexión directa vía pymssql |
 

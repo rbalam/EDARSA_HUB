@@ -16,7 +16,7 @@ El backend Python de EDARSAHUB tiene un job que escribe cada 5 minutos a las tab
 - **No genera logs** en el backend
 - **Escribe cada ~5 minutos** en los segundos :00 o :09
 
-**El agente actual (`HRLectura`) no tiene permisos para consultar msdb ni dm_exec_sessions.**
+**El agente actual (`<REDACTED_EDARSAHUB_SQL_USER>`) no tiene permisos para consultar msdb ni dm_exec_sessions.**
 
 ---
 

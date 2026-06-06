@@ -47,7 +47,7 @@ Ambas tablas fueron pobladas con datos reales de los 2 servidores de prueba auto
 | Campo | Valor |
 |-------|-------|
 | ID | `1b230a06-ffaf-4c70-bd27-b1be3579dea6` |
-| Host | 54.39.104.176 |
+| Host | <REDACTED_EDARSAHUB_SQL_HOST> |
 | Base de datos | CENTRAL2020 |
 | Registros PorHora | 7 |
 | Registros PorDiaSemana | 7 |

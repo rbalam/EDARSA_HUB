@@ -284,8 +284,8 @@ git diff --name-only HEAD~1 | grep -E "frontend|\.jsx|\.tsx"
 ## 19. Confirmación: NO se usaron Datos Mock
 
 Todos los datos provienen de:
-- **ORIGEN**: API Local MPRO real (http://54.39.104.176:8000/query)
-- **130QRO**: API Local MPRO real (http://54.39.104.176:8001/query)
+- **ORIGEN**: API Local MPRO real (http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query)
+- **130QRO**: API Local MPRO real (http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query)
 - **SoftRestaurant**: Conexión SQL Server directa a cada sucursal
 
 ---

@@ -3,8 +3,8 @@
 
 **Fecha de Diagnóstico:** 2026-05-25  
 **Base de Datos:** EDARSAHUB (SQL Server)  
-**Servidor:** 54.39.104.176:1433  
-**Usuario Auditor:** HRLectura  
+**Servidor:** <REDACTED_EDARSAHUB_SQL_HOST>:1433  
+**Usuario Auditor:** <REDACTED_EDARSAHUB_SQL_USER>  
 **Metodología:** Diagnóstico Pasivo (Solo lectura, sin modificaciones)
 
 ---

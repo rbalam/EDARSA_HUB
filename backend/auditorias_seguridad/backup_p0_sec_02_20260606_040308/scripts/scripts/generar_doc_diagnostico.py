@@ -70,7 +70,7 @@ arch = doc.add_paragraph()
 arch.add_run('''
 ┌─────────────────┐     HTTP      ┌─────────────────────────┐     SQL      ┌──────────────────┐
 │  EDARSA HUB     │──────────────▶│  API Intermedia (Nube)  │──────────────▶│  SQL Server      │
-│  (Este servidor)│               │  54.39.104.176          │              │  (Sucursal local)│
+│  (Este servidor)│               │  <REDACTED_EDARSAHUB_SQL_HOST>          │              │  (Sucursal local)│
 └─────────────────┘               └─────────────────────────┘              └──────────────────┘
                                          ✅ OK                                  ❌ FALLA
 ''').font.name = 'Consolas'
@@ -87,13 +87,13 @@ for i, h in enumerate(headers2):
     table2.rows[0].cells[i].paragraphs[0].runs[0].bold = True
 
 table2.rows[1].cells[0].text = 'ORIGEN'
-table2.rows[1].cells[1].text = 'http://54.39.104.176:8000/query'
+table2.rows[1].cells[1].text = 'http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query'
 table2.rows[1].cells[2].text = '8000'
 table2.rows[1].cells[3].text = '✅ Responde'
 table2.rows[1].cells[4].text = '❌ SQL timeout'
 
 table2.rows[2].cells[0].text = '130QRO'
-table2.rows[2].cells[1].text = 'http://54.39.104.176:8001/query'
+table2.rows[2].cells[1].text = 'http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query'
 table2.rows[2].cells[2].text = '8001'
 table2.rows[2].cells[3].text = '✅ Responde'
 table2.rows[2].cells[4].text = '❌ SQL timeout'
@@ -160,7 +160,7 @@ code4.add_run('New-NetFirewallRule -DisplayName "SQL Server" -Direction Inbound 
 
 # Paso 5
 doc.add_heading('5. PRUEBA DE CONECTIVIDAD DESDE SERVIDOR API', level=2)
-doc.add_paragraph('Desde el servidor donde corren las APIs (54.39.104.176):')
+doc.add_paragraph('Desde el servidor donde corren las APIs (<REDACTED_EDARSAHUB_SQL_HOST>):')
 code5 = doc.add_paragraph()
 code5.add_run('# Para ORIGEN\n').font.name = 'Consolas'
 code5.add_run('Test-NetConnection -ComputerName [IP_SUCURSAL_ORIGEN] -Port 1433\n\n').font.name = 'Consolas'
@@ -227,9 +227,9 @@ for i, row_data in enumerate(entregables):
 doc.add_heading('PRUEBA FINAL DESDE EDARSA HUB', level=1)
 doc.add_paragraph('Una vez corregido en las sucursales, ejecutar:')
 code_final = doc.add_paragraph()
-code_final.add_run('curl -X GET "http://54.39.104.176:8000/query?sql=SELECT%201%20as%20test" \\\n').font.name = 'Consolas'
+code_final.add_run('curl -X GET "http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query?sql=SELECT%201%20as%20test" \\\n').font.name = 'Consolas'
 code_final.add_run('  -H "x-api-key: EDARSA_2026_SECURE_KEY"\n\n').font.name = 'Consolas'
-code_final.add_run('curl -X GET "http://54.39.104.176:8001/query?sql=SELECT%201%20as%20test" \\\n').font.name = 'Consolas'
+code_final.add_run('curl -X GET "http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query?sql=SELECT%201%20as%20test" \\\n').font.name = 'Consolas'
 code_final.add_run('  -H "x-api-key: EDARSA_2026_SECURE_KEY"').font.name = 'Consolas'
 
 doc.add_paragraph('Respuesta esperada:').runs[0].bold = True

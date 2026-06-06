@@ -2,7 +2,7 @@
 
 - Fecha: 2026-06-02T16:17:05.156218
 - Modo: `diagnostic`
-- Servidor: `54.39.104.176`
+- Servidor: `<REDACTED_EDARSAHUB_SQL_HOST>`
 - Base de datos: `EDARSAHUB`
 - Script: `/app/backend/database/diagnostics/015_diagnostico_completo_rbac_canonico.sql`
 

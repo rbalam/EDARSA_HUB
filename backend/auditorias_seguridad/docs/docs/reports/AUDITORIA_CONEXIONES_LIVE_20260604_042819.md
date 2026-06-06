@@ -113,7 +113,7 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/modules/comercial/service.py:2604:    # Mapeo de server_id a posibles unidad_negocio_id
 /app/backend/modules/comercial/service.py:2614:    return mapeo_servidor_unidad.get(server_id, [])
 /app/backend/modules/comercial/service.py:2618:def get_last_valid_snapshot_edarsahub(server_id: str) -> Dict:
-/app/backend/modules/comercial/service.py:2633:            server='54.39.104.176',
+/app/backend/modules/comercial/service.py:2633:            server='<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/modules/comercial/service.py:2636:            database='EDARSAHUB',
 /app/backend/modules/comercial/service.py:2645:                server_id,
 /app/backend/modules/comercial/service.py:2656:            WHERE server_id = %s
@@ -597,7 +597,7 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/modules/comercial/routes.py:2016:    server_id: str, 
 /app/backend/modules/comercial/routes.py:2030:    server = await get_server_by_id(server_id)
 /app/backend/modules/comercial/routes.py:2039:    await validate_server_access_rbac(current_user, server_id)
-/app/backend/modules/comercial/routes.py:2045:            server='54.39.104.176', port=1433, database='EDARSAHUB',
+/app/backend/modules/comercial/routes.py:2045:            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433, database='EDARSAHUB',
 /app/backend/modules/comercial/routes.py:2059:            """, (server_id, sucursal, anio, mes))
 /app/backend/modules/comercial/routes.py:2065:            """, (server_id, anio, mes))
 /app/backend/modules/comercial/routes.py:2114:        server_id=server_id,
@@ -609,7 +609,7 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/modules/comercial/routes.py:2351:    server_id: str, 
 /app/backend/modules/comercial/routes.py:2367:    server = await get_server_by_id(server_id)
 /app/backend/modules/comercial/routes.py:2376:    await validate_server_access_rbac(current_user, server_id)
-/app/backend/modules/comercial/routes.py:2382:            server='54.39.104.176', port=1433, database='EDARSAHUB',
+/app/backend/modules/comercial/routes.py:2382:            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433, database='EDARSAHUB',
 /app/backend/modules/comercial/routes.py:2405:            """, (server_id, sucursal, f_inicio, f_fin))
 /app/backend/modules/comercial/routes.py:2411:            """, (server_id, f_inicio, f_fin))
 /app/backend/modules/comercial/routes.py:2460:        server_id=server_id,
@@ -620,19 +620,19 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/modules/comercial/routes.py:2647:    server_id: str, 
 /app/backend/modules/comercial/routes.py:2657:    server = await get_server_by_id(server_id)
 /app/backend/modules/comercial/routes.py:2662:    await validate_server_access_rbac(current_user, server_id)
-/app/backend/modules/comercial/routes.py:2684:                server='54.39.104.176',
+/app/backend/modules/comercial/routes.py:2684:                server='<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/modules/comercial/routes.py:2687:                database='EDARSAHUB',
 /app/backend/modules/comercial/routes.py:2705:            """, (server_id, fecha_ini, fecha_fin))
 /app/backend/modules/comercial/routes.py:2720:            """, (server_id, fecha_ini, fecha_fin))
 /app/backend/modules/comercial/routes.py:2730:            """, (server_id,))
-/app/backend/modules/comercial/routes.py:2792:                    server='54.39.104.176',
+/app/backend/modules/comercial/routes.py:2792:                    server='<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/modules/comercial/routes.py:2795:                    database='EDARSAHUB',
 /app/backend/modules/comercial/routes.py:2807:                """, (server_id, hoy_str))
 /app/backend/modules/comercial/routes.py:2869:@router.get("/comercial/mesas/{server_id}")
 /app/backend/modules/comercial/routes.py:2871:    server_id: str, 
 /app/backend/modules/comercial/routes.py:2886:    server = await get_server_by_id(server_id)
 /app/backend/modules/comercial/routes.py:2895:    await validate_server_access_rbac(current_user, server_id)
-/app/backend/modules/comercial/routes.py:2901:            server='54.39.104.176', port=1433, database='EDARSAHUB',
+/app/backend/modules/comercial/routes.py:2901:            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433, database='EDARSAHUB',
 /app/backend/modules/comercial/routes.py:2917:            """, (server_id, sucursal, fecha_op))
 /app/backend/modules/comercial/routes.py:2923:            """, (server_id, fecha_op))
 /app/backend/modules/comercial/routes.py:2985:    nombre_unidad_mostrar, nombre_source = await get_sucursal_nombre(server_id, sucursal, server['name'])
@@ -666,7 +666,7 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/modules/comercial/routes.py:4099:    server_id: str, 
 /app/backend/modules/comercial/routes.py:4115:    server = await get_server_by_id(server_id)
 /app/backend/modules/comercial/routes.py:4124:    await validate_server_access_rbac(current_user, server_id)
-/app/backend/modules/comercial/routes.py:4130:            server='54.39.104.176', port=1433, database='EDARSAHUB',
+/app/backend/modules/comercial/routes.py:4130:            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433, database='EDARSAHUB',
 /app/backend/modules/comercial/routes.py:4153:            """, (server_id, sucursal, f_inicio, f_fin))
 /app/backend/modules/comercial/routes.py:4159:            """, (server_id, f_inicio, f_fin))
 /app/backend/modules/comercial/routes.py:4223:@router.get("/comercial/dashboard/{server_id}")
@@ -873,9 +873,9 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/modules/api_connections/repository.py:632:        results = execute_sql_query(
 /app/backend/modules/api_connections/repository.py:683:        results = execute_sql_query(
 /app/backend/modules/api_connections/universal_test_routes.py:23:- Endpoint SQL: /api/servers/{server_id}/universal-query-test
-/app/backend/modules/api_connections/universal_test_routes.py:143:            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/api_connections/universal_test_routes.py:143:            server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/api_connections/universal_test_routes.py:145:            database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-/app/backend/modules/api_connections/universal_test_routes.py:182:            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/api_connections/universal_test_routes.py:182:            server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/api_connections/universal_test_routes.py:184:            database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
 /app/backend/modules/corporate_filters/router.py:6:from core.db import execute_sql_query
 /app/backend/modules/corporate_filters/router.py:55:    return execute_sql_query(
@@ -1207,16 +1207,16 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/modules/automatizacion/schemas.py:112:    server_id: str = Field(..., max_length=50)
 /app/backend/modules/automatizacion/schemas.py:213:    (sistema_origen, server_id, sucursal_id, almacen_id)
 /app/backend/modules/automatizacion/schemas.py:216:    server_id: str = Field(..., max_length=50)
-/app/backend/modules/auth/service.py:375:            server='54.39.104.176',
+/app/backend/modules/auth/service.py:375:            server='<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/modules/auth/service.py:379:            database='EDARSAHUB'
-/app/backend/modules/auth/password_reset.py:56:        server='54.39.104.176',
+/app/backend/modules/auth/password_reset.py:56:        server='<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/modules/auth/password_reset.py:60:        database='EDARSAHUB'
 /app/backend/modules/auth/repository.py:29:def init_auth_repository(database=None) -> None:
-/app/backend/modules/auth/repository.py:102:            server='54.39.104.176',
+/app/backend/modules/auth/repository.py:102:            server='<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/modules/auth/repository.py:106:            database='EDARSAHUB'
-/app/backend/modules/auth/repository.py:314:        server='54.39.104.176',
+/app/backend/modules/auth/repository.py:314:        server='<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/modules/auth/repository.py:316:        database='EDARSAHUB',
-/app/backend/modules/auth/context_service.py:48:        server='54.39.104.176',
+/app/backend/modules/auth/context_service.py:48:        server='<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/modules/auth/context_service.py:52:        database='EDARSAHUB'
 /app/backend/modules/auth/context_service.py:273:        server_id = row[0]
 /app/backend/modules/auth/context_service.py:275:        if server_id not in result:
@@ -1434,7 +1434,7 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/modules/sync_recetas/sync_recetas.py:1180:        execute_sql_query(
 /app/backend/modules/crm/automation_service.py:32:            server=self.db_config['host'],
 /app/backend/modules/crm/automation_service.py:35:            database=self.db_config['database'],
-/app/backend/modules/crm/comercial_routes.py:185:            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/crm/comercial_routes.py:185:            server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/crm/comercial_routes.py:189:            database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB')
 /app/backend/modules/crm/trigger_service.py:74:            server=self.db_config['host'],
 /app/backend/modules/crm/trigger_service.py:77:            database=self.db_config['database'],
@@ -1442,11 +1442,11 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/modules/crm/comercial_service.py:36:            database=self.db_config['database'],
 /app/backend/modules/crm/repository.py:33:        server=EDARSAHUB_CONFIG['host'],
 /app/backend/modules/crm/repository.py:35:        database=EDARSAHUB_CONFIG['database'],
-/app/backend/modules/crm/native_routes.py:82:            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/crm/native_routes.py:82:            server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/crm/native_routes.py:86:            database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB')
-/app/backend/modules/crm/native_routes.py:312:            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/crm/native_routes.py:312:            server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/crm/native_routes.py:316:            database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB')
-/app/backend/modules/crm/native_routes.py:423:            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/modules/crm/native_routes.py:423:            server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/modules/crm/native_routes.py:427:            database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB')
 /app/backend/modules/crm/sql/execute_crm_migration.py:69:            server=EDARSAHUB_CONFIG['host'],
 /app/backend/modules/crm/sql/execute_crm_migration.py:71:            database=EDARSAHUB_CONFIG['database'],
@@ -2118,7 +2118,7 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/scripts/update_proyeccion_con_funcion.py:18:        database=DATABASE_CONFIG['database'],
 /app/backend/scripts/precheck_conectividad.py:88:                from core.db import execute_sql_query
 /app/backend/scripts/precheck_conectividad.py:90:                result = execute_sql_query(
-/app/backend/scripts/create_crm_automation_tables.py:15:        server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/create_crm_automation_tables.py:15:        server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/create_crm_automation_tables.py:18:        database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
 /app/backend/scripts/reconcile_servers_sql_mongo.py:47:from core.db import execute_sql_query
 /app/backend/scripts/correccion_proyeccion_y_moneda_final.py:91:            server=DATABASE_CONFIG['server'],
@@ -2158,7 +2158,7 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/scripts/sync_response_cache_finops.py:17:        server=DATABASE_CONFIG['server'],
 /app/backend/scripts/sync_response_cache_finops.py:19:        database=DATABASE_CONFIG['database'],
 /app/backend/scripts/consolidado_general_sistema_comercial.py:37:    "driver": "{ODBC Driver 17 for SQL Server}"
-/app/backend/scripts/consolidado_general_sistema_comercial.py:415:        server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/consolidado_general_sistema_comercial.py:415:        server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/consolidado_general_sistema_comercial.py:419:        database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
 /app/backend/scripts/carga_historica_fase23.py:164:        server_id: str,
 /app/backend/scripts/carga_historica_fase23.py:195:                server_id=server_id,
@@ -2177,7 +2177,7 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/scripts/create_tablajeria_rbac.py:30:        database=DB_CONFIG['database'],
 /app/backend/scripts/ddl_competidores_enterprise_unidad.py:22:from core.db import execute_sql_query
 /app/backend/scripts/ddl_competidores_enterprise_unidad.py:340:            execute_sql_query(*conn, stmt)
-/app/backend/scripts/seed_ventas_consolidadas.py:34:        server='54.39.104.176',
+/app/backend/scripts/seed_ventas_consolidadas.py:34:        server='<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/scripts/seed_ventas_consolidadas.py:38:        database='EDARSAHUB',
 /app/backend/scripts/ddl_competidores_nuevos_campos.py:12:from core.db import execute_sql_query
 /app/backend/scripts/ddl_competidores_nuevos_campos.py:68:            execute_sql_query(*conn, stmt)
@@ -2304,17 +2304,17 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/scripts/run_historical_load_compras.py:672:        await update_checkpoint(db, server_id, kpi_tipo, {
 /app/backend/scripts/run_historical_load_compras.py:687:    await update_checkpoint(db, server_id, kpi_tipo, {"status": final_status})
 /app/backend/scripts/run_historical_load_compras.py:816:                    server=server,
-/app/backend/scripts/backfill_cienfuegos_mayo_2026.py:68:            server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/backfill_cienfuegos_mayo_2026.py:68:            server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:70:            database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:84:            get_server_connection_config
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:107:    from modules.comercial_v2.sync_comercial_edarsahub import get_server_connection_config
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:109:    server_config = get_server_connection_config('6d053c22-523e-48c0-b72b-96081e2d781b')
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:124:            server=server_config['host'],
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:126:            database=server_config['database_name'],
-/app/backend/scripts/backfill_cienfuegos_mayo_2026.py:173:        server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/backfill_cienfuegos_mayo_2026.py:173:        server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:175:        database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:216:        server_id='6d053c22-523e-48c0-b72b-96081e2d781b',
-/app/backend/scripts/backfill_cienfuegos_mayo_2026.py:250:        server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/scripts/backfill_cienfuegos_mayo_2026.py:250:        server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:252:        database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
 /app/backend/scripts/generar_doc_diagnostico.py:192:code_cs.add_run('Server=IP_SUCURSAL,1433;Database=ManagementPro;User Id=usuario;Password=***;\n\n').font.name = 'Consolas'
 /app/backend/scripts/generar_doc_diagnostico.py:194:code_cs.add_run('Server=IP_SUCURSAL,PUERTO;Database=ManagementPro;User Id=usuario;Password=***;\n\n').font.name = 'Consolas'
@@ -3525,7 +3525,7 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/core/refresh_tokens.py:204:                database=config['database'],
 /app/backend/core/unidades_registry.py:18:- NO usar server_id como unidad_negocio_id
 /app/backend/core/unidades_registry.py:42:    server_id: str                  # UUID del servidor
-/app/backend/core/unidades_registry.py:52:        server='54.39.104.176',
+/app/backend/core/unidades_registry.py:52:        server='<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/core/unidades_registry.py:54:        database='EDARSAHUB',
 /app/backend/core/unidades_registry.py:68:            'by_server_sucursal': {(server_id, sucursal_id): UnidadNegocioConfig},
 /app/backend/core/unidades_registry.py:90:                server_id,
@@ -3539,11 +3539,11 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/core/unidades_registry.py:161:        key_default = (server_id, 'DEFAULT')
 /app/backend/core/unidades_registry.py:164:            logger.warning(f"[UNIDADES_REGISTRY] Fallback a DEFAULT para server={server_id}, sucursal={suc}")
 /app/backend/core/unidades_registry.py:167:    logger.warning(f"[UNIDADES_REGISTRY] No encontrado: server={server_id}, sucursal={suc}")
-/app/backend/core/security.py:493:            server='54.39.104.176', port=1433,
+/app/backend/core/security.py:493:            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433,
 /app/backend/core/security.py:495:            database='EDARSAHUB'
 /app/backend/core/security.py:528:    Obtiene los server_ids asociados a una lista de empresas.
 /app/backend/core/security.py:532:        Lista de server_ids (UUIDs lowercase)
-/app/backend/core/security.py:540:        server='54.39.104.176', port=1433,
+/app/backend/core/security.py:540:        server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433,
 /app/backend/core/security.py:542:        database='EDARSAHUB'
 /app/backend/core/security.py:608:        return [i for i in items if i.get('id') in servers_permitidos or i.get('server_id') in servers_permitidos]
 /app/backend/core/security.py:617:def user_has_server_access(user: Dict[str, Any], server_id: str) -> bool:
@@ -3638,7 +3638,7 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:497:                            pax_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
 /app/backend/core/scheduler/jobs/inteligencia_comercial_status_job.py:41:        server=host,
 /app/backend/core/scheduler/jobs/inteligencia_comercial_status_job.py:43:        database=os.environ.get("EDARSA_HUB_SQL_DB") or os.environ.get("EDARSAHUB_SQL_DATABASE") or os.environ.get("EDARSAHUB_SQL_DB") or "EDARSA_HUB",
-/app/backend/core/scheduler/jobs/vtiger_sync_job.py:24:        server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/core/scheduler/jobs/vtiger_sync_job.py:24:        server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/core/scheduler/jobs/vtiger_sync_job.py:28:        database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB')
 /app/backend/core/scheduler/jobs/sync_comercial_v2_job.py:84:                "server_id": u.server_id,
 /app/backend/core/scheduler/jobs/sync_comercial_v2_job.py:94:                "server_id": u.server_id,
@@ -3686,7 +3686,7 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/core/scheduler/jobs/detect_nuevos_compras_job.py:175:            LEFT JOIN Unidades_Negocio u ON u.server_id = CAST(s.id AS NVARCHAR(36))
 /app/backend/core/scheduler/jobs/detect_nuevos_compras_job.py:220:    from core.db import execute_sql_query
 /app/backend/core/scheduler/jobs/detect_nuevos_compras_job.py:232:        result = execute_sql_query(host, port, database, username, password, query, timeout=timeout_seconds)
-/app/backend/core/scheduler/jobs/crm_sync_job.py:25:        server=os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+/app/backend/core/scheduler/jobs/crm_sync_job.py:25:        server=os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
 /app/backend/core/scheduler/jobs/crm_sync_job.py:28:        database=os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
 /app/backend/core/scheduler/jobs/inventarios_detector_job.py:20:- server_id
 /app/backend/core/scheduler/jobs/inventarios_detector_job.py:124:    from core.db import execute_sql_query
@@ -3761,7 +3761,7 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/core/system_type_utils.py:365:    parts = [prefix, endpoint, server_id, normalized]
 /app/backend/core/exceptions.py:12:    raise NotFoundError("Servidor", server_id)
 /app/backend/core/context_resolver.py:8:- server_id
-/app/backend/core/context_resolver.py:59:        server='54.39.104.176',
+/app/backend/core/context_resolver.py:59:        server='<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/core/context_resolver.py:63:        database='EDARSAHUB'
 /app/backend/core/context_resolver.py:180:        Dict {sucursal_id_sql: {server_id, sucursal_origen_id, ...}}
 /app/backend/core/context_resolver.py:208:            'server_id': row[2],  # UUID como string lowercase
@@ -3801,7 +3801,7 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/core/context_resolver.py:638:async def validate_user_access_to_server(user: Dict[str, Any], server_id: str) -> bool:
 /app/backend/core/context_resolver.py:645:        server_id: ID del servidor
 /app/backend/core/context_resolver.py:651:        await resolve_server_context(user, server_id)
-/app/backend/core/user_access_context.py:70:        server='54.39.104.176',
+/app/backend/core/user_access_context.py:70:        server='<REDACTED_EDARSAHUB_SQL_HOST>',
 /app/backend/core/user_access_context.py:74:        database='EDARSAHUB'
 /app/backend/core/user_access_context.py:288:        server_id = row[0]
 /app/backend/core/user_access_context.py:290:        if server_id not in sucursales_por_server:
@@ -3870,9 +3870,9 @@ Fecha: Thu Jun  4 04:28:19 UTC 2026
 /app/backend/core/security_v2_passive.py:101:        if mapeo.get('server_id') == server_id:
 /app/backend/core/security_v2_passive.py:108:    Traduce un sucursal_id al server_id correspondiente.
 /app/backend/core/security_v2_passive.py:114:            return mapeo.get('server_id')
-/app/backend/core/alcance_helper.py:74:            server='54.39.104.176', port=1433,
+/app/backend/core/alcance_helper.py:74:            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433,
 /app/backend/core/alcance_helper.py:76:            database='EDARSAHUB'
-/app/backend/core/alcance_helper.py:119:            server='54.39.104.176', port=1433,
+/app/backend/core/alcance_helper.py:119:            server='<REDACTED_EDARSAHUB_SQL_HOST>', port=1433,
 /app/backend/core/alcance_helper.py:121:            database='EDARSAHUB'
 /app/backend/core/system_capability_resolver.py:204:            from core.db import execute_sql_query
 /app/backend/core/system_capability_resolver.py:206:            result = execute_sql_query(

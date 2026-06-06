@@ -22,7 +22,7 @@
 │  └── Auditoría (scripts_pendientes, script_logs, informes_*)    │
 ├─────────────────────────────────────────────────────────────────┤
 │  SQL Server Externos (8 servidores)                              │
-│  ├── MPRO Cloud (54.39.104.176)                                 │
+│  ├── MPRO Cloud (<REDACTED_EDARSAHUB_SQL_HOST>)                                 │
 │  ├── APIs Locales (QRO, Origen) - Tiempo real                   │
 │  └── SoftRestaurant (CIENFUEGOS, ESTELAR, MERIDA)               │
 └─────────────────────────────────────────────────────────────────┘
@@ -70,7 +70,7 @@
 {
   id: "uuid",
   name: "string",          // "ManagmentPro", "CIENFUEGOS"
-  host: "string",          // "54.39.104.176" o "servercienfuegos.ddns.net,6669\\nationalsoft"
+  host: "string",          // "<REDACTED_EDARSAHUB_SQL_HOST>" o "servercienfuegos.ddns.net,6669\\nationalsoft"
   port: 1433,              // Puerto SQL
   database: "string",      // Nombre de BD
   username: "string",
@@ -510,14 +510,14 @@
 
 | Sistema | Nombre | Host | Puerto | Base de Datos |
 |---------|--------|------|--------|---------------|
-| MPRO | ManagmentPro | 54.39.104.176 | 1433 | ManagementPro_Edarsa |
-| MPRO | MPRO TABLAJERIA | 54.39.104.176 | 1433 | ManagementPro_Tablajeria |
-| MPRO | HR2020 ESCRITURA | 54.39.104.176 | 1433 | HR2020 |
+| MPRO | ManagmentPro | <REDACTED_EDARSAHUB_SQL_HOST> | 1433 | ManagementPro_Edarsa |
+| MPRO | MPRO TABLAJERIA | <REDACTED_EDARSAHUB_SQL_HOST> | 1433 | ManagementPro_Tablajeria |
+| MPRO | HR2020 ESCRITURA | <REDACTED_EDARSAHUB_SQL_HOST> | 1433 | HR2020 |
 | SoftRest | CIENFUEGOS | servercienfuegos.ddns.net | 6669 | cienfuegos |
 | SoftRest | CIENFUEGOS TABLAJERIA | servercienfuegos.ddns.net | 6669 | tablajeria |
 | SoftRest | LA ESTELAR | serverestelar.ddns.net | 6969 | estelar |
 | SoftRest | 130° MERIDA | 130mid.ddns.net | 1433 | merida |
-| Otro | EDARSA HUB | 54.39.104.176 | 1433 | EdarsaHub |
+| Otro | EDARSA HUB | <REDACTED_EDARSAHUB_SQL_HOST> | 1433 | EdarsaHub |
 
 ---
 
@@ -525,8 +525,8 @@
 
 | API | URL | Sucursal Destino | Hora Réplica |
 |-----|-----|------------------|--------------|
-| 130° QRO LOCAL | http://54.39.104.176:8001/query | QUERETARO | 4:00 AM |
-| ORIGEN LOCAL | http://54.39.104.176:8000/query | ORIGEN | 4:00 AM |
+| 130° QRO LOCAL | http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query | QUERETARO | 4:00 AM |
+| ORIGEN LOCAL | http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query | ORIGEN | 4:00 AM |
 
 ---
 

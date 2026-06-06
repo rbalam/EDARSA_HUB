@@ -29,5 +29,5 @@
 - Agregados campos de redes sociales
 
 ## Problemas conocidos de infraestructura
-- **EDARSAHUB SQL (54.39.104.176)**: Intermitencias de conectividad ocasionales
+- **EDARSAHUB SQL (<REDACTED_EDARSAHUB_SQL_HOST>)**: Intermitencias de conectividad ocasionales
 - **SoftRestaurant (189.162.155.142)**: Connection refused intermitente

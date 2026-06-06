@@ -469,7 +469,7 @@ Pendiente autorización de usuario.
 **EDARSAHUB ya tiene la infraestructura necesaria.** No se requiere crear tablas ni columnas.
 
 ### Bloqueador:
-**Usuario `HRLectura` es SOLO LECTURA.** Se requiere usuario con permisos de escritura para implementar Lote 7.
+**Usuario `<REDACTED_EDARSAHUB_SQL_USER>` es SOLO LECTURA.** Se requiere usuario con permisos de escritura para implementar Lote 7.
 
 ### Funciones Propuestas:
 - `update_server_query()` — Actualizar query con auditoría

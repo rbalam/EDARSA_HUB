@@ -110,10 +110,10 @@ El resolver usa la función existente `execute_sql_query` de `core.db`:
 from core.db import execute_sql_query
 
 result = execute_sql_query(
-    host='54.39.104.176',
+    host='<REDACTED_EDARSAHUB_SQL_HOST>',
     port=1433,
     database='EDARSAHUB',
-    username='HRLectura',  # Solo lectura
+    username='<REDACTED_EDARSAHUB_SQL_USER>',  # Solo lectura
     password='***',
     query=query
 )

@@ -2,7 +2,7 @@
 P3-06 ELIMINAR MONGO MIGRADAS CERTIFICADAS
 Timestamp: 20260606_001110
 ==================================================
-MongoDB: mongodb://localhost:27017/edarsa_hub
+MongoDB: <REDACTED_MONGO_URL>/edarsa_hub
 Backup dir: /app/backend/auditorias_p3/mongo_migradas_backup_20260606_001110
 
 ANTES_TARGETS:

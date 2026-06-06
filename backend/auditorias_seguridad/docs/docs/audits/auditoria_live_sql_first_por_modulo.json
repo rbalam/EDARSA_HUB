@@ -5679,7 +5679,7 @@
       "pattern": "remote POS names",
       "file": "/app/backend/modules/comercial/adapters.py",
       "line": 65,
-      "code": "\"url\": os.environ.get(\"API_MPRO_ORIGEN_URL\", \"http://54.39.104.176:8000/query\"),"
+      "code": "\"url\": os.environ.get(\"API_MPRO_ORIGEN_URL\", \"http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query\"),"
     },
     {
       "module": "Comercial",
@@ -5697,7 +5697,7 @@
       "pattern": "remote POS names",
       "file": "/app/backend/modules/comercial/adapters.py",
       "line": 73,
-      "code": "\"url\": os.environ.get(\"API_MPRO_QRO_URL\", \"http://54.39.104.176:8001/query\"),"
+      "code": "\"url\": os.environ.get(\"API_MPRO_QRO_URL\", \"http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query\"),"
     },
     {
       "module": "Comercial",
@@ -5724,7 +5724,7 @@
       "pattern": "remote POS names",
       "file": "/app/backend/modules/comercial/adapters.py",
       "line": 150,
-      "code": "api_config[\"url\"] = os.environ.get(\"API_MPRO_ORIGEN_URL\", \"http://54.39.104.176:8000/query\")"
+      "code": "api_config[\"url\"] = os.environ.get(\"API_MPRO_ORIGEN_URL\", \"http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query\")"
     },
     {
       "module": "Comercial",
@@ -5733,7 +5733,7 @@
       "pattern": "remote POS names",
       "file": "/app/backend/modules/comercial/adapters.py",
       "line": 152,
-      "code": "api_config[\"url\"] = os.environ.get(\"API_MPRO_QRO_URL\", \"http://54.39.104.176:8001/query\")"
+      "code": "api_config[\"url\"] = os.environ.get(\"API_MPRO_QRO_URL\", \"http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query\")"
     },
     {
       "module": "Comercial",

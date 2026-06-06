@@ -3,7 +3,7 @@ P3-14 CLASIFICACION FINAL MONGO RESTANTE
 Timestamp: 20260606_003730
 ==================================================
 MongoDB: edarsa_hub
-SQL: 54.39.104.176:1433/EDARSAHUB
+SQL: <REDACTED_EDARSAHUB_SQL_HOST>:1433/EDARSAHUB
 
 COLECCION | DOCS | CLASIFICACION | SQL_MATCH | ACCION
 ------------------------------------------------------------------------------------------------------------------------

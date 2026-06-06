@@ -34,7 +34,7 @@ Lista todas las conexiones CORE.
       "name": "EDARSA HUB",
       "connection_type": "CORE",
       "system_type": "EDARSA_HUB",
-      "host": "54.39.104.176",
+      "host": "<REDACTED_EDARSAHUB_SQL_HOST>",
       "port": 1433,
       "password_configured": true,
       "password_encrypted": true,
@@ -139,7 +139,7 @@ HTTP Status: 200 OK
 
 ID: F8A9049A-96E8-4210-84AE-595FFA2822FA
 Nombre: EDARSA HUB
-Host: 54.39.104.176
+Host: <REDACTED_EDARSAHUB_SQL_HOST>
 Sistema: EDARSA_HUB
 Password configurado: true
 Password cifrado: true

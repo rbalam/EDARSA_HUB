@@ -2,8 +2,8 @@
 P3-09 VALIDAR MONGO MIGRADAS PROBABLES
 Timestamp: 20260606_001638
 ==================================================
-MongoDB: mongodb://localhost:27017/edarsa_hub
-SQL Server: 54.39.104.176:1433/EDARSAHUB
+MongoDB: <REDACTED_MONGO_URL>/edarsa_hub
+SQL Server: <REDACTED_EDARSAHUB_SQL_HOST>:1433/EDARSAHUB
 
 MONGO_COLECCION | MONGO_DOCS | SQL_TABLE | SQL_ROWS | DICTAMEN
 ------------------------------------------------------------------------------------------------------------------------

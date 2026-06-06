@@ -230,7 +230,7 @@ conn_hoy = pymssql.connect(...)
 **Código violatorio:**
 ```python
 # db_utils.py:26-29
-mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 _client = MongoClient(mongo_url)
 ```
 

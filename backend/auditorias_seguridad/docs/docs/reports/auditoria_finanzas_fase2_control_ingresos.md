@@ -43,7 +43,7 @@ Esta auditoría documenta la arquitectura existente para Control de Ingresos, id
 
 ### 2.1 Tabla Principal: `Unidades_Negocio`
 
-**Ubicación:** EDARSAHUB SQL Server (`54.39.104.176:1433`)
+**Ubicación:** EDARSAHUB SQL Server (`<REDACTED_EDARSAHUB_SQL_HOST>:1433`)
 
 **Estructura:**
 ```sql
@@ -120,7 +120,7 @@ ORDER BY un.orden
 | `a5547321-...` | 130° MÉRIDA | SoftRestaurant | 130mid.ddns.net | 1433 | softrestaurant10 |
 | `6d053c22-...` | CIENFUEGOS | SoftRestaurant | servercienfuegos.ddns.net,6669 | 1433 | softrestaurant95pro |
 | `a5ff0e25-...` | LA ESTELAR | SoftRestaurant | serverestelar.ddns.net,6969 | 6969 | softrestaurant12 |
-| `1b230a06-...` | ManagementPro | MPRO | 54.39.104.176 | 1433 | CENTRAL2020 |
+| `1b230a06-...` | ManagementPro | MPRO | <REDACTED_EDARSAHUB_SQL_HOST> | 1433 | CENTRAL2020 |
 
 ### 3.3 Función Existente para Obtener Servidores
 

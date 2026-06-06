@@ -16,7 +16,7 @@ Resolver de raíz el problema de MPRO que devolvía $0.00 falso, y establecer po
 - Respaldo en `/tmp/snapshot_fix_mpro_20260419_065210/`
 
 ### 06:53 - Diagnóstico de credenciales
-- MongoDB tiene credenciales correctas: HRLectura/National09$
+- MongoDB tiene credenciales correctas: <REDACTED_EDARSAHUB_SQL_USER>/<REDACTED_EDARSAHUB_SQL_PASSWORD>
 - Identificadas credenciales hardcodeadas legacy: sa/Edarsa2018$
 - Ambas funcionan
 

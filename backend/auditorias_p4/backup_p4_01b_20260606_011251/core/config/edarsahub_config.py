@@ -86,11 +86,11 @@ def get_edarsahub_sql_config() -> EdarsahubSQLConfig:
         return _config
     
     _config = EdarsahubSQLConfig(
-        host=os.environ.get('EDARSAHUB_SQL_HOST', '54.39.104.176'),
+        host=os.environ.get('EDARSAHUB_SQL_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
         port=int(os.environ.get('EDARSAHUB_SQL_PORT', '1433')),
         database=os.environ.get('EDARSAHUB_SQL_DATABASE', 'EDARSAHUB'),
-        user=os.environ.get('EDARSAHUB_SQL_USER', 'HRLectura'),
-        password=os.environ.get('EDARSAHUB_SQL_PASSWORD', 'National09$'),
+        user=os.environ.get('EDARSAHUB_SQL_USER', '<REDACTED_EDARSAHUB_SQL_USER>'),
+        password=os.environ.get('EDARSAHUB_SQL_PASSWORD', '<REDACTED_EDARSAHUB_SQL_PASSWORD>'),
     )
     
     logger.info(f"[EDARSAHUB_CONFIG] Configuración cargada: {_config.safe_dict()}")

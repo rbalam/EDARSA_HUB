@@ -480,7 +480,7 @@ SERVER_SECRET_KEY=<clave_de_cifrado>
 | Servidor en SQL | ORIGEN LOCAL ✅ | 130° QRO LOCAL ✅ |
 | system_type | MPRO ✅ | MPRO ✅ |
 | tipo_conexion | API_LOCAL ✅ | API_LOCAL ✅ |
-| api_url | http://54.39.104.176:8000/query ✅ | http://54.39.104.176:8001/query ✅ |
+| api_url | http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query ✅ | http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query ✅ |
 | api_key_encrypted | enc:v1:gAAAAAB... ✅ | enc:v1:gAAAAAB... ✅ |
 | activo | True ✅ | True ✅ |
 | **Descifrado API key** | ❌ FALLA | ❌ FALLA |

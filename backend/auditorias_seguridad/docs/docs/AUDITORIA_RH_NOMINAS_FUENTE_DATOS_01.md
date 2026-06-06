@@ -50,11 +50,11 @@ server_registry.py → EDARSAHUB_CONFIG (conexión directa) → FUNCIONA
 
 ```python
 EDARSAHUB_CONFIG = {
-    'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+    'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
     'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
     'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-    'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-    'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+    'username': os.environ.get('EDARSAHUB_USERNAME', '<REDACTED_EDARSAHUB_SQL_USER>'),
+    'password': os.environ.get('EDARSAHUB_PASSWORD', '<REDACTED_EDARSAHUB_SQL_PASSWORD>')
 }
 ```
 
@@ -86,7 +86,7 @@ async def get_edarsa_hub_server():
 {
   "id": "bea40259-35f1-4693-bda2-d2d10e13e56a",
   "name": "EDARSA HUB",
-  "host": "54.39.104.176",
+  "host": "<REDACTED_EDARSAHUB_SQL_HOST>",
   "port": "1433",
   "database": "EDARSAHUB",
   "system_type": "Otro",
@@ -161,11 +161,11 @@ async def get_edarsa_hub_server() -> Optional[Dict]:
 def get_edarsa_hub_config() -> Dict:
     """Obtiene configuración EDARSAHUB desde variables de entorno."""
     return {
-        'host': os.environ.get('EDARSAHUB_HOST', '54.39.104.176'),
+        'host': os.environ.get('EDARSAHUB_HOST', '<REDACTED_EDARSAHUB_SQL_HOST>'),
         'port': int(os.environ.get('EDARSAHUB_PORT', '1433')),
         'database': os.environ.get('EDARSAHUB_DATABASE', 'EDARSAHUB'),
-        'username': os.environ.get('EDARSAHUB_USERNAME', 'HRLectura'),
-        'password': os.environ.get('EDARSAHUB_PASSWORD', 'National09$')
+        'username': os.environ.get('EDARSAHUB_USERNAME', '<REDACTED_EDARSAHUB_SQL_USER>'),
+        'password': os.environ.get('EDARSAHUB_PASSWORD', '<REDACTED_EDARSAHUB_SQL_PASSWORD>')
     }
 ```
 

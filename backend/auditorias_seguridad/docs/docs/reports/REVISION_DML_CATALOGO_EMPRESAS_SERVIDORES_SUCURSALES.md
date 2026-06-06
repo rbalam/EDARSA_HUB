@@ -417,7 +417,7 @@ VALUES
 **ServidorID**: `1B230A06-FFAF-4C70-BD27-B1BE3579DEA6`  
 **Nombre**: ManagmentPro  
 **Database**: CENTRAL2020  
-**Host**: 54.39.104.176
+**Host**: <REDACTED_EDARSAHUB_SQL_HOST>
 
 ### 9.2 Diferenciación por NumeroSucursalSistema
 

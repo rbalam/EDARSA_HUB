@@ -52,7 +52,7 @@ La FASE 3B implementó el **Server Registry Central** que convierte EDARSAHUB SQ
 
 **Nombre:** `Servidores_Conexiones`  
 **Base de datos:** `EDARSAHUB`  
-**Host:** `54.39.104.176`
+**Host:** `<REDACTED_EDARSAHUB_SQL_HOST>`
 
 ### Columnas
 

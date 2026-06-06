@@ -2,7 +2,7 @@
 
 - Fecha: 2026-06-02T16:42:14.941676
 - Modo: `migrate`
-- Servidor: `54.39.104.176`
+- Servidor: `<REDACTED_EDARSAHUB_SQL_HOST>`
 - Base de datos: `EDARSAHUB`
 - Script: `/app/backend/database/migrations/023_rbac_inteligencia_comercial_matriz_ideal.sql`
 

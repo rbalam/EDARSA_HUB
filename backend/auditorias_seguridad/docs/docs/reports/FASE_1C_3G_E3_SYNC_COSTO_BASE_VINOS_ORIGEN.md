@@ -26,7 +26,7 @@ Se detiene la fase porque:
 
 | Servidor | Sistema | Host | Estado |
 |----------|---------|------|--------|
-| ManagmentPro | MPRO | 54.39.104.176 | ✅ Datos sincronizados |
+| ManagmentPro | MPRO | <REDACTED_EDARSAHUB_SQL_HOST> | ✅ Datos sincronizados |
 | CIENFUEGOS | SoftRestaurant | servercienfuegos.ddns.net | ✅ Datos sincronizados |
 | 130° MERIDA | SoftRestaurant | 130mid.ddns.net | ✅ Datos sincronizados |
 | LA ESTELAR | SoftRestaurant | serverestelar.ddns.net | ✅ Datos sincronizados |

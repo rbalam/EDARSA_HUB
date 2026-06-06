@@ -215,7 +215,7 @@ async def update_server_query(
 
 ### Prerrequisitos para Implementar
 
-1. **Permisos de escritura** en EDARSAHUB (usuario actual es `HRLectura`)
+1. **Permisos de escritura** en EDARSAHUB (usuario actual es `<REDACTED_EDARSAHUB_SQL_USER>`)
 2. **Validación de formato JSON** compatible
 3. **Sincronización previa** MongoDB → EDARSAHUB
 4. **Tests unitarios** para escritura

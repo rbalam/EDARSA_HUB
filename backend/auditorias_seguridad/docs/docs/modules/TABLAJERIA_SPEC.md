@@ -49,7 +49,7 @@ Diseñar e implementar de forma controlada el submódulo de TABLAJERÍA dentro d
 | Servidor | Sistema | Base de Datos | Usuario | Puerto | Estado |
 |----------|---------|---------------|---------|--------|--------|
 | CIENFUEGOS TABLAJERIA | SOFTRESTAURANT_PRO | Tablajeria | CFLectura | 1433 | Offline |
-| MPRO TABLAJERIA | MPRO | tablajeria_mpro | HRLectura | 1433 | Offline |
+| MPRO TABLAJERIA | MPRO | tablajeria_mpro | <REDACTED_EDARSAHUB_SQL_USER> | 1433 | Offline |
 | 130 MÉRIDA (Futuro) | Por definir | Por definir | Por definir | 1433 | Pendiente |
 | LA ESTELAR | N/A - Captura directa | EDARSAHUB | N/A | N/A | Captura EDARSAHUB |
 

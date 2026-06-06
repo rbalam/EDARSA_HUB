@@ -15,7 +15,7 @@ L341: # FUNCIONES DE COMPARACIÓN MONGODB VS SQL
 L346: Compara usuario entre MongoDB y SQL.
 L354: from motor.motor_asyncio import AsyncIOMotorClient
 L360: # Obtener de MongoDB
-L361: mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+L361: mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 L363: mongo_client = AsyncIOMotorClient(mongo_url)
 L473: Lista diferencias de migración Auth entre MongoDB y SQL para todos los usuarios SQL.
 L585: # Mapeo de rol MongoDB a SQL
@@ -65,7 +65,7 @@ ARCHIVO: /app/backend/core/rbac/middleware.py
 --- REFERENCIAS MONGO ---
 L34: """Obtiene conexión a MongoDB de forma síncrona."""
 L36: from pymongo import MongoClient
-L37: mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+L37: mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 L39: client = MongoClient(mongo_url)
 Total: 4
 

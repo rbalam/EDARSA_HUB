@@ -18,7 +18,7 @@ patterns = [
     r"EDARSAHUB_DATABASE",
     r"EDARSAHUB_USERNAME",
     r"EDARSAHUB_PASSWORD",
-    r"'HRLectura'",
+    r"'<REDACTED_EDARSAHUB_SQL_USER>'",
     r"'National09",
 ]
 

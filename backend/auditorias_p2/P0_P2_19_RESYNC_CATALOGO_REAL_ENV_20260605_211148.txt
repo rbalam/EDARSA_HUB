@@ -9,7 +9,7 @@ BACKUP /app/backend/api/admin_scheduler_resync.py
 
 ### VALIDACION RESOLVER SIN SECRETOS
 OK 130MID {'unidad_codigo': '130MID', 'servidor_nombre': '130° MERIDA', 'host': '130mid.ddns.net', 'system_type': 'SOFTRESTAURANT_PRO'}
-OK 130QRO {'unidad_codigo': '130QRO', 'servidor_nombre': 'ManagmentPro', 'host': '54.39.104.176', 'system_type': 'MPRO'}
+OK 130QRO {'unidad_codigo': '130QRO', 'servidor_nombre': 'ManagmentPro', 'host': '<REDACTED_EDARSAHUB_SQL_HOST>', 'system_type': 'MPRO'}
 OK CIENFUEGOS {'unidad_codigo': 'CIENFUEGOS', 'servidor_nombre': 'CIENFUEGOS', 'host': 'servercienfuegos.ddns.net,6669\\nationalsoft', 'system_type': 'SOFTRESTAURANT_PRO'}
 OK ESTELAR {'unidad_codigo': 'ESTELAR', 'servidor_nombre': 'LA ESTELAR', 'host': 'serverestelar.ddns.net,6969', 'system_type': 'SOFTRESTAURANT_PRO'}
-OK ORIGEN {'unidad_codigo': 'ORIGEN', 'servidor_nombre': 'ManagmentPro', 'host': '54.39.104.176', 'system_type': 'MPRO'}
+OK ORIGEN {'unidad_codigo': 'ORIGEN', 'servidor_nombre': 'ManagmentPro', 'host': '<REDACTED_EDARSAHUB_SQL_HOST>', 'system_type': 'MPRO'}

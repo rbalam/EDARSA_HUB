@@ -614,11 +614,11 @@ logger = logging.getLogger(__name__)
 
 # Configuración EDARSAHUB
 EDARSAHUB_CONFIG = {
-    'host': '54.39.104.176',
+    'host': '<REDACTED_EDARSAHUB_SQL_HOST>',
     'port': 1433,
     'database': 'EDARSAHUB',
-    'username': 'HRLectura',
-    'password': 'National09$'
+    'username': '<REDACTED_EDARSAHUB_SQL_USER>',
+    'password': '<REDACTED_EDARSAHUB_SQL_PASSWORD>'
 }
 
 # Cache en memoria
@@ -979,8 +979,8 @@ def obtener_empresa_mpro_incorrecto(servidor_id: str) -> int:
 
 | EmpresaID | Empresa | API Local | URL |
 |-----------|---------|-----------|-----|
-| 1 | ORIGEN | ORIGEN LOCAL | http://54.39.104.176:8000/query |
-| 2 | 130QRO | 130° QRO LOCAL | http://54.39.104.176:8001/query |
+| 1 | ORIGEN | ORIGEN LOCAL | http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query |
+| 2 | 130QRO | 130° QRO LOCAL | http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query |
 
 ---
 

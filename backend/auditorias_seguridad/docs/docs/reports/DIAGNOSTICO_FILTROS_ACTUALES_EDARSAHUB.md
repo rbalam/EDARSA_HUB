@@ -79,7 +79,7 @@ Fecha: Wed Jun  3 07:03:00 UTC 2026
 ## 3. Posibles conexiones live en backend
 ```text
 /app/backend/init_queries.py:4:from motor.motor_asyncio import AsyncIOMotorClient
-/app/backend/init_queries.py:10:mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/init_queries.py:10:mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/init_queries.py:266:    client = AsyncIOMotorClient(mongo_url)
 /app/backend/migrar_a_sql.py:24:            if 'pymongo' not in linea and 'motor' not in linea:
 /app/backend/migrar_a_sql.py:26:    print("✅ Limpiado: requirements.txt (eliminado pymongo/motor)")
@@ -319,11 +319,11 @@ Fecha: Wed Jun  3 07:03:00 UTC 2026
 /app/backend/modules/comercial/routes.py:4129:        conn = pymssql.connect(
 /app/backend/modules/fase2_operativo/sql_repository.py:41:    return pymssql.connect(
 /app/backend/modules/fase2_operativo/db_utils.py:8:from pymongo import MongoClient
-/app/backend/modules/fase2_operativo/db_utils.py:26:        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/modules/fase2_operativo/db_utils.py:26:        mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/modules/fase2_operativo/db_utils.py:29:        _client = MongoClient(mongo_url)
 /app/backend/modules/fase2_operativo/repositories/sql_base_repository.py:318:        return pymssql.connect(
 /app/backend/modules/fase2_operativo/scripts/init_notificaciones.py:9:from motor.motor_asyncio import AsyncIOMotorClient
-/app/backend/modules/fase2_operativo/scripts/init_notificaciones.py:20:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/modules/fase2_operativo/scripts/init_notificaciones.py:20:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/modules/fase2_operativo/scripts/init_notificaciones.py:23:    client = AsyncIOMotorClient(mongo_url)
 /app/backend/modules/fase2_operativo/scripts/init_collections_fase2a.py:16:from pymongo import MongoClient, ASCENDING, DESCENDING
 /app/backend/modules/fase2_operativo/scripts/init_collections_fase2a.py:335:        client = MongoClient(MONGO_URL, serverSelectionTimeoutMS=5000)
@@ -376,7 +376,7 @@ Fecha: Wed Jun  3 07:03:00 UTC 2026
 /app/backend/modules/configuracion/repositories/config_asignaciones_repository.py:37:    return pymssql.connect(
 /app/backend/modules/configuracion/services/almacenes_sync_service.py:174:            almacenes_origen = execute_sql_query(
 /app/backend/modules/configuracion/routes/config_asignaciones_routes.py:25:from motor.motor_asyncio import AsyncIOMotorClient
-/app/backend/modules/configuracion/routes/config_asignaciones_routes.py:43:        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/modules/configuracion/routes/config_asignaciones_routes.py:43:        mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/modules/configuracion/routes/config_asignaciones_routes.py:45:        client = AsyncIOMotorClient(mongo_url)
 /app/backend/modules/consultas_sql/repository.py:63:        return execute_sql_query(
 /app/backend/modules/consultas_sql/routes.py:353:        versiones_rows = execute_sql_query(
@@ -481,7 +481,7 @@ Fecha: Wed Jun  3 07:03:00 UTC 2026
 /app/backend/modules/finanzas/repository_cuadres_z_edarsahub.py:37:    return pymssql.connect(**config, login_timeout=30)
 /app/backend/modules/finanzas/tesoreria.py:782:        results = execute_sql_query(
 /app/backend/modules/finanzas/repository_cuadres_z.py:18:        from pymongo import MongoClient
-/app/backend/modules/finanzas/repository_cuadres_z.py:19:        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/modules/finanzas/repository_cuadres_z.py:19:        mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/modules/finanzas/repository_cuadres_z.py:21:        client = MongoClient(mongo_url)
 /app/backend/modules/finanzas/sync_propinas_mpro.py:85:    return pymssql.connect(
 /app/backend/modules/finanzas/sync_propinas_mpro.py:168:    return pymssql.connect(
@@ -546,7 +546,7 @@ Fecha: Wed Jun  3 07:03:00 UTC 2026
 /app/backend/scripts/consultar_cache_finops.py:16:    return pymssql.connect(
 /app/backend/scripts/create_sesiones_tables.py:81:        conn = pymssql.connect(
 /app/backend/scripts/run_historical_load_finanzas.py:87:    from motor.motor_asyncio import AsyncIOMotorClient
-/app/backend/scripts/run_historical_load_finanzas.py:88:    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/run_historical_load_finanzas.py:88:    mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/run_historical_load_finanzas.py:89:    client = AsyncIOMotorClient(mongo_url)
 /app/backend/scripts/run_historical_load_finanzas.py:223:        with pytds.connect(
 /app/backend/scripts/run_historical_load_finanzas.py:289:        with pytds.connect(
@@ -557,14 +557,14 @@ Fecha: Wed Jun  3 07:03:00 UTC 2026
 /app/backend/scripts/create_cava_socios_tables.py:28:    return pymssql.connect(
 /app/backend/scripts/update_proyeccion_con_funcion.py:15:    conn = pymssql.connect(
 /app/backend/scripts/precheck_conectividad.py:20:from pymongo import MongoClient
-/app/backend/scripts/precheck_conectividad.py:23:MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/precheck_conectividad.py:23:MONGO_URL = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/precheck_conectividad.py:34:        client = MongoClient(MONGO_URL, serverSelectionTimeoutMS=5000)
 /app/backend/scripts/precheck_conectividad.py:90:                result = execute_sql_query(
 /app/backend/scripts/create_crm_automation_tables.py:14:    conn = pymssql.connect(
 /app/backend/scripts/reconcile_servers_sql_mongo.py:35:from motor.motor_asyncio import AsyncIOMotorClient
 /app/backend/scripts/reconcile_servers_sql_mongo.py:101:        # Indexar por ID y mongodb_id
 /app/backend/scripts/reconcile_servers_sql_mongo.py:103:        sql_by_mongodb_id = {s['mongodb_id']: s for s in sql_servers if s.get('mongodb_id')}
-/app/backend/scripts/reconcile_servers_sql_mongo.py:107:        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+/app/backend/scripts/reconcile_servers_sql_mongo.py:107:        mongo_url = os.environ.get('MONGO_URL', '<REDACTED_MONGO_URL>')
 /app/backend/scripts/reconcile_servers_sql_mongo.py:110:        client = AsyncIOMotorClient(mongo_url)
 /app/backend/scripts/reconcile_servers_sql_mongo.py:123:            mongo_server = mongo_by_id.get(sql_id) or mongo_by_id.get(sql_server.get('mongodb_id'))
 /app/backend/scripts/reconcile_servers_sql_mongo.py:183:            if mongo_id not in sql_by_id and mongo_id not in sql_by_mongodb_id:
@@ -792,18 +792,18 @@ Fecha: Wed Jun  3 07:03:00 UTC 2026
 /app/backend/modules/comercial/adapters.py:57:# CONFIGURACIÓN APIs LOCALES MPRO (FALLBACK LEGACY - SOLO SI EmpresaResolver FALLA)
 /app/backend/modules/comercial/adapters.py:62:APIS_MPRO_LOCALES_LEGACY = {
 /app/backend/modules/comercial/adapters.py:64:        "nombre": "ORIGEN LOCAL",
-/app/backend/modules/comercial/adapters.py:65:        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query"),
+/app/backend/modules/comercial/adapters.py:65:        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query"),
 /app/backend/modules/comercial/adapters.py:66:        "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
 /app/backend/modules/comercial/adapters.py:67:        "empresa_id": 1,  # ORIGEN
-/app/backend/modules/comercial/adapters.py:73:        "url": os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query"),
+/app/backend/modules/comercial/adapters.py:73:        "url": os.environ.get("API_MPRO_QRO_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query"),
 /app/backend/modules/comercial/adapters.py:74:        "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
 /app/backend/modules/comercial/adapters.py:75:        "empresa_id": 2,  # 130QRO
 /app/backend/modules/comercial/adapters.py:82:APIS_MPRO_LOCALES = APIS_MPRO_LOCALES_LEGACY
 /app/backend/modules/comercial/adapters.py:90:        alias: Cualquier variante de nombre (130-MER, QRO, LA ESTELAR, etc.)
 /app/backend/modules/comercial/adapters.py:149:            if empresa.codigo_empresa == 'ORIGEN':
-/app/backend/modules/comercial/adapters.py:150:                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query")
+/app/backend/modules/comercial/adapters.py:150:                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query")
 /app/backend/modules/comercial/adapters.py:151:            elif empresa.codigo_empresa == '130QRO':
-/app/backend/modules/comercial/adapters.py:152:                api_config["url"] = os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query")
+/app/backend/modules/comercial/adapters.py:152:                api_config["url"] = os.environ.get("API_MPRO_QRO_URL", "http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query")
 /app/backend/modules/comercial/adapters.py:157:            api_config["api_key"] = os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY")
 /app/backend/modules/comercial/adapters.py:170:    Consulta una API MPRO local y retorna los resultados.
 /app/backend/modules/comercial/adapters.py:228:    Obtiene las ventas del día actual desde una API MPRO local.

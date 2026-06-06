@@ -24,7 +24,7 @@
 ```
 ┌─────────────────┐     HTTP      ┌─────────────────────────┐     SQL      ┌──────────────────┐
 │  EDARSA HUB     │────────────── │  API Intermedia (Nube)  │──────────────│  SQL Server      │
-│  (Este servidor)│               │  54.39.104.176          │              │  (Sucursal local)│
+│  (Este servidor)│               │  <REDACTED_EDARSAHUB_SQL_HOST>          │              │  (Sucursal local)│
 └─────────────────┘               └─────────────────────────┘              └──────────────────┘
       │                                    │                                       │
       │ Consulta ventas del día           │ ✅ API responde                       │ ❌ SQL NO conecta
@@ -35,8 +35,8 @@
 
 | Sucursal | URL API | Puerto | Estado HTTP | Estado SQL |
 |----------|---------|--------|-------------|------------|
-| ORIGEN | http://54.39.104.176:8000/query | 8000 | ✅ Responde | ❌ SQL timeout |
-| 130QRO | http://54.39.104.176:8001/query | 8001 | ✅ Responde | ❌ SQL timeout |
+| ORIGEN | http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query | 8000 | ✅ Responde | ❌ SQL timeout |
+| 130QRO | http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query | 8001 | ✅ Responde | ❌ SQL timeout |
 
 ---
 
@@ -101,7 +101,7 @@ New-NetFirewallRule -DisplayName "SQL Server" -Direction Inbound -Protocol TCP -
 
 ### 5. PRUEBA DE CONECTIVIDAD DESDE SERVIDOR API
 
-Desde el servidor donde corren las APIs (54.39.104.176):
+Desde el servidor donde corren las APIs (<REDACTED_EDARSAHUB_SQL_HOST>):
 
 ```bash
 # Para ORIGEN
@@ -181,10 +181,10 @@ Una vez corregido en las sucursales, ejecutar:
 
 ```bash
 # Desde este servidor, probar las APIs
-curl -X GET "http://54.39.104.176:8000/query?sql=SELECT%201%20as%20test" \
+curl -X GET "http://<REDACTED_EDARSAHUB_SQL_HOST>:8000/query?sql=SELECT%201%20as%20test" \
   -H "x-api-key: EDARSA_2026_SECURE_KEY"
 
-curl -X GET "http://54.39.104.176:8001/query?sql=SELECT%201%20as%20test" \
+curl -X GET "http://<REDACTED_EDARSAHUB_SQL_HOST>:8001/query?sql=SELECT%201%20as%20test" \
   -H "x-api-key: EDARSA_2026_SECURE_KEY"
 ```
 

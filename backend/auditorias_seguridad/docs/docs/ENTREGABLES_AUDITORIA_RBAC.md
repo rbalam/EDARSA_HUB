@@ -169,7 +169,7 @@ python3 -c "
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 async def main():
-    db = AsyncIOMotorClient('mongodb://localhost:27017')['edarsa_hub']
+    db = AsyncIOMotorClient('<REDACTED_MONGO_URL>')['edarsa_hub']
     async for doc in db.auditoria_financiera.find().sort('created_at', -1).limit(10):
         print(f\"{doc['created_at']} | {doc['modulo']} | {doc['accion']} | {doc['registro_id']}\")
 asyncio.run(main())
