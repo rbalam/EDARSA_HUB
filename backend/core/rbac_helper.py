@@ -1,89 +1,197 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
 """
-FASE 9: Helper mínimo de verificación RBAC.
-Contiene ÚNICAMENTE la función para verificar permisos granulares.
+RBAC Helper - SQL-First (P0-2 estabilización V1.0)
+==================================================
 
-NO es un framework general - es un helper específico para FASE 9.
+Verificación de permisos RBAC contra EDARSAHUB SQL (fuente única de verdad).
+
+REGLAS:
+- NO MongoDB. Sin dependencia del stub legacy.
+- NO conexiones live externas. Solo core.sql_first.db.get_sql_connection().
+- La función pública DEBE seguir siendo `async` (8 call-sites usan `await`).
+- PyMSSQL es síncrono: el núcleo SQL se ejecuta en run_in_threadpool para no
+  bloquear el event loop (patrón recomendado FastAPI/Starlette).
+
+current_user (modules/auth/repository._normalize_user) expone:
+    - role           -> CodigoRol ('SUPERADMIN' | 'ADMIN' | ...)
+    - UsuarioID      -> id numérico
+    - email
 """
 
-import os
+from typing import Any, Dict, List, Optional
+from starlette.concurrency import run_in_threadpool
 
-# Conexión a MongoDB (reutiliza la existente del entorno)
-_client = None
-_db = None
-
-
-def _get_db():
-    """Obtiene conexión a MongoDB de forma lazy."""
-    global _client, _db
-    if _db is None:
-        _client = None  # P2-07: MongoDB eliminado)
-        _db = _client[os.environ.get('DB_NAME', 'edarsa_hub')]
-    return _db
+from core.sql_first.db import get_sql_connection
 
 
-# Whitelist FASE 11 - NO EXPANDIR sin autorización
-PERMISOS_WHITELIST = [
-    "SISTEMA_ESTRUCTURA_VER",
-    "SISTEMA_USUARIOS_VER",
-    "SISTEMA_USUARIOS_CREAR",      # FASE 11
-    "SISTEMA_USUARIOS_EDITAR",
-    "SISTEMA_USUARIOS_ELIMINAR",
-    "SISTEMA_ROLES_VER",
-    "SISTEMA_ROLES_CREAR",         # FASE 11
-    "SISTEMA_ROLES_EDITAR",
-    "SISTEMA_ROLES_ELIMINAR",
-    "SCHEDULER_VER",               # Para ver estado del scheduler
-    "SCHEDULER_GESTIONAR"          # Para controlar jobs
-]
-ROLES_WHITELIST = ["VISOR_ESTRUCTURA", "VISOR_SISTEMA", "VISOR_ADMIN", "ADMIN_USUARIOS", "GESTOR_SISTEMA"]
+# Roles con bypass administrativo total (normalizados a MAYÚSCULAS)
+BYPASS_ROLES = {
+    "SUPERADMIN",
+    "SUPERADMINISTRADOR",
+    "SUPER ADMIN",
+    "ADMIN",
+    "ADMINISTRADOR",
+}
+
+# Nivel jerárquico mínimo para bypass (Administrador=90, SuperAdministrador=100)
+BYPASS_NIVEL_MINIMO = 90
 
 
-async def verificar_permiso_rbac(user: dict, permiso: str) -> bool:
+# =============================================================================
+# Extractores tolerantes (firma flexible, no rompe llamadas legacy)
+# =============================================================================
+
+def _norm(value: Any) -> str:
+    return str(value or "").strip().upper()
+
+
+def _extract_current_user(*args, **kwargs) -> Optional[Dict[str, Any]]:
+    for key in ("current_user", "user", "usuario"):
+        value = kwargs.get(key)
+        if isinstance(value, dict):
+            return value
+    for arg in args:
+        if isinstance(arg, dict):
+            return arg
+    return None
+
+
+def _extract_permiso(*args, **kwargs) -> str:
+    for key in ("permiso", "permiso_requerido", "permission", "required_permission"):
+        value = kwargs.get(key)
+        if value:
+            return str(value)
+    for arg in args:
+        if isinstance(arg, str) and arg.strip():
+            return arg.strip()
+    return ""
+
+
+def _extract_usuario_id(current_user: Dict[str, Any]) -> Optional[int]:
+    for key in ("UsuarioID", "_sql_usuario_id", "usuario_id", "user_id", "sql_user_id"):
+        value = current_user.get(key)
+        if value is not None and str(value).strip() != "":
+            try:
+                return int(value)
+            except Exception:
+                continue
+    return None
+
+
+def _extract_role(current_user: Dict[str, Any]) -> str:
+    for key in ("role", "rol", "CodigoRol", "RolNombre", "NombreRol", "role_name", "nombre_rol"):
+        value = current_user.get(key)
+        if value:
+            return _norm(value)
+    return ""
+
+
+def _module_candidates_from_permiso(permiso: str) -> List[str]:
+    raw = (permiso or "").strip()
+    if not raw:
+        return []
+    parts = [raw]
+    for sep in (".", ":", "/", "\\", "|"):
+        if sep in raw:
+            parts.append(raw.split(sep, 1)[0])
+    out: List[str] = []
+    for p in parts:
+        n = _norm(p).replace(" ", "_")
+        if n and n not in out:
+            out.append(n)
+    return out
+
+
+# =============================================================================
+# Núcleo SQL síncrono (PyMSSQL) - se ejecuta en threadpool
+# =============================================================================
+
+def _has_bypass_role_sql(usuario_id: int) -> bool:
+    sql = """
+        SELECT TOP 1 1
+        FROM Usuario_RolesContexto urc
+        INNER JOIN Usuario_Roles r
+            ON urc.RolID = r.RolID AND r.Activo = 1
+        WHERE urc.UsuarioID = %s
+          AND urc.Activo = 1
+          AND (
+                UPPER(LTRIM(RTRIM(r.CodigoRol))) IN ('SUPERADMIN', 'ADMIN')
+                OR UPPER(LTRIM(RTRIM(r.NombreRol))) IN ('SUPERADMINISTRADOR', 'ADMINISTRADOR')
+                OR r.NivelJerarquia >= 90
+          )
     """
-    FASE 9: Verifica si el usuario tiene un permiso RBAC.
-    
-    Orden de resolución (4 capas):
-    1. Permisos directos (sec_permisos) → FASE 4
-    2. Múltiples roles (sec_roles array) → FASE 6
-    3. Rol único (sec_rol string) → FASE 5 (compatibilidad)
-    4. Fallback SuperAdmin → FASE 3
-    
-    Args:
-        user: Diccionario con datos del usuario (debe incluir sec_permisos, sec_roles, sec_rol, role)
-        permiso: Código del permiso a verificar (ej: 'SISTEMA_USUARIOS_VER')
-    
-    Returns:
-        bool: True si tiene el permiso por cualquiera de las 4 capas
-    
-    NOTA: Esta función NO implementa el fallback legacy (role_level).
-          Ese fallback se maneja en el código que llama a esta función.
+    with get_sql_connection() as conn:
+        cur = conn.cursor()
+        cur.execute(sql, (usuario_id,))
+        return cur.fetchone() is not None
+
+
+def _has_permission_sql(usuario_id: int, modules: List[str]) -> bool:
+    if not modules:
+        return False
+    placeholders = ",".join(["%s"] * len(modules))
+    sql = f"""
+        SELECT TOP 1 1
+        FROM Usuario_RolesContexto urc
+        INNER JOIN Usuario_Roles r
+            ON r.RolID = urc.RolID AND r.Activo = 1
+        INNER JOIN Usuario_PermisosRolModulo prm
+            ON prm.RolID = urc.RolID AND prm.Activo = 1 AND prm.Permitido = 1
+        INNER JOIN Sistema_Modulos sm
+            ON sm.ModuloID = prm.ModuloID
+        WHERE urc.UsuarioID = %s
+          AND urc.Activo = 1
+          AND (
+                UPPER(LTRIM(RTRIM(sm.Codigo))) IN ({placeholders})
+                OR UPPER(REPLACE(LTRIM(RTRIM(sm.Nombre)), ' ', '_')) IN ({placeholders})
+          )
     """
-    db = _get_db()
-    
-    # 1. Permisos directos (FASE 4)
-    permisos_directos = user.get('sec_permisos', [])
-    if permiso in permisos_directos:
-        return True
-    
-    # 2. Múltiples roles (FASE 6)
-    sec_roles = user.get('sec_roles', [])
-    for rol_codigo in sec_roles:
-        if rol_codigo in ROLES_WHITELIST:
-            rol_doc = await db.sec_roles.find_one({"codigo": rol_codigo, "activo": True})
-            if rol_doc and permiso in rol_doc.get('permisos', []):
-                return True
-    
-    # 3. Rol único - compatibilidad FASE 5
-    sec_rol = user.get('sec_rol')
-    if sec_rol and sec_rol in ROLES_WHITELIST:
-        rol_doc = await db.sec_roles.find_one({"codigo": sec_rol, "activo": True})
-        if rol_doc and permiso in rol_doc.get('permisos', []):
+    params = [usuario_id] + modules + modules
+    with get_sql_connection() as conn:
+        cur = conn.cursor()
+        cur.execute(sql, tuple(params))
+        return cur.fetchone() is not None
+
+
+def _verificar_sql(usuario_id: int, permiso: str) -> bool:
+    """Núcleo síncrono. Fail-closed ante errores (el caller tiene fallback legacy)."""
+    try:
+        if _has_bypass_role_sql(usuario_id):
             return True
-    
-    # 4. Fallback SuperAdmin (FASE 3)
-    if user.get('role') == 'SuperAdministrador':
+        modules = _module_candidates_from_permiso(permiso)
+        if modules:
+            return _has_permission_sql(usuario_id, modules)
+        return False
+    except Exception:
+        return False
+
+
+# =============================================================================
+# API pública (ASÍNCRONA - 8 call-sites usan await)
+# =============================================================================
+
+async def verificar_permiso_rbac(*args, **kwargs) -> bool:
+    """
+    Verifica permiso RBAC contra EDARSAHUB SQL.
+
+    Firma flexible (acepta (current_user, permiso) o kwargs). Ignora cualquier
+    parámetro `db` legacy si se envía.
+
+    Resolución:
+      1. Bypass inmediato si current_user['role'] (CodigoRol) es admin -> sin SQL.
+      2. Si no, consulta SQL (en threadpool) rol/permiso del usuario.
+    """
+    current_user = _extract_current_user(*args, **kwargs)
+    if not current_user:
+        return False
+
+    # 1. Bypass rápido por rol del token (CodigoRol)
+    if _extract_role(current_user) in BYPASS_ROLES:
         return True
-    
-    return False
+
+    # 2. Verificación SQL para usuarios no-admin
+    usuario_id = _extract_usuario_id(current_user)
+    if not usuario_id:
+        return False
+
+    permiso = _extract_permiso(*args, **kwargs)
+    return await run_in_threadpool(_verificar_sql, usuario_id, permiso)
