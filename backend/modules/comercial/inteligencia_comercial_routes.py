@@ -110,7 +110,7 @@ def _require_permission(current_user: Dict[str, Any], permission: str = "INTELIG
 
     # Superadmin/admin legacy
     role = str(current_user.get("role") or current_user.get("rol") or "").upper()
-    if role in {"SUPERADMIN", "ADMIN", "ADMINISTRADOR"}:
+    if role in {"SUPERADMIN", "SUPERADMINISTRADOR", "ADMIN", "ADMINISTRADOR"}:
         return
 
     permissions = current_user.get("permissions") or current_user.get("permisos") or []
@@ -356,7 +356,7 @@ async def get_tendencia_diaria(
     _require_permission(current_user)
     
     params: Dict[str, Any] = {"dias": dias}
-    where = [f"fecha_operacion >= DATEADD(DAY, -%(dias)s, GETDATE())"]
+    where = ["fecha_operacion >= DATEADD(DAY, -%(dias)s, GETDATE())"]
     
     if unidad_negocio_nombre:
         where.append("unidad_negocio_nombre = %(unidad)s")

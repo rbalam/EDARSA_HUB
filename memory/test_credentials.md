@@ -2,8 +2,8 @@
 
 ## Usuario SuperAdmin (Principal)
 - **Email:** `ricardo@edarsa.com.mx`
-- **Contraseña:** `Ricardo2835!`  ⚠️ NOTA (2026-06-07): el login devuelve "Credenciales inválidas"; al parecer la contraseña fue cambiada/está en proceso de reset. Para pruebas usar la cuenta Administrador de abajo.
-- **Rol:** SUPERADMIN
+- **Contraseña:** `Ricardo2835!`  ✅ (2026-06-07: contraseña restablecida con bcrypt del sistema y verificada; login OK. UsuarioID=8, Activo=True)
+- **Rol:** SUPERADMIN (CodigoRol) / `SuperAdministrador` (NombreRol legacy en `role`)
 - **Permisos:** Acceso global a todos los módulos y menús de sistema
 
 ## Usuario Administrador (Legacy)

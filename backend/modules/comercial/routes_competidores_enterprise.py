@@ -153,7 +153,7 @@ async def relacionar_competidor_endpoint(
     - Comentarios
     """
     usuario = current_user.get('email', 'sistema')
-    es_superadmin = current_user.get('rol') == 'SuperAdministrador'
+    es_superadmin = current_user.get('role') == 'SuperAdministrador'
     
     # Validar acceso RBAC
     if not validar_acceso_unidad(current_user.get('id'), data.unidad_negocio_pk, es_superadmin):
@@ -190,7 +190,7 @@ async def desrelacionar_competidor_endpoint(
     - Otras unidades donde esté relacionado
     """
     usuario = current_user.get('email', 'sistema')
-    es_superadmin = current_user.get('rol') == 'SuperAdministrador'
+    es_superadmin = current_user.get('role') == 'SuperAdministrador'
     
     if not validar_acceso_unidad(current_user.get('id'), data.unidad_negocio_pk, es_superadmin):
         raise HTTPException(status_code=403, detail="Sin acceso a esta unidad de negocio")
@@ -243,7 +243,7 @@ async def listar_competidores_unidad_endpoint(
     - Segmento
     - Concepto
     """
-    es_superadmin = current_user.get('rol') == 'SuperAdministrador'
+    es_superadmin = current_user.get('role') == 'SuperAdministrador'
     
     if not validar_acceso_unidad(current_user.get('id'), unidad_negocio_pk, es_superadmin):
         raise HTTPException(status_code=403, detail="Sin acceso a esta unidad de negocio")
@@ -270,7 +270,7 @@ async def obtener_competidor_unidad_endpoint(
     
     Retorna datos del catálogo + datos de la relación con la unidad.
     """
-    es_superadmin = current_user.get('rol') == 'SuperAdministrador'
+    es_superadmin = current_user.get('role') == 'SuperAdministrador'
     
     if not validar_acceso_unidad(current_user.get('id'), unidad_negocio_pk, es_superadmin):
         raise HTTPException(status_code=403, detail="Sin acceso a esta unidad de negocio")
@@ -294,7 +294,7 @@ async def estadisticas_competidores_endpoint(
     """
     Estadísticas de competidores para una unidad específica.
     """
-    es_superadmin = current_user.get('rol') == 'SuperAdministrador'
+    es_superadmin = current_user.get('role') == 'SuperAdministrador'
     
     if not validar_acceso_unidad(current_user.get('id'), unidad_negocio_pk, es_superadmin):
         raise HTTPException(status_code=403, detail="Sin acceso a esta unidad de negocio")

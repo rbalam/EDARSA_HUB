@@ -124,7 +124,15 @@ class AuthRepository:
         if not user:
             return None
         
-        role = user.get("CodigoRol") or user.get("NombreRol") or "USUARIO"
+        # CANONICIDAD DE ROL: el sistema (backend ~185 sitios + frontend ~47)
+        # compara mayoritariamente contra el NombreRol legacy ('SuperAdministrador',
+        # 'Administrador', ...). La migración SQL-First había expuesto el CodigoRol
+        # canónico ('SUPERADMIN', ...) en `role`, rompiendo esas comparaciones por
+        # igualdad. Punto único de normalización: `role` lleva el NombreRol legacy
+        # (lo que esperan los guards y el frontend) y se conserva el CodigoRol
+        # canónico en `role_code`/`_sql_rol_codigo` para el código RBAC canónico-aware.
+        role_code = user.get("CodigoRol") or ""
+        role = user.get("NombreRol") or user.get("CodigoRol") or "Usuario"
         
         return {
             "id": str(user.get("PublicUUID") or user.get("MongoLegacyID") or user.get("UsuarioID")),
@@ -134,11 +142,13 @@ class AuthRepository:
             "nombre": user.get("NombreCompleto") or user.get("Nombre") or user.get("Username"),
             "name": user.get("NombreCompleto") or user.get("Nombre") or user.get("Username"),
             "role": role,
+            "role_code": role_code,
             "active": bool(user.get("Activo", True)),
             "password_hash": user.get("PasswordHashTexto"),
             "password": user.get("PasswordHashTexto"),  # Compatibilidad con service.py
             "auth_source": "SQL_USUARIO_CATALOGO",
             "_sql_usuario_id": user.get("UsuarioID"),
+            "_sql_rol_codigo": role_code,
         }
     
     @staticmethod

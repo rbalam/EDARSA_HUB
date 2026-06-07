@@ -97,6 +97,26 @@ Los 5 bloqueadores P0 del Dictamen cerrados y verificados (cURL/pytest, sin test
   - [x] (2026-06-07) VALIDACIÓN POR MUESTREO DE LLAVES (Fase 6-ter, SOLO LECTURA): 27 colecciones CUBIERTA_PARCIALMENTE validadas doc-por-doc contra su tabla SQL (COUNT parametrizado). Veredicto duro: **6 CUBIERTA_CONFIRMADA** (toda la muestra hallada unívocamente → candidatas a borrado CON respaldo): `users`→Usuario_Catalogo, `inventarios_procesados_auto`→Inventarios_ProcesadosAuto (vía col MongoId), `portal_suppliers`→Portal_Proveedores (vía MongoId), `consultas_custom`→Sistema_ConsultasCustom, `sec_modulos_sistema`→Sistema_Modulos, `server_status`→Sistema_ServidoresEstado. **18 NO_CUBIERTA + 3 SIN_LLAVE** (NO borrar): destacan rbac_roles/sec_roles/roles/rbac_usuarios_roles (nombres no coinciden en Sistema_RBAC_Roles) y rbac_permisos/sec_permisos_catalogo (AMBIGUO en RBAC_Permisos). Reportes en `/app/docs/reports/mongo_validacion_muestra_llaves_20260607_191439/` (MD/JSON + CSV detalle por doc + CSV resumen). NADA borrado/modificado.
 - [ ] Remover pymongo de dependencias (requirements)
 
+### P0 - Canonicidad de Rol (SUPERADMIN ↔ SuperAdministrador) ✅ COMPLETE (2026-06-07)
+Bug urgente reportado por el usuario: `role` en current_user/JWT llevaba el **CodigoRol**
+canónico (`SUPERADMIN`), pero ~185 guards de backend y ~47 del frontend comparan por
+igualdad contra el **NombreRol** legacy (`SuperAdministrador`). Resultado: el
+SuperAdministrador era rechazado en decenas de endpoints (p.ej. `/api/config-asignaciones`
+devolvía 403). Causa raíz adicional ("dos claves distintas"): 5 sitios en
+`routes_competidores_enterprise.py` leían la clave equivocada `current_user.get('rol')`
+(no existe; la clave es `'role'`).
+Fix de punto único en `modules/auth/repository.py::_normalize_user`:
+- `role` = `NombreRol` legacy (lo que esperan guards + frontend).
+- Se conserva el CodigoRol canónico en `role_code` y `_sql_rol_codigo` (para RBAC canónico-aware).
+- Ajuste puntual `inteligencia_comercial_routes.py:113` (set acepta `SUPERADMINISTRADOR`).
+- 5x `current_user.get('rol')` → `current_user.get('role')` en competidores enterprise.
+Verificado vía cURL: login Ricardo OK, `/api/config-asignaciones` 200 (antes 403),
+`/api/inteligencia/dashboard` 200, total comercial canónico intacto **$1,573,660.81**.
+Regresión: `tests/test_rol_canonicidad_normalize_user.py` (4 tests) + `tests/test_rbac_helper.py` (5).
+Equivalencia respetada: SUPERADMIN↔SuperAdministrador, ADMIN↔Administrador,
+SUPERVISOR↔Supervisor, USUARIO↔Usuario, VISOR↔Visor.
+También: password de `ricardo@edarsa.com.mx` restablecido a `Ricardo2835!` (bcrypt) y verificado.
+
 ---
 
 ## Testing Protocol
