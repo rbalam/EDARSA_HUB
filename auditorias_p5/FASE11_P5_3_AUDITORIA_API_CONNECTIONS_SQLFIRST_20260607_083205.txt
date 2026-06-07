@@ -1,0 +1,161 @@
+FASE 11 - P5-3 AUDITORIA API_CONNECTIONS SQL-FIRST Sun Jun  7 08:32:05 UTC 2026
+===== 2) DEFS REALES =====
+--- repository.py
+40:def init_api_connections_repository(database) -> None:
+47:def get_mongo_db():
+52:def _escape_sql(value: str) -> str:
+59:def _log_operation(servidor_id: str, accion: str, datos_anteriores: Dict, datos_nuevos: Dict, usuario: str) -> bool:
+93:def _sql_row_to_api_dict(row: Dict) -> Dict:
+153:def list_api_connections_sql(include_inactive: bool = False) -> List[Dict]:
+180:async def list_api_connections(include_inactive: bool = False) -> List[Dict]:
+188:def get_api_connection_sql(api_id: str) -> Optional[Dict]:
+211:async def get_api_connection(api_id: str) -> Optional[Dict]:
+219:def check_duplicate_api(name: str, url: str, exclude_id: str = None) -> Optional[Dict]:
+249:async def create_api_connection(data: Dict, created_by: str = "system") -> Dict:
+338:async def update_api_connection(api_id: str, data: Dict, updated_by: str = "system") -> Optional[Dict]:
+432:async def delete_api_connection(api_id: str, deleted_by: str = "system") -> bool:
+483:async def _sync_to_mongo_cache(api_id: str) -> bool:
+527:async def sync_all_to_mongo_cache() -> Dict:
+554:async def test_api_connection_health(api_id: str = None, url: str = None, api_key: str = None) -> Dict:
+622:def get_api_connection_with_decrypted_key(api_id: str) -> Optional[Dict]:
+671:async def get_api_connection_by_id_full(api_id: str) -> Optional[Dict]:
+712:async def get_decrypted_api_key(api_conn: Dict) -> str:
+732:async def execute_test_query(
+922:def get_api_connections_for_adapters() -> List[Dict]:
+--- admin_core_connections.py
+47:def require_super_admin(current_user: Dict) -> bool:
+82:def audit_core_action(
+125:def get_core_connections_from_sql() -> List[Dict]:
+164:def get_core_connection_by_id(server_id: str) -> Optional[Dict]:
+210:def format_core_connection(conn: Dict, include_mongo: bool = True) -> Dict:
+261:def _classify_sql_error(error_msg: str, error_type: str) -> tuple:
+275:def _validate_connection_config(conn: Dict) -> tuple:
+284:def test_core_connectivity(conn: Dict, timeout: int = 10) -> Dict:
+347:async def list_core_connections(
+382:async def get_core_connection_detail(
+418:async def test_core_connection(
+--- mongo_compat.py
+28:def init_mongo_compat(db) -> None:
+43:def get_mongo_db():
+48:def is_mongo_available() -> bool:
+57:async def mongo_find_one(
+81:async def mongo_find(
+117:async def mongo_count(
+141:async def mongo_insert_one(
+163:async def mongo_insert_many(
+189:async def mongo_update_one(
+213:async def mongo_update_many(
+240:async def mongo_delete_one(
+262:async def mongo_delete_many(
+288:async def mongo_aggregate(
+314:def require_mongo(func):
+335:def mongo_optional(default_value=None):
+===== 3) RUTAS / ENDPOINTS =====
+346:@router.get("")
+381:@router.get("/{server_id}")
+417:@router.post("/{server_id}/test")
+===== 4) USOS VIVOS MONGO/COMPAT =====
+/app/backend/modules/api_connections/repository.py:47:def get_mongo_db():
+/app/backend/modules/api_connections/repository.py:470:        db = get_mongo_db()
+/app/backend/modules/api_connections/repository.py:472:            await db.api_connections_cache.delete_one({"id": api_id})
+/app/backend/modules/api_connections/repository.py:489:        db = get_mongo_db()
+/app/backend/modules/api_connections/repository.py:515:        await db.api_connections_cache.update_one(
+/app/backend/modules/api_connections/repository.py:604:        db = get_mongo_db()
+/app/backend/modules/api_connections/repository.py:606:            await db.api_health_logs.insert_one({
+/app/backend/api/admin_core_connections.py:33:from core.db import execute_sql_query, get_mongo_db
+/app/backend/api/admin_core_connections.py:114:        db = get_mongo_db()
+/app/backend/api/admin_core_connections.py:116:            db.auditoria_core_admin.insert_one(log_data)
+/app/backend/api/admin_core_connections.py:249:            db = get_mongo_db()
+/app/backend/api/admin_core_connections.py:251:                mongo_server = db.servidores_conexiones.find_one({'id': conn.get('id')})
+/app/backend/core/mongo_compat.py:28:def init_mongo_compat(db) -> None:
+/app/backend/core/mongo_compat.py:43:def get_mongo_db():
+/app/backend/core/mongo_compat.py:57:async def mongo_find_one(
+/app/backend/core/mongo_compat.py:68:        logger.debug(f"[MONGO_COMPAT] find_one({collection_name}) - MongoDB no disponible")
+/app/backend/core/mongo_compat.py:74:            return await collection.find_one(filter_query, projection)
+/app/backend/core/mongo_compat.py:75:        return await collection.find_one(filter_query)
+/app/backend/core/mongo_compat.py:77:        logger.error(f"[MONGO_COMPAT] Error en find_one({collection_name}): {e}")
+/app/backend/core/mongo_compat.py:81:async def mongo_find(
+/app/backend/core/mongo_compat.py:95:        logger.debug(f"[MONGO_COMPAT] find({collection_name}) - MongoDB no disponible")
+/app/backend/core/mongo_compat.py:102:        cursor = collection.find(filter_query, projection or {"_id": 0})
+/app/backend/core/mongo_compat.py:113:        logger.error(f"[MONGO_COMPAT] Error en find({collection_name}): {e}")
+/app/backend/core/mongo_compat.py:141:async def mongo_insert_one(
+/app/backend/core/mongo_compat.py:151:        logger.warning(f"[MONGO_COMPAT] insert_one({collection_name}) - MongoDB no disponible, documento NO persistido")
+/app/backend/core/mongo_compat.py:156:        result = await collection.insert_one(document)
+/app/backend/core/mongo_compat.py:159:        logger.error(f"[MONGO_COMPAT] Error en insert_one({collection_name}): {e}")
+/app/backend/core/mongo_compat.py:189:async def mongo_update_one(
+/app/backend/core/mongo_compat.py:201:        logger.warning(f"[MONGO_COMPAT] update_one({collection_name}) - MongoDB no disponible")
+/app/backend/core/mongo_compat.py:206:        result = await collection.update_one(filter_query, update, upsert=upsert)
+/app/backend/core/mongo_compat.py:209:        logger.error(f"[MONGO_COMPAT] Error en update_one({collection_name}): {e}")
+/app/backend/core/mongo_compat.py:240:async def mongo_delete_one(
+/app/backend/core/mongo_compat.py:250:        logger.warning(f"[MONGO_COMPAT] delete_one({collection_name}) - MongoDB no disponible")
+/app/backend/core/mongo_compat.py:255:        result = await collection.delete_one(filter_query)
+/app/backend/core/mongo_compat.py:258:        logger.error(f"[MONGO_COMPAT] Error en delete_one({collection_name}): {e}")
+/app/backend/core/mongo_compat.py:262:async def mongo_delete_many(
+/app/backend/core/mongo_compat.py:272:        logger.warning(f"[MONGO_COMPAT] delete_many({collection_name}) - MongoDB no disponible")
+/app/backend/core/mongo_compat.py:277:        result = await collection.delete_many(filter_query)
+/app/backend/core/mongo_compat.py:280:        logger.error(f"[MONGO_COMPAT] Error en delete_many({collection_name}): {e}")
+/app/backend/core/mongo_compat.py:288:async def mongo_aggregate(
+/app/backend/core/mongo_compat.py:298:        logger.debug(f"[MONGO_COMPAT] aggregate({collection_name}) - MongoDB no disponible")
+/app/backend/core/mongo_compat.py:303:        cursor = collection.aggregate(pipeline)
+/app/backend/core/mongo_compat.py:306:        logger.error(f"[MONGO_COMPAT] Error en aggregate({collection_name}): {e}")
+/app/backend/core/mongo_compat.py:359:    'init_mongo_compat',
+/app/backend/core/mongo_compat.py:360:    'get_mongo_db',
+/app/backend/core/mongo_compat.py:362:    'mongo_find_one',
+/app/backend/core/mongo_compat.py:365:    'mongo_insert_one',
+/app/backend/core/mongo_compat.py:367:    'mongo_update_one',
+/app/backend/core/mongo_compat.py:369:    'mongo_delete_one',
+/app/backend/core/mongo_compat.py:370:    'mongo_delete_many',
+===== 5) IMPORTADORES/CALLERS VIVOS =====
+/app/backend/server.py:686:from modules.api_connections.repository import init_api_connections_repository
+/app/backend/server.py:11434:from modules.api_connections.repository import get_api_connection_by_id_full
+/app/backend/server.py:11482:from modules.api_connections.repository import execute_test_query
+/app/backend/server.py:11684:from modules.api_connections.repository import get_api_connection_by_id_full, execute_test_query
+/app/backend/server.py:11869:from modules.api_connections.repository import get_api_connection_by_id_full, execute_test_query
+/app/backend/server.py:16564:from api.admin_core_connections import router as admin_core_router
+===== 6) REGISTRO server.py =====
+685:from modules.api_connections import api_connections_router
+686:from modules.api_connections.repository import init_api_connections_repository
+687:from modules.api_connections.routes import set_verify_token
+688:init_api_connections_repository(None)  # MongoDB eliminado
+690:api_router.include_router(api_connections_router)
+698:from modules.api_connections import api_universal_test_router, set_api_uqt_verify_token
+11434:    from modules.api_connections.repository import get_api_connection_by_id_full
+11482:    from modules.api_connections.repository import execute_test_query
+11684:    from modules.api_connections.repository import get_api_connection_by_id_full, execute_test_query
+11869:    from modules.api_connections.repository import get_api_connection_by_id_full, execute_test_query
+16564:    from api.admin_core_connections import router as admin_core_router
+===== 7) COLECCIONES MONGO =====
+/app/backend/modules/api_connections/repository.py:
+  - (patron simple sin matches)
+/app/backend/api/admin_core_connections.py:
+  - (patron simple sin matches)
+===== 9) TABLAS SQL RELACIONADAS (READ-ONLY) =====
+TABLAS_SQL_RELACIONADAS:
+  - dbo.Backup_P4_14_20260606_Dups_Usuario_ServidoresAsignacion
+  - dbo.Backup_P4_14_20260606_Orphans_Usuario_ServidoresAsignacion
+  - dbo.ConsultasSQL_Servidores
+  - dbo.CRM_Integracion_Conectores
+  - dbo.P4_14_Backup_Dups_Usuario_ServidoresAsignacion_20260606_P4_14
+  - dbo.P4_14_Backup_Orphans_Usuario_ServidoresAsignacion_20260606_P4_14
+  - dbo.Servidores_Conexiones
+  - dbo.Servidores_Conexiones_backup_tipos_enriq_20260513_0840
+  - dbo.Servidores_Conexiones_backup_tipos_mov_20260513_0729
+  - dbo.Servidores_Conexiones_Log
+  - dbo.Servidores_ConexionEstado
+  - dbo.Servidores_Status
+  - dbo.Sistema_EmpresasServidores
+  - dbo.Sistema_ServidoresConexionEstado
+  - dbo.Sistema_ServidoresEstado
+  - dbo.Sistema_ServidoresSucursalesConfig
+  - dbo.Sistema_ServidorSucursalesConfig
+  - dbo.Sistema_SucursalServidorConfig
+  - dbo.Sistema_SucursalServidorMapeo
+  - dbo.Sistema_VW_Servidores_Conexiones_Publico
+  - dbo.Usuario_ServidoresAsignacion
+  - dbo.vw_Servidores_Conexiones_Versiones
+===== 10) RESUMEN =====
+  repo_defs: 21
+  api_defs: 11
+  repo_mongo_ops: 3
+  api_mongo_refs: 3
+  api_routes: 3
