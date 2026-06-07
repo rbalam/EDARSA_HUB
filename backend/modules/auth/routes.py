@@ -741,20 +741,12 @@ async def forgot_password(request_data: ForgotPasswordRequest, request: Request)
     ip = request.client.host if request.client else "unknown"
     user_agent = request.headers.get("user-agent", "unknown")
     
-    # Obtener URL base del frontend
-    # Usar el header Origin o Referer, o default a la URL de preview
-    origin = request.headers.get("origin", "")
-    if not origin:
-        referer = request.headers.get("referer", "")
-        if referer:
-            from urllib.parse import urlparse
-            parsed = urlparse(referer)
-            origin = f"{parsed.scheme}://{parsed.netloc}"
-    
-    # Default a preview URL si no hay origin
-    if not origin:
-        import os
-        origin = os.environ.get("FRONTEND_URL", "https://erp-crm-enterprise-1.preview.emergentagent.com")
+    # URL base del frontend para el enlace de reset.
+    # IMPORTANTE: NO usar Origin/Referer de la petición: el usuario puede entrar
+    # por un host alterno (ej. *.preview.emergentcf.cloud) que el proxy bloquea
+    # con 403. El enlace SIEMPRE debe apuntar al dominio público canónico.
+    import os
+    origin = os.environ.get("FRONTEND_URL", "https://erp-crm-enterprise-1.preview.emergentagent.com")
     
     result = request_password_reset(
         email=request_data.email,
