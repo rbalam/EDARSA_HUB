@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff, Globe, Link2, Clock, Zap, Building2, Eye, EyeOff, RefreshCw, GripVertical, TestTube2, AlertTriangle, Play, Table2, LayoutGrid, List, Minus, Maximize2, X, Move, Mail } from 'lucide-react';
+import { Plus, Edit, Trash2, Database, Settings, Loader2, Check, Filter, Code, CheckCircle2, AlertCircle, Wifi, WifiOff, Globe, Link2, Clock, Zap, Building2, Eye, EyeOff, RefreshCw, GripVertical, TestTube2, AlertTriangle, Play, Table2, LayoutGrid, List, Minus, Maximize2, X, Move, Mail, History, ScrollText, User } from 'lucide-react';
 import { toast } from 'sonner';
 import QueryConfigWizard from '@/components/QueryConfigWizard';
 import UniversalQueryTester from '@/components/UniversalQueryTester';
@@ -106,6 +106,32 @@ const Servidores = () => {
   
   // Estado para el tab activo (SQL Servers o Conexiones API)
   const [activeMainTab, setActiveMainTab] = useState('sql');
+
+  // ========== ESTADO BITÁCORA ADMIN CORE ==========
+  const [coreAuditLog, setCoreAuditLog] = useState([]);
+  const [loadingCoreAudit, setLoadingCoreAudit] = useState(false);
+
+  // Cargar bitácora de acciones CORE (lectura SQL-First de Servidores_Conexiones_Log)
+  const loadCoreAuditLog = useCallback(async () => {
+    setLoadingCoreAudit(true);
+    try {
+      const response = await api.get('/admin/core-connections/audit-log', { params: { limit: 100 } });
+      setCoreAuditLog(response.data?.data || []);
+    } catch (error) {
+      console.error('Error cargando bitácora CORE:', error);
+      toast.error('Error al cargar la bitácora de conexiones');
+      setCoreAuditLog([]);
+    } finally {
+      setLoadingCoreAudit(false);
+    }
+  }, []);
+
+  // Cargar bitácora cuando se abre su tab (lazy)
+  useEffect(() => {
+    if (activeMainTab === 'bitacora') {
+      loadCoreAuditLog();
+    }
+  }, [activeMainTab, loadCoreAuditLog]);
   
   // Estado para Conexiones API
   const [apiConnections, setApiConnections] = useState([]);
@@ -1236,7 +1262,7 @@ const Servidores = () => {
 
       {/* Tabs principales: SQL Servers | Conexiones API | Vtiger CRM */}
       <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
-        <TabsList className="grid w-full max-w-xl grid-cols-3 mb-6">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4 mb-6">
           <TabsTrigger value="sql" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
             SQL Servers
@@ -1248,6 +1274,10 @@ const Servidores = () => {
           <TabsTrigger value="vtiger" className="flex items-center gap-2">
             <Link2 className="h-4 w-4" />
             Vtiger CRM
+          </TabsTrigger>
+          <TabsTrigger value="bitacora" className="flex items-center gap-2" data-testid="tab-bitacora-core">
+            <History className="h-4 w-4" />
+            Bitácora
           </TabsTrigger>
         </TabsList>
 
@@ -1425,8 +1455,9 @@ const Servidores = () => {
                                 size="sm"
                                 className="h-7 w-7 p-0"
                                 onClick={() => {
-                                  setSelectedConnection(server);
-                                  setUniversalTesterOpen(true);
+                                  setServerForUniversalTest(server);
+                                  setUniversalTestConnectionType('sql');
+                                  setUniversalTestOpen(true);
                                 }}
                                 title="Test Universal"
                               >
@@ -1851,8 +1882,9 @@ const Servidores = () => {
                               size="sm"
                               className="h-7 w-7 p-0"
                               onClick={() => {
-                                setSelectedConnection(apiConn);
-                                setUniversalTesterOpen(true);
+                                setServerForUniversalTest(apiConn);
+                                setUniversalTestConnectionType('api');
+                                setUniversalTestOpen(true);
                               }}
                               title="Test Universal"
                             >
@@ -2321,6 +2353,103 @@ const Servidores = () => {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Tab: Bitácora Admin CORE */}
+        <TabsContent value="bitacora">
+          <div className="flex items-center justify-between mb-4" data-testid="bitacora-core-panel">
+            <div className="flex items-start gap-3">
+              <div className="bg-amber-50 p-2 rounded-lg">
+                <ScrollText className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-zinc-800" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  Bitácora de Conexiones CORE
+                </h3>
+                <p className="text-sm text-zinc-500">
+                  Registro de pruebas y acciones sobre conexiones del HUB (auditoría EDARSAHUB SQL).
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={loadCoreAuditLog}
+              variant="outline"
+              size="sm"
+              disabled={loadingCoreAudit}
+              className="border-amber-200 text-amber-700 hover:bg-amber-50"
+              data-testid="bitacora-refresh-button"
+            >
+              {loadingCoreAudit ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Actualizar
+            </Button>
+          </div>
+
+          {loadingCoreAudit ? (
+            <div className="flex items-center justify-center h-48">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-500"></div>
+            </div>
+          ) : coreAuditLog.length === 0 ? (
+            <div className="text-center py-12 text-zinc-500 border border-dashed border-zinc-200 rounded-lg" data-testid="bitacora-empty">
+              <History className="h-10 w-10 mx-auto mb-3 text-zinc-300" />
+              Sin registros de auditoría todavía.
+            </div>
+          ) : (
+            <div className="border border-zinc-200 rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm" data-testid="bitacora-table">
+                  <thead className="bg-zinc-50 border-b border-zinc-200">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Fecha</th>
+                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Conexión</th>
+                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Acción</th>
+                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Usuario</th>
+                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Estado</th>
+                      <th className="px-3 py-2 text-left font-medium text-zinc-600">Origen</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {coreAuditLog.map((row) => (
+                      <tr key={row.log_id} className="border-b border-zinc-100 hover:bg-zinc-50" data-testid="bitacora-row">
+                        <td className="px-3 py-2 text-zinc-700 text-xs whitespace-nowrap font-mono">
+                          {row.fecha ? new Date(row.fecha).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                        </td>
+                        <td className="px-3 py-2 font-medium text-zinc-800">{row.servidor_nombre || '—'}</td>
+                        <td className="px-3 py-2">
+                          <Badge variant="outline" className="text-xs font-mono">{row.accion || '—'}</Badge>
+                        </td>
+                        <td className="px-3 py-2 text-zinc-600">
+                          <span className="inline-flex items-center gap-1">
+                            <User className="h-3 w-3 text-zinc-400" />
+                            {row.usuario || 'Sistema'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2">
+                          {row.estado ? (
+                            <Badge
+                              variant="outline"
+                              className={`text-xs ${row.estado === 'SUCCESS' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}
+                            >
+                              {row.estado}
+                            </Badge>
+                          ) : (
+                            <span className="text-zinc-400 text-xs">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-zinc-500 text-xs font-mono">{row.ip_origen || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="bg-zinc-50 px-3 py-2 text-xs text-zinc-500 border-t border-zinc-200">
+                {coreAuditLog.length} registros (más recientes primero)
+              </div>
             </div>
           )}
         </TabsContent>
@@ -3362,7 +3491,7 @@ const Servidores = () => {
                 <p className="text-sm text-zinc-500 mb-4">
                   Actualmente todas las sucursales de este servidor son visibles en operaciones.
                   <br />
-                  Haz clic en "Sincronizar desde SQL" para cargar las sucursales y configurar su visibilidad.
+                  Haz clic en &quot;Sincronizar desde SQL&quot; para cargar las sucursales y configurar su visibilidad.
                 </p>
               </div>
             )}

@@ -404,6 +404,94 @@ async def list_core_connections(
         )
 
 
+@router.get("/audit-log")
+async def get_core_audit_log(
+    limit: int = 50,
+    server_id: Optional[str] = None,
+    current_user: Dict = Depends(lambda: None)
+):
+    """
+    Bitácora de acciones sobre conexiones CORE (lectura SQL-First).
+
+    Lee dbo.Servidores_Conexiones_Log. NO expone secretos.
+    RBAC: Solo SuperAdministrador (enforced al incluir el router).
+    NOTA: definido ANTES de /{server_id} para evitar colisión de ruta.
+    """
+    try:
+        safe_limit = max(1, min(int(limit), 200))
+    except (TypeError, ValueError):
+        safe_limit = 50
+
+    where = ""
+    if server_id:
+        safe_sid = server_id.replace("'", "''")
+        where = f"WHERE l.servidor_id = '{safe_sid}'"
+
+    query = f"""
+    SELECT TOP ({safe_limit})
+        l.log_id,
+        CAST(l.servidor_id AS VARCHAR(50)) as servidor_id,
+        s.nombre as servidor_nombre,
+        l.accion,
+        l.usuario,
+        CONVERT(VARCHAR(33), l.fecha, 126) as fecha,
+        l.ip_origen,
+        l.datos_nuevos
+    FROM dbo.Servidores_Conexiones_Log l
+    LEFT JOIN dbo.Servidores_Conexiones s ON s.id = l.servidor_id
+    {where}
+    ORDER BY l.fecha DESC, l.log_id DESC
+    """
+
+    try:
+        rows = execute_sql_query(
+            EDARSAHUB_CONFIG['host'],
+            EDARSAHUB_CONFIG['port'],
+            EDARSAHUB_CONFIG['database'],
+            EDARSAHUB_CONFIG['username'],
+            EDARSAHUB_CONFIG['password'],
+            query
+        )
+    except Exception as e:
+        logger.error(f"[CORE_ADMIN][AUDIT_LOG] Error: {type(e).__name__}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al obtener la bitácora CORE"
+        )
+
+    items = []
+    for r in rows or []:
+        estado = None
+        datos = r.get('datos_nuevos')
+        if datos:
+            try:
+                parsed = json.loads(datos)
+                if isinstance(parsed, dict):
+                    estado = parsed.get('status')
+            except (ValueError, TypeError):
+                estado = None
+        items.append({
+            'log_id': r.get('log_id'),
+            'servidor_id': r.get('servidor_id'),
+            'servidor_nombre': r.get('servidor_nombre') or '—',
+            'accion': r.get('accion'),
+            'usuario': r.get('usuario') or 'Sistema',
+            'fecha': r.get('fecha'),
+            'ip_origen': r.get('ip_origen'),
+            'estado': estado,
+        })
+
+    return {
+        'status': 'SUCCESS',
+        'data': items,
+        'meta': {
+            'count': len(items),
+            'limit': safe_limit,
+            'secrets_exposed': False
+        }
+    }
+
+
 @router.get("/{server_id}")
 async def get_core_connection_detail(
     server_id: str,
