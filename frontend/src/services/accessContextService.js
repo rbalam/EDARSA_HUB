@@ -1,7 +1,12 @@
+import { getToken } from "../lib/api";
+
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 function getAuthHeaders() {
-  const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+  // FUENTE ÚNICA del token: getToken() de lib/api.js (sessionStorage
+  // 'edarsa_memory_token' / memoria). Antes leía la llave 'token' (inexistente),
+  // por lo que access-context viajaba SIN Bearer → 403 y forzaba logout al navegar.
+  const token = getToken();
   return {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),

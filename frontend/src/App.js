@@ -73,6 +73,16 @@ import SyncMonitor from '@/pages/SyncMonitor';
 
 import { isAuthenticated } from '@/lib/auth';
 
+/**
+ * Redirección del catch-all: evita el logout espurio al navegar a rutas
+ * desconocidas. Si hay sesión activa → tablero; si no → login.
+ */
+function CatchAllRedirect() {
+  return isAuthenticated()
+    ? <Navigate to="/tablero-ejecutivo" replace />
+    : <Navigate to="/login" replace />;
+}
+
 // Portal de Proveedores (Subproyecto separado)
 import PortalProveedoresApp from '@/portal/App';
 
@@ -180,8 +190,11 @@ function App() {
               <Route path="operativo" element={<Navigate to="/reportes?tab=operativo" replace />} />
             </Route>
             
-            {/* Catch-all global - DEBE IR AL FINAL y FUERA del Layout */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
+            {/* Catch-all global - DEBE IR AL FINAL y FUERA del Layout.
+                IMPORTANTE: si el usuario está autenticado, una ruta desconocida
+                (ej. ítem de menú aún sin pantalla) NO debe expulsarlo al login;
+                se le envía al tablero. Solo si NO hay sesión va a /login. */}
+            <Route path="*" element={<CatchAllRedirect />} />
           </Routes>
           
           <Toaster position="top-right" richColors />

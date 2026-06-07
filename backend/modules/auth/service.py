@@ -151,17 +151,32 @@ async def get_user_by_id(user_id) -> Dict[str, Any]:
 # ============================================================================
 
 # Jerarquía de roles (mayor número = más privilegios)
+# IMPORTANTE: el JWT usa CodigoRol (canónico SQL, ej. 'SUPERADMIN'), pero el
+# sistema legacy usaba NombreRol (ej. 'SuperAdministrador'). Mapeamos AMBOS a la
+# misma escala legacy (1/2/3/100) para preservar los umbrales (>=3 admin, >=100
+# superadmin) usados en todo el módulo.
 ROLE_HIERARCHY = {
+    # NombreRol legacy
     'Usuario': 1,
     'Supervisor': 2,
     'Administrador': 3,
-    'SuperAdministrador': 100  # Rol máximo del sistema
+    'SuperAdministrador': 100,  # Rol máximo del sistema
+    # CodigoRol canónico SQL (el que viaja en el token)
+    'USUARIO': 1,
+    'SUPERVISOR': 2,
+    'ADMIN': 3,
+    'SUPERADMIN': 100,
+    # Compatibilidad adicional
+    'admin': 3,
+    'Admin': 3,
 }
 
 
 def _get_role_level(role: str) -> int:
-    """Obtiene el nivel de privilegio de un rol."""
-    return ROLE_HIERARCHY.get(role, 0)
+    """Obtiene el nivel de privilegio de un rol (acepta NombreRol o CodigoRol)."""
+    if not role:
+        return 0
+    return ROLE_HIERARCHY.get(role, ROLE_HIERARCHY.get(role.upper(), 0))
 
 
 def _can_manage_user(current_user: Dict, target_user: Dict) -> bool:
@@ -390,13 +405,16 @@ async def update_user_permissions(user_id: str, permissions: Dict, current_user:
         conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
         cursor = conn.cursor()
         
-        # Resolver UsuarioID SQL desde PublicUUID
-        user_id_lower = user_id.lower()
+        # Resolver UsuarioID SQL: aceptar tanto UsuarioID numérico como PublicUUID
+        # (el frontend de administración envía el UsuarioID numérico).
+        ident = str(user_id)
         cursor.execute("""
             SELECT UsuarioID 
             FROM Usuario_Catalogo 
-            WHERE LOWER(CAST(PublicUUID AS VARCHAR(36))) = %s AND Activo = 1
-        """, (user_id_lower,))
+            WHERE (UsuarioID = TRY_CONVERT(INT, %s)
+                   OR LOWER(CAST(PublicUUID AS VARCHAR(36))) = LOWER(%s))
+              AND Activo = 1
+        """, (ident, ident))
         
         row = cursor.fetchone()
         if not row:

@@ -133,12 +133,12 @@ export function BitacoraFilters({
           </div>
           <div>
             <label className="text-xs text-zinc-500 mb-1 block">Resultado</label>
-            <Select value={filtros.resultado} onValueChange={(v) => updateFiltro('resultado', v)}>
+            <Select value={filtros.resultado || 'todos'} onValueChange={(v) => updateFiltro('resultado', v === 'todos' ? '' : v)}>
               <SelectTrigger className="h-9">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="todos">Todos</SelectItem>
                 <SelectItem value="exitoso">Exitoso</SelectItem>
                 <SelectItem value="fallido">Fallido</SelectItem>
                 <SelectItem value="parcial">Parcial</SelectItem>
@@ -147,12 +147,12 @@ export function BitacoraFilters({
           </div>
           <div>
             <label className="text-xs text-zinc-500 mb-1 block">Tipo</label>
-            <Select value={filtros.tipo} onValueChange={(v) => updateFiltro('tipo', v)}>
+            <Select value={filtros.tipo || 'todos'} onValueChange={(v) => updateFiltro('tipo', v === 'todos' ? '' : v)}>
               <SelectTrigger className="h-9">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="todos">Todos</SelectItem>
                 <SelectItem value="LOGIN">Login</SelectItem>
                 <SelectItem value="LOGOUT">Logout</SelectItem>
                 <SelectItem value="CREAR">Crear</SelectItem>

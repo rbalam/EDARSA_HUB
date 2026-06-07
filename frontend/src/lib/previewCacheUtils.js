@@ -203,6 +203,15 @@ function clearSessionStorage() {
 function shouldClearKey(key) {
   const lowerKey = key.toLowerCase();
   
+  // NUNCA limpiar llaves de autenticación/sesión: borrarlas provoca logout y
+  // carreras de 401/403 en recarga dura (el token se reconstruía tarde).
+  const NEVER_CLEAR = [
+    'edarsa_memory_token',
+    'user',
+    'edarsa_preview_cache_reset_done',
+  ];
+  if (NEVER_CLEAR.includes(lowerKey)) return false;
+  
   // Verificar prefijos conocidos
   if (lowerKey.startsWith('edarsa')) return true;
   if (lowerKey.startsWith('edarsahub')) return true;

@@ -144,7 +144,7 @@ export const enterpriseMenuGroups = [
       {
         id: "direccion",
         label: "Dirección / Tablero Ejecutivo",
-        path: "/dashboard-ejecutivo",
+        path: "/tablero-ejecutivo",
         icon: "LayoutDashboard",
         section: "Dirección",
         keywords: ["direccion", "dashboard", "ejecutivo", "tablero", "kpi"]
