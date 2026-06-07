@@ -8,9 +8,9 @@
 
 ## Usuario Administrador (Legacy)
 - **Email:** `admin@edarsa.com`
-- **Contraseña:** `admin123`
-- **Rol:** Administrador (ADMIN, nivel 3) — NOTA: tiene `unidades_permitidas` asignadas y `unidad_activa`.
-- **Permisos:** Acceso completo; 28 módulos visibles.
+- **Contraseña:** `pruebas123`  (actualizada 2026-06-07)
+- **Rol:** **SUPERADMIN** (promovido 2026-06-07 a solicitud del usuario; antes era ADMIN). UsuarioID=1.
+- **Permisos:** 28 módulos visibles. Tiene `unidades_permitidas` asignadas y `unidad_activa`.
 
 ## Usuario SUPERADMIN de QA (creado 2026-06-07 para validación de auditoría)
 - **Email:** `qa.superadmin@edarsa.com`

@@ -141,3 +141,49 @@ Fecha: 2026-06-07 · Método: lectura de código + pruebas de endpoints con toke
 - ⚠️ **RBAC / unidades para SUPERADMIN**: un SUPERADMIN sin asignación explícita → `unidades_permitidas=0`, `unidad_activa=None`. Las pantallas con filtro por Unidad de Negocio podrían quedar sin contexto/datos para un SUPERADMIN. (admin@edarsa.com SÍ tiene unidades asignadas.) **Recomendación**: decidir política — auto-otorgar todas las unidades a SUPERADMIN en `access-context`, o exigir asignación explícita.
 - ⚠️ **Ruido de fondo (P2)**: `core.scheduler.jobs.crm_sync_job` → `Invalid column name 'OportunidadID'`; `health_checker` → `'NoneType' object is not subscriptable`; `sla_service` (tarea None) en bucle.
 - **Cuenta de prueba creada**: `qa.superadmin@edarsa.com` / `QaSuper2026!` (SUPERADMIN, UsuarioID=22) — registrada en `test_credentials.md`.
+
+---
+
+## 7) AUDITORÍAS PROFUNDAS A / B / C (2026-06-07)
+
+### 7.A — Smoke UI de menús (login `admin@edarsa.com` promovido a SUPERADMIN / `pruebas123`)
+Resultado: **ningún menú expulsa al login** (fix de navegación sólido) y **ningún crash** de React. Detalle:
+
+| Menú | URL | Logout | Crash | API 4xx | JS errors | Nota |
+|------|-----|--------|-------|---------|-----------|------|
+| Dirección / Tablero Ejecutivo | /tablero-ejecutivo | No | No | **403** `v2/comercial/dashboard` | 3 | KPIs comerciales no cargan (403 + vista corrupta) |
+| Comercial / Ventas | /comercial | No | No | — | 0 | Renderiza; datos probablemente vacíos (vista corrupta) |
+| Finanzas | /finanzas | No | No | — | 0 | Carga UI; `/health` 502 a nivel API |
+| Operación | /reportes?tab=operativo | No | No | — | 0 | OK |
+| Mis Tareas | /mis-tareas | No | No | — | **12** | Revisar errores de consola |
+| Alertas | /alertas | No | No | — | 0 | OK |
+| Explorador BD | /explorador-bd | No | No | — | 0 | Carga inicial OK; rompe al consultar servidor (import) |
+| Catálogos SQL | /catalogo-consultas | No | No | — | 0 | OK |
+| Automatizaciones | /automatizaciones | No | No | — | 0 | OK |
+| Asignaciones | /configuracion/asignaciones | No | No | — | **8** | Revisar errores de consola |
+| Personas / RH | /recursos-humanos | No | No | — | 0 | OK |
+| Config. Operativa | /admin/configuracion-operativa | No | No | — | 0 | UI atascada en "Cargando configuraciones…" (500 backend) |
+
+### 7.B — NO-LIVE a fondo
+- **Guard rail EXISTE** (`modules/comercial/routes.py:182`, flag `LEGACY_LIVE_DISABLED`): bloquea con error controlado los endpoints comerciales LIVE desde UI (`/comercial/sucursales|metas|ticket-perfecto|mesas|detalle-movimientos|precios-constantes|reporte-pax/{server_id}`). ✅ Cumple máxima.
+- **Endpoints WEB que aún pasan `server['host']` (LIVE potencial)**: `modules/comercial/service.py:1942,2068,2131,2154` y builders POS `modules/comercial/queries/mpro.py`, `softrestaurant.py`. Hoy se evita porque el lookup falla ("Servidor no encontrado en configuración") o por el guard rail; **riesgo latente** si un servidor operativo queda configurado.
+- **Jobs de SYNC (ETL legítimo, NO son violación)**: `modules/comercial_v2/sync_comercial_edarsahub.py`, `carga_historica_*`, `modules/tablajeria/sync_service.py`, `modules/sync_historicos/*`, `modules/edge/*`, `modules/sync_recetas/*` → conectan a operativos para **poblar EDARSAHUB**. Es la arquitectura ETL esperada (no es "operación principal live").
+- **Intentos LIVE en logs** (`130mid`, `cienfuegos:6669/softrestaurant95pro,Tablajeria`, `estelar:6969`, `54.39.104.176/softrestaurant12`): provienen de los jobs de sync/scheduler (servidores inalcanzables) — ruido, no violación de UI. **Recomendación**: aislar estos jobs del runtime web y silenciar/controlar sus errores; confirmar que ningún endpoint web los dispare.
+- 🔴 **Vista corrupta sistémica (NO es live pero rompe datos)**: **88 referencias** a `vw_vw...Runtime_Runtime...` en `modules/dashboard_ejecutivo/routes.py` y `modules/comercial/service.py` (varias en `FROM` reales con versión ×4). Real: `vw_Comercial_KPIs_Diarios_v2_Runtime`. Rompe TODA la capa de KPIs Comercial/Tablero.
+
+### 7.C — RBAC a fondo
+- 🔴 **`core/rbac_helper.py:verificar_permiso_rbac` es Mongo y CRASHEA**: `db=_get_db()=None` → `await db.sec_roles.find_one(...)` revienta. Usado en `modules/auth/service.py` para usuarios (VER/CREAR/EDITAR/ELIMINAR) y roles (VER/CREAR/EDITAR/ELIMINAR) → **rompe todo el CRUD de Personas/Usuarios y Roles** (500). Es **violación NO-MONGO** + causa raíz. Su fallback (línea 86) solo reconoce `'SuperAdministrador'`, no el código canónico `'SUPERADMIN'`.
+- ⚠️ **Enforcement disperso**: `require_admin` solo en `modules/admin_sql/routes.py` (8 usos). La mayoría de routers usan `Depends(get_current_user)` (solo auth), sin permiso/rol/scope a nivel de endpoint.
+- 🔴 **SUPERADMIN NO bypassa scope de unidad en `comercial_v2`**: `modules/comercial_v2/routes.py` (líneas 664,672,1076,1080,1129,1132,1203,1207) lanza **403** "No tiene unidades asignadas"/"No tiene acceso a esa unidad" **incluso a SUPERADMIN** sin asignación de unidad. Explica los 403 de `v2/comercial/dashboard` y `v2/comercial/ventas-dia`.
+- **Comparativo visibilidad**: ADMIN y SUPERADMIN ven ambos **28 módulos** (sin diferenciación por rol a nivel de menú API). Diferencias reales solo en endpoints (CRUD usuarios/roles, Bitácora RBAC).
+
+### 7.D — Bloqueadores P0 consolidados (final auditoría)
+1. **Vista corrupta** `vw_vw...` (88 refs) → Tablero Ejecutivo 500 + Comercial KPIs rotos. Fix: reemplazar por `vw_Comercial_KPIs_Diarios_v2_Runtime`.
+2. **`verificar_permiso_rbac` Mongo/crash** → CRUD usuarios/roles roto + NO-MONGO. Fix: reescribir contra SQL / quitar dependencia Mongo + reconocer `SUPERADMIN`.
+3. **Explorador BD**: import roto `_execute_sql_direct_with_error`.
+4. **Config. Operativa**: 500 cursor tupla-vs-dict.
+5. **Finanzas** `/health` 502.
+6. **comercial_v2 RBAC**: SUPERADMIN debe bypassar scope de unidad.
+7. **NO-MONGO residual**: `comercial/cache_service.py`, `kpis_repository.py`, `historical_kpis_repository.py`.
+8. **UI**: Mis Tareas (12 JS err), Asignaciones (8 JS err) — revisar.
+9. **Ruido P2**: `sla_service`, `health_checker`, `crm_sync_job` (OportunidadID), jobs sync hacia operativos inalcanzables.
