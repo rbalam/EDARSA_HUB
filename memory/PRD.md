@@ -95,6 +95,29 @@ Los 5 bloqueadores P0 del Dictamen cerrados y verificados (cURL/pytest, sin test
 - [ ] Eliminar 28 colecciones Mongo restantes (pendiente script usuario)
   - [x] (2026-06-07) RESPALDO COMPLETO NO destructivo realizado vía `mongodump` de las 5 bases locales (edarsa_hub=28, test_database=61, cab003=10, edarsahub=6, stock_tracker=2 → 107 colecciones, 3066 docs, 2.4MB). Ruta: `/app/backups/mongo_sunset_20260607_181350/`. Reporte: `REPORTE_RESPALDO_MONGO.md` + `MANIFEST_SHA256.json` (SHA256 por archivo + global). NADA borrado/desinstalado: pendiente decisión de borrado quirúrgico del usuario tras revisar el reporte.
   - [x] (2026-06-07) VALIDACIÓN POR MUESTREO DE LLAVES (Fase 6-ter, SOLO LECTURA): 27 colecciones CUBIERTA_PARCIALMENTE validadas doc-por-doc contra su tabla SQL (COUNT parametrizado). Veredicto duro: **6 CUBIERTA_CONFIRMADA** (toda la muestra hallada unívocamente → candidatas a borrado CON respaldo): `users`→Usuario_Catalogo, `inventarios_procesados_auto`→Inventarios_ProcesadosAuto (vía col MongoId), `portal_suppliers`→Portal_Proveedores (vía MongoId), `consultas_custom`→Sistema_ConsultasCustom, `sec_modulos_sistema`→Sistema_Modulos, `server_status`→Sistema_ServidoresEstado. **18 NO_CUBIERTA + 3 SIN_LLAVE** (NO borrar): destacan rbac_roles/sec_roles/roles/rbac_usuarios_roles (nombres no coinciden en Sistema_RBAC_Roles) y rbac_permisos/sec_permisos_catalogo (AMBIGUO en RBAC_Permisos). Reportes en `/app/docs/reports/mongo_validacion_muestra_llaves_20260607_191439/` (MD/JSON + CSV detalle por doc + CSV resumen). NADA borrado/modificado.
+### P0 - Bitácora RBAC → SQL-First + Eliminación de Alcance legacy ✅ COMPLETE (2026-06-07)
+Completadas las 2 features hermanas que seguían en Mongo stub (tras auditar y RECHAZAR el
+script del usuario por: colisión de rutas con endpoints legacy no eliminados, `UsuarioID
+UNIQUEIDENTIFIER` incompatible con el INT real, y crear un 3er sistema de alcance paralelo):
+- **Bitácora RBAC → SQL**: nueva tabla `dbo.Usuario_RBAC_Bitacora` (UsuarioID INT,
+  `migrations/rbac_bitacora_sql_20260607.py`); en `rbac_pilot_service.py` se añadieron
+  `registrar_bitacora()` (no-fatal), `get_bitacora()` (filtros fecha/email/resultado/tipo +
+  paginación OFFSET/FETCH) y `get_bitacora_evento()`. Se **re-instrumentaron** los 5 endpoints
+  de perfiles/roles/permisos para escribir auditoría. Los endpoints legacy `GET /admin/bitacora`
+  y `/admin/bitacora/{id}` (Mongo) fueron **reemplazados** por versiones SQL (gate `es_superadmin`).
+  Contrato de respuesta idéntico al que espera el frontend (`useBitacoraRBACData.js`:
+  skip/limit/fecha_inicio/fecha_fin/email/resultado/tipo → {total,pagina,paginas_total,eventos[]}).
+- **Alcance legacy → ELIMINADO**: borrados `GET/POST /admin/alcance/*` (Mongo muerto, 0
+  consumidores) porque el alcance canónico ya vive en `/api/config-asignaciones`
+  (`Usuario_EmpresasAsignacion`/`Usuario_SucursalesAsignacion`). NO se creó tabla nueva.
+- Eliminados 2 helpers de auditoría Mongo huérfanos (`registrar_auditoria_*_fase*`).
+- NOTA: durante el borrado de helpers se eliminaron por error los endpoints
+  `/admin/permisos/asignar` y `/admin/roles/asignar` (estaban intercalados); fueron
+  **restaurados** en su versión SQL-First.
+Verificado: cURL E2E (asignar perfil/rol/permiso generan bitácora; filtros OK; detalle OK;
+`/admin/alcance/*` → 404; `/admin-sql/users` 26 usuarios). 19/19 tests, lint limpio,
+regresión role-migration OK (pool-stats 200, config-asignaciones 200).
+
 ### P0 - Consolidación RBAC Canónica (helper SQL central) ✅ COMPLETE (2026-06-07)
 A petición del usuario (tras auditar y RECHAZAR su script por crear un 3er helper con
 niveles hardcodeados de solo 5 roles + reemplazo masivo ciego), se implementó la versión

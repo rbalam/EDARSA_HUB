@@ -15362,46 +15362,8 @@ class PermisoAsignacionRequest(BaseModel):
     accion: str  # "ASIGNAR" o "RETIRAR"
 
 
-async def registrar_auditoria_admin_fase4(
-    tipo_operacion: str,
-    administrador: dict,
-    usuario_afectado: dict,
-    permiso: str,
-    accion: str,
-    estado_anterior: list,
-    estado_nuevo: list,
-    resultado: str,
-    mensaje: str = None
-):
-    """
-    FASE 4: Registra auditoría de administración de permisos.
-    Desacoplado - no bloquea el flujo si falla.
-    """
-    try:
-        await db.sec_bitacora_admin.insert_one({
-            "id": str(uuid.uuid4()),
-            "timestamp": datetime.now(timezone.utc),
-            "tipo": tipo_operacion,
-            "administrador": {
-                "id": administrador.get('id', ''),
-                "email": administrador.get('email', ''),
-                "role": administrador.get('role', '')
-            },
-            "usuario_afectado": {
-                "id": usuario_afectado.get('id', '') if usuario_afectado else '',
-                "email": usuario_afectado.get('email', '') if usuario_afectado else ''
-            },
-            "permiso": permiso,
-            "accion": accion,
-            "estado_anterior": estado_anterior,
-            "estado_nuevo": estado_nuevo,
-            "resultado": resultado,
-            "mensaje": mensaje,
-            "origen": "API",
-            "fase": "FASE_4"
-        })
-    except Exception as e:
-        logging.warning(f"Error en auditoría admin FASE 4 (no crítico): {e}")
+# Helpers de auditoría legacy (Mongo sec_bitacora_admin) eliminados:
+# la bitácora ahora es SQL-First via rbac_pilot_service.registrar_bitacora().
 
 
 @api_router.post("/admin/permisos/asignar")
@@ -15413,7 +15375,8 @@ async def admin_asignar_permiso(
     if not es_superadmin(current_user):
         raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede administrar permisos")
     return rbac_pilot_service.toggle_asignacion(
-        request.usuario_email, "PERMISO", request.permiso, request.accion
+        request.usuario_email, "PERMISO", request.permiso, request.accion,
+        current_user.get('email', 'sistema')
     )
 
 
@@ -15422,51 +15385,6 @@ class RolAsignacionRequest(BaseModel):
     usuario_email: str
     rol: str
     accion: str  # "ASIGNAR" o "RETIRAR"
-
-
-async def registrar_auditoria_rol_fase6(
-    tipo_operacion: str,
-    administrador: dict,
-    usuario_afectado: dict,
-    rol: str,
-    permisos_rol: list,
-    accion: str,
-    roles_anteriores: list,
-    roles_nuevos: list,
-    resultado: str,
-    mensaje: str = None
-):
-    """
-    FASE 6: Registra auditoría de administración de múltiples roles.
-    Reutiliza sec_bitacora_admin.
-    Desacoplado - no bloquea el flujo si falla.
-    """
-    try:
-        await db.sec_bitacora_admin.insert_one({
-            "id": str(uuid.uuid4()),
-            "timestamp": datetime.now(timezone.utc),
-            "tipo": tipo_operacion,
-            "administrador": {
-                "id": administrador.get('id', ''),
-                "email": administrador.get('email', ''),
-                "role": administrador.get('role', '')
-            },
-            "usuario_afectado": {
-                "id": usuario_afectado.get('id', '') if usuario_afectado else '',
-                "email": usuario_afectado.get('email', '') if usuario_afectado else ''
-            },
-            "rol": rol,
-            "permisos_heredados": permisos_rol,
-            "accion": accion,
-            "roles_anteriores": roles_anteriores,
-            "roles_nuevos": roles_nuevos,
-            "resultado": resultado,
-            "mensaje": mensaje,
-            "origen": "API",
-            "fase": "FASE_6"
-        })
-    except Exception as e:
-        logging.warning(f"Error en auditoría rol FASE 6 (no crítico): {e}")
 
 
 @api_router.post("/admin/roles/asignar")
@@ -15478,7 +15396,8 @@ async def admin_asignar_rol(
     if not es_superadmin(current_user):
         raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede administrar roles")
     return rbac_pilot_service.toggle_asignacion(
-        request.usuario_email, "ROL", request.rol, request.accion
+        request.usuario_email, "ROL", request.rol, request.accion,
+        current_user.get('email', 'sistema')
     )
 
 
@@ -15493,85 +15412,25 @@ async def get_bitacora_rbac(
     limit: int = 50,
     current_user: Dict = Depends(get_current_user)
 ):
-    """
-    FASE 12: Endpoint de solo lectura para consultar bitácora RBAC.
-    
-    Acceso: Solo SuperAdministrador
-    
-    Filtros:
-        - fecha_inicio: YYYY-MM-DD
-        - fecha_fin: YYYY-MM-DD
-        - email: Email del usuario afectado
-        - resultado: OK | RECHAZADO | SIN_CAMBIO
-        - tipo: ASIGNAR_PERMISO | ASIGNAR_ROL_MULTIPLE
-    
-    Paginación:
-        - skip: Registros a saltar (default 0)
-        - limit: Registros por página (default 50, max 100)
-    """
-    # Verificar acceso: Solo SuperAdministrador
+    """Bitácora RBAC SQL-First (solo SuperAdministrador). Lee de
+    dbo.Usuario_RBAC_Bitacora. Filtros: fecha_inicio/fecha_fin (YYYY-MM-DD),
+    email (LIKE), resultado (exitoso|fallido|parcial), tipo (ASIGNAR|REVOCAR)."""
     if not es_superadmin(current_user):
-        raise HTTPException(
-            status_code=403,
-            detail="Solo SuperAdministrador puede acceder a la bitácora RBAC"
-        )
-    
-    # Limitar máximo de registros por consulta
+        raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede acceder a la bitácora RBAC")
     if limit > 100:
         limit = 100
-    
-    # Construir filtro
-    filtro = {}
-    
-    if fecha_inicio:
-        try:
-            fecha_ini = datetime.strptime(fecha_inicio, "%Y-%m-%d")
-            filtro["timestamp"] = {"$gte": fecha_ini.isoformat()}
-        except ValueError:
-            pass  # Ignorar fecha inválida
-    
-    if fecha_fin:
-        try:
-            fecha_f = datetime.strptime(fecha_fin, "%Y-%m-%d")
-            # Agregar un día para incluir todo el día final
-            fecha_f = fecha_f.replace(hour=23, minute=59, second=59)
-            if "timestamp" in filtro:
-                filtro["timestamp"]["$lte"] = fecha_f.isoformat()
-            else:
-                filtro["timestamp"] = {"$lte": fecha_f.isoformat()}
-        except ValueError:
-            pass
-    
-    if email:
-        filtro["usuario_afectado.email"] = {"$regex": email, "$options": "i"}
-    
-    if resultado:
-        filtro["resultado"] = resultado
-    
-    if tipo:
-        filtro["tipo"] = tipo
-    
-    # Obtener total para paginación
-    total = await db.sec_bitacora_admin.count_documents(filtro)
-    
-    # Obtener eventos con paginación
-    eventos_cursor = db.sec_bitacora_admin.find(
-        filtro,
-        {"_id": 0}
-    ).sort("timestamp", -1).skip(skip).limit(limit)
-    
-    eventos = await eventos_cursor.to_list(limit)
-    
-    # Calcular páginas
+    total, eventos = rbac_pilot_service.get_bitacora(
+        fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, email=email,
+        resultado=resultado, tipo=tipo, skip=skip, limit=limit,
+    )
     paginas_total = (total + limit - 1) // limit if total > 0 else 1
     pagina_actual = (skip // limit) + 1
-    
     return {
         "total": total,
         "pagina": pagina_actual,
         "paginas_total": paginas_total,
         "limit": limit,
-        "eventos": eventos
+        "eventos": eventos,
     }
 
 
@@ -15580,31 +15439,17 @@ async def get_bitacora_evento_detalle(
     evento_id: str,
     current_user: Dict = Depends(get_current_user)
 ):
-    """
-    FASE 12: Obtiene detalle completo de un evento de bitácora.
-    
-    Acceso: Solo SuperAdministrador
-    """
-    # Verificar acceso: Solo SuperAdministrador
+    """Detalle de un evento de bitácora RBAC (solo SuperAdministrador)."""
     if not es_superadmin(current_user):
-        raise HTTPException(
-            status_code=403,
-            detail="Solo SuperAdministrador puede acceder a la bitácora RBAC"
-        )
-    
-    evento = await db.sec_bitacora_admin.find_one(
-        {"id": evento_id},
-        {"_id": 0}
-    )
-    
+        raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede acceder a la bitácora RBAC")
+    evento = rbac_pilot_service.get_bitacora_evento(evento_id)
     if not evento:
         raise HTTPException(status_code=404, detail="Evento no encontrado")
-    
     return evento
 
 
 # ==============================================================================
-# FIN FASE 12 - BITÁCORA RBAC
+# FIN FASE 12 - BITÁCORA RBAC (SQL-First)
 # ==============================================================================
 
 
@@ -15673,263 +15518,11 @@ async def retirar_perfil_usuario(
     )
 
 
-@api_router.get("/admin/alcance/empresas")
-async def get_empresas_alcance(current_user: Dict = Depends(get_current_user)):
-    """
-    FASE 14: Lista empresas disponibles para asignar alcance.
-    
-    Acceso: Solo SuperAdministrador
-    """
-    if not es_superadmin(current_user):
-        raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede consultar alcance")
-    
-    empresas = await db.sec_empresas.find(
-        {},
-        {"_id": 0, "id": 1, "codigo": 1, "nombre": 1}
-    ).to_list(100)
-    
-    return {"empresas": empresas}
-
-
-@api_router.get("/admin/alcance/unidades")
-async def get_unidades_alcance(
-    empresa_id: Optional[str] = None,
-    current_user: Dict = Depends(get_current_user)
-):
-    """
-    FASE 14: Lista unidades de negocio disponibles.
-    
-    Acceso: Solo SuperAdministrador
-    """
-    if not es_superadmin(current_user):
-        raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede consultar alcance")
-    
-    filtro = {}
-    if empresa_id:
-        filtro["empresa_id"] = empresa_id
-    
-    unidades = await db.sec_unidades_negocio.find(
-        filtro,
-        {"_id": 0, "id": 1, "codigo": 1, "nombre": 1, "empresa_id": 1}
-    ).to_list(100)
-    
-    return {"unidades": unidades}
-
-
-@api_router.get("/admin/alcance/sucursales")
-async def get_sucursales_alcance(
-    unidad_id: Optional[str] = None,
-    current_user: Dict = Depends(get_current_user)
-):
-    """
-    FASE 14: Lista sucursales disponibles.
-    
-    Acceso: Solo SuperAdministrador
-    """
-    if not es_superadmin(current_user):
-        raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede consultar alcance")
-    
-    filtro = {}
-    if unidad_id:
-        filtro["unidad_negocio_id"] = unidad_id
-    
-    sucursales = await db.sec_sucursales.find(
-        filtro,
-        {"_id": 0, "id": 1, "codigo": 1, "nombre": 1, "unidad_negocio_id": 1}
-    ).to_list(100)
-    
-    return {"sucursales": sucursales}
-
-
-class AsignarAlcanceRequest(BaseModel):
-    usuario_email: str
-    rol: str
-    tipo: str  # GLOBAL | EMPRESA | UNIDAD | SUCURSAL | ALMACEN
-    empresa_id: Optional[str] = None
-    unidades_ids: List[str] = []
-    sucursales_ids: List[str] = []
-    almacenes_ids: List[str] = []
-
-
-@api_router.post("/admin/alcance/asignar")
-async def asignar_alcance_rol(
-    request: AsignarAlcanceRequest,
-    current_user: Dict = Depends(get_current_user)
-):
-    """
-    FASE 14: Asigna alcance organizacional a un rol específico de un usuario.
-    
-    Comportamiento:
-    - Verifica que el usuario tenga el rol en sec_roles
-    - Actualiza sec_roles_alcance[rol] con el nuevo alcance
-    - Registra auditoría
-    
-    IMPORTANTE: En esta fase es solo METADATO, no filtrado activo.
-    
-    Acceso: Solo SuperAdministrador
-    """
-    # 1. Verificar acceso
-    if not es_superadmin(current_user):
-        raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede asignar alcance")
-    
-    # 2. Validar tipo de alcance
-    if request.tipo not in TIPOS_ALCANCE_PERMITIDOS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Tipo de alcance inválido. Permitidos: {TIPOS_ALCANCE_PERMITIDOS}"
-        )
-    
-    # 3. Buscar usuario
-    usuario = await db.users.find_one({"email": request.usuario_email})
-    if not usuario:
-        raise HTTPException(status_code=404, detail=f"Usuario {request.usuario_email} no encontrado")
-    
-    # 4. Verificar que el usuario tenga el rol
-    sec_roles = usuario.get("sec_roles", [])
-    if request.rol not in sec_roles:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Usuario no tiene el rol {request.rol}. Roles actuales: {sec_roles}"
-        )
-    
-    # 5. Obtener alcance anterior
-    sec_roles_alcance = usuario.get("sec_roles_alcance", {})
-    alcance_anterior = sec_roles_alcance.get(request.rol)
-    
-    # 6. Construir nuevo alcance
-    nuevo_alcance = {
-        "tipo": request.tipo,
-        "empresa_id": request.empresa_id,
-        "unidades_ids": request.unidades_ids,
-        "sucursales_ids": request.sucursales_ids,
-        "almacenes_ids": request.almacenes_ids,
-        "updated_at": datetime.now(timezone.utc).isoformat()
-    }
-    
-    # 7. Actualizar sec_roles_alcance
-    sec_roles_alcance[request.rol] = nuevo_alcance
-    
-    await db.users.update_one(
-        {"email": request.usuario_email},
-        {"$set": {"sec_roles_alcance": sec_roles_alcance}}
-    )
-    
-    # 8. Auditoría
-    await db.sec_bitacora_admin.insert_one({
-        "id": str(uuid.uuid4()),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "tipo": "ASIGNAR_ALCANCE",
-        "administrador": {
-            "id": current_user.get("id"),
-            "email": current_user.get("email"),
-            "role": current_user.get("role")
-        },
-        "usuario_afectado": {
-            "id": usuario.get("id"),
-            "email": request.usuario_email
-        },
-        "rol": request.rol,
-        "alcance_nuevo": nuevo_alcance,
-        "alcance_anterior": alcance_anterior,
-        "accion": "ASIGNAR",
-        "resultado": "OK",
-        "mensaje": f"Alcance {request.tipo} asignado a rol {request.rol} de {request.usuario_email}",
-        "fase": "FASE_14"
-    })
-    
-    return {
-        "success": True,
-        "usuario": request.usuario_email,
-        "rol": request.rol,
-        "alcance": nuevo_alcance,
-        "alcance_anterior": alcance_anterior,
-        "mensaje": f"Alcance {request.tipo} asignado exitosamente"
-    }
-
-
-class RetirarAlcanceRequest(BaseModel):
-    usuario_email: str
-    rol: str
-
-
-@api_router.post("/admin/alcance/retirar")
-async def retirar_alcance_rol(
-    request: RetirarAlcanceRequest,
-    current_user: Dict = Depends(get_current_user)
-):
-    """
-    FASE 14: Retira el alcance de un rol específico de un usuario.
-    
-    Comportamiento:
-    - Elimina la entrada del rol en sec_roles_alcance
-    - Registra auditoría
-    
-    Acceso: Solo SuperAdministrador
-    """
-    # 1. Verificar acceso
-    if not es_superadmin(current_user):
-        raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede retirar alcance")
-    
-    # 2. Buscar usuario
-    usuario = await db.users.find_one({"email": request.usuario_email})
-    if not usuario:
-        raise HTTPException(status_code=404, detail=f"Usuario {request.usuario_email} no encontrado")
-    
-    # 3. Obtener alcance actual
-    sec_roles_alcance = usuario.get("sec_roles_alcance", {})
-    alcance_anterior = sec_roles_alcance.get(request.rol)
-    
-    if not alcance_anterior:
-        return {
-            "success": True,
-            "usuario": request.usuario_email,
-            "rol": request.rol,
-            "mensaje": f"El rol {request.rol} no tenía alcance asignado",
-            "cambio_realizado": False
-        }
-    
-    # 4. Eliminar alcance del rol
-    del sec_roles_alcance[request.rol]
-    
-    await db.users.update_one(
-        {"email": request.usuario_email},
-        {"$set": {"sec_roles_alcance": sec_roles_alcance}}
-    )
-    
-    # 5. Auditoría
-    await db.sec_bitacora_admin.insert_one({
-        "id": str(uuid.uuid4()),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "tipo": "RETIRAR_ALCANCE",
-        "administrador": {
-            "id": current_user.get("id"),
-            "email": current_user.get("email"),
-            "role": current_user.get("role")
-        },
-        "usuario_afectado": {
-            "id": usuario.get("id"),
-            "email": request.usuario_email
-        },
-        "rol": request.rol,
-        "alcance_anterior": alcance_anterior,
-        "accion": "RETIRAR",
-        "resultado": "OK",
-        "mensaje": f"Alcance retirado del rol {request.rol} de {request.usuario_email}",
-        "fase": "FASE_14"
-    })
-    
-    return {
-        "success": True,
-        "usuario": request.usuario_email,
-        "rol": request.rol,
-        "alcance_retirado": alcance_anterior,
-        "mensaje": f"Alcance retirado del rol {request.rol}",
-        "cambio_realizado": True
-    }
-
-
 # ==============================================================================
-# FIN FASE 14 - ALCANCE ORGANIZACIONAL RBAC
+# FASE 14 - ALCANCE ORGANIZACIONAL: ELIMINADO (SQL-First)
+# Los endpoints /admin/alcance/* legacy (Mongo, 0 consumidores) fueron retirados.
+# El alcance canónico vive en /api/config-asignaciones
+# (Usuario_EmpresasAsignacion / Usuario_SucursalesAsignacion).
 # ==============================================================================
 
 

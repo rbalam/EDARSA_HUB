@@ -12,8 +12,10 @@ resolución de permisos en vivo de `rbac_helper`):
   - Retirar perfil = limpia sec_perfil y sec_roles.
   - Toggle rol/permiso = alta/baja individual.
 """
+import json
 import logging
-from typing import Any, Dict, List, Optional
+import uuid
+from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import HTTPException
 
@@ -133,6 +135,13 @@ def asignar_perfil(usuario_email: str, perfil_codigo: str, actor: str) -> Dict[s
                 (usuario_id, rol, actor),
             )
         conn.commit()
+        registrar_bitacora(
+            usuario_email, "ASIGNAR", "ASIGNAR_PERFIL",
+            f"Perfil {perfil_codigo} asignado ({len(perfil['roles'])} roles)",
+            usuario_id=usuario_id,
+            detalles={"perfil": perfil_codigo, "roles": perfil["roles"]},
+            actor_email=actor,
+        )
         return {
             "success": True,
             "usuario": usuario_email,
@@ -156,12 +165,16 @@ def retirar_perfil(usuario_email: str, actor: str) -> Dict[str, Any]:
             (usuario_id,),
         )
         conn.commit()
+        registrar_bitacora(
+            usuario_email, "REVOCAR", "RETIRAR_PERFIL", "Perfil retirado",
+            usuario_id=usuario_id, actor_email=actor,
+        )
         return {"success": True, "usuario": usuario_email, "mensaje": "Perfil retirado"}
     finally:
         conn.close()
 
 
-def toggle_asignacion(usuario_email: str, tipo: str, codigo: str, accion: str) -> Dict[str, Any]:
+def toggle_asignacion(usuario_email: str, tipo: str, codigo: str, accion: str, actor: Optional[str] = None) -> Dict[str, Any]:
     tipo = tipo.upper()
     accion = (accion or "").upper()
     if tipo == "ROL" and codigo not in ROLES_PILOTO:
@@ -196,6 +209,137 @@ def toggle_asignacion(usuario_email: str, tipo: str, codigo: str, accion: str) -
         conn.commit()
         label = "rol" if tipo == "ROL" else "permiso"
         verbo = "asignado" if accion == "ASIGNAR" else "retirado"
-        return {"success": True, "detail": f"{label.capitalize()} {codigo} {verbo}"}
+        detalle = f"{label.capitalize()} {codigo} {verbo}"
+        registrar_bitacora(
+            usuario_email,
+            "ASIGNAR" if accion == "ASIGNAR" else "REVOCAR",
+            f"{accion}_{tipo}", detalle,
+            usuario_id=usuario_id, actor_email=actor,
+        )
+        return {"success": True, "detail": detalle}
+    finally:
+        conn.close()
+
+
+# =============================================================================
+# BITÁCORA RBAC SQL-First (reemplaza Mongo sec_bitacora_admin)
+# =============================================================================
+def registrar_bitacora(
+    usuario_email: Optional[str],
+    tipo: str,
+    accion: str,
+    descripcion: str,
+    *,
+    usuario_id: Optional[int] = None,
+    resultado: str = "exitoso",
+    detalles: Optional[dict] = None,
+    actor_email: Optional[str] = None,
+    ip: Optional[str] = None,
+) -> None:
+    """Registra un evento de bitácora RBAC en SQL. No-fatal: si falla, no rompe
+    la operación principal (solo loguea)."""
+    try:
+        conn = _connect()
+        try:
+            cur = conn.cursor()
+            if usuario_id is None and usuario_email:
+                usuario_id = _resolve_usuario_id(cur, usuario_email)
+            detalles_json = json.dumps(detalles, ensure_ascii=False) if detalles is not None else None
+            cur.execute(
+                """INSERT INTO dbo.Usuario_RBAC_Bitacora
+                   (EventoUUID, UsuarioAfectadoID, UsuarioAfectadoEmail, Tipo, Accion,
+                    Resultado, Descripcion, Detalles, IP, AdministradorEmail)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                (str(uuid.uuid4()), usuario_id, usuario_email, tipo, accion,
+                 resultado, descripcion, detalles_json, ip, actor_email),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception as e:  # noqa: BLE001
+        logger.warning("[RBAC-Bitacora] No se pudo registrar evento: %s", e)
+
+
+def _map_evento(row) -> Dict[str, Any]:
+    detalles = row[7]
+    if detalles:
+        try:
+            detalles = json.loads(detalles)
+        except (ValueError, TypeError):
+            pass
+    fecha = row[1]
+    return {
+        "id": row[0],
+        "timestamp": fecha.isoformat() if hasattr(fecha, "isoformat") else fecha,
+        "email": row[2],
+        "tipo": row[3],
+        "accion": row[4],
+        "resultado": row[5],
+        "descripcion": row[6],
+        "detalles": detalles,
+        "ip": row[8],
+        "administrador_email": row[9],
+    }
+
+
+_BITACORA_COLS = (
+    "EventoUUID, FechaEvento, UsuarioAfectadoEmail, Tipo, Accion, "
+    "Resultado, Descripcion, Detalles, IP, AdministradorEmail"
+)
+
+
+def get_bitacora(
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
+    email: Optional[str] = None,
+    resultado: Optional[str] = None,
+    tipo: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
+) -> Tuple[int, List[Dict[str, Any]]]:
+    conn = _connect()
+    try:
+        cur = conn.cursor()
+        where, params = [], []
+        if fecha_inicio:
+            where.append("FechaEvento >= %s")
+            params.append(fecha_inicio)
+        if fecha_fin:
+            where.append("FechaEvento <= %s")
+            params.append(f"{fecha_fin} 23:59:59")
+        if email:
+            where.append("UsuarioAfectadoEmail LIKE %s")
+            params.append(f"%{email}%")
+        if resultado:
+            where.append("Resultado = %s")
+            params.append(resultado)
+        if tipo:
+            where.append("Tipo = %s")
+            params.append(tipo)
+        wsql = ("WHERE " + " AND ".join(where)) if where else ""
+        cur.execute(f"SELECT COUNT(*) FROM dbo.Usuario_RBAC_Bitacora {wsql}", tuple(params))
+        total = cur.fetchone()[0]
+        cur.execute(
+            f"""SELECT {_BITACORA_COLS} FROM dbo.Usuario_RBAC_Bitacora {wsql}
+                ORDER BY FechaEvento DESC, BitacoraID DESC
+                OFFSET %s ROWS FETCH NEXT %s ROWS ONLY""",
+            tuple(params) + (int(skip), int(limit)),
+        )
+        eventos = [_map_evento(r) for r in cur.fetchall()]
+        return total, eventos
+    finally:
+        conn.close()
+
+
+def get_bitacora_evento(evento_id: str) -> Optional[Dict[str, Any]]:
+    conn = _connect()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            f"SELECT {_BITACORA_COLS} FROM dbo.Usuario_RBAC_Bitacora WHERE EventoUUID = %s",
+            (evento_id,),
+        )
+        row = cur.fetchone()
+        return _map_evento(row) if row else None
     finally:
         conn.close()
