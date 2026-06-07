@@ -174,8 +174,10 @@ def has_full_access(user: Dict) -> bool:
     roles_full_access_names = get_role_names_with_full_access()
     
     # 1. Verificar por nombre de rol (campo legacy 'role')
+    # NOTA: el JWT guarda el CÓDIGO de rol (p.ej. 'SUPERADMIN') en el claim 'role',
+    # por eso se compara contra NOMBRES y CÓDIGOS de acceso total.
     user_role = user.get('role', '') or user.get('rol', '')
-    if user_role in roles_full_access_names:
+    if user_role in roles_full_access_names or user_role in roles_full_access_codes:
         return True
     
     # 2. Verificar por código SQL (_sql_rol_codigo)

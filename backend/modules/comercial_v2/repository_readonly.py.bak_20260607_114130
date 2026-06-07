@@ -82,12 +82,14 @@ def get_kpis_diarios(
         Lista de KPIs diarios
     """
     where_clauses = [
-        f"fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'"
+        f"fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'",
+        "activo = 1",
+        "es_demo = 0"
     ]
     
     if unidades_permitidas:
         ids_quoted = ','.join([f"'{u}'" for u in unidades_permitidas])
-        where_clauses.append(f"unidad_negocio_id IN ({ids_quoted})")
+        where_clauses.append(f"unidad_negocio_pk IN ({ids_quoted})")
     
     query = f"""
     SELECT 
@@ -132,28 +134,25 @@ def get_kpis_diarios_agregados(
 ) -> Dict:
     """
     Obtiene KPIs diarios agregados (totales) para el dashboard.
-
-    MÁXIMA: KPI de ventas = ventas_sin_propina (las propinas NO cuentan como venta);
-    propinas_total se informa por separado. Filtro por unidad_negocio_id canónico.
-    Fuente: vw_Comercial_KPIs_Diarios_v2_Runtime (EDARSAHUB SQL, NO live, NO Mongo).
     """
     where_clauses = [
-        f"fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'"
+        f"fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'",
+        "activo = 1",
+        "es_demo = 0"
     ]
     
     if unidades_permitidas:
-        ids_quoted = ','.join([f"'{str(u).replace(chr(39), chr(39)+chr(39))}'" for u in unidades_permitidas])
-        where_clauses.append(f"unidad_negocio_id IN ({ids_quoted})")
+        ids_quoted = ','.join([f"'{u}'" for u in unidades_permitidas])
+        where_clauses.append(f"unidad_negocio_pk IN ({ids_quoted})")
     
     query = f"""
     SELECT 
         COUNT(*) as total_registros,
-        COUNT(DISTINCT unidad_negocio_id) as total_unidades,
+        COUNT(DISTINCT unidad_negocio_pk) as total_unidades,
         COUNT(DISTINCT fecha_operacion) as total_dias,
-        SUM(ISNULL(ventas_sin_propina, 0)) as ventas_total,
-        SUM(ISNULL(propinas_total, 0)) as propinas_total,
-        SUM(ISNULL(tickets_total, 0)) as tickets_total,
-        SUM(ISNULL(pax_total, 0)) as pax_total,
+        SUM(ventas_total) as ventas_total,
+        SUM(tickets_total) as tickets_total,
+        SUM(pax_total) as pax_total,
         MIN(fecha_operacion) as fecha_min,
         MAX(fecha_operacion) as fecha_max
     FROM vw_Comercial_KPIs_Diarios_v2_Runtime
@@ -170,43 +169,104 @@ def get_kpis_por_unidad(
     unidades_permitidas: Optional[List[str]] = None
 ) -> List[Dict]:
     """
-    Obtiene KPIs agregados por unidad para el dashboard desde EDARSAHUB SQL.
-
-    MÁXIMA:
-    - Se agrupa por unidad_negocio_id canónico (sin LIKE/nombre, sin SQL inválido).
-    - KPI ventas = ventas_sin_propina; propinas_total queda separado y FUERA del KPI.
-    - Fuente: vw_Comercial_KPIs_Diarios_v2_Runtime (NO live, NO Mongo).
+    Obtiene KPIs agregados por unidad para el dashboard.
+    
+    CORRECCIÓN BUG 14-May-2026 (v2):
+    - Se detectaron datos DUPLICADOS en vw_Comercial_KPIs_Diarios_v2_Runtime para Mérida
+    - Días 10-12 mayo tienen registros con 130MID y 130-MER (mismo monto duplicado)
+    - La solución es usar ROW_NUMBER para eliminar duplicados por fecha+nombre normalizado
+    - El valor correcto validado desde fuente: $1,577,253 (no $1.99M)
     """
-    where_clauses = [
-        f"fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'"
+    base_where = [
+        f"fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'",
+        "activo = 1",
+        "es_demo = 0"
     ]
-
+    
     if unidades_permitidas:
-        ids_quoted = ','.join([f"'{str(u).replace(chr(39), chr(39)+chr(39))}'" for u in unidades_permitidas])
-        where_clauses.append(f"unidad_negocio_id IN ({ids_quoted})")
-
+        # Expandir IDs para incluir variantes conocidas
+        expanded_ids = []
+        for uid in unidades_permitidas:
+            expanded_ids.append(uid)
+            if uid == UnidadesService.resolver_codigo('130MID') or '130MID':
+                expanded_ids.extend(['130-MER', '130-MID'])
+            elif uid == UnidadesService.resolver_codigo('130QRO') or '130QRO':
+                expanded_ids.extend(['130-QRO'])
+            elif uid == UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR':
+                expanded_ids.extend(['LA-ESTELAR'])
+        ids_quoted = ','.join([f"'{u}'" for u in set(expanded_ids)])
+        base_where.append(f"unidad_negocio_pk IN ({ids_quoted})")
+    
+    # Query con deduplicación:
+    # 1. Normalizar nombres e IDs
+    # 2. Usar ROW_NUMBER para detectar duplicados por fecha+nombre
+    # 3. Tomar solo el primer registro de cada grupo (rn=1)
     query = f"""
+    WITH datos_normalizados AS (
+        SELECT 
+            fecha_operacion,
+            -- Normalizar nombre
+            CASE 
+                WHEN UPPER(unidad_negocio_nombre) LIKE '%MERIDA%' 
+                  OR UPPER(unidad_negocio_nombre) LIKE '%MÉRIDA%' THEN '130° MERIDA'
+                WHEN UPPER(unidad_negocio_nombre) LIKE '%QUERETARO%' 
+                  OR UPPER(unidad_negocio_nombre) LIKE '%QUERÉTARO%' THEN '130° QUERETARO'
+                ELSE UPPER(TRIM(unidad_negocio_nombre))
+            END as nombre_normalizado,
+            -- ID canónico
+            CASE 
+                WHEN UPPER(unidad_negocio_nombre) LIKE '%MERIDA%' 
+                  OR UPPER(unidad_negocio_nombre) LIKE '%MÉRIDA%' THEN UnidadesService.resolver_codigo('130MID') or '130MID'
+                WHEN UPPER(unidad_negocio_nombre) LIKE '%QUERETARO%' 
+                  OR UPPER(unidad_negocio_nombre) LIKE '%QUERÉTARO%' THEN UnidadesService.resolver_codigo('130QRO') or '130QRO'
+                WHEN UPPER(unidad_negocio_nombre) LIKE '%CIENFUEGOS%' THEN UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS'
+                WHEN UPPER(unidad_negocio_nombre) LIKE '%ESTELAR%' THEN UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR'
+                WHEN UPPER(unidad_negocio_nombre) LIKE '%ORIGEN%' THEN UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN'
+                ELSE unidad_negocio_pk
+            END as id_normalizado,
+            sistema_origen,
+            ventas_total,
+            ventas_sin_propina,
+            propinas_total,
+            tickets_total,
+            pax_total,
+            ticket_promedio,
+            -- Detectar duplicados: mismo día + mismo nombre normalizado
+            ROW_NUMBER() OVER (
+                PARTITION BY fecha_operacion, 
+                    CASE 
+                        WHEN UPPER(unidad_negocio_nombre) LIKE '%MERIDA%' 
+                          OR UPPER(unidad_negocio_nombre) LIKE '%MÉRIDA%' THEN '130° MERIDA'
+                        WHEN UPPER(unidad_negocio_nombre) LIKE '%QUERETARO%' 
+                          OR UPPER(unidad_negocio_nombre) LIKE '%QUERÉTARO%' THEN '130° QUERETARO'
+                        ELSE UPPER(TRIM(unidad_negocio_nombre))
+                    END
+                ORDER BY id DESC  -- Preferir el ID más reciente
+            ) as rn
+        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+        WHERE {' AND '.join(base_where)}
+    ),
+    datos_sin_duplicados AS (
+        SELECT * FROM datos_normalizados WHERE rn = 1
+    )
     SELECT 
-        unidad_negocio_id as unidad_negocio_pk,
-        MAX(unidad_negocio_nombre) as unidad_negocio_nombre,
+        id_normalizado as unidad_negocio_pk,
+        nombre_normalizado as unidad_negocio_nombre,
         MAX(sistema_origen) as sistema_origen,
-        COUNT(DISTINCT fecha_operacion) as dias,
-        SUM(ISNULL(ventas_sin_propina, 0)) as ventas_total,
-        SUM(ISNULL(ventas_sin_propina, 0)) as ventas_sin_propina,
-        SUM(ISNULL(propinas_total, 0)) as propinas_total,
-        SUM(ISNULL(tickets_total, 0)) as tickets_total,
-        SUM(ISNULL(pax_total, 0)) as pax_total,
-        CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
-             THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(tickets_total, 0))
-             ELSE 0 END as ticket_promedio_avg,
+        COUNT(*) as dias,
+        SUM(ventas_total) as ventas_total,
+        SUM(ventas_sin_propina) as ventas_sin_propina,
+        SUM(propinas_total) as propinas_total,
+        SUM(tickets_total) as tickets_total,
+        SUM(pax_total) as pax_total,
+        AVG(ticket_promedio) as ticket_promedio_avg,
         MIN(fecha_operacion) as fecha_min,
         MAX(fecha_operacion) as fecha_max
-    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-    WHERE {' AND '.join(where_clauses)}
-    GROUP BY unidad_negocio_id
+    FROM datos_sin_duplicados
+    GROUP BY id_normalizado, nombre_normalizado
     ORDER BY ventas_total DESC
     """
-
+    
     return _execute_readonly_query(query)
 
 
@@ -225,12 +285,13 @@ def get_kpis_mensuales(
     """
     where_clauses = [
         f"anio = {anio}",
-        f"mes BETWEEN {mes_inicio} AND {mes_fin}"
+        f"mes BETWEEN {mes_inicio} AND {mes_fin}",
+        "activo = 1"
     ]
     
     if unidades_permitidas:
         ids_quoted = ','.join([f"'{u}'" for u in unidades_permitidas])
-        where_clauses.append(f"unidad_negocio_id IN ({ids_quoted})")
+        where_clauses.append(f"unidad_negocio_pk IN ({ids_quoted})")
     
     query = f"""
     SELECT 
@@ -287,14 +348,14 @@ def get_ventas_dia_abiertas(
     
     if unidades_permitidas:
         ids_quoted = ','.join([f"'{u}'" for u in unidades_permitidas])
-        where_clauses.append(f"unidad_negocio_id IN ({ids_quoted})")
+        where_clauses.append(f"unidad_negocio_pk IN ({ids_quoted})")
     
     # Usar ROW_NUMBER para obtener solo el registro más reciente por unidad
     query = f"""
     WITH RankedData AS (
         SELECT 
             id,
-            unidad_negocio_id AS unidad_negocio_pk,
+            unidad_negocio_pk,
             unidad_negocio_nombre,
             server_id,
             sucursal_id,
@@ -312,7 +373,7 @@ def get_ventas_dia_abiertas(
             fuente_original,
             sync_run_id,
             fecha_ultima_actualizacion,
-            ROW_NUMBER() OVER (PARTITION BY unidad_negocio_id ORDER BY snapshot_timestamp DESC) as rn
+            ROW_NUMBER() OVER (PARTITION BY unidad_negocio_pk ORDER BY snapshot_timestamp DESC) as rn
         FROM Comercial_Ventas_Dia_Abiertas_v2
         WHERE {' AND '.join(where_clauses)}
     )
@@ -359,7 +420,7 @@ def get_sync_status(
     
     if unidades_permitidas:
         ids_quoted = ','.join([f"'{u}'" for u in unidades_permitidas])
-        where_clauses.append(f"unidad_negocio_id IN ({ids_quoted})")
+        where_clauses.append(f"unidad_negocio_pk IN ({ids_quoted})")
     
     query = f"""
     SELECT TOP {limit}
@@ -398,7 +459,7 @@ def get_last_sync_by_unidad(
     
     if unidades_permitidas:
         ids_quoted = ','.join([f"'{u}'" for u in unidades_permitidas])
-        where_clauses.append(f"unidad_negocio_id IN ({ids_quoted})")
+        where_clauses.append(f"unidad_negocio_pk IN ({ids_quoted})")
     
     query = f"""
     SELECT 
@@ -424,11 +485,11 @@ def get_unidades_disponibles(
     """
     Obtiene las unidades que tienen datos en Comercial v2.
     """
-    where_clauses = []
+    where_clauses = ["activo = 1", "es_demo = 0"]
     
     if unidades_permitidas:
         ids_quoted = ','.join([f"'{u}'" for u in unidades_permitidas])
-        where_clauses.append(f"unidad_negocio_id IN ({ids_quoted})")
+        where_clauses.append(f"unidad_negocio_pk IN ({ids_quoted})")
     
     query = f"""
     SELECT DISTINCT
@@ -439,7 +500,7 @@ def get_unidades_disponibles(
         MIN(fecha_operacion) as fecha_min,
         MAX(fecha_operacion) as fecha_max,
         COUNT(*) as total_dias,
-        SUM(ISNULL(ventas_sin_propina, 0)) as ventas_historicas
+        SUM(ventas_total) as ventas_historicas
     FROM vw_Comercial_KPIs_Diarios_v2_Runtime
     WHERE {' AND '.join(where_clauses)}
     GROUP BY unidad_negocio_pk, unidad_negocio_nombre, sistema_origen, server_id
@@ -472,7 +533,7 @@ def check_v2_health() -> Dict:
                 MIN(fecha_operacion) as fecha_min,
                 MAX(fecha_operacion) as fecha_max
             FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-            WHERE 1 = 1
+            WHERE activo = 1 AND es_demo = 0
         """)
         
         if stats:
@@ -536,7 +597,7 @@ def get_comparativos_diarios(
         ISNULL(pax_abiertos, 0) + ISNULL(pax_cerrados_dia, 0) as pax,
         ISNULL(tickets_abiertos, 0) + ISNULL(tickets_cerrados_dia, 0) as cheques
     FROM Comercial_Ventas_Dia_Abiertas_v2
-    WHERE unidad_negocio_id = '{unidad_negocio_pk}'
+    WHERE unidad_negocio_pk = '{unidad_negocio_pk}'
       AND fecha_operacion = '{fecha_actual.isoformat()}'
     """
     
@@ -553,12 +614,13 @@ def get_comparativos_diarios(
     # con una ventana máxima de 7 días para evitar mostrar datos muy antiguos
     query_anterior = f"""
     SELECT TOP 1
-        ISNULL(ventas_sin_propina, 0) as ventas,
+        ISNULL(ventas_total, 0) as ventas,
         ISNULL(pax_total, 0) as pax_total,
         ISNULL(tickets_total, 0) as cheques,
         anio, mes, dia
     FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-    WHERE unidad_negocio_id = '{unidad_negocio_pk}'
+    WHERE unidad_negocio_pk = '{unidad_negocio_pk}'
+      AND activo = 1 AND es_demo = 0
       AND (
         -- Primero intentar día exacto anterior
         (anio = {fecha_anterior.year} AND mes = {fecha_anterior.month} AND dia = {fecha_anterior.day})
@@ -587,12 +649,13 @@ def get_comparativos_diarios(
     # CORRECCIÓN: Similar lógica de fallback para año anterior
     query_anio_ant = f"""
     SELECT TOP 1
-        ISNULL(ventas_sin_propina, 0) as ventas,
+        ISNULL(ventas_total, 0) as ventas,
         ISNULL(pax_total, 0) as pax_total,
         ISNULL(tickets_total, 0) as cheques,
         anio, mes, dia
     FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-    WHERE unidad_negocio_id = '{unidad_negocio_pk}'
+    WHERE unidad_negocio_pk = '{unidad_negocio_pk}'
+      AND activo = 1 AND es_demo = 0
       AND (
         -- Primero intentar día exacto año anterior
         (anio = {fecha_anio_ant.year} AND mes = {fecha_anio_ant.month} AND dia = {fecha_anio_ant.day})

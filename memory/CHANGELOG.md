@@ -1,5 +1,23 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-07] FIX P0 — Tablero Ejecutivo KPIs en cero (Junio 2026)
+**Script del usuario (`fix_p0_..._junio_2026.sh`) AUDITADO y RECHAZADO:** usaba `npm run build` (PROHIBIDO, es `yarn`), reescribía `frontend/.env` (riesgo a `REACT_APP_BACKEND_URL`), sus `re.sub` NO matcheaban las firmas reales (parche backend = no-op), y mantenía `activo=1/es_demo=0` + base table `Comercial_KPIs_Diarios_v2`. Apliqué una versión auditada y corregida (`/app/scripts/fix_tablero_kpis_cero_AUDITADO.py`, con aserciones por reemplazo y backups).
+
+**Causas raíz confirmadas contra el esquema real de EDARSAHUB SQL:**
+1. Las queries filtraban columnas **INEXISTENTES** `activo`/`es_demo` (ninguna tabla/vista las tiene) → error SQL → `[]` → KPIs cero.
+2. Filtraban `unidad_negocio_pk` (GUID) con **CÓDIGOS** canónicos (`get_unidades_permitidas_v2` devuelve códigos) → nunca matcheaba. Correcto: `unidad_negocio_id`.
+3. `get_kpis_por_unidad` armaba **SQL inválido** (texto literal `UnidadesService.resolver_codigo(...) or '130MID'` dentro del f-string).
+4. **RBAC:** `has_full_access` comparaba el claim `role` solo contra NOMBRES; el JWT guarda el CÓDIGO `SUPERADMIN` → 403 "No tiene unidades". Fix: comparar también contra CÓDIGOS de acceso total.
+5. **Frontend race condition:** `TableroEjecutivo.js` descartaba la respuesta válida como `IGNORED_STALE` por leer `latestRequestId` (useState) obsoleto en el closure. Fix: `useRef` síncrono.
+
+**Cambios (todos NO-LIVE / SQL-First / vista `vw_Comercial_KPIs_Diarios_v2_Runtime`):**
+- `repository_readonly.py` + `routes.py` (comercial_v2): quitado activo/es_demo, filtro por `unidad_negocio_id`, KPI ventas = `ventas_sin_propina`, `propinas_total` separado (totales + por unidad), `get_ventas_dia_abiertas` alias `unidad_negocio_id AS unidad_negocio_pk`.
+- `core/rbac_helper_sql.py::has_full_access`: reconoce el código `SUPERADMIN` en el claim `role`.
+- `TableroEjecutivo.js`: fix race condition con `useRef`.
+
+**Verificado (cURL + screenshot autenticado):** dashboard `/api/v2/comercial/dashboard?fecha_inicio=2026-06-01&fecha_fin=2026-06-30` → 200; **ventas (sin propina)=$1,573,660.81**, propinas=$105,376.57 (separadas), 5 unidades, tickets=523, pax=1449. Tablero renderiza **VENTAS CONSOLIDADAS $1.57M** y las 5 unidades. `v2/comercial/health` y `ventas-dia` → 200.
+**Nota lint:** queda 1 hallazgo `react-hooks/immutability` (React Compiler) en el `useEffect` de carga inicial — PRE-EXISTENTE (idéntico en commit base `51cb56e`), no suprimible por directivas y no aplicado por el build real (la app compila y funciona). Fuera de alcance (exigiría refactor de `.sort()` en lógica crítica).
+
 ## [2026-06-07] Fase 26 — Panel Bitácora Admin CORE (lectura SQL-First de Servidores_Conexiones_Log)
 - **Backend:** nuevo endpoint read-only `GET /api/admin/core-connections/audit-log?limit&server_id` en `api/admin_core_connections.py`. Lee `dbo.Servidores_Conexiones_Log` con `LEFT JOIN Servidores_Conexiones` (nombre de conexión), `CONVERT(...,126)` fecha ISO, parseo de `status` desde `datos_nuevos` JSON. NO expone secretos. `TOP` parametrizado (1–200). **Registrado ANTES de `GET /{server_id}`** para evitar colisión de ruta (si no, `/audit-log` caería en `/{server_id}` → 404). Verificado cURL: 200, count correcto, join de nombres OK, LIST sigue 200.
 - **Frontend:** 4º tab **Bitácora** en `pages/Servidores.js` (`grid-cols-3`→`grid-cols-4`, `max-w-xl`→`max-w-2xl`). Carga lazy al abrir el tab (`useEffect` sobre `activeMainTab`), tabla con Fecha/Conexión/Acción/Usuario/Estado(badge)/Origen + botón Actualizar y estados loading/empty. `data-testid`: `tab-bitacora-core`, `bitacora-core-panel`, `bitacora-table`, `bitacora-row`, `bitacora-refresh-button`. Verificado screenshot autenticado: 41 registros renderizados.

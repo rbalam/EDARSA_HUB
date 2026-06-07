@@ -245,13 +245,15 @@ def _get_variaciones_comparativas(
         
         query_actual = f"""
         SELECT 
-            SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
+            SUM(ventas_total) as ventas,
             SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques
         FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-        WHERE unidad_negocio_id = '{unidad_negocio_pk}'
+        WHERE unidad_negocio_pk = '{unidad_negocio_pk}'
           AND fecha_operacion >= '{fecha_inicio.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_efectiva + timedelta(days=1)).isoformat()}'
+          AND activo = 1
+          AND es_demo = 0
         """
         
         result_actual = _execute_readonly_query(query_actual)
@@ -265,14 +267,16 @@ def _get_variaciones_comparativas(
         
         query_mes_ant = f"""
         SELECT 
-            SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
+            SUM(ventas_total) as ventas,
             SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques,
             COUNT(*) as dias
         FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-        WHERE unidad_negocio_id = '{unidad_negocio_pk}'
+        WHERE unidad_negocio_pk = '{unidad_negocio_pk}'
           AND fecha_operacion >= '{fecha_inicio_mes_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_mes_ant + timedelta(days=1)).isoformat()}'
+          AND activo = 1
+          AND es_demo = 0
         """
         
         result_mes_ant = _execute_readonly_query(query_mes_ant)
@@ -289,14 +293,16 @@ def _get_variaciones_comparativas(
         
         query_año_ant = f"""
         SELECT 
-            SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
+            SUM(ventas_total) as ventas,
             SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques,
             COUNT(*) as dias
         FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-        WHERE unidad_negocio_id = '{unidad_negocio_pk}'
+        WHERE unidad_negocio_pk = '{unidad_negocio_pk}'
           AND fecha_operacion >= '{fecha_inicio_año_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_año_ant + timedelta(days=1)).isoformat()}'
+          AND activo = 1
+          AND es_demo = 0
         """
         
         result_año_ant = _execute_readonly_query(query_año_ant)
@@ -439,14 +445,16 @@ def _calcular_totales_variaciones(
         # Query mes anterior
         query_mes_ant = f"""
         SELECT 
-            SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
+            SUM(ventas_total) as ventas,
             SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques,
             COUNT(DISTINCT fecha_operacion) as dias
         FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-        WHERE unidad_negocio_id IN ({ids_quoted})
+        WHERE unidad_negocio_pk IN ({ids_quoted})
           AND fecha_operacion >= '{fecha_inicio_mes_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_mes_ant + timedelta(days=1)).isoformat()}'
+          AND activo = 1
+          AND es_demo = 0
         """
         
         result_mes_ant = _execute_readonly_query(query_mes_ant)
@@ -459,14 +467,16 @@ def _calcular_totales_variaciones(
         # Query año anterior
         query_año_ant = f"""
         SELECT 
-            SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
+            SUM(ventas_total) as ventas,
             SUM(pax_total) as pax_total,
             SUM(tickets_total) as cheques,
             COUNT(DISTINCT fecha_operacion) as dias
         FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-        WHERE unidad_negocio_id IN ({ids_quoted})
+        WHERE unidad_negocio_pk IN ({ids_quoted})
           AND fecha_operacion >= '{fecha_inicio_año_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_año_ant + timedelta(days=1)).isoformat()}'
+          AND activo = 1
+          AND es_demo = 0
         """
         
         result_año_ant = _execute_readonly_query(query_año_ant)
@@ -910,7 +920,6 @@ async def comercial_v2_dashboard(
         response_data = {
             "totales": serialize_response({
                 "ventas_total": totales_con_variaciones.get('ventas_total', 0),
-                "propinas_total": totales.get('propinas_total', 0),
                 "tickets_total": totales_con_variaciones.get('tickets_total', 0),
                 "pax_total": totales_con_variaciones.get('pax_total', 0),
                 "total_registros": totales_con_variaciones.get('total_registros', 0),
@@ -1128,7 +1137,8 @@ async def comercial_v2_kpis_diarios_unidad(
         query_ultima_fecha = f"""
         SELECT MAX(fecha_operacion) as ultima_fecha
         FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-        WHERE unidad_negocio_id = '{unidad_negocio_pk}'
+        WHERE unidad_negocio_pk = '{unidad_negocio_pk}'
+          AND activo = 1 AND es_demo = 0
         """
         result = _execute_readonly_query(query_ultima_fecha)
         

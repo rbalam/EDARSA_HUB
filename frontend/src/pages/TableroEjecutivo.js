@@ -1,7 +1,7 @@
 import logger from '../services/logger';
 // FASE AUTH-SECURITY-01 / FASE 4.1: getToken eliminado, auth viaja en cookie httpOnly
 import { clearSession } from '../services/authStorage';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 // AUDITORIA-TABLEROS-KPIS-FILTROS-01: Migrado de axios directo a api centralizado
 import api from '../lib/api';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
@@ -650,6 +650,7 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
       cargarDetalle();
     } else {
       // Sin server_id y sin modo diario, mostrar datos básicos
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDetalleData({
         dashboard: null,
         ventasTiempo: null,
@@ -894,6 +895,9 @@ export default function TableroEjecutivo() {
   const [lastRefreshTime, setLastRefreshTime] = useState(null);
   const [requestId, setRequestId] = useState(0);
   const [latestRequestId, setLatestRequestId] = useState(0); // Para validar respuestas
+  // FIX race condition: useRef se actualiza de forma SÍNCRONA (el estado en el closure
+  // quedaba obsoleto y descartaba respuestas válidas como 'stale_request').
+  const latestRequestIdRef = useRef(0);
   const [refreshError, setRefreshError] = useState(null); // Error sin borrar datos
   const STATUS_TTL_SECONDS = 120; // TTL de 2 minutos para considerar datos stale
 
@@ -963,7 +967,8 @@ export default function TableroEjecutivo() {
     // PROTECCIÓN RACE CONDITION: requestId incremental
     // Solo aplicar respuesta si requestId === latestRequestId
     // =========================================================================
-    const currentRequestId = requestId + 1;
+    const currentRequestId = latestRequestIdRef.current + 1;
+    latestRequestIdRef.current = currentRequestId; // síncrono: refleja el request más reciente
     setRequestId(currentRequestId);
     setLatestRequestId(currentRequestId);
     setRefreshError(null); // Limpiar error previo
@@ -1106,8 +1111,8 @@ export default function TableroEjecutivo() {
       // =========================================================================
       // VALIDACIÓN RACE CONDITION: Solo aplicar si es el request más reciente
       // =========================================================================
-      if (currentRequestId !== latestRequestId) {
-        logger.log(`[REFRESH_LOG] IGNORED_STALE: requestId=${currentRequestId}, latestRequestId=${latestRequestId}, applied=false, reason=stale_request`);
+      if (currentRequestId !== latestRequestIdRef.current) {
+        logger.log(`[REFRESH_LOG] IGNORED_STALE: requestId=${currentRequestId}, latestRequestId=${latestRequestIdRef.current}, applied=false, reason=stale_request`);
         setLoading(false);
         return;
       }
