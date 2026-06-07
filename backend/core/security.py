@@ -651,8 +651,9 @@ def filter_servers_by_permissions(servers: List[Dict], user: Dict[str, Any]) -> 
     role = user.get('role', '')
     logging.info(f"filter_servers: role={role}, total_servers={len(servers)}")
     
-    # SuperAdministrador y Administrador tienen acceso full
-    if role in ['SuperAdministrador', 'Administrador']:
+    # SuperAdministrador y Administrador tienen acceso full (canónico SQL)
+    from core.rbac_helper_sql import es_admin
+    if es_admin(user):
         logging.info(f"Usuario es {role}, retornando todos los servidores")
         return servers
     
@@ -1046,9 +1047,11 @@ class SQLSanitizer:
     def validate_for_explorer(cls, sql: str, user_role: str = None) -> SQLValidationResult:
         """Validación para el Explorador BD."""
         result = cls.validate(sql, allow_comments=False, strict_mode=True)
-        if user_role and user_role not in ['Administrador', 'SuperAdministrador']:
-            result.is_safe = False
-            result.blocked_reason = "Solo administradores pueden usar el explorador SQL"
+        if user_role:
+            from core.rbac_helper_sql import get_role_code
+            if get_role_code({'role': user_role}) not in ('SUPERADMIN', 'ADMIN'):
+                result.is_safe = False
+                result.blocked_reason = "Solo administradores pueden usar el explorador SQL"
         return result
     
     @classmethod

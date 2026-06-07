@@ -23,6 +23,7 @@ from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from core.security import get_current_user
+from core.rbac_helper_sql import get_role_code, es_admin, es_supervisor_o_superior
 
 router = APIRouter(prefix="/rrhh/solicitudes-catalogo", tags=["Solicitudes Catálogo"])
 
@@ -161,15 +162,15 @@ async def listar_solicitudes(
     - Supervisor: solicitudes pendientes para crear
     - Administrador: todas las solicitudes
     """
-    role = current_user.get("role", "Usuario")
+    role_code = get_role_code(current_user)
     email = current_user.get("email")
     
     solicitudes = _solicitudes_db.copy()
     
-    # Filtrar según rol
-    if role == "Usuario" or mis_solicitudes:
+    # Filtrar según rol (canónico SQL; SUPERADMIN/ADMIN ven todas vía else)
+    if role_code == "USUARIO" or mis_solicitudes:
         solicitudes = [s for s in solicitudes if s["solicitante_email"] == email]
-    elif role == "Supervisor":
+    elif role_code == "SUPERVISOR":
         # Supervisor ve pendientes y las que él está creando
         solicitudes = [s for s in solicitudes if s["estado"] in ["pendiente", "en_creacion"] or s["creador_email"] == email]
     # Administrador ve todas
@@ -207,16 +208,16 @@ async def get_pendientes_notificacion(
     Obtiene solicitudes pendientes de acción para el usuario actual.
     Para mostrar en "Mis Tareas".
     """
-    role = current_user.get("role", "Usuario")
+    role_code = get_role_code(current_user)
     email = current_user.get("email")
     
     pendientes = []
     
-    if role == "Supervisor":
+    if role_code == "SUPERVISOR":
         # Solicitudes pendientes de crear
         pendientes = [s for s in _solicitudes_db if s["estado"] == "pendiente"]
-    elif role == "Administrador":
-        # Solicitudes pendientes de autorizar
+    elif es_admin(current_user):
+        # Solicitudes pendientes de autorizar (ADMIN/SUPERADMIN)
         pendientes = [s for s in _solicitudes_db if s["estado"] == "creado"]
     else:
         # Usuario: sus solicitudes rechazadas o autorizadas recientes
@@ -227,7 +228,7 @@ async def get_pendientes_notificacion(
     return {
         "pendientes": pendientes,
         "total": len(pendientes),
-        "rol_usuario": role
+        "rol_usuario": role_code
     }
 
 
@@ -242,7 +243,6 @@ async def actualizar_solicitud(
     - Supervisor puede: aprobar (pasar a en_creacion), crear (pasar a creado), rechazar
     - Administrador puede: autorizar, rechazar
     """
-    role = current_user.get("role", "Usuario")
     email = current_user.get("email")
     nombre = current_user.get("name", email)
     
@@ -255,7 +255,7 @@ async def actualizar_solicitud(
     
     # Validar permisos y acciones
     if update.accion == "aprobar":
-        if role not in ["Supervisor", "Administrador"]:
+        if not es_supervisor_o_superior(current_user):
             raise HTTPException(status_code=403, detail="No tiene permisos para aprobar")
         if solicitud["estado"] != "pendiente":
             raise HTTPException(status_code=400, detail="Solo se pueden aprobar solicitudes pendientes")
@@ -266,7 +266,7 @@ async def actualizar_solicitud(
         solicitud["creador_nombre"] = nombre
         
     elif update.accion == "crear":
-        if role not in ["Supervisor", "Administrador"]:
+        if not es_supervisor_o_superior(current_user):
             raise HTTPException(status_code=403, detail="No tiene permisos para crear")
         if solicitud["estado"] not in ["pendiente", "en_creacion"]:
             raise HTTPException(status_code=400, detail="Solicitud no está en estado válido para crear")
@@ -280,8 +280,8 @@ async def actualizar_solicitud(
             solicitud["datos_adicionales"].update(update.datos_creacion)
         
     elif update.accion == "autorizar":
-        if role != "Administrador":
-            raise HTTPException(status_code=403, detail="Solo Administrador puede autorizar")
+        if not es_admin(current_user):
+            raise HTTPException(status_code=403, detail="Solo Administrador/SuperAdministrador puede autorizar")
         if solicitud["estado"] != "creado":
             raise HTTPException(status_code=400, detail="Solo se pueden autorizar solicitudes creadas")
         
@@ -295,7 +295,7 @@ async def actualizar_solicitud(
         # Por ahora solo marcamos como autorizado
         
     elif update.accion == "rechazar":
-        if role not in ["Supervisor", "Administrador"]:
+        if not es_supervisor_o_superior(current_user):
             raise HTTPException(status_code=403, detail="No tiene permisos para rechazar")
         
         solicitud["estado"] = "rechazado"

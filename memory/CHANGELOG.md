@@ -266,3 +266,16 @@ Todos validados con cURL/pytest (sin testing_agent, por prohibición). Backups `
 ## Problemas conocidos de infraestructura
 - **EDARSAHUB SQL (54.39.104.176)**: Intermitencias de conectividad ocasionales
 - **SoftRestaurant (189.162.155.142)**: Connection refused intermitente
+
+## [2026-06-07] P1 RBAC Hardening — Gates legacy → helper canónico (script usuario AUDITADO y RECHAZADO)
+El usuario entregó un bash de "P1 RBAC Hardening" (regex masivo). AUDITADO y RECHAZADO por:
+1) Objetivos ficticios/muertos: `modules/comercial/costos_margenes/` NO existe; `core/rbac/middleware.py` sin patrones (cero cambios).
+2) Migración incompleta/inconsistente: su mapa NO incluía `role not in ["Supervisor","Administrador"]` → dejaba L258/269/298 de solicitudes_catalogo.py hardcodeadas; ni `role in [...]` pelón → dejaba security.py L655 intacta.
+3) Parche ciego sobre validador de SEGURIDAD (security.py L1049 validate_for_explorer) con sólo py_compile (sintaxis) y sin prueba funcional.
+4) Objetivo de bajo valor: solicitudes_catalogo.py es stub en memoria (_solicitudes_db).
+Verificado: SIN import circular (rbac_helper_sql no tiene back-edge a security).
+RUTA SEGURA aplicada (usuario eligió a+b — incluir SUPERADMIN):
+- `core/security.py`: L655 `role in [...]`→`es_admin(user)` (import local); L1049 explorer gate→`get_role_code({'role':user_role}) not in ('SUPERADMIN','ADMIN')` (corrige bug código-vs-nombre que bloqueaba al SUPERADMIN).
+- `modules/rh/solicitudes_catalogo.py`: 8 gates migrados a `get_role_code`/`es_admin`/`es_supervisor_o_superior`; SUPERADMIN ahora habilitado en aprobar/crear/autorizar/rechazar y en la vista admin de notificaciones.
+- NO se tocó middleware.py ni costos_margenes (no aplican).
+Validación: lint limpio + cURL (listar 200, pendientes-notificacion rol_usuario=SUPERADMIN) + pytest `tests/test_rbac_p1_hardening_gates.py` (7/7) + regresión RBAC (10/10). Sin testing_agent (prohibido).
