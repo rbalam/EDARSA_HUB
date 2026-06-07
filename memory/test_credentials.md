@@ -9,8 +9,15 @@
 ## Usuario Administrador (Legacy)
 - **Email:** `admin@edarsa.com`
 - **Contraseña:** `admin123`
-- **Rol:** Administrador
-- **Permisos:** Acceso completo a todas las unidades de negocio
+- **Rol:** Administrador (ADMIN, nivel 3) — NOTA: tiene `unidades_permitidas` asignadas y `unidad_activa`.
+- **Permisos:** Acceso completo; 28 módulos visibles.
+
+## Usuario SUPERADMIN de QA (creado 2026-06-07 para validación de auditoría)
+- **Email:** `qa.superadmin@edarsa.com`
+- **Contraseña:** `QaSuper2026!`
+- **Rol:** SUPERADMIN (RolID=6) · UsuarioID=22 · PublicUUID `5498a725-62ef-4df5-a83f-d8fea9520e50`
+- **Login:** OK (verificado). 28 módulos visibles.
+- ⚠️ **Sin unidades asignadas**: `access-context` devuelve `unidades_permitidas=0`, `unidad_activa=None` (las unidades provienen de asignación explícita, NO se auto-otorgan a SUPERADMIN). Útil para auditar pantallas con filtro por unidad sin contexto.
 
 ## Notas
 - Las credenciales se autentican contra EDARSAHUB_SQL (tabla Usuario_Catalogo)

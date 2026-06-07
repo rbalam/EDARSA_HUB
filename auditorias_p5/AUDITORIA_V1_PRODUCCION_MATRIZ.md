@@ -135,3 +135,9 @@ Fecha: 2026-06-07 · Método: lectura de código + pruebas de endpoints con toke
 3. Finanzas — `/health` 502.
 4. **Configuración Operativa — 500 (cursor tupla-vs-dict).**
 5. NO-LIVE — erradicar conexiones a operativos.
+
+### 6.5 Hallazgos adicionales (validación con SUPERADMIN QA — 2026-06-07)
+- 🔴 **Creación de usuarios ROTA (menú Personas/Usuarios)**: `POST /api/users` → 500. Causa: `modules/auth/service.py:556` → `verificar_permiso_rbac(current_user,'SISTEMA_USUARIOS_CREAR')` lanza `TypeError: 'NoneType' object is not subscriptable`. Bloquea alta de usuarios desde la UI. **Recomendación**: corregir `verificar_permiso_rbac` (manejo de None en el contexto/permisos).
+- ⚠️ **RBAC / unidades para SUPERADMIN**: un SUPERADMIN sin asignación explícita → `unidades_permitidas=0`, `unidad_activa=None`. Las pantallas con filtro por Unidad de Negocio podrían quedar sin contexto/datos para un SUPERADMIN. (admin@edarsa.com SÍ tiene unidades asignadas.) **Recomendación**: decidir política — auto-otorgar todas las unidades a SUPERADMIN en `access-context`, o exigir asignación explícita.
+- ⚠️ **Ruido de fondo (P2)**: `core.scheduler.jobs.crm_sync_job` → `Invalid column name 'OportunidadID'`; `health_checker` → `'NoneType' object is not subscriptable`; `sla_service` (tarea None) en bucle.
+- **Cuenta de prueba creada**: `qa.superadmin@edarsa.com` / `QaSuper2026!` (SUPERADMIN, UsuarioID=22) — registrada en `test_credentials.md`.
