@@ -169,7 +169,7 @@ export default function EnterpriseSidebarMenu({
   }, [query, flat]);
 
   const go = (item) => {
-    if (!item?.path) return;
+    if (!item?.path || item.comingSoon) return;
     navigate(item.path);
   };
 
@@ -182,26 +182,39 @@ export default function EnterpriseSidebarMenu({
 
   const renderItem = (item, compact = false) => {
     const Icon = getIcon(item.icon);
-    const active = currentPath && item.path && currentPath.startsWith(item.path);
+    const active = currentPath && item.path && currentPath.startsWith(item.path) && !item.comingSoon;
+    const comingSoon = !!item.comingSoon;
 
     return (
       <button
         key={`${compact ? "compact" : "item"}-${item.id}`}
         onClick={() => go(item)}
+        disabled={comingSoon}
+        aria-disabled={comingSoon}
         data-testid={`menu-item-${item.id}`}
         className={[
           "w-full flex items-center gap-3 rounded-xl text-left transition-all",
           compact ? "px-3 py-2 text-sm" : "px-4 py-2.5 text-[15px]",
-          active
-            ? "bg-white/12 text-white shadow-sm"
-            : "text-zinc-400 hover:bg-white/8 hover:text-white"
+          comingSoon
+            ? "text-zinc-600 cursor-not-allowed"
+            : active
+              ? "bg-white/12 text-white shadow-sm"
+              : "text-zinc-400 hover:bg-white/8 hover:text-white"
         ].join(" ")}
-        title={item.label}
+        title={comingSoon ? `${item.label} — Próximamente` : item.label}
       >
         <Icon size={compact ? 17 : 20} className="shrink-0" />
         {!collapsed && (
-          <span className="font-medium leading-tight">
-            {item.label}
+          <span className="font-medium leading-tight flex-1 flex items-center justify-between gap-2 min-w-0">
+            <span className="truncate">{item.label}</span>
+            {comingSoon && (
+              <span
+                data-testid={`menu-coming-soon-${item.id}`}
+                className="shrink-0 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-white/5 text-zinc-500 border border-white/10"
+              >
+                Pronto
+              </span>
+            )}
           </span>
         )}
       </button>

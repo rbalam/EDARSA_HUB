@@ -43,6 +43,7 @@ export const enterpriseMenuGroups = [
         id: "inventarios",
         label: "Inventarios / Operaciones",
         path: "/inventarios",
+        comingSoon: true,
         icon: "Boxes",
         section: "Inventarios",
         keywords: ["inventarios", "almacen", "conteos", "operaciones", "diferencias"]
@@ -77,6 +78,7 @@ export const enterpriseMenuGroups = [
         id: "host-to-host",
         label: "Host to Host Bancario",
         path: "/host-to-host",
+        comingSoon: true,
         icon: "Building2",
         section: "Bancos",
         keywords: ["bancos", "host", "pagos", "bancario"]
@@ -85,6 +87,7 @@ export const enterpriseMenuGroups = [
         id: "contabilidad",
         label: "Contabilidad",
         path: "/contabilidad",
+        comingSoon: true,
         icon: "Calculator",
         section: "Contabilidad",
         keywords: ["contabilidad", "polizas", "cuentas"]
@@ -93,6 +96,7 @@ export const enterpriseMenuGroups = [
         id: "comisiones",
         label: "Comisiones",
         path: "/comisiones",
+        comingSoon: true,
         icon: "Percent",
         section: "Comisiones",
         keywords: ["comisiones", "tarjetas", "netpay"]
@@ -170,6 +174,7 @@ export const enterpriseMenuGroups = [
         id: "inteligencia-artificial",
         label: "Inteligencia Artificial",
         path: "/inteligencia-artificial",
+        comingSoon: true,
         icon: "Brain",
         section: "IA",
         keywords: ["ia", "inteligencia artificial", "agentes"]
@@ -178,6 +183,7 @@ export const enterpriseMenuGroups = [
         id: "calidad-auditoria",
         label: "Calidad / Auditoría",
         path: "/auditoria",
+        comingSoon: true,
         icon: "ShieldCheck",
         section: "Auditoría",
         keywords: ["auditoria", "calidad", "control", "revision"]
@@ -196,6 +202,7 @@ export const enterpriseMenuGroups = [
         id: "proyectos",
         label: "Proyectos / Tareas",
         path: "/proyectos",
+        comingSoon: true,
         icon: "ClipboardList",
         section: "Proyectos",
         keywords: ["proyectos", "tareas", "workflow"]
@@ -204,6 +211,7 @@ export const enterpriseMenuGroups = [
         id: "marketing",
         label: "Marketing",
         path: "/marketing",
+        comingSoon: true,
         icon: "Megaphone",
         section: "Marketing",
         keywords: ["marketing", "campañas"]
@@ -222,6 +230,7 @@ export const enterpriseMenuGroups = [
         id: "activos-fijos",
         label: "Activos Fijos",
         path: "/activos-fijos",
+        comingSoon: true,
         icon: "Grid3X3",
         section: "Activos",
         keywords: ["activos", "fijos", "mantenimiento"]
@@ -248,6 +257,7 @@ export const enterpriseMenuGroups = [
         id: "integraciones-conectores",
         label: "Integraciones / Conectores",
         path: "/integraciones",
+        comingSoon: true,
         icon: "Plug",
         section: "Conectores",
         keywords: ["integraciones", "conectores", "apis", "sincronizaciones"]
@@ -315,6 +325,7 @@ export const enterpriseMenuGroups = [
         id: "programacion",
         label: "Programación",
         path: "/programacion",
+        comingSoon: true,
         icon: "Clock",
         section: "Automatización",
         keywords: ["programacion", "scheduler", "jobs"]
@@ -330,7 +341,7 @@ export const enterpriseMenuGroups = [
       {
         id: "asignaciones",
         label: "Asignaciones",
-        path: "/asignaciones",
+        path: "/configuracion/asignaciones",
         icon: "UserCog",
         section: "Automatización",
         keywords: ["asignaciones", "responsables"]
@@ -346,7 +357,7 @@ export const enterpriseMenuGroups = [
       {
         id: "config-operativa",
         label: "Config. Operativa",
-        path: "/configuracion-operativa",
+        path: "/admin/configuracion-operativa",
         icon: "Settings",
         section: "Configuración",
         keywords: ["configuracion", "operativa", "parametros"]

@@ -1,5 +1,14 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-07] Limpieza de menú: rutas rotas → "Pronto" + 2 rutas corregidas
+
+- **2 ítems con ruta mal escrita corregidos** (apuntaban a rutas inexistentes pese a tener pantalla):
+  - `Asignaciones`: `/asignaciones` → `/configuracion/asignaciones` (validado: abre "Asignaciones de Inventarios").
+  - `Config. Operativa`: `/configuracion-operativa` → `/admin/configuracion-operativa`.
+- **11 módulos sin pantalla marcados `comingSoon: true`** (Inventarios, Host to Host, Contabilidad, Comisiones, Inteligencia Artificial, Calidad/Auditoría, Proyectos, Marketing, Activos Fijos, Integraciones, Programación). `EnterpriseSidebarMenu` los renderiza **deshabilitados** (no clicables) con badge **"Pronto"** y tooltip "— Próximamente". `go()` ignora ítems `comingSoon`.
+- **Validado (playwright)**: clic en ítem `comingSoon` (Contabilidad) NO navega ni expulsa; ítem corregido (Asignaciones) abre su pantalla. Lint limpio.
+
+
 ## [2026-06-07] FIX lote: Permisos 403, crash Select, logout navegación (Issue #1) y race recarga (Issue #2)
 
 ### 🐞 Guardar permisos de usuario → "Error al guardar permisos" (backend, 403/404)
