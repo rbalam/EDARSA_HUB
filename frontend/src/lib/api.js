@@ -103,6 +103,10 @@ api.interceptors.response.use(
     const isInteligenciaPortal = currentPath.startsWith('/inteligencia-comercial');
     const isPortalProveedores = currentPath.startsWith('/portal');
     const isLoginPage = currentPath.startsWith('/login');
+    // Páginas del flujo de recuperación de contraseña: son públicas y NO deben
+    // ser redirigidas al login cuando /auth/me responde 401 (no hay sesión).
+    const isAuthFlowPage = currentPath.startsWith('/forgot-password') ||
+                           currentPath.startsWith('/reset-password');
     
     // Parche de estabilidad: Evitar cierre de sesión por errores 500/502
     if (error.response?.status === 500 || error.response?.status === 502) {
@@ -113,7 +117,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       clearSession();
       // Solo redirigir si NO estamos en una de las zonas públicas/app-independientes
-      if (!isInteligenciaPortal && !isPortalProveedores && !isLoginPage) {
+      if (!isInteligenciaPortal && !isPortalProveedores && !isLoginPage && !isAuthFlowPage) {
         window.location.href = '/login';
       }
     }
