@@ -507,7 +507,7 @@ def _get_ultimo_dia_con_datos_edarsahub(server_id: str, mes: int, anio: int) -> 
     WHERE server_id = '{server_id}'
       AND anio = {anio}
       AND mes = {mes}
-      AND ventas_total > 0
+      AND ventas_sin_propina > 0
     """
     result = _query_edarsahub_tablero(query)
     if result and result[0].get('ultimo_dia'):
@@ -554,7 +554,7 @@ def _get_kpis_periodo_edarsahub(
     # Usar rangos semiabiertos: fecha >= ini AND fecha <= fin
     query = f"""
     SELECT 
-        ISNULL(SUM(ventas_total), 0) as ventas,
+        ISNULL(SUM(ventas_sin_propina), 0) as ventas,
         ISNULL(SUM(pax_total), 0) as pax_total,
         ISNULL(SUM(tickets_total), 0) as cheques,
         COUNT(*) as registros
@@ -563,7 +563,7 @@ def _get_kpis_periodo_edarsahub(
       AND sucursal_id = '{sucursal_id}'
       AND fecha_operacion >= '{fecha_ini}'
       AND fecha_operacion <= '{fecha_fin}'
-      AND ventas_total > 0
+      AND ventas_sin_propina > 0
     """
     result = _query_edarsahub_tablero(query)
     
@@ -848,7 +848,7 @@ def _obtener_kpis_tablero_desde_edarsahub(
       AND sucursal_id = '{sucursal_id}'
       AND fecha_operacion >= '{fecha_ini}'
       AND fecha_operacion <= '{fecha_fin}'
-      AND ventas_total > 0
+      AND ventas_sin_propina > 0
     """
     result_ultimo = _query_edarsahub_tablero(query_ultimo_dia)
     
@@ -2505,7 +2505,7 @@ def _get_kpis_periodo_edarsahub_flexible(
     if sucursal_id == 'DEFAULT':
         query = f"""
         SELECT 
-            ISNULL(SUM(ventas_total), 0) as ventas,
+            ISNULL(SUM(ventas_sin_propina), 0) as ventas,
             ISNULL(SUM(pax_total), 0) as pax_total,
             ISNULL(SUM(tickets_total), 0) as cheques,
             COUNT(*) as registros
@@ -2513,7 +2513,7 @@ def _get_kpis_periodo_edarsahub_flexible(
         WHERE server_id = '{server_id}'
           AND fecha_operacion >= '{fecha_ini}'
           AND fecha_operacion <= '{fecha_fin}'
-          AND ventas_total > 0
+          AND ventas_sin_propina > 0
         """
         result = _query_edarsahub_tablero(query)
         
@@ -2555,7 +2555,7 @@ def _get_kpis_periodo_edarsahub_flexible(
         
         query_mpro = f"""
         SELECT 
-            ISNULL(SUM(ventas_total), 0) as ventas,
+            ISNULL(SUM(ventas_sin_propina), 0) as ventas,
             ISNULL(SUM(pax_total), 0) as pax_total,
             ISNULL(SUM(tickets_total), 0) as cheques,
             COUNT(*) as registros
@@ -2563,7 +2563,7 @@ def _get_kpis_periodo_edarsahub_flexible(
         WHERE unidad_negocio_pk IN ({ids_str})
           AND fecha_operacion >= '{fecha_ini}'
           AND fecha_operacion <= '{fecha_fin}'
-          AND ventas_total > 0
+          AND ventas_sin_propina > 0
         """
         
         result_mpro = _query_edarsahub_tablero(query_mpro)

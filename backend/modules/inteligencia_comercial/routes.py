@@ -187,7 +187,7 @@ async def get_dashboard_data(
     
     try:
         # WHERE dinámico
-        where_parts = ["activo = 1", f"fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
+        where_parts = [f"fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
         if unidad_db:
             where_parts.append(f"unidad_negocio_nombre = '{unidad_db}'")
         where_sql = " AND ".join(where_parts)
@@ -195,12 +195,12 @@ async def get_dashboard_data(
         # Query KPIs principales
         kpis_sql = f"""
             SELECT 
-                COALESCE(SUM(ventas_total), 0) AS ventas_totales,
+                COALESCE(SUM(ventas_sin_propina), 0) AS ventas_totales,
                 COALESCE(SUM(pax_total), 0) AS pax_total,
                 COALESCE(SUM(tickets_total), 0) AS cheques_total,
                 COALESCE(SUM(propinas_total), 0) AS propinas_total,
                 CASE WHEN SUM(tickets_total) > 0 
-                    THEN SUM(ventas_total) / SUM(tickets_total) 
+                    THEN SUM(ventas_sin_propina) / SUM(tickets_total) 
                     ELSE 0 END AS cheque_promedio
             FROM vw_Comercial_KPIs_Diarios_v2_Runtime
             WHERE {where_sql}
@@ -214,14 +214,14 @@ async def get_dashboard_data(
             unidad_sql = f"""
                 SELECT 
                     unidad_negocio_nombre AS unidad,
-                    SUM(ventas_total) AS ventas,
+                    SUM(ventas_sin_propina) AS ventas,
                     SUM(pax_total) AS pax_total,
                     SUM(tickets_total) AS tickets,
                     SUM(propinas_total) AS propinas
                 FROM vw_Comercial_KPIs_Diarios_v2_Runtime
                 WHERE {where_sql}
                 GROUP BY unidad_negocio_nombre
-                ORDER BY SUM(ventas_total) DESC
+                ORDER BY SUM(ventas_sin_propina) DESC
             """
             ventas_por_unidad = execute_query(unidad_sql)
         
@@ -288,7 +288,7 @@ async def get_dashboard_data(
                 {
                     "unidad": u["unidad"],
                     "ventas": round(float(u["ventas"] or 0), 2),
-                    "pax": int(u["pax"] or 0),
+                    "pax": int(u["pax_total"] or 0),
                     "tickets": int(u["tickets"] or 0),
                     "propinas": round(float(u["propinas"] or 0), 2),
                     "participacion": round((float(u["ventas"] or 0) / total_ventas) * 100, 2)
@@ -336,7 +336,7 @@ async def get_tendencia_diaria(
         fecha_fin = datetime.now().strftime("%Y-%m-%d")
     
     try:
-        where_parts = ["activo = 1", f"fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
+        where_parts = [f"fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
         if unidad_db:
             where_parts.append(f"unidad_negocio_nombre = '{unidad_db}'")
         where_sql = " AND ".join(where_parts)
@@ -344,12 +344,12 @@ async def get_tendencia_diaria(
         sql = f"""
             SELECT 
                 fecha_operacion AS fecha,
-                SUM(ventas_total) AS ventas,
+                SUM(ventas_sin_propina) AS ventas,
                 SUM(pax_total) AS pax_total,
                 SUM(tickets_total) AS tickets,
                 SUM(propinas_total) AS propinas,
                 CASE WHEN SUM(tickets_total) > 0 
-                    THEN SUM(ventas_total) / SUM(tickets_total) 
+                    THEN SUM(ventas_sin_propina) / SUM(tickets_total) 
                     ELSE 0 END AS cheque_promedio
             FROM vw_Comercial_KPIs_Diarios_v2_Runtime
             WHERE {where_sql}
@@ -454,12 +454,12 @@ async def get_ventas_horario(
             }
         
         # FALLBACK: Calcular desde KPIs con proporciones estándar restaurante
-        where_kpi = ["activo = 1", f"fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
+        where_kpi = [f"fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
         if unidad_db:
             where_kpi.append(f"unidad_negocio_nombre = '{unidad_db}'")
         
         kpi_sql = f"""
-            SELECT SUM(ventas_total) AS total, SUM(pax_total) AS pax_total, SUM(tickets_total) AS tickets
+            SELECT SUM(ventas_sin_propina) AS total, SUM(pax_total) AS pax_total, SUM(tickets_total) AS tickets
             FROM vw_Comercial_KPIs_Diarios_v2_Runtime
             WHERE {" AND ".join(where_kpi)}
         """
@@ -705,11 +705,11 @@ async def get_ventas_familia(
     
     try:
         # Obtener total de ventas para calcular proporciones
-        where_kpi = ["activo = 1", f"fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
+        where_kpi = [f"fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
         if unidad_db:
             where_kpi.append(f"unidad_negocio_nombre = '{unidad_db}'")
         
-        kpi_sql = f"SELECT SUM(ventas_total) AS total FROM vw_Comercial_KPIs_Diarios_v2_Runtime WHERE {' AND '.join(where_kpi)}"
+        kpi_sql = f"SELECT SUM(ventas_sin_propina) AS total FROM vw_Comercial_KPIs_Diarios_v2_Runtime WHERE {' AND '.join(where_kpi)}"
         kpis = execute_query(kpi_sql)
         total_ventas = float(kpis[0]["total"] or 0) if kpis else 0
         
@@ -767,11 +767,11 @@ async def get_ventas_casas(
     
     try:
         # Obtener total de ventas
-        where_kpi = ["activo = 1", f"fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
+        where_kpi = [f"fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
         if unidad_db:
             where_kpi.append(f"unidad_negocio_nombre = '{unidad_db}'")
         
-        kpi_sql = f"SELECT SUM(ventas_total) AS total FROM vw_Comercial_KPIs_Diarios_v2_Runtime WHERE {' AND '.join(where_kpi)}"
+        kpi_sql = f"SELECT SUM(ventas_sin_propina) AS total FROM vw_Comercial_KPIs_Diarios_v2_Runtime WHERE {' AND '.join(where_kpi)}"
         kpis = execute_query(kpi_sql)
         total_ventas = float(kpis[0]["total"] or 0) if kpis else 0
         
