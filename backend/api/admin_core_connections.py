@@ -30,7 +30,8 @@ from datetime import datetime, timezone
 import time
 import logging
 
-from core.db import execute_sql_query, get_mongo_db
+from core.db import execute_sql_query
+from core.mongo_compat import get_mongo_db
 from core.server_registry import EDARSAHUB_CONFIG, get_decrypted_credentials
 from core.secret_manager import is_encrypted_secret, decrypt_secret
 from core.system_type_utils import normalize_system_type
