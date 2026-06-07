@@ -1,5 +1,14 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-07] Fase 18 — P5-3D Cierre NO-MONGO en `core/` + guardrail extendido
+- **Neutralizado `core/auditoria.py::_get_mongo_db`** (stub roto `client=None; client[db_name]` en try/except) → `return None` limpio. La auditoría persiste en SQL (`_guardar_sql` con commit es la ruta primaria); los callers (`_guardar_mongo`, `consultar_por_*`) ya estaban guardados → degradan a False/[].
+- **Neutralizado `core/communications/scripts/__init__.py::main`** (init standalone con stub Mongo roto) → no-op NO-MONGO.
+- **Neutralizado `core/centro_control/recipients_manager.py`**: `get_db`/`get_collection` → `None`; añadidos guards en `get_all_recipients` (→[]), `add/update/delete_recipient` (→RuntimeError claro "NO-MONGO, requiere migración SQL"). Feature de destinatarios de alertas era **Mongo-backed y ya rota** (crasheaba); ahora **degrada con gracia**: endpoints `GET /api/centro-control/destinatarios` y `/resumen` pasan de **500 → 200 vacío**. (Escrituras deshabilitadas hasta migración SQL.)
+- **Limpiado comentario muerto** `modules/comercial/queries/hub.py:62` (`# from core.db import get_mongo_db`).
+- **Guardrail extendido a `core/`:** `test_p5_1_no_mongo_residual_modules.py` ahora escanea `modules/` Y `core/` (imports pymongo/motor + patrón roto `client=None`). Scan = 0 imports prohibidos / 0 stubs rotos.
+- **Verificado:** `py_compile` OK, backend RUNNING, guardrails **9/9**, `health/v1` healthy, Admin CORE en paridad (200/2), destinatarios 200. NO-MONGO end-to-end en runtime (`modules/`+`core/`) logrado.
+- **Nota de proceso:** 2 veces un `search_replace` en paralelo sobre el MISMO archivo no persistió una edición (se detectó por verificación post-parche y se reaplicó). Aprendizaje: editar el mismo archivo de forma secuencial.
+
 ## [2026-06-07] Fase 17 — P5-3C Sunset `api_connections/repository.py` + retiro `core/mongo_compat`
 - **AUDITORÍA DE SCRIPT (rechazado):** `fase17_*.sh` NO ejecutado — mismo defecto FATAL que P5-3A: reemplazaba `db.api_connections_cache.delete_one(` por `pass` dejando el `await` → **`await pass`** (SyntaxError), y escribía el archivo roto ANTES del `py_compile` → habría tirado el backend por hot-reload.
 - **Decisión:** `api_connections_cache` y `api_health_logs` no las **lee** nadie (solo escritura) → **retirada limpia** (no migración).

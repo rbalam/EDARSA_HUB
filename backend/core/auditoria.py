@@ -221,18 +221,8 @@ class ServicioAuditoria:
         self._mongo_db = None
     
     async def _get_mongo_db(self):
-        """Obtiene conexión a MongoDB para fallback"""
-        if self._mongo_db is None:
-            try:
-                pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
-                mongo_url = None  # P2-07: MongoDB eliminado
-                client = None  # P2-07: MongoDB eliminado
-                db_name = os.environ.get('DB_NAME', 'edarsa_hub')
-                self._mongo_db = client[db_name]
-            except Exception as e:
-                logger.error(f"Error conectando a MongoDB: {e}")
-                return None
-        return self._mongo_db
+        """P5-3D: MongoDB retirado (NO-MONGO). La auditoría persiste en SQL. Retorna None."""
+        return None
     
     def _get_sql_connection(self):
         """Obtiene conexión a SQL Server EDARSA HUB"""

@@ -58,8 +58,6 @@ Estado: BLOQUE_1 - Estructura preparada, sin implementación
 
 from typing import Dict, Optional, List
 from datetime import datetime, date
-# Los imports de MongoDB se agregarán cuando se implemente
-# from core.db import get_mongo_db
 
 # =============================================================================
 # CONSTANTES

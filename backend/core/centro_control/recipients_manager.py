@@ -34,18 +34,19 @@ _db = None
 
 
 def get_db():
-    """Obtiene la conexión a la base de datos"""
-    global _db
-    if _db is None:
-        client = None  # P2-07: MongoDB eliminado
-        _db = client[DB_NAME]
-    return _db
+    """P5-3D: MongoDB retirado (NO-MONGO). Retorna None."""
+    return None
 
 
 def get_collection():
-    """Obtiene la colección de destinatarios"""
-    db = get_db()
-    return db['alert_recipients']
+    """P5-3D: colección Mongo retirada (NO-MONGO). Retorna None; los callers degradan."""
+    return None
+
+
+_RECIPIENTS_DISABLED_MSG = (
+    "Destinatarios de alertas no disponibles: almacenamiento MongoDB retirado "
+    "(NO-MONGO). Requiere migración a SQL para reactivarse."
+)
 
 
 # ============================================================================
@@ -64,6 +65,8 @@ def get_all_recipients(tipo: Optional[str] = None, solo_activos: bool = True) ->
         Lista de destinatarios
     """
     collection = get_collection()
+    if collection is None:
+        return []
     
     query = {}
     if tipo:
@@ -117,6 +120,8 @@ def add_recipient(
         Dict con el destinatario creado
     """
     collection = get_collection()
+    if collection is None:
+        raise RuntimeError(_RECIPIENTS_DISABLED_MSG)
     
     # Validar tipo
     if tipo not in ["email", "whatsapp"]:
@@ -184,6 +189,8 @@ def update_recipient(
         Dict con el destinatario actualizado
     """
     collection = get_collection()
+    if collection is None:
+        raise RuntimeError(_RECIPIENTS_DISABLED_MSG)
     
     update_data = {}
     if activo is not None:
@@ -227,6 +234,8 @@ def delete_recipient(recipient_id: str) -> bool:
         True si se eliminó correctamente
     """
     collection = get_collection()
+    if collection is None:
+        raise RuntimeError(_RECIPIENTS_DISABLED_MSG)
     
     result = collection.delete_one({"_id": ObjectId(recipient_id)})
     

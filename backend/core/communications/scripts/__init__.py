@@ -375,19 +375,11 @@ async def init_notification_system(db):
 
 
 async def main():
-    """Ejecuta la inicialización standalone."""
+    """P5-3D: inicialización standalone deshabilitada (NO-MONGO).
+    El sistema de notificaciones ya no depende de MongoDB."""
     logging.basicConfig(level=logging.INFO)
-    
-    mongo_url = None  # P2-07: MongoDB eliminado
-    db_name = os.environ.get("DB_NAME", "edarsa_hub")
-    
-    client = None  # P2-07: MongoDB eliminado
-    db = client[db_name]
-    
-    try:
-        await init_notification_system(db)
-    finally:
-        client.close()
+    logging.warning("[NOTIFICATIONS] init standalone Mongo retirado (NO-MONGO). No-op.")
+    return None
 
 
 if __name__ == "__main__":

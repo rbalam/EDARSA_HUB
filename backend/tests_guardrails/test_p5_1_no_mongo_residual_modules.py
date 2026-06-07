@@ -1,4 +1,4 @@
-"""Guardrail P5-1: Blindaje permanente NO-MONGO en /app/backend/modules/.
+"""Guardrail P5-1/P5-3D: Blindaje permanente NO-MONGO en /app/backend/modules/ y /app/backend/core/.
 
 Falla (pytest assert / exit 1) si reaparece cualquiera de:
   1) imports vivos de Mongo: `import pymongo`, `from pymongo`, `import motor`,
@@ -14,6 +14,8 @@ from pathlib import Path
 import re
 
 MODULES_ROOT = Path("/app/backend/modules")
+CORE_ROOT = Path("/app/backend/core")
+SCAN_ROOTS = (MODULES_ROOT, CORE_ROOT)
 
 # Subcadenas en la RUTA que excluyen el archivo del escaneo
 PATH_ALLOW = (
@@ -49,19 +51,20 @@ def _strip_comments(text: str) -> str:
 def _scan():
     forbidden_imports = []
     broken_stub = []
-    if not MODULES_ROOT.exists():
-        return forbidden_imports, broken_stub
-    for p in MODULES_ROOT.rglob("*.py"):
-        sp = str(p)
-        if any(a in sp for a in PATH_ALLOW):
+    for root in SCAN_ROOTS:
+        if not root.exists():
             continue
-        raw = p.read_text(errors="ignore")
-        code = _strip_comments(raw)
-        for rx in FORBIDDEN_IMPORTS:
-            if rx.search(code):
-                forbidden_imports.append((sp, rx.pattern))
-        if RE_CLIENT_NONE.search(code) and RE_CLIENT_AS_MONGO.search(code):
-            broken_stub.append(sp)
+        for p in root.rglob("*.py"):
+            sp = str(p)
+            if any(a in sp for a in PATH_ALLOW):
+                continue
+            raw = p.read_text(errors="ignore")
+            code = _strip_comments(raw)
+            for rx in FORBIDDEN_IMPORTS:
+                if rx.search(code):
+                    forbidden_imports.append((sp, rx.pattern))
+            if RE_CLIENT_NONE.search(code) and RE_CLIENT_AS_MONGO.search(code):
+                broken_stub.append(sp)
     return forbidden_imports, broken_stub
 
 
