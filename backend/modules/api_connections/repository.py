@@ -44,11 +44,6 @@ def init_api_connections_repository(database) -> None:
     logging.info("[API_CONNECTIONS] Repositorio inicializado - Fuente primaria: EDARSAHUB SQL")
 
 
-def get_mongo_db():
-    """Obtiene la conexión a MongoDB (solo para caché)."""
-    return _db
-
-
 def _escape_sql(value: str) -> str:
     """Escapa caracteres especiales para SQL."""
     if value is None:
@@ -465,14 +460,6 @@ async def delete_api_connection(api_id: str, deleted_by: str = "system") -> bool
     # 3. Registrar en bitácora
     _log_operation(api_id, 'DELETE', existing, {'activo': False}, deleted_by)
     
-    # 4. Eliminar de caché MongoDB (no bloquea)
-    try:
-        db = get_mongo_db()
-        if db is not None:
-            await db.api_connections_cache.delete_one({"id": api_id})
-    except Exception as e:
-        logging.warning(f"[API_CONNECTIONS] Error eliminando caché MongoDB: {e}")
-    
     return True
 
 
@@ -481,47 +468,8 @@ async def delete_api_connection(api_id: str, deleted_by: str = "system") -> bool
 # ============================================================================
 
 async def _sync_to_mongo_cache(api_id: str) -> bool:
-    """
-    Sincroniza una conexión específica de EDARSAHUB SQL a MongoDB caché.
-    No bloquea si falla.
-    """
-    try:
-        db = get_mongo_db()
-        if db is None:
-            return False
-        
-        api = get_api_connection_sql(api_id)
-        if not api:
-            return False
-        
-        # Guardar en colección de caché (no la principal)
-        cache_doc = {
-            'id': api['id'],
-            'name': api['name'],
-            'url': api['url'],
-            'tipo': api['tipo'],
-            'tipo_conexion': 'API_LOCAL',
-            'servidor_padre': api['servidor_padre'],
-            'sucursal_destino': api['sucursal_destino'],
-            'hora_replica': api['hora_replica'],
-            'solo_ventas_dia': api['solo_ventas_dia'],
-            'activo': api['activo'],
-            'active': api['activo'],  # Alias para compatibilidad
-            'visible_en_operaciones': api['visible_en_operaciones'],
-            'synced_at': datetime.now(timezone.utc).isoformat(),
-            'source': 'SYNC_FROM_SQL'
-        }
-        
-        await db.api_connections_cache.update_one(
-            {"id": api_id},
-            {"$set": cache_doc},
-            upsert=True
-        )
-        logging.debug(f"[API_CONNECTIONS] Caché MongoDB actualizado para {api_id}")
-        return True
-    except Exception as e:
-        logging.warning(f"[API_CONNECTIONS] Error sincronizando caché MongoDB: {e}")
-        return False
+    """P5-3C: caché Mongo retirada (NO-MONGO). EDARSAHUB SQL es la única fuente. No-op."""
+    return False
 
 
 async def sync_all_to_mongo_cache() -> Dict:
@@ -598,19 +546,6 @@ async def test_api_connection_health(api_id: str = None, url: str = None, api_ke
         result = {"success": False, "error": "Sin conexión"}
     except Exception as e:
         result = {"success": False, "error": str(e)}
-    
-    # Guardar resultado en MongoDB como log de estado (no bloquea)
-    try:
-        db = get_mongo_db()
-        if db is not None and api_id:
-            await db.api_health_logs.insert_one({
-                "api_id": api_id,
-                "url": url,
-                "result": result,
-                "tested_at": datetime.now(timezone.utc).isoformat()
-            })
-    except:
-        pass
     
     return result
 

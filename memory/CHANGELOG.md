@@ -1,5 +1,14 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-07] Fase 17 — P5-3C Sunset `api_connections/repository.py` + retiro `core/mongo_compat`
+- **AUDITORÍA DE SCRIPT (rechazado):** `fase17_*.sh` NO ejecutado — mismo defecto FATAL que P5-3A: reemplazaba `db.api_connections_cache.delete_one(` por `pass` dejando el `await` → **`await pass`** (SyntaxError), y escribía el archivo roto ANTES del `py_compile` → habría tirado el backend por hot-reload.
+- **Decisión:** `api_connections_cache` y `api_health_logs` no las **lee** nadie (solo escritura) → **retirada limpia** (no migración).
+- **Fix aplicado:** `modules/api_connections/repository.py`: removido `def get_mongo_db()` local; `_sync_to_mongo_cache` → no-op (`return False`); removido bloque de borrado de caché en `delete_api_connection`; removido bloque de health-log en test. Conteo `get_mongo_db`/`api_connections_cache`/`api_health_logs` = **0**. (Nota: había código duplicado de `_sync_to_mongo_cache`; se neutralizó en 2 pasos.)
+- **Guardrail reescrito al end-state:** `test_api_connections_mongo_degrades_safe.py` ahora exige 0 residual Mongo + exports SQL-First.
+- **Retiro `core/mongo_compat`:** sin consumidores runtime tras limpiar admin + api_connections. Neutralizado el último consumidor (`scripts/rotate_server_secret_key.py::sync_to_mongodb` → no-op NO-MONGO) y **eliminado `core/mongo_compat.py`** (backup en `auditorias_p5/`). Nuevo guardrail `test_no_mongo_compat.py` (archivo ausente + sin imports).
+- **Verificado:** backend arrancó SIN errores de import, guardrails **9/9**, contrato Admin CORE en paridad (LIST 200/2, ITEM 20 keys), `GET /api/api-connections` 200, `health/v1` healthy.
+- **PENDIENTE (residual Mongo separado, pre-existente y GUARDADO):** `core/auditoria.py::_get_mongo_db` (patrón `client=None; client[db_name]` en try/except → return None, degrada seguro). Mi guardrail cubre `modules/`; falta extenderlo a `core/` y neutralizar este stub. `modules/comercial/queries/hub.py:62` es solo un comentario.
+
 ## [2026-06-07] Fase 16 — P5-3B-2/3 Admin CORE: retiro total de `get_mongo_db` (NO-MONGO completo)
 - **AUDITORÍA DE SCRIPT (rechazado):** `fase16_*.sh` NO ejecutado. Defectos: (1) su `pattern_find` esperaba variable `mongo_doc` pero el código real usa `mongo_server` → abortaba; (2) su GATE/regex buscaba `'mongodb_id':` (literal dict) pero el código usa `formatted['mongodb_id'] =` (asignación) → abortaba; (3) habría sourceado `mongodb_id` desde SQL de forma incondicional → **agregaba 2 keys** al output rompiendo la paridad del contrato.
 - **Análisis de contrato:** ambos endpoints llaman `format_core_connection(conn, include_mongo=True)`, pero como la conexión Mongo siempre era None, el bloque nunca agregaba `mongodb_id`/`mongo_synced` → el baseline tiene 20 keys sin esos campos.

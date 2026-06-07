@@ -391,29 +391,8 @@ def execute_rotation(
 
 
 def sync_to_mongodb(server_id: str, updates: Dict):
-    """
-    Sincroniza secretos rotados a MongoDB.
-    
-    SEGURIDAD: No imprime secretos.
-    """
-    from core.mongo_compat import get_mongo_db
-    
-    db = get_mongo_db()
-    if not db:
-        raise Exception("MongoDB no disponible")
-    
-    # Buscar y actualizar en MongoDB
-    mongo_updates = {}
-    for field, value in updates.items():
-        # Mapear campos SQL a MongoDB
-        mongo_field = field.replace('_encrypted', '')
-        mongo_updates[mongo_field] = value
-    
-    if mongo_updates:
-        db.servidores_conexiones.update_one(
-            {'id': server_id},
-            {'$set': mongo_updates}
-        )
+    """P5-3C: NO-MONGO. La rotación de secretos se persiste solo en EDARSAHUB SQL. No-op."""
+    return None
 
 
 def generate_report(
