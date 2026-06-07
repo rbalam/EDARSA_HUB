@@ -8,8 +8,9 @@ def test_admin_core_import_source_is_correct():
     txt = API_FILE.read_text(encoding="utf-8", errors="ignore")
     assert "from core.db import execute_sql_query, get_mongo_db" not in txt, \
         "No debe volver el import roto get_mongo_db desde core.db"
-    assert "from core.mongo_compat import get_mongo_db" in txt, \
-        "Debe importarse get_mongo_db desde core.mongo_compat"
+    # P5-3B-2: get_mongo_db retirado por completo del admin (NO-MONGO end-state)
+    assert "get_mongo_db" not in txt, \
+        "Admin CORE no debe referenciar get_mongo_db (sunset Mongo completado)"
 
 
 def test_admin_core_router_defines_expected_routes():

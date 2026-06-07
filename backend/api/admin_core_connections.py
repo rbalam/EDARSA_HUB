@@ -32,7 +32,6 @@ import logging
 import json
 
 from core.db import execute_sql_query
-from core.mongo_compat import get_mongo_db
 from core.server_registry import EDARSAHUB_CONFIG, get_decrypted_credentials
 from core.secret_manager import is_encrypted_secret, decrypt_secret
 from core.system_type_utils import normalize_system_type
@@ -278,18 +277,9 @@ def format_core_connection(conn: Dict, include_mongo: bool = True) -> Dict:
     if formatted['api_key_configured'] and not formatted['api_key_encrypted']:
         formatted['warnings'].append('API Key está en texto plano')
     
-    # Verificar MongoDB si aplica
-    if include_mongo:
-        try:
-            db = get_mongo_db()
-            if db:
-                mongo_server = db.servidores_conexiones.find_one({'id': conn.get('id')})
-                formatted['mongodb_id'] = str(mongo_server.get('_id')) if mongo_server else None
-                formatted['mongo_synced'] = mongo_server is not None
-        except Exception:
-            formatted['mongodb_id'] = None
-            formatted['mongo_synced'] = False
-    
+    # P5-3B-2: residual Mongo retirado. mongodb_id/mongo_synced eran no-op
+    # (la conexión Mongo siempre era None, nunca agregaban estas keys) y no
+    # forman parte del contrato HTTP. Arquitectura NO-MONGO: estado solo en SQL.
     return formatted
 
 
