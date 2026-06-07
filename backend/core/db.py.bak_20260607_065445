@@ -614,38 +614,3 @@ def init_db_connections():
 
 def execute_query_safe_legacy(*args, **kwargs):
     return execute_query_safe(*args, **kwargs)
-
-async def _execute_sql_direct_with_error(
-    host: str,
-    port: int,
-    database: str,
-    username: str,
-    password: str,
-    query: str,
-    timeout_seconds: int = 30
-) -> tuple:
-    """
-    Ejecuta SQL directo y retorna (resultado, error_mensaje).
-    Explorador BD necesita distinguir 0 resultados vs error.
-    Returns: (list, None) si exito; ([], str) si error.
-    """
-    import asyncio
-    try:
-        result = await asyncio.to_thread(
-            execute_sql_query, host, port, database, username, password, query, timeout_seconds
-        )
-        if result is None:
-            return ([], None)
-        return (result, None)
-    except Exception as e:
-        error_msg = str(e)
-        low = error_msg.lower()
-        if "login" in low or "inicio de sesion" in low or "authentication" in low:
-            return ([], f"Error de autenticacion: acceso denegado a la base '{database}'")
-        if "connection refused" in low or "unavailable" in low or "refused" in low:
-            return ([], f"Error de conexion: no se puede conectar al servidor {host}:{port}")
-        if "timeout" in low:
-            return ([], f"Timeout: el servidor no respondio en {timeout_seconds} segundos")
-        if "does not exist" in low or ("database" in low and "exist" in low):
-            return ([], f"Error: la base de datos '{database}' no existe")
-        return ([], f"Error SQL: {error_msg[:180]}")

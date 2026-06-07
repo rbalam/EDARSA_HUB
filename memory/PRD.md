@@ -58,6 +58,15 @@ Spanish (Español)
 - [x] P4-16: Eliminación tablas RBAC_* vacías (6 eliminadas)
 - [x] P4-17/17B: Dictamen Final APROBADO, core/db.py refactorizado
 
+### Phase V1.0 - Estabilización Producción ✅ COMPLETE (2026-06-07)
+Los 5 bloqueadores P0 del Dictamen cerrados y verificados (cURL/pytest, sin testing_agent):
+- [x] P0-1: Vistas corruptas `vw_vw...Runtime` normalizadas (Tablero Ejecutivo + Comercial) → 200
+- [x] P0-2: `rbac_helper.py` SQL-First async + 11 funciones module-level en `repository.py` + alcance SuperAdmin por CodigoRol → CRUD Usuarios/Roles 200
+- [x] P0-3: Configuración Operativa cursor tupla-vs-dict (`_rows_dicts`/`_one_dict`) → 200
+- [x] P0-4: Explorador BD `_execute_sql_direct_with_error` repuesto en `core/db.py` → 200
+- [x] P0-5: Finanzas `/health` 502 → canónico NO-LIVE (externos opt-in) → 200/0.28s
+- Detalle completo en CHANGELOG.md [2026-06-07] Fase 1.
+
 ### Phase P5 - MongoDB Sunset ✅ IN PROGRESS
 - [x] P5-01: Backup controlado y eliminación de 9 colecciones Mongo
 - [x] P5-02: Consolidación RBAC_Roles en Usuario_Roles

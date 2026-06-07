@@ -1,0 +1,24 @@
+FASE 4 - P0-4 EXPLORADOR BD  Sun Jun  7 06:54:45 UTC 2026
+===== 1) AUDITORIA PREVIA =====
+11595:        from core.db import _execute_sql_direct_with_error
+helper NO existe (esperado)
+===== 2) BACKUP =====
+BACKUP: /app/backend/core/db.py.bak_20260607_065445
+===== 3) PARCHE core/db.py =====
+PATCHED core/db.py
+===== 4) VALIDACION SINTACTICA =====
+COMPILE core/db.py OK
+===== 5) REINICIO BACKEND =====
+backend                          RUNNING   pid 1228, uptime 0:00:10
+===== 6) LOGIN ADMIN =====
+TOKEN_LEN=257
+===== 7) SMOKE EXPLORADOR =====
+--- conexiones-explorables
+HTTP=200 t=0.457076s
+CONEXIONES= 13
+SERVER_ID=a5547321-1139-4d2b-9d53-182ca737b6b6
+--- tablas/a5547321-1139-4d2b-9d53-182ca737b6b6
+HTTP=200 t=1.222365s
+{"servidor":"130° MERIDA","sistema":"SOFTRESTAURANT_PRO","database":"softrestaurant10","tablas":[{"tabla":"actualizaciones","tipo":"BASE TABLE"},{"tabla":"actualizacionsucursales","tipo":"BASE TABLE"},{"tabla":"acumuladoinsumos","tipo":"BA
+RAW_REPORT=/app/auditorias_p5/FASE4_P0_4_EXPLORADOR_BD_20260607_065445.txt
+OK - FASE 4 ejecutado
