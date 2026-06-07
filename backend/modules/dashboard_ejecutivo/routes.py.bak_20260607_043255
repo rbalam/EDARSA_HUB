@@ -29,7 +29,7 @@ async def resumen(
         SUM(ISNULL(k.ventas_total, 0)) AS ventas,
         SUM(ISNULL(k.tickets_total, 0)) AS tickets,
         SUM(ISNULL(k.pax_total, 0)) AS pax
-    FROM vw_Comercial_KPIs_Diarios_v2_Runtime k
+    FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime k
     LEFT JOIN Servidores_Conexiones s
         ON CAST(s.id AS NVARCHAR(100)) = CAST(k.server_id AS NVARCHAR(100))
     WHERE k.fecha_operacion >= %s AND k.fecha_operacion <= %s

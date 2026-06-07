@@ -193,7 +193,7 @@ router = APIRouter(tags=["comercial"])
 # ENDPOINTS PERMITIDOS (ya migrados a SQL-First):
 # - /comercial/dashboard/{server_id} - Usa EDARSAHUB vía get_dashboard_kpis_from_edarsahub
 # - /comercial/ventas-tiempo/{server_id} - Usa Sync_Ventas_PorHora
-# - /comercial/tablero-ejecutivo - Usa vw_Comercial_KPIs_Diarios_v2_Runtime
+# - /comercial/tablero-ejecutivo - Usa vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
 # ============================================================================
 
 # Flag para habilitar/deshabilitar el guard rail LIVE
@@ -3234,7 +3234,7 @@ async def comercial_detalle_movimientos(
     Detalle de movimientos para drill-down en KPIs.
     
     FIX 2026-06-04: MIGRADO A SQL-FIRST
-    Este endpoint ahora lee de vw_Comercial_KPIs_Diarios_v2_Runtime en EDARSAHUB SQL.
+    Este endpoint ahora lee de vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime en EDARSAHUB SQL.
     Ya no usa conexiones LIVE a SoftRestaurant/MPRO.
     
     Columnas reales de la tabla:
@@ -3298,14 +3298,14 @@ async def comercial_detalle_movimientos(
         else:
             filtro_principal = f"server_id = '{server_id}'"
 
-        # Query para obtener totales (columnas reales de vw_Comercial_KPIs_Diarios_v2_Runtime)
+        # Query para obtener totales (columnas reales de vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime)
         query_total = f"""
         SELECT
             ISNULL(SUM(ventas_total),0) AS venta_total,
             ISNULL(SUM(tickets_total),0) AS cheques_total,
             ISNULL(SUM(pax_total),0) AS pax_total,
             COUNT(*) AS total
-        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+        FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
         WHERE {filtro_principal}
           AND fecha_operacion >= '{fecha_ini}'
           AND fecha_operacion <= '{fecha_fin}'
@@ -3327,7 +3327,7 @@ async def comercial_detalle_movimientos(
             sucursal_nombre,
             unidad_negocio_nombre,
             sistema_origen
-        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+        FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
         WHERE {filtro_principal}
           AND fecha_operacion >= '{fecha_ini}'
           AND fecha_operacion <= '{fecha_fin}'
@@ -3906,7 +3906,7 @@ async def comercial_dashboard(
             # FASE 7-FIX: EDARSAHUB COMO FUENTE PRINCIPAL
             # ============================================================================
             # PROBLEMA: Dashboard mostraba "Sin Datos" cuando servidor remoto fallaba
-            # PERO EDARSAHUB sí tiene datos en vw_Comercial_KPIs_Diarios_v2_Runtime.
+            # PERO EDARSAHUB sí tiene datos en vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime.
             #
             # SOLUCIÓN: Usar EDARSAHUB primero (igual que Tablero Ejecutivo).
             # MÁXIMA: EDARSAHUB SQL es el cerebro del sistema.

@@ -142,12 +142,12 @@ def get_sucursales_mpro(server_id: str) -> List[Dict[str, str]]:
 
 
 # =============================================================================
-# OPERACIONES EN vw_Comercial_KPIs_Diarios_v2_Runtime
+# OPERACIONES EN vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
 # =============================================================================
 
 def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
     """
-    Inserta o actualiza un KPI diario en vw_Comercial_KPIs_Diarios_v2_Runtime.
+    Inserta o actualiza un KPI diario en vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime.
     
     Lógica:
     1. Busca registro existente por (unidad_negocio_pk, sucursal_id, fecha_operacion)
@@ -167,7 +167,7 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
     # Verificar si existe
     check_query = f"""
     SELECT id, hash_origen, version 
-    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+    FROM vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
     WHERE unidad_negocio_pk = '{kpi.unidad_negocio_pk}'
       AND sucursal_id = '{kpi.sucursal_id}'
       AND fecha_operacion = '{kpi.fecha_operacion.isoformat()}'
@@ -184,7 +184,7 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
             # Datos diferentes, actualizar
             new_version = (record.get('version') or 1) + 1
             update_query = f"""
-            UPDATE vw_Comercial_KPIs_Diarios_v2_Runtime SET
+            UPDATE vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime SET
                 ventas_total = {kpi.ventas_total},
                 ventas_sin_propina = {kpi.ventas_sin_propina},
                 propinas_total = {kpi.propinas_total},
@@ -208,7 +208,7 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
         # No existe, insertar
         new_id = str(uuid.uuid4())
         insert_query = f"""
-        INSERT INTO vw_Comercial_KPIs_Diarios_v2_Runtime (
+        INSERT INTO vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime (
             id, unidad_negocio_pk, unidad_negocio_nombre, server_id, sucursal_id,
             sucursal_nombre, sistema_origen, fecha_operacion, anio, mes, dia,
             ventas_total, ventas_sin_propina, propinas_total, tickets_total, pax_total,
@@ -252,7 +252,7 @@ def get_kpis_diarios_v2(
     """Lee KPIs diarios v2 para un rango de fechas"""
     query = f"""
     SELECT *
-    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+    FROM vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
     WHERE unidad_negocio_pk = '{unidad_negocio_pk}'
       AND fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'
       AND activo = 1
@@ -531,7 +531,7 @@ def get_stats_kpis_diarios_v2() -> Dict[str, Any]:
         MIN(fecha_operacion) as fecha_min,
         MAX(fecha_operacion) as fecha_max,
         SUM(ventas_total) as ventas_totales
-    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+    FROM vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
     WHERE activo = 1
     """
     result = _execute_query(query)
@@ -549,7 +549,7 @@ def get_stats_by_unidad_v2() -> List[Dict]:
         MIN(fecha_operacion) as desde,
         MAX(fecha_operacion) as hasta,
         SUM(ventas_total) as ventas_totales
-    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+    FROM vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
     WHERE activo = 1
     GROUP BY unidad_negocio_pk, unidad_negocio_nombre, sistema_origen
     ORDER BY unidad_negocio_pk

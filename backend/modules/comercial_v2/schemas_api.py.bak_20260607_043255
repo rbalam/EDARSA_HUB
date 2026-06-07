@@ -40,7 +40,7 @@ class UnidadKPIResponse(BaseModel):
     
     # Trazabilidad v2
     _v2_fuente: str = "EDARSAHUB"
-    _v2_tabla: str = "vw_Comercial_KPIs_Diarios_v2_Runtime"
+    _v2_tabla: str = "vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime"
 
 
 class TotalesResponse(BaseModel):
@@ -57,7 +57,7 @@ class MetadataV2(BaseModel):
     """Metadata de respuesta v2."""
     version: str = "v2"
     fuente: str = "EDARSAHUB_V2"
-    tabla_principal: str = "vw_Comercial_KPIs_Diarios_v2_Runtime"
+    tabla_principal: str = "vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime"
     feature_flag: str = "COMERCIAL_V2_ENABLED"
     sql_vivo: bool = False
     mongodb_cache: bool = False

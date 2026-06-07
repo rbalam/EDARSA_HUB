@@ -101,7 +101,7 @@ class VentasDiaAbiertasInput(BaseModel):
 # =============================================================================
 
 class KPIsDiariosV2(BaseModel):
-    """Registro completo para vw_Comercial_KPIs_Diarios_v2_Runtime"""
+    """Registro completo para vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime"""
     
     # Identificadores de unidad
     unidad_negocio_pk: str

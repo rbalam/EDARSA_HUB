@@ -4,7 +4,7 @@ MÓDULO: Inteligencia Comercial IA - EDARSAHUB
 Endpoints para el Portal de Inteligencia Comercial.
 
 Fuentes de datos:
-- KPIs Dashboard: vw_Comercial_KPIs_Diarios_v2_Runtime (pre-calculada)
+- KPIs Dashboard: vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime (pre-calculada)
 - Ventas/Productos: Sync_Sales + Products (JOIN)
 - PAX/Demográficos: Sync_PAX_Detalle
 - Vista consolidada: View_Inteligencia_Comercial
@@ -165,7 +165,7 @@ def execute_query(sql: str, params: tuple = None) -> List[Dict]:
 
 # ============================================================================
 # ENDPOINT: Dashboard Principal (KPIs)
-# Fuente: vw_Comercial_KPIs_Diarios_v2_Runtime
+# Fuente: vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
 # ============================================================================
 @router.get("/dashboard")
 async def get_dashboard_data(
@@ -175,7 +175,7 @@ async def get_dashboard_data(
 ):
     """
     Dashboard principal con KPIs consolidados.
-    Fuente: vw_Comercial_KPIs_Diarios_v2_Runtime
+    Fuente: vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
     """
     unidad_db = normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
     
@@ -202,7 +202,7 @@ async def get_dashboard_data(
                 CASE WHEN SUM(tickets_total) > 0 
                     THEN SUM(ventas_total) / SUM(tickets_total) 
                     ELSE 0 END AS cheque_promedio
-            FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+            FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
             WHERE {where_sql}
         """
         kpis = execute_query(kpis_sql)
@@ -218,7 +218,7 @@ async def get_dashboard_data(
                     SUM(pax_total) AS pax_total,
                     SUM(tickets_total) AS tickets,
                     SUM(propinas_total) AS propinas
-                FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+                FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
                 WHERE {where_sql}
                 GROUP BY unidad_negocio_nombre
                 ORDER BY SUM(ventas_total) DESC
@@ -316,7 +316,7 @@ async def get_dashboard_data(
 
 # ============================================================================
 # ENDPOINT: Tendencia Diaria
-# Fuente: vw_Comercial_KPIs_Diarios_v2_Runtime
+# Fuente: vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
 # ============================================================================
 @router.get("/dashboard/tendencia")
 async def get_tendencia_diaria(
@@ -326,7 +326,7 @@ async def get_tendencia_diaria(
 ):
     """
     Tendencia diaria de ventas para gráficos de línea.
-    Fuente: vw_Comercial_KPIs_Diarios_v2_Runtime
+    Fuente: vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime
     """
     unidad_db = normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
     
@@ -351,7 +351,7 @@ async def get_tendencia_diaria(
                 CASE WHEN SUM(tickets_total) > 0 
                     THEN SUM(ventas_total) / SUM(tickets_total) 
                     ELSE 0 END AS cheque_promedio
-            FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+            FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
             WHERE {where_sql}
             GROUP BY fecha_operacion
             ORDER BY fecha_operacion ASC
@@ -460,7 +460,7 @@ async def get_ventas_horario(
         
         kpi_sql = f"""
             SELECT SUM(ventas_total) AS total, SUM(pax_total) AS pax_total, SUM(tickets_total) AS tickets
-            FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+            FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime
             WHERE {" AND ".join(where_kpi)}
         """
         kpis = execute_query(kpi_sql)
@@ -709,7 +709,7 @@ async def get_ventas_familia(
         if unidad_db:
             where_kpi.append(f"unidad_negocio_nombre = '{unidad_db}'")
         
-        kpi_sql = f"SELECT SUM(ventas_total) AS total FROM vw_Comercial_KPIs_Diarios_v2_Runtime WHERE {' AND '.join(where_kpi)}"
+        kpi_sql = f"SELECT SUM(ventas_total) AS total FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime WHERE {' AND '.join(where_kpi)}"
         kpis = execute_query(kpi_sql)
         total_ventas = float(kpis[0]["total"] or 0) if kpis else 0
         
@@ -771,7 +771,7 @@ async def get_ventas_casas(
         if unidad_db:
             where_kpi.append(f"unidad_negocio_nombre = '{unidad_db}'")
         
-        kpi_sql = f"SELECT SUM(ventas_total) AS total FROM vw_Comercial_KPIs_Diarios_v2_Runtime WHERE {' AND '.join(where_kpi)}"
+        kpi_sql = f"SELECT SUM(ventas_total) AS total FROM vw_vw_vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime_Runtime_Runtime WHERE {' AND '.join(where_kpi)}"
         kpis = execute_query(kpi_sql)
         total_ventas = float(kpis[0]["total"] or 0) if kpis else 0
         

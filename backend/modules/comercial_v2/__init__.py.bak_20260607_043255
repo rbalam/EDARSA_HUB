@@ -15,8 +15,8 @@ IMPORTANTE:
 - NO consultan SQL vivo ni MongoDB cache
 
 Tablas EDARSAHUB usadas:
-- vw_Comercial_KPIs_Diarios_v2_Runtime
-- vw_Comercial_KPIs_Mensuales_v2_Runtime
+- vw_vw_Comercial_KPIs_Diarios_v2_Runtime_Runtime
+- vw_vw_Comercial_KPIs_Mensuales_v2_Runtime_Runtime
 - Comercial_Ventas_Dia_Abiertas_v2
 - Comercial_SyncLog_v2
 
