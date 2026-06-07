@@ -279,3 +279,13 @@ RUTA SEGURA aplicada (usuario eligió a+b — incluir SUPERADMIN):
 - `modules/rh/solicitudes_catalogo.py`: 8 gates migrados a `get_role_code`/`es_admin`/`es_supervisor_o_superior`; SUPERADMIN ahora habilitado en aprobar/crear/autorizar/rechazar y en la vista admin de notificaciones.
 - NO se tocó middleware.py ni costos_margenes (no aplican).
 Validación: lint limpio + cURL (listar 200, pendientes-notificacion rol_usuario=SUPERADMIN) + pytest `tests/test_rbac_p1_hardening_gates.py` (7/7) + regresión RBAC (10/10). Sin testing_agent (prohibido).
+
+## [2026-06-07] Auditoría RBAC Hardcodes en TODO el repo (SOLO LECTURA, planning)
+Scanner propio vetado `/app/scripts/audit_rbac_hardcodes.py` (excluye backups/auditorías muertas).
+Resultado código vivo: 399 hits (ALTO=50, MEDIO=74, BAJO=275). ALTO runtime real (gates a migrar): **44 en 14 archivos**.
+Top: server.py(15), core/security.py(5), core/rbac/middleware.py(3), core/server_registry.py(3),
+modules/costos_margenes/routes.py(3), routes_precios.py(3), auth/service.py(2), catalogos/routes.py(2),
+fase2_operativo automatizacion_compras_routes.py(2), finanzas/propinas_tpv/routes_sql.py(2), +4 con 1 c/u.
+Reportes: `docs/reports/AUDITORIA_RBAC_HARDCODES_REPO_20260607_213039.csv` + `.md`.
+NOTA: `modules/comercial/costos_margenes/` NO existe (el módulo real es `modules/costos_margenes/`).
+Hardening NO ejecutado en esta pasada — es roadmap para migración sistemática archivo-por-archivo + prueba.
