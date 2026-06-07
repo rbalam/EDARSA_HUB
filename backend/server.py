@@ -3291,10 +3291,15 @@ async def get_unidades_negocio(
         # ============================================================================
         # APLICAR RBAC: Filtrar por permisos del usuario
         # ============================================================================
-        user_role = current_user.get('role', '')
+        user_role = (current_user.get('role') or '').strip()
         
         # SuperAdministrador y Administrador ven todas las unidades
-        if user_role in ['SuperAdministrador', 'Administrador']:
+        # (se aceptan tanto los nombres visibles como los códigos canónicos RBAC)
+        is_admin_global = (
+            user_role in ['SuperAdministrador', 'Administrador']
+            or user_role.upper() in ['SUPERADMIN', 'ADMIN', 'ADMINISTRADOR']
+        )
+        if is_admin_global:
             unidades_filtradas = unidades_sql
         else:
             # Otros roles: filtrar por empresas permitidas

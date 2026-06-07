@@ -113,12 +113,12 @@ const WorkflowRow = ({ workflow, onClick, onDownloadExcel, onDownloadPdf, downlo
       data-testid={`workflow-row-${workflowId}`}
     >
       <td className="px-4 py-3 text-sm font-mono text-zinc-600">
-        {(workflowId || '').substring(0, 8)}...
+        {String(workflowId || '').substring(0, 8)}...
       </td>
       <td className="px-4 py-3 text-sm">
         {workflow.procesado_id ? (
           <span className="font-mono text-zinc-700">
-            {workflow.procesado_id.substring(0, 8)}...
+            {String(workflow.procesado_id).substring(0, 8)}...
           </span>
         ) : (
           <span className="text-zinc-400">-</span>

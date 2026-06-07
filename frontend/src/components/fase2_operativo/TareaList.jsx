@@ -102,7 +102,7 @@ const TareaRow = ({ tarea, onClick }) => {
       data-testid={`tarea-row-${tarea.id || tarea._id}`}
     >
       <td className="px-4 py-3 text-sm font-mono text-zinc-600">
-        {(tarea.id || tarea._id || '').substring(0, 8)}...
+        {String(tarea.id || tarea._id || '').substring(0, 8)}...
       </td>
       <td className="px-4 py-3">
         <span className={`text-sm font-medium ${tipoInfo.color}`}>
@@ -116,7 +116,7 @@ const TareaRow = ({ tarea, onClick }) => {
         {tarea.usuario_asignado_nombre || tarea.usuario_asignado_id ? (
           <span className="flex items-center gap-1">
             <User className="h-3 w-3" />
-            {tarea.usuario_asignado_nombre || tarea.usuario_asignado_id?.substring(0, 8)}
+            {tarea.usuario_asignado_nombre || String(tarea.usuario_asignado_id ?? '').substring(0, 8)}
           </span>
         ) : (
           <span className="text-zinc-400">Sin asignar</span>

@@ -11,6 +11,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 // FASE AUTH-SECURITY-01 / FASE 4: getToken eliminado, auth viaja en cookie httpOnly
 import { getSessionUser } from '../services/authStorage';
 import logger from '../services/logger';
+// FASE AUTH-V2-ALIGN: auth canónica vía Bearer (authedFetch) + cookie httpOnly
+import { authedFetch } from '../services/operativoApi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -100,8 +102,8 @@ export default function TabOperativasCompras() {
     
     try {
       const [kpisRes, listRes] = await Promise.all([
-        fetch(`${API_URL}/api/v2/automatizaciones/operativas/compras/kpis`, { credentials: 'include' }),
-        fetch(`${API_URL}/api/v2/automatizaciones/operativas/compras?limite=50`, { credentials: 'include' })
+        authedFetch(`${API_URL}/api/v2/automatizaciones/operativas/compras/kpis`),
+        authedFetch(`${API_URL}/api/v2/automatizaciones/operativas/compras?limite=50`)
       ]);
       
       if (kpisRes.ok) setKpis(await kpisRes.json());
@@ -120,7 +122,7 @@ export default function TabOperativasCompras() {
   
   const handleVerDetalle = async (item) => {
     try {
-      const res = await fetch(
+      const res = await authedFetch(
         `${API_URL}/api/v2/automatizaciones/operativas/compras/${item.id}`,
         { credentials: 'include' }
       );
@@ -137,7 +139,7 @@ export default function TabOperativasCompras() {
         setComentario('');
         setShowDetail(true);
         
-        const bitRes = await fetch(
+        const bitRes = await authedFetch(
           `${API_URL}/api/v2/automatizaciones/operativas/compras/${item.id}/bitacora`,
           { credentials: 'include' }
         );
@@ -153,7 +155,7 @@ export default function TabOperativasCompras() {
     setProcesando(true);
     
     try {
-      const res = await fetch(
+      const res = await authedFetch(
         `${API_URL}/api/v2/automatizaciones/operativas/compras/${selectedItem.id}/dias-objetivo`,
         {
           method: 'POST',
@@ -192,7 +194,7 @@ export default function TabOperativasCompras() {
         body.porcentaje_ajuste = parseFloat(porcentajeAjuste);
       }
       
-      const res = await fetch(
+      const res = await authedFetch(
         `${API_URL}/api/v2/automatizaciones/operativas/compras/${selectedItem.id}/parametros-consumo`,
         { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
       );
@@ -221,7 +223,7 @@ export default function TabOperativasCompras() {
       const body = { accion, comentario };
       if (accion === 'ajuste') body.dias_objetivo = parseInt(nuevoDiasObjetivo);
       
-      const res = await fetch(
+      const res = await authedFetch(
         `${API_URL}/api/v2/automatizaciones/operativas/compras/${selectedItem.id}/gerencia`,
         { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
       );
@@ -246,7 +248,7 @@ export default function TabOperativasCompras() {
     setProcesando(true);
     
     try {
-      const res = await fetch(
+      const res = await authedFetch(
         `${API_URL}/api/v2/automatizaciones/operativas/compras/${selectedItem.id}/tesoreria`,
         { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion, comentario }) }
       );

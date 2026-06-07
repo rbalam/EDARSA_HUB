@@ -28,7 +28,10 @@ def get_database():
         db_name = os.environ.get('DB_NAME', 'test_database')
         
         _client = None  # P2-07: MongoDB eliminado
-        _db = _client[db_name]
+        # Capa 3: Mongo eliminado. Los repositorios del módulo leen de EDARSAHUB
+        # SQL e ignoran este 'db'. Antes hacía None[db_name] => 'NoneType' object
+        # is not subscriptable, lo que tiraba todas las rutas v2/compras con 500.
+        _db = None
     
     return _db
 

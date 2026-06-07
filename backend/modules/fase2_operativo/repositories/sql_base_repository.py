@@ -347,13 +347,14 @@ class SQLBaseRepository:
         """Verifica si un campo existe en la tabla SQL."""
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(as_dict=True)
             cursor.execute("""
-                SELECT COUNT(*) 
+                SELECT COUNT(*) as cnt
                 FROM INFORMATION_SCHEMA.COLUMNS 
                 WHERE TABLE_NAME = %s AND COLUMN_NAME = %s
             """, (self.table_name, field_name))
-            exists = cursor.fetchone()[0] > 0
+            row = cursor.fetchone()
+            exists = (row['cnt'] if row else 0) > 0
             cursor.close()
             conn.close()
             return exists
@@ -473,7 +474,7 @@ class SQLBaseRepository:
         
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(as_dict=True)
             cursor.execute("""
                 SELECT COLUMN_NAME 
                 FROM INFORMATION_SCHEMA.COLUMNS 
@@ -544,7 +545,7 @@ class SQLBaseRepository:
         
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(as_dict=True)
             cursor.execute(sql, list(sql_data.values()))
             conn.commit()
             cursor.close()
@@ -566,7 +567,7 @@ class SQLBaseRepository:
         
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(as_dict=True)
             cursor.execute(sql, (id,))
             row = cursor.fetchone()
             cursor.close()
@@ -604,7 +605,7 @@ class SQLBaseRepository:
         
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(as_dict=True)
             cursor.execute(sql, params)
             rows = cursor.fetchall()
             cursor.close()
@@ -642,7 +643,7 @@ class SQLBaseRepository:
         
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(as_dict=True)
             cursor.execute(sql, params)
             conn.commit()
             cursor.close()
@@ -665,7 +666,7 @@ class SQLBaseRepository:
         
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(as_dict=True)
             cursor.execute(sql, (id,))
             affected = cursor.rowcount
             conn.commit()
@@ -690,7 +691,7 @@ class SQLBaseRepository:
         
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(as_dict=True)
             cursor.execute(sql, params)
             row = cursor.fetchone()
             cursor.close()
@@ -757,7 +758,7 @@ class SQLBaseRepository:
         
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(as_dict=True)
             cursor.execute(sql, params)
             row = cursor.fetchone()
             cursor.close()
@@ -827,7 +828,7 @@ class SQLBaseRepository:
         
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(as_dict=True)
             cursor.execute(sql, params)
             rows = cursor.fetchall()
             cursor.close()
@@ -840,16 +841,34 @@ class SQLBaseRepository:
             # Retornar lista vacía para no romper la UI
             return []
     
+    def _run_coro_sync(self, coro):
+        """
+        Ejecuta una corrutina desde contexto síncrono, exista o no un event loop
+        corriendo. Si ya hay un loop (ej. dentro de una ruta async de FastAPI),
+        ejecuta en un hilo aparte para evitar 'Cannot run the event loop while
+        another loop is running'.
+        """
+        import asyncio
+        try:
+            asyncio.get_running_loop()
+            running = True
+        except RuntimeError:
+            running = False
+        if not running:
+            loop = asyncio.new_event_loop()
+            try:
+                return loop.run_until_complete(coro)
+            finally:
+                loop.close()
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+            return ex.submit(asyncio.run, coro).result()
+    
     def insert_one(self, data: Dict) -> Dict:
         """
         Versión síncrona de create para compatibilidad con código MongoDB.
         """
-        import asyncio
-        loop = asyncio.new_event_loop()
-        try:
-            return loop.run_until_complete(self.create(data))
-        finally:
-            loop.close()
+        return self._run_coro_sync(self.create(data))
     
     def update_one(self, filters: Dict, update: Dict) -> int:
         """
@@ -877,7 +896,7 @@ class SQLBaseRepository:
         
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(as_dict=True)
             cursor.execute(sql, params)
             affected = cursor.rowcount
             conn.commit()
@@ -894,12 +913,7 @@ class SQLBaseRepository:
         """
         Versión síncrona de count para compatibilidad con código MongoDB.
         """
-        import asyncio
-        loop = asyncio.new_event_loop()
-        try:
-            return loop.run_until_complete(self.count(filters))
-        finally:
-            loop.close()
+        return self._run_coro_sync(self.count(filters))
     
     def delete_one(self, filters: Dict) -> Dict:
         """
@@ -914,7 +928,7 @@ class SQLBaseRepository:
         
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(as_dict=True)
             cursor.execute(sql, params)
             affected = cursor.rowcount
             conn.commit()
@@ -953,7 +967,7 @@ class SQLBaseRepository:
         
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(as_dict=True)
             cursor.execute(sql, params)
             affected = cursor.rowcount
             conn.commit()
@@ -1005,7 +1019,7 @@ class SQLBaseRepository:
         
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(as_dict=True)
             
             # Ejecutar UPDATE
             cursor.execute(sql_update, params)
@@ -1061,8 +1075,8 @@ class SQLBaseRepository:
                 project_fields = stage["$project"]
         
         # Construir query SQL
-        if group_by is not None:
-            # Agregación con GROUP BY
+        if group_by is not None or group_accumulators:
+            # Agregación con GROUP BY, o agregación global ($group _id:None con acumuladores)
             return self._execute_group_aggregate(
                 match_filters, group_by, group_accumulators, sort_spec, limit_val
             )
@@ -1161,7 +1175,7 @@ class SQLBaseRepository:
         
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(as_dict=True)
             cursor.execute(sql, params)
             rows = cursor.fetchall()
             cursor.close()
@@ -1257,6 +1271,35 @@ class BaseRepository:
     
     async def exists(self, filters: Dict) -> bool:
         return await self._sql_repo.exists(filters)
+    
+    # Delegación de métodos síncronos estilo MongoDB (compatibilidad con services
+    # que llaman estos métodos directamente sobre el repo wrapper). FASE Capa 3.
+    def find(self, filters=None, projection=None, skip=0, limit=100, sort=None):
+        return self._sql_repo.find(filters, projection, skip, limit, sort)
+    
+    def find_one(self, filters, projection=None):
+        return self._sql_repo.find_one(filters, projection)
+    
+    def count_documents(self, filters=None, limit=None):
+        return self._sql_repo.count_documents(filters, limit)
+    
+    def aggregate(self, pipeline):
+        return self._sql_repo.aggregate(pipeline)
+    
+    def insert_one(self, data):
+        return self._sql_repo.insert_one(data)
+    
+    def update_one(self, filters, update):
+        return self._sql_repo.update_one(filters, update)
+    
+    def update_many(self, filters, update):
+        return self._sql_repo.update_many(filters, update)
+    
+    def delete_one(self, filters):
+        return self._sql_repo.delete_one(filters)
+    
+    def find_one_and_update(self, filters, update, return_document=True, upsert=False):
+        return self._sql_repo.find_one_and_update(filters, update, return_document, upsert)
     
     # Métodos de serialización (compatibilidad)
     def _serialize_id(self, doc: Optional[Dict]) -> Optional[Dict]:

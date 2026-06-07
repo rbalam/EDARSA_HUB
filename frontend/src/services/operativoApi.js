@@ -21,8 +21,23 @@ const API_V2 = `${API_BASE}/api/v2`;
  * del token; no se duplica lógica de auth) y mantiene credentials:'include'.
  * Retorna el Response crudo (para JSON o blob).
  */
-export function authedFetch(url, options = {}) {
-  const token = getToken();
+/**
+ * Espera (poll corto) a que el token canónico esté disponible. En recarga dura,
+ * el dashboard puede montar y hacer fetch ANTES de que la sesión rehidrate el
+ * token (carrera => 401/403). Esperamos hasta maxWaitMs para evitarlo.
+ */
+async function _resolveToken(maxWaitMs = 2500) {
+  let token = getToken();
+  const start = Date.now();
+  while (!token && Date.now() - start < maxWaitMs) {
+    await new Promise((r) => setTimeout(r, 100));
+    token = getToken();
+  }
+  return token;
+}
+
+export async function authedFetch(url, options = {}) {
+  const token = await _resolveToken();
   const headers = { ...(options.headers || {}) };
   if (token) {
     headers.Authorization = `Bearer ${token}`;

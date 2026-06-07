@@ -44,7 +44,7 @@ export default function AutomatizacionesTable({ automatizaciones = [], onVerDeta
         {automatizaciones.map((item) => (
           <TableRow key={item.id} data-testid={`row-${item.id}`}>
             <TableCell className="text-sm">{formatDate(item.fecha_creacion)}</TableCell>
-            <TableCell className="font-mono text-xs">{item.pedido_id?.substring(0, 10)}...</TableCell>
+            <TableCell className="font-mono text-xs">{String(item.pedido_id ?? '').substring(0, 10)}...</TableCell>
             <TableCell>
               <Badge variant="outline" className="text-xs">{item.origen_sistema || 'MPRO'}</Badge>
             </TableCell>

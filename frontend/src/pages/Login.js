@@ -30,7 +30,7 @@ const Login = () => {
       toast.success('Inicio de sesión exitoso');
       // Pequeño delay para permitir que el toast se renderice antes de navegar
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate('/tablero-ejecutivo');
       }, 100);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Error al iniciar sesión');

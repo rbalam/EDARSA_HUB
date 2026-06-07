@@ -51,7 +51,7 @@ const AlertaItem = ({ alerta, onDismiss }) => {
           )}
           {alerta.referencia_tipo && alerta.referencia_id && (
             <span>
-              {alerta.referencia_tipo}: {alerta.referencia_id.substring(0, 8)}...
+              {alerta.referencia_tipo}: {String(alerta.referencia_id ?? '').substring(0, 8)}...
             </span>
           )}
           {alerta.fecha_creacion && (
