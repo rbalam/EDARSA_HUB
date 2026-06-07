@@ -244,3 +244,10 @@ Archivos clave:
 - `/app/frontend/src/config/enterpriseMenuConfig.js` - Configuración canónica
 - `/app/frontend/src/components/navigation/EnterpriseSidebarMenu.jsx` - Componente visual
 - Flag `USE_ENTERPRISE_MENU` en Layout.js para activar/desactivar
+
+## 🥇 MÁXIMA DE ORO (REGLA PERMANENTE — 2026-06-07)
+**CADA VEZ que algo se vaya a HARDCODEAR, se REQUIERE la AUTORIZACIÓN ESCRITA del usuario ANTES de hacerlo.**
+- Aplica a: unidades, credenciales, hosts, rutas, horarios, roles/permisos, productos, casas/marcas, periodos, IDs, URLs, valores de negocio, fallbacks, etc.
+- Si un valor no puede venir de SQL/env/config canónica, DETENERSE y pedir autorización escrita explícita; nunca hardcodear por defecto.
+- Preferir siempre fuente canónica: EDARSAHUB SQL (p.ej. catálogos como dbo.Servidores_Conexiones) o variables de entorno.
+- Si se detecta hardcoding pre-existente, reportarlo (no asumir que es propio) y proponer migración a fuente canónica, también con autorización.
