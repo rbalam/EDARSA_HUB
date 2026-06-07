@@ -542,11 +542,15 @@ def _get_kpis_periodo_edarsahub(
             'existe_data': bool
         }
     """
-    # Determinar filtro a usar
+    # P0-D UNA SOLA VERDAD COMERCIAL:
+    # Filtrar por unidad_negocio_id (código de texto canónico: 130MID, CIENFUEGOS,
+    # ESTELAR, 130QRO, ORIGEN), igual que Tablero V2 e Inteligencia Comercial.
+    # En la vista, unidad_negocio_pk es un GUID (NO el código), por eso filtrar por
+    # él devolvía $0. NO se fuerza sucursal_id porque cada unidad_negocio_id
+    # identifica unívocamente sus datos (DEFAULT/0021/0023).
     if unidad_negocio_pk:
-        # FIX: Usar unidad_negocio_pk para MPRO
-        filtro_principal = f"unidad_negocio_pk = '{unidad_negocio_pk}'"
-        logging.info(f"[EDARSAHUB-QUERY] Usando unidad_negocio_pk={unidad_negocio_pk}, sucursal_id={sucursal_id}")
+        filtro_principal = f"unidad_negocio_id = '{unidad_negocio_pk}'"
+        logging.info(f"[EDARSAHUB-QUERY] Usando unidad_negocio_id={unidad_negocio_pk}")
     else:
         # Legacy: Usar server_id
         filtro_principal = f"server_id = '{server_id}'"
@@ -560,7 +564,6 @@ def _get_kpis_periodo_edarsahub(
         COUNT(*) as registros
     FROM vw_Comercial_KPIs_Diarios_v2_Runtime
     WHERE {filtro_principal}
-      AND sucursal_id = '{sucursal_id}'
       AND fecha_operacion >= '{fecha_ini}'
       AND fecha_operacion <= '{fecha_fin}'
       AND ventas_sin_propina > 0
@@ -844,8 +847,7 @@ def _obtener_kpis_tablero_desde_edarsahub(
     query_ultimo_dia = f"""
     SELECT MAX(fecha_operacion) as ultimo_dia_venta, MAX(dia) as dia_max
     FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-    WHERE unidad_negocio_pk = '{unidad_negocio_pk}'
-      AND sucursal_id = '{sucursal_id}'
+    WHERE unidad_negocio_id = '{unidad_negocio_pk}'
       AND fecha_operacion >= '{fecha_ini}'
       AND fecha_operacion <= '{fecha_fin}'
       AND ventas_sin_propina > 0

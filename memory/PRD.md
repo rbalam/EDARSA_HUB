@@ -58,6 +58,19 @@ Spanish (Español)
 - [x] P4-16: Eliminación tablas RBAC_* vacías (6 eliminadas)
 - [x] P4-17/17B: Dictamen Final APROBADO, core/db.py refactorizado
 
+### P0-D - Una Sola Verdad Comercial ✅ COMPLETE (2026-06-XX)
+Menú Comercial (`/api/comercial/tablero-ejecutivo`) devolvía $0. Causa raíz: `service.py`
+filtraba la vista `vw_Comercial_KPIs_Diarios_v2_Runtime` por `unidad_negocio_pk` (que en la
+vista es un GUID, NO el código) y forzaba `sucursal_id='DEFAULT'` (rompía 130QRO=0021 y
+ORIGEN=0023). Fix quirúrgico en `_get_kpis_periodo_edarsahub` y el "portero" `query_ultimo_dia`
+de `_obtener_kpis_tablero_desde_edarsahub`: filtro por `unidad_negocio_id` (texto canónico),
+sin forzar `sucursal_id`, KPI = `ventas_sin_propina`. Los 3 módulos comerciales ahora cuadran
+en **$1,573,660.81** (Junio 2026). Verificado vía cURL + SQL directo. Regresión:
+`backend/tests/test_p0d_menu_comercial_filtro_canonico.py` (4 tests, estáticos). Script del
+usuario AUDITADO y RECHAZADO (regex frágil que dejaba `sucursal_id` a medias, `yarn build`
+innecesario, validación a endpoint inexistente `/api/inteligencia-comercial/resumen` sin JWT);
+intención aplicada manualmente.
+
 ### Phase V1.0 - Estabilización Producción ✅ COMPLETE (2026-06-07)
 Los 5 bloqueadores P0 del Dictamen cerrados y verificados (cURL/pytest, sin testing_agent):
 - [x] P0-1: Vistas corruptas `vw_vw...Runtime` normalizadas (Tablero Ejecutivo + Comercial) → 200
