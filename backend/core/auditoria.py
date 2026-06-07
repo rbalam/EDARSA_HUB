@@ -473,20 +473,66 @@ class ServicioAuditoria:
         )
         return await self.registrar_params(params)
     
-    async def consultar_por_registro(self, registro_id: str, limite: int = 100) -> list:
-        """Obtiene historial de auditoría de un registro específico."""
+    def _consultar_auditoria_sql(self, predicate, limite: int) -> list:
+        """Lee auditoría desde EDARSAHUB SQL (dbo.Finanzas_AuditoriaFinanciera).
+
+        Los eventos viven como JSON en PayloadMongo. Filtra con `predicate(payload)`,
+        normaliza created_at a ISO y ordena descendente.
+        """
+        from datetime import datetime as _dt, timezone as _tz
+        from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
+
+        def _ca_dt(payload):
+            ca = payload.get('created_at')
+            if isinstance(ca, dict):
+                ca = ca.get('$date')
+            if not ca:
+                return None
+            try:
+                s = ca.replace('Z', '+00:00') if isinstance(ca, str) else ca
+                d = _dt.fromisoformat(s)
+                return d if d.tzinfo else d.replace(tzinfo=_tz.utc)
+            except Exception:
+                return None
+
         try:
-            db = await self._get_mongo_db()
-            if db:
-                cursor = db.auditoria_financiera.find(
-                    {'registro_id': registro_id}, {'_id': 0}
-                ).sort('created_at', -1).limit(limite)
-                return await cursor.to_list(length=limite)
-            return []
+            conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=10)
+            try:
+                cur = conn.cursor(as_dict=True)
+                cur.execute(
+                    "SELECT PayloadMongo FROM dbo.Finanzas_AuditoriaFinanciera "
+                    "WHERE ColeccionOrigen = %s",
+                    ('auditoria_financiera',),
+                )
+                rows = cur.fetchall() or []
+            finally:
+                conn.close()
+
+            eventos = []
+            for r in rows:
+                try:
+                    p = json.loads(r['PayloadMongo']) if r['PayloadMongo'] else {}
+                except Exception:
+                    continue
+                if not p or not predicate(p, _ca_dt(p)):
+                    continue
+                p.pop('_id', None)
+                ca_dt = _ca_dt(p)
+                p['created_at'] = ca_dt.isoformat() if ca_dt else None
+                eventos.append((ca_dt or _dt.min.replace(tzinfo=_tz.utc), p))
+
+            eventos.sort(key=lambda x: x[0], reverse=True)
+            return [e for _, e in eventos[:limite]]
         except Exception as e:
-            logger.error(f"Error consultando auditoría: {e}")
+            logger.error(f"Error consultando auditoría SQL: {e}")
             return []
-    
+
+    async def consultar_por_registro(self, registro_id: str, limite: int = 100) -> list:
+        """Obtiene historial de auditoría de un registro específico (SQL-First)."""
+        return self._consultar_auditoria_sql(
+            lambda p, ca: p.get('registro_id') == registro_id, limite
+        )
+
     async def consultar_por_modulo(
         self,
         modulo: ModuloAuditoria,
@@ -494,24 +540,27 @@ class ServicioAuditoria:
         fecha_fin: Optional[datetime] = None,
         limite: int = 500
     ) -> list:
-        """Obtiene historial de auditoría de un módulo."""
-        try:
-            db = await self._get_mongo_db()
-            if db:
-                filtro = {'modulo': modulo.value}
-                if fecha_inicio:
-                    filtro['created_at'] = {'$gte': fecha_inicio}
-                if fecha_fin:
-                    filtro.setdefault('created_at', {})['$lte'] = fecha_fin
-                
-                cursor = db.auditoria_financiera.find(
-                    filtro, {'_id': 0}
-                ).sort('created_at', -1).limit(limite)
-                return await cursor.to_list(length=limite)
-            return []
-        except Exception as e:
-            logger.error(f"Error consultando auditoría: {e}")
-            return []
+        """Obtiene historial de auditoría de un módulo (SQL-First)."""
+        from datetime import timezone as _tz
+
+        def _aware(dt):
+            if dt is None:
+                return None
+            return dt if dt.tzinfo else dt.replace(tzinfo=_tz.utc)
+
+        fi = _aware(fecha_inicio)
+        ff = _aware(fecha_fin)
+
+        def match(p, ca):
+            if p.get('modulo') != modulo.value:
+                return False
+            if fi and (ca is None or ca < fi):
+                return False
+            if ff and (ca is None or ca > ff):
+                return False
+            return True
+
+        return self._consultar_auditoria_sql(match, limite)
 
 
 # ============================================

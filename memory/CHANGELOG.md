@@ -1,5 +1,12 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-07] Fase 19 — Reactivación SQL-First de Destinatarios de Alertas + lecturas de Auditoría
+- **Destinatarios de alertas (Centro de Control) REACTIVADOS sobre SQL.** Reescrito `core/centro_control/recipients_manager.py` completo a SQL-First sobre `dbo.Sistema_AlertasDestinatarios` (`ColeccionOrigen='alert_recipients'`, detalle en `PayloadMongo` JSON) vía `get_edarsahub_pymssql_connection`. Maneja JSON migrado (`$date`/`$oid`) y nuevo. `recipient_id` = `Id` (uniqueidentifier).
+  - CRUD verificado end-to-end por API: LIST (2 migrados leídos), RESUMEN, ADD (200 + GUID), ADD duplicado (400), UPDATE (activo/nombre), filtro `solo_activos`, DELETE (cleanup). Endpoints `GET/POST/PUT/DELETE /api/centro-control/destinatarios` 100% funcionales (antes 500/deshabilitados).
+- **Auditoría: `consultar_por_registro` y `consultar_por_modulo` migrados a SQL** (`dbo.Finanzas_AuditoriaFinanciera`, 73 registros). Nuevo helper `_consultar_auditoria_sql(predicate, limite)` lee `PayloadMongo`, normaliza `created_at` a ISO, ordena desc. Verificado: filtro por módulo (CONFIG→5), por registro (todos coinciden), orden descendente correcto. Ya NO usan `_get_mongo_db`.
+- **Verificado:** `py_compile` OK, backend RUNNING, guardrails **9/9**, scan `modules/`+`core/` = 0 forbidden / 0 broken, `health/v1` healthy, Admin CORE paridad (200/2), destinatarios 200/total=2.
+- **Nota:** ambas tablas son de aterrizaje Mongo→SQL (datos en `PayloadMongo` JSON); el modelo es 1:1 con lo migrado, sin pérdida. Escrituras de destinatarios crean filas nativas SQL (`MigradoDesdeMongo=0`).
+
 ## [2026-06-07] Fase 18 — P5-3D Cierre NO-MONGO en `core/` + guardrail extendido
 - **Neutralizado `core/auditoria.py::_get_mongo_db`** (stub roto `client=None; client[db_name]` en try/except) → `return None` limpio. La auditoría persiste en SQL (`_guardar_sql` con commit es la ruta primaria); los callers (`_guardar_mongo`, `consultar_por_*`) ya estaban guardados → degradan a False/[].
 - **Neutralizado `core/communications/scripts/__init__.py::main`** (init standalone con stub Mongo roto) → no-op NO-MONGO.
