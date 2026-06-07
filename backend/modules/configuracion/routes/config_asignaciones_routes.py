@@ -27,6 +27,7 @@ import os
 
 from core.security import get_current_user
 from core.alcance_helper import resolver_alcance_usuarios
+from core.rbac_helper_sql import es_superadmin
 from core.auditoria import servicio_auditoria, AccionAuditoria, ModuloAuditoria
 from ..repositories.config_asignaciones_repository import get_config_asignaciones_repository
 
@@ -97,7 +98,7 @@ async def obtener_empresas_permitidas(current_user: dict) -> list:
 async def validar_alcance_usuario(current_user: dict, unidad_negocio_pk: str):
     """Valida que el usuario tenga alcance sobre la unidad de negocio."""
     # SuperAdministrador tiene acceso total
-    if current_user.get("role") == "SuperAdministrador":
+    if es_superadmin(current_user):
         return True
     
     empresas_permitidas = await obtener_empresas_permitidas(current_user)
@@ -132,7 +133,7 @@ async def validar_usuario_responsable(usuario_id: str, unidad_negocio_pk: str):
         raise HTTPException(status_code=400, detail="El usuario responsable está inactivo")
     
     # SuperAdministrador tiene acceso total - skip validaciones de alcance y rol
-    if usuario.get("role") == "SuperAdministrador":
+    if es_superadmin(usuario):
         return usuario
     
     # 3. Alcance sobre la unidad
@@ -181,7 +182,7 @@ async def listar_asignaciones(
     repo = get_config_asignaciones_repository(get_db())
     
     # Si no es SuperAdmin, filtrar por empresas permitidas
-    if current_user.get("role") != "SuperAdministrador":
+    if not es_superadmin(current_user):
         empresas_permitidas = await obtener_empresas_permitidas(current_user)
         
         if unidad_negocio_pk:
@@ -648,7 +649,7 @@ async def sincronizar_almacenes(
     - Retorna metadatos completos de la operación
     """
     # Solo SuperAdministrador puede sincronizar
-    if current_user.get("role") != "SuperAdministrador":
+    if not es_superadmin(current_user):
         raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede sincronizar almacenes")
     
     # Validar que la unidad existe

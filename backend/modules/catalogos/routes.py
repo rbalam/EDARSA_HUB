@@ -26,6 +26,7 @@ from fastapi import APIRouter, Depends, Query
 from typing import Optional, Dict, Any
 
 from core.security import get_current_user
+from core.rbac_helper_sql import es_admin, es_supervisor_o_superior
 from modules.catalogos.service import get_catalogos_service
 from modules.catalogos.schemas import (
     CatalogoRegistroCreate,
@@ -183,7 +184,7 @@ async def solicitar_sistema(
         insert_query = f"""
             INSERT INTO Sistema_Catalogo (Codigo, Descripcion, Activo, Estado, SolicitadoPorEmail, FechaSolicitud)
             OUTPUT INSERTED.SistemaID
-            VALUES ('{Codigo}', '{Descripcion.replace("'", "''")}', 0, 'PENDIENTE', '{user_email}', SYSDATETIME())
+            VALUES ('{codigo}', '{descripcion.replace("'", "''")}', 0, 'PENDIENTE', '{user_email}', SYSDATETIME())
         """
         result = execute_sql_query(
             os.getenv('EDARSAHUB_SQL_HOST'), 1433, 'EDARSAHUB', os.getenv('EDARSAHUB_SQL_USER'), os.getenv('EDARSAHUB_SQL_PASSWORD'),
@@ -232,7 +233,7 @@ async def crear_sistema(
     # Verificar duplicados
     check_query = f"""
         SELECT COUNT(*) as cnt FROM Sistema_Catalogo 
-        WHERE Codigo = '{Codigo}' OR Descripcion = '{Descripcion.replace("'", "''")}'
+        WHERE Codigo = '{codigo}' OR Descripcion = '{descripcion.replace("'", "''")}'
     """
     try:
         result = execute_sql_query(
@@ -248,7 +249,7 @@ async def crear_sistema(
         insert_query = f"""
             INSERT INTO Sistema_Catalogo (Codigo, Descripcion, Activo, Estado, SolicitadoPorEmail, FechaSolicitud, AutorizadoPorEmail, FechaAutorizacion)
             OUTPUT INSERTED.SistemaID, INSERTED.Codigo, INSERTED.Descripcion
-            VALUES ('{Codigo}', '{Descripcion.replace("'", "''")}', 1, 'ACTIVO', '{user_email}', SYSDATETIME(), '{user_email}', SYSDATETIME())
+            VALUES ('{codigo}', '{descripcion.replace("'", "''")}', 1, 'ACTIVO', '{user_email}', SYSDATETIME(), '{user_email}', SYSDATETIME())
         """
         result = execute_sql_query(
             os.getenv('EDARSAHUB_SQL_HOST'), 1433, 'EDARSAHUB', os.getenv('EDARSAHUB_SQL_USER'), os.getenv('EDARSAHUB_SQL_PASSWORD'),
@@ -288,7 +289,7 @@ async def actualizar_sistema(
     from fastapi import HTTPException
     from core.db import execute_sql_query
     
-    if current_user.get('role') not in ['Administrador', 'Supervisor']:
+    if not es_supervisor_o_superior(current_user):
         raise HTTPException(status_code=403, detail="Sin permisos para editar sistemas")
     
     descripcion = body.datos.get('Descripcion', '').strip()
@@ -299,7 +300,7 @@ async def actualizar_sistema(
     # Verificar duplicados (excepto el actual)
     check_query = f"""
         SELECT COUNT(*) as cnt FROM Sistema_Catalogo 
-        WHERE Descripcion = '{Descripcion}' AND SistemaID <> {sistema_id}
+        WHERE Descripcion = '{descripcion}' AND SistemaID <> {sistema_id}
     """
     try:
         result = execute_sql_query(
@@ -312,7 +313,7 @@ async def actualizar_sistema(
         # Actualizar
         update_query = f"""
             UPDATE Sistema_Catalogo 
-            SET Descripcion = '{Descripcion}', FechaActualizacion = SYSDATETIME()
+            SET Descripcion = '{descripcion}', FechaActualizacion = SYSDATETIME()
             WHERE SistemaID = {sistema_id}
         """
         execute_sql_query(
@@ -356,8 +357,6 @@ async def toggle_sistema_activo(
         
         nuevo_activo = 0 if result[0].get('Activo') else 1
         nuevo_estado = 'ACTIVO' if nuevo_activo else 'INACTIVO'
-        
-        user_email = current_user.get('email', 'unknown')
         
         # Actualizar
         update_query = f"""
@@ -587,7 +586,7 @@ async def crear_registro(
     
     Requiere rol: Administrador o Supervisor
     """
-    if current_user.get('role') not in ['Administrador', 'Supervisor']:
+    if not es_supervisor_o_superior(current_user):
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="Sin permisos para crear registros")
     
@@ -616,7 +615,7 @@ async def actualizar_registro(
     
     Requiere rol: Administrador o Supervisor
     """
-    if current_user.get('role') not in ['Administrador', 'Supervisor']:
+    if not es_supervisor_o_superior(current_user):
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="Sin permisos para editar registros")
     
@@ -642,7 +641,7 @@ async def desactivar_registro(
     
     Requiere rol: Administrador
     """
-    if current_user.get('role') != 'Administrador':
+    if not es_admin(current_user):
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="Solo administradores pueden desactivar registros")
     
@@ -661,7 +660,7 @@ async def activar_registro(
     
     Requiere rol: Administrador
     """
-    if current_user.get('role') != 'Administrador':
+    if not es_admin(current_user):
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="Solo administradores pueden activar registros")
     
@@ -693,7 +692,7 @@ async def crear_tablas_nuevas(current_user: Dict = Depends(get_current_user)):
     
     Requiere rol: Administrador
     """
-    if current_user.get('role') != 'Administrador':
+    if not es_admin(current_user):
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="Solo administradores pueden crear tablas")
     
@@ -720,7 +719,7 @@ async def obtener_script_ddl(current_user: Dict = Depends(get_current_user)):
     
     Requiere rol: Administrador
     """
-    if current_user.get('role') != 'Administrador':
+    if not es_admin(current_user):
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="Solo administradores pueden ver el script DDL")
     

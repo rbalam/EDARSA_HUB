@@ -95,6 +95,33 @@ Los 5 bloqueadores P0 del Dictamen cerrados y verificados (cURL/pytest, sin test
 - [ ] Eliminar 28 colecciones Mongo restantes (pendiente script usuario)
   - [x] (2026-06-07) RESPALDO COMPLETO NO destructivo realizado vía `mongodump` de las 5 bases locales (edarsa_hub=28, test_database=61, cab003=10, edarsahub=6, stock_tracker=2 → 107 colecciones, 3066 docs, 2.4MB). Ruta: `/app/backups/mongo_sunset_20260607_181350/`. Reporte: `REPORTE_RESPALDO_MONGO.md` + `MANIFEST_SHA256.json` (SHA256 por archivo + global). NADA borrado/desinstalado: pendiente decisión de borrado quirúrgico del usuario tras revisar el reporte.
   - [x] (2026-06-07) VALIDACIÓN POR MUESTREO DE LLAVES (Fase 6-ter, SOLO LECTURA): 27 colecciones CUBIERTA_PARCIALMENTE validadas doc-por-doc contra su tabla SQL (COUNT parametrizado). Veredicto duro: **6 CUBIERTA_CONFIRMADA** (toda la muestra hallada unívocamente → candidatas a borrado CON respaldo): `users`→Usuario_Catalogo, `inventarios_procesados_auto`→Inventarios_ProcesadosAuto (vía col MongoId), `portal_suppliers`→Portal_Proveedores (vía MongoId), `consultas_custom`→Sistema_ConsultasCustom, `sec_modulos_sistema`→Sistema_Modulos, `server_status`→Sistema_ServidoresEstado. **18 NO_CUBIERTA + 3 SIN_LLAVE** (NO borrar): destacan rbac_roles/sec_roles/roles/rbac_usuarios_roles (nombres no coinciden en Sistema_RBAC_Roles) y rbac_permisos/sec_permisos_catalogo (AMBIGUO en RBAC_Permisos). Reportes en `/app/docs/reports/mongo_validacion_muestra_llaves_20260607_191439/` (MD/JSON + CSV detalle por doc + CSV resumen). NADA borrado/modificado.
+### P0 - Consolidación RBAC Canónica (helper SQL central) ✅ COMPLETE (2026-06-07)
+A petición del usuario (tras auditar y RECHAZAR su script por crear un 3er helper con
+niveles hardcodeados de solo 5 roles + reemplazo masivo ciego), se implementó la versión
+segura reusando la infraestructura existente:
+- **(A) Helpers canónicos en `core/rbac_helper_sql.py`** (sin 3er archivo, sin hardcodear
+  niveles): `get_role_code()` (resuelve el código canónico desde los 23 roles de
+  `Usuario_Roles` vía SQL + compatibilidad con role_code/_sql_rol_codigo/CodigoRol/role/
+  NombreRol/rol), `es_superadmin()`, `es_admin()` (={SUPERADMIN,ADMIN}),
+  `es_supervisor_o_superior()` (={SUPERADMIN,ADMIN,SUPERVISOR}). Conjuntos explícitos que
+  preservan la semántica legacy y corrigen la **negación falsa al SUPERADMIN**.
+- **(B) Migración quirúrgica** (no `text.replace` ciego) de porteros en 4 archivos:
+  `server.py` (24 gates), `routes_competidores_enterprise.py` (5, con rename de var local
+  `es_superadmin`→`es_super` para evitar colisión), `config_asignaciones_routes.py` (4),
+  `catalogos/routes.py` (9). **Bug corregido**: endpoints con `!= 'Administrador'` /
+  `not in ['Administrador','Supervisor']` que NEGABAN al SUPERADMIN (ej. `/api/sistema/pool-stats`
+  daba 403, ahora 200). Se DEJÓ INTACTO `auth/routes.py` (ya correcto vía `tiene_acceso_global`,
+  listas heterogéneas con Director/Gerente/Auditor → riesgo sin beneficio).
+- **(C) Auditoría** `migrations/auditar_hardcodes_rbac.py` → CSV con hardcodes restantes
+  clasificados por riesgo en `/app/docs/reports/P0_RBAC_HARDCODES_RESTANTES_*.csv`.
+- Bonus: corregidos 2 bugs pre-existentes en `catalogos/routes.py` (`Descripcion`/`Codigo`
+  indefinidos → NameError) y 2 corrupciones de cola de archivo.
+Verificado: cURL per-rol (SUPERADMIN pasa gates antes denegados; comercial intacto
+$1,573,660.81), 15/15 tests (`test_rbac_helpers_canonicos.py` + `test_rbac_helper.py` +
+`test_rol_canonicidad_normalize_user.py`), lint limpio.
+BACKLOG (en CSV): porteros restantes en `rh/solicitudes_catalogo.py`, `costos_margenes/*`,
+`core/security.py`, `core/rbac/middleware.py`, frontend `Layout.js`.
+
 ### P0 - RBAC Piloto (Perfiles/Roles/Permisos) → SQL-First ✅ COMPLETE (2026-06-07)
 Bug reportado por el usuario: "no encuentra los perfiles RBAC" → toast "Perfil
 PERFIL_GESTOR_SISTEMA no encontrado o inactivo" al asignar un perfil en la pantalla

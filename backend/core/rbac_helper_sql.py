@@ -225,3 +225,66 @@ def invalidate_cache():
     _roles_cache = {}
     _cache_timestamp = None
     logger.info("[RBAC-SQL] Cache de roles invalidado")
+
+
+# =============================================================================
+# HELPERS DE AUTORIZACIÓN CANÓNICOS (consolidación de porteros)
+# =============================================================================
+# Regla: la autorización backend se decide por el CÓDIGO canónico de rol,
+# resuelto dinámicamente desde SQL (Usuario_Roles, 23 roles). El NombreRol legacy
+# y la clave 'rol' quedan solo como compatibilidad de lectura. Sin hardcodear
+# niveles jerárquicos (esos viven en SQL). Mapeos explícitos de conjuntos para
+# preservar exactamente la semántica legacy de los gates existentes.
+
+# Fallback mínimo SOLO para los 5 roles de sistema, por resiliencia si SQL no
+# responde en el instante del check. SQL sigue siendo la fuente primaria.
+_CODE_FALLBACK = {
+    "SUPERADMIN": "SUPERADMIN", "SUPERADMINISTRADOR": "SUPERADMIN",
+    "ADMIN": "ADMIN", "ADMINISTRADOR": "ADMIN",
+    "SUPERVISOR": "SUPERVISOR",
+    "USUARIO": "USUARIO", "USER": "USUARIO",
+    "VISOR": "VISOR", "VIEWER": "VISOR",
+}
+
+
+def get_role_code(user: Optional[Dict]) -> str:
+    """Resuelve el CÓDIGO canónico de rol (ej. 'SUPERADMIN') desde múltiples
+    campos de compatibilidad (role_code, _sql_rol_codigo, CodigoRol, role,
+    NombreRol, rol), usando el catálogo SQL (23 roles) + fallback de sistema."""
+    if not user:
+        return ""
+    roles = _load_roles_from_sql()
+    for key in ("role_code", "_sql_rol_codigo", "CodigoRol", "codigo_rol",
+                "role", "NombreRol", "nombre_rol", "rol"):
+        v = user.get(key)
+        if not v:
+            continue
+        v = str(v).strip()
+        if not v:
+            continue
+        if v in roles and isinstance(roles[v], dict):
+            return roles[v]["codigo"]
+        vu = v.upper()
+        if vu in roles and isinstance(roles[vu], dict):
+            return roles[vu]["codigo"]
+        if vu in _CODE_FALLBACK:
+            return _CODE_FALLBACK[vu]
+    return ""
+
+
+def es_superadmin(user: Optional[Dict]) -> bool:
+    """True si el rol canónico es SUPERADMIN."""
+    return get_role_code(user) == "SUPERADMIN"
+
+
+def es_admin(user: Optional[Dict]) -> bool:
+    """Administrador o SuperAdministrador. Equivale a los gates legacy
+    ['SuperAdministrador','Administrador'] y '== Administrador' (este último
+    ahora también admite al SUPERADMIN, corrigiendo la negación falsa previa)."""
+    return get_role_code(user) in ("SUPERADMIN", "ADMIN")
+
+
+def es_supervisor_o_superior(user: Optional[Dict]) -> bool:
+    """Supervisor, Administrador o SuperAdministrador. Equivale a los gates
+    legacy ['Administrador','Supervisor'] (ahora también admite al SUPERADMIN)."""
+    return get_role_code(user) in ("SUPERADMIN", "ADMIN", "SUPERVISOR")

@@ -19,6 +19,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 
 from core.security import get_current_user
+from core.rbac_helper_sql import es_superadmin, es_admin, es_supervisor_o_superior
 from .services.competidores_enterprise_service import (
     crear_competidor_catalogo,
     buscar_competidor_catalogo,
@@ -153,10 +154,10 @@ async def relacionar_competidor_endpoint(
     - Comentarios
     """
     usuario = current_user.get('email', 'sistema')
-    es_superadmin = current_user.get('role') == 'SuperAdministrador'
+    es_super = es_superadmin(current_user)
     
     # Validar acceso RBAC
-    if not validar_acceso_unidad(current_user.get('id'), data.unidad_negocio_pk, es_superadmin):
+    if not validar_acceso_unidad(current_user.get('id'), data.unidad_negocio_pk, es_super):
         raise HTTPException(status_code=403, detail="Sin acceso a esta unidad de negocio")
     
     result = relacionar_competidor_unidad(
@@ -190,9 +191,9 @@ async def desrelacionar_competidor_endpoint(
     - Otras unidades donde esté relacionado
     """
     usuario = current_user.get('email', 'sistema')
-    es_superadmin = current_user.get('role') == 'SuperAdministrador'
+    es_super = es_superadmin(current_user)
     
-    if not validar_acceso_unidad(current_user.get('id'), data.unidad_negocio_pk, es_superadmin):
+    if not validar_acceso_unidad(current_user.get('id'), data.unidad_negocio_pk, es_super):
         raise HTTPException(status_code=403, detail="Sin acceso a esta unidad de negocio")
     
     return desrelacionar_competidor_unidad(
@@ -243,9 +244,9 @@ async def listar_competidores_unidad_endpoint(
     - Segmento
     - Concepto
     """
-    es_superadmin = current_user.get('role') == 'SuperAdministrador'
+    es_super = es_superadmin(current_user)
     
-    if not validar_acceso_unidad(current_user.get('id'), unidad_negocio_pk, es_superadmin):
+    if not validar_acceso_unidad(current_user.get('id'), unidad_negocio_pk, es_super):
         raise HTTPException(status_code=403, detail="Sin acceso a esta unidad de negocio")
     
     return listar_competidores_por_unidad(
@@ -270,9 +271,9 @@ async def obtener_competidor_unidad_endpoint(
     
     Retorna datos del catálogo + datos de la relación con la unidad.
     """
-    es_superadmin = current_user.get('role') == 'SuperAdministrador'
+    es_super = es_superadmin(current_user)
     
-    if not validar_acceso_unidad(current_user.get('id'), unidad_negocio_pk, es_superadmin):
+    if not validar_acceso_unidad(current_user.get('id'), unidad_negocio_pk, es_super):
         raise HTTPException(status_code=403, detail="Sin acceso a esta unidad de negocio")
     
     result = obtener_competidor_por_unidad(competidor_catalogo_id, unidad_negocio_pk)
@@ -294,9 +295,9 @@ async def estadisticas_competidores_endpoint(
     """
     Estadísticas de competidores para una unidad específica.
     """
-    es_superadmin = current_user.get('role') == 'SuperAdministrador'
+    es_super = es_superadmin(current_user)
     
-    if not validar_acceso_unidad(current_user.get('id'), unidad_negocio_pk, es_superadmin):
+    if not validar_acceso_unidad(current_user.get('id'), unidad_negocio_pk, es_super):
         raise HTTPException(status_code=403, detail="Sin acceso a esta unidad de negocio")
     
     return estadisticas_competidores_unidad(unidad_negocio_pk)

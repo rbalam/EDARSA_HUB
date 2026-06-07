@@ -738,6 +738,7 @@ api_router.include_router(backfill_corporativo_router)
 # ============================================================================
 from modules.admin_sql.routes import router as admin_sql_router
 from modules.admin_sql import rbac_pilot_service
+from core.rbac_helper_sql import es_superadmin, es_admin, es_supervisor_o_superior
 app.include_router(admin_sql_router)
 
 # ============================================================================
@@ -3001,7 +3002,7 @@ async def sync_sucursales_config(server_id: str, current_user: Dict = Depends(ge
     """
     from core.server_registry import get_server_connection_info
     
-    if current_user.get('role') != 'Administrador':
+    if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo administradores pueden sincronizar")
     
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
@@ -3102,7 +3103,7 @@ async def update_sucursal_config(
     current_user: Dict = Depends(get_current_user)
 ):
     """Actualiza la configuración de una sucursal específica."""
-    if current_user.get('role') != 'Administrador':
+    if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo administradores pueden modificar")
     
     # Verificar que existe
@@ -3138,7 +3139,7 @@ async def update_sucursales_config_bulk(
     current_user: Dict = Depends(get_current_user)
 ):
     """Actualiza múltiples sucursales en una sola operación."""
-    if current_user.get('role') != 'Administrador':
+    if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo administradores pueden modificar")
     
     now = datetime.now(timezone.utc)
@@ -11974,7 +11975,7 @@ async def ejecutar_query_libre(
     SEGURIDAD: Validación estricta de rol Administrador + bloqueo de SQL peligroso.
     """
     # FASE 1B: Validación de rol
-    if current_user.get('role') not in ['Administrador', 'SuperAdministrador']:
+    if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar queries libres")
     
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
@@ -12026,7 +12027,7 @@ async def ejecutar_script_sql(
     """
     # FASE 1B: Solo SuperAdministrador puede ejecutar scripts SQL completos
     # Este endpoint permite DDL/DML, es extremadamente peligroso
-    if current_user.get('role') != 'SuperAdministrador':
+    if not es_superadmin(current_user):
         logging.warning(
             f"[SQL-SCRIPT-BLOCKED] User {current_user.get('email')} intentó ejecutar script SQL. "
             f"Rol: {current_user.get('role')}. Solo SuperAdministrador permitido."
@@ -12313,7 +12314,7 @@ class InformeAuditoriaResponse(BaseModel):
 
 # def check_admin_role(current_user: Dict):
 #     """Verifica que el usuario tenga rol de Administrador"""
-#     if current_user.get('role') != 'Administrador':
+#     if not es_admin(current_user):
 #         raise HTTPException(status_code=403, detail="Solo administradores pueden realizar esta acción")
 
 
@@ -13082,7 +13083,7 @@ async def ejecutar_script_con_credenciales(
     """
     from core.server_registry import get_server_connection_info_with_secrets
     
-    if current_user.get('role') != 'Administrador':
+    if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar scripts")
     
     # FASE P1.4-E4: Obtener servidor desde EDARSAHUB SQL via server_registry
@@ -14121,7 +14122,7 @@ async def get_pool_statistics(current_user: Dict = Depends(get_current_user)):
     Obtiene estadísticas del connection pool de SQL Server.
     Solo accesible para Administradores.
     """
-    if current_user.get("role") != "Administrador":
+    if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo administradores pueden ver estadísticas del pool")
     
     try:
@@ -14149,7 +14150,7 @@ async def reset_pool_connections(current_user: Dict = Depends(get_current_user))
     Resetea todos los pools de conexiones SQL Server.
     Solo accesible para Administradores. Usar con precaución.
     """
-    if current_user.get("role") != "Administrador":
+    if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo administradores pueden resetear pools")
     
     try:
@@ -14650,7 +14651,7 @@ async def obtener_ciclo_nomina(ciclo_id: str, current_user: Dict = Depends(get_c
 @api_router.post("/nomina/ciclos")
 async def crear_ciclo_nomina(body: Dict, current_user: Dict = Depends(get_current_user)):
     """Crea un nuevo ciclo de nómina"""
-    if current_user.get('role') not in ['Administrador', 'Supervisor']:
+    if not es_supervisor_o_superior(current_user):
         raise HTTPException(status_code=403, detail="No autorizado para crear ciclos de nómina")
     
     sucursal_id = body.get('sucursal_id')
@@ -14993,7 +14994,7 @@ async def obtener_configuracion_nomina(current_user: Dict = Depends(get_current_
 @api_router.post("/nomina/configuracion")
 async def guardar_configuracion_nomina(body: Dict, current_user: Dict = Depends(get_current_user)):
     """Guarda la configuración de nóminas (Solo Admin)"""
-    if current_user.get('role') != 'Administrador':
+    if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo Administradores pueden configurar nóminas")
     
     config = {
@@ -15033,7 +15034,7 @@ async def listar_kpis_nomina(current_user: Dict = Depends(get_current_user)):
 @api_router.post("/nomina/kpis")
 async def crear_kpi_nomina(body: Dict, current_user: Dict = Depends(get_current_user)):
     """Crea o actualiza KPIs para un puesto"""
-    if current_user.get('role') != 'Administrador':
+    if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo Administradores pueden configurar KPIs")
     
     puesto_id = body.get('puesto_id')
@@ -15232,7 +15233,7 @@ async def verificar_permiso_v6(user: dict, permiso: str) -> bool:
             return True
     
     # 4. Fallback legacy (FASE 3)
-    if user.get('role') == 'SuperAdministrador':
+    if es_superadmin(user):
         return True
     
     return False
@@ -15289,7 +15290,7 @@ async def get_mapeo_servidores(current_user: Dict = Depends(get_current_user)):
     FASE 2: Obtiene mapeo servidor-sucursal (solo lectura).
     Informativo - servidor es dimensión técnica.
     """
-    if current_user.get('role') not in ['SuperAdministrador', 'Administrador']:
+    if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="No autorizado")
     
     service = get_estructura_service(db)  # MongoDB ELIMINADO - StubDatabase
@@ -15310,7 +15311,7 @@ async def get_permisos_catalogo_v2(current_user: Dict = Depends(get_current_user
     FASE 2: Obtiene catálogo de permisos v2 (solo lectura informativa).
     NO reemplaza catálogo legacy - solo visualización del nuevo modelo.
     """
-    if current_user.get('role') not in ['SuperAdministrador', 'Administrador']:
+    if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="No autorizado")
     
     service = get_estructura_service(db)  # MongoDB ELIMINADO - StubDatabase
@@ -15409,7 +15410,7 @@ async def admin_asignar_permiso(
     current_user: Dict = Depends(get_current_user)
 ):
     """RBAC piloto SQL-First: asigna/retira un permiso directo (sec_permisos)."""
-    if current_user.get('role') != 'SuperAdministrador':
+    if not es_superadmin(current_user):
         raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede administrar permisos")
     return rbac_pilot_service.toggle_asignacion(
         request.usuario_email, "PERMISO", request.permiso, request.accion
@@ -15474,7 +15475,7 @@ async def admin_asignar_rol(
     current_user: Dict = Depends(get_current_user)
 ):
     """RBAC piloto SQL-First: asigna/retira un rol (sec_roles)."""
-    if current_user.get('role') != 'SuperAdministrador':
+    if not es_superadmin(current_user):
         raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede administrar roles")
     return rbac_pilot_service.toggle_asignacion(
         request.usuario_email, "ROL", request.rol, request.accion
@@ -15509,7 +15510,7 @@ async def get_bitacora_rbac(
         - limit: Registros por página (default 50, max 100)
     """
     # Verificar acceso: Solo SuperAdministrador
-    if current_user.get('role') != 'SuperAdministrador':
+    if not es_superadmin(current_user):
         raise HTTPException(
             status_code=403,
             detail="Solo SuperAdministrador puede acceder a la bitácora RBAC"
@@ -15585,7 +15586,7 @@ async def get_bitacora_evento_detalle(
     Acceso: Solo SuperAdministrador
     """
     # Verificar acceso: Solo SuperAdministrador
-    if current_user.get('role') != 'SuperAdministrador':
+    if not es_superadmin(current_user):
         raise HTTPException(
             status_code=403,
             detail="Solo SuperAdministrador puede acceder a la bitácora RBAC"
@@ -15630,7 +15631,7 @@ PERFILES_FASE_13_WHITELIST = [
 @api_router.get("/admin/perfiles")
 async def get_perfiles_disponibles(current_user: Dict = Depends(get_current_user)):
     """RBAC piloto SQL-First: lista los perfiles predefinidos disponibles."""
-    if current_user.get('role') != 'SuperAdministrador':
+    if not es_superadmin(current_user):
         raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede ver perfiles")
     return {"perfiles": rbac_pilot_service.get_perfiles_catalogo()}
 
@@ -15646,7 +15647,7 @@ async def asignar_perfil_usuario(
     current_user: Dict = Depends(get_current_user)
 ):
     """RBAC piloto SQL-First: asigna un perfil (sobrescribe sec_roles con los del perfil)."""
-    if current_user.get('role') != 'SuperAdministrador':
+    if not es_superadmin(current_user):
         raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede asignar perfiles")
     if request.perfil not in PERFILES_FASE_13_WHITELIST:
         raise HTTPException(status_code=400, detail=f"Perfil '{request.perfil}' no esta en whitelist FASE 13")
@@ -15665,7 +15666,7 @@ async def retirar_perfil_usuario(
     current_user: Dict = Depends(get_current_user)
 ):
     """RBAC piloto SQL-First: retira el perfil de un usuario (limpia sec_perfil y sec_roles)."""
-    if current_user.get('role') != 'SuperAdministrador':
+    if not es_superadmin(current_user):
         raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede retirar perfiles")
     return rbac_pilot_service.retirar_perfil(
         request.usuario_email, current_user.get('email', 'sistema')
@@ -15679,7 +15680,7 @@ async def get_empresas_alcance(current_user: Dict = Depends(get_current_user)):
     
     Acceso: Solo SuperAdministrador
     """
-    if current_user.get('role') != 'SuperAdministrador':
+    if not es_superadmin(current_user):
         raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede consultar alcance")
     
     empresas = await db.sec_empresas.find(
@@ -15700,7 +15701,7 @@ async def get_unidades_alcance(
     
     Acceso: Solo SuperAdministrador
     """
-    if current_user.get('role') != 'SuperAdministrador':
+    if not es_superadmin(current_user):
         raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede consultar alcance")
     
     filtro = {}
@@ -15725,7 +15726,7 @@ async def get_sucursales_alcance(
     
     Acceso: Solo SuperAdministrador
     """
-    if current_user.get('role') != 'SuperAdministrador':
+    if not es_superadmin(current_user):
         raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede consultar alcance")
     
     filtro = {}
@@ -15768,7 +15769,7 @@ async def asignar_alcance_rol(
     Acceso: Solo SuperAdministrador
     """
     # 1. Verificar acceso
-    if current_user.get('role') != 'SuperAdministrador':
+    if not es_superadmin(current_user):
         raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede asignar alcance")
     
     # 2. Validar tipo de alcance
@@ -15866,7 +15867,7 @@ async def retirar_alcance_rol(
     Acceso: Solo SuperAdministrador
     """
     # 1. Verificar acceso
-    if current_user.get('role') != 'SuperAdministrador':
+    if not es_superadmin(current_user):
         raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede retirar alcance")
     
     # 2. Buscar usuario
