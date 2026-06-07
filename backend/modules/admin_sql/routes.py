@@ -21,6 +21,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any, List
 from core.security import get_current_user
 from core.config.edarsahub_sql import get_edarsahub_connection
+from modules.admin_sql import rbac_pilot_service
 import logging
 
 router = APIRouter(prefix="/api/admin-sql", tags=["Admin SQL"])
@@ -134,12 +135,17 @@ async def get_users(current_user: dict = Depends(get_current_user)):
             map_suc.setdefault(uid, []).append(str(s.get("SucursalCodigo", "")))
 
     # Enriquecer usuarios con asignaciones
+    rbac_map = rbac_pilot_service.get_rbac_map()
     for u in users:
         uid = str(u.get("UsuarioID", ""))
         u["allowed_servers"] = map_serv.get(uid, [])
         u["allowed_sucursales"] = map_suc.get(uid, [])
         u["allowed_warehouses"] = []
         u["sucursales"] = u["allowed_sucursales"]
+        rbac = rbac_map.get(uid, {})
+        u["sec_perfil"] = rbac.get("sec_perfil")
+        u["sec_roles"] = rbac.get("sec_roles", [])
+        u["sec_permisos"] = rbac.get("sec_permisos", [])
 
     return users
 

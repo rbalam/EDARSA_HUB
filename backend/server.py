@@ -737,6 +737,7 @@ api_router.include_router(backfill_corporativo_router)
 # Endpoints: /api/admin-sql/users, /api/admin-sql/roles, etc.
 # ============================================================================
 from modules.admin_sql.routes import router as admin_sql_router
+from modules.admin_sql import rbac_pilot_service
 app.include_router(admin_sql_router)
 
 # ============================================================================
@@ -15407,163 +15408,13 @@ async def admin_asignar_permiso(
     request: PermisoAsignacionRequest,
     current_user: Dict = Depends(get_current_user)
 ):
-    """
-    FASE 4: Asigna o retira un permiso a un usuario.
-    
-    Restricciones:
-    - Solo SuperAdministrador puede ejecutar
-    - Solo permisos en whitelist FASE 4
-    - Auditoría completa en sec_bitacora_admin
-    
-    NO TOCA: get_current_user, Layout.js, auth global, roles legacy
-    """
-    # 1. VALIDAR: Solo SuperAdministrador puede administrar
+    """RBAC piloto SQL-First: asigna/retira un permiso directo (sec_permisos)."""
     if current_user.get('role') != 'SuperAdministrador':
-        await registrar_auditoria_admin_fase4(
-            tipo_operacion="INTENTO_NO_AUTORIZADO",
-            administrador=current_user,
-            usuario_afectado=None,
-            permiso=request.permiso,
-            accion=request.accion,
-            estado_anterior=[],
-            estado_nuevo=[],
-            resultado="RECHAZADO",
-            mensaje="Usuario sin privilegios de SuperAdministrador"
-        )
-        raise HTTPException(
-            status_code=403,
-            detail="Solo SuperAdministrador puede administrar permisos"
-        )
-    
-    # 2. VALIDAR: Acción válida
-    accion_upper = request.accion.upper()
-    if accion_upper not in ["ASIGNAR", "RETIRAR"]:
-        raise HTTPException(
-            status_code=400,
-            detail="Acción inválida. Use 'ASIGNAR' o 'RETIRAR'"
-        )
-    
-    # 3. VALIDAR: Permiso en whitelist FASE 4
-    if request.permiso not in PERMISOS_FASE_10_WHITELIST:
-        await registrar_auditoria_admin_fase4(
-            tipo_operacion="PERMISO_FUERA_WHITELIST",
-            administrador=current_user,
-            usuario_afectado=None,
-            permiso=request.permiso,
-            accion=accion_upper,
-            estado_anterior=[],
-            estado_nuevo=[],
-            resultado="RECHAZADO",
-            mensaje=f"Permiso {request.permiso} no está en whitelist FASE 4"
-        )
-        raise HTTPException(
-            status_code=400,
-            detail=f"Permiso '{request.permiso}' no disponible en FASE 10. Whitelist: {PERMISOS_FASE_10_WHITELIST}"
-        )
-    
-    # 4. VALIDAR: Permiso existe en catálogo
-    permiso_catalogo = await db.sec_permisos_catalogo.find_one({"codigo": request.permiso})
-    if not permiso_catalogo:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Permiso '{request.permiso}' no existe en catálogo sec_permisos_catalogo"
-        )
-    
-    # 5. VALIDAR: Usuario destino existe
-    usuario_destino = await db.users.find_one({"email": request.usuario_email})
-    if not usuario_destino:
-        await registrar_auditoria_admin_fase4(
-            tipo_operacion="USUARIO_NO_ENCONTRADO",
-            administrador=current_user,
-            usuario_afectado={"email": request.usuario_email},
-            permiso=request.permiso,
-            accion=accion_upper,
-            estado_anterior=[],
-            estado_nuevo=[],
-            resultado="RECHAZADO",
-            mensaje=f"Usuario {request.usuario_email} no encontrado"
-        )
-        raise HTTPException(
-            status_code=404,
-            detail=f"Usuario '{request.usuario_email}' no encontrado"
-        )
-    
-    # 6. Obtener permisos actuales del usuario
-    permisos_actuales = usuario_destino.get('sec_permisos', [])
-    estado_anterior = permisos_actuales.copy() if permisos_actuales else []
-    
-    # 7. Aplicar acción
-    cambio_realizado = False
-    mensaje_resultado = ""
-    
-    if accion_upper == "ASIGNAR":
-        if request.permiso in permisos_actuales:
-            # Permiso ya existe - no es error, pero informar
-            mensaje_resultado = f"Permiso {request.permiso} ya estaba asignado a {request.usuario_email}"
-        else:
-            permisos_actuales.append(request.permiso)
-            cambio_realizado = True
-            mensaje_resultado = f"Permiso {request.permiso} asignado exitosamente a {request.usuario_email}"
-    
-    elif accion_upper == "RETIRAR":
-        if request.permiso not in permisos_actuales:
-            # Permiso no existe - no es error, pero informar
-            mensaje_resultado = f"Permiso {request.permiso} no estaba asignado a {request.usuario_email}"
-        else:
-            permisos_actuales.remove(request.permiso)
-            cambio_realizado = True
-            mensaje_resultado = f"Permiso {request.permiso} retirado exitosamente de {request.usuario_email}"
-    
-    estado_nuevo = permisos_actuales.copy()
-    
-    # 8. Actualizar usuario si hubo cambio
-    if cambio_realizado:
-        await db.users.update_one(
-            {"email": request.usuario_email},
-            {"$set": {"sec_permisos": permisos_actuales}}
-        )
-    
-    # 9. Registrar auditoría
-    await registrar_auditoria_admin_fase4(
-        tipo_operacion=f"{accion_upper}_PERMISO",
-        administrador=current_user,
-        usuario_afectado=usuario_destino,
-        permiso=request.permiso,
-        accion=accion_upper,
-        estado_anterior=estado_anterior,
-        estado_nuevo=estado_nuevo,
-        resultado="OK" if cambio_realizado else "SIN_CAMBIO",
-        mensaje=mensaje_resultado
+        raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede administrar permisos")
+    return rbac_pilot_service.toggle_asignacion(
+        request.usuario_email, "PERMISO", request.permiso, request.accion
     )
-    
-    # 10. Respuesta
-    return {
-        "success": True,
-        "usuario": request.usuario_email,
-        "permiso": request.permiso,
-        "accion": accion_upper,
-        "cambio_realizado": cambio_realizado,
-        "mensaje": mensaje_resultado,
-        "permisos_actuales": estado_nuevo,
-        "fase": "FASE_4"
-    }
 
-
-# ==============================================================================
-# FIN FASE 4 - ADMINISTRACIÓN DE PERMISOS
-# ==============================================================================
-
-
-# ==============================================================================
-# FASE 5/6: HERENCIA DE PERMISOS POR ROL (PILOTO CONTROLADO)
-# ==============================================================================
-# FASE 5: Rol único (sec_rol)
-# FASE 6: Múltiples roles (sec_roles array)
-# Whitelist: ["VISOR_ESTRUCTURA", "VISOR_SISTEMA"]
-# Quién administra: SOLO SuperAdministrador
-# Auditoría: sec_bitacora_admin
-# NO TOCA: get_current_user, Layout.js, auth global, UI, roles legacy
-# ==============================================================================
 
 class RolAsignacionRequest(BaseModel):
     """Request para asignar/retirar rol sec_*."""
@@ -15622,179 +15473,13 @@ async def admin_asignar_rol(
     request: RolAsignacionRequest,
     current_user: Dict = Depends(get_current_user)
 ):
-    """
-    FASE 6: Asigna o retira un rol sec_* a un usuario.
-    Soporta múltiples roles en array sec_roles.
-    Mantiene compatibilidad con sec_rol de FASE 5.
-    
-    Restricciones:
-    - Solo SuperAdministrador puede ejecutar
-    - Solo roles en whitelist FASE 6 (VISOR_ESTRUCTURA, VISOR_SISTEMA)
-    - Auditoría completa en sec_bitacora_admin
-    
-    NO TOCA: get_current_user, Layout.js, auth global, roles legacy
-    """
-    # 1. VALIDAR: Solo SuperAdministrador puede administrar
+    """RBAC piloto SQL-First: asigna/retira un rol (sec_roles)."""
     if current_user.get('role') != 'SuperAdministrador':
-        await registrar_auditoria_rol_fase6(
-            tipo_operacion="INTENTO_NO_AUTORIZADO_ROL",
-            administrador=current_user,
-            usuario_afectado=None,
-            rol=request.rol,
-            permisos_rol=[],
-            accion=request.accion,
-            roles_anteriores=[],
-            roles_nuevos=[],
-            resultado="RECHAZADO",
-            mensaje="Usuario sin privilegios de SuperAdministrador"
-        )
-        raise HTTPException(
-            status_code=403,
-            detail="Solo SuperAdministrador puede administrar roles"
-        )
-    
-    # 2. VALIDAR: Acción válida
-    accion_upper = request.accion.upper()
-    if accion_upper not in ["ASIGNAR", "RETIRAR"]:
-        raise HTTPException(
-            status_code=400,
-            detail="Acción inválida. Use 'ASIGNAR' o 'RETIRAR'"
-        )
-    
-    # 3. VALIDAR: Rol en whitelist FASE 11
-    if request.rol not in ROLES_FASE_11_WHITELIST:
-        await registrar_auditoria_rol_fase6(
-            tipo_operacion="ROL_FUERA_WHITELIST",
-            administrador=current_user,
-            usuario_afectado=None,
-            rol=request.rol,
-            permisos_rol=[],
-            accion=accion_upper,
-            roles_anteriores=[],
-            roles_nuevos=[],
-            resultado="RECHAZADO",
-            mensaje=f"Rol {request.rol} no está en whitelist FASE 11"
-        )
-        raise HTTPException(
-            status_code=400,
-            detail=f"Rol '{request.rol}' no disponible en FASE 11. Whitelist: {ROLES_FASE_11_WHITELIST}"
-        )
-    
-    # 4. VALIDAR: Rol existe en sec_roles
-    rol_doc = await db.sec_roles.find_one({"codigo": request.rol, "activo": True})
-    if not rol_doc:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Rol '{request.rol}' no existe en colección sec_roles"
-        )
-    
-    permisos_del_rol = rol_doc.get('permisos', [])
-    
-    # 5. VALIDAR: Usuario destino existe
-    usuario_destino = await db.users.find_one({"email": request.usuario_email})
-    if not usuario_destino:
-        await registrar_auditoria_rol_fase6(
-            tipo_operacion="USUARIO_NO_ENCONTRADO_ROL",
-            administrador=current_user,
-            usuario_afectado={"email": request.usuario_email},
-            rol=request.rol,
-            permisos_rol=permisos_del_rol,
-            accion=accion_upper,
-            roles_anteriores=[],
-            roles_nuevos=[],
-            resultado="RECHAZADO",
-            mensaje=f"Usuario {request.usuario_email} no encontrado"
-        )
-        raise HTTPException(
-            status_code=404,
-            detail=f"Usuario '{request.usuario_email}' no encontrado"
-        )
-    
-    # 6. Obtener roles actuales del usuario (FASE 6: array)
-    roles_actuales = usuario_destino.get('sec_roles', [])
-    if not isinstance(roles_actuales, list):
-        roles_actuales = []
-    roles_anteriores = roles_actuales.copy()
-    
-    # 7. Aplicar acción
-    cambio_realizado = False
-    mensaje_resultado = ""
-    
-    if accion_upper == "ASIGNAR":
-        if request.rol in roles_actuales:
-            mensaje_resultado = f"Rol {request.rol} ya estaba asignado a {request.usuario_email}"
-        else:
-            roles_actuales.append(request.rol)
-            cambio_realizado = True
-            mensaje_resultado = f"Rol {request.rol} asignado exitosamente a {request.usuario_email}. Permisos heredados: {permisos_del_rol}"
-    
-    elif accion_upper == "RETIRAR":
-        if request.rol not in roles_actuales:
-            mensaje_resultado = f"Rol {request.rol} no estaba asignado a {request.usuario_email}"
-        else:
-            roles_actuales.remove(request.rol)
-            cambio_realizado = True
-            mensaje_resultado = f"Rol {request.rol} retirado exitosamente de {request.usuario_email}"
-    
-    roles_nuevos = roles_actuales.copy()
-    
-    # 8. Actualizar usuario si hubo cambio
-    if cambio_realizado:
-        await db.users.update_one(
-            {"email": request.usuario_email},
-            {"$set": {"sec_roles": roles_actuales}}
-        )
-    
-    # 9. Calcular permisos efectivos de todos los roles
-    permisos_efectivos = []
-    for rol_codigo in roles_nuevos:
-        rol = await db.sec_roles.find_one({"codigo": rol_codigo, "activo": True})
-        if rol:
-            for p in rol.get('permisos', []):
-                if p not in permisos_efectivos:
-                    permisos_efectivos.append(p)
-    
-    # 10. Registrar auditoría
-    await registrar_auditoria_rol_fase6(
-        tipo_operacion=f"{accion_upper}_ROL_MULTIPLE",
-        administrador=current_user,
-        usuario_afectado=usuario_destino,
-        rol=request.rol,
-        permisos_rol=permisos_del_rol,
-        accion=accion_upper,
-        roles_anteriores=roles_anteriores,
-        roles_nuevos=roles_nuevos,
-        resultado="OK" if cambio_realizado else "SIN_CAMBIO",
-        mensaje=mensaje_resultado
+        raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede administrar roles")
+    return rbac_pilot_service.toggle_asignacion(
+        request.usuario_email, "ROL", request.rol, request.accion
     )
-    
-    # 11. Respuesta
-    return {
-        "success": True,
-        "usuario": request.usuario_email,
-        "rol": request.rol,
-        "permisos_heredados_rol": permisos_del_rol,
-        "accion": accion_upper,
-        "cambio_realizado": cambio_realizado,
-        "mensaje": mensaje_resultado,
-        "sec_roles_actuales": roles_nuevos,
-        "permisos_efectivos_todos_roles": permisos_efectivos,
-        "fase": "FASE_6"
-    }
 
-
-# ==============================================================================
-# FIN FASE 5/6 - HERENCIA DE PERMISOS POR ROL
-# ==============================================================================
-
-
-# ==============================================================================
-# FASE 12: BITÁCORA RBAC DE SOLO LECTURA
-# ==============================================================================
-# Panel de auditoría visual para consultar sec_bitacora_admin
-# Acceso restringido a SuperAdministrador
-# Solo lectura - sin edición, borrado ni modificación
-# ==============================================================================
 
 @api_router.get("/admin/bitacora")
 async def get_bitacora_rbac(
@@ -15944,20 +15629,10 @@ PERFILES_FASE_13_WHITELIST = [
 
 @api_router.get("/admin/perfiles")
 async def get_perfiles_disponibles(current_user: Dict = Depends(get_current_user)):
-    """
-    FASE 13: Lista los perfiles predefinidos disponibles.
-    
-    Acceso: Solo SuperAdministrador
-    """
+    """RBAC piloto SQL-First: lista los perfiles predefinidos disponibles."""
     if current_user.get('role') != 'SuperAdministrador':
         raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede ver perfiles")
-    
-    perfiles = await db.sec_perfiles.find(
-        {"activo": True},
-        {"_id": 0}
-    ).to_list(100)
-    
-    return {"perfiles": perfiles}
+    return {"perfiles": rbac_pilot_service.get_perfiles_catalogo()}
 
 
 class AsignarPerfilRequest(BaseModel):
@@ -15970,106 +15645,14 @@ async def asignar_perfil_usuario(
     request: AsignarPerfilRequest,
     current_user: Dict = Depends(get_current_user)
 ):
-    """
-    FASE 13: Asigna un perfil predefinido a un usuario.
-    
-    Comportamiento:
-    - Sobrescribe sec_roles con los roles exactos del perfil
-    - Guarda sec_perfil como metadato informativo
-    - Registra en sec_bitacora_admin
-    
-    Acceso: Solo SuperAdministrador
-    """
-    # 1. Verificar acceso
+    """RBAC piloto SQL-First: asigna un perfil (sobrescribe sec_roles con los del perfil)."""
     if current_user.get('role') != 'SuperAdministrador':
         raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede asignar perfiles")
-    
-    # 2. Validar perfil en whitelist
     if request.perfil not in PERFILES_FASE_13_WHITELIST:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Perfil '{request.perfil}' no está en whitelist FASE 13. Permitidos: {PERFILES_FASE_13_WHITELIST}"
-        )
-    
-    # 3. Obtener perfil de la colección
-    perfil_doc = await db.sec_perfiles.find_one({"codigo": request.perfil, "activo": True})
-    if not perfil_doc:
-        raise HTTPException(status_code=404, detail=f"Perfil {request.perfil} no encontrado o inactivo")
-    
-    roles_del_perfil = perfil_doc.get("roles", [])
-    
-    # 4. Buscar usuario
-    usuario = await db.users.find_one({"email": request.usuario_email})
-    if not usuario:
-        # Auditoría de fallo
-        await db.sec_bitacora_admin.insert_one({
-            "id": str(uuid.uuid4()),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "tipo": "ASIGNAR_PERFIL",
-            "administrador": {
-                "id": current_user.get("id"),
-                "email": current_user.get("email"),
-                "role": current_user.get("role")
-            },
-            "usuario_afectado": {"id": "", "email": request.usuario_email},
-            "perfil": request.perfil,
-            "roles_del_perfil": roles_del_perfil,
-            "accion": "ASIGNAR",
-            "resultado": "RECHAZADO",
-            "mensaje": f"Usuario {request.usuario_email} no encontrado",
-            "fase": "FASE_13"
-        })
-        raise HTTPException(status_code=404, detail=f"Usuario {request.usuario_email} no encontrado")
-    
-    # 5. Obtener estado anterior
-    perfil_anterior = usuario.get("sec_perfil")
-    roles_anteriores = usuario.get("sec_roles", [])
-    
-    # 6. Actualizar usuario: sobrescribir sec_roles, sec_perfil y limpiar sec_roles_alcance
-    # FASE 14: Al cambiar perfil, los roles cambian, por lo que el alcance anterior no aplica
-    await db.users.update_one(
-        {"email": request.usuario_email},
-        {"$set": {
-            "sec_perfil": request.perfil,
-            "sec_roles": roles_del_perfil,
-            "sec_roles_alcance": {}  # FASE 14: Limpiar alcance al cambiar perfil
-        }}
+        raise HTTPException(status_code=400, detail=f"Perfil '{request.perfil}' no esta en whitelist FASE 13")
+    return rbac_pilot_service.asignar_perfil(
+        request.usuario_email, request.perfil, current_user.get('email', 'sistema')
     )
-    
-    # 7. Auditoría
-    await db.sec_bitacora_admin.insert_one({
-        "id": str(uuid.uuid4()),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "tipo": "ASIGNAR_PERFIL",
-        "administrador": {
-            "id": current_user.get("id"),
-            "email": current_user.get("email"),
-            "role": current_user.get("role")
-        },
-        "usuario_afectado": {
-            "id": usuario.get("id"),
-            "email": request.usuario_email
-        },
-        "perfil": request.perfil,
-        "roles_del_perfil": roles_del_perfil,
-        "accion": "ASIGNAR",
-        "perfil_anterior": perfil_anterior,
-        "roles_anteriores": roles_anteriores,
-        "roles_nuevos": roles_del_perfil,
-        "resultado": "OK",
-        "mensaje": f"Perfil {request.perfil} asignado exitosamente a {request.usuario_email}. Roles aplicados: {roles_del_perfil}",
-        "fase": "FASE_13"
-    })
-    
-    return {
-        "success": True,
-        "usuario": request.usuario_email,
-        "perfil": request.perfil,
-        "roles_aplicados": roles_del_perfil,
-        "perfil_anterior": perfil_anterior,
-        "roles_anteriores": roles_anteriores,
-        "mensaje": f"Perfil {request.perfil} asignado exitosamente"
-    }
 
 
 class RetirarPerfilRequest(BaseModel):
@@ -16081,99 +15664,12 @@ async def retirar_perfil_usuario(
     request: RetirarPerfilRequest,
     current_user: Dict = Depends(get_current_user)
 ):
-    """
-    FASE 13: Retira el perfil de un usuario.
-    
-    Comportamiento:
-    - Limpia sec_perfil (None)
-    - Limpia sec_roles (lista vacía)
-    - Registra en sec_bitacora_admin
-    
-    Acceso: Solo SuperAdministrador
-    """
-    # 1. Verificar acceso
+    """RBAC piloto SQL-First: retira el perfil de un usuario (limpia sec_perfil y sec_roles)."""
     if current_user.get('role') != 'SuperAdministrador':
         raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede retirar perfiles")
-    
-    # 2. Buscar usuario
-    usuario = await db.users.find_one({"email": request.usuario_email})
-    if not usuario:
-        raise HTTPException(status_code=404, detail=f"Usuario {request.usuario_email} no encontrado")
-    
-    # 3. Obtener estado anterior
-    perfil_anterior = usuario.get("sec_perfil")
-    roles_anteriores = usuario.get("sec_roles", [])
-    
-    if not perfil_anterior:
-        return {
-            "success": True,
-            "usuario": request.usuario_email,
-            "mensaje": "Usuario no tenía perfil asignado",
-            "cambio_realizado": False
-        }
-    
-    # 4. Limpiar perfil, roles y alcance
-    # FASE 14: Al retirar perfil, también limpiar alcance
-    await db.users.update_one(
-        {"email": request.usuario_email},
-        {"$set": {
-            "sec_perfil": None,
-            "sec_roles": [],
-            "sec_roles_alcance": {}  # FASE 14: Limpiar alcance al retirar perfil
-        }}
+    return rbac_pilot_service.retirar_perfil(
+        request.usuario_email, current_user.get('email', 'sistema')
     )
-    
-    # 5. Auditoría
-    await db.sec_bitacora_admin.insert_one({
-        "id": str(uuid.uuid4()),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "tipo": "RETIRAR_PERFIL",
-        "administrador": {
-            "id": current_user.get("id"),
-            "email": current_user.get("email"),
-            "role": current_user.get("role")
-        },
-        "usuario_afectado": {
-            "id": usuario.get("id"),
-            "email": request.usuario_email
-        },
-        "perfil": perfil_anterior,
-        "accion": "RETIRAR",
-        "perfil_anterior": perfil_anterior,
-        "roles_anteriores": roles_anteriores,
-        "roles_nuevos": [],
-        "resultado": "OK",
-        "mensaje": f"Perfil {perfil_anterior} retirado de {request.usuario_email}. Roles limpiados.",
-        "fase": "FASE_13"
-    })
-    
-    return {
-        "success": True,
-        "usuario": request.usuario_email,
-        "perfil_retirado": perfil_anterior,
-        "roles_eliminados": roles_anteriores,
-        "mensaje": f"Perfil {perfil_anterior} retirado exitosamente",
-        "cambio_realizado": True
-    }
-
-
-# ==============================================================================
-# FIN FASE 13 - PERFILES PREDEFINIDOS
-# ==============================================================================
-
-
-# ==============================================================================
-# FASE 14: ALCANCE ORGANIZACIONAL RBAC (METADATO)
-# ==============================================================================
-# Modelo de alcance organizacional por rol.
-# - sec_roles_alcance define alcance por cada rol en sec_roles
-# - En esta fase es solo METADATO, no filtrado activo
-# - NO modifica rbac_helper.py ni resolución de permisos
-# - Sincronización: retirar rol limpia su alcance asociado
-# ==============================================================================
-
-# Tipos de alcance permitidos
-TIPOS_ALCANCE_PERMITIDOS = ["GLOBAL", "EMPRESA", "UNIDAD", "SUCURSAL", "ALMACEN"]
 
 
 @api_router.get("/admin/alcance/empresas")

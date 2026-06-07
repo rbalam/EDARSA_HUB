@@ -95,6 +95,30 @@ Los 5 bloqueadores P0 del Dictamen cerrados y verificados (cURL/pytest, sin test
 - [ ] Eliminar 28 colecciones Mongo restantes (pendiente script usuario)
   - [x] (2026-06-07) RESPALDO COMPLETO NO destructivo realizado vía `mongodump` de las 5 bases locales (edarsa_hub=28, test_database=61, cab003=10, edarsahub=6, stock_tracker=2 → 107 colecciones, 3066 docs, 2.4MB). Ruta: `/app/backups/mongo_sunset_20260607_181350/`. Reporte: `REPORTE_RESPALDO_MONGO.md` + `MANIFEST_SHA256.json` (SHA256 por archivo + global). NADA borrado/desinstalado: pendiente decisión de borrado quirúrgico del usuario tras revisar el reporte.
   - [x] (2026-06-07) VALIDACIÓN POR MUESTREO DE LLAVES (Fase 6-ter, SOLO LECTURA): 27 colecciones CUBIERTA_PARCIALMENTE validadas doc-por-doc contra su tabla SQL (COUNT parametrizado). Veredicto duro: **6 CUBIERTA_CONFIRMADA** (toda la muestra hallada unívocamente → candidatas a borrado CON respaldo): `users`→Usuario_Catalogo, `inventarios_procesados_auto`→Inventarios_ProcesadosAuto (vía col MongoId), `portal_suppliers`→Portal_Proveedores (vía MongoId), `consultas_custom`→Sistema_ConsultasCustom, `sec_modulos_sistema`→Sistema_Modulos, `server_status`→Sistema_ServidoresEstado. **18 NO_CUBIERTA + 3 SIN_LLAVE** (NO borrar): destacan rbac_roles/sec_roles/roles/rbac_usuarios_roles (nombres no coinciden en Sistema_RBAC_Roles) y rbac_permisos/sec_permisos_catalogo (AMBIGUO en RBAC_Permisos). Reportes en `/app/docs/reports/mongo_validacion_muestra_llaves_20260607_191439/` (MD/JSON + CSV detalle por doc + CSV resumen). NADA borrado/modificado.
+### P0 - RBAC Piloto (Perfiles/Roles/Permisos) → SQL-First ✅ COMPLETE (2026-06-07)
+Bug reportado por el usuario: "no encuentra los perfiles RBAC" → toast "Perfil
+PERFIL_GESTOR_SISTEMA no encontrado o inactivo" al asignar un perfil en la pantalla
+Usuarios. Causa raíz: el panel "Seguridad RBAC" (perfiles `sec_perfiles`, roles
+`sec_roles`, permisos `sec_permisos`) corría 100% sobre MongoDB (`db = get_stub_database()`
+en server.py:117), deshabilitado en la arquitectura SQL-First.
+Migración SQL-First (opción (b) elegida por el usuario):
+- Nuevas tablas SQL: `dbo.Sistema_RBAC_PerfilCatalogo` (catálogo perfil→roles CSV, 5 perfiles
+  FASE 13 sembrados desde el respaldo mongodump `sec_perfiles.bson`) y
+  `dbo.Usuario_RBAC_Asignacion` (asignación por usuario, Tipo: PERFIL|ROL|PERMISO).
+- Nuevo servicio `modules/admin_sql/rbac_pilot_service.py` (get_perfiles_catalogo,
+  asignar_perfil, retirar_perfil, toggle_asignacion, get_rbac_map).
+- 5 endpoints reescritos a SQL en server.py (sin Mongo): `GET /admin/perfiles`,
+  `POST /admin/perfiles/asignar|retirar`, `POST /admin/roles/asignar`,
+  `POST /admin/permisos/asignar`. `/admin-sql/users` ahora devuelve `sec_perfil`,
+  `sec_roles`, `sec_permisos` desde SQL.
+- Semántica preservada del modelo legacy: asignar perfil = setea sec_perfil + sobrescribe
+  sec_roles; retirar perfil = limpia sec_perfil+sec_roles (conserva permisos directos).
+Verificado: cURL E2E (listar/asignar/estado/toggle rol/toggle permiso/retirar) sobre Carlos
+Ruz (carlosruz@edarsa.com.mx) + screenshot (panel carga sin el error). Migración idempotente
+en `migrations/rbac_pilot_sql_20260607.py`.
+PENDIENTE (features separadas aún en Mongo stub, NO reportadas): visor "Bitácora RBAC"
+(`/admin/bitacora`) y asignación de "Alcance" empresas/unidades/sucursales (`/admin/alcance/*`).
+
 - [ ] Remover pymongo de dependencias (requirements)
 
 ### P0 - Canonicidad de Rol (SUPERADMIN ↔ SuperAdministrador) ✅ COMPLETE (2026-06-07)
