@@ -1,5 +1,12 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-07] Fase 9 — P5-1 Sunset mínimo `historical_kpis_repository.py` (NO-MONGO)
+- Contexto: el módulo ya no tenía `import pymongo/motor` vivos; el riesgo real eran 3 funciones legacy Mongo ROTAS (`client = None` → `db = client['edarsa_hub']`) que reventarían si se reactivaran. Verificado: NINGÚN router importa el módulo (código muerto inerte).
+- Neutralización quirúrgica por bloques de función: `_get_edarsahub_credentials`, `_get_edarsahub_credentials_sync` y `migrate_staging_mongo_kpis_to_sql` → stubs que retornan `{"disabled": True, "reason": "MONGO_LEGACY_SUNSET"/"MONGO_STAGING_SUNSET"}`. Sin tocar lógica SQL viva.
+- Removido import huérfano `from core.secret_manager import decrypt_secret, is_encrypted_secret` (solo lo usaban las funciones Mongo retiradas).
+- **AUDITORÍA DE SCRIPT (rechazado):** el script del usuario `fase9_p5_1_sunset_historical_kpis_minimo.sh` era un **no-op engañoso**: sus 3 regex usaban `\([^)]*\):` (esperan `):` pegado) pero las firmas reales son `() -> Dict:` y `migrate_...(` multilínea → 3× NO-MATCH. Habría reportado `PATCHED`+`health OK` SIN neutralizar nada. Se aplicó versión corregida (reemplazo por bloques línea-a-línea).
+- Verificado: `py_compile` OK, `NO_MONGO_RESIDUAL`, backend RUNNING, `GET /api/health/v1` (auth) → 200 `overall_status=healthy` (6/6 dominios). Backup `.bak_*`.
+
 ## [2026-06-07] Bugfix server nombre + Fase 8B P2-2B (frontend Mis Tareas/Asignaciones)
 - `modules/comercial/repository.py::_sql_row_to_server_dict`: agregado alias `'nombre'` (= `row['nombre']`) junto a `'name'` (consumidores que esperan `nombre`). Verificado: name/nombre poblados (130° MERIDA, CIENFUEGOS, LA ESTELAR, ManagmentPro). Nota: el "nombre None" reportado antes fue un falso positivo (la clave de salida es `name`).
 - `frontend/src/pages/ConfigAsignaciones.jsx`: FIX bug real `getUserRole()` usaba `token` no declarado → `ReferenceError`. Ahora `const token = getToken()` (import `{ getToken }` de `lib/api`). + hardening `ensureArray`/`asString` en setters y Radix Selects (value string).

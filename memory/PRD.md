@@ -78,8 +78,9 @@ Los 5 bloqueadores P0 del Dictamen cerrados y verificados (cURL/pytest, sin test
   - SUPERADMIN detectado por CodigoRol o NivelJerarquia >= 100
   - Frontend delegado al backend SQL
   - password_hash eliminado de respuestas API
+- [x] P5-1 (2026-06-07): Sunset mínimo `comercial/historical_kpis_repository.py` — 3 funciones Mongo rotas neutralizadas a stubs + import huérfano `secret_manager` removido. Módulo era código muerto inerte (sin importadores). health/v1 → healthy.
 - [ ] Eliminar 28 colecciones Mongo restantes (pendiente script usuario)
-- [ ] Remover pymongo de dependencias
+- [ ] Remover pymongo de dependencias (requirements)
 
 ---
 
