@@ -183,25 +183,18 @@ async def check_server_connectivity(server_id: str, server_name: str, system_typ
 
 @router.get("")
 async def get_finanzas_health(
-    include_server_details: bool = False,
+    include_server_details: bool = True,
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Diagnóstico completo del módulo Finanzas.
-
-    P0-5 (NO-LIVE): El health canónico evalúa ÚNICAMENTE EDARSAHUB SQL
-    (fuente única de verdad) y la existencia de tablas requeridas. La
-    conectividad a servidores operativos externos (SoftRestaurant, MPRO)
-    es un DIAGNÓSTICO SECUNDARIO opt-in: solo se ejecuta si el cliente
-    envía explícitamente ?include_server_details=true. Esto evita que una
-    caída de operativos externos produzca timeouts/502 en el health.
-
+    
     Verifica:
-    - Conectividad a EDARSAHUB (base de datos central) [canónico]
-    - Tablas requeridas por cada submódulo [canónico]
-    - Conectividad a servidores de datos [secundario, opt-in]
+    - Conectividad a EDARSAHUB (base de datos central)
+    - Tablas requeridas por cada submódulo
+    - Conectividad a servidores de datos (SoftRestaurant, MPRO)
     - Estado general del módulo
-
+    
     Returns:
         Dict con estado de salud detallado
     """
