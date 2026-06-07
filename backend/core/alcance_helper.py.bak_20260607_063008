@@ -182,8 +182,8 @@ async def resolver_alcance_usuarios(current_user: Dict, db) -> Dict:
     """
     email = current_user.get('email', 'N/A')
     
-    # PASO 1: SuperAdministrador → acceso global (acepta NombreRol y CodigoRol)
-    if str(current_user.get('role') or '').strip().upper() in ('SUPERADMINISTRADOR', 'SUPERADMIN'):
+    # PASO 1: SuperAdministrador → acceso global
+    if current_user.get('role') == 'SuperAdministrador':
         logger.info(f"Alcance resuelto para {email}: SUPERADMIN (global)")
         return ResultadoAlcance(tiene_acceso_global=True, fuente_alcance="SUPERADMIN").to_dict()
     
@@ -234,8 +234,8 @@ async def verificar_usuario_en_alcance(actor: Dict, target_user: Dict, db) -> Di
     
     Usado para validar operaciones PUT/DELETE sobre usuarios específicos.
     """
-    # SuperAdmin puede operar sobre cualquiera (acepta NombreRol y CodigoRol)
-    if str(actor.get('role') or '').strip().upper() in ('SUPERADMINISTRADOR', 'SUPERADMIN'):
+    # SuperAdmin puede operar sobre cualquiera
+    if actor.get('role') == 'SuperAdministrador':
         return {"permitido": True, "razon": "SUPERADMIN"}
     
     # Resolver alcance del actor
