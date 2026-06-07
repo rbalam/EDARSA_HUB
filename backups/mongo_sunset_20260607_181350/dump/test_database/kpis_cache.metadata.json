@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"server_id":{"$numberInt":"1"},"periodo_key":{"$numberInt":"1"}},"name":"idx_kpis_lookup"}],"uuid":"96f3c10ee0ca45e38cf9ee3826e144bb","collectionName":"kpis_cache","type":"collection"}

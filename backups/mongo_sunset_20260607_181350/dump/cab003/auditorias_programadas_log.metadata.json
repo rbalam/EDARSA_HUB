@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"2838b7aed6064393b65ec7d982f1dca8","collectionName":"auditorias_programadas_log","type":"collection"}

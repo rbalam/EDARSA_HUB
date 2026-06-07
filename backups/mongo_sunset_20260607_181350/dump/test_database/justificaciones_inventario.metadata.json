@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"workflow_id":{"$numberInt":"1"}},"name":"idx_workflow_id"},{"v":{"$numberInt":"2"},"key":{"diferencia_id":{"$numberInt":"1"}},"name":"idx_diferencia_id"}],"uuid":"8298d3c97237479eb133a45a072621e0","collectionName":"justificaciones_inventario","type":"collection"}

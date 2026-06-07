@@ -93,6 +93,7 @@ Los 5 bloqueadores P0 del Dictamen cerrados y verificados (cURL/pytest, sin test
   - password_hash eliminado de respuestas API
 - [x] P5-1 (2026-06-07): Sunset mínimo `comercial/historical_kpis_repository.py` — 3 funciones Mongo rotas neutralizadas a stubs + import huérfano `secret_manager` removido. Módulo era código muerto inerte (sin importadores). health/v1 → healthy.
 - [ ] Eliminar 28 colecciones Mongo restantes (pendiente script usuario)
+  - [x] (2026-06-07) RESPALDO COMPLETO NO destructivo realizado vía `mongodump` de las 5 bases locales (edarsa_hub=28, test_database=61, cab003=10, edarsahub=6, stock_tracker=2 → 107 colecciones, 3066 docs, 2.4MB). Ruta: `/app/backups/mongo_sunset_20260607_181350/`. Reporte: `REPORTE_RESPALDO_MONGO.md` + `MANIFEST_SHA256.json` (SHA256 por archivo + global). NADA borrado/desinstalado: pendiente decisión de borrado quirúrgico del usuario tras revisar el reporte.
 - [ ] Remover pymongo de dependencias (requirements)
 
 ---
