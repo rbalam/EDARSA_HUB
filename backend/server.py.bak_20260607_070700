@@ -551,7 +551,6 @@ from modules.finanzas.cuentas_por_pagar import router as cxp_router
 from modules.finanzas.ingresos import router as ingresos_router
 from modules.finanzas.tesoreria import router as tesoreria_router
 from modules.finanzas.health import router as finanzas_health_router
-from modules.health_v1.routes import router as health_v1_router  # FASE6: health canónico V1 NO-LIVE
 
 # P1-FASE5A.1: Cuentas y Saldos Bancarios (EDARSAHUB)
 # - Mayo 2026: Implementación endpoints backend
@@ -16438,9 +16437,6 @@ async def retirar_alcance_rol(
 
 # Incluir el router después de definir TODOS los endpoints
 app.include_router(api_router)
-
-# FASE6: health canónico V1.0 (SQL-First / NO-LIVE) -> /api/health/v1
-app.include_router(health_v1_router, prefix="/api")
 
 # ============================================================================
 # PORTAL DE PROVEEDORES (Subproyecto separado)
