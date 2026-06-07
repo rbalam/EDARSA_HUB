@@ -300,3 +300,13 @@ Fix frontend: envía `&periodo=`, useEffect depende de [unidad, periodo], valore
 Verificado vía cURL (4 periodos con KPIs distintos + trends) y screenshot (Año $21.64M vs Mes $0.48M, etiquetas correctas).
 NOTA: lint `react-hooks/immutability` es ruido repo-wide preexistente (también en VentasHorarioPage.jsx sin tocar) — falso positivo del React Compiler sobre helpers con early-return.
 NOTA MOCK: ventas_horario/top_productos/casas_distribuidoras del dashboard siguen siendo proporciones calculadas del total (NO datos reales por producto/casa) — escalan con el total pero son ESTIMADOS, no reales.
+
+## [2026-06-07] FASE 0 (diagnóstico) + Opción D (preparar sync real, SIN ejecutar) — PIC datos reales
+FASE 0 (solo lectura): Sync_Sales=79 tickets, SOLO 2026-06-01 ($309K) vs KPI canónico=125,833 tickets/$431.7M/2024-2026 → cobertura 0.06%. Mismo día 06-01 ≈100% (el parser está bien; falta histórico). Reporte: docs/reports/FASE0_AUDITORIA_COBERTURA_SYNC_SALES_20260607.md
+CAUSA RAÍZ EXACTA (inteligencia_comercial_sync_job.py): (1) sin backfill: dias_atras=1 ventana fija + cron 0 * * * * ; los 79 del 06-01 fueron carga puntual única (created_at en 47s del 06-03). (2) get_pos_connection era STUB que devolvía get_sql_connection() (EDARSAHUB) en vez del POS real; tablas POS no existen en EDARSAHUB y TODAS las credenciales *_DB_PASS están VACÍAS. => detalle histórico no existe en EDARSAHUB; requiere export histórico (opción B, recomendada) o credenciales POS (A).
+Script usuario para D: AUDITADO. Intención correcta/segura pero parche regex frágil (no idempotente) + helpers muertos + audit-script que consulta tablas de servidores inexistentes (config POS está hardcodeada en UNIDADES_CONFIG). Implementé el intent QUIRÚRGICAMENTE:
+- get_pos_connection: conexión REAL pymssql al POS con guard de credenciales vacías (retorna None sin colgar => job horario = no-op seguro).
+- job_inteligencia_comercial_sync: +params fecha_inicio/fecha_fin/dry_run + lógica de backfill por rango; fix refs current_date->_dt; __main__ por env vars.
+- Nuevo script seguro: scripts/backfill_inteligencia_comercial_pos.py (default DRY-RUN, reusa el job, sin sync nuevo).
+NO ejecutado contra POS, NO se tocaron datos (Sync_Sales sigue=79). Verificado: py_compile, lint limpio, dry-run OK (lista 5 unidades, retorno temprano), backend healthy, job horario sano.
+PENDIENTE usuario: elegir B (export histórico) o A (credenciales) para llenar el 100% antes de FASE 2/3/4 (portal/normalización/casas). NO construir portal con datos parciales (mandato usuario).

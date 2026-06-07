@@ -92,11 +92,41 @@ def get_edarsahub_connection():
 
 
 def get_pos_connection(config: Dict) -> Optional[pymssql.Connection]:
-    """Conexión a servidor POS origen."""
+    """
+    Conexión REAL al servidor POS origen (SoftRestaurant/MPRO).
+
+    NOTA P0: este método es SOLO para ETL/sync autorizado; los dashboards NO
+    consultan el POS en vivo. NO debe usar get_sql_connection() porque eso
+    conectaba a EDARSAHUB (destino) en vez del POS origen (bug del stub previo).
+
+    Si faltan credenciales (p.ej. *_DB_PASS vacío), retorna None sin intentar
+    conectar, evitando cuelgues; el job se vuelve no-op seguro.
+    """
+    required = ["host", "database", "username", "password"]
+    missing = [k for k in required if not config.get(k)]
+    if missing:
+        logger.error(
+            f"[SYNC] Config POS incompleta (host={config.get('host')}); "
+            f"faltan/vacios={missing}. No se intenta conexión."
+        )
+        return None
     try:
-        return get_sql_connection()
+        return pymssql.connect(
+            server=config["host"],
+            port=int(config.get("port", 1433)),
+            user=config["username"],
+            password=config["password"],
+            database=config["database"],
+            login_timeout=int(config.get("login_timeout", 15)),
+            timeout=int(config.get("timeout", 180)),
+            tds_version=str(config.get("tds_version", "7.0")),
+            as_dict=True,
+        )
     except Exception as e:
-        logger.error(f"[SYNC] Error conectando a {config['host']}: {e}")
+        logger.error(
+            f"[SYNC] Error conectando a POS host={config.get('host')} "
+            f"db={config.get('database')}: {e}"
+        )
         return None
 
 
@@ -363,7 +393,10 @@ def update_job_status(conn, status: str = "ACTIVE"):
 
 def job_inteligencia_comercial_sync(
     dias_atras: int = 1,
-    unidades: List[str] = None
+    unidades: List[str] = None,
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
+    dry_run: bool = False
 ) -> Dict[str, Any]:
     """
     Job principal de sincronización de Inteligencia Comercial.
@@ -377,13 +410,29 @@ def job_inteligencia_comercial_sync(
     """
     logger.info("[INTELIGENCIA_SYNC] ========== INICIO ==========")
     
-    # Fechas a sincronizar
-    fecha_fin = datetime.now()
-    fecha_inicio = fecha_fin - timedelta(days=dias_atras)
-    fecha_inicio_str = fecha_inicio.strftime("%Y-%m-%d")
-    fecha_fin_str = fecha_fin.strftime("%Y-%m-%d")
+    # Fechas a sincronizar.
+    # Backfill explícito: fecha_inicio/fecha_fin en YYYY-MM-DD (fecha_fin EXCLUSIVA en la extracción).
+    # Si no se pasan, se usa la ventana deslizante de 'dias_atras' (compatibilidad con el job horario).
+    if fecha_inicio and fecha_fin:
+        fecha_inicio_dt = datetime.strptime(fecha_inicio, "%Y-%m-%d")
+        fecha_fin_dt = datetime.strptime(fecha_fin, "%Y-%m-%d")
+    else:
+        fecha_fin_dt = datetime.now()
+        fecha_inicio_dt = fecha_fin_dt - timedelta(days=dias_atras)
+    fecha_inicio_str = fecha_inicio_dt.strftime("%Y-%m-%d")
+    fecha_fin_str = fecha_fin_dt.strftime("%Y-%m-%d")
     
-    logger.info(f"[INTELIGENCIA_SYNC] Período: {fecha_inicio_str} a {fecha_fin_str}")
+    logger.info(f"[INTELIGENCIA_SYNC] Período: {fecha_inicio_str} a {fecha_fin_str} (dry_run={dry_run})")
+
+    if dry_run:
+        return {
+            "success": True,
+            "dry_run": True,
+            "fecha_inicio": fecha_inicio_str,
+            "fecha_fin": fecha_fin_str,
+            "unidades": unidades or list(UNIDADES_CONFIG.keys()),
+            "message": "Código preparado (opción D). NO se ejecutó extracción ni carga de datos."
+        }
     
     # Unidades a procesar
     if not unidades:
@@ -425,8 +474,8 @@ def job_inteligencia_comercial_sync(
                     hub_conn.commit()
                 
                 # 3. Actualizar KPIs diarios
-                current_date = fecha_inicio
-                while current_date <= fecha_fin:
+                current_date = fecha_inicio_dt
+                while current_date <= fecha_fin_dt:
                     fecha_str = current_date.strftime("%Y-%m-%d")
                     if update_kpis_diarios(hub_conn, unidad, fecha_str):
                         stats["kpis_actualizados"] += 1
@@ -450,7 +499,7 @@ def job_inteligencia_comercial_sync(
         logger.error(f"[INTELIGENCIA_SYNC] Error general: {e}")
         stats["errores"].append(f"General: {str(e)}")
     
-    logger.info(f"[INTELIGENCIA_SYNC] ========== FIN ==========")
+    logger.info("[INTELIGENCIA_SYNC] ========== FIN ==========")
     logger.info(f"[INTELIGENCIA_SYNC] Stats: {stats}")
     
     return stats
@@ -462,5 +511,11 @@ def job_inteligencia_comercial_sync(
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    result = job_inteligencia_comercial_sync(dias_atras=1)
+    result = job_inteligencia_comercial_sync(
+        dias_atras=int(os.environ.get("PIC_SYNC_DIAS_ATRAS", "1")),
+        unidades=[x.strip() for x in os.environ.get("PIC_SYNC_UNIDADES", "").split(",") if x.strip()] or None,
+        fecha_inicio=os.environ.get("PIC_SYNC_FECHA_INICIO"),
+        fecha_fin=os.environ.get("PIC_SYNC_FECHA_FIN"),
+        dry_run=os.environ.get("PIC_SYNC_DRY_RUN", "true").lower() == "true",
+    )
     print(json.dumps(result, indent=2, default=str))
