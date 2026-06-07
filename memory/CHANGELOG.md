@@ -1,5 +1,11 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-07] Fase 0 — Auditoría v1.0 producción (SIN cambios de código)
+- Entregable: `/app/auditorias_p5/AUDITORIA_V1_PRODUCCION_MATRIZ.md` (matriz por menú: front/back, endpoints, auth, RBAC, filtros, tablas canónicas, legacy/stub, live prohibido, mongo residual, estado, riesgo, recomendación).
+- Bloqueadores hallados: **Tablero Ejecutivo 500** (vista corrupta `vw_vw_vw_vw_..._Runtime_Runtime...` → real `vw_Comercial_KPIs_Diarios_v2_Runtime`); **Explorador BD** import roto `_execute_sql_direct_with_error`; **Finanzas /health 502**; intentos **NO-LIVE** a operativos en logs; **Mongo residual** alcanzable en `comercial/cache_service|kpis_repository|historical_kpis_repository`.
+- Sin correcciones aplicadas (a la espera de aprobación de Fase 1).
+
+
 ## [2026-06-07] Limpieza de menú: rutas rotas → "Pronto" + 2 rutas corregidas
 
 - **2 ítems con ruta mal escrita corregidos** (apuntaban a rutas inexistentes pese a tener pantalla):
