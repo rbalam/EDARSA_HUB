@@ -1,4 +1,3 @@
-// P2_2B_FRONT_HARDENING
 import logger from '../services/logger';
 /**
  * ConfigAsignaciones.jsx
@@ -14,7 +13,7 @@ import logger from '../services/logger';
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import api, { getToken } from '../lib/api';
+import api from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -82,9 +81,6 @@ const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 export default function ConfigAsignaciones() {
   const { toast } = useToast();
   
-  const ensureArray = (value) => Array.isArray(value) ? value : [];
-  const asString = (value) => value === null || value === undefined ? '' : String(value);
-  
   // Estado principal
   const [asignaciones, setAsignaciones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -135,7 +131,6 @@ export default function ConfigAsignaciones() {
   // Obtener rol del usuario del token JWT
   const getUserRole = () => {
     try {
-      const token = typeof getToken === 'function' ? getToken() : '';
       if (!token) return '';
       const payload = JSON.parse(atob(token.split('.')[1]));
       return payload.role || '';
@@ -164,8 +159,8 @@ export default function ConfigAsignaciones() {
       
       const response = await api.get(`/config-asignaciones?${params.toString()}`);
       
-      setAsignaciones(ensureArray(response.data?.data));
-      setTotalAsignaciones(response.data?.total || 0);
+      setAsignaciones(response.data.data || []);
+      setTotalAsignaciones(response.data.total || 0);
     } catch (error) {
       toast({
         title: 'Error',
@@ -180,7 +175,7 @@ export default function ConfigAsignaciones() {
   const fetchUnidadesNegocio = async () => {
     try {
       const response = await api.get('/config-asignaciones/unidades-negocio');
-      setUnidadesNegocio(ensureArray(response.data?.data));
+      setUnidadesNegocio(response.data.data || []);
     } catch (error) {
       logger.error('Error cargando unidades:', error);
     }
@@ -191,7 +186,7 @@ export default function ConfigAsignaciones() {
     try {
       const response = await api.get(`/config-asignaciones/almacenes/${unidadId}`);
       // Filtrar la opción "todos" del backend, solo queremos almacenes reales
-      return ensureArray(response.data?.data).filter(a => a?.id !== undefined && a?.id !== null && a?.id !== '');
+      return (response.data.data || []).filter(a => a.id);
     } catch (error) {
       logger.error('Error cargando almacenes:', error);
       return [];
@@ -232,8 +227,7 @@ export default function ConfigAsignaciones() {
     try {
       const response = await api.get('/users');
       // Filtrar usuarios activos
-      const rawUsers = ensureArray(response.data?.users || (Array.isArray(response.data) ? response.data : []));
-      const activos = rawUsers.filter(u => u?.activo !== false);
+      const activos = (response.data.users || response.data || []).filter(u => u.activo !== false);
       setUsuarios(activos);
     } catch (error) {
       logger.error('Error cargando usuarios:', error);
@@ -775,7 +769,7 @@ export default function ConfigAsignaciones() {
               </div>
               
               {/* Filtro unidad */}
-              <Select value={asString(filtroUnidad || '__todas__')} onValueChange={(v) => setFiltroUnidad(v === '__todas__' ? '' : asString(v))}>
+              <Select value={filtroUnidad || '__todas__'} onValueChange={(v) => setFiltroUnidad(v === '__todas__' ? '' : v)}>
                 <SelectTrigger
                   className="w-[180px] bg-slate-800 border-slate-700"
                   data-testid="filtro-unidad"
@@ -785,7 +779,7 @@ export default function ConfigAsignaciones() {
                 <SelectContent className="bg-slate-800 border-slate-700">
                   <SelectItem value="__todas__">Todas las unidades</SelectItem>
                   {unidadesNegocio.map((u) => (
-                    <SelectItem key={asString(u.id)} value={asString(u.id)}>
+                    <SelectItem key={u.id} value={u.id}>
                       {u.nombre}
                     </SelectItem>
                   ))}

@@ -127,6 +127,7 @@ def _sql_row_to_server_dict(row: Dict) -> Dict:
     return {
         'id': str(row.get('id', '')),
         'name': row.get('nombre', ''),
+        'nombre': row.get('nombre', ''),  # alias para consumidores que esperan 'nombre'
         'system_type': row.get('system_type', ''),
         'tipo_conexion': row.get('tipo_conexion', 'DATA_SOURCE'),
         'host': row.get('host', ''),

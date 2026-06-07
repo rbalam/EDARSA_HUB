@@ -1,0 +1,143 @@
+FASE 8B - P2-2B  Sun Jun  7 08:01:13 UTC 2026
+===== BACKUPS =====
+BACKUP /app/frontend/src/pages/ConfigAsignaciones.jsx.bak_20260607_080113
+BACKUP /app/frontend/src/pages/MisTareas.js.bak_20260607_080113
+===== PARCHE ConfigAsignaciones.jsx =====
+PATCHED ConfigAsignaciones.jsx
+===== PARCHE MisTareas.js =====
+PATCHED MisTareas.js
+===== BUILD FRONTEND (yarn) =====
+yarn run v1.22.22
+$ craco build
+Creating an optimized production build...
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+Compiled with warnings.
+
+[eslint] 
+src/components/PropinasTPV.jsx
+  Line 111:6:  React Hook useEffect has a missing dependency: 'cargarUnidadesNegocio'. Either include it or remove the dependency array      react-hooks/exhaustive-deps
+  Line 120:6:  React Hook useEffect has a missing dependency: 'filtros.unidad_negocio_id'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/auditorias/useAuditoriasData.js
+  Line 38:6:  React Hook useCallback has a missing dependency: 'fetchOptions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  Line 49:6:  React Hook useCallback has a missing dependency: 'fetchOptions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  Line 64:6:  React Hook useCallback has a missing dependency: 'fetchOptions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  Line 79:6:  React Hook useCallback has a missing dependency: 'fetchOptions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/catalogos/ConfiguracionOperativaUnidad.jsx
+  Line 49:6:  React Hook useEffect has a missing dependency: 'loadConfig'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/CentroExcepciones.js
+  Line 39:6:  React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ConfigAsignaciones.jsx
+  Line 320:6:  React Hook useEffect has missing dependencies: 'fetchUnidadesNegocio' and 'fetchUsuarios'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/DBACredentialManager.jsx
+  Line 75:6:  React Hook useEffect has a missing dependency: 'fetchStatus'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/DashboardEjecutivo.js
+  Line 49:6:  React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/Finanzas.js
+  Line 283:6:  React Hook useEffect has a missing dependency: 'setSelectedUnidad'. Either include it or remove the dependency array                      react-hooks/exhaustive-deps
+  Line 823:6:  React Hook useEffect has missing dependencies: 'activeTab' and 'loadCuentasPorPagar'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/MisTareas.js
+  Line 190:6:  React Hook useCallback has missing dependencies: 'normalizePendientes' and 'normalizeTareas'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/TableroEjecutivo.js
+  Line 1191:6:  React Hook useCallback has an unnecessary dependency: 'tipoComparacion'. Either exclude it or remove the dependency array               react-hooks/exhaustive-deps
+  Line 1197:6:  React Hook useEffect has a missing dependency: 'cargarDatos'. Either include it or remove the dependency array                          react-hooks/exhaustive-deps
+  Line 1205:6:  React Hook useEffect has missing dependencies: 'cargarDatos' and 'lastRefreshTime'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/cava-socios/SocioDetail.jsx
+  Line 119:6:  React Hook useEffect has a missing dependency: 'fetchSocio'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/cava-socios/SocioForm.jsx
+  Line 67:6:  React Hook useEffect has missing dependencies: 'isEditing' and 'loadSocio'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/comercial/CostosMargenes.jsx
+  Line 675:6:  React Hook useEffect has a missing dependency: 'producto'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/comercial/PricingIA.jsx
+  Line 1372:6:  React Hook useEffect has a missing dependency: 'selectedCompetidor'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/crm/CuentasPage.jsx
+  Line 29:6:  React Hook useEffect has a missing dependency: 'loadCuentas'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/crm/LeadsPage.jsx
+  Line 35:6:  React Hook useEffect has a missing dependency: 'loadLeads'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/crm/OportunidadesPage.jsx
+  Line 36:6:  React Hook useEffect has a missing dependency: 'loadOportunidades'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/tablajeria/OrdenesPage.jsx
+  Line 110:6:  React Hook useEffect has a missing dependency: 'fetchOrdenes'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/tablajeria/PlantillasPage.jsx
+  Line 74:6:  React Hook useEffect has a missing dependency: 'fetchPlantillas'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/portal-inteligencia/pages/AnalisisPAXPage.jsx
+  Line 42:6:  React Hook useEffect has a missing dependency: 'fetchPAXData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/portal-inteligencia/pages/DashboardIA.jsx
+  Line 45:6:  React Hook useEffect has a missing dependency: 'fetchDashboardData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/portal-inteligencia/pages/VentasCasaPage.jsx
+  Line 90:6:  React Hook useEffect has a missing dependency: 'fetchCasas'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/portal-inteligencia/pages/VentasFamiliaPage.jsx
+  Line 65:6:  React Hook useEffect has a missing dependency: 'fetchFamilias'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/portal-inteligencia/pages/VentasHorarioPage.jsx
+  Line 64:6:  React Hook useEffect has a missing dependency: 'fetchHorarios'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/portal-inteligencia/pages/VentasProductoPage.jsx
+  Line 32:6:  React Hook useEffect has a missing dependency: 'fetchProductos'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/portal/App.jsx
+  Line 44:6:  React Hook useEffect has a missing dependency: 'verifySession'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+File sizes after gzip:
+
+  892.95 kB  build/static/js/main.30b6db46.js
+  46.35 kB   build/static/js/239.e39fb35b.chunk.js
+  43.29 kB   build/static/js/455.ba0306d1.chunk.js
+  20.93 kB   build/static/css/main.00c242ae.css
+  8.73 kB    build/static/js/977.8591a78c.chunk.js
+
+The bundle size is significantly larger than recommended.
+Consider reducing it with code splitting: https://goo.gl/9VhYWB
+You can also analyze the project dependencies: https://goo.gl/LeUzfb
+
+The project was built assuming it is hosted at /.
+You can control this with the homepage field in your package.json.
+
+The build folder is ready to be deployed.
+You may serve it with a static server:
+
+  yarn global add serve
+  serve -s build
+
+Find out more about deployment here:
+
+  https://cra.link/deployment
+
+Done in 49.20s.
+BUILD_OK=1
+===== REINICIO FRONTEND =====
+frontend                         RUNNING   pid 16282, uptime 0:00:10
+===== EVIDENCIA =====
+7
+22
+RAW_REPORT=/app/auditorias_p5/FASE8B_P2_2B_FRONT_20260607_080113.txt
+OK - FASE 8B ejecutado

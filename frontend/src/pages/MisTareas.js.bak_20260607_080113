@@ -1,4 +1,3 @@
-// P2_2B_FRONT_HARDENING
 import logger from '../services/logger';
 // FASE P1-FETCH-MIGRATION: Migrado a api.js centralizado
 import { getSessionUser } from '../services/authStorage';
@@ -20,28 +19,6 @@ import { toast } from 'sonner';
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 export default function MisTareas() {
-  const ensureArray = (value) => Array.isArray(value) ? value : [];
-  const normalizeTareas = (data) => ({
-    pendientes: ensureArray(data?.pendientes),
-    en_proceso: ensureArray(data?.en_proceso),
-    completadas: ensureArray(data?.completadas),
-    total_pendientes: Number(data?.total_pendientes || 0),
-    total_en_proceso: Number(data?.total_en_proceso || 0),
-    solicitudes_pendientes_aprobar: Number(data?.solicitudes_pendientes_aprobar || 0),
-  });
-  const normalizePendientes = (data) => ({
-    urgentes: ensureArray(data?.urgentes),
-    catalogos: ensureArray(data?.catalogos),
-    proveedores: ensureArray(data?.proveedores),
-    nominas: ensureArray(data?.nominas),
-    contadores: {
-      urgentes: Number(data?.contadores?.urgentes || 0),
-      catalogos: Number(data?.contadores?.catalogos || 0),
-      proveedores: Number(data?.contadores?.proveedores || 0),
-      nominas: Number(data?.contadores?.nominas || 0),
-      total: Number(data?.contadores?.total || 0),
-    }
-  });
   const [loading, setLoading] = useState(true);
   const [tareas, setTareas] = useState({
     pendientes: [],
@@ -138,10 +115,10 @@ export default function MisTareas() {
         fetchWithAuth('/sistema/pendientes-unificados')  // NUEVO: Bandeja unificada
       ]);
       
-      setTareas(normalizeTareas(tareasData));
-      setMisPermisos({ puede_solicitar: !!permisosData?.puede_solicitar, puede_aprobar: !!permisosData?.puede_aprobar, catalogos_permitidos: ensureArray(permisosData?.catalogos_permitidos) });
-      setCatalogosDisponibles(ensureArray(catalogosData?.catalogos));
-      setMisSolicitudes(ensureArray(misSolicitudesData?.solicitudes));
+      setTareas(tareasData);
+      setMisPermisos(permisosData);
+      setCatalogosDisponibles(catalogosData.catalogos || []);
+      setMisSolicitudes(misSolicitudesData.solicitudes || []);
       
       // Cargar solicitudes de catálogos RH pendientes
       try {
@@ -169,17 +146,17 @@ export default function MisTareas() {
         });
       } catch (e) {
         logger.log('No se pudieron cargar solicitudes RH:', e);
-        setPendientesUnificados(normalizePendientes(unificadosData));
+        setPendientesUnificados(unificadosData);
       }
       
       // Si puede aprobar, cargar solicitudes pendientes de aprobar
       if (canApprove) {
         // Cargar solicitudes en cualquier estado "Pendiente" o "Reenviada"
         const solicitudesData = await fetchWithAuth('/sistema/solicitudes');
-        const pendientes = ensureArray(solicitudesData?.solicitudes).filter(s => 
+        const pendientes = (solicitudesData.solicitudes || []).filter(s => 
           s.estatus?.includes('Pendiente') || s.estatus === 'Reenviada'
         );
-        setSolicitudesPendientes(ensureArray(pendientes));
+        setSolicitudesPendientes(pendientes);
       }
     } catch (error) {
       logger.error('Error cargando tareas:', error);
@@ -193,7 +170,7 @@ export default function MisTareas() {
   const loadUsuarios = async () => {
     try {
       const data = await fetchWithAuth('/sistema/usuarios-asignables');
-      setUsuarios(ensureArray(data?.usuarios));
+      setUsuarios(data.usuarios || []);
     } catch (error) {
       logger.error('Error cargando usuarios:', error);
     }
@@ -203,7 +180,7 @@ export default function MisTareas() {
   const loadProveedores = async () => {
     try {
       const response = await api.get('/portal/admin/all-suppliers');
-      setProveedores(ensureArray(response.data));
+      setProveedores(response.data || []);
     } catch (error) {
       logger.error('Error cargando proveedores:', error);
     }
@@ -213,20 +190,19 @@ export default function MisTareas() {
   const loadServersProveedor = async () => {
     try {
       const response = await api.get('/servers');
-      setServersDisponibles(ensureArray(response.data).filter(s => s?.active));
+      setServersDisponibles(response.data.filter(s => s.active) || []);
     } catch (error) {
       logger.error('Error cargando servers:', error);
     }
   };
   
   useEffect(() => {
-    const init = async () => {
-      await loadData();
-      if (canApprove) {
-        await Promise.all([loadUsuarios(), loadProveedores(), loadServersProveedor()]);
-      }
-    };
-    init();
+    loadData();
+    if (canApprove) {
+      loadUsuarios();
+      loadProveedores();
+      loadServersProveedor();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadData, canApprove]);
   
@@ -598,14 +574,14 @@ export default function MisTareas() {
   };
   
   // Agrupar catálogos por módulo
-  const catalogosPorModulo = ensureArray(catalogosDisponibles).reduce((acc, cat) => {
+  const catalogosPorModulo = catalogosDisponibles.reduce((acc, cat) => {
     if (!acc[cat.modulo]) acc[cat.modulo] = [];
     acc[cat.modulo].push(cat);
     return acc;
   }, {});
   
   // Filtrar proveedores
-  const proveedoresFiltrados = ensureArray(proveedores)
+  const proveedoresFiltrados = proveedores
     .filter(s => filtroProveedores === 'all' || s.status === filtroProveedores)
     .filter(s => 
       s.rfc?.toLowerCase().includes(searchProveedores.toLowerCase()) ||
@@ -613,7 +589,7 @@ export default function MisTareas() {
       s.email?.toLowerCase().includes(searchProveedores.toLowerCase())
     );
   
-  const proveedoresPendientesCount = ensureArray(proveedores).filter(s => s?.status === 'pending').length;
+  const proveedoresPendientesCount = proveedores.filter(s => s.status === 'pending').length;
   
   // Aprobar proveedor
   const handleAprobarProveedor = async () => {
@@ -1670,7 +1646,7 @@ export default function MisTareas() {
                         {/* Comentario */}
                         {evento.comentario && (
                           <div className="mt-2 text-xs bg-zinc-50 text-zinc-600 p-2 rounded italic">
-                            &quot;{evento.comentario}&quot;
+                            "{evento.comentario}"
                           </div>
                         )}
                       </div>
