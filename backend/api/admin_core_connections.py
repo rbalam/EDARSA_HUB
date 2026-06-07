@@ -130,6 +130,7 @@ def audit_core_action(
     
     SEGURIDAD: No incluye secretos.
     """
+    user = user or {}
     log_data = {
         'timestamp': datetime.now(timezone.utc).isoformat(),
         'action': action,
@@ -467,5 +468,13 @@ async def test_core_connection(
         )
     
     result = test_core_connectivity(conn)
+    
+    audit_core_action(
+        action='TEST_CORE_CONNECTION',
+        user=current_user,
+        core_id=server_id,
+        status=result.get('status', 'SUCCESS'),
+        details={'endpoint': 'POST /api/admin/core-connections/{server_id}/test'}
+    )
     
     return result
