@@ -650,7 +650,6 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
       cargarDetalle();
     } else {
       // Sin server_id y sin modo diario, mostrar datos básicos
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDetalleData({
         dashboard: null,
         ventasTiempo: null,
