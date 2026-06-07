@@ -1,0 +1,706 @@
+{
+  "fecha": "2026-06-07 18:18:56",
+  "backup_root": "/app/backups/mongo_sunset_20260607_181350",
+  "global_ok": true,
+  "verify_dbs_dropped": [
+    "cab003_verify_20260607_181850",
+    "edarsa_hub_verify_20260607_181850",
+    "edarsahub_verify_20260607_181850",
+    "stock_tracker_verify_20260607_181850",
+    "test_database_verify_20260607_181850"
+  ],
+  "resultados": {
+    "cab003": {
+      "verify_db": "cab003_verify_20260607_181850",
+      "total_colecciones_original": 10,
+      "total_colecciones_restauradas": 10,
+      "colecciones_match": 10,
+      "colecciones_total": 10,
+      "all_match": true,
+      "detalle": [
+        {
+          "coleccion": "auditorias_programadas",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        },
+        {
+          "coleccion": "auditorias_programadas_log",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        },
+        {
+          "coleccion": "cargos_economicos",
+          "original": 5,
+          "restaurado": 5,
+          "match": true
+        },
+        {
+          "coleccion": "cargos_economicos_log",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        },
+        {
+          "coleccion": "detalle_diferencias",
+          "original": 18,
+          "restaurado": 18,
+          "match": true
+        },
+        {
+          "coleccion": "notificaciones_log",
+          "original": 4,
+          "restaurado": 4,
+          "match": true
+        },
+        {
+          "coleccion": "responsabilidad_economica",
+          "original": 5,
+          "restaurado": 5,
+          "match": true
+        },
+        {
+          "coleccion": "responsabilidad_historial",
+          "original": 10,
+          "restaurado": 10,
+          "match": true
+        },
+        {
+          "coleccion": "users",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        },
+        {
+          "coleccion": "workflow_inventarios",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        }
+      ]
+    },
+    "edarsa_hub": {
+      "verify_db": "edarsa_hub_verify_20260607_181850",
+      "total_colecciones_original": 28,
+      "total_colecciones_restauradas": 28,
+      "colecciones_match": 28,
+      "colecciones_total": 28,
+      "all_match": true,
+      "detalle": [
+        {
+          "coleccion": "audit_password_reset",
+          "original": 3,
+          "restaurado": 3,
+          "match": true
+        },
+        {
+          "coleccion": "consultas_custom",
+          "original": 6,
+          "restaurado": 6,
+          "match": true
+        },
+        {
+          "coleccion": "inventarios_procesados_auto",
+          "original": 158,
+          "restaurado": 158,
+          "match": true
+        },
+        {
+          "coleccion": "password_reset_tokens",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        },
+        {
+          "coleccion": "pedidos_procesados_automatizacion",
+          "original": 2,
+          "restaurado": 2,
+          "match": true
+        },
+        {
+          "coleccion": "permisos_catalogos",
+          "original": 8,
+          "restaurado": 8,
+          "match": true
+        },
+        {
+          "coleccion": "portal_suppliers",
+          "original": 3,
+          "restaurado": 3,
+          "match": true
+        },
+        {
+          "coleccion": "propinas_config",
+          "original": 1,
+          "restaurado": 1,
+          "match": true
+        },
+        {
+          "coleccion": "rate_limit_password_reset",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        },
+        {
+          "coleccion": "rbac_audit_log",
+          "original": 598,
+          "restaurado": 598,
+          "match": true
+        },
+        {
+          "coleccion": "rbac_permisos",
+          "original": 43,
+          "restaurado": 43,
+          "match": true
+        },
+        {
+          "coleccion": "rbac_roles",
+          "original": 6,
+          "restaurado": 6,
+          "match": true
+        },
+        {
+          "coleccion": "rbac_usuarios_roles",
+          "original": 72,
+          "restaurado": 72,
+          "match": true
+        },
+        {
+          "coleccion": "roles",
+          "original": 4,
+          "restaurado": 4,
+          "match": true
+        },
+        {
+          "coleccion": "sec_bitacora_acceso",
+          "original": 27,
+          "restaurado": 27,
+          "match": true
+        },
+        {
+          "coleccion": "sec_bitacora_admin",
+          "original": 61,
+          "restaurado": 61,
+          "match": true
+        },
+        {
+          "coleccion": "sec_empresas",
+          "original": 1,
+          "restaurado": 1,
+          "match": true
+        },
+        {
+          "coleccion": "sec_mapeo_servidor_sucursal",
+          "original": 7,
+          "restaurado": 7,
+          "match": true
+        },
+        {
+          "coleccion": "sec_metadata",
+          "original": 1,
+          "restaurado": 1,
+          "match": true
+        },
+        {
+          "coleccion": "sec_modulos_sistema",
+          "original": 10,
+          "restaurado": 10,
+          "match": true
+        },
+        {
+          "coleccion": "sec_perfiles",
+          "original": 5,
+          "restaurado": 5,
+          "match": true
+        },
+        {
+          "coleccion": "sec_permisos_catalogo",
+          "original": 90,
+          "restaurado": 90,
+          "match": true
+        },
+        {
+          "coleccion": "sec_roles",
+          "original": 5,
+          "restaurado": 5,
+          "match": true
+        },
+        {
+          "coleccion": "sec_sucursales",
+          "original": 7,
+          "restaurado": 7,
+          "match": true
+        },
+        {
+          "coleccion": "sec_unidades_negocio",
+          "original": 7,
+          "restaurado": 7,
+          "match": true
+        },
+        {
+          "coleccion": "server_connection_status",
+          "original": 1,
+          "restaurado": 1,
+          "match": true
+        },
+        {
+          "coleccion": "server_status",
+          "original": 13,
+          "restaurado": 13,
+          "match": true
+        },
+        {
+          "coleccion": "users",
+          "original": 17,
+          "restaurado": 17,
+          "match": true
+        }
+      ]
+    },
+    "edarsahub": {
+      "verify_db": "edarsahub_verify_20260607_181850",
+      "total_colecciones_original": 6,
+      "total_colecciones_restauradas": 6,
+      "colecciones_match": 6,
+      "colecciones_total": 6,
+      "all_match": true,
+      "detalle": [
+        {
+          "coleccion": "notification_config",
+          "original": 11,
+          "restaurado": 11,
+          "match": true
+        },
+        {
+          "coleccion": "notification_log",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        },
+        {
+          "coleccion": "notification_queue",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        },
+        {
+          "coleccion": "notification_templates",
+          "original": 11,
+          "restaurado": 11,
+          "match": true
+        },
+        {
+          "coleccion": "users_legacy_backup_auth_rbac_20260603",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        },
+        {
+          "coleccion": "users_legacy_backup_auth_rbac_20260604",
+          "original": 1,
+          "restaurado": 1,
+          "match": true
+        }
+      ]
+    },
+    "stock_tracker": {
+      "verify_db": "stock_tracker_verify_20260607_181850",
+      "total_colecciones_original": 2,
+      "total_colecciones_restauradas": 2,
+      "colecciones_match": 2,
+      "colecciones_total": 2,
+      "all_match": true,
+      "detalle": [
+        {
+          "coleccion": "rbac_permisos",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        },
+        {
+          "coleccion": "rbac_roles",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        }
+      ]
+    },
+    "test_database": {
+      "verify_db": "test_database_verify_20260607_181850",
+      "total_colecciones_original": 61,
+      "total_colecciones_restauradas": 61,
+      "colecciones_match": 61,
+      "colecciones_total": 61,
+      "all_match": true,
+      "detalle": [
+        {
+          "coleccion": "auditoria_financiera",
+          "original": 274,
+          "restaurado": 274,
+          "match": true
+        },
+        {
+          "coleccion": "auditorias_programadas",
+          "original": 1,
+          "restaurado": 1,
+          "match": true
+        },
+        {
+          "coleccion": "automatizaciones_bitacora",
+          "original": 1,
+          "restaurado": 1,
+          "match": true
+        },
+        {
+          "coleccion": "automatizaciones_operativas_compras",
+          "original": 2,
+          "restaurado": 2,
+          "match": true
+        },
+        {
+          "coleccion": "cargos_economicos",
+          "original": 2,
+          "restaurado": 2,
+          "match": true
+        },
+        {
+          "coleccion": "cargos_economicos_log",
+          "original": 7,
+          "restaurado": 7,
+          "match": true
+        },
+        {
+          "coleccion": "config_catalogos",
+          "original": 1,
+          "restaurado": 1,
+          "match": true
+        },
+        {
+          "coleccion": "configuracion_operativa",
+          "original": 9,
+          "restaurado": 9,
+          "match": true
+        },
+        {
+          "coleccion": "configuracion_operativo",
+          "original": 1,
+          "restaurado": 1,
+          "match": true
+        },
+        {
+          "coleccion": "consultas_custom",
+          "original": 4,
+          "restaurado": 4,
+          "match": true
+        },
+        {
+          "coleccion": "decisiones_auditoria",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        },
+        {
+          "coleccion": "detalle_diferencias",
+          "original": 48,
+          "restaurado": 48,
+          "match": true
+        },
+        {
+          "coleccion": "documentos_generados",
+          "original": 9,
+          "restaurado": 9,
+          "match": true
+        },
+        {
+          "coleccion": "historial_asignaciones",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        },
+        {
+          "coleccion": "informes_auditoria",
+          "original": 3,
+          "restaurado": 3,
+          "match": true
+        },
+        {
+          "coleccion": "inventario_diferencias_cache",
+          "original": 1,
+          "restaurado": 1,
+          "match": true
+        },
+        {
+          "coleccion": "inventario_diferencias_detalle",
+          "original": 19,
+          "restaurado": 19,
+          "match": true
+        },
+        {
+          "coleccion": "inventarios_fisicos_procesados",
+          "original": 1,
+          "restaurado": 1,
+          "match": true
+        },
+        {
+          "coleccion": "justificaciones_inventario",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        },
+        {
+          "coleccion": "kpis_cache",
+          "original": 46,
+          "restaurado": 46,
+          "match": true
+        },
+        {
+          "coleccion": "nomina_ciclos",
+          "original": 3,
+          "restaurado": 3,
+          "match": true
+        },
+        {
+          "coleccion": "nomina_configuracion",
+          "original": 1,
+          "restaurado": 1,
+          "match": true
+        },
+        {
+          "coleccion": "nomina_kpis_puestos",
+          "original": 1,
+          "restaurado": 1,
+          "match": true
+        },
+        {
+          "coleccion": "nomina_movimientos",
+          "original": 3,
+          "restaurado": 3,
+          "match": true
+        },
+        {
+          "coleccion": "notificaciones_log",
+          "original": 4,
+          "restaurado": 4,
+          "match": true
+        },
+        {
+          "coleccion": "notification_config",
+          "original": 6,
+          "restaurado": 6,
+          "match": true
+        },
+        {
+          "coleccion": "notification_log",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        },
+        {
+          "coleccion": "notification_provider_config",
+          "original": 2,
+          "restaurado": 2,
+          "match": true
+        },
+        {
+          "coleccion": "notification_queue",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        },
+        {
+          "coleccion": "notification_templates",
+          "original": 9,
+          "restaurado": 9,
+          "match": true
+        },
+        {
+          "coleccion": "permisos_catalogos",
+          "original": 2,
+          "restaurado": 2,
+          "match": true
+        },
+        {
+          "coleccion": "portal_suppliers",
+          "original": 1,
+          "restaurado": 1,
+          "match": true
+        },
+        {
+          "coleccion": "propinas_cache_listado",
+          "original": 7,
+          "restaurado": 7,
+          "match": true
+        },
+        {
+          "coleccion": "queries",
+          "original": 4,
+          "restaurado": 4,
+          "match": true
+        },
+        {
+          "coleccion": "rbac_audit_log",
+          "original": 370,
+          "restaurado": 370,
+          "match": true
+        },
+        {
+          "coleccion": "rbac_permisos",
+          "original": 43,
+          "restaurado": 43,
+          "match": true
+        },
+        {
+          "coleccion": "rbac_roles",
+          "original": 6,
+          "restaurado": 6,
+          "match": true
+        },
+        {
+          "coleccion": "rbac_usuarios_roles",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        },
+        {
+          "coleccion": "responsabilidad_economica",
+          "original": 5,
+          "restaurado": 5,
+          "match": true
+        },
+        {
+          "coleccion": "responsabilidad_historial",
+          "original": 37,
+          "restaurado": 37,
+          "match": true
+        },
+        {
+          "coleccion": "roles",
+          "original": 4,
+          "restaurado": 4,
+          "match": true
+        },
+        {
+          "coleccion": "scheduler_job_log",
+          "original": 590,
+          "restaurado": 590,
+          "match": true
+        },
+        {
+          "coleccion": "scheduler_locks",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        },
+        {
+          "coleccion": "script_logs",
+          "original": 19,
+          "restaurado": 19,
+          "match": true
+        },
+        {
+          "coleccion": "scripts_pendientes",
+          "original": 58,
+          "restaurado": 58,
+          "match": true
+        },
+        {
+          "coleccion": "sec_bitacora_acceso",
+          "original": 0,
+          "restaurado": 0,
+          "match": true
+        },
+        {
+          "coleccion": "sec_empresas",
+          "original": 1,
+          "restaurado": 1,
+          "match": true
+        },
+        {
+          "coleccion": "sec_mapeo_servidor_sucursal",
+          "original": 7,
+          "restaurado": 7,
+          "match": true
+        },
+        {
+          "coleccion": "sec_metadata",
+          "original": 1,
+          "restaurado": 1,
+          "match": true
+        },
+        {
+          "coleccion": "sec_modulos_sistema",
+          "original": 10,
+          "restaurado": 10,
+          "match": true
+        },
+        {
+          "coleccion": "sec_permisos_catalogo",
+          "original": 89,
+          "restaurado": 89,
+          "match": true
+        },
+        {
+          "coleccion": "sec_sucursales",
+          "original": 7,
+          "restaurado": 7,
+          "match": true
+        },
+        {
+          "coleccion": "sec_unidades_negocio",
+          "original": 7,
+          "restaurado": 7,
+          "match": true
+        },
+        {
+          "coleccion": "server_status",
+          "original": 9,
+          "restaurado": 9,
+          "match": true
+        },
+        {
+          "coleccion": "server_sucursales_config",
+          "original": 7,
+          "restaurado": 7,
+          "match": true
+        },
+        {
+          "coleccion": "servers",
+          "original": 11,
+          "restaurado": 11,
+          "match": true
+        },
+        {
+          "coleccion": "solicitudes_catalogos",
+          "original": 10,
+          "restaurado": 10,
+          "match": true
+        },
+        {
+          "coleccion": "tareas_inventario",
+          "original": 26,
+          "restaurado": 26,
+          "match": true
+        },
+        {
+          "coleccion": "tareas_sistema",
+          "original": 22,
+          "restaurado": 22,
+          "match": true
+        },
+        {
+          "coleccion": "users",
+          "original": 16,
+          "restaurado": 16,
+          "match": true
+        },
+        {
+          "coleccion": "workflow_inventarios",
+          "original": 28,
+          "restaurado": 28,
+          "match": true
+        }
+      ]
+    }
+  }
+}
