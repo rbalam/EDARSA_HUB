@@ -29,6 +29,7 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, timezone
 import time
 import logging
+import json
 
 from core.db import execute_sql_query
 from core.mongo_compat import get_mongo_db
@@ -80,6 +81,44 @@ def require_super_admin(current_user: Dict) -> bool:
     return True
 
 
+def _write_admin_audit_log_sql(log_data: Dict) -> bool:
+    """Persiste auditoría CORE en dbo.Servidores_Conexiones_Log (SQL-First, NO bloqueante).
+
+    Reemplaza el residual Mongo (auditoria_core_admin). Usa la conexión canónica
+    write-capable get_edarsahub_pymssql_connection. Nunca interrumpe el flujo.
+    """
+    try:
+        servidor_id = log_data.get("core_connection_id")
+        accion = log_data.get("action")
+        usuario = log_data.get("user_email") or (
+            str(log_data.get("user_id")) if log_data.get("user_id") else None
+        )
+        datos_nuevos = json.dumps(log_data, ensure_ascii=False, default=str)
+
+        # Truncar a los límites reales de columna (accion=20, usuario=100)
+        if accion is not None:
+            accion = str(accion)[:20]
+        if usuario is not None:
+            usuario = str(usuario)[:100]
+
+        conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=10)
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO dbo.Servidores_Conexiones_Log "
+            "(servidor_id, accion, datos_nuevos, usuario, fecha, ip_origen) "
+            "VALUES (%s, %s, %s, %s, GETDATE(), %s)",
+            (servidor_id, accion, datos_nuevos, usuario, None),
+        )
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        logger.warning(
+            f"[CORE_ADMIN][AUDIT_SQL] No se pudo registrar auditoría SQL: {type(e).__name__}: {e}"
+        )
+        return False
+
+
 def audit_core_action(
     action: str,
     user: Dict,
@@ -110,13 +149,8 @@ def audit_core_action(
     
     logger.info(f"[CORE_ADMIN][AUDIT] {action}: {log_data}")
     
-    # Guardar en MongoDB si está disponible
-    try:
-        db = get_mongo_db()
-        if db:
-            db.auditoria_core_admin.insert_one(log_data)
-    except Exception as e:
-        logger.warning(f"[CORE_ADMIN][AUDIT] No se pudo guardar auditoría: {type(e).__name__}")
+    # Persistir auditoría en SQL-First (dbo.Servidores_Conexiones_Log) — NO bloqueante
+    _write_admin_audit_log_sql(log_data)
 
 
 # =============================================================================

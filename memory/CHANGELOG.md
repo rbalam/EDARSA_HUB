@@ -1,5 +1,12 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-07] Fase 15 — P5-3B-1 Auditoría Admin CORE Mongo→SQL (`Servidores_Conexiones_Log`)
+- **AUDITORÍA DE SCRIPT (rechazado):** `fase15_*.sh` NO ejecutado. Defectos: (1) su GATE busca `def _log_audit(` pero la función real es `audit_core_action` (línea 83) → habría abortado sin parchar; (2) mapeo de campos incorrecto (`log_data` tiene `core_connection_id`/`action`/`user_email`, no `server_id`/`user`); (3) no-canónico: abría `pymssql.connect` crudo desde env en vez de la conexión write-capable ya importada `get_edarsahub_pymssql_connection`.
+- **Fix aplicado (corregido):** `api/admin_core_connections.py`: nuevo helper `_write_admin_audit_log_sql(log_data)` que inserta en `dbo.Servidores_Conexiones_Log` vía `get_edarsahub_pymssql_connection` (parametrizado `%s`, no bloqueante), mapeo correcto (`core_connection_id→servidor_id`, `action→accion`, `user_email→usuario`, `json.dumps(log_data)→datos_nuevos`, `GETDATE()→fecha`), truncado defensivo (`accion`≤20, `usuario`≤100 según esquema real). Reemplazado el bloque Mongo `db.auditoria_core_admin.insert_one(log_data)`. `import json` añadido.
+- **Hallazgo:** `audit_core_action` es función muerta (sin callers) → migración valida sunset NO-MONGO; validado el INSERT directamente (no por endpoint).
+- **Verificado:** smoke real → `INSERT_OK=True`, fila persistida en `Servidores_Conexiones_Log` (accion/usuario/datos_nuevos) y limpiada. Primer intento reveló truncamiento `accion` nvarchar(20) (escritura SÍ permitida → no es problema de permisos). Backend RUNNING, guardrails 8/8, **contrato Admin CORE = paridad total con baseline** (LIST 200/2, ITEM 200/20-keys, 404 idénticos), `health/v1` healthy. Backup `.bak_*`.
+- PENDIENTE P5-3B-2/3: `get_mongo_db` sigue usado en `audit_core_action`... no — ya removido ahí; sigue en el formateo de item (`servidores_conexiones.find_one` → `mongodb_id`/`mongo_synced`, ~línea 249). Migrar a leer `mongodb_id` de la fila SQL y luego retirar el import `get_mongo_db`.
+
 ## [2026-06-07] Fase 14 — P5-3B Auditoría exacta pre-cutover Admin CORE (read-only)
 - Script `fase14_*.sh` ejecutado (auditoría read-only, sin cambios código/BD/restart; SQL solo lectura a `INFORMATION_SCHEMA`/`TOP 1` mostrando **solo nombres de columnas**, sin valores → sin fuga de secretos).
 - **Contrato HTTP congelado** (`auditorias_p5/FASE14_ADMIN_CORE_*`): `GET /core-connections`→200 `{status:SUCCESS,data:[2],meta}`; `GET /{id}`→200/404; `POST /{id}/test`→200 `{status,message,name,server_id,duration_ms,safe_error}`/404. DATA_KEYS documentadas.
