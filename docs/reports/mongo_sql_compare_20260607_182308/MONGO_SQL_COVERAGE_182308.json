@@ -1,0 +1,5234 @@
+{
+  "generated_at": "2026-06-07T18:24:11",
+  "mode": "NO_DESTRUCTIVE",
+  "mongo_databases_checked": [
+    "edarsa_hub",
+    "test_database",
+    "cab003",
+    "edarsahub",
+    "stock_tracker"
+  ],
+  "sql_database": "EDARSAHUB",
+  "summary": {
+    "mongo_collections": 107,
+    "mongo_docs": 3076,
+    "sql_tables": 478,
+    "recommendations": {
+      "MIGRAR_ANTES_DE_BORRAR": 25,
+      "CANDIDATA_A_BORRADO_POSTERIOR": 20,
+      "VALIDAR_MANUALMENTE": 9,
+      "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO": 53
+    },
+    "classifications": {
+      "Auditoría / Logs": 12,
+      "Configuración": 4,
+      "Inventarios": 2,
+      "Vacía / Sin datos": 3,
+      "Compras / Proveedores": 3,
+      "Usuarios / Auth / RBAC": 13,
+      "Legacy sin uso detectado": 9,
+      "Pruebas / Test": 61
+    }
+  },
+  "matrix": [
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "audit_password_reset",
+      "mongo_docs": 3,
+      "mongo_size": 806,
+      "classification": "Auditoría / Logs",
+      "sql_candidate": "dbo.Sync_Logs",
+      "sql_candidate_rows": 3,
+      "match_score": 0.2167,
+      "match_evidence": "campos_match=id,timestamp; conteo_similar mongo=3 sql~3",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sync_Logs",
+          "approx_rows": 3,
+          "score": 0.2167,
+          "evidence": "campos_match=id,timestamp; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Config_Horarios",
+          "approx_rows": 3,
+          "score": 0.1833,
+          "evidence": "campos_match=id; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Portal_Proveedores",
+          "approx_rows": 3,
+          "score": 0.175,
+          "evidence": "campos_match=id; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Comercial_Ventas_Dia_Abiertas_v2_backup_migracion_codigos_20260513_0558",
+          "approx_rows": 3,
+          "score": 0.1638,
+          "evidence": "campos_match=id; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Vtiger_Leads",
+          "approx_rows": 3,
+          "score": 0.1611,
+          "evidence": "campos_match=email; conteo_similar mongo=3 sql~3"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "consultas_custom",
+      "mongo_docs": 6,
+      "mongo_size": 7100,
+      "classification": "Configuración",
+      "sql_candidate": "dbo.Sistema_RBAC_Roles",
+      "sql_candidate_rows": 6,
+      "match_score": 0.1944,
+      "match_evidence": "campos_match=descripcion,nombre; conteo_similar mongo=6 sql~6",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.1944,
+          "evidence": "campos_match=descripcion,nombre; conteo_similar mongo=6 sql~6"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Menus",
+          "approx_rows": 6,
+          "score": 0.1921,
+          "evidence": "campos_match=active,id; conteo_similar mongo=6 sql~6"
+        },
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.1882,
+          "evidence": "campos_match=created_at,id,nombre; conteo_similar mongo=6 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "ActivoFijo_EstatusActivo",
+          "approx_rows": 6,
+          "score": 0.1786,
+          "evidence": "campos_match=nombre; conteo_similar mongo=6 sql~6"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_RecepcionesEstatus",
+          "approx_rows": 6,
+          "score": 0.1786,
+          "evidence": "campos_match=descripcion; conteo_similar mongo=6 sql~6"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "inventarios_procesados_auto",
+      "mongo_docs": 158,
+      "mongo_size": 139938,
+      "classification": "Inventarios",
+      "sql_candidate": "dbo.Inventarios_ProcesadosAuto",
+      "sql_candidate_rows": 158,
+      "match_score": 0.241,
+      "match_evidence": "tokens_nombre=inventarios; campos_match=id; conteo_similar mongo=158 sql~158",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Inventarios_ProcesadosAuto",
+          "approx_rows": 158,
+          "score": 0.241,
+          "evidence": "tokens_nombre=inventarios; campos_match=id; conteo_similar mongo=158 sql~158"
+        },
+        {
+          "schema": "dbo",
+          "table": "automatizacion_inventarios_folios_procesados",
+          "approx_rows": 1,
+          "score": 0.1659,
+          "evidence": "tokens_nombre=inventarios,procesados; campos_match=estado,fecha_inventario,fecha_procesado"
+        },
+        {
+          "schema": "dbo",
+          "table": "Operaciones_Tablaje_PlantillasDetalle",
+          "approx_rows": 151,
+          "score": 0.1434,
+          "evidence": "conteo_similar mongo=158 sql~151"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_Pedidos",
+          "approx_rows": 172,
+          "score": 0.1378,
+          "evidence": "conteo_similar mongo=158 sql~172"
+        },
+        {
+          "schema": "dbo",
+          "table": "Backup_P4_14_20260606_Dups_Usuario_ServidoresAsignacion",
+          "approx_rows": 184,
+          "score": 0.1288,
+          "evidence": "conteo_similar mongo=158 sql~184"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "password_reset_tokens",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Vacía / Sin datos",
+      "sql_candidate": "",
+      "sql_candidate_rows": "",
+      "match_score": 0,
+      "match_evidence": "",
+      "top_candidates": [],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "pedidos_procesados_automatizacion",
+      "mongo_docs": 2,
+      "mongo_size": 412,
+      "classification": "Compras / Proveedores",
+      "sql_candidate": "dbo.automatizacion_inventarios_folios_procesados",
+      "sql_candidate_rows": 1,
+      "match_score": 0.2384,
+      "match_evidence": "tokens_nombre=automatizacion,procesados; campos_match=fecha_procesado,server_id",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "automatizacion_inventarios_folios_procesados",
+          "approx_rows": 1,
+          "score": 0.2384,
+          "evidence": "tokens_nombre=automatizacion,procesados; campos_match=fecha_procesado,server_id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_PedidosProcesadosAutomatizacion",
+          "approx_rows": 2,
+          "score": 0.1786,
+          "evidence": "campos_match=id; conteo_similar mongo=2 sql~2"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_AlertasDestinatarios",
+          "approx_rows": 2,
+          "score": 0.1786,
+          "evidence": "campos_match=id; conteo_similar mongo=2 sql~2"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Response_Cache",
+          "approx_rows": 2,
+          "score": 0.1767,
+          "evidence": "campos_match=id; conteo_similar mongo=2 sql~2"
+        },
+        {
+          "schema": "dbo",
+          "table": "Config_Asignaciones",
+          "approx_rows": 2,
+          "score": 0.1682,
+          "evidence": "campos_match=id; conteo_similar mongo=2 sql~2"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "permisos_catalogos",
+      "mongo_docs": 8,
+      "mongo_size": 3178,
+      "classification": "Auditoría / Logs",
+      "sql_candidate": "dbo.RBAC_Permisos",
+      "sql_candidate_rows": 9,
+      "match_score": 0.2233,
+      "match_evidence": "tokens_nombre=permisos; conteo_similar mongo=8 sql~9",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.2233,
+          "evidence": "tokens_nombre=permisos; conteo_similar mongo=8 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "Backup_P5_RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.1976,
+          "evidence": "tokens_nombre=permisos; conteo_similar mongo=8 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_AutomatizacionesOperativas",
+          "approx_rows": 8,
+          "score": 0.175,
+          "evidence": "campos_match=id; conteo_similar mongo=8 sql~8"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_Migracion_MongoSQL_Mapeo",
+          "approx_rows": 8,
+          "score": 0.1722,
+          "evidence": "campos_match=id; conteo_similar mongo=8 sql~8"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Permisos",
+          "approx_rows": 5,
+          "score": 0.1688,
+          "evidence": "tokens_nombre=permisos"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "portal_suppliers",
+      "mongo_docs": 3,
+      "mongo_size": 1617,
+      "classification": "Compras / Proveedores",
+      "sql_candidate": "dbo.Portal_Proveedores",
+      "sql_candidate_rows": 3,
+      "match_score": 0.2567,
+      "match_evidence": "tokens_nombre=portal; campos_match=id; conteo_similar mongo=3 sql~3",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Portal_Proveedores",
+          "approx_rows": 3,
+          "score": 0.2567,
+          "evidence": "tokens_nombre=portal; campos_match=id; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Config_Horarios",
+          "approx_rows": 3,
+          "score": 0.17,
+          "evidence": "campos_match=id; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Logs",
+          "approx_rows": 3,
+          "score": 0.169,
+          "evidence": "campos_match=id; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Vtiger_Leads",
+          "approx_rows": 3,
+          "score": 0.1686,
+          "evidence": "campos_match=email,telefono; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Comercial_Ventas_Dia_Abiertas_v2_backup_migracion_codigos_20260513_0558",
+          "approx_rows": 3,
+          "score": 0.1608,
+          "evidence": "campos_match=id; conteo_similar mongo=3 sql~3"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "propinas_config",
+      "mongo_docs": 1,
+      "mongo_size": 562,
+      "classification": "Configuración",
+      "sql_candidate": "dbo.propinas_tpv_config",
+      "sql_candidate_rows": 0,
+      "match_score": 0.2657,
+      "match_evidence": "tokens_nombre=config,propinas; campos_match=created_at,created_by,id,motivo_cambio,updated_at,updated_by",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "propinas_tpv_config",
+          "approx_rows": 0,
+          "score": 0.2657,
+          "evidence": "tokens_nombre=config,propinas; campos_match=created_at,created_by,id,motivo_cambio,updated_at,updated_by"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Config_Pipelines",
+          "approx_rows": 1,
+          "score": 0.225,
+          "evidence": "tokens_nombre=config; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "automatizacion_inventarios_folios_procesados",
+          "approx_rows": 1,
+          "score": 0.214,
+          "evidence": "campos_match=created_at,created_by,updated_at,updated_by; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Config_Asignaciones",
+          "approx_rows": 2,
+          "score": 0.1804,
+          "evidence": "tokens_nombre=config; campos_match=id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Finanzas_PropinasConfig",
+          "approx_rows": 1,
+          "score": 0.1722,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "rate_limit_password_reset",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Vacía / Sin datos",
+      "sql_candidate": "",
+      "sql_candidate_rows": "",
+      "match_score": 0,
+      "match_evidence": "",
+      "top_candidates": [],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "rbac_audit_log",
+      "mongo_docs": 598,
+      "mongo_size": 296342,
+      "classification": "Auditoría / Logs",
+      "sql_candidate": "dbo.Compras_Sync_Log",
+      "sql_candidate_rows": 387,
+      "match_score": 0.1824,
+      "match_evidence": "tokens_nombre=log; campos_match=id",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Compras_Sync_Log",
+          "approx_rows": 387,
+          "score": 0.1824,
+          "evidence": "tokens_nombre=log; campos_match=id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Ventas_PorHora",
+          "approx_rows": 605,
+          "score": 0.1483,
+          "evidence": "conteo_similar mongo=598 sql~605"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_Inventarios_Fisicos_Sync",
+          "approx_rows": 748,
+          "score": 0.1466,
+          "evidence": "campos_match=fecha,id"
+        },
+        {
+          "schema": "dbo",
+          "table": "RH_Importacion_Staging",
+          "approx_rows": 571,
+          "score": 0.1432,
+          "evidence": "conteo_similar mongo=598 sql~571"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Vtiger_Log",
+          "approx_rows": 1275,
+          "score": 0.1346,
+          "evidence": "tokens_nombre=log"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "rbac_permisos",
+      "mongo_docs": 43,
+      "mongo_size": 9528,
+      "classification": "Usuarios / Auth / RBAC",
+      "sql_candidate": "dbo.RBAC_Permisos",
+      "sql_candidate_rows": 9,
+      "match_score": 0.4018,
+      "match_evidence": "tokens_nombre=permisos,rbac; campos_match=accion,activo,descripcion,modulo",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.4018,
+          "evidence": "tokens_nombre=permisos,rbac; campos_match=accion,activo,descripcion,modulo"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Permisos",
+          "approx_rows": 5,
+          "score": 0.3308,
+          "evidence": "tokens_nombre=permisos,rbac; campos_match=activo,codigo,descripcion,modulo"
+        },
+        {
+          "schema": "dbo",
+          "table": "Backup_P5_RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.3268,
+          "evidence": "tokens_nombre=permisos,rbac; campos_match=accion,activo,descripcion,modulo"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.2293,
+          "evidence": "tokens_nombre=rbac; campos_match=activo,codigo,descripcion,es_sistema"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ModulosMenus",
+          "approx_rows": 52,
+          "score": 0.1946,
+          "evidence": "campos_match=activo,codigo,descripcion; conteo_similar mongo=43 sql~52"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "rbac_roles",
+      "mongo_docs": 6,
+      "mongo_size": 4702,
+      "classification": "Usuarios / Auth / RBAC",
+      "sql_candidate": "dbo.Sistema_RBAC_Roles",
+      "sql_candidate_rows": 6,
+      "match_score": 0.4531,
+      "match_evidence": "tokens_nombre=rbac,roles; campos_match=activo,descripcion,es_sistema,nombre; conteo_similar mongo=6 sql~6",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.4531,
+          "evidence": "tokens_nombre=rbac,roles; campos_match=activo,descripcion,es_sistema,nombre; conteo_similar mongo=6 sql~6"
+        },
+        {
+          "schema": "dbo",
+          "table": "Backup_P5_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.3533,
+          "evidence": "tokens_nombre=rbac,roles; campos_match=activo,descripcion; conteo_similar mongo=6 sql~6"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Permisos",
+          "approx_rows": 5,
+          "score": 0.2857,
+          "evidence": "tokens_nombre=rbac; campos_match=activo,descripcion,nombre; conteo_similar mongo=6 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.2679,
+          "evidence": "campos_match=activo,created_at,id,nombre,updated_at; conteo_similar mongo=6 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.2471,
+          "evidence": "tokens_nombre=rbac; campos_match=activo,descripcion"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "rbac_usuarios_roles",
+      "mongo_docs": 72,
+      "mongo_size": 21672,
+      "classification": "Usuarios / Auth / RBAC",
+      "sql_candidate": "dbo.Sistema_RBAC_Roles",
+      "sql_candidate_rows": 6,
+      "match_score": 0.2196,
+      "match_evidence": "tokens_nombre=rbac,roles; campos_match=activo,rol_id",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.2196,
+          "evidence": "tokens_nombre=rbac,roles; campos_match=activo,rol_id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Finanzas_AuditoriaFinanciera",
+          "approx_rows": 73,
+          "score": 0.2013,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=72 sql~73"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_RolesPermisos",
+          "approx_rows": 18,
+          "score": 0.1745,
+          "evidence": "tokens_nombre=rbac; campos_match=activo,rol_id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Sales",
+          "approx_rows": 79,
+          "score": 0.1731,
+          "evidence": "campos_match=created_at,id; conteo_similar mongo=72 sql~79"
+        },
+        {
+          "schema": "dbo",
+          "table": "Backup_P5_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.1677,
+          "evidence": "tokens_nombre=rbac,roles; campos_match=activo"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "roles",
+      "mongo_docs": 4,
+      "mongo_size": 1701,
+      "classification": "Usuarios / Auth / RBAC",
+      "sql_candidate": "dbo.Sistema_RBAC_Roles",
+      "sql_candidate_rows": 6,
+      "match_score": 0.2991,
+      "match_evidence": "tokens_nombre=roles; campos_match=descripcion,es_sistema,nombre",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.2991,
+          "evidence": "tokens_nombre=roles; campos_match=descripcion,es_sistema,nombre"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sys_Roles",
+          "approx_rows": 4,
+          "score": 0.2625,
+          "evidence": "tokens_nombre=roles; conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_TiposPipeline",
+          "approx_rows": 4,
+          "score": 0.2227,
+          "evidence": "campos_match=descripcion,nombre; conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_Prioridades",
+          "approx_rows": 4,
+          "score": 0.2167,
+          "evidence": "campos_match=descripcion,nombre; conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.2123,
+          "evidence": "campos_match=created_at,id,nombre; conteo_similar mongo=4 sql~5"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "sec_bitacora_acceso",
+      "mongo_docs": 27,
+      "mongo_size": 7864,
+      "classification": "Auditoría / Logs",
+      "sql_candidate": "dbo.Inventarios_DiferenciasDetalle",
+      "sql_candidate_rows": 24,
+      "match_score": 0.1569,
+      "match_evidence": "campos_match=id; conteo_similar mongo=27 sql~24",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Inventarios_DiferenciasDetalle",
+          "approx_rows": 24,
+          "score": 0.1569,
+          "evidence": "campos_match=id; conteo_similar mongo=27 sql~24"
+        },
+        {
+          "schema": "dbo",
+          "table": "Backup_P4_14_20260606_Orphans_Usuario_RolesAsignacion",
+          "approx_rows": 27,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=27 sql~27"
+        },
+        {
+          "schema": "dbo",
+          "table": "P4_14_Backup_Orphans_Usuario_RolesAsignacion_20260606_P4_14",
+          "approx_rows": 27,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=27 sql~27"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_Modulos",
+          "approx_rows": 28,
+          "score": 0.1446,
+          "evidence": "conteo_similar mongo=27 sql~28"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Ventas_PorDiaSemana",
+          "approx_rows": 28,
+          "score": 0.1446,
+          "evidence": "conteo_similar mongo=27 sql~28"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "sec_bitacora_admin",
+      "mongo_docs": 61,
+      "mongo_size": 42605,
+      "classification": "Auditoría / Logs",
+      "sql_candidate": "dbo.RH_Homologacion_Equivalencias",
+      "sql_candidate_rows": 56,
+      "match_score": 0.1568,
+      "match_evidence": "campos_match=tipo; conteo_similar mongo=61 sql~56",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "RH_Homologacion_Equivalencias",
+          "approx_rows": 56,
+          "score": 0.1568,
+          "evidence": "campos_match=tipo; conteo_similar mongo=61 sql~56"
+        },
+        {
+          "schema": "dbo",
+          "table": "Finanzas_AuditoriaFinanciera",
+          "approx_rows": 73,
+          "score": 0.1444,
+          "evidence": "campos_match=id; conteo_similar mongo=61 sql~73"
+        },
+        {
+          "schema": "dbo",
+          "table": "Usuario_Modulos",
+          "approx_rows": 56,
+          "score": 0.1377,
+          "evidence": "conteo_similar mongo=61 sql~56"
+        },
+        {
+          "schema": "dbo",
+          "table": "Finanzas_CortesCaja_Backup_Demo_20260501",
+          "approx_rows": 70,
+          "score": 0.1307,
+          "evidence": "conteo_similar mongo=61 sql~70"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Sales",
+          "approx_rows": 79,
+          "score": 0.1301,
+          "evidence": "campos_match=id"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "sec_empresas",
+      "mongo_docs": 1,
+      "mongo_size": 404,
+      "classification": "Legacy sin uso detectado",
+      "sql_candidate": "dbo.CRM_Config_Pipelines",
+      "sql_candidate_rows": 1,
+      "match_score": 0.21,
+      "match_evidence": "campos_match=activo,codigo,nombre; conteo_similar mongo=1 sql~1",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "CRM_Config_Pipelines",
+          "approx_rows": 1,
+          "score": 0.21,
+          "evidence": "campos_match=activo,codigo,nombre; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Finanzas_PropinasConfig",
+          "approx_rows": 1,
+          "score": 0.1921,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_FisicosProcesados",
+          "approx_rows": 1,
+          "score": 0.1921,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Manuales_Operativos",
+          "approx_rows": 1,
+          "score": 0.1921,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ConfiguracionOperativa",
+          "approx_rows": 1,
+          "score": 0.1921,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=1 sql~1"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "VALIDAR_MANUALMENTE",
+      "reason": "Sin equivalente SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "sec_mapeo_servidor_sucursal",
+      "mongo_docs": 7,
+      "mongo_size": 4211,
+      "classification": "Legacy sin uso detectado",
+      "sql_candidate": "dbo.Finanzas_ConfiguracionTPV_Sucursal",
+      "sql_candidate_rows": 8,
+      "match_score": 0.1993,
+      "match_evidence": "tokens_nombre=sucursal; campos_match=activo; conteo_similar mongo=7 sql~8",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Finanzas_ConfiguracionTPV_Sucursal",
+          "approx_rows": 8,
+          "score": 0.1993,
+          "evidence": "tokens_nombre=sucursal; campos_match=activo; conteo_similar mongo=7 sql~8"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_Migracion_MongoSQL_Mapeo",
+          "approx_rows": 8,
+          "score": 0.1979,
+          "evidence": "tokens_nombre=mapeo; campos_match=id; conteo_similar mongo=7 sql~8"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ServidoresSucursalesConfig",
+          "approx_rows": 7,
+          "score": 0.1881,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=7 sql~7"
+        },
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.1871,
+          "evidence": "campos_match=activo,created_at,id,server_id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Comercial_Ventas_Dia_Abiertas_v2",
+          "approx_rows": 8,
+          "score": 0.1864,
+          "evidence": "campos_match=id,server_id,sucursal_id,unidad_negocio_id; conteo_similar mongo=7 sql~8"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "VALIDAR_MANUALMENTE",
+      "reason": "Sin equivalente SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "sec_metadata",
+      "mongo_docs": 1,
+      "mongo_size": 687,
+      "classification": "Legacy sin uso detectado",
+      "sql_candidate": "dbo.Finanzas_PropinasConfig",
+      "sql_candidate_rows": 1,
+      "match_score": 0.1767,
+      "match_evidence": "campos_match=id; conteo_similar mongo=1 sql~1",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Finanzas_PropinasConfig",
+          "approx_rows": 1,
+          "score": 0.1767,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_FisicosProcesados",
+          "approx_rows": 1,
+          "score": 0.1767,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Manuales_Operativos",
+          "approx_rows": 1,
+          "score": 0.1767,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ConfiguracionOperativa",
+          "approx_rows": 1,
+          "score": 0.1767,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ServidoresConexionEstado",
+          "approx_rows": 1,
+          "score": 0.1767,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "VALIDAR_MANUALMENTE",
+      "reason": "Sin equivalente SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "sec_modulos_sistema",
+      "mongo_docs": 10,
+      "mongo_size": 2524,
+      "classification": "Compras / Proveedores",
+      "sql_candidate": "dbo.Sistema_Modulos",
+      "sql_candidate_rows": 28,
+      "match_score": 0.405,
+      "match_evidence": "tokens_nombre=modulos,sistema; campos_match=activo,codigo,descripcion,icono,nombre,orden",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_Modulos",
+          "approx_rows": 28,
+          "score": 0.405,
+          "evidence": "tokens_nombre=modulos,sistema; campos_match=activo,codigo,descripcion,icono,nombre,orden"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_MotivosPerdida",
+          "approx_rows": 9,
+          "score": 0.335,
+          "evidence": "campos_match=activo,codigo,descripcion,nombre,orden; conteo_similar mongo=10 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_Sectores",
+          "approx_rows": 9,
+          "score": 0.335,
+          "evidence": "campos_match=activo,codigo,descripcion,nombre,orden; conteo_similar mongo=10 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ModulosPermisos",
+          "approx_rows": 13,
+          "score": 0.3237,
+          "evidence": "tokens_nombre=sistema; campos_match=activo,codigo,descripcion,nombre"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_MotivosGanada",
+          "approx_rows": 8,
+          "score": 0.32,
+          "evidence": "campos_match=activo,codigo,descripcion,nombre,orden; conteo_similar mongo=10 sql~8"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "sec_perfiles",
+      "mongo_docs": 5,
+      "mongo_size": 1360,
+      "classification": "Usuarios / Auth / RBAC",
+      "sql_candidate": "dbo.Unidades_Negocio",
+      "sql_candidate_rows": 5,
+      "match_score": 0.3038,
+      "match_evidence": "campos_match=activo,codigo,created_at,id,nombre; conteo_similar mongo=5 sql~5",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.3038,
+          "evidence": "campos_match=activo,codigo,created_at,id,nombre; conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Permisos",
+          "approx_rows": 5,
+          "score": 0.2833,
+          "evidence": "campos_match=activo,codigo,descripcion,nombre; conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_EstatusLead",
+          "approx_rows": 5,
+          "score": 0.2731,
+          "evidence": "campos_match=activo,codigo,descripcion,nombre; conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_TamanosCliente",
+          "approx_rows": 5,
+          "score": 0.2731,
+          "evidence": "campos_match=activo,codigo,descripcion,nombre; conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "Finanzas_EstatusPago",
+          "approx_rows": 5,
+          "score": 0.27,
+          "evidence": "campos_match=activo,codigo,descripcion; conteo_similar mongo=5 sql~5"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "sec_permisos_catalogo",
+      "mongo_docs": 90,
+      "mongo_size": 23684,
+      "classification": "Auditoría / Logs",
+      "sql_candidate": "dbo.RBAC_Permisos",
+      "sql_candidate_rows": 9,
+      "match_score": 0.2505,
+      "match_evidence": "tokens_nombre=permisos; campos_match=accion,activo,descripcion,modulo",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.2505,
+          "evidence": "tokens_nombre=permisos; campos_match=accion,activo,descripcion,modulo"
+        },
+        {
+          "schema": "dbo",
+          "table": "Backup_P5_RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.2247,
+          "evidence": "tokens_nombre=permisos; campos_match=accion,activo,descripcion,modulo"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Permisos",
+          "approx_rows": 5,
+          "score": 0.2167,
+          "evidence": "tokens_nombre=permisos; campos_match=activo,codigo,descripcion,modulo"
+        },
+        {
+          "schema": "dbo",
+          "table": "Finanzas_AuditoriaFinanciera",
+          "approx_rows": 73,
+          "score": 0.175,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=90 sql~73"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Sales",
+          "approx_rows": 79,
+          "score": 0.168,
+          "evidence": "campos_match=created_at,id; conteo_similar mongo=90 sql~79"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "sec_roles",
+      "mongo_docs": 5,
+      "mongo_size": 2026,
+      "classification": "Usuarios / Auth / RBAC",
+      "sql_candidate": "dbo.Sistema_RBAC_Roles",
+      "sql_candidate_rows": 6,
+      "match_score": 0.3538,
+      "match_evidence": "tokens_nombre=roles; campos_match=activo,codigo,descripcion,es_sistema,nombre; conteo_similar mongo=5 sql~6",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.3538,
+          "evidence": "tokens_nombre=roles; campos_match=activo,codigo,descripcion,es_sistema,nombre; conteo_similar mongo=5 sql~6"
+        },
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.2833,
+          "evidence": "campos_match=activo,codigo,created_at,id,nombre; conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Permisos",
+          "approx_rows": 5,
+          "score": 0.2643,
+          "evidence": "campos_match=activo,codigo,descripcion,nombre; conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_EstatusLead",
+          "approx_rows": 5,
+          "score": 0.2567,
+          "evidence": "campos_match=activo,codigo,descripcion,nombre; conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_TamanosCliente",
+          "approx_rows": 5,
+          "score": 0.2567,
+          "evidence": "campos_match=activo,codigo,descripcion,nombre; conteo_similar mongo=5 sql~5"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "sec_sucursales",
+      "mongo_docs": 7,
+      "mongo_size": 3084,
+      "classification": "Legacy sin uso detectado",
+      "sql_candidate": "dbo.Unidades_Negocio",
+      "sql_candidate_rows": 5,
+      "match_score": 0.2321,
+      "match_evidence": "campos_match=activo,codigo,created_at,id,nombre",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.2321,
+          "evidence": "campos_match=activo,codigo,created_at,id,nombre"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_EstatusContrato",
+          "approx_rows": 7,
+          "score": 0.225,
+          "evidence": "campos_match=activo,codigo,nombre; conteo_similar mongo=7 sql~7"
+        },
+        {
+          "schema": "dbo",
+          "table": "RH_Cat_Sucursales",
+          "approx_rows": 8,
+          "score": 0.2213,
+          "evidence": "tokens_nombre=sucursales; conteo_similar mongo=7 sql~8"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_EstatusPropuesta",
+          "approx_rows": 7,
+          "score": 0.2206,
+          "evidence": "campos_match=activo,codigo,nombre; conteo_similar mongo=7 sql~7"
+        },
+        {
+          "schema": "dbo",
+          "table": "ActivoFijo_TipoBaja",
+          "approx_rows": 7,
+          "score": 0.2167,
+          "evidence": "campos_match=activo,nombre; conteo_similar mongo=7 sql~7"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "VALIDAR_MANUALMENTE",
+      "reason": "Sin equivalente SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "sec_unidades_negocio",
+      "mongo_docs": 7,
+      "mongo_size": 4139,
+      "classification": "Usuarios / Auth / RBAC",
+      "sql_candidate": "dbo.Unidades_Negocio",
+      "sql_candidate_rows": 5,
+      "match_score": 0.3871,
+      "match_evidence": "tokens_nombre=negocio,unidades; campos_match=activo,codigo,created_at,id,nombre",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.3871,
+          "evidence": "tokens_nombre=negocio,unidades; campos_match=activo,codigo,created_at,id,nombre"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_EstatusContrato",
+          "approx_rows": 7,
+          "score": 0.2342,
+          "evidence": "campos_match=activo,codigo,descripcion,nombre; conteo_similar mongo=7 sql~7"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_EstatusPropuesta",
+          "approx_rows": 7,
+          "score": 0.23,
+          "evidence": "campos_match=activo,codigo,descripcion,nombre; conteo_similar mongo=7 sql~7"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_MotivosGanada",
+          "approx_rows": 8,
+          "score": 0.2201,
+          "evidence": "campos_match=activo,codigo,descripcion,nombre; conteo_similar mongo=7 sql~8"
+        },
+        {
+          "schema": "dbo",
+          "table": "Venta_Cat_EstatusRemision",
+          "approx_rows": 7,
+          "score": 0.2167,
+          "evidence": "campos_match=activo,descripcion,nombre; conteo_similar mongo=7 sql~7"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "server_connection_status",
+      "mongo_docs": 1,
+      "mongo_size": 191,
+      "classification": "Legacy sin uso detectado",
+      "sql_candidate": "dbo.Finanzas_PropinasConfig",
+      "sql_candidate_rows": 1,
+      "match_score": 0.1808,
+      "match_evidence": "campos_match=id; conteo_similar mongo=1 sql~1",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Finanzas_PropinasConfig",
+          "approx_rows": 1,
+          "score": 0.1808,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_FisicosProcesados",
+          "approx_rows": 1,
+          "score": 0.1808,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Manuales_Operativos",
+          "approx_rows": 1,
+          "score": 0.1808,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ConfiguracionOperativa",
+          "approx_rows": 1,
+          "score": 0.1808,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ServidoresConexionEstado",
+          "approx_rows": 1,
+          "score": 0.1808,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "VALIDAR_MANUALMENTE",
+      "reason": "Sin equivalente SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "server_status",
+      "mongo_docs": 13,
+      "mongo_size": 2107,
+      "classification": "Legacy sin uso detectado",
+      "sql_candidate": "dbo.Sistema_ServidoresEstado",
+      "sql_candidate_rows": 13,
+      "match_score": 0.1808,
+      "match_evidence": "campos_match=id; conteo_similar mongo=13 sql~13",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_ServidoresEstado",
+          "approx_rows": 13,
+          "score": 0.1808,
+          "evidence": "campos_match=id; conteo_similar mongo=13 sql~13"
+        },
+        {
+          "schema": "dbo",
+          "table": "Comercial_ReglasPrecioRangos",
+          "approx_rows": 13,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=13 sql~13"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ModulosPermisos",
+          "approx_rows": 13,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=13 sql~13"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_MigracionMongoColecciones",
+          "approx_rows": 16,
+          "score": 0.1485,
+          "evidence": "campos_match=id; conteo_similar mongo=13 sql~16"
+        },
+        {
+          "schema": "dbo",
+          "table": "Alertas_Sistema",
+          "approx_rows": 16,
+          "score": 0.1454,
+          "evidence": "campos_match=id; conteo_similar mongo=13 sql~16"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "VALIDAR_MANUALMENTE",
+      "reason": "Sin equivalente SQL claro."
+    },
+    {
+      "mongo_db": "edarsa_hub",
+      "mongo_collection": "users",
+      "mongo_docs": 17,
+      "mongo_size": 13899,
+      "classification": "Auditoría / Logs",
+      "sql_candidate": "dbo.Usuario_LogRecuperacion",
+      "sql_candidate_rows": 17,
+      "match_score": 0.1654,
+      "match_evidence": "campos_match=email; conteo_similar mongo=17 sql~17",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Usuario_LogRecuperacion",
+          "approx_rows": 17,
+          "score": 0.1654,
+          "evidence": "campos_match=email; conteo_similar mongo=17 sql~17"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_RolesPermisos",
+          "approx_rows": 18,
+          "score": 0.1591,
+          "evidence": "campos_match=activo; conteo_similar mongo=17 sql~18"
+        },
+        {
+          "schema": "dbo",
+          "table": "Usuario_Acciones",
+          "approx_rows": 16,
+          "score": 0.1578,
+          "evidence": "campos_match=activo; conteo_similar mongo=17 sql~16"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ModulosVisibilidad",
+          "approx_rows": 16,
+          "score": 0.156,
+          "evidence": "campos_match=activo; conteo_similar mongo=17 sql~16"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_MigracionMongoColecciones",
+          "approx_rows": 16,
+          "score": 0.155,
+          "evidence": "campos_match=id; conteo_similar mongo=17 sql~16"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "auditoria_financiera",
+      "mongo_docs": 274,
+      "mongo_size": 161612,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Sync_Productos_SubFamilias",
+      "sql_candidate_rows": 264,
+      "match_score": 0.1445,
+      "match_evidence": "conteo_similar mongo=274 sql~264",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sync_Productos_SubFamilias",
+          "approx_rows": 264,
+          "score": 0.1445,
+          "evidence": "conteo_similar mongo=274 sql~264"
+        },
+        {
+          "schema": "dbo",
+          "table": "propinas_tpv_historial",
+          "approx_rows": 0,
+          "score": 0.1333,
+          "evidence": "campos_match=accion,campo_modificado,id,ip_origen,observaciones,usuario_email,usuario_id,valor_anterior,valor_nuevo"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_Sync_Log",
+          "approx_rows": 387,
+          "score": 0.132,
+          "evidence": "campos_match=created_at,id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Usuario_SucursalesAsignacion",
+          "approx_rows": 218,
+          "score": 0.1315,
+          "evidence": "campos_match=observaciones"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_Gobierno_Tablas",
+          "approx_rows": 428,
+          "score": 0.1313,
+          "evidence": "campos_match=id,modulo,observaciones"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "auditorias_programadas",
+      "mongo_docs": 1,
+      "mongo_size": 622,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.automatizacion_inventarios_folios_procesados",
+      "sql_candidate_rows": 1,
+      "match_score": 0.191,
+      "match_evidence": "campos_match=created_at,created_by,sucursal_id,updated_at; conteo_similar mongo=1 sql~1",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "automatizacion_inventarios_folios_procesados",
+          "approx_rows": 1,
+          "score": 0.191,
+          "evidence": "campos_match=created_at,created_by,sucursal_id,updated_at; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Config_Pipelines",
+          "approx_rows": 1,
+          "score": 0.1875,
+          "evidence": "campos_match=activo,descripcion,nombre; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Integracion_Conectores",
+          "approx_rows": 1,
+          "score": 0.1793,
+          "evidence": "campos_match=activo,descripcion,nombre; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Finanzas_PropinasConfig",
+          "approx_rows": 1,
+          "score": 0.1758,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_FisicosProcesados",
+          "approx_rows": 1,
+          "score": 0.1758,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=1 sql~1"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "automatizaciones_bitacora",
+      "mongo_docs": 1,
+      "mongo_size": 639,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Finanzas_PropinasConfig",
+      "sql_candidate_rows": 1,
+      "match_score": 0.169,
+      "match_evidence": "campos_match=id; conteo_similar mongo=1 sql~1",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Finanzas_PropinasConfig",
+          "approx_rows": 1,
+          "score": 0.169,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_FisicosProcesados",
+          "approx_rows": 1,
+          "score": 0.169,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Manuales_Operativos",
+          "approx_rows": 1,
+          "score": 0.169,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ConfiguracionOperativa",
+          "approx_rows": 1,
+          "score": 0.169,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ServidoresConexionEstado",
+          "approx_rows": 1,
+          "score": 0.169,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "automatizaciones_operativas_compras",
+      "mongo_docs": 2,
+      "mongo_size": 2499,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Compras_PedidosProcesadosAutomatizacion",
+      "sql_candidate_rows": 2,
+      "match_score": 0.2398,
+      "match_evidence": "tokens_nombre=compras; campos_match=id; conteo_similar mongo=2 sql~2",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Compras_PedidosProcesadosAutomatizacion",
+          "approx_rows": 2,
+          "score": 0.2398,
+          "evidence": "tokens_nombre=compras; campos_match=id; conteo_similar mongo=2 sql~2"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_AlertasDestinatarios",
+          "approx_rows": 2,
+          "score": 0.1648,
+          "evidence": "campos_match=id; conteo_similar mongo=2 sql~2"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Response_Cache",
+          "approx_rows": 2,
+          "score": 0.1643,
+          "evidence": "campos_match=id; conteo_similar mongo=2 sql~2"
+        },
+        {
+          "schema": "dbo",
+          "table": "Config_Asignaciones",
+          "approx_rows": 2,
+          "score": 0.1614,
+          "evidence": "campos_match=id; conteo_similar mongo=2 sql~2"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Vtiger_Cuentas",
+          "approx_rows": 2,
+          "score": 0.1591,
+          "evidence": "campos_match=estado; conteo_similar mongo=2 sql~2"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "cargos_economicos",
+      "mongo_docs": 2,
+      "mongo_size": 1444,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.CavaSocios_Cargos",
+      "sql_candidate_rows": 1,
+      "match_score": 0.165,
+      "match_evidence": "tokens_nombre=cargos",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "CavaSocios_Cargos",
+          "approx_rows": 1,
+          "score": 0.165,
+          "evidence": "tokens_nombre=cargos"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_PedidosProcesadosAutomatizacion",
+          "approx_rows": 2,
+          "score": 0.1633,
+          "evidence": "campos_match=id; conteo_similar mongo=2 sql~2"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_AlertasDestinatarios",
+          "approx_rows": 2,
+          "score": 0.1633,
+          "evidence": "campos_match=id; conteo_similar mongo=2 sql~2"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Response_Cache",
+          "approx_rows": 2,
+          "score": 0.1629,
+          "evidence": "campos_match=id; conteo_similar mongo=2 sql~2"
+        },
+        {
+          "schema": "dbo",
+          "table": "Config_Asignaciones",
+          "approx_rows": 2,
+          "score": 0.1605,
+          "evidence": "campos_match=id; conteo_similar mongo=2 sql~2"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "cargos_economicos_log",
+      "mongo_docs": 7,
+      "mongo_size": 2903,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Sistema_ServidoresSucursalesConfig",
+      "sql_candidate_rows": 7,
+      "match_score": 0.169,
+      "match_evidence": "campos_match=id; conteo_similar mongo=7 sql~7",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_ServidoresSucursalesConfig",
+          "approx_rows": 7,
+          "score": 0.169,
+          "evidence": "campos_match=id; conteo_similar mongo=7 sql~7"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_AutomatizacionesOperativas",
+          "approx_rows": 8,
+          "score": 0.1503,
+          "evidence": "campos_match=id; conteo_similar mongo=7 sql~8"
+        },
+        {
+          "schema": "dbo",
+          "table": "ActivoFijo_TipoBaja",
+          "approx_rows": 7,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=7 sql~7"
+        },
+        {
+          "schema": "dbo",
+          "table": "Comercial_ImpuestosTasas",
+          "approx_rows": 7,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=7 sql~7"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_DocumentosFiscalesEstatus",
+          "approx_rows": 7,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=7 sql~7"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "config_catalogos",
+      "mongo_docs": 1,
+      "mongo_size": 78,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.CRM_Config_Pipelines",
+      "sql_candidate_rows": 1,
+      "match_score": 0.225,
+      "match_evidence": "tokens_nombre=config; conteo_similar mongo=1 sql~1",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "CRM_Config_Pipelines",
+          "approx_rows": 1,
+          "score": 0.225,
+          "evidence": "tokens_nombre=config; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Config_Horarios",
+          "approx_rows": 3,
+          "score": 0.1971,
+          "evidence": "tokens_nombre=config; campos_match=id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Finanzas_PropinasConfig",
+          "approx_rows": 1,
+          "score": 0.1864,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_FisicosProcesados",
+          "approx_rows": 1,
+          "score": 0.1864,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Manuales_Operativos",
+          "approx_rows": 1,
+          "score": 0.1864,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "configuracion_operativa",
+      "mongo_docs": 9,
+      "mongo_size": 1732,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Configuracion_Operativa",
+      "sql_candidate_rows": 9,
+      "match_score": 0.5083,
+      "match_evidence": "tokens_nombre=configuracion,operativa; campos_match=clave,descripcion,id,valor; conteo_similar mongo=9 sql~9",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Configuracion_Operativa",
+          "approx_rows": 9,
+          "score": 0.5083,
+          "evidence": "tokens_nombre=configuracion,operativa; campos_match=clave,descripcion,id,valor; conteo_similar mongo=9 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "Global_Cat_FormaPagoSAT",
+          "approx_rows": 6,
+          "score": 0.2143,
+          "evidence": "campos_match=clave,descripcion"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_Estatus",
+          "approx_rows": 8,
+          "score": 0.1905,
+          "evidence": "campos_match=descripcion; conteo_similar mongo=9 sql~8"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_OrdenesEstatus",
+          "approx_rows": 8,
+          "score": 0.1905,
+          "evidence": "campos_match=descripcion; conteo_similar mongo=9 sql~8"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_PedidosEstatus",
+          "approx_rows": 8,
+          "score": 0.1905,
+          "evidence": "campos_match=descripcion; conteo_similar mongo=9 sql~8"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "configuracion_operativo",
+      "mongo_docs": 1,
+      "mongo_size": 153,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Configuracion_Operativa",
+      "sql_candidate_rows": 9,
+      "match_score": 0.24,
+      "match_evidence": "tokens_nombre=configuracion; campos_match=clave,id,tipo,valor",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Configuracion_Operativa",
+          "approx_rows": 9,
+          "score": 0.24,
+          "evidence": "tokens_nombre=configuracion; campos_match=clave,id,tipo,valor"
+        },
+        {
+          "schema": "dbo",
+          "table": "Finanzas_PropinasConfig",
+          "approx_rows": 1,
+          "score": 0.1808,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_FisicosProcesados",
+          "approx_rows": 1,
+          "score": 0.1808,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Manuales_Operativos",
+          "approx_rows": 1,
+          "score": 0.1808,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ConfiguracionOperativa",
+          "approx_rows": 1,
+          "score": 0.1808,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "consultas_custom",
+      "mongo_docs": 4,
+      "mongo_size": 12744,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.CRM_Cat_TiposPipeline",
+      "sql_candidate_rows": 4,
+      "match_score": 0.2,
+      "match_evidence": "campos_match=descripcion,nombre; conteo_similar mongo=4 sql~4",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_TiposPipeline",
+          "approx_rows": 4,
+          "score": 0.2,
+          "evidence": "campos_match=descripcion,nombre; conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_Prioridades",
+          "approx_rows": 4,
+          "score": 0.1971,
+          "evidence": "campos_match=descripcion,nombre; conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_Queries",
+          "approx_rows": 4,
+          "score": 0.1944,
+          "evidence": "campos_match=descripcion,id; conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "Servidores_Conexiones_backup_tipos_mov_20260513_0729",
+          "approx_rows": 4,
+          "score": 0.189,
+          "evidence": "campos_match=created_at,created_by,id,nombre; conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.1867,
+          "evidence": "campos_match=created_at,id,nombre; conteo_similar mongo=4 sql~5"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "decisiones_auditoria",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Auditoria_Informes",
+      "sql_candidate_rows": 0,
+      "match_score": 0.09,
+      "match_evidence": "tokens_nombre=auditoria",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Auditoria_Informes",
+          "approx_rows": 0,
+          "score": 0.09,
+          "evidence": "tokens_nombre=auditoria"
+        },
+        {
+          "schema": "dbo",
+          "table": "Auditoria_InformesHistorial",
+          "approx_rows": 0,
+          "score": 0.09,
+          "evidence": "tokens_nombre=auditoria"
+        },
+        {
+          "schema": "dbo",
+          "table": "Auditoria_Inventario_Provisional",
+          "approx_rows": 9,
+          "score": 0.075,
+          "evidence": "tokens_nombre=auditoria"
+        },
+        {
+          "schema": "dbo",
+          "table": "Operaciones_Tablaje_Auditoria",
+          "approx_rows": 0,
+          "score": 0.075,
+          "evidence": "tokens_nombre=auditoria"
+        },
+        {
+          "schema": "dbo",
+          "table": "RH_Auditoria_Fiscal",
+          "approx_rows": 0,
+          "score": 0.075,
+          "evidence": "tokens_nombre=auditoria"
+        }
+      ],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "detalle_diferencias",
+      "mongo_docs": 48,
+      "mongo_size": 30309,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Products",
+      "sql_candidate_rows": 37,
+      "match_score": 0.1585,
+      "match_evidence": "campos_match=familia,id,subfamilia",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Products",
+          "approx_rows": 37,
+          "score": 0.1585,
+          "evidence": "campos_match=familia,id,subfamilia"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_HorariosServicioUnidad",
+          "approx_rows": 35,
+          "score": 0.139,
+          "evidence": "campos_match=fecha_creacion,id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ModulosMenus",
+          "approx_rows": 52,
+          "score": 0.1385,
+          "evidence": "conteo_similar mongo=48 sql~52"
+        },
+        {
+          "schema": "dbo",
+          "table": "RH_Homologacion_Equivalencias",
+          "approx_rows": 56,
+          "score": 0.1286,
+          "evidence": "conteo_similar mongo=48 sql~56"
+        },
+        {
+          "schema": "dbo",
+          "table": "Usuario_Modulos",
+          "approx_rows": 56,
+          "score": 0.1286,
+          "evidence": "conteo_similar mongo=48 sql~56"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "documentos_generados",
+      "mongo_docs": 9,
+      "mongo_size": 2450,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Sistema_DeudaTecnica_TablasDuplicadas",
+      "sql_candidate_rows": 9,
+      "match_score": 0.1833,
+      "match_evidence": "campos_match=id; conteo_similar mongo=9 sql~9",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_DeudaTecnica_TablasDuplicadas",
+          "approx_rows": 9,
+          "score": 0.1833,
+          "evidence": "campos_match=id; conteo_similar mongo=9 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "Configuracion_Operativa",
+          "approx_rows": 9,
+          "score": 0.175,
+          "evidence": "campos_match=id; conteo_similar mongo=9 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "Auditoria_Inventario_Provisional",
+          "approx_rows": 9,
+          "score": 0.1654,
+          "evidence": "campos_match=id; conteo_similar mongo=9 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_AutomatizacionesOperativas",
+          "approx_rows": 8,
+          "score": 0.1619,
+          "evidence": "campos_match=id; conteo_similar mongo=9 sql~8"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_Migracion_MongoSQL_Mapeo",
+          "approx_rows": 8,
+          "score": 0.1583,
+          "evidence": "campos_match=id; conteo_similar mongo=9 sql~8"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "historial_asignaciones",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Config_Asignaciones",
+      "sql_candidate_rows": 2,
+      "match_score": 0.09,
+      "match_evidence": "tokens_nombre=asignaciones",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Config_Asignaciones",
+          "approx_rows": 2,
+          "score": 0.09,
+          "evidence": "tokens_nombre=asignaciones"
+        },
+        {
+          "schema": "dbo",
+          "table": "propinas_tpv_historial",
+          "approx_rows": 0,
+          "score": 0.075,
+          "evidence": "tokens_nombre=historial"
+        },
+        {
+          "schema": "dbo",
+          "table": "RH_Historial_Puestos",
+          "approx_rows": 0,
+          "score": 0.075,
+          "evidence": "tokens_nombre=historial"
+        },
+        {
+          "schema": "dbo",
+          "table": "RH_Historial_Salarios",
+          "approx_rows": 0,
+          "score": 0.075,
+          "evidence": "tokens_nombre=historial"
+        }
+      ],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "informes_auditoria",
+      "mongo_docs": 3,
+      "mongo_size": 5197,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Auditoria_Informes",
+      "sql_candidate_rows": 0,
+      "match_score": 0.225,
+      "match_evidence": "tokens_nombre=auditoria,informes",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Auditoria_Informes",
+          "approx_rows": 0,
+          "score": 0.225,
+          "evidence": "tokens_nombre=auditoria,informes"
+        },
+        {
+          "schema": "dbo",
+          "table": "Comercial_Ventas_Dia_Abiertas_v2_backup_migracion_codigos_20260513_0558",
+          "approx_rows": 3,
+          "score": 0.1745,
+          "evidence": "campos_match=id,sucursal_id,sucursal_nombre; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Config_Horarios",
+          "approx_rows": 3,
+          "score": 0.1618,
+          "evidence": "campos_match=id; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Logs",
+          "approx_rows": 3,
+          "score": 0.1614,
+          "evidence": "campos_match=id; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Portal_Proveedores",
+          "approx_rows": 3,
+          "score": 0.1605,
+          "evidence": "campos_match=id; conteo_similar mongo=3 sql~3"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "inventario_diferencias_cache",
+      "mongo_docs": 1,
+      "mongo_size": 643,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.automatizacion_inventarios_folios_procesados",
+      "sql_candidate_rows": 1,
+      "match_score": 0.2115,
+      "match_evidence": "campos_match=almacen_id,comentario,server_id,sucursal_id; conteo_similar mongo=1 sql~1",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "automatizacion_inventarios_folios_procesados",
+          "approx_rows": 1,
+          "score": 0.2115,
+          "evidence": "campos_match=almacen_id,comentario,server_id,sucursal_id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Finanzas_PropinasConfig",
+          "approx_rows": 1,
+          "score": 0.1711,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_FisicosProcesados",
+          "approx_rows": 1,
+          "score": 0.1711,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Manuales_Operativos",
+          "approx_rows": 1,
+          "score": 0.1711,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ConfiguracionOperativa",
+          "approx_rows": 1,
+          "score": 0.1711,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "inventario_diferencias_detalle",
+      "mongo_docs": 19,
+      "mongo_size": 521866,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Tareas_Inventario",
+      "sql_candidate_rows": 18,
+      "match_score": 0.2292,
+      "match_evidence": "tokens_nombre=inventario; campos_match=id; conteo_similar mongo=19 sql~18",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Tareas_Inventario",
+          "approx_rows": 18,
+          "score": 0.2292,
+          "evidence": "tokens_nombre=inventario; campos_match=id; conteo_similar mongo=19 sql~18"
+        },
+        {
+          "schema": "dbo",
+          "table": "Auditoria_Inventario_Provisional",
+          "approx_rows": 9,
+          "score": 0.1639,
+          "evidence": "tokens_nombre=inventario; campos_match=id,server_id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_TurnosOperativosUnidad",
+          "approx_rows": 20,
+          "score": 0.1599,
+          "evidence": "campos_match=id; conteo_similar mongo=19 sql~20"
+        },
+        {
+          "schema": "dbo",
+          "table": "Workflow_Inventarios",
+          "approx_rows": 18,
+          "score": 0.1546,
+          "evidence": "campos_match=id; conteo_similar mongo=19 sql~18"
+        },
+        {
+          "schema": "dbo",
+          "table": "Backup_P4_14_20260606_Dups_Usuario_RolesAsignacion",
+          "approx_rows": 19,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=19 sql~19"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "inventarios_fisicos_procesados",
+      "mongo_docs": 1,
+      "mongo_size": 188,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.automatizacion_inventarios_folios_procesados",
+      "sql_candidate_rows": 1,
+      "match_score": 0.3513,
+      "match_evidence": "tokens_nombre=inventarios,procesados; campos_match=almacen_id,estado,server_id,sucursal_id; conteo_similar mongo=1 sql~1",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "automatizacion_inventarios_folios_procesados",
+          "approx_rows": 1,
+          "score": 0.3513,
+          "evidence": "tokens_nombre=inventarios,procesados; campos_match=almacen_id,estado,server_id,sucursal_id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_FisicosProcesados",
+          "approx_rows": 1,
+          "score": 0.2517,
+          "evidence": "tokens_nombre=inventarios; campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_Inventarios_Fisicos_Sync",
+          "approx_rows": 748,
+          "score": 0.2331,
+          "evidence": "tokens_nombre=fisicos,inventarios; campos_match=almacen_id,fecha,folio,id,server_id,sucursal_id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Finanzas_PropinasConfig",
+          "approx_rows": 1,
+          "score": 0.1767,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Manuales_Operativos",
+          "approx_rows": 1,
+          "score": 0.1767,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "justificaciones_inventario",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Inventario_Almacenes",
+      "sql_candidate_rows": 39,
+      "match_score": 0.09,
+      "match_evidence": "tokens_nombre=inventario",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Inventario_Almacenes",
+          "approx_rows": 39,
+          "score": 0.09,
+          "evidence": "tokens_nombre=inventario"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventario_Existencias",
+          "approx_rows": 0,
+          "score": 0.09,
+          "evidence": "tokens_nombre=inventario"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventario_Movimientos",
+          "approx_rows": 0,
+          "score": 0.09,
+          "evidence": "tokens_nombre=inventario"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventario_MovimientosDetalle",
+          "approx_rows": 0,
+          "score": 0.09,
+          "evidence": "tokens_nombre=inventario"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventario_TipoMovimiento",
+          "approx_rows": 6,
+          "score": 0.09,
+          "evidence": "tokens_nombre=inventario"
+        }
+      ],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "kpis_cache",
+      "mongo_docs": 46,
+      "mongo_size": 33482,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Comercial_KPIs_Cache",
+      "sql_candidate_rows": 0,
+      "match_score": 0.2164,
+      "match_evidence": "tokens_nombre=cache,kpis; campos_match=status",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Comercial_KPIs_Cache",
+          "approx_rows": 0,
+          "score": 0.2164,
+          "evidence": "tokens_nombre=cache,kpis; campos_match=status"
+        },
+        {
+          "schema": "dbo",
+          "table": "Products",
+          "approx_rows": 37,
+          "score": 0.1457,
+          "evidence": "campos_match=id; conteo_similar mongo=46 sql~37"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_HorariosServicioUnidad",
+          "approx_rows": 35,
+          "score": 0.1427,
+          "evidence": "campos_match=id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Servidores_Conexiones_Log",
+          "approx_rows": 41,
+          "score": 0.1337,
+          "evidence": "conteo_similar mongo=46 sql~41"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ModulosMenus",
+          "approx_rows": 52,
+          "score": 0.1327,
+          "evidence": "conteo_similar mongo=46 sql~52"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "nomina_ciclos",
+      "mongo_docs": 3,
+      "mongo_size": 5247,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Comercial_Ventas_Dia_Abiertas_v2_backup_migracion_codigos_20260513_0558",
+      "sql_candidate_rows": 3,
+      "match_score": 0.1985,
+      "match_evidence": "campos_match=fecha_ultima_actualizacion,id,sucursal_id,sucursal_nombre; conteo_similar mongo=3 sql~3",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Comercial_Ventas_Dia_Abiertas_v2_backup_migracion_codigos_20260513_0558",
+          "approx_rows": 3,
+          "score": 0.1985,
+          "evidence": "campos_match=fecha_ultima_actualizacion,id,sucursal_id,sucursal_nombre; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Config_Horarios",
+          "approx_rows": 3,
+          "score": 0.1711,
+          "evidence": "campos_match=id; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Logs",
+          "approx_rows": 3,
+          "score": 0.17,
+          "evidence": "campos_match=id; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Portal_Proveedores",
+          "approx_rows": 3,
+          "score": 0.1674,
+          "evidence": "campos_match=id; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Comercial_Competidores",
+          "approx_rows": 3,
+          "score": 0.1598,
+          "evidence": "campos_match=notas; conteo_similar mongo=3 sql~3"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "nomina_configuracion",
+      "mongo_docs": 1,
+      "mongo_size": 310,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Finanzas_PropinasConfig",
+      "sql_candidate_rows": 1,
+      "match_score": 0.1711,
+      "match_evidence": "campos_match=id; conteo_similar mongo=1 sql~1",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Finanzas_PropinasConfig",
+          "approx_rows": 1,
+          "score": 0.1711,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_FisicosProcesados",
+          "approx_rows": 1,
+          "score": 0.1711,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Manuales_Operativos",
+          "approx_rows": 1,
+          "score": 0.1711,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ConfiguracionOperativa",
+          "approx_rows": 1,
+          "score": 0.1711,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ServidoresConexionEstado",
+          "approx_rows": 1,
+          "score": 0.1711,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "nomina_kpis_puestos",
+      "mongo_docs": 1,
+      "mongo_size": 326,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Finanzas_PropinasConfig",
+      "sql_candidate_rows": 1,
+      "match_score": 0.1786,
+      "match_evidence": "campos_match=id; conteo_similar mongo=1 sql~1",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Finanzas_PropinasConfig",
+          "approx_rows": 1,
+          "score": 0.1786,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_FisicosProcesados",
+          "approx_rows": 1,
+          "score": 0.1786,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Manuales_Operativos",
+          "approx_rows": 1,
+          "score": 0.1786,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ConfiguracionOperativa",
+          "approx_rows": 1,
+          "score": 0.1786,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ServidoresConexionEstado",
+          "approx_rows": 1,
+          "score": 0.1786,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "nomina_movimientos",
+      "mongo_docs": 3,
+      "mongo_size": 1335,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.CavaSocios_Movimientos",
+      "sql_candidate_rows": 3,
+      "match_score": 0.24,
+      "match_evidence": "tokens_nombre=movimientos; conteo_similar mongo=3 sql~3",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "CavaSocios_Movimientos",
+          "approx_rows": 3,
+          "score": 0.24,
+          "evidence": "tokens_nombre=movimientos; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Config_Horarios",
+          "approx_rows": 3,
+          "score": 0.175,
+          "evidence": "campos_match=id; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Logs",
+          "approx_rows": 3,
+          "score": 0.1735,
+          "evidence": "campos_match=id; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Portal_Proveedores",
+          "approx_rows": 3,
+          "score": 0.17,
+          "evidence": "campos_match=id; conteo_similar mongo=3 sql~3"
+        },
+        {
+          "schema": "dbo",
+          "table": "Comercial_Ventas_Dia_Abiertas_v2_backup_migracion_codigos_20260513_0558",
+          "approx_rows": 3,
+          "score": 0.1621,
+          "evidence": "campos_match=id; conteo_similar mongo=3 sql~3"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "notificaciones_log",
+      "mongo_docs": 4,
+      "mongo_size": 1983,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Operativo_Notificaciones_Log",
+      "sql_candidate_rows": 0,
+      "match_score": 0.2527,
+      "match_evidence": "tokens_nombre=log,notificaciones; campos_match=canal,destinatario,estado,id",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Operativo_Notificaciones_Log",
+          "approx_rows": 0,
+          "score": 0.2527,
+          "evidence": "tokens_nombre=log,notificaciones; campos_match=canal,destinatario,estado,id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_Queries",
+          "approx_rows": 4,
+          "score": 0.1711,
+          "evidence": "campos_match=id; conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "Comercial_CompetidoresCatalogo",
+          "approx_rows": 4,
+          "score": 0.1618,
+          "evidence": "campos_match=estado; conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "Servidores_Conexiones_backup_tipos_mov_20260513_0729",
+          "approx_rows": 4,
+          "score": 0.1591,
+          "evidence": "campos_match=id; conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "ActivoFijo_PrioridadOT",
+          "approx_rows": 4,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=4 sql~4"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "notification_config",
+      "mongo_docs": 6,
+      "mongo_size": 2638,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.CRM_Config_PipelineEtapas",
+      "sql_candidate_rows": 7,
+      "match_score": 0.2161,
+      "match_evidence": "tokens_nombre=config; campos_match=activo; conteo_similar mongo=6 sql~7",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "CRM_Config_PipelineEtapas",
+          "approx_rows": 7,
+          "score": 0.2161,
+          "evidence": "tokens_nombre=config; campos_match=activo; conteo_similar mongo=6 sql~7"
+        },
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.1977,
+          "evidence": "campos_match=activo,created_at,id,updated_at; conteo_similar mongo=6 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "Config_Horarios",
+          "approx_rows": 3,
+          "score": 0.185,
+          "evidence": "tokens_nombre=config; campos_match=id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ConsultasCustom",
+          "approx_rows": 6,
+          "score": 0.1848,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=6 sql~6"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_NotificacionesConfig",
+          "approx_rows": 6,
+          "score": 0.1848,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=6 sql~6"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "notification_log",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Compras_Sync_Log",
+      "sql_candidate_rows": 387,
+      "match_score": 0.075,
+      "match_evidence": "tokens_nombre=log",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Compras_Sync_Log",
+          "approx_rows": 387,
+          "score": 0.075,
+          "evidence": "tokens_nombre=log"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Automation_Log",
+          "approx_rows": 0,
+          "score": 0.075,
+          "evidence": "tokens_nombre=log"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Trigger_Log",
+          "approx_rows": 0,
+          "score": 0.075,
+          "evidence": "tokens_nombre=log"
+        },
+        {
+          "schema": "dbo",
+          "table": "Operativo_Notificaciones_Log",
+          "approx_rows": 0,
+          "score": 0.075,
+          "evidence": "tokens_nombre=log"
+        },
+        {
+          "schema": "dbo",
+          "table": "Servidores_Conexiones_Log",
+          "approx_rows": 41,
+          "score": 0.075,
+          "evidence": "tokens_nombre=log"
+        }
+      ],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "notification_provider_config",
+      "mongo_docs": 2,
+      "mongo_size": 663,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Config_Asignaciones",
+      "sql_candidate_rows": 2,
+      "match_score": 0.2404,
+      "match_evidence": "tokens_nombre=config; campos_match=id; conteo_similar mongo=2 sql~2",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Config_Asignaciones",
+          "approx_rows": 2,
+          "score": 0.2404,
+          "evidence": "tokens_nombre=config; campos_match=id; conteo_similar mongo=2 sql~2"
+        },
+        {
+          "schema": "dbo",
+          "table": "Config_Horarios",
+          "approx_rows": 3,
+          "score": 0.2036,
+          "evidence": "tokens_nombre=config; campos_match=id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_PedidosProcesadosAutomatizacion",
+          "approx_rows": 2,
+          "score": 0.1971,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=2 sql~2"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_AlertasDestinatarios",
+          "approx_rows": 2,
+          "score": 0.1971,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=2 sql~2"
+        },
+        {
+          "schema": "dbo",
+          "table": "Venta_CondicionesPago",
+          "approx_rows": 2,
+          "score": 0.1767,
+          "evidence": "campos_match=activo; conteo_similar mongo=2 sql~2"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "notification_queue",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "",
+      "sql_candidate_rows": "",
+      "match_score": 0,
+      "match_evidence": "",
+      "top_candidates": [],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "notification_templates",
+      "mongo_docs": 9,
+      "mongo_size": 4035,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Unidades_Negocio",
+      "sql_candidate_rows": 5,
+      "match_score": 0.2433,
+      "match_evidence": "campos_match=activo,codigo,created_at,id,nombre,updated_at",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.2433,
+          "evidence": "campos_match=activo,codigo,created_at,id,nombre,updated_at"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_MotivosPerdida",
+          "approx_rows": 9,
+          "score": 0.23,
+          "evidence": "campos_match=activo,codigo,nombre; conteo_similar mongo=9 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_Sectores",
+          "approx_rows": 9,
+          "score": 0.23,
+          "evidence": "campos_match=activo,codigo,nombre; conteo_similar mongo=9 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "ActivoFijo_TipoActivo",
+          "approx_rows": 9,
+          "score": 0.2167,
+          "evidence": "campos_match=activo,nombre; conteo_similar mongo=9 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "ActivoFijo_TipoUbicacion",
+          "approx_rows": 9,
+          "score": 0.2167,
+          "evidence": "campos_match=activo,nombre; conteo_similar mongo=9 sql~9"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "permisos_catalogos",
+      "mongo_docs": 2,
+      "mongo_size": 495,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Compras_PedidosProcesadosAutomatizacion",
+      "sql_candidate_rows": 2,
+      "match_score": 0.1786,
+      "match_evidence": "campos_match=id; conteo_similar mongo=2 sql~2",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Compras_PedidosProcesadosAutomatizacion",
+          "approx_rows": 2,
+          "score": 0.1786,
+          "evidence": "campos_match=id; conteo_similar mongo=2 sql~2"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_AlertasDestinatarios",
+          "approx_rows": 2,
+          "score": 0.1786,
+          "evidence": "campos_match=id; conteo_similar mongo=2 sql~2"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Response_Cache",
+          "approx_rows": 2,
+          "score": 0.1767,
+          "evidence": "campos_match=id; conteo_similar mongo=2 sql~2"
+        },
+        {
+          "schema": "dbo",
+          "table": "Config_Asignaciones",
+          "approx_rows": 2,
+          "score": 0.1682,
+          "evidence": "campos_match=id; conteo_similar mongo=2 sql~2"
+        },
+        {
+          "schema": "dbo",
+          "table": "CavaSocios_Botellas",
+          "approx_rows": 2,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=2 sql~2"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "portal_suppliers",
+      "mongo_docs": 1,
+      "mongo_size": 700,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Sync_Vtiger_Contactos",
+      "sql_candidate_rows": 1,
+      "match_score": 0.1695,
+      "match_evidence": "campos_match=email,telefono; conteo_similar mongo=1 sql~1",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sync_Vtiger_Contactos",
+          "approx_rows": 1,
+          "score": 0.1695,
+          "evidence": "campos_match=email,telefono; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Finanzas_PropinasConfig",
+          "approx_rows": 1,
+          "score": 0.1654,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_FisicosProcesados",
+          "approx_rows": 1,
+          "score": 0.1654,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Manuales_Operativos",
+          "approx_rows": 1,
+          "score": 0.1654,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ConfiguracionOperativa",
+          "approx_rows": 1,
+          "score": 0.1654,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "propinas_cache_listado",
+      "mongo_docs": 7,
+      "mongo_size": 2929,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Sistema_ServidoresSucursalesConfig",
+      "sql_candidate_rows": 7,
+      "match_score": 0.1808,
+      "match_evidence": "campos_match=id; conteo_similar mongo=7 sql~7",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_ServidoresSucursalesConfig",
+          "approx_rows": 7,
+          "score": 0.1808,
+          "evidence": "campos_match=id; conteo_similar mongo=7 sql~7"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_AutomatizacionesOperativas",
+          "approx_rows": 8,
+          "score": 0.162,
+          "evidence": "campos_match=id; conteo_similar mongo=7 sql~8"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ConsultasCustom",
+          "approx_rows": 6,
+          "score": 0.1593,
+          "evidence": "campos_match=id; conteo_similar mongo=7 sql~6"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_NotificacionesConfig",
+          "approx_rows": 6,
+          "score": 0.1593,
+          "evidence": "campos_match=id; conteo_similar mongo=7 sql~6"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Menus",
+          "approx_rows": 6,
+          "score": 0.1593,
+          "evidence": "campos_match=id; conteo_similar mongo=7 sql~6"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "queries",
+      "mongo_docs": 4,
+      "mongo_size": 9753,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Sistema_Queries",
+      "sql_candidate_rows": 4,
+      "match_score": 0.2892,
+      "match_evidence": "tokens_nombre=queries; campos_match=id; conteo_similar mongo=4 sql~4",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_Queries",
+          "approx_rows": 4,
+          "score": 0.2892,
+          "evidence": "tokens_nombre=queries; campos_match=id; conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.2057,
+          "evidence": "campos_match=created_at,id,system_type; conteo_similar mongo=4 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "Servidores_Conexiones_backup_tipos_mov_20260513_0729",
+          "approx_rows": 4,
+          "score": 0.1816,
+          "evidence": "campos_match=created_at,id,system_type; conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "ActivoFijo_PrioridadOT",
+          "approx_rows": 4,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "Comercial_AlertasUmbralesSeveridad",
+          "approx_rows": 4,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=4 sql~4"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "rbac_audit_log",
+      "mongo_docs": 370,
+      "mongo_size": 231954,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Compras_Sync_Log",
+      "sql_candidate_rows": 387,
+      "match_score": 0.2287,
+      "match_evidence": "tokens_nombre=log; campos_match=id; conteo_similar mongo=370 sql~387",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Compras_Sync_Log",
+          "approx_rows": 387,
+          "score": 0.2287,
+          "evidence": "tokens_nombre=log; campos_match=id; conteo_similar mongo=370 sql~387"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_Gobierno_Tablas",
+          "approx_rows": 428,
+          "score": 0.1471,
+          "evidence": "campos_match=id; conteo_similar mongo=370 sql~428"
+        },
+        {
+          "schema": "dbo",
+          "table": "Usuario_PermisosRolModulo",
+          "approx_rows": 459,
+          "score": 0.1209,
+          "evidence": "conteo_similar mongo=370 sql~459"
+        },
+        {
+          "schema": "dbo",
+          "table": "RH_Colaboradores_Expediente",
+          "approx_rows": 510,
+          "score": 0.1088,
+          "evidence": ""
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Vtiger_Log",
+          "approx_rows": 1275,
+          "score": 0.1078,
+          "evidence": "tokens_nombre=log"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "rbac_permisos",
+      "mongo_docs": 43,
+      "mongo_size": 9528,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.RBAC_Permisos",
+      "sql_candidate_rows": 9,
+      "match_score": 0.4018,
+      "match_evidence": "tokens_nombre=permisos,rbac; campos_match=accion,activo,descripcion,modulo",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.4018,
+          "evidence": "tokens_nombre=permisos,rbac; campos_match=accion,activo,descripcion,modulo"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Permisos",
+          "approx_rows": 5,
+          "score": 0.3308,
+          "evidence": "tokens_nombre=permisos,rbac; campos_match=activo,codigo,descripcion,modulo"
+        },
+        {
+          "schema": "dbo",
+          "table": "Backup_P5_RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.3268,
+          "evidence": "tokens_nombre=permisos,rbac; campos_match=accion,activo,descripcion,modulo"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.2293,
+          "evidence": "tokens_nombre=rbac; campos_match=activo,codigo,descripcion,es_sistema"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ModulosMenus",
+          "approx_rows": 52,
+          "score": 0.1946,
+          "evidence": "campos_match=activo,codigo,descripcion; conteo_similar mongo=43 sql~52"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "rbac_roles",
+      "mongo_docs": 6,
+      "mongo_size": 4680,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Sistema_RBAC_Roles",
+      "sql_candidate_rows": 6,
+      "match_score": 0.4531,
+      "match_evidence": "tokens_nombre=rbac,roles; campos_match=activo,descripcion,es_sistema,nombre; conteo_similar mongo=6 sql~6",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.4531,
+          "evidence": "tokens_nombre=rbac,roles; campos_match=activo,descripcion,es_sistema,nombre; conteo_similar mongo=6 sql~6"
+        },
+        {
+          "schema": "dbo",
+          "table": "Backup_P5_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.3533,
+          "evidence": "tokens_nombre=rbac,roles; campos_match=activo,descripcion; conteo_similar mongo=6 sql~6"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Permisos",
+          "approx_rows": 5,
+          "score": 0.2857,
+          "evidence": "tokens_nombre=rbac; campos_match=activo,descripcion,nombre; conteo_similar mongo=6 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.2679,
+          "evidence": "campos_match=activo,created_at,id,nombre,updated_at; conteo_similar mongo=6 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.2471,
+          "evidence": "tokens_nombre=rbac; campos_match=activo,descripcion"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "rbac_usuarios_roles",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Sistema_RBAC_Roles",
+      "sql_candidate_rows": 6,
+      "match_score": 0.15,
+      "match_evidence": "tokens_nombre=rbac,roles",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.15,
+          "evidence": "tokens_nombre=rbac,roles"
+        },
+        {
+          "schema": "dbo",
+          "table": "Backup_P5_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.1286,
+          "evidence": "tokens_nombre=rbac,roles"
+        },
+        {
+          "schema": "dbo",
+          "table": "RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.075,
+          "evidence": "tokens_nombre=rbac"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sys_Roles",
+          "approx_rows": 4,
+          "score": 0.075,
+          "evidence": "tokens_nombre=roles"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sys_Usuarios",
+          "approx_rows": 0,
+          "score": 0.075,
+          "evidence": "tokens_nombre=usuarios"
+        }
+      ],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "responsabilidad_economica",
+      "mongo_docs": 5,
+      "mongo_size": 4061,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Comercial_Ventas_Dia_Abiertas_v2_Backup_FechaOperacion_20260521",
+      "sql_candidate_rows": 5,
+      "match_score": 0.1786,
+      "match_evidence": "campos_match=fecha_ultima_actualizacion,id,sucursal_id; conteo_similar mongo=5 sql~5",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Comercial_Ventas_Dia_Abiertas_v2_Backup_FechaOperacion_20260521",
+          "approx_rows": 5,
+          "score": 0.1786,
+          "evidence": "campos_match=fecha_ultima_actualizacion,id,sucursal_id; conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Permisos",
+          "approx_rows": 5,
+          "score": 0.1621,
+          "evidence": "campos_match=fecha_ultima_actualizacion; conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.1614,
+          "evidence": "campos_match=id; conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_Catalogo",
+          "approx_rows": 5,
+          "score": 0.1605,
+          "evidence": "campos_match=estado; conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "Proveedor_Catalogo",
+          "approx_rows": 5,
+          "score": 0.1571,
+          "evidence": "campos_match=estado; conteo_similar mongo=5 sql~5"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "responsabilidad_historial",
+      "mongo_docs": 37,
+      "mongo_size": 15662,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.propinas_tpv_historial",
+      "sql_candidate_rows": 0,
+      "match_score": 0.2013,
+      "match_evidence": "tokens_nombre=historial; campos_match=accion,estado_anterior,estado_nuevo,fecha,id,usuario_id",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "propinas_tpv_historial",
+          "approx_rows": 0,
+          "score": 0.2013,
+          "evidence": "tokens_nombre=historial; campos_match=accion,estado_anterior,estado_nuevo,fecha,id,usuario_id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_HorariosServicioUnidad",
+          "approx_rows": 35,
+          "score": 0.184,
+          "evidence": "campos_match=fecha_creacion,id; conteo_similar mongo=37 sql~35"
+        },
+        {
+          "schema": "dbo",
+          "table": "Servidores_Conexiones_Log",
+          "approx_rows": 41,
+          "score": 0.1798,
+          "evidence": "campos_match=accion,fecha; conteo_similar mongo=37 sql~41"
+        },
+        {
+          "schema": "dbo",
+          "table": "Products",
+          "approx_rows": 37,
+          "score": 0.1682,
+          "evidence": "campos_match=id; conteo_similar mongo=37 sql~37"
+        },
+        {
+          "schema": "dbo",
+          "table": "Operaciones_Tablaje_Plantillas",
+          "approx_rows": 37,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=37 sql~37"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "roles",
+      "mongo_docs": 4,
+      "mongo_size": 1786,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Sistema_RBAC_Roles",
+      "sql_candidate_rows": 6,
+      "match_score": 0.2991,
+      "match_evidence": "tokens_nombre=roles; campos_match=descripcion,es_sistema,nombre",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.2991,
+          "evidence": "tokens_nombre=roles; campos_match=descripcion,es_sistema,nombre"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sys_Roles",
+          "approx_rows": 4,
+          "score": 0.2625,
+          "evidence": "tokens_nombre=roles; conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_TiposPipeline",
+          "approx_rows": 4,
+          "score": 0.2227,
+          "evidence": "campos_match=descripcion,nombre; conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_Prioridades",
+          "approx_rows": 4,
+          "score": 0.2167,
+          "evidence": "campos_match=descripcion,nombre; conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.2123,
+          "evidence": "campos_match=created_at,id,nombre; conteo_similar mongo=4 sql~5"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "scheduler_job_log",
+      "mongo_docs": 590,
+      "mongo_size": 523759,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Compras_Sync_Log",
+      "sql_candidate_rows": 387,
+      "match_score": 0.199,
+      "match_evidence": "tokens_nombre=log; campos_match=id,status",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Compras_Sync_Log",
+          "approx_rows": 387,
+          "score": 0.199,
+          "evidence": "tokens_nombre=log; campos_match=id,status"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Ventas_PorHora",
+          "approx_rows": 605,
+          "score": 0.1463,
+          "evidence": "conteo_similar mongo=590 sql~605"
+        },
+        {
+          "schema": "dbo",
+          "table": "RH_Importacion_Staging",
+          "approx_rows": 571,
+          "score": 0.1452,
+          "evidence": "conteo_similar mongo=590 sql~571"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Vtiger_Log",
+          "approx_rows": 1275,
+          "score": 0.1337,
+          "evidence": "tokens_nombre=log"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_Inventarios_Fisicos_Sync",
+          "approx_rows": 748,
+          "score": 0.1297,
+          "evidence": "campos_match=id"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "scheduler_locks",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Scheduler_BitacoraJobs",
+      "sql_candidate_rows": 130044,
+      "match_score": 0.09,
+      "match_evidence": "tokens_nombre=scheduler",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Scheduler_BitacoraJobs",
+          "approx_rows": 130044,
+          "score": 0.09,
+          "evidence": "tokens_nombre=scheduler"
+        },
+        {
+          "schema": "dbo",
+          "table": "Scheduler_InventariosProcesados",
+          "approx_rows": 0,
+          "score": 0.09,
+          "evidence": "tokens_nombre=scheduler"
+        },
+        {
+          "schema": "dbo",
+          "table": "Scheduler_PedidosProcesados",
+          "approx_rows": 0,
+          "score": 0.09,
+          "evidence": "tokens_nombre=scheduler"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sys_Scheduler_Jobs",
+          "approx_rows": 6,
+          "score": 0.075,
+          "evidence": "tokens_nombre=scheduler"
+        }
+      ],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "script_logs",
+      "mongo_docs": 19,
+      "mongo_size": 112152,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Tareas_Inventario",
+      "sql_candidate_rows": 18,
+      "match_score": 0.1663,
+      "match_evidence": "campos_match=id,titulo; conteo_similar mongo=19 sql~18",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Tareas_Inventario",
+          "approx_rows": 18,
+          "score": 0.1663,
+          "evidence": "campos_match=id,titulo; conteo_similar mongo=19 sql~18"
+        },
+        {
+          "schema": "dbo",
+          "table": "Alertas_Sistema",
+          "approx_rows": 16,
+          "score": 0.1644,
+          "evidence": "campos_match=id,titulo; conteo_similar mongo=19 sql~16"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_TurnosOperativosUnidad",
+          "approx_rows": 20,
+          "score": 0.1592,
+          "evidence": "campos_match=id; conteo_similar mongo=19 sql~20"
+        },
+        {
+          "schema": "dbo",
+          "table": "Workflow_Inventarios",
+          "approx_rows": 18,
+          "score": 0.1542,
+          "evidence": "campos_match=id; conteo_similar mongo=19 sql~18"
+        },
+        {
+          "schema": "dbo",
+          "table": "Backup_P4_14_20260606_Dups_Usuario_RolesAsignacion",
+          "approx_rows": 19,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=19 sql~19"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "scripts_pendientes",
+      "mongo_docs": 58,
+      "mongo_size": 120112,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.RH_Homologacion_Equivalencias",
+      "sql_candidate_rows": 56,
+      "match_score": 0.163,
+      "match_evidence": "campos_match=estado; conteo_similar mongo=58 sql~56",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "RH_Homologacion_Equivalencias",
+          "approx_rows": 56,
+          "score": 0.163,
+          "evidence": "campos_match=estado; conteo_similar mongo=58 sql~56"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_HorariosServicioUnidad",
+          "approx_rows": 35,
+          "score": 0.1505,
+          "evidence": "campos_match=fecha_creacion,fecha_modificacion,id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Usuario_Modulos",
+          "approx_rows": 56,
+          "score": 0.1448,
+          "evidence": "conteo_similar mongo=58 sql~56"
+        },
+        {
+          "schema": "dbo",
+          "table": "Finanzas_AuditoriaFinanciera",
+          "approx_rows": 73,
+          "score": 0.1374,
+          "evidence": "campos_match=id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_TurnosOperativosUnidad",
+          "approx_rows": 20,
+          "score": 0.1351,
+          "evidence": "campos_match=creado_por,fecha_creacion,fecha_modificacion,id,modificado_por"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "sec_bitacora_acceso",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.RH_Importacion_Bitacora",
+      "sql_candidate_rows": 7,
+      "match_score": 0.0643,
+      "match_evidence": "tokens_nombre=bitacora",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "RH_Importacion_Bitacora",
+          "approx_rows": 7,
+          "score": 0.0643,
+          "evidence": "tokens_nombre=bitacora"
+        }
+      ],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "sec_empresas",
+      "mongo_docs": 1,
+      "mongo_size": 404,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.CRM_Config_Pipelines",
+      "sql_candidate_rows": 1,
+      "match_score": 0.21,
+      "match_evidence": "campos_match=activo,codigo,nombre; conteo_similar mongo=1 sql~1",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "CRM_Config_Pipelines",
+          "approx_rows": 1,
+          "score": 0.21,
+          "evidence": "campos_match=activo,codigo,nombre; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Finanzas_PropinasConfig",
+          "approx_rows": 1,
+          "score": 0.1921,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_FisicosProcesados",
+          "approx_rows": 1,
+          "score": 0.1921,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Manuales_Operativos",
+          "approx_rows": 1,
+          "score": 0.1921,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ConfiguracionOperativa",
+          "approx_rows": 1,
+          "score": 0.1921,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=1 sql~1"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "sec_mapeo_servidor_sucursal",
+      "mongo_docs": 7,
+      "mongo_size": 4211,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Finanzas_ConfiguracionTPV_Sucursal",
+      "sql_candidate_rows": 8,
+      "match_score": 0.1993,
+      "match_evidence": "tokens_nombre=sucursal; campos_match=activo; conteo_similar mongo=7 sql~8",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Finanzas_ConfiguracionTPV_Sucursal",
+          "approx_rows": 8,
+          "score": 0.1993,
+          "evidence": "tokens_nombre=sucursal; campos_match=activo; conteo_similar mongo=7 sql~8"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_Migracion_MongoSQL_Mapeo",
+          "approx_rows": 8,
+          "score": 0.1979,
+          "evidence": "tokens_nombre=mapeo; campos_match=id; conteo_similar mongo=7 sql~8"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ServidoresSucursalesConfig",
+          "approx_rows": 7,
+          "score": 0.1881,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=7 sql~7"
+        },
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.1871,
+          "evidence": "campos_match=activo,created_at,id,server_id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Comercial_Ventas_Dia_Abiertas_v2",
+          "approx_rows": 8,
+          "score": 0.1864,
+          "evidence": "campos_match=id,server_id,sucursal_id,unidad_negocio_id; conteo_similar mongo=7 sql~8"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "sec_metadata",
+      "mongo_docs": 1,
+      "mongo_size": 687,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Finanzas_PropinasConfig",
+      "sql_candidate_rows": 1,
+      "match_score": 0.1767,
+      "match_evidence": "campos_match=id; conteo_similar mongo=1 sql~1",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Finanzas_PropinasConfig",
+          "approx_rows": 1,
+          "score": 0.1767,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_FisicosProcesados",
+          "approx_rows": 1,
+          "score": 0.1767,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Manuales_Operativos",
+          "approx_rows": 1,
+          "score": 0.1767,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ConfiguracionOperativa",
+          "approx_rows": 1,
+          "score": 0.1767,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ServidoresConexionEstado",
+          "approx_rows": 1,
+          "score": 0.1767,
+          "evidence": "campos_match=id; conteo_similar mongo=1 sql~1"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "sec_modulos_sistema",
+      "mongo_docs": 10,
+      "mongo_size": 2524,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Sistema_Modulos",
+      "sql_candidate_rows": 28,
+      "match_score": 0.405,
+      "match_evidence": "tokens_nombre=modulos,sistema; campos_match=activo,codigo,descripcion,icono,nombre,orden",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_Modulos",
+          "approx_rows": 28,
+          "score": 0.405,
+          "evidence": "tokens_nombre=modulos,sistema; campos_match=activo,codigo,descripcion,icono,nombre,orden"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_MotivosPerdida",
+          "approx_rows": 9,
+          "score": 0.335,
+          "evidence": "campos_match=activo,codigo,descripcion,nombre,orden; conteo_similar mongo=10 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_Sectores",
+          "approx_rows": 9,
+          "score": 0.335,
+          "evidence": "campos_match=activo,codigo,descripcion,nombre,orden; conteo_similar mongo=10 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ModulosPermisos",
+          "approx_rows": 13,
+          "score": 0.3237,
+          "evidence": "tokens_nombre=sistema; campos_match=activo,codigo,descripcion,nombre"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_MotivosGanada",
+          "approx_rows": 8,
+          "score": 0.32,
+          "evidence": "campos_match=activo,codigo,descripcion,nombre,orden; conteo_similar mongo=10 sql~8"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "sec_permisos_catalogo",
+      "mongo_docs": 89,
+      "mongo_size": 23385,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.RBAC_Permisos",
+      "sql_candidate_rows": 9,
+      "match_score": 0.2506,
+      "match_evidence": "tokens_nombre=permisos; campos_match=accion,activo,descripcion,modulo",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.2506,
+          "evidence": "tokens_nombre=permisos; campos_match=accion,activo,descripcion,modulo"
+        },
+        {
+          "schema": "dbo",
+          "table": "Backup_P5_RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.2249,
+          "evidence": "tokens_nombre=permisos; campos_match=accion,activo,descripcion,modulo"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Permisos",
+          "approx_rows": 5,
+          "score": 0.2168,
+          "evidence": "tokens_nombre=permisos; campos_match=activo,codigo,descripcion,modulo"
+        },
+        {
+          "schema": "dbo",
+          "table": "Finanzas_AuditoriaFinanciera",
+          "approx_rows": 73,
+          "score": 0.1764,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=89 sql~73"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Sales",
+          "approx_rows": 79,
+          "score": 0.1695,
+          "evidence": "campos_match=created_at,id; conteo_similar mongo=89 sql~79"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "sec_sucursales",
+      "mongo_docs": 7,
+      "mongo_size": 3084,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Unidades_Negocio",
+      "sql_candidate_rows": 5,
+      "match_score": 0.2321,
+      "match_evidence": "campos_match=activo,codigo,created_at,id,nombre",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.2321,
+          "evidence": "campos_match=activo,codigo,created_at,id,nombre"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_EstatusContrato",
+          "approx_rows": 7,
+          "score": 0.225,
+          "evidence": "campos_match=activo,codigo,nombre; conteo_similar mongo=7 sql~7"
+        },
+        {
+          "schema": "dbo",
+          "table": "RH_Cat_Sucursales",
+          "approx_rows": 8,
+          "score": 0.2213,
+          "evidence": "tokens_nombre=sucursales; conteo_similar mongo=7 sql~8"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_EstatusPropuesta",
+          "approx_rows": 7,
+          "score": 0.2206,
+          "evidence": "campos_match=activo,codigo,nombre; conteo_similar mongo=7 sql~7"
+        },
+        {
+          "schema": "dbo",
+          "table": "ActivoFijo_TipoBaja",
+          "approx_rows": 7,
+          "score": 0.2167,
+          "evidence": "campos_match=activo,nombre; conteo_similar mongo=7 sql~7"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "sec_unidades_negocio",
+      "mongo_docs": 7,
+      "mongo_size": 4139,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Unidades_Negocio",
+      "sql_candidate_rows": 5,
+      "match_score": 0.3871,
+      "match_evidence": "tokens_nombre=negocio,unidades; campos_match=activo,codigo,created_at,id,nombre",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.3871,
+          "evidence": "tokens_nombre=negocio,unidades; campos_match=activo,codigo,created_at,id,nombre"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_EstatusContrato",
+          "approx_rows": 7,
+          "score": 0.2342,
+          "evidence": "campos_match=activo,codigo,descripcion,nombre; conteo_similar mongo=7 sql~7"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_EstatusPropuesta",
+          "approx_rows": 7,
+          "score": 0.23,
+          "evidence": "campos_match=activo,codigo,descripcion,nombre; conteo_similar mongo=7 sql~7"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_MotivosGanada",
+          "approx_rows": 8,
+          "score": 0.2201,
+          "evidence": "campos_match=activo,codigo,descripcion,nombre; conteo_similar mongo=7 sql~8"
+        },
+        {
+          "schema": "dbo",
+          "table": "Venta_Cat_EstatusRemision",
+          "approx_rows": 7,
+          "score": 0.2167,
+          "evidence": "campos_match=activo,descripcion,nombre; conteo_similar mongo=7 sql~7"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "server_status",
+      "mongo_docs": 9,
+      "mongo_size": 1407,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Sistema_DeudaTecnica_TablasDuplicadas",
+      "sql_candidate_rows": 9,
+      "match_score": 0.1864,
+      "match_evidence": "campos_match=id; conteo_similar mongo=9 sql~9",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_DeudaTecnica_TablasDuplicadas",
+          "approx_rows": 9,
+          "score": 0.1864,
+          "evidence": "campos_match=id; conteo_similar mongo=9 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "Auditoria_Inventario_Provisional",
+          "approx_rows": 9,
+          "score": 0.1833,
+          "evidence": "campos_match=id,server_id; conteo_similar mongo=9 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "Configuracion_Operativa",
+          "approx_rows": 9,
+          "score": 0.1767,
+          "evidence": "campos_match=id; conteo_similar mongo=9 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "Comercial_Ventas_Dia_Abiertas_v2",
+          "approx_rows": 8,
+          "score": 0.1697,
+          "evidence": "campos_match=id,server_id; conteo_similar mongo=9 sql~8"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_AutomatizacionesOperativas",
+          "approx_rows": 8,
+          "score": 0.1641,
+          "evidence": "campos_match=id; conteo_similar mongo=9 sql~8"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "server_sucursales_config",
+      "mongo_docs": 7,
+      "mongo_size": 3490,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.RH_Cat_Sucursales",
+      "sql_candidate_rows": 8,
+      "match_score": 0.2298,
+      "match_evidence": "tokens_nombre=sucursales; campos_match=activa; conteo_similar mongo=7 sql~8",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "RH_Cat_Sucursales",
+          "approx_rows": 8,
+          "score": 0.2298,
+          "evidence": "tokens_nombre=sucursales; campos_match=activa; conteo_similar mongo=7 sql~8"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Config_PipelineEtapas",
+          "approx_rows": 7,
+          "score": 0.2276,
+          "evidence": "tokens_nombre=config; campos_match=orden; conteo_similar mongo=7 sql~7"
+        },
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.1871,
+          "evidence": "campos_match=id,orden,server_id,sucursal_origen_id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_Sucursales",
+          "approx_rows": 5,
+          "score": 0.1821,
+          "evidence": "tokens_nombre=sucursales"
+        },
+        {
+          "schema": "dbo",
+          "table": "Comercial_Ventas_Dia_Abiertas_v2",
+          "approx_rows": 8,
+          "score": 0.1713,
+          "evidence": "campos_match=id,server_id,sucursal_nombre; conteo_similar mongo=7 sql~8"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "servers",
+      "mongo_docs": 11,
+      "mongo_size": 13012,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Servidores_Conexiones",
+      "sql_candidate_rows": 23,
+      "match_score": 0.2717,
+      "match_evidence": "campos_match=categorias,created_at,departamentos,es_editable_ui,es_eliminable_ui,host,id,port,queries_configured,query_inventario,query_movimientos,query_ventas,sucursales,system_type,tipo_conexion",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Servidores_Conexiones",
+          "approx_rows": 23,
+          "score": 0.2717,
+          "evidence": "campos_match=categorias,created_at,departamentos,es_editable_ui,es_eliminable_ui,host,id,port,queries_configured,query_inventario,query_movimientos,query_ventas,sucursales,system_type,tipo_conexion"
+        },
+        {
+          "schema": "dbo",
+          "table": "Servidores_Conexiones_backup_tipos_mov_20260513_0729",
+          "approx_rows": 4,
+          "score": 0.2651,
+          "evidence": "campos_match=categorias,created_at,departamentos,es_editable_ui,es_eliminable_ui,host,id,port,queries_configured,query_inventario,query_movimientos,query_ventas,sucursales,system_type,tipo_conexion"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_ConciliacionSATEstatus",
+          "approx_rows": 11,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=11 sql~11"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_OrigenLead",
+          "approx_rows": 11,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=11 sql~11"
+        },
+        {
+          "schema": "dbo",
+          "table": "RH_Cat_Departamentos",
+          "approx_rows": 11,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=11 sql~11"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "solicitudes_catalogos",
+      "mongo_docs": 10,
+      "mongo_size": 12688,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Auditoria_Inventario_Provisional",
+      "sql_candidate_rows": 9,
+      "match_score": 0.1585,
+      "match_evidence": "campos_match=id,notas; conteo_similar mongo=10 sql~9",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Auditoria_Inventario_Provisional",
+          "approx_rows": 9,
+          "score": 0.1585,
+          "evidence": "campos_match=id,notas; conteo_similar mongo=10 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "Backup_P5_RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.154,
+          "evidence": "campos_match=modulo; conteo_similar mongo=10 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.154,
+          "evidence": "campos_match=modulo; conteo_similar mongo=10 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_DeudaTecnica_TablasDuplicadas",
+          "approx_rows": 9,
+          "score": 0.154,
+          "evidence": "campos_match=id; conteo_similar mongo=10 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_Migracion_MongoSQL_Mapeo",
+          "approx_rows": 8,
+          "score": 0.1533,
+          "evidence": "campos_match=id,modulo; conteo_similar mongo=10 sql~8"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "tareas_inventario",
+      "mongo_docs": 26,
+      "mongo_size": 6477,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Tareas_Inventario",
+      "sql_candidate_rows": 18,
+      "match_score": 0.392,
+      "match_evidence": "tokens_nombre=inventario,tareas; campos_match=ciclo,descripcion,id,prioridad,titulo,vencida",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Tareas_Inventario",
+          "approx_rows": 18,
+          "score": 0.392,
+          "evidence": "tokens_nombre=inventario,tareas; campos_match=ciclo,descripcion,id,prioridad,titulo,vencida"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventario_Almacenes",
+          "approx_rows": 39,
+          "score": 0.19,
+          "evidence": "tokens_nombre=inventario"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_DiferenciasDetalle",
+          "approx_rows": 24,
+          "score": 0.1533,
+          "evidence": "campos_match=id; conteo_similar mongo=26 sql~24"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_Modulos",
+          "approx_rows": 28,
+          "score": 0.1526,
+          "evidence": "campos_match=descripcion; conteo_similar mongo=26 sql~28"
+        },
+        {
+          "schema": "dbo",
+          "table": "Auditoria_Inventario_Provisional",
+          "approx_rows": 9,
+          "score": 0.148,
+          "evidence": "tokens_nombre=inventario; campos_match=id,notas"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "tareas_sistema",
+      "mongo_docs": 22,
+      "mongo_size": 12127,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Sistema_TurnosOperativosUnidad",
+      "sql_candidate_rows": 20,
+      "match_score": 0.2744,
+      "match_evidence": "tokens_nombre=sistema; campos_match=creado_por,fecha_creacion,id; conteo_similar mongo=22 sql~20",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_TurnosOperativosUnidad",
+          "approx_rows": 20,
+          "score": 0.2744,
+          "evidence": "tokens_nombre=sistema; campos_match=creado_por,fecha_creacion,id; conteo_similar mongo=22 sql~20"
+        },
+        {
+          "schema": "dbo",
+          "table": "Tareas_Inventario",
+          "approx_rows": 18,
+          "score": 0.2598,
+          "evidence": "tokens_nombre=tareas; campos_match=descripcion,id,prioridad,titulo; conteo_similar mongo=22 sql~18"
+        },
+        {
+          "schema": "dbo",
+          "table": "Alertas_Sistema",
+          "approx_rows": 16,
+          "score": 0.2513,
+          "evidence": "tokens_nombre=sistema; campos_match=id,tipo,titulo"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_Tareas",
+          "approx_rows": 0,
+          "score": 0.2461,
+          "evidence": "tokens_nombre=sistema,tareas; campos_match=descripcion,prioridad"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_Modulos",
+          "approx_rows": 28,
+          "score": 0.2245,
+          "evidence": "tokens_nombre=sistema; campos_match=descripcion"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "users",
+      "mongo_docs": 16,
+      "mongo_size": 7354,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Sistema_MigracionMongoColecciones",
+      "sql_candidate_rows": 16,
+      "match_score": 0.1722,
+      "match_evidence": "campos_match=id; conteo_similar mongo=16 sql~16",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_MigracionMongoColecciones",
+          "approx_rows": 16,
+          "score": 0.1722,
+          "evidence": "campos_match=id; conteo_similar mongo=16 sql~16"
+        },
+        {
+          "schema": "dbo",
+          "table": "Alertas_Sistema",
+          "approx_rows": 16,
+          "score": 0.17,
+          "evidence": "campos_match=id; conteo_similar mongo=16 sql~16"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_SinAsignar",
+          "approx_rows": 16,
+          "score": 0.169,
+          "evidence": "campos_match=id; conteo_similar mongo=16 sql~16"
+        },
+        {
+          "schema": "dbo",
+          "table": "Usuario_LogRecuperacion",
+          "approx_rows": 17,
+          "score": 0.1678,
+          "evidence": "campos_match=email; conteo_similar mongo=16 sql~17"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ModulosVisibilidad",
+          "approx_rows": 16,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=16 sql~16"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "test_database",
+      "mongo_collection": "workflow_inventarios",
+      "mongo_docs": 28,
+      "mongo_size": 7378,
+      "classification": "Pruebas / Test",
+      "sql_candidate": "dbo.Workflow_Inventarios",
+      "sql_candidate_rows": 18,
+      "match_score": 0.3392,
+      "match_evidence": "tokens_nombre=inventarios,workflow; campos_match=estado,id",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Workflow_Inventarios",
+          "approx_rows": 18,
+          "score": 0.3392,
+          "evidence": "tokens_nombre=inventarios,workflow; campos_match=estado,id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_DiferenciasDetalle",
+          "approx_rows": 24,
+          "score": 0.2315,
+          "evidence": "tokens_nombre=inventarios; campos_match=id; conteo_similar mongo=28 sql~24"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_SinAsignar",
+          "approx_rows": 16,
+          "score": 0.1986,
+          "evidence": "tokens_nombre=inventarios; campos_match=estado,id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_Modulos",
+          "approx_rows": 28,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=28 sql~28"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sync_Ventas_PorDiaSemana",
+          "approx_rows": 28,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=28 sql~28"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "BASE_DE_PRUEBAS_CANDIDATA_A_BORRADO",
+      "reason": "Base de pruebas; respaldo certificado. Requiere autorización final."
+    },
+    {
+      "mongo_db": "cab003",
+      "mongo_collection": "auditorias_programadas",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Auditoría / Logs",
+      "sql_candidate": "",
+      "sql_candidate_rows": "",
+      "match_score": 0,
+      "match_evidence": "",
+      "top_candidates": [],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "cab003",
+      "mongo_collection": "auditorias_programadas_log",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Auditoría / Logs",
+      "sql_candidate": "dbo.Compras_Sync_Log",
+      "sql_candidate_rows": 387,
+      "match_score": 0.075,
+      "match_evidence": "tokens_nombre=log",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Compras_Sync_Log",
+          "approx_rows": 387,
+          "score": 0.075,
+          "evidence": "tokens_nombre=log"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Automation_Log",
+          "approx_rows": 0,
+          "score": 0.075,
+          "evidence": "tokens_nombre=log"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Trigger_Log",
+          "approx_rows": 0,
+          "score": 0.075,
+          "evidence": "tokens_nombre=log"
+        },
+        {
+          "schema": "dbo",
+          "table": "Operativo_Notificaciones_Log",
+          "approx_rows": 0,
+          "score": 0.075,
+          "evidence": "tokens_nombre=log"
+        },
+        {
+          "schema": "dbo",
+          "table": "Servidores_Conexiones_Log",
+          "approx_rows": 41,
+          "score": 0.075,
+          "evidence": "tokens_nombre=log"
+        }
+      ],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "cab003",
+      "mongo_collection": "cargos_economicos",
+      "mongo_docs": 5,
+      "mongo_size": 3490,
+      "classification": "Legacy sin uso detectado",
+      "sql_candidate": "dbo.Comercial_Ventas_Dia_Abiertas_v2_Backup_FechaOperacion_20260521",
+      "sql_candidate_rows": 5,
+      "match_score": 0.1705,
+      "match_evidence": "campos_match=id,sucursal_id; conteo_similar mongo=5 sql~5",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Comercial_Ventas_Dia_Abiertas_v2_Backup_FechaOperacion_20260521",
+          "approx_rows": 5,
+          "score": 0.1705,
+          "evidence": "campos_match=id,sucursal_id; conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.1629,
+          "evidence": "campos_match=id; conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "Comercial",
+          "table": "TableroEjecutivoCache",
+          "approx_rows": 5,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "ActivoFijo_EstadoUsoActivo",
+          "approx_rows": 5,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "ActivoFijo_EstatusOT",
+          "approx_rows": 5,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=5 sql~5"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "VALIDAR_MANUALMENTE",
+      "reason": "Sin equivalente SQL claro."
+    },
+    {
+      "mongo_db": "cab003",
+      "mongo_collection": "cargos_economicos_log",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Auditoría / Logs",
+      "sql_candidate": "dbo.CavaSocios_Cargos",
+      "sql_candidate_rows": 1,
+      "match_score": 0.09,
+      "match_evidence": "tokens_nombre=cargos",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "CavaSocios_Cargos",
+          "approx_rows": 1,
+          "score": 0.09,
+          "evidence": "tokens_nombre=cargos"
+        },
+        {
+          "schema": "dbo",
+          "table": "Compras_Sync_Log",
+          "approx_rows": 387,
+          "score": 0.075,
+          "evidence": "tokens_nombre=log"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Automation_Log",
+          "approx_rows": 0,
+          "score": 0.075,
+          "evidence": "tokens_nombre=log"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Trigger_Log",
+          "approx_rows": 0,
+          "score": 0.075,
+          "evidence": "tokens_nombre=log"
+        },
+        {
+          "schema": "dbo",
+          "table": "Operativo_Notificaciones_Log",
+          "approx_rows": 0,
+          "score": 0.075,
+          "evidence": "tokens_nombre=log"
+        }
+      ],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "cab003",
+      "mongo_collection": "detalle_diferencias",
+      "mongo_docs": 18,
+      "mongo_size": 5472,
+      "classification": "Legacy sin uso detectado",
+      "sql_candidate": "dbo.Sistema_TurnosOperativosUnidad",
+      "sql_candidate_rows": 20,
+      "match_score": 0.1731,
+      "match_evidence": "campos_match=fecha_creacion,id; conteo_similar mongo=18 sql~20",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_TurnosOperativosUnidad",
+          "approx_rows": 20,
+          "score": 0.1731,
+          "evidence": "campos_match=fecha_creacion,id; conteo_similar mongo=18 sql~20"
+        },
+        {
+          "schema": "dbo",
+          "table": "Workflow_Inventarios",
+          "approx_rows": 18,
+          "score": 0.1629,
+          "evidence": "campos_match=id; conteo_similar mongo=18 sql~18"
+        },
+        {
+          "schema": "dbo",
+          "table": "Tareas_Inventario",
+          "approx_rows": 18,
+          "score": 0.1625,
+          "evidence": "campos_match=id; conteo_similar mongo=18 sql~18"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_MigracionMongoColecciones",
+          "approx_rows": 16,
+          "score": 0.1556,
+          "evidence": "campos_match=id; conteo_similar mongo=18 sql~16"
+        },
+        {
+          "schema": "dbo",
+          "table": "Alertas_Sistema",
+          "approx_rows": 16,
+          "score": 0.1533,
+          "evidence": "campos_match=id; conteo_similar mongo=18 sql~16"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "VALIDAR_MANUALMENTE",
+      "reason": "Sin equivalente SQL claro."
+    },
+    {
+      "mongo_db": "cab003",
+      "mongo_collection": "notificaciones_log",
+      "mongo_docs": 4,
+      "mongo_size": 2260,
+      "classification": "Auditoría / Logs",
+      "sql_candidate": "dbo.Operativo_Notificaciones_Log",
+      "sql_candidate_rows": 0,
+      "match_score": 0.2977,
+      "match_evidence": "tokens_nombre=log,notificaciones; campos_match=canal,destinatario,estado,id",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Operativo_Notificaciones_Log",
+          "approx_rows": 0,
+          "score": 0.2977,
+          "evidence": "tokens_nombre=log,notificaciones; campos_match=canal,destinatario,estado,id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_Queries",
+          "approx_rows": 4,
+          "score": 0.1711,
+          "evidence": "campos_match=id; conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "Comercial_CompetidoresCatalogo",
+          "approx_rows": 4,
+          "score": 0.1618,
+          "evidence": "campos_match=estado; conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "Servidores_Conexiones_backup_tipos_mov_20260513_0729",
+          "approx_rows": 4,
+          "score": 0.1591,
+          "evidence": "campos_match=id; conteo_similar mongo=4 sql~4"
+        },
+        {
+          "schema": "dbo",
+          "table": "ActivoFijo_PrioridadOT",
+          "approx_rows": 4,
+          "score": 0.15,
+          "evidence": "conteo_similar mongo=4 sql~4"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "cab003",
+      "mongo_collection": "responsabilidad_economica",
+      "mongo_docs": 5,
+      "mongo_size": 4035,
+      "classification": "Configuración",
+      "sql_candidate": "dbo.Comercial_Ventas_Dia_Abiertas_v2_Backup_FechaOperacion_20260521",
+      "sql_candidate_rows": 5,
+      "match_score": 0.1786,
+      "match_evidence": "campos_match=fecha_ultima_actualizacion,id,sucursal_id; conteo_similar mongo=5 sql~5",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Comercial_Ventas_Dia_Abiertas_v2_Backup_FechaOperacion_20260521",
+          "approx_rows": 5,
+          "score": 0.1786,
+          "evidence": "campos_match=fecha_ultima_actualizacion,id,sucursal_id; conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Permisos",
+          "approx_rows": 5,
+          "score": 0.1621,
+          "evidence": "campos_match=fecha_ultima_actualizacion; conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.1614,
+          "evidence": "campos_match=id; conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_Catalogo",
+          "approx_rows": 5,
+          "score": 0.1605,
+          "evidence": "campos_match=estado; conteo_similar mongo=5 sql~5"
+        },
+        {
+          "schema": "dbo",
+          "table": "Proveedor_Catalogo",
+          "approx_rows": 5,
+          "score": 0.1571,
+          "evidence": "campos_match=estado; conteo_similar mongo=5 sql~5"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "cab003",
+      "mongo_collection": "responsabilidad_historial",
+      "mongo_docs": 10,
+      "mongo_size": 3940,
+      "classification": "Usuarios / Auth / RBAC",
+      "sql_candidate": "dbo.propinas_tpv_historial",
+      "sql_candidate_rows": 0,
+      "match_score": 0.2163,
+      "match_evidence": "tokens_nombre=historial; campos_match=accion,estado_anterior,estado_nuevo,fecha,id,usuario_id",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "propinas_tpv_historial",
+          "approx_rows": 0,
+          "score": 0.2163,
+          "evidence": "tokens_nombre=historial; campos_match=accion,estado_anterior,estado_nuevo,fecha,id,usuario_id"
+        },
+        {
+          "schema": "dbo",
+          "table": "Auditoria_Inventario_Provisional",
+          "approx_rows": 9,
+          "score": 0.1608,
+          "evidence": "campos_match=id,usuario_id; conteo_similar mongo=10 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "Comercial_SolicitudesCambioPrecioHistorial",
+          "approx_rows": 12,
+          "score": 0.1583,
+          "evidence": "campos_match=accion,comentario; conteo_similar mongo=10 sql~12"
+        },
+        {
+          "schema": "dbo",
+          "table": "Backup_P5_RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.1572,
+          "evidence": "campos_match=accion; conteo_similar mongo=10 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.1572,
+          "evidence": "campos_match=accion; conteo_similar mongo=10 sql~9"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "cab003",
+      "mongo_collection": "users",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Usuarios / Auth / RBAC",
+      "sql_candidate": "",
+      "sql_candidate_rows": "",
+      "match_score": 0,
+      "match_evidence": "",
+      "top_candidates": [],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "cab003",
+      "mongo_collection": "workflow_inventarios",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Inventarios",
+      "sql_candidate": "dbo.Workflow_Inventarios",
+      "sql_candidate_rows": 18,
+      "match_score": 0.3,
+      "match_evidence": "tokens_nombre=inventarios,workflow",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Workflow_Inventarios",
+          "approx_rows": 18,
+          "score": 0.3,
+          "evidence": "tokens_nombre=inventarios,workflow"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_DiferenciasDetalle",
+          "approx_rows": 24,
+          "score": 0.1125,
+          "evidence": "tokens_nombre=inventarios"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_FisicosProcesados",
+          "approx_rows": 1,
+          "score": 0.1125,
+          "evidence": "tokens_nombre=inventarios"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_ProcesadosAuto",
+          "approx_rows": 158,
+          "score": 0.1125,
+          "evidence": "tokens_nombre=inventarios"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_SinAsignar",
+          "approx_rows": 16,
+          "score": 0.1125,
+          "evidence": "tokens_nombre=inventarios"
+        }
+      ],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "edarsahub",
+      "mongo_collection": "notification_config",
+      "mongo_docs": 11,
+      "mongo_size": 4366,
+      "classification": "Configuración",
+      "sql_candidate": "dbo.Compras_ConciliacionSATEstatus",
+      "sql_candidate_rows": 11,
+      "match_score": 0.2167,
+      "match_evidence": "campos_match=activo,descripcion; conteo_similar mongo=11 sql~11",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Compras_ConciliacionSATEstatus",
+          "approx_rows": 11,
+          "score": 0.2167,
+          "evidence": "campos_match=activo,descripcion; conteo_similar mongo=11 sql~11"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Config_PipelineEtapas",
+          "approx_rows": 7,
+          "score": 0.2162,
+          "evidence": "tokens_nombre=config; campos_match=activo,descripcion"
+        },
+        {
+          "schema": "dbo",
+          "table": "RH_Cat_Departamentos",
+          "approx_rows": 11,
+          "score": 0.2,
+          "evidence": "campos_match=activo,descripcion; conteo_similar mongo=11 sql~11"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_OrigenLead",
+          "approx_rows": 11,
+          "score": 0.1971,
+          "evidence": "campos_match=activo,descripcion; conteo_similar mongo=11 sql~11"
+        },
+        {
+          "schema": "dbo",
+          "table": "Config_Horarios",
+          "approx_rows": 3,
+          "score": 0.1801,
+          "evidence": "tokens_nombre=config; campos_match=id"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "edarsahub",
+      "mongo_collection": "notification_log",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Auditoría / Logs",
+      "sql_candidate": "dbo.Compras_Sync_Log",
+      "sql_candidate_rows": 387,
+      "match_score": 0.09,
+      "match_evidence": "tokens_nombre=log",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Compras_Sync_Log",
+          "approx_rows": 387,
+          "score": 0.09,
+          "evidence": "tokens_nombre=log"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Automation_Log",
+          "approx_rows": 0,
+          "score": 0.09,
+          "evidence": "tokens_nombre=log"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Trigger_Log",
+          "approx_rows": 0,
+          "score": 0.09,
+          "evidence": "tokens_nombre=log"
+        },
+        {
+          "schema": "dbo",
+          "table": "Operativo_Notificaciones_Log",
+          "approx_rows": 0,
+          "score": 0.09,
+          "evidence": "tokens_nombre=log"
+        },
+        {
+          "schema": "dbo",
+          "table": "Servidores_Conexiones_Log",
+          "approx_rows": 41,
+          "score": 0.09,
+          "evidence": "tokens_nombre=log"
+        }
+      ],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "edarsahub",
+      "mongo_collection": "notification_queue",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Vacía / Sin datos",
+      "sql_candidate": "",
+      "sql_candidate_rows": "",
+      "match_score": 0,
+      "match_evidence": "",
+      "top_candidates": [],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "edarsahub",
+      "mongo_collection": "notification_templates",
+      "mongo_docs": 11,
+      "mongo_size": 4914,
+      "classification": "Legacy sin uso detectado",
+      "sql_candidate": "dbo.CRM_Cat_OrigenLead",
+      "sql_candidate_rows": 11,
+      "match_score": 0.23,
+      "match_evidence": "campos_match=activo,codigo,nombre; conteo_similar mongo=11 sql~11",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_OrigenLead",
+          "approx_rows": 11,
+          "score": 0.23,
+          "evidence": "campos_match=activo,codigo,nombre; conteo_similar mongo=11 sql~11"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_MotivosPerdida",
+          "approx_rows": 9,
+          "score": 0.2084,
+          "evidence": "campos_match=activo,codigo,nombre; conteo_similar mongo=11 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "CRM_Cat_Sectores",
+          "approx_rows": 9,
+          "score": 0.2084,
+          "evidence": "campos_match=activo,codigo,nombre; conteo_similar mongo=11 sql~9"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ModulosPermisos",
+          "approx_rows": 13,
+          "score": 0.2069,
+          "evidence": "campos_match=activo,codigo,nombre; conteo_similar mongo=11 sql~13"
+        },
+        {
+          "schema": "dbo",
+          "table": "Unidades_Negocio",
+          "approx_rows": 5,
+          "score": 0.2015,
+          "evidence": "campos_match=activo,codigo,created_at,id,nombre"
+        }
+      ],
+      "risk": "MEDIO",
+      "recommendation": "VALIDAR_MANUALMENTE",
+      "reason": "Sin equivalente SQL claro."
+    },
+    {
+      "mongo_db": "edarsahub",
+      "mongo_collection": "users_legacy_backup_auth_rbac_20260603",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Usuarios / Auth / RBAC",
+      "sql_candidate": "dbo.Backup_P5_RBAC_Permisos",
+      "sql_candidate_rows": 9,
+      "match_score": 0.1,
+      "match_evidence": "tokens_nombre=backup,rbac",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Backup_P5_RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.1,
+          "evidence": "tokens_nombre=backup,rbac"
+        },
+        {
+          "schema": "dbo",
+          "table": "Backup_P5_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.1,
+          "evidence": "tokens_nombre=backup,rbac"
+        },
+        {
+          "schema": "dbo",
+          "table": "RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.0563,
+          "evidence": "tokens_nombre=rbac"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Permisos",
+          "approx_rows": 5,
+          "score": 0.05,
+          "evidence": "tokens_nombre=rbac"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.05,
+          "evidence": "tokens_nombre=rbac"
+        }
+      ],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "edarsahub",
+      "mongo_collection": "users_legacy_backup_auth_rbac_20260604",
+      "mongo_docs": 1,
+      "mongo_size": 529,
+      "classification": "Usuarios / Auth / RBAC",
+      "sql_candidate": "dbo.Finanzas_PropinasConfig",
+      "sql_candidate_rows": 1,
+      "match_score": 0.19,
+      "match_evidence": "campos_match=activo,id; conteo_similar mongo=1 sql~1",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Finanzas_PropinasConfig",
+          "approx_rows": 1,
+          "score": 0.19,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Inventarios_FisicosProcesados",
+          "approx_rows": 1,
+          "score": 0.19,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Manuales_Operativos",
+          "approx_rows": 1,
+          "score": 0.19,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ConfiguracionOperativa",
+          "approx_rows": 1,
+          "score": 0.19,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=1 sql~1"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_ServidoresConexionEstado",
+          "approx_rows": 1,
+          "score": 0.19,
+          "evidence": "campos_match=activo,id; conteo_similar mongo=1 sql~1"
+        }
+      ],
+      "risk": "ALTO",
+      "recommendation": "MIGRAR_ANTES_DE_BORRAR",
+      "reason": "Sensible sin match SQL claro."
+    },
+    {
+      "mongo_db": "stock_tracker",
+      "mongo_collection": "rbac_permisos",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Usuarios / Auth / RBAC",
+      "sql_candidate": "dbo.RBAC_Permisos",
+      "sql_candidate_rows": 9,
+      "match_score": 0.225,
+      "match_evidence": "tokens_nombre=permisos,rbac",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.225,
+          "evidence": "tokens_nombre=permisos,rbac"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Permisos",
+          "approx_rows": 5,
+          "score": 0.18,
+          "evidence": "tokens_nombre=permisos,rbac"
+        },
+        {
+          "schema": "dbo",
+          "table": "Backup_P5_RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.15,
+          "evidence": "tokens_nombre=permisos,rbac"
+        },
+        {
+          "schema": "dbo",
+          "table": "ConsultasSQL_Permisos",
+          "approx_rows": 0,
+          "score": 0.09,
+          "evidence": "tokens_nombre=permisos"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.075,
+          "evidence": "tokens_nombre=rbac"
+        }
+      ],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    },
+    {
+      "mongo_db": "stock_tracker",
+      "mongo_collection": "rbac_roles",
+      "mongo_docs": 0,
+      "mongo_size": 0,
+      "classification": "Usuarios / Auth / RBAC",
+      "sql_candidate": "dbo.Sistema_RBAC_Roles",
+      "sql_candidate_rows": 6,
+      "match_score": 0.18,
+      "match_evidence": "tokens_nombre=rbac,roles",
+      "top_candidates": [
+        {
+          "schema": "dbo",
+          "table": "Sistema_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.18,
+          "evidence": "tokens_nombre=rbac,roles"
+        },
+        {
+          "schema": "dbo",
+          "table": "Backup_P5_RBAC_Roles",
+          "approx_rows": 6,
+          "score": 0.15,
+          "evidence": "tokens_nombre=rbac,roles"
+        },
+        {
+          "schema": "dbo",
+          "table": "RBAC_Permisos",
+          "approx_rows": 9,
+          "score": 0.09,
+          "evidence": "tokens_nombre=rbac"
+        },
+        {
+          "schema": "dbo",
+          "table": "Sys_Roles",
+          "approx_rows": 4,
+          "score": 0.09,
+          "evidence": "tokens_nombre=roles"
+        },
+        {
+          "schema": "dbo",
+          "table": "Usuario_Roles",
+          "approx_rows": 22,
+          "score": 0.09,
+          "evidence": "tokens_nombre=roles"
+        }
+      ],
+      "risk": "BAJO",
+      "recommendation": "CANDIDATA_A_BORRADO_POSTERIOR",
+      "reason": "Colección vacía; respaldo certificado."
+    }
+  ]
+}
