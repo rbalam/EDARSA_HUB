@@ -1,5 +1,12 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-07] Fase 14 — P5-3B Auditoría exacta pre-cutover Admin CORE (read-only)
+- Script `fase14_*.sh` ejecutado (auditoría read-only, sin cambios código/BD/restart; SQL solo lectura a `INFORMATION_SCHEMA`/`TOP 1` mostrando **solo nombres de columnas**, sin valores → sin fuga de secretos).
+- **Contrato HTTP congelado** (`auditorias_p5/FASE14_ADMIN_CORE_*`): `GET /core-connections`→200 `{status:SUCCESS,data:[2],meta}`; `GET /{id}`→200/404; `POST /{id}/test`→200 `{status,message,name,server_id,duration_ms,safe_error}`/404. DATA_KEYS documentadas.
+- **Hallazgo:** los GET/POST ya son SQL-First sobre `dbo.Servidores_Conexiones`. Residual Mongo en admin = 2 puntos (ya no-op): `auditoria_core_admin.insert_one` y `servidores_conexiones.find_one` (mongodb_id/mongo_synced vestigial).
+- **Destino SQL para auditoría identificado:** `dbo.Servidores_Conexiones_Log` (servidor_id, accion, datos_anteriores/nuevos, usuario, fecha, ip_origen). `mongodb_id` ya es columna en `Servidores_Conexiones`.
+- **Blueprint cutover** escrito en `auditorias_p5/P5_3B_BLUEPRINT_CUTOVER_ADMIN_CORE.md` (5-6 pasos, bajo riesgo, validable contra contrato congelado). Pendiente aprobación para ejecutar el cutover (toca router vivo).
+
 ## [2026-06-07] Fase 13 — P5-3B-A Guardrails + snapshot contrato Admin CORE (pre-cutover)
 - **AUDITORÍA DE SCRIPT (corregido antes de ejecutar):** `fase13_*.sh` tenía un defecto: 2 tests importan módulos de la app (`exec_module` de `admin_core_connections`, `from modules.api_connections import repository`) que requieren `EDARSAHUB_SQL_*`; bajo `pytest` desde bash el `.env` NO se carga → fallaban → `set -e` abortaba antes del snapshot. Confirmado: `EDARSAHUB_SQL_HOST` ausente en shell ambiente.
 - **Fix permanente:** creado `tests_guardrails/conftest.py` que carga `/app/backend/.env` (`load_dotenv`) + asegura `/app/backend` en `sys.path`. Reutilizable por todos los guardrails que importen módulos.

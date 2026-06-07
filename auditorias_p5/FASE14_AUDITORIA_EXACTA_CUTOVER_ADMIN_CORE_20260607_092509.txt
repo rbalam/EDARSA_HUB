@@ -1,0 +1,103 @@
+FASE 14 - AUDITORIA EXACTA CUTOVER ADMIN CORE Sun Jun  7 09:25:09 UTC 2026
+===== 1) LOGIN =====
+HTTP=200 t=0.538682s
+===== 2) SNAPSHOT LIST =====
+LIST HTTP=200 t=0.034638s
+TOP_LEVEL_KEYS= ['data', 'meta', 'status']
+ITEM_COUNT= 2
+FIRST_ITEM_KEYS= ['activo', 'api_key_configured', 'api_key_encrypted', 'api_url', 'config_origin', 'connection_type', 'created_at', 'database_name', 'host', 'id', 'name', 'password_configured', 'password_encrypted', 'port', 'system_type', 'system_type_normalized', 'tipo_conexion', 'updated_at', 'username', 'warnings']
+FIRST_id= F8A9049A-96E8-4210-84AE-595FFA2822FA
+FIRST_name= EDARSA HUB
+FIRST_ID=F8A9049A-96E8-4210-84AE-595FFA2822FA
+===== 3) SNAPSHOT ITEM + TEST =====
+ITEM HTTP=200 t=0.037966s
+TEST HTTP=200 t=0.348448s
+ITEM TOP_LEVEL_KEYS= ['data', 'meta', 'status']
+ITEM DATA_KEYS= ['activo', 'api_key_configured', 'api_key_encrypted', 'api_url', 'config_origin', 'connection_type', 'created_at', 'database_name', 'host', 'id', 'name', 'password_configured', 'password_encrypted', 'port', 'system_type', 'system_type_normalized', 'tipo_conexion', 'updated_at', 'username', 'warnings']
+TEST TOP_LEVEL_KEYS= ['duration_ms', 'message', 'name', 'safe_error', 'server_id', 'status']
+===== 4) AUDITORIA SQL (READ-ONLY, solo nombres de columnas) =====
+
+TABLA=dbo.Servidores_Conexiones
+COL=id|TYPE=uniqueidentifier|NULL=NO
+COL=nombre|TYPE=nvarchar|NULL=NO
+COL=system_type|TYPE=nvarchar|NULL=NO
+COL=tipo_conexion|TYPE=nvarchar|NULL=NO
+COL=host|TYPE=nvarchar|NULL=YES
+COL=port|TYPE=int|NULL=YES
+COL=database_name|TYPE=nvarchar|NULL=YES
+COL=username|TYPE=nvarchar|NULL=YES
+COL=password_encrypted|TYPE=nvarchar|NULL=YES
+COL=api_url|TYPE=nvarchar|NULL=YES
+COL=api_key_encrypted|TYPE=nvarchar|NULL=YES
+COL=activo|TYPE=bit|NULL=YES
+COL=visible_en_operaciones|TYPE=bit|NULL=YES
+COL=visible_en_listado|TYPE=bit|NULL=YES
+COL=es_editable_ui|TYPE=bit|NULL=YES
+COL=es_eliminable_ui|TYPE=bit|NULL=YES
+COL=empresa_id|TYPE=nvarchar|NULL=YES
+COL=sucursales|TYPE=nvarchar|NULL=YES
+COL=categorias|TYPE=nvarchar|NULL=YES
+COL=departamentos|TYPE=nvarchar|NULL=YES
+COL=date_calculation_method|TYPE=nvarchar|NULL=YES
+COL=queries_configured|TYPE=bit|NULL=YES
+COL=query_ventas|TYPE=nvarchar|NULL=YES
+COL=query_inventario|TYPE=nvarchar|NULL=YES
+COL=query_movimientos|TYPE=nvarchar|NULL=YES
+COL=created_at|TYPE=datetime|NULL=YES
+COL=updated_at|TYPE=datetime|NULL=YES
+COL=created_by|TYPE=nvarchar|NULL=YES
+COL=updated_by|TYPE=nvarchar|NULL=YES
+COL=mongodb_id|TYPE=nvarchar|NULL=YES
+COL=EmpresaID|TYPE=int|NULL=YES
+COL=tipos_movimiento|TYPE=nvarchar|NULL=YES
+COL=fecha_ultima_sincronizacion|TYPE=datetime2|NULL=YES
+COL=source_status|TYPE=varchar|NULL=YES
+COL=ultimo_error_sync|TYPE=nvarchar|NULL=YES
+COL=sistema_version_id|TYPE=uniqueidentifier|NULL=YES
+SAMPLE_KEYS=id,nombre,system_type,tipo_conexion,host,port,database_name,username,password_encrypted,api_url,api_key_encrypted,activo,visible_en_operaciones,visible_en_listado,es_editable_ui,es_eliminable_ui,empresa_id,sucursales,categorias,departamentos,date_calculation_method,queries_configured,query_ventas,query_inventario,query_movimientos,created_at,updated_at,created_by,updated_by,mongodb_id,EmpresaID,tipos_movimiento,fecha_ultima_sincronizacion,source_status,ultimo_error_sync,sistema_version_id
+
+TABLA=dbo.Servidores_Conexiones_Log
+COL=log_id|TYPE=bigint|NULL=NO
+COL=servidor_id|TYPE=uniqueidentifier|NULL=YES
+COL=accion|TYPE=nvarchar|NULL=YES
+COL=datos_anteriores|TYPE=nvarchar|NULL=YES
+COL=datos_nuevos|TYPE=nvarchar|NULL=YES
+COL=usuario|TYPE=nvarchar|NULL=YES
+COL=fecha|TYPE=datetime|NULL=YES
+COL=ip_origen|TYPE=nvarchar|NULL=YES
+SAMPLE_KEYS=log_id,servidor_id,accion,datos_anteriores,datos_nuevos,usuario,fecha,ip_origen
+
+TABLA=dbo.ConsultasSQL_Servidores
+COL=ConsultaServidorID|TYPE=int|NULL=NO
+COL=ConsultaID|TYPE=int|NULL=NO
+COL=ServidorID|TYPE=uniqueidentifier|NULL=NO
+COL=EmpresaID|TYPE=int|NULL=YES
+COL=SucursalID|TYPE=nvarchar|NULL=YES
+COL=Activo|TYPE=bit|NULL=NO
+COL=Prioridad|TYPE=int|NULL=NO
+COL=FechaCreacion|TYPE=datetime2|NULL=NO
+COL=UsuarioCreacionID|TYPE=nvarchar|NULL=YES
+SAMPLE_KEYS=NO_ROWS
+
+TABLA=dbo.CRM_Integracion_Conectores
+COL=ConectorID|TYPE=int|NULL=NO
+COL=EmpresaID|TYPE=uniqueidentifier|NULL=NO
+COL=Codigo|TYPE=nvarchar|NULL=NO
+COL=Nombre|TYPE=nvarchar|NULL=NO
+COL=Descripcion|TYPE=nvarchar|NULL=YES
+COL=TipoConector|TYPE=nvarchar|NULL=NO
+COL=ConfiguracionJSON|TYPE=nvarchar|NULL=YES
+COL=Activo|TYPE=bit|NULL=YES
+COL=EsPrincipal|TYPE=bit|NULL=YES
+COL=UltimaSincronizacion|TYPE=datetime|NULL=YES
+COL=EstadoConexion|TYPE=nvarchar|NULL=YES
+COL=MensajeError|TYPE=nvarchar|NULL=YES
+COL=MapeoLeadsJSON|TYPE=nvarchar|NULL=YES
+COL=MapeoOportunidadesJSON|TYPE=nvarchar|NULL=YES
+COL=MapeoCuentasJSON|TYPE=nvarchar|NULL=YES
+COL=MapeoContactosJSON|TYPE=nvarchar|NULL=YES
+COL=CreatedAt|TYPE=datetime|NULL=YES
+COL=CreatedBy|TYPE=uniqueidentifier|NULL=YES
+COL=UpdatedAt|TYPE=datetime|NULL=YES
+COL=UpdatedBy|TYPE=uniqueidentifier|NULL=YES
+SAMPLE_KEYS=ConectorID,EmpresaID,Codigo,Nombre,Descripcion,TipoConector,ConfiguracionJSON,Activo,EsPrincipal,UltimaSincronizacion,EstadoConexion,MensajeError,MapeoLeadsJSON,MapeoOportunidadesJSON,MapeoCuentasJSON,MapeoContactosJSON,CreatedAt,CreatedBy,UpdatedAt,UpdatedBy
