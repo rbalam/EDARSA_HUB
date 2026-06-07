@@ -1,4 +1,3 @@
-# P2_2A_NOISE_BACKEND
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
 """
@@ -148,20 +147,63 @@ class SystemHealthChecker:
         self._events_log: List[Dict[str, Any]] = []
     
     def _check_mongodb(self) -> SourceHealth:
-        """MongoDB eliminado del camino productivo. Se reporta solo como residual deshabilitado."""
-        return SourceHealth(
-            name="MongoDB (EDARSA HUB)",
-            source_type=SourceType.MONGODB,
-            status=HealthStatus.UNKNOWN,
-            last_error="MongoDB eliminado del flujo productivo (SQL-First / NO-MONGO)"
-        )
+        """Verifica conexión a MongoDB"""
+        start = time.time()
+        try:
+            pass  # P2-07: MongoDB eliminado (MongoClient)
+            import os
+            
+            mongo_url = None  # P2-07: MongoDB eliminado
+            client = None  # P2-07: MongoDB eliminado
+            client.admin.command('ping')
+            
+            response_time = (time.time() - start) * 1000
+            
+            return SourceHealth(
+                name="MongoDB (EDARSA HUB)",
+                source_type=SourceType.MONGODB,
+                status=HealthStatus.HEALTHY,
+                response_time_ms=response_time,
+                last_success=datetime.now(timezone.utc)
+            )
+        except Exception as e:
+            return SourceHealth(
+                name="MongoDB (EDARSA HUB)",
+                source_type=SourceType.MONGODB,
+                status=HealthStatus.CRITICAL,
+                last_error=str(e)[:200]
+            )
     
     def _check_sql_servers(self) -> List[SourceHealth]:
-        """
-        Catálogo legacy de servidores dependía de Mongo.
-        En V1 estabilizada se omite para evitar ruido falso-crítico.
-        """
-        return []
+        """Verifica conexión a servidores SQL"""
+        results = []
+        try:
+            pass  # P2-07: MongoDB eliminado (MongoClient)
+            import os
+            
+            mongo_url = None  # P2-07: MongoDB eliminado
+            client = None  # P2-07: MongoDB eliminado
+            db = client['edarsa_hub']
+            
+            servers = list(db.servers.find(
+                {"active": True, "visible_en_operaciones": True},
+                {"_id": 0, "id": 1, "name": 1, "host": 1, "system_type": 1}
+            ))
+            
+            for server in servers:
+                # Por ahora solo verificamos que estén registrados
+                # En producción aquí haríamos ping real
+                results.append(SourceHealth(
+                    name=f"{server.get('name')} ({server.get('system_type')})",
+                    source_type=SourceType.SQL_SERVER,
+                    status=HealthStatus.HEALTHY,  # Asumimos healthy si está en catálogo
+                    last_success=datetime.now(timezone.utc)
+                ))
+                
+        except Exception as e:
+            self.logger.error(f"Error verificando SQL servers: {e}")
+        
+        return results
     
     def _get_module_health(self, module_name: str) -> ModuleHealth:
         """Obtiene salud de un módulo específico"""
@@ -193,7 +235,7 @@ class SystemHealthChecker:
         report.sources.append(mongo_health)
         if mongo_health.status == HealthStatus.HEALTHY:
             report.sources_connected += 1
-        elif mongo_health.status == HealthStatus.CRITICAL:
+        else:
             report.sources_failed += 1
         
         # Verificar SQL Servers
@@ -202,7 +244,7 @@ class SystemHealthChecker:
             report.sources.append(sql_health)
             if sql_health.status == HealthStatus.HEALTHY:
                 report.sources_connected += 1
-            elif sql_health.status == HealthStatus.CRITICAL:
+            else:
                 report.sources_failed += 1
         
         # Verificar módulos críticos

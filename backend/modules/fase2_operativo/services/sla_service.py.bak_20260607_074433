@@ -1,4 +1,3 @@
-# P2_2A_NOISE_BACKEND
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
 """
@@ -222,17 +221,6 @@ class SLAService:
         Returns:
             Dict con estado_sla y métricas calculadas
         """
-        if not tarea or not isinstance(tarea, dict):
-            return {
-                "estado_sla": EstadoSLA.EN_TIEMPO.value,
-                "tiempo_respuesta_horas": None,
-                "tiempo_resolucion_horas": None,
-                "porcentaje_tiempo_consumido": 0,
-                "horas_restantes": 0,
-                "limite_horas": 0,
-                "cumple_sla": None
-            }
-
         ahora = datetime.now(timezone.utc)
         
         fecha_creacion = self._parsear_fecha(tarea.get("fecha_creacion"))
@@ -351,8 +339,6 @@ class SLAService:
         
         for tarea in tareas:
             try:
-                if not tarea or not isinstance(tarea, dict):
-                    continue
                 calculo = self.calcular_estado_sla(tarea)
                 nuevo_estado = calculo["estado_sla"]
                 porcentaje = calculo.get("porcentaje_tiempo_consumido", 0)
@@ -421,8 +407,6 @@ class SLAService:
         tiempos_resolucion = []
         
         for tarea in completadas:
-            if not tarea or not isinstance(tarea, dict):
-                continue
             calculo = self.calcular_estado_sla(tarea)
             if calculo["cumple_sla"]:
                 cumplidas_en_tiempo += 1
@@ -443,8 +427,6 @@ class SLAService:
         }
         
         for tarea in activas:
-            if not tarea or not isinstance(tarea, dict):
-                continue
             calculo = self.calcular_estado_sla(tarea)
             estado = calculo["estado_sla"]
             if estado in activas_por_estado:
@@ -486,8 +468,6 @@ class SLAService:
         
         resultado = []
         for tarea in tareas[:limite * 2]:
-            if not tarea or not isinstance(tarea, dict):
-                continue
             calculo = self.calcular_estado_sla(tarea)
             if calculo["estado_sla"] in [EstadoSLA.ADVERTENCIA.value, EstadoSLA.URGENTE.value]:
                 tarea["sla"] = calculo
@@ -507,8 +487,6 @@ class SLAService:
         
         resultado = []
         for tarea in tareas:
-            if not tarea or not isinstance(tarea, dict):
-                continue
             if tarea.get("vencida") or tarea.get("estado_sla") == EstadoSLA.VENCIDA.value:
                 calculo = self.calcular_estado_sla(tarea)
                 if calculo["estado_sla"] == EstadoSLA.VENCIDA.value:
@@ -529,9 +507,6 @@ class SLAService:
         """
         Notifica que un SLA está por vencer (80% consumido).
         """
-        if not tarea or not isinstance(tarea, dict):
-            return False
-
         notifier = self._get_notification_service()
         if not notifier:
             logger.warning("Notificación SLA_POR_VENCER omitida: servicio no disponible")
@@ -576,9 +551,6 @@ class SLAService:
         """
         Notifica que un SLA venció (100% consumido).
         """
-        if not tarea or not isinstance(tarea, dict):
-            return False
-
         notifier = self._get_notification_service()
         if not notifier:
             logger.warning("Notificación SLA_VENCIDO omitida: servicio no disponible")
@@ -619,9 +591,6 @@ class SLAService:
         """
         Notifica escalamiento de SLA (150% consumido).
         """
-        if not tarea or not isinstance(tarea, dict):
-            return False
-
         notifier = self._get_notification_service()
         if not notifier:
             logger.warning("Notificación SLA_ESCALADO omitida: servicio no disponible")

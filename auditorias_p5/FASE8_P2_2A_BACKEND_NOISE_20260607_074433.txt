@@ -1,0 +1,31 @@
+FASE 8 - P2-2A  Sun Jun  7 07:44:33 UTC 2026
+===== BACKUPS =====
+BACKUP /app/backend/core/health_checker.py.bak_20260607_074433
+BACKUP /app/backend/core/scheduler/jobs/crm_sync_job.py.bak_20260607_074433
+BACKUP /app/backend/modules/fase2_operativo/services/sla_service.py.bak_20260607_074433
+===== PARCHE health_checker.py =====
+PATCHED health_checker.py
+===== PARCHE crm_sync_job.py =====
+PATCHED crm_sync_job.py
+===== PARCHE sla_service.py =====
+PATCHED sla_service.py
+===== VALIDACION SINTACTICA =====
+COMPILE health OK
+COMPILE crm OK
+COMPILE sla OK
+===== REINICIO BACKEND =====
+backend                          RUNNING   pid 15472, uptime 0:00:11
+===== SMOKE health/v1 =====
+HTTP=403
+===== SMOKE health_checker =====
+OVERALL= healthy FAILED= 0 CONNECTED= 0
+===== SMOKE crm_sync_job =====
+CRM_SLA= OK
+CRM_ACT= SKIP
+===== SMOKE sla_service =====
+CALC_NONE_estado= EN_TIEMPO
+WARN_NONE= False
+EXP_NONE= False
+ESC_NONE= False
+RAW_REPORT=/app/auditorias_p5/FASE8_P2_2A_BACKEND_NOISE_20260607_074433.txt
+OK - FASE 8 ejecutado
