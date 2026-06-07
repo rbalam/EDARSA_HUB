@@ -289,3 +289,14 @@ fase2_operativo automatizacion_compras_routes.py(2), finanzas/propinas_tpv/route
 Reportes: `docs/reports/AUDITORIA_RBAC_HARDCODES_REPO_20260607_213039.csv` + `.md`.
 NOTA: `modules/comercial/costos_margenes/` NO existe (el módulo real es `modules/costos_margenes/`).
 Hardening NO ejecutado en esta pasada — es roadmap para migración sistemática archivo-por-archivo + prueba.
+
+## [2026-06-07] FIX P0 — Dashboard Inteligencia Comercial IA: KPIs no reaccionaban al periodo
+Síntoma (reporte usuario): los KPIs (Ventas/PAX/Cheques/Propinas) no cambiaban al cambiar Unidad ni Día/Semana/Mes/Año, y no indicaba qué día/mes/año.
+Causa raíz: el frontend `portal-inteligencia/pages/DashboardIA.jsx` NUNCA enviaba `periodo` (useEffect solo dependía de unidad; URL solo `?unidad=`), así que siempre mostraba el default backend (últimos 30 días) sin importar el botón. Trends (+12.5% etc.) y "+8.5% vs mes anterior" estaban HARDCODEADOS.
+Fix backend `modules/inteligencia_comercial/routes.py` `/inteligencia/dashboard`:
+- Nuevo param `periodo` (dia|semana|mes|anio/año). Resuelve rango anclado al ÚLTIMO DÍA CON VENTAS>0 (NO-LIVE, evita rangos vacíos). Helper `_ultimo_dia_con_datos` (parsea fecha string del view) + `_periodo_rango` (mes/semana/año/día + periodo anterior equivalente).
+- Trends REALES vs periodo anterior (kpis_trends) + etiqueta legible (filtros.periodo_label, meses en español).
+Fix frontend: envía `&periodo=`, useEffect depende de [unidad, periodo], valores 'anio' (evita encoding ñ), muestra etiqueta "Mostrando: <periodo>" con icono, trends reales por card, y usa data real aunque sea 0 (ya no cae al mock $15.71M). formatMoney movido a scope módulo.
+Verificado vía cURL (4 periodos con KPIs distintos + trends) y screenshot (Año $21.64M vs Mes $0.48M, etiquetas correctas).
+NOTA: lint `react-hooks/immutability` es ruido repo-wide preexistente (también en VentasHorarioPage.jsx sin tocar) — falso positivo del React Compiler sobre helpers con early-return.
+NOTA MOCK: ventas_horario/top_productos/casas_distribuidoras del dashboard siguen siendo proporciones calculadas del total (NO datos reales por producto/casa) — escalan con el total pero son ESTIMADOS, no reales.

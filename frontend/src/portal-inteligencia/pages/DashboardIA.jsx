@@ -4,10 +4,26 @@
 import React, { useState, useEffect } from 'react';
 import { 
   DollarSign, Users, Receipt, TrendingUp, Clock,
-  Wine, Package, ArrowUpRight, ArrowDownRight, Loader2
+  Wine, Package, ArrowUpRight, ArrowDownRight, Loader2, CalendarDays
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+
+// Periodos (value enviado al backend; 'anio' evita problemas de encoding con la ñ)
+const PERIODOS = [
+  { value: 'dia', label: 'Día' },
+  { value: 'semana', label: 'Semana' },
+  { value: 'mes', label: 'Mes' },
+  { value: 'anio', label: 'Año' },
+];
+
+const fmtTrend = (t) => (t === null || t === undefined) ? null : `${t >= 0 ? '+' : ''}${Number(t).toFixed(1)}%`;
+
+const formatMoney = (value) => {
+  if (value >= 1000000) return `$${(value / 1000000).toFixed(2)}M`;
+  if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
+  return `$${value.toFixed(2)}`;
+};
 
 // Datos de fallback para Alta Disponibilidad
 const FALLBACK_KPI = {
@@ -42,13 +58,13 @@ export default function DashboardIA({ user, unidadSeleccionada, onNavigate }) {
 
   useEffect(() => {
     fetchDashboardData();
-  }, [unidadSeleccionada]);
+  }, [unidadSeleccionada, periodo]);
 
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `${API_URL}/api/inteligencia/dashboard?unidad=${unidadSeleccionada}`,
+        `${API_URL}/api/inteligencia/dashboard?unidad=${unidadSeleccionada}&periodo=${periodo}`,
         { credentials: 'include' }
       );
       
@@ -58,38 +74,34 @@ export default function DashboardIA({ user, unidadSeleccionada, onNavigate }) {
         // Mapear respuesta del backend al formato esperado por el frontend
         if (result.success && result.kpis) {
           const kpis = result.kpis;
-          
-          // Si hay datos reales, usarlos
-          if (kpis.ventas_totales > 0) {
-            // Calcular ventas por horario
-            const ventasHorario = result.ventas_horario || [];
-            const desayuno = ventasHorario.find(h => h.horario === 'Desayuno')?.ventas || 0;
-            const comida = ventasHorario.find(h => h.horario === 'Comida')?.ventas || 0;
-            const cena = ventasHorario.find(h => h.horario === 'Cena')?.ventas || 0;
-            
-            setData({
-              ventasTotales: kpis.ventas_totales / 1000000, // Convertir a millones
-              paxTotal: kpis.pax_total,
-              chequesTotal: kpis.cheques_total,
-              propinaTotal: kpis.propinas_total,
-              ticketPromedio: kpis.cheque_promedio,
-              ventasDesayuno: desayuno / 1000000,
-              ventasComida: comida / 1000000,
-              ventasCena: cena / 1000000,
-              topProductos: (result.top_productos || []).map(p => ({
-                nombre: p.producto,
-                ventas: p.ventas,
-                cantidad: p.cantidad
-              })),
-              topCasas: (result.casas_distribuidoras || []).map(c => ({
-                casa: c.casa,
-                ventas: c.ventas,
-                porcentaje: c.participacion || ((c.ventas / kpis.ventas_totales) * 100)
-              })),
-              _source: result._source || 'LIVE'
-            });
-          }
-          // Si no hay datos reales, mantener fallback
+          const ventasHorario = result.ventas_horario || [];
+          const desayuno = ventasHorario.find(h => h.horario === 'Desayuno')?.ventas || 0;
+          const comida = ventasHorario.find(h => h.horario === 'Comida')?.ventas || 0;
+          const cena = ventasHorario.find(h => h.horario === 'Cena')?.ventas || 0;
+
+          setData({
+            ventasTotales: kpis.ventas_totales / 1000000, // Convertir a millones
+            paxTotal: kpis.pax_total,
+            chequesTotal: kpis.cheques_total,
+            propinaTotal: kpis.propinas_total,
+            ticketPromedio: kpis.cheque_promedio,
+            ventasDesayuno: desayuno / 1000000,
+            ventasComida: comida / 1000000,
+            ventasCena: cena / 1000000,
+            trends: result.kpis_trends || {},
+            periodoLabel: result.filtros?.periodo_label || '',
+            topProductos: (result.top_productos || []).map(p => ({
+              nombre: p.producto,
+              ventas: p.ventas,
+              cantidad: p.cantidad
+            })),
+            topCasas: (result.casas_distribuidoras || []).map(c => ({
+              casa: c.casa,
+              ventas: c.ventas,
+              porcentaje: c.participacion || ((c.ventas / (kpis.ventas_totales || 1)) * 100)
+            })),
+            _source: result._source || 'LIVE'
+          });
         }
       }
     } catch (error) {
@@ -99,44 +111,34 @@ export default function DashboardIA({ user, unidadSeleccionada, onNavigate }) {
     }
   };
 
-  const formatMoney = (value) => {
-    if (value >= 1000000) return `$${(value / 1000000).toFixed(2)}M`;
-    if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
-    return `$${value.toFixed(2)}`;
-  };
-
   const kpiCards = [
     { 
       title: 'Ventas Totales', 
       value: `$${data.ventasTotales.toFixed(2)}M`, 
       icon: DollarSign, 
       color: 'emerald',
-      trend: '+12.5%',
-      trendUp: true
+      trend: data.trends?.ventas_totales
     },
     { 
       title: 'PAX Total', 
       value: data.paxTotal.toLocaleString(), 
       icon: Users, 
       color: 'blue',
-      trend: '+8.3%',
-      trendUp: true
+      trend: data.trends?.pax_total
     },
     { 
       title: 'Cheques Emitidos', 
       value: data.chequesTotal.toLocaleString(), 
       icon: Receipt, 
       color: 'purple',
-      trend: '+5.7%',
-      trendUp: true
+      trend: data.trends?.cheques_total
     },
     { 
       title: 'Propinas', 
       value: formatMoney(data.propinaTotal), 
       icon: TrendingUp, 
       color: 'amber',
-      trend: '+15.2%',
-      trendUp: true
+      trend: data.trends?.propinas_total
     },
   ];
 
@@ -148,22 +150,34 @@ export default function DashboardIA({ user, unidadSeleccionada, onNavigate }) {
 
   return (
     <div className="space-y-6" data-testid="dashboard-ia">
-      {/* Periodo Selector */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-2">
-          {['dia', 'semana', 'mes', 'año'].map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriodo(p)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                periodo === p 
-                  ? 'bg-emerald-500 text-white' 
-                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-              }`}
+      {/* Periodo Selector + Etiqueta de fecha */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2" data-testid="periodo-selector">
+            {PERIODOS.map((p) => (
+              <button
+                key={p.value}
+                data-testid={`periodo-btn-${p.value}`}
+                onClick={() => setPeriodo(p.value)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  periodo === p.value 
+                    ? 'bg-emerald-500 text-white' 
+                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          {data.periodoLabel && (
+            <div
+              className="flex items-center gap-2 text-sm text-slate-300"
+              data-testid="periodo-label"
             >
-              {p.charAt(0).toUpperCase() + p.slice(1)}
-            </button>
-          ))}
+              <CalendarDays className="h-4 w-4 text-emerald-400" />
+              <span>Mostrando: <span className="font-semibold text-white">{data.periodoLabel}</span></span>
+            </div>
+          )}
         </div>
         
         {loading && (
@@ -178,22 +192,27 @@ export default function DashboardIA({ user, unidadSeleccionada, onNavigate }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpiCards.map((kpi, idx) => {
           const Icon = kpi.icon;
+          const trendStr = fmtTrend(kpi.trend);
+          const trendUp = (kpi.trend ?? 0) >= 0;
           return (
             <div 
               key={idx}
+              data-testid={`kpi-card-${idx}`}
               className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-5 hover:border-slate-600 transition-all"
             >
               <div className="flex items-start justify-between">
                 <div className={`p-2 rounded-lg bg-${kpi.color}-500/20`}>
                   <Icon className={`h-5 w-5 text-${kpi.color}-400`} />
                 </div>
-                <div className={`flex items-center gap-1 text-xs ${kpi.trendUp ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {kpi.trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                  {kpi.trend}
-                </div>
+                {trendStr && (
+                  <div className={`flex items-center gap-1 text-xs ${trendUp ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                    {trendStr}
+                  </div>
+                )}
               </div>
               <div className="mt-3">
-                <p className="text-2xl font-bold text-white">{kpi.value}</p>
+                <p className="text-2xl font-bold text-white" data-testid={`kpi-value-${idx}`}>{kpi.value}</p>
                 <p className="text-sm text-slate-400">{kpi.title}</p>
               </div>
             </div>
@@ -318,9 +337,9 @@ export default function DashboardIA({ user, unidadSeleccionada, onNavigate }) {
             <p className="text-3xl font-bold text-white mt-1">${data.ticketPromedio.toLocaleString()} MXN</p>
           </div>
           <div className="text-right">
-            <p className="text-emerald-400 text-sm flex items-center gap-1">
-              <ArrowUpRight className="h-4 w-4" />
-              +8.5% vs mes anterior
+            <p className="text-emerald-400 text-sm flex items-center gap-1 justify-end">
+              <CalendarDays className="h-4 w-4" />
+              {data.periodoLabel || 'Periodo actual'}
             </p>
             <p className="text-slate-500 text-xs mt-1">Promedio por cheque</p>
           </div>

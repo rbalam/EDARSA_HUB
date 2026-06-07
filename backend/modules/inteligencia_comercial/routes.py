@@ -18,7 +18,7 @@ Unidades de Negocio válidas:
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Query, HTTPException
 import pymssql
@@ -167,9 +167,66 @@ def execute_query(sql: str, params: tuple = None) -> List[Dict]:
 # ENDPOINT: Dashboard Principal (KPIs)
 # Fuente: vw_Comercial_KPIs_Diarios_v2_Runtime
 # ============================================================================
+_MESES_ES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+             "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+
+
+def _ultimo_dia_con_datos(unidad_db: Optional[str]) -> date:
+    """Ancla NO-LIVE: último día con datos en la vista (evita rangos vacíos
+    al seleccionar 'Día' cuando hoy aún no tiene ventas)."""
+    where = "ventas_sin_propina > 0"
+    if unidad_db:
+        where += f" AND unidad_negocio_nombre = '{unidad_db}'"
+    rows = execute_query(
+        f"SELECT MAX(fecha_operacion) AS m FROM vw_Comercial_KPIs_Diarios_v2_Runtime WHERE {where}"
+    )
+    m = rows[0].get("m") if rows else None
+    if isinstance(m, datetime):
+        return m.date()
+    if isinstance(m, date):
+        return m
+    if isinstance(m, str) and len(m) >= 10:
+        try:
+            return datetime.strptime(m[:10], "%Y-%m-%d").date()
+        except ValueError:
+            pass
+    return date.today()
+
+
+def _periodo_rango(periodo: str, anchor: date):
+    """Resuelve (inicio, fin, prev_inicio, prev_fin, etiqueta) para el periodo
+    seleccionado, anclado al último día con datos. 'prev_*' = periodo anterior
+    equivalente para calcular tendencias reales."""
+    import calendar
+    p = (periodo or "mes").strip().lower()
+    if p in ("año", "ano", "anio", "anual", "year"):
+        ini, fin = date(anchor.year, 1, 1), anchor
+        d_prev = 28 if (anchor.month == 2 and anchor.day == 29) else anchor.day
+        prev_ini = date(anchor.year - 1, 1, 1)
+        prev_fin = date(anchor.year - 1, anchor.month, d_prev)
+        label = f"Año {anchor.year}"
+    elif p in ("semana", "week"):
+        ini, fin = anchor - timedelta(days=6), anchor
+        prev_ini, prev_fin = anchor - timedelta(days=13), anchor - timedelta(days=7)
+        label = f"Semana {ini.day} {_MESES_ES[ini.month]} – {fin.day} {_MESES_ES[fin.month]} {fin.year}"
+    elif p in ("dia", "día", "day"):
+        ini = fin = anchor
+        prev_ini = prev_fin = anchor - timedelta(days=1)
+        label = f"{anchor.day} de {_MESES_ES[anchor.month]} {anchor.year}"
+    else:  # mes
+        ini, fin = date(anchor.year, anchor.month, 1), anchor
+        py, pm = (anchor.year - 1, 12) if anchor.month == 1 else (anchor.year, anchor.month - 1)
+        last_prev = calendar.monthrange(py, pm)[1]
+        prev_ini = date(py, pm, 1)
+        prev_fin = date(py, pm, min(anchor.day, last_prev))
+        label = f"{_MESES_ES[anchor.month]} {anchor.year}"
+    return ini, fin, prev_ini, prev_fin, label
+
+
 @router.get("/dashboard")
 async def get_dashboard_data(
     unidad: Optional[str] = Query(None, description="Unidad de negocio (130MID, CIENFUEGOS, etc.)"),
+    periodo: Optional[str] = Query(None, description="Periodo: dia | semana | mes | anio/año"),
     fecha_inicio: Optional[str] = Query(None, description="Fecha inicio (YYYY-MM-DD)"),
     fecha_fin: Optional[str] = Query(None, description="Fecha fin (YYYY-MM-DD)")
 ):
@@ -178,8 +235,18 @@ async def get_dashboard_data(
     Fuente: vw_Comercial_KPIs_Diarios_v2_Runtime
     """
     unidad_db = normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
-    
-    # Defaults para fechas
+
+    periodo_label = None
+    prev_inicio = prev_fin = None
+    # Si se especifica periodo y NO se pasaron fechas explícitas, se resuelve el
+    # rango anclado al último día con datos (NO-LIVE, evita rangos vacíos).
+    if periodo and not (fecha_inicio and fecha_fin):
+        anchor = _ultimo_dia_con_datos(unidad_db)
+        ini, fin, prev_inicio, prev_fin, periodo_label = _periodo_rango(periodo, anchor)
+        fecha_inicio = ini.strftime("%Y-%m-%d")
+        fecha_fin = fin.strftime("%Y-%m-%d")
+
+    # Defaults para fechas (compatibilidad: últimos 30 días)
     if not fecha_inicio:
         fecha_inicio = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
     if not fecha_fin:
@@ -207,6 +274,40 @@ async def get_dashboard_data(
         """
         kpis = execute_query(kpis_sql)
         kpi_data = kpis[0] if kpis else {}
+
+        # ========== TENDENCIAS REALES vs periodo anterior equivalente ==========
+        kpis_trends = {}
+        if prev_inicio and prev_fin:
+            prev_where = [f"fecha_operacion BETWEEN '{prev_inicio}' AND '{prev_fin}'"]
+            if unidad_db:
+                prev_where.append(f"unidad_negocio_nombre = '{unidad_db}'")
+            prev_sql = f"""
+                SELECT
+                    COALESCE(SUM(ventas_sin_propina), 0) AS ventas_totales,
+                    COALESCE(SUM(pax_total), 0) AS pax_total,
+                    COALESCE(SUM(tickets_total), 0) AS cheques_total,
+                    COALESCE(SUM(propinas_total), 0) AS propinas_total
+                FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+                WHERE {' AND '.join(prev_where)}
+            """
+            prev_rows = execute_query(prev_sql)
+            prev = prev_rows[0] if prev_rows else {}
+
+            def _trend(cur, prv):
+                try:
+                    cur, prv = float(cur or 0), float(prv or 0)
+                    if prv <= 0:
+                        return None
+                    return round((cur - prv) / prv * 100, 1)
+                except Exception:
+                    return None
+
+            kpis_trends = {
+                "ventas_totales": _trend(kpi_data.get("ventas_totales"), prev.get("ventas_totales")),
+                "pax_total": _trend(kpi_data.get("pax_total"), prev.get("pax_total")),
+                "cheques_total": _trend(kpi_data.get("cheques_total"), prev.get("cheques_total")),
+                "propinas_total": _trend(kpi_data.get("propinas_total"), prev.get("propinas_total")),
+            }
         
         # Query por unidad (si es consolidado)
         ventas_por_unidad = []
@@ -275,8 +376,11 @@ async def get_dashboard_data(
             "filtros": {
                 "fecha_inicio": fecha_inicio,
                 "fecha_fin": fecha_fin,
-                "unidad": unidad_db or "TODAS"
+                "unidad": unidad_db or "TODAS",
+                "periodo": periodo or None,
+                "periodo_label": periodo_label
             },
+            "kpis_trends": kpis_trends,
             "kpis": {
                 "ventas_totales": round(float(kpi_data.get("ventas_totales", 0)), 2),
                 "pax_total": int(kpi_data.get("pax_total", 0)),
