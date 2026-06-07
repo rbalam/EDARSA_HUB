@@ -207,6 +207,9 @@ function shouldClearKey(key) {
   // carreras de 401/403 en recarga dura (el token se reconstruía tarde).
   const NEVER_CLEAR = [
     'edarsa_memory_token',
+    'token',
+    'access_token',
+    'auth_token',
     'user',
     'edarsa_preview_cache_reset_done',
   ];
