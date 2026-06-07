@@ -38,14 +38,9 @@ router = APIRouter(prefix="/api/config-asignaciones", tags=["Config Asignaciones
 _db = None
 
 def get_db():
-    """Obtiene la conexión a la base de datos MongoDB."""
-    global _db
-    if _db is None:
-        mongo_url = None  # P2-07: MongoDB eliminado
-        db_name = os.environ.get('DB_NAME', 'edarsa_hub')
-        client = None  # P2-07: MongoDB eliminado
-        _db = client[db_name]
-    return _db
+    """DEPRECADO: MongoDB ya no se usa. Retorna None (NO-MONGO / P5-1 sunset)."""
+    logging.debug("[CONFIG_ASIGNACIONES] get_db() - MongoDB deprecado, retornando None")
+    return None
 
 
 # Alias para uso en el módulo

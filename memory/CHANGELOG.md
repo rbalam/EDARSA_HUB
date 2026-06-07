@@ -1,5 +1,14 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-07] Fase 10 — P5-2 Guardrail CI NO-MONGO + neutralización 2 stubs rotos extra
+- **AUDITORÍA DE SCRIPT (rechazado):** `fase10_p5_2_requirements_guardrail.sh` NO ejecutado. Defectos: (1) GATE `get_mongo_db` aborta siempre — hay 12+ refs VIVAS (`core/mongo_compat.py`, `modules/api_connections/repository.py`, `api/admin_core_connections.py`, etc.); (2) objetivo ya cumplido: `requirements.txt` NO contiene `pymongo`/`motor`; (3) parche requirements roto: `'"$REQ_FILES"'` en heredoc `<<'PY'` (sin interpolación) → FileNotFoundError; (4) el guardrail que crea se auto-falla (`test_no_get_mongo_db_left` escanea su propio código que contiene `get_mongo_db`).
+- **Guardrail creado (versión propia, acotada):** `tests_guardrails/test_p5_1_no_mongo_residual_modules.py` — pytest + standalone. Falla si reaparece en `/app/backend/modules/`: imports vivos `pymongo`/`motor`/`MongoClient`/`AsyncIOMotorClient`, o el patrón roto `client = None` usado como conexión (`db = client[...]`/`.find(`/`.find_one(`). Acotado a `modules/` → no se auto-falla. PASS (2/2).
+- **Bonus:** el guardrail detectó 2 stubs Mongo rotos pre-existentes adicionales → neutralizados al patrón canónico deprecado-None:
+  - `modules/finanzas/repository_cuadres_z.py::get_db` (código muerto: tesoreria usa la versión `_edarsahub` SQL).
+  - `modules/configuracion/routes/config_asignaciones_routes.py::get_db` (router vivo, pero `get_db()` ya crasheaba en `client[db_name]` → sin regresión).
+- Verificado: `py_compile` OK, backend RUNNING, `GET /api/health/v1` (auth) → 200 `healthy`, guardrail 2/2.
+- NOTA pendiente: capa `core/mongo_compat.get_mongo_db` aún cableada en `api_connections`/`admin_core_connections` (residual Mongo mayor, fuera de alcance de este lote).
+
 ## [2026-06-07] Fase 9 — P5-1 Sunset mínimo `historical_kpis_repository.py` (NO-MONGO)
 - Contexto: el módulo ya no tenía `import pymongo/motor` vivos; el riesgo real eran 3 funciones legacy Mongo ROTAS (`client = None` → `db = client['edarsa_hub']`) que reventarían si se reactivaran. Verificado: NINGÚN router importa el módulo (código muerto inerte).
 - Neutralización quirúrgica por bloques de función: `_get_edarsahub_credentials`, `_get_edarsahub_credentials_sync` y `migrate_staging_mongo_kpis_to_sql` → stubs que retornan `{"disabled": True, "reason": "MONGO_LEGACY_SUNSET"/"MONGO_STAGING_SUNSET"}`. Sin tocar lógica SQL viva.

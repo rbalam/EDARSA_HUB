@@ -15,14 +15,9 @@ logger = logging.getLogger(__name__)
 _db = None
 
 def get_db():
-    global _db
-    if _db is None:
-        pass  # P2-07: MongoDB eliminado (MongoClient)
-        mongo_url = None  # P2-07: MongoDB eliminado
-        db_name = os.environ.get('DB_NAME', 'edarsahub')
-        client = None  # P2-07: MongoDB eliminado
-        _db = client[db_name]
-    return _db
+    """DEPRECADO: MongoDB ya no se usa. Retorna None (NO-MONGO / P5-1 sunset)."""
+    logging.debug("[CUADRES_Z] get_db() - MongoDB deprecado, retornando None")
+    return None
 
 
 def calcular_fecha_deposito_esperada(fecha_venta: str) -> str:
