@@ -1,0 +1,141 @@
+==================================================
+CAPA 3 - DIAGNOSTICO AUDITADO Y BLUEPRINT EXACTO
+Fecha: Sun Jun  7 00:14:44 UTC 2026
+==================================================
+===== 1) UBICACION DE ROUTERS /v2 =====
+/app/backend/auditorias_p4/backup_p4_01b_20260606_011251/server.py:19094:app.include_router(router_fase2_operativo, prefix="/api/v2", tags=["Fase2-Operativo"])
+/app/backend/auditorias_p4/backup_p4_01b_20260606_011251/server.py:19155:app.include_router(rbac_router, prefix="/api/v2", tags=["RBAC"])
+/app/backend/auditorias_p4/backup_p4_01b_20260606_011251/server.py:19164:    app.include_router(comercial_v2_router, prefix="/api/v2", tags=["Comercial V2"])
+/app/backend/auditorias_p4/backup_p4_02g_20260606_015931/server.py:19094:app.include_router(router_fase2_operativo, prefix="/api/v2", tags=["Fase2-Operativo"])
+/app/backend/auditorias_p4/backup_p4_02g_20260606_015931/server.py:19156:app.include_router(rbac_router, prefix="/api/v2", tags=["RBAC"])
+/app/backend/auditorias_p4/backup_p4_02g_20260606_015931/server.py:19165:    app.include_router(comercial_v2_router, prefix="/api/v2", tags=["Comercial V2"])
+/app/backend/auditorias_p4/backup_p4_04_05_20260606_041128/server.py:18982:app.include_router(router_fase2_operativo, prefix="/api/v2", tags=["Fase2-Operativo"])
+/app/backend/auditorias_p4/backup_p4_04_05_20260606_041128/server.py:19045:app.include_router(rbac_router, prefix="/api/v2", tags=["RBAC"])
+/app/backend/auditorias_p4/backup_p4_04_05_20260606_041128/server.py:19054:    app.include_router(comercial_v2_router, prefix="/api/v2", tags=["Comercial V2"])
+/app/backend/auditorias_p4/backup_p4_02_20260606_012636/server.py:19094:app.include_router(router_fase2_operativo, prefix="/api/v2", tags=["Fase2-Operativo"])
+/app/backend/auditorias_p4/backup_p4_02_20260606_012636/server.py:19155:app.include_router(rbac_router, prefix="/api/v2", tags=["RBAC"])
+/app/backend/auditorias_p4/backup_p4_02_20260606_012636/server.py:19164:    app.include_router(comercial_v2_router, prefix="/api/v2", tags=["Comercial V2"])
+/app/backend/auditorias_p4/backup_p4_02i_20260606_021615/server.py:19094:app.include_router(router_fase2_operativo, prefix="/api/v2", tags=["Fase2-Operativo"])
+/app/backend/auditorias_p4/backup_p4_02i_20260606_021615/server.py:19157:app.include_router(rbac_router, prefix="/api/v2", tags=["RBAC"])
+/app/backend/auditorias_p4/backup_p4_02i_20260606_021615/server.py:19166:    app.include_router(comercial_v2_router, prefix="/api/v2", tags=["Comercial V2"])
+/app/backend/auditorias_p4/backup_p4_02j_20260606_022445/server.py:19094:app.include_router(router_fase2_operativo, prefix="/api/v2", tags=["Fase2-Operativo"])
+/app/backend/auditorias_p4/backup_p4_02j_20260606_022445/server.py:19157:app.include_router(rbac_router, prefix="/api/v2", tags=["RBAC"])
+/app/backend/auditorias_p4/backup_p4_02j_20260606_022445/server.py:19166:    app.include_router(comercial_v2_router, prefix="/api/v2", tags=["Comercial V2"])
+/app/backend/auditorias_p4/backup_p4_02d_20260606_014556/server.py:19094:app.include_router(router_fase2_operativo, prefix="/api/v2", tags=["Fase2-Operativo"])
+/app/backend/auditorias_p4/backup_p4_02d_20260606_014556/server.py:19155:app.include_router(rbac_router, prefix="/api/v2", tags=["RBAC"])
+/app/backend/auditorias_p4/backup_p4_02d_20260606_014556/server.py:19164:    app.include_router(comercial_v2_router, prefix="/api/v2", tags=["Comercial V2"])
+/app/backend/auditorias_p4/backup_p4_02h_20260606_020653/server.py:19094:app.include_router(router_fase2_operativo, prefix="/api/v2", tags=["Fase2-Operativo"])
+/app/backend/auditorias_p4/backup_p4_02h_20260606_020653/server.py:19156:app.include_router(rbac_router, prefix="/api/v2", tags=["RBAC"])
+/app/backend/auditorias_p4/backup_p4_02h_20260606_020653/server.py:19165:    app.include_router(comercial_v2_router, prefix="/api/v2", tags=["Comercial V2"])
+/app/backend/auditorias_p4/backup_p4_02b_20260606_013125/server.py:19094:app.include_router(router_fase2_operativo, prefix="/api/v2", tags=["Fase2-Operativo"])
+/app/backend/auditorias_p4/backup_p4_02b_20260606_013125/server.py:19155:app.include_router(rbac_router, prefix="/api/v2", tags=["RBAC"])
+/app/backend/auditorias_p4/backup_p4_02b_20260606_013125/server.py:19164:    app.include_router(comercial_v2_router, prefix="/api/v2", tags=["Comercial V2"])
+/app/backend/modules/comercial_v2/routes.py:118:router = APIRouter(prefix="/comercial", tags=["Comercial V2"])
+/app/backend/modules/finanzas/propinas_tpv/routes_edarsahub.py:35:    prefix="/finanzas/propinas/v2",
+/app/backend/modules/finanzas/saldos_bancarios.py:48:router = APIRouter(prefix="/v2/finanzas", tags=["Finanzas - Saldos Bancarios"])
+/app/backend/modules/finanzas/cuentas_bancarias.py:49:router = APIRouter(prefix="/v2/finanzas", tags=["Finanzas - Cuentas Bancarias"])
+/app/backend/tests/test_notificaciones_whatsapp.py:429:        """POST /api/v2/notificaciones/test - phone without + prefix"""
+/app/backend/server.py:16474:app.include_router(router_fase2_operativo, prefix="/api/v2", tags=["Fase2-Operativo"])
+/app/backend/server.py:16537:app.include_router(rbac_router, prefix="/api/v2", tags=["RBAC"])
+/app/backend/server.py:16546:    app.include_router(comercial_v2_router, prefix="/api/v2", tags=["Comercial V2"])
+/app/backend/core/scheduler/routes.py:22:router = APIRouter(prefix="/api/v2/scheduler", tags=["Scheduler"])
+/app/backend/core/communications/routes.py:37:router = APIRouter(prefix="/api/v2/notificaciones-whatsapp", tags=["Notificaciones WhatsApp"])
+===== 2) USO DE get_database()/stub EN fase2_operativo =====
+/app/backend/modules/fase2_operativo/db_utils.py:16:def get_database():
+/app/backend/modules/fase2_operativo/repositories/sql_base_repository.py:272:        self.collection = collection
+/app/backend/modules/fase2_operativo/repositories/sql_base_repository.py:300:        self.collection_name = collection_name
+/app/backend/modules/fase2_operativo/repositories/sql_base_repository.py:1222:        self.collection_name = collection_name
+/app/backend/modules/fase2_operativo/repositories/sql_base_repository.py:1226:        self.collection = self._sql_repo
+/app/backend/modules/fase2_operativo/services/document_data_service.py:51:        self.db = db
+/app/backend/modules/fase2_operativo/services/document_data_service.py:64:            from core.mongo_stub import StubDatabase
+/app/backend/modules/fase2_operativo/services/cargos_service.py:107:        self.db = db
+/app/backend/modules/fase2_operativo/services/cargos_service.py:119:            from core.mongo_stub import StubDatabase
+/app/backend/modules/fase2_operativo/services/cargos_service.py:782:            notification_service = get_notification_service(self.db)
+/app/backend/modules/fase2_operativo/services/notification_service.py:38:        self.db = db  # Mantenido para compatibilidad, no se usa
+/app/backend/modules/fase2_operativo/services/auditoria_programada_service.py:51:        self.db = db
+/app/backend/modules/fase2_operativo/services/auditoria_programada_service.py:60:            from core.mongo_stub import StubDatabase
+/app/backend/modules/fase2_operativo/services/automatizacion_compras_service.py:84:        self.db = db  # Para compatibilidad
+/app/backend/modules/fase2_operativo/services/automatizacion_compras_service.py:684:            manual_id = trigger_generar_manual_sync(self.db, automatizacion_id, modulo="compras")
+/app/backend/modules/fase2_operativo/services/responsabilidad_service.py:108:        self.db = db
+/app/backend/modules/fase2_operativo/services/operativo_service.py:54:        self.db = db
+/app/backend/modules/fase2_operativo/routes/sla_routes.py:22:from ..db_utils import get_database
+/app/backend/modules/fase2_operativo/routes/sla_routes.py:44:        db = get_database()
+/app/backend/modules/fase2_operativo/routes/sla_routes.py:78:        db = get_database()
+/app/backend/modules/fase2_operativo/routes/sla_routes.py:108:        db = get_database()
+/app/backend/modules/fase2_operativo/routes/sla_routes.py:141:        db = get_database()
+/app/backend/modules/fase2_operativo/routes/sla_routes.py:175:        db = get_database()
+/app/backend/modules/fase2_operativo/routes/sla_routes.py:208:        db = get_database()
+/app/backend/modules/fase2_operativo/routes/sla_routes.py:244:        db = get_database()
+/app/backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:20:from ..db_utils import get_database
+/app/backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:140:    from ..db_utils import get_database
+/app/backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:142:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:182:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:208:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:233:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:269:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:304:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:319:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:339:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:365:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:395:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:415:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:452:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:490:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:526:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:576:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:605:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/tarea_routes.py:27:from ..db_utils import get_database
+/app/backend/modules/fase2_operativo/routes/tarea_routes.py:37:    return get_database()
+/app/backend/modules/fase2_operativo/routes/configuracion_routes.py:18:from ..db_utils import get_database
+/app/backend/modules/fase2_operativo/routes/configuracion_routes.py:28:    return get_database()
+/app/backend/modules/fase2_operativo/routes/cargos_routes.py:52:from ..db_utils import get_database
+/app/backend/modules/fase2_operativo/routes/cargos_routes.py:63:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/responsabilidad_routes.py:49:from ..db_utils import get_database
+/app/backend/modules/fase2_operativo/routes/responsabilidad_routes.py:59:    return get_database()
+/app/backend/modules/fase2_operativo/routes/notificaciones_routes.py:55:    from ..db_utils import get_database
+/app/backend/modules/fase2_operativo/routes/notificaciones_routes.py:56:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/notificaciones_routes.py:89:    from ..db_utils import get_database
+/app/backend/modules/fase2_operativo/routes/notificaciones_routes.py:90:    db = get_database()
+/app/backend/modules/fase2_operativo/routes/justificacion_routes.py:21:from ..db_utils import get_database
+/app/backend/modules/fase2_operativo/routes/justificacion_routes.py:31:    return get_database()
+/app/backend/modules/fase2_operativo/routes/workflow_routes.py:30:from ..db_utils import get_database
+/app/backend/modules/fase2_operativo/routes/workflow_routes.py:40:    return get_database()
+/app/backend/modules/fase2_operativo/routes/auditoria_programada_routes.py:28:from ..db_utils import get_database
+/app/backend/modules/fase2_operativo/routes/auditoria_programada_routes.py:38:    return get_database()
+/app/backend/modules/fase2_operativo/routes/documentos_routes.py:17:from ..db_utils import get_database
+/app/backend/modules/fase2_operativo/routes/documentos_routes.py:58:        db = get_database()
+/app/backend/modules/fase2_operativo/routes/documentos_routes.py:132:        db = get_database()
+/app/backend/modules/fase2_operativo/routes/documentos_routes.py:199:        db = get_database()
+/app/backend/modules/fase2_operativo/routes/documentos_routes.py:235:        db = get_database()
+/app/backend/modules/fase2_operativo/routes/documentos_routes.py:275:        db = get_database()
+/app/backend/modules/fase2_operativo/routes/auditoria_routes.py:20:from ..db_utils import get_database
+/app/backend/modules/fase2_operativo/routes/auditoria_routes.py:30:    return get_database()
+/app/backend/modules/fase2_operativo/routes/dashboard_routes.py:20:from ..db_utils import get_database
+/app/backend/modules/fase2_operativo/routes/dashboard_routes.py:30:    return get_database()
+===== 3) COLECCIONES MONGO POR REPOSITORIO =====
+===== 4) ENDPOINTS OBJETIVO (ubicacion) =====
+--- /api/v2/dashboard/resumen
+--- /api/v2/dashboard/alertas
+--- /api/v2/tareas
+--- /api/v2/workflows
+--- /api/v2/sla/metricas
+--- /api/v2/responsabilidad/metricas
+--- /api/v2/responsabilidad/pendientes-aprobacion
+--- /api/v2/responsabilidad/en-disputa
+===== 5) REPOSITORIOS SQL YA EXISTENTES (referencia) =====
+/app/backend/modules/fase2_operativo/repositories/__init__.py
+/app/backend/modules/fase2_operativo/repositories/base_repository.py
+/app/backend/modules/fase2_operativo/repositories/cargos_repository.py
+/app/backend/modules/fase2_operativo/repositories/configuracion_repository.py
+/app/backend/modules/fase2_operativo/repositories/auditoria_programada_repository.py
+/app/backend/modules/fase2_operativo/repositories/auditoria_repository.py
+/app/backend/modules/fase2_operativo/repositories/workflow_repository.py
+/app/backend/modules/fase2_operativo/repositories/asignacion_repository.py
+/app/backend/modules/fase2_operativo/repositories/justificacion_repository.py
+/app/backend/modules/fase2_operativo/repositories/tarea_repository.py
+/app/backend/modules/fase2_operativo/repositories/detalle_diferencias_repository.py
+/app/backend/modules/fase2_operativo/repositories/responsabilidad_repository.py
+/app/backend/modules/fase2_operativo/repositories/historial_responsabilidad_repository.py
+/app/backend/modules/fase2_operativo/repositories/historial_repository.py
+/app/backend/modules/fase2_operativo/repositories/sql_base_repository.py
+
