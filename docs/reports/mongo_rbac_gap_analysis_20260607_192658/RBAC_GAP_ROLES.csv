@@ -1,0 +1,29 @@
+tipo,key_normalizada,mongo_existe,mongo_source,mongo_id,mongo_nombre,mongo_modulo,mongo_user,mongo_role,sql_existe,sql_source,sql_id,sql_nombre,sql_modulo,sql_user,sql_role,dictamen,accion_recomendada,riesgo,motivo
+ROL,admin,True,edarsa_hub.rbac_roles,69e42eedfb75b19aabd0acdd,ADMIN,,,,True,dbo.Usuario_Roles,1,Administrador,,,,CUBIERTO_EN_SQL,CANDIDATA_A_BORRADO_FUTURO,BAJO,Existe en Mongo y SQL (llave normalizada equivalente).
+ROL,administrador_comercial,False,,,,,,,True,dbo.Usuario_Roles,17,Administrador Comercial,,,,SQL_EVOLUCIONADO_NO_EXISTIA_EN_MONGO,SIN_ACCION,BAJO,En SQL pero no en Mongo (evolución de SQL).
+ROL,administrador_de_usuarios,True,edarsa_hub.sec_roles,69e738e90800eb46a1e1f038,Administrador de Usuarios,,,,False,,,,,,,POSIBLE_FALTANTE_SQL,REVISION_MANUAL_NO_MIGRAR_EN_BLOQUE,MEDIO_ALTO,En Mongo pero sin equivalente normalizado en SQL.
+ROL,analista_comercial,False,,,,,,,True,dbo.Usuario_Roles,19,Analista Comercial,,,,SQL_EVOLUCIONADO_NO_EXISTIA_EN_MONGO,SIN_ACCION,BAJO,En SQL pero no en Mongo (evolución de SQL).
+ROL,auditor,True,edarsa_hub.rbac_roles,69e42eedfb75b19aabd0ace2,AUDITOR,,,,True,dbo.Usuario_Roles,13,Auditor,,,,CUBIERTO_EN_SQL,CANDIDATA_A_BORRADO_FUTURO,BAJO,Existe en Mongo y SQL (llave normalizada equivalente).
+ROL,compras,False,,,,,,,True,dbo.Usuario_Roles,3,Compras,,,,SQL_EVOLUCIONADO_NO_EXISTIA_EN_MONGO,SIN_ACCION,BAJO,En SQL pero no en Mongo (evolución de SQL).
+ROL,configurador_comercial,False,,,,,,,True,dbo.Usuario_Roles,21,Configurador Comercial,,,,SQL_EVOLUCIONADO_NO_EXISTIA_EN_MONGO,SIN_ACCION,BAJO,En SQL pero no en Mongo (evolución de SQL).
+ROL,crm_administrador,False,,,,,,,True,dbo.Usuario_Roles,14,CRM_Administrador,,,,SQL_EVOLUCIONADO_NO_EXISTIA_EN_MONGO,SIN_ACCION,BAJO,En SQL pero no en Mongo (evolución de SQL).
+ROL,crm_auditor,False,,,,,,,True,dbo.Usuario_Roles,16,CRM_Auditor,,,,SQL_EVOLUCIONADO_NO_EXISTIA_EN_MONGO,SIN_ACCION,BAJO,En SQL pero no en Mongo (evolución de SQL).
+ROL,crm_ejecutivo,False,,,,,,,True,dbo.Usuario_Roles,15,CRM_Ejecutivo,,,,SQL_EVOLUCIONADO_NO_EXISTIA_EN_MONGO,SIN_ACCION,BAJO,En SQL pero no en Mongo (evolución de SQL).
+ROL,direccion,True,edarsa_hub.rbac_roles,69e42eedfb75b19aabd0acde,DIRECCION,,,,True,dbo.Usuario_Roles,10,Dirección,,,,CUBIERTO_EN_SQL,CANDIDATA_A_BORRADO_FUTURO,BAJO,Existe en Mongo y SQL (llave normalizada equivalente).
+ROL,gerencia,False,,,,,,,True,dbo.Usuario_Roles,2,Gerencia,,,,SQL_EVOLUCIONADO_NO_EXISTIA_EN_MONGO,SIN_ACCION,BAJO,En SQL pero no en Mongo (evolución de SQL).
+ROL,gerente,False,,,,,,,True,dbo.Usuario_Roles,22,Gerente,,,,SQL_EVOLUCIONADO_NO_EXISTIA_EN_MONGO,SIN_ACCION,BAJO,En SQL pero no en Mongo (evolución de SQL).
+ROL,gerente_de_unidad,False,,,,,,,True,dbo.Usuario_Roles,18,Gerente de Unidad,,,,SQL_EVOLUCIONADO_NO_EXISTIA_EN_MONGO,SIN_ACCION,BAJO,En SQL pero no en Mongo (evolución de SQL).
+ROL,gerente_operaciones,False,,,,,,,True,dbo.Usuario_Roles,11,Gerente Operaciones,,,,SQL_EVOLUCIONADO_NO_EXISTIA_EN_MONGO,SIN_ACCION,BAJO,En SQL pero no en Mongo (evolución de SQL).
+ROL,gerente_ops,True,edarsa_hub.rbac_roles,69e42eedfb75b19aabd0acdf,GERENTE_OPS,,,,False,,,,,,,POSIBLE_FALTANTE_SQL,REVISION_MANUAL_NO_MIGRAR_EN_BLOQUE,MEDIO_ALTO,En Mongo pero sin equivalente normalizado en SQL.
+ROL,gestor_de_sistema,True,edarsa_hub.sec_roles,69e73fb47f894b56767c741b,Gestor de Sistema,,,,False,,,,,,,POSIBLE_FALTANTE_SQL,REVISION_MANUAL_NO_MIGRAR_EN_BLOQUE,MEDIO_ALTO,En Mongo pero sin equivalente normalizado en SQL.
+ROL,operador,True,edarsa_hub.rbac_roles,69e42eedfb75b19aabd0ace1,OPERADOR,,,,True,dbo.Usuario_Roles,12,Operador,,,,CUBIERTO_EN_SQL,CANDIDATA_A_BORRADO_FUTURO,BAJO,Existe en Mongo y SQL (llave normalizada equivalente).
+ROL,superadmin,True,edarsa_hub.roles,69e6f5eaa9e9fa3414f636e7,SuperAdministrador,,,,True,dbo.Usuario_Roles,6,SuperAdministrador,,,,CUBIERTO_EN_SQL,CANDIDATA_A_BORRADO_FUTURO,BAJO,Existe en Mongo y SQL (llave normalizada equivalente).
+ROL,supervisor,True,edarsa_hub.rbac_roles,69e42eedfb75b19aabd0ace0,SUPERVISOR,,,,True,dbo.Usuario_Roles,7,Supervisor,,,,CUBIERTO_EN_SQL,CANDIDATA_A_BORRADO_FUTURO,BAJO,Existe en Mongo y SQL (llave normalizada equivalente).
+ROL,tesoreria,False,,,,,,,True,dbo.Usuario_Roles,5,Tesoreria,,,,SQL_EVOLUCIONADO_NO_EXISTIA_EN_MONGO,SIN_ACCION,BAJO,En SQL pero no en Mongo (evolución de SQL).
+ROL,usuario,True,edarsa_hub.roles,69e4557b965d2f0b82648f90,Usuario,,,,True,dbo.Usuario_Roles,8,Usuario,,,,CUBIERTO_EN_SQL,CANDIDATA_A_BORRADO_FUTURO,BAJO,Existe en Mongo y SQL (llave normalizada equivalente).
+ROL,ventas,False,,,,,,,True,dbo.Usuario_Roles,4,Ventas,,,,SQL_EVOLUCIONADO_NO_EXISTIA_EN_MONGO,SIN_ACCION,BAJO,En SQL pero no en Mongo (evolución de SQL).
+ROL,visor,False,,,,,,,True,dbo.Usuario_Roles,9,Visor,,,,SQL_EVOLUCIONADO_NO_EXISTIA_EN_MONGO,SIN_ACCION,BAJO,En SQL pero no en Mongo (evolución de SQL).
+ROL,visor_comercial,False,,,,,,,True,dbo.Usuario_Roles,20,Visor Comercial,,,,SQL_EVOLUCIONADO_NO_EXISTIA_EN_MONGO,SIN_ACCION,BAJO,En SQL pero no en Mongo (evolución de SQL).
+ROL,visor_de_administracion,True,edarsa_hub.sec_roles,69e72eadcf243934e266b781,Visor de Administración,,,,False,,,,,,,POSIBLE_FALTANTE_SQL,REVISION_MANUAL_NO_MIGRAR_EN_BLOQUE,MEDIO_ALTO,En Mongo pero sin equivalente normalizado en SQL.
+ROL,visor_de_estructura_organizacional,True,edarsa_hub.sec_roles,69e71d3a3e78a36a5f3d88b3,Visor de Estructura Organizacional,,,,False,,,,,,,POSIBLE_FALTANTE_SQL,REVISION_MANUAL_NO_MIGRAR_EN_BLOQUE,MEDIO_ALTO,En Mongo pero sin equivalente normalizado en SQL.
+ROL,visor_del_sistema,True,edarsa_hub.sec_roles,69e7205e5cbe2430273d88b3,Visor del Sistema,,,,False,,,,,,,POSIBLE_FALTANTE_SQL,REVISION_MANUAL_NO_MIGRAR_EN_BLOQUE,MEDIO_ALTO,En Mongo pero sin equivalente normalizado en SQL.
