@@ -1,5 +1,14 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-07] Fase 13 — P5-3B-A Guardrails + snapshot contrato Admin CORE (pre-cutover)
+- **AUDITORÍA DE SCRIPT (corregido antes de ejecutar):** `fase13_*.sh` tenía un defecto: 2 tests importan módulos de la app (`exec_module` de `admin_core_connections`, `from modules.api_connections import repository`) que requieren `EDARSAHUB_SQL_*`; bajo `pytest` desde bash el `.env` NO se carga → fallaban → `set -e` abortaba antes del snapshot. Confirmado: `EDARSAHUB_SQL_HOST` ausente en shell ambiente.
+- **Fix permanente:** creado `tests_guardrails/conftest.py` que carga `/app/backend/.env` (`load_dotenv`) + asegura `/app/backend` en `sys.path`. Reutilizable por todos los guardrails que importen módulos.
+- **Guardrails creados (6/6 PASS):**
+  - `test_admin_core_contract_and_imports.py`: import correcto (`get_mongo_db` desde `core.mongo_compat`, no desde `core.db`), rutas esperadas (`GET ""`, `GET "/{server_id}"`, `POST "/{server_id}/test"`), módulo importa limpio con `router`.
+  - `test_api_connections_mongo_degrades_safe.py`: `repository.py` sin import `from core.db import get_mongo_db`, conserva guardas `if db is None`, expone `create/update/delete_api_connection`.
+- **Snapshot contrato HTTP actual (baseline para cutover)** en `auditorias_p5/FASE13_CONTRATO_ADMIN_CORE_*`: `GET /core-connections` → 200 `{status:SUCCESS, data:[2], meta}`; `GET /{id}` inexistente → 404 `{"detail":"Conexión CORE no encontrada"}`; `POST /{id}/test` inexistente → 404; `health/v1` → healthy.
+- Sin cambios a runtime/BD/frontend/rutas. Listo para P5-3B (cutover SQL-First endpoint por endpoint contra este contrato).
+
 ## [2026-06-07] Fase 11 — P5-3A Fix import roto `get_mongo_db` → Admin CORE router reactivado
 - **AUDITORÍA DE SCRIPT (rechazado):** `fase11_p5_3a_admin_core_api_connections_safe.sh` NO ejecutado. Defectos: (1) inyectaba helpers `_safe_mongo_*` REDUNDANTES en `admin_core_connections.py` (las ops Mongo líneas 116/251 ya están guardadas con `if db:` + try/except); (2) en `api_connections/repository.py` reemplazaba `db.api_connections_cache.delete_one(`/`update_one(`/`api_health_logs.insert_one(` por funciones SÍNCRONAS dejando el `await` delante → `await <dict>` = TypeError latente si Mongo volviera. Churn innecesario.
 - **Fix mínimo aplicado (opción a real):** `api/admin_core_connections.py` línea 33 `from core.db import execute_sql_query, get_mongo_db` → split en `from core.db import execute_sql_query` + `from core.mongo_compat import get_mongo_db`. Causa raíz: `core/db.py` NO exporta `get_mongo_db` (vive en `core/mongo_compat.py`) → ImportError → el router Admin CORE NUNCA se registraba (34 WARNINGs históricos "Error registrando Admin CORE router").
