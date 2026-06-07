@@ -109,3 +109,29 @@ Fecha: 2026-06-07 · Método: lectura de código + pruebas de endpoints con toke
 - Validación RBAC con **cuenta de rol limitado** (Supervisor/Usuario) — pendiente para medir visibilidad de menús y scope de datos.
 
 **Conclusión Fase 0**: 2 menús **BLOQUEADOS** (Tablero Ejecutivo, Explorador BD), 1 con fallo grave (Finanzas 502), violaciones **NO-LIVE** activas en logs y **Mongo residual** alcanzable en Comercial. El resto está OK o requiere ajustes menores. No se aplicaron correcciones.
+
+---
+
+## 6) VERIFICACIÓN COMPLEMENTARIA (2026-06-07, cuenta `admin@edarsa.com`)
+
+### 6.1 RBAC — contexto del usuario de prueba
+- `admin@edarsa.com` → rol del sistema = **ADMIN (Administrador)**, `UsuarioID=1`, nombre "Admin Test Editado". *(Nota: se reporta ADMIN, no SuperAdministrador.)*
+- `/api/auth/access-context` devuelve `unidad_activa` + `unidades_permitidas` (130° MERIDA y otras) → **RBAC de Unidad de Negocio funcional a nivel de CONTEXTO**.
+- `/api/sistema/menus/usuario` → **28 módulos** visibles para ADMIN.
+- Limitación: validación de **rol limitado** (Supervisor/Usuario) no ejecutada por instrucción de no crear usuarios; se evaluó RBAC por código + contexto admin. La brecha real es de **scope de DATOS por unidad en endpoints** (no de contexto): endpoints como `dashboard-ejecutivo/resumen` y `rentabilidad` no filtran por unidad.
+
+### 6.2 Rutas reales resueltas (antes 404 por prefijo asumido)
+- **Centro de Control** → `core/centro_control/routes.py`, prefix `/api/centro-control`. Endpoints `/salud/resumen`, `/fuentes`, `/ping` → **200 OK**. ⚠️ Background `health_checker` con bug: `Error verificando SQL servers: 'NoneType' object is not subscriptable`.
+- **Configuración Operativa** → `api/configuracion_operativa_unidades.py`, prefix real `/api/admin/unidades-negocio`. Endpoint `/todas/configuracion-operativa` → **500**. Causa: `[CONFIG_OPERATIVA] ... tuple indices must be integers or slices, not str` (bug cursor **tupla-vs-dict** de PyMSSQL; mismo patrón ya resuelto en `SQLBaseRepository`). **Reclasificado: MENOR → MAYOR/BLOQ.**
+
+### 6.3 Ajustes a la matriz tras verificación
+- **7g Configuración Operativa**: estado **MAYOR/BLOQ** (500 por cursor tupla-vs-dict). Recomendación: usar cursor `as_dict=True` / `_row_to_dict` en `configuracion_operativa_unidades.py`.
+- **Centro de Control** (no estaba en los 15, pero relevante): OK en API; corregir `health_checker` NoneType.
+- **Ruido confirmado**: `sla_service` (tarea None) sigue emitiendo errores en bucle → P2 limpieza.
+
+### 6.4 Bloqueadores actualizados (P0)
+1. Tablero Ejecutivo — vista corrupta (500).
+2. Explorador BD — import roto (`_execute_sql_direct_with_error`).
+3. Finanzas — `/health` 502.
+4. **Configuración Operativa — 500 (cursor tupla-vs-dict).**
+5. NO-LIVE — erradicar conexiones a operativos.
