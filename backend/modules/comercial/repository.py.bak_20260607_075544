@@ -158,12 +158,9 @@ def _get_server_by_id_sql(server_id: str) -> Optional[Dict]:
     Retorna None si no se encuentra o si hay error de conexión.
     """
     try:
-        # FIX: usar server_id (antes interpolaba '{id}' = builtin de Python -> nunca match).
-        # Escapado de comillas para evitar inyección SQL (server_id viene del path).
-        safe_id = str(server_id).replace("'", "''")
         query = f"""
         SELECT * FROM Servidores_Conexiones
-        WHERE (id = '{safe_id}' OR mongodb_id = '{safe_id}')
+        WHERE (id = '{id}' OR mongodb_id = '{id}')
           AND activo = 1
         """
         results = execute_sql_query(
