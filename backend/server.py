@@ -7369,7 +7369,7 @@ async def obtener_inventarios_fisicos(server_id: str, unidad: str = None, sucurs
     """
     # ── Resolución canónica de unidad (puerta única). 'unidad' tiene prioridad;
     #    si no, se interpreta el path como token (unidad o server_id deprecated).
-    from core.corporate_filters.request_resolver import resolve_unidad_simple
+    from core.corporate_filters.request_resolver import resolve_unidad_simple, _shared_server
     token = unidad or server_id
     u, matched_by = resolve_unidad_simple(token)
     if u:
@@ -7398,11 +7398,19 @@ async def obtener_inventarios_fisicos(server_id: str, unidad: str = None, sucurs
     # ÚNICA FUENTE: EDARSAHUB Sync (NO-LIVE). Sin fallback a POS en vivo.
     # =========================================================================
     try:
+        # ROBUSTEZ (sistema-agnóstico, no hardcode de 'MPRO'/'SoftRestaurant'):
+        # el filtro por sucursal SOLO aplica cuando un mismo server_id aloja >1 unidad
+        # (caso MPRO ORIGEN/QRO, que requieren desambiguar). Para single-tenant
+        # (SoftRestaurant, o un MPRO único) el server_id basta y NO se filtra por sucursal,
+        # así un placeholder del frontend (p.ej. 'SoftRestaurant') o una sucursal vacía en
+        # EDARSAHUB NO oculta los inventarios. Si en el futuro se agrega otro sistema, este
+        # criterio canónico (¿el server aloja varias unidades?) sigue siendo válido.
+        sucursal_filtro = (sucursal_id or sucursal) if _shared_server(server_id) else None
         inventarios = obtener_inventarios_fisicos_sync(
             unidad_negocio_id=None,  # MPRO etiqueta todas las sucursales con la misma
                                      # unidad_negocio_id; se desambigua por server_id+sucursal
             server_id=server_id,
-            sucursal=sucursal or sucursal_id,
+            sucursal=sucursal_filtro,
             almacen=almacen,
             limit=500
         )

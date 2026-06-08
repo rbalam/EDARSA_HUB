@@ -142,7 +142,7 @@ export function AuthProvider({ children }) {
     setUser(userData);
     
     // P0-CACHE-PREVIEW: Intentar limpiar caché del backend
-    if (isPreviewMode() && (userData.role === 'SuperAdministrador' || userData.role === 'Administrador')) {
+    if (isPreviewMode() && (userData?.role === 'SuperAdministrador' || userData?.role === 'Administrador')) {
       try {
         await clearPreviewBackendCache(api);
       } catch (e) {

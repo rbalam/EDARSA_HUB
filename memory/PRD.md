@@ -353,6 +353,37 @@ lectura/reportes al contrato canónico `unidad`. Admin screens conservan `server
 - **PENDIENTE (reportar al usuario):** FASE 2 — migrar TableroEjecutivo, DashboardIA, Compras,
   Finanzas/Propinas, Tesorería, Costos, Pricing al contrato `unidad`.
 
+### P0 — Inventarios físicos SoftRestaurant rotos + crash login ✅ COMPLETE (2026-06-08)
+Bug reportado (urgente): en la pestaña **Análisis**, los inventarios de **SoftRestaurant**
+(130MID, CIENFUEGOS, ESTELAR) salían "No hay inventarios disponibles" y un crash
+`undefined is not an object (evaluating 'userData.role')` sacaba del sistema. MPRO sí
+mostraba inventarios. Regla del usuario: AMBOS sistemas deben funcionar, no romper uno
+arreglando el otro (este ajuste ya se había perdido ~4 veces).
+- **Causa raíz (read-only confirmada):** `Compras_Inventarios_Fisicos_Sync` SÍ tiene datos
+  SoftRestaurant (CIEN 185 / MID 172 / ESTELAR 131) pero su columna `sucursal` viene VACÍA
+  (single-tenant). El frontend SR envía el placeholder `sucursal='SoftRestaurant'` y el
+  endpoint filtraba SIEMPRE por sucursal → `sucursal LIKE '%SoftRestaurant%'` = 0 filas.
+- **Fix canónico (sistema-agnóstico, sin hardcode 'MPRO'/'SoftRestaurant')** en
+  `server.py::obtener_inventarios_fisicos`: el filtro por sucursal SOLO aplica cuando un
+  mismo server_id aloja >1 unidad (caso MPRO ORIGEN/QRO) usando
+  `_shared_server(server_id)`. Para single-tenant → `sucursal_filtro=None` → el server_id
+  basta. Futuro-proof: si se agrega otro sistema, el criterio (¿server con varias unidades?)
+  sigue válido.
+- **Crash login:** guard null-safety en `AuthContext.jsx` (`userData?.role`).
+- **Verificado cURL E2E:** SoftRestaurant con `sucursal=SoftRestaurant` → CIEN 185 / MID 172
+  / ESTELAR 131 (antes 0); MPRO desambiguación intacta (QRO 113 solo '130° QUERETARO',
+  ORIGEN 147 solo 'ORIGEN'); sin crash; smoke visual OK. Regresión:
+  `tests/test_inventarios_fisicos_scope_canonico.py` (3 tests, blindan la invariante canónica).
+- **PENDIENTE (propuesto, requiere autorización):** mostrar el **comentario capturado** en los
+  selectores Inventario Inicial/Final SOLO MPRO. Hoy NO es posible NO-LIVE porque
+  `Compras_Inventarios_Fisicos_Sync` NO tiene columna `comentario`, la query fuente MPRO
+  (`query_inventarios_fisicos_mpro`) NO lo selecciona y el INSERT del sync NO lo guarda; el
+  read devuelve `comentario=''` hardcodeado (server.py:7428). El frontend YA lo renderiza si
+  viene (Reportes.js 1837/1939). Solución robusta data-driven (sin hardcode de system_type):
+  (1) agregar columna `comentario` a la tabla sync, (2) seleccionar el campo real en la query
+  MPRO (definir nombre exacto de columna, p.ej. observaciones), (3) incluirlo en el INSERT,
+  (4) backfill MPRO, (5) read devuelve el valor real. SoftRestaurant queda '' automáticamente.
+
 ## 🥇 MÁXIMA DE ORO (REGLA PERMANENTE — 2026-06-07)
 **CADA VEZ que algo se vaya a HARDCODEAR, se REQUIERE la AUTORIZACIÓN ESCRITA del usuario ANTES de hacerlo.**
 - Aplica a: unidades, credenciales, hosts, rutas, horarios, roles/permisos, productos, casas/marcas, periodos, IDs, URLs, valores de negocio, fallbacks, etc.
