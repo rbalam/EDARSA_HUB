@@ -245,6 +245,29 @@ Archivos clave:
 - `/app/frontend/src/components/navigation/EnterpriseSidebarMenu.jsx` - Componente visual
 - Flag `USE_ENTERPRISE_MENU` en Layout.js para activar/desactivar
 
+### P1B - Sync POS Canónico Configurable (Modo Seguro) ✅ COMPLETE (2026-06-08)
+Script `.sh` del usuario AUDITADO y RECHAZADO (2 bloqueantes críticos invisibles a sus propias
+validaciones: NameError `tipo_ejecucion` por firma ya modificada → rompía el cron horario; y
+`detectar_faltantes_syncpos` consultaba `Venta_Detalle.PIC_*` que NO existe en EDARSAHUB,
+oculto por `|| true`). Intención implementada MANUALMENTE y corregida, con autorización del
+usuario en MODO SEGURO:
+- **SQL** (`migrations/p1b_sync_pos_config.py`, idempotente): crea `dbo.Sistema_SyncPOS_Config`,
+  `_EstadoUnidad`, `_Faltantes`, `_Bitacora`. Seed `INTELIGENCIA_COMERCIAL_POS` con
+  **Habilitado=0, PermitirPOSAutomatico=0, BackfillAutomaticoHabilitado=0** (NO conecta al POS).
+- **Job** (`core/scheduler/jobs/inteligencia_comercial_sync_job.py`): `UNIDADES_CONFIG` deprecado
+  a `{}` (eliminados hosts `.ddns.net`, `sa`, `*_DB_PASS`, `EDARSAHUB_SQL_PASSWORD`). Helpers
+  canónicos leen `Unidades_Negocio`+`Servidores_Conexiones` y reúsan `get_server_connection_config`
+  de Comercial V2 (sin duplicar desencriptado). Gate `should_run_syncpos_now` → cron horario hace
+  SKIPPED sin tocar POS. Firma extendida con `tipo_ejecucion`.
+- **Scripts**: `scripts/auditar_sync_pos_canonico.py` (auditoría sin secretos, `has_password` bool),
+  `scripts/guardrail_sync_pos_secrets.py`, `scripts/backfill_inteligencia_comercial_pos.py`.
+- Verificado: migración OK, py_compile OK, guardrail OK, lint OK, auditoría 5/5 unidades resueltas
+  sin exponer password, AUTO=skipped (no conecta POS), backend 200, bitácora registró SKIPPED.
+- **DIFERIDO por decisión del usuario**: detección de faltantes hasta definir tabla final de detalle
+  (Venta_Detalle vs Comercial_Inteligencia_VentasDetalleProducto; Sync_Sales solo staging).
+- **Activación**: por SQL `UPDATE dbo.Sistema_SyncPOS_Config SET Habilitado=1, PermitirPOSAutomatico=1`
+  cuando el usuario valide conectividad. Reporte: `docs/reports/P1B_SYNC_POS_CANONICO_AUTO_20260608.md`.
+
 ## 🥇 MÁXIMA DE ORO (REGLA PERMANENTE — 2026-06-07)
 **CADA VEZ que algo se vaya a HARDCODEAR, se REQUIERE la AUTORIZACIÓN ESCRITA del usuario ANTES de hacerlo.**
 - Aplica a: unidades, credenciales, hosts, rutas, horarios, roles/permisos, productos, casas/marcas, periodos, IDs, URLs, valores de negocio, fallbacks, etc.

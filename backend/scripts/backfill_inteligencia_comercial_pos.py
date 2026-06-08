@@ -54,6 +54,7 @@ def main():
         fecha_fin=args.fecha_fin,
         unidades=unidades,
         dry_run=not args.execute,
+        tipo_ejecucion="MANUAL" if args.execute else "AUDITORIA",
     )
     print(json.dumps(result, indent=2, ensure_ascii=False, default=str))
 
