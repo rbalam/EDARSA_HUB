@@ -2778,29 +2778,31 @@ def _derive_sucursales_from_sync(server_id: str) -> List[Dict]:
         return []
 
 
-def _derive_almacenes_from_sync(server_id: str, sucursal_id: Optional[str] = None) -> List[Dict]:
-    """FASE C (NO-LIVE): deriva almacenes distintos desde Compras_Inventarios_Fisicos_Sync."""
+def _derive_almacenes_from_sync(server_id: str, sucursal_id: Optional[str] = None, sucursal: Optional[str] = None) -> List[Dict]:
+    """FASE C (NO-LIVE): deriva almacenes distintos desde Compras_Inventarios_Fisicos_Sync.
+    El filtro por sucursal SOLO aplica a servers compartidos (MPRO ORIGEN/QRO); para
+    single-tenant (SoftRestaurant) la sucursal viene vacía en el sync y NO se filtra."""
     try:
         from modules.compras.sync_service import get_edarsahub_connection
+        from core.corporate_filters.request_resolver import _shared_server
+        apply_suc = _shared_server(server_id)
+        where = "LOWER(server_id) = LOWER(%s) AND almacen_id IS NOT NULL AND almacen_id <> ''"
+        params: List = [server_id]
+        if apply_suc and sucursal_id:
+            where += " AND sucursal_id = %s"
+            params.append(sucursal_id)
+        elif apply_suc and sucursal:
+            where += " AND sucursal = %s"
+            params.append(sucursal)
         conn = get_edarsahub_connection()
         try:
             cur = conn.cursor(as_dict=True)
-            if sucursal_id:
-                cur.execute("""
-                    SELECT DISTINCT almacen_id, almacen
-                    FROM Compras_Inventarios_Fisicos_Sync
-                    WHERE LOWER(server_id) = LOWER(%s) AND sucursal_id = %s
-                      AND almacen_id IS NOT NULL AND almacen_id <> ''
-                    ORDER BY almacen_id
-                """, (server_id, sucursal_id))
-            else:
-                cur.execute("""
-                    SELECT DISTINCT almacen_id, almacen
-                    FROM Compras_Inventarios_Fisicos_Sync
-                    WHERE LOWER(server_id) = LOWER(%s)
-                      AND almacen_id IS NOT NULL AND almacen_id <> ''
-                    ORDER BY almacen_id
-                """, (server_id,))
+            cur.execute(f"""
+                SELECT DISTINCT almacen_id, almacen
+                FROM Compras_Inventarios_Fisicos_Sync
+                WHERE {where}
+                ORDER BY almacen_id
+            """, tuple(params))
             rows = cur.fetchall() or []
         finally:
             conn.close()
@@ -2834,19 +2836,19 @@ async def get_sucursales(server_id: str, include_hidden: bool = False, current_u
     
     logging.debug(f"[GET_SUCURSALES] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
 
-    # === FASE C (NO-LIVE / anti-cooldown) ===
-    # Si el server es el host compartido de EDARSAHUB (MPRO), NUNCA conectar en vivo:
-    # derivar las sucursales de la tabla sync. Esto elimina el disparador del cooldown
-    # que dejaba el Tablero Ejecutivo en blanco.
-    if is_mpro_system(server.get('system_type')) and _is_edarsahub_shared_host(server):
-        sucursales_raw = _derive_sucursales_from_sync(server_id)
-        if not sucursales_raw:
-            sucursales_raw = [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
-        sucursales_filtradas = filter_sucursales_by_permissions(sucursales_raw, current_user, server_id)
-        if not include_hidden:
-            sucursales_filtradas = await filter_sucursales_by_config(sucursales_filtradas, server_id)
-        logging.info(f"[FASE-C] Sucursales NO-LIVE (sync) para server={server_id}: {len(sucursales_filtradas)}")
-        return sucursales_filtradas
+    # === NO-LIVE / EDARSAHUB EXCLUSIVO (todos los sistemas) ===
+    # Las sucursales se derivan SIEMPRE del cerebro EDARSAHUB (tabla sync). Nunca se
+    # conecta en vivo a ningún POS (ni SoftRestaurant ni MPRO). Esto cumple la máxima
+    # NO-LIVE y elimina el cooldown del host compartido. Para single-tenant
+    # (SoftRestaurant) el sync no trae sucursal → se usa la virtual "Principal".
+    sucursales_raw = _derive_sucursales_from_sync(server_id)
+    if not sucursales_raw:
+        sucursales_raw = [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
+    sucursales_filtradas = filter_sucursales_by_permissions(sucursales_raw, current_user, server_id)
+    if not include_hidden:
+        sucursales_filtradas = await filter_sucursales_by_config(sucursales_filtradas, server_id)
+    logging.info(f"[NO-LIVE] Sucursales (sync EDARSAHUB) server={server_id}: {len(sucursales_filtradas)}")
+    return sucursales_filtradas
 
     try:
         sucursales_raw = []
@@ -2965,15 +2967,15 @@ async def get_almacenes(server_id: str, sucursal_id: Optional[str] = None, sucur
         f"Server={server_id}, AlmacenesPermitidos={almacenes_permitidos or 'TODOS'}"
     )
 
-    # === FASE C (NO-LIVE / anti-cooldown) ===
-    # Host compartido de EDARSAHUB (MPRO) → derivar almacenes de la tabla sync, sin conexión viva.
-    if is_mpro_system(server.get('system_type')) and _is_edarsahub_shared_host(server):
-        results = _derive_almacenes_from_sync(server_id, sucursal_id)
-        if almacenes_permitidos:
-            _permitidos = {str(x) for x in almacenes_permitidos}
-            results = [a for a in results if str(a.get('id')) in _permitidos]
-        logging.info(f"[FASE-C] Almacenes NO-LIVE (sync) para server={server_id}: {len(results)} (RBAC aplicado)")
-        return results
+    # === NO-LIVE / EDARSAHUB EXCLUSIVO (todos los sistemas) ===
+    # Los almacenes se derivan SIEMPRE del cerebro EDARSAHUB (tabla sync), sin conexión
+    # viva a ningún POS. El filtro por sucursal solo aplica a servers compartidos (MPRO).
+    results = _derive_almacenes_from_sync(server_id, sucursal_id, sucursal)
+    if almacenes_permitidos:
+        _permitidos = {str(x) for x in almacenes_permitidos}
+        results = [a for a in results if str(a.get('id')) in _permitidos]
+    logging.info(f"[NO-LIVE] Almacenes (sync EDARSAHUB) server={server_id}: {len(results)} (RBAC aplicado)")
+    return results
 
     try:
         # FASE 1B: Importar execute_sql_query_params para parametrización segura
@@ -7717,8 +7719,17 @@ async def obtener_pedidos_vigentes(server_id: str, sucursal: str = None, credent
                 "sync_status": req.get('sync_status', 'SYNCED'),
             } for req in requisiciones]
     except Exception as e:
-        logging.warning(f"[COMPRAS-HIBRIDO] Error leyendo Sync requisiciones, intentando LIVE: {e}")
-    
+        logging.warning(f"[COMPRAS-HIBRIDO] Error leyendo Sync requisiciones: {e}")
+
+    # =========================================================================
+    # NO-LIVE / EDARSAHUB EXCLUSIVO: si el sync no trae requisiciones, devolvemos
+    # vacío. NUNCA se hace fallback a consulta viva al POS — eso disparaba el
+    # "Error de conexión" en Auditoría (MPRO) y el cooldown de EDARSAHUB.
+    # =========================================================================
+    logging.info(f"[COMPRAS-NOLIVE] Requisiciones sync vacío para server={server_id}; devolviendo [] (sin conexión viva).")
+    return []
+
+    # ---- (código LIVE legacy deshabilitado por política NO-LIVE) ----
     # =========================================================================
     # PASO 2: Fallback a consulta LIVE (si Sync está vacío o falló)
     # =========================================================================
@@ -10149,101 +10160,59 @@ class DetalleConsumosRequest(BaseModel):
 @api_router.post("/compras/detalle-consumos")
 async def obtener_detalle_consumos_post(request: DetalleConsumosRequest, current_user: Dict = Depends(get_current_user)):
     """
-    Obtiene el detalle de consumos/ventas de un producto específico en un período.
-    Para SoftRestaurant: ventas directas o a través de recetas.
+    Detalle de consumos/ventas de un producto en un período.
+    UNIFICACIÓN CANÓNICA (Fase B): reutiliza la MISMA lógica que el detalle de ventas
+    de Análisis (/reports/sales-details), que SÍ funciona para MPRO y SoftRestaurant.
+    La fecha inicial proviene del inventario inicial (la envía el frontend en fecha_inicio).
     """
-    # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)
-    from core.server_registry import get_server_connection_info
-    server = await get_server_connection_info(request.server_id, db=db)
-    if not server:
-        raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
-    # Formatear fechas para SQL
-    fecha_ini = request.fecha_inicio.replace('-', '') if request.fecha_inicio else ''
-    fecha_fin = request.fecha_fin.replace('-', '') if request.fecha_fin else ''
-    
-    if not fecha_ini or not fecha_fin:
-        return {"consumos": [], "totales": {"total": 0}, "error": "Fechas no válidas"}
-    
-    # Limpiar código de espacios y posibles prefijos
-    codigo_limpio = request.codigo.strip()
-    codigo_sin_prefijo = codigo_limpio[1:] if codigo_limpio and codigo_limpio[0].isalpha() else codigo_limpio
-    
-    consumos = []
-    total_consumo = 0
-    
+    almacen = ''
+    if isinstance(request.almacenes, list) and request.almacenes:
+        almacen = request.almacenes[0]
+    elif isinstance(request.almacenes, str):
+        almacen = request.almacenes
+
+    params = {
+        "server_id": request.server_id,
+        "producto_codigo": (request.codigo or '').strip(),
+        "sucursal": request.sucursal,
+        "almacen": almacen,
+        "fecha_ini": request.fecha_inicio,
+        "fecha_fin": request.fecha_fin,
+    }
+
     try:
-        if is_softrestaurant_system(server.get('system_type')):
-            logging.info(f"[DETALLE_CONSUMOS] Buscando consumos para código: '{codigo_limpio}' (sin prefijo: '{codigo_sin_prefijo}'), fechas: {fecha_ini} a {fecha_fin}")
-            
-            # Buscar ventas donde este insumo está en la receta de un producto vendido
-            # cheqdet tiene los productos vendidos
-            # recetasalmacenes tiene la receta (qué insumos usa cada producto)
-            # Consumo = cantidad vendida × cantidad del insumo en la receta
-            query_ventas = f"""
-SELECT 
-    C.fecha,
-    C.folio as documento,
-    P.descripcion as producto_vendido,
-    CD.cantidad as cantidad_vendida,
-    R.cantidad as cantidad_receta,
-    (CD.cantidad * R.cantidad) as consumo_total,
-    A.nombre as almacen
-FROM cheques C
-INNER JOIN cheqdet CD ON CD.foliodet = C.folio
-INNER JOIN productos P ON P.idproducto = CD.idproducto
-INNER JOIN recetasalmacenes R ON R.idproducto = CD.idproducto
-LEFT JOIN almacen A ON A.idalmacen = R.idalmacen
-WHERE (RTRIM(LTRIM(R.idinsumo)) = '{codigo_limpio}' OR RTRIM(LTRIM(R.idinsumo)) = '{codigo_sin_prefijo}')
-    AND C.fecha >= '{fecha_ini}'
-    AND C.fecha <= '{fecha_fin} 23:59:59'
-    AND C.statusfactura <> 'CA'
-ORDER BY C.fecha DESC
-"""
-            logging.info(f"[DETALLE_CONSUMOS] Query: {query_ventas[:200]}...")
-            result_ventas = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_ventas
-            )
-            logging.info(f"[DETALLE_CONSUMOS] Resultados: {len(result_ventas)}")
-            
-            for r in result_ventas:
-                consumo = float(r.get('consumo_total', 0) or 0)
-                consumos.append({
-                    "fecha": r['fecha'].isoformat() if hasattr(r['fecha'], 'isoformat') else str(r['fecha']),
-                    "documento": str(r.get('documento', '')),
-                    "producto_vendido": r.get('producto_vendido', ''),
-                    "cantidad_vendida": float(r.get('cantidad_vendida', 0) or 0),
-                    "cantidad_receta": float(r.get('cantidad_receta', 0) or 0),
-                    "consumo": consumo,
-                    "almacen": r.get('almacen', '')
-                })
-                total_consumo += consumo
-            
-            return {
-                "consumos": consumos,
-                "totales": {"total": round(total_consumo, 4)}
-            }
-        
-        return {
-            "consumos": [],
-            "totales": {"total": 0},
-            "error": f"Sistema {server['system_type']} no soportado para detalle de consumos"
-        }
-        
+        result = await get_sales_details(params, current_user)
     except Exception as e:
-        logging.error(f"[DETALLE_CONSUMOS] Error: {str(e)}")
-        if "unavailable" in str(e).lower() or "timeout" in str(e).lower():
-            return {
-                "consumos": [],
-                "totales": {"total": 0},
-                "error": "El servidor externo no está disponible. Intente nuevamente en unos momentos."
-            }
-        return {
-            "consumos": [],
-            "totales": {"total": 0},
-            "error": f"Error al obtener consumos: {str(e)[:100]}"
-        }
+        logging.error(f"[DETALLE_CONSUMOS] Error delegando a sales-details: {e}")
+        return {"consumos": [], "movimientos": [], "totales": {"total": 0},
+                "error": f"Error al obtener consumos: {str(e)[:100]}"}
+
+    ventas = result.get("data", []) if isinstance(result, dict) else []
+    consumos = []
+    total = 0.0
+    for v in ventas:
+        cant = float(v.get('cantidad') or 0)
+        consumos.append({
+            "fecha": v.get('fecha'),
+            "concepto": v.get('tipo_venta') or 'VENTA',
+            "descripcion": v.get('producto_vendido') or v.get('producto') or '',
+            "cantidad": cant,
+            "tipo": "S",
+            "almacen": v.get('sucursal') or '',
+            "referencia": str(v.get('folio') or ''),
+            # compat con render/legacy
+            "documento": str(v.get('folio') or ''),
+            "producto_vendido": v.get('producto_vendido'),
+            "cantidad_vendida": cant,
+            "consumo": cant,
+        })
+        total += cant
+
+    return {
+        "consumos": consumos,
+        "movimientos": consumos,
+        "totales": {"total": round(total, 4), "entradas": 0, "salidas": round(total, 4), "neto": -round(total, 4)},
+    }
 
 
 # ============= ANÁLISIS DE COMPRAS - ENDPOINTS =============

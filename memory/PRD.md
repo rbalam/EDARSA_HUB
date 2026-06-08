@@ -443,6 +443,29 @@ regresión visual), en lugar de refactor del frontend.
   Reportes usa `/reports/movement-details` y `/reports/sales-details` (fallan), Compras usa
   `/compras/detalle-movimientos` (OK) y `/compras/detalle-consumos` (falla "sin registros").
 
+### NO-LIVE total + unificación detalle (respuesta a 4 puntos del usuario) ✅ (2026-06-08)
+El usuario señaló: (1) SoftRestaurant aún consultaba almacenes EN VIVO (debe ser EDARSAHUB
+exclusivo); (2) Auditoría MPRO ORIGEN daba "Error de conexión" (debe leer de EDARSAHUB como
+SoftRestaurant); (3) detalle de consumos de Auditoría no salía y la fecha inicial debe tomarse
+del inventario inicial; (4) el detalle de ventas de Análisis SÍ funciona y Auditoría debe usar lo mismo.
+- **Change A — almacenes/sucursales NO-LIVE para TODOS los sistemas:** `/servers/{id}/almacenes`
+  y `/sucursales` ahora derivan SIEMPRE de `Compras_Inventarios_Fisicos_Sync` (helpers
+  `_derive_*_from_sync`), sin conexión viva a ningún POS. El filtro por sucursal solo aplica a
+  servers compartidos (MPRO) vía `_shared_server`. Verificado: SoftR CIEN almacenes=10 / sucursal
+  virtual; MPRO ORIGEN=2, QRO=3 (filtrado correcto por nombre o sucursal_id).
+- **Change B — `/compras/pedidos-vigentes` NO-LIVE:** eliminado el fallback LIVE (PASO 2). Si el
+  sync no trae requisiciones → devuelve `[]` sin conectar. Esto elimina el banner "Error de
+  conexión" en Auditoría MPRO (antes lanzaba 503). Verificado: ORIGEN → 200 `[]` en 0.9s.
+- **Change C — `/compras/detalle-consumos` unificado:** ahora delega en `get_sales_details` (la
+  MISMA lógica que `/reports/sales-details` de Análisis, que funciona para MPRO y SoftRestaurant),
+  usando `fecha_inicio` (del inventario inicial) y mapeando al formato del modal de Compras
+  (fecha/concepto/descripcion/cantidad/almacen/referencia + campos legacy). Smoke: 200, shape OK.
+- NOTA: el detalle de ventas/consumos sigue usando conexión viva al POS (igual que Análisis hoy).
+  Para NO-LIVE total del detalle habría que migrarlo a `Sync_Sales` (tarea futura). Tablero
+  Ejecutivo intacto ($3,792,053.41 / 5 unidades / 0 errores). Regresión: 3 tests pasan.
+- **PENDIENTE verificación del usuario:** abrir Auditoría MPRO ORIGEN (sin error) y doble clic en
+  un producto real para ver consumos. Movimientos de Auditoría ya funcionaba (no se tocó).
+
 ## 🥇 MÁXIMA DE ORO (REGLA PERMANENTE — 2026-06-07)
 **CADA VEZ que algo se vaya a HARDCODEAR, se REQUIERE la AUTORIZACIÓN ESCRITA del usuario ANTES de hacerlo.**
 - Aplica a: unidades, credenciales, hosts, rutas, horarios, roles/permisos, productos, casas/marcas, periodos, IDs, URLs, valores de negocio, fallbacks, etc.
