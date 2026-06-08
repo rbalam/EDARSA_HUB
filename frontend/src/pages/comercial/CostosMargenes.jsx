@@ -2212,6 +2212,10 @@ const TabPreciosSugeridos = () => {
   const [vistaAgrupada, setVistaAgrupada] = useState(false);
   const [familiasExpandidas, setFamiliasExpandidas] = useState(new Set());
 
+  // CANÓNICO: unidad seleccionada desde Corporate Filters (fuente única)
+  const { selected: corpSel } = useCorporateFilters();
+  const unidadNegocio = corpSel?.unidades_negocio || '';
+
   const fetchProductos = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -2227,6 +2231,7 @@ const TabPreciosSugeridos = () => {
       if (filters.soloRequiereRevision) params.append('solo_requiere_revision', 'true');
       if (filters.fuente) params.append('fuente', filters.fuente);
       if (filters.incluirInactivos) params.append('incluir_inactivos', 'true'); // BUG-COSTOS-001
+      if (unidadNegocio) params.append('unidad', unidadNegocio);
       
       const res = await api.get(`/comercial/pricing/precios-sugeridos?${params}`);
       setProductos(res.data.productos || []);
@@ -2237,7 +2242,7 @@ const TabPreciosSugeridos = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search, filters, vistaAgrupada]);
+  }, [page, pageSize, search, filters, vistaAgrupada, unidadNegocio]);
 
   useEffect(() => {
     fetchProductos();
@@ -2308,6 +2313,11 @@ const TabPreciosSugeridos = () => {
                 className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm"
               />
             </div>
+          </div>
+          
+          <div className="min-w-[180px]">
+            <label className="block text-xs font-medium text-gray-500 mb-1">Unidad de Negocio</label>
+            <CorporateFilterSelect filterKey="unidades_negocio" placeholder="Todas las unidades" />
           </div>
           
           <div>
@@ -2497,7 +2507,7 @@ const TabPreciosSugeridos = () => {
                           {p.costo_receta > 0 ? formatCurrency(p.costo_receta) : <span className="text-gray-400">-</span>}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <span className={`font-medium ${p.margen_porcentaje < 20 ? 'text-red-600' : p.margen_porcentaje < 35 ? 'text-yellow-600' : 'text-green-600'}`}>
+                          <span className={`text-xs font-medium ${p.margen_porcentaje < 20 ? 'text-red-600' : p.margen_porcentaje < 35 ? 'text-yellow-600' : 'text-green-600'}`}>
                             {p.margen_porcentaje != null ? `${p.margen_porcentaje.toFixed(1)}%` : '-'}
                           </span>
                         </td>
@@ -2565,8 +2575,14 @@ const TabPreciosSugeridos = () => {
                         )}
                       </div>
                     </td>
+                    <td className="px-4 py-3 text-right font-mono">
+                      {p.precio_actual > 0 ? formatCurrency(p.precio_actual) : <span className="text-gray-400">-</span>}
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono">
+                      {p.costo_receta > 0 ? formatCurrency(p.costo_receta) : <span className="text-gray-400">-</span>}
+                    </td>
                     <td className="px-4 py-3 text-right">
-                      <span className={p.margen_porcentaje < 20 ? 'text-red-600 font-medium' : ''}>
+                      <span className={`text-xs ${p.margen_porcentaje < 20 ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
                         {p.margen_porcentaje ? `${p.margen_porcentaje.toFixed(1)}%` : '-'}
                       </span>
                     </td>

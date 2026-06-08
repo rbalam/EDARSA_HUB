@@ -1,5 +1,26 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-08 PM] Fork: 6 fixes (menú, Finanzas, Propinas, Costos canónico, Recetas, Precios Sugeridos)
+Sesión fork. Pruebas SOLO cURL/python/screenshots (NO testing_agent). CERO MongoDB. NO-LIVE respetado.
+
+1. **Menú Enterprise "Operación"** (`enterpriseMenuConfig.js`): se confirmó el render (Costos y Márgenes, Pricing IA, Tablajería visibles bajo VENTAS/COSTOS/COMPRAS/INVENTARIOS/PRODUCCIÓN). Verificado por screenshot.
+
+2. **Finanzas → Control de Ingresos** (`Finanzas.js`): el front enviaba `unidad_negocio_id` pero `/finanzas/ingresos/cortes-caja` espera `unidad_negocio_pk` → no filtraba (mostraba todas). Fix: front envía `unidad_negocio_pk`. Verificado: Mérida=6 cortes (solo Mérida) vs 40 (todas).
+
+3. **Propinas TPV** (`PropinasTPV.jsx`): los `fetch` usaban solo `credentials:'include'` (cookie httpOnly que no se setea/lee) → 401 "Verifique su sesión". Fix: usar `authedFetch` canónico (inyecta Bearer). Verificado: v2/detalle 200 con datos.
+
+4. **Costos y Márgenes — Unidad de Negocio CANÓNICO** (`CostosMargenes.jsx` + `modules/costos_margenes/routes.py`): se eliminó el dropdown duplicado + `/costos-margenes/unidades-negocio` (404, desactivado). Ahora usa `CorporateFiltersProvider scope=comercial.costos_margenes` + `CorporateFilterSelect`. Backend `/productos`,`/familias`,`/subfamilias` aceptan `unidad` (codigo/id) resuelto vía `resolve_unidad_scope`; `servidor_id` DEPRECATED. Verificado: productos CIENFUEGOS=2022, 130MID=1858, ORIGEN=5414, todas=9905; familias CIEN=37/125.
+
+5. **Recetas reparadas (P0 regresión)** (`modules/costos_margenes/repository.py`): NameError `name 'ProductoID' is not defined` (f-strings con variables inexistentes `{ProductoID}`/`{ServerID}`) + `producto.get('server_id')` leía clave equivocada (col es `ServerID`). Fix aplicado. Verificado: BETABEL TATEMADO=9 componentes, costo $81.42, sub-recetas "Elaborado" marcadas.
+
+6. **Precios Sugeridos** (`CostosMargenes.jsx` TabPreciosSugeridos + `routes_precios_sugeridos.py`): (a) la vista LISTA no tenía las celdas `Precio Actual` ni `Costo` → todas las columnas se recorrían 2 posiciones (parecía que Precio Actual/Sugerido eran %). Fix: agregadas las 2 celdas (muestran $). (b) Reducida fuente del % (text-xs). (c) Agregado filtro canónico de unidad (`unidad`→server_id vía UnidadesService). Verificado: unidad=CIENFUEGOS=2022, 130MID=1858.
+
+**PENDIENTE (orden acordado con usuario a→d→c→b, faltan d/c/b):**
+- (d) SYNC de estatus inactivo/baja: TODOS los productos quedaron `Activo=1`. SoftRestaurant debe mapear `suspendido` SÍ/NO; MPRO solo sincroniza `Es_Cve_Estado='AC'` (inactivos ni entran) → requiere ajustar query MPRO (traer todos + Activo por estado) + RE-EJECUTAR sync (conecta POS, pesado, requiere autorización/auditoría del usuario).
+- (c) Catálogo canónico NO-LIVE Categoría→Familia→Subgrupo reutilizable (Análisis+Costos+Inteligencia). Estructuras: MPRO=1 catálogo (Categoría/Departamento/Marca/Línea/Familia/Subfamilia); SoftRestaurant=catálogo ventas (Clasificación/Grupo/Subgrupo) + catálogo insumos/elaborados (Clasificación/Grupo). OJO: `/servers/{id}/report-filters` (usado por Análisis) hace LIVE a POS → VIOLA NO-LIVE, hay que migrarlo.
+- (b) Auto-refresh de sesión: token 15 min sin refresco → logout al cambiar de tab tras expirar. Existe cookie refresh_token 7 días sin usar. Requiere experto de integración (AUTH).
+
+
 ## [2026-06-08] P0 — UNIFICACIÓN CANÓNICA DE TABLEROS (unidad_codigo → backend resuelve)
 Regla arquitectónica confirmada por el usuario: el frontend envía SOLO la unidad canónica; el backend valida permiso y resuelve server_id/sucursal_origen_id desde EDARSAHUB; `server_id` queda deprecated (compat temporal); dashboards NO-LIVE.
 

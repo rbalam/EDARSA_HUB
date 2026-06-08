@@ -57,7 +57,8 @@ class RangoVinoUpdate(BaseModel):
 
 @router.get("/precios-sugeridos")
 async def get_precios_sugeridos(
-    server_id: Optional[str] = Query(None, description="Filtrar por servidor"),
+    server_id: Optional[str] = Query(None, description="DEPRECATED: usar 'unidad'"),
+    unidad: Optional[str] = Query(None, description="CANÓNICO: unidad de negocio (codigo o id)"),
     familia: Optional[str] = Query(None, description="Filtrar por familia"),
     subfamilia: Optional[str] = Query(None, description="Filtrar por subfamilia"),
     solo_vinos: bool = Query(False, description="Solo productos vino"),
@@ -83,6 +84,14 @@ async def get_precios_sugeridos(
     
     NO modifica precios oficiales. Solo muestra recomendaciones.
     """
+    # CANÓNICO: resolver 'unidad' (codigo/id) → server_id. 'server_id' DEPRECATED.
+    if unidad and not server_id:
+        try:
+            u = UnidadesService.get_by_codigo(unidad) or UnidadesService.get_by_pk(unidad)
+            if u:
+                server_id = u.get('server_id')
+        except Exception:
+            pass
     result = obtener_precios_sugeridos(
         server_id=server_id,
         familia=familia,
