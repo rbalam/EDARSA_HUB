@@ -7454,7 +7454,7 @@ async def obtener_inventarios_fisicos(server_id: str, unidad: str = None, sucurs
                 "almacen_id": str(inv.get('almacen_id', '')),
                 "sucursal": inv.get('sucursal', ''),
                 "sucursal_id": str(inv.get('sucursal_id', '')),
-                "comentario": '',
+                "comentario": (inv.get('comentario') or '').strip(),
                 "productos": int(inv.get('total_productos', 0)),
                 "source": "EDARSAHUB_SYNC",
                 "sync_status": inv.get('sync_status', 'SYNCED'),

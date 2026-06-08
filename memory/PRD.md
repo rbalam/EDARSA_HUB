@@ -402,6 +402,28 @@ vacío → "el sistema se cae" (la fragilidad que el usuario ha perdido ~4 veces
   (`/servers/{server_id}/almacenes|sucursales`) aún pueden conectar live al host compartido;
   migrarlos a NO-LIVE es trabajo futuro para blindar 100% el anti-cooldown.
 
+### FASE A — Comentario MPRO en inventarios (NO-LIVE) ✅ COMPLETE (2026-06-08)
+Objetivo: mostrar el comentario capturado en los selectores Inventario Inicial/Final, SOLO MPRO
+(SoftRestaurant no tiene ese campo). Autorizado por el usuario (columna + backfill).
+- **Descubrimiento de esquema (read-only, proceso aislado para no afectar cooldown):** el campo real
+  es **`Fisico.Fi_Comentario`** (nvarchar 50) en el POS MPRO (db CENTRAL2020). La tabla
+  `Inventario_Fisico` que usa `repository.py::query_inventarios_fisicos_mpro` NO existe (código
+  legacy muerto). El sync REAL usa `sync_service.py::sync_inventarios_fisicos_from_server` →
+  tabla **`Fisico`** con `Fi_Folio`.
+- **Cambios:** (1) columna `comentario NVARCHAR(255)` en `Compras_Inventarios_Fisicos_Sync`
+  (idempotente). (2) query sync MPRO: `MAX(F.Fi_Comentario) as comentario` (1 por folio,
+  prefiere no-vacío). (3) query sync SoftRestaurant: `'' as comentario`. (4) INSERT incluye
+  comentario. (5) read `obtener_inventarios_fisicos_sync` SELECT + endpoint
+  `obtener_inventarios_fisicos` devuelven el comentario real (antes hardcodeado `''`, server.py).
+- **Backfill** (`scripts/backfill_comentario_mpro.py`): UPDATE por folio (sin re-sync/REPLACE,
+  no perturba filas). 245 folios leídos del POS (244 con comentario) → 238 filas MPRO actualizadas.
+- **Verificado cURL:** MPRO QRO 102/113 con comentario (CONSIGNACION/BARRA/COCINA),
+  ORIGEN 136/147 (CAVA/BARRA/BODEGA), SoftRestaurant 0 (vacío, data-driven). Frontend ya
+  renderiza `inv.comentario` (Reportes.js 1837/1939, Compras.js 756). Tablero Ejecutivo intacto.
+- **PENDIENTE:** Fase C (anti-cooldown: derivar almacenes/sucursales del inventario NO-LIVE,
+  eliminar `/servers/{id}/almacenes|sucursales` vivos) y Fase B (unificar el filtro
+  Análisis↔Auditoría en un solo componente canónico).
+
 ## 🥇 MÁXIMA DE ORO (REGLA PERMANENTE — 2026-06-07)
 **CADA VEZ que algo se vaya a HARDCODEAR, se REQUIERE la AUTORIZACIÓN ESCRITA del usuario ANTES de hacerlo.**
 - Aplica a: unidades, credenciales, hosts, rutas, horarios, roles/permisos, productos, casas/marcas, periodos, IDs, URLs, valores de negocio, fallbacks, etc.

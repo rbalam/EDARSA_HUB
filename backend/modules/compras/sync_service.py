@@ -277,7 +277,7 @@ def obtener_inventarios_fisicos_sync(
         query = f"""
             SELECT 
                 folio, fecha, almacen, almacen_id, sucursal, sucursal_id,
-                tipo, estatus, total_productos, unidad_negocio_id, 
+                tipo, estatus, total_productos, comentario, unidad_negocio_id, 
                 unidad_negocio_codigo, server_id, system_type,
                 sync_timestamp, sync_status
             FROM (
@@ -413,7 +413,8 @@ def sync_inventarios_fisicos_from_server(
                     A.Sc_Cve_Sucursal as sucursal_id,
                     'FISICO' as tipo,
                     'CERRADO' as estatus,
-                    COUNT(F.Pr_Cve_Producto) as total_productos
+                    COUNT(F.Pr_Cve_Producto) as total_productos,
+                    MAX(F.Fi_Comentario) as comentario
                 FROM Fisico F
                 INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = F.Sc_Cve_Sucursal
                 LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
@@ -434,7 +435,8 @@ def sync_inventarios_fisicos_from_server(
                     '' as sucursal_id,
                     'FISICO' as tipo,
                     'CERRADO' as estatus,
-                    0 as total_productos
+                    0 as total_productos,
+                    '' as comentario
                 FROM invfisico INV
                 LEFT JOIN almacen A ON A.idalmacen = INV.idalmacen1
                 WHERE INV.fecha >= DATEADD(MONTH, -6, GETDATE())
@@ -475,8 +477,8 @@ def sync_inventarios_fisicos_from_server(
                     INSERT INTO Compras_Inventarios_Fisicos_Sync
                     (unidad_negocio_id, unidad_negocio_codigo, server_id, system_type,
                      folio, fecha, almacen, almacen_id, sucursal, sucursal_id,
-                     tipo, estatus, total_productos, sync_source, sync_timestamp, sync_status)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'SYNC', GETDATE(), 'ACTIVE')
+                     tipo, estatus, total_productos, comentario, sync_source, sync_timestamp, sync_status)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'SYNC', GETDATE(), 'ACTIVE')
                 """, (
                     unidad_id, unidad_codigo, server_id, system_type,
                     str(row.get('folio', '')),
@@ -487,7 +489,8 @@ def sync_inventarios_fisicos_from_server(
                     str(row.get('sucursal_id', '')),
                     row.get('tipo', 'FISICO'),
                     row.get('estatus', ''),
-                    row.get('total_productos', 0)
+                    row.get('total_productos', 0),
+                    (row.get('comentario') or '')[:50]
                 ))
                 records_synced += 1
             except Exception as e:
