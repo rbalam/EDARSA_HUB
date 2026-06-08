@@ -1,7 +1,7 @@
 import logger from '../services/logger';
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import api from '@/lib/api';
-import { fetchUnidadesNegocio, getServerIdFromUnidad } from '@/services/unidadesNegocioService';
+import { fetchUnidadesNegocio } from '@/services/unidadesNegocioService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -81,11 +81,6 @@ const Dashboard = () => {
   const [selectedUnidad, setSelectedUnidad] = useState('');
   const [loadingUnidades, setLoadingUnidades] = useState(true);
   
-  // Server interno (derivado de unidad) - NO visible al usuario
-  const selectedServer = useMemo(() => {
-    return getServerIdFromUnidad(unidadesNegocio, selectedUnidad);
-  }, [unidadesNegocio, selectedUnidad]);
-  
   const [dashboardData, setDashboardData] = useState(null);
   const [error, setError] = useState(null);
   
@@ -94,18 +89,19 @@ const Dashboard = () => {
   const [loadingPendientes, setLoadingPendientes] = useState(false);
   const [almacenesPendientesSeleccionados, setAlmacenesPendientesSeleccionados] = useState([]);
 
-  // MIGRACIÓN: Cargar unidades de negocio (reemplaza servidores)
+  // MIGRACIÓN: Cargar unidades de negocio al montar
   useEffect(() => {
     loadUnidades();
   }, []);
 
   // Cargar datos cuando cambia la unidad seleccionada
+  // CONTRATO CANÓNICO: enviamos la 'unidad' (id/código). El backend resuelve el server_id.
   useEffect(() => {
-    if (selectedServer) {
-      loadDashboardData(selectedServer);
-      loadInsumosPendientes(selectedServer);
+    if (selectedUnidad) {
+      loadDashboardData(selectedUnidad);
+      loadInsumosPendientes(selectedUnidad);
     }
-  }, [selectedServer]);
+  }, [selectedUnidad]);
 
   // MIGRACIÓN: Cargar unidades de negocio (reemplaza loadServers)
   const loadUnidades = async () => {
@@ -127,11 +123,11 @@ const Dashboard = () => {
     }
   };
 
-  const loadDashboardData = async (serverId) => {
+  const loadDashboardData = async (unidad) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get(`/dashboard/inventory-summary?server_id=${serverId}`);
+      const response = await api.get(`/dashboard/inventory-summary?unidad=${encodeURIComponent(unidad)}`);
       if (response.data.success) {
         setDashboardData(response.data.data);
       } else {
@@ -147,11 +143,11 @@ const Dashboard = () => {
   };
 
   // Función para cargar Insumos Pendientes de Descargar
-  const loadInsumosPendientes = async (serverId) => {
+  const loadInsumosPendientes = async (unidad) => {
     setLoadingPendientes(true);
     setAlmacenesPendientesSeleccionados([]);
     try {
-      const response = await api.get(`/inventarios/pendientes/${serverId}`);
+      const response = await api.get(`/inventarios/pendientes/${encodeURIComponent(unidad)}`);
       setPendientesData(response.data);
     } catch (error) {
       logger.error('Error cargando insumos pendientes:', error);
@@ -163,9 +159,9 @@ const Dashboard = () => {
 
   const handleRefresh = () => {
     setRefreshing(true);
-    if (selectedServer) {
-      loadDashboardData(selectedServer);
-      loadInsumosPendientes(selectedServer);
+    if (selectedUnidad) {
+      loadDashboardData(selectedUnidad);
+      loadInsumosPendientes(selectedUnidad);
     }
   };
 

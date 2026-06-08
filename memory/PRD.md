@@ -327,6 +327,32 @@ Usuario autorizó Opción A (lectura POS en vivo) + escalado por tandas + desblo
 - Reporte: `docs/reports/BACKFILL_OPCION_A_COMPLETADO_20260608.md`.
 - **SIGUIENTE (PIC Fase 2)**: conectar tarjetas "Top Productos"/"Casas" del DashboardIA a `Sync_Sales` real (eran mock).
 
+### P0 — Retiro de `server_id` en tableros de lectura · FASE 1 (Métricas) ✅ COMPLETE (2026-06-08)
+Decisión del usuario: **opción (b)** — mantener los endpoints operativos por servidor
+(`/servers/{server_id}/...` de la pestaña Análisis) INTACTOS, y migrar SOLO la capa de
+lectura/reportes al contrato canónico `unidad`. Admin screens conservan `server_id`.
+- **Frontend `pages/Dashboard.js` (pestaña Métricas):** eliminada la resolución local de
+  `server_id` (`getServerIdFromUnidad`/`useMemo selectedServer`). Ahora envía la `unidad`
+  (id/código) directamente: `GET /dashboard/inventory-summary?unidad=...` y
+  `GET /inventarios/pendientes/{unidad}`. Diff = solo cambio funcional (sin reordenar hooks,
+  para no introducir comentarios `eslint-disable` de reglas que el build CRA no conoce
+  —`set-state-in-effect`/`immutability`— que rompían la compilación).
+- **Backend `server.py`:**
+  - `/dashboard/inventory-summary`: nuevo param `unidad` (+ `server_id` DEPRECATED compat).
+    Resuelve server_id central con `resolve_unidad_scope` (RBAC + canónico). access_denied → vacío.
+  - `/inventarios/pendientes/{server_id}`: el token de ruta se resuelve con `resolve_unidad_simple`
+    → si es unidad, se traduce a su server_id; si es server_id legacy (pantalla Análisis), se deja
+    igual. RBAC aguas abajo vía `has_server_access` intacto.
+- **Informes (`/auditoria/informes/*`):** ya eran agnósticos a servidor en lectura (GET sin filtro
+  por server; el create solo guarda `servidor_id` como metadato derivado de Análisis). NO requirió cambio.
+- Verificado cURL E2E: CIENFUEGOS por `unidad` (id y código) → success=True/datos OK; MPRO (QRO/ORIGEN)
+  → guarda NO-LIVE intacta (prueba que el resolver resolvió bien); compat legacy `server_id` → misma
+  respuesta (sin regresión; 130MID sigue con queries_configured=0, estado de datos conocido);
+  `pendientes` resuelve token-unidad y server_id directo → 200. Lint del proyecto limpio, CRA compila,
+  smoke E2E visual (selección CIENFUEGOS renderiza KPIs/gráficos sin error).
+- **PENDIENTE (reportar al usuario):** FASE 2 — migrar TableroEjecutivo, DashboardIA, Compras,
+  Finanzas/Propinas, Tesorería, Costos, Pricing al contrato `unidad`.
+
 ## 🥇 MÁXIMA DE ORO (REGLA PERMANENTE — 2026-06-07)
 **CADA VEZ que algo se vaya a HARDCODEAR, se REQUIERE la AUTORIZACIÓN ESCRITA del usuario ANTES de hacerlo.**
 - Aplica a: unidades, credenciales, hosts, rutas, horarios, roles/permisos, productos, casas/marcas, periodos, IDs, URLs, valores de negocio, fallbacks, etc.

@@ -3573,6 +3573,15 @@ async def get_insumos_pendientes(
     para usar EDARSAHUB SQL como fuente primaria.
     """
     from core.server_registry import get_server_connection_info
+    from core.corporate_filters.request_resolver import resolve_unidad_simple
+
+    # CONTRATO CANÓNICO: el token de ruta puede ser una unidad (codigo/id) — caso
+    # Métricas — o un server_id legacy — caso pantalla Análisis. Si es unidad,
+    # resolvemos su server_id. El RBAC se aplica aguas abajo vía has_server_access.
+    _unidad_token, _matched_by = resolve_unidad_simple(server_id)
+    if _unidad_token and _matched_by == 'unidad':
+        server_id = _unidad_token.get('server_id') or server_id
+
     
     # FASE 8: Validar acceso y obtener contexto
     context = await resolve_user_access_context(current_user)
@@ -6934,6 +6943,7 @@ def get_dashboard_inventory_query_mpro(departamentos=None, categorias=None):
 
 @api_router.get("/dashboard/inventory-summary")
 async def get_dashboard_inventory_summary(
+    unidad: Optional[str] = None,
     server_id: Optional[str] = None,
     current_user: Dict = Depends(get_current_user)
 ):
@@ -6947,7 +6957,20 @@ async def get_dashboard_inventory_summary(
     NO FUENTE: MongoDB db.servers
     """
     from core.server_registry import get_server_connection_info_with_secrets, list_servers as registry_list_servers
-    
+    from core.corporate_filters.request_resolver import resolve_unidad_scope
+
+    # CONTRATO CANÓNICO (NO-LIVE): el frontend envía 'unidad' (codigo/id). El
+    # backend resuelve server_id centralmente aplicando RBAC. 'server_id' directo
+    # queda DEPRECATED (compatibilidad temporal con warning en el resolver).
+    _scope = await resolve_unidad_scope(current_user, unidad=unidad, server_id_legacy=server_id)
+    if _scope.access_denied:
+        return {
+            "success": False,
+            "message": "Sin acceso a la unidad seleccionada",
+            "data": {}
+        }
+    resolved_server_id = _scope.server_id
+
     try:
         # FASE P1.4-E2: Obtener servidor desde EDARSAHUB SQL via server_registry
         # ANTES: query = {"active": True, "queries_configured": True}
@@ -6955,9 +6978,9 @@ async def get_dashboard_inventory_summary(
         # ANTES: server = decrypt_server_secrets(await db.servers.find_one(query))
         
         server = None
-        if server_id:
-            # Servidor específico
-            server = decrypt_server_secrets(get_server_connection_info_with_secrets(server_id))
+        if resolved_server_id:
+            # Servidor específico (resuelto desde la unidad canónica)
+            server = decrypt_server_secrets(get_server_connection_info_with_secrets(resolved_server_id))
             if server and (not server.get('active', True) or not server.get('queries_configured', False)):
                 server = None
         else:
