@@ -51,6 +51,7 @@ from modules.costos_margenes.repository import (
 from core.security import get_current_user
 from core.db import execute_sql_query
 from core.server_registry import EDARSAHUB_CONFIG
+from core.corporate_filters.request_resolver import resolve_unidad_scope
 
 logger = logging.getLogger(__name__)
 
@@ -172,6 +173,37 @@ def _verify_costos_margenes_access(user: dict) -> None:
         )
 
 
+async def _resolve_servidor_filtro(current_user: dict, unidad: Optional[str], servidor_id: Optional[str]):
+    """
+    Resolución CANÓNICA de la unidad de negocio para Costos y Márgenes.
+
+    - Si llega 'unidad' (codigo o id) → puerta única ``resolve_unidad_scope``
+      (resuelve server_id + valida RBAC reutilizando el sistema existente). Es el
+      contrato canónico, igual que el resto de tableros del ERP.
+    - 'servidor_id' queda SOLO como compatibilidad DEPRECATED.
+    - Sin filtro → fallback RBAC por servidores permitidos del usuario.
+
+    Returns: (servidor_id_filtro, servidores_ids_filtro, access_denied)
+    """
+    if unidad:
+        scope = await resolve_unidad_scope(current_user, unidad=unidad)
+        if scope.access_denied:
+            return None, None, True
+        return scope.server_id, None, False
+
+    allowed_servers, es_corporativo = _get_user_allowed_servers(current_user)
+    if servidor_id and not es_corporativo and servidor_id not in allowed_servers:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "ACCESO_DENEGADO_UNIDAD",
+                "mensaje": "No tiene acceso a esta unidad de negocio"
+            }
+        )
+    servidores_ids_filtro = allowed_servers if (not es_corporativo and not servidor_id) else None
+    return servidor_id, servidores_ids_filtro, False
+
+
 # ==================== RESUMEN ====================
 
 @router.get("/resumen", response_model=CostosMargenesResumen)
@@ -224,7 +256,8 @@ async def obtener_resumen(
 async def listar_productos(
     empresa_id: Optional[int] = Query(None, description="Filtrar por empresa"),
     unidad_negocio_pk: Optional[int] = Query(None, description="Filtrar por unidad de negocio"),
-    servidor_id: Optional[str] = Query(None, description="Filtrar por servidor"),
+    unidad: Optional[str] = Query(None, description="CANÓNICO: unidad de negocio (codigo o id)"),
+    servidor_id: Optional[str] = Query(None, description="DEPRECATED: usar 'unidad'"),
     sistema_origen: Optional[str] = Query(None, description="Filtrar por sistema (SOFTRESTAURANT_PRO, MPRO)"),
     familia: Optional[str] = Query(None, description="Filtrar por familia"),
     subfamilia: Optional[str] = Query(None, description="Filtrar por subfamilia"),
@@ -263,25 +296,16 @@ async def listar_productos(
     # FASE 1C-3E: Verificar permisos
     _verify_costos_margenes_access(current_user)
     
-    # FASE P2: RBAC por Unidad de Negocio
-    allowed_servers, es_corporativo = _get_user_allowed_servers(current_user)
-    
-    # Si el usuario selecciona un servidor específico, validar que tenga acceso
-    servidor_id_filtro = servidor_id
-    if servidor_id and not es_corporativo:
-        if servidor_id not in allowed_servers:
-            raise HTTPException(
-                status_code=403,
-                detail={
-                    "error": "ACCESO_DENEGADO_UNIDAD",
-                    "mensaje": "No tiene acceso a esta unidad de negocio"
-                }
-            )
-    
-    # Si no es corporativo y no seleccionó servidor, aplicar filtro RBAC
-    servidores_ids_filtro = None
-    if not es_corporativo and not servidor_id:
-        servidores_ids_filtro = allowed_servers
+    # CANÓNICO: 'unidad' (codigo/id) → server_id vía puerta única (RBAC incluido).
+    # 'servidor_id' queda DEPRECATED (compat).
+    servidor_id_filtro, servidores_ids_filtro, _acc_denied = await _resolve_servidor_filtro(
+        current_user, unidad, servidor_id
+    )
+    if _acc_denied:
+        return ProductosListResponse(
+            productos=[], total=0, page=page, page_size=page_size,
+            total_pages=1, source_type=SourceType.EDARSAHUB_SQL
+        )
     
     try:
         productos_data, total = get_productos_con_costos(
@@ -601,13 +625,14 @@ async def listar_unidades_negocio(
 @router.get("/familias")
 async def listar_familias(
     current_user: dict = Depends(get_current_user),
-    servidor_id: Optional[str] = Query(None, description="Filtrar por unidad de negocio (ServerID)")
+    unidad: Optional[str] = Query(None, description="CANÓNICO: unidad de negocio (codigo o id)"),
+    servidor_id: Optional[str] = Query(None, description="DEPRECATED: usar 'unidad'")
 ):
     """
     Lista las familias de productos disponibles.
     
     **Parámetros**:
-    - servidor_id: Filtrar familias por unidad de negocio
+    - unidad: Filtrar familias por unidad de negocio (canónico)
     
     **Fuente**: EDARSAHUB SQL (NO-LIVE)
     
@@ -617,15 +642,15 @@ async def listar_familias(
     """
     _verify_costos_margenes_access(current_user)
     
-    # FASE P2: RBAC por Unidad de Negocio
-    allowed_servers, es_corporativo = _get_user_allowed_servers(current_user)
-    
-    servidor_id_filtro = servidor_id
-    if servidor_id and not es_corporativo and servidor_id not in allowed_servers:
-        raise HTTPException(status_code=403, detail="No tiene acceso a esta unidad")
+    # CANÓNICO: resolver 'unidad' → server_id (RBAC incluido). 'servidor_id' DEPRECATED.
+    servidor_id_filtro, servidores_ids_filtro, _acc = await _resolve_servidor_filtro(
+        current_user, unidad, servidor_id
+    )
+    if _acc:
+        return {"familias": [], "total": 0, "source_type": "EDARSAHUB_SQL"}
     
     try:
-        familias = get_familias_productos(servidor_id_filtro, allowed_servers if not es_corporativo else None)
+        familias = get_familias_productos(servidor_id_filtro, servidores_ids_filtro)
         return {
             "familias": familias,
             "total": len(familias),
@@ -639,14 +664,15 @@ async def listar_familias(
 async def listar_subfamilias(
     current_user: dict = Depends(get_current_user),
     familia: Optional[str] = Query(None, description="Filtrar por familia"),
-    servidor_id: Optional[str] = Query(None, description="Filtrar por unidad de negocio (ServerID)")
+    unidad: Optional[str] = Query(None, description="CANÓNICO: unidad de negocio (codigo o id)"),
+    servidor_id: Optional[str] = Query(None, description="DEPRECATED: usar 'unidad'")
 ):
     """
     Lista las subfamilias de productos.
     
     **Parámetros**:
     - familia: Filtrar subfamilias por familia padre
-    - servidor_id: Filtrar por unidad de negocio
+    - unidad: Filtrar por unidad de negocio (canónico)
     
     **Fuente**: EDARSAHUB SQL (NO-LIVE)
     
@@ -654,8 +680,12 @@ async def listar_subfamilias(
     """
     _verify_costos_margenes_access(current_user)
     
+    servidor_id_filtro, _sids, _acc = await _resolve_servidor_filtro(current_user, unidad, servidor_id)
+    if _acc:
+        return {"subfamilias": [], "total": 0, "source_type": "EDARSAHUB_SQL"}
+    
     try:
-        subfamilias = get_subfamilias_productos(familia, servidor_id)
+        subfamilias = get_subfamilias_productos(familia, servidor_id_filtro)
         return {
             "subfamilias": subfamilias,
             "total": len(subfamilias),

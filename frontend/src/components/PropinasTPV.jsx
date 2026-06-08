@@ -14,6 +14,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // FASE AUTH-SECURITY-01 / FASE 4.1: getToken eliminado, auth viaja en cookie httpOnly
 import { getSessionUser } from '../services/authStorage';
+import { authedFetch } from '../services/operativoApi';
 import logger from '../services/logger';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -138,7 +139,7 @@ function PropinasTPVContent() {
     setLoadingUnidades(true);
     try {
       // Endpoint v2 EDARSAHUB - único origen
-      const resV2 = await fetch(`${API_URL}/api/finanzas/propinas/v2/unidades`, {
+      const resV2 = await authedFetch(`${API_URL}/api/finanzas/propinas/v2/unidades`, {
         credentials: 'include'
       });
       
@@ -186,7 +187,7 @@ function PropinasTPVContent() {
   const cargarConfigs = useCallback(async () => {
     setLoadingConfigs(true);
     try {
-      const res = await fetch(`${API_URL}/api/finanzas/propinas/config/all`, {
+      const res = await authedFetch(`${API_URL}/api/finanzas/propinas/config/all`, {
         credentials: 'include'
       });
       if (res.ok) {
@@ -218,7 +219,7 @@ function PropinasTPVContent() {
       }
       
       // Llamar endpoint v2 EDARSAHUB
-      const res = await fetch(`${API_URL}/api/finanzas/propinas/v2/detalle?${params.toString()}`, {
+      const res = await authedFetch(`${API_URL}/api/finanzas/propinas/v2/detalle?${params.toString()}`, {
         credentials: 'include'
       });
       

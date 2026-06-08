@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import TabReglasMargen from './TabReglasMargen';
+import { CorporateFiltersProvider, useCorporateFilters, CorporateFilterSelect } from '../../filters';
 
 // ==================== UTILIDADES ====================
 
@@ -1339,7 +1340,10 @@ const TabProductos = ({ onSimularPrecio }) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalProductos, setTotalProductos] = useState(0);
   const [busqueda, setBusqueda] = useState('');
-  const [unidadNegocio, setUnidadNegocio] = useState('');
+  // CANÓNICO: la unidad seleccionada viene de Corporate Filters (fuente única,
+  // compartida con el resto del ERP), no de un dropdown/estado local duplicado.
+  const { selected: corpSelected } = useCorporateFilters();
+  const unidadNegocio = corpSelected?.unidades_negocio || '';
   const [familia, setFamilia] = useState('');
   const [subfamilia, setSubfamilia] = useState('');
   const [soloConReceta, setSoloConReceta] = useState(false);
@@ -1355,7 +1359,6 @@ const TabProductos = ({ onSimularPrecio }) => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   
   // Datos para filtros
-  const [unidades, setUnidades] = useState([]);
   const [familias, setFamilias] = useState([]);
   const [subfamilias, setSubfamilias] = useState([]);
   const [loadingFamilias, setLoadingFamilias] = useState(false);
@@ -1402,19 +1405,18 @@ const TabProductos = ({ onSimularPrecio }) => {
       : <ChevronDown className="w-3 h-3 text-blue-600" />;
   };
   
-  // Cargar unidades de negocio (solo una vez)
+  // CANÓNICO: la lista y selección de unidades la provee Corporate Filters
+  // (CorporateFiltersProvider). Aquí solo reaccionamos al cambio para resetear página.
   useEffect(() => {
-    api.get('/costos-margenes/unidades-negocio')
-      .then(res => setUnidades(res.data.unidades || []))
-      .catch(err => console.error('Error cargando unidades:', err));
-  }, []);
+    setPage(1);
+  }, [unidadNegocio]);
   
   // Cargar familias cuando cambie la unidad de negocio
   useEffect(() => {
     const cargarFamilias = async () => {
       setLoadingFamilias(true);
       try {
-        const params = unidadNegocio ? `?servidor_id=${encodeURIComponent(unidadNegocio)}` : '';
+        const params = unidadNegocio ? `?unidad=${encodeURIComponent(unidadNegocio)}` : '';
         const res = await api.get(`/costos-margenes/familias${params}`);
         setFamilias(res.data.familias || []);
         // Limpiar familia y subfamilia si la seleccionada ya no existe
@@ -1433,7 +1435,7 @@ const TabProductos = ({ onSimularPrecio }) => {
   useEffect(() => {
     if (familia) {
       const params = new URLSearchParams({ familia });
-      if (unidadNegocio) params.append('servidor_id', unidadNegocio);
+      if (unidadNegocio) params.append('unidad', unidadNegocio);
       
       api.get(`/costos-margenes/subfamilias?${params}`)
         .then(res => setSubfamilias(res.data.subfamilias || []))
@@ -1476,7 +1478,7 @@ const TabProductos = ({ onSimularPrecio }) => {
       });
       
       if (busqueda) params.append('busqueda', busqueda);
-      if (unidadNegocio) params.append('servidor_id', unidadNegocio);
+      if (unidadNegocio) params.append('unidad', unidadNegocio);
       if (familia) params.append('familia', familia);
       if (subfamilia) params.append('subfamilia', subfamilia);
       if (soloConReceta) params.append('solo_con_receta', 'true');
@@ -1628,18 +1630,13 @@ const TabProductos = ({ onSimularPrecio }) => {
             />
           </div>
           
-          {/* Filtro por Unidad de Negocio */}
-          <select
-            value={unidadNegocio}
-            onChange={(e) => { setUnidadNegocio(e.target.value); setPage(1); }}
-            className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[180px]"
-            data-testid="filtro-unidad"
-          >
-            <option value="">Todas las unidades</option>
-            {unidades.map(u => (
-              <option key={u.server_id} value={u.server_id}>{u.nombre}</option>
-            ))}
-          </select>
+          {/* Filtro por Unidad de Negocio — CANÓNICO (Corporate Filters) */}
+          <div className="min-w-[200px]" data-testid="filtro-unidad">
+            <CorporateFilterSelect
+              filterKey="unidades_negocio"
+              placeholder="Todas las unidades"
+            />
+          </div>
           
           {/* Filtro por Familia */}
           <select
@@ -3257,7 +3254,7 @@ const TabSolicitudesPrecio = () => {
 
 // ==================== COMPONENTE PRINCIPAL ====================
 
-const CostosMargenes = () => {
+const CostosMargenesContent = () => {
   const [activeTab, setActiveTab] = useState('productos');
   const [simulacionModal, setSimulacionModal] = useState({ open: false, producto: null });
   
@@ -3389,5 +3386,13 @@ const CostosMargenes = () => {
     </div>
   );
 };
+
+// CANÓNICO: provee Corporate Filters (unidad de negocio) a todo el módulo,
+// igual que Finanzas/Propinas/DashboardIA. Fuente única, sin filtros duplicados.
+const CostosMargenes = () => (
+  <CorporateFiltersProvider scope="comercial.costos_margenes">
+    <CostosMargenesContent />
+  </CorporateFiltersProvider>
+);
 
 export default CostosMargenes;

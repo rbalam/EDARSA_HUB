@@ -741,7 +741,9 @@ function FinanzasContent() {
     try {
       const params = new URLSearchParams();
       // SUBFASE 2.5: Usar unidad_negocio_id en lugar de server_id
-      if (selectedUnidad) params.append('unidad_negocio_id', selectedUnidad);
+      // FIX: el backend /cortes-caja espera 'unidad_negocio_pk' (GUID). Antes se
+      // enviaba 'unidad_negocio_id' → no filtraba y mostraba todas las unidades.
+      if (selectedUnidad) params.append('unidad_negocio_pk', selectedUnidad);
       if (ingresosFechaInicio) params.append('fecha_inicio', ingresosFechaInicio);
       if (ingresosFechaFin) params.append('fecha_fin', ingresosFechaFin);
       if (ingresosSoloPendientes) params.append('solo_pendientes', 'true');
