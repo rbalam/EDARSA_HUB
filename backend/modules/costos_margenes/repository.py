@@ -314,8 +314,8 @@ def get_producto_by_id(producto_id: str) -> Optional[Dict]:
         SyncRunID,
         SyncedAtMexico
     FROM Sync_Productos
-    WHERE ProductoID = '{ProductoID}'
-    OR CodigoFuente = '{ProductoID}'
+    WHERE ProductoID = '{producto_id}'
+    OR CodigoFuente = '{producto_id}'
     """
     result = execute_sql_query(*conn, query)
     return result[0] if result else None
@@ -344,8 +344,8 @@ def get_receta_producto(producto_id: str, server_id: Optional[str] = None) -> Tu
                 SyncRunID,
                 SyncedAtMexico
             FROM Sync_Productos
-            WHERE CodigoFuente = '{ProductoID}'
-            AND ServerID = '{ServerID}'
+            WHERE CodigoFuente = '{producto_id}'
+            AND ServerID = '{server_id}'
             """
             result = execute_sql_query(*conn, query)
             producto = result[0] if result else None
@@ -354,7 +354,7 @@ def get_receta_producto(producto_id: str, server_id: Optional[str] = None) -> Tu
         return None, []
     
     # Obtener componentes de la receta
-    srv_id = producto.get('server_id')
+    srv_id = producto.get('ServerID') or producto.get('server_id') or server_id
     codigo_fuente = producto.get('CodigoFuente')
     
     receta_query = f"""
