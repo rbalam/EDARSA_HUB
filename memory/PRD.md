@@ -13,10 +13,11 @@ Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosist
 Spanish (Español)
 
 ### Estado actualizado (2026-06-08)
-- ✅ Pantalla "Operaciones" (Reportes.js): 3 bugs corregidos — (a) filtro por Unidad de Negocio en Dashboard Operativo; (b) Métricas ya no descarta servidores configurados (CIENFUEGOS/ESTELAR cargan); (c) Análisis muestra inventarios de TODAS las unidades incl. MPRO ORIGEN/QRO, leídos NO-LIVE desde `Compras_Inventarios_Fisicos_Sync`.
-- 🛡️ Protección crítica: Métricas NUNCA conecta EN VIVO al host de EDARSAHUB (el POS MPRO comparte IP 54.39.104.176; un connect fallido tumbaba todas las lecturas canónicas). Detalle en CHANGELOG 2026-06-08.
-- ⏳ Pendiente decisión usuario: (1) 130MID con `queries_configured=0` en SQL; (2) migrar Métricas de SoftRestaurant/MPRO a NO-LIVE (hoy SoftRestaurant aún consulta POS en vivo, lento). 
-- ⏳ P1 backlog: conectar tarjetas mock "Top Productos"/"Casas-Distribuidores" de DashboardIA a `Sync_Sales`.
+- ✅ **Unificación canónica de tableros (P0):** contrato `unidad_codigo` → backend valida permiso y resuelve server_id/sucursal_origen_id (helper central `core/corporate_filters/request_resolver.py`). `server_id` deprecated (compat con warning). Operativo + Inventarios migrados. MPRO desambiguado (ORIGEN/QRO). Detalle en CHANGELOG 2026-06-08.
+- ✅ **NO-LIVE puro en inventarios:** eliminado el fallback LIVE (PASO 2) en `obtener_inventarios_fisicos`. Única fuente EDARSAHUB_SYNC.
+- ✅ **CERO MongoDB** verificado en todo el refactor.
+- ⏳ **Siguiente incremento:** migrar `Reportes.js` (Análisis/Métricas) y TableroEjecutivo/DashboardIA al contrato `unidad` (hoy funcionan vía compatibilidad server_id, ya NO-LIVE).
+- ⏳ Pendiente decisión usuario previa: (1) 130MID con `queries_configured=0`; (2) migrar Métricas SoftRestaurant a NO-LIVE.
 
 ---
 

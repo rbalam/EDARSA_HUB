@@ -1,5 +1,24 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-08] P0 — UNIFICACIÓN CANÓNICA DE TABLEROS (unidad_codigo → backend resuelve)
+Regla arquitectónica confirmada por el usuario: el frontend envía SOLO la unidad canónica; el backend valida permiso y resuelve server_id/sucursal_origen_id desde EDARSAHUB; `server_id` queda deprecated (compat temporal); dashboards NO-LIVE.
+
+**AUDITORÍA DE SCRIPT DEL USUARIO (rechazado):** se auditó un bash de reemplazos regex a ciegas y se DETUVO su ejecución (regla de oro). Bugs detectados: rompía RBAC (pasaba `current_user` donde se espera lista de unidades → PermissionError global; y devolvía TODOS los servers sin permisos), corrompía `dashboard_routes.py` (regex truncaba la descripción `(server_id)` → SyntaxError), rompía `OperativoDashboard.jsx` (getServerIdFromUnidad es import, no función local; `selectedServerId`→`selectedUnidad` duplicaba variable), y por `set -e` dejaba el repo a medio aplicar. Se implementó el MISMO objetivo de forma quirúrgica.
+
+**Helper central único** `core/corporate_filters/request_resolver.py` (NUEVO): `resolve_unidad_scope(current_user, unidad, server_id_legacy)` y `resolve_unidad_simple(valor)`. Reutiliza `UnidadesService` (SQL) + RBAC existente (`empresas_permitidas`→servers). CERO MongoDB, CERO POS live. Prioridad: unidad > server_id(deprecated, con warning) > global. Sin acceso → centinela → resultados vacíos. Desambigua MPRO: server compartido (ORIGEN/QRO) → filtra por etiqueta de sucursal (codigo/nombre) en operativo y por sucursal_origen_id (0021/0023) en inventarios.
+
+**Backend operativo** (`dashboard_routes`, `workflow_routes`, `tarea_routes`): aceptan `unidad` (nuevo) + `server_id` (deprecated). Se eliminó `resolve_effective_server_ids` (reemplazado por el helper central). `workflow_repository`/`workflow_service`/`operativo_service` ahora soportan `sucursal_ids` para desambiguar MPRO; tareas se filtran por workflow_uuids del scope (server+sucursal). Verificado: global=18; por unidad 130MID=4, CIENFUEGOS=7, ESTELAR=5, ORIGEN=1, 130QRO=1 (suman 18); legacy server_id sigue funcionando; unidad inexistente→0.
+
+**Backend inventarios** (`server.py` `obtener_inventarios_fisicos`): acepta `unidad` (prioridad) o path server_id (deprecated). **ELIMINADO el fallback LIVE (PASO 2)** → NO-LIVE puro, única fuente EDARSAHUB_SYNC. MPRO desambiguado: unidad=ORIGEN→147 (suc 0023), unidad=130QRO→113 (suc 0021), todas source=EDARSAHUB_SYNC.
+
+**`modules/inventarios/repository.py`** (código MUERTO confirmado, alineado por higiene): `sync_status='ACTIVE'` → `IN ('ACTIVE','REPLACED')` con dedup ROW_NUMBER (no vuelve a ocultar MPRO/REPLACED).
+
+**Frontend operativo** (`operativoApi.js` + `OperativoDashboard.jsx`): se ELIMINÓ `getServerIdFromUnidad`; el selector envía `unidad_codigo`. El frontend ya NO resuelve server_id.
+
+**Pendiente (siguiente incremento):** migrar `Reportes.js` (Análisis/Métricas — componente grande con su propio sistema server/sucursal/almacén) al contrato `unidad`. Hoy funciona vía compatibilidad (server_id legacy, ya NO-LIVE). También TableroEjecutivo/DashboardIA.
+
+**Verificación:** cURL E2E (SIN testing_agent), `yarn build` OK (34.75s), py_compile/AST OK, regresión: unidades-negocio=5 (EDARSAHUB no envenenado), comercial intacto. CERO MongoDB (evidenciado: sólo comentarios mencionan pymongo; get_database()=None; base_repository→SQL).
+
 ## [2026-06-08] FIX P0 — 3 bugs pantalla "Operaciones" (Reportes.js) + protección crítica EDARSAHUB
 Reporte del usuario: (a) Dashboard Operativo sin filtro de unidad (datos globales); (b) Métricas "No hay servidores configurados con consultas SQL"; (c) Análisis "No hay inventarios disponibles" en ORIGEN/QUERÉTARO (MPRO), CIENFUEGOS sí.
 

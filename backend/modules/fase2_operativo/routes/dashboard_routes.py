@@ -21,6 +21,8 @@ from ..db_utils import get_database
 
 # RBAC - Fase 3.1
 from core.security import get_current_user, get_user_empresas_permitidas, get_servers_for_empresas
+# P0 (2026-06): resolución canónica única de unidad (puerta única)
+from core.corporate_filters.request_resolver import resolve_unidad_scope
 
 router = APIRouter()
 
@@ -42,46 +44,30 @@ async def get_user_server_ids(current_user: Dict[str, Any]) -> list:
     return server_ids
 
 
-async def resolve_effective_server_ids(current_user: Dict[str, Any], server_id: Optional[str]) -> list:
-    """
-    Resuelve los server_ids efectivos para el dashboard.
-    - Sin server_id: devuelve los permitidos del usuario (lista vacía = sin restricción / todos).
-    - Con server_id válido (permitido o usuario sin restricción): acota a [server_id].
-    - Con server_id NO permitido: devuelve un sentinel inexistente → resultado vacío (RBAC).
-    """
-    allowed = await get_user_server_ids(current_user)
-    if not server_id:
-        return allowed
-    if not allowed or server_id in allowed:
-        return [server_id]
-    # Unidad no permitida para este usuario → no exponer datos
-    return ['00000000-0000-0000-0000-000000000000']
-
-
 @router.get("/resumen")
 async def obtener_resumen_dashboard(
-    server_id: Optional[str] = Query(None, description="Filtrar por unidad de negocio (server_id)"),
+    unidad: Optional[str] = Query(None, description="Unidad de negocio canónica (unidad_codigo o id). Contrato nuevo."),
+    server_id: Optional[str] = Query(None, description="DEPRECATED: usar 'unidad'. Compatibilidad temporal."),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
     Obtiene un resumen completo para el dashboard.
     PROTEGIDO: Filtra por empresas_permitidas del usuario.
-    Acepta filtro opcional por unidad de negocio (server_id).
     
-    Incluye:
-    - **workflows**: Conteos por estado y total
-    - **tareas**: Conteos por estado y vencidas
-    - **alertas**: Conteo de alertas activas
-    - **parametros**: Configuración operativa actual
+    Contrato canónico: el frontend envía **unidad** (codigo o id). El backend
+    valida permisos y resuelve server_id/sucursal. `server_id` queda deprecated.
     """
     try:
         db = get_db()
         
-        # Resolver server_ids efectivos (acota a la unidad si se pidió)
-        server_ids = await resolve_effective_server_ids(current_user, server_id)
+        # Puerta única: resolver unidad canónica (valida permiso + server_id/sucursal)
+        scope = await resolve_unidad_scope(current_user, unidad=unidad, server_id_legacy=server_id)
         
         operativo_svc = OperativoService(db)
-        resumen = await operativo_svc.obtener_resumen_dashboard(server_ids=server_ids)
+        resumen = await operativo_svc.obtener_resumen_dashboard(
+            server_ids=scope.effective_server_ids,
+            sucursal_ids=scope.sucursal_labels
+        )
         return resumen
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -89,7 +75,8 @@ async def obtener_resumen_dashboard(
 
 @router.get("/alertas")
 async def obtener_alertas(
-    server_id: Optional[str] = Query(None, description="Filtrar por unidad de negocio (server_id)"),
+    unidad: Optional[str] = Query(None, description="Unidad de negocio canónica (unidad_codigo o id). Contrato nuevo."),
+    server_id: Optional[str] = Query(None, description="DEPRECATED: usar 'unidad'. Compatibilidad temporal."),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
@@ -104,11 +91,14 @@ async def obtener_alertas(
     try:
         db = get_db()
         
-        # Resolver server_ids efectivos (acota a la unidad si se pidió)
-        server_ids = await resolve_effective_server_ids(current_user, server_id)
+        # Puerta única: resolver unidad canónica (valida permiso + server_id/sucursal)
+        scope = await resolve_unidad_scope(current_user, unidad=unidad, server_id_legacy=server_id)
         
         operativo_svc = OperativoService(db)
-        alertas = await operativo_svc.obtener_alertas_activas(server_ids=server_ids)
+        alertas = await operativo_svc.obtener_alertas_activas(
+            server_ids=scope.effective_server_ids,
+            sucursal_ids=scope.sucursal_labels
+        )
         return {
             "alertas": alertas,
             "total": len(alertas),

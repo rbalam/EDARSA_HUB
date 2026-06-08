@@ -87,13 +87,13 @@ export async function checkHealth() {
 // DASHBOARD
 // ============================================
 
-export async function getDashboardResumen(serverId = null) {
-  const q = serverId ? `?server_id=${encodeURIComponent(serverId)}` : '';
+export async function getDashboardResumen(unidad = null) {
+  const q = unidad ? `?unidad=${encodeURIComponent(unidad)}` : '';
   return apiRequest(`${API_V2}/dashboard/resumen${q}`);
 }
 
-export async function getDashboardAlertas(serverId = null) {
-  const q = serverId ? `?server_id=${encodeURIComponent(serverId)}` : '';
+export async function getDashboardAlertas(unidad = null) {
+  const q = unidad ? `?unidad=${encodeURIComponent(unidad)}` : '';
   return apiRequest(`${API_V2}/dashboard/alertas${q}`);
 }
 
@@ -117,7 +117,7 @@ export async function getWorkflows(params = {}) {
   const queryParams = new URLSearchParams();
   if (params.estado) queryParams.append('estado', params.estado);
   if (params.procesado_id) queryParams.append('procesado_id', params.procesado_id);
-  if (params.server_id) queryParams.append('server_id', params.server_id);
+  if (params.unidad) queryParams.append('unidad', params.unidad);
   if (params.skip) queryParams.append('skip', params.skip);
   if (params.limit) queryParams.append('limit', params.limit);
   
@@ -165,7 +165,7 @@ export async function getTareas(params = {}) {
   if (params.estado) queryParams.append('estado', params.estado);
   if (params.vencidas) queryParams.append('vencidas', 'true');
   if (params.pendientes) queryParams.append('pendientes', 'true');
-  if (params.server_id) queryParams.append('server_id', params.server_id);
+  if (params.unidad) queryParams.append('unidad', params.unidad);
   if (params.limit) queryParams.append('limit', params.limit);
   
   const query = queryParams.toString();

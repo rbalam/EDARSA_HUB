@@ -7331,17 +7331,33 @@ async def validate_server_access_by_empresa(server_id: str, credentials: HTTPAut
     return {"user": user, "server": server, "context": context}
 
 @api_router.get("/compras/inventarios-fisicos/{server_id}")
-async def obtener_inventarios_fisicos(server_id: str, sucursal: str = None, sucursal_id: str = None, almacen: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def obtener_inventarios_fisicos(server_id: str, unidad: str = None, sucursal: str = None, sucursal_id: str = None, almacen: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
     Obtiene la lista de inventarios físicos disponibles para seleccionar.
-    
-    ESTRATEGIA HÍBRIDA:
-    1. Primero intenta leer de EDARSAHUB (tabla Compras_Inventarios_Fisicos_Sync)
-    2. Si Sync está vacío, hace fallback a consulta LIVE al servidor físico
-    
+
+    CONTRATO CANÓNICO (P0 2026-06):
+    - El frontend envía la **unidad** canónica (unidad_codigo o id). El backend
+      resuelve server_id y sucursal_origen_id (desambigua MPRO ORIGEN/QRO).
+    - El path {server_id} queda DEPRECATED (compatibilidad temporal).
+
+    FUENTE ÚNICA: EDARSAHUB SQL (tabla Compras_Inventarios_Fisicos_Sync).
+    NO-LIVE: este endpoint NO consulta POS en vivo.
     FASE 8: Aplica filtro RBAC por almacenes permitidos.
     """
-    # FASE 3.1: Validar acceso por empresa
+    # ── Resolución canónica de unidad (puerta única). 'unidad' tiene prioridad;
+    #    si no, se interpreta el path como token (unidad o server_id deprecated).
+    from core.corporate_filters.request_resolver import resolve_unidad_simple
+    token = unidad or server_id
+    u, matched_by = resolve_unidad_simple(token)
+    if u:
+        server_id = u.get('server_id') or server_id
+        # Desambiguar sucursal SOLO si el token es una unidad canónica (no server_id)
+        if matched_by == 'unidad' and u.get('sucursal_origen_id'):
+            sucursal_id = sucursal_id or u.get('sucursal_origen_id')
+        elif matched_by == 'server' and not unidad:
+            logging.warning(f"[DEPRECATED-PARAM] inventarios-fisicos por server_id directo (deprecated). Migrar a 'unidad'. server_id={server_id}")
+
+    # FASE 3.1: Validar acceso por empresa (RBAC real, aguas abajo de la resolución)
     access = await validate_server_access_by_empresa(server_id, credentials)
     server = access["server"]
     context = access["context"]  # FASE 8: Obtener contexto RBAC
@@ -7350,26 +7366,18 @@ async def obtener_inventarios_fisicos(server_id: str, sucursal: str = None, sucu
     almacenes_permitidos = get_almacenes_permitidos(context, server_id)
     
     logging.info(
-        f"[COMPRAS-HIBRIDO] Inventarios físicos - "
-        f"Usuario={access['user'].get('email')}, Server={server_id}, "
-        f"AlmacenesPermitidos={almacenes_permitidos or 'TODOS'}"
+        f"[COMPRAS-NOLIVE] Inventarios físicos - "
+        f"Usuario={access['user'].get('email')}, Unidad={unidad or '-'}, Server={server_id}, "
+        f"Sucursal={sucursal_id or sucursal or '-'}, AlmacenesPermitidos={almacenes_permitidos or 'TODOS'}"
     )
     
     # =========================================================================
-    # PASO 1: Intentar leer de EDARSAHUB Sync
+    # ÚNICA FUENTE: EDARSAHUB Sync (NO-LIVE). Sin fallback a POS en vivo.
     # =========================================================================
     try:
-        unidad_negocio_id = None
-        try:
-            from core.unidades_registry import get_unidad_by_server_id
-            unidad_info = get_unidad_by_server_id(server_id)
-            if unidad_info:
-                unidad_negocio_id = unidad_info.id
-        except Exception:
-            pass
-        
         inventarios = obtener_inventarios_fisicos_sync(
-            unidad_negocio_id=unidad_negocio_id,
+            unidad_negocio_id=None,  # MPRO etiqueta todas las sucursales con la misma
+                                     # unidad_negocio_id; se desambigua por server_id+sucursal
             server_id=server_id,
             sucursal=sucursal or sucursal_id,
             almacen=almacen,
@@ -7385,7 +7393,7 @@ async def obtener_inventarios_fisicos(server_id: str, sucursal: str = None, sucu
                     or not almacenes_permitidos
                 ]
             
-            logging.info(f"[COMPRAS-HIBRIDO] ✅ Inventarios desde SYNC: {len(inventarios)} registros")
+            logging.info(f"[COMPRAS-NOLIVE] ✅ Inventarios desde EDARSAHUB SYNC: {len(inventarios)} registros")
             
             return [{
                 "folio": str(inv.get('folio', '')),
@@ -7400,96 +7408,12 @@ async def obtener_inventarios_fisicos(server_id: str, sucursal: str = None, sucu
                 "sync_status": inv.get('sync_status', 'SYNCED'),
             } for inv in inventarios]
     except Exception as e:
-        logging.warning(f"[COMPRAS-HIBRIDO] Error leyendo Sync, intentando LIVE: {e}")
+        logging.error(f"[COMPRAS-NOLIVE] Error leyendo EDARSAHUB Sync: {e}")
+        raise HTTPException(status_code=503, detail="No se pudieron leer los inventarios desde EDARSAHUB en este momento.")
     
-    # =========================================================================
-    # PASO 2: Fallback a consulta LIVE (si Sync está vacío o falló)
-    # =========================================================================
-    logging.info(f"[COMPRAS-HIBRIDO] Sync vacío/fallido, consultando LIVE: {server.get('name')}")
-    
-    if is_mpro_system(server.get('system_type')):
-        almacen_rbac_filter = get_almacenes_sql_filter(context, server_id, "A.Al_Cve_Almacen")
-        almacen_safe = _escape_like_pattern(almacen) if almacen else ""
-        sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
-        
-        almacen_filtro = ""
-        if almacen and almacen != "TODOS":
-            almacen_filtro = f"AND A.Al_Descripcion LIKE '%{almacen_safe}%'"
-        
-        sucursal_filtro = "1=1"
-        if sucursal_id:
-            sucursal_filtro = f"A.Sc_Cve_Sucursal = '{sucursal_id}'"
-        elif sucursal:
-            if sucursal.isdigit() or (len(sucursal) == 4 and sucursal[0] == '0'):
-                sucursal_filtro = f"A.Sc_Cve_Sucursal = '{sucursal}'"
-            else:
-                sucursal_filtro = f"S.Sc_Descripcion LIKE '%{sucursal_safe}%'"
-        
-        query = f"""
-SELECT DISTINCT 
-    F.Fi_Folio as folio, F.Fi_Fecha as fecha,
-    A.Al_Descripcion as almacen, A.Al_Cve_Almacen as almacen_id,
-    S.Sc_Descripcion as sucursal, A.Sc_Cve_Sucursal as sucursal_id,
-    ISNULL(F.Fi_Comentario, '') as comentario,
-    COUNT(DISTINCT F.Pr_Cve_Producto) as total_productos
-FROM Fisico F
-INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = F.Sc_Cve_Sucursal
-INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
-WHERE {sucursal_filtro} {almacen_filtro} {almacen_rbac_filter}
-GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion, A.Al_Cve_Almacen, S.Sc_Descripcion, A.Sc_Cve_Sucursal, F.Fi_Comentario
-ORDER BY F.Fi_Folio DESC
-"""
-        try:
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query, timeout=30
-            )
-            logging.info(f"[COMPRAS-HIBRIDO] ✅ MPRO LIVE: {len(result)} inventarios")
-            return [{"folio": r['folio'], "fecha": str(r['fecha']), "almacen": r['almacen'], 
-                     "almacen_id": r.get('almacen_id', ''), "sucursal": r.get('sucursal', ''),
-                     "sucursal_id": r.get('sucursal_id', ''), "comentario": r['comentario'],
-                     "productos": r['total_productos'], "source": "LIVE"} for r in result]
-        except Exception as e:
-            error_msg = str(e)
-            log_compras_error("inventarios-fisicos", server_id, "CONNECTION_ERROR", error_msg[:200], server.get('system_type'))
-            if 'timeout' in error_msg.lower() or 'connection' in error_msg.lower():
-                raise HTTPException(status_code=503, detail=f"Servidor temporalmente inaccesible: {server['host']}")
-            raise HTTPException(status_code=500, detail=f"Error consultando inventarios: {error_msg[:200]}")
-    
-    elif is_softrestaurant_system(server.get('system_type')):
-        almacen_rbac_filter = get_almacenes_sql_filter(context, server_id, "A.idalmacen")
-        almacen_safe = _escape_like_pattern(almacen) if almacen else ""
-        
-        almacen_filtro = ""
-        if almacen and almacen != "TODOS":
-            almacen_filtro = f"AND A.nombre LIKE '%{almacen_safe}%'"
-        
-        query = f"""
-SELECT DISTINCT 
-    INV.folio as folio, INV.fecha as fecha,
-    A.nombre as almacen, A.idalmacen as almacen_id, '' as comentario
-FROM invfisico INV
-LEFT JOIN almacen A ON A.idalmacen = INV.idalmacen1
-WHERE 1=1 {almacen_filtro} {almacen_rbac_filter}
-ORDER BY INV.folio DESC, INV.fecha DESC
-"""
-        try:
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
-            )
-            logging.info(f"[COMPRAS-HIBRIDO] ✅ SoftRestaurant LIVE: {len(result)} inventarios")
-            return [{"folio": str(r['folio']), "fecha": str(r['fecha']), 
-                     "almacen": r['almacen'] or 'Sin almacén', "almacen_id": str(r.get('almacen_id', '')),
-                     "comentario": '', "productos": 0, "source": "LIVE"} for r in result]
-        except Exception as e:
-            log_compras_error("inventarios-fisicos", server_id, "QUERY_ERROR", str(e), server.get('system_type'))
-            raise HTTPException(status_code=500, detail=f"Error consultando inventarios: {str(e)[:200]}")
-    
-    system_type = server.get('system_type', 'UNKNOWN')
-    normalized = normalize_system_type(system_type)
-    log_compras_error("inventarios-fisicos", server_id, "UNSUPPORTED_SYSTEM_TYPE", f"system_type={system_type}", system_type)
-    raise HTTPException(status_code=400, detail=f"Sistema '{system_type}' (normalizado: {normalized}) no soportado")
+    # Sin datos en EDARSAHUB para este scope (NO-LIVE: no se consulta el POS)
+    logging.info(f"[COMPRAS-NOLIVE] Sin inventarios en EDARSAHUB Sync para server={server_id} sucursal={sucursal_id or sucursal or '-'}")
+    return []
 
 
 @api_router.get("/compras/inventarios-fisicos-sql-first/{server_id}")

@@ -52,15 +52,23 @@ class WorkflowRepository(BaseRepository):
         super().__init__(db, "workflow_inventarios")
         logger.info(f"[WORKFLOW_REPO] Inicializado usando SQL: {self.table_name}")
     
-    async def get_uuids_by_servers(self, server_ids: Optional[List[str]] = None) -> List[str]:
+    async def get_uuids_by_servers(
+        self,
+        server_ids: Optional[List[str]] = None,
+        sucursal_ids: Optional[List[str]] = None,
+    ) -> List[str]:
         """
-        Retorna los _id (uuid) de los workflows de los server_ids dados.
-        Se usa para filtrar Tareas_Inventario por unidad de negocio (esa tabla
-        NO tiene server_id; el vínculo es workflow_id == workflow._id).
+        Retorna los _id (uuid) de los workflows del scope dado (server_ids y,
+        opcionalmente, sucursal_ids para desambiguar unidades que comparten
+        server_id, ej. MPRO ORIGEN vs 130QRO).
+        Se usa para filtrar Tareas_Inventario por unidad (esa tabla NO tiene
+        server_id; el vínculo es workflow_id == workflow._id).
         """
         filters = {}
         if server_ids:
             filters["server_id"] = {"$in": server_ids}
+        if sucursal_ids:
+            filters["sucursal_id"] = {"$in": sucursal_ids}
         cursor = self._sql_repo.find(filters)
         uuids = []
         for doc in cursor:
@@ -89,7 +97,8 @@ class WorkflowRepository(BaseRepository):
         estado: str, 
         skip: int = 0, 
         limit: int = 100,
-        server_ids: Optional[List[str]] = None
+        server_ids: Optional[List[str]] = None,
+        sucursal_ids: Optional[List[str]] = None
     ) -> List[Dict]:
         """
         Obtiene workflows por estado.
@@ -101,6 +110,7 @@ class WorkflowRepository(BaseRepository):
             skip: Paginación
             limit: Límite
             server_ids: Lista opcional de server_ids para filtro RBAC
+            sucursal_ids: Lista opcional de etiquetas de sucursal (desambiguar MPRO)
             
         Returns:
             Lista de workflows
@@ -108,6 +118,8 @@ class WorkflowRepository(BaseRepository):
         filters = {"estado_workflow": estado}
         if server_ids:
             filters["server_id"] = {"$in": server_ids}
+        if sucursal_ids:
+            filters["sucursal_id"] = {"$in": sucursal_ids}
         
         # Usar SQLCursor encadenable
         cursor = self._sql_repo.find(filters)
@@ -168,24 +180,19 @@ class WorkflowRepository(BaseRepository):
     async def get_escalados(
         self, 
         limit: int = 100, 
-        server_ids: Optional[List[str]] = None
+        server_ids: Optional[List[str]] = None,
+        sucursal_ids: Optional[List[str]] = None
     ) -> List[Dict]:
         """
         Obtiene workflows escalados.
         
-        MIGRADO A SQL: Soporta filtrado por server_ids para RBAC.
-        
-        Args:
-            limit: Límite de resultados
-            server_ids: Lista opcional de server_ids para filtro RBAC
-            
-        Returns:
-            Lista de workflows escalados
+        MIGRADO A SQL: Soporta filtrado por server_ids (RBAC) y sucursal_ids (MPRO).
         """
         return await self.get_by_estado(
             "ESCALADO",
             limit=limit,
-            server_ids=server_ids
+            server_ids=server_ids,
+            sucursal_ids=sucursal_ids
         )
     
     async def actualizar_estado(
@@ -244,16 +251,18 @@ class WorkflowRepository(BaseRepository):
     
     async def contar_por_estado(
         self, 
-        server_ids: Optional[List[str]] = None
+        server_ids: Optional[List[str]] = None,
+        sucursal_ids: Optional[List[str]] = None
     ) -> Dict[str, int]:
         """
         Cuenta workflows agrupados por estado.
         
         MIGRADO A SQL: Usa GROUP BY explícito en lugar de aggregate de MongoDB.
-        FASE 3.1: Soporta filtrado por server_ids para RBAC.
+        Soporta filtrado por server_ids (RBAC) y sucursal_ids (desambiguar MPRO).
         
         Args:
             server_ids: Lista opcional de server_ids permitidos para filtrar
+            sucursal_ids: Lista opcional de etiquetas de sucursal
         
         Returns:
             Diccionario con conteos por estado {estado: count}
@@ -261,9 +270,14 @@ class WorkflowRepository(BaseRepository):
         # Construir pipeline de agregación
         pipeline = []
         
-        # Match por server_ids si se especifica (RBAC)
+        # Match por server_ids/sucursal_ids si se especifica
+        match = {}
         if server_ids:
-            pipeline.append({"$match": {"server_id": {"$in": server_ids}}})
+            match["server_id"] = {"$in": server_ids}
+        if sucursal_ids:
+            match["sucursal_id"] = {"$in": sucursal_ids}
+        if match:
+            pipeline.append({"$match": match})
         
         # Group by estado
         pipeline.append({

@@ -7,7 +7,7 @@
  * Consume únicamente operativoApi.js para llamadas HTTP.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   RefreshCw, 
   Search, 
@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { fetchUnidadesNegocio, getServerIdFromUnidad } from '@/services/unidadesNegocioService';
+import { fetchUnidadesNegocio } from '@/services/unidadesNegocioService';
 import KPICards from './KPICards';
 import SLACard from './SLACard';
 import ResponsabilidadCard from './ResponsabilidadCard';
@@ -44,13 +44,10 @@ const OperativoDashboard = () => {
   const [workflows, setWorkflows] = useState([]);
   const [tareas, setTareas] = useState([]);
   
-  // Unidad de Negocio (filtro visible) → server_id interno
+  // Unidad de Negocio (filtro canónico). El frontend envía SOLO la unidad
+  // (unidad_codigo). NO resuelve server_id: eso lo hace el backend.
   const [unidadesNegocio, setUnidadesNegocio] = useState([]);
   const [selectedUnidad, setSelectedUnidad] = useState('');
-  const selectedServerId = useMemo(
-    () => getServerIdFromUnidad(unidadesNegocio, selectedUnidad) || '',
-    [unidadesNegocio, selectedUnidad]
-  );
   
   // Estados de carga
   const [loadingResumen, setLoadingResumen] = useState(true);
@@ -83,27 +80,27 @@ const OperativoDashboard = () => {
     setLoadingResumen(true);
     setErrorResumen(null);
     try {
-      const data = await getDashboardResumen(selectedServerId || null);
+      const data = await getDashboardResumen(selectedUnidad || null);
       setResumen(data);
     } catch (err) {
       setErrorResumen(err.message || 'Error desconocido');
     } finally {
       setLoadingResumen(false);
     }
-  }, [selectedServerId]);
+  }, [selectedUnidad]);
 
   const cargarAlertas = useCallback(async () => {
     setLoadingAlertas(true);
     setErrorAlertas(null);
     try {
-      const data = await getDashboardAlertas(selectedServerId || null);
+      const data = await getDashboardAlertas(selectedUnidad || null);
       setAlertas(Array.isArray(data) ? data : data.alertas || []);
     } catch (err) {
       setErrorAlertas(err.message || 'Error desconocido');
     } finally {
       setLoadingAlertas(false);
     }
-  }, [selectedServerId]);
+  }, [selectedUnidad]);
 
   const cargarWorkflows = useCallback(async () => {
     setLoadingWorkflows(true);
@@ -112,7 +109,7 @@ const OperativoDashboard = () => {
       const params = {};
       if (filtros.estadoWorkflow) params.estado = filtros.estadoWorkflow;
       if (filtros.busquedaId) params.procesado_id = filtros.busquedaId;
-      if (selectedServerId) params.server_id = selectedServerId;
+      if (selectedUnidad) params.unidad = selectedUnidad;
       params.limit = 50;
       
       const data = await getWorkflows(params);
@@ -122,7 +119,7 @@ const OperativoDashboard = () => {
     } finally {
       setLoadingWorkflows(false);
     }
-  }, [filtros.estadoWorkflow, filtros.busquedaId, selectedServerId]);
+  }, [filtros.estadoWorkflow, filtros.busquedaId, selectedUnidad]);
 
   const cargarTareas = useCallback(async () => {
     setLoadingTareas(true);
@@ -131,7 +128,7 @@ const OperativoDashboard = () => {
       const params = {};
       if (filtros.usuarioAsignado) params.usuario_id = filtros.usuarioAsignado;
       if (filtros.soloVencidas) params.vencidas = true;
-      if (selectedServerId) params.server_id = selectedServerId;
+      if (selectedUnidad) params.unidad = selectedUnidad;
       params.limit = 50;
       
       const data = await getTareas(params);
@@ -141,7 +138,7 @@ const OperativoDashboard = () => {
     } finally {
       setLoadingTareas(false);
     }
-  }, [filtros.usuarioAsignado, filtros.soloVencidas, selectedServerId]);
+  }, [filtros.usuarioAsignado, filtros.soloVencidas, selectedUnidad]);
 
   const cargarTodo = useCallback(async () => {
     await Promise.all([
@@ -160,7 +157,6 @@ const OperativoDashboard = () => {
   // Carga inicial
   useEffect(() => {
     cargarTodo();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Cargar unidades de negocio (filtro visible)
@@ -171,7 +167,7 @@ const OperativoDashboard = () => {
         setUnidadesNegocio(unidades);
         // Auto-seleccionar si el usuario sólo tiene una unidad
         if (unidades.length === 1) {
-          setSelectedUnidad(unidades[0].id);
+          setSelectedUnidad(unidades[0].codigo);
         }
       } catch (e) {
         setUnidadesNegocio([]);
@@ -250,7 +246,7 @@ const OperativoDashboard = () => {
             >
               <option value="">Todas las unidades</option>
               {unidadesNegocio.map((u) => (
-                <option key={u.id} value={u.id}>{u.nombre}</option>
+                <option key={u.id} value={u.codigo}>{u.nombre}</option>
               ))}
             </select>
           </div>

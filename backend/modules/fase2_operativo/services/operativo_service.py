@@ -359,25 +359,26 @@ class OperativoService:
     
     # === OPERACIONES DE DASHBOARD ===
     
-    async def obtener_resumen_dashboard(self, server_ids: Optional[List[str]] = None) -> Dict[str, Any]:
+    async def obtener_resumen_dashboard(self, server_ids: Optional[List[str]] = None, sucursal_ids: Optional[List[str]] = None) -> Dict[str, Any]:
         """
         Obtiene un resumen completo para el dashboard.
-        FASE 3.1: Soporta filtrado por server_ids para RBAC.
+        Soporta filtrado por server_ids (RBAC) y sucursal_ids (desambiguar MPRO).
         
         Args:
             server_ids: Lista opcional de server_ids permitidos para filtrar
+            sucursal_ids: Lista opcional de etiquetas de sucursal (unidad MPRO)
         
         Returns:
             Dict con resúmenes de workflows, tareas y alertas
         """
         # Resumen de workflows
-        workflows_por_estado = await self.workflow_service.resumen_por_estado(server_ids=server_ids)
+        workflows_por_estado = await self.workflow_service.resumen_por_estado(server_ids=server_ids, sucursal_ids=sucursal_ids)
         
-        # Resolver los workflow uuid de la(s) unidad(es) para filtrar tareas por unidad
+        # Resolver los workflow uuid del scope para filtrar tareas por unidad
         # (Tareas_Inventario no tiene server_id). Solo se filtra si hay server_ids.
         workflow_uuids = None
         if server_ids:
-            workflow_uuids = await self.workflow_service.get_uuids_by_servers(server_ids=server_ids)
+            workflow_uuids = await self.workflow_service.get_uuids_by_servers(server_ids=server_ids, sucursal_ids=sucursal_ids)
         
         # Resumen de tareas (acotado por unidad vía workflow_uuids)
         tareas_por_estado = await self.tarea_service.resumen_por_estado(workflow_ids=workflow_uuids)
@@ -386,7 +387,7 @@ class OperativoService:
         tareas_vencidas = await self.tarea_service.obtener_tareas_vencidas(workflow_ids=workflow_uuids)
         
         # Workflows escalados
-        workflows_escalados = await self.workflow_service.listar_escalados(server_ids=server_ids)
+        workflows_escalados = await self.workflow_service.listar_escalados(server_ids=server_ids, sucursal_ids=sucursal_ids)
         
         # Parámetros operativos
         parametros = await self.config_service.obtener_parametros_operativos()
@@ -407,23 +408,24 @@ class OperativoService:
             "parametros": parametros
         }
     
-    async def obtener_alertas_activas(self, server_ids: Optional[List[str]] = None) -> List[Dict]:
+    async def obtener_alertas_activas(self, server_ids: Optional[List[str]] = None, sucursal_ids: Optional[List[str]] = None) -> List[Dict]:
         """
         Obtiene las alertas activas del sistema.
-        FASE 3.1: Soporta filtrado por server_ids para RBAC.
+        Soporta filtrado por server_ids (RBAC) y sucursal_ids (desambiguar MPRO).
         
         Args:
             server_ids: Lista opcional de server_ids permitidos para filtrar
+            sucursal_ids: Lista opcional de etiquetas de sucursal (unidad MPRO)
         
         Returns:
             Lista de alertas
         """
         alertas = []
         
-        # Resolver workflow uuid de la(s) unidad(es) para acotar tareas por unidad
+        # Resolver workflow uuid del scope para acotar tareas por unidad
         workflow_uuids = None
         if server_ids:
-            workflow_uuids = await self.workflow_service.get_uuids_by_servers(server_ids=server_ids)
+            workflow_uuids = await self.workflow_service.get_uuids_by_servers(server_ids=server_ids, sucursal_ids=sucursal_ids)
         
         # Tareas vencidas
         tareas_vencidas = await self.tarea_service.obtener_tareas_vencidas(workflow_ids=workflow_uuids)
@@ -437,7 +439,7 @@ class OperativoService:
             })
         
         # Workflows escalados
-        workflows_escalados = await self.workflow_service.listar_escalados(server_ids=server_ids)
+        workflows_escalados = await self.workflow_service.listar_escalados(server_ids=server_ids, sucursal_ids=sucursal_ids)
         for wf in workflows_escalados:
             alertas.append({
                 "tipo": "WORKFLOW_ESCALADO",
