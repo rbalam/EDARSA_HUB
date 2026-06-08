@@ -630,6 +630,7 @@ async def comercial_v2_dashboard(
     fecha_inicio: date = Query(..., description="Fecha inicio del período"),
     fecha_fin: date = Query(..., description="Fecha fin del período"),
     unidad_negocio_pk: Optional[str] = Query(None, description="Filtrar por unidad"),
+    meses: Optional[str] = Query(None, description="Meses exactos a sumar, separados por coma (ej: 1,3). Si se omite, suma todo el rango."),
     current_user: dict = Depends(get_current_user_dual_dependency())
 ):
     """
@@ -665,11 +666,16 @@ async def comercial_v2_dashboard(
                 )
             unidades_permitidas = [unidad_negocio_pk]
         
+        # FIX 2026-06-08: Parsear meses exactos seleccionados (suma solo esos meses)
+        meses_list = None
+        if meses:
+            meses_list = [int(m) for m in meses.split(',') if m.strip().isdigit()]
+
         # Obtener datos agregados de ventas cerradas
-        totales = get_kpis_diarios_agregados(fecha_inicio, fecha_fin, unidades_permitidas)
+        totales = get_kpis_diarios_agregados(fecha_inicio, fecha_fin, unidades_permitidas, meses_list)
         
         # Obtener datos por unidad (cerradas)
-        por_unidad_cerradas = get_kpis_por_unidad(fecha_inicio, fecha_fin, unidades_permitidas)
+        por_unidad_cerradas = get_kpis_por_unidad(fecha_inicio, fecha_fin, unidades_permitidas, meses_list)
         
         # =====================================================================
         # COMBINAR CON VENTAS ABIERTAS DEL DÍA ACTUAL

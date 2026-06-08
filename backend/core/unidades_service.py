@@ -74,6 +74,10 @@ class UnidadesService:
                     codigo,
                     nombre AS unidad_negocio_nombre,
                     nombre,
+                    CONVERT(varchar(36), server_id) AS server_id,
+                    system_type,
+                    system_type AS sistema,
+                    sucursal_origen_id,
                     activo
                 FROM dbo.Unidades_Negocio
                 WHERE ISNULL(activo, 1) = 1

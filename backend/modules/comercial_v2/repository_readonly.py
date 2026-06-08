@@ -128,7 +128,8 @@ def get_kpis_diarios(
 def get_kpis_diarios_agregados(
     fecha_inicio: date,
     fecha_fin: date,
-    unidades_permitidas: Optional[List[str]] = None
+    unidades_permitidas: Optional[List[str]] = None,
+    meses: Optional[List[int]] = None
 ) -> Dict:
     """
     Obtiene KPIs diarios agregados (totales) para el dashboard.
@@ -144,6 +145,11 @@ def get_kpis_diarios_agregados(
     if unidades_permitidas:
         ids_quoted = ','.join([f"'{str(u).replace(chr(39), chr(39)+chr(39))}'" for u in unidades_permitidas])
         where_clauses.append(f"unidad_negocio_id IN ({ids_quoted})")
+    
+    # FIX 2026-06-08: Sumar EXACTAMENTE los meses seleccionados (no el rango intermedio)
+    if meses:
+        meses_str = ','.join(str(int(m)) for m in meses)
+        where_clauses.append(f"MONTH(fecha_operacion) IN ({meses_str})")
     
     query = f"""
     SELECT 
@@ -167,7 +173,8 @@ def get_kpis_diarios_agregados(
 def get_kpis_por_unidad(
     fecha_inicio: date,
     fecha_fin: date,
-    unidades_permitidas: Optional[List[str]] = None
+    unidades_permitidas: Optional[List[str]] = None,
+    meses: Optional[List[int]] = None
 ) -> List[Dict]:
     """
     Obtiene KPIs agregados por unidad para el dashboard desde EDARSAHUB SQL.
@@ -184,6 +191,11 @@ def get_kpis_por_unidad(
     if unidades_permitidas:
         ids_quoted = ','.join([f"'{str(u).replace(chr(39), chr(39)+chr(39))}'" for u in unidades_permitidas])
         where_clauses.append(f"unidad_negocio_id IN ({ids_quoted})")
+
+    # FIX 2026-06-08: Sumar EXACTAMENTE los meses seleccionados (no el rango intermedio)
+    if meses:
+        meses_str = ','.join(str(int(m)) for m in meses)
+        where_clauses.append(f"MONTH(fecha_operacion) IN ({meses_str})")
 
     query = f"""
     SELECT 

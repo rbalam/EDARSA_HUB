@@ -1,5 +1,23 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-08] FIX P0 — Sintonizador KPIs Comercial detenido (Junio desactualizado) + meses exactos + formato
+**Reporte del usuario:** El KPI de ventas de junio mostraba MENOS de lo real (Tablero solo leía hasta 4-5 jun, faltaban 5/6/7). Pidió: (1) junio al día y solución definitiva al "sintonizador", (2) que se auto-actualice solo, (3) sumar EXACTAMENTE los meses seleccionados, (4) coma en proyección ($1,016.49M).
+
+**Causa raíz (refactor incompleto del 5-jun que rompió `sync_comercial_v2`):**
+1. `UnidadesService.get_all()` dejó de exponer `server_id`, `system_type`, `sucursal_origen_id` → el job clasificaba 0 unidades. **Fix:** agregadas esas columnas al SELECT (aditivo).
+2. Esquemas/mappers migrados a `unidad_negocio_pk` pero el job y `sync_comercial_edarsahub` seguían usando `unidad_negocio_id` → ValidationError. **Fix:** pasar `unidad_negocio_pk` (GUID) en todo el flujo del job y SyncResult/SyncLogV2.
+3. `upsert_kpi_diario` escribía contra la **vista con JOIN** `vw_Comercial_KPIs_Diarios_v2_Runtime` (no expone `hash_origen`/`es_demo`/etc.) y omitía `unidad_negocio_id` (NOT NULL). **Fix:** upsert apunta a la **tabla base** `dbo.Comercial_KPIs_Diarios_v2` e incluye `unidad_negocio_id` (código resuelto vía `UnidadesService.get_by_pk`).
+4. `insert_sync_log` usaba columna `unidad_negocio_pk` inexistente en `Comercial_SyncLog_v2`. **Fix:** columna `unidad_negocio_id`.
+
+**Acciones:**
+- Catch-up oficial ejecutado (`scripts/catchup_junio_kpis_v2.py`, dias_atras=4): junio 5 ($907K), 6 ($996K), 7 (parcial) cargados. **Idempotente, solo lectura del POS, NO se tocó `Comercial_KPIs_Diarios_v2` de jun 1-4 (solo skip/update)**.
+- Auto-actualización: `SCHEDULER_SYNC_COMERCIAL_V2_ENABLED=true` (job cada 15 min, ya verificado corriendo y registrando SUCCESS en `Comercial_SyncLog_v2`).
+- Meses exactos: `/v2/comercial/dashboard` acepta `meses=` (ej `1,3`) → `MONTH(fecha_operacion) IN (...)`. Verificado: Ene+Mar excluye Feb (cuadre exacto).
+- Formato: `formatCurrency` usa `toLocaleString` → `$1,016.49M` con coma.
+
+**Verificación (cURL + screenshot, SIN testing_agent):** Tablero junio = $3.66M / 3,701 pax / 1,300 cheques (antes 1,449/523). 5 unidades con datos.
+
+
 ## [2026-06-07] FIX P0 — Tablero Ejecutivo KPIs en cero (Junio 2026)
 **Script del usuario (`fix_p0_..._junio_2026.sh`) AUDITADO y RECHAZADO:** usaba `npm run build` (PROHIBIDO, es `yarn`), reescribía `frontend/.env` (riesgo a `REACT_APP_BACKEND_URL`), sus `re.sub` NO matcheaban las firmas reales (parche backend = no-op), y mantenía `activo=1/es_demo=0` + base table `Comercial_KPIs_Diarios_v2`. Apliqué una versión auditada y corregida (`/app/scripts/fix_tablero_kpis_cero_AUDITADO.py`, con aserciones por reemplazo y backups).
 

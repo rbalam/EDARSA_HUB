@@ -71,6 +71,7 @@ def _get_unidades_from_edarsahub() -> tuple:
         for u in UnidadesService.get_all():
             sistema = (u.get('system_type') or '').upper()
             entry = {
+                "unidad_negocio_pk": u.get('unidad_negocio_pk'),
                 "unidad_negocio_id": u.get('codigo'),
                 "nombre": u.get('nombre'),
                 "server_id": u.get('server_id'),
@@ -167,7 +168,7 @@ async def execute_sync_comercial_v2(db=None) -> Dict[str, Any]:
             
             # Crear configuración de la unidad
             config = UnidadNegocioConfig(
-                unidad_negocio_id=unidad_id,
+                unidad_negocio_pk=unidad["unidad_negocio_pk"],
                 unidad_negocio_nombre=nombre,
                 server_id=unidad["server_id"],
                 sucursal_id=unidad["sucursal_id"],
@@ -246,7 +247,7 @@ async def execute_sync_comercial_v2(db=None) -> Dict[str, Any]:
             
             # Crear configuración de la unidad
             config = UnidadNegocioConfig(
-                unidad_negocio_id=unidad_id,
+                unidad_negocio_pk=unidad["unidad_negocio_pk"],
                 unidad_negocio_nombre=nombre,
                 server_id=unidad["server_id"],
                 sucursal_id=sucursal_id,

@@ -1078,7 +1078,8 @@ export default function TableroEjecutivo() {
             const v2Response = await api.get(`/v2/comercial/dashboard`, {
               params: { 
                 fecha_inicio: fechaInicio,
-                fecha_fin: fechaFin
+                fecha_fin: fechaFin,
+                meses: selectedMeses.map(m => parseInt(m)).join(',')
               },
               timeout: 30000
             });

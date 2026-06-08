@@ -163,11 +163,15 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
     # NORMALIZACIÓN: Asegurar nombre canónico sin acentos
     nombre_normalizado = ensure_canonical_name(kpi.unidad_negocio_pk, kpi.unidad_negocio_nombre)
     sucursal_normalizada = normalize_unidad_nombre(kpi.sucursal_nombre) if kpi.sucursal_nombre else None
-    
+
+    # FIX 2026-06-08: Resolver código de unidad (unidad_negocio_id es NOT NULL en la tabla base)
+    _unidad_info = UnidadesService.get_by_pk(kpi.unidad_negocio_pk) or {}
+    unidad_codigo = _unidad_info.get('codigo') or kpi.unidad_negocio_pk
+
     # Verificar si existe
     check_query = f"""
     SELECT id, hash_origen, version 
-    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+    FROM dbo.Comercial_KPIs_Diarios_v2
     WHERE unidad_negocio_pk = '{kpi.unidad_negocio_pk}'
       AND sucursal_id = '{kpi.sucursal_id}'
       AND fecha_operacion = '{kpi.fecha_operacion.isoformat()}'
@@ -184,7 +188,7 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
             # Datos diferentes, actualizar
             new_version = (record.get('version') or 1) + 1
             update_query = f"""
-            UPDATE vw_Comercial_KPIs_Diarios_v2_Runtime SET
+            UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
                 ventas_total = {kpi.ventas_total},
                 ventas_sin_propina = {kpi.ventas_sin_propina},
                 propinas_total = {kpi.propinas_total},
@@ -208,8 +212,8 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
         # No existe, insertar
         new_id = str(uuid.uuid4())
         insert_query = f"""
-        INSERT INTO vw_Comercial_KPIs_Diarios_v2_Runtime (
-            id, unidad_negocio_pk, unidad_negocio_nombre, server_id, sucursal_id,
+        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
             sucursal_nombre, sistema_origen, fecha_operacion, anio, mes, dia,
             ventas_total, ventas_sin_propina, propinas_total, tickets_total, pax_total,
             ticket_promedio, pax_promedio, ventas_cerradas, ventas_abiertas, total_estimado_dia,
@@ -219,6 +223,7 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
         ) VALUES (
             '{new_id}', 
             '{kpi.unidad_negocio_pk}', 
+            '{unidad_codigo}',
             '{nombre_normalizado}',
             '{kpi.server_id}', 
             '{kpi.sucursal_id}',
@@ -473,7 +478,7 @@ def insert_sync_log(log: SyncLogV2) -> str:
     insert_query = f"""
     INSERT INTO Comercial_SyncLog_v2 (
         id, run_id, run_timestamp, run_type,
-        unidad_negocio_pk, server_id, sucursal_id,
+        unidad_negocio_id, server_id, sucursal_id,
         fecha_inicio, fecha_fin,
         status, records_processed, records_inserted, records_updated, 
         records_skipped, records_errored,

@@ -279,7 +279,7 @@ def sync_softrestaurant_ventas_cerradas(
     result = SyncResult(
         success=False,
         run_id=run_id,
-        unidad_negocio_id=config.unidad_negocio_id
+        unidad_negocio_pk=config.unidad_negocio_pk
     )
     
     try:
@@ -302,7 +302,7 @@ def sync_softrestaurant_ventas_cerradas(
             log = SyncLogV2(
                 run_id=run_id,
                 run_type=SyncRunType.INCREMENTAL,
-                unidad_negocio_id=config.unidad_negocio_id,
+                unidad_negocio_pk=config.unidad_negocio_pk,
                 server_id=config.server_id,
                 fecha_inicio=fecha_inicio,
                 fecha_fin=fecha_fin,
@@ -348,7 +348,7 @@ def sync_softrestaurant_ventas_cerradas(
         log = SyncLogV2(
             run_id=run_id,
             run_type=SyncRunType.INCREMENTAL,
-            unidad_negocio_id=config.unidad_negocio_id,
+            unidad_negocio_pk=config.unidad_negocio_pk,
             server_id=config.server_id,
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
@@ -386,7 +386,7 @@ def sync_mpro_ventas_cerradas(
     result = SyncResult(
         success=False,
         run_id=run_id,
-        unidad_negocio_id=config.unidad_negocio_id
+        unidad_negocio_pk=config.unidad_negocio_pk
     )
     
     try:
@@ -410,7 +410,7 @@ def sync_mpro_ventas_cerradas(
             log = SyncLogV2(
                 run_id=run_id,
                 run_type=SyncRunType.INCREMENTAL,
-                unidad_negocio_id=config.unidad_negocio_id,
+                unidad_negocio_pk=config.unidad_negocio_pk,
                 server_id=config.server_id,
                 sucursal_id=sucursal_id,
                 fecha_inicio=fecha_inicio,
@@ -425,7 +425,7 @@ def sync_mpro_ventas_cerradas(
         
         # Actualizar config con sucursal específica para el mapeo
         config_with_sucursal = UnidadNegocioConfig(
-            unidad_negocio_id=config.unidad_negocio_id,
+            unidad_negocio_pk=config.unidad_negocio_pk,
             unidad_negocio_nombre=config.unidad_negocio_nombre,
             server_id=config.server_id,
             sucursal_id=sucursal_id,
@@ -468,7 +468,7 @@ def sync_mpro_ventas_cerradas(
         log = SyncLogV2(
             run_id=run_id,
             run_type=SyncRunType.INCREMENTAL,
-            unidad_negocio_id=config.unidad_negocio_id,
+            unidad_negocio_pk=config.unidad_negocio_pk,
             server_id=config.server_id,
             sucursal_id=sucursal_id,
             fecha_inicio=fecha_inicio,
