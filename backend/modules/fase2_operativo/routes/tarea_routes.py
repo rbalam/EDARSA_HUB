@@ -100,6 +100,7 @@ async def listar_tareas(
     estado: Optional[EstadoTarea] = Query(None, description="Filtrar por estado"),
     vencidas: bool = Query(False, description="Solo tareas vencidas"),
     pendientes: bool = Query(False, description="Solo tareas pendientes"),
+    server_id: Optional[str] = Query(None, description="Filtrar por unidad de negocio (server_id)"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     current_user: Dict[str, Any] = Depends(get_current_user)
@@ -107,13 +108,23 @@ async def listar_tareas(
     """
     Lista tareas con filtros opcionales.
     PROTEGIDO: Requiere autenticación.
+    Acepta filtro opcional por unidad de negocio (server_id), que se resuelve a los
+    workflows de esa unidad (Tareas_Inventario no tiene server_id directo).
     """
     try:
         db = get_db()
         tarea_svc = TareaService(db)
         
+        # Resolver los workflow uuid de la unidad para acotar tareas por unidad
+        from .dashboard_routes import resolve_effective_server_ids
+        from ..services.workflow_service import WorkflowService
+        workflow_uuids = None
+        if server_id:
+            eff_server_ids = await resolve_effective_server_ids(current_user, server_id)
+            workflow_uuids = await WorkflowService(db).get_uuids_by_servers(server_ids=eff_server_ids)
+        
         if vencidas:
-            tareas = await tarea_svc.obtener_tareas_vencidas()
+            tareas = await tarea_svc.obtener_tareas_vencidas(workflow_ids=workflow_uuids)
             return {"items": tareas, "total": len(tareas)}
         
         if usuario_id:
@@ -125,11 +136,11 @@ async def listar_tareas(
             return {"items": tareas, "total": len(tareas)}
         
         if pendientes:
-            tareas = await tarea_svc.obtener_tareas_pendientes(limit)
+            tareas = await tarea_svc.obtener_tareas_pendientes(limit, workflow_ids=workflow_uuids)
             return {"items": tareas, "total": len(tareas)}
         
         # Sin filtros específicos, listar todas pendientes
-        tareas = await tarea_svc.obtener_tareas_pendientes(limit)
+        tareas = await tarea_svc.obtener_tareas_pendientes(limit, workflow_ids=workflow_uuids)
         return {"items": tareas, "total": len(tareas)}
         
     except Exception as e:

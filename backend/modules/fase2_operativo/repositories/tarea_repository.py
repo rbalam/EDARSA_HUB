@@ -98,19 +98,27 @@ class TareaRepository(BaseRepository):
         
         return list(cursor)
     
-    async def get_pendientes_globales(self, limit: int = 100) -> List[Dict]:
+    async def get_pendientes_globales(self, limit: int = 100, workflow_ids: Optional[List[str]] = None) -> List[Dict]:
         """
         Obtiene todas las tareas pendientes del sistema.
         
         MIGRADO A SQL: Usa SQLCursor con filtro de estados.
+        Soporta filtro por workflow_ids (para acotar por unidad de negocio).
         
         Args:
             limit: Límite de resultados
+            workflow_ids: Lista opcional de workflow uuid para filtrar por unidad
             
         Returns:
             Lista de tareas pendientes
         """
+        # workflow_ids == [] significa "unidad sin workflows" → sin tareas
+        if workflow_ids is not None and len(workflow_ids) == 0:
+            return []
+        
         filters = {"estado_tarea": {"$in": ["PENDIENTE", "EN_PROGRESO"]}}
+        if workflow_ids:
+            filters["workflow_id"] = {"$in": workflow_ids}
         
         cursor = self._sql_repo.find(filters)
         cursor = cursor.sort("fecha_limite", ASCENDING)
@@ -142,23 +150,25 @@ class TareaRepository(BaseRepository):
         
         return list(cursor)
     
-    async def get_vencidas(self, server_ids: Optional[List[str]] = None) -> List[Dict]:
+    async def get_vencidas(self, server_ids: Optional[List[str]] = None, workflow_ids: Optional[List[str]] = None) -> List[Dict]:
         """
         Obtiene tareas que han excedido su fecha límite.
         
         MIGRADO A SQL: Usa comparación de fechas.
-        
-        NOTA: Tareas_Inventario no tiene ServerID directamente.
-        Para filtrar por server_ids se requiere JOIN con Workflow_Inventarios.
-        Actualmente retorna todas las tareas vencidas si server_ids se especifica,
-        ya que el filtro RBAC se aplica a nivel de service.
+        El filtro real por unidad se hace vía workflow_ids (resuelto en service),
+        ya que Tareas_Inventario no tiene server_id.
         
         Args:
-            server_ids: Lista opcional de server_ids (filtrado en capa service)
+            server_ids: (obsoleto a este nivel) se ignora; usar workflow_ids
+            workflow_ids: Lista opcional de workflow uuid para filtrar por unidad
         
         Returns:
             Lista de tareas vencidas
         """
+        # workflow_ids == [] significa "unidad sin workflows" → sin tareas
+        if workflow_ids is not None and len(workflow_ids) == 0:
+            return []
+        
         ahora = datetime.now(timezone.utc)
         
         filters = {
@@ -166,13 +176,8 @@ class TareaRepository(BaseRepository):
             "fecha_limite": {"$lt": ahora}
         }
         
-        # NOTA: server_id no existe en Tareas_Inventario
-        # El filtro RBAC debe aplicarse en la capa service mediante JOIN
-        if server_ids:
-            logger.warning(
-                "[TAREA_REPO] get_vencidas: server_ids ignorado (campo no existe en tabla). "
-                "Filtro RBAC debe aplicarse en service con JOIN a Workflow_Inventarios."
-            )
+        if workflow_ids:
+            filters["workflow_id"] = {"$in": workflow_ids}
         
         cursor = self._sql_repo.find(filters)
         return list(cursor)
@@ -251,30 +256,29 @@ class TareaRepository(BaseRepository):
         }
         return await self.update(id, data)
     
-    async def contar_por_estado(self, server_ids: Optional[List[str]] = None) -> Dict[str, int]:
+    async def contar_por_estado(self, server_ids: Optional[List[str]] = None, workflow_ids: Optional[List[str]] = None) -> Dict[str, int]:
         """
         Cuenta tareas agrupadas por estado.
         
         MIGRADO A SQL: Usa aggregate() con GROUP BY.
-        
-        NOTA: server_ids requiere JOIN con Workflow_Inventarios.
-        Actualmente ignora server_ids y cuenta todas las tareas.
-        El filtro RBAC debe aplicarse en la capa service.
+        El filtro por unidad se hace vía workflow_ids (resuelto en service),
+        ya que Tareas_Inventario no tiene server_id.
         
         Args:
-            server_ids: Lista opcional de server_ids (filtrado en service)
+            server_ids: (obsoleto a este nivel) se ignora; usar workflow_ids
+            workflow_ids: Lista opcional de workflow uuid para filtrar por unidad
         
         Returns:
             Diccionario con conteos por estado {estado: count}
         """
+        # workflow_ids == [] significa "unidad sin workflows" → 0 tareas
+        if workflow_ids is not None and len(workflow_ids) == 0:
+            return {}
+        
         pipeline = []
         
-        # NOTA: server_id no existe en Tareas_Inventario
-        if server_ids:
-            logger.warning(
-                "[TAREA_REPO] contar_por_estado: server_ids ignorado (campo no existe). "
-                "Filtro RBAC debe aplicarse en service."
-            )
+        if workflow_ids:
+            pipeline.append({"$match": {"workflow_id": {"$in": workflow_ids}}})
         
         # Group by estado
         pipeline.append({

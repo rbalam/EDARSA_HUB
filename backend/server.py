@@ -6975,6 +6975,26 @@ async def get_dashboard_inventory_summary(
                 "data": {}
             }
         
+        # ====================================================================
+        # PROTECCIÓN NO-LIVE / HOST COMPARTIDO (crítico):
+        # El POS de MPRO comparte IP con EDARSAHUB (54.39.104.176). Un intento
+        # de conexión EN VIVO fallido a ese host pone a EDARSAHUB en "cooldown"
+        # en memoria → TODAS las lecturas canónicas (unidades, RBAC, etc.)
+        # devuelven vacío y se cae el sistema. Por eso NUNCA se conecta en vivo
+        # al host de EDARSAHUB desde este dashboard.
+        # ====================================================================
+        try:
+            from core.server_registry import EDARSAHUB_CONFIG as _EDA_CFG
+            _eda_host = str(_EDA_CFG.get('host') or '').strip()
+        except Exception:
+            _eda_host = ''
+        if _eda_host and str(server.get('host') or '').strip() == _eda_host:
+            return {
+                "success": False,
+                "message": "Métricas en vivo no disponibles para esta unidad (regla NO-LIVE). Usa la pestaña Análisis para ver sus inventarios.",
+                "data": {}
+            }
+        
         # Obtener filtros configurados
         departamentos = server.get('departamentos', [])
         categorias = server.get('categorias', [])
@@ -7001,7 +7021,8 @@ async def get_dashboard_inventory_summary(
                 server['database'],
                 server['username'],
                 server['password'],
-                query_sql
+                query_sql,
+                timeout_seconds=30
             )
         except Exception as query_error:
             logging.error(f"Error en consulta dashboard: {str(query_error)}")

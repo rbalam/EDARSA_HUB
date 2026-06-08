@@ -11,8 +11,8 @@ Incluye métricas de SLA.
 Permisos requeridos:
 - Todos los endpoints requieren autenticación y filtran por empresas_permitidas del usuario
 """
-from fastapi import APIRouter, HTTPException, Depends
-from typing import Dict, Any
+from fastapi import APIRouter, HTTPException, Depends, Query
+from typing import Dict, Any, Optional
 from ..services.operativo_service import OperativoService
 from ..services.workflow_service import WorkflowService
 from ..services.tarea_service import TareaService
@@ -42,13 +42,31 @@ async def get_user_server_ids(current_user: Dict[str, Any]) -> list:
     return server_ids
 
 
+async def resolve_effective_server_ids(current_user: Dict[str, Any], server_id: Optional[str]) -> list:
+    """
+    Resuelve los server_ids efectivos para el dashboard.
+    - Sin server_id: devuelve los permitidos del usuario (lista vacía = sin restricción / todos).
+    - Con server_id válido (permitido o usuario sin restricción): acota a [server_id].
+    - Con server_id NO permitido: devuelve un sentinel inexistente → resultado vacío (RBAC).
+    """
+    allowed = await get_user_server_ids(current_user)
+    if not server_id:
+        return allowed
+    if not allowed or server_id in allowed:
+        return [server_id]
+    # Unidad no permitida para este usuario → no exponer datos
+    return ['00000000-0000-0000-0000-000000000000']
+
+
 @router.get("/resumen")
 async def obtener_resumen_dashboard(
+    server_id: Optional[str] = Query(None, description="Filtrar por unidad de negocio (server_id)"),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
     Obtiene un resumen completo para el dashboard.
     PROTEGIDO: Filtra por empresas_permitidas del usuario.
+    Acepta filtro opcional por unidad de negocio (server_id).
     
     Incluye:
     - **workflows**: Conteos por estado y total
@@ -59,8 +77,8 @@ async def obtener_resumen_dashboard(
     try:
         db = get_db()
         
-        # Obtener server_ids permitidos para el usuario
-        server_ids = await get_user_server_ids(current_user)
+        # Resolver server_ids efectivos (acota a la unidad si se pidió)
+        server_ids = await resolve_effective_server_ids(current_user, server_id)
         
         operativo_svc = OperativoService(db)
         resumen = await operativo_svc.obtener_resumen_dashboard(server_ids=server_ids)
@@ -71,11 +89,13 @@ async def obtener_resumen_dashboard(
 
 @router.get("/alertas")
 async def obtener_alertas(
+    server_id: Optional[str] = Query(None, description="Filtrar por unidad de negocio (server_id)"),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
     Obtiene las alertas activas del sistema.
     PROTEGIDO: Filtra por empresas_permitidas del usuario.
+    Acepta filtro opcional por unidad de negocio (server_id).
     
     Tipos de alertas:
     - **TAREA_VENCIDA**: Tareas que excedieron su fecha límite
@@ -84,8 +104,8 @@ async def obtener_alertas(
     try:
         db = get_db()
         
-        # Obtener server_ids permitidos para el usuario
-        server_ids = await get_user_server_ids(current_user)
+        # Resolver server_ids efectivos (acota a la unidad si se pidió)
+        server_ids = await resolve_effective_server_ids(current_user, server_id)
         
         operativo_svc = OperativoService(db)
         alertas = await operativo_svc.obtener_alertas_activas(server_ids=server_ids)

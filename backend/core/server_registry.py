@@ -2384,6 +2384,13 @@ def get_server_connection_info_with_secrets(server_id: str) -> Optional[Dict]:
         'password': server.get('password'),  # password_encrypted desde SQL
         'api_key': server.get('api_key'),    # api_key_encrypted desde SQL
         'active': server.get('active', False),
+        # FIX 2026-06: incluir metadata de configuración de consultas (antes se
+        # omitía → el Dashboard de Métricas descartaba servidores YA configurados
+        # con el mensaje "No hay servidores configurados con consultas SQL").
+        'queries_configured': server.get('queries_configured', False),
+        'departamentos': server.get('departamentos', []),
+        'categorias': server.get('categorias', []),
+        'visible_en_operaciones': server.get('visible_en_operaciones', True),
         'config_origin': 'EDARSAHUB_SQL'
     }
 

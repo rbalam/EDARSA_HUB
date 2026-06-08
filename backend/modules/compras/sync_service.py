@@ -250,34 +250,48 @@ def obtener_inventarios_fisicos_sync(
         conn = get_edarsahub_connection()
         cursor = conn.cursor(as_dict=True)
         
-        query = """
+        # NO-LIVE / EDARSAHUB única fuente: se leen TODOS los inventarios capturados
+        # (ACTIVE y REPLACED) deduplicando por inventario físico real
+        # (server_id+sucursal_id+almacen_id+folio) y prefiriendo ACTIVE. Esto corrige
+        # el caso en que un sync marcó los registros como REPLACED pero el insert de la
+        # nueva tanda ACTIVE falló (POS inaccesible), dejando data válida oculta (MPRO).
+        inner_where = "WHERE sync_status IN ('ACTIVE', 'REPLACED')"
+        params = []
+        
+        if unidad_negocio_id:
+            inner_where += " AND unidad_negocio_id = %s"
+            params.append(unidad_negocio_id)
+        
+        if server_id:
+            inner_where += " AND LOWER(server_id) = LOWER(%s)"
+            params.append(server_id)
+        
+        if sucursal:
+            inner_where += " AND (sucursal LIKE %s OR sucursal_id = %s)"
+            params.extend([f'%{sucursal}%', sucursal])
+        
+        if almacen and almacen != 'TODOS':
+            inner_where += " AND almacen LIKE %s"
+            params.append(f'%{almacen}%')
+        
+        query = f"""
             SELECT 
                 folio, fecha, almacen, almacen_id, sucursal, sucursal_id,
                 tipo, estatus, total_productos, unidad_negocio_id, 
                 unidad_negocio_codigo, server_id, system_type,
                 sync_timestamp, sync_status
-            FROM Compras_Inventarios_Fisicos_Sync
-            WHERE sync_status = 'ACTIVE'
+            FROM (
+                SELECT *,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY server_id, sucursal_id, almacen_id, folio
+                        ORDER BY CASE WHEN sync_status = 'ACTIVE' THEN 0 ELSE 1 END, sync_timestamp DESC
+                    ) AS _rn
+                FROM Compras_Inventarios_Fisicos_Sync
+                {inner_where}
+            ) t
+            WHERE t._rn = 1
+            ORDER BY fecha DESC OFFSET 0 ROWS FETCH NEXT {limit} ROWS ONLY
         """
-        params = []
-        
-        if unidad_negocio_id:
-            query += " AND unidad_negocio_id = %s"
-            params.append(unidad_negocio_id)
-        
-        if server_id:
-            query += " AND LOWER(server_id) = LOWER(%s)"
-            params.append(server_id)
-        
-        if sucursal:
-            query += " AND (sucursal LIKE %s OR sucursal_id = %s)"
-            params.extend([f'%{sucursal}%', sucursal])
-        
-        if almacen and almacen != 'TODOS':
-            query += " AND almacen LIKE %s"
-            params.append(f'%{almacen}%')
-        
-        query += f" ORDER BY fecha DESC OFFSET 0 ROWS FETCH NEXT {limit} ROWS ONLY"
         
         cursor.execute(query, params)
         rows = cursor.fetchall()

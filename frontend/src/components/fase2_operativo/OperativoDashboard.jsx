@@ -7,16 +7,18 @@
  * Consume únicamente operativoApi.js para llamadas HTTP.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   RefreshCw, 
   Search, 
   Filter, 
   X,
-  Activity
+  Activity,
+  Building2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { fetchUnidadesNegocio, getServerIdFromUnidad } from '@/services/unidadesNegocioService';
 import KPICards from './KPICards';
 import SLACard from './SLACard';
 import ResponsabilidadCard from './ResponsabilidadCard';
@@ -41,6 +43,14 @@ const OperativoDashboard = () => {
   const [alertas, setAlertas] = useState([]);
   const [workflows, setWorkflows] = useState([]);
   const [tareas, setTareas] = useState([]);
+  
+  // Unidad de Negocio (filtro visible) → server_id interno
+  const [unidadesNegocio, setUnidadesNegocio] = useState([]);
+  const [selectedUnidad, setSelectedUnidad] = useState('');
+  const selectedServerId = useMemo(
+    () => getServerIdFromUnidad(unidadesNegocio, selectedUnidad) || '',
+    [unidadesNegocio, selectedUnidad]
+  );
   
   // Estados de carga
   const [loadingResumen, setLoadingResumen] = useState(true);
@@ -73,27 +83,27 @@ const OperativoDashboard = () => {
     setLoadingResumen(true);
     setErrorResumen(null);
     try {
-      const data = await getDashboardResumen();
+      const data = await getDashboardResumen(selectedServerId || null);
       setResumen(data);
     } catch (err) {
       setErrorResumen(err.message || 'Error desconocido');
     } finally {
       setLoadingResumen(false);
     }
-  }, []);
+  }, [selectedServerId]);
 
   const cargarAlertas = useCallback(async () => {
     setLoadingAlertas(true);
     setErrorAlertas(null);
     try {
-      const data = await getDashboardAlertas();
+      const data = await getDashboardAlertas(selectedServerId || null);
       setAlertas(Array.isArray(data) ? data : data.alertas || []);
     } catch (err) {
       setErrorAlertas(err.message || 'Error desconocido');
     } finally {
       setLoadingAlertas(false);
     }
-  }, []);
+  }, [selectedServerId]);
 
   const cargarWorkflows = useCallback(async () => {
     setLoadingWorkflows(true);
@@ -102,6 +112,7 @@ const OperativoDashboard = () => {
       const params = {};
       if (filtros.estadoWorkflow) params.estado = filtros.estadoWorkflow;
       if (filtros.busquedaId) params.procesado_id = filtros.busquedaId;
+      if (selectedServerId) params.server_id = selectedServerId;
       params.limit = 50;
       
       const data = await getWorkflows(params);
@@ -111,7 +122,7 @@ const OperativoDashboard = () => {
     } finally {
       setLoadingWorkflows(false);
     }
-  }, [filtros.estadoWorkflow, filtros.busquedaId]);
+  }, [filtros.estadoWorkflow, filtros.busquedaId, selectedServerId]);
 
   const cargarTareas = useCallback(async () => {
     setLoadingTareas(true);
@@ -120,6 +131,7 @@ const OperativoDashboard = () => {
       const params = {};
       if (filtros.usuarioAsignado) params.usuario_id = filtros.usuarioAsignado;
       if (filtros.soloVencidas) params.vencidas = true;
+      if (selectedServerId) params.server_id = selectedServerId;
       params.limit = 50;
       
       const data = await getTareas(params);
@@ -129,7 +141,7 @@ const OperativoDashboard = () => {
     } finally {
       setLoadingTareas(false);
     }
-  }, [filtros.usuarioAsignado, filtros.soloVencidas]);
+  }, [filtros.usuarioAsignado, filtros.soloVencidas, selectedServerId]);
 
   const cargarTodo = useCallback(async () => {
     await Promise.all([
@@ -150,6 +162,31 @@ const OperativoDashboard = () => {
     cargarTodo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Cargar unidades de negocio (filtro visible)
+  useEffect(() => {
+    (async () => {
+      try {
+        const unidades = await fetchUnidadesNegocio();
+        setUnidadesNegocio(unidades);
+        // Auto-seleccionar si el usuario sólo tiene una unidad
+        if (unidades.length === 1) {
+          setSelectedUnidad(unidades[0].id);
+        }
+      } catch (e) {
+        setUnidadesNegocio([]);
+      }
+    })();
+  }, []);
+
+  // Recargar KPIs y alertas cuando cambie la unidad (o filtros relevantes)
+  useEffect(() => {
+    cargarResumen();
+  }, [cargarResumen]);
+
+  useEffect(() => {
+    cargarAlertas();
+  }, [cargarAlertas]);
 
   // Recargar workflows y tareas cuando cambien filtros
   useEffect(() => {
@@ -202,6 +239,21 @@ const OperativoDashboard = () => {
         </div>
         
         <div className="flex items-center gap-2">
+          {/* Selector de Unidad de Negocio */}
+          <div className="flex items-center gap-2" data-testid="operativo-unidad-filter">
+            <Building2 className="h-4 w-4 text-zinc-500" />
+            <select
+              value={selectedUnidad}
+              onChange={(e) => setSelectedUnidad(e.target.value)}
+              className="h-9 px-3 rounded-md border border-zinc-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              data-testid="operativo-unidad-select"
+            >
+              <option value="">Todas las unidades</option>
+              {unidadesNegocio.map((u) => (
+                <option key={u.id} value={u.id}>{u.nombre}</option>
+              ))}
+            </select>
+          </div>
           {ultimaActualizacion && (
             <span className="text-xs text-zinc-400">
               Actualizado: {ultimaActualizacion.toLocaleTimeString('es-MX')}

@@ -52,6 +52,23 @@ class WorkflowRepository(BaseRepository):
         super().__init__(db, "workflow_inventarios")
         logger.info(f"[WORKFLOW_REPO] Inicializado usando SQL: {self.table_name}")
     
+    async def get_uuids_by_servers(self, server_ids: Optional[List[str]] = None) -> List[str]:
+        """
+        Retorna los _id (uuid) de los workflows de los server_ids dados.
+        Se usa para filtrar Tareas_Inventario por unidad de negocio (esa tabla
+        NO tiene server_id; el vínculo es workflow_id == workflow._id).
+        """
+        filters = {}
+        if server_ids:
+            filters["server_id"] = {"$in": server_ids}
+        cursor = self._sql_repo.find(filters)
+        uuids = []
+        for doc in cursor:
+            wid = doc.get("_id") or doc.get("id")
+            if wid is not None:
+                uuids.append(str(wid))
+        return uuids
+    
     async def get_by_procesado_id(self, procesado_id: str) -> Optional[Dict]:
         """
         Obtiene un workflow por su procesado_id (FK a Fase 1).

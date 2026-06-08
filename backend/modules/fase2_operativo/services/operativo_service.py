@@ -373,11 +373,17 @@ class OperativoService:
         # Resumen de workflows
         workflows_por_estado = await self.workflow_service.resumen_por_estado(server_ids=server_ids)
         
-        # Resumen de tareas
-        tareas_por_estado = await self.tarea_service.resumen_por_estado(server_ids=server_ids)
+        # Resolver los workflow uuid de la(s) unidad(es) para filtrar tareas por unidad
+        # (Tareas_Inventario no tiene server_id). Solo se filtra si hay server_ids.
+        workflow_uuids = None
+        if server_ids:
+            workflow_uuids = await self.workflow_service.get_uuids_by_servers(server_ids=server_ids)
+        
+        # Resumen de tareas (acotado por unidad vía workflow_uuids)
+        tareas_por_estado = await self.tarea_service.resumen_por_estado(workflow_ids=workflow_uuids)
         
         # Tareas vencidas
-        tareas_vencidas = await self.tarea_service.obtener_tareas_vencidas(server_ids=server_ids)
+        tareas_vencidas = await self.tarea_service.obtener_tareas_vencidas(workflow_ids=workflow_uuids)
         
         # Workflows escalados
         workflows_escalados = await self.workflow_service.listar_escalados(server_ids=server_ids)
@@ -414,8 +420,13 @@ class OperativoService:
         """
         alertas = []
         
+        # Resolver workflow uuid de la(s) unidad(es) para acotar tareas por unidad
+        workflow_uuids = None
+        if server_ids:
+            workflow_uuids = await self.workflow_service.get_uuids_by_servers(server_ids=server_ids)
+        
         # Tareas vencidas
-        tareas_vencidas = await self.tarea_service.obtener_tareas_vencidas(server_ids=server_ids)
+        tareas_vencidas = await self.tarea_service.obtener_tareas_vencidas(workflow_ids=workflow_uuids)
         for tarea in tareas_vencidas:
             alertas.append({
                 "tipo": "TAREA_VENCIDA",

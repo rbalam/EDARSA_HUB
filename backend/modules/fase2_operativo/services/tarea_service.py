@@ -282,17 +282,18 @@ class TareaService:
         """
         return await self.tarea_repo.get_by_usuario(usuario_id, solo_pendientes)
     
-    async def obtener_tareas_pendientes(self, limit: int = 100) -> List[Dict]:
+    async def obtener_tareas_pendientes(self, limit: int = 100, workflow_ids: Optional[List[str]] = None) -> List[Dict]:
         """
         Obtiene todas las tareas pendientes del sistema.
         
         Args:
             limit: Límite de resultados
+            workflow_ids: Lista opcional de workflow uuid para filtrar por unidad
             
         Returns:
             Lista de tareas pendientes
         """
-        return await self.tarea_repo.get_pendientes_globales(limit)
+        return await self.tarea_repo.get_pendientes_globales(limit, workflow_ids=workflow_ids)
     
     async def obtener_tareas_sin_asignar(self, limit: int = 100) -> List[Dict]:
         """
@@ -303,18 +304,19 @@ class TareaService:
         """
         return await self.tarea_repo.get_sin_asignar(limit)
     
-    async def obtener_tareas_vencidas(self, server_ids: Optional[List[str]] = None) -> List[Dict]:
+    async def obtener_tareas_vencidas(self, server_ids: Optional[List[str]] = None, workflow_ids: Optional[List[str]] = None) -> List[Dict]:
         """
         Obtiene tareas que han excedido su fecha límite.
-        FASE 3.1: Soporta filtrado por server_ids para RBAC.
+        Filtra por unidad vía workflow_ids (resuelto en operativo_service).
         
         Args:
-            server_ids: Lista opcional de server_ids permitidos para filtrar
+            server_ids: (obsoleto a este nivel) usar workflow_ids
+            workflow_ids: Lista opcional de workflow uuid para filtrar por unidad
         
         Returns:
             Lista de tareas vencidas
         """
-        return await self.tarea_repo.get_vencidas(server_ids=server_ids)
+        return await self.tarea_repo.get_vencidas(server_ids=server_ids, workflow_ids=workflow_ids)
     
     async def obtener_historial_tarea(self, tarea_id: str) -> List[Dict]:
         """
@@ -328,18 +330,19 @@ class TareaService:
         """
         return await self.historial_repo.get_by_tarea(tarea_id)
     
-    async def resumen_por_estado(self, server_ids: Optional[List[str]] = None) -> Dict[str, int]:
+    async def resumen_por_estado(self, server_ids: Optional[List[str]] = None, workflow_ids: Optional[List[str]] = None) -> Dict[str, int]:
         """
         Obtiene resumen de tareas por estado.
-        FASE 3.1: Soporta filtrado por server_ids para RBAC.
+        Filtra por unidad vía workflow_ids (resuelto en operativo_service).
         
         Args:
-            server_ids: Lista opcional de server_ids permitidos para filtrar
+            server_ids: (obsoleto a este nivel) usar workflow_ids
+            workflow_ids: Lista opcional de workflow uuid para filtrar por unidad
         
         Returns:
             Diccionario con conteos por estado
         """
-        return await self.tarea_repo.contar_por_estado(server_ids=server_ids)
+        return await self.tarea_repo.contar_por_estado(server_ids=server_ids, workflow_ids=workflow_ids)
     
     async def resumen_por_usuario(self, usuario_id: str) -> Dict[str, int]:
         """

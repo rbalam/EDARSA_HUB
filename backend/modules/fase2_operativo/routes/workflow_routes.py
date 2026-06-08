@@ -117,6 +117,7 @@ async def obtener_workflow(
 async def listar_workflows(
     estado: Optional[EstadoWorkflow] = Query(None, description="Filtrar por estado"),
     procesado_id: Optional[str] = Query(None, description="Filtrar por procesado_id"),
+    server_id: Optional[str] = Query(None, description="Filtrar por unidad de negocio (server_id)"),
     skip: int = Query(0, ge=0, description="Registros a saltar"),
     limit: int = Query(50, ge=1, le=100, description="Límite de registros"),
     current_user: Dict[str, Any] = Depends(get_current_user)
@@ -124,6 +125,7 @@ async def listar_workflows(
     """
     Lista workflows con filtros opcionales.
     PROTEGIDO: Requiere autenticación y filtra por empresas_permitidas.
+    Acepta filtro opcional por unidad de negocio (server_id).
     """
     try:
         db = get_db()
@@ -136,6 +138,12 @@ async def listar_workflows(
             return {"items": [], "total": 0}
         
         resultado = await workflow_svc.listar_workflows(estado, skip, limit)
+        
+        # Filtro por unidad de negocio (post-filtro: el item ya trae servidor_id)
+        if server_id and isinstance(resultado, dict) and isinstance(resultado.get("items"), list):
+            items = [w for w in resultado["items"] if str(w.get("servidor_id") or "") == server_id]
+            resultado = {"items": items, "total": len(items)}
+        
         return resultado
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
