@@ -289,6 +289,22 @@ manualmente con autorización:
 - PENDIENTE (arquitectura, separado): `repository_softrestaurant.py` aún consulta POS EN VIVO
   (subprocess) → migrar a tabla pre-calculada EDARSAHUB (NO-LIVE) es trabajo futuro.
 
+### Opción A — Backfill detalle Sync_Sales: PILOTO ✅ VALIDADO (2026-06-08)
+Usuario autorizó Opción A (lectura POS en vivo) + piloto controlado. Hallazgo: el histórico de
+**KPIs ya estaba completo** (`Comercial_KPIs_Diarios_v2`: 3,392 filas, 2024-05→2026-06,
+$431,766,974.05, `SQL_LIVE`); lo faltante es el DETALLE en `Sync_Sales`. Por eso el backfill puebla
+SOLO `Sync_Sales`, sin tocar KPIs (regla protegida).
+- **Conectividad**: las 5 unidades POS alcanzables desde el pod (probe read-only).
+- **Piloto ESTELAR mayo-2026**: 1,881 tickets / 25,541 líneas / $2,924,063 insertados a `Sync_Sales`
+  en 63.7s. Comparación vs KPI canónico (solo lectura): −0.18% ($2,924,063 vs $2,929,406). 0 tickets sin detalle.
+- **Validado**: idempotencia (re-run insertó 0, 1881 duplicados); `Comercial_KPIs_Diarios_v2` INTACTO
+  (3,392 filas/$431,766,974.05); solo `Sync_Sales` tocado (79→1,960). Credenciales canónicas, sin secretos,
+  por lotes, transaccional con rollback, bitácora.
+- Scripts: `scripts/probe_pos_connectivity.py`, `scripts/pilot_backfill_sync_sales.py`.
+- **PENDIENTE autorización del usuario**: escalar a 24 meses × 5 unidades (~225,720 tickets, ~2h, por lotes
+  mes×unidad). Validar query MPRO (130QRO/ORIGEN) en mini-piloto antes de escalar esa rama.
+- Reporte: `docs/reports/PILOTO_OPCION_A_BACKFILL_SYNC_SALES_20260608.md`.
+
 ## 🥇 MÁXIMA DE ORO (REGLA PERMANENTE — 2026-06-07)
 **CADA VEZ que algo se vaya a HARDCODEAR, se REQUIERE la AUTORIZACIÓN ESCRITA del usuario ANTES de hacerlo.**
 - Aplica a: unidades, credenciales, hosts, rutas, horarios, roles/permisos, productos, casas/marcas, periodos, IDs, URLs, valores de negocio, fallbacks, etc.
