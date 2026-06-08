@@ -3930,120 +3930,74 @@ async def get_insumos_pendientes(
 async def get_report_filters(server_id: str, current_user: Dict = Depends(get_current_user)):
     """
     Obtiene las opciones de filtros (categorías, familias, subfamilias) para el reporte de análisis.
-    Soporta MPRO y SoftRestaurant con equivalencias:
-    - MPRO: Categoria, Familia, SubFamilia
-    - SoftRestaurant: clasificacionventa (CATEGORIA), gruposiclasificacion (FAMILIA), gruposi (SUBFAMILIA)
-    
-    CONEXIONES-SQL-EDARSAHUB-01 / SUBFASE C / LOTE 3:
-    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
-    para usar EDARSAHUB SQL como fuente primaria.
+
+    CATALOGO-CANONICO-C1 (2026-06-09) — MIGRADO A NO-LIVE:
+    Antes consultaba EN VIVO los POS (MPRO/SoftRestaurant), lo que violaba la regla
+    NO-LIVE y disparaba el cooldown de EDARSAHUB en el host compartido de MPRO.
+    Ahora lee EXCLUSIVAMENTE de EDARSAHUB:
+    - MPRO: dimensiones derivadas de Sync_Productos (Categoria/Familia/SubFamilia,
+      cuyos códigos = Ct_Cve_Categoria/Fm_Cve_Familia/Sf_Cve_SubFamilia → siguen
+      coincidiendo con los filtros de /reports/inventory-analysis).
+    - SoftRestaurant: jerarquía de INSUMOS (clasificacionventa/gruposiclasificacion/
+      gruposi) desde Sync_Catalogo_Filtros (sincronizada por el job de recetas).
     """
     from core.server_registry import get_server_connection_info
-    
-    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
-    # AHORA: Usar registry que prioriza EDARSAHUB SQL
+
+    # Metadata del servidor (system_type) desde EDARSAHUB — NO-LIVE (no conecta al POS)
     server = await get_server_connection_info(server_id, db=db)
-    
     if not server:
         logging.warning(f"[GET_REPORT_FILTERS] Servidor no encontrado via registry. ID={server_id}")
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
-    logging.debug(f"[GET_REPORT_FILTERS] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
-    
+
+    cfg = EDARSAHUB_CONFIG
+    empty = {"categorias": [], "familias": [], "subfamilias": []}
+
     try:
         if is_mpro_system(server.get('system_type')):
-            # Obtener categorías
-            categorias_query = """
-                SELECT DISTINCT Ct_Cve_Categoria as id, Ct_Descripcion as nombre 
-                FROM Categoria 
-                WHERE Es_Cve_Estado <> 'BA'
-                ORDER BY Ct_Descripcion
+            base = f"""
+                FROM Sync_Productos
+                WHERE CAST(ServerID AS NVARCHAR(36)) = '{server_id}'
             """
             categorias = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], categorias_query
+                cfg['host'], cfg['port'], cfg['database'], cfg['username'], cfg['password'],
+                f"SELECT DISTINCT CategoriaCodigoFuente as id, CategoriaNombre as nombre {base} "
+                f"AND CategoriaCodigoFuente IS NOT NULL AND CategoriaNombre IS NOT NULL ORDER BY CategoriaNombre"
             )
-            
-            # Obtener familias
-            familias_query = """
-                SELECT DISTINCT Fm_Cve_Familia as id, Fm_Descripcion as nombre 
-                FROM Familia 
-                WHERE Es_Cve_Estado <> 'BA'
-                ORDER BY Fm_Descripcion
-            """
             familias = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], familias_query
+                cfg['host'], cfg['port'], cfg['database'], cfg['username'], cfg['password'],
+                f"SELECT DISTINCT FamiliaCodigoFuente as id, FamiliaNombre as nombre {base} "
+                f"AND FamiliaCodigoFuente IS NOT NULL AND FamiliaNombre IS NOT NULL ORDER BY FamiliaNombre"
             )
-            
-            # Obtener subfamilias
-            subfamilias_query = """
-                SELECT DISTINCT Sf_Cve_SubFamilia as id, Sf_Descripcion as nombre 
-                FROM SubFamilia 
-                WHERE Es_Cve_Estado <> 'BA'
-                ORDER BY Sf_Descripcion
-            """
             subfamilias = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], subfamilias_query
+                cfg['host'], cfg['port'], cfg['database'], cfg['username'], cfg['password'],
+                f"SELECT DISTINCT SubFamiliaCodigoFuente as id, SubFamiliaNombre as nombre {base} "
+                f"AND SubFamiliaCodigoFuente IS NOT NULL AND SubFamiliaNombre IS NOT NULL ORDER BY SubFamiliaNombre"
             )
-            
             return {
                 "categorias": categorias or [],
                 "familias": familias or [],
                 "subfamilias": subfamilias or []
             }
-            
+
         elif is_softrestaurant_system(server.get('system_type')):
-            # Para SoftRestaurant:
-            # clasificacionventa (1=ALIMENTOS, 2=BEBIDAS, 3=OTROS) = CATEGORIA
-            # gruposiclasificacion = FAMILIA
-            # gruposi = SUBFAMILIA
-            
-            # Categorías fijas según clasificacionventa
-            categorias = [
-                {"id": "1", "nombre": "ALIMENTOS"},
-                {"id": "2", "nombre": "BEBIDAS"},
-                {"id": "3", "nombre": "OTROS"}
-            ]
-            
-            # Obtener familias (gruposiclasificacion)
-            familias_query = """
-                SELECT DISTINCT 
-                    CAST(idgruposiclasificacion as VARCHAR) as id, 
-                    descripcion as nombre 
-                FROM gruposiclasificacion
-                ORDER BY descripcion
-            """
-            familias = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], familias_query
-            )
-            
-            # Obtener subfamilias (gruposi)
-            subfamilias_query = """
-                SELECT DISTINCT 
-                    CAST(idgruposi as VARCHAR) as id, 
-                    descripcion as nombre 
-                FROM gruposi
-                ORDER BY descripcion
-            """
-            subfamilias = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], subfamilias_query
-            )
-            
+            def _nivel(nivel: str):
+                return execute_sql_query(
+                    cfg['host'], cfg['port'], cfg['database'], cfg['username'], cfg['password'],
+                    f"SELECT Codigo as id, Nombre as nombre FROM Sync_Catalogo_Filtros "
+                    f"WHERE CAST(ServerID AS NVARCHAR(36)) = '{server_id}' AND Nivel = '{nivel}' "
+                    f"AND Activo = 1 ORDER BY Nombre"
+                ) or []
             return {
-                "categorias": categorias,
-                "familias": familias or [],
-                "subfamilias": subfamilias or []
+                "categorias": _nivel('CATEGORIA'),
+                "familias": _nivel('FAMILIA'),
+                "subfamilias": _nivel('SUBFAMILIA')
             }
         else:
-            return {"categorias": [], "familias": [], "subfamilias": []}
-            
+            return empty
+
     except Exception as e:
-        logging.error(f"Error obteniendo filtros: {str(e)}")
-        return {"categorias": [], "familias": [], "subfamilias": []}
+        logging.error(f"Error obteniendo filtros (NO-LIVE): {str(e)}")
+        return empty
 
 
 # =============================================================================

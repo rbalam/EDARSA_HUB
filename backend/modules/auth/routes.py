@@ -146,7 +146,7 @@ async def login(credentials: UserLogin, request: Request, response: Response):
         import asyncio
         session_info = await asyncio.wait_for(
             create_session(
-                user_id=int(user_id) if str(user_id).isdigit() else hash(str(user_id)) % 2147483647,
+                user_id=str(user_id),
                 refresh_token=refresh_token,
                 ip_address=ip_address,
                 user_agent=user_agent,
@@ -317,7 +317,11 @@ async def refresh_tokens(request: Request, response: Response):
     set_auth_cookie(response, new_access_token, short_lived=True)
     set_refresh_cookie(response, new_refresh_token)
     
+    # AUTH-REFRESH: Devolver el nuevo access token en el body.
+    # get_current_user lee SOLO el header Authorization: Bearer, por lo que el SPA
+    # debe poder actualizar su token (sessionStorage) tras el refresh silencioso.
     return {
+        "token": new_access_token,
         "message": "Token renovado",
         "expires_in": ACCESS_TOKEN_MINUTES * 60
     }

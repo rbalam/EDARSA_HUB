@@ -304,6 +304,15 @@ def _sync_softrestaurant(
         if not config.dry_run and elaborados:
             _guardar_elaborados(server_id, system_type, elaborados, sync_run_id, result)
 
+    # 7. CATALOGO-CANONICO-C1: Dimensiones de filtro NO-LIVE (jerarquía INSUMOS)
+    #    El Análisis de SoftRestaurant filtra por clasificacionventa /
+    #    gruposiclasificacion / gruposi (insumos), NO por la jerarquía de ventas
+    #    (grupos) que vive en Sync_Productos. Se sincroniza a Sync_Catalogo_Filtros.
+    if config.sync_familias:
+        filtros = _obtener_filtros_catalogo_sr(host, port, database, username, password)
+        if not config.dry_run and filtros:
+            _guardar_catalogo_filtros(server_id, system_type, filtros, sync_run_id, result)
+
 
 def _obtener_familias_sr(host, port, database, username, password) -> List[FamiliaSync]:
     """Obtiene familias (grupos) de SoftRestaurant."""
@@ -506,6 +515,125 @@ def _obtener_elaborados_sr(host, port, database, username, password) -> List[Ela
         ))
     
     return result
+
+
+# ============================================================================
+# CATALOGO-CANONICO-C1: Dimensiones de filtro (NO-LIVE) - SoftRestaurant
+# ============================================================================
+
+# Mapeo canónico de clasificacionventa (mismo que ya usa el sync de productos
+# y el endpoint LIVE legacy). Semántica fija de SoftRestaurant.
+_CLASIF_VENTA_SR = {'1': 'ALIMENTOS', '2': 'BEBIDAS', '3': 'OTROS'}
+
+
+def _obtener_filtros_catalogo_sr(host, port, database, username, password) -> List[Dict]:
+    """
+    Obtiene las dimensiones de filtro de la jerarquía de INSUMOS de SoftRestaurant
+    (la que usa el Análisis de inventarios):
+      - CATEGORIA   = clasificacionventa (1/2/3)
+      - FAMILIA     = gruposiclasificacion (idgruposiclasificacion)
+      - SUBFAMILIA  = gruposi (idgruposi)
+    Retorna lista de dicts {nivel, codigo, nombre, parent}.
+    """
+    filtros: List[Dict] = []
+
+    # FAMILIA: gruposiclasificacion (+ su clasificacionventa = categoría padre)
+    fam_query = "SELECT idgruposiclasificacion, descripcion, clasificacionventa FROM gruposiclasificacion"
+    fam_rows = execute_sql_query(host, port, database, username, password, fam_query) or []
+    cats_vistas = set()
+    for r in fam_rows:
+        cod = str(r.get('idgruposiclasificacion') or '').strip()
+        if not cod:
+            continue
+        clas = r.get('clasificacionventa')
+        clas = str(int(clas)) if clas is not None else None
+        filtros.append({
+            'nivel': 'FAMILIA',
+            'codigo': cod,
+            'nombre': str(r.get('descripcion') or '').strip() or cod,
+            'parent': clas,
+        })
+        if clas:
+            cats_vistas.add(clas)
+
+    # CATEGORIA: derivada de las clasificacionventa presentes (data-driven)
+    for clas in sorted(cats_vistas):
+        filtros.append({
+            'nivel': 'CATEGORIA',
+            'codigo': clas,
+            'nombre': _CLASIF_VENTA_SR.get(clas, 'OTROS'),
+            'parent': None,
+        })
+
+    # SUBFAMILIA: gruposi (+ su gruposiclasificacion = familia padre)
+    sub_query = "SELECT idgruposi, descripcion, idgruposiclasificacion FROM gruposi"
+    sub_rows = execute_sql_query(host, port, database, username, password, sub_query) or []
+    for r in sub_rows:
+        cod = str(r.get('idgruposi') or '').strip()
+        if not cod:
+            continue
+        parent = str(r.get('idgruposiclasificacion') or '').strip() or None
+        filtros.append({
+            'nivel': 'SUBFAMILIA',
+            'codigo': cod,
+            'nombre': str(r.get('descripcion') or '').strip() or cod,
+            'parent': parent,
+        })
+
+    return filtros
+
+
+def _guardar_catalogo_filtros(server_id: str, system_type: str, filtros: List[Dict],
+                              sync_run_id: str, result: Dict) -> None:
+    """Guarda las dimensiones de filtro en EDARSAHUB.Sync_Catalogo_Filtros (UPSERT)."""
+    for f in filtros:
+        try:
+            nombre_esc = (f.get('nombre') or '').replace("'", "''")
+            codigo_esc = (f.get('codigo') or '').replace("'", "''")
+            parent = f.get('parent')
+            parent_sql = f"'{parent.replace(chr(39), chr(39)+chr(39))}'" if parent else 'NULL'
+            query = f"""
+            MERGE Sync_Catalogo_Filtros AS target
+            USING (SELECT '{server_id}' as ServerID, '{f['nivel']}' as Nivel, '{codigo_esc}' as Codigo) AS source
+            ON target.ServerID = CAST(source.ServerID AS UNIQUEIDENTIFIER)
+               AND target.Nivel = source.Nivel
+               AND target.Codigo = source.Codigo
+            WHEN MATCHED THEN
+                UPDATE SET
+                    Nombre = N'{nombre_esc}',
+                    ParentCodigo = {parent_sql},
+                    SystemType = '{system_type}',
+                    Activo = 1,
+                    SyncRunID = '{sync_run_id}',
+                    SyncedAtMexico = SYSDATETIME(),
+                    FechaModificacion = SYSDATETIME()
+            WHEN NOT MATCHED THEN
+                INSERT (ServerID, SystemType, Nivel, Codigo, Nombre, ParentCodigo, Activo, SyncRunID, SyncedAtMexico)
+                VALUES (
+                    CAST('{server_id}' AS UNIQUEIDENTIFIER),
+                    '{system_type}',
+                    '{f['nivel']}',
+                    '{codigo_esc}',
+                    N'{nombre_esc}',
+                    {parent_sql},
+                    1,
+                    '{sync_run_id}',
+                    SYSDATETIME()
+                );
+            """
+            execute_sql_query(
+                EDARSAHUB_CONFIG['host'],
+                EDARSAHUB_CONFIG['port'],
+                EDARSAHUB_CONFIG['database'],
+                EDARSAHUB_CONFIG['username'],
+                EDARSAHUB_CONFIG['password'],
+                query
+            )
+            result['insertados'] += 1
+        except Exception as e:
+            result['errores_count'] += 1
+            if len(result['errores']) < 10:
+                result['errores'].append(f"Error filtro {f.get('nivel')}/{f.get('codigo')}: {str(e)[:80]}")
 
 
 # ============================================================================

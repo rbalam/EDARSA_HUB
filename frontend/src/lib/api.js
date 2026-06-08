@@ -93,35 +93,107 @@ api.interceptors.request.use(
   }
 );
 
+// AUTH-REFRESH: Estado de refresco silencioso (single-flight).
+// Evita que múltiples 401 concurrentes disparen varios /auth/refresh.
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+const subscribeTokenRefresh = (cb) => {
+  refreshSubscribers.push(cb);
+};
+
+const onRefreshed = (token) => {
+  refreshSubscribers.forEach((cb) => cb(token));
+  refreshSubscribers = [];
+};
+
+const redirectToLoginIfNeeded = () => {
+  const currentPath = window.location.pathname;
+  const isInteligenciaPortal = currentPath.startsWith('/inteligencia-comercial');
+  const isPortalProveedores = currentPath.startsWith('/portal');
+  const isLoginPage = currentPath.startsWith('/login');
+  const isAuthFlowPage = currentPath.startsWith('/forgot-password') ||
+                         currentPath.startsWith('/reset-password');
+  if (!isInteligenciaPortal && !isPortalProveedores && !isLoginPage && !isAuthFlowPage) {
+    window.location.href = '/login';
+  }
+};
+
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    const currentPath = window.location.pathname;
-    
-    // Fix: Excluir las rutas del portal de Inteligencia de la redirección forzada al CRM
-    const isInteligenciaPortal = currentPath.startsWith('/inteligencia-comercial');
-    const isPortalProveedores = currentPath.startsWith('/portal');
-    const isLoginPage = currentPath.startsWith('/login');
-    // Páginas del flujo de recuperación de contraseña: son públicas y NO deben
-    // ser redirigidas al login cuando /auth/me responde 401 (no hay sesión).
-    const isAuthFlowPage = currentPath.startsWith('/forgot-password') ||
-                           currentPath.startsWith('/reset-password');
-    
+  async (error) => {
+    const originalRequest = error.config || {};
+    const status = error.response?.status;
+    const url = originalRequest.url || '';
+
+    // Los propios endpoints de auth NO deben intentar refrescarse (evita bucles).
+    const isAuthEndpoint = url.includes('/auth/login') ||
+                           url.includes('/auth/refresh') ||
+                           url.includes('/auth/logout');
+
     // Parche de estabilidad: Evitar cierre de sesión por errores 500/502
-    if (error.response?.status === 500 || error.response?.status === 502) {
+    if (status === 500 || status === 502) {
       console.warn("[API] Fallo de red detectado (500/502), manteniendo sesión...");
       return Promise.resolve({ data: [] });
     }
-    
-    if (error.response?.status === 401) {
-      clearSession();
-      // Solo redirigir si NO estamos en una de las zonas públicas/app-independientes
-      if (!isInteligenciaPortal && !isPortalProveedores && !isLoginPage && !isAuthFlowPage) {
-        window.location.href = '/login';
+
+    if (status === 401 && !isAuthEndpoint && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      // Si ya hay un refresco en curso, encolar esta request hasta que termine.
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          subscribeTokenRefresh((newToken) => {
+            if (newToken) {
+              originalRequest.headers = originalRequest.headers || {};
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              resolve(api(originalRequest));
+            } else {
+              reject(error);
+            }
+          });
+        });
       }
+
+      isRefreshing = true;
+      try {
+        // Usar axios "crudo" (no la instancia) para no re-disparar este interceptor.
+        // withCredentials envía la cookie httpOnly del refresh token (7 días).
+        const refreshResp = await axios.post(
+          `${API_URL}/auth/refresh`,
+          {},
+          { withCredentials: true, headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+        );
+        const newToken = refreshResp.data?.token;
+        isRefreshing = false;
+
+        if (newToken) {
+          setMemoryToken(newToken);
+          onRefreshed(newToken);
+          originalRequest.headers = originalRequest.headers || {};
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return api(originalRequest);
+        }
+        // Sin token en la respuesta → tratar como fallo de sesión.
+        onRefreshed(null);
+      } catch (refreshErr) {
+        isRefreshing = false;
+        onRefreshed(null);
+      }
+
+      // El refresh falló (refresh token expirado/ inválido) → cerrar sesión.
+      clearSession();
+      redirectToLoginIfNeeded();
+      return Promise.reject(error);
     }
-    
+
+    if (status === 401) {
+      // 401 en endpoint de auth o tras un retry fallido → limpiar y redirigir.
+      clearSession();
+      redirectToLoginIfNeeded();
+    }
+
     return Promise.reject(error);
   }
 );

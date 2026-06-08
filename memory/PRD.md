@@ -12,7 +12,12 @@ Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosist
 ### User's Preferred Language
 Spanish (Español)
 
-### Estado actualizado (2026-06-08)
+### Estado actualizado (2026-06-09)
+- ✅ **Catálogo canónico NO-LIVE (P0):** `/servers/{id}/report-filters` ya NO consulta los POS en vivo. MPRO deriva de `Sync_Productos`; SoftRestaurant de la nueva `Sync_Catalogo_Filtros` (jerarquía insumos). Cierra la recurrencia de violación NO-LIVE y el riesgo de cooldown del host compartido de MPRO. Detalle en CHANGELOG 2026-06-09.
+- ✅ **Auto-refresh de sesión (P0):** corregido el auto-logout a los 15 min (refresh backend 500→200, token en body, interceptor axios single-flight, rotación+replay intactos). Detalle en CHANGELOG 2026-06-09.
+- ⏳ **Siguiente:** agregar nivel Categoría al filtro de CostosMargenes; migrar tableros restantes a `unidad`; DashboardIA mock→Sync_Sales; export Auditoría Excel/PDF.
+
+### Estado previo (2026-06-08)
 - ✅ **Unificación canónica de tableros (P0):** contrato `unidad_codigo` → backend valida permiso y resuelve server_id/sucursal_origen_id (helper central `core/corporate_filters/request_resolver.py`). `server_id` deprecated (compat con warning). Operativo + Inventarios migrados. MPRO desambiguado (ORIGEN/QRO). Detalle en CHANGELOG 2026-06-08.
 - ✅ **NO-LIVE puro en inventarios:** eliminado el fallback LIVE (PASO 2) en `obtener_inventarios_fisicos`. Única fuente EDARSAHUB_SYNC.
 - ✅ **CERO MongoDB** verificado en todo el refactor.

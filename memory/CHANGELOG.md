@@ -382,3 +382,23 @@ Script usuario para D: AUDITADO. Intención correcta/segura pero parche regex fr
 - Nuevo script seguro: scripts/backfill_inteligencia_comercial_pos.py (default DRY-RUN, reusa el job, sin sync nuevo).
 NO ejecutado contra POS, NO se tocaron datos (Sync_Sales sigue=79). Verificado: py_compile, lint limpio, dry-run OK (lista 5 unidades, retorno temprano), backend healthy, job horario sano.
 PENDIENTE usuario: elegir B (export histórico) o A (credenciales) para llenar el 100% antes de FASE 2/3/4 (portal/normalización/casas). NO construir portal con datos parciales (mandato usuario).
+
+## [2026-06-09] CATALOGO-CANONICO-C1 (NO-LIVE filtros) + AUTH-REFRESH (auto-logout 15 min)
+
+### Catálogo canónico NO-LIVE — filtros de Análisis (P0, recurrencia NO-LIVE cerrada)
+- **`/servers/{id}/report-filters` migrado a NO-LIVE** (server.py). Antes consultaba EN VIVO los POS (MPRO/SoftRestaurant) → violaba NO-LIVE y disparaba el cooldown de EDARSAHUB en el host compartido de MPRO (54.39.104.176). Cambio backend-only (cero cambio de UI → cero riesgo de regresión; contrato {categorias,familias,subfamilias}[{id,nombre}] idéntico).
+  - **MPRO**: dimensiones derivadas de `Sync_Productos` (CodigoFuente = Ct_Cve_Categoria/Fm_Cve_Familia/Sf_Cve_SubFamilia → siguen casando con los filtros de `/reports/inventory-analysis`). Re-sync MPRO completo: 660→7957/7957 productos con categoría.
+  - **SoftRestaurant**: el Análisis filtra por la jerarquía de INSUMOS (clasificacionventa/gruposiclasificacion/gruposi), que NO vive en Sync_Productos (ventas). Nueva tabla `dbo.Sync_Catalogo_Filtros` (migración `catalogo_filtros_sync_20260609.py`) + función de sync `_obtener_filtros_catalogo_sr`/`_guardar_catalogo_filtros` en `sync_recetas.py` (aditiva). Pobladas 3 unidades SR (CATEGORIA 3 / FAMILIA / SUBFAMILIA).
+- Sync de Categoría a `Sync_Productos` (MPRO `Ct_Cve_Categoria`+`Categoria`, SR `grupos.clasificacion`) y MERGE: ya estaban escritos por el fork anterior; se re-ejecutó el sync MPRO para poblar.
+- Verificado: cURL E2E MPRO (19/73/108) y SR (3/77/130) en ~0.5s (NO-LIVE, sin tocar POS); 4 tests `tests/test_catalogo_filtros_nolive.py`; smoke login OK.
+- NOTA (bug menor pre-existente, NO bloqueante): `_registrar_ejecucion` inserta en `Sync_Control_Ejecuciones` con `StartedAtMexico` pero la columna real es `FechaInicio` (NOT NULL) → el registro de bitácora del sync falla, aunque la sincronización de datos sí se escribe correctamente.
+
+### AUTH-REFRESH — fin del auto-logout a los 15 minutos (P0, recurrente)
+Causa raíz (triple) en el flujo de refresh, que devolvía 500/401:
+1. `core/refresh_tokens.py::validate_and_get_session` llamaba `.isoformat()` sobre datetimes que SQL devuelve como `str` → AttributeError. Fix: normalización defensiva `_iso()`.
+2. `dbo.Sesiones` no tenía las columnas que usa la rotación/replay (`FechaRevocacion`, `MotivoRevocacion`, `ReemplazadaPorSesionID`, `RevocadoPorUsuarioID`) ni `dbo.SesionesHistorico`. Migración `sesiones_refresh_schema_20260609.py` (idempotente, no toca datos).
+3. El login guardaba `UsuarioID` como `hash(uuid) % N` (¡inestable entre procesos!) → el refresh nunca encontraba al usuario ("Usuario no encontrado"). Fix: `create_session(user_id=str(user_id))` (PublicUUID estable; `find_user_by_id` lo resuelve).
+- `POST /auth/refresh` ahora devuelve `{token, expires_in, message}` (antes solo seteaba cookie; `get_current_user` lee SOLO el header Bearer, así que el SPA necesita el token en el body).
+- Frontend `lib/api.js`: interceptor de respuesta con **refresco silencioso single-flight** — en 401 (excepto endpoints de auth) llama `/auth/refresh` una vez (cookie httpOnly de 7 días vía withCredentials), encola requests concurrentes, actualiza el Bearer en sessionStorage y reintenta. Solo desloguea si el refresh falla.
+- Rotación de refresh token + detección de replay PRESERVADAS. Consultado `integration_expert` (obligatorio) antes de tocar auth.
+- Verificado: cURL (login→refresh 200 con token→/auth/me 200→rotación→replay del token viejo 401); 3 tests `tests/test_auth_refresh_flow.py`; smoke navegador (Bearer corrupto + reload → sesión mantenida, sin redirect a /login, token renovado).

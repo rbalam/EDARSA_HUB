@@ -342,14 +342,22 @@ async def validate_and_get_session(refresh_token: str) -> Optional[Dict[str, Any
         result = await _execute_sql_async(query, (token_hash,), fetch_one=True)
         
         if result:
+            # SQL puede devolver datetimes como objetos datetime o como str
+            # (según el driver/path). Normalizar defensivamente para no crashear
+            # en .isoformat() (bug AUTH-REFRESH-500).
+            def _iso(v):
+                if v is None:
+                    return None
+                return v.isoformat() if hasattr(v, "isoformat") else str(v)
+
             return {
                 "session_id": str(result[0]),
                 "user_id": result[1],
                 "user_type": result[2],
                 "familia_id": str(result[3]),
-                "created_at": result[4].isoformat() if result[4] else None,
-                "expires_at": result[5].isoformat() if result[5] else None,
-                "last_activity": result[6].isoformat() if result[6] else None,
+                "created_at": _iso(result[4]),
+                "expires_at": _iso(result[5]),
+                "last_activity": _iso(result[6]),
                 "ip_address": result[7],
                 "user_agent": result[8]
             }

@@ -3,10 +3,8 @@
 ## En curso (orden acordado con usuario: a → d → c → b)
 - [x] (a) Precios Sugeridos: columnas $/%, fuente del %, filtro unidad canónico. (2026-06-08)
 - [x] (d) SYNC estatus inactivo/baja (SoftRestaurant `productosdetalle.bloqueado`, MPRO `Es_Cve_Estado`) + re-sync. (2026-06-08)
-- [ ] (c) **Catálogo canónico NO-LIVE** Categoría→Familia→Subgrupo reutilizable (Análisis + Costos y Márgenes + Inteligencia Comercial). Migrar `/servers/{id}/report-filters` (hoy LIVE → viola NO-LIVE) a EDARSAHUB. Estructuras por sistema:
-  - MPRO: 1 catálogo único (Categoría / Departamento / Marca / Línea / Familia / Subfamilia + Proveedor/Comprador).
-  - SoftRestaurant: catálogo VENTAS (Clasificación / Grupo / Subgrupo) + catálogo INSUMOS-elaborados (Clasificación / Grupo).
-- [ ] (b) **Auto-refresh de sesión**: token de 15 min sin refresco → logout al cambiar de tab. Existe cookie refresh_token 7 días sin usar. Requiere experto de integración (AUTH).
+- [x] (c) **Catálogo canónico NO-LIVE** Categoría→Familia→Subfamilia. (2026-06-09) `/servers/{id}/report-filters` migrado a NO-LIVE (backend-only, sin cambio de UI). MPRO deriva de `Sync_Productos` (re-sync completo: 7957/7957 con categoría); SoftRestaurant (jerarquía INSUMOS: clasificacionventa/gruposiclasificacion/gruposi) desde nueva tabla `Sync_Catalogo_Filtros` (sincronizada por el job de recetas). Verificado cURL E2E + 4 tests + smoke. CostosMargenes ya era NO-LIVE; PricingIA usa texto libre. PENDIENTE menor: agregar nivel Categoría al filtro de CostosMargenes (mejora).
+- [x] (b) **Auto-refresh de sesión**: (2026-06-09) Arreglado el auto-logout a los 15 min. Backend `/auth/refresh` estaba roto (500): bug `.isoformat()` sobre datetime-string + columnas faltantes en `dbo.Sesiones` (FechaRevocacion/MotivoRevocacion/ReemplazadaPorSesionID/RevocadoPorUsuarioID) + `UsuarioID` guardado como hash inestable. Refresh ahora devuelve el token en el body; interceptor axios single-flight refresca silenciosamente en 401 y reintenta. Rotación + detección de replay intactas. Verificado cURL + 3 tests + smoke navegador (token corrupto → sesión mantenida).
 
 ## Backlog (agendado)
 - [ ] **Exportar a Excel/PDF** del análisis de Costos y Márgenes filtrado por unidad (y reporte de Auditoría: inventarios + movimientos + consumos + delta). (Solicitado por usuario 2026-06-08)
