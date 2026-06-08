@@ -42,11 +42,10 @@ export const enterpriseMenuGroups = [
       {
         id: "inventarios",
         label: "Inventarios / Operaciones",
-        path: "/inventarios",
-        comingSoon: true,
+        path: "/reportes",
         icon: "Boxes",
         section: "Inventarios",
-        keywords: ["inventarios", "almacen", "conteos", "operaciones", "diferencias"]
+        keywords: ["inventarios", "almacen", "conteos", "operaciones", "diferencias", "reportes", "metricas", "analisis", "informes"]
       },
       {
         id: "tablajeria",
