@@ -292,8 +292,8 @@ const getAniosDisponibles = () => {
 
 const formatCurrency = (num) => {
   if (num === null || num === undefined) return '-';
-  if (num >= 1000000) return `$${(num/1000000).toFixed(2)}M`;
-  if (num >= 1000) return `$${(num/1000).toFixed(2)}K`;
+  if (num >= 1000000) return `$${(num/1000000).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}M`;
+  if (num >= 1000) return `$${(num/1000).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}K`;
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(num);
 };
 
