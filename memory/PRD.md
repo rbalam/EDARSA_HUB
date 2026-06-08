@@ -384,6 +384,24 @@ arreglando el otro (este ajuste ya se había perdido ~4 veces).
   MPRO (definir nombre exacto de columna, p.ej. observaciones), (3) incluirlo en el INSERT,
   (4) backfill MPRO, (5) read devuelve el valor real. SoftRestaurant queda '' automáticamente.
 
+### P0 — Protección anti-cooldown EDARSAHUB en /inventarios/pendientes ✅ COMPLETE (2026-06-08)
+Reporte: "Tablero Ejecutivo roto" (pantalla en blanco). Diagnóstico: el tablero NO estaba roto
+(endpoint 200, ventas Junio=$3,792,053.41, 5 unidades, 0 errores). La causa de verlo vacío fue
+un **cooldown transitorio de EDARSAHUB**: en logs, timeout de conexión a `54.39.104.176` (host
+que comparte EDARSAHUB con el POS de MPRO). Un intento de conexión EN VIVO fallido a ese host
+pone EDARSAHUB en cooldown y TODAS las lecturas canónicas (tablero, unidades, RBAC) devuelven
+vacío → "el sistema se cae" (la fragilidad que el usuario ha perdido ~4 veces).
+- **Disparador cerrado:** `/inventarios/pendientes/{server_id}` conectaba EN VIVO al POS; para
+  MPRO eso es el host de EDARSAHUB. Métricas (Dashboard.js) autollama pendientes al elegir
+  unidad. Se añadió la MISMA guarda NO-LIVE que ya tenía `/dashboard/inventory-summary`: si el
+  host del server resuelto == host EDARSAHUB → NO conecta live, devuelve vacío con `no_live:true`.
+- **Verificado cURL:** pendientes MPRO → vacío en 0.78s sin tocar EDARSAHUB; pendientes
+  SoftRestaurant → sigue live OK; Tablero Ejecutivo → $3,792,053.41 / 5 unidades / 0 errores;
+  inventarios MPRO=113 y SoftR=185 intactos. Sin regresiones.
+- NOTA arquitectónica (backlog): otros endpoints operativos MPRO de Análisis
+  (`/servers/{server_id}/almacenes|sucursales`) aún pueden conectar live al host compartido;
+  migrarlos a NO-LIVE es trabajo futuro para blindar 100% el anti-cooldown.
+
 ## 🥇 MÁXIMA DE ORO (REGLA PERMANENTE — 2026-06-07)
 **CADA VEZ que algo se vaya a HARDCODEAR, se REQUIERE la AUTORIZACIÓN ESCRITA del usuario ANTES de hacerlo.**
 - Aplica a: unidades, credenciales, hosts, rutas, horarios, roles/permisos, productos, casas/marcas, periodos, IDs, URLs, valores de negocio, fallbacks, etc.

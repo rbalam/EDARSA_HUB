@@ -3599,7 +3599,28 @@ async def get_insumos_pendientes(
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     logging.debug(f"[GET_PENDIENTES_DESCARGAR] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
-    
+
+    # ====================================================================
+    # PROTECCIÓN NO-LIVE / HOST COMPARTIDO (crítico para estabilidad):
+    # El POS de MPRO comparte IP con EDARSAHUB (54.39.104.176). Un intento de
+    # conexión EN VIVO fallido a ese host pone a EDARSAHUB en "cooldown" en
+    # memoria → TODAS las lecturas canónicas (Tablero Ejecutivo, unidades, RBAC)
+    # devuelven vacío y el sistema "se cae". Por eso NUNCA se conecta en vivo al
+    # host de EDARSAHUB desde este endpoint ("insumos pendientes" es opcional).
+    # Misma guarda que /dashboard/inventory-summary.
+    # ====================================================================
+    try:
+        from core.server_registry import EDARSAHUB_CONFIG as _EDA_CFG
+        _eda_host = str(_EDA_CFG.get('host') or '').strip()
+    except Exception:
+        _eda_host = ''
+    if _eda_host and str(server.get('host') or '').strip() == _eda_host:
+        logging.info(
+            f"[PENDIENTES-NOLIVE] Conexión live bloqueada al host EDARSAHUB para "
+            f"server={server_id} (protección anti-cooldown)."
+        )
+        return {"items": [], "totales": {"cantidad": 0, "valor": 0, "items": 0}, "almacenes": [], "no_live": True}
+
     # FASE 8: Validar que si se solicita un almacén específico, esté en el alcance
     almacenes_permitidos = get_almacenes_permitidos(context, server_id)
     if almacen_id and almacenes_permitidos and almacen_id not in almacenes_permitidos:
