@@ -276,12 +276,8 @@ def limpiar_caches():
     """Limpia caches antes de iniciar carga."""
     reset_fernet_cache()
     reset_server_cache()
-    try:
-        pm = get_pool_manager()
-        # Cerrar pools de unidades problemáticas
-        pm.close_pool('serverestelar.ddns.net', 6969, 'softrestaurant12')
-    except:
-        pass
+    # SECURITY P0: se elimina close_pool con host hardcodeado.
+    # reset_server_cache() arriba ya limpia el estado; los pools se autogestionan.
 
 
 # =============================================================================

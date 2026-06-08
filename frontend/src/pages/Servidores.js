@@ -344,33 +344,9 @@ const Servidores = () => {
       }
     } catch (error) {
       console.error('Error cargando conexiones API:', error);
-      // Si falla, usar datos de fallback (hardcoded legacy)
-      setApiConnections([
-        {
-          id: 'api_qro_local',
-          name: '130° QRO LOCAL',
-          url: 'http://54.39.104.176:8001/query',
-          tipo: 'MPRO',
-          servidor_padre: 'ManagementPro',
-          sucursal_destino: 'Querétaro',
-          hora_replica: '04:00',
-          solo_ventas_dia: true,
-          activo: true,
-          visible_en_operaciones: false
-        },
-        {
-          id: 'api_origen_local',
-          name: 'ORIGEN LOCAL',
-          url: 'http://54.39.104.176:8000/query',
-          tipo: 'MPRO',
-          servidor_padre: 'ManagementPro',
-          sucursal_destino: 'Origen',
-          hora_replica: '04:00',
-          solo_ventas_dia: true,
-          activo: true,
-          visible_en_operaciones: false
-        }
-      ]);
+      // SECURITY P0: sin fallback hardcodeado. No inventar conexiones ni exponer IPs reales.
+      setApiConnections([]);
+      toast.error('No se pudieron cargar las conexiones API locales.');
     } finally {
       setLoadingApis(false);
     }
@@ -2547,7 +2523,7 @@ const Servidores = () => {
                 id="api_url"
                 value={apiFormData.url}
                 onChange={(e) => setApiFormData({...apiFormData, url: e.target.value})}
-                placeholder="http://54.39.104.176:8001/query"
+                placeholder="https://servidor-local/query"
               />
             </div>
             

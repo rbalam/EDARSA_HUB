@@ -7,10 +7,10 @@ EDARSA HUB - Finanzas Repository (SoftRestaurant Multi-Sucursal)
 Repositorio para acceso a datos REALES de Cuentas por Pagar desde
 servidores SoftRestaurant de cada sucursal.
 
-SUCURSALES CONECTADAS:
-- CIENFUEGOS: servercienfuegos.ddns.net:6669 / softrestaurant95pro (Vista: AC_vwSaldoCxp)
-- LA ESTELAR: serverestelar.ddns.net:6969 / softrestaurant12 (Vista: AC_vwSaldoCxp)
-- 130° MERIDA: 130mid.ddns.net:1433 / softrestaurant10 (Vista: vwSaldoCxp)
+SUCURSALES (credenciales resueltas desde Servidores_Conexiones canónico):
+- CIENFUEGOS: softrestaurant95pro (Vista: AC_vwSaldoCxp)
+- LA ESTELAR: softrestaurant12 (Vista: AC_vwSaldoCxp)
+- 130° MERIDA: softrestaurant10 (Vista: vwSaldoCxp)
 
 AGRUPACIÓN DE PROVEEDORES:
 - A = ALIMENTOS
@@ -32,39 +32,73 @@ from decimal import Decimal
 from .sql_subprocess_helper import execute_sql_subprocess
 from core.sql_first.db import get_sql_connection
 
-# Configuración de servidores SoftRestaurant (desde menú de servidores)
-SOFTRESTAURANT_SERVERS = {
-    UnidadesService.resolver_codigo("CIENFUEGOS") or "CIENFUEGOS": {
-        "id": "CF",
-        "name": "CIEN FUEGOS",
-        "host": "servercienfuegos.ddns.net",
-        "port": 6669,
-        "database": "softrestaurant95pro",
-        "username": "CFLectura",
-        "password": os.getenv('EDARSAHUB_SQL_PASSWORD'),
-        "view": "AC_vwSaldoCxp"
-    },
-    UnidadesService.resolver_codigo("ESTELAR") or "ESTELAR": {
-        "id": "EST",
-        "name": "LA ESTELAR",
-        "host": "serverestelar.ddns.net",
-        "port": 6969,
-        "database": "softrestaurant12",
-        "username": "SCedarsa",
-        "password": "C0ntr4s3ña#2026",
-        "view": "AC_vwSaldoCxp"
-    },
-    UnidadesService.resolver_codigo("130MID") or "130MID": {
-        "id": "130M",
-        "name": "130° MERIDA",
-        "host": "130mid.ddns.net",
-        "port": 1433,
-        "database": "softrestaurant10",
-        "username": "SCedarsa",
-        "password": "C0ntr4s3ña#2026",
-        "view": "vwSaldoCxp"
-    }
+# ============================================================================
+# SECURITY P0 (2026-06): credenciales SoftRestaurant resueltas desde fuente
+# canónica (dbo.Unidades_Negocio.server_id + dbo.Servidores_Conexiones), SIN
+# hosts/usuarios/passwords hardcodeados. Solo se conserva metadata NO-secreta
+# (id corto de UI y nombre de vista CxP), que NO es credencial.
+# ============================================================================
+
+# Metadata NO-SECRETA por código de unidad (no son credenciales).
+_SOFTRESTAURANT_META = {
+    "CIENFUEGOS": {"id": "CF", "view": "AC_vwSaldoCxp"},
+    "ESTELAR": {"id": "EST", "view": "AC_vwSaldoCxp"},
+    "130MID": {"id": "130M", "view": "vwSaldoCxp"},
 }
+
+
+def _build_softrestaurant_servers() -> Dict[str, Dict]:
+    """
+    Construye el mapa de servidores SoftRestaurant resolviendo credenciales
+    desde la fuente canónica (Servidores_Conexiones vía helper Comercial V2).
+    NO hardcodea host/usuario/password. Si una sucursal no resuelve, se omite
+    (la pantalla queda sin esa fuente, sin inventar ni exponer credenciales).
+    """
+    servers: Dict[str, Dict] = {}
+    try:
+        from modules.comercial_v2.sync_comercial_edarsahub import get_server_connection_config
+        from core.sql_first.db import fetch_all_dict
+    except Exception as e:
+        logging.error(f"[SoftRestaurant] No se pudo importar helper canónico: {e}")
+        return servers
+
+    codigos = list(_SOFTRESTAURANT_META.keys())
+    in_list = ",".join("N'" + c.replace("'", "''") + "'" for c in codigos)
+    try:
+        rows = fetch_all_dict(
+            "SELECT CONVERT(NVARCHAR(100), codigo) AS codigo, "
+            "CONVERT(NVARCHAR(100), server_id) AS server_id, "
+            "CONVERT(NVARCHAR(300), nombre) AS nombre "
+            "FROM dbo.Unidades_Negocio "
+            f"WHERE CONVERT(NVARCHAR(100), codigo) IN ({in_list}) AND server_id IS NOT NULL"
+        )
+    except Exception as e:
+        logging.error(f"[SoftRestaurant] No se pudieron resolver unidades canónicas: {e}")
+        return servers
+
+    for row in rows:
+        codigo = row.get("codigo")
+        meta = _SOFTRESTAURANT_META.get(codigo, {})
+        cfg = get_server_connection_config(row.get("server_id"))
+        if not cfg or not cfg.get("host"):
+            logging.warning(f"[SoftRestaurant] Sin config canónica para {codigo}; se omite.")
+            continue
+        key = UnidadesService.resolver_codigo(codigo) or codigo
+        servers[key] = {
+            "id": meta.get("id") or codigo,
+            "name": row.get("nombre") or codigo,
+            "host": cfg.get("host"),
+            "port": int(cfg.get("port") or 1433),
+            "database": cfg.get("database_name") or cfg.get("database"),
+            "username": cfg.get("username"),
+            "password": cfg.get("password"),
+            "view": meta.get("view"),
+        }
+    return servers
+
+
+# Mapa resuelto desde canónico (sin secretos hardcodeados).
+SOFTRESTAURANT_SERVERS = _build_softrestaurant_servers()
 
 
 def get_tipo_proveedor(nombre_proveedor: str) -> str:
@@ -284,7 +318,7 @@ class FinanzasRepositorySoftRestaurant:
         DEPRECATED: Usar _execute_query_subprocess en su lugar.
         Mantiene compatibilidad con código existente.
         """
-        logging.warning(f"[SoftRestaurant] _get_connection está deprecado, usar _execute_query_subprocess")
+        logging.warning("[SoftRestaurant] _get_connection está deprecado, usar _execute_query_subprocess")
         return None
     
     def _execute_query(self, server_key: str, query: str) -> List[Dict]:
@@ -292,7 +326,7 @@ class FinanzasRepositorySoftRestaurant:
         DEPRECATED: Usar _execute_query_subprocess en su lugar.
         Este método síncrono se mantiene por compatibilidad pero retorna vacío.
         """
-        logging.warning(f"[SoftRestaurant] _execute_query síncrono está deprecado")
+        logging.warning("[SoftRestaurant] _execute_query síncrono está deprecado")
         return []
     
     async def get_sucursales(self) -> List[Dict]:
@@ -336,7 +370,7 @@ class FinanzasRepositorySoftRestaurant:
         logging.info(f"[SoftRestaurant] get_cuentas_por_pagar: sucursal_id={sucursal_id}, target_servers={target_servers}")
         
         if not target_servers:
-            logging.info(f"[SoftRestaurant] No hay target servers, retornando vacío")
+            logging.info("[SoftRestaurant] No hay target servers, retornando vacío")
             return []
         
         for server_key in target_servers:
@@ -427,7 +461,7 @@ class FinanzasRepositorySoftRestaurant:
                         else:
                             fv = fecha_vencimiento
                         dias_vencido = max(0, (datetime.now() - fv).days)
-                    except:
+                    except Exception:
                         pass
                 
                 # Clasificar antigüedad basado en días vencido

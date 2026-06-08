@@ -268,6 +268,27 @@ usuario en MODO SEGURO:
 - **Activación**: por SQL `UPDATE dbo.Sistema_SyncPOS_Config SET Habilitado=1, PermitirPOSAutomatico=1`
   cuando el usuario valide conectividad. Reporte: `docs/reports/P1B_SYNC_POS_CANONICO_AUTO_20260608.md`.
 
+### P0 - Corrección Exposición de Secretos / POS SQL-First ✅ COMPLETE (2026-06-08)
+Script `.sh` del usuario AUDITADO y RECHAZADO (Parche 1 duplicaba helpers de P1B; Parche 2 rompía
+la pantalla viva de Finanzas CxP y NO redactaba el secreto real; Parche 3 rompía URLs funcionales).
+Único secreto en texto plano real: `C0ntr4s3ña#2026` en `repository_softrestaurant.py`. Corregido
+manualmente con autorización:
+- **`modules/finanzas/repository_softrestaurant.py`** (LIVE): `SOFTRESTAURANT_SERVERS` migrado a
+  builder `_build_softrestaurant_servers()` que resuelve host/puerto/db/usuario/password desde
+  `Unidades_Negocio.server_id`+`Servidores_Conexiones` vía `get_server_connection_config` (sin
+  hardcodes; solo metadata no-secreta id/view). Endpoint CxP `/sucursales` → 200, 3 sucursales OK.
+- **`modules/comercial/adapters.py`**: eliminados defaults hardcodeados con IP pública en
+  `os.environ.get("API_MPRO_*_URL", "http://54.39.104.176:...")` (vars ya en `.env`).
+- **`modules/comercial_v2/carga_historica_24_meses.py`**: eliminado `close_pool` con host hardcodeado.
+- **`core/server_registry.py`**: host de ejemplo en docstring neutralizado.
+- **`frontend/src/pages/Servidores.js`**: eliminado fallback hardcodeado de `loadApiConnections()`
+  (IPs públicas); en error → `setApiConnections([])`+toast; placeholder neutro. Sin tocar endpoints
+  ni mover a `REACT_APP_*`.
+- Verificado: grep runtime 0 ocurrencias de `C0ntr4s3ña`/IP/ddns en archivos tocados; py_compile OK;
+  lint limpio; backend RUNNING; CxP 200. Reporte: `docs/reports/P0_FIX_SECRET_EXPOSURE_20260608.md`.
+- PENDIENTE (arquitectura, separado): `repository_softrestaurant.py` aún consulta POS EN VIVO
+  (subprocess) → migrar a tabla pre-calculada EDARSAHUB (NO-LIVE) es trabajo futuro.
+
 ## 🥇 MÁXIMA DE ORO (REGLA PERMANENTE — 2026-06-07)
 **CADA VEZ que algo se vaya a HARDCODEAR, se REQUIERE la AUTORIZACIÓN ESCRITA del usuario ANTES de hacerlo.**
 - Aplica a: unidades, credenciales, hosts, rutas, horarios, roles/permisos, productos, casas/marcas, periodos, IDs, URLs, valores de negocio, fallbacks, etc.

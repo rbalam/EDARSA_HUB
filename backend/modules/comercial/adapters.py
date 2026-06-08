@@ -64,7 +64,7 @@ except ImportError as e:
 APIS_MPRO_LOCALES_LEGACY = {
     "origen": {
         "nombre": "ORIGEN LOCAL",
-        "url": os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query"),
+        "url": os.environ.get("API_MPRO_ORIGEN_URL"),
         "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
         "empresa_id": 1,  # ORIGEN
         "hora_replica": 4,
@@ -72,7 +72,7 @@ APIS_MPRO_LOCALES_LEGACY = {
     },
     "130_qro": {
         "nombre": "130° QRO LOCAL",
-        "url": os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query"),
+        "url": os.environ.get("API_MPRO_QRO_URL"),
         "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
         "empresa_id": 2,  # 130QRO
         "hora_replica": 4,
@@ -149,9 +149,9 @@ def _obtener_api_local_por_empresa_id(empresa_id: int) -> Optional[Dict[str, Any
             
             # Obtener URL desde variables de entorno según la empresa
             if empresa.codigo_empresa == 'ORIGEN':
-                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL", "http://54.39.104.176:8000/query")
+                api_config["url"] = os.environ.get("API_MPRO_ORIGEN_URL")
             elif empresa.codigo_empresa == '130QRO':
-                api_config["url"] = os.environ.get("API_MPRO_QRO_URL", "http://54.39.104.176:8001/query")
+                api_config["url"] = os.environ.get("API_MPRO_QRO_URL")
             else:
                 # Fallback genérico
                 api_config["url"] = None
@@ -316,7 +316,7 @@ def sumar_ventas_api_local_a_sucursal(
     Cuando solo_ventas_dia=True, las ventas de API local REEMPLAZAN (no suman) las de la nube.
     
     Args:
-        server_host: Host del servidor padre (ej: "54.39.104.176") - LEGACY, se mantiene por compatibilidad
+        server_host: Host del servidor padre (ej: "servidor-ejemplo") - LEGACY, se mantiene por compatibilidad
         sucursal_nombre: Nombre o código de la sucursal a buscar (ej: "ORIGEN", "0023", "130-QRO", etc.)
         fecha_fin: Fecha fin del período (YYYY-MM-DD)
         mes_solicitado: Mes del período (opcional)

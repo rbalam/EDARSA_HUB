@@ -1951,7 +1951,7 @@ def get_server_by_unidad_codigo(codigo: str) -> Optional[Dict]:
         >>> server['unidad_negocio_codigo']
         UnidadesService.resolver_codigo('130MID') or '130MID'
         >>> server['host']
-        '130mid.ddns.net'
+        'servidor-pos-ejemplo.local'
     """
     if not codigo:
         return None
