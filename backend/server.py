@@ -2739,6 +2739,77 @@ async def filter_sucursales_by_config(sucursales: List[Dict], server_id: str) ->
     
     return resultado
 
+def _is_edarsahub_shared_host(server: Optional[Dict]) -> bool:
+    """True si el host del server es el de EDARSAHUB (compartido con el POS de MPRO).
+    Conectar en vivo a ese host es lo que dispara el cooldown que tumba los tableros."""
+    if not server:
+        return False
+    try:
+        from core.server_registry import EDARSAHUB_CONFIG as _CFG
+        eda = str(_CFG.get('host') or '').strip()
+        return bool(eda and str(server.get('host') or '').strip() == eda)
+    except Exception:
+        return False
+
+
+def _derive_sucursales_from_sync(server_id: str) -> List[Dict]:
+    """FASE C (NO-LIVE): deriva sucursales distintas desde Compras_Inventarios_Fisicos_Sync."""
+    try:
+        from modules.compras.sync_service import get_edarsahub_connection
+        conn = get_edarsahub_connection()
+        try:
+            cur = conn.cursor(as_dict=True)
+            cur.execute("""
+                SELECT DISTINCT sucursal_id, sucursal
+                FROM Compras_Inventarios_Fisicos_Sync
+                WHERE LOWER(server_id) = LOWER(%s)
+                  AND sucursal_id IS NOT NULL AND sucursal_id <> ''
+                ORDER BY sucursal_id
+            """, (server_id,))
+            rows = cur.fetchall() or []
+        finally:
+            conn.close()
+        return [
+            {"id": r['sucursal_id'], "nombre": r.get('sucursal') or r['sucursal_id'], "codigo": r['sucursal_id']}
+            for r in rows
+        ]
+    except Exception as e:
+        logging.error(f"[FASE-C] Error derivando sucursales NO-LIVE: {e}")
+        return []
+
+
+def _derive_almacenes_from_sync(server_id: str, sucursal_id: Optional[str] = None) -> List[Dict]:
+    """FASE C (NO-LIVE): deriva almacenes distintos desde Compras_Inventarios_Fisicos_Sync."""
+    try:
+        from modules.compras.sync_service import get_edarsahub_connection
+        conn = get_edarsahub_connection()
+        try:
+            cur = conn.cursor(as_dict=True)
+            if sucursal_id:
+                cur.execute("""
+                    SELECT DISTINCT almacen_id, almacen
+                    FROM Compras_Inventarios_Fisicos_Sync
+                    WHERE LOWER(server_id) = LOWER(%s) AND sucursal_id = %s
+                      AND almacen_id IS NOT NULL AND almacen_id <> ''
+                    ORDER BY almacen_id
+                """, (server_id, sucursal_id))
+            else:
+                cur.execute("""
+                    SELECT DISTINCT almacen_id, almacen
+                    FROM Compras_Inventarios_Fisicos_Sync
+                    WHERE LOWER(server_id) = LOWER(%s)
+                      AND almacen_id IS NOT NULL AND almacen_id <> ''
+                    ORDER BY almacen_id
+                """, (server_id,))
+            rows = cur.fetchall() or []
+        finally:
+            conn.close()
+        return [{"id": r['almacen_id'], "nombre": r.get('almacen') or r['almacen_id']} for r in rows]
+    except Exception as e:
+        logging.error(f"[FASE-C] Error derivando almacenes NO-LIVE: {e}")
+        return []
+
+
 @api_router.get("/servers/{server_id}/sucursales")
 async def get_sucursales(server_id: str, include_hidden: bool = False, current_user: Dict = Depends(get_current_user)):
     """
@@ -2762,7 +2833,21 @@ async def get_sucursales(server_id: str, include_hidden: bool = False, current_u
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
     logging.debug(f"[GET_SUCURSALES] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
-    
+
+    # === FASE C (NO-LIVE / anti-cooldown) ===
+    # Si el server es el host compartido de EDARSAHUB (MPRO), NUNCA conectar en vivo:
+    # derivar las sucursales de la tabla sync. Esto elimina el disparador del cooldown
+    # que dejaba el Tablero Ejecutivo en blanco.
+    if is_mpro_system(server.get('system_type')) and _is_edarsahub_shared_host(server):
+        sucursales_raw = _derive_sucursales_from_sync(server_id)
+        if not sucursales_raw:
+            sucursales_raw = [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
+        sucursales_filtradas = filter_sucursales_by_permissions(sucursales_raw, current_user, server_id)
+        if not include_hidden:
+            sucursales_filtradas = await filter_sucursales_by_config(sucursales_filtradas, server_id)
+        logging.info(f"[FASE-C] Sucursales NO-LIVE (sync) para server={server_id}: {len(sucursales_filtradas)}")
+        return sucursales_filtradas
+
     try:
         sucursales_raw = []
         
@@ -2879,7 +2964,17 @@ async def get_almacenes(server_id: str, sucursal_id: Optional[str] = None, sucur
         f"[RBAC-ALMACENES] Usuario={current_user.get('email')}, "
         f"Server={server_id}, AlmacenesPermitidos={almacenes_permitidos or 'TODOS'}"
     )
-    
+
+    # === FASE C (NO-LIVE / anti-cooldown) ===
+    # Host compartido de EDARSAHUB (MPRO) → derivar almacenes de la tabla sync, sin conexión viva.
+    if is_mpro_system(server.get('system_type')) and _is_edarsahub_shared_host(server):
+        results = _derive_almacenes_from_sync(server_id, sucursal_id)
+        if almacenes_permitidos:
+            _permitidos = {str(x) for x in almacenes_permitidos}
+            results = [a for a in results if str(a.get('id')) in _permitidos]
+        logging.info(f"[FASE-C] Almacenes NO-LIVE (sync) para server={server_id}: {len(results)} (RBAC aplicado)")
+        return results
+
     try:
         # FASE 1B: Importar execute_sql_query_params para parametrización segura
         from core.db import execute_sql_query_params

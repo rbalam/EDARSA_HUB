@@ -424,6 +424,25 @@ Objetivo: mostrar el comentario capturado en los selectores Inventario Inicial/F
   eliminar `/servers/{id}/almacenes|sucursales` vivos) y Fase B (unificar el filtro
   Análisis↔Auditoría en un solo componente canónico).
 
+### FASE C — Anti-cooldown: sucursales/almacenes MPRO NO-LIVE ✅ COMPLETE (2026-06-08)
+Objetivo: eliminar las conexiones EN VIVO al host compartido de EDARSAHUB (54.39.104.176) que
+disparan el cooldown. Enfoque elegido: **backend-only** (cero cambio de UI → cero riesgo de
+regresión visual), en lugar de refactor del frontend.
+- `/servers/{id}/sucursales` y `/servers/{id}/almacenes`: si el server es el host compartido de
+  EDARSAHUB (`_is_edarsahub_shared_host`), se derivan de `Compras_Inventarios_Fisicos_Sync`
+  (helpers `_derive_sucursales_from_sync` / `_derive_almacenes_from_sync`) en vez de conectar en
+  vivo. RBAC de almacenes y filtros de permisos/visibilidad de sucursales se mantienen.
+- `/servers/{id}/inventarios` ya era NO-LIVE (no se tocó). SoftRestaurant sigue en vivo a su propio
+  POS (host distinto, sin riesgo de cooldown).
+- **Verificado cURL:** MPRO sucursales → [0021 130° QUERETARO, 0023 ORIGEN]; almacenes QRO=3
+  (ALMACEN GENERAL/BODEGA/CONSIGNACION), ORIGEN=2; SoftRestaurant almacenes=10 (live OK);
+  Tablero Ejecutivo $3,792,053.41 / 5 unidades / 0 errores. Sin regresiones.
+- NOTA: los almacenes MPRO ahora son solo los que TIENEN inventarios físicos en el sync (correcto
+  para análisis de inventarios). Si se requiere mostrar almacenes sin inventarios, sería ajuste aparte.
+- **PENDIENTE Fase B** (unificar Análisis↔Auditoría) — también arregla bugs de modales de detalle:
+  Reportes usa `/reports/movement-details` y `/reports/sales-details` (fallan), Compras usa
+  `/compras/detalle-movimientos` (OK) y `/compras/detalle-consumos` (falla "sin registros").
+
 ## 🥇 MÁXIMA DE ORO (REGLA PERMANENTE — 2026-06-07)
 **CADA VEZ que algo se vaya a HARDCODEAR, se REQUIERE la AUTORIZACIÓN ESCRITA del usuario ANTES de hacerlo.**
 - Aplica a: unidades, credenciales, hosts, rutas, horarios, roles/permisos, productos, casas/marcas, periodos, IDs, URLs, valores de negocio, fallbacks, etc.
