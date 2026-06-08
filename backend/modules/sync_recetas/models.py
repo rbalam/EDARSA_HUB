@@ -83,6 +83,9 @@ class ProductoSync:
     subfamilia_codigo_fuente: Optional[str] = None
     familia_nombre: Optional[str] = None
     subfamilia_nombre: Optional[str] = None
+    # CATALOGO-CANONICO-C1: nivel Categoría (MPRO: Ct_Cve_Categoria; SR: grupos.clasificacion 1/2/3)
+    categoria_codigo_fuente: Optional[str] = None
+    categoria_nombre: Optional[str] = None
     precio_venta: Decimal = Decimal('0')
     precio_sin_impuestos: Decimal = Decimal('0')
     tasa_impuesto: Decimal = Decimal('0')

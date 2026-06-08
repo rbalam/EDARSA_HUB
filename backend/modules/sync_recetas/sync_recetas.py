@@ -385,7 +385,7 @@ def _obtener_productos_sr(host, port, database, username, password) -> List[Prod
     # se marcaban inactivos). bloqueado=1 → producto de baja/inactivo.
     query = """
     SELECT p.idproducto, p.descripcion, p.nombrecorto, p.idgrupo,
-           g.descripcion as grupo_nombre,
+           g.descripcion as grupo_nombre, g.clasificacion as clasificacion,
            pd.precio, pd.preciosinimpuestos, pd.impuesto1,
            ISNULL(pd.bloqueado, 0) as bloqueado
     FROM productos p
@@ -394,23 +394,35 @@ def _obtener_productos_sr(host, port, database, username, password) -> List[Prod
     WHERE p.descripcion IS NOT NULL AND p.descripcion != ''
     """
     rows = execute_sql_query(host, port, database, username, password, query) or []
+    # CATALOGO-CANONICO-C1: SoftRestaurant grupos.clasificacion → Categoría canónica
+    _CLASIF_SR = {'1': 'ALIMENTOS', '2': 'BEBIDAS', '3': 'OTROS'}
     
-    return [
-        ProductoSync(
+    def _cat(r):
+        c = r.get('clasificacion')
+        if c is None or str(c).strip() == '':
+            return None, None
+        cs = str(c).strip()
+        return cs, _CLASIF_SR.get(cs, 'OTROS')
+    
+    productos = []
+    for r in rows:
+        cat_cf, cat_nom = _cat(r)
+        productos.append(ProductoSync(
             codigo_fuente=str(r.get('idproducto', '')),
             nombre=str(r.get('descripcion', '')),
             # Fix FASE 1C-3B-R3: Conversión explícita a str() para evitar bugs .replace()
             nombre_corto=str(r.get('nombrecorto')) if r.get('nombrecorto') else None,
             familia_codigo_fuente=str(r.get('idgrupo', '')) if r.get('idgrupo') else None,
             familia_nombre=str(r.get('grupo_nombre')) if r.get('grupo_nombre') else None,
+            categoria_codigo_fuente=cat_cf,
+            categoria_nombre=cat_nom,
             precio_venta=Decimal(str(r.get('precio') or 0)),
             precio_sin_impuestos=Decimal(str(r.get('preciosinimpuestos') or 0)),
             tasa_impuesto=Decimal(str(r.get('impuesto1') or 0)),
             # BUG-COSTOS-001-R3: bloqueado = 1 significa inactivo/de baja
             activo=not bool(r.get('bloqueado', 0))
-        )
-        for r in rows
-    ]
+        ))
+    return productos
 
 
 def _contar_productos_con_receta_sr(host, port, database, username, password) -> int:
@@ -679,6 +691,8 @@ def _obtener_productos_mpro(host, port, database, username, password) -> List[Pr
         p.Pr_Descripcion_Corta,
         p.Fm_Cve_Familia,
         p.Sf_Cve_SubFamilia,
+        p.Ct_Cve_Categoria,
+        ct.Ct_Descripcion,
         f.Fm_Descripcion,
         sf.Sf_Descripcion,
         pp.Pp_Precio_1 as Precio,
@@ -695,6 +709,7 @@ def _obtener_productos_mpro(host, port, database, username, password) -> List[Pr
     FROM Producto p
     LEFT JOIN Familia f ON p.Fm_Cve_Familia = f.Fm_Cve_Familia
     LEFT JOIN SubFamilia sf ON p.Sf_Cve_SubFamilia = sf.Sf_Cve_SubFamilia
+    LEFT JOIN Categoria ct ON p.Ct_Cve_Categoria = ct.Ct_Cve_Categoria
     LEFT JOIN Producto_Precio pp ON p.Pr_Cve_Producto = pp.Pr_Cve_Producto
     LEFT JOIN ImpuestosPriorizados ip ON p.Pr_Cve_Producto = ip.Pr_Cve_Producto AND ip.rn = 1
     WHERE p.Pr_Descripcion IS NOT NULL
@@ -738,6 +753,8 @@ def _obtener_productos_mpro(host, port, database, username, password) -> List[Pr
             subfamilia_codigo_fuente=str(r.get('Sf_Cve_SubFamilia', '')) if r.get('Sf_Cve_SubFamilia') else None,
             familia_nombre=str(r.get('Fm_Descripcion')) if r.get('Fm_Descripcion') else None,
             subfamilia_nombre=str(r.get('Sf_Descripcion')) if r.get('Sf_Descripcion') else None,
+            categoria_codigo_fuente=str(r.get('Ct_Cve_Categoria', '')) if r.get('Ct_Cve_Categoria') else None,
+            categoria_nombre=str(r.get('Ct_Descripcion')) if r.get('Ct_Descripcion') else None,
             precio_venta=precio_venta,
             precio_sin_impuestos=precio_sin_impuestos,
             tasa_impuesto=tasa_impuesto,
@@ -953,6 +970,11 @@ def _guardar_productos(server_id: str, system_type: str, productos: List[Product
             nombre_escaped = prod.nombre.replace("'", "''")
             nombre_corto = prod.nombre_corto.replace("'", "''") if prod.nombre_corto else None
             fam_nombre = prod.familia_nombre.replace("'", "''") if prod.familia_nombre else None
+            # CATALOGO-CANONICO-C1: subfamilia + categoria
+            subfam_nombre = prod.subfamilia_nombre.replace("'", "''") if prod.subfamilia_nombre else None
+            cat_nombre = prod.categoria_nombre.replace("'", "''") if prod.categoria_nombre else None
+            subfam_cf = f"'{prod.subfamilia_codigo_fuente}'" if prod.subfamilia_codigo_fuente else 'NULL'
+            cat_cf = f"'{prod.categoria_codigo_fuente}'" if prod.categoria_codigo_fuente else 'NULL'
             # BUG-COSTOS-001-FIX: Convertir activo a bit para SQL
             activo_bit = 1 if prod.activo else 0
             
@@ -967,6 +989,10 @@ def _guardar_productos(server_id: str, system_type: str, productos: List[Product
                     NombreCorto = {f"N'{nombre_corto}'" if nombre_corto else 'NULL'},
                     FamiliaCodigoFuente = {f"'{prod.familia_codigo_fuente}'" if prod.familia_codigo_fuente else 'NULL'},
                     FamiliaNombre = {f"N'{fam_nombre}'" if fam_nombre else 'NULL'},
+                    SubFamiliaCodigoFuente = {subfam_cf},
+                    SubFamiliaNombre = {f"N'{subfam_nombre}'" if subfam_nombre else 'NULL'},
+                    CategoriaCodigoFuente = {cat_cf},
+                    CategoriaNombre = {f"N'{cat_nombre}'" if cat_nombre else 'NULL'},
                     PrecioVenta = {prod.precio_venta},
                     PrecioSinImpuestos = {prod.precio_sin_impuestos},
                     TasaImpuesto = {prod.tasa_impuesto},
@@ -977,6 +1003,7 @@ def _guardar_productos(server_id: str, system_type: str, productos: List[Product
                     FechaModificacion = SYSDATETIME()
             WHEN NOT MATCHED THEN
                 INSERT (ServerID, CodigoFuente, Nombre, NombreCorto, FamiliaCodigoFuente, FamiliaNombre,
+                        SubFamiliaCodigoFuente, SubFamiliaNombre, CategoriaCodigoFuente, CategoriaNombre,
                         PrecioVenta, PrecioSinImpuestos, TasaImpuesto, SystemType, SyncRunID, Activo)
                 VALUES (
                     CAST('{server_id}' AS UNIQUEIDENTIFIER),
@@ -985,6 +1012,10 @@ def _guardar_productos(server_id: str, system_type: str, productos: List[Product
                     {f"N'{nombre_corto}'" if nombre_corto else 'NULL'},
                     {f"'{prod.familia_codigo_fuente}'" if prod.familia_codigo_fuente else 'NULL'},
                     {f"N'{fam_nombre}'" if fam_nombre else 'NULL'},
+                    {subfam_cf},
+                    {f"N'{subfam_nombre}'" if subfam_nombre else 'NULL'},
+                    {cat_cf},
+                    {f"N'{cat_nombre}'" if cat_nombre else 'NULL'},
                     {prod.precio_venta}, {prod.precio_sin_impuestos}, {prod.tasa_impuesto},
                     '{system_type}',
                     '{sync_run_id}',
