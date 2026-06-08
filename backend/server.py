@@ -6687,6 +6687,7 @@ async def debug_test_connection(params: Dict, current_user: Dict = Depends(get_c
             "data": []
         }
 
+
 # ============= ENDPOINT TEMPORAL: Diagnóstico tipos_movimiento =============
 # FASE T3.4-B4 DIAGNÓSTICO - Este endpoint es TEMPORAL y debe eliminarse después
 @api_router.get("/debug/tipos-movimiento-live/{server_id}")

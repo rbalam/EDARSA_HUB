@@ -380,12 +380,14 @@ def _obtener_insumos_sr(host, port, database, username, password) -> List[Insumo
 
 def _obtener_productos_sr(host, port, database, username, password) -> List[ProductoSync]:
     """Obtiene productos con precios de SoftRestaurant."""
-    # BUG-COSTOS-001-FIX: Incluir campo Suspendido para sincronizar estado activo
+    # BUG-COSTOS-001-R3: La columna real de estatus en SoftRestaurant es
+    # productosdetalle.bloqueado (bit). 'suspendido' NO existe (por eso nunca
+    # se marcaban inactivos). bloqueado=1 → producto de baja/inactivo.
     query = """
     SELECT p.idproducto, p.descripcion, p.nombrecorto, p.idgrupo,
            g.descripcion as grupo_nombre,
            pd.precio, pd.preciosinimpuestos, pd.impuesto1,
-           ISNULL(pd.suspendido, 0) as suspendido
+           ISNULL(pd.bloqueado, 0) as bloqueado
     FROM productos p
     LEFT JOIN productosdetalle pd ON p.idproducto = pd.idproducto
     LEFT JOIN grupos g ON p.idgrupo = g.idgrupo
@@ -404,8 +406,8 @@ def _obtener_productos_sr(host, port, database, username, password) -> List[Prod
             precio_venta=Decimal(str(r.get('precio') or 0)),
             precio_sin_impuestos=Decimal(str(r.get('preciosinimpuestos') or 0)),
             tasa_impuesto=Decimal(str(r.get('impuesto1') or 0)),
-            # BUG-COSTOS-001-FIX: Suspendido = 1 significa inactivo
-            activo=not bool(r.get('suspendido', 0))
+            # BUG-COSTOS-001-R3: bloqueado = 1 significa inactivo/de baja
+            activo=not bool(r.get('bloqueado', 0))
         )
         for r in rows
     ]

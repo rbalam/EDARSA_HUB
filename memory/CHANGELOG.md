@@ -15,10 +15,11 @@ Sesión fork. Pruebas SOLO cURL/python/screenshots (NO testing_agent). CERO Mong
 
 6. **Precios Sugeridos** (`CostosMargenes.jsx` TabPreciosSugeridos + `routes_precios_sugeridos.py`): (a) la vista LISTA no tenía las celdas `Precio Actual` ni `Costo` → todas las columnas se recorrían 2 posiciones (parecía que Precio Actual/Sugerido eran %). Fix: agregadas las 2 celdas (muestran $). (b) Reducida fuente del % (text-xs). (c) Agregado filtro canónico de unidad (`unidad`→server_id vía UnidadesService). Verificado: unidad=CIENFUEGOS=2022, 130MID=1858.
 
-**PENDIENTE (orden acordado con usuario a→d→c→b, faltan d/c/b):**
-- (d) SYNC de estatus inactivo/baja: TODOS los productos quedaron `Activo=1`. SoftRestaurant debe mapear `suspendido` SÍ/NO; MPRO solo sincroniza `Es_Cve_Estado='AC'` (inactivos ni entran) → requiere ajustar query MPRO (traer todos + Activo por estado) + RE-EJECUTAR sync (conecta POS, pesado, requiere autorización/auditoría del usuario).
-- (c) Catálogo canónico NO-LIVE Categoría→Familia→Subgrupo reutilizable (Análisis+Costos+Inteligencia). Estructuras: MPRO=1 catálogo (Categoría/Departamento/Marca/Línea/Familia/Subfamilia); SoftRestaurant=catálogo ventas (Clasificación/Grupo/Subgrupo) + catálogo insumos/elaborados (Clasificación/Grupo). OJO: `/servers/{id}/report-filters` (usado por Análisis) hace LIVE a POS → VIOLA NO-LIVE, hay que migrarlo.
-- (b) Auto-refresh de sesión: token 15 min sin refresco → logout al cambiar de tab tras expirar. Existe cookie refresh_token 7 días sin usar. Requiere experto de integración (AUTH).
+**PENDIENTE (orden acordado con usuario a→d→c→b, faltan c/b):**
+- ✅ (a) Precios Sugeridos — HECHO (columnas $/%, fuente, filtro unidad canónico).
+- ✅ (d) SYNC de estatus inactivo/baja — HECHO. Causa: SoftRestaurant leía `pd.suspendido` (NO existe); la columna real es `productosdetalle.bloqueado` (bit). Corregido en `sync_recetas.py` (`_obtener_productos_sr`). MPRO `Es_Cve_Estado` ya estaba bien. Re-sincronizados todos los servidores con productos vía el central `ejecutar_sync_recetas_real`. Resultado: 130MID 950/916, CIENFUEGOS 955/1068, ESTELAR 441/173, MPRO(ORIGEN+130QRO) 5415/2207 (act/inact). Filtro "Incluir inactivos" verificado (CIENFUEGOS 955 solo activos vs 2023 todos). CLAM CHOWDER ahora Activo=False. Conexiones vía helper central `get_server_connection_info`+`execute_sql_query`. Endpoints temporales de debug eliminados.
+- ⏳ (c) Catálogo canónico NO-LIVE. Estructuras confirmadas por usuario: MPRO=1 catálogo único (Categoría→Departamento→Marca→Línea→Familia→Subfamilia, +Proveedor/Comprador); SoftRestaurant=catálogo VENTAS (Clasificación→Grupo→Subgrupo) + catálogo INSUMOS/elaborados (Clasificación→Grupo). `/servers/{id}/report-filters` (Análisis) hace LIVE a POS → VIOLA NO-LIVE, migrar.
+- ⏳ (b) Auto-refresh de sesión (logout a los 15 min). Requiere experto de integración (AUTH).
 
 
 ## [2026-06-08] P0 — UNIFICACIÓN CANÓNICA DE TABLEROS (unidad_codigo → backend resuelve)
