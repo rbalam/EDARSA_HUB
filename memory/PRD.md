@@ -305,6 +305,21 @@ SOLO `Sync_Sales`, sin tocar KPIs (regla protegida).
   mes×unidad). Validar query MPRO (130QRO/ORIGEN) en mini-piloto antes de escalar esa rama.
 - Reporte: `docs/reports/PILOTO_OPCION_A_BACKFILL_SYNC_SALES_20260608.md`.
 
+### Backfill Opción A (detalle Sync_Sales) ✅ COMPLETADO (2026-06-08)
+Usuario autorizó Opción A (lectura POS en vivo) + escalado por tandas + desbloqueo CIENFUEGOS/MPRO.
+**`Sync_Sales` pasó de 79 → 112,313 tickets** (detalle ticket/producto real) para las 5 unidades,
+24 meses (2024-06→2026-06; ESTELAR desde 2025-06 por límite real de su POS):
+- 130MID 26,796 · CIENFUEGOS 30,183 · ESTELAR 16,216 · 130QRO 17,612 · ORIGEN 21,506.
+- **KPIs canónicos INTACTOS** (`Comercial_KPIs_Diarios_v2` = 3,392 / $431,766,974.05 / SQL_LIVE) — regla
+  protegida cumplida: SOLO se pobló `Sync_Sales`, sin tocar/re-derivar KPIs ni vw_*.
+- Diferencias detalle vs KPI (mayo-26) sanas: ESTELAR −0.18%, 130QRO −1.9%, ORIGEN −1.3%, CIENFUEGOS +4.7% (reportadas, no corregidas).
+- Desbloqueos: CIENFUEGOS (SQL 2014 sin FOR JSON) → extracción two-pass armando JSON en Python; MPRO
+  (CENTRAL2020) → detalle en `Comanda_Detalle` + filtro `Sc_Cve_Sucursal=sucursal_origen_id` (0021/0023) + NOLOCK/retry.
+- Credenciales canónicas, idempotente (NumeroTicket+unidad+fecha), por lotes, transaccional, bitácora.
+- Scripts: `probe_pos_connectivity.py`, `pilot_backfill_sync_sales.py`, `backfill_sync_sales_batch.py`.
+- Reporte: `docs/reports/BACKFILL_OPCION_A_COMPLETADO_20260608.md`.
+- **SIGUIENTE (PIC Fase 2)**: conectar tarjetas "Top Productos"/"Casas" del DashboardIA a `Sync_Sales` real (eran mock).
+
 ## 🥇 MÁXIMA DE ORO (REGLA PERMANENTE — 2026-06-07)
 **CADA VEZ que algo se vaya a HARDCODEAR, se REQUIERE la AUTORIZACIÓN ESCRITA del usuario ANTES de hacerlo.**
 - Aplica a: unidades, credenciales, hosts, rutas, horarios, roles/permisos, productos, casas/marcas, periodos, IDs, URLs, valores de negocio, fallbacks, etc.

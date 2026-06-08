@@ -44,6 +44,7 @@ load_env()
 sys.path.insert(0, str(BACKEND_DIR))
 
 import pymssql
+import uuid
 from core.sql_first.db import get_sql_connection, fetch_all_dict
 from core.scheduler.jobs.inteligencia_comercial_sync_job import (
     get_unidades_negocio_pos,
@@ -68,23 +69,134 @@ def _count_items(items_json):
         return 0, True
 
 
-def extract_from_pos(unidad_row, cfg, fi, ff):
-    """Lee tickets del POS (read-only). Devuelve (rows, elapsed)."""
-    t0 = time.time()
-    system_type = (cfg.get("system_type") or "").upper()
-    query = get_mpro_query(fi, ff) if system_type == "MPRO" else get_softrestaurant_query(fi, ff)
-    conn = pymssql.connect(
+def _connect_pos(cfg):
+    return pymssql.connect(
         server=cfg["host"], port=int(cfg.get("port") or 1433),
         user=cfg["username"], password=cfg["password"], database=cfg["database"],
         login_timeout=10, timeout=240, tds_version="7.0",
     )
+
+
+def _attach_items(headers, details):
+    """Agrupa detalle por folio y arma items JSON en Python (version-agnostico)."""
+    by_folio = {}
+    for d in details:
+        f = str(d.get("folio"))
+        by_folio.setdefault(f, []).append({
+            "id": d.get("id"),
+            "name": d.get("name"),
+            "quantity": float(d["quantity"]) if d.get("quantity") is not None else None,
+            "price": float(d["price"]) if d.get("price") is not None else None,
+            "total": float(d["total"]) if d.get("total") is not None else None,
+        })
+    for h in headers:
+        items = by_folio.get(str(h.get("NumeroTicket")), [])
+        h["items"] = json.dumps(items, ensure_ascii=False, default=str) if items else None
+        h["IdTransaccion"] = h.get("IdTransaccion") or str(uuid.uuid4())
+        h["status"] = h.get("status") or "COMPLETED"
+    return headers
+
+
+def extract_softrestaurant_twopass(cfg, fi, ff):
+    """SoftRestaurant sin FOR JSON (compatible SQL 2014/SR 9.5): header + detalle."""
+    conn = _connect_pos(cfg)
     try:
         cur = conn.cursor(as_dict=True)
-        cur.execute(query)
-        rows = cur.fetchall() or []
+        cur.execute(f"""
+            SELECT CONVERT(VARCHAR(64), ch.folio) AS NumeroTicket,
+                   ch.nopersonas AS Pax, ch.total AS MontoTotal, t.apertura AS FechaHora
+            FROM cheques ch INNER JOIN turnos t ON t.idturno = ch.idturno
+            WHERE t.apertura >= '{fi}' AND t.apertura < '{ff}'
+              AND ch.cancelado = 0 AND ch.total > 0
+        """)
+        headers = cur.fetchall() or []
+        cur.execute(f"""
+            SELECT CONVERT(VARCHAR(64), dc.foliodet) AS folio,
+                   CONVERT(VARCHAR(64), p.idproducto) AS id, p.descripcion AS name,
+                   dc.cantidad AS quantity, dc.precio AS price,
+                   (dc.cantidad * dc.precio) AS total
+            FROM cheqdet dc
+            INNER JOIN productos p ON dc.idproducto = p.idproducto
+            INNER JOIN cheques ch ON ch.folio = dc.foliodet
+            INNER JOIN turnos t ON t.idturno = ch.idturno
+            WHERE t.apertura >= '{fi}' AND t.apertura < '{ff}' AND ch.cancelado = 0
+        """)
+        details = cur.fetchall() or []
         cur.close()
     finally:
         conn.close()
+    return _attach_items(headers, details)
+
+
+def extract_mpro_twopass(cfg, fi, ff):
+    """MPRO (CENTRAL2020): header Venta_Encabezado + detalle Comanda_Detalle,
+    FILTRADO por sucursal canónica (Sc_Cve_Sucursal = sucursal_origen_id).
+    Usa WITH (NOLOCK) (lectura, servidor OLTP activo) y reintenta ante deadlock."""
+    suc = cfg.get("sucursal_origen_id")
+    if not suc:
+        raise ValueError("MPRO requiere sucursal_origen_id canónico (Sc_Cve_Sucursal)")
+    suc_lit = str(suc).replace("'", "''")
+    last_err = None
+    for intento in range(3):
+        conn = _connect_pos(cfg)
+        try:
+            cur = conn.cursor(as_dict=True)
+            cur.execute(f"""
+                SELECT CONVERT(VARCHAR(64), v.Vn_Folio) AS NumeroTicket,
+                       1 AS Pax, v.Vn_Precio_Neto_Importe AS MontoTotal, v.Vn_Fecha AS FechaHora
+                FROM Venta_Encabezado v WITH (NOLOCK)
+                WHERE v.Vn_Fecha >= '{fi}' AND v.Vn_Fecha < '{ff}'
+                  AND v.Sc_Cve_Sucursal = '{suc_lit}'
+                  AND ISNULL(v.Es_Cve_Estado, '') <> 'CA'
+                  AND v.Vn_Precio_Neto_Importe > 0
+            """)
+            headers = cur.fetchall() or []
+            cur.execute(f"""
+                SELECT CONVERT(VARCHAR(64), d.Co_Folio) AS folio,
+                       CONVERT(VARCHAR(64), d.Pr_Cve_Producto) AS id, d.Cd_Concepto AS name,
+                       d.Cd_Cantidad AS quantity, d.Cd_Precio AS price, d.Cd_Importe AS total
+                FROM Comanda_Detalle d WITH (NOLOCK)
+                INNER JOIN Venta_Encabezado v WITH (NOLOCK)
+                    ON v.Vn_Folio = d.Co_Folio AND v.Sc_Cve_Sucursal = '{suc_lit}'
+                WHERE v.Vn_Fecha >= '{fi}' AND v.Vn_Fecha < '{ff}'
+                  AND ISNULL(d.Es_Cve_Estado, '') <> 'CA'
+            """)
+            details = cur.fetchall() or []
+            cur.close()
+            return _attach_items(headers, details)
+        except Exception as e:
+            last_err = e
+            if "deadlock" in str(e).lower() or "1205" in str(e):
+                time.sleep(2 + intento * 2)
+                continue
+            raise
+        finally:
+            conn.close()
+    raise last_err
+
+
+def extract_from_pos(unidad_row, cfg, fi, ff):
+    """Lee tickets del POS (read-only). Ruta por sistema/versión. Devuelve (rows, elapsed)."""
+    t0 = time.time()
+    system_type = (cfg.get("system_type") or "").upper()
+    if "MPRO" in system_type:
+        rows = extract_mpro_twopass(cfg, fi, ff)
+    else:
+        # SoftRestaurant: intento rápido con FOR JSON; si la versión no lo soporta, dos pasos.
+        try:
+            conn = _connect_pos(cfg)
+            try:
+                cur = conn.cursor(as_dict=True)
+                cur.execute(get_softrestaurant_query(fi, ff))
+                rows = cur.fetchall() or []
+                cur.close()
+            finally:
+                conn.close()
+        except Exception as e:
+            if "json" in str(e).lower() or "incorrect syntax" in str(e).lower():
+                rows = extract_softrestaurant_twopass(cfg, fi, ff)
+            else:
+                raise
     codigo = unidad_row.get("unidad_codigo")
     for r in rows:
         r["UnidadNegocio"] = codigo
@@ -109,7 +221,7 @@ def load_to_sync_sales(rows, unidad_codigo, fi, ff, dry_run=False):
         cur = conn.cursor()
         cur.execute(
             "SELECT NumeroTicket, CONVERT(VARCHAR(10), CAST(FechaHora AS DATE), 120) AS d "
-            "FROM Sync_Sales WHERE UnidadNegocio=%s AND FechaHora >= %s AND FechaHora < %s",
+            "FROM Sync_Sales WITH (NOLOCK) WHERE UnidadNegocio=%s AND FechaHora >= %s AND FechaHora < %s",
             (unidad_codigo, fi, ff),
         )
         existing = set((str(t), str(d)) for (t, d) in cur.fetchall())
