@@ -13,6 +13,9 @@
  * 8. Todo tablero debe consumir EDARSAHUB SQL como fuente de verdad.
  * 9. MongoDB no debe ser fuente de navegación ni permisos.
  * 10. La navegación debe ser estética, corta, buscable y agrupada.
+ * 11. CANÓNICO/CENTRALIZADO OBLIGATORIO: cuando un elemento (filtro, dato, lógica,
+ *     componente, endpoint) lo usen MÁS DE DOS menús/pantallas, DEBE ser canónico /
+ *     centralizado (una sola fuente de verdad reutilizable). Prohibido duplicar.
  */
 
 export const enterpriseMenuGroups = [
@@ -30,6 +33,22 @@ export const enterpriseMenuGroups = [
         icon: "ShoppingCart",
         section: "Ventas",
         keywords: ["ventas", "comercial", "margenes", "costos", "precios", "tickets"]
+      },
+      {
+        id: "costos-margenes",
+        label: "Costos y Márgenes",
+        path: "/comercial/costos-margenes",
+        icon: "Calculator",
+        section: "Costos / Precios",
+        keywords: ["costos", "margenes", "rentabilidad", "benchmark", "tasas", "precios"]
+      },
+      {
+        id: "pricing-ia",
+        label: "Pricing IA",
+        path: "/comercial/pricing-ia",
+        icon: "Percent",
+        section: "Costos / Precios",
+        keywords: ["pricing", "precios", "ia", "benchmark", "competidores", "tasas", "margenes"]
       },
       {
         id: "compras",
