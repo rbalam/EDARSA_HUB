@@ -494,6 +494,10 @@ api_router.include_router(catalogo_router)
 from modules.comercial_enriquecido import comercial_enriquecido_router
 api_router.include_router(comercial_enriquecido_router)
 
+# BENCHMARK-INTERNO (G3): Portal Inteligencia Comercial - comparativo de grupo con confidencialidad backend
+from modules.comercial_benchmark import comercial_benchmark_router
+api_router.include_router(comercial_benchmark_router)
+
 # FASE 1C-3F: Simulación de Precios y Solicitudes de Cambio
 # ===========================================
 from modules.costos_margenes.routes_precios import router as costos_margenes_precios_router

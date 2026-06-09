@@ -23,6 +23,7 @@ import VentasFamiliaPage from './pages/VentasFamiliaPage';
 import VentasHorarioPage from './pages/VentasHorarioPage';
 import VentasCasaPage from './pages/VentasCasaPage';
 import AnalisisPAXPage from './pages/AnalisisPAXPage';
+import BenchmarkGrupoPage from './pages/BenchmarkGrupoPage';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -98,6 +99,7 @@ export default function PortalInteligenciaApp() {
     { id: 'horarios', label: 'Por Horario', icon: Clock },
     { id: 'casas', label: 'Casas/Distribuidores', icon: Building2 },
     { id: 'pax', label: 'Análisis PAX', icon: Users },
+    { id: 'benchmark', label: 'Benchmark Grupo', icon: TrendingUp },
   ];
 
   const renderPage = () => {
@@ -121,6 +123,8 @@ export default function PortalInteligenciaApp() {
         return <VentasCasaPage {...props} />;
       case 'pax':
         return <AnalisisPAXPage {...props} />;
+      case 'benchmark':
+        return <BenchmarkGrupoPage {...props} />;
       default:
         return <DashboardIA {...props} />;
     }
