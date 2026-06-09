@@ -3320,7 +3320,6 @@ async def comercial_detalle_movimientos(
           AND fecha_operacion >= '{fecha_ini}'
           AND fecha_operacion <= '{fecha_fin}'
           AND ventas_total > 0
-          AND ISNULL(activo,1) = 1
         """
 
         resumen_rows = _query_edarsahub_tablero(query_total)
@@ -3342,7 +3341,6 @@ async def comercial_detalle_movimientos(
           AND fecha_operacion >= '{fecha_ini}'
           AND fecha_operacion <= '{fecha_fin}'
           AND ventas_total > 0
-          AND ISNULL(activo,1) = 1
         ORDER BY fecha_operacion DESC
         OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
         """

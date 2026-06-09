@@ -1,6 +1,25 @@
 # EDARSA HUB - Changelog
 
-## [2026-06-10] Inteligencia Comercial: franjas centralizadas + rango de fechas personalizado + fix de export
+## [2026-06-10] Dashboard Comercial: fix PAX = 0 + PAX Promedio + Detalle de Ventas vacío (KPIs canónicos)
+Reporte del usuario (menú **Comercial → Dashboard**, 130° MÉRIDA): "PAX Total = 0" y "Pax Promedio = $0"
+pese a tener 193 cheques y $761K en ventas; y el doble-clic en una tarjeta abría "Detalle de Ventas" con
+"No hay movimientos en este período". El servicio canónico SÍ tenía el dato (pax 542).
+
+- **BUG 1 — PAX = 0 (alias):** en `modules/comercial/service.py`, `_get_kpis_periodo_edarsahub` y los dos
+  fallbacks de `_get_kpis_periodo_edarsahub_flexible` hacían `SUM(pax_total) AS pax_total` pero leían
+  `row.get('pax')` (clave inexistente) → PAX siempre 0 y "Pax Promedio" $0 (ventas/pax con pax=0). Fix:
+  `row.get('pax_total')` en los 3 lugares. Ahora el Dashboard muestra **PAX_TOTAL=542**, pax_promedio=2.81,
+  consumo/persona=$1,405 — **coincide exactamente con `KPIsCanonicosService`** (misma base EDARSAHUB).
+- **BUG 2 — Detalle vacío:** `/comercial/detalle-movimientos/{server_id}` consultaba la VISTA
+  `vw_Comercial_KPIs_Diarios_v2_Runtime` con `ISNULL(activo,1)=1`, pero esa columna **NO existe** en la vista
+  (sí en la tabla base) → error SQL silenciado por el helper → "No hay movimientos". Fix: eliminado el filtro
+  `activo` de las 2 queries. Ahora el detalle trae los 8 días con ventas/PAX (56, 85, 114, …).
+- Verificado: curl end-to-end (dashboard PAX 542; detalle 8 movimientos) + `tests/test_comercial_dashboard_pax.py` (4/4 PASS).
+- NOTA: la tarjeta "Pax Promedio" del frontend muestra en realidad *Ventas ÷ PAX* (consumo por persona); el
+  backend ya expone también `pax_promedio` (pax/cheque). Pendiente de confirmar con el usuario si se desea
+  re-etiquetar/cambiar la fórmula de esa tarjeta.
+
+
 Tres pedidos del usuario sobre el Portal Inteligencia Comercial:
 
 1. **Franjas horarias centralizadas (sin hardcode)** — `_real_horario` (backend) ahora LEE las franjas

@@ -573,7 +573,7 @@ def _get_kpis_periodo_edarsahub(
     if result and len(result) > 0:
         row = result[0]
         ventas = float(row.get('ventas') or 0)
-        pax = int(row.get('pax') or 0)
+        pax = int(row.get('pax_total') or 0)
         cheques = int(row.get('cheques') or 0)
         registros = int(row.get('registros') or 0)
         
@@ -2522,7 +2522,7 @@ def _get_kpis_periodo_edarsahub_flexible(
         if result and len(result) > 0:
             row = result[0]
             ventas = float(row.get('ventas') or 0)
-            pax = int(row.get('pax') or 0)
+            pax = int(row.get('pax_total') or 0)
             cheques = int(row.get('cheques') or 0)
             registros = int(row.get('registros') or 0)
             
@@ -2573,7 +2573,7 @@ def _get_kpis_periodo_edarsahub_flexible(
         if result_mpro and len(result_mpro) > 0:
             row = result_mpro[0]
             ventas = float(row.get('ventas') or 0)
-            pax = int(row.get('pax') or 0)
+            pax = int(row.get('pax_total') or 0)
             cheques = int(row.get('cheques') or 0)
             registros = int(row.get('registros') or 0)
             
