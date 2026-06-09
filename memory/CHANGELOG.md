@@ -1,5 +1,33 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-10] Configuración Operativa de Turnos — Cena configurable + retiro LEGACY + fix motor canónico
+Reporte del usuario: en la pantalla Configuración Operativa solo se podían configurar Desayuno y
+"Comida/Cena", NO la Cena por separado, y existía un indicador "Comida/Cena (LEGACY)" duplicado e
+inconfigurable. Auditoría reveló 3 lógicas desconectadas de "turno/horario".
+
+- **(a) Editor data-driven** (`components/catalogos/ConfiguracionOperativaUnidad.jsx`): se eliminaron los
+  `find` hardcodeados a `DESAYUNO`/`COMIDA_CENA`. Ahora renderiza dinámicamente TODOS los turnos canónicos
+  (Desayuno, Comida, **Cena**) — cada uno con activo/hora_inicio/hora_fin/cruza_medianoche. Excluye el código
+  LEGACY del render y del payload de guardado (no se re-crea). data-testid `turno-config/activo/inicio/fin/cruza-*`.
+- **(b) Retiro del LEGACY** (`migrations/eliminar_turno_legacy_comida_cena_20260610.py`, idempotente, con
+  respaldo JSON impreso): DELETE de las 5 filas `turno_codigo='COMIDA_CENA'` en `Sistema_TurnosOperativosUnidad`.
+  Cada unidad queda con 3 turnos canónicos. Badge `tiene_comida_cena_activo` ahora considera COMIDA/CENA.
+- **(c) BUG GRAVE corregido** (`core/utils/operational_window.py::_get_turnos_unidad`): consultaba la columna
+  **inexistente** `unidad_negocio_pk` (real: `unidad_negocio_id`) y asumía dict-cursor (pymssql devuelve
+  tuplas) → la query truenaba SIEMPRE → caía al *fallback hardcodeado 13:00–06:00*. Es decir, lo configurado
+  en la pantalla NO afectaba el cálculo de FechaOperacion del sync. Fix: columna correcta + CAST a VARCHAR +
+  conversión tupla→dict + parseo de horas. Añadido `clear_turnos_cache()` (invalidado tras editar). ⚠️ Cambia
+  el FechaOperacion del sync de "abiertas": ahora respeta DESAYUNO/COMIDA/CENA reales (autorizado por usuario).
+- **(d) Unificación "Probar"** (`api/configuracion_operativa_unidades.py::calcular_fecha_operacion_por_unidad`):
+  se eliminó la lógica DUPLICADA (hardcodeada a DESAYUNO+COMIDA_CENA legacy) y ahora delega en el MISMO
+  `get_operational_window` (motor canónico). El PUT invalida el cache de turnos.
+- Verificado: motor lee turnos reales (5/5 unidades), "Probar" 130MID 14:30→COMIDA, 21:30→CENA (día actual),
+  02:30→CENA (madrugada→día anterior); PUT roundtrip no recrea LEGACY; screenshot del editor con los 3 turnos
+  editables (Cena con cruza medianoche). Tests `tests/test_turnos_operativos_canonicos.py` (5/5 PASS).
+- NOTA pendiente (informativo): "Ventas por horario" del DashboardIA (`_real_horario`) y reporteador_bi aún
+  usan rangos horarios HARDCODEADOS distintos a esta config canónica → candidato a centralizar en una próxima tarea.
+
+
 ## [2026-06-09] Reporte Familia/Subfamilia → 4º nivel PRODUCTOS de venta
 El reporte solo llegaba a Subfamilia; faltaban los productos de venta. Agregado nivel Producto con carga
 bajo demanda: backend `GET /inteligencia/productos-subfamilia` (familia+subfamilia → productos con

@@ -155,137 +155,32 @@ def calcular_fecha_operacion_por_unidad(
     fecha_hora_mexico: Optional[datetime] = None
 ) -> Dict[str, Any]:
     """
-    Calcula la FechaOperacion para una unidad usando America/Mexico_City.
-    
-    Reglas:
-    1. Si hay turno de DESAYUNO activo y estamos en horario de desayuno → día actual
-    2. Si solo COMIDA_CENA activo y estamos antes de su hora_inicio → día anterior
-    3. Si estamos en horario de COMIDA_CENA → día actual (o anterior si cruza medianoche después de 00:00)
+    Calcula la FechaOperacion para una unidad usando el MOTOR CANÓNICO ÚNICO
+    (core.utils.operational_window.get_operational_window): la MISMA lógica que
+    usa el sync de ventas. Soporta los turnos canónicos DESAYUNO/COMIDA/CENA y
+    cruza_medianoche, leyendo dinámicamente de Sistema_TurnosOperativosUnidad.
+
+    (Antes esta función tenía lógica DUPLICADA y hardcodeada a DESAYUNO +
+    COMIDA_CENA legacy; se eliminó para que exista una sola fuente de verdad.)
     """
-    # Hora actual en México si no se proporciona
-    if fecha_hora_mexico is None:
-        fecha_hora_mexico = datetime.now(MEXICO_TZ)
-    elif fecha_hora_mexico.tzinfo is None:
-        fecha_hora_mexico = fecha_hora_mexico.replace(tzinfo=MEXICO_TZ)
-    
-    hora_actual = fecha_hora_mexico.time()
-    fecha_calendario = fecha_hora_mexico.date()
-    
-    # Obtener turnos activos de la unidad
-    turnos = get_turnos_por_unidad(unidad_negocio_id)
-    turnos_activos = [t for t in turnos if t['activo']]
-    
-    if not turnos_activos:
-        # Fallback: usar día calendario con warning
-        logger.warning(
-            f"[CONFIG_OPERATIVA] Unidad {unidad_negocio_id} sin turnos activos. "
-            f"Usando fecha calendario como fallback."
-        )
-        return {
-            'unidad_negocio_id': unidad_negocio_id,
-            'fecha_hora_input_mexico': fecha_hora_mexico.strftime('%Y-%m-%d %H:%M:%S'),
-            'fecha_operacion_calculada': str(fecha_calendario),
-            'turno_detectado': None,
-            'window_start': '00:00:00',
-            'window_end': '23:59:59',
-            'cruza_medianoche': False,
-            'timezone_usada': 'America/Mexico_City',
-            'estado_operativo': 'SIN_CONFIGURACION'
-        }
-    
-    # Buscar turno DESAYUNO activo
-    desayuno = next((t for t in turnos_activos if t['turno_codigo'] == 'DESAYUNO'), None)
-    comida_cena = next((t for t in turnos_activos if t['turno_codigo'] == 'COMIDA_CENA'), None)
-    
-    # Convertir strings a time
-    def str_to_time(s: str) -> time:
-        parts = s.split(':')
-        return time(int(parts[0]), int(parts[1]), int(parts[2]) if len(parts) > 2 else 0)
-    
-    turno_detectado = None
-    fecha_operacion = fecha_calendario
-    window_start = '00:00:00'
-    window_end = '23:59:59'
-    cruza = False
-    estado = 'CERRADO'
-    
-    # Caso 1: DESAYUNO activo
-    if desayuno:
-        desayuno_inicio = str_to_time(desayuno['hora_inicio'])
-        desayuno_fin = str_to_time(desayuno['hora_fin'])
-        
-        if desayuno_inicio <= hora_actual < desayuno_fin:
-            # Estamos en horario de desayuno
-            turno_detectado = 'DESAYUNO'
-            fecha_operacion = fecha_calendario
-            window_start = desayuno['hora_inicio']
-            window_end = desayuno['hora_fin']
-            estado = 'DESAYUNO'
-        elif hora_actual >= desayuno_inicio:
-            # Ya pasó el desayuno, checar comida/cena
-            pass
-    
-    # Caso 2: COMIDA_CENA
-    if comida_cena and turno_detectado is None:
-        cc_inicio = str_to_time(comida_cena['hora_inicio'])
-        cc_fin = str_to_time(comida_cena['hora_fin'])
-        cruza = comida_cena['cruza_medianoche']
-        
-        if cruza:
-            # Turno que cruza medianoche (ej: 13:00 - 06:00)
-            if hora_actual >= cc_inicio:
-                # Después de la hora de inicio (ej: 14:00) → día actual
-                turno_detectado = 'COMIDA_CENA'
-                fecha_operacion = fecha_calendario
-                estado = 'COMIDA_CENA'
-            elif hora_actual < cc_fin:
-                # Antes de la hora de fin (ej: 02:00) → día anterior
-                turno_detectado = 'COMIDA_CENA'
-                fecha_operacion = fecha_calendario - timedelta(days=1)
-                estado = 'COMIDA_CENA'
-            else:
-                # Entre cc_fin y cc_inicio (ej: 08:00, cerrado)
-                # Si hay desayuno activo, ya lo detectamos arriba
-                # Si no, estamos cerrados
-                if desayuno and desayuno['activo']:
-                    # Ya debería haberse detectado arriba
-                    pass
-                else:
-                    # Cerrado, usar día anterior
-                    fecha_operacion = fecha_calendario - timedelta(days=1)
-                    estado = 'CERRADO'
-        else:
-            # Turno que NO cruza medianoche (ej: 13:00 - 23:00)
-            if cc_inicio <= hora_actual <= cc_fin:
-                turno_detectado = 'COMIDA_CENA'
-                fecha_operacion = fecha_calendario
-                estado = 'COMIDA_CENA'
-            elif hora_actual < cc_inicio:
-                # Antes de abrir
-                if desayuno and desayuno['activo']:
-                    # Ya detectado arriba
-                    pass
-                else:
-                    fecha_operacion = fecha_calendario - timedelta(days=1)
-                    estado = 'CERRADO'
-            else:
-                # Después de cerrar
-                fecha_operacion = fecha_calendario
-                estado = 'CERRADO'
-        
-        window_start = comida_cena['hora_inicio']
-        window_end = comida_cena['hora_fin']
-    
+    from core.utils.operational_window import get_operational_window
+
+    resultado = get_operational_window(unidad_negocio_id, fecha_hora_mexico)
+
+    TURNOS_REALES = {'DESAYUNO', 'COMIDA', 'CENA'}
+    codigo = resultado.turno_operativo_codigo
+    en_turno = codigo in TURNOS_REALES
+
     return {
         'unidad_negocio_id': unidad_negocio_id,
-        'fecha_hora_input_mexico': fecha_hora_mexico.strftime('%Y-%m-%d %H:%M:%S'),
-        'fecha_operacion_calculada': str(fecha_operacion),
-        'turno_detectado': turno_detectado,
-        'window_start': window_start,
-        'window_end': window_end,
-        'cruza_medianoche': cruza,
+        'fecha_hora_input_mexico': resultado.timestamp_consulta.strftime('%Y-%m-%d %H:%M:%S'),
+        'fecha_operacion_calculada': str(resultado.fecha_operacion),
+        'turno_detectado': codigo if en_turno else None,
+        'window_start': resultado.window_start_mx.strftime('%H:%M:%S'),
+        'window_end': resultado.window_end_mx.strftime('%H:%M:%S'),
+        'cruza_medianoche': bool(resultado.cruza_medianoche),
         'timezone_usada': 'America/Mexico_City',
-        'estado_operativo': estado
+        'estado_operativo': codigo if en_turno else 'CERRADO'
     }
 
 
@@ -323,7 +218,7 @@ async def get_todas_configuraciones():
                     for t in turnos
                 ),
                 'tiene_comida_cena_activo': any(
-                    t['turno_codigo'] == 'COMIDA_CENA' and t['activo'] 
+                    t['turno_codigo'] in ('COMIDA', 'CENA', 'COMIDA_CENA') and t['activo']
                     for t in turnos
                 )
             }
@@ -446,7 +341,14 @@ async def update_configuracion_operativa(
         
         conn.commit()
         conn.close()
-        
+
+        # Invalidar cache del motor canónico para que el sync/"Probar" usen lo recién guardado.
+        try:
+            from core.utils.operational_window import clear_turnos_cache
+            clear_turnos_cache()
+        except Exception as _e:
+            logger.warning(f"[CONFIG_OPERATIVA] No se pudo invalidar cache de turnos: {_e}")
+
         logger.info(f"[CONFIG_OPERATIVA] Configuración actualizada para {unidad_id}")
         
         return {

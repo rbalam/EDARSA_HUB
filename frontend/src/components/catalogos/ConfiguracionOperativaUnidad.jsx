@@ -87,7 +87,7 @@ const ConfiguracionOperativaUnidad = ({ unidadId, onClose, onSave }) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             unidad_negocio_id: unidadId,
-            turnos: config.turnos,
+            turnos: (config.turnos || []).filter(t => t.turno_codigo !== 'COMIDA_CENA'),
             usa_configuracion_operativa: true
           })
         }
@@ -153,8 +153,11 @@ const ConfiguracionOperativaUnidad = ({ unidadId, onClose, onSave }) => {
     );
   }
 
-  const desayuno = config.turnos?.find(t => t.turno_codigo === 'DESAYUNO');
-  const comidaCena = config.turnos?.find(t => t.turno_codigo === 'COMIDA_CENA');
+  // Render data-driven de TODOS los turnos canónicos (sin hardcodear códigos).
+  // Se excluye el turno LEGACY 'COMIDA_CENA' (duplicado, retirado de BD).
+  const turnosEditables = (config.turnos || []).filter(
+    t => t.turno_codigo !== 'COMIDA_CENA'
+  );
 
   return (
     <div className="bg-white rounded-lg shadow-lg max-w-2xl mx-auto">
@@ -196,112 +199,93 @@ const ConfiguracionOperativaUnidad = ({ unidadId, onClose, onSave }) => {
           </div>
         </div>
 
-        {/* Turno DESAYUNO */}
-        {desayuno && (
-          <div className={`border rounded-lg p-4 ${desayuno.activo ? 'border-amber-300 bg-amber-50' : 'border-gray-200'}`}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Sun className="w-5 h-5 text-amber-500" />
-                <span className="font-semibold">Desayuno</span>
-              </div>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={desayuno.activo}
-                  onChange={(e) => handleTurnoChange('DESAYUNO', 'activo', e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-                />
-                <span className="text-sm">{desayuno.activo ? 'Activo' : 'Inactivo'}</span>
-              </label>
-            </div>
-
-            {desayuno.activo && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Hora Inicio
-                  </label>
-                  <input
-                    type="time"
-                    value={desayuno.hora_inicio?.substring(0, 5) || '07:00'}
-                    onChange={(e) => handleTurnoChange('DESAYUNO', 'hora_inicio', e.target.value + ':00')}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Hora Fin
-                  </label>
-                  <input
-                    type="time"
-                    value={desayuno.hora_fin?.substring(0, 5) || '13:00'}
-                    onChange={(e) => handleTurnoChange('DESAYUNO', 'hora_fin', e.target.value + ':00')}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500"
-                  />
-                </div>
-              </div>
-            )}
+        {/* Turnos canónicos (data-driven: Desayuno, Comida, Cena) */}
+        {turnosEditables.length === 0 && (
+          <div className="text-sm text-gray-500 border rounded-lg p-4">
+            Esta unidad no tiene turnos canónicos configurados.
           </div>
         )}
-
-        {/* Turno COMIDA/CENA */}
-        {comidaCena && (
-          <div className={`border rounded-lg p-4 ${comidaCena.activo ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200'}`}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Moon className="w-5 h-5 text-indigo-500" />
-                <span className="font-semibold">Comida / Cena</span>
-              </div>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={comidaCena.activo}
-                  onChange={(e) => handleTurnoChange('COMIDA_CENA', 'activo', e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                <span className="text-sm">{comidaCena.activo ? 'Activo' : 'Inactivo'}</span>
-              </label>
-            </div>
-
-            {comidaCena.activo && (
-              <>
-                <div className="grid grid-cols-2 gap-4 mb-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Hora Inicio
-                    </label>
-                    <input
-                      type="time"
-                      value={comidaCena.hora_inicio?.substring(0, 5) || '13:00'}
-                      onChange={(e) => handleTurnoChange('COMIDA_CENA', 'hora_inicio', e.target.value + ':00')}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Hora Fin
-                    </label>
-                    <input
-                      type="time"
-                      value={comidaCena.hora_fin?.substring(0, 5) || '06:00'}
-                      onChange={(e) => handleTurnoChange('COMIDA_CENA', 'hora_fin', e.target.value + ':00')}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
+        {turnosEditables.map(turno => {
+          const codigo = turno.turno_codigo;
+          const codigoLc = codigo.toLowerCase();
+          const esDesayuno = codigo === 'DESAYUNO';
+          const Icono = esDesayuno ? Sun : Moon;
+          return (
+            <div
+              key={codigo}
+              data-testid={`turno-config-${codigoLc}`}
+              className={`border rounded-lg p-4 ${
+                turno.activo
+                  ? esDesayuno
+                    ? 'border-amber-300 bg-amber-50'
+                    : 'border-indigo-300 bg-indigo-50'
+                  : 'border-gray-200'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Icono className={`w-5 h-5 ${esDesayuno ? 'text-amber-500' : 'text-indigo-500'}`} />
+                  <span className="font-semibold">{turno.turno_nombre}</span>
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={comidaCena.cruza_medianoche}
-                    onChange={(e) => handleTurnoChange('COMIDA_CENA', 'cruza_medianoche', e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-indigo-600"
+                    data-testid={`turno-activo-${codigoLc}`}
+                    checked={turno.activo}
+                    onChange={(e) => handleTurnoChange(codigo, 'activo', e.target.checked)}
+                    className={
+                      esDesayuno
+                        ? 'w-5 h-5 rounded border-gray-300 text-amber-600 focus:ring-amber-500'
+                        : 'w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500'
+                    }
                   />
-                  <span className="text-sm text-gray-600">Cruza medianoche</span>
+                  <span className="text-sm">{turno.activo ? 'Activo' : 'Inactivo'}</span>
                 </label>
-              </>
-            )}
-          </div>
-        )}
+              </div>
+
+              {turno.activo && (
+                <>
+                  <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Hora Inicio
+                      </label>
+                      <input
+                        type="time"
+                        data-testid={`turno-inicio-${codigoLc}`}
+                        value={turno.hora_inicio?.substring(0, 5) || ''}
+                        onChange={(e) => handleTurnoChange(codigo, 'hora_inicio', e.target.value + ':00')}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 ${esDesayuno ? 'focus:ring-amber-500' : 'focus:ring-indigo-500'}`}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Hora Fin
+                      </label>
+                      <input
+                        type="time"
+                        data-testid={`turno-fin-${codigoLc}`}
+                        value={turno.hora_fin?.substring(0, 5) || ''}
+                        onChange={(e) => handleTurnoChange(codigo, 'hora_fin', e.target.value + ':00')}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 ${esDesayuno ? 'focus:ring-amber-500' : 'focus:ring-indigo-500'}`}
+                      />
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      data-testid={`turno-cruza-${codigoLc}`}
+                      checked={!!turno.cruza_medianoche}
+                      onChange={(e) => handleTurnoChange(codigo, 'cruza_medianoche', e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-indigo-600"
+                    />
+                    <span className="text-sm text-gray-600">Cruza medianoche (ej. Cena 19:00 – 05:59)</span>
+                  </label>
+                </>
+              )}
+            </div>
+          );
+        })}
 
         {/* Probar FechaOperacion */}
         <div className="border rounded-lg p-4 bg-gray-50">

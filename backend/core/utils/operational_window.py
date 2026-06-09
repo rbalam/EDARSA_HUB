@@ -94,51 +94,70 @@ def _get_turnos_unidad(unidad_negocio_pk: str) -> List[Dict]:
         _cache_timestamp = now
     
     # Consultar BD
-    import pymssql
+    # NOTA: la tabla usa la columna canónica `unidad_negocio_id` (NO existe
+    # `unidad_negocio_pk`). El parámetro recibe el código de unidad ('130QRO',
+    # 'ORIGEN', etc.). El cursor de pymssql devuelve tuplas → se convierte a dict.
     try:
         conn = get_sql_connection()
         cursor = conn.cursor()
-        
-        # Query sin dependencia de columnas de tolerancia (pueden no existir)
+
         cursor.execute("""
             SELECT 
                 turno_codigo,
                 turno_nombre,
-                hora_inicio,
-                hora_fin,
+                CAST(hora_inicio AS VARCHAR(8)) AS hora_inicio,
+                CAST(hora_fin AS VARCHAR(8)) AS hora_fin,
                 cruza_medianoche,
                 aplica_ventas_dia,
                 es_turno_principal,
                 orden
             FROM Sistema_TurnosOperativosUnidad
-            WHERE unidad_negocio_pk = %s
+            WHERE unidad_negocio_id = %s
               AND activo = 1
               AND aplica_ventas_dia = 1
             ORDER BY orden
         """, (unidad_negocio_pk,))
-        
-        turnos = cursor.fetchall()
+
+        rows = cursor.fetchall()
+        cols = [c[0] for c in cursor.description] if cursor.description else []
         conn.close()
-        
-        # Convertir timedelta a time si es necesario y agregar tolerancias default
-        for t in turnos:
-            if isinstance(t['hora_inicio'], timedelta):
-                total_sec = int(t['hora_inicio'].total_seconds())
-                t['hora_inicio'] = time(total_sec // 3600, (total_sec % 3600) // 60)
-            if isinstance(t['hora_fin'], timedelta):
-                total_sec = int(t['hora_fin'].total_seconds())
-                t['hora_fin'] = time(total_sec // 3600, (total_sec % 3600) // 60)
-            # Tolerancias por defecto si no existen en BD
-            t['tolerancia_inicio_minutos'] = t.get('tolerancia_inicio_minutos', 5)
-            t['tolerancia_fin_minutos'] = t.get('tolerancia_fin_minutos', 30)
-        
+
+        def _parse_time(v):
+            if isinstance(v, time):
+                return v
+            if isinstance(v, timedelta):
+                total_sec = int(v.total_seconds())
+                return time(total_sec // 3600, (total_sec % 3600) // 60, total_sec % 60)
+            parts = str(v).split(':')
+            return time(int(parts[0]), int(parts[1]), int(parts[2]) if len(parts) > 2 else 0)
+
+        turnos: List[Dict] = []
+        for r in rows:
+            t = r if isinstance(r, dict) else dict(zip(cols, r))
+            t['hora_inicio'] = _parse_time(t['hora_inicio'])
+            t['hora_fin'] = _parse_time(t['hora_fin'])
+            t['cruza_medianoche'] = bool(t.get('cruza_medianoche'))
+            t['aplica_ventas_dia'] = bool(t.get('aplica_ventas_dia'))
+            t['es_turno_principal'] = bool(t.get('es_turno_principal'))
+            # Tolerancias por defecto (no existen como columnas en BD)
+            t['tolerancia_inicio_minutos'] = 5
+            t['tolerancia_fin_minutos'] = 30
+            turnos.append(t)
+
         _turnos_cache[unidad_negocio_pk] = turnos
         logger.debug(f"[OPERATIONAL_WINDOW] {unidad_negocio_pk}: {len(turnos)} turnos cargados")
         return turnos
-        
+
     except Exception as e:
         logger.error(f"[OPERATIONAL_WINDOW] Error consultando turnos para {unidad_negocio_pk}: {e}")
         return []
+
+
+def clear_turnos_cache():
+    """Invalida el cache de turnos (usar tras editar la configuración operativa)."""
+    global _turnos_cache, _cache_timestamp
+    _turnos_cache = {}
+    _cache_timestamp = None
 
 
 def _hora_en_rango(hora: time, inicio: time, fin: time, cruza_medianoche: bool, 
