@@ -3,7 +3,7 @@
  * Dashboard ejecutivo con análisis de ventas por:
  * - Producto, Categoría, Familia, Subfamilia
  * - PAX, Propinas, Horarios (Desayuno/Comida/Cena)
- * - Casas/Distribuidores (Diageo, Casa Cuervo, Pernod, etc.)
+ * - Casas/Distribuidores
  * 
  * NOTA: Este componente puede ser renderizado:
  * 1. Como ruta dentro del CRM principal (/inteligencia-comercial/*)
@@ -24,53 +24,68 @@ import VentasHorarioPage from './pages/VentasHorarioPage';
 import VentasCasaPage from './pages/VentasCasaPage';
 import AnalisisPAXPage from './pages/AnalisisPAXPage';
 import BenchmarkGrupoPage from './pages/BenchmarkGrupoPage';
+import api, { getToken } from '../lib/api';
+import { ShieldAlert } from 'lucide-react';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+// Mensajes honestos de sesión (sin modo demo).
+const MENSAJES_AUTH = {
+  SIN_SESION: { titulo: 'Sin sesión activa', detalle: 'Inicia sesión en EDARSA HUB para acceder al Portal de Inteligencia Comercial.' },
+  SESION_EXPIRADA: { titulo: 'Sesión expirada', detalle: 'Tu sesión caducó. Vuelve a iniciar sesión para continuar.' },
+  SIN_PERMISO: { titulo: 'Sin permiso', detalle: 'Tu usuario no tiene permiso para ver la Inteligencia Comercial. Contacta a un administrador.' },
+};
+
+function AuthGate({ estado }) {
+  const m = MENSAJES_AUTH[estado] || MENSAJES_AUTH.SIN_SESION;
+  const mostrarLogin = estado === 'SIN_SESION' || estado === 'SESION_EXPIRADA';
+  return (
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6" data-testid={`auth-gate-${String(estado).toLowerCase()}`}>
+      <div className="max-w-md w-full bg-slate-800 border border-slate-700 rounded-2xl p-8 text-center">
+        <div className="mx-auto w-12 h-12 rounded-full bg-amber-500/15 flex items-center justify-center mb-4">
+          <ShieldAlert className="h-6 w-6 text-amber-400" />
+        </div>
+        <h1 className="text-xl font-semibold text-white">{m.titulo}</h1>
+        <p className="text-sm text-slate-400 mt-2">{m.detalle}</p>
+        {mostrarLogin && (
+          <button
+            onClick={() => { window.location.href = '/login'; }}
+            data-testid="auth-gate-login-btn"
+            className="mt-6 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-colors"
+          >
+            Ir al inicio de sesión
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function PortalInteligenciaApp() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [user, setUser] = useState(null);
+  const [authEstado, setAuthEstado] = useState('CARGANDO'); // CARGANDO | OK | SIN_SESION | SESION_EXPIRADA | SIN_PERMISO
   const [loading, setLoading] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [unidadSeleccionada, setUnidadSeleccionada] = useState('todas');
 
   useEffect(() => {
-    // Verificar si hay sesión activa del CRM principal
     checkSession();
   }, []);
 
+  // Sesión SIEMPRE con el token operativo vigente (Bearer desde sessionStorage,
+  // misma fuente canónica que el CRM principal: lib/api.js::getToken). SIN modo demo.
   const checkSession = async () => {
-    // Timeout de 3 segundos para la verificación de sesión
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    
+    if (!getToken()) {
+      setAuthEstado('SIN_SESION');
+      setLoading(false);
+      return;
+    }
     try {
-      const response = await fetch(`${API_URL}/api/auth/me`, {
-        credentials: 'include',
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data);
-      } else {
-        // Modo demo para externos (respuesta 401, etc.)
-        setUser({ 
-          nombre: 'Usuario Externo', 
-          rol: 'CONSULTOR_EXTERNO',
-          email: 'demo@edarsa.com'
-        });
-      }
-    } catch (error) {
-      clearTimeout(timeoutId);
-      // Fallback a modo demo (timeout o error de red)
-      setUser({ 
-        nombre: 'Usuario Demo', 
-        rol: 'DEMO',
-        email: 'demo@inteligencia.edarsa.com'
-      });
+      const res = await api.get('/auth/me');
+      setUser(res.data);
+      setAuthEstado('OK');
+    } catch (err) {
+      const status = err?.response?.status;
+      setAuthEstado(status === 403 ? 'SIN_PERMISO' : 'SESION_EXPIRADA');
     } finally {
       setLoading(false);
     }
@@ -91,6 +106,11 @@ export default function PortalInteligenciaApp() {
       </div>
     );
   }
+
+  if (authEstado !== 'OK') {
+    return <AuthGate estado={authEstado} />;
+  }
+
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard IA', icon: LayoutDashboard },
@@ -193,7 +213,7 @@ export default function PortalInteligenciaApp() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-white truncate">{user?.nombre || 'Usuario'}</p>
-              <p className="text-xs text-slate-500">{user?.rol || 'Consultor'}</p>
+              <p className="text-xs text-slate-500">{user?.rol || user?.role || 'Consultor'}</p>
             </div>
           </div>
         </div>

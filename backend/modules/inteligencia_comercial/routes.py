@@ -223,6 +223,175 @@ def _periodo_rango(periodo: str, anchor: date):
     return ini, fin, prev_ini, prev_fin, label
 
 
+# ============================================================================
+# BLOQUES REALES (NO-LIVE) desde Comercial_Inteligencia_VentasDetalleProducto
+# Reemplazan los antiguos bloques con porcentajes/productos HARDCODEADOS.
+# Medida de ventas: importe_neto (neto de línea). Donde NO hay detalle real
+# (p.ej. casa NULL aún no sincronizada) se devuelve VACÍO para que el frontend
+# muestre SIN_DATOS_SYNC; nunca se inventa.
+# ============================================================================
+_DETALLE_TABLA = "Comercial_Inteligencia_VentasDetalleProducto"
+
+
+def _detalle_where(unidad_db: Optional[str], fecha_inicio: str, fecha_fin: str) -> str:
+    parts = ["ISNULL(activo,1)=1",
+             f"fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
+    if unidad_db:
+        parts.append(f"unidad_negocio_nombre = '{unidad_db}'")
+    return " AND ".join(parts)
+
+
+def _real_detalle_total(unidad_db, fecha_inicio, fecha_fin) -> float:
+    rows = execute_query(
+        f"SELECT SUM(importe_neto) AS t FROM {_DETALLE_TABLA} "
+        f"WHERE {_detalle_where(unidad_db, fecha_inicio, fecha_fin)}")
+    return float(rows[0]["t"] or 0) if rows and rows[0].get("t") is not None else 0.0
+
+
+def _real_top_productos(unidad_db, fecha_inicio, fecha_fin, limit=7):
+    sql = f"""
+        SELECT TOP {int(limit)}
+               producto_nombre AS nombre,
+               MAX(producto_codigo_fuente) AS codigo,
+               MAX(familia_nombre) AS familia,
+               MAX(subfamilia_nombre) AS subfamilia,
+               MAX(ISNULL(casa, '')) AS casa,
+               MAX(porcentaje_alcohol) AS alcohol,
+               SUM(cantidad) AS cantidad,
+               SUM(importe_neto) AS ventas,
+               SUM(propina) AS propina
+        FROM {_DETALLE_TABLA}
+        WHERE {_detalle_where(unidad_db, fecha_inicio, fecha_fin)}
+          AND producto_nombre IS NOT NULL AND producto_nombre <> ''
+        GROUP BY producto_nombre
+        ORDER BY SUM(importe_neto) DESC
+    """
+    out = []
+    for i, r in enumerate(execute_query(sql)):
+        out.append({
+            "id": i + 1,
+            "producto": r["nombre"],
+            "nombre": r["nombre"],
+            "codigo": r.get("codigo") or "",
+            "familia": (r.get("familia") or "").strip(),
+            "subfamilia": (r.get("subfamilia") or "").strip(),
+            "casa": (r.get("casa") or "").strip(),
+            "alcohol": round(float(r.get("alcohol") or 0), 1),
+            "cantidad": round(float(r.get("cantidad") or 0), 2),
+            "ventas": round(float(r.get("ventas") or 0), 2),
+            "propina": round(float(r.get("propina") or 0), 2),
+        })
+    return out
+
+
+def _real_familias(unidad_db, fecha_inicio, fecha_fin, total_ventas=None, limit=12):
+    sql = f"""
+        SELECT TOP {int(limit)} familia_nombre AS familia, SUM(importe_neto) AS ventas
+        FROM {_DETALLE_TABLA}
+        WHERE {_detalle_where(unidad_db, fecha_inicio, fecha_fin)}
+          AND familia_nombre IS NOT NULL AND familia_nombre <> ''
+        GROUP BY familia_nombre
+        ORDER BY SUM(importe_neto) DESC
+    """
+    rows = execute_query(sql)
+    base = total_ventas if total_ventas else (sum(float(r["ventas"] or 0) for r in rows) or 1)
+    return [{"familia": (r["familia"] or "").strip(),
+             "ventas": round(float(r["ventas"] or 0), 2),
+             "participacion": round(float(r["ventas"] or 0) / base * 100, 2)} for r in rows]
+
+
+def _real_familias_nested(unidad_db, fecha_inicio, fecha_fin, limit_fam=20):
+    """Familias con sus subfamilias (datos reales). Para la pantalla Familia/Subfamilia."""
+    sql = f"""
+        SELECT familia_nombre AS familia,
+               ISNULL(NULLIF(LTRIM(RTRIM(subfamilia_nombre)), ''), '(Sin subfamilia)') AS subfamilia,
+               SUM(importe_neto) AS ventas, SUM(cantidad) AS cantidad
+        FROM {_DETALLE_TABLA}
+        WHERE {_detalle_where(unidad_db, fecha_inicio, fecha_fin)}
+          AND familia_nombre IS NOT NULL AND familia_nombre <> ''
+        GROUP BY familia_nombre,
+                 ISNULL(NULLIF(LTRIM(RTRIM(subfamilia_nombre)), ''), '(Sin subfamilia)')
+    """
+    fam_map = {}
+    for r in execute_query(sql):
+        fam = (r["familia"] or "").strip()
+        v = float(r["ventas"] or 0)
+        c = float(r["cantidad"] or 0)
+        d = fam_map.setdefault(fam, {"familia": fam, "ventas": 0.0, "cantidad": 0.0, "subs": []})
+        d["ventas"] += v
+        d["cantidad"] += c
+        d["subs"].append({"nombre": r["subfamilia"], "ventas": round(v, 2), "cantidad": round(c, 2)})
+    familias = sorted(fam_map.values(), key=lambda x: x["ventas"], reverse=True)[:limit_fam]
+    total = sum(f["ventas"] for f in familias) or 1
+    out = []
+    for f in familias:
+        fv = f["ventas"] or 1
+        subs = sorted(f["subs"], key=lambda s: s["ventas"], reverse=True)
+        for s in subs:
+            s["porcentaje"] = round(s["ventas"] / fv * 100, 1)
+        out.append({
+            "familia": f["familia"],
+            "ventas": round(f["ventas"], 2),
+            "cantidad": round(f["cantidad"], 2),
+            "porcentaje": round(f["ventas"] / total * 100, 1),
+            "subfamilias": subs,
+        })
+    return out
+
+
+def _real_casas(unidad_db, fecha_inicio, fecha_fin, total_ventas=None, limit=12):
+    # casa puede venir NULL (aún no sincronizada): se EXCLUYE → si no hay ninguna,
+    # el bloque queda vacío y el frontend muestra SIN_DATOS_SYNC.
+    sql = f"""
+        SELECT TOP {int(limit)} casa, SUM(importe_neto) AS ventas
+        FROM {_DETALLE_TABLA}
+        WHERE {_detalle_where(unidad_db, fecha_inicio, fecha_fin)}
+          AND casa IS NOT NULL AND LTRIM(RTRIM(casa)) <> ''
+        GROUP BY casa
+        ORDER BY SUM(importe_neto) DESC
+    """
+    rows = execute_query(sql)
+    base = total_ventas if total_ventas else (sum(float(r["ventas"] or 0) for r in rows) or 1)
+    return [{"casa": r["casa"].strip(),
+             "ventas": round(float(r["ventas"] or 0), 2),
+             "participacion": round(float(r["ventas"] or 0) / base * 100, 2)} for r in rows]
+
+
+def _real_horario(unidad_db, fecha_inicio, fecha_fin):
+    # Agrega a nivel ticket (pax/cheques correctos) y clasifica por hora de apertura.
+    sql = f"""
+        WITH tk AS (
+            SELECT unidad_negocio_nombre, fecha_operacion, numero_ticket,
+                   MIN(fecha_hora) AS fh, MAX(pax) AS pax,
+                   SUM(importe_neto) AS ventas, SUM(propina) AS propinas
+            FROM {_DETALLE_TABLA}
+            WHERE {_detalle_where(unidad_db, fecha_inicio, fecha_fin)}
+            GROUP BY unidad_negocio_nombre, fecha_operacion, numero_ticket
+        )
+        SELECT CASE WHEN DATEPART(hour, fh) BETWEEN 7 AND 12 THEN 'Desayuno'
+                    WHEN DATEPART(hour, fh) BETWEEN 13 AND 18 THEN 'Comida'
+                    ELSE 'Cena' END AS horario,
+               SUM(ventas) AS ventas, SUM(pax) AS pax,
+               COUNT(*) AS cheques, SUM(propinas) AS propinas
+        FROM tk
+        GROUP BY CASE WHEN DATEPART(hour, fh) BETWEEN 7 AND 12 THEN 'Desayuno'
+                      WHEN DATEPART(hour, fh) BETWEEN 13 AND 18 THEN 'Comida'
+                      ELSE 'Cena' END
+    """
+    orden = {"Desayuno": 0, "Comida": 1, "Cena": 2}
+    out = []
+    for r in execute_query(sql):
+        ventas = round(float(r["ventas"] or 0), 2)
+        cheques = int(r["cheques"] or 0)
+        out.append({"horario": r["horario"], "ventas": ventas,
+                    "pax": int(r["pax"] or 0), "cheques": cheques,
+                    "propinas": round(float(r["propinas"] or 0), 2),
+                    "ticket_promedio": round(ventas / cheques, 2) if cheques else 0})
+    out.sort(key=lambda x: orden.get(x["horario"], 9))
+    return out
+
+
+
 @router.get("/dashboard")
 async def get_dashboard_data(
     unidad: Optional[str] = Query(None, description="Unidad de negocio (130MID, CIENFUEGOS, etc.)"),
@@ -330,47 +499,21 @@ async def get_dashboard_data(
         total_pax = int(kpi_data.get("pax_total", 0))
         total_tickets = int(kpi_data.get("cheques_total", 0))
         
-        # ========== VENTAS POR HORARIO (proporcional) ==========
-        ventas_horario = [
-            {"horario": "Desayuno", "ventas": round(total_ventas * 0.20, 2), "pax": int(total_pax * 0.20)},
-            {"horario": "Comida", "ventas": round(total_ventas * 0.50, 2), "pax": int(total_pax * 0.50)},
-            {"horario": "Cena", "ventas": round(total_ventas * 0.30, 2), "pax": int(total_pax * 0.30)},
-        ]
-        
-        # ========== TOP PRODUCTOS (basado en catálogo) ==========
-        top_productos = [
-            {"producto": "Don Julio Reposado", "cantidad": int(total_tickets * 0.08), "ventas": round(total_ventas * 0.08, 0)},
-            {"producto": "Filete Mignon", "cantidad": int(total_tickets * 0.07), "ventas": round(total_ventas * 0.065, 0)},
-            {"producto": "Buchanan's 12", "cantidad": int(total_tickets * 0.05), "ventas": round(total_ventas * 0.055, 0)},
-            {"producto": "Camarón al Mojo", "cantidad": int(total_tickets * 0.06), "ventas": round(total_ventas * 0.05, 0)},
-            {"producto": "Patrón Silver", "cantidad": int(total_tickets * 0.05), "ventas": round(total_ventas * 0.045, 0)},
-            {"producto": "Corona Extra", "cantidad": int(total_tickets * 0.15), "ventas": round(total_ventas * 0.035, 0)},
-            {"producto": "1800 Cristalino", "cantidad": int(total_tickets * 0.04), "ventas": round(total_ventas * 0.04, 0)},
-        ]
-        
-        # ========== CASAS DISTRIBUIDORAS ==========
-        casas_distribuidoras = [
-            {"casa": "DIAGEO", "ventas": round(total_ventas * 0.22, 0), "participacion": 22.0},
-            {"casa": "PERNOD RICARD", "ventas": round(total_ventas * 0.17, 0), "participacion": 17.0},
-            {"casa": "BACARDI", "ventas": round(total_ventas * 0.15, 0), "participacion": 15.0},
-            {"casa": "CASA CUERVO", "ventas": round(total_ventas * 0.14, 0), "participacion": 14.0},
-            {"casa": "COCINA", "ventas": round(total_ventas * 0.10, 0), "participacion": 10.0},
-            {"casa": "GRUPO MODELO", "ventas": round(total_ventas * 0.08, 0), "participacion": 8.0},
-        ]
-        
-        # ========== VENTAS POR FAMILIA ==========
-        ventas_familia = [
-            {"familia": "Tequilas", "ventas": round(total_ventas * 0.28, 0)},
-            {"familia": "Whisky", "ventas": round(total_ventas * 0.22, 0)},
-            {"familia": "Vodka", "ventas": round(total_ventas * 0.15, 0)},
-            {"familia": "Cerveza", "ventas": round(total_ventas * 0.12, 0)},
-            {"familia": "Ron", "ventas": round(total_ventas * 0.08, 0)},
-        ]
+        # ========== BLOQUES REALES (NO-LIVE) desde el detalle de ventas ==========
+        # Antes: porcentajes/productos HARDCODEADOS. Ahora: agregados reales de
+        # Comercial_Inteligencia_VentasDetalleProducto. Bloque vacío => SIN_DATOS_SYNC.
+        det_total = _real_detalle_total(unidad_db, fecha_inicio, fecha_fin)
+        ventas_horario = _real_horario(unidad_db, fecha_inicio, fecha_fin)
+        top_productos = _real_top_productos(unidad_db, fecha_inicio, fecha_fin, limit=7)
+        casas_distribuidoras = _real_casas(unidad_db, fecha_inicio, fecha_fin, total_ventas=det_total)
+        ventas_familia = _real_familias(unidad_db, fecha_inicio, fecha_fin, total_ventas=det_total)
         
         # Construir respuesta
         response = {
             "success": True,
             "_source": "SQL_COMERCIAL_KPIS_DIARIOS_V2",
+            "_blocks_source": _DETALLE_TABLA,
+            "_detalle_total": round(det_total, 2),
             "_unidad": unidad_db or "TODAS",
             "timestamp": datetime.utcnow().isoformat(),
             "filtros": {
@@ -732,54 +875,24 @@ async def get_top_productos(
     limit: int = Query(50, ge=1, le=200)
 ):
     """
-    Top productos vendidos.
-    Fuente: View_Inteligencia_Comercial (JOIN Sync_Sales + Products)
+    Top productos vendidos (NO-LIVE, datos reales por línea).
+    Fuente: Comercial_Inteligencia_VentasDetalleProducto.
     """
     unidad_db = normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
-    
+
     if not fecha_inicio:
         fecha_inicio = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
     if not fecha_fin:
         fecha_fin = datetime.now().strftime("%Y-%m-%d")
-    
+
     try:
-        where_parts = [f"Fecha BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
-        if unidad_db:
-            where_parts.append(f"UnidadNegocio = '{unidad_db}'")
-        where_sql = " AND ".join(where_parts)
-        
-        sql = f"""
-            SELECT TOP {limit}
-                Producto,
-                Familia,
-                CasaProductora AS Casa,
-                Alcohol,
-                SUM(CantidadTotal) AS cantidad,
-                SUM(IngresoTotal) AS ventas
-            FROM View_Inteligencia_Comercial
-            WHERE {where_sql}
-            GROUP BY Producto, Familia, CasaProductora, Alcohol
-            ORDER BY SUM(IngresoTotal) DESC
-        """
-        
-        productos = execute_query(sql)
-        
+        productos = _real_top_productos(unidad_db, fecha_inicio, fecha_fin, limit=limit)
         return {
             "success": True,
-            "_source": "SQL_VIEW_INTELIGENCIA_COMERCIAL",
+            "_source": _DETALLE_TABLA,
             "_unidad": unidad_db or "TODAS",
             "total": len(productos),
-            "productos": [
-                {
-                    "producto": p["Producto"],
-                    "familia": p["Familia"],
-                    "casa": p["Casa"],
-                    "alcohol": float(p["Alcohol"] or 0),
-                    "cantidad": round(float(p["cantidad"] or 0), 2),
-                    "ventas": round(float(p["ventas"] or 0), 2)
-                }
-                for p in productos
-            ]
+            "productos": productos,
         }
     except Exception as e:
         logger.error(f"[INTELIGENCIA] Error productos: {e}")
@@ -797,51 +910,25 @@ async def get_ventas_familia(
     fecha_fin: Optional[str] = Query(None)
 ):
     """
-    Ventas agrupadas por familia de producto.
-    Si View_Inteligencia_Comercial está vacía, usa catálogo + proporción.
+    Ventas agrupadas por familia de producto (NO-LIVE, datos reales).
+    Fuente: Comercial_Inteligencia_VentasDetalleProducto.
     """
     unidad_db = normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
-    
+
     if not fecha_inicio:
         fecha_inicio = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
     if not fecha_fin:
         fecha_fin = datetime.now().strftime("%Y-%m-%d")
-    
+
     try:
-        # Obtener total de ventas para calcular proporciones
-        where_kpi = [f"fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
-        if unidad_db:
-            where_kpi.append(f"unidad_negocio_nombre = '{unidad_db}'")
-        
-        kpi_sql = f"SELECT SUM(ventas_sin_propina) AS total FROM vw_Comercial_KPIs_Diarios_v2_Runtime WHERE {' AND '.join(where_kpi)}"
-        kpis = execute_query(kpi_sql)
-        total_ventas = float(kpis[0]["total"] or 0) if kpis else 0
-        
-        # Usar distribución basada en catálogo de familias
-        familias_data = [
-            {"familia": "TEQUILAS Y MEZCALES", "porcentaje": 0.28},
-            {"familia": "WHISKY", "porcentaje": 0.22},
-            {"familia": "VODKA Y GIN", "porcentaje": 0.15},
-            {"familia": "CERVEZAS", "porcentaje": 0.12},
-            {"familia": "RON", "porcentaje": 0.08},
-            {"familia": "VINOS", "porcentaje": 0.07},
-            {"familia": "ALIMENTOS", "porcentaje": 0.05},
-            {"familia": "OTROS", "porcentaje": 0.03},
-        ]
-        
+        det_total = _real_detalle_total(unidad_db, fecha_inicio, fecha_fin)
+        familias = _real_familias_nested(unidad_db, fecha_inicio, fecha_fin)
         return {
             "success": True,
-            "_source": "FALLBACK_CATALOGO_PROPORCIONAL",
+            "_source": _DETALLE_TABLA,
             "_unidad": unidad_db or "TODAS",
-            "_nota": "Distribución basada en catálogo de productos",
-            "ventas_familia": [
-                {
-                    "familia": f["familia"],
-                    "ventas": round(total_ventas * f["porcentaje"], 2),
-                    "participacion": round(f["porcentaje"] * 100, 2)
-                }
-                for f in familias_data
-            ]
+            "_detalle_total": round(det_total, 2),
+            "ventas_familia": familias,
         }
     except Exception as e:
         logger.error(f"[INTELIGENCIA] Error familias: {e}")
@@ -859,51 +946,25 @@ async def get_ventas_casas(
     fecha_fin: Optional[str] = Query(None)
 ):
     """
-    Ventas agrupadas por casa distribuidora.
-    Usa catálogo de Products + proporción de ventas.
+    Ventas agrupadas por casa distribuidora (NO-LIVE, datos reales).
+    Fuente: Comercial_Inteligencia_VentasDetalleProducto. Si la casa no está
+    sincronizada (NULL) el bloque queda vacío → el frontend muestra SIN_DATOS_SYNC.
     """
     unidad_db = normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
-    
+
     if not fecha_inicio:
         fecha_inicio = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
     if not fecha_fin:
         fecha_fin = datetime.now().strftime("%Y-%m-%d")
-    
+
     try:
-        # Obtener total de ventas
-        where_kpi = [f"fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
-        if unidad_db:
-            where_kpi.append(f"unidad_negocio_nombre = '{unidad_db}'")
-        
-        kpi_sql = f"SELECT SUM(ventas_sin_propina) AS total FROM vw_Comercial_KPIs_Diarios_v2_Runtime WHERE {' AND '.join(where_kpi)}"
-        kpis = execute_query(kpi_sql)
-        total_ventas = float(kpis[0]["total"] or 0) if kpis else 0
-        
-        # Distribución basada en casas del catálogo Products
-        casas_data = [
-            {"casa": "DIAGEO", "porcentaje": 0.22},
-            {"casa": "PERNOD RICARD", "porcentaje": 0.17},
-            {"casa": "BACARDI", "porcentaje": 0.15},
-            {"casa": "CASA CUERVO", "porcentaje": 0.14},
-            {"casa": "COCINA", "porcentaje": 0.10},
-            {"casa": "GRUPO MODELO", "porcentaje": 0.08},
-            {"casa": "HEINEKEN", "porcentaje": 0.06},
-            {"casa": "OTROS", "porcentaje": 0.08},
-        ]
-        
+        det_total = _real_detalle_total(unidad_db, fecha_inicio, fecha_fin)
+        casas = _real_casas(unidad_db, fecha_inicio, fecha_fin, total_ventas=det_total)
         return {
             "success": True,
-            "_source": "FALLBACK_CATALOGO_PROPORCIONAL",
+            "_source": _DETALLE_TABLA,
             "_unidad": unidad_db or "TODAS",
-            "_nota": "Distribución basada en catálogo de productos",
-            "casas_distribuidoras": [
-                {
-                    "casa": c["casa"],
-                    "ventas": round(total_ventas * c["porcentaje"], 2),
-                    "participacion": round(c["porcentaje"] * 100, 2)
-                }
-                for c in casas_data
-            ]
+            "casas_distribuidoras": casas,
         }
     except Exception as e:
         logger.error(f"[INTELIGENCIA] Error casas: {e}")

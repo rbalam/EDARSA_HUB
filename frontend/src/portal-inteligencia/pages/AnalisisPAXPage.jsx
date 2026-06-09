@@ -1,265 +1,169 @@
 /**
- * Análisis PAX - Personas atendidas, propinas, ticket promedio
+ * Análisis PAX - Personas atendidas, propinas, cheque promedio (datos reales, sin mock).
+ * Fuente: /api/inteligencia/dashboard -> kpis + ventas_por_unidad.
  */
 import React, { useState, useEffect } from 'react';
-import { Users, DollarSign, TrendingUp, Receipt, ArrowUpRight, Calendar } from 'lucide-react';
-
-const FALLBACK_PAX_DATA = {
-  resumen: {
-    paxTotal: 16619,
-    propinaTotal: 386800,
-    ticketPromedio: 2712,
-    chequesTotal: 5796,
-    propinaPorPax: 23.28,
-    paxPorCheque: 2.87
-  },
-  porUnidad: [
-    { unidad: 'CIENFUEGOS', pax: 4555, propina: 125800, ticketPromedio: 2945, cheques: 1500 },
-    { unidad: '130° MÉRIDA', pax: 3890, propina: 98500, ticketPromedio: 2680, cheques: 1320 },
-    { unidad: '130° QUERÉTARO', pax: 3210, propina: 78200, ticketPromedio: 2520, cheques: 1180 },
-    { unidad: 'LA ESTELAR', pax: 2850, propina: 52300, ticketPromedio: 2890, cheques: 980 },
-    { unidad: 'ORIGEN', pax: 2114, propina: 32000, ticketPromedio: 2410, cheques: 816 },
-  ],
-  tendenciaSemanal: [
-    { dia: 'Lunes', pax: 1850, propina: 42500 },
-    { dia: 'Martes', pax: 1920, propina: 44800 },
-    { dia: 'Miércoles', pax: 2150, propina: 51200 },
-    { dia: 'Jueves', pax: 2480, propina: 58900 },
-    { dia: 'Viernes', pax: 3250, propina: 82500 },
-    { dia: 'Sábado', pax: 3120, propina: 75200 },
-    { dia: 'Domingo', pax: 1849, propina: 31700 },
-  ]
-};
+import { Users, DollarSign, TrendingUp, Receipt } from 'lucide-react';
+import { apiGet, ESTADO } from '../api/client';
+import { EstadoVacio } from '../components/EstadoVacio';
 
 export default function AnalisisPAXPage({ unidadSeleccionada }) {
-  const [data, setData] = useState(FALLBACK_PAX_DATA);
-  const [loading, setLoading] = useState(false);
-
-  const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+  const [resumen, setResumen] = useState(null);
+  const [porUnidad, setPorUnidad] = useState([]);
+  const [estado, setEstado] = useState(ESTADO.CARGANDO);
 
   useEffect(() => {
-    fetchPAXData();
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unidadSeleccionada]);
 
-  const fetchPAXData = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(
-        `${API_URL}/api/inteligencia/dashboard?unidad=${unidadSeleccionada}`,
-        { credentials: 'include' }
-      );
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.kpis) {
-          const kpis = result.kpis;
-          // Actualizar solo el resumen con datos reales
-          setData(prev => ({
-            ...prev,
-            resumen: {
-              paxTotal: kpis.pax_total || prev.resumen.paxTotal,
-              propinaTotal: kpis.propinas_total || prev.resumen.propinaTotal,
-              ticketPromedio: kpis.cheque_promedio || prev.resumen.ticketPromedio,
-              chequesTotal: kpis.cheques_total || prev.resumen.chequesTotal,
-              propinaPorPax: kpis.pax_total > 0 ? (kpis.propinas_total / kpis.pax_total) : prev.resumen.propinaPorPax,
-              paxPorCheque: kpis.cheques_total > 0 ? (kpis.pax_total / kpis.cheques_total) : prev.resumen.paxPorCheque
-            }
-          }));
-        }
-      }
-    } catch (error) {
-      console.log('[PAX] Usando fallback:', error.message);
-    } finally {
-      setLoading(false);
+  const fetchData = async () => {
+    setEstado(ESTADO.CARGANDO);
+    const { estado: est, data } = await apiGet('/inteligencia/dashboard', { unidad: unidadSeleccionada, periodo: 'mes' });
+    if (est !== ESTADO.OK || !data || data.success === false || !data.kpis) {
+      setResumen(null); setPorUnidad([]);
+      setEstado(est === ESTADO.OK ? ESTADO.ERROR : est);
+      return;
     }
+    const k = data.kpis;
+    const pax = Number(k.pax_total || 0), cheques = Number(k.cheques_total || 0), propinas = Number(k.propinas_total || 0);
+    setResumen({
+      paxTotal: pax,
+      propinaTotal: propinas,
+      ticketPromedio: Number(k.cheque_promedio || 0),
+      chequesTotal: cheques,
+      propinaPorPax: pax > 0 ? propinas / pax : 0,
+      paxPorCheque: cheques > 0 ? pax / cheques : 0,
+    });
+    setPorUnidad((data.ventas_por_unidad || []).map(u => ({
+      unidad: u.unidad,
+      pax: Number(u.pax || 0),
+      cheques: Number(u.tickets || 0),
+      propina: Number(u.propinas || 0),
+      ventas: Number(u.ventas || 0),
+      ticketPromedio: Number(u.tickets) > 0 ? Number(u.ventas || 0) / Number(u.tickets) : 0,
+    })));
+    setEstado(ESTADO.OK);
   };
 
   const formatMoney = (val) => {
-    if (val >= 1000000) return `$${(val / 1000000).toFixed(2)}M`;
-    if (val >= 1000) return `$${(val / 1000).toFixed(1)}K`;
-    return `$${val.toFixed(0)}`;
+    const v = Number(val || 0);
+    if (v >= 1000000) return `$${(v / 1000000).toFixed(2)}M`;
+    if (v >= 1000) return `$${(v / 1000).toFixed(1)}K`;
+    return `$${v.toFixed(0)}`;
   };
 
-  const maxPaxDia = Math.max(...data.tendenciaSemanal.map(d => d.pax));
+  if (estado !== ESTADO.OK || !resumen) {
+    return (
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl" data-testid="analisis-pax-page">
+        <EstadoVacio estado={estado} testid="analisis-pax-estado" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" data-testid="analisis-pax-page">
       {/* KPI Cards principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/30 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <Users className="h-8 w-8 text-blue-400" />
-            <span className="flex items-center gap-1 text-xs text-emerald-400">
-              <ArrowUpRight className="h-3 w-3" /> +8.3%
-            </span>
-          </div>
-          <p className="text-3xl font-bold text-white">{data.resumen.paxTotal.toLocaleString()}</p>
+          <Users className="h-8 w-8 text-blue-400 mb-3" />
+          <p className="text-3xl font-bold text-white">{resumen.paxTotal.toLocaleString()}</p>
           <p className="text-sm text-slate-400 mt-1">PAX Total</p>
         </div>
-
         <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/30 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <DollarSign className="h-8 w-8 text-emerald-400" />
-            <span className="flex items-center gap-1 text-xs text-emerald-400">
-              <ArrowUpRight className="h-3 w-3" /> +15.2%
-            </span>
-          </div>
-          <p className="text-3xl font-bold text-white">{formatMoney(data.resumen.propinaTotal)}</p>
+          <DollarSign className="h-8 w-8 text-emerald-400 mb-3" />
+          <p className="text-3xl font-bold text-white">{formatMoney(resumen.propinaTotal)}</p>
           <p className="text-sm text-slate-400 mt-1">Propinas Totales</p>
         </div>
-
         <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/30 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <Receipt className="h-8 w-8 text-purple-400" />
-            <span className="flex items-center gap-1 text-xs text-emerald-400">
-              <ArrowUpRight className="h-3 w-3" /> +5.7%
-            </span>
-          </div>
-          <p className="text-3xl font-bold text-white">${data.resumen.ticketPromedio.toLocaleString()}</p>
-          <p className="text-sm text-slate-400 mt-1">Ticket Promedio</p>
+          <Receipt className="h-8 w-8 text-purple-400 mb-3" />
+          <p className="text-3xl font-bold text-white">${resumen.ticketPromedio.toLocaleString('es-MX', { maximumFractionDigits: 0 })}</p>
+          <p className="text-sm text-slate-400 mt-1">Cheque Promedio</p>
         </div>
-
         <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/30 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <TrendingUp className="h-8 w-8 text-amber-400" />
-          </div>
-          <p className="text-3xl font-bold text-white">${data.resumen.propinaPorPax.toFixed(2)}</p>
+          <TrendingUp className="h-8 w-8 text-amber-400 mb-3" />
+          <p className="text-3xl font-bold text-white">${resumen.propinaPorPax.toFixed(2)}</p>
           <p className="text-sm text-slate-400 mt-1">Propina por PAX</p>
         </div>
       </div>
 
-      {/* Grid principal */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* PAX por Unidad */}
-        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-5">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Users className="h-5 w-5 text-blue-400" />
-            PAX por Unidad de Negocio
-          </h3>
-          
+      {/* PAX por Unidad */}
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-5">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <Users className="h-5 w-5 text-blue-400" /> PAX por Unidad de Negocio
+        </h3>
+        {porUnidad.length === 0 ? (
+          <EstadoVacio estado={ESTADO.SIN_DATOS} testid="pax-por-unidad-vacio" compacto />
+        ) : (
           <div className="space-y-4">
-            {data.porUnidad.map((unidad, idx) => {
-              const porcentaje = ((unidad.pax / data.resumen.paxTotal) * 100).toFixed(1);
+            {porUnidad.map((u) => {
+              const porcentaje = ((u.pax / (resumen.paxTotal || 1)) * 100).toFixed(1);
               return (
-                <div key={unidad.unidad}>
+                <div key={u.unidad}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm text-white">{unidad.unidad}</span>
+                    <span className="text-sm text-white">{u.unidad}</span>
                     <div className="flex items-center gap-4">
-                      <span className="text-sm font-semibold text-blue-400">
-                        {unidad.pax.toLocaleString()} PAX
-                      </span>
+                      <span className="text-sm font-semibold text-blue-400">{u.pax.toLocaleString()} PAX</span>
                       <span className="text-xs text-slate-500 w-12 text-right">{porcentaje}%</span>
                     </div>
                   </div>
                   <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full"
-                      style={{ width: `${porcentaje}%` }}
-                    />
+                    <div className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full" style={{ width: `${porcentaje}%` }} />
                   </div>
                   <div className="flex justify-between mt-1 text-xs text-slate-500">
-                    <span>Propina: {formatMoney(unidad.propina)}</span>
-                    <span>Ticket: ${unidad.ticketPromedio.toLocaleString()}</span>
+                    <span>Propina: {formatMoney(u.propina)}</span>
+                    <span>Cheque prom.: ${u.ticketPromedio.toLocaleString('es-MX', { maximumFractionDigits: 0 })}</span>
                   </div>
                 </div>
               );
             })}
           </div>
-        </div>
-
-        {/* Tendencia Semanal */}
-        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-5">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-emerald-400" />
-            Tendencia Semanal
-          </h3>
-          
-          <div className="flex items-end justify-between h-48 gap-2">
-            {data.tendenciaSemanal.map((dia, idx) => {
-              const altura = (dia.pax / maxPaxDia) * 100;
-              const esFinDeSemana = dia.dia === 'Viernes' || dia.dia === 'Sábado';
-              
-              return (
-                <div key={dia.dia} className="flex-1 flex flex-col items-center">
-                  <div className="w-full flex flex-col items-center justify-end h-40">
-                    <span className="text-xs text-emerald-400 mb-1">{formatMoney(dia.propina)}</span>
-                    <div 
-                      className={`w-full rounded-t-lg transition-all ${
-                        esFinDeSemana ? 'bg-gradient-to-t from-emerald-600 to-emerald-400' : 'bg-gradient-to-t from-blue-600 to-blue-400'
-                      }`}
-                      style={{ height: `${altura}%` }}
-                    />
-                  </div>
-                  <div className="text-center mt-2">
-                    <p className="text-xs text-white font-medium">{dia.pax.toLocaleString()}</p>
-                    <p className="text-xs text-slate-500">{dia.dia.substring(0, 3)}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          
-          {/* Leyenda */}
-          <div className="flex justify-center gap-6 mt-4 pt-4 border-t border-slate-700">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-blue-500" />
-              <span className="text-xs text-slate-400">Entre semana</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-emerald-500" />
-              <span className="text-xs text-slate-400">Fin de semana</span>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Tabla detallada */}
-      <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-700">
-          <h3 className="text-lg font-semibold text-white">Detalle por Unidad</h3>
-        </div>
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-slate-700">
-              <th className="text-left text-xs font-medium text-slate-400 px-4 py-3">UNIDAD</th>
-              <th className="text-right text-xs font-medium text-slate-400 px-4 py-3">PAX</th>
-              <th className="text-right text-xs font-medium text-slate-400 px-4 py-3">CHEQUES</th>
-              <th className="text-right text-xs font-medium text-slate-400 px-4 py-3">PAX/CHEQUE</th>
-              <th className="text-right text-xs font-medium text-slate-400 px-4 py-3">PROPINAS</th>
-              <th className="text-right text-xs font-medium text-slate-400 px-4 py-3">PROPINA/PAX</th>
-              <th className="text-right text-xs font-medium text-slate-400 px-4 py-3">TICKET PROM.</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.porUnidad.map((unidad) => {
-              const paxPorCheque = (unidad.pax / unidad.cheques).toFixed(2);
-              const propinaPorPax = (unidad.propina / unidad.pax).toFixed(2);
-              
-              return (
-                <tr key={unidad.unidad} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                  <td className="px-4 py-3 text-white font-medium">{unidad.unidad}</td>
-                  <td className="px-4 py-3 text-right text-blue-400">{unidad.pax.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-right text-slate-300">{unidad.cheques.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-right text-slate-300">{paxPorCheque}</td>
-                  <td className="px-4 py-3 text-right text-emerald-400">{formatMoney(unidad.propina)}</td>
-                  <td className="px-4 py-3 text-right text-amber-400">${propinaPorPax}</td>
-                  <td className="px-4 py-3 text-right text-purple-400">${unidad.ticketPromedio.toLocaleString()}</td>
+      {/* Tabla detallada por unidad */}
+      {porUnidad.length > 0 && (
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-700"><h3 className="text-lg font-semibold text-white">Detalle por Unidad</h3></div>
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-slate-700">
+                <th className="text-left text-xs font-medium text-slate-400 px-4 py-3">UNIDAD</th>
+                <th className="text-right text-xs font-medium text-slate-400 px-4 py-3">PAX</th>
+                <th className="text-right text-xs font-medium text-slate-400 px-4 py-3">CHEQUES</th>
+                <th className="text-right text-xs font-medium text-slate-400 px-4 py-3">PAX/CHEQUE</th>
+                <th className="text-right text-xs font-medium text-slate-400 px-4 py-3">PROPINAS</th>
+                <th className="text-right text-xs font-medium text-slate-400 px-4 py-3">PROPINA/PAX</th>
+                <th className="text-right text-xs font-medium text-slate-400 px-4 py-3">CHEQUE PROM.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {porUnidad.map((u) => (
+                <tr key={u.unidad} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+                  <td className="px-4 py-3 text-white font-medium">{u.unidad}</td>
+                  <td className="px-4 py-3 text-right text-blue-400">{u.pax.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-right text-slate-300">{u.cheques.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-right text-slate-300">{u.cheques > 0 ? (u.pax / u.cheques).toFixed(2) : '—'}</td>
+                  <td className="px-4 py-3 text-right text-emerald-400">{formatMoney(u.propina)}</td>
+                  <td className="px-4 py-3 text-right text-amber-400">${u.pax > 0 ? (u.propina / u.pax).toFixed(2) : '0.00'}</td>
+                  <td className="px-4 py-3 text-right text-purple-400">${u.ticketPromedio.toLocaleString('es-MX', { maximumFractionDigits: 0 })}</td>
                 </tr>
-              );
-            })}
-          </tbody>
-          <tfoot>
-            <tr className="bg-slate-800/80">
-              <td className="px-4 py-3 text-white font-bold">TOTAL</td>
-              <td className="px-4 py-3 text-right text-blue-400 font-bold">{data.resumen.paxTotal.toLocaleString()}</td>
-              <td className="px-4 py-3 text-right text-white font-bold">{data.resumen.chequesTotal.toLocaleString()}</td>
-              <td className="px-4 py-3 text-right text-white font-bold">{data.resumen.paxPorCheque.toFixed(2)}</td>
-              <td className="px-4 py-3 text-right text-emerald-400 font-bold">{formatMoney(data.resumen.propinaTotal)}</td>
-              <td className="px-4 py-3 text-right text-amber-400 font-bold">${data.resumen.propinaPorPax.toFixed(2)}</td>
-              <td className="px-4 py-3 text-right text-purple-400 font-bold">${data.resumen.ticketPromedio.toLocaleString()}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-slate-800/80">
+                <td className="px-4 py-3 text-white font-bold">TOTAL</td>
+                <td className="px-4 py-3 text-right text-blue-400 font-bold">{resumen.paxTotal.toLocaleString()}</td>
+                <td className="px-4 py-3 text-right text-white font-bold">{resumen.chequesTotal.toLocaleString()}</td>
+                <td className="px-4 py-3 text-right text-white font-bold">{resumen.paxPorCheque.toFixed(2)}</td>
+                <td className="px-4 py-3 text-right text-emerald-400 font-bold">{formatMoney(resumen.propinaTotal)}</td>
+                <td className="px-4 py-3 text-right text-amber-400 font-bold">${resumen.propinaPorPax.toFixed(2)}</td>
+                <td className="px-4 py-3 text-right text-purple-400 font-bold">${resumen.ticketPromedio.toLocaleString('es-MX', { maximumFractionDigits: 0 })}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

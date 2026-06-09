@@ -13,6 +13,16 @@ Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosist
 Spanish (Español)
 
 ### Estado actualizado (2026-06-09)
+- ✅ **Portal Inteligencia operativo SIN demo + datos 100% reales (P0):** (1) AUTH del portal migrada
+  de cookie a token operativo Bearer (sessionStorage, fuente canónica `lib/api.js`); eliminado el modo
+  demo (`Usuario Externo`/`Usuario Demo`/`demo@edarsa.com`); estados honestos SIN_SESION/SESION_EXPIRADA/
+  SIN_PERMISO. Cliente único `portal-inteligencia/api/client.js`. (2) Eliminado TODO el mock: frontend
+  (`FALLBACK_*`, `Math.random`, alcohol 35) y **backend** (`inteligencia_comercial/routes.py`: bloques
+  horario 20/50/30, top_productos/casas/familias hardcodeados) reemplazados por agregados REALES desde
+  `Comercial_Inteligencia_VentasDetalleProducto`. `casa` NULL → SIN_DATOS_SYNC honesto. Verificado cURL +
+  screenshots (admin@edarsa.com). Doc: `memory/DIAGNOSTICO_PORTAL_INTELIGENCIA_AUTH_MOCK.md`.
+  Pendiente (no regresión): seed permisos/unidades `comercial.benchmark.*`.
+
 - ✅ **P2 TableroEjecutivo + RBAC string→SQL:** (1) Eliminadas las cifras de ventas hardcodeadas del fallback del Tablero Ejecutivo (backend caché estático $15.7M + frontend `FALLBACK_TABLERO_EJECUTIVO` que era código muerto); fallback honesto NO-LIVE (`fuente=SQL_NO_DISPONIBLE`, KPIs en 0, unidades canónicas desde `UnidadesService`). (2) Porteros admin/superadmin migrados a `es_admin`/`es_superadmin` en `core/security.py`, `core/rbac/middleware.py`, `costos_margenes/routes.py` y `routes_precios.py`. Verificado cURL + 5 tests + 19 regresión. Total comercial intacto.
 - ✅ **Centralización modales de detalle + selector inventarios (P1):** 3 módulos canónicos compartidos entre Análisis y Auditoría.
 - ✅ **Compras → contrato canónico `unidad` (P0):** helper central `canonical_server_id()` aplicado a los 9 endpoints de Compras. Acepta unidad (codigo/pk) + compatibilidad legacy `server_id`. NO-LIVE. Verificado cURL + 6 tests.

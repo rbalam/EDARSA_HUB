@@ -13,7 +13,7 @@ import {
   Package, BarChart3, Wine, AlertTriangle,
 } from 'lucide-react';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+import { apiGet, ESTADO } from '../api/client';
 
 // Formateadores por tipo de formato canónico (el catálogo vive en SQL).
 const FORMATTERS = {
@@ -67,44 +67,32 @@ export default function BenchmarkGrupoPage() {
   const metaMetrica = { label: metaDef?.label || 'Métrica', fmt: fmtBy(metaDef?.formato) };
 
   useEffect(() => {
-    fetch(`${API_URL}/api/comercial/benchmark/metricas`, { credentials: 'include' })
-      .then((r) => (r.ok ? r.json() : { metricas: [] }))
-      .then((d) => setMetricasList(d.metricas || []))
-      .catch(() => setMetricasList([]));
+    apiGet('/comercial/benchmark/metricas').then(({ estado, data }) => {
+      setMetricasList(estado === ESTADO.OK && data ? (data.metricas || []) : []);
+    });
   }, []);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/comercial/benchmark/mis-unidades`, { credentials: 'include' })
-      .then((r) => (r.ok ? r.json() : { unidades: [] }))
-      .then((d) => {
-        setUnidades(d.unidades || []);
-        if ((d.unidades || []).length) setUnidad(d.unidades[0].codigo);
-      })
-      .catch(() => setUnidades([]));
+    apiGet('/comercial/benchmark/mis-unidades').then(({ estado, data }) => {
+      const us = estado === ESTADO.OK && data ? (data.unidades || []) : [];
+      setUnidades(us);
+      if (us.length) setUnidad(us[0].codigo);
+    });
   }, []);
 
   const cargarUnidades = useCallback(async () => {
     if (!unidad) return;
     setLoading(true);
-    try {
-      const r = await fetch(
-        `${API_URL}/api/comercial/benchmark/interno/unidades?unidad=${encodeURIComponent(unidad)}&metrica=${metrica}`,
-        { credentials: 'include' });
-      setData(r.ok ? await r.json() : null);
-    } catch { setData(null); }
+    const { estado, data } = await apiGet('/comercial/benchmark/interno/unidades', { unidad, metrica });
+    setData(estado === ESTADO.OK ? data : null);
     setLoading(false);
   }, [unidad, metrica]);
 
   const cargarProductos = useCallback(async () => {
     if (!unidad) return;
     setLoading(true);
-    const met = metrica === 'ventas' ? 'ventas' : 'ventas';
-    try {
-      const r = await fetch(
-        `${API_URL}/api/comercial/benchmark/interno/productos?unidad=${encodeURIComponent(unidad)}&metrica=${met}&top=20`,
-        { credentials: 'include' });
-      setProductos(r.ok ? await r.json() : null);
-    } catch { setProductos(null); }
+    const { estado, data } = await apiGet('/comercial/benchmark/interno/productos', { unidad, metrica: 'ventas', top: 20 });
+    setProductos(estado === ESTADO.OK ? data : null);
     setLoading(false);
   }, [unidad, metrica]);
 
