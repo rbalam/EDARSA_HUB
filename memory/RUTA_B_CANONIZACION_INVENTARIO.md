@@ -56,6 +56,13 @@
 - ✅ `sync_movimientos_canonico` usa `resolver_empresa_id`. Tests **12/12**.
 - 🔴 Pendiente decisión: `SucursalID`(RH) de ORIGEN/130QRO. `Sistema_SucursalServidorMapeo` del server MPRO compartido tiene SucursalID 1,2 ('130 QUERETARO','130 TULUM') que NO son las unidades reales (ORIGEN=RH 7).
 
+### Avance 2026-06-09 (sesión 4) — Sucursal/Empresa 5/5 + decisión catálogos
+- 🔎 **Raíz:** existen 2 catálogos de sucursal: `Sistema_Sucursales` (LIMPIO, 1:1 con unidades + EmpresaID; FK del mapeo) vs `RH_Cat_Sucursales` (RRHH, desalineado; FK de `Inventario_Movimientos`).
+- ✅ **UPDATE MPRO PERSISTIDO** (autorizado, additive): `Sistema_SucursalServidorMapeo` server MPRO → SucursalOrigenID ORIGEN(SucursalID 1)='0023', 130QRO(SucursalID 2)='0021'. Validado: 2 filas, global 5→5, ServerID intacto, acceso sin cambio (seguridad filtra por EmpresaID, no SucursalOrigenID). Script: `migrations/aplicar_sucursalorigen_mpro.py`.
+- ✅ **Resolución 5/5** (Sistema_Sucursales): ORIGEN=1, 130QRO=2, CIENFUEGOS=3, ESTELAR=4, 130MID=5. EmpresaID 5/5. Tests **13/13**.
+- 🟡 **DDL propuesto (NO ejecutado, decisión 🅐 aprobada):** re-apuntar `FK_Inventario_Movimientos_Sucursal` de `RH_Cat_Sucursales` → `Sistema_Sucursales` (`migrations/PROPUESTA_repuntar_fk_sucursal_sistema_sucursales.sql`, con rollback). Tablas vacías → bajo riesgo. **Pendiente tu OK para ejecutar.**
+- 🔴 **Almacenes** (`Inventario_Almacenes`): siguen sin poblar por unidad (39 filas mis-atribuidas a Emp5/Suc1). Fuente canónica por confirmar (¿POS en prod o tabla canónica?).
+
 ### Pendiente (gates)
 - ✅ DDL+seed `Inventario_ConceptoMapeoOrigen` EJECUTADO (12 conceptos SR, FK ok, idempotente, resolver EPC→1). Tests **10/10**.
 - **PROD (equipo):** correr `scripts/diag_origen_almacenes_sucursal_safe.py` (Paso 3) → poblar almacenes/SucursalOrigenID → correr sync 4a (`sync_compras_job`/`sync_movimientos_canonico`) → activar endpoint NO-LIVE (4b, diferido por el usuario hasta el sync productivo para no mostrar vacío).

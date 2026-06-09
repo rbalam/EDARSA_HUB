@@ -107,10 +107,20 @@ def test_sucursal_softrestaurant_resuelve_unica():
     assert isinstance(res.canonical_id, int)
 
 
-def test_sucursal_mpro_compartido_es_ambiguo_sin_origen():
-    # ORIGEN/130QRO comparten servidor MPRO y SucursalOrigenID es NULL -> AMBIGUO (no adivina)
+def test_sucursal_mpro_sin_origen_sigue_ambiguo():
+    # Sin sucursal_origen, el server MPRO compartido NO se puede desambiguar -> AMBIGUO
     unidad = rc.get_server_by_unidad_codigo("ORIGEN")
     server_id = unidad.get("server_id") or unidad.get("id")
     res = rc.resolver_sucursal_id(server_id)
     assert res.resuelto is False
     assert res.motivo == "AMBIGUO_MULTISUCURSAL"
+
+
+def test_sucursal_mpro_resuelve_con_origen():
+    # Con SucursalOrigenID poblado: ORIGEN(0023)->1, 130QRO(0021)->2 (Sistema_Sucursales)
+    unidad = rc.get_server_by_unidad_codigo("ORIGEN")
+    server_id = unidad.get("server_id") or unidad.get("id")
+    r_origen = rc.resolver_sucursal_id(server_id, "0023")
+    r_qro = rc.resolver_sucursal_id(server_id, "0021")
+    assert r_origen.resuelto is True and r_origen.canonical_id == 1
+    assert r_qro.resuelto is True and r_qro.canonical_id == 2
