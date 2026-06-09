@@ -73,3 +73,43 @@
 - ✅ DDL+seed `Inventario_ConceptoMapeoOrigen` EJECUTADO (12 conceptos SR, FK ok, idempotente, resolver EPC→1). Tests **10/10**.
 - **PROD (equipo):** correr `scripts/diag_origen_almacenes_sucursal_safe.py` (Paso 3) → poblar almacenes/SucursalOrigenID → correr sync 4a (`sync_compras_job`/`sync_movimientos_canonico`) → activar endpoint NO-LIVE (4b, diferido por el usuario hasta el sync productivo para no mostrar vacío).
 - Conceptos MPRO (`Mo_Tipo`) NO sembrados (sin evidencia de origen) → quedan PENDIENTE hasta validar en prod (descartados=0).
+
+---
+
+## DIAGNÓSTICO DEFINITIVO CONECTIVIDAD POS + FIXES (2026-06-09)
+
+### Conclusión: la conectividad POS desde preview NUNCA se perdió.
+Diagnóstico de solo lectura ejecutado desde el contenedor preview (scripts en `/app/backend/tests/diag_*.py`):
+
+- `SERVER_SECRET_KEY`: VÁLIDA. Todas las credenciales en `Servidores_Conexiones` desencriptan OK (Fernet `enc:v1:`).
+- EDARSAHUB SQL (`54.39.104.176:1433`): conecta OK.
+- POS DATA_SOURCE: **5 de 7 conectan** vía `pymssql` (con `parse_sql_server_host` para instancia/puerto embebido):
+  - ✅ 130° MERIDA (`130mid.ddns.net:1433` / softrestaurant10)
+  - ✅ ManagmentPro (`54.39.104.176:1433` / CENTRAL2020)
+  - ✅ HR2020 ESCRITURA, ✅ MPRO TABLAJERIA (tablajeria_mpro)
+  - ✅ LA ESTELAR (`serverestelar.ddns.net,6969` / softrestaurant12)
+  - ❌ PRUEBAS SOFTRESTAURANT (instancia `\SOFTRESTAURANT` rechaza — server de pruebas mal configurado)
+  - ❌ CIENFUEGOS (`servercienfuegos.ddns.net,6669` — DDNS/host no responde ahora; POS apagado)
+- Los POS se exponen por DDNS público (forward del firewall corporativo) → SON alcanzables directo. La afirmación previa de "aislamiento de red" era FALSA.
+
+### Causa real del "0 registros": bugs de query y de arquitectura.
+1. **Query almacenes SoftRestaurant** (`sync_service.sync_almacenes_from_server`): `ISNULL(tipo,'GENERAL')` fallaba (`tipo` es numérico → error conversión varchar→numeric) y además el valor numérico violaba el CHECK `CK_Inventario_Almacenes_TipoAlmacen` (solo admite GENERAL/BODEGA/CONSUMO/TRANSITO/DEVOLUCIONES/DAÑADOS). **FIX:** `tipo_almacen='GENERAL'` (default canónico; el origen SR no expone clasificación canónica).
+2. **Query movimientos** (`sync_movimientos_canonico._query_origen`):
+   - MPRO usaba `Mo_Fecha/Mo_Tipo/Ar_Cve_Articulo/Mo_Cantidad/Mo_Costo` (NO existen). Esquema real: `Mv_Fecha/Tm_Cve_Tipo_Movimiento/Pr_Cve_Producto/Mv_Cantidad_1/Mv_Costo/Mv_Documento`. **FIX aplicado.**
+   - SoftRestaurant usaba `m.idinsumo` (no existe) y `m.cancelado=0` (no existe). Esquema real: `movtosalmacen` sin `cancelado`; el código de producto se obtiene vía `JOIN insumospresentaciones ip ON ip.idinsumospresentaciones=m.idinsumospresentaciones` → `ip.idinsumo`. **FIX aplicado.**
+3. **Fuga de conexiones en el resolver** (`core/inventarios/resolver_canonico.py`): abría una conexión nueva a EDARSAHUB por cada fila × cada resolución (~14k conexiones para 4.6k movimientos) y nunca las cerraba → timeout EDARSAHUB. **FIX:** conexión compartida reutilizable + caches en proceso (existencia de tablas, server_id, producto/almacén/empresa/sucursal/tipo). Interfaz pública intacta. Añadido `clear_resolver_caches()`.
+4. **CHECK `CK_Inventario_MovimientosDetalle_Valores`** (`Cantidad>0 AND CostoUnitario>=0`): las salidas SR traen cantidad negativa (dirección la lleva el TipoMovimiento). **FIX:** almacenar `abs(cantidad)`/`abs(costo)` y saltar filas con cantidad 0.
+
+### Pruebas E2E desde preview (datos reales persistidos)
+- `sync_almacenes` (130MID + ESTELAR): **46 almacenes** → `Inventario_Almacenes` (39→85).
+- `sync_movimientos_canonico` ESTELAR (3 días): **366 movimientos procesados, 0 descartados**, 3 productos pendientes (sin mapeo en `Producto_MapeoOrigen`). Persistidos con dedup idempotente.
+
+### Tablas puente (verificadas, POBLADAS)
+- `Producto_MapeoOrigen` = 11,735 (SOFTRESTAURANT_PRO 6,321 / MPRO 5,414). `CodigoFuente` = clave de insumo (p.ej. 'B170045').
+- `Inventario_ConceptoMapeoOrigen` = 12 (SOLO SOFTRESTAURANT_PRO; **falta poblar MPRO** → movimientos MPRO quedan en pendiente 'tipo').
+
+### Pendientes derivados (NO son conectividad)
+- MPRO: poblar `Inventario_ConceptoMapeoOrigen` para SystemType='MPRO' (sin esto, tipo→pendiente).
+- MPRO multisucursal: `resolver_sucursal_id` devuelve AMBIGUO para ManagmentPro (server compartido) → requiere `SucursalOrigenID` en `Sistema_SucursalServidorMapeo`.
+- `tablajeria_mpro`: esquema custom (tablas minúsculas `movimiento/detallemovimiento`, sin `Almacen`) → requiere adapter dedicado.
+- Rendimiento backfill: el sync hace round-trips remotos por fila; correr como job background (no en request).

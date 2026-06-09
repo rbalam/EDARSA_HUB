@@ -37,30 +37,34 @@ logger = logging.getLogger(__name__)
 def _query_origen(system_type: str, dias_atras: int) -> str:
     st = (system_type or "").upper()
     if "MPRO" in st or "MANAGEMENT" in st or "MANAGMENT" in st:
+        # Esquema real ManagementPro (verificado): tabla Movimiento con prefijo Mv_/Pr_/Tm_.
+        # (El esquema legacy usaba Mo_*/Ar_Cve_Articulo que NO existe -> 0 filas.)
         return f"""
             SELECT
-                Mo_Fecha            AS fecha,
+                Mv_Fecha            AS fecha,
                 CAST(Al_Cve_Almacen AS VARCHAR(50)) AS almacen_cod,
-                Mo_Tipo             AS concepto,
-                CAST(Ar_Cve_Articulo AS VARCHAR(50)) AS producto_cod,
-                ISNULL(Mo_Cantidad, 0) AS cantidad,
-                ISNULL(Mo_Costo, 0)    AS costo,
-                CAST(Mo_Documento AS VARCHAR(50)) AS folio
+                CAST(Tm_Cve_Tipo_Movimiento AS VARCHAR(50)) AS concepto,
+                CAST(Pr_Cve_Producto AS VARCHAR(50)) AS producto_cod,
+                ISNULL(Mv_Cantidad_1, 0) AS cantidad,
+                ISNULL(Mv_Costo, 0)      AS costo,
+                CAST(Mv_Documento AS VARCHAR(50)) AS folio
             FROM Movimiento
-            WHERE Mo_Fecha >= DATEADD(DAY, -{int(dias_atras)}, GETDATE())
+            WHERE Mv_Fecha >= DATEADD(DAY, -{int(dias_atras)}, GETDATE())
         """
+    # SoftRestaurant Pro (esquema real verificado): movtosalmacen no tiene 'cancelado'
+    # ni 'idinsumo'; el código de producto se obtiene vía insumospresentaciones.idinsumo.
     return f"""
         SELECT
             m.fecha             AS fecha,
             CAST(m.idalmacen AS VARCHAR(50)) AS almacen_cod,
             RTRIM(LTRIM(m.idconcepto)) AS concepto,
-            CAST(m.idinsumo AS VARCHAR(50)) AS producto_cod,
+            CAST(ip.idinsumo AS VARCHAR(50)) AS producto_cod,
             ISNULL(m.cantidad, 0) AS cantidad,
             ISNULL(m.costo, 0)    AS costo,
             CAST(m.movto AS VARCHAR(50)) AS folio
         FROM movtosalmacen m
+        JOIN insumospresentaciones ip ON ip.idinsumospresentaciones = m.idinsumospresentaciones
         WHERE m.fecha >= DATEADD(DAY, -{int(dias_atras)}, GETDATE())
-          AND m.cancelado = 0
     """
 
 
@@ -120,8 +124,17 @@ def sync_movimientos_canonico(
         almacen_cod = str(r.get("almacen_cod") or "").strip()
         fecha = r.get("fecha")
         folio = str(r.get("folio") or "").strip()[:30]
-        cantidad = float(r.get("cantidad") or 0)
-        costo = float(r.get("costo") or 0)
+        # El signo en SoftRestaurant indica dirección (entrada/salida); la dirección
+        # ya la representa el TipoMovimiento canónico. El detalle canónico exige
+        # Cantidad > 0 y CostoUnitario >= 0 (CK_Inventario_MovimientosDetalle_Valores),
+        # por lo que se almacena la MAGNITUD.
+        cantidad = abs(float(r.get("cantidad") or 0))
+        costo = abs(float(r.get("costo") or 0))
+
+        # Movimiento sin cantidad útil -> no genera detalle canónico válido.
+        if cantidad <= 0:
+            pend["cantidad_cero"] = pend.get("cantidad_cero", 0) + 1
+            continue
 
         # Resolver tipo (DB-driven), almacén y producto. Si algo falla -> pendiente, descartados=0.
         tip = resolver_tipo_movimiento_desde_concepto(system_type, concepto)

@@ -630,3 +630,14 @@ Frontend (`pages/Usuarios.js`):
 - `getCurrentUserRole`/`currentUser` ahora usan `useAuth()` (AuthContext) como fuente primaria + getSessionUser fallback (robustez de rol en navegación SPA).
 
 Verificado: cURL (toggle desactivar/reactivar, revocación de sesiones, bloqueo auto-inactivación, dedup 12 únicos, incluir_inactivos 20=12+8) + screenshot E2E SPA (toast "Usuario inactivado", botones Inactivar visibles, estados correctos).
+
+## 2026-06-09 — Conectividad POS preview: diagnóstico + fixes (P0 BLOQUEANTE RESUELTO)
+- DIAGNÓSTICO: la conectividad POS desde preview NUNCA se perdió. 5/7 servidores DATA_SOURCE conectan OK desde el contenedor (130MID, ESTELAR, ManagmentPro, HR2020, MPRO TABLAJERIA). Solo fallan PRUEBAS SOFTRESTAURANT (instancia mal config) y CIENFUEGOS (DDNS caído). `SERVER_SECRET_KEY` válida; credenciales desencriptan OK.
+- Causa real del "0 registros" = bugs de query/arquitectura, NO red.
+- FIX 1: query almacenes SoftRestaurant (`sync_service.py`) → `tipo_almacen='GENERAL'` (CHECK constraint + conversión numérica).
+- FIX 2: `_query_origen` movimientos (`sync_movimientos_canonico.py`) corregido a esquemas reales (MPRO `Mv_*`; SoftRestaurant JOIN `insumospresentaciones.idinsumo`, sin `cancelado`).
+- FIX 3: `resolver_canonico.py` refactor → conexión compartida + caches (antes ~14k conexiones/run sin cerrar → timeout EDARSAHUB).
+- FIX 4: detalle movimientos → `abs(cantidad/costo)` + skip cantidad 0 (CHECK `Cantidad>0`).
+- E2E PROBADO desde preview: 46 almacenes y 366 movimientos ESTELAR (3d, 0 descartados) persistidos en tablas canónicas.
+- Scripts diagnóstico/regresión: `/app/backend/tests/diag_*.py`.
+- PENDIENTE (no conectividad): poblar `Inventario_ConceptoMapeoOrigen` para MPRO; desambiguar sucursal MPRO compartido; adapter `tablajeria_mpro`; backfill completo como job background.

@@ -734,12 +734,16 @@ def sync_almacenes_from_server(
                 FROM Almacen
             """
         else:
-            # SoftRestaurant Pro - usar nombres de tabla correctos
+            # SoftRestaurant Pro - usar nombres de tabla correctos.
+            # NOTA: el campo 'tipo' en SoftRestaurant es un código numérico interno, NO un
+            # tipo de almacén canónico. El destino Inventario_Almacenes tiene CHECK constraint
+            # (GENERAL/BODEGA/CONSUMO/TRANSITO/DEVOLUCIONES/DAÑADOS). Se mapea a 'GENERAL'
+            # (default canónico) ya que el origen no expone esa clasificación canónica.
             query_origen = """
                 SELECT 
                     CAST(idalmacen AS VARCHAR(50)) AS codigo_almacen,
                     nombre AS nombre_almacen,
-                    ISNULL(tipo, 'GENERAL') AS tipo_almacen,
+                    'GENERAL' AS tipo_almacen,
                     1 AS activo
                 FROM almacen
             """
