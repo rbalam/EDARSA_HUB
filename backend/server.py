@@ -490,6 +490,10 @@ api_router.include_router(costos_margenes_router)
 from modules.catalogo import router as catalogo_router
 api_router.include_router(catalogo_router)
 
+# COMERCIAL-ENRIQUECIDO-C: Catálogo Comercial Enriquecido de Productos (NO-LIVE, SQL-first)
+from modules.comercial_enriquecido import comercial_enriquecido_router
+api_router.include_router(comercial_enriquecido_router)
+
 # FASE 1C-3F: Simulación de Precios y Solicitudes de Cambio
 # ===========================================
 from modules.costos_margenes.routes_precios import router as costos_margenes_precios_router
