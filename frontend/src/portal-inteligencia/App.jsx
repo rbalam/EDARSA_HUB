@@ -13,7 +13,7 @@ import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard, BarChart3, Wine, Clock, Users, 
   DollarSign, TrendingUp, LogOut, ChevronDown, User,
-  Package, Layers, Building2, Percent, Droplet, Tag
+  Package, Layers, Building2, Percent, Droplet, Tag, LineChart
 } from 'lucide-react';
 
 // Páginas
@@ -24,6 +24,7 @@ import VentasHorarioPage from './pages/VentasHorarioPage';
 import VentasCasaPage from './pages/VentasCasaPage';
 import VentasAlcoholPage from './pages/VentasAlcoholPage';
 import ClasificacionAdminPage from './pages/ClasificacionAdminPage';
+import ReporteadorBI from './pages/ReporteadorBI';
 import AnalisisPAXPage from './pages/AnalisisPAXPage';
 import BenchmarkGrupoPage from './pages/BenchmarkGrupoPage';
 import api, { getToken } from '../lib/api';
@@ -136,6 +137,7 @@ export default function PortalInteligenciaApp() {
     { id: 'casas', label: 'Casas/Distribuidores', icon: Building2 },
     { id: 'pax', label: 'Análisis PAX', icon: Users },
     { id: 'benchmark', label: 'Benchmark Grupo', icon: TrendingUp },
+    { id: 'reporteador-bi', label: 'Reporteador BI', icon: LineChart },
     { id: 'clasificacion', label: 'Clasificación (admin)', icon: Tag },
   ];
 
@@ -168,6 +170,8 @@ export default function PortalInteligenciaApp() {
         return <BenchmarkGrupoPage {...props} />;
       case 'clasificacion':
         return <ClasificacionAdminPage {...props} />;
+      case 'reporteador-bi':
+        return <ReporteadorBI {...props} />;
       default:
         return <DashboardIA {...props} />;
     }

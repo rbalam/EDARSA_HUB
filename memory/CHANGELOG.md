@@ -1,5 +1,30 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-09] FASE 2 — Reporteador BI (Informe Gerencial MECA MPRO, 9 páginas)
+Reconstrucción del Power BI sobre EDARSAHUB SQL (NO-LIVE). Menú "Reporteador BI" en el Portal Inteligencia.
+
+Backend nuevo `modules/reporteador_bi/routes.py` (prefijo `/api/reporteador-bi`), reutiliza helpers canónicos
+de inteligencia (KPIs, clasificación, tickets, horario):
+- `/paginas` (metadatos 9 páginas + disponibilidad)
+- DISPONIBLES (datos reales): `/analisis-ventas` (KPIs+serie diaria+treemap clasificación+top productos),
+  `/ventas-semana` (serie semanal ISO + comparativo), `/ventas-mes` (12-24m + var mes/año anterior),
+  `/ambientacion` (ventas por hora real; bandera evento PENDIENTE), `/revision-tickets` (resumen+tickets,
+  reusa reconstrucción), `/kpis-mes` (mes actual vs anterior; metas PENDIENTE).
+- PENDIENTE_SINCRONIZACIÓN (fuente no sincronizada, sin inventar): `/gastos` (Compras), `/rotacion-mesas`
+  (Capacidad/Mesas), `/analisis-documentos` (Documentos_Capturados).
+
+Frontend `portal-inteligencia/pages/ReporteadorBI.jsx` + `components/PendienteSync.jsx`: navegación interna
+de 9 páginas, gráficos recharts (LineChart/ComposedChart/BarChart/Treemap), KPIs, export Excel/PDF en cada
+página, drill-down de tickets (reusa TicketDrilldownModal), período canónico. Registrado en `server.py`.
+
+Auditoría de disponibilidad EDARSAHUB: ventas (detalle+KPIs v2) ✅; NO sincronizados: Compras/Costos,
+Documentos_Capturados, Metas, Capacidad/Mesas, Vendedores, bandera Ambientación → muestran estado honesto.
+Tests: `tests/test_reporteador_bi.py` (10) + `tests/test_inteligencia_fase1.py` (9) = 19/19 PASS.
+
+PRÓXIMO (orden del usuario) → (c) Propagar clasificación canónica a Costos/Pricing/Benchmark.
+PENDIENTE habilitar páginas Gastos/Rotación/Documentos al sincronizar sus fuentes a EDARSAHUB.
+
+
 ## [2026-06-09] Pantalla Admin de Clasificación de Producto (resuelve PENDIENTE)
 - Backend (`modules/inteligencia_comercial/routes.py`): endpoints admin (auth dual + rol admin):
   `GET /inteligencia/clasificaciones` (catálogo), `GET /inteligencia/admin/productos-clasificacion`

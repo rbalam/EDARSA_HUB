@@ -544,6 +544,13 @@ from modules.inteligencia_comercial.routes import router as inteligencia_router
 api_router.include_router(inteligencia_router)
 
 # ============================================================================
+# REPORTEADOR BI — Informe Gerencial MECA MPRO (9 páginas)
+# Endpoints: /api/reporteador-bi/*  | Fuente: EDARSAHUB SQL (NO-LIVE)
+# ============================================================================
+from modules.reporteador_bi.routes import router as reporteador_bi_router
+api_router.include_router(reporteador_bi_router)
+
+# ============================================================================
 # INTELIGENCIA COMERCIAL FASE 1 - Endpoints SQL-First
 # Endpoints: /api/comercial/inteligencia/*
 # Fuente: EDARSAHUB (Comercial_KPIs_Diarios_v2, Sync_PAX_Detalle, Sync_Sales)
