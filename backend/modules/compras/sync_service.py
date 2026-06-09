@@ -899,132 +899,18 @@ def sync_movimientos_from_server(
     dry_run: bool = False
 ) -> Dict[str, Any]:
     """
-    Sincroniza movimientos de inventario desde servidor físico a EDARSAHUB.
-    Destino: Inventario_Movimientos + Inventario_MovimientosDetalle
-    
-    MAPEO: idconcepto (SoftRestaurant) → TipoMovimientoID (EDARSAHUB)
-    - EPC → 1 (ENTRADA_COMPRA)
-    - SPC → 2 (SALIDA_DEV_PROV)  
-    - ETA → 5 (TRASPASO_ENTRADA)
-    - STA → 6 (TRASPASO_SALIDA)
-    - ECI → 3 (AJUSTE_ENTRADA)
-    - SCI → 4 (AJUSTE_SALIDA)
+    Sincroniza movimientos de inventario POS -> Inventario_Movimientos + Detalle.
+
+    REFACTOR Ruta B (int estricta): delega en la capa común
+    `core.inventarios.sync_movimientos_canonico`, que usa el RESOLVER CENTRALIZADO
+    (producto/almacén/sucursal/tipo) y escribe en el ESQUEMA REAL.
+    - Corrige el bug previo (MERGE con columnas inexistentes -> 0 filas).
+    - No inventa IDs: lo no resoluble queda en pendientes; descartados=0.
+    - Sin hardcode de clasificación (tipo de movimiento vía catálogo DB-driven).
     """
-    ctx = _get_edarsahub_context(server_info, unidad_info)
-    empresa_id = ctx['empresa_id']
-    sucursal_id = ctx['sucursal_id']
-    system_type = ctx['system_type']
-    
-    logger.info(f"[SYNC] Iniciando sync movimientos: Empresa={empresa_id}, Sucursal={sucursal_id}")
-    
-    try:
-        if 'MPRO' in system_type.upper() or 'MANAGEMENT' in system_type.upper():
-            query_origen = """
-                SELECT TOP 2000
-                    Mo_Fecha AS fecha_movimiento,
-                    CAST(Al_Cve_Almacen AS INT) AS almacen_id,
-                    Mo_Tipo AS concepto_origen,
-                    CAST(Ar_Cve_Articulo AS VARCHAR(50)) AS producto_id,
-                    ISNULL(Mo_Cantidad, 0) AS cantidad,
-                    ISNULL(Mo_Costo, 0) AS costo
-                FROM Movimiento
-                WHERE Mo_Fecha >= DATEADD(DAY, -30, GETDATE())
-            """
-        else:
-            # SoftRestaurant - usar idconcepto para mapear tipo
-            query_origen = """
-                SELECT TOP 2000
-                    m.fecha AS fecha_movimiento,
-                    CAST(m.idalmacen AS INT) AS almacen_id,
-                    m.idconcepto AS concepto_origen,
-                    CAST(m.idinsumo AS VARCHAR(50)) AS producto_id,
-                    ISNULL(m.cantidad, 0) AS cantidad,
-                    ISNULL(m.costo, 0) AS costo,
-                    m.idcompra AS compra_id,
-                    m.traspaso AS traspaso_id,
-                    m.invfisico AS invfisico_id
-                FROM movtosalmacen m
-                WHERE m.fecha >= DATEADD(DAY, -30, GETDATE())
-                  AND m.cancelado = 0
-                ORDER BY m.fecha DESC
-            """
-        
-        result_origen = execute_sql_fn(
-            server_info['host'], server_info['port'], server_info['database'],
-            server_info['username'], server_info['password'], query_origen
-        )
-        
-        if result_origen is None:
-            return {"status": "ERROR", "error": "Timeout o error de conexión", "encabezados_synced": 0, "detalles_synced": 0}
-        
-        if not result_origen:
-            return {"status": "OK", "encabezados_synced": 0, "detalles_synced": 0, "message": "Sin datos en origen"}
-        
-        conn = get_edarsahub_connection()
-        cursor = conn.cursor()
-        
-        records_synced = 0
-        skipped_no_mapping = 0
-        
-        for row in result_origen:
-            try:
-                concepto = row.get('concepto_origen')
-                tipo_movimiento_id = map_tipo_movimiento_softrestaurant(concepto)
-                
-                if tipo_movimiento_id is None:
-                    skipped_no_mapping += 1
-                    continue
-                
-                almacen_id = int(row.get('almacen_id') or 1)
-                producto_id = str(row.get('producto_id') or '')[:50]
-                fecha = row.get('fecha_movimiento')
-                cantidad = float(row.get('cantidad') or 0)
-                costo = float(row.get('costo') or 0)
-                
-                # MERGE en Inventario_Movimientos
-                # Llave: EmpresaID + SucursalID + AlmacenID + ProductoID + FechaMovimiento + TipoMovimientoID
-                cursor.execute("""
-                    MERGE INTO Inventario_Movimientos AS target
-                    USING (SELECT %s AS EmpresaID, %s AS SucursalID, %s AS AlmacenID, 
-                                  %s AS ProductoID, %s AS FechaMovimiento, %s AS TipoMovimientoID) AS source 
-                    ON target.EmpresaID = source.EmpresaID 
-                       AND target.SucursalID = source.SucursalID 
-                       AND target.AlmacenID = source.AlmacenID
-                       AND target.ProductoID = source.ProductoID
-                       AND CAST(target.FechaMovimiento AS DATE) = CAST(source.FechaMovimiento AS DATE)
-                       AND target.TipoMovimientoID = source.TipoMovimientoID
-                    WHEN MATCHED THEN 
-                        UPDATE SET Cantidad = Cantidad + %s, CostoUnitario = %s, ModifiedAt = GETDATE()
-                    WHEN NOT MATCHED THEN 
-                        INSERT (EmpresaID, SucursalID, AlmacenID, ProductoID, TipoMovimientoID, 
-                                FechaMovimiento, Cantidad, CostoUnitario, CostoTotal, Activo, CreatedAt)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 1, GETDATE());
-                """, (
-                    empresa_id, sucursal_id, almacen_id, producto_id, fecha, tipo_movimiento_id,
-                    cantidad, costo,
-                    empresa_id, sucursal_id, almacen_id, producto_id, tipo_movimiento_id, 
-                    fecha, cantidad, costo, cantidad * costo
-                ))
-                records_synced += 1
-                
-            except Exception as e:
-                logger.warning(f"[SYNC] Error insertando movimiento: {e}")
-        
-        conn.commit()
-        conn.close()
-        
-        logger.info(f"[SYNC] Movimientos sync: {records_synced}, skipped (sin mapeo): {skipped_no_mapping}")
-        
-        return {
-            "status": "OK", 
-            "encabezados_synced": records_synced, 
-            "detalles_synced": 0,
-            "skipped_no_mapping": skipped_no_mapping
-        }
-        
-    except Exception as e:
-        logger.error(f"[SYNC] Error en sync_movimientos: {e}")
-        return {"status": "ERROR", "error": str(e), "encabezados_synced": 0, "detalles_synced": 0}
+    # Import perezoso para evitar import circular con esta misma capa.
+    from core.inventarios.sync_movimientos_canonico import sync_movimientos_canonico
+    return sync_movimientos_canonico(server_info, unidad_info, execute_sql_fn)
 
 
 

@@ -42,3 +42,14 @@
   - Reparto puente: 1b230a06/MPRO=5414, a5547321/SR=2629, 6d053c22/SR=2493, a5ff0e25/SR=1199.
 - ⏳ **PASO 3 (DATA, requiere POS):** completar `Inventario_Almacenes` + `SucursalOrigenID` MPRO **desde origen**. Diagnóstico listo: `scripts/diag_origen_almacenes_sucursal_safe.py` (correr en red productiva).
 - ⏳ **PASO 4:** corregir `sync_movimientos_from_server` (header+detalle, esquema real, usar resolver) + migrar endpoint `detalle-movimientos` a NO-LIVE. Código factible aquí; datos dependen de Paso 3 (POS).
+
+## 7. Avance 2026-06-09 (sesión 2) — Código aprobado (sin POS)
+- 🔌 **Conectividad POS (evidencia definitiva):** sonda `SELECT 1` vía helper canónico → **SIN_CONEXION en las 5 unidades**. El "conectividad SI" previo era falso positivo (`execute_sql_query` retorna `[]` en error y en tabla vacía). Diagnóstico endurecido con sonda real. **El run de movimientos debe hacerse en red productiva.**
+- ✅ **Sub-fase B (código, DB-driven):** `resolver_tipo_movimiento_desde_concepto(system_type, concepto)` en `resolver_canonico.py` (cero hardcode; si catálogo ausente→PENDIENTE). DDL+seed propuestos en `migrations/PROPUESTA_concepto_mapeo_origen.sql` (**NO ejecutado**, pendiente aprobación).
+- ✅ **4a (código):** `core/inventarios/sync_movimientos_canonico.py` — lee POS y escribe `Inventario_Movimientos`+`Detalle` en **esquema real**, usando los 4 resolvers; no resueltos→pendientes (sucursal/tipo/almacén/producto), **descartados=0**, idempotente (NOT EXISTS). `modules/compras/sync_service.sync_movimientos_from_server` ahora **delega** en esta capa común (bug del MERGE eliminado).
+- ✅ **Validación de esquema (rollback):** `migrations/validar_esquema_sync_movimientos.py` inserta encabezado+detalle con IDs reales y hace ROLLBACK → 0 errores de columna/FK, 0 filas persistidas. (`Importe` es columna calculada → excluida del INSERT.)
+- ✅ Imports sin circular (lazy import). Tests resolver **8/8**. Backend sano.
+
+### Pendiente (gates)
+- Aprobar DDL `Inventario_ConceptoMapeoOrigen` (Sub-fase B) + seed conceptos.
+- **PROD (equipo):** correr `scripts/diag_origen_almacenes_sucursal_safe.py` (Paso 3) → poblar almacenes/SucursalOrigenID → correr sync (4a) → activar endpoint NO-LIVE (4b).

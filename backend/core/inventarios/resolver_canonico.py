@@ -200,11 +200,47 @@ def resolver_tipo_movimiento_por_codigo(codigo_canonico: str) -> ResultadoResolu
     return ResultadoResolucion.pendiente("PENDIENTE_SIN_MAPEO")
 
 
+# Tabla DB-driven de mapeo concepto-origen -> TipoMovimientoID (Sub-fase B).
+CONCEPTO_MAPEO_TABLE = "Inventario_ConceptoMapeoOrigen"
+
+
+def resolver_tipo_movimiento_desde_concepto(system_type: str, concepto_origen: str) -> ResultadoResolucion:
+    """
+    Sub-fase B (DB-driven): resuelve TipoMovimientoID a partir del concepto de ORIGEN
+    (EPC/SPC/ETA... en SoftRestaurant; Mo_Tipo en MPRO), leyendo del catálogo
+    `Inventario_ConceptoMapeoOrigen` (SystemType + ConceptoOrigen -> TipoMovimientoID).
+
+    CERO hardcode: si el catálogo no existe aún o el concepto no está mapeado,
+    devuelve PENDIENTE (el movimiento queda en pendientes; descartados=0).
+    """
+    st = str(system_type or "").strip().upper()
+    cc = str(concepto_origen or "").strip().upper()
+    if not st or not cc:
+        return ResultadoResolucion.pendiente("PENDIENTE_SIN_MAPEO")
+
+    if not _tabla_existe(CONCEPTO_MAPEO_TABLE):
+        return ResultadoResolucion.pendiente("CATALOGO_CONCEPTOS_AUSENTE")
+
+    conn = get_sql_connection()
+    cur = conn.cursor()
+    cur.execute(
+        f"""SELECT TOP 1 TipoMovimientoID FROM {CONCEPTO_MAPEO_TABLE}
+            WHERE SystemType = %s AND ConceptoOrigen = %s AND Activo = 1""",
+        (st, cc),
+    )
+    row = cur.fetchone()
+    if row and row[0] is not None:
+        return ResultadoResolucion.ok(row[0])
+    return ResultadoResolucion.pendiente("PENDIENTE_SIN_MAPEO")
+
+
 __all__ = [
     "ResultadoResolucion",
     "resolver_producto_id",
     "resolver_almacen_id",
     "resolver_sucursal_id",
     "resolver_tipo_movimiento_por_codigo",
+    "resolver_tipo_movimiento_desde_concepto",
     "BRIDGE_TABLE",
+    "CONCEPTO_MAPEO_TABLE",
 ]
