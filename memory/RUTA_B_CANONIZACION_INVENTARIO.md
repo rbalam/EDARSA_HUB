@@ -51,5 +51,6 @@
 - ✅ Imports sin circular (lazy import). Tests resolver **8/8**. Backend sano.
 
 ### Pendiente (gates)
-- Aprobar DDL `Inventario_ConceptoMapeoOrigen` (Sub-fase B) + seed conceptos.
-- **PROD (equipo):** correr `scripts/diag_origen_almacenes_sucursal_safe.py` (Paso 3) → poblar almacenes/SucursalOrigenID → correr sync (4a) → activar endpoint NO-LIVE (4b).
+- ✅ DDL+seed `Inventario_ConceptoMapeoOrigen` EJECUTADO (12 conceptos SR, FK ok, idempotente, resolver EPC→1). Tests **10/10**.
+- **PROD (equipo):** correr `scripts/diag_origen_almacenes_sucursal_safe.py` (Paso 3) → poblar almacenes/SucursalOrigenID → correr sync 4a (`sync_compras_job`/`sync_movimientos_canonico`) → activar endpoint NO-LIVE (4b, diferido por el usuario hasta el sync productivo para no mostrar vacío).
+- Conceptos MPRO (`Mo_Tipo`) NO sembrados (sin evidencia de origen) → quedan PENDIENTE hasta validar en prod (descartados=0).

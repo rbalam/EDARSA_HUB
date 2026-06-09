@@ -71,6 +71,20 @@ def test_almacen_inexistente_queda_pendiente():
     assert res.canonical_id is None
 
 
+def test_concepto_db_driven_resuelve_epc():
+    # Sub-fase B: catálogo DB-driven Inventario_ConceptoMapeoOrigen
+    res = rc.resolver_tipo_movimiento_desde_concepto("SOFTRESTAURANT_PRO", "EPC")
+    assert res.resuelto is True
+    assert res.canonical_id == 1
+    assert res.motivo == "OK"
+
+
+def test_concepto_no_mapeado_queda_pendiente():
+    res = rc.resolver_tipo_movimiento_desde_concepto("SOFTRESTAURANT_PRO", "CONCEPTO_INEXISTENTE_ZZZ")
+    assert res.resuelto is False
+    assert res.motivo in ("PENDIENTE_SIN_MAPEO", "CATALOGO_CONCEPTOS_AUSENTE")
+
+
 def test_sucursal_softrestaurant_resuelve_unica():
     # CIENFUEGOS -> server dedicado -> 1 sola sucursal en el mapeo
     unidad = rc.get_server_by_unidad_codigo("CIENFUEGOS")
