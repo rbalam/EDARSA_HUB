@@ -1260,7 +1260,57 @@ async def get_ticket_detalle(
 # ENDPOINT: Ventas por Casa/Distribuidor
 # Fuente: Products con fallback proporcional
 # ============================================================================
-@router.get("/casas")
+def _real_productos_subfamilia(unidad_db, fi, ff, familia, subfamilia, limit=200):
+    """Productos de venta dentro de una familia/subfamilia (nivel más bajo del
+    reporte Familia→Subfamilia→Producto). Maneja los marcadores '(Sin familia)'
+    y '(Sin subfamilia)' como NULL/vacío en la fuente."""
+    where = [_detalle_where(unidad_db, fi, ff)]
+    params = []
+    if familia == "(Sin familia)":
+        where.append("(familia_nombre IS NULL OR LTRIM(RTRIM(familia_nombre))='')")
+    else:
+        where.append("LTRIM(RTRIM(familia_nombre)) = %s")
+        params.append(familia.strip())
+    if subfamilia == "(Sin subfamilia)":
+        where.append("(subfamilia_nombre IS NULL OR LTRIM(RTRIM(subfamilia_nombre))='')")
+    else:
+        where.append("LTRIM(RTRIM(subfamilia_nombre)) = %s")
+        params.append(subfamilia.strip())
+    sql = f"""
+        SELECT TOP {int(limit)} producto_nombre AS producto, producto_codigo_fuente AS codigo,
+               SUM(importe_neto) AS ventas, SUM(cantidad) AS cantidad
+        FROM {_DETALLE_TABLA}
+        WHERE {' AND '.join(where)}
+        GROUP BY producto_nombre, producto_codigo_fuente
+        ORDER BY SUM(importe_neto) DESC
+    """
+    rows = execute_query(sql, tuple(params))
+    total = sum(float(r["ventas"] or 0) for r in rows) or 1
+    return [{"producto": r["producto"] or "", "codigo": r.get("codigo") or "",
+             "ventas": round(float(r["ventas"] or 0), 2),
+             "cantidad": round(float(r.get("cantidad") or 0), 2),
+             "porcentaje": round(float(r["ventas"] or 0) / total * 100, 1)} for r in rows]
+
+
+@router.get("/productos-subfamilia")
+async def get_productos_subfamilia(
+    familia: str = Query(...),
+    subfamilia: str = Query(...),
+    unidad: Optional[str] = Query(None),
+    periodo: Optional[str] = Query(None),
+    fecha_inicio: Optional[str] = Query(None),
+    fecha_fin: Optional[str] = Query(None),
+):
+    """Productos de venta de una familia/subfamilia (drill-down del reporte Familias)."""
+    unidad_db = normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
+    fi, ff, _, _, _ = _resolver_rango(unidad_db, periodo, fecha_inicio, fecha_fin)
+    try:
+        productos = _real_productos_subfamilia(unidad_db, fi, ff, familia, subfamilia)
+        return {"success": True, "_source": _DETALLE_TABLA, "familia": familia,
+                "subfamilia": subfamilia, "total": len(productos), "productos": productos}
+    except Exception as e:
+        logger.error(f"[INTELIGENCIA] Error productos-subfamilia: {e}")
+        return {"success": False, "_error": str(e), "productos": []}
 async def get_ventas_casas(
     unidad: Optional[str] = Query(None),
     periodo: Optional[str] = Query(None, description="dia | semana | mes | anio"),

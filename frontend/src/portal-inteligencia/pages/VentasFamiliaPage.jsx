@@ -4,7 +4,7 @@
  * Fuente: /api/inteligencia/familias (ventas_clasificacion).
  */
 import React, { useState, useEffect } from 'react';
-import { Layers, ChevronDown, ChevronRight } from 'lucide-react';
+import { Layers, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 import { apiGet, ESTADO } from '../api/client';
 import { EstadoVacio } from '../components/EstadoVacio';
 import { PeriodoSelector } from '../components/PeriodoSelector';
@@ -33,6 +33,8 @@ export default function VentasFamiliaPage({ unidadSeleccionada, periodo = 'mes' 
   const [periodoLocal, setPeriodoLocal] = useState(periodo);
   const [openClas, setOpenClas] = useState([]);
   const [openFam, setOpenFam] = useState([]);
+  const [openSub, setOpenSub] = useState([]);      // subfamilias expandidas
+  const [prodMap, setProdMap] = useState({});       // key sub -> {loading, productos}
 
   useEffect(() => {
     fetchData();
@@ -49,10 +51,23 @@ export default function VentasFamiliaPage({ unidadSeleccionada, periodo = 'mes' 
     setClasif(lista);
     setPeriodoLabel(data.filtros?.periodo_label || '');
     setOpenClas(lista.slice(0, 2).map(c => c.clasificacion));
+    setOpenSub([]); setProdMap({});
     setEstado(lista.length ? ESTADO.OK : ESTADO.SIN_DATOS);
   };
 
   const toggle = (arr, setArr, key) => setArr(arr.includes(key) ? arr.filter(k => k !== key) : [...arr, key]);
+
+  const toggleSub = async (familia, subfamilia) => {
+    const skey = `${familia}>${subfamilia}`;
+    const abierto = openSub.includes(skey);
+    setOpenSub(abierto ? openSub.filter(k => k !== skey) : [...openSub, skey]);
+    if (abierto || prodMap[skey]) return;  // ya cargado o cerrando
+    setProdMap(m => ({ ...m, [skey]: { loading: true, productos: [] } }));
+    const { estado: est, data } = await apiGet('/inteligencia/productos-subfamilia', {
+      familia, subfamilia, unidad: unidadSeleccionada, periodo: periodoLocal,
+    });
+    setProdMap(m => ({ ...m, [skey]: { loading: false, productos: (est === ESTADO.OK && data?.productos) ? data.productos : [] } }));
+  };
 
   const total = clasif.reduce((a, c) => a + Number(c.ventas || 0), 0);
   const meta = `${unidadSeleccionada === 'todas' ? 'Consolidado' : unidadSeleccionada} · ${periodoLabel}`;
@@ -149,18 +164,51 @@ export default function VentasFamiliaPage({ unidadSeleccionada, periodo = 'mes' 
                               <span className="text-xs text-slate-500 w-12 text-right">{f.porcentaje}%</span>
                             </div>
                           </button>
-                          {fOpen && f.subfamilias.map((s) => (
-                            <div key={s.nombre} className="px-4 py-2 pl-20 flex items-center justify-between border-t border-slate-700/20 hover:bg-slate-700/10">
-                              <div className="flex items-center gap-3">
-                                <div className={`w-2 h-2 rounded-full ${col.dot} opacity-60`} />
-                                <span className="text-sm text-slate-400">{s.nombre}</span>
+                          {fOpen && f.subfamilias.map((s) => {
+                            const skey = `${f.familia}>${s.nombre}`;
+                            const sOpen = openSub.includes(skey);
+                            const prod = prodMap[skey];
+                            return (
+                              <div key={s.nombre} className="bg-slate-900/30">
+                                <button onClick={() => toggleSub(f.familia, s.nombre)}
+                                  data-testid={`subfamilia-row-${ci}`}
+                                  className="w-full px-4 py-2 pl-20 flex items-center justify-between border-t border-slate-700/20 hover:bg-slate-700/10">
+                                  <div className="flex items-center gap-3">
+                                    {sOpen ? <ChevronDown className="h-3.5 w-3.5 text-slate-500" /> : <ChevronRight className="h-3.5 w-3.5 text-slate-500" />}
+                                    <div className={`w-2 h-2 rounded-full ${col.dot} opacity-60`} />
+                                    <span className="text-sm text-slate-400">{s.nombre}</span>
+                                  </div>
+                                  <div className="flex items-center gap-6">
+                                    <span className="text-sm text-slate-300">{formatMoney(s.ventas)}</span>
+                                    <span className="text-xs text-slate-600 w-12 text-right">{s.porcentaje}%</span>
+                                  </div>
+                                </button>
+                                {sOpen && (
+                                  prod?.loading ? (
+                                    <div className="px-4 py-3 pl-28 flex items-center gap-2 text-slate-500 text-xs"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Cargando productos…</div>
+                                  ) : (prod?.productos?.length ? (
+                                    <>
+                                      <div className="px-4 py-1.5 pl-28 flex items-center justify-between text-[10px] uppercase tracking-wide text-slate-600 bg-slate-900/40">
+                                        <span>Producto de venta</span><span>Cant · Ventas · %</span>
+                                      </div>
+                                      {prod.productos.map((p, pi) => (
+                                        <div key={pi} className="px-4 py-1.5 pl-28 flex items-center justify-between border-t border-slate-700/10 hover:bg-slate-700/10">
+                                          <span className="text-sm text-slate-300">{p.producto}</span>
+                                          <div className="flex items-center gap-5">
+                                            <span className="text-xs text-slate-500 w-14 text-right">{Number(p.cantidad).toLocaleString()} u</span>
+                                            <span className="text-sm text-emerald-400 w-20 text-right">{formatMoney(p.ventas)}</span>
+                                            <span className="text-xs text-slate-600 w-10 text-right">{p.porcentaje}%</span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </>
+                                  ) : (
+                                    <div className="px-4 py-3 pl-28 text-xs text-slate-600">Sin productos en el período.</div>
+                                  ))
+                                )}
                               </div>
-                              <div className="flex items-center gap-6">
-                                <span className="text-sm text-slate-300">{formatMoney(s.ventas)}</span>
-                                <span className="text-xs text-slate-600 w-12 text-right">{s.porcentaje}%</span>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       );
                     })}

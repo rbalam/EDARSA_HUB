@@ -1,5 +1,13 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-09] Reporte Familia/Subfamilia → 4º nivel PRODUCTOS de venta
+El reporte solo llegaba a Subfamilia; faltaban los productos de venta. Agregado nivel Producto con carga
+bajo demanda: backend `GET /inteligencia/productos-subfamilia` (familia+subfamilia → productos con
+cantidad/ventas/%, maneja '(Sin familia)'/'(Sin subfamilia)' como NULL). Frontend `VentasFamiliaPage.jsx`:
+subfamilias ahora expandibles (chevron) que lazy-load productos. Verificado: B CERVEZAS Y REFRESCOS →
+(Sin subfamilia) muestra Agua Topo Chico $31.3K/392u, Michelob Ultra $28.1K, etc.
+
+
 ## [2026-06-09] FIX — Selector de período se quedaba "pegado en Junio" (condición de carrera)
 Síntoma: al cambiar Día/Semana/Mes/Año el botón se resaltaba pero los KPIs/etiqueta no cambiaban
 (p.ej. Año mostraba datos de Día). Causa: race condition — la respuesta lenta de un período anterior
