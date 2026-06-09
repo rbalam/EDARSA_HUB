@@ -54,8 +54,17 @@ def _es_mpro(system_type: str) -> bool:
     return "MPRO" in st or "MANAGEMENT" in st or "MANAGMENT" in st
 
 
+def _probar_conexion(srv) -> bool:
+    """Sonda REAL de conectividad: SELECT 1. Una conexión viva siempre devuelve fila.
+    (execute_sql_query devuelve [] tanto en error como en tabla vacía, por eso no basta
+    con el conteo: hay que probar SELECT 1 explícitamente.)"""
+    r = execute_sql_query(srv["host"], srv["port"], srv["database"],
+                          srv["username"], srv["password"], "SELECT 1 AS ok")
+    return bool(r) and r[0].get("ok") == 1
+
+
 def _safe_query(srv, query):
-    """Ejecuta SELECT read-only. Devuelve (filas|None). Nunca expone secretos."""
+    """Ejecuta SELECT read-only. Devuelve (filas|[]). Nunca expone secretos."""
     return execute_sql_query(srv["host"], srv["port"], srv["database"],
                              srv["username"], srv["password"], query)
 
@@ -86,6 +95,14 @@ def diagnosticar_unidad(unidad: dict) -> dict:
         rep["estado"] = "SIN_CONEXION"
         return rep
 
+    # Sonda REAL de conectividad antes de cualquier conteo (evita falsos positivos
+    # porque execute_sql_query devuelve [] tanto en error como en tabla vacía).
+    if not _probar_conexion(srv):
+        rep["conectividad"] = False
+        rep["estado"] = "SIN_CONEXION"
+        return rep
+    rep["conectividad"] = True
+
     try:
         # 1) Movimientos: conteo + MIN/MAX fecha (read-only)
         if es_mpro:
@@ -98,7 +115,6 @@ def diagnosticar_unidad(unidad: dict) -> dict:
             q_suc = None  # SoftRestaurant = 1 sucursal por base
 
         mov = _safe_query(srv, q_mov)
-        rep["conectividad"] = True
         if mov and mov[0].get("n") is not None:
             rep["conteo_filas_movimientos"] = int(mov[0]["n"] or 0)
             fmin, fmax = mov[0].get("fmin"), mov[0].get("fmax")
