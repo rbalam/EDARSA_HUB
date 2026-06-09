@@ -235,6 +235,7 @@ def _periodo_rango(periodo: str, anchor: date):
 _DETALLE_TABLA = "Comercial_Inteligencia_VentasDetalleProducto"
 _ENRIQ_TABLA = "Comercial_Productos_Enriquecidos"   # casa/distribuidor, alcohol (NO-LIVE)
 _SYNC_PROD = "Sync_Productos"                        # clasificación macro canónica (CategoriaNombre)
+_CLAS_TABLA = "Comercial_ClasificacionesProducto"    # catálogo controlado de clasificación comercial
 
 
 def _detalle_where(unidad_db: Optional[str], fecha_inicio: str, fecha_fin: str, alias: str = "") -> str:
@@ -388,34 +389,20 @@ def _real_casas(unidad_db, fecha_inicio, fecha_fin, total_ventas=None, limit=12)
 
 def _real_clasificacion_nested(unidad_db, fecha_inicio, fecha_fin):
     """Jerarquía REAL Clasificación → Familia → Subfamilia. La clasificación macro
-    (ALIMENTOS/BEBIDAS/OTROS) es canónica desde Sync_Productos.CategoriaNombre
-    (unida por producto_id); NO se hardcodea. Cada FAMILIA se asigna a su
-    clasificación DOMINANTE (la categoría con más ventas dentro de la familia),
-    replicando el modelo del POS donde el grupo lleva una sola clasificación."""
+    (ALIMENTOS/BEBIDAS/OTROS/PENDIENTE_CLASIFICACION) es DATO CANÓNICO del producto:
+    se lee de Sync_Productos.ClasificacionProductoID → Comercial_ClasificacionesProducto
+    (catálogo controlado), unido por producto_id. SIN CASE en el endpoint."""
     where_d = _detalle_where(unidad_db, fecha_inicio, fecha_fin, alias="d")
-    # Regla de negocio canónica (instrucción del usuario + pantalla "Grupos" del POS):
-    #  - SoftRestaurant NO tiene clasificador real: la familia lleva prefijo
-    #    "A "=Alimentos / "B "=Bebidas. El prefijo MANDA cuando existe.
-    #  - MPRO sí clasifica: se usa Sync_Productos.CategoriaNombre (ALIMENTOS/BEBIDAS).
-    #  - Todo lo demás (gastos, cavas, cristalería, etc.) → OTROS.
-    # NO es un mapeo hardcodeado producto→categoría: lee convenciones de la fuente.
-    clas_expr = (
-        "CASE "
-        "WHEN LEFT(LTRIM(d.familia_nombre),2)='A ' THEN 'ALIMENTOS' "
-        "WHEN LEFT(LTRIM(d.familia_nombre),2)='B ' THEN 'BEBIDAS' "
-        "WHEN UPPER(LTRIM(RTRIM(ISNULL(p.CategoriaNombre,''))))='ALIMENTOS' THEN 'ALIMENTOS' "
-        "WHEN UPPER(LTRIM(RTRIM(ISNULL(p.CategoriaNombre,''))))='BEBIDAS' THEN 'BEBIDAS' "
-        "ELSE 'OTROS' END"
-    )
     sql = f"""
-        SELECT {clas_expr} AS clasificacion,
+        SELECT ISNULL(cc.Codigo, 'PENDIENTE_CLASIFICACION') AS clasificacion,
                ISNULL(NULLIF(LTRIM(RTRIM(d.familia_nombre)), ''), '(Sin familia)') AS familia,
                ISNULL(NULLIF(LTRIM(RTRIM(d.subfamilia_nombre)), ''), '(Sin subfamilia)') AS subfamilia,
                SUM(d.importe_neto) AS ventas, SUM(d.cantidad) AS cantidad
         FROM {_DETALLE_TABLA} d
         LEFT JOIN {_SYNC_PROD} p ON p.ProductoID = d.producto_id
+        LEFT JOIN {_CLAS_TABLA} cc ON cc.ClasificacionProductoID = p.ClasificacionProductoID
         WHERE {where_d}
-        GROUP BY {clas_expr},
+        GROUP BY ISNULL(cc.Codigo, 'PENDIENTE_CLASIFICACION'),
                  ISNULL(NULLIF(LTRIM(RTRIM(d.familia_nombre)), ''), '(Sin familia)'),
                  ISNULL(NULLIF(LTRIM(RTRIM(d.subfamilia_nombre)), ''), '(Sin subfamilia)')
     """
@@ -552,18 +539,14 @@ def _real_ticket_lineas(unidad_db, fecha, numero_ticket):
     sql = f"""
         SELECT d.producto_codigo_fuente AS codigo, d.producto_nombre AS producto,
                d.familia_nombre AS familia, d.subfamilia_nombre AS subfamilia,
-               CASE
-                 WHEN LEFT(LTRIM(d.familia_nombre),2)='A ' THEN 'ALIMENTOS'
-                 WHEN LEFT(LTRIM(d.familia_nombre),2)='B ' THEN 'BEBIDAS'
-                 WHEN UPPER(LTRIM(RTRIM(ISNULL(p.CategoriaNombre,''))))='ALIMENTOS' THEN 'ALIMENTOS'
-                 WHEN UPPER(LTRIM(RTRIM(ISNULL(p.CategoriaNombre,''))))='BEBIDAS' THEN 'BEBIDAS'
-                 ELSE 'OTROS' END AS clasificacion,
+               ISNULL(cc.Codigo, 'PENDIENTE_CLASIFICACION') AS clasificacion,
                e.grupo_comercial AS casa,
                e.marca, e.grado_alcohol AS grado_alcohol, e.es_alcoholico AS es_alcoholico,
                d.cantidad, d.precio_unitario, d.importe_neto AS importe, d.propina, d.pax,
                d.fecha_hora
         FROM {_DETALLE_TABLA} d
         LEFT JOIN {_SYNC_PROD} p ON p.ProductoID = d.producto_id
+        LEFT JOIN {_CLAS_TABLA} cc ON cc.ClasificacionProductoID = p.ClasificacionProductoID
         LEFT JOIN {_ENRIQ_TABLA} e ON e.producto_id = d.producto_id
         WHERE {' AND '.join(where)}
         ORDER BY d.importe_neto DESC

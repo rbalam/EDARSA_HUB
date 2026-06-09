@@ -1,5 +1,11 @@
 # AUDITORÍA + PROPUESTA — Clasificación Comercial Canónica de Producto
-**Fecha:** 2026-06-09 · **Estado:** SOLO AUDITORÍA Y PROPUESTA — **NO se ejecutó DDL** · **NO MongoDB · NO-LIVE · SIN hardcode**
+**Fecha:** 2026-06-09 · **Estado:** ✅ EJECUTADO Y AUTORIZADO — DDL aplicado + backfill + endpoints refactorizados (sin CASE) · **NO MongoDB · NO-LIVE · SIN hardcode**
+
+> RESULTADO (2026-06-09): Migración `migrations/comercial_clasificacion_producto_20260609.py` ejecutada.
+> Catálogo `Comercial_ClasificacionesProducto` creado (4 valores). Columnas `ClasificacionProductoID`(FK)
+> + `ClasificacionOrigen` + `ClasificacionFecha` agregadas a `Sync_Productos`. Backfill: BEBIDAS 6.558,
+> ALIMENTOS 3.324, OTROS 1.492, PENDIENTE 1.086, NULL=0. Endpoints `_real_clasificacion_nested` y
+> `_real_ticket_lineas` ahora leen del catálogo (JOIN), **CASE A/B eliminado**. 6/6 tests PASS.
 
 Objetivo: dejar la clasificación comercial (ALIMENTOS / BEBIDAS / OTROS / PENDIENTE_CLASIFICACION) como **dato canónico del producto** alimentado desde un **catálogo controlado**, eliminando el `CASE A/B` de los endpoints. La regla A/B aplica **solo a SOFTRESTAURANT_PRO** (no global).
 

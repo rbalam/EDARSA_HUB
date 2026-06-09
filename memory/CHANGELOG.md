@@ -1,5 +1,21 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-09] Clasificación Comercial CANÓNICA de Producto (elimina CASE A/B de endpoints)
+Autorizado por usuario. Migración `migrations/comercial_clasificacion_producto_20260609.py` (idempotente).
+
+- **Catálogo controlado** `Comercial_ClasificacionesProducto` (ALIMENTOS/BEBIDAS/OTROS/PENDIENTE_CLASIFICACION).
+- **`Sync_Productos`** += `ClasificacionProductoID` (FK) + `ClasificacionOrigen` + `ClasificacionFecha` (trazabilidad).
+  Columnas nullables; el MERGE del sync (`sync_recetas.py`, llave ServerID+CodigoFuente, sin DELETE) las preserva.
+- **Backfill** (idempotente, no pisa 'MANUAL'): SoftRestaurant SOLO por prefijo familia 'A '/'B ' (regla NO global);
+  MPRO SOLO por `CategoriaNombre`; resto → PENDIENTE. Resultado: BEBIDAS 6.558, ALIMENTOS 3.324, OTROS 1.492,
+  PENDIENTE 1.086, NULL=0 (de 12.460 productos).
+- **Endpoints refactorizados** (`modules/inteligencia_comercial/routes.py`): `_real_clasificacion_nested` y
+  `_real_ticket_lineas` ahora hacen JOIN a `Comercial_ClasificacionesProducto` y leen `Codigo`. **CASE A/B eliminado.**
+  Si falta clasificación → muestra PENDIENTE_CLASIFICACION (no inventa). 6/6 tests PASS.
+- Doc completo: `memory/AUDITORIA_CLASIFICACION_COMERCIAL_PRODUCTO.md` (incluye rollback). Pendiente: clasificar
+  manualmente los 1.086 PENDIENTE (Soft sin prefijo) y reutilizar la clasificación en Costos/Pricing/Benchmark/MECA MPRO.
+
+
 ## [2026-06-09] Portal Inteligencia FASE 1 — 7 observaciones + Drill-down + Export (SQL-First, NO-LIVE)
 Sesión fork. Pruebas SOLO cURL/python/pytest/screenshots (NO testing_agent). CERO MongoDB. NO-LIVE. SIN hardcode.
 
