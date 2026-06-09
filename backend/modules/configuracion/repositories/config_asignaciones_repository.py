@@ -126,7 +126,7 @@ class ConfigAsignacionesRepository:
         # Obtener datos
         data_query = f"""
             SELECT 
-                ConfigID as ID,
+                ConfigID as id,
                 UnidadNegocioID as UnidadNegocioID,
                 UnidadNegocioNombre as unidad_negocio_nombre,
                 AlmacenID as AlmacenID,
@@ -159,7 +159,7 @@ class ConfigAsignacionesRepository:
         """Obtiene una configuración por su ID."""
         query = """
             SELECT 
-                ConfigID as ID,
+                ConfigID as id,
                 UnidadNegocioID as UnidadNegocioID,
                 UnidadNegocioNombre as unidad_negocio_nombre,
                 AlmacenID as AlmacenID,

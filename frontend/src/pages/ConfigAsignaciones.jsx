@@ -84,6 +84,17 @@ export default function ConfigAsignaciones() {
   
   const ensureArray = (value) => Array.isArray(value) ? value : [];
   const asString = (value) => value === null || value === undefined ? '' : String(value);
+  // Extrae un mensaje legible de un error de API. Maneja `detail` como string,
+  // como array de validación FastAPI [{msg, loc}], o como objeto (evita "[object Object]").
+  const getErrorMsg = (err) => {
+    const detail = err?.response?.data?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+      return detail.map(d => (d?.msg ? `${d.msg}${d?.loc ? ` (${d.loc.join('.')})` : ''}` : asString(d))).join('; ');
+    }
+    if (detail && typeof detail === 'object') return detail.msg || JSON.stringify(detail);
+    return err?.message || 'Error de conexión';
+  };
   
   // Estado principal
   const [asignaciones, setAsignaciones] = useState([]);
@@ -647,15 +658,15 @@ export default function ConfigAsignaciones() {
             for (const usuarioId of usuariosSeleccionados) {
               try {
                 await api.post('/config-asignaciones', {
-                  unidad_negocio_id: unidadId,
+                  unidad_negocio_pk: unidadId,
                   almacen_id: almacenId,
                   usuario_responsable_id: usuarioId,
                 });
                 creadas++;
               } catch (err) {
-                const unidadNombre = unidadesNegocio.find(u => u.id === unidadId)?.nombre || unidadId;
-                const usuarioNombre = usuarios.find(u => u.id === usuarioId)?.name || usuarioId;
-                const errorMsg = err.response?.data?.detail || err.message || 'Error de conexión';
+                const unidadNombre = unidadesNegocio.find(u => asString(u.id) === asString(unidadId))?.nombre || unidadId;
+                const usuarioNombre = usuarios.find(u => asString(u.id) === asString(usuarioId))?.name || usuarioId;
+                const errorMsg = getErrorMsg(err);
                 errores.push(`${unidadNombre} → ${usuarioNombre}: ${errorMsg}`);
               }
             }
@@ -683,7 +694,7 @@ export default function ConfigAsignaciones() {
     } catch (error) {
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || error.message,
+        description: getErrorMsg(error),
         variant: 'destructive',
       });
     } finally {
