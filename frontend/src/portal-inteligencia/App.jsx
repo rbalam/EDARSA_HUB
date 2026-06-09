@@ -13,7 +13,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, BarChart3, Wine, Clock, Users, 
   DollarSign, TrendingUp, LogOut, ChevronDown, User,
-  Package, Layers, Building2, Percent
+  Package, Layers, Building2, Percent, Droplet
 } from 'lucide-react';
 
 // Páginas
@@ -22,6 +22,7 @@ import VentasProductoPage from './pages/VentasProductoPage';
 import VentasFamiliaPage from './pages/VentasFamiliaPage';
 import VentasHorarioPage from './pages/VentasHorarioPage';
 import VentasCasaPage from './pages/VentasCasaPage';
+import VentasAlcoholPage from './pages/VentasAlcoholPage';
 import AnalisisPAXPage from './pages/AnalisisPAXPage';
 import BenchmarkGrupoPage from './pages/BenchmarkGrupoPage';
 import api, { getToken } from '../lib/api';
@@ -66,10 +67,23 @@ export default function PortalInteligenciaApp() {
   const [loading, setLoading] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [unidadSeleccionada, setUnidadSeleccionada] = useState('todas');
+  const [periodo, setPeriodo] = useState('mes');
+  const [unidades, setUnidades] = useState([]);
 
   useEffect(() => {
     checkSession();
   }, []);
+
+  // Unidades dinámicas desde SQL (sin hardcode) una vez autenticado.
+  useEffect(() => {
+    if (authEstado !== 'OK') return;
+    (async () => {
+      try {
+        const res = await api.get('/inteligencia/unidades');
+        setUnidades(res.data?.unidades || []);
+      } catch { setUnidades([]); }
+    })();
+  }, [authEstado]);
 
   // Sesión SIEMPRE con el token operativo vigente (Bearer desde sessionStorage,
   // misma fuente canónica que el CRM principal: lib/api.js::getToken). SIN modo demo.
@@ -116,6 +130,7 @@ export default function PortalInteligenciaApp() {
     { id: 'dashboard', label: 'Dashboard IA', icon: LayoutDashboard },
     { id: 'productos', label: 'Por Producto', icon: Package },
     { id: 'familias', label: 'Familia/Subfamilia', icon: Layers },
+    { id: 'alcohol', label: 'Bebidas (Alcohol)', icon: Droplet },
     { id: 'horarios', label: 'Por Horario', icon: Clock },
     { id: 'casas', label: 'Casas/Distribuidores', icon: Building2 },
     { id: 'pax', label: 'Análisis PAX', icon: Users },
@@ -127,6 +142,8 @@ export default function PortalInteligenciaApp() {
       user, 
       unidadSeleccionada, 
       setUnidadSeleccionada,
+      periodo,
+      setPeriodo,
       onNavigate: setCurrentPage 
     };
     
@@ -137,6 +154,8 @@ export default function PortalInteligenciaApp() {
         return <VentasProductoPage {...props} />;
       case 'familias':
         return <VentasFamiliaPage {...props} />;
+      case 'alcohol':
+        return <VentasAlcoholPage {...props} />;
       case 'horarios':
         return <VentasHorarioPage {...props} />;
       case 'casas':
@@ -171,14 +190,13 @@ export default function PortalInteligenciaApp() {
           <select 
             value={unidadSeleccionada}
             onChange={(e) => setUnidadSeleccionada(e.target.value)}
+            data-testid="unidad-selector"
             className="w-full bg-slate-700 text-white text-sm rounded px-2 py-1.5 border border-slate-600 focus:border-emerald-400 focus:outline-none"
           >
             <option value="todas">Todas las Unidades</option>
-            <option value="cienfuegos">CIENFUEGOS</option>
-            <option value="merida">130° MÉRIDA</option>
-            <option value="queretaro">130° QUERÉTARO</option>
-            <option value="estelar">LA ESTELAR</option>
-            <option value="origen">ORIGEN</option>
+            {unidades.map((u) => (
+              <option key={u.codigo} value={u.codigo}>{u.nombre || u.codigo}</option>
+            ))}
           </select>
         </div>
 

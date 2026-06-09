@@ -172,13 +172,15 @@ _MESES_ES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
 
 
 def _ultimo_dia_con_datos(unidad_db: Optional[str]) -> date:
-    """Ancla NO-LIVE: último día con datos en la vista (evita rangos vacíos
-    al seleccionar 'Día' cuando hoy aún no tiene ventas)."""
-    where = "ventas_sin_propina > 0"
+    """Ancla NO-LIVE: último día con DETALLE de ventas. Se usa el detalle
+    (Comercial_Inteligencia_VentasDetalleProducto) y no la vista KPI porque las
+    tarjetas (horario/productos/casas/familias) se nutren del detalle; anclando
+    aquí se evita que 'Día' caiga en una fecha con KPI pero sin detalle (vacío)."""
+    where = "ISNULL(activo,1)=1"
     if unidad_db:
         where += f" AND unidad_negocio_nombre = '{unidad_db}'"
     rows = execute_query(
-        f"SELECT MAX(fecha_operacion) AS m FROM vw_Comercial_KPIs_Diarios_v2_Runtime WHERE {where}"
+        f"SELECT MAX(fecha_operacion) AS m FROM Comercial_Inteligencia_VentasDetalleProducto WHERE {where}"
     )
     m = rows[0].get("m") if rows else None
     if isinstance(m, datetime):
@@ -231,14 +233,35 @@ def _periodo_rango(periodo: str, anchor: date):
 # muestre SIN_DATOS_SYNC; nunca se inventa.
 # ============================================================================
 _DETALLE_TABLA = "Comercial_Inteligencia_VentasDetalleProducto"
+_ENRIQ_TABLA = "Comercial_Productos_Enriquecidos"   # casa/distribuidor, alcohol (NO-LIVE)
+_SYNC_PROD = "Sync_Productos"                        # clasificación macro canónica (CategoriaNombre)
 
 
-def _detalle_where(unidad_db: Optional[str], fecha_inicio: str, fecha_fin: str) -> str:
-    parts = ["ISNULL(activo,1)=1",
-             f"fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
+def _detalle_where(unidad_db: Optional[str], fecha_inicio: str, fecha_fin: str, alias: str = "") -> str:
+    a = (alias + ".") if alias else ""
+    parts = [f"ISNULL({a}activo,1)=1",
+             f"{a}fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
     if unidad_db:
-        parts.append(f"unidad_negocio_nombre = '{unidad_db}'")
+        parts.append(f"{a}unidad_negocio_nombre = '{unidad_db}'")
     return " AND ".join(parts)
+
+
+def _resolver_rango(unidad_db, periodo, fecha_inicio, fecha_fin):
+    """Resolución canónica del rango (idéntica al dashboard): anclada al último
+    día con datos cuando se pasa `periodo`, sin inventar fechas. Compartida por
+    todas las pantallas para que el filtro de fecha sea ÚNICO/canónico."""
+    periodo_label = None
+    prev_inicio = prev_fin = None
+    if periodo and not (fecha_inicio and fecha_fin):
+        anchor = _ultimo_dia_con_datos(unidad_db)
+        ini, fin, prev_inicio, prev_fin, periodo_label = _periodo_rango(periodo, anchor)
+        fecha_inicio = ini.strftime("%Y-%m-%d")
+        fecha_fin = fin.strftime("%Y-%m-%d")
+    if not fecha_inicio:
+        fecha_inicio = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+    if not fecha_fin:
+        fecha_fin = datetime.now().strftime("%Y-%m-%d")
+    return fecha_inicio, fecha_fin, prev_inicio, prev_fin, periodo_label
 
 
 def _real_detalle_total(unidad_db, fecha_inicio, fecha_fin) -> float:
@@ -340,21 +363,229 @@ def _real_familias_nested(unidad_db, fecha_inicio, fecha_fin, limit_fam=20):
 
 
 def _real_casas(unidad_db, fecha_inicio, fecha_fin, total_ventas=None, limit=12):
-    # casa puede venir NULL (aún no sincronizada): se EXCLUYE → si no hay ninguna,
-    # el bloque queda vacío y el frontend muestra SIN_DATOS_SYNC.
+    # Casa/distribuidor = grupo_comercial del Catálogo Enriquecido (Diageo, Pernod
+    # Ricard, etc.), unido por producto_id. NO-LIVE (ambas tablas en EDARSAHUB).
+    # Productos sin enriquecer (alimentos, etc.) quedan fuera (correcto: solo bebidas
+    # tienen casa distribuidora).
+    where_d = _detalle_where(unidad_db, fecha_inicio, fecha_fin, alias="d")
     sql = f"""
-        SELECT TOP {int(limit)} casa, SUM(importe_neto) AS ventas
-        FROM {_DETALLE_TABLA}
-        WHERE {_detalle_where(unidad_db, fecha_inicio, fecha_fin)}
-          AND casa IS NOT NULL AND LTRIM(RTRIM(casa)) <> ''
-        GROUP BY casa
-        ORDER BY SUM(importe_neto) DESC
+        SELECT TOP {int(limit)} e.grupo_comercial AS casa,
+               SUM(d.importe_neto) AS ventas, SUM(d.cantidad) AS cantidad
+        FROM {_DETALLE_TABLA} d
+        JOIN {_ENRIQ_TABLA} e ON e.producto_id = d.producto_id
+        WHERE {where_d}
+          AND e.grupo_comercial IS NOT NULL AND LTRIM(RTRIM(e.grupo_comercial)) <> ''
+        GROUP BY e.grupo_comercial
+        ORDER BY SUM(d.importe_neto) DESC
     """
     rows = execute_query(sql)
     base = total_ventas if total_ventas else (sum(float(r["ventas"] or 0) for r in rows) or 1)
-    return [{"casa": r["casa"].strip(),
+    return [{"casa": (r["casa"] or "").strip(),
              "ventas": round(float(r["ventas"] or 0), 2),
+             "cantidad": round(float(r.get("cantidad") or 0), 2),
              "participacion": round(float(r["ventas"] or 0) / base * 100, 2)} for r in rows]
+
+
+def _real_clasificacion_nested(unidad_db, fecha_inicio, fecha_fin):
+    """Jerarquía REAL Clasificación → Familia → Subfamilia. La clasificación macro
+    (ALIMENTOS/BEBIDAS/OTROS) es canónica desde Sync_Productos.CategoriaNombre
+    (unida por producto_id); NO se hardcodea. Cada FAMILIA se asigna a su
+    clasificación DOMINANTE (la categoría con más ventas dentro de la familia),
+    replicando el modelo del POS donde el grupo lleva una sola clasificación."""
+    where_d = _detalle_where(unidad_db, fecha_inicio, fecha_fin, alias="d")
+    # Regla de negocio canónica (instrucción del usuario + pantalla "Grupos" del POS):
+    #  - SoftRestaurant NO tiene clasificador real: la familia lleva prefijo
+    #    "A "=Alimentos / "B "=Bebidas. El prefijo MANDA cuando existe.
+    #  - MPRO sí clasifica: se usa Sync_Productos.CategoriaNombre (ALIMENTOS/BEBIDAS).
+    #  - Todo lo demás (gastos, cavas, cristalería, etc.) → OTROS.
+    # NO es un mapeo hardcodeado producto→categoría: lee convenciones de la fuente.
+    clas_expr = (
+        "CASE "
+        "WHEN LEFT(LTRIM(d.familia_nombre),2)='A ' THEN 'ALIMENTOS' "
+        "WHEN LEFT(LTRIM(d.familia_nombre),2)='B ' THEN 'BEBIDAS' "
+        "WHEN UPPER(LTRIM(RTRIM(ISNULL(p.CategoriaNombre,''))))='ALIMENTOS' THEN 'ALIMENTOS' "
+        "WHEN UPPER(LTRIM(RTRIM(ISNULL(p.CategoriaNombre,''))))='BEBIDAS' THEN 'BEBIDAS' "
+        "ELSE 'OTROS' END"
+    )
+    sql = f"""
+        SELECT {clas_expr} AS clasificacion,
+               ISNULL(NULLIF(LTRIM(RTRIM(d.familia_nombre)), ''), '(Sin familia)') AS familia,
+               ISNULL(NULLIF(LTRIM(RTRIM(d.subfamilia_nombre)), ''), '(Sin subfamilia)') AS subfamilia,
+               SUM(d.importe_neto) AS ventas, SUM(d.cantidad) AS cantidad
+        FROM {_DETALLE_TABLA} d
+        LEFT JOIN {_SYNC_PROD} p ON p.ProductoID = d.producto_id
+        WHERE {where_d}
+        GROUP BY {clas_expr},
+                 ISNULL(NULLIF(LTRIM(RTRIM(d.familia_nombre)), ''), '(Sin familia)'),
+                 ISNULL(NULLIF(LTRIM(RTRIM(d.subfamilia_nombre)), ''), '(Sin subfamilia)')
+    """
+    # Agregados por familia (para decidir clasificación dominante y subfamilias)
+    fam_cat_ventas = {}   # familia -> {clasificacion: ventas}
+    fam_subs = {}         # familia -> {subfamilia: {ventas, cantidad}}
+    fam_tot = {}          # familia -> {ventas, cantidad}
+    for r in execute_query(sql):
+        clas = r["clasificacion"]
+        fam = r["familia"]
+        sub = r["subfamilia"]
+        v = float(r["ventas"] or 0)
+        c = float(r["cantidad"] or 0)
+        fam_cat_ventas.setdefault(fam, {}).setdefault(clas, 0.0)
+        fam_cat_ventas[fam][clas] += v
+        sd = fam_subs.setdefault(fam, {}).setdefault(sub, {"ventas": 0.0, "cantidad": 0.0})
+        sd["ventas"] += v
+        sd["cantidad"] += c
+        ft = fam_tot.setdefault(fam, {"ventas": 0.0, "cantidad": 0.0})
+        ft["ventas"] += v
+        ft["cantidad"] += c
+
+    # Construir clasificación → familias (cada familia bajo su categoría dominante)
+    clas_map = {}
+    for fam, tot in fam_tot.items():
+        dom = max(fam_cat_ventas[fam].items(), key=lambda kv: kv[1])[0]
+        cd = clas_map.setdefault(dom, {"clasificacion": dom, "ventas": 0.0, "cantidad": 0.0, "fams": []})
+        cd["ventas"] += tot["ventas"]
+        cd["cantidad"] += tot["cantidad"]
+        fv = tot["ventas"] or 1
+        subs = sorted(
+            [{"nombre": s, "ventas": round(d["ventas"], 2), "cantidad": round(d["cantidad"], 2),
+              "porcentaje": round(d["ventas"] / fv * 100, 1)} for s, d in fam_subs[fam].items()],
+            key=lambda x: x["ventas"], reverse=True)
+        cd["fams"].append({"familia": fam, "ventas": round(tot["ventas"], 2),
+                           "cantidad": round(tot["cantidad"], 2), "subfamilias": subs})
+
+    total = sum(cd["ventas"] for cd in clas_map.values()) or 1
+    out = []
+    for cd in sorted(clas_map.values(), key=lambda x: x["ventas"], reverse=True):
+        cv = cd["ventas"] or 1
+        familias = sorted(cd["fams"], key=lambda x: x["ventas"], reverse=True)
+        for f in familias:
+            f["porcentaje"] = round(f["ventas"] / cv * 100, 1)
+        out.append({"clasificacion": cd["clasificacion"], "ventas": round(cd["ventas"], 2),
+                    "cantidad": round(cd["cantidad"], 2),
+                    "porcentaje": round(cd["ventas"] / total * 100, 1),
+                    "familias": familias})
+    return out
+
+
+_GRADO_BUCKETS = [(0, 0, "Sin alcohol (0°)"), (0.1, 15, "1–15°"),
+                  (15, 30, "15–30°"), (30, 40, "30–40°"), (40, 999, "40°+")]
+
+
+def _real_alcohol(unidad_db, fecha_inicio, fecha_fin):
+    """Reporte de bebidas: con/sin alcohol y por grado, desde el Catálogo
+    Enriquecido (es_alcoholico/grado_alcohol), unido por producto_id. NO-LIVE."""
+    where_d = _detalle_where(unidad_db, fecha_inicio, fecha_fin, alias="d")
+    sql = f"""
+        SELECT e.es_alcoholico AS es_alcoholico, e.grado_alcohol AS grado,
+               SUM(d.importe_neto) AS ventas, SUM(d.cantidad) AS cantidad
+        FROM {_DETALLE_TABLA} d
+        JOIN {_ENRIQ_TABLA} e ON e.producto_id = d.producto_id
+        WHERE {where_d}
+        GROUP BY e.es_alcoholico, e.grado_alcohol
+    """
+    rows = execute_query(sql)
+    con = {"label": "Con alcohol", "ventas": 0.0, "cantidad": 0.0}
+    sin = {"label": "Sin alcohol", "ventas": 0.0, "cantidad": 0.0}
+    grados = {b[2]: {"rango": b[2], "ventas": 0.0, "cantidad": 0.0} for b in _GRADO_BUCKETS}
+    for r in rows:
+        v = float(r["ventas"] or 0)
+        c = float(r["cantidad"] or 0)
+        es_alc = bool(r.get("es_alcoholico"))
+        g = r.get("grado")
+        g = float(g) if g is not None else None
+        (con if es_alc else sin)["ventas"] += v
+        (con if es_alc else sin)["cantidad"] += c
+        if es_alc and g is not None:
+            for lo, hi, label in _GRADO_BUCKETS:
+                if (lo == 0 and hi == 0 and g == 0) or (lo <= g <= hi and not (lo == 0 and hi == 0)):
+                    grados[label]["ventas"] += v
+                    grados[label]["cantidad"] += c
+                    break
+    total = (con["ventas"] + sin["ventas"]) or 1
+    for d in (con, sin):
+        d["ventas"] = round(d["ventas"], 2)
+        d["cantidad"] = round(d["cantidad"], 2)
+        d["participacion"] = round(d["ventas"] / total * 100, 2)
+    grados_out = [{"rango": g["rango"], "ventas": round(g["ventas"], 2),
+                   "cantidad": round(g["cantidad"], 2),
+                   "participacion": round(g["ventas"] / (con["ventas"] or 1) * 100, 2)}
+                  for g in grados.values() if g["ventas"] > 0]
+    return {"con_alcohol": con, "sin_alcohol": sin, "por_grado": grados_out,
+            "total": round(total, 2)}
+
+
+def _real_tickets(unidad_db, fecha_inicio, fecha_fin, limit=200):
+    """Lista de tickets (cuentas) reconstruidos desde el detalle — nivel cuenta."""
+    where_d = _detalle_where(unidad_db, fecha_inicio, fecha_fin)
+    sql = f"""
+        SELECT TOP {int(limit)} unidad_negocio_nombre AS unidad, sucursal_nombre AS sucursal,
+               fecha_operacion, numero_ticket, MIN(fecha_hora) AS fh, MAX(pax) AS pax,
+               COUNT(*) AS lineas, SUM(importe_neto) AS ventas, SUM(propina) AS propina
+        FROM {_DETALLE_TABLA}
+        WHERE {where_d} AND numero_ticket IS NOT NULL
+        GROUP BY unidad_negocio_nombre, sucursal_nombre, fecha_operacion, numero_ticket
+        ORDER BY MIN(fecha_hora) DESC, SUM(importe_neto) DESC
+    """
+    out = []
+    for r in execute_query(sql):
+        out.append({
+            "unidad": r["unidad"], "sucursal": r.get("sucursal"),
+            "fecha": str(r["fecha_operacion"])[:10], "numero_ticket": r["numero_ticket"],
+            "hora": str(r["fh"])[11:16] if r.get("fh") else "",
+            "pax": int(r["pax"] or 0), "lineas": int(r["lineas"] or 0),
+            "ventas": round(float(r["ventas"] or 0), 2),
+            "propina": round(float(r["propina"] or 0), 2),
+        })
+    return out
+
+
+def _real_ticket_lineas(unidad_db, fecha, numero_ticket):
+    """Líneas (productos) de un ticket — el nivel más bajo (reconstrucción)."""
+    where = ["ISNULL(d.activo,1)=1", "d.numero_ticket = %s"]
+    params = [numero_ticket]
+    if fecha:
+        where.append("d.fecha_operacion = %s")
+        params.append(fecha)
+    if unidad_db:
+        where.append("d.unidad_negocio_nombre = %s")
+        params.append(unidad_db)
+    sql = f"""
+        SELECT d.producto_codigo_fuente AS codigo, d.producto_nombre AS producto,
+               d.familia_nombre AS familia, d.subfamilia_nombre AS subfamilia,
+               CASE
+                 WHEN LEFT(LTRIM(d.familia_nombre),2)='A ' THEN 'ALIMENTOS'
+                 WHEN LEFT(LTRIM(d.familia_nombre),2)='B ' THEN 'BEBIDAS'
+                 WHEN UPPER(LTRIM(RTRIM(ISNULL(p.CategoriaNombre,''))))='ALIMENTOS' THEN 'ALIMENTOS'
+                 WHEN UPPER(LTRIM(RTRIM(ISNULL(p.CategoriaNombre,''))))='BEBIDAS' THEN 'BEBIDAS'
+                 ELSE 'OTROS' END AS clasificacion,
+               e.grupo_comercial AS casa,
+               e.marca, e.grado_alcohol AS grado_alcohol, e.es_alcoholico AS es_alcoholico,
+               d.cantidad, d.precio_unitario, d.importe_neto AS importe, d.propina, d.pax,
+               d.fecha_hora
+        FROM {_DETALLE_TABLA} d
+        LEFT JOIN {_SYNC_PROD} p ON p.ProductoID = d.producto_id
+        LEFT JOIN {_ENRIQ_TABLA} e ON e.producto_id = d.producto_id
+        WHERE {' AND '.join(where)}
+        ORDER BY d.importe_neto DESC
+    """
+    rows = execute_query(sql, tuple(params))
+    out = []
+    for r in rows:
+        out.append({
+            "codigo": r.get("codigo") or "", "producto": r.get("producto") or "",
+            "familia": (r.get("familia") or "").strip(),
+            "subfamilia": (r.get("subfamilia") or "").strip(),
+            "clasificacion": (r.get("clasificacion") or "").strip(),
+            "casa": (r.get("casa") or "").strip(), "marca": (r.get("marca") or "").strip(),
+            "grado_alcohol": round(float(r["grado_alcohol"]), 1) if r.get("grado_alcohol") is not None else None,
+            "es_alcoholico": bool(r.get("es_alcoholico")),
+            "cantidad": round(float(r.get("cantidad") or 0), 2),
+            "precio_unitario": round(float(r.get("precio_unitario") or 0), 2),
+            "importe": round(float(r.get("importe") or 0), 2),
+            "propina": round(float(r.get("propina") or 0), 2),
+            "pax": int(r.get("pax") or 0),
+        })
+    return out
 
 
 def _real_horario(unidad_db, fecha_inicio, fecha_fin):
@@ -437,7 +668,10 @@ async def get_dashboard_data(
                 COALESCE(SUM(propinas_total), 0) AS propinas_total,
                 CASE WHEN SUM(tickets_total) > 0 
                     THEN SUM(ventas_sin_propina) / SUM(tickets_total) 
-                    ELSE 0 END AS cheque_promedio
+                    ELSE 0 END AS cheque_promedio,
+                CASE WHEN SUM(pax_total) > 0
+                    THEN SUM(ventas_sin_propina) / SUM(pax_total)
+                    ELSE 0 END AS ticket_promedio
             FROM vw_Comercial_KPIs_Diarios_v2_Runtime
             WHERE {where_sql}
         """
@@ -507,6 +741,7 @@ async def get_dashboard_data(
         top_productos = _real_top_productos(unidad_db, fecha_inicio, fecha_fin, limit=7)
         casas_distribuidoras = _real_casas(unidad_db, fecha_inicio, fecha_fin, total_ventas=det_total)
         ventas_familia = _real_familias(unidad_db, fecha_inicio, fecha_fin, total_ventas=det_total)
+        ventas_clasificacion = _real_clasificacion_nested(unidad_db, fecha_inicio, fecha_fin)
         
         # Construir respuesta
         response = {
@@ -529,7 +764,8 @@ async def get_dashboard_data(
                 "pax_total": int(kpi_data.get("pax_total", 0)),
                 "cheques_total": int(kpi_data.get("cheques_total", 0)),
                 "propinas_total": round(float(kpi_data.get("propinas_total", 0)), 2),
-                "cheque_promedio": round(float(kpi_data.get("cheque_promedio", 0)), 2)
+                "cheque_promedio": round(float(kpi_data.get("cheque_promedio", 0)), 2),
+                "ticket_promedio": round(float(kpi_data.get("ticket_promedio", 0)), 2)
             },
             "ventas_por_unidad": [
                 {
@@ -545,7 +781,8 @@ async def get_dashboard_data(
             "ventas_horario": ventas_horario,
             "top_productos": top_productos,
             "casas_distribuidoras": casas_distribuidoras,
-            "ventas_familia": ventas_familia
+            "ventas_familia": ventas_familia,
+            "ventas_clasificacion": ventas_clasificacion
         }
         
         logger.info(f"[INTELIGENCIA] Dashboard OK - {unidad_db or 'TODAS'} - ${total_ventas:,.2f}")
@@ -870,20 +1107,17 @@ async def get_analisis_pax(
 @router.get("/productos")
 async def get_top_productos(
     unidad: Optional[str] = Query(None),
+    periodo: Optional[str] = Query(None, description="dia | semana | mes | anio"),
     fecha_inicio: Optional[str] = Query(None),
     fecha_fin: Optional[str] = Query(None),
-    limit: int = Query(50, ge=1, le=200)
+    limit: int = Query(50, ge=1, le=500)
 ):
     """
     Top productos vendidos (NO-LIVE, datos reales por línea).
     Fuente: Comercial_Inteligencia_VentasDetalleProducto.
     """
     unidad_db = normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
-
-    if not fecha_inicio:
-        fecha_inicio = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
-    if not fecha_fin:
-        fecha_fin = datetime.now().strftime("%Y-%m-%d")
+    fecha_inicio, fecha_fin, _, _, periodo_label = _resolver_rango(unidad_db, periodo, fecha_inicio, fecha_fin)
 
     try:
         productos = _real_top_productos(unidad_db, fecha_inicio, fecha_fin, limit=limit)
@@ -891,6 +1125,8 @@ async def get_top_productos(
             "success": True,
             "_source": _DETALLE_TABLA,
             "_unidad": unidad_db or "TODAS",
+            "filtros": {"fecha_inicio": fecha_inicio, "fecha_fin": fecha_fin,
+                        "periodo": periodo or None, "periodo_label": periodo_label},
             "total": len(productos),
             "productos": productos,
         }
@@ -906,33 +1142,109 @@ async def get_top_productos(
 @router.get("/familias")
 async def get_ventas_familia(
     unidad: Optional[str] = Query(None),
+    periodo: Optional[str] = Query(None, description="dia | semana | mes | anio"),
     fecha_inicio: Optional[str] = Query(None),
     fecha_fin: Optional[str] = Query(None)
 ):
     """
-    Ventas agrupadas por familia de producto (NO-LIVE, datos reales).
+    Ventas por familia (NO-LIVE) + jerarquía Clasificación(Alimentos/Bebidas/Otros)
+    → Familia → Subfamilia. Clasificación macro canónica desde Sync_Productos.
     Fuente: Comercial_Inteligencia_VentasDetalleProducto.
     """
     unidad_db = normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
-
-    if not fecha_inicio:
-        fecha_inicio = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
-    if not fecha_fin:
-        fecha_fin = datetime.now().strftime("%Y-%m-%d")
+    fecha_inicio, fecha_fin, _, _, periodo_label = _resolver_rango(unidad_db, periodo, fecha_inicio, fecha_fin)
 
     try:
         det_total = _real_detalle_total(unidad_db, fecha_inicio, fecha_fin)
         familias = _real_familias_nested(unidad_db, fecha_inicio, fecha_fin)
+        clasificaciones = _real_clasificacion_nested(unidad_db, fecha_inicio, fecha_fin)
         return {
             "success": True,
             "_source": _DETALLE_TABLA,
             "_unidad": unidad_db or "TODAS",
             "_detalle_total": round(det_total, 2),
+            "filtros": {"fecha_inicio": fecha_inicio, "fecha_fin": fecha_fin,
+                        "periodo": periodo or None, "periodo_label": periodo_label},
             "ventas_familia": familias,
+            "ventas_clasificacion": clasificaciones,
         }
     except Exception as e:
         logger.error(f"[INTELIGENCIA] Error familias: {e}")
-        return {"success": False, "_error": str(e), "ventas_familia": []}
+        return {"success": False, "_error": str(e), "ventas_familia": [], "ventas_clasificacion": []}
+
+
+@router.get("/alcohol")
+async def get_reporte_alcohol(
+    unidad: Optional[str] = Query(None),
+    periodo: Optional[str] = Query(None, description="dia | semana | mes | anio"),
+    fecha_inicio: Optional[str] = Query(None),
+    fecha_fin: Optional[str] = Query(None)
+):
+    """
+    Reporte de bebidas: con/sin alcohol y por grado de alcohol (NO-LIVE).
+    Fuente: detalle + Catálogo Enriquecido (es_alcoholico/grado_alcohol).
+    """
+    unidad_db = normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
+    fecha_inicio, fecha_fin, _, _, periodo_label = _resolver_rango(unidad_db, periodo, fecha_inicio, fecha_fin)
+    try:
+        rep = _real_alcohol(unidad_db, fecha_inicio, fecha_fin)
+        return {
+            "success": True,
+            "_source": f"{_DETALLE_TABLA} + {_ENRIQ_TABLA}",
+            "_unidad": unidad_db or "TODAS",
+            "filtros": {"fecha_inicio": fecha_inicio, "fecha_fin": fecha_fin,
+                        "periodo": periodo or None, "periodo_label": periodo_label},
+            **rep,
+        }
+    except Exception as e:
+        logger.error(f"[INTELIGENCIA] Error alcohol: {e}")
+        return {"success": False, "_error": str(e), "con_alcohol": None, "sin_alcohol": None, "por_grado": []}
+
+
+@router.get("/tickets")
+async def get_tickets(
+    unidad: Optional[str] = Query(None),
+    periodo: Optional[str] = Query(None, description="dia | semana | mes | anio"),
+    fecha_inicio: Optional[str] = Query(None),
+    fecha_fin: Optional[str] = Query(None),
+    limit: int = Query(200, ge=1, le=1000)
+):
+    """Lista de tickets/cuentas reconstruidos (drill-down nivel cuenta). NO-LIVE."""
+    unidad_db = normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
+    fecha_inicio, fecha_fin, _, _, periodo_label = _resolver_rango(unidad_db, periodo, fecha_inicio, fecha_fin)
+    try:
+        tickets = _real_tickets(unidad_db, fecha_inicio, fecha_fin, limit=limit)
+        return {
+            "success": True, "_source": _DETALLE_TABLA, "_unidad": unidad_db or "TODAS",
+            "filtros": {"fecha_inicio": fecha_inicio, "fecha_fin": fecha_fin,
+                        "periodo": periodo or None, "periodo_label": periodo_label},
+            "total": len(tickets), "tickets": tickets,
+        }
+    except Exception as e:
+        logger.error(f"[INTELIGENCIA] Error tickets: {e}")
+        return {"success": False, "_error": str(e), "tickets": []}
+
+
+@router.get("/ticket-detalle")
+async def get_ticket_detalle(
+    numero_ticket: str = Query(..., description="Número de ticket/cuenta"),
+    unidad: Optional[str] = Query(None),
+    fecha: Optional[str] = Query(None, description="Fecha operación YYYY-MM-DD (desambigua)")
+):
+    """Líneas de un ticket — el nivel más bajo (máxima profundidad). NO-LIVE."""
+    unidad_db = normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
+    try:
+        lineas = _real_ticket_lineas(unidad_db, fecha, numero_ticket)
+        total = round(sum(l["importe"] for l in lineas), 2)
+        propina = round(sum(l["propina"] for l in lineas), 2)
+        return {
+            "success": True, "_source": _DETALLE_TABLA, "numero_ticket": numero_ticket,
+            "unidad": unidad_db or "TODAS", "fecha": fecha,
+            "total": total, "propina": propina, "lineas": lineas, "n_lineas": len(lineas),
+        }
+    except Exception as e:
+        logger.error(f"[INTELIGENCIA] Error ticket-detalle: {e}")
+        return {"success": False, "_error": str(e), "lineas": []}
 
 
 # ============================================================================
@@ -942,28 +1254,26 @@ async def get_ventas_familia(
 @router.get("/casas")
 async def get_ventas_casas(
     unidad: Optional[str] = Query(None),
+    periodo: Optional[str] = Query(None, description="dia | semana | mes | anio"),
     fecha_inicio: Optional[str] = Query(None),
     fecha_fin: Optional[str] = Query(None)
 ):
     """
-    Ventas agrupadas por casa distribuidora (NO-LIVE, datos reales).
-    Fuente: Comercial_Inteligencia_VentasDetalleProducto. Si la casa no está
-    sincronizada (NULL) el bloque queda vacío → el frontend muestra SIN_DATOS_SYNC.
+    Ventas por casa/distribuidor (NO-LIVE). Casa = grupo_comercial del Catálogo
+    Enriquecido (Diageo, Pernod Ricard, etc.), unido por producto_id.
     """
     unidad_db = normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
-
-    if not fecha_inicio:
-        fecha_inicio = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
-    if not fecha_fin:
-        fecha_fin = datetime.now().strftime("%Y-%m-%d")
+    fecha_inicio, fecha_fin, _, _, periodo_label = _resolver_rango(unidad_db, periodo, fecha_inicio, fecha_fin)
 
     try:
         det_total = _real_detalle_total(unidad_db, fecha_inicio, fecha_fin)
-        casas = _real_casas(unidad_db, fecha_inicio, fecha_fin, total_ventas=det_total)
+        casas = _real_casas(unidad_db, fecha_inicio, fecha_fin, total_ventas=det_total, limit=50)
         return {
             "success": True,
-            "_source": _DETALLE_TABLA,
+            "_source": f"{_DETALLE_TABLA} + {_ENRIQ_TABLA}",
             "_unidad": unidad_db or "TODAS",
+            "filtros": {"fecha_inicio": fecha_inicio, "fecha_fin": fecha_fin,
+                        "periodo": periodo or None, "periodo_label": periodo_label},
             "casas_distribuidoras": casas,
         }
     except Exception as e:

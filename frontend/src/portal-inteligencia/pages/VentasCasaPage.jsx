@@ -7,6 +7,8 @@ import React, { useState, useEffect } from 'react';
 import { Building2, Percent } from 'lucide-react';
 import { apiGet, ESTADO } from '../api/client';
 import { EstadoVacio } from '../components/EstadoVacio';
+import { PeriodoSelector } from '../components/PeriodoSelector';
+import { ExportButtons } from '../components/ExportButtons';
 
 const COLORES = ['emerald', 'amber', 'blue', 'orange', 'purple', 'yellow', 'pink'];
 const CLS = {
@@ -19,19 +21,21 @@ const CLS = {
   pink: { bg: 'bg-pink-500/20', border: 'border-pink-500/30', text: 'text-pink-400', bar: 'bg-pink-500' },
 };
 
-export default function VentasCasaPage({ unidadSeleccionada }) {
+export default function VentasCasaPage({ unidadSeleccionada, periodo = 'mes' }) {
   const [casas, setCasas] = useState([]);
   const [estado, setEstado] = useState(ESTADO.CARGANDO);
   const [vista, setVista] = useState('cards');
+  const [periodoLocal, setPeriodoLocal] = useState(periodo);
+  const [periodoLabel, setPeriodoLabel] = useState('');
 
   useEffect(() => {
     fetchCasas();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unidadSeleccionada]);
+  }, [unidadSeleccionada, periodoLocal]);
 
   const fetchCasas = async () => {
     setEstado(ESTADO.CARGANDO);
-    const { estado: est, data } = await apiGet('/inteligencia/dashboard', { unidad: unidadSeleccionada, periodo: 'mes' });
+    const { estado: est, data } = await apiGet('/inteligencia/casas', { unidad: unidadSeleccionada, periodo: periodoLocal });
     if (est !== ESTADO.OK || !data || data.success === false) {
       setCasas([]);
       setEstado(est === ESTADO.OK ? ESTADO.ERROR : est);
@@ -40,10 +44,12 @@ export default function VentasCasaPage({ unidadSeleccionada }) {
     const lista = (data.casas_distribuidoras || []).map((c, idx) => ({
       casa: c.casa,
       ventas: Number(c.ventas || 0),
+      cantidad: Number(c.cantidad || 0),
       porcentaje: Number(c.participacion || 0),
       color: COLORES[idx % COLORES.length],
     }));
     setCasas(lista);
+    setPeriodoLabel(data.filtros?.periodo_label || '');
     setEstado(lista.length ? ESTADO.OK : ESTADO.SIN_DATOS);
   };
 
@@ -55,17 +61,30 @@ export default function VentasCasaPage({ unidadSeleccionada }) {
   };
 
   const totalVentas = casas.reduce((a, b) => a + b.ventas, 0);
+  const meta = `${unidadSeleccionada === 'todas' ? 'Consolidado' : unidadSeleccionada} · ${periodoLabel}`;
+  const exportCols = [
+    { key: 'casa', label: 'Casa / Distribuidor' }, { key: 'ventas', label: 'Ventas' },
+    { key: 'cantidad', label: 'Cantidad' }, { key: 'porcentaje', label: '% Part.' },
+  ];
 
   if (estado !== ESTADO.OK) {
     return (
-      <div className="bg-slate-800/50 border border-slate-700 rounded-xl" data-testid="ventas-casa-page">
-        <EstadoVacio estado={estado} testid="ventas-casa-estado" />
+      <div className="space-y-4" data-testid="ventas-casa-page">
+        <PeriodoSelector periodo={periodoLocal} onChange={setPeriodoLocal} />
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl">
+          <EstadoVacio estado={estado} testid="ventas-casa-estado" />
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6" data-testid="ventas-casa-page">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <PeriodoSelector periodo={periodoLocal} onChange={setPeriodoLocal} periodoLabel={periodoLabel} />
+        <ExportButtons filename="ventas_casas" title="Ventas por Casa / Distribuidor"
+          columns={exportCols} rows={casas} meta={meta} testid="casa-export" />
+      </div>
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
           <button onClick={() => setVista('cards')} className={`px-4 py-2 rounded-lg text-sm ${vista === 'cards' ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>Vista Cards</button>

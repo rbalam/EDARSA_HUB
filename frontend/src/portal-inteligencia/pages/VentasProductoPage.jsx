@@ -6,24 +6,28 @@ import React, { useState, useEffect } from 'react';
 import { Search, ArrowUpDown } from 'lucide-react';
 import { apiGet, ESTADO } from '../api/client';
 import { EstadoVacio } from '../components/EstadoVacio';
+import { PeriodoSelector } from '../components/PeriodoSelector';
+import { ExportButtons } from '../components/ExportButtons';
 
-export default function VentasProductoPage({ unidadSeleccionada }) {
+export default function VentasProductoPage({ unidadSeleccionada, periodo = 'mes' }) {
   const [productos, setProductos] = useState([]);
   const [estado, setEstado] = useState(ESTADO.CARGANDO);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('ventas');
   const [sortDir, setSortDir] = useState('desc');
   const [filtroFamilia, setFiltroFamilia] = useState('todas');
+  const [periodoLocal, setPeriodoLocal] = useState(periodo);
+  const [periodoLabel, setPeriodoLabel] = useState('');
 
   useEffect(() => {
     fetchProductos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unidadSeleccionada]);
+  }, [unidadSeleccionada, periodoLocal]);
 
   const fetchProductos = async () => {
     setEstado(ESTADO.CARGANDO);
     const { estado: est, data } = await apiGet('/inteligencia/productos', {
-      unidad: unidadSeleccionada, limit: 200,
+      unidad: unidadSeleccionada, periodo: periodoLocal, limit: 500,
     });
     if (est !== ESTADO.OK || !data || data.success === false) {
       setProductos([]);
@@ -32,6 +36,7 @@ export default function VentasProductoPage({ unidadSeleccionada }) {
     }
     const lista = data.productos || [];
     setProductos(lista);
+    setPeriodoLabel(data.filtros?.periodo_label || '');
     setEstado(lista.length ? ESTADO.OK : ESTADO.SIN_DATOS);
   };
 
@@ -54,9 +59,21 @@ export default function VentasProductoPage({ unidadSeleccionada }) {
   };
 
   const formatMoney = (val) => `$${Number(val || 0).toLocaleString('es-MX')}`;
+  const meta = `${unidadSeleccionada === 'todas' ? 'Consolidado' : unidadSeleccionada} · ${periodoLabel}`;
+  const exportCols = [
+    { key: 'codigo', label: 'Código' }, { key: 'nombre', label: 'Producto' },
+    { key: 'familia', label: 'Familia' }, { key: 'subfamilia', label: 'Subfamilia' },
+    { key: 'casa', label: 'Casa' }, { key: 'alcohol', label: 'Grado' },
+    { key: 'cantidad', label: 'Cantidad' }, { key: 'ventas', label: 'Ventas' }, { key: 'propina', label: 'Propina' },
+  ];
 
   return (
     <div className="space-y-6" data-testid="ventas-producto-page">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <PeriodoSelector periodo={periodoLocal} onChange={setPeriodoLocal} periodoLabel={periodoLabel} />
+        <ExportButtons filename="ventas_productos" title="Ventas por Producto"
+          columns={exportCols} rows={filteredProducts} meta={meta} testid="producto-export" />
+      </div>
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">

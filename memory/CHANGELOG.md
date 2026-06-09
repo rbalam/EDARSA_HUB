@@ -1,5 +1,35 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-09] Portal Inteligencia FASE 1 — 7 observaciones + Drill-down + Export (SQL-First, NO-LIVE)
+Sesión fork. Pruebas SOLO cURL/python/pytest/screenshots (NO testing_agent). CERO MongoDB. NO-LIVE. SIN hardcode.
+
+Backend (`modules/inteligencia_comercial/routes.py`):
+1. **KPIs canónicos arriba**: agregado `ticket_promedio` (ventas_sin_propina ÷ PAX) junto a
+   `cheque_promedio` (ventas_sin_propina ÷ cheques), ambos desde `Comercial_Metricas_Canonicas`.
+2. **Casas/Distribuidores reales**: `_real_casas` ahora hace JOIN a `Comercial_Productos_Enriquecidos.grupo_comercial`
+   por `producto_id` (Diageo, Pernod, Cuervo, Grupo Modelo…). El campo `casa` del detalle estaba 100% NULL.
+3. **Clasificación macro Alimentos/Bebidas/Otros** (`_real_clasificacion_nested`): regla HÍBRIDA canónica —
+   familias con prefijo "A "/"B " (SoftRestaurant, sin clasificador real) usan el prefijo; MPRO usa
+   `Sync_Productos.CategoriaNombre`; resto → OTROS. Cada familia se asigna a su clasificación dominante.
+4. **Bug "Día" vacío** corregido: `_ultimo_dia_con_datos` ahora ancla al DETALLE (no a la vista KPI),
+   evitando que horarios/productos salgan vacíos cuando el KPI tiene un día más reciente que el detalle.
+5. **Reporte de Alcohol** (`/inteligencia/alcohol`): con/sin alcohol + por grado (es_alcoholico/grado_alcohol del enriquecido).
+6. **Drill-down / reconstrucción de ticket**: `/inteligencia/tickets` (nivel cuenta) y
+   `/inteligencia/ticket-detalle` (líneas, nivel más bajo, con casa/clasificación/grado).
+7. **Filtro de período canónico** (`_resolver_rango`) reutilizado por dashboard/productos/familias/casas/alcohol.
+
+Frontend (`portal-inteligencia/`):
+- `DashboardIA.jsx`: Ticket+Cheque Promedio en fila superior, KPIs clicables → modal de tickets, export Excel/PDF.
+- `VentasFamiliaPage.jsx`: árbol Clasificación→Familia→Subfamilia (tarjetas Alimentos/Bebidas/Otros).
+- `VentasCasaPage.jsx` (grupo_comercial) y `VentasProductoPage.jsx`: período + export.
+- Nuevo `VentasAlcoholPage.jsx` + ítem de menú "Bebidas (Alcohol)".
+- Componentes nuevos: `PeriodoSelector`, `ExportButtons` (xlsx/jspdf/file-saver), `TicketDrilldownModal`.
+- `utils/exportUtils.js`: export Excel/PDF reutilizable. Unidades del selector ahora dinámicas (sin hardcode).
+- Tests: `backend/tests/test_inteligencia_fase1.py` (6 PASS).
+
+PENDIENTE → **FASE 2**: Reporteador tipo Power BI "Informe Gerencial MECA MPRO" (9 páginas) + export/drill-down universal.
+
+
 ## [2026-06-09] Confidencialidad + KPIs Canónicos (SQL) + Benchmark Interno de Grupo
 Sesión fork. Pruebas SOLO cURL/python/pytest/screenshots (NO testing_agent). CERO MongoDB. NO-LIVE.
 

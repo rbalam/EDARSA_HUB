@@ -1,21 +1,19 @@
 /**
- * Dashboard IA - Vista principal con KPIs consolidados (datos reales, sin mock).
+ * Dashboard IA - Vista principal con KPIs canónicos (datos reales, sin mock).
+ * KPIs: Ventas, Ticket Promedio (ventas÷PAX) y Cheque Promedio (ventas÷cheques)
+ * en la fila superior. Drill-down a tickets y export Excel/PDF.
  */
 import React, { useState, useEffect } from 'react';
 import {
   DollarSign, Users, Receipt, TrendingUp, Clock,
-  Wine, Package, ArrowUpRight, ArrowDownRight, Loader2, CalendarDays,
-  Sun, Sunset, Moon
+  Wine, Package, ArrowUpRight, ArrowDownRight, Loader2,
+  Sun, Sunset, Moon, Search,
 } from 'lucide-react';
 import { apiGet, ESTADO } from '../api/client';
 import { EstadoVacio } from '../components/EstadoVacio';
-
-const PERIODOS = [
-  { value: 'dia', label: 'Día' },
-  { value: 'semana', label: 'Semana' },
-  { value: 'mes', label: 'Mes' },
-  { value: 'anio', label: 'Año' },
-];
+import { PeriodoSelector } from '../components/PeriodoSelector';
+import { ExportButtons } from '../components/ExportButtons';
+import { TicketDrilldownModal } from '../components/TicketDrilldownModal';
 
 const fmtTrend = (t) => (t === null || t === undefined) ? null : `${t >= 0 ? '+' : ''}${Number(t).toFixed(1)}%`;
 
@@ -25,25 +23,40 @@ const formatMoney = (value) => {
   if (v >= 1000) return `$${(v / 1000).toFixed(1)}K`;
   return `$${v.toFixed(2)}`;
 };
+const money2 = (v) => `$${Number(v || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const HORARIO_ICON = { Desayuno: Sun, Comida: Sunset, Cena: Moon };
 const HORARIO_COLOR = { Desayuno: 'bg-amber-500', Comida: 'bg-orange-500', Cena: 'bg-indigo-500' };
 
-export default function DashboardIA({ unidadSeleccionada, onNavigate }) {
+// Mapa estático de clases (evita el purgado de Tailwind con clases dinámicas).
+const COLOR_CLS = {
+  emerald: { icon: 'text-emerald-400', iconBg: 'bg-emerald-500/20', bigBorder: 'border-emerald-500/30', bigBg: 'bg-emerald-500/5', hover: 'hover:border-emerald-500/60' },
+  cyan: { icon: 'text-cyan-400', iconBg: 'bg-cyan-500/20', bigBorder: 'border-cyan-500/30', bigBg: 'bg-cyan-500/5', hover: 'hover:border-cyan-500/60' },
+  violet: { icon: 'text-violet-400', iconBg: 'bg-violet-500/20', bigBorder: 'border-violet-500/30', bigBg: 'bg-violet-500/5', hover: 'hover:border-violet-500/60' },
+  blue: { icon: 'text-blue-400', iconBg: 'bg-blue-500/20', bigBorder: 'border-blue-500/30', bigBg: 'bg-blue-500/5', hover: 'hover:border-blue-500/60' },
+  purple: { icon: 'text-purple-400', iconBg: 'bg-purple-500/20', bigBorder: 'border-purple-500/30', bigBg: 'bg-purple-500/5', hover: 'hover:border-purple-500/60' },
+  amber: { icon: 'text-amber-400', iconBg: 'bg-amber-500/20', bigBorder: 'border-amber-500/30', bigBg: 'bg-amber-500/5', hover: 'hover:border-amber-500/60' },
+};
+
+export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 'mes', setPeriodo }) {
   const [data, setData] = useState(null);
   const [estado, setEstado] = useState(ESTADO.CARGANDO);
   const [loading, setLoading] = useState(true);
-  const [periodo, setPeriodo] = useState('mes');
+  const [periodoLocal, setPeriodoLocal] = useState(periodo);
+  const [drill, setDrill] = useState(false);
+
+  const periodoActivo = setPeriodo ? periodo : periodoLocal;
+  const cambiarPeriodo = setPeriodo || setPeriodoLocal;
 
   useEffect(() => {
     fetchDashboardData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unidadSeleccionada, periodo]);
+  }, [unidadSeleccionada, periodoActivo]);
 
   const fetchDashboardData = async () => {
     setLoading(true);
     const { estado: est, data: result } = await apiGet('/inteligencia/dashboard', {
-      unidad: unidadSeleccionada, periodo,
+      unidad: unidadSeleccionada, periodo: periodoActivo,
     });
     if (est !== ESTADO.OK || !result || result.success === false) {
       setData(null);
@@ -58,6 +71,7 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate }) {
       chequesTotal: Number(kpis.cheques_total || 0),
       propinaTotal: Number(kpis.propinas_total || 0),
       chequePromedio: Number(kpis.cheque_promedio || 0),
+      ticketPromedio: Number(kpis.ticket_promedio || 0),
       trends: result.kpis_trends || {},
       periodoLabel: result.filtros?.periodo_label || '',
       ventasHorario: result.ventas_horario || [],
@@ -69,79 +83,96 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate }) {
   };
 
   if (estado !== ESTADO.OK && !data) {
-    return <EstadoVacio estado={estado} testid="dashboard-ia-estado" />;
+    return (
+      <div className="space-y-4" data-testid="dashboard-ia">
+        <PeriodoSelector periodo={periodoActivo} onChange={cambiarPeriodo} />
+        <EstadoVacio estado={estado} testid="dashboard-ia-estado" />
+      </div>
+    );
   }
 
   const totalHorario = (data.ventasHorario || []).reduce((a, b) => a + Number(b.ventas || 0), 0) || 1;
 
-  const kpiCards = [
+  // Fila superior: Ventas + los 2 promedios canónicos (lo que pidió el usuario arriba).
+  const kpiPrincipales = [
     { title: 'Ventas Totales', value: formatMoney(data.ventasTotales), icon: DollarSign, color: 'emerald', trend: data.trends?.ventas_totales },
+    { title: 'Ticket Promedio', sub: 'Ventas ÷ PAX', value: money2(data.ticketPromedio), icon: Users, color: 'cyan', trend: null },
+    { title: 'Cheque Promedio', sub: 'Ventas ÷ cheques', value: money2(data.chequePromedio), icon: Receipt, color: 'violet', trend: null },
+  ];
+  const kpiSecundarios = [
     { title: 'PAX Total', value: data.paxTotal.toLocaleString(), icon: Users, color: 'blue', trend: data.trends?.pax_total },
     { title: 'Cheques Emitidos', value: data.chequesTotal.toLocaleString(), icon: Receipt, color: 'purple', trend: data.trends?.cheques_total },
     { title: 'Propinas', value: formatMoney(data.propinaTotal), icon: TrendingUp, color: 'amber', trend: data.trends?.propinas_total },
   ];
 
-  return (
-    <div className="space-y-6" data-testid="dashboard-ia">
-      {/* Periodo Selector + Etiqueta de fecha */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-col gap-2">
-          <div className="flex gap-2" data-testid="periodo-selector">
-            {PERIODOS.map((p) => (
-              <button
-                key={p.value}
-                data-testid={`periodo-btn-${p.value}`}
-                onClick={() => setPeriodo(p.value)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  periodo === p.value ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
+  // Datos para export del resumen
+  const exportRows = [
+    { kpi: 'Ventas Totales', valor: data.ventasTotales },
+    { kpi: 'Ticket Promedio (ventas/PAX)', valor: data.ticketPromedio },
+    { kpi: 'Cheque Promedio (ventas/cheques)', valor: data.chequePromedio },
+    { kpi: 'PAX Total', valor: data.paxTotal },
+    { kpi: 'Cheques Emitidos', valor: data.chequesTotal },
+    { kpi: 'Propinas', valor: data.propinaTotal },
+  ];
+  const meta = `${unidadSeleccionada === 'todas' ? 'Consolidado' : unidadSeleccionada} · ${data.periodoLabel}`;
+
+  const KpiCard = ({ kpi, idx, big }) => {
+    const Icon = kpi.icon;
+    const c = COLOR_CLS[kpi.color] || COLOR_CLS.emerald;
+    const trendStr = fmtTrend(kpi.trend);
+    const trendUp = (kpi.trend ?? 0) >= 0;
+    return (
+      <button onClick={() => setDrill(true)} data-testid={`kpi-card-${idx}`}
+        className={`text-left w-full bg-slate-800/50 backdrop-blur border rounded-xl p-5 ${c.hover} transition-all ${big ? `${c.bigBorder} ${c.bigBg}` : 'border-slate-700'}`}>
+        <div className="flex items-start justify-between">
+          <div className={`p-2 rounded-lg ${c.iconBg}`}>
+            <Icon className={`h-5 w-5 ${c.icon}`} />
           </div>
-          {data.periodoLabel && (
-            <div className="flex items-center gap-2 text-sm text-slate-300" data-testid="periodo-label">
-              <CalendarDays className="h-4 w-4 text-emerald-400" />
-              <span>Mostrando: <span className="font-semibold text-white">{data.periodoLabel}</span></span>
+          {trendStr && (
+            <div className={`flex items-center gap-1 text-xs ${trendUp ? 'text-emerald-400' : 'text-red-400'}`}>
+              {trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+              {trendStr}
             </div>
           )}
         </div>
-        {loading && (
-          <div className="flex items-center gap-2 text-slate-400">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm">Actualizando...</span>
-          </div>
-        )}
+        <div className="mt-3">
+          <p className={`font-bold text-white ${big ? 'text-3xl' : 'text-2xl'}`} data-testid={`kpi-value-${idx}`}>{kpi.value}</p>
+          <p className="text-sm text-slate-400">{kpi.title}</p>
+          {kpi.sub && <p className="text-xs text-slate-500 mt-0.5">{kpi.sub}</p>}
+        </div>
+        <p className="text-[10px] text-slate-500 mt-2 flex items-center gap-1"><Search className="h-3 w-3" /> Ver tickets</p>
+      </button>
+    );
+  };
+
+  return (
+    <div className="space-y-6" data-testid="dashboard-ia">
+      {/* Período canónico + export + drill */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <PeriodoSelector periodo={periodoActivo} onChange={cambiarPeriodo} periodoLabel={data.periodoLabel} />
+        <div className="flex items-center gap-3">
+          {loading && (
+            <div className="flex items-center gap-2 text-slate-400">
+              <Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm">Actualizando...</span>
+            </div>
+          )}
+          <button onClick={() => setDrill(true)} data-testid="dashboard-drilldown-btn"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-700 hover:bg-slate-600 text-white transition-colors">
+            <Receipt className="h-3.5 w-3.5" /> Reconstruir Tickets
+          </button>
+          <ExportButtons filename="dashboard_kpis" title="Resumen KPIs Inteligencia"
+            columns={[{ key: 'kpi', label: 'KPI' }, { key: 'valor', label: 'Valor' }]}
+            rows={exportRows} meta={meta} testid="dashboard-export" />
+        </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpiCards.map((kpi, idx) => {
-          const Icon = kpi.icon;
-          const trendStr = fmtTrend(kpi.trend);
-          const trendUp = (kpi.trend ?? 0) >= 0;
-          return (
-            <div key={idx} data-testid={`kpi-card-${idx}`}
-              className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-5 hover:border-slate-600 transition-all">
-              <div className="flex items-start justify-between">
-                <div className={`p-2 rounded-lg bg-${kpi.color}-500/20`}>
-                  <Icon className={`h-5 w-5 text-${kpi.color}-400`} />
-                </div>
-                {trendStr && (
-                  <div className={`flex items-center gap-1 text-xs ${trendUp ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                    {trendStr}
-                  </div>
-                )}
-              </div>
-              <div className="mt-3">
-                <p className="text-2xl font-bold text-white" data-testid={`kpi-value-${idx}`}>{kpi.value}</p>
-                <p className="text-sm text-slate-400">{kpi.title}</p>
-              </div>
-            </div>
-          );
-        })}
+      {/* KPIs principales (Ventas + promedios canónicos arriba) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {kpiPrincipales.map((kpi, idx) => <KpiCard key={idx} kpi={kpi} idx={idx} big />)}
+      </div>
+      {/* KPIs secundarios */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {kpiSecundarios.map((kpi, idx) => <KpiCard key={idx + 3} kpi={kpi} idx={idx + 3} />)}
       </div>
 
       {/* Main Grid */}
@@ -220,7 +251,7 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate }) {
             <EstadoVacio estado={ESTADO.SIN_DATOS} testid="dashboard-casas-vacio" compacto />
           ) : (
             <div className="space-y-3">
-              {data.topCasas.map((casa, idx) => (
+              {data.topCasas.slice(0, 8).map((casa, idx) => (
                 <div key={idx} className="space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-white">{casa.casa}</span>
@@ -238,22 +269,8 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate }) {
         </div>
       </div>
 
-      {/* Cheque Promedio Card */}
-      <div className="bg-gradient-to-r from-emerald-500/20 to-blue-500/20 border border-emerald-500/30 rounded-xl p-6" data-testid="dashboard-cheque-promedio">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-slate-400 text-sm">Cheque Promedio</p>
-            <p className="text-3xl font-bold text-white mt-1">${data.chequePromedio.toLocaleString('es-MX', { maximumFractionDigits: 2 })} MXN</p>
-          </div>
-          <div className="text-right">
-            <p className="text-emerald-400 text-sm flex items-center gap-1 justify-end">
-              <CalendarDays className="h-4 w-4" />
-              {data.periodoLabel || 'Periodo actual'}
-            </p>
-            <p className="text-slate-500 text-xs mt-1">Ventas ÷ cheques</p>
-          </div>
-        </div>
-      </div>
+      <TicketDrilldownModal open={drill} onClose={() => setDrill(false)}
+        unidad={unidadSeleccionada} periodo={periodoActivo} titulo="Reconstrucción de Tickets" />
     </div>
   );
 }
