@@ -21,7 +21,7 @@ from core.inventarios.resolver_canonico import clear_resolver_caches
 from core.scheduler.jobs.sync_compras_job import _execute_sql_with_timeout
 
 DIAS = int(sys.argv[1]) if len(sys.argv) > 1 else 365
-UNIDADES = ["130MID", "ESTELAR", "ORIGEN", "130QRO"]
+UNIDADES = sys.argv[2].split(",") if len(sys.argv) > 2 else ["130MID", "ESTELAR", "ORIGEN", "130QRO"]
 
 
 def log(msg):
@@ -30,12 +30,13 @@ def log(msg):
 
 def main():
     conn = get_sql_connection(); cur = conn.cursor()
-    cur.execute("""
+    _ph = ",".join(["%s"] * len(UNIDADES))
+    cur.execute(f"""
       SELECT s.id,s.host,s.port,s.database_name,s.username,s.password_encrypted,s.system_type,
              u.id uid,u.codigo uc,u.nombre un,u.sucursal_origen_id soi
       FROM Servidores_Conexiones s JOIN Unidades_Negocio u ON u.server_id=CAST(s.id AS NVARCHAR(36))
-      WHERE u.codigo IN ('130MID','ESTELAR','ORIGEN','130QRO')
-    """)
+      WHERE u.codigo IN ({_ph})
+    """, tuple(UNIDADES))
     cols = [d[0] for d in cur.description]
     by_code = {r[cols.index('uc')]: dict(zip(cols, r)) for r in cur.fetchall()}
     conn.close()

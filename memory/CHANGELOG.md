@@ -662,3 +662,10 @@ Verificado: cURL (toggle desactivar/reactivar, revocación de sesiones, bloqueo 
 - OPTIMIZACIÓN escritura movimientos (`sync_movimientos_canonico.py`): de 4 round-trips/fila a SET-BASED (tabla temporal #stg_mov + executemany + INSERT..SELECT idempotente). + `precargar_productos_mapeo` en resolver (1 query carga todo el mapeo de productos en caché, evita miles de round-trips). Resultado: escritura ~100x; cuello de botella restante = lectura del POS remoto por ventana.
 - Backfill background (90d) verificado: 130MID = 314 enc + 12,323 detalles, 0 descartados (~8 min, dominado por lectura POS). Script: `tests/backfill_inventario.py [dias]`.
 - CIENFUEGOS omitido (DDNS caído). 130QRO usa el mecanismo validado (sucursal_origen=0021, idéntico a ORIGEN ya probado E2E).
+
+## 2026-06-09 (cont.) — Backfill 90d en curso + UI Auditoría validada + CIENFUEGOS en línea
+- Backfill 90d (background, log /tmp/backfill90b.log): 130MID=12,323 det + ESTELAR=9,625 det (0 descartados) COMPLETADOS. ORIGEN (MPRO 0023) y 130QRO (0021) en proceso (MPRO alto volumen, lectura POS lenta).
+- UI Auditoría VALIDADA: tras seleccionar unidad LA ESTELAR, el dropdown Requisición(es) muestra datos reales ('0000005724 - A0113 XO CHIHUAHUA') NO-LIVE desde EDARSAHUB; botón 'Realizar Auditoría' habilitado.
+- CIENFUEGOS: su DDNS (servercienfuegos.ddns.net:6669) VOLVIÓ EN LÍNEA. SQL conecta OK y resuelve canónicamente (empresa=3, sucursal=3, SoftRestaurant). Backfill de CIENFUEGOS encadenado para correr al terminar el principal (log /tmp/backfill_cienfuegos.log). CIENFUEGOS TABLAJERIA queda fuera (esquema custom, sin unidad mapeada).
+- Script backfill ahora acepta unidades por arg: `python tests/backfill_inventario.py [dias] [COD1,COD2,...]`.
+- Histórico completo (1-2 años): correr el job recurrente con env `SYNC_COMPRAS_MOV_DIAS_ATRAS=365/730` (corrida larga programada; el límite es la lectura del POS por ventana).
