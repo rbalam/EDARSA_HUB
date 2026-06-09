@@ -15,6 +15,14 @@ Ejemplo (regla del usuario):
 Esta es la verdad ÚNICA de consumo usada por Auditoría de compras,
 Análisis de inventarios e Inteligencia de ventas: el mismo número en todos.
 
+EQUIVALENCIA AUDITADA (fórmulas LIVE ya validadas que esto canoniza NO-LIVE):
+  - SoftRestaurant: SUM(venta.cantidad * costos.cantidad) GROUP BY insumo
+    (server.py ~L5116). `costos.cantidad` -> Sync_Productos_Recetas.Cantidad
+    (sync_recetas ~L450).
+  - MPRO: SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) GROUP BY componente
+    (server.py ~L4321). `Pk_Cantidad` -> Sync_Productos_Recetas.Cantidad.
+  => consumo = Cantidad(receta) * cantidad_vendida, agregado por insumo. Idéntico.
+
 NO-LIVE: lee EXCLUSIVAMENTE de EDARSAHUB SQL.
 """
 import logging
