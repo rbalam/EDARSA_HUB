@@ -251,6 +251,58 @@ def _periodo_rango(periodo: str, anchor: date):
     return ini, fin, prev_ini, prev_fin, label
 
 
+def _get_franjas_canonicas():
+    """Franjas horarias canónicas (Desayuno/Comida/Cena) LEÍDAS de
+    Sistema_TurnosOperativosUnidad (NO-LIVE, sin hardcode). Una franja por
+    turno_codigo, representativa entre unidades (las franjas son uniformes).
+    Devuelve [] si no hay config (el caller usa un safety net)."""
+    sql = """
+        SELECT turno_codigo,
+               MIN(turno_nombre) AS nombre,
+               MIN(DATEPART(hour, hora_inicio)) AS h_ini,
+               MAX(DATEPART(hour, hora_fin)) AS h_fin,
+               MAX(DATEPART(minute, hora_fin)) AS m_fin,
+               MIN(CONVERT(VARCHAR(5), hora_inicio, 108)) AS ini_str,
+               MAX(CONVERT(VARCHAR(5), hora_fin, 108)) AS fin_str,
+               MAX(CAST(cruza_medianoche AS INT)) AS cruza,
+               MIN(orden) AS orden
+        FROM Sistema_TurnosOperativosUnidad
+        WHERE activo = 1 AND aplica_ventas_dia = 1
+        GROUP BY turno_codigo
+        ORDER BY MIN(orden)
+    """
+    try:
+        franjas = []
+        for r in execute_query(sql):
+            franjas.append({
+                "codigo": r["turno_codigo"],
+                "nombre": r["nombre"],
+                "h_ini": int(r["h_ini"]),
+                "h_fin": int(r["h_fin"]),
+                "m_fin": int(r["m_fin"] or 0),
+                "ini_str": r["ini_str"],
+                "fin_str": r["fin_str"],
+                "cruza": bool(r["cruza"]),
+                "orden": int(r["orden"] or 0),
+            })
+        return franjas
+    except Exception as e:
+        logger.error(f"[INTELIGENCIA] Error leyendo franjas canónicas: {e}")
+        return []
+
+
+def _label_rango_personalizado(fi, ff):
+    """Etiqueta legible para un rango de fechas personalizado (sin periodo)."""
+    try:
+        d1 = datetime.strptime(fi, "%Y-%m-%d").date()
+        d2 = datetime.strptime(ff, "%Y-%m-%d").date()
+        if d1 == d2:
+            return f"{d1.day} de {_MESES_ES[d1.month]} {d1.year}"
+        return f"{d1.day} {_MESES_ES[d1.month]} – {d2.day} {_MESES_ES[d2.month]} {d2.year}"
+    except Exception:
+        return f"{fi} a {ff}"
+
+
 # ============================================================================
 # BLOQUES REALES (NO-LIVE) desde Comercial_Inteligencia_VentasDetalleProducto
 # Reemplazan los antiguos bloques con porcentajes/productos HARDCODEADOS.
@@ -288,6 +340,8 @@ def _resolver_rango(unidad_db, periodo, fecha_inicio, fecha_fin):
         fecha_inicio = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
     if not fecha_fin:
         fecha_fin = datetime.now().strftime("%Y-%m-%d")
+    if periodo_label is None:
+        periodo_label = _label_rango_personalizado(fecha_inicio, fecha_fin)
     return fecha_inicio, fecha_fin, prev_inicio, prev_fin, periodo_label
 
 
@@ -599,6 +653,34 @@ def _real_ticket_lineas(unidad_db, fecha, numero_ticket):
 
 def _real_horario(unidad_db, fecha_inicio, fecha_fin):
     # Agrega a nivel ticket (pax/cheques correctos) y clasifica por hora de apertura.
+    # CENTRALIZADO (2026-06-10): las franjas (Desayuno/Comida/Cena) se LEEN de
+    # Sistema_TurnosOperativosUnidad (NO-LIVE, sin hardcode). Una sola fuente de
+    # verdad: lo que se configure en "Configuración Operativa" rige este reporte.
+    franjas = _get_franjas_canonicas()
+    if franjas:
+        # El turno que cruza medianoche (o el último por orden) es el catch-all (ELSE).
+        catch = next((f for f in franjas if f["cruza"]), franjas[-1])
+        whens, rango_map = [], {}
+        for f in franjas:
+            if f is catch and f["cruza"]:
+                rango_map[f["nombre"]] = f"{f['ini_str']} – madrugada"
+            else:
+                rango_map[f["nombre"]] = f"{f['ini_str']} - {f['fin_str']}"
+            if f is catch:
+                continue
+            # hora_fin '13:00' (m=0) cubre hasta las 12:59 → bucket de hora = h_fin-1.
+            h_fin_bucket = f["h_fin"] - 1 if f["m_fin"] == 0 else f["h_fin"]
+            nombre = f["nombre"].replace("'", "''")
+            whens.append(f"WHEN DATEPART(hour, fh) BETWEEN {f['h_ini']} AND {h_fin_bucket} THEN '{nombre}'")
+        catch_nombre = catch["nombre"].replace("'", "''")
+        case_expr = "CASE " + " ".join(whens) + f" ELSE '{catch_nombre}' END"
+        orden_map = {f["nombre"]: i for i, f in enumerate(franjas)}
+    else:
+        # Safety net (la config no debería faltar): comportamiento previo conocido.
+        case_expr = ("CASE WHEN DATEPART(hour, fh) BETWEEN 7 AND 12 THEN 'Desayuno' "
+                     "WHEN DATEPART(hour, fh) BETWEEN 13 AND 18 THEN 'Comida' ELSE 'Cena' END")
+        orden_map = {"Desayuno": 0, "Comida": 1, "Cena": 2}
+        rango_map = {}
     sql = f"""
         WITH tk AS (
             SELECT unidad_negocio_nombre, fecha_operacion, numero_ticket,
@@ -608,17 +690,12 @@ def _real_horario(unidad_db, fecha_inicio, fecha_fin):
             WHERE {_detalle_where(unidad_db, fecha_inicio, fecha_fin)}
             GROUP BY unidad_negocio_nombre, fecha_operacion, numero_ticket
         )
-        SELECT CASE WHEN DATEPART(hour, fh) BETWEEN 7 AND 12 THEN 'Desayuno'
-                    WHEN DATEPART(hour, fh) BETWEEN 13 AND 18 THEN 'Comida'
-                    ELSE 'Cena' END AS horario,
+        SELECT {case_expr} AS horario,
                SUM(ventas) AS ventas, SUM(pax) AS pax,
                COUNT(*) AS cheques, SUM(propinas) AS propinas
         FROM tk
-        GROUP BY CASE WHEN DATEPART(hour, fh) BETWEEN 7 AND 12 THEN 'Desayuno'
-                      WHEN DATEPART(hour, fh) BETWEEN 13 AND 18 THEN 'Comida'
-                      ELSE 'Cena' END
+        GROUP BY {case_expr}
     """
-    orden = {"Desayuno": 0, "Comida": 1, "Cena": 2}
     out = []
     for r in execute_query(sql):
         ventas = round(float(r["ventas"] or 0), 2)
@@ -626,8 +703,9 @@ def _real_horario(unidad_db, fecha_inicio, fecha_fin):
         out.append({"horario": r["horario"], "ventas": ventas,
                     "pax": int(r["pax"] or 0), "cheques": cheques,
                     "propinas": round(float(r["propinas"] or 0), 2),
-                    "ticket_promedio": round(ventas / cheques, 2) if cheques else 0})
-    out.sort(key=lambda x: orden.get(x["horario"], 9))
+                    "ticket_promedio": round(ventas / cheques, 2) if cheques else 0,
+                    "rango": rango_map.get(r["horario"], "")})
+    out.sort(key=lambda x: orden_map.get(x["horario"], 9))
     return out
 
 
@@ -660,6 +738,8 @@ async def get_dashboard_data(
         fecha_inicio = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
     if not fecha_fin:
         fecha_fin = datetime.now().strftime("%Y-%m-%d")
+    if periodo_label is None:
+        periodo_label = _label_rango_personalizado(fecha_inicio, fecha_fin)
     
     try:
         # WHERE dinámico
@@ -1208,6 +1288,37 @@ async def get_reporte_alcohol(
     except Exception as e:
         logger.error(f"[INTELIGENCIA] Error alcohol: {e}")
         return {"success": False, "_error": str(e), "con_alcohol": None, "sin_alcohol": None, "por_grado": []}
+
+
+@router.get("/casas")
+async def get_ventas_casas(
+    unidad: Optional[str] = Query(None),
+    periodo: Optional[str] = Query(None, description="dia | semana | mes | anio"),
+    fecha_inicio: Optional[str] = Query(None),
+    fecha_fin: Optional[str] = Query(None)
+):
+    """
+    Ventas por Casa/Distribuidor (NO-LIVE). Fuente: detalle + Catálogo Enriquecido
+    (grupo_comercial). Mismo cálculo canónico que el bloque del dashboard, expuesto
+    como endpoint dedicado para la pantalla Casas/Distribuidores.
+    """
+    unidad_db = normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
+    fecha_inicio, fecha_fin, _, _, periodo_label = _resolver_rango(unidad_db, periodo, fecha_inicio, fecha_fin)
+    try:
+        det_total = _real_detalle_total(unidad_db, fecha_inicio, fecha_fin)
+        casas = _real_casas(unidad_db, fecha_inicio, fecha_fin, total_ventas=det_total)
+        return {
+            "success": True,
+            "_source": f"{_DETALLE_TABLA} + {_ENRIQ_TABLA}",
+            "_unidad": unidad_db or "TODAS",
+            "_detalle_total": round(det_total, 2),
+            "filtros": {"fecha_inicio": fecha_inicio, "fecha_fin": fecha_fin,
+                        "periodo": periodo or None, "periodo_label": periodo_label},
+            "casas_distribuidoras": casas,
+        }
+    except Exception as e:
+        logger.error(f"[INTELIGENCIA] Error casas: {e}")
+        return {"success": False, "_error": str(e), "casas_distribuidoras": []}
 
 
 @router.get("/tickets")

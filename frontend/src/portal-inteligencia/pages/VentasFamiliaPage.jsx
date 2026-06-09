@@ -9,6 +9,7 @@ import { apiGet, ESTADO } from '../api/client';
 import { EstadoVacio } from '../components/EstadoVacio';
 import { PeriodoSelector } from '../components/PeriodoSelector';
 import { ExportButtons } from '../components/ExportButtons';
+import { usePeriodo } from '../utils/usePeriodo';
 
 const PALETA = ['emerald', 'blue', 'purple', 'amber', 'pink', 'cyan'];
 const CLS = {
@@ -30,7 +31,7 @@ export default function VentasFamiliaPage({ unidadSeleccionada, periodo = 'mes' 
   const [clasif, setClasif] = useState([]);
   const [estado, setEstado] = useState(ESTADO.CARGANDO);
   const [periodoLabel, setPeriodoLabel] = useState('');
-  const [periodoLocal, setPeriodoLocal] = useState(periodo);
+  const { periodo: periodoLocal, setPeriodo: setPeriodoLocal, rangoInicio, rangoFin, onRango, listo, params } = usePeriodo(periodo);
   const [openClas, setOpenClas] = useState([]);
   const [openFam, setOpenFam] = useState([]);
   const [openSub, setOpenSub] = useState([]);      // subfamilias expandidas
@@ -39,11 +40,12 @@ export default function VentasFamiliaPage({ unidadSeleccionada, periodo = 'mes' 
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unidadSeleccionada, periodoLocal]);
+  }, [unidadSeleccionada, periodoLocal, rangoInicio, rangoFin]);
 
   const fetchData = async () => {
+    if (!listo) return;
     setEstado(ESTADO.CARGANDO);
-    const { estado: est, data } = await apiGet('/inteligencia/familias', { unidad: unidadSeleccionada, periodo: periodoLocal });
+    const { estado: est, data } = await apiGet('/inteligencia/familias', { unidad: unidadSeleccionada, ...params });
     if (est !== ESTADO.OK || !data || data.success === false) {
       setClasif([]); setEstado(est === ESTADO.OK ? ESTADO.ERROR : est); return;
     }
@@ -64,7 +66,7 @@ export default function VentasFamiliaPage({ unidadSeleccionada, periodo = 'mes' 
     if (abierto || prodMap[skey]) return;  // ya cargado o cerrando
     setProdMap(m => ({ ...m, [skey]: { loading: true, productos: [] } }));
     const { estado: est, data } = await apiGet('/inteligencia/productos-subfamilia', {
-      familia, subfamilia, unidad: unidadSeleccionada, periodo: periodoLocal,
+      familia, subfamilia, unidad: unidadSeleccionada, ...params,
     });
     setProdMap(m => ({ ...m, [skey]: { loading: false, productos: (est === ESTADO.OK && data?.productos) ? data.productos : [] } }));
   };
@@ -88,7 +90,8 @@ export default function VentasFamiliaPage({ unidadSeleccionada, periodo = 'mes' 
   return (
     <div className="space-y-6" data-testid="ventas-familia-page">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <PeriodoSelector periodo={periodoLocal} onChange={setPeriodoLocal} periodoLabel={periodoLabel} />
+        <PeriodoSelector periodo={periodoLocal} onChange={setPeriodoLocal} periodoLabel={periodoLabel}
+          rangoInicio={rangoInicio} rangoFin={rangoFin} onRango={onRango} />
         <ExportButtons filename="ventas_clasificacion" title="Ventas por Clasificación y Familia"
           columns={exportCols} rows={exportRows} meta={meta} testid="familia-export" />
       </div>

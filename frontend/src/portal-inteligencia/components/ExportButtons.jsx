@@ -8,10 +8,22 @@ import { exportToExcel, exportToPDF } from '../utils/exportUtils';
 export function ExportButtons({ filename, title, columns, rows, meta = '', sheets = null, testid = 'export' }) {
   const disabled = (!rows || rows.length === 0) && (!sheets || sheets.length === 0);
   const handleExcel = () => {
-    if (sheets) exportToExcel(filename, sheets);
-    else exportToExcel(filename, [{ name: title, columns, rows }]);
+    try {
+      if (sheets) exportToExcel(filename, sheets);
+      else exportToExcel(filename, [{ name: title, columns, rows }]);
+    } catch (e) {
+      console.error('[Export Excel] error:', e);
+      alert('No se pudo exportar a Excel: ' + (e?.message || e));
+    }
   };
-  const handlePDF = () => exportToPDF(title, columns, rows, meta);
+  const handlePDF = () => {
+    try {
+      exportToPDF(title, columns, rows, meta);
+    } catch (e) {
+      console.error('[Export PDF] error:', e);
+      alert('No se pudo exportar a PDF: ' + (e?.message || e));
+    }
+  };
   return (
     <div className="flex gap-2">
       <button

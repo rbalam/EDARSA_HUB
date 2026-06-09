@@ -12,7 +12,7 @@ import { ExportButtons } from './ExportButtons';
 
 const fMoney = (v) => `$${Number(v || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-export function TicketDrilldownModal({ open, onClose, unidad, periodo, titulo = 'Reconstrucción de Tickets' }) {
+export function TicketDrilldownModal({ open, onClose, unidad, periodo, fechaInicio, fechaFin, titulo = 'Reconstrucción de Tickets' }) {
   const [tickets, setTickets] = useState([]);
   const [estado, setEstado] = useState(ESTADO.CARGANDO);
   const [filtros, setFiltros] = useState(null);
@@ -25,11 +25,12 @@ export function TicketDrilldownModal({ open, onClose, unidad, periodo, titulo = 
     setSel(null);
     fetchTickets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, unidad, periodo]);
+  }, [open, unidad, periodo, fechaInicio, fechaFin]);
 
   const fetchTickets = async () => {
     setEstado(ESTADO.CARGANDO);
-    const { estado: est, data } = await apiGet('/inteligencia/tickets', { unidad, periodo, limit: 500 });
+    const rango = (fechaInicio && fechaFin) ? { fecha_inicio: fechaInicio, fecha_fin: fechaFin } : { periodo };
+    const { estado: est, data } = await apiGet('/inteligencia/tickets', { unidad, limit: 500, ...rango });
     if (est !== ESTADO.OK || !data || data.success === false) {
       setTickets([]); setEstado(est === ESTADO.OK ? ESTADO.ERROR : est); return;
     }

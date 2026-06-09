@@ -9,6 +9,12 @@ import autoTable from 'jspdf-autotable';
 
 const stamp = () => new Date().toISOString().slice(0, 16).replace('T', '_').replace(/:/g, '');
 
+// Excel prohíbe estos caracteres en el nombre de hoja: : \ / ? * [ ]
+// (además el máximo es 31 chars). Sin sanear, títulos como
+// "Ventas por Casa / Distribuidor" lanzan excepción y rompen la exportación.
+const sanitizeSheetName = (name) =>
+  ((name || 'Hoja').replace(/[:\\/?*[\]]/g, '-').trim().slice(0, 31) || 'Hoja');
+
 /**
  * Exporta una o varias hojas a un archivo .xlsx
  * @param {string} filename  Nombre base del archivo (sin extensión)
@@ -23,7 +29,7 @@ export function exportToExcel(filename, sheets) {
       return o;
     });
     const ws = XLSX.utils.json_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, (s.name || `Hoja${i + 1}`).slice(0, 31));
+    XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName(s.name || `Hoja${i + 1}`));
   });
   const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
   saveAs(new Blob([buf], { type: 'application/octet-stream' }), `${filename}_${stamp()}.xlsx`);

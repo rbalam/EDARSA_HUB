@@ -8,6 +8,7 @@ import { apiGet, ESTADO } from '../api/client';
 import { EstadoVacio } from '../components/EstadoVacio';
 import { PeriodoSelector } from '../components/PeriodoSelector';
 import { ExportButtons } from '../components/ExportButtons';
+import { usePeriodo } from '../utils/usePeriodo';
 
 export default function VentasProductoPage({ unidadSeleccionada, periodo = 'mes' }) {
   const [productos, setProductos] = useState([]);
@@ -16,18 +17,19 @@ export default function VentasProductoPage({ unidadSeleccionada, periodo = 'mes'
   const [sortBy, setSortBy] = useState('ventas');
   const [sortDir, setSortDir] = useState('desc');
   const [filtroFamilia, setFiltroFamilia] = useState('todas');
-  const [periodoLocal, setPeriodoLocal] = useState(periodo);
+  const { periodo: periodoLocal, setPeriodo: setPeriodoLocal, rangoInicio, rangoFin, onRango, listo, params } = usePeriodo(periodo);
   const [periodoLabel, setPeriodoLabel] = useState('');
 
   useEffect(() => {
     fetchProductos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unidadSeleccionada, periodoLocal]);
+  }, [unidadSeleccionada, periodoLocal, rangoInicio, rangoFin]);
 
   const fetchProductos = async () => {
+    if (!listo) return;
     setEstado(ESTADO.CARGANDO);
     const { estado: est, data } = await apiGet('/inteligencia/productos', {
-      unidad: unidadSeleccionada, periodo: periodoLocal, limit: 500,
+      unidad: unidadSeleccionada, ...params, limit: 500,
     });
     if (est !== ESTADO.OK || !data || data.success === false) {
       setProductos([]);
@@ -70,7 +72,8 @@ export default function VentasProductoPage({ unidadSeleccionada, periodo = 'mes'
   return (
     <div className="space-y-6" data-testid="ventas-producto-page">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <PeriodoSelector periodo={periodoLocal} onChange={setPeriodoLocal} periodoLabel={periodoLabel} />
+        <PeriodoSelector periodo={periodoLocal} onChange={setPeriodoLocal} periodoLabel={periodoLabel}
+          rangoInicio={rangoInicio} rangoFin={rangoFin} onRango={onRango} />
         <ExportButtons filename="ventas_productos" title="Ventas por Producto"
           columns={exportCols} rows={filteredProducts} meta={meta} testid="producto-export" />
       </div>

@@ -45,20 +45,27 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
   const [periodoLocal, setPeriodoLocal] = useState(periodo);
   const [drill, setDrill] = useState(false);
   const reqRef = useRef(0);
+  const [rangoInicio, setRangoInicio] = useState('');
+  const [rangoFin, setRangoFin] = useState('');
+  const onRango = (i, f) => { setRangoInicio(i || ''); setRangoFin(f || ''); };
 
   const periodoActivo = setPeriodo ? periodo : periodoLocal;
   const cambiarPeriodo = setPeriodo || setPeriodoLocal;
+  const esCustom = periodoActivo === 'personalizado' && !!rangoInicio && !!rangoFin;
+  const periodoParams = esCustom ? { fecha_inicio: rangoInicio, fecha_fin: rangoFin } : { periodo: periodoActivo };
+  const listoP = periodoActivo !== 'personalizado' || esCustom;
 
   useEffect(() => {
     fetchDashboardData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unidadSeleccionada, periodoActivo]);
+  }, [unidadSeleccionada, periodoActivo, rangoInicio, rangoFin]);
 
   const fetchDashboardData = async () => {
+    if (!listoP) return;
     const myReq = ++reqRef.current;
     setLoading(true);
     const { estado: est, data: result } = await apiGet('/inteligencia/dashboard', {
-      unidad: unidadSeleccionada, periodo: periodoActivo,
+      unidad: unidadSeleccionada, ...periodoParams,
     });
     if (myReq !== reqRef.current) return;  // respuesta obsoleta: ignorar (evita carrera)
     if (est !== ESTADO.OK || !result || result.success === false) {
@@ -88,7 +95,8 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
   if (estado !== ESTADO.OK && !data) {
     return (
       <div className="space-y-4" data-testid="dashboard-ia">
-        <PeriodoSelector periodo={periodoActivo} onChange={cambiarPeriodo} />
+        <PeriodoSelector periodo={periodoActivo} onChange={cambiarPeriodo}
+          rangoInicio={rangoInicio} rangoFin={rangoFin} onRango={onRango} />
         <EstadoVacio estado={estado} testid="dashboard-ia-estado" />
       </div>
     );
@@ -152,7 +160,8 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
     <div className="space-y-6" data-testid="dashboard-ia">
       {/* Período canónico + export + drill */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <PeriodoSelector periodo={periodoActivo} onChange={cambiarPeriodo} periodoLabel={data.periodoLabel} />
+        <PeriodoSelector periodo={periodoActivo} onChange={cambiarPeriodo} periodoLabel={data.periodoLabel}
+          rangoInicio={rangoInicio} rangoFin={rangoFin} onRango={onRango} />
         <div className="flex items-center gap-3">
           {loading && (
             <div className="flex items-center gap-2 text-slate-400">
@@ -273,7 +282,9 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
       </div>
 
       <TicketDrilldownModal open={drill} onClose={() => setDrill(false)}
-        unidad={unidadSeleccionada} periodo={periodoActivo} titulo="Reconstrucción de Tickets" />
+        unidad={unidadSeleccionada} periodo={periodoActivo}
+        fechaInicio={esCustom ? rangoInicio : undefined} fechaFin={esCustom ? rangoFin : undefined}
+        titulo="Reconstrucción de Tickets" />
     </div>
   );
 }

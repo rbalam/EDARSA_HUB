@@ -6,6 +6,8 @@ import React, { useState, useEffect } from 'react';
 import { Clock, Sun, Sunset, Moon, Users, DollarSign } from 'lucide-react';
 import { apiGet, ESTADO } from '../api/client';
 import { EstadoVacio } from '../components/EstadoVacio';
+import { PeriodoSelector } from '../components/PeriodoSelector';
+import { usePeriodo } from '../utils/usePeriodo';
 
 const META = {
   Desayuno: { icon: Sun, horario: '7:00 - 12:59', gradient: 'from-amber-500 to-orange-500', bg: 'bg-amber-500/20 border-amber-500/30 text-amber-400' },
@@ -13,19 +15,22 @@ const META = {
   Cena: { icon: Moon, horario: '19:00 - 23:59', gradient: 'from-indigo-500 to-purple-500', bg: 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400' },
 };
 
-export default function VentasHorarioPage({ unidadSeleccionada }) {
+export default function VentasHorarioPage({ unidadSeleccionada, periodo = 'mes' }) {
   const [horarios, setHorarios] = useState([]);
   const [estado, setEstado] = useState(ESTADO.CARGANDO);
   const [selected, setSelected] = useState(null);
+  const [periodoLabel, setPeriodoLabel] = useState('');
+  const { periodo: periodoLocal, setPeriodo: setPeriodoLocal, rangoInicio, rangoFin, onRango, listo, params } = usePeriodo(periodo);
 
   useEffect(() => {
     fetchHorarios();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unidadSeleccionada]);
+  }, [unidadSeleccionada, periodoLocal, rangoInicio, rangoFin]);
 
   const fetchHorarios = async () => {
+    if (!listo) return;
     setEstado(ESTADO.CARGANDO);
-    const { estado: est, data } = await apiGet('/inteligencia/dashboard', { unidad: unidadSeleccionada, periodo: 'mes' });
+    const { estado: est, data } = await apiGet('/inteligencia/dashboard', { unidad: unidadSeleccionada, ...params });
     if (est !== ESTADO.OK || !data || data.success === false) {
       setHorarios([]);
       setEstado(est === ESTADO.OK ? ESTADO.ERROR : est);
@@ -33,6 +38,7 @@ export default function VentasHorarioPage({ unidadSeleccionada }) {
     }
     const lista = (data.ventas_horario || []).map(h => ({
       nombre: h.horario,
+      rango: h.rango || '',
       ventas: Number(h.ventas || 0),
       pax: Number(h.pax || 0),
       cheques: Number(h.cheques || 0),
@@ -40,6 +46,7 @@ export default function VentasHorarioPage({ unidadSeleccionada }) {
       ticketPromedio: Number(h.ticket_promedio || 0),
     }));
     setHorarios(lista);
+    setPeriodoLabel(data.filtros?.periodo_label || '');
     setEstado(lista.length ? ESTADO.OK : ESTADO.SIN_DATOS);
   };
 
@@ -52,8 +59,12 @@ export default function VentasHorarioPage({ unidadSeleccionada }) {
 
   if (estado !== ESTADO.OK) {
     return (
-      <div className="bg-slate-800/50 border border-slate-700 rounded-xl" data-testid="ventas-horario-page">
-        <EstadoVacio estado={estado} testid="ventas-horario-estado" />
+      <div className="space-y-4" data-testid="ventas-horario-page">
+        <PeriodoSelector periodo={periodoLocal} onChange={setPeriodoLocal} periodoLabel={periodoLabel}
+          rangoInicio={rangoInicio} rangoFin={rangoFin} onRango={onRango} />
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl">
+          <EstadoVacio estado={estado} testid="ventas-horario-estado" />
+        </div>
       </div>
     );
   }
@@ -63,6 +74,8 @@ export default function VentasHorarioPage({ unidadSeleccionada }) {
 
   return (
     <div className="space-y-6" data-testid="ventas-horario-page">
+      <PeriodoSelector periodo={periodoLocal} onChange={setPeriodoLocal} periodoLabel={periodoLabel}
+        rangoInicio={rangoInicio} rangoFin={rangoFin} onRango={onRango} />
       {/* Cards principales por horario */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {horarios.map((periodo) => {
@@ -84,7 +97,7 @@ export default function VentasHorarioPage({ unidadSeleccionada }) {
                   </div>
                 </div>
                 <h3 className="text-xl font-bold text-white mb-1">{periodo.nombre}</h3>
-                <p className="text-sm text-slate-400 mb-4">{meta.horario}</p>
+                <p className="text-sm text-slate-400 mb-4">{periodo.rango || meta.horario}</p>
                 <div className="mb-4"><p className="text-3xl font-bold text-emerald-400">{formatMoney(periodo.ventas)}</p></div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-slate-700/50 rounded-lg p-3">

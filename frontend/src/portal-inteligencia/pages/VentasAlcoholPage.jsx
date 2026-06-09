@@ -8,22 +8,24 @@ import { apiGet, ESTADO } from '../api/client';
 import { EstadoVacio } from '../components/EstadoVacio';
 import { PeriodoSelector } from '../components/PeriodoSelector';
 import { ExportButtons } from '../components/ExportButtons';
+import { usePeriodo } from '../utils/usePeriodo';
 
 const money = (v) => `$${Number(v || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}`;
 
 export default function VentasAlcoholPage({ unidadSeleccionada, periodo = 'mes' }) {
   const [data, setData] = useState(null);
   const [estado, setEstado] = useState(ESTADO.CARGANDO);
-  const [periodoLocal, setPeriodoLocal] = useState(periodo);
+  const { periodo: periodoLocal, setPeriodo: setPeriodoLocal, rangoInicio, rangoFin, onRango, listo, params } = usePeriodo(periodo);
 
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unidadSeleccionada, periodoLocal]);
+  }, [unidadSeleccionada, periodoLocal, rangoInicio, rangoFin]);
 
   const fetchData = async () => {
+    if (!listo) return;
     setEstado(ESTADO.CARGANDO);
-    const { estado: est, data: d } = await apiGet('/inteligencia/alcohol', { unidad: unidadSeleccionada, periodo: periodoLocal });
+    const { estado: est, data: d } = await apiGet('/inteligencia/alcohol', { unidad: unidadSeleccionada, ...params });
     if (est !== ESTADO.OK || !d || d.success === false) {
       setData(null); setEstado(est === ESTADO.OK ? ESTADO.ERROR : est); return;
     }
@@ -35,7 +37,8 @@ export default function VentasAlcoholPage({ unidadSeleccionada, periodo = 'mes' 
   if (estado !== ESTADO.OK) {
     return (
       <div className="space-y-4" data-testid="ventas-alcohol-page">
-        <PeriodoSelector periodo={periodoLocal} onChange={setPeriodoLocal} />
+        <PeriodoSelector periodo={periodoLocal} onChange={setPeriodoLocal}
+          rangoInicio={rangoInicio} rangoFin={rangoFin} onRango={onRango} />
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl">
           <EstadoVacio estado={estado} testid="ventas-alcohol-estado" />
         </div>
@@ -61,7 +64,8 @@ export default function VentasAlcoholPage({ unidadSeleccionada, periodo = 'mes' 
   return (
     <div className="space-y-6" data-testid="ventas-alcohol-page">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <PeriodoSelector periodo={periodoLocal} onChange={setPeriodoLocal} periodoLabel={periodoLabel} />
+        <PeriodoSelector periodo={periodoLocal} onChange={setPeriodoLocal} periodoLabel={periodoLabel}
+          rangoInicio={rangoInicio} rangoFin={rangoFin} onRango={onRango} />
         <ExportButtons filename="reporte_alcohol" title="Reporte de Bebidas (Alcohol)"
           columns={exportCols} rows={exportRows} meta={meta} testid="alcohol-export" />
       </div>

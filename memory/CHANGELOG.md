@@ -1,6 +1,33 @@
 # EDARSA HUB - Changelog
 
-## [2026-06-10] Configuración Operativa de Turnos — Cena configurable + retiro LEGACY + fix motor canónico
+## [2026-06-10] Inteligencia Comercial: franjas centralizadas + rango de fechas personalizado + fix de export
+Tres pedidos del usuario sobre el Portal Inteligencia Comercial:
+
+1. **Franjas horarias centralizadas (sin hardcode)** — `_real_horario` (backend) ahora LEE las franjas
+   (Desayuno/Comida/Cena) de `Sistema_TurnosOperativosUnidad` vía `_get_franjas_canonicas()` y construye el
+   `CASE` dinámicamente (antes 7-12/13-18/else hardcodeado). Devuelve además `rango` por franja
+   (ej. Cena "19:00 – madrugada"). `VentasHorarioPage` muestra ese `rango` real (eliminado el label hardcodeado).
+   → Única fuente de verdad: lo que se configura en "Configuración Operativa" rige el reporte "Ventas por Horario".
+
+2. **Rango de fechas PERSONALIZADO** — nuevo botón "Personalizado" + dos `input[type=date]` en `PeriodoSelector`
+   (data-testid `periodo-btn-personalizado`, `periodo-fecha-inicio/fin`). Hook `usePeriodo` (utils) entrega los
+   query-params correctos (`fecha_inicio/fecha_fin` vs `periodo`). Cableado en Dashboard, Familia, Producto,
+   Casa, Alcohol y Horario, y propagado al drill-down de tickets. Backend: `_resolver_rango` + dashboard ahora
+   generan `periodo_label` legible para rangos personalizados (ej. "1 Junio – 5 Junio 2026").
+
+3. **Export Excel/PDF arreglado** — DOS causas:
+   - **Raíz (Excel):** el nombre de hoja usaba el `title`; títulos con `/` (ej. "Ventas por Casa / Distribuidor")
+     violan la restricción de Excel (`: \ / ? * [ ]`) → excepción NO capturada que **tumbaba la app**. Fix:
+     `sanitizeSheetName()` en `exportUtils.js` + `try/catch` en `ExportButtons`. (El Dashboard exportaba porque
+     su título no tenía `/`.)
+   - **Ruta faltante:** la pantalla Casas llamaba a `/api/inteligencia/casas` que **NO existía (404)** → página
+     vacía y export deshabilitado. Se creó el endpoint `/casas` (reusa `_real_casas`, mismo cálculo del dashboard).
+
+- Verificado: tests `tests/test_inteligencia_fase1.py` + `test_turnos_operativos_canonicos.py` +
+  `test_reporteador_bi.py` (24/24 PASS); curl (casas 200, labels OK, franjas con rango); screenshots
+  (rango personalizado filtra datos y muestra "Mostrando: …"; Casas carga 12 casas y exporta .xlsx + .pdf sin error).
+
+
 Reporte del usuario: en la pantalla Configuración Operativa solo se podían configurar Desayuno y
 "Comida/Cena", NO la Cena por separado, y existía un indicador "Comida/Cena (LEGACY)" duplicado e
 inconfigurable. Auditoría reveló 3 lógicas desconectadas de "turno/horario".
