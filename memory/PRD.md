@@ -13,6 +13,7 @@ Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosist
 Spanish (Español)
 
 ### Estado actualizado (2026-06-09)
+- ✅ **Compras → contrato canónico `unidad` (P0):** helper central `canonical_server_id()` (regla de centralización) aplicado a los 9 endpoints de Compras que aún resolvían el servidor con `get_server_connection_info` directo. Acepta unidad (codigo/pk) y conserva compatibilidad legacy `server_id`. NO-LIVE. Verificado cURL + 6 tests (`test_compras_canonical_unidad.py`). La "puerta única" `validate_server_access_by_empresa` ya cubría los otros 8 endpoints.
 - ✅ **P0 Usuarios Activo/Inactivo:** corregido (todos aparecían "Inactivo" por mismatch `activo`/`active`; los inactivos no listaban; filas duplicadas). Dedup + campo `active` + `incluir_inactivos` + endpoint `PATCH /admin-sql/users/{id}/toggle-activo` (revoca sesiones al inactivar, bloquea auto-inactivación) + UI: checkbox "Mostrar inactivos" + botón Activar/Inactivar. Verificado E2E.
 - ✅ **Catálogo canónico NO-LIVE (P0):** `report-filters` ya no consulta POS en vivo (MPRO de `Sync_Productos`, SR de `Sync_Catalogo_Filtros`).
 - ✅ **Auto-refresh de sesión (P0):** corregido el auto-logout a 15 min.

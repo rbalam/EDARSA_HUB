@@ -96,6 +96,38 @@ async def _get_allowed_server_ids(current_user: Optional[Dict[str, Any]]) -> Lis
         return []
 
 
+def canonical_server_id(token: Optional[str]) -> Optional[str]:
+    """
+    Puerta única (regla de centralización) para resolver un token recibido del
+    frontend al **server_id real del POS** registrado en EDARSAHUB.
+
+    - Si el token es una unidad canónica (codigo o pk) → devuelve su server_id.
+    - Si el token es un server_id legacy (deprecated) → lo devuelve sin cambios
+      (compatibilidad limpia).
+    - Si no resuelve a nada → devuelve el token original (que aguas abajo dará
+      404 "Servidor no encontrado", comportamiento legacy preservado).
+
+    NO conecta a POS ni consulta en vivo: solo lee el catálogo canónico
+    (dbo.Unidades_Negocio vía UnidadesService).
+    """
+    if not token:
+        return token
+    u, matched_by = resolve_unidad_simple(token)
+    if u and u.get("server_id"):
+        if matched_by == 'unidad':
+            logger.debug(
+                "[CANONICAL-UNIDAD] token unidad '%s' → server %s (%s)",
+                token, u.get("server_id"), u.get("codigo"),
+            )
+        else:
+            logger.warning(
+                "[DEPRECATED-PARAM] server_id directo recibido (deprecated). "
+                "Migrar a 'unidad'. token=%s", token,
+            )
+        return u.get("server_id")
+    return token
+
+
 def resolve_unidad_simple(valor: Optional[str]):
     """
     Resolución PURA (sin RBAC) de un token a unidad.

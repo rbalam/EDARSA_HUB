@@ -9,7 +9,8 @@
 ## Backlog (agendado)
 - [ ] **Exportar a Excel/PDF** del análisis de Costos y Márgenes filtrado por unidad (y reporte de Auditoría: inventarios + movimientos + consumos + delta). (Solicitado por usuario 2026-06-08)
 - [ ] Receta Expandida: ordenar componentes por costo total (mayor→menor) + ordenar por cualquier columna con doble click + abrir sub-recetas (elaborados) al dar click. (Solicitado por usuario)
-- [ ] Migrar tableros restantes de `server_id` → `unidad` (TableroEjecutivo, DashboardIA, Compras, Finanzas resto).
+- [x] (2026-06-09) **Compras → contrato canónico `unidad`**: helper central `canonical_server_id(token)` en `request_resolver.py` (regla de centralización) aplicado a los 9 endpoints que resolvían el servidor directo (facturas-proveedor, detalle-factura, parametros GET/POST, productos-para-captura, auditoria-operativa, detalle-movimientos POST, detalle-consumos POST, analisis). Acepta unidad canónica (codigo/pk) y mantiene compatibilidad legacy `server_id`. NO-LIVE (solo lee catálogo). Verificado cURL E2E (codigo vs server_id idénticos) + 6 tests `test_compras_canonical_unidad.py`. `Finanzas`/`DashboardIA` ya eran canónicos.
+- [ ] Migrar tableros restantes de `server_id` → `unidad` (TableroEjecutivo resolver `unidad_negocio_id`, Finanzas resto).
 - [ ] Issue 2 handoff: centralizar selector inventario inicial/final + modales de detalle (movimientos/consumos) entre Análisis (Reportes.js) y Auditoría (Compras.js).
 - [ ] PIC: conectar tarjetas mock "Top Productos" y "Casas/Distribuidores" (DashboardIA) a `Sync_Sales`.
 - [ ] ESTELAR histórico solo desde Jun-2025 (¿fecha real de apertura o datos faltantes?).

@@ -8508,6 +8508,10 @@ async def obtener_parametros_compra(
     """
     verify_token(credentials.credentials)
     
+    # CANONICAL-UNIDAD: el path puede traer una unidad canónica o un server_id legacy.
+    from core.corporate_filters.request_resolver import canonical_server_id
+    server_id = canonical_server_id(server_id)
+    
     # Usar servicio del módulo compras que lee de SQL
     from modules.compras.service import obtener_parametros
     
@@ -8529,7 +8533,9 @@ async def guardar_parametros_compra(params: dict, credentials: HTTPAuthorization
     """
     verify_token(credentials.credentials)
     
-    server_id = params.get('server_id')
+    # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy.
+    from core.corporate_filters.request_resolver import canonical_server_id
+    server_id = canonical_server_id(params.get('server_id'))
     if not server_id:
         raise HTTPException(status_code=400, detail="server_id es requerido")
     
@@ -8577,6 +8583,10 @@ async def obtener_productos_para_captura(request: ProductosParaCapturaRequest, c
     para inicializar la captura manual de inventario físico.
     """
     await get_current_user(credentials)
+    
+    # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy.
+    from core.corporate_filters.request_resolver import canonical_server_id
+    request.server_id = canonical_server_id(request.server_id)
     
     # FASE T3.3: Migrado de db.servers a server_registry (EDARSAHUB)
     from core.server_registry import get_server_connection_info
@@ -8893,6 +8903,10 @@ async def realizar_auditoria_operativa(request: AuditoriaOperativaRequest, crede
     from core.server_registry import get_server_connection_info_with_secrets
     
     verify_token(credentials.credentials)
+    
+    # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy.
+    from core.corporate_filters.request_resolver import canonical_server_id
+    request.server_id = canonical_server_id(request.server_id)
     
     logging.info(f"[AUDITORIA] Iniciando auditoría - server: {request.server_id}, sucursal: {request.sucursal}")
     
@@ -9828,6 +9842,10 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
     print("Fecha final:", request.fecha_fin)
     print("Server ID:", request.server_id)
     
+    # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy (detalle-movimientos).
+    from core.corporate_filters.request_resolver import canonical_server_id
+    request.server_id = canonical_server_id(request.server_id)
+    
     # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)
     from core.server_registry import get_server_connection_info
     server = await get_server_connection_info(request.server_id, db=db)
@@ -10146,6 +10164,10 @@ async def obtener_detalle_consumos_post(request: DetalleConsumosRequest, current
     de Análisis (/reports/sales-details), que SÍ funciona para MPRO y SoftRestaurant.
     La fecha inicial proviene del inventario inicial (la envía el frontend en fecha_inicio).
     """
+    # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy.
+    from core.corporate_filters.request_resolver import canonical_server_id
+    request.server_id = canonical_server_id(request.server_id)
+
     almacen = ''
     if isinstance(request.almacenes, list) and request.almacenes:
         almacen = request.almacenes[0]
@@ -10531,6 +10553,10 @@ async def obtener_analisis_compras(request: AnalisisComprasRequest, credentials:
     """Obtiene análisis de compras por proveedor y mes con alertas de desviación"""
     verify_token(credentials.credentials)
     
+    # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy.
+    from core.corporate_filters.request_resolver import canonical_server_id
+    request.server_id = canonical_server_id(request.server_id)
+    
     # FASE T3.3: Migrado de db.servers a server_registry (EDARSAHUB)
     from core.server_registry import get_server_connection_info
     server = await get_server_connection_info(request.server_id, db=db)
@@ -10683,6 +10709,10 @@ async def obtener_facturas_proveedor(server_id: str, proveedor_codigo: str, anio
     """Obtiene las facturas/entradas de un proveedor específico"""
     verify_token(credentials.credentials)
     
+    # CANONICAL-UNIDAD: el path puede traer una unidad canónica o un server_id legacy.
+    from core.corporate_filters.request_resolver import canonical_server_id
+    server_id = canonical_server_id(server_id)
+    
     # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)
     from core.server_registry import get_server_connection_info
     server = await get_server_connection_info(server_id, db=db)
@@ -10749,6 +10779,10 @@ ORDER BY M.Mv_Fecha DESC
 async def obtener_detalle_factura(server_id: str, folio: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Obtiene el detalle de productos de una factura/entrada"""
     verify_token(credentials.credentials)
+    
+    # CANONICAL-UNIDAD: el path puede traer una unidad canónica o un server_id legacy.
+    from core.corporate_filters.request_resolver import canonical_server_id
+    server_id = canonical_server_id(server_id)
     
     # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)
     from core.server_registry import get_server_connection_info
