@@ -31,12 +31,31 @@ def test_tipo_movimiento_codigo_inexistente_queda_pendiente():
     assert res.motivo == "PENDIENTE_SIN_MAPEO"
 
 
-def test_producto_sin_puente_devuelve_bridge_ausente():
-    # El puente Producto_MapeoOrigen aún no existe -> BRIDGE_AUSENTE (no inventa IDs)
-    res = rc.resolver_producto_id("CIENFUEGOS", "SOFTRESTAURANT_PRO", "ABC123")
+def test_producto_real_se_resuelve_via_puente():
+    # Tras canonización (Paso 2), un código real debe resolver a un ProductoID int.
+    unidad = rc.get_server_by_unidad_codigo("CIENFUEGOS")
+    server_id = unidad.get("server_id") or unidad.get("id")
+    from core.sql_first.db import get_sql_connection
+    cur = get_sql_connection().cursor(as_dict=True)
+    cur.execute(
+        "SELECT TOP 1 CodigoFuente, SystemType FROM Sync_Productos_Insumos WHERE ServerID = %s "
+        "AND CodigoFuente IS NOT NULL AND LTRIM(RTRIM(CodigoFuente)) <> ''",
+        (str(server_id),),
+    )
+    row = cur.fetchone()
+    assert row is not None
+    res = rc.resolver_producto_id("CIENFUEGOS", row["SystemType"], row["CodigoFuente"])
+    assert res.resuelto is True
+    assert isinstance(res.canonical_id, int)
+    assert res.motivo == "OK"
+
+
+def test_producto_codigo_inexistente_queda_pendiente():
+    # Código que no existe -> PENDIENTE_SIN_MAPEO (nunca inventa ID)
+    res = rc.resolver_producto_id("CIENFUEGOS", "SOFTRESTAURANT_PRO", "CODIGO_FALSO_XYZ")
     assert res.resuelto is False
     assert res.canonical_id is None
-    assert res.motivo in ("BRIDGE_AUSENTE", "UNIDAD_DESCONOCIDA")
+    assert res.motivo == "PENDIENTE_SIN_MAPEO"
 
 
 def test_producto_unidad_desconocida():

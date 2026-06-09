@@ -36,8 +36,9 @@
 | ORIGEN | MPRO | 5,414 | 5,414 | 0 ❌ | AMBIGUO ❌ |
 `Producto_Catalogo`=0 · tipos=6 · descartados=0.
 
-## 6. Próximos pasos (cada uno requiere OK explícito)
-1. **DDL** `Producto_MapeoOrigen` (en revisión por usuario) → ejecutar → validar tabla vacía → reportar.
-2. **DML** poblar `Producto_Catalogo` + `Producto_MapeoOrigen` desde `Sync_Productos_Insumos` (solo inventariables), idempotente.
-3. **DATA** completar `Inventario_Almacenes` y `SucursalOrigenID` MPRO **desde origen** (diagnóstico ya listo).
-4. Corregir `sync_movimientos_from_server` (header+detalle, esquema real, resolver) + endpoint `detalle-movimientos` NO-LIVE.
+## 6. Estado de pasos (cadencia: proponer→autorizar→ejecutar→validar→reportar)
+- ✅ **PASO 1 (DDL) HECHO (2026-06-09):** `Producto_MapeoOrigen` creada (PK, UQ(ServerID,SystemType,CodigoFuente), IX_PMO_Producto, FK→Producto_Catalogo). 0 filas. Script: `migrations/ejecutar_ddl_producto_mapeoorigen.py`.
+- ✅ **PASO 2 (DML) HECHO (2026-06-09):** Canonización insumos → `Producto_Catalogo` 0→**11,735** + puente 0→**11,735**. SKU=GUID(InsumoID), CodigoProducto='INS-#######'. descartados=0, FK huérfanos=0, dups=0. **Idempotente** (re-run +0). Script: `migrations/ejecutar_dml_canonizacion_insumos.py`. Resolver operativo (test A100025→ProductoID=5). Tests: **8/8 PASS**.
+  - Reparto puente: 1b230a06/MPRO=5414, a5547321/SR=2629, 6d053c22/SR=2493, a5ff0e25/SR=1199.
+- ⏳ **PASO 3 (DATA, requiere POS):** completar `Inventario_Almacenes` + `SucursalOrigenID` MPRO **desde origen**. Diagnóstico listo: `scripts/diag_origen_almacenes_sucursal_safe.py` (correr en red productiva).
+- ⏳ **PASO 4:** corregir `sync_movimientos_from_server` (header+detalle, esquema real, usar resolver) + migrar endpoint `detalle-movimientos` a NO-LIVE. Código factible aquí; datos dependen de Paso 3 (POS).
