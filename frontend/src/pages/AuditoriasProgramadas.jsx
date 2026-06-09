@@ -225,7 +225,7 @@ export default function AuditoriasProgramadas() {
     setActionLoading(true);
     try {
       await api.post(`/v2/auditorias-programadas/${id}/${action}`);
-      await fetchAll(true);
+      await handleRefresh();
     } catch (error) {
       alert(`Error: ${error.response?.data?.detail || 'Error de conexión'}`);
     } finally {
@@ -257,7 +257,7 @@ export default function AuditoriasProgramadas() {
         tipo_auditoria: 'INVENTARIO_COMPLETO', frecuencia: 'SEMANAL',
         dia_semana: 0, dia_mes: 1, hora_ejecucion: '08:00', observaciones: '',
       });
-      await fetchAll(true);
+      await handleRefresh();
     } catch (error) {
       alert(`Error: ${error.response?.data?.detail || 'Error de conexión'}`);
     } finally {
@@ -317,7 +317,7 @@ export default function AuditoriasProgramadas() {
             <Label htmlFor="auto-refresh" className="text-zinc-600">Auto-refresh</Label>
           </div>
           
-          <Button variant="outline" size="sm" onClick={() => fetchAll(true)} disabled={refreshing}>
+          <Button variant="outline" size="sm" onClick={() => handleRefresh()} disabled={refreshing}>
             <RefreshCw className={`w-4 h-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
             Actualizar
           </Button>
