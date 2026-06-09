@@ -9867,186 +9867,107 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
     
-    # Formatear fechas para SQL
-    fecha_ini = request.fecha_inicio.replace('-', '') if request.fecha_inicio else ''
-    fecha_fin = request.fecha_fin.replace('-', '') if request.fecha_fin else ''
-    
-    if not fecha_ini or not fecha_fin:
+    # =====================================================================
+    # NO-LIVE: el detalle de movimientos se lee EXCLUSIVAMENTE de las tablas
+    # canónicas de EDARSAHUB (Inventario_Movimientos/Detalle), pobladas por el
+    # job sync_compras. NUNCA se conecta al POS en vivo (cumple regla NO-LIVE).
+    # El `codigo` (clave de producto origen) se resuelve a ProductoID canónico
+    # vía el puente Producto_MapeoOrigen (ServerID + SystemType + CodigoFuente).
+    # =====================================================================
+    if not request.fecha_inicio or not request.fecha_fin:
         return {"movimientos": [], "totales": {"entradas": 0, "salidas": 0, "neto": 0}, "error": "Fechas no válidas"}
-    
-    movimientos = []
-    totales = {"entradas": 0, "salidas": 0, "neto": 0}
-    
-    # Reintentos para manejar conexiones inestables
-    max_retries = 2
-    last_error = None
-    
-    # Limpiar código de espacios
+
+    system_type = (server.get('system_type') or '').upper()
     codigo_limpio = request.codigo.strip()
-    
-    # Si el código empieza con letra (posible prefijo de almacén A/B/C), también probar sin él
+    # Si el código empieza con letra (posible prefijo de almacén A/B/C), probar sin él.
     codigo_sin_prefijo = codigo_limpio[1:] if codigo_limpio and codigo_limpio[0].isalpha() else codigo_limpio
-    
-    # Filtro de almacenes
+
     almacenes_limpios = []
     if request.almacenes:
-        almacenes_limpios = [
-            str(a).replace("'", "''").strip()
-            for a in request.almacenes
-            if str(a).strip()
-        ]
-    
-    filtro_almacenes_movtos = ""
-    filtro_almacenes_movsinv = ""
-    
-    if almacenes_limpios:
-        almacenes_sql = ", ".join([f"'{a}'" for a in almacenes_limpios])
-        filtro_almacenes_movtos = f" AND RTRIM(LTRIM(M.idalmacen)) IN ({almacenes_sql}) "
-        filtro_almacenes_movsinv = f" AND RTRIM(LTRIM(M.idalmacen)) IN ({almacenes_sql}) "
-    
-    logging.info(f"[DETALLE_MOV] Buscando movimientos para código: '{codigo_limpio}' (sin prefijo: '{codigo_sin_prefijo}'), fechas: {fecha_ini} a {fecha_fin}, almacenes: {almacenes_limpios}")
-    
-    for retry in range(max_retries):
-        try:
-            if is_softrestaurant_system(server.get('system_type')):
-                # Obtener movimientos de presentaciones (movtosalmacen)
-                # Buscar con código completo Y sin prefijo (por si A/B es prefijo de almacén)
-                query_pres = f"""
-SELECT TOP 500 
-    M.fecha,
-    RTRIM(LTRIM(M.idconcepto)) as concepto,
-    C.descripcion as descripcion_concepto,
-    M.cantidad,
-    A.nombre as almacen,
-    ISNULL(CAST(M.movto AS VARCHAR(50)), '') as referencia,
-    CASE WHEN C.tipo = 1 THEN 'E' ELSE 'S' END as tipo
-FROM movtosalmacen M
-LEFT JOIN conceptos C ON C.idconcepto = M.idconcepto
-LEFT JOIN almacen A ON A.idalmacen = M.idalmacen
-WHERE (RTRIM(LTRIM(M.idinsumospresentaciones)) = '{codigo_limpio}' 
-    OR RTRIM(LTRIM(M.idinsumospresentaciones)) = '{codigo_sin_prefijo}')
-    AND M.fecha >= '{fecha_ini}'
-    AND M.fecha <= '{fecha_fin} 23:59:59'
-    {filtro_almacenes_movtos}
-ORDER BY M.fecha DESC
-"""
-                print("Ejecutando query_pres...")
-                logging.info(f"[DETALLE_MOV] Query presentaciones: {query_pres[:200]}...")
-                result_pres = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], query_pres
-                )
-                print(f"Resultados query_pres: {len(result_pres)} registros")
-                logging.info(f"[DETALLE_MOV] Resultados presentaciones: {len(result_pres)}")
-                
-                for m in result_pres:
-                    cantidad = float(m.get('cantidad', 0) or 0)
-                    tipo = m.get('tipo', 'E')
-                    
-                    movimientos.append({
-                        "fecha": m['fecha'].isoformat() if hasattr(m['fecha'], 'isoformat') else str(m['fecha']),
-                        "concepto": m['concepto'],
-                        "descripcion": m.get('descripcion_concepto', ''),
-                        "cantidad": cantidad if tipo == 'E' else -cantidad,
-                        "almacen": m.get('almacen', ''),
-                        "referencia": str(m.get('referencia', '')),
-                        "tipo": tipo
-                    })
-                    
-                    if tipo == 'E':
-                        totales["entradas"] += cantidad
-                    else:
-                        totales["salidas"] += cantidad
-                
-                # También buscar en movsinv (para insumos)
-                query_ins = f"""
-SELECT TOP 500 
-    M.fecha,
-    RTRIM(LTRIM(M.idconcepto)) as concepto,
-    C.descripcion as descripcion_concepto,
-    M.cantidad,
-    A.nombre as almacen,
-    ISNULL(CAST(M.folio AS VARCHAR(50)), '') as referencia,
-    CASE WHEN C.tipo = 1 THEN 'E' ELSE 'S' END as tipo
-FROM movsinv M
-LEFT JOIN conceptos C ON C.idconcepto = M.idconcepto
-LEFT JOIN almacen A ON A.idalmacen = M.idalmacen
-WHERE (RTRIM(LTRIM(M.idinsumo)) = '{codigo_limpio}'
-    OR RTRIM(LTRIM(M.idinsumo)) = '{codigo_sin_prefijo}')
-    AND M.fecha >= '{fecha_ini}'
-    AND M.fecha <= '{fecha_fin} 23:59:59'
-    {filtro_almacenes_movsinv}
-ORDER BY M.fecha DESC
-"""
-                print("Ejecutando query_ins...")
-                logging.info(f"[DETALLE_MOV] Query insumos: {query_ins[:200]}...")
-                result_ins = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], query_ins
-                )
-                print(f"Resultados query_ins: {len(result_ins)} registros")
-                logging.info(f"[DETALLE_MOV] Resultados insumos: {len(result_ins)}")
-                
-                for m in result_ins:
-                    cantidad = float(m.get('cantidad', 0) or 0)
-                    tipo = m.get('tipo', 'E')
-                    
-                    movimientos.append({
-                        "fecha": m['fecha'].isoformat() if hasattr(m['fecha'], 'isoformat') else str(m['fecha']),
-                        "concepto": m['concepto'],
-                        "descripcion": m.get('descripcion_concepto', ''),
-                        "cantidad": cantidad if tipo == 'E' else -cantidad,
-                        "almacen": m.get('almacen', ''),
-                        "referencia": str(m.get('referencia', '')),
-                        "tipo": tipo
-                    })
-                    
-                    if tipo == 'E':
-                        totales["entradas"] += cantidad
-                    else:
-                        totales["salidas"] += cantidad
-                
-                # Ordenar por fecha
-                movimientos.sort(key=lambda x: x['fecha'], reverse=True)
-                
-                totales["neto"] = totales["entradas"] - totales["salidas"]
-                
-                return {
-                    "movimientos": movimientos,
-                    "totales": totales
-                }
+        almacenes_limpios = [str(a).strip() for a in request.almacenes if str(a).strip()]
+
+    movimientos = []
+    totales = {"entradas": 0, "salidas": 0, "neto": 0}
+
+    logging.info(f"[DETALLE_MOV][NO-LIVE] server={request.server_id} sys={system_type} codigo='{codigo_limpio}' "
+                 f"fechas={request.fecha_inicio}..{request.fecha_fin} almacenes={almacenes_limpios}")
+
+    try:
+        conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=15)
+        cursor = conn.cursor(as_dict=True)
+
+        # 1) Resolver ProductoID(s) canónicos desde el puente Producto_MapeoOrigen.
+        cursor.execute(
+            """SELECT DISTINCT ProductoID FROM dbo.Producto_MapeoOrigen
+               WHERE ServerID = %s AND SystemType = %s
+                 AND CodigoFuente IN (%s, %s) AND Activo = 1""",
+            (request.server_id, system_type, codigo_limpio, codigo_sin_prefijo)
+        )
+        producto_ids = [r['ProductoID'] for r in cursor.fetchall()]
+
+        if not producto_ids:
+            conn.close()
+            return {"movimientos": [], "totales": totales,
+                    "message": "Sin mapeo canónico para el producto (Producto_MapeoOrigen)",
+                    "source": "EDARSAHUB_NOLIVE"}
+
+        # 2) Detalle de movimientos canónico (NO-LIVE).
+        prod_ph = ", ".join(["%s"] * len(producto_ids))
+        params = list(producto_ids) + [request.fecha_inicio, request.fecha_fin]
+        filtro_almacen = ""
+        if almacenes_limpios:
+            alm_ph = ", ".join(["%s"] * len(almacenes_limpios))
+            filtro_almacen = f" AND al.CodigoAlmacen IN ({alm_ph}) "
+            params += almacenes_limpios
+
+        query = f"""
+        SELECT TOP 1000
+            m.FechaMovimiento AS fecha,
+            tm.Codigo AS concepto,
+            tm.Descripcion AS descripcion_concepto,
+            d.Cantidad AS cantidad,
+            al.NombreAlmacen AS almacen,
+            ISNULL(m.FolioReferencia, '') AS referencia,
+            tm.Naturaleza AS tipo
+        FROM dbo.Inventario_MovimientosDetalle d
+        INNER JOIN dbo.Inventario_Movimientos m ON m.MovimientoID = d.MovimientoID
+        INNER JOIN dbo.Inventario_TipoMovimiento tm ON tm.TipoMovimientoID = m.TipoMovimientoID
+        LEFT JOIN dbo.Inventario_Almacenes al ON al.AlmacenID = m.AlmacenID
+        WHERE d.ProductoID IN ({prod_ph})
+          AND m.FechaMovimiento >= CAST(%s AS DATE)
+          AND m.FechaMovimiento < DATEADD(DAY, 1, CAST(%s AS DATE))
+          {filtro_almacen}
+        ORDER BY m.FechaMovimiento DESC
+        """
+        cursor.execute(query, tuple(params))
+        for r in cursor.fetchall():
+            cantidad = float(r['cantidad'] or 0)
+            tipo = (r['tipo'] or 'S').upper()
+            movimientos.append({
+                "fecha": r['fecha'].isoformat() if hasattr(r['fecha'], 'isoformat') else str(r['fecha']),
+                "concepto": r['concepto'] or '',
+                "descripcion": r['descripcion_concepto'] or '',
+                "cantidad": cantidad if tipo == 'E' else -cantidad,
+                "almacen": r['almacen'] or '',
+                "referencia": str(r['referencia'] or ''),
+                "tipo": tipo
+            })
+            if tipo == 'E':
+                totales["entradas"] += cantidad
             else:
-                # Para otros sistemas (MPRO, etc.), retornar vacío por ahora
-                return {
-                    "movimientos": [],
-                    "totales": {"entradas": 0, "salidas": 0, "neto": 0},
-                    "error": f"Sistema {server['system_type']} no soportado para detalle de movimientos"
-                }
-            
-        except Exception as e:
-            last_error = str(e)
-            logging.warning(f"[DETALLE_MOV] Intento {retry + 1}/{max_retries} falló: {e}")
-            if retry < max_retries - 1:
-                import asyncio
-                await asyncio.sleep(1)  # Esperar 1 segundo antes de reintentar
-            continue
-    
-    # Si llegamos aquí, todos los reintentos fallaron
-    logging.error(f"[DETALLE_MOV] Todos los reintentos fallaron: {last_error}")
-    
-    # Devolver respuesta con error pero sin hacer crash
-    if "unavailable" in str(last_error).lower() or "timeout" in str(last_error).lower():
+                totales["salidas"] += cantidad
+        conn.close()
+
+        totales["neto"] = totales["entradas"] - totales["salidas"]
+        return {"movimientos": movimientos, "totales": totales, "source": "EDARSAHUB_NOLIVE"}
+
+    except Exception as e:
+        logging.error(f"[DETALLE_MOV][NO-LIVE] Error: {str(e)[:200]}")
         return {
             "movimientos": [],
             "totales": {"entradas": 0, "salidas": 0, "neto": 0},
-            "error": "El servidor externo no está disponible. Intente nuevamente en unos momentos."
+            "error": f"Error al obtener movimientos: {str(e)[:120]}"
         }
-    
-    return {
-        "movimientos": [],
-        "totales": {"entradas": 0, "salidas": 0, "neto": 0},
-        "error": f"Error al obtener movimientos: {last_error[:100]}"
-    }
 
 
 @api_router.post("/compras/detalle-movimientos-sql-first")

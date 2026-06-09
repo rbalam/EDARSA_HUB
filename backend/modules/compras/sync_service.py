@@ -346,7 +346,10 @@ def obtener_requisiciones_sync(
             params.append(server_id)
         
         if sucursal:
-            query += " AND (sucursal LIKE %s OR sucursal_id = %s)"
+            # SoftRestaurant es 1:1 servidor-sucursal y guarda sucursal=''. Como el query
+            # ya filtra por server_id, las filas sin sucursal (SR) deben pasar siempre;
+            # el filtro de sucursal solo desambigua servidores multisucursal (MPRO).
+            query += " AND (sucursal LIKE %s OR sucursal_id = %s OR ISNULL(sucursal,'') = '')"
             params.extend([f'%{sucursal}%', sucursal])
         
         query += f" ORDER BY fecha DESC OFFSET 0 ROWS FETCH NEXT {limit} ROWS ONLY"
@@ -527,54 +530,55 @@ def sync_requisiciones_from_server(
     try:
         # Query según tipo de sistema
         if is_mpro_system(system_type):
+            # Esquema real ManagementPro (verificado): Orden_Compra es a nivel renglón
+            # (1 fila por producto). Se agrupa por folio. Columnas reales:
+            # Es_Cve_Estado (no Oc_Status), Pv_Descripcion (no Pv_Nombre),
+            # importe = SUM(Oc_Precio_Neto_Importe) (no existe Oc_Total).
             query = """
                 SELECT 
                     'OC' as tipo,
                     OC.Oc_Folio as folio,
-                    OC.Oc_Fecha as fecha,
-                    OC.Oc_Fecha_Entrega as fecha_entrega,
-                    P.Pv_Nombre as proveedor,
-                    OC.Pv_Cve_Proveedor as proveedor_id,
-                    S.Sc_Descripcion as sucursal,
-                    OC.Sc_Cve_Sucursal as sucursal_id,
-                    1 as total_productos,
-                    ISNULL(OC.Oc_Total, 0) as importe,
-                    CASE OC.Oc_Status 
-                        WHEN 0 THEN 'PENDIENTE'
-                        WHEN 1 THEN 'RECIBIDO'
-                        ELSE 'OTRO'
-                    END as estatus
+                    MIN(OC.Oc_Fecha) as fecha,
+                    MIN(OC.Oc_Fecha_Entrega) as fecha_entrega,
+                    MAX(P.Pv_Descripcion) as proveedor,
+                    MAX(OC.Pv_Cve_Proveedor) as proveedor_id,
+                    MAX(S.Sc_Descripcion) as sucursal,
+                    MAX(OC.Sc_Cve_Sucursal) as sucursal_id,
+                    COUNT(OC.Pr_Cve_Producto) as total_productos,
+                    SUM(ISNULL(OC.Oc_Precio_Neto_Importe, 0)) as importe,
+                    MAX(OC.Es_Cve_Estado) as estatus
                 FROM Orden_Compra OC
                 LEFT JOIN Proveedor P ON P.Pv_Cve_Proveedor = OC.Pv_Cve_Proveedor
                 LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = OC.Sc_Cve_Sucursal
-                WHERE OC.Oc_Status = 0
-                AND OC.Oc_Fecha >= DATEADD(MONTH, -3, GETDATE())
-                ORDER BY OC.Oc_Fecha DESC
+                WHERE OC.Es_Cve_Estado IN ('PXA', 'AC', 'RCT')
+                  AND OC.Oc_Fecha >= DATEADD(MONTH, -3, GETDATE())
+                GROUP BY OC.Oc_Folio
+                ORDER BY MIN(OC.Oc_Fecha) DESC
             """
         elif is_softrestaurant_system(system_type):
+            # Esquema real SoftRestaurant (verificado): ordenescompra usa fechacaptura/
+            # fecharecepcion, aplicada/cancelado (no 'estatus'); JOIN ordenescompramov por
+            # idordencompra. Mirror de la query LIVE legacy que ya funcionaba.
             query = """
                 SELECT 
-                    'OC' as tipo,
-                    OC.folio as folio,
-                    OC.fecha as fecha,
-                    OC.fechaentrega as fecha_entrega,
-                    P.nombre as proveedor,
-                    CAST(OC.idProveedor AS VARCHAR) as proveedor_id,
+                    'ORDEN' as tipo,
+                    CAST(OC.folio AS VARCHAR(50)) as folio,
+                    OC.fechacaptura as fecha,
+                    OC.fecharecepcion as fecha_entrega,
+                    MAX(PR.nombre) as proveedor,
+                    CAST(MAX(OC.idproveedor) AS VARCHAR(50)) as proveedor_id,
                     '' as sucursal,
                     '' as sucursal_id,
-                    (SELECT COUNT(*) FROM ordenescompramov WHERE idOrdenCompra = OC.idOrdenCompra) as total_productos,
+                    COUNT(OCM.idinsumo) as total_productos,
                     ISNULL(OC.total, 0) as importe,
-                    CASE OC.estatus
-                        WHEN 0 THEN 'PENDIENTE'
-                        WHEN 1 THEN 'PARCIAL'
-                        WHEN 2 THEN 'RECIBIDO'
-                        ELSE 'OTRO'
-                    END as estatus
+                    CASE WHEN OC.aplicada = 0 THEN 'PXA' ELSE 'AUT' END as estatus
                 FROM ordenescompra OC
-                LEFT JOIN proveedores P ON P.idProveedor = OC.idProveedor
-                WHERE OC.estatus IN (0, 1)
-                AND OC.fecha >= DATEADD(MONTH, -3, GETDATE())
-                ORDER BY OC.fecha DESC
+                LEFT JOIN proveedores PR ON PR.idproveedor = OC.idproveedor
+                LEFT JOIN ordenescompramov OCM ON OCM.idordencompra = OC.idordencompra
+                WHERE OC.aplicada = 0 AND OC.cancelado = 0
+                  AND OC.fechacaptura >= DATEADD(MONTH, -3, GETDATE())
+                GROUP BY OC.folio, OC.fechacaptura, OC.fecharecepcion, OC.aplicada, OC.total
+                ORDER BY OC.fechacaptura DESC
             """
         else:
             return {"status": "ERROR", "records_synced": 0, "error": f"Sistema no soportado: {system_type}"}

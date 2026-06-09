@@ -641,3 +641,11 @@ Verificado: cURL (toggle desactivar/reactivar, revocación de sesiones, bloqueo 
 - E2E PROBADO desde preview: 46 almacenes y 366 movimientos ESTELAR (3d, 0 descartados) persistidos en tablas canónicas.
 - Scripts diagnóstico/regresión: `/app/backend/tests/diag_*.py`.
 - PENDIENTE (no conectividad): poblar `Inventario_ConceptoMapeoOrigen` para MPRO; desambiguar sucursal MPRO compartido; adapter `tablajeria_mpro`; backfill completo como job background.
+
+## 2026-06-09 (cont.) — Requisiciones SR+MPRO NO-LIVE + migración detalle-movimientos
+- FIX sync_requisiciones (`sync_service.py`): queries corregidas a esquemas reales.
+  - MPRO: `Orden_Compra` agrupada por folio; `Es_Cve_Estado` (no Oc_Status), `Pv_Descripcion` (no Pv_Nombre), importe=SUM(Oc_Precio_Neto_Importe) (no Oc_Total).
+  - SoftRestaurant: `ordenescompra` con `fechacaptura/fecharecepcion`, `aplicada/cancelado`, JOIN `ordenescompramov` por idordencompra (no 'estatus'/'fecha').
+  - E2E: ESTELAR=86, ORIGEN(MPRO)=2947 requisiciones en `Compras_Requisiciones_Sync`.
+- FIX lectura `obtener_requisiciones_sync`: el filtro de sucursal ocultaba SoftRestaurant (guarda sucursal=''). Ahora filas sin sucursal pasan dentro del mismo server_id (SR es 1:1 servidor-sucursal). Endpoint `/compras/pedidos-vigentes/{id}` verificado: ESTELAR 86, ORIGEN 500.
+- MIGRACIÓN NO-LIVE `/compras/detalle-movimientos` (POST, server.py): antes consultaba POS live (movtosalmacen/movsinv). Ahora lee EXCLUSIVAMENTE tablas canónicas (Inventario_MovimientosDetalle/Movimientos/TipoMovimiento/Almacenes), resolviendo codigo→ProductoID vía `Producto_MapeoOrigen`. Verificado: producto A700002 (ESTELAR) devuelve movimientos reales con entradas/salidas/totales y source=EDARSAHUB_NOLIVE.
