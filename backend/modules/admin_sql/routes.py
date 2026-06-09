@@ -58,21 +58,52 @@ def execute_query(sql: str, params: tuple = ()) -> List[Dict[str, Any]]:
         raise HTTPException(status_code=500, detail=f"Error de base de datos: {str(e)}")
 
 
+def execute_write(sql: str, params: tuple = (), fetch: bool = False) -> List[Dict[str, Any]]:
+    """Ejecuta una sentencia de escritura (UPDATE/INSERT/DELETE) con commit.
+
+    Args:
+        fetch: True si la sentencia devuelve resultset (p.ej. OUTPUT INSERTED.*).
+    """
+    cn = get_edarsahub_connection()
+    try:
+        cur = cn.cursor(as_dict=True)
+        cur.execute(sql, params)
+        rows = cur.fetchall() if fetch else []
+        cn.commit()
+        return rows
+    except Exception as e:
+        logging.error(f"[ADMIN_SQL] Error en escritura: {e}")
+        raise HTTPException(status_code=500, detail=f"Error de base de datos: {str(e)}")
+    finally:
+        cn.close()
+
+
 @router.get("/users")
-async def get_users(current_user: dict = Depends(get_current_user)):
+async def get_users(
+    incluir_inactivos: bool = False,
+    current_user: dict = Depends(get_current_user),
+):
     """
     Lista todos los usuarios del sistema desde EDARSAHUB SQL.
-    
+
     Incluye:
     - Datos básicos del usuario
-    - Rol principal asignado
+    - Rol principal asignado (deduplicado: 1 fila por usuario)
     - Servidores asignados
     - Sucursales asignadas
+
+    Args:
+        incluir_inactivos: si True, también devuelve usuarios con Activo=0
+                           (para poder reactivarlos desde la pantalla Usuarios).
     """
     require_admin(current_user)
 
-    # Obtener usuarios con su rol principal
-    users = execute_query("""
+    # Filtro de estado: por defecto solo activos (comportamiento legacy).
+    where_estado = "" if incluir_inactivos else "WHERE ISNULL(u.Activo, 1) = 1"
+
+    # OUTER APPLY TOP 1 → evita filas duplicadas cuando un usuario tiene
+    # más de una asignación de rol principal activa.
+    users = execute_query(f"""
     SELECT
         CAST(u.UsuarioID AS NVARCHAR(100)) AS id,
         CAST(u.UsuarioID AS NVARCHAR(100)) AS UsuarioID,
@@ -91,13 +122,17 @@ async def get_users(current_user: dict = Depends(get_current_user)):
         r.CodigoRol AS role_code,
         r.RolID
     FROM Usuario_Catalogo u
-    LEFT JOIN Usuario_RolesAsignacion ura
-        ON ura.UsuarioID = u.UsuarioID
-       AND ISNULL(ura.Activo, 1) = 1
-       AND ISNULL(ura.EsPrincipal, 1) = 1
+    OUTER APPLY (
+        SELECT TOP 1 ura.RolID
+        FROM Usuario_RolesAsignacion ura
+        WHERE ura.UsuarioID = u.UsuarioID
+          AND ISNULL(ura.Activo, 1) = 1
+          AND ISNULL(ura.EsPrincipal, 1) = 1
+        ORDER BY ura.RolID
+    ) ra
     LEFT JOIN Usuario_Roles r
-        ON r.RolID = ura.RolID
-    WHERE ISNULL(u.Activo, 1) = 1
+        ON r.RolID = ra.RolID
+    {where_estado}
     ORDER BY u.NombreCompleto, u.Email
     """)
 
@@ -138,6 +173,9 @@ async def get_users(current_user: dict = Depends(get_current_user)):
     rbac_map = rbac_pilot_service.get_rbac_map()
     for u in users:
         uid = str(u.get("UsuarioID", ""))
+        # Normalizar estado: el frontend lee `active` (booleano). Antes solo
+        # existía `activo` → todos se mostraban "Inactivo". Exponemos ambos.
+        u["active"] = bool(u.get("activo"))
         u["allowed_servers"] = map_serv.get(uid, [])
         u["allowed_sucursales"] = map_suc.get(uid, [])
         u["allowed_warehouses"] = []
@@ -148,6 +186,70 @@ async def get_users(current_user: dict = Depends(get_current_user)):
         u["sec_permisos"] = rbac.get("sec_permisos", [])
 
     return users
+
+
+@router.patch("/users/{user_id}/toggle-activo")
+async def toggle_user_activo(user_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Activa/Inactiva un usuario (Usuario_Catalogo.Activo).
+
+    - Al INACTIVAR, además se revocan todas sus sesiones activas
+      (no podrá seguir usando el sistema; el refresh token deja de servir).
+    - No se permite que un admin se inactive a sí mismo.
+    """
+    require_admin(current_user)
+
+    # Obtener estado y PublicUUID actuales
+    rows = execute_query(
+        "SELECT CAST(UsuarioID AS NVARCHAR(100)) AS UsuarioID, PublicUUID, "
+        "ISNULL(Activo, 1) AS activo, Email FROM Usuario_Catalogo WHERE UsuarioID = %s",
+        (user_id,),
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    u = rows[0]
+    actual = bool(u.get("activo"))
+    nuevo = 0 if actual else 1
+
+    # Evitar auto-inactivación
+    if nuevo == 0:
+        me = str(current_user.get("id") or current_user.get("_id") or "")
+        if str(u.get("UsuarioID")) == me or str(u.get("PublicUUID")) == me:
+            raise HTTPException(status_code=400, detail="No puedes inactivar tu propio usuario")
+
+    # Actualizar estado
+    execute_write(
+        "UPDATE Usuario_Catalogo SET Activo = %s WHERE UsuarioID = %s",
+        (nuevo, user_id),
+    )
+
+    sesiones_revocadas = 0
+    if nuevo == 0:
+        # Revocar sesiones activas (la sesión guarda UsuarioID = PublicUUID;
+        # se incluye también el id numérico por compatibilidad con sesiones antiguas).
+        public_uuid = str(u.get("PublicUUID") or "")
+        try:
+            res = execute_write(
+                "UPDATE Sesiones SET EstaActiva = 0, FechaRevocacion = GETUTCDATE(), "
+                "MotivoRevocacion = 'user_deactivated', FechaModificacion = GETUTCDATE() "
+                "OUTPUT INSERTED.SesionID "
+                "WHERE EstaActiva = 1 AND UsuarioID IN (%s, %s)",
+                (public_uuid, str(user_id)),
+                fetch=True,
+            )
+            sesiones_revocadas = len(res or [])
+        except Exception as e:
+            logging.warning(f"[ADMIN_SQL] No se pudieron revocar sesiones de {user_id}: {e}")
+
+    return {
+        "success": True,
+        "id": str(user_id),
+        "email": u.get("Email"),
+        "activo": bool(nuevo),
+        "active": bool(nuevo),
+        "sesiones_revocadas": sesiones_revocadas,
+    }
 
 
 @router.get("/roles")

@@ -1,6 +1,7 @@
 import logger from '../services/logger';
 // FASE AUTH-SECURITY-01 / FASE 4.1: getToken eliminado, auth viaja en cookie httpOnly
 import { getSessionUser } from '../services/authStorage';
+import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,10 @@ const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 const Usuarios = () => {
   // ============= USUARIO ACTUAL (para verificación de rol) =============
-  const currentUser = getSessionUser() || {};
+  // AuthContext es la fuente primaria (persiste en estado React durante la
+  // navegación SPA); getSessionUser es el fallback de caché.
+  const { user: authUser } = useAuth();
+  const currentUser = authUser || getSessionUser() || {};
   
   // ============= ESTADOS USUARIOS =============
   const [users, setUsers] = useState([]);
@@ -54,6 +58,8 @@ const Usuarios = () => {
   // ============= ESTADOS BÚSQUEDA =============
   const [searchUsers, setSearchUsers] = useState('');
   const [searchRoles, setSearchRoles] = useState('');
+  // P0 USUARIOS: mostrar/ocultar inactivos (default: ocultos)
+  const [showInactive, setShowInactive] = useState(false);
   
   // ============= ESTADOS PERMISOS CATÁLOGOS =============
   const [usuariosCatalogos, setUsuariosCatalogos] = useState([]);
@@ -106,8 +112,10 @@ const Usuarios = () => {
 
   const loadUsers = useCallback(async () => {
     try {
-      // SQL-FIRST: Usuarios desde EDARSAHUB SQL
-      const response = await api.get('/admin-sql/users');
+      // SQL-FIRST: Usuarios desde EDARSAHUB SQL.
+      // incluir_inactivos=true para poder mostrar/reactivar usuarios inactivos
+      // (el filtrado visual lo controla el checkbox "Mostrar inactivos").
+      const response = await api.get('/admin-sql/users?incluir_inactivos=true');
       setUsers(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       toast.error('Error al cargar usuarios');
@@ -116,6 +124,24 @@ const Usuarios = () => {
       setLoading(false);
     }
   }, []);
+
+  // P0 USUARIOS: activar/desactivar usuario (con revocación de sesiones al inactivar)
+  const handleToggleActivo = useCallback(async (user) => {
+    const accion = user.active ? 'inactivar' : 'activar';
+    try {
+      const { data } = await api.patch(`/admin-sql/users/${user.id}/toggle-activo`);
+      if (data?.active) {
+        toast.success(`Usuario activado correctamente`);
+      } else {
+        const ses = data?.sesiones_revocadas || 0;
+        toast.success(`Usuario inactivado${ses ? ` · ${ses} sesión(es) cerrada(s)` : ''}`);
+      }
+      await loadUsers();
+    } catch (error) {
+      const msg = error?.response?.data?.detail || `No se pudo ${accion} el usuario`;
+      toast.error(msg);
+    }
+  }, [loadUsers]);
 
   const loadServers = useCallback(async () => {
     try {
@@ -602,7 +628,7 @@ const Usuarios = () => {
   };
 
   const getCurrentUserRole = () => {
-    const userData = getSessionUser() || {};
+    const userData = authUser || getSessionUser() || {};
     return userData.role || '';
   };
 
@@ -865,7 +891,12 @@ const Usuarios = () => {
           <div className="flex flex-col gap-3 mb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <p className="text-sm text-zinc-600">{users.length} usuario(s) registrado(s)</p>
+                <p className="text-sm text-zinc-600">
+                  {users.filter(u => u.active).length} activo(s)
+                  {users.filter(u => !u.active).length > 0 && (
+                    <span className="text-red-500"> · {users.filter(u => !u.active).length} inactivo(s)</span>
+                  )}
+                </p>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -882,24 +913,34 @@ const Usuarios = () => {
                 Agregar Usuario
               </Button>
             </div>
-            {/* Campo de búsqueda */}
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-              <Input
-                placeholder="Buscar por nombre o email..."
-                value={searchUsers}
-                onChange={(e) => setSearchUsers(e.target.value)}
-                className="pl-9"
-                data-testid="search-users-input"
-              />
-              {searchUsers && (
-                <button
-                  onClick={() => setSearchUsers('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
+            {/* Campo de búsqueda + filtro de inactivos */}
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="relative max-w-md flex-1 min-w-[240px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                <Input
+                  placeholder="Buscar por nombre o email..."
+                  value={searchUsers}
+                  onChange={(e) => setSearchUsers(e.target.value)}
+                  className="pl-9"
+                  data-testid="search-users-input"
+                />
+                {searchUsers && (
+                  <button
+                    onClick={() => setSearchUsers('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              <label className="flex items-center gap-2 text-sm text-zinc-600 cursor-pointer select-none" data-testid="show-inactive-label">
+                <Checkbox
+                  checked={showInactive}
+                  onCheckedChange={(v) => setShowInactive(!!v)}
+                  data-testid="show-inactive-checkbox"
+                />
+                Mostrar inactivos
+              </label>
             </div>
           </div>
 
@@ -910,6 +951,7 @@ const Usuarios = () => {
           ) : usersExpanded ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {users
+                .filter(user => showInactive || user.active)
                 .filter(user => {
                   if (!searchUsers.trim()) return true;
                   const search = searchUsers.toLowerCase();
@@ -960,6 +1002,18 @@ const Usuarios = () => {
                             <Edit className="h-4 w-4 mr-1" />
                             Editar
                           </Button>
+                          {!isSuperAdmin(user.role) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={`flex-1 ${user.active ? 'text-red-600 hover:text-red-700 hover:bg-red-50' : 'text-green-600 hover:text-green-700 hover:bg-green-50'}`}
+                              onClick={() => handleToggleActivo(user)}
+                              data-testid="toggle-activo-button"
+                            >
+                              {user.active ? <XCircle className="h-4 w-4 mr-1" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
+                              {user.active ? 'Inactivar' : 'Activar'}
+                            </Button>
+                          )}
                           {!isSuperAdmin(user.role) && (
                             <Button variant="outline" size="sm" className="flex-1" onClick={() => openPermissionsDialog(user)} data-testid="permissions-button">
                               <Settings className="h-4 w-4 mr-1" />
@@ -1119,6 +1173,7 @@ const Usuarios = () => {
                 </thead>
                 <tbody>
                   {users
+                    .filter(user => showInactive || user.active)
                     .filter(user => {
                       if (!searchUsers.trim()) return true;
                       const search = searchUsers.toLowerCase();
@@ -1143,6 +1198,18 @@ const Usuarios = () => {
                           <Button variant="ghost" size="sm" onClick={() => openEditDialog(user)}>
                             <Edit className="h-3 w-3" />
                           </Button>
+                          {!isSuperAdmin(user.role) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={user.active ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'}
+                              title={user.active ? 'Inactivar usuario' : 'Activar usuario'}
+                              onClick={() => handleToggleActivo(user)}
+                              data-testid="toggle-activo-button-row"
+                            >
+                              {user.active ? <XCircle className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
+                            </Button>
+                          )}
                           {!isSuperAdmin(user.role) && (
                             <Button variant="ghost" size="sm" onClick={() => openPermissionsDialog(user)}>
                               <Settings className="h-3 w-3" />

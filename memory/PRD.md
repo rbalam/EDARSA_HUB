@@ -13,9 +13,10 @@ Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosist
 Spanish (Español)
 
 ### Estado actualizado (2026-06-09)
-- ✅ **Catálogo canónico NO-LIVE (P0):** `/servers/{id}/report-filters` ya NO consulta los POS en vivo. MPRO deriva de `Sync_Productos`; SoftRestaurant de la nueva `Sync_Catalogo_Filtros` (jerarquía insumos). Cierra la recurrencia de violación NO-LIVE y el riesgo de cooldown del host compartido de MPRO. Detalle en CHANGELOG 2026-06-09.
-- ✅ **Auto-refresh de sesión (P0):** corregido el auto-logout a los 15 min (refresh backend 500→200, token en body, interceptor axios single-flight, rotación+replay intactos). Detalle en CHANGELOG 2026-06-09.
-- ⏳ **Siguiente:** agregar nivel Categoría al filtro de CostosMargenes; migrar tableros restantes a `unidad`; DashboardIA mock→Sync_Sales; export Auditoría Excel/PDF.
+- ✅ **P0 Usuarios Activo/Inactivo:** corregido (todos aparecían "Inactivo" por mismatch `activo`/`active`; los inactivos no listaban; filas duplicadas). Dedup + campo `active` + `incluir_inactivos` + endpoint `PATCH /admin-sql/users/{id}/toggle-activo` (revoca sesiones al inactivar, bloquea auto-inactivación) + UI: checkbox "Mostrar inactivos" + botón Activar/Inactivar. Verificado E2E.
+- ✅ **Catálogo canónico NO-LIVE (P0):** `report-filters` ya no consulta POS en vivo (MPRO de `Sync_Productos`, SR de `Sync_Catalogo_Filtros`).
+- ✅ **Auto-refresh de sesión (P0):** corregido el auto-logout a 15 min.
+- ⏳ **Siguiente (pedido por el usuario):** nivel Categoría en filtro de Costos y Márgenes; migrar tableros `server_id`→`unidad`; DashboardIA mock→`Sync_Sales`; export Auditoría Excel/PDF.
 
 ### Estado previo (2026-06-08)
 - ✅ **Unificación canónica de tableros (P0):** contrato `unidad_codigo` → backend valida permiso y resuelve server_id/sucursal_origen_id (helper central `core/corporate_filters/request_resolver.py`). `server_id` deprecated (compat con warning). Operativo + Inventarios migrados. MPRO desambiguado (ORIGEN/QRO). Detalle en CHANGELOG 2026-06-08.

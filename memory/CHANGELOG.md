@@ -402,3 +402,21 @@ Causa raíz (triple) en el flujo de refresh, que devolvía 500/401:
 - Frontend `lib/api.js`: interceptor de respuesta con **refresco silencioso single-flight** — en 401 (excepto endpoints de auth) llama `/auth/refresh` una vez (cookie httpOnly de 7 días vía withCredentials), encola requests concurrentes, actualiza el Bearer en sessionStorage y reintenta. Solo desloguea si el refresh falla.
 - Rotación de refresh token + detección de replay PRESERVADAS. Consultado `integration_expert` (obligatorio) antes de tocar auth.
 - Verificado: cURL (login→refresh 200 con token→/auth/me 200→rotación→replay del token viejo 401); 3 tests `tests/test_auth_refresh_flow.py`; smoke navegador (Bearer corrupto + reload → sesión mantenida, sin redirect a /login, token renovado).
+
+## [2026-06-09] P0 USUARIOS — Activo/Inactivo (bug: todos aparecían inactivos, sin forma de activarlos)
+
+Causa raíz triple en la pantalla Usuarios:
+1. Mismatch de campo: el backend devolvía `activo` (es) pero el frontend leía `active` (en) → TODOS mostraban "Inactivo".
+2. La query filtraba `WHERE Activo=1` → los inactivos no aparecían (imposible reactivarlos).
+3. Filas duplicadas por el JOIN de roles (admin salía 3×).
+
+Backend (`modules/admin_sql/routes.py`):
+- `GET /admin-sql/users`: dedup con `OUTER APPLY TOP 1` (1 fila/usuario), agrega campo `active` (bool), y parámetro `incluir_inactivos` (default False) para listar también inactivos.
+- Nuevo `PATCH /admin-sql/users/{id}/toggle-activo`: activa/inactiva `Usuario_Catalogo.Activo`; al INACTIVAR revoca todas las sesiones activas (`Sesiones.EstaActiva=0`, MotivoRevocacion='user_deactivated') por PublicUUID; bloquea auto-inactivación. Helper `execute_write` (commit) agregado.
+
+Frontend (`pages/Usuarios.js`):
+- loadUsers usa `?incluir_inactivos=true`; checkbox "Mostrar inactivos" (default oculto); contador "X activo(s) · Y inactivo(s)".
+- Botón Activar/Desactivar (rojo/verde) en vista tarjetas y tabla, junto a Editar/Permisos/Eliminar; gateado por `canManageUser` (no aplica a SuperAdministrador).
+- `getCurrentUserRole`/`currentUser` ahora usan `useAuth()` (AuthContext) como fuente primaria + getSessionUser fallback (robustez de rol en navegación SPA).
+
+Verificado: cURL (toggle desactivar/reactivar, revocación de sesiones, bloqueo auto-inactivación, dedup 12 únicos, incluir_inactivos 20=12+8) + screenshot E2E SPA (toast "Usuario inactivado", botones Inactivar visibles, estados correctos).
