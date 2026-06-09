@@ -85,6 +85,19 @@ def test_concepto_no_mapeado_queda_pendiente():
     assert res.motivo in ("PENDIENTE_SIN_MAPEO", "CATALOGO_CONCEPTOS_AUSENTE")
 
 
+def test_empresa_resuelve_por_codigo_unidad():
+    # Sistema_Empresas.CodigoEmpresa = código de unidad (1:1)
+    for cod in ["ORIGEN", "CIENFUEGOS", "130MID"]:
+        res = rc.resolver_empresa_id(cod)
+        assert res.resuelto is True, f"EmpresaID no resuelto para {cod}"
+        assert isinstance(res.canonical_id, int)
+
+
+def test_empresa_inexistente_pendiente():
+    res = rc.resolver_empresa_id("UNIDAD_FANTASMA")
+    assert res.resuelto is False
+
+
 def test_sucursal_softrestaurant_resuelve_unica():
     # CIENFUEGOS -> server dedicado -> 1 sola sucursal en el mapeo
     unidad = rc.get_server_by_unidad_codigo("CIENFUEGOS")

@@ -50,6 +50,12 @@
 - ✅ **Validación de esquema (rollback):** `migrations/validar_esquema_sync_movimientos.py` inserta encabezado+detalle con IDs reales y hace ROLLBACK → 0 errores de columna/FK, 0 filas persistidas. (`Importe` es columna calculada → excluida del INSERT.)
 - ✅ Imports sin circular (lazy import). Tests resolver **8/8**. Backend sano.
 
+### Avance 2026-06-09 (sesión 3) — Resolver empresa/sucursal canónico (sin POS)
+- ✅ `resolver_empresa_id(unidad_codigo)` vía `Sistema_Empresas.CodigoEmpresa` (1:1). **EmpresaID 5/5**.
+- ✅ `resolver_sucursal_id` revisado (deriva de tablas canónicas). **SucursalID 3/5** auto (130MID→5, CIENFUEGOS→3, ESTELAR→4). MPRO (ORIGEN, 130QRO) → AMBIGUO.
+- ✅ `sync_movimientos_canonico` usa `resolver_empresa_id`. Tests **12/12**.
+- 🔴 Pendiente decisión: `SucursalID`(RH) de ORIGEN/130QRO. `Sistema_SucursalServidorMapeo` del server MPRO compartido tiene SucursalID 1,2 ('130 QUERETARO','130 TULUM') que NO son las unidades reales (ORIGEN=RH 7).
+
 ### Pendiente (gates)
 - ✅ DDL+seed `Inventario_ConceptoMapeoOrigen` EJECUTADO (12 conceptos SR, FK ok, idempotente, resolver EPC→1). Tests **10/10**.
 - **PROD (equipo):** correr `scripts/diag_origen_almacenes_sucursal_safe.py` (Paso 3) → poblar almacenes/SucursalOrigenID → correr sync 4a (`sync_compras_job`/`sync_movimientos_canonico`) → activar endpoint NO-LIVE (4b, diferido por el usuario hasta el sync productivo para no mostrar vacío).

@@ -26,6 +26,7 @@ from modules.compras.sync_service import get_edarsahub_connection
 from core.inventarios.resolver_canonico import (
     resolver_producto_id,
     resolver_almacen_id,
+    resolver_empresa_id,
     resolver_sucursal_id,
     resolver_tipo_movimiento_desde_concepto,
 )
@@ -89,16 +90,15 @@ def sync_movimientos_canonico(
                 "descartados": 0, "pendientes": {"sucursal": "TODO", "motivo": suc.motivo}}
     sucursal_id = suc.canonical_id
 
-    # 2) EmpresaID desde el catálogo canónico de almacenes de esa sucursal
+    # 2) EmpresaID canónico vía Sistema_Empresas (CodigoEmpresa = código de unidad)
+    emp = resolver_empresa_id(unidad_codigo)
+    if not emp.resuelto:
+        return {"status": "PENDIENTE", "encabezados_synced": 0, "detalles_synced": 0,
+                "descartados": 0, "pendientes": {"empresa": "TODO", "motivo": emp.motivo}}
+    empresa_id = emp.canonical_id
+
     conn = get_edarsahub_connection()
     cur = conn.cursor(as_dict=True)
-    cur.execute("SELECT TOP 1 EmpresaID FROM Inventario_Almacenes WHERE SucursalID = %s AND Activo = 1", (int(sucursal_id),))
-    erow = cur.fetchone()
-    if not erow:
-        conn.close()
-        return {"status": "PENDIENTE", "encabezados_synced": 0, "detalles_synced": 0,
-                "descartados": 0, "pendientes": {"almacen": "TODO", "motivo": "SIN_ALMACENES_CANONICOS_SUCURSAL"}}
-    empresa_id = erow["EmpresaID"]
 
     # 3) Leer ORIGEN
     rows = execute_sql_fn(

@@ -136,14 +136,45 @@ def resolver_almacen_id(empresa_id: int, sucursal_id: int, codigo_almacen: str) 
 
 
 # ---------------------------------------------------------------------------
+# Resolución de EMPRESA (unidad canónica -> EmpresaID int)  [Sistema_Empresas]
+# ---------------------------------------------------------------------------
+
+def resolver_empresa_id(unidad_codigo: str) -> ResultadoResolucion:
+    """
+    Resuelve EmpresaID canónico desde `Sistema_Empresas` por `CodigoEmpresa`,
+    que coincide 1:1 con el código de unidad (ORIGEN, 130QRO, CIENFUEGOS, ...).
+    Fuente autoritativa. Sin POS, sin hardcode.
+    """
+    cod = str(unidad_codigo or "").strip().upper()
+    if not cod:
+        return ResultadoResolucion.pendiente("UNIDAD_DESCONOCIDA")
+    conn = get_sql_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT TOP 1 EmpresaID FROM Sistema_Empresas WHERE UPPER(CodigoEmpresa) = %s AND Activo = 1",
+        (cod,),
+    )
+    row = cur.fetchone()
+    if row and row[0] is not None:
+        return ResultadoResolucion.ok(row[0])
+    return ResultadoResolucion.pendiente("PENDIENTE_SIN_MAPEO")
+
+
+# ---------------------------------------------------------------------------
 # Resolución de SUCURSAL (ServerID + sucursal_origen -> SucursalID int)
 # ---------------------------------------------------------------------------
 
 def resolver_sucursal_id(servidor_id: str, sucursal_origen_id: Optional[str] = None) -> ResultadoResolucion:
     """
-    Resuelve SucursalID canónico desde `Sistema_SucursalServidorMapeo`.
-    Si el servidor aloja varias sucursales y no se entrega `sucursal_origen_id`,
-    devuelve PENDIENTE (ambiguo) en lugar de adivinar.
+    Resuelve SucursalID canónico (RH_Cat_Sucursales) por unidad, derivando de tablas
+    canónicas (sin POS):
+
+    1. `Sistema_SucursalServidorMapeo` por ServidorID:
+       - 1 sola fila (servidor dedicado SR) -> esa SucursalID.
+       - varias filas (servidor MPRO compartido) -> desambigua por SucursalOrigenID.
+    2. Si el mapeo no trae SucursalOrigenID (NULL) pero hay `sucursal_origen_id`, intenta
+       confirmar la sucursal de origen vía `Sistema_EmpresasServidores.NumeroSucursalSistema`.
+       Si aún no se puede mapear a una SucursalID(RH) única -> AMBIGUO (no adivina).
     """
     if not servidor_id:
         return ResultadoResolucion.pendiente("SIN_DIMENSION")
@@ -159,16 +190,27 @@ def resolver_sucursal_id(servidor_id: str, sucursal_origen_id: Optional[str] = N
     if not filas:
         return ResultadoResolucion.pendiente("PENDIENTE_SIN_MAPEO")
 
-    if sucursal_origen_id:
-        for f in filas:
-            if str(f.get("SucursalOrigenID") or "") == str(sucursal_origen_id):
-                return ResultadoResolucion.ok(f["SucursalID"])
-        return ResultadoResolucion.pendiente("PENDIENTE_SIN_MAPEO")
-
     if len(filas) == 1:
         return ResultadoResolucion.ok(filas[0]["SucursalID"])
 
-    # Servidor con múltiples sucursales y sin origen: no adivinar.
+    # Servidor compartido (MPRO): intentar desambiguar por SucursalOrigenID del mapeo.
+    if sucursal_origen_id:
+        try:
+            origen_norm = int(str(sucursal_origen_id).lstrip("0") or "0")
+        except ValueError:
+            origen_norm = None
+        for f in filas:
+            soi = f.get("SucursalOrigenID")
+            if soi is not None and str(soi).strip() == str(sucursal_origen_id).strip():
+                return ResultadoResolucion.ok(f["SucursalID"])
+            if soi is not None and origen_norm is not None:
+                try:
+                    if int(str(soi).lstrip("0") or "0") == origen_norm:
+                        return ResultadoResolucion.ok(f["SucursalID"])
+                except ValueError:
+                    pass
+
+    # Mapeo MPRO sin SucursalOrigenID confiable -> no adivinar.
     return ResultadoResolucion.pendiente("AMBIGUO_MULTISUCURSAL")
 
 
@@ -238,6 +280,7 @@ __all__ = [
     "ResultadoResolucion",
     "resolver_producto_id",
     "resolver_almacen_id",
+    "resolver_empresa_id",
     "resolver_sucursal_id",
     "resolver_tipo_movimiento_por_codigo",
     "resolver_tipo_movimiento_desde_concepto",
