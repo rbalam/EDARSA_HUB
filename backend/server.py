@@ -7404,6 +7404,28 @@ async def validate_server_access_by_empresa(server_id: str, credentials: HTTPAut
     # FASE 2-G FIX: Usar get_current_user (SQL-only) en lugar de db.users (MongoDB)
     user = await get_current_user(credentials)
     
+    # CANONICAL-UNIDAD (2026-06-09): El identificador recibido puede ser una
+    # unidad canónica (codigo o pk) — contrato nuevo — o un server_id del POS
+    # (deprecated, compatibilidad). Se resuelve SIEMPRE al server_id real de
+    # EDARSAHUB antes de validar acceso y obtener la configuración.
+    try:
+        from core.corporate_filters.request_resolver import resolve_unidad_simple
+        _u, _matched = resolve_unidad_simple(server_id)
+        if _u and _u.get("server_id"):
+            if _matched == 'unidad':
+                logging.debug(
+                    f"[CANONICAL-UNIDAD] token unidad '{server_id}' "
+                    f"→ server {_u.get('server_id')} ({_u.get('codigo')})"
+                )
+            else:
+                logging.warning(
+                    f"[DEPRECATED-PARAM] Se recibió server_id directo (deprecated). "
+                    f"Migrar a 'unidad'. user={user.get('email')} server_id={server_id}"
+                )
+            server_id = _u.get("server_id")
+    except Exception as _e:
+        logging.debug(f"[CANONICAL-UNIDAD] resolución no aplicada: {_e}")
+    
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     # AHORA: Usar registry que prioriza EDARSAHUB SQL
     server = await get_server_connection_info(server_id, db=db)
