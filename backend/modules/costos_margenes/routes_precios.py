@@ -1,6 +1,9 @@
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
-from core.rbac_helper_sql import es_admin
+from core.rbac_helper_sql import (
+    es_admin, get_role_code,
+    ROLES_APROBADORES, ROLES_COMERCIAL_OPERATIVO, ROLES_LECTORES,
+)
 """
 Endpoints para Simulación de Precios y Solicitudes de Cambio
 FASE 1C-3F - Costos y Márgenes
@@ -53,7 +56,8 @@ def _get_user_permissions(user: dict) -> dict:
     """
     FASE 1C-3F: Determina permisos del usuario para el flujo de precios.
     """
-    role = user.get('role', '')
+    # CodigoRol canónico (normaliza NombreRol legacy desde dbo.Usuario_Roles)
+    codigo = get_role_code(user)
     
     # Permisos por rol
     permisos = {
@@ -71,8 +75,8 @@ def _get_user_permissions(user: dict) -> dict:
     if es_admin(user):
         return {k: True for k in permisos}
     
-    # Gerente / Supervisor - puede aprobar/rechazar
-    if role in ['Gerente', 'Supervisor']:
+    # Aprobadores (Gerencias / Supervisión) - puede aprobar/rechazar (canónico)
+    if codigo in ROLES_APROBADORES:
         permisos['simular_precio'] = True
         permisos['solicitar_cambio_precio'] = True
         permisos['ver_solicitudes_precio'] = True
@@ -82,8 +86,8 @@ def _get_user_permissions(user: dict) -> dict:
         permisos['ver_costos'] = True
         return permisos
     
-    # Comercial - puede solicitar, no aprobar
-    if role in ['Comercial', 'Ventas']:
+    # Comercial operativo / Ventas - puede solicitar, no aprobar (canónico)
+    if codigo in ROLES_COMERCIAL_OPERATIVO:
         permisos['simular_precio'] = True
         permisos['solicitar_cambio_precio'] = True
         permisos['ver_solicitudes_precio'] = True
@@ -91,8 +95,8 @@ def _get_user_permissions(user: dict) -> dict:
         permisos['ver_costos'] = True
         return permisos
     
-    # Usuario básico - solo ver
-    if role in ['Usuario']:
+    # Lectores (Usuario / Visores) - solo ver (canónico)
+    if codigo in ROLES_LECTORES:
         permisos['ver_solicitudes_precio'] = True
         permisos['ver_historial_precios'] = True
         return permisos

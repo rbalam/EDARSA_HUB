@@ -288,3 +288,41 @@ def es_supervisor_o_superior(user: Optional[Dict]) -> bool:
     """Supervisor, Administrador o SuperAdministrador. Equivale a los gates
     legacy ['Administrador','Supervisor'] (ahora también admite al SUPERADMIN)."""
     return get_role_code(user) in ("SUPERADMIN", "ADMIN", "SUPERVISOR")
+
+
+# =============================================================================
+# Conjuntos canónicos de roles por TIER FUNCIONAL (CodigoRol)
+# -----------------------------------------------------------------------------
+# Reemplazan las listas legacy por NombreRol (['Gerente','Comercial','Ventas',
+# 'Usuario'...]) en el módulo costos_margenes. Derivados del catálogo
+# dbo.Usuario_Roles. Mapeo legacy -> canónico:
+#   'Gerente'/'Supervisor'      -> ROLES_APROBADORES
+#   'Comercial'/'Ventas'        -> ROLES_COMERCIAL_OPERATIVO
+#   'Usuario'                   -> ROLES_LECTORES
+# =============================================================================
+ROLES_APROBADORES = frozenset({
+    "GERENTE", "GERENTE_OPS", "GERENTE_UNIDAD", "DIRECCION", "SUPERVISOR",
+})
+ROLES_COMERCIAL_OPERATIVO = frozenset({
+    "VENTAS", "ANALISTA_COMERCIAL", "ADMIN_COMERCIAL", "CONFIGURADOR_COMERCIAL",
+})
+ROLES_LECTORES = frozenset({
+    "USUARIO", "VISOR", "VISOR_COMERCIAL", "OPERADOR",
+})
+
+
+def es_aprobador(user: Optional[Dict]) -> bool:
+    """Puede aprobar (Admin/SuperAdmin o gerencias/supervisión canónicas)."""
+    return es_admin(user) or get_role_code(user) in ROLES_APROBADORES
+
+
+def puede_solicitar_comercial(user: Optional[Dict]) -> bool:
+    """Puede solicitar cambios comerciales (aprobadores + comercial operativo)."""
+    return es_aprobador(user) or get_role_code(user) in ROLES_COMERCIAL_OPERATIVO
+
+
+def tiene_acceso_lectura_comercial(user: Optional[Dict]) -> bool:
+    """Acceso de lectura a costos/márgenes: cualquier rol canónico del staff
+    (aprobadores + comercial operativo + lectores). Reemplaza la lista legacy
+    ['Supervisor','Comercial','Gerente','Usuario']."""
+    return puede_solicitar_comercial(user) or get_role_code(user) in ROLES_LECTORES

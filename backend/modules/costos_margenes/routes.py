@@ -1,6 +1,6 @@
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
-from core.rbac_helper_sql import es_admin
+from core.rbac_helper_sql import es_admin, tiene_acceso_lectura_comercial
 """
 Endpoints del módulo Costos y Márgenes.
 FASE 1C-3C - Endpoints NO-LIVE
@@ -146,17 +146,9 @@ def _check_admin_or_comercial(user: dict) -> bool:
     
     NOTA: En futuras fases se puede integrar con require_permission() de core.rbac
     """
-    role = user.get('role', '')
-    
-    # Roles con acceso total (RBAC canónico: ADMIN/SUPERADMIN)
-    if es_admin(user):
-        return True
-    
-    # Roles con acceso de lectura (lista legacy inclusiva; sin helper canónico equivalente)
-    if role in ['Supervisor', 'Comercial', 'Gerente', 'Usuario']:
-        return True
-    
-    return False
+    # Acceso de lectura: cualquier rol canónico del staff (RBAC canónico,
+    # reemplaza la lista legacy ['Supervisor','Comercial','Gerente','Usuario']).
+    return tiene_acceso_lectura_comercial(user)
 
 
 def _verify_costos_margenes_access(user: dict) -> None:

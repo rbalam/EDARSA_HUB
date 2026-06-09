@@ -51,6 +51,40 @@ def test_costos_margenes_precios_admin_todos_permisos():
     assert not all(perms_user.values())
 
 
+# --- Tiers granulares migrados a CodigoRol canónico -------------------------
+def test_costos_margenes_precios_tiers_canonicos():
+    from modules.costos_margenes.routes_precios import _get_user_permissions
+    # Aprobador (Supervisor real / Gerente): puede aprobar
+    for rol in ("Supervisor", "SUPERVISOR", "GERENTE", "Gerente"):
+        p = _get_user_permissions({"role": rol})
+        assert p["aprobar_cambio_precio"] is True, rol
+        assert p["solicitar_cambio_precio"] is True, rol
+    # Comercial operativo / Ventas: solicita pero NO aprueba
+    for rol in ("VENTAS", "Ventas", "ANALISTA_COMERCIAL"):
+        p = _get_user_permissions({"role": rol})
+        assert p["solicitar_cambio_precio"] is True, rol
+        assert p["aprobar_cambio_precio"] is False, rol
+    # Usuario/Visor: solo lectura
+    for rol in ("Usuario", "USUARIO", "VISOR"):
+        p = _get_user_permissions({"role": rol})
+        assert p["ver_solicitudes_precio"] is True, rol
+        assert p["solicitar_cambio_precio"] is False, rol
+        assert p["aprobar_cambio_precio"] is False, rol
+    # Rol desconocido: sin permisos
+    p = _get_user_permissions({"role": "RolFantasma"})
+    assert not any(p.values())
+
+
+def test_costos_margenes_lectura_comercial_canonica():
+    from modules.costos_margenes.routes import _check_admin_or_comercial
+    # Cualquier rol canónico del staff tiene lectura
+    for rol in ("Usuario", "Supervisor", "GERENTE", "VENTAS", "ANALISTA_COMERCIAL", "VISOR"):
+        assert _check_admin_or_comercial({"role": rol}) is True, rol
+    # Sin rol reconocido -> sin acceso
+    assert _check_admin_or_comercial({"role": "RolFantasma"}) is False
+    assert _check_admin_or_comercial({"role": ""}) is False
+
+
 # --- Tablero Ejecutivo: fallback sin cifras de ventas hardcodeadas -----------
 def test_tablero_fallback_sin_cifras_hardcodeadas():
     ruta = os.path.join(os.path.dirname(__file__), "..", "modules", "comercial", "routes.py")
