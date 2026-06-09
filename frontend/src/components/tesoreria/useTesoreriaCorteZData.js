@@ -20,9 +20,14 @@ export function useTesoreriaCorteZData() {
   const [modalOpen, setModalOpen] = useState(false);
   const [conteoEfectivo, setConteoEfectivo] = useState({ billetes: {}, monedas: {} });
   const [fichaDeposito, setFichaDeposito] = useState({});
+  // Rango por defecto: fecha final = hoy, fecha inicial = hoy - 7 días.
+  const _hoy = new Date();
+  const _hace7 = new Date();
+  _hace7.setDate(_hoy.getDate() - 7);
+  const _fmt = (d) => d.toISOString().split('T')[0];
   const [filtros, setFiltros] = useState({
-    fechaInicio: '',
-    fechaFin: '',
+    fechaInicio: _fmt(_hace7),
+    fechaFin: _fmt(_hoy),
     server_id: '',  // Cambiado de 'sucursal' a 'server_id'
     estado: ''
   });

@@ -221,6 +221,22 @@ export default function FinanzasCuentasPorPagar({
   
   const antiguedad = cxpResumen?.antiguedad || {};
 
+  // SALDO TOTAL CxP = SUMA de los buckets de antigüedad (Corriente + 1-30 + 31-60 + 61-90 + +90).
+  // Se calcula desde `cxpResumen.antiguedad` (fuente canónica del resumen), NO desde la lista
+  // de facturas paginada — así el total es correcto aunque la lista esté limitada/filtrada.
+  const saldoTotalAntiguedad =
+    (antiguedad.corriente?.monto || 0) +
+    (antiguedad.vencidas_1_30?.monto || 0) +
+    (antiguedad.vencidas_31_60?.monto || 0) +
+    (antiguedad.vencidas_61_90?.monto || 0) +
+    (antiguedad.vencidas_90_plus?.monto || 0);
+  const facturasTotalAntiguedad =
+    (antiguedad.corriente?.cantidad || 0) +
+    (antiguedad.vencidas_1_30?.cantidad || 0) +
+    (antiguedad.vencidas_31_60?.cantidad || 0) +
+    (antiguedad.vencidas_61_90?.cantidad || 0) +
+    (antiguedad.vencidas_90_plus?.cantidad || 0);
+
   // Componente interno para renderizar la tabla de facturas de un proveedor
   const FacturasTable = ({ proveedor }) => {
     // Determinar si todas las facturas están marcadas para mostrar indicador visual
@@ -594,8 +610,8 @@ export default function FinanzasCuentasPorPagar({
         <Card className="border-l-4 border-l-blue-600 bg-blue-50">
           <CardContent className="p-3">
             <p className="text-xs text-blue-600 font-medium">SALDO TOTAL CxP</p>
-            <p className="text-lg font-bold text-blue-700">{formatCurrency(totales.total_saldo || 0)}</p>
-            <p className="text-xs text-blue-500">{cxpData?.proveedores?.reduce((acc, p) => acc + (p.facturas?.length || 0), 0) || 0} facturas</p>
+            <p className="text-lg font-bold text-blue-700">{formatCurrency(saldoTotalAntiguedad)}</p>
+            <p className="text-xs text-blue-500">{facturasTotalAntiguedad} facturas</p>
           </CardContent>
         </Card>
       </div>
