@@ -26,6 +26,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from core.security import verify_token
 from .service import RBACService, PermisoDenegadoError
+from core.rbac_helper_sql import es_admin
 
 logger = logging.getLogger(__name__)
 
@@ -110,8 +111,8 @@ class RBACDependency:
             rbac_service = RBACService(db)
         except Exception as e:
             logger.error(f"Error obteniendo DB para RBAC: {e}")
-            # En caso de error de DB, permitir si es admin legacy
-            if user.get("role") == "Administrador":
+            # En caso de error de DB, permitir si es admin legacy (canónico ADMIN/SUPERADMIN)
+            if es_admin(user):
                 return user
             raise HTTPException(status_code=500, detail="Error interno de autorización")
         
@@ -171,7 +172,7 @@ class RBACAnyDependency:
             db = _get_db()
             rbac_service = RBACService(db)
         except Exception:
-            if user.get("role") == "Administrador":
+            if es_admin(user):
                 return user
             raise HTTPException(status_code=500, detail="Error de autorización")
         
@@ -219,7 +220,7 @@ class RBACAllDependency:
             db = _get_db()
             rbac_service = RBACService(db)
         except Exception:
-            if user.get("role") == "Administrador":
+            if es_admin(user):
                 return user
             raise HTTPException(status_code=500, detail="Error de autorización")
         
@@ -312,7 +313,7 @@ async def get_current_user_with_permissions(
             "permisos": [],
             "roles_rbac": [],
             "nivel_jerarquia": 0,
-            "es_admin": user.get("role") == "Administrador",
+            "es_admin": es_admin(user),
         }
 
 

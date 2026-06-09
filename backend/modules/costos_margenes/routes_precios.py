@@ -1,5 +1,6 @@
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
+from core.rbac_helper_sql import es_admin
 """
 Endpoints para Simulación de Precios y Solicitudes de Cambio
 FASE 1C-3F - Costos y Márgenes
@@ -66,8 +67,8 @@ def _get_user_permissions(user: dict) -> dict:
         'ver_costos': False,
     }
     
-    # SuperAdmin / Admin - todos los permisos
-    if role in ['SuperAdministrador', 'Administrador', 'admin', 'Admin']:
+    # SuperAdmin / Admin - todos los permisos (RBAC canónico)
+    if es_admin(user):
         return {k: True for k in permisos}
     
     # Gerente / Supervisor - puede aprobar/rechazar

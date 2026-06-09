@@ -1,5 +1,6 @@
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
+from core.rbac_helper_sql import es_admin
 """
 Endpoints del módulo Costos y Márgenes.
 FASE 1C-3C - Endpoints NO-LIVE
@@ -85,8 +86,8 @@ def _get_user_allowed_servers(user: dict) -> tuple[List[str], bool]:
     user_id = user.get('id', '')
     email = user.get('email', '')
     
-    # SuperAdministrador y Administrador tienen acceso global
-    if role in ['SuperAdministrador', 'Administrador', 'admin', 'Admin']:
+    # SuperAdministrador y Administrador tienen acceso global (RBAC canónico)
+    if es_admin(user):
         logger.info(f"[RBAC] Usuario {email} tiene acceso global por rol {role}")
         return [], True
     
@@ -147,11 +148,11 @@ def _check_admin_or_comercial(user: dict) -> bool:
     """
     role = user.get('role', '')
     
-    # Roles con acceso total
-    if role in ['SuperAdministrador', 'Administrador', 'admin', 'Admin']:
+    # Roles con acceso total (RBAC canónico: ADMIN/SUPERADMIN)
+    if es_admin(user):
         return True
     
-    # Roles con acceso de lectura
+    # Roles con acceso de lectura (lista legacy inclusiva; sin helper canónico equivalente)
     if role in ['Supervisor', 'Comercial', 'Gerente', 'Usuario']:
         return True
     

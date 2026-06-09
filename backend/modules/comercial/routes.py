@@ -553,33 +553,43 @@ async def tablero_ejecutivo(
     try:
         return await _tablero_ejecutivo_internal(mes, anio, meses, anios, periodo, tipo_comparacion, current_user)
     except Exception as e:
-        logging.warning(f"[EDARSA-FALLBACK] SQL no disponible, usando caché estático: {e}")
+        logging.warning(f"[EDARSA-FALLBACK] SQL no disponible; devolviendo estructura canónica vacía (NO-LIVE, sin cifras inventadas): {e}")
+        import calendar
         hoy = datetime.now()
+        try:
+            dias_mes = calendar.monthrange(hoy.year, hoy.month)[1]
+        except Exception:
+            dias_mes = 30
+        # Regla de Oro / NO-LIVE: NO fabricar KPIs. Las unidades provienen del catálogo
+        # canónico (UnidadesService); los KPIs quedan en 0 con data_status explícito.
+        unidades_canonicas = []
+        try:
+            for u in UnidadesService.get_all():
+                unidades_canonicas.append({
+                    "id": u.get("unidad_negocio_pk") or u.get("codigo"),
+                    "unidad": u.get("codigo") or u.get("nombre"),
+                    "nombre": u.get("nombre"),
+                    "ventas": 0, "proyeccion": 0, "var_vs_mes_ant": 0, "var_vs_año_ant": 0,
+                    "pax": 0, "cheques": 0, "cheque_promedio": 0, "pax_promedio": 0,
+                    "data_status": "SQL_NO_DISPONIBLE",
+                })
+        except Exception as _e_unidades:
+            logging.error(f"[EDARSA-FALLBACK] No se pudieron resolver unidades canónicas: {_e_unidades}")
+            unidades_canonicas = []
         return {
-            "success": True,
-            "fuente": "FALLBACK_CACHE_SERVER",
-            "periodo": {"mes": hoy.month, "anio": hoy.year, "dias_transcurridos": hoy.day, "dias_mes": 31},
+            "success": False,
+            "fuente": "SQL_NO_DISPONIBLE",
+            "error": "Base de datos no disponible temporalmente. Reintente en unos momentos.",
+            "periodo": {"mes": hoy.month, "anio": hoy.year, "dias_transcurridos": hoy.day, "dias_mes": dias_mes},
             "consolidado": {
-                "totalVentas": 15710000,
-                "vsMes": 1.9,
-                "vsAnio": 9.6,
-                "paxTotal": 15008,
-                "cheques": 5223,
-                "paxPromedio": 1050,
-                "chequePromedio": 3010
+                "totalVentas": 0, "vsMes": 0, "vsAnio": 0, "paxTotal": 0,
+                "cheques": 0, "paxPromedio": 0, "chequePromedio": 0
             },
             "totales": {
-                "ventas": 15710000, "pax": 15008, "cheques": 5223,
-                "cheque_promedio": 3010, "pax_prom": 1050, "proyeccion": 16809700,
-                "var_vs_mes_ant": 1.9, "var_vs_año_ant": 9.6
+                "ventas": 0, "pax": 0, "cheques": 0, "cheque_promedio": 0,
+                "pax_prom": 0, "proyeccion": 0, "var_vs_mes_ant": 0, "var_vs_año_ant": 0
             },
-            "unidades": [
-                {"id": "cienfuegos", "unidad": UnidadesService.resolver_codigo("CIENFUEGOS") or "CIENFUEGOS", "ventas": 4130000, "proyeccion": 4410000, "var_vs_mes_ant": 8.8, "var_vs_año_ant": -14.5, "pax": 3177, "cheques": 1052, "cheque_promedio": 3926, "pax_promedio": 1300, "data_status": "DATA_OK"},
-                {"id": "merida", "unidad": "130° MERIDA", "ventas": 3570000, "proyeccion": 3820000, "var_vs_mes_ant": -12.7, "var_vs_año_ant": -15.6, "pax": 2314, "cheques": 794, "cheque_promedio": 4496, "pax_promedio": 1543, "data_status": "DATA_OK"},
-                {"id": "queretaro", "unidad": "130° QUERETARO", "ventas": 3460000, "proyeccion": 3700000, "var_vs_mes_ant": 4.5, "var_vs_año_ant": -0.9, "pax": 2067, "cheques": 704, "cheque_promedio": 4915, "pax_promedio": 1674, "data_status": "DATA_OK"},
-                {"id": "estelar", "unidad": "LA ESTELAR", "ventas": 2470000, "proyeccion": 2640000, "var_vs_mes_ant": 2.3, "var_vs_año_ant": 0.0, "pax": 4520, "cheques": 1658, "cheque_promedio": 1490, "pax_promedio": 546, "data_status": "DATA_OK"},
-                {"id": "origen", "unidad": UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN", "ventas": 2070000, "proyeccion": 2220000, "var_vs_mes_ant": 15.6, "var_vs_año_ant": 16.6, "pax": 2930, "cheques": 1015, "cheque_promedio": 2039, "pax_promedio": 706, "data_status": "DATA_OK"}
-            ]
+            "unidades": unidades_canonicas,
         }
 
 

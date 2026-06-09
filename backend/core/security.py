@@ -19,6 +19,7 @@ from core.access_context.sql_context import (
 
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
+from core.rbac_helper_sql import es_superadmin, es_admin
 """
 EDARSA HUB - Seguridad y Autenticación
 ======================================
@@ -516,16 +517,16 @@ async def get_user_empresas_permitidas(user: Dict[str, Any]) -> List[str]:
         finally:
             conn.close()
     
-    # SuperAdministrador tiene acceso a todas las empresas
-    if user.get('role') == 'SuperAdministrador':
+    # SuperAdministrador tiene acceso a todas las empresas (RBAC canónico)
+    if es_superadmin(user):
         return _get_all_empresas_sql()
     
     # Nuevo modelo: empresas_permitidas (ya viene del user dict resuelto desde SQL)
     if user.get('empresas_permitidas'):
         return user['empresas_permitidas']
     
-    # Fallback legacy: Si es Administrador, todas las empresas
-    if user.get('role') in ['Administrador', 'admin', 'Admin']:
+    # Fallback legacy: Si es Administrador (canónico ADMIN/SUPERADMIN), todas las empresas
+    if es_admin(user):
         return _get_all_empresas_sql()
     
     # Sin acceso

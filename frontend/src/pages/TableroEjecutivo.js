@@ -25,75 +25,12 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 const USE_COMERCIAL_V2 = process.env.REACT_APP_COMERCIAL_V2_ENABLED === 'true';
 
 // ============================================================================
-// DATOS FALLBACK EDARSA - Usados cuando la API no responde (404, 502, etc.)
+// NOTA (2026-06-09): Se ELIMINÓ el fallback estático con cifras de ventas
+// hardcodeadas (FALLBACK_TABLERO_EJECUTIVO / transformFallbackToTableroFormat).
+// Era código muerto (nunca se invocaba) y violaba la Regla de Oro (datos de
+// negocio inventados). Ante error de API se preservan los datos previos y se
+// muestra un toast — V2 es la fuente única, NO-LIVE.
 // ============================================================================
-const FALLBACK_TABLERO_EJECUTIVO = {
-  success: true,
-  data: {
-    consolidatedSales: 15710000,
-    growthMonth: 1.9,
-    growthYear: 9.6,
-    paxTotal: 15008,
-    paxAvg: 1050,
-    tickets: 5223,
-    ticketAvg: 3010,
-    units: [
-      { id: "cienfuegos", name: "CIENFUEGOS", sales: 4130000, projection: 4410000, growthMonth: 8.8, growthYear: -14.5, pax: 3177, tickets: 1052 },
-      { id: "merida", name: "130° MERIDA", sales: 3570000, projection: 3820000, growthMonth: -12.7, growthYear: -15.6, pax: 2314, tickets: 794 },
-      { id: "queretaro", name: "130° QUERETARO", sales: 3460000, projection: 3700000, growthMonth: 4.5, growthYear: -0.9, pax: 2067, tickets: 704 },
-      { id: "estelar", name: "LA ESTELAR", sales: 2470000, projection: 2640000, growthMonth: 2.3, growthYear: null, pax: 4520, tickets: 1658 },
-      { id: "origen", name: "ORIGEN", sales: 2070000, projection: 2220000, growthMonth: 15.6, growthYear: 16.6, pax: 2930, tickets: 1015 }
-    ]
-  }
-};
-
-// Función para transformar FALLBACK a formato del tablero
-const transformFallbackToTableroFormat = () => {
-  const data = FALLBACK_TABLERO_EJECUTIVO.data;
-  const hoy = new Date();
-  
-  return {
-    periodo: {
-      mes: hoy.getMonth() + 1,
-      anio: hoy.getFullYear(),
-      dias_transcurridos: hoy.getDate(),
-      dias_mes: new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate(),
-      modo_ventas_dia: false
-    },
-    totales: {
-      ventas: data.consolidatedSales,
-      pax: data.paxTotal,
-      cheques: data.tickets,
-      cheque_promedio: data.ticketAvg,
-      pax_prom: data.paxAvg,
-      proyeccion: data.consolidatedSales * 1.07, // Proyección estimada +7%
-      var_vs_mes_ant: data.growthMonth,
-      var_vs_año_ant: data.growthYear
-    },
-    unidades: data.units.map(u => ({
-      id: u.id,
-      unidad: u.name,
-      server_id: u.id,
-      sucursal: null,
-      ventas: u.sales,
-      pax: u.pax,
-      cheques: u.tickets,
-      cheque_promedio: u.tickets > 0 ? u.sales / u.tickets : 0,
-      pax_promedio: u.pax > 0 ? u.sales / u.pax : 0,
-      proyeccion: u.projection,
-      var_vs_mes_ant: u.growthMonth,
-      var_vs_año_ant: u.growthYear,
-      status: 'fallback',
-      data_status: 'DATA_FROM_FALLBACK',
-      live_status: 'LIVE_UNKNOWN',
-      source_used: 'FALLBACK_OFFLINE',
-      cache_warning: 'Datos de respaldo offline',
-      error_message: null
-    })),
-    _fallback: true,
-    _fallback_reason: 'API no disponible'
-  };
-};
 
 // SUBFASE 5: Transformador de respuesta v2 al formato esperado por v1
 const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger) => {
@@ -1180,7 +1117,7 @@ export default function TableroEjecutivo() {
         setRefreshError(errorMsg);
         
         // NO setData(null) - mantener datos anteriores
-        // NO usar transformFallbackToTableroFormat()
+        // Sin fallback con cifras inventadas (eliminado 2026-06-09): V2 es fuente única.
         
         logger.warn(`[REFRESH_LOG] ERROR_PRESERVED_DATA: requestId=${currentRequestId}, statusCode=${statusCode}, error=${error.message}, existingDataPreserved=${!!data}, applied=false, reason=error_no_fallback`);
         
