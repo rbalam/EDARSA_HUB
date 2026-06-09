@@ -24,6 +24,10 @@ import { Checkbox } from '../components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { toast } from 'sonner';
+// Componentes/lógica CANÓNICOS compartidos con Análisis (Reportes.js) — regla de centralización
+import DetalleProductoModal from '../components/compras/DetalleProductoModal';
+import { useDetalleProducto } from '../hooks/useDetalleProducto';
+import { fechaMinimaInventarios, filtrarInventariosFinales } from '../lib/inventarioSelectorUtils';
 import { 
   Loader2, ShoppingCart, Package, TrendingUp, AlertTriangle, Download, 
   AlertCircle, Calendar, Edit3, RefreshCw, Search, BarChart3, FileText,
@@ -1595,26 +1599,17 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
   // Verificar si el usuario puede editar días objetivo (admin o roles autorizados)
   const puedeEditarDiasObjetivo = currentUser?.role === 'admin' || currentUser?.role === 'Administrador' || currentUser?.role === 'gerente' || currentUser?.permisos?.includes('editar_dias_inventario');
   
-  // Calcular fecha mínima de inventarios iniciales para filtrar finales
-  const fechaMinimaInvInicial = useMemo(() => {
-    if (selectedInvIniciales.length === 0) return null;
-    // Obtener la fecha más antigua de los inventarios iniciales
-    const fechas = selectedInvIniciales
-      .map(inv => inv.fecha?.split('T')[0])
-      .filter(f => f);
-    if (fechas.length === 0) return null;
-    return fechas.sort()[0]; // La fecha más antigua
-  }, [selectedInvIniciales]);
-  
-  // Filtrar inventarios finales: solo mostrar los que tienen fecha >= fecha del inv inicial
-  const inventariosFinalesFiltrados = useMemo(() => {
-    if (!fechaMinimaInvInicial) return inventariosFisicos;
-    return inventariosFisicos.filter(inv => {
-      const fechaInv = inv.fecha?.split('T')[0];
-      if (!fechaInv) return true; // Si no tiene fecha, mostrarlo
-      return fechaInv >= fechaMinimaInvInicial;
-    });
-  }, [inventariosFisicos, fechaMinimaInvInicial]);
+  // Calcular fecha mínima de inventarios iniciales para filtrar finales (util CANÓNICO)
+  const fechaMinimaInvInicial = useMemo(
+    () => fechaMinimaInventarios(selectedInvIniciales),
+    [selectedInvIniciales]
+  );
+
+  // Filtrar inventarios finales: solo fecha >= fecha del inicial (util CANÓNICO)
+  const inventariosFinalesFiltrados = useMemo(
+    () => filtrarInventariosFinales(inventariosFisicos, fechaMinimaInvInicial),
+    [inventariosFisicos, fechaMinimaInvInicial]
+  );
   
   const [resultados, setResultados] = useState(null);
   const [resumen, setResumen] = useState(null);
@@ -1623,11 +1618,13 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
   // Selector de unidad de análisis: 'presentaciones' o 'insumos'
   const [unidadAnalisis, setUnidadAnalisis] = useState('presentaciones');
   
-  // Modal detalle de movimientos
-  const [detalleMovimientos, setDetalleMovimientos] = useState(null);
-  const [showDetalleModal, setShowDetalleModal] = useState(false);
-  const [loadingDetalle, setLoadingDetalle] = useState(false);
-  const [tipoDetalle, setTipoDetalle] = useState('movimientos'); // 'movimientos' o 'consumos'
+  // Modal detalle de movimientos / consumos (hook + componente CANÓNICO compartido con Análisis)
+  const {
+    detalle: detalleProducto,
+    abrirMovimientos,
+    abrirConsumos,
+    cerrar: cerrarDetalleProducto,
+  } = useDetalleProducto();
   
   // Modal pantalla completa para detalle de auditoría
   const [showFullscreenAuditoria, setShowFullscreenAuditoria] = useState(false);
@@ -1951,106 +1948,30 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
     return `${values.principal} (${values.alternativo})`;
   };
 
-  // Función para obtener detalle de movimientos al hacer doble click
-  const fetchDetalleMovimientos = async (codigo, producto) => {
-    setLoadingDetalle(true);
-    setShowDetalleModal(true);
-    setTipoDetalle('movimientos');
-    try {
-      const response = await api.post(`/compras/detalle-movimientos`, {
-        server_id: selectedServer,
-        sucursal: parentSucursal,
-        codigo: codigo,
-        fecha_inicio: fechaInicial || selectedInvIniciales[0]?.fecha?.split('T')[0] || fechaAuditoria,
-        fecha_fin: fechaAuditoria,
-        almacenes: selectedAlmacenes
-      }, {
-        timeout: 30000  // 30 segundos de timeout
-      });
-      
-      // Verificar si la respuesta tiene error del servidor
-      if (response.data.error) {
-        setDetalleMovimientos({
-          codigo,
-          producto,
-          movimientos: [],
-          error: response.data.error
-        });
-      } else {
-        setDetalleMovimientos({
-          codigo,
-          producto,
-          movimientos: response.data.movimientos || [],
-          totales: response.data.totales || {}
-        });
-      }
-    } catch (error) {
-      logger.error('Error obteniendo detalle:', error);
-      let errorMsg = 'Error al obtener detalle de movimientos';
-      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        errorMsg = 'Tiempo de espera agotado. El servidor externo no responde.';
-      } else if (error.response?.data?.detail) {
-        errorMsg = error.response.data.detail.substring(0, 150);
-      }
-      setDetalleMovimientos({
-        codigo,
-        producto,
-        movimientos: [],
-        error: errorMsg
-      });
-    } finally {
-      setLoadingDetalle(false);
-    }
+  // Doble clic: detalle CANÓNICO de movimientos (hook + componente compartido con Análisis)
+  const fetchDetalleMovimientos = (codigo, producto) => {
+    abrirMovimientos({
+      serverId: selectedServer,
+      sucursal: parentSucursal,
+      codigo,
+      producto,
+      fechaInicio: fechaInicial || selectedInvIniciales[0]?.fecha?.split('T')[0] || fechaAuditoria,
+      fechaFin: fechaAuditoria,
+      almacenes: selectedAlmacenes,
+    });
   };
 
-  const fetchDetalleConsumos = async (codigo, producto) => {
-    setLoadingDetalle(true);
-    setShowDetalleModal(true);
-    setTipoDetalle('consumos');
-    try {
-      const response = await api.post(`/compras/detalle-consumos`, {
-        server_id: selectedServer,
-        sucursal: parentSucursal,
-        codigo: codigo,
-        fecha_inicio: fechaInicial || selectedInvIniciales[0]?.fecha?.split('T')[0] || fechaAuditoria,
-        fecha_fin: fechaAuditoria,
-        almacenes: selectedAlmacenes
-      }, {
-        timeout: 30000
-      });
-      
-      if (response.data.error) {
-        setDetalleMovimientos({
-          codigo,
-          producto,
-          movimientos: [],
-          error: response.data.error
-        });
-      } else {
-        setDetalleMovimientos({
-          codigo,
-          producto,
-          movimientos: response.data.consumos || response.data.movimientos || [],
-          totales: response.data.totales || {}
-        });
-      }
-    } catch (error) {
-      logger.error('Error obteniendo detalle consumos:', error);
-      let errorMsg = 'Error al obtener detalle de consumos';
-      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        errorMsg = 'Tiempo de espera agotado. El servidor externo no responde.';
-      } else if (error.response?.data?.detail) {
-        errorMsg = error.response.data.detail.substring(0, 150);
-      }
-      setDetalleMovimientos({
-        codigo,
-        producto,
-        movimientos: [],
-        error: errorMsg
-      });
-    } finally {
-      setLoadingDetalle(false);
-    }
+  // Doble clic: detalle CANÓNICO de consumos (hook + componente compartido con Análisis)
+  const fetchDetalleConsumos = (codigo, producto) => {
+    abrirConsumos({
+      serverId: selectedServer,
+      sucursal: parentSucursal,
+      codigo,
+      producto,
+      fechaInicio: fechaInicial || selectedInvIniciales[0]?.fecha?.split('T')[0] || fechaAuditoria,
+      fechaFin: fechaAuditoria,
+      almacenes: selectedAlmacenes,
+    });
   };
 
   const handleInvInicialChange = (folio) => {
@@ -2952,96 +2873,12 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
         </Card>
       )}
 
-      {/* Modal Detalle de Movimientos/Consumos */}
-      {showDetalleModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden">
-            <div className="px-4 py-3 border-b flex items-center justify-between bg-zinc-50">
-              <div>
-                <h3 className="font-semibold">
-                  {tipoDetalle === 'consumos' ? 'Detalle de Consumos' : 'Detalle de Movimientos'}
-                </h3>
-                {detalleMovimientos && (
-                  <p className="text-sm text-zinc-500">{detalleMovimientos.codigo} - {detalleMovimientos.producto}</p>
-                )}
-              </div>
-              <button 
-                onClick={() => setShowDetalleModal(false)}
-                className="p-1 hover:bg-zinc-200 rounded"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="p-4 overflow-auto max-h-[60vh]">
-              {loadingDetalle ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                </div>
-              ) : detalleMovimientos?.error ? (
-                <p className="text-red-600 text-center py-4">{detalleMovimientos.error}</p>
-              ) : detalleMovimientos?.movimientos?.length > 0 ? (
-                <>
-                  <table className="w-full text-sm">
-                    <thead className="bg-zinc-100">
-                      <tr>
-                        <th className="py-2 px-3 text-left">Fecha</th>
-                        <th className="py-2 px-3 text-left">Concepto</th>
-                        <th className="py-2 px-3 text-left">Descripción</th>
-                        <th className="py-2 px-3 text-right">Cantidad</th>
-                        <th className="py-2 px-3 text-left">Almacén</th>
-                        <th className="py-2 px-3 text-left">Referencia</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {detalleMovimientos.movimientos.map((m, idx) => (
-                        <tr key={`mov-${m.fecha}-${m.concepto}-${idx}`} className={`border-b ${m.tipo === 'E' ? 'bg-green-50' : 'bg-red-50'}`}>
-                          <td className="py-1.5 px-3">{new Date(m.fecha).toLocaleDateString()}</td>
-                          <td className="py-1.5 px-3">
-                            <span className={`px-2 py-0.5 rounded text-xs ${m.tipo === 'E' ? 'bg-green-200' : 'bg-red-200'}`}>
-                              {m.concepto}
-                            </span>
-                          </td>
-                          <td className="py-1.5 px-3">{m.descripcion}</td>
-                          <td className={`py-1.5 px-3 text-right font-medium ${m.cantidad >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {m.cantidad >= 0 ? '+' : ''}{formatNumber(m.cantidad)}
-                          </td>
-                          <td className="py-1.5 px-3">{m.almacen}</td>
-                          <td className="py-1.5 px-3 text-zinc-500">{m.referencia}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {detalleMovimientos.totales && (
-                    <div className="mt-4 p-3 bg-zinc-100 rounded flex gap-6">
-                      <div>
-                        <span className="text-xs text-zinc-500">Total Entradas:</span>
-                        <span className="ml-2 font-bold text-green-600">+{formatNumber(detalleMovimientos.totales.entradas || 0)}</span>
-                      </div>
-                      <div>
-                        <span className="text-xs text-zinc-500">Total Salidas:</span>
-                        <span className="ml-2 font-bold text-red-600">-{formatNumber(detalleMovimientos.totales.salidas || 0)}</span>
-                      </div>
-                      <div>
-                        <span className="text-xs text-zinc-500">Neto:</span>
-                        <span className={`ml-2 font-bold ${detalleMovimientos.totales.neto >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {formatNumber(detalleMovimientos.totales.neto || 0)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p className="text-center text-zinc-500 py-8">No se encontraron movimientos para este producto en el período seleccionado</p>
-              )}
-            </div>
-            <div className="px-4 py-3 border-t bg-zinc-50 flex justify-end">
-              <Button variant="outline" onClick={() => setShowDetalleModal(false)}>
-                Cerrar
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal Detalle de Movimientos/Consumos (componente CANÓNICO compartido con Análisis) */}
+      <DetalleProductoModal
+        detalle={detalleProducto}
+        onClose={cerrarDetalleProducto}
+        formatNumber={formatNumber}
+      />
       
       {/* Modal Pantalla Completa - Detalle de Auditoría */}
       <Dialog open={showFullscreenAuditoria} onOpenChange={setShowFullscreenAuditoria}>

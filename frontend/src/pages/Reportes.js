@@ -21,6 +21,10 @@ import DashboardInventarios from './Dashboard'; // Importar el Dashboard de Inve
 import { OperativoDashboard } from '@/components/fase2_operativo'; // Dashboard Operativo Fase 2A
 import { Activity } from 'lucide-react';
 import { getAlmacenTipoText } from '../utils/styleHelpers';
+// Componentes/lógica CANÓNICOS compartidos con Auditoría (Compras.js) — regla de centralización
+import DetalleProductoModal from '@/components/compras/DetalleProductoModal';
+import { useDetalleProducto } from '@/hooks/useDetalleProducto';
+import { fechaMinimaInventarios, filtrarInventariosFinales } from '@/lib/inventarioSelectorUtils';
 
 // Estilos para los selectores nativos
 const selectStyle = "w-full h-10 px-3 py-2 text-sm border border-zinc-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-zinc-100 disabled:cursor-not-allowed";
@@ -137,13 +141,13 @@ const Reportes = () => {
   const [selectedServer, setSelectedServer] = useState(null);
   
   // Estado para el modal de detalle
-  const [detailModal, setDetailModal] = useState({
-    open: false,
-    type: '', // 'movimientos' o 'ventas'
-    producto: null,
-    data: [],
-    loading: false
-  });
+  // Modal detalle de movimientos / consumos (hook + componente CANÓNICO compartido con Auditoría)
+  const {
+    detalle: detalleProducto,
+    abrirMovimientos,
+    abrirConsumos,
+    cerrar: cerrarDetalleProducto,
+  } = useDetalleProducto();
 
   // Estados para filtros de categoría/familia/subfamilia
   const [filterOptions, setFilterOptions] = useState({
@@ -201,26 +205,17 @@ const Reportes = () => {
     }
   });
   
-  // Calcular fecha mínima de inventarios iniciales para filtrar finales
-  const fechaMinimaInvInicial = useMemo(() => {
-    if (selectedInventariosIni.length === 0) return null;
-    // Obtener la fecha más antigua de los inventarios iniciales
-    const fechas = selectedInventariosIni
-      .map(inv => inv.fecha?.split('T')[0])
-      .filter(f => f);
-    if (fechas.length === 0) return null;
-    return fechas.sort()[0]; // La fecha más antigua
-  }, [selectedInventariosIni]);
-  
-  // Filtrar inventarios finales: solo mostrar los que tienen fecha >= fecha del inv inicial
-  const inventariosFinalesFiltrados = useMemo(() => {
-    if (!fechaMinimaInvInicial) return inventarios;
-    return inventarios.filter(inv => {
-      const fechaInv = inv.fecha?.split('T')[0];
-      if (!fechaInv) return true; // Si no tiene fecha, mostrarlo
-      return fechaInv >= fechaMinimaInvInicial;
-    });
-  }, [inventarios, fechaMinimaInvInicial]);
+  // Calcular fecha mínima de inventarios iniciales para filtrar finales (util CANÓNICO)
+  const fechaMinimaInvInicial = useMemo(
+    () => fechaMinimaInventarios(selectedInventariosIni),
+    [selectedInventariosIni]
+  );
+
+  // Filtrar inventarios finales: solo fecha >= fecha del inicial (util CANÓNICO)
+  const inventariosFinalesFiltrados = useMemo(
+    () => filtrarInventariosFinales(inventarios, fechaMinimaInvInicial),
+    [inventarios, fechaMinimaInvInicial]
+  );
   
   // Estado para agrupar insumos de múltiples inventarios (MPRO)
   const [agruparInsumos, setAgruparInsumos] = useState(false);
@@ -1419,102 +1414,35 @@ const Reportes = () => {
     }).format(num);
   };
 
-  // Función para cargar el detalle de movimientos
-  const loadMovementDetails = async (producto) => {
-    // DEBUG: Log de los parámetros que se enviarán
-    console.log('[DEBUG] loadMovementDetails - Parámetros:', {
-      server_id: filters.server_id,
-      producto_codigo: producto.Codigo,
+  // Doble clic: detalle CANÓNICO de movimientos (hook + componente compartido con Auditoría).
+  // Usa los endpoints canónicos /compras/detalle-movimientos (aceptan unidad o server_id legacy).
+  const loadMovementDetails = (producto) => {
+    abrirMovimientos({
+      serverId: filters.server_id,
       sucursal: filters.sucursal,
-      almacen: filters.almacen,
-      fecha_ini: filters.fecha_ini,
-      fecha_fin: filters.fecha_fin
-    });
-    
-    setDetailModal({
-      open: true,
-      type: 'movimientos',
-      producto: producto,
-      data: [],
-      loading: true
-    });
-
-    try {
-      const response = await api.post('/reports/movement-details', {
-        server_id: filters.server_id,
-        producto_codigo: producto.Codigo,
-        sucursal: filters.sucursal,
-        almacen: filters.almacen,
-        fecha_ini: filters.fecha_ini,
-        fecha_fin: filters.fecha_fin
-      });
-      
-      console.log('[DEBUG] loadMovementDetails - Respuesta:', response.data);
-      
-      setDetailModal(prev => ({
-        ...prev,
-        data: response.data.data,
-        loading: false
-      }));
-    } catch (error) {
-      logger.error('Error al cargar detalle de movimientos:', error);
-      toast.error('Error al cargar detalle de movimientos');
-      setDetailModal(prev => ({ ...prev, loading: false }));
-    }
-  };
-
-  // Función para cargar el detalle de ventas
-  const loadSalesDetails = async (producto) => {
-    logger.log('loadSalesDetails llamado con producto:', producto);
-    setDetailModal({
-      open: true,
-      type: 'ventas',
-      producto: producto,
-      data: [],
-      loading: true
-    });
-
-    try {
-      logger.log('Enviando request a /reports/sales-details con:', {
-        server_id: filters.server_id,
-        producto_codigo: producto.Codigo,
-        sucursal: filters.sucursal,
-        almacen: filters.almacen,
-        fecha_ini: filters.fecha_ini,
-        fecha_fin: filters.fecha_fin
-      });
-      const response = await api.post('/reports/sales-details', {
-        server_id: filters.server_id,
-        producto_codigo: producto.Codigo,
-        sucursal: filters.sucursal,
-        almacen: filters.almacen,
-        fecha_ini: filters.fecha_ini,
-        fecha_fin: filters.fecha_fin
-      });
-      
-      logger.log('Respuesta de sales-details:', response.data);
-      setDetailModal(prev => ({
-        ...prev,
-        data: response.data.data,
-        loading: false
-      }));
-    } catch (error) {
-      logger.error('Error al cargar detalle de ventas:', error);
-      toast.error('Error al cargar detalle de ventas');
-      setDetailModal(prev => ({ ...prev, loading: false }));
-    }
-  };
-
-  // Cerrar modal
-  const closeDetailModal = () => {
-    setDetailModal({
-      open: false,
-      type: '',
-      producto: null,
-      data: [],
-      loading: false
+      codigo: producto.Codigo,
+      producto: producto.Producto,
+      fechaInicio: filters.fecha_ini,
+      fechaFin: filters.fecha_fin,
+      almacenes: filters.almacen,
     });
   };
+
+  // Doble clic: detalle CANÓNICO de ventas/consumos (hook + componente compartido con Auditoría).
+  const loadSalesDetails = (producto) => {
+    abrirConsumos({
+      serverId: filters.server_id,
+      sucursal: filters.sucursal,
+      codigo: producto.Codigo,
+      producto: producto.Producto,
+      fechaInicio: filters.fecha_ini,
+      fechaFin: filters.fecha_fin,
+      almacenes: filters.almacen,
+    });
+  };
+
+  // Cerrar modal (alias canónico)
+  const closeDetailModal = cerrarDetalleProducto;
 
   return (
     <div className="space-y-6" data-testid="reportes-page">
@@ -2666,142 +2594,12 @@ const Reportes = () => {
         </Card>
       )}
 
-      {/* Modal de Detalle - Simple HTML/CSS sin Radix */}
-      {detailModal.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Overlay */}
-          <div 
-            className="fixed inset-0 bg-black/50"
-            onClick={closeDetailModal}
-          />
-          
-          {/* Modal Content */}
-          <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b">
-              <div>
-                <h2 className="text-lg font-semibold">
-                  {detailModal.type === 'movimientos' ? 'Detalle de Movimientos' : 'Detalle de Ventas'}
-                </h2>
-                {detailModal.producto && (
-                  <p className="text-sm text-zinc-600">
-                    Producto: <strong>{detailModal.producto.Codigo}</strong> - {detailModal.producto.Producto}
-                  </p>
-                )}
-              </div>
-              <button
-                onClick={closeDetailModal}
-                className="p-2 hover:bg-zinc-100 rounded-full"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            {/* Body */}
-            <div className="p-4 overflow-y-auto max-h-[60vh]">
-              {detailModal.loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
-                  <span className="ml-2 text-zinc-500">Cargando detalle...</span>
-                </div>
-              ) : detailModal.data.length === 0 ? (
-                <div className="text-center py-8 text-zinc-500">
-                  <AlertCircle className="h-8 w-8 mx-auto mb-2 text-zinc-400" />
-                  <p>No se encontraron registros</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-zinc-50">
-                        {detailModal.type === 'movimientos' ? (
-                          <>
-                            <TableHead className="text-xs uppercase font-medium">Folio</TableHead>
-                            <TableHead className="text-xs uppercase font-medium">Fecha</TableHead>
-                            <TableHead className="text-xs uppercase font-medium text-right">Cantidad</TableHead>
-                            <TableHead className="text-xs uppercase font-medium">Tipo</TableHead>
-                            <TableHead className="text-xs uppercase font-medium">Descripción</TableHead>
-                            <TableHead className="text-xs uppercase font-medium">Almacén</TableHead>
-                            <TableHead className="text-xs uppercase font-medium">Observaciones</TableHead>
-                          </>
-                        ) : (
-                          <>
-                            <TableHead className="text-xs uppercase font-medium">Folio</TableHead>
-                            <TableHead className="text-xs uppercase font-medium">Fecha</TableHead>
-                            <TableHead className="text-xs uppercase font-medium text-right">Cantidad</TableHead>
-                            <TableHead className="text-xs uppercase font-medium">Tipo</TableHead>
-                            <TableHead className="text-xs uppercase font-medium">Producto Vendido</TableHead>
-                            <TableHead className="text-xs uppercase font-medium text-right">Precio Unit.</TableHead>
-                            <TableHead className="text-xs uppercase font-medium">Sucursal</TableHead>
-                          </>
-                        )}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {detailModal.data.map((item, idx) => (
-                        <TableRow key={item.folio || item.codigo || `detail-${idx}`} className="hover:bg-zinc-50/50">
-                          {detailModal.type === 'movimientos' ? (
-                            <>
-                              <TableCell className="font-mono text-sm">{item.folio}</TableCell>
-                              <TableCell className="text-sm">{item.fecha}</TableCell>
-                              <TableCell className={`text-sm text-right font-semibold ${item.cantidad >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {formatNumber(item.cantidad)}
-                              </TableCell>
-                              <TableCell className="text-sm">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.tipo_movimiento === 'Entrada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                  {item.tipo_movimiento}
-                                </span>
-                              </TableCell>
-                              <TableCell className="text-sm">{item.tipo_descripcion}</TableCell>
-                              <TableCell className="text-sm">{item.almacen}</TableCell>
-                              <TableCell className="text-sm text-zinc-500 max-w-xs truncate">{item.observaciones}</TableCell>
-                            </>
-                          ) : (
-                            <>
-                              <TableCell className="font-mono text-sm">{item.folio}</TableCell>
-                              <TableCell className="text-sm">{item.fecha}</TableCell>
-                              <TableCell className="text-sm text-right font-semibold">{formatNumber(item.cantidad)}</TableCell>
-                              <TableCell className="text-sm">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.tipo_venta === 'DIRECTA' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
-                                  {item.tipo_venta}
-                                </span>
-                              </TableCell>
-                              <TableCell className="text-sm">{item.producto_vendido || item.producto}</TableCell>
-                              <TableCell className="text-sm text-right">{formatCurrency(item.precio_unitario)}</TableCell>
-                              <TableCell className="text-sm">{item.sucursal}</TableCell>
-                            </>
-                          )}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </div>
-            
-            {/* Footer con totales */}
-            {detailModal.data.length > 0 && (
-              <div className="p-4 border-t text-sm text-zinc-500">
-                <div className="flex justify-between items-center">
-                  <span>Total: {detailModal.data.length} registro(s)</span>
-                  {detailModal.type === 'movimientos' && (
-                    <span className="font-semibold text-zinc-700">
-                      Total Cantidad: <span className={detailModal.data.reduce((sum, row) => sum + (parseFloat(row.cantidad) || 0), 0) >= 0 ? 'text-green-600' : 'text-red-600'}>
-                        {detailModal.data.reduce((sum, row) => sum + (parseFloat(row.cantidad) || 0), 0).toFixed(2)}
-                      </span>
-                    </span>
-                  )}
-                  {detailModal.type === 'ventas' && (
-                    <span className="font-semibold text-zinc-700">
-                      Total Cantidad: {detailModal.data.reduce((sum, row) => sum + (parseFloat(row.cantidad) || 0), 0).toFixed(2)}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Modal de Detalle de Movimientos/Consumos (componente CANÓNICO compartido con Auditoría) */}
+      <DetalleProductoModal
+        detalle={detalleProducto}
+        onClose={cerrarDetalleProducto}
+        formatNumber={formatNumber}
+      />
         </TabsContent>
 
         {/* Tab: Informes de Auditoría */}
