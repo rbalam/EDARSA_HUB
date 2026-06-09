@@ -705,11 +705,22 @@ def sync_almacenes_from_server(
     
     Llave MERGE: EmpresaID + SucursalID + CodigoAlmacen
     """
-    ctx = _get_edarsahub_context(server_info, unidad_info)
-    empresa_id = ctx['empresa_id']
-    sucursal_id = ctx['sucursal_id']
-    system_type = ctx['system_type']
-    
+    # Resolución canónica de empresa/sucursal (Sistema_Empresas / Sistema_Sucursales).
+    # No usa el contexto legacy (empresa=1/sucursal=1) que causaba mis-atribución.
+    from core.inventarios.resolver_canonico import resolver_empresa_id, resolver_sucursal_id
+    unidad_codigo = (unidad_info or {}).get('codigo', '')
+    server_id = server_info.get('id') or server_info.get('server_id')
+    system_type = server_info.get('system_type', '')
+
+    emp = resolver_empresa_id(unidad_codigo)
+    suc = resolver_sucursal_id(str(server_id), (unidad_info or {}).get('sucursal_origen_id'))
+    if not emp.resuelto or not suc.resuelto:
+        return {"status": "PENDIENTE", "records_synced": 0,
+                "motivo": {"empresa": emp.motivo if not emp.resuelto else "OK",
+                           "sucursal": suc.motivo if not suc.resuelto else "OK"}}
+    empresa_id = emp.canonical_id
+    sucursal_id = suc.canonical_id
+
     logger.info(f"[SYNC] Iniciando sync almacenes: Empresa={empresa_id}, Sucursal={sucursal_id}")
     
     try:

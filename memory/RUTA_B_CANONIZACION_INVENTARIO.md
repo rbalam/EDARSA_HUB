@@ -63,6 +63,12 @@
 - 🟡 **DDL propuesto (NO ejecutado, decisión 🅐 aprobada):** re-apuntar `FK_Inventario_Movimientos_Sucursal` de `RH_Cat_Sucursales` → `Sistema_Sucursales` (`migrations/PROPUESTA_repuntar_fk_sucursal_sistema_sucursales.sql`, con rollback). Tablas vacías → bajo riesgo. **Pendiente tu OK para ejecutar.**
 - 🔴 **Almacenes** (`Inventario_Almacenes`): siguen sin poblar por unidad (39 filas mis-atribuidas a Emp5/Suc1). Fuente canónica por confirmar (¿POS en prod o tabla canónica?).
 
+### Avance 2026-06-09 (sesión 5) — FK re-apuntado + almacén sync corregido
+- ✅ **DDL EJECUTADO Y VALIDADO:** `FK_Inventario_Movimientos_Sucursal` re-apuntado `RH_Cat_Sucursales` → `Sistema_Sucursales` (pre-check 0 violaciones, transacción, commit, validado). Script: `migrations/ejecutar_repuntar_fk_sucursal.py`. Rollback en `migrations/PROPUESTA_repuntar_fk_sucursal_sistema_sucursales.sql`.
+- ✅ **`sync_almacenes_from_server` corregido:** usa `resolver_empresa_id`+`resolver_sucursal_id` (empresa/sucursal canónicos alineados); elimina el fallback legacy empresa=1/sucursal=1 que mis-atribuía. No resuelto → PENDIENTE.
+- ✅ **Almacenes: fuente = POS** (no hay catálogo canónico alterno; `Inventario_Almacenes` se puebla desde origen vía el sync corregido en prod). 13/13 tests, backend sano.
+- 🎯 **Cadena canónica COMPLETA en código:** producto + empresa(5/5) + sucursal(5/5) + tipo + concepto resueltos en EDARSAHUB. Solo resta el run en PROD (POS): sync almacenes → sync movimientos 4a → endpoint NO-LIVE 4b.
+
 ### Pendiente (gates)
 - ✅ DDL+seed `Inventario_ConceptoMapeoOrigen` EJECUTADO (12 conceptos SR, FK ok, idempotente, resolver EPC→1). Tests **10/10**.
 - **PROD (equipo):** correr `scripts/diag_origen_almacenes_sucursal_safe.py` (Paso 3) → poblar almacenes/SucursalOrigenID → correr sync 4a (`sync_compras_job`/`sync_movimientos_canonico`) → activar endpoint NO-LIVE (4b, diferido por el usuario hasta el sync productivo para no mostrar vacío).
