@@ -3,7 +3,7 @@
  * Navegación interna + gráficos (recharts) + export Excel/PDF + drill-down.
  * Fuente: /api/reporteador-bi/* (EDARSAHUB SQL, NO-LIVE).
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   BarChart3, CalendarRange, CalendarDays, Music, Wallet, Receipt,
   Armchair, FileText, Gauge, Loader2, DollarSign, Users, ArrowUpRight, ArrowDownRight,
@@ -62,6 +62,7 @@ export default function ReporteadorBI({ unidadSeleccionada }) {
   const [data, setData] = useState(null);
   const [estado, setEstado] = useState(ESTADO.CARGANDO);
   const [drill, setDrill] = useState(false);
+  const reqRef = useRef(0);
 
   useEffect(() => {
     apiGet('/reporteador-bi/paginas').then(({ data }) => setPaginas(data?.paginas || []));
@@ -71,8 +72,10 @@ export default function ReporteadorBI({ unidadSeleccionada }) {
     let qp = { unidad: unidadSeleccionada, periodo };
     if (activa === 'ventas-mes') qp = { unidad: unidadSeleccionada, meses: 12 };
     if (activa === 'kpis-mes') qp = { unidad: unidadSeleccionada };
+    const myReq = ++reqRef.current;
     setEstado(ESTADO.CARGANDO);
     apiGet(`/reporteador-bi/${activa}`, qp).then(({ estado: est, data: d }) => {
+      if (myReq !== reqRef.current) return;  // respuesta obsoleta: ignorar (evita carrera)
       if (est !== ESTADO.OK || !d || d.success === false) { setData(null); setEstado(est === ESTADO.OK ? ESTADO.ERROR : est); return; }
       setData(d); setEstado(ESTADO.OK);
     });

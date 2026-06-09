@@ -1,5 +1,13 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-09] FIX — Selector de período se quedaba "pegado en Junio" (condición de carrera)
+Síntoma: al cambiar Día/Semana/Mes/Año el botón se resaltaba pero los KPIs/etiqueta no cambiaban
+(p.ej. Año mostraba datos de Día). Causa: race condition — la respuesta lenta de un período anterior
+(Año tarda ~3.6s agregando 1.2M líneas) pisaba los datos del período ya seleccionado.
+Fix: guard de request-id (`useRef`) en `DashboardIA.jsx` y `ReporteadorBI.jsx` → se descartan respuestas
+obsoletas. Verificado: Año=$88.13M/89,841 PAX y cambio rápido Día→Semana resuelve correcto. Backend sin cambios.
+
+
 ## [2026-06-09] FASE 2 — Reporteador BI (Informe Gerencial MECA MPRO, 9 páginas)
 Reconstrucción del Power BI sobre EDARSAHUB SQL (NO-LIVE). Menú "Reporteador BI" en el Portal Inteligencia.
 

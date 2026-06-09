@@ -3,7 +3,7 @@
  * KPIs: Ventas, Ticket Promedio (ventas÷PAX) y Cheque Promedio (ventas÷cheques)
  * en la fila superior. Drill-down a tickets y export Excel/PDF.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   DollarSign, Users, Receipt, TrendingUp, Clock,
   Wine, Package, ArrowUpRight, ArrowDownRight, Loader2,
@@ -44,6 +44,7 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
   const [loading, setLoading] = useState(true);
   const [periodoLocal, setPeriodoLocal] = useState(periodo);
   const [drill, setDrill] = useState(false);
+  const reqRef = useRef(0);
 
   const periodoActivo = setPeriodo ? periodo : periodoLocal;
   const cambiarPeriodo = setPeriodo || setPeriodoLocal;
@@ -54,10 +55,12 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
   }, [unidadSeleccionada, periodoActivo]);
 
   const fetchDashboardData = async () => {
+    const myReq = ++reqRef.current;
     setLoading(true);
     const { estado: est, data: result } = await apiGet('/inteligencia/dashboard', {
       unidad: unidadSeleccionada, periodo: periodoActivo,
     });
+    if (myReq !== reqRef.current) return;  // respuesta obsoleta: ignorar (evita carrera)
     if (est !== ESTADO.OK || !result || result.success === false) {
       setData(null);
       setEstado(est === ESTADO.OK ? ESTADO.ERROR : est);
