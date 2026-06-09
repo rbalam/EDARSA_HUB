@@ -10,10 +10,10 @@
  * 2. Como aplicación standalone vía subdominio (inteligencia.edarsa.com.mx)
  */
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   LayoutDashboard, BarChart3, Wine, Clock, Users, 
   DollarSign, TrendingUp, LogOut, ChevronDown, User,
-  Package, Layers, Building2, Percent, Droplet
+  Package, Layers, Building2, Percent, Droplet, Tag
 } from 'lucide-react';
 
 // Páginas
@@ -23,6 +23,7 @@ import VentasFamiliaPage from './pages/VentasFamiliaPage';
 import VentasHorarioPage from './pages/VentasHorarioPage';
 import VentasCasaPage from './pages/VentasCasaPage';
 import VentasAlcoholPage from './pages/VentasAlcoholPage';
+import ClasificacionAdminPage from './pages/ClasificacionAdminPage';
 import AnalisisPAXPage from './pages/AnalisisPAXPage';
 import BenchmarkGrupoPage from './pages/BenchmarkGrupoPage';
 import api, { getToken } from '../lib/api';
@@ -135,6 +136,7 @@ export default function PortalInteligenciaApp() {
     { id: 'casas', label: 'Casas/Distribuidores', icon: Building2 },
     { id: 'pax', label: 'Análisis PAX', icon: Users },
     { id: 'benchmark', label: 'Benchmark Grupo', icon: TrendingUp },
+    { id: 'clasificacion', label: 'Clasificación (admin)', icon: Tag },
   ];
 
   const renderPage = () => {
@@ -164,6 +166,8 @@ export default function PortalInteligenciaApp() {
         return <AnalisisPAXPage {...props} />;
       case 'benchmark':
         return <BenchmarkGrupoPage {...props} />;
+      case 'clasificacion':
+        return <ClasificacionAdminPage {...props} />;
       default:
         return <DashboardIA {...props} />;
     }

@@ -1,5 +1,18 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-09] Pantalla Admin de Clasificación de Producto (resuelve PENDIENTE)
+- Backend (`modules/inteligencia_comercial/routes.py`): endpoints admin (auth dual + rol admin):
+  `GET /inteligencia/clasificaciones` (catálogo), `GET /inteligencia/admin/productos-clasificacion`
+  (lista paginada con filtros q/system_type/estado), `GET /inteligencia/admin/familias-pendientes`,
+  `POST /inteligencia/admin/clasificar` (por producto_ids o por familia → `ClasificacionOrigen='MANUAL'`).
+  Helper `execute_write` (commit) + dependencia `require_admin`.
+- Frontend (`portal-inteligencia/pages/ClasificacionAdminPage.jsx` + ítem menú "Clasificación (admin)"):
+  2 vistas (Por familia en bloque / Por producto individual), dropdown del catálogo, toasts (sonner),
+  paginación y búsqueda. `apiPost` añadido al client.
+- Verificado: clasificación en bloque (familia "Z SUSPENDIDOS" 731→OTROS) y 401 sin token. 9/9 tests PASS
+  (`tests/test_inteligencia_fase1.py`). Pendientes bajaron de 1.086 al ir clasificando.
+
+
 ## [2026-06-09] Clasificación Comercial CANÓNICA de Producto (elimina CASE A/B de endpoints)
 Autorizado por usuario. Migración `migrations/comercial_clasificacion_producto_20260609.py` (idempotente).
 

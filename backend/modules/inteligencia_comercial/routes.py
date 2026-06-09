@@ -20,7 +20,8 @@ Unidades de Negocio válidas:
 import logging
 from datetime import datetime, timedelta, date
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Depends, Request
+from pydantic import BaseModel
 import pymssql
 import os
 from core.config.edarsahub_config import get_edarsahub_sql_config
@@ -161,6 +162,31 @@ def execute_query(sql: str, params: tuple = None) -> List[Dict]:
     except Exception as e:
         logger.error(f"[INTELIGENCIA] Error SQL: {e}")
         return []
+
+
+def execute_write(sql: str, params: tuple = None) -> int:
+    """Ejecuta INSERT/UPDATE/DELETE con commit. Retorna filas afectadas."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    if params:
+        cursor.execute(sql, params)
+    else:
+        cursor.execute(sql)
+    affected = cursor.rowcount
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return affected
+
+
+async def require_admin(request: Request) -> Dict[str, Any]:
+    """Auth dual (Bearer/Cookie) + rol administrador para escrituras de catálogo."""
+    from core.security import get_current_user_dual
+    user = await get_current_user_dual(request)
+    role = str(user.get("role") or user.get("rol") or "").lower()
+    if not ("admin" in role or "super" in role):
+        raise HTTPException(status_code=403, detail="Requiere rol administrador")
+    return user
 
 
 # ============================================================================
@@ -1322,3 +1348,118 @@ async def health_check():
             "database": "EDARSAHUB",
             "error": str(e)
         }
+
+
+
+# ============================================================================
+# ADMIN: Clasificación Comercial de Producto (catálogo canónico)
+# Fuente: Sync_Productos + Comercial_ClasificacionesProducto
+# La regla A/B (SoftRestaurant) solo se aplicó en el backfill; aquí el admin
+# resuelve los PENDIENTE_CLASIFICACION asignando una clasificación MANUAL.
+# ============================================================================
+
+class ClasificarRequest(BaseModel):
+    clasificacion_id: int
+    producto_ids: Optional[List[str]] = None          # UUIDs de Sync_Productos.ProductoID
+    familia_nombre: Optional[str] = None              # alternativa: clasificar familia completa
+    system_type: Optional[str] = None                 # opcional para acotar la familia
+
+
+@router.get("/clasificaciones")
+async def get_catalogo_clasificaciones():
+    """Catálogo controlado de clasificaciones comerciales (activo)."""
+    rows = execute_query(
+        f"SELECT ClasificacionProductoID AS id, Codigo AS codigo, Nombre AS nombre, Orden AS orden "
+        f"FROM {_CLAS_TABLA} WHERE Activo=1 ORDER BY Orden"
+    )
+    return {"success": True, "clasificaciones": rows}
+
+
+@router.get("/admin/productos-clasificacion")
+async def admin_listar_productos(
+    q: Optional[str] = Query(None, description="Busca por nombre/familia"),
+    system_type: Optional[str] = Query(None),
+    estado: Optional[str] = Query(None, description="pendientes | clasificados | todos"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    _: Dict = Depends(require_admin),
+):
+    """Lista productos del catálogo con su clasificación actual (paginado)."""
+    where = ["1=1"]
+    params: list = []
+    if q:
+        where.append("(sp.Nombre LIKE %s OR sp.FamiliaNombre LIKE %s)")
+        params += [f"%{q}%", f"%{q}%"]
+    if system_type:
+        where.append("sp.SystemType = %s")
+        params.append(system_type)
+    if estado == "pendientes":
+        where.append("(cc.Codigo IS NULL OR cc.Codigo = 'PENDIENTE_CLASIFICACION')")
+    elif estado == "clasificados":
+        where.append("cc.Codigo IS NOT NULL AND cc.Codigo <> 'PENDIENTE_CLASIFICACION'")
+    wsql = " AND ".join(where)
+    offset = (page - 1) * page_size
+
+    total = execute_query(
+        f"SELECT COUNT(*) AS n FROM {_SYNC_PROD} sp "
+        f"LEFT JOIN {_CLAS_TABLA} cc ON cc.ClasificacionProductoID = sp.ClasificacionProductoID "
+        f"WHERE {wsql}", tuple(params))
+    total_n = total[0]["n"] if total else 0
+
+    rows = execute_query(
+        f"SELECT sp.ProductoID AS producto_id, sp.Nombre AS nombre, sp.FamiliaNombre AS familia, "
+        f"sp.SubFamiliaNombre AS subfamilia, sp.SystemType AS system_type, "
+        f"sp.CategoriaNombre AS categoria_pos, "
+        f"cc.ClasificacionProductoID AS clasificacion_id, "
+        f"ISNULL(cc.Codigo,'PENDIENTE_CLASIFICACION') AS clasificacion, "
+        f"sp.ClasificacionOrigen AS origen, sp.ClasificacionFecha AS fecha "
+        f"FROM {_SYNC_PROD} sp "
+        f"LEFT JOIN {_CLAS_TABLA} cc ON cc.ClasificacionProductoID = sp.ClasificacionProductoID "
+        f"WHERE {wsql} ORDER BY sp.FamiliaNombre, sp.Nombre "
+        f"OFFSET {offset} ROWS FETCH NEXT {page_size} ROWS ONLY", tuple(params))
+    for r in rows:
+        r["producto_id"] = str(r["producto_id"])
+        r["fecha"] = str(r["fecha"])[:19] if r.get("fecha") else None
+    return {"success": True, "total": total_n, "page": page, "page_size": page_size, "productos": rows}
+
+
+@router.get("/admin/familias-pendientes")
+async def admin_familias_pendientes(_: Dict = Depends(require_admin)):
+    """Familias con productos PENDIENTE_CLASIFICACION (para clasificar en bloque)."""
+    rows = execute_query(
+        f"SELECT sp.SystemType AS system_type, sp.FamiliaNombre AS familia, COUNT(*) AS pendientes "
+        f"FROM {_SYNC_PROD} sp "
+        f"LEFT JOIN {_CLAS_TABLA} cc ON cc.ClasificacionProductoID = sp.ClasificacionProductoID "
+        f"WHERE cc.Codigo IS NULL OR cc.Codigo = 'PENDIENTE_CLASIFICACION' "
+        f"GROUP BY sp.SystemType, sp.FamiliaNombre ORDER BY COUNT(*) DESC")
+    return {"success": True, "total": len(rows), "familias": rows}
+
+
+@router.post("/admin/clasificar")
+async def admin_clasificar(body: ClasificarRequest, _: Dict = Depends(require_admin)):
+    """Asigna clasificación MANUAL a productos (por IDs) o a una familia completa.
+    Trazabilidad: ClasificacionOrigen='MANUAL', ClasificacionFecha=now."""
+    cat = execute_query(
+        f"SELECT ClasificacionProductoID AS id, Codigo FROM {_CLAS_TABLA} WHERE ClasificacionProductoID=%s",
+        (body.clasificacion_id,))
+    if not cat:
+        raise HTTPException(status_code=400, detail="clasificacion_id inválido")
+
+    if body.producto_ids:
+        marks = ",".join(["%s"] * len(body.producto_ids))
+        sql = (f"UPDATE {_SYNC_PROD} SET ClasificacionProductoID=%s, ClasificacionOrigen='MANUAL', "
+               f"ClasificacionFecha=SYSDATETIME() WHERE ProductoID IN ({marks})")
+        affected = execute_write(sql, tuple([body.clasificacion_id] + body.producto_ids))
+    elif body.familia_nombre:
+        conds = ["FamiliaNombre=%s"]
+        params = [body.clasificacion_id, body.familia_nombre]
+        if body.system_type:
+            conds.append("SystemType=%s")
+            params.append(body.system_type)
+        sql = (f"UPDATE {_SYNC_PROD} SET ClasificacionProductoID=%s, ClasificacionOrigen='MANUAL', "
+               f"ClasificacionFecha=SYSDATETIME() WHERE {' AND '.join(conds)}")
+        affected = execute_write(sql, tuple(params))
+    else:
+        raise HTTPException(status_code=400, detail="Indica producto_ids o familia_nombre")
+
+    return {"success": True, "actualizados": affected, "clasificacion": cat[0]["Codigo"]}

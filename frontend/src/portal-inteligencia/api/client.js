@@ -38,3 +38,19 @@ export async function apiGet(path, params) {
     return { estado: ESTADO.ERROR, data: null, status: status || 0 };
   }
 }
+
+/**
+ * POST autenticado. Retorna { estado, data, status }.
+ */
+export async function apiPost(path, payload) {
+  if (!getToken()) return { estado: ESTADO.SIN_SESION, data: null, status: 0 };
+  try {
+    const res = await api.post(path, payload, { timeout: 35000 });
+    return { estado: ESTADO.OK, data: res.data, status: res.status };
+  } catch (err) {
+    const status = err?.response?.status;
+    if (status === 401) return { estado: ESTADO.SESION_EXPIRADA, data: null, status };
+    if (status === 403) return { estado: ESTADO.SIN_PERMISO, data: null, status };
+    return { estado: ESTADO.ERROR, data: null, status: status || 0 };
+  }
+}

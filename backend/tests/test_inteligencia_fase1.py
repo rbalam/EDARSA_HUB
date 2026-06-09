@@ -78,3 +78,27 @@ def test_dia_no_vacia_horario_productos(token):
     d = _get(token, "/dashboard", periodo="dia")
     assert len(d["ventas_horario"]) > 0, "ventas_horario vacío en periodo dia"
     assert len(d["top_productos"]) > 0, "top_productos vacío en periodo dia"
+
+
+def test_catalogo_clasificaciones(token):
+    d = _get(token, "/clasificaciones")
+    codigos = {c["codigo"] for c in d["clasificaciones"]}
+    assert {"ALIMENTOS", "BEBIDAS", "OTROS", "PENDIENTE_CLASIFICACION"}.issubset(codigos)
+
+
+def test_admin_listar_y_clasificar(token):
+    """Lista productos pendientes y clasifica uno como MANUAL; verifica que sale de pendientes."""
+    lst = _get(token, "/admin/productos-clasificacion", estado="pendientes", page_size=1)
+    if lst["total"] == 0:
+        return  # nada pendiente (ya clasificado), test no aplica
+    prod = lst["productos"][0]
+    otros = next(c for c in _get(token, "/clasificaciones")["clasificaciones"] if c["codigo"] == "OTROS")
+    r = requests.post(f"{API}/api/inteligencia/admin/clasificar",
+                      json={"clasificacion_id": otros["id"], "producto_ids": [prod["producto_id"]]},
+                      headers={"Authorization": f"Bearer {token}"}, timeout=30)
+    assert r.status_code == 200 and r.json().get("actualizados", 0) >= 1
+
+
+def test_admin_requiere_auth():
+    r = requests.get(f"{API}/api/inteligencia/admin/familias-pendientes", timeout=30)
+    assert r.status_code in (401, 403), "endpoint admin debe exigir autenticación"
