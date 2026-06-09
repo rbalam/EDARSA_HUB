@@ -17,3 +17,12 @@
 - [ ] PIC: conectar tarjetas mock "Top Productos" y "Casas/Distribuidores" (DashboardIA) a `Sync_Sales`.
 - [ ] ESTELAR histórico solo desde Jun-2025 (¿fecha real de apertura o datos faltantes?).
 - [ ] MongoDB sunset (espera autorización del usuario).
+
+
+## Programa CANONIZACIÓN + Catálogo Enriquecido de Productos (2026-06-09, orden A→B→C→D→E)
+Auditoría FASE 1 hecha: `Sync_Productos` (12,460, PK ProductoID GUID), `Sync_Productos_Insumos` (11,735), `Sync_Productos_Recetas` (13,313, ya aplanada NivelExplosion=1), `Sync_Productos_Elaborados`. NO existe catálogo enriquecido comercial; `Producto_Catalogo` está VACÍA (PK INT, sin campos alcohol/comercial) → NO reutilizar. Excel del usuario: 3774 enriquecidos (26 grupos, 70 marcas) + 1000 pendientes; `producto_id` hace match 100% (3774/3774) con `Sync_Productos.ProductoID`. Fuente de ventas NO-LIVE existente y vacía: `Comercial_Inteligencia_VentasDetalleProducto` (ya trae casa/porcentaje_alcohol/es_alcohol).
+- [x] **Bloque A — Servicios canónicos (código, sin DDL)** (2026-06-09): `core/productos_service.py` (ProductosService), `core/insumos_service.py` (InsumosService), `core/recetas_service.py` (RecetasService), `core/consumo_receta_service.py` (ConsumoRecetaService = regla canónica consumo: Cantidad×cantidad_vendida + agregado por insumo). Patrón espejo de UnidadesService (`EDARSAHUB_CONFIG` + `execute_sql_query_params`, parametrizado). Verificado contra datos reales MPRO+SoftRestaurant + 6 tests `test_bloque_a_servicios_canonicos.py`. Refactor gradual de los ~18 archivos que consultan Sync_Productos directo: PENDIENTE (incremental, sin cambiar resultados).
+- [ ] **Bloque B — DDL Catálogo Enriquecido (NO destructivo)**: crear `Comercial_Productos_Enriquecidos` (GUID 1:1 `Sync_Productos.ProductoID`, patrón `Comercial_*`) + `Comercial_Marcas_Diccionario` + índices + backfill desde Sync_Productos (campos comerciales NULL) + importar 3774 enriquecidos + 1000 pendientes del Excel.
+- [ ] **Bloque C — Backend**: 8 endpoints SQL-first `/api/comercial/productos-enriquecidos*` + RBAC + filtros.
+- [ ] **Bloque D — Frontend**: pantalla Comercial > Catálogo Enriquecido (filtros corporativos, import/export, indicadores de pendientes).
+- [ ] **Bloque E — Integración Portal**: vista/endpoint ventas enriquecidas (`Comercial_Inteligencia_VentasDetalleProducto` + enriquecido + recetas) con KPIs coincidentes con Tablero/Menú Comercial.
