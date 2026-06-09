@@ -87,7 +87,7 @@ def init_compras_repository(database) -> None:
     _db = database
     _stub_mode = database is None
     if _stub_mode:
-        logger.warning("[COMPRAS_REPO] Inicializado en modo STUB - funcionalidad MongoDB limitada")
+        logger.debug("[COMPRAS_REPO] Inicializado en modo STUB - funcionalidad MongoDB limitada")
 
 
 def get_db():
