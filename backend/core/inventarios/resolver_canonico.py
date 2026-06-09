@@ -151,6 +151,30 @@ def _server_id_de_unidad(unidad_codigo: str) -> Optional[str]:
 # Resolución de PRODUCTO (POS -> ProductoID int)
 # ---------------------------------------------------------------------------
 
+def precargar_productos_mapeo(unidad_codigo: str, sistema_origen: str) -> int:
+    """
+    Precarga TODO el mapeo de productos (Producto_MapeoOrigen) de la unidad+sistema en
+    una sola consulta, poblando `_producto_cache`. Evita miles de round-trips por producto
+    único durante un backfill. Devuelve cuántos mapeos quedaron en caché.
+    """
+    server_id = _server_id_de_unidad(unidad_codigo)
+    if not server_id or not _tabla_existe(BRIDGE_TABLE):
+        return 0
+    sistema = str(sistema_origen or "").upper()
+    rows = _fetchall(
+        f"SELECT CodigoFuente, ProductoID FROM {BRIDGE_TABLE} WHERE ServerID=%s AND SystemType=%s AND Activo=1",
+        (str(server_id), sistema),
+    )
+    n = 0
+    for cf, pid in rows:
+        if cf is None or pid is None:
+            continue
+        ckey = (str(server_id), sistema, str(cf).strip())
+        _producto_cache[ckey] = ResultadoResolucion.ok(pid)
+        n += 1
+    return n
+
+
 def resolver_producto_id(unidad_codigo: str, sistema_origen: str, codigo_origen: str) -> ResultadoResolucion:
     """
     Resuelve el ProductoID canónico (int) a partir de la unidad canónica, el sistema

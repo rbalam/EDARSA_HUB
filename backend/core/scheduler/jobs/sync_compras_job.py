@@ -199,7 +199,8 @@ def _get_servers_to_sync() -> List[Dict]:
             SELECT 
                 s.id, s.nombre as server_name, s.host, s.port, s.database_name,
                 s.username, s.password_encrypted, s.system_type, s.activo,
-                u.id as unidad_id, u.codigo as unidad_codigo, u.nombre as unidad_nombre
+                u.id as unidad_id, u.codigo as unidad_codigo, u.nombre as unidad_nombre,
+                u.sucursal_origen_id as sucursal_origen_id
             FROM Servidores_Conexiones s
             LEFT JOIN Unidades_Negocio u ON u.server_id = CAST(s.id AS NVARCHAR(36))
             WHERE s.activo = 1
@@ -233,6 +234,7 @@ def _get_servers_to_sync() -> List[Dict]:
                 'unidad_id': str(row.get('unidad_id', '')),
                 'unidad_codigo': row.get('unidad_codigo', ''),
                 'unidad_nombre': row.get('unidad_nombre', ''),
+                'sucursal_origen_id': row.get('sucursal_origen_id'),
             })
         
         logger.info(f"[SYNC-COMPRAS] Servidores encontrados: {len(servers)}")
@@ -322,6 +324,7 @@ def execute_sync_compras(dry_run: bool = False) -> Dict[str, Any]:
                 'id': server['unidad_id'],
                 'codigo': unidad_codigo,
                 'nombre': server['unidad_nombre'],
+                'sucursal_origen_id': server.get('sucursal_origen_id'),
             }
             
             # Sincronizar Inventarios Físicos

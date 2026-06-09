@@ -34,11 +34,17 @@ from core.inventarios.resolver_canonico import (
 logger = logging.getLogger(__name__)
 
 
-def _query_origen(system_type: str, dias_atras: int) -> str:
+def _query_origen(system_type: str, dias_atras: int, sucursal_origen: str = None) -> str:
     st = (system_type or "").upper()
     if "MPRO" in st or "MANAGEMENT" in st or "MANAGMENT" in st:
         # Esquema real ManagementPro (verificado): tabla Movimiento con prefijo Mv_/Pr_/Tm_.
         # (El esquema legacy usaba Mo_*/Ar_Cve_Articulo que NO existe -> 0 filas.)
+        # MPRO es multisucursal en un mismo servidor: filtrar por Sc_Cve_Sucursal para
+        # asignar cada movimiento a su unidad/sucursal canónica correcta.
+        filtro_suc = ""
+        if sucursal_origen:
+            suc = str(sucursal_origen).replace("'", "''")
+            filtro_suc = f" AND Sc_Cve_Sucursal = '{suc}' "
         return f"""
             SELECT
                 Mv_Fecha            AS fecha,
@@ -50,6 +56,7 @@ def _query_origen(system_type: str, dias_atras: int) -> str:
                 CAST(Mv_Documento AS VARCHAR(50)) AS folio
             FROM Movimiento
             WHERE Mv_Fecha >= DATEADD(DAY, -{int(dias_atras)}, GETDATE())
+              {filtro_suc}
         """
     # SoftRestaurant Pro (esquema real verificado): movtosalmacen no tiene 'cancelado'
     # ni 'idinsumo'; el código de producto se obtiene vía insumospresentaciones.idinsumo.
@@ -107,36 +114,35 @@ def sync_movimientos_canonico(
     # 3) Leer ORIGEN
     rows = execute_sql_fn(
         server_info["host"], server_info["port"], server_info["database"],
-        server_info["username"], server_info["password"], _query_origen(system_type, dias_atras),
+        server_info["username"], server_info["password"], _query_origen(system_type, dias_atras, sucursal_origen),
     )
     if not rows:
         conn.close()
         return {"status": "OK", "encabezados_synced": 0, "detalles_synced": 0,
                 "descartados": 0, "pendientes": pend, "message": "Sin datos o sin conexión en origen"}
 
-    encabezados = 0
-    detalles = 0
-    cur_w = conn.cursor()
-
+    # 3) Leer y RESOLVER todo en memoria (resolvers cacheados -> rápido).
+    # Precarga masiva del mapeo de productos (1 query) para evitar round-trips por producto.
+    try:
+        from core.inventarios.resolver_canonico import precargar_productos_mapeo
+        precargar_productos_mapeo(unidad_codigo, system_type)
+    except Exception as _e:
+        logger.warning(f"[SYNC-MOV-CANONICO] Precarga productos falló (continúa): {str(_e)[:120]}")
+    resueltos = []  # tuplas listas para staging
     for r in rows:
         concepto = r.get("concepto")
         producto_cod = str(r.get("producto_cod") or "").strip()
         almacen_cod = str(r.get("almacen_cod") or "").strip()
         fecha = r.get("fecha")
         folio = str(r.get("folio") or "").strip()[:30]
-        # El signo en SoftRestaurant indica dirección (entrada/salida); la dirección
-        # ya la representa el TipoMovimiento canónico. El detalle canónico exige
-        # Cantidad > 0 y CostoUnitario >= 0 (CK_Inventario_MovimientosDetalle_Valores),
-        # por lo que se almacena la MAGNITUD.
+        # El signo (SoftRestaurant) indica dirección; la dirección la lleva el
+        # TipoMovimiento canónico. El detalle exige Cantidad>0 y CostoUnitario>=0
+        # (CK_Inventario_MovimientosDetalle_Valores) -> se almacena la MAGNITUD.
         cantidad = abs(float(r.get("cantidad") or 0))
         costo = abs(float(r.get("costo") or 0))
-
-        # Movimiento sin cantidad útil -> no genera detalle canónico válido.
         if cantidad <= 0:
             pend["cantidad_cero"] = pend.get("cantidad_cero", 0) + 1
             continue
-
-        # Resolver tipo (DB-driven), almacén y producto. Si algo falla -> pendiente, descartados=0.
         tip = resolver_tipo_movimiento_desde_concepto(system_type, concepto)
         if not tip.resuelto:
             pend["tipo"] += 1
@@ -149,58 +155,73 @@ def sync_movimientos_canonico(
         if not prod.resuelto:
             pend["producto"] += 1
             continue
+        resueltos.append((empresa_id, sucursal_id, alm.canonical_id, tip.canonical_id,
+                          fecha, folio, prod.canonical_id, cantidad, costo))
 
-        tipo_id, almacen_id, producto_id = tip.canonical_id, alm.canonical_id, prod.canonical_id
+    if not resueltos:
+        conn.close()
+        return {"status": "OK", "encabezados_synced": 0, "detalles_synced": 0,
+                "descartados": 0, "pendientes": pend, "message": "Sin movimientos resolubles"}
 
-        try:
-            # Encabezado idempotente (NOT EXISTS por llave natural)
-            cur_w.execute(
-                """
-                IF NOT EXISTS (
-                    SELECT 1 FROM Inventario_Movimientos
-                    WHERE EmpresaID=%s AND SucursalID=%s AND AlmacenID=%s AND TipoMovimientoID=%s
-                      AND CAST(FechaMovimiento AS DATE)=CAST(%s AS DATE)
-                      AND ISNULL(FolioReferencia,'')=%s
-                )
-                INSERT INTO Inventario_Movimientos
-                    (TipoMovimientoID, EmpresaID, SucursalID, AlmacenID, FechaMovimiento,
-                     ReferenciaTipo, FolioReferencia, Activo, CreatedAt)
-                VALUES (%s,%s,%s,%s,%s,'MOVIMIENTO_POS',%s,1,GETDATE());
-                """,
-                (empresa_id, sucursal_id, almacen_id, tipo_id, fecha, folio,
-                 tipo_id, empresa_id, sucursal_id, almacen_id, fecha, folio),
-            )
-            # Obtener MovimientoID (existente o recién insertado)
-            cur_w.execute(
-                """SELECT TOP 1 MovimientoID FROM Inventario_Movimientos
-                   WHERE EmpresaID=%s AND SucursalID=%s AND AlmacenID=%s AND TipoMovimientoID=%s
-                     AND CAST(FechaMovimiento AS DATE)=CAST(%s AS DATE) AND ISNULL(FolioReferencia,'')=%s
-                   ORDER BY MovimientoID DESC""",
-                (empresa_id, sucursal_id, almacen_id, tipo_id, fecha, folio),
-            )
-            mid_row = cur_w.fetchone()
-            if not mid_row:
-                continue
-            movimiento_id = mid_row[0]
-            encabezados += 1
+    # 4) Escritura SET-BASED (staging temporal + INSERT..SELECT). Reduce miles de
+    #    round-trips a unas pocas sentencias. Idempotente por llave natural.
+    cur_w = conn.cursor()
+    cur_w.execute("""
+        CREATE TABLE #stg_mov (
+            EmpresaID int, SucursalID int, AlmacenID int, TipoMovimientoID tinyint,
+            FechaMovimiento datetime2, Folio varchar(30),
+            ProductoID int, Cantidad decimal(18,6), CostoUnitario decimal(18,6)
+        )
+    """)
+    ins = """INSERT INTO #stg_mov (EmpresaID,SucursalID,AlmacenID,TipoMovimientoID,FechaMovimiento,Folio,ProductoID,Cantidad,CostoUnitario)
+             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
+    BATCH = 1000
+    for i in range(0, len(resueltos), BATCH):
+        cur_w.executemany(ins, resueltos[i:i + BATCH])
 
-            # Detalle idempotente (NOT EXISTS por MovimientoID + ProductoID)
-            cur_w.execute(
-                """
-                IF NOT EXISTS (
-                    SELECT 1 FROM Inventario_MovimientosDetalle
-                    WHERE MovimientoID=%s AND ProductoID=%s
-                )
-                INSERT INTO Inventario_MovimientosDetalle
-                    (MovimientoID, ProductoID, Cantidad, CostoUnitario, CreatedAt)
-                VALUES (%s,%s,%s,%s,GETDATE());
-                """,
-                (movimiento_id, producto_id, movimiento_id, producto_id, cantidad, costo),
-            )
-            detalles += 1
-        except Exception as e:
-            logger.warning(f"[SYNC-MOV-CANONICO] Error insertando movimiento: {str(e)[:120]}")
+    # 4a) Insertar encabezados nuevos (uno por llave natural empresa+sucursal+almacen+tipo+fecha(día)+folio)
+    cur_w.execute("""
+        INSERT INTO Inventario_Movimientos
+            (TipoMovimientoID, EmpresaID, SucursalID, AlmacenID, FechaMovimiento,
+             ReferenciaTipo, FolioReferencia, Activo, CreatedAt)
+        SELECT s.TipoMovimientoID, s.EmpresaID, s.SucursalID, s.AlmacenID,
+               MIN(s.FechaMovimiento), 'MOVIMIENTO_POS', s.Folio, 1, GETDATE()
+        FROM #stg_mov s
+        WHERE NOT EXISTS (
+            SELECT 1 FROM Inventario_Movimientos m
+            WHERE m.EmpresaID=s.EmpresaID AND m.SucursalID=s.SucursalID AND m.AlmacenID=s.AlmacenID
+              AND m.TipoMovimientoID=s.TipoMovimientoID
+              AND CAST(m.FechaMovimiento AS DATE)=CAST(s.FechaMovimiento AS DATE)
+              AND ISNULL(m.FolioReferencia,'')=ISNULL(s.Folio,'')
+        )
+        GROUP BY s.EmpresaID, s.SucursalID, s.AlmacenID, s.TipoMovimientoID,
+                 CAST(s.FechaMovimiento AS DATE), s.Folio
+    """)
+    encabezados = cur_w.rowcount or 0
 
+    # 4b) Insertar detalles nuevos (uno por movimiento+producto; agrega cantidades duplicadas del día)
+    cur_w.execute("""
+        INSERT INTO Inventario_MovimientosDetalle
+            (MovimientoID, ProductoID, Cantidad, CostoUnitario, CreatedAt)
+        SELECT m.MovimientoID, s.ProductoID, SUM(s.Cantidad),
+               CASE WHEN SUM(s.Cantidad)=0 THEN MAX(s.CostoUnitario)
+                    ELSE SUM(s.Cantidad*s.CostoUnitario)/NULLIF(SUM(s.Cantidad),0) END,
+               GETDATE()
+        FROM #stg_mov s
+        JOIN Inventario_Movimientos m
+          ON m.EmpresaID=s.EmpresaID AND m.SucursalID=s.SucursalID AND m.AlmacenID=s.AlmacenID
+         AND m.TipoMovimientoID=s.TipoMovimientoID
+         AND CAST(m.FechaMovimiento AS DATE)=CAST(s.FechaMovimiento AS DATE)
+         AND ISNULL(m.FolioReferencia,'')=ISNULL(s.Folio,'')
+        WHERE NOT EXISTS (
+            SELECT 1 FROM Inventario_MovimientosDetalle d
+            WHERE d.MovimientoID=m.MovimientoID AND d.ProductoID=s.ProductoID
+        )
+        GROUP BY m.MovimientoID, s.ProductoID
+    """)
+    detalles = cur_w.rowcount or 0
+
+    cur_w.execute("DROP TABLE #stg_mov")
     conn.commit()
     conn.close()
 

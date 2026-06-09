@@ -724,18 +724,28 @@ def sync_almacenes_from_server(
                            "sucursal": suc.motivo if not suc.resuelto else "OK"}}
     empresa_id = emp.canonical_id
     sucursal_id = suc.canonical_id
+    sucursal_origen = (unidad_info or {}).get('sucursal_origen_id')
 
     logger.info(f"[SYNC] Iniciando sync almacenes: Empresa={empresa_id}, Sucursal={sucursal_id}")
     
     try:
         if 'MPRO' in system_type.upper() or 'MANAGEMENT' in system_type.upper():
-            query_origen = """
+            # Esquema real ManagementPro (verificado): la tabla Almacen no tiene 'Al_Estatus';
+            # el estado activo es Es_Cve_Estado='AC'. No expone tipo canónico -> 'GENERAL'.
+            # MPRO es multisucursal: el código de almacén (p.ej. '0001') se repite por sucursal,
+            # por lo que se DEBE filtrar por Sc_Cve_Sucursal = sucursal de origen de la unidad.
+            filtro_suc_alm = ""
+            if sucursal_origen:
+                _so = str(sucursal_origen).replace("'", "''")
+                filtro_suc_alm = f" AND Sc_Cve_Sucursal = '{_so}' "
+            query_origen = f"""
                 SELECT 
                     CAST(Al_Cve_Almacen AS VARCHAR(50)) AS codigo_almacen,
                     Al_Descripcion AS nombre_almacen,
                     'GENERAL' AS tipo_almacen,
-                    CASE WHEN Al_Estatus = 'A' THEN 1 ELSE 0 END AS activo
+                    CASE WHEN Es_Cve_Estado = 'AC' THEN 1 ELSE 0 END AS activo
                 FROM Almacen
+                WHERE 1=1 {filtro_suc_alm}
             """
         else:
             # SoftRestaurant Pro - usar nombres de tabla correctos.
@@ -928,8 +938,11 @@ def sync_movimientos_from_server(
     - Sin hardcode de clasificación (tipo de movimiento vía catálogo DB-driven).
     """
     # Import perezoso para evitar import circular con esta misma capa.
+    import os as _os
     from core.inventarios.sync_movimientos_canonico import sync_movimientos_canonico
-    return sync_movimientos_canonico(server_info, unidad_info, execute_sql_fn)
+    # Ventana histórica configurable (backfill). Default 30 días para el job recurrente.
+    dias_atras = int(_os.environ.get("SYNC_COMPRAS_MOV_DIAS_ATRAS", "30"))
+    return sync_movimientos_canonico(server_info, unidad_info, execute_sql_fn, dias_atras=dias_atras)
 
 
 

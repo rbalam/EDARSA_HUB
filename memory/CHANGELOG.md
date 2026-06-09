@@ -649,3 +649,16 @@ Verificado: cURL (toggle desactivar/reactivar, revocación de sesiones, bloqueo 
   - E2E: ESTELAR=86, ORIGEN(MPRO)=2947 requisiciones en `Compras_Requisiciones_Sync`.
 - FIX lectura `obtener_requisiciones_sync`: el filtro de sucursal ocultaba SoftRestaurant (guarda sucursal=''). Ahora filas sin sucursal pasan dentro del mismo server_id (SR es 1:1 servidor-sucursal). Endpoint `/compras/pedidos-vigentes/{id}` verificado: ESTELAR 86, ORIGEN 500.
 - MIGRACIÓN NO-LIVE `/compras/detalle-movimientos` (POST, server.py): antes consultaba POS live (movtosalmacen/movsinv). Ahora lee EXCLUSIVAMENTE tablas canónicas (Inventario_MovimientosDetalle/Movimientos/TipoMovimiento/Almacenes), resolviendo codigo→ProductoID vía `Producto_MapeoOrigen`. Verificado: producto A700002 (ESTELAR) devuelve movimientos reales con entradas/salidas/totales y source=EDARSAHUB_NOLIVE.
+
+## 2026-06-09 (cont.) — Mapeo de conceptos MPRO + sync movimientos MPRO E2E
+- Poblado `Inventario_ConceptoMapeoOrigen` para SystemType='MPRO' (84 tipos del catálogo activo `Tipo_Movimiento`). Regla determinista validada por usuario: TRASPASO/TRANSFERENCIA/TRANSITO→5/6; COMPRA(EN)→1; COMPRA/PROVEEDOR(SA)→2; resto por naturaleza→3(EN)/4(SA). Decisiones usuario: 700 NOTA DE VENTA→4, conversión/tablajería→AJUSTE, 051 anulación compra→2, 940 bonificaciones→3. Script: `tests/seed_mpro_concepto_mapeo.py`.
+- FIX multisucursal MPRO (bonus, necesario para correctitud): `_query_origen` MPRO ahora filtra `Sc_Cve_Sucursal = sucursal_origen` (ORIGEN=0023/130QRO=0021), evitando mezclar movimientos de ambas sucursales en una.
+- FIX query almacenes MPRO (`sync_service.py`): `Al_Estatus` (no existe) → `Es_Cve_Estado='AC'`; + filtro `Sc_Cve_Sucursal` (el código de almacén se repite por sucursal).
+- E2E MPRO (ORIGEN, 3d): almacenes=5; movimientos=182 enc + 182 det, **0 descartados, 0 pendientes** (tipo/almacen/producto/sucursal=0). Antes 100% pendiente 'tipo'.
+- Endpoint NO-LIVE `/compras/detalle-movimientos` verificado con producto MPRO: devuelve movimientos canónicos (AJUSTE_ENTRADA, etc.) con source=EDARSAHUB_NOLIVE.
+
+## 2026-06-09 (cont.) — Job sync_compras: wiring multisucursal + optimización backfill
+- FIX job (`sync_compras_job.py`): `_get_servers_to_sync` y `unidad_info` ahora incluyen `sucursal_origen_id` (antes None → MPRO multisucursal resolvía AMBIGUO y no sincronizaba). Wrapper `sync_movimientos_from_server` usa ventana configurable `SYNC_COMPRAS_MOV_DIAS_ATRAS` (default 30).
+- OPTIMIZACIÓN escritura movimientos (`sync_movimientos_canonico.py`): de 4 round-trips/fila a SET-BASED (tabla temporal #stg_mov + executemany + INSERT..SELECT idempotente). + `precargar_productos_mapeo` en resolver (1 query carga todo el mapeo de productos en caché, evita miles de round-trips). Resultado: escritura ~100x; cuello de botella restante = lectura del POS remoto por ventana.
+- Backfill background (90d) verificado: 130MID = 314 enc + 12,323 detalles, 0 descartados (~8 min, dominado por lectura POS). Script: `tests/backfill_inventario.py [dias]`.
+- CIENFUEGOS omitido (DDNS caído). 130QRO usa el mecanismo validado (sucursal_origen=0021, idéntico a ORIGEN ya probado E2E).
