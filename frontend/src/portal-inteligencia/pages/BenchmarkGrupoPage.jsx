@@ -15,13 +15,13 @@ import {
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
-const METRICAS = [
-  { id: 'ventas', label: 'Ventas', fmt: (v) => `$${Math.round(v).toLocaleString('es-MX')}` },
-  { id: 'cheque_promedio', label: 'Cheque Promedio', fmt: (v) => `$${(v || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}` },
-  { id: 'venta_por_pax', label: 'Venta / PAX', fmt: (v) => `$${(v || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}` },
-  { id: 'pax', label: 'PAX', fmt: (v) => Math.round(v).toLocaleString('es-MX') },
-  { id: 'cheques', label: 'Cheques', fmt: (v) => Math.round(v).toLocaleString('es-MX') },
-];
+// Formateadores por tipo de formato canónico (el catálogo vive en SQL).
+const FORMATTERS = {
+  moneda: (v) => `$${Math.round(v || 0).toLocaleString('es-MX')}`,
+  entero: (v) => Math.round(v || 0).toLocaleString('es-MX'),
+  decimal: (v) => (v || 0).toLocaleString('es-MX', { maximumFractionDigits: 2 }),
+};
+const fmtBy = (formato) => FORMATTERS[formato] || FORMATTERS.decimal;
 
 const fmtNum = (v, fmt) => (v === null || v === undefined ? '—' : fmt(v));
 
@@ -56,13 +56,22 @@ function KpiCard({ label, value, sub, accent = 'emerald' }) {
 export default function BenchmarkGrupoPage() {
   const [unidades, setUnidades] = useState([]);
   const [unidad, setUnidad] = useState('');
-  const [metrica, setMetrica] = useState('ticket_promedio');
+  const [metricasList, setMetricasList] = useState([]);
+  const [metrica, setMetrica] = useState('cheque_promedio');
   const [data, setData] = useState(null);
   const [productos, setProductos] = useState(null);
   const [loading, setLoading] = useState(false);
   const [vista, setVista] = useState('unidades'); // unidades | productos
 
-  const metaMetrica = METRICAS.find((m) => m.id === metrica) || METRICAS[0];
+  const metaDef = metricasList.find((m) => m.id === metrica);
+  const metaMetrica = { label: metaDef?.label || 'Métrica', fmt: fmtBy(metaDef?.formato) };
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/comercial/benchmark/metricas`, { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : { metricas: [] }))
+      .then((d) => setMetricasList(d.metricas || []))
+      .catch(() => setMetricasList([]));
+  }, []);
 
   useEffect(() => {
     fetch(`${API_URL}/api/comercial/benchmark/mis-unidades`, { credentials: 'include' })
@@ -125,7 +134,8 @@ export default function BenchmarkGrupoPage() {
           <select value={metrica} onChange={(e) => setMetrica(e.target.value)}
             data-testid="benchmark-metrica-select"
             className="bg-slate-700 text-white text-sm rounded px-3 py-2 border border-slate-600 focus:border-emerald-400 focus:outline-none">
-            {METRICAS.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+            {metricasList.length === 0 && <option value="cheque_promedio">Cheque Promedio</option>}
+            {metricasList.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
           </select>
         </div>
         <div className="flex gap-1 bg-slate-700/50 rounded-lg p-1 ml-auto">

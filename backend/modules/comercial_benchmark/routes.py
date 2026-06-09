@@ -19,6 +19,7 @@ from core.security import get_current_user_dual_dependency
 from core.rbac_helper_sql import get_role_code
 from core.corporate_filters.request_resolver import resolve_unidad_scope, canonical_server_id
 from core.confidencialidad import AnonymizerService
+from core.kpis_canonicos import KPIsCanonicosService
 from modules.comercial_benchmark import repository as repo
 from modules.comercial_benchmark.stats import resumen_benchmark
 
@@ -73,7 +74,7 @@ def _meta(metrica, desde, hasta, ctx, source_table, advertencias):
 @router.get("/interno/unidades")
 async def benchmark_unidades(
     unidad: Optional[str] = Query(None, description="Unidad propia (codigo/pk) para diferencia/percentil"),
-    metrica: str = Query("cheque_promedio", pattern="^(ventas|tickets|cheques|pax|ticket_promedio|cheque_promedio|venta_por_pax|cheques_por_pax)$"),
+    metrica: str = Query("cheque_promedio", pattern="^(ventas|ventas_brutas|ventas_sin_propina|propinas|tickets|cheques|pax|ticket_promedio|cheque_promedio|venta_por_pax|consumo_promedio_pax|cheques_por_pax)$"),
     desde: Optional[str] = None,
     hasta: Optional[str] = None,
     current_user: dict = Depends(get_current_user),
@@ -180,6 +181,12 @@ async def mis_unidades(current_user: dict = Depends(get_current_user)):
             continue
         out.append({"codigo": u.get("codigo"), "nombre": u.get("nombre")})
     return {"unidades": out}
+
+
+@router.get("/metricas")
+async def metricas(current_user: dict = Depends(get_current_user)):
+    """Glosario CANÓNICO de métricas desde SQL (sin hardcode en frontend)."""
+    return {"metricas": KPIsCanonicosService.metricas_disponibles()}
 
 
 @router.get("/cobertura")

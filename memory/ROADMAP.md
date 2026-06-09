@@ -26,3 +26,14 @@ Auditoría FASE 1 hecha: `Sync_Productos` (12,460, PK ProductoID GUID), `Sync_Pr
 - [x] **Bloque C — Backend** (2026-06-09): módulo `modules/comercial_enriquecido/` (repository + routes). 8 endpoints `/api/comercial/productos-enriquecidos*` (GET lista+filtros, GET/{id}, POST, PUT, PATCH activar/desactivar, POST importar, GET catalogos/filtros). RBAC CANÓNICO (es_admin/es_aprobador + resolve_unidad_scope, sin hardcode; lista vacía=admin ve todo). LEFT JOIN Sync_Productos (base canónica fresca). Verificado cURL los 8 + 7 tests `test_bloque_c_comercial_enriquecido.py`. Registrado en server.py.
 - [ ] **Bloque D — Frontend**: pantalla Comercial > Catálogo Enriquecido (filtros corporativos, import/export, indicadores de pendientes).
 - [ ] **Bloque E — Integración Portal**: vista/endpoint ventas enriquecidas (`Comercial_Inteligencia_VentasDetalleProducto` + enriquecido + recetas) con KPIs coincidentes con Tablero/Menú Comercial.
+
+## [2026-06-09 PM] Gobierno Benchmark + Confidencialidad + KPIs Canónicos (SQL)
+- [x] **AnonymizerService** (`core/confidencialidad/`): enmascaramiento central por permiso (6 tests).
+- [x] **KPIs Canónicos en SQL** (máxima SQL-First): tablas `Comercial_Metricas_Canonicas` + `Comercial_Metricas_Sinonimos` (migración idempotente `comercial_metricas_canonicas_20260609.py`, 8 métricas/21 sinónimos). `core/kpis_canonicos/KPIsCanonicosService` LEE de SQL e interpreta (campo/ratio). Propina NO es venta; `cheque_promedio`=ventas/CHEQUES (x cuenta) ≠ `ticket_promedio`=ventas/PAX (x comensal). Endpoint `/api/comercial/benchmark/metricas`. Tests `test_kpis_canonicos.py`.
+- [x] **Benchmark Interno de Grupo** (`modules/comercial_benchmark`, Portal → "Benchmark Grupo"): consume KPIs canónicos + AnonymizerService, agrupa por `unidad_negocio_pk` (MPRO no colapsa), envelope completo (46–54). Frontend lee métricas/unidades desde SQL. Auth DUAL (cookie+Bearer) corregida. Tests `test_benchmark_stats.py`.
+- [x] **ETL NO-LIVE** `scripts/poblar_ventas_detalle_producto.py`: `Comercial_Inteligencia_VentasDetalleProducto` poblada desde `Sync_Sales.items` (1,246,050 líneas, 5 unidades, 2024-06→2026-06; ESTELAR desde 2025-06). Idempotente, 100% EDARSAHUB.
+- [x] **Validación**: `benchmark_service.py` existente = benchmark de PRECIOS vs competidores (concepto distinto, se mantiene en Costos/Pricing IA). Split de menús confirmado por usuario.
+- [ ] **C2 (resto)**: migrar Tablero/Compras/Inteligencia a `KPIsCanonicosService` (una sola fórmula en todos los menús).
+- [ ] **C1**: Pricing IA `server_id` → `unidad` canónica (ELIMINAR server_id) + frontend `PricingIA.jsx`/`CostosMargenes.jsx`.
+- [ ] **C3**: auditar `modules/comercial/repository.py|routes.py` (server_id operacional vs plumbing).
+- [ ] **Diferido**: grupo corporativo real, benchmark sectorial, siembra permisos benchmark.

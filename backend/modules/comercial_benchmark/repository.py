@@ -21,7 +21,7 @@ from typing import Dict, List, Optional
 from core.db import execute_sql_query_params
 from core.server_registry import EDARSAHUB_CONFIG
 from core.unidades_service import UnidadesService
-from core.kpis_canonicos import KPIsCanonicosService, METRICAS_CANONICAS, resolver_metrica
+from core.kpis_canonicos import KPIsCanonicosService, resolver_metrica
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +29,6 @@ logger = logging.getLogger(__name__)
 def _conn():
     c = EDARSAHUB_CONFIG
     return (c['host'], c['port'], c['database'], c['username'], c['password'])
-
-
-# Métricas de benchmark = subconjunto del glosario CANÓNICO (sin duplicar fórmulas)
-METRICAS = {k: v["fn"] for k, v in METRICAS_CANONICAS.items()}
 
 
 def _identidad_por_pk(pk: Optional[str]) -> Optional[Dict]:

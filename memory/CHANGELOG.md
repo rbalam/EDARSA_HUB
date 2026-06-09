@@ -1,5 +1,41 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-09] Confidencialidad + KPIs Canónicos (SQL) + Benchmark Interno de Grupo
+Sesión fork. Pruebas SOLO cURL/python/pytest/screenshots (NO testing_agent). CERO MongoDB. NO-LIVE.
+
+1. **Capa de Confidencialidad central** (`core/confidencialidad/AnonymizerService`): enmascara
+   nombres reales / IDs técnicos según permiso (niveles COMPLETO→AGREGADO derivados del rol canónico).
+   Etiquetas anónimas deterministas ("Unidad comparable A/B"). Frontend nunca recibe nombres sin permiso.
+   Tests: `tests/test_anonymizer_service.py` (6).
+
+2. **KPIs Canónicos viven en SQL** (máxima SQL-First). Migración idempotente
+   `migrations/comercial_metricas_canonicas_20260609.py` crea:
+   - `dbo.Comercial_Metricas_Canonicas` (definición declarativa operacion=campo/ratio, formato,
+     versión, auditoría) — 8 métricas.
+   - `dbo.Comercial_Metricas_Sinonimos` (alias→canónico) — 21 sinónimos.
+   `core/kpis_canonicos/KPIsCanonicosService` LEE de SQL e interpreta (`aplicar_definicion`).
+   **La propina NO es venta**: `ventas`=sin propina; `cheque_promedio`=ventas/CHEQUES (x cuenta);
+   `ticket_promedio`=ventas/PAX (x comensal) — KPIs DISTINTOS. Endpoint `/api/comercial/benchmark/metricas`.
+   Validado: ESTELAR cheque_prom $1,477 · ticket_prom $508. Tests `tests/test_kpis_canonicos.py`.
+
+3. **Benchmark Interno de Grupo** (Portal Inteligencia → "Benchmark Grupo"): `modules/comercial_benchmark`
+   consume KPIs canónicos + AnonymizerService. Agrupa por `unidad_negocio_pk` (MPRO 130QRO/ORIGEN NO se
+   colapsan). Envelope completo (criterios 46–54). Frontend lee métricas y unidades desde SQL (sin hardcode).
+   **Auth corregida**: dependencia DUAL (cookie httpOnly + Bearer) — antes daba 401 en el Portal.
+   Tests `tests/test_benchmark_stats.py` (4).
+
+4. **ETL NO-LIVE** `scripts/poblar_ventas_detalle_producto.py`: puebla
+   `Comercial_Inteligencia_VentasDetalleProducto` desde `Sync_Sales.items` (JSON) + match canónico +
+   enriquecido. Idempotente, 100% EDARSAHUB (sin POS). 130MID/130QRO completos; resto en backfill.
+
+5. **Validación arquitectónica**: el `benchmark_service.py` existente es benchmark de PRECIOS vs
+   competidores (concepto distinto). Confirmado split de menús con el usuario.
+
+**Pendiente (autorizado):** C2 resto (Tablero/Compras/Inteligencia → KPIsCanonicosService);
+C1 (Pricing `server_id`→`unidad`, ELIMINAR server_id + frontend); C3 (auditar server_id operacional
+en comercial/repository.py|routes.py); completar backfill productos.
+
+
 ## [2026-06-08 PM] Fork: 6 fixes (menú, Finanzas, Propinas, Costos canónico, Recetas, Precios Sugeridos)
 Sesión fork. Pruebas SOLO cURL/python/screenshots (NO testing_agent). CERO MongoDB. NO-LIVE respetado.
 
