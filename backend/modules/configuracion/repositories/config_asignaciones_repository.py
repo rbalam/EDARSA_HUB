@@ -127,15 +127,16 @@ class ConfigAsignacionesRepository:
         data_query = f"""
             SELECT 
                 ConfigID as id,
-                UnidadNegocioID as UnidadNegocioID,
+                UnidadNegocioID as unidad_negocio_pk,
+                UnidadNegocioID as unidad_negocio_id,
                 UnidadNegocioNombre as unidad_negocio_nombre,
-                AlmacenID as AlmacenID,
+                AlmacenID as almacen_id,
                 AlmacenNombre as almacen_nombre,
                 UsuarioResponsableID as usuario_responsable_id,
                 UsuarioResponsableNombre as usuario_responsable_nombre,
                 UsuarioResponsableEmail as usuario_responsable_email,
-                Activa as Activa,
-                Prioridad as Prioridad,
+                Activa as activa,
+                Prioridad as prioridad,
                 FechaCreacion as fecha_creacion,
                 UsuarioCreacion as usuario_creacion,
                 FechaModificacion as fecha_modificacion,
@@ -160,15 +161,16 @@ class ConfigAsignacionesRepository:
         query = """
             SELECT 
                 ConfigID as id,
-                UnidadNegocioID as UnidadNegocioID,
+                UnidadNegocioID as unidad_negocio_pk,
+                UnidadNegocioID as unidad_negocio_id,
                 UnidadNegocioNombre as unidad_negocio_nombre,
-                AlmacenID as AlmacenID,
+                AlmacenID as almacen_id,
                 AlmacenNombre as almacen_nombre,
                 UsuarioResponsableID as usuario_responsable_id,
                 UsuarioResponsableNombre as usuario_responsable_nombre,
                 UsuarioResponsableEmail as usuario_responsable_email,
-                Activa as Activa,
-                Prioridad as Prioridad
+                Activa as activa,
+                Prioridad as prioridad
             FROM Config_Asignaciones
             WHERE ConfigID = %s
         """
@@ -183,10 +185,14 @@ class ConfigAsignacionesRepository:
         unidad_negocio_pk: str,
         almacen_id: str,
         usuario_responsable_id: str,
-        usuario_creacion: str
+        usuario_creacion: str,
+        unidad_negocio_nombre: str = "",
+        server_id: str = ""
     ) -> Dict[str, Any]:
         """
         Crea una nueva configuración de asignación en SQL Server.
+        El nombre de la unidad y server_id se resuelven en la ruta (espacio de
+        IDs EmpresaMongoUUID) y se reciben como parámetros.
         """
         # 1. Verificar que no existe duplicado
         check_query = """
@@ -197,29 +203,12 @@ class ConfigAsignacionesRepository:
         if existente:
             raise ValueError("Ya existe configuración para esta combinación")
         
-        # 2. Obtener datos de la unidad de negocio desde Servidores_Conexiones
-        empresa_query = """
-            SELECT nombre, CAST(id AS VARCHAR(50)) as id
-            FROM Servidores_Conexiones
-            WHERE activo = 1 AND (
-                CAST(id AS VARCHAR(50)) = %s 
-                OR nombre LIKE %s
-            )
-        """
-        empresas = await _execute_sql_async(empresa_query, (unidad_negocio_pk, f'%{unidad_negocio_pk}%'))
-        empresa = empresas[0] if empresas else {"nombre": unidad_negocio_pk, "server_id": unidad_negocio_pk}
+        empresa = {"nombre": unidad_negocio_nombre or unidad_negocio_pk, "server_id": server_id}
         
-        # 3. Obtener datos del usuario responsable
-        usuario_query = """
-            SELECT 
-                CAST(UsuarioID AS VARCHAR(50)) as id,
-                NombreCompleto as name,
-                Email as email
-            FROM Usuarios
-            WHERE UsuarioID = %s OR MongoLegacyID = %s
-        """
-        usuarios = await _execute_sql_async(usuario_query, (usuario_responsable_id, usuario_responsable_id))
-        usuario = usuarios[0] if usuarios else {"id": usuario_responsable_id, "name": "Usuario", "email": ""}
+        # 2. Obtener datos del usuario responsable (tabla canónica: Usuario_Catalogo)
+        usuario = await self.obtener_usuario(usuario_responsable_id) or {
+            "id": usuario_responsable_id, "name": "", "email": ""
+        }
         
         # 4. Calcular prioridad
         prioridad = 20 if almacen_id else 10
@@ -282,17 +271,8 @@ class ConfigAsignacionesRepository:
             params.append(almacen_id)
         
         if usuario_responsable_id is not None:
-            # Obtener datos del usuario
-            usuario_query = """
-                SELECT 
-                    CAST(UsuarioID AS VARCHAR(50)) as id,
-                    NombreCompleto as name,
-                    Email as email
-                FROM Usuarios
-                WHERE UsuarioID = %s OR MongoLegacyID = %s
-            """
-            usuarios = await _execute_sql_async(usuario_query, (usuario_responsable_id, usuario_responsable_id))
-            usuario = usuarios[0] if usuarios else {"name": "", "email": ""}
+            # Obtener datos del usuario (tabla canónica: Usuario_Catalogo)
+            usuario = await self.obtener_usuario(usuario_responsable_id) or {"name": "", "email": ""}
             
             updates.append("UsuarioResponsableID = %s")
             params.append(usuario_responsable_id)
@@ -325,6 +305,59 @@ class ConfigAsignacionesRepository:
         await _execute_sql_async(query, (config_id,), fetch=False)
         logger.info(f"Config asignación eliminada: {config_id}")
         return True
+
+    # =========================================================================
+    # VALIDACIONES SQL (reemplazan validaciones legacy MongoDB)
+    # =========================================================================
+
+    async def obtener_usuario(self, usuario_id: str) -> Optional[Dict]:
+        """
+        Obtiene un usuario desde la tabla canónica Usuario_Catalogo.
+        Acepta UsuarioID (int), MongoLegacyID o PublicUUID.
+        Retorna dict con id, name, email, activo o None si no existe.
+        """
+        query = """
+            SELECT
+                CAST(UsuarioID AS VARCHAR(50)) as id,
+                NombreCompleto as name,
+                Email as email,
+                Activo as activo
+            FROM Usuario_Catalogo
+            WHERE CAST(UsuarioID AS VARCHAR(50)) = %s
+               OR MongoLegacyID = %s
+               OR CAST(PublicUUID AS VARCHAR(50)) = %s
+        """
+        uid = str(usuario_id)
+        rows = await _execute_sql_async(query, (uid, uid, uid))
+        if rows:
+            rows[0]['activo'] = bool(rows[0].get('activo', True))
+            return rows[0]
+        return None
+
+    async def existe_duplicado(
+        self,
+        unidad_negocio_pk: str,
+        almacen_id: str,
+        usuario_responsable_id: str,
+        excluir_config_id: Optional[str] = None
+    ) -> bool:
+        """
+        Verifica si ya existe otra asignación con la misma combinación
+        Unidad/Almacén/Usuario (excluyendo opcionalmente un ConfigID).
+        """
+        query = """
+            SELECT TOP 1 ConfigID FROM Config_Asignaciones
+            WHERE UnidadNegocioID = %s
+              AND AlmacenID = %s
+              AND UsuarioResponsableID = %s
+        """
+        params = [unidad_negocio_pk, almacen_id or '', usuario_responsable_id]
+        if excluir_config_id:
+            query += " AND ConfigID <> %s"
+            params.append(excluir_config_id)
+        rows = await _execute_sql_async(query, tuple(params))
+        return bool(rows)
+
     
     # =========================================================================
     # RESOLUCIÓN DE RESPONSABLE (usado por Orquestador)

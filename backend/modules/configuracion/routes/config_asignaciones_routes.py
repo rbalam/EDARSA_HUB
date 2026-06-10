@@ -79,20 +79,28 @@ class ResolverRequest(BaseModel):
 
 async def obtener_empresas_permitidas(current_user: dict) -> list:
     """
-    Obtiene la lista de empresas_ids a las que el usuario tiene acceso.
-    Usa resolver_alcance_usuarios del alcance_helper.
+    Obtiene la lista de unidades (EmpresaMongoUUID) a las que el usuario tiene acceso.
+    SQL-First: usa el mismo espacio de IDs que el endpoint /unidades-negocio.
     """
-    alcance = await resolver_alcance_usuarios(current_user, get_db())
+    alcance = await resolver_alcance_usuarios(current_user, None)
     
     if alcance.get("tiene_acceso_global"):
-        # Usuario con acceso global - obtener todas las empresas activas
-        empresas = await get_db().empresas.find(
-            {"activa": True},
-            {"_id": 0, "id": 1}
-        ).to_list(100)
-        return [e["id"] for e in empresas]
+        from core.context_resolver import get_user_unidades_negocio
+        unidades = await get_user_unidades_negocio(current_user)
+        return [u["id"] for u in unidades]
     
     return alcance.get("empresas_ids", [])
+
+
+async def obtener_unidad_accesible(current_user: dict, unidad_negocio_pk: str) -> Optional[dict]:
+    """
+    Devuelve la unidad de negocio (dict con id, nombre, server_id) si el usuario
+    tiene acceso a ella. Usa get_user_unidades_negocio (mismo espacio de IDs que
+    el frontend). Retorna None si no existe o el usuario no tiene alcance.
+    """
+    from core.context_resolver import get_user_unidades_negocio
+    unidades = await get_user_unidades_negocio(current_user)
+    return next((u for u in unidades if str(u.get("id")) == str(unidad_negocio_pk)), None)
 
 
 async def validar_alcance_usuario(current_user: dict, unidad_negocio_pk: str):
@@ -114,50 +122,21 @@ async def validar_alcance_usuario(current_user: dict, unidad_negocio_pk: str):
 
 async def validar_usuario_responsable(usuario_id: str, unidad_negocio_pk: str):
     """
-    Valida que el usuario responsable:
-    1. Exista
-    2. Esté activo
-    3. Tenga alcance sobre la unidad de negocio
-    4. Tenga al menos un rol activo (excepto SuperAdministrador)
+    Valida el usuario responsable contra la fuente canónica SQL (Usuario_Catalogo):
+    1. Existe
+    2. Está activo
+
+    SQL-First: las validaciones legacy de alcance/roles MongoDB fueron removidas.
+    El repositorio SQL es la única fuente de verdad.
     """
-    # 1. Existe
-    usuario = await get_db().users.find_one(
-        {"id": usuario_id},
-        {"_id": 0}
-    )
+    repo = get_config_asignaciones_repository(None)
+    usuario = await repo.obtener_usuario(usuario_id)
+    
     if not usuario:
         raise HTTPException(status_code=400, detail="Usuario responsable no encontrado")
     
-    # 2. Activo
     if not usuario.get("activo", True):
         raise HTTPException(status_code=400, detail="El usuario responsable está inactivo")
-    
-    # SuperAdministrador tiene acceso total - skip validaciones de alcance y rol
-    if es_superadmin(usuario):
-        return usuario
-    
-    # 3. Alcance sobre la unidad
-    empresas_usuario = await obtener_empresas_permitidas(usuario)
-    if unidad_negocio_pk not in empresas_usuario:
-        # Verificar también empresas_permitidas legacy
-        empresas_legacy = usuario.get("empresas_permitidas", [])
-        if unidad_negocio_pk not in empresas_legacy:
-            raise HTTPException(
-                status_code=400,
-                detail="El usuario responsable no tiene alcance sobre esta unidad de negocio"
-            )
-    
-    # 4. Tiene rol activo
-    roles = await get_db().rbac_usuarios_roles.find({
-        "usuario_id": usuario_id,
-        "activo": True
-    }).to_list(1)
-    
-    if not roles:
-        raise HTTPException(
-            status_code=400,
-            detail="El usuario responsable no tiene roles activos asignados"
-        )
     
     return usuario
 
@@ -278,23 +257,16 @@ async def info_sincronizacion_almacenes(
     # Validar alcance
     await validar_alcance_usuario(current_user, unidad_negocio_pk)
     
-    # Obtener info del catálogo local
-    almacen_mas_reciente = await get_db().almacenes_catalogo.find_one(
-        {"unidad_negocio_pk": unidad_negocio_pk},
-        {"_id": 0, "fecha_sync": 1, "usuario_sync": 1},
-        sort=[("fecha_sync", -1)]
-    )
-    
-    total = await get_db().almacenes_catalogo.count_documents({
-        "unidad_negocio_pk": unidad_negocio_pk,
-        "activo": True
-    })
+    # Catálogo SQL-First: contar almacenes disponibles (excluye opción "(Todos)")
+    repo = get_config_asignaciones_repository(None)
+    almacenes = await repo.listar_almacenes(unidad_negocio_pk)
+    total = len([a for a in almacenes if a.get("id")])
     
     return {
         "success": True,
         "data": {
-            "ultima_sincronizacion": almacen_mas_reciente.get("fecha_sync") if almacen_mas_reciente else None,
-            "usuario_sync": almacen_mas_reciente.get("usuario_sync") if almacen_mas_reciente else None,
+            "ultima_sincronizacion": None,
+            "usuario_sync": None,
             "total_almacenes": total
         }
     }
@@ -335,12 +307,9 @@ async def crear_asignacion(
     # 1. Validar alcance del usuario autenticado
     await validar_alcance_usuario(current_user, request.unidad_negocio_pk)
     
-    # 2. Validar unidad de negocio
-    empresa = await get_db().empresas.find_one(
-        {"id": request.unidad_negocio_pk, "activa": True},
-        {"_id": 0}
-    )
-    if not empresa:
+    # 2. Validar unidad de negocio (mismo espacio de IDs que /unidades-negocio)
+    unidad = await obtener_unidad_accesible(current_user, request.unidad_negocio_pk)
+    if not unidad:
         raise HTTPException(status_code=400, detail="Unidad de negocio no encontrada o inactiva")
     
     # 3. Validar usuario responsable (completo)
@@ -366,7 +335,9 @@ async def crear_asignacion(
             unidad_negocio_pk=request.unidad_negocio_pk,
             almacen_id=request.almacen_id,
             usuario_responsable_id=request.usuario_responsable_id,
-            usuario_creacion=current_user.get("email", "")
+            usuario_creacion=current_user.get("email", ""),
+            unidad_negocio_nombre=unidad.get("nombre", ""),
+            server_id=unidad.get("server_id", "")
         )
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
@@ -433,12 +404,8 @@ async def actualizar_asignacion(
     if request.unidad_negocio_pk and request.unidad_negocio_pk != config_actual["unidad_negocio_pk"]:
         await validar_alcance_usuario(current_user, request.unidad_negocio_pk)
         
-        # Validar que la nueva unidad existe
-        empresa = await get_db().empresas.find_one(
-            {"id": request.unidad_negocio_pk, "activa": True},
-            {"_id": 0}
-        )
-        if not empresa:
+        # Validar que la nueva unidad existe (mismo espacio de IDs que /unidades-negocio)
+        if not await obtener_unidad_accesible(current_user, request.unidad_negocio_pk):
             raise HTTPException(status_code=400, detail="Unidad de negocio no encontrada o inactiva")
     
     # Validar almacén si se especifica uno diferente
@@ -463,14 +430,13 @@ async def actualizar_asignacion(
     )
     
     if cambio_clave:
-        # Verificar que no exista otra configuración con la misma combinación
-        existente = await get_db().config_asignaciones.find_one({
-            "unidad_negocio_pk": nueva_unidad,
-            "almacen_id": nuevo_almacen,
-            "usuario_responsable_id": nuevo_responsable,
-            "id": {"$ne": config_id}  # Excluir la actual
-        })
-        if existente:
+        # Verificar que no exista otra configuración con la misma combinación (SQL)
+        if await repo.existe_duplicado(
+            unidad_negocio_pk=nueva_unidad,
+            almacen_id=nuevo_almacen,
+            usuario_responsable_id=nuevo_responsable,
+            excluir_config_id=config_id
+        ):
             raise HTTPException(
                 status_code=409,
                 detail="Ya existe una asignación con esta combinación de Unidad/Almacén/Usuario"
@@ -652,9 +618,8 @@ async def sincronizar_almacenes(
     if not es_superadmin(current_user):
         raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede sincronizar almacenes")
     
-    # Validar que la unidad existe
-    empresa = await get_db().empresas.find_one({"id": unidad_negocio_pk, "activa": True})
-    if not empresa:
+    # Validar que la unidad existe (mismo espacio de IDs que /unidades-negocio)
+    if not await obtener_unidad_accesible(current_user, unidad_negocio_pk):
         raise HTTPException(status_code=404, detail="Unidad de negocio no encontrada")
     
     # Delegar al service (resuelve contexto internamente)

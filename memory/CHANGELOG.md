@@ -1,5 +1,12 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-10] Config Asignaciones — Refactor SQL-First (elimina MongoDB legacy, fix CRUD 500)
+- **Causa raíz:** `config_asignaciones_routes.py` ejecutaba validaciones legacy MongoDB (`get_db().empresas/users/rbac_usuarios_roles/config_asignaciones/almacenes_catalogo`). Con `get_db()` deprecado (→ None) lanzaba `AttributeError` → 500 en POST/PUT/DELETE.
+- **Ruta:** removidas TODAS las llamadas Mongo. `obtener_empresas_permitidas` y nueva `obtener_unidad_accesible` usan `get_user_unidades_negocio` (mismo espacio de IDs EmpresaMongoUUID que `/unidades-negocio`). `validar_usuario_responsable` ahora valida contra SQL (`Usuario_Catalogo`). Duplicados en PUT vía `repo.existe_duplicado`. `info_sincronizacion_almacenes` y `sincronizar_almacenes` sin Mongo.
+- **Repositorio:** alias SQL alineados a snake_case (`unidad_negocio_pk`, `unidad_negocio_id`, `almacen_id`, `activa`, `prioridad`) en `listar` y `obtener_por_id` (corrige `activa` siempre false y "Configuración no encontrada"). `crear` recibe `unidad_negocio_nombre`/`server_id` desde la ruta; lookups de usuario corregidos de tabla inexistente `Usuarios` → `Usuario_Catalogo`. Nuevos métodos `obtener_usuario` y `existe_duplicado`.
+- **Pruebas (cURL + screenshot, sin testing_agent):** CREATE/GET/UPDATE/DELETE OK, duplicado→409, GET tras delete→404; nombres canónicos (CIENFUEGOS, Carlos Ruz) correctos. UI muestra "Configuraciones (2)" con estados Activa/Inactiva correctos.
+
+
 ## [2026-06-10] Dashboard Comercial: fix PAX = 0 + PAX Promedio + Detalle de Ventas vacío (KPIs canónicos)
 Reporte del usuario (menú **Comercial → Dashboard**, 130° MÉRIDA): "PAX Total = 0" y "Pax Promedio = $0"
 pese a tener 193 cheques y $761K en ventas; y el doble-clic en una tarjeta abría "Detalle de Ventas" con
