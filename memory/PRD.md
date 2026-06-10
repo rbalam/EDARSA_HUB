@@ -24,7 +24,16 @@ Spanish (Español)
   pragmático (B) ahora; A queda como siguiente incremento. ESTADO: PENDIENTE.
 
 ### Estado actualizado (2026-06-12)
-- ✅ **Fix Compras → "Auditoría Operativa de Inventarios" (opción B, desbloqueo):** el error
+- ✅ **Fix CRASH al hacer click en "Realizar Auditoría" (Compras → Auditoría) — P0:** el sistema
+  reventaba con `Uncaught runtime error: Cannot access 'getCostoSegunUnidad' before initialization`
+  y expulsaba al login. Causa raíz (TDZ / temporal dead zone): el `useMemo` `auditoriaExport`
+  (Compras.js) invocaba `getCostoSegunUnidad(r)` dentro del `.map(resultados)`, pero la función
+  estaba declarada como `const` MÁS ABAJO en el mismo componente. En el render inicial `resultados`
+  está vacío → no se llama → no crashea; al correr la auditoría `resultados` se puebla → el map la
+  invoca antes de su inicialización → ReferenceError → error boundary → logout. Fix: `getCostoSegunUnidad`
+  movido ANTES del useMemo como `useCallback([unidadAnalisis])` y agregado a las deps del useMemo;
+  eliminada la definición original duplicada. Frontend compila limpio (sin el warning previo de deps),
+  smoke E2E sin runtime error. el error
   "Error al obtener productos de las requisiciones" se debía a **timeout** del cliente axios.
   Diagnóstico (cURL, sin testing_agent): el endpoint `POST /api/compras/productos-para-captura`
   responde 200 en ~0.5s (warm) con `server_id` (código o GUID) para CIENFUEGOS, pero la llamada

@@ -1631,6 +1631,18 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
   const [showFullscreenAuditoria, setShowFullscreenAuditoria] = useState(false);
 
   // Export Excel/PDF del reporte de Auditoría (inventarios + movimientos + consumos + delta)
+  // Costo unitario según unidad de análisis. Definido ANTES de `auditoriaExport`
+  // para evitar TDZ (ReferenceError "Cannot access 'getCostoSegunUnidad' before
+  // initialization"): el useMemo lo invoca al poblarse `resultados` tras la auditoría.
+  const getCostoSegunUnidad = useCallback((row) => {
+    if (unidadAnalisis === 'presentaciones') {
+      // Costo de la presentación (del backend)
+      return row.costo_presentacion || row.costo || 0;
+    }
+    // Costo del insumo directamente de la tabla insumos
+    return row.costo_insumo || row.costo || 0;
+  }, [unidadAnalisis]);
+
   const auditoriaExport = useMemo(() => {
     const rows = (resultados || []).map(r => ({
       producto: r.producto,
@@ -1706,7 +1718,7 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
     }
 
     return { columns, rows, meta, sheets };
-  }, [resultados, resumen, unidadesNegocio, selectedUnidad, parentSucursal, fechaAuditoria, agruparPorProveedor]);
+  }, [resultados, resumen, unidadesNegocio, selectedUnidad, parentSucursal, fechaAuditoria, agruparPorProveedor, getCostoSegunUnidad]);
 
   // Cargar filtros guardados al montar
   useEffect(() => {
@@ -2020,16 +2032,6 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
   
   // Función para obtener el costo según unidad seleccionada
   // Usa directamente costo_insumo o costo_presentacion del backend
-  const getCostoSegunUnidad = (row) => {
-    if (unidadAnalisis === 'presentaciones') {
-      // Costo de la presentación (del backend)
-      return row.costo_presentacion || row.costo || 0;
-    } else {
-      // Costo del insumo directamente de la tabla insumos
-      return row.costo_insumo || row.costo || 0;
-    }
-  };
-
   // Función para formatear cantidad con conversión (formato legible)
   const formatConversion = (cantidad, rendimiento, unidadPrincipal) => {
     const values = getConversionValues(cantidad, rendimiento);
