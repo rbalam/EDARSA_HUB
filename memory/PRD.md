@@ -12,6 +12,12 @@ Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosist
 ### User's Preferred Language
 Spanish (Español)
 
+### 📋 BACKLOG (pendiente, no implementado)
+- **CTA inteligente del semáforo (Benchmark Sectorial):** que el botón "Ajustar en Análisis IA"
+  abra el tab Análisis IA **precargando la categoría/producto detectado como "Caro" u "Oportunidad"**,
+  para pasar del diagnóstico sectorial a la sugerencia de precio con un clic (sin volver a buscar el
+  producto). Solicitado por el usuario el 2026-06-11. ESTADO: PENDIENTE.
+
 ### Estado actualizado (2026-06-11)
 - ✅ **Semáforo de oportunidad de precio (mejora sobre Benchmark Sectorial):** `vista_vs_sector`
   ahora clasifica cada categoría comparable con umbral configurable (`umbral_pct`, default 15):
