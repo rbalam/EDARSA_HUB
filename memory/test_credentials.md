@@ -19,6 +19,14 @@
 - **Login:** OK (verificado). 28 módulos visibles.
 - ⚠️ **Sin unidades asignadas**: `access-context` devuelve `unidades_permitidas=0`, `unidad_activa=None` (las unidades provienen de asignación explícita, NO se auto-otorgan a SUPERADMIN). Útil para auditar pantallas con filtro por unidad sin contexto.
 
+## Usuario QA VISOR_COMERCIAL (creado 2026-06-11 para validar RBAC comercial.*)
+- **Email:** `qa.visorcomercial@edarsa.com`
+- **Contraseña:** `VisorCom2026!`
+- **Rol:** VISOR_COMERCIAL (RolID=20, no-admin) · UsuarioID=25
+- **Uso:** Validar permisos `comercial.*` sin bypass de admin. Tiene `comercial.benchmark.ver`,
+  `comercial.competidores.ver`, `comercial.perfil_unidad.ver`, `comercial.precios_sugeridos.ver_ia`
+  (solo lectura). NO tiene `.validar`/`.crear`/`.generar` → esos endpoints devuelven 403.
+
 ## Notas
 - Las credenciales se autentican contra EDARSAHUB_SQL (tabla Usuario_Catalogo)
 - El token JWT expira en 15 minutos

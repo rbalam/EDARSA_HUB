@@ -171,7 +171,12 @@ class RBACRepositorySQL:
                     WHERE prm.RolID = %s AND prm.Permitido = 1 AND prm.Activo = 1
                 ''', (rol_id,))
                 
-                permisos = [f"{r[0]}_{r[1]}" for r in cur.fetchall()]
+                _perm_rows = cur.fetchall()
+                permisos = [f"{r[0]}_{r[1]}" for r in _perm_rows]
+                # Formato canonico con punto/minusculas que usan los endpoints
+                # comercial.* via require_permission (p.ej. comercial.benchmark.ver).
+                # Aditivo: no elimina el formato legacy con guion bajo.
+                permisos += [f"{r[0]}.{str(r[1]).lower()}" for r in _perm_rows]
                 
                 roles.append({
                     "id": str(rol_id),
@@ -428,7 +433,12 @@ class RBACRepositorySQL:
                     WHERE prm.RolID = %s AND prm.Permitido = 1 AND prm.Activo = 1
                 ''', (rol_id,))
                 
-                permisos = [f"{r[0]}_{r[1]}" for r in cur.fetchall()]
+                _perm_rows = cur.fetchall()
+                permisos = [f"{r[0]}_{r[1]}" for r in _perm_rows]
+                # Formato canonico con punto/minusculas que usan los endpoints
+                # comercial.* via require_permission (p.ej. comercial.benchmark.ver).
+                # Aditivo: no elimina el formato legacy con guion bajo.
+                permisos += [f"{r[0]}.{str(r[1]).lower()}" for r in _perm_rows]
                 
                 roles.append({
                     "asignacion_id": str(asig_id),
