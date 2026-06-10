@@ -132,6 +132,7 @@ export default function DashboardEjecutivo() {
                   <th className="py-2">Servidor</th>
                   <th className="py-2 text-right">Productos</th>
                   <th className="py-2 text-right">Sin Costo</th>
+                  <th className="py-2 text-right">Anomalías</th>
                   <th className="py-2 text-right">Margen Prom.</th>
                   <th className="py-2 text-right">Precio Prom.</th>
                 </tr>
@@ -142,7 +143,8 @@ export default function DashboardEjecutivo() {
                     <td className="py-2">{r.servidor}</td>
                     <td className="py-2 text-right">{num(r.productos)}</td>
                     <td className="py-2 text-right">{num(r.sin_costo)}</td>
-                    <td className="py-2 text-right">{r.margen_promedio_pct ? `${Number(r.margen_promedio_pct).toFixed(2)}%` : 'N/D'}</td>
+                    <td className="py-2 text-right">{r.anomalias_costo > 0 ? <span className="text-amber-600">{num(r.anomalias_costo)}</span> : num(r.anomalias_costo)}</td>
+                    <td className="py-2 text-right">{r.margen_promedio_pct != null ? `${Number(r.margen_promedio_pct).toFixed(2)}%` : 'N/D'}</td>
                     <td className="py-2 text-right">{money(r.precio_promedio)}</td>
                   </tr>
                 ))}
