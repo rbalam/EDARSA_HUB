@@ -523,6 +523,11 @@ api_router.include_router(listas_competidores_router)
 from modules.comercial.routes_benchmark_sectorial import router as benchmark_sectorial_router
 api_router.include_router(benchmark_sectorial_router)
 
+# Ingesta de Competencia (adjunto/link -> staging -> tablas canonicas)
+# ===========================================
+from modules.comercial.routes_ingesta_competencia import router as ingesta_competencia_router
+api_router.include_router(ingesta_competencia_router)
+
 # FASE 1C-3G-F: Precios Sugeridos y Rangos Vinos
 # ===========================================
 from modules.comercial.routes_precios_sugeridos import router as precios_sugeridos_router

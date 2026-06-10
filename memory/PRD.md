@@ -41,6 +41,20 @@ Spanish (Español)
 - ⏳ **Pendiente Benchmark Sectorial — Incremento 2 (INGESTA):** alimentar datos de competencia/sector
   cuando faltan, vía adjunto (Excel/PDF/JPG/Word) o link. Requiere object storage + extracción
   (LLM). PENDIENTE confirmar integración con el usuario antes de construir.
+  → **RESUELTO 2026-06-11 (ver abajo).**
+
+- ✅ **P2 Benchmark Sectorial — Incremento 2 (INGESTA de competencia) COMPLETADO (2026-06-11):**
+  - Tabla staging `Comercial_Ingesta_Competencia` (migración `migrations/comercial_ingesta_competencia_20260611.py`).
+  - Object storage helper `core/object_storage.py` (Emergent, EMERGENT_LLM_KEY) — archiva TODO adjunto para auditoría; referencia en SQL (NO Mongo).
+  - Servicio `modules/comercial/services/ingesta_competencia_service.py` + `routes_ingesta_competencia.py`.
+  - Extracción: **Excel/CSV** = plantilla directa (openpyxl/csv); **PDF/imagen/Word/txt** = IA **gemini-2.5-flash** (emergentintegrations, FileContentWithMimeType / texto); **link** = scraping (requests+bs4) → IA.
+  - Flujo: upload/link → archiva + extrae → staging PENDIENTE → **validación humana** (editar filas) → confirmar (inserta a `Comercial_Competidores` + `Comercial_CompetidoresMenuItems`, una o varias unidades vía CSV de EmpresaID) o rechazar.
+  - RBAC: ver=`comercial.competidores.ver`, crear/confirmar=`comercial.competidores.crear` (ya sembrados).
+  - Endpoints: `/api/comercial/ingesta-competencia/{,/upload,/link,/{id},/{id}/filas,/{id}/confirmar,/{id}/rechazar,/{id}/archivo,/plantilla}`.
+  - Frontend: 4º sub-tab "Ingesta de Datos" en `TabBenchmarkSectorial.jsx` (`TabIngestaCompetencia.jsx`): subir/link/plantilla + preview editable + confirmar/rechazar + historial.
+  - **Verificado e2e por cURL:** Excel (4 filas→2 competidores+4 items, archivado en object storage OK), IA Gemini (.txt→3 productos OK), editar filas OK, rechazar OK; el reporte sectorial toma los datos nuevos (comparables ALIMENTOS/BEBIDAS). Frontend compila limpio.
+  - Deps añadidas: `python-docx`, `beautifulsoup4` (en requirements.txt vía pip freeze).
+  - ⚠️ Screenshot automatizado del UI bloqueado por reset de sessionStorage del preview; pendiente verificación visual del usuario.
 
 ### Estado actualizado (2026-06-09)
 - ✅ **Portal Inteligencia operativo SIN demo + datos 100% reales (P0):** (1) AUTH del portal migrada

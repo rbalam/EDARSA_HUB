@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Layers, RefreshCw, TrendingUp, TrendingDown, Minus, AlertTriangle,
-  Building2, Filter, Store, BarChart2
+  Building2, Filter, Store, BarChart2, UploadCloud
 } from 'lucide-react';
 import api from '@/lib/api';
+import TabIngestaCompetencia from './TabIngestaCompetencia';
 
 const fmt = (v) => {
   if (v === null || v === undefined) return '—';
@@ -262,6 +263,7 @@ const SUBTABS = [
   { id: 'vs-sector', label: 'vs Sector', icon: BarChart2 },
   { id: 'interno', label: 'Entre Unidades', icon: Building2 },
   { id: 'por-segmento', label: 'Por Segmento', icon: Store },
+  { id: 'ingesta', label: 'Ingesta de Datos', icon: UploadCloud },
 ];
 
 const TabBenchmarkSectorial = ({ empresaId, unidadId }) => {
@@ -296,6 +298,7 @@ const TabBenchmarkSectorial = ({ empresaId, unidadId }) => {
       {sub === 'vs-sector' && <VistaVsSector empresaId={empresaId} unidadId={unidadId} />}
       {sub === 'interno' && <VistaInterno />}
       {sub === 'por-segmento' && <VistaPorSegmento empresaId={empresaId} unidadId={unidadId} />}
+      {sub === 'ingesta' && <TabIngestaCompetencia empresaId={empresaId} />}
     </div>
   );
 };
