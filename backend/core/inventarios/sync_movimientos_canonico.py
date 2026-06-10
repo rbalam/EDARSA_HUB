@@ -138,8 +138,10 @@ def sync_movimientos_canonico(
         # El signo (SoftRestaurant) indica dirección; la dirección la lleva el
         # TipoMovimiento canónico. El detalle exige Cantidad>0 y CostoUnitario>=0
         # (CK_Inventario_MovimientosDetalle_Valores) -> se almacena la MAGNITUD.
-        cantidad = abs(float(r.get("cantidad") or 0))
-        costo = abs(float(r.get("costo") or 0))
+        # Se redondea a la escala del destino decimal(18,6); cantidades que
+        # redondean a 0 se descartan (evitan violar la CHECK al agregar).
+        cantidad = round(abs(float(r.get("cantidad") or 0)), 6)
+        costo = round(abs(float(r.get("costo") or 0)), 6)
         if cantidad <= 0:
             pend["cantidad_cero"] = pend.get("cantidad_cero", 0) + 1
             continue
@@ -218,6 +220,7 @@ def sync_movimientos_canonico(
             WHERE d.MovimientoID=m.MovimientoID AND d.ProductoID=s.ProductoID
         )
         GROUP BY m.MovimientoID, s.ProductoID
+        HAVING SUM(s.Cantidad) > 0
     """)
     detalles = cur_w.rowcount or 0
 

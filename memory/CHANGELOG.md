@@ -1,5 +1,11 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-10 PM-5] Fix sync movimientos 130QRO — NO era mapeo de conceptos, era CHECK constraint por redondeo
+- **Diagnóstico (causa raíz real):** el backfill de 130QRO fallaba con `(547) CK_Inventario_MovimientosDetalle_Valores` (def: `Cantidad>0 AND CostoUnitario>=0`). NO era brecha de mapeo de conceptos (hay 96 mapeos completos). Consulta directa al origen MPRO QRO: de 74,722 movimientos, **4 filas con cantidad minúscula** (`0E-9`) pasaban el chequeo float `>0` pero al guardarse en `decimal(18,6)` quedaban en `0.000000` → `SUM(Cantidad)=0` → violaba la CHECK → rollback del lote completo (por eso 0 movimientos). CIENFUEGOS no tenía esas filas.
+- **Fix** (`core/inventarios/sync_movimientos_canonico.py`): (1) `cantidad/costo = round(abs(valor), 6)` y se descartan cantidades que redondean a 0; (2) `HAVING SUM(s.Cantidad) > 0` en el INSERT agregado del detalle (red de seguridad). Aplica a TODOS los servidores/unidades, no solo QRO.
+- **Verificado (re-ejecución 90 días):** `130QRO MOVIMIENTOS: status OK, encabezados_synced=6083, detalles_synced=56235, cantidad_cero=149` (=145 cero + 4 minúsculos del diagnóstico). BD: EmpresaID 2 = 6,083 movimientos / 56,235 detalles (Mar-13 a Jun-10). Sin error de restricción.
+
+
 ## [2026-06-10 PM-4] Frontend Bloque D (Catálogo Enriquecido) + Export Auditoría por proveedor
 - **Bloque D — Catálogo Enriquecido** (`pages/comercial/CatalogoEnriquecido.jsx`, ruta `/comercial/catalogo-enriquecido`):
   - Pantalla admin SQL-First sobre `/api/comercial/productos-enriquecidos` (3,774 productos). Incluye: indicadores (total/requieren validación/sin marca/sin presentación), filtros (búsqueda, unidad canónica, grupo comercial, marca, categoría, tipo alcohol, requiere validación, estado), tabla paginada (50/pág), edición en diálogo (PUT — verificado que persiste), activar/desactivar (PATCH), importación masiva (.xlsx → UPSERT `/importar`), y export Excel/PDF.
