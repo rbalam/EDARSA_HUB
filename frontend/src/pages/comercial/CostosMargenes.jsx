@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import TabReglasMargen from './TabReglasMargen';
+import { ExportButtons } from '../../portal-inteligencia/components/ExportButtons';
 import { CorporateFiltersProvider, useCorporateFilters, CorporateFilterSelect } from '../../filters';
 
 // ==================== UTILIDADES ====================
@@ -1734,6 +1735,32 @@ const TabProductos = ({ onSimularPrecio }) => {
           >
             <RefreshCw className="w-4 h-4" />
           </button>
+
+          <ExportButtons
+            filename="costos_margenes"
+            title="Costos y Márgenes por Producto"
+            testid="costos-export"
+            columns={[
+              { key: 'producto', label: 'Producto' },
+              { key: 'codigo', label: 'Código' },
+              { key: 'sistema', label: 'Sistema' },
+              { key: 'familia', label: 'Familia' },
+              { key: 'precio_venta', label: 'Precio Venta' },
+              { key: 'costo_receta', label: 'Costo Receta' },
+              { key: 'margen_pesos', label: 'Margen $' },
+              { key: 'margen_porcentaje', label: 'Margen %' },
+            ]}
+            rows={(sortedProductos || []).map(p => ({
+              producto: p.nombre,
+              codigo: p.id_producto_origen || '',
+              sistema: p.sistema_origen === 'SOFTRESTAURANT_PRO' ? 'SR' : 'MPRO',
+              familia: p.familia || 'Sin clasificar',
+              precio_venta: Number(p.precio_venta) || 0,
+              costo_receta: Number(p.costo_receta) || 0,
+              margen_pesos: p.margen_pesos != null ? Number(p.margen_pesos) : '',
+              margen_porcentaje: p.margen_porcentaje != null ? Number(p.margen_porcentaje) : '',
+            }))}
+          />
         </div>
       </div>
       

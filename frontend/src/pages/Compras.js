@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import DetalleProductoModal from '../components/compras/DetalleProductoModal';
 import { useDetalleProducto } from '../hooks/useDetalleProducto';
 import { fechaMinimaInventarios, filtrarInventariosFinales } from '../lib/inventarioSelectorUtils';
+import { ExportButtons } from '../portal-inteligencia/components/ExportButtons';
 import { 
   Loader2, ShoppingCart, Package, TrendingUp, AlertTriangle, Download, 
   AlertCircle, Calendar, Edit3, RefreshCw, Search, BarChart3, FileText,
@@ -1629,6 +1630,57 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
   // Modal pantalla completa para detalle de auditoría
   const [showFullscreenAuditoria, setShowFullscreenAuditoria] = useState(false);
 
+  // Export Excel/PDF del reporte de Auditoría (inventarios + movimientos + consumos + delta)
+  const auditoriaExport = useMemo(() => {
+    const rows = (resultados || []).map(r => ({
+      producto: r.producto,
+      proveedor: r.proveedor || '',
+      folio_pedido: r.folio_pedido || '',
+      inv_inicial: Number(r.inv_inicial) || 0,
+      movimientos: Number(r.movimientos ?? r.entradas ?? 0) || 0,
+      consumos: Math.abs(Number(r.consumos) || 0),
+      existencia_teorica: Number(r.existencia_teorica) || 0,
+      inv_fisico: Number(r.inv_fisico) || 0,
+      diferencia: Number(r.diferencia) || 0,
+      costo_unit: Number(getCostoSegunUnidad(r)) || 0,
+      importe_diferencia: Math.round((Number(r.importe_diferencia) || 0) * 100) / 100,
+      dias_inventario: r.dias_inventario,
+    }));
+    const columns = [
+      { key: 'producto', label: 'Producto' },
+      { key: 'proveedor', label: 'Proveedor' },
+      { key: 'folio_pedido', label: 'Folio Pedido' },
+      { key: 'inv_inicial', label: 'Inv. Inicial' },
+      { key: 'movimientos', label: '+ Movimientos' },
+      { key: 'consumos', label: '- Consumos' },
+      { key: 'existencia_teorica', label: 'Teórico (Delta)' },
+      { key: 'inv_fisico', label: 'Físico' },
+      { key: 'diferencia', label: 'Diferencia' },
+      { key: 'costo_unit', label: 'Costo Unit.' },
+      { key: 'importe_diferencia', label: 'Importe' },
+      { key: 'dias_inventario', label: 'Días Inv.' },
+    ];
+    const resumenRows = resumen ? [
+      { concepto: 'Total Teórico', valor: Number(resumen.total_teorico || 0) },
+      { concepto: 'Total Físico', valor: Number(resumen.total_fisico || 0) },
+      { concepto: 'Importe A Favor', valor: Number(resumen.importe_favor || 0) },
+      { concepto: 'Importe En Contra', valor: -Math.abs(Number(resumen.importe_contra || 0)) },
+      { concepto: 'Diferencia Total', valor: Number(resumen.total_diferencia || 0) },
+      { concepto: 'Requiere Acta', valor: resumen.requiere_acta ? 'SÍ' : 'NO' },
+    ] : [];
+    const unidadNombre = (unidadesNegocio || []).find(u => String(u.id) === String(selectedUnidad) || u.codigo === selectedUnidad)?.nombre || selectedUnidad || '';
+    const meta = `Unidad: ${unidadNombre}${parentSucursal ? ' · Sucursal: ' + parentSucursal : ''} · Fecha: ${fechaAuditoria}`;
+    return {
+      columns,
+      rows,
+      meta,
+      sheets: [
+        { name: 'Auditoria Detalle', columns, rows },
+        { name: 'Resumen', columns: [{ key: 'concepto', label: 'Concepto' }, { key: 'valor', label: 'Valor' }], rows: resumenRows },
+      ],
+    };
+  }, [resultados, resumen, unidadesNegocio, selectedUnidad, parentSucursal, fechaAuditoria]);
+
   // Cargar filtros guardados al montar
   useEffect(() => {
     const savedFilters = localStorage.getItem(`auditoria_filters_${selectedServer}_${parentSucursal}`);
@@ -2623,6 +2675,15 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
                 />
                 <span>Agrupar por Proveedor</span>
               </label>
+              <ExportButtons
+                filename="auditoria_operativa"
+                title="Reporte de Auditoría Operativa"
+                columns={auditoriaExport.columns}
+                rows={auditoriaExport.rows}
+                meta={auditoriaExport.meta}
+                sheets={auditoriaExport.sheets}
+                testid="auditoria-export"
+              />
               {/* Botón pantalla completa */}
               <Button
                 variant="outline"
@@ -2912,6 +2973,15 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
                 />
                 <span>Agrupar por Proveedor</span>
               </label>
+              <ExportButtons
+                filename="auditoria_operativa"
+                title="Reporte de Auditoría Operativa"
+                columns={auditoriaExport.columns}
+                rows={auditoriaExport.rows}
+                meta={auditoriaExport.meta}
+                sheets={auditoriaExport.sheets}
+                testid="auditoria-export-fs"
+              />
               <Button
                 variant="ghost"
                 size="sm"

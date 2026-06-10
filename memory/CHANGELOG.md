@@ -1,5 +1,17 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-10 PM-2] Export Excel/PDF (Auditoría + Costos), filtro canónico Cuentas Bancarias, backfill CIENFUEGOS/130QRO
+- **Export Excel/PDF (probado E2E con descarga real):**
+  - Costos y Márgenes (`CostosMargenes.jsx`): botones Excel/PDF en toolbar; exporta lista filtrada (7,757 productos) con Producto/Código/Sistema/Familia/Precio/Costo/Margen$/Margen%. Descargas `.xlsx` y `.pdf` verificadas.
+  - Auditoría Operativa (`Compras.js`): botones en encabezado normal y pantalla completa; exporta `resultados` (inv. inicial + movimientos + consumos + teórico/delta + físico + diferencia + importe) en hoja Detalle + hoja Resumen. Reutiliza `ExportButtons`/`exportUtils` (xlsx/jspdf) del Portal Inteligencia.
+- **Filtro canónico por unidad — Cuentas Bancarias:**
+  - Backend `repository_bancarios.get_cuentas_bancarias` + `/v2/finanzas/cuentas-bancarias`: nuevo param `empresa_codigo` (JOIN `Sistema_Empresas`, filtro parametrizado anti-inyección); serializer ahora expone `empresa_nombre`/`empresa_codigo`. Verificado cURL (sin filtro=1, 130MID=0, inyección `O'Brien`→200 sin error).
+  - Frontend `CuentasBancariasPage.jsx` + hook: dropdown de unidad canónico (`fetchUnidadesNegocio`) → pasa `empresa_codigo`. Dropdown poblado con las 5 unidades; verificado en UI.
+  - Corte Z: ya tenía filtro de unidad canónico (vía `fetchUnidadesNegocio` + `server_id`); sin cambios.
+- **Backfill inventario (90 días):** CIENFUEGOS COMPLETO (110 movs / 4274 detalles / 40 reqs; EmpresaID 3 verificado). 130QRO (MPRO) quedó EN PROCESO en background al cierre (paso MOVIMIENTOS lento).
+- **C2 KPIs canónicos:** DIFERIDO con análisis y plan en `/app/memory/PLAN_C2_KPIS_CANONICOS.md` (alto riesgo de regresión en dashboards de producción; requiere decisión del usuario sobre base de ventas para promedios).
+
+
 ## [2026-06-10 PM] Barrido NO-MONGO + fix 2 crashers fase2 + verificación backfill CIENFUEGOS
 - **Barrido `get_db()`/`db.<col>` (preventivo):** grep en `modules/`+`core/` + verificación EN VIVO por cURL. Reporte: `/app/memory/BARRIDO_MONGO_2026-06-10.md`. Conclusión: solo 2 crashers reales en vivo; el resto está protegido (try/except → degrada) o es código fallback inalcanzable; `StubDatabase` cubre security/auth/communications/auditoria.
 - **Fix SQL-First (2 crashers fase2):**

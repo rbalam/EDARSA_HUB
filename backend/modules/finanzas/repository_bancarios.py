@@ -128,15 +128,18 @@ def get_banco_by_id(banco_id: int) -> Optional[dict]:
 def get_cuentas_bancarias(
     banco_id: Optional[int] = None,
     activo: bool = True,
-    include_inactive: bool = False
+    include_inactive: bool = False,
+    empresa_codigo: Optional[str] = None
 ) -> List[dict]:
     """
     Lista cuentas bancarias con información de banco.
     
     Tabla: Finanzas_Cat_CuentasBancarias
-    JOIN: Global_Cat_Bancos
+    JOIN: Global_Cat_Bancos, Sistema_Empresas (identidad canónica)
+    Filtro canónico opcional por unidad de negocio (empresa_codigo).
     """
     where_clauses = []
+    params = {}
     
     if not include_inactive:
         where_clauses.append("cb.Activo = 1")
@@ -146,12 +149,18 @@ def get_cuentas_bancarias(
     if banco_id:
         where_clauses.append(f"cb.BancoID = {banco_id}")
     
+    if empresa_codigo:
+        where_clauses.append("se.CodigoEmpresa = @empresa_codigo")
+        params['empresa_codigo'] = empresa_codigo
+    
     where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
     
     query = f"""
     SELECT 
         cb.CuentaBancariaID,
         cb.EmpresaID,
+        se.NombreEmpresa AS empresa_nombre,
+        se.CodigoEmpresa AS empresa_codigo,
         cb.BancoID,
         b.NombreBanco,
         b.CodigoBanco,
@@ -168,10 +177,11 @@ def get_cuentas_bancarias(
         cb.UsuarioModificacionID
     FROM Finanzas_Cat_CuentasBancarias cb
     LEFT JOIN Global_Cat_Bancos b ON cb.BancoID = b.BancoID
+    LEFT JOIN Sistema_Empresas se ON cb.EmpresaID = se.EmpresaID
     {where_sql}
     ORDER BY cb.Alias
     """
-    return _execute_edarsahub(query)
+    return _execute_edarsahub(query, params if params else None)
 
 
 def get_cuenta_by_id(cuenta_id: int) -> Optional[dict]:

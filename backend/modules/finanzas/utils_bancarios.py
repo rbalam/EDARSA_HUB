@@ -221,6 +221,8 @@ def serialize_cuenta_bancaria(cuenta: dict, include_saldo: bool = False) -> dict
     result = {
         "cuenta_bancaria_id": cuenta.get("CuentaBancariaID"),
         "empresa_id": cuenta.get("EmpresaID"),
+        "empresa_nombre": cuenta.get("empresa_nombre") or cuenta.get("NombreEmpresa"),
+        "empresa_codigo": cuenta.get("empresa_codigo") or cuenta.get("CodigoEmpresa"),
         "banco_id": cuenta.get("BancoID"),
         "banco_nombre": cuenta.get("NombreBanco") or cuenta.get("banco_nombre"),
         "banco_codigo": cuenta.get("CodigoBanco") or cuenta.get("banco_codigo"),

@@ -17,6 +17,7 @@ import TarjetaSaldoTotal from './saldos/TarjetaSaldoTotal';
 import { useCuentasBancarias } from './hooks/useCuentasBancarias';
 import { useBancos } from './hooks/useBancos';
 import { useSaldosBancarios } from './hooks/useSaldosBancarios';
+import { fetchUnidadesNegocio } from '../../../services/unidadesNegocioService';
 
 /**
  * Página principal del módulo Cuentas Bancarias
@@ -46,11 +47,19 @@ export function CuentasBancariasPage() {
   const [modoEdicion, setModoEdicion] = useState(false);
   const [vistaDetalle, setVistaDetalle] = useState(false);
 
+  // Filtro canónico por Unidad de Negocio
+  const [unidades, setUnidades] = useState([]);
+  const [unidadCodigo, setUnidadCodigo] = useState('');
+
   // Cargar datos iniciales
   useEffect(() => {
-    fetchCuentas({ soloActivas: true });
+    fetchUnidadesNegocio().then(data => setUnidades(data || [])).catch(() => setUnidades([]));
+  }, []);
+
+  useEffect(() => {
+    fetchCuentas({ soloActivas: true, empresaCodigo: unidadCodigo || undefined });
     fetchSaldoTotal();
-  }, [fetchCuentas, fetchSaldoTotal]);
+  }, [fetchCuentas, fetchSaldoTotal, unidadCodigo]);
 
   // Handlers
   const handleNuevaCuenta = () => {
@@ -82,7 +91,7 @@ export function CuentasBancariasPage() {
     setVistaDetalle(false);
     setCuentaSeleccionada(null);
     // Refrescar para obtener último saldo
-    fetchCuentas({ soloActivas: true });
+    fetchCuentas({ soloActivas: true, empresaCodigo: unidadCodigo || undefined });
     fetchSaldoTotal();
   };
 
@@ -118,9 +127,9 @@ export function CuentasBancariasPage() {
   };
 
   const handleRefrescar = useCallback(() => {
-    fetchCuentas({ soloActivas: true });
+    fetchCuentas({ soloActivas: true, empresaCodigo: unidadCodigo || undefined });
     fetchSaldoTotal();
-  }, [fetchCuentas, fetchSaldoTotal]);
+  }, [fetchCuentas, fetchSaldoTotal, unidadCodigo]);
 
   // Si está en vista detalle, mostrar solo el detalle
   if (vistaDetalle && cuentaSeleccionada) {
@@ -148,7 +157,18 @@ export function CuentasBancariasPage() {
           </div>
         </div>
         
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          <select
+            value={unidadCodigo}
+            onChange={(e) => setUnidadCodigo(e.target.value)}
+            className="h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            data-testid="filtro-unidad-cuentas"
+          >
+            <option value="">Todas las unidades</option>
+            {unidades.map(u => (
+              <option key={u.id} value={u.codigo}>{u.nombre}</option>
+            ))}
+          </select>
           <Button
             variant="outline"
             size="sm"

@@ -31,6 +31,9 @@ export function useCuentasBancarias() {
       if (params.bancoId) {
         queryParams.append('banco_id', params.bancoId);
       }
+      if (params.empresaCodigo) {
+        queryParams.append('empresa_codigo', params.empresaCodigo);
+      }
       
       const url = `/v2/finanzas/cuentas-bancarias${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
       const response = await api.get(url);

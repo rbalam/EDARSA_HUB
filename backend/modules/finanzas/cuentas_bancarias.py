@@ -137,6 +137,7 @@ async def listar_cuentas_bancarias(
     banco_id: Optional[int] = Query(None, description="Filtrar por banco"),
     activo: Optional[bool] = Query(True, description="Filtrar por estado"),
     include_inactive: bool = Query(False, description="Incluir inactivas"),
+    empresa_codigo: Optional[str] = Query(None, description="Filtrar por unidad de negocio (código canónico)"),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -154,7 +155,8 @@ async def listar_cuentas_bancarias(
         cuentas = get_cuentas_bancarias(
             banco_id=banco_id,
             activo=activo,
-            include_inactive=include_inactive
+            include_inactive=include_inactive,
+            empresa_codigo=empresa_codigo
         )
         
         # Serializar con enmascaramiento y agregar último saldo
