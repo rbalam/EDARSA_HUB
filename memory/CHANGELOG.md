@@ -1,5 +1,15 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-10 PM-3] C2 — Unificación KPIs canónicos (COMPLETO + verificado)
+- **Decisión canónica confirmada desde SQL** (`dbo.Comercial_Metricas_Canonicas`, fuente única): promedios usan `ventas_sin_propina` (neto). Convención: `cheque_promedio`=neto/cheques (por cuenta); `ticket_promedio`=neto/pax (por comensal; sinónimo venta_por_pax/consumo_per_capita); `ventas`=neto, `ventas_brutas`=con propina. No requirió decisión del usuario (el catálogo decide).
+- **Tablero Ejecutivo** (`modules/dashboard_ejecutivo/routes.py`): ERA no-canónico (usaba `ventas_total` bruto vía vista + JOIN server_id). Refactorizado a `KPIsCanonicosService.agregados_por_unidad`; KPIs ahora neto + fórmulas canónicas + identidad por UnidadesService. Verificado: endpoint == servicio canónico EXACTO (mayo: neto 16,697,051.34 / 5,980 cheques / 17,150 pax / cheque_prom 2,792.15 / ticket_prom 973.59). Frontend `DashboardEjecutivo.js` re-etiquetado: "Ventas (neto)", "Cheques", "Cheque Prom.", "Consumo/PAX" — UI verificada.
+- **Inteligencia Comercial** (`/inteligencia/dashboard`): YA canónico (usa `ventas_sin_propina`, cheque_prom=neto/cheques, ticket_prom=neto/pax). Verificado: vista Runtime == tabla canónica (totales idénticos). Sin cambios.
+- **Comercial Dashboard** (`comercial/service.py`): YA canónico (`_get_kpis_periodo_edarsahub` retorna SUM(ventas_sin_propina); ticket_prom=neto/pax, cheque_prom=neto/cheques). Sin cambios.
+- **Compras**: no calcula KPIs de ventas (solo compras) → N/A.
+- Detalle/plan en `/app/memory/PLAN_C2_KPIS_CANONICOS.md`.
+- **Nota pendiente (no C2):** "Rentabilidad Base" del Tablero muestra márgenes absurdos (costo receta canónico pendiente; ya señalado en `_nota`). 130QRO backfill quedó EN PROCESO (paso MOVIMIENTOS MPRO muy lento).
+
+
 ## [2026-06-10 PM-2] Export Excel/PDF (Auditoría + Costos), filtro canónico Cuentas Bancarias, backfill CIENFUEGOS/130QRO
 - **Export Excel/PDF (probado E2E con descarga real):**
   - Costos y Márgenes (`CostosMargenes.jsx`): botones Excel/PDF en toolbar; exporta lista filtrada (7,757 productos) con Producto/Código/Sistema/Familia/Precio/Costo/Margen$/Margen%. Descargas `.xlsx` y `.pdf` verificadas.

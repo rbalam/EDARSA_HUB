@@ -78,11 +78,11 @@ export default function DashboardEjecutivo() {
       {data && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <Kpi title="Ventas" value={money(data.kpis?.ventas)} />
-            <Kpi title="Tickets" value={num(data.kpis?.tickets)} />
+            <Kpi title="Ventas (neto)" value={money(data.kpis?.ventas)} />
+            <Kpi title="Cheques" value={num(data.kpis?.cheques ?? data.kpis?.tickets)} />
             <Kpi title="PAX" value={num(data.kpis?.pax)} />
-            <Kpi title="Ticket Prom." value={money(data.kpis?.ticket_promedio)} />
-            <Kpi title="Consumo/PAX" value={money(data.kpis?.consumo_promedio_pax)} />
+            <Kpi title="Cheque Prom." value={money(data.kpis?.cheque_promedio)} />
+            <Kpi title="Consumo/PAX" value={money(data.kpis?.ticket_promedio ?? data.kpis?.consumo_promedio_pax)} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -91,8 +91,8 @@ export default function DashboardEjecutivo() {
                 <thead>
                   <tr className="text-left border-b">
                     <th className="py-2">Unidad</th>
-                    <th className="py-2 text-right">Ventas</th>
-                    <th className="py-2 text-right">Tickets</th>
+                    <th className="py-2 text-right">Ventas (neto)</th>
+                    <th className="py-2 text-right">Cheques</th>
                     <th className="py-2 text-right">PAX</th>
                   </tr>
                 </thead>
@@ -101,7 +101,7 @@ export default function DashboardEjecutivo() {
                     <tr key={i} className="border-b hover:bg-gray-50">
                       <td className="py-2">{r.unidad}</td>
                       <td className="py-2 text-right">{money(r.ventas)}</td>
-                      <td className="py-2 text-right">{num(r.tickets)}</td>
+                      <td className="py-2 text-right">{num(r.cheques ?? r.tickets)}</td>
                       <td className="py-2 text-right">{num(r.pax)}</td>
                     </tr>
                   ))}

@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, Query
 from core.security import get_current_user
 from core.config.edarsahub_sql import get_edarsahub_connection
 from core.sql_first.db import get_sql_connection
+from core.kpis_canonicos import KPIsCanonicosService
+from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/api/dashboard-ejecutivo", tags=["Dashboard Ejecutivo"])
 
@@ -21,21 +23,29 @@ async def resumen(
     fecha_fin: str = Query(default="2026-06-30"),
     current_user: dict = Depends(get_current_user)
 ):
-    ventas = q("""
-    SELECT
-        k.server_id,
-        ISNULL(s.nombre, k.server_id) AS unidad,
-        COUNT(*) AS dias,
-        SUM(ISNULL(k.ventas_total, 0)) AS ventas,
-        SUM(ISNULL(k.tickets_total, 0)) AS tickets,
-        SUM(ISNULL(k.pax_total, 0)) AS pax
-    FROM vw_Comercial_KPIs_Diarios_v2_Runtime k
-    LEFT JOIN Servidores_Conexiones s
-        ON CAST(s.id AS NVARCHAR(100)) = CAST(k.server_id AS NVARCHAR(100))
-    WHERE k.fecha_operacion >= %s AND k.fecha_operacion <= %s
-    GROUP BY k.server_id, ISNULL(s.nombre, k.server_id)
-    ORDER BY ventas DESC
-    """, (fecha_inicio, fecha_fin))
+    # KPIs comerciales: fuente ÚNICA canónica (KPIsCanonicosService, NO-LIVE).
+    # Promedios usan ventas_sin_propina (neto) por definición canónica en SQL.
+    # El rango del servicio es [desde, hasta); convertimos fecha_fin a límite
+    # exclusivo (+1 día) para preservar la semántica inclusiva del endpoint.
+    try:
+        hasta_excl = (datetime.fromisoformat(fecha_fin) + timedelta(days=1)).date().isoformat()
+    except Exception:
+        hasta_excl = fecha_fin
+
+    agg = KPIsCanonicosService.agregados_por_unidad(fecha_inicio, hasta_excl)
+    agg = sorted(agg, key=lambda x: float(x.get("ventas_sin_propina") or 0), reverse=True)
+
+    ventas = [{
+        "server_id": a.get("server_id"),
+        "unidad": a.get("unidad_nombre"),
+        "unidad_codigo": a.get("unidad_codigo"),
+        "dias": a.get("dias"),
+        "ventas": float(a.get("ventas_sin_propina") or 0),   # neto (canónico)
+        "ventas_brutas": float(a.get("ventas") or 0),         # con propina (referencia)
+        "tickets": float(a.get("cheques") or 0),              # alias retrocompatible
+        "cheques": float(a.get("cheques") or 0),
+        "pax": float(a.get("pax") or 0),
+    } for a in agg]
 
     precios = q("""
     SELECT
@@ -72,20 +82,29 @@ async def resumen(
     ORDER BY eventos DESC
     """)
 
-    total_ventas = sum(float(x.get("ventas") or 0) for x in ventas)
-    total_tickets = sum(int(x.get("tickets") or 0) for x in ventas)
-    total_pax = sum(int(x.get("pax") or 0) for x in ventas)
+    total_ventas = sum(float(x.get("ventas") or 0) for x in ventas)         # neto (sin propina)
+    total_ventas_brutas = sum(float(x.get("ventas_brutas") or 0) for x in ventas)
+    total_tickets = sum(float(x.get("cheques") or 0) for x in ventas)
+    total_pax = sum(float(x.get("pax") or 0) for x in ventas)
+
+    cheque_promedio = total_ventas / total_tickets if total_tickets else 0  # neto / cheques
+    ticket_promedio = total_ventas / total_pax if total_pax else 0          # neto / pax (canónico)
 
     return {
         "success": True,
         "source": "EDARSAHUB_SQL",
+        "kpis_origen": "KPIsCanonicosService",
         "periodo": {"inicio": fecha_inicio, "fin": fecha_fin},
         "kpis": {
-            "ventas": total_ventas,
-            "tickets": total_tickets,
+            "ventas": total_ventas,                    # NETO (canónico, sin propina)
+            "ventas_brutas": total_ventas_brutas,      # con propina (referencia)
+            "tickets": total_tickets,                  # alias retrocompatible
+            "cheques": total_tickets,
             "pax": total_pax,
-            "ticket_promedio": total_ventas / total_tickets if total_tickets else 0,
-            "consumo_promedio_pax": total_ventas / total_pax if total_pax else 0
+            "cheque_promedio": cheque_promedio,        # neto / cheques (por cuenta)
+            "ticket_promedio": ticket_promedio,        # neto / pax (canónico, por comensal)
+            "consumo_promedio_pax": ticket_promedio,   # alias retrocompatible (= ticket_promedio)
+            "cheques_por_pax": total_tickets / total_pax if total_pax else 0
         },
         "ventas_por_unidad": ventas,
         "precios": precios[0] if precios else {},
