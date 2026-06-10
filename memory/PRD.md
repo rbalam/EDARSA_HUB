@@ -23,8 +23,26 @@ Spanish (Español)
   sincronizan). Requiere primero poblar/crear el job de sync de detalle. El usuario eligió desbloqueo
   pragmático (B) ahora; A queda como siguiente incremento. ESTADO: PENDIENTE.
 
-### Estado actualizado (2026-06-12)
-- ✅ **Fix CRASH al hacer click en "Realizar Auditoría" (Compras → Auditoría) — P0:** el sistema
+### Estado actualizado (2026-06-12) — Navegación: sincronizaciones accesibles
+- ✅ **Enlaces de menú a sincronizaciones/scheduler arreglados (opción C):** las pantallas de
+  sincronización existían pero no eran accesibles desde el menú Enterprise. Fix en
+  `config/enterpriseMenuConfig.js` (grupo Administración/Sistema → sección Automatización):
+  (1) item **"Programación"**: ruta corregida `/programacion` (rota) → `/scheduler` (real) y
+  removido `comingSoon` (estaba deshabilitado). Abre `Scheduler.jsx` = "Scheduler del Sistema"
+  con jobs programados (SYNC Comercial V2, SLA Processor, Auditorías Scheduler, etc.) + pestaña
+  Re-sync Manual. (2) Nuevo item **"Monitor de Sincronización"** → `/admin/sync-monitor`
+  (`SyncMonitor.js`): estado de syncs por servidor, tipos, errores 24h, actividad. Icono
+  `RefreshCw` agregado al import y al mapa `ICONS` de `EnterpriseSidebarMenu.jsx`. Verificado por
+  screenshot: ambas rutas renderizan con sesión admin. Aclaración al usuario: el menú
+  "Automatizaciones" (`/automatizaciones`) es solo para automatizaciones operativas de Compras y
+  auditorías de inventario programadas (NO para sincronizaciones de catálogos).
+- 📝 **AUDITORÍA de pantallas huérfanas (rutas en App.js NO accesibles desde el menú Enterprise):**
+  Arregladas: `/scheduler`, `/admin/sync-monitor`. Pendientes (solo accesibles por URL o desde el
+  menú LEGACY de `Layout.js`, no del Enterprise): `/admin/dba-credential` (DBA Diagnóstico),
+  `/importador-rh`, `/produccion` (Enterprise usa `/tablajeria`), `/admin/dashboard-ejecutivo`
+  (posible duplicado de `/tablero-ejecutivo`), `/admin/centro-excepciones`, `/operativo`,
+  `/proveedores` (interno, distinto del portal externo). PENDIENTE decisión del usuario si quiere
+  enlazar alguna de estas. el sistema
   reventaba con `Uncaught runtime error: Cannot access 'getCostoSegunUnidad' before initialization`
   y expulsaba al login. Causa raíz (TDZ / temporal dead zone): el `useMemo` `auditoriaExport`
   (Compras.js) invocaba `getCostoSegunUnidad(r)` dentro del `.map(resultados)`, pero la función

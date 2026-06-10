@@ -342,11 +342,18 @@ export const enterpriseMenuGroups = [
       {
         id: "programacion",
         label: "Programación",
-        path: "/programacion",
-        comingSoon: true,
+        path: "/scheduler",
         icon: "Clock",
         section: "Automatización",
-        keywords: ["programacion", "scheduler", "jobs"]
+        keywords: ["programacion", "scheduler", "jobs", "sincronizacion", "re-sincronizar", "analisis inventario"]
+      },
+      {
+        id: "sync-monitor",
+        label: "Monitor de Sincronización",
+        path: "/admin/sync-monitor",
+        icon: "RefreshCw",
+        section: "Automatización",
+        keywords: ["sincronizacion", "sync", "catalogos", "monitor", "estado", "servidores"]
       },
       {
         id: "automatizaciones",
