@@ -1861,11 +1861,14 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
       try {
         
         // Obtener SOLO productos de las requisiciones seleccionadas
+        // NOTA: este endpoint lee EN VIVO del POS (lento/variable). Igual que
+        // pedidos-vigentes/inventarios-fisicos, usar timeout extendido (30s) para
+        // evitar falsos errores de "timeout" del default de 15s del cliente.
         const response = await api.post(`/compras/productos-para-captura`, {
           server_id: selectedServer,
           folios_inv_inicial: [],  // Ignorar inventarios iniciales cuando hay requisiciones
           folios_requisiciones: folioPedido
-        });
+        }, { timeout: 30000 });
         
         logger.log('Productos de requisiciones:', response.data);
         
@@ -1885,7 +1888,10 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
         }
       } catch (error) {
         logger.error('Error obteniendo productos de requisiciones:', error);
-        alert('Error al obtener productos de las requisiciones.');
+        const esTimeout = error.code === 'ECONNABORTED' || error.message?.includes('timeout');
+        alert(esTimeout
+          ? 'La consulta de productos tardó demasiado (el POS está respondiendo lento). Intenta de nuevo en unos segundos.'
+          : 'Error al obtener productos de las requisiciones.');
       }
       return;
     }
@@ -1899,7 +1905,7 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
           server_id: selectedServer,
           folios_inv_inicial: foliosIni,
           folios_requisiciones: []
-        });
+        }, { timeout: 30000 });
         
         if (response.data.productos && response.data.productos.length > 0) {
           const capturaInicial = response.data.productos.map(p => ({
@@ -1917,7 +1923,10 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
         }
       } catch (error) {
         logger.error('Error obteniendo productos:', error);
-        alert('Error al obtener productos de inventarios iniciales.');
+        const esTimeout = error.code === 'ECONNABORTED' || error.message?.includes('timeout');
+        alert(esTimeout
+          ? 'La consulta de productos tardó demasiado (el POS está respondiendo lento). Intenta de nuevo en unos segundos.'
+          : 'Error al obtener productos de inventarios iniciales.');
       }
       return;
     }

@@ -17,6 +17,23 @@ Spanish (Español)
   abra el tab Análisis IA **precargando la categoría/producto detectado como "Caro" u "Oportunidad"**,
   para pasar del diagnóstico sectorial a la sugerencia de precio con un clic (sin volver a buscar el
   producto). Solicitado por el usuario el 2026-06-11. ESTADO: PENDIENTE.
+- **🔴 A) Migración NO-LIVE de `POST /api/compras/productos-para-captura` (DIFERIDA, autorizada 2026-06-12):**
+  hoy el endpoint conecta EN VIVO al POS (viola NO-LIVE). Migrarlo a leer de tablas sync de EDARSAHUB.
+  BLOQUEANTE: las tablas de DETALLE de compras/requisiciones (líneas) están VACÍAS (solo encabezados se
+  sincronizan). Requiere primero poblar/crear el job de sync de detalle. El usuario eligió desbloqueo
+  pragmático (B) ahora; A queda como siguiente incremento. ESTADO: PENDIENTE.
+
+### Estado actualizado (2026-06-12)
+- ✅ **Fix Compras → "Auditoría Operativa de Inventarios" (opción B, desbloqueo):** el error
+  "Error al obtener productos de las requisiciones" se debía a **timeout** del cliente axios.
+  Diagnóstico (cURL, sin testing_agent): el endpoint `POST /api/compras/productos-para-captura`
+  responde 200 en ~0.5s (warm) con `server_id` (código o GUID) para CIENFUEGOS, pero la llamada
+  del frontend usaba el timeout default de 15s mientras sus hermanas en vivo (`pedidos-vigentes`,
+  `inventarios-fisicos`) usan 30s — el POS en vivo es lento/variable → en navegador excedía 15s →
+  `catch` → alert. Fix en `frontend/src/pages/Compras.js` (`iniciarCapturaManual`): ambas llamadas
+  a `productos-para-captura` ahora usan `{ timeout: 30000 }` + mensaje honesto si es timeout.
+  NOTA: la requisición del screenshot (00000031014) venía de localStorage (pedidos-vigentes ya es
+  NO-LIVE y devuelve 0 para CIENFUEGOS). Frontend compila limpio. Migración NO-LIVE = backlog A.
 
 ### Estado actualizado (2026-06-11)
 - ✅ **Semáforo de oportunidad de precio (mejora sobre Benchmark Sectorial):** `vista_vs_sector`
