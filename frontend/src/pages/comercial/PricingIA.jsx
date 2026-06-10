@@ -27,9 +27,10 @@ import {
   Plus, Edit2, Trash2, Eye, AlertCircle, CheckCircle, Clock, X,
   AlertTriangle, TrendingUp, TrendingDown, ChevronDown, ChevronUp,
   Target, Sparkles, History, FileText, Users, Tag, ExternalLink,
-  Zap, Info, ShieldAlert, ThumbsUp, ThumbsDown, Loader2, Store, Folder
+  Zap, Info, ShieldAlert, ThumbsUp, ThumbsDown, Loader2, Store, Folder, Layers
 } from 'lucide-react';
 import api from '@/lib/api';
+import TabBenchmarkSectorial from './TabBenchmarkSectorial';
 
 // Importar componentes de visualización y listas (FASE 1C-3I-F y 1C-3I-G)
 import {
@@ -2531,6 +2532,12 @@ const PricingIA = () => {
             label="Historial"
           />
           <TabButton
+            active={activeTab === 'sectorial'}
+            onClick={() => setActiveTab('sectorial')}
+            icon={Layers}
+            label="Benchmark Sectorial"
+          />
+          <TabButton
             active={activeTab === 'listas'}
             onClick={() => setActiveTab('listas')}
             icon={Folder}
@@ -2555,6 +2562,9 @@ const PricingIA = () => {
         )}
         {activeTab === 'historial' && (
           <TabHistorial empresaId={empresaId} unidadId={unidadId} />
+        )}
+        {activeTab === 'sectorial' && (
+          <TabBenchmarkSectorial empresaId={empresaId} unidadId={unidadId} />
         )}
         {activeTab === 'listas' && (
           <TabListasCompetidores empresaId={empresaId} unidadId={unidadId} />

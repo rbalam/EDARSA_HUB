@@ -12,6 +12,36 @@ Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosist
 ### User's Preferred Language
 Spanish (Español)
 
+### Estado actualizado (2026-06-11)
+- ✅ **P2 RBAC permisos `comercial.*` sembrados (benchmark/competidores/perfil/precios):**
+  Causa: los endpoints de Pricing IA/Benchmark usan permisos con formato punto/minúsculas
+  (`comercial.benchmark.ver`), pero el motor RBAC (`core/rbac/repository_sql.py`) sólo generaba
+  el formato legacy `{Modulo}_{Accion}` y NO existían módulos `comercial.*` ni las acciones
+  `INACTIVAR/VALIDAR/VER_IA/GENERAR`. Sólo admin (bypass) podía entrar. Fix:
+  (1) Parche **aditivo** en `repository_sql.py` (`get_all_roles` + `get_roles_usuario`) para emitir
+  también `{Modulo}.{accion_lower}` sin romper el formato legacy.
+  (2) Script idempotente `scripts/create_comercial_pricing_rbac.py`: crea 4 acciones, 5 módulos
+  `comercial.*` y 82 permisos por rol (SUPERADMIN/ADMIN/ADMIN_COMERCIAL/DIRECCION/GERENTE_UNIDAD/
+  CONFIGURADOR_COMERCIAL/ANALISTA_COMERCIAL/VISOR_COMERCIAL/GERENCIA/AUDITOR).
+  Verificado e2e por cURL con usuario NO-admin `VISOR_COMERCIAL` (qa.visorcomercial@edarsa.com):
+  200 en benchmark/competidores (.ver), 403 en validar/crear. Regresión OK (tablero ejecutivo 200).
+- ✅ **P2 Benchmark Sectorial — Incremento 1 (reporte backend + tab frontend):**
+  Backend `modules/comercial/services/benchmark_sectorial_service.py` + `routes_benchmark_sectorial.py`
+  (RBAC `comercial.benchmark.ver`, NO-LIVE, deriva de tablas canónicas, sin hardcode). 4 endpoints:
+  `/api/comercial/benchmark-sectorial/{sectores,vs-sector,interno,por-segmento}`. Puente de IDs:
+  `Sistema_EmpresasServidores` (EmpresaID int → ServidorID GUID → `Sync_Productos.ServerID`) para
+  nuestros precios; competencia desde `Comercial_CompetidoresMenuItems`+`Comercial_Competidores`
+  (TipoRestaurante=giro, SegmentoPrecio=segmento). 3 vistas: vs sector / interno entre unidades /
+  por segmento + métrica % desviación por categoría. Frontend tab `TabBenchmarkSectorial.jsx` en
+  `PricingIA.jsx`. Verificado backend por cURL; frontend compila limpio (screenshot bloqueado por
+  el reset de sessionStorage del preview en navegación automatizada). Estados honestos SIN_DATOS.
+  **NOTA real de datos**: categorías propias (ALIMENTOS/BEBIDAS) no empatan con las del competidor
+  (Carnes/Entradas) → 0 comparables hoy (mismatch de taxonomía + datos escasos). Aquí entra el
+  Incremento 2 (ingesta).
+- ⏳ **Pendiente Benchmark Sectorial — Incremento 2 (INGESTA):** alimentar datos de competencia/sector
+  cuando faltan, vía adjunto (Excel/PDF/JPG/Word) o link. Requiere object storage + extracción
+  (LLM). PENDIENTE confirmar integración con el usuario antes de construir.
+
 ### Estado actualizado (2026-06-09)
 - ✅ **Portal Inteligencia operativo SIN demo + datos 100% reales (P0):** (1) AUTH del portal migrada
   de cookie a token operativo Bearer (sessionStorage, fuente canónica `lib/api.js`); eliminado el modo

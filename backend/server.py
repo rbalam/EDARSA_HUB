@@ -518,6 +518,11 @@ api_router.include_router(pricing_ai_gpt_router)
 from modules.comercial.routes_listas_competidores import router as listas_competidores_router
 api_router.include_router(listas_competidores_router)
 
+# Benchmark Sectorial (reporte NO-LIVE derivado de tablas canonicas)
+# ===========================================
+from modules.comercial.routes_benchmark_sectorial import router as benchmark_sectorial_router
+api_router.include_router(benchmark_sectorial_router)
+
 # FASE 1C-3G-F: Precios Sugeridos y Rangos Vinos
 # ===========================================
 from modules.comercial.routes_precios_sugeridos import router as precios_sugeridos_router
