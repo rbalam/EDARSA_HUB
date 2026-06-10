@@ -13,6 +13,21 @@ Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosist
 Spanish (Español)
 
 ### 📋 BACKLOG (pendiente, no implementado)
+- **🧭 NAVEGACIÓN — Enlazar pantallas huérfanas al menú Enterprise (auditoría 2026-06-12):**
+  rutas que existen en `App.js` pero NO son accesibles desde el menú Enterprise (solo por URL o
+  desde el menú LEGACY de `Layout.js`). PENDIENTE decidir cuáles enlazar y en qué grupo:
+    - `/admin/dba-credential` (DBA Diagnóstico)
+    - `/importador-rh` (Importador de RH)
+    - `/produccion` (el Enterprise usa `/tablajeria`)
+    - `/admin/dashboard-ejecutivo` (posible duplicado de `/tablero-ejecutivo` → revisar si retirar o enlazar)
+    - `/admin/centro-excepciones`
+    - `/operativo`
+    - `/proveedores` (interno, distinto del portal externo `/portal-proveedores`)
+  ESTADO: PENDIENTE (decisión del usuario por cada una).
+- **🧭 NAVEGACIÓN — Consolidar menús (retirar el legacy de `Layout.js`):** hoy conviven DOS menús
+  (el Enterprise activo `EnterpriseSidebarMenu.jsx` + el legacy en `Layout.js`). Consolidar todo en
+  el Enterprise y retirar el legacy para evitar pantallas "perdidas" y centralizar el mantenimiento
+  del menú en un solo lugar. ESTADO: PENDIENTE.
 - **CTA inteligente del semáforo (Benchmark Sectorial):** que el botón "Ajustar en Análisis IA"
   abra el tab Análisis IA **precargando la categoría/producto detectado como "Caro" u "Oportunidad"**,
   para pasar del diagnóstico sectorial a la sugerencia de precio con un clic (sin volver a buscar el
