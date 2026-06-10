@@ -205,7 +205,7 @@ def obtener_perfil_por_unidad(unidad_negocio_pk: int) -> Optional[PerfilDigitalR
         FechaModificacion,
         UsuarioModificacion
     FROM Sistema_UnidadesNegocioPerfilDigital
-    WHERE UnidadNegocioID = {UnidadNegocioID}
+    WHERE UnidadNegocioID = {unidad_negocio_pk}
       AND Activo = 1
     """
     

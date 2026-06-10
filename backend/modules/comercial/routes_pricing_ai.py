@@ -43,6 +43,8 @@ from modules.comercial.services.metricas_ia_service import (
     obtener_estadisticas_competidores_benchmark,
 )
 
+from modules.comercial.services.unidad_resolver import resolver_server_id
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/comercial/pricing-ai", tags=["Comercial - Pricing IA GPT-5.2"])
@@ -55,7 +57,7 @@ router = APIRouter(prefix="/comercial/pricing-ai", tags=["Comercial - Pricing IA
 class AnalizarProductoRequest(BaseModel):
     """Request para analizar un producto con IA."""
     codigo_producto: str = Field(..., description="Código del producto")
-    server_id: str = Field(..., description="UUID del servidor")
+    server_id: Optional[str] = Field(None, description="(Opcional/legacy) UUID del servidor; se resuelve canonicamente desde empresa_id+unidad_negocio_pk")
     empresa_id: int = Field(..., gt=0)
     unidad_negocio_pk: int = Field(..., gt=0)
     margen_objetivo: float = Field(default=0.35, gt=0, lt=1, description="Margen objetivo (0.35 = 35%)")
@@ -65,7 +67,7 @@ class AnalizarProductoRequest(BaseModel):
 class SugerirComparablesRequest(BaseModel):
     """Request para sugerir productos comparables."""
     codigo_producto: str = Field(..., description="Código del producto")
-    server_id: str = Field(..., description="UUID del servidor")
+    server_id: Optional[str] = Field(None, description="(Opcional/legacy) UUID del servidor; se resuelve canonicamente desde empresa_id+unidad_negocio_pk")
     empresa_id: int = Field(..., gt=0)
     unidad_negocio_pk: int = Field(..., gt=0)
     lista_id: Optional[str] = Field(None, description="ID de lista de competidores para filtrar")
@@ -74,7 +76,7 @@ class SugerirComparablesRequest(BaseModel):
 class GenerarJustificacionRequest(BaseModel):
     """Request para generar justificación de precio."""
     codigo_producto: str = Field(..., description="Código del producto")
-    server_id: str = Field(..., description="UUID del servidor")
+    server_id: Optional[str] = Field(None, description="(Opcional/legacy) UUID del servidor; se resuelve canonicamente desde empresa_id+unidad_negocio_pk")
     empresa_id: int = Field(..., gt=0)
     unidad_negocio_pk: int = Field(..., gt=0)
     precio_propuesto: float = Field(..., gt=0, description="Precio propuesto a justificar")
@@ -131,9 +133,13 @@ async def endpoint_analizar_producto(
     logger.info(f"[PRICING-IA] Análisis producto {request.codigo_producto} por {usuario}" + 
                 (f" (lista: {request.lista_id})" if request.lista_id else ""))
     
+    server_id = request.server_id or resolver_server_id(request.empresa_id, request.unidad_negocio_pk)
+    if not server_id:
+        raise HTTPException(status_code=400, detail=f"No se pudo resolver el servidor canónico para empresa {request.empresa_id} / unidad {request.unidad_negocio_pk}")
+
     resultado = await analizar_producto_con_ia(
         codigo_producto=request.codigo_producto,
-        server_id=request.server_id,
+        server_id=server_id,
         empresa_id=request.empresa_id,
         unidad_negocio_pk=request.unidad_negocio_pk,
         usuario=usuario,
@@ -192,9 +198,13 @@ async def endpoint_sugerir_comparables(
     
     logger.info(f"[PRICING-IA] Sugerencia comparables {request.codigo_producto} por {usuario}")
     
+    server_id = request.server_id or resolver_server_id(request.empresa_id, request.unidad_negocio_pk)
+    if not server_id:
+        raise HTTPException(status_code=400, detail=f"No se pudo resolver el servidor canónico para empresa {request.empresa_id} / unidad {request.unidad_negocio_pk}")
+
     resultado = await sugerir_comparables_con_ia(
         codigo_producto=request.codigo_producto,
-        server_id=request.server_id,
+        server_id=server_id,
         empresa_id=request.empresa_id,
         unidad_negocio_pk=request.unidad_negocio_pk,
         usuario=usuario
@@ -244,9 +254,13 @@ async def endpoint_generar_justificacion(
     
     logger.info(f"[PRICING-IA] Justificación {request.codigo_producto} precio ${request.precio_propuesto} por {usuario}")
     
+    server_id = request.server_id or resolver_server_id(request.empresa_id, request.unidad_negocio_pk)
+    if not server_id:
+        raise HTTPException(status_code=400, detail=f"No se pudo resolver el servidor canónico para empresa {request.empresa_id} / unidad {request.unidad_negocio_pk}")
+
     resultado = await generar_justificacion_con_ia(
         codigo_producto=request.codigo_producto,
-        server_id=request.server_id,
+        server_id=server_id,
         empresa_id=request.empresa_id,
         unidad_negocio_pk=request.unidad_negocio_pk,
         precio_propuesto=request.precio_propuesto,

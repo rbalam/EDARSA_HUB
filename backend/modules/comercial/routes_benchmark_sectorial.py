@@ -30,10 +30,11 @@ async def get_vs_sector(
     unidad_negocio_pk: Optional[int] = Query(None),
     segmento: Optional[str] = Query(None, description="Filtrar por SegmentoPrecio"),
     giro: Optional[str] = Query(None, description="Filtrar por TipoRestaurante"),
+    umbral_pct: float = Query(15.0, ge=0, le=100, description="Umbral % para el semaforo de oportunidad"),
     current_user: dict = Depends(get_current_user),
     _auth: dict = Depends(require_permission("comercial.benchmark.ver")),
 ):
-    return svc.vista_vs_sector(empresa_id, unidad_negocio_pk, segmento, giro)
+    return svc.vista_vs_sector(empresa_id, unidad_negocio_pk, segmento, giro, umbral_pct)
 
 
 @router.get("/interno", summary="Vista B: comparativa interna entre nuestras unidades")

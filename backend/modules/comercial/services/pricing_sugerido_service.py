@@ -94,7 +94,7 @@ def _obtener_costo_producto(codigo_producto: str, server_id: str) -> Tuple[Optio
     query_receta = f"""
     SELECT CostoReceta
     FROM Sync_Productos
-    WHERE ServerID = '{ServerID}'
+    WHERE ServerID = '{server_id}'
       AND CodigoFuente = '{codigo_producto}'
     """
     
@@ -113,7 +113,7 @@ def _obtener_costo_producto(codigo_producto: str, server_id: str) -> Tuple[Optio
         CostoPromedio,
         CostoEstandar
     FROM Sync_Productos_Insumos
-    WHERE ServerID = '{ServerID}'
+    WHERE ServerID = '{server_id}'
       AND CodigoFuente = '{codigo_producto}'
     """
     
@@ -144,7 +144,7 @@ def _obtener_nombre_producto(codigo_producto: str, server_id: str) -> Optional[s
     query = f"""
     SELECT Nombre
     FROM Sync_Productos
-    WHERE ServerID = '{ServerID}'
+    WHERE ServerID = '{server_id}'
       AND CodigoFuente = '{codigo_producto}'
     """
     
@@ -172,7 +172,7 @@ def _es_producto_vino(codigo_producto: str, server_id: str) -> bool:
     query = f"""
     SELECT 1
     FROM Sync_Productos
-    WHERE ServerID = '{ServerID}'
+    WHERE ServerID = '{server_id}'
       AND CodigoFuente = '{codigo_producto}'
       AND FamiliaNombre IN ('{familias_str}')
     """

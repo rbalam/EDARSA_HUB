@@ -2564,7 +2564,7 @@ const PricingIA = () => {
           <TabHistorial empresaId={empresaId} unidadId={unidadId} />
         )}
         {activeTab === 'sectorial' && (
-          <TabBenchmarkSectorial empresaId={empresaId} unidadId={unidadId} />
+          <TabBenchmarkSectorial empresaId={empresaId} unidadId={unidadId} onNavigateTab={setActiveTab} />
         )}
         {activeTab === 'listas' && (
           <TabListasCompetidores empresaId={empresaId} unidadId={unidadId} />

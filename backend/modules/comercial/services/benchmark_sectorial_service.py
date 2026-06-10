@@ -51,6 +51,25 @@ def _desviacion(propio: Optional[float], referencia: Optional[float]) -> Optiona
     return round((propio - referencia) / referencia * 100.0, 1)
 
 
+def _semaforo(desviacion_pct: Optional[float], umbral_pct: float) -> Dict[str, Any]:
+    """Clasifica la oportunidad de precio por categoria segun la desviacion vs sector.
+
+    - desviacion > +umbral  -> CARO (por encima del sector; candidato a revisar/bajar)
+    - desviacion < -umbral  -> BARATO (por debajo del sector; oportunidad de subir precio)
+    - en el rango           -> ALINEADO
+    """
+    if desviacion_pct is None:
+        return {"oportunidad": "SIN_DATO", "semaforo": "gris", "accion_sugerida": None}
+    if desviacion_pct > umbral_pct:
+        return {"oportunidad": "CARO", "semaforo": "rojo",
+                "accion_sugerida": "Revisar: tu precio esta por encima del sector"}
+    if desviacion_pct < -umbral_pct:
+        return {"oportunidad": "BARATO", "semaforo": "verde",
+                "accion_sugerida": "Oportunidad: podrias subir precio hacia el sector"}
+    return {"oportunidad": "ALINEADO", "semaforo": "ambar" if abs(desviacion_pct) > umbral_pct / 2 else "verde",
+            "accion_sugerida": None}
+
+
 # ---------------------------------------------------------------------------
 # Catalogos / mapeos canonicos (derivados, sin hardcode)
 # ---------------------------------------------------------------------------
@@ -130,7 +149,8 @@ def _competidor_precios_por_categoria(
 # ---------------------------------------------------------------------------
 
 def vista_vs_sector(empresa_id: int, unidad_negocio_pk: Optional[int],
-                    segmento: Optional[str], giro: Optional[str]) -> Dict[str, Any]:
+                    segmento: Optional[str], giro: Optional[str],
+                    umbral_pct: float = 15.0) -> Dict[str, Any]:
     nuestros = {r['categoria']: r for r in _nuestros_precios_por_categoria(empresa_id)}
     comp = {r['categoria']: r for r in _competidor_precios_por_categoria(
         empresa_id, unidad_negocio_pk, segmento, giro)}
@@ -148,6 +168,9 @@ def vista_vs_sector(empresa_id: int, unidad_negocio_pk: Optional[int],
             estado = "SIN_DATO_COMPETENCIA"
         else:
             estado = "SIN_PRODUCTO_PROPIO"
+        desv = _desviacion(mi_prom, sector_prom)
+        sem = _semaforo(desv, umbral_pct) if estado == "COMPARABLE" else {
+            "oportunidad": "SIN_DATO", "semaforo": "gris", "accion_sugerida": None}
         filas.append({
             "categoria": cat,
             "mi_precio_prom": mi_prom,
@@ -157,8 +180,9 @@ def vista_vs_sector(empresa_id: int, unidad_negocio_pk: Optional[int],
             "sector_precio_max": round(c['precio_max'], 2) if c else None,
             "n_items_competencia": c['n_items'] if c else 0,
             "n_competidores": c['n_competidores'] if c else 0,
-            "desviacion_pct": _desviacion(mi_prom, sector_prom),
+            "desviacion_pct": desv,
             "estado": estado,
+            **sem,
         })
 
     comparables = [f for f in filas if f['estado'] == 'COMPARABLE']
@@ -169,10 +193,16 @@ def vista_vs_sector(empresa_id: int, unidad_negocio_pk: Optional[int],
         "unidad_negocio_pk": unidad_negocio_pk,
         "filtro_segmento": segmento,
         "filtro_giro": giro,
+        "umbral_pct": umbral_pct,
         "fuente": "Sync_Productos + Comercial_CompetidoresMenuItems (NO-LIVE)",
         "estado": estado_global,
         "total_categorias": len(filas),
         "categorias_comparables": len(comparables),
+        "oportunidades": {
+            "caro": len([f for f in comparables if f['oportunidad'] == 'CARO']),
+            "barato": len([f for f in comparables if f['oportunidad'] == 'BARATO']),
+            "alineado": len([f for f in comparables if f['oportunidad'] == 'ALINEADO']),
+        },
         "filas": filas,
     }
 

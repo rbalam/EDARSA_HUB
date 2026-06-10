@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Layers, RefreshCw, TrendingUp, TrendingDown, Minus, AlertTriangle,
-  Building2, Filter, Store, BarChart2, UploadCloud
+  Building2, Filter, Store, BarChart2, UploadCloud, ArrowRight
 } from 'lucide-react';
 import api from '@/lib/api';
 import TabIngestaCompetencia from './TabIngestaCompetencia';
@@ -32,6 +32,24 @@ const DesviacionBadge = ({ pct }) => {
   );
 };
 
+const SEMAFORO_CFG = {
+  rojo: { dot: 'bg-red-500', label: 'Caro', cls: 'text-red-700' },
+  ambar: { dot: 'bg-amber-500', label: 'Cerca', cls: 'text-amber-700' },
+  verde: { dot: 'bg-green-500', label: 'OK / Oportunidad', cls: 'text-green-700' },
+  gris: { dot: 'bg-gray-300', label: '—', cls: 'text-gray-400' },
+};
+
+const Semaforo = ({ tipo, oportunidad }) => {
+  const cfg = SEMAFORO_CFG[tipo] || SEMAFORO_CFG.gris;
+  const txt = oportunidad === 'CARO' ? 'Caro' : oportunidad === 'BARATO' ? 'Oportunidad ↑' : oportunidad === 'ALINEADO' ? 'Alineado' : '—';
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${cfg.cls}`} data-testid={`semaforo-${oportunidad}`}>
+      <span className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
+      {txt}
+    </span>
+  );
+};
+
 const EstadoVacio = ({ titulo, detalle }) => (
   <div className="text-center py-12 text-gray-500" data-testid="benchmark-sectorial-vacio">
     <BarChart2 className="w-10 h-10 mx-auto mb-3 text-gray-300" />
@@ -41,7 +59,7 @@ const EstadoVacio = ({ titulo, detalle }) => (
 );
 
 // ---------------- Vista A: vs Sector ----------------
-const VistaVsSector = ({ empresaId, unidadId }) => {
+const VistaVsSector = ({ empresaId, unidadId, onNavigateTab }) => {
   const [data, setData] = useState(null);
   const [sectores, setSectores] = useState(null);
   const [segmento, setSegmento] = useState('');
@@ -110,6 +128,24 @@ const VistaVsSector = ({ empresaId, unidadId }) => {
         <div className="bg-gray-50 rounded-lg p-3"><div className="text-gray-500">Competidores</div><div className="text-xl font-bold text-gray-700">{sectores?.total_competidores ?? 0}</div></div>
       </div>
 
+      {data.oportunidades && data.categorias_comparables > 0 && (
+        <div className="flex flex-wrap items-center gap-3 bg-white border border-gray-200 rounded-lg p-3" data-testid="resumen-oportunidades">
+          <span className="text-sm font-medium text-gray-700">Semáforo de oportunidad (±{data.umbral_pct}%):</span>
+          <span className="inline-flex items-center gap-1.5 text-sm text-red-700"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> {data.oportunidades.caro} caro(s)</span>
+          <span className="inline-flex items-center gap-1.5 text-sm text-green-700"><span className="w-2.5 h-2.5 rounded-full bg-green-500" /> {data.oportunidades.barato} oportunidad(es) ↑</span>
+          <span className="inline-flex items-center gap-1.5 text-sm text-gray-600"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> {data.oportunidades.alineado} alineado(s)</span>
+          {(data.oportunidades.caro + data.oportunidades.barato) > 0 && onNavigateTab && (
+            <button
+              data-testid="cta-precios-sugeridos"
+              onClick={() => onNavigateTab('analisis')}
+              className="ml-auto inline-flex items-center gap-1 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-full px-3 py-1.5"
+            >
+              Ajustar en Análisis IA <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      )}
+
       {comparables.length === 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2 text-sm text-amber-800" data-testid="aviso-sin-comparables">
           <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -127,6 +163,7 @@ const VistaVsSector = ({ empresaId, unidadId }) => {
               <th className="text-right px-3 py-2">Rango sector</th>
               <th className="text-center px-3 py-2">Items comp.</th>
               <th className="text-center px-3 py-2">Desviación</th>
+              <th className="text-center px-3 py-2">Oportunidad</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -138,6 +175,7 @@ const VistaVsSector = ({ empresaId, unidadId }) => {
                 <td className="px-3 py-2 text-right text-gray-500 text-xs">{f.sector_precio_min !== null ? `${fmt(f.sector_precio_min)} – ${fmt(f.sector_precio_max)}` : '—'}</td>
                 <td className="px-3 py-2 text-center text-gray-500">{f.n_items_competencia}</td>
                 <td className="px-3 py-2 text-center"><DesviacionBadge pct={f.desviacion_pct} /></td>
+                <td className="px-3 py-2 text-center"><Semaforo tipo={f.semaforo} oportunidad={f.oportunidad} /></td>
               </tr>
             ))}
           </tbody>
@@ -266,7 +304,7 @@ const SUBTABS = [
   { id: 'ingesta', label: 'Ingesta de Datos', icon: UploadCloud },
 ];
 
-const TabBenchmarkSectorial = ({ empresaId, unidadId }) => {
+const TabBenchmarkSectorial = ({ empresaId, unidadId, onNavigateTab }) => {
   const [sub, setSub] = useState('vs-sector');
   return (
     <div className="space-y-4" data-testid="tab-benchmark-sectorial">
@@ -295,7 +333,7 @@ const TabBenchmarkSectorial = ({ empresaId, unidadId }) => {
         })}
       </div>
 
-      {sub === 'vs-sector' && <VistaVsSector empresaId={empresaId} unidadId={unidadId} />}
+      {sub === 'vs-sector' && <VistaVsSector empresaId={empresaId} unidadId={unidadId} onNavigateTab={onNavigateTab} />}
       {sub === 'interno' && <VistaInterno />}
       {sub === 'por-segmento' && <VistaPorSegmento empresaId={empresaId} unidadId={unidadId} />}
       {sub === 'ingesta' && <TabIngestaCompetencia empresaId={empresaId} />}

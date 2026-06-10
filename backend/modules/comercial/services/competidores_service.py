@@ -720,7 +720,7 @@ def obtener_estadisticas_competidores(unidad_negocio_pk: int) -> Dict[str, Any]:
         SUM(CASE WHEN EsCompetenciaDirecta = 1 THEN 1 ELSE 0 END) as directos,
         SUM(CASE WHEN EsBenchmarkAspiracional = 1 THEN 1 ELSE 0 END) as aspiracionales
     FROM Comercial_Competidores
-    WHERE UnidadNegocioID = {UnidadNegocioID}
+    WHERE UnidadNegocioID = {unidad_negocio_pk}
       AND Activo = 1
     """
     

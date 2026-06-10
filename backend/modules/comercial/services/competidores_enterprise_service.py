@@ -241,7 +241,7 @@ def relacionar_competidor_unidad(
     existe_query = f"""
     SELECT CompetidorUnidadID FROM Comercial_CompetidoresUnidad
     WHERE CompetidorCatalogoID = '{competidor_catalogo_id}' 
-      AND UnidadNegocioID = {UnidadNegocioID}
+      AND UnidadNegocioID = {unidad_negocio_pk}
       AND Activo = 1
     """
     existe_result = execute_sql_query(*conn, existe_query)
@@ -277,8 +277,8 @@ def relacionar_competidor_unidad(
     ) VALUES (
         '{relacion_id}',
         '{competidor_catalogo_id}',
-        {EmpresaID},
-        {UnidadNegocioID},
+        {empresa_id},
+        {unidad_negocio_pk},
         {1 if es_competencia_directa else 0},
         {1 if es_benchmark_aspiracional else 0},
         '{tipo_relacion}',
@@ -321,7 +321,7 @@ def desrelacionar_competidor_unidad(
         FechaModificacion = GETDATE(),
         UsuarioModificacion = N'{usuario}'
     WHERE CompetidorCatalogoID = '{competidor_catalogo_id}'
-      AND UnidadNegocioID = {UnidadNegocioID}
+      AND UnidadNegocioID = {unidad_negocio_pk}
       AND Activo = 1
     """
     

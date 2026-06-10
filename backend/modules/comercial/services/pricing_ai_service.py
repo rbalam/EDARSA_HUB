@@ -450,9 +450,9 @@ def _guardar_analisis_ia(
         '{analisis_id}',
         {producto_id_sql},
         '{codigo_producto}',
-        '{ServerID}',
-        {EmpresaID},
-        {UnidadNegocioID},
+        '{server_id}',
+        {empresa_id},
+        {unidad_negocio_pk},
         '{tipo_analisis.value}',
         '{modelo_ia}',
         '{version_modelo}',
@@ -960,14 +960,17 @@ async def sugerir_comparables_con_ia(
         f"- [{i['competidor']}] {i['producto']} ({i['categoria'] or 'Sin categoría'}): ${i['precio']:.2f}"
         for i in todos_items[:50]  # Limitar a 50 items
     ])
-    
+
+    _pa = datos_producto.get('precio_actual')
+    _precio_actual_txt = f"${_pa:.2f}" if _pa else "No configurado"
+
     prompt = f"""Analiza los siguientes productos de la competencia y sugiere cuáles son comparables con nuestro producto.
 
 NUESTRO PRODUCTO:
 - Nombre: {datos_producto.get('nombre')}
 - Código: {codigo_producto}
 - Familia: {datos_producto.get('familia', 'No especificada')}
-- Precio Actual: ${datos_producto.get('precio_actual', 0):.2f if datos_producto.get('precio_actual') else 'No configurado'}
+- Precio Actual: {_precio_actual_txt}
 
 PRODUCTOS DE COMPETENCIA DISPONIBLES:
 {items_texto}
@@ -1112,6 +1115,7 @@ async def generar_justificacion_con_ia(
     
     cambio_porcentaje = ((precio_propuesto - precio_actual) / precio_actual * 100) if precio_actual > 0 else 0
     margen_propuesto = ((1 - costo / precio_propuesto) * 100) if costo > 0 and precio_propuesto > 0 else None
+    margen_propuesto_txt = f"{margen_propuesto:.1f}%" if margen_propuesto is not None else "N/A (sin costo)"
     
     prompt = f"""Genera una justificación comercial profesional para el siguiente cambio de precio.
 
@@ -1125,7 +1129,7 @@ PRODUCTO:
 PRECIO PROPUESTO:
 - Nuevo Precio: ${precio_propuesto:.2f}
 - Cambio: {cambio_porcentaje:+.1f}%
-- Margen Propuesto: {margen_propuesto:.1f}% si se calcula
+- Margen Propuesto: {margen_propuesto_txt}
 
 CONTEXTO:
 - Restaurante: {contexto_unidad.get('nombre_comercial', 'N/A')}

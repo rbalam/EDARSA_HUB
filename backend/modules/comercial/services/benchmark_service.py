@@ -425,7 +425,7 @@ def obtener_resumen_benchmark(unidad_negocio_pk: int, empresa_id: int) -> Benchm
         SUM(CASE WHEN b.ValidadoPorUsuario = 1 THEN 1 ELSE 0 END) as mapeos_validados,
         MAX(b.FechaModificacion) as ultima_actualizacion
     FROM Comercial_PricingBenchmarkProducto b
-    WHERE b.UnidadNegocioID = {UnidadNegocioID}
+    WHERE b.UnidadNegocioID = {unidad_negocio_pk}
       AND b.Activo = 1
     """
     
@@ -518,7 +518,7 @@ def obtener_estado_preparacion_ia(unidad_negocio_pk: int, empresa_id: int) -> Be
         COUNT(DISTINCT CodigoProducto) as productos_mapeados,
         SUM(CASE WHEN ValidadoPorUsuario = 1 THEN 1 ELSE 0 END) as mapeos_validados
     FROM Comercial_PricingBenchmarkProducto
-    WHERE UnidadNegocioID = {UnidadNegocioID}
+    WHERE UnidadNegocioID = {unidad_negocio_pk}
       AND Activo = 1
     """
     

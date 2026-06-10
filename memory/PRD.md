@@ -13,6 +13,31 @@ Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosist
 Spanish (Español)
 
 ### Estado actualizado (2026-06-11)
+- ✅ **Semáforo de oportunidad de precio (mejora sobre Benchmark Sectorial):** `vista_vs_sector`
+  ahora clasifica cada categoría comparable con umbral configurable (`umbral_pct`, default 15):
+  CARO (>+umbral, rojo), BARATO/oportunidad↑ (<-umbral, verde), ALINEADO. Devuelve resumen
+  `oportunidades{caro,barato,alineado}` + `accion_sugerida`. Frontend: columna "Oportunidad" con
+  semáforo, barra resumen y CTA "Ajustar en Análisis IA" (→ tab `analisis`). Verificado por cURL
+  (ALIMENTOS→BARATO, BEBIDAS→CARO). pytest puro en `tests/test_benchmark_sectorial.py` (5/5).
+- ✅ **C1 — Eliminado `server_id` del módulo Pricing IA (`routes_pricing_ai.py`):**
+  `server_id` ahora es OPCIONAL/legacy en los 3 modelos (AnalizarProducto/SugerirComparables/
+  GenerarJustificacion); se resuelve canónicamente desde `empresa_id`(+`unidad_negocio_pk`) con
+  nuevo `modules/comercial/services/unidad_resolver.resolver_server_id` (vía
+  `Sistema_EmpresasServidores`, RolConexion='PRINCIPAL_SQL'; graceful→None→HTTP 400). Cliente usa
+  filtros canónicos; sin GUID. Backward-compat: si se manda server_id explícito, también funciona.
+  **Bugs latentes preexistentes corregidos (f-strings con variable mal nombrada que provocaban
+  NameError/TypeError y rompían el módulo):**
+    - `pricing_ai_service.py`: `_guardar_analisis_ia` (`{ServerID}/{EmpresaID}/{UnidadNegocioID}`→snake),
+      prompt sugerir-comparables (`:.2f if...`), prompt generar-justificacion (`margen_propuesto` None).
+    - `perfil_unidad_service.py`, `benchmark_service.py`, `competidores_service.py`,
+      `competidores_enterprise_service.py`, `impuestos_service.py`, `precios_vinos_service.py`,
+      `pricing_sugerido_service.py`: `{ServerID}/{UnidadNegocioID}/{EmpresaID}/{SucursalID}`→snake_case.
+  **Verificado por cURL:** los 4 endpoints pricing-ai (analizar-producto/sugerir-comparables/
+  generar-justificacion/analizar-benchmark) responden 200 success SIN server_id (GPT-5.2 real).
+  Regresión 200: benchmark/resumen, benchmark/estado-preparacion, competidores, perfil-unidad,
+  dashboard/metricas, dashboard/estadisticas-competidores. Sin MongoDB, sin hardcode.
+
+### Estado actualizado (2026-06-11) — Sesión previa (RBAC + Benchmark Sectorial)
 - ✅ **P2 RBAC permisos `comercial.*` sembrados (benchmark/competidores/perfil/precios):**
   Causa: los endpoints de Pricing IA/Benchmark usan permisos con formato punto/minúsculas
   (`comercial.benchmark.ver`), pero el motor RBAC (`core/rbac/repository_sql.py`) sólo generaba
