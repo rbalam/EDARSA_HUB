@@ -1670,16 +1670,43 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
     ] : [];
     const unidadNombre = (unidadesNegocio || []).find(u => String(u.id) === String(selectedUnidad) || u.codigo === selectedUnidad)?.nombre || selectedUnidad || '';
     const meta = `Unidad: ${unidadNombre}${parentSucursal ? ' · Sucursal: ' + parentSucursal : ''} · Fecha: ${fechaAuditoria}`;
-    return {
-      columns,
-      rows,
-      meta,
-      sheets: [
-        { name: 'Auditoria Detalle', columns, rows },
-        { name: 'Resumen', columns: [{ key: 'concepto', label: 'Concepto' }, { key: 'valor', label: 'Valor' }], rows: resumenRows },
-      ],
-    };
-  }, [resultados, resumen, unidadesNegocio, selectedUnidad, parentSucursal, fechaAuditoria]);
+
+    const sheets = [
+      { name: 'Auditoria Detalle', columns, rows },
+      { name: 'Resumen', columns: [{ key: 'concepto', label: 'Concepto' }, { key: 'valor', label: 'Valor' }], rows: resumenRows },
+    ];
+
+    // Hoja agrupada por proveedor (solo si el toggle "Agrupar por Proveedor" está activo)
+    if (agruparPorProveedor) {
+      const provColumns = [
+        { key: 'proveedor', label: 'Proveedor' },
+        { key: 'folio_pedido', label: 'Folio Pedido' },
+        { key: 'producto', label: 'Producto' },
+        { key: 'inv_inicial', label: 'Inv. Inicial' },
+        { key: 'movimientos', label: '+ Movimientos' },
+        { key: 'consumos', label: '- Consumos' },
+        { key: 'existencia_teorica', label: 'Teórico (Delta)' },
+        { key: 'inv_fisico', label: 'Físico' },
+        { key: 'diferencia', label: 'Diferencia' },
+        { key: 'costo_unit', label: 'Costo Unit.' },
+        { key: 'importe_diferencia', label: 'Importe' },
+      ];
+      const sorted = [...rows].sort((a, b) =>
+        (a.proveedor || '').localeCompare(b.proveedor || '') ||
+        (a.folio_pedido || '').localeCompare(b.folio_pedido || ''));
+      const groups = {};
+      sorted.forEach(r => { const key = r.proveedor || '(Sin proveedor)'; (groups[key] = groups[key] || []).push(r); });
+      const provRows = [];
+      Object.entries(groups).forEach(([prov, gr]) => {
+        gr.forEach(r => provRows.push({ ...r }));
+        const subImporte = gr.reduce((s, r) => s + (Number(r.importe_diferencia) || 0), 0);
+        provRows.push({ proveedor: `SUBTOTAL ${prov}`, folio_pedido: '', producto: '', importe_diferencia: Math.round(subImporte * 100) / 100 });
+      });
+      if (provRows.length) sheets.push({ name: 'Por Proveedor', columns: provColumns, rows: provRows });
+    }
+
+    return { columns, rows, meta, sheets };
+  }, [resultados, resumen, unidadesNegocio, selectedUnidad, parentSucursal, fechaAuditoria, agruparPorProveedor]);
 
   // Cargar filtros guardados al montar
   useEffect(() => {

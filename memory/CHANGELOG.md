@@ -1,5 +1,14 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-10 PM-4] Frontend Bloque D (Catálogo Enriquecido) + Export Auditoría por proveedor
+- **Bloque D — Catálogo Enriquecido** (`pages/comercial/CatalogoEnriquecido.jsx`, ruta `/comercial/catalogo-enriquecido`):
+  - Pantalla admin SQL-First sobre `/api/comercial/productos-enriquecidos` (3,774 productos). Incluye: indicadores (total/requieren validación/sin marca/sin presentación), filtros (búsqueda, unidad canónica, grupo comercial, marca, categoría, tipo alcohol, requiere validación, estado), tabla paginada (50/pág), edición en diálogo (PUT — verificado que persiste), activar/desactivar (PATCH), importación masiva (.xlsx → UPSERT `/importar`), y export Excel/PDF.
+  - Menú: insertado item `comercial.catalogo_enriquecido` en `Sistema_ModulosMenus` (seed idempotente `tests/seed_menu_catalogo_enriquecido.py`; verificado que aparece en `/sistema/menus/usuario`).
+  - Fix: claves de respuesta de importación alineadas (`insertadas`/`actualizadas`/`omitidas`).
+- **Export Auditoría por proveedor** (`pages/Compras.js`): cuando el toggle "Agrupar por Proveedor" está activo, el export agrega una hoja "Por Proveedor" (ordenada por proveedor/folio con subtotal de importe por proveedor). Solo se incluye cuando el toggle está activo. Compila sin errores; sin regresión en Compras (smoke test sin errores de consola). Nota: el flujo E2E con descarga de la hoja agrupada requiere correr una auditoría completa; la lógica reutiliza `ExportButtons`/`exportUtils` ya validados E2E en Costos.
+- **Backfill 130QRO (cierre):** terminó en ~43 min. Requisiciones 130QRO SÍ poblaron (20), pero `Inventario_Movimientos` quedó en 0 para EmpresaID 2 → probable brecha de mapeo de conceptos MPRO para QRO (similar a "pendientes: tipo" de CIENFUEGOS). Pendiente revisión de mapeo de conceptos QRO.
+
+
 ## [2026-06-10 PM-3] C2 — Unificación KPIs canónicos (COMPLETO + verificado)
 - **Decisión canónica confirmada desde SQL** (`dbo.Comercial_Metricas_Canonicas`, fuente única): promedios usan `ventas_sin_propina` (neto). Convención: `cheque_promedio`=neto/cheques (por cuenta); `ticket_promedio`=neto/pax (por comensal; sinónimo venta_por_pax/consumo_per_capita); `ventas`=neto, `ventas_brutas`=con propina. No requirió decisión del usuario (el catálogo decide).
 - **Tablero Ejecutivo** (`modules/dashboard_ejecutivo/routes.py`): ERA no-canónico (usaba `ventas_total` bruto vía vista + JOIN server_id). Refactorizado a `KPIsCanonicosService.agregados_por_unidad`; KPIs ahora neto + fórmulas canónicas + identidad por UnidadesService. Verificado: endpoint == servicio canónico EXACTO (mayo: neto 16,697,051.34 / 5,980 cheques / 17,150 pax / cheque_prom 2,792.15 / ticket_prom 973.59). Frontend `DashboardEjecutivo.js` re-etiquetado: "Ventas (neto)", "Cheques", "Cheque Prom.", "Consumo/PAX" — UI verificada.

@@ -64,6 +64,7 @@ import { CavaSociosDashboard, SociosList, SocioDetail, SocioForm } from '@/pages
 
 // Costos y Márgenes (FASE 1C-3D)
 import CostosMargenes from '@/pages/comercial/CostosMargenes';
+import CatalogoEnriquecido from '@/pages/comercial/CatalogoEnriquecido';
 
 // Motor de Precios IA y Benchmark (FASE 1C-3I-D)
 import PricingIA from '@/pages/comercial/PricingIA';
@@ -122,6 +123,7 @@ function App() {
               <Route path="comercial/clientes" element={<Navigate to="/crm/cuentas" replace />} />
               {/* FASE 1C-3D: Costos y Márgenes */}
               <Route path="comercial/costos-margenes" element={<CostosMargenes />} />
+              <Route path="comercial/catalogo-enriquecido" element={<CatalogoEnriquecido />} />
               {/* FASE 1C-3I-D: Motor de Precios IA y Benchmark */}
               <Route path="comercial/pricing-ia" element={<PricingIA />} />
               {/* Rutas alternativas comercial/crm → crm principal */}
