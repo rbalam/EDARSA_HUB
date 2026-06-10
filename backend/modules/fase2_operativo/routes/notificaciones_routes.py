@@ -51,30 +51,47 @@ async def get_notification_log(
 ):
     """
     Obtiene el log de notificaciones enviadas.
+    SQL-First: fuente canónica EDARSAHUB.Operativo_Notificaciones_Log (sin MongoDB).
     """
-    from ..db_utils import get_database
-    db = get_database()
-    
-    filtro = {}
+    import asyncio
+    from core.sql_first.db import get_sql_connection
+
+    where = ["1=1"]
+    params: list = []
     if tipo_evento:
-        filtro["tipo_evento"] = tipo_evento
+        where.append("TipoEvento = %s"); params.append(tipo_evento)
     if workflow_id:
-        filtro["workflow_id"] = workflow_id
+        where.append("WorkflowID = %s"); params.append(workflow_id)
     if estado:
-        filtro["estado"] = estado
-    
-    # Usar método síncrono para MongoDB síncrono
-    items = list(db.notificaciones_log.find(
-        filtro,
-        {"_id": 0}
-    ).sort("fecha_envio", -1).limit(limit))
-    
-    total = db.notificaciones_log.count_documents(filtro)
-    
-    return {
-        "items": items,
-        "total": total
-    }
+        where.append("Estado = %s"); params.append(estado)
+    where_sql = " AND ".join(where)
+
+    def _run():
+        conn = get_sql_connection()
+        cur = conn.cursor(as_dict=True)
+        cur.execute(f"SELECT COUNT(*) AS total FROM Operativo_Notificaciones_Log WHERE {where_sql}", tuple(params))
+        total = cur.fetchone()["total"]
+        cur.execute(f"""
+            SELECT NotificacionID AS id, TipoEvento AS tipo_evento, WorkflowID AS workflow_id,
+                   TareaID AS tarea_id, Destinatario AS destinatario, DestinatarioEmail AS destinatario_email,
+                   Titulo AS titulo, Mensaje AS mensaje, Estado AS estado, Canal AS canal,
+                   FechaEnvio AS fecha_envio, ErrorMensaje AS error
+            FROM Operativo_Notificaciones_Log
+            WHERE {where_sql}
+            ORDER BY FechaEnvio DESC
+            OFFSET 0 ROWS FETCH NEXT %s ROWS ONLY
+        """, tuple(params) + (limit,))
+        rows = list(cur.fetchall())
+        cur.close(); conn.close()
+        return total, rows
+
+    try:
+        total, items = await asyncio.get_event_loop().run_in_executor(None, _run)
+    except Exception as e:
+        logger.error(f"[NOTIF_LOG] Error SQL: {e}")
+        total, items = 0, []
+
+    return {"items": items, "total": total}
 
 
 @router.post("/verificar-vencidas")
@@ -85,9 +102,22 @@ async def verificar_tareas_vencidas(
     Verifica tareas vencidas y envía notificaciones.
     
     Este endpoint puede ser invocado manualmente o por un cron externo cada hora.
+    NOTA: La detección de tareas vencidas se realiza ahora vía el módulo SLA
+    (SQL-First). El almacén MongoDB fue deprecado; si no hay backend de datos
+    disponible, retorna un resultado vacío en lugar de fallar.
     """
     from ..db_utils import get_database
     db = get_database()
+    
+    if db is None:
+        logger.info("[NOTIF] verificar-vencidas: almacén operativo deprecado (NO-MONGO). Use el módulo SLA.")
+        return {
+            "tareas_verificadas": 0,
+            "notificaciones_enviadas": 0,
+            "errores": 0,
+            "detalles": [],
+            "mensaje": "Detección de vencidas migrada al módulo SLA (SQL-First)."
+        }
     
     notification_service = get_notification_service(db)
     

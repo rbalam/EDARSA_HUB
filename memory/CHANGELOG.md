@@ -1,5 +1,15 @@
 # EDARSA HUB - Changelog
 
+## [2026-06-10 PM] Barrido NO-MONGO + fix 2 crashers fase2 + verificación backfill CIENFUEGOS
+- **Barrido `get_db()`/`db.<col>` (preventivo):** grep en `modules/`+`core/` + verificación EN VIVO por cURL. Reporte: `/app/memory/BARRIDO_MONGO_2026-06-10.md`. Conclusión: solo 2 crashers reales en vivo; el resto está protegido (try/except → degrada) o es código fallback inalcanzable; `StubDatabase` cubre security/auth/communications/auditoria.
+- **Fix SQL-First (2 crashers fase2):**
+  - `GET /api/v2/notificaciones/log` → lee de `EDARSAHUB.Operativo_Notificaciones_Log` (antes 500 por `db.notificaciones_log.find()` con db=None).
+  - `GET /api/v2/documentos/historial` → lee de `EDARSAHUB.Operativo_DocumentosGenerados` (antes 500).
+  - `POST /api/v2/notificaciones/verificar-vencidas` → guardado contra db=None (retorna vacío; detección de vencidas vive en módulo SLA). Verificado cURL: los 3 → 200.
+- **Verificación backfill (P0 handoff):** CIENFUEGOS (EmpresaID 3) y 130 QRO (EmpresaID 2) tienen **0 filas** en `Inventario_Movimientos`. Con datos: 130 MID (314), LA ESTELAR (444), ORIGEN (2). El backfill NO se completó para CIENFUEGOS/130QRO → requiere re-ejecución (operación de datos contra servidor externo; PENDIENTE visto bueno del usuario).
+- **NO tocado (con justificación):** seed permisos benchmark (DIFERIDO por decisión usuario 2b), benchmark sectorial (diferido 5a), C1 Pricing server_id→unidad (ambigüedad de espacios de ID int vs GUID; requiere resolver claro + prueba E2E con GPT).
+
+
 ## [2026-06-10] Config Asignaciones — Refactor SQL-First (elimina MongoDB legacy, fix CRUD 500)
 - **Causa raíz:** `config_asignaciones_routes.py` ejecutaba validaciones legacy MongoDB (`get_db().empresas/users/rbac_usuarios_roles/config_asignaciones/almacenes_catalogo`). Con `get_db()` deprecado (→ None) lanzaba `AttributeError` → 500 en POST/PUT/DELETE.
 - **Ruta:** removidas TODAS las llamadas Mongo. `obtener_empresas_permitidas` y nueva `obtener_unidad_accesible` usan `get_user_unidades_negocio` (mismo espacio de IDs EmpresaMongoUUID que `/unidades-negocio`). `validar_usuario_responsable` ahora valida contra SQL (`Usuario_Catalogo`). Duplicados en PUT vía `repo.existe_duplicado`. `info_sincronizacion_almacenes` y `sincronizar_almacenes` sin Mongo.

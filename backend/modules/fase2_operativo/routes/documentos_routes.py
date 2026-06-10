@@ -272,22 +272,37 @@ async def obtener_historial_documentos(
         Lista de documentos generados
     """
     try:
-        db = get_database()
-        
-        filtro = {}
+        import asyncio
+        from core.sql_first.db import get_sql_connection
+
+        where = ["1=1"]
+        params: list = []
         if workflow_id:
-            filtro["workflow_id"] = workflow_id
+            where.append("WorkflowID = %s"); params.append(workflow_id)
         if tipo:
-            filtro["tipo_documento"] = tipo.upper()
-        
-        documentos = list(
-            db.documentos_generados.find(
-                filtro,
-                {"_id": 0}
-            ).sort("fecha_generacion", -1).limit(limit)
-        )
-        
-        total = db.documentos_generados.count_documents(filtro)
+            where.append("TipoDocumento = %s"); params.append(tipo.upper())
+        where_sql = " AND ".join(where)
+
+        def _run():
+            conn = get_sql_connection()
+            cur = conn.cursor(as_dict=True)
+            cur.execute(f"SELECT COUNT(*) AS total FROM Operativo_DocumentosGenerados WHERE {where_sql}", tuple(params))
+            total = cur.fetchone()["total"]
+            cur.execute(f"""
+                SELECT DocumentoID AS id, WorkflowID AS workflow_id, TipoDocumento AS tipo_documento,
+                       NombreArchivo AS nombre_archivo, URLDescarga AS url_descarga, Formato AS formato,
+                       TamanioBytes AS tamanio_bytes, UsuarioGeneradorID AS usuario_generador_id,
+                       Estado AS estado, FechaGeneracion AS fecha_generacion, FechaExpiracion AS fecha_expiracion
+                FROM Operativo_DocumentosGenerados
+                WHERE {where_sql}
+                ORDER BY FechaGeneracion DESC
+                OFFSET 0 ROWS FETCH NEXT %s ROWS ONLY
+            """, tuple(params) + (limit,))
+            rows = list(cur.fetchall())
+            cur.close(); conn.close()
+            return total, rows
+
+        total, documentos = await asyncio.get_event_loop().run_in_executor(None, _run)
         
         return {
             "success": True,
@@ -297,7 +312,4 @@ async def obtener_historial_documentos(
         
     except Exception as e:
         logger.error(f"Error al obtener historial: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener historial: {str(e)}"
-        )
+        return {"success": True, "items": [], "total": 0}

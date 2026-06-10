@@ -21,6 +21,7 @@
 - [x] Issue 2 handoff: centralizar selector inventario inicial/final + modales de detalle (movimientos/consumos) entre Análisis (Reportes.js) y Auditoría (Compras.js). (2026-06-09) Creados 3 módulos canónicos: `components/compras/DetalleProductoModal.jsx` (modal único), `hooks/useDetalleProducto.js` (consulta SIEMPRE `/compras/detalle-movimientos` y `/compras/detalle-consumos`, canónicos + NO rompe MPRO/SoftRestaurant) y `lib/inventarioSelectorUtils.js` (fechaMinima + filtrado finales). Ambas pantallas re-cableadas. Análisis deja de usar `/reports/*` (que fallaban) → ahora usa los endpoints buenos. Verificado: webpack OK, eslint limpio, curl shape OK, utils probados con node.
 - [ ] PIC: conectar tarjetas mock "Top Productos" y "Casas/Distribuidores" (DashboardIA) a `Sync_Sales`.
 - [ ] ESTELAR histórico solo desde Jun-2025 (¿fecha real de apertura o datos faltantes?).
+- [ ] **Backfill CIENFUEGOS + 130 QRO** (verificado 2026-06-10): `Inventario_Movimientos` tiene 0 filas para EmpresaID 3 (CIENFUEGOS) y 2 (130 QRO). Re-ejecutar `tests/backfill_inventario.py` para esas unidades (requiere servidor externo alcanzable + visto bueno del usuario).
 - [ ] MongoDB sunset (espera autorización del usuario).
 
 
