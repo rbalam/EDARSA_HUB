@@ -69,41 +69,56 @@ def _iso(v):
     return v.isoformat() if hasattr(v, "isoformat") else str(v)
 
 
+def _period_sql(col: str, group_by: Optional[str]) -> str:
+    """Expresión SQL FORMAT para agrupar por año / mes / día."""
+    g = (group_by or "mes").lower()
+    if g == "anio":
+        return f"FORMAT({col},'yyyy')"
+    if g == "dia":
+        return f"FORMAT({col},'yyyy-MM-dd')"
+    return f"FORMAT({col},'yyyy-MM')"  # mes (default)
+
+
 # ============================================================================
-# 1) VENTAS A 12 PERIODOS
+# 1) VENTAS POR PERIODOS (agrupable por Año / Mes)
 # ============================================================================
 @iscam_router.get("/ventas-periodos")
-async def ventas_periodos(unidad: str = Query(...), meses: int = Query(12, ge=1, le=36)):
+async def ventas_periodos(unidad: str = Query(...), desde: Optional[str] = None, hasta: Optional[str] = None,
+                          group_by: str = Query("mes"), meses: int = Query(12, ge=1, le=36)):
+    gb = group_by if group_by in ("anio", "mes") else "mes"
+    pexpr = _period_sql("s.FechaHora", gb)
+    if desde or hasta:
+        d, h = _rango_fechas(desde, hasta)
+        where, params = "AND s.FechaHora >= %s AND s.FechaHora < %s", (unidad, d, h)
+    else:
+        where, params = "AND s.FechaHora >= DATEADD(MONTH, %s, CAST(GETDATE() AS DATE))", (unidad, -int(meses))
     rows = _q(
-        """
-        SELECT FORMAT(s.FechaHora,'yyyy-MM') AS periodo,
-               SUM(s.MontoTotal) AS venta_total,
-               COUNT(*)          AS cheques,
-               SUM(s.Pax)        AS clientes
+        f"""
+        SELECT {pexpr} AS periodo, SUM(s.MontoTotal) AS venta_total,
+               COUNT(*) AS cheques, SUM(s.Pax) AS clientes
         FROM dbo.Sync_Sales s
-        WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'
-          AND s.FechaHora >= DATEADD(MONTH, %s, CAST(GETDATE() AS DATE))
-        GROUP BY FORMAT(s.FechaHora,'yyyy-MM')
+        WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED' {where}
+        GROUP BY {pexpr}
         ORDER BY periodo DESC
         """,
-        (unidad, -int(meses)),
+        params,
     )
     data = []
     for r in rows:
         venta = _f(r["venta_total"]); cheques = int(r["cheques"] or 0); cli = int(r["clientes"] or 0)
         data.append({
-            "periodo": r["periodo"],
-            "venta_total": round(venta, 2),
-            "cheques": cheques,
-            "clientes": cli,
+            "periodo": r["periodo"], "venta_total": round(venta, 2), "cheques": cheques, "clientes": cli,
             "cheque_promedio": round(venta / cheques, 2) if cheques else 0,
             "consumo_promedio": round(venta / cli, 2) if cli else 0,
         })
-    return {"success": True, "source": "Sync_Sales (canónica)", "unidad": unidad, "periodos": data}
+    return {"success": True, "source": "Sync_Sales (canónica)", "unidad": unidad,
+            "group_by": gb, "periodos": data}
 
 
 @iscam_router.get("/ventas-periodos/productos")
-async def ventas_periodos_productos(unidad: str = Query(...), periodo: str = Query(..., description="YYYY-MM")):
+async def ventas_periodos_productos(unidad: str = Query(...), periodo: str = Query(...),
+                                    group_by: str = Query("mes")):
+    pexpr = _period_sql("s.FechaHora", group_by)
     rows = _q(
         f"""
         SELECT j.prod_id AS codigo, MAX(j.prod_name) AS producto,
@@ -111,7 +126,7 @@ async def ventas_periodos_productos(unidad: str = Query(...), periodo: str = Que
                COUNT(DISTINCT s.id) AS tickets
         FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}
         WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'
-          AND FORMAT(s.FechaHora,'yyyy-MM') = %s
+          AND {pexpr} = %s
         GROUP BY j.prod_id
         ORDER BY importe DESC
         """,
@@ -124,14 +139,16 @@ async def ventas_periodos_productos(unidad: str = Query(...), periodo: str = Que
 
 
 @iscam_router.get("/ventas-periodos/tickets")
-async def ventas_periodos_tickets(unidad: str = Query(...), periodo: str = Query(...), producto: str = Query(...)):
+async def ventas_periodos_tickets(unidad: str = Query(...), periodo: str = Query(...),
+                                  producto: str = Query(...), group_by: str = Query("mes")):
+    pexpr = _period_sql("s.FechaHora", group_by)
     rows = _q(
         f"""
         SELECT s.NumeroTicket AS folio, s.FechaHora AS fecha, s.MontoTotal AS importe_ticket,
                s.Pax AS personas, j.cantidad AS cantidad, j.importe AS importe_producto
         FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}
         WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'
-          AND FORMAT(s.FechaHora,'yyyy-MM') = %s AND j.prod_id = %s
+          AND {pexpr} = %s AND j.prod_id = %s
         ORDER BY s.FechaHora DESC
         """,
         (unidad, periodo, producto),
@@ -147,8 +164,29 @@ async def ventas_periodos_tickets(unidad: str = Query(...), periodo: str = Query
 # ============================================================================
 @iscam_router.get("/cuentas")
 async def resumen_cuentas(unidad: str = Query(...), desde: Optional[str] = None, hasta: Optional[str] = None,
-                          limit: int = Query(500, ge=1, le=2000)):
+                          group_by: str = Query("none"), limit: int = Query(2000, ge=1, le=5000)):
     d, h = _rango_fechas(desde, hasta)
+    if group_by in ("anio", "mes", "dia"):
+        pexpr = _period_sql("s.FechaHora", group_by)
+        rows = _q(
+            f"""
+            SELECT {pexpr} AS periodo, COUNT(*) AS cuentas, SUM(s.MontoTotal) AS importe,
+                   SUM(s.Pax) AS personas
+            FROM dbo.Sync_Sales s
+            WHERE s.UnidadNegocio = %s AND s.FechaHora >= %s AND s.FechaHora < %s
+            GROUP BY {pexpr}
+            ORDER BY periodo DESC
+            """,
+            (unidad, d, h),
+        )
+        agrupado = []
+        for r in rows:
+            imp = _f(r["importe"]); cu = int(r["cuentas"] or 0); pax = int(r["personas"] or 0)
+            agrupado.append({"periodo": r["periodo"], "cuentas": cu, "importe": round(imp, 2),
+                             "personas": pax, "cuenta_promedio": round(imp / cu, 2) if cu else 0,
+                             "consumo_promedio": round(imp / pax, 2) if pax else 0})
+        return {"success": True, "unidad": unidad, "desde": d, "hasta": h, "group_by": group_by,
+                "agrupado": agrupado}
     rows = _q(
         """
         SELECT TOP (%s) s.NumeroTicket AS folio, s.FechaHora AS fecha, s.MontoTotal AS importe,
@@ -159,7 +197,7 @@ async def resumen_cuentas(unidad: str = Query(...), desde: Optional[str] = None,
         """,
         (limit, unidad, d, h),
     )
-    return {"success": True, "unidad": unidad, "desde": d, "hasta": h,
+    return {"success": True, "unidad": unidad, "desde": d, "hasta": h, "group_by": "none",
             "cuentas": [{"folio": r["folio"], "fecha": r["fecha"].isoformat() if r["fecha"] else None,
                          "importe": round(_f(r["importe"]), 2), "personas": int(r["personas"] or 0),
                          "estado": r["estado"], "cuenta_id": r["cuenta_id"]} for r in rows]}
@@ -187,8 +225,26 @@ async def cuenta_detalle(unidad: str = Query(...), folio: str = Query(...)):
 # ============================================================================
 @iscam_router.get("/comandas")
 async def comandas_venta(unidad: str = Query(...), desde: Optional[str] = None, hasta: Optional[str] = None,
-                         limit: int = Query(1000, ge=1, le=5000)):
+                         group_by: str = Query("none"), limit: int = Query(1000, ge=1, le=5000)):
     d, h = _rango_fechas(desde, hasta)
+    if group_by in ("anio", "mes", "dia"):
+        pexpr = _period_sql("s.FechaHora", group_by)
+        rows = _q(
+            f"""
+            SELECT {pexpr} AS periodo, COUNT(*) AS lineas, COUNT(DISTINCT s.id) AS tickets,
+                   SUM(j.cantidad) AS cantidad, SUM(j.importe) AS importe
+            FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}
+            WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'
+              AND s.FechaHora >= %s AND s.FechaHora < %s
+            GROUP BY {pexpr}
+            ORDER BY periodo DESC
+            """,
+            (unidad, d, h),
+        )
+        return {"success": True, "unidad": unidad, "desde": d, "hasta": h, "group_by": group_by,
+                "agrupado": [{"periodo": r["periodo"], "lineas": int(r["lineas"] or 0),
+                              "tickets": int(r["tickets"] or 0), "cantidad": _f(r["cantidad"]),
+                              "importe": round(_f(r["importe"]), 2)} for r in rows]}
     rows = _q(
         f"""
         SELECT TOP (%s) s.NumeroTicket AS folio_cuenta, s.FechaHora AS fecha,
@@ -201,7 +257,7 @@ async def comandas_venta(unidad: str = Query(...), desde: Optional[str] = None, 
         """,
         (limit, unidad, d, h),
     )
-    return {"success": True, "unidad": unidad, "desde": d, "hasta": h,
+    return {"success": True, "unidad": unidad, "desde": d, "hasta": h, "group_by": "none",
             "comandas": [{"folio_cuenta": r["folio_cuenta"], "fecha": r["fecha"].isoformat() if r["fecha"] else None,
                           "clave": r["clave"], "descripcion": r["descripcion"], "cantidad": _f(r["cantidad"]),
                           "precio": round(_f(r["precio"]), 2), "importe": round(_f(r["importe"]), 2)} for r in rows]}
@@ -260,8 +316,31 @@ async def ventas_formas_pago(unidad: str = Query(...), desde: Optional[str] = No
 # ============================================================================
 @iscam_router.get("/formas-pago/por-ticket")
 async def formas_pago_por_ticket(unidad: str = Query(...), desde: Optional[str] = None,
-                                 hasta: Optional[str] = None, limit: int = Query(2000, ge=1, le=10000)):
+                                 hasta: Optional[str] = None, group_by: str = Query("none"),
+                                 limit: int = Query(2000, ge=1, le=10000)):
     d, h = _rango_fechas(desde, hasta)
+    if group_by in ("anio", "mes", "dia"):
+        pexpr = _period_sql("FechaHora", group_by)
+        rows = _q(
+            f"""
+            SELECT {pexpr} AS periodo, FormaPago AS forma, FormaPagoCodigo AS codigo,
+                   COUNT(DISTINCT NumeroTicket) AS tickets, COUNT(*) AS pagos,
+                   SUM(Importe) AS importe, SUM(ISNULL(Propina,0)) AS propina
+            FROM dbo.Finanzas_CortesCaja_DetallePagos
+            WHERE UnidadNegocio = %s AND ISNULL(Activo,1)=1
+              AND FechaHora >= %s AND FechaHora < %s
+            GROUP BY {pexpr}, FormaPago, FormaPagoCodigo
+            ORDER BY periodo DESC, importe DESC
+            """,
+            (unidad, d, h),
+        )
+        tot_i = sum(_f(r["importe"]) for r in rows); tot_p = sum(_f(r["propina"]) for r in rows)
+        return {"success": True, "source": "Finanzas_CortesCaja_DetallePagos (canónica, ticket)",
+                "unidad": unidad, "desde": d, "hasta": h, "group_by": group_by,
+                "totales": {"importe": round(tot_i, 2), "propina": round(tot_p, 2)},
+                "agrupado": [{"periodo": r["periodo"], "forma": r["forma"], "codigo": r["codigo"],
+                              "tickets": int(r["tickets"] or 0), "pagos": int(r["pagos"] or 0),
+                              "importe": round(_f(r["importe"]), 2), "propina": round(_f(r["propina"]), 2)} for r in rows]}
     # Resumen por forma de pago (totales)
     resumen = _q(
         """
@@ -308,15 +387,17 @@ async def formas_pago_por_ticket(unidad: str = Query(...), desde: Optional[str] 
 # 1b) DESGLOSE POR TIPO DE SERVICIO  (drill del Reporte 1, desde Sync_Sales)
 # ============================================================================
 @iscam_router.get("/ventas-periodos/tipos-servicio")
-async def ventas_periodos_tipos_servicio(unidad: str = Query(...), periodo: str = Query(..., description="YYYY-MM")):
+async def ventas_periodos_tipos_servicio(unidad: str = Query(...), periodo: str = Query(...),
+                                         group_by: str = Query("mes")):
+    pexpr = _period_sql("s.FechaHora", group_by)
     rows = _q(
-        """
+        f"""
         SELECT ISNULL(s.TipoServicio, ISNULL(s.TipoServicioID, 'SIN_DATOS')) AS tipo,
                s.TipoServicioID AS tipo_id,
                SUM(s.MontoTotal) AS venta_total, COUNT(*) AS cheques, SUM(s.Pax) AS clientes
         FROM dbo.Sync_Sales s
         WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'
-          AND FORMAT(s.FechaHora,'yyyy-MM') = %s
+          AND {pexpr} = %s
         GROUP BY s.TipoServicio, s.TipoServicioID
         ORDER BY venta_total DESC
         """,

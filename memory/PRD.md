@@ -46,6 +46,25 @@ Spanish (Español)
   sincronizan). Requiere primero poblar/crear el job de sync de detalle. El usuario eligió desbloqueo
   pragmático (B) ahora; A queda como siguiente incremento. ESTADO: PENDIENTE.
 
+### Estado actualizado (2026-06-13) — Reportes ISCAM: agrupación + rango mes-año + exportación
+- ✅ **Agrupación por Año / Mes / Día + "Sin agrupar"** en los reportes ISCAM (backend `group_by` en
+  `iscam_routes.py`, todo NO-LIVE desde Sync_Sales / Finanzas_CortesCaja[_DetallePagos]):
+  - Ventas por Periodo (Año/Mes), Resumen de Cuentas (Año/Mes/Día/Sin agrupar), Comandas
+    (Año/Mes/Día/Sin agrupar), Pagos por Ticket (Año/Mes/Día con desglose por forma de pago / Sin agrupar).
+  - Drills (`/productos`, `/tickets`, `/tipos-servicio`) ahora reciben `group_by` para que el drill por
+    Año/Mes/Día matchee el periodo correcto.
+- ✅ **Selector de periodo por RANGO mes-año** (Desde mes/año → Hasta mes/año) en el frontend; default
+  últimos 12 meses. Reemplaza los date-pickers Desde/Hasta.
+- ✅ **Exportación a Excel y PDF** en todos los reportes (client-side, exporta la vista actual con la
+  agrupación activa), reutilizando el util canónico `portal-inteligencia/utils/exportUtils.js`.
+- 📁 Frontend reescrito: `portal-inteligencia/pages/ReportesISCAMPage.jsx` (toolbar de controles,
+  `GenericTable` para vistas agrupadas, tablas custom + drills para "Sin agrupar", botones export).
+- **Verificado por cURL** (5 reportes × modos de agrupación + detalle, ej. periodos/anio → 2026
+  $14.69M / 2025 $11.38M; pagos-ticket/mes con desglose por forma) y **pytest 6/6**. Frontend compila
+  sin errores. ⚠️ Verificación VISUAL del portal pendiente del usuario (login automatizado bloqueado
+  por reset de sessionStorage del preview — limitación conocida del entorno).
+
+
 ### Estado actualizado (2026-06-13) — Enriquecido por TICKET (tipo de servicio + formas de pago)
 - ✅ **Job de sync ENRIQUECIDO** para poblar, por ticket, desde el POS (SOLO LECTURA, NO-LIVE en
   pantallas), 100% canónico y sin hardcode:
