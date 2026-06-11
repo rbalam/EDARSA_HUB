@@ -665,6 +665,24 @@ def job_inteligencia_comercial_sync(
                     current_date += timedelta(days=1)
                 
                 hub_conn.commit()
+
+                # 4. Enriquecer tipo de servicio + formas de pago por ticket
+                #    (Sync_Sales.TipoServicio* + Finanzas_CortesCaja_DetallePagos).
+                #    No-fatal: un fallo aquí no debe abortar el sync de ventas.
+                try:
+                    from core.scheduler.jobs.inteligencia_comercial_enrich import enrich_unidad
+                    enr = enrich_unidad(unidad, fecha_inicio_str, fecha_fin_str, dry_run=False)
+                    stats.setdefault("enriquecido", []).append(enr)
+                    registrar_syncpos_bitacora(
+                        tipo_ejecucion, "ENRICH_OK" if not enr.get("error") else "ENRICH_ERROR",
+                        f"{unidad}: pagos={enr.get('pagos_insertados')} ts={enr.get('tickets_actualizados')} err={enr.get('error')}",
+                        unidad=unidad, fecha_inicio=fecha_inicio_str, fecha_fin=fecha_fin_str,
+                        tickets=enr.get("tickets_actualizados"), lineas=enr.get("pagos_insertados"),
+                    )
+                except Exception as e:
+                    logger.error(f"[INTELIGENCIA_SYNC] Enriquecido falló para {unidad}: {e}")
+                    stats["errores"].append(f"enrich {unidad}: {str(e)}")
+
                 stats["unidades_procesadas"] += 1
                 
             except Exception as e:

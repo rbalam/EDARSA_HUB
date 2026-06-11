@@ -255,6 +255,84 @@ async def ventas_formas_pago(unidad: str = Query(...), desde: Optional[str] = No
 
 
 # ============================================================================
+# 4b) FORMAS DE PAGO POR TICKET  (NO-LIVE desde dbo.Finanzas_CortesCaja_DetallePagos)
+#     Granularidad TICKET (enriquecida por el job de sync). 1 fila = 1 pago.
+# ============================================================================
+@iscam_router.get("/formas-pago/por-ticket")
+async def formas_pago_por_ticket(unidad: str = Query(...), desde: Optional[str] = None,
+                                 hasta: Optional[str] = None, limit: int = Query(2000, ge=1, le=10000)):
+    d, h = _rango_fechas(desde, hasta)
+    # Resumen por forma de pago (totales)
+    resumen = _q(
+        """
+        SELECT FormaPago AS forma, FormaPagoCodigo AS codigo,
+               COUNT(*) AS pagos, COUNT(DISTINCT NumeroTicket) AS tickets,
+               SUM(Importe) AS importe, SUM(ISNULL(Propina,0)) AS propina
+        FROM dbo.Finanzas_CortesCaja_DetallePagos
+        WHERE UnidadNegocio = %s AND ISNULL(Activo,1)=1
+          AND FechaHora >= %s AND FechaHora < %s
+        GROUP BY FormaPago, FormaPagoCodigo
+        ORDER BY importe DESC
+        """,
+        (unidad, d, h),
+    )
+    # Detalle por pago (limitado)
+    rows = _q(
+        """
+        SELECT TOP (%s) NumeroTicket AS folio, FechaHora AS fecha, FormaPago AS forma,
+               FormaPagoCodigo AS codigo, Importe AS importe, ISNULL(Propina,0) AS propina,
+               Referencia AS referencia, SistemaOrigen AS sistema
+        FROM dbo.Finanzas_CortesCaja_DetallePagos
+        WHERE UnidadNegocio = %s AND ISNULL(Activo,1)=1
+          AND FechaHora >= %s AND FechaHora < %s
+        ORDER BY FechaHora DESC, NumeroTicket DESC
+        """,
+        (limit, unidad, d, h),
+    )
+    tot_importe = sum(_f(r["importe"]) for r in resumen)
+    tot_propina = sum(_f(r["propina"]) for r in resumen)
+    return {
+        "success": True, "source": "Finanzas_CortesCaja_DetallePagos (canónica, ticket)",
+        "unidad": unidad, "desde": d, "hasta": h,
+        "resumen_formas": [{"forma": r["forma"], "codigo": r["codigo"], "pagos": int(r["pagos"] or 0),
+                            "tickets": int(r["tickets"] or 0), "importe": round(_f(r["importe"]), 2),
+                            "propina": round(_f(r["propina"]), 2)} for r in resumen],
+        "totales": {"importe": round(tot_importe, 2), "propina": round(tot_propina, 2)},
+        "pagos": [{"folio": r["folio"], "fecha": _iso(r["fecha"]), "forma": r["forma"], "codigo": r["codigo"],
+                   "importe": round(_f(r["importe"]), 2), "propina": round(_f(r["propina"]), 2),
+                   "referencia": r["referencia"], "sistema": r["sistema"]} for r in rows],
+    }
+
+
+# ============================================================================
+# 1b) DESGLOSE POR TIPO DE SERVICIO  (drill del Reporte 1, desde Sync_Sales)
+# ============================================================================
+@iscam_router.get("/ventas-periodos/tipos-servicio")
+async def ventas_periodos_tipos_servicio(unidad: str = Query(...), periodo: str = Query(..., description="YYYY-MM")):
+    rows = _q(
+        """
+        SELECT ISNULL(s.TipoServicio, ISNULL(s.TipoServicioID, 'SIN_DATOS')) AS tipo,
+               s.TipoServicioID AS tipo_id,
+               SUM(s.MontoTotal) AS venta_total, COUNT(*) AS cheques, SUM(s.Pax) AS clientes
+        FROM dbo.Sync_Sales s
+        WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'
+          AND FORMAT(s.FechaHora,'yyyy-MM') = %s
+        GROUP BY s.TipoServicio, s.TipoServicioID
+        ORDER BY venta_total DESC
+        """,
+        (unidad, periodo),
+    )
+    data = []
+    for r in rows:
+        venta = _f(r["venta_total"]); cheques = int(r["cheques"] or 0)
+        data.append({"tipo": r["tipo"], "tipo_id": r["tipo_id"], "venta_total": round(venta, 2),
+                     "cheques": cheques, "clientes": int(r["clientes"] or 0),
+                     "cheque_promedio": round(venta / cheques, 2) if cheques else 0})
+    return {"success": True, "unidad": unidad, "periodo": periodo, "tipos_servicio": data}
+
+
+
+# ============================================================================
 def _rango_fechas(desde: Optional[str], hasta: Optional[str]):
     """Normaliza rango. Por defecto: últimos 30 días. `hasta` es exclusivo (+1 día)."""
     try:

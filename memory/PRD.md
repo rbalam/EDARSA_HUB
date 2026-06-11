@@ -46,6 +46,38 @@ Spanish (Español)
   sincronizan). Requiere primero poblar/crear el job de sync de detalle. El usuario eligió desbloqueo
   pragmático (B) ahora; A queda como siguiente incremento. ESTADO: PENDIENTE.
 
+### Estado actualizado (2026-06-13) — Enriquecido por TICKET (tipo de servicio + formas de pago)
+- ✅ **Job de sync ENRIQUECIDO** para poblar, por ticket, desde el POS (SOLO LECTURA, NO-LIVE en
+  pantallas), 100% canónico y sin hardcode:
+  - **(a) Tipo de servicio → `dbo.Sync_Sales`** (columnas nuevas `TipoServicioID`/`TipoServicio`).
+    Fuentes: SoftRestaurant `cheques.tipodeservicio` (+catálogo `tiposervicio`); MPRO `Comanda.Co_Tipo`.
+  - **(b) Formas de pago por ticket → `dbo.Finanzas_CortesCaja_DetallePagos`** (tabla canónica
+    existente, antes VACÍA/sin uso; se le agregaron columnas de enlace `UnidadNegocio/NumeroTicket/
+    FechaHora/Propina` y se hizo `CorteCajaID` NULLABLE). Fuentes: SoftRestaurant `chequespagos`+
+    `formasdepago`; MPRO `Comanda_Pago`+`Forma_Pago` (enlace `Co_Folio=Vn_Folio`, verificado).
+  - **Migración** idempotente `migrations/enrich_tiposervicio_detallepagos_20260613.py` (+índices
+    `IX_DetallePagos_Unidad_Ticket/_Fecha`, `IX_SyncSales_Unidad_Ticket`).
+  - **Módulo** `core/scheduler/jobs/inteligencia_comercial_enrich.py` (`enrich_unidad`, idempotente
+    por DELETE+INSERT del rango; inserts multi-fila por performance). Integrado al loop del job
+    `inteligencia_comercial_sync_job` (paso 4, no-fatal) + bitácora `Sistema_SyncPOS_Bitacora`
+    (eventos ENRICH visibles en el Monitor/Scheduler). CLI `scripts/pilot_enrich_tiposervicio_pagos.py`
+    (soporta `--dry-run`).
+  - **Piloto autorizado (1 unidad × 1 mes) cargado y validado:** ESTELAR mayo-2026 (1,881 tickets,
+    2,460 pagos, $2,924,063; idempotente en re-run) y ORIGEN/MPRO mayo-2026 (1,057 tickets, 1,175
+    pagos, $2,448,971). KPIs canónicos NO tocados.
+  - **Consumo ISCAM (NO-LIVE):** 2 endpoints nuevos en `iscam_routes.py`:
+    `GET /inteligencia/iscam/formas-pago/por-ticket` (resumen por forma + detalle por pago, desde
+    DetallePagos) y `GET /inteligencia/iscam/ventas-periodos/tipos-servicio` (desglose del Reporte 1
+    desde Sync_Sales). Frontend `ReportesISCAMPage.jsx`: nueva sub-pestaña **"Pagos por Ticket"** y
+    drill por DOBLE CLIC en la columna Cheques → tipo de servicio. Scoping por unidad intacto (403 en
+    unidad ajena, verificado).
+  - **Verificado por cURL + python -c + pytest** (`tests/test_enrich_tiposervicio_pagos.py`, 6/6).
+    SIN testing_agent. ⚠️ Verificación VISUAL del frontend pendiente del usuario (el screenshot
+    automatizado del portal externo sigue bloqueado por el reset de sessionStorage del preview).
+  - ⏳ **PENDIENTE (escalar):** correr el enriquecido para las 5 unidades × 24 meses (autorización del
+    usuario para el escalado, igual que el backfill de Sync_Sales).
+
+
 ### Estado actualizado (2026-06-12) — Reportes ISCAM (Portal Inteligencia)
 - ✅ **Menú "Reportes ISCAM"** agregado al Portal de Inteligencia Comercial, 100% sobre tablas
   CANÓNICAS (NO-LIVE, sin hardcode, SIN DUPLICAR — reutiliza tablas existentes):

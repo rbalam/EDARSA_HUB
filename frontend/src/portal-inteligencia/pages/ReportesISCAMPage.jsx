@@ -19,6 +19,7 @@ const SUBTABS = [
   { id: 'cuentas', label: 'Resumen de Cuentas', icon: Receipt },
   { id: 'comandas', label: 'Comandas de Venta', icon: ClipboardList },
   { id: 'formas', label: 'Ventas Formas de Pago', icon: CreditCard },
+  { id: 'pagos-ticket', label: 'Pagos por Ticket', icon: CreditCard },
 ];
 
 function Modal({ title, onClose, children }) {
@@ -57,6 +58,7 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
     if (sub === 'periodos') { path = '/inteligencia/iscam/ventas-periodos'; params.meses = 12; }
     else if (sub === 'cuentas') { path = '/inteligencia/iscam/cuentas'; params.desde = desde; params.hasta = hasta; }
     else if (sub === 'comandas') { path = '/inteligencia/iscam/comandas'; params.desde = desde; params.hasta = hasta; }
+    else if (sub === 'pagos-ticket') { path = '/inteligencia/iscam/formas-pago/por-ticket'; params.desde = desde; params.hasta = hasta; }
     else { path = '/inteligencia/iscam/formas-pago'; params.desde = desde; params.hasta = hasta; }
     const res = await apiGet(path, params);
     setEstado(res.estado);
@@ -81,6 +83,11 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
     setDrill({ tipo: 'cuenta', titulo: `Detalle de cuenta — Folio ${folio}`, items: [], loading: true });
     const res = await apiGet('/inteligencia/iscam/cuentas/detalle', { unidad, folio });
     setDrill((d) => ({ ...d, items: res.data?.productos || [], loading: false }));
+  };
+  const drillTiposServicio = async (periodo) => {
+    setDrill({ tipo: 'tipos-servicio', titulo: `Tipo de servicio — ${periodo}`, items: [], loading: true });
+    const res = await apiGet('/inteligencia/iscam/ventas-periodos/tipos-servicio', { unidad, periodo });
+    setDrill((d) => ({ ...d, items: res.data?.tipos_servicio || [], loading: false }));
   };
 
   return (
@@ -126,10 +133,11 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
             <div className="px-4 py-10 text-center text-slate-400">No se pudieron cargar los datos ({estado}).</div>
           ) : (
             <div className="overflow-x-auto">
-              {sub === 'periodos' && <TablaPeriodos data={data} onDrill={drillProductos} />}
+              {sub === 'periodos' && <TablaPeriodos data={data} onDrill={drillProductos} onDrillTipos={drillTiposServicio} />}
               {sub === 'cuentas' && <TablaCuentas data={data} onDrill={drillCuenta} />}
               {sub === 'comandas' && <TablaComandas data={data} />}
               {sub === 'formas' && <TablaFormas data={data} />}
+              {sub === 'pagos-ticket' && <TablaPagosTicket data={data} />}
             </div>
           )}
         </div>
@@ -161,6 +169,15 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
                 ))}
               </tbody>
             </table>
+          ) : drill.tipo === 'tipos-servicio' ? (
+            <table className="w-full">
+              <thead><tr><TH>Tipo de servicio</TH><TH right>Venta Total</TH><TH right>Cheques</TH><TH right>Clientes</TH><TH right>Cheque Prom.</TH></tr></thead>
+              <tbody className="divide-y divide-slate-700">
+                {drill.items.map((t, i) => (
+                  <tr key={i}><TD>{t.tipo}</TD><TD right>{money(t.venta_total)}</TD><TD right>{t.cheques}</TD><TD right>{t.clientes}</TD><TD right>{money(t.cheque_promedio)}</TD></tr>
+                ))}
+              </tbody>
+            </table>
           ) : (
             <table className="w-full">
               <thead><tr><TH>Producto</TH><TH right>Cantidad</TH><TH right>Precio</TH><TH right>Importe</TH></tr></thead>
@@ -177,7 +194,7 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
   );
 }
 
-function TablaPeriodos({ data, onDrill }) {
+function TablaPeriodos({ data, onDrill, onDrillTipos }) {
   const rows = data?.periodos || [];
   if (!rows.length) return <div className="px-4 py-10 text-center text-slate-400">Sin ventas en el rango.</div>;
   return (
@@ -190,7 +207,8 @@ function TablaPeriodos({ data, onDrill }) {
           <tr key={r.periodo} className="hover:bg-slate-700/30">
             <TD mono>{r.periodo}</TD>
             <td className="px-3 py-2 text-sm text-emerald-300 text-right font-semibold cursor-pointer hover:underline" onDoubleClick={() => onDrill(r.periodo)} title="Doble clic: detalle por producto" data-testid={`periodo-venta-${r.periodo}`}>{money(r.venta_total)}</td>
-            <TD right>{r.cheques}</TD><TD right>{money(r.cheque_promedio)}</TD><TD right>{r.clientes}</TD><TD right>{money(r.consumo_promedio)}</TD>
+            <td className="px-3 py-2 text-sm text-sky-300 text-right cursor-pointer hover:underline" onDoubleClick={() => onDrillTipos(r.periodo)} title="Doble clic: por tipo de servicio" data-testid={`periodo-cheques-${r.periodo}`}>{r.cheques}</td>
+            <TD right>{money(r.cheque_promedio)}</TD><TD right>{r.clientes}</TD><TD right>{money(r.consumo_promedio)}</TD>
           </tr>
         ))}
       </tbody>
@@ -260,5 +278,54 @@ function TablaFormas({ data }) {
         </tr>
       </tfoot>
     </table>
+  );
+}
+
+function TablaPagosTicket({ data }) {
+  const resumen = data?.resumen_formas || [];
+  const pagos = data?.pagos || [];
+  const t = data?.totales || {};
+  if (!resumen.length) return <div className="px-4 py-10 text-center text-slate-400">Sin pagos por ticket en el rango. (Requiere que el job de sync haya enriquecido la unidad/periodo).</div>;
+  return (
+    <div className="space-y-4" data-testid="iscam-pagos-ticket">
+      <div>
+        <div className="px-3 py-2 text-xs font-semibold text-emerald-300 uppercase">Resumen por forma de pago</div>
+        <table className="w-full">
+          <thead className="bg-slate-700/40"><tr>
+            <TH>Forma de Pago</TH><TH>Código</TH><TH right>Tickets</TH><TH right>Pagos</TH><TH right>Importe</TH><TH right>Propina</TH>
+          </tr></thead>
+          <tbody className="divide-y divide-slate-700">
+            {resumen.map((r, i) => (
+              <tr key={i} className="hover:bg-slate-700/30" data-testid={`pago-forma-${r.codigo}`}>
+                <TD>{r.forma}</TD><TD mono>{r.codigo}</TD><TD right>{r.tickets}</TD><TD right>{r.pagos}</TD>
+                <TD right>{money(r.importe)}</TD><TD right>{money(r.propina)}</TD>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot className="bg-slate-700/60 font-semibold">
+            <tr>
+              <td className="px-3 py-2 text-sm text-white" colSpan={4}>TOTALES</td>
+              <TD right>{money(t.importe)}</TD><TD right>{money(t.propina)}</TD>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div>
+        <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase">Detalle por pago (máx 2000)</div>
+        <table className="w-full">
+          <thead className="bg-slate-700/40"><tr>
+            <TH>Folio</TH><TH>Fecha</TH><TH>Forma</TH><TH right>Importe</TH><TH right>Propina</TH><TH>Referencia</TH>
+          </tr></thead>
+          <tbody className="divide-y divide-slate-700">
+            {pagos.map((p, i) => (
+              <tr key={i} className="hover:bg-slate-700/30">
+                <TD mono>{p.folio}</TD><TD>{(p.fecha || '').replace('T', ' ').slice(0, 16)}</TD><TD>{p.forma}</TD>
+                <TD right>{money(p.importe)}</TD><TD right>{money(p.propina)}</TD><TD mono>{p.referencia}</TD>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
