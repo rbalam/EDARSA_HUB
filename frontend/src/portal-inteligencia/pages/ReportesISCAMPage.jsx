@@ -31,21 +31,24 @@ const SUBTABS = [
 
 // Opciones de agrupación por reporte
 const GROUP_OPTS = {
-  periodos: [{ id: 'mes', label: 'Mes' }, { id: 'anio', label: 'Año' }],
+  periodos: [{ id: 'dia', label: 'Día' }, { id: 'mes', label: 'Mes' }, { id: 'anio', label: 'Año' }],
   cuentas: [{ id: 'none', label: 'Sin agrupar' }, { id: 'dia', label: 'Día' }, { id: 'mes', label: 'Mes' }, { id: 'anio', label: 'Año' }],
   comandas: [{ id: 'none', label: 'Sin agrupar' }, { id: 'dia', label: 'Día' }, { id: 'mes', label: 'Mes' }, { id: 'anio', label: 'Año' }],
+  formas: [{ id: 'none', label: 'Sin agrupar' }, { id: 'dia', label: 'Día' }, { id: 'mes', label: 'Mes' }, { id: 'anio', label: 'Año' }],
   'pagos-ticket': [{ id: 'none', label: 'Sin agrupar' }, { id: 'dia', label: 'Día' }, { id: 'mes', label: 'Mes' }, { id: 'anio', label: 'Año' }],
-  formas: [],
 };
 const DEFAULT_GROUP = { periodos: 'mes', cuentas: 'mes', comandas: 'mes', 'pagos-ticket': 'mes', formas: 'none' };
 
-function Modal({ title, onClose, children }) {
+function Modal({ title, onClose, headerAction, children }) {
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-slate-800 border border-slate-700 rounded-xl w-full max-w-3xl max-h-[85vh] overflow-auto" onClick={(e) => e.stopPropagation()} data-testid="iscam-drill-modal">
         <div className="sticky top-0 bg-slate-800 border-b border-slate-700 px-5 py-3 flex items-center justify-between">
           <h3 className="text-white font-semibold text-sm">{title}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white"><X className="h-4 w-4" /></button>
+          <div className="flex items-center gap-2">
+            {headerAction}
+            <button onClick={onClose} className="text-slate-400 hover:text-white"><X className="h-4 w-4" /></button>
+          </div>
         </div>
         <div className="p-4">{children}</div>
       </div>
@@ -148,6 +151,24 @@ function buildDescriptor(sub, groupBy, data) {
     };
   }
   // formas (corte)
+  if (grouped) {
+    return {
+      title: 'Formas de Pago — Corte (agrupado)',
+      columns: [
+        { key: 'periodo', label: 'Periodo', tipo: 'text' },
+        { key: 'cortes', label: 'Cortes', tipo: 'int' },
+        { key: 'total', label: 'Total', tipo: 'money' },
+        { key: 'efectivo', label: 'Efectivo', tipo: 'money' },
+        { key: 'tarjeta', label: 'Tarjeta', tipo: 'money' },
+        { key: 'amex', label: 'Amex', tipo: 'money' },
+        { key: 'vales', label: 'Vales', tipo: 'money' },
+        { key: 'otros', label: 'Otros', tipo: 'money' },
+        { key: 'propina', label: 'Propina', tipo: 'money' },
+        { key: 'comision', label: 'Comisión', tipo: 'money' },
+      ],
+      rows: data?.agrupado || [],
+    };
+  }
   return {
     title: 'Formas de Pago (Corte de Caja)',
     columns: [
@@ -219,7 +240,7 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
     else if (sub === 'cuentas') { path = '/inteligencia/iscam/cuentas'; params.group_by = groupBy; }
     else if (sub === 'comandas') { path = '/inteligencia/iscam/comandas'; params.group_by = groupBy; }
     else if (sub === 'pagos-ticket') { path = '/inteligencia/iscam/formas-pago/por-ticket'; params.group_by = groupBy; }
-    else { path = '/inteligencia/iscam/formas-pago'; }
+    else { path = '/inteligencia/iscam/formas-pago'; params.group_by = groupBy; }
     const res = await apiGet(path, params);
     setEstado(res.estado);
     setData(res.estado === ESTADO.OK ? res.data : null);
@@ -248,6 +269,23 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
     setDrill({ tipo: 'tipos-servicio', titulo: `Tipo de servicio — ${periodo}`, items: [], loading: true });
     const res = await apiGet('/inteligencia/iscam/ventas-periodos/tipos-servicio', { unidad, periodo, group_by: groupBy });
     setDrill((d) => ({ ...d, items: res.data?.tipos_servicio || [], loading: false }));
+  };
+
+  const DRILL_COLS = {
+    productos: [{ key: 'producto', label: 'Producto' }, { key: 'cantidad', label: 'Cantidad' }, { key: 'importe', label: 'Venta Total' }, { key: 'tickets', label: 'Tickets' }],
+    tickets: [{ key: 'folio', label: 'Folio' }, { key: 'fecha', label: 'Fecha' }, { key: 'cantidad', label: 'Cantidad' }, { key: 'importe_producto', label: 'Importe Producto' }, { key: 'importe_ticket', label: 'Importe Ticket' }],
+    'tipos-servicio': [{ key: 'tipo', label: 'Tipo de Servicio' }, { key: 'venta_total', label: 'Venta Total' }, { key: 'cheques', label: 'Cheques' }, { key: 'clientes', label: 'Clientes' }, { key: 'cheque_promedio', label: 'Cheque Prom.' }],
+    cuenta: [{ key: 'producto', label: 'Producto' }, { key: 'cantidad', label: 'Cantidad' }, { key: 'precio', label: 'Precio' }, { key: 'importe', label: 'Importe' }],
+  };
+  const exportDrillExcel = () => {
+    if (!drill?.items?.length) return;
+    const cols = DRILL_COLS[drill.tipo] || DRILL_COLS.cuenta;
+    exportToExcel(`ISCAM_${drill.tipo}_${unidad}`, [{ name: 'Detalle', columns: cols, rows: drill.items }]);
+  };
+  const exportDrillPdf = () => {
+    if (!drill?.items?.length) return;
+    const cols = DRILL_COLS[drill.tipo] || DRILL_COLS.cuenta;
+    exportToPDF(drill.titulo, cols, drill.items, unidad);
   };
 
   // ---- Exportación ----
@@ -353,7 +391,9 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
               {sub === 'comandas' && (groupBy !== 'none'
                 ? <GenericTable columns={descriptor.columns} rows={descriptor.rows} />
                 : <TablaComandas data={data} />)}
-              {sub === 'formas' && <TablaFormas data={data} />}
+              {sub === 'formas' && (groupBy !== 'none'
+                ? <GenericTable columns={descriptor.columns} rows={descriptor.rows} />
+                : <TablaFormas data={data} />)}
               {sub === 'pagos-ticket' && (groupBy !== 'none'
                 ? <GenericTable columns={descriptor.columns} rows={descriptor.rows} />
                 : <TablaPagosTicket data={data} />)}
@@ -364,7 +404,20 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
 
       {/* Modales drill */}
       {drill && (
-        <Modal title={drill.titulo} onClose={() => setDrill(null)}>
+        <Modal title={drill.titulo} onClose={() => setDrill(null)} headerAction={
+          !drill.loading && drill.items?.length ? (
+            <>
+              <button onClick={exportDrillExcel} data-testid="iscam-drill-export-excel"
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-emerald-600 text-white hover:bg-emerald-500">
+                <FileSpreadsheet className="h-3.5 w-3.5" /> Excel
+              </button>
+              <button onClick={exportDrillPdf} data-testid="iscam-drill-export-pdf"
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-rose-600 text-white hover:bg-rose-500">
+                <FileText className="h-3.5 w-3.5" /> PDF
+              </button>
+            </>
+          ) : null
+        }>
           {drill.loading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-emerald-400" /></div>
           ) : drill.tipo === 'productos' ? (

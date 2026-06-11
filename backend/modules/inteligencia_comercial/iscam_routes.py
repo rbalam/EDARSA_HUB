@@ -85,7 +85,7 @@ def _period_sql(col: str, group_by: Optional[str]) -> str:
 @iscam_router.get("/ventas-periodos")
 async def ventas_periodos(unidad: str = Query(...), desde: Optional[str] = None, hasta: Optional[str] = None,
                           group_by: str = Query("mes"), meses: int = Query(12, ge=1, le=36)):
-    gb = group_by if group_by in ("anio", "mes") else "mes"
+    gb = group_by if group_by in ("anio", "mes", "dia") else "mes"
     pexpr = _period_sql("s.FechaHora", gb)
     if desde or hasta:
         d, h = _rango_fechas(desde, hasta)
@@ -268,11 +268,40 @@ async def comandas_venta(unidad: str = Query(...), desde: Optional[str] = None, 
 # ============================================================================
 @iscam_router.get("/formas-pago")
 async def ventas_formas_pago(unidad: str = Query(...), desde: Optional[str] = None, hasta: Optional[str] = None,
-                             limit: int = Query(1000, ge=1, le=5000)):
+                             group_by: str = Query("none"), limit: int = Query(1000, ge=1, le=5000)):
     nombre = _nombre_unidad(unidad)
     if not nombre:
         raise HTTPException(status_code=404, detail=f"No se pudo resolver la unidad '{unidad}'")
     d, h = _rango_fechas(desde, hasta)
+    if group_by in ("anio", "mes", "dia"):
+        pexpr = _period_sql("FechaCierre", group_by)
+        rows = _q(
+            f"""
+            SELECT {pexpr} AS periodo,
+                   SUM(ISNULL(TotalVenta,0)) AS total, SUM(ISNULL(TotalEfectivo,0)) AS efectivo,
+                   SUM(ISNULL(TotalTarjetaDebito,0)+ISNULL(TotalTarjetaCredito,0)) AS tarjeta,
+                   SUM(ISNULL(TotalAmex,0)) AS amex, SUM(ISNULL(TotalVales,0)) AS vales,
+                   SUM(ISNULL(TotalOtros,0)) AS otros, SUM(ISNULL(Propinas,0)) AS propina,
+                   SUM(ISNULL(ComisionDebito,0)+ISNULL(ComisionCredito,0)+ISNULL(ComisionAmex,0)+ISNULL(ComisionInternacional,0)) AS comision,
+                   COUNT(*) AS cortes
+            FROM dbo.Finanzas_CortesCaja
+            WHERE UnidadNegocioNombre = %s AND ISNULL(Activo,1)=1
+              AND FechaCierre >= %s AND FechaCierre < %s
+            GROUP BY {pexpr}
+            ORDER BY periodo DESC
+            """,
+            (nombre, d, h),
+        )
+        agrupado = [{"periodo": r["periodo"], "cortes": int(r["cortes"] or 0),
+                     "total": round(_f(r["total"]), 2), "efectivo": round(_f(r["efectivo"]), 2),
+                     "tarjeta": round(_f(r["tarjeta"]), 2), "amex": round(_f(r["amex"]), 2),
+                     "vales": round(_f(r["vales"]), 2), "otros": round(_f(r["otros"]), 2),
+                     "propina": round(_f(r["propina"]), 2), "comision": round(_f(r["comision"]), 2)} for r in rows]
+        tot = {k: round(sum(a[k] for a in agrupado), 2) for k in
+               ("total", "efectivo", "tarjeta", "amex", "vales", "otros", "propina", "comision")}
+        return {"success": True, "source": "Finanzas_CortesCaja (canónica, compartida)", "unidad": unidad,
+                "unidad_nombre": nombre, "desde": d, "hasta": h, "group_by": group_by,
+                "totales": tot, "agrupado": agrupado}
     rows = _q(
         """
         SELECT TOP (%s) FolioCorte AS folio, FechaCierre AS fecha, TotalVenta AS total,
