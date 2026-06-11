@@ -15,10 +15,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 // FASE P1-FETCH-MIGRATION: Migrado a api.js centralizado
 import { getFilterLabel } from '../utils/styleHelpers';
+import UsuariosInteligencia from './UsuariosInteligencia';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 export default function Proveedores() {
+  const [adminTab, setAdminTab] = useState('proveedores'); // 'proveedores' | 'inteligencia'
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -210,6 +212,18 @@ export default function Proveedores() {
         </div>
       </div>
 
+      {/* Pestañas de administración */}
+      <div className="flex gap-2 border-b border-zinc-200">
+        <button onClick={() => setAdminTab('proveedores')} data-testid="tab-proveedores"
+          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${adminTab === 'proveedores' ? 'border-zinc-900 text-zinc-900' : 'border-transparent text-zinc-500 hover:text-zinc-700'}`}>Proveedores</button>
+        <button onClick={() => setAdminTab('inteligencia')} data-testid="tab-usuarios-inteligencia"
+          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${adminTab === 'inteligencia' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-zinc-500 hover:text-zinc-700'}`}>Usuarios Inteligencia</button>
+      </div>
+
+      {adminTab === 'inteligencia' && <UsuariosInteligencia />}
+
+      {adminTab === 'proveedores' && (
+      <>
       {/* Filtros y búsqueda */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex gap-2">
@@ -359,6 +373,8 @@ export default function Proveedores() {
           </tbody>
         </table>
       </div>
+      </>
+      )}
 
       {/* Modal de detalle/aprobación */}
       {showModal && selectedSupplier && (

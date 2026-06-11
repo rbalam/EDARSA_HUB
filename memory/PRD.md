@@ -46,6 +46,29 @@ Spanish (Español)
   sincronizan). Requiere primero poblar/crear el job de sync de detalle. El usuario eligió desbloqueo
   pragmático (B) ahora; A queda como siguiente incremento. ESTADO: PENDIENTE.
 
+### Estado actualizado (2026-06-12) — Portal Inteligencia Comercial EXTERNO (login propio + scoping)
+- ✅ **Feature: Portal de Inteligencia Comercial como portal EXTERNO** (como Proveedores), priorizado por
+  el usuario. Antes solo accedían usuarios internos del CRM. Ahora:
+  - **Backend (100% SQL, NO-Mongo)**: tabla canónica `dbo.Portal_Inteligencia_Usuarios`
+    (migración `migrations/portal_intel_usuarios_20260612.py`) con usuarios externos (email, bcrypt,
+    `UnidadesAsignadas` JSON, activo). Nuevo router `routes/portal_inteligencia.py`:
+    auth propia (cookie httpOnly `edarsa_intel_access_token`, JWT type `portal_intel`, bcrypt passlib)
+    + endpoints admin CRUD (`/api/portal-intel/admin/usuarios`, protegidos por admin CRM).
+  - **Guard DUAL** `intel_portal_guard` aplicado al router `/api/inteligencia/*`: acepta usuario INTERNO
+    del CRM (acceso completo) O EXTERNO del portal (restringido a sus unidades). Para externos exige
+    `unidad` ∈ asignadas (bloquea "todas" y unidades ajenas con 403). `/inteligencia/unidades` devuelve
+    solo las unidades del externo. NOTA: esto cerró un hueco — los endpoints de inteligencia ahora
+    exigen sesión (antes estaban abiertos).
+  - **Frontend**: login externo propio (`portal-inteligencia/pages/LoginInteligencia.jsx`), cliente API
+    dedicado (cookie + Bearer, sin redirección al CRM), `App.jsx` con sesión DUAL, dropdown de unidades
+    acotado (sin "Todas" para externos), oculta vista "Clasificación (admin)". Admin de usuarios externos
+    integrada como pestaña **"Usuarios Inteligencia"** en la pantalla de Proveedores
+    (`pages/UsuariosInteligencia.jsx`): CRUD + asignación de unidades con checkboxes.
+  - **Verificado** (cURL + screenshots, sin testing_agent): login externo OK, scoping de unidades
+    (solo asignadas), 403 en unidad ajena/"todas", 401 sin sesión, admin CRUD operativo, coexiste con
+    acceso interno. Credenciales de prueba creadas: socio@externo.com / socio123 (ORIGEN, LA ESTELAR).
+  - ⏳ **Subdominio propio** (ej. inteligencia.edarsa.com.mx): pendiente, se gestiona con Soporte Emergent.
+
 ### Estado actualizado (2026-06-12) — Catálogo Canónico de Sincronizaciones (agrupación + dependencias)
 - ✅ **Feature: sincronizaciones agrupadas con ejecución grupo/individual + sugerencia por dependencias.**
   Solicitado por el usuario. Antes el panel Re-sync exponía UN solo tipo hardcodeado.

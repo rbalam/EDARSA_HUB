@@ -1455,37 +1455,39 @@ async def get_ventas_casas(
 # ENDPOINT: Unidades de Negocio disponibles
 # ============================================================================
 @router.get("/unidades")
-async def get_unidades_negocio():
-    """Lista de unidades de negocio activas."""
+async def get_unidades_negocio(request: Request):
+    """Lista de unidades de negocio activas.
+    Si el llamante es un usuario EXTERNO del portal de inteligencia, se devuelven
+    SOLO las unidades asignadas a su cuenta (scoping)."""
+    # Scoping para usuarios externos (intel_portal_guard fija request.state.intel_unidades)
+    allowed = getattr(request.state, "intel_unidades", None)
     try:
         # P1 REFACTORIZADO: Usar UnidadesService (SQL-First)
         unidades = _pic_unidades_activas()
-        
-        return {
-            "success": True,
-            "unidades": [
-                {
-                    "codigo": u.get("codigo"),
-                    "nombre": u.get("nombre"),
-                    "sistema": u.get("system_type", "N/A")
-                }
-                for u in unidades
-            ]
-        }
+        lista = [
+            {
+                "codigo": u.get("codigo"),
+                "nombre": u.get("nombre"),
+                "sistema": u.get("system_type", "N/A")
+            }
+            for u in unidades
+        ]
+        if allowed is not None:
+            lista = [u for u in lista if u["codigo"] in allowed]
+        return {"success": True, "unidades": lista}
     except Exception as e:
         logger.error(f"[INTELIGENCIA] Error unidades: {e}")
         # Fallback también usa UnidadesService (cache interno)
         try:
             from core.unidades_service import UnidadesService
             unidades = UnidadesService.get_all()
-            return {
-                "success": True,
-                "_source": "FALLBACK_UNIDADES_SERVICE",
-                "unidades": [
-                    {"codigo": u.get("codigo"), "nombre": u.get("nombre"), "sistema": u.get("system_type", "N/A")}
-                    for u in unidades
-                ]
-            }
+            lista = [
+                {"codigo": u.get("codigo"), "nombre": u.get("nombre"), "sistema": u.get("system_type", "N/A")}
+                for u in unidades
+            ]
+            if allowed is not None:
+                lista = [u for u in lista if u["codigo"] in allowed]
+            return {"success": True, "_source": "FALLBACK_UNIDADES_SERVICE", "unidades": lista}
         except:
             return {"success": False, "unidades": [], "error": str(e)}
 

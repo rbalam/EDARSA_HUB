@@ -550,8 +550,14 @@ api_router.include_router(competidores_enterprise_router)
 # NOTA: Portal EXTERNO sin autenticación del CRM principal
 # ============================================================================
 from modules.inteligencia_comercial.routes import router as inteligencia_router
-# Módulo de inteligencia comercial ya incluye su propia configuración
-api_router.include_router(inteligencia_router)
+# Portal Inteligencia EXTERNO: auth propia + guard de scoping por unidad
+from routes.portal_inteligencia import router as portal_intel_router, intel_portal_guard
+from fastapi import Depends as _DependsIntel
+# Módulo de inteligencia comercial ya incluye su propia configuración.
+# Guard DUAL: usuarios internos del CRM (acceso completo) O externos del portal
+# de inteligencia (restringidos a sus unidades asignadas).
+api_router.include_router(inteligencia_router, dependencies=[_DependsIntel(intel_portal_guard)])
+api_router.include_router(portal_intel_router)
 
 # ============================================================================
 # REPORTEADOR BI — Informe Gerencial MECA MPRO (9 páginas)

@@ -29,6 +29,8 @@ import AnalisisPAXPage from './pages/AnalisisPAXPage';
 import BenchmarkGrupoPage from './pages/BenchmarkGrupoPage';
 import api, { getToken } from '../lib/api';
 import { ShieldAlert } from 'lucide-react';
+import { intelApi, getMeIntel, logoutIntel, haySesionIntel } from './api/client';
+import LoginInteligencia from './pages/LoginInteligencia';
 
 // Mensajes honestos de sesión (sin modo demo).
 const MENSAJES_AUTH = {
@@ -65,6 +67,7 @@ function AuthGate({ estado }) {
 export default function PortalInteligenciaApp() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [user, setUser] = useState(null);
+  const [esExterno, setEsExterno] = useState(false);
   const [authEstado, setAuthEstado] = useState('CARGANDO'); // CARGANDO | OK | SIN_SESION | SESION_EXPIRADA | SIN_PERMISO
   const [loading, setLoading] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -77,37 +80,61 @@ export default function PortalInteligenciaApp() {
   }, []);
 
   // Unidades dinámicas desde SQL (sin hardcode) una vez autenticado.
+  // El backend ya filtra por las unidades asignadas si el usuario es EXTERNO.
   useEffect(() => {
     if (authEstado !== 'OK') return;
     (async () => {
       try {
-        const res = await api.get('/inteligencia/unidades');
-        setUnidades(res.data?.unidades || []);
+        const res = await intelApi.get('/inteligencia/unidades');
+        const lista = res.data?.unidades || [];
+        setUnidades(lista);
+        // Externo: no existe vista consolidada; pre-seleccionar su primera unidad.
+        if (esExterno && lista.length > 0) {
+          setUnidadSeleccionada((prev) => (prev === 'todas' ? lista[0].codigo : prev));
+        }
       } catch { setUnidades([]); }
     })();
-  }, [authEstado]);
+  }, [authEstado, esExterno]);
 
-  // Sesión SIEMPRE con el token operativo vigente (Bearer desde sessionStorage,
-  // misma fuente canónica que el CRM principal: lib/api.js::getToken). SIN modo demo.
+  // Sesión DUAL: 1) interno (Bearer del CRM)  2) externo (cookie del portal).
   const checkSession = async () => {
-    if (!getToken()) {
-      setAuthEstado('SIN_SESION');
-      setLoading(false);
-      return;
+    // 1) Usuario interno del CRM
+    if (getToken()) {
+      try {
+        const res = await intelApi.get('/auth/me');
+        setUser(res.data);
+        setEsExterno(false);
+        setAuthEstado('OK');
+        setLoading(false);
+        return;
+      } catch (err) {
+        const status = err?.response?.status;
+        if (status === 403) { setAuthEstado('SIN_PERMISO'); setLoading(false); return; }
+        // si 401, intentamos sesión externa abajo
+      }
     }
-    try {
-      const res = await api.get('/auth/me');
-      setUser(res.data);
-      setAuthEstado('OK');
-    } catch (err) {
-      const status = err?.response?.status;
-      setAuthEstado(status === 403 ? 'SIN_PERMISO' : 'SESION_EXPIRADA');
-    } finally {
-      setLoading(false);
+    // 2) Usuario externo del portal (cookie)
+    if (haySesionIntel()) {
+      const me = await getMeIntel();
+      if (me.ok) {
+        setUser(me.user);
+        setEsExterno(true);
+        setAuthEstado('OK');
+        setLoading(false);
+        return;
+      }
     }
+    setAuthEstado('SIN_SESION');
+    setLoading(false);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (esExterno) {
+      await logoutIntel();
+      setUser(null);
+      window.location.reload();
+      return;
+    }
     setUser(null);
     window.location.href = '/';
   };
@@ -123,6 +150,14 @@ export default function PortalInteligenciaApp() {
     );
   }
 
+  // Usuario no autenticado: mostrar LOGIN EXTERNO propio (no redirigir al CRM).
+  if (authEstado === 'SIN_SESION' || authEstado === 'SESION_EXPIRADA') {
+    return (
+      <LoginInteligencia
+        onSuccess={(u) => { setUser(u); setEsExterno(true); setAuthEstado('OK'); }}
+      />
+    );
+  }
   if (authEstado !== 'OK') {
     return <AuthGate estado={authEstado} />;
   }
@@ -139,7 +174,8 @@ export default function PortalInteligenciaApp() {
     { id: 'benchmark', label: 'Benchmark Grupo', icon: TrendingUp },
     { id: 'reporteador-bi', label: 'Reporteador BI', icon: LineChart },
     { id: 'clasificacion', label: 'Clasificación (admin)', icon: Tag },
-  ];
+  // Usuarios EXTERNOS: solo vistas de consulta (sin administración/clasificación).
+  ].filter((item) => !esExterno || item.id !== 'clasificacion');
 
   const renderPage = () => {
     const props = { 
@@ -201,7 +237,7 @@ export default function PortalInteligenciaApp() {
             data-testid="unidad-selector"
             className="w-full bg-slate-700 text-white text-sm rounded px-2 py-1.5 border border-slate-600 focus:border-emerald-400 focus:outline-none"
           >
-            <option value="todas">Todas las Unidades</option>
+            {!esExterno && <option value="todas">Todas las Unidades</option>}
             {unidades.map((u) => (
               <option key={u.codigo} value={u.codigo}>{u.nombre || u.codigo}</option>
             ))}
@@ -282,7 +318,7 @@ export default function PortalInteligenciaApp() {
                   data-testid="inteligencia-logout-btn"
                 >
                   <LogOut className="h-4 w-4" />
-                  Salir al CRM
+                  {esExterno ? 'Cerrar sesión' : 'Salir al CRM'}
                 </button>
               </div>
             )}

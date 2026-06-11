@@ -1,14 +1,20 @@
 /**
- * Cliente API ÚNICO del Portal de Inteligencia Comercial.
- * ======================================================
- * Reutiliza el cliente canónico del CRM (`lib/api.js`):
- *   - Token operativo vigente (Bearer) desde sessionStorage (`edarsa_memory_token`).
- *   - Interceptor con refresh silencioso de sesión.
- *   - En rutas /inteligencia-comercial NO fuerza redirección a /login.
- * Sin cookies de demo, sin datos mock. Devuelve estados canónicos para que
- * cada pantalla muestre estados honestos.
+ * Cliente API del Portal de Inteligencia Comercial.
+ * ================================================
+ * Soporta DOS modos de sesión:
+ *   1. INTERNO (usuario del CRM): Bearer token desde sessionStorage (lib/api::getToken).
+ *   2. EXTERNO (usuario del portal): cookie httpOnly `edarsa_intel_access_token`
+ *      (se envía automáticamente con withCredentials). Marcamos un flag local
+ *      `edarsa_intel_session` para saber que hay sesión externa activa.
+ *
+ * Usa una instancia axios DEDICADA (sin la redirección a /login del CRM) para que
+ * el portal maneje sus propios estados de sesión. Sin mocks.
  */
-import api, { getToken } from '../../lib/api';
+import axios from 'axios';
+import { getToken } from '../../lib/api';
+
+const API_URL = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const INTEL_SESSION_FLAG = 'edarsa_intel_session';
 
 export const ESTADO = {
   CARGANDO: 'CARGANDO',
@@ -20,16 +26,56 @@ export const ESTADO = {
   ERROR: 'ERROR',
 };
 
-export const haySesion = () => !!getToken();
+// Instancia dedicada: envía cookie (externo) y Bearer si hay sesión interna.
+const intelApi = axios.create({ baseURL: API_URL, withCredentials: true, timeout: 35000 });
+intelApi.interceptors.request.use((config) => {
+  const t = getToken();
+  if (t) config.headers.Authorization = `Bearer ${t}`;
+  return config;
+});
 
-/**
- * GET autenticado. `path` es relativo a /api (p.ej. '/inteligencia/dashboard').
- * Retorna { estado, data, status }.
- */
+export const haySesionIntel = () => {
+  try { return sessionStorage.getItem(INTEL_SESSION_FLAG) === '1'; } catch { return false; }
+};
+const setIntelSessionFlag = () => { try { sessionStorage.setItem(INTEL_SESSION_FLAG, '1'); } catch {} };
+const clearIntelSessionFlag = () => { try { sessionStorage.removeItem(INTEL_SESSION_FLAG); } catch {} };
+
+export const haySesion = () => !!getToken() || haySesionIntel();
+
+/** Login de usuario EXTERNO. Devuelve { ok, user, error }. */
+export async function loginIntel(email, password) {
+  try {
+    const res = await intelApi.post('/portal-intel/auth/login', { email, password });
+    setIntelSessionFlag();
+    return { ok: true, user: res.data?.user };
+  } catch (err) {
+    const detail = err?.response?.data?.detail;
+    return { ok: false, error: typeof detail === 'string' ? detail : 'No se pudo iniciar sesión' };
+  }
+}
+
+/** Perfil del usuario EXTERNO (valida cookie). */
+export async function getMeIntel() {
+  try {
+    const res = await intelApi.get('/portal-intel/auth/me');
+    setIntelSessionFlag();
+    return { ok: true, user: res.data };
+  } catch {
+    clearIntelSessionFlag();
+    return { ok: false, user: null };
+  }
+}
+
+export async function logoutIntel() {
+  try { await intelApi.post('/portal-intel/auth/logout'); } catch {}
+  clearIntelSessionFlag();
+}
+
+/** GET autenticado. `path` relativo a /api. Retorna { estado, data, status }. */
 export async function apiGet(path, params) {
-  if (!getToken()) return { estado: ESTADO.SIN_SESION, data: null, status: 0 };
+  if (!haySesion()) return { estado: ESTADO.SIN_SESION, data: null, status: 0 };
   try {
-    const res = await api.get(path, { params, timeout: 35000 });
+    const res = await intelApi.get(path, { params });
     return { estado: ESTADO.OK, data: res.data, status: res.status };
   } catch (err) {
     const status = err?.response?.status;
@@ -39,13 +85,11 @@ export async function apiGet(path, params) {
   }
 }
 
-/**
- * POST autenticado. Retorna { estado, data, status }.
- */
+/** POST autenticado. Retorna { estado, data, status }. */
 export async function apiPost(path, payload) {
-  if (!getToken()) return { estado: ESTADO.SIN_SESION, data: null, status: 0 };
+  if (!haySesion()) return { estado: ESTADO.SIN_SESION, data: null, status: 0 };
   try {
-    const res = await api.post(path, payload, { timeout: 35000 });
+    const res = await intelApi.post(path, payload);
     return { estado: ESTADO.OK, data: res.data, status: res.status };
   } catch (err) {
     const status = err?.response?.status;
@@ -54,3 +98,5 @@ export async function apiPost(path, payload) {
     return { estado: ESTADO.ERROR, data: null, status: status || 0 };
   }
 }
+
+export { intelApi };
