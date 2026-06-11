@@ -151,7 +151,8 @@ TIPOS_SYNC = {
         'rango_max_dias': 30,
         'nivel_riesgo': 'MEDIO',
         'separa_propinas': True,
-        'campo_venta_sin_propina': 'ventas_sin_propina'
+        'campo_venta_sin_propina': 'ventas_sin_propina',
+        'handler_implementado': True
     }
 }
 
@@ -161,8 +162,20 @@ UNIDADES_CONFIG = {}  # Deprecated - usar _get_unidad_config() que consulta BD
 
 
 def _get_tipo_sync_config(codigo: str) -> Optional[Dict[str, Any]]:
-    """Obtiene configuración del tipo de sync."""
-    return TIPOS_SYNC.get(codigo)
+    """
+    Obtiene configuración del tipo de sync.
+    Fuente: catálogo canónico SQL (dbo.Sistema_Sync_Catalogo). Para el handler
+    real existente se conserva la config de TIPOS_SYNC (que incluye campos
+    específicos como separa_propinas).
+    """
+    if codigo in TIPOS_SYNC:
+        return TIPOS_SYNC[codigo]
+    try:
+        from modules.sistema.sync_catalogo_service import get_tipo
+        return get_tipo(codigo)
+    except Exception as e:
+        logger.error(f"[RESYNC] Error leyendo catálogo para '{codigo}': {e}")
+        return None
 
 
 def _get_unidad_config(unidad_negocio_id: str) -> Optional[Dict[str, Any]]:
@@ -467,7 +480,43 @@ async def ejecutar_resync(
     # Generar IDs
     ejecucion_id = str(uuid.uuid4())
     sync_run_id = f"RESYNC-{request.unidad_negocio_id}-{request.fecha_inicio.strftime('%Y%m%d')}-{request.fecha_fin.strftime('%Y%m%d')}-{str(uuid.uuid4())[:4]}"
-    
+
+    # GUARD HONESTO: tipo registrado en el catálogo canónico pero sin handler real
+    # cableado todavía. No simulamos ni ejecutamos (sin mocks): estado PENDIENTE claro.
+    if not tipo_sync.get('handler_implementado'):
+        _registrar_en_bitacora(
+            job_name=f"RESYNC_{request.tipo_sync}",
+            run_id=sync_run_id,
+            accion='HANDLER_NO_IMPLEMENTADO',
+            server_id=(unidad or {}).get('server_id', ''),
+            detalles={
+                'unidad': request.unidad_negocio_id,
+                'fecha_inicio': str(request.fecha_inicio),
+                'fecha_fin': str(request.fecha_fin),
+                'motivo': request.motivo,
+                'dry_run': request.dry_run,
+                'usuario': user_email,
+            },
+            exito=False,
+            error_mensaje='Handler de re-sync no implementado'
+        )
+        return ResyncResponse(
+            success=False,
+            ejecucion_id=ejecucion_id,
+            sync_run_id=sync_run_id,
+            modo='DRY_RUN' if request.dry_run else 'REAL',
+            tipo_sync=request.tipo_sync,
+            unidad_negocio_id=request.unidad_negocio_id,
+            fecha_inicio=request.fecha_inicio.isoformat(),
+            fecha_fin=request.fecha_fin.isoformat(),
+            validacion_previa={'pendiente_handler': True},
+            error_message=(
+                f"El tipo '{tipo_sync.get('nombre', request.tipo_sync)}' está registrado en el "
+                f"catálogo canónico, pero su handler de re-sincronización aún NO está implementado. "
+                f"Disponible próximamente (sin simulación para no mostrar datos falsos)."
+            )
+        )
+
     # Validación previa
     validacion_previa = {
         'conectividad': _validar_conectividad(unidad['server_id']),
@@ -728,24 +777,138 @@ async def obtener_opciones_resync(
     except Exception as e:
         logger.error(f"[RESYNC] Error obteniendo unidades: {e}")
     
+    # Tipos de sync desde el CATÁLOGO CANÓNICO (dbo.Sistema_Sync_Catalogo)
+    tipos_sync = []
+    catalogo_agrupado = []
+    try:
+        from modules.sistema.sync_catalogo_service import get_catalogo, get_catalogo_agrupado
+        for t in get_catalogo(incluir_inactivos=False):
+            tipos_sync.append({
+                'codigo': t['codigo'],
+                'nombre': t['nombre'],
+                'grupo': t['grupo'],
+                'modulo': t['grupo'],
+                'descripcion': t['descripcion'],
+                'permite_resync': t['permite_resync'],
+                'permite_dry_run': t['permite_dry_run'],
+                'requiere_unidad': t['requiere_unidad'],
+                'requiere_rango_fechas': t['requiere_rango_fechas'],
+                'rango_max_dias': t['rango_max_dias'],
+                'nivel_riesgo': t['nivel_riesgo'],
+                'handler_implementado': t['handler_implementado'],
+                'dependencias': t['dependencias'],
+            })
+        catalogo_agrupado = get_catalogo_agrupado(incluir_inactivos=False)
+    except Exception as e:
+        logger.error(f"[RESYNC] Error leyendo catálogo canónico: {e}")
+
     return {
         'success': True,
         'source': 'EDARSAHUB_SQL',
-        'tipos_sync': [
-            {
-                'codigo': k,
-                'nombre': v['nombre'],
-                'modulo': v['modulo'],
-                'descripcion': v['descripcion'],
-                'permite_resync': v['permite_resync'],
-                'permite_dry_run': v['permite_dry_run'],
-                'rango_max_dias': v['rango_max_dias'],
-                'nivel_riesgo': v['nivel_riesgo']
-            }
-            for k, v in TIPOS_SYNC.items()
-        ],
+        'tipos_sync': tipos_sync,
+        'grupos': catalogo_agrupado,
         'unidades': unidades_list
     }
+
+
+# =============================================================================
+# CATÁLOGO CANÓNICO DE SINCRONIZACIONES (CRUD + RESOLVE DEPENDENCIAS)
+# =============================================================================
+
+class SyncTipoUpsert(BaseModel):
+    codigo: Optional[str] = None
+    nombre: Optional[str] = None
+    grupo: Optional[str] = None
+    descripcion: Optional[str] = None
+    orden: Optional[int] = None
+    nivel_riesgo: Optional[str] = None
+    permite_resync: Optional[bool] = None
+    permite_dry_run: Optional[bool] = None
+    requiere_unidad: Optional[bool] = None
+    requiere_rango_fechas: Optional[bool] = None
+    rango_max_dias: Optional[int] = None
+    handler: Optional[str] = None
+    handler_implementado: Optional[bool] = None
+    tabla_destino: Optional[str] = None
+    dependencias: Optional[List[Dict[str, Any]]] = None
+    activo: Optional[bool] = None
+
+
+class ResolveRequest(BaseModel):
+    codigos: List[str] = Field(..., description="Códigos seleccionados por el usuario")
+
+
+@router.get("/resync/catalogo")
+async def listar_catalogo_sync(
+    incluir_inactivos: bool = False,
+    current_user: dict = Depends(require_permission("SCHEDULER_VER"))
+):
+    """Lista el catálogo canónico de sincronizaciones, agrupado por tipo."""
+    from modules.sistema.sync_catalogo_service import get_catalogo_agrupado, get_catalogo
+    return {
+        'success': True,
+        'source': 'EDARSAHUB_SQL',
+        'grupos': get_catalogo_agrupado(incluir_inactivos),
+        'tipos': get_catalogo(incluir_inactivos),
+    }
+
+
+@router.post("/resync/catalogo")
+async def crear_tipo_sync(
+    body: SyncTipoUpsert,
+    current_user: dict = Depends(require_permission("SCHEDULER_ADMIN"))
+):
+    """Crea un nuevo tipo de sincronización canónico."""
+    from modules.sistema.sync_catalogo_service import crear_tipo
+    try:
+        creado = crear_tipo(body.dict(exclude_none=True))
+        return {'success': True, 'tipo': creado}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put("/resync/catalogo/{codigo}")
+async def actualizar_tipo_sync(
+    codigo: str,
+    body: SyncTipoUpsert,
+    current_user: dict = Depends(require_permission("SCHEDULER_ADMIN"))
+):
+    """Edita un tipo de sincronización canónico existente."""
+    from modules.sistema.sync_catalogo_service import actualizar_tipo
+    try:
+        actualizado = actualizar_tipo(codigo, body.dict(exclude_none=True))
+        return {'success': True, 'tipo': actualizado}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.patch("/resync/catalogo/{codigo}/toggle")
+async def toggle_tipo_sync(
+    codigo: str,
+    current_user: dict = Depends(require_permission("SCHEDULER_ADMIN"))
+):
+    """Activa/Inactiva un tipo de sincronización."""
+    from modules.sistema.sync_catalogo_service import toggle_activo
+    try:
+        return {'success': True, 'tipo': toggle_activo(codigo)}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/resync/resolve")
+async def resolver_dependencias_sync(
+    body: ResolveRequest,
+    current_user: dict = Depends(require_permission("SCHEDULER_VER"))
+):
+    """
+    Expande dependencias de los tipos seleccionados y devuelve el conjunto
+    ORDENADO para ejecutar (dependencias primero). Marca cuáles se agregaron por
+    dependencia y cuáles son obligatorias (no des-seleccionables).
+    """
+    from modules.sistema.sync_catalogo_service import resolver_dependencias
+    if not body.codigos:
+        raise HTTPException(status_code=400, detail="Debe seleccionar al menos un tipo")
+    return {'success': True, **resolver_dependencias(body.codigos)}
 
 
 # =============================================================================

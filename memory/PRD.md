@@ -38,6 +38,35 @@ Spanish (Español)
   sincronizan). Requiere primero poblar/crear el job de sync de detalle. El usuario eligió desbloqueo
   pragmático (B) ahora; A queda como siguiente incremento. ESTADO: PENDIENTE.
 
+### Estado actualizado (2026-06-12) — Catálogo Canónico de Sincronizaciones (agrupación + dependencias)
+- ✅ **Feature: sincronizaciones agrupadas con ejecución grupo/individual + sugerencia por dependencias.**
+  Solicitado por el usuario. Antes el panel Re-sync exponía UN solo tipo hardcodeado.
+  - **Catálogo canónico SQL (NO hardcode):** nueva tabla `dbo.Sistema_Sync_Catalogo`
+    (migración `migrations/sync_catalogo_canonico_20260612.py`, idempotente). Campos: Codigo, Nombre,
+    Grupo, Descripcion, Orden, NivelRiesgo, PermiteResync/DryRun, Requiere Unidad/RangoFechas,
+    RangoMaxDias, Handler, **HandlerImplementado**, TablaDestino, **Dependencias (JSON
+    [{codigo,obligatoria}])**, Activo. Seed: 7 tipos en 3 grupos → Comercial (Detalle de Ventas,
+    Ventas Cerradas), Catálogos (Productos, Proveedores, Filtros), Inventarios (Requisiciones,
+    Inventarios Físicos). Dependencias derivadas por el agente (opcionales/sugeridas).
+  - **Servicio** `modules/sistema/sync_catalogo_service.py`: get_catalogo/_agrupado, CRUD
+    (crear/actualizar/toggle), y `resolver_dependencias()` (expansión recursiva + orden topológico).
+  - **API** (en `api/admin_scheduler_resync.py`): `GET /resync/catalogo`, `POST/PUT/PATCH /resync/catalogo`
+    (CRUD, perm SCHEDULER_ADMIN), `POST /resync/resolve`. `/resync/options` ahora devuelve `grupos`.
+    `_get_tipo_sync_config` lee del catálogo. **Guard honesto:** tipos sin handler real
+    (HandlerImplementado=0) NO se simulan ni ejecutan (DRY RUN y REAL devuelven "Disponible
+    próximamente" + bitácora HANDLER_NO_IMPLEMENTADO). Solo `comercial_ventas_cerradas` ejecuta real.
+  - **Frontend** `components/admin/ResyncPanel.jsx` (reescrito): selección agrupada por checkbox
+    (individual o "seleccionar grupo"), badges de dependencias y "Handler pendiente". Al ejecutar:
+    llama `/resync/resolve` → **comportamiento (b)**: agrega dependencias automáticamente y abre
+    diálogo de confirmación con el conjunto ORDENADO; el usuario puede des-seleccionar las opcionales
+    (las obligatorias quedan bloqueadas). Ejecuta el conjunto en orden (DRY RUN/REAL) mostrando
+    resultados por tipo. Verificado por cURL + screenshots (panel y resolve OK). NO se usó testing_agent.
+  - ⚠️ **PENDIENTE (handlers reales):** Detalle de Ventas, Productos, Proveedores, Filtros,
+    Requisiciones e Inventarios Físicos están en el catálogo pero su handler de re-sync aún NO está
+    implementado (sin mock). Cablearlos a sus fuentes/scripts reales es el siguiente incremento.
+  - ⚠️ **PENDIENTE (UI):** editor visual del catálogo (crear/editar tipos, grupos y dependencias).
+    El backend CRUD ya está listo; falta la pantalla de configuración.
+
 ### Estado actualizado (2026-06-12) — Navegación: sincronizaciones accesibles
 - ✅ **Enlaces de menú a sincronizaciones/scheduler arreglados (opción C):** las pantallas de
   sincronización existían pero no eran accesibles desde el menú Enterprise. Fix en

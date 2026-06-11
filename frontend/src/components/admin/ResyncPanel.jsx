@@ -1,20 +1,16 @@
 /**
  * EDARSA HUB - Panel de Re-sincronización Manual
- * Fase 0: Consola Administrativa de Scheduler
- * 
- * Features:
- * - Selección de tipo de sync y unidad
- * - Validación previa con dry_run
- * - Ejecución real con confirmación
- * - Historial de re-syncs
- * 
- * MÁXIMAS CUMPLIDAS:
- * - #8: Dry run obligatorio antes de ejecución real
- * - #6: Trazabilidad completa
- * - #7: Motivo obligatorio
+ * Consola Administrativa de Scheduler
+ *
+ * Catálogo CANÓNICO (dbo.Sistema_Sync_Catalogo): tipos de sync agrupados por
+ * `grupo`, ejecutables individualmente o por grupo. Si una sync seleccionada
+ * requiere otra (dependencia), se AGREGA automáticamente y se pide confirmar,
+ * permitiendo des-seleccionar las opcionales (las obligatorias quedan fijas).
+ *
+ * MÁXIMAS: NO hardcode (catálogo SQL) · DRY RUN primero · motivo obligatorio.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../../lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,98 +18,73 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
-  RefreshCw,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Loader2,
-  Database,
-  Server,
-  Calendar,
-  FileText,
-  Play,
-  Eye,
-  History,
+  RefreshCw, CheckCircle2, XCircle, AlertTriangle, Loader2, Database, Server,
+  Play, History, Layers, Link2, Lock, Clock,
 } from 'lucide-react';
-
 
 const formatDateTime = (isoString) => {
   if (!isoString) return '-';
   const date = new Date(isoString);
   return date.toLocaleString('es-MX', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 };
 
+const RIESGO_COLOR = { ALTO: 'destructive', MEDIO: 'outline', BAJO: 'secondary' };
 
 export default function ResyncPanel() {
-  // Estados de opciones
-  const [options, setOptions] = useState({ tipos_sync: [], unidades: [] });
+  const [options, setOptions] = useState({ tipos_sync: [], unidades: [], grupos: [] });
   const [loadingOptions, setLoadingOptions] = useState(true);
-  
-  // Estados del formulario
-  const [tipoSync, setTipoSync] = useState('');
+
+  // Selección
+  const [selectedCodigos, setSelectedCodigos] = useState([]);
   const [unidadId, setUnidadId] = useState('');
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
   const [motivo, setMotivo] = useState('');
-  
-  // Estados de validación
-  const [validating, setValidating] = useState(false);
-  const [validationResult, setValidationResult] = useState(null);
-  
-  // Estados de ejecución
+
+  // Diálogo de resolución de dependencias / confirmación
+  const [resolveDialog, setResolveDialog] = useState({ open: false, isDryRun: true, loading: false });
+  const [resolvedItems, setResolvedItems] = useState([]); // [{codigo, nombre, grupo, obligatoria, seleccionado_directo, handler_implementado,...}]
+  const [itemChecked, setItemChecked] = useState({});      // {codigo: bool}
+
+  // Ejecución
   const [executing, setExecuting] = useState(false);
-  const [executionResult, setExecutionResult] = useState(null);
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, isDryRun: true });
-  
+  const [batchResults, setBatchResults] = useState([]);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+
   // Historial
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  
-  // Cargar opciones
+
   const fetchOptions = useCallback(async () => {
     try {
       setLoadingOptions(true);
       const response = await api.get('/admin/scheduler/resync/options');
-      setOptions(response.data);
+      setOptions({
+        tipos_sync: response.data.tipos_sync || [],
+        unidades: response.data.unidades || [],
+        grupos: response.data.grupos || [],
+      });
     } catch (error) {
       console.error('Error cargando opciones:', error);
     } finally {
       setLoadingOptions(false);
     }
   }, []);
-  
-  // Cargar historial
+
   const fetchHistory = useCallback(async () => {
     try {
       setLoadingHistory(true);
@@ -125,416 +96,321 @@ export default function ResyncPanel() {
       setLoadingHistory(false);
     }
   }, []);
-  
-  useEffect(() => {
-    fetchOptions();
+
+  useEffect(() => { fetchOptions(); fetchHistory(); }, [fetchOptions, fetchHistory]);
+
+  const tipoMap = useMemo(() => {
+    const m = {};
+    (options.tipos_sync || []).forEach(t => { m[t.codigo] = t; });
+    return m;
+  }, [options.tipos_sync]);
+
+  const requiereFechas = useMemo(
+    () => selectedCodigos.some(c => tipoMap[c]?.requiere_rango_fechas),
+    [selectedCodigos, tipoMap]
+  );
+
+  const toggleTipo = (codigo) => {
+    setSelectedCodigos(prev =>
+      prev.includes(codigo) ? prev.filter(c => c !== codigo) : [...prev, codigo]
+    );
+  };
+
+  const toggleGrupo = (grupo) => {
+    const codigos = grupo.tipos.map(t => t.codigo);
+    const allSelected = codigos.every(c => selectedCodigos.includes(c));
+    setSelectedCodigos(prev =>
+      allSelected ? prev.filter(c => !codigos.includes(c)) : [...new Set([...prev, ...codigos])]
+    );
+  };
+
+  const formValid = motivo.length >= 10 && unidadId && selectedCodigos.length > 0
+    && (!requiereFechas || (fechaInicio && fechaFin));
+
+  // Paso 1: resolver dependencias y abrir confirmación
+  const handleResolve = async (isDryRun) => {
+    if (!formValid) {
+      alert('Complete unidad, motivo (mín. 10), seleccione al menos un tipo y el rango de fechas si aplica.');
+      return;
+    }
+    setResolveDialog({ open: true, isDryRun, loading: true });
+    setResolvedItems([]);
+    try {
+      const resp = await api.post('/admin/scheduler/resync/resolve', { codigos: selectedCodigos });
+      const items = resp.data.items || [];
+      setResolvedItems(items);
+      const checks = {};
+      items.forEach(it => { checks[it.codigo] = true; });
+      setItemChecked(checks);
+    } catch (error) {
+      alert('Error resolviendo dependencias: ' + (error.response?.data?.detail || error.message));
+      setResolveDialog({ open: false, isDryRun, loading: false });
+      return;
+    }
+    setResolveDialog({ open: true, isDryRun, loading: false });
+  };
+
+  const toggleItemCheck = (item) => {
+    if (item.obligatoria && !item.seleccionado_directo) return; // dependencia obligatoria: bloqueada
+    setItemChecked(prev => ({ ...prev, [item.codigo]: !prev[item.codigo] }));
+  };
+
+  // Paso 2: ejecutar en orden el conjunto confirmado
+  const handleExecuteBatch = async () => {
+    const finalItems = resolvedItems.filter(it => itemChecked[it.codigo]);
+    if (finalItems.length === 0) { alert('Seleccione al menos un tipo para ejecutar.'); return; }
+
+    const isDryRun = resolveDialog.isDryRun;
+    setResolveDialog({ open: false, isDryRun, loading: false });
+    setExecuting(true);
+    setBatchResults([]);
+    setProgress({ current: 0, total: finalItems.length });
+
+    const results = [];
+    const fi = fechaInicio || new Date().toISOString().slice(0, 10);
+    const ff = fechaFin || new Date().toISOString().slice(0, 10);
+
+    for (let i = 0; i < finalItems.length; i++) {
+      const it = finalItems[i];
+      setProgress({ current: i + 1, total: finalItems.length });
+      try {
+        const resp = await api.post('/admin/scheduler/resync/execute', {
+          tipo_sync: it.codigo,
+          unidad_negocio_id: unidadId,
+          fecha_inicio: fi,
+          fecha_fin: ff,
+          motivo,
+          dry_run: isDryRun,
+        });
+        results.push({ tipo: it, data: resp.data });
+      } catch (error) {
+        results.push({
+          tipo: it,
+          data: { success: false, modo: isDryRun ? 'DRY_RUN' : 'REAL',
+                  error_message: error.response?.data?.detail || 'Error de ejecución' },
+        });
+      }
+      setBatchResults([...results]);
+    }
+    setExecuting(false);
     fetchHistory();
-  }, [fetchOptions, fetchHistory]);
-  
-  // Validar parámetros
-  const handleValidate = async () => {
-    if (!tipoSync || !unidadId || !fechaInicio || !fechaFin) {
-      alert('Complete todos los campos obligatorios');
-      return;
-    }
-    
-    try {
-      setValidating(true);
-      setValidationResult(null);
-      setExecutionResult(null);
-      
-      const response = await api.post('/admin/scheduler/resync/validate', {
-        tipo_sync: tipoSync,
-        unidad_negocio_id: unidadId,
-        fecha_inicio: fechaInicio,
-        fecha_fin: fechaFin,
-      });
-      
-      setValidationResult(response.data);
-    } catch (error) {
-      setValidationResult({
-        success: false,
-        error: error.response?.data?.detail || 'Error de validación',
-      });
-    } finally {
-      setValidating(false);
-    }
   };
-  
-  // Ejecutar resync
-  const handleExecute = async (isDryRun) => {
-    if (!motivo || motivo.length < 10) {
-      alert('Debe ingresar un motivo de al menos 10 caracteres');
-      return;
-    }
-    
-    setConfirmDialog({ open: false, isDryRun });
-    
-    try {
-      setExecuting(true);
-      setExecutionResult(null);
-      
-      const response = await api.post('/admin/scheduler/resync/execute', {
-        tipo_sync: tipoSync,
-        unidad_negocio_id: unidadId,
-        fecha_inicio: fechaInicio,
-        fecha_fin: fechaFin,
-        motivo: motivo,
-        dry_run: isDryRun,
-      });
-      
-      setExecutionResult(response.data);
-      
-      // Recargar historial
-      fetchHistory();
-    } catch (error) {
-      setExecutionResult({
-        success: false,
-        error_message: error.response?.data?.detail || 'Error de ejecución',
-      });
-    } finally {
-      setExecuting(false);
-    }
-  };
-  
-  const selectedTipoSync = options.tipos_sync.find(t => t.codigo === tipoSync);
+
   const selectedUnidad = options.unidades.find(u => u.id === unidadId);
-  
+
   if (loadingOptions) {
     return (
       <div className="flex items-center justify-center p-8">
-        <Loader2 className="w-6 h-6 animate-spin mr-2" />
-        Cargando opciones...
+        <Loader2 className="w-6 h-6 animate-spin mr-2" /> Cargando catálogo de sincronizaciones...
       </div>
     );
   }
-  
+
   return (
-    <div className="space-y-6">
-      {/* Formulario de Re-sync */}
+    <div className="space-y-6" data-testid="resync-panel">
       <Card data-testid="resync-form-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <RefreshCw className="w-5 h-5" />
-            Re-sincronización Manual
+            <RefreshCw className="w-5 h-5" /> Re-sincronización Manual
           </CardTitle>
           <CardDescription>
-            Sincronización controlada de períodos históricos. 
-            <strong className="text-amber-600 ml-1">Siempre ejecute DRY RUN primero.</strong>
+            Selecciona una o varias sincronizaciones (individual o por grupo).
+            <strong className="text-amber-600 ml-1">Ejecuta DRY RUN primero.</strong>
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Tipo de Sync */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Tipo de Sincronización</Label>
-              <Select value={tipoSync} onValueChange={setTipoSync} data-testid="select-tipo-sync">
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione tipo..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {options.tipos_sync.map(tipo => (
-                    <SelectItem key={tipo.codigo} value={tipo.codigo}>
-                      <div className="flex items-center gap-2">
-                        <Database className="w-4 h-4" />
-                        {tipo.nombre}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedTipoSync && (
-                <p className="text-xs text-zinc-500">{selectedTipoSync.descripcion}</p>
-              )}
+        <CardContent className="space-y-5">
+          {/* Catálogo agrupado */}
+          <div className="space-y-3">
+            <Label className="flex items-center gap-2"><Layers className="w-4 h-4" /> Tipos de Sincronización (por grupo)</Label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {(options.grupos || []).map(grupo => {
+                const codigos = grupo.tipos.map(t => t.codigo);
+                const allSel = codigos.every(c => selectedCodigos.includes(c));
+                const someSel = codigos.some(c => selectedCodigos.includes(c));
+                return (
+                  <div key={grupo.grupo} className="border rounded-lg p-3 bg-zinc-50/50" data-testid={`grupo-${grupo.grupo}`}>
+                    <div className="flex items-center justify-between mb-2 pb-2 border-b">
+                      <span className="font-semibold text-sm flex items-center gap-2">
+                        <Database className="w-4 h-4 text-zinc-500" /> {grupo.grupo}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => toggleGrupo(grupo)}
+                        className="text-xs text-blue-600 hover:underline"
+                        data-testid={`btn-toggle-grupo-${grupo.grupo}`}
+                      >
+                        {allSel ? 'Quitar grupo' : (someSel ? 'Completar grupo' : 'Seleccionar grupo')}
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {grupo.tipos.map(tipo => (
+                        <label
+                          key={tipo.codigo}
+                          className="flex items-start gap-2 cursor-pointer text-sm hover:bg-white rounded p-1"
+                          data-testid={`tipo-row-${tipo.codigo}`}
+                        >
+                          <Checkbox
+                            checked={selectedCodigos.includes(tipo.codigo)}
+                            onCheckedChange={() => toggleTipo(tipo.codigo)}
+                            data-testid={`check-tipo-${tipo.codigo}`}
+                          />
+                          <span className="flex-1">
+                            <span className="font-medium">{tipo.nombre}</span>
+                            <span className="block text-xs text-zinc-500">{tipo.descripcion}</span>
+                            <span className="flex items-center gap-1 mt-1 flex-wrap">
+                              {!tipo.handler_implementado && (
+                                <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-300">
+                                  <Clock className="w-3 h-3" /> Handler pendiente
+                                </Badge>
+                              )}
+                              {(tipo.dependencias || []).length > 0 && (
+                                <Badge variant="outline" className="text-[10px] gap-1">
+                                  <Link2 className="w-3 h-3" /> {tipo.dependencias.length} dep.
+                                </Badge>
+                              )}
+                            </span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            
+            {selectedCodigos.length > 0 && (
+              <p className="text-xs text-zinc-600" data-testid="seleccionados-count">
+                {selectedCodigos.length} sincronización(es) seleccionada(s).
+              </p>
+            )}
+          </div>
+
+          {/* Unidad + fechas */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Unidad de Negocio</Label>
               <Select value={unidadId} onValueChange={setUnidadId} data-testid="select-unidad">
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione unidad..." />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Seleccione unidad..." /></SelectTrigger>
                 <SelectContent>
                   {options.unidades.map(unidad => (
                     <SelectItem key={unidad.id} value={unidad.id}>
                       <div className="flex items-center gap-2">
-                        <Server className="w-4 h-4" />
-                        {unidad.nombre}
-                        <Badge variant="outline" className="ml-2 text-xs">
-                          {unidad.sistema}
-                        </Badge>
+                        <Server className="w-4 h-4" /> {unidad.nombre}
+                        <Badge variant="outline" className="ml-2 text-xs">{unidad.sistema}</Badge>
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          
-          {/* Rango de fechas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Fecha Inicio</Label>
-              <Input
-                type="date"
-                value={fechaInicio}
-                onChange={(e) => setFechaInicio(e.target.value)}
-                data-testid="input-fecha-inicio"
-              />
+              <Label>Fecha Inicio {requiereFechas && <span className="text-red-500">*</span>}</Label>
+              <Input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} data-testid="input-fecha-inicio" />
             </div>
             <div className="space-y-2">
-              <Label>Fecha Fin</Label>
-              <Input
-                type="date"
-                value={fechaFin}
-                onChange={(e) => setFechaFin(e.target.value)}
-                data-testid="input-fecha-fin"
-              />
+              <Label>Fecha Fin {requiereFechas && <span className="text-red-500">*</span>}</Label>
+              <Input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} data-testid="input-fecha-fin" />
             </div>
           </div>
-          
+
           {/* Motivo */}
           <div className="space-y-2">
             <Label>Motivo (obligatorio, mín. 10 caracteres)</Label>
             <Textarea
               placeholder="Describa el motivo de esta re-sincronización..."
-              value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
-              rows={2}
-              data-testid="input-motivo"
+              value={motivo} onChange={(e) => setMotivo(e.target.value)} rows={2} data-testid="input-motivo"
             />
             <p className="text-xs text-zinc-500">
               {motivo.length}/10 caracteres mínimos
               {motivo.length >= 10 && <CheckCircle2 className="w-3 h-3 inline ml-1 text-emerald-500" />}
             </p>
           </div>
-          
-          {/* Botones de acción */}
-          <div className="flex gap-3 pt-4">
+
+          {/* Botones */}
+          <div className="flex gap-3 pt-2">
             <Button
-              onClick={handleValidate}
-              disabled={validating || !tipoSync || !unidadId || !fechaInicio || !fechaFin}
-              variant="outline"
-              data-testid="btn-validate"
-            >
-              {validating ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Eye className="w-4 h-4 mr-2" />
-              )}
-              Validar Parámetros
-            </Button>
-            
-            <Button
-              onClick={() => setConfirmDialog({ open: true, isDryRun: true })}
-              disabled={executing || !validationResult?.success || motivo.length < 10}
+              onClick={() => handleResolve(true)}
+              disabled={executing || !formValid}
               className="bg-amber-600 hover:bg-amber-700"
               data-testid="btn-dry-run"
             >
-              <Play className="w-4 h-4 mr-2" />
-              Ejecutar DRY RUN
+              <Play className="w-4 h-4 mr-2" /> Ejecutar DRY RUN
             </Button>
-            
             <Button
-              onClick={() => setConfirmDialog({ open: true, isDryRun: false })}
-              disabled={executing || !validationResult?.success || motivo.length < 10 || !validationResult?.conectividad?.conectado}
+              onClick={() => handleResolve(false)}
+              disabled={executing || !formValid}
               className="bg-red-600 hover:bg-red-700"
               data-testid="btn-execute-real"
             >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Ejecutar REAL
+              <RefreshCw className="w-4 h-4 mr-2" /> Ejecutar REAL
             </Button>
+            {executing && (
+              <span className="flex items-center text-sm text-zinc-600" data-testid="batch-progress">
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Ejecutando {progress.current}/{progress.total}...
+              </span>
+            )}
           </div>
         </CardContent>
       </Card>
-      
-      {/* Resultado de validación */}
-      {validationResult && (
-        <Card data-testid="validation-result-card">
+
+      {/* Resultados del lote */}
+      {batchResults.length > 0 && (
+        <Card data-testid="batch-results-card">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              {validationResult.success ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              ) : (
-                <XCircle className="w-5 h-5 text-red-600" />
-              )}
-              Resultado de Validación
-            </CardTitle>
+            <CardTitle className="flex items-center gap-2"><Layers className="w-5 h-5" /> Resultados de Ejecución</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Conectividad */}
-            <div className="flex items-center gap-3">
-              <Badge variant={validationResult.conectividad?.conectado ? "default" : "destructive"}>
-                {validationResult.conectividad?.conectado ? 'CONECTADO' : 'SIN CONEXIÓN'}
-              </Badge>
-              {!validationResult.conectividad?.conectado && (
-                <span className="text-sm text-red-600">
-                  {validationResult.conectividad?.error?.substring(0, 100)}...
-                </span>
-              )}
-            </div>
-            
-            {/* Días existentes */}
-            {validationResult.dias_existentes && (
-              <div>
-                <h4 className="font-medium mb-2">
-                  Días existentes en destino: {validationResult.dias_existentes.cantidad}
-                </h4>
-                {validationResult.dias_existentes.cantidad > 0 ? (
-                  <div className="bg-zinc-50 p-3 rounded text-sm">
-                    {validationResult.dias_existentes.dias_existentes.map((dia, idx) => (
-                      <div key={idx} className="flex gap-4 py-1 border-b last:border-0">
-                        <span className="font-mono">{dia.fecha}</span>
-                        <span>Ventas: ${dia.ventas_total?.toLocaleString()}</span>
-                        <span>Tickets: {dia.tickets}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-amber-600 text-sm">
-                    <AlertTriangle className="w-4 h-4 inline mr-1" />
-                    No hay datos existentes para este rango
-                  </p>
-                )}
-              </div>
-            )}
-            
-            {/* Info adicional */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <span className="text-zinc-500">Rango:</span>
-                <p className="font-medium">{validationResult.rango?.mensaje}</p>
-              </div>
-              <div>
-                <span className="text-zinc-500">Nivel de Riesgo:</span>
-                <Badge variant={validationResult.nivel_riesgo === 'ALTO' ? 'destructive' : 'outline'}>
-                  {validationResult.nivel_riesgo}
-                </Badge>
-              </div>
-              <div>
-                <span className="text-zinc-500">Permite Dry Run:</span>
-                <p>{validationResult.permite_dry_run ? '✓ Sí' : '✗ No'}</p>
-              </div>
-              <div>
-                <span className="text-zinc-500">Propinas Separadas:</span>
-                <p>{validationResult.propinas_separadas ? '✓ Sí' : '✗ No'}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      
-      {/* Resultado de ejecución */}
-      {executionResult && (
-        <Card data-testid="execution-result-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              {executionResult.success ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              ) : (
-                <XCircle className="w-5 h-5 text-red-600" />
-              )}
-              Resultado de Ejecución ({executionResult.modo})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Alert variant={executionResult.success ? "default" : "destructive"}>
-              <AlertTitle>
-                {executionResult.success ? 'Ejecución completada' : 'Ejecución fallida'}
-              </AlertTitle>
-              <AlertDescription>
-                <div className="space-y-2 mt-2">
-                  <p><strong>Run ID:</strong> {executionResult.sync_run_id}</p>
-                  <p><strong>Modo:</strong> {executionResult.modo}</p>
-                  
-                  {executionResult.resultado && (
-                    <>
-                      <p><strong>Registros procesados:</strong> {executionResult.resultado.records_processed || 0}</p>
-                      {executionResult.modo === 'REAL' && (
-                        <>
-                          <p><strong>Insertados:</strong> {executionResult.resultado.records_inserted || 0}</p>
-                          <p><strong>Actualizados:</strong> {executionResult.resultado.records_updated || 0}</p>
-                        </>
+          <CardContent className="space-y-3">
+            {batchResults.map((r, idx) => (
+              <Alert key={idx} variant={r.data.success ? 'default' : 'destructive'} data-testid={`result-${r.tipo.codigo}`}>
+                <AlertTitle className="flex items-center gap-2">
+                  {r.data.success ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <XCircle className="w-4 h-4 text-red-600" />}
+                  {r.tipo.nombre} <Badge variant="outline" className="ml-1">{r.data.modo}</Badge>
+                </AlertTitle>
+                <AlertDescription>
+                  {r.data.success ? (
+                    <div className="text-sm mt-1">
+                      <span>Run ID: <span className="font-mono">{r.data.sync_run_id}</span></span>
+                      {r.data.resultado && (
+                        <span className="ml-3">Procesados: {r.data.resultado.records_processed || 0}
+                          {r.data.modo === 'REAL' && ` · Insertados: ${r.data.resultado.records_inserted || 0} · Actualizados: ${r.data.resultado.records_updated || 0}`}
+                        </span>
                       )}
-                    </>
-                  )}
-                  
-                  {executionResult.resultado?.detalle && executionResult.modo === 'DRY_RUN' && (
-                    <div className="mt-3">
-                      <p className="font-medium mb-2">Detalle de registros que se sincronizarían:</p>
-                      <div className="bg-zinc-100 p-3 rounded max-h-48 overflow-y-auto">
-                        {executionResult.resultado.detalle.map((item, idx) => (
-                          <div key={idx} className="text-sm py-1 border-b last:border-0">
-                            <span className="font-mono">{item.fecha}</span>: 
-                            Ventas ${item.ventas_total?.toLocaleString()}, 
-                            Sin Propina ${item.ventas_sin_propina?.toLocaleString()}, 
-                            Propinas ${item.propinas_total?.toLocaleString()}, 
-                            Tickets {item.tickets_total}
-                          </div>
-                        ))}
-                      </div>
                     </div>
+                  ) : (
+                    <p className="text-sm mt-1">{r.data.error_message}</p>
                   )}
-                  
-                  {executionResult.error_message && (
-                    <p className="text-red-600 mt-2">
-                      <strong>Error:</strong> {executionResult.error_message}
-                    </p>
-                  )}
-                </div>
-              </AlertDescription>
-            </Alert>
+                </AlertDescription>
+              </Alert>
+            ))}
           </CardContent>
         </Card>
       )}
-      
-      {/* Historial de Re-syncs */}
+
+      {/* Historial */}
       <Card data-testid="resync-history-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <History className="w-5 h-5" />
-            Historial de Re-sincronizaciones
-          </CardTitle>
+          <CardTitle className="flex items-center gap-2"><History className="w-5 h-5" /> Historial de Re-sincronizaciones</CardTitle>
         </CardHeader>
         <CardContent>
           {loadingHistory ? (
-            <div className="flex items-center justify-center p-4">
-              <Loader2 className="w-5 h-5 animate-spin" />
-            </div>
+            <div className="flex items-center justify-center p-4"><Loader2 className="w-5 h-5 animate-spin" /></div>
           ) : history.length === 0 ? (
             <p className="text-zinc-500 text-center py-4">No hay re-sincronizaciones registradas</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Acción</TableHead>
-                  <TableHead>Unidad</TableHead>
-                  <TableHead>Rango</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Usuario</TableHead>
+                  <TableHead>Fecha</TableHead><TableHead>Acción</TableHead><TableHead>Unidad</TableHead>
+                  <TableHead>Rango</TableHead><TableHead>Estado</TableHead><TableHead>Usuario</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {history.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="text-sm">{formatDateTime(item.fecha)}</TableCell>
-                    <TableCell>
-                      <Badge variant={item.accion.includes('SUCCESS') ? 'default' : 'destructive'}>
-                        {item.accion}
-                      </Badge>
-                    </TableCell>
+                    <TableCell><Badge variant={item.exito ? 'default' : 'destructive'}>{item.accion}</Badge></TableCell>
                     <TableCell>{item.detalles?.unidad || '-'}</TableCell>
-                    <TableCell className="text-sm font-mono">
-                      {item.detalles?.fecha_inicio} → {item.detalles?.fecha_fin}
-                    </TableCell>
-                    <TableCell>
-                      {item.exito ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-500" />
-                      )}
-                    </TableCell>
+                    <TableCell className="text-sm font-mono">{item.detalles?.fecha_inicio} → {item.detalles?.fecha_fin}</TableCell>
+                    <TableCell>{item.exito ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <XCircle className="w-4 h-4 text-red-500" />}</TableCell>
                     <TableCell className="text-sm text-zinc-500">{item.detalles?.usuario || '-'}</TableCell>
                   </TableRow>
                 ))}
@@ -543,52 +419,85 @@ export default function ResyncPanel() {
           )}
         </CardContent>
       </Card>
-      
-      {/* Dialog de confirmación */}
-      <Dialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
-        <DialogContent data-testid="confirm-resync-dialog">
+
+      {/* Diálogo de resolución de dependencias / confirmación */}
+      <Dialog open={resolveDialog.open} onOpenChange={(open) => setResolveDialog(prev => ({ ...prev, open }))}>
+        <DialogContent data-testid="confirm-resync-dialog" className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {confirmDialog.isDryRun ? 'Confirmar DRY RUN' : 'Confirmar Ejecución REAL'}
+              {resolveDialog.isDryRun ? 'Confirmar DRY RUN' : 'Confirmar Ejecución REAL'}
             </DialogTitle>
             <DialogDescription>
-              {confirmDialog.isDryRun ? (
-                <>
-                  El DRY RUN <strong>NO modificará datos</strong>. 
-                  Solo mostrará qué registros se sincronizarían.
-                </>
-              ) : (
-                <>
-                  <span className="text-red-600 font-medium">
-                    Esta acción MODIFICARÁ datos en EDARSAHUB.
-                  </span>
-                  <br />
-                  Los registros serán insertados o actualizados en la tabla de destino.
-                </>
-              )}
+              {resolveDialog.isDryRun
+                ? 'El DRY RUN no modifica datos. Revisa el conjunto a ejecutar.'
+                : <span className="text-red-600 font-medium">Esta acción MODIFICARÁ datos en EDARSAHUB.</span>}
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4 space-y-2 text-sm">
-            <p><strong>Tipo:</strong> {selectedTipoSync?.nombre}</p>
-            <p><strong>Unidad:</strong> {selectedUnidad?.nombre}</p>
-            <p><strong>Rango:</strong> {fechaInicio} a {fechaFin}</p>
-            <p><strong>Motivo:</strong> {motivo}</p>
-          </div>
+
+          {resolveDialog.loading ? (
+            <div className="flex items-center justify-center py-8"><Loader2 className="w-6 h-6 animate-spin mr-2" /> Resolviendo dependencias...</div>
+          ) : (
+            <div className="py-2 space-y-3">
+              {resolvedItems.some(it => !it.seleccionado_directo) && (
+                <Alert>
+                  <AlertTriangle className="w-4 h-4" />
+                  <AlertTitle>Dependencias agregadas automáticamente</AlertTitle>
+                  <AlertDescription className="text-sm">
+                    Para un resultado consistente se incluyeron sincronizaciones relacionadas.
+                    Puedes des-seleccionar las opcionales; las <strong>obligatorias</strong> quedan fijas.
+                  </AlertDescription>
+                </Alert>
+              )}
+              <div className="border rounded-lg divide-y" data-testid="resolved-items">
+                {resolvedItems.map((it, idx) => {
+                  const locked = it.obligatoria && !it.seleccionado_directo;
+                  return (
+                    <div key={it.codigo} className="flex items-center gap-3 p-2 text-sm" data-testid={`resolved-${it.codigo}`}>
+                      <span className="text-xs text-zinc-400 w-5">{idx + 1}.</span>
+                      <Checkbox
+                        checked={!!itemChecked[it.codigo]}
+                        disabled={locked}
+                        onCheckedChange={() => toggleItemCheck(it)}
+                        data-testid={`resolved-check-${it.codigo}`}
+                      />
+                      <div className="flex-1">
+                        <span className="font-medium">{it.nombre}</span>
+                        <span className="ml-2 text-xs text-zinc-500">({it.grupo})</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {it.seleccionado_directo
+                          ? <Badge variant="secondary" className="text-[10px]">Seleccionada</Badge>
+                          : <Badge variant="outline" className="text-[10px] gap-1"><Link2 className="w-3 h-3" /> Dependencia</Badge>}
+                        {locked && <Lock className="w-3 h-3 text-zinc-400" />}
+                        {!it.handler_implementado && (
+                          <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-300">
+                            <Clock className="w-3 h-3" /> Pendiente
+                          </Badge>
+                        )}
+                        <Badge variant={RIESGO_COLOR[it.nivel_riesgo] || 'outline'} className="text-[10px]">{it.nivel_riesgo}</Badge>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="text-sm text-zinc-600 space-y-1">
+                <p><strong>Unidad:</strong> {selectedUnidad?.nombre || unidadId}</p>
+                {requiereFechas && <p><strong>Rango:</strong> {fechaInicio} a {fechaFin}</p>}
+                <p><strong>Motivo:</strong> {motivo}</p>
+              </div>
+            </div>
+          )}
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmDialog({ open: false, isDryRun: true })}>
-              Cancelar
-            </Button>
+            <Button variant="outline" onClick={() => setResolveDialog(prev => ({ ...prev, open: false }))}>Cancelar</Button>
             <Button
-              onClick={() => handleExecute(confirmDialog.isDryRun)}
-              className={confirmDialog.isDryRun ? 'bg-amber-600 hover:bg-amber-700' : 'bg-red-600 hover:bg-red-700'}
+              onClick={handleExecuteBatch}
+              disabled={resolveDialog.loading || resolvedItems.filter(it => itemChecked[it.codigo]).length === 0}
+              className={resolveDialog.isDryRun ? 'bg-amber-600 hover:bg-amber-700' : 'bg-red-600 hover:bg-red-700'}
               data-testid="confirm-execute-btn"
             >
-              {executing ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Play className="w-4 h-4 mr-2" />
-              )}
-              {confirmDialog.isDryRun ? 'Ejecutar DRY RUN' : 'Ejecutar REAL'}
+              <Play className="w-4 h-4 mr-2" />
+              {resolveDialog.isDryRun ? 'Ejecutar DRY RUN del conjunto' : 'Ejecutar REAL del conjunto'}
             </Button>
           </DialogFooter>
         </DialogContent>
