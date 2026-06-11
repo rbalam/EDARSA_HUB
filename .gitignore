@@ -4,6 +4,11 @@
 .idea/
 .vscode/
 
+# Credenciales de prueba (no subir a git)
+memory/test_credentials.md
+/app/memory/test_credentials.md
+
+
 # Dependencies
 node_modules/
 /node_modules
