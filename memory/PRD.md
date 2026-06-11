@@ -13,6 +13,12 @@ Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosist
 Spanish (Español)
 
 ### 📋 BACKLOG (pendiente, no implementado)
+### 📋 BACKLOG (pendiente, no implementado)
+- **🟡 Escalar el ENRIQUECIDO (tipo de servicio + pagos por ticket) a las 5 unidades × 24 meses.**
+  Pilotos ESTELAR y ORIGEN (mayo-2026) ya cargados y validados. El escalado completo (2024-06 →
+  2026-06) está LISTO en `scripts/escalar_enrich_5u_24m.py` pero **NO ejecutado** por decisión del
+  usuario (queda pendiente de su autorización explícita para correrlo). ESTADO: PENDIENTE / BACKLOG.
+
 - **🔴 Handlers REALES de re-sync por tipo (lo más valioso):** cablear los handlers reales de
   Detalle de Ventas, Productos, Proveedores, Filtros, Requisiciones e Inventarios Físicos a sus
   fuentes/scripts reales, para que "Ejecutar" funcione en TODOS los tipos del catálogo (hoy solo
