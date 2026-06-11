@@ -33,7 +33,7 @@ import secrets  # Reemplaza random para generación de datos demo
 
 # Importar función de filtrado de visibilidad
 from modules.comercial.repository import get_sucursales_visibles_config
-from core.sql_first.db import get_sql_connection
+from core.sql_first.db import get_sql_connection, fetch_all_dict
 
 router = APIRouter(prefix="/finanzas/cuentas-por-pagar", tags=["Cuentas por Pagar"])
 
@@ -128,6 +128,128 @@ async def get_mpro_repo():
 async def get_softrest_repo():
     """Obtiene específicamente el repositorio SoftRestaurant"""
     return _softrest_repo
+
+# ============================================================================
+# LECTURA NO-LIVE (CANÓNICA) · dbo.Finanzas_CxP_Sync
+# La pantalla de CxP lee EXCLUSIVAMENTE de esta tabla, poblada por el job
+# core/scheduler/jobs/cxp_sync_job.py (registrado en el scheduler).
+# ============================================================================
+def _cxp_rows_canonico(unidad=None, tipo=None, solo_vencidas=False):
+    where = ["Activo=1", "Saldo>0", "ISNULL(EsDemo,0)=0"]
+    params = []
+    if unidad and str(unidad).lower() not in ("todas", "all", ""):
+        where.append("(UPPER(UnidadNegocio)=UPPER(%s) OR UPPER(ISNULL(UnidadNegocioNombre,''))=UPPER(%s) "
+                     "OR UPPER(ISNULL(UnidadNegocioNombre,'')) LIKE UPPER(%s))")
+        params += [unidad, unidad, f"%{unidad}%"]
+    if tipo:
+        where.append("TipoProveedor=%s"); params.append(tipo)
+    if solo_vencidas:
+        where.append("DiasVencido>0")
+    sql = "SELECT * FROM dbo.Finanzas_CxP_Sync WHERE " + " AND ".join(where) + " ORDER BY Saldo DESC"
+    return fetch_all_dict(sql, tuple(params))
+
+
+def _cxp_factura_dict(r):
+    dias = int(r.get('DiasVencido') or 0)
+    saldo = float(r.get('Saldo') or 0)
+    fe, fv = r.get('FechaEntrada'), r.get('FechaVencimiento')
+    return {
+        "factura_id": f"CXP_{r.get('CxpSyncID')}",
+        "proveedor_id": r.get('ProveedorID'),
+        "proveedor_nombre": r.get('ProveedorNombre') or 'N/A',
+        "proveedor_rfc": r.get('ProveedorRFC') or '',
+        "tipo_proveedor": r.get('TipoProveedor') or 'X',
+        "tipo_proveedor_nombre": r.get('TipoProveedorNombre') or 'OTROS',
+        "sucursal_id": r.get('UnidadNegocio'),
+        "sucursal_nombre": r.get('UnidadNegocioNombre'),
+        "folio_entrada": r.get('FolioEntrada') or '-',
+        "folio_factura": r.get('FolioFactura') or '-',
+        "fecha_entrada": str(fe)[:10] if fe else None,
+        "fecha_vencimiento": str(fv)[:10] if fv else '-',
+        "referencia": r.get('Referencia') or '-',
+        "dias_vencida": dias,
+        "importe_original": float(r.get('MontoOriginal') or 0),
+        "saldo": saldo,
+        "por_vencer": saldo if dias <= 0 else 0,
+        "venc_1_30": saldo if 1 <= dias <= 30 else 0,
+        "venc_31_60": saldo if 31 <= dias <= 60 else 0,
+        "venc_61_90": saldo if 61 <= dias <= 90 else 0,
+        "venc_91_plus": saldo if dias > 90 else 0,
+        "decision_pago": False, "importe_a_pagar": 0,
+        "fuente": r.get('Fuente'),
+    }
+
+
+def _cxp_listar_canonico(unidad, tipo, solo_vencidas):
+    facturas = [_cxp_factura_dict(r) for r in _cxp_rows_canonico(unidad, tipo, solo_vencidas)]
+    nombres = {'A': 'ALIMENTOS', 'B': 'BEBIDAS', 'X': 'OTROS'}
+    tipos = {}
+    for f in facturas:
+        t = f['tipo_proveedor']
+        if t not in tipos:
+            tipos[t] = {"proveedor_id": t, "proveedor_nombre": f"{t} - {nombres.get(t, 'OTROS')}",
+                        "proveedor_rfc": "", "cantidad_facturas": 0, "subtotal_importe": 0.0,
+                        "subtotal_saldo": 0.0, "cantidad_vencidas": 0, "facturas": []}
+        g = tipos[t]
+        g["facturas"].append(f); g["cantidad_facturas"] += 1
+        g["subtotal_importe"] += f["importe_original"]; g["subtotal_saldo"] += f["saldo"]
+        if f["dias_vencida"] > 0:
+            g["cantidad_vencidas"] += 1
+    provs = [tipos[t] for t in ['A', 'B', 'X'] if t in tipos]
+    totales = {
+        "total_saldo": round(sum(p["subtotal_saldo"] for p in provs), 2),
+        "total_importe": round(sum(p["subtotal_importe"] for p in provs), 2),
+        "total_proveedores": len(provs),
+        "cantidad_facturas": sum(p["cantidad_facturas"] for p in provs),
+        "cantidad_vencidas": sum(p["cantidad_vencidas"] for p in provs),
+    }
+    return {"fuente": "CANONICO_EDARSAHUB", "proveedores": provs,
+            "total_facturas": totales["cantidad_facturas"], "totales": totales}
+
+
+def _cxp_resumen_canonico(unidad):
+    rows = _cxp_rows_canonico(unidad)
+    b = {'c': [0, 0.0], 'v1': [0, 0.0], 'v2': [0, 0.0], 'v3': [0, 0.0], 'v4': [0, 0.0]}
+    total = 0.0; n = 0
+    for r in rows:
+        s = float(r.get('Saldo') or 0); d = int(r.get('DiasVencido') or 0)
+        if s <= 0:
+            continue
+        n += 1; total += s
+        k = 'c' if d <= 0 else 'v1' if d <= 30 else 'v2' if d <= 60 else 'v3' if d <= 90 else 'v4'
+        b[k][0] += 1; b[k][1] += s
+    bk = lambda k: {"cantidad": b[k][0], "monto": round(b[k][1], 2)}
+    return {"fuente": "CANONICO_EDARSAHUB",
+            "resumen": {"total_facturas": n, "total_saldo": round(total, 2),
+                        "total_decision_pago": 0, "facturas_con_decision": 0},
+            "antiguedad": {"corriente": bk('c'), "vencidas_1_30": bk('v1'), "vencidas_31_60": bk('v2'),
+                           "vencidas_61_90": bk('v3'), "vencidas_90_plus": bk('v4'),
+                           "total_facturas": n, "total_saldo": round(total, 2)}}
+
+
+def _cxp_proveedores_canonico(unidad):
+    rows = _cxp_rows_canonico(unidad)
+    provs = {}
+    for r in rows:
+        pid = r.get('ProveedorID')
+        if pid not in provs:
+            provs[pid] = {"proveedor_id": pid, "proveedor_nombre": r.get('ProveedorNombre') or f"Proveedor {pid}",
+                          "proveedor_rfc": r.get('ProveedorRFC') or '', "total_saldo": 0.0, "cantidad_facturas": 0}
+        provs[pid]["total_saldo"] += float(r.get('Saldo') or 0)
+        provs[pid]["cantidad_facturas"] += 1
+    return {"fuente": "CANONICO_EDARSAHUB",
+            "proveedores": sorted(provs.values(), key=lambda x: -x["total_saldo"])}
+
+
+def _cxp_sucursales_canonico():
+    rows = fetch_all_dict(
+        "SELECT UnidadNegocio, MAX(UnidadNegocioNombre) nombre, MAX(Fuente) fuente, "
+        "COUNT(*) n, SUM(Saldo) saldo FROM dbo.Finanzas_CxP_Sync "
+        "WHERE Activo=1 AND Saldo>0 AND ISNULL(EsDemo,0)=0 GROUP BY UnidadNegocio ORDER BY saldo DESC")
+    return {"fuente": "CANONICO_EDARSAHUB",
+            "sucursales": [{"SucursalID": r["UnidadNegocio"], "Nombre_Sucursal": r.get("nombre") or r["UnidadNegocio"],
+                            "CantidadFacturas": int(r["n"] or 0), "SaldoTotal": float(r["saldo"] or 0),
+                            "Sistema": r.get("fuente")} for r in rows]}
 
 # ============================================================================
 # DATOS DEMO (Solo se usan si SQL no tiene datos o use_demo=true)
@@ -245,6 +367,8 @@ async def listar_facturas_pendientes(
     Filtros: sucursal, proveedor, tipo (A/B/X), fecha de corte, solo vencidas.
     Agrupa por TIPO DE PROVEEDOR (A=Alimentos, B=Bebidas, X=Otros).
     """
+    # === NO-LIVE: lee EXCLUSIVAMENTE de la tabla canónica Finanzas_CxP_Sync ===
+    return _cxp_listar_canonico(sucursal_id, tipo_proveedor, solo_vencidas)
     if use_demo:
         # Ir directo a modo demo
         pass
@@ -827,6 +951,8 @@ async def get_resumen_cuentas_por_pagar(
     
     Si una fuente falla, reporta resultado parcial con la otra.
     """
+    # === NO-LIVE: lee EXCLUSIVAMENTE de la tabla canónica Finanzas_CxP_Sync ===
+    return _cxp_resumen_canonico(sucursal_id)
     if use_demo:
         # Ir directo a modo demo (código existente abajo)
         pass
@@ -997,7 +1123,8 @@ async def listar_proveedores_con_saldo(
     use_demo: bool = Query(False, description="Usar datos demo en lugar de SQL real"),
     current_user: Dict = Depends(get_current_user)
 ):
-    """Lista proveedores que tienen facturas pendientes - CONECTADO A MPRO"""
+    """Lista proveedores que tienen facturas pendientes - NO-LIVE (canónico)"""
+    return _cxp_proveedores_canonico(sucursal_id)
     mpro_repo = await get_mpro_repo()
     
     # Usar MPRO como fuente principal
@@ -1067,6 +1194,8 @@ async def listar_sucursales_cxp(
     - SoftRestaurant: CIENFUEGOS, LA ESTELAR, 130° MERIDA
     - ManagementPro: ORIGEN (0023), 130° QRO (0021)
     """
+    # === NO-LIVE: lee EXCLUSIVAMENTE de la tabla canónica Finanzas_CxP_Sync ===
+    return _cxp_sucursales_canonico()
     softrest_repo = await get_softrest_repo()
     mpro_repo = await get_mpro_repo()
     

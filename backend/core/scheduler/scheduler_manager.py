@@ -362,6 +362,38 @@ class SchedulerManager:
         finally:
             await lock.release()
     
+    async def _run_sync_cxp_facturas_job(self):
+        """Wrapper async: sincroniza Cuentas por Pagar hacia dbo.Finanzas_CxP_Sync (canónico)."""
+        job_config = self.config.jobs.get("sync_cxp_facturas")
+        if not job_config or not job_config.enabled:
+            return
+        lock_manager = get_lock_manager(self.db)
+        lock = lock_manager.get_lock("sync_cxp_facturas")
+        if not await lock.acquire(timeout_seconds=600):
+            logger.warning("[SYNC_CXP] Lock ocupado - ejecución en progreso")
+            return
+        job_logger = get_job_logger(self.db)
+        log_entry = await job_logger.start_execution("sync_cxp_facturas")
+        try:
+            from .jobs.cxp_sync_job import run_cxp_sync_async
+            result = await run_cxp_sync_async(dry_run=False)
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status="failed" if result.get("errores") else "success",
+                processed_count=result.get("facturas_persistidas", 0),
+                success_count=result.get("facturas_persistidas", 0),
+                message=f"CxP SR={result.get('softrestaurant')} MPRO={result.get('mpro')} "
+                        f"persistidas={result.get('facturas_persistidas')}",
+                extra_metadata={"result_summary": result},
+            )
+            logger.info(f"[SYNC_CXP] Completado: {result.get('facturas_persistidas')} facturas")
+        except Exception as e:
+            logger.error(f"[SYNC_CXP] Error: {e}")
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+        finally:
+            await lock.release()
+
+
     async def _run_sync_propinas_tpv_incremental_job(self):
         """
         Wrapper async para ejecutar sincronización incremental de Propinas TPV.
@@ -1014,6 +1046,28 @@ class SchedulerManager:
             )
             self._jobs["sync_propinas_tpv_incremental"] = sync_propinas_config
             logger.info(f"Job SYNC_PROPINAS_TPV registrado: intervalo={sync_propinas_config.interval_seconds}s")
+
+        # ========================================
+        # CxP: Job Sincronización Cuentas por Pagar (canónico)
+        # ========================================
+        sync_cxp_config = self.config.jobs.get("sync_cxp_facturas")
+        if sync_cxp_config and sync_cxp_config.enabled:
+            if sync_cxp_config.cron_expression:
+                trigger = CronTrigger.from_crontab(sync_cxp_config.cron_expression)
+            else:
+                trigger = IntervalTrigger(seconds=sync_cxp_config.interval_seconds)
+            self._scheduler.add_job(
+                self._run_sync_cxp_facturas_job,
+                trigger=trigger,
+                id="sync_cxp_facturas",
+                name="SYNC Cuentas por Pagar",
+                replace_existing=True,
+                max_instances=1,
+                coalesce=True
+            )
+            self._jobs["sync_cxp_facturas"] = sync_cxp_config
+            logger.info(f"Job SYNC_CXP registrado: cron={sync_cxp_config.cron_expression}")
+
         
         # ========================================
         # SUBFASE 4: Job Sincronización Comercial V2
@@ -1309,6 +1363,9 @@ class SchedulerManager:
             return {"status": "executed", "job_id": job_id}
         elif job_id == "sync_propinas_tpv_incremental":
             await self._run_sync_propinas_tpv_incremental_job()
+            return {"status": "executed", "job_id": job_id}
+        elif job_id == "sync_cxp_facturas":
+            await self._run_sync_cxp_facturas_job()
             return {"status": "executed", "job_id": job_id}
         elif job_id == "sync_comercial_v2":
             await self._run_sync_comercial_v2_job()

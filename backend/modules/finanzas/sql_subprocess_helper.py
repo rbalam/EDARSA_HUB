@@ -99,6 +99,10 @@ async def execute_sql_subprocess_secure(
     env['PYTHONIOENCODING'] = 'utf-8'
     env['LANG'] = 'C.UTF-8'
     env['LC_ALL'] = 'C.UTF-8'
+    # El subprocess es un intérprete nuevo: garantizar que /app/backend esté en PYTHONPATH
+    # para que el worker pueda 'import core...' (si falta, el worker devuelve VACIO -> datos demo).
+    _backend_root = str(Path(__file__).resolve().parents[2])
+    env['PYTHONPATH'] = _backend_root + (os.pathsep + env['PYTHONPATH'] if env.get('PYTHONPATH') else '')
     
     try:
         # Ejecutar subprocess con stdin
@@ -211,6 +215,10 @@ async def execute_sql_subprocess(
     env['PYTHONIOENCODING'] = 'utf-8'
     env['LANG'] = 'C.UTF-8'
     env['LC_ALL'] = 'C.UTF-8'
+    # El subprocess es un intérprete nuevo: garantizar que /app/backend esté en PYTHONPATH
+    # para que el worker pueda 'import core...' (si falta, el worker devuelve VACIO -> datos demo).
+    _backend_root = str(Path(__file__).resolve().parents[2])
+    env['PYTHONPATH'] = _backend_root + (os.pathsep + env['PYTHONPATH'] if env.get('PYTHONPATH') else '')
     
     try:
         # Ejecutar subprocess

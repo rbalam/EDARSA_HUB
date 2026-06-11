@@ -218,6 +218,17 @@ class SchedulerConfig(BaseModel):
                 batch_size=10,
                 timeout_seconds=300  # 5 minutos max
             ),
+            # CxP: Sincronización de Cuentas por Pagar a tabla canónica (nocturno 04:30)
+            "sync_cxp_facturas": JobConfig(
+                job_id="sync_cxp_facturas",
+                job_name="SYNC Cuentas por Pagar",
+                description="Sincroniza facturas pendientes (SoftRestaurant + MPRO) hacia la tabla canónica dbo.Finanzas_CxP_Sync (NO-LIVE)",
+                enabled=os.environ.get("SCHEDULER_SYNC_CXP_ENABLED", "true").lower() == "true",
+                cron_expression=os.environ.get("SCHEDULER_SYNC_CXP_CRON", "30 4 * * *"),
+                interval_seconds=86400,
+                batch_size=2000,
+                timeout_seconds=600,
+            ),
             # Cava de Socios: Envío mensual de estados de cuenta
             "cava_socios_monthly": JobConfig(
                 job_id="cava_socios_monthly",

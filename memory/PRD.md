@@ -13,6 +13,25 @@ Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosist
 Spanish (Español)
 
 ### 📋 BACKLOG (pendiente, no implementado)
+### Estado actualizado (2026-06-13) — Cuentas por Pagar 100% canónico (NO-LIVE) + job en scheduler
+- ✅ **Causa raíz "información demo"**: el worker de subprocess SQL fallaba con `ModuleNotFoundError: core`
+  (faltaba `PYTHONPATH` en el subprocess) → toda consulta a CxP en vivo fallaba y caía a DEMO.
+  **FIX** en `modules/finanzas/sql_subprocess_helper.py`: se inyecta `PYTHONPATH=/app/backend` al env
+  del subprocess (aplica a TODOS los workers de finanzas).
+- ✅ **Tabla canónica `dbo.Finanzas_CxP_Sync`** (migración `cxp_sync_canonico_20260613.py`) poblada por el
+  **job `core/scheduler/jobs/cxp_sync_job.py`** desde SoftRestaurant (CIENFUEGOS/ESTELAR/130MID) + MPRO
+  (ORIGEN=0023/130QRO=0021, mapeo canónico desde `Unidades_Negocio`, sin hardcode; sucursales MPRO no
+  canónicas se omiten). Refresh idempotente con **guard anti-borrado** (no vacía si la extracción falla).
+- ✅ **Job registrado en el scheduler** (`sync_cxp_facturas`, cron 04:30 diario) + ejecución manual
+  (`POST /api/v2/scheduler/jobs/sync_cxp_facturas/run`) + bitácora. CLI: `scripts/sync_cxp_canonico.py`.
+- ✅ **Endpoints CxP reescritos a NO-LIVE** (lectura exclusiva de la canónica, demo eliminado):
+  `/cuentas-por-pagar` (agrupado A/B/X con detalle de facturas), `/resumen` (antigüedad), `/proveedores`,
+  `/sucursales`. **Filtro de unidad arreglado** (front mapea GUID→código canónico; backend filtra por código/nombre).
+- **Verificado por cURL** (admin@edarsa.com): CIENFUEGOS=368 facturas $5.04M; 5 unidades, $37.9M total;
+  aging ORIGEN correcto; corrida vía scheduler repuebla las 5 unidades. ⚠️ Validación VISUAL pendiente
+  del usuario (ricardo@edarsa.com.mx). Datos = 2,803 facturas reales, CERO demo.
+
+
 ### 📋 BACKLOG (pendiente, no implementado)
 - **🟡 Escalar el ENRIQUECIDO (tipo de servicio + pagos por ticket) a las 5 unidades × 24 meses.**
   Pilotos ESTELAR y ORIGEN (mayo-2026) ya cargados y validados. El escalado completo (2024-06 →
