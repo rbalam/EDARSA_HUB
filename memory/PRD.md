@@ -13,6 +13,14 @@ Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosist
 Spanish (Español)
 
 ### 📋 BACKLOG (pendiente, no implementado)
+- **🔴 Handlers REALES de re-sync por tipo (lo más valioso):** cablear los handlers reales de
+  Detalle de Ventas, Productos, Proveedores, Filtros, Requisiciones e Inventarios Físicos a sus
+  fuentes/scripts reales, para que "Ejecutar" funcione en TODOS los tipos del catálogo (hoy solo
+  `comercial_ventas_cerradas` ejecuta de verdad; el resto devuelve "Disponible próximamente").
+  Al implementarse, marcar `HandlerImplementado=1` en `dbo.Sistema_Sync_Catalogo`. ESTADO: PENDIENTE.
+- **🟡 Pantalla de edición del catálogo de sincronizaciones:** UI para crear/editar tipos, grupos y
+  dependencias (obligatorias vs sugeridas) y orden. El backend CRUD ya está listo
+  (`/resync/catalogo` POST/PUT/PATCH). Futuro: orden y dependencias arrastrables. ESTADO: PENDIENTE.
 - **🧭 NAVEGACIÓN — Enlazar pantallas huérfanas al menú Enterprise (auditoría 2026-06-12):**
   rutas que existen en `App.js` pero NO son accesibles desde el menú Enterprise (solo por URL o
   desde el menú LEGACY de `Layout.js`). PENDIENTE decidir cuáles enlazar y en qué grupo:
