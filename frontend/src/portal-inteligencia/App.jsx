@@ -13,7 +13,7 @@ import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard, BarChart3, Wine, Clock, Users, 
   DollarSign, TrendingUp, LogOut, ChevronDown, User,
-  Package, Layers, Building2, Percent, Droplet, Tag, LineChart
+  Package, Layers, Building2, Percent, Droplet, Tag, LineChart, FileBarChart
 } from 'lucide-react';
 
 // Páginas
@@ -27,6 +27,7 @@ import ClasificacionAdminPage from './pages/ClasificacionAdminPage';
 import ReporteadorBI from './pages/ReporteadorBI';
 import AnalisisPAXPage from './pages/AnalisisPAXPage';
 import BenchmarkGrupoPage from './pages/BenchmarkGrupoPage';
+import ReportesISCAMPage from './pages/ReportesISCAMPage';
 import api, { getToken } from '../lib/api';
 import { ShieldAlert } from 'lucide-react';
 import { intelApi, getMeIntel, logoutIntel, haySesionIntel } from './api/client';
@@ -173,6 +174,7 @@ export default function PortalInteligenciaApp() {
     { id: 'pax', label: 'Análisis PAX', icon: Users },
     { id: 'benchmark', label: 'Benchmark Grupo', icon: TrendingUp },
     { id: 'reporteador-bi', label: 'Reporteador BI', icon: LineChart },
+    { id: 'iscam', label: 'Reportes ISCAM', icon: FileBarChart },
     { id: 'clasificacion', label: 'Clasificación (admin)', icon: Tag },
   // Usuarios EXTERNOS: solo vistas de consulta (sin administración/clasificación).
   ].filter((item) => !esExterno || item.id !== 'clasificacion');
@@ -208,6 +210,8 @@ export default function PortalInteligenciaApp() {
         return <ClasificacionAdminPage {...props} />;
       case 'reporteador-bi':
         return <ReporteadorBI {...props} />;
+      case 'iscam':
+        return <ReportesISCAMPage {...props} />;
       default:
         return <DashboardIA {...props} />;
     }

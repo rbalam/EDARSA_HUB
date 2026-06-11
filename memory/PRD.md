@@ -46,6 +46,29 @@ Spanish (Español)
   sincronizan). Requiere primero poblar/crear el job de sync de detalle. El usuario eligió desbloqueo
   pragmático (B) ahora; A queda como siguiente incremento. ESTADO: PENDIENTE.
 
+### Estado actualizado (2026-06-12) — Reportes ISCAM (Portal Inteligencia)
+- ✅ **Menú "Reportes ISCAM"** agregado al Portal de Inteligencia Comercial, 100% sobre tablas
+  CANÓNICAS (NO-LIVE, sin hardcode, SIN DUPLICAR — reutiliza tablas existentes):
+  - **Fuentes:** `dbo.Sync_Sales` (112k tickets, encabezado + `items` JSON de productos) y
+    `dbo.Finanzas_CortesCaja` (formas de cobro: efectivo/tarjeta/amex/vales/otros/propinas/comisiones)
+    — esta última REUTILIZADA del módulo Finanzas por indicación del usuario (no recrear).
+  - **Backend** `modules/inteligencia_comercial/iscam_routes.py` (`iscam_router`, prefix
+    `/api/inteligencia/iscam`, montado con `intel_portal_guard` → scoping por unidad para externos):
+      1. `/ventas-periodos` (12 periodos) + drill `/productos` + drill `/tickets`
+      2. `/cuentas` (resumen) + drill `/cuentas/detalle`
+      3. `/comandas` (OPENJSON sobre items)
+      4. `/formas-pago` (desde Finanzas_CortesCaja, con totales y efectivo)
+  - **Índices canónicos** creados para performance: `IX_SyncSales_Unidad_Fecha`,
+    `IX_CortesCaja_Unidad_Fecha` (report 1 pasó de 26s → 0.6s).
+  - **Frontend** `portal-inteligencia/pages/ReportesISCAMPage.jsx`: 4 sub-pestañas, tablas con tema
+    oscuro, **drill-down por DOBLE CLIC** (periodo→productos→tickets; cuenta→productos), filtros de
+    fecha, fila de TOTALES en formas de pago. Verificado por cURL + screenshots (login externo →
+    ESTELAR → tabla + drill OK). Sin testing_agent.
+  - ⚠️ **PENDIENTE (enriquecer sync, opción b del usuario):** desglose por TIPO DE SERVICIO
+    (Comedor/Domicilio/Rápido) del Reporte 1 y formas de pago A NIVEL TICKET (tabla canónica
+    `dbo.Finanzas_CortesCaja_DetallePagos` existe pero está VACÍA) no están sincronizados todavía.
+    Hoy formas de pago es a nivel CORTE (turno/caja), que es la granularidad canónica disponible.
+
 ### Estado actualizado (2026-06-12) — Portal Inteligencia Comercial EXTERNO (login propio + scoping)
 - ✅ **Feature: Portal de Inteligencia Comercial como portal EXTERNO** (como Proveedores), priorizado por
   el usuario. Antes solo accedían usuarios internos del CRM. Ahora:
