@@ -1,0 +1,1521 @@
+===== STATUS =====
+?? auditorias_canonicas/
+
+===== TABLAS/VISTAS CANONICAS USADAS EN CODIGO =====
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:2:-- SQL SCRIPT 66 - Datos de Prueba Multi-Unidad
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:13:    DECLARE @Rol1 INT = (SELECT TOP 1 RolID FROM Usuario_Roles ORDER BY RolID);
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:14:    DECLARE @Rol2 INT = (SELECT TOP 1 RolID FROM Usuario_Roles WHERE RolID <> @Rol1 ORDER BY RolID);
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:16:    DECLARE @Unidad1 UNIQUEIDENTIFIER = (SELECT TOP 1 id FROM Unidades_Negocio ORDER BY nombre);
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:17:    DECLARE @Unidad2 UNIQUEIDENTIFIER = (
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:19:        FROM Unidades_Negocio
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:20:        WHERE id <> @Unidad1
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:24:    IF @UsuarioID IS NOT NULL AND @Rol1 IS NOT NULL AND @Unidad1 IS NOT NULL
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:28:            FROM Usuario_RolesContexto
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:31:              AND UnidadNegocioID = @Unidad1
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:35:            INSERT INTO Usuario_RolesContexto (
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:36:                UsuarioID, RolID, UnidadNegocioID, EsRolPrimario, Activo, FechaAlta, Observaciones, CreatedBy
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:39:                @UsuarioID, @Rol1, @Unidad1, 1, 1, GETDATE(),
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:40:                'PRUEBA_MULTI_UNIDAD_1', 'SCRIPT_SQL_66'
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:45:    IF @UsuarioID IS NOT NULL AND @Rol2 IS NOT NULL AND @Unidad2 IS NOT NULL
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:49:            FROM Usuario_RolesContexto
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:52:              AND UnidadNegocioID = @Unidad2
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:56:            INSERT INTO Usuario_RolesContexto (
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:57:                UsuarioID, RolID, UnidadNegocioID, EsRolPrimario, Activo, FechaAlta, Observaciones, CreatedBy
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:60:                @UsuarioID, @Rol2, @Unidad2, 0, 1, GETDATE(),
+backend/sql_scripts/SQL_SCRIPT_66_DATOS_PRUEBA_MULTI_UNIDAD.sql:61:                'PRUEBA_MULTI_UNIDAD_2', 'SCRIPT_SQL_66'
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:2:-- SQL SCRIPT 64 - RBAC Context (Tabla + Migración + Vista)
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:14:    IF OBJECT_ID('dbo.Usuario_RolesContexto', 'U') IS NULL
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:16:        CREATE TABLE dbo.Usuario_RolesContexto (
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:22:            UnidadNegocioID UNIQUEIDENTIFIER NULL,
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:25:            EsRolPrimario BIT NOT NULL CONSTRAINT DF_Usuario_RolesContexto_EsRolPrimario DEFAULT(0),
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:26:            Activo BIT NOT NULL CONSTRAINT DF_Usuario_RolesContexto_Activo DEFAULT(1),
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:28:            FechaAlta DATETIME2 NOT NULL CONSTRAINT DF_Usuario_RolesContexto_FechaAlta DEFAULT(SYSDATETIME()),
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:33:            CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Usuario_RolesContexto_CreatedAt DEFAULT(SYSDATETIME()),
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:46:        WHERE name = 'FK_Usuario_RolesContexto_Usuario'
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:49:        ALTER TABLE dbo.Usuario_RolesContexto
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:50:            ADD CONSTRAINT FK_Usuario_RolesContexto_Usuario
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:51:            FOREIGN KEY (UsuarioID) REFERENCES dbo.Usuario_Catalogo(UsuarioID);
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:57:        WHERE name = 'FK_Usuario_RolesContexto_Rol'
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:60:        ALTER TABLE dbo.Usuario_RolesContexto
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:61:            ADD CONSTRAINT FK_Usuario_RolesContexto_Rol
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:62:            FOREIGN KEY (RolID) REFERENCES dbo.Usuario_Roles(RolID);
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:70:        WHERE name = 'IX_Usuario_RolesContexto_Usuario'
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:71:          AND object_id = OBJECT_ID('dbo.Usuario_RolesContexto')
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:74:        CREATE INDEX IX_Usuario_RolesContexto_Usuario
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:75:            ON dbo.Usuario_RolesContexto(UsuarioID, Activo, UnidadNegocioID, EmpresaID, SucursalID);
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:80:        WHERE name = 'IX_Usuario_RolesContexto_Contexto'
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:81:          AND object_id = OBJECT_ID('dbo.Usuario_RolesContexto')
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:84:        CREATE INDEX IX_Usuario_RolesContexto_Contexto
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:85:            ON dbo.Usuario_RolesContexto(UnidadNegocioID, EmpresaID, SucursalID, Activo);
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:90:        WHERE name = 'UX_Usuario_RolesContexto_UniqueActivo'
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:91:          AND object_id = OBJECT_ID('dbo.Usuario_RolesContexto')
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:94:        CREATE UNIQUE INDEX UX_Usuario_RolesContexto_UniqueActivo
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:95:            ON dbo.Usuario_RolesContexto(UsuarioID, RolID, EmpresaID, UnidadNegocioID, SucursalID, Activo)
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:102:    IF OBJECT_ID('dbo.Usuario_RolesAsignacion', 'U') IS NOT NULL
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:104:        INSERT INTO dbo.Usuario_RolesContexto (
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:108:            UnidadNegocioID,
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:121:            NULL AS UnidadNegocioID,
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:126:            'MIGRADO_DESDE_Usuario_RolesAsignacion' AS Observaciones,
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:129:        FROM dbo.Usuario_RolesAsignacion ura
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:132:            FROM dbo.Usuario_RolesContexto x
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:137:              AND x.UnidadNegocioID IS NULL
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:145:    IF OBJECT_ID('dbo.vw_Usuario_RolesContexto', 'V') IS NOT NULL
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:146:        DROP VIEW dbo.vw_Usuario_RolesContexto;
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:148:        CREATE VIEW dbo.vw_Usuario_RolesContexto
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:159:            urc.UnidadNegocioID,
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:160:            un.nombre AS UnidadNegocioNombre,
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:172:        FROM dbo.Usuario_RolesContexto urc
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:173:        INNER JOIN dbo.Usuario_Catalogo u
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:175:        INNER JOIN dbo.Usuario_Roles r
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:177:        LEFT JOIN dbo.Sistema_Empresas e
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:179:        LEFT JOIN dbo.Unidades_Negocio un
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:180:            ON urc.UnidadNegocioID = un.id
+backend/sql_scripts/SQL_SCRIPT_64_RBAC_CONTEXT.sql:181:        LEFT JOIN dbo.Sistema_Sucursales s
+backend/sql_scripts/SQL_VALIDACION_RBAC_CONTEXT.sql:2:-- VALIDACIÓN RBAC CONTEXT
+backend/sql_scripts/SQL_VALIDACION_RBAC_CONTEXT.sql:7:PRINT '===== VALIDACION RBAC CONTEXT =====';
+backend/sql_scripts/SQL_VALIDACION_RBAC_CONTEXT.sql:10:    CASE WHEN OBJECT_ID('dbo.Usuario_RolesContexto', 'U') IS NOT NULL THEN 'OK' ELSE 'FALTA' END AS Tabla_Usuario_RolesContexto,
+backend/sql_scripts/SQL_VALIDACION_RBAC_CONTEXT.sql:11:    CASE WHEN OBJECT_ID('dbo.vw_Usuario_RolesContexto', 'V') IS NOT NULL THEN 'OK' ELSE 'FALTA' END AS Vista_vw_Usuario_RolesContexto;
+backend/sql_scripts/SQL_VALIDACION_RBAC_CONTEXT.sql:14:SELECT COUNT(*) AS TotalRolesContexto
+backend/sql_scripts/SQL_VALIDACION_RBAC_CONTEXT.sql:15:FROM dbo.Usuario_RolesContexto;
+backend/sql_scripts/SQL_VALIDACION_RBAC_CONTEXT.sql:17:PRINT '===== MUESTRA ROLES CONTEXTO =====';
+backend/sql_scripts/SQL_VALIDACION_RBAC_CONTEXT.sql:19:FROM dbo.vw_Usuario_RolesContexto
+backend/sql_scripts/SQL_VALIDACION_RBAC_CONTEXT.sql:27:FROM dbo.Usuario_Catalogo u
+backend/sql_scripts/SQL_VALIDACION_RBAC_CONTEXT.sql:30:    FROM dbo.Usuario_RolesContexto urc
+backend/00_auditar_unidades_hardcodeadas.sh:4:echo "=== AUDITORIA HARDCODE UNIDADES ==="
+backend/00_auditar_unidades_hardcodeadas.sh:14:  > /app/backend/auditoria_unidades_hardcodeadas.txt 2>/dev/null || true
+backend/00_auditar_unidades_hardcodeadas.sh:16:wc -l /app/backend/auditoria_unidades_hardcodeadas.txt
+backend/00_auditar_unidades_hardcodeadas.sh:17:head -50 /app/backend/auditoria_unidades_hardcodeadas.txt
+backend/tests_guardrails/test_no_hardcode_unidades.py:16:    "tests_guardrails/test_no_hardcode_unidades.py",
+backend/tests_guardrails/test_no_hardcode_unidades.py:18:    "auditoria_unidades_hardcodeadas.txt",
+backend/tests_guardrails/test_no_hardcode_unidades.py:48:    print("FAIL - hardcodes de unidades encontrados:")
+backend/tests_guardrails/test_no_hardcode_unidades.py:53:print("OK - sin hardcodes de unidades")
+backend/tests_guardrails/test_p4_rbac_sql_runtime_ready.py:5:from core.rbac_sql.service import RBACSQLService
+backend/tests_guardrails/test_p4_rbac_sql_runtime_ready.py:8:    "RBAC_Roles",
+backend/tests_guardrails/test_p4_rbac_sql_runtime_ready.py:9:    "RBAC_Permisos",
+backend/tests_guardrails/test_p4_rbac_sql_runtime_ready.py:10:    "RBAC_RolesPermisos",
+backend/tests_guardrails/test_p4_rbac_sql_runtime_ready.py:11:    "RBAC_UsuariosRoles",
+backend/tests_guardrails/test_p4_rbac_sql_runtime_ready.py:12:    "RBAC_UsuariosEmpresas",
+backend/tests_guardrails/test_p4_rbac_sql_runtime_ready.py:13:    "RBAC_UsuariosUnidadesNegocio",
+backend/tests_guardrails/test_p4_rbac_sql_runtime_ready.py:14:    "RBAC_UsuariosSucursales",
+backend/tests_guardrails/test_p4_rbac_sql_runtime_ready.py:15:    "RBAC_AuditLog",
+backend/tests_guardrails/test_p4_rbac_sql_runtime_ready.py:27:cur.execute("SELECT COUNT(*) FROM dbo.RBAC_Roles WHERE Activo=1")
+backend/tests_guardrails/test_p4_rbac_sql_runtime_ready.py:28:roles = cur.fetchone()[0]
+backend/tests_guardrails/test_p4_rbac_sql_runtime_ready.py:30:cur.execute("SELECT COUNT(*) FROM dbo.RBAC_Permisos WHERE Activo=1")
+backend/tests_guardrails/test_p4_rbac_sql_runtime_ready.py:31:permisos = cur.fetchone()[0]
+backend/tests_guardrails/test_p4_rbac_sql_runtime_ready.py:39:if roles < 5 or permisos < 5:
+backend/tests_guardrails/test_p4_rbac_sql_runtime_ready.py:40:    print("FAIL seed insuficiente:", roles, permisos)
+backend/tests_guardrails/test_p4_rbac_sql_runtime_ready.py:43:print("PASS RBAC SQL runtime listo")
+backend/tests_guardrails/test_p4_rbac_sql_runtime_ready.py:44:print(f"  Tablas: {len(required)}, Roles: {roles}, Permisos: {permisos}")
+backend/tests_guardrails/test_p2_runtime_critico_no_hardcodes.py:2:Guardrail P2: Verificar que runtime crítico no tenga hardcodes directos de unidades
+backend/tests_guardrails/test_p2_runtime_critico_no_hardcodes.py:23:        # Skip si ya usa UnidadesService
+backend/tests_guardrails/test_p2_runtime_critico_no_hardcodes.py:24:        if 'UnidadesService' in line:
+backend/tests_guardrails/test_p4_roles_canonicos_usuario_roles.py:4:svc = Path("core/rbac_sql/service.py").read_text(errors="ignore")
+backend/tests_guardrails/test_p4_roles_canonicos_usuario_roles.py:7:    "Usuario_Roles",
+backend/tests_guardrails/test_p4_roles_canonicos_usuario_roles.py:8:    "Usuario_RolesAsignacion",
+backend/tests_guardrails/test_p4_roles_canonicos_usuario_roles.py:20:    "FROM dbo.Sys_Roles",
+backend/tests_guardrails/test_p4_roles_canonicos_usuario_roles.py:21:    "JOIN dbo.Sys_Roles",
+backend/tests_guardrails/test_p4_roles_canonicos_usuario_roles.py:22:    "FROM dbo.RBAC_",
+backend/tests_guardrails/test_p4_roles_canonicos_usuario_roles.py:23:    "JOIN dbo.RBAC_",
+backend/tests_guardrails/test_p4_roles_canonicos_usuario_roles.py:29:print("PASS roles canónicos usan Usuario_Roles y asignaciones Usuario_*")
+backend/tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:6:    "Inventarios_ProcesadosAuto",
+backend/tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:7:    "Inventarios_DiferenciasDetalle",
+backend/tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:8:    "Inventarios_FisicosProcesados",
+backend/tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:9:    "Sistema_ServidoresEstado",
+backend/tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:10:    "Sistema_ServidoresConexionEstado",
+backend/tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:11:    "Sistema_ServidoresSucursalesConfig",
+backend/tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:12:    "Sistema_NotificacionesConfig",
+backend/tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:13:    "Sistema_ConfiguracionOperativa",
+backend/tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:14:    "Sistema_ConsultasCustom",
+backend/tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:15:    "Sistema_AlertasDestinatarios",
+backend/tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:16:    "Finanzas_PropinasConfig",
+backend/tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:17:    "Finanzas_AuditoriaFinanciera",
+backend/tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:18:    "Compras_AutomatizacionesOperativas",
+backend/tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:19:    "Compras_PedidosProcesadosAutomatizacion",
+backend/tests_guardrails/test_p1_corporate_filters.py:2:Guardrail P1: Verificar que módulos que usan UnidadesService no tengan hardcodes
+backend/tests_guardrails/test_p1_corporate_filters.py:29:    # Solo verificar archivos que usan el sistema de unidades
+backend/tests_guardrails/test_p1_corporate_filters.py:30:    if "unidad_negocio_pk" not in txt and "UnidadesService" not in txt:
+backend/tests_guardrails/test_p1_corporate_filters.py:48:    print(f"WARN - {len(hits)} hardcodes encontrados en archivos que usan UnidadesService:")
+backend/tests_guardrails/test_p4_rbac_usa_usuario_canonico.py:4:svc = Path("core/rbac_sql/service.py").read_text(errors="ignore")
+backend/tests_guardrails/test_p4_rbac_usa_usuario_canonico.py:7:    "Usuario_RolesAsignacion",
+backend/tests_guardrails/test_p4_rbac_usa_usuario_canonico.py:18:    "FROM dbo.RBAC_UsuariosRoles",
+backend/tests_guardrails/test_p4_rbac_usa_usuario_canonico.py:19:    "FROM dbo.RBAC_UsuariosEmpresas",
+backend/tests_guardrails/test_p4_rbac_usa_usuario_canonico.py:20:    "FROM dbo.RBAC_UsuariosUnidadesNegocio",
+backend/tests_guardrails/test_p4_rbac_usa_usuario_canonico.py:21:    "FROM dbo.RBAC_UsuariosSucursales",
+backend/tests_guardrails/test_p4_rbac_usa_usuario_canonico.py:24:        print("FAIL usa tabla RBAC duplicada:", forbidden)
+backend/tests_guardrails/test_p4_rbac_usa_usuario_canonico.py:27:print("PASS RBAC runtime usa Usuario_* canónico")
+backend/tests_guardrails/test_p1_kpis_unidad_pk_real.py:2:Guardrail P1: Validar que KPIs usen unidad_negocio_pk real
+backend/tests_guardrails/test_p1_kpis_unidad_pk_real.py:19:for table in ["Comercial_KPIs_Diarios_v2", "Comercial_KPIs_Mensuales_v2"]:
+backend/tests_guardrails/test_p1_kpis_unidad_pk_real.py:24:    WHERE TABLE_NAME=%s AND COLUMN_NAME='unidad_negocio_pk' AND DATA_TYPE='uniqueidentifier'
+backend/tests_guardrails/test_p1_kpis_unidad_pk_real.py:27:        errors.append(f"{table} no tiene unidad_negocio_pk UNIQUEIDENTIFIER")
+backend/tests_guardrails/test_p1_kpis_unidad_pk_real.py:31:    cur.execute(f"SELECT COUNT(*) FROM dbo.{table} WHERE unidad_negocio_pk IS NULL")
+backend/tests_guardrails/test_p1_kpis_unidad_pk_real.py:34:        errors.append(f"{table} tiene {nulls} registros sin unidad_negocio_pk")
+backend/tests_guardrails/test_p1_kpis_unidad_pk_real.py:40:    LEFT JOIN dbo.Unidades_Negocio u ON u.id = k.unidad_negocio_pk
+backend/tests_guardrails/test_p1_kpis_unidad_pk_real.py:41:    WHERE k.unidad_negocio_pk IS NOT NULL AND u.id IS NULL
+backend/tests_guardrails/test_p1_kpis_unidad_pk_real.py:45:        errors.append(f"{table} tiene {orphans} huérfanos contra Unidades_Negocio.id")
+backend/tests_guardrails/test_p1_kpis_unidad_pk_real.py:55:print("OK - KPIs normalizados por unidad_negocio_pk real")
+backend/tests_guardrails/test_p4_rbac_empresa_unidad_sucursal_sql.py:7:    "RBAC_Roles",
+backend/tests_guardrails/test_p4_rbac_empresa_unidad_sucursal_sql.py:8:    "RBAC_Permisos",
+backend/tests_guardrails/test_p4_rbac_empresa_unidad_sucursal_sql.py:9:    "RBAC_RolesPermisos",
+backend/tests_guardrails/test_p4_rbac_empresa_unidad_sucursal_sql.py:10:    "RBAC_UsuariosRoles",
+backend/tests_guardrails/test_p4_rbac_empresa_unidad_sucursal_sql.py:11:    "RBAC_UsuariosEmpresas",
+backend/tests_guardrails/test_p4_rbac_empresa_unidad_sucursal_sql.py:12:    "RBAC_UsuariosUnidadesNegocio",
+backend/tests_guardrails/test_p4_rbac_empresa_unidad_sucursal_sql.py:13:    "RBAC_UsuariosSucursales",
+backend/tests_guardrails/test_p4_rbac_empresa_unidad_sucursal_sql.py:14:    "RBAC_AuditLog",
+backend/tests_guardrails/test_p4_rbac_empresa_unidad_sucursal_sql.py:28:    print("FAIL tablas RBAC faltantes:", missing)
+backend/tests_guardrails/test_p4_rbac_empresa_unidad_sucursal_sql.py:31:cur.execute("SELECT COUNT(*) FROM dbo.RBAC_Roles WHERE Activo=1")
+backend/tests_guardrails/test_p4_rbac_empresa_unidad_sucursal_sql.py:32:roles = cur.fetchone()[0]
+backend/tests_guardrails/test_p4_rbac_empresa_unidad_sucursal_sql.py:33:cur.execute("SELECT COUNT(*) FROM dbo.RBAC_Permisos WHERE Activo=1")
+backend/tests_guardrails/test_p4_rbac_empresa_unidad_sucursal_sql.py:34:permisos = cur.fetchone()[0]
+backend/tests_guardrails/test_p4_rbac_empresa_unidad_sucursal_sql.py:38:if roles < 5 or permisos < 5:
+backend/tests_guardrails/test_p4_rbac_empresa_unidad_sucursal_sql.py:39:    print("FAIL RBAC seed insuficiente", roles, permisos)
+backend/tests_guardrails/test_p4_rbac_empresa_unidad_sucursal_sql.py:42:print("PASS RBAC SQL empresa/unidad/sucursal base listo")
+backend/tests_guardrails/test_p4_rbac_empresa_unidad_sucursal_sql.py:43:print(f"  Roles: {roles}, Permisos: {permisos}")
+backend/tests_guardrails/test_p4_auth_context_usa_rbac_sql.py:7:    "core/rbac_sql/service.py",
+backend/tests_guardrails/test_p4_auth_context_usa_rbac_sql.py:8:    "core/rbac_sql/runtime.py",
+backend/tests_guardrails/test_p4_auth_context_usa_rbac_sql.py:17:from core.rbac_sql.service import RBACSQLService
+backend/tests_guardrails/test_p4_auth_context_usa_rbac_sql.py:20:assert hasattr(RBACSQLService, "build_context")
+backend/tests_guardrails/test_p4_auth_context_usa_rbac_sql.py:23:print("PASS Auth/Context conectado a RBAC SQL")
+backend/tests_guardrails/test_p2_10_repository_layer.py:29:    if "Comercial_KPIs_Diarios_v2" in txt and "vw_Comercial_KPIs_Diarios_v2_Runtime" not in txt:
+backend/tests_guardrails/test_p2_10_repository_layer.py:32:    if "Comercial_KPIs_Mensuales_v2" in txt and "vw_Comercial_KPIs_Mensuales_v2_Runtime" not in txt:
+backend/tests_guardrails/test_p1_kpis_pk_completo.py:1:"""Guardrail: Verificar que KPIs tienen unidad_negocio_pk poblado"""
+backend/tests_guardrails/test_p1_kpis_pk_completo.py:16:for table in ["Comercial_KPIs_Diarios_v2", "Comercial_KPIs_Mensuales_v2"]:
+backend/tests_guardrails/test_p1_kpis_pk_completo.py:17:    cur.execute(f"SELECT COUNT(*) FROM dbo.{table} WHERE unidad_negocio_pk IS NULL")
+backend/tests_guardrails/test_p1_kpis_pk_completo.py:20:        errors.append(f"{table}: {nulls} registros sin unidad_negocio_pk")
+backend/tests_guardrails/test_p1_kpis_pk_completo.py:30:print("OK - Todos los KPIs tienen unidad_negocio_pk")
+backend/tests_guardrails/test_p2_unidad_negocio_pk_obligatoria.py:2:P2-25 Guardrail: unidad_negocio_pk obligatoria en KPIs Comercial
+backend/tests_guardrails/test_p2_unidad_negocio_pk_obligatoria.py:14:    cur.execute("SELECT COUNT(*) FROM dbo.Comercial_KPIs_Diarios_v2 WHERE unidad_negocio_pk IS NULL")
+backend/tests_guardrails/test_p2_unidad_negocio_pk_obligatoria.py:17:        errors.append(f"Comercial_KPIs_Diarios_v2: {n} registros con unidad_negocio_pk NULL")
+backend/tests_guardrails/test_p2_unidad_negocio_pk_obligatoria.py:20:    cur.execute("SELECT COUNT(*) FROM dbo.Comercial_KPIs_Mensuales_v2 WHERE unidad_negocio_pk IS NULL")
+backend/tests_guardrails/test_p2_unidad_negocio_pk_obligatoria.py:23:        errors.append(f"Comercial_KPIs_Mensuales_v2: {n} registros con unidad_negocio_pk NULL")
+backend/tests_guardrails/test_p2_unidad_negocio_pk_obligatoria.py:33:    print("PASS: unidad_negocio_pk obligatoria - 0 registros NULL")
+backend/tests_guardrails/test_p2_07_runtime.py:22:        legacy += txt.count("Comercial_KPIs_Diarios_v2")
+backend/tests_guardrails/test_p2_07_runtime.py:23:        legacy += txt.count("Comercial_KPIs_Mensuales_v2")
+backend/tests_guardrails/test_p1_vistas_runtime_existen.py:16:for v in ["vw_Comercial_KPIs_Diarios_v2_Runtime", "vw_Comercial_KPIs_Mensuales_v2_Runtime", 
+backend/tests_guardrails/test_p1_vistas_runtime_existen.py:17:          "vw_Comercial_KPIs_Diarios_v2_Canonica", "vw_Comercial_KPIs_Mensuales_v2_Canonica"]:
+backend/db/migrations/create_finanzas_kpis_historico.sql:2:-- MIGRACIÓN: Crear tabla Finanzas_KPIs_Historico
+backend/db/migrations/create_finanzas_kpis_historico.sql:9:IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Finanzas_KPIs_Historico]') AND type in (N'U'))
+backend/db/migrations/create_finanzas_kpis_historico.sql:11:    CREATE TABLE [dbo].[Finanzas_KPIs_Historico] (
+backend/db/migrations/create_finanzas_kpis_historico.sql:57:        CONSTRAINT UX_Finanzas_KPIs_Historico UNIQUE (
+backend/db/migrations/create_finanzas_kpis_historico.sql:67:    CREATE INDEX IX_Finanzas_KPIs_Historico_Fecha ON Finanzas_KPIs_Historico(fecha);
+backend/db/migrations/create_finanzas_kpis_historico.sql:68:    CREATE INDEX IX_Finanzas_KPIs_Historico_Server ON Finanzas_KPIs_Historico(server_id);
+backend/db/migrations/create_finanzas_kpis_historico.sql:69:    CREATE INDEX IX_Finanzas_KPIs_Historico_Sucursal ON Finanzas_KPIs_Historico(sucursal_id);
+backend/db/migrations/create_finanzas_kpis_historico.sql:70:    CREATE INDEX IX_Finanzas_KPIs_Historico_Tipo ON Finanzas_KPIs_Historico(kpi_tipo);
+backend/db/migrations/create_finanzas_kpis_historico.sql:71:    CREATE INDEX IX_Finanzas_KPIs_Historico_RunId ON Finanzas_KPIs_Historico(run_id);
+backend/db/migrations/create_finanzas_kpis_historico.sql:73:    PRINT 'Tabla Finanzas_KPIs_Historico creada exitosamente';
+backend/db/migrations/create_finanzas_kpis_historico.sql:77:    PRINT 'Tabla Finanzas_KPIs_Historico ya existe';
+backend/db/migrations/create_finanzas_kpis_historico.sql:84:IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_Finanzas_Resumen_Diario')
+backend/db/migrations/create_finanzas_kpis_historico.sql:85:    DROP VIEW vw_Finanzas_Resumen_Diario;
+backend/db/migrations/create_finanzas_kpis_historico.sql:88:CREATE VIEW vw_Finanzas_Resumen_Diario AS
+backend/db/migrations/create_finanzas_kpis_historico.sql:106:FROM Finanzas_KPIs_Historico
+backend/db/migrations/create_finanzas_kpis_historico.sql:110:PRINT 'Vista vw_Finanzas_Resumen_Diario creada';
+backend/db/migrations/create_comercial_kpis_historico.sql:3:-- Tabla: Comercial_KPIs_Historico
+backend/db/migrations/create_comercial_kpis_historico.sql:20:IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Comercial_KPIs_Historico')
+backend/db/migrations/create_comercial_kpis_historico.sql:22:    CREATE TABLE Comercial_KPIs_Historico (
+backend/db/migrations/create_comercial_kpis_historico.sql:34:        unidad_negocio_id NVARCHAR(100) NULL,
+backend/db/migrations/create_comercial_kpis_historico.sql:68:        CONSTRAINT PK_Comercial_KPIs_Historico PRIMARY KEY (id)
+backend/db/migrations/create_comercial_kpis_historico.sql:71:    PRINT 'Tabla Comercial_KPIs_Historico creada exitosamente.';
+backend/db/migrations/create_comercial_kpis_historico.sql:75:    PRINT 'Tabla Comercial_KPIs_Historico ya existe. No se realizaron cambios.';
+backend/db/migrations/create_comercial_kpis_historico.sql:83:IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'UX_Comercial_KPIs_Historico' AND object_id = OBJECT_ID('Comercial_KPIs_Historico'))
+backend/db/migrations/create_comercial_kpis_historico.sql:85:    CREATE UNIQUE INDEX UX_Comercial_KPIs_Historico
+backend/db/migrations/create_comercial_kpis_historico.sql:86:    ON Comercial_KPIs_Historico (server_id, sucursal_id, system_type_normalized, fecha, kpi_tipo);
+backend/db/migrations/create_comercial_kpis_historico.sql:88:    PRINT 'Índice único UX_Comercial_KPIs_Historico creado.';
+backend/db/migrations/create_comercial_kpis_historico.sql:92:    PRINT 'Índice único UX_Comercial_KPIs_Historico ya existe.';
+backend/db/migrations/create_comercial_kpis_historico.sql:100:IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Comercial_KPIs_Historico_Fecha' AND object_id = OBJECT_ID('Comercial_KPIs_Historico'))
+backend/db/migrations/create_comercial_kpis_historico.sql:102:    CREATE INDEX IX_Comercial_KPIs_Historico_Fecha
+backend/db/migrations/create_comercial_kpis_historico.sql:103:    ON Comercial_KPIs_Historico (fecha DESC);
+backend/db/migrations/create_comercial_kpis_historico.sql:105:    PRINT 'Índice IX_Comercial_KPIs_Historico_Fecha creado.';
+backend/db/migrations/create_comercial_kpis_historico.sql:109:IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Comercial_KPIs_Historico_Server_Fecha' AND object_id = OBJECT_ID('Comercial_KPIs_Historico'))
+backend/db/migrations/create_comercial_kpis_historico.sql:111:    CREATE INDEX IX_Comercial_KPIs_Historico_Server_Fecha
+backend/db/migrations/create_comercial_kpis_historico.sql:112:    ON Comercial_KPIs_Historico (server_id, fecha DESC);
+backend/db/migrations/create_comercial_kpis_historico.sql:114:    PRINT 'Índice IX_Comercial_KPIs_Historico_Server_Fecha creado.';
+backend/db/migrations/create_comercial_kpis_historico.sql:118:IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Comercial_KPIs_Historico_RunId' AND object_id = OBJECT_ID('Comercial_KPIs_Historico'))
+backend/db/migrations/create_comercial_kpis_historico.sql:120:    CREATE INDEX IX_Comercial_KPIs_Historico_RunId
+backend/db/migrations/create_comercial_kpis_historico.sql:121:    ON Comercial_KPIs_Historico (run_id);
+backend/db/migrations/create_comercial_kpis_historico.sql:123:    PRINT 'Índice IX_Comercial_KPIs_Historico_RunId creado.';
+backend/db/migrations/create_comercial_kpis_historico.sql:133:    (SELECT COUNT(*) FROM Comercial_KPIs_Historico) as row_count
+backend/db/migrations/create_comercial_kpis_historico.sql:135:WHERE TABLE_NAME = 'Comercial_KPIs_Historico';
+backend/db/migrations/create_comercial_kpis_historico.sql:144:WHERE i.object_id = OBJECT_ID('Comercial_KPIs_Historico')
+backend/modules/dashboard_ejecutivo/__init__.py:1:from core.unidades_service import UnidadesService
+backend/modules/dashboard_ejecutivo/__init__.py:2:from core.corporate_filters.service import CorporateFilterService
+backend/modules/dashboard_ejecutivo/routes.py:1:from core.unidades_service import UnidadesService
+backend/modules/dashboard_ejecutivo/routes.py:2:from core.corporate_filters.service import CorporateFilterService
+backend/modules/dashboard_ejecutivo/routes.py:35:    agg = KPIsCanonicosService.agregados_por_unidad(fecha_inicio, hasta_excl)
+backend/modules/dashboard_ejecutivo/routes.py:40:        "unidad": a.get("unidad_nombre"),
+backend/modules/dashboard_ejecutivo/routes.py:41:        "unidad_codigo": a.get("unidad_codigo"),
+backend/modules/dashboard_ejecutivo/routes.py:53:        COUNT(DISTINCT ServerID) AS servidores_precio,
+backend/modules/dashboard_ejecutivo/routes.py:61:        COUNT(DISTINCT ServerID) AS servidores_producto
+backend/modules/dashboard_ejecutivo/routes.py:67:        (SELECT COUNT(*) FROM Compras_Pedidos) AS pedidos,
+backend/modules/dashboard_ejecutivo/routes.py:68:        (SELECT COUNT(*) FROM Compras_PedidosDetalle) AS detalles,
+backend/modules/dashboard_ejecutivo/routes.py:69:        (SELECT COUNT(*) FROM Compras_Ordenes) AS ordenes,
+backend/modules/dashboard_ejecutivo/routes.py:70:        (SELECT COUNT(*) FROM Compras_Recepciones) AS recepciones
+backend/modules/dashboard_ejecutivo/routes.py:79:    FROM Compras_Sync_Log
+backend/modules/dashboard_ejecutivo/routes.py:109:        "ventas_por_unidad": ventas,
+backend/modules/dashboard_ejecutivo/routes.py:140:    LEFT JOIN Servidores_Conexiones s
+backend/modules/catalogos_workflow_compat/__init__.py:1:# Catalogos Workflow Compat - Legacy routes using SQL
+backend/modules/catalogos_workflow_compat/routes.py:5:from modules.catalogos_workflow_sql.repository import CatalogosWorkflowSQLRepository
+backend/modules/catalogos_workflow_compat/routes.py:7:router = APIRouter(prefix="/api", tags=["Catalogos Workflow Compat"])
+backend/modules/catalogos_workflow_compat/routes.py:8:repo = CatalogosWorkflowSQLRepository()
+backend/modules/catalogos_workflow_compat/routes.py:11:# CATALOGOS / PERMISOS
+backend/modules/catalogos_workflow_compat/routes.py:14:@router.get("/sistema/catalogos-disponibles")
+backend/modules/catalogos_workflow_compat/routes.py:15:async def compat_get_catalogos_disponibles(current_user: Dict = Depends(get_current_user)):
+backend/modules/catalogos_workflow_compat/routes.py:16:    return repo.get_catalogos_disponibles()
+backend/modules/catalogos_workflow_compat/routes.py:18:@router.put("/sistema/catalogos/{catalogo_id}/niveles")
+backend/modules/catalogos_workflow_compat/routes.py:19:async def compat_put_catalogo_niveles(catalogo_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
+backend/modules/catalogos_workflow_compat/routes.py:20:    repo.upsert_niveles_catalogo(catalogo_id, body, current_user)
+backend/modules/catalogos_workflow_compat/routes.py:23:@router.get("/sistema/catalogos/permisos/{user_id}")
+backend/modules/catalogos_workflow_compat/routes.py:24:async def compat_get_permisos_catalogo(user_id: int, current_user: Dict = Depends(get_current_user)):
+backend/modules/catalogos_workflow_compat/routes.py:25:    return repo.get_permisos_catalogo_usuario(user_id)
+backend/modules/catalogos_workflow_compat/routes.py:27:@router.get("/sistema/mis-permisos-catalogos")
+backend/modules/catalogos_workflow_compat/routes.py:28:async def compat_get_mis_permisos_catalogos(current_user: Dict = Depends(get_current_user)):
+backend/modules/catalogos_workflow_compat/routes.py:31:    return repo.get_mis_permisos_catalogos(user_id)
+backend/modules/catalogos_workflow_compat/routes.py:33:@router.post("/sistema/permisos-catalogos")
+backend/modules/catalogos_workflow_compat/routes.py:34:async def compat_post_permisos_catalogo(body: Dict, current_user: Dict = Depends(get_current_user)):
+backend/modules/catalogos_workflow_compat/routes.py:35:    repo.upsert_permisos_catalogo(body, current_user)
+backend/modules/catalogos_workflow_compat/routes.py:36:    return {"ok": True, "message": "Permisos guardados en SQL (compat)"}
+backend/modules/catalogos_workflow_compat/routes.py:46:@router.get("/sistema/catalogos/solicitudes")
+backend/modules/catalogos_workflow_compat/routes.py:47:async def compat_get_solicitudes_catalogo(current_user: Dict = Depends(get_current_user)):
+backend/modules/catalogos_workflow_compat/routes.py:48:    return repo.listar_solicitudes_catalogo()
+backend/modules/catalogos_workflow_compat/routes.py:52:    row = repo.get_solicitud_catalogo(solicitud_id)
+backend/modules/catalogos_workflow_compat/routes.py:59:    return repo.get_historial_solicitud_catalogo(solicitud_id)
+backend/modules/catalogos_workflow_compat/routes.py:62:async def compat_post_solicitud_catalogo(body: Dict, current_user: Dict = Depends(get_current_user)):
+backend/modules/catalogos_workflow_compat/routes.py:63:    solicitud_id = repo.crear_solicitud_catalogo(body, current_user)
+backend/modules/sync_monitor/service.py:6:- Compras_Sync_Log
+backend/modules/sync_monitor/service.py:7:- Comercial_SyncLog_v2
+backend/modules/sync_monitor/service.py:9:- Servidores_Conexiones
+backend/modules/sync_monitor/service.py:34:    "CATALOGOS": 1440,
+backend/modules/sync_monitor/service.py:131:            FROM Servidores_Conexiones
+backend/modules/sync_monitor/service.py:135:        servidores_raw = cursor.fetchall()
+backend/modules/sync_monitor/service.py:137:        # 2. Obtener últimos syncs de Compras_Sync_Log
+backend/modules/sync_monitor/service.py:148:            FROM Compras_Sync_Log
+backend/modules/sync_monitor/service.py:152:        compras_syncs = cursor.fetchall()
+backend/modules/sync_monitor/service.py:154:        # 3. Obtener últimos syncs de Comercial_SyncLog_v2
+backend/modules/sync_monitor/service.py:165:            FROM Comercial_SyncLog_v2
+backend/modules/sync_monitor/service.py:182:            FROM Compras_Sync_Log
+backend/modules/sync_monitor/service.py:199:            FROM Comercial_SyncLog_v2
+backend/modules/sync_monitor/service.py:217:            FROM Compras_Sync_Log
+backend/modules/sync_monitor/service.py:232:            FROM Comercial_SyncLog_v2
+backend/modules/sync_monitor/service.py:241:        server_map = {_safe_str(s["server_id"]): s for s in servidores_raw}
+backend/modules/sync_monitor/service.py:245:        all_syncs = compras_syncs + comercial_syncs
+backend/modules/sync_monitor/service.py:339:        for srv in servidores_raw:
+backend/modules/sync_monitor/service.py:380:        servidores_ok = len([s for s in servidores if s["status"] == "SUCCESS"])
+backend/modules/sync_monitor/service.py:381:        servidores_warning = len([s for s in servidores if s["status"] == "WARNING"])
+backend/modules/sync_monitor/service.py:382:        servidores_error = len([s for s in servidores if s["status"] == "ERROR"])
+backend/modules/sync_monitor/service.py:383:        servidores_stale = len([s for s in servidores if s["status"] == "STALE"])
+backend/modules/sync_monitor/service.py:399:                "servidores_ok": servidores_ok,
+backend/modules/sync_monitor/service.py:400:                "servidores_warning": servidores_warning,
+backend/modules/sync_monitor/service.py:401:                "servidores_error": servidores_error,
+backend/modules/sync_monitor/service.py:402:                "servidores_stale": servidores_stale,
+backend/modules/comercial/service.py:1:from core.unidades_service import UnidadesService
+backend/modules/comercial/service.py:2:from core.corporate_filters.service import CorporateFilterService
+backend/modules/comercial/service.py:48:from core.server_registry import resolve_unidad_by_server_sucursal
+backend/modules/comercial/service.py:81:# Tablero Ejecutivo lee exclusivamente de vw_Comercial_KPIs_Diarios_v2_Runtime.
+backend/modules/comercial/service.py:94:# CATÁLOGO MAESTRO DE UNIDADES DE NEGOCIO (EDARSAHUB)
+backend/modules/comercial/service.py:96:# FUENTE MAESTRA: Unidades_Negocio.codigo
+backend/modules/comercial/service.py:98:# NO usar MongoDB como fuente funcional para unidades.
+backend/modules/comercial/service.py:100:_CACHE_UNIDADES_NEGOCIO = None
+backend/modules/comercial/service.py:102:def _cargar_catalogo_unidades_negocio() -> Dict:
+backend/modules/comercial/service.py:104:    Carga el catálogo maestro de Unidades de Negocio desde EDARSAHUB.
+backend/modules/comercial/service.py:106:    FUENTE MAESTRA: Unidades_Negocio
+backend/modules/comercial/service.py:113:    global _CACHE_UNIDADES_NEGOCIO
+backend/modules/comercial/service.py:115:    if _CACHE_UNIDADES_NEGOCIO is not None:
+backend/modules/comercial/service.py:116:        return _CACHE_UNIDADES_NEGOCIO
+backend/modules/comercial/service.py:127:    FROM Unidades_Negocio
+backend/modules/comercial/service.py:151:            unidad_data = {
+backend/modules/comercial/service.py:160:                por_server_id[server_id] = unidad_data
+backend/modules/comercial/service.py:164:            por_server_sucursal[key] = unidad_data
+backend/modules/comercial/service.py:166:        _CACHE_UNIDADES_NEGOCIO = {
+backend/modules/comercial/service.py:172:        logging.info(f"[UNIDADES_NEGOCIO] Catálogo cargado desde EDARSAHUB: {len(result or [])} unidades activas")
+backend/modules/comercial/service.py:173:        return _CACHE_UNIDADES_NEGOCIO
+backend/modules/comercial/service.py:176:        logging.error(f"[UNIDADES_NEGOCIO] Error cargando catálogo desde EDARSAHUB: {e}")
+backend/modules/comercial/service.py:180:def obtener_unidad_negocio_edarsahub(server_id: str, sucursal: str = None) -> Dict:
+backend/modules/comercial/service.py:182:    Obtiene datos de una unidad de negocio desde el catálogo EDARSAHUB.
+backend/modules/comercial/service.py:184:    FUENTE MAESTRA: Unidades_Negocio (EDARSAHUB SQL Server)
+backend/modules/comercial/service.py:194:    catalogo = _cargar_catalogo_unidades_negocio()
+backend/modules/comercial/service.py:199:        if key in catalogo['por_server_sucursal']:
+backend/modules/comercial/service.py:200:            return catalogo['por_server_sucursal'][key]
+backend/modules/comercial/service.py:203:    if server_id in catalogo['por_server_id']:
+backend/modules/comercial/service.py:204:        return catalogo['por_server_id'][server_id]
+backend/modules/comercial/service.py:207:    logging.warning(f"[UNIDADES_NEGOCIO] No se encontró unidad para server_id={server_id}, sucursal={sucursal}")
+backend/modules/comercial/service.py:210:        'nombre': 'Unidad Desconocida',
+backend/modules/comercial/service.py:222:    - Fallback a Unidades_Negocio (EDARSAHUB) si EmpresaResolver no resuelve
+backend/modules/comercial/service.py:231:        Tuple (unidad_negocio_codigo, unidad_negocio_nombre)
+backend/modules/comercial/service.py:244:        # Los códigos MPRO deben estar en Sistema_EmpresasServidores
+backend/modules/comercial/service.py:250:            FROM Sistema_EmpresasServidores es
+backend/modules/comercial/service.py:251:            JOIN Sistema_Empresas e ON es.EmpresaID = e.EmpresaID
+backend/modules/comercial/service.py:268:    # Fallback: Buscar en Unidades_Negocio (EDARSAHUB)
+backend/modules/comercial/service.py:270:    unidad_edarsahub = obtener_unidad_negocio_edarsahub(server_id, sucursal=sucursal_id)
+backend/modules/comercial/service.py:272:    codigo = unidad_edarsahub.get('codigo', '')
+backend/modules/comercial/service.py:273:    nombre = unidad_edarsahub.get('nombre', '')
+backend/modules/comercial/service.py:283:        '0021': (UnidadesService.resolver_codigo('130QRO') or '130QRO', '130° QUERETARO'),
+backend/modules/comercial/service.py:284:        '0023': (UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN'),
+backend/modules/comercial/service.py:285:        UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN': (UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN'),
+backend/modules/comercial/service.py:286:        '130_QRO': (UnidadesService.resolver_codigo('130QRO') or '130QRO', '130° QUERETARO'),
+backend/modules/comercial/service.py:297:def _mapear_codigo_a_unidad_negocio_pk(codigo_empresa: str) -> str:
+backend/modules/comercial/service.py:304:    - La identidad principal es unidad_negocio_pk CANÓNICO (130MID, 130QRO, etc.)
+backend/modules/comercial/service.py:307:    - Los datos en vw_Comercial_KPIs_Diarios_v2_Runtime deben usar códigos canónicos
+backend/modules/comercial/service.py:309:    CÓDIGOS CANÓNICOS OFICIALES (según Unidades_Negocio en EDARSAHUB):
+backend/modules/comercial/service.py:317:        codigo_empresa: Código de empresa/unidad
+backend/modules/comercial/service.py:337:        '130-MER': UnidadesService.resolver_codigo('130MID') or '130MID',
+backend/modules/comercial/service.py:338:        '130-MID': UnidadesService.resolver_codigo('130MID') or '130MID',
+backend/modules/comercial/service.py:339:        '130MER': UnidadesService.resolver_codigo('130MID') or '130MID',
+backend/modules/comercial/service.py:340:        '130 MERIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
+backend/modules/comercial/service.py:341:        '130 MÉRIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
+backend/modules/comercial/service.py:342:        '130° MERIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
+backend/modules/comercial/service.py:343:        '130° MÉRIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
+backend/modules/comercial/service.py:344:        'MERIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
+backend/modules/comercial/service.py:345:        'MÉRIDA': UnidadesService.resolver_codigo('130MID') or '130MID',
+backend/modules/comercial/service.py:347:        '130-QRO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+backend/modules/comercial/service.py:348:        '130 QRO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+backend/modules/comercial/service.py:349:        '130 QUERETARO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+backend/modules/comercial/service.py:350:        '130 QUERÉTARO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+backend/modules/comercial/service.py:351:        '130° QUERETARO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+backend/modules/comercial/service.py:352:        '130° QUERÉTARO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+backend/modules/comercial/service.py:353:        'QUERETARO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+backend/modules/comercial/service.py:354:        'QUERÉTARO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+backend/modules/comercial/service.py:356:        'LA-ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
+backend/modules/comercial/service.py:357:        'LA ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
+backend/modules/comercial/service.py:359:        UnidadesService.resolver_codigo('130MID') or '130MID': UnidadesService.resolver_codigo('130MID') or '130MID',
+backend/modules/comercial/service.py:360:        UnidadesService.resolver_codigo('130QRO') or '130QRO': UnidadesService.resolver_codigo('130QRO') or '130QRO',
+backend/modules/comercial/service.py:361:        UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS': UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS',
+backend/modules/comercial/service.py:362:        UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR': UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR',
+backend/modules/comercial/service.py:363:        UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN': UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN',
+backend/modules/comercial/service.py:379:    Lee de Sistema_EmpresasServidores las empresas que tienen conexión MPRO
+backend/modules/comercial/service.py:415:                FROM Sistema_EmpresasServidores es
+backend/modules/comercial/service.py:416:                JOIN Sistema_Empresas e ON es.EmpresaID = e.EmpresaID
+backend/modules/comercial/service.py:417:                JOIN Servidores_Conexiones sc ON es.ServidorID = sc.id
+backend/modules/comercial/service.py:461:            "codigo": UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN",
+backend/modules/comercial/service.py:468:            "codigo": UnidadesService.resolver_codigo("130QRO") or "130QRO",
+backend/modules/comercial/service.py:481:    Fuente: vw_Comercial_KPIs_Diarios_v2_Runtime y Comercial_Ventas_Dia_Abiertas_v2.
+backend/modules/comercial/service.py:501:    Obtiene el último día con ventas registradas en vw_Comercial_KPIs_Diarios_v2_Runtime.
+backend/modules/comercial/service.py:506:    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+backend/modules/comercial/service.py:523:    unidad_negocio_pk: str = None  # FIX: Agregar unidad_negocio_pk como parámetro opcional
+backend/modules/comercial/service.py:526:    Obtiene KPIs agregados de vw_Comercial_KPIs_Diarios_v2_Runtime para un período.
+backend/modules/comercial/service.py:529:    - Si se proporciona unidad_negocio_pk, filtrar por unidad_negocio_pk + sucursal_id
+backend/modules/comercial/service.py:532:    RAZÓN: Para MPRO, los datos en vw_Comercial_KPIs_Diarios_v2_Runtime tienen un server_id
+backend/modules/comercial/service.py:533:    diferente al que está configurado en Servidores_Conexiones. Usar unidad_negocio_pk
+backend/modules/comercial/service.py:546:    # Filtrar por unidad_negocio_id (código de texto canónico: 130MID, CIENFUEGOS,
+backend/modules/comercial/service.py:548:    # En la vista, unidad_negocio_pk es un GUID (NO el código), por eso filtrar por
+backend/modules/comercial/service.py:549:    # él devolvía $0. NO se fuerza sucursal_id porque cada unidad_negocio_id
+backend/modules/comercial/service.py:551:    if unidad_negocio_pk:
+backend/modules/comercial/service.py:552:        filtro_principal = f"unidad_negocio_id = '{unidad_negocio_pk}'"
+backend/modules/comercial/service.py:553:        logging.info(f"[EDARSAHUB-QUERY] Usando unidad_negocio_id={unidad_negocio_pk}")
+backend/modules/comercial/service.py:565:    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+backend/modules/comercial/service.py:597:def _get_ventas_abiertas_edarsahub(server_id: str, sucursal_id: str = 'DEFAULT', unidad_negocio_pk: str = None) -> Dict:
+backend/modules/comercial/service.py:624:    if unidad_negocio_pk:
+backend/modules/comercial/service.py:625:        # Usar ventana operativa de la unidad específica
+backend/modules/comercial/service.py:627:        fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_pk, now_mx)
+backend/modules/comercial/service.py:630:            f"[TABLERO-EDARSAHUB] _get_ventas_abiertas: {unidad_negocio_pk} FechaOperacion={fecha_operacion} "
+backend/modules/comercial/service.py:634:        # Sin unidad específica: usar horario por defecto 13:00-06:00
+backend/modules/comercial/service.py:655:    # FIX P0 (15-May-2026): Buscar por unidad_negocio_pk en lugar de server_id
+backend/modules/comercial/service.py:662:    if unidad_negocio_pk:
+backend/modules/comercial/service.py:663:        # Priorizar búsqueda por unidad_negocio_pk (más confiable)
+backend/modules/comercial/service.py:677:        WHERE unidad_negocio_pk = '{unidad_negocio_pk}'
+backend/modules/comercial/service.py:707:    if (not result or len(result) == 0) and unidad_negocio_pk:
+backend/modules/comercial/service.py:709:            f"[TABLERO-EDARSAHUB] Sin datos para fecha exacta. Buscando último snapshot para {unidad_negocio_pk}..."
+backend/modules/comercial/service.py:711:        # Buscar el registro más reciente de esta unidad (cualquier fecha)
+backend/modules/comercial/service.py:724:        WHERE unidad_negocio_pk = '{unidad_negocio_pk}'
+backend/modules/comercial/service.py:731:                f"[TABLERO-EDARSAHUB] Usando snapshot STALE para {unidad_negocio_pk}: "
+backend/modules/comercial/service.py:797:    unidad_negocio_pk: str,
+backend/modules/comercial/service.py:803:    nombre_unidad: str = ''
+backend/modules/comercial/service.py:813:    - Lee de vw_Comercial_KPIs_Diarios_v2_Runtime
+backend/modules/comercial/service.py:825:        server_id: ID del servidor EDARSAHUB (para mapear unidad)
+backend/modules/comercial/service.py:826:        unidad_negocio_pk: ID de unidad (130MID, CIENFUEGOS, etc.)
+backend/modules/comercial/service.py:832:        nombre_unidad: Nombre de la unidad (para logs)
+backend/modules/comercial/service.py:837:    logging.info(f"[TABLERO-EDARSAHUB] {nombre_unidad or unidad_negocio_pk}: Consultando KPIs desde EDARSAHUB, dias_transcurridos={dias_transcurridos}")
+backend/modules/comercial/service.py:849:    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+backend/modules/comercial/service.py:850:    WHERE unidad_negocio_id = '{unidad_negocio_pk}'
+backend/modules/comercial/service.py:858:        logging.warning(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Sin datos en período {fecha_ini} a {fecha_fin}")
+backend/modules/comercial/service.py:876:    logging.info(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Último día con datos: {anio_ultimo}-{mes_ultimo:02d}-{dia_ultimo:02d}, Mes completo: {mes_completo}")
+backend/modules/comercial/service.py:916:    logging.info(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Rangos - Actual: {fecha_ini} a {fecha_fin_real}, Mes ant: {fecha_ini_ant} a {fecha_fin_ant}, Año ant: {fecha_ini_anio_ant} a {fecha_fin_anio_ant}")
+backend/modules/comercial/service.py:919:    # FIX: Pasar unidad_negocio_pk para filtro más confiable (especialmente para MPRO)
+backend/modules/comercial/service.py:920:    kpis_actual = _get_kpis_periodo_edarsahub(server_id, fecha_ini, fecha_fin_real, sucursal_id, unidad_negocio_pk=unidad_negocio_pk)
+backend/modules/comercial/service.py:923:        logging.warning(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Sin datos reales en período actual")
+backend/modules/comercial/service.py:956:    logging.info(f"[PROYECCION] {nombre_unidad}: dias_transcurridos={dias_transcurridos}, dia_ultimo_datos={dia_ultimo}, sync_lag={sync_lag}, dias_mes={dias_mes}")
+backend/modules/comercial/service.py:959:    kpis_mes_ant = _get_kpis_periodo_edarsahub(server_id, fecha_ini_ant, fecha_fin_ant, sucursal_id, unidad_negocio_pk=unidad_negocio_pk)
+backend/modules/comercial/service.py:969:        logging.info(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Sin datos de mes anterior ({fecha_ini_ant} a {fecha_fin_ant})")
+backend/modules/comercial/service.py:972:    kpis_anio_ant = _get_kpis_periodo_edarsahub(server_id, fecha_ini_anio_ant, fecha_fin_anio_ant, sucursal_id, unidad_negocio_pk=unidad_negocio_pk)
+backend/modules/comercial/service.py:982:        logging.info(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Sin datos de año anterior ({fecha_ini_anio_ant} a {fecha_fin_anio_ant})")
+backend/modules/comercial/service.py:997:    logging.info(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Ventas=${ventas:,.0f}, vs Mes Ant={var_vs_mes_ant}%, vs Año Ant={var_vs_año_ant}%")
+backend/modules/comercial/service.py:1025:            "tabla": "vw_Comercial_KPIs_Diarios_v2_Runtime",
+backend/modules/comercial/service.py:1039:# MAPEO DE UNIDADES EDARSAHUB - CÓDIGOS CANÓNICOS
+backend/modules/comercial/service.py:1042:# - Usar SIEMPRE códigos CANÓNICOS según tabla Unidades_Negocio en EDARSAHUB
+backend/modules/comercial/service.py:1046:UNIDADES_EDARSAHUB_MAP = {
+backend/modules/comercial/service.py:1048:    "a5547321-1139-4d2b-9d53-182ca737b6b6": {"unidad_negocio_pk": UnidadesService.resolver_codigo("130MID") or "130MID", "nombre": "130° MÉRIDA", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+backend/modules/comercial/service.py:1049:    "6d053c22-523e-48c0-b72b-96081e2d781b": {"unidad_negocio_pk": UnidadesService.resolver_codigo("CIENFUEGOS") or "CIENFUEGOS", "nombre": UnidadesService.resolver_codigo("CIENFUEGOS") or "CIENFUEGOS", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+backend/modules/comercial/service.py:1050:    "a5ff0e25-f029-43db-b634-d4ac814c904f": {"unidad_negocio_pk": UnidadesService.resolver_codigo("ESTELAR") or "ESTELAR", "nombre": "LA ESTELAR", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
+backend/modules/comercial/service.py:1054:            "0021": {"unidad_negocio_pk": UnidadesService.resolver_codigo("130QRO") or "130QRO", "nombre": "130° QUERÉTARO"},
+backend/modules/comercial/service.py:1055:            "0023": {"unidad_negocio_pk": UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN", "nombre": UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN"}
+backend/modules/comercial/service.py:1186:    Construye la respuesta estándar de una unidad para el Tablero Ejecutivo.
+backend/modules/comercial/service.py:1190:    - Extrae unidad_negocio_codigo y unidad_negocio_nombre de kpis
+backend/modules/comercial/service.py:1191:    - FUENTE MAESTRA: Unidades_Negocio (EDARSAHUB)
+backend/modules/comercial/service.py:1193:    - Retorna unidad_negocio_codigo para que el frontend cruce por código canónico
+backend/modules/comercial/service.py:1197:    # Generar unidad_key canónica
+backend/modules/comercial/service.py:1203:    # FUENTE MAESTRA: Unidades_Negocio.codigo y Unidades_Negocio.nombre
+backend/modules/comercial/service.py:1206:    unidad_negocio_codigo = kpis.get('unidad_negocio_codigo', '') if kpis else ''
+backend/modules/comercial/service.py:1207:    unidad_negocio_nombre = kpis.get('unidad_negocio_nombre', '') if kpis else ''
+backend/modules/comercial/service.py:1209:    # Usar nombre canónico de EDARSAHUB para los campos unidad/nombre
+backend/modules/comercial/service.py:1211:    nombre_oficial = unidad_negocio_nombre or sucursal or server_name
+backend/modules/comercial/service.py:1213:    unidad_key = f"{server_id}:{unidad_negocio_codigo or sucursal or 'default'}"
+backend/modules/comercial/service.py:1237:        "unidad_key": unidad_key,
+backend/modules/comercial/service.py:1238:        "unidad_negocio_pk": unidad_negocio_codigo or server_id,  # Código canónico, no server_id
+backend/modules/comercial/service.py:1239:        "unidad_negocio_codigo": unidad_negocio_codigo,  # NUEVO: Código canónico oficial
+backend/modules/comercial/service.py:1240:        "unidad_negocio_nombre": unidad_negocio_nombre,  # NUEVO: Nombre oficial EDARSAHUB
+backend/modules/comercial/service.py:1242:        "unidad": nombre_oficial,  # Usar nombre canónico de EDARSAHUB
+backend/modules/comercial/service.py:1371:# - Fuente: vw_Comercial_KPIs_Diarios_v2_Runtime
+backend/modules/comercial/service.py:1382:    - Lee EXCLUSIVAMENTE de EDARSAHUB (vw_Comercial_KPIs_Diarios_v2_Runtime)
+backend/modules/comercial/service.py:1387:    - Obtiene nombre y código canónico desde Unidades_Negocio (EDARSAHUB)
+backend/modules/comercial/service.py:1389:    - Retorna unidad_negocio_codigo y unidad_negocio_nombre en el payload
+backend/modules/comercial/service.py:1399:    # CAMBIO A: Obtener datos canónicos desde Unidades_Negocio (EDARSAHUB)
+backend/modules/comercial/service.py:1400:    # FUENTE MAESTRA: Unidades_Negocio.codigo y Unidades_Negocio.nombre
+backend/modules/comercial/service.py:1403:    unidad_edarsahub = obtener_unidad_negocio_edarsahub(server_id, sucursal=None)
+backend/modules/comercial/service.py:1404:    unidad_negocio_codigo = unidad_edarsahub.get('codigo', '')
+backend/modules/comercial/service.py:1405:    unidad_negocio_nombre = unidad_edarsahub.get('nombre', '')
+backend/modules/comercial/service.py:1406:    sucursal_id = unidad_edarsahub.get('sucursal_origen_id', '') or 'DEFAULT'
+backend/modules/comercial/service.py:1409:    nombre = unidad_negocio_nombre or server.get('name', 'SoftRestaurant')
+backend/modules/comercial/service.py:1411:    if not unidad_negocio_codigo:
+backend/modules/comercial/service.py:1412:        logging.warning(f"[TABLERO-EDARSAHUB] server_id {server_id} no encontrado en Unidades_Negocio EDARSAHUB")
+backend/modules/comercial/service.py:1416:    # FASE 5B: Usar EmpresaResolver para obtener mapeo de unidad_negocio_pk
+backend/modules/comercial/service.py:1418:    # usados en vw_Comercial_KPIs_Diarios_v2_Runtime
+backend/modules/comercial/service.py:1420:    unidad_negocio_pk = _mapear_codigo_a_unidad_negocio_pk(unidad_negocio_codigo)
+backend/modules/comercial/service.py:1422:    logging.info(f"[TABLERO-EDARSAHUB] {nombre}: Iniciando consulta - unidad={unidad_negocio_pk}, sucursal={sucursal_id}")
+backend/modules/comercial/service.py:1430:        # FIX 2026-05-15: Pasar unidad_negocio_codigo para calcular FechaOperacion correcta
+backend/modules/comercial/service.py:1431:        ventas_abiertas = _get_ventas_abiertas_edarsahub(server_id, sucursal_id, unidad_negocio_pk=unidad_negocio_codigo)
+backend/modules/comercial/service.py:1466:                # CAMBIO A: Campos canónicos desde Unidades_Negocio EDARSAHUB
+backend/modules/comercial/service.py:1467:                "unidad_negocio_codigo": unidad_negocio_codigo,
+backend/modules/comercial/service.py:1468:                "unidad_negocio_nombre": unidad_negocio_nombre,
+backend/modules/comercial/service.py:1475:    # MODO KPIs HISTÓRICOS/ACUMULADOS: Leer de vw_Comercial_KPIs_Diarios_v2_Runtime
+backend/modules/comercial/service.py:1486:        unidad_negocio_pk=unidad_negocio_pk,
+backend/modules/comercial/service.py:1492:        nombre_unidad=nombre
+backend/modules/comercial/service.py:1499:    # CAMBIO A: Agregar campos canónicos desde Unidades_Negocio EDARSAHUB
+backend/modules/comercial/service.py:1500:    kpis['unidad_negocio_codigo'] = unidad_negocio_codigo
+backend/modules/comercial/service.py:1501:    kpis['unidad_negocio_nombre'] = unidad_negocio_nombre
+backend/modules/comercial/service.py:1512:    - Lee EXCLUSIVAMENTE de EDARSAHUB (vw_Comercial_KPIs_Diarios_v2_Runtime)
+backend/modules/comercial/service.py:1525:    # Obtener configuración de unidades MPRO
+backend/modules/comercial/service.py:1526:    mpro_config = UNIDADES_EDARSAHUB_MAP.get(server_id, {})
+backend/modules/comercial/service.py:1529:        logging.warning(f"[TABLERO-EDARSAHUB] {nombre}: server_id {server_id} no tiene mapeo de unidad MPRO")
+backend/modules/comercial/service.py:1556:        unidad_negocio_pk = sucursal_config.get('unidad_negocio_pk', '')
+backend/modules/comercial/service.py:1561:            unidad_negocio_pk=unidad_negocio_pk,
+backend/modules/comercial/service.py:1567:            nombre_unidad=nombre_sucursal
+backend/modules/comercial/service.py:1684:    Retorna una lista de unidades, no un solo bloque.
+backend/modules/comercial/service.py:1715:        unidades = []
+backend/modules/comercial/service.py:1718:            # Resolver unidad desde EDARSAHUB
+backend/modules/comercial/service.py:1719:            unidad_edarsahub = resolve_unidad_by_server_sucursal(
+backend/modules/comercial/service.py:1723:            codigo_canonico = unidad_edarsahub.get('codigo', suc['codigo']) if unidad_edarsahub else suc['codigo']
+backend/modules/comercial/service.py:1724:            nombre_canonico = unidad_edarsahub.get('nombre', suc['codigo']) if unidad_edarsahub else suc['codigo']
+
+===== POSIBLES TABLAS LEGACY / NO CANONICAS ACTIVAS =====
+backend/tests_guardrails/test_p5_auth_no_mongo_fallback.py:15:    if "pymongo" in txt or "mongoclient" in txt or "users.find" in txt:
+backend/tests_guardrails/test_p4_runtime_critico_sin_conexiones_directas.py:7:    "core/sql_first/db.py",
+backend/tests_guardrails/test_p4_conexiones_sql_centralizadas.py:7:    "core/sql_first/db.py",
+backend/tests_guardrails/test_p4_runtime_sql_directas_sin_scripts.py:7:    "core/sql_first/db.py",
+backend/tests_guardrails/test_p4_no_sql_direct_runtime.py:8:    "core/sql_first/db.py",
+backend/limpiar_tests_dns.py:4:test_path = 'backend/tests/test_core_db.py'
+backend/limpiar_tests_dns.py:18:    print("✅ Tests de DNS marcados como skip en test_core_db.py")
+backend/limpiar_tests_dns.py:20:# 2. LIMPIEZA DE CÓDIGO INNECESARIO EN db.py
+backend/limpiar_tests_dns.py:21:db_path = 'backend/core/db.py'
+backend/limpiar_tests_dns.py:30:print("✅ Eliminada lógica obsoleta de hosts externos en db.py")
+backend/limpiar_tests_dns.py:37:        f.write("- Eliminación definitiva de dependencias MongoDB.\n")
+backend/modules/sync_monitor/service.py:11:NO usa MongoDB.
+backend/modules/sync_monitor/routes.py:25:    NO usa MongoDB.
+backend/modules/comercial/service.py:107:    NO usa MongoDB.
+backend/modules/comercial/service.py:185:    NO usa MongoDB.
+backend/modules/comercial/service.py:482:    NO usa MongoDB. NO usa servidores locales.
+backend/modules/comercial/cache_service.py:139:        cached = await db.comercial_cache.find_one({"cache_key": cache_key})
+backend/modules/comercial/cache_service.py:207:        await db.comercial_cache.update_one(
+backend/modules/comercial/cache_service.py:349:        await db.comercial_cache.create_index("cache_key", unique=True)
+backend/modules/comercial/cache_service.py:350:        await db.comercial_cache.create_index("cached_at")
+backend/modules/comercial/cache_service.py:373:        total_before = await db.comercial_cache.count_documents({})
+backend/modules/comercial/cache_service.py:376:        result = await db.comercial_cache.delete_many({
+backend/modules/comercial/cache_service.py:381:        result2 = await db.comercial_cache.delete_many({
+backend/modules/comercial/cache_service.py:386:        total_after = await db.comercial_cache.count_documents({})
+backend/modules/comercial/cache_service.py:421:        total_entries = await db.comercial_cache.count_documents({})
+backend/modules/comercial/cache_service.py:429:        async for doc in db.comercial_cache.aggregate(pipeline):
+backend/modules/comercial/cache_service.py:433:        oldest = await db.comercial_cache.find_one(sort=[("cached_at", 1)])
+backend/modules/comercial/cache_service.py:434:        newest = await db.comercial_cache.find_one(sort=[("cached_at", -1)])
+backend/modules/comercial/__init__.py:55:    Inicializa el módulo comercial con la conexión a MongoDB.
+backend/modules/comercial/queries/hub.py:14:- server_status: Estado de conexión de servidores
+backend/modules/comercial/queries/hub.py:73:COLLECTION_STATUS = "server_status"
+backend/modules/comercial/queries/mpro.py:26:- Todas retornan SafeQueryResult del core/db.py
+backend/modules/comercial/queries/softrestaurant.py:28:- Todas retornan SafeQueryResult del core/db.py
+backend/modules/comercial/alertas_margen_service.py:6:EDARSAHUB SQL es el cerebro. CERO MongoDB.
+backend/modules/comercial/inteligencia_repository.py:85:        row = self.db.execute(sql, params).mappings().first()
+backend/modules/comercial/inteligencia_repository.py:129:        return [dict(r) for r in self.db.execute(sql, params).mappings().all()]
+backend/modules/comercial/inteligencia_repository.py:160:        return [dict(r) for r in self.db.execute(sql, params).mappings().all()]
+backend/modules/comercial/inteligencia_repository.py:169:        return [dict(r) for r in self.db.execute(sql).mappings().all()]
+backend/modules/comercial/inteligencia_repository.py:186:        return [dict(r) for r in self.db.execute(sql).mappings().all()]
+backend/modules/comercial/inteligencia_repository.py:233:        rows = [dict(r) for r in self.db.execute(sql, params).mappings().all()]
+backend/modules/comercial/alertas_margen_repository.py:6:EDARSAHUB SQL es el cerebro. CERO MongoDB.
+backend/modules/comercial/routes_alertas_margen.py:6:EDARSAHUB SQL es el cerebro. CERO MongoDB.
+backend/modules/comercial/repository.py:16:- Cache KPIs: Tabla Comercial_KPIs_Cache (nueva)
+backend/modules/comercial/repository.py:92:    Garantiza paridad estructural con el esquema original de MongoDB.
+backend/modules/comercial/repository.py:535:        FROM Comercial_KPIs_Cache
+backend/modules/comercial/repository.py:547:async def save_kpis_cache(server_id: str, periodo_key: str, kpis: dict) -> None:
+backend/modules/comercial/repository.py:553:        SELECT 1 FROM Comercial_KPIs_Cache
+backend/modules/comercial/repository.py:560:            UPDATE Comercial_KPIs_Cache SET
+backend/modules/comercial/repository.py:567:            INSERT INTO Comercial_KPIs_Cache (ServerID, PeriodoKey, KPIsJSON, UpdatedAt, Status)
+backend/modules/comercial/repository.py:578:        FROM Comercial_KPIs_Cache
+backend/modules/comercial/repository.py:775:    'save_kpis_cache',
+backend/modules/comercial/kpis_repository.py:232:    No usa MongoDB.
+backend/modules/comercial/README_BLINDAJE.md:13:/app/backend/core/db.py                    🔴 CRÍTICO
+backend/modules/comercial/routes.py:126:    save_kpis_cache,
+backend/modules/comercial/routes.py:1047:                        await save_kpis_cache(server['id'], periodo_key, kpis)
+backend/modules/comercial/routes.py:1204:                                kpis_cached = cached['kpis']
+backend/modules/comercial/routes.py:1209:                                    kpis=kpis_cached,
+backend/modules/comercial/routes.py:1225:                                    totales[k] += kpis_cached.get(k, 0)
+backend/modules/comercial/routes.py:1250:                        kpis_cached = cached['kpis']
+backend/modules/comercial/routes.py:1254:                            kpis=kpis_cached,
+backend/modules/comercial/routes.py:1269:                            totales[k] += kpis_cached.get(k, 0)
+backend/modules/comercial/routes.py:1360:                            kpis_cached = cached['kpis']
+backend/modules/comercial/routes.py:1364:                                kpis=kpis_cached,
+backend/modules/comercial/routes.py:1379:                                totales[k] += kpis_cached.get(k, 0)
+backend/modules/comercial/routes.py:1572:                                await save_kpis_cache(server['id'], unidad_cache_key, unidad)
+backend/modules/fase2_operativo/db_utils.py:18:    Obtiene la conexión a la base de datos MongoDB.
+backend/modules/fase2_operativo/repositories/workflow_repository.py:260:        MIGRADO A SQL: Usa GROUP BY explícito en lugar de aggregate de MongoDB.
+backend/modules/fase2_operativo/repositories/asignacion_repository.py:32:        super().__init__("server_sucursales_config")
+backend/modules/fase2_operativo/repositories/sql_base_repository.py:8:usando EDARSAHUB SQL Server en lugar de MongoDB.
+backend/modules/fase2_operativo/repositories/sql_base_repository.py:58:    "server_sucursales_config": "Sistema_SucursalServidorMapeo",
+backend/modules/fase2_operativo/repositories/sql_base_repository.py:366:        Convierte una fila SQL a formato compatible con MongoDB.
+backend/modules/fase2_operativo/repositories/sql_base_repository.py:405:        Construye cláusula WHERE desde filtros estilo MongoDB.
+backend/modules/fase2_operativo/repositories/sql_base_repository.py:492:        Construye cláusula ORDER BY desde formato MongoDB.
+backend/modules/fase2_operativo/repositories/sql_base_repository.py:744:        Versión síncrona de get para compatibilidad con código MongoDB.
+backend/modules/fase2_operativo/repositories/sql_base_repository.py:782:        Versión síncrona para compatibilidad con código MongoDB.
+backend/modules/fase2_operativo/repositories/sql_base_repository.py:869:        Versión síncrona de create para compatibilidad con código MongoDB.
+backend/modules/fase2_operativo/repositories/sql_base_repository.py:875:        Versión síncrona de update para compatibilidad con código MongoDB.
+backend/modules/fase2_operativo/repositories/sql_base_repository.py:914:        Versión síncrona de count para compatibilidad con código MongoDB.
+backend/modules/fase2_operativo/repositories/sql_base_repository.py:921:        Versión síncrona para compatibilidad con MongoDB.
+backend/modules/fase2_operativo/repositories/sql_base_repository.py:947:        Versión síncrona para compatibilidad con MongoDB.
+backend/modules/fase2_operativo/repositories/sql_base_repository.py:992:        Versión síncrona para compatibilidad con MongoDB.
+backend/modules/fase2_operativo/repositories/sql_base_repository.py:1047:        Ejecuta una agregación estilo MongoDB.
+backend/modules/fase2_operativo/repositories/sql_base_repository.py:1198:    Factory para obtener un repositorio SQL dado un nombre de colección MongoDB.
+backend/modules/fase2_operativo/services/document_data_service.py:72:        FASE B-P2: SQL-only, sin fallback a MongoDB.
+backend/modules/fase2_operativo/services/orquestador_service.py:9:Este servicio ahora usa SQL Server (EDARSAHUB) en lugar de MongoDB.
+backend/modules/fase2_operativo/services/orquestador_service.py:76:        MIGRADO A SQL SERVER - Ya no depende de MongoDB.
+backend/modules/fase2_operativo/services/notification_service.py:34:    FASE B-P2: Migrado a SQL - usa repositorio SQL en lugar de MongoDB.
+backend/modules/fase2_operativo/services/sla_service.py:10:Este servicio ahora usa SQL Server (EDARSAHUB) en lugar de MongoDB.
+backend/modules/fase2_operativo/routes/sla_routes.py:248:        tarea = db.tareas_inventario.find_one({"id": tarea_id}, {"_id": 0})
+backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:145:    ultima = db.scheduler_job_logs.find_one(
+backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:190:    tareas = list(db.tareas_operativas_compras.find(
+backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:210:    tarea = db.tareas_operativas_compras.find_one(
+backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:237:    tarea = db.tareas_operativas_compras.find_one({"id": tarea_id})
+backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:246:    db.tareas_operativas_compras.update_one(
+backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:273:    tarea = db.tareas_operativas_compras.find_one({"id": tarea_id})
+backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:279:    db.tareas_operativas_compras.update_one(
+backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:341:    bitacora = list(db.auditoria_compras_bitacora.find(
+backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:373:    pedidos = list(db.pedidos_procesados_automatizacion.find(
+backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:456:    user = db.users.find_one({"id": payload.get("user_id")}, {"_id": 0, "role": 1})
+backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:494:    user = db.users.find_one({"id": payload.get("user_id")}, {"_id": 0, "role": 1})
+backend/modules/fase2_operativo/routes/automatizacion_compras_routes.py:529:    user = db.users.find_one({"id": payload.get("user_id")}, {"_id": 0, "role": 1})
+backend/modules/fase2_operativo/routes/notificaciones_routes.py:131:    db.tareas_inventario.update_many(
+backend/modules/fase2_operativo/routes/notificaciones_routes.py:143:    notificaciones_recientes = db.notificaciones_log.find(
+backend/modules/fase2_operativo/routes/notificaciones_routes.py:162:    tareas_vencidas = list(db.tareas_inventario.find(filtro_tareas, {"_id": 0}).limit(50))
+backend/modules/fase2_operativo/routes/notificaciones_routes.py:184:        usuario = db.users.find_one({"id": usuario_id}, {"_id": 0, "email": 1, "name": 1})
+backend/modules/fase2_operativo/routes/documentos_routes.py:72:            db.documentos_generados.insert_one({
+backend/modules/fase2_operativo/routes/documentos_routes.py:146:            db.documentos_generados.insert_one({
+backend/modules/api_connections/routes.py:164:    DESTINO: EDARSAHUB SQL (autoritativo), luego caché MongoDB.
+backend/modules/api_connections/routes.py:197:    DESTINO: EDARSAHUB SQL (autoritativo), luego caché MongoDB.
+backend/modules/scripts_pendientes/__init__.py:1:from .repository import ScriptsPendientesRepository, get_scripts_pendientes_repo
+backend/modules/scripts_pendientes/__init__.py:4:__all__ = ['ScriptsPendientesRepository', 'get_scripts_pendientes_repo', 'router']
+backend/modules/scripts_pendientes/repository.py:193:def get_scripts_pendientes_repo() -> ScriptsPendientesRepository:
+backend/modules/scripts_pendientes/routes.py:8:from .repository import get_scripts_pendientes_repo
+backend/modules/scripts_pendientes/routes.py:14:async def listar_scripts_pendientes_sql(
+backend/modules/scripts_pendientes/routes.py:20:    repo = get_scripts_pendientes_repo()
+backend/modules/scripts_pendientes/routes.py:25:        "source": "SQL_SCRIPTS_PENDIENTES"
+backend/modules/scripts_pendientes/routes.py:35:    repo = get_scripts_pendientes_repo()
+backend/modules/scripts_pendientes/routes.py:48:    repo = get_scripts_pendientes_repo()
+backend/modules/scripts_pendientes/routes.py:56:        "source": "SQL_SCRIPTS_PENDIENTES"
+backend/modules/scripts_pendientes/routes.py:67:    repo = get_scripts_pendientes_repo()
+backend/modules/scripts_pendientes/routes.py:76:        "source": "SQL_SCRIPTS_PENDIENTES"
+backend/modules/scripts_pendientes/routes.py:86:    repo = get_scripts_pendientes_repo()
+backend/modules/scripts_pendientes/routes.py:95:        "source": "SQL_SCRIPTS_PENDIENTES"
+backend/modules/sistema/estructura_service.py:54:            empresas = await self.db.sec_empresas.find(
+backend/modules/sistema/estructura_service.py:70:                unidades = await self.db.sec_unidades_negocio.find(
+backend/modules/sistema/estructura_service.py:86:                    sucursales = await self.db.sec_sucursales.find(
+backend/modules/sistema/estructura_service.py:124:            mapeos = await self.db.sec_mapeo_servidor_sucursal.find(
+backend/modules/sistema/estructura_service.py:161:            permisos = await self.db.sec_permisos_catalogo.find(
+backend/modules/sistema/estructura_service.py:220:            await self.db.sec_bitacora_acceso.insert_one(entry)
+backend/modules/rh/importador/repository.py:40:    """Inicializa el repositorio con la conexión a MongoDB."""
+backend/modules/rh/solicitudes_catalogo.py:142:    _solicitudes_db.append(nueva_solicitud)
+backend/modules/rh/solicitudes_catalogo.py:168:    solicitudes = _solicitudes_db.copy()
+backend/modules/rh/repository.py:79:    """Inicializa el repositorio con la conexión a MongoDB."""
+backend/modules/rh/routes.py:140:    empresas = await db.empresas.find(
+backend/modules/configuracion/repositories/config_asignaciones_repository.py:432:        En modo SQL-only, esta operación no persiste en MongoDB.
+backend/modules/configuracion/services/almacenes_sync_service.py:6:Sincroniza almacenes desde sistemas origen (SoftRestaurant/MPRO) al catálogo local MongoDB.
+backend/modules/configuracion/services/almacenes_sync_service.py:137:        # FASE P1.4-F (Dic 2025): Migrado de MongoDB db.servers a server_registry
+backend/modules/configuracion/services/almacenes_sync_service.py:141:        # ANTES: server = await db.servers.find_one({"id": server_id}, {"_id": 0})
+backend/modules/configuracion/services/almacenes_sync_service.py:201:        almacenes_collection = db.almacenes_catalogo
+backend/modules/inventarios/repository.py:23:    Reemplaza: mongo_db.inventarios.find(filtro)
+backend/modules/catalogos/__init__.py:35:    """Inicializa el módulo de catálogos con la conexión a MongoDB."""
+backend/modules/catalogos/__init__.py:41:    """Obtiene la conexión a MongoDB."""
+backend/modules/catalogos/repository.py:9:FASE P1.2 (Dic 2025): Migrado de MongoDB db.servers a EDARSAHUB_CONFIG de server_registry.
+backend/modules/catalogos/repository.py:39:    FASE P1.2 (Dic 2025): Migrado de MongoDB db.servers a server_registry.EDARSAHUB_CONFIG.
+backend/modules/catalogos/repository.py:43:    NO FUENTE: MongoDB db.servers
+backend/modules/auth/service.py:376:    Ya NO escribe en MongoDB. Los permisos operativos se guardan en:
+backend/modules/auth/__init__.py:37:    Inicializa el módulo de auth con la conexión a MongoDB.
+backend/modules/auth/repository.py:5:Sin fallback a MongoDB.
+backend/modules/auth/context_service.py:216:    Obtiene una empresa por UUID MongoDB.
+backend/modules/sql_compat_bridge/repository.py:20:    def listar_consultas_custom(self) -> List[Dict]:
+backend/modules/sql_compat_bridge/repository.py:145:    def listar_scripts_pendientes_por_server(self, server_id: str) -> List[Dict]:
+backend/modules/sql_compat_bridge/routes.py:19:async def compat_listar_consultas_custom(current_user: Dict = Depends(get_current_user)):
+backend/modules/sql_compat_bridge/routes.py:22:    consultas = repo.listar_consultas_custom()
+backend/modules/sql_compat_bridge/routes.py:64:async def compat_listar_scripts_pendientes(server_id: str, current_user: Dict = Depends(get_current_user)):
+backend/modules/sql_compat_bridge/routes.py:67:    scripts = repo.listar_scripts_pendientes_por_server(server_id)
+backend/modules/universal_query/routes.py:167:    FASE P1.3 (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+backend/modules/universal_query/routes.py:171:    NO FUENTE: MongoDB db.servers
+backend/modules/finanzas/repository_bancarios.py:6:Acceso a datos EDARSAHUB. NO usar MongoDB.
+backend/modules/finanzas/repository_bancarios.py:30:    IMPORTANTE: Solo usar EDARSAHUB, NO MongoDB.
+backend/modules/finanzas/tesoreria.py:61:    empresas = await db.empresas.find(
+backend/modules/finanzas/sync_cortes_softrestaurant.py:72:    - Usa core.db.parse_sql_server_host() para parsear correctamente instancias nombradas
+backend/modules/finanzas/cuentas_por_pagar.py:72:    empresas = await db.empresas.find(
+backend/modules/finanzas/repository_real.py:51:        Ya no consulta MongoDB db.servers.
+backend/modules/finanzas/ingresos.py:437:    cortes = _cortes_caja_db.copy()
+backend/modules/finanzas/ingresos.py:485:    cortes = _cortes_caja_db.copy()
+backend/modules/finanzas/ingresos.py:559:    cortes = _cortes_caja_db.copy()
+backend/modules/finanzas/ingresos.py:694:    _movimientos_banco_db.extend(movimientos_extraidos)
+backend/modules/finanzas/ingresos.py:710:    movimientos = _movimientos_banco_db.copy()
+backend/modules/finanzas/historical_kpis_repository.py:29:    Ya no consulta MongoDB db.servers.
+backend/modules/finanzas/propinas_tpv/service.py:78:        # Ya no usar MongoDB: self.db['servers']
+backend/modules/finanzas/propinas_tpv/routes_sql.py:8:FASE T2.3 (Mayo 2026): Migrado a server_registry.py (elimina MongoDB db.servers)
+backend/modules/finanzas/propinas_tpv/routes_sql.py:59:    FASE T2.3: Reemplaza db.servers.find_one()
+backend/modules/finanzas/propinas_tpv/routes_sql.py:83:    FASE T2.3: Reemplaza db.servers.find({system_type: 'SoftRestaurant'})
+backend/modules/finanzas/propinas_tpv/routes_sql.py:116:    """Obtiene la conexión a MongoDB."""
+backend/modules/finanzas/propinas_tpv/routes_sql.py:133:        await db.command('ping')
+backend/modules/finanzas/propinas_tpv/routes_sql.py:427:    """Obtiene estadísticas del cache MongoDB."""
+backend/modules/finanzas/propinas_tpv/routes_sql.py:471:        # FASE T2.3: Usar server_registry en lugar de db.servers
+backend/modules/finanzas/propinas_tpv/routes_sql.py:504:        # FASE T2.3: Usar server_registry en lugar de db.servers
+backend/modules/finanzas/propinas_tpv/routes_sql.py:574:        # FASE T2.3: Usar server_registry en lugar de db.servers
+backend/modules/finanzas/propinas_tpv/sql_repository.py:74:        Ya no consulta MongoDB db.servers.
+backend/modules/finanzas/propinas_tpv/cache_manager.py:62:        self.cache_listado = db['propinas_cache_listado']
+backend/modules/finanzas/propinas_tpv/cache_manager.py:63:        self.cache_resumen = db['propinas_cache_resumen']
+backend/modules/finanzas/propinas_tpv/cache_manager.py:64:        self.cache_config = db['propinas_cache_config']
+backend/modules/finanzas/propinas_tpv/cache_manager.py:65:        self.cache_detalle = db['propinas_cache_detalle']
+backend/modules/finanzas/propinas_tpv/routes_edarsahub.py:79:        empresas = await db.empresas.find(
+backend/modules/finanzas/propinas_tpv/routes_edarsahub.py:222:    Compatible con formato anterior de MongoDB.
+backend/modules/finanzas/propinas_tpv/repository.py:43:        self.collection_control = db['propinas_control']
+backend/modules/finanzas/propinas_tpv/repository.py:44:        self.collection_config = db['propinas_config']
+backend/modules/finanzas/propinas_tpv/service_sql.py:159:        # Ya no usar MongoDB: self.db['servers']
+backend/modules/finanzas/propinas_tpv/routes.py:22:FASE T2.3 (Mayo 2026): Migrado a server_registry.py (elimina MongoDB db.servers)
+backend/modules/finanzas/propinas_tpv/routes.py:62:    FASE T2.3: Reemplaza db.servers.find_one()
+backend/modules/finanzas/propinas_tpv/routes.py:88:    FASE T2.3: Reemplaza db.servers.find({system_type: 'SoftRestaurant'})
+backend/modules/finanzas/propinas_tpv/routes.py:123:    Obtiene la conexión a MongoDB.
+backend/modules/finanzas/propinas_tpv/routes.py:142:    empresas = await db.empresas.find(
+backend/modules/finanzas/propinas_tpv/routes.py:171:        await db.command('ping')
+backend/modules/finanzas/propinas_tpv/routes.py:172:        collections = await db.list_collection_names()
+backend/modules/finanzas/propinas_tpv/routes.py:286:        # FASE T2.3: Usar server_registry en lugar de db.servers
+backend/modules/finanzas/propinas_tpv/routes.py:326:        # FASE T2.3: Usar server_registry en lugar de db.servers
+backend/modules/finanzas/propinas_tpv/routes.py:399:    FASE 1B: Consulta propinas de un período SIN guardar en MongoDB.
+backend/modules/finanzas/propinas_tpv/routes.py:415:        # FASE T2.3: Usar server_registry en lugar de db.servers
+backend/modules/admin_sql/rbac_pilot_service.py:4:Reemplaza la implementación legacy basada en MongoDB (`db.sec_perfiles`, `db.sec_roles`,
+backend/modules/admin_sql/rbac_pilot_service.py:5:`db.users.sec_*`) por almacenamiento canónico en EDARSAHUB SQL:
+backend/modules/manuales_operativos/service.py:51:        self.collection = db[self.COLLECTION_NAME]
+backend/modules/manuales_operativos/__init__.py:35:    """Inicializa el módulo con la conexión a MongoDB."""
+backend/modules/manuales_operativos/triggers.py:80:    proceso = await db.automatizaciones_operativas_compras.find_one({"id": proceso_id})
+backend/modules/manuales_operativos/triggers.py:92:    bitacora = await db.automatizaciones_bitacora.find(
+backend/modules/manuales_operativos/triggers.py:107:        users_cursor = db.users.find({"id": {"$in": list(user_ids)}}, {"id": 1, "email": 1, "full_name": 1})
+backend/modules/manuales_operativos/triggers.py:137:    cursor = db.automatizaciones_operativas_compras.find({
+backend/modules/manuales_operativos/triggers.py:230:        for u in db_sync.users.find({"id": {"$in": list(user_ids)}}):
+backend/modules/manuales_operativos/routes.py:31:    """Inicializa el módulo con la conexión a MongoDB."""
+backend/modules/manuales_operativos/routes.py:145:        proceso = await _db.automatizaciones_operativas_compras.find_one({"id": proceso_id})
+backend/modules/manuales_operativos/routes.py:149:        bitacora = await _db.automatizaciones_bitacora.find(
+backend/modules/manuales_operativos/schemas.py:145:    """Schema del manual como está almacenado en MongoDB."""
+backend/modules/compras/__init__.py:59:    Inicializa el módulo de compras con la conexión a MongoDB.
+backend/modules/compras/sql_first_repository.py:23:        cursor = self.db.cursor()
+backend/modules/compras/repository.py:82:    Inicializa el repositorio con la conexión a MongoDB.
+backend/modules/compras/repository.py:114:    Descifra el password de un servidor obtenido de MongoDB.
+backend/modules/compras/repository.py:143:    FASE T3.1: Migrado de MongoDB db.servers a server_registry (EDARSAHUB).
+backend/modules/compras/repository.py:166:    MIGRADO: Ahora lee desde EDARSAHUB SQL en lugar de MongoDB.
+backend/modules/compras/repository.py:183:    MIGRADO: Ahora escribe a EDARSAHUB SQL en lugar de MongoDB.
+backend/modules/compras/historical_kpis_repository.py:32:    FASE T3.1: Migrado de MongoDB db.servers a EDARSAHUB_CONFIG de server_registry.
+backend/modules/compras/repository_pedidos_sql.py:99:# Reemplaza: db['pedidos_procesados_automatizacion']
+backend/modules/compras/repository_pedidos_sql.py:110:    REEMPLAZA: db['pedidos_procesados_automatizacion'].find_one()
+backend/modules/compras/repository_pedidos_sql.py:139:    REEMPLAZA: db['pedidos_procesados_automatizacion'].update_one(..., upsert=True)
+backend/modules/compras/repository_pedidos_sql.py:197:    REEMPLAZA: db['pedidos_procesados_automatizacion'].find()
+backend/modules/compras/repository_pedidos_sql.py:256:# Reemplaza: db['tareas_operativas_compras']
+backend/modules/compras/repository_pedidos_sql.py:276:    REEMPLAZA: db['tareas_operativas_compras'].insert_one()
+backend/modules/compras/repository_pedidos_sql.py:338:    REEMPLAZA: db['tareas_operativas_compras'].find()
+backend/modules/compras/repository_pedidos_sql.py:392:# Reemplaza: db['auditoria_compras_bitacora']
+backend/modules/compras/repository_pedidos_sql.py:403:    REEMPLAZA: db['auditoria_compras_bitacora'].insert_one()
+backend/.pytest_cache/v/cache/nodeids:121:  "tests/test_core_db.py::TestExecuteSqlQueryErrors::test_connection_error_handling",
+backend/.pytest_cache/v/cache/nodeids:122:  "tests/test_core_db.py::TestExecuteSqlQueryErrors::test_partial_result_handling",
+backend/.pytest_cache/v/cache/nodeids:123:  "tests/test_core_db.py::TestExecuteSqlQueryErrors::test_sql_error_handling",
+backend/.pytest_cache/v/cache/nodeids:124:  "tests/test_core_db.py::TestExecuteSqlQueryErrors::test_timeout_error_handling",
+backend/.pytest_cache/v/cache/nodeids:125:  "tests/test_core_db.py::TestExecuteSqlQueryWithMocks::test_datetime_conversion_in_results",
+backend/.pytest_cache/v/cache/nodeids:126:  "tests/test_core_db.py::TestExecuteSqlQueryWithMocks::test_empty_result_handling",
+backend/.pytest_cache/v/cache/nodeids:127:  "tests/test_core_db.py::TestExecuteSqlQueryWithMocks::test_execute_sql_query_fallback_imports",
+backend/.pytest_cache/v/cache/nodeids:128:  "tests/test_core_db.py::TestExecuteSqlQueryWithMocks::test_execute_sql_query_imports",
+backend/.pytest_cache/v/cache/nodeids:129:  "tests/test_core_db.py::TestExecuteSqlQueryWithMocks::test_execute_with_mock_pool_success",
+backend/.pytest_cache/v/cache/nodeids:130:  "tests/test_core_db.py::TestExecuteSqlQueryWithMocks::test_server_in_cooldown_returns_empty",
+backend/.pytest_cache/v/cache/nodeids:131:  "tests/test_core_db.py::TestParseSqlServerHost::test_custom_default_port",
+backend/.pytest_cache/v/cache/nodeids:132:  "tests/test_core_db.py::TestParseSqlServerHost::test_ddns_format",
+backend/.pytest_cache/v/cache/nodeids:133:  "tests/test_core_db.py::TestParseSqlServerHost::test_hostname_with_instance",
+backend/.pytest_cache/v/cache/nodeids:134:  "tests/test_core_db.py::TestParseSqlServerHost::test_hostname_with_port",
+backend/.pytest_cache/v/cache/nodeids:135:  "tests/test_core_db.py::TestParseSqlServerHost::test_instance_then_port",
+backend/.pytest_cache/v/cache/nodeids:136:  "tests/test_core_db.py::TestParseSqlServerHost::test_simple_hostname",
+backend/.pytest_cache/v/cache/nodeids:137:  "tests/test_core_db.py::TestParseSqlServerHost::test_with_spaces",
+backend/.pytest_cache/v/cache/nodeids:138:  "tests/test_core_db.py::TestServerCooldown::test_cooldown_info_structure",
+backend/.pytest_cache/v/cache/nodeids:139:  "tests/test_core_db.py::TestServerCooldown::test_get_server_cache_status",
+backend/.pytest_cache/v/cache/nodeids:140:  "tests/test_core_db.py::TestServerCooldown::test_mark_server_offline",
+backend/.pytest_cache/v/cache/nodeids:141:  "tests/test_core_db.py::TestServerCooldown::test_mark_server_online",
+backend/.pytest_cache/v/cache/nodeids:142:  "tests/test_core_db.py::TestServerCooldown::test_reset_server_cache",
+backend/.pytest_cache/v/cache/nodeids:143:  "tests/test_core_db.py::TestServerCooldown::test_server_not_in_cache",
+backend/.pytest_cache/v/cache/nodeids:144:  "tests/test_core_db.py::TestSqlQueryParameters::test_custom_timeout_accepted",
+backend/.pytest_cache/v/cache/nodeids:145:  "tests/test_core_db.py::TestSqlQueryParameters::test_default_timeout",
+backend/.pytest_cache/v/cache/nodeids:146:  "tests/test_core_db.py::TestSqlQueryParameters::test_port_is_integer",
+backend/.pytest_cache/v/cache/nodeids:147:  "tests/test_core_db.py::TestSqlQueryParameters::test_query_string_type",
+backend/scripts/p5_audit_cleanup_mongo.py:34:print("\n=== REFERENCIAS db.* (agrupadas) ===")
+backend/scripts/p5_audit_cleanup_mongo.py:40:print(f"\nTotal referencias db.*: {len(mongo_hits)}")
+backend/scripts/ddl_costos_alertas_001b.py:6:MÁXIMAS: EDARSAHUB SQL es el cerebro. CERO MongoDB.
+backend/scripts/ddl_costos_alertas_001b.py:618:    print("MÁXIMAS: EDARSAHUB SQL es el cerebro. CERO MongoDB.")
+backend/scripts/migrate_legacy_mongo_to_sql.py:185:                "scripts_pendientes", "MIGRACION_MONGO", legacy_id
+backend/scripts/migrate_legacy_mongo_to_sql.py:205:            created_at, created_by, legacy_id, "scripts_pendientes"
+backend/scripts/migrate_legacy_mongo_to_sql.py:285:    parser.add_argument("--only", choices=["queries", "consultas_custom", "scripts_pendientes", "informes_auditoria", "all"], default="all")
+backend/scripts/migrate_legacy_mongo_to_sql.py:304:    if args.only in ("consultas_custom", "all"):
+backend/scripts/migrate_legacy_mongo_to_sql.py:305:        collections.append("consultas_custom")
+backend/scripts/migrate_legacy_mongo_to_sql.py:306:    if args.only in ("scripts_pendientes", "all"):
+backend/scripts/migrate_legacy_mongo_to_sql.py:307:        collections.append("scripts_pendientes")
+backend/scripts/migrate_legacy_mongo_to_sql.py:313:            for doc in mdb[collection_name].find({}):
+backend/scripts/migrate_legacy_mongo_to_sql.py:315:                    if collection_name in ("queries", "consultas_custom"):
+backend/scripts/migrate_legacy_mongo_to_sql.py:317:                    elif collection_name == "scripts_pendientes":
+backend/tests/test_auth_mocks.py:42:            mock_db.users.find_one = AsyncMock(return_value=mock_user_db)
+backend/tests/test_auth_mocks.py:45:            assert mock_db.users.find_one is not None
+backend/tests/test_core_db.py:2:EDARSA HUB - Tests Ampliados para core/db.py
+backend/tests/test_dashboard_comercial.py:45:                mock_db.servers.find_one = AsyncMock(return_value=None)
+backend/tests/test_dashboard_comercial.py:98:                mock_db.servers.find_one = AsyncMock(return_value=sample_server_config)
+backend/tests/test_dashboard_comercial.py:101:                with patch("core.db.execute_sql_query") as mock_sql:
+backend/tests/test_centro_control_whatsapp.py:300:        """Verify critical alerts flow documentation"""
+backend/tests/test_centro_control_whatsapp.py:315:        print("✅ Critical alerts flow documented")
+backend/tests/test_repositories.py:24:        assert hasattr(mock_mongo_db, 'kpis_cache')
+backend/tests/test_repositories.py:87:        with patch("core.db.execute_sql_query") as mock:
+backend/tests/test_bloque4_paridad.py:43:db_module = load_module_isolated('core.db', '/app/backend/core/db.py')
+backend/tests/test_rbac_p1_hardening_gates.py:9:Las pruebas son estáticas + semánticas (vía _CODE_FALLBACK) para no depender de la DB.
+backend/tests/test_benchmark_sectorial.py:2:No requieren DB. Ejecutar: cd /app/backend && python -m pytest tests/test_benchmark_sectorial.py -q
+backend/tests/test_comparativo_inventarios.py:6:1. /api/reports/inventory-analysis - saves correctly to MongoDB cache (inventario_diferencias_detalle)
+backend/tests/test_recipients_manager.py:4:Tests for CRUD operations on alert recipients stored in MongoDB.
+backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql:1483:-- TABLA: [dbo].[Comercial_KPIs_Cache]
+backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql:1485:CREATE TABLE [dbo].[Comercial_KPIs_Cache] (
+backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql:1492:    CONSTRAINT [PK_Comercial_KPIs_Cache] PRIMARY KEY ([CacheID])
+backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql:11405:CREATE UNIQUE NONCLUSTERED INDEX [UQ_Comercial_KPIs_Cache]
+backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql:11406:    ON [dbo].[Comercial_KPIs_Cache] (ServerID, PeriodoKey);
+backend/server.py:759:# NO usa MongoDB. NO usa conexiones LIVE.
+backend/server.py:1587:# Las funciones de SQL Server han sido migradas a /core/db.py
+backend/server.py:1599:#   - _server_status_cache (variable global)
+backend/server.py:1616:# Nota: _server_status_cache ya no está disponible directamente, usar funciones
+backend/server.py:1904:    FASE 3B.1: Crea servidor en EDARSAHUB SQL primero, NO sincroniza a MongoDB.
+backend/server.py:2015:    FASE 3B.1: Actualiza servidor en EDARSAHUB SQL primero, NO sincroniza a MongoDB.
+backend/server.py:2073:    FASE 3B.1: Desactiva servidor en EDARSAHUB SQL primero, NO sincroniza a MongoDB.
+backend/server.py:2132:    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+backend/server.py:2139:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id}))
+backend/server.py:2167:            await db.server_status.update_one(
+backend/server.py:2194:        await db.server_status.update_one(
+backend/server.py:2227:    FASE P1.4-B (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+backend/server.py:2229:    NO FUENTE: MongoDB db.servers
+backend/server.py:2252:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+backend/server.py:2334:    FASE P1.4-B (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+backend/server.py:2336:    NO FUENTE: MongoDB db.servers
+backend/server.py:2350:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+backend/server.py:2365:    # ANTES: await db.servers.update_one({"id": server_id}, {"$set": {field_name: query_config}})
+backend/server.py:2378:    # ANTES: updated_server = decrypt_server_secrets(await db.servers.find_one({"id": server_id}, {"_id": 0}))
+backend/server.py:2387:        # ANTES: await db.servers.update_one({"id": server_id}, {"$set": {"queries_configured": all_configured}})
+backend/server.py:2411:    FASE P1.4-B (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+backend/server.py:2413:    NO FUENTE: MongoDB db.servers
+backend/server.py:2418:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+backend/server.py:2470:    FASE P1.4-B (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+backend/server.py:2472:    NO FUENTE: MongoDB db.servers
+backend/server.py:2480:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+backend/server.py:2487:    # ANTES: await db.servers.update_one({"id": server_id}, {"$set": {field_name: None, "queries_configured": False}})
+backend/server.py:2640:    NO consulta MongoDB.
+backend/server.py:2677:    NO consulta MongoDB.
+backend/server.py:2736:    configs = await db.server_sucursales_config.find(
+backend/server.py:2858:    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+backend/server.py:2866:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+backend/server.py:2977:    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+backend/server.py:2989:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+backend/server.py:3097:    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+backend/server.py:3102:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+backend/server.py:3113:    configs = await db.server_sucursales_config.find(
+backend/server.py:3134:    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+backend/server.py:3142:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+backend/server.py:3172:    existing_configs = await db.server_sucursales_config.find(
+backend/server.py:3189:            await db.server_sucursales_config.update_one(
+backend/server.py:3215:            await db.server_sucursales_config.insert_one(new_config)
+backend/server.py:3219:    configs = await db.server_sucursales_config.find(
+backend/server.py:3244:    existing = await db.server_sucursales_config.find_one({
+backend/server.py:3262:    await db.server_sucursales_config.update_one(
+backend/server.py:3296:        result = await db.server_sucursales_config.update_one(
+backend/server.py:3318:    Migrado de db.servers.find() a server_registry.list_servers()
+backend/server.py:3327:    cursor = db.server_sucursales_config.find(filtro, {"_id": 0})
+backend/server.py:3331:    # ANTES: server_cursor = db.servers.find({"id": {"$in": server_ids}}, {"_id": 0, "id": 1, "name": 1})
+backend/server.py:3515:    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+backend/server.py:3527:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+backend/server.py:3589:    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+backend/server.py:3601:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+backend/server.py:3706:    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+backend/server.py:3727:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+backend/server.py:4059:    FASE P1.4-C (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+backend/server.py:4061:    NO FUENTE: MongoDB db.servers
+backend/server.py:4131:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+backend/server.py:4708:                        await db.inventario_diferencias_detalle.update_one(
+backend/server.py:5356:                        await db.inventario_diferencias_detalle.update_one(
+backend/server.py:5423:    FASE P1.4-C (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+backend/server.py:5425:    NO FUENTE: MongoDB db.servers
+backend/server.py:5437:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+backend/server.py:5679:    FASE P1.4-C (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+backend/server.py:5681:    NO FUENTE: MongoDB db.servers
+backend/server.py:5692:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+backend/server.py:5909:    Lee las diferencias del cache inventario_diferencias_detalle.
+backend/server.py:5989:            cached = await db.inventario_diferencias_detalle.find_one(cache_key, {"_id": 0})
+backend/server.py:6250:    FASE P1.4-E3 (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+backend/server.py:6252:    NO FUENTE: MongoDB db.servers
+backend/server.py:6264:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": request.server_id, "active": True}))
+backend/server.py:6438:# ============= ALERTS =============
+backend/server.py:6440:@api_router.post("/alerts")
+backend/server.py:6446:    await db.alerts.insert_one(doc)
+backend/server.py:6450:@api_router.get("/alerts", response_model=List[Alert])
+backend/server.py:6451:async def get_alerts(current_user: Dict = Depends(get_current_user)):
+backend/server.py:6452:    alerts = await db.alerts.find({"active": True}, {"_id": 0}).to_list(1000)
+backend/server.py:6453:    return alerts
+backend/server.py:6455:@api_router.put("/alerts/{alert_id}")
+backend/server.py:6457:    await db.alerts.update_one({"id": alert_id}, {"$set": alert_data})
+backend/server.py:6460:@api_router.delete("/alerts/{alert_id}")
+backend/server.py:6462:    await db.alerts.update_one({"id": alert_id}, {"$set": {"active": False}})
+backend/server.py:6524:    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+backend/server.py:6533:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+backend/server.py:6590:    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+backend/server.py:6610:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+backend/server.py:6748:    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+backend/server.py:6758:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
+backend/server.py:7065:    FASE P1.4-E2 (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+backend/server.py:7067:    NO FUENTE: MongoDB db.servers
+backend/server.py:7088:        # ANTES: server = decrypt_server_secrets(await db.servers.find_one(query))
+backend/server.py:7303:    Migrado de db.servers.find() a server_registry.list_servers()
+backend/server.py:7306:    # ANTES: servers = await db.servers.find({"active": True, "queries_configured": True}, {...}).to_list(100)
+backend/server.py:7331:    NOTA: db.users y db.alerts aún usan MongoDB (fuera del alcance de P1.4-E4).
+backend/server.py:7336:    # ANTES: total_servers = await db.servers.count_documents({"active": True})
+backend/server.py:7337:    # ANTES: servers_configured = await db.servers.count_documents({"active": True, "queries_configured": True})
+backend/server.py:7342:    # NOTA: db.users y db.alerts aún usan MongoDB (migración en Fase 2)
+backend/server.py:7343:    total_users = await db.users.count_documents({"active": True})
+backend/server.py:7344:    total_alerts = await db.alerts.count_documents({"active": True})
+backend/server.py:7349:        "total_alerts": total_alerts,
+backend/server.py:7423:    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+backend/server.py:7426:    FASE 2-G FIX: Usar get_current_user que busca en SQL en lugar de db.users (MongoDB)
+backend/server.py:7437:    # FASE 2-G FIX: Usar get_current_user (SQL-only) en lugar de db.users (MongoDB)
+backend/server.py:7462:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+backend/server.py:8624:    # FASE T3.3: Migrado de db.servers a server_registry (EDARSAHUB)
+backend/server.py:8932:    FASE P1.4-E1 (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+backend/server.py:8934:    NO FUENTE: MongoDB db.servers
+backend/server.py:8947:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": request.server_id, "active": True}))
+backend/server.py:9882:    # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)
+backend/server.py:10514:    # FASE T3.3: Migrado de db.servers a server_registry (EDARSAHUB)
+backend/server.py:10670:    # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)
+backend/server.py:10741:    # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)
+backend/server.py:11198:async def save_kpis_cache(server_id: str, periodo_key: str, kpis: dict):
+backend/server.py:11200:    from modules.comercial.repository import save_kpis_cache as _sql_save_kpis_cache
+backend/server.py:11201:    await _sql_save_kpis_cache(server_id, periodo_key, kpis)
+backend/server.py:11809:    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+backend/server.py:11813:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+backend/server.py:11980:    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+backend/server.py:11990:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+backend/server.py:12034:    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+backend/server.py:12050:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+backend/server.py:12195:    await db.script_logs.insert_one({
+backend/server.py:13089:    FASE P1.4-E4 (Dic 2025): Migrado de MongoDB db.servers a server_registry.
+backend/server.py:13091:    NO FUENTE: MongoDB db.servers
+backend/server.py:13099:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+backend/server.py:13113:    # FASE P5: MongoDB deprecado - scripts_pendientes migrado a SQL
+backend/server.py:13116:        pass  # P5: db.scripts_pendientes eliminado - usar API SQL
+backend/server.py:13237:    await db.script_logs.insert_one({
+backend/server.py:13252:    # FASE P5: MongoDB deprecado - scripts_pendientes migrado a SQL
+backend/server.py:13254:        pass  # P5: db.scripts_pendientes.update_one eliminado - usar API SQL
+backend/server.py:13735:    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+backend/server.py:13740:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+backend/server.py:13921:    # FASE P5: MongoDB deprecado - consultas_custom migrado a SQL
+backend/server.py:13923:    # consultas_custom = await db.consultas_custom.find(filtro).to_list(500)
+backend/server.py:13924:    consultas_custom = []  # P5: db.consultas_custom eliminado - usar API SQL
+backend/server.py:13960:        # FASE P5: MongoDB deprecado - consultas_custom migrado a SQL
+backend/server.py:13962:        consulta_custom = None  # P5: db.consultas_custom eliminado
+backend/server.py:13987:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
+backend/server.py:14202:    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+backend/server.py:14225:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": target_server_id, "active": True}))
+backend/server.py:14269:    Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
+backend/server.py:14283:    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": target_server_id, "active": True}))
+backend/server.py:14358:        solicitudes = await db.solicitudes_catalogos.find(
+backend/server.py:14387:        proveedores = await db.portal_proveedores.find(
+backend/server.py:14435:        ciclos = await db.nomina_ciclos.find(
+backend/server.py:14441:        config = await db.nomina_configuracion.find_one({}, {"_id": 0})
+backend/server.py:14521:    await db.tareas_sistema.update_one(
+backend/server.py:14565:        "nota": "Este script es OPCIONAL. El sistema de tareas funciona con MongoDB. Use este script solo si desea mantener un log adicional en SQL Server."
+backend/server.py:14598:    await db.nomina_ciclos.update_one(
+backend/server.py:14639:    cursor = db.nomina_ciclos.find(filtro).sort("fecha_creacion", -1)
+backend/server.py:14652:    ciclo = await db.nomina_ciclos.find_one({"id": ciclo_id})
+backend/server.py:14685:    ciclo_existente = await db.nomina_ciclos.find_one({
+backend/server.py:14694:    config = await db.nomina_configuracion.find_one({"tipo": "general"})
+backend/server.py:14730:    await db.nomina_ciclos.insert_one(ciclo)
+backend/server.py:14745:    user = await db.users.find_one({"id": current_user.get("id")})
+backend/server.py:14750:    ciclo = await db.nomina_ciclos.find_one({"id": ciclo_id})
+backend/server.py:14775:    config = await db.nomina_configuracion.find_one({"tipo": "general"})
+backend/server.py:14801:    await db.nomina_ciclos.update_one(
+backend/server.py:14836:    ciclo = await db.nomina_ciclos.find_one({"id": ciclo_id})
+backend/server.py:14855:    await db.nomina_ciclos.update_one(
+backend/server.py:14883:    ciclo = await db.nomina_ciclos.find_one({"id": ciclo_id})
+backend/server.py:14887:    cursor = db.nomina_movimientos.find({"ciclo_id": ciclo_id}).sort("fecha_registro", -1)
+backend/server.py:14900:    ciclo = await db.nomina_ciclos.find_one({"id": ciclo_id})
+backend/server.py:14945:    await db.nomina_movimientos.insert_one(movimiento)
+backend/server.py:14948:    await db.nomina_ciclos.update_one(
+backend/server.py:14959:    movimiento = await db.nomina_movimientos.find_one({"id": movimiento_id})
+backend/server.py:14966:    ciclo = await db.nomina_ciclos.find_one({"id": ciclo_id})
+backend/server.py:14970:    await db.nomina_movimientos.delete_one({"id": movimiento_id})
+backend/server.py:14973:    await db.nomina_ciclos.update_one(
+backend/server.py:14984:    config = await db.nomina_configuracion.find_one({"tipo": "general"})
+backend/server.py:15022:    await db.nomina_configuracion.update_one(
+backend/server.py:15034:    cursor = db.nomina_kpis_puestos.find({})
+backend/server.py:15076:    await db.nomina_kpis_puestos.update_one(
+backend/server.py:15092:-- NOTA: Las tablas principales se manejan en MongoDB.
+backend/server.py:15180:        "nota": "Este script es OPCIONAL. El sistema de nóminas funciona principalmente con MongoDB. Use estas tablas para integración con NomiPAQ o reportes SQL."
+backend/server.py:15233:            rol_doc = await db.sec_roles.find_one({"codigo": rol_codigo, "activo": True})
+backend/server.py:15240:        rol_doc = await db.sec_roles.find_one({"codigo": sec_rol, "activo": True})
+backend/server.py:15947:    from modules.scripts_pendientes.routes import router as scripts_pendientes_sql_router
+backend/server.py:15948:    app.include_router(scripts_pendientes_sql_router, tags=["Scripts Pendientes SQL"])
+backend/server.py:16045:    zip_path = "/app/backend/static/backup_db.zip"
+backend/utils/migration_helpers.py:17:    "mongo_db.servers": "Servidores_Conexiones",
+backend/utils/migration_helpers.py:18:    "mongo_db.ventas": "Comercial_Ventas_Sync",
+backend/utils/migration_helpers.py:19:    "mongo_db.inventarios": "Compras_Inventarios_Fisicos_Sync",
+backend/utils/migration_helpers.py:20:    "mongo_db.leads": "CRM_Leads",
+backend/utils/migration_helpers.py:21:    "mongo_db.accounts": "CRM_Cuentas",
+backend/utils/migration_helpers.py:22:    "mongo_db.cuentas": "CRM_Cuentas",
+backend/utils/migration_helpers.py:23:    "mongo_db.metas": "Comercial_Metas",
+backend/utils/migration_helpers.py:24:    "mongo_db.kpis_cache": "Comercial_KPIs_Cache",
+backend/utils/migration_helpers.py:25:    "mongo_db.dashboard_cache": "Comercial_Dashboard_Cache",
+backend/utils/migration_helpers.py:26:    "mongo_db.server_status": "Servidores_Status",
+backend/utils/migration_helpers.py:27:    "mongo_db.users": "Usuario_Catalogo",
+backend/utils/migration_helpers.py:28:    "mongo_db.roles": "Usuario_Roles",
+backend/utils/migration_helpers.py:29:    "mongo_db.clientes": "Cliente_Catalogo",
+backend/utils/migration_helpers.py:30:    "mongo_db.cotizaciones": "Venta_Cotizaciones",
+backend/utils/migration_helpers.py:31:    "mongo_db.pedidos": "Venta_Pedidos",
+backend/utils/migration_helpers.py:32:    "mongo_db.remisiones": "Venta_Remisiones",
+backend/utils/migration_helpers.py:33:    "mongo_db.solicitudes_alta": "CRM_ClientesSolicitudesAlta",
+backend/utils/migration_helpers.py:87:            return await db.servers.find({"active": True}).to_list(100)
+backend/utils/migration_helpers.py:104:    - mongo_db.servers     → Servidores_Conexiones
+backend/utils/migration_helpers.py:105:    - mongo_db.ventas      → Comercial_Ventas_Sync
+backend/utils/migration_helpers.py:106:    - mongo_db.inventarios → Compras_Inventarios_Fisicos_Sync
+backend/utils/migration_helpers.py:107:    - mongo_db.leads       → CRM_Leads
+backend/utils/migration_helpers.py:108:    - mongo_db.accounts    → CRM_Cuentas
+backend/utils/migration_helpers.py:109:    - mongo_db.metas       → Comercial_Metas
+backend/utils/migration_helpers.py:144:- Comercial_Ventas_Sync, Comercial_Metas, Comercial_KPIs_Cache
+backend/utils/migration_helpers.py:162:    tabla = MONGO_TO_SQL_MAPPING.get(f"mongo_db.{coleccion}", coleccion)
+backend/utils/migration_helpers.py:185:    tabla = MONGO_TO_SQL_MAPPING.get(f"mongo_db.{coleccion}", coleccion)
+backend/migrations/PROPUESTA_concepto_mapeo_origen.sql:34:-- SEED PROPUESTO (DML, pendiente de aprobación) - migra el dict actual a DB.
+backend/migrations/cxp_sync_canonico_20260613.py:8:Idempotente. NO MongoDB. 100% SQL Server (EDARSAHUB).
+
+===== CONEXIONES DIRECTAS / NO CENTRALIZADAS =====
+backend/tests_guardrails/test_p4_runtime_critico_sin_conexiones_directas.py:39:    if "pyodbc.connect" in txt or "pymssql.connect" in txt or "create_engine(" in txt:
+backend/tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:24:sql_host = os.getenv("EDARSAHUB_SQL_HOST")
+backend/tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:27:sql_user = os.getenv("EDARSAHUB_SQL_USER")
+backend/tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:28:sql_password = os.getenv("EDARSAHUB_SQL_PASSWORD")
+backend/tests_guardrails/test_p4_tablas_canonicas_migracion_mongo.py:34:conn = pymssql.connect(
+backend/tests_guardrails/test_p4_conexiones_sql_centralizadas.py:29:    if "pyodbc.connect" in txt or "pymssql.connect" in txt or "create_engine(" in txt:
+backend/tests_guardrails/test_p4_runtime_sql_directas_sin_scripts.py:28:    if "pyodbc.connect" in txt or "pymssql.connect" in txt or "create_engine(" in txt:
+backend/tests_guardrails/test_p1_kpis_unidad_pk_real.py:8:host = os.getenv('EDARSAHUB_SQL_HOST')
+backend/tests_guardrails/test_p1_kpis_unidad_pk_real.py:11:user = os.getenv('EDARSAHUB_SQL_USER')
+backend/tests_guardrails/test_p1_kpis_unidad_pk_real.py:12:password = os.getenv('EDARSAHUB_SQL_PASSWORD')
+backend/tests_guardrails/test_p1_kpis_unidad_pk_real.py:14:conn = pymssql.connect(server=host, port=port, user=user, password=password, database=database)
+backend/tests_guardrails/test_p4_no_sql_direct_runtime.py:44:                    if '"pyodbc.connect' in line or '"pymssql.connect' in line or '"create_engine' in line:
+backend/tests_guardrails/test_p4_no_sql_direct_runtime.py:46:                    if "'pyodbc.connect" in line or "'pymssql.connect" in line or "'create_engine" in line:
+backend/tests_guardrails/test_p1_kpis_pk_completo.py:6:host = os.getenv('EDARSAHUB_SQL_HOST')
+backend/tests_guardrails/test_p1_kpis_pk_completo.py:9:user = os.getenv('EDARSAHUB_SQL_USER')
+backend/tests_guardrails/test_p1_kpis_pk_completo.py:10:password = os.getenv('EDARSAHUB_SQL_PASSWORD')
+backend/tests_guardrails/test_p1_kpis_pk_completo.py:12:conn = pymssql.connect(server=host, port=port, user=user, password=password, database=database)
+backend/tests_guardrails/test_p1_vistas_runtime_existen.py:6:host = os.getenv('EDARSAHUB_SQL_HOST')
+backend/tests_guardrails/test_p1_vistas_runtime_existen.py:9:user = os.getenv('EDARSAHUB_SQL_USER')
+backend/tests_guardrails/test_p1_vistas_runtime_existen.py:10:password = os.getenv('EDARSAHUB_SQL_PASSWORD')
+backend/tests_guardrails/test_p1_vistas_runtime_existen.py:12:conn = pymssql.connect(server=host, port=port, user=user, password=password, database=database)
+backend/modules/dashboard_ejecutivo/routes.py:5:from core.config.edarsahub_sql import get_edarsahub_connection
+backend/modules/dashboard_ejecutivo/routes.py:13:    cn = get_edarsahub_connection()
+backend/modules/sync_monitor/service.py:111:    from core.config.edarsahub_sql import get_edarsahub_connection
+backend/modules/sync_monitor/service.py:114:        conn = get_edarsahub_connection(timeout=30)
+backend/modules/comercial/service.py:54:from core.sql_first.connection_factory import get_external_sql_connection, get_edarsahub_connection
+backend/modules/comercial/service.py:85:    'host': os.getenv('EDARSAHUB_SQL_HOST'),
+backend/modules/comercial/service.py:88:    'username': os.getenv('EDARSAHUB_SQL_USER'),
+backend/modules/comercial/service.py:89:    'password': os.getenv('EDARSAHUB_SQL_PASSWORD')
+backend/modules/comercial/service.py:133:        result = execute_sql_query(
+backend/modules/comercial/service.py:485:        result = execute_sql_query(
+backend/modules/comercial/service.py:1944:        result_ultimo = execute_sql_query(server['host'], server['port'], server['database'], 
+backend/modules/comercial/service.py:2070:            result_ultimo_suc = execute_sql_query(server['host'], server['port'], server['database'], 
+backend/modules/comercial/service.py:2133:            r_ant = execute_sql_query(server['host'], server['port'], server['database'], 
+backend/modules/comercial/service.py:2156:            r_año = execute_sql_query(server['host'], server['port'], server['database'], 
+backend/modules/comercial/queries/mpro.py:201:        result = execute_sql_query(
+backend/modules/comercial/queries/mpro.py:382:        result = execute_sql_query(
+backend/modules/comercial/queries/mpro.py:692:        result = execute_sql_query(
+backend/modules/comercial/queries/softrestaurant.py:183:        result = execute_sql_query(
+backend/modules/comercial/alertas_margen_repository.py:110:    count_result = execute_sql_query(*conn, count_query)
+backend/modules/comercial/alertas_margen_repository.py:150:    rows = execute_sql_query(*conn, data_query) or []
+backend/modules/comercial/alertas_margen_repository.py:227:    rows = execute_sql_query(*conn, query)
+backend/modules/comercial/alertas_margen_repository.py:319:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/alertas_margen_repository.py:423:    execute_sql_query(*conn, query)
+backend/modules/comercial/alertas_margen_repository.py:488:    execute_sql_query(*conn, query)
+backend/modules/comercial/alertas_margen_repository.py:520:    execute_sql_query(*conn, query)
+backend/modules/comercial/alertas_margen_repository.py:620:        rows = execute_sql_query(*conn, query)
+backend/modules/comercial/alertas_margen_repository.py:677:    rows = execute_sql_query(*conn, query) or []
+backend/modules/comercial/alertas_margen_repository.py:754:    rows = execute_sql_query(*conn, query)
+backend/modules/comercial/repository.py:170:        results = execute_sql_query(
+backend/modules/comercial/repository.py:200:        results = execute_sql_query(
+backend/modules/comercial/repository.py:320:        results = execute_sql_query(
+backend/modules/comercial/repository.py:398:    return execute_sql_query(
+backend/modules/comercial/repository.py:427:    return execute_sql_query(
+backend/modules/comercial/repository.py:462:    return execute_sql_query(
+backend/modules/comercial/historical_kpis_repository.py:64:    return execute_sql_query(
+backend/modules/comercial/services/impuestos_service.py:71:def _get_edarsahub_connection() -> Tuple:
+backend/modules/comercial/services/impuestos_service.py:115:    conn = _get_edarsahub_connection()
+backend/modules/comercial/services/impuestos_service.py:154:    override_result = execute_sql_query(*conn, override_query)
+backend/modules/comercial/services/impuestos_service.py:184:    producto_result = execute_sql_query(*conn, producto_query)
+backend/modules/comercial/services/impuestos_service.py:227:    sync_result = execute_sql_query(*conn, sync_query)
+backend/modules/comercial/services/impuestos_service.py:267:    conn = _get_edarsahub_connection()
+backend/modules/comercial/services/impuestos_service.py:288:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/impuestos_service.py:321:    conn = _get_edarsahub_connection()
+backend/modules/comercial/services/impuestos_service.py:341:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/ingesta_competencia_service.py:68:    return execute_sql_query_params(*_conn(), query, params)
+backend/modules/comercial/services/listas_competidores_service.py:105:        execute_sql_query(*conn, ddl_listas)
+backend/modules/comercial/services/listas_competidores_service.py:106:        execute_sql_query(*conn, ddl_detalle)
+backend/modules/comercial/services/listas_competidores_service.py:177:        result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/listas_competidores_service.py:178:        count_result = execute_sql_query(*conn, count_query)
+backend/modules/comercial/services/listas_competidores_service.py:258:        execute_sql_query(*conn, query)
+backend/modules/comercial/services/listas_competidores_service.py:316:        execute_sql_query(*conn, query)
+backend/modules/comercial/services/listas_competidores_service.py:338:        execute_sql_query(*conn, query)
+backend/modules/comercial/services/listas_competidores_service.py:374:        result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/listas_competidores_service.py:447:        result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/listas_competidores_service.py:500:        existing = execute_sql_query(*conn, check_query)
+backend/modules/comercial/services/listas_competidores_service.py:515:            execute_sql_query(*conn, reactivate_query)
+backend/modules/comercial/services/listas_competidores_service.py:535:            execute_sql_query(*conn, insert_query)
+backend/modules/comercial/services/listas_competidores_service.py:565:        execute_sql_query(*conn, query)
+backend/modules/comercial/services/listas_competidores_service.py:586:        result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/listas_competidores_service.py:614:        result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/competidores_service.py:157:    count_result = execute_sql_query(*conn, count_query)
+backend/modules/comercial/services/competidores_service.py:204:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/competidores_service.py:257:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/competidores_service.py:347:    execute_sql_query(*conn, insert_query)
+backend/modules/comercial/services/competidores_service.py:425:    execute_sql_query(*conn, update_query)
+backend/modules/comercial/services/competidores_service.py:444:    execute_sql_query(*conn, update_items_query)
+backend/modules/comercial/services/competidores_service.py:455:    execute_sql_query(*conn, update_query)
+backend/modules/comercial/services/competidores_service.py:491:    count_result = execute_sql_query(*conn, count_query)
+backend/modules/comercial/services/competidores_service.py:523:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/competidores_service.py:561:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/competidores_service.py:624:    execute_sql_query(*conn, insert_query)
+backend/modules/comercial/services/competidores_service.py:683:    execute_sql_query(*conn, update_query)
+backend/modules/comercial/services/competidores_service.py:701:    execute_sql_query(*conn, update_query)
+backend/modules/comercial/services/competidores_service.py:727:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/competidores_service.py:762:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/competidores_enterprise_service.py:118:    execute_sql_query(*conn, query)
+backend/modules/comercial/services/competidores_enterprise_service.py:153:    count_result = execute_sql_query(*conn, count_query)
+backend/modules/comercial/services/competidores_enterprise_service.py:183:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/competidores_enterprise_service.py:234:    check_result = execute_sql_query(*conn, check_query)
+backend/modules/comercial/services/competidores_enterprise_service.py:247:    existe_result = execute_sql_query(*conn, existe_query)
+backend/modules/comercial/services/competidores_enterprise_service.py:294:    execute_sql_query(*conn, insert_query)
+backend/modules/comercial/services/competidores_enterprise_service.py:328:    execute_sql_query(*conn, update_query)
+backend/modules/comercial/services/competidores_enterprise_service.py:374:    count_result = execute_sql_query(*conn, count_query)
+backend/modules/comercial/services/competidores_enterprise_service.py:413:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/competidores_enterprise_service.py:495:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/competidores_enterprise_service.py:544:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/competidores_enterprise_service.py:582:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/competidores_enterprise_service.py:637:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/benchmark_service.py:123:    count_result = execute_sql_query(*conn, count_query)
+backend/modules/comercial/services/benchmark_service.py:160:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/benchmark_service.py:203:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/benchmark_service.py:253:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/benchmark_service.py:306:    execute_sql_query(*conn, insert_query)
+backend/modules/comercial/services/benchmark_service.py:354:    execute_sql_query(*conn, update_query)
+backend/modules/comercial/services/benchmark_service.py:376:    execute_sql_query(*conn, update_query)
+backend/modules/comercial/services/benchmark_service.py:396:    execute_sql_query(*conn, update_query)
+backend/modules/comercial/services/benchmark_service.py:432:    result_benchmark = execute_sql_query(*conn, query_benchmark)
+backend/modules/comercial/services/benchmark_service.py:451:    result_productos = execute_sql_query(*conn, query_productos)
+backend/modules/comercial/services/benchmark_service.py:525:    result = execute_sql_query(*conn, query_validados)
+backend/modules/comercial/services/benchmark_service.py:573:    result_menu = execute_sql_query(*conn, query_con_menu)
+backend/modules/comercial/services/precios_sugeridos_consolidado_service.py:77:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/precios_sugeridos_consolidado_service.py:227:    productos_raw = execute_sql_query(*conn, query) or []
+backend/modules/comercial/services/precios_sugeridos_consolidado_service.py:228:    count_result = execute_sql_query(*conn, count_query)
+backend/modules/comercial/services/precios_sugeridos_consolidado_service.py:378:    rangos = execute_sql_query(*conn, query) or []
+backend/modules/comercial/services/precios_sugeridos_consolidado_service.py:435:    regla = execute_sql_query(*conn, query_regla)
+backend/modules/comercial/services/precios_sugeridos_consolidado_service.py:453:    traslape = execute_sql_query(*conn, query_traslape)
+backend/modules/comercial/services/precios_sugeridos_consolidado_service.py:474:        execute_sql_query(*conn, insert_query)
+backend/modules/comercial/services/precios_sugeridos_consolidado_service.py:506:    rango = execute_sql_query(*conn, query_existe)
+backend/modules/comercial/services/precios_sugeridos_consolidado_service.py:539:        traslape = execute_sql_query(*conn, query_traslape)
+backend/modules/comercial/services/precios_sugeridos_consolidado_service.py:572:        execute_sql_query(*conn, update_query)
+backend/modules/comercial/services/pricing_ai_service.py:153:        execute_sql_query(*conn, ddl)
+backend/modules/comercial/services/pricing_ai_service.py:187:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/pricing_ai_service.py:480:        execute_sql_query(*conn, insert_query)
+backend/modules/comercial/services/pricing_ai_service.py:527:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/perfil_unidad_service.py:117:    count_result = execute_sql_query(*conn, count_query)
+backend/modules/comercial/services/perfil_unidad_service.py:161:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/perfil_unidad_service.py:212:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/perfil_unidad_service.py:263:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/perfil_unidad_service.py:287:    check_result = execute_sql_query(*conn, check_query)
+backend/modules/comercial/services/perfil_unidad_service.py:387:    execute_sql_query(*conn, insert_query)
+backend/modules/comercial/services/perfil_unidad_service.py:478:    execute_sql_query(*conn, update_query)
+backend/modules/comercial/services/perfil_unidad_service.py:498:    execute_sql_query(*conn, update_query)
+backend/modules/comercial/services/pricing_sugerido_service.py:101:    result = execute_sql_query(*conn, query_receta)
+backend/modules/comercial/services/pricing_sugerido_service.py:120:    result_insumos = execute_sql_query(*conn, query_insumos)
+backend/modules/comercial/services/pricing_sugerido_service.py:151:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/pricing_sugerido_service.py:180:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/pricing_sugerido_service.py:543:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/benchmark_sectorial_service.py:44:    return execute_sql_query_params(*_conn(), query, params)
+backend/modules/comercial/services/metricas_ia_service.py:107:        result = execute_sql_query(*conn, query_totales)
+backend/modules/comercial/services/metricas_ia_service.py:142:        result = execute_sql_query(*conn, query_por_dia)
+backend/modules/comercial/services/metricas_ia_service.py:165:        result = execute_sql_query(*conn, query_productos)
+backend/modules/comercial/services/metricas_ia_service.py:187:        result = execute_sql_query(*conn, query_competidores)
+backend/modules/comercial/services/metricas_ia_service.py:222:        result = execute_sql_query(*conn, query_ultimos)
+backend/modules/comercial/services/metricas_ia_service.py:253:        result = execute_sql_query(*conn, query_promedios)
+backend/modules/comercial/services/metricas_ia_service.py:276:        result = execute_sql_query(*conn, query_tipos)
+backend/modules/comercial/services/metricas_ia_service.py:326:        result = execute_sql_query(*conn, query_comp)
+backend/modules/comercial/services/metricas_ia_service.py:346:        result = execute_sql_query(*conn, query_items)
+backend/modules/comercial/services/precios_vinos_service.py:260:    result_cr = execute_sql_query(*conn, query_costo_receta)
+backend/modules/comercial/services/precios_vinos_service.py:280:    result_insumos = execute_sql_query(*conn, query_insumos)
+backend/modules/comercial/services/precios_vinos_service.py:328:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/precios_vinos_service.py:355:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/precios_vinos_service.py:391:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/precios_vinos_service.py:569:    result = execute_sql_query(*conn, query)
+backend/modules/comercial/services/unidad_resolver.py:38:        rows = execute_sql_query_params(
+backend/modules/comercial/routes.py:459:        result = execute_sql_query(
+backend/modules/comercial/routes.py:1974:        result = execute_sql_query(
+backend/modules/comercial/routes.py:2170:            result_prod = execute_sql_query(
+backend/modules/comercial/routes.py:2202:            result_vend = execute_sql_query(
+backend/modules/comercial/routes.py:2255:            result_prod = execute_sql_query(
+backend/modules/comercial/routes.py:2288:            result_vend = execute_sql_query(
+backend/modules/comercial/routes.py:2512:                result = execute_sql_query(
+backend/modules/comercial/routes.py:2550:                    result_simple = execute_sql_query(
+backend/modules/comercial/routes.py:2588:            result_rent = execute_sql_query(
+backend/modules/comercial/routes.py:3012:            result = execute_sql_query(
+backend/modules/comercial/routes.py:3068:            result_rot = execute_sql_query(
+backend/modules/comercial/routes.py:3126:            result = execute_sql_query(
+backend/modules/comercial/routes.py:3159:                        result_nombre = execute_sql_query(
+backend/modules/comercial/routes.py:3199:            result_rotacion = execute_sql_query(
+backend/modules/comercial/routes.py:4166:from core.sql_first.connection_factory import get_external_sql_connection, get_edarsahub_connection
+backend/modules/comercial_enriquecido/repository.py:125:        total_rows = execute_sql_query_params(*_conn(), total_sql, tuple(params))
+backend/modules/comercial_enriquecido/repository.py:130:        items = execute_sql_query_params(*_conn(), page_sql, tuple(params))
+backend/modules/comercial_enriquecido/repository.py:138:        rows = execute_sql_query_params(*_conn(), sql, tuple(params) + (str(id_),))
+backend/modules/comercial_enriquecido/repository.py:298:            return [r["v"] for r in execute_sql_query_params(*_conn(), sql, tuple(params))]
+backend/modules/comercial_enriquecido/repository.py:304:            r = execute_sql_query_params(*_conn(), sql, tuple(params))
+backend/modules/backfill_corporativo/service.py:1:from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
+backend/modules/backfill_corporativo/service.py:10:from core.config.edarsahub_sql import get_edarsahub_connection
+backend/modules/backfill_corporativo/service.py:675:        cn = get_edarsahub_connection(timeout=30)
+backend/modules/fase2_operativo/sql_repository.py:34:    'host': os.getenv('EDARSAHUB_SQL_HOST'),
+backend/modules/fase2_operativo/sql_repository.py:37:    'username': os.getenv('EDARSAHUB_SQL_USER'),
+backend/modules/fase2_operativo/sql_repository.py:38:    'password': os.getenv('EDARSAHUB_SQL_PASSWORD')
+backend/modules/fase2_operativo/repositories/sql_base_repository.py:322:    def _get_connection(self) -> pymssql.Connection:
+backend/modules/api_connections/repository.py:29:    'host': os.getenv('EDARSAHUB_SQL_HOST'),
+backend/modules/api_connections/repository.py:32:    'username': os.getenv('EDARSAHUB_SQL_USER'),
+backend/modules/api_connections/repository.py:33:    'password': os.getenv('EDARSAHUB_SQL_PASSWORD')
+backend/modules/api_connections/repository.py:76:        execute_sql_query(
+backend/modules/api_connections/repository.py:162:        results = execute_sql_query(
+backend/modules/api_connections/repository.py:193:        results = execute_sql_query(
+backend/modules/api_connections/repository.py:227:        results = execute_sql_query(
+backend/modules/api_connections/repository.py:313:        execute_sql_query(
+backend/modules/api_connections/repository.py:408:        execute_sql_query(
+backend/modules/api_connections/repository.py:450:        execute_sql_query(
+backend/modules/api_connections/repository.py:569:        results = execute_sql_query(
+backend/modules/api_connections/repository.py:620:        results = execute_sql_query(
+backend/modules/corporate_filters/router.py:28:    return execute_sql_query(host, port, database, username, password, query, timeout_seconds=45)
+backend/modules/costos_margenes/repository.py:16:def _get_edarsahub_connection() -> Tuple[str, int, str, str, str]:
+backend/modules/costos_margenes/repository.py:44:    conn = _get_edarsahub_connection()
+backend/modules/costos_margenes/repository.py:62:    productos_result = execute_sql_query(*conn, productos_query)
+backend/modules/costos_margenes/repository.py:66:    insumos_result = execute_sql_query(*conn, insumos_query)
+backend/modules/costos_margenes/repository.py:70:    recetas_result = execute_sql_query(*conn, recetas_query)
+backend/modules/costos_margenes/repository.py:74:    elaborados_result = execute_sql_query(*conn, elaborados_query)
+backend/modules/costos_margenes/repository.py:127:    conn = _get_edarsahub_connection()
+backend/modules/costos_margenes/repository.py:188:    count_result = execute_sql_query(*conn, count_query)
+backend/modules/costos_margenes/repository.py:234:    data_result = execute_sql_query(*conn, data_query) or []
+backend/modules/costos_margenes/repository.py:304:    conn = _get_edarsahub_connection()
+backend/modules/costos_margenes/repository.py:320:    result = execute_sql_query(*conn, query)
+backend/modules/costos_margenes/repository.py:329:    conn = _get_edarsahub_connection()
+backend/modules/costos_margenes/repository.py:350:            result = execute_sql_query(*conn, query)
+backend/modules/costos_margenes/repository.py:380:    receta_result = execute_sql_query(*conn, receta_query) or []
+backend/modules/costos_margenes/repository.py:425:    conn = _get_edarsahub_connection()
+backend/modules/costos_margenes/repository.py:446:    insumo_result = execute_sql_query(*conn, insumo_query)
+backend/modules/costos_margenes/repository.py:465:        insumo_result = execute_sql_query(*conn, producto_query)
+backend/modules/costos_margenes/repository.py:501:    elaborado_result = execute_sql_query(*conn, elaborado_query) or []
+backend/modules/costos_margenes/repository.py:593:    conn = _get_edarsahub_connection()
+backend/modules/costos_margenes/repository.py:601:    sync_result = execute_sql_query(*conn, sync_query)
+backend/modules/costos_margenes/repository.py:617:        result = execute_sql_query(*conn, count_query)
+backend/modules/costos_margenes/repository.py:628:    sistema_result = execute_sql_query(*conn, sistema_query) or []
+backend/modules/costos_margenes/repository.py:640:    servidor_result = execute_sql_query(*conn, servidor_query) or []
+backend/modules/costos_margenes/repository.py:692:    conn = _get_edarsahub_connection()
+backend/modules/costos_margenes/repository.py:709:    result = execute_sql_query(*conn, query)
+backend/modules/costos_margenes/repository.py:739:    conn = _get_edarsahub_connection()
+backend/modules/costos_margenes/repository.py:761:    result = execute_sql_query(*conn, query)
+backend/modules/costos_margenes/repository.py:785:    conn = _get_edarsahub_connection()
+backend/modules/costos_margenes/repository.py:806:    result = execute_sql_query(*conn, query)
+backend/modules/costos_margenes/routes.py:64:def _get_edarsahub_connection():
+backend/modules/costos_margenes/routes.py:95:    conn = _get_edarsahub_connection()
+backend/modules/costos_margenes/routes.py:105:        user_result = execute_sql_query(*conn, user_query)
+backend/modules/costos_margenes/routes.py:120:        servers_result = execute_sql_query(*conn, servers_query) or []
+backend/modules/costos_margenes/repository_precios.py:22:def _get_edarsahub_connection():
+backend/modules/costos_margenes/repository_precios.py:78:    conn = _get_edarsahub_connection()
+backend/modules/costos_margenes/repository_precios.py:105:    result = execute_sql_query(*conn, query)
+backend/modules/costos_margenes/repository_precios.py:203:    conn = _get_edarsahub_connection()
+backend/modules/costos_margenes/repository_precios.py:248:    execute_sql_query(*conn, query)
+backend/modules/costos_margenes/repository_precios.py:270:    conn = _get_edarsahub_connection()
+backend/modules/costos_margenes/repository_precios.py:332:    execute_sql_query(*conn, query)
+backend/modules/costos_margenes/repository_precios.py:350:    conn = _get_edarsahub_connection()
+backend/modules/costos_margenes/repository_precios.py:357:    result = execute_sql_query(*conn, query)
+backend/modules/costos_margenes/repository_precios.py:372:    conn = _get_edarsahub_connection()
+backend/modules/costos_margenes/repository_precios.py:387:    count_result = execute_sql_query(*conn, count_query)
+backend/modules/costos_margenes/repository_precios.py:402:    result = execute_sql_query(*conn, query)
+backend/modules/costos_margenes/repository_precios.py:439:    conn = _get_edarsahub_connection()
+backend/modules/costos_margenes/repository_precios.py:514:    execute_sql_query(*conn, update_query)
+backend/modules/costos_margenes/repository_precios.py:533:    conn = _get_edarsahub_connection()
+backend/modules/costos_margenes/repository_precios.py:545:    result = execute_sql_query(*conn, query)
+backend/modules/costos_margenes/repository_precios.py:651:    execute_sql_query(*conn, query)
+backend/modules/rentabilidad/routes.py:5:from core.config.edarsahub_sql import get_edarsahub_connection
+backend/modules/rentabilidad/routes.py:10:    cn = get_edarsahub_connection()
+backend/modules/rh/importador/repository.py:81:    return execute_sql_query(
+backend/modules/rh/repository.py:189:    return execute_sql_query(
+backend/modules/rh/repository.py:550:# IMPORTANTE: Estas funciones usan execute_sql_query_params() que pasa
+backend/modules/rh/repository.py:581:    return execute_sql_query_params(
+backend/modules/rh/repository.py:1240:# - Se usa execute_sql_query_params() para parámetros nativos donde es posible
+backend/modules/rh/repository.py:1424:# - execute_sql_query_params() para INSERT y UPDATE con IDs
+backend/modules/configuracion/repositories/config_asignaciones_repository.py:30:    'host': os.getenv('EDARSAHUB_SQL_HOST'),
+backend/modules/configuracion/repositories/config_asignaciones_repository.py:33:    'username': os.getenv('EDARSAHUB_SQL_USER'),
+backend/modules/configuracion/repositories/config_asignaciones_repository.py:34:    'password': os.getenv('EDARSAHUB_SQL_PASSWORD')
+backend/modules/configuracion/services/almacenes_sync_service.py:174:            almacenes_origen = execute_sql_query(
+backend/modules/catalogos/repository.py:56:    return execute_sql_query(
+backend/modules/catalogos/routes.py:93:        rows = execute_sql_query(
+backend/modules/catalogos/routes.py:94:            os.getenv('EDARSAHUB_SQL_HOST'), 1433, 'EDARSAHUB', os.getenv('EDARSAHUB_SQL_USER'), os.getenv('EDARSAHUB_SQL_PASSWORD'),
+backend/modules/catalogos/routes.py:122:        rows = execute_sql_query(
+backend/modules/catalogos/routes.py:123:            os.getenv('EDARSAHUB_SQL_HOST'), 1433, 'EDARSAHUB', os.getenv('EDARSAHUB_SQL_USER'), os.getenv('EDARSAHUB_SQL_PASSWORD'),
+backend/modules/catalogos/routes.py:174:        result = execute_sql_query(
+backend/modules/catalogos/routes.py:175:            os.getenv('EDARSAHUB_SQL_HOST'), 1433, 'EDARSAHUB', os.getenv('EDARSAHUB_SQL_USER'), os.getenv('EDARSAHUB_SQL_PASSWORD'),
+backend/modules/catalogos/routes.py:189:        result = execute_sql_query(
+backend/modules/catalogos/routes.py:190:            os.getenv('EDARSAHUB_SQL_HOST'), 1433, 'EDARSAHUB', os.getenv('EDARSAHUB_SQL_USER'), os.getenv('EDARSAHUB_SQL_PASSWORD'),
+backend/modules/catalogos/routes.py:239:        result = execute_sql_query(
+backend/modules/catalogos/routes.py:240:            os.getenv('EDARSAHUB_SQL_HOST'), 1433, 'EDARSAHUB', os.getenv('EDARSAHUB_SQL_USER'), os.getenv('EDARSAHUB_SQL_PASSWORD'),
+backend/modules/catalogos/routes.py:254:        result = execute_sql_query(
+backend/modules/catalogos/routes.py:255:            os.getenv('EDARSAHUB_SQL_HOST'), 1433, 'EDARSAHUB', os.getenv('EDARSAHUB_SQL_USER'), os.getenv('EDARSAHUB_SQL_PASSWORD'),
+backend/modules/catalogos/routes.py:306:        result = execute_sql_query(
+backend/modules/catalogos/routes.py:307:            os.getenv('EDARSAHUB_SQL_HOST'), 1433, 'EDARSAHUB', os.getenv('EDARSAHUB_SQL_USER'), os.getenv('EDARSAHUB_SQL_PASSWORD'),
+backend/modules/catalogos/routes.py:319:        execute_sql_query(
+backend/modules/catalogos/routes.py:320:            os.getenv('EDARSAHUB_SQL_HOST'), 1433, 'EDARSAHUB', os.getenv('EDARSAHUB_SQL_USER'), os.getenv('EDARSAHUB_SQL_PASSWORD'),
+backend/modules/catalogos/routes.py:350:        result = execute_sql_query(
+backend/modules/catalogos/routes.py:351:            os.getenv('EDARSAHUB_SQL_HOST'), 1433, 'EDARSAHUB', os.getenv('EDARSAHUB_SQL_USER'), os.getenv('EDARSAHUB_SQL_PASSWORD'),
+backend/modules/catalogos/routes.py:369:        execute_sql_query(
+backend/modules/catalogos/routes.py:370:            os.getenv('EDARSAHUB_SQL_HOST'), 1433, 'EDARSAHUB', os.getenv('EDARSAHUB_SQL_USER'), os.getenv('EDARSAHUB_SQL_PASSWORD'),
+backend/modules/catalogos/routes.py:401:        result = execute_sql_query(
+backend/modules/catalogos/routes.py:402:            os.getenv('EDARSAHUB_SQL_HOST'), 1433, 'EDARSAHUB', os.getenv('EDARSAHUB_SQL_USER'), os.getenv('EDARSAHUB_SQL_PASSWORD'),
+backend/modules/catalogos/routes.py:425:        execute_sql_query(
+backend/modules/catalogos/routes.py:426:            os.getenv('EDARSAHUB_SQL_HOST'), 1433, 'EDARSAHUB', os.getenv('EDARSAHUB_SQL_USER'), os.getenv('EDARSAHUB_SQL_PASSWORD'),
+backend/modules/catalogos/routes.py:460:        result = execute_sql_query(
+backend/modules/catalogos/routes.py:461:            os.getenv('EDARSAHUB_SQL_HOST'), 1433, 'EDARSAHUB', os.getenv('EDARSAHUB_SQL_USER'), os.getenv('EDARSAHUB_SQL_PASSWORD'),
+backend/modules/catalogos/routes.py:484:        execute_sql_query(
+backend/modules/catalogos/routes.py:485:            os.getenv('EDARSAHUB_SQL_HOST'), 1433, 'EDARSAHUB', os.getenv('EDARSAHUB_SQL_USER'), os.getenv('EDARSAHUB_SQL_PASSWORD'),
+backend/modules/sync_historicos/service.py:144:            result = execute_sql_query(
+backend/modules/sync_historicos/service.py:202:            result = execute_sql_query(
+backend/modules/sync_historicos/service.py:510:            result = execute_sql_query(
+backend/modules/sync_historicos/service.py:573:            result = execute_sql_query(
+backend/modules/sync_historicos/repository.py:61:        return execute_sql_query(
+backend/modules/sync_historicos/sync_ventas.py:149:            result = execute_sql_query(
+backend/modules/sync_historicos/sync_ventas.py:164:            count = execute_sql_query(
+backend/modules/sync_historicos/sync_ventas.py:175:            count = execute_sql_query(
+backend/modules/sync_historicos/sync_ventas.py:186:            count = execute_sql_query(
+backend/modules/automatizacion/repository.py:1:from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
+backend/modules/pricing_ai/service.py:4:from core.config.edarsahub_sql import get_edarsahub_connection
+backend/modules/pricing_ai/service.py:8:    cn = get_edarsahub_connection(timeout=30)
+backend/modules/auth/service.py:14:from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
+backend/modules/auth/context_service.py:49:    return get_edarsahub_connection()
+backend/modules/comercial_v2/sync_comercial_edarsahub.py:95:        result = execute_sql_query(
+backend/modules/comercial_v2/sync_comercial_edarsahub.py:164:        result = execute_sql_query(
+backend/modules/comercial_v2/sync_comercial_edarsahub.py:185:        test_result = execute_sql_query(host, port, database, username, password, test_query)
+backend/modules/comercial_v2/carga_historica_abril_2026.py:198:        result = execute_sql_query(
+backend/modules/comercial_v2/carga_historica_abril_2026.py:316:        rows = execute_sql_query(
+backend/modules/comercial_v2/carga_historica_abril_2026.py:485:        rows = execute_sql_query(
+backend/modules/comercial_v2/carga_historica_abril_2026.py:646:        result = execute_sql_query(
+backend/modules/comercial_v2/carga_historica_abril_2026.py:721:        result = execute_sql_query(
+backend/modules/comercial_v2/carga_historica_abril_2026.py:852:        result = execute_sql_query(
+backend/modules/comercial_v2/repository_readonly.py:39:    'host': os.getenv('EDARSAHUB_SQL_HOST'),
+backend/modules/comercial_v2/repository_readonly.py:42:    'username': os.getenv('EDARSAHUB_SQL_USER'),
+backend/modules/comercial_v2/repository_readonly.py:43:    'password': os.getenv('EDARSAHUB_SQL_PASSWORD')
+backend/modules/comercial_v2/repository_readonly.py:50:        result = execute_sql_query(
+backend/modules/comercial_v2/repository_comercial_edarsahub.py:46:    'host': os.getenv('EDARSAHUB_SQL_HOST'),
+backend/modules/comercial_v2/repository_comercial_edarsahub.py:49:    'username': os.getenv('EDARSAHUB_SQL_USER'),
+backend/modules/comercial_v2/repository_comercial_edarsahub.py:50:    'password': os.getenv('EDARSAHUB_SQL_PASSWORD')
+backend/modules/comercial_v2/repository_comercial_edarsahub.py:57:        result = execute_sql_query(
+backend/modules/comercial_v2/carga_historica_24_meses.py:235:        result = execute_sql_query(
+backend/modules/comercial_v2/carga_historica_24_meses.py:335:        rows = execute_sql_query(
+backend/modules/comercial_v2/carga_historica_24_meses.py:485:        rows = execute_sql_query(
+backend/modules/comercial_v2/carga_historica_24_meses.py:706:    result = execute_sql_query(
+backend/modules/comercial_v2/carga_historica_24_meses.py:735:    result = execute_sql_query(
+backend/modules/comercial_v2/carga_historica_24_meses.py:773:    result = execute_sql_query(
+backend/modules/tablajeria/ordenes_service.py:1:from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
+backend/modules/tablajeria/dashboard_service.py:1:from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
+backend/modules/tablajeria/sync_service.py:29:from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
+backend/modules/catalogo/routes.py:20:from modules.costos_margenes.repository import _get_edarsahub_connection
+backend/modules/catalogo/routes.py:76:    conn = _get_edarsahub_connection()
+backend/modules/catalogo/routes.py:101:        categorias = execute_sql_query(*conn, categorias_q) or []
+backend/modules/catalogo/routes.py:102:        familias = execute_sql_query(*conn, familias_q) or []
+backend/modules/catalogo/routes.py:103:        subfamilias = execute_sql_query(*conn, subfamilias_q) or []
+backend/modules/universal_query/routes.py:1:from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
+backend/modules/sync_recetas/sync_recetas.py:325:    rows = execute_sql_query(host, port, database, username, password, query) or []
+backend/modules/sync_recetas/sync_recetas.py:349:    rows = execute_sql_query(host, port, database, username, password, query) or []
+backend/modules/sync_recetas/sync_recetas.py:371:    rows = execute_sql_query(host, port, database, username, password, query) or []
+backend/modules/sync_recetas/sync_recetas.py:405:    rows = execute_sql_query(host, port, database, username, password, query) or []
+backend/modules/sync_recetas/sync_recetas.py:440:    rows = execute_sql_query(host, port, database, username, password, query) or []
+backend/modules/sync_recetas/sync_recetas.py:459:    rows = execute_sql_query(host, port, database, username, password, query) or []
+backend/modules/sync_recetas/sync_recetas.py:497:    rows = execute_sql_query(host, port, database, username, password, query) or []
+backend/modules/sync_recetas/sync_recetas.py:542:    fam_rows = execute_sql_query(host, port, database, username, password, fam_query) or []
+backend/modules/sync_recetas/sync_recetas.py:570:    sub_rows = execute_sql_query(host, port, database, username, password, sub_query) or []
+backend/modules/sync_recetas/sync_recetas.py:624:            execute_sql_query(
+backend/modules/sync_recetas/sync_recetas.py:707:    rows = execute_sql_query(host, port, database, username, password, query) or []
+backend/modules/sync_recetas/sync_recetas.py:726:    rows = execute_sql_query(host, port, database, username, password, query) or []
+backend/modules/sync_recetas/sync_recetas.py:748:    rows = execute_sql_query(host, port, database, username, password, query) or []
+backend/modules/sync_recetas/sync_recetas.py:845:    rows = execute_sql_query(host, port, database, username, password, query) or []
+backend/modules/sync_recetas/sync_recetas.py:899:    rows = execute_sql_query(host, port, database, username, password, query) or []
+backend/modules/sync_recetas/sync_recetas.py:916:    rows = execute_sql_query(host, port, database, username, password, query) or []
+backend/modules/sync_recetas/sync_recetas.py:976:            execute_sql_query(
+backend/modules/sync_recetas/sync_recetas.py:1020:            execute_sql_query(
+backend/modules/sync_recetas/sync_recetas.py:1078:            execute_sql_query(
+backend/modules/sync_recetas/sync_recetas.py:1153:            execute_sql_query(
+backend/modules/sync_recetas/sync_recetas.py:1220:            execute_sql_query(
+backend/modules/sync_recetas/sync_recetas.py:1249:            execute_sql_query(
+backend/modules/sync_recetas/sync_recetas.py:1304:            execute_sql_query(
+backend/modules/sync_recetas/sync_recetas.py:1341:        execute_sql_query(
+backend/modules/comercial_benchmark/repository.py:86:    rows = execute_sql_query_params(*_conn(), sql, (producto_id, desde, hasta))
+backend/modules/comercial_benchmark/repository.py:114:    return execute_sql_query_params(*_conn(), sql, (unidad_codigo, desde, hasta))
+backend/modules/comercial_benchmark/repository.py:126:    return {"unidades": execute_sql_query_params(*_conn(), sql, ())}
+backend/modules/crm/automation_service.py:1:from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
+backend/modules/crm/trigger_service.py:1:from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
+backend/modules/crm/native_routes.py:27:from core.sql_first.connection_factory import get_external_sql_connection, get_edarsahub_connection
+backend/modules/crm/native_routes.py:87:        conn = get_edarsahub_connection()
+backend/modules/crm/native_routes.py:311:        conn = get_edarsahub_connection()
+backend/modules/crm/native_routes.py:416:        conn = get_edarsahub_connection()
+backend/modules/crm/integration/staging_service.py:1:from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
+backend/modules/finanzas/repository_bancarios.py:52:        result = execute_sql_query(
+backend/modules/finanzas/repository_cuadres_z_edarsahub.py:34:def get_edarsahub_connection():
+backend/modules/finanzas/repository_cuadres_z_edarsahub.py:97:        conn = get_edarsahub_connection()
+backend/modules/finanzas/repository_cuadres_z_edarsahub.py:117:        conn = get_edarsahub_connection()
+backend/modules/finanzas/repository_cuadres_z_edarsahub.py:176:        conn = get_edarsahub_connection()
+backend/modules/finanzas/repository_cuadres_z_edarsahub.py:374:        conn = get_edarsahub_connection()
+backend/modules/finanzas/repository_cuadres_z_edarsahub.py:520:        conn = get_edarsahub_connection()
+backend/modules/finanzas/repository_cuadres_z_edarsahub.py:566:        conn = get_edarsahub_connection()
+backend/modules/finanzas/repository_cuadres_z_edarsahub.py:661:        conn = get_edarsahub_connection()
+backend/modules/finanzas/repository_cuadres_z_edarsahub.py:848:        conn = get_edarsahub_connection()
+backend/modules/finanzas/repository_cuadres_z_edarsahub.py:920:        conn = get_edarsahub_connection()
+backend/modules/finanzas/repository_cuadres_z_edarsahub.py:994:        conn = get_edarsahub_connection()
+backend/modules/finanzas/repository_cuadres_z_edarsahub.py:1059:        conn = get_edarsahub_connection()
+backend/modules/finanzas/repository_cuadres_z_edarsahub.py:1169:    'get_edarsahub_connection',
+backend/modules/finanzas/tesoreria.py:784:        results = execute_sql_query(
+backend/modules/finanzas/sync_propinas_mpro.py:89:def get_edarsahub_connection():
+backend/modules/finanzas/sync_propinas_mpro.py:100:    conn = get_edarsahub_connection()
+backend/modules/finanzas/sync_propinas_mpro.py:152:            'host': unidad['host'] or os.getenv('EDARSAHUB_SQL_HOST'),
+backend/modules/finanzas/sync_propinas_mpro.py:155:            'user': unidad['username'] or os.getenv('EDARSAHUB_SQL_USER'),
+backend/modules/finanzas/sync_propinas_mpro.py:156:            'password': os.getenv('EDARSAHUB_SQL_PASSWORD'),
+backend/modules/finanzas/sync_propinas_mpro.py:371:    conn = get_edarsahub_connection()
+backend/modules/finanzas/sync_propinas_mpro.py:481:    conn = get_edarsahub_connection()
+backend/modules/finanzas/sync_cortes_softrestaurant.py:62:def get_edarsahub_connection():
+backend/modules/finanzas/sync_cortes_softrestaurant.py:95:    conn = get_edarsahub_connection()
+backend/modules/finanzas/sync_cortes_softrestaurant.py:412:    conn = get_edarsahub_connection()
+backend/modules/finanzas/sync_cortes_softrestaurant.py:533:    conn = get_edarsahub_connection()
+backend/modules/finanzas/sync_propinas_softrestaurant.py:84:def get_edarsahub_connection():
+backend/modules/finanzas/sync_propinas_softrestaurant.py:106:    conn = get_edarsahub_connection()
+backend/modules/finanzas/sync_propinas_softrestaurant.py:427:    conn = get_edarsahub_connection()
+backend/modules/finanzas/sync_propinas_softrestaurant.py:539:    conn = get_edarsahub_connection()
+backend/modules/finanzas/repository_ingresos_edarsahub.py:49:def get_edarsahub_connection():
+backend/modules/finanzas/repository_ingresos_edarsahub.py:63:    conn = get_edarsahub_connection()
+backend/modules/finanzas/repository_ingresos_edarsahub.py:93:    conn = get_edarsahub_connection()
+backend/modules/finanzas/repository_ingresos_edarsahub.py:135:        return get_edarsahub_connection()
+backend/modules/finanzas/health.py:64:        existing = execute_sql_query(
+backend/modules/finanzas/health.py:152:                    test_result = execute_sql_query(
+backend/modules/finanzas/repository_real.py:96:            results = execute_sql_query(
+backend/modules/finanzas/repository_cortes_z.py:98:            results = execute_sql_query(
+backend/modules/finanzas/ingresos.py:69:    from modules.finanzas.repository_ingresos_edarsahub import get_edarsahub_connection
+backend/modules/finanzas/ingresos.py:77:        conn = get_edarsahub_connection()
+backend/modules/finanzas/historical_kpis_repository.py:45:def get_edarsahub_connection():
+backend/modules/finanzas/historical_kpis_repository.py:76:        conn = get_edarsahub_connection()
+backend/modules/finanzas/historical_kpis_repository.py:175:        conn = get_edarsahub_connection()
+backend/modules/finanzas/historical_kpis_repository.py:214:        conn = get_edarsahub_connection()
+backend/modules/finanzas/historical_kpis_repository.py:242:        conn = get_edarsahub_connection()
+backend/modules/finanzas/propinas_tpv/sql_repository.py:98:        return execute_sql_query(
+backend/modules/finanzas/propinas_tpv/schema_detector.py:64:            result = execute_sql_query(
+backend/modules/finanzas/propinas_tpv/repository.py:119:            result = execute_sql_query(
+backend/modules/finanzas/propinas_tpv/repository.py:202:            rows = execute_sql_query(
+backend/modules/finanzas/sync_cortes_mpro.py:62:def get_edarsahub_connection():
+backend/modules/finanzas/sync_cortes_mpro.py:77:    conn = get_edarsahub_connection()
+backend/modules/finanzas/sync_cortes_mpro.py:338:    conn = get_edarsahub_connection()
+backend/modules/finanzas/sync_cortes_mpro.py:463:    conn = get_edarsahub_connection()
+backend/modules/finanzas/repository_cortes_caja_edarsahub.py:19:def get_edarsahub_connection():
+backend/modules/finanzas/repository_cortes_caja_edarsahub.py:21:    from core.unidades_registry import _get_edarsahub_connection
+backend/modules/finanzas/repository_cortes_caja_edarsahub.py:22:    return _get_edarsahub_connection()
+backend/modules/finanzas/repository_cortes_caja_edarsahub.py:62:            conn = get_edarsahub_connection()
+backend/modules/finanzas/repository_cortes_caja_edarsahub.py:279:        conn = get_edarsahub_connection()
+backend/modules/finanzas/repository_cortes_caja_edarsahub.py:457:    'get_edarsahub_connection',
+backend/modules/admin_sql/routes.py:25:from core.config.edarsahub_sql import get_edarsahub_connection
+backend/modules/admin_sql/routes.py:52:        cn = get_edarsahub_connection()
+backend/modules/admin_sql/routes.py:69:    cn = get_edarsahub_connection()
+backend/modules/cava_socios/service.py:1:from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
+backend/modules/alertas_estrategicas/routes.py:5:from core.config.edarsahub_sql import get_edarsahub_connection
+backend/modules/alertas_estrategicas/routes.py:10:    cn = get_edarsahub_connection()
+backend/modules/compras/repository_compras_sql.py:35:def _get_edarsahub_connection():
+backend/modules/compras/repository_compras_sql.py:109:        conn = _get_edarsahub_connection()
+backend/modules/compras/repository_compras_sql.py:140:        conn = _get_edarsahub_connection()
+backend/modules/compras/repository_compras_sql.py:218:        conn = _get_edarsahub_connection()
+backend/modules/compras/repository_compras_sql.py:281:        conn = _get_edarsahub_connection()
+backend/modules/compras/repository_compras_sql.py:348:        conn = _get_edarsahub_connection()
+backend/modules/compras/repository.py:60:        result = execute_sql_query(
+backend/modules/compras/repository.py:225:    return execute_sql_query(
+backend/modules/compras/repository.py:251:    return execute_sql_query(
+backend/modules/compras/repository.py:286:    return execute_sql_query(
+backend/modules/compras/repository.py:334:        result = execute_sql_query(
+backend/modules/compras/repository.py:413:    return execute_sql_query(
+backend/modules/compras/repository.py:441:    return execute_sql_query(
+backend/modules/compras/repository.py:480:    return execute_sql_query(
+backend/modules/compras/historical_kpis_repository.py:46:def get_edarsahub_connection():
+backend/modules/compras/historical_kpis_repository.py:63:        conn = get_edarsahub_connection()
+backend/modules/compras/historical_kpis_repository.py:81:        conn = get_edarsahub_connection()
+backend/modules/compras/historical_kpis_repository.py:160:        conn = get_edarsahub_connection()
+backend/modules/compras/sync_service.py:194:def get_edarsahub_connection():
+backend/modules/compras/sync_service.py:250:        conn = get_edarsahub_connection()
+backend/modules/compras/sync_service.py:326:        conn = get_edarsahub_connection()
+backend/modules/compras/sync_service.py:465:        conn = get_edarsahub_connection()
+backend/modules/compras/sync_service.py:600:        conn = get_edarsahub_connection()
+backend/modules/compras/sync_service.py:662:        conn = get_edarsahub_connection()
+backend/modules/compras/sync_service.py:682:        conn = get_edarsahub_connection()
+backend/modules/compras/sync_service.py:776:        conn = get_edarsahub_connection()
+backend/modules/compras/sync_service.py:872:        conn = get_edarsahub_connection()
+backend/modules/compras/sync_service.py:1034:        conn = get_edarsahub_connection()
+backend/modules/compras/sync_service.py:1218:        conn = get_edarsahub_connection()
+backend/modules/compras/sync_service.py:1321:        conn = get_edarsahub_connection()
+backend/modules/compras/repository_pedidos_sql.py:39:    'host': os.getenv('EDARSAHUB_SQL_HOST'),
+backend/modules/compras/repository_pedidos_sql.py:42:    'username': os.getenv('EDARSAHUB_SQL_USER'),
+backend/modules/compras/repository_pedidos_sql.py:43:    'password': os.getenv('EDARSAHUB_SQL_PASSWORD')
+backend/scripts/backfill_comentario_mpro.py:19:from modules.compras.sync_service import get_edarsahub_connection
+backend/scripts/backfill_comentario_mpro.py:33:    conn = get_edarsahub_connection()
+backend/scripts/backfill_comentario_mpro.py:56:    rows = execute_sql_query(s['host'], s['port'], s['database'], s['username'], s['password'], q, timeout_seconds=60) or []
+backend/scripts/backfill_comentario_mpro.py:68:    conn = get_edarsahub_connection()
+backend/scripts/sync_agent_piloto.py:96:        conn = pymssql.connect(
+backend/scripts/sync_agent_piloto.py:123:        conn = pyodbc.connect(conn_str)
+backend/scripts/correccion_sistema_menus_y_fallbacks.py:7:    "server": os.environ.get('EDARSAHUB_HOST', os.getenv('EDARSAHUB_SQL_HOST')),
+backend/scripts/correccion_sistema_menus_y_fallbacks.py:10:    "username": os.environ.get('EDARSAHUB_USERNAME', os.getenv('EDARSAHUB_SQL_USER')),
+backend/scripts/correccion_sistema_menus_y_fallbacks.py:11:    "password": os.environ.get('EDARSAHUB_PASSWORD', os.getenv('EDARSAHUB_SQL_PASSWORD')),
+backend/scripts/correccion_sistema_menus_y_fallbacks.py:23:    conn = pymssql.connect(
+backend/scripts/backfill_sync_precios_historicos_from_productos.py:11:    return pymssql.connect(
+backend/scripts/backfill_sync_precios_historicos_from_productos.py:12:        server=os.getenv('EDARSAHUB_SQL_HOST'),
+backend/scripts/backfill_sync_precios_historicos_from_productos.py:15:        user=os.getenv('EDARSAHUB_SQL_USER'),
+backend/scripts/backfill_sync_precios_historicos_from_productos.py:16:        password=os.getenv('EDARSAHUB_SQL_PASSWORD'),
+backend/scripts/consultar_cache_finops.py:8:    "server": os.environ.get('EDARSAHUB_HOST', os.getenv('EDARSAHUB_SQL_HOST')),
+backend/scripts/consultar_cache_finops.py:11:    "username": os.environ.get('EDARSAHUB_USERNAME', os.getenv('EDARSAHUB_SQL_USER')),
+backend/scripts/consultar_cache_finops.py:12:    "password": os.environ.get('EDARSAHUB_PASSWORD', os.getenv('EDARSAHUB_SQL_PASSWORD')),
+backend/scripts/consultar_cache_finops.py:16:    return pymssql.connect(
+backend/scripts/create_comercial_pricing_rbac.py:32:    return pymssql.connect(
+backend/scripts/create_comercial_pricing_rbac.py:33:        server=os.getenv('EDARSAHUB_SQL_HOST'),
+backend/scripts/create_comercial_pricing_rbac.py:36:        user=os.getenv('EDARSAHUB_SQL_USER'),
+backend/scripts/create_comercial_pricing_rbac.py:37:        password=os.getenv('EDARSAHUB_SQL_PASSWORD'),
+backend/scripts/diag_rbac_benchmark.py:7:    'server': os.getenv('EDARSAHUB_SQL_HOST'),
+backend/scripts/diag_rbac_benchmark.py:10:    'user': os.getenv('EDARSAHUB_SQL_USER'),
+backend/scripts/diag_rbac_benchmark.py:11:    'password': os.getenv('EDARSAHUB_SQL_PASSWORD'),
+backend/scripts/diag_rbac_benchmark.py:14:conn = pymssql.connect(**DB)
+
+===== COMPILACION IMPACTO =====
+COMPILE_OK
+
+===== LOG =====
+7c2c401f Auto-generated changes
+4049a956 Migra cache KPI y status de servidores a SQL canonico
+10481615 Neutraliza cache comercial legacy sin Mongo
+23cc7fb7 Migra kpis repository comercial a SQL-first wrapper
+ad3ab3ed Aclara textos SQL-only restantes en jobs scheduler
+f807223c Aclara textos SQL-only en jobs scheduler
+bdddde37 Aclara textos legacy SQL-only del scheduler
+028728e2 Limpia backups versionados del scheduler
