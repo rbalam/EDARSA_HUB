@@ -164,11 +164,62 @@ def _get_utc_now() -> str:
 # FUNCIONES PRINCIPALES
 # ============================================================================
 
+
+async def _sql_parse_date(fecha: str):
+    from datetime import datetime
+    return datetime.strptime(str(fecha), "%Y-%m-%d").date()
+
+
+def _sql_decimal(value, default="0"):
+    from decimal import Decimal
+    return Decimal(str(value if value is not None else default))
+
+
+def _sql_int(value, default=0):
+    try:
+        return int(value if value is not None else default)
+    except Exception:
+        return default
+
+
+def _sql_build_hash(server_id: str, sucursal_id: str, fecha: str, kpis: dict) -> str:
+    import hashlib
+    payload = {
+        "server_id": server_id,
+        "sucursal_id": str(sucursal_id),
+        "fecha": str(fecha),
+        "ventas": str(kpis.get("ventas", kpis.get("ventas_total", 0)) or 0),
+        "ventas_sin_propina": str(kpis.get("ventas_sin_propina", kpis.get("ventas", 0)) or 0),
+        "propinas": str(kpis.get("propinas", kpis.get("propinas_total", 0)) or 0),
+        "tickets": str(kpis.get("tickets", kpis.get("cheques", kpis.get("tickets_total", 0))) or 0),
+        "pax": str(kpis.get("pax", kpis.get("pax_total", 0)) or 0),
+    }
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()[:32]
+
+
+def _sql_resolve_unidad_pk(server_id: str, empresa_id: str, metadata: Optional[dict]) -> str:
+    metadata = metadata or {}
+    return (
+        metadata.get("unidad_negocio_pk")
+        or metadata.get("unidad_negocio_id")
+        or empresa_id
+        or server_id
+    )
+
+
+def _sql_resolve_sistema(system_type: str):
+    from modules.comercial_v2.schemas import SistemaOrigen
+    st = (system_type or "").upper()
+    if "MPRO" in st or "MANAG" in st:
+        return SistemaOrigen.MPRO
+    return SistemaOrigen.SOFTRESTAURANT
+
+
 async def upsert_kpi_comercial(
     server_id: str,
     empresa_id: str,
     sucursal_id: str,
-    fecha: str,  # YYYY-MM-DD
+    fecha: str,
     kpis: dict,
     source_info: dict,
     updated_by: str = "scheduler",
@@ -176,200 +227,75 @@ async def upsert_kpi_comercial(
     force_update: bool = False
 ) -> dict:
     """
-    UPSERT idempotente de KPI comercial.
-    
-    Reglas:
-    1. Si no existe: INSERT con version=1, estado=ABIERTO
-    2. Si existe y hay cambios: UPDATE con version+1 y guardar snapshot
-    3. Si existe y NO hay cambios: NO hacer nada (idempotente)
-    4. Si período está RECONCILIADO: Rechazar update (requiere reapertura manual)
-    5. Si período está CERRADO y no es SYNC-N: Solo actualizar si force_update=True
-    
-    Args:
-        server_id: UUID del servidor origen
-        empresa_id: UUID de la empresa EDARSA
-        sucursal_id: Código de sucursal en sistema origen
-        fecha: Fecha en formato YYYY-MM-DD
-        kpis: Diccionario con KPIs (ventas, pax, cheques, etc.)
-        source_info: Información de origen (type, query_timestamp, etc.)
-        updated_by: Identificador del proceso que actualiza
-        metadata: Datos adicionales (sucursal_nombre, empresa_nombre, etc.)
-        force_update: Forzar actualización en estado CERRADO
-    
-    Returns:
-        dict con {
-            action: "INSERT" | "UPDATE" | "SKIP" | "REJECTED",
-            version: int,
-            reason: str (opcional)
-        }
+    SQL-first wrapper conservando firma legacy.
+    Escribe en dbo.Comercial_KPIs_Diarios_v2 mediante Comercial V2.
+    No usa MongoDB.
     """
-    db = get_db()
-    now = _get_utc_now()
+    from modules.comercial_v2.repository_comercial_edarsahub import upsert_kpi_diario
+    from modules.comercial_v2.schemas import KPIsDiariosV2, FuenteOriginal
 
-    # FASE7 P2-1: MongoDB comercial DEPRECADO. EDARSAHUB SQL es la fuente única.
-    # No-op seguro para neutralizar el residual legacy sin romper sync_receiver
-    # (que solo lee result["action"]). Evita el crash None[COLLECTION].find_one(...).
-    if db is None:
-        logging.debug("[KPI-UPSERT] MongoDB deprecado (SQL-First). SKIP no-op.")
-        return {"action": "SKIP", "disabled": True, "reason": "MONGO_COMMERCIAL_DEPRECATED"}
+    metadata = metadata or {}
+    fecha_op = await _sql_parse_date(fecha)
 
-    filter_key = _build_filter_key(server_id, empresa_id, sucursal_id, fecha)
-    
-    # Buscar documento existente
-    existing = await db[COLLECTION_NAME].find_one(filter_key)
-    
-    # ========================================
-    # CASO 1: No existe - INSERT
-    # ========================================
-    if not existing:
-        new_doc = {
-            **filter_key,
-            # Identificadores auxiliares
-            "sucursal_nombre": metadata.get("sucursal_nombre", "") if metadata else "",
-            "empresa_nombre": metadata.get("empresa_nombre", "") if metadata else "",
-            "unidad_negocio_pk": metadata.get("unidad_negocio_pk") if metadata else None,
-            "system_type": metadata.get("system_type", "") if metadata else "",
-            # Estado
-            "estado_periodo": ESTADO_ABIERTO,
-            "estado_transiciones": [{
-                "de": None,
-                "a": ESTADO_ABIERTO,
-                "timestamp": now,
-                "motivo": "Creación inicial"
-            }],
-            # KPIs
-            "kpis": kpis,
-            # Origen
-            "source": source_info,
-            # Auditoría
-            "created_at": now,
-            "created_by": updated_by,
-            "updated_at": now,
-            "updated_by": updated_by,
-            "version": 1,
-            "versions": [],
-            # Flags
-            "flags": {
-                "tiene_corte_z": False,
-                "requiere_reconciliacion": False,
-                "datos_incompletos": False,
-                "excluir_de_reportes": False,
-                "alerta_diferencia_mayor_5pct": False
-            }
-        }
-        
-        try:
-            await db[COLLECTION_NAME].insert_one(new_doc)
-            logging.info(f"[KPI-UPSERT] INSERT: {filter_key}")
-            return {"action": "INSERT", "version": 1}
-        except Exception as e:
-            # Posible race condition - intentar update
-            if "duplicate key" in str(e).lower():
-                logging.warning("[KPI-UPSERT] Race condition detectada, reintentando como UPDATE")
-                existing = await db[COLLECTION_NAME].find_one(filter_key)
-            else:
-                raise
-    
-    # ========================================
-    # CASO 2: Existe pero está RECONCILIADO - RECHAZAR
-    # ========================================
-    estado_actual = existing.get("estado_periodo", ESTADO_ABIERTO)
-    
-    if estado_actual == ESTADO_RECONCILIADO:
-        logging.warning(
-            f"[KPI-UPSERT] REJECTED - Período RECONCILIADO: {filter_key}"
-        )
-        return {
-            "action": "REJECTED", 
-            "version": existing.get("version", 1), 
-            "reason": "Período RECONCILIADO - requiere reapertura manual"
-        }
-    
-    # ========================================
-    # CASO 3: Existe y está CERRADO - Solo SYNC-N o force_update
-    # ========================================
-    if estado_actual == ESTADO_CERRADO and not force_update:
-        # Solo permitir actualización si es SYNC-N explícito
-        if updated_by not in ["scheduler_sync_n", "reconciliacion", "admin_manual"]:
-            logging.info(
-                f"[KPI-UPSERT] SKIP - Período CERRADO y no es SYNC-N: {filter_key}"
-            )
-            return {
-                "action": "SKIP", 
-                "version": existing.get("version", 1),
-                "reason": "Período CERRADO - solo actualizable por SYNC-N"
-            }
-    
-    # ========================================
-    # CASO 4: Verificar si hay cambios significativos
-    # ========================================
-    existing_kpis = existing.get("kpis", {})
-    has_changes = _detect_kpi_changes(existing_kpis, kpis)
-    
-    if not has_changes:
-        logging.debug(f"[KPI-UPSERT] SKIP - Sin cambios significativos: {filter_key}")
-        return {"action": "SKIP", "version": existing.get("version", 1)}
-    
-    # ========================================
-    # CASO 5: Hay cambios - UPDATE con historial
-    # ========================================
-    new_version = existing.get("version", 1) + 1
-    diff = _calculate_diff(existing_kpis, kpis)
-    
-    # Crear snapshot de versión anterior
-    version_snapshot = {
-        "version": existing.get("version", 1),
-        "timestamp": existing.get("updated_at", now),
-        "updated_by": existing.get("updated_by", "unknown"),
-        "source_type": existing.get("source", {}).get("type", "UNKNOWN"),
-        "kpis_snapshot": {k: v for k, v in existing_kpis.items() if k in diff},  # Solo campos que cambiaron
-        "reason": f"Actualización por {updated_by}",
-        "diff": diff
-    }
-    
-    # Determinar si requiere reconciliación (cambio > 5%)
-    requires_reconciliation = False
-    ventas_old = existing_kpis.get("ventas", 0) or 0
-    ventas_new = kpis.get("ventas", 0) or 0
-    if ventas_old > 0:
-        ventas_diff_pct = abs((ventas_new - ventas_old) / ventas_old) * 100
-        requires_reconciliation = ventas_diff_pct > 5.0
-    
-    update_doc = {
-        "$set": {
-            "kpis": kpis,
-            "source": source_info,
-            "updated_at": now,
-            "updated_by": updated_by,
-            "version": new_version,
-            "flags.requiere_reconciliacion": requires_reconciliation,
-            "flags.alerta_diferencia_mayor_5pct": requires_reconciliation
-        },
-        "$push": {
-            "versions": {
-                "$each": [version_snapshot],
-                "$slice": -MAX_EMBEDDED_VERSIONS  # Mantener últimas N versiones
-            }
-        }
-    }
-    
-    # Actualizar metadatos si se proporcionan
-    if metadata:
-        if metadata.get("sucursal_nombre"):
-            update_doc["$set"]["sucursal_nombre"] = metadata["sucursal_nombre"]
-        if metadata.get("empresa_nombre"):
-            update_doc["$set"]["empresa_nombre"] = metadata["empresa_nombre"]
-        if metadata.get("system_type"):
-            update_doc["$set"]["system_type"] = metadata["system_type"]
-    
-    await db[COLLECTION_NAME].update_one(filter_key, update_doc)
-    
-    logging.info(
-        f"[KPI-UPSERT] UPDATE v{new_version}: {filter_key}, "
-        f"cambios={len(diff)} campos, reconciliacion={requires_reconciliation}"
+    unidad_negocio_pk = _sql_resolve_unidad_pk(server_id, empresa_id, metadata)
+    unidad_nombre = metadata.get("empresa_nombre") or metadata.get("unidad_negocio_nombre") or unidad_negocio_pk
+    sucursal_nombre = metadata.get("sucursal_nombre") or unidad_nombre
+    sistema_origen = _sql_resolve_sistema(metadata.get("system_type") or source_info.get("system_type"))
+
+    ventas_total = _sql_decimal(kpis.get("ventas_total", kpis.get("ventas", 0)))
+    propinas_total = _sql_decimal(kpis.get("propinas_total", kpis.get("propinas", 0)))
+    ventas_sin_propina = _sql_decimal(
+        kpis.get("ventas_sin_propina", ventas_total - propinas_total)
     )
-    
-    return {"action": "UPDATE", "version": new_version}
+
+    tickets_total = _sql_int(kpis.get("tickets_total", kpis.get("tickets", kpis.get("cheques", 0))))
+    pax_total = _sql_int(kpis.get("pax_total", kpis.get("pax", kpis.get("personas", 0))))
+
+    ticket_promedio = ventas_sin_propina / tickets_total if tickets_total > 0 else _sql_decimal(0)
+    pax_promedio = ventas_sin_propina / pax_total if pax_total > 0 else _sql_decimal(0)
+
+    sync_run_id = source_info.get("scheduler_job_id") or source_info.get("agent_id") or updated_by
+    hash_origen = _sql_build_hash(server_id, sucursal_id, fecha, kpis)
+
+    kpi_v2 = KPIsDiariosV2(
+        unidad_negocio_pk=str(unidad_negocio_pk),
+        unidad_negocio_nombre=str(unidad_nombre),
+        server_id=str(server_id),
+        sucursal_id=str(sucursal_id or "DEFAULT"),
+        sucursal_nombre=str(sucursal_nombre) if sucursal_nombre else None,
+        sistema_origen=sistema_origen,
+        fecha_operacion=fecha_op,
+        anio=fecha_op.year,
+        mes=fecha_op.month,
+        dia=fecha_op.day,
+        ventas_total=ventas_total,
+        ventas_sin_propina=ventas_sin_propina,
+        propinas_total=propinas_total,
+        tickets_total=tickets_total,
+        pax_total=pax_total,
+        ticket_promedio=ticket_promedio,
+        pax_promedio=pax_promedio,
+        ventas_cerradas=_sql_decimal(kpis.get("ventas_cerradas", ventas_total)),
+        ventas_abiertas=_sql_decimal(kpis.get("ventas_abiertas", 0)),
+        total_estimado_dia=_sql_decimal(kpis.get("total_estimado_dia", ventas_total)),
+        es_venta_abierta=False,
+        es_corte_cerrado=True,
+        es_demo=False,
+        activo=True,
+        fuente_original=FuenteOriginal.API_LOCAL if source_info.get("type") == "SYNC_AGENT" else FuenteOriginal.SQL_LIVE,
+        id_origen=source_info.get("agent_id") or source_info.get("id_origen"),
+        hash_origen=hash_origen,
+        sync_run_id=str(sync_run_id),
+    )
+
+    result = upsert_kpi_diario(kpi_v2)
+    action = result.get("action", "SKIP")
+    return {
+        "action": action,
+        "version": result.get("version", 1),
+        "id": result.get("id"),
+        "source": "SQL_COMERCIAL_KPIS_DIARIOS_V2",
+    }
 
 
 async def cambiar_estado_periodo(
@@ -382,55 +308,9 @@ async def cambiar_estado_periodo(
     updated_by: str
 ) -> Tuple[bool, str]:
     """
-    Cambia el estado del período con validaciones.
-    
-    Args:
-        server_id, empresa_id, sucursal_id, fecha: Clave del documento
-        nuevo_estado: ABIERTO | CERRADO | RECONCILIADO
-        motivo: Razón del cambio
-        updated_by: Identificador del proceso
-    
-    Returns:
-        Tuple (success: bool, message: str)
+    Compatibilidad legacy. Comercial_KPIs_Diarios_v2 no usa estado_periodo documental.
     """
-    db = get_db()
-    filter_key = _build_filter_key(server_id, empresa_id, sucursal_id, fecha)
-    
-    existing = await db[COLLECTION_NAME].find_one(filter_key)
-    if not existing:
-        return False, "Documento no encontrado"
-    
-    estado_actual = existing.get("estado_periodo", ESTADO_ABIERTO)
-    
-    # Validar transición permitida
-    if nuevo_estado not in TRANSICIONES_VALIDAS.get(estado_actual, []):
-        return False, f"Transición no válida: {estado_actual} → {nuevo_estado}"
-    
-    now = _get_utc_now()
-    
-    transicion = {
-        "de": estado_actual,
-        "a": nuevo_estado,
-        "timestamp": now,
-        "motivo": motivo
-    }
-    
-    await db[COLLECTION_NAME].update_one(
-        filter_key,
-        {
-            "$set": {
-                "estado_periodo": nuevo_estado,
-                "updated_at": now,
-                "updated_by": updated_by
-            },
-            "$push": {
-                "estado_transiciones": transicion
-            }
-        }
-    )
-    
-    logging.info(f"[KPI-ESTADO] {estado_actual} → {nuevo_estado}: {filter_key}")
-    return True, f"Estado cambiado a {nuevo_estado}"
+    return False, "Estado de período legacy no aplica en SQL v2"
 
 
 async def get_kpi_comercial(
@@ -439,11 +319,37 @@ async def get_kpi_comercial(
     sucursal_id: str,
     fecha: str
 ) -> Optional[dict]:
-    """Obtiene un documento KPI por su clave."""
-    db = get_db()
-    filter_key = _build_filter_key(server_id, empresa_id, sucursal_id, fecha)
-    doc = await db[COLLECTION_NAME].find_one(filter_key, {"_id": 0})
-    return doc
+    """Lee KPI desde vw_Comercial_KPIs_Diarios_v2_Runtime por server/sucursal/fecha."""
+    from modules.comercial_v2.repository_comercial_edarsahub import _execute_query
+
+    safe_server = str(server_id).replace("'", "''")
+    safe_sucursal = str(sucursal_id or "DEFAULT").replace("'", "''")
+    safe_fecha = str(fecha).replace("'", "''")
+
+    rows = _execute_query(f"""
+        SELECT TOP 1 *
+        FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime
+        WHERE server_id = '{safe_server}'
+          AND sucursal_id = '{safe_sucursal}'
+          AND fecha_operacion = '{safe_fecha}'
+          AND activo = 1
+    """)
+    if not rows:
+        return None
+
+    row = rows[0]
+    return {
+        **row,
+        "version": row.get("version", 1),
+        "kpis": {
+            "ventas": row.get("ventas_sin_propina") or row.get("ventas_total") or 0,
+            "ventas_total": row.get("ventas_total") or 0,
+            "ventas_sin_propina": row.get("ventas_sin_propina") or 0,
+            "propinas_total": row.get("propinas_total") or 0,
+            "tickets_total": row.get("tickets_total") or 0,
+            "pax_total": row.get("pax_total") or 0,
+        },
+    }
 
 
 async def get_kpis_by_empresa_rango(
@@ -452,22 +358,21 @@ async def get_kpis_by_empresa_rango(
     fecha_fin: str,
     excluir_reportes: bool = True
 ) -> List[dict]:
-    """
-    Obtiene KPIs de una empresa en un rango de fechas.
-    Usado por el Tablero Ejecutivo.
-    """
-    db = get_db()
-    
-    query = {
-        "empresa_id": empresa_id,
-        "fecha": {"$gte": fecha_inicio, "$lte": fecha_fin}
-    }
-    
-    if excluir_reportes:
-        query["flags.excluir_de_reportes"] = {"$ne": True}
-    
-    cursor = db[COLLECTION_NAME].find(query, {"_id": 0}).sort("fecha", -1)
-    return await cursor.to_list(1000)
+    """Lee KPIs SQL por unidad_negocio_pk en rango."""
+    from modules.comercial_v2.repository_comercial_edarsahub import _execute_query
+
+    safe_empresa = str(empresa_id).replace("'", "''")
+    safe_ini = str(fecha_inicio).replace("'", "''")
+    safe_fin = str(fecha_fin).replace("'", "''")
+
+    return _execute_query(f"""
+        SELECT *
+        FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime
+        WHERE unidad_negocio_pk = '{safe_empresa}'
+          AND fecha_operacion BETWEEN '{safe_ini}' AND '{safe_fin}'
+          AND activo = 1
+        ORDER BY fecha_operacion DESC
+    """)
 
 
 async def get_kpis_by_server_rango(
@@ -475,19 +380,21 @@ async def get_kpis_by_server_rango(
     fecha_inicio: str,
     fecha_fin: str
 ) -> List[dict]:
-    """
-    Obtiene KPIs de un servidor en un rango de fechas.
-    Usado por schedulers de sincronización.
-    """
-    db = get_db()
-    
-    query = {
-        "server_id": server_id,
-        "fecha": {"$gte": fecha_inicio, "$lte": fecha_fin}
-    }
-    
-    cursor = db[COLLECTION_NAME].find(query, {"_id": 0}).sort("fecha", -1)
-    return await cursor.to_list(1000)
+    """Lee KPIs SQL por server_id en rango."""
+    from modules.comercial_v2.repository_comercial_edarsahub import _execute_query
+
+    safe_server = str(server_id).replace("'", "''")
+    safe_ini = str(fecha_inicio).replace("'", "''")
+    safe_fin = str(fecha_fin).replace("'", "''")
+
+    return _execute_query(f"""
+        SELECT *
+        FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime
+        WHERE server_id = '{safe_server}'
+          AND fecha_operacion BETWEEN '{safe_ini}' AND '{safe_fin}'
+          AND activo = 1
+        ORDER BY fecha_operacion DESC
+    """)
 
 
 async def get_pendientes_reconciliacion(
@@ -495,20 +402,9 @@ async def get_pendientes_reconciliacion(
     limit: int = 100
 ) -> List[dict]:
     """
-    Obtiene documentos pendientes de reconciliación.
+    Compatibilidad legacy. Reconciliación documental no aplica en SQL v2.
     """
-    db = get_db()
-    
-    query = {
-        "estado_periodo": ESTADO_CERRADO,
-        "flags.requiere_reconciliacion": True
-    }
-    
-    if fecha_limite:
-        query["fecha"] = {"$lte": fecha_limite}
-    
-    cursor = db[COLLECTION_NAME].find(query, {"_id": 0}).sort("fecha", 1).limit(limit)
-    return await cursor.to_list(limit)
+    return []
 
 
 async def cerrar_periodos_anteriores(
@@ -516,44 +412,10 @@ async def cerrar_periodos_anteriores(
     updated_by: str = "scheduler_sync_n"
 ) -> int:
     """
-    Cierra períodos ABIERTOS anteriores a la fecha de corte.
-    
-    Args:
-        fecha_corte: Fecha límite (YYYY-MM-DD), los días anteriores se cierran
-        updated_by: Identificador del proceso
-    
-    Returns:
-        Cantidad de documentos actualizados
+    Compatibilidad legacy. SQL v2 no usa cierre documental de períodos.
     """
-    db = get_db()
-    now = _get_utc_now()
-    
-    result = await db[COLLECTION_NAME].update_many(
-        {
-            "estado_periodo": ESTADO_ABIERTO,
-            "fecha": {"$lt": fecha_corte}
-        },
-        {
-            "$set": {
-                "estado_periodo": ESTADO_CERRADO,
-                "updated_at": now,
-                "updated_by": updated_by
-            },
-            "$push": {
-                "estado_transiciones": {
-                    "de": ESTADO_ABIERTO,
-                    "a": ESTADO_CERRADO,
-                    "timestamp": now,
-                    "motivo": f"Cierre automático por SYNC-N (corte: {fecha_corte})"
-                }
-            }
-        }
-    )
-    
-    if result.modified_count > 0:
-        logging.info(f"[KPI-CIERRE] Cerrados {result.modified_count} períodos anteriores a {fecha_corte}")
-    
-    return result.modified_count
+    logging.info(f"[KPI-CIERRE] SQL v2 no requiere cierre documental legacy. fecha_corte={fecha_corte}")
+    return 0
 
 
 # ============================================================================
