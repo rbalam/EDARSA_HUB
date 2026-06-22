@@ -81,13 +81,19 @@ except ImportError as e:
 # Tablero Ejecutivo lee exclusivamente de vw_Comercial_KPIs_Diarios_v2_Runtime.
 # NO consulta servidores locales ni MongoDB para KPIs.
 
-EDARSAHUB_TABLERO_CONFIG = {
-    'host': os.getenv('EDARSAHUB_SQL_HOST'),
-    'port': 1433,
-    'database': 'EDARSAHUB',
-    'username': os.getenv('EDARSAHUB_SQL_USER'),
-    'password': os.getenv('EDARSAHUB_SQL_PASSWORD')
-}
+def _get_edarsahub_tablero_config() -> dict:
+    from core.config.edarsahub_config import get_edarsahub_sql_config
+    cfg = get_edarsahub_sql_config()
+    return {
+        'host': cfg.host,
+        'port': cfg.port,
+        'database': cfg.database,
+        'username': cfg.user,
+        'password': cfg.password,
+    }
+
+
+EDARSAHUB_TABLERO_CONFIG = _get_edarsahub_tablero_config()
 
 
 # ============================================================================
