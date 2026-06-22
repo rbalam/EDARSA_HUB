@@ -1,4 +1,3 @@
-import os
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
 """
@@ -42,13 +41,19 @@ logger = logging.getLogger(__name__)
 # CONFIGURACIÓN EDARSAHUB
 # =============================================================================
 
-EDARSAHUB_CONFIG = {
-    'host': os.getenv('EDARSAHUB_SQL_HOST'),
-    'port': 1433,
-    'database': 'EDARSAHUB',
-    'username': os.getenv('EDARSAHUB_SQL_USER'),
-    'password': os.getenv('EDARSAHUB_SQL_PASSWORD')
-}
+def _get_edarsahub_config() -> dict:
+    from core.config.edarsahub_config import get_edarsahub_sql_config
+    cfg = get_edarsahub_sql_config()
+    return {
+        'host': cfg.host,
+        'port': cfg.port,
+        'database': cfg.database,
+        'username': cfg.user,
+        'password': cfg.password,
+    }
+
+
+EDARSAHUB_CONFIG = _get_edarsahub_config()
 
 
 def _execute_query(query: str, params: dict = None) -> List[Dict]:
@@ -283,7 +288,6 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
     3. BARRERA P0C: Validar que FechaOperacion coincida con get_operational_window().
     """
     import logging
-    import os
     import traceback
     logger = logging.getLogger(__name__)
     
