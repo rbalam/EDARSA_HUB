@@ -479,14 +479,13 @@ async def get_saldos_proveedor(
     current_supplier: dict = Depends(get_supplier_dual_dep)
 ):
     """
-    SQL-only guardrail.
-    Este endpoint no puede consultar servidores LIVE ni credenciales por db.servers.
-    Debe leer de Finanzas_CxP_Sync / Finanzas_CuentasPorPagar.
+    Obtiene saldos CxP del proveedor desde SQL canónico.
+    No consulta Mongo ni servidores LIVE.
     """
-    raise HTTPException(
-        status_code=501,
-        detail="Saldos de proveedor pendientes de migración a CxP SQL canónico. Consulta LIVE deshabilitada."
-    )
+    if current_supplier.get("status") != "approved":
+        raise HTTPException(status_code=403, detail="Cuenta no aprobada")
+
+    return await portal_sql.get_supplier_balances(current_supplier["id"], limit=500)
 
 
 

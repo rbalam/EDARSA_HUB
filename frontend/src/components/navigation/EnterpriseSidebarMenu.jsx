@@ -119,6 +119,15 @@ export default function EnterpriseSidebarMenu({
     satelites: true
   });
 
+  const [favoriteIds, setFavoriteIds] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("edarsahub_menu_favorites") || "null");
+      return Array.isArray(stored) && stored.length ? stored : defaultFavoriteMenuIds;
+    } catch {
+      return defaultFavoriteMenuIds;
+    }
+  });
+
   const groups = useMemo(
     () => filterEnterpriseMenuByRole(enterpriseMenuGroups, user),
     [user]
@@ -127,24 +136,14 @@ export default function EnterpriseSidebarMenu({
   const flat = useMemo(() => flattenEnterpriseMenu(groups), [groups]);
 
   const favorites = useMemo(() => {
-    let stored = null;
-
-    try {
-      stored = JSON.parse(localStorage.getItem("edarsahub_menu_favorites") || "null");
-    } catch {
-      stored = null;
-    }
-
-    const ids = Array.isArray(stored) && stored.length ? stored : defaultFavoriteMenuIds;
-
     const unique = [];
-    ids.forEach(id => {
+    favoriteIds.forEach(id => {
       const found = flat.find(x => x.id === id);
       if (found && !unique.some(x => x.path === found.path)) unique.push(found);
     });
 
     return unique.slice(0, 6);
-  }, [flat]);
+  }, [flat, favoriteIds]);
 
   const searchResults = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -182,20 +181,35 @@ export default function EnterpriseSidebarMenu({
     }));
   };
 
+  const toggleFavorite = (item, event) => {
+    event?.stopPropagation?.();
+
+    if (!item?.id || item.comingSoon) return;
+
+    setFavoriteIds(prev => {
+      const current = Array.isArray(prev) ? prev : [];
+      const exists = current.includes(item.id);
+      const next = exists
+        ? current.filter(id => id !== item.id)
+        : [item.id, ...current].slice(0, 12);
+
+      localStorage.setItem("edarsahub_menu_favorites", JSON.stringify(next));
+      return next;
+    });
+  };
+
   const renderItem = (item, compact = false) => {
     const Icon = getIcon(item.icon);
     const active = currentPath && item.path && currentPath.startsWith(item.path) && !item.comingSoon;
     const comingSoon = !!item.comingSoon;
+    const isFavorite = favoriteIds.includes(item.id);
 
     return (
-      <button
+      <div
         key={`${compact ? "compact" : "item"}-${item.id}`}
-        onClick={() => go(item)}
-        disabled={comingSoon}
-        aria-disabled={comingSoon}
         data-testid={`menu-item-${item.id}`}
         className={[
-          "w-full flex items-center gap-3 rounded-xl text-left transition-all",
+          "w-full flex items-center gap-2 rounded-xl text-left transition-all group",
           compact ? "px-3 py-2 text-sm" : "px-4 py-2.5 text-[15px]",
           comingSoon
             ? "text-zinc-600 cursor-not-allowed"
@@ -205,21 +219,45 @@ export default function EnterpriseSidebarMenu({
         ].join(" ")}
         title={comingSoon ? `${item.label} — Próximamente` : item.label}
       >
-        <Icon size={compact ? 17 : 20} className="shrink-0" />
-        {!collapsed && (
-          <span className="font-medium leading-tight flex-1 flex items-center justify-between gap-2 min-w-0">
-            <span className="truncate">{item.label}</span>
-            {comingSoon && (
-              <span
-                data-testid={`menu-coming-soon-${item.id}`}
-                className="shrink-0 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-white/5 text-zinc-500 border border-white/10"
-              >
-                Pronto
-              </span>
-            )}
-          </span>
+        <button
+          type="button"
+          onClick={() => go(item)}
+          disabled={comingSoon}
+          aria-disabled={comingSoon}
+          className="flex items-center gap-3 flex-1 min-w-0 text-left disabled:cursor-not-allowed"
+        >
+          <Icon size={compact ? 17 : 20} className="shrink-0" />
+          {!collapsed && (
+            <span className="font-medium leading-tight flex-1 flex items-center justify-between gap-2 min-w-0">
+              <span className="truncate">{item.label}</span>
+              {comingSoon && (
+                <span
+                  data-testid={`menu-coming-soon-${item.id}`}
+                  className="shrink-0 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-white/5 text-zinc-500 border border-white/10"
+                >
+                  Pronto
+                </span>
+              )}
+            </span>
+          )}
+        </button>
+
+        {!comingSoon && !collapsed && (
+          <button
+            type="button"
+            onClick={(event) => toggleFavorite(item, event)}
+            data-testid={`menu-favorite-${item.id}`}
+            title={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
+            aria-label={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
+            className="shrink-0 p-1 rounded-lg text-zinc-600 hover:text-amber-400 hover:bg-white/10 transition-all"
+          >
+            <Star
+              size={compact ? 15 : 16}
+              className={isFavorite ? "fill-amber-400 text-amber-400" : ""}
+            />
+          </button>
         )}
-      </button>
+      </div>
     );
   };
 

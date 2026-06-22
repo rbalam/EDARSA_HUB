@@ -180,15 +180,6 @@ export const enterpriseMenuGroups = [
         keywords: ["bi", "reportes", "analitica", "power bi"]
       },
       {
-        id: "portal-inteligencia-comercial",
-        label: "Portal Inteligencia Comercial",
-        path: "/inteligencia-comercial",
-        icon: "BarChart3",
-        section: "Analítica Comercial",
-        satellite: true,
-        keywords: ["portal", "inteligencia comercial", "pic", "ventas", "analitica", "tableros comerciales"]
-      },
-      {
         id: "inteligencia-artificial",
         label: "Inteligencia Artificial",
         path: "/inteligencia-artificial",
@@ -431,7 +422,6 @@ export const enterpriseMenuGroups = [
 
 export const defaultFavoriteMenuIds = [
   "direccion",
-  "portal-inteligencia-comercial",
   "comercial",
   "inventarios",
   "compras",

@@ -197,3 +197,94 @@ async def list_supplier_invoices(supplier_id: str, status: Optional[str] = None,
 async def get_supplier_invoice(invoice_id: str, supplier_id: str) -> Optional[Dict[str, Any]]:
     rows = await list_supplier_invoices(str(supplier_id), limit=500)
     return next((i for i in rows if str(i.get("id")) == str(invoice_id)), None)
+
+
+async def get_supplier_balances(supplier_id: str, limit: int = 500) -> Dict[str, Any]:
+    """
+    Saldos CxP SQL-only del proveedor.
+    Fuente canónica: dbo.Finanzas_CuentasPorPagar.
+    No consulta Mongo ni servidores LIVE.
+    """
+    sql = f"""
+        SELECT TOP {int(limit)}
+            cxp.CuentaPorPagarID,
+            cxp.DocumentoFiscalID,
+            cxp.ProveedorID,
+            cxp.SucursalID,
+            cxp.NumeroDocumento,
+            cxp.FechaDocumento,
+            cxp.FechaVencimiento,
+            cxp.FechaRecepcion,
+            cxp.MontoOriginal,
+            cxp.MontoPagado,
+            (cxp.MontoOriginal - cxp.MontoPagado) AS Saldo,
+            cxp.MonedaID,
+            cxp.TipoCambio,
+            cxp.EstatusPagoID,
+            ep.Codigo AS EstatusCodigo,
+            ep.Descripcion AS EstatusDescripcion,
+            df.UUID,
+            df.Serie,
+            df.Folio
+        FROM dbo.Finanzas_CuentasPorPagar cxp
+        LEFT JOIN dbo.Finanzas_EstatusPago ep
+            ON ep.EstatusPagoID = cxp.EstatusPagoID
+        LEFT JOIN dbo.Compras_DocumentosFiscales df
+            ON df.DocumentoFiscalID = cxp.DocumentoFiscalID
+        WHERE CAST(cxp.ProveedorID AS VARCHAR(50)) = %s
+          AND cxp.Activo = 1
+        ORDER BY cxp.FechaVencimiento ASC, cxp.FechaDocumento ASC
+    """
+    rows = _fetch_all(sql, (str(supplier_id),))
+
+    facturas = []
+    total_importe = 0.0
+    total_pagado = 0.0
+    total_saldo = 0.0
+
+    for r in rows:
+        importe = float(r.get("MontoOriginal") or 0)
+        pagado = float(r.get("MontoPagado") or 0)
+        saldo = float(r.get("Saldo") or 0)
+
+        total_importe += importe
+        total_pagado += pagado
+        total_saldo += saldo
+
+        facturas.append({
+            "cuenta_por_pagar_id": str(r.get("CuentaPorPagarID")),
+            "documento_fiscal_id": str(r.get("DocumentoFiscalID")) if r.get("DocumentoFiscalID") is not None else None,
+            "supplier_id": str(r.get("ProveedorID")),
+            "sucursal_id": str(r.get("SucursalID")),
+            "folio": r.get("NumeroDocumento") or r.get("Folio") or "",
+            "uuid": r.get("UUID"),
+            "fecha": str(r.get("FechaDocumento") or "")[:10],
+            "vencimiento": str(r.get("FechaVencimiento") or "")[:10],
+            "importe": importe,
+            "pagado": pagado,
+            "saldo": saldo,
+            "estatus_pago_id": r.get("EstatusPagoID"),
+            "estatus": r.get("EstatusDescripcion") or r.get("EstatusCodigo") or "",
+        })
+
+    return {
+        "sistemas": [{
+            "id": "EDARSAHUB_SQL",
+            "name": "EDARSAHUB SQL",
+            "system_type": "EDARSAHUB_SQL",
+            "facturas": len(facturas),
+            "importe": total_importe,
+            "pagado": total_pagado,
+            "saldo": total_saldo,
+            "status": "connected"
+        }],
+        "sucursales": [],
+        "facturas_pendientes": [f for f in facturas if f.get("saldo", 0) > 0],
+        "totales": {
+            "importe": total_importe,
+            "pagado": total_pagado,
+            "saldo": total_saldo,
+            "facturas": len(facturas)
+        },
+        "source_type": "EDARSAHUB_SQL"
+    }
