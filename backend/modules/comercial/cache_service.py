@@ -134,6 +134,8 @@ async def get_cached_response(cache_key: str) -> Optional[Dict]:
     """
     try:
         db = get_db()
+        if db is None:
+            return None
         cached = await db.comercial_cache.find_one({"cache_key": cache_key})
         
         if not cached:
@@ -187,6 +189,8 @@ async def save_to_cache(
     """
     try:
         db = get_db()
+        if db is None:
+            return False
         ttl = CACHE_TTL.get(endpoint, 300)
         
         cache_doc = {
@@ -340,6 +344,8 @@ async def ensure_cache_indexes():
     """Asegura que existen los índices necesarios para el cache."""
     try:
         db = get_db()
+        if db is None:
+            return
         await db.comercial_cache.create_index("cache_key", unique=True)
         await db.comercial_cache.create_index("cached_at")
         logging.info("Índices de cache comercial verificados")
@@ -359,6 +365,8 @@ async def cleanup_expired_cache(max_age_hours: int = 24) -> Dict:
     """
     try:
         db = get_db()
+        if db is None:
+            return {"success": True, "deleted_count": 0, "total_before": 0, "total_after": 0, "max_age_hours": max_age_hours, "mode": "SQL_SAFE_NOOP"}
         cutoff_time = datetime.now(timezone.utc) - timedelta(hours=max_age_hours)
         
         # Contar antes de eliminar
@@ -407,6 +415,8 @@ async def get_cache_stats() -> Dict:
     """
     try:
         db = get_db()
+        if db is None:
+            return {"total_entries": 0, "by_endpoint": [], "oldest_entry": None, "newest_entry": None, "mode": "SQL_SAFE_NOOP"}
         
         total_entries = await db.comercial_cache.count_documents({})
         
