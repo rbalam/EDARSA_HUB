@@ -34,7 +34,7 @@ _db = None
 
 def init_scheduler_routes(database) -> None:
     """
-    Inicializa las rutas con la conexión a MongoDB.
+    Inicializa las rutas con la dependencia técnica del scheduler.
     
     NOTA: MongoDB ELIMINADO del sistema. Este módulo ahora opera con StubDatabase
     que retorna valores vacíos sin fallar.
@@ -51,7 +51,7 @@ def init_scheduler_routes(database) -> None:
 
 def get_db():
     """
-    Obtiene la conexión a MongoDB.
+    Obtiene la dependencia técnica del scheduler.
     
     NOTA: Puede retornar StubDatabase que opera sin persistencia.
     """
@@ -60,7 +60,7 @@ def get_db():
 
 def is_mongo_available() -> bool:
     """
-    Verifica si MongoDB real está disponible.
+    Verifica si existe dependencia legacy real no StubDatabase.
     
     NOTA: StubDatabase se considera como NO disponible.
     """

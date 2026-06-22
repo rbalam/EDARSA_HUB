@@ -74,9 +74,9 @@ class SchedulerManager:
     def __init__(self, db=None):
         """
         Args:
-            db: Conexión MongoDB o StubDatabase (MongoDB ELIMINADO)
+            db: Dependencia legacy opcional; en modo SQL-only usa StubDatabase
         """
-        # Si no se pasa db, obtener StubDatabase
+        # Si no se pasa db, usar StubDatabase para compatibilidad legacy
         if db is None:
             from core.mongo_stub import get_stub_database
             db = get_stub_database()
@@ -95,7 +95,7 @@ class SchedulerManager:
         # Detectar si es StubDatabase
         is_stub = hasattr(db, '_collections') and db.__class__.__name__ == 'StubDatabase'
         
-        # NOTA: MongoDB ELIMINADO - Scheduler opera con StubDatabase
+        # Scheduler SQL-only: StubDatabase conserva compatibilidad con firmas legacy
         if is_stub and not SchedulerManager._initialized:
             logger.info("[SCHEDULER] Inicializando con StubDatabase - MongoDB ELIMINADO")
         
@@ -1492,11 +1492,11 @@ def get_scheduler_manager(db=None) -> SchedulerManager:
     """
     Obtiene instancia del scheduler manager.
     
-    NOTA: MongoDB ELIMINADO - Siempre usa StubDatabase.
+    Scheduler SQL-only: si no recibe dependencia, usa StubDatabase para compatibilidad legacy.
     """
     global _scheduler_manager
     
-    # Si no se pasa db, obtener StubDatabase
+    # Si no se pasa db, usar StubDatabase para compatibilidad legacy
     if db is None:
         from core.mongo_stub import get_stub_database
         db = get_stub_database()
@@ -1515,7 +1515,7 @@ async def start_scheduler(db) -> SchedulerManager:
     """
     Inicia el scheduler.
     
-    NOTA: MongoDB ELIMINADO - Acepta db=None para modo SQL-only.
+    Acepta db=None para modo SQL-only.
     """
     manager = get_scheduler_manager(db)
     await manager.start()

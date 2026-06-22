@@ -3,8 +3,7 @@ EDARSA HUB - Distributed Lock Manager
 =====================================
 Sistema de locks distribuidos para evitar ejecuciones concurrentes.
 
-Usa MongoDB para locks persistentes que funcionan con múltiples
-instancias/workers del servidor.
+Clase legacy para locks persistentes. En operación SQL-only el LockManager usa NullLock.
 """
 
 from typing import Optional, Dict
@@ -18,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class DistributedLock:
     """
-    Lock distribuido basado en MongoDB.
+    Lock distribuido legacy basado en una dependencia documental.
     
     Características:
     - Evita doble procesamiento de jobs
@@ -32,7 +31,7 @@ class DistributedLock:
     def __init__(self, db, job_name: str, owner_id: Optional[str] = None):
         """
         Args:
-            db: Conexión MongoDB
+            db: Dependencia legacy compatible con colección documental
             job_name: Nombre del job a bloquear
             owner_id: Identificador único del proceso (auto-generado si None)
         """
@@ -250,10 +249,10 @@ class LockManager:
         
         if db is not None and not self._is_stub:
             self.collection = db[DistributedLock.COLLECTION_NAME]
-            logger.info("[LOCK_MANAGER] Inicializado con MongoDB")
+            logger.info("[LOCK_MANAGER] Inicializado con dependencia legacy documental")
         else:
             self.collection = None
-            logger.info("[LOCK_MANAGER] Inicializado con StubDatabase - Usando NullLock")
+            logger.info("[LOCK_MANAGER] Inicializado en modo SQL-only - Usando NullLock")
     
     def get_lock(self, job_name: str) -> DistributedLock:
         """Crea una instancia de lock para un job."""
@@ -296,7 +295,7 @@ class LockManager:
 class NullLock:
     """
     Lock dummy que siempre permite ejecución.
-    Se usa cuando MongoDB no está disponible (modo SQL-only).
+    Se usa en modo SQL-only o cuando no hay dependencia legacy de locks.
     """
     
     def __init__(self, job_name: str):
