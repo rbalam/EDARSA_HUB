@@ -30,7 +30,7 @@ class BaseJob(ABC):
     def __init__(self, db, config: JobConfig):
         """
         Args:
-            db: Conexión MongoDB
+            db: Dependencia técnica legacy opcional para locks/logs
             config: Configuración del job
         """
         self.db = db

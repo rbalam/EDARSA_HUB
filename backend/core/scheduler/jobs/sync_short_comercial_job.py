@@ -34,7 +34,7 @@ async def execute_sync_short_comercial(db, context: Optional[Dict] = None) -> Di
     Ejecuta la sincronización corta de KPIs comerciales.
     
     Args:
-        db: Conexión a MongoDB
+        db: Dependencia técnica legacy opcional para locks/logs
         context: Contexto opcional de ejecución
         
     Returns:

@@ -36,7 +36,7 @@ async def execute_sync_nightly_comercial(db, context: Optional[Dict] = None) -> 
     Ejecuta la sincronización nocturna de KPIs comerciales.
     
     Args:
-        db: Conexión a MongoDB
+        db: Dependencia técnica legacy opcional para locks/logs
         context: Contexto opcional de ejecución
         
     Returns:

@@ -19,7 +19,7 @@ MÁXIMAS RESPETADAS:
 - EDARSAHUB es el cerebro (destino de sincronización)
 - No depende de conexiones en vivo para pintar dashboards
 - Datos demo aislados (EsDemo=0 para datos reales)
-- MongoDB NO es fuente financiera
+- La fuente financiera es EDARSAHUB SQL; no se usa dependencia documental como fuente operativa
 
 FUENTES:
 - SoftRestaurant: cheques.propinatarjeta
@@ -52,7 +52,7 @@ async def execute_sync_propinas_tpv_incremental(db=None) -> Dict[str, Any]:
     Ejecuta sincronización incremental de propinas TPV.
     
     Args:
-        db: Conexión MongoDB (para locks/logs legacy, no para datos financieros)
+        db: Dependencia técnica legacy opcional para locks/logs; no es fuente financiera
         
     Returns:
         Dict con resumen de la ejecución

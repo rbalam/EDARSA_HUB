@@ -40,7 +40,7 @@ async def execute_sync_ingresos_incremental(db=None) -> Dict[str, Any]:
     Ejecuta sincronización incremental de cortes de caja.
     
     Args:
-        db: Conexión MongoDB (para locks/logs legacy, no para datos financieros)
+        db: Dependencia técnica legacy opcional para locks/logs; no es fuente financiera
         
     Returns:
         Dict con resumen de la ejecución

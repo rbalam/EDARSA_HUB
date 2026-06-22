@@ -10,7 +10,7 @@ Sistema de jobs periódicos para:
 
 Arquitectura:
 - APScheduler AsyncIOScheduler
-- Locks distribuidos vía MongoDB
+- Locks de ejecución mediante capa de compatibilidad SQL-only/legacy
 - Logging completo de ejecuciones
 - Endpoints de administración
 """

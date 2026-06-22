@@ -11,7 +11,7 @@ CARACTERÍSTICAS:
 - Sincronización incremental (últimos 3 días por defecto)
 - Idempotente (usa HashOrigen para evitar duplicados)
 - Tolerante a fallos (una unidad falla, las demás continúan)
-- Lock distribuido (MongoDB) para evitar ejecuciones simultáneas
+- Lock de ejecución para evitar ejecuciones simultáneas
 - SyncLog detallado por unidad (EDARSAHUB.Comercial_SyncLog_v2)
 
 UNIDADES: Se cargan dinámicamente desde EDARSAHUB.Unidades_Negocio
@@ -20,7 +20,7 @@ MÁXIMAS RESPETADAS:
 - EDARSAHUB es el cerebro (destino de sincronización)
 - No depende de conexiones en vivo para pintar dashboards
 - Datos demo aislados (es_demo=0 para datos reales)
-- MongoDB solo para locks técnicos, NO para datos de negocio
+- EDARSAHUB SQL es la fuente operativa; la dependencia legacy no es fuente de negocio
 
 REFACTORIZADO 2026-06-05:
 - Eliminados hardcodes de códigos de unidades
@@ -103,7 +103,7 @@ async def execute_sync_comercial_v2(db=None) -> Dict[str, Any]:
     Ejecuta sincronización incremental de KPIs comerciales V2.
     
     Args:
-        db: Conexión MongoDB (para locks/logs técnicos, NO para datos de negocio)
+        db: Dependencia técnica legacy opcional para locks/logs; no es fuente de negocio
         
     Returns:
         Dict con resumen de la ejecución
