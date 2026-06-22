@@ -19,7 +19,7 @@ async def execute_cava_socios_monthly(db) -> Dict[str, Any]:
     Ejecuta el envío mensual de estados de cuenta a socios activos.
     
     Args:
-        db: Conexión (StubDatabase - no usado, conexión es SQL Server)
+        db: Dependencia técnica legacy opcional; la operación usa SQL Server
     
     Returns:
         Dict con resultados del envío masivo

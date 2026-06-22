@@ -57,7 +57,7 @@ async def execute_crm_sync(db) -> Dict[str, Any]:
     Este job retorna inmediatamente indicando que no hay conectores externos.
     
     Args:
-        db: StubDatabase (no usado, SQL Server directo)
+        db: Dependencia técnica legacy opcional; SQL Server directo
     
     Returns:
         Dict con mensaje indicando que no hay sincronización externa
@@ -83,7 +83,7 @@ async def execute_crm_sla_check(db) -> Dict[str, Any]:
     Verifica SLAs de oportunidades y genera alertas.
     
     Args:
-        db: StubDatabase (no usado)
+        db: Dependencia técnica legacy opcional
     
     Returns:
         Dict con resumen de verificación SLA
@@ -166,7 +166,7 @@ async def execute_crm_actividades_vencidas(db) -> Dict[str, Any]:
     Verifica actividades vencidas y genera recordatorios.
     
     Args:
-        db: StubDatabase (no usado)
+        db: Dependencia técnica legacy opcional
     
     Returns:
         Dict con resumen de actividades procesadas

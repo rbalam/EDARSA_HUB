@@ -57,7 +57,7 @@ class SyncComercialEndpointsJob:
     def __init__(self, db=None, config: JobConfig = None):
         """
         Args:
-            db: Conexión MongoDB (IGNORADA - usamos SQL directo)
+            db: Dependencia técnica legacy opcional; este job usa SQL directo
             config: Configuración del job
         """
         self.db = db

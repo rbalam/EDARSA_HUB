@@ -184,7 +184,7 @@ class ClaveIdempotencia:
         return asdict(self)
     
     def to_query(self) -> Dict:
-        """Genera query MongoDB para buscar por esta clave."""
+        """Genera filtro legacy de compatibilidad para buscar por esta clave."""
         return {
             "clave.sistema_origen": self.sistema_origen,
             "clave.server_id": self.server_id,
@@ -215,7 +215,7 @@ class InventariosDetectorJob:
     Job para detectar inventarios nuevos y disparar análisis automático.
     
     Control anti-duplicado:
-    - Colección `inventarios_procesados_auto` en MongoDB
+    - Tracking operativo en SQL con compatibilidad legacy
     - Índice único por clave de idempotencia
     """
     
@@ -259,7 +259,7 @@ class InventariosDetectorJob:
         Ejecuta detección de inventarios nuevos.
         
         NOTA: Migrado a SQL Server (Mayo 2026).
-        Ya no depende de MongoDB para tracking de inventarios.
+        El tracking operativo de inventarios es SQL-first.
         
         Args:
             manual: True si es ejecución manual

@@ -58,7 +58,7 @@ class PedidosDetectorJob:
     - Tabla `Scheduler_PedidosProcesados` en EDARSAHUB SQL
     - Índice único por (EmpresaID, FolioPedido, SistemaOrigen)
     
-    COMPRAS-MONGO-001-F2: Migrado de MongoDB a SQL Server (Mayo 2026)
+    COMPRAS-SQL-001-F2: Tracking migrado a SQL Server (Mayo 2026)
     
     ESTADOS DE CONSULTA:
     - SUCCESS_WITH_DATA: Consulta exitosa con pedidos encontrados
@@ -68,7 +68,7 @@ class PedidosDetectorJob:
     - PARTIAL_SUCCESS: Algunas fuentes respondieron, otras no
     """
     
-    # Colecciones MongoDB removidas - ahora usa SQL
+    # Colecciones legacy removidas - ahora usa SQL
     # COLLECTION_PROCESADOS = "pedidos_procesados_automatizacion"  # -> Scheduler_PedidosProcesados
     # COLLECTION_TAREAS = "tareas_operativas_compras"              # -> Compras_Eventos_Pendientes  
     # COLLECTION_BITACORA = "auditoria_compras_bitacora"           # -> Scheduler_BitacoraJobs
@@ -84,7 +84,7 @@ class PedidosDetectorJob:
         self.db = db
         self.config = config or {}
         self.job_logger = get_job_logger(db)
-        self._use_sql = True  # Flag para usar SQL en lugar de MongoDB
+        self._use_sql = True  # Flag para usar SQL como tracking operativo
     
     def _is_stub_db(self) -> bool:
         """Detecta si self.db es StubDatabase."""
@@ -100,7 +100,7 @@ class PedidosDetectorJob:
         FASE 4.2: Valida inventario y crea tareas si falta
         
         NOTA: Migrado parcialmente a SQL Server (Mayo 2026).
-        Obtiene servidores desde SQL. Tracking usa StubDatabase (sin persistencia).
+        Obtiene servidores desde SQL. Tracking operativo en SQL; StubDatabase conserva compatibilidad legacy.
         
         Args:
             manual: True si es ejecución manual (para pruebas)
@@ -580,7 +580,7 @@ class PedidosDetectorJob:
         Verifica si el pedido ya fue procesado para esta empresa.
         
         FASE 4.1: Anti-duplicado por empresa_id (no server_id).
-        COMPRAS-MONGO-001-F2: Migrado a SQL Server.
+        COMPRAS-SQL-001-F2: Migrado a SQL Server.
         """
         from modules.compras.repository_pedidos_sql import pedido_ya_procesado_sql
         return await pedido_ya_procesado_sql(empresa_id, folio, origen)
@@ -599,7 +599,7 @@ class PedidosDetectorJob:
         Marca pedido como procesado.
         
         FASE 4.1: Guarda empresa_id como clave principal.
-        COMPRAS-MONGO-001-F2: Migrado a SQL Server.
+        COMPRAS-SQL-001-F2: Migrado a SQL Server.
         """
         from modules.compras.repository_pedidos_sql import marcar_pedido_procesado_sql
         
@@ -783,16 +783,16 @@ class PedidosDetectorJob:
         
         FASE 4.2: Determina si podemos proceder con auditoría o necesitamos tarea.
         
-        NOTA: Esta función verificaba inventarios en MongoDB.
-        Migrado a SQL (simplificado): Siempre retorna True para continuar flujo.
+        NOTA: Validación legacy de inventarios removida.
+        Pendiente validación SQL; por ahora retorna True para continuar flujo.
         La validación de inventarios se hará posteriormente.
         
         Returns:
             True si hay inventario disponible, False si falta
         """
-        # MongoDB ELIMINADO - Por ahora siempre retorna True
+        # Validación SQL pendiente - por ahora siempre retorna True
         # TODO: Implementar validación contra tabla SQL de inventarios
-        logger.debug("[PEDIDOS_DETECTOR] _inventario_valido: Retornando True (MongoDB eliminado)")
+        logger.debug("[PEDIDOS_DETECTOR] _inventario_valido: Retornando True (validación SQL pendiente)")
         return True
     
     # =========================================================================
@@ -816,7 +816,7 @@ class PedidosDetectorJob:
         Crea una tarea operativa cuando falta inventario.
         
         FASE 4.2: Estado PENDIENTE_INVENTARIO hasta que se capture inventario.
-        COMPRAS-MONGO-001-F2: Migrado a SQL Server.
+        COMPRAS-SQL-001-F2: Migrado a SQL Server.
         
         Returns:
             ID de la tarea creada
@@ -916,7 +916,7 @@ class PedidosDetectorJob:
         Registra evento en bitácora del job.
         
         FASE 4.1: Evidencia clara de cada acción del detector.
-        COMPRAS-MONGO-001-F2: Migrado a SQL Server (Scheduler_BitacoraJobs).
+        COMPRAS-SQL-001-F2: Migrado a SQL Server (Scheduler_BitacoraJobs).
         """
         from modules.compras.repository_pedidos_sql import registrar_bitacora_pedidos_sql
         await registrar_bitacora_pedidos_sql("pedidos_detector", evento, datos)
@@ -941,7 +941,7 @@ async def ejecutar_detector_manual(
     Útil para pruebas y validación de la Fase 4.1 y 4.2.
     
     Args:
-        db: Conexión a MongoDB (async)
+        db: Dependencia técnica legacy opcional para locks/logs
         empresa_id: Filtrar por empresa específica (opcional)
     
     Returns:
