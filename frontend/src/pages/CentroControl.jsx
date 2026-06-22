@@ -20,6 +20,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import logger from '../services/logger';
 import api from '../lib/api';
 // FASE AUTH-SECURITY-01 / FASE 4.2: getToken eliminado permanentemente
@@ -60,6 +61,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 // ============================================================================
 
 const CentroControl = () => {
+  const navigate = useNavigate();
   // Estado de UI
   const [activeTab, setActiveTab] = useState('resumen');
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -858,6 +860,23 @@ const CentroControl = () => {
         {/* TAB 5: JOBS Y AUTOMATIZACIONES */}
         {/* ================================================================ */}
         <TabsContent value="jobs" className="mt-6 space-y-6">
+            <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg flex items-center justify-between gap-4">
+              <div>
+                <p className="font-medium text-blue-400">Vista ejecutiva de jobs</p>
+                <p className="text-sm text-zinc-400">
+                  Centro de Control solo monitorea. Ejecutar, pausar, reanudar y re-sincronizar se gestiona en Programación.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                className="shrink-0 border-blue-500/40 text-blue-400 hover:bg-blue-500/10"
+                onClick={() => navigate('/scheduler')}
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Abrir Programación
+              </Button>
+            </div>
+
           {/* Estado del Scheduler */}
           <Card className={`border-2 ${jobs?.scheduler_status === 'running' ? 'border-green-500/50 bg-green-500/5' : 'border-yellow-500/50 bg-yellow-500/5'}`}>
             <CardContent className="p-4">
