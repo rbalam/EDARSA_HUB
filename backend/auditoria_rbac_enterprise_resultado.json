@@ -1,0 +1,1180 @@
+{
+  "fecha": "2026-06-22T00:28:25.561358",
+  "checks": {
+    "01_ROLES_SIN_PERMISOS": [
+      {
+        "RolID": 14,
+        "CodigoRol": "CRM_ADMIN",
+        "NombreRol": "CRM_Administrador",
+        "NivelJerarquia": 90,
+        "Activo": true
+      },
+      {
+        "RolID": 16,
+        "CodigoRol": "CRM_AUDIT",
+        "NombreRol": "CRM_Auditor",
+        "NivelJerarquia": 70,
+        "Activo": true
+      },
+      {
+        "RolID": 22,
+        "CodigoRol": "GERENTE",
+        "NombreRol": "Gerente",
+        "NivelJerarquia": 70,
+        "Activo": true
+      },
+      {
+        "RolID": 15,
+        "CodigoRol": "CRM_EJEC",
+        "NombreRol": "CRM_Ejecutivo",
+        "NivelJerarquia": 50,
+        "Activo": true
+      },
+      {
+        "RolID": 8,
+        "CodigoRol": "USUARIO",
+        "NombreRol": "Usuario",
+        "NivelJerarquia": 10,
+        "Activo": true
+      },
+      {
+        "RolID": 3,
+        "CodigoRol": "COMPRAS",
+        "NombreRol": "Compras",
+        "NivelJerarquia": 0,
+        "Activo": true
+      },
+      {
+        "RolID": 5,
+        "CodigoRol": "TESORERIA",
+        "NombreRol": "Tesoreria",
+        "NivelJerarquia": 0,
+        "Activo": true
+      },
+      {
+        "RolID": 4,
+        "CodigoRol": "VENTAS",
+        "NombreRol": "Ventas",
+        "NivelJerarquia": 0,
+        "Activo": true
+      }
+    ],
+    "02_MODULOS_SIN_PERMISOS": [
+      {
+        "ModuloID": 22,
+        "CodigoModulo": "crm.dashboard",
+        "NombreModulo": "Dashboard CRM",
+        "TipoModulo": "SUBMODULO",
+        "Ruta": "/crm/dashboard",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 1,
+        "CodigoModulo": "SEGURIDAD",
+        "NombreModulo": "Seguridad",
+        "TipoModulo": "MODULO",
+        "Ruta": "/seguridad",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 23,
+        "CodigoModulo": "crm.leads",
+        "NombreModulo": "Leads",
+        "TipoModulo": "SUBMODULO",
+        "Ruta": "/crm/leads",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 24,
+        "CodigoModulo": "crm.cuentas",
+        "NombreModulo": "Cuentas",
+        "TipoModulo": "SUBMODULO",
+        "Ruta": "/crm/cuentas",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 25,
+        "CodigoModulo": "crm.clientes",
+        "NombreModulo": "Clientes",
+        "TipoModulo": "SUBMODULO",
+        "Ruta": "/crm/clientes",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 26,
+        "CodigoModulo": "crm.solicitudes",
+        "NombreModulo": "Solicitudes Alta",
+        "TipoModulo": "SUBMODULO",
+        "Ruta": "/crm/solicitudes-alta-cliente",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 27,
+        "CodigoModulo": "crm.contactos",
+        "NombreModulo": "Contactos",
+        "TipoModulo": "SUBMODULO",
+        "Ruta": "/crm/contactos",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 28,
+        "CodigoModulo": "crm.oportunidades",
+        "NombreModulo": "Oportunidades",
+        "TipoModulo": "SUBMODULO",
+        "Ruta": "/crm/oportunidades",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 29,
+        "CodigoModulo": "crm.pipeline",
+        "NombreModulo": "Pipeline",
+        "TipoModulo": "SUBMODULO",
+        "Ruta": "/crm/pipeline",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 30,
+        "CodigoModulo": "crm.actividades",
+        "NombreModulo": "Actividades",
+        "TipoModulo": "SUBMODULO",
+        "Ruta": "/crm/actividades",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 31,
+        "CodigoModulo": "crm.cotizaciones",
+        "NombreModulo": "Cotizaciones",
+        "TipoModulo": "SUBMODULO",
+        "Ruta": "/crm/cotizaciones",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 2,
+        "CodigoModulo": "COMPRAS_COT",
+        "NombreModulo": "Cotizaciones de compra",
+        "TipoModulo": "PROCESO",
+        "Ruta": "/compras/cotizaciones",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 3,
+        "CodigoModulo": "COMPRAS_OC",
+        "NombreModulo": "Ordenes de compra",
+        "TipoModulo": "PROCESO",
+        "Ruta": "/compras/ordenes",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 32,
+        "CodigoModulo": "crm.pedidos",
+        "NombreModulo": "Pedidos",
+        "TipoModulo": "SUBMODULO",
+        "Ruta": "/crm/pedidos-venta",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 4,
+        "CodigoModulo": "COMPRAS_FACT",
+        "NombreModulo": "Compras",
+        "TipoModulo": "PROCESO",
+        "Ruta": "/compras/facturas",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 33,
+        "CodigoModulo": "crm.remisiones",
+        "NombreModulo": "Remisiones",
+        "TipoModulo": "SUBMODULO",
+        "Ruta": "/crm/remisiones",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 34,
+        "CodigoModulo": "crm.integraciones",
+        "NombreModulo": "Integraciones",
+        "TipoModulo": "SUBMODULO",
+        "Ruta": "/crm/integraciones",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 35,
+        "CodigoModulo": "crm.kpis",
+        "NombreModulo": "KPIs",
+        "TipoModulo": "SUBMODULO",
+        "Ruta": "/crm/kpis",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 36,
+        "CodigoModulo": "crm.config",
+        "NombreModulo": "Configuración",
+        "TipoModulo": "SUBMODULO",
+        "Ruta": "/crm/configuracion",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 5,
+        "CodigoModulo": "TES_PAGOS",
+        "NombreModulo": "Pagos",
+        "TipoModulo": "PROCESO",
+        "Ruta": "/tesoreria/pagos",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 21,
+        "CodigoModulo": "crm",
+        "NombreModulo": "CRM",
+        "TipoModulo": "MODULO",
+        "Ruta": "/crm",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 6,
+        "CodigoModulo": "VENTA_LISTAS",
+        "NombreModulo": "Listas de precios",
+        "TipoModulo": "PROCESO",
+        "Ruta": "/ventas/listas-precios",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 7,
+        "CodigoModulo": "VENTA_COT",
+        "NombreModulo": "Cotizaciones de venta",
+        "TipoModulo": "PROCESO",
+        "Ruta": "/ventas/cotizaciones",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 8,
+        "CodigoModulo": "VENTA_PED",
+        "NombreModulo": "Pedidos de venta",
+        "TipoModulo": "PROCESO",
+        "Ruta": "/ventas/pedidos",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 17,
+        "CodigoModulo": "AUDITORIAS",
+        "NombreModulo": "Auditorías Programadas",
+        "TipoModulo": "MODULO",
+        "Ruta": null,
+        "EsVisibleMenu": true,
+        "Activo": true
+      }
+    ],
+    "03_MENUS_SIN_MODULO_VALIDO": [],
+    "04_MODULOS_VISIBLES_SIN_MENU": [
+      {
+        "ModuloID": 51,
+        "CodigoModulo": "cava_socios.dashboard",
+        "NombreModulo": "Dashboard Cava",
+        "Ruta": "/cava-socios/dashboard",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 22,
+        "CodigoModulo": "crm.dashboard",
+        "NombreModulo": "Dashboard CRM",
+        "Ruta": "/crm/dashboard",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 40,
+        "CodigoModulo": "tablajeria.dashboard",
+        "NombreModulo": "Dashboard Tablajería",
+        "Ruta": "/tablajeria/dashboard",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 23,
+        "CodigoModulo": "crm.leads",
+        "NombreModulo": "Leads",
+        "Ruta": "/crm/leads",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 41,
+        "CodigoModulo": "tablajeria.ordenes",
+        "NombreModulo": "Órdenes de Tablaje",
+        "Ruta": "/tablajeria/ordenes",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 52,
+        "CodigoModulo": "cava_socios.socios",
+        "NombreModulo": "Socios",
+        "Ruta": "/cava-socios/socios",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 53,
+        "CodigoModulo": "cava_socios.botellas",
+        "NombreModulo": "Botellas",
+        "Ruta": "/cava-socios/botellas",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 42,
+        "CodigoModulo": "tablajeria.captura_directa",
+        "NombreModulo": "Captura Directa",
+        "Ruta": "/tablajeria/captura-directa",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 25,
+        "CodigoModulo": "crm.clientes",
+        "NombreModulo": "Clientes",
+        "Ruta": "/crm/clientes",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 54,
+        "CodigoModulo": "cava_socios.movimientos",
+        "NombreModulo": "Movimientos",
+        "Ruta": "/cava-socios/movimientos",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 43,
+        "CodigoModulo": "tablajeria.plantillas",
+        "NombreModulo": "Plantillas",
+        "Ruta": "/tablajeria/plantillas",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 55,
+        "CodigoModulo": "cava_socios.consumos",
+        "NombreModulo": "Consumos",
+        "Ruta": "/cava-socios/consumos",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 44,
+        "CodigoModulo": "tablajeria.rendimientos",
+        "NombreModulo": "Rendimientos",
+        "Ruta": "/tablajeria/rendimientos",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 56,
+        "CodigoModulo": "cava_socios.cargos",
+        "NombreModulo": "Cargos",
+        "Ruta": "/cava-socios/cargos",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 45,
+        "CodigoModulo": "tablajeria.mermas",
+        "NombreModulo": "Mermas",
+        "Ruta": "/tablajeria/mermas",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 46,
+        "CodigoModulo": "tablajeria.costeo",
+        "NombreModulo": "Costeo",
+        "Ruta": "/tablajeria/costeo",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 57,
+        "CodigoModulo": "cava_socios.reportes",
+        "NombreModulo": "Reportes",
+        "Ruta": "/cava-socios/reportes",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 58,
+        "CodigoModulo": "cava_socios.config",
+        "NombreModulo": "Configuración",
+        "Ruta": "/cava-socios/config",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 29,
+        "CodigoModulo": "crm.pipeline",
+        "NombreModulo": "Pipeline",
+        "Ruta": "/crm/pipeline",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 47,
+        "CodigoModulo": "tablajeria.polizas",
+        "NombreModulo": "Pólizas Contables",
+        "Ruta": "/tablajeria/polizas",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 30,
+        "CodigoModulo": "crm.actividades",
+        "NombreModulo": "Actividades",
+        "Ruta": "/crm/actividades",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 48,
+        "CodigoModulo": "tablajeria.sync",
+        "NombreModulo": "Sincronización",
+        "Ruta": "/tablajeria/sync",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 49,
+        "CodigoModulo": "tablajeria.config",
+        "NombreModulo": "Configuración",
+        "Ruta": "/tablajeria/config",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 31,
+        "CodigoModulo": "crm.cotizaciones",
+        "NombreModulo": "Cotizaciones",
+        "Ruta": "/crm/cotizaciones",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 32,
+        "CodigoModulo": "crm.pedidos",
+        "NombreModulo": "Pedidos",
+        "Ruta": "/crm/pedidos-venta",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 33,
+        "CodigoModulo": "crm.remisiones",
+        "NombreModulo": "Remisiones",
+        "Ruta": "/crm/remisiones",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 34,
+        "CodigoModulo": "crm.integraciones",
+        "NombreModulo": "Integraciones",
+        "Ruta": "/crm/integraciones",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 35,
+        "CodigoModulo": "crm.kpis",
+        "NombreModulo": "KPIs",
+        "Ruta": "/crm/kpis",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 36,
+        "CodigoModulo": "crm.config",
+        "NombreModulo": "Configuración",
+        "Ruta": "/crm/configuracion",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 21,
+        "CodigoModulo": "crm",
+        "NombreModulo": "CRM",
+        "Ruta": "/crm",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 59,
+        "CodigoModulo": "INTELIGENCIA_COMERCIAL",
+        "NombreModulo": "Inteligencia Comercial",
+        "Ruta": "/comercial/inteligencia",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 39,
+        "CodigoModulo": "tablajeria",
+        "NombreModulo": "Tablajería",
+        "Ruta": "/tablajeria",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 50,
+        "CodigoModulo": "cava_socios",
+        "NombreModulo": "Cava de Socios",
+        "Ruta": "/cava-socios",
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 11,
+        "CodigoModulo": "RESPONSABILIDAD",
+        "NombreModulo": "Responsabilidad Económica",
+        "Ruta": null,
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 13,
+        "CodigoModulo": "WORKFLOW",
+        "NombreModulo": "Workflows",
+        "Ruta": null,
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 15,
+        "CodigoModulo": "NOTIFICACIONES",
+        "NombreModulo": "Notificaciones",
+        "Ruta": null,
+        "EsVisibleMenu": true,
+        "Activo": true
+      },
+      {
+        "ModuloID": 20,
+        "CodigoModulo": "RBAC",
+        "NombreModulo": "Gestión RBAC",
+        "Ruta": null,
+        "EsVisibleMenu": true,
+        "Activo": true
+      }
+    ],
+    "05_USUARIOS_ACTIVOS_SIN_ROL_ACTIVO": [],
+    "06_USUARIOS_CON_MULTIPLES_ROLES_PRINCIPALES": [
+      {
+        "UsuarioID": 1,
+        "Email": "admin@edarsa.com",
+        "RolesPrincipalesActivos": 3
+      },
+      {
+        "UsuarioID": 5,
+        "Email": "auditoria@edarsa.com.mx",
+        "RolesPrincipalesActivos": 7
+      },
+      {
+        "UsuarioID": 9,
+        "Email": "david.ricardez@cienfuegos.mx",
+        "RolesPrincipalesActivos": 4
+      },
+      {
+        "UsuarioID": 4,
+        "Email": "noxte@alpyc.com",
+        "RolesPrincipalesActivos": 2
+      }
+    ],
+    "07_PERMISOS_HUERFANOS": [],
+    "08_DUPLICADOS_PERMISOS": [],
+    "09_ACCIONES_SIN_USO": [
+      {
+        "AccionID": 6,
+        "CodigoAccion": "IMPORTAR",
+        "NombreAccion": "IMPORTAR",
+        "Activo": true
+      }
+    ],
+    "10_MENUS_CON_REQUIEREPERMISO_NO_ALINEADO": [
+      {
+        "MenuID": 75,
+        "Codigo": "sistema.tareas",
+        "Nombre": "Mis Tareas",
+        "Ruta": "/mis-tareas",
+        "ModuloID": 27,
+        "RequierePermiso": "mis_tareas",
+        "CodigoModulo": "crm.contactos",
+        "NombreModulo": "Contactos"
+      },
+      {
+        "MenuID": 52,
+        "Codigo": "catalogos.general",
+        "Nombre": "Catálogos",
+        "Ruta": "/catalogos",
+        "ModuloID": 26,
+        "RequierePermiso": "catalogos",
+        "CodigoModulo": "crm.solicitudes",
+        "NombreModulo": "Solicitudes Alta"
+      },
+      {
+        "MenuID": 53,
+        "Codigo": "sistema.control",
+        "Nombre": "Centro de Control",
+        "Ruta": "/centro-control",
+        "ModuloID": 27,
+        "RequierePermiso": "centro_control",
+        "CodigoModulo": "crm.contactos",
+        "NombreModulo": "Contactos"
+      },
+      {
+        "MenuID": 74,
+        "Codigo": "chef_ia.calidad",
+        "Nombre": "Chef IA",
+        "Ruta": "/chef-ia",
+        "ModuloID": 19,
+        "RequierePermiso": "chef_ia",
+        "CodigoModulo": "CONFIG",
+        "NombreModulo": "Configuración Sistema"
+      },
+      {
+        "MenuID": 46,
+        "Codigo": "cava.dashboard",
+        "Nombre": "Dashboard",
+        "Ruta": "/cava-socios",
+        "ModuloID": 7,
+        "RequierePermiso": "cava_socios",
+        "CodigoModulo": "VENTA_COT",
+        "NombreModulo": "Cotizaciones de venta"
+      },
+      {
+        "MenuID": 42,
+        "Codigo": "tablajeria.dashboard",
+        "Nombre": "Dashboard",
+        "Ruta": "/tablajeria/dashboard",
+        "ModuloID": 6,
+        "RequierePermiso": "produccion",
+        "CodigoModulo": "VENTA_LISTAS",
+        "NombreModulo": "Listas de precios"
+      },
+      {
+        "MenuID": 25,
+        "Codigo": "comercial.dashboard",
+        "Nombre": "Dashboard Comercial",
+        "Ruta": "/comercial",
+        "ModuloID": 2,
+        "RequierePermiso": "comercial",
+        "CodigoModulo": "COMPRAS_COT",
+        "NombreModulo": "Cotizaciones de compra"
+      },
+      {
+        "MenuID": 37,
+        "Codigo": "compras.dashboard",
+        "Nombre": "Dashboard Compras",
+        "Ruta": "/compras",
+        "ModuloID": 4,
+        "RequierePermiso": "compras",
+        "CodigoModulo": "COMPRAS_FACT",
+        "NombreModulo": "Compras"
+      },
+      {
+        "MenuID": 31,
+        "Codigo": "crm.dashboard",
+        "Nombre": "Dashboard CRM",
+        "Ruta": "/crm/dashboard",
+        "ModuloID": 14,
+        "RequierePermiso": "crm",
+        "CodigoModulo": "TAREAS",
+        "NombreModulo": "Tareas Operativas"
+      },
+      {
+        "MenuID": 48,
+        "Codigo": "finanzas.dashboard",
+        "Nombre": "Dashboard Finanzas",
+        "Ruta": "/finanzas",
+        "ModuloID": 8,
+        "RequierePermiso": "finanzas",
+        "CodigoModulo": "VENTA_PED",
+        "NombreModulo": "Pedidos de venta"
+      },
+      {
+        "MenuID": 72,
+        "Codigo": "edarsa_go.cobros",
+        "Nombre": "EDARSA GO",
+        "Ruta": "/edarsa-go",
+        "ModuloID": 10,
+        "RequierePermiso": "edarsa_go",
+        "CodigoModulo": "CARGOS",
+        "NombreModulo": "Cargos Económicos"
+      },
+      {
+        "MenuID": 65,
+        "Codigo": "comandero.mesas",
+        "Nombre": "Mesas",
+        "Ruta": "/comandero/mesas",
+        "ModuloID": 3,
+        "RequierePermiso": "comandero",
+        "CodigoModulo": "COMPRAS_OC",
+        "NombreModulo": "Ordenes de compra"
+      },
+      {
+        "MenuID": 40,
+        "Codigo": "inventarios.dashboard",
+        "Nombre": "Operaciones",
+        "Ruta": "/reportes",
+        "ModuloID": 5,
+        "RequierePermiso": "operaciones",
+        "CodigoModulo": "TES_PAGOS",
+        "NombreModulo": "Pagos"
+      },
+      {
+        "MenuID": 71,
+        "Codigo": "portal.clientes",
+        "Nombre": "Portal Clientes",
+        "Ruta": "/portal/clientes",
+        "ModuloID": 18,
+        "RequierePermiso": "portal_clientes",
+        "CodigoModulo": "REPORTES",
+        "NombreModulo": "Reportes"
+      },
+      {
+        "MenuID": 70,
+        "Codigo": "portal.comisionistas",
+        "Nombre": "Portal Comisionistas",
+        "Ruta": "/portal/comisionistas",
+        "ModuloID": 17,
+        "RequierePermiso": "portal_comisionistas",
+        "CodigoModulo": "AUDITORIAS",
+        "NombreModulo": "Auditorías Programadas"
+      },
+      {
+        "MenuID": 69,
+        "Codigo": "portal.proveedores",
+        "Nombre": "Portal Proveedores",
+        "Ruta": "/portal/proveedores",
+        "ModuloID": 16,
+        "RequierePermiso": "portal_proveedores",
+        "CodigoModulo": "SCHEDULER",
+        "NombreModulo": "Programador de Tareas"
+      },
+      {
+        "MenuID": 63,
+        "Codigo": "pos.dashboard",
+        "Nombre": "Punto de Venta",
+        "Ruta": "/pos/generico",
+        "ModuloID": 28,
+        "RequierePermiso": "pos_generico",
+        "CodigoModulo": "crm.oportunidades",
+        "NombreModulo": "Oportunidades"
+      },
+      {
+        "MenuID": 49,
+        "Codigo": "rh.dashboard",
+        "Nombre": "Recursos Humanos",
+        "Ruta": "/recursos-humanos",
+        "ModuloID": 12,
+        "RequierePermiso": "recursos_humanos",
+        "CodigoModulo": "SLA",
+        "NombreModulo": "SLA y Métricas"
+      },
+      {
+        "MenuID": 51,
+        "Codigo": "bi.reportes",
+        "Nombre": "Reportes BI",
+        "Ruta": "/reportes-bi",
+        "ModuloID": 24,
+        "RequierePermiso": "reportes_bi",
+        "CodigoModulo": "crm.cuentas",
+        "NombreModulo": "Cuentas"
+      },
+      {
+        "MenuID": 24,
+        "Codigo": "direccion.tablero",
+        "Nombre": "Tablero Ejecutivo",
+        "Ruta": "/tablero-ejecutivo",
+        "ModuloID": 1,
+        "RequierePermiso": "tablero_ejecutivo",
+        "CodigoModulo": "SEGURIDAD",
+        "NombreModulo": "Seguridad"
+      },
+      {
+        "MenuID": 64,
+        "Codigo": "pos.caja",
+        "Nombre": "Caja",
+        "Ruta": "/pos/caja",
+        "ModuloID": 28,
+        "RequierePermiso": "pos_generico",
+        "CodigoModulo": "crm.oportunidades",
+        "NombreModulo": "Oportunidades"
+      },
+      {
+        "MenuID": 26,
+        "Codigo": "comercial.clientes",
+        "Nombre": "Clientes",
+        "Ruta": "/comercial/clientes",
+        "ModuloID": 2,
+        "RequierePermiso": "comercial.clientes",
+        "CodigoModulo": "COMPRAS_COT",
+        "NombreModulo": "Cotizaciones de compra"
+      },
+      {
+        "MenuID": 66,
+        "Codigo": "comandero.comandas",
+        "Nombre": "Comandas",
+        "Ruta": "/comandero/comandas",
+        "ModuloID": 3,
+        "RequierePermiso": "comandero",
+        "CodigoModulo": "COMPRAS_OC",
+        "NombreModulo": "Ordenes de compra"
+      },
+      {
+        "MenuID": 32,
+        "Codigo": "crm.cuentas",
+        "Nombre": "Cuentas",
+        "Ruta": "/crm/cuentas",
+        "ModuloID": 14,
+        "RequierePermiso": "crm",
+        "CodigoModulo": "TAREAS",
+        "NombreModulo": "Tareas Operativas"
+      },
+      {
+        "MenuID": 41,
+        "Codigo": "inventarios.existencias",
+        "Nombre": "Existencias",
+        "Ruta": "/inventarios/existencias",
+        "ModuloID": 5,
+        "RequierePermiso": "inventarios",
+        "CodigoModulo": "TES_PAGOS",
+        "NombreModulo": "Pagos"
+      },
+      {
+        "MenuID": 50,
+        "Codigo": "rh.importador",
+        "Nombre": "Importador RH",
+        "Ruta": "/importador-rh",
+        "ModuloID": 12,
+        "RequierePermiso": "recursos_humanos",
+        "CodigoModulo": "SLA",
+        "NombreModulo": "SLA y Métricas"
+      },
+      {
+        "MenuID": 73,
+        "Codigo": "edarsa_go.links",
+        "Nombre": "Links de Pago",
+        "Ruta": "/edarsa-go/links",
+        "ModuloID": 10,
+        "RequierePermiso": "edarsa_go",
+        "CodigoModulo": "CARGOS",
+        "NombreModulo": "Cargos Económicos"
+      },
+      {
+        "MenuID": 43,
+        "Codigo": "tablajeria.ordenes",
+        "Nombre": "Órdenes",
+        "Ruta": "/tablajeria/ordenes",
+        "ModuloID": 6,
+        "RequierePermiso": "produccion",
+        "CodigoModulo": "VENTA_LISTAS",
+        "NombreModulo": "Listas de precios"
+      },
+      {
+        "MenuID": 38,
+        "Codigo": "compras.proveedores",
+        "Nombre": "Proveedores",
+        "Ruta": "/compras/proveedores",
+        "ModuloID": 4,
+        "RequierePermiso": "compras.proveedores",
+        "CodigoModulo": "COMPRAS_FACT",
+        "NombreModulo": "Compras"
+      },
+      {
+        "MenuID": 54,
+        "Codigo": "sistema.servidores",
+        "Nombre": "Servidores",
+        "Ruta": "/servidores",
+        "ModuloID": 27,
+        "RequierePermiso": "servidores",
+        "CodigoModulo": "crm.contactos",
+        "NombreModulo": "Contactos"
+      },
+      {
+        "MenuID": 47,
+        "Codigo": "cava.socios",
+        "Nombre": "Socios",
+        "Ruta": "/cava-socios/socios",
+        "ModuloID": 7,
+        "RequierePermiso": "cava_socios",
+        "CodigoModulo": "VENTA_COT",
+        "NombreModulo": "Cotizaciones de venta"
+      },
+      {
+        "MenuID": 44,
+        "Codigo": "tablajeria.captura",
+        "Nombre": "Captura Directa",
+        "Ruta": "/tablajeria/captura-directa",
+        "ModuloID": 6,
+        "RequierePermiso": "produccion",
+        "CodigoModulo": "VENTA_LISTAS",
+        "NombreModulo": "Listas de precios"
+      },
+      {
+        "MenuID": 27,
+        "Codigo": "comercial.cotizaciones",
+        "Nombre": "Cotizaciones",
+        "Ruta": "/crm/cotizaciones",
+        "ModuloID": 2,
+        "RequierePermiso": "comercial.cotizaciones",
+        "CodigoModulo": "COMPRAS_COT",
+        "NombreModulo": "Cotizaciones de compra"
+      },
+      {
+        "MenuID": 67,
+        "Codigo": "comandero.cuentas",
+        "Nombre": "Cuentas",
+        "Ruta": "/comandero/cuentas",
+        "ModuloID": 3,
+        "RequierePermiso": "comandero",
+        "CodigoModulo": "COMPRAS_OC",
+        "NombreModulo": "Ordenes de compra"
+      },
+      {
+        "MenuID": 39,
+        "Codigo": "compras.ordenes",
+        "Nombre": "Órdenes de Compra",
+        "Ruta": "/compras/ordenes",
+        "ModuloID": 4,
+        "RequierePermiso": "compras.ordenes",
+        "CodigoModulo": "COMPRAS_FACT",
+        "NombreModulo": "Compras"
+      },
+      {
+        "MenuID": 55,
+        "Codigo": "sistema.scheduler",
+        "Nombre": "Programación",
+        "Ruta": "/scheduler",
+        "ModuloID": 16,
+        "RequierePermiso": "programacion",
+        "CodigoModulo": "SCHEDULER",
+        "NombreModulo": "Programador de Tareas"
+      },
+      {
+        "MenuID": 33,
+        "Codigo": "crm.solicitudes",
+        "Nombre": "Solicitudes Alta",
+        "Ruta": "/crm/solicitudes-alta",
+        "ModuloID": 14,
+        "RequierePermiso": "crm",
+        "CodigoModulo": "TAREAS",
+        "NombreModulo": "Tareas Operativas"
+      },
+      {
+        "MenuID": 56,
+        "Codigo": "sistema.automatizaciones",
+        "Nombre": "Automatizaciones",
+        "Ruta": "/automatizaciones",
+        "ModuloID": 27,
+        "RequierePermiso": "automatizaciones",
+        "CodigoModulo": "crm.contactos",
+        "NombreModulo": "Contactos"
+      },
+      {
+        "MenuID": 68,
+        "Codigo": "comandero.cortes",
+        "Nombre": "Cortes",
+        "Ruta": "/comandero/cortes",
+        "ModuloID": 3,
+        "RequierePermiso": "comandero",
+        "CodigoModulo": "COMPRAS_OC",
+        "NombreModulo": "Ordenes de compra"
+      },
+      {
+        "MenuID": 34,
+        "Codigo": "crm.leads",
+        "Nombre": "Leads",
+        "Ruta": "/crm/leads",
+        "ModuloID": 14,
+        "RequierePermiso": "crm",
+        "CodigoModulo": "TAREAS",
+        "NombreModulo": "Tareas Operativas"
+      },
+      {
+        "MenuID": 28,
+        "Codigo": "comercial.pedidos",
+        "Nombre": "Pedidos",
+        "Ruta": "/crm/pedidos",
+        "ModuloID": 2,
+        "RequierePermiso": "comercial.pedidos",
+        "CodigoModulo": "COMPRAS_COT",
+        "NombreModulo": "Cotizaciones de compra"
+      },
+      {
+        "MenuID": 45,
+        "Codigo": "tablajeria.plantillas",
+        "Nombre": "Plantillas",
+        "Ruta": "/tablajeria/plantillas",
+        "ModuloID": 6,
+        "RequierePermiso": "produccion",
+        "CodigoModulo": "VENTA_LISTAS",
+        "NombreModulo": "Listas de precios"
+      },
+      {
+        "MenuID": 57,
+        "Codigo": "sistema.asignaciones",
+        "Nombre": "Asignaciones",
+        "Ruta": "/configuracion/asignaciones",
+        "ModuloID": 27,
+        "RequierePermiso": "asignaciones",
+        "CodigoModulo": "crm.contactos",
+        "NombreModulo": "Contactos"
+      },
+      {
+        "MenuID": 35,
+        "Codigo": "crm.oportunidades",
+        "Nombre": "Oportunidades",
+        "Ruta": "/crm/oportunidades",
+        "ModuloID": 14,
+        "RequierePermiso": "crm",
+        "CodigoModulo": "TAREAS",
+        "NombreModulo": "Tareas Operativas"
+      },
+      {
+        "MenuID": 29,
+        "Codigo": "comercial.remisiones",
+        "Nombre": "Remisiones",
+        "Ruta": "/crm/remisiones",
+        "ModuloID": 2,
+        "RequierePermiso": "comercial.remisiones",
+        "CodigoModulo": "COMPRAS_COT",
+        "NombreModulo": "Cotizaciones de compra"
+      },
+      {
+        "MenuID": 58,
+        "Codigo": "sistema.sql",
+        "Nombre": "Catálogo SQL",
+        "Ruta": "/catalogo-consultas",
+        "ModuloID": 27,
+        "RequierePermiso": "catalogo_sql",
+        "CodigoModulo": "crm.contactos",
+        "NombreModulo": "Contactos"
+      },
+      {
+        "MenuID": 30,
+        "Codigo": "comercial.costos",
+        "Nombre": "Costos y Márgenes",
+        "Ruta": "/comercial/costos-margenes",
+        "ModuloID": 2,
+        "RequierePermiso": "comercial.costos",
+        "CodigoModulo": "COMPRAS_COT",
+        "NombreModulo": "Cotizaciones de compra"
+      },
+      {
+        "MenuID": 36,
+        "Codigo": "crm.pipeline",
+        "Nombre": "Pipeline",
+        "Ruta": "/crm/pipeline",
+        "ModuloID": 14,
+        "RequierePermiso": "crm",
+        "CodigoModulo": "TAREAS",
+        "NombreModulo": "Tareas Operativas"
+      },
+      {
+        "MenuID": 76,
+        "Codigo": "comercial.catalogo_enriquecido",
+        "Nombre": "Catálogo Enriquecido",
+        "Ruta": "/comercial/catalogo-enriquecido",
+        "ModuloID": 2,
+        "RequierePermiso": "comercial.costos",
+        "CodigoModulo": "COMPRAS_COT",
+        "NombreModulo": "Cotizaciones de compra"
+      },
+      {
+        "MenuID": 59,
+        "Codigo": "sistema.explorador",
+        "Nombre": "Explorador BD",
+        "Ruta": "/explorador-bd",
+        "ModuloID": 27,
+        "RequierePermiso": "explorador_bd",
+        "CodigoModulo": "crm.contactos",
+        "NombreModulo": "Contactos"
+      },
+      {
+        "MenuID": 60,
+        "Codigo": "sistema.alertas",
+        "Nombre": "Alertas",
+        "Ruta": "/alertas",
+        "ModuloID": 27,
+        "RequierePermiso": "alertas",
+        "CodigoModulo": "crm.contactos",
+        "NombreModulo": "Contactos"
+      },
+      {
+        "MenuID": 61,
+        "Codigo": "sistema.usuarios",
+        "Nombre": "Usuarios",
+        "Ruta": "/usuarios",
+        "ModuloID": 27,
+        "RequierePermiso": "usuarios",
+        "CodigoModulo": "crm.contactos",
+        "NombreModulo": "Contactos"
+      },
+      {
+        "MenuID": 62,
+        "Codigo": "sistema.config",
+        "Nombre": "Config. Operativa",
+        "Ruta": "/admin/configuracion-operativa",
+        "ModuloID": 27,
+        "RequierePermiso": "configuracion",
+        "CodigoModulo": "crm.contactos",
+        "NombreModulo": "Contactos"
+      }
+    ],
+    "11_RESUMEN_RBAC": [
+      {
+        "Metrica": "Roles activos",
+        "Total": 23
+      },
+      {
+        "Metrica": "Modulos activos",
+        "Total": 61
+      },
+      {
+        "Metrica": "Acciones activas",
+        "Total": 20
+      },
+      {
+        "Metrica": "Permisos activos",
+        "Total": 534
+      },
+      {
+        "Metrica": "Menus activos",
+        "Total": 53
+      },
+      {
+        "Metrica": "Usuarios activos",
+        "Total": 12
+      }
+    ]
+  }
+}

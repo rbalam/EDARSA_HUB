@@ -1,0 +1,2537 @@
+{
+  "EDARSAHUB_SCHEMA_COMPLETO.sql": {
+    "mtime": 1780534076.5301883,
+    "ast_hash": "bc0745e521cd6d7b48972468356d18ac",
+    "semantic_hash": "bc0745e521cd6d7b48972468356d18ac"
+  },
+  "EDARSAHUB_SCHEMA_ONLY.sql": {
+    "mtime": 1780534076.5301883,
+    "ast_hash": "d876ee93dc73b99cc7e257983bffd1e8",
+    "semantic_hash": "d876ee93dc73b99cc7e257983bffd1e8"
+  },
+  "auditorias/SQLFIRST_HEALTH_AUDIT.json": {
+    "mtime": 1780631908.3047323,
+    "ast_hash": "68ef4e6f424432160018ae52724ac02d",
+    "semantic_hash": "68ef4e6f424432160018ae52724ac02d"
+  },
+  "audits/auditoria_comercial_routes_sql_first.json": {
+    "mtime": 1780604430.7960527,
+    "ast_hash": "3d63551f69095d66ae5979f08d83d650",
+    "semantic_hash": "3d63551f69095d66ae5979f08d83d650"
+  },
+  "audits/auditoria_detallada_comercial_routes_visuales_p0.json": {
+    "mtime": 1780605345.0810556,
+    "ast_hash": "c6870f8cf8dc9b9d3f6809296a0f7589",
+    "semantic_hash": "c6870f8cf8dc9b9d3f6809296a0f7589"
+  },
+  "audits/auditoria_endpoint_precios_constantes_comercial.json": {
+    "mtime": 1780605570.5080564,
+    "ast_hash": "364b502fa83c5b7fb061442db9c47160",
+    "semantic_hash": "364b502fa83c5b7fb061442db9c47160"
+  },
+  "audits/auditoria_live_sql_first_por_modulo.json": {
+    "mtime": 1780601928.606045,
+    "ast_hash": "a7de8f0e97ea06958bbb7e5773a5fc87",
+    "semantic_hash": "a7de8f0e97ea06958bbb7e5773a5fc87"
+  },
+  "audits/hallazgos_alta_clasificados.json": {
+    "mtime": 1780604100.0340517,
+    "ast_hash": "50141086bef45673d55588075127d585",
+    "semantic_hash": "50141086bef45673d55588075127d585"
+  },
+  "audits/orden_ataque_sql_first.json": {
+    "mtime": 1780604176.5870519,
+    "ast_hash": "e7a5ecfd6652b0263e685040c8a1e249",
+    "semantic_hash": "e7a5ecfd6652b0263e685040c8a1e249"
+  },
+  "audits/validacion_post_migracion_finanzas.json": {
+    "mtime": 1780602480.0610466,
+    "ast_hash": "ff8d28aa20849a8c92c6f9fe606c4062",
+    "semantic_hash": "ff8d28aa20849a8c92c6f9fe606c4062"
+  },
+  "ddl/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_DDL_FASE2.sql": {
+    "mtime": 1780534076.5331883,
+    "ast_hash": "e6ad5e48dbca5f00ed07e39c94d657b4",
+    "semantic_hash": "e6ad5e48dbca5f00ed07e39c94d657b4"
+  },
+  "ddl/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_SEED_FASE3.sql": {
+    "mtime": 1780534076.5331883,
+    "ast_hash": "a2acdbcef25844c3b73ac8ccb1014d30",
+    "semantic_hash": "a2acdbcef25844c3b73ac8ccb1014d30"
+  },
+  "ddl/FASE_3A_DDL_VENTAS_HORA_DIASEMANA.sql": {
+    "mtime": 1780534076.5331883,
+    "ast_hash": "d14bec89ce4a137885912c51ee649088",
+    "semantic_hash": "d14bec89ce4a137885912c51ee649088"
+  },
+  "fixtures/EDARSA_HUB_TRANSACCION_PRUEBA.json": {
+    "mtime": 1780534076.5341883,
+    "ast_hash": "849a1cc269a1800fb1715cedba2698c0",
+    "semantic_hash": "849a1cc269a1800fb1715cedba2698c0"
+  },
+  "modules/TABLAJERIA_DDL_FASE1.sql": {
+    "mtime": 1780534076.5341883,
+    "ast_hash": "09ca8cd8cf770b357c3cd737b28e3bbd",
+    "semantic_hash": "09ca8cd8cf770b357c3cd737b28e3bbd"
+  },
+  "reports/CONSULTAS_DBA_EJECUTAR_CON_SA.sql": {
+    "mtime": 1780534076.5421884,
+    "ast_hash": "e6da9a275bacd073795163cbc4d302eb",
+    "semantic_hash": "e6da9a275bacd073795163cbc4d302eb"
+  },
+  "reports/DRY_RUN_CIENFUEGOS_20260601_FINAL.json": {
+    "mtime": 1780534076.5481884,
+    "ast_hash": "ceca82d52d0bf6d2f71713cfc4802051",
+    "semantic_hash": "ceca82d52d0bf6d2f71713cfc4802051"
+  },
+  "reports/DRY_RUN_CIENFUEGOS_20260601_REAL.json": {
+    "mtime": 1780534076.5481884,
+    "ast_hash": "8832c9ac1bac3d41f01dc38ef1b9951a",
+    "semantic_hash": "8832c9ac1bac3d41f01dc38ef1b9951a"
+  },
+  "reports/DRY_RUN_CIENFUEGOS_20260601_SIMULADO.json": {
+    "mtime": 1780534076.5481884,
+    "ast_hash": "d01c8a03cb30acd3685382726d26adbe",
+    "semantic_hash": "d01c8a03cb30acd3685382726d26adbe"
+  },
+  "reports/DRY_RUN_CIENFUEGOS_20260601_V2.json": {
+    "mtime": 1780534076.5481884,
+    "ast_hash": "0dc43c447a9178ced1ab3cea3f6aa5db",
+    "semantic_hash": "0dc43c447a9178ced1ab3cea3f6aa5db"
+  },
+  "reports/SCRIPT_PERMISOS_TEMPORALES_HRLECTURA_MSDB.sql": {
+    "mtime": 1780534076.5721884,
+    "ast_hash": "6ceeb3c146be9256bc9848749e182610",
+    "semantic_hash": "6ceeb3c146be9256bc9848749e182610"
+  },
+  "reports/audit_fecha_operativa_0600_202605.json": {
+    "mtime": 1780534076.5731883,
+    "ast_hash": "288d928d2d6aab6dbd729d14ecdad50f",
+    "semantic_hash": "288d928d2d6aab6dbd729d14ecdad50f"
+  },
+  "reports/compras_historical_load_12813dab.json": {
+    "mtime": 1778227144.3744466,
+    "ast_hash": "37e6ff5b6489a89c73596b188d2438d0",
+    "semantic_hash": "37e6ff5b6489a89c73596b188d2438d0"
+  },
+  "reports/compras_historical_load_35f75f68.json": {
+    "mtime": 1778227144.3744466,
+    "ast_hash": "00a4eb5386bca7cee1a1ba85e9ac1abe",
+    "semantic_hash": "00a4eb5386bca7cee1a1ba85e9ac1abe"
+  },
+  "reports/compras_historical_load_363a8b0d.json": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "9895b7b1e8983f9551f51cd669d7e0db",
+    "semantic_hash": "9895b7b1e8983f9551f51cd669d7e0db"
+  },
+  "reports/compras_historical_load_36e6e0f9.json": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "8acf55da6e537ab4f4070e8fd1a407fb",
+    "semantic_hash": "8acf55da6e537ab4f4070e8fd1a407fb"
+  },
+  "reports/compras_historical_load_3a1823db.json": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "70e9ae3957504d5350bccdea7f5615d4",
+    "semantic_hash": "70e9ae3957504d5350bccdea7f5615d4"
+  },
+  "reports/compras_historical_load_5e680dfb.json": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "b82c91a915a5be6f7d62f6bc8d443885",
+    "semantic_hash": "b82c91a915a5be6f7d62f6bc8d443885"
+  },
+  "reports/compras_historical_load_6fa4900a.json": {
+    "mtime": 1778227144.3744466,
+    "ast_hash": "1001a01a43c358edca80e97829f76bf3",
+    "semantic_hash": "1001a01a43c358edca80e97829f76bf3"
+  },
+  "reports/compras_historical_load_874f9f4f.json": {
+    "mtime": 1778227144.3734467,
+    "ast_hash": "7fe11df1fdbfb8dbfe6ee007e267d3c7",
+    "semantic_hash": "7fe11df1fdbfb8dbfe6ee007e267d3c7"
+  },
+  "reports/compras_historical_load_955efda4.json": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "27e80ec6555e0ee97e7235381b644a2f",
+    "semantic_hash": "27e80ec6555e0ee97e7235381b644a2f"
+  },
+  "reports/compras_historical_load_a1c3db90.json": {
+    "mtime": 1778227144.3754468,
+    "ast_hash": "c9e6184219aaffda198034a04c2b8646",
+    "semantic_hash": "c9e6184219aaffda198034a04c2b8646"
+  },
+  "reports/compras_historical_load_a46962cf.json": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "6ecb5cd25416b7da06084c7edab9135a",
+    "semantic_hash": "6ecb5cd25416b7da06084c7edab9135a"
+  },
+  "reports/compras_historical_load_c0ed0af1.json": {
+    "mtime": 1778227144.3744466,
+    "ast_hash": "44dabccf4c256986b4f6dbde21c8e2c2",
+    "semantic_hash": "44dabccf4c256986b4f6dbde21c8e2c2"
+  },
+  "reports/compras_historical_load_cb6a9216.json": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "5e86c4bca7b394dd3626a2027a552e4d",
+    "semantic_hash": "5e86c4bca7b394dd3626a2027a552e4d"
+  },
+  "reports/core_secrets_encryption_report.json": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "cf872f07cf56bba1f9018f8d1d31ad57",
+    "semantic_hash": "cf872f07cf56bba1f9018f8d1d31ad57"
+  },
+  "reports/debug_tablero_ejecutivo_call_1.json": {
+    "mtime": 1780534076.5731883,
+    "ast_hash": "2b7d29d5e274305c508ff368116570b2",
+    "semantic_hash": "2b7d29d5e274305c508ff368116570b2"
+  },
+  "reports/debug_tablero_ejecutivo_call_2.json": {
+    "mtime": 1780534076.5731883,
+    "ast_hash": "db18440aec7e8be8c768be8441602498",
+    "semantic_hash": "db18440aec7e8be8c768be8441602498"
+  },
+  "reports/debug_tablero_ejecutivo_call_3.json": {
+    "mtime": 1780534076.5731883,
+    "ast_hash": "253680c6f3853a0d442ebe802b3d3d07",
+    "semantic_hash": "253680c6f3853a0d442ebe802b3d3d07"
+  },
+  "reports/debug_tablero_ejecutivo_post_cleanup_1.json": {
+    "mtime": 1780534076.5731883,
+    "ast_hash": "4f37cc878496278216ad2e26431c682a",
+    "semantic_hash": "4f37cc878496278216ad2e26431c682a"
+  },
+  "reports/debug_tablero_ejecutivo_post_cleanup_2.json": {
+    "mtime": 1780534076.5731883,
+    "ast_hash": "e1a17bb08208de7b0fef8c71ef65b7cd",
+    "semantic_hash": "e1a17bb08208de7b0fef8c71ef65b7cd"
+  },
+  "reports/debug_tablero_ejecutivo_post_cleanup_3.json": {
+    "mtime": 1780534076.5731883,
+    "ast_hash": "e447c8c6900b604bdc959f76c06015ef",
+    "semantic_hash": "e447c8c6900b604bdc959f76c06015ef"
+  },
+  "reports/debug_tablero_ejecutivo_post_cleanup_4.json": {
+    "mtime": 1780534076.5731883,
+    "ast_hash": "392d59a0c93a473df2bc28dcb7d1844d",
+    "semantic_hash": "392d59a0c93a473df2bc28dcb7d1844d"
+  },
+  "reports/debug_tablero_ejecutivo_post_cleanup_5.json": {
+    "mtime": 1780534076.5731883,
+    "ast_hash": "5c064c7f92c4439b9da98064d1e37d12",
+    "semantic_hash": "5c064c7f92c4439b9da98064d1e37d12"
+  },
+  "reports/debug_tablero_ejecutivo_stability_1.json": {
+    "mtime": 1780534076.5731883,
+    "ast_hash": "47d23e4177123792deca2f439260509c",
+    "semantic_hash": "47d23e4177123792deca2f439260509c"
+  },
+  "reports/debug_tablero_ejecutivo_stability_2.json": {
+    "mtime": 1780534076.5731883,
+    "ast_hash": "e89840cfea351de1e874fcc1b90329f2",
+    "semantic_hash": "e89840cfea351de1e874fcc1b90329f2"
+  },
+  "reports/debug_tablero_ejecutivo_stability_3.json": {
+    "mtime": 1780534076.5731883,
+    "ast_hash": "f9b6f7329332af2c365a71fbfcae355b",
+    "semantic_hash": "f9b6f7329332af2c365a71fbfcae355b"
+  },
+  "reports/debug_tablero_ejecutivo_stability_4.json": {
+    "mtime": 1780534076.5731883,
+    "ast_hash": "122aefe7aa5518a25418eb96770e5fc6",
+    "semantic_hash": "122aefe7aa5518a25418eb96770e5fc6"
+  },
+  "reports/debug_tablero_ejecutivo_stability_5.json": {
+    "mtime": 1780534076.5731883,
+    "ast_hash": "db36e08fd71cbcecb67d8b92bf8d8e07",
+    "semantic_hash": "db36e08fd71cbcecb67d8b92bf8d8e07"
+  },
+  "reports/diagnostico_cienfuegos.json": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "cb29625ba7a1a2a629d2fc57a0a163db",
+    "semantic_hash": "cb29625ba7a1a2a629d2fc57a0a163db"
+  },
+  "reports/encrypted_connectivity_validation_report.json": {
+    "mtime": 1778227144.3774467,
+    "ast_hash": "13f2cdd7d483942a540ae4b86c72f365",
+    "semantic_hash": "13f2cdd7d483942a540ae4b86c72f365"
+  },
+  "reports/finanzas_historical_load_056e4937.json": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "aa2ebba04e77bfebf502a6837df71401",
+    "semantic_hash": "aa2ebba04e77bfebf502a6837df71401"
+  },
+  "reports/finanzas_historical_load_05a8a0a7.json": {
+    "mtime": 1778227144.3744466,
+    "ast_hash": "0b83b9e1acd52b7eb9f8fde56dc76553",
+    "semantic_hash": "0b83b9e1acd52b7eb9f8fde56dc76553"
+  },
+  "reports/finanzas_historical_load_4044b4a4.json": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "3d81b2ee92f9dc444c574d91252501a7",
+    "semantic_hash": "3d81b2ee92f9dc444c574d91252501a7"
+  },
+  "reports/finanzas_historical_load_51f00733.json": {
+    "mtime": 1778227144.3734467,
+    "ast_hash": "b3e29ef5990358378dfca7da3dd8af79",
+    "semantic_hash": "b3e29ef5990358378dfca7da3dd8af79"
+  },
+  "reports/finanzas_historical_load_52603078.json": {
+    "mtime": 1778227144.3754468,
+    "ast_hash": "efdc349aa6583c1545a4a9bcb57b7a84",
+    "semantic_hash": "efdc349aa6583c1545a4a9bcb57b7a84"
+  },
+  "reports/finanzas_historical_load_5ae7f41c.json": {
+    "mtime": 1778227144.3754468,
+    "ast_hash": "9eaf7dd80f05388b95a56caa476c9e17",
+    "semantic_hash": "9eaf7dd80f05388b95a56caa476c9e17"
+  },
+  "reports/finanzas_historical_load_7fdda15c.json": {
+    "mtime": 1778227144.3744466,
+    "ast_hash": "15f99cce64e917e327df5ea417d52921",
+    "semantic_hash": "15f99cce64e917e327df5ea417d52921"
+  },
+  "reports/finanzas_historical_load_8325c23f.json": {
+    "mtime": 1778227144.3744466,
+    "ast_hash": "8bc2c75330ac091b7129fdecb57ac153",
+    "semantic_hash": "8bc2c75330ac091b7129fdecb57ac153"
+  },
+  "reports/finanzas_historical_load_86aec7ad.json": {
+    "mtime": 1778227144.3744466,
+    "ast_hash": "8372ce5c6a91ed9c4a2859742b248260",
+    "semantic_hash": "8372ce5c6a91ed9c4a2859742b248260"
+  },
+  "reports/finanzas_historical_load_8b78e6f6.json": {
+    "mtime": 1778227144.3734467,
+    "ast_hash": "02746ab4e9616f1276580f3b53ddddcf",
+    "semantic_hash": "02746ab4e9616f1276580f3b53ddddcf"
+  },
+  "reports/finanzas_historical_load_9a13f1ce.json": {
+    "mtime": 1778227144.3734467,
+    "ast_hash": "4613540be381c9e6652a0cfbaa444601",
+    "semantic_hash": "4613540be381c9e6652a0cfbaa444601"
+  },
+  "reports/finanzas_historical_load_b2dae3b9.json": {
+    "mtime": 1778227144.3744466,
+    "ast_hash": "202db373e20a141aec6b252b0556311b",
+    "semantic_hash": "202db373e20a141aec6b252b0556311b"
+  },
+  "reports/finanzas_historical_load_b3846398.json": {
+    "mtime": 1778227144.3744466,
+    "ast_hash": "23ada28316d5394fac9af86d3eae650a",
+    "semantic_hash": "23ada28316d5394fac9af86d3eae650a"
+  },
+  "reports/finanzas_historical_load_bc2ffc38.json": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "52545c5009e6da030282420b173191b7",
+    "semantic_hash": "52545c5009e6da030282420b173191b7"
+  },
+  "reports/finanzas_historical_load_bc424d55.json": {
+    "mtime": 1778227144.3734467,
+    "ast_hash": "530eba0d31aad1775046c0db00ddfadd",
+    "semantic_hash": "530eba0d31aad1775046c0db00ddfadd"
+  },
+  "reports/finanzas_historical_load_cff5aba8.json": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "09ddff55aa6fbeb14545196a9d5a3261",
+    "semantic_hash": "09ddff55aa6fbeb14545196a9d5a3261"
+  },
+  "reports/finanzas_historical_load_d503470e.json": {
+    "mtime": 1778227144.3734467,
+    "ast_hash": "d23316644eb8fdcee516a7c243e995a0",
+    "semantic_hash": "d23316644eb8fdcee516a7c243e995a0"
+  },
+  "reports/finanzas_historical_load_ee852294.json": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "6c2515a30848086a3416ff102dbb2f93",
+    "semantic_hash": "6c2515a30848086a3416ff102dbb2f93"
+  },
+  "reports/finanzas_historical_load_f5a0c8e7.json": {
+    "mtime": 1778227144.3744466,
+    "ast_hash": "7f095bfbafe73ea720921ecec18ac03b",
+    "semantic_hash": "7f095bfbafe73ea720921ecec18ac03b"
+  },
+  "reports/finanzas_historical_load_faffd5be.json": {
+    "mtime": 1778227144.3734467,
+    "ast_hash": "8e09d96484b2d540d99b8a71e7def337",
+    "semantic_hash": "8e09d96484b2d540d99b8a71e7def337"
+  },
+  "reports/historical_load_24_months_dry_run.json": {
+    "mtime": 1778227144.3734467,
+    "ast_hash": "4d3a685da47ed3f2f0539fc77683877f",
+    "semantic_hash": "4d3a685da47ed3f2f0539fc77683877f"
+  },
+  "reports/historical_load_24_months_execution_report.json": {
+    "mtime": 1778227144.3774467,
+    "ast_hash": "632a3490072bad87c532993f610b8862",
+    "semantic_hash": "632a3490072bad87c532993f610b8862"
+  },
+  "reports/historical_load_cienfuegos_complete_report.json": {
+    "mtime": 1778227144.3754468,
+    "ast_hash": "d6b53a19416082202d82ff746b7b7389",
+    "semantic_hash": "d6b53a19416082202d82ff746b7b7389"
+  },
+  "reports/historical_load_complete_report.json": {
+    "mtime": 1778227144.3774467,
+    "ast_hash": "e2a53d8e907ae67ed88ce3102c9cefe1",
+    "semantic_hash": "e2a53d8e907ae67ed88ce3102c9cefe1"
+  },
+  "reports/historical_load_destination_audit.json": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "6476b3b2e522f61fece353a1683b6352",
+    "semantic_hash": "6476b3b2e522f61fece353a1683b6352"
+  },
+  "reports/historical_load_final_report.json": {
+    "mtime": 1778227144.3774467,
+    "ast_hash": "731776450040d56e9531e71ca0bbb86d",
+    "semantic_hash": "731776450040d56e9531e71ca0bbb86d"
+  },
+  "reports/historical_load_june_2024_validation_report.json": {
+    "mtime": 1778227144.3734467,
+    "ast_hash": "021d4b92debe2cbf53aeef14c8c80b1e",
+    "semantic_hash": "021d4b92debe2cbf53aeef14c8c80b1e"
+  },
+  "reports/historical_load_may_2024_validation_report.json": {
+    "mtime": 1778227144.3744466,
+    "ast_hash": "bdb51b6250e3f9ad7f4062ff9493e90e",
+    "semantic_hash": "bdb51b6250e3f9ad7f4062ff9493e90e"
+  },
+  "reports/historical_load_mpro_scaling_report.json": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "dde278413ec572d55facb8dda711a78e",
+    "semantic_hash": "dde278413ec572d55facb8dda711a78e"
+  },
+  "reports/historical_load_softrestaurant_validation_report.json": {
+    "mtime": 1778227144.3734467,
+    "ast_hash": "622eaf0c3e04970da632eadb02b148f1",
+    "semantic_hash": "622eaf0c3e04970da632eadb02b148f1"
+  },
+  "reports/historical_load_sql_destination_validation.json": {
+    "mtime": 1778227144.3744466,
+    "ast_hash": "3fa6d3f390bcf94726c5fe1a12d4e962",
+    "semantic_hash": "3fa6d3f390bcf94726c5fe1a12d4e962"
+  },
+  "reports/mongo_cobertura_canonica_20260607_190519/MONGO_COBERTURA_CANONICA.json": {
+    "mtime": 1780859121.142062,
+    "ast_hash": "e160cdeb5b68dc061ea16d9d5e105d2d",
+    "semantic_hash": "e160cdeb5b68dc061ea16d9d5e105d2d"
+  },
+  "reports/mongo_delete_whitelist_20260607_183030/MONGO_DELETE_WHITELIST_20260607_183030.json": {
+    "mtime": 1780857030.4910443,
+    "ast_hash": "3b75198520eebe8feb5aa137e981d818",
+    "semantic_hash": "3b75198520eebe8feb5aa137e981d818"
+  },
+  "reports/mongo_rbac_gap_analysis_20260607_192658/RBAC_GAP_ANALYSIS.json": {
+    "mtime": 1780860420.2650719,
+    "ast_hash": "fdaa85eb9e6e90565691583258eb1998",
+    "semantic_hash": "fdaa85eb9e6e90565691583258eb1998"
+  },
+  "reports/mongo_sql_compare_20260607_182308/MONGO_SQL_COVERAGE_182308.json": {
+    "mtime": 1780856651.5810409,
+    "ast_hash": "2bacbc1ffb49ca213c2924046eb7d205",
+    "semantic_hash": "2bacbc1ffb49ca213c2924046eb7d205"
+  },
+  "reports/mongo_sunset_sql_audit_20260607_185306/MONGO_SUNSET_SQL_AUDIT.json": {
+    "mtime": 1780858389.3350558,
+    "ast_hash": "66cea90eaec87cb38fc31a7845bac4dd",
+    "semantic_hash": "66cea90eaec87cb38fc31a7845bac4dd"
+  },
+  "reports/mongo_validacion_muestra_llaves_20260607_191407/MONGO_VALIDACION_MUESTRA_LLAVES.json": {
+    "mtime": 1780859679.3480666,
+    "ast_hash": "28ddde607ab2681b6aed52bc14fbda13",
+    "semantic_hash": "28ddde607ab2681b6aed52bc14fbda13"
+  },
+  "reports/server_secret_key_rotation_report.json": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "7b5ba76b64264cc97834b3b885f9634f",
+    "semantic_hash": "7b5ba76b64264cc97834b3b885f9634f"
+  },
+  "reports/server_secrets_encryption_report.json": {
+    "mtime": 1778227144.3734467,
+    "ast_hash": "8baa90eac31c09de8f25b49e45941d4d",
+    "semantic_hash": "8baa90eac31c09de8f25b49e45941d4d"
+  },
+  "reports/servers_reconciliation_report.json": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "d5041b59cf320a109f34d69d7c86829f",
+    "semantic_hash": "d5041b59cf320a109f34d69d7c86829f"
+  },
+  "snippets/BarraLateral_SingleActive.jsx": {
+    "mtime": 1780534076.5751884,
+    "ast_hash": "6e20c8bb773b376de35f0b49ca00d6a7",
+    "semantic_hash": "6e20c8bb773b376de35f0b49ca00d6a7"
+  },
+  "snippets/CACHE_LOCAL_MENUS_FALLBACK.js": {
+    "mtime": 1780534076.5751884,
+    "ast_hash": "af30084c49b7d3aeb0b6f6887860950e",
+    "semantic_hash": "af30084c49b7d3aeb0b6f6887860950e"
+  },
+  "snippets/CARGAR_DETALLE_MOVIMIENTOS_FALLBACK.jsx": {
+    "mtime": 1780534076.5751884,
+    "ast_hash": "9aacb710004efe1cfb0949b829e88deb",
+    "semantic_hash": "9aacb710004efe1cfb0949b829e88deb"
+  },
+  "snippets/CARGAR_SERVIDORES_FALLBACK.jsx": {
+    "mtime": 1780534076.5751884,
+    "ast_hash": "c921e29339a6ca89b4eee47b81151a26",
+    "semantic_hash": "c921e29339a6ca89b4eee47b81151a26"
+  },
+  "snippets/CARGAR_USUARIOS_ASIGNABLES_FALLBACK.jsx": {
+    "mtime": 1780534076.5751884,
+    "ast_hash": "f1d409fd37faa5391bed68afdab009f8",
+    "semantic_hash": "f1d409fd37faa5391bed68afdab009f8"
+  },
+  "snippets/CONSOLA_LIMPIAR_SESION_EMERGENT.js": {
+    "mtime": 1780534076.5751884,
+    "ast_hash": "eed87f1d4c0bda7060852af013644c3c",
+    "semantic_hash": "eed87f1d4c0bda7060852af013644c3c"
+  },
+  "snippets/CONSOLA_LIMPIEZA_PROFUNDA_EMERGENT.js": {
+    "mtime": 1780534076.5751884,
+    "ast_hash": "8cce9c220cc756e355f4e1f4282ced80",
+    "semantic_hash": "8cce9c220cc756e355f4e1f4282ced80"
+  },
+  "snippets/CONSOLA_RESTABLECIMIENTO_SESION_EDARSA.js": {
+    "mtime": 1780534076.5751884,
+    "ast_hash": "fba8170a4b2d444a3bf7e266db3d49d5",
+    "semantic_hash": "fba8170a4b2d444a3bf7e266db3d49d5"
+  },
+  "snippets/DASHBOARD_DEBOUNCE_ERROR_CONTROL.jsx": {
+    "mtime": 1780534076.5751884,
+    "ast_hash": "2c8fc591f126878f99f52f6914b2f1b8",
+    "semantic_hash": "2c8fc591f126878f99f52f6914b2f1b8"
+  },
+  "snippets/FALLBACK_MENUS_ROLES_ANTIBUCLE.js": {
+    "mtime": 1780534076.5751884,
+    "ast_hash": "62f886f5e2586e35908ba2f9ba537b12",
+    "semantic_hash": "62f886f5e2586e35908ba2f9ba537b12"
+  },
+  "snippets/GUARDADO_ROLES_OFFLINE_BLINDADO.jsx": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "18c1667fbd5a56b44e837d20cb17d938",
+    "semantic_hash": "18c1667fbd5a56b44e837d20cb17d938"
+  },
+  "snippets/HANDLERS_SAVE_USUARIOS_ROLES.jsx": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "0e7f9078a77f36279cc8c6f50d9b98a7",
+    "semantic_hash": "0e7f9078a77f36279cc8c6f50d9b98a7"
+  },
+  "snippets/HANDLER_PERIOD_FALLBACK.jsx": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "c1d5c26aa4e2f60f536a27f5900f7542",
+    "semantic_hash": "c1d5c26aa4e2f60f536a27f5900f7542"
+  },
+  "snippets/HANDLE_SAVE_OFFLINE_FIRST.jsx": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "1936e173693ccc2ae1b995fda27d3a19",
+    "semantic_hash": "1936e173693ccc2ae1b995fda27d3a19"
+  },
+  "snippets/HANDLE_SAVE_ROLES_OFFLINE.jsx": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "14b1c665c45aca0833202ed06f719285",
+    "semantic_hash": "14b1c665c45aca0833202ed06f719285"
+  },
+  "snippets/LOAD_MENUS_CON_FALLBACK.jsx": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "7b4e8fcb67be0373e5ae1be584d253c8",
+    "semantic_hash": "7b4e8fcb67be0373e5ae1be584d253c8"
+  },
+  "snippets/MENU_FALLBACK_SATELITES.js": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "8ed204117e71a3293b7b6c21aaa0f9e6",
+    "semantic_hash": "8ed204117e71a3293b7b6c21aaa0f9e6"
+  },
+  "snippets/SELECT_UNIDADES_LIMPIO.jsx": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "ca7a96b5bc9f20844c0ec16582ddcaf0",
+    "semantic_hash": "ca7a96b5bc9f20844c0ec16582ddcaf0"
+  },
+  "snippets/SQLALCHEMY_CONNECTION_POOL_CONFIG.py": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "9ef8454c8cb982a145fe839abdfdd550",
+    "semantic_hash": "9ef8454c8cb982a145fe839abdfdd550"
+  },
+  "snippets/TIMEOUT_CONTROL_FRONTEND.js": {
+    "mtime": 1780756351.3383245,
+    "ast_hash": "742fc8d627d04d134dc2c28915873a45",
+    "semantic_hash": "742fc8d627d04d134dc2c28915873a45"
+  },
+  "snippets/TOGGLE_SUBMENU_FIX.jsx": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "46a25ab8f9a1cd2f53dec5ced8ed41f5",
+    "semantic_hash": "46a25ab8f9a1cd2f53dec5ced8ed41f5"
+  },
+  "snippets/USO_HANDLE_SAVE_OFFLINE.jsx": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "80a78957762a8eecffa2974f4e5b87bf",
+    "semantic_hash": "80a78957762a8eecffa2974f4e5b87bf"
+  },
+  "snippets/ejemplo_uso_resilient_ws.js": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "5ae10db3fafc0f2c55ca0013ebe51834",
+    "semantic_hash": "5ae10db3fafc0f2c55ca0013ebe51834"
+  },
+  "snippets/endpoint_ventas_tiempo_referencia.py": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "d68e90599f8310eba8e32413a027fff5",
+    "semantic_hash": "d68e90599f8310eba8e32413a027fff5"
+  },
+  "snippets/filtro_productos_inactivos.jsx": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "b0e86eda683ea6279164b479c944f6d5",
+    "semantic_hash": "b0e86eda683ea6279164b479c944f6d5"
+  },
+  "snippets/formatear_inventario_reporte.js": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "817cb8b64c787886b73ef9fa788529a6",
+    "semantic_hash": "817cb8b64c787886b73ef9fa788529a6"
+  },
+  "snippets/snippet_axios_fallback_pattern.js": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "76de33408f5614d77fd93eee9284bd05",
+    "semantic_hash": "76de33408f5614d77fd93eee9284bd05"
+  },
+  "sql/ACTUALIZACION_KPI_PROYECCION_COMERCIAL.sql": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "1d0199702fc2634b882c332646ad0110",
+    "semantic_hash": "1d0199702fc2634b882c332646ad0110"
+  },
+  "sql/ALTA_MODULO_SATELITE_COMPANERO.sql": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "1b5c03029ba63cfd0f2a8f78194bdf92",
+    "semantic_hash": "1b5c03029ba63cfd0f2a8f78194bdf92"
+  },
+  "sql/ALTA_MODULO_SATELITE_SUPER_CAJA.sql": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "fb36710ff2028bb1fb8e5ab444ca8b2f",
+    "semantic_hash": "fb36710ff2028bb1fb8e5ab444ca8b2f"
+  },
+  "sql/ALTA_SUPER_CAJA_5_UNIDADES.sql": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "db2339d7ffa90365735bfc92e761ffec",
+    "semantic_hash": "db2339d7ffa90365735bfc92e761ffec"
+  },
+  "sql/ARQUITECTURA_FECHA_OPERATIVA_TURNO_BASE.sql": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "b395c06c8a40fa5fdd0d2a3b343f9c4a",
+    "semantic_hash": "b395c06c8a40fa5fdd0d2a3b343f9c4a"
+  },
+  "sql/AUDITORIA_CRUZADA_SERIES_VS_HUB.sql": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "c11da4a60da5089eeab7dda95ae58fea",
+    "semantic_hash": "c11da4a60da5089eeab7dda95ae58fea"
+  },
+  "sql/AUDITORIA_REGLAS_NEGOCIO_VENTA_HISTORICA.sql": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "fd3103c96e60d0502d19f7880aad412c",
+    "semantic_hash": "fd3103c96e60d0502d19f7880aad412c"
+  },
+  "sql/AUDITORIA_VERACIDAD_HISTORICA_VENTAS_CHEQUES.sql": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "471b99aee49eede4327068894964b9a7",
+    "semantic_hash": "471b99aee49eede4327068894964b9a7"
+  },
+  "sql/CIERRE_P0_VALIDACION_PROPINA_TPV_SOFTRESTAURANT.sql": {
+    "mtime": 1780599222.9440346,
+    "ast_hash": "517f4feb9ba165947c040c6fe9d114ff",
+    "semantic_hash": "517f4feb9ba165947c040c6fe9d114ff"
+  },
+  "sql/CORRECCION_PROYECCION_Y_MONEDA_FINAL.sql": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "ffaa9ef5cdebd010503bd8cbcc921021",
+    "semantic_hash": "ffaa9ef5cdebd010503bd8cbcc921021"
+  },
+  "sql/CORRECCION_SISTEMA_MENUS_Y_FALLBACKS.sql": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "33fcf2369f706947177c471419de105e",
+    "semantic_hash": "33fcf2369f706947177c471419de105e"
+  },
+  "sql/DESBLOQUEO_MASIVO_USUARIOS_ROLES.sql": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "03c0f4b2a17f980a0bc1395a9ffb070d",
+    "semantic_hash": "03c0f4b2a17f980a0bc1395a9ffb070d"
+  },
+  "sql/DESBLOQUEO_ROLES_SISTEMA.sql": {
+    "mtime": 1780534076.5761883,
+    "ast_hash": "cb0ad3fa7d42c737802aa972d725fac4",
+    "semantic_hash": "cb0ad3fa7d42c737802aa972d725fac4"
+  },
+  "sql/DIAGNOSTICO_RAPIDO_SUCURSAL_130.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "d09b2a66616eae5ff506f800733c9453",
+    "semantic_hash": "d09b2a66616eae5ff506f800733c9453"
+  },
+  "sql/DIAGNOSTICO_SINCRONIZACION_SUCURSAL_130.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "620a637c073a0698e00a2b8596da462e",
+    "semantic_hash": "620a637c073a0698e00a2b8596da462e"
+  },
+  "sql/EXTENSION_ROLES_MODULE_ACCESS.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "8433daddf6d3ad4b37db86c6e5840de3",
+    "semantic_hash": "8433daddf6d3ad4b37db86c6e5840de3"
+  },
+  "sql/FACT_VENTAS_CONSOLIDADAS_MULTITENANT.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "b7cdae6bde868dee1dac1160dd99fbeb",
+    "semantic_hash": "b7cdae6bde868dee1dac1160dd99fbeb"
+  },
+  "sql/FN_CALCULAR_PROYECCION_MENSUAL.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "8d0d07488594f8ee031cec08cc09e86b",
+    "semantic_hash": "8d0d07488594f8ee031cec08cc09e86b"
+  },
+  "sql/FORMULA_PROYECCION_DINAMICA.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "d2df09da6e071180876785570e759762",
+    "semantic_hash": "d2df09da6e071180876785570e759762"
+  },
+  "sql/FORZADO_SINCRONIZACION_HISTORICA_DIAGNOSTICO.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "bb73c4bdca37859bc381c76876d5d6b5",
+    "semantic_hash": "bb73c4bdca37859bc381c76876d5d6b5"
+  },
+  "sql/INFRAESTRUCTURA_RESPALDO_CACHE_EDARSAHUB.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "8931cd0b360ba17d68631dd4964e8c36",
+    "semantic_hash": "8931cd0b360ba17d68631dd4964e8c36"
+  },
+  "sql/INTEGRACION_UNIDADES_SIN_DUPLICAR.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "ab504953af02e7a5b96538592219f126",
+    "semantic_hash": "ab504953af02e7a5b96538592219f126"
+  },
+  "sql/INTEGRADOR_PANEL_COMERCIAL_EDARSAHUB.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "0adc545fd11ea241feb6603160be41a6",
+    "semantic_hash": "0adc545fd11ea241feb6603160be41a6"
+  },
+  "sql/LIMPIEZA_CACHE_VISTAS_COMERCIALES.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "c8fc23acd415effbc761bf608d8e92f0",
+    "semantic_hash": "c8fc23acd415effbc761bf608d8e92f0"
+  },
+  "sql/LIMPIEZA_COMPLETA_BLOQUEOS.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "1e0b9864814efed1be5d1edb32de8340",
+    "semantic_hash": "1e0b9864814efed1be5d1edb32de8340"
+  },
+  "sql/MIGRACION_PROVEEDORES_MONGO_A_SQL.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "113fa3535c432dcf07fc7526972e5ab4",
+    "semantic_hash": "113fa3535c432dcf07fc7526972e5ab4"
+  },
+  "sql/PERMISOS_SUPERADMIN_LIMPIEZA_CACHE.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "5256334d3663f7baf4763d49dd26827a",
+    "semantic_hash": "5256334d3663f7baf4763d49dd26827a"
+  },
+  "sql/PROYECCION_ANUAL_MIGRACION_PEGA.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "7231ebcdb6522aece273c3cc4942daab",
+    "semantic_hash": "7231ebcdb6522aece273c3cc4942daab"
+  },
+  "sql/PROYECCION_ANUAL_MIGRACION_PROD.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "48a79763eb70ffe8d17c2e2c775a8764",
+    "semantic_hash": "48a79763eb70ffe8d17c2e2c775a8764"
+  },
+  "sql/RECONCILIACION_SERIACION_KPI_VENTAS_MAYO2026.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "f7af691ba4d85b3cc9b1e9b040c9150f",
+    "semantic_hash": "f7af691ba4d85b3cc9b1e9b040c9150f"
+  },
+  "sql/RECONFIGURACION_JOB_BARRIDO_AUDITORIA_D10.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "4f6f64e456ba33a473642ee964ba7671",
+    "semantic_hash": "4f6f64e456ba33a473642ee964ba7671"
+  },
+  "sql/REFRESH_CACHE_SYNC_VERIFICACION.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "05aedf401fff5bef6b2ce6f191fe5fde",
+    "semantic_hash": "05aedf401fff5bef6b2ce6f191fe5fde"
+  },
+  "sql/REFRESH_VISTAS_TABLERO_COMERCIAL.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "0f3886ff2336dca052096f75d3d7b09f",
+    "semantic_hash": "0f3886ff2336dca052096f75d3d7b09f"
+  },
+  "sql/REGISTRO_MODULO_SATELITE_COMEDERO.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "4843bf83baba7a2d9963196fdb9ff6cd",
+    "semantic_hash": "4843bf83baba7a2d9963196fdb9ff6cd"
+  },
+  "sql/REGLA_NEGOCIO_CORRECCION_TURNOS_NO_CERRADOS.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "7efc05cbd6be407ac560360b50a6b0cb",
+    "semantic_hash": "7efc05cbd6be407ac560360b50a6b0cb"
+  },
+  "sql/RENOMBRAR_COMEDERO_A_COMANDERO.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "d92c529822b1759ce3eb458df3a77188",
+    "semantic_hash": "d92c529822b1759ce3eb458df3a77188"
+  },
+  "sql/REPARACION_BUCLES_INFINITOS_SYNC.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "e644055c67211851e1653fb80f78b5c3",
+    "semantic_hash": "e644055c67211851e1653fb80f78b5c3"
+  },
+  "sql/REPARACION_CACHE_DESBLOQUEO_AUTO.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "97a22eed972777b8df2a0fd5d694498f",
+    "semantic_hash": "97a22eed972777b8df2a0fd5d694498f"
+  },
+  "sql/REPARACION_USUARIOS_BLOQUEADOS.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "16bd2873bed6601df1d38ac5bd9ba551",
+    "semantic_hash": "16bd2873bed6601df1d38ac5bd9ba551"
+  },
+  "sql/RESTAURACION_SERVIDORES_UNIDADES.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "1dd5a6d4a96842141fd89122dca40762",
+    "semantic_hash": "1dd5a6d4a96842141fd89122dca40762"
+  },
+  "sql/SCRIPT_2_CONTROL_VERSIONES_SISTEMAS.sql": {
+    "mtime": 1780590140.9050047,
+    "ast_hash": "53bf5dab9771789213f022531c3aeb54",
+    "semantic_hash": "53bf5dab9771789213f022531c3aeb54"
+  },
+  "sql/SINCRONIZACION_COMPLETA_5_UNIDADES.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "51dcbdaace8078b3c2dc4f987c2e12e5",
+    "semantic_hash": "51dcbdaace8078b3c2dc4f987c2e12e5"
+  },
+  "sql/SYNC_DETALLE_MOVIMIENTOS_COMERCIAL.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "9ba10620a02d34de38ed4c67b0e3d933",
+    "semantic_hash": "9ba10620a02d34de38ed4c67b0e3d933"
+  },
+  "sql/SYNC_INTELIGENCIA_JOB_REGISTRO.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "a77f46401d7a00496ddd96635cad7050",
+    "semantic_hash": "a77f46401d7a00496ddd96635cad7050"
+  },
+  "sql/SYNC_LOGS_TABLA_AUDITORIA.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "8f0850a039e24af2117cd44aadfe4664",
+    "semantic_hash": "8f0850a039e24af2117cd44aadfe4664"
+  },
+  "sql/SYNC_LOGS_Y_MENUS_CONSOLIDADO.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "44c0d24877feef53c1ce474e9bfb8da2",
+    "semantic_hash": "44c0d24877feef53c1ce474e9bfb8da2"
+  },
+  "sql/SYNC_MASIVA_SATELITES_5_UNIDADES.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "6894cf2fe65f5716a8422e20174adac7",
+    "semantic_hash": "6894cf2fe65f5716a8422e20174adac7"
+  },
+  "sql/SYNC_RESPONSE_CACHE_FINOPS.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "96270638547907f8086d4e3bb21b061e",
+    "semantic_hash": "96270638547907f8086d4e3bb21b061e"
+  },
+  "sql/TRADUCTOR_ALERTAS_TECNICAS_HUMANO.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "0abbe493a2079eb7632a9807e83f9c79",
+    "semantic_hash": "0abbe493a2079eb7632a9807e83f9c79"
+  },
+  "sql/UPDATE_PROYECCION_CON_FUNCION.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "aa31c26f506e18294e4165dca9eee494",
+    "semantic_hash": "aa31c26f506e18294e4165dca9eee494"
+  },
+  "sql/VALIDACION_ESTRUCTURA_USUARIOS.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "018077467df4aef09fd7db80077ba04f",
+    "semantic_hash": "018077467df4aef09fd7db80077ba04f"
+  },
+  "sql/VALIDACION_ROLES_MINIMOS_VITALES.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "cc42c46ca5bca7ed05f144ac90a2bb30",
+    "semantic_hash": "cc42c46ca5bca7ed05f144ac90a2bb30"
+  },
+  "sql/VALIDACION_SERVIDORES_EDARSAHUB.sql": {
+    "mtime": 1778227144.3854468,
+    "ast_hash": "012774ac1dc42bbb02368c59b481d092",
+    "semantic_hash": "012774ac1dc42bbb02368c59b481d092"
+  },
+  "sql/VALIDACION_SYNC_PROPINA_TPV_SOFTRESTAURANT.sql": {
+    "mtime": 1780596880.8490272,
+    "ast_hash": "150b1175f2fdd64294defe854e5e3cec",
+    "semantic_hash": "150b1175f2fdd64294defe854e5e3cec"
+  },
+  "sql/VERIFICACION_MODULO_COMPANERO_130.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "3454d834f0de4ec5cba95fbeeaa128e1",
+    "semantic_hash": "3454d834f0de4ec5cba95fbeeaa128e1"
+  },
+  "sql/VERIFICACION_PROVEEDORES_SQL_CENTRAL.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "89899902bd34aeda6f5a9ba330292ea4",
+    "semantic_hash": "89899902bd34aeda6f5a9ba330292ea4"
+  },
+  "sql/VERIFICAR_ROL_ADMINISTRADOR.sql": {
+    "mtime": 1780534076.5771885,
+    "ast_hash": "c914776d49ceedff19fba0638909101b",
+    "semantic_hash": "c914776d49ceedff19fba0638909101b"
+  },
+  "sql/VIEW_INTELIGENCIA_COMERCIAL.sql": {
+    "mtime": 1780534076.5781884,
+    "ast_hash": "b78c1e34285d0bd8056f7e17a4e5ab48",
+    "semantic_hash": "b78c1e34285d0bd8056f7e17a4e5ab48"
+  },
+  "sql/catalogos_maestros_universales.sql": {
+    "mtime": 1780534076.5781884,
+    "ast_hash": "476a1b6849c8dd430d20805fc4e578e7",
+    "semantic_hash": "476a1b6849c8dd430d20805fc4e578e7"
+  },
+  "AUDITORIA_COMPRAS_AUTORIZACION_01.md": {
+    "mtime": 1778227144.3684466,
+    "ast_hash": "d2e6ec6ad3c63825304a881ad6725c59",
+    "semantic_hash": "d2e6ec6ad3c63825304a881ad6725c59"
+  },
+  "AUDITORIA_COMPRAS_DASHBOARD_VS_ANALISIS_01.md": {
+    "mtime": 1778227144.3824468,
+    "ast_hash": "7aa987009b6e0c21955ffb1965ec9b66",
+    "semantic_hash": "7aa987009b6e0c21955ffb1965ec9b66"
+  },
+  "AUDITORIA_COMPRAS_DATOS_01.md": {
+    "mtime": 1778227144.3684466,
+    "ast_hash": "38d47330267b0e0184df4e79116e53ae",
+    "semantic_hash": "38d47330267b0e0184df4e79116e53ae"
+  },
+  "AUDITORIA_DASHBOARD_COMERCIAL.md": {
+    "mtime": 1778227144.3854468,
+    "ast_hash": "9c55985754bcf56c6f9cc882fb690bae",
+    "semantic_hash": "9c55985754bcf56c6f9cc882fb690bae"
+  },
+  "AUDITORIA_FINANCIERA_PROPUESTA.md": {
+    "mtime": 1778227144.3694468,
+    "ast_hash": "d9ea034195e91c216f866d688854efc1",
+    "semantic_hash": "d9ea034195e91c216f866d688854efc1"
+  },
+  "AUDITORIA_FINANZAS.md": {
+    "mtime": 1778227144.3814466,
+    "ast_hash": "cdfe3a16e42fe82978bdeeba99d8f2f6",
+    "semantic_hash": "cdfe3a16e42fe82978bdeeba99d8f2f6"
+  },
+  "AUDITORIA_FINANZAS_COMPLETA_01.md": {
+    "mtime": 1778227144.3814466,
+    "ast_hash": "891783dd15301827d282022dff595c8c",
+    "semantic_hash": "891783dd15301827d282022dff595c8c"
+  },
+  "AUDITORIA_FINANZAS_P0_BLOQUEADORES.md": {
+    "mtime": 1778227144.3724468,
+    "ast_hash": "8527a4d9409bee5437ee5fbcceac4b57",
+    "semantic_hash": "8527a4d9409bee5437ee5fbcceac4b57"
+  },
+  "AUDITORIA_FUENTES_DATOS_EDARSAHUB.md": {
+    "mtime": 1780534076.5281885,
+    "ast_hash": "7c38c682ed81bf012262b0e3c5eaeb62",
+    "semantic_hash": "7c38c682ed81bf012262b0e3c5eaeb62"
+  },
+  "AUDITORIA_OPERACIONES_INVENTARIOS_01.md": {
+    "mtime": 1778227144.3704467,
+    "ast_hash": "970b54d2dbe4459727cf2002a475a5fb",
+    "semantic_hash": "970b54d2dbe4459727cf2002a475a5fb"
+  },
+  "AUDITORIA_PROVEEDORES_PORTAL_01.md": {
+    "mtime": 1778227144.3804467,
+    "ast_hash": "6a8fbfcf49a43fabfbe6fdf69a5ef19d",
+    "semantic_hash": "6a8fbfcf49a43fabfbe6fdf69a5ef19d"
+  },
+  "AUDITORIA_RH_NOMINAS_01.md": {
+    "mtime": 1778227144.3864467,
+    "ast_hash": "5142088898f29be89d7a372fff137254",
+    "semantic_hash": "5142088898f29be89d7a372fff137254"
+  },
+  "AUDITORIA_RH_NOMINAS_02.md": {
+    "mtime": 1778227144.3684466,
+    "ast_hash": "8eb573c2bec6945c882e133777328d3b",
+    "semantic_hash": "8eb573c2bec6945c882e133777328d3b"
+  },
+  "AUDITORIA_RH_NOMINAS_FUENTE_DATOS_01.md": {
+    "mtime": 1778227144.3824468,
+    "ast_hash": "0c3865b5af9cc0ae4a44ef1dc7e3c785",
+    "semantic_hash": "0c3865b5af9cc0ae4a44ef1dc7e3c785"
+  },
+  "AUDITORIA_SEGURIDAD_RBAC.md": {
+    "mtime": 1778227144.3874466,
+    "ast_hash": "db9551f52b3206627f3fce3a31b4a95f",
+    "semantic_hash": "db9551f52b3206627f3fce3a31b4a95f"
+  },
+  "AUDITORIA_TABLEROS_KPIS_FILTROS_DIAGNOSTICO.md": {
+    "mtime": 1778227144.3864467,
+    "ast_hash": "eeb9c81944669f587865a772adc33455",
+    "semantic_hash": "eeb9c81944669f587865a772adc33455"
+  },
+  "AUDITORIA_TABLEROS_KPIS_FILTROS_INVENTARIO.md": {
+    "mtime": 1778227144.3854468,
+    "ast_hash": "de4331701f66b0383d21bb21187c888a",
+    "semantic_hash": "de4331701f66b0383d21bb21187c888a"
+  },
+  "AUDITORIA_TABLEROS_KPIS_FILTROS_REPARACIONES.md": {
+    "mtime": 1778227144.3834467,
+    "ast_hash": "bdeaa746accc9593bac0b887b952d03d",
+    "semantic_hash": "bdeaa746accc9593bac0b887b952d03d"
+  },
+  "AUTH_HTTPONLY_COOKIE_MIGRATION_PLAN.md": {
+    "mtime": 1780756351.3383245,
+    "ast_hash": "49406abf0b8daddb729169de89e62b78",
+    "semantic_hash": "49406abf0b8daddb729169de89e62b78"
+  },
+  "AUTH_PRODUCTION_VALIDATION_REPORT.md": {
+    "mtime": 1780756351.2713246,
+    "ast_hash": "7dacbb37e6cb72ed7dc1b25fe7ed48fa",
+    "semantic_hash": "7dacbb37e6cb72ed7dc1b25fe7ed48fa"
+  },
+  "AUTH_SECURITY_ENVIRONMENT_COMPATIBILITY.md": {
+    "mtime": 1780756351.3373246,
+    "ast_hash": "4987b3be10ba231bb2e9009d927addf5",
+    "semantic_hash": "4987b3be10ba231bb2e9009d927addf5"
+  },
+  "AUTH_SECURITY_FINAL_VALIDATION_REPORT.md": {
+    "mtime": 1780756351.3373246,
+    "ast_hash": "ad3d10465eb8f2bd5879002b7120c1cd",
+    "semantic_hash": "ad3d10465eb8f2bd5879002b7120c1cd"
+  },
+  "AUTH_SECURITY_PHASE_1_BACKEND_DUAL_REPORT.md": {
+    "mtime": 1780756351.3373246,
+    "ast_hash": "e583cc4ae351ae0143a88eb4cd617677",
+    "semantic_hash": "e583cc4ae351ae0143a88eb4cd617677"
+  },
+  "AUTH_SECURITY_PHASE_2_FRONTEND_COOKIES_REPORT.md": {
+    "mtime": 1780756351.3373246,
+    "ast_hash": "8156841df5326876723430886016e0a9",
+    "semantic_hash": "8156841df5326876723430886016e0a9"
+  },
+  "AUTH_SECURITY_PHASE_3_6_FETCH_MIGRATION_REPORT.md": {
+    "mtime": 1778227144.3824468,
+    "ast_hash": "c9ad56ef522cc6318e7c36890e11658a",
+    "semantic_hash": "c9ad56ef522cc6318e7c36890e11658a"
+  },
+  "AUTH_SECURITY_PHASE_3_PORTAL_COOKIES_REPORT.md": {
+    "mtime": 1780756351.2713246,
+    "ast_hash": "7b05329faec7d70b556dede7b6099765",
+    "semantic_hash": "7b05329faec7d70b556dede7b6099765"
+  },
+  "AUTH_SECURITY_PHASE_4_1_GETTOKEN_MIGRATION_REPORT.md": {
+    "mtime": 1778227144.3704467,
+    "ast_hash": "1f8e8be8d906aa1ae6a183f73f486d93",
+    "semantic_hash": "1f8e8be8d906aa1ae6a183f73f486d93"
+  },
+  "AUTH_SECURITY_PHASE_4_2_DEPRECATED_REMOVAL_REPORT.md": {
+    "mtime": 1778227144.3814466,
+    "ast_hash": "d9d4e7b3de842acd25cdaaf3524a8538",
+    "semantic_hash": "d9d4e7b3de842acd25cdaaf3524a8538"
+  },
+  "AUTH_SECURITY_PHASE_4_LEGACY_CLEANUP_REPORT.md": {
+    "mtime": 1778227144.3854468,
+    "ast_hash": "8e0ecea309e3661fd5a117e8fb78a308",
+    "semantic_hash": "8e0ecea309e3661fd5a117e8fb78a308"
+  },
+  "AUTH_STORAGE_SECURITY_AUDIT.md": {
+    "mtime": 1778227144.3794467,
+    "ast_hash": "8a4098494f25d6eaf577c292ddb93f99",
+    "semantic_hash": "8a4098494f25d6eaf577c292ddb93f99"
+  },
+  "BACKEND_COMPLEXITY_REFACTOR_PLAN.md": {
+    "mtime": 1778227144.3734467,
+    "ast_hash": "2d25f638621b5ae5f9d4271651b645bc",
+    "semantic_hash": "2d25f638621b5ae5f9d4271651b645bc"
+  },
+  "BLINDAJE_COMERCIAL_RBAC.md": {
+    "mtime": 1778227144.3834467,
+    "ast_hash": "6c97ce17e841696d597d6edcd6948757",
+    "semantic_hash": "6c97ce17e841696d597d6edcd6948757"
+  },
+  "CAB_MODULO_PROPINAS_TPV.md": {
+    "mtime": 1778227144.3714466,
+    "ast_hash": "1df2be1e09b23969959d05b170abc79f",
+    "semantic_hash": "1df2be1e09b23969959d05b170abc79f"
+  },
+  "CAB_PROPINAS_TPV_ADENDA_FINAL.md": {
+    "mtime": 1778227144.3714466,
+    "ast_hash": "54b9c0d57ae4f22a15fb4423c35b540b",
+    "semantic_hash": "54b9c0d57ae4f22a15fb4423c35b540b"
+  },
+  "CAB_PROPINAS_TPV_VALIDACION_TECNICA.md": {
+    "mtime": 1778227144.3704467,
+    "ast_hash": "6b388431045df7169f871aec7bad0f02",
+    "semantic_hash": "6b388431045df7169f871aec7bad0f02"
+  },
+  "CACHE_CONTEXT_POLICY_3C1.md": {
+    "mtime": 1778227144.3694468,
+    "ast_hash": "88cc5977da703edab1d7424d0ca456c7",
+    "semantic_hash": "88cc5977da703edab1d7424d0ca456c7"
+  },
+  "CAMBIOS_PENDIENTES_DEPLOY.md": {
+    "mtime": 1778227144.3854468,
+    "ast_hash": "bd5ab70eec978d3dafcf923e91e89311",
+    "semantic_hash": "bd5ab70eec978d3dafcf923e91e89311"
+  },
+  "CENTRO_CONTROL_EDARSA.md": {
+    "mtime": 1778227144.3874466,
+    "ast_hash": "71b5cc4503abb144fbbf96609ff4b0a4",
+    "semantic_hash": "71b5cc4503abb144fbbf96609ff4b0a4"
+  },
+  "CENTRO_CONTROL_ENDPOINTS_FALTANTES.md": {
+    "mtime": 1778227144.3704467,
+    "ast_hash": "94b2a166bf946d71c759b2a4f0518a2d",
+    "semantic_hash": "94b2a166bf946d71c759b2a4f0518a2d"
+  },
+  "CENTRO_DE_CONTROL_EDARSA_WIREFRAME.md": {
+    "mtime": 1778227144.3694468,
+    "ast_hash": "0bf417182dff17e3d013c7ee66c9ba6e",
+    "semantic_hash": "0bf417182dff17e3d013c7ee66c9ba6e"
+  },
+  "CIERRE_FASE_4_SOURCE_RESOLVER.md": {
+    "mtime": 1778227144.3794467,
+    "ast_hash": "80132f0c85031dfe2fdb79143e3ed523",
+    "semantic_hash": "80132f0c85031dfe2fdb79143e3ed523"
+  },
+  "FASE14_EVIDENCIA.md": {
+    "mtime": 1778227144.3824468,
+    "ast_hash": "0eb851b5d005d49abdd355837ce907b8",
+    "semantic_hash": "0eb851b5d005d49abdd355837ce907b8"
+  },
+  "FASE14_PROPUESTA.md": {
+    "mtime": 1778227144.3724468,
+    "ast_hash": "1cc4e6953be2dc52a91b7de4e5bb9b1e",
+    "semantic_hash": "1cc4e6953be2dc52a91b7de4e5bb9b1e"
+  },
+  "FASE15_EVIDENCIA.md": {
+    "mtime": 1778227144.3704467,
+    "ast_hash": "d18378daaf2f5cb3166a5a580776c97f",
+    "semantic_hash": "d18378daaf2f5cb3166a5a580776c97f"
+  },
+  "FASE15_PROPUESTA.md": {
+    "mtime": 1778227144.3844466,
+    "ast_hash": "9cae58c43d32cf29b9a60c5c5a19b8e0",
+    "semantic_hash": "9cae58c43d32cf29b9a60c5c5a19b8e0"
+  },
+  "FASE16_EVIDENCIA.md": {
+    "mtime": 1778227144.3704467,
+    "ast_hash": "9c619d05643223d8613b675d20ae12c3",
+    "semantic_hash": "9c619d05643223d8613b675d20ae12c3"
+  },
+  "FASE16_PROPUESTA.md": {
+    "mtime": 1778227144.3714466,
+    "ast_hash": "cdf8945411afc56ef3f165b8d5fd852a",
+    "semantic_hash": "cdf8945411afc56ef3f165b8d5fd852a"
+  },
+  "FASE1B_VALIDACION_ESTABILIZACION.md": {
+    "mtime": 1778227144.3694468,
+    "ast_hash": "97410d790c8b128928af9af9af653ae3",
+    "semantic_hash": "97410d790c8b128928af9af9af653ae3"
+  },
+  "FASE1_EVIDENCIA.md": {
+    "mtime": 1778227144.3844466,
+    "ast_hash": "12ea3d1f16c00e2c96759c33209a7914",
+    "semantic_hash": "12ea3d1f16c00e2c96759c33209a7914"
+  },
+  "FASE2_ALCANCE_CONTROLADO.md": {
+    "mtime": 1778227144.3804467,
+    "ast_hash": "299625684d2e9878fc544c1a8e59fa97",
+    "semantic_hash": "299625684d2e9878fc544c1a8e59fa97"
+  },
+  "FASE2_EVIDENCIA.md": {
+    "mtime": 1778227144.3854468,
+    "ast_hash": "2a3bc740ae7618c896c85600c2f82528",
+    "semantic_hash": "2a3bc740ae7618c896c85600c2f82528"
+  },
+  "FASE3_EVIDENCIA.md": {
+    "mtime": 1778227144.3884466,
+    "ast_hash": "a0c81d67c65b677d405044589120e6ea",
+    "semantic_hash": "a0c81d67c65b677d405044589120e6ea"
+  },
+  "FASE3_PILOTO_FUNCIONAL_PROPUESTA.md": {
+    "mtime": 1778227144.3864467,
+    "ast_hash": "6105db10936de1cde35c69b36e4aa7da",
+    "semantic_hash": "6105db10936de1cde35c69b36e4aa7da"
+  },
+  "FASE4_ADMINISTRACION_PERMISOS_PROPUESTA.md": {
+    "mtime": 1778227144.3844466,
+    "ast_hash": "b5e418ca9085faa618cd2a54f3914ae6",
+    "semantic_hash": "b5e418ca9085faa618cd2a54f3914ae6"
+  },
+  "FASE4_EVIDENCIA.md": {
+    "mtime": 1778227144.3684466,
+    "ast_hash": "98f4fe70ed5202694af259c606bff085",
+    "semantic_hash": "98f4fe70ed5202694af259c606bff085"
+  },
+  "FASE5_EVIDENCIA.md": {
+    "mtime": 1778227144.3874466,
+    "ast_hash": "031106c7e8c8d6a215e7efadbbb45c46",
+    "semantic_hash": "031106c7e8c8d6a215e7efadbbb45c46"
+  },
+  "FASE5_HERENCIA_ROL_PROPUESTA.md": {
+    "mtime": 1778227144.3824468,
+    "ast_hash": "36e2855e9713873bf510ca89e5471107",
+    "semantic_hash": "36e2855e9713873bf510ca89e5471107"
+  },
+  "FASE6_EVIDENCIA.md": {
+    "mtime": 1778227144.3794467,
+    "ast_hash": "2a6556730a6174f3eb0df588fa14f7f2",
+    "semantic_hash": "2a6556730a6174f3eb0df588fa14f7f2"
+  },
+  "FASE6_MULTIPLES_ROLES_PROPUESTA.md": {
+    "mtime": 1778227144.3864467,
+    "ast_hash": "c9174fb2cba3eb2e209a01caac7117c5",
+    "semantic_hash": "c9174fb2cba3eb2e209a01caac7117c5"
+  },
+  "FASE7_EVIDENCIA.md": {
+    "mtime": 1778227144.3694468,
+    "ast_hash": "0fb2f17a38f884ee9f380b54e7aa221f",
+    "semantic_hash": "0fb2f17a38f884ee9f380b54e7aa221f"
+  },
+  "FASE7_PROPUESTA.md": {
+    "mtime": 1778227144.3714466,
+    "ast_hash": "30cd2552e0d7f2bde0f249f555e7235a",
+    "semantic_hash": "30cd2552e0d7f2bde0f249f555e7235a"
+  },
+  "FASE8_EVIDENCIA.md": {
+    "mtime": 1778227144.3794467,
+    "ast_hash": "e2fd7c178bd796cb37803995cce8f9f5",
+    "semantic_hash": "e2fd7c178bd796cb37803995cce8f9f5"
+  },
+  "FASE8_PROPUESTA.md": {
+    "mtime": 1778227144.3854468,
+    "ast_hash": "b682d46d196bc02943034518efdd77c9",
+    "semantic_hash": "b682d46d196bc02943034518efdd77c9"
+  },
+  "FASE9_EVIDENCIA.md": {
+    "mtime": 1778227144.3844466,
+    "ast_hash": "c17734830e1b144f18e24aa78998f915",
+    "semantic_hash": "c17734830e1b144f18e24aa78998f915"
+  },
+  "FASE9_PROPUESTA.md": {
+    "mtime": 1778227144.3884466,
+    "ast_hash": "030bff6650a14859ec72aa778215c8e2",
+    "semantic_hash": "030bff6650a14859ec72aa778215c8e2"
+  },
+  "FASE_3B1_SERVERS_WRITE_SYNC.md": {
+    "mtime": 1778227144.3844466,
+    "ast_hash": "8b201a3c71ad5bdb056d5c34ff431272",
+    "semantic_hash": "8b201a3c71ad5bdb056d5c34ff431272"
+  },
+  "FASE_3B2_VALIDACION_SERVERS_WRITE_SYNC.md": {
+    "mtime": 1778227144.3814466,
+    "ast_hash": "5443bf3cab68f657c4ec0730186fed94",
+    "semantic_hash": "5443bf3cab68f657c4ec0730186fed94"
+  },
+  "FASE_3B_MIGRACION_SERVERS_EDARSAHUB.md": {
+    "mtime": 1778227144.3864467,
+    "ast_hash": "d3bd32cf750c986534cd7ba9db449c3a",
+    "semantic_hash": "d3bd32cf750c986534cd7ba9db449c3a"
+  },
+  "FASE_3C1_LEGACY_SECRET_ADOPTION.md": {
+    "mtime": 1780718597.088061,
+    "ast_hash": "d32973d5b7315c4c41c75a1262bc7fdd",
+    "semantic_hash": "d32973d5b7315c4c41c75a1262bc7fdd"
+  },
+  "FASE_3C3_CORE_SECRET_ENCRYPTION.md": {
+    "mtime": 1778227144.3724468,
+    "ast_hash": "8ab88925bcc863cb1b1fd51ef3da252e",
+    "semantic_hash": "8ab88925bcc863cb1b1fd51ef3da252e"
+  },
+  "FASE_3C_SECRETOS_SERVIDORES.md": {
+    "mtime": 1778227144.3804467,
+    "ast_hash": "8a37562a6fe05d87144564f34cf64c83",
+    "semantic_hash": "8a37562a6fe05d87144564f34cf64c83"
+  },
+  "FASE_3D_VALIDACION_CONECTIVIDAD_SECRETOS_CIFRADOS.md": {
+    "mtime": 1778227144.3874466,
+    "ast_hash": "48629792975a4979ac206510a77912e2",
+    "semantic_hash": "48629792975a4979ac206510a77912e2"
+  },
+  "FASE_3E_SERVER_SYSTEM_TYPE_CLEANUP.md": {
+    "mtime": 1778227144.3734467,
+    "ast_hash": "45e792ea0d2ac00a5fdae86b8f255ae6",
+    "semantic_hash": "45e792ea0d2ac00a5fdae86b8f255ae6"
+  },
+  "FASE_4A_VARIABLES_INDEFINIDAS.md": {
+    "mtime": 1778227144.3684466,
+    "ast_hash": "e7904f055bb4a8534695019738cbba90",
+    "semantic_hash": "e7904f055bb4a8534695019738cbba90"
+  },
+  "FASE_4B_FRONTEND_COMPONENTES_KEYS.md": {
+    "mtime": 1778227144.3814466,
+    "ast_hash": "3c43f6bfa6fc1713febe9a820b579f0a",
+    "semantic_hash": "3c43f6bfa6fc1713febe9a820b579f0a"
+  },
+  "FASE_4C_ROTACION_CLAVES_SECRETOS.md": {
+    "mtime": 1778227144.3814466,
+    "ast_hash": "22cfeaab971e6aa4996f4fb791bf305f",
+    "semantic_hash": "22cfeaab971e6aa4996f4fb791bf305f"
+  },
+  "FASE_4D_ADMIN_CORE_CONNECTIONS.md": {
+    "mtime": 1778227144.3794467,
+    "ast_hash": "9d95f79004d866305f55ad1baa01249e",
+    "semantic_hash": "9d95f79004d866305f55ad1baa01249e"
+  },
+  "FASE_4E_FRONTEND_DESACOPLAMIENTO_COMPONENTES.md": {
+    "mtime": 1778227144.3684466,
+    "ast_hash": "efb74d4ee4ab02c1ffb23ee1a00d1d77",
+    "semantic_hash": "efb74d4ee4ab02c1ffb23ee1a00d1d77"
+  },
+  "FASE_4F_VALIDACION_POST_REFACTOR_CACHE.md": {
+    "mtime": 1778227144.3804467,
+    "ast_hash": "90d5ad712e4d664425ba6ae57e7e00a8",
+    "semantic_hash": "90d5ad712e4d664425ba6ae57e7e00a8"
+  },
+  "FASE_A1_7_DDL_BASE_ORGANIZACIONAL_AUTH_RBAC.md": {
+    "mtime": 1780534076.5301883,
+    "ast_hash": "548d99b3d7336911367ba33ab325baaf",
+    "semantic_hash": "548d99b3d7336911367ba33ab325baaf"
+  },
+  "FASE_A2_POBLADO_SISTEMA_EMPRESAS.md": {
+    "mtime": 1780534076.5311885,
+    "ast_hash": "d308df9eb9f664bc018c7a64d1af9554",
+    "semantic_hash": "d308df9eb9f664bc018c7a64d1af9554"
+  },
+  "FASE_ASIGNACIONES_PROPUESTA.md": {
+    "mtime": 1778227144.3864467,
+    "ast_hash": "77ed77e59fd895a0b0a4061444c82e79",
+    "semantic_hash": "77ed77e59fd895a0b0a4061444c82e79"
+  },
+  "FINANZAS_CXP_MPRO_COMBINE_01_REPORT.md": {
+    "mtime": 1778227144.3814466,
+    "ast_hash": "9f32998ce84dbce947d86750c85b2368",
+    "semantic_hash": "9f32998ce84dbce947d86750c85b2368"
+  },
+  "FINANZAS_CXP_MPRO_CREDENTIALS_SECURITY_01_REPORT.md": {
+    "mtime": 1778227144.3804467,
+    "ast_hash": "909f2ee42514726e10a12f55a1fde49c",
+    "semantic_hash": "909f2ee42514726e10a12f55a1fde49c"
+  },
+  "FIX_SERVIDORES_DUPLICADOS_20260419.md": {
+    "mtime": 1778227144.3804467,
+    "ast_hash": "d9d8c731234f2bd9165f3725a020bf16",
+    "semantic_hash": "d9d8c731234f2bd9165f3725a020bf16"
+  },
+  "GUIA_OPERATIVA_PILOTO_SYNC_AGENT.md": {
+    "mtime": 1780756351.3363245,
+    "ast_hash": "5b4ea3010d636fe1fe106779d5c74766",
+    "semantic_hash": "5b4ea3010d636fe1fe106779d5c74766"
+  },
+  "GUIA_PILOTO_SYNC_AGENT.md": {
+    "mtime": 1778227144.3694468,
+    "ast_hash": "851acb88919db8e088bdb7cfaac08582",
+    "semantic_hash": "851acb88919db8e088bdb7cfaac08582"
+  },
+  "HITO_CONTROL_CAB003_FASE0.md": {
+    "mtime": 1778227144.3874466,
+    "ast_hash": "43e4bd291a4f0dbe81e3fb5daa2bd0c2",
+    "semantic_hash": "43e4bd291a4f0dbe81e3fb5daa2bd0c2"
+  },
+  "HOMOLOGACION_CACHE_COMERCIAL.md": {
+    "mtime": 1778227144.3724468,
+    "ast_hash": "53668cd743f2d3e5e96ccacb68228e9e",
+    "semantic_hash": "53668cd743f2d3e5e96ccacb68228e9e"
+  },
+  "INCIDENCIAS_OPERACION.md": {
+    "mtime": 1778227144.3684466,
+    "ast_hash": "b67dcee715ed1f3efcd099f0b813e461",
+    "semantic_hash": "b67dcee715ed1f3efcd099f0b813e461"
+  },
+  "INVENTARIOS_DETECTOR_VALIDACION.md": {
+    "mtime": 1778227144.3724468,
+    "ast_hash": "7390bff8f312b2e9c20749bf79c36dd7",
+    "semantic_hash": "7390bff8f312b2e9c20749bf79c36dd7"
+  },
+  "LOG_PENDIENTES_ARQUITECTURA.md": {
+    "mtime": 1780557105.4279292,
+    "ast_hash": "09031462190f9491fd0da60e43ee76c4",
+    "semantic_hash": "09031462190f9491fd0da60e43ee76c4"
+  },
+  "MACROFASE2_ESQUEMA_KPIS_CONSOLIDADOS.md": {
+    "mtime": 1778227144.3724468,
+    "ast_hash": "b4e662f5b305b34077983ad13ed4a940",
+    "semantic_hash": "b4e662f5b305b34077983ad13ed4a940"
+  },
+  "MACROFASE_2_FASE_2_3_CARGA_HISTORICA_24_MESES.md": {
+    "mtime": 1778227144.3844466,
+    "ast_hash": "d76e94dac2aabf42aec44a26bb4454db",
+    "semantic_hash": "d76e94dac2aabf42aec44a26bb4454db"
+  },
+  "MANUALES_OPERATIVOS_CIENFUEGOS.md": {
+    "mtime": 1778227144.3874466,
+    "ast_hash": "0e2dc5107054a776d62dcde65d456ac4",
+    "semantic_hash": "0e2dc5107054a776d62dcde65d456ac4"
+  },
+  "MANUAL_FLUJO_DESARROLLO_PRODUCCION_EDARSAHUB.md": {
+    "mtime": 1780756351.3363245,
+    "ast_hash": "acc8e7c6788b7492d86c84eb25f5eb03",
+    "semantic_hash": "acc8e7c6788b7492d86c84eb25f5eb03"
+  },
+  "MAPEO_ORGANIZACIONAL_AUTH_RBAC_EDARSAHUB.md": {
+    "mtime": 1780534076.5311885,
+    "ast_hash": "8ea107b845738b7dff87833b802ead0f",
+    "semantic_hash": "8ea107b845738b7dff87833b802ead0f"
+  },
+  "MATRIZ_CLASIFICACION_GRANULAR_DATOS.md": {
+    "mtime": 1778227144.3704467,
+    "ast_hash": "61164fa4292569353ff0d8a21614d216",
+    "semantic_hash": "61164fa4292569353ff0d8a21614d216"
+  },
+  "MATRIZ_COMPATIBILIDAD_SOFTRESTAURANT.md": {
+    "mtime": 1778227144.3874466,
+    "ast_hash": "4da7bb544e68ce783619eb435f2477e6",
+    "semantic_hash": "4da7bb544e68ce783619eb435f2477e6"
+  },
+  "MATRIZ_FUENTES_TABLERO_EJECUTIVO.md": {
+    "mtime": 1778227144.3794467,
+    "ast_hash": "132a252b7d5da4468e234959bccfd790",
+    "semantic_hash": "132a252b7d5da4468e234959bccfd790"
+  },
+  "MATRIZ_ROLES_PERMISOS_v2.md": {
+    "mtime": 1778227144.3784466,
+    "ast_hash": "bde1db07fe74c92e4317c17f993be403",
+    "semantic_hash": "bde1db07fe74c92e4317c17f993be403"
+  },
+  "MATRIZ_VALIDACION_RBAC_ALMACENES.md": {
+    "mtime": 1778227144.3864467,
+    "ast_hash": "8ae96119736bf782eac7b3ace3c1f2fb",
+    "semantic_hash": "8ae96119736bf782eac7b3ace3c1f2fb"
+  },
+  "MIGRACION_TECNICA_PROPINAS_SQL.md": {
+    "mtime": 1778227144.3704467,
+    "ast_hash": "8338de29f425dfe1cdacd2eb784abcda",
+    "semantic_hash": "8338de29f425dfe1cdacd2eb784abcda"
+  },
+  "MIGRACION_UNIDAD_NEGOCIO_COMPRAS.md": {
+    "mtime": 1778227144.3874466,
+    "ast_hash": "dc7c3c43a05360ba54bbc0994fe991e8",
+    "semantic_hash": "dc7c3c43a05360ba54bbc0994fe991e8"
+  },
+  "NORMAS_TECNICAS.md": {
+    "mtime": 1778227144.3794467,
+    "ast_hash": "8d42c92156d145f96b2b64c9b691300c",
+    "semantic_hash": "8d42c92156d145f96b2b64c9b691300c"
+  },
+  "P0_AUTH_COOKIE_FRONTEND_01_REPORT.md": {
+    "mtime": 1778227144.3694468,
+    "ast_hash": "12ab36cdb033b7191f0243f41f159796",
+    "semantic_hash": "12ab36cdb033b7191f0243f41f159796"
+  },
+  "P0_CENTROCONTROL_01_DIAGNOSTICO.md": {
+    "mtime": 1778227144.3814466,
+    "ast_hash": "14464b60c567530486d8d1fe1c2f5a92",
+    "semantic_hash": "14464b60c567530486d8d1fe1c2f5a92"
+  },
+  "P0_CENTROCONTROL_01_FIX_REPORT.md": {
+    "mtime": 1778227144.3854468,
+    "ast_hash": "ff43b355092ad1736002e8b844928f62",
+    "semantic_hash": "ff43b355092ad1736002e8b844928f62"
+  },
+  "P0_COMERCIAL_PRECIOS_CONSTANTES_NO_DATA_01_REPORT.md": {
+    "mtime": 1778227144.3694468,
+    "ast_hash": "6780bd4d89dbcb0d44124bb282f62ca1",
+    "semantic_hash": "6780bd4d89dbcb0d44124bb282f62ca1"
+  },
+  "P0_PORTAL_PROVEEDORES_AUTH_01_REPORT.md": {
+    "mtime": 1778227144.3704467,
+    "ast_hash": "fc8d460ba4078df45f7a819c0e609741",
+    "semantic_hash": "fc8d460ba4078df45f7a819c0e609741"
+  },
+  "P0_REGRESION_SQL_SERVERS_CORRECCION_REPORT.md": {
+    "mtime": 1778227144.3844466,
+    "ast_hash": "e14c61304dcd1f218dc636da071eb511",
+    "semantic_hash": "e14c61304dcd1f218dc636da071eb511"
+  },
+  "P0_USUARIOS_VISIBILIDAD_FIX_REPORT.md": {
+    "mtime": 1780756351.3363245,
+    "ast_hash": "1bb700c8efdd6c771b6281bcad433382",
+    "semantic_hash": "1bb700c8efdd6c771b6281bcad433382"
+  },
+  "P1_FETCH_MIGRATION_DIAGNOSTICO.md": {
+    "mtime": 1778227144.3724468,
+    "ast_hash": "2e79170e33b3cf48bf392631cb56b2a8",
+    "semantic_hash": "2e79170e33b3cf48bf392631cb56b2a8"
+  },
+  "P1_FETCH_MIGRATION_REPORT.md": {
+    "mtime": 1778227144.3814466,
+    "ast_hash": "c62518deca943c0725fe67c0ae4b4b2d",
+    "semantic_hash": "c62518deca943c0725fe67c0ae4b4b2d"
+  },
+  "P1_REFRESH_TOKENS_PHASE_A_BACKEND_REPORT.md": {
+    "mtime": 1780756351.3363245,
+    "ast_hash": "30f0284ccb6833dbce61c0dfc5524b68",
+    "semantic_hash": "30f0284ccb6833dbce61c0dfc5524b68"
+  },
+  "P1_REFRESH_TOKENS_PHASE_A_SQL_EXECUTION_GUIDE.md": {
+    "mtime": 1778227144.3874466,
+    "ast_hash": "ec56b18631e6b14769062a9e96b859b4",
+    "semantic_hash": "ec56b18631e6b14769062a9e96b859b4"
+  },
+  "P1_REFRESH_TOKENS_TECHNICAL_PLAN.md": {
+    "mtime": 1778227144.3814466,
+    "ast_hash": "425fa7ce2d1089f74ba8bc789681ad1e",
+    "semantic_hash": "425fa7ce2d1089f74ba8bc789681ad1e"
+  },
+  "PENDIENTE_DRY_RUN_SYNC_COMPRAS.md": {
+    "mtime": 1780554276.63092,
+    "ast_hash": "b32de12678b173272785a1050bc6264f",
+    "semantic_hash": "b32de12678b173272785a1050bc6264f"
+  },
+  "PENDIENTE_VALIDAR_COLUMNAS_DESTINO_SYNC_COMPRAS.md": {
+    "mtime": 1780558356.106933,
+    "ast_hash": "fa61e14cefd7c5f8cf3e3fbf4fc739bd",
+    "semantic_hash": "fa61e14cefd7c5f8cf3e3fbf4fc739bd"
+  },
+  "PLAN_CORRECCION_HISTORICOS_NULL.md": {
+    "mtime": 1778227144.3724468,
+    "ast_hash": "e4ae9ea28aaf2ac79c09e477bb801105",
+    "semantic_hash": "e4ae9ea28aaf2ac79c09e477bb801105"
+  },
+  "PLAN_MIGRACION_NO_LIVE_EXCEPTO_SYNC_COMPRAS.md": {
+    "mtime": 1780554476.0209205,
+    "ast_hash": "6de963bfb9c8933b014a37c209f7a162",
+    "semantic_hash": "6de963bfb9c8933b014a37c209f7a162"
+  },
+  "POLITICA_FECHAS_EDARSA_HUB.md": {
+    "mtime": 1778227144.3694468,
+    "ast_hash": "c98a054131abcda0df63601a0634e6f4",
+    "semantic_hash": "c98a054131abcda0df63601a0634e6f4"
+  },
+  "POLITICA_TRANSVERSAL_FECHAS_Y_CONEXIONES.md": {
+    "mtime": 1778227144.3834467,
+    "ast_hash": "717e15e50e1a50b9f06adbc926131e51",
+    "semantic_hash": "717e15e50e1a50b9f06adbc926131e51"
+  },
+  "POOL_POISON_FIX_01_REPORT.md": {
+    "mtime": 1778227144.3724468,
+    "ast_hash": "0894a9bcdd8da5ab8b5baacb7a42e04b",
+    "semantic_hash": "0894a9bcdd8da5ab8b5baacb7a42e04b"
+  },
+  "PROPUESTA_DDL_AUTH_RBAC_EDARSAHUB.md": {
+    "mtime": 1780534076.5321884,
+    "ast_hash": "c244668bc85a213fa90358333803f709",
+    "semantic_hash": "c244668bc85a213fa90358333803f709"
+  },
+  "PROPUESTA_MIGRACION_AUTH_RBAC_SERVIDORES_EDARSAHUB.md": {
+    "mtime": 1780534076.5321884,
+    "ast_hash": "a3f701ce8d9e8cb914e06ec52aa25269",
+    "semantic_hash": "a3f701ce8d9e8cb914e06ec52aa25269"
+  },
+  "RH_NOMINAS_EDARSAHUB_CONNECTION_01_REPORT.md": {
+    "mtime": 1778227144.3864467,
+    "ast_hash": "357efd5057b8ad1127aa0f647674803a",
+    "semantic_hash": "357efd5057b8ad1127aa0f647674803a"
+  },
+  "SISTEMA_RBAC_PROPUESTA.md": {
+    "mtime": 1778227144.3874466,
+    "ast_hash": "bb1dbcae56750e842cc7f74322549a6c",
+    "semantic_hash": "bb1dbcae56750e842cc7f74322549a6c"
+  },
+  "auditorias/P3_01E_PATCH_SYNC_COMPRAS_DETALLES_20260605_045849.txt": {
+    "mtime": 1780635529.2237725,
+    "ast_hash": "8fb13cdd197624a06f38ddb023fc3524",
+    "semantic_hash": "8fb13cdd197624a06f38ddb023fc3524"
+  },
+  "auditorias/P3_01F_VALIDACION_PATCH_COMPRAS_SIN_LIVE_20260605_050117.txt": {
+    "mtime": 1780635678.4517741,
+    "ast_hash": "45d381c8859b1633942c71034c1728bf",
+    "semantic_hash": "45d381c8859b1633942c71034c1728bf"
+  },
+  "auditorias/P3_02_SYNC_MONITOR_SQL_FIRST_20260605_051150.md": {
+    "mtime": 1780636310.3697808,
+    "ast_hash": "5d613b945333daf0dca6ca0ca1004ff9",
+    "semantic_hash": "5d613b945333daf0dca6ca0ca1004ff9"
+  },
+  "auditorias/P3_03D_BACKFILL_COMPRAS_FINAL_20260605_055446.txt": {
+    "mtime": 1780638890.082809,
+    "ast_hash": "50a86cce06cba4381d316e6a149c9adb",
+    "semantic_hash": "50a86cce06cba4381d316e6a149c9adb"
+  },
+  "auditorias/P3_03D_BACKFILL_COMPRAS_INVENTARIOS_20260605_055108.txt": {
+    "mtime": 1780638668.1938066,
+    "ast_hash": "f7da9acb349c6ffbc5e40215aaf439b9",
+    "semantic_hash": "f7da9acb349c6ffbc5e40215aaf439b9"
+  },
+  "auditorias/P3_05_PRICING_IA_BASE_20260605_060055.txt": {
+    "mtime": 1780639256.1038132,
+    "ast_hash": "4425c75ab1886f80842ba78c61d88831",
+    "semantic_hash": "4425c75ab1886f80842ba78c61d88831"
+  },
+  "auditorias/P3_06A_CANONIZACION_COLUMNAS_20260605_062205.txt": {
+    "mtime": 1780640525.8228261,
+    "ast_hash": "2cf49f32caf1ae6f8180139f27cfe7d7",
+    "semantic_hash": "2cf49f32caf1ae6f8180139f27cfe7d7"
+  },
+  "auditorias/P3_06B_VALIDACION_SECUNDARIA_20260605_062450.txt": {
+    "mtime": 1780640694.4578278,
+    "ast_hash": "7a972bed37097e38e41df20de06828a4",
+    "semantic_hash": "7a972bed37097e38e41df20de06828a4"
+  },
+  "auditorias/P3_07B_COSTO_RECETA_SYNC_PRODUCTOS_20260605_063842.txt": {
+    "mtime": 1780641524.427837,
+    "ast_hash": "0d96a77e505d7897cd62a7757a56fb1b",
+    "semantic_hash": "0d96a77e505d7897cd62a7757a56fb1b"
+  },
+  "auditorias/P3_07_MOTOR_RENTABILIDAD_20260605_063456.txt": {
+    "mtime": 1780641297.6858344,
+    "ast_hash": "8c72646bb20db7f9f43ec69bdb453770",
+    "semantic_hash": "8c72646bb20db7f9f43ec69bdb453770"
+  },
+  "auditorias/P3_08_ALERTAS_ESTRATEGICAS_BSC_20260605_065311.txt": {
+    "mtime": 1780642393.5388465,
+    "ast_hash": "b72c8186b006f2611cfe1c4f89f4c61a",
+    "semantic_hash": "b72c8186b006f2611cfe1c4f89f4c61a"
+  },
+  "auditorias/P3_BLOQUE_A_COMPLETADO_20260605_060840.md": {
+    "mtime": 1780639720.9588182,
+    "ast_hash": "93f38f818cbb4123ada7e15476a87072",
+    "semantic_hash": "93f38f818cbb4123ada7e15476a87072"
+  },
+  "auditorias/P3_BLOQUE_A_DASHBOARD_FINAL_20260605_060826.txt": {
+    "mtime": 1780639708.890818,
+    "ast_hash": "b0bd9c083157f3c98734d0a538724468",
+    "semantic_hash": "b0bd9c083157f3c98734d0a538724468"
+  },
+  "auditorias/P3_BLOQUE_A_DASHBOARD_RENTABILIDAD_20260605_060612.txt": {
+    "mtime": 1780639573.6758165,
+    "ast_hash": "0e0a65888434b08fa832c3b26a4560cf",
+    "semantic_hash": "0e0a65888434b08fa832c3b26a4560cf"
+  },
+  "diagnosticos/FASE_1A_DIAGNOSTICO_COMERCIAL_VENTAS.md": {
+    "mtime": 1780534076.5331883,
+    "ast_hash": "d6fa1e43346b6a647566c9d13f8ece92",
+    "semantic_hash": "d6fa1e43346b6a647566c9d13f8ece92"
+  },
+  "governance/AGENTE_RECTOR_PROMPT.md": {
+    "mtime": 1780534076.5341883,
+    "ast_hash": "09bb58d1f20f0695602a0e2ffc291400",
+    "semantic_hash": "09bb58d1f20f0695602a0e2ffc291400"
+  },
+  "modules/TABLAJERIA_FASE0_DIAGNOSTICO.md": {
+    "mtime": 1780534076.5341883,
+    "ast_hash": "6dd86eac372b2b20aa930afcd1d0302d",
+    "semantic_hash": "6dd86eac372b2b20aa930afcd1d0302d"
+  },
+  "modules/TABLAJERIA_SPEC.md": {
+    "mtime": 1780534076.5341883,
+    "ast_hash": "793f9da9a95131b106467bfb89f88d26",
+    "semantic_hash": "793f9da9a95131b106467bfb89f88d26"
+  },
+  "proposals/BUG-ARQUITECTONICO-FUENTE-NO-DISPONIBLE.md": {
+    "mtime": 1778227144.3784466,
+    "ast_hash": "17cfaa17450f25b6cc9e74bb6c995efc",
+    "semantic_hash": "17cfaa17450f25b6cc9e74bb6c995efc"
+  },
+  "proposals/FASE2A_DDL_AUTH_RBAC_EDARSAHUB_SQL.md": {
+    "mtime": 1780534076.5341883,
+    "ast_hash": "38c54ab2de8d1f76b7c61cf9932892ee",
+    "semantic_hash": "38c54ab2de8d1f76b7c61cf9932892ee"
+  },
+  "proposals/P1-FASE4-TESORERIA-diagnostico.md": {
+    "mtime": 1778227144.3774467,
+    "ast_hash": "129e0c0f2615d651aa443cc38ff316b7",
+    "semantic_hash": "129e0c0f2615d651aa443cc38ff316b7"
+  },
+  "proposals/P1-FASE5-DASHBOARD-FINANZAS-TESORERIA-CONSOLIDADO.md": {
+    "mtime": 1778227144.3784466,
+    "ast_hash": "3646fe649890bbbf6c9a37f4a51caf92",
+    "semantic_hash": "3646fe649890bbbf6c9a37f4a51caf92"
+  },
+  "proposals/P1-FASE5A-1-CUENTAS-Y-SALDOS-BANCARIOS-DDL.md": {
+    "mtime": 1778227144.3784466,
+    "ast_hash": "92ab964786a7a133ca5d48e49784d2ca",
+    "semantic_hash": "92ab964786a7a133ca5d48e49784d2ca"
+  },
+  "proposals/P1-FASE5A-1-ENDPOINTS-CUENTAS-SALDOS-BANCARIOS.md": {
+    "mtime": 1778227144.3784466,
+    "ast_hash": "cf7460c339aff52649f3313a49544e30",
+    "semantic_hash": "cf7460c339aff52649f3313a49544e30"
+  },
+  "proposals/P1-FASE5A-1-FRONTEND-CUENTAS-SALDOS-BANCARIOS.md": {
+    "mtime": 1778227144.3784466,
+    "ast_hash": "bad5c7cdff725de1afd900ed1b00cc49",
+    "semantic_hash": "bad5c7cdff725de1afd900ed1b00cc49"
+  },
+  "proposals/P1-FASE5A-POSICION-EFECTIVO-DISENO.md": {
+    "mtime": 1778227144.3774467,
+    "ast_hash": "fe010d218e8532e62e86732d4baad342",
+    "semantic_hash": "fe010d218e8532e62e86732d4baad342"
+  },
+  "proposals/PROP-001-cierre.md": {
+    "mtime": 1780756351.3363245,
+    "ast_hash": "7d94d52b3515b8fefa42a4c70ca4eec0",
+    "semantic_hash": "7d94d52b3515b8fefa42a4c70ca4eec0"
+  },
+  "proposals/PROP-001-recuperar-contrasena.md": {
+    "mtime": 1780756351.3363245,
+    "ast_hash": "5a673ec0e97a733f42180aaf77ae4d45",
+    "semantic_hash": "5a673ec0e97a733f42180aaf77ae4d45"
+  },
+  "proposals/PROP-002-cierre.md": {
+    "mtime": 1778227144.3784466,
+    "ast_hash": "ee9cff06d4d1ae9ea31c0a49e12ef613",
+    "semantic_hash": "ee9cff06d4d1ae9ea31c0a49e12ef613"
+  },
+  "proposals/PROP-002-correccion-merida-v2.md": {
+    "mtime": 1778227144.3784466,
+    "ast_hash": "100dfa6928a80f12fabdeadbd81bc002",
+    "semantic_hash": "100dfa6928a80f12fabdeadbd81bc002"
+  },
+  "proposals/PROP-003-cierre.md": {
+    "mtime": 1778227144.3784466,
+    "ast_hash": "65f621d6ea7caea7c546b6516ee4ea4a",
+    "semantic_hash": "65f621d6ea7caea7c546b6516ee4ea4a"
+  },
+  "proposals/PROPUESTA_TECNICA_ESTANDARIZACION_UNIDADES_NEGOCIO.md": {
+    "mtime": 1780534076.5341883,
+    "ast_hash": "a289f1505774f7987db86ec42ab178a1",
+    "semantic_hash": "a289f1505774f7987db86ec42ab178a1"
+  },
+  "proposals/PROP_SERVIDORES_CONSULTAS_SQL_EDARSAHUB.md": {
+    "mtime": 1780534076.5341883,
+    "ast_hash": "bbe9fd3f355137cd947d62540a3edd96",
+    "semantic_hash": "bbe9fd3f355137cd947d62540a3edd96"
+  },
+  "proposals/PROP_SYNC_HISTORICOS_EDARSAHUB.md": {
+    "mtime": 1780534076.5341883,
+    "ast_hash": "872f701909cf80d0077c7c6bcc1b4c8c",
+    "semantic_hash": "872f701909cf80d0077c7c6bcc1b4c8c"
+  },
+  "proposals/RBAC_SCOPE_001_MIGRACION_PERMISOS_LEGACY_SQL.md": {
+    "mtime": 1780534076.5341883,
+    "ast_hash": "5190a148c98c9475fc909f220be9a73e",
+    "semantic_hash": "5190a148c98c9475fc909f220be9a73e"
+  },
+  "reports/ADAPTACION_SYNC_SERVICE_OPCION_B_20260604_092749.md": {
+    "mtime": 1780565269.358335,
+    "ast_hash": "e85a2a97dc125914092de11f37f40b9e",
+    "semantic_hash": "e85a2a97dc125914092de11f37f40b9e"
+  },
+  "reports/ADAPTADORES_SYNC_COMPRAS_20260604_090637.md": {
+    "mtime": 1780563997.5393293,
+    "ast_hash": "d2da67e874f7ab8a7bac4d63f6885072",
+    "semantic_hash": "d2da67e874f7ab8a7bac4d63f6885072"
+  },
+  "reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE1_DIAGNOSTICO.md": {
+    "mtime": 1780534076.5341883,
+    "ast_hash": "78eab9c080d7364bbaad0fcc16486f6c",
+    "semantic_hash": "78eab9c080d7364bbaad0fcc16486f6c"
+  },
+  "reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE2_DDL_EJECUCION.md": {
+    "mtime": 1780534076.5341883,
+    "ast_hash": "a053aa18c439166f1ec9e204f11f1eb9",
+    "semantic_hash": "a053aa18c439166f1ec9e204f11f1eb9"
+  },
+  "reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE3_SEED_EJECUCION.md": {
+    "mtime": 1780534076.5341883,
+    "ast_hash": "08bbabb92d83fe2d90358ae18ac998e3",
+    "semantic_hash": "08bbabb92d83fe2d90358ae18ac998e3"
+  },
+  "reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE4_RESOLVER_REPORTE.md": {
+    "mtime": 1780534076.5351884,
+    "ast_hash": "40da35407a06ca45d36c35c2fc6e560a",
+    "semantic_hash": "40da35407a06ca45d36c35c2fc6e560a"
+  },
+  "reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE5_ENDPOINTS_REPORTE.md": {
+    "mtime": 1780534076.5351884,
+    "ast_hash": "b7f71cd2ab2507ccd3c82f0d1030d6be",
+    "semantic_hash": "b7f71cd2ab2507ccd3c82f0d1030d6be"
+  },
+  "reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE6_INTEGRACION_REPORTE.md": {
+    "mtime": 1780534076.5351884,
+    "ast_hash": "e1a25fd4631f3ad211541937a52004d6",
+    "semantic_hash": "e1a25fd4631f3ad211541937a52004d6"
+  },
+  "reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_FASE7_FRONTEND_DINAMICO_REPORTE.md": {
+    "mtime": 1780534076.5351884,
+    "ast_hash": "d900fe3a2ab83a402c2164170ce673ff",
+    "semantic_hash": "d900fe3a2ab83a402c2164170ce673ff"
+  },
+  "reports/ARQ_CATALOGO_SISTEMAS_CAPACIDADES_SQLFIRST_REPORTE.md": {
+    "mtime": 1780534076.5351884,
+    "ast_hash": "e78d4e7cd009d8b920cc877e98172556",
+    "semantic_hash": "e78d4e7cd009d8b920cc877e98172556"
+  },
+  "reports/AUDITORIA_COMERCIAL_ROUTES_SQL_FIRST.md": {
+    "mtime": 1780604472.1920528,
+    "ast_hash": "6ca79489af6fc88470c4e054030f5588",
+    "semantic_hash": "6ca79489af6fc88470c4e054030f5588"
+  },
+  "reports/AUDITORIA_CONEXIONES_EN_VIVO_VS_EDARSAHUB_SQL.md": {
+    "mtime": 1780534076.5351884,
+    "ast_hash": "46e0d4b99bd5d6b0a81c9cec1db255ae",
+    "semantic_hash": "46e0d4b99bd5d6b0a81c9cec1db255ae"
+  },
+  "reports/AUDITORIA_CONEXIONES_LIVE.md": {
+    "mtime": 1780756351.2793245,
+    "ast_hash": "4be568dc1a012798809a6c2683d2c02b",
+    "semantic_hash": "4be568dc1a012798809a6c2683d2c02b"
+  },
+  "reports/AUDITORIA_CONEXIONES_LIVE_20260604_042605.md": {
+    "mtime": 1780547165.8068948,
+    "ast_hash": "160f69f6b3518b0bb165808ca8dd00ff",
+    "semantic_hash": "160f69f6b3518b0bb165808ca8dd00ff"
+  },
+  "reports/AUDITORIA_CONEXIONES_LIVE_20260604_042819.md": {
+    "mtime": 1780547299.1248953,
+    "ast_hash": "31b337647376340ed9206ad186092b93",
+    "semantic_hash": "31b337647376340ed9206ad186092b93"
+  },
+  "reports/COSTOS_ALERTAS_001B_DDL_ALERTAS_MARGEN_SNAPSHOTS.md": {
+    "mtime": 1780534076.5421884,
+    "ast_hash": "4f2d6f3ce2cd34aa738a19c7d1ec0efe",
+    "semantic_hash": "4f2d6f3ce2cd34aa738a19c7d1ec0efe"
+  },
+  "reports/COSTOS_ALERTAS_001C_SERVICIOS_REGLAS_MARGEN.md": {
+    "mtime": 1780534076.5421884,
+    "ast_hash": "3a93a83cfd1d57f1b42185907fceedca",
+    "semantic_hash": "3a93a83cfd1d57f1b42185907fceedca"
+  },
+  "reports/COSTOS_ALERTAS_001D_UI_REGLAS_MARGEN_DESTINATARIOS.md": {
+    "mtime": 1780534076.5421884,
+    "ast_hash": "3716022eb06bed815437ac8ce1ac9a95",
+    "semantic_hash": "3716022eb06bed815437ac8ce1ac9a95"
+  },
+  "reports/DIAGNOSTICO_ORIGEN_KPIS_V2_20260602.md": {
+    "mtime": 1780534076.5471883,
+    "ast_hash": "03d058df2c01eec0a9317a5b7a99e0aa",
+    "semantic_hash": "03d058df2c01eec0a9317a5b7a99e0aa"
+  },
+  "reports/DISENO_CONSOLA_GENERAL_SCHEDULER_SINCRONIZACIONES_EDARSAHUB.md": {
+    "mtime": 1780534076.5481884,
+    "ast_hash": "034eb034ebb2cbc6b1c1da9988bb9fa8",
+    "semantic_hash": "034eb034ebb2cbc6b1c1da9988bb9fa8"
+  },
+  "reports/FASE2B1_POBLADO_USUARIOS_BASE_SQL.md": {
+    "mtime": 1780534076.5481884,
+    "ast_hash": "f5022e7bbf2b2ab5ed934f755430caca",
+    "semantic_hash": "f5022e7bbf2b2ab5ed934f755430caca"
+  },
+  "reports/FASE2B2_1_MAPEO_EMPRESAS_MONGO_SQL.md": {
+    "mtime": 1780534076.5481884,
+    "ast_hash": "86002ce8b42772ca95bbab3cd3941a74",
+    "semantic_hash": "86002ce8b42772ca95bbab3cd3941a74"
+  },
+  "reports/FASE2B2_POBLADO_USUARIO_ROLES_ASIGNACION.md": {
+    "mtime": 1780534076.5481884,
+    "ast_hash": "2cf1b5ad1fc3e309d61ebd32a9c6f574",
+    "semantic_hash": "2cf1b5ad1fc3e309d61ebd32a9c6f574"
+  },
+  "reports/FASE2B3_POBLADO_USUARIO_EMPRESAS_ASIGNACION.md": {
+    "mtime": 1780534076.5481884,
+    "ast_hash": "ad6a5ca3468b8ae80316231d2053eb1a",
+    "semantic_hash": "ad6a5ca3468b8ae80316231d2053eb1a"
+  },
+  "reports/FASE2C_VALIDACION_POST_MIGRACION_AUTH_RBAC_SQL.md": {
+    "mtime": 1780534076.5481884,
+    "ast_hash": "837dc2fca848a0f38e1e74e43e9ec58e",
+    "semantic_hash": "837dc2fca848a0f38e1e74e43e9ec58e"
+  },
+  "reports/FASE2D1_PREFLIGHT_AUTH_SQL_FIRST.md": {
+    "mtime": 1780534076.5481884,
+    "ast_hash": "aed53e32767d908f57c23b1e70dbc66c",
+    "semantic_hash": "aed53e32767d908f57c23b1e70dbc66c"
+  },
+  "reports/FASE2D_AUTH_REPOSITORY_SQL_PARALELO.md": {
+    "mtime": 1780534076.5481884,
+    "ast_hash": "468e35719cd0fed4bba5269a670cf57b",
+    "semantic_hash": "468e35719cd0fed4bba5269a670cf57b"
+  },
+  "reports/FASE2E_AUTH_SQL_FIRST_FALLBACK_MONGODB.md": {
+    "mtime": 1780534076.5481884,
+    "ast_hash": "65ee7286e318eca4ce773e0c5a52269a",
+    "semantic_hash": "65ee7286e318eca4ce773e0c5a52269a"
+  },
+  "reports/FASE2F1_CIERRE_PENDIENTES_AUTH_RBAC_PRE_FALLBACK_OFF.md": {
+    "mtime": 1780534076.5481884,
+    "ast_hash": "14915a71b4c90786304fe6febb1369ae",
+    "semantic_hash": "14915a71b4c90786304fe6febb1369ae"
+  },
+  "reports/FASE2F2_SANEAMIENTO_USUARIOS_PRE_FALLBACK_OFF.md": {
+    "mtime": 1780534076.5481884,
+    "ast_hash": "a0adcf322b00c16901aefa5e722f4ad9",
+    "semantic_hash": "a0adcf322b00c16901aefa5e722f4ad9"
+  },
+  "reports/FASE2F_OBSERVACION_SQL_FIRST_AUTH.md": {
+    "mtime": 1780756351.3043246,
+    "ast_hash": "11312c542ff84faacaa02b671683a871",
+    "semantic_hash": "11312c542ff84faacaa02b671683a871"
+  },
+  "reports/FASE2G_ELIMINACION_FALLBACK_MONGODB_AUTH.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "4f7953f62656a76e09920d1966618b25",
+    "semantic_hash": "4f7953f62656a76e09920d1966618b25"
+  },
+  "reports/FASE3A_DIAGNOSTICO_EMPRESAS_SUCURSALES_MAPEOS_SQL.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "e8b8880ee44961e0ff5280dc577c1098",
+    "semantic_hash": "e8b8880ee44961e0ff5280dc577c1098"
+  },
+  "reports/FASE3B_DDL_MIGRACION_SUCURSALES_MAPEOS_SQL.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "20ac835bc807298e75fe80c7712ee25c",
+    "semantic_hash": "20ac835bc807298e75fe80c7712ee25c"
+  },
+  "reports/FASE3C_CONTEXT_RESOLVER_SQL.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "a03f0f396715bea23309e4ee16576afe",
+    "semantic_hash": "a03f0f396715bea23309e4ee16576afe"
+  },
+  "reports/FASE3D_USER_ACCESS_CONTEXT_SQL.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "a2a54971d27d7bb231de78e555be5af4",
+    "semantic_hash": "a2a54971d27d7bb231de78e555be5af4"
+  },
+  "reports/FASE3E_CONTEXT_SERVICE_SQL.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "f8d7c4b1448029015df07f401ba7586f",
+    "semantic_hash": "f8d7c4b1448029015df07f401ba7586f"
+  },
+  "reports/FASE3FG_AUDITORIA_FINAL_EMPRESAS_SUCURSALES_CONTEXTO_SQL.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "55d1518ed927eed6786138334ad7937a",
+    "semantic_hash": "55d1518ed927eed6786138334ad7937a"
+  },
+  "reports/FASE3H_SECURITY_ALCANCE_HELPER_SQL.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "bfdecd326cc52fd2706a6f80e35a88a0",
+    "semantic_hash": "bfdecd326cc52fd2706a6f80e35a88a0"
+  },
+  "reports/FASE3I_PASSWORD_RESET_SQL.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "5e00ce9241e01545ac2678f75f06959c",
+    "semantic_hash": "5e00ce9241e01545ac2678f75f06959c"
+  },
+  "reports/FASE_0_5_VALIDACION_ARQUITECTURA_MENUS_Y_COMERCIAL.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "b6fdd01886e389b8ddd53d1ac4e44d97",
+    "semantic_hash": "b6fdd01886e389b8ddd53d1ac4e44d97"
+  },
+  "reports/FASE_0_6_MIGRACION_LAYOUT_MENUS_SQL.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "811efcc029efb86ca51e43a42cb1e041",
+    "semantic_hash": "811efcc029efb86ca51e43a42cb1e041"
+  },
+  "reports/FASE_1A_COMERCIAL_VENTAS_MENU_GOBERNADO.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "1593ce274ace9aea1e0411a4a4749858",
+    "semantic_hash": "1593ce274ace9aea1e0411a4a4749858"
+  },
+  "reports/FASE_1A_SANITIZACION_SQL_REPORTE.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "d65a5eb4bc112b58cc819b21389d6f58",
+    "semantic_hash": "d65a5eb4bc112b58cc819b21389d6f58"
+  },
+  "reports/FASE_1B_DASHBOARD_COMERCIAL_EDARSAHUB_SQL.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "35788cd3b1253c52eb7ebf7943a26632",
+    "semantic_hash": "35788cd3b1253c52eb7ebf7943a26632"
+  },
+  "reports/FASE_1B_R1_NO_LIVE_DASHBOARD_COMERCIAL_CORRECCION.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "06b899a33f4d919e8cd8cd60cf2cbf86",
+    "semantic_hash": "06b899a33f4d919e8cd8cd60cf2cbf86"
+  },
+  "reports/FASE_1B_R2_NO_LIVE_VENTAS_TIEMPO_SYNC_VENTAS_PORHORA.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "fed32b04c53a166e4247d9fb0e47f7ec",
+    "semantic_hash": "fed32b04c53a166e4247d9fb0e47f7ec"
+  },
+  "reports/FASE_1B_R3_SYNC_VENTAS_PORHORA_JOB_VALIDACION.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "f6bc6da0419715ad368945d9a4a12171",
+    "semantic_hash": "f6bc6da0419715ad368945d9a4a12171"
+  },
+  "reports/FASE_1B_SANITIZACION_SQL_ALTAS_REPORTE.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "37d859cdf2ad52ab1b4542c7b1a5e827",
+    "semantic_hash": "37d859cdf2ad52ab1b4542c7b1a5e827"
+  },
+  "reports/FASE_1B_SANITIZACION_SQL_VULNERABILIDADES_ALTAS.md": {
+    "mtime": 1780534076.5491884,
+    "ast_hash": "f78860119552774ab8482347f7a8b5df",
+    "semantic_hash": "f78860119552774ab8482347f7a8b5df"
+  },
+  "reports/FASE_1C_0_DIAGNOSTICO_COMERCIAL_VENTAS_SUBFASES.md": {
+    "mtime": 1780534076.5501883,
+    "ast_hash": "f79b094bb205c10d01294e1aa174ec48",
+    "semantic_hash": "f79b094bb205c10d01294e1aa174ec48"
+  },
+  "reports/FASE_1C_3A_COSTOS_MARGENES_DISENO_TECNICO.md": {
+    "mtime": 1780534076.5501883,
+    "ast_hash": "3d1ce22f9a09458aef0da907c5c29315",
+    "semantic_hash": "3d1ce22f9a09458aef0da907c5c29315"
+  },
+  "reports/FASE_1C_3B_COSTOS_MARGENES_SYNC_RECETAS_IMPLEMENTACION.md": {
+    "mtime": 1780534076.5501883,
+    "ast_hash": "b262a5ce2e3ecf99989285842d25ea62",
+    "semantic_hash": "b262a5ce2e3ecf99989285842d25ea62"
+  },
+  "reports/FASE_1C_3C_COSTOS_MARGENES_ENDPOINTS_NO_LIVE.md": {
+    "mtime": 1780534076.5501883,
+    "ast_hash": "3ab2265b1db1d7929e1d4d019403814c",
+    "semantic_hash": "3ab2265b1db1d7929e1d4d019403814c"
+  },
+  "reports/FASE_1C_3D_COSTOS_MARGENES_FRONTEND.md": {
+    "mtime": 1780534076.5501883,
+    "ast_hash": "02498fcdc0bc101f9678be4f90596f24",
+    "semantic_hash": "02498fcdc0bc101f9678be4f90596f24"
+  },
+  "reports/FASE_1C_3E_VALIDACION_RBAC_EXPORTACION.md": {
+    "mtime": 1780534076.5501883,
+    "ast_hash": "70a6d91298ccbfc6d9baf54da2fdd0e7",
+    "semantic_hash": "70a6d91298ccbfc6d9baf54da2fdd0e7"
+  },
+  "reports/FASE_1C_3F_FRONTEND_SIMULACION_SOLICITUDES_PRECIO.md": {
+    "mtime": 1780534076.5501883,
+    "ast_hash": "cf1baf78788f57ded6116fcbb9b47f95",
+    "semantic_hash": "cf1baf78788f57ded6116fcbb9b47f95"
+  },
+  "reports/FASE_1C_3F_SIMULACION_PRECIOS_SOLICITUD_AUTORIZACION.md": {
+    "mtime": 1780534076.5501883,
+    "ast_hash": "c7bc7c40db2dade42e0610fe2ec8ff27",
+    "semantic_hash": "c7bc7c40db2dade42e0610fe2ec8ff27"
+  },
+  "reports/FASE_1C_3G_A_DIAGNOSTICO_VINOS_IMPUESTOS_REGLAS_PRECIO.md": {
+    "mtime": 1780534076.5501883,
+    "ast_hash": "6777dadd68e643637023c086f946d351",
+    "semantic_hash": "6777dadd68e643637023c086f946d351"
+  },
+  "reports/FASE_1C_3G_B_DIAGNOSTICO_CORRECCION_IMPUESTOS_MPRO.md": {
+    "mtime": 1780534076.5501883,
+    "ast_hash": "c021cc1cad1d8546c9d23e0399316e8d",
+    "semantic_hash": "c021cc1cad1d8546c9d23e0399316e8d"
+  },
+  "reports/FASE_1C_3G_B_SYNC_REAL_IMPUESTOS_MPRO.md": {
+    "mtime": 1780534076.5501883,
+    "ast_hash": "0e99a9e3b4eea0cda14841d977323aa3",
+    "semantic_hash": "0e99a9e3b4eea0cda14841d977323aa3"
+  },
+  "reports/FASE_1C_3G_C_MODELO_CANONICO_IMPUESTOS_EDARSAHUB.md": {
+    "mtime": 1780534076.5501883,
+    "ast_hash": "9ee4f3467c81f98378736d40c6a16b5d",
+    "semantic_hash": "9ee4f3467c81f98378736d40c6a16b5d"
+  },
+  "reports/FASE_1C_3G_D_PRODUCTOS_CLASIFICADOS_VINO_EXTENSION_ATRIBUTOS.md": {
+    "mtime": 1780534076.5501883,
+    "ast_hash": "a840179338609fa7e17fdad425bc8951",
+    "semantic_hash": "a840179338609fa7e17fdad425bc8951"
+  },
+  "reports/FASE_1C_3G_E2_COSTO_BASE_VINOS_SIN_COSTO.md": {
+    "mtime": 1780534076.5501883,
+    "ast_hash": "eafe42f2347b0f47670d81cdbbcb77de",
+    "semantic_hash": "eafe42f2347b0f47670d81cdbbcb77de"
+  },
+  "reports/FASE_1C_3G_E3_SYNC_COSTO_BASE_VINOS_ORIGEN.md": {
+    "mtime": 1780534076.5501883,
+    "ast_hash": "699fdc2024fc6e350b44e1e0ca57868e",
+    "semantic_hash": "699fdc2024fc6e350b44e1e0ca57868e"
+  },
+  "reports/FASE_1C_3G_E_REGLAS_PRECIO_RANGO_VINOS.md": {
+    "mtime": 1780534076.5501883,
+    "ast_hash": "607ad15bc3086e886391fcab18f0b92e",
+    "semantic_hash": "607ad15bc3086e886391fcab18f0b92e"
+  },
+  "reports/FASE_1C_3G_F_PRECIOS_SUGERIDOS_COSTOS_MARGENES_RANGOS_VINOS.md": {
+    "mtime": 1780534076.5501883,
+    "ast_hash": "d9eebb392ab199c3286cee2ef0222912",
+    "semantic_hash": "d9eebb392ab199c3286cee2ef0222912"
+  },
+  "reports/FASE_1C_3I_A_MODELO_DATOS_PRICING_IA_BENCHMARK.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "cf0e7bc116115d70a593c01da992784e",
+    "semantic_hash": "cf0e7bc116115d70a593c01da992784e"
+  },
+  "reports/FASE_1C_3I_B_COMPETIDORES_ENTERPRISE_UNIDAD.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "dacef2eaea22c13c753b3420a4b4b4e5",
+    "semantic_hash": "dacef2eaea22c13c753b3420a4b4b4e5"
+  },
+  "reports/FASE_1C_3I_B_SERVICIOS_BACKEND_PRICING_BENCHMARK.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "fc2e09fd1f19cab8db18fd2522623b05",
+    "semantic_hash": "fc2e09fd1f19cab8db18fd2522623b05"
+  },
+  "reports/FASE_1C_3I_C_INTEGRACION_GPT52_PRICING_BENCHMARK.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "2d1ab032032ca26a17beca3bb2421ee7",
+    "semantic_hash": "2d1ab032032ca26a17beca3bb2421ee7"
+  },
+  "reports/FASE_1C_3I_D_FRONTEND_PRICING_IA_BENCHMARK.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "bd905a2774fd13cb3909e5cd8c68c31c",
+    "semantic_hash": "bd905a2774fd13cb3909e5cd8c68c31c"
+  },
+  "reports/FASE_1C_3I_E_DASHBOARD_METRICAS_IA_PRICING.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "195e788e26b4398e9664c7096130a2bd",
+    "semantic_hash": "195e788e26b4398e9664c7096130a2bd"
+  },
+  "reports/FASE_1C_3I_F_VISUALIZACION_EXPORTACION_PRICING_IA.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "15d6db37c0a321fc7fe52a981b24adb1",
+    "semantic_hash": "15d6db37c0a321fc7fe52a981b24adb1"
+  },
+  "reports/FASE_1C_3I_G_LISTAS_MANUALES_COMPETIDORES_PRICING_IA.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "0861a2bdfcba042e74009b9bb9b5fe2c",
+    "semantic_hash": "0861a2bdfcba042e74009b9bb9b5fe2c"
+  },
+  "reports/FASE_1C_3I_H_LISTAS_COMPETIDORES_FILTRO_IA_BENCHMARK.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "9dafc9d0345bd3445b2c3932009037cc",
+    "semantic_hash": "9dafc9d0345bd3445b2c3932009037cc"
+  },
+  "reports/FASE_1C_SANITIZACION_SQL_LIKE_REPORTE.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "5571726cfe32b564d4a1286f1673ae7c",
+    "semantic_hash": "5571726cfe32b564d4a1286f1673ae7c"
+  },
+  "reports/FASE_1_CONSULTAS_SQL_DDL_EJECUCION.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "5091899c1315a808ae698700cf703211",
+    "semantic_hash": "5091899c1315a808ae698700cf703211"
+  },
+  "reports/FASE_2_DML_CONSULTAS_SQL_CATALOGO_EJECUCION.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "a87ae7cc814752280af656f6b1a294ac",
+    "semantic_hash": "a87ae7cc814752280af656f6b1a294ac"
+  },
+  "reports/FASE_2_INVENTARIO_CONSULTAS_HARDCODEADAS.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "42428992522a879b4b9ebfcf214336c5",
+    "semantic_hash": "42428992522a879b4b9ebfcf214336c5"
+  },
+  "reports/FASE_3_DML_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES_EJECUTADO.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "9f9339af920aa7b0a37d19258a5d1073",
+    "semantic_hash": "9f9339af920aa7b0a37d19258a5d1073"
+  },
+  "reports/FASE_3_REPOSITORY_CONSULTAS_SQL_SQLFIRST.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "0f7fae94a6647811518056c49cd7e53b",
+    "semantic_hash": "0f7fae94a6647811518056c49cd7e53b"
+  },
+  "reports/FASE_4A_DIAGNOSTICO_REGLAS_VIVAS_MONGODB.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "84464c8d2442404a6a6c7cab4d0ad39d",
+    "semantic_hash": "84464c8d2442404a6a6c7cab4d0ad39d"
+  },
+  "reports/FASE_4B_CIERRE_ENDPOINTS_CONSULTAS_SQL_SQLFIRST.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "22eedb9c6016bbc490299f9717e94343",
+    "semantic_hash": "22eedb9c6016bbc490299f9717e94343"
+  },
+  "reports/FASE_4B_FASE2_OPERATIVO_PROPUESTA_TECNICA.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "746ac922dd4070583caade244477e9a1",
+    "semantic_hash": "746ac922dd4070583caade244477e9a1"
+  },
+  "reports/FASE_4B_RBAC_EJECUCION_FINAL.md": {
+    "mtime": 1780534076.5511885,
+    "ast_hash": "265598fdd9827f8ddc9a727225828fd6",
+    "semantic_hash": "265598fdd9827f8ddc9a727225828fd6"
+  },
+  "reports/FASE_4_ENDPOINTS_CONSULTAS_SQL_SQLFIRST.md": {
+    "mtime": 1780534076.5521884,
+    "ast_hash": "112a7fd4af6ed1914eb06301fdc4aaac",
+    "semantic_hash": "112a7fd4af6ed1914eb06301fdc4aaac"
+  },
+  "reports/FASE_5A_REFACTOR_ADAPTERS_EMPRESARESOLVER.md": {
+    "mtime": 1780534076.5521884,
+    "ast_hash": "d682ddccefc370cd066cfbc9d9ceddcb",
+    "semantic_hash": "d682ddccefc370cd066cfbc9d9ceddcb"
+  },
+  "reports/FASE_5B_REFACTOR_SERVICE_EMPRESARESOLVER.md": {
+    "mtime": 1780534076.5521884,
+    "ast_hash": "7c804523ae512934bd899fff5bf275c0",
+    "semantic_hash": "7c804523ae512934bd899fff5bf275c0"
+  },
+  "reports/FASE_5C_REFACTOR_MPRO_EMPRESARESOLVER.md": {
+    "mtime": 1780534076.5521884,
+    "ast_hash": "e4fe51da29a6ff328a8d69b7381c7c65",
+    "semantic_hash": "e4fe51da29a6ff328a8d69b7381c7c65"
+  },
+  "reports/FASE_5D_REFACTOR_SCHEDULER_EMPRESARESOLVER_FECHAOPERACION.md": {
+    "mtime": 1780534076.5521884,
+    "ast_hash": "3550ed3d5e8b53a9fef33851ff7d1138",
+    "semantic_hash": "3550ed3d5e8b53a9fef33851ff7d1138"
+  },
+  "reports/FASE_API_LOCAL_QUERY_EDITOR_REPORTE.md": {
+    "mtime": 1780534076.5521884,
+    "ast_hash": "e8f09b51266755c5531634e2bddacdf5",
+    "semantic_hash": "e8f09b51266755c5531634e2bddacdf5"
+  },
+  "reports/FASE_B_P0_C_BASE_REPOSITORY_SQL.md": {
+    "mtime": 1780534076.5521884,
+    "ast_hash": "aef9da83fb29ea1f1ebf0e6b7aa5e9ca",
+    "semantic_hash": "aef9da83fb29ea1f1ebf0e6b7aa5e9ca"
+  },
+  "reports/FASE_B_P1_A_WORKFLOW_REPOSITORY_SQL.md": {
+    "mtime": 1780534076.5521884,
+    "ast_hash": "3d18ee281a3ef2da8b0674c49ad94c56",
+    "semantic_hash": "3d18ee281a3ef2da8b0674c49ad94c56"
+  },
+  "reports/FASE_B_P1_B_TAREA_REPOSITORY_SQL.md": {
+    "mtime": 1780534076.5521884,
+    "ast_hash": "74cd757cbb84a76d3ca62dc2f28a9350",
+    "semantic_hash": "74cd757cbb84a76d3ca62dc2f28a9350"
+  },
+  "reports/FASE_B_P1_C_RESPONSABILIDAD_REPOSITORY_SQL.md": {
+    "mtime": 1780534076.5521884,
+    "ast_hash": "38d69697cc7e57efaf78d53b341d582a",
+    "semantic_hash": "38d69697cc7e57efaf78d53b341d582a"
+  },
+  "reports/FASE_B_P1_E_P2_REPOSITORIES_SERVICES_SQL.md": {
+    "mtime": 1780534076.5521884,
+    "ast_hash": "ac1638f34b085a71cfdb9d5dd697dbad",
+    "semantic_hash": "ac1638f34b085a71cfdb9d5dd697dbad"
+  },
+  "reports/FASE_B_P2_B_DDL_COMERCIAL_SQL.md": {
+    "mtime": 1780534076.5521884,
+    "ast_hash": "d49ffb3bdd24cc8bd37ae037eafe4541",
+    "semantic_hash": "d49ffb3bdd24cc8bd37ae037eafe4541"
+  },
+  "reports/FASE_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md": {
+    "mtime": 1780534076.5521884,
+    "ast_hash": "a7f858eeb17807280a5b27288df20c59",
+    "semantic_hash": "a7f858eeb17807280a5b27288df20c59"
+  },
+  "reports/FASE_ENV_SECRET_01_SERVER_SECRET_KEY_REPORTE.md": {
+    "mtime": 1780534076.5521884,
+    "ast_hash": "a7b2b819d91bc600a902d3ccaeba6dbb",
+    "semantic_hash": "a7b2b819d91bc600a902d3ccaeba6dbb"
+  },
+  "reports/FASE_ESTANDARIZACION_NOMBRES_UNIDADES_NEGOCIO.md": {
+    "mtime": 1780534076.5521884,
+    "ast_hash": "3df043a759be767354a65826f8bafbef",
+    "semantic_hash": "3df043a759be767354a65826f8bafbef"
+  },
+  "reports/FASE_SYNC_1_INFRAESTRUCTURA_HISTORICOS_REPORTE.md": {
+    "mtime": 1780534076.5531883,
+    "ast_hash": "1c5094d8b54f78fbaf037b4b817074df",
+    "semantic_hash": "1c5094d8b54f78fbaf037b4b817074df"
+  },
+  "reports/FASE_SYNC_2B_VENTAS_HORA_DIASEMANA_REPORTE.md": {
+    "mtime": 1780534076.5531883,
+    "ast_hash": "6bcf33834fecfef5c09ff5d060b7eacc",
+    "semantic_hash": "6bcf33834fecfef5c09ff5d060b7eacc"
+  },
+  "reports/FASE_SYNC_2C_APLICACION_CORRECCION_MPRO_PORHORA_REPORTE.md": {
+    "mtime": 1780534076.5531883,
+    "ast_hash": "6c46a98a605cc3d56dfa0d39122b0eaf",
+    "semantic_hash": "6c46a98a605cc3d56dfa0d39122b0eaf"
+  },
+  "reports/FASE_SYNC_2C_DIAGNOSTICO_HORA_MPRO_REPORTE.md": {
+    "mtime": 1780534076.5531883,
+    "ast_hash": "426e29e6e8b1a34687764ec113d24b58",
+    "semantic_hash": "426e29e6e8b1a34687764ec113d24b58"
+  },
+  "reports/FASE_SYNC_2_PRUEBA_REAL_HISTORICOS_REPORTE.md": {
+    "mtime": 1780534076.5531883,
+    "ast_hash": "9cd458e55bd842890e9b4d5ccf41e435",
+    "semantic_hash": "9cd458e55bd842890e9b4d5ccf41e435"
+  },
+  "reports/FASE_SYNC_3A_EXPANSION_8_SERVIDORES_7_DIAS_REPORTE.md": {
+    "mtime": 1780534076.5531883,
+    "ast_hash": "71410d0aaff724175c464875129cf131",
+    "semantic_hash": "71410d0aaff724175c464875129cf131"
+  },
+  "reports/FASE_SYNC_3A_R2_PORDIASEMANA_CONFIG_PENDIENTES_REPORTE.md": {
+    "mtime": 1780534076.5531883,
+    "ast_hash": "0caca36cf24adf423ecf3db3f5471220",
+    "semantic_hash": "0caca36cf24adf423ecf3db3f5471220"
+  },
+  "reports/FASE_SYNC_3A_R_ESCRITURA_REAL_SOFTRESTAURANT_REPORTE.md": {
+    "mtime": 1780534076.5531883,
+    "ast_hash": "2d0e3de43e5014d6aaed2b7524cb5721",
+    "semantic_hash": "2d0e3de43e5014d6aaed2b7524cb5721"
+  },
+  "reports/FINANZAS_TESORERIA_MONGO_002_MIGRACION_CUADRES_Z_SQL.md": {
+    "mtime": 1780534076.5531883,
+    "ast_hash": "246359e0b2358ff655de9669649bfee2",
+    "semantic_hash": "246359e0b2358ff655de9669649bfee2"
+  },
+  "reports/FINANZAS_TESORERIA_MONGO_DEPENDENCIA_CUADRES_DIAGNOSTICO.md": {
+    "mtime": 1780534076.5531883,
+    "ast_hash": "2373d4848f10f7c25a5c3ed627d955ac",
+    "semantic_hash": "2373d4848f10f7c25a5c3ed627d955ac"
+  },
+  "reports/FIX_AUTOMATICO_SERVIDORES_NUEVOS_CATALOGO_SQL_EXPLORADOR_BD.md": {
+    "mtime": 1780534076.5531883,
+    "ast_hash": "02b41c224bc3aeea828900a165a78145",
+    "semantic_hash": "02b41c224bc3aeea828900a165a78145"
+  },
+  "reports/FIX_CATALOGO_CONSULTAS_SISTEMAS_DINAMICOS.md": {
+    "mtime": 1780534076.5531883,
+    "ast_hash": "a753a3702987dc11dd49d8886ac9509a",
+    "semantic_hash": "a753a3702987dc11dd49d8886ac9509a"
+  },
+  "reports/FIX_CATALOGO_SQL_EXPLORADOR_BD_MATCHING_ENTERPRISE.md": {
+    "mtime": 1780534076.5531883,
+    "ast_hash": "cd087309fa92cf2119abd99ffc33d1ab",
+    "semantic_hash": "cd087309fa92cf2119abd99ffc33d1ab"
+  },
+  "reports/MONGODB_DEPENDENCY_AUDIT_EDARSAHUB_SQL.md": {
+    "mtime": 1780534076.5701883,
+    "ast_hash": "b022fffac15ed708d3451c216d5e0a55",
+    "semantic_hash": "b022fffac15ed708d3451c216d5e0a55"
+  },
+  "reports/P1.4-E4_MIGRACION_DB_SERVERS_EXPLORADOR_CATALOGO.md": {
+    "mtime": 1780534076.5701883,
+    "ast_hash": "d963f97c1182aa73a30bf7f19aa6421d",
+    "semantic_hash": "d963f97c1182aa73a30bf7f19aa6421d"
+  },
+  "reports/P1.4-F_MIGRACION_DB_SERVERS_CONFIGURACION.md": {
+    "mtime": 1780534076.5701883,
+    "ast_hash": "03b14247c541980f14e521917e11a793",
+    "semantic_hash": "03b14247c541980f14e521917e11a793"
+  },
+  "reports/RBAC_CLOSE_001_AUDITORIA_FINAL_AUTH_RBAC_SQL.md": {
+    "mtime": 1780534076.5711884,
+    "ast_hash": "749784d9dd4c20692b897a1672b41414",
+    "semantic_hash": "749784d9dd4c20692b897a1672b41414"
+  },
+  "reports/RBAC_SCOPE_B_CREACION_TABLAS_PERMISOS_SQL.md": {
+    "mtime": 1780534076.5711884,
+    "ast_hash": "33a858329c05044ae63bb297c2965e8d",
+    "semantic_hash": "33a858329c05044ae63bb297c2965e8d"
+  },
+  "reports/RBAC_SCOPE_C_MIGRACION_PERMISOS_LEGACY_SQL.md": {
+    "mtime": 1780534076.5711884,
+    "ast_hash": "11f092ab13c376d6b8a7d0e99074f191",
+    "semantic_hash": "11f092ab13c376d6b8a7d0e99074f191"
+  },
+  "reports/RBAC_SCOPE_D_GET_ALL_USERS_LEE_PERMISOS_SQL.md": {
+    "mtime": 1780534076.5711884,
+    "ast_hash": "043e5d793da4fc00bfcec0650951c4e3",
+    "semantic_hash": "043e5d793da4fc00bfcec0650951c4e3"
+  },
+  "reports/RBAC_SCOPE_E_UPDATE_USER_PERMISSIONS_ESCRIBE_SQL.md": {
+    "mtime": 1780534076.5711884,
+    "ast_hash": "d839b42643304642e2db10b6f5585809",
+    "semantic_hash": "d839b42643304642e2db10b6f5585809"
+  },
+  "reports/RBAC_SCOPE_F_VALIDACION_E2E_MODAL_PERMISOS_SQL.md": {
+    "mtime": 1780534076.5711884,
+    "ast_hash": "5e04eaca23ce38e95bbf4ce54c5de2b2",
+    "semantic_hash": "5e04eaca23ce38e95bbf4ce54c5de2b2"
+  },
+  "reports/RBAC_SCOPE_G_ELIMINACION_MONGODB_USUARIOS_ROLES.md": {
+    "mtime": 1780534076.5711884,
+    "ast_hash": "d7ee205eff77dbe4fd2ff876bebf68cf",
+    "semantic_hash": "d7ee205eff77dbe4fd2ff876bebf68cf"
+  },
+  "reports/RECONCILIACION_CIENFUEGOS_MAYO_2026_DIAS_FALTANTES.md": {
+    "mtime": 1780534076.5711884,
+    "ast_hash": "dbc599d35a439382acf2d081d97a0229",
+    "semantic_hash": "dbc599d35a439382acf2d081d97a0229"
+  },
+  "reports/REFACTOR_SYNC_SYSTEM_TYPE_HELPERS_EXISTENTES.md": {
+    "mtime": 1780600405.1230397,
+    "ast_hash": "790288723fd73d9365075c96fcbacae8",
+    "semantic_hash": "790288723fd73d9365075c96fcbacae8"
+  },
+  "reports/REFACTOR_SYSTEM_TYPE_USAR_HELPERS_EXISTENTES.md": {
+    "mtime": 1780599996.520038,
+    "ast_hash": "a5e02d545d01862e3df35841726dce0e",
+    "semantic_hash": "a5e02d545d01862e3df35841726dce0e"
+  },
+  "reports/REGRESION_CRITICA_CATALOGOS_SQL_EXPLORADOR_SISTEMA.md": {
+    "mtime": 1780534076.5711884,
+    "ast_hash": "49f7f6525a06f9b9031f2ca1c0a406c3",
+    "semantic_hash": "49f7f6525a06f9b9031f2ca1c0a406c3"
+  },
+  "reports/REGRESION_CRITICA_NO_ROMPER_LO_QUE_FUNCIONA.md": {
+    "mtime": 1780534076.5711884,
+    "ast_hash": "edc64b32b95b4266991a584b4a5977ad",
+    "semantic_hash": "edc64b32b95b4266991a584b4a5977ad"
+  },
+  "reports/REGRESION_TABLERO_EJECUTIVO_QRO_VENTAS_DIA_CERO.md": {
+    "mtime": 1780534076.5711884,
+    "ast_hash": "2d01292904762bda6cc7b8ddd0efbca7",
+    "semantic_hash": "2d01292904762bda6cc7b8ddd0efbca7"
+  },
+  "reports/REPORTE_EJECUTIVO_HALLAZGOS_ALTA_SQL_FIRST.md": {
+    "mtime": 1780604158.8210518,
+    "ast_hash": "38e463b9c35e6d1bddfea543101c7d91",
+    "semantic_hash": "38e463b9c35e6d1bddfea543101c7d91"
+  },
+  "reports/RESOLUCION_P0E_EJECUTOR_B_NO_EXISTE.md": {
+    "mtime": 1780534076.5711884,
+    "ast_hash": "e86e20759a388653db2a68a298bddc04",
+    "semantic_hash": "e86e20759a388653db2a68a298bddc04"
+  },
+  "reports/RESOLVER_CORPORATIVO_GLOBAL_EDARSAHUB.md": {
+    "mtime": 1780599602.9470363,
+    "ast_hash": "13cf17da8e20ceb00ab1c8fa7cb016a8",
+    "semantic_hash": "13cf17da8e20ceb00ab1c8fa7cb016a8"
+  },
+  "reports/RESULTADO_SYNC_SALES_DRY_RUN_BACKFILL_2026-06-01_2026-06-07.md": {
+    "mtime": 1780534076.5711884,
+    "ast_hash": "1111ccb52ed708c6eca5b478fa4383a6",
+    "semantic_hash": "1111ccb52ed708c6eca5b478fa4383a6"
+  },
+  "reports/RESULTADO_SYNC_SALES_DRY_RUN_REAL_CIENFUEGOS_20260601.md": {
+    "mtime": 1780534076.5711884,
+    "ast_hash": "7c449ccfcd978909bd706f1910f1db47",
+    "semantic_hash": "7c449ccfcd978909bd706f1910f1db47"
+  },
+  "reports/RESULTADO_SYNC_SALES_DRY_RUN_TODAS_UNIDADES_2026-06-01.md": {
+    "mtime": 1780534076.5721884,
+    "ast_hash": "b42d80eb14c8c4f618013613d74c937d",
+    "semantic_hash": "b42d80eb14c8c4f618013613d74c937d"
+  },
+  "reports/RESULTADO_SYNC_SALES_EXECUTE_PILOTO_20260601.md": {
+    "mtime": 1780534076.5721884,
+    "ast_hash": "58e3611e147a1f135e0249eb8b515d77",
+    "semantic_hash": "58e3611e147a1f135e0249eb8b515d77"
+  },
+  "reports/REVISION_DML_CATALOGO_EMPRESAS_SERVIDORES_SUCURSALES.md": {
+    "mtime": 1780534076.5721884,
+    "ast_hash": "fc3e6062f489d53b2e7bbac2535ceeda",
+    "semantic_hash": "fc3e6062f489d53b2e7bbac2535ceeda"
+  },
+  "reports/SCRIPT_1_RECREAR_FRONTEND_CORPORATE_FILTERS.md": {
+    "mtime": 1780589683.395003,
+    "ast_hash": "c8fcbdc82543e4bc19372d78af695d85",
+    "semantic_hash": "c8fcbdc82543e4bc19372d78af695d85"
+  },
+  "reports/SCRIPT_2_VALIDACION_PRE_PROPINAS_TPV.md": {
+    "mtime": 1780590066.2020044,
+    "ast_hash": "3306d56ea75115aceed6ba80eeb3fd12",
+    "semantic_hash": "3306d56ea75115aceed6ba80eeb3fd12"
+  },
+  "reports/SCRIPT_3_INTEGRAR_VERSIONES_CORPORATE_FILTERS.md": {
+    "mtime": 1780590617.4300086,
+    "ast_hash": "dbdcdbc07f0522d99d8c5775a0513af2",
+    "semantic_hash": "dbdcdbc07f0522d99d8c5775a0513af2"
+  },
+  "reports/SCRIPT_3_MIGRACION_PROPINAS_TPV_CORPORATE_FILTERS.md": {
+    "mtime": 1780590348.9420063,
+    "ast_hash": "76a3fcf4ad98f70673a2e5d1c7309c0d",
+    "semantic_hash": "76a3fcf4ad98f70673a2e5d1c7309c0d"
+  },
+  "reports/SCRIPT_4_API_ADMIN_VERSIONES_SISTEMAS.md": {
+    "mtime": 1780590809.1240106,
+    "ast_hash": "6952ccc7b3d5ca07e147f8ee0d57afb2",
+    "semantic_hash": "6952ccc7b3d5ca07e147f8ee0d57afb2"
+  },
+  "reports/SCRIPT_4_VALIDACION_POST_PROPINAS_TPV.md": {
+    "mtime": 1780590712.7000096,
+    "ast_hash": "457a424f07d19a51017a7e91cd0ab55b",
+    "semantic_hash": "457a424f07d19a51017a7e91cd0ab55b"
+  },
+  "reports/SCRIPT_5_VALIDACION_VISUAL_PROPINAS_TPV.md": {
+    "mtime": 1780591011.0720122,
+    "ast_hash": "edf154c3e8d3fdd2587c5d8cbebd3e71",
+    "semantic_hash": "edf154c3e8d3fdd2587c5d8cbebd3e71"
+  },
+  "reports/SCRIPT_6_RESULTADO_VISUAL_PROPINAS_TPV.md": {
+    "mtime": 1780591454.1290145,
+    "ast_hash": "6c40b59939e7bd4bb8148ee8852e46a8",
+    "semantic_hash": "6c40b59939e7bd4bb8148ee8852e46a8"
+  },
+  "reports/SISTEMA_CATALOGO_IMPLEMENTACION.md": {
+    "mtime": 1780534076.5721884,
+    "ast_hash": "ec3db3ba5c3181891565e1f0f6304c36",
+    "semantic_hash": "ec3db3ba5c3181891565e1f0f6304c36"
+  },
+  "reports/ejecucion_finanzas_fase4_tesoreria.md": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "ffd1a660bef9ae5b17b88e44a486876e",
+    "semantic_hash": "ffd1a660bef9ae5b17b88e44a486876e"
+  },
+  "reports/estabilizacion_compras_multi_unidad_multi_tab_report.md": {
+    "mtime": 1778227144.3764467,
+    "ast_hash": "89f8b0a54570055dfaba978e34d72b86",
+    "semantic_hash": "89f8b0a54570055dfaba978e34d72b86"
+  },
+  "reports/plan_finanzas_fase2_control_ingresos_migracion_edarsahub.md": {
+    "mtime": 1778227144.3744466,
+    "ast_hash": "c48d10f786ac8a802169334f2a9969e4",
+    "semantic_hash": "c48d10f786ac8a802169334f2a9969e4"
+  },
+  "reports/plan_panel_programaciones_automatizaciones.md": {
+    "mtime": 1778227144.3734467,
+    "ast_hash": "ab19b9d4481deba24e19dae4ce53d6b8",
+    "semantic_hash": "ab19b9d4481deba24e19dae4ce53d6b8"
+  },
+  "reports/sql_runner_logs/20260602_094724_migrate_007_crear_tabla_migracion_mongosql_mapeo.md": {
+    "mtime": 1780534076.5741885,
+    "ast_hash": "f3ab4c336c9f3162c590eff234af3db8",
+    "semantic_hash": "f3ab4c336c9f3162c590eff234af3db8"
+  },
+  "reports/sql_runner_logs/20260602_094841_migrate_008_crear_sistema_rbac_tablas.md": {
+    "mtime": 1780534076.5741885,
+    "ast_hash": "88d25917b9944097dc49c66de11f69d5",
+    "semantic_hash": "88d25917b9944097dc49c66de11f69d5"
+  },
+  "reports/sql_runner_logs/20260602_095123_migrate_009_crear_inteligencia_comercial_vistas_tablas.md": {
+    "mtime": 1780534076.5741885,
+    "ast_hash": "c534fae103e1368306fb5c4e4ea6d84a",
+    "semantic_hash": "c534fae103e1368306fb5c4e4ea6d84a"
+  },
+  "reports/sql_runner_logs/20260602_101112_migrate_010_crear_rbac_roles_inteligencia_comercial.md": {
+    "mtime": 1780534076.5741885,
+    "ast_hash": "979d645eb9bc9ee0c79bb9f6922024c7",
+    "semantic_hash": "979d645eb9bc9ee0c79bb9f6922024c7"
+  },
+  "reports/sql_runner_logs/20260602_161643_diagnostic_014_diagnostico_tablas_rbac_usuario.md": {
+    "mtime": 1780534076.5741885,
+    "ast_hash": "b191c750642bf49b75b9da34d736f96a",
+    "semantic_hash": "b191c750642bf49b75b9da34d736f96a"
+  },
+  "reports/sql_runner_logs/20260602_161705_diagnostic_015_diagnostico_completo_rbac_canonico.md": {
+    "mtime": 1780534076.5741885,
+    "ast_hash": "8a7b72334a10896a7fd8aeb2baa519b0",
+    "semantic_hash": "8a7b72334a10896a7fd8aeb2baa519b0"
+  },
+  "reports/sql_runner_logs/20260602_161728_diagnostic_016_verificar_datos_rbac.md": {
+    "mtime": 1780534076.5741885,
+    "ast_hash": "b93126d33e97cf558e8147ce444190e9",
+    "semantic_hash": "b93126d33e97cf558e8147ce444190e9"
+  },
+  "reports/sql_runner_logs/20260602_161833_migrate_017_registrar_inteligencia_comercial_y_transicionales.md": {
+    "mtime": 1780534076.5741885,
+    "ast_hash": "cc7d063f5187a46a066490ddc6d9c5ed",
+    "semantic_hash": "cc7d063f5187a46a066490ddc6d9c5ed"
+  },
+  "reports/sql_runner_logs/20260602_162501_migrate_018_crear_vista_gobierno_resumen.md": {
+    "mtime": 1780534076.5741885,
+    "ast_hash": "1c847f500610b23dcb896fc4b197a8d4",
+    "semantic_hash": "1c847f500610b23dcb896fc4b197a8d4"
+  },
+  "reports/sql_runner_logs/20260602_163117_migrate_019_clasificacion_masiva_por_familia.md": {
+    "mtime": 1780534076.5741885,
+    "ast_hash": "f66c21d10de8f9ca06166128cf145621",
+    "semantic_hash": "f66c21d10de8f9ca06166128cf145621"
+  },
+  "reports/sql_runner_logs/20260602_163122_migrate_020_marcar_sistema_rbac_transicion.md": {
+    "mtime": 1780534076.5741885,
+    "ast_hash": "b76caccc5e9a3633952db80c202c7dd4",
+    "semantic_hash": "b76caccc5e9a3633952db80c202c7dd4"
+  },
+  "reports/sql_runner_logs/20260602_163244_migrate_021_permisos_inteligencia_comercial.md": {
+    "mtime": 1780534076.5741885,
+    "ast_hash": "f860d6f08d3a5b97da7d2044e6a711f7",
+    "semantic_hash": "f860d6f08d3a5b97da7d2044e6a711f7"
+  },
+  "reports/sql_runner_logs/20260602_164245_migrate_023a_crear_roles_comerciales.md": {
+    "mtime": 1780534076.5751884,
+    "ast_hash": "160de5ddd60b24b1ece8d42571e8ce29",
+    "semantic_hash": "160de5ddd60b24b1ece8d42571e8ce29"
+  },
+  "reports/sql_runner_logs/20260602_164251_migrate_023_rbac_inteligencia_comercial_matriz_ideal.md": {
+    "mtime": 1780534076.5751884,
+    "ast_hash": "f50a27b9f9a0a09e0ef112375b115941",
+    "semantic_hash": "f50a27b9f9a0a09e0ef112375b115941"
+  },
+  "reports/sql_runner_logs/20260602_195522_migrate_030_diagnostico_mapeo_rbac_mongo_a_sql.md": {
+    "mtime": 1780534076.5751884,
+    "ast_hash": "b67c17d004e39e9dd728ded725fac73c",
+    "semantic_hash": "b67c17d004e39e9dd728ded725fac73c"
+  },
+  "rules/RULE_SYNC_SALES_SOFTRESTAURANT_LEGACY_AMOUNTS.md": {
+    "mtime": 1780534076.5751884,
+    "ast_hash": "08b09f5edb0909a632be92c57513406f",
+    "semantic_hash": "08b09f5edb0909a632be92c57513406f"
+  }
+}

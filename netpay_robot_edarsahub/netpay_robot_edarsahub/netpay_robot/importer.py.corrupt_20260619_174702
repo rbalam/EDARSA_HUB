@@ -1,0 +1,173 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from decimal import Decimal, InvalidOperation
+from typing import Any, Iterable
+
+from openpyxl import load_workbook
+
+from .hash_utils import sha256_row
+from .layouts import (
+    detect_layout,
+    TRANSACCIONES_SHEET,
+    DEPOSITOS_RESUMEN_SHEET,
+    DEPOSITOS_DETALLE_SHEET,
+)
+
+
+@dataclass
+class ParsedRows:
+    report_kind: str
+    sheet_name: str
+    rows: list[dict[str, Any]]
+    totals: dict[str, Decimal]
+
+
+def _clean_header(value: Any) -> str:
+    if value is None:
+        return ""
+    return str(value).replace("\n", " ").strip()
+
+
+def _to_decimal(value: Any) -> Decimal:
+    if value is None or value == "":
+        return Decimal("0.00")
+    if isinstance(value, Decimal):
+        return value
+    if isinstance(value, (int, float)):
+        return Decimal(str(value)).quantize(Decimal("0.01"))
+
+    s = str(value).strip().replace("$", "").replace(",", "").replace("%", "")
+    if s in ("", "-"):
+        return Decimal("0.00")
+
+    try:
+        return Decimal(s).quantize(Decimal("0.01"))
+    except InvalidOperation:
+        return Decimal("0.00")
+
+
+def _is_footer_or_note_row(values: list[Any]) -> bool:
+    first_value = values[0] if values else None
+    first_text = str(first_value).strip() if first_value is not None else ""
+    return first_text.startswith("**")
+
+
+def _as_dict_rows(ws, header_row: int) -> Iterable[dict[str, Any]]:
+    # NetPay exporta XLSX con estilos/metadatos que pueden inflar max_row/max_column.
+    # En modo read_only NO usar ws.cell() por acceso aleatorio: puede volverse extremadamente lento.
+    # Se usa iter_rows secuencial y se corta después de 25 filas vacías consecutivas.
+    max_probe_col = min((ws.max_column or 120), 120)
+
+    header_iter = ws.iter_rows(
+        min_row=header_row,
+        max_row=header_row,
+        min_col=1,
+        max_col=max_probe_col,
+        values_only=True,
+    )
+    header_values = next(header_iter, ())
+    raw_headers = [_clean_header(v) for v in header_values]
+
+    last_header_idx = 0
+    for i, h in enumerate(raw_headers, start=1):
+        if h:
+            last_header_idx = i
+
+    headers = raw_headers[:last_header_idx]
+    if not headers:
+        return
+
+    blank_streak = 0
+    max_scan_row = min((ws.max_row or (header_row + 200000)), header_row + 200000)
+
+    for values in ws.iter_rows(
+        min_row=header_row + 1,
+        max_row=max_scan_row,
+        min_col=1,
+        max_col=len(headers),
+        values_only=True,
+    ):
+        values = list(values)
+
+        if all(v is None or str(v).strip() == "" for v in values):
+            blank_streak += 1
+            if blank_streak >= 25:
+                break
+            continue
+
+        blank_streak = 0
+
+        if _is_footer_or_note_row(values):
+            break
+
+        record = {headers[i]: values[i] for i in range(len(headers)) if headers[i]}
+        record["HashRegistro"] = sha256_row(values)
+        yield record
+
+
+def parse_netpay_workbook(path: str | Path) -> list[ParsedRows]:
+    layout = detect_layout(path)
+    if not layout.ok:
+        raise ValueError("; ".join(layout.errors))
+
+    wb = load_workbook(path, read_only=True, data_only=True)
+    parsed: list[ParsedRows] = []
+
+    if layout.report_kind == "DETALLE_TRANSACCIONES":
+        lay = layout.layouts[0]
+        ws = wb[TRANSACCIONES_SHEET]
+
+        rows = list(_as_dict_rows(ws, lay.header_row))
+        rows = [
+            r for r in rows
+            if not str(r.get("Fecha de TRX", "")).strip().startswith("**")
+        ]
+
+        approved = [
+            r for r in rows
+            if str(r.get("Estatus de trx", "")).strip().lower() == "aprobada"
+            and str(r.get("Código de respuesta", "")).strip() in ("00", "0")
+        ]
+
+        totals = {
+            "rows": Decimal(len(rows)),
+            "approved_rows": Decimal(len(approved)),
+            "approved_monto_trx": sum((_to_decimal(r.get("Monto de trx")) for r in approved), Decimal("0.00")),
+            "approved_propina": sum((_to_decimal(r.get("Propina")) for r in approved), Decimal("0.00")),
+            "approved_venta_neta": sum((_to_decimal(r.get("Venta Neta")) for r in approved), Decimal("0.00")),
+        }
+
+        parsed.append(ParsedRows(layout.report_kind, TRANSACCIONES_SHEET, rows, totals))
+        return parsed
+
+    if layout.report_kind == "DETALLE_DEPOSITOS_MOVIMIENTOS":
+        for lay in layout.layouts:
+            ws = wb[lay.sheet_name]
+            rows = list(_as_dict_rows(ws, lay.header_row))
+
+            if lay.sheet_name == DEPOSITOS_RESUMEN_SHEET:
+                totals = {
+                    "rows": Decimal(len(rows)),
+                    "monto_deposito": sum((_to_decimal(r.get("Monto Depósito")) for r in rows), Decimal("0.00")),
+                }
+            elif lay.sheet_name == DEPOSITOS_DETALLE_SHEET:
+                totals = {
+                    "rows": Decimal(len(rows)),
+                    "monto_deposito": sum((_to_decimal(r.get("Monto Depósito")) for r in rows), Decimal("0.00")),
+                    "monto_trx": sum((_to_decimal(r.get("Monto de Trx")) for r in rows), Decimal("0.00")),
+                    "venta_neta": sum((_to_decimal(r.get("Venta Neta")) for r in rows), Decimal("0.00")),
+                    "propina": sum((_to_decimal(r.get("Propina")) for r in rows), Decimal("0.00")),
+                    "comision_total": sum((_to_decimal(r.get("Comisión Total ($)")) for r in rows), Decimal("0.00")),
+                    "iva_comisiones": sum((_to_decimal(r.get("IVA Comisiones (16%)")) for r in rows), Decimal("0.00")),
+                    "comisiones_mas_iva": sum((_to_decimal(r.get("Comisiones + IVA")) for r in rows), Decimal("0.00")),
+                }
+            else:
+                totals = {"rows": Decimal(len(rows))}
+
+            parsed.append(ParsedRows(layout.report_kind, lay.sheet_name, rows, totals))
+
+        return parsed
+
+    raise ValueError("Layout no soportado")

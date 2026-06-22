@@ -45,6 +45,8 @@ from .jobs.crm_sync_job import execute_crm_sync, execute_crm_sla_check, execute_
 from .jobs.vtiger_sync_job import execute_vtiger_sync
 # Inteligencia Comercial: Sincronización de ventas desde POS
 from .jobs.inteligencia_comercial_sync_job import job_inteligencia_comercial_sync
+# NetPay: Sincronización diaria de reportes conciliables
+from .jobs.netpay_sync_job import execute_netpay_sync_diario
 
 logger = logging.getLogger(__name__)
 
@@ -852,6 +854,43 @@ class SchedulerManager:
         finally:
             await lock.release()
     
+    async def _run_netpay_sync_diario_job(self):
+        """Wrapper async para sincronización diaria NetPay."""
+        job_config = self.config.jobs.get("netpay_sync_diario")
+        if not job_config or not job_config.enabled:
+            logger.debug("[NETPAY_SYNC] Deshabilitado por configuración")
+            return
+
+        lock_manager = get_lock_manager(self.db)
+        lock = lock_manager.get_lock("netpay_sync_diario")
+        lock_acquired = await lock.acquire(timeout_seconds=job_config.timeout_seconds)
+
+        if not lock_acquired:
+            logger.warning("[NETPAY_SYNC] No se pudo obtener lock - ya hay una ejecución en progreso")
+            return
+
+        job_logger = get_job_logger(self.db)
+        log_entry = await job_logger.start_execution("netpay_sync_diario")
+
+        try:
+            result = await execute_netpay_sync_diario()
+            reports = result.get("reports", [])
+            success_count = sum(1 for item in reports if item.get("success"))
+
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status="completed" if result.get("success") else "failed",
+                processed_count=len(reports),
+                success_count=success_count,
+                message=result.get("message", "NetPay sync diario finalizado"),
+                extra_metadata={"result_summary": result}
+            )
+        except Exception as e:
+            logger.error(f"[NETPAY_SYNC] Error: {e}")
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+        finally:
+            await lock.release()
+
     def register_jobs(self):
         """Registra todos los jobs configurados."""
         if self._scheduler is None:
@@ -1243,6 +1282,29 @@ class SchedulerManager:
             )
             self._jobs["inteligencia_comercial_sync"] = inteligencia_sync_config
             logger.info(f"Job INTELIGENCIA_COMERCIAL_SYNC registrado: cron={inteligencia_sync_config.cron_expression or 'interval'}")
+
+        
+        # ========================================
+        # NetPay: Sincronización diaria conciliable
+        # ========================================
+        netpay_sync_config = self.config.jobs.get("netpay_sync_diario")
+        if netpay_sync_config and netpay_sync_config.enabled:
+            if netpay_sync_config.cron_expression:
+                trigger = CronTrigger.from_crontab(netpay_sync_config.cron_expression)
+            else:
+                trigger = IntervalTrigger(seconds=netpay_sync_config.interval_seconds)
+
+            self._scheduler.add_job(
+                self._run_netpay_sync_diario_job,
+                trigger=trigger,
+                id="netpay_sync_diario",
+                name="NetPay - Sync Diario",
+                replace_existing=True,
+                max_instances=1,
+                coalesce=True
+            )
+            self._jobs["netpay_sync_diario"] = netpay_sync_config
+            logger.info(f"Job NETPAY_SYNC registrado: cron={netpay_sync_config.cron_expression or 'interval'}")
     
     async def start(self):
         """Inicia el scheduler."""
@@ -1387,6 +1449,9 @@ class SchedulerManager:
             return {"status": "executed", "job_id": job_id}
         elif job_id == "vtiger_sync":
             await self._run_vtiger_sync_job()
+            return {"status": "executed", "job_id": job_id}
+        elif job_id == "netpay_sync_diario":
+            await self._run_netpay_sync_diario_job()
             return {"status": "executed", "job_id": job_id}
         else:
             return {"status": "error", "message": f"Job desconocido: {job_id}"}

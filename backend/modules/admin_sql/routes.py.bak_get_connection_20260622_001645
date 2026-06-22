@@ -1,0 +1,568 @@
+from core.unidades_service import UnidadesService
+from core.corporate_filters.service import CorporateFilterService
+"""
+Router SQL-First para Administración de Usuarios, Roles y Permisos
+==================================================================
+
+ARQUITECTURA: SQL-FIRST desde EDARSAHUB_SQL
+TABLAS FUENTE:
+  - Usuario_Catalogo
+  - Usuario_Roles
+  - Usuario_RolesAsignacion
+  - Usuario_Modulos
+  - Usuario_ServidoresAsignacion
+  - Usuario_SucursalesAsignacion
+  - Servidores_Conexiones
+
+FECHA: Junio 2026
+"""
+
+from fastapi import APIRouter, Depends, HTTPException
+import re
+from typing import Dict, Any, List
+from core.security import get_current_user
+from core.config.edarsahub_sql import get_edarsahub_connection
+from modules.admin_sql import rbac_pilot_service
+import logging
+
+router = APIRouter(prefix="/api/admin-sql", tags=["Admin SQL"])
+
+
+def is_admin(user: Dict[str, Any]) -> bool:
+    """Verifica si el usuario es administrador."""
+    role = str(user.get("role") or user.get("rol") or "").upper()
+    email = str(user.get("email") or "").lower()
+    return (
+        "ADMIN" in role
+        or "SUPER" in role
+        or email in ["admin@edarsa.com", "ricardo@edarsa.com.mx"]
+    )
+
+
+def require_admin(user: Dict[str, Any]) -> None:
+    """Lanza excepción si el usuario no es admin."""
+    if not is_admin(user):
+        raise HTTPException(status_code=403, detail="No autorizado - Se requiere rol de administrador")
+
+
+def execute_query(sql: str, params: tuple = ()) -> List[Dict[str, Any]]:
+    """Ejecuta una consulta SQL y devuelve los resultados como lista de diccionarios."""
+    try:
+        cn = get_edarsahub_connection()
+        cur = cn.cursor(as_dict=True)
+        cur.execute(sql, params)
+        rows = cur.fetchall()
+        cn.close()
+        return rows
+    except Exception as e:
+        logging.error(f"[ADMIN_SQL] Error ejecutando query: {e}")
+        raise HTTPException(status_code=500, detail=f"Error de base de datos: {str(e)}")
+
+
+def execute_write(sql: str, params: tuple = (), fetch: bool = False) -> List[Dict[str, Any]]:
+    """Ejecuta una sentencia de escritura (UPDATE/INSERT/DELETE) con commit.
+
+    Args:
+        fetch: True si la sentencia devuelve resultset (p.ej. OUTPUT INSERTED.*).
+    """
+    cn = get_edarsahub_connection()
+    try:
+        cur = cn.cursor(as_dict=True)
+        cur.execute(sql, params)
+        rows = cur.fetchall() if fetch else []
+        cn.commit()
+        return rows
+    except Exception as e:
+        logging.error(f"[ADMIN_SQL] Error en escritura: {e}")
+        raise HTTPException(status_code=500, detail=f"Error de base de datos: {str(e)}")
+    finally:
+        cn.close()
+
+
+@router.get("/users")
+async def get_users(
+    incluir_inactivos: bool = False,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Lista todos los usuarios del sistema desde EDARSAHUB SQL.
+
+    Incluye:
+    - Datos básicos del usuario
+    - Rol principal asignado (deduplicado: 1 fila por usuario)
+    - Servidores asignados
+    - Sucursales asignadas
+
+    Args:
+        incluir_inactivos: si True, también devuelve usuarios con Activo=0
+                           (para poder reactivarlos desde la pantalla Usuarios).
+    """
+    require_admin(current_user)
+
+    # Filtro de estado: por defecto solo activos (comportamiento legacy).
+    where_estado = "" if incluir_inactivos else "WHERE ISNULL(u.Activo, 1) = 1"
+
+    # OUTER APPLY TOP 1 → evita filas duplicadas cuando un usuario tiene
+    # más de una asignación de rol principal activa.
+    users = execute_query(f"""
+    SELECT
+        CAST(u.UsuarioID AS NVARCHAR(100)) AS id,
+        CAST(u.UsuarioID AS NVARCHAR(100)) AS UsuarioID,
+        u.PublicUUID,
+        u.Username AS username,
+        u.Email AS email,
+        u.Nombre AS nombre,
+        u.NombreCompleto AS name,
+        u.NombreCompleto AS nombre_completo,
+        u.Apellidos AS apellidos,
+        u.Puesto AS puesto,
+        u.Departamento AS departamento,
+        ISNULL(u.Activo, 1) AS activo,
+        ISNULL(u.Bloqueado, 0) AS bloqueado,
+        r.NombreRol AS role,
+        r.CodigoRol AS role_code,
+        r.RolID
+    FROM Usuario_Catalogo u
+    OUTER APPLY (
+        SELECT TOP 1 ura.RolID
+        FROM Usuario_RolesAsignacion ura
+        WHERE ura.UsuarioID = u.UsuarioID
+          AND ISNULL(ura.Activo, 1) = 1
+          AND ISNULL(ura.EsPrincipal, 1) = 1
+        ORDER BY ura.RolID
+    ) ra
+    LEFT JOIN Usuario_Roles r
+        ON r.RolID = ra.RolID
+    {where_estado}
+    ORDER BY u.NombreCompleto, u.Email
+    """)
+
+    # Obtener asignaciones de servidores
+    servidores = execute_query("""
+    SELECT
+        CAST(UsuarioID AS NVARCHAR(100)) AS UsuarioID,
+        CAST(ServidorID AS NVARCHAR(100)) AS ServidorID
+    FROM Usuario_ServidoresAsignacion
+    WHERE ISNULL(Activo, 1) = 1
+    """)
+
+    # Obtener asignaciones de sucursales
+    sucursales = execute_query("""
+    SELECT
+        CAST(UsuarioID AS NVARCHAR(100)) AS UsuarioID,
+        CAST(ServidorID AS NVARCHAR(100)) AS ServidorID,
+        SucursalCodigo
+    FROM Usuario_SucursalesAsignacion
+    WHERE ISNULL(Activo, 1) = 1
+    """)
+
+    # Mapear servidores por usuario
+    map_serv = {}
+    for s in servidores:
+        uid = str(s.get("UsuarioID", ""))
+        if uid:
+            map_serv.setdefault(uid, []).append(str(s.get("ServidorID", "")))
+
+    # Mapear sucursales por usuario
+    map_suc = {}
+    for s in sucursales:
+        uid = str(s.get("UsuarioID", ""))
+        if uid:
+            map_suc.setdefault(uid, []).append(str(s.get("SucursalCodigo", "")))
+
+    # Enriquecer usuarios con asignaciones
+    rbac_map = rbac_pilot_service.get_rbac_map()
+    for u in users:
+        uid = str(u.get("UsuarioID", ""))
+        # Normalizar estado: el frontend lee `active` (booleano). Antes solo
+        # existía `activo` → todos se mostraban "Inactivo". Exponemos ambos.
+        u["active"] = bool(u.get("activo"))
+        u["allowed_servers"] = map_serv.get(uid, [])
+        u["allowed_sucursales"] = map_suc.get(uid, [])
+        u["allowed_warehouses"] = []
+        u["sucursales"] = u["allowed_sucursales"]
+        rbac = rbac_map.get(uid, {})
+        u["sec_perfil"] = rbac.get("sec_perfil")
+        u["sec_roles"] = rbac.get("sec_roles", [])
+        u["sec_permisos"] = rbac.get("sec_permisos", [])
+
+    return users
+
+
+@router.patch("/users/{user_id}/toggle-activo")
+async def toggle_user_activo(user_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Activa/Inactiva un usuario (Usuario_Catalogo.Activo).
+
+    - Al INACTIVAR, además se revocan todas sus sesiones activas
+      (no podrá seguir usando el sistema; el refresh token deja de servir).
+    - No se permite que un admin se inactive a sí mismo.
+    """
+    require_admin(current_user)
+
+    # Obtener estado y PublicUUID actuales
+    rows = execute_query(
+        "SELECT CAST(UsuarioID AS NVARCHAR(100)) AS UsuarioID, PublicUUID, "
+        "ISNULL(Activo, 1) AS activo, Email FROM Usuario_Catalogo WHERE UsuarioID = %s",
+        (user_id,),
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    u = rows[0]
+    actual = bool(u.get("activo"))
+    nuevo = 0 if actual else 1
+
+    # Evitar auto-inactivación
+    if nuevo == 0:
+        me = str(current_user.get("id") or current_user.get("_id") or "")
+        if str(u.get("UsuarioID")) == me or str(u.get("PublicUUID")) == me:
+            raise HTTPException(status_code=400, detail="No puedes inactivar tu propio usuario")
+
+    # Actualizar estado
+    execute_write(
+        "UPDATE Usuario_Catalogo SET Activo = %s WHERE UsuarioID = %s",
+        (nuevo, user_id),
+    )
+
+    sesiones_revocadas = 0
+    if nuevo == 0:
+        # Revocar sesiones activas (la sesión guarda UsuarioID = PublicUUID;
+        # se incluye también el id numérico por compatibilidad con sesiones antiguas).
+        public_uuid = str(u.get("PublicUUID") or "")
+        try:
+            res = execute_write(
+                "UPDATE Sesiones SET EstaActiva = 0, FechaRevocacion = GETUTCDATE(), "
+                "MotivoRevocacion = 'user_deactivated', FechaModificacion = GETUTCDATE() "
+                "OUTPUT INSERTED.SesionID "
+                "WHERE EstaActiva = 1 AND UsuarioID IN (%s, %s)",
+                (public_uuid, str(user_id)),
+                fetch=True,
+            )
+            sesiones_revocadas = len(res or [])
+        except Exception as e:
+            logging.warning(f"[ADMIN_SQL] No se pudieron revocar sesiones de {user_id}: {e}")
+
+    return {
+        "success": True,
+        "id": str(user_id),
+        "email": u.get("Email"),
+        "activo": bool(nuevo),
+        "active": bool(nuevo),
+        "sesiones_revocadas": sesiones_revocadas,
+    }
+
+
+@router.get("/roles")
+async def get_roles(current_user: dict = Depends(get_current_user)):
+    """
+    Lista todos los roles del sistema desde EDARSAHUB SQL.
+    """
+    require_admin(current_user)
+
+    roles = execute_query("""
+    SELECT
+        CAST(RolID AS NVARCHAR(100)) AS id,
+        RolID,
+        CodigoRol AS codigo,
+        NombreRol AS name,
+        NombreRol AS nombre,
+        Descripcion AS descripcion,
+        ISNULL(EsRolSistema, 0) AS es_sistema,
+        ISNULL(Activo, 1) AS activo,
+        NivelJerarquia AS nivel
+    FROM Usuario_Roles
+    WHERE ISNULL(Activo, 1) = 1
+    ORDER BY NivelJerarquia, NombreRol
+    """)
+
+    # Obtener permisos por rol
+    permisos = execute_query("""
+    SELECT
+        prm.RolID,
+        m.ModuloID,
+        CAST(m.ModuloID AS NVARCHAR(100)) AS modulo_id,
+        m.CodigoModulo AS codigo,
+        m.NombreModulo AS nombre,
+        a.CodigoAccion AS accion,
+        prm.Permitido
+    FROM Usuario_PermisosRolModulo prm
+    LEFT JOIN Usuario_Modulos m ON m.ModuloID = prm.ModuloID
+    LEFT JOIN Usuario_Acciones a ON a.AccionID = prm.AccionID
+    WHERE ISNULL(prm.Activo, 1) = 1
+      AND ISNULL(prm.Permitido, 1) = 1
+    """)
+
+    # Mapear permisos por rol
+    pmap = {}
+    for p in permisos:
+        rid = p.get("RolID")
+        if rid:
+            pmap.setdefault(rid, []).append(p.get("modulo_id"))
+
+    # Enriquecer roles con permisos
+    for r in roles:
+        r["permisos"] = pmap.get(r.get("RolID"), [])
+
+    return roles
+
+
+@router.get("/roles/modulos")
+async def get_modulos(current_user: dict = Depends(get_current_user)):
+    """
+    Lista todos los módulos del sistema desde EDARSAHUB SQL.
+    """
+    require_admin(current_user)
+
+    return execute_query("""
+    SELECT
+        CAST(ModuloID AS NVARCHAR(100)) AS id,
+        ModuloID,
+        CodigoModulo AS codigo,
+        NombreModulo AS name,
+        NombreModulo AS nombre,
+        Descripcion AS descripcion,
+        Ruta AS ruta,
+        Icono AS icono,
+        OrdenMenu AS orden,
+        ISNULL(EsVisibleMenu, 1) AS visible,
+        ISNULL(Activo, 1) AS activo
+    FROM Usuario_Modulos
+    WHERE ISNULL(Activo, 1) = 1
+    ORDER BY OrdenMenu, NombreModulo
+    """)
+
+
+@router.get("/servers")
+async def get_servers(current_user: dict = Depends(get_current_user)):
+    """
+    Lista todos los servidores configurados desde EDARSAHUB SQL.
+    """
+    require_admin(current_user)
+
+    return execute_query("""
+    SELECT
+        CAST(id AS NVARCHAR(100)) AS id,
+        nombre AS name,
+        nombre,
+        system_type,
+        tipo_conexion,
+        host,
+        port,
+        database_name,
+        EmpresaID,
+        ISNULL(activo, 1) AS activo
+    FROM Servidores_Conexiones
+    WHERE ISNULL(activo, 1) = 1
+    ORDER BY nombre
+    """)
+
+
+@router.get("/usuarios-asignables")
+async def get_usuarios_asignables(current_user: dict = Depends(get_current_user)):
+    """
+    Lista usuarios que pueden ser asignados a responsabilidades.
+    """
+    require_admin(current_user)
+
+    return execute_query("""
+    SELECT
+        CAST(UsuarioID AS NVARCHAR(100)) AS id,
+        Email AS email,
+        NombreCompleto AS name,
+        NombreCompleto AS nombre,
+        Puesto AS puesto,
+        ISNULL(Activo, 1) AS activo
+    FROM Usuario_Catalogo
+    WHERE ISNULL(Activo, 1) = 1
+    ORDER BY NombreCompleto, Email
+    """)
+
+
+@router.get("/catalogos-disponibles")
+async def get_catalogos_disponibles(current_user: dict = Depends(get_current_user)):
+    """
+    Lista catálogos/módulos disponibles para configuración de permisos.
+    """
+    require_admin(current_user)
+
+    return execute_query("""
+    SELECT
+        CAST(ModuloID AS NVARCHAR(100)) AS id,
+        CodigoModulo AS codigo,
+        NombreModulo AS name,
+        NombreModulo AS nombre,
+        Descripcion AS descripcion
+    FROM Usuario_Modulos
+    WHERE ISNULL(Activo, 1) = 1
+    ORDER BY NombreModulo
+    """)
+
+
+@router.post("/permisos-catalogos")
+async def save_permisos_catalogos(payload: dict, current_user: dict = Depends(get_current_user)):
+    """
+    Guarda configuración de permisos de catálogos.
+    
+    NOTA: Fase inicial - solo recibe y confirma el payload.
+    La persistencia granular requiere tablas adicionales.
+    """
+    require_admin(current_user)
+
+    logging.info(f"[ADMIN_SQL] Permisos recibidos de {current_user.get('email')}: {payload}")
+
+    return {
+        "success": True,
+        "source": "EDARSAHUB_SQL",
+        "message": "Permisos recibidos correctamente",
+        "payload": payload
+    }
+
+
+@router.put("/roles/{role_id}")
+async def update_role_sql(role_id: str, role_data: dict, current_user: dict = Depends(get_current_user)):
+    """
+    Actualiza rol y permisos en EDARSAHUB SQL.
+    Fuente única: Usuario_Roles + Usuario_PermisosRolModulo.
+    """
+    require_admin(current_user)
+
+    nombre = role_data.get("nombre")
+    descripcion = role_data.get("descripcion")
+    permisos = role_data.get("permisos", [])
+
+    conn = get_connection()
+    cur = conn.cursor(as_dict=True)
+    try:
+        cur.execute("""
+            SELECT RolID, EsRolSistema
+            FROM dbo.Usuario_Roles
+            WHERE RolID = %s AND Activo = 1
+        """, (role_id,))
+        rol = cur.fetchone()
+        if not rol:
+            raise HTTPException(status_code=404, detail="Rol no encontrado")
+
+        rol_id_sql = rol["RolID"]
+
+        if descripcion is not None:
+            cur.execute("""
+                UPDATE dbo.Usuario_Roles
+                SET Descripcion = %s, FechaModificacion = GETDATE()
+                WHERE RolID = %s
+            """, (descripcion, rol_id_sql))
+
+        if nombre and not rol.get("EsRolSistema"):
+            cur.execute("""
+                UPDATE dbo.Usuario_Roles
+                SET NombreRol = %s, CodigoRol = UPPER(REPLACE(%s, ' ', '_')), FechaModificacion = GETDATE()
+                WHERE RolID = %s
+            """, (nombre, nombre, rol_id_sql))
+
+        if isinstance(permisos, list):
+            cur.execute("""
+                UPDATE dbo.Usuario_PermisosRolModulo
+                SET Activo = 0, Permitido = 0, FechaModificacion = GETDATE(), ModifiedBy = 'admin-sql'
+                WHERE RolID = %s
+            """, (rol_id_sql,))
+
+            for p in permisos:
+                modulo_id = None
+                accion_id = None
+
+                if isinstance(p, dict):
+                    modulo_id = p.get("modulo_id") or p.get("ModuloID") or p.get("id")
+                    accion_id = p.get("accion_id") or p.get("AccionID")
+                    accion_codigo = p.get("accion_codigo") or p.get("accion") or "VER"
+                else:
+                    modulo_id = p
+                    accion_codigo = "VER"
+
+                if accion_id is None:
+                    cur.execute("""
+                        SELECT AccionID
+                        FROM dbo.Usuario_Acciones
+                        WHERE CodigoAccion = %s AND Activo = 1
+                    """, (str(accion_codigo).upper(),))
+                    acc = cur.fetchone()
+                    if not acc:
+                        continue
+                    accion_id = acc["AccionID"]
+
+                cur.execute("""
+                    SELECT ModuloID
+                    FROM dbo.Usuario_Modulos
+                    WHERE ModuloID = TRY_CONVERT(INT, %s) AND Activo = 1
+                """, (str(modulo_id),))
+                mod = cur.fetchone()
+                if not mod:
+                    continue
+
+                cur.execute("""
+                    UPDATE dbo.Usuario_PermisosRolModulo
+                    SET Activo = 1, Permitido = 1, FechaModificacion = GETDATE(), ModifiedBy = 'admin-sql'
+                    WHERE RolID = %s AND ModuloID = %s AND AccionID = %s
+                """, (rol_id_sql, mod["ModuloID"], accion_id))
+
+                if cur.rowcount == 0:
+                    cur.execute("""
+                        INSERT INTO dbo.Usuario_PermisosRolModulo
+                        (RolID, ModuloID, AccionID, Permitido, RestriccionPropietario,
+                         RestriccionSucursal, RequiereAutorizacion, Activo, FechaAlta, CreatedBy)
+                        VALUES (%s, %s, %s, 1, 0, 0, 0, 1, GETDATE(), 'admin-sql')
+                    """, (rol_id_sql, mod["ModuloID"], accion_id))
+
+        conn.commit()
+        return {"ok": True, "message": "Rol y permisos actualizados", "rol_id": rol_id_sql}
+
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error guardando permisos del rol: {e}")
+    finally:
+        conn.close()
+
+
+@router.post("/roles")
+async def create_role_sql(role_data: dict, current_user: dict = Depends(get_current_user)):
+    require_admin(current_user)
+
+    nombre = role_data.get("nombre")
+    descripcion = role_data.get("descripcion") or nombre or ""
+    if not nombre:
+        raise HTTPException(status_code=400, detail="Nombre requerido")
+
+    conn = get_connection()
+    cur = conn.cursor(as_dict=True)
+    try:
+        codigo = nombre.upper().replace(" ", "_")
+        cur.execute("""
+            INSERT INTO dbo.Usuario_Roles
+            (CodigoRol, NombreRol, Descripcion, EsRolSistema, Activo, FechaAlta, NivelJerarquia)
+            VALUES (%s, %s, %s, 0, 1, GETDATE(), 0)
+        """, (codigo, nombre, descripcion))
+
+        cur.execute("SELECT SCOPE_IDENTITY() AS RolID")
+        rol_id = int(cur.fetchone()["RolID"])
+        conn.commit()
+        return await update_role_sql(str(rol_id), role_data, current_user)
+
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error creando rol: {e}")
+    finally:
+        conn.close()
+
+
+@router.delete("/roles/{role_id}")
+async def delete_role_sql(role_id: str, current_user: dict = Depends(get_current_user)):
+    require_admin(current_user)
+    execute_query("""
+        UPDATE dbo.Usuario_Roles
+        SET Activo = 0, FechaModificacion = GETDATE()
+        WHERE RolID = %s AND ISNULL(EsRolSistema, 0) = 0
+    """, (role_id,))
+    return {"ok": True, "message": "Rol desactivado"}
+

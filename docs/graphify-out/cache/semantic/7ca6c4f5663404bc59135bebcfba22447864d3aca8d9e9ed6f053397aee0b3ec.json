@@ -1,0 +1,1 @@
+{"nodes": [{"id": "inventory_analysis_core_py", "label": "Inventory Analysis Core Service", "file_type": "code", "source_file": "/app/backend/core/inventory_analysis_core.py", "source_location": null}], "edges": [], "hyperedges": []}

@@ -1,0 +1,1 @@
+{"nodes": [], "edges": [{"source": "scheduler_jobs_sync_comercial_abiertas_v2_job_py", "target": "empresa_resolver_empresa_resolver_py", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "reports/FASE_5D_REFACTOR_SCHEDULER_EMPRESARESOLVER_FECHAOPERACION.md", "source_location": null, "weight": 1.0}], "hyperedges": []}

@@ -40,6 +40,12 @@ ACTUALIZADO: 2026-04-19
 """
 
 import logging
+import os
+import json
+import uuid
+import asyncio
+import subprocess
+import re
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
@@ -84,6 +90,165 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/centro-control", tags=["Centro de Control"])
 
+
+# ============================================================================
+# HELPERS SQL-FIRST PARA JOBS DEL CENTRO DE CONTROL
+# ============================================================================
+
+def _cc_sql_env(name_options):
+    for name in name_options:
+        value = os.environ.get(name)
+        if value:
+            return value
+    return None
+
+
+def _cc_sql_connection():
+    """Conexión SQL Server centralizada por variables de entorno; sin credenciales hardcodeadas."""
+    try:
+        import pymssql
+    except Exception as exc:
+        raise RuntimeError(f"pymssql no disponible: {exc}")
+
+    host = _cc_sql_env(["EDARSAHUB_SQL_HOST", "SQL_HOST", "MSSQL_HOST"])
+    database = _cc_sql_env(["EDARSAHUB_SQL_DATABASE", "SQL_DATABASE", "MSSQL_DATABASE"])
+    user = _cc_sql_env(["EDARSAHUB_SQL_USER", "SQL_USER", "MSSQL_USER"])
+    password = _cc_sql_env(["EDARSAHUB_SQL_PASSWORD", "SQL_PASSWORD", "MSSQL_PASSWORD"])
+
+    missing = []
+    if not host: missing.append("EDARSAHUB_SQL_HOST")
+    if not database: missing.append("EDARSAHUB_SQL_DATABASE")
+    if not user: missing.append("EDARSAHUB_SQL_USER")
+    if not password: missing.append("EDARSAHUB_SQL_PASSWORD")
+    if missing:
+        raise RuntimeError("Variables SQL faltantes: " + ", ".join(missing))
+
+    return pymssql.connect(
+        server=host,
+        database=database,
+        user=user,
+        password=password,
+        as_dict=True,
+        login_timeout=15,
+        timeout=60,
+    )
+
+
+def _cc_execute(sql: str, params: tuple = ()):
+    conn = _cc_sql_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, params)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _cc_fetchall(sql: str, params: tuple = ()):
+    conn = _cc_sql_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, params)
+        return cur.fetchall()
+    finally:
+        conn.close()
+
+
+def _ensure_scheduler_job_config_table():
+    """Extiende scheduler sin romper dbo.Sys_Scheduler_Jobs."""
+    _cc_execute("""
+    IF NOT EXISTS (
+        SELECT 1
+        FROM sys.objects
+        WHERE object_id = OBJECT_ID(N'[dbo].[Sys_Scheduler_JobConfig]')
+          AND type = 'U'
+    )
+    BEGIN
+        CREATE TABLE dbo.Sys_Scheduler_JobConfig (
+            JobID VARCHAR(50) NOT NULL PRIMARY KEY,
+            Modulo VARCHAR(50) NOT NULL,
+            Handler VARCHAR(80) NOT NULL,
+            ParametrosJSON NVARCHAR(MAX) NULL,
+            ModoEjecucion VARCHAR(30) NOT NULL DEFAULT('MANUAL'),
+            TimeoutSegundos INT NOT NULL DEFAULT(1800),
+            ReintentosMaximos INT NOT NULL DEFAULT(0),
+            PermiteEjecucionManual BIT NOT NULL DEFAULT(1),
+            CreadoPorUsuarioID VARCHAR(100) NULL,
+            FechaCreacion DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+            FechaActualizacion DATETIME2 NULL,
+            CONSTRAINT FK_SchedulerJobConfig_Jobs
+                FOREIGN KEY (JobID) REFERENCES dbo.Sys_Scheduler_Jobs(JobID)
+        );
+    END
+    """)
+
+
+def _safe_job_id(value: str) -> str:
+    value = (value or "").strip().lower()
+    value = re.sub(r"[^a-z0-9_\-]", "-", value)
+    value = re.sub(r"-+", "-", value).strip("-")
+    if not value:
+        raise HTTPException(status_code=400, detail="job_id requerido")
+    if len(value) > 50:
+        raise HTTPException(status_code=400, detail="job_id excede 50 caracteres")
+    return value
+
+
+def _validate_handler(handler: str) -> str:
+    allowed = {"NETPAY_BACKFILL"}
+    handler = (handler or "").strip().upper()
+    if handler not in allowed:
+        raise HTTPException(status_code=400, detail=f"Handler no permitido: {handler}")
+    return handler
+
+
+def _run_netpay_backfill_sync(params: Dict[str, Any], timeout: int = 1800) -> Dict[str, Any]:
+    report_type = (params.get("report_type") or "").strip().upper()
+    date_from = (params.get("date_from") or "").strip()
+    date_to = (params.get("date_to") or "").strip()
+
+    if report_type not in {"DETALLE_TRANSACCIONES", "DETALLE_DEPOSITOS_MOVIMIENTOS"}:
+        raise HTTPException(status_code=400, detail="report_type NetPay inválido")
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", date_from):
+        raise HTTPException(status_code=400, detail="date_from requerido YYYY-MM-DD")
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", date_to):
+        raise HTTPException(status_code=400, detail="date_to requerido YYYY-MM-DD")
+
+    working_directory = params.get("working_directory") or "/app/netpay_robot_edarsahub/netpay_robot_edarsahub"
+    allowed_wd = "/app/netpay_robot_edarsahub/netpay_robot_edarsahub"
+    if working_directory != allowed_wd:
+        raise HTTPException(status_code=400, detail="working_directory no permitido")
+
+    python_bin = os.environ.get("NETPAY_ROBOT_PYTHON", "/usr/local/bin/python")
+    env = os.environ.copy()
+    env["PYTHONUNBUFFERED"] = "1"
+    env["PYTHONPATH"] = f"{working_directory}/.vendor:{working_directory}"
+
+    cmd = [
+        python_bin, "-B", "-m", "netpay_robot.cli", "run",
+        "--report-type", report_type,
+        "--date-from", date_from,
+        "--date-to", date_to,
+    ]
+
+    proc = subprocess.run(
+        cmd,
+        cwd=working_directory,
+        env=env,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        timeout=timeout,
+    )
+
+    output = proc.stdout or ""
+    return {
+        "exit_code": proc.returncode,
+        "ok": proc.returncode == 0,
+        "output_tail": output[-12000:],
+        "command": " ".join(cmd),
+    }
+
 # ============================================================================
 # MODELOS DE REQUEST/RESPONSE
 # ============================================================================
@@ -117,6 +282,26 @@ class BitacoraEntryRequest(BaseModel):
     impacto: Optional[str] = None
     autor: Optional[str] = None
     referencias: Optional[List[str]] = None  # PRs, tickets, docs
+
+
+class SchedulerJobCreateRequest(BaseModel):
+    """Request para crear job desde Centro de Control."""
+    job_id: str
+    job_name: str
+    cron_expression: str = "MANUAL"
+    job_type: str = "NETPAY"
+    status: str = "activo"
+    modulo: str = "FINANZAS"
+    handler: str = "NETPAY_BACKFILL"
+    parametros: Dict[str, Any] = {}
+    timeout_segundos: int = 1800
+    reintentos_maximos: int = 0
+    permite_ejecucion_manual: bool = True
+
+
+class SchedulerJobRunRequest(BaseModel):
+    """Request para ejecutar job manual con parámetros opcionales."""
+    parametros: Optional[Dict[str, Any]] = None
 
 # ============================================================================
 # STORAGE EN MEMORIA (para historial de la sesión)
@@ -717,6 +902,47 @@ async def obtener_estado_jobs(current_user: Dict = Depends(get_current_user)):
                     "trigger": str(job.trigger) if hasattr(job, 'trigger') else "unknown"
                 })
         
+        # Complementar con jobs registrados en SQL para que el menú muestre también jobs manuales/configurados.
+        try:
+            _ensure_scheduler_job_config_table()
+            sql_jobs = _cc_fetchall("""
+                SELECT
+                    j.JobID,
+                    j.JobName,
+                    j.CronExpression,
+                    j.JobType,
+                    j.Status,
+                    j.LastRunDate,
+                    c.Modulo,
+                    c.Handler,
+                    c.ParametrosJSON,
+                    c.ModoEjecucion,
+                    c.PermiteEjecucionManual
+                FROM dbo.Sys_Scheduler_Jobs j
+                LEFT JOIN dbo.Sys_Scheduler_JobConfig c
+                    ON c.JobID = j.JobID
+                ORDER BY j.JobName
+            """)
+            existing_ids = {str(j.get("id")) for j in jobs}
+            for row in sql_jobs:
+                job_id = row.get("JobID")
+                if job_id in existing_ids:
+                    continue
+                jobs.append({
+                    "id": job_id,
+                    "name": row.get("JobName"),
+                    "next_run": None,
+                    "trigger": row.get("CronExpression"),
+                    "job_type": row.get("JobType"),
+                    "status": row.get("Status"),
+                    "handler": row.get("Handler"),
+                    "modulo": row.get("Modulo"),
+                    "manual": bool(row.get("PermiteEjecucionManual")) if row.get("PermiteEjecucionManual") is not None else False,
+                    "last_run": row.get("LastRunDate").isoformat() if row.get("LastRunDate") else None,
+                })
+        except Exception as sql_exc:
+            logger.warning(f"[CENTRO CONTROL] No se pudieron cargar jobs SQL: {sql_exc}")
+
         return {
             "scheduler_status": "running" if (hasattr(scheduler, 'running') and scheduler.running) else "stopped",
             "jobs_total": len(jobs),
@@ -737,6 +963,212 @@ async def obtener_estado_jobs(current_user: Dict = Depends(get_current_user)):
             "jobs": [],
             "error": str(e)[:200]
         }
+
+
+@router.post("/jobs")
+async def crear_scheduler_job(
+    payload: SchedulerJobCreateRequest,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Crea/actualiza un job SQL-first visible desde Centro de Control."""
+    try:
+        _ensure_scheduler_job_config_table()
+
+        job_id = _safe_job_id(payload.job_id)
+        handler = _validate_handler(payload.handler)
+
+        job_name = (payload.job_name or "").strip()
+        if not job_name:
+            raise HTTPException(status_code=400, detail="job_name requerido")
+        if len(job_name) > 100:
+            raise HTTPException(status_code=400, detail="job_name excede 100 caracteres")
+
+        cron = (payload.cron_expression or "MANUAL").strip()
+        if len(cron) > 50:
+            raise HTTPException(status_code=400, detail="cron_expression excede 50 caracteres")
+
+        job_type = (payload.job_type or "NETPAY").strip().upper()
+        if len(job_type) > 20:
+            raise HTTPException(status_code=400, detail="job_type excede 20 caracteres")
+
+        status = (payload.status or "activo").strip()
+        if status.lower() not in {"activo", "active", "inactivo", "inactive", "paused", "pausado"}:
+            raise HTTPException(status_code=400, detail="status inválido")
+
+        user_id = str(
+            current_user.get("PublicUUID")
+            or current_user.get("id")
+            or current_user.get("email")
+            or current_user.get("username")
+            or "unknown"
+        )
+
+        parametros = dict(payload.parametros or {})
+        if handler == "NETPAY_BACKFILL":
+            parametros.setdefault("working_directory", "/app/netpay_robot_edarsahub/netpay_robot_edarsahub")
+            if "report_type" in parametros:
+                parametros["report_type"] = str(parametros["report_type"]).upper()
+
+        parametros_json = json.dumps(parametros, ensure_ascii=False)
+
+        _cc_execute("""
+            IF EXISTS (SELECT 1 FROM dbo.Sys_Scheduler_Jobs WHERE JobID=%s)
+            BEGIN
+                UPDATE dbo.Sys_Scheduler_Jobs
+                SET JobName=%s,
+                    CronExpression=%s,
+                    JobType=%s,
+                    Status=%s
+                WHERE JobID=%s
+            END
+            ELSE
+            BEGIN
+                INSERT INTO dbo.Sys_Scheduler_Jobs (
+                    JobID, JobName, CronExpression, JobType, Status, LastRunDate
+                )
+                VALUES (%s, %s, %s, %s, %s, NULL)
+            END
+        """, (
+            job_id, job_name, cron, job_type, status, job_id,
+            job_id, job_name, cron, job_type, status
+        ))
+
+        _cc_execute("""
+            IF EXISTS (SELECT 1 FROM dbo.Sys_Scheduler_JobConfig WHERE JobID=%s)
+            BEGIN
+                UPDATE dbo.Sys_Scheduler_JobConfig
+                SET Modulo=%s,
+                    Handler=%s,
+                    ParametrosJSON=%s,
+                    ModoEjecucion=%s,
+                    TimeoutSegundos=%s,
+                    ReintentosMaximos=%s,
+                    PermiteEjecucionManual=%s,
+                    FechaActualizacion=SYSUTCDATETIME()
+                WHERE JobID=%s
+            END
+            ELSE
+            BEGIN
+                INSERT INTO dbo.Sys_Scheduler_JobConfig (
+                    JobID, Modulo, Handler, ParametrosJSON, ModoEjecucion,
+                    TimeoutSegundos, ReintentosMaximos, PermiteEjecucionManual,
+                    CreadoPorUsuarioID
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            END
+        """, (
+            job_id, payload.modulo, handler, parametros_json, "MANUAL",
+            int(payload.timeout_segundos), int(payload.reintentos_maximos),
+            1 if payload.permite_ejecucion_manual else 0, job_id,
+            job_id, payload.modulo, handler, parametros_json, "MANUAL",
+            int(payload.timeout_segundos), int(payload.reintentos_maximos),
+            1 if payload.permite_ejecucion_manual else 0, user_id
+        ))
+
+        return {
+            "ok": True,
+            "job_id": job_id,
+            "job_name": job_name,
+            "handler": handler,
+            "message": "Job creado/actualizado correctamente"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[CENTRO CONTROL] Error creando job: {e}")
+        raise HTTPException(status_code=500, detail=str(e)[:500])
+
+
+@router.post("/jobs/{job_id}/run")
+async def ejecutar_scheduler_job_manual(
+    job_id: str,
+    payload: SchedulerJobRunRequest = SchedulerJobRunRequest(),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Ejecuta manualmente un job permitido desde Centro de Control."""
+    try:
+        _ensure_scheduler_job_config_table()
+        job_id = _safe_job_id(job_id)
+
+        rows = _cc_fetchall("""
+            SELECT
+                j.JobID,
+                j.JobName,
+                j.Status,
+                c.Handler,
+                c.ParametrosJSON,
+                c.TimeoutSegundos,
+                c.PermiteEjecucionManual
+            FROM dbo.Sys_Scheduler_Jobs j
+            INNER JOIN dbo.Sys_Scheduler_JobConfig c
+                ON c.JobID = j.JobID
+            WHERE j.JobID=%s
+        """, (job_id,))
+
+        if not rows:
+            raise HTTPException(status_code=404, detail=f"Job no encontrado: {job_id}")
+
+        row = rows[0]
+        if not row.get("PermiteEjecucionManual"):
+            raise HTTPException(status_code=400, detail="Job no permite ejecución manual")
+
+        handler = _validate_handler(row.get("Handler"))
+        base_params = json.loads(row.get("ParametrosJSON") or "{}")
+        run_params = dict(base_params)
+        if payload and payload.parametros:
+            run_params.update(payload.parametros)
+
+        run_id = str(uuid.uuid4())[:8]
+        _cc_execute("""
+            INSERT INTO dbo.Scheduler_BitacoraJobs (
+                JobName, RunID, Accion, DetallesJSON, Exito
+            )
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            row.get("JobName"), run_id, "INICIO_MANUAL",
+            json.dumps({"job_id": job_id, "params": run_params}, ensure_ascii=False), 1
+        ))
+
+        if handler == "NETPAY_BACKFILL":
+            result = await asyncio.to_thread(
+                _run_netpay_backfill_sync,
+                run_params,
+                int(row.get("TimeoutSegundos") or 1800)
+            )
+        else:
+            raise HTTPException(status_code=400, detail=f"Handler sin ejecutor: {handler}")
+
+        _cc_execute("""
+            UPDATE dbo.Sys_Scheduler_Jobs
+            SET LastRunDate=GETDATE()
+            WHERE JobID=%s
+        """, (job_id,))
+
+        _cc_execute("""
+            INSERT INTO dbo.Scheduler_BitacoraJobs (
+                JobName, RunID, Accion, DetallesJSON, Exito, MensajeError
+            )
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (
+            row.get("JobName"), run_id, "EJECUCION_MANUAL_COMPLETADA",
+            json.dumps(result, ensure_ascii=False), 1 if result.get("ok") else 0,
+            None if result.get("ok") else result.get("output_tail", "")[-500:]
+        ))
+
+        return {
+            "ok": bool(result.get("ok")),
+            "job_id": job_id,
+            "run_id": run_id,
+            "result": result
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[CENTRO CONTROL] Error ejecutando job manual: {e}")
+        raise HTTPException(status_code=500, detail=str(e)[:500])
+
 
 # ============================================================================
 # ENDPOINTS: BITÁCORA DE CAMBIOS

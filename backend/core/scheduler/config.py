@@ -112,6 +112,10 @@ class SchedulerConfig(BaseModel):
         vtiger_sync_interval = int(os.environ.get("SCHEDULER_VTIGER_SYNC_INTERVAL_SECONDS", "900"))  # 15 minutos
         vtiger_sync_enabled = os.environ.get("SCHEDULER_VTIGER_SYNC_ENABLED", "true").lower() == "true"
         
+        # NetPay Sync Diario (posterior al corte operativo)
+        netpay_sync_cron = os.environ.get("SCHEDULER_NETPAY_SYNC_CRON", "30 6 * * *")  # 06:30 diario
+        netpay_sync_enabled = os.environ.get("SCHEDULER_NETPAY_SYNC_ENABLED", "true").lower() == "true"
+        
         jobs = {
             "sla_processor": JobConfig(
                 job_id="sla_processor",
@@ -281,6 +285,17 @@ class SchedulerConfig(BaseModel):
                 timeout_seconds=300  # 5 minutos max
             ),
             # Inteligencia Comercial: Sincronización de ventas desde POS
+            # NetPay: Sincronización diaria de reportes conciliables
+            "netpay_sync_diario": JobConfig(
+                job_id="netpay_sync_diario",
+                job_name="NetPay - Sync Diario",
+                description="Ejecuta diariamente los reportes NetPay DETALLE_TRANSACCIONES y DETALLE_DEPOSITOS_MOVIMIENTOS para el día anterior completo",
+                enabled=netpay_sync_enabled,
+                cron_expression=netpay_sync_cron,
+                interval_seconds=86400,
+                batch_size=2,
+                timeout_seconds=1800
+            ),
             "inteligencia_comercial_sync": JobConfig(
                 job_id="inteligencia_comercial_sync",
                 job_name="Inteligencia Comercial - Sync Sales",

@@ -17,7 +17,9 @@ TABLAS FUENTE:
 FECHA: Junio 2026
 """
 
+from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
 from fastapi import APIRouter, Depends, HTTPException
+import re
 from typing import Dict, Any, List
 from core.security import get_current_user
 from core.config.edarsahub_sql import get_edarsahub_connection
@@ -416,3 +418,152 @@ async def save_permisos_catalogos(payload: dict, current_user: dict = Depends(ge
         "message": "Permisos recibidos correctamente",
         "payload": payload
     }
+
+
+@router.put("/roles/{role_id}")
+async def update_role_sql(role_id: str, role_data: dict, current_user: dict = Depends(get_current_user)):
+    """
+    Actualiza rol y permisos en EDARSAHUB SQL.
+    Fuente única: Usuario_Roles + Usuario_PermisosRolModulo.
+    """
+    require_admin(current_user)
+
+    nombre = role_data.get("nombre")
+    descripcion = role_data.get("descripcion")
+    permisos = role_data.get("permisos", [])
+
+    conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+    cur = conn.cursor(as_dict=True)
+    try:
+        cur.execute("""
+            SELECT RolID, EsRolSistema
+            FROM dbo.Usuario_Roles
+            WHERE RolID = %s AND Activo = 1
+        """, (role_id,))
+        rol = cur.fetchone()
+        if not rol:
+            raise HTTPException(status_code=404, detail="Rol no encontrado")
+
+        rol_id_sql = rol["RolID"]
+
+        if descripcion is not None:
+            cur.execute("""
+                UPDATE dbo.Usuario_Roles
+                SET Descripcion = %s, FechaModificacion = GETDATE()
+                WHERE RolID = %s
+            """, (descripcion, rol_id_sql))
+
+        if nombre and not rol.get("EsRolSistema"):
+            cur.execute("""
+                UPDATE dbo.Usuario_Roles
+                SET NombreRol = %s, CodigoRol = UPPER(REPLACE(%s, ' ', '_')), FechaModificacion = GETDATE()
+                WHERE RolID = %s
+            """, (nombre, nombre, rol_id_sql))
+
+        if isinstance(permisos, list):
+            cur.execute("""
+                UPDATE dbo.Usuario_PermisosRolModulo
+                SET Activo = 0, Permitido = 0, FechaModificacion = GETDATE(), ModifiedBy = 'admin-sql'
+                WHERE RolID = %s
+            """, (rol_id_sql,))
+
+            for p in permisos:
+                modulo_id = None
+                accion_id = None
+
+                if isinstance(p, dict):
+                    modulo_id = p.get("modulo_id") or p.get("ModuloID") or p.get("id")
+                    accion_id = p.get("accion_id") or p.get("AccionID")
+                    accion_codigo = p.get("accion_codigo") or p.get("accion") or "VER"
+                else:
+                    modulo_id = p
+                    accion_codigo = "VER"
+
+                if accion_id is None:
+                    cur.execute("""
+                        SELECT AccionID
+                        FROM dbo.Usuario_Acciones
+                        WHERE CodigoAccion = %s AND Activo = 1
+                    """, (str(accion_codigo).upper(),))
+                    acc = cur.fetchone()
+                    if not acc:
+                        continue
+                    accion_id = acc["AccionID"]
+
+                cur.execute("""
+                    SELECT ModuloID
+                    FROM dbo.Usuario_Modulos
+                    WHERE ModuloID = TRY_CONVERT(INT, %s) AND Activo = 1
+                """, (str(modulo_id),))
+                mod = cur.fetchone()
+                if not mod:
+                    continue
+
+                cur.execute("""
+                    UPDATE dbo.Usuario_PermisosRolModulo
+                    SET Activo = 1, Permitido = 1, FechaModificacion = GETDATE(), ModifiedBy = 'admin-sql'
+                    WHERE RolID = %s AND ModuloID = %s AND AccionID = %s
+                """, (rol_id_sql, mod["ModuloID"], accion_id))
+
+                if cur.rowcount == 0:
+                    cur.execute("""
+                        INSERT INTO dbo.Usuario_PermisosRolModulo
+                        (RolID, ModuloID, AccionID, Permitido, RestriccionPropietario,
+                         RestriccionSucursal, RequiereAutorizacion, Activo, FechaAlta, CreatedBy)
+                        VALUES (%s, %s, %s, 1, 0, 0, 0, 1, GETDATE(), 'admin-sql')
+                    """, (rol_id_sql, mod["ModuloID"], accion_id))
+
+        conn.commit()
+        return {"ok": True, "message": "Rol y permisos actualizados", "rol_id": rol_id_sql}
+
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error guardando permisos del rol: {e}")
+    finally:
+        conn.close()
+
+
+@router.post("/roles")
+async def create_role_sql(role_data: dict, current_user: dict = Depends(get_current_user)):
+    require_admin(current_user)
+
+    nombre = role_data.get("nombre")
+    descripcion = role_data.get("descripcion") or nombre or ""
+    if not nombre:
+        raise HTTPException(status_code=400, detail="Nombre requerido")
+
+    conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+    cur = conn.cursor(as_dict=True)
+    try:
+        codigo = nombre.upper().replace(" ", "_")
+        cur.execute("""
+            INSERT INTO dbo.Usuario_Roles
+            (CodigoRol, NombreRol, Descripcion, EsRolSistema, Activo, FechaAlta, NivelJerarquia)
+            VALUES (%s, %s, %s, 0, 1, GETDATE(), 0)
+        """, (codigo, nombre, descripcion))
+
+        cur.execute("SELECT SCOPE_IDENTITY() AS RolID")
+        rol_id = int(cur.fetchone()["RolID"])
+        conn.commit()
+        return await update_role_sql(str(rol_id), role_data, current_user)
+
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error creando rol: {e}")
+    finally:
+        conn.close()
+
+
+@router.delete("/roles/{role_id}")
+async def delete_role_sql(role_id: str, current_user: dict = Depends(get_current_user)):
+    require_admin(current_user)
+    execute_query("""
+        UPDATE dbo.Usuario_Roles
+        SET Activo = 0, FechaModificacion = GETDATE()
+        WHERE RolID = %s AND ISNULL(EsRolSistema, 0) = 0
+    """, (role_id,))
+    return {"ok": True, "message": "Rol desactivado"}
+

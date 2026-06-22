@@ -1,0 +1,1 @@
+{"nodes": [], "edges": [{"source": "fase2_operativo_repositories_base_repository_py", "target": "fase2_operativo_fase2_operativo", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "reports/FASE_B_P0_C_BASE_REPOSITORY_SQL.md", "source_location": null, "weight": 1.0}], "hyperedges": []}

@@ -11,7 +11,8 @@ Permisos requeridos:
 """
 
 from typing import Optional
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException, Query, Depends
 import logging
 
@@ -20,6 +21,12 @@ from core.rbac.middleware import require_permission
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v2/scheduler", tags=["Scheduler"])
+
+
+class NetPayManualRunRequest(BaseModel):
+    fecha_desde: date = Field(..., description="Fecha inicial ISO YYYY-MM-DD")
+    fecha_hasta: date = Field(..., description="Fecha final ISO YYYY-MM-DD")
+
 
 # Inyección de dependencia
 _db = None
@@ -131,6 +138,39 @@ async def run_job_now(
         raise HTTPException(status_code=400, detail=result.get("message"))
     
     return result
+
+
+@router.post("/netpay/run")
+async def run_netpay_manual(
+    payload: NetPayManualRunRequest,
+    current_user: dict = Depends(require_permission("SCHEDULER_ADMIN"))
+):
+    """
+    Ejecuta manualmente NetPay por rango controlado.
+    Máximo permitido: 31 días calendario.
+    """
+    from .jobs.netpay_sync_job import execute_netpay_sync_diario
+
+    try:
+        result = await execute_netpay_sync_diario(
+            date_from=payload.fecha_desde,
+            date_to=payload.fecha_hasta,
+            max_days=31,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[NETPAY_MANUAL_RUN] Error ejecutando NetPay manual: {e}")
+        raise HTTPException(status_code=500, detail="Error ejecutando NetPay manual")
+
+    return {
+        "status": "completed" if result.get("success") else "failed",
+        "job_id": "netpay_sync_diario",
+        "manual": True,
+        "fecha_desde": payload.fecha_desde.isoformat(),
+        "fecha_hasta": payload.fecha_hasta.isoformat(),
+        "result": result,
+    }
 
 
 @router.post("/jobs/{job_id}/pause")
