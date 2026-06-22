@@ -11154,72 +11154,51 @@ async def obtener_dashboard_compras_sql_first(
 
 # Función para guardar/obtener estado de conexión de servidores
 async def get_server_connection_status(server_id: str):
-    """Obtiene el último estado de conexión de un servidor"""
-    status = await db.server_status.find_one({"server_id": server_id})
-    return status
+    """Obtiene el último estado de conexión de un servidor desde EDARSAHUB SQL."""
+    from modules.comercial.repository import get_server_connection_status as _sql_get_status
+    return await _sql_get_status(server_id)
 
 async def save_server_connection_status(server_id: str, is_online: bool, response_time_ms: int = None):
-    """Guarda el estado de conexión de un servidor"""
-    await db.server_status.update_one(
-        {"server_id": server_id},
-        {
-            "$set": {
-                "server_id": server_id,
-                "is_online": is_online,
-                "response_time_ms": response_time_ms,
-                "last_check": datetime.now(timezone.utc).isoformat()
-            }
-        },
-        upsert=True
-    )
+    """Guarda el estado de conexión de un servidor en EDARSAHUB SQL."""
+    from modules.comercial.repository import save_server_connection_status as _sql_save_status
+    await _sql_save_status(server_id, is_online, response_time_ms)
 
 async def is_server_recently_offline(server_id: str, minutes_threshold: int = 10):
-    """Verifica si un servidor fue marcado como offline recientemente (evita reintentos)"""
+    """Verifica si un servidor fue marcado como offline recientemente (evita reintentos)."""
     status = await get_server_connection_status(server_id)
     if not status:
-        return False  # Sin registro, intentar conectar
-    
+        return False
+
     if status.get('is_online', True):
-        return False  # Estaba online, intentar conectar
-    
-    # Verificar si el último chequeo fue hace menos de X minutos
+        return False
+
     last_check = status.get('last_check')
     if last_check:
         try:
+            if not isinstance(last_check, str):
+                last_check = last_check.isoformat()
             last_check_dt = datetime.fromisoformat(last_check.replace('Z', '+00:00'))
+            if last_check_dt.tzinfo is None:
+                last_check_dt = last_check_dt.replace(tzinfo=timezone.utc)
             now = datetime.now(timezone.utc)
             diff_minutes = (now - last_check_dt).total_seconds() / 60
             if diff_minutes < minutes_threshold:
-                return True  # Offline recientemente, no reintentar
+                return True
         except Exception:
             pass
-    
+
     return False
 
 # Función para guardar/obtener caché de KPIs
 async def get_cached_kpis(server_id: str, periodo_key: str):
-    """Obtiene los KPIs cacheados de un servidor"""
-    cache = await db.kpis_cache.find_one({
-        "server_id": server_id,
-        "periodo_key": periodo_key
-    })
-    return cache
+    """Obtiene los KPIs cacheados desde EDARSAHUB SQL."""
+    from modules.comercial.repository import get_cached_kpis as _sql_get_cached_kpis
+    return await _sql_get_cached_kpis(server_id, periodo_key)
 
 async def save_kpis_cache(server_id: str, periodo_key: str, kpis: dict):
-    """Guarda los KPIs en caché"""
-    await db.kpis_cache.update_one(
-        {"server_id": server_id, "periodo_key": periodo_key},
-        {
-            "$set": {
-                "server_id": server_id,
-                "periodo_key": periodo_key,
-                "kpis": kpis,
-                "updated_at": datetime.now(timezone.utc).isoformat(),
-                "status": "online"
-            }
-        },
-        upsert=True
-    )
+    """Guarda los KPIs en caché SQL."""
+    from modules.comercial.repository import save_kpis_cache as _sql_save_kpis_cache
+    await _sql_save_kpis_cache(server_id, periodo_key, kpis)
 
 # ============================================================================
 # HELPERS DEL TABLERO EJECUTIVO - MIGRADOS A modules/comercial/service.py
