@@ -6,8 +6,8 @@ FASE 3B: Registry centralizado para resolución de servidores.
 
 PRINCIPIOS:
 1. EDARSAHUB SQL es la fuente primaria de configuración de servidores
-2. MongoDB queda como fallback legacy temporal
-3. Todo fallback debe quedar marcado con config_origin = "MONGODB_LEGACY"
+2. EDARSAHUB SQL es la única fuente operativa para configuración de servidores
+3. No usar MongoDB como fallback operativo
 4. Nunca exponer secretos (passwords, api_keys) al frontend
 5. Normalizar system_type usando core.system_type_utils
 
