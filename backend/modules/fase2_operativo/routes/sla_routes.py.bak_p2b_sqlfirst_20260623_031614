@@ -244,41 +244,8 @@ async def obtener_sla_tarea(
         db = get_database()
         sla_service = get_sla_service(db)
         
-        # SQL-FIRST P2B: buscar tarea en dbo.Tareas_Inventario
-        tarea = None
-        try:
-            from modules.compras.sync_service import get_edarsahub_connection
-            conn = get_edarsahub_connection()
-            cur = conn.cursor(as_dict=True)
-            cur.execute("""
-                SELECT TOP 1
-                    TareaID AS id,
-                    TareaID AS tarea_id,
-                    WorkflowID AS workflow_id,
-                    TipoTarea AS tipo_tarea,
-                    Titulo AS titulo,
-                    Descripcion AS descripcion,
-                    EstadoTarea AS estado_tarea,
-                    Prioridad AS prioridad,
-                    UsuarioAsignadoID AS usuario_asignado_id,
-                    UsuarioAsignadoNombre AS usuario_asignado_nombre,
-                    FechaCreacion AS fecha_creacion,
-                    FechaAsignacion AS fecha_asignacion,
-                    FechaLimite AS fecha_limite,
-                    FechaPrimeraAccion AS fecha_primera_accion,
-                    FechaCompletada AS fecha_completada,
-                    Ciclo AS ciclo,
-                    EsReasignacion AS es_reasignacion,
-                    Vencida AS vencida,
-                    EstadoSLA AS estado_sla,
-                    NotasJSON AS notas_json
-                FROM dbo.Tareas_Inventario
-                WHERE TareaID=%s
-            """, (tarea_id,))
-            tarea = cur.fetchone()
-            conn.close()
-        except Exception:
-            tarea = None
+        # Buscar tarea
+        tarea = db.tareas_inventario.find_one({"id": tarea_id}, {"_id": 0})
         if not tarea:
             raise HTTPException(status_code=404, detail="Tarea no encontrada")
         

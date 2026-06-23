@@ -1,0 +1,909 @@
+===== STATUS INICIAL =====
+?? docs/reports/MONGO_RUNTIME_P2B_FASE2_OPERATIVO_RESTANTE_AUDIT_20260623.txt
+
+===== RUNTIME MONGO RESTANTE FASE2 OPERATIVO =====
+backend/modules/fase2_operativo/routes/sla_routes.py:248:        tarea = db.tareas_inventario.find_one({"id": tarea_id}, {"_id": 0})
+backend/modules/fase2_operativo/routes/notificaciones_routes.py:131:    db.tareas_inventario.update_many(
+backend/modules/fase2_operativo/routes/notificaciones_routes.py:143:    notificaciones_recientes = db.notificaciones_log.find(
+backend/modules/fase2_operativo/routes/notificaciones_routes.py:162:    tareas_vencidas = list(db.tareas_inventario.find(filtro_tareas, {"_id": 0}).limit(50))
+backend/modules/fase2_operativo/routes/notificaciones_routes.py:184:        usuario = db.users.find_one({"id": usuario_id}, {"_id": 0, "email": 1, "name": 1})
+backend/modules/fase2_operativo/routes/documentos_routes.py:72:            db.documentos_generados.insert_one({
+backend/modules/fase2_operativo/routes/documentos_routes.py:146:            db.documentos_generados.insert_one({
+
+===== ARCHIVO notificaciones_routes.py =====
+     1	from core.unidades_service import UnidadesService
+     2	from core.corporate_filters.service import CorporateFilterService
+     3	"""
+     4	Rutas de Notificaciones - API para gestión de notificaciones.
+     5	CAB-003 | Fase 2B.1
+     6	PROTEGIDO CON RBAC (Fase 3.1)
+     7	"""
+     8	
+     9	from fastapi import APIRouter, Depends, HTTPException, Query
+    10	from typing import Optional, List, Dict, Any
+    11	from datetime import datetime, timezone, timedelta
+    12	import logging
+    13	
+    14	from ..services.notification_service import get_notification_service
+    15	from ..services.email_service import get_email_service
+    16	
+    17	# RBAC - Fase 3.1
+    18	from core.security import get_current_user
+    19	
+    20	logger = logging.getLogger(__name__)
+    21	
+    22	router = APIRouter(prefix="/notificaciones", tags=["Notificaciones"])
+    23	
+    24	
+    25	@router.get("/status")
+    26	async def get_notification_status(
+    27	    current_user: Dict[str, Any] = Depends(get_current_user)
+    28	):
+    29	    """
+    30	    Obtiene el estado del servicio de notificaciones.
+    31	    """
+    32	    email_service = get_email_service()
+    33	    
+    34	    return {
+    35	        "email": {
+    36	            "configured": email_service.is_configured(),
+    37	            "enabled": email_service.enabled,
+    38	            "from_email": email_service.from_email
+    39	        },
+    40	        "status": "ok"
+    41	    }
+    42	
+    43	
+    44	@router.get("/log")
+    45	async def get_notification_log(
+    46	    tipo_evento: Optional[str] = None,
+    47	    workflow_id: Optional[str] = None,
+    48	    estado: Optional[str] = None,
+    49	    limit: int = Query(default=50, le=200),
+    50	    current_user: Dict[str, Any] = Depends(get_current_user)
+    51	):
+    52	    """
+    53	    Obtiene el log de notificaciones enviadas.
+    54	    SQL-First: fuente canónica EDARSAHUB.Operativo_Notificaciones_Log (sin MongoDB).
+    55	    """
+    56	    import asyncio
+    57	    from core.sql_first.db import get_sql_connection
+    58	
+    59	    where = ["1=1"]
+    60	    params: list = []
+    61	    if tipo_evento:
+    62	        where.append("TipoEvento = %s"); params.append(tipo_evento)
+    63	    if workflow_id:
+    64	        where.append("WorkflowID = %s"); params.append(workflow_id)
+    65	    if estado:
+    66	        where.append("Estado = %s"); params.append(estado)
+    67	    where_sql = " AND ".join(where)
+    68	
+    69	    def _run():
+    70	        conn = get_sql_connection()
+    71	        cur = conn.cursor(as_dict=True)
+    72	        cur.execute(f"SELECT COUNT(*) AS total FROM Operativo_Notificaciones_Log WHERE {where_sql}", tuple(params))
+    73	        total = cur.fetchone()["total"]
+    74	        cur.execute(f"""
+    75	            SELECT NotificacionID AS id, TipoEvento AS tipo_evento, WorkflowID AS workflow_id,
+    76	                   TareaID AS tarea_id, Destinatario AS destinatario, DestinatarioEmail AS destinatario_email,
+    77	                   Titulo AS titulo, Mensaje AS mensaje, Estado AS estado, Canal AS canal,
+    78	                   FechaEnvio AS fecha_envio, ErrorMensaje AS error
+    79	            FROM Operativo_Notificaciones_Log
+    80	            WHERE {where_sql}
+    81	            ORDER BY FechaEnvio DESC
+    82	            OFFSET 0 ROWS FETCH NEXT %s ROWS ONLY
+    83	        """, tuple(params) + (limit,))
+    84	        rows = list(cur.fetchall())
+    85	        cur.close(); conn.close()
+    86	        return total, rows
+    87	
+    88	    try:
+    89	        total, items = await asyncio.get_event_loop().run_in_executor(None, _run)
+    90	    except Exception as e:
+    91	        logger.error(f"[NOTIF_LOG] Error SQL: {e}")
+    92	        total, items = 0, []
+    93	
+    94	    return {"items": items, "total": total}
+    95	
+    96	
+    97	@router.post("/verificar-vencidas")
+    98	async def verificar_tareas_vencidas(
+    99	    current_user: Dict[str, Any] = Depends(get_current_user)
+   100	):
+   101	    """
+   102	    Verifica tareas vencidas y envía notificaciones.
+   103	    
+   104	    Este endpoint puede ser invocado manualmente o por un cron externo cada hora.
+   105	    NOTA: La detección de tareas vencidas se realiza ahora vía el módulo SLA
+   106	    (SQL-First). El almacén MongoDB fue deprecado; si no hay backend de datos
+   107	    disponible, retorna un resultado vacío en lugar de fallar.
+   108	    """
+   109	    from ..db_utils import get_database
+   110	    db = get_database()
+   111	    
+   112	    if db is None:
+   113	        logger.info("[NOTIF] verificar-vencidas: almacén operativo deprecado (NO-MONGO). Use el módulo SLA.")
+   114	        return {
+   115	            "tareas_verificadas": 0,
+   116	            "notificaciones_enviadas": 0,
+   117	            "errores": 0,
+   118	            "detalles": [],
+   119	            "mensaje": "Detección de vencidas migrada al módulo SLA (SQL-First)."
+   120	        }
+   121	    
+   122	    notification_service = get_notification_service(db)
+   123	    
+   124	    ahora = datetime.now(timezone.utc)
+   125	    
+   126	    # Buscar tareas vencidas que no estén completadas ni canceladas
+   127	    # y que no hayan sido notificadas recientemente (últimas 6 horas)
+   128	    hace_6_horas = (ahora - timedelta(hours=6)).isoformat()
+   129	    
+   130	    # Primero actualizar el campo vencida en tareas (síncrono)
+   131	    db.tareas_inventario.update_many(
+   132	        {
+   133	            "fecha_limite": {"$lt": ahora.isoformat()},
+   134	            "estado_tarea": {"$nin": ["COMPLETADA", "CANCELADA"]},
+   135	            "vencida": {"$ne": True}
+   136	        },
+   137	        {"$set": {"vencida": True}}
+   138	    )
+   139	    
+   140	    # Buscar tareas vencidas para notificar
+   141	    # Excluir las que ya recibieron notificación de vencimiento en las últimas 6 horas
+   142	    tareas_notificadas_ids = []
+   143	    notificaciones_recientes = db.notificaciones_log.find(
+   144	        {
+   145	            "tipo_evento": "TAREA_VENCIDA",
+   146	            "fecha_envio": {"$gte": hace_6_horas}
+   147	        },
+   148	        {"tarea_id": 1}
+   149	    )
+   150	    for n in notificaciones_recientes:
+   151	        if n.get("tarea_id"):
+   152	            tareas_notificadas_ids.append(n["tarea_id"])
+   153	    
+   154	    # Buscar tareas vencidas
+   155	    filtro_tareas = {
+   156	        "vencida": True,
+   157	        "estado_tarea": {"$nin": ["COMPLETADA", "CANCELADA"]}
+   158	    }
+   159	    if tareas_notificadas_ids:
+   160	        filtro_tareas["id"] = {"$nin": tareas_notificadas_ids}
+   161	    
+   162	    tareas_vencidas = list(db.tareas_inventario.find(filtro_tareas, {"_id": 0}).limit(50))
+   163	    
+   164	    resultados = {
+   165	        "tareas_verificadas": len(tareas_vencidas),
+   166	        "notificaciones_enviadas": 0,
+   167	        "errores": 0,
+   168	        "detalles": []
+   169	    }
+   170	    
+   171	    for tarea in tareas_vencidas:
+   172	        # Calcular días vencida
+   173	        try:
+   174	            fecha_limite = datetime.fromisoformat(tarea.get("fecha_limite", "").replace("Z", "+00:00"))
+   175	            dias_vencida = (ahora - fecha_limite).days
+   176	        except Exception:
+   177	            dias_vencida = 1
+   178	        
+   179	        # Obtener email del usuario asignado
+   180	        usuario_id = tarea.get("usuario_asignado_id")
+   181	        if not usuario_id:
+   182	            continue
+   183	        
+   184	        usuario = db.users.find_one({"id": usuario_id}, {"_id": 0, "email": 1, "name": 1})
+   185	        if not usuario or not usuario.get("email"):
+   186	            continue
+   187	        
+   188	        # Enviar notificación
+   189	        resultado = await notification_service.notificar_tarea_vencida(
+   190	            tarea_id=tarea.get("id", ""),
+   191	            workflow_id=tarea.get("workflow_id", ""),
+   192	            tipo_tarea=tarea.get("tipo_tarea", ""),
+   193	            titulo=tarea.get("titulo", ""),
+   194	            fecha_limite=tarea.get("fecha_limite", ""),
+   195	            dias_vencida=dias_vencida,
+   196	            destinatario_email=usuario.get("email"),
+   197	            destinatario_nombre=usuario.get("name", "Usuario")
+   198	        )
+   199	        
+   200	        if resultado.get("notificado"):
+   201	            resultados["notificaciones_enviadas"] += 1
+   202	        else:
+   203	            resultados["errores"] += 1
+   204	        
+   205	        resultados["detalles"].append({
+   206	            "tarea_id": tarea.get("id"),
+   207	            "notificado": resultado.get("notificado"),
+   208	            "error": resultado.get("error")
+   209	        })
+   210	    
+   211	    logger.info(f"Verificación de vencidas: {resultados['tareas_verificadas']} tareas, {resultados['notificaciones_enviadas']} notificadas")
+   212	    
+   213	    return resultados
+   214	
+   215	
+   216	@router.post("/test-email")
+   217	async def test_email(
+   218	    destinatario: str = Query(..., description="Email de destino para prueba"),
+   219	    current_user: Dict[str, Any] = Depends(get_current_user)
+   220	):
+   221	    """
+   222	    Envía un email de prueba para verificar la configuración.
+   223	    """
+   224	    email_service = get_email_service()
+   225	    
+   226	    if not email_service.is_configured():
+   227	        return {
+   228	            "success": False,
+   229	            "message": "Servicio de email no configurado",
+   230	            "configured": False,
+   231	            "enabled": email_service.enabled,
+   232	            "api_key_present": bool(email_service.api_key)
+   233	        }
+   234	    
+   235	    resultado = await email_service.enviar_email(
+   236	        destinatario=destinatario,
+   237	        asunto="EDARSA HUB - Email de Prueba",
+   238	        contenido_html="""
+   239	        <html>
+   240	        <body style="font-family: Arial, sans-serif; padding: 20px;">
+
+===== ARCHIVO documentos_routes.py =====
+     1	from core.unidades_service import UnidadesService
+     2	from core.corporate_filters.service import CorporateFilterService
+     3	"""
+     4	Rutas de Documentos - API para generación de documentos.
+     5	CAB-003 | EDARSA HUB - Fase 2B.2 / 2B.3
+     6	PROTEGIDO CON RBAC (Fase 3.1)
+     7	
+     8	Endpoints para generar y descargar documentos (Excel, PDF).
+     9	"""
+    10	
+    11	from fastapi import APIRouter, HTTPException, Depends
+    12	from fastapi.responses import StreamingResponse
+    13	from datetime import datetime, timezone
+    14	from typing import Dict, Any
+    15	import logging
+    16	
+    17	from ..db_utils import get_database
+    18	from ..services.excel_service import get_excel_service
+    19	from ..services.pdf_service import get_pdf_service
+    20	from ..services.document_data_service import (
+    21	    get_document_data_service,
+    22	    WorkflowNoEncontradoError
+    23	)
+    24	
+    25	# RBAC - Fase 3.1
+    26	from core.security import get_current_user
+    27	
+    28	logger = logging.getLogger(__name__)
+    29	
+    30	router = APIRouter(prefix="/documentos", tags=["Documentos"])
+    31	
+    32	
+    33	@router.get("/workflow/{workflow_id}/excel")
+    34	async def descargar_excel_workflow(
+    35	    workflow_id: str,
+    36	    current_user: Dict[str, Any] = Depends(get_current_user)
+    37	):
+    38	    """
+    39	    Genera y descarga el reporte Excel de un workflow.
+    40	    
+    41	    El archivo contiene 4 hojas:
+    42	    - Resumen: Información ejecutiva
+    43	    - Diferencias: Detalle de diferencias de inventario
+    44	    - Justificaciones: Registro de justificaciones
+    45	    - Auditoria: Historial de decisiones
+    46	    
+    47	    Args:
+    48	        workflow_id: ID del workflow
+    49	        
+    50	    Returns:
+    51	        StreamingResponse con el archivo Excel
+    52	        
+    53	    Raises:
+    54	        404: Workflow no encontrado
+    55	        500: Error al generar el documento
+    56	    """
+    57	    try:
+    58	        db = get_database()
+    59	        excel_service = get_excel_service(db)
+    60	        
+    61	        # Generar Excel
+    62	        excel_buffer = await excel_service.generar_excel_workflow(workflow_id)
+    63	        
+    64	        # Crear nombre de archivo
+    65	        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    66	        filename = f"workflow_{workflow_id}_{timestamp}.xlsx"
+    67	        
+    68	        logger.info(f"Excel generado: {filename}")
+    69	        
+    70	        # Registrar en colección documentos_generados
+    71	        try:
+    72	            db.documentos_generados.insert_one({
+    73	                "workflow_id": workflow_id,
+    74	                "tipo_documento": "EXCEL",
+    75	                "nombre_archivo": filename,
+    76	                "fecha_generacion": datetime.now(timezone.utc).isoformat(),
+    77	                "generado_por": "sistema"  # En el futuro: usuario autenticado
+    78	            })
+    79	        except Exception as e:
+    80	            # No bloquear si falla el log
+    81	            logger.warning(f"Error al registrar documento: {e}")
+    82	        
+    83	        # Devolver como descarga
+    84	        return StreamingResponse(
+    85	            excel_buffer,
+    86	            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    87	            headers={
+    88	                "Content-Disposition": f"attachment; filename={filename}",
+    89	                "Access-Control-Expose-Headers": "Content-Disposition"
+    90	            }
+    91	        )
+    92	        
+    93	    except WorkflowNoEncontradoError as e:
+    94	        logger.warning(f"Workflow no encontrado: {workflow_id}")
+    95	        raise HTTPException(status_code=404, detail=str(e))
+    96	    
+    97	    except Exception as e:
+    98	        logger.error(f"Error al generar Excel: {e}")
+    99	        raise HTTPException(
+   100	            status_code=500, 
+   101	            detail=f"Error al generar documento: {str(e)}"
+   102	        )
+   103	
+   104	
+   105	@router.get("/workflow/{workflow_id}/pdf")
+   106	async def descargar_pdf_workflow(
+   107	    workflow_id: str,
+   108	    current_user: Dict[str, Any] = Depends(get_current_user)
+   109	):
+   110	    """
+   111	    Genera y descarga el resumen ejecutivo en PDF de un workflow.
+   112	    
+   113	    El PDF incluye:
+   114	    - Información general del workflow
+   115	    - Métricas clave
+   116	    - Diferencias relevantes (top 10)
+   117	    - Estado de auditoría
+   118	    
+   119	    Para el detalle completo, use el endpoint de Excel.
+   120	    
+   121	    Args:
+   122	        workflow_id: ID del workflow
+   123	        
+   124	    Returns:
+   125	        StreamingResponse con el archivo PDF
+   126	        
+   127	    Raises:
+   128	        404: Workflow no encontrado
+   129	        500: Error al generar el documento
+   130	    """
+   131	    try:
+   132	        db = get_database()
+   133	        pdf_service = get_pdf_service(db)
+   134	        
+   135	        # Generar PDF
+   136	        pdf_buffer = await pdf_service.generar_pdf_workflow(workflow_id)
+   137	        
+   138	        # Crear nombre de archivo
+   139	        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+   140	        filename = f"resumen_workflow_{workflow_id}_{timestamp}.pdf"
+   141	        
+   142	        logger.info(f"PDF generado: {filename}")
+   143	        
+   144	        # Registrar en colección documentos_generados
+   145	        try:
+   146	            db.documentos_generados.insert_one({
+   147	                "workflow_id": workflow_id,
+   148	                "tipo_documento": "PDF",
+   149	                "nombre_archivo": filename,
+   150	                "fecha_generacion": datetime.now(timezone.utc).isoformat(),
+   151	                "generado_por": "sistema"
+   152	            })
+   153	        except Exception as e:
+   154	            # No bloquear si falla el log
+   155	            logger.warning(f"Error al registrar documento PDF: {e}")
+   156	        
+   157	        # Devolver como descarga
+   158	        return StreamingResponse(
+   159	            pdf_buffer,
+   160	            media_type="application/pdf",
+   161	            headers={
+   162	                "Content-Disposition": f"attachment; filename={filename}",
+   163	                "Access-Control-Expose-Headers": "Content-Disposition"
+   164	            }
+   165	        )
+   166	        
+   167	    except WorkflowNoEncontradoError as e:
+   168	        logger.warning(f"Workflow no encontrado para PDF: {workflow_id}")
+   169	        raise HTTPException(status_code=404, detail=str(e))
+   170	    
+   171	    except Exception as e:
+   172	        logger.error(f"Error al generar PDF: {e}")
+   173	        raise HTTPException(
+   174	            status_code=500, 
+   175	            detail=f"Error al generar documento PDF: {str(e)}"
+   176	        )
+   177	
+   178	
+   179	@router.get("/workflow/{workflow_id}/datos")
+   180	async def obtener_datos_workflow(
+   181	    workflow_id: str,
+   182	    current_user: Dict[str, Any] = Depends(get_current_user)
+   183	):
+   184	    """
+   185	    Obtiene los datos completos de un workflow para documentos.
+   186	    
+   187	    Útil para previsualizar antes de descargar o para debugging.
+   188	    
+   189	    Args:
+   190	        workflow_id: ID del workflow
+   191	        
+   192	    Returns:
+   193	        Datos completos del workflow
+   194	        
+   195	    Raises:
+   196	        404: Workflow no encontrado
+   197	    """
+   198	    try:
+   199	        db = get_database()
+   200	        data_service = get_document_data_service(db)
+   201	        
+   202	        datos = await data_service.obtener_datos_completos_workflow(workflow_id)
+   203	        
+   204	        return {
+   205	            "success": True,
+   206	            "data": datos
+   207	        }
+   208	        
+   209	    except WorkflowNoEncontradoError as e:
+   210	        raise HTTPException(status_code=404, detail=str(e))
+   211	    
+   212	    except Exception as e:
+   213	        logger.error(f"Error al obtener datos: {e}")
+   214	        raise HTTPException(
+   215	            status_code=500,
+   216	            detail=f"Error al obtener datos: {str(e)}"
+   217	        )
+   218	
+   219	
+   220	@router.get("/workflow/{workflow_id}/resumen")
+
+===== ARCHIVO sla_routes.py =====
+     1	from core.unidades_service import UnidadesService
+     2	from core.corporate_filters.service import CorporateFilterService
+     3	"""
+     4	Rutas de SLA - API para monitoreo de tiempos y cumplimiento.
+     5	CAB-003 | EDARSA HUB - Fase 2B.4
+     6	PROTEGIDO CON RBAC (Fase 2D)
+     7	
+     8	Endpoints para gestión de SLA de tareas operativas.
+     9	
+    10	Permisos requeridos:
+    11	- GET /configuracion - SLA_VER
+    12	- PUT /configuracion - SLA_CONFIGURAR
+    13	- GET /metricas - SLA_VER
+    14	- GET /tareas/* - SLA_VER
+    15	- POST /actualizar-estados - SLA_VER (invocado por scheduler)
+    16	"""
+    17	
+    18	from fastapi import APIRouter, HTTPException, Query, Depends
+    19	from typing import Dict, Any
+    20	import logging
+    21	
+    22	from ..db_utils import get_database
+    23	from ..services.sla_service import get_sla_service, EstadoSLA
+    24	
+    25	# RBAC - Fase 2D
+    26	from core.rbac.middleware import require_permission
+    27	
+    28	logger = logging.getLogger(__name__)
+    29	
+    30	router = APIRouter(prefix="/sla", tags=["SLA"])
+    31	
+    32	
+    33	@router.get("/configuracion")
+    34	async def obtener_configuracion_sla(
+    35	    current_user: dict = Depends(require_permission("SLA_VER"))
+    36	):
+    37	    """
+    38	    Obtiene la configuración actual de umbrales SLA.
+    39	    
+    40	    Returns:
+    41	        Configuración de umbrales y porcentajes
+    42	    """
+    43	    try:
+    44	        db = get_database()
+    45	        sla_service = get_sla_service(db)
+    46	        
+    47	        config = sla_service.obtener_configuracion()
+    48	        
+    49	        return {
+    50	            "success": True,
+    51	            "data": config
+    52	        }
+    53	        
+    54	    except Exception as e:
+    55	        logger.error(f"Error obteniendo configuración SLA: {e}")
+    56	        raise HTTPException(
+    57	            status_code=500,
+    58	            detail=f"Error obteniendo configuración: {str(e)}"
+    59	        )
+    60	
+    61	
+    62	@router.put("/configuracion")
+    63	async def actualizar_configuracion_sla(
+    64	    valores: Dict[str, int],
+    65	    current_user: dict = Depends(require_permission("SLA_CONFIGURAR"))
+    66	):
+    67	    """
+    68	    Actualiza la configuración de umbrales SLA.
+    69	    
+    70	    Args:
+    71	        valores: Dict con claves y valores a actualizar
+    72	        Ejemplo: {"justificacion_simple_horas": 24, "umbral_advertencia_porcentaje": 50}
+    73	        
+    74	    Returns:
+    75	        Configuración actualizada
+    76	    """
+    77	    try:
+    78	        db = get_database()
+    79	        sla_service = get_sla_service(db)
+    80	        
+    81	        config = await sla_service.actualizar_configuracion(valores)
+    82	        
+    83	        return {
+    84	            "success": True,
+    85	            "message": "Configuración actualizada",
+    86	            "data": config
+    87	        }
+    88	        
+    89	    except Exception as e:
+    90	        logger.error(f"Error actualizando configuración SLA: {e}")
+    91	        raise HTTPException(
+    92	            status_code=500,
+    93	            detail=f"Error actualizando configuración: {str(e)}"
+    94	        )
+    95	
+    96	
+    97	@router.get("/metricas")
+    98	async def obtener_metricas_sla(
+    99	    current_user: dict = Depends(require_permission("SLA_VER"))
+   100	):
+   101	    """
+   102	    Obtiene métricas globales de cumplimiento SLA.
+   103	    
+   104	    Returns:
+   105	        Métricas de cumplimiento, tiempos promedio y distribución
+   106	    """
+   107	    try:
+   108	        db = get_database()
+   109	        sla_service = get_sla_service(db)
+   110	        
+   111	        metricas = await sla_service.obtener_metricas_globales()
+   112	        
+   113	        return {
+   114	            "success": True,
+   115	            "data": metricas
+   116	        }
+   117	        
+   118	    except Exception as e:
+   119	        logger.error(f"Error obteniendo métricas SLA: {e}")
+   120	        raise HTTPException(
+   121	            status_code=500,
+   122	            detail=f"Error obteniendo métricas: {str(e)}"
+   123	        )
+   124	
+   125	
+   126	@router.get("/tareas/proximas-vencer")
+   127	async def obtener_tareas_proximas_vencer(
+   128	    limite: int = Query(default=20, le=100),
+   129	    current_user: dict = Depends(require_permission("SLA_VER"))
+   130	):
+   131	    """
+   132	    Obtiene tareas próximas a vencer (ADVERTENCIA o URGENTE).
+   133	    
+   134	    Args:
+   135	        limite: Máximo de tareas a retornar
+   136	        
+   137	    Returns:
+   138	        Lista de tareas con cálculos SLA
+   139	    """
+   140	    try:
+   141	        db = get_database()
+   142	        sla_service = get_sla_service(db)
+   143	        
+   144	        tareas = await sla_service.obtener_tareas_proximas_vencer(limite)
+   145	        
+   146	        return {
+   147	            "success": True,
+   148	            "items": tareas,
+   149	            "total": len(tareas)
+   150	        }
+   151	        
+   152	    except Exception as e:
+   153	        logger.error(f"Error obteniendo tareas próximas a vencer: {e}")
+   154	        raise HTTPException(
+   155	            status_code=500,
+   156	            detail=f"Error obteniendo tareas: {str(e)}"
+   157	        )
+   158	
+   159	
+   160	@router.get("/tareas/vencidas")
+   161	async def obtener_tareas_vencidas(
+   162	    limite: int = Query(default=50, le=200),
+   163	    current_user: dict = Depends(require_permission("SLA_VER"))
+   164	):
+   165	    """
+   166	    Obtiene tareas vencidas.
+   167	    
+   168	    Args:
+   169	        limite: Máximo de tareas a retornar
+   170	        
+   171	    Returns:
+   172	        Lista de tareas vencidas con cálculos SLA
+   173	    """
+   174	    try:
+   175	        db = get_database()
+   176	        sla_service = get_sla_service(db)
+   177	        
+   178	        tareas = await sla_service.obtener_tareas_vencidas(limite)
+   179	        
+   180	        return {
+   181	            "success": True,
+   182	            "items": tareas,
+   183	            "total": len(tareas)
+   184	        }
+   185	        
+   186	    except Exception as e:
+   187	        logger.error(f"Error obteniendo tareas vencidas: {e}")
+   188	        raise HTTPException(
+   189	            status_code=500,
+   190	            detail=f"Error obteniendo tareas: {str(e)}"
+   191	        )
+   192	
+   193	
+   194	@router.post("/actualizar-estados")
+   195	async def actualizar_estados_sla(
+   196	    current_user: dict = Depends(require_permission("SLA_VER"))
+   197	):
+   198	    """
+   199	    Actualiza los estados SLA de todas las tareas activas.
+   200	    
+   201	    Este endpoint debe ser invocado periódicamente (cada hora)
+   202	    por un cron externo o mecanismo equivalente.
+   203	    
+   204	    Returns:
+   205	        Resumen de actualizaciones realizadas
+   206	    """
+   207	    try:
+   208	        db = get_database()
+   209	        sla_service = get_sla_service(db)
+   210	        
+   211	        resultado = await sla_service.actualizar_estados_sla()
+   212	        
+   213	        logger.info(f"Estados SLA actualizados: {resultado}")
+   214	        
+   215	        return {
+   216	            "success": True,
+   217	            "message": "Estados SLA actualizados",
+   218	            "data": resultado
+   219	        }
+   220	        
+   221	    except Exception as e:
+   222	        logger.error(f"Error actualizando estados SLA: {e}")
+   223	        raise HTTPException(
+   224	            status_code=500,
+   225	            detail=f"Error actualizando estados: {str(e)}"
+   226	        )
+   227	
+   228	
+   229	@router.get("/tarea/{tarea_id}")
+   230	async def obtener_sla_tarea(
+   231	    tarea_id: str,
+   232	    current_user: dict = Depends(require_permission("SLA_VER"))
+   233	):
+   234	    """
+   235	    Obtiene el cálculo SLA de una tarea específica.
+   236	    
+   237	    Args:
+   238	        tarea_id: ID de la tarea
+   239	        
+   240	    Returns:
+   241	        Cálculo SLA de la tarea
+   242	    """
+   243	    try:
+   244	        db = get_database()
+   245	        sla_service = get_sla_service(db)
+   246	        
+   247	        # Buscar tarea
+   248	        tarea = db.tareas_inventario.find_one({"id": tarea_id}, {"_id": 0})
+   249	        if not tarea:
+   250	            raise HTTPException(status_code=404, detail="Tarea no encontrada")
+   251	        
+   252	        # Calcular SLA
+   253	        calculo = sla_service.calcular_estado_sla(tarea)
+   254	        
+   255	        return {
+   256	            "success": True,
+   257	            "data": {
+   258	                "tarea_id": tarea_id,
+   259	                "tipo_tarea": tarea.get("tipo_tarea"),
+   260	                "estado_tarea": tarea.get("estado_tarea"),
+   261	                "sla": calculo
+   262	            }
+   263	        }
+   264	        
+   265	    except HTTPException:
+   266	        raise
+   267	    except Exception as e:
+   268	        logger.error(f"Error obteniendo SLA de tarea {tarea_id}: {e}")
+   269	        raise HTTPException(
+   270	            status_code=500,
+   271	            detail=f"Error obteniendo SLA: {str(e)}"
+   272	        )
+   273	
+   274	
+   275	@router.get("/estados")
+   276	async def obtener_definicion_estados():
+   277	    """
+   278	    Obtiene la definición de estados SLA.
+   279	    
+   280	    Returns:
+   281	        Lista de estados SLA con sus descripciones
+   282	    """
+   283	    return {
+   284	        "success": True,
+   285	        "data": {
+   286	            "estados": [
+   287	                {
+   288	                    "valor": EstadoSLA.EN_TIEMPO.value,
+   289	                    "descripcion": "Tarea activa, dentro del 50% del tiempo",
+   290	                    "tipo": "activa"
+   291	                },
+   292	                {
+   293	                    "valor": EstadoSLA.ADVERTENCIA.value,
+   294	                    "descripcion": "Tarea activa, 50-75% del tiempo consumido",
+   295	                    "tipo": "activa"
+   296	                },
+   297	                {
+   298	                    "valor": EstadoSLA.URGENTE.value,
+   299	                    "descripcion": "Tarea activa, 75-100% del tiempo consumido",
+   300	                    "tipo": "activa"
+
+===== TABLAS CANONICAS OPERATIVO/TAREAS =====
+5190:CREATE TABLE [dbo].[Operativo_DocumentosGenerados] (
+5250:CREATE TABLE [dbo].[Operativo_Notificaciones_Log] (
+8517:CREATE TABLE [dbo].[Tareas_Inventario] (
+8650:CREATE TABLE [dbo].[Usuario_Catalogo] (
+
+===== COLUMNAS Operativo_Notificaciones_Log =====
+CREATE TABLE [dbo].[Operativo_Notificaciones_Log] (
+    [ID] INT NOT NULL,
+    [NotificacionID] VARCHAR(50) NOT NULL,
+    [TipoEvento] VARCHAR(50) NOT NULL,
+    [WorkflowID] VARCHAR(50) NULL,
+    [TareaID] VARCHAR(50) NULL,
+    [Destinatario] VARCHAR(200) NULL,
+    [DestinatarioEmail] VARCHAR(200) NULL,
+    [Titulo] VARCHAR(500) NULL,
+    [Mensaje] NVARCHAR(MAX) NULL,
+    [Estado] VARCHAR(50) NULL DEFAULT ('PENDIENTE'),
+    [Canal] VARCHAR(50) NULL DEFAULT ('EMAIL'),
+    [FechaEnvio] DATETIME2 NULL DEFAULT (getutcdate()),
+    [FechaLeido] DATETIME2 NULL,
+    [ErrorMensaje] NVARCHAR(MAX) NULL,
+    [MetadatosJSON] NVARCHAR(MAX) NULL,
+    CONSTRAINT [PK_Operativo_Notificaciones_Log] PRIMARY KEY ([ID])
+);
+GO
+
+-- ============================================================
+-- TABLA: [dbo].[Operativo_PedidosProcesados]
+-- ============================================================
+
+===== COLUMNAS Operativo_DocumentosGenerados =====
+CREATE TABLE [dbo].[Operativo_DocumentosGenerados] (
+    [ID] INT NOT NULL,
+    [DocumentoID] VARCHAR(50) NOT NULL,
+    [WorkflowID] VARCHAR(50) NULL,
+    [TipoDocumento] VARCHAR(50) NOT NULL,
+    [NombreArchivo] VARCHAR(500) NULL,
+    [URLDescarga] VARCHAR(1000) NULL,
+    [Formato] VARCHAR(20) NULL DEFAULT ('PDF'),
+    [TamanioBytes] BIGINT NULL,
+    [UsuarioGeneradorID] VARCHAR(50) NULL,
+    [Estado] VARCHAR(50) NULL DEFAULT ('GENERADO'),
+    [FechaGeneracion] DATETIME2 NULL DEFAULT (getutcdate()),
+    [FechaExpiracion] DATETIME2 NULL,
+    [MetadatosJSON] NVARCHAR(MAX) NULL,
+    CONSTRAINT [PK_Operativo_DocumentosGenerados] PRIMARY KEY ([ID])
+);
+GO
+
+-- ============================================================
+-- TABLA: [dbo].[Operativo_HistorialAsignaciones]
+-- ============================================================
+
+===== COLUMNAS Tareas_Inventario =====
+CREATE TABLE [dbo].[Tareas_Inventario] (
+    [ID] INT NOT NULL,
+    [TareaID] VARCHAR(50) NOT NULL,
+    [WorkflowID] VARCHAR(50) NOT NULL,
+    [TipoTarea] VARCHAR(50) NULL DEFAULT ('JUSTIFICAR'),
+    [Titulo] VARCHAR(500) NULL,
+    [Descripcion] NVARCHAR(MAX) NULL,
+    [EstadoTarea] VARCHAR(50) NULL DEFAULT ('PENDIENTE'),
+    [Prioridad] VARCHAR(20) NULL DEFAULT ('MEDIA'),
+    [UsuarioAsignadoID] VARCHAR(50) NULL,
+    [UsuarioAsignadoNombre] VARCHAR(200) NULL,
+    [FechaCreacion] DATETIME2 NULL DEFAULT (getutcdate()),
+    [FechaAsignacion] DATETIME2 NULL,
+    [FechaLimite] DATETIME2 NULL,
+    [FechaActualizacion] DATETIME2 NULL,
+    [FechaPrimeraAccion] DATETIME2 NULL,
+    [FechaCompletada] DATETIME2 NULL,
+    [Ciclo] INT NULL DEFAULT ((1)),
+    [EsReasignacion] BIT NULL DEFAULT ((0)),
+    [Vencida] BIT NULL DEFAULT ((0)),
+    [EstadoSLA] VARCHAR(50) NULL,
+    [FechaActualizacionSLA] DATETIME2 NULL,
+    [NotificacionWarningEnviada] BIT NULL DEFAULT ((0)),
+    [NotificacionVencidoEnviada] BIT NULL DEFAULT ((0)),
+    [NotificacionEscaladoEnviada] BIT NULL DEFAULT ((0)),
+    [NotasJSON] NVARCHAR(MAX) NULL,
+    CONSTRAINT [PK_Tareas_Inventario] PRIMARY KEY ([ID])
+);
+GO
+
+-- ============================================================
+-- TABLA: [dbo].[Unidades_Negocio]
+
+===== COLUMNAS Usuario_Catalogo =====
+CREATE TABLE [dbo].[Usuario_Catalogo] (
+    [UsuarioID] INT NOT NULL,
+    [CodigoUsuario] VARCHAR(30) NOT NULL,
+    [Username] VARCHAR(60) NOT NULL,
+    [Email] VARCHAR(150) NOT NULL,
+    [PasswordHash] VARBINARY(MAX) NULL,
+    [PasswordHashTexto] VARCHAR(255) NULL,
+    [Nombre] VARCHAR(100) NOT NULL,
+    [Apellidos] VARCHAR(150) NULL,
+    [NombreCompleto] VARCHAR(251) NULL,
+    [Telefono] VARCHAR(25) NULL,
+    [Celular] VARCHAR(25) NULL,
+    [Puesto] VARCHAR(100) NULL,
+    [Departamento] VARCHAR(100) NULL,
+    [EsUsuarioPortal] BIT NOT NULL DEFAULT ((1)),
+    [RequiereMFA] BIT NOT NULL DEFAULT ((0)),
+    [PasswordTemporal] BIT NOT NULL DEFAULT ((1)),
+    [DebeCambiarPassword] BIT NOT NULL DEFAULT ((1)),
+    [IntentosFallidos] INT NOT NULL DEFAULT ((0)),
+    [Bloqueado] BIT NOT NULL DEFAULT ((0)),
+    [FechaBloqueo] DATETIME2 NULL,
+    [MotivoBloqueo] VARCHAR(250) NULL,
+    [UltimoAcceso] DATETIME2 NULL,
+    [UltimoCambioPassword] DATETIME2 NULL,
+    [FechaExpiracionPassword] DATETIME2 NULL,
+    [ZonaHoraria] VARCHAR(60) NULL,
+    [Idioma] VARCHAR(20) NULL,
+    [Activo] BIT NOT NULL DEFAULT ((1)),
+    [FechaAlta] DATETIME2 NOT NULL DEFAULT (sysdatetime()),
+    [FechaModificacion] DATETIME2 NULL,
+    [CreatedBy] VARCHAR(100) NULL,
+    [ModifiedBy] VARCHAR(100) NULL,
+    [MongoLegacyID] VARCHAR(50) NULL,
+    [PublicUUID] UNIQUEIDENTIFIER NULL,
+    CONSTRAINT [PK_Usuario_Catalogo] PRIMARY KEY ([UsuarioID])
+);
+GO
+
+-- ============================================================
+
+===== COMPILE BASE =====
+PY_COMPILE_OK

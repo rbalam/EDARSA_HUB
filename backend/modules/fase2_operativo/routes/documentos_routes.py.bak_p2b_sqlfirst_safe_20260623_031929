@@ -67,33 +67,15 @@ async def descargar_excel_workflow(
         
         logger.info(f"Excel generado: {filename}")
         
-        # SQL-FIRST P2B: registrar en dbo.Operativo_DocumentosGenerados
+        # Registrar en colección documentos_generados
         try:
-            from modules.compras.sync_service import get_edarsahub_connection
-            import uuid
-            conn = get_edarsahub_connection()
-            cur = conn.cursor(as_dict=True)
-            cur.execute("SELECT ISNULL(MAX(ID),0)+1 AS NextID FROM dbo.Operativo_DocumentosGenerados WITH (UPDLOCK,HOLDLOCK)")
-            row = cur.fetchone() or {}
-            next_id = int(row.get("NextID") or 1)
-            cur.execute("""
-                INSERT INTO dbo.Operativo_DocumentosGenerados (
-                    ID, DocumentoID, WorkflowID, TipoDocumento, NombreArchivo,
-                    Formato, UsuarioGeneradorID, Estado, FechaGeneracion, MetadatosJSON
-                )
-                VALUES (%s,%s,%s,%s,%s,%s,%s,'GENERADO',GETUTCDATE(),%s)
-            """, (
-                next_id,
-                str(uuid.uuid4()),
-                workflow_id,
-                "EXCEL",
-                filename,
-                "EXCEL",
-                "sistema",
-                "{}"
-            ))
-            conn.commit()
-            conn.close()
+            db.documentos_generados.insert_one({
+                "workflow_id": workflow_id,
+                "tipo_documento": "EXCEL",
+                "nombre_archivo": filename,
+                "fecha_generacion": datetime.now(timezone.utc).isoformat(),
+                "generado_por": "sistema"  # En el futuro: usuario autenticado
+            })
         except Exception as e:
             # No bloquear si falla el log
             logger.warning(f"Error al registrar documento: {e}")
@@ -159,33 +141,15 @@ async def descargar_pdf_workflow(
         
         logger.info(f"PDF generado: {filename}")
         
-        # SQL-FIRST P2B: registrar en dbo.Operativo_DocumentosGenerados
+        # Registrar en colección documentos_generados
         try:
-            from modules.compras.sync_service import get_edarsahub_connection
-            import uuid
-            conn = get_edarsahub_connection()
-            cur = conn.cursor(as_dict=True)
-            cur.execute("SELECT ISNULL(MAX(ID),0)+1 AS NextID FROM dbo.Operativo_DocumentosGenerados WITH (UPDLOCK,HOLDLOCK)")
-            row = cur.fetchone() or {}
-            next_id = int(row.get("NextID") or 1)
-            cur.execute("""
-                INSERT INTO dbo.Operativo_DocumentosGenerados (
-                    ID, DocumentoID, WorkflowID, TipoDocumento, NombreArchivo,
-                    Formato, UsuarioGeneradorID, Estado, FechaGeneracion, MetadatosJSON
-                )
-                VALUES (%s,%s,%s,%s,%s,%s,%s,'GENERADO',GETUTCDATE(),%s)
-            """, (
-                next_id,
-                str(uuid.uuid4()),
-                workflow_id,
-                "PDF",
-                filename,
-                "PDF",
-                "sistema",
-                "{}"
-            ))
-            conn.commit()
-            conn.close()
+            db.documentos_generados.insert_one({
+                "workflow_id": workflow_id,
+                "tipo_documento": "PDF",
+                "nombre_archivo": filename,
+                "fecha_generacion": datetime.now(timezone.utc).isoformat(),
+                "generado_por": "sistema"
+            })
         except Exception as e:
             # No bloquear si falla el log
             logger.warning(f"Error al registrar documento PDF: {e}")

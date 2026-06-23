@@ -127,68 +127,39 @@ async def verificar_tareas_vencidas(
     # y que no hayan sido notificadas recientemente (últimas 6 horas)
     hace_6_horas = (ahora - timedelta(hours=6)).isoformat()
     
-    # SQL-FIRST P2B: actualizar y consultar tareas vencidas desde dbo.Tareas_Inventario
+    # Primero actualizar el campo vencida en tareas (síncrono)
+    db.tareas_inventario.update_many(
+        {
+            "fecha_limite": {"$lt": ahora.isoformat()},
+            "estado_tarea": {"$nin": ["COMPLETADA", "CANCELADA"]},
+            "vencida": {"$ne": True}
+        },
+        {"$set": {"vencida": True}}
+    )
+    
+    # Buscar tareas vencidas para notificar
+    # Excluir las que ya recibieron notificación de vencimiento en las últimas 6 horas
     tareas_notificadas_ids = []
-    tareas_vencidas = []
-    try:
-        from modules.compras.sync_service import get_edarsahub_connection
-        conn = get_edarsahub_connection()
-        cur = conn.cursor(as_dict=True)
-
-        cur.execute("""
-            UPDATE dbo.Tareas_Inventario
-            SET Vencida=1, FechaActualizacionSLA=GETUTCDATE()
-            WHERE FechaLimite < GETUTCDATE()
-              AND ISNULL(EstadoTarea,'PENDIENTE') NOT IN ('COMPLETADA','CANCELADA')
-              AND ISNULL(Vencida,0)=0
-        """)
-
-        cur.execute("""
-            SELECT TareaID
-            FROM dbo.Operativo_Notificaciones_Log
-            WHERE TipoEvento='TAREA_VENCIDA'
-              AND FechaEnvio >= DATEADD(hour,-6,GETUTCDATE())
-              AND TareaID IS NOT NULL
-        """)
-        tareas_notificadas_ids = [r.get("TareaID") for r in (cur.fetchall() or []) if r.get("TareaID")]
-
-        params = []
-        exclusion = ""
-        if tareas_notificadas_ids:
-            placeholders = ",".join(["%s"] * len(tareas_notificadas_ids))
-            exclusion = f" AND TareaID NOT IN ({placeholders})"
-            params.extend(tareas_notificadas_ids)
-
-        cur.execute(f"""
-            SELECT TOP 50
-                TareaID AS id,
-                TareaID AS tarea_id,
-                WorkflowID AS workflow_id,
-                TipoTarea AS tipo_tarea,
-                Titulo AS titulo,
-                Descripcion AS descripcion,
-                EstadoTarea AS estado_tarea,
-                Prioridad AS prioridad,
-                UsuarioAsignadoID AS usuario_asignado_id,
-                UsuarioAsignadoNombre AS usuario_asignado_nombre,
-                FechaCreacion AS fecha_creacion,
-                FechaLimite AS fecha_limite,
-                Vencida AS vencida,
-                EstadoSLA AS estado_sla,
-                NotasJSON AS notas_json
-            FROM dbo.Tareas_Inventario
-            WHERE ISNULL(Vencida,0)=1
-              AND ISNULL(EstadoTarea,'PENDIENTE') NOT IN ('COMPLETADA','CANCELADA')
-              {exclusion}
-            ORDER BY FechaLimite ASC
-        """, tuple(params))
-
-        tareas_vencidas = cur.fetchall() or []
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        logger.warning(f"SQL-FIRST P2B error consultando tareas vencidas: {e}")
-        tareas_vencidas = []
+    notificaciones_recientes = db.notificaciones_log.find(
+        {
+            "tipo_evento": "TAREA_VENCIDA",
+            "fecha_envio": {"$gte": hace_6_horas}
+        },
+        {"tarea_id": 1}
+    )
+    for n in notificaciones_recientes:
+        if n.get("tarea_id"):
+            tareas_notificadas_ids.append(n["tarea_id"])
+    
+    # Buscar tareas vencidas
+    filtro_tareas = {
+        "vencida": True,
+        "estado_tarea": {"$nin": ["COMPLETADA", "CANCELADA"]}
+    }
+    if tareas_notificadas_ids:
+        filtro_tareas["id"] = {"$nin": tareas_notificadas_ids}
+    
+    tareas_vencidas = list(db.tareas_inventario.find(filtro_tareas, {"_id": 0}).limit(50))
     
     resultados = {
         "tareas_verificadas": len(tareas_vencidas),
@@ -210,24 +181,7 @@ async def verificar_tareas_vencidas(
         if not usuario_id:
             continue
         
-        usuario = None
-        try:
-            from modules.compras.sync_service import get_edarsahub_connection
-            conn = get_edarsahub_connection()
-            cur = conn.cursor(as_dict=True)
-            cur.execute("""
-                SELECT TOP 1 Email AS email, NombreCompleto AS name
-                FROM dbo.Usuario_Catalogo
-                WHERE CodigoUsuario=%s
-                   OR Email=%s
-                   OR Username=%s
-                   OR CONVERT(VARCHAR(50), PublicUUID)=%s
-            """, (usuario_id, usuario_id, usuario_id, usuario_id))
-            usuario = cur.fetchone()
-            conn.close()
-        except Exception as e:
-            logger.warning(f"SQL-FIRST P2B error consultando usuario: {e}")
-            usuario = None
+        usuario = db.users.find_one({"id": usuario_id}, {"_id": 0, "email": 1, "name": 1})
         if not usuario or not usuario.get("email"):
             continue
         
