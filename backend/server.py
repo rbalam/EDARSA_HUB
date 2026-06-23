@@ -2725,6 +2725,223 @@ async def get_departamentos(server_id: str, current_user: Dict = Depends(get_cur
     logging.info(f"[GET_DEPARTAMENTOS] Sin departamentos en EDARSAHUB (pendiente sync). Server={server.get('name', 'N/A')}")
     return []
 
+
+# ============================================================================
+# SQL-FIRST: Sistema_ServidorSucursalesConfig
+# ============================================================================
+
+def _sql_sucursal_config_row_to_api(row: Dict) -> Dict:
+    sucursal_codigo = row.get("SucursalCodigo")
+    sucursal_id = row.get("SucursalID")
+    sucursal_origen_id = str(sucursal_codigo or sucursal_id or "").strip()
+    return {
+        "id": str(row.get("ConfigID")),
+        "server_id": str(row.get("ServidorID")),
+        "sucursal_origen_id": sucursal_origen_id,
+        "sucursal_nombre": row.get("SucursalNombre"),
+        "nombre_visible": row.get("SucursalNombre"),
+        "visible_en_operaciones": bool(row.get("VisibleEnOperaciones")),
+        "visible_en_comercial": bool(row.get("VisibleEnComercial")),
+        "orden": int(row.get("ConfigID") or 999),
+        "activa": bool(row.get("Activo")),
+        "fecha_alta": row.get("FechaCreacion"),
+        "fecha_modificacion": row.get("FechaModificacion"),
+        "usuario_alta": row.get("CreatedBy"),
+        "usuario_modificacion": row.get("UpdatedBy"),
+    }
+
+
+def _sql_list_sucursales_config(server_id: Optional[str] = None, activas: bool = True) -> List[Dict]:
+    from modules.compras.sync_service import get_edarsahub_connection
+
+    where = []
+    params = []
+
+    if server_id:
+        where.append("ServidorID = CONVERT(uniqueidentifier, %s)")
+        params.append(server_id)
+
+    if activas:
+        where.append("Activo = 1")
+
+    sql = """
+        SELECT
+            ConfigID,
+            ServidorID,
+            SucursalNombre,
+            SucursalCodigo,
+            SucursalID,
+            VisibleEnOperaciones,
+            VisibleEnComercial,
+            Activo,
+            FechaCreacion,
+            FechaModificacion,
+            CreatedBy,
+            UpdatedBy,
+            Observaciones
+        FROM dbo.Sistema_ServidorSucursalesConfig
+    """
+    if where:
+        sql += " WHERE " + " AND ".join(where)
+    sql += " ORDER BY ConfigID"
+
+    conn = get_edarsahub_connection()
+    try:
+        cur = conn.cursor(as_dict=True)
+        cur.execute(sql, tuple(params))
+        return [_sql_sucursal_config_row_to_api(r) for r in (cur.fetchall() or [])]
+    finally:
+        conn.close()
+
+
+def _sql_get_sucursal_config(server_id: str, sucursal_origen_id: str) -> Optional[Dict]:
+    rows = _sql_list_sucursales_config(server_id=server_id, activas=False)
+    target = str(sucursal_origen_id).strip()
+    for r in rows:
+        if str(r.get("sucursal_origen_id", "")).strip() == target:
+            return r
+    return None
+
+
+def _sql_upsert_sucursal_config(
+    server_id: str,
+    sucursal_origen_id: str,
+    sucursal_nombre: str,
+    visible_en_operaciones: Optional[bool] = None,
+    visible_en_comercial: Optional[bool] = None,
+    activa: Optional[bool] = None,
+    user_email: Optional[str] = None,
+) -> bool:
+    from modules.compras.sync_service import get_edarsahub_connection
+
+    visible_op = 1 if visible_en_operaciones is not False else 0
+    visible_com = 1 if visible_en_comercial is True else 0
+    activo = 1 if activa is not False else 0
+    user_email = user_email or "sistema"
+
+    conn = get_edarsahub_connection()
+    try:
+        cur = conn.cursor(as_dict=True)
+        cur.execute("""
+            SELECT ConfigID
+            FROM dbo.Sistema_ServidorSucursalesConfig
+            WHERE ServidorID = CONVERT(uniqueidentifier, %s)
+              AND ISNULL(SucursalCodigo, CONVERT(varchar(50), SucursalID)) = %s
+        """, (server_id, str(sucursal_origen_id)))
+
+        existing = cur.fetchone()
+
+        if existing:
+            cur.execute("""
+                UPDATE dbo.Sistema_ServidorSucursalesConfig
+                SET SucursalNombre = %s,
+                    VisibleEnOperaciones = %s,
+                    VisibleEnComercial = %s,
+                    Activo = %s,
+                    FechaModificacion = SYSDATETIME(),
+                    UpdatedBy = %s
+                WHERE ConfigID = %s
+            """, (
+                sucursal_nombre,
+                visible_op,
+                visible_com,
+                activo,
+                user_email,
+                existing["ConfigID"],
+            ))
+            conn.commit()
+            return False
+
+        cur.execute("""
+            SELECT ISNULL(MAX(ConfigID), 0) + 1 AS NextID
+            FROM dbo.Sistema_ServidorSucursalesConfig WITH (UPDLOCK, HOLDLOCK)
+        """)
+        next_id = cur.fetchone()["NextID"]
+
+        cur.execute("""
+            INSERT INTO dbo.Sistema_ServidorSucursalesConfig (
+                ConfigID,
+                ServidorID,
+                SucursalNombre,
+                SucursalCodigo,
+                SucursalID,
+                VisibleEnOperaciones,
+                VisibleEnComercial,
+                FuenteMigracion,
+                Activo,
+                FechaCreacion,
+                CreatedBy
+            )
+            VALUES (
+                %s,
+                CONVERT(uniqueidentifier, %s),
+                %s,
+                %s,
+                NULL,
+                %s,
+                %s,
+                'SQL_RUNTIME',
+                %s,
+                SYSDATETIME(),
+                %s
+            )
+        """, (
+            next_id,
+            server_id,
+            sucursal_nombre,
+            str(sucursal_origen_id),
+            visible_op,
+            visible_com,
+            activo,
+            user_email,
+        ))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
+def _sql_update_sucursal_config_fields(
+    server_id: str,
+    sucursal_origen_id: str,
+    update_data: Dict,
+    user_email: Optional[str] = None,
+) -> int:
+    from modules.compras.sync_service import get_edarsahub_connection
+
+    sets = ["FechaModificacion = SYSDATETIME()", "UpdatedBy = %s"]
+    params = [user_email or "sistema"]
+
+    if "visible_en_operaciones" in update_data and update_data["visible_en_operaciones"] is not None:
+        sets.append("VisibleEnOperaciones = %s")
+        params.append(1 if update_data["visible_en_operaciones"] else 0)
+
+    if "nombre_visible" in update_data and update_data["nombre_visible"] is not None:
+        sets.append("SucursalNombre = %s")
+        params.append(str(update_data["nombre_visible"]))
+
+    if "activa" in update_data and update_data["activa"] is not None:
+        sets.append("Activo = %s")
+        params.append(1 if update_data["activa"] else 0)
+
+    params.extend([server_id, str(sucursal_origen_id)])
+
+    conn = get_edarsahub_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(f"""
+            UPDATE dbo.Sistema_ServidorSucursalesConfig
+            SET {", ".join(sets)}
+            WHERE ServidorID = CONVERT(uniqueidentifier, %s)
+              AND ISNULL(SucursalCodigo, CONVERT(varchar(50), SucursalID)) = %s
+        """, tuple(params))
+        count = cur.rowcount or 0
+        conn.commit()
+        return count
+    finally:
+        conn.close()
+
+
 async def filter_sucursales_by_config(sucursales: List[Dict], server_id: str) -> List[Dict]:
     """
     Filtra sucursales según la configuración de visibilidad.
@@ -2732,10 +2949,8 @@ async def filter_sucursales_by_config(sucursales: List[Dict], server_id: str) ->
     - Si NO hay configuración para este servidor -> devuelve TODAS (comportamiento legacy)
     - Si SÍ hay configuración -> devuelve solo las marcadas como visible_en_operaciones=True
     """
-    # Buscar configuración existente
-    configs = await db.server_sucursales_config.find(
-        {"server_id": server_id, "activa": True}
-    ).to_list(500)
+    # Buscar configuración existente en EDARSAHUB SQL
+    configs = _sql_list_sucursales_config(server_id=server_id, activas=True)
     
     # Si no hay configuración, devolver todas (backward compatible)
     if not configs or len(configs) == 0:
@@ -3109,11 +3324,8 @@ async def get_sucursales_config(server_id: str, current_user: Dict = Depends(get
     
     logging.debug(f"[GET_SUCURSALES_CONFIG] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
     
-    # Obtener configuración existente
-    configs = await db.server_sucursales_config.find(
-        {"server_id": server_id, "activa": True},
-        {"_id": 0}
-    ).sort("orden", 1).to_list(500)
+    # Obtener configuración existente desde EDARSAHUB SQL
+    configs = _sql_list_sucursales_config(server_id=server_id, activas=True)
     
     return {
         "server_id": server_id,
@@ -3149,30 +3361,13 @@ async def sync_sucursales_config(server_id: str, current_user: Dict = Depends(ge
     
     logging.debug(f"[SYNC_SUCURSALES_CONFIG] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
     
-    # Obtener sucursales desde SQL Server
-    try:
-        sucursales_sql = []
-        if is_mpro_system(server.get('system_type')):
-            query = "SELECT Sc_Cve_Sucursal as id, Sc_Descripcion as nombre FROM Sucursal WHERE Es_Cve_Estado <> 'BA'"
-            sucursales_sql = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
-            ) or []
-        elif is_softrestaurant_system(server.get('system_type')):
-            # SoftRestaurant no tiene tabla Sucursal, crear virtual
-            sucursales_sql = [{"id": "default", "nombre": server.get('name', 'Principal')}]
-        
-        if not sucursales_sql:
-            sucursales_sql = [{"id": "default", "nombre": server.get('name', 'Principal')}]
-    except Exception as e:
-        logging.error(f"Error consultando sucursales SQL: {e}")
+    # Obtener sucursales desde EDARSAHUB SQL sync, sin conexión live al POS
+    sucursales_sql = _derive_sucursales_from_sync(server_id)
+    if not sucursales_sql:
         sucursales_sql = [{"id": "default", "nombre": server.get('name', 'Principal')}]
-    
-    # Obtener configuración existente
-    existing_configs = await db.server_sucursales_config.find(
-        {"server_id": server_id}
-    ).to_list(500)
-    existing_ids = {c.get("sucursal_origen_id") for c in existing_configs}
+
+    existing_configs = _sql_list_sucursales_config(server_id=server_id, activas=False)
+    existing_ids = {str(c.get("sucursal_origen_id")) for c in existing_configs}
     
     # Agregar nuevas sucursales
     nuevas = 0
@@ -3184,42 +3379,21 @@ async def sync_sucursales_config(server_id: str, current_user: Dict = Depends(ge
         suc_id = str(suc.get("id", "")).strip()
         suc_nombre = str(suc.get("nombre", "")).strip()
         
-        if suc_id in existing_ids:
-            # Ya existe - actualizar nombre si cambió (reactivar si estaba inactiva)
-            await db.server_sucursales_config.update_one(
-                {"server_id": server_id, "sucursal_origen_id": suc_id},
-                {"$set": {
-                    "sucursal_nombre": suc_nombre,
-                    "activa": True,
-                    "fecha_modificacion": now,
-                    "usuario_modificacion": user_email
-                }}
-            )
-            actualizadas += 1
-        else:
-            # Nueva sucursal - agregar como visible por defecto
-            new_config = {
-                "id": str(uuid.uuid4()),
-                "server_id": server_id,
-                "sucursal_origen_id": suc_id,
-                "sucursal_nombre": suc_nombre,
-                "nombre_visible": None,
-                "visible_en_operaciones": True,  # VISIBLE POR DEFECTO
-                "orden": idx,
-                "activa": True,
-                "fecha_alta": now,
-                "usuario_alta": user_email,
-                "fecha_modificacion": None,
-                "usuario_modificacion": None
-            }
-            await db.server_sucursales_config.insert_one(new_config)
+        created = _sql_upsert_sucursal_config(
+            server_id=server_id,
+            sucursal_origen_id=suc_id,
+            sucursal_nombre=suc_nombre,
+            visible_en_operaciones=True,
+            activa=True,
+            user_email=user_email,
+        )
+        if created:
             nuevas += 1
-    
-    # Obtener configuración actualizada
-    configs = await db.server_sucursales_config.find(
-        {"server_id": server_id, "activa": True},
-        {"_id": 0}
-    ).sort("orden", 1).to_list(500)
+        else:
+            actualizadas += 1
+
+    # Obtener configuración actualizada desde EDARSAHUB SQL
+    configs = _sql_list_sucursales_config(server_id=server_id, activas=True)
     
     return {
         "message": f"Sincronización completada: {nuevas} nuevas, {actualizadas} actualizadas",
@@ -3240,28 +3414,25 @@ async def update_sucursal_config(
     if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo administradores pueden modificar")
     
-    # Verificar que existe
-    existing = await db.server_sucursales_config.find_one({
-        "server_id": server_id,
-        "sucursal_origen_id": sucursal_origen_id
-    })
+    # Verificar que existe en EDARSAHUB SQL
+    existing = _sql_get_sucursal_config(server_id, sucursal_origen_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Configuración de sucursal no encontrada")
     
-    # Preparar actualización
-    update_fields = {"fecha_modificacion": datetime.now(timezone.utc), "usuario_modificacion": current_user.get("email")}
+    # Preparar actualización SQL
+    update_fields = {}
     if update_data.visible_en_operaciones is not None:
         update_fields["visible_en_operaciones"] = update_data.visible_en_operaciones
     if update_data.nombre_visible is not None:
         update_fields["nombre_visible"] = update_data.nombre_visible
-    if update_data.orden is not None:
-        update_fields["orden"] = update_data.orden
     if update_data.activa is not None:
         update_fields["activa"] = update_data.activa
-    
-    await db.server_sucursales_config.update_one(
-        {"server_id": server_id, "sucursal_origen_id": sucursal_origen_id},
-        {"$set": update_fields}
+
+    _sql_update_sucursal_config_fields(
+        server_id,
+        sucursal_origen_id,
+        update_fields,
+        current_user.get("email"),
     )
     
     return {"message": "Configuración actualizada", "sucursal_origen_id": sucursal_origen_id}
@@ -3293,11 +3464,13 @@ async def update_sucursales_config_bulk(
         if "nombre_visible" in suc:
             update_fields["nombre_visible"] = suc["nombre_visible"]
         
-        result = await db.server_sucursales_config.update_one(
-            {"server_id": server_id, "sucursal_origen_id": suc_id},
-            {"$set": update_fields}
+        result_count = _sql_update_sucursal_config_fields(
+            server_id,
+            suc_id,
+            update_fields,
+            user_email,
         )
-        if result.modified_count > 0:
+        if result_count > 0:
             updated += 1
     
     return {"message": f"{updated} sucursales actualizadas", "updated": updated}
@@ -3318,14 +3491,7 @@ async def get_all_sucursales(
     Migrado de db.servers.find() a server_registry.list_servers()
     CONEXIONES-SQL-EDARSAHUB-01 / LOTE 5
     """
-    filtro = {}
-    if server_id:
-        filtro["server_id"] = server_id
-    if activas:
-        filtro["activa"] = True
-    
-    cursor = db.server_sucursales_config.find(filtro, {"_id": 0})
-    sucursales = await cursor.to_list(500)
+    sucursales = _sql_list_sucursales_config(server_id=server_id, activas=activas)
     
     # Enriquecer con nombre de servidor usando registry
     # ANTES: server_cursor = db.servers.find({"id": {"$in": server_ids}}, {"_id": 0, "id": 1, "name": 1})
