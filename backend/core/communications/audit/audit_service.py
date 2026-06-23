@@ -179,15 +179,27 @@ class NotificationAuditService:
                 }
             }
         
-        cursor = self.db.notification_log.aggregate(pipeline)
-        
+        # SQL-FIRST P4C: stats desde dbo.Operativo_Notificaciones_Log
         stats_por_canal = {}
-        async for doc in cursor:
-            canal = doc["_id"]
-            stats_por_canal[canal] = {
-                "total": doc["total"],
-                "por_estado": {item["estado"]: item["count"] for item in doc["estados"]}
-            }
+        try:
+            from modules.compras.sync_service import get_edarsahub_connection
+            conn = get_edarsahub_connection()
+            cur = conn.cursor(as_dict=True)
+            cur.execute("""
+                SELECT Canal, Estado, COUNT(*) AS total
+                FROM dbo.Operativo_Notificaciones_Log
+                GROUP BY Canal, Estado
+            """)
+            for row in cur.fetchall() or []:
+                canal = row.get("Canal") or "SIN_CANAL"
+                estado = row.get("Estado") or "SIN_ESTADO"
+                stats_por_canal.setdefault(canal, {"total": 0, "por_estado": {}})
+                stats_por_canal[canal]["total"] += int(row.get("total") or 0)
+                stats_por_canal[canal]["por_estado"][estado] = int(row.get("total") or 0)
+            conn.close()
+        except Exception as e:
+            logger.warning(f"SQL-FIRST P4C audit stats fallback: {e}")
+            stats_por_canal = {}
         
         # Calcular totales generales
         total_enviados = 0

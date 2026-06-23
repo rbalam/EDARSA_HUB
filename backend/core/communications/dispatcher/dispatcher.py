@@ -107,10 +107,8 @@ class NotificationDispatcher:
             return
         
         try:
-            providers = await self.db.notification_provider_config.find(
-                {"activo": True},
-                {"_id": 0}
-            ).to_list(20)
+            # SQL-FIRST P4B: providers legacy en Mongo neutralizados.
+            providers = []
             
             for config in providers:
                 provider_name = config.get("provider")

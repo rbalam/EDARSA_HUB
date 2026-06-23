@@ -34,7 +34,7 @@ class DeduplicationService:
     
     def __init__(self, db):
         self.db = db
-        self.log_collection = db.notification_log
+        self.log_collection = None  # SQL-FIRST P4C: notification_log Mongo neutralizado
         self.default_window_minutes = 60
     
     def _generate_dedup_key(
@@ -110,16 +110,27 @@ class DeduplicationService:
         if workflow_id:
             filtro["workflow_id"] = workflow_id
         
-        existente = await self.log_collection.find_one(filtro, {"_id": 0, "id": 1})
-        
-        if existente:
-            logger.info(
-                f"Duplicado detectado: evento={evento}, "
-                f"destinatario={destinatario[-4:]}****, "
-                f"log_existente={existente.get('id')}"
-            )
-            return True, existente.get("id")
-        
+        # SQL-FIRST P4C: buscar envío reciente en dbo.Operativo_Notificaciones_Log
+        try:
+            from modules.compras.sync_service import get_edarsahub_connection
+            conn = get_edarsahub_connection()
+            cur = conn.cursor(as_dict=True)
+            cur.execute("""
+                SELECT TOP 1 NotificacionID
+                FROM dbo.Operativo_Notificaciones_Log
+                WHERE TipoEvento=%s
+                  AND (Destinatario=%s OR DestinatarioEmail=%s)
+                  AND Estado IN ('enviado','entregado','ENVIADO','ENTREGADO')
+                  AND FechaEnvio >= DATEADD(minute, -%s, GETUTCDATE())
+                ORDER BY FechaEnvio DESC
+            """, (evento, destinatario, destinatario, int(window)))
+            existente = cur.fetchone()
+            conn.close()
+            if existente:
+                return True, existente.get("NotificacionID")
+        except Exception as e:
+            logger.warning(f"SQL-FIRST P4C dedup fallback: {e}")
+
         return False, None
     
     async def should_send(
@@ -181,13 +192,24 @@ class DeduplicationService:
         ahora = datetime.now(timezone.utc)
         inicio_ventana = (ahora - timedelta(minutes=minutes)).isoformat()
         
-        count = await self.log_collection.count_documents({
-            "destinatario": destinatario,
-            "estado_envio": {"$in": ["enviado", "entregado"]},
-            "fecha_intento": {"$gte": inicio_ventana}
-        })
-        
-        return count
+        # SQL-FIRST P4C: conteo reciente desde dbo.Operativo_Notificaciones_Log
+        try:
+            from modules.compras.sync_service import get_edarsahub_connection
+            conn = get_edarsahub_connection()
+            cur = conn.cursor(as_dict=True)
+            cur.execute("""
+                SELECT COUNT(*) AS total
+                FROM dbo.Operativo_Notificaciones_Log
+                WHERE (Destinatario=%s OR DestinatarioEmail=%s)
+                  AND Estado IN ('enviado','entregado','ENVIADO','ENTREGADO')
+                  AND FechaEnvio >= DATEADD(minute, -%s, GETUTCDATE())
+            """, (destinatario, destinatario, int(minutes)))
+            row = cur.fetchone() or {}
+            conn.close()
+            return int(row.get("total") or 0)
+        except Exception as e:
+            logger.warning(f"SQL-FIRST P4C recent sends fallback: {e}")
+            return 0
 
 
 # =============================================================================

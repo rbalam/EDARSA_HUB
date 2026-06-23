@@ -248,11 +248,28 @@ class NotificationOrchestratorService:
                 pass
             return None
         
-        user = await self.db.users.find_one(
-            {"id": user_id, "active": True},
-            {"_id": 0, "id": 1, "name": 1, "email": 1, "telefono": 1}
-        )
-        return user
+        # SQL-FIRST P4B: usuario desde dbo.Usuario_Catalogo
+        try:
+            from modules.compras.sync_service import get_edarsahub_connection
+            conn = get_edarsahub_connection()
+            cur = conn.cursor(as_dict=True)
+            cur.execute("""
+                SELECT TOP 1
+                    CONVERT(VARCHAR(50), PublicUUID) AS id,
+                    NombreCompleto AS name,
+                    Email AS email,
+                    COALESCE(Celular, Telefono) AS telefono
+                FROM dbo.Usuario_Catalogo
+                WHERE Activo=1
+                  AND (
+                    CodigoUsuario=%s OR Email=%s OR Username=%s OR CONVERT(VARCHAR(50), PublicUUID)=%s
+                  )
+            """, (user_id, user_id, user_id, user_id))
+            user = cur.fetchone()
+            conn.close()
+            return user
+        except Exception:
+            return None
     
     # =========================================================================
     # MÉTODOS DE CONVENIENCIA PARA EVENTOS ESPECÍFICOS

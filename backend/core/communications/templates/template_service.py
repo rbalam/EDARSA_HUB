@@ -94,7 +94,7 @@ class TemplateService:
     
     def __init__(self, db):
         self.db = db
-        self.template_collection = db.notification_templates
+        self.template_collection = None  # SQL-FIRST P4C: notification_templates Mongo neutralizado
         self._cache: Dict[str, Dict] = {}
     
     async def get_template(
@@ -123,15 +123,8 @@ class TemplateService:
         if cache_key in self._cache:
             return self._cache[cache_key]
         
-        # 2. Buscar en BD
-        template = await self.template_collection.find_one(
-            {"canal": canal, "codigo": codigo, "activo": True},
-            {"_id": 0}
-        )
-        
-        if template:
-            self._cache[cache_key] = template
-            return template
+        # 2. SQL-FIRST P4C: BD legacy de templates neutralizada.
+        template = None
         
         # 3. Usar default
         if codigo in DEFAULT_TEMPLATES:
@@ -278,22 +271,9 @@ class TemplateService:
         """
         Siembra los templates default en la BD si no existen.
         """
-        for codigo, template_data in DEFAULT_TEMPLATES.items():
-            existing = await self.template_collection.find_one(
-                {"codigo": codigo, "canal": "whatsapp"}
-            )
-            if not existing:
-                doc = {
-                    "id": f"tpl_{codigo}",
-                    "canal": "whatsapp",
-                    "activo": True,
-                    "idioma": "es",
-                    "version": 1,
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                    **template_data
-                }
-                await self.template_collection.insert_one(doc)
-                logger.info(f"Template sembrado: {codigo}")
+        # SQL-FIRST P4C: seed legacy de templates neutralizado.
+        logger.info("Seed templates omitido en SQL-first; se usan DEFAULT_TEMPLATES en memoria")
+        return {"success": True, "sql_first_neutralized": True}
 
 
 # =============================================================================
