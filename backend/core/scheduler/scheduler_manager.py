@@ -1513,6 +1513,9 @@ class SchedulerManager:
         elif job_id == "vtiger_sync":
             await self._run_vtiger_sync_job()
             return {"status": "executed", "job_id": job_id}
+        elif job_id == "inteligencia_comercial_sync":
+            await self._run_inteligencia_comercial_sync_job()
+            return {"status": "executed", "job_id": job_id}
         elif job_id == "netpay_sync_diario":
             await self._run_netpay_sync_diario_job()
             return {"status": "executed", "job_id": job_id}
