@@ -223,10 +223,11 @@ export default function Scheduler() {
   const [actionLoading, setActionLoading] = useState(false);
   
   // Permisos RBAC (derivados del rol)
+  const normalizedRole = String(user?.role || '').toUpperCase();
   const userPermissions = {
-    canView: ['Administrador', 'Supervisor', 'Gerente', 'Director', 'Auditor'].includes(user?.role),
-    canManage: ['Administrador', 'Supervisor', 'Gerente', 'Director'].includes(user?.role),
-    canAdmin: ['SuperAdministrador', 'Administrador', 'Director'].includes(user?.role),
+    canView: ['SUPERADMIN', 'ADMIN', 'ADMINISTRADOR', 'SUPERVISOR', 'GERENTE', 'DIRECTOR', 'AUDITOR'].includes(normalizedRole),
+    canManage: ['SUPERADMIN', 'ADMIN', 'ADMINISTRADOR', 'SUPERVISOR', 'GERENTE', 'DIRECTOR'].includes(normalizedRole),
+    canAdmin: ['SUPERADMIN', 'ADMIN', 'ADMINISTRADOR', 'SUPERADMINISTRADOR', 'DIRECTOR'].includes(normalizedRole),
   };
 
   // Fetch scheduler status
@@ -578,6 +579,16 @@ export default function Scheduler() {
                       <p className="text-sm text-zinc-500 mt-1">
                         {config?.description || job.id}
                       </p>
+                        {(config?.instruccion_ejecucion || config?.comando_preview || config?.grupo_ejecucion || config?.dependencias_json || config?.advertencia_manual) && (
+                          <div className="mt-3 p-3 bg-zinc-50 border border-zinc-200 rounded-lg text-xs text-zinc-700 space-y-1">
+                            {config?.grupo_ejecucion && <div><strong>Grupo:</strong> {config.grupo_ejecucion}</div>}
+                            {config?.instruccion_ejecucion && <div><strong>Orden / acción:</strong> {config.instruccion_ejecucion}</div>}
+                            {config?.comando_preview && <div className="font-mono break-all bg-white border rounded p-2 mt-1">{config.comando_preview}</div>}
+                            {config?.dependencias_json && <div><strong>Dependencias:</strong> {config.dependencias_json}</div>}
+                            {config?.advertencia_manual && <div className="text-amber-700"><strong>Advertencia:</strong> {config.advertencia_manual}</div>}
+                          </div>
+                        )}
+
                       
                       {/* Execution times */}
                       <div className="flex flex-wrap gap-4 mt-3 text-sm">

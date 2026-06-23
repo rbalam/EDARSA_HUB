@@ -89,6 +89,7 @@ import PortalProveedoresApp from '@/portal/App';
 
 // Portal de Inteligencia Comercial IA (Subproyecto separado)
 import PortalInteligenciaApp from '@/portal-inteligencia/App';
+import ComingSoonPage from '@/pages/ComingSoonPage';
 import DashboardEjecutivo from './pages/DashboardEjecutivo';
 import CentroExcepciones from './pages/CentroExcepciones';
 import AdminHub from './pages/AdminHub';
@@ -188,6 +189,19 @@ function App() {
               {/* Módulos Satélites */}
               <Route path="super-caja" element={<SuperCajaPage />} />
               <Route path="comandero" element={<ComanderoPage />} />
+
+              {/* Módulos registrados pendientes de implementación */}
+              <Route path="pos/generico" element={<ComingSoonPage title="Punto de Venta" />} />
+              <Route path="pos/caja" element={<ComingSoonPage title="Caja POS" />} />
+              <Route path="compras/proveedores" element={<ComingSoonPage title="Proveedores de Compras" />} />
+              <Route path="compras/ordenes" element={<ComingSoonPage title="Órdenes de Compra" />} />
+              <Route path="inventarios/existencias" element={<ComingSoonPage title="Existencias de Inventario" />} />
+              <Route path="edarsa-go" element={<ComingSoonPage title="EDARSA GO" />} />
+              <Route path="edarsa-go/links" element={<ComingSoonPage title="Links de Pago" />} />
+              <Route path="portal/proveedores" element={<Navigate to="/portal-proveedores" replace />} />
+              <Route path="portal/comisionistas" element={<ComingSoonPage title="Portal Comisionistas" />} />
+              <Route path="portal/clientes" element={<ComingSoonPage title="Portal Clientes" />} />
+              <Route path="chef-ia" element={<ComingSoonPage title="Chef IA" />} />
               {/* Redirect /operativo → /reportes (Dashboard Operativo ahora es tab dentro de Operaciones) */}
               <Route path="operativo" element={<Navigate to="/reportes?tab=operativo" replace />} />
             </Route>

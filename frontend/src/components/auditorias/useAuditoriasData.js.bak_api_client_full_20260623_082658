@@ -1,0 +1,135 @@
+/**
+ * useAuditoriasData - Hook para datos de Auditorías Programadas
+ */
+import { useState, useCallback, useEffect, useMemo } from 'react';
+// FASE AUTH-SECURITY-01 / FASE 4.1: getToken eliminado, auth viaja en cookie httpOnly
+import logger from '../../services/logger';
+import api from '../../lib/api';
+
+export function useAuditoriasData() {
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  
+  const [auditorias, setAuditorias] = useState([]);
+  const [kpis, setKpis] = useState(null);
+  const [historial, setHistorial] = useState([]);
+  const [calendario, setCalendario] = useState({ 
+    eventos: [], 
+    mes: new Date().getMonth() + 1, 
+    anio: new Date().getFullYear() 
+  });
+  
+  const [historialDias, setHistorialDias] = useState('30');
+  
+  // FASE AUTH-SECURITY-01 / FASE 4.1: Auth viaja en cookie httpOnly
+  const fetchOptions = { credentials: 'include' };
+
+  const fetchAuditorias = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/v2/auditorias-programadas`, fetchOptions);
+      if (response.ok) {
+        const data = await response.json();
+        setAuditorias(data.items || []);
+      }
+    } catch (error) {
+      logger.error('Error fetching auditorias:', error);
+    }
+  }, []);
+
+  const fetchKpis = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/v2/auditorias-programadas/kpis`, fetchOptions);
+      if (response.ok) {
+        setKpis(await response.json());
+      }
+    } catch (error) {
+      logger.error('Error fetching KPIs:', error);
+    }
+  }, []);
+
+  const fetchHistorial = useCallback(async () => {
+    try {
+      const response = await fetch(
+        `${API_URL}/api/v2/auditorias-programadas/historial?dias=${historialDias}&limit=100`,
+        fetchOptions
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setHistorial(data.items || []);
+      }
+    } catch (error) {
+      logger.error('Error fetching historial:', error);
+    }
+  }, [historialDias]);
+
+  const fetchCalendario = useCallback(async () => {
+    try {
+      const response = await fetch(
+        `${API_URL}/api/v2/auditorias-programadas/calendario?anio=${calendario.anio}&mes=${calendario.mes}`,
+        fetchOptions
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setCalendario(prev => ({ ...prev, eventos: data.eventos || [] }));
+      }
+    } catch (error) {
+      logger.error('Error fetching calendario:', error);
+    }
+  }, [calendario.anio, calendario.mes]);
+
+  const loadAllData = useCallback(async () => {
+    await Promise.all([
+      fetchAuditorias(),
+      fetchKpis(),
+      fetchHistorial(),
+      fetchCalendario()
+    ]);
+  }, [fetchAuditorias, fetchKpis, fetchHistorial, fetchCalendario]);
+
+  useEffect(() => {
+    const init = async () => {
+      setLoading(true);
+      await loadAllData();
+      setLoading(false);
+    };
+    init();
+  }, [loadAllData]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadAllData();
+    setRefreshing(false);
+  }, [loadAllData]);
+
+  const cambiarMesCalendario = (delta) => {
+    setCalendario(prev => {
+      let nuevoMes = prev.mes + delta;
+      let nuevoAnio = prev.anio;
+      
+      if (nuevoMes > 12) { nuevoMes = 1; nuevoAnio++; }
+      if (nuevoMes < 1) { nuevoMes = 12; nuevoAnio--; }
+      
+      return { ...prev, mes: nuevoMes, anio: nuevoAnio };
+    });
+  };
+
+  return {
+    loading,
+    refreshing,
+    auditorias,
+    kpis,
+    historial,
+    calendario,
+    historialDias,
+    setHistorialDias,
+    handleRefresh,
+    loadAllData,
+    fetchAuditorias,
+    fetchKpis,
+    fetchHistorial,
+    fetchCalendario,
+    cambiarMesCalendario
+  };
+}
+
+export default useAuditoriasData;

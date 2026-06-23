@@ -88,6 +88,32 @@ def _safe_float(val) -> float:
         return 0.0
 
 
+
+def _safe_datetime(val):
+    """Convierte fechas SQL/strings ISO a datetime naive para comparaciones seguras."""
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        return val.replace(tzinfo=None)
+    if isinstance(val, str):
+        raw = val.strip()
+        if not raw:
+            return None
+        try:
+            return datetime.fromisoformat(raw.replace("Z", "+00:00")).replace(tzinfo=None)
+        except Exception:
+            try:
+                return datetime.strptime(raw[:19], "%Y-%m-%d %H:%M:%S")
+            except Exception:
+                return None
+    return None
+
+
+def _norm_server_id(val) -> str:
+    """Normaliza server_id canónico para cruces contra Servidores_Conexiones."""
+    return _safe_str(val).lower()
+
+
 def _safe_str(val) -> str:
     """Convierte valor a string de forma segura."""
     if val is None:
@@ -112,7 +138,7 @@ def get_sync_monitor_data() -> Dict[str, Any]:
     
     try:
         conn = get_edarsahub_connection(timeout=30)
-        cursor = conn.cursor()
+        cursor = conn.cursor(as_dict=True)
         
         now = datetime.now()
         hace_24h = now - timedelta(hours=24)
@@ -238,17 +264,17 @@ def get_sync_monitor_data() -> Dict[str, Any]:
         conn.close()
         
         # Procesar servidores con estado calculado
-        server_map = {_safe_str(s["server_id"]): s for s in servidores_raw}
+        server_map = {_norm_server_id(s["server_id"]): s for s in servidores_raw}
         
         # Consolidar procesos por servidor
         procesos = []
         all_syncs = compras_syncs + comercial_syncs
         
         for sync in all_syncs:
-            server_id = _safe_str(sync.get("server_id"))
+            server_id = _norm_server_id(sync.get("server_id"))
             sync_type = _safe_str(sync.get("sync_type"))
-            last_sync = sync.get("last_sync")
-            last_success = sync.get("last_success")
+            last_sync = _safe_datetime(sync.get("last_sync"))
+            last_success = _safe_datetime(sync.get("last_success"))
             total_records = int(sync.get("total_records") or 0)
             total_runs = int(sync.get("total_runs") or 0)
             error_count = int(sync.get("error_count") or 0)
@@ -280,12 +306,12 @@ def get_sync_monitor_data() -> Dict[str, Any]:
         # Consolidar errores
         errores = []
         for err in errores_compras + errores_comercial:
-            server_id = _safe_str(err.get("server_id"))
+            server_id = _norm_server_id(err.get("server_id"))
             server_info = server_map.get(server_id, {})
             server_name = server_info.get("nombre", server_id[:20] if server_id else "DESCONOCIDO")
             
-            sync_start = err.get("sync_start")
-            sync_end = err.get("sync_end")
+            sync_start = _safe_datetime(err.get("sync_start"))
+            sync_end = _safe_datetime(err.get("sync_end"))
             
             errores.append({
                 "server_id": server_id,
@@ -300,12 +326,12 @@ def get_sync_monitor_data() -> Dict[str, Any]:
         # Consolidar últimos syncs
         ultimos_syncs = []
         for ult in ultimos_compras + ultimos_comercial:
-            server_id = _safe_str(ult.get("server_id"))
+            server_id = _norm_server_id(ult.get("server_id"))
             server_info = server_map.get(server_id, {})
             server_name = server_info.get("nombre", server_id[:20] if server_id else "DESCONOCIDO")
             
-            sync_start = ult.get("sync_start")
-            sync_end = ult.get("sync_end")
+            sync_start = _safe_datetime(ult.get("sync_start"))
+            sync_end = _safe_datetime(ult.get("sync_end"))
             sync_type = _safe_str(ult.get("sync_type"))
             original_status = _safe_str(ult.get("status"))
             
@@ -337,7 +363,7 @@ def get_sync_monitor_data() -> Dict[str, Any]:
         # Servidores con estado consolidado
         servidores = []
         for srv in servidores_raw:
-            server_id = _safe_str(srv.get("server_id"))
+            server_id = _norm_server_id(srv.get("server_id"))
             
             # Buscar último sync de este servidor
             srv_procesos = [p for p in procesos if p["server_id"] == server_id]
@@ -354,7 +380,13 @@ def get_sync_monitor_data() -> Dict[str, Any]:
                 else:
                     srv_status = "SUCCESS"
                 
-                last_sync_all = max([p["last_sync"] for p in srv_procesos if p["last_sync"]], default=None)
+                last_sync_values = [
+                    _safe_datetime(p.get("last_sync"))
+                    for p in srv_procesos
+                    if p.get("last_sync")
+                ]
+                last_sync_dt = max(last_sync_values) if last_sync_values else None
+                last_sync_all = last_sync_dt.isoformat() if last_sync_dt else None
                 total_records = sum(p["total_records_24h"] for p in srv_procesos)
                 total_errors = sum(p["error_count_24h"] for p in srv_procesos)
             else:

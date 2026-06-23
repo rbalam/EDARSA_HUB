@@ -327,9 +327,49 @@ async def get_scheduler_config(
     from .config import get_scheduler_config
     
     config = get_scheduler_config()
+    jobs = {k: v.model_dump() for k, v in config.jobs.items()}
+
+    # Complemento SQL-first: metadatos operativos editables/visibles desde Centro de Control.
+    # No ejecuta comandos arbitrarios; solo expone instrucción, preview, parámetros y dependencias.
+    try:
+        from core.centro_control.routes import _ensure_scheduler_job_config_table, _cc_fetchall
+        _ensure_scheduler_job_config_table()
+        rows = _cc_fetchall("""
+            SELECT
+                JobID,
+                Handler,
+                ParametrosJSON,
+                InstruccionEjecucion,
+                ComandoPreview,
+                ParametrosEditablesJSON,
+                GrupoEjecucion,
+                DependenciasJSON,
+                AdvertenciaManual,
+                PermiteEjecucionManual
+            FROM dbo.Sys_Scheduler_JobConfig
+        """)
+        for row in rows:
+            job_id = row.get("JobID")
+            if not job_id:
+                continue
+            jobs.setdefault(job_id, {"job_id": job_id})
+            jobs[job_id].update({
+                "handler": row.get("Handler"),
+                "parametros_json": row.get("ParametrosJSON"),
+                "instruccion_ejecucion": row.get("InstruccionEjecucion"),
+                "comando_preview": row.get("ComandoPreview"),
+                "parametros_editables_json": row.get("ParametrosEditablesJSON"),
+                "grupo_ejecucion": row.get("GrupoEjecucion"),
+                "dependencias_json": row.get("DependenciasJSON"),
+                "advertencia_manual": row.get("AdvertenciaManual"),
+                "permite_ejecucion_manual": bool(row.get("PermiteEjecucionManual", True)),
+            })
+    except Exception as e:
+        logger.warning(f"[SCHEDULER_CONFIG] No se pudieron cargar metadatos SQL de jobs: {e}")
+
     return {
         "enabled": config.enabled,
         "timezone": config.timezone,
-        "jobs": {k: v.model_dump() for k, v in config.jobs.items()},
+        "jobs": jobs,
         "lock_timeout_seconds": config.lock_timeout_seconds
     }

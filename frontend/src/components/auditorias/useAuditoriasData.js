@@ -1,37 +1,29 @@
 /**
  * useAuditoriasData - Hook para datos de Auditorías Programadas
  */
-import { useState, useCallback, useEffect, useMemo } from 'react';
-// FASE AUTH-SECURITY-01 / FASE 4.1: getToken eliminado, auth viaja en cookie httpOnly
+import { useState, useCallback, useEffect } from 'react';
 import logger from '../../services/logger';
-
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import api from '@/lib/api';
 
 export function useAuditoriasData() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   const [auditorias, setAuditorias] = useState([]);
   const [kpis, setKpis] = useState(null);
   const [historial, setHistorial] = useState([]);
-  const [calendario, setCalendario] = useState({ 
-    eventos: [], 
-    mes: new Date().getMonth() + 1, 
-    anio: new Date().getFullYear() 
+  const [calendario, setCalendario] = useState({
+    eventos: [],
+    mes: new Date().getMonth() + 1,
+    anio: new Date().getFullYear()
   });
-  
+
   const [historialDias, setHistorialDias] = useState('30');
-  
-  // FASE AUTH-SECURITY-01 / FASE 4.1: Auth viaja en cookie httpOnly
-  const fetchOptions = { credentials: 'include' };
 
   const fetchAuditorias = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/api/v2/auditorias-programadas`, fetchOptions);
-      if (response.ok) {
-        const data = await response.json();
-        setAuditorias(data.items || []);
-      }
+      const response = await api.get('/v2/auditorias-programadas');
+      setAuditorias(response.data?.items || []);
     } catch (error) {
       logger.error('Error fetching auditorias:', error);
     }
@@ -39,10 +31,8 @@ export function useAuditoriasData() {
 
   const fetchKpis = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/api/v2/auditorias-programadas/kpis`, fetchOptions);
-      if (response.ok) {
-        setKpis(await response.json());
-      }
+      const response = await api.get('/v2/auditorias-programadas/kpis');
+      setKpis(response.data || null);
     } catch (error) {
       logger.error('Error fetching KPIs:', error);
     }
@@ -50,14 +40,10 @@ export function useAuditoriasData() {
 
   const fetchHistorial = useCallback(async () => {
     try {
-      const response = await fetch(
-        `${API_URL}/api/v2/auditorias-programadas/historial?dias=${historialDias}&limit=100`,
-        fetchOptions
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setHistorial(data.items || []);
-      }
+      const response = await api.get('/v2/auditorias-programadas/historial', {
+        params: { dias: historialDias, limit: 100 }
+      });
+      setHistorial(response.data?.items || []);
     } catch (error) {
       logger.error('Error fetching historial:', error);
     }
@@ -65,14 +51,10 @@ export function useAuditoriasData() {
 
   const fetchCalendario = useCallback(async () => {
     try {
-      const response = await fetch(
-        `${API_URL}/api/v2/auditorias-programadas/calendario?anio=${calendario.anio}&mes=${calendario.mes}`,
-        fetchOptions
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setCalendario(prev => ({ ...prev, eventos: data.eventos || [] }));
-      }
+      const response = await api.get('/v2/auditorias-programadas/calendario', {
+        params: { anio: calendario.anio, mes: calendario.mes }
+      });
+      setCalendario(prev => ({ ...prev, eventos: response.data?.eventos || [] }));
     } catch (error) {
       logger.error('Error fetching calendario:', error);
     }
@@ -106,10 +88,10 @@ export function useAuditoriasData() {
     setCalendario(prev => {
       let nuevoMes = prev.mes + delta;
       let nuevoAnio = prev.anio;
-      
+
       if (nuevoMes > 12) { nuevoMes = 1; nuevoAnio++; }
       if (nuevoMes < 1) { nuevoMes = 12; nuevoAnio--; }
-      
+
       return { ...prev, mes: nuevoMes, anio: nuevoAnio };
     });
   };

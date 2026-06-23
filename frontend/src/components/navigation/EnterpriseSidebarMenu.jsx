@@ -98,9 +98,83 @@ function groupBySection(items) {
   }, {});
 }
 
+function normalizeSqlEnterpriseGroups(sqlMenus = []) {
+  if (!Array.isArray(sqlMenus) || sqlMenus.length === 0) return null;
+
+  const groupMap = {
+    DIRECCION: "inteligencia",
+    REPORTES_BI: "inteligencia",
+    IA: "inteligencia",
+    CALIDAD: "inteligencia",
+    COMERCIAL: "operacion",
+    COMPRAS: "operacion",
+    INVENTARIOS: "operacion",
+    TABLAJERIA: "operacion",
+    FINANZAS: "finanzas-group",
+    HOST_TO_HOST: "finanzas-group",
+    CONTABILIDAD: "finanzas-group",
+    COMISIONES: "finanzas-group",
+    RH: "personas",
+    CRM: "personas",
+    CAVA_SOCIOS: "personas",
+    PROYECTOS: "gestion",
+    MARKETING: "gestion",
+    ACTIVOS_FIJOS: "corporativo",
+    CATALOGOS: "corporativo",
+    INTEGRACIONES: "integraciones",
+    SISTEMA: "administracion",
+    PORTAL_PROVEEDORES: "satelites",
+    PORTAL_COMISIONISTAS: "satelites",
+    PORTAL_CLIENTES: "satelites",
+    COMANDERO_RESTAURANTERO: "satelites",
+    POS_GENERICO: "satelites",
+    EDARSA_GO: "satelites",
+    CHEF_IA: "satelites"
+  };
+
+  const groups = enterpriseMenuGroups.map(group => ({ ...group, children: [] }));
+
+  sqlMenus.forEach(modulo => {
+    const codigo = String(modulo.codigo || "").toUpperCase();
+    const menus = Array.isArray(modulo.menus) ? modulo.menus : [];
+    const targetGroupId = groupMap[codigo] || (modulo.es_satelite || modulo.es_portal ? "satelites" : "operacion");
+    const group = groups.find(g => g.id === targetGroupId);
+    if (!group) return;
+
+    if (menus.length > 1) {
+      menus.forEach(m => {
+        if (m.visible === false || !m.ruta) return;
+        group.children.push({
+          id: String(m.codigo || `${codigo}-${m.id || m.nombre}`),
+          label: m.nombre || m.codigo,
+          path: m.ruta,
+          icon: m.icono || modulo.icono || "Grid3X3",
+          section: modulo.nombre || group.label,
+          keywords: [m.nombre, m.codigo, modulo.nombre, codigo].filter(Boolean)
+        });
+      });
+    } else {
+      const first = menus[0] || {};
+      const path = first.ruta || modulo.ruta || modulo.url_externa;
+      if (!path) return;
+      group.children.push({
+        id: String(modulo.codigo || modulo.id || first.codigo || first.id),
+        label: modulo.nombre || first.nombre || codigo,
+        path,
+        icon: modulo.icono || first.icono || "Grid3X3",
+        section: group.label,
+        keywords: [modulo.nombre, codigo, first.nombre, first.codigo].filter(Boolean)
+      });
+    }
+  });
+
+  return groups.filter(group => group.children.length > 0);
+}
+
 export default function EnterpriseSidebarMenu({
   user,
-  collapsed = false
+  collapsed = false,
+  sqlMenus = null
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -128,10 +202,10 @@ export default function EnterpriseSidebarMenu({
     }
   });
 
-  const groups = useMemo(
-    () => filterEnterpriseMenuByRole(enterpriseMenuGroups, user),
-    [user]
-  );
+  const groups = useMemo(() => {
+    const sqlGroups = normalizeSqlEnterpriseGroups(sqlMenus);
+    return sqlGroups || filterEnterpriseMenuByRole(enterpriseMenuGroups, user);
+  }, [sqlMenus, user]);
 
   const flat = useMemo(() => flattenEnterpriseMenu(groups), [groups]);
 

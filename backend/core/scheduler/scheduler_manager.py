@@ -47,6 +47,7 @@ from .jobs.vtiger_sync_job import execute_vtiger_sync
 from .jobs.inteligencia_comercial_sync_job import job_inteligencia_comercial_sync
 # NetPay: Sincronización diaria de reportes conciliables
 from .jobs.netpay_sync_job import execute_netpay_sync_diario
+from .jobs.sync_compras_job import execute_sync_compras
 
 logger = logging.getLogger(__name__)
 
@@ -364,6 +365,43 @@ class SchedulerManager:
         finally:
             await lock.release()
     
+    async def _run_sync_compras_job(self):
+        """Wrapper async para sincronización canónica de Compras."""
+        job_config = self.config.jobs.get("sync_compras")
+        if not job_config or not job_config.enabled:
+            logger.debug("[SYNC_COMPRAS] Deshabilitado por configuración")
+            return
+
+        lock_manager = get_lock_manager(self.db)
+        lock = lock_manager.get_lock("sync_compras")
+        lock_acquired = await lock.acquire(timeout_seconds=job_config.timeout_seconds)
+
+        if not lock_acquired:
+            logger.warning("[SYNC_COMPRAS] No se pudo obtener lock - ya hay una ejecución en progreso")
+            return
+
+        job_logger = get_job_logger(self.db)
+        log_entry = await job_logger.start_execution("sync_compras")
+
+        try:
+            import asyncio
+            result = await asyncio.to_thread(execute_sync_compras, False)
+            ok = result.get("status") in ("SUCCESS", "PARTIAL", "WARNING")
+
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status="completed" if ok else "failed",
+                processed_count=int(result.get("total_processed") or 0),
+                success_count=int(result.get("total_processed") or 0),
+                message=result.get("message") or f"SYNC Compras finalizado: {result.get('status')}",
+                extra_metadata={"result_summary": result}
+            )
+        except Exception as e:
+            logger.error(f"[SYNC_COMPRAS] Error: {e}")
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+        finally:
+            await lock.release()
+
     async def _run_sync_cxp_facturas_job(self):
         """Wrapper async: sincroniza Cuentas por Pagar hacia dbo.Finanzas_CxP_Sync (canónico)."""
         job_config = self.config.jobs.get("sync_cxp_facturas")
@@ -1087,6 +1125,28 @@ class SchedulerManager:
             logger.info(f"Job SYNC_PROPINAS_TPV registrado: intervalo={sync_propinas_config.interval_seconds}s")
 
         # ========================================
+        # Compras: Job Sincronización Integral
+        # ========================================
+        sync_compras_config = self.config.jobs.get("sync_compras")
+        if sync_compras_config and sync_compras_config.enabled:
+            if sync_compras_config.cron_expression:
+                trigger = CronTrigger.from_crontab(sync_compras_config.cron_expression)
+            else:
+                trigger = IntervalTrigger(seconds=sync_compras_config.interval_seconds)
+
+            self._scheduler.add_job(
+                self._run_sync_compras_job,
+                trigger=trigger,
+                id="sync_compras",
+                name="SYNC Compras Integral",
+                replace_existing=True,
+                max_instances=1,
+                coalesce=True
+            )
+            self._jobs["sync_compras"] = sync_compras_config
+            logger.info(f"Job SYNC_COMPRAS registrado: intervalo={sync_compras_config.interval_seconds}s")
+
+        # ========================================
         # CxP: Job Sincronización Cuentas por Pagar (canónico)
         # ========================================
         sync_cxp_config = self.config.jobs.get("sync_cxp_facturas")
@@ -1425,6 +1485,9 @@ class SchedulerManager:
             return {"status": "executed", "job_id": job_id}
         elif job_id == "sync_propinas_tpv_incremental":
             await self._run_sync_propinas_tpv_incremental_job()
+            return {"status": "executed", "job_id": job_id}
+        elif job_id == "sync_compras":
+            await self._run_sync_compras_job()
             return {"status": "executed", "job_id": job_id}
         elif job_id == "sync_cxp_facturas":
             await self._run_sync_cxp_facturas_job()

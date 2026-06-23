@@ -1,0 +1,545 @@
+{
+  "generated_at": "20260623_120032",
+  "frontend_routes_count": 58,
+  "sql_menus_count": 64,
+  "frontend_without_sql_menu_actionable": [],
+  "frontend_without_sql_menu_classified": [
+    {
+      "ruta": "/admin",
+      "componente": "AdminHub",
+      "classification": "hub_internal",
+      "decision": "no_menu_sql",
+      "reason": "Hub interno de administracion; no debe contarse como menu operativo independiente."
+    },
+    {
+      "ruta": "/admin/dashboard-ejecutivo",
+      "componente": "DashboardEjecutivo",
+      "classification": "alias_redirect",
+      "decision": "no_menu_sql",
+      "reason": "Duplicado legacy de /tablero-ejecutivo, que ya existe en SQL."
+    },
+    {
+      "ruta": "/produccion",
+      "componente": "Produccion",
+      "classification": "legacy_route",
+      "decision": "no_menu_sql",
+      "reason": "Ruta contenedora legacy de produccion; no insertar sin validar menu funcional activo."
+    },
+    {
+      "ruta": "/produccion/tablajeria",
+      "componente": "TablajeriaDashboard",
+      "classification": "legacy_route",
+      "decision": "no_menu_sql",
+      "reason": "Alias legacy de TablajeriaDashboard; evitar duplicar menu."
+    },
+    {
+      "ruta": "/produccion/tablajeria/plantillas",
+      "componente": "PlantillasPage",
+      "classification": "legacy_route",
+      "decision": "no_menu_sql",
+      "reason": "Ruta legacy de plantillas de tablajeria; evitar duplicar menu."
+    },
+    {
+      "ruta": "/produccion/tablajeria/ordenes",
+      "componente": "OrdenesPage",
+      "classification": "legacy_route",
+      "decision": "no_menu_sql",
+      "reason": "Ruta legacy de ordenes de tablajeria; evitar duplicar menu."
+    },
+    {
+      "ruta": "/produccion/tablajeria/captura-directa",
+      "componente": "CapturaDirectaPage",
+      "classification": "legacy_route",
+      "decision": "no_menu_sql",
+      "reason": "Ruta legacy de captura directa de tablajeria; evitar duplicar menu."
+    },
+    {
+      "ruta": "/tablajeria",
+      "componente": "TablajeriaDashboard",
+      "classification": "alias_redirect",
+      "decision": "no_menu_sql",
+      "reason": "Alias de /tablajeria/dashboard; no debe crear menu duplicado."
+    },
+    {
+      "ruta": "/cava-socios/socios/nuevo",
+      "componente": "SocioForm",
+      "classification": "internal_form",
+      "decision": "no_menu_sql",
+      "reason": "Formulario interno de alta; debe abrir desde el flujo de socios, no como menu."
+    },
+    {
+      "ruta": "/admin/dba-credential",
+      "componente": "DBACredentialManager",
+      "classification": "sensitive_superadmin",
+      "decision": "no_menu_sql",
+      "reason": "Herramienta sensible restringida a SuperAdministrador; no debe exponerse como menu general."
+    }
+  ],
+  "frontend_without_sql_menu_no_actionable": [
+    {
+      "ruta": "/admin",
+      "componente": "AdminHub",
+      "classification": "hub_internal",
+      "decision": "no_menu_sql",
+      "reason": "Hub interno de administracion; no debe contarse como menu operativo independiente."
+    },
+    {
+      "ruta": "/admin/dashboard-ejecutivo",
+      "componente": "DashboardEjecutivo",
+      "classification": "alias_redirect",
+      "decision": "no_menu_sql",
+      "reason": "Duplicado legacy de /tablero-ejecutivo, que ya existe en SQL."
+    },
+    {
+      "ruta": "/produccion",
+      "componente": "Produccion",
+      "classification": "legacy_route",
+      "decision": "no_menu_sql",
+      "reason": "Ruta contenedora legacy de produccion; no insertar sin validar menu funcional activo."
+    },
+    {
+      "ruta": "/produccion/tablajeria",
+      "componente": "TablajeriaDashboard",
+      "classification": "legacy_route",
+      "decision": "no_menu_sql",
+      "reason": "Alias legacy de TablajeriaDashboard; evitar duplicar menu."
+    },
+    {
+      "ruta": "/produccion/tablajeria/plantillas",
+      "componente": "PlantillasPage",
+      "classification": "legacy_route",
+      "decision": "no_menu_sql",
+      "reason": "Ruta legacy de plantillas de tablajeria; evitar duplicar menu."
+    },
+    {
+      "ruta": "/produccion/tablajeria/ordenes",
+      "componente": "OrdenesPage",
+      "classification": "legacy_route",
+      "decision": "no_menu_sql",
+      "reason": "Ruta legacy de ordenes de tablajeria; evitar duplicar menu."
+    },
+    {
+      "ruta": "/produccion/tablajeria/captura-directa",
+      "componente": "CapturaDirectaPage",
+      "classification": "legacy_route",
+      "decision": "no_menu_sql",
+      "reason": "Ruta legacy de captura directa de tablajeria; evitar duplicar menu."
+    },
+    {
+      "ruta": "/tablajeria",
+      "componente": "TablajeriaDashboard",
+      "classification": "alias_redirect",
+      "decision": "no_menu_sql",
+      "reason": "Alias de /tablajeria/dashboard; no debe crear menu duplicado."
+    },
+    {
+      "ruta": "/cava-socios/socios/nuevo",
+      "componente": "SocioForm",
+      "classification": "internal_form",
+      "decision": "no_menu_sql",
+      "reason": "Formulario interno de alta; debe abrir desde el flujo de socios, no como menu."
+    },
+    {
+      "ruta": "/admin/dba-credential",
+      "componente": "DBACredentialManager",
+      "classification": "sensitive_superadmin",
+      "decision": "no_menu_sql",
+      "reason": "Herramienta sensible restringida a SuperAdministrador; no debe exponerse como menu general."
+    }
+  ],
+  "sql_menu_without_frontend_route": [
+    {
+      "ModuloID": 2,
+      "ModuloCodigo": "COMERCIAL",
+      "ModuloNombre": "Comercial / Ventas",
+      "MenuID": 26,
+      "MenuCodigo": "comercial.clientes",
+      "MenuNombre": "Clientes",
+      "Ruta": "/comercial/clientes",
+      "Orden": 2,
+      "RequierePermiso": "comercial.clientes"
+    },
+    {
+      "ModuloID": 3,
+      "ModuloCodigo": "COMANDERO_RESTAURANTERO",
+      "ModuloNombre": "Comandero Restaurantero",
+      "MenuID": 65,
+      "MenuCodigo": "comandero.mesas",
+      "MenuNombre": "Mesas",
+      "Ruta": "/comandero/mesas",
+      "Orden": 1,
+      "RequierePermiso": "comandero"
+    },
+    {
+      "ModuloID": 28,
+      "ModuloCodigo": "POS_GENERICO",
+      "ModuloNombre": "Punto de Venta Genérico",
+      "MenuID": 63,
+      "MenuCodigo": "pos.dashboard",
+      "MenuNombre": "Punto de Venta",
+      "Ruta": "/pos/generico",
+      "Orden": 1,
+      "RequierePermiso": "pos_generico"
+    },
+    {
+      "ModuloID": 28,
+      "ModuloCodigo": "POS_GENERICO",
+      "ModuloNombre": "Punto de Venta Genérico",
+      "MenuID": 64,
+      "MenuCodigo": "pos.caja",
+      "MenuNombre": "Caja",
+      "Ruta": "/pos/caja",
+      "Orden": 2,
+      "RequierePermiso": "pos_generico"
+    },
+    {
+      "ModuloID": 3,
+      "ModuloCodigo": "COMANDERO_RESTAURANTERO",
+      "ModuloNombre": "Comandero Restaurantero",
+      "MenuID": 66,
+      "MenuCodigo": "comandero.comandas",
+      "MenuNombre": "Comandas",
+      "Ruta": "/comandero/comandas",
+      "Orden": 2,
+      "RequierePermiso": "comandero"
+    },
+    {
+      "ModuloID": 3,
+      "ModuloCodigo": "COMANDERO_RESTAURANTERO",
+      "ModuloNombre": "Comandero Restaurantero",
+      "MenuID": 67,
+      "MenuCodigo": "comandero.cuentas",
+      "MenuNombre": "Cuentas",
+      "Ruta": "/comandero/cuentas",
+      "Orden": 3,
+      "RequierePermiso": "comandero"
+    },
+    {
+      "ModuloID": 3,
+      "ModuloCodigo": "COMANDERO_RESTAURANTERO",
+      "ModuloNombre": "Comandero Restaurantero",
+      "MenuID": 68,
+      "MenuCodigo": "comandero.cortes",
+      "MenuNombre": "Cortes",
+      "Ruta": "/comandero/cortes",
+      "Orden": 4,
+      "RequierePermiso": "comandero"
+    },
+    {
+      "ModuloID": 4,
+      "ModuloCodigo": "COMPRAS",
+      "ModuloNombre": "Compras",
+      "MenuID": 38,
+      "MenuCodigo": "compras.proveedores",
+      "MenuNombre": "Proveedores",
+      "Ruta": "/compras/proveedores",
+      "Orden": 2,
+      "RequierePermiso": "compras.proveedores"
+    },
+    {
+      "ModuloID": 4,
+      "ModuloCodigo": "COMPRAS",
+      "ModuloNombre": "Compras",
+      "MenuID": 39,
+      "MenuCodigo": "compras.ordenes",
+      "MenuNombre": "Órdenes de Compra",
+      "Ruta": "/compras/ordenes",
+      "Orden": 3,
+      "RequierePermiso": "compras.ordenes"
+    },
+    {
+      "ModuloID": 5,
+      "ModuloCodigo": "INVENTARIOS",
+      "ModuloNombre": "Inventarios / Operaciones",
+      "MenuID": 41,
+      "MenuCodigo": "inventarios.existencias",
+      "MenuNombre": "Existencias",
+      "Ruta": "/inventarios/existencias",
+      "Orden": 2,
+      "RequierePermiso": "inventarios"
+    },
+    {
+      "ModuloID": 10,
+      "ModuloCodigo": "EDARSA_GO",
+      "ModuloNombre": "EDARSA GO / Cobros",
+      "MenuID": 72,
+      "MenuCodigo": "edarsa_go.cobros",
+      "MenuNombre": "EDARSA GO",
+      "Ruta": "/edarsa-go",
+      "Orden": 1,
+      "RequierePermiso": "edarsa_go"
+    },
+    {
+      "ModuloID": 10,
+      "ModuloCodigo": "EDARSA_GO",
+      "ModuloNombre": "EDARSA GO / Cobros",
+      "MenuID": 73,
+      "MenuCodigo": "edarsa_go.links",
+      "MenuNombre": "Links de Pago",
+      "Ruta": "/edarsa-go/links",
+      "Orden": 2,
+      "RequierePermiso": "edarsa_go"
+    },
+    {
+      "ModuloID": 16,
+      "ModuloCodigo": "PORTAL_PROVEEDORES",
+      "ModuloNombre": "Portal de Proveedores",
+      "MenuID": 69,
+      "MenuCodigo": "portal.proveedores",
+      "MenuNombre": "Portal Proveedores",
+      "Ruta": "/portal/proveedores",
+      "Orden": 1,
+      "RequierePermiso": "portal_proveedores"
+    },
+    {
+      "ModuloID": 17,
+      "ModuloCodigo": "PORTAL_COMISIONISTAS",
+      "ModuloNombre": "Portal de Comisionistas",
+      "MenuID": 70,
+      "MenuCodigo": "portal.comisionistas",
+      "MenuNombre": "Portal Comisionistas",
+      "Ruta": "/portal/comisionistas",
+      "Orden": 1,
+      "RequierePermiso": "portal_comisionistas"
+    },
+    {
+      "ModuloID": 18,
+      "ModuloCodigo": "PORTAL_CLIENTES",
+      "ModuloNombre": "Portal de Clientes",
+      "MenuID": 71,
+      "MenuCodigo": "portal.clientes",
+      "MenuNombre": "Portal Clientes",
+      "Ruta": "/portal/clientes",
+      "Orden": 1,
+      "RequierePermiso": "portal_clientes"
+    },
+    {
+      "ModuloID": 19,
+      "ModuloCodigo": "CHEF_IA",
+      "ModuloNombre": "Chef IA / Calidad",
+      "MenuID": 74,
+      "MenuCodigo": "chef_ia.calidad",
+      "MenuNombre": "Chef IA",
+      "Ruta": "/chef-ia",
+      "Orden": 1,
+      "RequierePermiso": "chef_ia"
+    }
+  ],
+  "rbac_modules_without_sql_menu": [
+    {
+      "ModuloID": 17,
+      "CodigoModulo": "AUDITORIAS",
+      "NombreModulo": "Auditorías Programadas"
+    },
+    {
+      "ModuloID": 63,
+      "CodigoModulo": "comercial.benchmark",
+      "NombreModulo": "Benchmark de Productos"
+    },
+    {
+      "ModuloID": 53,
+      "CodigoModulo": "cava_socios.botellas",
+      "NombreModulo": "Botellas"
+    },
+    {
+      "ModuloID": 42,
+      "CodigoModulo": "tablajeria.captura_directa",
+      "NombreModulo": "Captura Directa"
+    },
+    {
+      "ModuloID": 56,
+      "CodigoModulo": "cava_socios.cargos",
+      "NombreModulo": "Cargos"
+    },
+    {
+      "ModuloID": 10,
+      "CodigoModulo": "CARGOS",
+      "NombreModulo": "Cargos Económicos"
+    },
+    {
+      "ModuloID": 25,
+      "CodigoModulo": "crm.clientes",
+      "NombreModulo": "Clientes"
+    },
+    {
+      "ModuloID": 62,
+      "CodigoModulo": "comercial.competidores",
+      "NombreModulo": "Competidores"
+    },
+    {
+      "ModuloID": 4,
+      "CodigoModulo": "COMPRAS_FACT",
+      "NombreModulo": "Compras"
+    },
+    {
+      "ModuloID": 36,
+      "CodigoModulo": "crm.config",
+      "NombreModulo": "Configuración"
+    },
+    {
+      "ModuloID": 49,
+      "CodigoModulo": "tablajeria.config",
+      "NombreModulo": "Configuración"
+    },
+    {
+      "ModuloID": 58,
+      "CodigoModulo": "cava_socios.config",
+      "NombreModulo": "Configuración"
+    },
+    {
+      "ModuloID": 55,
+      "CodigoModulo": "cava_socios.consumos",
+      "NombreModulo": "Consumos"
+    },
+    {
+      "ModuloID": 27,
+      "CodigoModulo": "crm.contactos",
+      "NombreModulo": "Contactos"
+    },
+    {
+      "ModuloID": 46,
+      "CodigoModulo": "tablajeria.costeo",
+      "NombreModulo": "Costeo"
+    },
+    {
+      "ModuloID": 31,
+      "CodigoModulo": "crm.cotizaciones",
+      "NombreModulo": "Cotizaciones"
+    },
+    {
+      "ModuloID": 2,
+      "CodigoModulo": "COMPRAS_COT",
+      "NombreModulo": "Cotizaciones de compra"
+    },
+    {
+      "ModuloID": 7,
+      "CodigoModulo": "VENTA_COT",
+      "NombreModulo": "Cotizaciones de venta"
+    },
+    {
+      "ModuloID": 51,
+      "CodigoModulo": "cava_socios.dashboard",
+      "NombreModulo": "Dashboard Cava"
+    },
+    {
+      "ModuloID": 20,
+      "CodigoModulo": "RBAC",
+      "NombreModulo": "Gestión RBAC"
+    },
+    {
+      "ModuloID": 34,
+      "CodigoModulo": "crm.integraciones",
+      "NombreModulo": "Integraciones"
+    },
+    {
+      "ModuloID": 59,
+      "CodigoModulo": "INTELIGENCIA_COMERCIAL",
+      "NombreModulo": "Inteligencia Comercial"
+    },
+    {
+      "ModuloID": 6,
+      "CodigoModulo": "VENTA_LISTAS",
+      "NombreModulo": "Listas de precios"
+    },
+    {
+      "ModuloID": 45,
+      "CodigoModulo": "tablajeria.mermas",
+      "NombreModulo": "Mermas"
+    },
+    {
+      "ModuloID": 54,
+      "CodigoModulo": "cava_socios.movimientos",
+      "NombreModulo": "Movimientos"
+    },
+    {
+      "ModuloID": 15,
+      "CodigoModulo": "NOTIFICACIONES",
+      "NombreModulo": "Notificaciones"
+    },
+    {
+      "ModuloID": 3,
+      "CodigoModulo": "COMPRAS_OC",
+      "NombreModulo": "Ordenes de compra"
+    },
+    {
+      "ModuloID": 5,
+      "CodigoModulo": "TES_PAGOS",
+      "NombreModulo": "Pagos"
+    },
+    {
+      "ModuloID": 32,
+      "CodigoModulo": "crm.pedidos",
+      "NombreModulo": "Pedidos"
+    },
+    {
+      "ModuloID": 8,
+      "CodigoModulo": "VENTA_PED",
+      "NombreModulo": "Pedidos de venta"
+    },
+    {
+      "ModuloID": 61,
+      "CodigoModulo": "comercial.perfil_unidad",
+      "NombreModulo": "Perfil Digital de Unidad"
+    },
+    {
+      "ModuloID": 47,
+      "CodigoModulo": "tablajeria.polizas",
+      "NombreModulo": "Pólizas Contables"
+    },
+    {
+      "ModuloID": 64,
+      "CodigoModulo": "comercial.precios_sugeridos",
+      "NombreModulo": "Precios Sugeridos"
+    },
+    {
+      "ModuloID": 33,
+      "CodigoModulo": "crm.remisiones",
+      "NombreModulo": "Remisiones"
+    },
+    {
+      "ModuloID": 44,
+      "CodigoModulo": "tablajeria.rendimientos",
+      "NombreModulo": "Rendimientos"
+    },
+    {
+      "ModuloID": 57,
+      "CodigoModulo": "cava_socios.reportes",
+      "NombreModulo": "Reportes"
+    },
+    {
+      "ModuloID": 11,
+      "CodigoModulo": "RESPONSABILIDAD",
+      "NombreModulo": "Responsabilidad Económica"
+    },
+    {
+      "ModuloID": 1,
+      "CodigoModulo": "SEGURIDAD",
+      "NombreModulo": "Seguridad"
+    },
+    {
+      "ModuloID": 48,
+      "CodigoModulo": "tablajeria.sync",
+      "NombreModulo": "Sincronización"
+    },
+    {
+      "ModuloID": 12,
+      "CodigoModulo": "SLA",
+      "NombreModulo": "SLA y Métricas"
+    },
+    {
+      "ModuloID": 52,
+      "CodigoModulo": "cava_socios.socios",
+      "NombreModulo": "Socios"
+    },
+    {
+      "ModuloID": 39,
+      "CodigoModulo": "tablajeria",
+      "NombreModulo": "Tablajería"
+    },
+    {
+      "ModuloID": 13,
+      "CodigoModulo": "WORKFLOW",
+      "NombreModulo": "Workflows"
+    }
+  ]
+}

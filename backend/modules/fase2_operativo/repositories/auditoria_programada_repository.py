@@ -58,11 +58,10 @@ class AuditoriaProgramadaRepository(SQLBaseRepository):
             "SucursalID": data.get("sucursal_id", ""),
             "AlmacenID": data.get("almacen_id", ""),
             "Frecuencia": data.get("frecuencia", "MENSUAL"),
-            "Activo": data.get("activo", True),
+            "Estado": "ACTIVA" if data.get("activo", True) else "INACTIVA",
             "ProximaEjecucion": data.get("proxima_ejecucion"),
             "UltimaEjecucion": data.get("ultima_ejecucion"),
-            "UltimaEjecucionStatus": data.get("ultima_ejecucion_status"),
-        }
+                    }
         
         columns = ", ".join(sql_data.keys())
         placeholders = ", ".join(["%s"] * len(sql_data))
@@ -133,11 +132,10 @@ class AuditoriaProgramadaRepository(SQLBaseRepository):
             "sucursal_id": "SucursalID",
             "almacen_id": "AlmacenID",
             "frecuencia": "Frecuencia",
-            "activo": "Activo",
+            "activo": "Estado",
             "proxima_ejecucion": "ProximaEjecucion",
             "ultima_ejecucion": "UltimaEjecucion",
-            "ultima_ejecucion_status": "UltimaEjecucionStatus",
-        }
+                    }
         
         for key, value in data.items():
             if key in field_mapping:
@@ -191,7 +189,7 @@ class AuditoriaProgramadaRepository(SQLBaseRepository):
         """Obtiene todas las auditorías activas."""
         sql = f"""
             SELECT * FROM {self.table_name}
-            WHERE Activo = 1
+            WHERE ISNULL(Estado, 'ACTIVA') = 'ACTIVA'
             ORDER BY ProximaEjecucion
         """
         
@@ -238,7 +236,7 @@ class AuditoriaProgramadaRepository(SQLBaseRepository):
         """
         sql = f"""
             SELECT * FROM {self.table_name}
-            WHERE Activo = 1 AND ProximaEjecucion <= %s
+            WHERE ISNULL(Estado, 'ACTIVA') = 'ACTIVA' AND ProximaEjecucion <= %s
         """
         
         try:
@@ -262,7 +260,7 @@ class AuditoriaProgramadaRepository(SQLBaseRepository):
         
         sql = f"""
             SELECT * FROM {self.table_name}
-            WHERE Activo = 1 
+            WHERE ISNULL(Estado, 'ACTIVA') = 'ACTIVA' 
               AND ProximaEjecucion >= %s 
               AND ProximaEjecucion <= %s
             ORDER BY ProximaEjecucion
@@ -294,14 +292,14 @@ class AuditoriaProgramadaRepository(SQLBaseRepository):
         if proxima:
             sql = f"""
                 UPDATE {self.table_name}
-                SET UltimaEjecucion = %s, UltimaEjecucionStatus = %s, ProximaEjecucion = %s
+                SET UltimaEjecucion = %s, Estado = %s, ProximaEjecucion = %s, FechaActualizacion = SYSUTCDATETIME()
                 WHERE AuditoriaID = %s
             """
             params = (now, estado, proxima, auditoria_id)
         else:
             sql = f"""
                 UPDATE {self.table_name}
-                SET UltimaEjecucion = %s, UltimaEjecucionStatus = %s
+                SET UltimaEjecucion = %s, Estado = %s, FechaActualizacion = SYSUTCDATETIME()
                 WHERE AuditoriaID = %s
             """
             params = (now, estado, auditoria_id)
@@ -323,7 +321,7 @@ class AuditoriaProgramadaRepository(SQLBaseRepository):
     
     def activar(self, auditoria_id: str) -> bool:
         """Activa una auditoría programada."""
-        sql = f"UPDATE {self.table_name} SET Activo = 1 WHERE AuditoriaID = %s"
+        sql = f"UPDATE {self.table_name} SET Estado = 'ACTIVA', FechaActualizacion = SYSUTCDATETIME() WHERE AuditoriaID = %s"
         
         try:
             conn = self._get_connection()
@@ -342,7 +340,7 @@ class AuditoriaProgramadaRepository(SQLBaseRepository):
     
     def desactivar(self, auditoria_id: str) -> bool:
         """Desactiva una auditoría programada."""
-        sql = f"UPDATE {self.table_name} SET Activo = 0 WHERE AuditoriaID = %s"
+        sql = f"UPDATE {self.table_name} SET Estado = 'INACTIVA', FechaActualizacion = SYSUTCDATETIME() WHERE AuditoriaID = %s"
         
         try:
             conn = self._get_connection()
@@ -362,9 +360,9 @@ class AuditoriaProgramadaRepository(SQLBaseRepository):
     def contar_por_estado(self) -> Dict[str, int]:
         """Cuenta auditorías por estado activo/inactivo."""
         sql = f"""
-            SELECT Activo, COUNT(*) as count
+            SELECT ISNULL(Estado, 'ACTIVA') AS Estado, COUNT(*) as count
             FROM {self.table_name}
-            GROUP BY Activo
+            GROUP BY ISNULL(Estado, 'ACTIVA')
         """
         
         try:
@@ -377,7 +375,7 @@ class AuditoriaProgramadaRepository(SQLBaseRepository):
             
             result = {"activas": 0, "inactivas": 0}
             for row in rows:
-                if row["Activo"]:
+                if str(row.get("Estado") or "").upper() == "ACTIVA":
                     result["activas"] = row["count"]
                 else:
                     result["inactivas"] = row["count"]
@@ -399,7 +397,7 @@ class AuditoriaProgramadaRepository(SQLBaseRepository):
         
         sql = f"""
             SELECT * FROM {self.table_name}
-            WHERE Activo = 1 
+            WHERE ISNULL(Estado, 'ACTIVA') = 'ACTIVA' 
               AND ProximaEjecucion >= %s 
               AND ProximaEjecucion < %s
             ORDER BY ProximaEjecucion
@@ -456,7 +454,7 @@ class AuditoriaProgramadaRepository(SQLBaseRepository):
             conditions.append("AuditoriaID = %s")
             params.append(auditoria_id)
         if estado:
-            conditions.append("UltimaEjecucionStatus = %s")
+            conditions.append("Estado = %s")
             params.append(estado)
         if desde:
             conditions.append("UltimaEjecucion >= %s")
@@ -484,7 +482,7 @@ class AuditoriaProgramadaRepository(SQLBaseRepository):
                 logs.append({
                     "auditoria_programada_id": row.get("AuditoriaID"),
                     "nombre": row.get("Nombre"),
-                    "estado": row.get("UltimaEjecucionStatus"),
+                    "estado": row.get("Estado"),
                     "fecha_ejecucion": row.get("UltimaEjecucion").isoformat() if row.get("UltimaEjecucion") else None,
                 })
             return logs
@@ -511,7 +509,7 @@ class AuditoriaProgramadaRepository(SQLBaseRepository):
             WHERE AuditoriaID = %s
               AND UltimaEjecucion >= %s
               AND UltimaEjecucion <= %s
-              AND UltimaEjecucionStatus IN ('COMPLETADA', 'EN_PROGRESO')
+              AND Estado IN ('COMPLETADA', 'EN_PROGRESO')
         """
         
         try:
@@ -537,10 +535,10 @@ class AuditoriaProgramadaRepository(SQLBaseRepository):
             fin_mes = datetime(anio, mes + 1, 1, tzinfo=timezone.utc)
         
         sql = f"""
-            SELECT UltimaEjecucionStatus, COUNT(*) as count
+            SELECT Estado, COUNT(*) as count
             FROM {self.table_name}
             WHERE UltimaEjecucion >= %s AND UltimaEjecucion < %s
-            GROUP BY UltimaEjecucionStatus
+            GROUP BY Estado
         """
         
         try:
@@ -553,7 +551,7 @@ class AuditoriaProgramadaRepository(SQLBaseRepository):
             
             result = {"COMPLETADA": 0, "FALLIDA": 0, "OMITIDA": 0, "EN_PROGRESO": 0}
             for row in rows:
-                status = row.get("UltimaEjecucionStatus")
+                status = row.get("Estado")
                 if status in result:
                     result[status] = row["count"]
             return result
@@ -587,8 +585,8 @@ class AuditoriaProgramadaRepository(SQLBaseRepository):
             "sucursal_id": row.get("SucursalID"),
             "almacen_id": row.get("AlmacenID"),
             "frecuencia": row.get("Frecuencia"),
-            "activo": bool(row.get("Activo")),
+            "activo": str(row.get("Estado") or "ACTIVA").upper() != "INACTIVA",
             "proxima_ejecucion": row.get("ProximaEjecucion").isoformat() if row.get("ProximaEjecucion") else None,
             "ultima_ejecucion": row.get("UltimaEjecucion").isoformat() if row.get("UltimaEjecucion") else None,
-            "ultima_ejecucion_status": row.get("UltimaEjecucionStatus"),
+            "ultima_ejecucion_status": row.get("Estado"),
         }

@@ -181,6 +181,20 @@ def _ensure_scheduler_job_config_table():
         );
     END
     """)
+    for col, ddl in {
+        "InstruccionEjecucion": "NVARCHAR(MAX) NULL",
+        "ComandoPreview": "NVARCHAR(MAX) NULL",
+        "ParametrosEditablesJSON": "NVARCHAR(MAX) NULL",
+        "GrupoEjecucion": "NVARCHAR(100) NULL",
+        "DependenciasJSON": "NVARCHAR(MAX) NULL",
+        "AdvertenciaManual": "NVARCHAR(MAX) NULL",
+    }.items():
+        _cc_execute(f"""
+            IF COL_LENGTH('dbo.Sys_Scheduler_JobConfig', '{col}') IS NULL
+            BEGIN
+                ALTER TABLE dbo.Sys_Scheduler_JobConfig ADD {col} {ddl}
+            END
+        """)
 
 
 def _safe_job_id(value: str) -> str:
@@ -195,7 +209,7 @@ def _safe_job_id(value: str) -> str:
 
 
 def _validate_handler(handler: str) -> str:
-    allowed = {"NETPAY_BACKFILL"}
+    allowed = {"NETPAY_BACKFILL", "SCHEDULER_JOB"}
     handler = (handler or "").strip().upper()
     if handler not in allowed:
         raise HTTPException(status_code=400, detail=f"Handler no permitido: {handler}")
@@ -906,16 +920,10 @@ async def obtener_estado_jobs(current_user: Dict = Depends(get_current_user)):
                 "message": "Scheduler no inicializado"
             }
         
-        # Obtener jobs
-        jobs = []
-        if hasattr(scheduler, 'get_jobs'):
-            for job in scheduler.get_jobs():
-                jobs.append({
-                    "id": job.id if hasattr(job, 'id') else "unknown",
-                    "name": job.name if hasattr(job, 'name') else "unknown",
-                    "next_run": job.next_run_time.isoformat() if hasattr(job, 'next_run_time') and job.next_run_time else None,
-                    "trigger": str(job.trigger) if hasattr(job, 'trigger') else "unknown"
-                })
+        # Obtener jobs desde API real del SchedulerManager
+        scheduler_status_data = scheduler.get_status() if hasattr(scheduler, 'get_status') else {}
+        jobs = scheduler_status_data.get("jobs", []) if isinstance(scheduler_status_data, dict) else []
+        scheduler_running = bool(scheduler_status_data.get("running")) if isinstance(scheduler_status_data, dict) else False
         
         # Complementar con jobs registrados en SQL para que el menú muestre también jobs manuales/configurados.
         try:
@@ -959,7 +967,7 @@ async def obtener_estado_jobs(current_user: Dict = Depends(get_current_user)):
             logger.warning(f"[CENTRO CONTROL] No se pudieron cargar jobs SQL: {sql_exc}")
 
         return {
-            "scheduler_status": "running" if (hasattr(scheduler, 'running') and scheduler.running) else "stopped",
+            "scheduler_status": "running" if scheduler_running else "stopped",
             "jobs_total": len(jobs),
             "jobs": jobs,
             "timestamp": datetime.now(timezone.utc).isoformat()

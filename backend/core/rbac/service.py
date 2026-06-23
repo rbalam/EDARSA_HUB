@@ -121,8 +121,8 @@ class RBACService:
         user_email = user.get("email")
         user_role_legacy = user.get("role", "")
         
-        # BYPASS: SuperAdministrador y Administrador tienen acceso total
-        if user_role_legacy in ("SuperAdministrador", "Administrador"):
+        # BYPASS: roles legacy y canónicos con acceso total
+        if str(user_role_legacy).upper() in ("SUPERADMIN", "ADMIN") or user_role_legacy in ("SuperAdministrador", "Administrador"):
             if audit:
                 self.repo.log_verificacion(
                     user_id=user_id,

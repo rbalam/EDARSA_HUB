@@ -116,6 +116,10 @@ class SchedulerConfig(BaseModel):
         netpay_sync_cron = os.environ.get("SCHEDULER_NETPAY_SYNC_CRON", "30 6 * * *")  # 06:30 diario
         netpay_sync_enabled = os.environ.get("SCHEDULER_NETPAY_SYNC_ENABLED", "true").lower() == "true"
         
+        # SYNC Compras integral (inventarios, requisiciones, almacenes, existencias, movimientos, pedidos, ordenes, recepciones)
+        sync_compras_interval = int(os.environ.get("SCHEDULER_SYNC_COMPRAS_INTERVAL_SECONDS", "1800"))  # 30 minutos
+        sync_compras_enabled = os.environ.get("SCHEDULER_SYNC_COMPRAS_ENABLED", "true").lower() == "true"
+        
         jobs = {
             "sla_processor": JobConfig(
                 job_id="sla_processor",
@@ -221,6 +225,16 @@ class SchedulerConfig(BaseModel):
                 interval_seconds=sync_comercial_abiertas_v2_interval,
                 batch_size=10,
                 timeout_seconds=300  # 5 minutos max
+            ),
+            # Compras: sincronización integral canónica
+            "sync_compras": JobConfig(
+                job_id="sync_compras",
+                job_name="SYNC Compras Integral",
+                description="Sincroniza compras integralmente: inventarios, requisiciones, almacenes, existencias, movimientos, pedidos, ordenes y recepciones. Debe ejecutarse como grupo para evitar dependencias incompletas.",
+                enabled=sync_compras_enabled,
+                interval_seconds=sync_compras_interval,
+                batch_size=2000,
+                timeout_seconds=1800,
             ),
             # CxP: Sincronización de Cuentas por Pagar a tabla canónica (nocturno 04:30)
             "sync_cxp_facturas": JobConfig(
