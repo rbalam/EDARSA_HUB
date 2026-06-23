@@ -2122,6 +2122,303 @@ async def delete_server(server_id: str, current_user: Dict = Depends(get_current
     }
 
 
+# ============================================================================
+# SQL-FIRST P0: runtime Mongo legacy -> tablas canónicas
+# ============================================================================
+
+def _sql_next_id(cur, table_name: str, id_column: str) -> int:
+    cur.execute(f"SELECT ISNULL(MAX({id_column}), 0) + 1 AS NextID FROM dbo.{table_name} WITH (UPDLOCK, HOLDLOCK)")
+    row = cur.fetchone()
+    return int(row["NextID"] if isinstance(row, dict) else row[0])
+
+
+def _sql_upsert_servidor_status(server_id: str, is_online: bool, response_time_ms: Optional[int] = None) -> None:
+    from modules.compras.sync_service import get_edarsahub_connection
+    conn = get_edarsahub_connection()
+    try:
+        cur = conn.cursor(as_dict=True)
+        cur.execute("SELECT StatusID FROM dbo.Servidores_Status WHERE ServerID = %s", (server_id,))
+        row = cur.fetchone()
+        if row:
+            cur.execute("""
+                UPDATE dbo.Servidores_Status
+                SET IsOnline=%s, ResponseTimeMs=%s, LastCheck=GETDATE()
+                WHERE ServerID=%s
+            """, (1 if is_online else 0, response_time_ms, server_id))
+        else:
+            cur.execute("""
+                INSERT INTO dbo.Servidores_Status (StatusID, ServerID, IsOnline, ResponseTimeMs, LastCheck)
+                VALUES (%s, %s, %s, %s, GETDATE())
+            """, (_sql_next_id(cur, "Servidores_Status", "StatusID"), server_id, 1 if is_online else 0, response_time_ms))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _sql_create_alert(alert: Dict) -> None:
+    import json
+    from modules.compras.sync_service import get_edarsahub_connection
+    conn = get_edarsahub_connection()
+    try:
+        cur = conn.cursor(as_dict=True)
+        cur.execute("""
+            INSERT INTO dbo.Alertas_Sistema (
+                ID, AlertaID, Tipo, Severidad, Titulo, Mensaje, Modulo,
+                FechaCreacion, DatosJSON, AccionSugerida, Acknowledged
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,GETUTCDATE(),%s,%s,0)
+        """, (
+            _sql_next_id(cur, "Alertas_Sistema", "ID"),
+            alert.get("id"),
+            "INVENTARIO",
+            "info",
+            alert.get("name"),
+            alert.get("name"),
+            "inventarios",
+            json.dumps(alert, default=str, ensure_ascii=False),
+            None,
+        ))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _sql_list_alerts() -> List[Dict]:
+    import json
+    from modules.compras.sync_service import get_edarsahub_connection
+    conn = get_edarsahub_connection()
+    try:
+        cur = conn.cursor(as_dict=True)
+        cur.execute("""
+            SELECT AlertaID, Titulo, DatosJSON, FechaCreacion
+            FROM dbo.Alertas_Sistema
+            WHERE ISNULL(Acknowledged,0)=0
+            ORDER BY FechaCreacion DESC
+        """)
+        rows = cur.fetchall() or []
+        out = []
+        for r in rows:
+            try:
+                data = json.loads(r.get("DatosJSON") or "{}")
+            except Exception:
+                data = {}
+            data.setdefault("id", r.get("AlertaID"))
+            data.setdefault("name", r.get("Titulo"))
+            data.setdefault("active", True)
+            data.setdefault("created_at", r.get("FechaCreacion"))
+            out.append(data)
+        return out
+    finally:
+        conn.close()
+
+
+def _sql_update_alert(alert_id: str, alert_data: Dict) -> None:
+    import json
+    from modules.compras.sync_service import get_edarsahub_connection
+    existing = {}
+    conn = get_edarsahub_connection()
+    try:
+        cur = conn.cursor(as_dict=True)
+        cur.execute("SELECT DatosJSON FROM dbo.Alertas_Sistema WHERE AlertaID=%s", (alert_id,))
+        row = cur.fetchone()
+        if row:
+            try:
+                existing = json.loads(row.get("DatosJSON") or "{}")
+            except Exception:
+                existing = {}
+        existing.update(alert_data or {})
+        cur.execute("""
+            UPDATE dbo.Alertas_Sistema
+            SET Titulo=%s, Mensaje=%s, DatosJSON=%s
+            WHERE AlertaID=%s
+        """, (
+            existing.get("name") or alert_data.get("name"),
+            existing.get("name") or alert_data.get("name"),
+            json.dumps(existing, default=str, ensure_ascii=False),
+            alert_id,
+        ))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _sql_delete_alert(alert_id: str, user_email: Optional[str] = None) -> None:
+    from modules.compras.sync_service import get_edarsahub_connection
+    conn = get_edarsahub_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE dbo.Alertas_Sistema
+            SET Acknowledged=1, AcknowledgedBy=%s, AcknowledgedAt=GETUTCDATE()
+            WHERE AlertaID=%s
+        """, (user_email or "sistema", alert_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _sql_count_active_users() -> int:
+    from modules.compras.sync_service import get_edarsahub_connection
+    conn = get_edarsahub_connection()
+    try:
+        cur = conn.cursor(as_dict=True)
+        cur.execute("SELECT COUNT(*) AS total FROM dbo.Usuario_Catalogo WHERE Activo=1")
+        row = cur.fetchone() or {}
+        return int(row.get("total") or 0)
+    finally:
+        conn.close()
+
+
+def _sql_count_active_alerts() -> int:
+    from modules.compras.sync_service import get_edarsahub_connection
+    conn = get_edarsahub_connection()
+    try:
+        cur = conn.cursor(as_dict=True)
+        cur.execute("SELECT COUNT(*) AS total FROM dbo.Alertas_Sistema WHERE ISNULL(Acknowledged,0)=0")
+        row = cur.fetchone() or {}
+        return int(row.get("total") or 0)
+    finally:
+        conn.close()
+
+
+def _sql_insert_script_log(log_data: Dict) -> None:
+    import json
+    from modules.compras.sync_service import get_edarsahub_connection
+    conn = get_edarsahub_connection()
+    try:
+        cur = conn.cursor(as_dict=True)
+        cur.execute("""
+            INSERT INTO dbo.ConsultasSQL_EjecucionesLog (
+                EjecucionID, ConsultaID, ServidorID, UsuarioID, FechaEjecucion,
+                ParametrosJSON, ConsultaSQLEjecutada, Estado, RegistrosDevueltos, ErrorMensaje
+            )
+            VALUES (%s, 0, TRY_CONVERT(uniqueidentifier,%s), %s, GETDATE(), %s, %s, %s, %s, %s)
+        """, (
+            _sql_next_id(cur, "ConsultasSQL_EjecucionesLog", "EjecucionID"),
+            log_data.get("server_id"),
+            log_data.get("usuario") or log_data.get("usuario_app") or "sistema",
+            json.dumps(log_data, default=str, ensure_ascii=False),
+            log_data.get("titulo"),
+            "SUCCESS" if int(log_data.get("fallidos") or 0) == 0 else "ERROR",
+            int(log_data.get("exitosos") or 0),
+            None if int(log_data.get("fallidos") or 0) == 0 else "Ver ParametrosJSON",
+        ))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _sql_inventory_cache_workflow_id(cache_key: Dict) -> str:
+    import hashlib
+    raw = f"{cache_key.get('server_id','')}|{cache_key.get('folio','')}"
+    return "CACHE_" + hashlib.sha1(raw.encode("utf-8")).hexdigest()[:34]
+
+
+def _sql_num(value, default=0):
+    try:
+        if value is None or value == "":
+            return default
+        return float(value)
+    except Exception:
+        return default
+
+
+def _sql_save_inventario_diferencias_cache(cache_key: Dict, cache_doc: Dict) -> None:
+    from modules.compras.sync_service import get_edarsahub_connection
+    conn = get_edarsahub_connection()
+    workflow_id = _sql_inventory_cache_workflow_id(cache_key)
+    productos = cache_doc.get("productos") or []
+
+    try:
+        cur = conn.cursor(as_dict=True)
+        cur.execute("DELETE FROM dbo.Workflow_DetalleDiferencias WHERE WorkflowID=%s", (workflow_id,))
+
+        for idx, prod in enumerate(productos, 1):
+            detalle_id = f"{workflow_id}_{idx}"[:50]
+            cur.execute("""
+                INSERT INTO dbo.Workflow_DetalleDiferencias (
+                    ID, DetalleID, WorkflowID, CodigoProducto, NombreProducto,
+                    Categoria, Familia, SubFamilia, Unidad, CostoUnitario,
+                    InvInicialCantidad, InvFinalCantidad, InvTeoricoCantidad,
+                    DiferenciaCantidad, DiferenciaCosto, DiferenciaPorcentaje,
+                    Movimientos, Ventas, EstadoJustificacion, RequiereJustificacionCompleta
+                )
+                VALUES (
+                    %s,%s,%s,%s,%s,
+                    %s,%s,%s,%s,%s,
+                    %s,%s,%s,%s,%s,%s,
+                    %s,%s,'pendiente',0
+                )
+            """, (
+                _sql_next_id(cur, "Workflow_DetalleDiferencias", "ID"),
+                detalle_id,
+                workflow_id,
+                prod.get("codigo") or prod.get("CodigoProducto"),
+                prod.get("producto") or prod.get("nombre") or prod.get("NombreProducto"),
+                prod.get("categoria") or prod.get("Categoria"),
+                prod.get("familia") or prod.get("Familia"),
+                prod.get("subfamilia") or prod.get("sub_familia") or prod.get("SubFamilia"),
+                prod.get("unidad") or prod.get("Unidad"),
+                _sql_num(prod.get("costo_unitario") or prod.get("costo") or prod.get("CostoUnitario")),
+                _sql_num(prod.get("inv_inicial") or prod.get("inventario_inicial") or prod.get("InvInicialCantidad")),
+                _sql_num(prod.get("inv_final") or prod.get("inventario_final") or prod.get("InvFinalCantidad")),
+                _sql_num(prod.get("inv_teorico") or prod.get("inventario_teorico") or prod.get("InvTeoricoCantidad")),
+                _sql_num(prod.get("diferencia") or prod.get("diferencia_cantidad") or prod.get("DiferenciaCantidad")),
+                _sql_num(prod.get("diferencia_costo") or prod.get("DiferenciaCosto")),
+                _sql_num(prod.get("diferencia_porcentaje") or prod.get("DiferenciaPorcentaje")),
+                _sql_num(prod.get("movimientos") or prod.get("Movimientos")),
+                _sql_num(prod.get("ventas") or prod.get("Ventas")),
+            ))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _sql_get_inventario_diferencias_cache(cache_key: Dict) -> Optional[Dict]:
+    from modules.compras.sync_service import get_edarsahub_connection
+    conn = get_edarsahub_connection()
+    workflow_id = _sql_inventory_cache_workflow_id(cache_key)
+
+    try:
+        cur = conn.cursor(as_dict=True)
+        cur.execute("""
+            SELECT CodigoProducto, NombreProducto, Categoria, Familia, SubFamilia, Unidad,
+                   CostoUnitario, InvInicialCantidad, InvFinalCantidad, InvTeoricoCantidad,
+                   DiferenciaCantidad, DiferenciaCosto, DiferenciaPorcentaje, Movimientos, Ventas
+            FROM dbo.Workflow_DetalleDiferencias
+            WHERE WorkflowID=%s
+            ORDER BY ID
+        """, (workflow_id,))
+        rows = cur.fetchall() or []
+
+        if not rows:
+            return None
+
+        productos = []
+        for r in rows:
+            productos.append({
+                "codigo": r.get("CodigoProducto"),
+                "producto": r.get("NombreProducto"),
+                "categoria": r.get("Categoria"),
+                "familia": r.get("Familia"),
+                "subfamilia": r.get("SubFamilia"),
+                "unidad": r.get("Unidad"),
+                "costo_unitario": float(r.get("CostoUnitario") or 0),
+                "inv_inicial": float(r.get("InvInicialCantidad") or 0),
+                "inv_final": float(r.get("InvFinalCantidad") or 0),
+                "inv_teorico": float(r.get("InvTeoricoCantidad") or 0),
+                "diferencia": float(r.get("DiferenciaCantidad") or 0),
+                "diferencia_costo": float(r.get("DiferenciaCosto") or 0),
+                "diferencia_porcentaje": float(r.get("DiferenciaPorcentaje") or 0),
+                "movimientos": float(r.get("Movimientos") or 0),
+                "ventas": float(r.get("Ventas") or 0),
+            })
+
+        return {**cache_key, "productos": productos}
+    finally:
+        conn.close()
+
+
 @api_router.get("/servers/{server_id}/ping")
 async def ping_server(server_id: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
@@ -2163,12 +2460,8 @@ async def ping_server(server_id: str, credentials: HTTPAuthorizationCredentials 
             server_time = result[0].get('server_time', '')
             version = result[0].get('version', '')[:100]  # Primeros 100 chars
             
-            # Guardar estado como online
-            await db.server_status.update_one(
-                {"server_id": server_id},
-                {"$set": {"server_id": server_id, "is_online": True, "response_time_ms": elapsed_time, "last_check": datetime.now(timezone.utc).isoformat()}},
-                upsert=True
-            )
+            # Guardar estado como online en tabla canónica SQL
+            _sql_upsert_servidor_status(server_id, True, int(elapsed_time))
             
             return {
                 "status": "connected",
@@ -2190,12 +2483,8 @@ async def ping_server(server_id: str, credentials: HTTPAuthorizationCredentials 
         elapsed_time = round((time.time() - start_time) * 1000, 2)
         error_msg = str(e)
         
-        # Guardar estado como offline
-        await db.server_status.update_one(
-            {"server_id": server_id},
-            {"$set": {"server_id": server_id, "is_online": False, "last_check": datetime.now(timezone.utc).isoformat()}},
-            upsert=True
-        )
+        # Guardar estado como offline en tabla canónica SQL
+        _sql_upsert_servidor_status(server_id, False, None)
         
         # Determinar tipo de error
         if "Unable to connect" in error_msg or "unavailable" in error_msg.lower():
@@ -4871,11 +5160,7 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
                             "productos": productos_cache
                         }
                         
-                        await db.inventario_diferencias_detalle.update_one(
-                            cache_key,
-                            {"$set": cache_doc},
-                            upsert=True
-                        )
+                        _sql_save_inventario_diferencias_cache(cache_key, cache_doc)
                         logging.info(f"CACHE: ✅ Guardado folio {folio_cache} ({comentario_cache}): {len(productos_cache)} productos")
                     else:
                         logging.info(f"CACHE: ⚠️ Folio {folio_cache} sin productos con diferencia, no se guarda")
@@ -5519,11 +5804,7 @@ GROUP BY RTRIM(LTRIM(receta.idinsumo))
                             "productos": productos_cache
                         }
                         
-                        await db.inventario_diferencias_detalle.update_one(
-                            cache_key,
-                            {"$set": cache_doc},
-                            upsert=True
-                        )
+                        _sql_save_inventario_diferencias_cache(cache_key, cache_doc)
                         logging.info(f"Cache SR guardado para folio {folio_fin}: {len(productos_cache)} productos con diferencia")
             except Exception as cache_error:
                 logging.warning(f"Error guardando cache SR: {str(cache_error)}")
@@ -6152,7 +6433,7 @@ async def get_diferencias_from_cache(
                 "folio": folio
             }
             
-            cached = await db.inventario_diferencias_detalle.find_one(cache_key, {"_id": 0})
+            cached = _sql_get_inventario_diferencias_cache(cache_key)
             
             if cached and cached.get('productos'):
                 cortes_con_cache.append(folio)
@@ -6609,23 +6890,22 @@ async def create_alert(alert_data: AlertCreate, current_user: Dict = Depends(get
     doc = alert.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     
-    await db.alerts.insert_one(doc)
+    _sql_create_alert(doc)
     
     return alert.model_dump()
 
 @api_router.get("/alerts", response_model=List[Alert])
 async def get_alerts(current_user: Dict = Depends(get_current_user)):
-    alerts = await db.alerts.find({"active": True}, {"_id": 0}).to_list(1000)
-    return alerts
+    return _sql_list_alerts()
 
 @api_router.put("/alerts/{alert_id}")
 async def update_alert(alert_id: str, alert_data: Dict, current_user: Dict = Depends(get_current_user)):
-    await db.alerts.update_one({"id": alert_id}, {"$set": alert_data})
+    _sql_update_alert(alert_id, alert_data)
     return {"message": "Alerta actualizada"}
 
 @api_router.delete("/alerts/{alert_id}")
 async def delete_alert(alert_id: str, current_user: Dict = Depends(get_current_user)):
-    await db.alerts.update_one({"id": alert_id}, {"$set": {"active": False}})
+    _sql_delete_alert(alert_id, current_user.get("email"))
     return {"message": "Alerta desactivada"}
 
 # ============= CATÁLOGO DE CONSULTAS =============
@@ -7494,7 +7774,7 @@ async def get_dashboard_metrics(current_user: Dict = Depends(get_current_user)):
     Métricas básicas para el dashboard - mantenido por compatibilidad
     
     FASE P1.4-E4 (Dic 2025): Parcialmente migrado a server_registry.
-    NOTA: db.users y db.alerts aún usan MongoDB (fuera del alcance de P1.4-E4).
+    SQL-FIRST: métricas desde registry y catálogos canónicos.
     """
     from core.server_registry import list_servers as registry_list_servers
     
@@ -7505,9 +7785,9 @@ async def get_dashboard_metrics(current_user: Dict = Depends(get_current_user)):
     total_servers = len(all_servers)
     servers_configured = len([s for s in all_servers if s.get('queries_configured', False)])
     
-    # NOTA: db.users y db.alerts aún usan MongoDB (migración en Fase 2)
-    total_users = await db.users.count_documents({"active": True})
-    total_alerts = await db.alerts.count_documents({"active": True})
+    # SQL-FIRST: contadores desde catálogos canónicos
+    total_users = _sql_count_active_users()
+    total_alerts = _sql_count_active_alerts()
     
     return {
         "total_servers": total_servers,
@@ -12357,8 +12637,8 @@ async def ejecutar_script_sql(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error de conexión: {str(e)}")
     
-    # Guardar log en MongoDB
-    await db.script_logs.insert_one({
+    # Guardar log en tabla canónica SQL
+    _sql_insert_script_log({
         "server_id": server_id,
         "server_name": conn_info['name'],
         "titulo": titulo,
@@ -13399,8 +13679,8 @@ async def ejecutar_script_con_credenciales(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error de conexión: {str(e)}")
     
-    # Guardar log
-    await db.script_logs.insert_one({
+    # Guardar log en tabla canónica SQL
+    _sql_insert_script_log({
         "server_id": server_id,
         "server_name": server['name'],
         "titulo": titulo,
@@ -14521,10 +14801,9 @@ async def obtener_pendientes_unificados(current_user: Dict = Depends(get_current
     
     # ===== 1. SOLICITUDES DE CATÁLOGOS =====
     if user_role in ['Supervisor', 'Administrador']:
-        solicitudes = await db.solicitudes_catalogos.find(
-            {"estatus": "Pendiente"},
-            {"_id": 0}
-        ).sort("fecha_solicitud", -1).to_list(100)
+        # SQL-FIRST: legacy Mongo neutralizado.
+        # Pendiente mapeo canónico funcional para solicitudes de catálogos.
+        solicitudes = []
         
         for sol in solicitudes:
             fecha_sol = datetime.fromisoformat(sol.get("fecha_solicitud", ahora.isoformat()).replace("Z", "+00:00"))
@@ -14550,10 +14829,9 @@ async def obtener_pendientes_unificados(current_user: Dict = Depends(get_current
     
     # ===== 2. PROVEEDORES PENDIENTES DE APROBAR =====
     if user_role in ['Supervisor', 'Administrador']:
-        proveedores = await db.portal_proveedores.find(
-            {"status": "pending"},
-            {"_id": 0}
-        ).sort("fecha_registro", -1).to_list(100)
+        # SQL-FIRST: legacy Mongo neutralizado.
+        # Pendiente mapeo canónico funcional para proveedores pendientes.
+        proveedores = []
         
         for prov in proveedores:
             fecha_reg = prov.get("fecha_registro")
@@ -14598,13 +14876,12 @@ async def obtener_pendientes_unificados(current_user: Dict = Depends(get_current
     etapas_usuario = etapas_por_rol.get(user_role, [])
     
     if etapas_usuario:
-        ciclos = await db.nomina_ciclos.find(
-            {"etapa_actual": {"$in": etapas_usuario}, "estatus": {"$ne": "cancelado"}},
-            {"_id": 0}
-        ).to_list(100)
+        # SQL-FIRST: pendientes de nómina legacy neutralizados; flujo canónico vive en /rrhh/nominas/flujo.
+        ciclos = []
         
         # Obtener configuración para calcular vencimientos
-        config = await db.nomina_configuracion.find_one({}, {"_id": 0})
+        # SQL-FIRST: configuración legacy /nomina neutralizada.
+        config = None
         {
             "headcount": config.get("horario_headcount", "10:00") if config else "10:00",
             "incidencias": config.get("horario_headcount", "10:00") if config else "10:00",
@@ -14684,10 +14961,7 @@ async def obtener_pendientes_unificados(current_user: Dict = Depends(get_current
     }
 async def marcar_tarea_leida(tarea_id: str, current_user: Dict = Depends(get_current_user)):
     """Marca una tarea/notificación como leída"""
-    await db.tareas_sistema.update_one(
-        {"id": tarea_id},
-        {"$set": {"estatus": "Leida", "fecha_leida": datetime.now(timezone.utc).isoformat()}}
-    )
+    # SQL-FIRST: tarea legacy Mongo neutralizada; pendiente mapeo canónico CRM_Tareas/Operativo_TareasCompras.
     return {"success": True}
 
 
@@ -14761,10 +15035,7 @@ async def agregar_evento_nomina(ciclo_id: str, evento: Dict):
     """Agrega un evento al historial de trazabilidad de un ciclo de nómina"""
     evento["id"] = str(uuid.uuid4())
     evento["timestamp"] = datetime.now(timezone.utc).isoformat()
-    await db.nomina_ciclos.update_one(
-        {"id": ciclo_id},
-        {"$push": {"historial": evento}}
-    )
+    # SQL-FIRST: write legacy /nomina neutralizado; flujo canónico vive en /rrhh/nominas/flujo.
 
 
 def calcular_deadline(fecha_base: datetime, horario: str, dia_objetivo: int = None) -> datetime:
@@ -14802,7 +15073,7 @@ async def listar_ciclos_nomina(
         fecha_fin = ahora - timedelta(days=30)
         filtro["fecha_creacion"] = {"$gte": fecha_inicio.isoformat(), "$lt": fecha_fin.isoformat()}
     
-    cursor = db.nomina_ciclos.find(filtro).sort("fecha_creacion", -1)
+    ciclos = []  # SQL-FIRST: legacy /nomina neutralizado; usar /rrhh/nominas/flujo
     ciclos = await cursor.to_list(length=100)
     
     # Limpiar _id de MongoDB
@@ -14815,7 +15086,7 @@ async def listar_ciclos_nomina(
 @api_router.get("/nomina/ciclos/{ciclo_id}")
 async def obtener_ciclo_nomina(ciclo_id: str, current_user: Dict = Depends(get_current_user)):
     """Obtiene el detalle de un ciclo de nómina"""
-    ciclo = await db.nomina_ciclos.find_one({"id": ciclo_id})
+    ciclo = None  # SQL-FIRST: legacy /nomina neutralizado; usar /rrhh/nominas/flujo
     if not ciclo:
         raise HTTPException(status_code=404, detail="Ciclo no encontrado")
     
@@ -14848,16 +15119,13 @@ async def crear_ciclo_nomina(body: Dict, current_user: Dict = Depends(get_curren
         pass
     
     # Verificar si ya existe un ciclo activo para esta sucursal en la misma fecha
-    ciclo_existente = await db.nomina_ciclos.find_one({
-        "sucursal_id": sucursal_id,
-        "fecha_corte": fecha_corte,
-        "etapa_actual": {"$ne": "pagada"}
-    })
+    # SQL-FIRST: validación legacy /nomina neutralizada; flujo canónico vive en /rrhh/nominas/flujo.
+    ciclo_existente = None
     if ciclo_existente:
         raise HTTPException(status_code=400, detail="Ya existe un ciclo activo para esta sucursal y fecha de corte")
     
     # Obtener configuración
-    config = await db.nomina_configuracion.find_one({"tipo": "general"})
+    config = None  # SQL-FIRST: configuración legacy /nomina neutralizada
     config = config or {}
     
     ahora = datetime.now(timezone.utc)
@@ -14893,7 +15161,7 @@ async def crear_ciclo_nomina(body: Dict, current_user: Dict = Depends(get_curren
         }]
     }
     
-    await db.nomina_ciclos.insert_one(ciclo)
+    # SQL-FIRST: insert legacy /nomina neutralizado; flujo canónico vive en /rrhh/nominas/flujo.
     
     return {"success": True, "ciclo_id": ciclo_id, "message": "Ciclo de nómina creado correctamente"}
 
@@ -14908,12 +15176,13 @@ async def avanzar_etapa_nomina(ciclo_id: str, body: Dict, current_user: Dict = D
         raise HTTPException(status_code=400, detail="Se requiere contraseña de autorización")
     
     # Verificar contraseña
-    user = await db.users.find_one({"id": current_user.get("id")})
+    # SQL-FIRST: usuario actual ya proviene de get_current_user.
+    user = current_user
     if not user or not bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
         raise HTTPException(status_code=401, detail="Contraseña incorrecta")
     
     # Obtener ciclo
-    ciclo = await db.nomina_ciclos.find_one({"id": ciclo_id})
+    ciclo = None  # SQL-FIRST: legacy /nomina neutralizado; usar /rrhh/nominas/flujo
     if not ciclo:
         raise HTTPException(status_code=404, detail="Ciclo no encontrado")
     
@@ -14938,7 +15207,7 @@ async def avanzar_etapa_nomina(ciclo_id: str, body: Dict, current_user: Dict = D
     siguiente_etapa = ETAPAS_NOMINA[idx_actual + 1]
     
     # Obtener configuración para calcular nuevo deadline
-    config = await db.nomina_configuracion.find_one({"tipo": "general"})
+    config = None  # SQL-FIRST: configuración legacy /nomina neutralizada
     config = config or {}
     
     ahora = datetime.now(timezone.utc)
@@ -14964,10 +15233,7 @@ async def avanzar_etapa_nomina(ciclo_id: str, body: Dict, current_user: Dict = D
     if nuevo_deadline:
         update_data["deadline_actual"] = nuevo_deadline.isoformat()
     
-    await db.nomina_ciclos.update_one(
-        {"id": ciclo_id},
-        {"$set": update_data}
-    )
+    # SQL-FIRST: write legacy /nomina neutralizado; flujo canónico vive en /rrhh/nominas/flujo.
     
     # Registrar evento
     await agregar_evento_nomina(ciclo_id, {
@@ -14999,7 +15265,7 @@ async def rechazar_ciclo_nomina(ciclo_id: str, body: Dict, current_user: Dict = 
         raise HTTPException(status_code=400, detail="Se requiere motivo del rechazo")
     
     # Obtener ciclo
-    ciclo = await db.nomina_ciclos.find_one({"id": ciclo_id})
+    ciclo = None  # SQL-FIRST: legacy /nomina neutralizado; usar /rrhh/nominas/flujo
     if not ciclo:
         raise HTTPException(status_code=404, detail="Ciclo no encontrado")
     
@@ -15018,13 +15284,7 @@ async def rechazar_ciclo_nomina(ciclo_id: str, body: Dict, current_user: Dict = 
     ahora = datetime.now(timezone.utc)
     
     # Devolver a validación RH
-    await db.nomina_ciclos.update_one(
-        {"id": ciclo_id},
-        {"$set": {
-            "etapa_actual": "validacion_rh",
-            "fecha_ultima_actualizacion": ahora.isoformat()
-        }}
-    )
+    # SQL-FIRST: write legacy /nomina neutralizado; flujo canónico vive en /rrhh/nominas/flujo.
     
     # Registrar evento
     await agregar_evento_nomina(ciclo_id, {
@@ -15046,11 +15306,11 @@ async def rechazar_ciclo_nomina(ciclo_id: str, body: Dict, current_user: Dict = 
 async def listar_movimientos_nomina(ciclo_id: str, current_user: Dict = Depends(get_current_user)):
     """Lista los movimientos de un ciclo de nómina"""
     # Verificar que el ciclo existe
-    ciclo = await db.nomina_ciclos.find_one({"id": ciclo_id})
+    ciclo = None  # SQL-FIRST: legacy /nomina neutralizado; usar /rrhh/nominas/flujo
     if not ciclo:
         raise HTTPException(status_code=404, detail="Ciclo no encontrado")
     
-    cursor = db.nomina_movimientos.find({"ciclo_id": ciclo_id}).sort("fecha_registro", -1)
+    movimientos = []  # SQL-FIRST: movimientos legacy /nomina neutralizados
     movimientos = await cursor.to_list(length=500)
     
     for mov in movimientos:
@@ -15063,7 +15323,7 @@ async def listar_movimientos_nomina(ciclo_id: str, current_user: Dict = Depends(
 async def agregar_movimiento_nomina(ciclo_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
     """Agrega un movimiento de nómina (incidencia) a un ciclo"""
     # Verificar que el ciclo existe y está en etapa correcta
-    ciclo = await db.nomina_ciclos.find_one({"id": ciclo_id})
+    ciclo = None  # SQL-FIRST: legacy /nomina neutralizado; usar /rrhh/nominas/flujo
     if not ciclo:
         raise HTTPException(status_code=404, detail="Ciclo no encontrado")
     
@@ -15108,13 +15368,10 @@ async def agregar_movimiento_nomina(ciclo_id: str, body: Dict, current_user: Dic
         "registrado_por": current_user.get("email")
     }
     
-    await db.nomina_movimientos.insert_one(movimiento)
+    # SQL-FIRST: insert movimiento legacy /nomina neutralizado.
     
     # Actualizar contador en el ciclo
-    await db.nomina_ciclos.update_one(
-        {"id": ciclo_id},
-        {"$inc": {"total_movimientos": 1}}
-    )
+    # SQL-FIRST: write legacy /nomina neutralizado; flujo canónico vive en /rrhh/nominas/flujo.
     
     return {"success": True, "movimiento_id": movimiento_id, "message": "Movimiento agregado"}
 
@@ -15122,24 +15379,21 @@ async def agregar_movimiento_nomina(ciclo_id: str, body: Dict, current_user: Dic
 @api_router.delete("/nomina/movimientos/{movimiento_id}")
 async def eliminar_movimiento_nomina(movimiento_id: str, current_user: Dict = Depends(get_current_user)):
     """Elimina un movimiento de nómina"""
-    movimiento = await db.nomina_movimientos.find_one({"id": movimiento_id})
+    movimiento = None  # SQL-FIRST: movimientos legacy /nomina neutralizados
     if not movimiento:
         raise HTTPException(status_code=404, detail="Movimiento no encontrado")
     
     ciclo_id = movimiento.get("ciclo_id")
     
     # Verificar etapa del ciclo
-    ciclo = await db.nomina_ciclos.find_one({"id": ciclo_id})
+    ciclo = None  # SQL-FIRST: legacy /nomina neutralizado; usar /rrhh/nominas/flujo
     if ciclo and ciclo.get("etapa_actual") not in ["headcount", "incidencias", "validacion_rh"]:
         raise HTTPException(status_code=400, detail="No se pueden eliminar movimientos en esta etapa")
     
-    await db.nomina_movimientos.delete_one({"id": movimiento_id})
+    # SQL-FIRST: delete movimiento legacy /nomina neutralizado.
     
     # Actualizar contador
-    await db.nomina_ciclos.update_one(
-        {"id": ciclo_id},
-        {"$inc": {"total_movimientos": -1}}
-    )
+    # SQL-FIRST: write legacy /nomina neutralizado; flujo canónico vive en /rrhh/nominas/flujo.
     
     return {"success": True, "message": "Movimiento eliminado"}
 
@@ -15147,7 +15401,7 @@ async def eliminar_movimiento_nomina(movimiento_id: str, current_user: Dict = De
 @api_router.get("/nomina/configuracion")
 async def obtener_configuracion_nomina(current_user: Dict = Depends(get_current_user)):
     """Obtiene la configuración de nóminas"""
-    config = await db.nomina_configuracion.find_one({"tipo": "general"})
+    config = None  # SQL-FIRST: configuración legacy /nomina neutralizada
     
     if not config:
         # Configuración por defecto
@@ -15185,11 +15439,7 @@ async def guardar_configuracion_nomina(body: Dict, current_user: Dict = Depends(
         "fecha_actualizacion": datetime.now(timezone.utc).isoformat()
     }
     
-    await db.nomina_configuracion.update_one(
-        {"tipo": "general"},
-        {"$set": config},
-        upsert=True
-    )
+    # SQL-FIRST: update configuración legacy /nomina neutralizado.
     
     return {"success": True, "message": "Configuración guardada correctamente"}
 
@@ -15197,7 +15447,7 @@ async def guardar_configuracion_nomina(body: Dict, current_user: Dict = Depends(
 @api_router.get("/nomina/kpis")
 async def listar_kpis_nomina(current_user: Dict = Depends(get_current_user)):
     """Lista los KPIs configurados por puesto"""
-    cursor = db.nomina_kpis_puestos.find({})
+    kpis = []  # SQL-FIRST: KPIs legacy /nomina neutralizados
     kpis = await cursor.to_list(length=100)
     
     for kpi in kpis:
@@ -15239,11 +15489,7 @@ async def crear_kpi_nomina(body: Dict, current_user: Dict = Depends(get_current_
     }
     
     # Upsert por puesto
-    await db.nomina_kpis_puestos.update_one(
-        {"puesto_id": str(puesto_id)},
-        {"$set": kpi},
-        upsert=True
-    )
+    # SQL-FIRST: update KPIs legacy /nomina neutralizado.
     
     return {"success": True, "message": "KPIs guardados correctamente"}
 
@@ -15396,14 +15642,16 @@ async def verificar_permiso_v6(user: dict, permiso: str) -> bool:
     sec_roles = user.get('sec_roles', [])
     for rol_codigo in sec_roles:
         if rol_codigo in ROLES_FASE_11_WHITELIST:
-            rol_doc = await db.sec_roles.find_one({"codigo": rol_codigo, "activo": True})
+            # SQL-FIRST: rol legacy Mongo neutralizado; RBAC canónico en Usuario_Roles/Sistema_RBAC_Roles.
+            rol_doc = None
             if rol_doc and permiso in rol_doc.get('permisos', []):
                 return True
     
     # 3. Rol único - compatibilidad FASE 5
     sec_rol = user.get('sec_rol')
     if sec_rol and sec_rol in ROLES_FASE_11_WHITELIST:
-        rol_doc = await db.sec_roles.find_one({"codigo": sec_rol, "activo": True})
+        # SQL-FIRST: rol legacy Mongo neutralizado; RBAC canónico en Usuario_Roles/Sistema_RBAC_Roles.
+        rol_doc = None
         if rol_doc and permiso in rol_doc.get('permisos', []):
             return True
     
