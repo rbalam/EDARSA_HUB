@@ -18,7 +18,7 @@ MÁXIMAS CUMPLIDAS:
 NO USA MONGODB - 100% SQL Server
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from pydantic import BaseModel, Field
 from datetime import date, datetime, timezone
 from typing import Optional, Dict, Any, List
@@ -325,6 +325,35 @@ def _validar_rango(fecha_inicio: date, fecha_fin: date, max_dias: int) -> Dict[s
     }
 
 
+def _is_netpay_sync(tipo_sync: Dict[str, Any], codigo: str) -> bool:
+    """Identifica el handler NetPay sin mezclarlo con conectores POS/SoftRestaurant/MPRO."""
+    handler = (tipo_sync or {}).get('handler') or (tipo_sync or {}).get('Handler') or ''
+    return codigo == 'finanzas_netpay' or handler == 'netpay_manual_background'
+
+
+async def _run_netpay_resync_background(fecha_inicio: date, fecha_fin: date) -> None:
+    """Ejecuta NetPay desde scheduler central en background; no usa Mongo ni conexiones POS live."""
+    from core.scheduler.jobs.netpay_sync_job import execute_netpay_sync_diario
+
+    try:
+        result = await execute_netpay_sync_diario(
+            date_from=fecha_inicio,
+            date_to=fecha_fin,
+            max_days=31,
+        )
+        logger.info(
+            "[RESYNC_NETPAY_BG] Finalizado success=%s fecha_inicio=%s fecha_fin=%s message=%s",
+            result.get("success"),
+            fecha_inicio.isoformat(),
+            fecha_fin.isoformat(),
+            result.get("message"),
+        )
+    except Exception as e:
+        logger.error(f"[RESYNC_NETPAY_BG] Error ejecutando NetPay: {e}")
+
+
+
+
 # =============================================================================
 # REGISTRO DE EJECUCIONES
 # =============================================================================
@@ -442,6 +471,7 @@ async def validar_resync(
 @router.post("/resync/execute", response_model=ResyncResponse)
 async def ejecutar_resync(
     request: ResyncExecuteRequest,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(require_permission("SCHEDULER_ADMIN"))
 ):
     """
@@ -476,10 +506,73 @@ async def ejecutar_resync(
     unidad = _get_unidad_config(request.unidad_negocio_id)
     if not unidad:
         raise HTTPException(status_code=400, detail=f"Unidad '{request.unidad_negocio_id}' no encontrada")
+
+    validacion_rango = _validar_rango(
+        request.fecha_inicio,
+        request.fecha_fin,
+        tipo_sync.get('rango_max_dias') or tipo_sync.get('RangoMaxDias') or 31,
+    )
+    if not validacion_rango['valido']:
+        raise HTTPException(status_code=400, detail=validacion_rango['mensaje'])
     
     # Generar IDs
     ejecucion_id = str(uuid.uuid4())
     sync_run_id = f"RESYNC-{request.unidad_negocio_id}-{request.fecha_inicio.strftime('%Y%m%d')}-{request.fecha_fin.strftime('%Y%m%d')}-{str(uuid.uuid4())[:4]}"
+
+    if _is_netpay_sync(tipo_sync, request.tipo_sync):
+        modo = 'DRY_RUN' if request.dry_run else 'REAL'
+        resultado = {
+            'records_processed': 0,
+            'records_inserted': 0,
+            'records_updated': 0,
+            'status': 'validated' if request.dry_run else 'accepted',
+            'message': (
+                'DRY RUN NetPay validado. No se descargaron archivos ni se modificó SQL.'
+                if request.dry_run
+                else 'Ejecución NetPay iniciada en segundo plano.'
+            ),
+        }
+
+        if not request.dry_run:
+            background_tasks.add_task(
+                _run_netpay_resync_background,
+                request.fecha_inicio,
+                request.fecha_fin,
+            )
+
+        _registrar_en_bitacora(
+            job_name='RESYNC_finanzas_netpay',
+            run_id=sync_run_id,
+            accion='DRY_RUN_SUCCESS' if request.dry_run else 'NETPAY_BACKGROUND_ACCEPTED',
+            server_id=unidad.get('server_id', ''),
+            detalles={
+                'unidad': request.unidad_negocio_id,
+                'fecha_inicio': str(request.fecha_inicio),
+                'fecha_fin': str(request.fecha_fin),
+                'motivo': request.motivo,
+                'dry_run': request.dry_run,
+                'usuario': user_email,
+                'source': 'NETPAY_PORTAL_ROBOT_SQL_CANONICO',
+            },
+            exito=True,
+        )
+
+        return ResyncResponse(
+            success=True,
+            ejecucion_id=ejecucion_id,
+            sync_run_id=sync_run_id,
+            modo=modo,
+            tipo_sync=request.tipo_sync,
+            unidad_negocio_id=request.unidad_negocio_id,
+            fecha_inicio=request.fecha_inicio.isoformat(),
+            fecha_fin=request.fecha_fin.isoformat(),
+            validacion_previa={
+                'rango': validacion_rango,
+                'netpay': True,
+                'nota': 'NetPay no usa conectividad POS/SoftRestaurant/MPRO; usa portal NetPay y persistencia SQL canónica.',
+            },
+            resultado=resultado,
+        )
 
     # GUARD HONESTO: tipo registrado en el catálogo canónico pero sin handler real
     # cableado todavía. No simulamos ni ejecutamos (sin mocks): estado PENDIENTE claro.
