@@ -437,6 +437,34 @@ async def validar_resync(
     
     if not validacion_rango['valido']:
         raise HTTPException(status_code=400, detail=validacion_rango['mensaje'])
+
+    if _is_netpay_sync(tipo_sync, request.tipo_sync):
+        return {
+            'success': True,
+            'source': 'EDARSAHUB_SQL',
+            'tipo_sync': tipo_sync,
+            'unidad': {
+                'id': request.unidad_negocio_id,
+                'nombre': unidad['nombre'],
+                'server_id': unidad['server_id'],
+                'sistema': unidad['sistema']
+            },
+            'rango': validacion_rango,
+            'conectividad': {
+                'conectado': True,
+                'tipo': 'NETPAY_PORTAL_ROBOT',
+                'nota': 'NetPay no usa conectividad POS/SoftRestaurant/MPRO; se ejecuta por portal NetPay y persiste en SQL canónico.'
+            },
+            'dias_existentes': {
+                'dias_existentes': [],
+                'cantidad': 0,
+                'nota': 'Validación NetPay sin consulta a tablas comerciales POS.'
+            },
+            'permite_dry_run': tipo_sync.get('permite_dry_run', True),
+            'nivel_riesgo': tipo_sync.get('nivel_riesgo', 'MEDIO'),
+            'propinas_separadas': False,
+            'campo_venta_sin_propina': None
+        }
     
     # Validar conectividad
     validacion_conectividad = _validar_conectividad(unidad['server_id'])
