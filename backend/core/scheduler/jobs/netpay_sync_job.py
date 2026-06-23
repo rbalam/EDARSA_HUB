@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import shlex
 import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -37,13 +38,54 @@ def _validate_range(date_from: date, date_to: date, max_days: int = 31) -> None:
         raise ValueError(f"Rango NetPay excede maximo permitido de {max_days} dias: {days}")
 
 
+def _read_env_file(path: Path) -> Dict[str, str]:
+    values: Dict[str, str] = {}
+    if not path.exists():
+        return values
+
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, raw_value = line.split("=", 1)
+        key = key.strip()
+        if not key:
+            continue
+        value = raw_value.strip()
+        if value and value[0] in {'"', "'"}:
+            try:
+                parsed = shlex.split(value, comments=False, posix=True)
+                value = parsed[0] if parsed else ""
+            except ValueError:
+                value = value.strip("'\"")
+        values[key] = value
+    return values
+
+
+def _build_robot_env(robot_root: Path) -> Dict[str, str]:
+    env = os.environ.copy()
+
+    backend_env = _read_env_file(Path("/app/backend/.env"))
+    robot_env = _read_env_file(robot_root / ".env")
+
+    for key, value in backend_env.items():
+        if key.startswith("EDARSAHUB_SQL_") and value:
+            env[key] = value
+
+    for key, value in robot_env.items():
+        if (key.startswith("NETPAY_") or key == "SERVER_SECRET_KEY") and value:
+            env[key] = value
+
+    env["PYTHONPATH"] = f"{robot_root / '.vendor'}:{robot_root}:{env.get('PYTHONPATH', '')}"
+    return env
+
+
 async def _run_cli(report_type: str, date_from: date, date_to: date) -> Dict[str, Any]:
     robot_root = Path("/app/netpay_robot_edarsahub/netpay_robot_edarsahub")
     if not robot_root.exists():
         raise RuntimeError(f"No existe robot_root NetPay: {robot_root}")
 
-    env = os.environ.copy()
-    env["PYTHONPATH"] = f"{robot_root / '.vendor'}:{robot_root}:{env.get('PYTHONPATH', '')}"
+    env = _build_robot_env(robot_root)
 
     cmd = [
         sys.executable,
