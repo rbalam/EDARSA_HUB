@@ -362,19 +362,24 @@ export default function Scheduler() {
 
       const responseData = response.data || {};
       const result = responseData.result || {};
-      const reports = Array.isArray(result.reports) ? result.reports : [];
-      const reportSummary = reports.length
-        ? reports.map((item) => {
-            const status = item.ok ? 'OK' : 'FALLO';
-            return `${item.report_type || 'Reporte'}: ${status}`;
-          }).join('\n')
-        : 'Sin detalle de reportes.';
 
-      alert([
-        responseData.status === 'completed' ? 'NetPay completado.' : 'NetPay finalizó con error.',
-        result.message || '',
-        reportSummary,
-      ].filter(Boolean).join('\n'));
+      if (responseData.status === 'accepted') {
+        alert(responseData.message || 'Ejecución NetPay iniciada en segundo plano.');
+      } else {
+        const reports = Array.isArray(result.reports) ? result.reports : [];
+        const reportSummary = reports.length
+          ? reports.map((item) => {
+              const status = item.ok ? 'OK' : 'FALLO';
+              return `${item.report_type || 'Reporte'}: ${status}`;
+            }).join('\n')
+          : 'Sin detalle de reportes.';
+
+        alert([
+          responseData.status === 'completed' ? 'NetPay completado.' : 'NetPay finalizó con error.',
+          result.message || '',
+          reportSummary,
+        ].filter(Boolean).join('\n'));
+      }
 
       setNewJobDialog({ open: false, fechaDesde: '', fechaHasta: '' });
       await fetchAllData(true);

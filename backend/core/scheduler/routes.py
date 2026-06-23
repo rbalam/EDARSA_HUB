@@ -13,7 +13,7 @@ Permisos requeridos:
 from typing import Optional
 from datetime import date, datetime, timezone, timedelta
 from pydantic import BaseModel, Field
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends, BackgroundTasks
 import logging
 
 from core.rbac.middleware import require_permission
@@ -140,36 +140,56 @@ async def run_job_now(
     return result
 
 
-@router.post("/netpay/run")
-async def run_netpay_manual(
-    payload: NetPayManualRunRequest,
-    current_user: dict = Depends(require_permission("SCHEDULER_ADMIN"))
-):
-    """
-    Ejecuta manualmente NetPay por rango controlado.
-    Máximo permitido: 31 días calendario.
-    """
+async def _run_netpay_manual_background(fecha_desde: date, fecha_hasta: date) -> None:
+    """Ejecuta NetPay fuera del request HTTP para evitar timeouts de navegador/proxy."""
     from .jobs.netpay_sync_job import execute_netpay_sync_diario
 
     try:
         result = await execute_netpay_sync_diario(
-            date_from=payload.fecha_desde,
-            date_to=payload.fecha_hasta,
+            date_from=fecha_desde,
+            date_to=fecha_hasta,
             max_days=31,
         )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.info(
+            "[NETPAY_MANUAL_RUN_BG] Finalizado status=%s fecha_desde=%s fecha_hasta=%s",
+            "completed" if result.get("success") else "failed",
+            fecha_desde.isoformat(),
+            fecha_hasta.isoformat(),
+        )
     except Exception as e:
-        logger.error(f"[NETPAY_MANUAL_RUN] Error ejecutando NetPay manual: {e}")
-        raise HTTPException(status_code=500, detail="Error ejecutando NetPay manual")
+        logger.error(f"[NETPAY_MANUAL_RUN_BG] Error ejecutando NetPay manual: {e}")
+
+
+@router.post("/netpay/run")
+async def run_netpay_manual(
+    payload: NetPayManualRunRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(require_permission("SCHEDULER_ADMIN"))
+):
+    """
+    Inicia manualmente NetPay por rango controlado.
+    Máximo permitido: 31 días calendario.
+    """
+    if payload.fecha_hasta < payload.fecha_desde:
+        raise HTTPException(status_code=400, detail="Fecha hasta no puede ser menor que fecha desde.")
+
+    diff_days = (payload.fecha_hasta - payload.fecha_desde).days + 1
+    if diff_days > 31:
+        raise HTTPException(status_code=400, detail=f"El rango máximo permitido es de 31 días. Rango actual: {diff_days} días.")
+
+    background_tasks.add_task(
+        _run_netpay_manual_background,
+        payload.fecha_desde,
+        payload.fecha_hasta,
+    )
 
     return {
-        "status": "completed" if result.get("success") else "failed",
+        "status": "accepted",
         "job_id": "netpay_sync_diario",
         "manual": True,
         "fecha_desde": payload.fecha_desde.isoformat(),
         "fecha_hasta": payload.fecha_hasta.isoformat(),
-        "result": result,
+        "message": "Ejecución NetPay iniciada en segundo plano",
     }
 
 
