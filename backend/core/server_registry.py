@@ -364,93 +364,6 @@ def _get_server_by_id_from_sql(server_id: str) -> Optional[Dict]:
 
 
 # ============================================================================
-# LECTURA DESDE MONGODB (FALLBACK LEGACY)
-# ============================================================================
-
-def _mongo_row_to_server_dict(row: Dict) -> Dict:
-    """
-    Convierte un documento MongoDB al formato normalizado.
-    Agrega config_origin y system_type_normalized.
-    """
-    system_type_raw = row.get('system_type', '')
-    
-    server = {
-        **row,
-        'system_type_normalized': normalize_system_type(system_type_raw),
-        'config_origin': 'MONGODB_LEGACY',
-        'warnings': ['Servidor obtenido desde MongoDB legacy; migrar a EDARSAHUB SQL.']
-    }
-    
-    # Asegurar que no haya _id de MongoDB
-    server.pop('_id', None)
-    
-    return server
-
-
-async def _get_servers_from_mongo(
-    db,
-    filter_active: bool = True,
-    filter_visible_listado: bool = True,
-    exclude_core: bool = True
-) -> List[Dict]:
-    """
-    Obtiene servidores desde MongoDB (fallback legacy).
-    """
-    try:
-        query = {}
-        
-        if filter_active:
-            query['active'] = True
-        
-        if filter_visible_listado:
-            query['$or'] = [
-                {'visible_en_listado': {'$exists': False}},
-                {'visible_en_listado': True}
-            ]
-        
-        cursor = db.servers.find(query, {'_id': 0})
-        servers = await cursor.to_list(1000)
-        
-        # Filtrar CORE si es necesario
-        if exclude_core:
-            servers = [s for s in servers if s.get('tipo_conexion') != 'CORE']
-        
-        # Excluir conexiones API_LOCAL (tienen su propio endpoint)
-        servers = [s for s in servers if s.get('tipo_conexion') != 'API_LOCAL']
-        
-        # Normalizar cada servidor
-        normalized = [_mongo_row_to_server_dict(s) for s in servers]
-        
-        logger.warning(f"[SERVER_REGISTRY][MONGODB_FALLBACK_USED] Obtenidos {len(normalized)} servidores desde MongoDB legacy")
-        return normalized
-        
-    except Exception as e:
-        logger.error(f"[SERVER_REGISTRY][MONGODB_ERROR] Error obteniendo servidores desde MongoDB: {e}")
-        return []
-
-
-async def _get_server_by_id_from_mongo(db, server_id: str) -> Optional[Dict]:
-    """
-    Obtiene un servidor específico por ID desde MongoDB (fallback legacy).
-    """
-    try:
-        server = await db.servers.find_one(
-            {'id': server_id, 'active': True},
-            {'_id': 0}
-        )
-        
-        if server:
-            logger.warning(f"[SERVER_REGISTRY][MONGODB_FALLBACK_USED] Servidor {server_id} obtenido desde MongoDB legacy")
-            return _mongo_row_to_server_dict(server)
-        
-        return None
-        
-    except Exception as e:
-        logger.error(f"[SERVER_REGISTRY][MONGODB_ERROR] Error buscando servidor {server_id}: {e}")
-        return None
-
-
-# ============================================================================
 # FUNCIONES PÚBLICAS DEL REGISTRY
 # ============================================================================
 
@@ -466,13 +379,13 @@ async def get_server_by_id(
     
     ORDEN DE CONSULTA:
     1. EDARSAHUB SQL (si prefer_sql=True y USE_SQL_FOR_SERVERS=True)
-    2. MongoDB (si allow_mongo_fallback=True y no se encontró en SQL)
+    2. Sin fallback MongoDB operativo
     
     Args:
         server_id: ID del servidor (UUID)
-        db: Conexión a MongoDB (requerido si allow_mongo_fallback=True)
+        db: Ignorado; compatibilidad de firma
         prefer_sql: Consultar SQL primero
-        allow_mongo_fallback: Permitir fallback a MongoDB
+        allow_mongo_fallback: Ignorado; MongoDB deshabilitado
         mask_secrets: Enmascarar passwords y api_keys
     
     Returns:
@@ -509,13 +422,13 @@ async def list_servers(
     
     ORDEN DE CONSULTA:
     1. EDARSAHUB SQL (si prefer_sql=True y USE_SQL_FOR_SERVERS=True)
-    2. MongoDB (si allow_mongo_fallback=True y SQL devuelve vacío)
+    2. Sin fallback MongoDB operativo
     
     Args:
-        db: Conexión a MongoDB (requerido si allow_mongo_fallback=True)
+        db: Ignorado; compatibilidad de firma
         user: Usuario actual para filtrar por permisos (opcional)
         prefer_sql: Consultar SQL primero
-        allow_mongo_fallback: Permitir fallback a MongoDB
+        allow_mongo_fallback: Ignorado; MongoDB deshabilitado
         filter_active: Solo servidores activos
         filter_visible_listado: Solo visibles en listado UI
         exclude_core: Excluir conexiones CORE
@@ -760,7 +673,7 @@ async def get_server_sucursales(
         server_id: ID del servidor
         db: Conexión a MongoDB
         prefer_sql: Consultar SQL primero
-        allow_mongo_fallback: Permitir fallback a MongoDB
+        allow_mongo_fallback: Ignorado; MongoDB deshabilitado
     
     Returns:
         Lista de sucursales configuradas
@@ -809,7 +722,7 @@ def normalize_server_record(record: Dict, source: str = "UNKNOWN") -> Dict:
     
     Args:
         record: Registro original del servidor
-        source: Fuente del registro ("EDARSAHUB_SQL" o "MONGODB_LEGACY")
+        source: Fuente del registro ("EDARSAHUB_SQL")
     
     Returns:
         Registro normalizado con todos los campos esperados
@@ -898,7 +811,6 @@ __all__ = [
     'create_server',
     'update_server',
     'delete_server',
-    'sync_server_to_mongo',
     'validate_server_payload',
     'USE_SQL_FOR_SERVERS',
     'EDARSAHUB_CONFIG'
@@ -1093,38 +1005,10 @@ async def create_server(
         }
     
     logger.info(f"[SERVER_REGISTRY][CREATE_SQL_SUCCESS] Servidor creado en SQL: {server_id}")
-    
-    # Sincronizar a MongoDB
-    sync_status = 'SYNCED'
+    sync_status = 'SQL_ONLY'
     sync_warnings = []
-    
-    if sync_mongo and db is not None:
-        try:
-            mongo_doc = {
-                'id': server_id,
-                'name': nombre,
-                'system_type': system_type,
-                'tipo_conexion': payload.get('tipo_conexion', 'DATA_SOURCE'),
-                'host': payload.get('host', ''),
-                'port': payload.get('port', 1433),
-                'database': payload.get('database') or payload.get('database_name', ''),
-                'username': payload.get('username', ''),
-                'password': payload.get('password', ''),
-                'api_url': payload.get('api_url', ''),
-                'active': True,
-                'visible_en_operaciones': payload.get('visible_en_operaciones', True),
-                'visible_en_listado': payload.get('visible_en_listado', True),
-                'es_editable_ui': payload.get('es_editable_ui', True),
-                'es_eliminable_ui': payload.get('es_eliminable_ui', True),
-                'created_at': now
-            }
-            await db.servers.insert_one(mongo_doc)
-            logger.info(f"[SERVER_REGISTRY][SYNC_MONGO_SUCCESS] Servidor sincronizado a MongoDB: {server_id}")
-        except Exception as e:
-            sync_status = 'PARTIAL_SYNC'
-            sync_warnings.append(f"SQL exitoso pero MongoDB falló: {str(e)}")
-            logger.warning(f"[SERVER_REGISTRY][SYNC_MONGO_ERROR] {e}")
-    
+    sync_mongo = False
+
     # Construir respuesta
     result = {
         'success': True,
@@ -1298,32 +1182,10 @@ async def update_server(
         }
     
     logger.info(f"[SERVER_REGISTRY][UPDATE_SQL_SUCCESS] Servidor actualizado en SQL: {server_id}")
-    
-    # Sincronizar a MongoDB
-    sync_status = 'SYNCED'
+    sync_status = 'SQL_ONLY'
     sync_warnings = []
-    
-    if sync_mongo and db is not None:
-        try:
-            mongo_update = {k: v for k, v in payload.items() if k not in ['_validation_warnings'] and v is not None}
-            mongo_update['updated_at'] = now
-            
-            # Mapear campos
-            if 'nombre' in mongo_update:
-                mongo_update['name'] = mongo_update.pop('nombre')
-            if 'database_name' in mongo_update:
-                mongo_update['database'] = mongo_update.pop('database_name')
-            
-            await db.servers.update_one(
-                {'id': server_id},
-                {'$set': mongo_update}
-            )
-            logger.info(f"[SERVER_REGISTRY][SYNC_MONGO_SUCCESS] Servidor sincronizado a MongoDB: {server_id}")
-        except Exception as e:
-            sync_status = 'PARTIAL_SYNC'
-            sync_warnings.append(f"SQL actualizado pero MongoDB falló: {str(e)}")
-            logger.warning(f"[SERVER_REGISTRY][SYNC_MONGO_ERROR] {e}")
-    
+    sync_mongo = False
+
     return {
         'success': True,
         'id': server_id,
@@ -1404,26 +1266,10 @@ async def delete_server(
         }
     
     logger.info(f"[SERVER_REGISTRY][DELETE_SQL_SUCCESS] Servidor {'desactivado' if soft_delete else 'eliminado'} en SQL: {server_id}")
-    
-    # Sincronizar a MongoDB
-    sync_status = 'SYNCED'
+    sync_status = 'SQL_ONLY'
     sync_warnings = []
-    
-    if sync_mongo and db is not None:
-        try:
-            if soft_delete:
-                await db.servers.update_one(
-                    {'id': server_id},
-                    {'$set': {'active': False, 'updated_at': now}}
-                )
-            else:
-                await db.servers.delete_one({'id': server_id})
-            logger.info(f"[SERVER_REGISTRY][SYNC_MONGO_SUCCESS] Servidor sincronizado a MongoDB: {server_id}")
-        except Exception as e:
-            sync_status = 'PARTIAL_SYNC'
-            sync_warnings.append(f"SQL actualizado pero MongoDB falló: {str(e)}")
-            logger.warning(f"[SERVER_REGISTRY][SYNC_MONGO_ERROR] {e}")
-    
+    sync_mongo = False
+
     return {
         'success': True,
         'id': server_id,
@@ -1435,132 +1281,11 @@ async def delete_server(
     }
 
 
-async def sync_server_to_mongo(sql_server_id: str, db=None) -> Dict:
-    """
-    Sincroniza un servidor específico desde SQL hacia MongoDB.
-    
-    Útil para reconciliación manual o después de cambios directos en SQL.
-    
-    Args:
-        sql_server_id: ID del servidor en SQL
-        db: Conexión MongoDB
-    
-    Returns:
-        Dict con resultado de sincronización
-    """
-    if db is None:
-        return {
-            'success': False,
-            'error': 'Conexión MongoDB no disponible',
-            'sync_status': 'NO_DB'
-        }
-    
-    # Obtener servidor desde SQL
-    server = _get_server_by_id_from_sql(sql_server_id)
-    if not server:
-        return {
-            'success': False,
-            'error': f'Servidor {sql_server_id} no encontrado en SQL',
-            'sync_status': 'NOT_FOUND'
-        }
-    
-    logger.info(f"[SERVER_REGISTRY][SYNC_MONGO_START] Sincronizando servidor: {sql_server_id}")
-    
-    try:
-        # Construir documento MongoDB
-        mongo_doc = {
-            'id': server['id'],
-            'name': server['name'],
-            'system_type': server['system_type'],
-            'tipo_conexion': server['tipo_conexion'],
-            'host': server['host'],
-            'port': server['port'],
-            'database': server['database'],
-            'username': server['username'],
-            'password': server.get('password', ''),
-            'api_url': server.get('api_url', ''),
-            'active': server['active'],
-            'visible_en_operaciones': server.get('visible_en_operaciones', True),
-            'visible_en_listado': server.get('visible_en_listado', True),
-            'es_editable_ui': server.get('es_editable_ui', True),
-            'es_eliminable_ui': server.get('es_eliminable_ui', True),
-            'updated_at': datetime.now(timezone.utc).isoformat()
-        }
-        
-        # Upsert en MongoDB
-        await db.servers.update_one(
-            {'id': server['id']},
-            {'$set': mongo_doc},
-            upsert=True
-        )
-        
-        logger.info(f"[SERVER_REGISTRY][SYNC_MONGO_SUCCESS] Servidor sincronizado: {sql_server_id}")
-        
-        return {
-            'success': True,
-            'id': server['id'],
-            'sync_status': 'SYNCED',
-            'message': 'Servidor sincronizado a MongoDB'
-        }
-        
-    except Exception as e:
-        logger.error(f"[SERVER_REGISTRY][SYNC_MONGO_ERROR] {e}")
-        return {
-            'success': False,
-            'error': str(e),
-            'sync_status': 'SYNC_ERROR'
-        }
 
 
 # ============================================================================
 # FASE 3B.1: FUNCIONES DE MAPEO Y RECONCILIACIÓN
 # ============================================================================
-
-def build_legacy_mongo_server_document(sql_record: Dict) -> Dict:
-    """
-    Construye un documento MongoDB legacy a partir de un registro SQL.
-    
-    Usado para sincronizar servidores de SQL hacia MongoDB manteniendo
-    compatibilidad con el esquema legacy de MongoDB.
-    
-    Args:
-        sql_record: Registro del servidor desde SQL
-    
-    Returns:
-        Dict compatible con colección MongoDB servers
-    """
-    if not sql_record:
-        return None
-    
-    return {
-        'id': sql_record.get('id', ''),
-        'name': sql_record.get('name') or sql_record.get('nombre', ''),
-        'system_type': sql_record.get('system_type', ''),
-        'tipo_conexion': sql_record.get('tipo_conexion', 'DATA_SOURCE'),
-        'host': sql_record.get('host', ''),
-        'port': sql_record.get('port', 1433),
-        'database': sql_record.get('database') or sql_record.get('database_name', ''),
-        'username': sql_record.get('username', ''),
-        'password': sql_record.get('password', ''),  # Solo para sync interno, nunca exponer
-        'api_url': sql_record.get('api_url', ''),
-        'api_key': sql_record.get('api_key', ''),  # Solo para sync interno, nunca exponer
-        'active': bool(sql_record.get('active', sql_record.get('activo', False))),
-        'visible_en_operaciones': bool(sql_record.get('visible_en_operaciones', True)),
-        'visible_en_listado': bool(sql_record.get('visible_en_listado', True)),
-        'es_editable_ui': bool(sql_record.get('es_editable_ui', True)),
-        'es_eliminable_ui': bool(sql_record.get('es_eliminable_ui', True)),
-        'sucursales': sql_record.get('sucursales'),
-        'categorias': sql_record.get('categorias'),
-        'departamentos': sql_record.get('departamentos'),
-        'date_calculation_method': sql_record.get('date_calculation_method'),
-        'queries_configured': bool(sql_record.get('queries_configured', False)),
-        'query_ventas': sql_record.get('query_ventas'),
-        'query_inventario': sql_record.get('query_inventario'),
-        'query_movimientos': sql_record.get('query_movimientos'),
-        'created_at': sql_record.get('created_at'),
-        'updated_at': sql_record.get('updated_at')
-    }
-
 
 def map_sql_to_api_server_response(sql_record: Dict, mask_secrets: bool = True) -> Dict:
     """
@@ -1634,132 +1359,6 @@ def map_sql_to_api_server_response(sql_record: Dict, mask_secrets: bool = True) 
         response['api_key'] = sql_record.get('api_key', '')
     
     return response
-
-
-async def reconcile_sql_mongo_servers(db=None, dry_run: bool = True) -> Dict:
-    """
-    Reconcilia servidores entre SQL y MongoDB.
-    
-    Compara ambas fuentes y reporta diferencias. En modo apply,
-    sincroniza MongoDB para que sea espejo de SQL.
-    
-    Args:
-        db: Conexión MongoDB
-        dry_run: Si True, solo reporta diferencias sin modificar
-    
-    Returns:
-        Dict con reporte de reconciliación
-    """
-    logger.info(f"[SERVER_REGISTRY][RECONCILIATION_START] dry_run={dry_run}")
-    
-    report = {
-        'status': 'SUCCESS',
-        'dry_run': dry_run,
-        'sql_count': 0,
-        'mongo_count': 0,
-        'matched': 0,
-        'sql_only': [],
-        'mongo_only': [],
-        'diffs': [],
-        'synced': [],
-        'warnings': [],
-        'errors': []
-    }
-    
-    try:
-        # Obtener servidores de SQL
-        sql_servers = _get_servers_from_sql(filter_active=False, filter_visible_listado=False, exclude_core=False)
-        report['sql_count'] = len(sql_servers)
-        
-        # Crear índice por ID y mongodb_id
-        sql_by_id = {s['id']: s for s in sql_servers}
-        sql_by_mongodb_id = {s['mongodb_id']: s for s in sql_servers if s.get('mongodb_id')}
-        
-        # Obtener servidores de MongoDB
-        if db is None:
-            report['warnings'].append('No se puede verificar MongoDB sin conexión')
-            return report
-        
-        mongo_cursor = db.servers.find({}, {'_id': 0})
-        mongo_servers = await mongo_cursor.to_list(1000)
-        report['mongo_count'] = len(mongo_servers)
-        
-        # Crear índice por ID
-        mongo_by_id = {s['id']: s for s in mongo_servers}
-        
-        # Comparar: SQL que no están en Mongo
-        for sql_id, sql_server in sql_by_id.items():
-            mongo_server = mongo_by_id.get(sql_id) or mongo_by_id.get(sql_server.get('mongodb_id'))
-            
-            if not mongo_server:
-                report['sql_only'].append({
-                    'id': sql_id,
-                    'name': sql_server.get('name', 'N/A'),
-                    'system_type': sql_server.get('system_type', 'N/A')
-                })
-                
-                # Sincronizar si no es dry_run
-                if not dry_run:
-                    try:
-                        mongo_doc = build_legacy_mongo_server_document(sql_server)
-                        await db.servers.insert_one(mongo_doc)
-                        report['synced'].append(sql_id)
-                        logger.info(f"[SERVER_REGISTRY][RECONCILIATION_SYNC] Creado en MongoDB: {sql_id}")
-                    except Exception as e:
-                        report['errors'].append(f"Error sincronizando {sql_id}: {str(e)}")
-            else:
-                report['matched'] += 1
-                
-                # Verificar diferencias de campos críticos
-                diffs = []
-                if sql_server.get('name') != mongo_server.get('name'):
-                    diffs.append(f"name: SQL='{sql_server.get('name')}' vs Mongo='{mongo_server.get('name')}'")
-                if sql_server.get('system_type') != mongo_server.get('system_type'):
-                    diffs.append(f"system_type: SQL='{sql_server.get('system_type')}' vs Mongo='{mongo_server.get('system_type')}'")
-                if sql_server.get('active') != mongo_server.get('active'):
-                    diffs.append(f"active: SQL={sql_server.get('active')} vs Mongo={mongo_server.get('active')}")
-                
-                if diffs:
-                    report['diffs'].append({
-                        'id': sql_id,
-                        'name': sql_server.get('name', 'N/A'),
-                        'differences': diffs
-                    })
-                    
-                    # Actualizar si no es dry_run
-                    if not dry_run:
-                        try:
-                            mongo_doc = build_legacy_mongo_server_document(sql_server)
-                            await db.servers.update_one({'id': sql_id}, {'$set': mongo_doc})
-                            report['synced'].append(sql_id)
-                            logger.info(f"[SERVER_REGISTRY][RECONCILIATION_SYNC] Actualizado en MongoDB: {sql_id}")
-                        except Exception as e:
-                            report['errors'].append(f"Error actualizando {sql_id}: {str(e)}")
-        
-        # Comparar: Mongo que no están en SQL
-        for mongo_id, mongo_server in mongo_by_id.items():
-            if mongo_id not in sql_by_id and mongo_id not in sql_by_mongodb_id:
-                report['mongo_only'].append({
-                    'id': mongo_id,
-                    'name': mongo_server.get('name', 'N/A'),
-                    'system_type': mongo_server.get('system_type', 'N/A')
-                })
-                report['warnings'].append(f"Servidor {mongo_id} existe en MongoDB pero no en SQL")
-        
-        # Determinar status final
-        if report['errors']:
-            report['status'] = 'ERROR'
-        elif report['sql_only'] or report['mongo_only'] or report['diffs']:
-            report['status'] = 'DIFFS_FOUND'
-        
-        logger.info(f"[SERVER_REGISTRY][RECONCILIATION_COMPLETE] matched={report['matched']}, sql_only={len(report['sql_only'])}, mongo_only={len(report['mongo_only'])}, diffs={len(report['diffs'])}")
-        
-    except Exception as e:
-        report['status'] = 'ERROR'
-        report['errors'].append(str(e))
-        logger.error(f"[SERVER_REGISTRY][RECONCILIATION_ERROR] {e}")
-    
-    return report
 
 
 # ============================================================================
@@ -2387,13 +1986,10 @@ __all__ = [
     'create_server',
     'update_server',
     'delete_server',
-    'sync_server_to_mongo',
     'validate_server_payload',
     # FASE 3B.1: Mapeo y reconciliación
-    'build_legacy_mongo_server_document',
-    'map_sql_to_api_server_response',
-    'reconcile_sql_mongo_servers',
-    # FASE M1: Unidades de Negocio (EDARSAHUB-ONLY)
+        'map_sql_to_api_server_response',
+        # FASE M1: Unidades de Negocio (EDARSAHUB-ONLY)
     'list_unidades_negocio',
     'get_server_by_unidad_codigo',
     'resolve_unidad_by_server_sucursal',
