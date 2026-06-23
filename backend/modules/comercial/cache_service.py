@@ -67,6 +67,40 @@ CACHE_TTL = {
 }
 
 # Estados de respuesta estándar
+
+
+# ============================================================================
+# SQL-FIRST cache backend: dbo.Sync_Response_Cache
+# ============================================================================
+
+def _sql_cache_hash(cache_key: str) -> str:
+    import hashlib
+    return hashlib.sha256(str(cache_key).encode("utf-8")).hexdigest()
+
+
+def _sql_conn():
+    from modules.compras.sync_service import get_edarsahub_connection
+    return get_edarsahub_connection()
+
+
+def _sql_next_cache_id(cur) -> int:
+    cur.execute("SELECT ISNULL(MAX(id),0)+1 AS NextID FROM dbo.Sync_Response_Cache WITH (UPDLOCK, HOLDLOCK)")
+    row = cur.fetchone()
+    return int(row["NextID"] if isinstance(row, dict) else row[0])
+
+
+def _json_dumps(obj) -> str:
+    import json
+    return json.dumps(obj, ensure_ascii=False, default=str)
+
+
+def _json_loads(txt):
+    import json
+    if not txt:
+        return None
+    return json.loads(txt)
+
+
 class SourceStatus:
     SUCCESS = "SUCCESS"
     NO_DATA = "NO_DATA"
@@ -125,98 +159,79 @@ def build_cache_key(
 
 
 async def get_cached_response(cache_key: str) -> Optional[Dict]:
-    """
-    Obtiene respuesta cacheada si existe y no ha expirado.
-    
-    Returns:
-        Dict con 'data', 'cached_at', 'ttl' si existe cache válido
-        None si no existe o expiró
-    """
+    h = _sql_cache_hash(cache_key)
+    conn = _sql_conn()
     try:
-        db = get_db()
-        if db is None:
+        cur = conn.cursor(as_dict=True)
+        cur.execute("""
+            SELECT ResponsePayload
+            FROM dbo.Sync_Response_Cache
+            WHERE RequestHash=%s
+              AND ServiceSource='comercial_cache'
+              AND (ExpiresAt IS NULL OR ExpiresAt > GETDATE())
+        """, (h,))
+        row = cur.fetchone()
+        if not row:
             return None
-        cached = await db.comercial_cache.find_one({"cache_key": cache_key})
-        
-        if not cached:
-            return None
-        
-        cached_at = cached.get("cached_at")
-        ttl = cached.get("ttl", 300)
-        
-        if cached_at:
-            # Verificar si expiró
-            if isinstance(cached_at, str):
-                cached_dt = datetime.fromisoformat(cached_at.replace('Z', '+00:00'))
-            else:
-                cached_dt = cached_at
-            
-            now = datetime.now(timezone.utc)
-            if cached_dt.tzinfo is None:
-                cached_dt = cached_dt.replace(tzinfo=timezone.utc)
-            
-            age_seconds = (now - cached_dt).total_seconds()
-            
-            if age_seconds > ttl:
-                logging.info(f"Cache expirado para {cache_key} (edad: {age_seconds}s, TTL: {ttl}s)")
-                return None
-        
-        return {
-            "data": cached.get("data"),
-            "cached_at": cached.get("cached_at"),
-            "ttl": ttl,
-            "server_name": cached.get("server_name"),
-            "server_type": cached.get("server_type")
-        }
-    
-    except Exception as e:
-        logging.warning(f"Error obteniendo cache para {cache_key}: {e}")
-        return None
 
+        cur.execute("""
+            UPDATE dbo.Sync_Response_Cache
+            SET HitCount = ISNULL(HitCount,0) + 1
+            WHERE RequestHash=%s AND ServiceSource='comercial_cache'
+        """, (h,))
+        conn.commit()
+
+        payload = _json_loads(row.get("ResponsePayload"))
+        if isinstance(payload, dict) and "data" in payload:
+            return payload.get("data")
+        return payload
+    finally:
+        conn.close()
 
 async def save_to_cache(
     cache_key: str,
-    data: Dict,
+    data: Any,
     endpoint: str,
     server_name: str = "",
-    server_type: str = ""
-) -> bool:
-    """
-    Guarda respuesta en cache.
-    
-    Returns:
-        True si se guardó correctamente
-    """
+    server_type: str = "",
+    ttl_hours: int = 24
+) -> None:
+    h = _sql_cache_hash(cache_key)
+    payload = {
+        "cache_key": cache_key,
+        "data": data,
+        "endpoint": endpoint,
+        "server_name": server_name,
+        "server_type": server_type,
+    }
+    conn = _sql_conn()
     try:
-        db = get_db()
-        if db is None:
-            return False
-        ttl = CACHE_TTL.get(endpoint, 300)
-        
-        cache_doc = {
-            "cache_key": cache_key,
-            "data": data,
-            "cached_at": datetime.now(timezone.utc).isoformat(),
-            "ttl": ttl,
-            "endpoint": endpoint,
-            "server_name": server_name,
-            "server_type": server_type,
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        }
-        
-        await db.comercial_cache.update_one(
-            {"cache_key": cache_key},
-            {"$set": cache_doc},
-            upsert=True
-        )
-        
-        logging.debug(f"Cache guardado para {cache_key} (TTL: {ttl}s)")
-        return True
-    
-    except Exception as e:
-        logging.warning(f"Error guardando cache para {cache_key}: {e}")
-        return False
-
+        cur = conn.cursor(as_dict=True)
+        cur.execute("""
+            SELECT id FROM dbo.Sync_Response_Cache
+            WHERE RequestHash=%s AND ServiceSource='comercial_cache'
+        """, (h,))
+        row = cur.fetchone()
+        if row:
+            cur.execute("""
+                UPDATE dbo.Sync_Response_Cache
+                SET RequestPayload=%s,
+                    ResponsePayload=%s,
+                    CacheDurationMinutes=%s,
+                    CreatedAt=GETDATE(),
+                    ExpiresAt=DATEADD(hour, %s, GETDATE())
+                WHERE RequestHash=%s AND ServiceSource='comercial_cache'
+            """, (cache_key, _json_dumps(payload), int(ttl_hours) * 60, int(ttl_hours), h))
+        else:
+            cur.execute("""
+                INSERT INTO dbo.Sync_Response_Cache
+                (id, RequestHash, ServiceSource, RequestPayload, ResponsePayload,
+                 TokenCostFraction, CacheDurationMinutes, CreatedAt, ExpiresAt, HitCount)
+                VALUES (%s,%s,'comercial_cache',%s,%s,0,%s,GETDATE(),DATEADD(hour,%s,GETDATE()),0)
+            """, (_sql_next_cache_id(cur), h, cache_key, _json_dumps(payload), int(ttl_hours) * 60, int(ttl_hours)))
+        conn.commit()
+    finally:
+        conn.close()
 
 def build_envelope_response(
     source_status: str,
@@ -341,122 +356,54 @@ def _check_has_data(data: Any) -> bool:
 
 # Colección de cache necesaria - crear índice al importar
 async def ensure_cache_indexes():
-    """Asegura que existen los índices necesarios para el cache."""
-    try:
-        db = get_db()
-        if db is None:
-            return
-        await db.comercial_cache.create_index("cache_key", unique=True)
-        await db.comercial_cache.create_index("cached_at")
-        logging.info("Índices de cache comercial verificados")
-    except Exception as e:
-        logging.warning(f"Error creando índices de cache: {e}")
-
+    return {"success": True, "message": "Sync_Response_Cache SQL-first"}
 
 async def cleanup_expired_cache(max_age_hours: int = 24) -> Dict:
-    """
-    Limpia entradas de cache expiradas.
-    
-    Args:
-        max_age_hours: Máximo de horas para considerar un cache como expirado (default 24h)
-    
-    Returns:
-        Dict con estadísticas de limpieza
-    """
+    conn = _sql_conn()
     try:
-        db = get_db()
-        if db is None:
-            return {"success": True, "deleted_count": 0, "total_before": 0, "total_after": 0, "max_age_hours": max_age_hours, "mode": "SQL_SAFE_NOOP"}
-        cutoff_time = datetime.now(timezone.utc) - timedelta(hours=max_age_hours)
-        
-        # Contar antes de eliminar
-        total_before = await db.comercial_cache.count_documents({})
-        
-        # Eliminar caches antiguos basados en cached_at
-        result = await db.comercial_cache.delete_many({
-            "cached_at": {"$lt": cutoff_time.isoformat()}
-        })
-        
-        # También eliminar por updated_at si cached_at no existe
-        result2 = await db.comercial_cache.delete_many({
-            "updated_at": {"$lt": cutoff_time.isoformat()},
-            "cached_at": {"$exists": False}
-        })
-        
-        total_after = await db.comercial_cache.count_documents({})
-        deleted_count = result.deleted_count + result2.deleted_count
-        
-        logging.info(f"Cache cleanup: {deleted_count} entradas eliminadas (antes: {total_before}, después: {total_after})")
-        
-        return {
-            "success": True,
-            "deleted_count": deleted_count,
-            "total_before": total_before,
-            "total_after": total_after,
-            "cutoff_time": cutoff_time.isoformat(),
-            "max_age_hours": max_age_hours
-        }
-    
-    except Exception as e:
-        logging.error(f"Error en limpieza de cache: {e}")
-        return {
-            "success": False,
-            "error": str(e),
-            "deleted_count": 0
-        }
+        cur = conn.cursor(as_dict=True)
+        cur.execute("SELECT COUNT(*) AS total FROM dbo.Sync_Response_Cache WHERE ServiceSource='comercial_cache'")
+        before = int((cur.fetchone() or {}).get("total") or 0)
 
+        cur.execute("""
+            DELETE FROM dbo.Sync_Response_Cache
+            WHERE ServiceSource='comercial_cache'
+              AND (
+                    (ExpiresAt IS NOT NULL AND ExpiresAt < GETDATE())
+                 OR CreatedAt < DATEADD(hour, -%s, GETDATE())
+              )
+        """, (max_age_hours,))
+        deleted = cur.rowcount if cur.rowcount is not None else 0
+
+        cur.execute("SELECT COUNT(*) AS total FROM dbo.Sync_Response_Cache WHERE ServiceSource='comercial_cache'")
+        after = int((cur.fetchone() or {}).get("total") or 0)
+
+        conn.commit()
+        return {"success": True, "total_before": before, "deleted": deleted, "total_after": after}
+    finally:
+        conn.close()
 
 async def get_cache_stats() -> Dict:
-    """
-    Obtiene estadísticas del cache.
-    
-    Returns:
-        Dict con estadísticas
-    """
+    conn = _sql_conn()
     try:
-        db = get_db()
-        if db is None:
-            return {"total_entries": 0, "by_endpoint": [], "oldest_entry": None, "newest_entry": None, "mode": "SQL_SAFE_NOOP"}
-        
-        total_entries = await db.comercial_cache.count_documents({})
-        
-        # Obtener distribución por endpoint
-        pipeline = [
-            {"$group": {"_id": "$endpoint", "count": {"$sum": 1}}},
-            {"$sort": {"count": -1}}
-        ]
-        by_endpoint = []
-        async for doc in db.comercial_cache.aggregate(pipeline):
-            by_endpoint.append({"endpoint": doc["_id"], "count": doc["count"]})
-        
-        # Obtener el más antiguo y más reciente
-        oldest = await db.comercial_cache.find_one(sort=[("cached_at", 1)])
-        newest = await db.comercial_cache.find_one(sort=[("cached_at", -1)])
-        
+        cur = conn.cursor(as_dict=True)
+        cur.execute("""
+            SELECT COUNT(*) AS total_entries,
+                   ISNULL(SUM(ISNULL(HitCount,0)),0) AS total_hits,
+                   MIN(CreatedAt) AS oldest,
+                   MAX(CreatedAt) AS newest
+            FROM dbo.Sync_Response_Cache
+            WHERE ServiceSource='comercial_cache'
+        """)
+        row = cur.fetchone() or {}
         return {
-            "total_entries": total_entries,
-            "by_endpoint": by_endpoint,
-            "oldest_entry": oldest.get("cached_at") if oldest else None,
-            "newest_entry": newest.get("cached_at") if newest else None
+            "total_entries": int(row.get("total_entries") or 0),
+            "total_hits": int(row.get("total_hits") or 0),
+            "oldest": row.get("oldest"),
+            "newest": row.get("newest"),
+            "backend": "sql",
+            "table": "Sync_Response_Cache",
         }
-    
-    except Exception as e:
-        logging.error(f"Error obteniendo stats de cache: {e}")
-        return {
-            "total_entries": 0,
-            "error": str(e)
-        }
+    finally:
+        conn.close()
 
-
-__all__ = [
-    'SourceStatus',
-    'build_cache_key',
-    'get_cached_response',
-    'save_to_cache',
-    'build_envelope_response',
-    'execute_with_cache_fallback',
-    'ensure_cache_indexes',
-    'cleanup_expired_cache',
-    'get_cache_stats',
-    'CACHE_TTL'
-]
