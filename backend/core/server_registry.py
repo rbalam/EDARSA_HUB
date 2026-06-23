@@ -42,7 +42,7 @@ EDARSAHUB_CONFIG = {
 }
 
 # Flag para habilitar/deshabilitar lectura desde SQL (para rollback rápido)
-USE_SQL_FOR_SERVERS = os.environ.get('USE_SQL_FOR_SERVERS', 'true').lower() == 'true'
+USE_SQL_FOR_SERVERS = True  # SQL-only operativo; sin rollback a Mongo
 
 logger = logging.getLogger(__name__)
 
@@ -458,7 +458,7 @@ async def get_server_by_id(
     server_id: str,
     db=None,
     prefer_sql: bool = True,
-    allow_mongo_fallback: bool = True,
+    allow_mongo_fallback: bool = False,
     mask_secrets: bool = True
 ) -> Optional[Dict]:
     """
@@ -484,9 +484,8 @@ async def get_server_by_id(
     if prefer_sql and USE_SQL_FOR_SERVERS:
         server = _get_server_by_id_from_sql(server_id)
     
-    # Fallback a MongoDB
-    if not server and allow_mongo_fallback and db is not None:
-        server = await _get_server_by_id_from_mongo(db, server_id)
+    # MongoDB fallback deshabilitado por política SQL-only.
+    allow_mongo_fallback = False
     
     # Enmascarar secretos si es necesario
     if server and mask_secrets:
@@ -499,7 +498,7 @@ async def list_servers(
     db=None,
     user: Optional[Dict] = None,
     prefer_sql: bool = True,
-    allow_mongo_fallback: bool = True,
+    allow_mongo_fallback: bool = False,
     filter_active: bool = True,
     filter_visible_listado: bool = True,
     exclude_core: bool = True,
@@ -535,14 +534,8 @@ async def list_servers(
             exclude_core=exclude_core
         )
     
-    # Fallback a MongoDB si SQL está vacío
-    if not servers and allow_mongo_fallback and db is not None:
-        servers = await _get_servers_from_mongo(
-            db,
-            filter_active=filter_active,
-            filter_visible_listado=filter_visible_listado,
-            exclude_core=exclude_core
-        )
+    # MongoDB fallback deshabilitado por política SQL-only.
+    allow_mongo_fallback = False
     
     # Enmascarar secretos
     if mask_secrets:
@@ -754,7 +747,7 @@ async def get_server_sucursales(
     server_id: str,
     db=None,
     prefer_sql: bool = True,
-    allow_mongo_fallback: bool = True
+    allow_mongo_fallback: bool = False
 ) -> List[Dict]:
     """
     Obtiene las sucursales configuradas para un servidor.
@@ -783,27 +776,8 @@ async def get_server_sucursales(
             source = 'EDARSAHUB_SQL'
             logger.info(f"[SERVER_REGISTRY][SUCURSALES][SQL_HIT] {len(sucursales)} sucursales para servidor {server_id}")
     
-    # Fallback a MongoDB si no hay sucursales en SQL
-    if not sucursales and allow_mongo_fallback and db is not None:
-        try:
-            # Buscar en colección dedicada
-            cursor = db.server_sucursales_config.find(
-                {'server_id': server_id, 'activo': {'$ne': False}},
-                {'_id': 0}
-            )
-            sucursales = await cursor.to_list(100)
-            
-            if not sucursales:
-                # Fallback al campo sucursales del servidor en MongoDB
-                server_mongo = await _get_server_by_id_from_mongo(db, server_id)
-                if server_mongo and server_mongo.get('sucursales'):
-                    sucursales = server_mongo['sucursales'] if isinstance(server_mongo['sucursales'], list) else []
-            
-            if sucursales:
-                source = 'MONGODB_LEGACY'
-                logger.warning(f"[SERVER_REGISTRY][SUCURSALES][MONGODB_FALLBACK] {len(sucursales)} sucursales para servidor {server_id}")
-        except Exception as e:
-            logger.error(f"[SERVER_REGISTRY][SUCURSALES][MONGODB_ERROR] Error obteniendo sucursales: {e}")
+    # MongoDB fallback deshabilitado por política SQL-only.
+    allow_mongo_fallback = False
     
     # Normalizar cada sucursal
     normalized = []
@@ -1022,7 +996,7 @@ async def create_server(
     payload: Dict,
     db=None,
     user: Optional[Dict] = None,
-    sync_mongo: bool = True
+    sync_mongo: bool = False
 ) -> Dict:
     """
     Crea un servidor en EDARSAHUB SQL primero, luego sincroniza a MongoDB.
@@ -1171,7 +1145,7 @@ async def update_server(
     payload: Dict,
     db=None,
     user: Optional[Dict] = None,
-    sync_mongo: bool = True
+    sync_mongo: bool = False
 ) -> Dict:
     """
     Actualiza un servidor en EDARSAHUB SQL primero, luego sincroniza a MongoDB.
@@ -1364,7 +1338,7 @@ async def delete_server(
     server_id: str,
     db=None,
     user: Optional[Dict] = None,
-    sync_mongo: bool = True,
+    sync_mongo: bool = False,
     soft_delete: bool = True
 ) -> Dict:
     """
