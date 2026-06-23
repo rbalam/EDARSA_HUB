@@ -127,32 +127,44 @@ async def get_db():
     return db
 
 
+async def _get_empresas_codigos_sql(empresas_ids):
+    """Obtiene códigos/nombres de empresas desde SQL canónico, sin Mongo."""
+    if not empresas_ids:
+        return []
+    try:
+        from core.db import execute_sql_query
+        ids = [str(x).replace("'", "''") for x in empresas_ids if x]
+        if not ids:
+            return []
+        in_clause = ",".join([f"'{x}'" for x in ids])
+        rows = execute_sql_query(f"""
+            SELECT id, codigo, nombre
+            FROM Empresas
+            WHERE id IN ({in_clause})
+        """) or []
+        codigos = []
+        for e in rows:
+            codigo = e.get("codigo") or e.get("Codigo")
+            nombre = e.get("nombre") or e.get("Nombre")
+            if codigo:
+                codigos.append(str(codigo).upper())
+            if nombre:
+                codigos.append(str(nombre).upper())
+        return codigos
+    except Exception:
+        return []
+
+
 async def get_user_server_ids_permitidos(current_user: Dict[str, Any]) -> List[str]:
     """
     RBAC Fase 3.1: Obtiene los CÓDIGOS de sucursales permitidas para el usuario.
     Retorna lista vacía si el usuario tiene acceso total (admin).
     """
-    from server import db
-    
     empresas_permitidas = await get_user_empresas_permitidas(current_user)
     if not empresas_permitidas:
         return []  # Sin restricción (admin)
     
-    # Obtener códigos de las empresas permitidas
-    empresas = await db.empresas.find(
-        {'id': {'$in': empresas_permitidas}},
-        {'_id': 0, 'codigo': 1, 'nombre': 1}
-    ).to_list(100)
-    
-    # Retornar códigos y nombres para matching flexible
-    codigos = []
-    for e in empresas:
-        if e.get('codigo'):
-            codigos.append(e['codigo'].upper())
-        if e.get('nombre'):
-            codigos.append(e['nombre'].upper())
-    
-    return codigos
+    return await _get_empresas_codigos_sql(empresas_permitidas)
 
 
 # ============================================================================
@@ -168,10 +180,6 @@ async def health_check(
     db: Any = Depends(get_db)
 ):
     try:
-        await db.command('ping')
-        collections = await db.list_collection_names()
-        propinas_control_exists = 'propinas_control' in collections
-        propinas_config_exists = 'propinas_config' in collections
         
         return {
             "status": "healthy",

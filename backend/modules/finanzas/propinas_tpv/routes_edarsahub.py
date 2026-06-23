@@ -73,13 +73,18 @@ async def get_unidades_permitidas_rbac(current_user: dict) -> Optional[List[str]
     if not empresas_permitidas:
         return None  # Sin restricción (legacy)
     
-    # Mapear empresas a UnidadNegocioID
-    # Buscar en MongoDB las empresas y sus unidades
+    # Mapear empresas a UnidadNegocioID desde SQL canónico
     try:
-        empresas = await db.empresas.find(
-            {'id': {'$in': empresas_permitidas}},
-            {'_id': 0, 'id': 1, 'codigo': 1, 'nombre': 1}
-        ).to_list(100)
+        from core.db import execute_sql_query
+        ids = [str(x).replace("'", "''") for x in empresas_permitidas if x]
+        if not ids:
+            return None
+        in_clause = ",".join([f"'{x}'" for x in ids])
+        empresas = execute_sql_query(f"""
+            SELECT id, codigo, nombre
+            FROM Empresas
+            WHERE id IN ({in_clause})
+        """) or []
         
         if not empresas:
             return None

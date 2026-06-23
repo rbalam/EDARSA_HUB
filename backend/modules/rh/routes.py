@@ -116,6 +116,34 @@ router = APIRouter(prefix="/rrhh", tags=["Recursos Humanos"])
 # RBAC - FASE 6-8: Helper usando resolve_user_access_context()
 # ============================================================================
 
+async def _get_empresas_codigos_sql(empresas_ids):
+    """Obtiene códigos/nombres de empresas desde SQL canónico, sin Mongo."""
+    if not empresas_ids:
+        return []
+    try:
+        from core.db import execute_sql_query
+        ids = [str(x).replace("'", "''") for x in empresas_ids if x]
+        if not ids:
+            return []
+        in_clause = ",".join([f"'{x}'" for x in ids])
+        rows = execute_sql_query(f"""
+            SELECT id, codigo, nombre
+            FROM Empresas
+            WHERE id IN ({in_clause})
+        """) or []
+        codigos = []
+        for e in rows:
+            codigo = e.get("codigo") or e.get("Codigo")
+            nombre = e.get("nombre") or e.get("Nombre")
+            if codigo:
+                codigos.append(str(codigo).upper())
+            if nombre:
+                codigos.append(str(nombre).upper())
+        return codigos
+    except Exception:
+        return []
+
+
 async def get_user_sucursales_permitidas_rh(current_user: Dict[str, Any]) -> List[int]:
     """
     FASE 6-8: Obtiene los IDs de sucursales permitidas para el usuario.
@@ -125,8 +153,6 @@ async def get_user_sucursales_permitidas_rh(current_user: Dict[str, Any]) -> Lis
     
     Nota: RH usa IDs numéricos de SQL Server, no UUIDs.
     """
-    from server import db
-    
     # Usar función centralizada de contexto
     context = await resolve_user_access_context(current_user)
     
@@ -136,21 +162,7 @@ async def get_user_sucursales_permitidas_rh(current_user: Dict[str, Any]) -> Lis
     if not context.empresas_ids:
         return []  # Sin restricción explícita
     
-    # Obtener códigos de las empresas permitidas
-    empresas = await db.empresas.find(
-        {'id': {'$in': context.empresas_ids}},
-        {'_id': 0, 'codigo': 1, 'nombre': 1}
-    ).to_list(100)
-    
-    # Retornar códigos para matching
-    codigos = []
-    for e in empresas:
-        if e.get('codigo'):
-            codigos.append(e['codigo'].upper())
-        if e.get('nombre'):
-            codigos.append(e['nombre'].upper())
-    
-    return codigos  # Retornamos códigos, el filtrado real se hace en el servicio
+    return await _get_empresas_codigos_sql(context.empresas_ids)
 
 
 # ============================================================================

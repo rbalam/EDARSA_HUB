@@ -129,9 +129,6 @@ async def get_db():
 async def health_check_sql(db: Any = Depends(get_db)):
     """Verifica el estado del módulo con arquitectura SQL + Cache."""
     try:
-        # Verificar MongoDB (cache)
-        await db.command('ping')
-        
         # Verificar SQL Server
         service = PropinasTPVSQLService(db)
         server = await service.sql_repo.get_edarsa_hub_server()
@@ -142,7 +139,7 @@ async def health_check_sql(db: Any = Depends(get_db)):
         return {
             "status": "healthy",
             "module": "propinas_tpv",
-            "arquitectura": "SQL Server (persistencia) + MongoDB (cache)",
+            "arquitectura": "SQL Server",
             "fase": "MVP FASE 1 - Solo SoftRestaurant",
             "alcance": ["La Estelar", "Cienfuegos", "130 Mérida"],
             "mongodb_connected": True,

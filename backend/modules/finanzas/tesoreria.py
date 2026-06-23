@@ -43,6 +43,34 @@ router = APIRouter(prefix="/finanzas/tesoreria", tags=["Tesorería"])
 logger = logging.getLogger(__name__)
 
 
+async def _get_empresas_codigos_sql(empresas_ids):
+    """Obtiene códigos/nombres de empresas desde SQL canónico, sin Mongo."""
+    if not empresas_ids:
+        return []
+    try:
+        from core.db import execute_sql_query
+        ids = [str(x).replace("'", "''") for x in empresas_ids if x]
+        if not ids:
+            return []
+        in_clause = ",".join([f"'{x}'" for x in ids])
+        rows = execute_sql_query(f"""
+            SELECT id, codigo, nombre
+            FROM Empresas
+            WHERE id IN ({in_clause})
+        """) or []
+        codigos = []
+        for e in rows:
+            codigo = e.get("codigo") or e.get("Codigo")
+            nombre = e.get("nombre") or e.get("Nombre")
+            if codigo:
+                codigos.append(str(codigo).upper())
+            if nombre:
+                codigos.append(str(nombre).upper())
+        return codigos
+    except Exception:
+        return []
+
+
 async def get_user_sucursales_permitidas(current_user: Dict[str, Any]) -> List[str]:
     """
     RBAC Fase 3.1: Obtiene los CÓDIGOS de sucursales permitidas para el usuario.
@@ -51,27 +79,11 @@ async def get_user_sucursales_permitidas(current_user: Dict[str, Any]) -> List[s
     Para Finanzas, usamos códigos de empresa ya que los datos demo usan códigos
     como 'CIENFUEGOS', 'LA_ESTELAR', etc.
     """
-    from server import db
-    
     empresas_permitidas = await get_user_empresas_permitidas(current_user)
     if not empresas_permitidas:
         return []  # Sin restricción (admin)
     
-    # Obtener códigos de las empresas permitidas
-    empresas = await db.empresas.find(
-        {'id': {'$in': empresas_permitidas}},
-        {'_id': 0, 'codigo': 1, 'nombre': 1}
-    ).to_list(100)
-    
-    # Retornar códigos y nombres para matching flexible
-    codigos = []
-    for e in empresas:
-        if e.get('codigo'):
-            codigos.append(e['codigo'].upper())
-        if e.get('nombre'):
-            codigos.append(e['nombre'].upper())
-    
-    return codigos
+    return await _get_empresas_codigos_sql(empresas_permitidas)
 
 
 def filtrar_cortes_por_permisos(cortes: List[Dict], codigos_permitidos: List[str]) -> List[Dict]:
