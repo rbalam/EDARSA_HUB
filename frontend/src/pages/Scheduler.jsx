@@ -356,6 +356,8 @@ export default function Scheduler() {
       const response = await api.post('/v2/scheduler/netpay/run', {
         fecha_desde: newJobDialog.fechaDesde,
         fecha_hasta: newJobDialog.fechaHasta,
+      }, {
+        timeout: 15 * 60 * 1000,
       });
 
       const responseData = response.data || {};
@@ -378,7 +380,10 @@ export default function Scheduler() {
       await fetchAllData(true);
     } catch (error) {
       logger.error('Error ejecutando NetPay manual:', error);
-      alert(`Error NetPay: ${error.response?.data?.detail || 'Error de conexión'}`);
+      const detail = error.code === 'ECONNABORTED'
+        ? 'La ejecución tardó más de lo esperado. Revisa el estado del job antes de reintentar.'
+        : error.response?.data?.detail || error.message || 'Error de conexión';
+      alert(`Error NetPay: ${detail}`);
     } finally {
       setNetpayLoading(false);
     }
