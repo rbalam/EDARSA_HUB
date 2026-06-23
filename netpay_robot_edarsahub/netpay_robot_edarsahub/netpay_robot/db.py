@@ -89,6 +89,102 @@ class EdarsaHubRepository:
             )
 
 
+    def mark_file_validated(
+        self,
+        execution_id: int | None,
+        sha256: str,
+        *,
+        status: str = 'VALIDADO',
+        layout: str | None = None,
+    ) -> None:
+        if not execution_id or not self.settings.edarsahub_sql_host:
+            return
+        with sql_connection(self.settings) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                UPDATE Finanzas_NetPayRobotArchivos
+                SET EstatusValidacion=%s,
+                    LayoutDetectado=COALESCE(%s, LayoutDetectado)
+                WHERE EjecucionID=%s
+                  AND HashArchivo=CONVERT(varbinary(32), %s, 2)
+                """,
+                (status, layout, execution_id, sha256),
+            )
+
+    def finish_execution(
+        self,
+        execution_id: int | None,
+        *,
+        status: str,
+        records: int | None = None,
+        total_monto_trx=None,
+        total_monto_deposito=None,
+        error_code: str | None = None,
+        error_message: str | None = None,
+        file_path: str | None = None,
+        sha256: str | None = None,
+    ) -> None:
+        if not execution_id or not self.settings.edarsahub_sql_host:
+            return
+
+        clean_error = error_message[:3900] if error_message else None
+        with sql_connection(self.settings) as conn:
+            cur = conn.cursor()
+            if sha256:
+                cur.execute(
+                    """
+                    UPDATE Finanzas_NetPayRobotEjecuciones
+                    SET FechaFin=SYSDATETIME(),
+                        Estatus=%s,
+                        RegistrosDescargados=COALESCE(%s, RegistrosDescargados),
+                        TotalMontoTrx=COALESCE(%s, TotalMontoTrx),
+                        TotalMontoDeposito=COALESCE(%s, TotalMontoDeposito),
+                        ErrorCodigo=%s,
+                        ErrorMensaje=%s,
+                        RutaArchivoOriginal=COALESCE(%s, RutaArchivoOriginal),
+                        HashArchivo=CONVERT(varbinary(32), %s, 2)
+                    WHERE EjecucionID=%s
+                    """,
+                    (
+                        status,
+                        records,
+                        total_monto_trx,
+                        total_monto_deposito,
+                        error_code,
+                        clean_error,
+                        file_path,
+                        sha256,
+                        execution_id,
+                    ),
+                )
+            else:
+                cur.execute(
+                    """
+                    UPDATE Finanzas_NetPayRobotEjecuciones
+                    SET FechaFin=SYSDATETIME(),
+                        Estatus=%s,
+                        RegistrosDescargados=COALESCE(%s, RegistrosDescargados),
+                        TotalMontoTrx=COALESCE(%s, TotalMontoTrx),
+                        TotalMontoDeposito=COALESCE(%s, TotalMontoDeposito),
+                        ErrorCodigo=%s,
+                        ErrorMensaje=%s,
+                        RutaArchivoOriginal=COALESCE(%s, RutaArchivoOriginal)
+                    WHERE EjecucionID=%s
+                    """,
+                    (
+                        status,
+                        records,
+                        total_monto_trx,
+                        total_monto_deposito,
+                        error_code,
+                        clean_error,
+                        file_path,
+                        execution_id,
+                    ),
+                )
+
+
     def _scalar(self, cur, sql: str, params: tuple = ()) -> int | None:
         cur.execute(sql, params)
         row = cur.fetchone()

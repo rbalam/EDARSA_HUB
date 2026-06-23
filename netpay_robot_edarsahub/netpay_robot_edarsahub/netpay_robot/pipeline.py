@@ -186,6 +186,7 @@ class NetPayRobotPipeline:
                 date_from=block.date_from.isoformat(),
                 date_to=block.date_to.isoformat(),
             )
+            result = None
             try:
                 result = await self.robot.run_download(report_type, block.date_from, block.date_to, password)
                 self.repo.register_file(execution_id, str(result.file_path), result.sha256, report_type.value)
@@ -195,6 +196,19 @@ class NetPayRobotPipeline:
 
                     if 'No se reconoció layout NetPay' in err and 'vacío' in err:
                         self.repo.log_event(execution_id, 'INFO', 'SIN_DATOS', err)
+                        self.repo.mark_file_validated(
+                            execution_id,
+                            result.sha256,
+                            status='SIN_DATOS',
+                            layout=getattr(validation, 'layout', None),
+                        )
+                        self.repo.finish_execution(
+                            execution_id,
+                            status='SIN_DATOS',
+                            records=0,
+                            file_path=str(result.file_path),
+                            sha256=result.sha256,
+                        )
                         print(f'[SIN_DATOS] {report_type.value} {block.date_from} - {block.date_to}: NetPay no devolvió registros.')
                         results.append(result)
                         continue
@@ -222,9 +236,50 @@ class NetPayRobotPipeline:
                     date_to=block.date_to.isoformat(),
                     parsed_rows=parsed,
                 )
+                records = sum(len(sheet.rows) for sheet in parsed)
+                self.repo.mark_file_validated(
+                    execution_id,
+                    result.sha256,
+                    status='VALIDADO',
+                    layout=getattr(validation, 'layout', None),
+                )
+                self.repo.finish_execution(
+                    execution_id,
+                    status='EXITOSO',
+                    records=records,
+                    file_path=str(result.file_path),
+                    sha256=result.sha256,
+                )
                 results.append(result)
             except Exception as exc:
                 self.repo.log_event(execution_id, 'ERROR', 'BLOQUE_FALLIDO', str(exc))
+                if result is not None:
+                    try:
+                        self.repo.mark_file_validated(
+                            execution_id,
+                            result.sha256,
+                            status='FALLIDO',
+                        )
+                        self.repo.finish_execution(
+                            execution_id,
+                            status='FALLIDO',
+                            error_code='BLOQUE_FALLIDO',
+                            error_message=str(exc),
+                            file_path=str(result.file_path),
+                            sha256=result.sha256,
+                        )
+                    except Exception as close_exc:
+                        self.repo.log_event(execution_id, 'ERROR', 'CIERRE_EJECUCION_FALLIDO', str(close_exc))
+                else:
+                    try:
+                        self.repo.finish_execution(
+                            execution_id,
+                            status='FALLIDO',
+                            error_code='BLOQUE_FALLIDO',
+                            error_message=str(exc),
+                        )
+                    except Exception as close_exc:
+                        self.repo.log_event(execution_id, 'ERROR', 'CIERRE_EJECUCION_FALLIDO', str(close_exc))
                 raise
         return results
 
