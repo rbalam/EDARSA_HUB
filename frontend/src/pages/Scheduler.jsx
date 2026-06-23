@@ -341,6 +341,11 @@ export default function Scheduler() {
   };
 
   const handleNetPayManualRun = async () => {
+    if (!userPermissions.canAdmin) {
+      alert('Sin permiso para ejecutar NetPay manual.');
+      return;
+    }
+
     const validationError = validateNetPayRange();
     if (validationError) {
       alert(validationError);
@@ -348,11 +353,27 @@ export default function Scheduler() {
     }
     setNetpayLoading(true);
     try {
-      await api.post('/v2/scheduler/netpay/run', {
+      const response = await api.post('/v2/scheduler/netpay/run', {
         fecha_desde: newJobDialog.fechaDesde,
         fecha_hasta: newJobDialog.fechaHasta,
       });
-      alert('Ejecución manual NetPay solicitada correctamente.');
+
+      const responseData = response.data || {};
+      const result = responseData.result || {};
+      const reports = Array.isArray(result.reports) ? result.reports : [];
+      const reportSummary = reports.length
+        ? reports.map((item) => {
+            const status = item.ok ? 'OK' : 'FALLO';
+            return `${item.report_type || 'Reporte'}: ${status}`;
+          }).join('\n')
+        : 'Sin detalle de reportes.';
+
+      alert([
+        responseData.status === 'completed' ? 'NetPay completado.' : 'NetPay finalizó con error.',
+        result.message || '',
+        reportSummary,
+      ].filter(Boolean).join('\n'));
+
       setNewJobDialog({ open: false, fechaDesde: '', fechaHasta: '' });
       await fetchAllData(true);
     } catch (error) {
@@ -548,6 +569,8 @@ export default function Scheduler() {
                   variant="outline"
                   size="sm"
                   onClick={() => setNewJobDialog({ open: true, fechaDesde: '', fechaHasta: '' })}
+                  disabled={!userPermissions.canAdmin}
+                  title={!userPermissions.canAdmin ? 'Sin permiso' : 'Ejecutar NetPay manual'}
                   data-testid="netpay-manual-btn"
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -851,7 +874,7 @@ export default function Scheduler() {
               </Button>
               <Button
                 onClick={handleNetPayManualRun}
-                disabled={netpayLoading || !newJobDialog.fechaDesde || !newJobDialog.fechaHasta}
+                disabled={netpayLoading || !userPermissions.canAdmin || !newJobDialog.fechaDesde || !newJobDialog.fechaHasta}
                 data-testid="netpay-manual-run-btn"
                 className="bg-blue-600 hover:bg-blue-700"
               >
