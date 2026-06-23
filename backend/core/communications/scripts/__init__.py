@@ -297,62 +297,17 @@ DEFAULT_TEMPLATES = [
 
 
 async def create_indexes(db):
-    """Crea índices en las colecciones."""
-    logger.info("Creando índices...")
-    
-    for collection_name, indexes in INDEXES.items():
-        collection = db[collection_name]
-        
-        for idx_config in indexes:
-            try:
-                kwargs = {"name": idx_config["name"]}
-                if idx_config.get("unique"):
-                    kwargs["unique"] = True
-                if idx_config.get("expireAfterSeconds"):
-                    kwargs["expireAfterSeconds"] = idx_config["expireAfterSeconds"]
-                
-                await collection.create_index(idx_config["keys"], **kwargs)
-                logger.info(f"  - Índice creado: {collection_name}.{idx_config['name']}")
-            except Exception as e:
-                if "already exists" in str(e).lower():
-                    logger.info(f"  - Índice ya existe: {collection_name}.{idx_config['name']}")
-                else:
-                    logger.error(f"  - Error creando índice {idx_config['name']}: {e}")
+    """SQL-FIRST P4D: no crea índices Mongo."""
+    logger.info("SQL-FIRST P4D: índices Mongo omitidos.")
+    return
+
 
 
 async def seed_default_data(db):
-    """Siembra datos iniciales."""
-    logger.info("Sembrando datos iniciales...")
-    ahora = datetime.now(timezone.utc).isoformat()
-    
-    # Configuraciones
-    for config in DEFAULT_CONFIGS:
-        existing = await db.notification_config.find_one({"id": config["id"]})
-        if not existing:
-            config["created_at"] = ahora
-            await db.notification_config.insert_one(config)
-            logger.info(f"  - Config creada: {config['evento']}")
-        else:
-            logger.info(f"  - Config ya existe: {config['evento']}")
-    
-    # Provider config
-    existing = await db.notification_provider_config.find_one({"id": DEFAULT_PROVIDER_CONFIG["id"]})
-    if not existing:
-        DEFAULT_PROVIDER_CONFIG["created_at"] = ahora
-        await db.notification_provider_config.insert_one(DEFAULT_PROVIDER_CONFIG)
-        logger.info("  - Provider mock creado")
-    else:
-        logger.info("  - Provider mock ya existe")
-    
-    # Templates
-    for template in DEFAULT_TEMPLATES:
-        existing = await db.notification_templates.find_one({"id": template["id"]})
-        if not existing:
-            template["created_at"] = ahora
-            await db.notification_templates.insert_one(template)
-            logger.info(f"  - Template creado: {template['codigo']}")
-        else:
-            logger.info(f"  - Template ya existe: {template['codigo']}")
+    """SQL-FIRST P4D: no siembra datos en Mongo."""
+    logger.info("SQL-FIRST P4D: siembra Mongo omitida.")
+    return
+
 
 
 async def init_notification_system(db):

@@ -161,7 +161,10 @@ async def get_config(
 ):
     """Obtiene una configuración por ID."""
     db = get_db()
-    config = await db.notification_config.find_one({"id": config_id}, {"_id": 0})
+    from core.communications.notifications.repository import NotificationRepository
+    repo = NotificationRepository(db)
+    configs = await repo.get_all_configs()
+    config = next((c for c in configs if c.get("id") == config_id), None)
     if not config:
         raise HTTPException(status_code=404, detail="Configuración no encontrada")
     return config
@@ -493,11 +496,13 @@ async def list_providers(
 ):
     """Lista providers configurados."""
     db = get_db()
-    
-    providers = await db.notification_provider_config.find(
-        {}, {"_id": 0}
-    ).to_list(100)
-    
+    from core.communications.notifications.repository import NotificationRepository
+    repo = NotificationRepository(db)
+    providers = []
+    for name in ["mock", "twilio"]:
+        cfg = await repo.get_provider_config("whatsapp", name)
+        if cfg:
+            providers.append(cfg)
     return {"items": providers, "total": len(providers)}
 
 
@@ -508,14 +513,16 @@ async def get_provider(
 ):
     """Obtiene un provider por ID."""
     db = get_db()
-    
-    provider = await db.notification_provider_config.find_one(
-        {"id": provider_id}, {"_id": 0}
-    )
-    
+    from core.communications.notifications.repository import NotificationRepository
+    repo = NotificationRepository(db)
+    providers = []
+    for name in ["mock", "twilio"]:
+        cfg = await repo.get_provider_config("whatsapp", name)
+        if cfg:
+            providers.append(cfg)
+    provider = next((p for p in providers if p.get("id") == provider_id or p.get("provider") == provider_id), None)
     if not provider:
         raise HTTPException(status_code=404, detail="Provider no encontrado")
-    
     return provider
 
 
@@ -667,21 +674,21 @@ async def configure_twilio_provider(
         }
     }
     
-    # Upsert
-    result = await db.notification_provider_config.update_one(
-        {"id": "provider_twilio"},
-        {
-            "$set": twilio_config,
-            "$setOnInsert": {"created_at": datetime.now(timezone.utc).isoformat()}
-        },
-        upsert=True
-    )
+    from core.communications.notifications.repository import NotificationRepository
+    repo = NotificationRepository(db)
+    existing = await repo.get_provider_config("whatsapp", "twilio")
+    if existing:
+        result = await repo.update_provider_config(existing.get("id") or "provider_twilio", twilio_config)
+        upserted = False
+    else:
+        result = await repo.create_provider_config(twilio_config)
+        upserted = True
     
     return {
         "success": True,
         "message": "Configuración de Twilio creada/actualizada",
-        "config": twilio_config,
-        "upserted": result.upserted_id is not None
+        "config": result or twilio_config,
+        "upserted": upserted
     }
 
 
@@ -710,22 +717,16 @@ async def update_event_provider(
     if modo not in ["mock", "real"]:
         raise HTTPException(status_code=400, detail="Modo debe ser 'mock' o 'real'")
     
-    result = await db.notification_config.update_one(
-        {"id": config_id},
-        {
-            "$set": {
-                "provider": provider,
-                "modo_envio": modo,
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            }
-        }
-    )
+    from core.communications.notifications.repository import NotificationRepository
+    repo = NotificationRepository(db)
+    config = await repo.update_config(config_id, {
+        "provider": provider,
+        "modo_envio": modo,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    })
     
-    if result.matched_count == 0:
+    if not config:
         raise HTTPException(status_code=404, detail=f"Configuración no encontrada: {config_id}")
-    
-    # Obtener config actualizada
-    config = await db.notification_config.find_one({"id": config_id}, {"_id": 0})
     
     return {
         "success": True,
