@@ -311,6 +311,80 @@ class EdarsaHubRepository:
 
             cur.execute(
                 """
+                SELECT TOP 1 ImportacionID AS id
+                FROM Finanzas_AdquirenteImportaciones
+                WHERE FuenteIngesta = %s
+                  AND TipoReporte = %s
+                  AND HashArchivo = CONVERT(varbinary(32), %s, 2)
+                  AND Estatus = 'CARGADO'
+                ORDER BY ImportacionID ASC
+                """,
+                ("PORTAL_ROBOT", report_type, sha256),
+            )
+            duplicate_import = cur.fetchone()
+            if duplicate_import:
+                importacion_id = int(duplicate_import["id"])
+                print(
+                    f"[SQL_DUPLICATE_IMPORT] importacion_id={importacion_id} "
+                    f"staging_rows=0 final_inserted=0 final_duplicate_skipped={int(total_rows)} "
+                    f"tipo_reporte={report_type}"
+                )
+                return
+
+            final_hashes = []
+            for sheet in parsed_rows:
+                for r in sheet.rows:
+                    if report_type == "DETALLE_DEPOSITOS_MOVIMIENTOS" and sheet.sheet_name == "Resumen":
+                        continue
+                    if report_type == "DETALLE_DEPOSITOS_MOVIMIENTOS":
+                        fecha_deposito = self._date(r, "Fecha de depósito", "Fecha Deposito", "FechaDeposito")
+                        fecha_trx = self._date(r, "Fecha Trx", "Fecha de Trx")
+                        clave_rastreo = self._s(r, "Clave Rastreo")
+                        order_id = self._s(r, "Order ID", "OrderID")
+                        monto_deposito = self._d(r, "Monto Depósito", "Monto Deposito")
+                        monto_trx = self._d(r, "Monto de Trx", "Monto Trx")
+                        propina = self._d(r, "Propina")
+                        if (
+                            fecha_deposito is None
+                            and fecha_trx is None
+                            and not clave_rastreo
+                            and not order_id
+                            and monto_deposito == Decimal("0.00")
+                            and monto_trx == Decimal("0.00")
+                            and propina == Decimal("0.00")
+                        ):
+                            continue
+                    final_hashes.append(self._hash_hex(r.get("HashRegistro")))
+
+            if final_hashes:
+                target_table = (
+                    "Finanzas_AdquirenteTransacciones"
+                    if report_type == "DETALLE_TRANSACCIONES"
+                    else "Finanzas_AdquirenteDepositos"
+                )
+                duplicate_rows = 0
+                for hash_hex in final_hashes:
+                    cur.execute(
+                        f"""
+                        SELECT COUNT(*) AS existe
+                        FROM {target_table}
+                        WHERE HashRegistro = CONVERT(varbinary(32), %s, 2)
+                        """,
+                        (hash_hex,),
+                    )
+                    existe_row = cur.fetchone()
+                    if existe_row and int(existe_row.get("existe", 0) or 0) > 0:
+                        duplicate_rows += 1
+
+                if duplicate_rows == len(final_hashes):
+                    print(
+                        f"[SQL_DUPLICATE_DATA] staging_rows=0 final_inserted=0 "
+                        f"final_duplicate_skipped={duplicate_rows} tipo_reporte={report_type}"
+                    )
+                    return
+
+            cur.execute(
+                """
                 INSERT INTO Finanzas_AdquirenteImportaciones
                 (UnidadNegocioID, AdquirenteID, FuenteIngesta, TipoReporte,
                  NombreArchivoOriginal, RutaArchivoSeguro, HashArchivo,
@@ -449,37 +523,43 @@ class EdarsaHubRepository:
 
                         cur.execute(
                             """
-                            IF NOT EXISTS (
-                                SELECT 1 FROM Finanzas_AdquirenteDepositos
-                                WHERE HashRegistro = CONVERT(varbinary(32), %s, 2)
-                            )
-                            BEGIN
-                                INSERT INTO Finanzas_AdquirenteDepositos
-                                (ImportacionID, UnidadNegocioID, AdquirenteID, FuenteIngesta,
-                                 FechaDeposito, FechaTrx, HoraTrx, ClaveRastreo, CuentaDeposito,
-                                 NombreEmpresa, Sucursal, StoreID, Producto,
-                                 MontoTrx, VentaNeta, Propina, MontoDeposito,
-                                 ComisionBasePorcentaje, ComisionBaseImporte,
-                                 SobreTasaPorcentaje, SobreTasaImporte,
-                                 ComisionTotal, IVAComisiones, ComisionesMasIVA,
-                                 Banco, Marca, TipoVenta, TipoTarjeta,
-                                 CodigoAutorizacion, OrderID, ReferenciaDepositoStoreID, Referencia,
-                                 HashRegistro, Estatus, FechaCreacion)
-                                VALUES
-                                (%s, NULL, NULL, 'PORTAL_ROBOT',
-                                 %s, %s, %s, %s, %s,
-                                 %s, %s, %s, %s,
-                                 %s, %s, %s, %s,
-                                 %s, %s,
-                                 %s, %s,
-                                 %s, %s, %s,
-                                 %s, %s, %s, %s,
-                                 %s, %s, %s, %s,
-                                 CONVERT(varbinary(32), %s, 2), 'PENDIENTE_BANCO', SYSDATETIME())
-                            END
+                            SELECT COUNT(*) AS existe
+                            FROM Finanzas_AdquirenteDepositos
+                            WHERE HashRegistro = CONVERT(varbinary(32), %s, 2)
+                            """,
+                            (hash_hex,),
+                        )
+                        existe_row = cur.fetchone()
+                        if existe_row and int(existe_row.get("existe", 0) or 0) > 0:
+                            skipped_dup += 1
+                            continue
+
+                        cur.execute(
+                            """
+                            INSERT INTO Finanzas_AdquirenteDepositos
+                            (ImportacionID, UnidadNegocioID, AdquirenteID, FuenteIngesta,
+                             FechaDeposito, FechaTrx, HoraTrx, ClaveRastreo, CuentaDeposito,
+                             NombreEmpresa, Sucursal, StoreID, Producto,
+                             MontoTrx, VentaNeta, Propina, MontoDeposito,
+                             ComisionBasePorcentaje, ComisionBaseImporte,
+                             SobreTasaPorcentaje, SobreTasaImporte,
+                             ComisionTotal, IVAComisiones, ComisionesMasIVA,
+                             Banco, Marca, TipoVenta, TipoTarjeta,
+                             CodigoAutorizacion, OrderID, ReferenciaDepositoStoreID, Referencia,
+                             HashRegistro, Estatus, FechaCreacion)
+                            VALUES
+                            (%s, NULL, NULL, 'PORTAL_ROBOT',
+                             %s, %s, %s, %s, %s,
+                             %s, %s, %s, %s,
+                             %s, %s, %s, %s,
+                             %s, %s,
+                             %s, %s,
+                             %s, %s, %s,
+                             %s, %s, %s, %s,
+                             %s, %s, %s, %s,
+                             CONVERT(varbinary(32), %s, 2), 'PENDIENTE_BANCO', SYSDATETIME())
                             """,
                             (
-                                hash_hex,
                                 importacion_id,
                                 self._date(r, "Fecha de depósito", "Fecha Deposito", "FechaDeposito"),
                                 self._date(r, "Fecha Trx", "Fecha de Trx"),
@@ -512,7 +592,7 @@ class EdarsaHubRepository:
                                 hash_hex,
                             ),
                         )
-                        inserted_final += cur.rowcount if cur.rowcount and cur.rowcount > 0 else 0
+                        inserted_final += 1
 
             print(
                 f"[SQL_OK] importacion_id={importacion_id} "
