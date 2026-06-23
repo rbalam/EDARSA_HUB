@@ -214,21 +214,6 @@ def _run_netpay_backfill_sync(params: Dict[str, Any], timeout: int = 1800) -> Di
     if not re.match(r"^\d{4}-\d{2}-\d{2}$", date_to):
         raise HTTPException(status_code=400, detail="date_to requerido YYYY-MM-DD")
 
-    try:
-        date_from_obj = datetime.strptime(date_from, "%Y-%m-%d").date()
-        date_to_obj = datetime.strptime(date_to, "%Y-%m-%d").date()
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Fechas NetPay inválidas")
-
-    if date_to_obj < date_from_obj:
-        raise HTTPException(status_code=400, detail="date_to no puede ser menor que date_from")
-    if date_to_obj > datetime.now().date():
-        raise HTTPException(status_code=400, detail="date_to no puede ser una fecha futura")
-
-    days = (date_to_obj - date_from_obj).days + 1
-    if days > 31:
-        raise HTTPException(status_code=400, detail=f"Rango NetPay excede maximo permitido de 31 dias: {days}")
-
     working_directory = params.get("working_directory") or "/app/netpay_robot_edarsahub/netpay_robot_edarsahub"
     allowed_wd = "/app/netpay_robot_edarsahub/netpay_robot_edarsahub"
     if working_directory != allowed_wd:

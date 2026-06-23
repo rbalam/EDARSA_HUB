@@ -340,148 +340,18 @@ class AuthRepositorySQL:
 
 async def compare_user_mongo_vs_sql(email: str) -> Dict:
     """
-    Compara usuario entre MongoDB y SQL.
-    
-    Args:
-        email: Email del usuario a comparar
-        
-    Returns:
-        Dict con comparación detallada
+    Comparación legacy desactivada.
+    La autenticación opera SQL-only; MongoDB no es fuente válida.
     """
-    pass  # P2-07: MongoDB eliminado (AsyncIOMotorClient)
-    
-    # Obtener de SQL
     repo_sql = AuthRepositorySQL()
     user_sql = repo_sql.get_user_by_email_sql(email)
-    
-    # Obtener de MongoDB
-    mongo_url = None  # P2-07: MongoDB eliminado
-    db_name = os.environ.get('DB_NAME', 'edarsa_hub')
-    mongo_client = None  # P2-07: MongoDB eliminado
-    mongo_db = mongo_client[db_name]
-    
-    user_mongo = await mongo_db.users.find_one({'email': email}, {'_id': 0})
-    
-    mongo_client.close()
-    
-    # Comparar
-    differences = []
-    
-    if not user_sql and not user_mongo:
-        return {
-            'email': email,
-            'exists_sql': False,
-            'exists_mongo': False,
-            'differences': ['Usuario no existe en ninguna fuente'],
-            'status': 'NOT_FOUND'
-        }
-    
-    if not user_sql:
-        return {
-            'email': email,
-            'exists_sql': False,
-            'exists_mongo': True,
-            'user_mongo': user_mongo,
-            'differences': ['Usuario no migrado a SQL'],
-            'status': 'MONGO_ONLY'
-        }
-    
-    if not user_mongo:
-        return {
-            'email': email,
-            'exists_sql': True,
-            'exists_mongo': False,
-            'user_sql': user_sql,
-            'differences': ['Usuario solo en SQL'],
-            'status': 'SQL_ONLY'
-        }
-    
-    # Comparar campos
-    # ID/UUID
-    sql_id = user_sql.get('id')
-    mongo_id = user_mongo.get('id')
-    if sql_id != mongo_id:
-        differences.append(f"id: SQL='{sql_id}' vs Mongo='{mongo_id}'")
-    
-    # Role
-    sql_role = user_sql.get('role')
-    mongo_role = user_mongo.get('role')
-    if sql_role != mongo_role:
-        differences.append(f"role: SQL='{sql_role}' vs Mongo='{mongo_role}'")
-    
-    # Active
-    sql_active = user_sql.get('active')
-    mongo_active = user_mongo.get('active', user_mongo.get('activo', False))
-    if sql_active != mongo_active:
-        differences.append(f"active: SQL={sql_active} vs Mongo={mongo_active}")
-    
-    # Hash presente
-    sql_has_hash = bool(user_sql.get('password'))
-    mongo_has_hash = bool(user_mongo.get('password'))
-    if sql_has_hash != mongo_has_hash:
-        differences.append(f"has_password: SQL={sql_has_hash} vs Mongo={mongo_has_hash}")
-    
-    # Empresas
-    sql_empresas = set(user_sql.get('empresas_permitidas', []))
-    mongo_empresas = set(user_mongo.get('empresas_permitidas', []))
-    if sql_empresas != mongo_empresas:
-        only_sql = sql_empresas - mongo_empresas
-        only_mongo = mongo_empresas - sql_empresas
-        if only_sql:
-            differences.append(f"empresas solo en SQL: {only_sql}")
-        if only_mongo:
-            differences.append(f"empresas solo en Mongo: {only_mongo}")
-    
-    # Empresa default
-    sql_default = user_sql.get('empresa_default_id')
-    mongo_default = user_mongo.get('empresa_default_id')
-    if sql_default != mongo_default:
-        differences.append(f"empresa_default: SQL='{sql_default}' vs Mongo='{mongo_default}'")
-    
-    status = 'MATCH' if not differences else 'DIFFERENCES'
-    
     return {
-        'email': email,
-        'exists_sql': True,
-        'exists_mongo': True,
-        'user_sql': {
-            'id': user_sql.get('id'),
-            'role': user_sql.get('role'),
-            'active': user_sql.get('active'),
-            'has_password': bool(user_sql.get('password')),
-            'empresas_count': len(user_sql.get('empresas_permitidas', [])),
-            'empresa_default': user_sql.get('empresa_default_id'),
-        },
-        'user_mongo': {
-            'id': user_mongo.get('id'),
-            'role': user_mongo.get('role'),
-            'active': user_mongo.get('active', user_mongo.get('activo')),
-            'has_password': bool(user_mongo.get('password')),
-            'empresas_count': len(user_mongo.get('empresas_permitidas', [])),
-            'empresa_default': user_mongo.get('empresa_default_id'),
-        },
-        'differences': differences,
-        'status': status
+        "email": email,
+        "exists_sql": bool(user_sql),
+        "exists_mongo": False,
+        "differences": [],
+        "status": "SQL_ONLY" if user_sql else "NOT_FOUND"
     }
-
-
-async def list_auth_migration_differences() -> List[Dict]:
-    """
-    Lista diferencias de migración Auth entre MongoDB y SQL para todos los usuarios SQL.
-    
-    Returns:
-        Lista de comparaciones por usuario
-    """
-    repo_sql = AuthRepositorySQL()
-    users_sql = repo_sql.list_all_users_sql()
-    
-    comparisons = []
-    for user in users_sql:
-        email = user.get('email')
-        comparison = await compare_user_mongo_vs_sql(email)
-        comparisons.append(comparison)
-    
-    return comparisons
 
 
 # =========================================================================

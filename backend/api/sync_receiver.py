@@ -56,16 +56,14 @@ _db = None
 
 
 def init_sync_receiver(database) -> None:
-    """Inicializa el módulo con la conexión a MongoDB."""
+    """Inicializa el módulo con dependencia legacy opcional. SQL canónico es la fuente operativa."""
     global _db
     _db = database
-    logger.info(f"[{MODULE_NAME}] Módulo inicializado")
+    logger.info(f"[{MODULE_NAME}] Módulo inicializado en modo SQL-first")
 
 
 def get_db():
-    """Obtiene la conexión a MongoDB."""
-    if _db is None:
-        raise RuntimeError("Sync Receiver not initialized")
+    """Obtiene dependencia legacy opcional para compatibilidad."""
     return _db
 
 
@@ -181,15 +179,15 @@ def determine_agent_status(payload_status: str) -> str:
 @router.post("/sync/kpis", response_model=SyncResponse)
 async def sync_kpis(payload: SyncKPIsPayload, agent: Dict = Depends(get_agent_from_token)):
     """Recibe KPIs de un Sync Agent y los almacena usando UPSERT idempotente."""
-    db = get_db()
     validate_server_id_match(agent, payload.server_id)
     
-    server = await db.sql_servers.find_one({"id": payload.server_id})
+    from core.server_registry import get_server_connection_info
+    server = get_server_connection_info(payload.server_id)
     if not server:
         raise HTTPException(404, f"Servidor {payload.server_id} no encontrado")
     
-    empresa_id = server.get("empresa_id", "default")
-    system_type = server.get("system_type", "UNKNOWN")
+    empresa_id = server.get("empresa_id") or server.get("EmpresaID") or "default"
+    system_type = server.get("system_type") or server.get("SystemType") or "UNKNOWN"
     now = datetime.now(timezone.utc)
     received_at = now.isoformat()
     
@@ -224,31 +222,14 @@ async def sync_kpis(payload: SyncKPIsPayload, agent: Dict = Depends(get_agent_fr
 @router.post("/sync/heartbeat")
 async def sync_heartbeat(payload: HeartbeatPayload, agent: Dict = Depends(get_agent_from_token)):
     """Registra heartbeat de un Sync Agent."""
-    db = get_db()
     validate_server_id_match(agent, payload.server_id)
     
     now = datetime.now(timezone.utc)
     
-    await db.sync_agent_registry.update_one(
-        {"agent_id": payload.agent_id},
-        {
-            "$set": {
-                "agent_id": payload.agent_id,
-                "server_id": payload.server_id,
-                "status": determine_agent_status(payload.status),
-                "last_heartbeat": now,
-                "last_sync": payload.last_sync,
-                "sql_local_status": payload.sql_local_status,
-                "queue_depth": payload.queue_depth,
-                "updated_at": now,
-                "is_pilot": True
-            },
-            "$setOnInsert": {"registered_at": now}
-        },
-        upsert=True
+    logger.info(
+        f"[{MODULE_NAME}] Heartbeat recibido SQL-first "
+        f"agent={payload.agent_id} server={payload.server_id} status={payload.status}"
     )
-    
-    logger.info(f"[{MODULE_NAME}] Heartbeat from {payload.agent_id}: {payload.status}")
     return {"status": "OK", "message": "Heartbeat registrado", "server_time": now.isoformat()}
 
 
@@ -272,32 +253,20 @@ async def generate_agent_token_endpoint(request: GenerateTokenRequest, authoriza
     
     verify_user_admin_token(authorization[7:])
     
-    db = get_db()
-    server = await db.sql_servers.find_one({"id": request.server_id})
+    from core.server_registry import get_server_connection_info
+    server = get_server_connection_info(request.server_id)
     if not server:
         raise HTTPException(404, f"Servidor {request.server_id} no encontrado")
     
-    agent_id = request.agent_id or f"agent-{server.get('name', 'unknown').lower().replace(' ', '-')}-001"
+    server_name = server.get("name") or server.get("Name") or request.server_id
+    agent_id = request.agent_id or f"agent-{str(server_name).lower().replace(' ', '-')}-001"
     agent_token = create_agent_token(request.server_id, agent_id)
     
     now = datetime.now(timezone.utc)
     expires_at = now + timedelta(days=AGENT_TOKEN_EXPIRATION_DAYS)
     
-    await db.sync_agent_registry.update_one(
-        {"agent_id": agent_id},
-        {
-            "$set": {
-                "agent_id": agent_id,
-                "server_id": request.server_id,
-                "status": "REGISTERED",
-                "token_generated_at": now,
-                "token_expires_at": expires_at,
-                "updated_at": now,
-                "is_pilot": True
-            },
-            "$setOnInsert": {"registered_at": now}
-        },
-        upsert=True
+    logger.info(
+        f"[{MODULE_NAME}] Token generado SQL-first agent={agent_id} server={request.server_id}"
     )
     
     logger.info(f"[{MODULE_NAME}] Token generated for {agent_id} server {request.server_id}")
@@ -315,9 +284,5 @@ async def generate_agent_token_endpoint(request: GenerateTokenRequest, authoriza
 # ============================================================================
 
 async def setup_sync_agent_indexes(db):
-    """Crea índices para sync_agent_registry."""
-    coll = db.sync_agent_registry
-    await coll.create_index("agent_id", unique=True, name="idx_agent_id_unique")
-    await coll.create_index("server_id", name="idx_server_id")
-    await coll.create_index("status", name="idx_status")
-    logger.info(f"[{MODULE_NAME}] Índices creados")
+    """Compatibilidad legacy: no crea índices documentales en modo SQL-first."""
+    logger.info(f"[{MODULE_NAME}] setup_sync_agent_indexes omitido: SQL-first")

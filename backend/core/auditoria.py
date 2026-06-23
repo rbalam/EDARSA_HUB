@@ -5,8 +5,8 @@ EDARSA HUB - Servicio de Auditoría Financiera
 ==============================================
 Registra todas las acciones financieras sensibles en SQL Server.
 
-NOTA: Si SQL Server EDARSA HUB no está disponible, los registros se 
-guardan temporalmente en MongoDB como fallback y se sincronizan después.
+NOTA: SQL Server EDARSA HUB es la fuente única para auditoría financiera.
+No existe fallback operativo a MongoDB.
 
 USO:
     from core.auditoria import servicio_auditoria, AccionAuditoria, ModuloAuditoria
@@ -392,19 +392,9 @@ class ServicioAuditoria:
             conn.close()
     
     async def _guardar_mongo(self, evento: EventoAuditoria) -> bool:
-        """Guarda en MongoDB como fallback."""
-        db = await self._get_mongo_db()
-        if db is None:
-            return False
-        
-        try:
-            await db.auditoria_financiera.insert_one(evento.to_mongo_doc())
-            logger.debug(f"[AUDIT-MONGO] {evento.modulo}/{evento.entidad}/{evento.accion}")
-            return True
-        except Exception as e:
-            logger.error(f"Error escribiendo auditoría a MongoDB: {e}")
-            return False
-    
+        """Compatibilidad legacy desactivada: auditoría opera SQL-only."""
+        return False
+
     async def registrar_params(self, params: AuditoriaParams) -> bool:
         """
         Registra un evento de auditoría usando AuditoriaParams.

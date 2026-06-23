@@ -30,8 +30,6 @@ def _default_date_range() -> tuple[date, date]:
 def _validate_range(date_from: date, date_to: date, max_days: int = 31) -> None:
     if date_to < date_from:
         raise ValueError("date_to no puede ser menor que date_from")
-    if date_to > date.today():
-        raise ValueError("date_to no puede ser una fecha futura")
     days = (date_to - date_from).days + 1
     if days > max_days:
         raise ValueError(f"Rango NetPay excede maximo permitido de {max_days} dias: {days}")
