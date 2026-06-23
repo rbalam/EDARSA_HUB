@@ -1,0 +1,799 @@
+===== Operativo_TareasCompras =====
+CREATE TABLE [dbo].[Operativo_TareasCompras] (
+    [ID] INT NOT NULL,
+    [TareaID] VARCHAR(50) NOT NULL,
+    [AutomatizacionID] VARCHAR(50) NULL,
+    [TipoTarea] VARCHAR(50) NOT NULL,
+    [Titulo] VARCHAR(500) NULL,
+    [Descripcion] NVARCHAR(MAX) NULL,
+    [ServerID] VARCHAR(50) NULL,
+    [SucursalID] VARCHAR(100) NULL,
+    [SucursalNombre] VARCHAR(100) NULL,
+    [UsuarioAsignadoID] VARCHAR(50) NULL,
+    [UsuarioAsignadoNombre] VARCHAR(200) NULL,
+    [Estado] VARCHAR(50) NULL DEFAULT ('PENDIENTE'),
+    [Prioridad] VARCHAR(20) NULL DEFAULT ('NORMAL'),
+    [FechaCreacion] DATETIME2 NULL DEFAULT (getutcdate()),
+    [FechaLimite] DATETIME2 NULL,
+    [FechaCompletada] DATETIME2 NULL,
+    [Resultado] NVARCHAR(MAX) NULL,
+    [MetadatosJSON] NVARCHAR(MAX) NULL,
+    CONSTRAINT [PK_Operativo_TareasCompras] PRIMARY KEY ([ID])
+);
+GO
+
+===== Operativo_BitacoraCompras =====
+CREATE TABLE [dbo].[Operativo_BitacoraCompras] (
+    [ID] INT NOT NULL,
+    [BitacoraID] VARCHAR(50) NOT NULL,
+    [AutomatizacionID] VARCHAR(50) NULL,
+    [Accion] VARCHAR(50) NOT NULL,
+    [UsuarioID] VARCHAR(50) NULL,
+    [UsuarioNombre] VARCHAR(200) NULL,
+    [Detalle] NVARCHAR(MAX) NULL,
+    [EstadoAnterior] VARCHAR(50) NULL,
+    [EstadoNuevo] VARCHAR(50) NULL,
+    [Fecha] DATETIME2 NULL DEFAULT (getutcdate()),
+    [MetadatosJSON] NVARCHAR(MAX) NULL,
+    CONSTRAINT [PK_Operativo_BitacoraCompras] PRIMARY KEY ([ID])
+);
+GO
+
+-- ============================================================
+-- TABLA: [dbo].[Operativo_CargosResponsabilidad]
+-- ============================================================
+===== Operativo_PedidosProcesados =====
+CREATE TABLE [dbo].[Operativo_PedidosProcesados] (
+    [ID] INT NOT NULL,
+    [PedidoID] VARCHAR(50) NOT NULL,
+    [AutomatizacionID] VARCHAR(50) NOT NULL,
+    [ServerID] VARCHAR(50) NULL,
+    [SucursalID] VARCHAR(100) NULL,
+    [FolioInventario] VARCHAR(100) NULL,
+    [Estado] VARCHAR(50) NULL DEFAULT ('PROCESADO'),
+    [CantidadItems] INT NULL DEFAULT ((0)),
+    [MontoTotal] DECIMAL(18,2) NULL DEFAULT ((0)),
+    [FechaProcesamiento] DATETIME2 NULL DEFAULT (getutcdate()),
+    [DetalleJSON] NVARCHAR(MAX) NULL,
+    CONSTRAINT [PK_Operativo_PedidosProcesados] PRIMARY KEY ([ID])
+);
+GO
+
+-- ============================================================
+-- TABLA: [dbo].[Operativo_ResponsabilidadEconomica]
+-- ============================================================
+===== Operativo_Notificaciones_Log =====
+CREATE TABLE [dbo].[Operativo_Notificaciones_Log] (
+    [ID] INT NOT NULL,
+    [NotificacionID] VARCHAR(50) NOT NULL,
+    [TipoEvento] VARCHAR(50) NOT NULL,
+    [WorkflowID] VARCHAR(50) NULL,
+    [TareaID] VARCHAR(50) NULL,
+    [Destinatario] VARCHAR(200) NULL,
+    [DestinatarioEmail] VARCHAR(200) NULL,
+    [Titulo] VARCHAR(500) NULL,
+    [Mensaje] NVARCHAR(MAX) NULL,
+    [Estado] VARCHAR(50) NULL DEFAULT ('PENDIENTE'),
+    [Canal] VARCHAR(50) NULL DEFAULT ('EMAIL'),
+    [FechaEnvio] DATETIME2 NULL DEFAULT (getutcdate()),
+    [FechaLeido] DATETIME2 NULL,
+    [ErrorMensaje] NVARCHAR(MAX) NULL,
+    [MetadatosJSON] NVARCHAR(MAX) NULL,
+    CONSTRAINT [PK_Operativo_Notificaciones_Log] PRIMARY KEY ([ID])
+);
+GO
+
+-- ============================================================
+-- TABLA: [dbo].[Operativo_PedidosProcesados]
+-- ============================================================
+===== Operativo_DocumentosGenerados =====
+CREATE TABLE [dbo].[Operativo_DocumentosGenerados] (
+    [ID] INT NOT NULL,
+    [DocumentoID] VARCHAR(50) NOT NULL,
+    [WorkflowID] VARCHAR(50) NULL,
+    [TipoDocumento] VARCHAR(50) NOT NULL,
+    [NombreArchivo] VARCHAR(500) NULL,
+    [URLDescarga] VARCHAR(1000) NULL,
+    [Formato] VARCHAR(20) NULL DEFAULT ('PDF'),
+    [TamanioBytes] BIGINT NULL,
+    [UsuarioGeneradorID] VARCHAR(50) NULL,
+    [Estado] VARCHAR(50) NULL DEFAULT ('GENERADO'),
+    [FechaGeneracion] DATETIME2 NULL DEFAULT (getutcdate()),
+    [FechaExpiracion] DATETIME2 NULL,
+    [MetadatosJSON] NVARCHAR(MAX) NULL,
+    CONSTRAINT [PK_Operativo_DocumentosGenerados] PRIMARY KEY ([ID])
+);
+GO
+
+-- ============================================================
+-- TABLA: [dbo].[Operativo_HistorialAsignaciones]
+-- ============================================================
+===== Tareas_Inventario =====
+CREATE TABLE [dbo].[Tareas_Inventario] (
+    [ID] INT NOT NULL,
+    [TareaID] VARCHAR(50) NOT NULL,
+    [WorkflowID] VARCHAR(50) NOT NULL,
+    [TipoTarea] VARCHAR(50) NULL DEFAULT ('JUSTIFICAR'),
+    [Titulo] VARCHAR(500) NULL,
+    [Descripcion] NVARCHAR(MAX) NULL,
+    [EstadoTarea] VARCHAR(50) NULL DEFAULT ('PENDIENTE'),
+    [Prioridad] VARCHAR(20) NULL DEFAULT ('MEDIA'),
+    [UsuarioAsignadoID] VARCHAR(50) NULL,
+    [UsuarioAsignadoNombre] VARCHAR(200) NULL,
+    [FechaCreacion] DATETIME2 NULL DEFAULT (getutcdate()),
+    [FechaAsignacion] DATETIME2 NULL,
+    [FechaLimite] DATETIME2 NULL,
+    [FechaActualizacion] DATETIME2 NULL,
+    [FechaPrimeraAccion] DATETIME2 NULL,
+    [FechaCompletada] DATETIME2 NULL,
+    [Ciclo] INT NULL DEFAULT ((1)),
+    [EsReasignacion] BIT NULL DEFAULT ((0)),
+    [Vencida] BIT NULL DEFAULT ((0)),
+    [EstadoSLA] VARCHAR(50) NULL,
+    [FechaActualizacionSLA] DATETIME2 NULL,
+    [NotificacionWarningEnviada] BIT NULL DEFAULT ((0)),
+    [NotificacionVencidoEnviada] BIT NULL DEFAULT ((0)),
+    [NotificacionEscaladoEnviada] BIT NULL DEFAULT ((0)),
+    [NotasJSON] NVARCHAR(MAX) NULL,
+    CONSTRAINT [PK_Tareas_Inventario] PRIMARY KEY ([ID])
+);
+GO
+
+-- ============================================================
+-- TABLA: [dbo].[Unidades_Negocio]
+-- ============================================================
+CREATE TABLE [dbo].[Unidades_Negocio] (
+    [id] UNIQUEIDENTIFIER NOT NULL DEFAULT (newid()),
+    [nombre] NVARCHAR(100) NOT NULL,
+    [codigo] NVARCHAR(50) NOT NULL,
+    [server_id] NVARCHAR(100) NOT NULL,
+    [sucursal_origen_id] NVARCHAR(50) NULL,
+    [system_type] NVARCHAR(50) NOT NULL DEFAULT ('SoftRestaurant'),
+    [activo] BIT NULL DEFAULT ((1)),
+    [orden] INT NULL DEFAULT ((0)),
+    [created_at] DATETIME NULL DEFAULT (getdate()),
+    [updated_at] DATETIME NULL DEFAULT (getdate()),
+    CONSTRAINT [PK_Unidades_Negocio] PRIMARY KEY ([id])
+);
+GO
+
+-- ============================================================
+-- TABLA: [dbo].[Usuario_Acciones]
+-- ============================================================
+===== Usuario_Catalogo =====
+CREATE TABLE [dbo].[Usuario_Catalogo] (
+    [UsuarioID] INT NOT NULL,
+    [CodigoUsuario] VARCHAR(30) NOT NULL,
+    [Username] VARCHAR(60) NOT NULL,
+    [Email] VARCHAR(150) NOT NULL,
+    [PasswordHash] VARBINARY(MAX) NULL,
+    [PasswordHashTexto] VARCHAR(255) NULL,
+    [Nombre] VARCHAR(100) NOT NULL,
+    [Apellidos] VARCHAR(150) NULL,
+    [NombreCompleto] VARCHAR(251) NULL,
+    [Telefono] VARCHAR(25) NULL,
+    [Celular] VARCHAR(25) NULL,
+    [Puesto] VARCHAR(100) NULL,
+    [Departamento] VARCHAR(100) NULL,
+    [EsUsuarioPortal] BIT NOT NULL DEFAULT ((1)),
+    [RequiereMFA] BIT NOT NULL DEFAULT ((0)),
+    [PasswordTemporal] BIT NOT NULL DEFAULT ((1)),
+    [DebeCambiarPassword] BIT NOT NULL DEFAULT ((1)),
+    [IntentosFallidos] INT NOT NULL DEFAULT ((0)),
+    [Bloqueado] BIT NOT NULL DEFAULT ((0)),
+    [FechaBloqueo] DATETIME2 NULL,
+    [MotivoBloqueo] VARCHAR(250) NULL,
+    [UltimoAcceso] DATETIME2 NULL,
+    [UltimoCambioPassword] DATETIME2 NULL,
+    [FechaExpiracionPassword] DATETIME2 NULL,
+    [ZonaHoraria] VARCHAR(60) NULL,
+    [Idioma] VARCHAR(20) NULL,
+    [Activo] BIT NOT NULL DEFAULT ((1)),
+    [FechaAlta] DATETIME2 NOT NULL DEFAULT (sysdatetime()),
+    [FechaModificacion] DATETIME2 NULL,
+    [CreatedBy] VARCHAR(100) NULL,
+    [ModifiedBy] VARCHAR(100) NULL,
+    [MongoLegacyID] VARCHAR(50) NULL,
+    [PublicUUID] UNIQUEIDENTIFIER NULL,
+    CONSTRAINT [PK_Usuario_Catalogo] PRIMARY KEY ([UsuarioID])
+);
+GO
+
+-- ============================================================
+-- TABLA: [dbo].[Usuario_EmpresasAsignacion]
+-- ============================================================
+===== BLOQUES P2 EXACTOS =====
+   130	    credentials: HTTPAuthorizationCredentials = Depends(security)
+   131	):
+   132	    """
+   133	    Obtiene el estado actual del detector de pedidos.
+   134	    
+   135	    Incluye última ejecución y próxima programada.
+   136	    """
+   137	    verify_token(credentials.credentials)
+   138	    
+   139	    from core.scheduler.scheduler_manager import get_scheduler_manager
+   140	    from ..db_utils import get_database
+   141	    
+   142	    db = get_database()
+   143	    
+   144	    # Obtener última ejecución
+   145	    ultima = db.scheduler_job_logs.find_one(
+   146	        {"job_name": "pedidos_detector"},
+   147	        {"_id": 0},
+   148	        sort=[("start_time", -1)]
+   149	    )
+   150	    
+   151	    # Obtener estado del job
+   152	    try:
+   153	        manager = get_scheduler_manager()
+   154	        job_info = manager.get_job_info("pedidos_detector")
+   155	    except Exception:
+   156	        job_info = None
+   157	    
+   158	    return {
+   159	        "ultima_ejecucion": ultima,
+   160	        "job_info": job_info,
+   161	        "intervalo_segundos": 300  # 5 minutos default
+   162	    }
+   163	
+   164	
+   165	# ============================================================================
+   166	# ENDPOINTS FASE 4.2 - TAREAS OPERATIVAS
+   167	# ============================================================================
+   168	
+   169	@router.get("/compras/tareas")
+   170	async def listar_tareas_operativas(
+   171	    empresa_id: Optional[str] = Query(None),
+   172	    estado: Optional[str] = Query(None),
+   173	    limite: int = Query(50, le=200),
+   174	    credentials: HTTPAuthorizationCredentials = Depends(security)
+   175	):
+   176	    """
+   177	    FASE 4.2: Lista tareas operativas de captura de inventario.
+   178	    
+   179	    Filtrable por empresa y estado.
+   180	    """
+   181	    verify_token(credentials.credentials)
+   182	    db = get_database()
+   183	    
+   184	    filtro = {}
+   185	    if empresa_id:
+   186	        filtro["empresa_id"] = empresa_id
+   187	    if estado:
+   188	        filtro["estado"] = estado
+   189	    
+   190	    tareas = list(db.tareas_operativas_compras.find(
+   191	        filtro,
+   192	        {"_id": 0}
+   193	    ).sort("fecha_creacion", -1).limit(limite))
+   194	    
+   195	    return {
+   196	        "total": len(tareas),
+   197	        "tareas": tareas
+   198	    }
+   199	
+   200	
+   201	@router.get("/compras/tareas/{tarea_id}")
+   202	async def obtener_tarea_operativa(
+   203	    tarea_id: str,
+   204	    credentials: HTTPAuthorizationCredentials = Depends(security)
+   205	):
+   206	    """Obtiene detalle de una tarea operativa."""
+   207	    verify_token(credentials.credentials)
+   208	    db = get_database()
+   209	    
+   210	    tarea = db.tareas_operativas_compras.find_one(
+   211	        {"id": tarea_id},
+   212	        {"_id": 0}
+   213	    )
+   214	    
+   215	    if not tarea:
+   216	        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+   217	    
+   218	    return tarea
+   219	
+   220	
+   221	@router.post("/compras/tareas/{tarea_id}/completar")
+   222	async def completar_tarea_operativa(
+   223	    tarea_id: str,
+   224	    credentials: HTTPAuthorizationCredentials = Depends(security)
+   225	):
+   226	    """
+   227	    FASE 4.2: Marca una tarea operativa como completada.
+   228	    
+   229	    Esto debería dispararse automáticamente cuando se captura el inventario,
+   230	    pero también puede hacerse manualmente.
+   231	    """
+   232	    payload = verify_token(credentials.credentials)
+   233	    db = get_database()
+   234	    
+   235	    from datetime import datetime, timezone
+   236	    
+   237	    tarea = db.tareas_operativas_compras.find_one({"id": tarea_id})
+   238	    if not tarea:
+   239	        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+   240	    
+   241	    if tarea.get("estado") == "COMPLETADA":
+   242	        raise HTTPException(status_code=400, detail="Tarea ya completada")
+   243	    
+   244	    now = datetime.now(timezone.utc).isoformat()
+   245	    
+   246	    db.tareas_operativas_compras.update_one(
+   247	        {"id": tarea_id},
+   248	        {
+   249	            "$set": {
+   250	                "estado": "COMPLETADA",
+   251	                "fecha_completado": now,
+   252	                "completado_por": payload.get("user_id"),
+   253	                "fecha_actualizacion": now
+   254	            }
+   255	        }
+   256	    )
+   257	    
+   258	    return {"success": True, "mensaje": "Tarea completada"}
+   259	
+   260	
+   261	@router.post("/compras/tareas/{tarea_id}/asignar")
+   262	async def asignar_tarea_operativa(
+   263	    tarea_id: str,
+   264	    usuario_id: str = Query(..., description="ID del usuario a asignar"),
+   265	    credentials: HTTPAuthorizationCredentials = Depends(security)
+   266	):
+   267	    """Asigna una tarea operativa a un usuario."""
+   268	    verify_token(credentials.credentials)
+   269	    db = get_database()
+   270	    
+   271	    from datetime import datetime, timezone
+   272	    
+   273	    tarea = db.tareas_operativas_compras.find_one({"id": tarea_id})
+   274	    if not tarea:
+   275	        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+   276	    
+   277	    now = datetime.now(timezone.utc).isoformat()
+   278	    
+   279	    db.tareas_operativas_compras.update_one(
+   280	        {"id": tarea_id},
+   281	        {
+   282	            "$set": {
+   283	                "asignado_a": usuario_id,
+   284	                "fecha_asignacion": now,
+   285	                "fecha_actualizacion": now
+   286	            }
+   287	        }
+   288	    )
+   289	    
+   290	    return {"success": True, "mensaje": f"Tarea asignada a {usuario_id}"}
+   291	
+   292	
+   293	# ============================================================================
+   294	# ENDPOINTS
+   295	# ============================================================================
+   296	
+   297	@router.get("/compras/kpis")
+   298	async def obtener_kpis(
+   299	    server_id: Optional[str] = Query(None),
+   300	    credentials: HTTPAuthorizationCredentials = Depends(security)
+   301	):
+   302	    """KPIs de automatizaciones operativas."""
+   303	    verify_token(credentials.credentials)
+   304	    db = get_database()
+   305	    service = get_automatizacion_compras_service(db)
+   306	    return service.obtener_kpis(server_id)
+   307	
+   308	
+   309	@router.get("/compras")
+   310	async def listar_automatizaciones(
+   311	    server_id: Optional[str] = Query(None),
+   312	    sucursal_id: Optional[str] = Query(None),
+   313	    estado: Optional[str] = Query(None),
+   314	    limite: int = Query(50, le=200),
+   315	    credentials: HTTPAuthorizationCredentials = Depends(security)
+   316	):
+   317	    """Lista automatizaciones."""
+   318	    verify_token(credentials.credentials)
+   319	    db = get_database()
+   320	    service = get_automatizacion_compras_service(db)
+   321	    return service.listar_automatizaciones(server_id, sucursal_id, estado, limite)
+   322	
+   323	
+   324	# ============================================================================
+   325	# BITÁCORA DEL DETECTOR (DEBE IR ANTES DE {automatizacion_id})
+   326	# ============================================================================
+   327	
+   328	@router.get("/compras/detector/bitacora")
+   329	async def obtener_bitacora_detector(
+   330	    limite: int = Query(100, le=500),
+   331	    credentials: HTTPAuthorizationCredentials = Depends(security)
+   332	):
+   333	    """
+   334	    FASE 4.1: Obtiene bitácora de ejecuciones del detector.
+   335	    
+   336	    Muestra eventos de detección, tareas creadas, auditorías iniciadas.
+   337	    """
+   338	    verify_token(credentials.credentials)
+   339	    db = get_database()
+   340	    
+   341	    bitacora = list(db.auditoria_compras_bitacora.find(
+   342	        {},
+   343	        {"_id": 0}
+   344	    ).sort("fecha", -1).limit(limite))
+   345	    
+   346	    return {
+   347	        "total": len(bitacora),
+   348	        "eventos": bitacora
+   349	    }
+   350	
+   351	
+   352	@router.get("/compras/pedidos-procesados")
+   353	async def listar_pedidos_procesados(
+   354	    empresa_id: Optional[str] = Query(None),
+   355	    estado: Optional[str] = Query(None),
+   356	    limite: int = Query(100, le=500),
+   357	    credentials: HTTPAuthorizationCredentials = Depends(security)
+   358	):
+   359	    """
+   360	    FASE 4.1: Lista pedidos que ya fueron procesados.
+   361	    
+   362	    Útil para verificar anti-duplicados y trazabilidad.
+   363	    """
+   364	    verify_token(credentials.credentials)
+   365	    db = get_database()
+   366	    
+   367	    filtro = {}
+   368	    if empresa_id:
+   369	        filtro["empresa_id"] = empresa_id
+   370	    if estado:
+   371	        filtro["estado"] = estado
+   372	    
+   373	    pedidos = list(db.pedidos_procesados_automatizacion.find(
+   374	        filtro,
+   375	        {"_id": 0}
+   376	    ).sort("fecha_procesado", -1).limit(limite))
+   377	    
+   378	    return {
+   379	        "total": len(pedidos),
+   380	        "pedidos": pedidos
+   381	    }
+   382	
+   383	
+   384	# ============================================================================
+   385	# ENDPOINTS CON PATH VARIABLE {automatizacion_id}
+   386	# ============================================================================
+   387	
+   388	@router.get("/compras/{automatizacion_id}")
+   389	async def obtener_automatizacion(
+   390	    automatizacion_id: str,
+   391	    credentials: HTTPAuthorizationCredentials = Depends(security)
+   392	):
+   393	    """Obtiene detalle de una automatización."""
+   394	    verify_token(credentials.credentials)
+   395	    db = get_database()
+   396	    service = get_automatizacion_compras_service(db)
+   397	    
+   398	    registro = service.obtener_automatizacion(automatizacion_id)
+   399	    if not registro:
+   400	        raise HTTPException(status_code=404, detail="No encontrada")
+   401	    
+   402	    return registro
+   403	
+   404	
+   405	@router.post("/compras/procesar")
+   406	async def procesar_pedido(
+   407	    request: ProcesarPedidoRequest,
+   408	    credentials: HTTPAuthorizationCredentials = Depends(security)
+   409	):
+   410	    """
+   411	    Procesa pedido capturado.
+   412	    Inicia flujo: Detección → Auditoría → EN_REVISION_GERENCIA
+   413	    """
+   414	    payload = verify_token(credentials.credentials)
+   415	    db = get_database()
+   416	    service = get_automatizacion_compras_service(db)
+   417	    
+   418	    resultado = service.procesar_pedido_operativo(
+   419	        pedido_id=request.pedido_id,
+   420	        server_id=request.server_id,
+   421	        sucursal_id=request.sucursal_id,
+   422	        sucursal_nombre=request.sucursal_nombre,
+   423	        almacen_id=request.almacen_id,
+   424	        almacen_nombre=request.almacen_nombre,
+   425	        usuario_id=payload.get("user_id", ""),
+   426	        usuario_nombre=payload.get("email", ""),
+   427	        productos=request.productos,
+   428	        dias_objetivo=request.dias_objetivo,
+   429	        origen_sistema=request.origen_sistema or "MPRO"
+   430	    )
+   431	    
+   432	    return resultado
+   433	
+   434	
+   435	# ============================================================================
+   436	# FLUJO AUTORIZACIÓN GERENCIA
+   437	# ============================================================================
+   438	
+   439	@router.post("/compras/{automatizacion_id}/gerencia")
+   440	async def autorizar_gerencia(
+   441	    automatizacion_id: str,
+   442	    request: AccionGerenciaRequest,
+   443	    credentials: HTTPAuthorizationCredentials = Depends(security)
+   444	):
+   445	    """
+   446	    Autorización de Gerencia.
+   447	    - aprobar → PENDIENTE_TESORERIA
+   448	    - rechazar → RECHAZADO
+   449	    - ajuste → recalcula y mantiene EN_REVISION_GERENCIA
+   450	    """
+   451	    payload = verify_token(credentials.credentials)
+   452	    db = get_database()
+   453	    service = get_automatizacion_compras_service(db)
+   454	    
+   455	    # Obtener rol
+   456	    user = db.users.find_one({"id": payload.get("user_id")}, {"_id": 0, "role": 1})
+   457	    usuario_rol = user.get("role", "") if user else ""
+   458	    
+   459	    resultado = service.autorizar_gerencia(
+   460	        automatizacion_id=automatizacion_id,
+   461	        usuario_id=payload.get("user_id", ""),
+   462	        usuario_rol=usuario_rol,
+   463	        accion=request.accion,
+   464	        comentario=request.comentario or "",
+   465	        nuevo_dias_objetivo=request.dias_objetivo
+   466	    )
+   467	    
+   468	    if not resultado.get("success"):
+   469	        raise HTTPException(status_code=400, detail=resultado.get("error"))
+   470	    
+   471	    return resultado
+   472	
+   473	
+   474	# ============================================================================
+   475	# FLUJO AUTORIZACIÓN TESORERÍA
+   476	# ============================================================================
+   477	
+   478	@router.post("/compras/{automatizacion_id}/tesoreria")
+   479	async def autorizar_tesoreria(
+   480	    automatizacion_id: str,
+   481	    request: AccionTesoreriaRequest,
+   482	    credentials: HTTPAuthorizationCredentials = Depends(security)
+   483	):
+   484	    """
+   485	    Autorización Final de Tesorería.
+   486	    - aprobar → APROBADO
+   487	    - rechazar → RECHAZADO
+   488	    """
+   489	    payload = verify_token(credentials.credentials)
+   490	    db = get_database()
+   491	    service = get_automatizacion_compras_service(db)
+   492	    
+   493	    # Obtener rol
+   494	    user = db.users.find_one({"id": payload.get("user_id")}, {"_id": 0, "role": 1})
+   495	    usuario_rol = user.get("role", "") if user else ""
+   496	    
+   497	    resultado = service.autorizar_tesoreria(
+   498	        automatizacion_id=automatizacion_id,
+   499	        usuario_id=payload.get("user_id", ""),
+   500	        usuario_rol=usuario_rol,
+   501	        accion=request.accion,
+   502	        comentario=request.comentario or ""
+   503	    )
+   504	    
+   505	    if not resultado.get("success"):
+   506	        raise HTTPException(status_code=400, detail=resultado.get("error"))
+   507	    
+   508	    return resultado
+   509	
+   510	
+   511	# ============================================================================
+   512	# MODIFICAR DÍAS OBJETIVO
+   513	# ============================================================================
+   514	
+   515	@router.post("/compras/{automatizacion_id}/dias-objetivo")
+   516	async def modificar_dias_objetivo(
+   517	    automatizacion_id: str,
+   518	    request: ModificarDiasObjetivoRequest,
+   519	    credentials: HTTPAuthorizationCredentials = Depends(security)
+   520	):
+   521	    """
+   522	    Modifica días objetivo y recalcula.
+   523	    Solo Gerencia/Director/Administrador.
+   524	    """
+   525	    payload = verify_token(credentials.credentials)
+   526	    db = get_database()
+   527	    service = get_automatizacion_compras_service(db)
+   528	    
+   529	    user = db.users.find_one({"id": payload.get("user_id")}, {"_id": 0, "role": 1})
+   530	    usuario_rol = user.get("role", "") if user else ""
+   531	    
+   532	    resultado = service.modificar_dias_objetivo(
+   533	        automatizacion_id=automatizacion_id,
+   534	        nuevo_dias_objetivo=request.dias_objetivo,
+   535	        usuario_id=payload.get("user_id", ""),
+   536	        usuario_rol=usuario_rol,
+   537	        motivo=request.motivo or ""
+   538	    )
+   539	    
+   540	    if not resultado.get("success"):
+   120	        }
+   121	    
+   122	    notification_service = get_notification_service(db)
+   123	    
+   124	    ahora = datetime.now(timezone.utc)
+   125	    
+   126	    # Buscar tareas vencidas que no estén completadas ni canceladas
+   127	    # y que no hayan sido notificadas recientemente (últimas 6 horas)
+   128	    hace_6_horas = (ahora - timedelta(hours=6)).isoformat()
+   129	    
+   130	    # Primero actualizar el campo vencida en tareas (síncrono)
+   131	    db.tareas_inventario.update_many(
+   132	        {
+   133	            "fecha_limite": {"$lt": ahora.isoformat()},
+   134	            "estado_tarea": {"$nin": ["COMPLETADA", "CANCELADA"]},
+   135	            "vencida": {"$ne": True}
+   136	        },
+   137	        {"$set": {"vencida": True}}
+   138	    )
+   139	    
+   140	    # Buscar tareas vencidas para notificar
+   141	    # Excluir las que ya recibieron notificación de vencimiento en las últimas 6 horas
+   142	    tareas_notificadas_ids = []
+   143	    notificaciones_recientes = db.notificaciones_log.find(
+   144	        {
+   145	            "tipo_evento": "TAREA_VENCIDA",
+   146	            "fecha_envio": {"$gte": hace_6_horas}
+   147	        },
+   148	        {"tarea_id": 1}
+   149	    )
+   150	    for n in notificaciones_recientes:
+   151	        if n.get("tarea_id"):
+   152	            tareas_notificadas_ids.append(n["tarea_id"])
+   153	    
+   154	    # Buscar tareas vencidas
+   155	    filtro_tareas = {
+   156	        "vencida": True,
+   157	        "estado_tarea": {"$nin": ["COMPLETADA", "CANCELADA"]}
+   158	    }
+   159	    if tareas_notificadas_ids:
+   160	        filtro_tareas["id"] = {"$nin": tareas_notificadas_ids}
+   161	    
+   162	    tareas_vencidas = list(db.tareas_inventario.find(filtro_tareas, {"_id": 0}).limit(50))
+   163	    
+   164	    resultados = {
+   165	        "tareas_verificadas": len(tareas_vencidas),
+   166	        "notificaciones_enviadas": 0,
+   167	        "errores": 0,
+   168	        "detalles": []
+   169	    }
+   170	    
+   171	    for tarea in tareas_vencidas:
+   172	        # Calcular días vencida
+   173	        try:
+   174	            fecha_limite = datetime.fromisoformat(tarea.get("fecha_limite", "").replace("Z", "+00:00"))
+   175	            dias_vencida = (ahora - fecha_limite).days
+   176	        except Exception:
+   177	            dias_vencida = 1
+   178	        
+   179	        # Obtener email del usuario asignado
+   180	        usuario_id = tarea.get("usuario_asignado_id")
+   181	        if not usuario_id:
+   182	            continue
+   183	        
+   184	        usuario = db.users.find_one({"id": usuario_id}, {"_id": 0, "email": 1, "name": 1})
+   185	        if not usuario or not usuario.get("email"):
+   186	            continue
+   187	        
+   188	        # Enviar notificación
+   189	        resultado = await notification_service.notificar_tarea_vencida(
+   190	            tarea_id=tarea.get("id", ""),
+    60	        
+    61	        # Generar Excel
+    62	        excel_buffer = await excel_service.generar_excel_workflow(workflow_id)
+    63	        
+    64	        # Crear nombre de archivo
+    65	        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    66	        filename = f"workflow_{workflow_id}_{timestamp}.xlsx"
+    67	        
+    68	        logger.info(f"Excel generado: {filename}")
+    69	        
+    70	        # Registrar en colección documentos_generados
+    71	        try:
+    72	            db.documentos_generados.insert_one({
+    73	                "workflow_id": workflow_id,
+    74	                "tipo_documento": "EXCEL",
+    75	                "nombre_archivo": filename,
+    76	                "fecha_generacion": datetime.now(timezone.utc).isoformat(),
+    77	                "generado_por": "sistema"  # En el futuro: usuario autenticado
+    78	            })
+    79	        except Exception as e:
+    80	            # No bloquear si falla el log
+    81	            logger.warning(f"Error al registrar documento: {e}")
+    82	        
+    83	        # Devolver como descarga
+    84	        return StreamingResponse(
+    85	            excel_buffer,
+    86	            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    87	            headers={
+    88	                "Content-Disposition": f"attachment; filename={filename}",
+    89	                "Access-Control-Expose-Headers": "Content-Disposition"
+    90	            }
+    91	        )
+    92	        
+    93	    except WorkflowNoEncontradoError as e:
+    94	        logger.warning(f"Workflow no encontrado: {workflow_id}")
+    95	        raise HTTPException(status_code=404, detail=str(e))
+    96	    
+    97	    except Exception as e:
+    98	        logger.error(f"Error al generar Excel: {e}")
+    99	        raise HTTPException(
+   100	            status_code=500, 
+   101	            detail=f"Error al generar documento: {str(e)}"
+   102	        )
+   103	
+   104	
+   105	@router.get("/workflow/{workflow_id}/pdf")
+   106	async def descargar_pdf_workflow(
+   107	    workflow_id: str,
+   108	    current_user: Dict[str, Any] = Depends(get_current_user)
+   109	):
+   110	    """
+   111	    Genera y descarga el resumen ejecutivo en PDF de un workflow.
+   112	    
+   113	    El PDF incluye:
+   114	    - Información general del workflow
+   115	    - Métricas clave
+   116	    - Diferencias relevantes (top 10)
+   117	    - Estado de auditoría
+   118	    
+   119	    Para el detalle completo, use el endpoint de Excel.
+   120	    
+   121	    Args:
+   122	        workflow_id: ID del workflow
+   123	        
+   124	    Returns:
+   125	        StreamingResponse con el archivo PDF
+   126	        
+   127	    Raises:
+   128	        404: Workflow no encontrado
+   129	        500: Error al generar el documento
+   130	    """
+   131	    try:
+   132	        db = get_database()
+   133	        pdf_service = get_pdf_service(db)
+   134	        
+   135	        # Generar PDF
+   136	        pdf_buffer = await pdf_service.generar_pdf_workflow(workflow_id)
+   137	        
+   138	        # Crear nombre de archivo
+   139	        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+   140	        filename = f"resumen_workflow_{workflow_id}_{timestamp}.pdf"
+   141	        
+   142	        logger.info(f"PDF generado: {filename}")
+   143	        
+   144	        # Registrar en colección documentos_generados
+   145	        try:
+   146	            db.documentos_generados.insert_one({
+   147	                "workflow_id": workflow_id,
+   148	                "tipo_documento": "PDF",
+   149	                "nombre_archivo": filename,
+   150	                "fecha_generacion": datetime.now(timezone.utc).isoformat(),
+   151	                "generado_por": "sistema"
+   152	            })
+   153	        except Exception as e:
+   154	            # No bloquear si falla el log
+   155	            logger.warning(f"Error al registrar documento PDF: {e}")
+   240	    Returns:
+   241	        Cálculo SLA de la tarea
+   242	    """
+   243	    try:
+   244	        db = get_database()
+   245	        sla_service = get_sla_service(db)
+   246	        
+   247	        # Buscar tarea
+   248	        tarea = db.tareas_inventario.find_one({"id": tarea_id}, {"_id": 0})
+   249	        if not tarea:
+   250	            raise HTTPException(status_code=404, detail="Tarea no encontrada")
+   251	        
+   252	        # Calcular SLA
+   253	        calculo = sla_service.calcular_estado_sla(tarea)
+   254	        
+   255	        return {

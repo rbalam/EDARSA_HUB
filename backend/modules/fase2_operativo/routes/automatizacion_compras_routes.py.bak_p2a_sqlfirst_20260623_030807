@@ -82,180 +82,6 @@ class EjecutarDetectorRequest(BaseModel):
 # ENDPOINTS FASE 4.1 y 4.2 - DETECTOR DE PEDIDOS
 # ============================================================================
 
-
-
-# ============================================================================
-# SQL-FIRST P2-A: automatización compras sin Mongo runtime
-# ============================================================================
-
-def _p2a_conn():
-    from modules.compras.sync_service import get_edarsahub_connection
-    return get_edarsahub_connection()
-
-
-def _p2a_rows(sql, params=()):
-    conn = _p2a_conn()
-    try:
-        cur = conn.cursor(as_dict=True)
-        cur.execute(sql, params)
-        return cur.fetchall() or []
-    finally:
-        conn.close()
-
-
-def _p2a_one(sql, params=()):
-    rows = _p2a_rows(sql, params)
-    return rows[0] if rows else None
-
-
-def _p2a_exec(sql, params=()):
-    conn = _p2a_conn()
-    try:
-        cur = conn.cursor(as_dict=True)
-        cur.execute(sql, params)
-        conn.commit()
-    finally:
-        conn.close()
-
-
-def _p2a_json(obj):
-    import json
-    return json.dumps(obj or {}, ensure_ascii=False, default=str)
-
-
-def _p2a_next_id(table, col="ID"):
-    conn = _p2a_conn()
-    try:
-        cur = conn.cursor(as_dict=True)
-        cur.execute(f"SELECT ISNULL(MAX({col}),0)+1 AS NextID FROM dbo.{table} WITH (UPDLOCK,HOLDLOCK)")
-        row = cur.fetchone() or {}
-        return int(row.get("NextID") or 1)
-    finally:
-        conn.close()
-
-
-def _p2a_norm_tarea(r):
-    if not r:
-        return None
-    return {
-        **r,
-        "id": r.get("TareaID"),
-        "tarea_id": r.get("TareaID"),
-        "automatizacion_id": r.get("AutomatizacionID"),
-        "tipo_tarea": r.get("TipoTarea"),
-        "titulo": r.get("Titulo"),
-        "descripcion": r.get("Descripcion"),
-        "estado": r.get("Estado"),
-        "prioridad": r.get("Prioridad"),
-        "fecha_creacion": r.get("FechaCreacion"),
-        "fecha_limite": r.get("FechaLimite"),
-        "fecha_completada": r.get("FechaCompletada"),
-        "resultado": r.get("Resultado"),
-    }
-
-
-def _p2a_list_tareas(ctx):
-    estado = ctx.get("estado")
-    limit = int(ctx.get("limit") or 100)
-    where = []
-    params = []
-    if estado:
-        where.append("Estado=%s")
-        params.append(estado)
-    sql_where = ("WHERE " + " AND ".join(where)) if where else ""
-    rows = _p2a_rows(f"""
-        SELECT TOP {limit} *
-        FROM dbo.Operativo_TareasCompras
-        {sql_where}
-        ORDER BY FechaCreacion DESC
-    """, tuple(params))
-    return [_p2a_norm_tarea(r) for r in rows]
-
-
-def _p2a_get_tarea(tarea_id):
-    return _p2a_norm_tarea(_p2a_one("""
-        SELECT TOP 1 * FROM dbo.Operativo_TareasCompras
-        WHERE TareaID=%s
-    """, (tarea_id,)))
-
-
-def _p2a_completar_tarea(tarea_id, ctx):
-    payload = ctx.get("payload") or ctx.get("body") or {}
-    _p2a_exec("""
-        UPDATE dbo.Operativo_TareasCompras
-        SET Estado='COMPLETADA',
-            FechaCompletada=GETUTCDATE(),
-            Resultado=%s,
-            MetadatosJSON=%s
-        WHERE TareaID=%s
-    """, (
-        payload.get("resultado") or payload.get("comentario") or "Completada",
-        _p2a_json(payload),
-        tarea_id
-    ))
-
-
-def _p2a_asignar_tarea(tarea_id, ctx):
-    payload = ctx.get("payload") or ctx.get("body") or {}
-    _p2a_exec("""
-        UPDATE dbo.Operativo_TareasCompras
-        SET UsuarioAsignadoID=%s,
-            UsuarioAsignadoNombre=%s,
-            Estado=CASE WHEN Estado IS NULL OR Estado='PENDIENTE' THEN 'ASIGNADA' ELSE Estado END,
-            MetadatosJSON=%s
-        WHERE TareaID=%s
-    """, (
-        payload.get("usuario_id") or payload.get("user_id"),
-        payload.get("usuario_nombre") or payload.get("nombre"),
-        _p2a_json(payload),
-        tarea_id
-    ))
-
-
-def _p2a_list_bitacora(ctx):
-    limit = int(ctx.get("limit") or 100)
-    return _p2a_rows(f"""
-        SELECT TOP {limit} *
-        FROM dbo.Operativo_BitacoraCompras
-        ORDER BY Fecha DESC
-    """)
-
-
-def _p2a_list_pedidos(ctx):
-    limit = int(ctx.get("limit") or 100)
-    return _p2a_rows(f"""
-        SELECT TOP {limit} *
-        FROM dbo.Operativo_PedidosProcesados
-        ORDER BY FechaProcesamiento DESC
-    """)
-
-
-def _p2a_user(payload):
-    payload = payload or {}
-    user_id = payload.get("user_id") or payload.get("usuario_id") or payload.get("id")
-    if not user_id:
-        return {"role": payload.get("role")}
-    row = _p2a_one("""
-        SELECT TOP 1 UsuarioID, Email, Username, NombreCompleto, Activo
-        FROM dbo.Usuario_Catalogo
-        WHERE CodigoUsuario=%s OR Email=%s OR Username=%s OR CONVERT(VARCHAR(50), PublicUUID)=%s
-    """, (user_id, user_id, user_id, user_id))
-    if not row:
-        return {"role": payload.get("role")}
-    row["role"] = payload.get("role") or payload.get("rol")
-    return row
-
-
-def _p2a_ultimo_scheduler_log():
-    try:
-        return _p2a_one("""
-            SELECT TOP 1 *
-            FROM dbo.Scheduler_BitacoraJobs
-            ORDER BY ID DESC
-        """) or {}
-    except Exception:
-        return {}
-
 @router.post("/compras/detector/ejecutar")
 async def ejecutar_detector_manual(
     request: EjecutarDetectorRequest = None,
@@ -316,7 +142,11 @@ async def obtener_estado_detector(
     db = get_database()
     
     # Obtener última ejecución
-    ultima = _p2a_ultimo_scheduler_log()
+    ultima = db.scheduler_job_logs.find_one(
+        {"job_name": "pedidos_detector"},
+        {"_id": 0},
+        sort=[("start_time", -1)]
+    )
     
     # Obtener estado del job
     try:
@@ -357,7 +187,10 @@ async def listar_tareas_operativas(
     if estado:
         filtro["estado"] = estado
     
-    tareas = _p2a_list_tareas(locals())
+    tareas = list(db.tareas_operativas_compras.find(
+        filtro,
+        {"_id": 0}
+    ).sort("fecha_creacion", -1).limit(limite))
     
     return {
         "total": len(tareas),
@@ -374,7 +207,10 @@ async def obtener_tarea_operativa(
     verify_token(credentials.credentials)
     db = get_database()
     
-    tarea = _p2a_get_tarea(tarea_id)
+    tarea = db.tareas_operativas_compras.find_one(
+        {"id": tarea_id},
+        {"_id": 0}
+    )
     
     if not tarea:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
@@ -398,7 +234,7 @@ async def completar_tarea_operativa(
     
     from datetime import datetime, timezone
     
-    tarea = _p2a_get_tarea(tarea_id)
+    tarea = db.tareas_operativas_compras.find_one({"id": tarea_id})
     if not tarea:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
     
@@ -407,7 +243,17 @@ async def completar_tarea_operativa(
     
     now = datetime.now(timezone.utc).isoformat()
     
-    _p2a_completar_tarea(tarea_id, locals())
+    db.tareas_operativas_compras.update_one(
+        {"id": tarea_id},
+        {
+            "$set": {
+                "estado": "COMPLETADA",
+                "fecha_completado": now,
+                "completado_por": payload.get("user_id"),
+                "fecha_actualizacion": now
+            }
+        }
+    )
     
     return {"success": True, "mensaje": "Tarea completada"}
 
@@ -424,13 +270,22 @@ async def asignar_tarea_operativa(
     
     from datetime import datetime, timezone
     
-    tarea = _p2a_get_tarea(tarea_id)
+    tarea = db.tareas_operativas_compras.find_one({"id": tarea_id})
     if not tarea:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
     
     now = datetime.now(timezone.utc).isoformat()
     
-    _p2a_asignar_tarea(tarea_id, locals())
+    db.tareas_operativas_compras.update_one(
+        {"id": tarea_id},
+        {
+            "$set": {
+                "asignado_a": usuario_id,
+                "fecha_asignacion": now,
+                "fecha_actualizacion": now
+            }
+        }
+    )
     
     return {"success": True, "mensaje": f"Tarea asignada a {usuario_id}"}
 
@@ -483,7 +338,10 @@ async def obtener_bitacora_detector(
     verify_token(credentials.credentials)
     db = get_database()
     
-    bitacora = _p2a_list_bitacora(locals())
+    bitacora = list(db.auditoria_compras_bitacora.find(
+        {},
+        {"_id": 0}
+    ).sort("fecha", -1).limit(limite))
     
     return {
         "total": len(bitacora),
@@ -512,7 +370,10 @@ async def listar_pedidos_procesados(
     if estado:
         filtro["estado"] = estado
     
-    pedidos = _p2a_list_pedidos(locals())
+    pedidos = list(db.pedidos_procesados_automatizacion.find(
+        filtro,
+        {"_id": 0}
+    ).sort("fecha_procesado", -1).limit(limite))
     
     return {
         "total": len(pedidos),
@@ -592,7 +453,7 @@ async def autorizar_gerencia(
     service = get_automatizacion_compras_service(db)
     
     # Obtener rol
-    user = _p2a_user(payload)
+    user = db.users.find_one({"id": payload.get("user_id")}, {"_id": 0, "role": 1})
     usuario_rol = user.get("role", "") if user else ""
     
     resultado = service.autorizar_gerencia(
@@ -630,7 +491,7 @@ async def autorizar_tesoreria(
     service = get_automatizacion_compras_service(db)
     
     # Obtener rol
-    user = _p2a_user(payload)
+    user = db.users.find_one({"id": payload.get("user_id")}, {"_id": 0, "role": 1})
     usuario_rol = user.get("role", "") if user else ""
     
     resultado = service.autorizar_tesoreria(
@@ -665,7 +526,7 @@ async def modificar_dias_objetivo(
     db = get_database()
     service = get_automatizacion_compras_service(db)
     
-    user = _p2a_user(payload)
+    user = db.users.find_one({"id": payload.get("user_id")}, {"_id": 0, "role": 1})
     usuario_rol = user.get("role", "") if user else ""
     
     resultado = service.modificar_dias_objetivo(
