@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     netpay_portal_url: str = Field(default='https://manager.netpay.com.mx', alias='NETPAY_PORTAL_URL')
     netpay_username: str = Field(default='', alias='NETPAY_USERNAME')
     netpay_password_plaintext: str = Field(default='', alias='NETPAY_PASSWORD_PLAINTEXT')
+    netpay_allow_plaintext_fallback: str = Field(default='', alias='NETPAY_ALLOW_PLAINTEXT_FALLBACK')
     netpay_password_ciphertext: str = Field(default='', alias='NETPAY_PASSWORD_CIPHERTEXT')
     netpay_expected_company: str = Field(default='', alias='NETPAY_EXPECTED_COMPANY')
     netpay_expected_unit: str = Field(default='', alias='NETPAY_EXPECTED_UNIT')

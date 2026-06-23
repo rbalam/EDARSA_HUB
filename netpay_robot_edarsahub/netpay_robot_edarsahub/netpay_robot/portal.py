@@ -330,8 +330,8 @@ class NetPayPortalRobot:
         )
 
         print('[DATEPICKER_REAL_RESULT]', result)
-        await page.screenshot(path='/app/netpay_datepicker_real_result.png', full_page=True)
-        print('[DATEPICKER_REAL_SCREENSHOT] /app/netpay_datepicker_real_result.png')
+        await page.screenshot(path='/tmp/netpay_datepicker_real_result.png', full_page=True)
+        print('[DATEPICKER_REAL_SCREENSHOT] /tmp/netpay_datepicker_real_result.png')
 
         if not result.get('ok'):
             raise RuntimeError(f"No se pudo seleccionar rango real en datepicker NetPay: {result}")

@@ -37,9 +37,10 @@ class NetPayRobotPipeline:
         print('[CREDENCIALES_WARN] No hay credencial NetPay activa en SQL; usando fallback .env temporal.')
         if self.settings.netpay_password_ciphertext:
             return self.settings.netpay_username, decrypt_secret(self.settings.netpay_password_ciphertext, self.settings.server_secret_key)
-        if self.settings.netpay_password_plaintext:
+        allow_plaintext = str(getattr(self.settings, 'netpay_allow_plaintext_fallback', '') or '').lower() in {'1', 'true', 'yes', 'si'}
+        if allow_plaintext and self.settings.netpay_password_plaintext:
             return self.settings.netpay_username, self.settings.netpay_password_plaintext
-        raise RuntimeError('No existe contraseña NetPay configurada.')
+        raise RuntimeError('No existe credencial NetPay activa en SQL ni contraseña cifrada configurada.')
 
     def _get_password(self) -> str:
         return self._get_credentials()[1]
