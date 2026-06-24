@@ -1,0 +1,198 @@
+name: EDARSAHUB Scheduler Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      strict_mode:
+        description: "Fail on scheduler drift"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: read
+
+jobs:
+  scheduler-audit:
+    name: Scheduler jobs, endpoints, locks and logs
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "GptLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_GPTREAD_SQL_PASSWORD }}
+
+      EDARSAHUB_GPTREAD_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_GPTREAD_SQL_PORT: "1433"
+      EDARSAHUB_GPTREAD_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_GPTREAD_SQL_USER: "GptLectura"
+      EDARSAHUB_GPTREAD_SQL_PASSWORD: ${{ secrets.EDARSAHUB_GPTREAD_SQL_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Git hygiene
+        run: git diff --check
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install minimal scheduler deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pymssql pydantic email-validator python-dotenv passlib bcrypt python-jose
+
+      - name: Compile scheduler modules
+        run: |
+          python - <<'PY'
+          import py_compile
+          from pathlib import Path
+
+          files = [
+              "backend/core/scheduler/scheduler_manager.py",
+              "backend/core/scheduler/routes.py",
+              "backend/core/scheduler/job_logger.py",
+              "backend/core/scheduler/locks/distributed_lock.py",
+              "backend/core/scheduler/jobs/netpay_sync_job.py",
+              "backend/core/scheduler/jobs/cxp_sync_job.py",
+              "backend/core/scheduler/jobs/sync_ingresos_job.py",
+              "backend/core/scheduler/jobs/sync_propinas_tpv_job.py",
+              "backend/api/admin_scheduler_resync.py",
+          ]
+
+          missing = []
+          for file_name in files:
+              p = Path(file_name)
+              if not p.exists():
+                  missing.append(file_name)
+                  continue
+              py_compile.compile(str(p), doraise=True)
+              print(f"COMPILE_OK {file_name}")
+
+          if missing:
+              print("MISSING_NON_BLOCKING")
+              for item in missing:
+                  print(item)
+          PY
+
+      - name: Audit scheduler endpoint markers
+        run: |
+          echo "===== Scheduler routes/endpoints inventory ====="
+          grep -RInE "APIRouter|@router\.|scheduler|jobs|pause|resume|run|logs|config|netpay" \
+            backend/core/scheduler backend/api \
+            --include="*.py" \
+            --exclude="*.bak*" \
+            | head -300 || true
+
+          echo "===== Old NetPay manual endpoint must be absent from Scheduler page ====="
+          ! grep -RInE "/v2/scheduler/netpay/run|NetPay Manual Run Dialog|netpay-manual-btn|handleNetPayManualRun" \
+            frontend/src/pages/Scheduler.jsx
+
+      - name: Audit scheduler locks and bitacoras markers
+        run: |
+          echo "===== Locks markers ====="
+          grep -RInE "LockManager|distributed_lock|acquire|release|lock|job_logger|get_job_logger|bitacora|SyncLog|Execution" \
+            backend/core/scheduler backend/core backend/modules backend/api \
+            --include="*.py" \
+            --exclude="*.bak*" \
+            | head -300 || true
+
+      - name: Inventory scheduler direct live risks
+        run: |
+          echo "Inventario no bloqueante de posibles accesos LIVE dentro de jobs."
+          matches=$(
+            grep -RInE "SoftRestaurant|ManagementPro|MPRO|live|Servidores_Conexiones|execute_sql_query|get_external_sql_connection" \
+              backend/core/scheduler/jobs backend/core/scheduler backend/api \
+              --include="*.py" \
+              --exclude="*.bak*" \
+              || true
+          )
+
+          if [ -n "$matches" ]; then
+            echo "$matches" | head -300
+            if [ "${{ inputs.strict_mode }}" = "true" ]; then
+              echo "strict_mode=true: revisar accesos live/directos detectados en scheduler."
+              exit 1
+            fi
+            echo "strict_mode=false: inventario no bloqueante."
+          else
+            echo "OK: no se detectaron marcadores live/directos en scheduler."
+          fi
+
+      - name: EDARSAHUB scheduler SQL probe
+        run: |
+          PYTHONPATH="$GITHUB_WORKSPACE/backend" python - <<'PY'
+          from core.sql_first.db import get_sql_connection
+
+          conn = get_sql_connection("gptread")
+          cur = conn.cursor()
+
+          def rows_as_dicts():
+              cols = [d[0] for d in cur.description]
+              return [dict(zip(cols, row)) for row in cur.fetchall()]
+
+          print("===== LOGIN =====")
+          cur.execute("SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS db_user")
+          print(rows_as_dicts()[0])
+
+          print("===== SCHEDULER TABLES =====")
+          cur.execute("""
+          SELECT s.name AS schema_name, t.name AS table_name
+          FROM sys.tables t
+          JOIN sys.schemas s ON s.schema_id = t.schema_id
+          WHERE t.name LIKE 'Sistema_Scheduler%'
+             OR t.name LIKE '%Scheduler%'
+             OR t.name LIKE '%SyncLog%'
+          ORDER BY s.name, t.name
+          """)
+          scheduler_tables = rows_as_dicts()
+          for row in scheduler_tables:
+              print(row)
+
+          key_tables = [
+              "dbo.Sistema_Scheduler_Jobs",
+              "dbo.Sistema_Scheduler_Executions",
+              "dbo.Sistema_Scheduler_Logs",
+              "dbo.Sistema_Sync_Catalogo",
+          ]
+
+          print("===== KEY TABLE COUNTS =====")
+          for table in key_tables:
+              cur.execute("SELECT CASE WHEN OBJECT_ID(%s, 'U') IS NULL THEN 0 ELSE 1 END AS exists_table", (table,))
+              exists = rows_as_dicts()[0]["exists_table"]
+              if not exists:
+                  print({"table": table, "exists": 0, "count": None})
+                  continue
+              cur.execute(f"SELECT COUNT(1) AS row_count FROM {table}")
+              count = rows_as_dicts()[0]["row_count"]
+              print({"table": table, "exists": 1, "count": count})
+
+          print("===== SYNC CATALOGO HANDLERS =====")
+          cur.execute("""
+          SELECT TOP 50 Codigo, Nombre, Grupo, Handler, HandlerImplementado, Activo
+          FROM dbo.Sistema_Sync_Catalogo
+          ORDER BY Grupo, Orden, Codigo
+          """)
+          for row in rows_as_dicts():
+              print(row)
+
+          cur.close()
+          conn.close()
+          PY
+
+      - name: Audit frontend scheduler surface
+        run: |
+          echo "===== Scheduler frontend markers ====="
+          grep -nE "TabsTrigger|resync|ResyncPanel|Jobs Programados|Historial de Ejecuciones|data-testid" \
+            frontend/src/pages/Scheduler.jsx \
+            frontend/src/components/admin/ResyncPanel.jsx \
+            | head -250 || true
