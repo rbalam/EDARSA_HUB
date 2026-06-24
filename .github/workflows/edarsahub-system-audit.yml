@@ -1,0 +1,173 @@
+name: EDARSAHUB System Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_frontend_build:
+        description: "Run frontend build"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      run_sql_probe:
+        description: "Run EDARSAHUB SQL read-only probe"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+permissions:
+  contents: read
+
+jobs:
+  system-audit:
+    name: System-wide static, build and SQL audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "GptLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_GPTREAD_SQL_PASSWORD }}
+
+      EDARSAHUB_GPTREAD_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_GPTREAD_SQL_PORT: "1433"
+      EDARSAHUB_GPTREAD_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_GPTREAD_SQL_USER: "GptLectura"
+      EDARSAHUB_GPTREAD_SQL_PASSWORD: ${{ secrets.EDARSAHUB_GPTREAD_SQL_PASSWORD }}
+
+      EDARSAHUB_GPTWRITE_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_GPTWRITE_SQL_PORT: "1433"
+      EDARSAHUB_GPTWRITE_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_GPTWRITE_SQL_USER: "GptEscritura"
+      EDARSAHUB_GPTWRITE_SQL_PASSWORD: ${{ secrets.EDARSAHUB_GPTWRITE_SQL_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Git hygiene
+        run: |
+          git diff --check
+          test -f frontend/.npmrc
+          grep -n "legacy-peer-deps=true" frontend/.npmrc
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install minimal Python deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pymssql pydantic email-validator python-dotenv passlib bcrypt python-jose
+
+      - name: Python syntax compile backend
+        run: |
+          python - <<'PY'
+          import compileall
+          import sys
+
+          ok = compileall.compile_dir(
+              "backend",
+              maxlevels=20,
+              quiet=1,
+              force=True,
+              rx=None,
+          )
+          if not ok:
+              sys.exit("Backend Python syntax compile failed")
+          print("Backend Python syntax compile OK")
+          PY
+
+      - name: Audit forbidden temporary files
+        run: |
+          ! find . -type f \( \
+            -name "*.bak*" -o \
+            -name "*.tmp" -o \
+            -name "*.orig" -o \
+            -name "*.rej" \
+          \) | grep -v node_modules
+
+      - name: Audit secrets not committed
+        run: |
+          ! git ls-files | grep -E '(^|/)\.env$|\.env\.|secret|password|credentials' || {
+            echo "Potential secret/config file tracked above. Review before release."
+            exit 1
+          }
+
+      - name: Audit NetPay canonical flow
+        run: |
+          grep -nE "NETPAY_REPORT_TYPES_BY_SYNC|_get_netpay_report_types|report_types|finanzas_netpay_transacciones|finanzas_netpay_depositos" \
+            backend/api/admin_scheduler_resync.py \
+            backend/core/scheduler/jobs/netpay_sync_job.py
+
+          grep -nE "netpayReports|check-netpay-transacciones|check-netpay-depositos|executionCodigo" \
+            frontend/src/components/admin/ResyncPanel.jsx
+
+          ! grep -nE "netpay-manual-btn|NetPay Manual Run Dialog|/v2/scheduler/netpay/run|handleNetPayManualRun|newJobDialog|netpayLoading" \
+            frontend/src/pages/Scheduler.jsx
+
+      - name: Audit SQL canonical helpers
+        run: |
+          grep -nE "get_edarsahub_sql_config|gptread|gptwrite|profile" \
+            backend/core/config/edarsahub_config.py \
+            backend/core/sql_first/db.py
+
+      - name: EDARSAHUB SQL read-only probe
+        if: ${{ inputs.run_sql_probe == 'true' }}
+        run: |
+          PYTHONPATH="$GITHUB_WORKSPACE/backend" python - <<'PY'
+          from core.sql_first.db import get_sql_connection
+
+          def fetch_one(cur):
+              cols = [d[0] for d in cur.description]
+              row = cur.fetchone()
+              return dict(zip(cols, row)) if row else None
+
+          for profile in ("gptread", "default"):
+              print(f"----- {profile} -----")
+              conn = get_sql_connection(profile)
+              cur = conn.cursor()
+
+              cur.execute("""
+              SELECT
+                DB_NAME() AS database_name,
+                SUSER_SNAME() AS login_name,
+                USER_NAME() AS db_user
+              """)
+              print(fetch_one(cur))
+
+              cur.execute("""
+              SELECT TOP 5 Codigo, Nombre, Activo
+              FROM dbo.Sistema_Sync_Catalogo
+              ORDER BY Orden, Codigo
+              """)
+              print({"catalogo_read_ok": len(cur.fetchall())})
+
+              cur.close()
+              conn.close()
+          PY
+
+      - name: Setup Node
+        if: ${{ inputs.run_frontend_build == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Frontend build
+        if: ${{ inputs.run_frontend_build == 'true' }}
+        working-directory: frontend
+        env:
+          NPM_CONFIG_LEGACY_PEER_DEPS: "true"
+        run: |
+          npm config set legacy-peer-deps true
+          npm install --legacy-peer-deps --no-audit --no-fund
+          npm install --no-save --legacy-peer-deps --no-audit --no-fund ajv@8.17.1 ajv-keywords@5.1.0
+          DISABLE_ESLINT_PLUGIN=true CI=false npm run build
