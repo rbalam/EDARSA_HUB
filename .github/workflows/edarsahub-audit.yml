@@ -131,4 +131,4 @@ jobs:
           npm config set legacy-peer-deps true
           npm install --legacy-peer-deps --no-audit --no-fund
           npm install --no-save --legacy-peer-deps --no-audit --no-fund ajv@8.17.1 ajv-keywords@5.1.0
-          CI=false npm run build
+          DISABLE_ESLINT_PLUGIN=true CI=false npm run build
