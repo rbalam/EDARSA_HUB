@@ -125,10 +125,9 @@ jobs:
       - name: Frontend build
         if: ${{ inputs.run_frontend_build == 'true' }}
         working-directory: frontend
+        env:
+          NPM_CONFIG_LEGACY_PEER_DEPS: "true"
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci --legacy-peer-deps
-          else
-            npm install --legacy-peer-deps
-          fi
+          npm config set legacy-peer-deps true
+          npm install --legacy-peer-deps --no-audit --no-fund
           npm run build
