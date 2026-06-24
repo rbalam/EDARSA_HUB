@@ -1,0 +1,273 @@
+name: EDARSAHUB Menu Surface Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      strict_mode:
+        description: "Fail on menu/API/RBAC drift"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      run_frontend_build:
+        description: "Run frontend build"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+permissions:
+  contents: read
+
+jobs:
+  menu-surface-audit:
+    name: Menus, routes, frontend surfaces and API usage
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "GptLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_GPTREAD_SQL_PASSWORD }}
+
+      EDARSAHUB_GPTREAD_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_GPTREAD_SQL_PORT: "1433"
+      EDARSAHUB_GPTREAD_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_GPTREAD_SQL_USER: "GptLectura"
+      EDARSAHUB_GPTREAD_SQL_PASSWORD: ${{ secrets.EDARSAHUB_GPTREAD_SQL_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Git hygiene
+        run: git diff --check
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install minimal audit deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pymssql pydantic email-validator python-dotenv passlib bcrypt python-jose
+
+      - name: Compile route and menu-related backend modules
+        run: |
+          python - <<'PY'
+          import py_compile
+          from pathlib import Path
+
+          roots = [
+              Path("backend/api"),
+              Path("backend/routes"),
+              Path("backend/modules"),
+              Path("backend/core"),
+          ]
+
+          patterns = [
+              "*.py",
+          ]
+
+          compiled = 0
+          skipped = 0
+
+          for root in roots:
+              if not root.exists():
+                  continue
+
+              for p in sorted(root.rglob("*.py")):
+                  if "__pycache__" in p.parts or ".bak" in p.name or "graphify-out" in p.parts:
+                      skipped += 1
+                      continue
+
+                  try:
+                      py_compile.compile(str(p), doraise=True)
+                      compiled += 1
+                  except Exception as exc:
+                      print(f"COMPILE_FAIL {p}: {exc}")
+                      raise
+
+          print({"compiled_backend_files": compiled, "skipped": skipped})
+          PY
+
+      - name: Inventory frontend pages, routes and menus
+        run: |
+          echo "===== Frontend pages ====="
+          find frontend/src/pages frontend/src/components frontend/src/portal frontend/src/portal-inteligencia \
+            -type f \( -name "*.js" -o -name "*.jsx" -o -name "*.ts" -o -name "*.tsx" \) \
+            2>/dev/null | sort | head -500
+
+          echo "===== Route/menu markers ====="
+          grep -RInE "Route|Routes|NavLink|Link to=|menu|Menu|sidebar|Sidebar|TabsTrigger|path=|element=|permissions|canAdmin|canManage|visible|RBAC|role|roles" \
+            frontend/src \
+            --include="*.js" \
+            --include="*.jsx" \
+            --include="*.ts" \
+            --include="*.tsx" \
+            --exclude-dir=node_modules \
+            --exclude="*.bak*" \
+            | head -700 || true
+
+      - name: Inventory frontend API endpoint usage
+        run: |
+          echo "===== Frontend API calls inventory ====="
+          grep -RInE "api\.(get|post|put|patch|delete)|fetch\(|axios\.|REACT_APP_BACKEND_URL" \
+            frontend/src \
+            --include="*.js" \
+            --include="*.jsx" \
+            --include="*.ts" \
+            --include="*.tsx" \
+            --exclude-dir=node_modules \
+            --exclude="*.bak*" \
+            | head -900 || true
+
+      - name: Inventory backend API routes
+        run: |
+          echo "===== Backend route definitions ====="
+          grep -RInE "APIRouter|@router\.(get|post|put|patch|delete)|@app\.(get|post|put|patch|delete)|include_router|prefix=" \
+            backend \
+            --include="*.py" \
+            --exclude-dir=graphify-out \
+            --exclude-dir=__pycache__ \
+            --exclude="*.bak*" \
+            | head -900 || true
+
+      - name: Audit menu RBAC and permission markers
+        run: |
+          echo "===== RBAC/frontend permission markers ====="
+          grep -RInE "getUser|userPermissions|canAdmin|canManage|permissions|roles|RBAC|visible_en_operaciones|solicitar|candado|lock|Lock|disabled=|Sin permiso" \
+            frontend/src backend \
+            --include="*.py" \
+            --include="*.js" \
+            --include="*.jsx" \
+            --include="*.ts" \
+            --include="*.tsx" \
+            --exclude-dir=node_modules \
+            --exclude-dir=graphify-out \
+            --exclude="*.bak*" \
+            | head -700 || true
+
+      - name: Inventory menu hardcodes, live and mongo risks
+        run: |
+          echo "===== Inventario no bloqueante: hardcodes/live/mongo/menu drift ====="
+          matches=$(
+            grep -RInE "MongoClient|pymongo|mongodb|mongo|SoftRestaurant|ManagementPro|MPRO|get_external_sql_connection|Servidores_Conexiones|localhost:|127\.0\.0\.1|http://|https://|CIENFUEGOS|ESTELAR|130MID|130QRO|ORIGEN|CHAPUR" \
+              frontend/src backend \
+              --include="*.py" \
+              --include="*.js" \
+              --include="*.jsx" \
+              --include="*.ts" \
+              --include="*.tsx" \
+              --exclude-dir=node_modules \
+              --exclude-dir=graphify-out \
+              --exclude="*.bak*" \
+              || true
+          )
+
+          if [ -n "$matches" ]; then
+            echo "$matches" | head -900
+            if [ "${{ inputs.strict_mode }}" = "true" ]; then
+              echo "strict_mode=true: revisar hardcodes/live/mongo/menu drift detectados."
+              exit 1
+            fi
+            echo "strict_mode=false: inventario no bloqueante."
+          else
+            echo "OK: no se detectaron marcadores de riesgo."
+          fi
+
+      - name: EDARSAHUB menu/RBAC SQL probe
+        run: |
+          PYTHONPATH="$GITHUB_WORKSPACE/backend" python - <<'PY'
+          from core.sql_first.db import get_sql_connection
+
+          conn = get_sql_connection("gptread")
+          cur = conn.cursor()
+
+          def rows():
+              cols = [d[0] for d in cur.description]
+              return [dict(zip(cols, row)) for row in cur.fetchall()]
+
+          print("===== LOGIN =====")
+          cur.execute("SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS db_user")
+          print(rows()[0])
+
+          print("===== MENU/RBAC OBJECT INVENTORY =====")
+          cur.execute("""
+          SELECT
+            s.name AS schema_name,
+            o.name AS object_name,
+            o.type_desc
+          FROM sys.objects o
+          JOIN sys.schemas s ON s.schema_id = o.schema_id
+          WHERE o.name LIKE '%Menu%'
+             OR o.name LIKE '%Modulo%'
+             OR o.name LIKE '%Permiso%'
+             OR o.name LIKE '%Rol%'
+             OR o.name LIKE '%RBAC%'
+             OR o.name LIKE '%Usuario%'
+             OR o.name LIKE '%Acceso%'
+             OR o.name LIKE '%Autorizacion%'
+          ORDER BY o.type_desc, s.name, o.name
+          """)
+          for row in rows()[:300]:
+              print(row)
+
+          print("===== CANONICAL ACCESS TABLE CHECKS =====")
+          objects = [
+              ("dbo.Sistema_Usuarios", "U"),
+              ("dbo.Sistema_Roles", "U"),
+              ("dbo.Sistema_UsuariosRoles", "U"),
+              ("dbo.Sistema_UnidadesNegocio", "U"),
+              ("dbo.Sistema_Sync_Catalogo", "U"),
+          ]
+
+          for name, obj_type in objects:
+              cur.execute("""
+              SELECT
+                %s AS object_name,
+                CASE WHEN OBJECT_ID(%s, %s) IS NULL THEN 0 ELSE 1 END AS exists_object,
+                COALESCE(HAS_PERMS_BY_NAME(%s, 'OBJECT', 'SELECT'), 0) AS can_select
+              """, (name, name, obj_type, name))
+              print(rows()[0])
+
+          cur.close()
+          conn.close()
+          PY
+
+      - name: Audit frontend performance markers
+        run: |
+          echo "===== Frontend performance/cache markers ====="
+          grep -RInE "useMemo|useCallback|React.memo|lazy\(|Suspense|pagination|page_size|virtual|cache|Cache|localStorage|sessionStorage|debounce|throttle" \
+            frontend/src \
+            --include="*.js" \
+            --include="*.jsx" \
+            --include="*.ts" \
+            --include="*.tsx" \
+            --exclude-dir=node_modules \
+            --exclude="*.bak*" \
+            | head -700 || true
+
+      - name: Setup Node
+        if: ${{ inputs.run_frontend_build == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Frontend build
+        if: ${{ inputs.run_frontend_build == 'true' }}
+        working-directory: frontend
+        env:
+          NPM_CONFIG_LEGACY_PEER_DEPS: "true"
+        run: |
+          npm config set legacy-peer-deps true
+          npm install --legacy-peer-deps --no-audit --no-fund
+          npm install --no-save --legacy-peer-deps --no-audit --no-fund ajv@8.17.1 ajv-keywords@5.1.0
+          DISABLE_ESLINT_PLUGIN=true CI=false npm run build
