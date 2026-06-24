@@ -1,0 +1,195 @@
+name: EDARSAHUB SQL Canonical Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      strict_mode:
+        description: "Fail on direct SQL connection drift"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: read
+
+jobs:
+  sql-canonical-audit:
+    name: SQL canonical connections, tables and permissions
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "GptLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_GPTREAD_SQL_PASSWORD }}
+
+      EDARSAHUB_GPTREAD_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_GPTREAD_SQL_PORT: "1433"
+      EDARSAHUB_GPTREAD_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_GPTREAD_SQL_USER: "GptLectura"
+      EDARSAHUB_GPTREAD_SQL_PASSWORD: ${{ secrets.EDARSAHUB_GPTREAD_SQL_PASSWORD }}
+
+      EDARSAHUB_GPTWRITE_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_GPTWRITE_SQL_PORT: "1433"
+      EDARSAHUB_GPTWRITE_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_GPTWRITE_SQL_USER: "GptEscritura"
+      EDARSAHUB_GPTWRITE_SQL_PASSWORD: ${{ secrets.EDARSAHUB_GPTWRITE_SQL_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Git hygiene
+        run: git diff --check
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install SQL probe deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pymssql
+
+      - name: Compile canonical SQL modules
+        run: |
+          python -m py_compile \
+            backend/core/config/edarsahub_config.py \
+            backend/core/sql_first/db.py \
+            backend/core/db.py \
+            backend/core/server_registry.py \
+            backend/core/connection_resolver.py \
+            backend/core/context_resolver.py \
+            backend/core/user_access_context.py \
+            backend/modules/sistema/sync_catalogo_service.py
+
+      - name: Audit canonical helper markers
+        run: |
+          grep -nE "get_edarsahub_sql_config|profile|gptread|gptwrite|EDARSAHUB_GPTREAD_SQL|EDARSAHUB_GPTWRITE_SQL" \
+            backend/core/config/edarsahub_config.py \
+            backend/core/sql_first/db.py
+
+      - name: Inventory direct SQL connection drift
+        run: |
+          echo "Inventario de conexiones directas SQL fuera de helpers canónicos."
+          matches=$(
+            grep -RInE "pymssql\.connect|pyodbc\.connect" backend \
+              --exclude-dir=__pycache__ \
+              --exclude-dir=graphify-out \
+              --exclude="*.bak*" \
+              | grep -v "backend/core/sql_first/db.py" \
+              | grep -v "backend/core/sql_first/connection_factory.py" \
+              || true
+          )
+
+          if [ -n "$matches" ]; then
+            echo "$matches"
+            if [ "${{ inputs.strict_mode }}" = "true" ]; then
+              echo "strict_mode=true: conexiones directas detectadas fuera de helpers canónicos."
+              exit 1
+            fi
+            echo "strict_mode=false: inventario no bloqueante."
+          else
+            echo "OK: no se detectaron conexiones directas fuera de helpers permitidos."
+          fi
+
+      - name: EDARSAHUB SQL profiles and permissions probe
+        run: |
+          PYTHONPATH="$GITHUB_WORKSPACE/backend" python - <<'PY'
+          from core.sql_first.db import get_sql_connection
+
+          KEY_TABLES = [
+              "dbo.Sistema_Sync_Catalogo",
+              "dbo.Servidores_Conexiones",
+              "dbo.Sistema_Scheduler_Jobs",
+              "dbo.Sistema_Scheduler_Executions",
+              "dbo.Sistema_Scheduler_Logs",
+              "dbo.Sistema_UnidadesNegocio",
+              "dbo.Finanzas_AdquirenteImportaciones",
+              "dbo.Finanzas_AdquirenteTransacciones",
+              "dbo.Finanzas_AdquirenteDepositos",
+          ]
+
+          def fetch_one(cur):
+              cols = [d[0] for d in cur.description]
+              row = cur.fetchone()
+              return dict(zip(cols, row)) if row else None
+
+          for profile in ("gptread", "gptwrite", "default"):
+              print(f"===== PROFILE {profile} =====")
+              conn = get_sql_connection(profile)
+              cur = conn.cursor()
+
+              cur.execute("""
+              SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS db_user
+              """)
+              print(fetch_one(cur))
+
+              for table in KEY_TABLES:
+                  cur.execute("""
+                  SELECT
+                    %s AS table_name,
+                    CASE WHEN OBJECT_ID(%s, 'U') IS NULL THEN 0 ELSE 1 END AS exists_table,
+                    COALESCE(HAS_PERMS_BY_NAME(%s, 'OBJECT', 'SELECT'), 0) AS can_select,
+                    COALESCE(HAS_PERMS_BY_NAME(%s, 'OBJECT', 'INSERT'), 0) AS can_insert,
+                    COALESCE(HAS_PERMS_BY_NAME(%s, 'OBJECT', 'UPDATE'), 0) AS can_update,
+                    COALESCE(HAS_PERMS_BY_NAME(%s, 'OBJECT', 'DELETE'), 0) AS can_delete
+                  """, (table, table, table, table, table, table))
+                  print(fetch_one(cur))
+
+              cur.close()
+              conn.close()
+          PY
+
+      - name: Audit sync catalog snapshot
+        run: |
+          PYTHONPATH="$GITHUB_WORKSPACE/backend" python - <<'PY'
+          from core.sql_first.db import get_sql_connection
+
+          conn = get_sql_connection("gptread")
+          cur = conn.cursor()
+          cur.execute("""
+          SELECT TOP 30 Codigo, Nombre, Grupo, Handler, HandlerImplementado, Activo
+          FROM dbo.Sistema_Sync_Catalogo
+          ORDER BY Grupo, Orden, Codigo
+          """)
+          cols = [d[0] for d in cur.description]
+          for row in cur.fetchall():
+              print(dict(zip(cols, row)))
+          cur.close()
+          conn.close()
+          PY
+
+      - name: Audit NetPay SQL canonical tables
+        run: |
+          PYTHONPATH="$GITHUB_WORKSPACE/backend" python - <<'PY'
+          from core.sql_first.db import get_sql_connection
+
+          conn = get_sql_connection("gptread")
+          cur = conn.cursor()
+
+          tables = [
+              "dbo.Finanzas_AdquirenteImportaciones",
+              "dbo.Finanzas_AdquirenteImportacionDetalle",
+              "dbo.Finanzas_AdquirenteTransacciones",
+              "dbo.Finanzas_AdquirenteDepositos",
+          ]
+
+          for table in tables:
+              cur.execute("""
+              SELECT
+                %s AS table_name,
+                CASE WHEN OBJECT_ID(%s, 'U') IS NULL THEN 0 ELSE 1 END AS exists_table
+              """, (table, table))
+              cols = [d[0] for d in cur.description]
+              print(dict(zip(cols, cur.fetchone())))
+
+          cur.close()
+          conn.close()
+          PY
