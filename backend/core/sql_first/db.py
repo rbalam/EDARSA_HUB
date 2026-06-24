@@ -1,8 +1,9 @@
 from contextlib import contextmanager
 from core.config.edarsahub_config import get_edarsahub_sql_config
 
-def get_sql_connection():
-    cfg = get_edarsahub_sql_config()
+
+def get_sql_connection(profile: str = "default"):
+    cfg = get_edarsahub_sql_config(profile)
 
     try:
         import pyodbc
@@ -27,29 +28,37 @@ def get_sql_connection():
             tds_version="7.0",
         )
 
+
 @contextmanager
-def sql_connection():
-    conn = get_sql_connection()
+def sql_connection(profile: str = "default"):
+    conn = get_sql_connection(profile)
     try:
         yield conn
     finally:
         conn.close()
 
-def fetch_all_dict(sql: str, params=None):
+
+def _rows_to_dicts(cur):
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, row)) for row in cur.fetchall()]
+
+
+def fetch_all_dict(sql: str, params=None, profile: str = "default"):
     params = params or []
-    with sql_connection() as conn:
+    with sql_connection(profile) as conn:
         cur = conn.cursor()
         cur.execute(sql, params)
-        cols = [d[0] for d in cur.description]
-        return [dict(zip(cols, row)) for row in cur.fetchall()]
+        return _rows_to_dicts(cur)
 
-def fetch_one_dict(sql: str, params=None):
-    rows = fetch_all_dict(sql, params)
+
+def fetch_one_dict(sql: str, params=None, profile: str = "default"):
+    rows = fetch_all_dict(sql, params, profile=profile)
     return rows[0] if rows else None
 
-def execute_sql(sql: str, params=None):
+
+def execute_sql(sql: str, params=None, profile: str = "default"):
     params = params or []
-    with sql_connection() as conn:
+    with sql_connection(profile) as conn:
         cur = conn.cursor()
         cur.execute(sql, params)
         conn.commit()

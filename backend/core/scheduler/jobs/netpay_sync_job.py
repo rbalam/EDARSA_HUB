@@ -13,7 +13,7 @@ import shlex
 import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Sequence
 
 
 REPORT_TYPES = (
@@ -128,14 +128,20 @@ async def execute_netpay_sync_diario(
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
     max_days: int = 31,
+    report_types: Optional[Sequence[str]] = None,
 ) -> Dict[str, Any]:
     if date_from is None or date_to is None:
         date_from, date_to = _default_date_range()
 
     _validate_range(date_from, date_to, max_days=max_days)
 
+    selected_report_types = tuple(report_types or REPORT_TYPES)
+    invalid_report_types = [r for r in selected_report_types if r not in REPORT_TYPES]
+    if invalid_report_types:
+        raise ValueError(f"Reportes NetPay invalidos: {invalid_report_types}")
+
     results = []
-    for report_type in REPORT_TYPES:
+    for report_type in selected_report_types:
         results.append(await _run_cli(report_type, date_from, date_to))
 
     ok = all(r["ok"] for r in results)
@@ -149,7 +155,7 @@ async def execute_netpay_sync_diario(
         ),
         "date_from": date_from.isoformat(),
         "date_to": date_to.isoformat(),
-        "report_types": list(REPORT_TYPES),
+        "report_types": list(selected_report_types),
         "results": results,
         "reports": results,
     }

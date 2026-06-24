@@ -325,13 +325,24 @@ def _validar_rango(fecha_inicio: date, fecha_fin: date, max_dias: int) -> Dict[s
     }
 
 
+NETPAY_REPORT_TYPES_BY_SYNC = {
+    'finanzas_netpay': None,
+    'finanzas_netpay_transacciones': ('DETALLE_TRANSACCIONES',),
+    'finanzas_netpay_depositos': ('DETALLE_DEPOSITOS_MOVIMIENTOS',),
+}
+
+
 def _is_netpay_sync(tipo_sync: Dict[str, Any], codigo: str) -> bool:
     """Identifica el handler NetPay sin mezclarlo con conectores POS/SoftRestaurant/MPRO."""
     handler = (tipo_sync or {}).get('handler') or (tipo_sync or {}).get('Handler') or ''
-    return codigo == 'finanzas_netpay' or handler == 'netpay_manual_background'
+    return codigo in NETPAY_REPORT_TYPES_BY_SYNC or handler == 'netpay_manual_background'
 
 
-async def _run_netpay_resync_background(fecha_inicio: date, fecha_fin: date) -> None:
+def _get_netpay_report_types(codigo: str):
+    return NETPAY_REPORT_TYPES_BY_SYNC.get(codigo)
+
+
+async def _run_netpay_resync_background(fecha_inicio: date, fecha_fin: date, report_types=None) -> None:
     """Ejecuta NetPay desde scheduler central en background; no usa Mongo ni conexiones POS live."""
     from core.scheduler.jobs.netpay_sync_job import execute_netpay_sync_diario
 
@@ -340,6 +351,7 @@ async def _run_netpay_resync_background(fecha_inicio: date, fecha_fin: date) -> 
             date_from=fecha_inicio,
             date_to=fecha_fin,
             max_days=31,
+            report_types=report_types,
         )
         logger.info(
             "[RESYNC_NETPAY_BG] Finalizado success=%s fecha_inicio=%s fecha_fin=%s message=%s",
@@ -549,10 +561,13 @@ async def ejecutar_resync(
 
     if _is_netpay_sync(tipo_sync, request.tipo_sync):
         modo = 'DRY_RUN' if request.dry_run else 'REAL'
+        report_types = _get_netpay_report_types(request.tipo_sync)
+        selected_report_types = list(report_types) if report_types else ['DETALLE_TRANSACCIONES', 'DETALLE_DEPOSITOS_MOVIMIENTOS']
         resultado = {
             'records_processed': 0,
             'records_inserted': 0,
             'records_updated': 0,
+            'report_types': selected_report_types,
             'status': 'validated' if request.dry_run else 'accepted',
             'message': (
                 'DRY RUN NetPay validado. No se descargaron archivos ni se modificó SQL.'
@@ -566,10 +581,11 @@ async def ejecutar_resync(
                 _run_netpay_resync_background,
                 request.fecha_inicio,
                 request.fecha_fin,
+                report_types,
             )
 
         _registrar_en_bitacora(
-            job_name='RESYNC_finanzas_netpay',
+            job_name=f"RESYNC_{request.tipo_sync}",
             run_id=sync_run_id,
             accion='DRY_RUN_SUCCESS' if request.dry_run else 'NETPAY_BACKGROUND_ACCEPTED',
             server_id=unidad.get('server_id', ''),
@@ -581,6 +597,7 @@ async def ejecutar_resync(
                 'dry_run': request.dry_run,
                 'usuario': user_email,
                 'source': 'NETPAY_PORTAL_ROBOT_SQL_CANONICO',
+                'report_types': selected_report_types,
             },
             exito=True,
         )

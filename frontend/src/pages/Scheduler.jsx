@@ -214,12 +214,6 @@ export default function Scheduler() {
     jobName: null,
   });
 
-  const [newJobDialog, setNewJobDialog] = useState({
-    open: false,
-    fechaDesde: '',
-    fechaHasta: '',
-  });
-  const [netpayLoading, setNetpayLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   
   // Permisos RBAC (derivados del rol)
@@ -329,70 +323,7 @@ export default function Scheduler() {
     }
   };
 
-  const validateNetPayRange = () => {
-    if (!newJobDialog.fechaDesde || !newJobDialog.fechaHasta) return 'Debe capturar fecha desde y fecha hasta.';
-    const desde = new Date(`${newJobDialog.fechaDesde}T00:00:00`);
-    const hasta = new Date(`${newJobDialog.fechaHasta}T00:00:00`);
-    if (Number.isNaN(desde.getTime()) || Number.isNaN(hasta.getTime())) return 'Formato de fecha inválido.';
-    if (hasta < desde) return 'Fecha hasta no puede ser menor que fecha desde.';
-    const diffDays = Math.floor((hasta - desde) / (1000 * 60 * 60 * 24)) + 1;
-    if (diffDays > 31) return `El rango máximo permitido es de 31 días. Rango actual: ${diffDays} días.`;
-    return null;
-  };
 
-  const handleNetPayManualRun = async () => {
-    if (!userPermissions.canAdmin) {
-      alert('Sin permiso para ejecutar NetPay manual.');
-      return;
-    }
-
-    const validationError = validateNetPayRange();
-    if (validationError) {
-      alert(validationError);
-      return;
-    }
-    setNetpayLoading(true);
-    try {
-      const response = await api.post('/v2/scheduler/netpay/run', {
-        fecha_desde: newJobDialog.fechaDesde,
-        fecha_hasta: newJobDialog.fechaHasta,
-      }, {
-        timeout: 15 * 60 * 1000,
-      });
-
-      const responseData = response.data || {};
-      const result = responseData.result || {};
-
-      if (responseData.status === 'accepted') {
-        alert(responseData.message || 'Ejecución NetPay iniciada en segundo plano.');
-      } else {
-        const reports = Array.isArray(result.reports) ? result.reports : [];
-        const reportSummary = reports.length
-          ? reports.map((item) => {
-              const status = item.ok ? 'OK' : 'FALLO';
-              return `${item.report_type || 'Reporte'}: ${status}`;
-            }).join('\n')
-          : 'Sin detalle de reportes.';
-
-        alert([
-          responseData.status === 'completed' ? 'NetPay completado.' : 'NetPay finalizó con error.',
-          result.message || '',
-          reportSummary,
-        ].filter(Boolean).join('\n'));
-      }
-
-      setNewJobDialog({ open: false, fechaDesde: '', fechaHasta: '' });
-      await fetchAllData(true);
-    } catch (error) {
-      logger.error('Error ejecutando NetPay manual:', error);
-      const detail = error.code === 'ECONNABORTED'
-        ? 'La ejecución tardó más de lo esperado. Revisa el estado del job antes de reintentar.'
-        : error.response?.data?.detail || error.message || 'Error de conexión';
-      alert(`Error NetPay: ${detail}`);
-    } finally {
-      setNetpayLoading(false);
-    }
-  };
 
   // Calculate KPIs
   const calculateKPIs = () => {
@@ -575,17 +506,6 @@ export default function Scheduler() {
                   Tareas automatizadas del sistema
                 </CardDescription>
               </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setNewJobDialog({ open: true, fechaDesde: '', fechaHasta: '' })}
-                  disabled={!userPermissions.canAdmin}
-                  title={!userPermissions.canAdmin ? 'Sin permiso' : 'Ejecutar NetPay manual'}
-                  data-testid="netpay-manual-btn"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Ejecutar NetPay
-                </Button>
             </div>
           </CardHeader>
         <CardContent>
@@ -835,71 +755,6 @@ export default function Scheduler() {
         </CardContent>
       </Card>
 
-        {/* NetPay Manual Run Dialog */}
-        <Dialog
-          open={newJobDialog.open}
-          onOpenChange={(open) => !netpayLoading && setNewJobDialog((prev) => ({ ...prev, open }))}
-        >
-          <DialogContent data-testid="netpay-manual-dialog">
-            <DialogHeader>
-              <DialogTitle>Ejecutar NetPay manual</DialogTitle>
-              <DialogDescription>
-                Ejecuta DETALLE_TRANSACCIONES y DETALLE_DEPOSITOS_MOVIMIENTOS para un rango máximo de 31 días.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-2">
-              <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                Esta ejecución corre el robot NetPay inmediatamente. Verifica el rango antes de confirmar.
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="grid gap-2">
-                  <Label htmlFor="netpay-fecha-desde">Fecha desde</Label>
-                  <Input
-                    id="netpay-fecha-desde"
-                    type="date"
-                    value={newJobDialog.fechaDesde}
-                    onChange={(e) => setNewJobDialog((prev) => ({ ...prev, fechaDesde: e.target.value }))}
-                    disabled={netpayLoading}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="netpay-fecha-hasta">Fecha hasta</Label>
-                  <Input
-                    id="netpay-fecha-hasta"
-                    type="date"
-                    value={newJobDialog.fechaHasta}
-                    onChange={(e) => setNewJobDialog((prev) => ({ ...prev, fechaHasta: e.target.value }))}
-                    disabled={netpayLoading}
-                  />
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setNewJobDialog({ open: false, fechaDesde: '', fechaHasta: '' })}
-                disabled={netpayLoading}
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleNetPayManualRun}
-                disabled={netpayLoading || !userPermissions.canAdmin || !newJobDialog.fechaDesde || !newJobDialog.fechaHasta}
-                data-testid="netpay-manual-run-btn"
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {netpayLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Ejecutando...
-                  </>
-                ) : (
-                  'Ejecutar NetPay'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
       {/* Confirmation Dialog */}
       <Dialog open={confirmDialog.open} onOpenChange={(open) => !actionLoading && setConfirmDialog({ ...confirmDialog, open })}>

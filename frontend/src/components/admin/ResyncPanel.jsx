@@ -54,6 +54,10 @@ export default function ResyncPanel() {
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
   const [motivo, setMotivo] = useState('');
+  const [netpayReports, setNetpayReports] = useState({
+    transacciones: true,
+    depositos: true,
+  });
 
   // Diálogo de resolución de dependencias / confirmación
   const [resolveDialog, setResolveDialog] = useState({ open: false, isDryRun: true, loading: false });
@@ -124,7 +128,18 @@ export default function ResyncPanel() {
     );
   };
 
+  const netpaySeleccionado = selectedCodigos.includes('finanzas_netpay');
+  const netpayReportesValidos = !netpaySeleccionado || netpayReports.transacciones || netpayReports.depositos;
+
+  const getNetpayExecutionCode = () => {
+    if (netpayReports.transacciones && netpayReports.depositos) return 'finanzas_netpay';
+    if (netpayReports.transacciones) return 'finanzas_netpay_transacciones';
+    if (netpayReports.depositos) return 'finanzas_netpay_depositos';
+    return 'finanzas_netpay';
+  };
+
   const formValid = motivo.length >= 10 && unidadId && selectedCodigos.length > 0
+    && netpayReportesValidos
     && (!requiereFechas || (fechaInicio && fechaFin));
 
   // Paso 1: resolver dependencias y abrir confirmación
@@ -172,17 +187,18 @@ export default function ResyncPanel() {
 
     for (let i = 0; i < finalItems.length; i++) {
       const it = finalItems[i];
+      const executionCodigo = it.codigo === 'finanzas_netpay' ? getNetpayExecutionCode() : it.codigo;
       setProgress({ current: i + 1, total: finalItems.length });
       try {
         const resp = await api.post('/admin/scheduler/resync/execute', {
-          tipo_sync: it.codigo,
+          tipo_sync: executionCodigo,
           unidad_negocio_id: unidadId,
           fecha_inicio: fi,
           fecha_fin: ff,
           motivo,
           dry_run: isDryRun,
         });
-        results.push({ tipo: it, data: resp.data });
+        results.push({ tipo: { ...it, codigo: executionCodigo }, data: resp.data });
       } catch (error) {
         results.push({
           tipo: it,
@@ -257,6 +273,30 @@ export default function ResyncPanel() {
                           <span className="flex-1">
                             <span className="font-medium">{tipo.nombre}</span>
                             <span className="block text-xs text-zinc-500">{tipo.descripcion}</span>
+                              {tipo.codigo === 'finanzas_netpay' && selectedCodigos.includes('finanzas_netpay') && (
+                                <span className="mt-2 grid grid-cols-1 gap-1 rounded-md border bg-white p-2" onClick={(e) => e.stopPropagation()}>
+                                  <span className="text-[11px] font-medium text-zinc-500">Reportes a sincronizar</span>
+                                  <span className="flex items-center gap-2 text-xs text-zinc-700">
+                                    <Checkbox
+                                      checked={netpayReports.transacciones}
+                                      onCheckedChange={(checked) => setNetpayReports(prev => ({ ...prev, transacciones: Boolean(checked) }))}
+                                      data-testid="check-netpay-transacciones"
+                                    />
+                                    Transacciones
+                                  </span>
+                                  <span className="flex items-center gap-2 text-xs text-zinc-700">
+                                    <Checkbox
+                                      checked={netpayReports.depositos}
+                                      onCheckedChange={(checked) => setNetpayReports(prev => ({ ...prev, depositos: Boolean(checked) }))}
+                                      data-testid="check-netpay-depositos"
+                                    />
+                                    Depósitos
+                                  </span>
+                                  {!netpayReportesValidos && (
+                                    <span className="text-xs text-red-600">Selecciona al menos un reporte NetPay.</span>
+                                  )}
+                                </span>
+                              )}
                             <span className="flex items-center gap-1 mt-1 flex-wrap">
                               {!tipo.handler_implementado && (
                                 <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-300">
