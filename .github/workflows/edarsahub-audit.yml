@@ -60,11 +60,7 @@ jobs:
       - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
-          if [ -f backend/requirements.txt ]; then
-            python -m pip install -r backend/requirements.txt
-          else
-            python -m pip install pymssql pydantic email-validator
-          fi
+          python -m pip install pymssql pydantic email-validator python-dotenv passlib bcrypt python-jose
 
       - name: Git diff check
         run: git diff --check
