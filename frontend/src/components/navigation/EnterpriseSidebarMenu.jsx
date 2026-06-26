@@ -98,6 +98,20 @@ function groupBySection(items) {
   }, {});
 }
 
+function getSqlMenuLabel(moduloCodigo, modulo, menu) {
+  const menuCodigo = String(menu?.codigo || "").toLowerCase();
+
+  if (
+    moduloCodigo === "INVENTARIOS" &&
+    menuCodigo === "inventarios.dashboard" &&
+    menu?.ruta === "/reportes"
+  ) {
+    return modulo?.nombre || "Inventarios / Operaciones";
+  }
+
+  return menu?.nombre || menu?.codigo;
+}
+
 function normalizeSqlEnterpriseGroups(sqlMenus = []) {
   if (!Array.isArray(sqlMenus) || sqlMenus.length === 0) return null;
 
@@ -146,7 +160,7 @@ function normalizeSqlEnterpriseGroups(sqlMenus = []) {
         if (m.visible === false || !m.ruta) return;
         group.children.push({
           id: String(m.codigo || `${codigo}-${m.id || m.nombre}`),
-          label: m.nombre || m.codigo,
+          label: getSqlMenuLabel(codigo, modulo, m),
           path: m.ruta,
           icon: m.icono || modulo.icono || "Grid3X3",
           section: modulo.nombre || group.label,
