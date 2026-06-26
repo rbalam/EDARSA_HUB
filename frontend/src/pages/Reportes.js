@@ -98,6 +98,34 @@ const Reportes = () => {
     }
     return [];
   });
+
+  const [inventorySearchTerm, setInventorySearchTerm] = useState('');
+  const [inventorySortConfig, setInventorySortConfig] = useState({
+    key: null,
+    direction: 'asc'
+  });
+
+  const handleInventorySort = (columnKey) => {
+    setInventorySortConfig(prev => {
+      if (prev?.key === columnKey) {
+        return {
+          key: columnKey,
+          direction: prev.direction === 'asc' ? 'desc' : 'asc'
+        };
+      }
+
+      return {
+        key: columnKey,
+        direction: 'asc'
+      };
+    });
+  };
+
+  const getInventorySortLabel = (columnKey) => {
+    if (inventorySortConfig?.key !== columnKey) return '';
+    return inventorySortConfig.direction === 'asc' ? ' ↑' : ' ↓';
+  };
+
   const [erroresCaptura, setErroresCaptura] = useState([]); // Errores de captura de inventario (MPRO)
   const [loading, setLoading] = useState(false);
   
@@ -219,6 +247,13 @@ const Reportes = () => {
   
   // Estado para agrupar insumos de múltiples inventarios (MPRO)
   const [agruparInsumos, setAgruparInsumos] = useState(false);
+
+  // EDARSAHUB-PATCH-ANALISIS-CONVERSION-AGRUPACION
+  // Vista de cantidades para Análisis de Inventarios.
+  // La data base del backend se conserva; esto solo cambia la vista.
+  const [unidadAnalisisInventarios, setUnidadAnalisisInventarios] = useState('presentaciones');
+  const [agruparProductosAnalisis, setAgruparProductosAnalisis] = useState(false);
+  const [agruparPorAnalisis, setAgruparPorAnalisis] = useState('categoria');
   
   // Estado para mostrar/ocultar columnas de costos (oculto por defecto)
   const [mostrarCostos, setMostrarCostos] = useState(false);
@@ -271,9 +306,10 @@ const Reportes = () => {
   // Abrir modal para generar informe
   const handleAbrirModalInforme = () => {
     // Pre-llenar datos del reporte actual
-    const totalProductos = reportData.length;
-    const productosConDiferencia = reportData.filter(p => Math.abs(p.DIFERENCIA_QTY || 0) > 0).length;
-    const valorDiferencias = reportData.reduce((sum, p) => sum + Math.abs(p.DIFERENCIA_VALOR || 0), 0);
+    const rowsVistaAnalisis = getAnalisisVistaRows();
+    const totalProductos = rowsVistaAnalisis.length;
+    const productosConDiferencia = rowsVistaAnalisis.filter(p => Math.abs(getAnalisisDiferenciaQty(p)) > 0).length;
+    const valorDiferencias = rowsVistaAnalisis.reduce((sum, p) => sum + Math.abs(getAnalisisDiferenciaValor(p)), 0);
     const precision = totalProductos > 0 ? ((totalProductos - productosConDiferencia) / totalProductos * 100) : 0;
     
     setInformeData({
@@ -304,17 +340,17 @@ const Reportes = () => {
       setSavingInforme(true);
       
       // Preparar productos con diferencias (top 50)
-      const productosConDif = reportData
+      const productosConDif = rowsVistaAnalisis
         .filter(p => Math.abs(p.DIFERENCIA_QTY || 0) > 0)
         .sort((a, b) => Math.abs(b.DIFERENCIA_VALOR || 0) - Math.abs(a.DIFERENCIA_VALOR || 0))
         .slice(0, 50)
         .map(p => ({
           codigo: p.CODIGO_INSUMO || p.ID_PRODUCTO || '',
           producto: p.PRODUCTO || p.NOMBRE || '',
-          inv_inicial: p.INV_INICIAL || 0,
-          inv_final: p.INV_FINAL || 0,
-          diferencia: p.DIFERENCIA_QTY || 0,
-          valor_diferencia: Math.abs(p.DIFERENCIA_VALOR || 0)
+          inv_inicial: p.Inv_Inicial_Cantidad ?? p.INV_INICIAL ?? p.inv_inicial ?? 0,
+          inv_final: p.Inv_Final_Cantidad ?? p.INV_FINAL ?? p.inv_final ?? 0,
+          diferencia: getAnalisisDiferenciaQty(p),
+          valor_diferencia: Math.abs(getAnalisisDiferenciaValor(p))
         }));
       
       const payload = {
@@ -538,22 +574,65 @@ const Reportes = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.server_id, servers, filters.sucursal_id]);
 
-  // Cargar almacenes para SoftRestaurant (no requiere sucursal)
+  // Cargar almacenes para SoftRestaurant desde EDARSAHUB SQL canónico
   const loadAlmacenesSoftRestaurant = async (soloConsumo = false) => {
     try {
-      const url = soloConsumo 
-        ? `/servers/${filters.server_id}/almacenes-softrestaurant?solo_consumo=true`
-        : `/servers/${filters.server_id}/almacenes-softrestaurant`;
-      const response = await api.get(url);
-      setAlmacenes(response.data);
-      // Establecer una sucursal "ficticia" para que el flujo continúe
+      const response = await api.get(`/servers/${filters.server_id}/almacenes-softrestaurant${soloConsumo ? '?solo_consumo=true' : ''}`);
+      const rows = Array.isArray(response.data)
+        ? response.data
+        : Array.isArray(response.data?.data)
+          ? response.data.data
+          : [];
+
+      const map = new Map();
+
+      rows.forEach(item => {
+        const almacenId = String(item.id ?? item.almacen_id ?? item.idalmacen ?? '').trim();
+        const almacenNombre = String(item.nombre ?? item.almacen ?? '').trim();
+        const almacenTipo = Number(item.tipo ?? item.tipo_almacen ?? item.almacen_tipo ?? 1);
+
+        if (!almacenId && !almacenNombre) return;
+
+        const nombreFinal = almacenNombre || almacenId;
+        const key = `${almacenId}|${nombreFinal}`;
+
+        if (!map.has(key)) {
+          map.set(key, {
+            id: almacenId || nombreFinal,
+            almacen_id: almacenId,
+            nombre: nombreFinal,
+            almacen: nombreFinal,
+            label: nombreFinal,
+            value: nombreFinal,
+            source: 'EDARSAHUB_SQL',
+            tipo: almacenTipo,
+            tipo_almacen: almacenTipo,
+            unidad_natural: almacenTipo === 2 ? 'presentaciones' : 'insumos'
+          });
+        }
+      });
+
+      const almacenesCanonicos = Array.from(map.values())
+        .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre)));
+
+      if (almacenesCanonicos.length > 0) {
+        setAlmacenes(almacenesCanonicos);
+      } else {
+        const fallbackUrl = soloConsumo
+          ? `/servers/${filters.server_id}/almacenes-softrestaurant?solo_consumo=true`
+          : `/servers/${filters.server_id}/almacenes-softrestaurant`;
+
+        const fallbackResponse = await api.get(fallbackUrl);
+        setAlmacenes(fallbackResponse.data);
+      }
+
       setFilters(prev => ({
         ...prev,
         sucursal_id: 'default',
         sucursal: 'SoftRestaurant'
       }));
     } catch (error) {
-      logger.error('Error al cargar almacenes SoftRestaurant:', error);
+      logger.error('Error al cargar almacenes canónicos SoftRestaurant:', error);
       setAlmacenes([]);
     }
   };
@@ -868,6 +947,292 @@ const Reportes = () => {
     }
   };
 
+  // EDARSAHUB-PATCH-ANALISIS-CONVERSION-AGRUPACION
+  const analisisQtyKeys = new Set([
+    'Inv_Inicial_Cantidad',
+    'Movimientos',
+    'Ventas',
+    'Inv_Teorico_Cantidad',
+    'Inv_Final_Cantidad',
+    'Diferencia_Cantidad',
+    'DIFERENCIA_QTY',
+    'INV_INICIAL',
+    'INV_FINAL'
+  ]);
+
+  const getAnalisisRendimiento = (row) => {
+    const raw =
+      row?.Rendimiento ??
+      row?.rendimiento ??
+      row?.RENDIMIENTO ??
+      row?.factor_conversion ??
+      1;
+
+    const val = parseFloat(raw);
+    return Number.isFinite(val) && val > 0 ? val : 1;
+  };
+
+  const isAnalisisCantidadKey = (key) => {
+    const k = String(key || '').toLowerCase();
+
+    if (analisisQtyKeys.has(key)) return true;
+    if (k.includes('costo') || k.includes('valor') || k.includes('porcentaje') || k.includes('precio')) return false;
+
+    return (
+      k === 'movimientos' ||
+      k === 'ventas' ||
+      k.includes('cantidad') ||
+      k.includes('qty') ||
+      k.includes('inv_inicial') ||
+      k.includes('inv_final') ||
+      k.includes('inv_teorico') ||
+      k.includes('diferencia')
+    );
+  };
+
+  const getUnidadNaturalAnalisis = (row) => {
+    const systemType = String(selectedServer?.system_type || '').toLowerCase();
+
+    if (systemType === 'mpro') {
+      return 'insumos';
+    }
+
+    const tipoRow = Number(row?.tipo_almacen ?? row?.tipoAlmacen ?? row?.almacen_tipo ?? row?.tipo);
+
+    if (Number.isFinite(tipoRow)) {
+      return tipoRow === 2 ? 'presentaciones' : 'insumos';
+    }
+
+    const tiposSeleccionados = Array.from(new Set(
+      selectedAlmacenes
+        .map(a => Number(a?.tipo ?? a?.tipo_almacen ?? a?.almacen_tipo))
+        .filter(Number.isFinite)
+    ));
+
+    if (tiposSeleccionados.length > 1) {
+      return 'mixto';
+    }
+
+    const tipoAlmacen = tiposSeleccionados[0] ?? 1;
+    return tipoAlmacen === 2 ? 'presentaciones' : 'insumos';
+  };
+
+  const convertirCantidadAnalisis = (row, key, value) => {
+    const num = parseFloat(value);
+
+    if (!Number.isFinite(num) || !isAnalisisCantidadKey(key)) {
+      return value;
+    }
+
+    const rendimiento = getAnalisisRendimiento(row);
+    const unidadNatural = getUnidadNaturalAnalisis(row);
+
+    if (unidadNatural === 'mixto' || unidadNatural === unidadAnalisisInventarios) {
+      return num;
+    }
+
+    if (unidadNatural === 'insumos' && unidadAnalisisInventarios === 'presentaciones') {
+      return rendimiento > 0 ? num / rendimiento : num;
+    }
+
+    if (unidadNatural === 'presentaciones' && unidadAnalisisInventarios === 'insumos') {
+      return num * rendimiento;
+    }
+
+    return num;
+  };
+
+  const formatAnalisisHeader = (key) => {
+    const base = String(key || '').replace(/_/g, ' ').replace(/Cantidad/gi, 'Qty');
+
+    if (isAnalisisCantidadKey(key)) {
+      return `${base} (${unidadAnalisisInventarios === 'presentaciones' ? 'Pres' : 'Ins'})`;
+    }
+
+    return base;
+  };
+
+  const getAgrupacionAnalisis = (row) => {
+    const valueBy = {
+      categoria: row?.Categoria ?? row?.categoria ?? row?.Grupo ?? row?.grupo,
+      familia: row?.Familia ?? row?.familia,
+      subfamilia: row?.SubFamilia ?? row?.subfamilia ?? row?.Subfamilia,
+      tipo: row?.Tipo ?? row?.tipo ?? row?.Tipo_Producto ?? row?.tipo_producto
+    };
+
+    const value = valueBy[agruparPorAnalisis];
+
+    return value === null || value === undefined || String(value).trim() === ''
+      ? 'SIN CLASIFICAR'
+      : String(value).trim();
+  };
+
+  const buildAnalisisDisplayData = () => {
+    const rows = Array.isArray(reportData) ? reportData : [];
+
+    if (!agruparProductosAnalisis) {
+      return rows.map((row) => {
+        const out = {};
+
+        Object.entries(row || {}).forEach(([key, value]) => {
+          out[key] = convertirCantidadAnalisis(row, key, value);
+        });
+
+        return out;
+      });
+    }
+
+    const metricas = [
+      'Inv_Inicial_Cantidad',
+      'Movimientos',
+      'Ventas',
+      'Inv_Teorico_Cantidad',
+      'Inv_Final_Cantidad',
+      'Diferencia_Cantidad',
+      'Diferencia_Costo',
+      'DIFERENCIA_QTY',
+      'DIFERENCIA_VALOR'
+    ];
+
+    const grupos = new Map();
+
+    rows.forEach((row) => {
+      const grupo = getAgrupacionAnalisis(row);
+
+      if (!grupos.has(grupo)) {
+        grupos.set(grupo, {
+          Agrupacion: grupo,
+          Items: 0
+        });
+      }
+
+      const acc = grupos.get(grupo);
+      acc.Items += 1;
+
+      metricas.forEach((key) => {
+        if (row[key] === undefined || row[key] === null) return;
+
+        const val = convertirCantidadAnalisis(row, key, row[key]);
+        const num = parseFloat(val);
+
+        if (!Number.isFinite(num)) return;
+
+        acc[key] = (parseFloat(acc[key]) || 0) + num;
+      });
+    });
+
+    return Array.from(grupos.values()).map((row) => {
+      const out = {};
+
+      Object.entries(row).forEach(([key, value]) => {
+        out[key] = typeof value === 'number'
+          ? Math.round(value * 10000) / 10000
+          : value;
+      });
+
+      return out;
+    });
+  };
+
+  const analysisDisplayData = filters.query_type === 'analisis'
+    ? buildAnalisisDisplayData()
+    : (Array.isArray(reportData) ? reportData : []);
+
+  const inventoryVisibleData = useMemo(() => {
+    const sourceRows = Array.isArray(analysisDisplayData) ? analysisDisplayData : [];
+    const search = inventorySearchTerm.trim().toLowerCase();
+
+    const filtered = sourceRows.filter(row => {
+      if (!search) return true;
+
+      const haystack = [
+        row.codigo_producto,
+        row.codigo,
+        row.Codigo,
+        row.CODIGO,
+        row.nombre_producto,
+        row.nombre,
+        row.Nombre,
+        row.NOMBRE,
+        row.descripcion,
+        row.Descripcion,
+        row.DESCRIPCION,
+        row.Producto,
+        row.producto
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(search);
+    });
+
+    const sortKey = inventorySortConfig?.key;
+    const direction = inventorySortConfig?.direction || 'asc';
+
+    if (!sortKey) {
+      return filtered;
+    }
+
+    const normalizeValue = (value) => {
+      if (value === null || value === undefined) return '';
+
+      const numeric = Number(value);
+      if (value !== '' && Number.isFinite(numeric)) {
+        return numeric;
+      }
+
+      return String(value)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+    };
+
+    return [...filtered].sort((a, b) => {
+      const av = normalizeValue(a?.[sortKey]);
+      const bv = normalizeValue(b?.[sortKey]);
+
+      if (typeof av === 'number' && typeof bv === 'number') {
+        return direction === 'asc' ? av - bv : bv - av;
+      }
+
+      const result = String(av).localeCompare(String(bv), 'es', {
+        numeric: true,
+        sensitivity: 'base'
+      });
+
+      return direction === 'asc' ? result : -result;
+    });
+  }, [analysisDisplayData, inventorySearchTerm, inventorySortConfig]);
+
+
+  // EDARSAHUB-PATCH-ANALISIS-EXPORTS-V3
+  const getAnalisisVistaRows = () => Array.isArray(analysisDisplayData) ? analysisDisplayData : [];
+
+  const getAnalisisDiferenciaQty = (row) => {
+    const value =
+      row?.DIFERENCIA_QTY ??
+      row?.Diferencia_Cantidad ??
+      row?.DiferenciaCantidad ??
+      row?.diferencia ??
+      0;
+
+    const num = parseFloat(value);
+    return Number.isFinite(num) ? num : 0;
+  };
+
+  const getAnalisisDiferenciaValor = (row) => {
+    const value =
+      row?.DIFERENCIA_VALOR ??
+      row?.Diferencia_Costo ??
+      row?.DiferenciaCosto ??
+      row?.importe_diferencia ??
+      0;
+
+    const num = parseFloat(value);
+    return Number.isFinite(num) ? num : 0;
+  };
+
   const handleGenerateReport = async () => {
     if (!filters.server_id) {
       toast.error('Selecciona una unidad de negocio');
@@ -970,20 +1335,201 @@ const Reportes = () => {
       }
       
       logger.log('Respuesta del reporte:', response.data);
-      logger.log('Primer producto:', response.data.data[0]);
-      setReportData(response.data.data);
+
+      const rawRows = Array.isArray(response.data?.data)
+        ? response.data.data
+        : Array.isArray(response.data?.results)
+          ? response.data.results
+          : Array.isArray(response.data?.reportData)
+            ? response.data.reportData
+            : [];
+
+      const toNumber = (value) => {
+        const n = Number(value ?? 0);
+        return Number.isFinite(n) ? n : 0;
+      };
+
+      const canonicalRows = rawRows.map(row => {
+        const codigo = String(
+          row.codigo_producto ??
+          row.codigo ??
+          row.Codigo ??
+          row.CODIGO ??
+          ''
+        ).trim();
+
+        const nombre = String(
+          row.nombre_producto ??
+          row.nombre ??
+          row.Nombre ??
+          row.descripcion ??
+          row.Descripcion ??
+          row.DESCRIPCION ??
+          codigo
+        ).trim();
+
+        const unidad = String(
+          row.unidad ??
+          row.Unidad ??
+          row.UNIDAD ??
+          ''
+        ).trim();
+
+        const inventarioInicial = toNumber(
+          row.inventario_inicial ??
+          row.inv_inicial ??
+          row.Inventario_Inicial ??
+          row.INV_INICIAL
+        );
+
+        const movimientos = toNumber(
+          row.movimientos ??
+          row.Movimientos ??
+          row.MOVIMIENTOS
+        );
+
+        const ventas = toNumber(
+          row.ventas ??
+          row.Ventas ??
+          row.VENTAS
+        );
+
+        const inventarioTeorico = toNumber(
+          row.inventario_teorico ??
+          row.inv_teorico ??
+          row.Inventario_Teorico ??
+          row.INV_TEORICO ??
+          (inventarioInicial + movimientos - ventas)
+        );
+
+        const inventarioFinal = toNumber(
+          row.inventario_final ??
+          row.inv_final ??
+          row.Inventario_Final ??
+          row.INV_FINAL
+        );
+
+        const diferencia = toNumber(
+          row.diferencia ??
+          row.Diferencia ??
+          row.DIFERENCIA ??
+          (inventarioFinal - inventarioTeorico)
+        );
+
+        const costoUnitario = toNumber(
+          row.costo_unitario ??
+          row.Costo_Unitario ??
+          row.COSTO_UNITARIO
+        );
+
+        const diferenciaCosto = toNumber(
+          row.diferencia_costo ??
+          row.Diferencia_Costo ??
+          row.DIFERENCIA_COSTO ??
+          (diferencia * costoUnitario)
+        );
+
+        return {
+          codigo_producto: codigo,
+          nombre_producto: nombre,
+          unidad: unidad,
+          inventario_inicial: inventarioInicial,
+          movimientos: movimientos,
+          ventas: ventas,
+          inventario_teorico: inventarioTeorico,
+          inventario_final: inventarioFinal,
+          diferencia: diferencia,
+          costo_unitario: costoUnitario,
+          diferencia_costo: diferenciaCosto
+        };
+      });
+
+      const groupedRowsMap = new Map();
+
+      canonicalRows.forEach(row => {
+        const key = `${row.nombre_producto}|${row.unidad}`;
+
+        if (!groupedRowsMap.has(key)) {
+          groupedRowsMap.set(key, { ...row });
+          return;
+        }
+
+        const current = groupedRowsMap.get(key);
+
+        current.inventario_inicial += row.inventario_inicial;
+        current.movimientos += row.movimientos;
+        current.ventas += row.ventas;
+        current.inventario_teorico += row.inventario_teorico;
+        current.inventario_final += row.inventario_final;
+        current.diferencia += row.diferencia;
+        current.diferencia_costo += row.diferencia_costo;
+
+        if (row.codigo_producto && !current.codigo_producto.includes(row.codigo_producto)) {
+          current.codigo_producto = `${current.codigo_producto}, ${row.codigo_producto}`;
+        }
+      });
+
+      const finalRows = agruparInsumos
+        ? Array.from(groupedRowsMap.values())
+        : canonicalRows;
+
+      const roundedRows = finalRows.map(row => {
+        const costoUnitarioFinal =
+          Math.abs(row.diferencia) > 0.000001
+            ? row.diferencia_costo / row.diferencia
+            : row.costo_unitario;
+
+        return {
+          codigo_producto: row.codigo_producto,
+          nombre_producto: row.nombre_producto,
+          unidad: row.unidad,
+          inventario_inicial: Number(row.inventario_inicial.toFixed(6)),
+          movimientos: Number(row.movimientos.toFixed(6)),
+          ventas: Number(row.ventas.toFixed(6)),
+          inventario_teorico: Number(row.inventario_teorico.toFixed(6)),
+          inventario_final: Number(row.inventario_final.toFixed(6)),
+          diferencia: Number(row.diferencia.toFixed(6)),
+          costo_unitario: Number(costoUnitarioFinal.toFixed(6)),
+          diferencia_costo: Number(row.diferencia_costo.toFixed(6))
+        };
+      });
+
+      const responseCount =
+        response.data?.count ??
+        response.data?.metadata?.total_productos ??
+        response.data?.resumen?.total_productos ??
+        roundedRows.length;
+
+      logger.log('Primer producto normalizado:', roundedRows[0] || null);
+      setReportData(roundedRows);
       
       // Manejar errores de captura de inventario (MPRO)
-      if (response.data.errores_captura && response.data.errores_captura.length > 0) {
+      if (response.data?.errores_captura && response.data.errores_captura.length > 0) {
         setErroresCaptura(response.data.errores_captura);
         toast.warning(`Atención: ${response.data.errores_captura.length} error(es) de captura detectados`);
       } else {
         setErroresCaptura([]);
       }
       
-      toast.success(`Reporte generado: ${response.data.count} registros`);
+      toast.success(`Reporte generado: ${responseCount} registros`);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Error al generar reporte');
+      const errorData = error.response?.data || {};
+      const errorMessage =
+        errorData.message ||
+        errorData.detail?.message ||
+        (typeof errorData.detail === 'string' ? errorData.detail : null) ||
+        error.message ||
+        'Error al generar reporte';
+
+      const errorCode = errorData.error || errorData.detail?.code;
+
+      if (errorCode === 'INVENTORY_PHYSICAL_DETAIL_MISSING') {
+        setReportData([]);
+        setErroresCaptura([]);
+        toast.error(errorMessage, { duration: 10000 });
+      } else {
+        toast.error(errorMessage, { duration: 8000 });
+      }
     } finally {
       setLoading(false);
     }
@@ -1149,8 +1695,9 @@ const Reportes = () => {
   };
 
   const handleExportExcel = async () => {
-    logger.log('handleExportExcel llamado, reportData:', reportData.length);
-    if (reportData.length === 0) {
+    const exportRows = getAnalisisVistaRows();
+    logger.log('handleExportExcel llamado, exportRows:', exportRows.length);
+    if (exportRows.length === 0) {
       toast.error('No hay datos para exportar');
       return;
     }
@@ -1176,8 +1723,8 @@ const Reportes = () => {
       
       // Crear copia filtrada para exportación (no modifica reportData original)
       const dataParaExportar = mostrarCostos 
-        ? reportData 
-        : reportData.map(row => {
+        ? exportRows 
+        : exportRows.map(row => {
             const rowFiltrada = {};
             Object.entries(row).forEach(([key, value]) => {
               // Solo excluir las columnas de la lista explícita
@@ -1224,8 +1771,9 @@ const Reportes = () => {
   };
 
   const handleExportPDF = () => {
-    logger.log('handleExportPDF llamado, reportData:', reportData.length);
-    if (reportData.length === 0) {
+    const exportRows = getAnalisisVistaRows();
+    logger.log('handleExportPDF llamado, exportRows:', exportRows.length);
+    if (exportRows.length === 0) {
       toast.error('No hay datos para exportar');
       return;
     }
@@ -1248,7 +1796,7 @@ const Reportes = () => {
       const headers = ['Código', 'Producto', 'Inv. Inicial', 'Movimientos', 'Ventas', 'Inv. Teórico', 'Inv. Final', 'Diferencia'];
       
       logger.log('Preparando datos para tabla...');
-      const data = reportData.map(row => columns.map(col => {
+      const data = exportRows.map(row => columns.map(col => {
         const val = row[col];
         if (typeof val === 'number') return val.toLocaleString('es-MX', { maximumFractionDigits: 2 });
         return val || '';
@@ -2303,7 +2851,7 @@ const Reportes = () => {
               <CardTitle className="text-lg font-semibold">Resultados</CardTitle>
               <div className="flex items-center gap-3">
                 <span className="text-sm text-zinc-600">
-                  Total: <span className="font-data font-semibold">{reportData.length}</span> registros
+                  Total: <span className="font-data font-semibold">{analysisDisplayData.length}</span> registros
                 </span>
                 <Button
                   variant="outline"
@@ -2343,23 +2891,120 @@ const Reportes = () => {
               </div>
             )}
             <p className="text-xs text-zinc-500 mb-2 italic">
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  margin: '12px 0',
+                  flexWrap: 'wrap'
+                }}
+              >
+                <input
+                  type="text"
+                  value={inventorySearchTerm}
+                  onChange={(e) => setInventorySearchTerm(e.target.value)}
+                  placeholder="Buscar por clave o nombre..."
+                  style={{
+                    minWidth: '320px',
+                    maxWidth: '520px',
+                    flex: '1',
+                    padding: '10px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '14px'
+                  }}
+                />
+
+                {inventorySearchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setInventorySearchTerm('')}
+                    style={{
+                      padding: '9px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      background: '#ffffff',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Limpiar
+                  </button>
+                )}
+
+                <span style={{ fontSize: '13px', color: '#6b7280' }}>
+                  Mostrando {inventoryVisibleData.length} de {analysisDisplayData.length} registros
+                </span>
+              </div>
               💡 Doble clic en las columnas Movimientos o Ventas para ver el detalle
             </p>
-            <div className="rounded-md border border-zinc-200 max-h-[600px] overflow-auto">
+                          {filters.query_type === 'analisis' && (
+                <>
+              {/* EDARSAHUB-PATCH-ANALISIS-CONVERSION-AGRUPACION */}
+              <div className="mb-3 flex flex-wrap items-center gap-3 rounded-md border border-zinc-200 bg-zinc-50 p-3">
+                <div className="flex rounded-lg bg-zinc-200 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setUnidadAnalisisInventarios('presentaciones')}
+                    className={`px-3 py-1 text-xs rounded ${unidadAnalisisInventarios === 'presentaciones' ? 'bg-white shadow font-medium' : 'text-zinc-600'}`}
+                  >
+                    Presentaciones
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setUnidadAnalisisInventarios('insumos')}
+                    className={`px-3 py-1 text-xs rounded ${unidadAnalisisInventarios === 'insumos' ? 'bg-white shadow font-medium' : 'text-zinc-600'}`}
+                  >
+                    Insumos
+                  </button>
+                </div>
+
+                <label className="flex items-center gap-2 text-xs text-zinc-700">
+                  <input
+                    type="checkbox"
+                    checked={agruparProductosAnalisis}
+                    onChange={(e) => setAgruparProductosAnalisis(e.target.checked)}
+                  />
+                  Agrupar productos
+                </label>
+
+                {agruparProductosAnalisis && (
+                  <select
+                    value={agruparPorAnalisis}
+                    onChange={(e) => setAgruparPorAnalisis(e.target.value)}
+                    className="h-8 rounded border border-zinc-300 bg-white px-2 text-xs"
+                  >
+                    <option value="categoria">Categoría / Grupo</option>
+                    <option value="familia">Familia</option>
+                    <option value="subfamilia">Subfamilia</option>
+                    <option value="tipo">Tipo producto</option>
+                  </select>
+                )}
+
+                <span className="text-xs text-zinc-500">
+                  Conversión por rendimiento del catálogo. Sin hardcode de alimentos/bebidas.
+                </span>
+              </div>
+
+                </>
+              )}
+<div className="rounded-md border border-zinc-200 max-h-[600px] overflow-auto">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-zinc-200">
                   <tr className="border-b-2 border-zinc-400">
-                    {Object.keys(reportData[0])
+                    {Object.keys(inventoryVisibleData[0] || {})
                       .filter(key => mostrarCostos || !key.toLowerCase().includes('costo'))
                       .map((key) => (
-                      <th key={key} className="text-xs uppercase tracking-wider font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-left">
-                        {key.replace(/_/g, ' ').replace(/Cantidad/gi, 'Qty')}
+                      <th key={key} onClick={() => handleInventorySort(key)} title="Ordenar columna" className="text-xs uppercase tracking-wider font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-left">
+                        {formatAnalisisHeader(key)}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {reportData.slice(0, 2000).map((row, idx) => (
+                  {inventoryVisibleData.slice(0, 2000).map((row, idx) => (
                     <tr key={row.id || row.codigo || row.folio || `row-${idx}`} className="border-b hover:bg-zinc-50/50">
                       {Object.entries(row)
                         .filter(([key]) => mostrarCostos || !key.toLowerCase().includes('costo'))
@@ -2376,11 +3021,11 @@ const Reportes = () => {
                         let onDoubleClick = null;
                         
                         // Columnas clickeables para ver detalle
-                        if (isMovimientos && value !== null && value !== undefined && parseFloat(value) !== 0) {
+                        if (!agruparProductosAnalisis && isMovimientos && value !== null && value !== undefined && parseFloat(value) !== 0) {
                           onDoubleClick = () => loadMovementDetails(row);
                           className = "text-sm font-data text-blue-600 cursor-pointer hover:underline p-2";
                           displayValue = formatNumber(value);
-                        } else if (isVentas && value !== null && value !== undefined && parseFloat(value) !== 0) {
+                        } else if (!agruparProductosAnalisis && isVentas && value !== null && value !== undefined && parseFloat(value) !== 0) {
                           onDoubleClick = () => loadSalesDetails(row);
                           className = "text-sm font-data text-blue-600 cursor-pointer hover:underline p-2";
                           displayValue = formatNumber(value);
@@ -2421,9 +3066,9 @@ const Reportes = () => {
                 </tbody>
               </table>
             </div>
-            {reportData.length > 2000 && (
+            {inventoryVisibleData.length > 2000 && (
               <p className="text-sm text-zinc-600 mt-4 text-center">
-                Mostrando 2000 de {reportData.length} registros. Exporta para ver todos.
+                Mostrando 2000 de {analysisDisplayData.length} registros. Exporta para ver todos.
               </p>
             )}
           </CardContent>
@@ -3256,7 +3901,7 @@ const Reportes = () => {
         <DialogContent className="max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh] p-0 overflow-hidden">
           <DialogHeader className="px-4 py-3 border-b bg-zinc-100 flex flex-row items-center justify-between">
             <DialogTitle className="text-lg font-semibold">
-              Resultados de Auditoría ({reportData.length} registros)
+              Resultados de Auditoría ({analysisDisplayData.length} registros)
             </DialogTitle>
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -3284,17 +3929,17 @@ const Reportes = () => {
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-zinc-800 text-white">
                   <tr>
-                    {Object.keys(reportData[0])
+                    {Object.keys(inventoryVisibleData[0] || {})
                       .filter(key => mostrarCostos || !key.toLowerCase().includes('costo'))
                       .map((key) => (
-                      <th key={key} className="text-xs uppercase tracking-wider font-semibold whitespace-nowrap py-3 px-3 text-left">
+                      <th key={key} onClick={() => handleInventorySort(key)} title="Ordenar columna" className="text-xs uppercase tracking-wider font-semibold whitespace-nowrap py-3 px-3 text-left">
                         {key.replace(/_/g, ' ').replace(/Cantidad/gi, 'Qty')}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {reportData.map((row, idx) => (
+                  {inventoryVisibleData.map((row, idx) => (
                     <tr key={row.id || row.codigo || row.folio || `data-${idx}`} className="border-b hover:bg-zinc-50">
                       {Object.entries(row)
                         .filter(([key]) => mostrarCostos || !key.toLowerCase().includes('costo'))
