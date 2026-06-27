@@ -577,7 +577,7 @@ const Reportes = () => {
   // Cargar almacenes para SoftRestaurant desde EDARSAHUB SQL canónico
   const loadAlmacenesSoftRestaurant = async (soloConsumo = false) => {
     try {
-      const response = await api.get(`/servers/${filters.server_id}/almacenes-softrestaurant${soloConsumo ? '?solo_consumo=true' : ''}`);
+      const response = await api.get(`/servers/${filters.server_id}/almacenes`);
       const rows = Array.isArray(response.data)
         ? response.data
         : Array.isArray(response.data?.data)
@@ -618,12 +618,7 @@ const Reportes = () => {
       if (almacenesCanonicos.length > 0) {
         setAlmacenes(almacenesCanonicos);
       } else {
-        const fallbackUrl = soloConsumo
-          ? `/servers/${filters.server_id}/almacenes-softrestaurant?solo_consumo=true`
-          : `/servers/${filters.server_id}/almacenes-softrestaurant`;
-
-        const fallbackResponse = await api.get(fallbackUrl);
-        setAlmacenes(fallbackResponse.data);
+        setAlmacenes([]);
       }
 
       setFilters(prev => ({
