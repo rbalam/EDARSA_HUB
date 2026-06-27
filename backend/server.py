@@ -4587,6 +4587,23 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     server = decrypt_server_secrets(get_server_connection_info_with_secrets(server_id))
     if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
+
+    from time import perf_counter
+    request_started_at = perf_counter()
+
+    def _timed_inventory_sql(label: str, query: str):
+        started_at = perf_counter()
+        logging.info("[INV-ANALYSIS-TIMING] start label=%s server_id=%s system_type=%s", label, server_id, server.get('system_type'))
+        try:
+            rows = execute_sql_query(server['host'], server['port'], server['database'], server['username'], server['password'], query)
+            elapsed_ms = int((perf_counter() - started_at) * 1000)
+            row_count = len(rows) if hasattr(rows, '__len__') else 'unknown'
+            logging.info("[INV-ANALYSIS-TIMING] done label=%s elapsed_ms=%s rows=%s", label, elapsed_ms, row_count)
+            return rows
+        except Exception:
+            elapsed_ms = int((perf_counter() - started_at) * 1000)
+            logging.exception("[INV-ANALYSIS-TIMING] error label=%s elapsed_ms=%s", label, elapsed_ms)
+            raise
     
     try:
         if is_mpro_system(server.get('system_type')):
@@ -4654,7 +4671,7 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
                 elif lista_folios_ini:
                     # Obtener fecha del primer folio inicial
                     fecha_folio_query = f"SELECT TOP 1 CONVERT(varchar, Fi_Fecha, 120) as fecha FROM Fisico WHERE Fi_Folio = '{lista_folios_ini[0]}'"
-                    fecha_result = execute_sql_query(server['host'], server['port'], server['database'], server['username'], server['password'], fecha_folio_query)
+                    fecha_result = _timed_inventory_sql("mpro.fecha_inicial_folio", fecha_folio_query)
                     if fecha_result:
                         fecha_ini = fecha_result[0]['fecha'][:10]
                     else:
@@ -4667,7 +4684,7 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
                     fecha_fin = inventarios_finales_info[0]['fecha'][:10]
                 elif lista_folios_fin:
                     fecha_folio_query = f"SELECT TOP 1 CONVERT(varchar, Fi_Fecha, 120) as fecha FROM Fisico WHERE Fi_Folio = '{lista_folios_fin[0]}'"
-                    fecha_result = execute_sql_query(server['host'], server['port'], server['database'], server['username'], server['password'], fecha_folio_query)
+                    fecha_result = _timed_inventory_sql("mpro.fecha_final_folio", fecha_folio_query)
                     if fecha_result:
                         fecha_fin = fecha_result[0]['fecha'][:10]
                     else:
@@ -4701,10 +4718,7 @@ INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
 WHERE ({almacenes_like_conditions})
     AND S.Sc_Descripcion LIKE '%{sucursal_safe}%'
 """
-            almacen_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], almacen_query
-            )
+            almacen_result = _timed_inventory_sql("mpro.almacenes", almacen_query)
             if not almacen_result:
                 logging.error(f"Almacén(es) no encontrado(s) en MPRO - Sucursal: '{sucursal}', Almacenes: {lista_almacenes}, Servidor: {server.get('name', server_id)}")
                 raise HTTPException(status_code=404, detail=f"Almacén no encontrado en sucursal '{sucursal}'. Verifique la conexión al servidor SQL o que el almacén exista.")
@@ -4788,10 +4802,7 @@ WHERE P.Es_Cve_Estado <> 'BA'
 ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
 """
             logging.info("Obteniendo catalogo de productos MPRO (INSUMOS con presentaciones + COMPRAS sin presentacion)...")
-            productos = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], productos_query
-            )
+            productos = _timed_inventory_sql("mpro.productos", productos_query)
             logging.info(f"Productos obtenidos: {len(productos)}")
             
             # 3. Obtener ventas - UNION ALL de ventas KIT + ventas DIRECTAS
@@ -4834,10 +4845,7 @@ SELECT Producto_Codigo, SUM(cantidad) as Total_Ventas FROM (
 GROUP BY Producto_Codigo
 """
                 logging.info("Obteniendo ventas (KIT + DIRECTAS)...")
-                ventas_result = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], ventas_query
-                )
+                ventas_result = _timed_inventory_sql("mpro.ventas", ventas_query)
                 ventas_dict = {v['Producto_Codigo']: float(v['Total_Ventas'] or 0) for v in ventas_result}
                 logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
             else:
@@ -4879,10 +4887,7 @@ WHERE S.Sc_Descripcion LIKE '%{_escape_like_pattern(sucursal) if sucursal else "
 GROUP BY E.Pr_Cve_Producto
 """
             logging.info("Obteniendo movimientos (con lógica especial de fechas para tipos 508/108)...")
-            movimientos_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], movimientos_query
-            )
+            movimientos_result = _timed_inventory_sql("mpro.movimientos", movimientos_query)
             movimientos_dict = {m['Producto_Codigo']: float(m['Total_Movimientos'] or 0) for m in movimientos_result}
             logging.info(f"Movimientos obtenidos para {len(movimientos_dict)} productos")
             
@@ -4903,10 +4908,7 @@ INNER JOIN Fisico F ON F.Pr_Cve_Producto = PP.Pp_Producto
     AND F.Fi_Folio IN ({folios_ini_sql}, {folios_fin_sql})
 WHERE P_INS.Dp_Cve_Departamento = '0007'
 """
-            errores_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], errores_captura_query
-            )
+            errores_result = _timed_inventory_sql("mpro.errores_captura", errores_captura_query)
             if errores_result:
                 logging.warning(f"ERRORES DE CAPTURA DETECTADOS: {len(errores_result)} presentaciones capturadas incorrectamente")
                 for err in errores_result:
@@ -4993,10 +4995,7 @@ WHERE F.Fi_Folio IN ({folios_ini_sql}, {folios_fin_sql})
     AND F.Al_Cve_Almacen IN ({almacenes_sql})
 ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
 """
-                inv_detalle = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], inv_detalle_query
-                )
+                inv_detalle = _timed_inventory_sql("mpro.inventario_detalle", inv_detalle_query)
                 
                 # Crear diccionarios de folios iniciales y finales
                 folios_ini_set = set(lista_folios_ini)
@@ -5111,6 +5110,7 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
                 })
             
             logging.info(f"Análisis MPRO completado: {len(results)} productos procesados, {len(errores_list)} errores de captura")
+            logging.info("[INV-ANALYSIS-TIMING] done label=mpro.total elapsed_ms=%s rows=%s", int((perf_counter() - request_started_at) * 1000), len(results))
             
             # ===== GUARDAR DIFERENCIAS EN CACHE PARA COMPARATIVO DE 4 CORTES =====
             try:
