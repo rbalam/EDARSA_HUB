@@ -580,3 +580,5 @@ exports/edarsahub_sql_full/
 *.zip
 *.7z
 *.rar
+graphify-out/
+**/graphify-out/
