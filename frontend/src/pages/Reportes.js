@@ -1049,13 +1049,39 @@ const Reportes = () => {
   };
 
   const formatAnalisisHeader = (key) => {
-    const base = String(key || '').replace(/_/g, ' ').replace(/Cantidad/gi, 'Qty');
+    const labels = {
+      Agrupacion: 'AGRUPACION',
+      codigo_producto: 'CODIGO',
+      Codigo: 'CODIGO',
+      codigo: 'CODIGO',
+      CODIGO: 'CODIGO',
+      nombre_producto: 'NOMBRE PRODUCTO',
+      Producto: 'NOMBRE PRODUCTO',
+      producto: 'NOMBRE PRODUCTO',
+      Nombre: 'NOMBRE PRODUCTO',
+      nombre: 'NOMBRE PRODUCTO',
+      unidad: 'UNIDAD',
+      Unidad: 'UNIDAD',
+      UNIDAD: 'UNIDAD',
+      Items: 'ITEMS',
+      Inv_Inicial_Cantidad: 'INV. INICIAL',
+      inventario_inicial: 'INV. INICIAL',
+      Movimientos: 'MOVIMIENTOS',
+      movimientos: 'MOVIMIENTOS',
+      Ventas: 'VENTAS',
+      ventas: 'VENTAS',
+      Inv_Teorico_Cantidad: 'INV. TEORICO',
+      inventario_teorico: 'INV. TEORICO',
+      Inv_Final_Cantidad: 'INV. FINAL',
+      inventario_final: 'INV. FINAL',
+      Diferencia_Cantidad: 'DIFERENCIAS',
+      diferencia: 'DIFERENCIAS',
+      DIFERENCIA_QTY: 'DIFERENCIAS',
+      Diferencia_Costo: 'DIFERENCIA COSTO',
+      DIFERENCIA_VALOR: 'DIFERENCIA COSTO'
+    };
 
-    if (isAnalisisCantidadKey(key)) {
-      return `${base} (${unidadAnalisisInventarios === 'presentaciones' ? 'Pres' : 'Ins'})`;
-    }
-
-    return base;
+    return labels[key] || String(key || '').replace(/_/g, ' ').replace(/Cantidad/gi, '').trim().toUpperCase();
   };
 
   const shouldShowAnalisisColumn = (key) => {
@@ -3228,7 +3254,13 @@ const Reportes = () => {
                 <thead className="sticky top-0 z-10 bg-zinc-200">
                   <tr className="border-b-2 border-zinc-400">
                     {inventoryVisibleColumns.map((key) => (
-                      <th key={key} onClick={() => handleInventorySort(key)} title="Ordenar columna" className="text-xs uppercase tracking-wider font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-left">
+                      <th
+                        key={key}
+                        onClick={() => handleInventorySort(key)}
+                        title="Ordenar columna"
+                        className="text-xs uppercase tracking-wider font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-left"
+                        style={{ textAlign: 'left' }}
+                      >
                         {formatAnalisisHeader(key)}
                       </th>
                     ))}
@@ -3304,7 +3336,8 @@ const Reportes = () => {
                         return (
                           <td 
                             key={cellIdx} 
-                            className={className}
+                            className={`${className} align-top whitespace-nowrap`}
+                            style={{ textAlign: 'left' }}
                             onDoubleClick={onDoubleClick}
                             title={onDoubleClick ? 'Doble clic para ver detalle' : ''}
                           >
@@ -4181,7 +4214,13 @@ const Reportes = () => {
                 <thead className="sticky top-0 z-10 bg-zinc-800 text-white">
                   <tr>
                     {inventoryVisibleColumns.map((key) => (
-                      <th key={key} onClick={() => handleInventorySort(key)} title="Ordenar columna" className="text-xs uppercase tracking-wider font-semibold whitespace-nowrap py-3 px-3 text-left">
+                      <th
+                        key={key}
+                        onClick={() => handleInventorySort(key)}
+                        title="Ordenar columna"
+                        className="text-xs uppercase tracking-wider font-semibold whitespace-nowrap py-3 px-3 text-left"
+                        style={{ textAlign: 'left' }}
+                      >
                         {formatAnalisisHeader(key)}
                       </th>
                     ))}
@@ -4253,7 +4292,8 @@ const Reportes = () => {
                         return (
                           <td
                             key={cellIdx}
-                            className={className}
+                            className={`${className} align-top whitespace-nowrap`}
+                            style={{ textAlign: 'left' }}
                             onDoubleClick={onDoubleClick}
                             title={onDoubleClick ? 'Doble clic para ver detalle' : ''}
                           >
