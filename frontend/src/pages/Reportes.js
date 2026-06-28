@@ -251,7 +251,7 @@ const Reportes = () => {
   // EDARSAHUB-PATCH-ANALISIS-CONVERSION-AGRUPACION
   // Vista de cantidades para Análisis de Inventarios.
   // La data base del backend se conserva; esto solo cambia la vista.
-  const [unidadAnalisisInventarios, setUnidadAnalisisInventarios] = useState('presentaciones');
+  const [unidadAnalisisInventarios, setUnidadAnalisisInventarios] = useState('insumos');
   const [agruparProductosAnalisis, setAgruparProductosAnalisis] = useState(false);
   const [agruparPorAnalisis, setAgruparPorAnalisis] = useState('categoria');
   
@@ -511,6 +511,20 @@ const Reportes = () => {
   useEffect(() => {
     sessionStorage.setItem('selectedAlmacenes', JSON.stringify(selectedAlmacenes));
   }, [selectedAlmacenes]);
+
+  useEffect(() => {
+    if (filters.query_type !== 'analisis' || selectedAlmacenes.length === 0) return;
+
+    const unidades = Array.from(new Set(
+      selectedAlmacenes
+        .map(a => a?.unidad_natural || (Number(a?.tipo ?? a?.tipo_almacen ?? a?.almacen_tipo) === 2 ? 'presentaciones' : 'insumos'))
+        .filter(Boolean)
+    ));
+
+    if (unidades.length === 1) {
+      setUnidadAnalisisInventarios(unidades[0]);
+    }
+  }, [filters.query_type, selectedAlmacenes]);
 
   useEffect(() => {
     sessionStorage.setItem('selectedInventariosIni', JSON.stringify(selectedInventariosIni));
@@ -1047,6 +1061,11 @@ const Reportes = () => {
     return base;
   };
 
+  const shouldShowAnalisisColumn = (key) => {
+    const hidden = new Set(['Rendimiento', 'rendimiento', 'tipo_almacen', 'tipoAlmacen', 'almacen_tipo', 'source']);
+    return !hidden.has(key);
+  };
+
   const getAgrupacionAnalisis = (row) => {
     const valueBy = {
       categoria: row?.Categoria ?? row?.categoria ?? row?.Grupo ?? row?.grupo,
@@ -1086,7 +1105,14 @@ const Reportes = () => {
       'Diferencia_Cantidad',
       'Diferencia_Costo',
       'DIFERENCIA_QTY',
-      'DIFERENCIA_VALOR'
+      'DIFERENCIA_VALOR',
+      'inventario_inicial',
+      'movimientos',
+      'ventas',
+      'inventario_teorico',
+      'inventario_final',
+      'diferencia',
+      'diferencia_costo'
     ];
 
     const grupos = new Map();
@@ -1432,6 +1458,9 @@ const Reportes = () => {
         );
 
         return {
+          Categoria: row.Categoria ?? row.categoria ?? '',
+          Familia: row.Familia ?? row.familia ?? '',
+          SubFamilia: row.SubFamilia ?? row.subfamilia ?? '',
           codigo_producto: codigo,
           nombre_producto: nombre,
           unidad: unidad,
@@ -1442,7 +1471,9 @@ const Reportes = () => {
           inventario_final: inventarioFinal,
           diferencia: diferencia,
           costo_unitario: costoUnitario,
-          diferencia_costo: diferenciaCosto
+          diferencia_costo: diferenciaCosto,
+          Rendimiento: row.Rendimiento ?? row.rendimiento ?? 1,
+          tipo_almacen: row.tipo_almacen ?? row.tipoAlmacen ?? row.almacen_tipo ?? row.tipo
         };
       });
 
@@ -1482,6 +1513,9 @@ const Reportes = () => {
             : row.costo_unitario;
 
         return {
+          Categoria: row.Categoria,
+          Familia: row.Familia,
+          SubFamilia: row.SubFamilia,
           codigo_producto: row.codigo_producto,
           nombre_producto: row.nombre_producto,
           unidad: row.unidad,
@@ -1492,7 +1526,9 @@ const Reportes = () => {
           inventario_final: Number(row.inventario_final.toFixed(6)),
           diferencia: Number(row.diferencia.toFixed(6)),
           costo_unitario: Number(costoUnitarioFinal.toFixed(6)),
-          diferencia_costo: Number(row.diferencia_costo.toFixed(6))
+          diferencia_costo: Number(row.diferencia_costo.toFixed(6)),
+          Rendimiento: row.Rendimiento,
+          tipo_almacen: row.tipo_almacen
         };
       });
 
@@ -1967,27 +2003,33 @@ const Reportes = () => {
   // Doble clic: detalle CANÓNICO de movimientos (hook + componente compartido con Auditoría).
   // Usa los endpoints canónicos /compras/detalle-movimientos (aceptan unidad o server_id legacy).
   const loadMovementDetails = (producto) => {
+    const codigo = producto.Codigo ?? producto.codigo_producto ?? producto.codigo ?? producto.CODIGO;
+    const nombre = producto.Producto ?? producto.nombre_producto ?? producto.nombre ?? producto.Nombre ?? codigo;
+
     abrirMovimientos({
       serverId: filters.server_id,
       sucursal: filters.sucursal,
-      codigo: producto.Codigo,
-      producto: producto.Producto,
+      codigo,
+      producto: nombre,
       fechaInicio: filters.fecha_ini,
       fechaFin: filters.fecha_fin,
-      almacenes: filters.almacen,
+      almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes.map(a => a.id || a.almacen_id || a.nombre) : filters.almacen,
     });
   };
 
   // Doble clic: detalle CANÓNICO de ventas/consumos (hook + componente compartido con Auditoría).
   const loadSalesDetails = (producto) => {
+    const codigo = producto.Codigo ?? producto.codigo_producto ?? producto.codigo ?? producto.CODIGO;
+    const nombre = producto.Producto ?? producto.nombre_producto ?? producto.nombre ?? producto.Nombre ?? codigo;
+
     abrirConsumos({
       serverId: filters.server_id,
       sucursal: filters.sucursal,
-      codigo: producto.Codigo,
-      producto: producto.Producto,
+      codigo,
+      producto: nombre,
       fechaInicio: filters.fecha_ini,
       fechaFin: filters.fecha_fin,
-      almacenes: filters.almacen,
+      almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes.map(a => a.id || a.almacen_id || a.nombre) : filters.almacen,
     });
   };
 
@@ -2997,6 +3039,7 @@ const Reportes = () => {
                 <thead className="sticky top-0 z-10 bg-zinc-200">
                   <tr className="border-b-2 border-zinc-400">
                     {Object.keys(inventoryVisibleData[0] || {})
+                      .filter(key => shouldShowAnalisisColumn(key))
                       .filter(key => mostrarCostos || !key.toLowerCase().includes('costo'))
                       .map((key) => (
                       <th key={key} onClick={() => handleInventorySort(key)} title="Ordenar columna" className="text-xs uppercase tracking-wider font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-left">
@@ -3009,14 +3052,16 @@ const Reportes = () => {
                   {inventoryVisibleData.slice(0, 2000).map((row, idx) => (
                     <tr key={row.id || row.codigo || row.folio || `row-${idx}`} className="border-b hover:bg-zinc-50/50">
                       {Object.entries(row)
+                        .filter(([key]) => shouldShowAnalisisColumn(key))
                         .filter(([key]) => mostrarCostos || !key.toLowerCase().includes('costo'))
                         .map(([key, value], cellIdx) => {
                         // Special formatting for analysis report
                         const isDiferencia = key.toLowerCase().includes('diferencia');
                         const isCosto = key.toLowerCase().includes('costo');
                         const isPorcentaje = key.toLowerCase().includes('porcentaje');
-                        const isMovimientos = key === 'Movimientos';
-                        const isVentas = key === 'Ventas';
+                        const keyLower = key.toLowerCase();
+                        const isMovimientos = keyLower === 'movimientos';
+                        const isVentas = keyLower === 'ventas';
                         
                         let displayValue = value;
                         let className = "text-sm font-data text-zinc-700 p-2";
@@ -3932,6 +3977,7 @@ const Reportes = () => {
                 <thead className="sticky top-0 z-10 bg-zinc-800 text-white">
                   <tr>
                     {Object.keys(inventoryVisibleData[0] || {})
+                      .filter(key => shouldShowAnalisisColumn(key))
                       .filter(key => mostrarCostos || !key.toLowerCase().includes('costo'))
                       .map((key) => (
                       <th key={key} onClick={() => handleInventorySort(key)} title="Ordenar columna" className="text-xs uppercase tracking-wider font-semibold whitespace-nowrap py-3 px-3 text-left">
@@ -3944,6 +3990,7 @@ const Reportes = () => {
                   {inventoryVisibleData.map((row, idx) => (
                     <tr key={row.id || row.codigo || row.folio || `data-${idx}`} className="border-b hover:bg-zinc-50">
                       {Object.entries(row)
+                        .filter(([key]) => shouldShowAnalisisColumn(key))
                         .filter(([key]) => mostrarCostos || !key.toLowerCase().includes('costo'))
                         .map(([key, value], cellIdx) => {
                         const isDiferencia = key.toLowerCase().includes('diferencia');

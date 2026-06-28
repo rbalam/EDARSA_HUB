@@ -4811,14 +4811,52 @@ GROUP BY codigo_producto
                 logging.exception("[SOFT-CANONICAL-NOLIVE] movimientos canonicos no disponibles")
                 raise HTTPException(status_code=500, detail=f"Movimientos canónicos no disponibles: {str(mov_error)}")
 
+            ventas = {}
+            sales_params = [server_id, period_start, period_end]
+            sales_filters = [
+                "server_id = %s",
+                "fecha >= %s",
+                "fecha <= %s",
+                "sync_status = 'ACTIVE'",
+                "ISNULL(idconcepto, '') IN ('SPV', 'SCP', 'SCS')",
+            ]
+            if almacen_ids:
+                ids = sorted(almacen_ids)
+                sales_filters.append(f"almacen_id IN ({','.join(['%s'] * len(ids))})")
+                sales_params.extend(ids)
+            elif almacen_names:
+                names = sorted(almacen_names)
+                sales_filters.append(f"almacen IN ({','.join(['%s'] * len(names))})")
+                sales_params.extend(names)
+
+            try:
+                cursor.execute(
+                    f"""
+SELECT
+    codigo_producto,
+    SUM(cantidad) AS cantidad
+FROM Compras_Inventarios_Movimientos_Sync
+WHERE {' AND '.join(sales_filters)}
+GROUP BY codigo_producto
+""",
+                    tuple(sales_params),
+                )
+                ventas = {
+                    _as_text(row.get('codigo_producto')): abs(_as_float(row.get('cantidad')))
+                    for row in cursor.fetchall()
+                    if _as_text(row.get('codigo_producto'))
+                }
+            except Exception as sales_error:
+                logging.warning("[SOFT-CANONICAL-NOLIVE] ventas canonicas no disponibles: %s", str(sales_error))
+
             results = []
-            for codigo in sorted(set(productos.keys()) | set(inv_inicial.keys()) | set(inv_final.keys()) | set(movimientos.keys())):
+            for codigo in sorted(set(productos.keys()) | set(inv_inicial.keys()) | set(inv_final.keys()) | set(movimientos.keys()) | set(ventas.keys())):
                 prod = productos.get(codigo, {})
                 costo = _as_float(prod.get('Costo_Unitario'))
                 inv_ini_qty = _as_float(inv_inicial.get(codigo))
                 inv_fin_qty = _as_float(inv_final.get(codigo))
                 mov_qty = _as_float(movimientos.get(codigo))
-                ventas_qty = 0.0
+                ventas_qty = _as_float(ventas.get(codigo))
                 inv_teorico = inv_ini_qty + mov_qty - ventas_qty
                 diferencia = inv_fin_qty - inv_teorico
                 diferencia_costo = diferencia * costo
@@ -4836,6 +4874,8 @@ GROUP BY codigo_producto
                     'Codigo': codigo,
                     'Producto': prod.get('Producto') or f'Producto {codigo}',
                     'Unidad': prod.get('Unidad') or 'PZA',
+                    'Rendimiento': 1,
+                    'tipo_almacen': 1,
                     'Costo_Unitario': round(costo, 4),
                     'Inv_Inicial_Cantidad': round(inv_ini_qty, 4),
                     'Inv_Inicial_Costo': round(inv_ini_qty * costo, 2),
@@ -4857,11 +4897,12 @@ GROUP BY codigo_producto
 
             elapsed_ms = int((perf_counter() - started_at) * 1000)
             logging.info(
-                "[SOFT-CANONICAL-NOLIVE] done elapsed_ms=%s rows=%s details=%s movimientos=%s",
+                "[SOFT-CANONICAL-NOLIVE] done elapsed_ms=%s rows=%s details=%s movimientos=%s ventas=%s",
                 elapsed_ms,
                 len(results),
                 len(detail_rows),
                 len(movimientos),
+                len(ventas),
             )
             return {"data": results, "count": len(results), "source": "EDARSAHUB_SQL_CANONICAL"}
         except HTTPException:
@@ -10361,6 +10402,153 @@ class DetalleMovimientosRequest(BaseModel):
     almacenes: Optional[List[str]] = None
 
 
+def _clean_detalle_almacenes(almacenes):
+    if not almacenes:
+        return []
+    if isinstance(almacenes, str):
+        almacenes = [almacenes]
+    cleaned = []
+    for almacen in almacenes:
+        value = str(almacen or '').strip()
+        if value:
+            cleaned.append(value)
+    return list(dict.fromkeys(cleaned))
+
+
+def _float_detalle(value):
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _iso_detalle(value):
+    return value.isoformat() if hasattr(value, 'isoformat') else str(value or '')
+
+
+def _obtener_detalle_softrestaurant_canonico(request, solo_ventas=False):
+    if not request.fecha_inicio or not request.fecha_fin:
+        empty_totals = {"total": 0, "entradas": 0, "salidas": 0, "neto": 0} if solo_ventas else {"entradas": 0, "salidas": 0, "neto": 0}
+        key = "consumos" if solo_ventas else "movimientos"
+        return {key: [], "movimientos": [], "totales": empty_totals, "error": "Fechas no válidas"}
+
+    codigo_limpio = str(request.codigo or '').strip()
+    codigo_sin_prefijo = codigo_limpio[1:] if codigo_limpio and codigo_limpio[0].isalpha() else codigo_limpio
+    codigos = [c for c in dict.fromkeys([codigo_limpio, codigo_sin_prefijo]) if c]
+    almacenes_limpios = _clean_detalle_almacenes(request.almacenes)
+
+    if not codigos:
+        empty_totals = {"total": 0, "entradas": 0, "salidas": 0, "neto": 0} if solo_ventas else {"entradas": 0, "salidas": 0, "neto": 0}
+        key = "consumos" if solo_ventas else "movimientos"
+        return {key: [], "movimientos": [], "totales": empty_totals, "error": "Producto no válido"}
+
+    concept_filter = "ISNULL(idconcepto, '') IN ('SPV', 'SCP', 'SCS')" if solo_ventas else "ISNULL(idconcepto, '') NOT IN ('', 'SPV', 'SCP', 'SCS')"
+    codigo_placeholders = ",".join(["%s"] * len(codigos))
+    filters = [
+        "server_id = %s",
+        f"codigo_producto IN ({codigo_placeholders})",
+        "fecha >= %s",
+        "fecha <= %s",
+        "sync_status = 'ACTIVE'",
+        concept_filter,
+    ]
+    params = [request.server_id, *codigos, request.fecha_inicio, request.fecha_fin]
+
+    if almacenes_limpios:
+        almacen_placeholders = ",".join(["%s"] * len(almacenes_limpios))
+        filters.append(f"(almacen_id IN ({almacen_placeholders}) OR almacen IN ({almacen_placeholders}))")
+        params.extend(almacenes_limpios)
+        params.extend(almacenes_limpios)
+
+    conn = None
+    try:
+        from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
+
+        conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=10)
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute(
+            f"""
+SELECT TOP 1000
+    fecha,
+    idconcepto,
+    codigo_producto,
+    cantidad,
+    almacen,
+    almacen_id
+FROM Compras_Inventarios_Movimientos_Sync
+WHERE {' AND '.join(filters)}
+ORDER BY fecha DESC
+""",
+            tuple(params),
+        )
+        rows = cursor.fetchall()
+
+        movimientos = []
+        totales = {"entradas": 0.0, "salidas": 0.0, "neto": 0.0}
+        total_ventas = 0.0
+
+        for row in rows:
+            raw_qty = _float_detalle(row.get('cantidad'))
+            concepto = str(row.get('idconcepto') or ('VENTA' if solo_ventas else 'MOV')).strip()
+            almacen = row.get('almacen') or row.get('almacen_id') or ''
+
+            if solo_ventas:
+                qty = abs(raw_qty)
+                signed_qty = -qty
+                tipo = 'S'
+                descripcion = 'Venta/consumo canónico SoftRestaurant'
+                total_ventas += qty
+                totales["salidas"] += qty
+            else:
+                qty = abs(raw_qty)
+                tipo = 'E' if raw_qty >= 0 else 'S'
+                signed_qty = qty if tipo == 'E' else -qty
+                descripcion = 'Movimiento canónico SoftRestaurant'
+                if tipo == 'E':
+                    totales["entradas"] += qty
+                else:
+                    totales["salidas"] += qty
+
+            movimientos.append({
+                "fecha": _iso_detalle(row.get('fecha')),
+                "concepto": concepto,
+                "descripcion": descripcion,
+                "cantidad": signed_qty,
+                "almacen": almacen,
+                "referencia": str(row.get('codigo_producto') or ''),
+                "tipo": tipo,
+            })
+
+        totales["neto"] = totales["entradas"] - totales["salidas"]
+
+        if solo_ventas:
+            total_ventas = round(total_ventas, 4)
+            return {
+                "consumos": movimientos,
+                "movimientos": movimientos,
+                "totales": {
+                    "total": total_ventas,
+                    "entradas": 0,
+                    "salidas": total_ventas,
+                    "neto": -total_ventas,
+                },
+                "source": "EDARSAHUB_SQL_CANONICAL",
+            }
+
+        return {
+            "movimientos": movimientos,
+            "totales": {
+                "entradas": round(totales["entradas"], 4),
+                "salidas": round(totales["salidas"], 4),
+                "neto": round(totales["neto"], 4),
+            },
+            "source": "EDARSAHUB_SQL_CANONICAL",
+        }
+    finally:
+        if conn:
+            conn.close()
+
+
 # =============================================================================
 # INVENTARIOS PROVISIONALES - CAPTURA MANUAL
 # Tabla: EDARSAHUB.dbo.Auditoria_Inventario_Provisional
@@ -10628,6 +10816,9 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
                  f"fechas={request.fecha_inicio}..{request.fecha_fin} almacenes={almacenes_limpios}")
 
     try:
+        if is_softrestaurant_system(server.get('system_type')):
+            return _obtener_detalle_softrestaurant_canonico(request, solo_ventas=False)
+
         conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=15)
         cursor = conn.cursor(as_dict=True)
 
@@ -10838,6 +11029,19 @@ async def obtener_detalle_consumos_post(request: DetalleConsumosRequest, current
     # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy.
     from core.corporate_filters.request_resolver import canonical_server_id
     request.server_id = canonical_server_id(request.server_id)
+
+    from core.server_registry import get_server_connection_info
+    server = await get_server_connection_info(request.server_id, db=db)
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+
+    if is_softrestaurant_system(server.get('system_type')):
+        try:
+            return _obtener_detalle_softrestaurant_canonico(request, solo_ventas=True)
+        except Exception as e:
+            logging.error(f"[DETALLE_CONSUMOS][SOFT-CANONICAL] Error: {e}")
+            return {"consumos": [], "movimientos": [], "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
+                    "error": f"Error al obtener consumos: {str(e)[:100]}"}
 
     almacen = ''
     if isinstance(request.almacenes, list) and request.almacenes:
