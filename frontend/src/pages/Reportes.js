@@ -1246,6 +1246,14 @@ const Reportes = () => {
     };
   };
 
+  const isNombreProductoAnalisisColumn = (key) => {
+    const normalized = String(key || '')
+      .toLowerCase()
+      .replace(/[\s_-]+/g, '');
+
+    return ['nombreproducto', 'producto', 'nombre'].includes(normalized);
+  };
+
   const getAgrupacionAnalisis = (row) => {
     const productoInfo = getProductoAgrupacionAnalisis(row);
     const rawBy = {
@@ -2352,9 +2360,10 @@ const Reportes = () => {
   };
 
   const loadRecipeUsageDetails = async (producto) => {
-    const codigo = producto.Codigo ?? producto.codigo_producto ?? producto.codigo ?? producto.CODIGO;
-    const nombre = producto.Producto ?? producto.nombre_producto ?? producto.nombre ?? producto.Nombre ?? codigo;
-    const unidad = producto.Unidad ?? producto.unidad ?? producto.UNIDAD ?? '';
+    const productoInfo = getProductoAgrupacionAnalisis(producto);
+    const codigo = productoInfo.codigo;
+    const nombre = productoInfo.producto || codigo;
+    const unidad = productoInfo.unidad;
     const rendimiento = getAnalisisRendimiento(producto);
 
     if (!codigo) {
@@ -3449,7 +3458,7 @@ const Reportes = () => {
                         const keyLower = key.toLowerCase();
                         const isMovimientos = keyLower === 'movimientos';
                         const isVentas = keyLower === 'ventas';
-                        const isNombreProducto = ['nombre_producto', 'producto', 'nombre'].includes(keyLower);
+                        const isNombreProducto = isNombreProductoAnalisisColumn(key);
                         
                         const isGroupRow = row.__rowType === 'group';
                         const isDetailInGroup = agruparProductosAnalisis && row.__rowType === 'detail';
@@ -4419,7 +4428,7 @@ const Reportes = () => {
                         const keyLower = key.toLowerCase();
                         const isMovimientos = keyLower === 'movimientos';
                         const isVentas = keyLower === 'ventas';
-                        const isNombreProducto = ['nombre_producto', 'producto', 'nombre'].includes(keyLower);
+                        const isNombreProducto = isNombreProductoAnalisisColumn(key);
                         
                         let displayValue = value;
                         let className = `py-2 px-3 text-left ${isGroupRow ? 'text-zinc-900 bg-zinc-100' : 'text-zinc-700'}`;
