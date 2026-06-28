@@ -4989,8 +4989,17 @@ WHERE i.ServerID = %s
 """,
                         tuple([server_id, *all_codes]),
                     )
-                    for row in cursor.fetchall():
+                    insumo_catalog_rows = cursor.fetchall()
+                    for row in insumo_catalog_rows:
                         _merge_catalog_row(_as_text(row.get('Codigo')), row)
+                    logging.warning(
+                        "[SOFT-CANONICAL-NOLIVE] sync insumo classifier rows=%s resolved=%s",
+                        len(insumo_catalog_rows),
+                        len([
+                            row for row in insumo_catalog_rows
+                            if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
+                        ]),
+                    )
                 except Exception as catalog_error:
                     logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo insumos canonico no disponible: %s", str(catalog_error))
                     try:
@@ -5044,7 +5053,7 @@ WHERE p.ServerID = %s
                     )
                     sync_product_rows = cursor.fetchall()
                     for row in sync_product_rows:
-                        _merge_catalog_row(_as_text(row.get('Codigo')), row, force_classifiers=True)
+                        _merge_catalog_row(_as_text(row.get('Codigo')), row)
                     logging.warning(
                         "[SOFT-CANONICAL-NOLIVE] sync product classifier rows=%s resolved=%s",
                         len(sync_product_rows),
