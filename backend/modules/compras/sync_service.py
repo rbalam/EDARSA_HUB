@@ -271,7 +271,13 @@ def obtener_inventarios_fisicos_sync(
             inner_where += " AND (sucursal LIKE %s OR sucursal_id = %s)"
             params.extend([f'%{sucursal}%', sucursal])
         
-        if almacen_id and almacen_id != 'TODOS':
+        if almacen_id and almacen_id != 'TODOS' and almacen and almacen != 'TODOS':
+            # Algunas pantallas tienen un id canónico de almacén que no coincide 1:1
+            # con el almacen_id sincronizado del origen; conservamos el filtro por id,
+            # pero dejamos el nombre como recuperación para no ocultar inventarios.
+            inner_where += " AND (almacen_id = %s OR almacen LIKE %s)"
+            params.extend([almacen_id, f'%{almacen}%'])
+        elif almacen_id and almacen_id != 'TODOS':
             inner_where += " AND almacen_id = %s"
             params.append(almacen_id)
         elif almacen and almacen != 'TODOS':
@@ -308,7 +314,14 @@ def obtener_inventarios_fisicos_sync(
             if row.get('sync_timestamp'):
                 row['sync_timestamp'] = str(row['sync_timestamp'])
         
-        logger.info(f"[SYNC-READ] Inventarios físicos: {len(rows)} registros desde EDARSAHUB")
+        logger.warning(
+            "[SYNC-READ] Inventarios físicos filtros server_id=%s sucursal=%s almacen_id=%s almacen=%s rows=%s",
+            server_id,
+            sucursal,
+            almacen_id,
+            almacen,
+            len(rows),
+        )
         return rows
         
     except Exception as e:
@@ -1365,4 +1378,3 @@ def sync_recepciones_from_server(
     except Exception as e:
         logger.error(f"[SYNC] Error en sync_recepciones: {e}")
         return {"status": "ERROR", "error": str(e), "encabezados_synced": 0, "detalles_synced": 0}
-

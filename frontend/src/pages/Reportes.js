@@ -890,8 +890,8 @@ const Reportes = () => {
           // Agregar el nombre del almacén a cada inventario
           const inventariosConAlmacen = inventariosData.map(inv => ({
             ...inv,
-            almacen: almacen.nombre,
-            almacen_id: almacen.id
+            almacen: inv.almacen || almacen.nombre,
+            almacen_id: inv.almacen_id || almacen.id
           }));
           allInventarios = [...allInventarios, ...inventariosConAlmacen];
         }
