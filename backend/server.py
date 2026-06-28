@@ -4789,7 +4789,9 @@ WHERE {' AND '.join(detail_filters)}
                 "fecha <= %s",
                 "sync_status = 'ACTIVE'",
                 "ISNULL(idconcepto, '') NOT IN ('', 'SPV', 'SCP', 'SCS')",
+                _soft_date_only_final_day_guard("fecha"),
             ]
+            movement_params.extend([period_end, period_end])
             if almacen_ids:
                 ids = sorted(almacen_ids)
                 movement_filters.append(f"almacen_id IN ({','.join(['%s'] * len(ids))})")
@@ -4828,7 +4830,9 @@ GROUP BY codigo_producto
                 "fecha <= %s",
                 "sync_status = 'ACTIVE'",
                 "ISNULL(idconcepto, '') IN ('SPV', 'SCP', 'SCS')",
+                _soft_date_only_final_day_guard("fecha"),
             ]
+            sales_params.extend([period_end, period_end])
             if almacen_ids:
                 ids = sorted(almacen_ids)
                 sales_filters.append(f"almacen_id IN ({','.join(['%s'] * len(ids))})")
@@ -4989,6 +4993,15 @@ WHERE p.ServerID = %s
                 inv_fin_qty = _as_float(inv_final.get(codigo))
                 mov_qty = _as_float(movimientos.get(codigo))
                 ventas_qty = _as_float(ventas.get(codigo))
+                has_activity = (
+                    abs(inv_ini_qty) > 0.000001
+                    or abs(inv_fin_qty) > 0.000001
+                    or codigo in movimientos
+                    or codigo in ventas
+                )
+                if not has_activity:
+                    continue
+
                 inv_teorico = inv_ini_qty + mov_qty - ventas_qty
                 diferencia = inv_fin_qty - inv_teorico
                 diferencia_costo = diferencia * costo
@@ -10558,6 +10571,14 @@ def _iso_detalle(value):
     return value.isoformat() if hasattr(value, 'isoformat') else str(value or '')
 
 
+def _soft_date_only_final_day_guard(column_name: str = "fecha") -> str:
+    return (
+        f"NOT (CAST({column_name} AS time) = '00:00:00' "
+        f"AND CAST({column_name} AS date) = CAST(%s AS date) "
+        "AND CAST(%s AS time) < '23:59:59')"
+    )
+
+
 def _obtener_detalle_softrestaurant_canonico(request, solo_ventas=False):
     if not request.fecha_inicio or not request.fecha_fin:
         empty_totals = {"total": 0, "entradas": 0, "salidas": 0, "neto": 0} if solo_ventas else {"entradas": 0, "salidas": 0, "neto": 0}
@@ -10583,8 +10604,9 @@ def _obtener_detalle_softrestaurant_canonico(request, solo_ventas=False):
         "fecha <= %s",
         "sync_status = 'ACTIVE'",
         concept_filter,
+        _soft_date_only_final_day_guard("fecha"),
     ]
-    params = [request.server_id, *codigos, request.fecha_inicio, request.fecha_fin]
+    params = [request.server_id, *codigos, request.fecha_inicio, request.fecha_fin, request.fecha_fin, request.fecha_fin]
 
     if almacenes_limpios:
         almacen_placeholders = ",".join(["%s"] * len(almacenes_limpios))
