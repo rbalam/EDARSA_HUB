@@ -39,8 +39,12 @@ const fmtCantidadReceta = (value) => {
     maximumFractionDigits: maxDecimals
   });
 };
-
-import { fechaMinimaInventarios, filtrarInventariosFinales } from '@/lib/inventarioSelectorUtils';
+import {
+  fechaMinimaInventarios,
+  filtrarInventariosFinales,
+  getInventarioKey,
+  getInventarioTimestamp
+} from '@/lib/inventarioSelectorUtils';
 
 // Estilos para los selectores nativos
 const selectStyle = "w-full h-10 px-3 py-2 text-sm border border-zinc-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-zinc-100 disabled:cursor-not-allowed";
@@ -67,6 +71,105 @@ const getAlmacenPlaceholder = (selectedAlmacenes, selectedServer, selectedUnidad
     return "No hay almacenes disponibles";
   }
   return "Selecciona almacén(es)";
+};
+
+const UsoRecetaModal = ({ detalle, onClose, formatNumber }) => {
+  if (!detalle?.open) return null;
+
+  const fmt = formatNumber || ((n) => Number(n || 0).toLocaleString('es-MX'));
+  const usos = detalle.data?.usos || [];
+  const base = detalle.data?.base;
+  const presentacion = detalle.data?.presentacion;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[82vh] overflow-hidden">
+        <div className="px-4 py-3 border-b flex items-center justify-between bg-zinc-50">
+          <div>
+            <h3 className="font-semibold">Uso en recetas</h3>
+            <p className="text-sm text-zinc-500">
+              {detalle.codigo} - {detalle.producto}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-zinc-200 rounded"
+            aria-label="Cerrar"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="p-4 overflow-auto max-h-[66vh]">
+          {detalle.loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+          ) : detalle.error ? (
+            <p className="text-red-600 text-center py-4">{detalle.error}</p>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                {presentacion && (
+                  <div className="rounded border border-zinc-200 bg-zinc-50 p-3">
+                    <p className="text-xs uppercase tracking-wide text-zinc-500">Presentación seleccionada</p>
+                    <p className="font-semibold">{presentacion.codigo} - {presentacion.nombre}</p>
+                    <p className="text-zinc-600">
+                      Unidad: {presentacion.unidad || '-'} · Rendimiento: {fmt(presentacion.rendimiento || 1)}
+                    </p>
+                  </div>
+                )}
+                <div className="rounded border border-zinc-200 bg-blue-50 p-3">
+                  <p className="text-xs uppercase tracking-wide text-blue-600">Insumo base consultado</p>
+                  <p className="font-semibold text-blue-900">{base?.codigo || detalle.codigo} - {base?.nombre || detalle.producto}</p>
+                  <p className="text-blue-700">Unidad: {base?.unidad || '-'}</p>
+                </div>
+              </div>
+
+              {usos.length > 0 ? (
+                <table className="w-full text-sm">
+                  <thead className="bg-zinc-100">
+                    <tr>
+                      <th className="py-2 px-3 text-left">CODIGO</th>
+                      <th className="py-2 px-3 text-left">PRODUCTO / PRODUCCION</th>
+                      <th className="py-2 px-3 text-left">TIPO</th>
+                      <th className="py-2 px-3 text-left">CANTIDAD RECETA</th>
+                      <th className="py-2 px-3 text-left">UNIDAD</th>
+                      <th className="py-2 px-3 text-left">LINEAS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usos.map((uso, idx) => (
+                      <tr key={`${uso.codigo_destino}-${idx}`} className="border-b hover:bg-zinc-50">
+                        <td className="py-1.5 px-3 font-mono">{uso.codigo_destino}</td>
+                        <td className="py-1.5 px-3 font-medium">{uso.producto_destino}</td>
+                        <td className="py-1.5 px-3">
+                          <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs">
+                            {uso.tipo_destino}
+                          </span>
+                        </td>
+                        <td className="py-1.5 px-3 font-mono">{fmtCantidadReceta(uso.cantidad_receta)}</td>
+                        <td className="py-1.5 px-3">{uso.unidad_receta || '-'}</td>
+                        <td className="py-1.5 px-3">{uso.lineas || 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="text-center text-zinc-500 py-8">
+                  No se encontraron productos de venta o producciones que usen este insumo.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="px-4 py-3 border-t bg-zinc-50 flex justify-end">
+          <Button variant="outline" onClick={onClose}>Cerrar</Button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const Reportes = () => {
@@ -192,6 +295,14 @@ const Reportes = () => {
     abrirConsumos,
     cerrar: cerrarDetalleProducto,
   } = useDetalleProducto();
+  const [usoRecetaDetalle, setUsoRecetaDetalle] = useState({
+    open: false,
+    loading: false,
+    codigo: '',
+    producto: '',
+    data: null,
+    error: null
+  });
 
   // Estados para filtros de categoría/familia/subfamilia
   const [filterOptions, setFilterOptions] = useState({
@@ -255,11 +366,41 @@ const Reportes = () => {
     [selectedInventariosIni]
   );
 
-  // Filtrar inventarios finales: solo fecha >= fecha del inicial (util CANÓNICO)
+  // Filtrar inventarios finales: posterior al inicial y nunca el mismo folio.
   const inventariosFinalesFiltrados = useMemo(
-    () => filtrarInventariosFinales(inventarios, fechaMinimaInvInicial),
-    [inventarios, fechaMinimaInvInicial]
+    () => filtrarInventariosFinales(inventarios, fechaMinimaInvInicial, {
+      inventariosIniciales: selectedInventariosIni,
+      strictAfterInitial: true
+    }),
+    [inventarios, fechaMinimaInvInicial, selectedInventariosIni]
   );
+
+  const validarInventariosFinales = useCallback((finales, iniciales = selectedInventariosIni) => {
+    if (!Array.isArray(finales) || finales.length === 0) return true;
+    if (!Array.isArray(iniciales) || iniciales.length === 0) return true;
+
+    const inicialKeys = new Set(iniciales.map(getInventarioKey).filter(Boolean));
+    const inicialTimestamps = iniciales
+      .map(getInventarioTimestamp)
+      .filter((timestamp) => timestamp != null);
+    const latestInitialTimestamp = inicialTimestamps.length > 0 ? Math.max(...inicialTimestamps) : null;
+
+    return finales.every((inv) => {
+      const key = getInventarioKey(inv);
+      if (key && inicialKeys.has(key)) return false;
+      if (latestInitialTimestamp == null) return true;
+      const finalTimestamp = getInventarioTimestamp(inv);
+      return finalTimestamp != null && finalTimestamp > latestInitialTimestamp;
+    });
+  }, [selectedInventariosIni]);
+
+  useEffect(() => {
+    if (selectedInventariosFin.length === 0) return;
+    if (validarInventariosFinales(selectedInventariosFin)) return;
+
+    setSelectedInventariosFin((prev) => prev.filter((inv) => validarInventariosFinales([inv])));
+    toast.warning('Se quitaron inventarios finales no posteriores al inicial');
+  }, [selectedInventariosIni, selectedInventariosFin, validarInventariosFinales]);
   
   // Estado para agrupar insumos de múltiples inventarios (MPRO)
   const [agruparInsumos, setAgruparInsumos] = useState(false);
@@ -267,9 +408,10 @@ const Reportes = () => {
   // EDARSAHUB-PATCH-ANALISIS-CONVERSION-AGRUPACION
   // Vista de cantidades para Análisis de Inventarios.
   // La data base del backend se conserva; esto solo cambia la vista.
-  const [unidadAnalisisInventarios, setUnidadAnalisisInventarios] = useState('presentaciones');
+  const [unidadAnalisisInventarios, setUnidadAnalisisInventarios] = useState('insumos');
   const [agruparProductosAnalisis, setAgruparProductosAnalisis] = useState(false);
   const [agruparPorAnalisis, setAgruparPorAnalisis] = useState('categoria');
+  const [expandedAnalisisGroups, setExpandedAnalisisGroups] = useState({});
   
   // Estado para mostrar/ocultar columnas de costos (oculto por defecto)
   const [mostrarCostos, setMostrarCostos] = useState(false);
@@ -529,6 +671,20 @@ const Reportes = () => {
   }, [selectedAlmacenes]);
 
   useEffect(() => {
+    if (filters.query_type !== 'analisis' || selectedAlmacenes.length === 0) return;
+
+    const unidades = Array.from(new Set(
+      selectedAlmacenes
+        .map(a => a?.unidad_natural || (Number(a?.tipo ?? a?.tipo_almacen ?? a?.almacen_tipo) === 2 ? 'presentaciones' : 'insumos'))
+        .filter(Boolean)
+    ));
+
+    if (unidades.length === 1) {
+      setUnidadAnalisisInventarios(unidades[0]);
+    }
+  }, [filters.query_type, selectedAlmacenes]);
+
+  useEffect(() => {
     sessionStorage.setItem('selectedInventariosIni', JSON.stringify(selectedInventariosIni));
   }, [selectedInventariosIni]);
 
@@ -566,6 +722,9 @@ const Reportes = () => {
         setSelectedAlmacenes([]);
         setSelectedInventariosIni([]);
         setSelectedInventariosFin([]);
+        setSelectedCategorias([]);
+        setSelectedFamilias([]);
+        setSelectedSubfamilias([]);
         setInventarios([]);
         setAlmacenes([]);
         setSucursales([]);
@@ -655,10 +814,23 @@ const Reportes = () => {
     setLoadingFilters(true);
     try {
       const response = await api.get(`/servers/${filters.server_id}/report-filters`);
+      const normalizeOptions = (items) => (Array.isArray(items) ? items : [])
+        .map((item) => {
+          const id = item?.id ?? item?.Codigo ?? item?.codigo;
+          const parent = item?.parent ?? item?.ParentCodigo ?? item?.parentCodigo;
+          return {
+            ...item,
+            id: id === null || id === undefined ? '' : String(id),
+            nombre: String(item?.nombre ?? item?.Nombre ?? item?.name ?? id ?? ''),
+            parent: parent === null || parent === undefined || parent === '' ? null : String(parent)
+          };
+        })
+        .filter((item) => item.id && item.nombre);
+
       setFilterOptions({
-        categorias: response.data.categorias || [],
-        familias: response.data.familias || [],
-        subfamilias: response.data.subfamilias || []
+        categorias: normalizeOptions(response.data.categorias),
+        familias: normalizeOptions(response.data.familias),
+        subfamilias: normalizeOptions(response.data.subfamilias)
       });
     } catch (error) {
       logger.error('Error al cargar filtros:', error);
@@ -715,6 +887,7 @@ const Reportes = () => {
         for (const almacen of selectedAlmacenes) {
           // Para MPRO usar sucursal_id, para SoftRestaurant usar 'SoftRestaurant'
           const params = {
+            almacen_id: almacen.id || '',
             almacen: almacen.nombre || ''
           };
           
@@ -732,8 +905,8 @@ const Reportes = () => {
           // Agregar el nombre del almacén a cada inventario
           const inventariosConAlmacen = inventariosData.map(inv => ({
             ...inv,
-            almacen: almacen.nombre,
-            almacen_id: almacen.id
+            almacen: inv.almacen || almacen.nombre,
+            almacen_id: inv.almacen_id || almacen.id
           }));
           allInventarios = [...allInventarios, ...inventariosConAlmacen];
         }
@@ -1001,33 +1174,6 @@ const Reportes = () => {
     );
   };
 
-  const getUnidadNaturalAnalisis = (row) => {
-    const systemType = String(selectedServer?.system_type || '').toLowerCase();
-
-    if (systemType === 'mpro') {
-      return 'insumos';
-    }
-
-    const tipoRow = Number(row?.tipo_almacen ?? row?.tipoAlmacen ?? row?.almacen_tipo ?? row?.tipo);
-
-    if (Number.isFinite(tipoRow)) {
-      return tipoRow === 2 ? 'presentaciones' : 'insumos';
-    }
-
-    const tiposSeleccionados = Array.from(new Set(
-      selectedAlmacenes
-        .map(a => Number(a?.tipo ?? a?.tipo_almacen ?? a?.almacen_tipo))
-        .filter(Number.isFinite)
-    ));
-
-    if (tiposSeleccionados.length > 1) {
-      return 'mixto';
-    }
-
-    const tipoAlmacen = tiposSeleccionados[0] ?? 1;
-    return tipoAlmacen === 2 ? 'presentaciones' : 'insumos';
-  };
-
   const convertirCantidadAnalisis = (row, key, value) => {
     const num = parseFloat(value);
 
@@ -1036,61 +1182,169 @@ const Reportes = () => {
     }
 
     const rendimiento = getAnalisisRendimiento(row);
-    const unidadNatural = getUnidadNaturalAnalisis(row);
-
-    if (unidadNatural === 'mixto' || unidadNatural === unidadAnalisisInventarios) {
-      return num;
-    }
-
-    if (unidadNatural === 'insumos' && unidadAnalisisInventarios === 'presentaciones') {
-      return rendimiento > 0 ? num / rendimiento : num;
-    }
-
-    if (unidadNatural === 'presentaciones' && unidadAnalisisInventarios === 'insumos') {
-      return num * rendimiento;
-    }
-
-    return num;
+    return unidadAnalisisInventarios === 'presentaciones' && rendimiento > 0
+      ? num / rendimiento
+      : num;
   };
 
   const formatAnalisisHeader = (key) => {
-    const base = String(key || '').replace(/_/g, ' ').replace(/Cantidad/gi, 'Qty');
+    const labels = {
+      Agrupacion: 'AGRUPACION',
+      codigo_producto: 'CODIGO',
+      Codigo: 'CODIGO',
+      codigo: 'CODIGO',
+      CODIGO: 'CODIGO',
+      nombre_producto: 'NOMBRE PRODUCTO',
+      Producto: 'NOMBRE PRODUCTO',
+      producto: 'NOMBRE PRODUCTO',
+      Nombre: 'NOMBRE PRODUCTO',
+      nombre: 'NOMBRE PRODUCTO',
+      unidad: 'UNIDAD',
+      Unidad: 'UNIDAD',
+      UNIDAD: 'UNIDAD',
+      Items: 'ITEMS',
+      Inv_Inicial_Cantidad: 'INV. INICIAL',
+      inventario_inicial: 'INV. INICIAL',
+      Movimientos: 'MOVIMIENTOS',
+      movimientos: 'MOVIMIENTOS',
+      Ventas: 'VENTAS',
+      ventas: 'VENTAS',
+      Inv_Teorico_Cantidad: 'INV. TEORICO',
+      inventario_teorico: 'INV. TEORICO',
+      Inv_Final_Cantidad: 'INV. FINAL',
+      inventario_final: 'INV. FINAL',
+      Diferencia_Cantidad: 'DIFERENCIAS',
+      diferencia: 'DIFERENCIAS',
+      DIFERENCIA_QTY: 'DIFERENCIAS',
+      Diferencia_Costo: 'DIFERENCIA COSTO',
+      DIFERENCIA_VALOR: 'DIFERENCIA COSTO'
+    };
 
-    if (isAnalisisCantidadKey(key)) {
-      return `${base} (${unidadAnalisisInventarios === 'presentaciones' ? 'Pres' : 'Ins'})`;
-    }
+    return labels[key] || String(key || '').replace(/_/g, ' ').replace(/Cantidad/gi, '').trim().toUpperCase();
+  };
 
-    return base;
+  const shouldShowAnalisisColumn = (key) => {
+    const normalized = String(key || '').toLowerCase();
+    const hidden = new Set([
+      'Rendimiento',
+      'rendimiento',
+      'tipo_almacen',
+      'tipoAlmacen',
+      'almacen_tipo',
+      'source',
+      'Categoria',
+      'categoria',
+      'Familia',
+      'familia',
+      'SubFamilia',
+      'Subfamilia',
+      'subfamilia',
+      '__rowType',
+      '__groupKey',
+      '__rowId',
+      '__detailCount'
+    ]);
+    return !String(key || '').startsWith('__') && !hidden.has(key) && !hidden.has(normalized);
+  };
+
+  const getProductoAgrupacionAnalisis = (row) => {
+    const codigo = String(
+      row?.codigo_producto ??
+      row?.Codigo ??
+      row?.codigo ??
+      row?.CODIGO ??
+      ''
+    ).trim();
+    const producto = String(
+      row?.nombre_producto ??
+      row?.Producto ??
+      row?.producto ??
+      row?.Nombre ??
+      row?.nombre ??
+      codigo
+    ).trim();
+    const unidad = String(
+      row?.unidad ??
+      row?.Unidad ??
+      row?.UNIDAD ??
+      ''
+    ).trim();
+
+    return {
+      key: `${codigo || producto}|${producto}|${unidad}`,
+      codigo,
+      producto,
+      unidad
+    };
+  };
+
+  const isNombreProductoAnalisisColumn = (key) => {
+    const normalized = String(key || '')
+      .toLowerCase()
+      .replace(/[\s_-]+/g, '');
+
+    return ['nombreproducto', 'producto', 'nombre'].includes(normalized);
   };
 
   const getAgrupacionAnalisis = (row) => {
-    const valueBy = {
+    const productoInfo = getProductoAgrupacionAnalisis(row);
+    const rawBy = {
+      producto: productoInfo.key,
       categoria: row?.Categoria ?? row?.categoria ?? row?.Grupo ?? row?.grupo,
       familia: row?.Familia ?? row?.familia,
-      subfamilia: row?.SubFamilia ?? row?.subfamilia ?? row?.Subfamilia,
-      tipo: row?.Tipo ?? row?.tipo ?? row?.Tipo_Producto ?? row?.tipo_producto
+      subfamilia: row?.SubFamilia ?? row?.subfamilia ?? row?.Subfamilia
     };
+    const labelBy = {
+      producto: productoInfo.producto || productoInfo.codigo || 'SIN PRODUCTO',
+      categoria: rawBy.categoria,
+      familia: rawBy.familia,
+      subfamilia: rawBy.subfamilia
+    };
+    const selected = rawBy[agruparPorAnalisis] ?? rawBy.producto;
+    const label = labelBy[agruparPorAnalisis] ?? labelBy.producto;
+    const fallback = agruparPorAnalisis === 'producto' ? 'SIN PRODUCTO' : 'SIN CLASIFICAR';
 
-    const value = valueBy[agruparPorAnalisis];
+    return {
+      key: selected === null || selected === undefined || String(selected).trim() === ''
+        ? fallback
+        : String(selected).trim(),
+      label: label === null || label === undefined || String(label).trim() === ''
+        ? fallback
+        : String(label).trim(),
+      productoInfo
+    };
+  };
 
-    return value === null || value === undefined || String(value).trim() === ''
-      ? 'SIN CLASIFICAR'
-      : String(value).trim();
+  const isAnalisisGroupExpanded = (groupKey) => (
+    expandedAnalisisGroups[groupKey] !== false
+  );
+
+  const toggleAnalisisGroup = (groupKey) => {
+    setExpandedAnalisisGroups((prev) => ({
+      ...prev,
+      [groupKey]: !isAnalisisGroupExpanded(groupKey)
+    }));
+  };
+
+  const buildConvertedAnalisisRow = (row) => {
+    const out = {};
+
+    Object.entries(row || {}).forEach(([key, value]) => {
+      out[key] = convertirCantidadAnalisis(row, key, value);
+    });
+
+    return out;
   };
 
   const buildAnalisisDisplayData = () => {
     const rows = Array.isArray(reportData) ? reportData : [];
 
     if (!agruparProductosAnalisis) {
-      return rows.map((row) => {
-        const out = {};
-
-        Object.entries(row || {}).forEach(([key, value]) => {
-          out[key] = convertirCantidadAnalisis(row, key, value);
-        });
-
-        return out;
-      });
+      return rows.map((row, idx) => ({
+        ...buildConvertedAnalisisRow(row),
+        __rowType: 'detail',
+        __rowId: `detail-${idx}`
+      }));
     }
 
     const metricas = [
@@ -1102,23 +1356,41 @@ const Reportes = () => {
       'Diferencia_Cantidad',
       'Diferencia_Costo',
       'DIFERENCIA_QTY',
-      'DIFERENCIA_VALOR'
+      'DIFERENCIA_VALOR',
+      'inventario_inicial',
+      'movimientos',
+      'ventas',
+      'inventario_teorico',
+      'inventario_final',
+      'diferencia',
+      'diferencia_costo'
     ];
 
     const grupos = new Map();
 
     rows.forEach((row) => {
-      const grupo = getAgrupacionAnalisis(row);
+      const agrupacion = getAgrupacionAnalisis(row);
+      const productoInfo = agrupacion.productoInfo;
 
-      if (!grupos.has(grupo)) {
-        grupos.set(grupo, {
-          Agrupacion: grupo,
-          Items: 0
+      if (!grupos.has(agrupacion.key)) {
+        grupos.set(agrupacion.key, {
+          summary: {
+            __rowType: 'group',
+            __groupKey: agrupacion.key,
+            Agrupacion: agrupacion.label,
+            codigo_producto: agruparPorAnalisis === 'producto' ? productoInfo.codigo : '',
+            nombre_producto: agruparPorAnalisis === 'producto' ? productoInfo.producto : agrupacion.label,
+            unidad: agruparPorAnalisis === 'producto' ? productoInfo.unidad : '',
+            Items: 0,
+            Rendimiento: getAnalisisRendimiento(row)
+          },
+          details: []
         });
       }
 
-      const acc = grupos.get(grupo);
+      const acc = grupos.get(agrupacion.key).summary;
       acc.Items += 1;
+      acc.Rendimiento = Math.max(getAnalisisRendimiento(row), getAnalisisRendimiento(acc));
 
       metricas.forEach((key) => {
         if (row[key] === undefined || row[key] === null) return;
@@ -1130,18 +1402,32 @@ const Reportes = () => {
 
         acc[key] = (parseFloat(acc[key]) || 0) + num;
       });
+
+      grupos.get(agrupacion.key).details.push({
+        ...buildConvertedAnalisisRow(row),
+        __rowType: 'detail',
+        __groupKey: agrupacion.key,
+        __rowId: `${agrupacion.key}-${grupos.get(agrupacion.key).details.length}`
+      });
     });
 
-    return Array.from(grupos.values()).map((row) => {
+    return Array.from(grupos.values()).flatMap(({ summary, details }) => {
       const out = {};
 
-      Object.entries(row).forEach(([key, value]) => {
+      Object.entries(summary).forEach(([key, value]) => {
         out[key] = typeof value === 'number'
           ? Math.round(value * 10000) / 10000
           : value;
       });
 
-      return out;
+      out.__detailCount = details.length;
+      const rowsForGroup = [out];
+
+      if (isAnalisisGroupExpanded(out.__groupKey)) {
+        rowsForGroup.push(...details);
+      }
+
+      return rowsForGroup;
     });
   };
 
@@ -1177,6 +1463,10 @@ const Reportes = () => {
 
       return haystack.includes(search);
     });
+
+    if (agruparProductosAnalisis) {
+      return filtered;
+    }
 
     const sortKey = inventorySortConfig?.key;
     const direction = inventorySortConfig?.direction || 'asc';
@@ -1214,11 +1504,112 @@ const Reportes = () => {
 
       return direction === 'asc' ? result : -result;
     });
-  }, [analysisDisplayData, inventorySearchTerm, inventorySortConfig]);
+  }, [analysisDisplayData, inventorySearchTerm, inventorySortConfig, agruparProductosAnalisis]);
+
+  const inventoryVisibleColumns = useMemo(() => {
+    const rows = Array.isArray(inventoryVisibleData) ? inventoryVisibleData : [];
+    const preferred = [
+      'Agrupacion',
+      'codigo_producto',
+      'nombre_producto',
+      'unidad',
+      'Items',
+      'Inv_Inicial_Cantidad',
+      'Movimientos',
+      'Ventas',
+      'Inv_Teorico_Cantidad',
+      'Inv_Final_Cantidad',
+      'Diferencia_Cantidad',
+      'Diferencia_Costo'
+    ];
+    const found = new Set();
+
+    rows.forEach((row) => {
+      Object.keys(row || {}).forEach((key) => {
+        if (!shouldShowAnalisisColumn(key)) return;
+        if (!mostrarCostos && key.toLowerCase().includes('costo')) return;
+        found.add(key);
+      });
+    });
+
+    return [
+      ...preferred.filter((key) => found.has(key)),
+      ...Array.from(found).filter((key) => !preferred.includes(key))
+    ];
+  }, [inventoryVisibleData, mostrarCostos]);
+
+  const selectedCategoriaSet = useMemo(
+    () => new Set(selectedCategorias.map(String)),
+    [selectedCategorias]
+  );
+
+  const selectedFamiliaSet = useMemo(
+    () => new Set(selectedFamilias.map(String)),
+    [selectedFamilias]
+  );
+
+  const familiasDisponibles = useMemo(() => {
+    if (selectedCategoriaSet.size === 0) {
+      return filterOptions.familias;
+    }
+
+    return filterOptions.familias.filter((familia) => (
+      !familia.parent || selectedCategoriaSet.has(String(familia.parent))
+    ));
+  }, [filterOptions.familias, selectedCategoriaSet]);
+
+  const subfamiliasDisponibles = useMemo(() => {
+    if (selectedFamiliaSet.size > 0) {
+      return filterOptions.subfamilias.filter((subfamilia) => (
+        !subfamilia.parent || selectedFamiliaSet.has(String(subfamilia.parent))
+      ));
+    }
+
+    if (selectedCategoriaSet.size === 0) {
+      return filterOptions.subfamilias;
+    }
+
+    const familiasPermitidas = new Set(familiasDisponibles.map((familia) => String(familia.id)));
+    return filterOptions.subfamilias.filter((subfamilia) => (
+      !subfamilia.parent || familiasPermitidas.has(String(subfamilia.parent))
+    ));
+  }, [filterOptions.subfamilias, familiasDisponibles, selectedCategoriaSet, selectedFamiliaSet]);
+
+  const pruneSelectionToOptions = useCallback((selected, options) => {
+    const validIds = new Set(options.map((option) => String(option.id)));
+    return selected.map(String).filter((id) => validIds.has(id));
+  }, []);
+
+  useEffect(() => {
+    const prunedCategorias = pruneSelectionToOptions(selectedCategorias, filterOptions.categorias);
+    if (prunedCategorias.length !== selectedCategorias.length || prunedCategorias.some((id, index) => id !== String(selectedCategorias[index]))) {
+      setSelectedCategorias(prunedCategorias);
+    }
+  }, [filterOptions.categorias, pruneSelectionToOptions, selectedCategorias]);
+
+  useEffect(() => {
+    const prunedFamilias = pruneSelectionToOptions(selectedFamilias, familiasDisponibles);
+    if (prunedFamilias.length !== selectedFamilias.length || prunedFamilias.some((id, index) => id !== String(selectedFamilias[index]))) {
+      setSelectedFamilias(prunedFamilias);
+    }
+  }, [familiasDisponibles, pruneSelectionToOptions, selectedFamilias]);
+
+  useEffect(() => {
+    const prunedSubfamilias = pruneSelectionToOptions(selectedSubfamilias, subfamiliasDisponibles);
+    if (prunedSubfamilias.length !== selectedSubfamilias.length || prunedSubfamilias.some((id, index) => id !== String(selectedSubfamilias[index]))) {
+      setSelectedSubfamilias(prunedSubfamilias);
+    }
+  }, [pruneSelectionToOptions, selectedSubfamilias, subfamiliasDisponibles]);
 
 
   // EDARSAHUB-PATCH-ANALISIS-EXPORTS-V3
-  const getAnalisisVistaRows = () => Array.isArray(analysisDisplayData) ? analysisDisplayData : [];
+  const getAnalisisVistaRows = () => {
+    if (filters.query_type !== 'analisis') {
+      return Array.isArray(analysisDisplayData) ? analysisDisplayData : [];
+    }
+
+    return (Array.isArray(reportData) ? reportData : []).map(buildConvertedAnalisisRow);
+  };
 
   const getAnalisisDiferenciaQty = (row) => {
     const value =
@@ -1271,6 +1662,31 @@ const Reportes = () => {
         toast.error('Selecciona inventario(s) inicial(es) y final(es)');
         return;
       }
+
+      const inventariosIniValidacion = selectedInventariosIni.length > 0
+        ? selectedInventariosIni
+        : inventarios.filter((inv) => String(inv.folio) === String(filters.inventario_inicial));
+      const inventariosFinValidacion = selectedInventariosFin.length > 0
+        ? selectedInventariosFin
+        : inventarios.filter((inv) => String(inv.folio) === String(filters.inventario_final));
+      const foliosIniValidacion = new Set(
+        (selectedInventariosIni.length > 0 ? selectedInventariosIni.map((inv) => inv.folio) : [filters.inventario_inicial])
+          .filter(Boolean)
+          .map(String)
+      );
+      const foliosFinValidacion = (selectedInventariosFin.length > 0 ? selectedInventariosFin.map((inv) => inv.folio) : [filters.inventario_final])
+        .filter(Boolean)
+        .map(String);
+
+      if (foliosFinValidacion.some((folio) => foliosIniValidacion.has(folio))) {
+        toast.error('Un mismo inventario no puede ser inicial y final al mismo tiempo');
+        return;
+      }
+
+      if (!validarInventariosFinales(inventariosFinValidacion, inventariosIniValidacion)) {
+        toast.error('El inventario final debe ser posterior al inventario inicial');
+        return;
+      }
     }
 
     setLoading(true);
@@ -1280,10 +1696,10 @@ const Reportes = () => {
       if (filters.query_type === 'analisis') {
         // Obtener folios de inventarios (multi-select o single)
         const foliosIniciales = selectedInventariosIni.length > 0 
-          ? selectedInventariosIni.map(i => i.folio) 
+          ? selectedInventariosIni.map(i => i.folio)
           : [filters.inventario_inicial];
         const foliosFinales = selectedInventariosFin.length > 0 
-          ? selectedInventariosFin.map(i => i.folio) 
+          ? selectedInventariosFin.map(i => i.folio)
           : [filters.inventario_final];
         
         // Log para debugging
@@ -1310,11 +1726,17 @@ const Reportes = () => {
         }));
         
         // Llamar al endpoint de análisis completo con filtros adicionales
+        const almacenesAnalisis = selectedAlmacenes
+          .map((a) => a.nombre ?? a.almacen ?? a.Al_Descripcion ?? a.label ?? a.id ?? a.almacen_id)
+          .filter(Boolean)
+          .map(String);
+
         response = await api.post('/reports/inventory-analysis', {
           server_id: filters.server_id,
+          sucursal_id: filters.sucursal_id,
           sucursal: filters.sucursal,
           almacen: filters.almacen,
-          almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes.map(a => a.nombre) : undefined,
+          almacenes: almacenesAnalisis.length > 0 ? almacenesAnalisis : undefined,
           fecha_ini: filters.fecha_ini,
           fecha_fin: filters.fecha_fin,
           folio_inicial: foliosIniciales.length === 1 ? foliosIniciales[0] : undefined,
@@ -1330,7 +1752,9 @@ const Reportes = () => {
           categorias: selectedCategorias,
           familias: selectedFamilias,
           subfamilias: selectedSubfamilias
-        }, { timeout: 120000 });
+        }, {
+          timeout: 120000
+        });
       } else {
         // Llamar al endpoint normal de reportes
         response = await api.post('/reports/inventory', {
@@ -1371,6 +1795,7 @@ const Reportes = () => {
 
         const nombre = String(
           row.nombre_producto ??
+          row.Producto ??
           row.nombre ??
           row.Nombre ??
           row.descripcion ??
@@ -1388,6 +1813,7 @@ const Reportes = () => {
 
         const inventarioInicial = toNumber(
           row.inventario_inicial ??
+          row.Inv_Inicial_Cantidad ??
           row.inv_inicial ??
           row.Inventario_Inicial ??
           row.INV_INICIAL
@@ -1407,6 +1833,7 @@ const Reportes = () => {
 
         const inventarioTeorico = toNumber(
           row.inventario_teorico ??
+          row.Inv_Teorico_Cantidad ??
           row.inv_teorico ??
           row.Inventario_Teorico ??
           row.INV_TEORICO ??
@@ -1415,6 +1842,7 @@ const Reportes = () => {
 
         const inventarioFinal = toNumber(
           row.inventario_final ??
+          row.Inv_Final_Cantidad ??
           row.inv_final ??
           row.Inventario_Final ??
           row.INV_FINAL
@@ -1422,6 +1850,7 @@ const Reportes = () => {
 
         const diferencia = toNumber(
           row.diferencia ??
+          row.Diferencia_Cantidad ??
           row.Diferencia ??
           row.DIFERENCIA ??
           (inventarioFinal - inventarioTeorico)
@@ -1441,6 +1870,9 @@ const Reportes = () => {
         );
 
         return {
+          Categoria: row.Categoria ?? row.categoria ?? '',
+          Familia: row.Familia ?? row.familia ?? '',
+          SubFamilia: row.SubFamilia ?? row.subfamilia ?? '',
           codigo_producto: codigo,
           nombre_producto: nombre,
           unidad: unidad,
@@ -1451,7 +1883,9 @@ const Reportes = () => {
           inventario_final: inventarioFinal,
           diferencia: diferencia,
           costo_unitario: costoUnitario,
-          diferencia_costo: diferenciaCosto
+          diferencia_costo: diferenciaCosto,
+          Rendimiento: row.Rendimiento ?? row.rendimiento ?? 1,
+          tipo_almacen: row.tipo_almacen ?? row.tipoAlmacen ?? row.almacen_tipo ?? row.tipo
         };
       });
 
@@ -1491,6 +1925,9 @@ const Reportes = () => {
             : row.costo_unitario;
 
         return {
+          Categoria: row.Categoria,
+          Familia: row.Familia,
+          SubFamilia: row.SubFamilia,
           codigo_producto: row.codigo_producto,
           nombre_producto: row.nombre_producto,
           unidad: row.unidad,
@@ -1501,7 +1938,9 @@ const Reportes = () => {
           inventario_final: Number(row.inventario_final.toFixed(6)),
           diferencia: Number(row.diferencia.toFixed(6)),
           costo_unitario: Number(costoUnitarioFinal.toFixed(6)),
-          diferencia_costo: Number(row.diferencia_costo.toFixed(6))
+          diferencia_costo: Number(row.diferencia_costo.toFixed(6)),
+          Rendimiento: row.Rendimiento,
+          tipo_almacen: row.tipo_almacen
         };
       });
 
@@ -1623,8 +2062,15 @@ const Reportes = () => {
     let fecha_ini, fecha_fin;
 
     if (systemType === 'MPRO') {
-      // Para MPRO: usar las fechas exactas de los inventarios (solo fecha)
-      fecha_ini = String(inicialFecha).split(/[T\s]/)[0]; // Solo fecha, sin hora
+      // Para MPRO: movimientos y ventas inician 1 dia despues del inventario inicial.
+      const fechaInicialDate = parseDateString(inicialFecha);
+      if (fechaInicialDate) {
+        fechaInicialDate.setDate(fechaInicialDate.getDate() + 1);
+        const pad = (n) => String(n).padStart(2, '0');
+        fecha_ini = `${fechaInicialDate.getFullYear()}-${pad(fechaInicialDate.getMonth() + 1)}-${pad(fechaInicialDate.getDate())}`;
+      } else {
+        fecha_ini = String(inicialFecha).split(/[T\s]/)[0];
+      }
       fecha_fin = String(finalFecha).split(/[T\s]/)[0];
     } else if (systemType === 'SoftRestaurant') {
       // Para SoftRestaurant: fecha inicial + 1 segundo, fecha final - 1 segundo
@@ -1976,27 +2422,111 @@ const Reportes = () => {
   // Doble clic: detalle CANÓNICO de movimientos (hook + componente compartido con Auditoría).
   // Usa los endpoints canónicos /compras/detalle-movimientos (aceptan unidad o server_id legacy).
   const loadMovementDetails = (producto) => {
+    const codigo = producto.Codigo ?? producto.codigo_producto ?? producto.codigo ?? producto.CODIGO;
+    const nombre = producto.Producto ?? producto.nombre_producto ?? producto.nombre ?? producto.Nombre ?? codigo;
+
     abrirMovimientos({
       serverId: filters.server_id,
       sucursal: filters.sucursal,
-      codigo: producto.Codigo,
-      producto: producto.Producto,
+      codigo,
+      producto: nombre,
       fechaInicio: filters.fecha_ini,
       fechaFin: filters.fecha_fin,
-      almacenes: filters.almacen,
+      almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes.map(a => a.id || a.almacen_id || a.nombre) : filters.almacen,
     });
   };
 
   // Doble clic: detalle CANÓNICO de ventas/consumos (hook + componente compartido con Auditoría).
   const loadSalesDetails = (producto) => {
+    const codigo = producto.Codigo ?? producto.codigo_producto ?? producto.codigo ?? producto.CODIGO;
+    const nombre = producto.Producto ?? producto.nombre_producto ?? producto.nombre ?? producto.Nombre ?? codigo;
+    let fechaInicioDetalle = filters.fecha_ini;
+    let fechaFinDetalle = filters.fecha_fin;
+
+    if (selectedServer?.system_type === 'SoftRestaurant') {
+      const fechaInicialVentas = parseDateString(selectedInventariosIni[0]?.fecha || filters.inventario_inicial_fecha);
+      const fechaFinalVentas = parseDateString(selectedInventariosFin[0]?.fecha || filters.inventario_final_fecha);
+
+      if (fechaInicialVentas && fechaFinalVentas) {
+        fechaInicialVentas.setHours(0, 0, 0, 0);
+        fechaFinalVentas.setHours(0, 0, 0, 0);
+        fechaFinalVentas.setSeconds(fechaFinalVentas.getSeconds() - 1);
+        fechaInicioDetalle = formatDateForSQL(fechaInicialVentas);
+        fechaFinDetalle = formatDateForSQL(fechaFinalVentas);
+      }
+    }
+
     abrirConsumos({
       serverId: filters.server_id,
       sucursal: filters.sucursal,
-      codigo: producto.Codigo,
-      producto: producto.Producto,
-      fechaInicio: filters.fecha_ini,
-      fechaFin: filters.fecha_fin,
-      almacenes: filters.almacen,
+      codigo,
+      producto: nombre,
+      fechaInicio: fechaInicioDetalle,
+      fechaFin: fechaFinDetalle,
+      almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes.map(a => a.id || a.almacen_id || a.nombre) : filters.almacen,
+    });
+  };
+
+  const loadRecipeUsageDetails = async (producto) => {
+    const productoInfo = getProductoAgrupacionAnalisis(producto);
+    const codigo = productoInfo.codigo;
+    const nombre = productoInfo.producto || codigo;
+    const unidad = productoInfo.unidad;
+    const rendimiento = getAnalisisRendimiento(producto);
+
+    if (!codigo) {
+      toast.error('No hay código para consultar la receta inversa');
+      return;
+    }
+
+    setUsoRecetaDetalle({
+      open: true,
+      loading: true,
+      codigo,
+      producto: nombre,
+      data: null,
+      error: null
+    });
+
+    try {
+      const response = await api.post(
+        '/reports/inverse-recipe-usage',
+        {
+          server_id: filters.server_id,
+          codigo,
+          producto: nombre,
+          unidad,
+          rendimiento,
+          unidad_vista: unidadAnalisisInventarios
+        },
+        { timeout: 30000 }
+      );
+
+      setUsoRecetaDetalle((prev) => ({
+        ...prev,
+        loading: false,
+        data: response.data,
+        error: null
+      }));
+    } catch (error) {
+      logger.error('[Reportes] Error uso inverso de receta:', error);
+      setUsoRecetaDetalle((prev) => ({
+        ...prev,
+        loading: false,
+        data: null,
+        error: error.response?.data?.detail || 'Error al obtener uso en recetas'
+      }));
+    }
+  };
+
+  const closeRecipeUsageDetails = () => {
+    setUsoRecetaDetalle({
+      open: false,
+      loading: false,
+      codigo: '',
+      producto: '',
+      data: null,
+      error: null
     });
   };
 
@@ -2392,10 +2922,10 @@ const Reportes = () => {
                     {/* Info: mostrar fecha mínima cuando hay inventarios iniciales seleccionados */}
                     {fechaMinimaInvInicial && (
                       <div className="px-3 py-1 text-xs text-zinc-500 bg-blue-50 border-b">
-                        Solo inventarios desde: {fechaMinimaInvInicial}
+                        Solo inventarios posteriores al inicial: {fechaMinimaInvInicial}
                       </div>
                     )}
-                    {/* Filtrar: solo mostrar inventarios con fecha >= fecha del inventario inicial */}
+                    {/* Filtrar: solo mostrar inventarios posteriores al inicial y nunca el mismo folio */}
                     {inventariosFinalesFiltrados
                       .filter(inv => {
                         // Filtro adicional: si ya hay finales seleccionados, filtrar por misma fecha
@@ -2417,6 +2947,10 @@ const Reportes = () => {
                           checked={selectedInventariosFin.some(i => i.folio === inv.folio)}
                           onChange={(e) => {
                             if (e.target.checked) {
+                              if (!validarInventariosFinales([inv])) {
+                                toast.error('El inventario final debe ser posterior al inicial y no puede ser el mismo inventario');
+                                return;
+                              }
                               setSelectedInventariosFin([...selectedInventariosFin, inv]);
                             } else {
                               setSelectedInventariosFin(selectedInventariosFin.filter(i => i.folio !== inv.folio));
@@ -2458,7 +2992,7 @@ const Reportes = () => {
                 Fecha Inicio de Movimientos
                 {selectedServer && (
                   <span className="text-xs text-zinc-500 ml-2">
-                    ({selectedServer.system_type === 'MPRO' ? 'Fecha inv. inicial' : 'Fecha inv. inicial + 1 seg'})
+                    ({selectedServer.system_type === 'MPRO' ? 'Fecha inv. inicial + 1 dia' : 'Fecha inv. inicial + 1 seg'})
                   </span>
                 )}
               </Label>
@@ -2527,7 +3061,7 @@ const Reportes = () => {
                     >
                       <span className="truncate">
                         {selectedCategorias.length === 0 
-                          ? 'Todas las categorías' 
+                          ? (selectedServer?.system_type === 'SoftRestaurant' ? 'Todas las clasificaciones' : 'Todas las categorías')
                           : `${selectedCategorias.length} seleccionada(s)`}
                       </span>
                       <ChevronDown className="h-4 w-4 opacity-50" />
@@ -2591,7 +3125,7 @@ const Reportes = () => {
                     >
                       <span className="truncate">
                         {selectedFamilias.length === 0 
-                          ? 'Todas las familias' 
+                          ? (selectedServer?.system_type === 'SoftRestaurant' ? 'Todos los grupos' : 'Todas las familias')
                           : `${selectedFamilias.length} seleccionada(s)`}
                       </span>
                       <ChevronDown className="h-4 w-4 opacity-50" />
@@ -2618,7 +3152,7 @@ const Reportes = () => {
                             <X className="h-3 w-3 mr-1" /> Limpiar selección
                           </button>
                         )}
-                        {filterOptions.familias
+                        {familiasDisponibles
                           .filter(fam => fam.nombre.toLowerCase().includes(searchFamilias.toLowerCase()))
                           .map((fam) => (
                           <label key={fam.id} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
@@ -2637,7 +3171,7 @@ const Reportes = () => {
                             <span className="text-sm">{fam.nombre}</span>
                           </label>
                         ))}
-                        {filterOptions.familias.filter(fam => fam.nombre.toLowerCase().includes(searchFamilias.toLowerCase())).length === 0 && (
+                        {familiasDisponibles.filter(fam => fam.nombre.toLowerCase().includes(searchFamilias.toLowerCase())).length === 0 && (
                           <p className="text-xs text-zinc-400 text-center py-2">No hay coincidencias</p>
                         )}
                       </div>
@@ -2655,7 +3189,7 @@ const Reportes = () => {
                     >
                       <span className="truncate">
                         {selectedSubfamilias.length === 0 
-                          ? 'Todas las subfamilias' 
+                          ? (selectedServer?.system_type === 'SoftRestaurant' ? 'Todos los subgrupos' : 'Todas las subfamilias')
                           : `${selectedSubfamilias.length} seleccionada(s)`}
                       </span>
                       <ChevronDown className="h-4 w-4 opacity-50" />
@@ -2682,7 +3216,7 @@ const Reportes = () => {
                             <X className="h-3 w-3 mr-1" /> Limpiar selección
                           </button>
                         )}
-                        {filterOptions.subfamilias
+                        {subfamiliasDisponibles
                           .filter(sf => sf.nombre.toLowerCase().includes(searchSubfamilias.toLowerCase()))
                           .map((sf) => (
                           <label key={sf.id} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
@@ -2701,7 +3235,7 @@ const Reportes = () => {
                             <span className="text-sm">{sf.nombre}</span>
                           </label>
                         ))}
-                        {filterOptions.subfamilias.filter(sf => sf.nombre.toLowerCase().includes(searchSubfamilias.toLowerCase())).length === 0 && (
+                        {subfamiliasDisponibles.filter(sf => sf.nombre.toLowerCase().includes(searchSubfamilias.toLowerCase())).length === 0 && (
                           <p className="text-xs text-zinc-400 text-center py-2">No hay coincidencias</p>
                         )}
                       </div>
@@ -2987,15 +3521,14 @@ const Reportes = () => {
                     onChange={(e) => setAgruparPorAnalisis(e.target.value)}
                     className="h-8 rounded border border-zinc-300 bg-white px-2 text-xs"
                   >
-                    <option value="categoria">Categoría / Grupo</option>
-                    <option value="familia">Familia</option>
-                    <option value="subfamilia">Subfamilia</option>
-                    <option value="tipo">Tipo producto</option>
+                    <option value="categoria">Categoría / Clasificación</option>
+                    <option value="familia">Familia / Grupo</option>
+                    <option value="subfamilia">Subfamilia / Subgrupo</option>
                   </select>
                 )}
 
                 <span className="text-xs text-zinc-500">
-                  Conversión por rendimiento del catálogo. Sin hardcode de alimentos/bebidas.
+                  Conversión por rendimiento canónico. Sin hardcode de alimentos/bebidas.
                 </span>
               </div>
 
@@ -3005,10 +3538,14 @@ const Reportes = () => {
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-zinc-200">
                   <tr className="border-b-2 border-zinc-400">
-                    {Object.keys(inventoryVisibleData[0] || {})
-                      .filter(key => mostrarCostos || !key.toLowerCase().includes('costo'))
-                      .map((key) => (
-                      <th key={key} onClick={() => handleInventorySort(key)} title="Ordenar columna" className="text-xs uppercase tracking-wider font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-left">
+                    {inventoryVisibleColumns.map((key) => (
+                      <th
+                        key={key}
+                        onClick={() => handleInventorySort(key)}
+                        title="Ordenar columna"
+                        className="text-xs uppercase tracking-wider font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-left"
+                        style={{ textAlign: 'left' }}
+                      >
                         {formatAnalisisHeader(key)}
                       </th>
                     ))}
@@ -3016,33 +3553,57 @@ const Reportes = () => {
                 </thead>
                 <tbody>
                   {inventoryVisibleData.slice(0, 2000).map((row, idx) => (
-                    <tr key={row.id || row.codigo || row.folio || `row-${idx}`} className="border-b hover:bg-zinc-50/50">
-                      {Object.entries(row)
-                        .filter(([key]) => mostrarCostos || !key.toLowerCase().includes('costo'))
-                        .map(([key, value], cellIdx) => {
+                    <tr
+                      key={row.__rowId || row.id || row.codigo || row.folio || `row-${idx}`}
+                      className={`border-b ${row.__rowType === 'group' ? 'bg-zinc-100 font-semibold' : 'hover:bg-zinc-50/50'}`}
+                    >
+                      {inventoryVisibleColumns.map((key, cellIdx) => {
+                        const value = row[key];
                         // Special formatting for analysis report
                         const isDiferencia = key.toLowerCase().includes('diferencia');
                         const isCosto = key.toLowerCase().includes('costo');
                         const isPorcentaje = key.toLowerCase().includes('porcentaje');
-                        const isMovimientos = key === 'Movimientos';
-                        const isVentas = key === 'Ventas';
+                        const keyLower = key.toLowerCase();
+                        const isMovimientos = keyLower === 'movimientos';
+                        const isVentas = keyLower === 'ventas';
+                        const isNombreProducto = isNombreProductoAnalisisColumn(key);
                         
+                        const isGroupRow = row.__rowType === 'group';
+                        const isDetailInGroup = agruparProductosAnalisis && row.__rowType === 'detail';
                         let displayValue = value;
-                        let className = "text-sm font-data text-zinc-700 p-2";
+                        let className = `text-sm font-data p-2 text-left ${isGroupRow ? 'text-zinc-900 bg-zinc-100' : 'text-zinc-700'}`;
                         let onDoubleClick = null;
                         
                         // Columnas clickeables para ver detalle
-                        if (!agruparProductosAnalisis && isMovimientos && value !== null && value !== undefined && parseFloat(value) !== 0) {
+                        if (!isGroupRow && isNombreProducto) {
+                          onDoubleClick = () => loadRecipeUsageDetails(row);
+                          className = "text-sm font-data text-blue-600 cursor-pointer hover:underline p-2 text-left";
+                        } else if (!isGroupRow && isMovimientos && value !== null && value !== undefined && parseFloat(value) !== 0) {
                           onDoubleClick = () => loadMovementDetails(row);
-                          className = "text-sm font-data text-blue-600 cursor-pointer hover:underline p-2";
+                          className = "text-sm font-data text-blue-600 cursor-pointer hover:underline p-2 text-left";
                           displayValue = formatNumber(value);
-                        } else if (!agruparProductosAnalisis && isVentas && value !== null && value !== undefined && parseFloat(value) !== 0) {
+                        } else if (!isGroupRow && isVentas && value !== null && value !== undefined && parseFloat(value) !== 0) {
                           onDoubleClick = () => loadSalesDetails(row);
-                          className = "text-sm font-data text-blue-600 cursor-pointer hover:underline p-2";
+                          className = "text-sm font-data text-blue-600 cursor-pointer hover:underline p-2 text-left";
                           displayValue = formatNumber(value);
+                        } else if (isGroupRow && key === 'Agrupacion') {
+                          const expanded = isAnalisisGroupExpanded(row.__groupKey);
+                          displayValue = (
+                            <button
+                              type="button"
+                              onClick={() => toggleAnalisisGroup(row.__groupKey)}
+                              className="inline-flex items-center gap-2 text-left font-semibold text-zinc-900"
+                              title={expanded ? 'Contraer grupo' : 'Expandir grupo'}
+                            >
+                              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${expanded ? '' : '-rotate-90'}`} />
+                              <span>{value || row.nombre_producto || 'SIN AGRUPACION'}</span>
+                            </button>
+                          );
+                        } else if (isDetailInGroup && (key === 'Agrupacion' || key === 'Items')) {
+                          displayValue = '';
                         } else if (isPorcentaje && value !== null && value !== undefined) {
                           displayValue = `${formatNumber(value)}%`;
-                          className = `text-sm font-data font-semibold p-2 ${getDifferenceColor(parseFloat(value))}`;
+                          className = `text-sm font-data font-semibold p-2 text-left ${getDifferenceColor(parseFloat(value))}`;
                         } else if (isCosto && value !== null && value !== undefined) {
                           displayValue = formatCurrency(value);
                         } else if ((key.toLowerCase().includes('cantidad') || key.toLowerCase().includes('ventas') || key.toLowerCase().includes('movimientos')) && value !== null && value !== undefined && typeof value === 'number') {
@@ -3064,7 +3625,8 @@ const Reportes = () => {
                         return (
                           <td 
                             key={cellIdx} 
-                            className={className}
+                            className={`${className} align-top whitespace-nowrap`}
+                            style={{ textAlign: 'left' }}
                             onDoubleClick={onDoubleClick}
                             title={onDoubleClick ? 'Doble clic para ver detalle' : ''}
                           >
@@ -3251,6 +3813,11 @@ const Reportes = () => {
       )}
 
       {/* Modal de Detalle de Movimientos/Consumos (componente CANÓNICO compartido con Auditoría) */}
+      <UsoRecetaModal
+        detalle={usoRecetaDetalle}
+        onClose={closeRecipeUsageDetails}
+        formatNumber={formatNumber}
+      />
       <DetalleProductoModal
         detalle={detalleProducto}
         onClose={cerrarDetalleProducto}
@@ -3940,38 +4507,75 @@ const Reportes = () => {
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-zinc-800 text-white">
                   <tr>
-                    {Object.keys(inventoryVisibleData[0] || {})
-                      .filter(key => mostrarCostos || !key.toLowerCase().includes('costo'))
-                      .map((key) => (
-                      <th key={key} onClick={() => handleInventorySort(key)} title="Ordenar columna" className="text-xs uppercase tracking-wider font-semibold whitespace-nowrap py-3 px-3 text-left">
-                        {key.replace(/_/g, ' ').replace(/Cantidad/gi, 'Qty')}
+                    {inventoryVisibleColumns.map((key) => (
+                      <th
+                        key={key}
+                        onClick={() => handleInventorySort(key)}
+                        title="Ordenar columna"
+                        className="text-xs uppercase tracking-wider font-semibold whitespace-nowrap py-3 px-3 text-left"
+                        style={{ textAlign: 'left' }}
+                      >
+                        {formatAnalisisHeader(key)}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {inventoryVisibleData.map((row, idx) => (
-                    <tr key={row.id || row.codigo || row.folio || `data-${idx}`} className="border-b hover:bg-zinc-50">
-                      {Object.entries(row)
-                        .filter(([key]) => mostrarCostos || !key.toLowerCase().includes('costo'))
-                        .map(([key, value], cellIdx) => {
+                    <tr
+                      key={row.__rowId || row.id || row.codigo || row.folio || `data-${idx}`}
+                      className={`border-b ${row.__rowType === 'group' ? 'bg-zinc-100 font-semibold' : 'hover:bg-zinc-50'}`}
+                    >
+                      {inventoryVisibleColumns.map((key, cellIdx) => {
+                        const value = row[key];
                         const isDiferencia = key.toLowerCase().includes('diferencia');
                         const isCosto = key.toLowerCase().includes('costo');
                         const isPorcentaje = key.toLowerCase().includes('porcentaje');
+                        const isGroupRow = row.__rowType === 'group';
+                        const isDetailInGroup = agruparProductosAnalisis && row.__rowType === 'detail';
+                        const keyLower = key.toLowerCase();
+                        const isMovimientos = keyLower === 'movimientos';
+                        const isVentas = keyLower === 'ventas';
+                        const isNombreProducto = isNombreProductoAnalisisColumn(key);
                         
                         let displayValue = value;
-                        let className = "py-2 px-3 text-zinc-700";
+                        let className = `py-2 px-3 text-left ${isGroupRow ? 'text-zinc-900 bg-zinc-100' : 'text-zinc-700'}`;
+                        let onDoubleClick = null;
                         
-                        if (typeof value === 'number') {
+                        if (!isGroupRow && isNombreProducto) {
+                          onDoubleClick = () => loadRecipeUsageDetails(row);
+                          className = "py-2 px-3 text-left text-blue-600 cursor-pointer hover:underline";
+                        } else if (!isGroupRow && isMovimientos && value !== null && value !== undefined && parseFloat(value) !== 0) {
+                          onDoubleClick = () => loadMovementDetails(row);
+                          className = "py-2 px-3 text-left text-blue-600 cursor-pointer hover:underline";
+                          displayValue = formatNumber(value);
+                        } else if (!isGroupRow && isVentas && value !== null && value !== undefined && parseFloat(value) !== 0) {
+                          onDoubleClick = () => loadSalesDetails(row);
+                          className = "py-2 px-3 text-left text-blue-600 cursor-pointer hover:underline";
+                          displayValue = formatNumber(value);
+                        } else if (isGroupRow && key === 'Agrupacion') {
+                          const expanded = isAnalisisGroupExpanded(row.__groupKey);
+                          displayValue = (
+                            <button
+                              type="button"
+                              onClick={() => toggleAnalisisGroup(row.__groupKey)}
+                              className="inline-flex items-center gap-2 text-left font-semibold text-zinc-900"
+                              title={expanded ? 'Contraer grupo' : 'Expandir grupo'}
+                            >
+                              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${expanded ? '' : '-rotate-90'}`} />
+                              <span>{value || row.nombre_producto || 'SIN AGRUPACION'}</span>
+                            </button>
+                          );
+                        } else if (isDetailInGroup && (key === 'Agrupacion' || key === 'Items')) {
+                          displayValue = '';
+                        } else if (typeof value === 'number') {
                           if (isCosto) {
                             displayValue = `$${value.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                            className += " text-right font-mono";
+                            className += " font-mono";
                           } else if (isPorcentaje) {
                             displayValue = `${value.toFixed(2)}%`;
-                            className += " text-right";
                           } else {
                             displayValue = value.toLocaleString('es-MX', { maximumFractionDigits: 2 });
-                            className += " text-right";
                           }
                         }
                         
@@ -3984,7 +4588,13 @@ const Reportes = () => {
                         }
                         
                         return (
-                          <td key={cellIdx} className={className}>
+                          <td
+                            key={cellIdx}
+                            className={`${className} align-top whitespace-nowrap`}
+                            style={{ textAlign: 'left' }}
+                            onDoubleClick={onDoubleClick}
+                            title={onDoubleClick ? 'Doble clic para ver detalle' : ''}
+                          >
                             {displayValue ?? '-'}
                           </td>
                         );

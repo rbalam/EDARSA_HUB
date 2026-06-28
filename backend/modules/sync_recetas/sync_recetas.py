@@ -362,10 +362,11 @@ def _obtener_insumos_sr(host, port, database, username, password) -> List[Insumo
     """Obtiene insumos con sus costos de SoftRestaurant."""
     query = """
     SELECT i.idinsumo, i.descripcion, i.unidad, i.elaborado, i.rendimientoelaborado,
-           i.idgruposi as idgrupoinsumo,
+           i.idgruposi as idgrupoinsumo, g.descripcion as grupoinsumo_nombre,
            id.costo, id.costopromedio, id.costoestandar, id.costoconimpuestos
     FROM insumos i
     LEFT JOIN insumosdetalle id ON i.idinsumo = id.idinsumo
+    LEFT JOIN gruposi g ON i.idgruposi = g.idgruposi
     WHERE i.descripcion IS NOT NULL AND i.descripcion != ''
     """
     rows = execute_sql_query(host, port, database, username, password, query) or []
@@ -381,7 +382,8 @@ def _obtener_insumos_sr(host, port, database, username, password) -> List[Insumo
             costo_con_impuestos=Decimal(str(r.get('costoconimpuestos') or 0)),
             es_elaborado=bool(r.get('elaborado')),
             rendimiento_elaborado=Decimal(str(r.get('rendimientoelaborado'))) if r.get('rendimientoelaborado') else None,
-            grupo_codigo_fuente=str(r.get('idgrupoinsumo', '')) if r.get('idgrupoinsumo') else None
+            grupo_codigo_fuente=str(r.get('idgrupoinsumo', '')) if r.get('idgrupoinsumo') else None,
+            grupo_nombre=str(r.get('grupoinsumo_nombre')) if r.get('grupoinsumo_nombre') else None
         )
         for r in rows
     ]
@@ -403,8 +405,9 @@ def _obtener_productos_sr(host, port, database, username, password) -> List[Prod
     WHERE p.descripcion IS NOT NULL AND p.descripcion != ''
     """
     rows = execute_sql_query(host, port, database, username, password, query) or []
-    # CATALOGO-CANONICO-C1: SoftRestaurant grupos.clasificacion → Categoría canónica
-    _CLASIF_SR = {'1': 'ALIMENTOS', '2': 'BEBIDAS', '3': 'OTROS'}
+    # CATALOGO-CANONICO-C1: SoftRestaurant grupos.clasificacion -> Categoria canonica.
+    # En SoftRestaurant Cienfuegos: 1=BEBIDAS, 2=ALIMENTOS, 3=OTROS.
+    _CLASIF_SR = {'1': 'BEBIDAS', '2': 'ALIMENTOS', '3': 'OTROS'}
     
     def _cat(r):
         c = r.get('clasificacion')
@@ -521,9 +524,8 @@ def _obtener_elaborados_sr(host, port, database, username, password) -> List[Ela
 # CATALOGO-CANONICO-C1: Dimensiones de filtro (NO-LIVE) - SoftRestaurant
 # ============================================================================
 
-# Mapeo canónico de clasificacionventa (mismo que ya usa el sync de productos
-# y el endpoint LIVE legacy). Semántica fija de SoftRestaurant.
-_CLASIF_VENTA_SR = {'1': 'ALIMENTOS', '2': 'BEBIDAS', '3': 'OTROS'}
+# Mapeo canonico de clasificacionventa para SoftRestaurant Cienfuegos.
+_CLASIF_VENTA_SR = {'1': 'BEBIDAS', '2': 'ALIMENTOS', '3': 'OTROS'}
 
 
 def _obtener_filtros_catalogo_sr(host, port, database, username, password) -> List[Dict]:
@@ -1080,6 +1082,8 @@ def _guardar_insumos(server_id: str, system_type: str, insumos: List[InsumoSync]
     for ins in insumos:
         try:
             nombre_escaped = ins.nombre.replace("'", "''")
+            grupo_codigo = ins.grupo_codigo_fuente.replace("'", "''") if ins.grupo_codigo_fuente else None
+            grupo_nombre = ins.grupo_nombre.replace("'", "''") if ins.grupo_nombre else None
             query = f"""
             MERGE Sync_Productos_Insumos AS target
             USING (SELECT '{server_id}' as ServerID, '{ins.codigo_fuente}' as CodigoFuente) AS source
@@ -1096,6 +1100,8 @@ def _guardar_insumos(server_id: str, system_type: str, insumos: List[InsumoSync]
                     CostoConImpuestos = {ins.costo_con_impuestos},
                     EsElaborado = {1 if ins.es_elaborado else 0},
                     RendimientoElaborado = {ins.rendimiento_elaborado if ins.rendimiento_elaborado else 'NULL'},
+                    GrupoInsumoCodigoFuente = {f"'{grupo_codigo}'" if grupo_codigo else 'NULL'},
+                    GrupoInsumoNombre = {f"N'{grupo_nombre}'" if grupo_nombre else 'NULL'},
                     SystemType = '{system_type}',
                     SyncRunID = '{sync_run_id}',
                     SyncedAtMexico = SYSDATETIME(),
@@ -1103,7 +1109,8 @@ def _guardar_insumos(server_id: str, system_type: str, insumos: List[InsumoSync]
             WHEN NOT MATCHED THEN
                 INSERT (ServerID, CodigoFuente, Nombre, UnidadMedida, Costo, CostoPromedio, 
                         UltimoCosto, CostoEstandar, CostoConImpuestos, EsElaborado, 
-                        RendimientoElaborado, SystemType, SyncRunID, Activo)
+                        RendimientoElaborado, GrupoInsumoCodigoFuente, GrupoInsumoNombre,
+                        SystemType, SyncRunID, Activo)
                 VALUES (
                     CAST('{server_id}' AS UNIQUEIDENTIFIER),
                     '{ins.codigo_fuente}',
@@ -1113,6 +1120,8 @@ def _guardar_insumos(server_id: str, system_type: str, insumos: List[InsumoSync]
                     {ins.costo_con_impuestos},
                     {1 if ins.es_elaborado else 0},
                     {ins.rendimiento_elaborado if ins.rendimiento_elaborado else 'NULL'},
+                    {f"'{grupo_codigo}'" if grupo_codigo else 'NULL'},
+                    {f"N'{grupo_nombre}'" if grupo_nombre else 'NULL'},
                     '{system_type}',
                     '{sync_run_id}',
                     1
