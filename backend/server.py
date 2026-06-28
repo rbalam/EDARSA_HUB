@@ -5096,6 +5096,59 @@ GROUP BY cb.Codigo
                 except Exception as canonical_catalog_error:
                     logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo producto canonico no disponible: %s", str(canonical_catalog_error))
 
+                try:
+                    cursor.execute(
+                        f"""
+SELECT
+    LTRIM(RTRIM(m.CodigoFuente)) AS Codigo,
+    MAX(pc.NombreProducto) AS Producto,
+    MAX(pc.UnidadInventario) AS Unidad,
+    MAX(pc.PrecioCostoBase) AS Costo_Unitario,
+    COALESCE(MAX(pp.FactorConversionInventario), 1) AS Rendimiento,
+    MAX(CAST(pf.CodigoFamilia AS VARCHAR(50))) AS CategoriaCodigo,
+    COALESCE(MAX(pf.NombreFamilia), 'SIN CATEGORIA') AS Categoria,
+    MAX(CAST(psf.CodigoSubFamilia AS VARCHAR(50))) AS FamiliaCodigo,
+    COALESCE(MAX(psf.NombreSubFamilia), 'SIN FAMILIA') AS Familia,
+    MAX(CAST(pl.CodigoLinea AS VARCHAR(50))) AS SubFamiliaCodigo,
+    COALESCE(MAX(pl.NombreLinea), 'SIN SUBFAMILIA') AS SubFamilia
+FROM Producto_MapeoOrigen m
+INNER JOIN Producto_Catalogo pc
+    ON pc.ProductoID = m.ProductoID
+   AND pc.Activo = 1
+LEFT JOIN Producto_Lineas pl
+    ON pl.LineaProductoID = pc.LineaProductoID
+   AND pl.Activo = 1
+LEFT JOIN Producto_SubFamilias psf
+    ON psf.SubFamiliaProductoID = pl.SubFamiliaProductoID
+   AND psf.Activo = 1
+LEFT JOIN Producto_Familias pf
+    ON pf.FamiliaProductoID = psf.FamiliaProductoID
+   AND pf.Activo = 1
+LEFT JOIN Producto_Presentaciones pp
+    ON pp.ProductoID = pc.ProductoID
+   AND pp.Activo = 1
+WHERE m.ServerID = %s
+  AND m.Activo = 1
+  AND UPPER(COALESCE(m.SystemType, '')) LIKE 'SOFT%%'
+  AND LTRIM(RTRIM(m.CodigoFuente)) IN ({code_placeholders})
+GROUP BY LTRIM(RTRIM(m.CodigoFuente))
+""",
+                        tuple([server_id, *all_codes]),
+                    )
+                    mapped_catalog_rows = cursor.fetchall()
+                    for row in mapped_catalog_rows:
+                        _merge_catalog_row(_as_text(row.get('Codigo')), row)
+                    logging.warning(
+                        "[SOFT-CANONICAL-NOLIVE] mapped classifier rows=%s resolved=%s",
+                        len(mapped_catalog_rows),
+                        len([
+                            row for row in mapped_catalog_rows
+                            if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
+                        ]),
+                    )
+                except Exception as mapped_catalog_error:
+                    logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo mapeo origen no disponible: %s", str(mapped_catalog_error))
+
                 weak_product_codes = [
                     code for code in all_codes
                     if code not in catalogo_productos
@@ -5212,7 +5265,7 @@ GROUP BY Codigo
                 except Exception as factor_error:
                     logging.warning("[SOFT-CANONICAL-NOLIVE] factores presentacion canonicos no disponibles: %s", str(factor_error))
 
-                logging.info(
+                logging.warning(
                     "[SOFT-CANONICAL-NOLIVE] catalog rows=%s missing=%s sin_categoria=%s rendimiento_gt1=%s",
                     len(catalogo_productos),
                     len([code for code in all_codes if code not in catalogo_productos]),
