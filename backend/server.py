@@ -4604,6 +4604,272 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             elapsed_ms = int((perf_counter() - started_at) * 1000)
             logging.exception("[INV-ANALYSIS-TIMING] error label=%s elapsed_ms=%s", label, elapsed_ms)
             raise
+
+    async def _generate_soft_inventory_analysis_canonical():
+        started_at = perf_counter()
+        logging.info(
+            "[SOFT-CANONICAL-NOLIVE] start server_id=%s almacen=%s folios_ini=%s folios_fin=%s",
+            server_id,
+            almacen,
+            lista_folios_ini,
+            lista_folios_fin,
+        )
+
+        if not lista_folios_ini or not lista_folios_fin:
+            raise HTTPException(status_code=400, detail="Debe seleccionar folios iniciales y finales")
+
+        def _as_text(value):
+            return "" if value is None else str(value).strip()
+
+        def _as_float(value):
+            if value is None:
+                return 0.0
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                return 0.0
+
+        def _parse_dt(value):
+            if not value:
+                return None
+            if isinstance(value, datetime):
+                return value
+            text = str(value).replace("T", " ").strip()
+            for size, fmt in ((19, "%Y-%m-%d %H:%M:%S"), (16, "%Y-%m-%d %H:%M"), (10, "%Y-%m-%d")):
+                try:
+                    return datetime.strptime(text[:size], fmt)
+                except ValueError:
+                    continue
+            return None
+
+        selected_almacenes = []
+        if almacenes:
+            for item in almacenes:
+                if isinstance(item, dict):
+                    selected_almacenes.append(_as_text(item.get('id') or item.get('almacen_id') or item.get('nombre')))
+                else:
+                    selected_almacenes.append(_as_text(item))
+        elif almacen:
+            selected_almacenes.append(_as_text(almacen))
+        selected_almacenes = [a for a in selected_almacenes if a]
+
+        folios_all = list(dict.fromkeys([*lista_folios_ini, *lista_folios_fin]))
+        folio_placeholders = ",".join(["%s"] * len(folios_all))
+
+        conn = None
+        try:
+            from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
+
+            conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+            cursor = conn.cursor(as_dict=True)
+
+            header_params = [server_id, *folios_all]
+            header_filters = ["server_id = %s", f"folio IN ({folio_placeholders})", "sync_status = 'ACTIVE'"]
+            if selected_almacenes:
+                almacen_placeholders = ",".join(["%s"] * len(selected_almacenes))
+                header_filters.append(f"(almacen_id IN ({almacen_placeholders}) OR almacen IN ({almacen_placeholders}))")
+                header_params.extend(selected_almacenes)
+                header_params.extend(selected_almacenes)
+
+            cursor.execute(
+                f"""
+SELECT
+    folio,
+    fecha,
+    almacen,
+    almacen_id,
+    sucursal,
+    sucursal_id
+FROM Compras_Inventarios_Fisicos_Sync
+WHERE {' AND '.join(header_filters)}
+ORDER BY fecha, folio
+""",
+                tuple(header_params),
+            )
+            header_rows = cursor.fetchall()
+            if not header_rows:
+                raise HTTPException(status_code=404, detail="No se encontraron inventarios canónicos para los folios seleccionados")
+
+            matched_folios = {_as_text(r.get('folio')) for r in header_rows}
+            missing_folios = [f for f in folios_all if _as_text(f) not in matched_folios]
+            if missing_folios:
+                raise HTTPException(status_code=404, detail=f"Folios sin respaldo canónico: {', '.join(missing_folios)}")
+
+            header_by_folio = {}
+            for row in header_rows:
+                header_by_folio.setdefault(_as_text(row.get('folio')), row)
+
+            almacen_ids = {_as_text(r.get('almacen_id')) for r in header_rows if _as_text(r.get('almacen_id'))}
+            almacen_names = {_as_text(r.get('almacen')) for r in header_rows if _as_text(r.get('almacen'))}
+            almacen_display = almacen or next(iter(almacen_names), "")
+
+            ini_dates = [_parse_dt(header_by_folio.get(_as_text(f), {}).get('fecha')) for f in lista_folios_ini]
+            fin_dates = [_parse_dt(header_by_folio.get(_as_text(f), {}).get('fecha')) for f in lista_folios_fin]
+            request_ini = _parse_dt(fecha_ini)
+            request_fin = _parse_dt(fecha_fin)
+            period_start = min([d for d in [*ini_dates, request_ini] if d], default=None)
+            period_end = max([d for d in [*fin_dates, request_fin] if d], default=None)
+            if not period_start or not period_end:
+                raise HTTPException(status_code=400, detail="No se pudieron determinar fechas canónicas de inventario")
+            if period_start > period_end:
+                period_start, period_end = period_end, period_start
+
+            detail_params = [server_id, *folios_all]
+            detail_filters = ["server_id = %s", f"folio IN ({folio_placeholders})", "sync_status = 'ACTIVE'"]
+            if almacen_ids:
+                ids = sorted(almacen_ids)
+                detail_filters.append(f"almacen_id IN ({','.join(['%s'] * len(ids))})")
+                detail_params.extend(ids)
+            elif almacen_names:
+                names = sorted(almacen_names)
+                detail_filters.append(f"almacen IN ({','.join(['%s'] * len(names))})")
+                detail_params.extend(names)
+
+            cursor.execute(
+                f"""
+SELECT
+    folio,
+    codigo_producto,
+    nombre_producto,
+    unidad,
+    existencia_fisica,
+    costo_unitario,
+    almacen,
+    almacen_id
+FROM Compras_Inventarios_Fisicos_Detalle_Sync
+WHERE {' AND '.join(detail_filters)}
+""",
+                tuple(detail_params),
+            )
+            detail_rows = cursor.fetchall()
+            if not detail_rows:
+                raise HTTPException(status_code=404, detail="No hay detalle canónico para los folios seleccionados")
+
+            ini_set = {_as_text(f) for f in lista_folios_ini}
+            fin_set = {_as_text(f) for f in lista_folios_fin}
+            inv_inicial = {}
+            inv_final = {}
+            productos = {}
+
+            for row in detail_rows:
+                codigo = _as_text(row.get('codigo_producto'))
+                if not codigo:
+                    continue
+                folio = _as_text(row.get('folio'))
+                cantidad = _as_float(row.get('existencia_fisica'))
+                costo = _as_float(row.get('costo_unitario'))
+                productos.setdefault(codigo, {
+                    'Producto': row.get('nombre_producto') or f'Producto {codigo}',
+                    'Unidad': row.get('unidad') or 'PZA',
+                    'Costo_Unitario': costo,
+                })
+                if costo:
+                    productos[codigo]['Costo_Unitario'] = costo
+                if folio in ini_set:
+                    inv_inicial[codigo] = inv_inicial.get(codigo, 0.0) + cantidad
+                if folio in fin_set:
+                    inv_final[codigo] = inv_final.get(codigo, 0.0) + cantidad
+
+            movimientos = {}
+            movement_params = [server_id, period_start, period_end]
+            movement_filters = [
+                "server_id = %s",
+                "fecha >= %s",
+                "fecha <= %s",
+                "sync_status = 'ACTIVE'",
+                "ISNULL(idconcepto, '') NOT IN ('', 'SPV', 'SCP', 'SCS')",
+            ]
+            if almacen_ids:
+                ids = sorted(almacen_ids)
+                movement_filters.append(f"almacen_id IN ({','.join(['%s'] * len(ids))})")
+                movement_params.extend(ids)
+            elif almacen_names:
+                names = sorted(almacen_names)
+                movement_filters.append(f"almacen IN ({','.join(['%s'] * len(names))})")
+                movement_params.extend(names)
+
+            try:
+                cursor.execute(
+                    f"""
+SELECT
+    codigo_producto,
+    SUM(cantidad) AS cantidad
+FROM Compras_Inventarios_Movimientos_Sync
+WHERE {' AND '.join(movement_filters)}
+GROUP BY codigo_producto
+""",
+                    tuple(movement_params),
+                )
+                movimientos = {
+                    _as_text(row.get('codigo_producto')): _as_float(row.get('cantidad'))
+                    for row in cursor.fetchall()
+                    if _as_text(row.get('codigo_producto'))
+                }
+            except Exception as mov_error:
+                logging.exception("[SOFT-CANONICAL-NOLIVE] movimientos canonicos no disponibles")
+                raise HTTPException(status_code=500, detail=f"Movimientos canónicos no disponibles: {str(mov_error)}")
+
+            results = []
+            for codigo in sorted(set(productos.keys()) | set(inv_inicial.keys()) | set(inv_final.keys()) | set(movimientos.keys())):
+                prod = productos.get(codigo, {})
+                costo = _as_float(prod.get('Costo_Unitario'))
+                inv_ini_qty = _as_float(inv_inicial.get(codigo))
+                inv_fin_qty = _as_float(inv_final.get(codigo))
+                mov_qty = _as_float(movimientos.get(codigo))
+                ventas_qty = 0.0
+                inv_teorico = inv_ini_qty + mov_qty - ventas_qty
+                diferencia = inv_fin_qty - inv_teorico
+                diferencia_costo = diferencia * costo
+                diferencia_pct = (diferencia / inv_teorico * 100) if inv_teorico else 0.0
+                valor_real = (inv_ini_qty + mov_qty - inv_fin_qty) * costo
+
+                results.append({
+                    'ID_Inv_Ini': ', '.join([str(f) for f in lista_folios_ini]),
+                    'Comentario_Ini': almacen_display,
+                    'ID_Inv_Fin': ', '.join([str(f) for f in lista_folios_fin]),
+                    'Comentario_Fin': almacen_display,
+                    'Categoria': 'SoftRestaurant',
+                    'Familia': 'EDARSAHUB SQL',
+                    'SubFamilia': 'CANONICO',
+                    'Codigo': codigo,
+                    'Producto': prod.get('Producto') or f'Producto {codigo}',
+                    'Unidad': prod.get('Unidad') or 'PZA',
+                    'Costo_Unitario': round(costo, 4),
+                    'Inv_Inicial_Cantidad': round(inv_ini_qty, 4),
+                    'Inv_Inicial_Costo': round(inv_ini_qty * costo, 2),
+                    'Movimientos': round(mov_qty, 4),
+                    'Movimientos_Costo': round(mov_qty * costo, 2),
+                    'Ventas': round(ventas_qty, 4),
+                    'Ventas_Costo': round(ventas_qty * costo, 2),
+                    'Inv_Teorico_Cantidad': round(inv_teorico, 4),
+                    'Inv_Teorico_Costo': round(inv_teorico * costo, 2),
+                    'Inv_Final_Cantidad': round(inv_fin_qty, 4),
+                    'Inv_Final_Costo': round(inv_fin_qty * costo, 2),
+                    'Diferencia_Cantidad': round(diferencia, 4),
+                    'Diferencia_Costo': round(diferencia_costo, 2),
+                    'Diferencia_Porcentaje': round(diferencia_pct, 2),
+                    'Valor_Real': round(valor_real, 2),
+                    'Teorico': 0.0,
+                    'source': 'EDARSAHUB_SQL_CANONICAL',
+                })
+
+            elapsed_ms = int((perf_counter() - started_at) * 1000)
+            logging.info(
+                "[SOFT-CANONICAL-NOLIVE] done elapsed_ms=%s rows=%s details=%s movimientos=%s",
+                elapsed_ms,
+                len(results),
+                len(detail_rows),
+                len(movimientos),
+            )
+            return {"data": results, "count": len(results), "source": "EDARSAHUB_SQL_CANONICAL"}
+        except HTTPException:
+            raise
+        except Exception as error:
+            logging.exception("[SOFT-CANONICAL-NOLIVE] error: %s", str(error))
+            raise HTTPException(status_code=500, detail=f"Error generando análisis canónico SoftRestaurant: {str(error)}")
+        finally:
+            if conn:
+                conn.close()
     
     try:
         if is_mpro_system(server.get('system_type')):
@@ -5211,6 +5477,9 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
             
         elif is_softrestaurant_system(server.get('system_type')):
             # Análisis de inventario para SoftRestaurant
+            logging.info("Generando análisis de inventario SoftRestaurant desde EDARSAHUB SQL canónico (NO-LIVE)")
+            return await _generate_soft_inventory_analysis_canonical()
+
             logging.info(f"Generando análisis de inventario SoftRestaurant: {almacen}")
             logging.info(f"Folios iniciales: {lista_folios_ini}, finales: {lista_folios_fin}")
             logging.info(f"Filtros frontend - Categorias: {filtro_categorias_frontend}, Familias: {filtro_familias_frontend}, SubFamilias: {filtro_subfamilias_frontend}")
