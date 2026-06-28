@@ -136,11 +136,16 @@ const Layout = () => {
   // que ahora respeta la unidad activa. NO se rompe el menú Enterprise.
   const { context: accessContext } = useAccessContext();
   const unidadActiva = accessContext?.unidad_activa || null;
-  const { menus: ctxMenus, error: ctxMenusError } = useMenusByContext(unidadActiva);
+  const { menus: ctxMenus, loading: ctxMenusLoading, error: ctxMenusError } = useMenusByContext(unidadActiva);
 
   // NUEVO: Sincronizar menús SQL por contexto -> estado del Layout (con fallback)
   useEffect(() => {
     if (!user) return;
+
+    if (ctxMenusLoading) {
+      setSqlMenusLoaded(false);
+      return;
+    }
 
     if (Array.isArray(ctxMenus) && ctxMenus.length > 0) {
       setSqlMenus(ctxMenus);
@@ -149,10 +154,14 @@ const Layout = () => {
     } else if (ctxMenusError) {
       // Regla #4: fallback visual solo si el endpoint falla.
       logger.warn('Menús SQL no disponibles, usando fallback hardcoded:', ctxMenusError.message);
+      setSqlMenus(null);
       setUseSqlMenus(false);
+    } else {
+      setSqlMenus([]);
+      setUseSqlMenus(true);
     }
     setSqlMenusLoaded(true);
-  }, [user, ctxMenus, ctxMenusError, unidadActiva]);
+  }, [user, ctxMenus, ctxMenusError, ctxMenusLoading, unidadActiva]);
 
   // Cargar permisos de menú desde el backend (RBAC centralizado)
   useEffect(() => {
@@ -662,6 +671,8 @@ const Layout = () => {
                 user={user}
                 sqlMenus={sqlMenus}
                 collapsed={false}
+                loading={!sqlMenusLoaded || ctxMenusLoading}
+                disableFallback={useSqlMenus}
               />
             ) : (
               <>

@@ -188,7 +188,9 @@ function normalizeSqlEnterpriseGroups(sqlMenus = []) {
 export default function EnterpriseSidebarMenu({
   user,
   collapsed = false,
-  sqlMenus = null
+  sqlMenus = null,
+  loading = false,
+  disableFallback = false
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -217,9 +219,11 @@ export default function EnterpriseSidebarMenu({
   });
 
   const groups = useMemo(() => {
+    if (loading) return [];
     const sqlGroups = normalizeSqlEnterpriseGroups(sqlMenus);
+    if (!sqlGroups && disableFallback) return [];
     return sqlGroups || filterEnterpriseMenuByRole(enterpriseMenuGroups, user);
-  }, [sqlMenus, user]);
+  }, [disableFallback, loading, sqlMenus, user]);
 
   const flat = useMemo(() => flattenEnterpriseMenu(groups), [groups]);
 
@@ -365,6 +369,20 @@ export default function EnterpriseSidebarMenu({
             </button>
           );
         })}
+      </nav>
+    );
+  }
+
+  if (loading) {
+    return (
+      <nav className="px-4 py-4 space-y-5" data-testid="enterprise-sidebar-menu-loading">
+        <div className="h-11 rounded-xl bg-zinc-900/80 border border-white/10 animate-pulse" />
+        <div className="space-y-2">
+          <div className="h-3 w-28 rounded bg-zinc-800 animate-pulse" />
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-10 rounded-xl bg-zinc-900/70 animate-pulse" />
+          ))}
+        </div>
       </nav>
     );
   }
