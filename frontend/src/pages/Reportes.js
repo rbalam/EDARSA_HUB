@@ -1357,6 +1357,7 @@ const Reportes = () => {
 
         const nombre = String(
           row.nombre_producto ??
+          row.Producto ??
           row.nombre ??
           row.Nombre ??
           row.descripcion ??
@@ -1374,6 +1375,7 @@ const Reportes = () => {
 
         const inventarioInicial = toNumber(
           row.inventario_inicial ??
+          row.Inv_Inicial_Cantidad ??
           row.inv_inicial ??
           row.Inventario_Inicial ??
           row.INV_INICIAL
@@ -1393,6 +1395,7 @@ const Reportes = () => {
 
         const inventarioTeorico = toNumber(
           row.inventario_teorico ??
+          row.Inv_Teorico_Cantidad ??
           row.inv_teorico ??
           row.Inventario_Teorico ??
           row.INV_TEORICO ??
@@ -1401,6 +1404,7 @@ const Reportes = () => {
 
         const inventarioFinal = toNumber(
           row.inventario_final ??
+          row.Inv_Final_Cantidad ??
           row.inv_final ??
           row.Inventario_Final ??
           row.INV_FINAL
@@ -1408,6 +1412,7 @@ const Reportes = () => {
 
         const diferencia = toNumber(
           row.diferencia ??
+          row.Diferencia_Cantidad ??
           row.Diferencia ??
           row.DIFERENCIA ??
           (inventarioFinal - inventarioTeorico)
