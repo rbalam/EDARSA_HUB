@@ -4919,7 +4919,7 @@ GROUP BY codigo_producto
                     value_text = _as_text(value).upper()
                     return not value_text or value_text == fallback_label or value_text.startswith("SIN ")
 
-                def _merge_catalog_row(codigo, catalog_row):
+                def _merge_catalog_row(codigo, catalog_row, force_classifiers=False):
                     if not codigo or not catalog_row:
                         return
                     current = dict(catalogo_productos.get(codigo) or {})
@@ -4943,11 +4943,11 @@ GROUP BY codigo_producto
                         'SubFamilia': 'SIN SUBFAMILIA',
                     }
                     for field, fallback_label in classifier_fallbacks.items():
-                        if _is_missing_classifier(current.get(field), fallback_label) and catalog_row.get(field):
+                        if (force_classifiers or _is_missing_classifier(current.get(field), fallback_label)) and catalog_row.get(field):
                             current[field] = catalog_row.get(field)
 
                     for field in ('CategoriaCodigo', 'FamiliaCodigo', 'SubFamiliaCodigo'):
-                        if not _as_text(current.get(field)) and _as_text(catalog_row.get(field)):
+                        if (force_classifiers or not _as_text(current.get(field))) and _as_text(catalog_row.get(field)):
                             current[field] = catalog_row.get(field)
 
                     catalogo_productos[codigo] = current
@@ -5023,13 +5023,59 @@ WHERE i.ServerID = %s
                 try:
                     cursor.execute(
                         f"""
+SELECT
+    p.CodigoFuente AS Codigo,
+    p.Nombre AS Producto,
+    'PZA' AS Unidad,
+    COALESCE(p.CostoReceta, 0) AS Costo_Unitario,
+    1 AS Rendimiento,
+    p.CategoriaCodigoFuente AS CategoriaCodigo,
+    COALESCE(p.CategoriaNombre, 'SIN CATEGORIA') AS Categoria,
+    p.FamiliaCodigoFuente AS FamiliaCodigo,
+    COALESCE(p.FamiliaNombre, 'SIN FAMILIA') AS Familia,
+    p.SubFamiliaCodigoFuente AS SubFamiliaCodigo,
+    COALESCE(p.SubFamiliaNombre, 'SIN SUBFAMILIA') AS SubFamilia
+FROM Sync_Productos p
+WHERE p.ServerID = %s
+  AND p.CodigoFuente IN ({code_placeholders})
+  AND p.Activo = 1
+""",
+                        tuple([server_id, *all_codes]),
+                    )
+                    sync_product_rows = cursor.fetchall()
+                    for row in sync_product_rows:
+                        _merge_catalog_row(_as_text(row.get('Codigo')), row, force_classifiers=True)
+                    logging.warning(
+                        "[SOFT-CANONICAL-NOLIVE] sync product classifier rows=%s resolved=%s",
+                        len(sync_product_rows),
+                        len([
+                            row for row in sync_product_rows
+                            if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
+                        ]),
+                    )
+                except Exception as product_catalog_error:
+                    logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo productos canonico no disponible: %s", str(product_catalog_error))
+
+                unresolved_catalog_codes = [
+                    code for code in all_codes
+                    if code not in catalogo_productos
+                    or _is_missing_classifier(catalogo_productos[code].get('Categoria'), 'SIN CATEGORIA')
+                    or _is_missing_classifier(catalogo_productos[code].get('Familia'), 'SIN FAMILIA')
+                    or _is_missing_classifier(catalogo_productos[code].get('SubFamilia'), 'SIN SUBFAMILIA')
+                ]
+                if unresolved_catalog_codes:
+                    unresolved_placeholders = ",".join(["%s"] * len(unresolved_catalog_codes))
+
+                    try:
+                        cursor.execute(
+                            f"""
 WITH catalogo_base AS (
     SELECT
         LTRIM(RTRIM(pc.CodigoProducto)) AS Codigo,
         pc.ProductoID
     FROM Producto_Catalogo pc
     WHERE pc.Activo = 1
-      AND LTRIM(RTRIM(pc.CodigoProducto)) IN ({code_placeholders})
+      AND LTRIM(RTRIM(pc.CodigoProducto)) IN ({unresolved_placeholders})
 
     UNION ALL
 
@@ -5038,7 +5084,7 @@ WITH catalogo_base AS (
         pc.ProductoID
     FROM Producto_Catalogo pc
     WHERE pc.Activo = 1
-      AND LTRIM(RTRIM(pc.SKU)) IN ({code_placeholders})
+      AND LTRIM(RTRIM(pc.SKU)) IN ({unresolved_placeholders})
 
     UNION ALL
 
@@ -5047,7 +5093,7 @@ WITH catalogo_base AS (
         pp.ProductoID
     FROM Producto_Presentaciones pp
     WHERE pp.Activo = 1
-      AND LTRIM(RTRIM(pp.CodigoPresentacion)) IN ({code_placeholders})
+      AND LTRIM(RTRIM(pp.CodigoPresentacion)) IN ({unresolved_placeholders})
 )
 SELECT
     cb.Codigo,
@@ -5080,25 +5126,25 @@ LEFT JOIN Producto_Presentaciones pp
 WHERE cb.Codigo IS NOT NULL AND cb.Codigo <> ''
 GROUP BY cb.Codigo
 """,
-                        tuple([*all_codes, *all_codes, *all_codes]),
-                    )
-                    catalogo_canonico_rows = cursor.fetchall()
-                    for row in catalogo_canonico_rows:
-                        _merge_catalog_row(_as_text(row.get('Codigo')), row)
-                    logging.info(
-                        "[SOFT-CANONICAL-NOLIVE] canonical classifier rows=%s resolved=%s",
-                        len(catalogo_canonico_rows),
-                        len([
-                            row for row in catalogo_canonico_rows
-                            if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
-                        ]),
-                    )
-                except Exception as canonical_catalog_error:
-                    logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo producto canonico no disponible: %s", str(canonical_catalog_error))
+                            tuple([*unresolved_catalog_codes, *unresolved_catalog_codes, *unresolved_catalog_codes]),
+                        )
+                        catalogo_canonico_rows = cursor.fetchall()
+                        for row in catalogo_canonico_rows:
+                            _merge_catalog_row(_as_text(row.get('Codigo')), row)
+                        logging.warning(
+                            "[SOFT-CANONICAL-NOLIVE] fallback catalog classifier rows=%s resolved=%s",
+                            len(catalogo_canonico_rows),
+                            len([
+                                row for row in catalogo_canonico_rows
+                                if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
+                            ]),
+                        )
+                    except Exception as canonical_catalog_error:
+                        logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo producto canonico no disponible: %s", str(canonical_catalog_error))
 
-                try:
-                    cursor.execute(
-                        f"""
+                    try:
+                        cursor.execute(
+                            f"""
 SELECT
     LTRIM(RTRIM(m.CodigoFuente)) AS Codigo,
     MAX(pc.NombreProducto) AS Producto,
@@ -5130,60 +5176,24 @@ LEFT JOIN Producto_Presentaciones pp
 WHERE m.ServerID = %s
   AND m.Activo = 1
   AND UPPER(COALESCE(m.SystemType, '')) LIKE 'SOFT%%'
-  AND LTRIM(RTRIM(m.CodigoFuente)) IN ({code_placeholders})
+  AND LTRIM(RTRIM(m.CodigoFuente)) IN ({unresolved_placeholders})
 GROUP BY LTRIM(RTRIM(m.CodigoFuente))
 """,
-                        tuple([server_id, *all_codes]),
-                    )
-                    mapped_catalog_rows = cursor.fetchall()
-                    for row in mapped_catalog_rows:
-                        _merge_catalog_row(_as_text(row.get('Codigo')), row)
-                    logging.warning(
-                        "[SOFT-CANONICAL-NOLIVE] mapped classifier rows=%s resolved=%s",
-                        len(mapped_catalog_rows),
-                        len([
-                            row for row in mapped_catalog_rows
-                            if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
-                        ]),
-                    )
-                except Exception as mapped_catalog_error:
-                    logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo mapeo origen no disponible: %s", str(mapped_catalog_error))
-
-                weak_product_codes = [
-                    code for code in all_codes
-                    if code not in catalogo_productos
-                    or _is_missing_classifier(catalogo_productos[code].get('Categoria'), 'SIN CATEGORIA')
-                    or _is_missing_classifier(catalogo_productos[code].get('Familia'), 'SIN FAMILIA')
-                    or _is_missing_classifier(catalogo_productos[code].get('SubFamilia'), 'SIN SUBFAMILIA')
-                ]
-                if weak_product_codes:
-                    try:
-                        weak_placeholders = ",".join(["%s"] * len(weak_product_codes))
-                        cursor.execute(
-                            f"""
-SELECT
-    p.CodigoFuente AS Codigo,
-    p.Nombre AS Producto,
-    'PZA' AS Unidad,
-    COALESCE(p.CostoReceta, 0) AS Costo_Unitario,
-    1 AS Rendimiento,
-    p.CategoriaCodigoFuente AS CategoriaCodigo,
-    COALESCE(p.CategoriaNombre, 'SIN CATEGORIA') AS Categoria,
-    p.FamiliaCodigoFuente AS FamiliaCodigo,
-    COALESCE(p.FamiliaNombre, 'SIN FAMILIA') AS Familia,
-    p.SubFamiliaCodigoFuente AS SubFamiliaCodigo,
-    COALESCE(p.SubFamiliaNombre, 'SIN SUBFAMILIA') AS SubFamilia
-FROM Sync_Productos p
-WHERE p.ServerID = %s
-  AND p.CodigoFuente IN ({weak_placeholders})
-  AND p.Activo = 1
-""",
-                            tuple([server_id, *weak_product_codes]),
+                            tuple([server_id, *unresolved_catalog_codes]),
                         )
-                        for row in cursor.fetchall():
+                        mapped_catalog_rows = cursor.fetchall()
+                        for row in mapped_catalog_rows:
                             _merge_catalog_row(_as_text(row.get('Codigo')), row)
-                    except Exception as product_catalog_error:
-                        logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo productos canonico no disponible: %s", str(product_catalog_error))
+                        logging.warning(
+                            "[SOFT-CANONICAL-NOLIVE] fallback mapped classifier rows=%s resolved=%s",
+                            len(mapped_catalog_rows),
+                            len([
+                                row for row in mapped_catalog_rows
+                                if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
+                            ]),
+                        )
+                    except Exception as mapped_catalog_error:
+                        logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo mapeo origen no disponible: %s", str(mapped_catalog_error))
 
                 for codigo, catalog_row in catalogo_productos.items():
                     productos.setdefault(codigo, {})
