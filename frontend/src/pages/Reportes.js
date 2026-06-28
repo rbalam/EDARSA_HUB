@@ -707,6 +707,9 @@ const Reportes = () => {
         setSelectedAlmacenes([]);
         setSelectedInventariosIni([]);
         setSelectedInventariosFin([]);
+        setSelectedCategorias([]);
+        setSelectedFamilias([]);
+        setSelectedSubfamilias([]);
         setInventarios([]);
         setAlmacenes([]);
         setSucursales([]);
@@ -1707,11 +1710,17 @@ const Reportes = () => {
         }));
         
         // Llamar al endpoint de análisis completo con filtros adicionales
+        const almacenesAnalisis = selectedAlmacenes
+          .map((a) => a.nombre ?? a.almacen ?? a.Al_Descripcion ?? a.label ?? a.id ?? a.almacen_id)
+          .filter(Boolean)
+          .map(String);
+
         response = await api.post('/reports/inventory-analysis', {
           server_id: filters.server_id,
+          sucursal_id: filters.sucursal_id,
           sucursal: filters.sucursal,
           almacen: filters.almacen,
-          almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes.map(a => a.nombre) : undefined,
+          almacenes: almacenesAnalisis.length > 0 ? almacenesAnalisis : undefined,
           fecha_ini: filters.fecha_ini,
           fecha_fin: filters.fecha_fin,
           folio_inicial: foliosIniciales.length === 1 ? foliosIniciales[0] : undefined,

@@ -4518,6 +4518,7 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     from core.server_registry import get_server_connection_info_with_secrets
     
     server_id = report_params.get('server_id')
+    sucursal_id_param = report_params.get('sucursal_id')
     sucursal = report_params.get('sucursal')
     almacen = report_params.get('almacen')
     almacenes = report_params.get('almacenes', [])  # Multi-almacén
@@ -5503,7 +5504,11 @@ GROUP BY Codigo
             
             # FASE 1B: Escapar caracteres especiales de LIKE para prevenir SQL Injection
             almacenes_like_conditions = " OR ".join([f"A.Al_Descripcion LIKE '%{_escape_like_pattern(alm)}%'" for alm in lista_almacenes])
-            sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
+            if sucursal_id_param and _validate_identifier(str(sucursal_id_param), max_length=50):
+                sucursal_condition = f"AND S.Sc_Cve_Sucursal = '{str(sucursal_id_param).replace(chr(39), chr(39)+chr(39))}'"
+            else:
+                sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
+                sucursal_condition = f"AND S.Sc_Descripcion LIKE '%{sucursal_safe}%'"
             
             almacen_query = f"""
 SELECT 
@@ -5513,11 +5518,11 @@ SELECT
 FROM Almacen A
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
 WHERE ({almacenes_like_conditions})
-    AND S.Sc_Descripcion LIKE '%{sucursal_safe}%'
+    {sucursal_condition}
 """
             almacen_result = _timed_inventory_sql("mpro.almacenes", almacen_query)
             if not almacen_result:
-                logging.error(f"Almacén(es) no encontrado(s) en MPRO - Sucursal: '{sucursal}', Almacenes: {lista_almacenes}, Servidor: {server.get('name', server_id)}")
+                logging.error(f"Almacén(es) no encontrado(s) en MPRO - SucursalID: '{sucursal_id_param}', Sucursal: '{sucursal}', Almacenes: {lista_almacenes}, Servidor: {server.get('name', server_id)}")
                 raise HTTPException(status_code=404, detail=f"Almacén no encontrado en sucursal '{sucursal}'. Verifique la conexión al servidor SQL o que el almacén exista.")
             
             # Lista de códigos de almacén
@@ -5716,6 +5721,40 @@ WHERE P_INS.Dp_Cve_Departamento = '0007'
             logging.info(f"Modo de agrupación: {'AGRUPADO' if agrupar_insumos else 'SIN AGRUPAR'}")
             results = []
             errores_list = []
+
+            # El catálogo base no trae cantidades físicas; se leen por folio para ambos modos.
+            inv_detalle_query = f"""
+SELECT
+    F.Fi_Folio as Folio,
+    F.Pr_Cve_Producto as Codigo,
+    F.Fi_Cantidad_Control_1 as Cantidad,
+    F.Al_Cve_Almacen as Almacen_Codigo,
+    ISNULL(F.Fi_Comentario, '') as Comentario
+FROM Fisico F
+WHERE F.Fi_Folio IN ({folios_ini_sql}, {folios_fin_sql})
+    AND F.Al_Cve_Almacen IN ({almacenes_sql})
+ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
+"""
+            inv_detalle = _timed_inventory_sql("mpro.inventario_detalle", inv_detalle_query)
+
+            folios_ini_set = set(lista_folios_ini)
+            folios_fin_set = set(lista_folios_fin)
+
+            inv_por_codigo = {}
+            for row in inv_detalle:
+                codigo = row['Codigo']
+                folio = row['Folio']
+                cantidad = float(row['Cantidad'] or 0)
+                comentario = row['Comentario'] or ''
+                almacen_cod = row['Almacen_Codigo']
+
+                if codigo not in inv_por_codigo:
+                    inv_por_codigo[codigo] = {'ini': {}, 'fin': {}}
+
+                if folio in folios_ini_set:
+                    inv_por_codigo[codigo]['ini'][folio] = {'cantidad': cantidad, 'comentario': comentario, 'almacen': almacen_cod}
+                elif folio in folios_fin_set:
+                    inv_por_codigo[codigo]['fin'][folio] = {'cantidad': cantidad, 'comentario': comentario, 'almacen': almacen_cod}
             
             if agrupar_insumos:
                 # MODO AGRUPADO: Una fila por producto (comportamiento original)
@@ -5723,8 +5762,9 @@ WHERE P_INS.Dp_Cve_Departamento = '0007'
                     codigo = prod['Codigo']
                     ventas_total = ventas_dict.get(codigo, 0)
                     movimientos = movimientos_dict.get(codigo, 0)
-                    inv_inicial = float(prod.get('Inv_Inicial_Cantidad', 0) or 0)
-                    inv_final = float(prod.get('Inv_Final_Cantidad', 0) or 0)
+                    inv_data = inv_por_codigo.get(codigo, {'ini': {}, 'fin': {}})
+                    inv_inicial = sum(item.get('cantidad', 0) for item in inv_data['ini'].values())
+                    inv_final = sum(item.get('cantidad', 0) for item in inv_data['fin'].values())
                     costo = float(prod.get('Costo_Unitario', 0) or 0)
                     tipo_producto = prod.get('Tipo_Producto', 'COMPRA')
                     
@@ -5779,47 +5819,6 @@ WHERE P_INS.Dp_Cve_Departamento = '0007'
                     })
             else:
                 # MODO SIN AGRUPAR: Una fila por cada combinación producto + inventario
-                # Obtener inventarios detallados por folio, incluyendo el código de almacén
-                inv_detalle_query = f"""
-SELECT 
-    F.Fi_Folio as Folio,
-    F.Pr_Cve_Producto as Codigo,
-    F.Fi_Cantidad_Control_1 as Cantidad,
-    F.Al_Cve_Almacen as Almacen_Codigo,
-    ISNULL(F.Fi_Comentario, '') as Comentario
-FROM Fisico F
-WHERE F.Fi_Folio IN ({folios_ini_sql}, {folios_fin_sql}) 
-    AND F.Al_Cve_Almacen IN ({almacenes_sql})
-ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
-"""
-                inv_detalle = _timed_inventory_sql("mpro.inventario_detalle", inv_detalle_query)
-                
-                # Crear diccionarios de folios iniciales y finales
-                folios_ini_set = set(lista_folios_ini)
-                folios_fin_set = set(lista_folios_fin)
-                
-                # Mapear folio -> almacén para obtener movimientos específicos
-                folio_almacen_map = {}
-                for row in inv_detalle:
-                    folio_almacen_map[row['Folio']] = row['Almacen_Codigo']
-                
-                # Organizar inventarios por código y folio
-                inv_por_codigo = {}
-                for row in inv_detalle:
-                    codigo = row['Codigo']
-                    folio = row['Folio']
-                    cantidad = float(row['Cantidad'] or 0)
-                    comentario = row['Comentario'] or ''
-                    almacen_cod = row['Almacen_Codigo']
-                    
-                    if codigo not in inv_por_codigo:
-                        inv_por_codigo[codigo] = {'ini': {}, 'fin': {}}
-                    
-                    if folio in folios_ini_set:
-                        inv_por_codigo[codigo]['ini'][folio] = {'cantidad': cantidad, 'comentario': comentario, 'almacen': almacen_cod}
-                    elif folio in folios_fin_set:
-                        inv_por_codigo[codigo]['fin'][folio] = {'cantidad': cantidad, 'comentario': comentario, 'almacen': almacen_cod}
-                
                 # Procesar productos con inventarios detallados
                 for prod in productos:
                     codigo = prod['Codigo']
