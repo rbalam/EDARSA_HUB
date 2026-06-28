@@ -24,6 +24,22 @@ import { getAlmacenTipoText } from '../utils/styleHelpers';
 // Componentes/lógica CANÓNICOS compartidos con Auditoría (Compras.js) — regla de centralización
 import DetalleProductoModal from '@/components/compras/DetalleProductoModal';
 import { useDetalleProducto } from '@/hooks/useDetalleProducto';
+
+
+const fmtCantidadReceta = (value) => {
+  const n = Number(value ?? 0);
+  if (!Number.isFinite(n)) return '-';
+  if (n === 0) return 'Sin consumo';
+
+  const abs = Math.abs(n);
+  const maxDecimals = abs < 1 ? 6 : 4;
+
+  return n.toLocaleString('es-MX', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: maxDecimals
+  });
+};
+
 import { fechaMinimaInventarios, filtrarInventariosFinales } from '@/lib/inventarioSelectorUtils';
 
 // Estilos para los selectores nativos
