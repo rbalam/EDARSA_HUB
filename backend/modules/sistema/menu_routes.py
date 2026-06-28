@@ -5,7 +5,7 @@ API para obtener menús dinámicos 100% SQL canónico.
 NO HAY HARDCODES de emails ni roles.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from typing import Dict, Optional
 import logging
 
@@ -30,15 +30,7 @@ async def obtener_menus_usuario(
     """
     service = get_menu_service()
 
-    usuario_id = (
-        current_user.get("UsuarioID")
-        or current_user.get("user_id")
-        or current_user.get("id")
-        or current_user.get("sub")
-    )
-
-    if not usuario_id:
-        raise HTTPException(status_code=401, detail="Usuario sin identificador válido")
+    usuario_id = service.resolver_usuario_id_canonico(current_user)
 
     menus = service.obtener_menus_usuario(str(usuario_id), unidad_negocio_id)
     es_superadmin = service.es_superadmin(str(usuario_id))

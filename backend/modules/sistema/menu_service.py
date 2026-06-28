@@ -1,4 +1,5 @@
 import logging
+from fastapi import HTTPException
 from typing import Dict, Any, List, Optional
 from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
 
@@ -12,6 +13,97 @@ class MenuService:
     @staticmethod
     def _norm(value):
         return str(value or "").strip().upper().replace("-", "_").replace(" ", "_")
+
+    def resolver_usuario_id_canonico(self, current_user: Dict[str, Any]) -> str:
+        """
+        Resuelve el UsuarioID canónico desde dbo.Usuario_Catalogo.
+        No usa MongoDB, no usa hardcodes de correos ni roles.
+        """
+        candidatos = [
+            current_user.get("UsuarioID"),
+            current_user.get("usuario_id"),
+            current_user.get("user_id"),
+            current_user.get("id"),
+            current_user.get("sub"),
+            current_user.get("email"),
+            current_user.get("correo"),
+            current_user.get("preferred_username"),
+            current_user.get("username"),
+        ]
+
+        candidatos = [str(x).strip() for x in candidatos if x and str(x).strip()]
+
+        if not candidatos:
+            raise HTTPException(status_code=401, detail="Token sin identidad de usuario")
+
+        conn = self._get_connection()
+        try:
+            cur = conn.cursor(as_dict=True)
+
+            cur.execute("""
+                SELECT COLUMN_NAME
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA='dbo'
+                  AND TABLE_NAME='Usuario_Catalogo'
+            """)
+            cols = {str(r["COLUMN_NAME"]) for r in (cur.fetchall() or [])}
+
+            columnas_preferidas = [
+                "UsuarioID",
+                "UserID",
+                "Id",
+                "ID",
+                "Email",
+                "Correo",
+                "CorreoElectronico",
+                "Usuario",
+                "UserName",
+                "Username",
+                "Login",
+                "AuthUserID",
+                "Auth0ID",
+                "ExternalID",
+                "ExternalUserID",
+                "MongoUserID",
+                "CodigoUsuario",
+            ]
+
+            columnas = [c for c in columnas_preferidas if c in cols]
+
+            if not columnas:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Usuario_Catalogo no tiene columnas candidatas para resolver identidad",
+                )
+
+            condiciones = []
+            params = []
+
+            for col in columnas:
+                for valor in candidatos:
+                    condiciones.append(f"LOWER(CONVERT(NVARCHAR(255), [{col}])) = LOWER(%s)")
+                    params.append(valor)
+
+            sql = f"""
+                SELECT TOP 1 UsuarioID
+                FROM dbo.Usuario_Catalogo
+                WHERE {" OR ".join(condiciones)}
+                ORDER BY UsuarioID
+            """
+
+            cur.execute(sql, tuple(params))
+            row = cur.fetchone()
+
+            if not row:
+                logger.warning(
+                    "No se pudo resolver UsuarioID canonico para token. Keys=%s",
+                    sorted(current_user.keys()),
+                )
+                raise HTTPException(status_code=403, detail="Usuario no encontrado en SQL canónico")
+
+            return str(row["UsuarioID"])
+        finally:
+            conn.close()
 
     def obtener_roles_usuario(self, usuario_id: str) -> List[Dict[str, Any]]:
         conn = self._get_connection()
