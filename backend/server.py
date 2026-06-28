@@ -11046,6 +11046,244 @@ ORDER BY fecha DESC
             conn.close()
 
 
+class UsoInversoRecetaRequest(BaseModel):
+    server_id: str
+    codigo: str
+    producto: Optional[str] = None
+    unidad: Optional[str] = None
+    rendimiento: Optional[float] = None
+    unidad_vista: Optional[str] = None
+
+
+def _usage_text(value) -> str:
+    return str(value or '').strip()
+
+
+def _usage_float(value) -> float:
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+@api_router.post("/reports/inverse-recipe-usage")
+async def obtener_uso_inverso_receta_reportes(
+    request: UsoInversoRecetaRequest,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Drilldown inverso desde Analisis de Inventarios.
+
+    Fuente unica: EDARSAHUB SQL canonico. No conecta live a MPRO/SoftRestaurant.
+    - Si el codigo es insumo, busca productos/producciones donde aparece.
+    - Si el codigo es presentacion, intenta resolver su insumo base canonico
+      antes de buscar el uso en recetas.
+    """
+    from core.corporate_filters.request_resolver import canonical_server_id
+    from core.server_registry import get_server_connection_info
+
+    server_id = canonical_server_id(request.server_id)
+    codigo = _usage_text(request.codigo)
+    if not codigo:
+        raise HTTPException(status_code=400, detail="Codigo de producto requerido")
+
+    server = await get_server_connection_info(server_id, db=db)
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+
+    system_type = _usage_text(server.get('system_type')).upper()
+    conn = None
+    try:
+        conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=10)
+        cursor = conn.cursor(as_dict=True)
+
+        base = {
+            "codigo": codigo,
+            "nombre": request.producto or codigo,
+            "unidad": "",
+            "tipo": "INSUMO",
+            "rendimiento": 1.0,
+        }
+        presentacion = None
+
+        cursor.execute(
+            """
+SELECT TOP 1
+    CodigoFuente,
+    Nombre,
+    UnidadMedida,
+    COALESCE(RendimientoElaborado, 1) AS Rendimiento,
+    COALESCE(EsElaborado, 0) AS EsElaborado
+FROM Sync_Productos_Insumos
+WHERE ServerID = %s
+  AND LTRIM(RTRIM(CodigoFuente)) = LTRIM(RTRIM(%s))
+  AND Activo = 1
+""",
+            (server_id, codigo),
+        )
+        insumo_rows = cursor.fetchall()
+        if insumo_rows:
+            insumo = insumo_rows[0]
+            base = {
+                "codigo": _usage_text(insumo.get("CodigoFuente")),
+                "nombre": insumo.get("Nombre") or request.producto or codigo,
+                "unidad": insumo.get("UnidadMedida") or "",
+                "tipo": "ELABORADO" if insumo.get("EsElaborado") else "INSUMO",
+                "rendimiento": _usage_float(insumo.get("Rendimiento")) or 1.0,
+            }
+        else:
+            try:
+                cursor.execute(
+                    """
+SELECT TOP 1
+    pp.CodigoPresentacion,
+    pp.NombrePresentacion,
+    pp.UnidadPresentacion,
+    COALESCE(pp.FactorConversionInventario, 1) AS Rendimiento,
+    pmo.CodigoFuente AS InsumoBaseCodigo,
+    spi.Nombre AS InsumoBaseNombre,
+    spi.UnidadMedida AS InsumoBaseUnidad
+FROM Producto_Presentaciones pp
+INNER JOIN Producto_Catalogo pc ON pc.ProductoID = pp.ProductoID
+LEFT JOIN Producto_MapeoOrigen pmo
+    ON pmo.ProductoID = pc.ProductoID
+   AND pmo.ServerID = %s
+   AND pmo.Activo = 1
+LEFT JOIN Sync_Productos_Insumos spi
+    ON spi.ServerID = pmo.ServerID
+   AND LTRIM(RTRIM(spi.CodigoFuente)) = LTRIM(RTRIM(pmo.CodigoFuente))
+   AND spi.Activo = 1
+WHERE LTRIM(RTRIM(pp.CodigoPresentacion)) = LTRIM(RTRIM(%s))
+  AND pp.Activo = 1
+""",
+                    (server_id, codigo),
+                )
+                pres_rows = cursor.fetchall()
+            except Exception as pres_error:
+                logging.warning("[INVERSE-RECIPE-USAGE] presentacion canonica no disponible: %s", str(pres_error))
+                pres_rows = []
+
+            if pres_rows:
+                pres = pres_rows[0]
+                base_codigo = _usage_text(pres.get("InsumoBaseCodigo")) or codigo
+                presentacion = {
+                    "codigo": _usage_text(pres.get("CodigoPresentacion")) or codigo,
+                    "nombre": pres.get("NombrePresentacion") or request.producto or codigo,
+                    "unidad": pres.get("UnidadPresentacion") or "",
+                    "rendimiento": _usage_float(pres.get("Rendimiento")) or 1.0,
+                }
+                base = {
+                    "codigo": base_codigo,
+                    "nombre": pres.get("InsumoBaseNombre") or request.producto or base_codigo,
+                    "unidad": pres.get("InsumoBaseUnidad") or "",
+                    "tipo": "INSUMO_BASE",
+                    "rendimiento": presentacion["rendimiento"],
+                }
+
+        target_codes = [c for c in dict.fromkeys([base["codigo"], codigo]) if c]
+        placeholders = ",".join(["%s"] * len(target_codes))
+        if not presentacion and _usage_text(request.unidad_vista).lower() == "presentaciones":
+            presentacion = {
+                "codigo": codigo,
+                "nombre": request.producto or base.get("nombre") or codigo,
+                "unidad": request.unidad or base.get("unidad") or "",
+                "rendimiento": _usage_float(request.rendimiento) or base.get("rendimiento") or 1.0,
+            }
+
+        cursor.execute(
+            f"""
+SELECT TOP 1000
+    r.ProductoCodigoFuente AS CodigoDestino,
+    COALESCE(p.Nombre, r.ProductoCodigoFuente) AS ProductoDestino,
+    CASE
+        WHEN COALESCE(p.EsCompuesto, 0) = 1 THEN 'PRODUCCION'
+        WHEN COALESCE(p.EsVendible, 1) = 1 THEN 'VENTA'
+        ELSE COALESCE(p.TipoProducto, 'PRODUCTO')
+    END AS TipoDestino,
+    SUM(COALESCE(r.Cantidad, 0)) AS CantidadReceta,
+    COALESCE(MAX(r.UnidadMedida), '') AS UnidadReceta,
+    SUM(COALESCE(r.CostoTotal, 0)) AS CostoTotal,
+    COUNT(*) AS Lineas
+FROM Sync_Productos_Recetas r
+LEFT JOIN Sync_Productos p
+    ON p.ServerID = r.ServerID
+   AND LTRIM(RTRIM(p.CodigoFuente)) = LTRIM(RTRIM(r.ProductoCodigoFuente))
+   AND p.Activo = 1
+WHERE r.ServerID = %s
+  AND r.Activo = 1
+  AND LTRIM(RTRIM(r.ComponenteCodigoFuente)) IN ({placeholders})
+GROUP BY
+    r.ProductoCodigoFuente,
+    COALESCE(p.Nombre, r.ProductoCodigoFuente),
+    CASE
+        WHEN COALESCE(p.EsCompuesto, 0) = 1 THEN 'PRODUCCION'
+        WHEN COALESCE(p.EsVendible, 1) = 1 THEN 'VENTA'
+        ELSE COALESCE(p.TipoProducto, 'PRODUCTO')
+    END
+ORDER BY ProductoDestino
+""",
+            tuple([server_id, *target_codes]),
+        )
+        productos_rows = cursor.fetchall()
+
+        cursor.execute(
+            f"""
+SELECT TOP 1000
+    e.InsumoElaboradoCodigoFuente AS CodigoDestino,
+    COALESCE(i.Nombre, e.InsumoElaboradoCodigoFuente) AS ProductoDestino,
+    'PRODUCCION' AS TipoDestino,
+    SUM(COALESCE(e.Cantidad, 0)) AS CantidadReceta,
+    COALESCE(MAX(e.UnidadMedida), '') AS UnidadReceta,
+    SUM(COALESCE(e.CostoTotal, 0)) AS CostoTotal,
+    COUNT(*) AS Lineas
+FROM Sync_Productos_Elaborados e
+LEFT JOIN Sync_Productos_Insumos i
+    ON i.ServerID = e.ServerID
+   AND LTRIM(RTRIM(i.CodigoFuente)) = LTRIM(RTRIM(e.InsumoElaboradoCodigoFuente))
+   AND i.Activo = 1
+WHERE e.ServerID = %s
+  AND e.Activo = 1
+  AND LTRIM(RTRIM(e.ComponenteCodigoFuente)) IN ({placeholders})
+GROUP BY e.InsumoElaboradoCodigoFuente, COALESCE(i.Nombre, e.InsumoElaboradoCodigoFuente)
+ORDER BY ProductoDestino
+""",
+            tuple([server_id, *target_codes]),
+        )
+        elaborados_rows = cursor.fetchall()
+
+        usos = []
+        for row in [*productos_rows, *elaborados_rows]:
+            usos.append({
+                "codigo_destino": _usage_text(row.get("CodigoDestino")),
+                "producto_destino": row.get("ProductoDestino") or _usage_text(row.get("CodigoDestino")),
+                "tipo_destino": row.get("TipoDestino") or "PRODUCTO",
+                "cantidad_receta": round(_usage_float(row.get("CantidadReceta")), 6),
+                "unidad_receta": row.get("UnidadReceta") or "",
+                "costo_total": round(_usage_float(row.get("CostoTotal")), 6),
+                "lineas": int(row.get("Lineas") or 0),
+            })
+
+        return {
+            "source": "EDARSAHUB_SQL_CANONICAL",
+            "system_type": system_type,
+            "codigo_consultado": codigo,
+            "producto_consultado": request.producto or codigo,
+            "unidad_vista": request.unidad_vista or "",
+            "base": base,
+            "presentacion": presentacion,
+            "usos": usos,
+            "total": len(usos),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("[INVERSE-RECIPE-USAGE] error")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo uso inverso de receta: {str(e)[:160]}")
+    finally:
+        if conn:
+            conn.close()
+
+
 # =============================================================================
 # INVENTARIOS PROVISIONALES - CAPTURA MANUAL
 # Tabla: EDARSAHUB.dbo.Auditoria_Inventario_Provisional

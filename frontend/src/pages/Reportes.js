@@ -58,6 +58,105 @@ const getAlmacenPlaceholder = (selectedAlmacenes, selectedServer, selectedUnidad
   return "Selecciona almacén(es)";
 };
 
+const UsoRecetaModal = ({ detalle, onClose, formatNumber }) => {
+  if (!detalle?.open) return null;
+
+  const fmt = formatNumber || ((n) => Number(n || 0).toLocaleString('es-MX'));
+  const usos = detalle.data?.usos || [];
+  const base = detalle.data?.base;
+  const presentacion = detalle.data?.presentacion;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[82vh] overflow-hidden">
+        <div className="px-4 py-3 border-b flex items-center justify-between bg-zinc-50">
+          <div>
+            <h3 className="font-semibold">Uso en recetas</h3>
+            <p className="text-sm text-zinc-500">
+              {detalle.codigo} - {detalle.producto}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-zinc-200 rounded"
+            aria-label="Cerrar"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="p-4 overflow-auto max-h-[66vh]">
+          {detalle.loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+          ) : detalle.error ? (
+            <p className="text-red-600 text-center py-4">{detalle.error}</p>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                {presentacion && (
+                  <div className="rounded border border-zinc-200 bg-zinc-50 p-3">
+                    <p className="text-xs uppercase tracking-wide text-zinc-500">Presentación seleccionada</p>
+                    <p className="font-semibold">{presentacion.codigo} - {presentacion.nombre}</p>
+                    <p className="text-zinc-600">
+                      Unidad: {presentacion.unidad || '-'} · Rendimiento: {fmt(presentacion.rendimiento || 1)}
+                    </p>
+                  </div>
+                )}
+                <div className="rounded border border-zinc-200 bg-blue-50 p-3">
+                  <p className="text-xs uppercase tracking-wide text-blue-600">Insumo base consultado</p>
+                  <p className="font-semibold text-blue-900">{base?.codigo || detalle.codigo} - {base?.nombre || detalle.producto}</p>
+                  <p className="text-blue-700">Unidad: {base?.unidad || '-'}</p>
+                </div>
+              </div>
+
+              {usos.length > 0 ? (
+                <table className="w-full text-sm">
+                  <thead className="bg-zinc-100">
+                    <tr>
+                      <th className="py-2 px-3 text-left">CODIGO</th>
+                      <th className="py-2 px-3 text-left">PRODUCTO / PRODUCCION</th>
+                      <th className="py-2 px-3 text-left">TIPO</th>
+                      <th className="py-2 px-3 text-left">CANTIDAD RECETA</th>
+                      <th className="py-2 px-3 text-left">UNIDAD</th>
+                      <th className="py-2 px-3 text-left">LINEAS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usos.map((uso, idx) => (
+                      <tr key={`${uso.codigo_destino}-${idx}`} className="border-b hover:bg-zinc-50">
+                        <td className="py-1.5 px-3 font-mono">{uso.codigo_destino}</td>
+                        <td className="py-1.5 px-3 font-medium">{uso.producto_destino}</td>
+                        <td className="py-1.5 px-3">
+                          <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs">
+                            {uso.tipo_destino}
+                          </span>
+                        </td>
+                        <td className="py-1.5 px-3 font-mono">{fmt(uso.cantidad_receta)}</td>
+                        <td className="py-1.5 px-3">{uso.unidad_receta || '-'}</td>
+                        <td className="py-1.5 px-3">{uso.lineas || 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="text-center text-zinc-500 py-8">
+                  No se encontraron productos de venta o producciones que usen este insumo.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="px-4 py-3 border-t bg-zinc-50 flex justify-end">
+          <Button variant="outline" onClick={onClose}>Cerrar</Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Reportes = () => {
   // FASE AUTH-FIX: Usar AuthContext para esperar a que el usuario esté autenticado
   const { user, loading: authLoading } = useAuth();
@@ -181,6 +280,14 @@ const Reportes = () => {
     abrirConsumos,
     cerrar: cerrarDetalleProducto,
   } = useDetalleProducto();
+  const [usoRecetaDetalle, setUsoRecetaDetalle] = useState({
+    open: false,
+    loading: false,
+    codigo: '',
+    producto: '',
+    data: null,
+    error: null
+  });
 
   // Estados para filtros de categoría/familia/subfamilia
   const [filterOptions, setFilterOptions] = useState({
@@ -2244,6 +2351,68 @@ const Reportes = () => {
     });
   };
 
+  const loadRecipeUsageDetails = async (producto) => {
+    const codigo = producto.Codigo ?? producto.codigo_producto ?? producto.codigo ?? producto.CODIGO;
+    const nombre = producto.Producto ?? producto.nombre_producto ?? producto.nombre ?? producto.Nombre ?? codigo;
+    const unidad = producto.Unidad ?? producto.unidad ?? producto.UNIDAD ?? '';
+    const rendimiento = getAnalisisRendimiento(producto);
+
+    if (!codigo) {
+      toast.error('No hay código para consultar la receta inversa');
+      return;
+    }
+
+    setUsoRecetaDetalle({
+      open: true,
+      loading: true,
+      codigo,
+      producto: nombre,
+      data: null,
+      error: null
+    });
+
+    try {
+      const response = await api.post(
+        '/reports/inverse-recipe-usage',
+        {
+          server_id: filters.server_id,
+          codigo,
+          producto: nombre,
+          unidad,
+          rendimiento,
+          unidad_vista: unidadAnalisisInventarios
+        },
+        { timeout: 30000 }
+      );
+
+      setUsoRecetaDetalle((prev) => ({
+        ...prev,
+        loading: false,
+        data: response.data,
+        error: null
+      }));
+    } catch (error) {
+      logger.error('[Reportes] Error uso inverso de receta:', error);
+      setUsoRecetaDetalle((prev) => ({
+        ...prev,
+        loading: false,
+        data: null,
+        error: error.response?.data?.detail || 'Error al obtener uso en recetas'
+      }));
+    }
+  };
+
+  const closeRecipeUsageDetails = () => {
+    setUsoRecetaDetalle({
+      open: false,
+      loading: false,
+      codigo: '',
+      producto: '',
+      data: null,
+      error: null
+    });
+  };
+
   // Cerrar modal (alias canónico)
   const closeDetailModal = cerrarDetalleProducto;
 
@@ -3280,6 +3449,7 @@ const Reportes = () => {
                         const keyLower = key.toLowerCase();
                         const isMovimientos = keyLower === 'movimientos';
                         const isVentas = keyLower === 'ventas';
+                        const isNombreProducto = ['nombre_producto', 'producto', 'nombre'].includes(keyLower);
                         
                         const isGroupRow = row.__rowType === 'group';
                         const isDetailInGroup = agruparProductosAnalisis && row.__rowType === 'detail';
@@ -3288,7 +3458,10 @@ const Reportes = () => {
                         let onDoubleClick = null;
                         
                         // Columnas clickeables para ver detalle
-                        if (!isGroupRow && isMovimientos && value !== null && value !== undefined && parseFloat(value) !== 0) {
+                        if (!isGroupRow && isNombreProducto) {
+                          onDoubleClick = () => loadRecipeUsageDetails(row);
+                          className = "text-sm font-data text-blue-600 cursor-pointer hover:underline p-2 text-left";
+                        } else if (!isGroupRow && isMovimientos && value !== null && value !== undefined && parseFloat(value) !== 0) {
                           onDoubleClick = () => loadMovementDetails(row);
                           className = "text-sm font-data text-blue-600 cursor-pointer hover:underline p-2 text-left";
                           displayValue = formatNumber(value);
@@ -3523,6 +3696,11 @@ const Reportes = () => {
       )}
 
       {/* Modal de Detalle de Movimientos/Consumos (componente CANÓNICO compartido con Auditoría) */}
+      <UsoRecetaModal
+        detalle={usoRecetaDetalle}
+        onClose={closeRecipeUsageDetails}
+        formatNumber={formatNumber}
+      />
       <DetalleProductoModal
         detalle={detalleProducto}
         onClose={cerrarDetalleProducto}
@@ -4241,12 +4419,16 @@ const Reportes = () => {
                         const keyLower = key.toLowerCase();
                         const isMovimientos = keyLower === 'movimientos';
                         const isVentas = keyLower === 'ventas';
+                        const isNombreProducto = ['nombre_producto', 'producto', 'nombre'].includes(keyLower);
                         
                         let displayValue = value;
                         let className = `py-2 px-3 text-left ${isGroupRow ? 'text-zinc-900 bg-zinc-100' : 'text-zinc-700'}`;
                         let onDoubleClick = null;
                         
-                        if (!isGroupRow && isMovimientos && value !== null && value !== undefined && parseFloat(value) !== 0) {
+                        if (!isGroupRow && isNombreProducto) {
+                          onDoubleClick = () => loadRecipeUsageDetails(row);
+                          className = "py-2 px-3 text-left text-blue-600 cursor-pointer hover:underline";
+                        } else if (!isGroupRow && isMovimientos && value !== null && value !== undefined && parseFloat(value) !== 0) {
                           onDoubleClick = () => loadMovementDetails(row);
                           className = "py-2 px-3 text-left text-blue-600 cursor-pointer hover:underline";
                           displayValue = formatNumber(value);
