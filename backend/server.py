@@ -5405,9 +5405,18 @@ GROUP BY Codigo
     
     try:
         if is_mpro_system(server.get('system_type')):
-            logging.info(f"Generando análisis de inventario MPRO: {sucursal} - {almacen}")
-            logging.info(f"Fechas: {fecha_ini} a {fecha_fin}")
-            logging.info(f"Folios iniciales: {lista_folios_ini}, finales: {lista_folios_fin}")
+            logging.warning(
+                "[MPRO-INV-ANALYSIS] start server_id=%s sucursal_id=%s sucursal=%s almacen=%s almacenes=%s fecha_ini=%s fecha_fin=%s folios_ini=%s folios_fin=%s",
+                server_id,
+                sucursal_id_param,
+                sucursal,
+                almacen,
+                almacenes,
+                fecha_ini,
+                fecha_fin,
+                lista_folios_ini,
+                lista_folios_fin,
+            )
 
             def _mpro_folio_candidates(folio: str) -> List[str]:
                 """Acepta folio visible canónico y folio físico real de MPRO."""
@@ -5429,7 +5438,7 @@ GROUP BY Codigo
                 for folio in lista_folios_fin
                 for candidate in _mpro_folio_candidates(folio)
             ))
-            logging.info(f"Folios MPRO SQL iniciales: {lista_folios_ini_sql}, finales: {lista_folios_fin_sql}")
+            logging.warning("[MPRO-INV-ANALYSIS] folios_sql ini=%s fin=%s", lista_folios_ini_sql, lista_folios_fin_sql)
             
             # Generar cadenas SQL para folios múltiples
             folios_ini_sql = ",".join([f"'{f}'" for f in lista_folios_ini_sql]) if lista_folios_ini_sql else "''"
@@ -5562,8 +5571,14 @@ WHERE ({almacenes_like_conditions})
             # MPRO: Detectar si ALGÚN almacén es tipo BODEGA
             es_almacen_bodega = any('BODEGA' in (n.upper() if n else '') for n in almacenes_nombres)
             
-            logging.info(f"Almacenes encontrados: {almacenes_codigos} - {almacenes_nombres} (Sucursal: {sucursal_codigo})")
-            logging.info(f"MPRO - Incluye almacén BODEGA: {es_almacen_bodega}")
+            logging.warning(
+                "[MPRO-INV-ANALYSIS] almacenes rows=%s codigos=%s nombres=%s sucursal_codigo=%s es_bodega=%s",
+                len(almacen_result),
+                almacenes_codigos,
+                almacenes_nombres,
+                sucursal_codigo,
+                es_almacen_bodega,
+            )
             
             # 2. Obtener productos que se controlan en inventario:
             # a) INSUMOS (Dp_Cve_Departamento = '0007') que tienen presentaciones configuradas
@@ -5628,7 +5643,7 @@ ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
             logging.info("Obteniendo catalogo de productos MPRO (INSUMOS con presentaciones + COMPRAS sin presentacion)...")
             productos = _timed_inventory_sql("mpro.productos", productos_query)
             productos_by_codigo = {str(p.get('Codigo') or '').strip(): p for p in productos if str(p.get('Codigo') or '').strip()}
-            logging.info(f"Productos obtenidos: {len(productos)}")
+            logging.warning("[MPRO-INV-ANALYSIS] productos rows=%s", len(productos))
             
             # 3. Obtener ventas - UNION ALL de ventas KIT + ventas DIRECTAS
             # Consulta proporcionada por el usuario para MPRO
@@ -5672,9 +5687,9 @@ GROUP BY Producto_Codigo
                 logging.info("Obteniendo ventas (KIT + DIRECTAS)...")
                 ventas_result = _timed_inventory_sql("mpro.ventas", ventas_query)
                 ventas_dict = {v['Producto_Codigo']: float(v['Total_Ventas'] or 0) for v in ventas_result}
-                logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
+                logging.warning("[MPRO-INV-ANALYSIS] ventas productos=%s", len(ventas_dict))
             else:
-                logging.info(f"MPRO - Almacén BODEGA '{almacen_nombre}' - Ventas = 0 para todos los productos")
+                logging.warning("[MPRO-INV-ANALYSIS] ventas omitidas por almacen bodega=%s", almacen_nombre)
             
             # 4. Obtener movimientos por producto FILTRADO POR ALMACÉN
             # Consulta proporcionada por el usuario para MPRO
@@ -5714,7 +5729,7 @@ GROUP BY E.Pr_Cve_Producto
             logging.info("Obteniendo movimientos (con lógica especial de fechas para tipos 508/108)...")
             movimientos_result = _timed_inventory_sql("mpro.movimientos", movimientos_query)
             movimientos_dict = {m['Producto_Codigo']: float(m['Total_Movimientos'] or 0) for m in movimientos_result}
-            logging.info(f"Movimientos obtenidos para {len(movimientos_dict)} productos")
+            logging.warning("[MPRO-INV-ANALYSIS] movimientos productos=%s", len(movimientos_dict))
             
             # 5. Detectar errores de captura de inventario
             # Si un producto está en Producto_Presentacion como Pp_Producto (es una presentación)
@@ -5784,7 +5799,7 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
 
             active_codes = set(inv_por_codigo.keys()) | {str(c).strip() for c in movimientos_dict.keys()} | {str(c).strip() for c in ventas_dict.keys()}
             missing_catalog_codes = sorted(c for c in active_codes if c and c not in productos_by_codigo)
-            logging.info(
+            logging.warning(
                 "MPRO universo actividad: catalogo=%s inventario=%s movimientos=%s ventas=%s missing_catalog=%s",
                 len(productos_by_codigo),
                 len(inv_por_codigo),
@@ -5831,7 +5846,7 @@ ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
                     if codigo_fb and codigo_fb not in productos_by_codigo:
                         productos_by_codigo[codigo_fb] = prod
                         productos.append(prod)
-                logging.info("MPRO productos fallback actividad: %s incorporados, catalogo_total=%s", len(productos_fallback), len(productos_by_codigo))
+                logging.warning("MPRO productos fallback actividad: %s incorporados, catalogo_total=%s", len(productos_fallback), len(productos_by_codigo))
             
             if agrupar_insumos:
                 # MODO AGRUPADO: Una fila por producto (comportamiento original)
@@ -5982,7 +5997,7 @@ ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
                     'mensaje': f"Presentación '{err['Descripcion_Presentacion']}' ({err['Codigo_Presentacion']}) capturada en inventario. Debería capturarse como INSUMO '{err['Descripcion_Insumo']}' ({err['Codigo_Insumo']})"
                 })
             
-            logging.info(f"Análisis MPRO completado: {len(results)} productos procesados, {len(errores_list)} errores de captura")
+            logging.warning("[MPRO-INV-ANALYSIS] done rows=%s errores=%s", len(results), len(errores_list))
             logging.info("[INV-ANALYSIS-TIMING] done label=mpro.total elapsed_ms=%s rows=%s", int((perf_counter() - request_started_at) * 1000), len(results))
             
             # ===== GUARDAR DIFERENCIAS EN CACHE PARA COMPARATIVO DE 4 CORTES =====
