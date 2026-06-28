@@ -903,38 +903,81 @@ def _contar_productos_con_receta_mpro(host, port, database, username, password) 
 
 
 def _obtener_recetas_mpro(host, port, database, username, password) -> List[RecetaLineaSync]:
-    """Obtiene recetas desde Formula_Produccion_Detalle de MPRO."""
+    """Obtiene recetas desde Formula_Produccion_Detalle de MPRO.
+
+    En MPRO:
+    - Fpd_Cantidad = cantidad normalizada por rendimiento.
+    - Fpd_Cantidad_Total = cantidad real de la receta completa.
+    - Fp_Rendimiento = rendimiento de la fórmula.
+    """
     query = """
-    SELECT fpd.Pr_Cve_Producto, fpd.Fpd_Producto as insumo_codigo, 
-           fpd.Fpd_Cantidad, fpd.Fpd_Unidad, fpd.Fpd_Costo,
+    SELECT
+           fpd.Pr_Cve_Producto,
+           fpd.Fpd_Producto as insumo_codigo,
+           fp.Fp_Rendimiento,
+           fpd.Fpd_Cantidad,
+           fpd.Fpd_Cantidad_Total,
+           fpd.Fpd_Unidad,
+           fpd.Fpd_Costo,
+           fpd.Fpd_Costo_Total,
            p.Pr_Descripcion as insumo_nombre
     FROM Formula_Produccion_Detalle fpd
-    JOIN Formula_Produccion fp ON fpd.Pr_Cve_Producto = fp.Pr_Cve_Producto AND fpd.Fp_ID = fp.Fp_ID
-    LEFT JOIN Producto p ON fpd.Fpd_Producto = p.Pr_Cve_Producto
+    JOIN Formula_Produccion fp
+      ON fpd.Pr_Cve_Producto = fp.Pr_Cve_Producto
+     AND fpd.Fp_ID = fp.Fp_ID
+    LEFT JOIN Producto p
+      ON fpd.Fpd_Producto = p.Pr_Cve_Producto
     WHERE fp.Es_Cve_Estado = 'AC'
-    AND fpd.Fpd_Cantidad > 0
+      AND fpd.Fpd_Cantidad > 0
     ORDER BY fpd.Pr_Cve_Producto, fpd.Fpd_Producto
     """
     rows = execute_sql_query(host, port, database, username, password, query) or []
-    
+
+    def _dec(value, default='0'):
+        if value is None:
+            return Decimal(default)
+        try:
+            return Decimal(str(value))
+        except Exception:
+            return Decimal(default)
+
     result = []
     for r in rows:
-        cantidad = Decimal(str(r.get('Fpd_Cantidad') or 0))
-        costo_unit = Decimal(str(r.get('Fpd_Costo') or 0))
-        
+        cantidad_unitaria = _dec(r.get('Fpd_Cantidad'))
+        rendimiento = _dec(r.get('Fp_Rendimiento'))
+
+        if r.get('Fpd_Cantidad_Total') is not None:
+            cantidad = _dec(r.get('Fpd_Cantidad_Total'))
+        elif rendimiento > 0:
+            cantidad = cantidad_unitaria * rendimiento
+        else:
+            cantidad = cantidad_unitaria
+
+        costo_fuente = _dec(r.get('Fpd_Costo'))
+
+        if r.get('Fpd_Costo_Total') is not None:
+            costo_total = _dec(r.get('Fpd_Costo_Total'))
+        elif rendimiento > 0:
+            costo_total = costo_fuente * rendimiento
+        else:
+            costo_total = cantidad * costo_fuente
+
+        costo_unitario_real = (costo_total / cantidad) if cantidad > 0 else Decimal('0')
+
         if cantidad <= 0:
             continue
-        
+
         result.append(RecetaLineaSync(
             producto_codigo_fuente=str(r.get('Pr_Cve_Producto', '')),
             insumo_codigo_fuente=str(r.get('insumo_codigo', '')),
             insumo_nombre=str(r.get('insumo_nombre') or r.get('insumo_codigo', '')),
             cantidad=cantidad,
             unidad_medida=str(r.get('Fpd_Unidad', 'UN')),
-            costo_unitario=costo_unit,
-            costo_total=cantidad * costo_unit
+            costo_unitario=costo_unitario_real,
+            costo_total=costo_total,
+            rendimiento_elaborado=rendimiento if rendimiento > 0 else None
         ))
-    
+
     return result
 
 
