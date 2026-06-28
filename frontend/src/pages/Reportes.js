@@ -24,7 +24,12 @@ import { getAlmacenTipoText } from '../utils/styleHelpers';
 // Componentes/lógica CANÓNICOS compartidos con Auditoría (Compras.js) — regla de centralización
 import DetalleProductoModal from '@/components/compras/DetalleProductoModal';
 import { useDetalleProducto } from '@/hooks/useDetalleProducto';
-import { fechaMinimaInventarios, filtrarInventariosFinales } from '@/lib/inventarioSelectorUtils';
+import {
+  fechaMinimaInventarios,
+  filtrarInventariosFinales,
+  getInventarioKey,
+  getInventarioTimestamp
+} from '@/lib/inventarioSelectorUtils';
 
 // Estilos para los selectores nativos
 const selectStyle = "w-full h-10 px-3 py-2 text-sm border border-zinc-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-zinc-100 disabled:cursor-not-allowed";
@@ -239,11 +244,41 @@ const Reportes = () => {
     [selectedInventariosIni]
   );
 
-  // Filtrar inventarios finales: solo fecha >= fecha del inicial (util CANÓNICO)
+  // Filtrar inventarios finales: posterior al inicial y nunca el mismo folio.
   const inventariosFinalesFiltrados = useMemo(
-    () => filtrarInventariosFinales(inventarios, fechaMinimaInvInicial),
-    [inventarios, fechaMinimaInvInicial]
+    () => filtrarInventariosFinales(inventarios, fechaMinimaInvInicial, {
+      inventariosIniciales: selectedInventariosIni,
+      strictAfterInitial: true
+    }),
+    [inventarios, fechaMinimaInvInicial, selectedInventariosIni]
   );
+
+  const validarInventariosFinales = useCallback((finales, iniciales = selectedInventariosIni) => {
+    if (!Array.isArray(finales) || finales.length === 0) return true;
+    if (!Array.isArray(iniciales) || iniciales.length === 0) return true;
+
+    const inicialKeys = new Set(iniciales.map(getInventarioKey).filter(Boolean));
+    const inicialTimestamps = iniciales
+      .map(getInventarioTimestamp)
+      .filter((timestamp) => timestamp != null);
+    const latestInitialTimestamp = inicialTimestamps.length > 0 ? Math.max(...inicialTimestamps) : null;
+
+    return finales.every((inv) => {
+      const key = getInventarioKey(inv);
+      if (key && inicialKeys.has(key)) return false;
+      if (latestInitialTimestamp == null) return true;
+      const finalTimestamp = getInventarioTimestamp(inv);
+      return finalTimestamp != null && finalTimestamp > latestInitialTimestamp;
+    });
+  }, [selectedInventariosIni]);
+
+  useEffect(() => {
+    if (selectedInventariosFin.length === 0) return;
+    if (validarInventariosFinales(selectedInventariosFin)) return;
+
+    setSelectedInventariosFin((prev) => prev.filter((inv) => validarInventariosFinales([inv])));
+    toast.warning('Se quitaron inventarios finales no posteriores al inicial');
+  }, [selectedInventariosIni, selectedInventariosFin, validarInventariosFinales]);
   
   // Estado para agrupar insumos de múltiples inventarios (MPRO)
   const [agruparInsumos, setAgruparInsumos] = useState(false);
@@ -1279,6 +1314,31 @@ const Reportes = () => {
       const hasInvFin = selectedInventariosFin.length > 0 || filters.inventario_final;
       if (!hasInvIni || !hasInvFin) {
         toast.error('Selecciona inventario(s) inicial(es) y final(es)');
+        return;
+      }
+
+      const inventariosIniValidacion = selectedInventariosIni.length > 0
+        ? selectedInventariosIni
+        : inventarios.filter((inv) => String(inv.folio) === String(filters.inventario_inicial));
+      const inventariosFinValidacion = selectedInventariosFin.length > 0
+        ? selectedInventariosFin
+        : inventarios.filter((inv) => String(inv.folio) === String(filters.inventario_final));
+      const foliosIniValidacion = new Set(
+        (selectedInventariosIni.length > 0 ? selectedInventariosIni.map((inv) => inv.folio) : [filters.inventario_inicial])
+          .filter(Boolean)
+          .map(String)
+      );
+      const foliosFinValidacion = (selectedInventariosFin.length > 0 ? selectedInventariosFin.map((inv) => inv.folio) : [filters.inventario_final])
+        .filter(Boolean)
+        .map(String);
+
+      if (foliosFinValidacion.some((folio) => foliosIniValidacion.has(folio))) {
+        toast.error('Un mismo inventario no puede ser inicial y final al mismo tiempo');
+        return;
+      }
+
+      if (!validarInventariosFinales(inventariosFinValidacion, inventariosIniValidacion)) {
+        toast.error('El inventario final debe ser posterior al inventario inicial');
         return;
       }
     }
@@ -2425,10 +2485,10 @@ const Reportes = () => {
                     {/* Info: mostrar fecha mínima cuando hay inventarios iniciales seleccionados */}
                     {fechaMinimaInvInicial && (
                       <div className="px-3 py-1 text-xs text-zinc-500 bg-blue-50 border-b">
-                        Solo inventarios desde: {fechaMinimaInvInicial}
+                        Solo inventarios posteriores al inicial: {fechaMinimaInvInicial}
                       </div>
                     )}
-                    {/* Filtrar: solo mostrar inventarios con fecha >= fecha del inventario inicial */}
+                    {/* Filtrar: solo mostrar inventarios posteriores al inicial y nunca el mismo folio */}
                     {inventariosFinalesFiltrados
                       .filter(inv => {
                         // Filtro adicional: si ya hay finales seleccionados, filtrar por misma fecha
@@ -2450,6 +2510,10 @@ const Reportes = () => {
                           checked={selectedInventariosFin.some(i => i.folio === inv.folio)}
                           onChange={(e) => {
                             if (e.target.checked) {
+                              if (!validarInventariosFinales([inv])) {
+                                toast.error('El inventario final debe ser posterior al inicial y no puede ser el mismo inventario');
+                                return;
+                              }
                               setSelectedInventariosFin([...selectedInventariosFin, inv]);
                             } else {
                               setSelectedInventariosFin(selectedInventariosFin.filter(i => i.folio !== inv.folio));
