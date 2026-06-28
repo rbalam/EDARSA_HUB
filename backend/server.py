@@ -4914,6 +4914,44 @@ GROUP BY codigo_producto
             catalogo_productos = {}
             if all_codes:
                 code_placeholders = ",".join(["%s"] * len(all_codes))
+
+                def _is_missing_classifier(value, fallback_label):
+                    value_text = _as_text(value).upper()
+                    return not value_text or value_text == fallback_label or value_text.startswith("SIN ")
+
+                def _merge_catalog_row(codigo, catalog_row):
+                    if not codigo or not catalog_row:
+                        return
+                    current = dict(catalogo_productos.get(codigo) or {})
+                    if not current:
+                        catalogo_productos[codigo] = dict(catalog_row)
+                        return
+
+                    for field in ('Producto', 'Unidad'):
+                        if not current.get(field) and catalog_row.get(field):
+                            current[field] = catalog_row.get(field)
+
+                    for field in ('Costo_Unitario', 'Rendimiento'):
+                        new_value = _as_float(catalog_row.get(field))
+                        current_value = _as_float(current.get(field))
+                        if new_value and (not current_value or new_value > current_value):
+                            current[field] = catalog_row.get(field)
+
+                    classifier_fallbacks = {
+                        'Categoria': 'SIN CATEGORIA',
+                        'Familia': 'SIN FAMILIA',
+                        'SubFamilia': 'SIN SUBFAMILIA',
+                    }
+                    for field, fallback_label in classifier_fallbacks.items():
+                        if _is_missing_classifier(current.get(field), fallback_label) and catalog_row.get(field):
+                            current[field] = catalog_row.get(field)
+
+                    for field in ('CategoriaCodigo', 'FamiliaCodigo', 'SubFamiliaCodigo'):
+                        if not _as_text(current.get(field)) and _as_text(catalog_row.get(field)):
+                            current[field] = catalog_row.get(field)
+
+                    catalogo_productos[codigo] = current
+
                 try:
                     cursor.execute(
                         f"""
@@ -4951,11 +4989,8 @@ WHERE i.ServerID = %s
 """,
                         tuple([server_id, *all_codes]),
                     )
-                    catalogo_productos.update({
-                        _as_text(row.get('Codigo')): row
-                        for row in cursor.fetchall()
-                        if _as_text(row.get('Codigo'))
-                    })
+                    for row in cursor.fetchall():
+                        _merge_catalog_row(_as_text(row.get('Codigo')), row)
                 except Exception as catalog_error:
                     logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo insumos canonico no disponible: %s", str(catalog_error))
                     try:
@@ -4980,18 +5015,97 @@ WHERE i.ServerID = %s
 """,
                             tuple([server_id, *all_codes]),
                         )
-                        catalogo_productos.update({
-                            _as_text(row.get('Codigo')): row
-                            for row in cursor.fetchall()
-                            if _as_text(row.get('Codigo'))
-                        })
+                        for row in cursor.fetchall():
+                            _merge_catalog_row(_as_text(row.get('Codigo')), row)
                     except Exception as fallback_catalog_error:
                         logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo insumos fallback no disponible: %s", str(fallback_catalog_error))
 
-                missing_product_codes = [code for code in all_codes if code not in catalogo_productos]
-                if missing_product_codes:
+                try:
+                    cursor.execute(
+                        f"""
+WITH catalogo_base AS (
+    SELECT
+        LTRIM(RTRIM(pc.CodigoProducto)) AS Codigo,
+        pc.ProductoID
+    FROM Producto_Catalogo pc
+    WHERE pc.Activo = 1
+      AND LTRIM(RTRIM(pc.CodigoProducto)) IN ({code_placeholders})
+
+    UNION ALL
+
+    SELECT
+        LTRIM(RTRIM(pc.SKU)) AS Codigo,
+        pc.ProductoID
+    FROM Producto_Catalogo pc
+    WHERE pc.Activo = 1
+      AND LTRIM(RTRIM(pc.SKU)) IN ({code_placeholders})
+
+    UNION ALL
+
+    SELECT
+        LTRIM(RTRIM(pp.CodigoPresentacion)) AS Codigo,
+        pp.ProductoID
+    FROM Producto_Presentaciones pp
+    WHERE pp.Activo = 1
+      AND LTRIM(RTRIM(pp.CodigoPresentacion)) IN ({code_placeholders})
+)
+SELECT
+    cb.Codigo,
+    MAX(pc.NombreProducto) AS Producto,
+    MAX(pc.UnidadInventario) AS Unidad,
+    MAX(pc.PrecioCostoBase) AS Costo_Unitario,
+    COALESCE(MAX(pp.FactorConversionInventario), 1) AS Rendimiento,
+    MAX(CAST(pf.CodigoFamilia AS VARCHAR(50))) AS CategoriaCodigo,
+    COALESCE(MAX(pf.NombreFamilia), 'SIN CATEGORIA') AS Categoria,
+    MAX(CAST(psf.CodigoSubFamilia AS VARCHAR(50))) AS FamiliaCodigo,
+    COALESCE(MAX(psf.NombreSubFamilia), 'SIN FAMILIA') AS Familia,
+    MAX(CAST(pl.CodigoLinea AS VARCHAR(50))) AS SubFamiliaCodigo,
+    COALESCE(MAX(pl.NombreLinea), 'SIN SUBFAMILIA') AS SubFamilia
+FROM catalogo_base cb
+INNER JOIN Producto_Catalogo pc
+    ON pc.ProductoID = cb.ProductoID
+   AND pc.Activo = 1
+LEFT JOIN Producto_Lineas pl
+    ON pl.LineaProductoID = pc.LineaProductoID
+   AND pl.Activo = 1
+LEFT JOIN Producto_SubFamilias psf
+    ON psf.SubFamiliaProductoID = pl.SubFamiliaProductoID
+   AND psf.Activo = 1
+LEFT JOIN Producto_Familias pf
+    ON pf.FamiliaProductoID = psf.FamiliaProductoID
+   AND pf.Activo = 1
+LEFT JOIN Producto_Presentaciones pp
+    ON pp.ProductoID = pc.ProductoID
+   AND pp.Activo = 1
+WHERE cb.Codigo IS NOT NULL AND cb.Codigo <> ''
+GROUP BY cb.Codigo
+""",
+                        tuple([*all_codes, *all_codes, *all_codes]),
+                    )
+                    catalogo_canonico_rows = cursor.fetchall()
+                    for row in catalogo_canonico_rows:
+                        _merge_catalog_row(_as_text(row.get('Codigo')), row)
+                    logging.info(
+                        "[SOFT-CANONICAL-NOLIVE] canonical classifier rows=%s resolved=%s",
+                        len(catalogo_canonico_rows),
+                        len([
+                            row for row in catalogo_canonico_rows
+                            if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
+                        ]),
+                    )
+                except Exception as canonical_catalog_error:
+                    logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo producto canonico no disponible: %s", str(canonical_catalog_error))
+
+                weak_product_codes = [
+                    code for code in all_codes
+                    if code not in catalogo_productos
+                    or _is_missing_classifier(catalogo_productos[code].get('Categoria'), 'SIN CATEGORIA')
+                    or _is_missing_classifier(catalogo_productos[code].get('Familia'), 'SIN FAMILIA')
+                    or _is_missing_classifier(catalogo_productos[code].get('SubFamilia'), 'SIN SUBFAMILIA')
+                ]
+                if weak_product_codes:
                     try:
-                        missing_placeholders = ",".join(["%s"] * len(missing_product_codes))
+                        weak_placeholders = ",".join(["%s"] * len(weak_product_codes))
                         cursor.execute(
                             f"""
 SELECT
@@ -5008,16 +5122,13 @@ SELECT
     COALESCE(p.SubFamiliaNombre, 'SIN SUBFAMILIA') AS SubFamilia
 FROM Sync_Productos p
 WHERE p.ServerID = %s
-  AND p.CodigoFuente IN ({missing_placeholders})
+  AND p.CodigoFuente IN ({weak_placeholders})
   AND p.Activo = 1
 """,
-                            tuple([server_id, *missing_product_codes]),
+                            tuple([server_id, *weak_product_codes]),
                         )
-                        catalogo_productos.update({
-                            _as_text(row.get('Codigo')): row
-                            for row in cursor.fetchall()
-                            if _as_text(row.get('Codigo'))
-                        })
+                        for row in cursor.fetchall():
+                            _merge_catalog_row(_as_text(row.get('Codigo')), row)
                     except Exception as product_catalog_error:
                         logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo productos canonico no disponible: %s", str(product_catalog_error))
 
@@ -5102,9 +5213,13 @@ GROUP BY Codigo
                     logging.warning("[SOFT-CANONICAL-NOLIVE] factores presentacion canonicos no disponibles: %s", str(factor_error))
 
                 logging.info(
-                    "[SOFT-CANONICAL-NOLIVE] catalog rows=%s missing=%s rendimiento_gt1=%s",
+                    "[SOFT-CANONICAL-NOLIVE] catalog rows=%s missing=%s sin_categoria=%s rendimiento_gt1=%s",
                     len(catalogo_productos),
                     len([code for code in all_codes if code not in catalogo_productos]),
+                    len([
+                        code for code in all_codes
+                        if _is_missing_classifier(productos.get(code, {}).get('Categoria'), 'SIN CATEGORIA')
+                    ]),
                     len([p for p in productos.values() if _as_float(p.get('Rendimiento')) > 1]),
                 )
 
