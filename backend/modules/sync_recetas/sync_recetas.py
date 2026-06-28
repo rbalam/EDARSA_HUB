@@ -1364,12 +1364,14 @@ def _registrar_ejecucion(result: SyncRecetasResult) -> None:
     try:
         query = f"""
         INSERT INTO Sync_Control_Ejecuciones (
-            SyncRunID, SyncType, IsDryRun, Status,
+            SyncRunID, SyncType, FechaInicio, FechaFin, IsDryRun, Status,
             RegistrosProcesados, RegistrosInsertados, RegistrosActualizados, RegistrosError,
-            StartedAtMexico, FinishedAtMexico, DurationSeconds
+            StartedAtMexico, FinishedAtMexico, DurationSeconds, CreatedAt
         ) VALUES (
             '{result.sync_run_id}',
             'SYNC_RECETAS',
+            '{result.started_at.strftime("%Y-%m-%d %H:%M:%S")}',
+            '{result.finished_at.strftime("%Y-%m-%d %H:%M:%S")}',
             {1 if result.is_dry_run else 0},
             '{'SUCCESS' if result.success else 'PARTIAL'}',
             {result.total_productos + result.total_insumos + result.total_lineas_receta},
@@ -1378,7 +1380,8 @@ def _registrar_ejecucion(result: SyncRecetasResult) -> None:
             {result.registros_error},
             '{result.started_at.strftime("%Y-%m-%d %H:%M:%S")}',
             '{result.finished_at.strftime("%Y-%m-%d %H:%M:%S")}',
-            {result.duration_seconds}
+            {result.duration_seconds},
+            '{result.started_at.strftime("%Y-%m-%d %H:%M:%S")}'
         )
         """
         execute_sql_query(
