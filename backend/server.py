@@ -4962,7 +4962,12 @@ SELECT
     COALESCE(i.Costo, i.CostoPromedio, i.UltimoCosto, 0) AS Costo_Unitario,
     COALESCE(i.RendimientoElaborado, 1) AS Rendimiento,
     cat.Codigo AS CategoriaCodigo,
-    COALESCE(cat.Nombre, 'SIN CATEGORIA') AS Categoria,
+    CASE LTRIM(RTRIM(CAST(cat.Codigo AS VARCHAR(50))))
+        WHEN '1' THEN 'BEBIDAS'
+        WHEN '2' THEN 'ALIMENTOS'
+        WHEN '3' THEN 'OTROS'
+        ELSE COALESCE(cat.Nombre, 'SIN CATEGORIA')
+    END AS Categoria,
     fam.Codigo AS FamiliaCodigo,
     COALESCE(fam.Nombre, 'SIN FAMILIA') AS Familia,
     sub.Codigo AS SubFamiliaCodigo,
@@ -5039,7 +5044,12 @@ SELECT
     COALESCE(p.CostoReceta, 0) AS Costo_Unitario,
     1 AS Rendimiento,
     p.CategoriaCodigoFuente AS CategoriaCodigo,
-    COALESCE(p.CategoriaNombre, 'SIN CATEGORIA') AS Categoria,
+    CASE LTRIM(RTRIM(CAST(p.CategoriaCodigoFuente AS VARCHAR(50))))
+        WHEN '1' THEN 'BEBIDAS'
+        WHEN '2' THEN 'ALIMENTOS'
+        WHEN '3' THEN 'OTROS'
+        ELSE COALESCE(p.CategoriaNombre, 'SIN CATEGORIA')
+    END AS Categoria,
     p.FamiliaCodigoFuente AS FamiliaCodigo,
     COALESCE(p.FamiliaNombre, 'SIN FAMILIA') AS Familia,
     p.SubFamiliaCodigoFuente AS SubFamiliaCodigo,
@@ -6101,7 +6111,7 @@ WHERE nombre LIKE '%{almacen_safe}%'
             logging.info(f"Almacén: {almacen_nombre}, ID: {almacen_id}, Tipo: {almacen_tipo}, Es Consumo (tiene ventas): {es_almacen_consumo}")
             
             # Construir filtros SQL para SoftRestaurant
-            # Categoría = clasificacionventa (1=ALIMENTOS, 2=BEBIDAS, 3=OTROS) en tabla gruposiclasificacion
+            # Categoria = clasificacionventa (1=BEBIDAS, 2=ALIMENTOS, 3=OTROS) en tabla gruposiclasificacion
             # Familia = idgruposiclasificacion en tabla gruposiclasificacion
             # SubFamilia = idgruposi en tabla gruposi
             

@@ -405,8 +405,9 @@ def _obtener_productos_sr(host, port, database, username, password) -> List[Prod
     WHERE p.descripcion IS NOT NULL AND p.descripcion != ''
     """
     rows = execute_sql_query(host, port, database, username, password, query) or []
-    # CATALOGO-CANONICO-C1: SoftRestaurant grupos.clasificacion → Categoría canónica
-    _CLASIF_SR = {'1': 'ALIMENTOS', '2': 'BEBIDAS', '3': 'OTROS'}
+    # CATALOGO-CANONICO-C1: SoftRestaurant grupos.clasificacion -> Categoria canonica.
+    # En SoftRestaurant Cienfuegos: 1=BEBIDAS, 2=ALIMENTOS, 3=OTROS.
+    _CLASIF_SR = {'1': 'BEBIDAS', '2': 'ALIMENTOS', '3': 'OTROS'}
     
     def _cat(r):
         c = r.get('clasificacion')
@@ -523,9 +524,8 @@ def _obtener_elaborados_sr(host, port, database, username, password) -> List[Ela
 # CATALOGO-CANONICO-C1: Dimensiones de filtro (NO-LIVE) - SoftRestaurant
 # ============================================================================
 
-# Mapeo canónico de clasificacionventa (mismo que ya usa el sync de productos
-# y el endpoint LIVE legacy). Semántica fija de SoftRestaurant.
-_CLASIF_VENTA_SR = {'1': 'ALIMENTOS', '2': 'BEBIDAS', '3': 'OTROS'}
+# Mapeo canonico de clasificacionventa para SoftRestaurant Cienfuegos.
+_CLASIF_VENTA_SR = {'1': 'BEBIDAS', '2': 'ALIMENTOS', '3': 'OTROS'}
 
 
 def _obtener_filtros_catalogo_sr(host, port, database, username, password) -> List[Dict]:

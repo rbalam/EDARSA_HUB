@@ -288,7 +288,7 @@ const Reportes = () => {
   // La data base del backend se conserva; esto solo cambia la vista.
   const [unidadAnalisisInventarios, setUnidadAnalisisInventarios] = useState('insumos');
   const [agruparProductosAnalisis, setAgruparProductosAnalisis] = useState(false);
-  const [agruparPorAnalisis, setAgruparPorAnalisis] = useState('producto');
+  const [agruparPorAnalisis, setAgruparPorAnalisis] = useState('categoria');
   const [expandedAnalisisGroups, setExpandedAnalisisGroups] = useState({});
   
   // Estado para mostrar/ocultar columnas de costos (oculto por defecto)
@@ -3235,7 +3235,6 @@ const Reportes = () => {
                     onChange={(e) => setAgruparPorAnalisis(e.target.value)}
                     className="h-8 rounded border border-zinc-300 bg-white px-2 text-xs"
                   >
-                    <option value="producto">Producto</option>
                     <option value="categoria">Categoría / Clasificación</option>
                     <option value="familia">Familia / Grupo</option>
                     <option value="subfamilia">Subfamilia / Subgrupo</option>
