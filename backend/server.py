@@ -4471,7 +4471,7 @@ async def get_report_filters(server_id: str, current_user: Dict = Depends(get_cu
             def _nivel(nivel: str):
                 return execute_sql_query(
                     cfg['host'], cfg['port'], cfg['database'], cfg['username'], cfg['password'],
-                    f"SELECT Codigo as id, Nombre as nombre FROM Sync_Catalogo_Filtros "
+                    f"SELECT Codigo as id, Nombre as nombre, ParentCodigo as parent FROM Sync_Catalogo_Filtros "
                     f"WHERE CAST(ServerID AS NVARCHAR(36)) = '{server_id}' AND Nivel = '{nivel}' "
                     f"AND Activo = 1 ORDER BY Nombre"
                 ) or []

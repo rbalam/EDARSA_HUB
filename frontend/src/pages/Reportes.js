@@ -796,10 +796,23 @@ const Reportes = () => {
     setLoadingFilters(true);
     try {
       const response = await api.get(`/servers/${filters.server_id}/report-filters`);
+      const normalizeOptions = (items) => (Array.isArray(items) ? items : [])
+        .map((item) => {
+          const id = item?.id ?? item?.Codigo ?? item?.codigo;
+          const parent = item?.parent ?? item?.ParentCodigo ?? item?.parentCodigo;
+          return {
+            ...item,
+            id: id === null || id === undefined ? '' : String(id),
+            nombre: String(item?.nombre ?? item?.Nombre ?? item?.name ?? id ?? ''),
+            parent: parent === null || parent === undefined || parent === '' ? null : String(parent)
+          };
+        })
+        .filter((item) => item.id && item.nombre);
+
       setFilterOptions({
-        categorias: response.data.categorias || [],
-        familias: response.data.familias || [],
-        subfamilias: response.data.subfamilias || []
+        categorias: normalizeOptions(response.data.categorias),
+        familias: normalizeOptions(response.data.familias),
+        subfamilias: normalizeOptions(response.data.subfamilias)
       });
     } catch (error) {
       logger.error('Error al cargar filtros:', error);
@@ -1506,6 +1519,69 @@ const Reportes = () => {
     ];
   }, [inventoryVisibleData, mostrarCostos]);
 
+  const selectedCategoriaSet = useMemo(
+    () => new Set(selectedCategorias.map(String)),
+    [selectedCategorias]
+  );
+
+  const selectedFamiliaSet = useMemo(
+    () => new Set(selectedFamilias.map(String)),
+    [selectedFamilias]
+  );
+
+  const familiasDisponibles = useMemo(() => {
+    if (selectedCategoriaSet.size === 0) {
+      return filterOptions.familias;
+    }
+
+    return filterOptions.familias.filter((familia) => (
+      !familia.parent || selectedCategoriaSet.has(String(familia.parent))
+    ));
+  }, [filterOptions.familias, selectedCategoriaSet]);
+
+  const subfamiliasDisponibles = useMemo(() => {
+    if (selectedFamiliaSet.size > 0) {
+      return filterOptions.subfamilias.filter((subfamilia) => (
+        !subfamilia.parent || selectedFamiliaSet.has(String(subfamilia.parent))
+      ));
+    }
+
+    if (selectedCategoriaSet.size === 0) {
+      return filterOptions.subfamilias;
+    }
+
+    const familiasPermitidas = new Set(familiasDisponibles.map((familia) => String(familia.id)));
+    return filterOptions.subfamilias.filter((subfamilia) => (
+      !subfamilia.parent || familiasPermitidas.has(String(subfamilia.parent))
+    ));
+  }, [filterOptions.subfamilias, familiasDisponibles, selectedCategoriaSet, selectedFamiliaSet]);
+
+  const pruneSelectionToOptions = useCallback((selected, options) => {
+    const validIds = new Set(options.map((option) => String(option.id)));
+    return selected.map(String).filter((id) => validIds.has(id));
+  }, []);
+
+  useEffect(() => {
+    const prunedCategorias = pruneSelectionToOptions(selectedCategorias, filterOptions.categorias);
+    if (prunedCategorias.length !== selectedCategorias.length || prunedCategorias.some((id, index) => id !== String(selectedCategorias[index]))) {
+      setSelectedCategorias(prunedCategorias);
+    }
+  }, [filterOptions.categorias, pruneSelectionToOptions, selectedCategorias]);
+
+  useEffect(() => {
+    const prunedFamilias = pruneSelectionToOptions(selectedFamilias, familiasDisponibles);
+    if (prunedFamilias.length !== selectedFamilias.length || prunedFamilias.some((id, index) => id !== String(selectedFamilias[index]))) {
+      setSelectedFamilias(prunedFamilias);
+    }
+  }, [familiasDisponibles, pruneSelectionToOptions, selectedFamilias]);
+
+  useEffect(() => {
+    const prunedSubfamilias = pruneSelectionToOptions(selectedSubfamilias, subfamiliasDisponibles);
+    if (prunedSubfamilias.length !== selectedSubfamilias.length || prunedSubfamilias.some((id, index) => id !== String(selectedSubfamilias[index]))) {
+      setSelectedSubfamilias(prunedSubfamilias);
+    }
+  }, [pruneSelectionToOptions, selectedSubfamilias, subfamiliasDisponibles]);
+
 
   // EDARSAHUB-PATCH-ANALISIS-EXPORTS-V3
   const getAnalisisVistaRows = () => {
@@ -1601,10 +1677,10 @@ const Reportes = () => {
       if (filters.query_type === 'analisis') {
         // Obtener folios de inventarios (multi-select o single)
         const foliosIniciales = selectedInventariosIni.length > 0 
-          ? selectedInventariosIni.map(i => i.folio) 
+          ? selectedInventariosIni.map(i => i.folio)
           : [filters.inventario_inicial];
         const foliosFinales = selectedInventariosFin.length > 0 
-          ? selectedInventariosFin.map(i => i.folio) 
+          ? selectedInventariosFin.map(i => i.folio)
           : [filters.inventario_final];
         
         // Log para debugging
@@ -2953,7 +3029,7 @@ const Reportes = () => {
                     >
                       <span className="truncate">
                         {selectedCategorias.length === 0 
-                          ? 'Todas las categorías' 
+                          ? (selectedServer?.system_type === 'SoftRestaurant' ? 'Todas las clasificaciones' : 'Todas las categorías')
                           : `${selectedCategorias.length} seleccionada(s)`}
                       </span>
                       <ChevronDown className="h-4 w-4 opacity-50" />
@@ -3017,7 +3093,7 @@ const Reportes = () => {
                     >
                       <span className="truncate">
                         {selectedFamilias.length === 0 
-                          ? 'Todas las familias' 
+                          ? (selectedServer?.system_type === 'SoftRestaurant' ? 'Todos los grupos' : 'Todas las familias')
                           : `${selectedFamilias.length} seleccionada(s)`}
                       </span>
                       <ChevronDown className="h-4 w-4 opacity-50" />
@@ -3044,7 +3120,7 @@ const Reportes = () => {
                             <X className="h-3 w-3 mr-1" /> Limpiar selección
                           </button>
                         )}
-                        {filterOptions.familias
+                        {familiasDisponibles
                           .filter(fam => fam.nombre.toLowerCase().includes(searchFamilias.toLowerCase()))
                           .map((fam) => (
                           <label key={fam.id} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
@@ -3063,7 +3139,7 @@ const Reportes = () => {
                             <span className="text-sm">{fam.nombre}</span>
                           </label>
                         ))}
-                        {filterOptions.familias.filter(fam => fam.nombre.toLowerCase().includes(searchFamilias.toLowerCase())).length === 0 && (
+                        {familiasDisponibles.filter(fam => fam.nombre.toLowerCase().includes(searchFamilias.toLowerCase())).length === 0 && (
                           <p className="text-xs text-zinc-400 text-center py-2">No hay coincidencias</p>
                         )}
                       </div>
@@ -3081,7 +3157,7 @@ const Reportes = () => {
                     >
                       <span className="truncate">
                         {selectedSubfamilias.length === 0 
-                          ? 'Todas las subfamilias' 
+                          ? (selectedServer?.system_type === 'SoftRestaurant' ? 'Todos los subgrupos' : 'Todas las subfamilias')
                           : `${selectedSubfamilias.length} seleccionada(s)`}
                       </span>
                       <ChevronDown className="h-4 w-4 opacity-50" />
@@ -3108,7 +3184,7 @@ const Reportes = () => {
                             <X className="h-3 w-3 mr-1" /> Limpiar selección
                           </button>
                         )}
-                        {filterOptions.subfamilias
+                        {subfamiliasDisponibles
                           .filter(sf => sf.nombre.toLowerCase().includes(searchSubfamilias.toLowerCase()))
                           .map((sf) => (
                           <label key={sf.id} className="flex items-center space-x-2 py-2 px-3 hover:bg-zinc-50 cursor-pointer">
@@ -3127,7 +3203,7 @@ const Reportes = () => {
                             <span className="text-sm">{sf.nombre}</span>
                           </label>
                         ))}
-                        {filterOptions.subfamilias.filter(sf => sf.nombre.toLowerCase().includes(searchSubfamilias.toLowerCase())).length === 0 && (
+                        {subfamiliasDisponibles.filter(sf => sf.nombre.toLowerCase().includes(searchSubfamilias.toLowerCase())).length === 0 && (
                           <p className="text-xs text-zinc-400 text-center py-2">No hay coincidencias</p>
                         )}
                       </div>
