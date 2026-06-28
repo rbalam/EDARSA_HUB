@@ -5627,6 +5627,7 @@ ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
 """
             logging.info("Obteniendo catalogo de productos MPRO (INSUMOS con presentaciones + COMPRAS sin presentacion)...")
             productos = _timed_inventory_sql("mpro.productos", productos_query)
+            productos_by_codigo = {str(p.get('Codigo') or '').strip(): p for p in productos if str(p.get('Codigo') or '').strip()}
             logging.info(f"Productos obtenidos: {len(productos)}")
             
             # 3. Obtener ventas - UNION ALL de ventas KIT + ventas DIRECTAS
@@ -5764,11 +5765,14 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
 
             inv_por_codigo = {}
             for row in inv_detalle:
-                codigo = row['Codigo']
-                folio = row['Folio']
+                codigo = str(row['Codigo'] or '').strip()
+                folio = str(row['Folio'] or '').strip()
                 cantidad = float(row['Cantidad'] or 0)
                 comentario = row['Comentario'] or ''
                 almacen_cod = row['Almacen_Codigo']
+
+                if not codigo:
+                    continue
 
                 if codigo not in inv_por_codigo:
                     inv_por_codigo[codigo] = {'ini': {}, 'fin': {}}
@@ -5777,6 +5781,57 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
                     inv_por_codigo[codigo]['ini'][folio] = {'cantidad': cantidad, 'comentario': comentario, 'almacen': almacen_cod}
                 elif folio in folios_fin_set:
                     inv_por_codigo[codigo]['fin'][folio] = {'cantidad': cantidad, 'comentario': comentario, 'almacen': almacen_cod}
+
+            active_codes = set(inv_por_codigo.keys()) | {str(c).strip() for c in movimientos_dict.keys()} | {str(c).strip() for c in ventas_dict.keys()}
+            missing_catalog_codes = sorted(c for c in active_codes if c and c not in productos_by_codigo)
+            logging.info(
+                "MPRO universo actividad: catalogo=%s inventario=%s movimientos=%s ventas=%s missing_catalog=%s",
+                len(productos_by_codigo),
+                len(inv_por_codigo),
+                len(movimientos_dict),
+                len(ventas_dict),
+                len(missing_catalog_codes),
+            )
+
+            if missing_catalog_codes:
+                missing_codes_sql = ",".join([f"'{c.replace(chr(39), chr(39)+chr(39))}'" for c in missing_catalog_codes])
+                productos_fallback_query = f"""
+SELECT DISTINCT
+    P.Pr_Cve_Producto as Codigo,
+    P.Pr_Descripcion as Producto,
+    F.Fm_Descripcion as Familia,
+    SF.Sf_Descripcion as SubFamilia,
+    C.Ct_Descripcion as Categoria,
+    P.Pr_Unidad_Control_1 as Unidad,
+    P.Pr_ultimo_costo as Costo_Unitario,
+    D.Dp_Descripcion as Departamento,
+    CASE
+        WHEN P.Dp_Cve_Departamento = '0007' THEN 'INSUMO'
+        ELSE 'COMPRA'
+    END as Tipo_Producto,
+    CASE
+        WHEN EXISTS (SELECT 1 FROM Producto_Presentacion PP WHERE PP.Pr_Cve_Producto = P.Pr_Cve_Producto) THEN 1
+        ELSE 0
+    END as Tiene_Presentaciones
+FROM Producto P
+LEFT JOIN Familia F ON F.Fm_Cve_Familia = P.Fm_Cve_Familia
+LEFT JOIN SubFamilia SF ON SF.Sf_Cve_SubFamilia = P.Sf_Cve_SubFamilia
+LEFT JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
+LEFT JOIN Departamento D ON D.Dp_Cve_Departamento = P.Dp_Cve_Departamento
+WHERE P.Es_Cve_Estado <> 'BA'
+    AND P.Pr_Cve_Producto IN ({missing_codes_sql})
+    {filtro_categorias_p}
+    {filtro_familias_p}
+    {filtro_subfamilias_p}
+ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
+"""
+                productos_fallback = _timed_inventory_sql("mpro.productos_fallback_actividad", productos_fallback_query)
+                for prod in productos_fallback:
+                    codigo_fb = str(prod.get('Codigo') or '').strip()
+                    if codigo_fb and codigo_fb not in productos_by_codigo:
+                        productos_by_codigo[codigo_fb] = prod
+                        productos.append(prod)
+                logging.info("MPRO productos fallback actividad: %s incorporados, catalogo_total=%s", len(productos_fallback), len(productos_by_codigo))
             
             if agrupar_insumos:
                 # MODO AGRUPADO: Una fila por producto (comportamiento original)
@@ -5849,8 +5904,8 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
                     
                     inv_data = inv_por_codigo.get(codigo, {'ini': {}, 'fin': {}})
                     
-                    # Si no hay inventarios, omitir
-                    if not inv_data['ini'] and not inv_data['fin']:
+                    has_period_activity = bool(inv_data['ini'] or inv_data['fin'] or movimientos_dict.get(codigo, 0) or ventas_dict.get(codigo, 0))
+                    if not has_period_activity:
                         continue
                     
                     # Crear filas por cada combinación de folios
@@ -5877,7 +5932,7 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
                         ven_fila = ventas_dict.get(codigo, 0)
                         
                         # Solo incluir si hay actividad
-                        if inv_inicial == 0 and inv_final == 0:
+                        if inv_inicial == 0 and inv_final == 0 and mov_fila == 0 and ven_fila == 0:
                             continue
                         
                         # Calcular inventario teórico: Inicial + Movimientos - Ventas
