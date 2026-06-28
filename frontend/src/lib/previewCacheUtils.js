@@ -212,6 +212,11 @@ function shouldClearKey(key) {
     'auth_token',
     'user',
     'edarsa_preview_cache_reset_done',
+
+    // Preferencias visuales del usuario. No son sesión ni datos sensibles.
+    'edarsahub_menu_favorites',
+    'edarsahub_sql_enterprise_menu_cache_v1',
+    'edarsahub_sidebar_collapsed',
   ];
   if (NEVER_CLEAR.includes(lowerKey)) return false;
   

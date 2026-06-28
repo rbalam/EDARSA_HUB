@@ -1330,7 +1330,7 @@ const Reportes = () => {
           categorias: selectedCategorias,
           familias: selectedFamilias,
           subfamilias: selectedSubfamilias
-        });
+        }, { timeout: 120000 });
       } else {
         // Llamar al endpoint normal de reportes
         response = await api.post('/reports/inventory', {

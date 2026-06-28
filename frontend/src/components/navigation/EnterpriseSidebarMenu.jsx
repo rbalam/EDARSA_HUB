@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Activity,
@@ -216,17 +216,46 @@ export default function EnterpriseSidebarMenu({
     }
   });
 
+  const cachedSqlMenus = useMemo(() => {
+    try {
+      const raw = localStorage.getItem("edarsahub_sql_enterprise_menu_cache_v1");
+      const parsed = JSON.parse(raw || "null");
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (Array.isArray(sqlMenus) && sqlMenus.length > 0) {
+      localStorage.setItem("edarsahub_sql_enterprise_menu_cache_v1", JSON.stringify(sqlMenus));
+    }
+  }, [sqlMenus]);
+
+  const sqlMenusForRender = Array.isArray(sqlMenus) && sqlMenus.length > 0
+    ? sqlMenus
+    : cachedSqlMenus;
+
   const groups = useMemo(() => {
-    const sqlGroups = normalizeSqlEnterpriseGroups(sqlMenus);
-    return sqlGroups || filterEnterpriseMenuByRole(enterpriseMenuGroups, user);
-  }, [sqlMenus, user]);
+    const sqlGroups = normalizeSqlEnterpriseGroups(sqlMenusForRender);
+
+    // SQL canónico es la única fuente del menú Enterprise.
+    // Si aún no llega la API, usamos el último menú SQL válido cacheado.
+    if (Array.isArray(sqlGroups)) {
+      return sqlGroups;
+    }
+
+    return [];
+  }, [sqlMenusForRender]);
 
   const flat = useMemo(() => flattenEnterpriseMenu(groups), [groups]);
+
+  const getFavoriteKey = (item) => item?.path || item?.id;
 
   const favorites = useMemo(() => {
     const unique = [];
     favoriteIds.forEach(id => {
-      const found = flat.find(x => x.id === id);
+      const found = flat.find(x => getFavoriteKey(x) === id || x.id === id);
       if (found && !unique.some(x => x.path === found.path)) unique.push(found);
     });
 
@@ -272,14 +301,16 @@ export default function EnterpriseSidebarMenu({
   const toggleFavorite = (item, event) => {
     event?.stopPropagation?.();
 
-    if (!item?.id || item.comingSoon) return;
+    const favoriteKey = getFavoriteKey(item);
+
+    if (!favoriteKey || item.comingSoon) return;
 
     setFavoriteIds(prev => {
       const current = Array.isArray(prev) ? prev : [];
-      const exists = current.includes(item.id);
+      const exists = current.includes(favoriteKey) || current.includes(item.id);
       const next = exists
-        ? current.filter(id => id !== item.id)
-        : [item.id, ...current].slice(0, 12);
+        ? current.filter(id => id !== favoriteKey && id !== item.id)
+        : [favoriteKey, ...current].slice(0, 12);
 
       localStorage.setItem("edarsahub_menu_favorites", JSON.stringify(next));
       return next;
@@ -290,7 +321,8 @@ export default function EnterpriseSidebarMenu({
     const Icon = getIcon(item.icon);
     const active = currentPath && item.path && currentPath.startsWith(item.path) && !item.comingSoon;
     const comingSoon = !!item.comingSoon;
-    const isFavorite = favoriteIds.includes(item.id);
+    const favoriteKey = getFavoriteKey(item);
+    const isFavorite = favoriteIds.includes(favoriteKey) || favoriteIds.includes(item.id);
 
     return (
       <div
@@ -312,12 +344,12 @@ export default function EnterpriseSidebarMenu({
           onClick={() => go(item)}
           disabled={comingSoon}
           aria-disabled={comingSoon}
-          className="flex items-center gap-3 flex-1 min-w-0 text-left disabled:cursor-not-allowed"
+          className="flex items-start gap-3 flex-1 min-w-0 text-left disabled:cursor-not-allowed"
         >
-          <Icon size={compact ? 17 : 20} className="shrink-0" />
+          <Icon size={compact ? 17 : 20} className="shrink-0 mt-0.5" />
           {!collapsed && (
-            <span className="font-medium leading-tight flex-1 flex items-center justify-between gap-2 min-w-0">
-              <span className="truncate">{item.label}</span>
+            <span className="font-medium leading-snug flex-1 flex items-start justify-between gap-2 min-w-0">
+              <span className="whitespace-normal break-words">{item.label}</span>
               {comingSoon && (
                 <span
                   data-testid={`menu-coming-soon-${item.id}`}
@@ -417,12 +449,8 @@ export default function EnterpriseSidebarMenu({
             </div>
           </section>
 
-          {/* Menú Enterprise */}
+          {/* Menú SQL canónico */}
           <section className="space-y-2">
-            <div className="text-xs font-bold tracking-widest text-zinc-500 uppercase">
-              Menú Enterprise
-            </div>
-
             {groups.map(group => {
               const Icon = getIcon(group.icon);
               const open = expanded[group.id];
@@ -432,9 +460,9 @@ export default function EnterpriseSidebarMenu({
                 <div key={group.id} className="rounded-2xl overflow-hidden" data-testid={`menu-group-${group.id}`}>
                   <button
                     onClick={() => toggleGroup(group.id)}
-                    className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl text-zinc-300 hover:bg-white/8 hover:text-white transition-all"
+                    className="w-full flex items-start justify-between gap-3 px-4 py-3 rounded-2xl text-zinc-300 hover:bg-white/8 hover:text-white transition-all"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-start gap-3 min-w-0">
                       <Icon
                         size={22}
                         className="shrink-0"
@@ -442,10 +470,10 @@ export default function EnterpriseSidebarMenu({
                       />
 
                       <div className="min-w-0 text-left">
-                        <div className="font-bold leading-tight">
+                        <div className="font-bold leading-snug whitespace-normal break-words">
                           {group.label}
                         </div>
-                        <div className="text-xs text-zinc-500 truncate">
+                        <div className="text-xs text-zinc-500 whitespace-normal break-words">
                           {group.description}
                         </div>
                       </div>

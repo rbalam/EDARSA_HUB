@@ -120,8 +120,16 @@ const USE_ENTERPRISE_MENU = true; // Enterprise visual activo con fuente SQL can
 
 const Layout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('edarsahub_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [expandedMenus, setExpandedMenus] = useState({});
   const [menuPermissions, setMenuPermissions] = useState({});
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
@@ -620,6 +628,24 @@ const Layout = () => {
     };
   }, [useSqlMenus, transformSqlMenus, filteredModulos, filteredSistema]);
 
+  const toggleSidebarCollapsed = () => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('edarsahub_sidebar_collapsed', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const handleLogout = () => {
+    try {
+      logout?.();
+    } finally {
+      navigate('/login', { replace: true });
+    }
+  };
+
   // Nota: La verificación de autenticación se hace en ProtectedRoute, no aquí
   // Esto evita conflictos con los portales externos
 
@@ -641,18 +667,34 @@ const Layout = () => {
 
       {/* Sidebar */}
       <aside 
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-zinc-900 transform transition-transform duration-200 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 bg-zinc-900 transform transition-all duration-200 lg:translate-x-0 ${sidebarCollapsed ? 'w-20' : 'w-80'} ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         data-testid="sidebar"
       >
         <div className="flex flex-col h-full">
-          <div className="p-6 border-b border-zinc-800">
-            <h1 className="text-xl font-extrabold text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              EDARSA HUB
-            </h1>
-            <p className="text-zinc-400 text-sm mt-1">{user?.name}</p>
-            <p className="text-zinc-500 text-xs">{user?.role}</p>
+          <div className={`border-b border-zinc-800 ${sidebarCollapsed ? 'p-3' : 'p-6'}`}>
+            <div className="flex items-center justify-between gap-2">
+              {!sidebarCollapsed && (
+                <div className="min-w-0">
+                  <h1 className="text-xl font-extrabold text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    EDARSA HUB
+                  </h1>
+                  <p className="text-zinc-400 text-sm mt-1 break-words">{user?.name}</p>
+                  <p className="text-zinc-500 text-xs break-words">{user?.role}</p>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={toggleSidebarCollapsed}
+                className="shrink-0 h-9 w-9 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-all"
+                title={sidebarCollapsed ? 'Mostrar menú' : 'Ocultar menú'}
+                aria-label={sidebarCollapsed ? 'Mostrar menú' : 'Ocultar menú'}
+                data-testid="sidebar-collapse-toggle"
+              >
+                {sidebarCollapsed ? <Menu size={18} /> : <X size={18} />}
+              </button>
+            </div>
           </div>
 
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto" data-testid="sidebar-nav">
@@ -661,7 +703,7 @@ const Layout = () => {
               <EnterpriseSidebarMenu 
                 user={user}
                 sqlMenus={sqlMenus}
-                collapsed={false}
+                collapsed={sidebarCollapsed}
               />
             ) : (
               <>
@@ -932,22 +974,26 @@ const Layout = () => {
             )}
           </nav>
 
-          <div className="p-4 border-t border-zinc-800">
+          <div className={`${sidebarCollapsed ? 'p-3' : 'p-4'} border-t border-zinc-800`}>
             <Button
               variant="ghost"
-              className="w-full justify-start text-zinc-400 hover:text-white hover:bg-zinc-800"
-              onClick={logout}
+              className={`text-zinc-400 hover:text-white hover:bg-zinc-800 ${
+                sidebarCollapsed ? 'w-11 h-11 justify-center p-0 mx-auto' : 'w-full justify-start'
+              }`}
+              onClick={handleLogout}
               data-testid="logout-button"
+              title="Cerrar Sesión"
+              aria-label="Cerrar Sesión"
             >
-              <LogOut className="h-5 w-5 mr-3" />
-              Cerrar Sesión
+              <LogOut className={sidebarCollapsed ? "h-5 w-5" : "h-5 w-5 mr-3"} />
+              {!sidebarCollapsed && <span>Cerrar Sesión</span>}
             </Button>
           </div>
         </div>
       </aside>
 
       {/* Main content */}
-      <main className="lg:ml-64 pt-16 lg:pt-0" data-testid="main-content">
+      <main className={`${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-80'} pt-16 lg:pt-0`} data-testid="main-content">
         <div className="p-4 md:p-6 lg:p-8">
           <Outlet />
         </div>
