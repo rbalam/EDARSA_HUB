@@ -4471,7 +4471,7 @@ async def get_report_filters(server_id: str, current_user: Dict = Depends(get_cu
             def _nivel(nivel: str):
                 return execute_sql_query(
                     cfg['host'], cfg['port'], cfg['database'], cfg['username'], cfg['password'],
-                    f"SELECT Codigo as id, Nombre as nombre FROM Sync_Catalogo_Filtros "
+                    f"SELECT Codigo as id, Nombre as nombre, ParentCodigo as parent FROM Sync_Catalogo_Filtros "
                     f"WHERE CAST(ServerID AS NVARCHAR(36)) = '{server_id}' AND Nivel = '{nivel}' "
                     f"AND Activo = 1 ORDER BY Nombre"
                 ) or []
@@ -4518,6 +4518,7 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     from core.server_registry import get_server_connection_info_with_secrets
     
     server_id = report_params.get('server_id')
+    sucursal_id_param = report_params.get('sucursal_id')
     sucursal = report_params.get('sucursal')
     almacen = report_params.get('almacen')
     almacenes = report_params.get('almacenes', [])  # Multi-almacén
@@ -4604,16 +4605,844 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             elapsed_ms = int((perf_counter() - started_at) * 1000)
             logging.exception("[INV-ANALYSIS-TIMING] error label=%s elapsed_ms=%s", label, elapsed_ms)
             raise
+
+    async def _generate_soft_inventory_analysis_canonical():
+        from datetime import datetime as _datetime, timedelta as _timedelta
+
+        started_at = perf_counter()
+        logging.info(
+            "[SOFT-CANONICAL-NOLIVE] start server_id=%s almacen=%s folios_ini=%s folios_fin=%s",
+            server_id,
+            almacen,
+            lista_folios_ini,
+            lista_folios_fin,
+        )
+
+        if not lista_folios_ini or not lista_folios_fin:
+            raise HTTPException(status_code=400, detail="Debe seleccionar folios iniciales y finales")
+
+        def _as_text(value):
+            return "" if value is None else str(value).strip()
+
+        def _as_float(value):
+            if value is None:
+                return 0.0
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                return 0.0
+
+        def _parse_dt(value):
+            if not value:
+                return None
+            if isinstance(value, _datetime):
+                return value
+            text = str(value).replace("T", " ").strip()
+            for size, fmt in ((19, "%Y-%m-%d %H:%M:%S"), (16, "%Y-%m-%d %H:%M"), (10, "%Y-%m-%d")):
+                try:
+                    return _datetime.strptime(text[:size], fmt)
+                except ValueError:
+                    continue
+            return None
+
+        def _as_filter_set(values):
+            return {
+                _as_text(v.get('id') if isinstance(v, dict) else v)
+                for v in (values or [])
+                if _as_text(v.get('id') if isinstance(v, dict) else v)
+            }
+
+        selected_categoria_codes = _as_filter_set(filtro_categorias_frontend)
+        selected_familia_codes = _as_filter_set(filtro_familias_frontend)
+        selected_subfamilia_codes = _as_filter_set(filtro_subfamilias_frontend)
+
+        selected_almacenes = []
+        if almacenes:
+            for item in almacenes:
+                if isinstance(item, dict):
+                    selected_almacenes.append(_as_text(item.get('id') or item.get('almacen_id') or item.get('nombre')))
+                else:
+                    selected_almacenes.append(_as_text(item))
+        elif almacen:
+            selected_almacenes.append(_as_text(almacen))
+        selected_almacenes = [a for a in selected_almacenes if a]
+
+        folios_all = list(dict.fromkeys([*lista_folios_ini, *lista_folios_fin]))
+        folio_placeholders = ",".join(["%s"] * len(folios_all))
+
+        conn = None
+        try:
+            from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
+
+            conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+            cursor = conn.cursor(as_dict=True)
+
+            header_params = [server_id, *folios_all]
+            header_filters = ["server_id = %s", f"folio IN ({folio_placeholders})", "sync_status = 'ACTIVE'"]
+            if selected_almacenes:
+                almacen_placeholders = ",".join(["%s"] * len(selected_almacenes))
+                header_filters.append(f"(almacen_id IN ({almacen_placeholders}) OR almacen IN ({almacen_placeholders}))")
+                header_params.extend(selected_almacenes)
+                header_params.extend(selected_almacenes)
+
+            cursor.execute(
+                f"""
+SELECT
+    folio,
+    fecha,
+    almacen,
+    almacen_id,
+    sucursal,
+    sucursal_id
+FROM Compras_Inventarios_Fisicos_Sync
+WHERE {' AND '.join(header_filters)}
+ORDER BY fecha, folio
+""",
+                tuple(header_params),
+            )
+            header_rows = cursor.fetchall()
+            if not header_rows:
+                raise HTTPException(status_code=404, detail="No se encontraron inventarios canónicos para los folios seleccionados")
+
+            matched_folios = {_as_text(r.get('folio')) for r in header_rows}
+            missing_folios = [f for f in folios_all if _as_text(f) not in matched_folios]
+            if missing_folios:
+                raise HTTPException(status_code=404, detail=f"Folios sin respaldo canónico: {', '.join(missing_folios)}")
+
+            header_by_folio = {}
+            for row in header_rows:
+                header_by_folio.setdefault(_as_text(row.get('folio')), row)
+
+            almacen_ids = {_as_text(r.get('almacen_id')) for r in header_rows if _as_text(r.get('almacen_id'))}
+            almacen_names = {_as_text(r.get('almacen')) for r in header_rows if _as_text(r.get('almacen'))}
+            almacen_display = almacen or next(iter(almacen_names), "")
+
+            ini_dates = [_parse_dt(header_by_folio.get(_as_text(f), {}).get('fecha')) for f in lista_folios_ini]
+            fin_dates = [_parse_dt(header_by_folio.get(_as_text(f), {}).get('fecha')) for f in lista_folios_fin]
+            request_ini = _parse_dt(fecha_ini)
+            request_fin = _parse_dt(fecha_fin)
+            inventory_start = min([d for d in [*ini_dates, request_ini] if d], default=None)
+            inventory_end = max([d for d in [*fin_dates, request_fin] if d], default=None)
+            if not inventory_start or not inventory_end:
+                raise HTTPException(status_code=400, detail="No se pudieron determinar fechas canónicas de inventario")
+            period_start = inventory_start
+            period_end = inventory_end
+            if period_start > period_end:
+                period_start, period_end = period_end, period_start
+            period_start = period_start + _timedelta(seconds=1)
+            period_end = period_end - _timedelta(seconds=1)
+            if period_start > period_end:
+                raise HTTPException(status_code=400, detail="La ventana canónica de movimientos quedó vacía")
+            sales_start = inventory_start.replace(hour=0, minute=0, second=0, microsecond=0)
+            sales_end = inventory_end.replace(hour=0, minute=0, second=0, microsecond=0) - _timedelta(seconds=1)
+            logging.info(
+                "[SOFT-CANONICAL-NOLIVE] window start=%s end=%s rule=initial+1s/final-1s",
+                period_start,
+                period_end,
+            )
+            logging.info(
+                "[SOFT-CANONICAL-NOLIVE] sales_window start=%s end=%s rule=initial-day/final-day-minus-1",
+                sales_start,
+                sales_end,
+            )
+
+            detail_params = [server_id, *folios_all]
+            detail_filters = ["server_id = %s", f"folio IN ({folio_placeholders})", "sync_status = 'ACTIVE'"]
+            if almacen_ids:
+                ids = sorted(almacen_ids)
+                detail_filters.append(f"almacen_id IN ({','.join(['%s'] * len(ids))})")
+                detail_params.extend(ids)
+            elif almacen_names:
+                names = sorted(almacen_names)
+                detail_filters.append(f"almacen IN ({','.join(['%s'] * len(names))})")
+                detail_params.extend(names)
+
+            try:
+                cursor.execute(
+                    f"""
+SELECT
+    folio,
+    codigo_producto,
+    nombre_producto,
+    unidad,
+    existencia_fisica,
+    ISNULL(Rendimiento, 1) AS rendimiento,
+    costo_unitario,
+    almacen,
+    almacen_id
+FROM Compras_Inventarios_Fisicos_Detalle_Sync
+WHERE {' AND '.join(detail_filters)}
+""",
+                    tuple(detail_params),
+                )
+            except Exception as detail_rendimiento_error:
+                logging.warning(
+                    "[SOFT-CANONICAL-NOLIVE] detalle sin rendimiento canonico, usando 1: %s",
+                    str(detail_rendimiento_error),
+                )
+                cursor.execute(
+                    f"""
+SELECT
+    folio,
+    codigo_producto,
+    nombre_producto,
+    unidad,
+    existencia_fisica,
+    1 AS rendimiento,
+    costo_unitario,
+    almacen,
+    almacen_id
+FROM Compras_Inventarios_Fisicos_Detalle_Sync
+WHERE {' AND '.join(detail_filters)}
+""",
+                    tuple(detail_params),
+                )
+            detail_rows = cursor.fetchall()
+            if not detail_rows:
+                raise HTTPException(status_code=404, detail="No hay detalle canónico para los folios seleccionados")
+
+            ini_set = {_as_text(f) for f in lista_folios_ini}
+            fin_set = {_as_text(f) for f in lista_folios_fin}
+            inv_inicial = {}
+            inv_final = {}
+            productos = {}
+
+            for row in detail_rows:
+                codigo = _as_text(row.get('codigo_producto'))
+                if not codigo:
+                    continue
+                folio = _as_text(row.get('folio'))
+                cantidad = _as_float(row.get('existencia_fisica'))
+                rendimiento = _as_float(row.get('rendimiento')) or 1
+                costo = _as_float(row.get('costo_unitario'))
+                productos.setdefault(codigo, {
+                    'Producto': row.get('nombre_producto') or f'Producto {codigo}',
+                    'Unidad': row.get('unidad') or 'PZA',
+                    'Rendimiento': rendimiento,
+                    'Costo_Unitario': costo,
+                })
+                if rendimiento > _as_float(productos[codigo].get('Rendimiento')):
+                    productos[codigo]['Rendimiento'] = rendimiento
+                if costo:
+                    productos[codigo]['Costo_Unitario'] = costo
+                if folio in ini_set:
+                    inv_inicial[codigo] = inv_inicial.get(codigo, 0.0) + cantidad
+                if folio in fin_set:
+                    inv_final[codigo] = inv_final.get(codigo, 0.0) + cantidad
+
+            movimientos = {}
+            movement_params = [server_id, period_start, period_end]
+            movement_filters = [
+                "server_id = %s",
+                "fecha >= %s",
+                "fecha <= %s",
+                "sync_status = 'ACTIVE'",
+                "ISNULL(idconcepto, '') NOT IN ('', 'SPV', 'SCP', 'SCS')",
+                _soft_date_only_final_day_guard("fecha"),
+            ]
+            movement_params.extend([period_end, period_end])
+            if almacen_ids:
+                ids = sorted(almacen_ids)
+                movement_filters.append(f"almacen_id IN ({','.join(['%s'] * len(ids))})")
+                movement_params.extend(ids)
+            elif almacen_names:
+                names = sorted(almacen_names)
+                movement_filters.append(f"almacen IN ({','.join(['%s'] * len(names))})")
+                movement_params.extend(names)
+
+            try:
+                cursor.execute(
+                    f"""
+SELECT
+    codigo_producto,
+    SUM(cantidad) AS cantidad
+FROM Compras_Inventarios_Movimientos_Sync
+WHERE {' AND '.join(movement_filters)}
+GROUP BY codigo_producto
+""",
+                    tuple(movement_params),
+                )
+                movimientos = {
+                    _as_text(row.get('codigo_producto')): _as_float(row.get('cantidad'))
+                    for row in cursor.fetchall()
+                    if _as_text(row.get('codigo_producto'))
+                }
+            except Exception as mov_error:
+                logging.exception("[SOFT-CANONICAL-NOLIVE] movimientos canonicos no disponibles")
+                raise HTTPException(status_code=500, detail=f"Movimientos canónicos no disponibles: {str(mov_error)}")
+
+            ventas = {}
+            sales_params = [server_id, sales_start, sales_end]
+            sales_filters = [
+                "server_id = %s",
+                "fecha >= %s",
+                "fecha <= %s",
+                "sync_status = 'ACTIVE'",
+                "ISNULL(idconcepto, '') IN ('SPV', 'SCP', 'SCS')",
+                _soft_date_only_final_day_guard("fecha"),
+            ]
+            sales_params.extend([sales_end, sales_end])
+            if almacen_ids:
+                ids = sorted(almacen_ids)
+                sales_filters.append(f"almacen_id IN ({','.join(['%s'] * len(ids))})")
+                sales_params.extend(ids)
+            elif almacen_names:
+                names = sorted(almacen_names)
+                sales_filters.append(f"almacen IN ({','.join(['%s'] * len(names))})")
+                sales_params.extend(names)
+
+            try:
+                cursor.execute(
+                    f"""
+SELECT
+    codigo_producto,
+    SUM(cantidad) AS cantidad
+FROM Compras_Inventarios_Movimientos_Sync
+WHERE {' AND '.join(sales_filters)}
+GROUP BY codigo_producto
+""",
+                    tuple(sales_params),
+                )
+                ventas = {
+                    _as_text(row.get('codigo_producto')): abs(_as_float(row.get('cantidad')))
+                    for row in cursor.fetchall()
+                    if _as_text(row.get('codigo_producto'))
+                }
+            except Exception as sales_error:
+                logging.warning("[SOFT-CANONICAL-NOLIVE] ventas canonicas no disponibles: %s", str(sales_error))
+
+            all_codes = sorted(set(productos.keys()) | set(inv_inicial.keys()) | set(inv_final.keys()) | set(movimientos.keys()) | set(ventas.keys()))
+            catalogo_productos = {}
+            if all_codes:
+                code_placeholders = ",".join(["%s"] * len(all_codes))
+
+                def _is_missing_classifier(value, fallback_label):
+                    value_text = _as_text(value).upper()
+                    return not value_text or value_text == fallback_label or value_text.startswith("SIN ")
+
+                def _merge_catalog_row(codigo, catalog_row, force_classifiers=False):
+                    if not codigo or not catalog_row:
+                        return
+                    current = dict(catalogo_productos.get(codigo) or {})
+                    if not current:
+                        catalogo_productos[codigo] = dict(catalog_row)
+                        return
+
+                    for field in ('Producto', 'Unidad'):
+                        if not current.get(field) and catalog_row.get(field):
+                            current[field] = catalog_row.get(field)
+
+                    for field in ('Costo_Unitario', 'Rendimiento'):
+                        new_value = _as_float(catalog_row.get(field))
+                        current_value = _as_float(current.get(field))
+                        if new_value and (not current_value or new_value > current_value):
+                            current[field] = catalog_row.get(field)
+
+                    classifier_fallbacks = {
+                        'Categoria': 'SIN CATEGORIA',
+                        'Familia': 'SIN FAMILIA',
+                        'SubFamilia': 'SIN SUBFAMILIA',
+                    }
+                    for field, fallback_label in classifier_fallbacks.items():
+                        if (force_classifiers or _is_missing_classifier(current.get(field), fallback_label)) and catalog_row.get(field):
+                            current[field] = catalog_row.get(field)
+
+                    for field in ('CategoriaCodigo', 'FamiliaCodigo', 'SubFamiliaCodigo'):
+                        if (force_classifiers or not _as_text(current.get(field))) and _as_text(catalog_row.get(field)):
+                            current[field] = catalog_row.get(field)
+
+                    catalogo_productos[codigo] = current
+
+                try:
+                    cursor.execute(
+                        f"""
+SELECT
+    i.CodigoFuente AS Codigo,
+    i.Nombre AS Producto,
+    i.UnidadMedida AS Unidad,
+    COALESCE(i.Costo, i.CostoPromedio, i.UltimoCosto, 0) AS Costo_Unitario,
+    COALESCE(i.RendimientoElaborado, 1) AS Rendimiento,
+    cat.Codigo AS CategoriaCodigo,
+    CASE LTRIM(RTRIM(CAST(cat.Codigo AS VARCHAR(50))))
+        WHEN '1' THEN 'BEBIDAS'
+        WHEN '2' THEN 'ALIMENTOS'
+        WHEN '3' THEN 'OTROS'
+        ELSE COALESCE(cat.Nombre, 'SIN CATEGORIA')
+    END AS Categoria,
+    fam.Codigo AS FamiliaCodigo,
+    COALESCE(fam.Nombre, 'SIN FAMILIA') AS Familia,
+    sub.Codigo AS SubFamiliaCodigo,
+    COALESCE(sub.Nombre, i.GrupoInsumoNombre, 'SIN SUBFAMILIA') AS SubFamilia
+FROM Sync_Productos_Insumos i
+LEFT JOIN Sync_Catalogo_Filtros sub
+    ON sub.ServerID = i.ServerID
+   AND sub.Nivel = 'SUBFAMILIA'
+   AND sub.Codigo = i.GrupoInsumoCodigoFuente
+   AND sub.Activo = 1
+LEFT JOIN Sync_Catalogo_Filtros fam
+    ON fam.ServerID = i.ServerID
+   AND fam.Nivel = 'FAMILIA'
+   AND fam.Codigo = sub.ParentCodigo
+   AND fam.Activo = 1
+LEFT JOIN Sync_Catalogo_Filtros cat
+    ON cat.ServerID = i.ServerID
+   AND cat.Nivel = 'CATEGORIA'
+   AND cat.Codigo = fam.ParentCodigo
+   AND cat.Activo = 1
+WHERE i.ServerID = %s
+  AND i.CodigoFuente IN ({code_placeholders})
+  AND i.Activo = 1
+""",
+                        tuple([server_id, *all_codes]),
+                    )
+                    insumo_catalog_rows = cursor.fetchall()
+                    for row in insumo_catalog_rows:
+                        _merge_catalog_row(_as_text(row.get('Codigo')), row)
+                    logging.warning(
+                        "[SOFT-CANONICAL-NOLIVE] sync insumo classifier rows=%s resolved=%s",
+                        len(insumo_catalog_rows),
+                        len([
+                            row for row in insumo_catalog_rows
+                            if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
+                        ]),
+                    )
+                except Exception as catalog_error:
+                    logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo insumos canonico no disponible: %s", str(catalog_error))
+                    try:
+                        cursor.execute(
+                            f"""
+SELECT
+    i.CodigoFuente AS Codigo,
+    i.Nombre AS Producto,
+    i.UnidadMedida AS Unidad,
+    COALESCE(i.Costo, i.CostoPromedio, i.UltimoCosto, 0) AS Costo_Unitario,
+    COALESCE(i.RendimientoElaborado, 1) AS Rendimiento,
+    NULL AS CategoriaCodigo,
+    'SIN CATEGORIA' AS Categoria,
+    NULL AS FamiliaCodigo,
+    'SIN FAMILIA' AS Familia,
+    i.GrupoInsumoCodigoFuente AS SubFamiliaCodigo,
+    COALESCE(i.GrupoInsumoNombre, 'SIN SUBFAMILIA') AS SubFamilia
+FROM Sync_Productos_Insumos i
+WHERE i.ServerID = %s
+  AND i.CodigoFuente IN ({code_placeholders})
+  AND i.Activo = 1
+""",
+                            tuple([server_id, *all_codes]),
+                        )
+                        for row in cursor.fetchall():
+                            _merge_catalog_row(_as_text(row.get('Codigo')), row)
+                    except Exception as fallback_catalog_error:
+                        logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo insumos fallback no disponible: %s", str(fallback_catalog_error))
+
+                try:
+                    cursor.execute(
+                        f"""
+SELECT
+    p.CodigoFuente AS Codigo,
+    p.Nombre AS Producto,
+    'PZA' AS Unidad,
+    COALESCE(p.CostoReceta, 0) AS Costo_Unitario,
+    1 AS Rendimiento,
+    p.CategoriaCodigoFuente AS CategoriaCodigo,
+    CASE LTRIM(RTRIM(CAST(p.CategoriaCodigoFuente AS VARCHAR(50))))
+        WHEN '1' THEN 'BEBIDAS'
+        WHEN '2' THEN 'ALIMENTOS'
+        WHEN '3' THEN 'OTROS'
+        ELSE COALESCE(p.CategoriaNombre, 'SIN CATEGORIA')
+    END AS Categoria,
+    p.FamiliaCodigoFuente AS FamiliaCodigo,
+    COALESCE(p.FamiliaNombre, 'SIN FAMILIA') AS Familia,
+    p.SubFamiliaCodigoFuente AS SubFamiliaCodigo,
+    COALESCE(p.SubFamiliaNombre, 'SIN SUBFAMILIA') AS SubFamilia
+FROM Sync_Productos p
+WHERE p.ServerID = %s
+  AND p.CodigoFuente IN ({code_placeholders})
+  AND p.Activo = 1
+""",
+                        tuple([server_id, *all_codes]),
+                    )
+                    sync_product_rows = cursor.fetchall()
+                    for row in sync_product_rows:
+                        _merge_catalog_row(_as_text(row.get('Codigo')), row)
+                    logging.warning(
+                        "[SOFT-CANONICAL-NOLIVE] sync product classifier rows=%s resolved=%s",
+                        len(sync_product_rows),
+                        len([
+                            row for row in sync_product_rows
+                            if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
+                        ]),
+                    )
+                except Exception as product_catalog_error:
+                    logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo productos canonico no disponible: %s", str(product_catalog_error))
+
+                unresolved_catalog_codes = [
+                    code for code in all_codes
+                    if code not in catalogo_productos
+                    or _is_missing_classifier(catalogo_productos[code].get('Categoria'), 'SIN CATEGORIA')
+                    or _is_missing_classifier(catalogo_productos[code].get('Familia'), 'SIN FAMILIA')
+                    or _is_missing_classifier(catalogo_productos[code].get('SubFamilia'), 'SIN SUBFAMILIA')
+                ]
+                if unresolved_catalog_codes:
+                    unresolved_placeholders = ",".join(["%s"] * len(unresolved_catalog_codes))
+
+                    try:
+                        cursor.execute(
+                            f"""
+WITH catalogo_base AS (
+    SELECT
+        LTRIM(RTRIM(pc.CodigoProducto)) AS Codigo,
+        pc.ProductoID
+    FROM Producto_Catalogo pc
+    WHERE pc.Activo = 1
+      AND LTRIM(RTRIM(pc.CodigoProducto)) IN ({unresolved_placeholders})
+
+    UNION ALL
+
+    SELECT
+        LTRIM(RTRIM(pc.SKU)) AS Codigo,
+        pc.ProductoID
+    FROM Producto_Catalogo pc
+    WHERE pc.Activo = 1
+      AND LTRIM(RTRIM(pc.SKU)) IN ({unresolved_placeholders})
+
+    UNION ALL
+
+    SELECT
+        LTRIM(RTRIM(pp.CodigoPresentacion)) AS Codigo,
+        pp.ProductoID
+    FROM Producto_Presentaciones pp
+    WHERE pp.Activo = 1
+      AND LTRIM(RTRIM(pp.CodigoPresentacion)) IN ({unresolved_placeholders})
+)
+SELECT
+    cb.Codigo,
+    MAX(pc.NombreProducto) AS Producto,
+    MAX(pc.UnidadInventario) AS Unidad,
+    MAX(pc.PrecioCostoBase) AS Costo_Unitario,
+    COALESCE(MAX(pp.FactorConversionInventario), 1) AS Rendimiento,
+    MAX(CAST(pf.CodigoFamilia AS VARCHAR(50))) AS CategoriaCodigo,
+    COALESCE(MAX(pf.NombreFamilia), 'SIN CATEGORIA') AS Categoria,
+    MAX(CAST(psf.CodigoSubFamilia AS VARCHAR(50))) AS FamiliaCodigo,
+    COALESCE(MAX(psf.NombreSubFamilia), 'SIN FAMILIA') AS Familia,
+    MAX(CAST(pl.CodigoLinea AS VARCHAR(50))) AS SubFamiliaCodigo,
+    COALESCE(MAX(pl.NombreLinea), 'SIN SUBFAMILIA') AS SubFamilia
+FROM catalogo_base cb
+INNER JOIN Producto_Catalogo pc
+    ON pc.ProductoID = cb.ProductoID
+   AND pc.Activo = 1
+LEFT JOIN Producto_Lineas pl
+    ON pl.LineaProductoID = pc.LineaProductoID
+   AND pl.Activo = 1
+LEFT JOIN Producto_SubFamilias psf
+    ON psf.SubFamiliaProductoID = pl.SubFamiliaProductoID
+   AND psf.Activo = 1
+LEFT JOIN Producto_Familias pf
+    ON pf.FamiliaProductoID = psf.FamiliaProductoID
+   AND pf.Activo = 1
+LEFT JOIN Producto_Presentaciones pp
+    ON pp.ProductoID = pc.ProductoID
+   AND pp.Activo = 1
+WHERE cb.Codigo IS NOT NULL AND cb.Codigo <> ''
+GROUP BY cb.Codigo
+""",
+                            tuple([*unresolved_catalog_codes, *unresolved_catalog_codes, *unresolved_catalog_codes]),
+                        )
+                        catalogo_canonico_rows = cursor.fetchall()
+                        for row in catalogo_canonico_rows:
+                            _merge_catalog_row(_as_text(row.get('Codigo')), row)
+                        logging.warning(
+                            "[SOFT-CANONICAL-NOLIVE] fallback catalog classifier rows=%s resolved=%s",
+                            len(catalogo_canonico_rows),
+                            len([
+                                row for row in catalogo_canonico_rows
+                                if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
+                            ]),
+                        )
+                    except Exception as canonical_catalog_error:
+                        logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo producto canonico no disponible: %s", str(canonical_catalog_error))
+
+                    try:
+                        cursor.execute(
+                            f"""
+SELECT
+    LTRIM(RTRIM(m.CodigoFuente)) AS Codigo,
+    MAX(pc.NombreProducto) AS Producto,
+    MAX(pc.UnidadInventario) AS Unidad,
+    MAX(pc.PrecioCostoBase) AS Costo_Unitario,
+    COALESCE(MAX(pp.FactorConversionInventario), 1) AS Rendimiento,
+    MAX(CAST(pf.CodigoFamilia AS VARCHAR(50))) AS CategoriaCodigo,
+    COALESCE(MAX(pf.NombreFamilia), 'SIN CATEGORIA') AS Categoria,
+    MAX(CAST(psf.CodigoSubFamilia AS VARCHAR(50))) AS FamiliaCodigo,
+    COALESCE(MAX(psf.NombreSubFamilia), 'SIN FAMILIA') AS Familia,
+    MAX(CAST(pl.CodigoLinea AS VARCHAR(50))) AS SubFamiliaCodigo,
+    COALESCE(MAX(pl.NombreLinea), 'SIN SUBFAMILIA') AS SubFamilia
+FROM Producto_MapeoOrigen m
+INNER JOIN Producto_Catalogo pc
+    ON pc.ProductoID = m.ProductoID
+   AND pc.Activo = 1
+LEFT JOIN Producto_Lineas pl
+    ON pl.LineaProductoID = pc.LineaProductoID
+   AND pl.Activo = 1
+LEFT JOIN Producto_SubFamilias psf
+    ON psf.SubFamiliaProductoID = pl.SubFamiliaProductoID
+   AND psf.Activo = 1
+LEFT JOIN Producto_Familias pf
+    ON pf.FamiliaProductoID = psf.FamiliaProductoID
+   AND pf.Activo = 1
+LEFT JOIN Producto_Presentaciones pp
+    ON pp.ProductoID = pc.ProductoID
+   AND pp.Activo = 1
+WHERE m.ServerID = %s
+  AND m.Activo = 1
+  AND UPPER(COALESCE(m.SystemType, '')) LIKE 'SOFT%%'
+  AND LTRIM(RTRIM(m.CodigoFuente)) IN ({unresolved_placeholders})
+GROUP BY LTRIM(RTRIM(m.CodigoFuente))
+""",
+                            tuple([server_id, *unresolved_catalog_codes]),
+                        )
+                        mapped_catalog_rows = cursor.fetchall()
+                        for row in mapped_catalog_rows:
+                            _merge_catalog_row(_as_text(row.get('Codigo')), row)
+                        logging.warning(
+                            "[SOFT-CANONICAL-NOLIVE] fallback mapped classifier rows=%s resolved=%s",
+                            len(mapped_catalog_rows),
+                            len([
+                                row for row in mapped_catalog_rows
+                                if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
+                            ]),
+                        )
+                    except Exception as mapped_catalog_error:
+                        logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo mapeo origen no disponible: %s", str(mapped_catalog_error))
+
+                for codigo, catalog_row in catalogo_productos.items():
+                    productos.setdefault(codigo, {})
+                    if catalog_row.get('Producto'):
+                        productos[codigo]['Producto'] = catalog_row.get('Producto')
+                    if catalog_row.get('Unidad'):
+                        productos[codigo]['Unidad'] = catalog_row.get('Unidad')
+                    catalog_cost = _as_float(catalog_row.get('Costo_Unitario'))
+                    if not _as_float(productos[codigo].get('Costo_Unitario')) and catalog_cost:
+                        productos[codigo]['Costo_Unitario'] = catalog_cost
+                    catalog_rendimiento = _as_float(catalog_row.get('Rendimiento')) or 1
+                    current_rendimiento = _as_float(productos[codigo].get('Rendimiento')) or 1
+                    productos[codigo]['Rendimiento'] = (
+                        catalog_rendimiento
+                        if catalog_rendimiento > current_rendimiento
+                        else current_rendimiento
+                    )
+                    productos[codigo]['Categoria'] = catalog_row.get('Categoria') or 'SIN CATEGORIA'
+                    productos[codigo]['Familia'] = catalog_row.get('Familia') or 'SIN FAMILIA'
+                    productos[codigo]['SubFamilia'] = catalog_row.get('SubFamilia') or 'SIN SUBFAMILIA'
+                    productos[codigo]['CategoriaCodigo'] = _as_text(catalog_row.get('CategoriaCodigo'))
+                    productos[codigo]['FamiliaCodigo'] = _as_text(catalog_row.get('FamiliaCodigo'))
+                    productos[codigo]['SubFamiliaCodigo'] = _as_text(catalog_row.get('SubFamiliaCodigo'))
+
+                try:
+                    cursor.execute(
+                        f"""
+SELECT
+    Codigo,
+    MAX(FactorConversionInventario) AS Rendimiento
+FROM (
+    SELECT
+        LTRIM(RTRIM(pc.CodigoProducto)) AS Codigo,
+        pp.FactorConversionInventario
+    FROM Producto_Catalogo pc
+    INNER JOIN Producto_Presentaciones pp
+        ON pp.ProductoID = pc.ProductoID
+       AND pp.Activo = 1
+    WHERE pc.Activo = 1
+      AND LTRIM(RTRIM(pc.CodigoProducto)) IN ({code_placeholders})
+
+    UNION ALL
+
+    SELECT
+        LTRIM(RTRIM(pc.SKU)) AS Codigo,
+        pp.FactorConversionInventario
+    FROM Producto_Catalogo pc
+    INNER JOIN Producto_Presentaciones pp
+        ON pp.ProductoID = pc.ProductoID
+       AND pp.Activo = 1
+    WHERE pc.Activo = 1
+      AND LTRIM(RTRIM(pc.SKU)) IN ({code_placeholders})
+
+    UNION ALL
+
+    SELECT
+        LTRIM(RTRIM(pp.CodigoPresentacion)) AS Codigo,
+        pp.FactorConversionInventario
+    FROM Producto_Presentaciones pp
+    WHERE pp.Activo = 1
+      AND LTRIM(RTRIM(pp.CodigoPresentacion)) IN ({code_placeholders})
+) factores
+WHERE Codigo IS NOT NULL AND Codigo <> ''
+GROUP BY Codigo
+""",
+                        tuple([*all_codes, *all_codes, *all_codes]),
+                    )
+                    factor_rows = cursor.fetchall()
+                    for factor_row in factor_rows:
+                        codigo_factor = _as_text(factor_row.get('Codigo'))
+                        rendimiento_factor = _as_float(factor_row.get('Rendimiento')) or 1
+                        if codigo_factor in productos and rendimiento_factor > _as_float(productos[codigo_factor].get('Rendimiento')):
+                            productos[codigo_factor]['Rendimiento'] = rendimiento_factor
+                    logging.info(
+                        "[SOFT-CANONICAL-NOLIVE] presentation factor rows=%s rendimiento_gt1=%s",
+                        len(factor_rows),
+                        len([p for p in productos.values() if _as_float(p.get('Rendimiento')) > 1]),
+                    )
+                except Exception as factor_error:
+                    logging.warning("[SOFT-CANONICAL-NOLIVE] factores presentacion canonicos no disponibles: %s", str(factor_error))
+
+                logging.warning(
+                    "[SOFT-CANONICAL-NOLIVE] catalog rows=%s missing=%s sin_categoria=%s rendimiento_gt1=%s",
+                    len(catalogo_productos),
+                    len([code for code in all_codes if code not in catalogo_productos]),
+                    len([
+                        code for code in all_codes
+                        if _is_missing_classifier(productos.get(code, {}).get('Categoria'), 'SIN CATEGORIA')
+                    ]),
+                    len([p for p in productos.values() if _as_float(p.get('Rendimiento')) > 1]),
+                )
+
+            if selected_categoria_codes or selected_familia_codes or selected_subfamilia_codes:
+                before_filter_count = len(all_codes)
+
+                def _passes_soft_catalog_filters(codigo):
+                    prod = productos.get(codigo, {})
+                    if selected_categoria_codes and _as_text(prod.get('CategoriaCodigo')) not in selected_categoria_codes:
+                        return False
+                    if selected_familia_codes and _as_text(prod.get('FamiliaCodigo')) not in selected_familia_codes:
+                        return False
+                    if selected_subfamilia_codes and _as_text(prod.get('SubFamiliaCodigo')) not in selected_subfamilia_codes:
+                        return False
+                    return True
+
+                all_codes = [codigo for codigo in all_codes if _passes_soft_catalog_filters(codigo)]
+                logging.info(
+                    "[SOFT-CANONICAL-NOLIVE] filtros catalogo categorias=%s familias=%s subfamilias=%s before=%s after=%s",
+                    sorted(selected_categoria_codes),
+                    sorted(selected_familia_codes),
+                    sorted(selected_subfamilia_codes),
+                    before_filter_count,
+                    len(all_codes),
+                )
+
+            results = []
+            for codigo in all_codes:
+                prod = productos.get(codigo, {})
+                costo = _as_float(prod.get('Costo_Unitario'))
+                inv_ini_qty = _as_float(inv_inicial.get(codigo))
+                inv_fin_qty = _as_float(inv_final.get(codigo))
+                mov_qty = _as_float(movimientos.get(codigo))
+                ventas_qty = _as_float(ventas.get(codigo))
+                has_activity = (
+                    abs(inv_ini_qty) > 0.000001
+                    or abs(inv_fin_qty) > 0.000001
+                    or codigo in movimientos
+                    or codigo in ventas
+                )
+                if not has_activity:
+                    continue
+
+                inv_teorico = inv_ini_qty + mov_qty - ventas_qty
+                diferencia = inv_fin_qty - inv_teorico
+                diferencia_costo = diferencia * costo
+                diferencia_pct = (diferencia / inv_teorico * 100) if inv_teorico else 0.0
+                valor_real = (inv_ini_qty + mov_qty - inv_fin_qty) * costo
+
+                results.append({
+                    'ID_Inv_Ini': ', '.join([str(f) for f in lista_folios_ini]),
+                    'Comentario_Ini': almacen_display,
+                    'ID_Inv_Fin': ', '.join([str(f) for f in lista_folios_fin]),
+                    'Comentario_Fin': almacen_display,
+                    'Categoria': prod.get('Categoria') or 'SIN CATEGORIA',
+                    'Familia': prod.get('Familia') or 'SIN FAMILIA',
+                    'SubFamilia': prod.get('SubFamilia') or 'SIN SUBFAMILIA',
+                    'Codigo': codigo,
+                    'Producto': prod.get('Producto') or f'Producto {codigo}',
+                    'Unidad': prod.get('Unidad') or 'PZA',
+                    'Rendimiento': _as_float(prod.get('Rendimiento')) or 1,
+                    'tipo_almacen': 1,
+                    'Costo_Unitario': round(costo, 4),
+                    'Inv_Inicial_Cantidad': round(inv_ini_qty, 4),
+                    'Inv_Inicial_Costo': round(inv_ini_qty * costo, 2),
+                    'Movimientos': round(mov_qty, 4),
+                    'Movimientos_Costo': round(mov_qty * costo, 2),
+                    'Ventas': round(ventas_qty, 4),
+                    'Ventas_Costo': round(ventas_qty * costo, 2),
+                    'Inv_Teorico_Cantidad': round(inv_teorico, 4),
+                    'Inv_Teorico_Costo': round(inv_teorico * costo, 2),
+                    'Inv_Final_Cantidad': round(inv_fin_qty, 4),
+                    'Inv_Final_Costo': round(inv_fin_qty * costo, 2),
+                    'Diferencia_Cantidad': round(diferencia, 4),
+                    'Diferencia_Costo': round(diferencia_costo, 2),
+                    'Diferencia_Porcentaje': round(diferencia_pct, 2),
+                    'Valor_Real': round(valor_real, 2),
+                    'Teorico': 0.0,
+                    'source': 'EDARSAHUB_SQL_CANONICAL',
+                })
+
+            elapsed_ms = int((perf_counter() - started_at) * 1000)
+            logging.info(
+                "[SOFT-CANONICAL-NOLIVE] done elapsed_ms=%s rows=%s details=%s movimientos=%s ventas=%s",
+                elapsed_ms,
+                len(results),
+                len(detail_rows),
+                len(movimientos),
+                len(ventas),
+            )
+            return {"data": results, "count": len(results), "source": "EDARSAHUB_SQL_CANONICAL"}
+        except HTTPException:
+            raise
+        except Exception as error:
+            logging.exception("[SOFT-CANONICAL-NOLIVE] error: %s", str(error))
+            raise HTTPException(status_code=500, detail=f"Error generando análisis canónico SoftRestaurant: {str(error)}")
+        finally:
+            if conn:
+                conn.close()
     
     try:
         if is_mpro_system(server.get('system_type')):
-            logging.info(f"Generando análisis de inventario MPRO: {sucursal} - {almacen}")
-            logging.info(f"Fechas: {fecha_ini} a {fecha_fin}")
-            logging.info(f"Folios iniciales: {lista_folios_ini}, finales: {lista_folios_fin}")
+            logging.warning(
+                "[MPRO-INV-ANALYSIS] start server_id=%s sucursal_id=%s sucursal=%s almacen=%s almacenes=%s fecha_ini=%s fecha_fin=%s folios_ini=%s folios_fin=%s",
+                server_id,
+                sucursal_id_param,
+                sucursal,
+                almacen,
+                almacenes,
+                fecha_ini,
+                fecha_fin,
+                lista_folios_ini,
+                lista_folios_fin,
+            )
+
+            def _mpro_folio_candidates(folio: str) -> List[str]:
+                """Acepta folio visible canónico y folio físico real de MPRO."""
+                folio_text = str(folio or '').strip()
+                candidates = [folio_text] if folio_text else []
+                if '-' in folio_text:
+                    suffix = folio_text.rsplit('-', 1)[-1].strip()
+                    if suffix and suffix not in candidates:
+                        candidates.append(suffix)
+                return candidates
+
+            lista_folios_ini_sql = list(dict.fromkeys(
+                candidate
+                for folio in lista_folios_ini
+                for candidate in _mpro_folio_candidates(folio)
+            ))
+            lista_folios_fin_sql = list(dict.fromkeys(
+                candidate
+                for folio in lista_folios_fin
+                for candidate in _mpro_folio_candidates(folio)
+            ))
+            logging.warning("[MPRO-INV-ANALYSIS] folios_sql ini=%s fin=%s", lista_folios_ini_sql, lista_folios_fin_sql)
             
             # Generar cadenas SQL para folios múltiples
-            folios_ini_sql = ",".join([f"'{f}'" for f in lista_folios_ini]) if lista_folios_ini else "''"
-            folios_fin_sql = ",".join([f"'{f}'" for f in lista_folios_fin]) if lista_folios_fin else "''"
+            folios_ini_sql = ",".join([f"'{f}'" for f in lista_folios_ini_sql]) if lista_folios_ini_sql else "''"
+            folios_fin_sql = ",".join([f"'{f}'" for f in lista_folios_fin_sql]) if lista_folios_fin_sql else "''"
             
             # Obtener filtros configurados del servidor
             tipos_movimiento = server.get('tipos_movimiento', [])
@@ -4664,16 +5493,21 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             # Obtener fechas de los inventarios si no se proporcionan explícitamente
             from datetime import datetime, timedelta
             
+            fecha_inventario_inicial = None
+            if inventarios_iniciales_info and inventarios_iniciales_info[0].get('fecha'):
+                fecha_inventario_inicial = inventarios_iniciales_info[0]['fecha'][:10]
+
             # Si no hay fecha_ini, intentar obtenerla de inventarios_iniciales_info o del folio
             if not fecha_ini:
-                if inventarios_iniciales_info and inventarios_iniciales_info[0].get('fecha'):
-                    fecha_ini = inventarios_iniciales_info[0]['fecha'][:10]  # YYYY-MM-DD
-                elif lista_folios_ini:
+                if fecha_inventario_inicial:
+                    fecha_ini = fecha_inventario_inicial  # YYYY-MM-DD
+                elif lista_folios_ini_sql:
                     # Obtener fecha del primer folio inicial
-                    fecha_folio_query = f"SELECT TOP 1 CONVERT(varchar, Fi_Fecha, 120) as fecha FROM Fisico WHERE Fi_Folio = '{lista_folios_ini[0]}'"
+                    fecha_folio_query = f"SELECT TOP 1 CONVERT(varchar, Fi_Fecha, 120) as fecha FROM Fisico WHERE Fi_Folio IN ({folios_ini_sql})"
                     fecha_result = _timed_inventory_sql("mpro.fecha_inicial_folio", fecha_folio_query)
                     if fecha_result:
                         fecha_ini = fecha_result[0]['fecha'][:10]
+                        fecha_inventario_inicial = fecha_ini
                     else:
                         raise HTTPException(status_code=400, detail="No se pudo determinar la fecha inicial")
                 else:
@@ -4682,8 +5516,8 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             if not fecha_fin:
                 if inventarios_finales_info and inventarios_finales_info[0].get('fecha'):
                     fecha_fin = inventarios_finales_info[0]['fecha'][:10]
-                elif lista_folios_fin:
-                    fecha_folio_query = f"SELECT TOP 1 CONVERT(varchar, Fi_Fecha, 120) as fecha FROM Fisico WHERE Fi_Folio = '{lista_folios_fin[0]}'"
+                elif lista_folios_fin_sql:
+                    fecha_folio_query = f"SELECT TOP 1 CONVERT(varchar, Fi_Fecha, 120) as fecha FROM Fisico WHERE Fi_Folio IN ({folios_fin_sql})"
                     fecha_result = _timed_inventory_sql("mpro.fecha_final_folio", fecha_folio_query)
                     if fecha_result:
                         fecha_fin = fecha_result[0]['fecha'][:10]
@@ -4692,9 +5526,14 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
                 else:
                     raise HTTPException(status_code=400, detail="Se requiere fecha_fin o inventarios_finales_info")
             
-            # Calcular fecha de inicio para movimientos/ventas (fecha_ini + 1 día)
-            fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d')
-            fecha_ini_mov = (fecha_ini_dt + timedelta(days=1)).strftime('%Y-%m-%d')
+            # El frontend moderno envia fecha_ini como inicio real de movimientos/ventas.
+            # Compatibilidad: si viene igual a la fecha cruda del inventario inicial,
+            # entonces aplicar la regla MPRO (+1 dia) aqui.
+            fecha_ini_base = str(fecha_ini).split()[0]
+            if fecha_inventario_inicial and fecha_ini_base == fecha_inventario_inicial:
+                fecha_ini_mov = (datetime.strptime(fecha_inventario_inicial, '%Y-%m-%d') + timedelta(days=1)).strftime('%Y-%m-%d')
+            else:
+                fecha_ini_mov = fecha_ini_base
             logging.info(f"MPRO - Fecha movimientos/ventas: {fecha_ini_mov} a {fecha_fin}")
             
             # 1. Obtener códigos de TODOS los almacenes seleccionados
@@ -4706,7 +5545,11 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             
             # FASE 1B: Escapar caracteres especiales de LIKE para prevenir SQL Injection
             almacenes_like_conditions = " OR ".join([f"A.Al_Descripcion LIKE '%{_escape_like_pattern(alm)}%'" for alm in lista_almacenes])
-            sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
+            if sucursal_id_param and _validate_identifier(str(sucursal_id_param), max_length=50):
+                sucursal_condition = f"AND S.Sc_Cve_Sucursal = '{str(sucursal_id_param).replace(chr(39), chr(39)+chr(39))}'"
+            else:
+                sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
+                sucursal_condition = f"AND S.Sc_Descripcion LIKE '%{sucursal_safe}%'"
             
             almacen_query = f"""
 SELECT 
@@ -4716,11 +5559,11 @@ SELECT
 FROM Almacen A
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
 WHERE ({almacenes_like_conditions})
-    AND S.Sc_Descripcion LIKE '%{sucursal_safe}%'
+    {sucursal_condition}
 """
             almacen_result = _timed_inventory_sql("mpro.almacenes", almacen_query)
             if not almacen_result:
-                logging.error(f"Almacén(es) no encontrado(s) en MPRO - Sucursal: '{sucursal}', Almacenes: {lista_almacenes}, Servidor: {server.get('name', server_id)}")
+                logging.error(f"Almacén(es) no encontrado(s) en MPRO - SucursalID: '{sucursal_id_param}', Sucursal: '{sucursal}', Almacenes: {lista_almacenes}, Servidor: {server.get('name', server_id)}")
                 raise HTTPException(status_code=404, detail=f"Almacén no encontrado en sucursal '{sucursal}'. Verifique la conexión al servidor SQL o que el almacén exista.")
             
             # Lista de códigos de almacén
@@ -4738,8 +5581,14 @@ WHERE ({almacenes_like_conditions})
             # MPRO: Detectar si ALGÚN almacén es tipo BODEGA
             es_almacen_bodega = any('BODEGA' in (n.upper() if n else '') for n in almacenes_nombres)
             
-            logging.info(f"Almacenes encontrados: {almacenes_codigos} - {almacenes_nombres} (Sucursal: {sucursal_codigo})")
-            logging.info(f"MPRO - Incluye almacén BODEGA: {es_almacen_bodega}")
+            logging.warning(
+                "[MPRO-INV-ANALYSIS] almacenes rows=%s codigos=%s nombres=%s sucursal_codigo=%s es_bodega=%s",
+                len(almacen_result),
+                almacenes_codigos,
+                almacenes_nombres,
+                sucursal_codigo,
+                es_almacen_bodega,
+            )
             
             # 2. Obtener productos que se controlan en inventario:
             # a) INSUMOS (Dp_Cve_Departamento = '0007') que tienen presentaciones configuradas
@@ -4796,14 +5645,15 @@ WHERE P.Es_Cve_Estado <> 'BA'
             AND MOV.Sc_Cve_Sucursal = '{sucursal_codigo}'
             AND MOV.Al_Cve_Almacen IN ({almacenes_sql})
             AND MOV.Es_Cve_Estado <> 'CA'
-            AND MOV.Mv_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+            AND MOV.Mv_Fecha BETWEEN '{fecha_ini_mov}' AND '{fecha_fin} 23:59:59'
         )
     )
 ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
 """
             logging.info("Obteniendo catalogo de productos MPRO (INSUMOS con presentaciones + COMPRAS sin presentacion)...")
             productos = _timed_inventory_sql("mpro.productos", productos_query)
-            logging.info(f"Productos obtenidos: {len(productos)}")
+            productos_by_codigo = {str(p.get('Codigo') or '').strip(): p for p in productos if str(p.get('Codigo') or '').strip()}
+            logging.warning("[MPRO-INV-ANALYSIS] productos rows=%s", len(productos))
             
             # 3. Obtener ventas - UNION ALL de ventas KIT + ventas DIRECTAS
             # Consulta proporcionada por el usuario para MPRO
@@ -4847,9 +5697,9 @@ GROUP BY Producto_Codigo
                 logging.info("Obteniendo ventas (KIT + DIRECTAS)...")
                 ventas_result = _timed_inventory_sql("mpro.ventas", ventas_query)
                 ventas_dict = {v['Producto_Codigo']: float(v['Total_Ventas'] or 0) for v in ventas_result}
-                logging.info(f"Ventas obtenidas para {len(ventas_dict)} productos")
+                logging.warning("[MPRO-INV-ANALYSIS] ventas productos=%s", len(ventas_dict))
             else:
-                logging.info(f"MPRO - Almacén BODEGA '{almacen_nombre}' - Ventas = 0 para todos los productos")
+                logging.warning("[MPRO-INV-ANALYSIS] ventas omitidas por almacen bodega=%s", almacen_nombre)
             
             # 4. Obtener movimientos por producto FILTRADO POR ALMACÉN
             # Consulta proporcionada por el usuario para MPRO
@@ -4889,7 +5739,7 @@ GROUP BY E.Pr_Cve_Producto
             logging.info("Obteniendo movimientos (con lógica especial de fechas para tipos 508/108)...")
             movimientos_result = _timed_inventory_sql("mpro.movimientos", movimientos_query)
             movimientos_dict = {m['Producto_Codigo']: float(m['Total_Movimientos'] or 0) for m in movimientos_result}
-            logging.info(f"Movimientos obtenidos para {len(movimientos_dict)} productos")
+            logging.warning("[MPRO-INV-ANALYSIS] movimientos productos=%s", len(movimientos_dict))
             
             # 5. Detectar errores de captura de inventario
             # Si un producto está en Producto_Presentacion como Pp_Producto (es una presentación)
@@ -4919,6 +5769,94 @@ WHERE P_INS.Dp_Cve_Departamento = '0007'
             logging.info(f"Modo de agrupación: {'AGRUPADO' if agrupar_insumos else 'SIN AGRUPAR'}")
             results = []
             errores_list = []
+
+            # El catálogo base no trae cantidades físicas; se leen por folio para ambos modos.
+            inv_detalle_query = f"""
+SELECT
+    F.Fi_Folio as Folio,
+    F.Pr_Cve_Producto as Codigo,
+    F.Fi_Cantidad_Control_1 as Cantidad,
+    F.Al_Cve_Almacen as Almacen_Codigo,
+    ISNULL(F.Fi_Comentario, '') as Comentario
+FROM Fisico F
+WHERE F.Fi_Folio IN ({folios_ini_sql}, {folios_fin_sql})
+    AND F.Al_Cve_Almacen IN ({almacenes_sql})
+ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
+"""
+            inv_detalle = _timed_inventory_sql("mpro.inventario_detalle", inv_detalle_query)
+
+            folios_ini_set = set(lista_folios_ini_sql)
+            folios_fin_set = set(lista_folios_fin_sql)
+
+            inv_por_codigo = {}
+            for row in inv_detalle:
+                codigo = str(row['Codigo'] or '').strip()
+                folio = str(row['Folio'] or '').strip()
+                cantidad = float(row['Cantidad'] or 0)
+                comentario = row['Comentario'] or ''
+                almacen_cod = row['Almacen_Codigo']
+
+                if not codigo:
+                    continue
+
+                if codigo not in inv_por_codigo:
+                    inv_por_codigo[codigo] = {'ini': {}, 'fin': {}}
+
+                if folio in folios_ini_set:
+                    inv_por_codigo[codigo]['ini'][folio] = {'cantidad': cantidad, 'comentario': comentario, 'almacen': almacen_cod}
+                elif folio in folios_fin_set:
+                    inv_por_codigo[codigo]['fin'][folio] = {'cantidad': cantidad, 'comentario': comentario, 'almacen': almacen_cod}
+
+            active_codes = set(inv_por_codigo.keys()) | {str(c).strip() for c in movimientos_dict.keys()} | {str(c).strip() for c in ventas_dict.keys()}
+            missing_catalog_codes = sorted(c for c in active_codes if c and c not in productos_by_codigo)
+            logging.warning(
+                "MPRO universo actividad: catalogo=%s inventario=%s movimientos=%s ventas=%s missing_catalog=%s",
+                len(productos_by_codigo),
+                len(inv_por_codigo),
+                len(movimientos_dict),
+                len(ventas_dict),
+                len(missing_catalog_codes),
+            )
+
+            if missing_catalog_codes:
+                missing_codes_sql = ",".join([f"'{c.replace(chr(39), chr(39)+chr(39))}'" for c in missing_catalog_codes])
+                productos_fallback_query = f"""
+SELECT DISTINCT
+    P.Pr_Cve_Producto as Codigo,
+    P.Pr_Descripcion as Producto,
+    F.Fm_Descripcion as Familia,
+    SF.Sf_Descripcion as SubFamilia,
+    C.Ct_Descripcion as Categoria,
+    P.Pr_Unidad_Control_1 as Unidad,
+    P.Pr_ultimo_costo as Costo_Unitario,
+    D.Dp_Descripcion as Departamento,
+    CASE
+        WHEN P.Dp_Cve_Departamento = '0007' THEN 'INSUMO'
+        ELSE 'COMPRA'
+    END as Tipo_Producto,
+    CASE
+        WHEN EXISTS (SELECT 1 FROM Producto_Presentacion PP WHERE PP.Pr_Cve_Producto = P.Pr_Cve_Producto) THEN 1
+        ELSE 0
+    END as Tiene_Presentaciones
+FROM Producto P
+LEFT JOIN Familia F ON F.Fm_Cve_Familia = P.Fm_Cve_Familia
+LEFT JOIN SubFamilia SF ON SF.Sf_Cve_SubFamilia = P.Sf_Cve_SubFamilia
+LEFT JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
+LEFT JOIN Departamento D ON D.Dp_Cve_Departamento = P.Dp_Cve_Departamento
+WHERE P.Es_Cve_Estado <> 'BA'
+    AND P.Pr_Cve_Producto IN ({missing_codes_sql})
+    {filtro_categorias_p}
+    {filtro_familias_p}
+    {filtro_subfamilias_p}
+ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
+"""
+                productos_fallback = _timed_inventory_sql("mpro.productos_fallback_actividad", productos_fallback_query)
+                for prod in productos_fallback:
+                    codigo_fb = str(prod.get('Codigo') or '').strip()
+                    if codigo_fb and codigo_fb not in productos_by_codigo:
+                        productos_by_codigo[codigo_fb] = prod
+                        productos.append(prod)
+                logging.warning("MPRO productos fallback actividad: %s incorporados, catalogo_total=%s", len(productos_fallback), len(productos_by_codigo))
             
             if agrupar_insumos:
                 # MODO AGRUPADO: Una fila por producto (comportamiento original)
@@ -4926,8 +5864,9 @@ WHERE P_INS.Dp_Cve_Departamento = '0007'
                     codigo = prod['Codigo']
                     ventas_total = ventas_dict.get(codigo, 0)
                     movimientos = movimientos_dict.get(codigo, 0)
-                    inv_inicial = float(prod.get('Inv_Inicial_Cantidad', 0) or 0)
-                    inv_final = float(prod.get('Inv_Final_Cantidad', 0) or 0)
+                    inv_data = inv_por_codigo.get(codigo, {'ini': {}, 'fin': {}})
+                    inv_inicial = sum(item.get('cantidad', 0) for item in inv_data['ini'].values())
+                    inv_final = sum(item.get('cantidad', 0) for item in inv_data['fin'].values())
                     costo = float(prod.get('Costo_Unitario', 0) or 0)
                     tipo_producto = prod.get('Tipo_Producto', 'COMPRA')
                     
@@ -4982,47 +5921,6 @@ WHERE P_INS.Dp_Cve_Departamento = '0007'
                     })
             else:
                 # MODO SIN AGRUPAR: Una fila por cada combinación producto + inventario
-                # Obtener inventarios detallados por folio, incluyendo el código de almacén
-                inv_detalle_query = f"""
-SELECT 
-    F.Fi_Folio as Folio,
-    F.Pr_Cve_Producto as Codigo,
-    F.Fi_Cantidad_Control_1 as Cantidad,
-    F.Al_Cve_Almacen as Almacen_Codigo,
-    ISNULL(F.Fi_Comentario, '') as Comentario
-FROM Fisico F
-WHERE F.Fi_Folio IN ({folios_ini_sql}, {folios_fin_sql}) 
-    AND F.Al_Cve_Almacen IN ({almacenes_sql})
-ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
-"""
-                inv_detalle = _timed_inventory_sql("mpro.inventario_detalle", inv_detalle_query)
-                
-                # Crear diccionarios de folios iniciales y finales
-                folios_ini_set = set(lista_folios_ini)
-                folios_fin_set = set(lista_folios_fin)
-                
-                # Mapear folio -> almacén para obtener movimientos específicos
-                folio_almacen_map = {}
-                for row in inv_detalle:
-                    folio_almacen_map[row['Folio']] = row['Almacen_Codigo']
-                
-                # Organizar inventarios por código y folio
-                inv_por_codigo = {}
-                for row in inv_detalle:
-                    codigo = row['Codigo']
-                    folio = row['Folio']
-                    cantidad = float(row['Cantidad'] or 0)
-                    comentario = row['Comentario'] or ''
-                    almacen_cod = row['Almacen_Codigo']
-                    
-                    if codigo not in inv_por_codigo:
-                        inv_por_codigo[codigo] = {'ini': {}, 'fin': {}}
-                    
-                    if folio in folios_ini_set:
-                        inv_por_codigo[codigo]['ini'][folio] = {'cantidad': cantidad, 'comentario': comentario, 'almacen': almacen_cod}
-                    elif folio in folios_fin_set:
-                        inv_por_codigo[codigo]['fin'][folio] = {'cantidad': cantidad, 'comentario': comentario, 'almacen': almacen_cod}
-                
                 # Procesar productos con inventarios detallados
                 for prod in productos:
                     codigo = prod['Codigo']
@@ -5031,8 +5929,8 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
                     
                     inv_data = inv_por_codigo.get(codigo, {'ini': {}, 'fin': {}})
                     
-                    # Si no hay inventarios, omitir
-                    if not inv_data['ini'] and not inv_data['fin']:
+                    has_period_activity = bool(inv_data['ini'] or inv_data['fin'] or movimientos_dict.get(codigo, 0) or ventas_dict.get(codigo, 0))
+                    if not has_period_activity:
                         continue
                     
                     # Crear filas por cada combinación de folios
@@ -5059,7 +5957,7 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
                         ven_fila = ventas_dict.get(codigo, 0)
                         
                         # Solo incluir si hay actividad
-                        if inv_inicial == 0 and inv_final == 0:
+                        if inv_inicial == 0 and inv_final == 0 and mov_fila == 0 and ven_fila == 0:
                             continue
                         
                         # Calcular inventario teórico: Inicial + Movimientos - Ventas
@@ -5109,7 +6007,7 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
                     'mensaje': f"Presentación '{err['Descripcion_Presentacion']}' ({err['Codigo_Presentacion']}) capturada en inventario. Debería capturarse como INSUMO '{err['Descripcion_Insumo']}' ({err['Codigo_Insumo']})"
                 })
             
-            logging.info(f"Análisis MPRO completado: {len(results)} productos procesados, {len(errores_list)} errores de captura")
+            logging.warning("[MPRO-INV-ANALYSIS] done rows=%s errores=%s", len(results), len(errores_list))
             logging.info("[INV-ANALYSIS-TIMING] done label=mpro.total elapsed_ms=%s rows=%s", int((perf_counter() - request_started_at) * 1000), len(results))
             
             # ===== GUARDAR DIFERENCIAS EN CACHE PARA COMPARATIVO DE 4 CORTES =====
@@ -5211,6 +6109,9 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
             
         elif is_softrestaurant_system(server.get('system_type')):
             # Análisis de inventario para SoftRestaurant
+            logging.info("Generando análisis de inventario SoftRestaurant desde EDARSAHUB SQL canónico (NO-LIVE)")
+            return await _generate_soft_inventory_analysis_canonical()
+
             logging.info(f"Generando análisis de inventario SoftRestaurant: {almacen}")
             logging.info(f"Folios iniciales: {lista_folios_ini}, finales: {lista_folios_fin}")
             logging.info(f"Filtros frontend - Categorias: {filtro_categorias_frontend}, Familias: {filtro_familias_frontend}, SubFamilias: {filtro_subfamilias_frontend}")
@@ -5311,7 +6212,7 @@ WHERE nombre LIKE '%{almacen_safe}%'
             logging.info(f"Almacén: {almacen_nombre}, ID: {almacen_id}, Tipo: {almacen_tipo}, Es Consumo (tiene ventas): {es_almacen_consumo}")
             
             # Construir filtros SQL para SoftRestaurant
-            # Categoría = clasificacionventa (1=ALIMENTOS, 2=BEBIDAS, 3=OTROS) en tabla gruposiclasificacion
+            # Categoria = clasificacionventa (1=BEBIDAS, 2=ALIMENTOS, 3=OTROS) en tabla gruposiclasificacion
             # Familia = idgruposiclasificacion en tabla gruposiclasificacion
             # SubFamilia = idgruposi en tabla gruposi
             
@@ -7932,7 +8833,7 @@ async def validate_server_access_by_empresa(server_id: str, credentials: HTTPAut
     return {"user": user, "server": server, "context": context}
 
 @api_router.get("/compras/inventarios-fisicos/{server_id}")
-async def obtener_inventarios_fisicos(server_id: str, unidad: str = None, sucursal: str = None, sucursal_id: str = None, almacen: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def obtener_inventarios_fisicos(server_id: str, unidad: str = None, sucursal: str = None, sucursal_id: str = None, almacen_id: str = None, almacen: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
     Obtiene la lista de inventarios físicos disponibles para seleccionar.
 
@@ -7989,6 +8890,7 @@ async def obtener_inventarios_fisicos(server_id: str, unidad: str = None, sucurs
                                      # unidad_negocio_id; se desambigua por server_id+sucursal
             server_id=server_id,
             sucursal=sucursal_filtro,
+            almacen_id=almacen_id,
             almacen=almacen,
             limit=500
         )
@@ -10090,6 +10992,455 @@ class DetalleMovimientosRequest(BaseModel):
     almacenes: Optional[List[str]] = None
 
 
+def _clean_detalle_almacenes(almacenes):
+    if not almacenes:
+        return []
+    if isinstance(almacenes, str):
+        almacenes = [almacenes]
+    cleaned = []
+    for almacen in almacenes:
+        value = str(almacen or '').strip()
+        if value:
+            cleaned.append(value)
+    return list(dict.fromkeys(cleaned))
+
+
+def _float_detalle(value):
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _iso_detalle(value):
+    return value.isoformat() if hasattr(value, 'isoformat') else str(value or '')
+
+
+def _soft_date_only_final_day_guard(column_name: str = "fecha") -> str:
+    return (
+        f"NOT (CAST({column_name} AS time) = '00:00:00' "
+        f"AND CAST({column_name} AS date) = CAST(%s AS date) "
+        "AND CAST(%s AS time) < '23:59:59')"
+    )
+
+
+def _obtener_detalle_softrestaurant_canonico(request, solo_ventas=False):
+    if not request.fecha_inicio or not request.fecha_fin:
+        empty_totals = {"total": 0, "entradas": 0, "salidas": 0, "neto": 0} if solo_ventas else {"entradas": 0, "salidas": 0, "neto": 0}
+        key = "consumos" if solo_ventas else "movimientos"
+        return {key: [], "movimientos": [], "totales": empty_totals, "error": "Fechas no válidas"}
+
+    codigo_limpio = str(request.codigo or '').strip()
+    codigo_sin_prefijo = codigo_limpio[1:] if codigo_limpio and codigo_limpio[0].isalpha() else codigo_limpio
+    codigos = [c for c in dict.fromkeys([codigo_limpio, codigo_sin_prefijo]) if c]
+    almacenes_limpios = _clean_detalle_almacenes(request.almacenes)
+
+    if not codigos:
+        empty_totals = {"total": 0, "entradas": 0, "salidas": 0, "neto": 0} if solo_ventas else {"entradas": 0, "salidas": 0, "neto": 0}
+        key = "consumos" if solo_ventas else "movimientos"
+        return {key: [], "movimientos": [], "totales": empty_totals, "error": "Producto no válido"}
+
+    concept_filter = "ISNULL(idconcepto, '') IN ('SPV', 'SCP', 'SCS')" if solo_ventas else "ISNULL(idconcepto, '') NOT IN ('', 'SPV', 'SCP', 'SCS')"
+    codigo_placeholders = ",".join(["%s"] * len(codigos))
+    filters = [
+        "server_id = %s",
+        f"codigo_producto IN ({codigo_placeholders})",
+        "fecha >= %s",
+        "fecha <= %s",
+        "sync_status = 'ACTIVE'",
+        concept_filter,
+        _soft_date_only_final_day_guard("fecha"),
+    ]
+    params = [request.server_id, *codigos, request.fecha_inicio, request.fecha_fin, request.fecha_fin, request.fecha_fin]
+
+    if almacenes_limpios:
+        almacen_placeholders = ",".join(["%s"] * len(almacenes_limpios))
+        filters.append(f"(almacen_id IN ({almacen_placeholders}) OR almacen IN ({almacen_placeholders}))")
+        params.extend(almacenes_limpios)
+        params.extend(almacenes_limpios)
+
+    conn = None
+    try:
+        from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
+
+        conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=10)
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute(
+            f"""
+SELECT TOP 1000
+    fecha,
+    idconcepto,
+    codigo_producto,
+    cantidad,
+    almacen,
+    almacen_id
+FROM Compras_Inventarios_Movimientos_Sync
+WHERE {' AND '.join(filters)}
+ORDER BY fecha DESC
+""",
+            tuple(params),
+        )
+        rows = cursor.fetchall()
+
+        movimientos = []
+        totales = {"entradas": 0.0, "salidas": 0.0, "neto": 0.0}
+        total_ventas = 0.0
+
+        for row in rows:
+            raw_qty = _float_detalle(row.get('cantidad'))
+            concepto = str(row.get('idconcepto') or ('VENTA' if solo_ventas else 'MOV')).strip()
+            almacen = row.get('almacen') or row.get('almacen_id') or ''
+
+            if solo_ventas:
+                qty = abs(raw_qty)
+                signed_qty = -qty
+                tipo = 'S'
+                descripcion = 'Venta/consumo canónico SoftRestaurant'
+                total_ventas += qty
+                totales["salidas"] += qty
+            else:
+                qty = abs(raw_qty)
+                tipo = 'E' if raw_qty >= 0 else 'S'
+                signed_qty = qty if tipo == 'E' else -qty
+                descripcion = 'Movimiento canónico SoftRestaurant'
+                if tipo == 'E':
+                    totales["entradas"] += qty
+                else:
+                    totales["salidas"] += qty
+
+            movimientos.append({
+                "fecha": _iso_detalle(row.get('fecha')),
+                "concepto": concepto,
+                "descripcion": descripcion,
+                "cantidad": signed_qty,
+                "almacen": almacen,
+                "referencia": str(row.get('codigo_producto') or ''),
+                "tipo": tipo,
+            })
+
+        totales["neto"] = totales["entradas"] - totales["salidas"]
+
+        if solo_ventas:
+            total_ventas = round(total_ventas, 4)
+            return {
+                "consumos": movimientos,
+                "movimientos": movimientos,
+                "totales": {
+                    "total": total_ventas,
+                    "entradas": 0,
+                    "salidas": total_ventas,
+                    "neto": -total_ventas,
+                },
+                "source": "EDARSAHUB_SQL_CANONICAL",
+            }
+
+        return {
+            "movimientos": movimientos,
+            "totales": {
+                "entradas": round(totales["entradas"], 4),
+                "salidas": round(totales["salidas"], 4),
+                "neto": round(totales["neto"], 4),
+            },
+            "source": "EDARSAHUB_SQL_CANONICAL",
+        }
+    finally:
+        if conn:
+            conn.close()
+
+
+class UsoInversoRecetaRequest(BaseModel):
+    server_id: str
+    codigo: str
+    producto: Optional[str] = None
+    unidad: Optional[str] = None
+    rendimiento: Optional[float] = None
+    unidad_vista: Optional[str] = None
+
+
+def _usage_text(value) -> str:
+    return str(value or '').strip()
+
+
+def _usage_float(value) -> float:
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _usage_code_variants(value) -> List[str]:
+    text = _usage_text(value)
+    if not text:
+        return []
+
+    variants = [text]
+    stripped = text.lstrip("0")
+    if stripped and stripped != text:
+        variants.append(stripped)
+    if text.isdigit():
+        variants.append(text.zfill(10))
+        variants.append(text.zfill(8))
+
+    return [v for v in dict.fromkeys(variants) if v]
+
+
+@api_router.post("/reports/inverse-recipe-usage")
+async def obtener_uso_inverso_receta_reportes(
+    request: UsoInversoRecetaRequest,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Drilldown inverso desde Analisis de Inventarios.
+
+    Fuente unica: EDARSAHUB SQL canonico. No conecta live a MPRO/SoftRestaurant.
+    - Si el codigo es insumo, busca productos/producciones donde aparece.
+    - Si el codigo es presentacion, intenta resolver su insumo base canonico
+      antes de buscar el uso en recetas.
+    """
+    from core.corporate_filters.request_resolver import canonical_server_id
+    from core.server_registry import get_server_connection_info
+
+    server_id = canonical_server_id(request.server_id)
+    codigo = _usage_text(request.codigo)
+    if not codigo:
+        raise HTTPException(status_code=400, detail="Codigo de producto requerido")
+    codigo_variants = _usage_code_variants(codigo)
+
+    server = await get_server_connection_info(server_id, db=db)
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+
+    system_type = _usage_text(server.get('system_type')).upper()
+    conn = None
+    try:
+        conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=10)
+        cursor = conn.cursor(as_dict=True)
+
+        base = {
+            "codigo": codigo,
+            "nombre": request.producto or codigo,
+            "unidad": "",
+            "tipo": "INSUMO",
+            "rendimiento": 1.0,
+        }
+        presentacion = None
+
+        variant_placeholders = ",".join(["%s"] * len(codigo_variants))
+
+        cursor.execute(
+            f"""
+SELECT TOP 1
+    CodigoFuente,
+    Nombre,
+    UnidadMedida,
+    COALESCE(RendimientoElaborado, 1) AS Rendimiento,
+    COALESCE(EsElaborado, 0) AS EsElaborado
+FROM Sync_Productos_Insumos
+WHERE ServerID = %s
+  AND LTRIM(RTRIM(CodigoFuente)) IN ({variant_placeholders})
+  AND Activo = 1
+""",
+            tuple([server_id, *codigo_variants]),
+        )
+        insumo_rows = cursor.fetchall()
+        if insumo_rows:
+            insumo = insumo_rows[0]
+            base = {
+                "codigo": _usage_text(insumo.get("CodigoFuente")),
+                "nombre": insumo.get("Nombre") or request.producto or codigo,
+                "unidad": insumo.get("UnidadMedida") or "",
+                "tipo": "ELABORADO" if insumo.get("EsElaborado") else "INSUMO",
+                "rendimiento": _usage_float(insumo.get("Rendimiento")) or 1.0,
+            }
+        else:
+            try:
+                cursor.execute(
+                    f"""
+SELECT TOP 1
+    pp.CodigoPresentacion,
+    pp.NombrePresentacion,
+    pp.UnidadPresentacion,
+    COALESCE(pp.FactorConversionInventario, 1) AS Rendimiento,
+    pmo.CodigoFuente AS InsumoBaseCodigo,
+    spi.Nombre AS InsumoBaseNombre,
+    spi.UnidadMedida AS InsumoBaseUnidad
+FROM Producto_Presentaciones pp
+INNER JOIN Producto_Catalogo pc ON pc.ProductoID = pp.ProductoID
+LEFT JOIN Producto_MapeoOrigen pmo
+    ON pmo.ProductoID = pc.ProductoID
+   AND pmo.ServerID = %s
+   AND pmo.Activo = 1
+LEFT JOIN Sync_Productos_Insumos spi
+    ON spi.ServerID = pmo.ServerID
+   AND LTRIM(RTRIM(spi.CodigoFuente)) = LTRIM(RTRIM(pmo.CodigoFuente))
+   AND spi.Activo = 1
+WHERE LTRIM(RTRIM(pp.CodigoPresentacion)) IN ({variant_placeholders})
+  AND pp.Activo = 1
+""",
+                    tuple([server_id, *codigo_variants]),
+                )
+                pres_rows = cursor.fetchall()
+            except Exception as pres_error:
+                logging.warning("[INVERSE-RECIPE-USAGE] presentacion canonica no disponible: %s", str(pres_error))
+                pres_rows = []
+
+            if pres_rows:
+                pres = pres_rows[0]
+                base_codigo = _usage_text(pres.get("InsumoBaseCodigo")) or codigo
+                presentacion = {
+                    "codigo": _usage_text(pres.get("CodigoPresentacion")) or codigo,
+                    "nombre": pres.get("NombrePresentacion") or request.producto or codigo,
+                    "unidad": pres.get("UnidadPresentacion") or "",
+                    "rendimiento": _usage_float(pres.get("Rendimiento")) or 1.0,
+                }
+                base = {
+                    "codigo": base_codigo,
+                    "nombre": pres.get("InsumoBaseNombre") or request.producto or base_codigo,
+                    "unidad": pres.get("InsumoBaseUnidad") or "",
+                    "tipo": "INSUMO_BASE",
+                    "rendimiento": presentacion["rendimiento"],
+                }
+
+        target_codes = []
+        for value in [base.get("codigo"), codigo]:
+            target_codes.extend(_usage_code_variants(value))
+
+        try:
+            map_placeholders = ",".join(["%s"] * len(target_codes))
+            cursor.execute(
+                f"""
+SELECT DISTINCT CodigoFuente
+FROM Producto_MapeoOrigen
+WHERE ServerID = %s
+  AND Activo = 1
+  AND ProductoID IN (
+      SELECT DISTINCT ProductoID
+      FROM Producto_MapeoOrigen
+      WHERE ServerID = %s
+        AND Activo = 1
+        AND LTRIM(RTRIM(CodigoFuente)) IN ({map_placeholders})
+  )
+""",
+                tuple([server_id, server_id, *target_codes]),
+            )
+            for row in cursor.fetchall():
+                target_codes.extend(_usage_code_variants(row.get("CodigoFuente")))
+        except Exception as map_error:
+            logging.warning("[INVERSE-RECIPE-USAGE] mapeo canonico no disponible: %s", str(map_error))
+
+        target_codes = [c for c in dict.fromkeys(target_codes) if c]
+        placeholders = ",".join(["%s"] * len(target_codes))
+        if not presentacion and _usage_text(request.unidad_vista).lower() == "presentaciones":
+            presentacion = {
+                "codigo": codigo,
+                "nombre": request.producto or base.get("nombre") or codigo,
+                "unidad": request.unidad or base.get("unidad") or "",
+                "rendimiento": _usage_float(request.rendimiento) or base.get("rendimiento") or 1.0,
+            }
+
+        cursor.execute(
+            f"""
+SELECT TOP 1000
+    r.ProductoCodigoFuente AS CodigoDestino,
+    COALESCE(p.Nombre, r.ProductoCodigoFuente) AS ProductoDestino,
+    CASE
+        WHEN COALESCE(p.EsCompuesto, 0) = 1 THEN 'PRODUCCION'
+        WHEN COALESCE(p.EsVendible, 1) = 1 THEN 'VENTA'
+        ELSE COALESCE(p.TipoProducto, 'PRODUCTO')
+    END AS TipoDestino,
+    SUM(COALESCE(r.Cantidad, 0)) AS CantidadReceta,
+    COALESCE(MAX(r.UnidadMedida), '') AS UnidadReceta,
+    SUM(COALESCE(r.CostoTotal, 0)) AS CostoTotal,
+    COUNT(*) AS Lineas
+FROM Sync_Productos_Recetas r
+LEFT JOIN Sync_Productos p
+    ON p.ServerID = r.ServerID
+   AND LTRIM(RTRIM(p.CodigoFuente)) = LTRIM(RTRIM(r.ProductoCodigoFuente))
+   AND p.Activo = 1
+WHERE r.ServerID = %s
+  AND r.Activo = 1
+  AND LTRIM(RTRIM(r.ComponenteCodigoFuente)) IN ({placeholders})
+GROUP BY
+    r.ProductoCodigoFuente,
+    COALESCE(p.Nombre, r.ProductoCodigoFuente),
+    CASE
+        WHEN COALESCE(p.EsCompuesto, 0) = 1 THEN 'PRODUCCION'
+        WHEN COALESCE(p.EsVendible, 1) = 1 THEN 'VENTA'
+        ELSE COALESCE(p.TipoProducto, 'PRODUCTO')
+    END
+ORDER BY ProductoDestino
+""",
+            tuple([server_id, *target_codes]),
+        )
+        productos_rows = cursor.fetchall()
+
+        cursor.execute(
+            f"""
+SELECT TOP 1000
+    e.InsumoElaboradoCodigoFuente AS CodigoDestino,
+    COALESCE(i.Nombre, e.InsumoElaboradoCodigoFuente) AS ProductoDestino,
+    'PRODUCCION' AS TipoDestino,
+    SUM(COALESCE(e.Cantidad, 0)) AS CantidadReceta,
+    COALESCE(MAX(e.UnidadMedida), '') AS UnidadReceta,
+    SUM(COALESCE(e.CostoTotal, 0)) AS CostoTotal,
+    COUNT(*) AS Lineas
+FROM Sync_Productos_Elaborados e
+LEFT JOIN Sync_Productos_Insumos i
+    ON i.ServerID = e.ServerID
+   AND LTRIM(RTRIM(i.CodigoFuente)) = LTRIM(RTRIM(e.InsumoElaboradoCodigoFuente))
+   AND i.Activo = 1
+WHERE e.ServerID = %s
+  AND e.Activo = 1
+  AND LTRIM(RTRIM(e.ComponenteCodigoFuente)) IN ({placeholders})
+GROUP BY e.InsumoElaboradoCodigoFuente, COALESCE(i.Nombre, e.InsumoElaboradoCodigoFuente)
+ORDER BY ProductoDestino
+""",
+            tuple([server_id, *target_codes]),
+        )
+        elaborados_rows = cursor.fetchall()
+
+        logging.warning(
+            "[INVERSE-RECIPE-USAGE] server=%s codigo=%s target_codes=%s productos=%s elaborados=%s",
+            server_id,
+            codigo,
+            target_codes,
+            len(productos_rows),
+            len(elaborados_rows),
+        )
+
+        usos = []
+        for row in [*productos_rows, *elaborados_rows]:
+            usos.append({
+                "codigo_destino": _usage_text(row.get("CodigoDestino")),
+                "producto_destino": row.get("ProductoDestino") or _usage_text(row.get("CodigoDestino")),
+                "tipo_destino": row.get("TipoDestino") or "PRODUCTO",
+                "cantidad_receta": round(_usage_float(row.get("CantidadReceta")), 6),
+                "unidad_receta": row.get("UnidadReceta") or "",
+                "costo_total": round(_usage_float(row.get("CostoTotal")), 6),
+                "lineas": int(row.get("Lineas") or 0),
+            })
+
+        return {
+            "source": "EDARSAHUB_SQL_CANONICAL",
+            "system_type": system_type,
+            "codigo_consultado": codigo,
+            "producto_consultado": request.producto or codigo,
+            "unidad_vista": request.unidad_vista or "",
+            "base": base,
+            "presentacion": presentacion,
+            "usos": usos,
+            "total": len(usos),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("[INVERSE-RECIPE-USAGE] error")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo uso inverso de receta: {str(e)[:160]}")
+    finally:
+        if conn:
+            conn.close()
+
+
 # =============================================================================
 # INVENTARIOS PROVISIONALES - CAPTURA MANUAL
 # Tabla: EDARSAHUB.dbo.Auditoria_Inventario_Provisional
@@ -10357,6 +11708,9 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
                  f"fechas={request.fecha_inicio}..{request.fecha_fin} almacenes={almacenes_limpios}")
 
     try:
+        if is_softrestaurant_system(server.get('system_type')):
+            return _obtener_detalle_softrestaurant_canonico(request, solo_ventas=False)
+
         conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=15)
         cursor = conn.cursor(as_dict=True)
 
@@ -10567,6 +11921,19 @@ async def obtener_detalle_consumos_post(request: DetalleConsumosRequest, current
     # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy.
     from core.corporate_filters.request_resolver import canonical_server_id
     request.server_id = canonical_server_id(request.server_id)
+
+    from core.server_registry import get_server_connection_info
+    server = await get_server_connection_info(request.server_id, db=db)
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+
+    if is_softrestaurant_system(server.get('system_type')):
+        try:
+            return _obtener_detalle_softrestaurant_canonico(request, solo_ventas=True)
+        except Exception as e:
+            logging.error(f"[DETALLE_CONSUMOS][SOFT-CANONICAL] Error: {e}")
+            return {"consumos": [], "movimientos": [], "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
+                    "error": f"Error al obtener consumos: {str(e)[:100]}"}
 
     almacen = ''
     if isinstance(request.almacenes, list) and request.almacenes:
