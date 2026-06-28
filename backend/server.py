@@ -5408,10 +5408,32 @@ GROUP BY Codigo
             logging.info(f"Generando análisis de inventario MPRO: {sucursal} - {almacen}")
             logging.info(f"Fechas: {fecha_ini} a {fecha_fin}")
             logging.info(f"Folios iniciales: {lista_folios_ini}, finales: {lista_folios_fin}")
+
+            def _mpro_folio_candidates(folio: str) -> List[str]:
+                """Acepta folio visible canónico y folio físico real de MPRO."""
+                folio_text = str(folio or '').strip()
+                candidates = [folio_text] if folio_text else []
+                if '-' in folio_text:
+                    suffix = folio_text.rsplit('-', 1)[-1].strip()
+                    if suffix and suffix not in candidates:
+                        candidates.append(suffix)
+                return candidates
+
+            lista_folios_ini_sql = list(dict.fromkeys(
+                candidate
+                for folio in lista_folios_ini
+                for candidate in _mpro_folio_candidates(folio)
+            ))
+            lista_folios_fin_sql = list(dict.fromkeys(
+                candidate
+                for folio in lista_folios_fin
+                for candidate in _mpro_folio_candidates(folio)
+            ))
+            logging.info(f"Folios MPRO SQL iniciales: {lista_folios_ini_sql}, finales: {lista_folios_fin_sql}")
             
             # Generar cadenas SQL para folios múltiples
-            folios_ini_sql = ",".join([f"'{f}'" for f in lista_folios_ini]) if lista_folios_ini else "''"
-            folios_fin_sql = ",".join([f"'{f}'" for f in lista_folios_fin]) if lista_folios_fin else "''"
+            folios_ini_sql = ",".join([f"'{f}'" for f in lista_folios_ini_sql]) if lista_folios_ini_sql else "''"
+            folios_fin_sql = ",".join([f"'{f}'" for f in lista_folios_fin_sql]) if lista_folios_fin_sql else "''"
             
             # Obtener filtros configurados del servidor
             tipos_movimiento = server.get('tipos_movimiento', [])
@@ -5466,9 +5488,9 @@ GROUP BY Codigo
             if not fecha_ini:
                 if inventarios_iniciales_info and inventarios_iniciales_info[0].get('fecha'):
                     fecha_ini = inventarios_iniciales_info[0]['fecha'][:10]  # YYYY-MM-DD
-                elif lista_folios_ini:
+                elif lista_folios_ini_sql:
                     # Obtener fecha del primer folio inicial
-                    fecha_folio_query = f"SELECT TOP 1 CONVERT(varchar, Fi_Fecha, 120) as fecha FROM Fisico WHERE Fi_Folio = '{lista_folios_ini[0]}'"
+                    fecha_folio_query = f"SELECT TOP 1 CONVERT(varchar, Fi_Fecha, 120) as fecha FROM Fisico WHERE Fi_Folio IN ({folios_ini_sql})"
                     fecha_result = _timed_inventory_sql("mpro.fecha_inicial_folio", fecha_folio_query)
                     if fecha_result:
                         fecha_ini = fecha_result[0]['fecha'][:10]
@@ -5480,8 +5502,8 @@ GROUP BY Codigo
             if not fecha_fin:
                 if inventarios_finales_info and inventarios_finales_info[0].get('fecha'):
                     fecha_fin = inventarios_finales_info[0]['fecha'][:10]
-                elif lista_folios_fin:
-                    fecha_folio_query = f"SELECT TOP 1 CONVERT(varchar, Fi_Fecha, 120) as fecha FROM Fisico WHERE Fi_Folio = '{lista_folios_fin[0]}'"
+                elif lista_folios_fin_sql:
+                    fecha_folio_query = f"SELECT TOP 1 CONVERT(varchar, Fi_Fecha, 120) as fecha FROM Fisico WHERE Fi_Folio IN ({folios_fin_sql})"
                     fecha_result = _timed_inventory_sql("mpro.fecha_final_folio", fecha_folio_query)
                     if fecha_result:
                         fecha_fin = fecha_result[0]['fecha'][:10]
@@ -5737,8 +5759,8 @@ ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
 """
             inv_detalle = _timed_inventory_sql("mpro.inventario_detalle", inv_detalle_query)
 
-            folios_ini_set = set(lista_folios_ini)
-            folios_fin_set = set(lista_folios_fin)
+            folios_ini_set = set(lista_folios_ini_sql)
+            folios_fin_set = set(lista_folios_fin_sql)
 
             inv_por_codigo = {}
             for row in inv_detalle:
