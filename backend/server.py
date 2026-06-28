@@ -5493,16 +5493,21 @@ GROUP BY Codigo
             # Obtener fechas de los inventarios si no se proporcionan explícitamente
             from datetime import datetime, timedelta
             
+            fecha_inventario_inicial = None
+            if inventarios_iniciales_info and inventarios_iniciales_info[0].get('fecha'):
+                fecha_inventario_inicial = inventarios_iniciales_info[0]['fecha'][:10]
+
             # Si no hay fecha_ini, intentar obtenerla de inventarios_iniciales_info o del folio
             if not fecha_ini:
-                if inventarios_iniciales_info and inventarios_iniciales_info[0].get('fecha'):
-                    fecha_ini = inventarios_iniciales_info[0]['fecha'][:10]  # YYYY-MM-DD
+                if fecha_inventario_inicial:
+                    fecha_ini = fecha_inventario_inicial  # YYYY-MM-DD
                 elif lista_folios_ini_sql:
                     # Obtener fecha del primer folio inicial
                     fecha_folio_query = f"SELECT TOP 1 CONVERT(varchar, Fi_Fecha, 120) as fecha FROM Fisico WHERE Fi_Folio IN ({folios_ini_sql})"
                     fecha_result = _timed_inventory_sql("mpro.fecha_inicial_folio", fecha_folio_query)
                     if fecha_result:
                         fecha_ini = fecha_result[0]['fecha'][:10]
+                        fecha_inventario_inicial = fecha_ini
                     else:
                         raise HTTPException(status_code=400, detail="No se pudo determinar la fecha inicial")
                 else:
@@ -5521,9 +5526,14 @@ GROUP BY Codigo
                 else:
                     raise HTTPException(status_code=400, detail="Se requiere fecha_fin o inventarios_finales_info")
             
-            # Calcular fecha de inicio para movimientos/ventas (fecha_ini + 1 día)
-            fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d')
-            fecha_ini_mov = (fecha_ini_dt + timedelta(days=1)).strftime('%Y-%m-%d')
+            # El frontend moderno envia fecha_ini como inicio real de movimientos/ventas.
+            # Compatibilidad: si viene igual a la fecha cruda del inventario inicial,
+            # entonces aplicar la regla MPRO (+1 dia) aqui.
+            fecha_ini_base = str(fecha_ini).split()[0]
+            if fecha_inventario_inicial and fecha_ini_base == fecha_inventario_inicial:
+                fecha_ini_mov = (datetime.strptime(fecha_inventario_inicial, '%Y-%m-%d') + timedelta(days=1)).strftime('%Y-%m-%d')
+            else:
+                fecha_ini_mov = fecha_ini_base
             logging.info(f"MPRO - Fecha movimientos/ventas: {fecha_ini_mov} a {fecha_fin}")
             
             # 1. Obtener códigos de TODOS los almacenes seleccionados
@@ -5635,7 +5645,7 @@ WHERE P.Es_Cve_Estado <> 'BA'
             AND MOV.Sc_Cve_Sucursal = '{sucursal_codigo}'
             AND MOV.Al_Cve_Almacen IN ({almacenes_sql})
             AND MOV.Es_Cve_Estado <> 'CA'
-            AND MOV.Mv_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
+            AND MOV.Mv_Fecha BETWEEN '{fecha_ini_mov}' AND '{fecha_fin} 23:59:59'
         )
     )
 ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
@@ -11158,6 +11168,22 @@ def _usage_float(value) -> float:
         return 0.0
 
 
+def _usage_code_variants(value) -> List[str]:
+    text = _usage_text(value)
+    if not text:
+        return []
+
+    variants = [text]
+    stripped = text.lstrip("0")
+    if stripped and stripped != text:
+        variants.append(stripped)
+    if text.isdigit():
+        variants.append(text.zfill(10))
+        variants.append(text.zfill(8))
+
+    return [v for v in dict.fromkeys(variants) if v]
+
+
 @api_router.post("/reports/inverse-recipe-usage")
 async def obtener_uso_inverso_receta_reportes(
     request: UsoInversoRecetaRequest,
@@ -11178,6 +11204,7 @@ async def obtener_uso_inverso_receta_reportes(
     codigo = _usage_text(request.codigo)
     if not codigo:
         raise HTTPException(status_code=400, detail="Codigo de producto requerido")
+    codigo_variants = _usage_code_variants(codigo)
 
     server = await get_server_connection_info(server_id, db=db)
     if not server:
@@ -11198,8 +11225,10 @@ async def obtener_uso_inverso_receta_reportes(
         }
         presentacion = None
 
+        variant_placeholders = ",".join(["%s"] * len(codigo_variants))
+
         cursor.execute(
-            """
+            f"""
 SELECT TOP 1
     CodigoFuente,
     Nombre,
@@ -11208,10 +11237,10 @@ SELECT TOP 1
     COALESCE(EsElaborado, 0) AS EsElaborado
 FROM Sync_Productos_Insumos
 WHERE ServerID = %s
-  AND LTRIM(RTRIM(CodigoFuente)) = LTRIM(RTRIM(%s))
+  AND LTRIM(RTRIM(CodigoFuente)) IN ({variant_placeholders})
   AND Activo = 1
 """,
-            (server_id, codigo),
+            tuple([server_id, *codigo_variants]),
         )
         insumo_rows = cursor.fetchall()
         if insumo_rows:
@@ -11226,7 +11255,7 @@ WHERE ServerID = %s
         else:
             try:
                 cursor.execute(
-                    """
+                    f"""
 SELECT TOP 1
     pp.CodigoPresentacion,
     pp.NombrePresentacion,
@@ -11245,10 +11274,10 @@ LEFT JOIN Sync_Productos_Insumos spi
     ON spi.ServerID = pmo.ServerID
    AND LTRIM(RTRIM(spi.CodigoFuente)) = LTRIM(RTRIM(pmo.CodigoFuente))
    AND spi.Activo = 1
-WHERE LTRIM(RTRIM(pp.CodigoPresentacion)) = LTRIM(RTRIM(%s))
+WHERE LTRIM(RTRIM(pp.CodigoPresentacion)) IN ({variant_placeholders})
   AND pp.Activo = 1
 """,
-                    (server_id, codigo),
+                    tuple([server_id, *codigo_variants]),
                 )
                 pres_rows = cursor.fetchall()
             except Exception as pres_error:
@@ -11272,7 +11301,34 @@ WHERE LTRIM(RTRIM(pp.CodigoPresentacion)) = LTRIM(RTRIM(%s))
                     "rendimiento": presentacion["rendimiento"],
                 }
 
-        target_codes = [c for c in dict.fromkeys([base["codigo"], codigo]) if c]
+        target_codes = []
+        for value in [base.get("codigo"), codigo]:
+            target_codes.extend(_usage_code_variants(value))
+
+        try:
+            map_placeholders = ",".join(["%s"] * len(target_codes))
+            cursor.execute(
+                f"""
+SELECT DISTINCT CodigoFuente
+FROM Producto_MapeoOrigen
+WHERE ServerID = %s
+  AND Activo = 1
+  AND ProductoID IN (
+      SELECT DISTINCT ProductoID
+      FROM Producto_MapeoOrigen
+      WHERE ServerID = %s
+        AND Activo = 1
+        AND LTRIM(RTRIM(CodigoFuente)) IN ({map_placeholders})
+  )
+""",
+                tuple([server_id, server_id, *target_codes]),
+            )
+            for row in cursor.fetchall():
+                target_codes.extend(_usage_code_variants(row.get("CodigoFuente")))
+        except Exception as map_error:
+            logging.warning("[INVERSE-RECIPE-USAGE] mapeo canonico no disponible: %s", str(map_error))
+
+        target_codes = [c for c in dict.fromkeys(target_codes) if c]
         placeholders = ",".join(["%s"] * len(target_codes))
         if not presentacion and _usage_text(request.unidad_vista).lower() == "presentaciones":
             presentacion = {
@@ -11342,6 +11398,15 @@ ORDER BY ProductoDestino
             tuple([server_id, *target_codes]),
         )
         elaborados_rows = cursor.fetchall()
+
+        logging.warning(
+            "[INVERSE-RECIPE-USAGE] server=%s codigo=%s target_codes=%s productos=%s elaborados=%s",
+            server_id,
+            codigo,
+            target_codes,
+            len(productos_rows),
+            len(elaborados_rows),
+        )
 
         usos = []
         for row in [*productos_rows, *elaborados_rows]:

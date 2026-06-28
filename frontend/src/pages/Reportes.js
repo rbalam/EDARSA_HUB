@@ -2047,8 +2047,15 @@ const Reportes = () => {
     let fecha_ini, fecha_fin;
 
     if (systemType === 'MPRO') {
-      // Para MPRO: usar las fechas exactas de los inventarios (solo fecha)
-      fecha_ini = String(inicialFecha).split(/[T\s]/)[0]; // Solo fecha, sin hora
+      // Para MPRO: movimientos y ventas inician 1 dia despues del inventario inicial.
+      const fechaInicialDate = parseDateString(inicialFecha);
+      if (fechaInicialDate) {
+        fechaInicialDate.setDate(fechaInicialDate.getDate() + 1);
+        const pad = (n) => String(n).padStart(2, '0');
+        fecha_ini = `${fechaInicialDate.getFullYear()}-${pad(fechaInicialDate.getMonth() + 1)}-${pad(fechaInicialDate.getDate())}`;
+      } else {
+        fecha_ini = String(inicialFecha).split(/[T\s]/)[0];
+      }
       fecha_fin = String(finalFecha).split(/[T\s]/)[0];
     } else if (systemType === 'SoftRestaurant') {
       // Para SoftRestaurant: fecha inicial + 1 segundo, fecha final - 1 segundo
@@ -2970,7 +2977,7 @@ const Reportes = () => {
                 Fecha Inicio de Movimientos
                 {selectedServer && (
                   <span className="text-xs text-zinc-500 ml-2">
-                    ({selectedServer.system_type === 'MPRO' ? 'Fecha inv. inicial' : 'Fecha inv. inicial + 1 seg'})
+                    ({selectedServer.system_type === 'MPRO' ? 'Fecha inv. inicial + 1 dia' : 'Fecha inv. inicial + 1 seg'})
                   </span>
                 )}
               </Label>
