@@ -8823,7 +8823,7 @@ async def validate_server_access_by_empresa(server_id: str, credentials: HTTPAut
     return {"user": user, "server": server, "context": context}
 
 @api_router.get("/compras/inventarios-fisicos/{server_id}")
-async def obtener_inventarios_fisicos(server_id: str, unidad: str = None, sucursal: str = None, sucursal_id: str = None, almacen: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def obtener_inventarios_fisicos(server_id: str, unidad: str = None, sucursal: str = None, sucursal_id: str = None, almacen_id: str = None, almacen: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
     Obtiene la lista de inventarios físicos disponibles para seleccionar.
 
@@ -8880,6 +8880,7 @@ async def obtener_inventarios_fisicos(server_id: str, unidad: str = None, sucurs
                                      # unidad_negocio_id; se desambigua por server_id+sucursal
             server_id=server_id,
             sucursal=sucursal_filtro,
+            almacen_id=almacen_id,
             almacen=almacen,
             limit=500
         )

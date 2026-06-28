@@ -872,6 +872,7 @@ const Reportes = () => {
         for (const almacen of selectedAlmacenes) {
           // Para MPRO usar sucursal_id, para SoftRestaurant usar 'SoftRestaurant'
           const params = {
+            almacen_id: almacen.id || '',
             almacen: almacen.nombre || ''
           };
           
