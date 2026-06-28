@@ -4745,22 +4745,46 @@ ORDER BY fecha, folio
                 detail_filters.append(f"almacen IN ({','.join(['%s'] * len(names))})")
                 detail_params.extend(names)
 
-            cursor.execute(
-                f"""
+            try:
+                cursor.execute(
+                    f"""
 SELECT
     folio,
     codigo_producto,
     nombre_producto,
     unidad,
     existencia_fisica,
+    ISNULL(Rendimiento, 1) AS rendimiento,
     costo_unitario,
     almacen,
     almacen_id
 FROM Compras_Inventarios_Fisicos_Detalle_Sync
 WHERE {' AND '.join(detail_filters)}
 """,
-                tuple(detail_params),
-            )
+                    tuple(detail_params),
+                )
+            except Exception as detail_rendimiento_error:
+                logging.warning(
+                    "[SOFT-CANONICAL-NOLIVE] detalle sin rendimiento canonico, usando 1: %s",
+                    str(detail_rendimiento_error),
+                )
+                cursor.execute(
+                    f"""
+SELECT
+    folio,
+    codigo_producto,
+    nombre_producto,
+    unidad,
+    existencia_fisica,
+    1 AS rendimiento,
+    costo_unitario,
+    almacen,
+    almacen_id
+FROM Compras_Inventarios_Fisicos_Detalle_Sync
+WHERE {' AND '.join(detail_filters)}
+""",
+                    tuple(detail_params),
+                )
             detail_rows = cursor.fetchall()
             if not detail_rows:
                 raise HTTPException(status_code=404, detail="No hay detalle canónico para los folios seleccionados")
@@ -4777,12 +4801,16 @@ WHERE {' AND '.join(detail_filters)}
                     continue
                 folio = _as_text(row.get('folio'))
                 cantidad = _as_float(row.get('existencia_fisica'))
+                rendimiento = _as_float(row.get('rendimiento')) or 1
                 costo = _as_float(row.get('costo_unitario'))
                 productos.setdefault(codigo, {
                     'Producto': row.get('nombre_producto') or f'Producto {codigo}',
                     'Unidad': row.get('unidad') or 'PZA',
+                    'Rendimiento': rendimiento,
                     'Costo_Unitario': costo,
                 })
+                if rendimiento > _as_float(productos[codigo].get('Rendimiento')):
+                    productos[codigo]['Rendimiento'] = rendimiento
                 if costo:
                     productos[codigo]['Costo_Unitario'] = costo
                 if folio in ini_set:
@@ -4982,7 +5010,13 @@ WHERE p.ServerID = %s
                     catalog_cost = _as_float(catalog_row.get('Costo_Unitario'))
                     if not _as_float(productos[codigo].get('Costo_Unitario')) and catalog_cost:
                         productos[codigo]['Costo_Unitario'] = catalog_cost
-                    productos[codigo]['Rendimiento'] = _as_float(catalog_row.get('Rendimiento')) or 1
+                    catalog_rendimiento = _as_float(catalog_row.get('Rendimiento')) or 1
+                    current_rendimiento = _as_float(productos[codigo].get('Rendimiento')) or 1
+                    productos[codigo]['Rendimiento'] = (
+                        catalog_rendimiento
+                        if catalog_rendimiento > current_rendimiento
+                        else current_rendimiento
+                    )
                     productos[codigo]['Categoria'] = catalog_row.get('Categoria') or 'SIN CATEGORIA'
                     productos[codigo]['Familia'] = catalog_row.get('Familia') or 'SIN FAMILIA'
                     productos[codigo]['SubFamilia'] = catalog_row.get('SubFamilia') or 'SIN SUBFAMILIA'

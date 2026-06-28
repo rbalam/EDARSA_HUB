@@ -288,7 +288,6 @@ const Reportes = () => {
   // La data base del backend se conserva; esto solo cambia la vista.
   const [unidadAnalisisInventarios, setUnidadAnalisisInventarios] = useState('insumos');
   const [agruparProductosAnalisis, setAgruparProductosAnalisis] = useState(false);
-  const [agruparPorAnalisis, setAgruparPorAnalisis] = useState('categoria');
   
   // Estado para mostrar/ocultar columnas de costos (oculto por defecto)
   const [mostrarCostos, setMostrarCostos] = useState(false);
@@ -1034,33 +1033,6 @@ const Reportes = () => {
     );
   };
 
-  const getUnidadNaturalAnalisis = (row) => {
-    const systemType = String(selectedServer?.system_type || '').toLowerCase();
-
-    if (systemType === 'mpro') {
-      return 'insumos';
-    }
-
-    const tipoRow = Number(row?.tipo_almacen ?? row?.tipoAlmacen ?? row?.almacen_tipo ?? row?.tipo);
-
-    if (Number.isFinite(tipoRow)) {
-      return tipoRow === 2 ? 'presentaciones' : 'insumos';
-    }
-
-    const tiposSeleccionados = Array.from(new Set(
-      selectedAlmacenes
-        .map(a => Number(a?.tipo ?? a?.tipo_almacen ?? a?.almacen_tipo))
-        .filter(Number.isFinite)
-    ));
-
-    if (tiposSeleccionados.length > 1) {
-      return 'mixto';
-    }
-
-    const tipoAlmacen = tiposSeleccionados[0] ?? 1;
-    return tipoAlmacen === 2 ? 'presentaciones' : 'insumos';
-  };
-
   const convertirCantidadAnalisis = (row, key, value) => {
     const num = parseFloat(value);
 
@@ -1069,21 +1041,9 @@ const Reportes = () => {
     }
 
     const rendimiento = getAnalisisRendimiento(row);
-    const unidadNatural = getUnidadNaturalAnalisis(row);
-
-    if (unidadNatural === 'mixto' || unidadNatural === unidadAnalisisInventarios) {
-      return num;
-    }
-
-    if (unidadNatural === 'insumos' && unidadAnalisisInventarios === 'presentaciones') {
-      return rendimiento > 0 ? num / rendimiento : num;
-    }
-
-    if (unidadNatural === 'presentaciones' && unidadAnalisisInventarios === 'insumos') {
-      return num * rendimiento;
-    }
-
-    return num;
+    return unidadAnalisisInventarios === 'presentaciones' && rendimiento > 0
+      ? num / rendimiento
+      : num;
   };
 
   const formatAnalisisHeader = (key) => {
@@ -1097,23 +1057,53 @@ const Reportes = () => {
   };
 
   const shouldShowAnalisisColumn = (key) => {
-    const hidden = new Set(['Rendimiento', 'rendimiento', 'tipo_almacen', 'tipoAlmacen', 'almacen_tipo', 'source']);
+    const hidden = new Set([
+      'Rendimiento',
+      'rendimiento',
+      'tipo_almacen',
+      'tipoAlmacen',
+      'almacen_tipo',
+      'source',
+      'Categoria',
+      'categoria',
+      'Familia',
+      'familia',
+      'SubFamilia',
+      'Subfamilia',
+      'subfamilia'
+    ]);
     return !hidden.has(key);
   };
 
-  const getAgrupacionAnalisis = (row) => {
-    const valueBy = {
-      categoria: row?.Categoria ?? row?.categoria ?? row?.Grupo ?? row?.grupo,
-      familia: row?.Familia ?? row?.familia,
-      subfamilia: row?.SubFamilia ?? row?.subfamilia ?? row?.Subfamilia,
-      tipo: row?.Tipo ?? row?.tipo ?? row?.Tipo_Producto ?? row?.tipo_producto
+  const getProductoAgrupacionAnalisis = (row) => {
+    const codigo = String(
+      row?.codigo_producto ??
+      row?.Codigo ??
+      row?.codigo ??
+      row?.CODIGO ??
+      ''
+    ).trim();
+    const producto = String(
+      row?.nombre_producto ??
+      row?.Producto ??
+      row?.producto ??
+      row?.Nombre ??
+      row?.nombre ??
+      codigo
+    ).trim();
+    const unidad = String(
+      row?.unidad ??
+      row?.Unidad ??
+      row?.UNIDAD ??
+      ''
+    ).trim();
+
+    return {
+      key: `${codigo || producto}|${producto}|${unidad}`,
+      codigo,
+      producto,
+      unidad
     };
-
-    const value = valueBy[agruparPorAnalisis];
-
-    return value === null || value === undefined || String(value).trim() === ''
-      ? 'SIN CLASIFICAR'
-      : String(value).trim();
   };
 
   const buildAnalisisDisplayData = () => {
@@ -1153,17 +1143,21 @@ const Reportes = () => {
     const grupos = new Map();
 
     rows.forEach((row) => {
-      const grupo = getAgrupacionAnalisis(row);
+      const productoInfo = getProductoAgrupacionAnalisis(row);
 
-      if (!grupos.has(grupo)) {
-        grupos.set(grupo, {
-          Agrupacion: grupo,
-          Items: 0
+      if (!grupos.has(productoInfo.key)) {
+        grupos.set(productoInfo.key, {
+          codigo_producto: productoInfo.codigo,
+          nombre_producto: productoInfo.producto,
+          unidad: productoInfo.unidad,
+          Items: 0,
+          Rendimiento: getAnalisisRendimiento(row)
         });
       }
 
-      const acc = grupos.get(grupo);
+      const acc = grupos.get(productoInfo.key);
       acc.Items += 1;
+      acc.Rendimiento = Math.max(getAnalisisRendimiento(row), getAnalisisRendimiento(acc));
 
       metricas.forEach((key) => {
         if (row[key] === undefined || row[key] === null) return;
@@ -3093,21 +3087,8 @@ const Reportes = () => {
                   Agrupar productos
                 </label>
 
-                {agruparProductosAnalisis && (
-                  <select
-                    value={agruparPorAnalisis}
-                    onChange={(e) => setAgruparPorAnalisis(e.target.value)}
-                    className="h-8 rounded border border-zinc-300 bg-white px-2 text-xs"
-                  >
-                    <option value="categoria">Categoría / Grupo</option>
-                    <option value="familia">Familia</option>
-                    <option value="subfamilia">Subfamilia</option>
-                    <option value="tipo">Tipo producto</option>
-                  </select>
-                )}
-
                 <span className="text-xs text-zinc-500">
-                  Conversión por rendimiento del catálogo. Sin hardcode de alimentos/bebidas.
+                  Conversión por rendimiento canónico. Sin hardcode de alimentos/bebidas.
                 </span>
               </div>
 
