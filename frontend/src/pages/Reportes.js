@@ -2081,14 +2081,29 @@ const Reportes = () => {
   const loadSalesDetails = (producto) => {
     const codigo = producto.Codigo ?? producto.codigo_producto ?? producto.codigo ?? producto.CODIGO;
     const nombre = producto.Producto ?? producto.nombre_producto ?? producto.nombre ?? producto.Nombre ?? codigo;
+    let fechaInicioDetalle = filters.fecha_ini;
+    let fechaFinDetalle = filters.fecha_fin;
+
+    if (selectedServer?.system_type === 'SoftRestaurant') {
+      const fechaInicialVentas = parseDateString(selectedInventariosIni[0]?.fecha || filters.inventario_inicial_fecha);
+      const fechaFinalVentas = parseDateString(selectedInventariosFin[0]?.fecha || filters.inventario_final_fecha);
+
+      if (fechaInicialVentas && fechaFinalVentas) {
+        fechaInicialVentas.setHours(0, 0, 0, 0);
+        fechaFinalVentas.setHours(0, 0, 0, 0);
+        fechaFinalVentas.setSeconds(fechaFinalVentas.getSeconds() - 1);
+        fechaInicioDetalle = formatDateForSQL(fechaInicialVentas);
+        fechaFinDetalle = formatDateForSQL(fechaFinalVentas);
+      }
+    }
 
     abrirConsumos({
       serverId: filters.server_id,
       sucursal: filters.sucursal,
       codigo,
       producto: nombre,
-      fechaInicio: filters.fecha_ini,
-      fechaFin: filters.fecha_fin,
+      fechaInicio: fechaInicioDetalle,
+      fechaFin: fechaFinDetalle,
       almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes.map(a => a.id || a.almacen_id || a.nombre) : filters.almacen,
     });
   };

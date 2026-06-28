@@ -4709,20 +4709,29 @@ ORDER BY fecha, folio
             fin_dates = [_parse_dt(header_by_folio.get(_as_text(f), {}).get('fecha')) for f in lista_folios_fin]
             request_ini = _parse_dt(fecha_ini)
             request_fin = _parse_dt(fecha_fin)
-            period_start = min([d for d in [*ini_dates, request_ini] if d], default=None)
-            period_end = max([d for d in [*fin_dates, request_fin] if d], default=None)
-            if not period_start or not period_end:
+            inventory_start = min([d for d in [*ini_dates, request_ini] if d], default=None)
+            inventory_end = max([d for d in [*fin_dates, request_fin] if d], default=None)
+            if not inventory_start or not inventory_end:
                 raise HTTPException(status_code=400, detail="No se pudieron determinar fechas canónicas de inventario")
+            period_start = inventory_start
+            period_end = inventory_end
             if period_start > period_end:
                 period_start, period_end = period_end, period_start
             period_start = period_start + _timedelta(seconds=1)
             period_end = period_end - _timedelta(seconds=1)
             if period_start > period_end:
                 raise HTTPException(status_code=400, detail="La ventana canónica de movimientos quedó vacía")
+            sales_start = inventory_start.replace(hour=0, minute=0, second=0, microsecond=0)
+            sales_end = inventory_end.replace(hour=0, minute=0, second=0, microsecond=0) - _timedelta(seconds=1)
             logging.info(
                 "[SOFT-CANONICAL-NOLIVE] window start=%s end=%s rule=initial+1s/final-1s",
                 period_start,
                 period_end,
+            )
+            logging.info(
+                "[SOFT-CANONICAL-NOLIVE] sales_window start=%s end=%s rule=initial-day/final-day-minus-1",
+                sales_start,
+                sales_end,
             )
 
             detail_params = [server_id, *folios_all]
@@ -4823,7 +4832,7 @@ GROUP BY codigo_producto
                 raise HTTPException(status_code=500, detail=f"Movimientos canónicos no disponibles: {str(mov_error)}")
 
             ventas = {}
-            sales_params = [server_id, period_start, period_end]
+            sales_params = [server_id, sales_start, sales_end]
             sales_filters = [
                 "server_id = %s",
                 "fecha >= %s",
@@ -4832,7 +4841,7 @@ GROUP BY codigo_producto
                 "ISNULL(idconcepto, '') IN ('SPV', 'SCP', 'SCS')",
                 _soft_date_only_final_day_guard("fecha"),
             ]
-            sales_params.extend([period_end, period_end])
+            sales_params.extend([sales_end, sales_end])
             if almacen_ids:
                 ids = sorted(almacen_ids)
                 sales_filters.append(f"almacen_id IN ({','.join(['%s'] * len(ids))})")
