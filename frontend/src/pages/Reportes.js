@@ -1057,6 +1057,7 @@ const Reportes = () => {
   };
 
   const shouldShowAnalisisColumn = (key) => {
+    const normalized = String(key || '').toLowerCase();
     const hidden = new Set([
       'Rendimiento',
       'rendimiento',
@@ -1072,7 +1073,7 @@ const Reportes = () => {
       'Subfamilia',
       'subfamilia'
     ]);
-    return !hidden.has(key);
+    return !hidden.has(key) && !hidden.has(normalized);
   };
 
   const getProductoAgrupacionAnalisis = (row) => {
@@ -1512,9 +1513,6 @@ const Reportes = () => {
         );
 
         return {
-          Categoria: row.Categoria ?? row.categoria ?? '',
-          Familia: row.Familia ?? row.familia ?? '',
-          SubFamilia: row.SubFamilia ?? row.subfamilia ?? '',
           codigo_producto: codigo,
           nombre_producto: nombre,
           unidad: unidad,
@@ -1567,9 +1565,6 @@ const Reportes = () => {
             : row.costo_unitario;
 
         return {
-          Categoria: row.Categoria,
-          Familia: row.Familia,
-          SubFamilia: row.SubFamilia,
           codigo_producto: row.codigo_producto,
           nombre_producto: row.nombre_producto,
           unidad: row.unidad,

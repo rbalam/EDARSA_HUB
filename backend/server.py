@@ -4644,6 +4644,17 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
                     continue
             return None
 
+        def _as_filter_set(values):
+            return {
+                _as_text(v.get('id') if isinstance(v, dict) else v)
+                for v in (values or [])
+                if _as_text(v.get('id') if isinstance(v, dict) else v)
+            }
+
+        selected_categoria_codes = _as_filter_set(filtro_categorias_frontend)
+        selected_familia_codes = _as_filter_set(filtro_familias_frontend)
+        selected_subfamilia_codes = _as_filter_set(filtro_subfamilias_frontend)
+
         selected_almacenes = []
         if almacenes:
             for item in almacenes:
@@ -4912,8 +4923,11 @@ SELECT
     i.UnidadMedida AS Unidad,
     COALESCE(i.Costo, i.CostoPromedio, i.UltimoCosto, 0) AS Costo_Unitario,
     COALESCE(i.RendimientoElaborado, 1) AS Rendimiento,
+    cat.Codigo AS CategoriaCodigo,
     COALESCE(cat.Nombre, 'SIN CATEGORIA') AS Categoria,
+    fam.Codigo AS FamiliaCodigo,
     COALESCE(fam.Nombre, 'SIN FAMILIA') AS Familia,
+    sub.Codigo AS SubFamiliaCodigo,
     COALESCE(sub.Nombre, i.GrupoInsumoNombre, 'SIN SUBFAMILIA') AS SubFamilia
 FROM Sync_Productos_Insumos i
 LEFT JOIN Sync_Catalogo_Filtros sub
@@ -4953,8 +4967,11 @@ SELECT
     i.UnidadMedida AS Unidad,
     COALESCE(i.Costo, i.CostoPromedio, i.UltimoCosto, 0) AS Costo_Unitario,
     COALESCE(i.RendimientoElaborado, 1) AS Rendimiento,
+    NULL AS CategoriaCodigo,
     'SIN CATEGORIA' AS Categoria,
+    NULL AS FamiliaCodigo,
     'SIN FAMILIA' AS Familia,
+    i.GrupoInsumoCodigoFuente AS SubFamiliaCodigo,
     COALESCE(i.GrupoInsumoNombre, 'SIN SUBFAMILIA') AS SubFamilia
 FROM Sync_Productos_Insumos i
 WHERE i.ServerID = %s
@@ -4983,8 +5000,11 @@ SELECT
     'PZA' AS Unidad,
     COALESCE(p.CostoReceta, 0) AS Costo_Unitario,
     1 AS Rendimiento,
+    p.CategoriaCodigoFuente AS CategoriaCodigo,
     COALESCE(p.CategoriaNombre, 'SIN CATEGORIA') AS Categoria,
+    p.FamiliaCodigoFuente AS FamiliaCodigo,
     COALESCE(p.FamiliaNombre, 'SIN FAMILIA') AS Familia,
+    p.SubFamiliaCodigoFuente AS SubFamiliaCodigo,
     COALESCE(p.SubFamiliaNombre, 'SIN SUBFAMILIA') AS SubFamilia
 FROM Sync_Productos p
 WHERE p.ServerID = %s
@@ -5020,12 +5040,38 @@ WHERE p.ServerID = %s
                     productos[codigo]['Categoria'] = catalog_row.get('Categoria') or 'SIN CATEGORIA'
                     productos[codigo]['Familia'] = catalog_row.get('Familia') or 'SIN FAMILIA'
                     productos[codigo]['SubFamilia'] = catalog_row.get('SubFamilia') or 'SIN SUBFAMILIA'
+                    productos[codigo]['CategoriaCodigo'] = _as_text(catalog_row.get('CategoriaCodigo'))
+                    productos[codigo]['FamiliaCodigo'] = _as_text(catalog_row.get('FamiliaCodigo'))
+                    productos[codigo]['SubFamiliaCodigo'] = _as_text(catalog_row.get('SubFamiliaCodigo'))
 
                 logging.info(
                     "[SOFT-CANONICAL-NOLIVE] catalog rows=%s missing=%s rendimiento_gt1=%s",
                     len(catalogo_productos),
                     len([code for code in all_codes if code not in catalogo_productos]),
                     len([p for p in productos.values() if _as_float(p.get('Rendimiento')) > 1]),
+                )
+
+            if selected_categoria_codes or selected_familia_codes or selected_subfamilia_codes:
+                before_filter_count = len(all_codes)
+
+                def _passes_soft_catalog_filters(codigo):
+                    prod = productos.get(codigo, {})
+                    if selected_categoria_codes and _as_text(prod.get('CategoriaCodigo')) not in selected_categoria_codes:
+                        return False
+                    if selected_familia_codes and _as_text(prod.get('FamiliaCodigo')) not in selected_familia_codes:
+                        return False
+                    if selected_subfamilia_codes and _as_text(prod.get('SubFamiliaCodigo')) not in selected_subfamilia_codes:
+                        return False
+                    return True
+
+                all_codes = [codigo for codigo in all_codes if _passes_soft_catalog_filters(codigo)]
+                logging.info(
+                    "[SOFT-CANONICAL-NOLIVE] filtros catalogo categorias=%s familias=%s subfamilias=%s before=%s after=%s",
+                    sorted(selected_categoria_codes),
+                    sorted(selected_familia_codes),
+                    sorted(selected_subfamilia_codes),
+                    before_filter_count,
+                    len(all_codes),
                 )
 
             results = []
@@ -5056,9 +5102,6 @@ WHERE p.ServerID = %s
                     'Comentario_Ini': almacen_display,
                     'ID_Inv_Fin': ', '.join([str(f) for f in lista_folios_fin]),
                     'Comentario_Fin': almacen_display,
-                    'Categoria': prod.get('Categoria') or 'SIN CATEGORIA',
-                    'Familia': prod.get('Familia') or 'SIN FAMILIA',
-                    'SubFamilia': prod.get('SubFamilia') or 'SIN SUBFAMILIA',
                     'Codigo': codigo,
                     'Producto': prod.get('Producto') or f'Producto {codigo}',
                     'Unidad': prod.get('Unidad') or 'PZA',
