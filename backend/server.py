@@ -4606,7 +4606,7 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             raise
 
     async def _generate_soft_inventory_analysis_canonical():
-        from datetime import datetime as _datetime
+        from datetime import datetime as _datetime, timedelta as _timedelta
 
         started_at = perf_counter()
         logging.info(
@@ -4715,6 +4715,15 @@ ORDER BY fecha, folio
                 raise HTTPException(status_code=400, detail="No se pudieron determinar fechas canónicas de inventario")
             if period_start > period_end:
                 period_start, period_end = period_end, period_start
+            period_start = period_start + _timedelta(seconds=1)
+            period_end = period_end - _timedelta(seconds=1)
+            if period_start > period_end:
+                raise HTTPException(status_code=400, detail="La ventana canónica de movimientos quedó vacía")
+            logging.info(
+                "[SOFT-CANONICAL-NOLIVE] window start=%s end=%s rule=initial+1s/final-1s",
+                period_start,
+                period_end,
+            )
 
             detail_params = [server_id, *folios_all]
             detail_filters = ["server_id = %s", f"folio IN ({folio_placeholders})", "sync_status = 'ACTIVE'"]
@@ -4849,8 +4858,131 @@ GROUP BY codigo_producto
             except Exception as sales_error:
                 logging.warning("[SOFT-CANONICAL-NOLIVE] ventas canonicas no disponibles: %s", str(sales_error))
 
+            all_codes = sorted(set(productos.keys()) | set(inv_inicial.keys()) | set(inv_final.keys()) | set(movimientos.keys()) | set(ventas.keys()))
+            catalogo_productos = {}
+            if all_codes:
+                code_placeholders = ",".join(["%s"] * len(all_codes))
+                try:
+                    cursor.execute(
+                        f"""
+SELECT
+    i.CodigoFuente AS Codigo,
+    i.Nombre AS Producto,
+    i.UnidadMedida AS Unidad,
+    COALESCE(i.Costo, i.CostoPromedio, i.UltimoCosto, 0) AS Costo_Unitario,
+    COALESCE(i.RendimientoElaborado, 1) AS Rendimiento,
+    COALESCE(cat.Nombre, 'SIN CATEGORIA') AS Categoria,
+    COALESCE(fam.Nombre, 'SIN FAMILIA') AS Familia,
+    COALESCE(sub.Nombre, i.GrupoInsumoNombre, 'SIN SUBFAMILIA') AS SubFamilia
+FROM Sync_Productos_Insumos i
+LEFT JOIN Sync_Catalogo_Filtros sub
+    ON sub.ServerID = i.ServerID
+   AND sub.Nivel = 'SUBFAMILIA'
+   AND sub.Codigo = i.GrupoInsumoCodigoFuente
+   AND sub.Activo = 1
+LEFT JOIN Sync_Catalogo_Filtros fam
+    ON fam.ServerID = i.ServerID
+   AND fam.Nivel = 'FAMILIA'
+   AND fam.Codigo = sub.ParentCodigo
+   AND fam.Activo = 1
+LEFT JOIN Sync_Catalogo_Filtros cat
+    ON cat.ServerID = i.ServerID
+   AND cat.Nivel = 'CATEGORIA'
+   AND cat.Codigo = fam.ParentCodigo
+   AND cat.Activo = 1
+WHERE i.ServerID = %s
+  AND i.CodigoFuente IN ({code_placeholders})
+  AND i.Activo = 1
+""",
+                        tuple([server_id, *all_codes]),
+                    )
+                    catalogo_productos.update({
+                        _as_text(row.get('Codigo')): row
+                        for row in cursor.fetchall()
+                        if _as_text(row.get('Codigo'))
+                    })
+                except Exception as catalog_error:
+                    logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo insumos canonico no disponible: %s", str(catalog_error))
+                    try:
+                        cursor.execute(
+                            f"""
+SELECT
+    i.CodigoFuente AS Codigo,
+    i.Nombre AS Producto,
+    i.UnidadMedida AS Unidad,
+    COALESCE(i.Costo, i.CostoPromedio, i.UltimoCosto, 0) AS Costo_Unitario,
+    COALESCE(i.RendimientoElaborado, 1) AS Rendimiento,
+    'SIN CATEGORIA' AS Categoria,
+    'SIN FAMILIA' AS Familia,
+    COALESCE(i.GrupoInsumoNombre, 'SIN SUBFAMILIA') AS SubFamilia
+FROM Sync_Productos_Insumos i
+WHERE i.ServerID = %s
+  AND i.CodigoFuente IN ({code_placeholders})
+  AND i.Activo = 1
+""",
+                            tuple([server_id, *all_codes]),
+                        )
+                        catalogo_productos.update({
+                            _as_text(row.get('Codigo')): row
+                            for row in cursor.fetchall()
+                            if _as_text(row.get('Codigo'))
+                        })
+                    except Exception as fallback_catalog_error:
+                        logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo insumos fallback no disponible: %s", str(fallback_catalog_error))
+
+                missing_product_codes = [code for code in all_codes if code not in catalogo_productos]
+                if missing_product_codes:
+                    try:
+                        missing_placeholders = ",".join(["%s"] * len(missing_product_codes))
+                        cursor.execute(
+                            f"""
+SELECT
+    p.CodigoFuente AS Codigo,
+    p.Nombre AS Producto,
+    'PZA' AS Unidad,
+    COALESCE(p.CostoReceta, 0) AS Costo_Unitario,
+    1 AS Rendimiento,
+    COALESCE(p.CategoriaNombre, 'SIN CATEGORIA') AS Categoria,
+    COALESCE(p.FamiliaNombre, 'SIN FAMILIA') AS Familia,
+    COALESCE(p.SubFamiliaNombre, 'SIN SUBFAMILIA') AS SubFamilia
+FROM Sync_Productos p
+WHERE p.ServerID = %s
+  AND p.CodigoFuente IN ({missing_placeholders})
+  AND p.Activo = 1
+""",
+                            tuple([server_id, *missing_product_codes]),
+                        )
+                        catalogo_productos.update({
+                            _as_text(row.get('Codigo')): row
+                            for row in cursor.fetchall()
+                            if _as_text(row.get('Codigo'))
+                        })
+                    except Exception as product_catalog_error:
+                        logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo productos canonico no disponible: %s", str(product_catalog_error))
+
+                for codigo, catalog_row in catalogo_productos.items():
+                    productos.setdefault(codigo, {})
+                    if catalog_row.get('Producto'):
+                        productos[codigo]['Producto'] = catalog_row.get('Producto')
+                    if catalog_row.get('Unidad'):
+                        productos[codigo]['Unidad'] = catalog_row.get('Unidad')
+                    catalog_cost = _as_float(catalog_row.get('Costo_Unitario'))
+                    if not _as_float(productos[codigo].get('Costo_Unitario')) and catalog_cost:
+                        productos[codigo]['Costo_Unitario'] = catalog_cost
+                    productos[codigo]['Rendimiento'] = _as_float(catalog_row.get('Rendimiento')) or 1
+                    productos[codigo]['Categoria'] = catalog_row.get('Categoria') or 'SIN CATEGORIA'
+                    productos[codigo]['Familia'] = catalog_row.get('Familia') or 'SIN FAMILIA'
+                    productos[codigo]['SubFamilia'] = catalog_row.get('SubFamilia') or 'SIN SUBFAMILIA'
+
+                logging.info(
+                    "[SOFT-CANONICAL-NOLIVE] catalog rows=%s missing=%s rendimiento_gt1=%s",
+                    len(catalogo_productos),
+                    len([code for code in all_codes if code not in catalogo_productos]),
+                    len([p for p in productos.values() if _as_float(p.get('Rendimiento')) > 1]),
+                )
+
             results = []
-            for codigo in sorted(set(productos.keys()) | set(inv_inicial.keys()) | set(inv_final.keys()) | set(movimientos.keys()) | set(ventas.keys())):
+            for codigo in all_codes:
                 prod = productos.get(codigo, {})
                 costo = _as_float(prod.get('Costo_Unitario'))
                 inv_ini_qty = _as_float(inv_inicial.get(codigo))
@@ -4868,13 +5000,13 @@ GROUP BY codigo_producto
                     'Comentario_Ini': almacen_display,
                     'ID_Inv_Fin': ', '.join([str(f) for f in lista_folios_fin]),
                     'Comentario_Fin': almacen_display,
-                    'Categoria': 'SoftRestaurant',
-                    'Familia': 'EDARSAHUB SQL',
-                    'SubFamilia': 'CANONICO',
+                    'Categoria': prod.get('Categoria') or 'SIN CATEGORIA',
+                    'Familia': prod.get('Familia') or 'SIN FAMILIA',
+                    'SubFamilia': prod.get('SubFamilia') or 'SIN SUBFAMILIA',
                     'Codigo': codigo,
                     'Producto': prod.get('Producto') or f'Producto {codigo}',
                     'Unidad': prod.get('Unidad') or 'PZA',
-                    'Rendimiento': 1,
+                    'Rendimiento': _as_float(prod.get('Rendimiento')) or 1,
                     'tipo_almacen': 1,
                     'Costo_Unitario': round(costo, 4),
                     'Inv_Inicial_Cantidad': round(inv_ini_qty, 4),
