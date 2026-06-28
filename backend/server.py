@@ -4606,6 +4606,8 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             raise
 
     async def _generate_soft_inventory_analysis_canonical():
+        from datetime import datetime as _datetime
+
         started_at = perf_counter()
         logging.info(
             "[SOFT-CANONICAL-NOLIVE] start server_id=%s almacen=%s folios_ini=%s folios_fin=%s",
@@ -4632,12 +4634,12 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
         def _parse_dt(value):
             if not value:
                 return None
-            if isinstance(value, datetime):
+            if isinstance(value, _datetime):
                 return value
             text = str(value).replace("T", " ").strip()
             for size, fmt in ((19, "%Y-%m-%d %H:%M:%S"), (16, "%Y-%m-%d %H:%M"), (10, "%Y-%m-%d")):
                 try:
-                    return datetime.strptime(text[:size], fmt)
+                    return _datetime.strptime(text[:size], fmt)
                 except ValueError:
                     continue
             return None
