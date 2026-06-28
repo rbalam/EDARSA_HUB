@@ -289,6 +289,7 @@ const Reportes = () => {
   const [unidadAnalisisInventarios, setUnidadAnalisisInventarios] = useState('insumos');
   const [agruparProductosAnalisis, setAgruparProductosAnalisis] = useState(false);
   const [agruparPorAnalisis, setAgruparPorAnalisis] = useState('producto');
+  const [expandedAnalisisGroups, setExpandedAnalisisGroups] = useState({});
   
   // Estado para mostrar/ocultar columnas de costos (oculto por defecto)
   const [mostrarCostos, setMostrarCostos] = useState(false);
@@ -1072,9 +1073,13 @@ const Reportes = () => {
       'familia',
       'SubFamilia',
       'Subfamilia',
-      'subfamilia'
+      'subfamilia',
+      '__rowType',
+      '__groupKey',
+      '__rowId',
+      '__detailCount'
     ]);
-    return !hidden.has(key) && !hidden.has(normalized);
+    return !String(key || '').startsWith('__') && !hidden.has(key) && !hidden.has(normalized);
   };
 
   const getProductoAgrupacionAnalisis = (row) => {
@@ -1137,19 +1142,36 @@ const Reportes = () => {
     };
   };
 
+  const isAnalisisGroupExpanded = (groupKey) => (
+    expandedAnalisisGroups[groupKey] !== false
+  );
+
+  const toggleAnalisisGroup = (groupKey) => {
+    setExpandedAnalisisGroups((prev) => ({
+      ...prev,
+      [groupKey]: !isAnalisisGroupExpanded(groupKey)
+    }));
+  };
+
+  const buildConvertedAnalisisRow = (row) => {
+    const out = {};
+
+    Object.entries(row || {}).forEach(([key, value]) => {
+      out[key] = convertirCantidadAnalisis(row, key, value);
+    });
+
+    return out;
+  };
+
   const buildAnalisisDisplayData = () => {
     const rows = Array.isArray(reportData) ? reportData : [];
 
     if (!agruparProductosAnalisis) {
-      return rows.map((row) => {
-        const out = {};
-
-        Object.entries(row || {}).forEach(([key, value]) => {
-          out[key] = convertirCantidadAnalisis(row, key, value);
-        });
-
-        return out;
-      });
+      return rows.map((row, idx) => ({
+        ...buildConvertedAnalisisRow(row),
+        __rowType: 'detail',
+        __rowId: `detail-${idx}`
+      }));
     }
 
     const metricas = [
@@ -1179,16 +1201,21 @@ const Reportes = () => {
 
       if (!grupos.has(agrupacion.key)) {
         grupos.set(agrupacion.key, {
-          Agrupacion: agrupacion.label,
-          codigo_producto: agruparPorAnalisis === 'producto' ? productoInfo.codigo : '',
-          nombre_producto: agruparPorAnalisis === 'producto' ? productoInfo.producto : agrupacion.label,
-          unidad: agruparPorAnalisis === 'producto' ? productoInfo.unidad : '',
-          Items: 0,
-          Rendimiento: getAnalisisRendimiento(row)
+          summary: {
+            __rowType: 'group',
+            __groupKey: agrupacion.key,
+            Agrupacion: agrupacion.label,
+            codigo_producto: agruparPorAnalisis === 'producto' ? productoInfo.codigo : '',
+            nombre_producto: agruparPorAnalisis === 'producto' ? productoInfo.producto : agrupacion.label,
+            unidad: agruparPorAnalisis === 'producto' ? productoInfo.unidad : '',
+            Items: 0,
+            Rendimiento: getAnalisisRendimiento(row)
+          },
+          details: []
         });
       }
 
-      const acc = grupos.get(agrupacion.key);
+      const acc = grupos.get(agrupacion.key).summary;
       acc.Items += 1;
       acc.Rendimiento = Math.max(getAnalisisRendimiento(row), getAnalisisRendimiento(acc));
 
@@ -1202,18 +1229,32 @@ const Reportes = () => {
 
         acc[key] = (parseFloat(acc[key]) || 0) + num;
       });
+
+      grupos.get(agrupacion.key).details.push({
+        ...buildConvertedAnalisisRow(row),
+        __rowType: 'detail',
+        __groupKey: agrupacion.key,
+        __rowId: `${agrupacion.key}-${grupos.get(agrupacion.key).details.length}`
+      });
     });
 
-    return Array.from(grupos.values()).map((row) => {
+    return Array.from(grupos.values()).flatMap(({ summary, details }) => {
       const out = {};
 
-      Object.entries(row).forEach(([key, value]) => {
+      Object.entries(summary).forEach(([key, value]) => {
         out[key] = typeof value === 'number'
           ? Math.round(value * 10000) / 10000
           : value;
       });
 
-      return out;
+      out.__detailCount = details.length;
+      const rowsForGroup = [out];
+
+      if (isAnalisisGroupExpanded(out.__groupKey)) {
+        rowsForGroup.push(...details);
+      }
+
+      return rowsForGroup;
     });
   };
 
@@ -1249,6 +1290,10 @@ const Reportes = () => {
 
       return haystack.includes(search);
     });
+
+    if (agruparProductosAnalisis) {
+      return filtered;
+    }
 
     const sortKey = inventorySortConfig?.key;
     const direction = inventorySortConfig?.direction || 'asc';
@@ -1286,11 +1331,49 @@ const Reportes = () => {
 
       return direction === 'asc' ? result : -result;
     });
-  }, [analysisDisplayData, inventorySearchTerm, inventorySortConfig]);
+  }, [analysisDisplayData, inventorySearchTerm, inventorySortConfig, agruparProductosAnalisis]);
+
+  const inventoryVisibleColumns = useMemo(() => {
+    const rows = Array.isArray(inventoryVisibleData) ? inventoryVisibleData : [];
+    const preferred = [
+      'Agrupacion',
+      'codigo_producto',
+      'nombre_producto',
+      'unidad',
+      'Items',
+      'Inv_Inicial_Cantidad',
+      'Movimientos',
+      'Ventas',
+      'Inv_Teorico_Cantidad',
+      'Inv_Final_Cantidad',
+      'Diferencia_Cantidad',
+      'Diferencia_Costo'
+    ];
+    const found = new Set();
+
+    rows.forEach((row) => {
+      Object.keys(row || {}).forEach((key) => {
+        if (!shouldShowAnalisisColumn(key)) return;
+        if (!mostrarCostos && key.toLowerCase().includes('costo')) return;
+        found.add(key);
+      });
+    });
+
+    return [
+      ...preferred.filter((key) => found.has(key)),
+      ...Array.from(found).filter((key) => !preferred.includes(key))
+    ];
+  }, [inventoryVisibleData, mostrarCostos]);
 
 
   // EDARSAHUB-PATCH-ANALISIS-EXPORTS-V3
-  const getAnalisisVistaRows = () => Array.isArray(analysisDisplayData) ? analysisDisplayData : [];
+  const getAnalisisVistaRows = () => {
+    if (filters.query_type !== 'analisis') {
+      return Array.isArray(analysisDisplayData) ? analysisDisplayData : [];
+    }
+
+    return (Array.isArray(reportData) ? reportData : []).map(buildConvertedAnalisisRow);
+  };
 
   const getAnalisisDiferenciaQty = (row) => {
     const value =
@@ -3144,10 +3227,7 @@ const Reportes = () => {
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-zinc-200">
                   <tr className="border-b-2 border-zinc-400">
-                    {Object.keys(inventoryVisibleData[0] || {})
-                      .filter(key => shouldShowAnalisisColumn(key))
-                      .filter(key => mostrarCostos || !key.toLowerCase().includes('costo'))
-                      .map((key) => (
+                    {inventoryVisibleColumns.map((key) => (
                       <th key={key} onClick={() => handleInventorySort(key)} title="Ordenar columna" className="text-xs uppercase tracking-wider font-semibold text-zinc-700 whitespace-nowrap bg-zinc-200 py-3 px-2 text-left">
                         {formatAnalisisHeader(key)}
                       </th>
@@ -3156,11 +3236,12 @@ const Reportes = () => {
                 </thead>
                 <tbody>
                   {inventoryVisibleData.slice(0, 2000).map((row, idx) => (
-                    <tr key={row.id || row.codigo || row.folio || `row-${idx}`} className="border-b hover:bg-zinc-50/50">
-                      {Object.entries(row)
-                        .filter(([key]) => shouldShowAnalisisColumn(key))
-                        .filter(([key]) => mostrarCostos || !key.toLowerCase().includes('costo'))
-                        .map(([key, value], cellIdx) => {
+                    <tr
+                      key={row.__rowId || row.id || row.codigo || row.folio || `row-${idx}`}
+                      className={`border-b ${row.__rowType === 'group' ? 'bg-zinc-100 font-semibold' : 'hover:bg-zinc-50/50'}`}
+                    >
+                      {inventoryVisibleColumns.map((key, cellIdx) => {
+                        const value = row[key];
                         // Special formatting for analysis report
                         const isDiferencia = key.toLowerCase().includes('diferencia');
                         const isCosto = key.toLowerCase().includes('costo');
@@ -3169,19 +3250,36 @@ const Reportes = () => {
                         const isMovimientos = keyLower === 'movimientos';
                         const isVentas = keyLower === 'ventas';
                         
+                        const isGroupRow = row.__rowType === 'group';
+                        const isDetailInGroup = agruparProductosAnalisis && row.__rowType === 'detail';
                         let displayValue = value;
-                        let className = "text-sm font-data text-zinc-700 p-2 text-left";
+                        let className = `text-sm font-data p-2 text-left ${isGroupRow ? 'text-zinc-900 bg-zinc-100' : 'text-zinc-700'}`;
                         let onDoubleClick = null;
                         
                         // Columnas clickeables para ver detalle
-                        if (!agruparProductosAnalisis && isMovimientos && value !== null && value !== undefined && parseFloat(value) !== 0) {
+                        if (!isGroupRow && isMovimientos && value !== null && value !== undefined && parseFloat(value) !== 0) {
                           onDoubleClick = () => loadMovementDetails(row);
                           className = "text-sm font-data text-blue-600 cursor-pointer hover:underline p-2 text-left";
                           displayValue = formatNumber(value);
-                        } else if (!agruparProductosAnalisis && isVentas && value !== null && value !== undefined && parseFloat(value) !== 0) {
+                        } else if (!isGroupRow && isVentas && value !== null && value !== undefined && parseFloat(value) !== 0) {
                           onDoubleClick = () => loadSalesDetails(row);
                           className = "text-sm font-data text-blue-600 cursor-pointer hover:underline p-2 text-left";
                           displayValue = formatNumber(value);
+                        } else if (isGroupRow && key === 'Agrupacion') {
+                          const expanded = isAnalisisGroupExpanded(row.__groupKey);
+                          displayValue = (
+                            <button
+                              type="button"
+                              onClick={() => toggleAnalisisGroup(row.__groupKey)}
+                              className="inline-flex items-center gap-2 text-left font-semibold text-zinc-900"
+                              title={expanded ? 'Contraer grupo' : 'Expandir grupo'}
+                            >
+                              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${expanded ? '' : '-rotate-90'}`} />
+                              <span>{value || row.nombre_producto || 'SIN AGRUPACION'}</span>
+                            </button>
+                          );
+                        } else if (isDetailInGroup && (key === 'Agrupacion' || key === 'Items')) {
+                          displayValue = '';
                         } else if (isPorcentaje && value !== null && value !== undefined) {
                           displayValue = `${formatNumber(value)}%`;
                           className = `text-sm font-data font-semibold p-2 text-left ${getDifferenceColor(parseFloat(value))}`;
@@ -4082,31 +4180,58 @@ const Reportes = () => {
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-zinc-800 text-white">
                   <tr>
-                    {Object.keys(inventoryVisibleData[0] || {})
-                      .filter(key => shouldShowAnalisisColumn(key))
-                      .filter(key => mostrarCostos || !key.toLowerCase().includes('costo'))
-                      .map((key) => (
+                    {inventoryVisibleColumns.map((key) => (
                       <th key={key} onClick={() => handleInventorySort(key)} title="Ordenar columna" className="text-xs uppercase tracking-wider font-semibold whitespace-nowrap py-3 px-3 text-left">
-                        {key.replace(/_/g, ' ').replace(/Cantidad/gi, 'Qty')}
+                        {formatAnalisisHeader(key)}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {inventoryVisibleData.map((row, idx) => (
-                    <tr key={row.id || row.codigo || row.folio || `data-${idx}`} className="border-b hover:bg-zinc-50">
-                      {Object.entries(row)
-                        .filter(([key]) => shouldShowAnalisisColumn(key))
-                        .filter(([key]) => mostrarCostos || !key.toLowerCase().includes('costo'))
-                        .map(([key, value], cellIdx) => {
+                    <tr
+                      key={row.__rowId || row.id || row.codigo || row.folio || `data-${idx}`}
+                      className={`border-b ${row.__rowType === 'group' ? 'bg-zinc-100 font-semibold' : 'hover:bg-zinc-50'}`}
+                    >
+                      {inventoryVisibleColumns.map((key, cellIdx) => {
+                        const value = row[key];
                         const isDiferencia = key.toLowerCase().includes('diferencia');
                         const isCosto = key.toLowerCase().includes('costo');
                         const isPorcentaje = key.toLowerCase().includes('porcentaje');
+                        const isGroupRow = row.__rowType === 'group';
+                        const isDetailInGroup = agruparProductosAnalisis && row.__rowType === 'detail';
+                        const keyLower = key.toLowerCase();
+                        const isMovimientos = keyLower === 'movimientos';
+                        const isVentas = keyLower === 'ventas';
                         
                         let displayValue = value;
-                        let className = "py-2 px-3 text-zinc-700 text-left";
+                        let className = `py-2 px-3 text-left ${isGroupRow ? 'text-zinc-900 bg-zinc-100' : 'text-zinc-700'}`;
+                        let onDoubleClick = null;
                         
-                        if (typeof value === 'number') {
+                        if (!isGroupRow && isMovimientos && value !== null && value !== undefined && parseFloat(value) !== 0) {
+                          onDoubleClick = () => loadMovementDetails(row);
+                          className = "py-2 px-3 text-left text-blue-600 cursor-pointer hover:underline";
+                          displayValue = formatNumber(value);
+                        } else if (!isGroupRow && isVentas && value !== null && value !== undefined && parseFloat(value) !== 0) {
+                          onDoubleClick = () => loadSalesDetails(row);
+                          className = "py-2 px-3 text-left text-blue-600 cursor-pointer hover:underline";
+                          displayValue = formatNumber(value);
+                        } else if (isGroupRow && key === 'Agrupacion') {
+                          const expanded = isAnalisisGroupExpanded(row.__groupKey);
+                          displayValue = (
+                            <button
+                              type="button"
+                              onClick={() => toggleAnalisisGroup(row.__groupKey)}
+                              className="inline-flex items-center gap-2 text-left font-semibold text-zinc-900"
+                              title={expanded ? 'Contraer grupo' : 'Expandir grupo'}
+                            >
+                              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${expanded ? '' : '-rotate-90'}`} />
+                              <span>{value || row.nombre_producto || 'SIN AGRUPACION'}</span>
+                            </button>
+                          );
+                        } else if (isDetailInGroup && (key === 'Agrupacion' || key === 'Items')) {
+                          displayValue = '';
+                        } else if (typeof value === 'number') {
                           if (isCosto) {
                             displayValue = `$${value.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                             className += " font-mono";
@@ -4126,7 +4251,12 @@ const Reportes = () => {
                         }
                         
                         return (
-                          <td key={cellIdx} className={className}>
+                          <td
+                            key={cellIdx}
+                            className={className}
+                            onDoubleClick={onDoubleClick}
+                            title={onDoubleClick ? 'Doble clic para ver detalle' : ''}
+                          >
                             {displayValue ?? '-'}
                           </td>
                         );
