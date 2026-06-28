@@ -5044,6 +5044,63 @@ WHERE p.ServerID = %s
                     productos[codigo]['FamiliaCodigo'] = _as_text(catalog_row.get('FamiliaCodigo'))
                     productos[codigo]['SubFamiliaCodigo'] = _as_text(catalog_row.get('SubFamiliaCodigo'))
 
+                try:
+                    cursor.execute(
+                        f"""
+SELECT
+    Codigo,
+    MAX(FactorConversionInventario) AS Rendimiento
+FROM (
+    SELECT
+        LTRIM(RTRIM(pc.CodigoProducto)) AS Codigo,
+        pp.FactorConversionInventario
+    FROM Producto_Catalogo pc
+    INNER JOIN Producto_Presentaciones pp
+        ON pp.ProductoID = pc.ProductoID
+       AND pp.Activo = 1
+    WHERE pc.Activo = 1
+      AND LTRIM(RTRIM(pc.CodigoProducto)) IN ({code_placeholders})
+
+    UNION ALL
+
+    SELECT
+        LTRIM(RTRIM(pc.SKU)) AS Codigo,
+        pp.FactorConversionInventario
+    FROM Producto_Catalogo pc
+    INNER JOIN Producto_Presentaciones pp
+        ON pp.ProductoID = pc.ProductoID
+       AND pp.Activo = 1
+    WHERE pc.Activo = 1
+      AND LTRIM(RTRIM(pc.SKU)) IN ({code_placeholders})
+
+    UNION ALL
+
+    SELECT
+        LTRIM(RTRIM(pp.CodigoPresentacion)) AS Codigo,
+        pp.FactorConversionInventario
+    FROM Producto_Presentaciones pp
+    WHERE pp.Activo = 1
+      AND LTRIM(RTRIM(pp.CodigoPresentacion)) IN ({code_placeholders})
+) factores
+WHERE Codigo IS NOT NULL AND Codigo <> ''
+GROUP BY Codigo
+""",
+                        tuple([*all_codes, *all_codes, *all_codes]),
+                    )
+                    factor_rows = cursor.fetchall()
+                    for factor_row in factor_rows:
+                        codigo_factor = _as_text(factor_row.get('Codigo'))
+                        rendimiento_factor = _as_float(factor_row.get('Rendimiento')) or 1
+                        if codigo_factor in productos and rendimiento_factor > _as_float(productos[codigo_factor].get('Rendimiento')):
+                            productos[codigo_factor]['Rendimiento'] = rendimiento_factor
+                    logging.info(
+                        "[SOFT-CANONICAL-NOLIVE] presentation factor rows=%s rendimiento_gt1=%s",
+                        len(factor_rows),
+                        len([p for p in productos.values() if _as_float(p.get('Rendimiento')) > 1]),
+                    )
+                except Exception as factor_error:
+                    logging.warning("[SOFT-CANONICAL-NOLIVE] factores presentacion canonicos no disponibles: %s", str(factor_error))
+
                 logging.info(
                     "[SOFT-CANONICAL-NOLIVE] catalog rows=%s missing=%s rendimiento_gt1=%s",
                     len(catalogo_productos),
@@ -5102,6 +5159,9 @@ WHERE p.ServerID = %s
                     'Comentario_Ini': almacen_display,
                     'ID_Inv_Fin': ', '.join([str(f) for f in lista_folios_fin]),
                     'Comentario_Fin': almacen_display,
+                    'Categoria': prod.get('Categoria') or 'SIN CATEGORIA',
+                    'Familia': prod.get('Familia') or 'SIN FAMILIA',
+                    'SubFamilia': prod.get('SubFamilia') or 'SIN SUBFAMILIA',
                     'Codigo': codigo,
                     'Producto': prod.get('Producto') or f'Producto {codigo}',
                     'Unidad': prod.get('Unidad') or 'PZA',

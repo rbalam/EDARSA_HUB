@@ -288,6 +288,7 @@ const Reportes = () => {
   // La data base del backend se conserva; esto solo cambia la vista.
   const [unidadAnalisisInventarios, setUnidadAnalisisInventarios] = useState('insumos');
   const [agruparProductosAnalisis, setAgruparProductosAnalisis] = useState(false);
+  const [agruparPorAnalisis, setAgruparPorAnalisis] = useState('producto');
   
   // Estado para mostrar/ocultar columnas de costos (oculto por defecto)
   const [mostrarCostos, setMostrarCostos] = useState(false);
@@ -1107,6 +1108,35 @@ const Reportes = () => {
     };
   };
 
+  const getAgrupacionAnalisis = (row) => {
+    const productoInfo = getProductoAgrupacionAnalisis(row);
+    const rawBy = {
+      producto: productoInfo.key,
+      categoria: row?.Categoria ?? row?.categoria ?? row?.Grupo ?? row?.grupo,
+      familia: row?.Familia ?? row?.familia,
+      subfamilia: row?.SubFamilia ?? row?.subfamilia ?? row?.Subfamilia
+    };
+    const labelBy = {
+      producto: productoInfo.producto || productoInfo.codigo || 'SIN PRODUCTO',
+      categoria: rawBy.categoria,
+      familia: rawBy.familia,
+      subfamilia: rawBy.subfamilia
+    };
+    const selected = rawBy[agruparPorAnalisis] ?? rawBy.producto;
+    const label = labelBy[agruparPorAnalisis] ?? labelBy.producto;
+    const fallback = agruparPorAnalisis === 'producto' ? 'SIN PRODUCTO' : 'SIN CLASIFICAR';
+
+    return {
+      key: selected === null || selected === undefined || String(selected).trim() === ''
+        ? fallback
+        : String(selected).trim(),
+      label: label === null || label === undefined || String(label).trim() === ''
+        ? fallback
+        : String(label).trim(),
+      productoInfo
+    };
+  };
+
   const buildAnalisisDisplayData = () => {
     const rows = Array.isArray(reportData) ? reportData : [];
 
@@ -1144,19 +1174,21 @@ const Reportes = () => {
     const grupos = new Map();
 
     rows.forEach((row) => {
-      const productoInfo = getProductoAgrupacionAnalisis(row);
+      const agrupacion = getAgrupacionAnalisis(row);
+      const productoInfo = agrupacion.productoInfo;
 
-      if (!grupos.has(productoInfo.key)) {
-        grupos.set(productoInfo.key, {
-          codigo_producto: productoInfo.codigo,
-          nombre_producto: productoInfo.producto,
-          unidad: productoInfo.unidad,
+      if (!grupos.has(agrupacion.key)) {
+        grupos.set(agrupacion.key, {
+          Agrupacion: agrupacion.label,
+          codigo_producto: agruparPorAnalisis === 'producto' ? productoInfo.codigo : '',
+          nombre_producto: agruparPorAnalisis === 'producto' ? productoInfo.producto : agrupacion.label,
+          unidad: agruparPorAnalisis === 'producto' ? productoInfo.unidad : '',
           Items: 0,
           Rendimiento: getAnalisisRendimiento(row)
         });
       }
 
-      const acc = grupos.get(productoInfo.key);
+      const acc = grupos.get(agrupacion.key);
       acc.Items += 1;
       acc.Rendimiento = Math.max(getAnalisisRendimiento(row), getAnalisisRendimiento(acc));
 
@@ -1513,6 +1545,9 @@ const Reportes = () => {
         );
 
         return {
+          Categoria: row.Categoria ?? row.categoria ?? '',
+          Familia: row.Familia ?? row.familia ?? '',
+          SubFamilia: row.SubFamilia ?? row.subfamilia ?? '',
           codigo_producto: codigo,
           nombre_producto: nombre,
           unidad: unidad,
@@ -1565,6 +1600,9 @@ const Reportes = () => {
             : row.costo_unitario;
 
         return {
+          Categoria: row.Categoria,
+          Familia: row.Familia,
+          SubFamilia: row.SubFamilia,
           codigo_producto: row.codigo_producto,
           nombre_producto: row.nombre_producto,
           unidad: row.unidad,
@@ -3082,6 +3120,19 @@ const Reportes = () => {
                   Agrupar productos
                 </label>
 
+                {agruparProductosAnalisis && (
+                  <select
+                    value={agruparPorAnalisis}
+                    onChange={(e) => setAgruparPorAnalisis(e.target.value)}
+                    className="h-8 rounded border border-zinc-300 bg-white px-2 text-xs"
+                  >
+                    <option value="producto">Producto</option>
+                    <option value="categoria">Categoría / Clasificación</option>
+                    <option value="familia">Familia / Grupo</option>
+                    <option value="subfamilia">Subfamilia / Subgrupo</option>
+                  </select>
+                )}
+
                 <span className="text-xs text-zinc-500">
                   Conversión por rendimiento canónico. Sin hardcode de alimentos/bebidas.
                 </span>
@@ -3119,21 +3170,21 @@ const Reportes = () => {
                         const isVentas = keyLower === 'ventas';
                         
                         let displayValue = value;
-                        let className = "text-sm font-data text-zinc-700 p-2";
+                        let className = "text-sm font-data text-zinc-700 p-2 text-left";
                         let onDoubleClick = null;
                         
                         // Columnas clickeables para ver detalle
                         if (!agruparProductosAnalisis && isMovimientos && value !== null && value !== undefined && parseFloat(value) !== 0) {
                           onDoubleClick = () => loadMovementDetails(row);
-                          className = "text-sm font-data text-blue-600 cursor-pointer hover:underline p-2";
+                          className = "text-sm font-data text-blue-600 cursor-pointer hover:underline p-2 text-left";
                           displayValue = formatNumber(value);
                         } else if (!agruparProductosAnalisis && isVentas && value !== null && value !== undefined && parseFloat(value) !== 0) {
                           onDoubleClick = () => loadSalesDetails(row);
-                          className = "text-sm font-data text-blue-600 cursor-pointer hover:underline p-2";
+                          className = "text-sm font-data text-blue-600 cursor-pointer hover:underline p-2 text-left";
                           displayValue = formatNumber(value);
                         } else if (isPorcentaje && value !== null && value !== undefined) {
                           displayValue = `${formatNumber(value)}%`;
-                          className = `text-sm font-data font-semibold p-2 ${getDifferenceColor(parseFloat(value))}`;
+                          className = `text-sm font-data font-semibold p-2 text-left ${getDifferenceColor(parseFloat(value))}`;
                         } else if (isCosto && value !== null && value !== undefined) {
                           displayValue = formatCurrency(value);
                         } else if ((key.toLowerCase().includes('cantidad') || key.toLowerCase().includes('ventas') || key.toLowerCase().includes('movimientos')) && value !== null && value !== undefined && typeof value === 'number') {
@@ -4053,18 +4104,16 @@ const Reportes = () => {
                         const isPorcentaje = key.toLowerCase().includes('porcentaje');
                         
                         let displayValue = value;
-                        let className = "py-2 px-3 text-zinc-700";
+                        let className = "py-2 px-3 text-zinc-700 text-left";
                         
                         if (typeof value === 'number') {
                           if (isCosto) {
                             displayValue = `$${value.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                            className += " text-right font-mono";
+                            className += " font-mono";
                           } else if (isPorcentaje) {
                             displayValue = `${value.toFixed(2)}%`;
-                            className += " text-right";
                           } else {
                             displayValue = value.toLocaleString('es-MX', { maximumFractionDigits: 2 });
-                            className += " text-right";
                           }
                         }
                         
