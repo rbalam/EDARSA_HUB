@@ -304,6 +304,15 @@ def _sync_softrestaurant(
         if not config.dry_run and elaborados:
             _guardar_elaborados(server_id, system_type, elaborados, sync_run_id, result)
 
+    
+    # Productos compuestos SoftRestaurant: fuente unica modificadores.
+    if config.sync_recetas:
+        compuestos = _obtener_compuestos_sr(host, port, database, username, password)
+        result['compuestos'] = len(compuestos)
+        
+        if not config.dry_run and compuestos:
+            _guardar_compuestos(server_id, system_type, compuestos, sync_run_id, result)
+
     # 7. CATALOGO-CANONICO-C1: Dimensiones de filtro NO-LIVE (jerarquía INSUMOS)
     #    El Análisis de SoftRestaurant filtra por clasificacionventa /
     #    gruposiclasificacion / gruposi (insumos), NO por la jerarquía de ventas
@@ -520,6 +529,61 @@ def _obtener_elaborados_sr(host, port, database, username, password) -> List[Ela
     return result
 
 
+def _obtener_compuestos_sr(host, port, database, username, password) -> List[Dict]:
+    """
+    Obtiene relaciones de productos compuestos/modificadores desde SoftRestaurant.
+
+    Fuente primaria: modificadores.
+    No usar vwipadproductosmodificados como segunda fuente para evitar duplicar:
+    esa vista reproduce la relacion producto/modificador.
+    """
+    query = """
+    SELECT
+        m.idproducto,
+        m.idmodificador,
+        COALESCE(p.descripcion, m.idmodificador) AS componente_nombre,
+        m.precio,
+        m.idgruposmodificadores,
+        m.idempresa
+    FROM modificadores m
+    LEFT JOIN productos p ON p.idproducto = m.idmodificador
+    WHERE m.idproducto IS NOT NULL
+      AND m.idmodificador IS NOT NULL
+      AND LTRIM(RTRIM(m.idproducto)) <> ''
+      AND LTRIM(RTRIM(m.idmodificador)) <> ''
+    ORDER BY m.idproducto, m.idmodificador
+    """
+    rows = execute_sql_query(host, port, database, username, password, query) or []
+
+    result = []
+    seen = set()
+    for r in rows:
+        producto = str(r.get('idproducto') or '').strip()
+        componente = str(r.get('idmodificador') or '').strip()
+        key = (producto, componente, 'MODIFICADORES')
+        if not producto or not componente or key in seen:
+            continue
+        seen.add(key)
+
+        costo_unit = Decimal(str(r.get('precio') or 0))
+        cantidad = Decimal('1')
+
+        result.append({
+            'producto_codigo_fuente': producto,
+            'componente_codigo_fuente': componente,
+            'componente_nombre': str(r.get('componente_nombre') or componente),
+            'cantidad': cantidad,
+            'unidad_medida': 'UN',
+            'costo_unitario': costo_unit,
+            'costo_total': cantidad * costo_unit,
+            'fuente_detalle': 'MODIFICADORES',
+            'grupo_codigo_fuente': str(r.get('idgruposmodificadores') or '') or None,
+            'empresa_codigo_fuente': str(r.get('idempresa') or '') or None,
+        })
+
+    return result
+
+
 # ============================================================================
 # CATALOGO-CANONICO-C1: Dimensiones de filtro (NO-LIVE) - SoftRestaurant
 # ============================================================================
@@ -697,6 +761,72 @@ def _sync_mpro(
         if not config.dry_run and recetas:
             _guardar_recetas(server_id, system_type, recetas, sync_run_id, result)
 
+    # 6. Sincronizar Productos Compuestos (Producto_Kit)
+    if config.sync_recetas:
+        compuestos_mpro = _obtener_compuestos_mpro(host, port, database, username, password)
+        result['compuestos'] = len(compuestos_mpro)
+
+        if not config.dry_run and compuestos_mpro:
+            _guardar_compuestos(server_id, system_type, compuestos_mpro, sync_run_id, result)
+
+
+
+
+def _obtener_compuestos_mpro(host, port, database, username, password) -> List[Dict]:
+    """
+    Obtiene productos compuestos desde MPRO Producto_Kit.
+
+    Fuente primaria: Producto_Kit.
+    No se mezcla con Formula_Produccion_Detalle para evitar duplicar recetas normales.
+    """
+    query = """
+    SELECT
+        pk.Pr_Cve_Producto,
+        pk.Pk_Producto,
+        COALESCE(p.Pr_Descripcion, pk.Pk_Producto) AS componente_nombre,
+        pk.Pk_Cantidad,
+        pk.Pk_Cantidad_Total,
+        pk.Un_Cve_Unidad,
+        pk.Pk_Costo,
+        pk.Pk_Factor_Costo
+    FROM Producto_Kit pk
+    LEFT JOIN Producto p ON p.Pr_Cve_Producto = pk.Pk_Producto
+    WHERE pk.Pr_Cve_Producto IS NOT NULL
+      AND pk.Pk_Producto IS NOT NULL
+    ORDER BY pk.Pr_Cve_Producto, pk.Pk_Producto
+    """
+    rows = execute_sql_query(host, port, database, username, password, query) or []
+
+    result = []
+    seen = set()
+    for r in rows:
+        producto = str(r.get('Pr_Cve_Producto') or '').strip()
+        componente = str(r.get('Pk_Producto') or '').strip()
+        key = (producto, componente, 'PRODUCTO_KIT')
+        if not producto or not componente or key in seen:
+            continue
+        seen.add(key)
+
+        cantidad = Decimal(str(r.get('Pk_Cantidad_Total') or r.get('Pk_Cantidad') or 1))
+        if cantidad <= 0:
+            continue
+
+        costo_unit = Decimal(str(r.get('Pk_Costo') or 0))
+
+        result.append({
+            'producto_codigo_fuente': producto,
+            'componente_codigo_fuente': componente,
+            'componente_nombre': str(r.get('componente_nombre') or componente),
+            'cantidad': cantidad,
+            'unidad_medida': str(r.get('Un_Cve_Unidad') or 'UN'),
+            'costo_unitario': costo_unit,
+            'costo_total': cantidad * costo_unit,
+            'fuente_detalle': 'PRODUCTO_KIT',
+            'grupo_codigo_fuente': None,
+            'empresa_codigo_fuente': None,
+        })
+
+    return result
 
 def _obtener_familias_mpro(host, port, database, username, password) -> List[FamiliaSync]:
     """Obtiene familias de MPRO."""
@@ -1309,6 +1439,121 @@ def _guardar_recetas(server_id: str, system_type: str, recetas: List[RecetaLinea
         except:
             pass
 
+
+
+
+def _sql_text(value):
+    if value is None:
+        return 'NULL'
+    return "N'" + str(value).replace("'", "''") + "'"
+
+
+def _guardar_compuestos(server_id: str, system_type: str, compuestos: List[Dict],
+                        sync_run_id: str, result: Dict) -> None:
+    """Guarda productos compuestos en EDARSAHUB SQL sin duplicar fuentes."""
+    productos_actualizados = set()
+
+    for comp in compuestos:
+        try:
+            producto = str(comp.get('producto_codigo_fuente') or '').replace("'", "''")
+            componente = str(comp.get('componente_codigo_fuente') or '').replace("'", "''")
+            nombre = str(comp.get('componente_nombre') or componente).replace("'", "''")
+            fuente = str(comp.get('fuente_detalle') or 'ORIGEN').replace("'", "''")
+            unidad = str(comp.get('unidad_medida') or 'UN').replace("'", "''")
+            grupo = comp.get('grupo_codigo_fuente')
+            empresa = comp.get('empresa_codigo_fuente')
+            cantidad = Decimal(str(comp.get('cantidad') or 1))
+            costo_unitario = Decimal(str(comp.get('costo_unitario') or 0))
+            costo_total = Decimal(str(comp.get('costo_total') or 0))
+
+            if not producto or not componente:
+                continue
+
+            query = f"""
+            MERGE Sync_Productos_Compuestos AS target
+            USING (
+                SELECT
+                    CAST('{server_id}' AS UNIQUEIDENTIFIER) AS ServerID,
+                    '{producto}' AS ProductoCodigoFuente,
+                    '{componente}' AS ComponenteCodigoFuente,
+                    '{fuente}' AS FuenteDetalle
+            ) AS source
+            ON target.ServerID = source.ServerID
+               AND target.ProductoCodigoFuente = source.ProductoCodigoFuente
+               AND target.ComponenteCodigoFuente = source.ComponenteCodigoFuente
+               AND target.FuenteDetalle = source.FuenteDetalle
+            WHEN MATCHED THEN
+                UPDATE SET
+                    ComponenteNombre = N'{nombre}',
+                    Cantidad = {cantidad},
+                    UnidadMedida = '{unidad}',
+                    CostoUnitario = {costo_unitario},
+                    CostoTotal = {costo_total},
+                    GrupoCodigoFuente = {_sql_text(grupo)},
+                    EmpresaCodigoFuente = {_sql_text(empresa)},
+                    SystemType = '{system_type}',
+                    Activo = 1,
+                    SyncRunID = '{sync_run_id}',
+                    SyncedAtMexico = SYSDATETIME(),
+                    FechaModificacion = SYSDATETIME()
+            WHEN NOT MATCHED THEN
+                INSERT (
+                    CompuestoDetalleID, ServerID, SystemType,
+                    ProductoCodigoFuente, ComponenteCodigoFuente, ComponenteNombre,
+                    FuenteDetalle, Cantidad, UnidadMedida,
+                    CostoUnitario, CostoTotal, GrupoCodigoFuente, EmpresaCodigoFuente,
+                    Activo, SyncRunID, SyncedAtMexico
+                )
+                VALUES (
+                    NEWID(), CAST('{server_id}' AS UNIQUEIDENTIFIER), '{system_type}',
+                    '{producto}', '{componente}', N'{nombre}',
+                    '{fuente}', {cantidad}, '{unidad}',
+                    {costo_unitario}, {costo_total}, {_sql_text(grupo)}, {_sql_text(empresa)},
+                    1, '{sync_run_id}', SYSDATETIME()
+                );
+            """
+            execute_sql_query(
+                EDARSAHUB_CONFIG['host'],
+                EDARSAHUB_CONFIG['port'],
+                EDARSAHUB_CONFIG['database'],
+                EDARSAHUB_CONFIG['username'],
+                EDARSAHUB_CONFIG['password'],
+                query
+            )
+            result['insertados'] += 1
+            productos_actualizados.add(producto)
+
+        except Exception as e:
+            result['errores_count'] += 1
+            if len(result['errores']) < 10:
+                result['errores'].append(f"Error compuesto {comp.get('producto_codigo_fuente')}: {str(e)[:80]}")
+
+    for prod_codigo in productos_actualizados:
+        try:
+            update_query = f"""
+            UPDATE Sync_Productos
+            SET EsCompuesto = 1,
+                CantidadComponentesReceta = (
+                    SELECT COUNT(*)
+                    FROM Sync_Productos_Compuestos
+                    WHERE ServerID = CAST('{server_id}' AS UNIQUEIDENTIFIER)
+                      AND ProductoCodigoFuente = '{prod_codigo}'
+                      AND Activo = 1
+                ),
+                FechaModificacion = SYSDATETIME()
+            WHERE ServerID = CAST('{server_id}' AS UNIQUEIDENTIFIER)
+              AND CodigoFuente = '{prod_codigo}'
+            """
+            execute_sql_query(
+                EDARSAHUB_CONFIG['host'],
+                EDARSAHUB_CONFIG['port'],
+                EDARSAHUB_CONFIG['database'],
+                EDARSAHUB_CONFIG['username'],
+                EDARSAHUB_CONFIG['password'],
+                update_query
+            )
+        except Exception:
+            pass
 
 def _guardar_elaborados(server_id: str, system_type: str, elaborados: List[ElaboradoLineaSync],
                         sync_run_id: str, result: Dict) -> None:
