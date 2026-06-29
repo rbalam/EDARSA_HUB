@@ -11399,17 +11399,50 @@ ORDER BY ProductoDestino
         )
         elaborados_rows = cursor.fetchall()
 
+        compuestos_rows = []
+        try:
+            cursor.execute("SELECT OBJECT_ID('Sync_Productos_Compuestos', 'U') AS ObjectID")
+            compuestos_table = cursor.fetchone()
+            if compuestos_table and compuestos_table.get("ObjectID"):
+                cursor.execute(
+                    f"""
+SELECT TOP 1000
+    c.ProductoCodigoFuente AS CodigoDestino,
+    COALESCE(p.Nombre, c.ProductoCodigoFuente) AS ProductoDestino,
+    'PRODUCTO COMPUESTO' AS TipoDestino,
+    SUM(COALESCE(c.Cantidad, 0)) AS CantidadReceta,
+    COALESCE(MAX(c.UnidadMedida), '') AS UnidadReceta,
+    SUM(COALESCE(c.CostoTotal, 0)) AS CostoTotal,
+    COUNT(*) AS Lineas
+FROM Sync_Productos_Compuestos c
+LEFT JOIN Sync_Productos p
+    ON p.ServerID = c.ServerID
+   AND LTRIM(RTRIM(p.CodigoFuente)) = LTRIM(RTRIM(c.ProductoCodigoFuente))
+   AND p.Activo = 1
+WHERE c.ServerID = %s
+  AND c.Activo = 1
+  AND LTRIM(RTRIM(c.ComponenteCodigoFuente)) IN ({placeholders})
+GROUP BY c.ProductoCodigoFuente, COALESCE(p.Nombre, c.ProductoCodigoFuente)
+ORDER BY ProductoDestino
+""",
+                    tuple([server_id, *target_codes]),
+                )
+                compuestos_rows = cursor.fetchall()
+        except Exception as comp_error:
+            logging.warning("[INVERSE-RECIPE-USAGE] compuestos canonicos no disponibles: %s", str(comp_error))
+
         logging.warning(
-            "[INVERSE-RECIPE-USAGE] server=%s codigo=%s target_codes=%s productos=%s elaborados=%s",
+            "[INVERSE-RECIPE-USAGE] server=%s codigo=%s target_codes=%s productos=%s elaborados=%s compuestos=%s",
             server_id,
             codigo,
             target_codes,
             len(productos_rows),
             len(elaborados_rows),
+            len(compuestos_rows),
         )
 
         usos = []
-        for row in [*productos_rows, *elaborados_rows]:
+        for row in [*productos_rows, *elaborados_rows, *compuestos_rows]:
             usos.append({
                 "codigo_destino": _usage_text(row.get("CodigoDestino")),
                 "producto_destino": row.get("ProductoDestino") or _usage_text(row.get("CodigoDestino")),
