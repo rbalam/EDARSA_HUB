@@ -371,159 +371,276 @@ async def delete_user(user_id: str, current_user: Dict) -> Dict:
 
 async def update_user_permissions(user_id: str, permissions: Dict, current_user: Dict) -> Dict:
     """
-    RBAC-SCOPE-E: Actualiza los permisos operativos de un usuario en EDARSAHUB SQL.
-    
-    Ya NO escribe en MongoDB. Los permisos operativos se guardan en:
+    RBAC-SCOPE-E HARDENED: Actualiza SOLO el alcance operativo de un usuario en EDARSAHUB SQL.
+
+    Este endpoint NO administra permisos funcionales RBAC.
+    Este endpoint NO administra roles.
+    Este endpoint NO administra menú.
+
+    Permitido:
+    - allowed_servers
+    - allowed_sucursales
+    - allowed_warehouses
+
+    Fuente canónica afectada:
     - Usuario_ServidoresAsignacion
     - Usuario_SucursalesAsignacion
     - Usuario_AlmacenesAsignacion
-    
-    Raises:
-        HTTPException 403: Si no tiene permisos o intenta modificar un SuperAdministrador
-        HTTPException 404: Si el usuario no existe
     """
     import pymssql
     import logging
-    
-    current_level = _get_role_level(current_user.get('role', ''))
-    if current_level < 3:  # Mínimo Administrador
-        raise HTTPException(status_code=403, detail="No autorizado")
-    
+
+    if not isinstance(permissions, dict):
+        raise HTTPException(status_code=400, detail="Payload inválido: se esperaba un objeto JSON")
+
+    allowed_keys = {
+        "allowed_servers",
+        "allowed_sucursales",
+        "allowed_warehouses",
+    }
+
+    forbidden_keys = {
+        "role",
+        "roles",
+        "rol",
+        "permisos",
+        "permissions",
+        "modules",
+        "modulos",
+        "actions",
+        "acciones",
+        "menu",
+        "menu_permissions",
+        "effective_permissions",
+        "sec_roles",
+        "sec_rol",
+        "sec_permisos",
+        "sec_perfil",
+        "sec_roles_alcance",
+        "Usuario_Roles",
+        "Usuario_RolesAsignacion",
+        "Usuario_PermisosRolModulo",
+        "Usuario_Modulos",
+        "Usuario_Acciones",
+        "Sistema_CatalogosPermisos",
+    }
+
+    received_keys = set(permissions.keys())
+    blocked = sorted(received_keys & forbidden_keys)
+    if blocked:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Este endpoint solo actualiza alcance operativo; no modifica RBAC funcional, roles ni menú",
+                "blocked_keys": blocked,
+            },
+        )
+
+    unknown = sorted(received_keys - allowed_keys)
+    if unknown:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Llaves no soportadas para este endpoint",
+                "allowed_keys": sorted(allowed_keys),
+                "unknown_keys": unknown,
+            },
+        )
+
+    if "allowed_servers" in permissions and not isinstance(permissions.get("allowed_servers") or [], list):
+        raise HTTPException(status_code=400, detail="allowed_servers debe ser una lista")
+
+    if "allowed_sucursales" in permissions and not isinstance(permissions.get("allowed_sucursales") or {}, dict):
+        raise HTTPException(status_code=400, detail="allowed_sucursales debe ser un objeto por servidor")
+
+    if "allowed_warehouses" in permissions and not isinstance(permissions.get("allowed_warehouses") or {}, dict):
+        raise HTTPException(status_code=400, detail="allowed_warehouses debe ser un objeto por servidor")
+
+    # RBAC primero; fallback legacy temporal por compatibilidad.
+    tiene_permiso_rbac = await verificar_permiso_rbac(current_user, "SISTEMA_USUARIOS_EDITAR")
+    if not tiene_permiso_rbac:
+        current_level = _get_role_level(current_user.get("role", ""))
+        if current_level < 3:
+            raise HTTPException(status_code=403, detail="No autorizado")
+
     user = await repo.find_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    
-    # Verificar jerarquía
+
+    # Verificar jerarquía.
     if not _can_manage_user(current_user, user):
         raise HTTPException(
-            status_code=403, 
-            detail="No tiene permisos para modificar permisos de usuarios SuperAdministrador"
+            status_code=403,
+            detail="No tiene permisos para modificar alcance de usuarios SuperAdministrador",
         )
-    
-    # RBAC-SCOPE-E: Escribir permisos en EDARSAHUB SQL
+
+    # Verificar alcance organizacional del actor sobre el usuario objetivo.
+    db = repo.get_db()
+    verificacion_alcance = await verificar_usuario_en_alcance(current_user, user, db)
+    if not verificacion_alcance["permitido"]:
+        logger.warning(
+            f"PUT /api/users/{user_id}/permissions DENEGADO por alcance: "
+            f"actor={current_user.get('email')}, target={user.get('email')}, "
+            f"razon={verificacion_alcance['razon']}"
+        )
+        raise HTTPException(
+            status_code=403,
+            detail="No tiene alcance para modificar este usuario",
+        )
+
+    conn = None
+
     try:
         conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
         cursor = conn.cursor()
-        
-        # Resolver UsuarioID SQL: aceptar tanto UsuarioID numérico como PublicUUID
-        # (el frontend de administración envía el UsuarioID numérico).
+
+        # Resolver UsuarioID SQL: aceptar tanto UsuarioID numérico como PublicUUID.
         ident = str(user_id)
         cursor.execute("""
-            SELECT UsuarioID 
-            FROM Usuario_Catalogo 
+            SELECT UsuarioID
+            FROM Usuario_Catalogo
             WHERE (UsuarioID = TRY_CONVERT(INT, %s)
                    OR LOWER(CAST(PublicUUID AS VARCHAR(36))) = LOWER(%s))
               AND Activo = 1
         """, (ident, ident))
-        
+
         row = cursor.fetchone()
         if not row:
-            conn.close()
             raise HTTPException(status_code=404, detail="Usuario no encontrado en SQL")
-        
+
         usuario_id_sql = row[0]
-        modificado_por = None  # TODO: Obtener UsuarioID del current_user si se desea
-        
+        modificado_por = None
+
         # 1. ACTUALIZAR SERVIDORES
-        if 'allowed_servers' in permissions:
-            allowed_servers = permissions['allowed_servers'] or []
-            
-            # Desactivar asignaciones anteriores
+        if "allowed_servers" in permissions:
+            allowed_servers = permissions["allowed_servers"] or []
+
             cursor.execute("""
-                UPDATE Usuario_ServidoresAsignacion 
+                UPDATE Usuario_ServidoresAsignacion
                 SET Activo = 0, FechaModificacion = GETDATE(), ModificadoPor = %s,
-                    Observaciones = CONCAT(ISNULL(Observaciones, ''), ' | Desactivado RBAC-SCOPE-E')
+                    Observaciones = CONCAT(ISNULL(Observaciones, ''), ' | Desactivado RBAC-SCOPE-E-HARDENED')
                 WHERE UsuarioID = %s AND Activo = 1
             """, (modificado_por, usuario_id_sql))
-            
-            # Insertar nuevas asignaciones
+
             for server_uuid in allowed_servers:
-                # Verificar que el servidor existe
+                if not server_uuid:
+                    continue
+
+                server_uuid = str(server_uuid).strip()
+
                 cursor.execute("""
-                    SELECT id FROM Servidores_Conexiones 
+                    SELECT id
+                    FROM Servidores_Conexiones
                     WHERE LOWER(CAST(id AS VARCHAR(36))) = %s AND activo = 1
                 """, (server_uuid.lower(),))
-                
+
                 if cursor.fetchone():
                     cursor.execute("""
-                        INSERT INTO Usuario_ServidoresAsignacion 
+                        INSERT INTO Usuario_ServidoresAsignacion
                         (UsuarioID, ServidorID, LegacyMongoValue, Activo, FechaCreacion, Observaciones)
-                        VALUES (%s, %s, %s, 1, GETDATE(), 'RBAC-SCOPE-E: Escritura SQL productiva')
+                        VALUES (%s, %s, %s, 1, GETDATE(), 'RBAC-SCOPE-E-HARDENED: Escritura SQL productiva')
                     """, (usuario_id_sql, server_uuid, server_uuid))
                 else:
-                    logging.warning(f"[RBAC-SCOPE-E] Servidor no encontrado: {server_uuid}")
-        
+                    logging.warning(f"[RBAC-SCOPE-E-HARDENED] Servidor no encontrado: {server_uuid}")
+
         # 2. ACTUALIZAR SUCURSALES
-        if 'allowed_sucursales' in permissions:
-            allowed_sucursales = permissions['allowed_sucursales'] or {}
-            
-            # Desactivar asignaciones anteriores
+        if "allowed_sucursales" in permissions:
+            allowed_sucursales = permissions["allowed_sucursales"] or {}
+
             cursor.execute("""
-                UPDATE Usuario_SucursalesAsignacion 
+                UPDATE Usuario_SucursalesAsignacion
                 SET Activo = 0, FechaModificacion = GETDATE(), ModificadoPor = %s,
-                    Observaciones = CONCAT(ISNULL(Observaciones, ''), ' | Desactivado RBAC-SCOPE-E')
+                    Observaciones = CONCAT(ISNULL(Observaciones, ''), ' | Desactivado RBAC-SCOPE-E-HARDENED')
                 WHERE UsuarioID = %s AND Activo = 1
             """, (modificado_por, usuario_id_sql))
-            
-            # Insertar nuevas asignaciones
+
             for server_uuid, sucursales in allowed_sucursales.items():
-                # Verificar que el servidor existe
+                if not server_uuid:
+                    continue
+
+                server_uuid = str(server_uuid).strip()
+
                 cursor.execute("""
-                    SELECT id FROM Servidores_Conexiones 
+                    SELECT id
+                    FROM Servidores_Conexiones
                     WHERE LOWER(CAST(id AS VARCHAR(36))) = %s AND activo = 1
                 """, (server_uuid.lower(),))
-                
+
                 if cursor.fetchone():
                     for suc_codigo in (sucursales or []):
                         if suc_codigo:
+                            suc_codigo = str(suc_codigo).strip()
                             cursor.execute("""
-                                INSERT INTO Usuario_SucursalesAsignacion 
+                                INSERT INTO Usuario_SucursalesAsignacion
                                 (UsuarioID, ServidorID, SucursalCodigo, LegacyMongoValue, Activo, FechaCreacion, Observaciones)
-                                VALUES (%s, %s, %s, %s, 1, GETDATE(), 'RBAC-SCOPE-E: Escritura SQL productiva')
+                                VALUES (%s, %s, %s, %s, 1, GETDATE(), 'RBAC-SCOPE-E-HARDENED: Escritura SQL productiva')
                             """, (usuario_id_sql, server_uuid, suc_codigo, suc_codigo))
                 else:
-                    logging.warning(f"[RBAC-SCOPE-E] Servidor no encontrado para sucursales: {server_uuid}")
-        
+                    logging.warning(f"[RBAC-SCOPE-E-HARDENED] Servidor no encontrado para sucursales: {server_uuid}")
+
         # 3. ACTUALIZAR ALMACENES
-        if 'allowed_warehouses' in permissions:
-            allowed_warehouses = permissions['allowed_warehouses'] or {}
-            
-            # Desactivar asignaciones anteriores
+        if "allowed_warehouses" in permissions:
+            allowed_warehouses = permissions["allowed_warehouses"] or {}
+
             cursor.execute("""
-                UPDATE Usuario_AlmacenesAsignacion 
+                UPDATE Usuario_AlmacenesAsignacion
                 SET Activo = 0, FechaModificacion = GETDATE(), ModificadoPor = %s,
-                    Observaciones = CONCAT(ISNULL(Observaciones, ''), ' | Desactivado RBAC-SCOPE-E')
+                    Observaciones = CONCAT(ISNULL(Observaciones, ''), ' | Desactivado RBAC-SCOPE-E-HARDENED')
                 WHERE UsuarioID = %s AND Activo = 1
             """, (modificado_por, usuario_id_sql))
-            
-            # Insertar nuevas asignaciones
+
             for server_uuid, almacenes in allowed_warehouses.items():
-                # Verificar que el servidor existe
+                if not server_uuid:
+                    continue
+
+                server_uuid = str(server_uuid).strip()
+
                 cursor.execute("""
-                    SELECT id FROM Servidores_Conexiones 
+                    SELECT id
+                    FROM Servidores_Conexiones
                     WHERE LOWER(CAST(id AS VARCHAR(36))) = %s AND activo = 1
                 """, (server_uuid.lower(),))
-                
+
                 if cursor.fetchone():
                     for alm_codigo in (almacenes or []):
                         if alm_codigo:
+                            alm_codigo = str(alm_codigo).strip()
                             cursor.execute("""
-                                INSERT INTO Usuario_AlmacenesAsignacion 
+                                INSERT INTO Usuario_AlmacenesAsignacion
                                 (UsuarioID, ServidorID, AlmacenCodigo, LegacyMongoValue, Activo, FechaCreacion, Observaciones)
-                                VALUES (%s, %s, %s, %s, 1, GETDATE(), 'RBAC-SCOPE-E: Escritura SQL productiva')
+                                VALUES (%s, %s, %s, %s, 1, GETDATE(), 'RBAC-SCOPE-E-HARDENED: Escritura SQL productiva')
                             """, (usuario_id_sql, server_uuid, alm_codigo, alm_codigo))
                 else:
-                    logging.warning(f"[RBAC-SCOPE-E] Servidor no encontrado para almacenes: {server_uuid}")
-        
+                    logging.warning(f"[RBAC-SCOPE-E-HARDENED] Servidor no encontrado para almacenes: {server_uuid}")
+
         conn.commit()
-        conn.close()
-        
-        logging.info(f"[RBAC-SCOPE-E] Permisos actualizados en SQL para usuario {user_id}")
-        return {"message": "Permisos actualizados"}
-        
+
+        logging.info(
+            f"[RBAC-SCOPE-E-HARDENED] Alcance actualizado en SQL para usuario {user_id} "
+            f"por {current_user.get('email')}"
+        )
+        return {"message": "Alcance operativo actualizado"}
+
+    except HTTPException:
+        if conn:
+            conn.rollback()
+        raise
+
     except pymssql.Error as e:
-        logging.error(f"[RBAC-SCOPE-E] Error SQL al actualizar permisos: {e}")
-        raise HTTPException(status_code=500, detail=f"Error al guardar permisos en SQL: {str(e)}")
+        if conn:
+            conn.rollback()
+        logging.error(f"[RBAC-SCOPE-E-HARDENED] Error SQL al actualizar alcance: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al guardar alcance en SQL: {str(e)}")
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        logging.exception(f"[RBAC-SCOPE-E-HARDENED] Error inesperado al actualizar alcance: {e}")
+        raise HTTPException(status_code=500, detail="Error inesperado al guardar alcance")
+
+    finally:
+        if conn:
+            conn.close()
 
 
 async def create_user_admin(user_data: Dict, current_user: Dict) -> Dict:
