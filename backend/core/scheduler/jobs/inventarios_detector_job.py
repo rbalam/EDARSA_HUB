@@ -921,7 +921,8 @@ class InventariosDetectorJob:
                 inv=inv,
                 productos_diferencia=productos_con_diferencia,
                 valor_total=valor_total,
-                workflow_id=workflow_id
+                workflow_id=workflow_id,
+                resultados=results
             )
             
             # Actualizar registro como COMPLETADO en SQL
@@ -947,7 +948,8 @@ class InventariosDetectorJob:
         inv: InventarioDetectado,
         productos_diferencia: List[Dict],
         valor_total: float,
-        workflow_id: Optional[str]
+        workflow_id: Optional[str],
+        resultados: Optional[List[Dict]] = None
     ) -> None:
         """Envía reporte automático del análisis de inventario por email."""
         import os
@@ -965,6 +967,54 @@ class InventariosDetectorJob:
         
         try:
             from core.centro_control.email_notifications import send_critical_alert_email
+            from io import BytesIO
+            from openpyxl import Workbook
+            
+            def _generar_excel_analisis(rows: List[Dict]) -> bytes:
+                wb = Workbook()
+                ws = wb.active
+                ws.title = "Analisis Inventario"
+                
+                data = rows or []
+                if not data:
+                    data = productos_diferencia or []
+                
+                columnas = []
+                for row in data:
+                    for key in row.keys():
+                        if key not in columnas:
+                            columnas.append(key)
+                
+                if not columnas:
+                    columnas = ["Mensaje"]
+                    data = [{"Mensaje": "Sin resultados para exportar"}]
+                
+                ws.append(columnas)
+                for row in data:
+                    ws.append([row.get(col, "") for col in columnas])
+                
+                for col in ws.columns:
+                    max_len = 0
+                    col_letter = col[0].column_letter
+                    for cell in col:
+                        value = "" if cell.value is None else str(cell.value)
+                        max_len = max(max_len, len(value))
+                    ws.column_dimensions[col_letter].width = min(max(max_len + 2, 12), 45)
+                
+                bio = BytesIO()
+                wb.save(bio)
+                return bio.getvalue()
+            
+            excel_name = (
+                f"analisis_inventario_{inv.clave.folio_inventario}_"
+                f"{inv.fecha_inventario}.xlsx"
+            ).replace("/", "-").replace("\\", "-")
+            
+            attachments = [{
+                "filename": excel_name,
+                "content": _generar_excel_analisis(resultados or productos_diferencia),
+                "subtype": "vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            }]
             
             top = sorted(
                 productos_diferencia,
@@ -1001,7 +1051,7 @@ class InventariosDetectorJob:
                 "detalle": "\n".join(detalle_lineas)
             }
             
-            result = await send_critical_alert_email(alerta)
+            result = await send_critical_alert_email(alerta, attachments=attachments)
             logger.info(f"[INVENTARIOS_DETECTOR] Email análisis inventario: {result}")
             
         except Exception as e:

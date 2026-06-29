@@ -29,6 +29,7 @@ import smtplib
 import asyncio
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
 from datetime import datetime, timezone
 from typing import Dict, Any, List
 from concurrent.futures import ThreadPoolExecutor
@@ -207,7 +208,7 @@ def generate_alert_html(alerta: Dict[str, Any]) -> str:
     return html
 
 
-def _send_email_sync(recipient: str, subject: str, html_content: str, text_content: str = None) -> Dict[str, Any]:
+def _send_email_sync(recipient: str, subject: str, html_content: str, text_content: str = None, attachments: List[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     Envía un email de forma síncrona (para usar en thread pool).
     
@@ -222,19 +223,32 @@ def _send_email_sync(recipient: str, subject: str, html_content: str, text_conte
     
     try:
         # Crear mensaje
-        msg = MIMEMultipart('alternative')
+        msg = MIMEMultipart('mixed')
         msg['Subject'] = subject
         msg['From'] = f"{EMAIL_FROM_NAME} <{EMAIL_FROM}>"
         msg['To'] = recipient
         
+        body = MIMEMultipart('alternative')
+        
         # Texto plano como fallback
         if text_content:
             part1 = MIMEText(text_content, 'plain', 'utf-8')
-            msg.attach(part1)
+            body.attach(part1)
         
         # HTML
         part2 = MIMEText(html_content, 'html', 'utf-8')
-        msg.attach(part2)
+        body.attach(part2)
+        msg.attach(body)
+        
+        # Adjuntos opcionales
+        for att in attachments or []:
+            filename = att.get("filename") or "adjunto.bin"
+            content = att.get("content") or b""
+            subtype = att.get("subtype") or "octet-stream"
+            
+            part = MIMEApplication(content, _subtype=subtype)
+            part.add_header("Content-Disposition", "attachment", filename=filename)
+            msg.attach(part)
         
         # Conectar y enviar
         if EMAIL_USE_TLS:
@@ -266,7 +280,7 @@ def _send_email_sync(recipient: str, subject: str, html_content: str, text_conte
     return result
 
 
-async def send_critical_alert_email(alerta: Dict[str, Any]) -> Dict[str, Any]:
+async def send_critical_alert_email(alerta: Dict[str, Any], attachments: List[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     Envía un email de alerta crítica a los destinatarios configurados.
     
@@ -335,7 +349,8 @@ Este es un mensaje automático del Centro de Control EDARSA HUB.
             recipient,
             subject,
             html_content,
-            text_content
+            text_content,
+            attachments
         )
         tasks.append(task)
     
