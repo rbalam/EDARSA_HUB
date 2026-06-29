@@ -798,6 +798,15 @@ class InventariosDetectorJob:
             # Calcular métricas
             valor_total = sum(abs(float(p.get('Diferencia_Costo', 0) or 0)) for p in productos_con_diferencia)
             
+            # Enviar reporte por email si aplica
+            await self._enviar_reporte_analisis_email(
+                servidor=servidor,
+                inv=inv,
+                productos_diferencia=productos_con_diferencia,
+                valor_total=valor_total,
+                workflow_id=workflow_id
+            )
+            
             # Actualizar registro como COMPLETADO en SQL
             await actualizar_inventario_completado(
                 sistema_origen=clave.sistema_origen,
@@ -814,6 +823,72 @@ class InventariosDetectorJob:
         except Exception as e:
             logger.error(f"[INVENTARIOS_DETECTOR] ERROR en análisis folio={clave.folio_inventario}: {e}")
             await self._marcar_error(registro, str(e))
+    
+    async def _enviar_reporte_analisis_email(
+        self,
+        servidor: Dict,
+        inv: InventarioDetectado,
+        productos_diferencia: List[Dict],
+        valor_total: float,
+        workflow_id: Optional[str]
+    ) -> None:
+        """Envía reporte automático del análisis de inventario por email."""
+        import os
+        
+        enabled = os.environ.get("SCHEDULER_INVENTARIOS_EMAIL_ENABLED", "false").lower() == "true"
+        send_zero = os.environ.get("SCHEDULER_INVENTARIOS_EMAIL_SEND_ZERO", "false").lower() == "true"
+        
+        if not enabled:
+            logger.info("[INVENTARIOS_DETECTOR] Email de análisis deshabilitado")
+            return
+        
+        if not productos_diferencia and not send_zero:
+            logger.info("[INVENTARIOS_DETECTOR] Sin diferencias; no se envía email")
+            return
+        
+        try:
+            from core.centro_control.email_notifications import send_critical_alert_email
+            
+            top = sorted(
+                productos_diferencia,
+                key=lambda r: abs(float(r.get("Diferencia_Costo", 0) or 0)),
+                reverse=True
+            )[:10]
+            
+            detalle_lineas = [
+                f"Servidor: {servidor.get('name')}",
+                f"Almacén: {inv.almacen_nombre}",
+                f"Periodo: {inv.fecha_inicial} a {inv.fecha_inventario}",
+                f"Folio inicial: {inv.folio_inicial}",
+                f"Folio final: {inv.clave.folio_inventario}",
+                f"Productos con diferencia: {len(productos_diferencia)}",
+                f"Valor absoluto diferencias: ${valor_total:,.2f}",
+                f"Workflow: {workflow_id or 'No creado'}",
+                "",
+                "Top diferencias:"
+            ]
+            
+            for r in top:
+                nombre = r.get("Nombre") or r.get("Producto") or r.get("Descripcion") or r.get("Codigo") or "Producto"
+                cantidad = r.get("Diferencia_Cantidad", 0)
+                costo = r.get("Diferencia_Costo", 0)
+                detalle_lineas.append(f"- {nombre}: cantidad {cantidad}, costo ${float(costo or 0):,.2f}")
+            
+            severidad = "high" if valor_total > 0 else "medium"
+            alerta = {
+                "id": f"INV-{inv.clave.server_id}-{inv.clave.almacen_id}-{inv.clave.folio_inventario}",
+                "titulo": f"Análisis automático de inventario - {inv.almacen_nombre}",
+                "severidad": severidad,
+                "modulo": "Inventarios",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "detalle": "\n".join(detalle_lineas)
+            }
+            
+            result = await send_critical_alert_email(alerta)
+            logger.info(f"[INVENTARIOS_DETECTOR] Email análisis inventario: {result}")
+            
+        except Exception as e:
+            logger.error(f"[INVENTARIOS_DETECTOR] Error enviando email de análisis: {e}")
     
     async def _ejecutar_orquestacion(
         self,
