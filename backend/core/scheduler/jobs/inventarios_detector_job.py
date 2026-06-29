@@ -557,15 +557,96 @@ class InventariosDetectorJob:
         return inventarios
     
     async def _detectar_mpro(self, servidor: Dict) -> List[InventarioDetectado]:
-        """Detecta inventarios en MPRO.
+        """Detecta inventarios MPRO desde EDARSAHUB Sync (NO-LIVE)."""
+        from modules.compras.sync_service import obtener_inventarios_fisicos_sync
         
-        NOTA BLINDAJE (Abril 2026): MPRO no tiene la tabla 'invfisico'.
-        Este método retorna lista vacía hasta que se implemente la estructura correcta.
-        """
-        # BLINDAJE: MPRO usa una estructura diferente de inventarios
-        # La tabla invfisico NO existe en MPRO - retornar vacío para evitar contaminar el pool SQL
-        logger.info(f"[INVENTARIOS_DETECTOR] MPRO {servidor.get('name')}: Saltando detección (tabla invfisico no existe en MPRO)")
-        return []
+        inventarios_detectados: List[InventarioDetectado] = []
+        server_name = servidor.get('name', 'DESCONOCIDO')
+        server_id = servidor.get('id')
+        
+        try:
+            rows = obtener_inventarios_fisicos_sync(
+                unidad_negocio_id=None,
+                server_id=server_id,
+                sucursal=None,
+                almacen_id=None,
+                almacen=None,
+                limit=1000
+            )
+            
+            if not rows:
+                logger.info(f"[INVENTARIOS_DETECTOR] MPRO {server_name}: Sin inventarios sync")
+                return inventarios_detectados
+            
+            grupos: Dict[str, List[Dict]] = {}
+            for row in rows:
+                folio = str(row.get('folio') or '').strip()
+                fecha = str(row.get('fecha') or '').strip()
+                almacen_id = str(row.get('almacen_id') or '').strip()
+                sucursal_id = str(row.get('sucursal_id') or '').strip()
+                
+                if not folio or not fecha or not almacen_id:
+                    continue
+                
+                key = f"{sucursal_id}|{almacen_id}"
+                grupos.setdefault(key, []).append(row)
+            
+            for _, grupo in grupos.items():
+                grupo_ordenado = sorted(
+                    grupo,
+                    key=lambda r: str(r.get('fecha') or ''),
+                    reverse=True
+                )
+                
+                if len(grupo_ordenado) < 2:
+                    logger.info(f"[INVENTARIOS_DETECTOR] MPRO {server_name}: Grupo sin par inicial/final")
+                    continue
+                
+                final = grupo_ordenado[0]
+                inicial = grupo_ordenado[1]
+                
+                folio_final = str(final.get('folio') or '').strip()
+                folio_inicial = str(inicial.get('folio') or '').strip()
+                fecha_final = str(final.get('fecha') or '')[:10]
+                fecha_inicial = str(inicial.get('fecha') or '')[:10]
+                
+                almacen_id = str(final.get('almacen_id') or '').strip()
+                almacen_nombre = final.get('almacen') or almacen_id
+                sucursal_id = str(final.get('sucursal_id') or final.get('sucursal') or '').strip()
+                
+                if not folio_final or not folio_inicial or not fecha_final or not fecha_inicial:
+                    continue
+                
+                clave = ClaveIdempotencia(
+                    sistema_origen='MPRO',
+                    server_id=server_id,
+                    sucursal_id=sucursal_id,
+                    almacen_id=almacen_id,
+                    folio_inventario=folio_final
+                )
+                
+                inventarios_detectados.append(InventarioDetectado(
+                    clave=clave,
+                    server_name=server_name,
+                    almacen_nombre=almacen_nombre,
+                    fecha_inventario=fecha_final,
+                    folio_inicial=folio_inicial,
+                    fecha_inicial=fecha_inicial,
+                    metadata={
+                        "system_type": "MPRO",
+                        "source": "EDARSAHUB_SYNC",
+                        "sucursal": final.get('sucursal', ''),
+                        "comentario_inicial": inicial.get('comentario', ''),
+                        "comentario_final": final.get('comentario', '')
+                    }
+                ))
+            
+            logger.info(f"[INVENTARIOS_DETECTOR] MPRO {server_name}: {len(inventarios_detectados)} pares detectados desde Sync")
+            
+        except Exception as e:
+            logger.error(f"[INVENTARIOS_DETECTOR] Error detectando MPRO en {server_name}: {e}")
+        
+        return inventarios_detectados
     
     async def _calcular_folio_inicial_soft(
         self, 
