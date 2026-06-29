@@ -294,16 +294,19 @@ async def get_roles(current_user: dict = Depends(get_current_user)):
       AND ISNULL(prm.Permitido, 1) = 1
     """)
 
-    # Mapear permisos por rol
+    # Mapear permisos por rol sin duplicar ModuloID.
+    # Un rol puede tener varias acciones por modulo; la UI de roles trabaja a nivel modulo.
     pmap = {}
     for p in permisos:
         rid = p.get("RolID")
-        if rid:
-            pmap.setdefault(rid, []).append(p.get("modulo_id"))
+        modulo_id = p.get("modulo_id")
+        if rid and modulo_id:
+            pmap.setdefault(rid, set()).add(str(modulo_id))
 
-    # Enriquecer roles con permisos
+    # Enriquecer roles con permisos deduplicados y orden estable
     for r in roles:
-        r["permisos"] = pmap.get(r.get("RolID"), [])
+        permisos_rol = pmap.get(r.get("RolID"), set())
+        r["permisos"] = sorted(permisos_rol, key=lambda x: int(x) if str(x).isdigit() else str(x))
 
     return roles
 

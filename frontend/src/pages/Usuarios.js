@@ -341,7 +341,11 @@ const Usuarios = () => {
     try {
       // SQL-FIRST: Roles desde EDARSAHUB SQL
       const response = await api.get('/admin-sql/roles');
-      setRoles(Array.isArray(response.data) ? response.data : []);
+      const rolesData = Array.isArray(response.data) ? response.data : [];
+      setRoles(rolesData.map(role => ({
+        ...role,
+        permisos: Array.from(new Set((role.permisos || []).map(String)))
+      })));
     } catch (error) {
       logger.error('Error loading roles:', error);
       setRoles([]);
@@ -354,7 +358,11 @@ const Usuarios = () => {
     try {
       // SQL-FIRST: Módulos desde EDARSAHUB SQL
       const response = await api.get('/admin-sql/roles/modulos');
-      setModulos(Array.isArray(response.data) ? response.data : []);
+      const modulosData = Array.isArray(response.data) ? response.data : [];
+      const uniqueModulos = Array.from(
+        new Map(modulosData.map(modulo => [String(modulo.id), { ...modulo, id: String(modulo.id) }])).values()
+      );
+      setModulos(uniqueModulos);
     } catch (error) {
       logger.error('Error loading modulos:', error);
       setModulos([]);
@@ -367,7 +375,7 @@ const Usuarios = () => {
       setRoleFormData({
         nombre: role.nombre,
         descripcion: role.descripcion || '',
-        permisos: role.permisos || []
+        permisos: Array.from(new Set((role.permisos || []).map(String)))
       });
     } else {
       setEditingRole(null);
@@ -409,12 +417,13 @@ const Usuarios = () => {
   };
 
   const togglePermiso = (moduloId) => {
-    const current = [...roleFormData.permisos];
-    const idx = current.indexOf(moduloId);
+    const id = String(moduloId);
+    const current = Array.from(new Set((roleFormData.permisos || []).map(String)));
+    const idx = current.indexOf(id);
     if (idx > -1) {
       current.splice(idx, 1);
     } else {
-      current.push(moduloId);
+      current.push(id);
     }
     setRoleFormData({ ...roleFormData, permisos: current });
   };
