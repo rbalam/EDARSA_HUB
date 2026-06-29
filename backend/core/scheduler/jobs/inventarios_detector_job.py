@@ -560,6 +560,27 @@ class InventariosDetectorJob:
         """Detecta inventarios MPRO desde EDARSAHUB Sync (NO-LIVE)."""
         from modules.compras.sync_service import obtener_inventarios_fisicos_sync
         
+        def _fecha_key(row: Dict) -> str:
+            return str(row.get('fecha') or '').strip()[:10]
+        
+        def _es_consolidado(row: Dict) -> bool:
+            comentario = str(row.get('comentario') or '').upper()
+            return 'CONSOLIDADO' in comentario
+        
+        def _preferir_inventario_fecha(rows_fecha: List[Dict]) -> Dict:
+            """
+            Para una misma fecha, preferir INVENTARIO FISICO CONSOLIDADO.
+            Si no existe consolidado, usar el mayor folio como desempate estable.
+            """
+            return sorted(
+                rows_fecha,
+                key=lambda r: (
+                    1 if _es_consolidado(r) else 0,
+                    str(r.get('folio') or '').strip()
+                ),
+                reverse=True
+            )[0]
+        
         inventarios_detectados: List[InventarioDetectado] = []
         server_name = servidor.get('name', 'DESCONOCIDO')
         server_id = servidor.get('id')
@@ -581,7 +602,7 @@ class InventariosDetectorJob:
             grupos: Dict[str, List[Dict]] = {}
             for row in rows:
                 folio = str(row.get('folio') or '').strip()
-                fecha = str(row.get('fecha') or '').strip()
+                fecha = _fecha_key(row)
                 almacen_id = str(row.get('almacen_id') or '').strip()
                 sucursal_id = str(row.get('sucursal_id') or '').strip()
                 
@@ -591,24 +612,31 @@ class InventariosDetectorJob:
                 key = f"{sucursal_id}|{almacen_id}"
                 grupos.setdefault(key, []).append(row)
             
-            for _, grupo in grupos.items():
-                grupo_ordenado = sorted(
-                    grupo,
-                    key=lambda r: str(r.get('fecha') or ''),
-                    reverse=True
-                )
+            for key, grupo in grupos.items():
+                por_fecha: Dict[str, List[Dict]] = {}
+                for row in grupo:
+                    fecha = _fecha_key(row)
+                    if not fecha:
+                        continue
+                    por_fecha.setdefault(fecha, []).append(row)
                 
-                if len(grupo_ordenado) < 2:
-                    logger.info(f"[INVENTARIOS_DETECTOR] MPRO {server_name}: Grupo sin par inicial/final")
+                fechas_ordenadas = sorted(por_fecha.keys(), reverse=True)
+                
+                if len(fechas_ordenadas) < 2:
+                    logger.info(
+                        f"[INVENTARIOS_DETECTOR] MPRO {server_name}: "
+                        f"Grupo sin fechas distintas suficientes key={key}"
+                    )
                     continue
                 
-                final = grupo_ordenado[0]
-                inicial = grupo_ordenado[1]
+                fecha_final = fechas_ordenadas[0]
+                fecha_inicial = fechas_ordenadas[1]
+                
+                final = _preferir_inventario_fecha(por_fecha[fecha_final])
+                inicial = _preferir_inventario_fecha(por_fecha[fecha_inicial])
                 
                 folio_final = str(final.get('folio') or '').strip()
                 folio_inicial = str(inicial.get('folio') or '').strip()
-                fecha_final = str(final.get('fecha') or '')[:10]
-                fecha_inicial = str(inicial.get('fecha') or '')[:10]
                 
                 almacen_id = str(final.get('almacen_id') or '').strip()
                 almacen_nombre = final.get('almacen') or almacen_id
@@ -616,6 +644,12 @@ class InventariosDetectorJob:
                 
                 if not folio_final or not folio_inicial or not fecha_final or not fecha_inicial:
                     continue
+                
+                logger.info(
+                    f"[INVENTARIOS_DETECTOR] MPRO {server_name}: "
+                    f"Par detectado key={key} inicial={folio_inicial}/{fecha_inicial} "
+                    f"final={folio_final}/{fecha_final}"
+                )
                 
                 clave = ClaveIdempotencia(
                     sistema_origen='MPRO',
@@ -637,7 +671,9 @@ class InventariosDetectorJob:
                         "source": "EDARSAHUB_SYNC",
                         "sucursal": final.get('sucursal', ''),
                         "comentario_inicial": inicial.get('comentario', ''),
-                        "comentario_final": final.get('comentario', '')
+                        "comentario_final": final.get('comentario', ''),
+                        "folio_inicial": folio_inicial,
+                        "folio_final": folio_final
                     }
                 ))
             
@@ -647,7 +683,7 @@ class InventariosDetectorJob:
             logger.error(f"[INVENTARIOS_DETECTOR] Error detectando MPRO en {server_name}: {e}")
         
         return inventarios_detectados
-    
+
     async def _calcular_folio_inicial_soft(
         self, 
         servidor: Dict, 
