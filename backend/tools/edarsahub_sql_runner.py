@@ -13,6 +13,8 @@ Variables de entorno requeridas:
     EDARSAHUB_SQL_DATABASE
     EDARSAHUB_SQL_USER
     EDARSAHUB_SQL_PASSWORD
+    EDARSAHUB_SQL_TIMEOUT_SECONDS=60          # Opcional
+    EDARSAHUB_SQL_LOGIN_TIMEOUT_SECONDS=15    # Opcional
     EDARSAHUB_ALLOW_MIGRATIONS=true   # Solo para modo migrate
 """
 
@@ -53,6 +55,17 @@ def get_env(name: str, required: bool = True, default: str | None = None) -> str
     return value
 
 
+def get_int_env(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None or value == "":
+        return default
+
+    try:
+        return int(value)
+    except ValueError as exc:
+        raise RuntimeError(f"Variable de entorno invalida para entero: {name}") from exc
+
+
 def get_connection():
     """Crea conexión pymssql a EDARSAHUB."""
     server = get_env("EDARSAHUB_SQL_SERVER")
@@ -60,6 +73,8 @@ def get_connection():
     user = get_env("EDARSAHUB_SQL_USER")
     password = get_env("EDARSAHUB_SQL_PASSWORD")
     port = int(get_env("EDARSAHUB_SQL_PORT", required=False, default="1433"))
+    timeout = get_int_env("EDARSAHUB_SQL_TIMEOUT_SECONDS", 60)
+    login_timeout = get_int_env("EDARSAHUB_SQL_LOGIN_TIMEOUT_SECONDS", 15)
     
     return pymssql.connect(
         server=server,
@@ -67,8 +82,8 @@ def get_connection():
         user=user,
         password=password,
         database=database,
-        timeout=60,
-        login_timeout=15,
+        timeout=timeout,
+        login_timeout=login_timeout,
         autocommit=False
     )
 

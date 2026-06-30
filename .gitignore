@@ -36,6 +36,13 @@ dist/
 dist
 
 # Environment files (comprehensive coverage)
+.env
+.env.*
+*.env
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
 
 *token.json*
 *credentials.json*
@@ -56,6 +63,7 @@ __pycache__/
 *pyc*
 venv/
 .venv/
+.venv*/
 
 # Development tools
 chainlit.md
