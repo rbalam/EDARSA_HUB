@@ -17,6 +17,11 @@ La validacion SQL reportada en Emergent/VSCode paso correctamente y dejo un hall
 - 12 usuarios activos con roles asignados.
 - 0 usuarios activos sin rol activo.
 - 8 roles activos sin permisos permitidos: `COMPRAS`, `CRM_ADMIN`, `CRM_AUDIT`, `CRM_EJEC`, `GERENTE`, `TESORERIA`, `USUARIO`, `VENTAS`.
+- El preview del reporte muestra usuarios activos asignados al rol `USUARIO`.
+
+Esto cambia la prioridad: antes de validar API por usuarios reales, confirmar si esos usuarios tienen solo `USUARIO` o si tambien tienen otro rol con permisos. Si tienen solo `USUARIO`, el hallazgo es critico para produccion porque el endpoint de permisos efectivos puede quedar vacio correctamente, reflejando una semilla RBAC incompleta.
+
+Nota tecnica: el mapeo legacy del backend no usa `USUARIO` como destino para el rol legacy `Usuario`; usa `OPERADOR`. Por eso el rol `USUARIO` vacio afecta sobre todo a usuarios con asignacion SQL directa a `USUARIO`, no al fallback legacy `Usuario -> OPERADOR`.
 
 ## Validacion 2A - Impacto de roles vacios
 
@@ -40,6 +45,36 @@ Criterio para avanzar:
 - Cero usuarios con `CRITICO_SOLO_ROLES_VACIOS`.
 - Cero mapeos legacy con `CRITICO_ROL_DESTINO_NO_EXISTE`.
 - Cero mapeos legacy con `CRITICO_ROL_DESTINO_SIN_PERMISOS`.
+
+Si aparece `CRITICO_SOLO_ROLES_VACIOS`, resolver datos RBAC antes de ejecutar 2B: poblar permisos del rol, reasignar el usuario a un rol con permisos, o desactivar el rol vacio si es obsoleto y no debe usarse.
+
+## Correccion aprobada - USUARIO a OPERADOR
+
+Decision tomada: los usuarios activos asignados al rol vacio `USUARIO` deben pasar a `OPERADOR`.
+
+Ejecutar en modo migracion:
+
+```bash
+export EDARSAHUB_ALLOW_MIGRATIONS=true
+python backend/tools/edarsahub_sql_runner.py \
+  --mode migrate \
+  --script backend/database/migrations/20260630_010_reasignar_usuario_a_operador_rbac.sql
+```
+
+Despues validar:
+
+```bash
+python backend/tools/edarsahub_sql_runner.py \
+  --mode validate \
+  --script backend/database/validation/phase2c_rbac_usuario_operador_post_validation.sql
+```
+
+Resultado esperado:
+
+- `USUARIO` sin asignaciones activas de usuarios activos.
+- `OPERADOR` con permisos permitidos activos.
+- Cero filas en `USUARIO_ACTIVO_CON_ROL_USUARIO_ACTIVO`.
+- Cero filas en `USUARIO_ACTIVO_SIN_OPERADOR_TRAS_MIGRACION`.
 
 ## Validacion 2B - API con usuarios reales
 
@@ -99,6 +134,8 @@ No promover a `Edarsahub_Produccion` hasta tener:
 
 - Reporte SQL Fase 1 OK.
 - Reporte SQL Fase 2A sin criticos.
+- Migracion `USUARIO -> OPERADOR` aplicada si 2A confirma usuarios activos sobre `USUARIO`.
+- Validacion 2C sin hallazgos.
 - Reporte API Fase 2B sin FAIL/WARN en modo `--strict`.
 - Decision tomada sobre roles vacios: poblar permisos, reasignar usuarios, o mantenerlos vacios solo si no afectan usuarios.
 - Decision tomada sobre el fallback legacy del menu frontend.
