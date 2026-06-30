@@ -19,6 +19,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
+from core.guards.server_secret_guard import require_server_secret_key
 from core.secret_manager import is_encryption_available
 from modules.compras.sync_service import (
     log_sync_operation,
@@ -70,6 +71,21 @@ def main() -> int:
     target.add_argument("--all", action="store_true", help="Ejecutar para todas las unidades canonicas mapeadas")
     parser.add_argument("--execute", action="store_true", help="Escribe cambios en SQL. Sin esto solo lista objetivos.")
     args = parser.parse_args()
+
+    try:
+        require_server_secret_key()
+    except Exception as exc:
+        payload = {
+            "started_at": datetime.now().isoformat(timespec="seconds"),
+            "mode": "execute" if args.execute else "dry_run",
+            "status": "SERVER_SECRET_KEY_MISSING",
+            "error": str(exc),
+        }
+        report_path = _write_report(payload)
+        print("SERVER_SECRET_KEY_MISSING")
+        print(str(exc))
+        print(f"Reporte: {report_path}")
+        return 2
 
     sync_job = _load_sync_compras_job_module()
     servers = sync_job._get_servers_to_sync()

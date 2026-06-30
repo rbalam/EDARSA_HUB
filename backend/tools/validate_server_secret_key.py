@@ -1,5 +1,6 @@
 import os
 import sys
+import hashlib
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -19,15 +20,20 @@ except Exception as exc:
     print(f"ERROR={exc}")
     sys.exit(1)
 
-from core.db import execute_sql_query
+try:
+    from core.config.edarsahub_config import get_edarsahub_sql_config
+    from core.db import execute_sql_query
+except Exception as exc:
+    print("IMPORT_ERROR=edarsahub sql config")
+    print(f"ERROR_TYPE={type(exc).__name__}")
+    print(f"ERROR={exc}")
+    sys.exit(1)
 
-EDARSAHUB = {
-    "host": os.getenv('EDARSAHUB_SQL_HOST'),
-    "port": 1433,
-    "database": "EDARSAHUB",
-    "user": os.getenv('EDARSAHUB_SQL_USER'),
-    "password": os.getenv('EDARSAHUB_SQL_PASSWORD')
-}
+
+def _fingerprint(value: str) -> str:
+    if not value:
+        return "none"
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()[:12]
 
 
 def main():
@@ -35,6 +41,7 @@ def main():
 
     print("SERVER_SECRET_KEY_STATUS=", "CONFIGURADA" if key else "NO_CONFIGURADA")
     print("SERVER_SECRET_KEY_LENGTH=", len(key) if key else 0)
+    print("SERVER_SECRET_KEY_FINGERPRINT=", _fingerprint(key))
 
     try:
         require_server_secret_key()
@@ -43,9 +50,10 @@ def main():
         print("REASON=", str(exc))
         sys.exit(1)
 
+    cfg = get_edarsahub_sql_config()
     rows = execute_sql_query(
-        EDARSAHUB["host"], EDARSAHUB["port"], EDARSAHUB["database"],
-        EDARSAHUB["user"], EDARSAHUB["password"],
+        cfg.host, cfg.port, cfg.database,
+        cfg.user, cfg.password,
         """
         SELECT
             nombre,
