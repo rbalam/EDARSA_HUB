@@ -76,6 +76,7 @@ from modules.auth import service
 from modules.auth import context_service
 from modules.auth.schemas import User, UserCreate, UserLogin, MODULOS_DISPONIBLES
 from core.user_access_context import resolve_user_access_context
+from core.rbac.service import get_user_permissions as get_rbac_user_permissions
 
 # Router sin prefix - se agregará en server.py como /api
 router = APIRouter(tags=["auth"])
@@ -496,120 +497,212 @@ async def get_my_access_context(current_user: Dict = Depends(get_user_dual)):
     return context.to_dict()
 
 
+MENU_PERMISSION_MAP = {
+    "mis_tareas": [],
+    "tablero_ejecutivo": [
+        "TABLERO_EJECUTIVO_VER",
+        "COMERCIAL_TABLERO_VER",
+        "COMERCIAL_DASHBOARD_VER",
+    ],
+    "comercial": [
+        "COMERCIAL_VER",
+        "COMERCIAL_DASHBOARD_VER",
+    ],
+    "compras": [
+        "COMPRAS_VER",
+        "COMPRAS_DASHBOARD_VER",
+        "COMPRAS_INVENTARIOS_VER",
+    ],
+    "operaciones": [
+        "OPERACIONES_VER",
+        "OPERACIONES_DASHBOARD_VER",
+    ],
+    "finanzas": [
+        "FINANZAS_VER",
+    ],
+    "produccion": [
+        "PRODUCCION_VER",
+    ],
+    "recursos_humanos": [
+        "RH_VER",
+        "RECURSOS_HUMANOS_VER",
+    ],
+    "reportes_bi": [
+        "REPORTES_BI_VER",
+        "REPORTES_VER",
+    ],
+    "catalogos": [
+        "CATALOGOS_VER",
+        "CATALOGO_VER",
+    ],
+    "centro_control": [
+        "CENTRO_CONTROL_VER",
+    ],
+    "servidores": [
+        "SERVIDORES_VER",
+        "SISTEMA_SERVIDORES_VER",
+    ],
+    "programacion": [
+        "SCHEDULER_VER",
+        "PROGRAMACION_VER",
+    ],
+    "automatizaciones": [
+        "AUTOMATIZACIONES_VER",
+    ],
+    "asignaciones": [
+        "ASIGNACIONES_VER",
+        "SISTEMA_ASIGNACIONES_VER",
+    ],
+    "catalogo_sql": [
+        "CATALOGO_SQL_VER",
+    ],
+    "explorador_bd": [
+        "EXPLORADOR_BD_VER",
+    ],
+    "alertas": [
+        "ALERTAS_VER",
+    ],
+    "usuarios": [
+        "SISTEMA_USUARIOS_VER",
+        "USUARIOS_VER",
+    ],
+}
+
+
+def _normalize_permission_codes(permisos: List[str]) -> List[str]:
+    normalized = set()
+
+    for permiso in permisos or []:
+        if not permiso:
+            continue
+
+        raw = str(permiso).strip()
+        if not raw:
+            continue
+
+        normalized.add(raw)
+        normalized.add(raw.upper())
+
+        if "." in raw:
+            modulo, accion = raw.rsplit(".", 1)
+            normalized.add(f"{modulo}_{accion}".upper())
+
+    return sorted(normalized)
+
+
+def _group_permissions_by_module(permisos_flat: List[str]) -> Dict[str, Dict[str, bool]]:
+    grouped = {}
+
+    for permiso in permisos_flat or []:
+        if "_" not in permiso:
+            continue
+
+        modulo, accion = permiso.rsplit("_", 1)
+        if not modulo or not accion:
+            continue
+
+        grouped.setdefault(modulo, {})[accion] = True
+
+    return grouped
+
+
+def _build_menu_permissions(
+    permissions_flat: List[str],
+    tiene_acceso_global: bool,
+) -> Dict[str, bool]:
+    permission_set = set(_normalize_permission_codes(permissions_flat))
+
+    menu = {}
+    for menu_key, required_permissions in MENU_PERMISSION_MAP.items():
+        if menu_key == "mis_tareas":
+            menu[menu_key] = True
+            continue
+
+        menu[menu_key] = bool(
+            tiene_acceso_global
+            or any(perm in permission_set for perm in required_permissions)
+        )
+
+    return menu
+
+
+async def _build_effective_permissions_payload(current_user: Dict) -> Dict:
+    context = await resolve_user_access_context(current_user)
+
+    db = service.repo.get_db()
+    rbac_payload = get_rbac_user_permissions(db, current_user)
+
+    permisos_originales = rbac_payload.get("permisos", []) or []
+    permisos_flat = _normalize_permission_codes(permisos_originales)
+    permissions_by_module = _group_permissions_by_module(permisos_flat)
+
+    roles = []
+    for role in rbac_payload.get("roles", []) or []:
+        roles.append({
+            "rol_id": role.get("id"),
+            "codigo": role.get("nombre"),
+            "nombre": role.get("descripcion") or role.get("nombre"),
+            "nivel_jerarquia": role.get("nivel_jerarquia", 0),
+            "es_sistema": role.get("es_sistema", False),
+            "activo": role.get("activo", True),
+        })
+
+    return {
+        "user_id": context.user_id,
+        "email": context.email,
+        "role_legacy": current_user.get("role"),
+        "source": "RBAC_SQL_CANONICAL_WITH_LEGACY_COMPAT",
+        "roles": roles,
+        "permissions": permissions_by_module,
+        "permissions_flat": permisos_flat,
+        "scope": {
+            "tiene_acceso_global": context.tiene_acceso_global,
+            "fuente_acceso": context.fuente_acceso,
+            "empresas_ids": context.empresas_ids,
+            "empresa_default_id": context.empresa_default_id,
+            "servers_ids": context.servers_ids,
+            "almacenes_por_server": context.almacenes_por_server,
+            "sucursales_por_server": context.sucursales_por_server,
+            "empresas_count": len(context.empresas_ids),
+            "servers_count": len(context.servers_ids),
+        },
+    }
+
+
+@router.get("/auth/me/effective-permissions")
+async def get_my_effective_permissions(current_user: Dict = Depends(get_user_dual)):
+    """
+    Retorna permisos efectivos desde RBAC SQL canónico.
+    """
+    return await _build_effective_permissions_payload(current_user)
+
+
 @router.get("/auth/me/menu-permissions")
 async def get_my_menu_permissions(current_user: Dict = Depends(get_user_dual)):
     """
-    BARRIDO SEGURIDAD: Retorna los permisos de menú efectivos para el usuario.
-    
-    Este endpoint es para que el frontend sepa qué módulos mostrar.
-    Combina:
-    - Rol legacy (Usuario, Supervisor, Administrador)
-    - sec_roles RBAC
-    - permisos funcionales específicos
-    
-    Retorna un diccionario con módulos y si el usuario tiene acceso.
+    Retorna permisos de menú derivados de permisos efectivos.
     """
-    context = await resolve_user_access_context(current_user)
-    
-    # Definir permisos por módulo
-    # Estos permisos determinan qué módulos se muestran en el menú
-    modulos_permisos = {
-        'mis_tareas': True,  # Todos los usuarios autenticados
-        'tablero_ejecutivo': (
-            context.tiene_acceso_global or 
-            current_user.get('role') in ['Supervisor', 'Administrador'] or
-            'COMERCIAL_TABLERO_VER' in context.permisos or
-            len(context.servers_ids) > 0  # Si tiene servidores asignados
-        ),
-        'comercial': (
-            context.tiene_acceso_global or
-            len(context.servers_ids) > 0 or
-            'COMERCIAL_DASHBOARD_VER' in context.permisos
-        ),
-        'compras': (
-            context.tiene_acceso_global or
-            len(context.servers_ids) > 0 or
-            'COMPRAS_DASHBOARD_VER' in context.permisos
-        ),
-        'operaciones': (
-            context.tiene_acceso_global or
-            len(context.servers_ids) > 0
-        ),
-        'finanzas': (
-            context.tiene_acceso_global or
-            current_user.get('role') in ['Supervisor', 'Administrador'] or
-            'FINANZAS_VER' in context.permisos
-        ),
-        'produccion': (
-            context.tiene_acceso_global or
-            current_user.get('role') in ['Supervisor', 'Administrador']
-        ),
-        'recursos_humanos': (
-            context.tiene_acceso_global or
-            current_user.get('role') in ['Supervisor', 'Administrador'] or
-            'RH_VER' in context.permisos
-        ),
-        'reportes_bi': (
-            context.tiene_acceso_global or
-            current_user.get('role') in ['Supervisor', 'Administrador']
-        ),
-        'catalogos': (
-            context.tiene_acceso_global or
-            current_user.get('role') in ['Supervisor', 'Administrador'] or
-            len(context.permisos_catalogos) > 0
-        ),
-        # Sistema
-        'centro_control': (
-            context.tiene_acceso_global or
-            current_user.get('role') in ['Supervisor', 'Administrador', 'Director']
-        ),
-        'servidores': (
-            context.tiene_acceso_global or
-            current_user.get('role') == 'Administrador'
-        ),
-        'programacion': (
-            context.tiene_acceso_global or
-            current_user.get('role') in ['Supervisor', 'Administrador'] or
-            'SCHEDULER_VER' in context.permisos
-        ),
-        'automatizaciones': (
-            context.tiene_acceso_global or
-            current_user.get('role') in ['Supervisor', 'Administrador', 'Gerente', 'Director', 'Auditor']
-        ),
-        'asignaciones': (
-            context.tiene_acceso_global or
-            current_user.get('role') == 'Administrador'
-        ),
-        'catalogo_sql': (
-            context.tiene_acceso_global or
-            current_user.get('role') in ['Supervisor', 'Administrador']
-        ),
-        'explorador_bd': (
-            context.tiene_acceso_global or
-            current_user.get('role') == 'Administrador'
-        ),
-        'alertas': (
-            context.tiene_acceso_global or
-            current_user.get('role') in ['Supervisor', 'Administrador']
-        ),
-        'usuarios': (
-            context.tiene_acceso_global or
-            current_user.get('role') == 'Administrador' or
-            'SISTEMA_USUARIOS_VER' in context.permisos
-        ),
-    }
-    
+    effective = await _build_effective_permissions_payload(current_user)
+    scope = effective.get("scope", {})
+    permissions_flat = effective.get("permissions_flat", [])
+
+    modulos_permisos = _build_menu_permissions(
+        permissions_flat=permissions_flat,
+        tiene_acceso_global=bool(scope.get("tiene_acceso_global")),
+    )
+
     return {
-        'user_id': context.user_id,
-        'email': context.email,
-        'role_legacy': current_user.get('role'),
-        'tiene_acceso_global': context.tiene_acceso_global,
-        'fuente_acceso': context.fuente_acceso,
-        'permisos_modulos': modulos_permisos,
-        'permisos_funcionales': context.permisos,
-        'sec_roles': context.sec_roles,
-        'servers_count': len(context.servers_ids),
-        'empresas_count': len(context.empresas_ids),
+        "user_id": effective.get("user_id"),
+        "email": effective.get("email"),
+        "role_legacy": effective.get("role_legacy"),
+        "source": effective.get("source"),
+        "tiene_acceso_global": scope.get("tiene_acceso_global"),
+        "fuente_acceso": scope.get("fuente_acceso"),
+        "permisos_modulos": modulos_permisos,
+        "permisos_funcionales": permissions_flat,
+        "roles": effective.get("roles", []),
+        "servers_count": scope.get("servers_count", 0),
+        "empresas_count": scope.get("empresas_count", 0),
     }
 
 
