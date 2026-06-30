@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import BitacoraRBAC from '@/components/admin/BitacoraRBAC';
 // FASE 6: Utilidades de estilo para evitar ternarios anidados
 import { getRoleBgClass, getNivelAprobacionClass, getNivelAprobacionDesc } from '../utils/styleHelpers';
+import { PasswordInput, PasswordRules, isPasswordPolicySatisfied } from '@/components/auth/PasswordControls';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -27,8 +28,11 @@ const Usuarios = () => {
   // AuthContext es la fuente primaria (persiste en estado React durante la
   // navegación SPA); getSessionUser es el fallback de caché.
   const { user: authUser } = useAuth();
-  const currentUser = authUser || getSessionUser() || {};
-  
+
+  // RBAC canónico para visibilidad de tabs: fuente primaria /auth/me/effective-permissions
+  const [effectivePermissions, setEffectivePermissions] = useState(null);
+  const [effectivePermissionsLoading, setEffectivePermissionsLoading] = useState(true);
+
   // ============= ESTADOS USUARIOS =============
   const [users, setUsers] = useState([]);
   const [servers, setServers] = useState([]);
@@ -38,7 +42,7 @@ const Usuarios = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [sucursalesMap, setSucursalesMap] = useState({});
   const [departamentosMap, setDepartamentosMap] = useState({});
-  
+
   // ============= ESTADOS ROLES =============
   const [roles, setRoles] = useState([]);
   const [modulos, setModulos] = useState([]);
@@ -50,17 +54,17 @@ const Usuarios = () => {
     descripcion: '',
     permisos: []
   });
-  
+
   // ============= ESTADOS VISTA EXPANDIR/CONTRAER =============
   const [usersExpanded, setUsersExpanded] = useState(true);
   const [rolesExpanded, setRolesExpanded] = useState(true);
-  
+
   // ============= ESTADOS BÚSQUEDA =============
   const [searchUsers, setSearchUsers] = useState('');
   const [searchRoles, setSearchRoles] = useState('');
   // P0 USUARIOS: mostrar/ocultar inactivos (default: ocultos)
   const [showInactive, setShowInactive] = useState(false);
-  
+
   // ============= ESTADOS PERMISOS CATÁLOGOS =============
   const [usuariosCatalogos, setUsuariosCatalogos] = useState([]);
   const [catalogosDisponibles, setCatalogosDisponibles] = useState([]);
@@ -73,16 +77,16 @@ const Usuarios = () => {
     puede_liberar: false
   });
   const [savingPermisosCat, setSavingPermisosCat] = useState(false);
-  
+
   // ============= ESTADOS ESTRUCTURA =============
   const [estructuraData, setEstructuraData] = useState(null);
   const [mapeoData, setMapeoData] = useState(null);
   const [estructuraLoading, setEstructuraLoading] = useState(false);
-  
+
   // ============= ESTADOS RBAC PILOTO (FASE 7 - UI mínima) =============
   const [rbacExpandedUser, setRbacExpandedUser] = useState(null);
   const [rbacSaving, setRbacSaving] = useState(false);
-  
+
   // ============= ESTADOS PROVEEDORES =============
   const [proveedores, setProveedores] = useState([]);
   const [filtroProveedores, setFiltroProveedores] = useState('all');
@@ -91,7 +95,7 @@ const Usuarios = () => {
   const [proveedorSeleccionado, setProveedorSeleccionado] = useState(null);
   const [sucursalesProveedor, setSucursalesProveedor] = useState([]);
   const [savingProveedor, setSavingProveedor] = useState(false);
-  
+
   // ============= ESTADOS FORMULARIO USUARIOS =============
   const [formData, setFormData] = useState({
     name: '',
@@ -100,10 +104,10 @@ const Usuarios = () => {
     role: 'Usuario',
     sucursales: []
   });
-  
+
   const [editMode, setEditMode] = useState(false);
   const [editUserId, setEditUserId] = useState(null);
-  
+
   const [permissionsData, setPermissionsData] = useState({
     allowed_servers: [],
     allowed_sucursales: {},
@@ -163,7 +167,7 @@ const Usuarios = () => {
         api.get('/sistema/estructura-organizacional'),
         api.get('/sistema/mapeo-servidores')
       ]);
-      
+
       setEstructuraData(estructuraRes.data);
       setMapeoData(mapeoRes.data);
     } catch (error) {
@@ -171,6 +175,35 @@ const Usuarios = () => {
     } finally {
       setEstructuraLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadEffectivePermissions = async () => {
+      setEffectivePermissionsLoading(true);
+      try {
+        const response = await api.get('/auth/me/effective-permissions');
+        if (mounted) {
+          setEffectivePermissions(response.data || {});
+        }
+      } catch (error) {
+        logger.error('Error cargando permisos efectivos:', error);
+        if (mounted) {
+          setEffectivePermissions({});
+        }
+      } finally {
+        if (mounted) {
+          setEffectivePermissionsLoading(false);
+        }
+      }
+    };
+
+    loadEffectivePermissions();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -194,20 +227,20 @@ const Usuarios = () => {
       logger.error('Error cargando proveedores:', error);
     }
   };
-  
+
   const proveedoresFiltrados = proveedores
     .filter(s => filtroProveedores === 'all' || s.status === filtroProveedores)
-    .filter(s => 
+    .filter(s =>
       s.rfc?.toLowerCase().includes(searchProveedores.toLowerCase()) ||
       s.razon_social?.toLowerCase().includes(searchProveedores.toLowerCase()) ||
       s.email?.toLowerCase().includes(searchProveedores.toLowerCase())
     );
-  
+
   const proveedoresPendientesCount = proveedores.filter(s => s.status === 'pending').length;
-  
+
   const handleAprobarProveedor = async () => {
     if (!proveedorSeleccionado) return;
-    
+
     setSavingProveedor(true);
     try {
       await api.post('/portal/admin/approve-supplier', {
@@ -216,7 +249,7 @@ const Usuarios = () => {
         sucursales: sucursalesProveedor,
         approved_by: 'admin'
       });
-      
+
       toast.success(`Proveedor ${proveedorSeleccionado.rfc} aprobado`);
       loadProveedores();
       setModalProveedor(false);
@@ -228,10 +261,10 @@ const Usuarios = () => {
       setSavingProveedor(false);
     }
   };
-  
+
   const handleRechazarProveedor = async (supplier) => {
     if (!confirm(`¿Rechazar proveedor ${supplier.rfc}?`)) return;
-    
+
     try {
       await api.post('/portal/admin/approve-supplier', {
         supplier_id: supplier.id,
@@ -239,20 +272,20 @@ const Usuarios = () => {
         notes: 'Rechazado por administrador',
         approved_by: 'admin'
       });
-      
+
       toast.success(`Proveedor ${supplier.rfc} rechazado`);
       loadProveedores();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Error de conexión');
     }
   };
-  
+
   const openProveedorModal = (supplier) => {
     setProveedorSeleccionado(supplier);
     setSucursalesProveedor(supplier.sucursales_asignadas || []);
     setModalProveedor(true);
   };
-  
+
   const formatDateProv = (dateStr) => {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('es-MX', {
@@ -261,7 +294,7 @@ const Usuarios = () => {
       year: 'numeric'
     });
   };
-  
+
   const getProveedorStatusBadge = (status) => {
     const styles = {
       pending: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Pendiente' },
@@ -313,7 +346,7 @@ const Usuarios = () => {
         user_id: usuarioSeleccionadoCat.id,
         ...formPermisosCat
       });
-      
+
       toast.success('Permisos asignados correctamente');
       setModalPermisosCatalogos(false);
       loadUsuariosCatalogos();
@@ -327,7 +360,7 @@ const Usuarios = () => {
   const handleConfigurarNiveles = async (catalogoId, niveles) => {
     try {
       await api.put(`/sistema/catalogos/${catalogoId}/niveles`, { niveles_aprobacion: niveles });
-      
+
       toast.success(`Niveles de aprobación actualizados a ${niveles}`);
       loadCatalogosDisponibles();
     } catch (error) {
@@ -455,6 +488,13 @@ const Usuarios = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const shouldValidatePassword = !editMode || Boolean(formData.password);
+    if (!isPasswordPolicySatisfied(formData.password, { required: shouldValidatePassword })) {
+      toast.error('La contraseña debe cumplir las reglas de seguridad.');
+      return;
+    }
+
     try {
       if (editMode && editUserId) {
         // Actualizar usuario existente
@@ -507,10 +547,10 @@ const Usuarios = () => {
       allowed_sucursales: user.allowed_sucursales || {},
       allowed_warehouses: user.allowed_warehouses || {}
     });
-    
+
     // Abrir el diálogo primero
     setPermissionsDialogOpen(true);
-    
+
     // Luego cargar sucursales y departamentos en background
     for (const server of servers) {
       loadSucursalesForServer(server.id);
@@ -645,13 +685,13 @@ const Usuarios = () => {
     const currentRole = getCurrentUserRole();
     const currentLevel = ROLE_HIERARCHY[currentRole] || 0;
     const targetLevel = ROLE_HIERARCHY[targetUser?.role] || 0;
-    
+
     // SuperAdministrador puede gestionar a cualquiera
     if (currentLevel >= 100) return true;
-    
+
     // Administrador puede gestionar usuarios de menor nivel (no SuperAdministrador)
     if (currentLevel >= 3 && targetLevel < 100) return true;
-    
+
     return false;
   };
 
@@ -660,80 +700,86 @@ const Usuarios = () => {
     return ROLE_HIERARCHY[currentRole] >= 100;
   };
 
-  // ============= FASE 3: PERMISO ESTRUCTURA =============
-  // Verifica si el usuario actual puede ver el tab Estructura
-  // La decisión REAL está en backend - esto solo refleja la visibilidad
-  const canViewEstructura = () => {
-    const userData = getSessionUser() || {};
-    
-    // 1. Verificar permisos nuevos asignados (sec_permisos)
-    const permisosNuevos = userData.sec_permisos || [];
-    if (permisosNuevos.includes('SISTEMA_ESTRUCTURA_VER')) {
-      return true;
+  // ============= RBAC CANÓNICO: VISIBILIDAD DE TABS =============
+  // Fuente primaria: /auth/me/effective-permissions.
+  // No usar sec_permisos/sec_roles/role legacy como fuente primaria para tabs.
+  const TAB_PERMISSIONS = {
+    usuarios: 'SISTEMA_USUARIOS_VER',
+    roles: 'SISTEMA_ROLES_VER',
+    permisosCatalogos: 'SISTEMA_PERMISOS_CATALOGOS_VER',
+    estructura: 'SISTEMA_ESTRUCTURA_VER',
+    bitacora: 'SISTEMA_RBAC_BITACORA_VER'
+  };
+
+  const getEffectivePermissionCodes = () => {
+    const flat = effectivePermissions?.permissions_flat;
+    if (Array.isArray(flat)) {
+      return flat.filter(Boolean);
     }
-    
-    // 2. FALLBACK LEGACY: SuperAdmin siempre puede ver
-    if (isSuperAdmin(userData.role)) {
-      return true;
+
+    const permissions = effectivePermissions?.permissions;
+    if (Array.isArray(permissions)) {
+      return permissions
+        .map((permission) => {
+          if (typeof permission === 'string') return permission;
+          return permission?.codigo || permission?.code || permission?.permission || permission?.name;
+        })
+        .filter(Boolean);
     }
-    
-    // 3. Otros roles: solo si tienen permiso explícito
-    return false;
+
+    return [];
   };
 
-  // Control de acceso para tab Usuarios
-  const canViewUsuarios = () => {
-    const userData = getSessionUser() || {};
-    const permisosNuevos = userData.sec_permisos || [];
-    
-    // SuperAdmin siempre puede
-    if (isSuperAdmin(userData.role)) return true;
-    
-    // Permiso RBAC específico
-    if (permisosNuevos.includes('SISTEMA_USUARIOS_VER')) return true;
-    
-    // Fallback legacy: Administrador y Supervisor
-    if (isAdmin(userData.role) || (userData.role || '').toUpperCase().includes('SUPERVISOR')) return true;
-    
-    return false;
+  const getEffectiveRoleCodes = () => {
+    const rolesEfectivos = effectivePermissions?.roles;
+    if (!Array.isArray(rolesEfectivos)) {
+      return [];
+    }
+
+    return rolesEfectivos
+      .map((role) => {
+        if (typeof role === 'string') return role;
+        return role?.codigo || role?.code || role?.nombre || role?.name;
+      })
+      .filter(Boolean);
   };
 
-  // Control de acceso para tab Roles
-  const canViewRoles = () => {
-    const userData = getSessionUser() || {};
-    const permisosNuevos = userData.sec_permisos || [];
-    
-    // SuperAdmin siempre puede
-    if (isSuperAdmin(userData.role)) return true;
-    
-    // Permiso RBAC específico
-    if (permisosNuevos.includes('SISTEMA_ROLES_VER')) return true;
-    
-    // Fallback legacy: solo Administrador
-    if (isAdmin(userData.role)) return true;
-    
-    return false;
+  const normalizeRbacCode = (value) => (
+    String(value || '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9_]/g, '')
+  );
+
+  const hasPermission = (permissionCode) => {
+    const expected = normalizeRbacCode(permissionCode);
+    return getEffectivePermissionCodes()
+      .map(normalizeRbacCode)
+      .includes(expected);
   };
 
-  // Control de acceso para tab Permisos Catálogos
-  const canViewPermisosCatalogos = () => {
-    const userData = getSessionUser() || {};
-    
-    // SuperAdmin siempre puede
-    if (isSuperAdmin(userData.role)) return true;
-    
-    // Administrador y Supervisor pueden
-    if (isAdmin(userData.role) || (userData.role || '').toUpperCase().includes('SUPERVISOR')) return true;
-    
-    return false;
+  const hasAnyPermission = (permissionCodes = []) => {
+    return permissionCodes.some((permissionCode) => hasPermission(permissionCode));
   };
 
-  // Control de acceso para tab Bitácora
-  const canViewBitacora = () => {
-    const userData = getSessionUser() || {};
-    // Solo SuperAdministrador
-    return isSuperAdmin(userData.role);
+  const isEffectiveSuperAdmin = () => {
+    const rolesEfectivos = getEffectiveRoleCodes().map(normalizeRbacCode);
+    return rolesEfectivos.includes('SUPERADMIN') || rolesEfectivos.includes('SUPERADMINISTRADOR');
   };
+
+  const canViewTab = (tabKey) => {
+    const permissionCode = TAB_PERMISSIONS[tabKey];
+    if (!permissionCode || effectivePermissionsLoading) {
+      return false;
+    }
+
+    return hasPermission(permissionCode) || isEffectiveSuperAdmin();
+  };
+
+  const canViewUsuarios = () => canViewTab('usuarios');
+  const canViewRoles = () => canViewTab('roles');
+  const canViewPermisosCatalogos = () => canViewTab('permisosCatalogos');
+  const canViewEstructura = () => canViewTab('estructura');
+  const canViewBitacora = () => canViewTab('bitacora');
 
   // ============= FASE 7/8/10/11: FUNCIONES RBAC PILOTO =============
   // Whitelist estricta FASE 11 - NO EXPANDIR sin autorización
@@ -896,6 +942,7 @@ const Usuarios = () => {
         </TabsList>
 
         {/* ============= TAB USUARIOS ============= */}
+        {canViewTab('usuarios') && (
         <TabsContent value="usuarios" className="mt-6">
           <div className="flex flex-col gap-3 mb-4">
             <div className="flex items-center justify-between">
@@ -906,9 +953,9 @@ const Usuarios = () => {
                     <span className="text-red-500"> · {users.filter(u => !u.active).length} inactivo(s)</span>
                   )}
                 </p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setUsersExpanded(!usersExpanded)}
                   className="flex items-center gap-1"
                   data-testid="toggle-users-view"
@@ -1029,8 +1076,8 @@ const Usuarios = () => {
                               Permisos
                             </Button>
                           )}
-                          <Button variant="outline" size="sm" className="flex-1" onClick={() => handleDelete(user.id)} 
-                            disabled={(isAdmin(user.role) && !isSuperAdmin(user.role) && users.filter(u => isAdmin(u.role) && !isSuperAdmin(u.role)).length === 1) || 
+                          <Button variant="outline" size="sm" className="flex-1" onClick={() => handleDelete(user.id)}
+                            disabled={(isAdmin(user.role) && !isSuperAdmin(user.role) && users.filter(u => isAdmin(u.role) && !isSuperAdmin(u.role)).length === 1) ||
                                       (isSuperAdmin(user.role) && users.filter(u => isSuperAdmin(u.role)).length === 1)}
                             data-testid="delete-user-button">
                             <Trash2 className="h-4 w-4 mr-1" />
@@ -1233,16 +1280,18 @@ const Usuarios = () => {
             </div>
           )}
         </TabsContent>
+        )}
 
         {/* ============= TAB ROLES ============= */}
+        {canViewTab('roles') && (
         <TabsContent value="roles" className="mt-6">
           <div className="flex flex-col gap-3 mb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <p className="text-sm text-zinc-600">{roles.length} rol(es) configurado(s)</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setRolesExpanded(!rolesExpanded)}
                   className="flex items-center gap-1"
                   data-testid="toggle-roles-view"
@@ -1295,8 +1344,8 @@ const Usuarios = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${getRoleBgClass(role.nombre)}`}>
-                          {role.nombre === 'Administrador' ? <Shield className="h-5 w-5 text-red-600" /> : 
-                           role.nombre === 'Supervisor' ? <Eye className="h-5 w-5 text-blue-600" /> : 
+                          {role.nombre === 'Administrador' ? <Shield className="h-5 w-5 text-red-600" /> :
+                           role.nombre === 'Supervisor' ? <Eye className="h-5 w-5 text-blue-600" /> :
                            <User className="h-5 w-5 text-green-600" />}
                         </div>
                         <div>
@@ -1313,7 +1362,7 @@ const Usuarios = () => {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-zinc-600 mb-3">{role.descripcion || 'Sin descripción'}</p>
-                    
+
                     <div className="mb-3">
                       <p className="text-xs font-medium text-zinc-500 mb-1">Permisos ({role.permisos?.length || 0}):</p>
                       <div className="flex flex-wrap gap-1">
@@ -1405,8 +1454,10 @@ const Usuarios = () => {
             </div>
           )}
         </TabsContent>
+        )}
 
         {/* ============= TAB PERMISOS CATÁLOGOS ============= */}
+        {canViewTab('permisosCatalogos') && (
         <TabsContent value="permisos-catalogos" className="mt-6 space-y-6">
           {/* Sección: Configurar Permisos de Catálogos por Usuario */}
           <Card>
@@ -1530,8 +1581,10 @@ const Usuarios = () => {
             </CardContent>
           </Card>
         </TabsContent>
+        )}
 
         {/* ============= TAB ESTRUCTURA ============= */}
+        {canViewTab('estructura') && (
         <TabsContent value="estructura" className="mt-6" data-testid="estructura-content">
           <Card>
             <CardHeader className="py-4">
@@ -1543,9 +1596,9 @@ const Usuarios = () => {
                     RBAC Activo
                   </Badge>
                 </CardTitle>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={loadEstructura}
                   disabled={estructuraLoading}
                   data-testid="btn-cargar-estructura"
@@ -1581,7 +1634,7 @@ const Usuarios = () => {
                     </div>
                     <div className="bg-green-50 p-4 rounded-lg text-center">
                       <p className="text-2xl font-bold text-green-700">
-                        {estructuraData.empresas?.reduce((acc, e) => 
+                        {estructuraData.empresas?.reduce((acc, e) =>
                           acc + (e.unidades_negocio?.reduce((acc2, u) => acc2 + (u.sucursales?.length || 0), 0) || 0), 0) || 0}
                       </p>
                       <p className="text-xs text-green-600">Sucursales</p>
@@ -1604,7 +1657,7 @@ const Usuarios = () => {
                             {empresa.unidades_negocio?.length || 0} unidades
                           </Badge>
                         </div>
-                        
+
                         {/* Unidades de negocio */}
                         <div className="ml-8 space-y-3">
                           {(empresa.unidades_negocio || []).map((unidad) => (
@@ -1623,12 +1676,12 @@ const Usuarios = () => {
                                   {unidad.sucursales?.length || 0} sucursales
                                 </Badge>
                               </div>
-                              
+
                               {/* Sucursales */}
                               {(unidad.sucursales || []).length > 0 && (
                                 <div className="ml-6 mt-2 flex flex-wrap gap-2">
                                   {(unidad.sucursales || []).map((sucursal) => (
-                                    <span 
+                                    <span
                                       key={sucursal.id}
                                       className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded text-xs border border-green-200"
                                     >
@@ -1673,7 +1726,7 @@ const Usuarios = () => {
                   {/* Nota de estado */}
                   <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4">
                     <p className="text-xs text-green-700">
-                      <strong>Estructura Organizacional:</strong> Esta información muestra la jerarquía de la empresa. 
+                      <strong>Estructura Organizacional:</strong> Esta información muestra la jerarquía de la empresa.
                       El filtrado de alcance RBAC ya está activo en los módulos piloto (Usuarios).
                     </p>
                   </div>
@@ -1682,10 +1735,10 @@ const Usuarios = () => {
             </CardContent>
           </Card>
         </TabsContent>
+        )}
 
         {/* ============= TAB BITÁCORA RBAC (FASE 12) ============= */}
-        {/* Solo visible para SuperAdministrador */}
-        {isSuperAdmin(currentUser?.role) && (
+        {canViewTab('bitacora') && (
           <TabsContent value="bitacora" className="mt-6" data-testid="bitacora-content">
             <BitacoraRBAC />
           </TabsContent>
@@ -1707,7 +1760,7 @@ const Usuarios = () => {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
+
             <div className="p-6 space-y-4 overflow-y-auto flex-1">
               {/* SuperAdministrador tiene acceso total automático */}
               {isSuperAdmin(usuarioSeleccionadoCat?.role) ? (
@@ -1715,7 +1768,7 @@ const Usuarios = () => {
                   <div className="text-4xl mb-3">👑</div>
                   <h3 className="font-bold text-amber-800 text-lg mb-2">Acceso Total</h3>
                   <p className="text-amber-700 text-sm">
-                    El SuperAdministrador tiene acceso completo al 100% de la aplicación 
+                    El SuperAdministrador tiene acceso completo al 100% de la aplicación
                     sin restricción alguna. No requiere configuración de permisos.
                   </p>
                   <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -1729,7 +1782,7 @@ const Usuarios = () => {
               <>
               <div className="space-y-3">
                 <p className="text-xs font-semibold text-zinc-600 uppercase tracking-wide">Permisos de Flujo</p>
-                
+
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -1742,7 +1795,7 @@ const Usuarios = () => {
                     Puede solicitar altas en catálogos
                   </Label>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -1755,7 +1808,7 @@ const Usuarios = () => {
                     Puede autorizar altas (Nivel 1 - Aprobación)
                   </Label>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -1769,7 +1822,7 @@ const Usuarios = () => {
                   </Label>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Catálogos Permitidos:</Label>
                 <div className="grid grid-cols-2 gap-2 p-3 border rounded-lg max-h-[300px] overflow-y-auto">
@@ -1798,7 +1851,7 @@ const Usuarios = () => {
               </>
               )}
             </div>
-            
+
             <div className="border-t px-6 py-4 flex justify-end gap-2 bg-zinc-50">
               <Button variant="outline" onClick={() => setModalPermisosCatalogos(false)}>Cancelar</Button>
               <Button onClick={handleGuardarPermisosCatalogos} disabled={savingPermisosCat} data-testid="btn-guardar-permisos-cat">
@@ -1815,7 +1868,11 @@ const Usuarios = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{editMode ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
-            <DialogDescription>Crea un nuevo usuario para el sistema</DialogDescription>
+            <DialogDescription>
+              {editMode
+                ? 'Actualiza los datos del usuario. La contraseña solo cambia si capturas una nueva.'
+                : 'Crea un nuevo usuario para el sistema.'}
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -1828,7 +1885,17 @@ const Usuarios = () => {
             </div>
             <div className="space-y-2">
               <Label>{editMode ? 'Nueva Contraseña (dejar vacío para no cambiar)' : 'Contraseña'}</Label>
-              <Input type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} required={!editMode} placeholder={editMode ? "Dejar vacío para mantener" : ""} data-testid="user-password-input" />
+              <PasswordInput
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                required={!editMode}
+                maxLength={128}
+                placeholder={editMode ? "Dejar vacío para mantener" : "••••••••"}
+                data-testid="user-password-input"
+              />
+              {(!editMode || formData.password) && (
+                <PasswordRules password={formData.password} compact />
+              )}
             </div>
             <div className="space-y-2">
               <Label>Rol</Label>
@@ -1863,7 +1930,13 @@ const Usuarios = () => {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-              <Button type="submit" className="bg-zinc-900 text-zinc-50" data-testid="submit-user-button">Crear</Button>
+              <Button
+                type="submit"
+                className="bg-zinc-900 text-zinc-50"
+                data-testid="submit-user-button"
+              >
+                {editMode ? 'Guardar cambios' : 'Crear usuario'}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -1876,7 +1949,7 @@ const Usuarios = () => {
             <DialogTitle>Permisos de {selectedUser?.name}</DialogTitle>
             <DialogDescription>Configura los servidores, sucursales y almacenes que puede ver este usuario</DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-6 py-4">
             {servers.length === 0 ? (
               <p className="text-zinc-500">No hay servidores configurados</p>
@@ -1885,7 +1958,7 @@ const Usuarios = () => {
                 const isServerSelected = permissionsData.allowed_servers.includes(server.id);
                 const serverSucursales = sucursalesMap[server.id] || [];
                 const serverDepartamentos = departamentosMap[server.id] || [];
-                
+
                 return (
                   <div key={server.id} className="border rounded-lg p-4">
                     <div className="flex items-center gap-3 mb-3">
@@ -1900,7 +1973,7 @@ const Usuarios = () => {
                         <Badge variant="outline" className="text-xs">{server.system_type}</Badge>
                       </label>
                     </div>
-                    
+
                     {isServerSelected && (
                       <div className="ml-6 space-y-4">
                         {/* Sucursales */}
@@ -1926,7 +1999,7 @@ const Usuarios = () => {
                             </div>
                           </div>
                         )}
-                        
+
                         {/* Departamentos/Almacenes */}
                         {serverDepartamentos.length > 0 && (
                           <div className="bg-blue-50 p-3 rounded">
@@ -1973,7 +2046,7 @@ const Usuarios = () => {
           <DialogHeader>
             <DialogTitle>{editingRole ? 'Editar Rol' : 'Nuevo Rol'}</DialogTitle>
             <DialogDescription>
-              {editingRole?.es_sistema 
+              {editingRole?.es_sistema
                 ? 'Este es un rol de sistema. Solo puedes modificar la descripción y permisos.'
                 : 'Define el nombre, descripción y permisos del rol'}
             </DialogDescription>
@@ -1982,26 +2055,26 @@ const Usuarios = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Nombre del Rol</Label>
-                <Input 
-                  value={roleFormData.nombre} 
-                  onChange={(e) => setRoleFormData({...roleFormData, nombre: e.target.value})} 
-                  required 
+                <Input
+                  value={roleFormData.nombre}
+                  onChange={(e) => setRoleFormData({...roleFormData, nombre: e.target.value})}
+                  required
                   disabled={editingRole?.es_sistema}
                   placeholder="Ej: Auditor, Gerente, etc."
-                  data-testid="role-name-input" 
+                  data-testid="role-name-input"
                 />
               </div>
               <div className="space-y-2">
                 <Label>Descripción</Label>
-                <Input 
-                  value={roleFormData.descripcion} 
-                  onChange={(e) => setRoleFormData({...roleFormData, descripcion: e.target.value})} 
+                <Input
+                  value={roleFormData.descripcion}
+                  onChange={(e) => setRoleFormData({...roleFormData, descripcion: e.target.value})}
                   placeholder="Breve descripción del rol"
-                  data-testid="role-desc-input" 
+                  data-testid="role-desc-input"
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label>Permisos de Módulos</Label>
               <p className="text-xs text-zinc-500 mb-2">Selecciona los módulos a los que tendrá acceso este rol</p>
