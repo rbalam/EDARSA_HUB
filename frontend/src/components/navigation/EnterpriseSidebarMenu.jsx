@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Activity,
@@ -216,31 +216,15 @@ export default function EnterpriseSidebarMenu({
     }
   });
 
-  const cachedSqlMenus = useMemo(() => {
-    try {
-      const raw = localStorage.getItem("edarsahub_sql_enterprise_menu_cache_v1");
-      const parsed = JSON.parse(raw || "null");
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
-    } catch {
-      return null;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (Array.isArray(sqlMenus) && sqlMenus.length > 0) {
-      localStorage.setItem("edarsahub_sql_enterprise_menu_cache_v1", JSON.stringify(sqlMenus));
-    }
-  }, [sqlMenus]);
-
   const sqlMenusForRender = Array.isArray(sqlMenus) && sqlMenus.length > 0
     ? sqlMenus
-    : cachedSqlMenus;
+    : null;
 
   const groups = useMemo(() => {
     const sqlGroups = normalizeSqlEnterpriseGroups(sqlMenusForRender);
 
-    // SQL canónico es la única fuente del menú Enterprise.
-    // Si aún no llega la API, usamos el último menú SQL válido cacheado.
+    // SQL canonico actual es la unica fuente del menu Enterprise.
+    // Sin respuesta SQL autorizada, no hay fallback visual por rol ni cache.
     if (Array.isArray(sqlGroups)) {
       return sqlGroups;
     }
