@@ -136,6 +136,8 @@ No promover a `Edarsahub_Produccion` hasta tener:
 - Reporte SQL Fase 2A sin criticos.
 - Migracion `USUARIO -> OPERADOR` aplicada si 2A confirma usuarios activos sobre `USUARIO`.
 - Validacion 2C sin hallazgos.
+- Migracion de desactivacion de roles vacios sin usuarios activos aplicada.
+- Validacion 2D sin roles objetivo activos y sin asignaciones activas sobre esos roles.
 - Reporte API Fase 2B sin FAIL/WARN en modo `--strict`.
 - Decision tomada sobre roles vacios: poblar permisos, reasignar usuarios, o mantenerlos vacios solo si no afectan usuarios.
 - Decision tomada sobre el fallback legacy del menu frontend.
