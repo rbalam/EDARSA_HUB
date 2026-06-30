@@ -93,6 +93,9 @@ ERRORES_ESTRUCTURA_SQL = [
     "does not exist"
 ]
 
+SOFTRESTAURANT_TYPES = {"softrestaurant", "softrestaurant_pro", "softrestaurantpro", "sr"}
+MPRO_TYPES = {"mpro", "managementpro"}
+
 
 # =============================================================================
 # FUNCIONES DE BLINDAJE Y VALIDACIÓN
@@ -106,6 +109,16 @@ def _es_error_estructura_sql(error_msg: str) -> bool:
     """
     error_lower = str(error_msg).lower()
     return any(indicador in error_lower for indicador in ERRORES_ESTRUCTURA_SQL)
+
+
+def _normalizar_system_type(system_type: str) -> str:
+    """Normaliza variantes operativas a los motores soportados por el detector."""
+    normalized = str(system_type or "").strip().lower()
+    if normalized in SOFTRESTAURANT_TYPES:
+        return "SoftRestaurant"
+    if normalized in MPRO_TYPES:
+        return "MPRO"
+    return str(system_type or "").strip()
 
 
 def _validar_tabla_existe(servidor: Dict, tabla: str) -> bool:
@@ -375,8 +388,9 @@ class InventariosDetectorJob:
         # Filtrar solo servidores con system_type compatible
         compatible = []
         for s in servidores:
-            st = s.get('system_type', '').lower()
-            if st in ['softrestaurant', 'sr', 'mpro']:
+            canonical_type = _normalizar_system_type(s.get('system_type', ''))
+            if canonical_type in ['SoftRestaurant', 'MPRO']:
+                s['system_type_canonical'] = canonical_type
                 compatible.append(s)
         
         return compatible
@@ -419,7 +433,9 @@ class InventariosDetectorJob:
     async def _escanear_servidor(self, servidor: Dict):
         """Escanea un servidor en busca de inventarios nuevos."""
         server_name = servidor.get('name', 'Unknown')
-        system_type = servidor.get('system_type', '')
+        system_type = _normalizar_system_type(
+            servidor.get('system_type_canonical') or servidor.get('system_type', '')
+        )
         
         self.stats["servidores_escaneados"] += 1
         logger.info(f"[INVENTARIOS_DETECTOR] Escaneando {server_name} ({system_type})")
@@ -460,7 +476,9 @@ class InventariosDetectorJob:
         server_name = servidor.get('name', 'DESCONOCIDO')
         
         # BLINDAJE 1: Validar system_type
-        system_type = servidor.get('system_type', '')
+        system_type = _normalizar_system_type(
+            servidor.get('system_type_canonical') or servidor.get('system_type', '')
+        )
         if system_type != 'SoftRestaurant':
             logger.warning(f"[INVENTARIOS_DETECTOR] {server_name}: _detectar_soft llamado con system_type={system_type} (esperado: SoftRestaurant)")
             return inventarios

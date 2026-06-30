@@ -34,6 +34,34 @@ EDARSAHUB_CONFIG = {
 }
 
 
+def _decrypt_password_for_internal_use(password_value: str) -> str:
+    """
+    Devuelve el password usable por jobs internos.
+
+    Servidores_Conexiones guarda password_encrypted para producción, pero algunos
+    registros legacy aún pueden venir en texto plano. No se loguea el valor.
+    """
+    if not password_value:
+        return ""
+
+    encrypted = False
+    try:
+        from core.secret_manager import decrypt_secret, is_encrypted_secret
+
+        encrypted = is_encrypted_secret(password_value)
+        if encrypted:
+            return decrypt_secret(password_value)
+    except Exception as exc:
+        logger.warning(
+            "[SCHEDULER_SQL] No se pudo descifrar password de servidor externo: %s",
+            type(exc).__name__,
+        )
+        if encrypted:
+            return ""
+
+    return password_value
+
+
 def _execute_sql(query: str, params: tuple = None, fetch: bool = True) -> List[Dict]:
     """Ejecuta una query SQL de forma síncrona."""
     import pymssql
@@ -122,7 +150,7 @@ async def get_active_servers(server_id_filter: str = None) -> List[Dict]:
             'host': row.get('host'),
             'port': row.get('port'),
             'username': row.get('username'),
-            'password': row.get('password'),
+            'password': _decrypt_password_for_internal_use(row.get('password')),
             'database': row.get('database_name'),
             'system_type': row.get('system_type', 'softrestaurant'),
             'active': bool(row.get('active', True)),
