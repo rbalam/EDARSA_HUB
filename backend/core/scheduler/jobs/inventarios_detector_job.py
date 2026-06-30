@@ -42,7 +42,7 @@ Fecha: Abril 2026
 """
 
 import logging
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 import uuid
 from dataclasses import dataclass, asdict
@@ -74,110 +74,20 @@ ESTADOS = {
     "ERROR": "ERROR"
 }
 
-# Contexto de pool para jobs (aislado de endpoints web)
-SQL_CONTEXT_JOBS = "jobs"
-
-# Tablas requeridas por sistema para detección de inventarios
-TABLAS_REQUERIDAS = {
-    "SoftRestaurant": ["invfisico", "almacen"],
-    "MPRO": []  # MPRO no tiene estructura de inventarios compatible
-}
-
-# Errores SQL que indican tabla/columna inexistente (requieren invalidar conexión)
-ERRORES_ESTRUCTURA_SQL = [
-    "nombre de objeto",
-    "nombre de columna", 
-    "invalid object name",
-    "invalid column name",
-    "no es válido",
-    "does not exist"
-]
-
-SOFTRESTAURANT_TYPES = {"softrestaurant", "softrestaurant_pro", "softrestaurantpro", "sr"}
-MPRO_TYPES = {"mpro", "managementpro"}
-
-
 # =============================================================================
 # FUNCIONES DE BLINDAJE Y VALIDACIÓN
 # =============================================================================
 
-def _es_error_estructura_sql(error_msg: str) -> bool:
-    """
-    Detecta si un error SQL indica problema de estructura (tabla/columna inexistente).
-    
-    Estos errores requieren invalidar la conexión para evitar contaminar el pool.
-    """
-    error_lower = str(error_msg).lower()
-    return any(indicador in error_lower for indicador in ERRORES_ESTRUCTURA_SQL)
-
-
 def _normalizar_system_type(system_type: str) -> str:
     """Normaliza variantes operativas a los motores soportados por el detector."""
-    normalized = str(system_type or "").strip().lower()
-    if normalized in SOFTRESTAURANT_TYPES:
+    from core.system_type_utils import normalize_system_type
+
+    normalized = normalize_system_type(system_type)
+    if normalized == "SOFTRESTAURANT":
         return "SoftRestaurant"
-    if normalized in MPRO_TYPES:
+    if normalized == "MANAGEMENTPRO":
         return "MPRO"
     return str(system_type or "").strip()
-
-
-def _validar_tabla_existe(servidor: Dict, tabla: str) -> bool:
-    """
-    Valida que una tabla exista en el servidor antes de ejecutar queries.
-    
-    AISLAMIENTO (Abril 2026): Usa context="jobs" para no afectar pool web.
-    
-    Args:
-        servidor: Dict con configuración de conexión
-        tabla: Nombre de la tabla a validar
-        
-    Returns:
-        True si la tabla existe, False si no existe o hay error
-    """
-    from core.db import execute_sql_query
-    
-    try:
-        # Query estándar SQL Server para verificar existencia de tabla
-        query = f"""
-            SELECT 1 FROM INFORMATION_SCHEMA.TABLES 
-            WHERE TABLE_NAME = '{tabla}'
-        """
-        result = execute_sql_query(
-            servidor['host'],
-            servidor['port'],
-            servidor['database'],
-            servidor['username'],
-            servidor['password'],
-            query,
-            context=SQL_CONTEXT_JOBS  # AISLAMIENTO: Usar pool de jobs
-        )
-        existe = result is not None and len(result) > 0
-        logger.debug(f"[INVENTARIOS_DETECTOR] Tabla '{tabla}' en {servidor['name']}: {'EXISTE' if existe else 'NO EXISTE'}")
-        return existe
-        
-    except Exception as e:
-        logger.warning(f"[INVENTARIOS_DETECTOR] Error verificando tabla '{tabla}' en {servidor['name']}: {e}")
-        return False
-
-
-def _invalidar_conexion_si_error_estructura(servidor: Dict, error: Exception) -> None:
-    """
-    Si el error indica problema de estructura SQL, invalida la conexión del pool de JOBS.
-    
-    AISLAMIENTO (Abril 2026): Solo afecta el pool "jobs", NO el pool "web".
-    """
-    if _es_error_estructura_sql(str(error)):
-        try:
-            from core.db import parse_sql_server_host
-            from core.pool import get_pool_manager
-            
-            hostname, port, _ = parse_sql_server_host(servidor['host'], servidor['port'])
-            pool_manager = get_pool_manager()
-            # IMPORTANTE: Solo cerrar pool de jobs, NO el de web
-            pool_manager.close_pool(hostname, port, servidor['database'], context=SQL_CONTEXT_JOBS)
-            logger.warning(f"[INVENTARIOS_DETECTOR] Pool [jobs] invalidado para {servidor['name']} por error de estructura SQL")
-        except Exception as cleanup_error:
-            logger.error(f"[INVENTARIOS_DETECTOR] Error invalidando pool [jobs]: {cleanup_error}")
 
 
 # =============================================================================
@@ -460,122 +370,13 @@ class InventariosDetectorJob:
         except Exception as e:
             logger.warning(f"[INVENTARIOS_DETECTOR] {server_name}: Conexión fallida - {e}")
     
-    async def _detectar_soft(self, servidor: Dict) -> List[InventarioDetectado]:
-        """
-        Detecta inventarios en SoftRestaurant.
-        
-        BLINDAJE (Abril 2026):
-        - Valida system_type antes de ejecutar
-        - Valida existencia de tabla invfisico
-        - try/except con invalidación de conexión si error de estructura
-        - Salida controlada si no corresponde
-        """
-        from core.db import execute_sql_query
-        
-        inventarios = []
-        server_name = servidor.get('name', 'DESCONOCIDO')
-        
-        # BLINDAJE 1: Validar system_type
-        system_type = _normalizar_system_type(
-            servidor.get('system_type_canonical') or servidor.get('system_type', '')
-        )
-        if system_type != 'SoftRestaurant':
-            logger.warning(f"[INVENTARIOS_DETECTOR] {server_name}: _detectar_soft llamado con system_type={system_type} (esperado: SoftRestaurant)")
-            return inventarios
-        
-        # BLINDAJE 2: Validar existencia de tabla invfisico
-        if not _validar_tabla_existe(servidor, 'invfisico'):
-            logger.info(f"[INVENTARIOS_DETECTOR] {server_name}: Tabla 'invfisico' no existe - saltando detección")
-            return inventarios
-        
-        try:
-            # Query para obtener inventarios válidos recientes
-            query = """
-                WITH inventarios_validos AS (
-                    SELECT
-                        i.folio,
-                        i.fecha,
-                        i.idalmacen1 AS almacen_id,
-                        a.nombre AS almacen_nombre,
-                        ROW_NUMBER() OVER (
-                            PARTITION BY i.idalmacen1, CONVERT(date, i.fecha)
-                            ORDER BY i.folio DESC, i.fecha DESC
-                        ) AS rn_dia
-                    FROM invfisico i
-                    LEFT JOIN almacen a ON a.idalmacen = i.idalmacen1
-                    WHERE i.cancelado = 0
-                      AND i.fecha >= DATEADD(MONTH, -2, GETDATE())
-                )
-                SELECT folio, fecha, almacen_id, almacen_nombre
-                FROM inventarios_validos
-                WHERE rn_dia = 1
-                ORDER BY fecha DESC
-            """
-            
-            result = execute_sql_query(
-                servidor['host'],
-                servidor['port'],
-                servidor['database'],
-                servidor['username'],
-                servidor['password'],
-                query,
-                context=SQL_CONTEXT_JOBS  # AISLAMIENTO: Usar pool de jobs
-            )
-            
-            if not result:
-                logger.debug(f"[INVENTARIOS_DETECTOR] {server_name}: Sin inventarios recientes")
-                return inventarios
-            
-            for row in result:
-                folio = str(row['folio'])
-                fecha_inv = row['fecha']
-                almacen_id = str(row['almacen_id']) if row['almacen_id'] else ''
-                almacen_nombre = row.get('almacen_nombre', almacen_id)
-                
-                # Convertir fecha
-                if isinstance(fecha_inv, datetime):
-                    fecha_str = fecha_inv.strftime('%Y-%m-%d')
-                elif isinstance(fecha_inv, date):
-                    fecha_str = fecha_inv.strftime('%Y-%m-%d')
-                else:
-                    fecha_str = str(fecha_inv)[:10]
-                
-                # Calcular folio inicial del período
-                folio_inicial, fecha_inicial = await self._calcular_folio_inicial_soft(
-                    servidor, almacen_id, fecha_str
-                )
-                
-                clave = ClaveIdempotencia(
-                    sistema_origen='SOFTRESTAURANT',
-                    server_id=servidor['id'],
-                    sucursal_id=servidor.get('name', ''),  # En Soft, sucursal = nombre servidor
-                    almacen_id=almacen_id,
-                    folio_inventario=folio
-                )
-                
-                inventarios.append(InventarioDetectado(
-                    clave=clave,
-                    server_name=servidor['name'],
-                    almacen_nombre=almacen_nombre,
-                    fecha_inventario=fecha_str,
-                    folio_inicial=folio_inicial,
-                    fecha_inicial=fecha_inicial,
-                    metadata={
-                        "system_type": "SoftRestaurant",
-                        "host": servidor['host'],
-                        "database": servidor['database']
-                    }
-                ))
-            
-        except Exception as e:
-            # BLINDAJE: Si es error de estructura SQL, invalidar conexión del pool
-            _invalidar_conexion_si_error_estructura(servidor, e)
-            logger.error(f"[INVENTARIOS_DETECTOR] Error detectando SOFT en {server_name}: {e}")
-        
-        return inventarios
-    
-    async def _detectar_mpro(self, servidor: Dict) -> List[InventarioDetectado]:
-        """Detecta inventarios MPRO desde EDARSAHUB Sync (NO-LIVE)."""
+    async def _detectar_desde_sync(
+        self,
+        servidor: Dict,
+        sistema_origen: str,
+        label: str,
+    ) -> List[InventarioDetectado]:
+        """Detecta inventarios desde EDARSAHUB Sync (NO-LIVE)."""
         from modules.compras.sync_service import obtener_inventarios_fisicos_sync
         
         def _fecha_key(row: Dict) -> str:
@@ -614,7 +415,7 @@ class InventariosDetectorJob:
             )
             
             if not rows:
-                logger.info(f"[INVENTARIOS_DETECTOR] MPRO {server_name}: Sin inventarios sync")
+                logger.info(f"[INVENTARIOS_DETECTOR] {label} {server_name}: Sin inventarios sync")
                 return inventarios_detectados
             
             grupos: Dict[str, List[Dict]] = {}
@@ -642,7 +443,7 @@ class InventariosDetectorJob:
                 
                 if len(fechas_ordenadas) < 2:
                     logger.info(
-                        f"[INVENTARIOS_DETECTOR] MPRO {server_name}: "
+                        f"[INVENTARIOS_DETECTOR] {label} {server_name}: "
                         f"Grupo sin fechas distintas suficientes key={key}"
                     )
                     continue
@@ -658,19 +459,25 @@ class InventariosDetectorJob:
                 
                 almacen_id = str(final.get('almacen_id') or '').strip()
                 almacen_nombre = final.get('almacen') or almacen_id
-                sucursal_id = str(final.get('sucursal_id') or final.get('sucursal') or '').strip()
+                sucursal_id = str(
+                    final.get('sucursal_id')
+                    or final.get('sucursal')
+                    or final.get('unidad_negocio_codigo')
+                    or server_name
+                    or ''
+                ).strip()
                 
                 if not folio_final or not folio_inicial or not fecha_final or not fecha_inicial:
                     continue
                 
                 logger.info(
-                    f"[INVENTARIOS_DETECTOR] MPRO {server_name}: "
+                    f"[INVENTARIOS_DETECTOR] {label} {server_name}: "
                     f"Par detectado key={key} inicial={folio_inicial}/{fecha_inicial} "
                     f"final={folio_final}/{fecha_final}"
                 )
                 
                 clave = ClaveIdempotencia(
-                    sistema_origen='MPRO',
+                    sistema_origen=sistema_origen,
                     server_id=server_id,
                     sucursal_id=sucursal_id,
                     almacen_id=almacen_id,
@@ -685,7 +492,7 @@ class InventariosDetectorJob:
                     folio_inicial=folio_inicial,
                     fecha_inicial=fecha_inicial,
                     metadata={
-                        "system_type": "MPRO",
+                        "system_type": label,
                         "source": "EDARSAHUB_SYNC",
                         "sucursal": final.get('sucursal', ''),
                         "comentario_inicial": inicial.get('comentario', ''),
@@ -695,85 +502,20 @@ class InventariosDetectorJob:
                     }
                 ))
             
-            logger.info(f"[INVENTARIOS_DETECTOR] MPRO {server_name}: {len(inventarios_detectados)} pares detectados desde Sync")
+            logger.info(f"[INVENTARIOS_DETECTOR] {label} {server_name}: {len(inventarios_detectados)} pares detectados desde Sync")
             
         except Exception as e:
-            logger.error(f"[INVENTARIOS_DETECTOR] Error detectando MPRO en {server_name}: {e}")
+            logger.error(f"[INVENTARIOS_DETECTOR] Error detectando {label} en {server_name}: {e}")
         
         return inventarios_detectados
 
-    async def _calcular_folio_inicial_soft(
-        self, 
-        servidor: Dict, 
-        almacen_id: str, 
-        fecha_fin: str
-    ) -> tuple:
-        """
-        Calcula el folio inicial para SoftRestaurant.
-        
-        BLINDAJE (Abril 2026): 
-        - Manejo de errores con invalidación de conexión
-        """
-        from core.db import execute_sql_query
-        server_name = servidor.get('name', 'DESCONOCIDO')
-        
-        try:
-            # Primer día del mes de la fecha final
-            fecha_obj = datetime.strptime(fecha_fin, '%Y-%m-%d')
-            primer_dia = fecha_obj.replace(day=1).strftime('%Y-%m-%d')
-            
-            query = f"""
-                SELECT TOP 1 folio, fecha
-                FROM invfisico
-                WHERE cancelado = 0
-                  AND idalmacen1 = '{almacen_id}'
-                  AND fecha >= '{primer_dia}'
-                ORDER BY fecha ASC, folio ASC
-            """
-            
-            result = execute_sql_query(
-                servidor['host'],
-                servidor['port'],
-                servidor['database'],
-                servidor['username'],
-                servidor['password'],
-                query,
-                context=SQL_CONTEXT_JOBS  # AISLAMIENTO: Usar pool de jobs
-            )
-            
-            if result and len(result) > 0:
-                folio = str(result[0]['folio'])
-                fecha = result[0]['fecha']
-                if isinstance(fecha, (datetime, date)):
-                    fecha_str = fecha.strftime('%Y-%m-%d') if hasattr(fecha, 'strftime') else str(fecha)[:10]
-                else:
-                    fecha_str = str(fecha)[:10]
-                return folio, fecha_str
-            
-        except Exception as e:
-            # BLINDAJE: Invalidar conexión si error de estructura
-            _invalidar_conexion_si_error_estructura(servidor, e)
-            logger.warning(f"[INVENTARIOS_DETECTOR] Error calculando folio inicial en {server_name}: {e}")
-        
-        return None, None
-    
-    async def _calcular_folio_inicial_mpro(
-        self,
-        servidor: Dict,
-        almacen_id: str,
-        sucursal_id: str,
-        fecha_fin: str
-    ) -> tuple:
-        """
-        Calcula el folio inicial para MPRO.
-        
-        BLINDAJE (Abril 2026): MPRO no tiene tabla invfisico.
-        Este método no debe ejecutarse - retorna None directamente.
-        """
-        # BLINDAJE: MPRO no tiene estructura de inventarios compatible
-        # NO ejecutar query a tabla inexistente
-        logger.debug("[INVENTARIOS_DETECTOR] _calcular_folio_inicial_mpro no implementado para MPRO (tabla invfisico no existe)")
-        return None, None
+    async def _detectar_soft(self, servidor: Dict) -> List[InventarioDetectado]:
+        """Detecta inventarios SoftRestaurant desde EDARSAHUB Sync (NO-LIVE)."""
+        return await self._detectar_desde_sync(servidor, "SOFTRESTAURANT", "SoftRestaurant")
+
+    async def _detectar_mpro(self, servidor: Dict) -> List[InventarioDetectado]:
+        """Detecta inventarios MPRO desde EDARSAHUB Sync (NO-LIVE)."""
+        return await self._detectar_desde_sync(servidor, "MPRO", "MPRO")
     
     async def _procesar_inventario(self, inv: InventarioDetectado, servidor: Dict):
         """Procesa un inventario detectado."""

@@ -443,14 +443,14 @@ def sync_inventarios_fisicos_from_server(
                 ORDER BY F.Fi_Fecha DESC
             """
         elif is_softrestaurant_system(system_type):
-            # SoftRestaurant usa tabla "invfisico"
+            # SoftRestaurant usa tabla "invfisico". El almacen_id debe venir
+            # del encabezado del inventario; no depende del LEFT JOIN al catalogo.
             query = """
                 SELECT 
                     CAST(INV.folio AS VARCHAR) as folio,
                     INV.fecha as fecha,
-                    A.nombre as almacen,
-                    CAST(A.
-) as almacen_id,
+                    COALESCE(A.nombre, CAST(INV.idalmacen1 AS VARCHAR(50))) as almacen,
+                    CAST(INV.idalmacen1 AS VARCHAR(50)) as almacen_id,
                     '' as sucursal,
                     '' as sucursal_id,
                     'FISICO' as tipo,
@@ -460,6 +460,7 @@ def sync_inventarios_fisicos_from_server(
                 FROM invfisico INV
                 LEFT JOIN almacen A ON A.idalmacen = INV.idalmacen1
                 WHERE INV.fecha >= DATEADD(MONTH, -6, GETDATE())
+                  AND ISNULL(INV.cancelado, 0) = 0
                 ORDER BY INV.fecha DESC
             """
         else:
@@ -475,6 +476,13 @@ def sync_inventarios_fisicos_from_server(
             query
         )
         
+        if rows is None:
+            return {
+                "status": "ERROR",
+                "records_synced": 0,
+                "error": "No se pudo consultar el servidor origen",
+            }
+
         if not rows:
             return {"status": "OK", "records_synced": 0, "error": None}
         

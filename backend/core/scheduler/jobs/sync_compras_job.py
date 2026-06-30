@@ -180,7 +180,7 @@ def _execute_sql_with_timeout(host, port, database, username, password, query, t
             logger.warning(f"[SYNC-COMPRAS] Error de conexión/timeout a {host}: {str(e)[:100]}")
             return None
         logger.error(f"[SYNC-COMPRAS] Error inesperado en query a {host}: {str(e)[:200]}")
-        return None
+        raise
 
 
 def _get_servers_to_sync() -> List[Dict]:
@@ -205,7 +205,11 @@ def _get_servers_to_sync() -> List[Dict]:
             LEFT JOIN Unidades_Negocio u ON u.server_id = CAST(s.id AS NVARCHAR(36))
             WHERE s.activo = 1
               AND s.tipo_conexion IN ('SQL_SERVER', 'DATA_SOURCE')
-              AND s.system_type IN ('SOFTRESTAURANT', 'MPRO', 'MANAGEMENTPRO', 'SOFTRESTAURANT_PRO')
+              AND UPPER(LTRIM(RTRIM(s.system_type))) IN (
+                  'SOFTRESTAURANT', 'SOFTRESTAURANT_PRO', 'SOFTRESTAURANTPRO', 'SR',
+                  'MPRO', 'MANAGEMENTPRO', 'MANAGMENTPRO'
+              )
+              AND u.id IS NOT NULL
               AND s.host IS NOT NULL AND s.host != ''
         """)
         rows = cursor.fetchall()

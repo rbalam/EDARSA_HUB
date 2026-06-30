@@ -38,10 +38,23 @@ def _load_detector_module(monkeypatch):
     sql_repository.get_inventarios_pendientes_reintento = _noop
     sql_repository.registrar_bitacora_job = _noop
 
+    system_type_utils = types.ModuleType("core.system_type_utils")
+
+    def normalize_system_type(value):
+        normalized = str(value or "").strip().upper()
+        if normalized in {"SOFTRESTAURANT", "SOFTRESTAURANT_PRO", "SOFTRESTAURANTPRO", "SR"}:
+            return "SOFTRESTAURANT"
+        if normalized in {"MPRO", "MANAGEMENTPRO"}:
+            return "MANAGEMENTPRO"
+        return "UNKNOWN"
+
+    system_type_utils.normalize_system_type = normalize_system_type
+
     monkeypatch.setitem(sys.modules, "core.scheduler", scheduler_pkg)
     monkeypatch.setitem(sys.modules, "core.scheduler.jobs", jobs_pkg)
     monkeypatch.setitem(sys.modules, "core.scheduler.job_logger", job_logger)
     monkeypatch.setitem(sys.modules, "core.scheduler.sql_repository", sql_repository)
+    monkeypatch.setitem(sys.modules, "core.system_type_utils", system_type_utils)
 
     module_path = (
         Path(__file__).resolve().parents[1]
@@ -102,3 +115,58 @@ async def test_obtener_servidores_incluye_la_estelar_softrestaurant_pro(monkeypa
     assert len(servidores) == 1
     assert servidores[0]["name"] == "LA ESTELAR"
     assert servidores[0]["system_type_canonical"] == "SoftRestaurant"
+
+
+@pytest.mark.asyncio
+async def test_detectar_softrestaurant_usa_sync_edarsahub(monkeypatch):
+    detector_module = _load_detector_module(monkeypatch)
+
+    modules_pkg = types.ModuleType("modules")
+    modules_pkg.__path__ = []
+    compras_pkg = types.ModuleType("modules.compras")
+    compras_pkg.__path__ = []
+    sync_service = types.ModuleType("modules.compras.sync_service")
+
+    def fake_obtener_inventarios_fisicos_sync(**kwargs):
+        assert kwargs["server_id"] == "server-estelar"
+        return [
+            {
+                "folio": "200",
+                "fecha": "2026-06-30T10:00:00",
+                "almacen_id": "1",
+                "almacen": "BODEGA",
+                "sucursal_id": "",
+                "unidad_negocio_codigo": "ESTELAR",
+                "comentario": "",
+            },
+            {
+                "folio": "100",
+                "fecha": "2026-06-01T09:00:00",
+                "almacen_id": "1",
+                "almacen": "BODEGA",
+                "sucursal_id": "",
+                "unidad_negocio_codigo": "ESTELAR",
+                "comentario": "",
+            },
+        ]
+
+    sync_service.obtener_inventarios_fisicos_sync = fake_obtener_inventarios_fisicos_sync
+    monkeypatch.setitem(sys.modules, "modules", modules_pkg)
+    monkeypatch.setitem(sys.modules, "modules.compras", compras_pkg)
+    monkeypatch.setitem(sys.modules, "modules.compras.sync_service", sync_service)
+
+    job = detector_module.InventariosDetectorJob(db={})
+    inventarios = await job._detectar_soft({
+        "id": "server-estelar",
+        "name": "LA ESTELAR",
+        "system_type": "SOFTRESTAURANT_PRO",
+    })
+
+    assert len(inventarios) == 1
+    inv = inventarios[0]
+    assert inv.clave.sistema_origen == "SOFTRESTAURANT"
+    assert inv.clave.sucursal_id == "ESTELAR"
+    assert inv.clave.almacen_id == "1"
+    assert inv.clave.folio_inventario == "200"
+    assert inv.folio_inicial == "100"
+    assert inv.metadata["source"] == "EDARSAHUB_SYNC"
