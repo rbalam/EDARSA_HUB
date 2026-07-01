@@ -49,16 +49,23 @@ export function useBitacoraRBACData() {
       if (filtrosActuales.resultado) params.append('resultado', filtrosActuales.resultado);
       if (filtrosActuales.tipo) params.append('tipo', filtrosActuales.tipo);
 
+      const token =
+        localStorage.getItem('token') ||
+        sessionStorage.getItem('edarsa_memory_token') ||
+        sessionStorage.getItem('access_token') ||
+        sessionStorage.getItem('token');
+
       const response = await fetch(`${API_URL}/api/admin/bitacora?${params.toString()}`, {
         credentials: 'include',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
         }
       });
 
       if (!response.ok) {
         if (response.status === 403) {
-          throw new Error('Acceso denegado. Solo SuperAdministrador puede ver la bitácora.');
+          throw new Error('Acceso denegado. Se requiere el permiso SISTEMA_RBAC_BITACORA_VER.');
         }
         throw new Error('Error al cargar la bitácora');
       }

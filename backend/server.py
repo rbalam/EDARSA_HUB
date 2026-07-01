@@ -17224,6 +17224,27 @@ async def admin_asignar_rol(
     )
 
 
+
+async def _require_rbac_bitacora_ver(current_user: Dict):
+    """
+    Valida acceso a Bitácora RBAC por permiso efectivo canónico.
+
+    Permiso requerido:
+    - SISTEMA_RBAC_BITACORA_VER
+
+    No usar rol legacy aquí. El tab y el endpoint deben depender del mismo
+    permiso efectivo calculado desde EDARSAHUB SQL.
+    """
+    context = await resolve_user_access_context(current_user)
+    bitacora_ok = has_permiso(context, "SISTEMA_RBAC_BITACORA_VER")
+    if not bitacora_ok:
+        raise HTTPException(
+            status_code=403,
+            detail="Permiso requerido: SISTEMA_RBAC_BITACORA_VER"
+        )
+    return context
+
+
 @api_router.get("/admin/bitacora")
 async def get_bitacora_rbac(
     fecha_inicio: Optional[str] = None,
@@ -17235,11 +17256,15 @@ async def get_bitacora_rbac(
     limit: int = 50,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Bitácora RBAC SQL-First (solo SuperAdministrador). Lee de
-    dbo.Usuario_RBAC_Bitacora. Filtros: fecha_inicio/fecha_fin (YYYY-MM-DD),
-    email (LIKE), resultado (exitoso|fallido|parcial), tipo (ASIGNAR|REVOCAR)."""
-    if not es_superadmin(current_user):
-        raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede acceder a la bitácora RBAC")
+    """Bitácora RBAC SQL-First. Lee de dbo.Usuario_RBAC_Bitacora.
+
+    Acceso por permiso efectivo:
+    - SISTEMA_RBAC_BITACORA_VER
+
+    Filtros: fecha_inicio/fecha_fin (YYYY-MM-DD), email (LIKE),
+    resultado (exitoso|fallido|parcial), tipo (ASIGNAR|REVOCAR).
+    """
+    await _require_rbac_bitacora_ver(current_user)
     if limit > 100:
         limit = 100
     total, eventos = rbac_pilot_service.get_bitacora(
@@ -17262,9 +17287,12 @@ async def get_bitacora_evento_detalle(
     evento_id: str,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Detalle de un evento de bitácora RBAC (solo SuperAdministrador)."""
-    if not es_superadmin(current_user):
-        raise HTTPException(status_code=403, detail="Solo SuperAdministrador puede acceder a la bitácora RBAC")
+    """Detalle de un evento de bitácora RBAC.
+
+    Acceso por permiso efectivo:
+    - SISTEMA_RBAC_BITACORA_VER
+    """
+    await _require_rbac_bitacora_ver(current_user)
     evento = rbac_pilot_service.get_bitacora_evento(evento_id)
     if not evento:
         raise HTTPException(status_code=404, detail="Evento no encontrado")
