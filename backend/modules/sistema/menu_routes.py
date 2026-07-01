@@ -29,16 +29,13 @@ async def obtener_menus_usuario(
     activo del usuario (Usuario_RolesContexto) en esa unidad de negocio.
     """
     service = get_menu_service()
-
-    usuario_id = service.resolver_usuario_id_canonico(current_user)
-
-    menus = service.obtener_menus_usuario(str(usuario_id), unidad_negocio_id)
-    es_superadmin = service.es_superadmin(str(usuario_id))
+    resolved = service.obtener_menus_current_user(current_user, unidad_negocio_id)
+    menus = resolved["menus"]
 
     return {
         "modulos": menus,
         "total": len(menus),
-        "es_super_admin": es_superadmin,
+        "es_super_admin": resolved["es_superadmin"],
         "unidad_negocio_id": unidad_negocio_id,
         "source": "SQL_MENU_CANONICO",
         "hardcoded": False
