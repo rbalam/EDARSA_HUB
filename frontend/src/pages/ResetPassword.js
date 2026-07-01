@@ -11,15 +11,15 @@
  * Ref: PROP-001 v2
  */
 
-import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import { PasswordInput, PasswordRules, isPasswordPolicySatisfied } from '@/components/auth/PasswordControls';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const token = searchParams.get('token');
 
   const [password, setPassword] = useState('');
@@ -28,26 +28,7 @@ const ResetPassword = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  // Validaciones de password
-  const [validations, setValidations] = useState({
-    minLength: false,
-    hasUppercase: false,
-    hasLowercase: false,
-    hasNumber: false,
-    passwordsMatch: false
-  });
-
-  useEffect(() => {
-    setValidations({
-      minLength: password.length >= 8,
-      hasUppercase: /[A-Z]/.test(password),
-      hasLowercase: /[a-z]/.test(password),
-      hasNumber: /[0-9]/.test(password),
-      passwordsMatch: password === confirmPassword && password.length > 0
-    });
-  }, [password, confirmPassword]);
-
-  const isValid = Object.values(validations).every(v => v);
+  const isValid = isPasswordPolicySatisfied(password, { confirmPassword });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -141,15 +122,14 @@ const ResetPassword = () => {
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
               Nueva contraseña
             </label>
-            <input
+            <PasswordInput
               id="password"
-              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              placeholder="••••••••"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              maxLength={128}
               disabled={loading}
+              inputClassName="border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               data-testid="reset-password-new"
             />
           </div>
@@ -158,28 +138,23 @@ const ResetPassword = () => {
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
               Confirmar contraseña
             </label>
-            <input
+            <PasswordInput
               id="confirmPassword"
-              type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              placeholder="••••••••"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              maxLength={128}
               disabled={loading}
+              inputClassName="border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               data-testid="reset-password-confirm"
             />
           </div>
 
-          {/* Validaciones visuales */}
-          <div className="bg-gray-50 rounded-md p-4 space-y-2">
-            <p className="text-sm font-medium text-gray-700 mb-2">Requisitos de contraseña:</p>
-            <ValidationItem valid={validations.minLength} text="Mínimo 8 caracteres" />
-            <ValidationItem valid={validations.hasUppercase} text="Al menos una mayúscula" />
-            <ValidationItem valid={validations.hasLowercase} text="Al menos una minúscula" />
-            <ValidationItem valid={validations.hasNumber} text="Al menos un número" />
-            <ValidationItem valid={validations.passwordsMatch} text="Las contraseñas coinciden" />
-          </div>
+          <PasswordRules
+            password={password}
+            confirmPassword={confirmPassword}
+            showConfirm
+          />
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
@@ -217,20 +192,5 @@ const ResetPassword = () => {
   );
 };
 
-// Componente de validación
-const ValidationItem = ({ valid, text }) => (
-  <div className="flex items-center text-sm">
-    {valid ? (
-      <svg className="h-4 w-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-      </svg>
-    ) : (
-      <svg className="h-4 w-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    )}
-    <span className={valid ? 'text-green-700' : 'text-gray-600'}>{text}</span>
-  </div>
-);
 
 export default ResetPassword;

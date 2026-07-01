@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { FileText, Lock, ArrowRight } from 'lucide-react';
+import { PasswordInput } from '@/components/auth/PasswordControls';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -140,15 +141,11 @@ export default function LoginPage({ onLogin, onRegister }) {
                   Contraseña
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="password"
+                  <PasswordInput
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-gray-900 placeholder:text-gray-400 transition-all"
+                    leftIcon={<Lock className="h-5 w-5" />}
+                    inputClassName="h-auto pl-12 py-3.5 bg-white border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-gray-900 placeholder:text-gray-400 transition-all"
                     data-testid="portal-password-input"
                   />
                 </div>

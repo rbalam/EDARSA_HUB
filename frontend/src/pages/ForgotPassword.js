@@ -14,6 +14,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { PasswordRules } from '@/components/auth/PasswordControls';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -76,6 +77,11 @@ const ForgotPassword = () => {
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900">EDARSA HUB</h1>
           <p className="text-gray-600 mt-2">Recuperar contraseña</p>
+        </div>
+
+        <div className="mb-6">
+          <p className="mb-2 text-sm font-medium text-gray-700">La nueva contraseña deberá cumplir:</p>
+          <PasswordRules password="Aa123456" compact />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

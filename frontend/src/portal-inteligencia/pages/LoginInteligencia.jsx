@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { BarChart3, Loader2, Lock, Mail, AlertCircle } from 'lucide-react';
 import { loginIntel } from '../api/client';
+import { PasswordInput } from '@/components/auth/PasswordControls';
 
 export default function LoginInteligencia({ onSuccess }) {
   const [email, setEmail] = useState('');
@@ -61,15 +62,13 @@ export default function LoginInteligencia({ onSuccess }) {
           <div>
             <label className="text-xs text-slate-400 mb-1 block">Contraseña</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-              <input
-                type="password"
+              <PasswordInput
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                leftIcon={<Lock className="h-4 w-4" />}
+                inputClassName="h-auto bg-slate-700 text-white text-sm rounded-lg pl-9 py-2.5 border-slate-600 focus:border-emerald-400 focus:outline-none"
                 data-testid="intel-login-password"
-                className="w-full bg-slate-700 text-white text-sm rounded-lg pl-9 pr-3 py-2.5 border border-slate-600 focus:border-emerald-400 focus:outline-none"
-                placeholder="••••••••"
               />
             </div>
           </div>

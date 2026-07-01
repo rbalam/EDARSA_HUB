@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import { PasswordInput } from '@/components/auth/PasswordControls';
 import { toast } from 'sonner';
 import { Loader2, LogIn, Mail, Lock, Building2 } from 'lucide-react';
 
@@ -144,20 +145,16 @@ const Login = () => {
                   <Label htmlFor="password" className="text-slate-700 font-medium">
                     Contraseña
                   </Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      disabled={loading}
-                      className="pl-10 bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-400 focus:border-emerald-500 focus:ring-emerald-500"
-                      data-testid="login-password-input"
-                    />
-                  </div>
+                  <PasswordInput
+                    id="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                    leftIcon={<Lock className="h-4 w-4" />}
+                    inputClassName="bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-400 focus:border-emerald-500 focus:ring-emerald-500"
+                    data-testid="login-password-input"
+                  />
                 </div>
 
                 <Button

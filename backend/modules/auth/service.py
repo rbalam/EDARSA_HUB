@@ -39,6 +39,7 @@ from core.security import hash_password, verify_password, create_token
 from core.rbac_helper import verificar_permiso_rbac  # FASE 9
 from core.alcance_helper import resolver_alcance_usuarios, verificar_usuario_en_alcance  # FASE 16 + CIERRE
 from modules.auth import repository as repo
+from modules.auth.password_reset import validate_password_strength
 from modules.auth.schemas import User, UserCreate, DEFAULT_ROLES
 
 logger = logging.getLogger(__name__)
@@ -62,6 +63,10 @@ async def register_user(user_data: UserCreate) -> Dict[str, Any]:
     existing = await repo.find_user_by_email(user_data.email)
     if existing:
         raise HTTPException(status_code=400, detail="El usuario ya existe")
+
+    valid_password, password_error = validate_password_strength(user_data.password)
+    if not valid_password:
+        raise HTTPException(status_code=400, detail=password_error)
     
     # Hash de contraseña
     hashed_pw = hash_password(user_data.password)
@@ -312,6 +317,9 @@ async def update_user(user_id: str, user_data: Dict, current_user: Dict) -> Dict
     
     # Hash de contraseña si se proporciona
     if 'password' in user_data and user_data['password']:
+        valid_password, password_error = validate_password_strength(user_data['password'])
+        if not valid_password:
+            raise HTTPException(status_code=400, detail=password_error)
         update_data['password'] = hash_password(user_data['password'])
     
     await repo.update_user(user_id, update_data)
@@ -686,6 +694,10 @@ async def create_user_admin(user_data: Dict, current_user: Dict) -> Dict:
     
     if not email or not name or not password:
         raise HTTPException(status_code=400, detail="Email, nombre y contraseña son requeridos")
+
+    valid_password, password_error = validate_password_strength(password)
+    if not valid_password:
+        raise HTTPException(status_code=400, detail=password_error)
     
     # Regla de jerarquía: solo SuperAdmin puede crear SuperAdmin
     current_level = _get_role_level(current_user.get('role', ''))
