@@ -92,6 +92,30 @@ def get_resumen_costos_margenes() -> Dict[str, Any]:
     }
 
 
+
+def _mpro_comercial_where(alias: str = "p") -> str:
+    """
+    Filtro comercial para MPRO dentro de Costos y Márgenes.
+
+    MPRO sincroniza elaborados de producción en Sync_Productos con:
+    - Activo = 1
+    - EsVendible = 1
+    - recetas estructurales reales
+    - PrecioVenta <= 0 o familia/subfamilia de producción
+
+    Para este módulo comercial no deben mezclarse con productos vendibles.
+    SoftRestaurant no se altera porque la condición solo restringe SystemType = MPRO.
+    """
+    prefix = f"{alias}." if alias else ""
+    return f"""(
+        UPPER(ISNULL({prefix}SystemType, '')) <> 'MPRO'
+        OR (
+            ISNULL({prefix}PrecioVenta, 0) > 0
+            AND ISNULL({prefix}FamiliaCodigoFuente, '') <> '0019'
+            AND ISNULL({prefix}SubFamiliaNombre, '') <> 'PRODUCCION'
+        )
+    )"""
+
 # ==================== PRODUCTOS ====================
 
 def get_productos_con_costos(
@@ -152,12 +176,39 @@ def get_productos_con_costos(
           AND r_chk.ServerID = p.ServerID
     )"""
 
+    where_clauses.append(_mpro_comercial_where("p"))
+
     if sistema_origen:
         where_clauses.append(f"p.SystemType = '{sistema_origen}'")
     if familia:
-        where_clauses.append(f"p.FamiliaNombre LIKE '%{familia}%'")
+        familia_safe = familia.replace("'", "''").strip()
+        where_clauses.append(f"""(
+            p.FamiliaNombre LIKE '%{familia_safe}%'
+            OR p.FamiliaCodigoFuente = '{familia_safe}'
+            OR EXISTS (
+                SELECT 1
+                FROM Sync_Productos pfam
+                WHERE pfam.ServerID = p.ServerID
+                  AND pfam.SystemType = p.SystemType
+                  AND ISNULL(pfam.Activo, 1) = 1
+                  AND pfam.FamiliaCodigoFuente IS NOT NULL
+                  AND pfam.FamiliaCodigoFuente <> ''
+                  AND (
+                      pfam.FamiliaNombre LIKE '%{familia_safe}%'
+                      OR pfam.FamiliaCodigoFuente = '{familia_safe}'
+                  )
+                  AND (
+                      p.FamiliaCodigoFuente = pfam.FamiliaCodigoFuente
+                      OR (
+                          UPPER(ISNULL(p.SystemType, '')) LIKE '%SOFT%'
+                          AND p.CodigoFuente LIKE pfam.FamiliaCodigoFuente + '%'
+                      )
+                  )
+            )
+        )""")
     if subfamilia:
-        where_clauses.append(f"p.SubFamiliaNombre LIKE '%{subfamilia}%'")
+        subfamilia_safe = subfamilia.replace("'", "''").strip()
+        where_clauses.append(f"p.SubFamiliaNombre LIKE '%{subfamilia_safe}%'")
     if busqueda:
         where_clauses.append(f"(p.Nombre LIKE '%{busqueda}%' OR p.CodigoFuente LIKE '%{busqueda}%')")
     if solo_con_receta:
@@ -757,7 +808,7 @@ def get_familias_productos(servidor_id: Optional[str] = None, servidores_ids: Op
     """
     conn = _get_edarsahub_connection()
     
-    where_clause = "WHERE FamiliaNombre IS NOT NULL AND FamiliaNombre != ''"
+    where_clause = f"WHERE FamiliaNombre IS NOT NULL AND FamiliaNombre != '' AND {_mpro_comercial_where('')}"
     if servidor_id:
         servidor_safe = servidor_id.replace("'", "''")
         where_clause += f" AND CAST(ServerID AS NVARCHAR(36)) = '{servidor_safe}'"
@@ -803,7 +854,7 @@ def get_subfamilias_productos(familia: Optional[str] = None, servidor_id: Option
     """
     conn = _get_edarsahub_connection()
     
-    where_clause = "WHERE SubFamiliaNombre IS NOT NULL AND SubFamiliaNombre != ''"
+    where_clause = f"WHERE SubFamiliaNombre IS NOT NULL AND SubFamiliaNombre != '' AND {_mpro_comercial_where('')}"
     if familia:
         familia_safe = familia.replace("'", "''")
         where_clause += f" AND FamiliaNombre = '{familia_safe}'"

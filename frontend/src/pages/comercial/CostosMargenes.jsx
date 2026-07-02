@@ -1470,30 +1470,51 @@ const TabProductos = ({ onSimularPrecio }) => {
     setError(null);
     
     try {
-      // Usar más productos cuando está en vista agrupada
-      const currentPageSize = vistaAgrupada ? pageSizeAgrupado : pageSize;
-      
-      const params = new URLSearchParams({
-        page: vistaAgrupada ? '1' : page.toString(),
-        page_size: currentPageSize.toString()
-      });
-      
-      if (busqueda) params.append('busqueda', busqueda);
-      if (unidadNegocio) params.append('unidad', unidadNegocio);
-      if (familia) params.append('familia', familia);
-      if (subfamilia) params.append('subfamilia', subfamilia);
-      if (soloConReceta) params.append('solo_con_receta', 'true');
-      if (margenBajo) {
-        params.append('margen_bajo', 'true');
-        params.append('umbral_margen', umbralMargenBajo.toString()); // Umbral editable
+      const buildParams = (targetPage, targetPageSize) => {
+        const params = new URLSearchParams({
+          page: targetPage.toString(),
+          page_size: targetPageSize.toString()
+        });
+
+        if (busqueda) params.append('busqueda', busqueda);
+        if (unidadNegocio) params.append('unidad', unidadNegocio);
+        if (familia) params.append('familia', familia);
+        if (subfamilia) params.append('subfamilia', subfamilia);
+        if (soloConReceta) params.append('solo_con_receta', 'true');
+        if (margenBajo) {
+          params.append('margen_bajo', 'true');
+          params.append('umbral_margen', umbralMargenBajo.toString());
+        }
+        if (incluirInactivos) params.append('incluir_inactivos', 'true');
+
+        return params;
+      };
+
+      if (vistaAgrupada) {
+        const firstParams = buildParams(1, pageSizeAgrupado);
+        const firstRes = await api.get(`/costos-margenes/productos?${firstParams}`);
+
+        const total = firstRes.data.total || 0;
+        const totalPagesAgrupado = firstRes.data.total_pages || 1;
+        let productosCompletos = firstRes.data.productos || [];
+
+        for (let nextPage = 2; nextPage <= totalPagesAgrupado; nextPage += 1) {
+          const nextParams = buildParams(nextPage, pageSizeAgrupado);
+          const nextRes = await api.get(`/costos-margenes/productos?${nextParams}`);
+          productosCompletos = productosCompletos.concat(nextRes.data.productos || []);
+        }
+
+        setProductos(productosCompletos);
+        setTotalProductos(total);
+        setTotalPages(1);
+      } else {
+        const params = buildParams(page, pageSize);
+        const res = await api.get(`/costos-margenes/productos?${params}`);
+
+        setProductos(res.data.productos || []);
+        setTotalProductos(res.data.total || 0);
+        setTotalPages(res.data.total_pages || 1);
       }
-      if (incluirInactivos) params.append('incluir_inactivos', 'true'); // BUG-COSTOS-001
-      
-      const res = await api.get(`/costos-margenes/productos?${params}`);
-      
-      setProductos(res.data.productos || []);
-      setTotalProductos(res.data.total || 0);
-      setTotalPages(vistaAgrupada ? 1 : (res.data.total_pages || 1));
     } catch (err) {
       setError(err.response?.data?.detail || err.message);
     } finally {
