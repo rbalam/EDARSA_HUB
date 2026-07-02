@@ -145,6 +145,30 @@ def get_productos_con_costos(
         servers_list = "', '".join(servidores_ids)
         where_clauses.append(f"CAST(p.ServerID AS NVARCHAR(36)) IN ('{servers_list}')")
     
+    receta_real_sql = """EXISTS (
+        SELECT 1
+        FROM Sync_Productos_Recetas r_chk
+        WHERE r_chk.ProductoCodigoFuente = p.CodigoFuente
+          AND r_chk.ServerID = p.ServerID
+    )"""
+
+    receta_costeada_sql = """(
+        EXISTS (
+            SELECT 1
+            FROM Sync_Productos_Recetas r_chk
+            WHERE r_chk.ProductoCodigoFuente = p.CodigoFuente
+              AND r_chk.ServerID = p.ServerID
+        )
+        AND COALESCE(
+            (SELECT SUM(r_cost.CostoTotal)
+             FROM Sync_Productos_Recetas r_cost
+             WHERE r_cost.ProductoCodigoFuente = p.CodigoFuente
+               AND r_cost.ServerID = p.ServerID),
+            p.CostoReceta,
+            0
+        ) > 0
+    )"""
+
     if sistema_origen:
         where_clauses.append(f"p.SystemType = '{sistema_origen}'")
     if familia:
@@ -154,14 +178,14 @@ def get_productos_con_costos(
     if busqueda:
         where_clauses.append(f"(p.Nombre LIKE '%{busqueda}%' OR p.CodigoFuente LIKE '%{busqueda}%')")
     if solo_con_receta:
-        where_clauses.append("p.TieneReceta = 1")
+        where_clauses.append(receta_costeada_sql)
     
     # MARGEN BAJO: Filtrar productos con margen < umbral configurado
     # El costo real viene de Sync_Productos_Recetas (no de p.CostoReceta)
     # Requiere: receta, precio > 0, costo calculado > 0, margen < umbral
     if margen_bajo:
         where_clauses.append(f"""(
-            p.TieneReceta = 1
+            {receta_real_sql}
             AND p.PrecioVenta > 0 
             AND COALESCE(
                 (SELECT SUM(r.CostoTotal) FROM Sync_Productos_Recetas r 
@@ -220,9 +244,21 @@ def get_productos_con_costos(
         p.MargenBrutoPesos as margen_pesos,
         p.MargenBrutoPorcentaje as margen_porcentaje,
         p.MargenObjetivo as margen_objetivo,
-        CAST(p.TieneReceta AS BIT) as tiene_receta,
+        CAST(CASE WHEN EXISTS (
+            SELECT 1
+            FROM Sync_Productos_Recetas r_chk
+            WHERE r_chk.ProductoCodigoFuente = p.CodigoFuente
+              AND r_chk.ServerID = p.ServerID
+        ) THEN 1 ELSE 0 END AS BIT) as tiene_receta,
         CAST(p.TieneSubRecetas AS BIT) as tiene_subrecetas,
-        COALESCE(p.CantidadComponentesReceta, 0) as numero_insumos,
+        COALESCE(
+            NULLIF(p.CantidadComponentesReceta, 0),
+            (SELECT COUNT(1)
+             FROM Sync_Productos_Recetas r_cnt
+             WHERE r_cnt.ProductoCodigoFuente = p.CodigoFuente
+               AND r_cnt.ServerID = p.ServerID),
+            0
+        ) as numero_insumos,
         p.SyncedAtMexico as ultima_sincronizacion,
         p.Activo as activo
     FROM Sync_Productos p
