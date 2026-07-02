@@ -17,6 +17,8 @@ from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel
 
 from core.security import security, verify_token
+from core.rbac.middleware import require_explicit_permission
+from core.rbac_helper_sql import get_role_code
 from ..db_utils import get_database
 from modules.fase2_operativo.services.automatizacion_compras_service import (
     get_automatizacion_compras_service,
@@ -24,6 +26,27 @@ from modules.fase2_operativo.services.automatizacion_compras_service import (
 )
 
 router = APIRouter(prefix="/automatizaciones/operativas", tags=["automatizaciones-operativas"])
+
+
+def _get_authenticated_compras_actor(current_user: Dict) -> tuple[str, str, str]:
+    """Deriva identidad real desde JWT/RBAC, no desde body ni rol hardcodeado."""
+    usuario_id = str(
+        current_user.get("id")
+        or current_user.get("user_id")
+        or current_user.get("sub")
+        or current_user.get("email")
+        or ""
+    ).strip()
+    usuario_nombre = str(current_user.get("email") or usuario_id).strip()
+    usuario_rol = get_role_code(current_user)
+
+    if not usuario_id:
+        raise HTTPException(
+            status_code=403,
+            detail="No fue posible resolver identidad RBAC del usuario autenticado"
+        )
+
+    return usuario_id, usuario_nombre, usuario_rol
 
 
 # ============================================================================
@@ -259,7 +282,7 @@ def _p2a_ultimo_scheduler_log():
 @router.post("/compras/detector/ejecutar")
 async def ejecutar_detector_manual(
     request: EjecutarDetectorRequest = None,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: Dict = Depends(require_explicit_permission("COMPRAS_FACT_EJECUTAR"))
 ):
     """
     FASE 4.1 y 4.2: Ejecuta el detector de pedidos manualmente.
@@ -269,16 +292,7 @@ async def ejecutar_detector_manual(
     - Si se proporciona empresa_id, solo procesa esa empresa
     - Si no, procesa todas las empresas activas
     """
-    payload = verify_token(credentials.credentials)
-    
-    # Solo Administrador o Gerente puede ejecutar manualmente
-    user_role = payload.get("role", "")
-    user_role_norm = str(user_role or "").upper()
-    if user_role_norm not in ["SUPERADMIN", "ADMIN", "ADMINISTRADOR", "GERENTE", "DIRECTOR"]:
-        raise HTTPException(
-            status_code=403,
-            detail="Solo Administrador/Gerente puede ejecutar el detector manualmente"
-        )
+    _get_authenticated_compras_actor(current_user)
     
     # Obtener db async desde el scheduler manager
     from core.scheduler.scheduler_manager import get_scheduler_manager
@@ -545,13 +559,13 @@ async def obtener_automatizacion(
 @router.post("/compras/procesar")
 async def procesar_pedido(
     request: ProcesarPedidoRequest,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: Dict = Depends(require_explicit_permission("COMPRAS_FACT_EJECUTAR"))
 ):
     """
     Procesa pedido capturado.
     Inicia flujo: Detección → Auditoría → EN_REVISION_GERENCIA
     """
-    payload = verify_token(credentials.credentials)
+    usuario_id, usuario_nombre, _usuario_rol = _get_authenticated_compras_actor(current_user)
     db = get_database()
     service = get_automatizacion_compras_service(db)
     
@@ -562,8 +576,8 @@ async def procesar_pedido(
         sucursal_nombre=request.sucursal_nombre,
         almacen_id=request.almacen_id,
         almacen_nombre=request.almacen_nombre,
-        usuario_id=payload.get("user_id", ""),
-        usuario_nombre=payload.get("email", ""),
+        usuario_id=usuario_id,
+        usuario_nombre=usuario_nombre,
         productos=request.productos,
         dias_objetivo=request.dias_objetivo,
         origen_sistema=request.origen_sistema or "MPRO"
@@ -580,7 +594,7 @@ async def procesar_pedido(
 async def autorizar_gerencia(
     automatizacion_id: str,
     request: AccionGerenciaRequest,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: Dict = Depends(require_explicit_permission("COMPRAS_FACT_AUTORIZAR"))
 ):
     """
     Autorización de Gerencia.
@@ -588,17 +602,13 @@ async def autorizar_gerencia(
     - rechazar → RECHAZADO
     - ajuste → recalcula y mantiene EN_REVISION_GERENCIA
     """
-    payload = verify_token(credentials.credentials)
+    usuario_id, _usuario_nombre, usuario_rol = _get_authenticated_compras_actor(current_user)
     db = get_database()
     service = get_automatizacion_compras_service(db)
     
-    # Obtener rol
-    user = _p2a_user(payload)
-    usuario_rol = user.get("role", "") if user else ""
-    
     resultado = service.autorizar_gerencia(
         automatizacion_id=automatizacion_id,
-        usuario_id=payload.get("user_id", ""),
+        usuario_id=usuario_id,
         usuario_rol=usuario_rol,
         accion=request.accion,
         comentario=request.comentario or "",
@@ -619,24 +629,20 @@ async def autorizar_gerencia(
 async def autorizar_tesoreria(
     automatizacion_id: str,
     request: AccionTesoreriaRequest,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: Dict = Depends(require_explicit_permission("COMPRAS_FACT_APROBAR"))
 ):
     """
     Autorización Final de Tesorería.
     - aprobar → APROBADO
     - rechazar → RECHAZADO
     """
-    payload = verify_token(credentials.credentials)
+    usuario_id, _usuario_nombre, usuario_rol = _get_authenticated_compras_actor(current_user)
     db = get_database()
     service = get_automatizacion_compras_service(db)
     
-    # Obtener rol
-    user = _p2a_user(payload)
-    usuario_rol = user.get("role", "") if user else ""
-    
     resultado = service.autorizar_tesoreria(
         automatizacion_id=automatizacion_id,
-        usuario_id=payload.get("user_id", ""),
+        usuario_id=usuario_id,
         usuario_rol=usuario_rol,
         accion=request.accion,
         comentario=request.comentario or ""
@@ -656,23 +662,20 @@ async def autorizar_tesoreria(
 async def modificar_dias_objetivo(
     automatizacion_id: str,
     request: ModificarDiasObjetivoRequest,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: Dict = Depends(require_explicit_permission("COMPRAS_FACT_CONFIGURAR"))
 ):
     """
     Modifica días objetivo y recalcula.
-    Solo Gerencia/Director/Administrador.
+    Requiere permiso explícito COMPRAS_FACT_CONFIGURAR.
     """
-    payload = verify_token(credentials.credentials)
+    usuario_id, _usuario_nombre, usuario_rol = _get_authenticated_compras_actor(current_user)
     db = get_database()
     service = get_automatizacion_compras_service(db)
-    
-    user = _p2a_user(payload)
-    usuario_rol = user.get("role", "") if user else ""
     
     resultado = service.modificar_dias_objetivo(
         automatizacion_id=automatizacion_id,
         nuevo_dias_objetivo=request.dias_objetivo,
-        usuario_id=payload.get("user_id", ""),
+        usuario_id=usuario_id,
         usuario_rol=usuario_rol,
         motivo=request.motivo or ""
     )
@@ -691,7 +694,7 @@ async def modificar_dias_objetivo(
 async def modificar_parametros_consumo(
     automatizacion_id: str,
     request: ModificarParametrosConsumoRequest,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: Dict = Depends(require_explicit_permission("COMPRAS_FACT_CONFIGURAR"))
 ):
     """
     FASE 4.3: Modifica periodo estadístico y/o ajuste porcentual de consumo.
@@ -702,23 +705,15 @@ async def modificar_parametros_consumo(
     
     El periodo operativo (fecha inventario inicial y fecha pedido) NO se modifica.
     
-    Solo Gerencia/Director/Administrador.
+    Requiere permiso explícito COMPRAS_FACT_CONFIGURAR.
     """
-    payload = verify_token(credentials.credentials)
-    user_role = payload.get("role", "")
-    
-    if user_role not in ["Administrador", "Gerente", "Director"]:
-        raise HTTPException(
-            status_code=403,
-            detail="Solo Gerencia/Director/Administrador puede modificar parámetros de consumo"
-        )
-    
+    usuario_id, _usuario_nombre, _usuario_rol = _get_authenticated_compras_actor(current_user)
     db = get_database()
     service = get_automatizacion_compras_service(db)
     
     resultado = service.modificar_parametros_consumo(
         automatizacion_id=automatizacion_id,
-        usuario_id=payload.get("user_id", ""),
+        usuario_id=usuario_id,
         fecha_consumo_inicio=request.fecha_consumo_inicio,
         fecha_consumo_fin=request.fecha_consumo_fin,
         porcentaje_ajuste=request.porcentaje_ajuste,

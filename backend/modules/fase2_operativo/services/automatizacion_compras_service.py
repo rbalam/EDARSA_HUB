@@ -252,10 +252,6 @@ class AutomatizacionComprasService:
         nuevo_dias_objetivo: int = None
     ) -> Dict:
         """Autorización de Gerencia - SQL."""
-        roles_permitidos = ["Gerente", "Director", "Administrador"]
-        if usuario_rol not in roles_permitidos:
-            return {"success": False, "error": "Solo Gerencia puede autorizar"}
-        
         registro = self.obtener_automatizacion(automatizacion_id)
         if not registro:
             return {"success": False, "error": "No encontrado"}
@@ -308,10 +304,6 @@ class AutomatizacionComprasService:
         comentario: str = ""
     ) -> Dict:
         """Autorización Final de Tesorería - SQL."""
-        roles_permitidos = ["Tesoreria", "Director", "Administrador"]
-        if usuario_rol not in roles_permitidos:
-            return {"success": False, "error": "Solo Tesorería puede autorizar"}
-        
         registro = self.obtener_automatizacion(automatizacion_id)
         if not registro:
             return {"success": False, "error": "No encontrado"}
@@ -362,10 +354,6 @@ class AutomatizacionComprasService:
         motivo: str = ""
     ) -> Dict:
         """Modifica días objetivo y recalcula - SQL."""
-        roles_permitidos = ["Gerente", "Director", "Administrador"]
-        if usuario_rol not in roles_permitidos:
-            return {"success": False, "error": "Solo Gerencia puede modificar"}
-        
         if nuevo_dias_objetivo < 1 or nuevo_dias_objetivo > 90:
             return {"success": False, "error": "Días objetivo debe estar entre 1 y 90"}
         
@@ -438,6 +426,90 @@ class AutomatizacionComprasService:
             "recalculado": True
         }
     
+
+    def modificar_parametros_consumo(
+        self,
+        automatizacion_id: str,
+        usuario_id: str,
+        fecha_consumo_inicio: str = None,
+        fecha_consumo_fin: str = None,
+        porcentaje_ajuste: float = None,
+        motivo: str = ""
+    ) -> Dict:
+        """Modifica periodo estadístico y ajuste de consumo - SQL."""
+        if porcentaje_ajuste is not None and (porcentaje_ajuste < -100 or porcentaje_ajuste > 500):
+            return {"success": False, "error": "Porcentaje de ajuste debe estar entre -100 y 500"}
+
+        registro = self.obtener_automatizacion(automatizacion_id)
+        if not registro:
+            return {"success": False, "error": "No encontrado"}
+
+        dias_objetivo = registro.get("dias_objetivo", self.DIAS_OBJETIVO_DEFAULT)
+        porcentaje_anterior = registro.get("porcentaje_ajuste_consumo", 0.0)
+        porcentaje_nuevo = porcentaje_ajuste if porcentaje_ajuste is not None else porcentaje_anterior
+
+        detalle_anterior = registro.get("detalle_productos", [])
+        if isinstance(detalle_anterior, str):
+            try:
+                detalle_anterior = json.loads(detalle_anterior)
+            except Exception:
+                detalle_anterior = []
+
+        detalle_nuevo = []
+        resumen = {"criticos": 0, "faltantes": 0, "optimos": 0, "sobrantes": 0, "total_pedido_optimo": 0}
+
+        for prod in detalle_anterior:
+            resultado_prod = self._recalcular_producto(prod, dias_objetivo, porcentaje_nuevo)
+            detalle_nuevo.append(resultado_prod)
+
+            estado = resultado_prod.get("estado", "")
+            if estado == EstadoProducto.CRITICO.value:
+                resumen["criticos"] += 1
+            elif estado == EstadoProducto.FALTANTE.value:
+                resumen["faltantes"] += 1
+            elif estado == EstadoProducto.OPTIMO.value:
+                resumen["optimos"] += 1
+            else:
+                resumen["sobrantes"] += 1
+            resumen["total_pedido_optimo"] += resultado_prod.get("pedido_optimo", 0)
+
+        resumen["porcentaje_ajuste_consumo"] = porcentaje_nuevo
+        recomendacion_general = self._determinar_recomendacion_general(resumen, len(detalle_nuevo))
+
+        now = datetime.now(timezone.utc)
+        update_data = {
+            "porcentaje_ajuste_consumo": porcentaje_nuevo,
+            "detalle_productos": json.dumps(detalle_nuevo),
+            "resultado": json.dumps(resumen),
+            "recomendacion_general": recomendacion_general,
+            "fecha_actualizacion": now.isoformat(),
+        }
+
+        if fecha_consumo_inicio is not None:
+            update_data["fecha_consumo_inicio"] = fecha_consumo_inicio
+        if fecha_consumo_fin is not None:
+            update_data["fecha_consumo_fin"] = fecha_consumo_fin
+
+        self._registrar_bitacora(automatizacion_id, "CAMBIO_PARAMETROS_CONSUMO", usuario_id, {
+            "fecha_consumo_inicio": fecha_consumo_inicio,
+            "fecha_consumo_fin": fecha_consumo_fin,
+            "porcentaje_anterior": porcentaje_anterior,
+            "porcentaje_nuevo": porcentaje_nuevo,
+            "motivo": motivo,
+            "recomendacion_anterior": registro.get("recomendacion_general"),
+            "recomendacion_nueva": recomendacion_general
+        })
+
+        self._repo.update_one({"id": automatizacion_id}, {"$set": update_data})
+
+        return {
+            "success": True,
+            "resultado": resumen,
+            "recomendacion_general": recomendacion_general,
+            "recalculado": True
+        }
+
+
     # =========================================================================
     # CONSULTAS SQL
     # =========================================================================
