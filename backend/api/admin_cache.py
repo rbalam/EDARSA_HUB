@@ -4,7 +4,7 @@ EDARSA HUB - Endpoint de Limpieza de Caché para Modo Preview
 P0-CACHE-PREVIEW: Limpieza automática de cachés del backend
 
 Solo funciona en modo preview/staging/desarrollo.
-Requiere permisos de administrador.
+Requiere permiso SQL explícito RBAC_ADMIN.
 
 NO AFECTA DATOS SQL - Solo limpia cachés en memoria.
 """
@@ -15,7 +15,7 @@ import os
 import logging
 
 from core.security import get_current_user
-from core.rbac.middleware import require_permission
+from core.rbac.middleware import require_explicit_permission
 
 logger = logging.getLogger(__name__)
 
@@ -141,17 +141,17 @@ def clear_lru_caches() -> bool:
 
 @router.post("/clear-preview")
 async def clear_preview_cache(
-    current_user: dict = Depends(require_permission("CACHE_ADMIN"))
+    current_user: dict = Depends(require_explicit_permission("RBAC_ADMIN"))
 ):
     """
     Limpia cachés del backend en modo preview.
     
     Solo disponible en ambientes preview/staging/development.
-    Requiere permisos de administrador.
+    Requiere permiso SQL explícito RBAC_ADMIN.
     
     NO BORRA DATOS SQL - Solo limpia cachés en memoria.
     
-    Permisos: CACHE_ADMIN o SuperAdministrador
+    Permisos: RBAC_ADMIN explícito
     """
     # Verificar modo preview
     if not is_preview_mode():
@@ -218,12 +218,12 @@ async def clear_preview_cache(
 
 @router.get("/status")
 async def get_cache_status(
-    current_user: dict = Depends(require_permission("CACHE_ADMIN"))
+    current_user: dict = Depends(require_explicit_permission("RBAC_ADMIN"))
 ):
     """
     Obtiene estado de los cachés del sistema.
     
-    Permisos: CACHE_ADMIN o SuperAdministrador
+    Permisos: RBAC_ADMIN explícito
     """
     return {
         'success': True,
@@ -233,15 +233,3 @@ async def get_cache_status(
         'cache_clearing_enabled': is_preview_mode()
     }
 
-
-# =============================================================================
-# PERMISOS ESPECIALES
-# =============================================================================
-
-# Agregar CACHE_ADMIN a los roles que pueden limpiar cachés
-CACHE_ADMIN_ROLES = ['SuperAdministrador', 'Administrador']
-
-def check_cache_admin_permission(user: dict) -> bool:
-    """Verifica si el usuario tiene permiso para administrar cachés."""
-    role = user.get('role', '')
-    return role in CACHE_ADMIN_ROLES
