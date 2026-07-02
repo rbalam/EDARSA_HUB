@@ -37,7 +37,7 @@ from .schemas import (
     RolRBACUpdate,
     AsignacionRolCreate,
 )
-from .middleware import require_permission, get_current_user_with_permissions
+from .middleware import require_permission, require_explicit_permission, get_current_user_with_permissions
 
 router = APIRouter(prefix="/rbac", tags=["RBAC"])
 logger = logging.getLogger(__name__)
@@ -45,11 +45,13 @@ security = HTTPBearer()
 
 
 def _get_db():
-    """Obtiene conexión a MongoDB de forma síncrona."""
-    mongo_url = None  # P2-07: MongoDB eliminado
-    db_name = os.environ.get('DB_NAME', 'edarsahub')
-    client = None  # P2-07: MongoDB eliminado
-    return client[db_name]
+    """
+    Parámetro legacy para RBACService.
+
+    MongoDB está eliminado para RBAC; RBACRepository delega a SQL Server e ignora
+    este argumento. Retornar None evita fallas por client None.
+    """
+    return None
 
 
 def get_rbac_service():
@@ -77,7 +79,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 
 @router.get("/roles", summary="Listar roles")
 async def listar_roles(
-    current_user: dict = Depends(require_permission("ROLES_VER")),
+    current_user: dict = Depends(require_explicit_permission("RBAC_VER")),
     service: RBACService = Depends(get_rbac_service)
 ):
     """Lista todos los roles del sistema."""
@@ -91,7 +93,7 @@ async def listar_roles(
 @router.post("/roles", summary="Crear rol")
 async def crear_rol(
     data: RolRBACCreate,
-    current_user: dict = Depends(require_permission("ROLES_GESTIONAR")),
+    current_user: dict = Depends(require_explicit_permission("RBAC_ADMIN")),
     service: RBACService = Depends(get_rbac_service)
 ):
     """Crea un nuevo rol."""
@@ -107,7 +109,7 @@ async def crear_rol(
 @router.get("/roles/{rol_id}", summary="Obtener rol")
 async def obtener_rol(
     rol_id: str,
-    current_user: dict = Depends(require_permission("ROLES_VER")),
+    current_user: dict = Depends(require_explicit_permission("RBAC_VER")),
     service: RBACService = Depends(get_rbac_service)
 ):
     """Obtiene un rol por ID."""
@@ -121,7 +123,7 @@ async def obtener_rol(
 async def actualizar_rol(
     rol_id: str,
     data: RolRBACUpdate,
-    current_user: dict = Depends(require_permission("ROLES_GESTIONAR")),
+    current_user: dict = Depends(require_explicit_permission("RBAC_ADMIN")),
     service: RBACService = Depends(get_rbac_service)
 ):
     """Actualiza un rol existente."""
@@ -140,7 +142,7 @@ async def actualizar_rol(
 @router.delete("/roles/{rol_id}", summary="Eliminar rol")
 async def eliminar_rol(
     rol_id: str,
-    current_user: dict = Depends(require_permission("ROLES_GESTIONAR")),
+    current_user: dict = Depends(require_explicit_permission("RBAC_ADMIN")),
     service: RBACService = Depends(get_rbac_service)
 ):
     """Elimina un rol (soft delete)."""
@@ -165,7 +167,7 @@ async def eliminar_rol(
 @router.get("/permisos", summary="Listar permisos")
 async def listar_permisos(
     modulo: Optional[str] = Query(None, description="Filtrar por módulo"),
-    current_user: dict = Depends(require_permission("ROLES_VER")),
+    current_user: dict = Depends(require_explicit_permission("RBAC_VER")),
     service: RBACService = Depends(get_rbac_service)
 ):
     """Lista todos los permisos del sistema."""
@@ -187,7 +189,7 @@ async def listar_permisos(
 @router.post("/asignar", summary="Asignar rol a usuario")
 async def asignar_rol(
     data: AsignacionRolCreate,
-    current_user: dict = Depends(require_permission("ROLES_GESTIONAR")),
+    current_user: dict = Depends(require_explicit_permission("RBAC_ADMIN")),
     service: RBACService = Depends(get_rbac_service)
 ):
     """Asigna un rol a un usuario."""
@@ -214,7 +216,7 @@ async def revocar_rol(
     user_id: str,
     rol_id: str,
     sucursal_id: Optional[str] = None,
-    current_user: dict = Depends(require_permission("ROLES_GESTIONAR")),
+    current_user: dict = Depends(require_explicit_permission("RBAC_ADMIN")),
     service: RBACService = Depends(get_rbac_service)
 ):
     """Revoca un rol de un usuario."""
@@ -233,7 +235,7 @@ async def revocar_rol(
 @router.get("/usuario/{user_id}/permisos", summary="Permisos de un usuario")
 async def obtener_permisos_usuario(
     user_id: str,
-    current_user: dict = Depends(require_permission("USUARIOS_VER")),
+    current_user: dict = Depends(require_explicit_permission("RBAC_ADMIN")),
     service: RBACService = Depends(get_rbac_service)
 ):
     """Obtiene los permisos efectivos de un usuario."""
@@ -267,7 +269,7 @@ async def obtener_audit_logs(
     user_id: Optional[str] = Query(None),
     resultado: Optional[str] = Query(None, description="PERMITIDO o DENEGADO"),
     limit: int = Query(100, ge=1, le=1000),
-    current_user: dict = Depends(require_permission("RBAC_ADMIN")),
+    current_user: dict = Depends(require_explicit_permission("RBAC_ADMIN")),
     service: RBACService = Depends(get_rbac_service)
 ):
     """Obtiene logs de auditoría de verificaciones de permisos."""
