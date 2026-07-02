@@ -31,6 +31,7 @@ from ..db_utils import get_database
 
 # RBAC - Fase 3.1
 from core.security import get_current_user, get_user_empresas_permitidas, get_servers_for_empresas
+from core.rbac.middleware import require_explicit_permission
 
 router = APIRouter()
 
@@ -46,6 +47,25 @@ async def get_user_server_ids(current_user: Dict[str, Any]) -> list:
     if not empresas_permitidas:
         return []
     return await get_servers_for_empresas(empresas_permitidas)
+
+
+def _get_authenticated_workflow_actor(current_user: Dict[str, Any]) -> str:
+    """Deriva identidad real desde JWT/RBAC, no desde el body del cliente."""
+    usuario_id = str(
+        current_user.get("id")
+        or current_user.get("user_id")
+        or current_user.get("sub")
+        or current_user.get("email")
+        or ""
+    ).strip()
+
+    if not usuario_id:
+        raise HTTPException(
+            status_code=403,
+            detail="No fue posible resolver identidad RBAC del usuario autenticado"
+        )
+
+    return usuario_id
 
 
 @router.post("", response_model=OperacionResponse, status_code=201)
@@ -207,7 +227,7 @@ async def cambiar_estado_workflow(
 async def escalar_workflow(
     workflow_id: str,
     request: WorkflowEscalarRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    current_user: Dict[str, Any] = Depends(require_explicit_permission("WORKFLOW_GESTIONAR"))
 ):
     """
     Escala un workflow para atención especial.
@@ -217,10 +237,11 @@ async def escalar_workflow(
         db = get_db()
         operativo_svc = OperativoService(db)
         
+        usuario_id = _get_authenticated_workflow_actor(current_user)
         resultado = await operativo_svc.escalar_workflow(
             workflow_id=workflow_id,
             motivo=request.motivo,
-            usuario_id=request.usuario_id
+            usuario_id=usuario_id
         )
         
         return OperacionResponse(
