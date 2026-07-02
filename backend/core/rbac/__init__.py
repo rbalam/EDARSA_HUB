@@ -46,6 +46,7 @@ from .service import (
 
 from .middleware import (
     require_permission,
+    require_explicit_permission,
     require_any_permission,
     require_all_permissions,
 )
@@ -68,6 +69,7 @@ __all__ = [
     'PermisoDenegadoError',
     # Middleware
     'require_permission',
+    'require_explicit_permission',
     'require_any_permission',
     'require_all_permissions',
 ]

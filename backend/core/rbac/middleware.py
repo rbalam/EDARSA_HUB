@@ -238,10 +238,125 @@ class RBACAllDependency:
         
         return user
 
+class RBACExplicitDependency:
+    """
+    Dependency estricta: exige permiso efectivo SQL explicito.
+
+    Diferencia contra RBACDependency / require_permission:
+    - No permite bypass por ADMIN legacy.
+    - No usa RBACService.check_permission(), porque ese motor conserva bypass legacy.
+    - Consulta EDARSAHUB SQL canónico por email y permiso.
+    """
+
+    def __init__(
+        self,
+        permiso: str,
+        mensaje_error: Optional[str] = None
+    ):
+        self.permiso = permiso
+        self.mensaje_error = mensaje_error or f"Se requiere permiso SQL explícito: {permiso}"
+
+    async def __call__(
+        self,
+        request: Request,
+        credentials: HTTPAuthorizationCredentials = Depends(security),
+    ):
+        if not credentials:
+            raise HTTPException(
+                status_code=401,
+                detail="Token de autenticación requerido"
+            )
+
+        try:
+            payload = verify_token(credentials.credentials)
+            user = {
+                "id": payload.get("user_id"),
+                "email": payload.get("email"),
+                "role": payload.get("role"),
+            }
+        except Exception:
+            raise HTTPException(
+                status_code=401,
+                detail="Token inválido o expirado"
+            )
+
+        email = user.get("email")
+        if not email:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "PERMISO_DENEGADO",
+                    "mensaje": self.mensaje_error,
+                    "permiso_requerido": self.permiso,
+                }
+            )
+
+        from core.sql_first.db import get_sql_connection
+
+        conn = get_sql_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT TOP 1 1
+                FROM dbo.Usuario_Catalogo u
+                INNER JOIN dbo.Usuario_RolesAsignacion ura
+                    ON ura.UsuarioID = u.UsuarioID
+                    AND ura.Activo = 1
+                INNER JOIN dbo.Usuario_Roles r
+                    ON r.RolID = ura.RolID
+                    AND r.Activo = 1
+                INNER JOIN dbo.Usuario_PermisosRolModulo prm
+                    ON prm.RolID = r.RolID
+                    AND prm.Activo = 1
+                    AND prm.Permitido = 1
+                INNER JOIN dbo.Usuario_Modulos m
+                    ON m.ModuloID = prm.ModuloID
+                    AND m.Activo = 1
+                INNER JOIN dbo.Usuario_Acciones a
+                    ON a.AccionID = prm.AccionID
+                    AND a.Activo = 1
+                WHERE u.Activo = 1
+                  AND LOWER(u.Email) = LOWER(%s)
+                  AND (
+                        UPPER(CONCAT(m.CodigoModulo, '_', a.CodigoAccion)) = UPPER(%s)
+                     OR LOWER(CONCAT(m.CodigoModulo, '.', a.CodigoAccion)) = LOWER(%s)
+                  )
+            """, (email, self.permiso, self.permiso))
+            row = cur.fetchone()
+        finally:
+            conn.close()
+
+        if not row:
+            logger.warning(
+                "RBAC EXPLICITO DENEGADO: %s -> %s en %s %s",
+                email,
+                self.permiso,
+                request.method,
+                request.url.path,
+            )
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "PERMISO_DENEGADO",
+                    "mensaje": self.mensaje_error,
+                    "permiso_requerido": self.permiso,
+                }
+            )
+
+        return user
+
 
 # =============================================================================
 # FUNCIONES DE ATAJO
 # =============================================================================
+
+def require_explicit_permission(permiso: str, mensaje: Optional[str] = None):
+    """
+    Crea dependency estricta que requiere permiso efectivo SQL explícito.
+    No permite bypass por ADMIN legacy.
+    """
+    return RBACExplicitDependency(permiso, mensaje)
+
 
 def require_permission(permiso: str, audit: bool = True, mensaje: Optional[str] = None):
     """
