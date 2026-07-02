@@ -17227,22 +17227,61 @@ async def admin_asignar_rol(
 
 async def _require_rbac_bitacora_ver(current_user: Dict):
     """
-    Valida acceso a Bitácora RBAC por permiso efectivo canónico.
+    Valida acceso a Bitácora RBAC por permiso efectivo SQL explícito.
 
     Permiso requerido:
     - SISTEMA_RBAC_BITACORA_VER
 
-    No usar rol legacy aquí. El tab y el endpoint deben depender del mismo
-    permiso efectivo calculado desde EDARSAHUB SQL.
+    Regla crítica:
+    - SUPERADMIN puede entrar solo si el permiso existe asignado por SQL.
+    - ADMIN legacy NO hace bypass funcional.
+    - No usar has_permiso() aquí porque tiene bypass por tiene_acceso_global.
     """
-    context = await resolve_user_access_context(current_user)
-    bitacora_ok = has_permiso(context, "SISTEMA_RBAC_BITACORA_VER")
-    if not bitacora_ok:
+    permiso_requerido = "SISTEMA_RBAC_BITACORA_VER"
+    email = current_user.get("email")
+
+    if not email:
+        raise HTTPException(status_code=403, detail=f"Permiso requerido: {permiso_requerido}")
+
+    from core.sql_first.db import get_sql_connection
+
+    conn = get_sql_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT TOP 1 1
+            FROM dbo.Usuario_Catalogo u
+            INNER JOIN dbo.Usuario_RolesAsignacion ura
+                ON ura.UsuarioID = u.UsuarioID
+                AND ura.Activo = 1
+            INNER JOIN dbo.Usuario_Roles r
+                ON r.RolID = ura.RolID
+                AND r.Activo = 1
+            INNER JOIN dbo.Usuario_PermisosRolModulo prm
+                ON prm.RolID = r.RolID
+                AND prm.Activo = 1
+                AND prm.Permitido = 1
+            INNER JOIN dbo.Usuario_Modulos m
+                ON m.ModuloID = prm.ModuloID
+                AND m.Activo = 1
+            INNER JOIN dbo.Usuario_Acciones a
+                ON a.AccionID = prm.AccionID
+                AND a.Activo = 1
+            WHERE u.Activo = 1
+              AND LOWER(u.Email) = LOWER(%s)
+              AND CONCAT(m.CodigoModulo, '_', a.CodigoAccion) = %s
+        """, (email, permiso_requerido))
+        row = cur.fetchone()
+    finally:
+        conn.close()
+
+    if not row:
         raise HTTPException(
             status_code=403,
-            detail="Permiso requerido: SISTEMA_RBAC_BITACORA_VER"
+            detail=f"Permiso requerido: {permiso_requerido}"
         )
-    return context
+
+    return True
 
 
 @api_router.get("/admin/bitacora")
