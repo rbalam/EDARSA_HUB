@@ -13,11 +13,9 @@ FASE 4.1 y 4.2 - Diciembre 2025:
 
 from typing import Optional, List, Dict
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel
 
-from core.security import security, verify_token
-from core.rbac.middleware import require_explicit_permission
+from core.rbac.middleware import require_permission, require_explicit_permission
 from core.rbac_helper_sql import get_role_code
 from ..db_utils import get_database
 from modules.fase2_operativo.services.automatizacion_compras_service import (
@@ -219,7 +217,12 @@ def _p2a_completar_tarea(tarea_id, ctx):
 
 
 def _p2a_asignar_tarea(tarea_id, ctx):
-    payload = ctx.get("payload") or ctx.get("body") or {}
+    target_usuario_id = ctx.get("usuario_id")
+    target_usuario_nombre = ctx.get("usuario_nombre") or ctx.get("nombre") or target_usuario_id
+    metadata = {
+        "usuario_asignado_id": target_usuario_id,
+        "usuario_asignado_nombre": target_usuario_nombre
+    }
     _p2a_exec("""
         UPDATE dbo.Operativo_TareasCompras
         SET UsuarioAsignadoID=%s,
@@ -228,9 +231,9 @@ def _p2a_asignar_tarea(tarea_id, ctx):
             MetadatosJSON=%s
         WHERE TareaID=%s
     """, (
-        payload.get("usuario_id") or payload.get("user_id"),
-        payload.get("usuario_nombre") or payload.get("nombre"),
-        _p2a_json(payload),
+        target_usuario_id,
+        target_usuario_nombre,
+        _p2a_json(metadata),
         tarea_id
     ))
 
@@ -252,21 +255,6 @@ def _p2a_list_pedidos(ctx):
         ORDER BY FechaProcesamiento DESC
     """)
 
-
-def _p2a_user(payload):
-    payload = payload or {}
-    user_id = payload.get("user_id") or payload.get("usuario_id") or payload.get("id")
-    if not user_id:
-        return {"role": payload.get("role")}
-    row = _p2a_one("""
-        SELECT TOP 1 UsuarioID, Email, Username, NombreCompleto, Activo
-        FROM dbo.Usuario_Catalogo
-        WHERE CodigoUsuario=%s OR Email=%s OR Username=%s OR CONVERT(VARCHAR(50), PublicUUID)=%s
-    """, (user_id, user_id, user_id, user_id))
-    if not row:
-        return {"role": payload.get("role")}
-    row["role"] = payload.get("role") or payload.get("rol")
-    return row
 
 
 def _p2a_ultimo_scheduler_log():
@@ -316,15 +304,13 @@ async def ejecutar_detector_manual(
 
 @router.get("/compras/detector/estado")
 async def obtener_estado_detector(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: Dict = Depends(require_permission("COMPRAS_FACT_VER"))
 ):
     """
     Obtiene el estado actual del detector de pedidos.
     
     Incluye última ejecución y próxima programada.
     """
-    verify_token(credentials.credentials)
-    
     from core.scheduler.scheduler_manager import get_scheduler_manager
     from ..db_utils import get_database
     
@@ -356,14 +342,13 @@ async def listar_tareas_operativas(
     empresa_id: Optional[str] = Query(None),
     estado: Optional[str] = Query(None),
     limite: int = Query(50, le=200),
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: Dict = Depends(require_permission("COMPRAS_FACT_VER"))
 ):
     """
     FASE 4.2: Lista tareas operativas de captura de inventario.
     
     Filtrable por empresa y estado.
     """
-    verify_token(credentials.credentials)
     db = get_database()
     
     filtro = {}
@@ -383,10 +368,9 @@ async def listar_tareas_operativas(
 @router.get("/compras/tareas/{tarea_id}")
 async def obtener_tarea_operativa(
     tarea_id: str,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: Dict = Depends(require_permission("COMPRAS_FACT_VER"))
 ):
     """Obtiene detalle de una tarea operativa."""
-    verify_token(credentials.credentials)
     db = get_database()
     
     tarea = _p2a_get_tarea(tarea_id)
@@ -400,7 +384,7 @@ async def obtener_tarea_operativa(
 @router.post("/compras/tareas/{tarea_id}/completar")
 async def completar_tarea_operativa(
     tarea_id: str,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: Dict = Depends(require_explicit_permission("COMPRAS_FACT_EJECUTAR"))
 ):
     """
     FASE 4.2: Marca una tarea operativa como completada.
@@ -408,7 +392,8 @@ async def completar_tarea_operativa(
     Esto debería dispararse automáticamente cuando se captura el inventario,
     pero también puede hacerse manualmente.
     """
-    payload = verify_token(credentials.credentials)
+    usuario_actor_id, usuario_actor_nombre, _usuario_actor_rol = _get_authenticated_compras_actor(current_user)
+    payload = {"usuario_id": usuario_actor_id, "usuario_nombre": usuario_actor_nombre, "comentario": "Completada"}
     db = get_database()
     
     from datetime import datetime, timezone
@@ -431,10 +416,10 @@ async def completar_tarea_operativa(
 async def asignar_tarea_operativa(
     tarea_id: str,
     usuario_id: str = Query(..., description="ID del usuario a asignar"),
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: Dict = Depends(require_explicit_permission("COMPRAS_FACT_GESTIONAR"))
 ):
     """Asigna una tarea operativa a un usuario."""
-    verify_token(credentials.credentials)
+    _get_authenticated_compras_actor(current_user)
     db = get_database()
     
     from datetime import datetime, timezone
@@ -457,10 +442,9 @@ async def asignar_tarea_operativa(
 @router.get("/compras/kpis")
 async def obtener_kpis(
     server_id: Optional[str] = Query(None),
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: Dict = Depends(require_permission("COMPRAS_FACT_VER"))
 ):
     """KPIs de automatizaciones operativas."""
-    verify_token(credentials.credentials)
     db = get_database()
     service = get_automatizacion_compras_service(db)
     return service.obtener_kpis(server_id)
@@ -472,10 +456,9 @@ async def listar_automatizaciones(
     sucursal_id: Optional[str] = Query(None),
     estado: Optional[str] = Query(None),
     limite: int = Query(50, le=200),
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: Dict = Depends(require_permission("COMPRAS_FACT_VER"))
 ):
     """Lista automatizaciones."""
-    verify_token(credentials.credentials)
     db = get_database()
     service = get_automatizacion_compras_service(db)
     return service.listar_automatizaciones(server_id, sucursal_id, estado, limite)
@@ -488,14 +471,13 @@ async def listar_automatizaciones(
 @router.get("/compras/detector/bitacora")
 async def obtener_bitacora_detector(
     limite: int = Query(100, le=500),
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: Dict = Depends(require_permission("COMPRAS_FACT_VER"))
 ):
     """
     FASE 4.1: Obtiene bitácora de ejecuciones del detector.
     
     Muestra eventos de detección, tareas creadas, auditorías iniciadas.
     """
-    verify_token(credentials.credentials)
     db = get_database()
     
     bitacora = _p2a_list_bitacora(locals())
@@ -511,14 +493,13 @@ async def listar_pedidos_procesados(
     empresa_id: Optional[str] = Query(None),
     estado: Optional[str] = Query(None),
     limite: int = Query(100, le=500),
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: Dict = Depends(require_permission("COMPRAS_FACT_VER"))
 ):
     """
     FASE 4.1: Lista pedidos que ya fueron procesados.
     
     Útil para verificar anti-duplicados y trazabilidad.
     """
-    verify_token(credentials.credentials)
     db = get_database()
     
     filtro = {}
@@ -542,10 +523,9 @@ async def listar_pedidos_procesados(
 @router.get("/compras/{automatizacion_id}")
 async def obtener_automatizacion(
     automatizacion_id: str,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: Dict = Depends(require_permission("COMPRAS_FACT_VER"))
 ):
     """Obtiene detalle de una automatización."""
-    verify_token(credentials.credentials)
     db = get_database()
     service = get_automatizacion_compras_service(db)
     
@@ -733,10 +713,9 @@ async def modificar_parametros_consumo(
 @router.get("/compras/{automatizacion_id}/bitacora")
 async def obtener_bitacora(
     automatizacion_id: str,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    current_user: Dict = Depends(require_permission("COMPRAS_FACT_VER"))
 ):
     """Obtiene bitácora de cambios."""
-    verify_token(credentials.credentials)
     db = get_database()
     service = get_automatizacion_compras_service(db)
     return service.obtener_bitacora(automatizacion_id)
