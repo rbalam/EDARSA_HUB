@@ -1878,7 +1878,15 @@ const TabProductos = ({ onSimularPrecio }) => {
                               </span>
                             </td>
                             <td className="p-3 text-right font-mono">{formatCurrency(prod.precio_venta)}</td>
-                            <td className="p-3 text-right font-mono">{formatCurrency(prod.costo_receta)}</td>
+                            <td className="p-3 text-right font-mono">
+                              {prod.tiene_receta && Number(prod.costo_receta || 0) <= 0 ? (
+                                <span className="text-red-600 font-semibold" title="Receta registrada sin costo calculado">
+                                  {formatCurrency(prod.costo_receta)}
+                                </span>
+                              ) : (
+                                formatCurrency(prod.costo_receta)
+                              )}
+                            </td>
                             <td className="p-3 text-right font-mono">
                               {prod.margen_pesos != null ? (
                                 <span className={prod.margen_pesos < 0 ? 'text-red-600' : 'text-green-600'}>
@@ -1895,10 +1903,16 @@ const TabProductos = ({ onSimularPrecio }) => {
                             </td>
                             <td className="p-3 text-center">
                               {prod.tiene_receta ? (
-                                <span className="text-green-600">
-                                  <CheckCircle className="w-4 h-4 inline" />
-                                  <span className="ml-1 text-xs">{prod.numero_insumos}</span>
-                                </span>
+                                Number(prod.costo_receta || 0) <= 0 ? (
+                                  <span className="inline-flex items-center justify-center rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700" title="Receta registrada sin costo calculado">
+                                    Receta sin costo ({prod.numero_insumos})
+                                  </span>
+                                ) : (
+                                  <span className="text-green-600">
+                                    <CheckCircle className="w-4 h-4 inline" />
+                                    <span className="ml-1 text-xs">{prod.numero_insumos}</span>
+                                  </span>
+                                )
                               ) : <span className="text-gray-400">-</span>}
                             </td>
                             <td className="p-3">
@@ -2034,7 +2048,13 @@ const TabProductos = ({ onSimularPrecio }) => {
                           {formatCurrency(prod.precio_venta)}
                         </td>
                         <td className="p-3 text-right font-mono">
-                          {formatCurrency(prod.costo_receta)}
+                          {prod.tiene_receta && Number(prod.costo_receta || 0) <= 0 ? (
+                            <span className="text-red-600 font-semibold" title="Receta registrada sin costo calculado">
+                              {formatCurrency(prod.costo_receta)}
+                            </span>
+                          ) : (
+                            formatCurrency(prod.costo_receta)
+                          )}
                         </td>
                         <td className="p-3 text-right font-mono">
                           {prod.margen_pesos != null ? (
@@ -2063,10 +2083,16 @@ const TabProductos = ({ onSimularPrecio }) => {
                         </td>
                         <td className="p-3 text-center">
                           {prod.tiene_receta ? (
-                            <span className="text-green-600">
-                              <CheckCircle className="w-4 h-4 inline" />
-                              <span className="ml-1 text-xs">{prod.numero_insumos}</span>
-                            </span>
+                            Number(prod.costo_receta || 0) <= 0 ? (
+                              <span className="inline-flex items-center justify-center rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700" title="Receta registrada sin costo calculado">
+                                Receta sin costo ({prod.numero_insumos})
+                              </span>
+                            ) : (
+                              <span className="text-green-600">
+                                <CheckCircle className="w-4 h-4 inline" />
+                                <span className="ml-1 text-xs">{prod.numero_insumos}</span>
+                              </span>
+                            )
                           ) : (
                             <span className="text-gray-400">-</span>
                           )}

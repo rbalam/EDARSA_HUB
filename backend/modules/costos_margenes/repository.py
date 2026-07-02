@@ -152,23 +152,6 @@ def get_productos_con_costos(
           AND r_chk.ServerID = p.ServerID
     )"""
 
-    receta_costeada_sql = """(
-        EXISTS (
-            SELECT 1
-            FROM Sync_Productos_Recetas r_chk
-            WHERE r_chk.ProductoCodigoFuente = p.CodigoFuente
-              AND r_chk.ServerID = p.ServerID
-        )
-        AND COALESCE(
-            (SELECT SUM(r_cost.CostoTotal)
-             FROM Sync_Productos_Recetas r_cost
-             WHERE r_cost.ProductoCodigoFuente = p.CodigoFuente
-               AND r_cost.ServerID = p.ServerID),
-            p.CostoReceta,
-            0
-        ) > 0
-    )"""
-
     if sistema_origen:
         where_clauses.append(f"p.SystemType = '{sistema_origen}'")
     if familia:
@@ -178,7 +161,7 @@ def get_productos_con_costos(
     if busqueda:
         where_clauses.append(f"(p.Nombre LIKE '%{busqueda}%' OR p.CodigoFuente LIKE '%{busqueda}%')")
     if solo_con_receta:
-        where_clauses.append(receta_costeada_sql)
+        where_clauses.append(receta_real_sql)
     
     # MARGEN BAJO: Filtrar productos con margen < umbral configurado
     # El costo real viene de Sync_Productos_Recetas (no de p.CostoReceta)
