@@ -255,8 +255,8 @@ PERMISOS_SISTEMA = [
     
     # === AUDITORÍAS PROGRAMADAS ===
     {"codigo": "AUDITORIA_VER", "modulo": "auditorias", "accion": "ver", "descripcion": "Ver auditorías programadas, historial, KPIs"},
-    {"codigo": "AUDITORIA_PROGRAMAR", "modulo": "auditorias", "accion": "programar", "descripcion": "Crear, editar, activar/desactivar auditorías"},
-    {"codigo": "AUDITORIA_GESTIONAR", "modulo": "auditorias", "accion": "gestionar", "descripcion": "Ejecutar manualmente, eliminar auditorías"},
+    {"codigo": "AUDITORIAS_PROGRAMAR", "modulo": "auditorias", "accion": "programar", "descripcion": "Crear, editar, activar/desactivar auditorías programadas"},
+    {"codigo": "AUDITORIAS_GESTIONAR", "modulo": "auditorias", "accion": "gestionar", "descripcion": "Ejecutar manualmente y eliminar auditorías programadas"},
     
     # === REPORTES ===
     {"codigo": "REPORTES_VER", "modulo": "reportes", "accion": "ver", "descripcion": "Ver reportes"},
@@ -300,7 +300,7 @@ ROLES_SISTEMA = [
             "TAREAS_VER", "TAREAS_ASIGNAR",
             "NOTIFICACIONES_VER", "NOTIFICACIONES_CONFIGURAR",
             "SCHEDULER_VER", "SCHEDULER_ADMIN",
-            "AUDITORIA_VER", "AUDITORIA_PROGRAMAR", "AUDITORIA_GESTIONAR",
+            "AUDITORIA_VER",
             "REPORTES_VER", "REPORTES_EXPORTAR",
             "USUARIOS_VER", "ROLES_VER",
         ],
@@ -318,7 +318,7 @@ ROLES_SISTEMA = [
             "TAREAS_VER", "TAREAS_CREAR", "TAREAS_ASIGNAR", "TAREAS_COMPLETAR",
             "NOTIFICACIONES_VER",
             "SCHEDULER_VER", "SCHEDULER_GESTIONAR",
-            "AUDITORIA_VER", "AUDITORIA_PROGRAMAR",
+            "AUDITORIA_VER",
             "REPORTES_VER", "REPORTES_EXPORTAR",
         ],
     },
