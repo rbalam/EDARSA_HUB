@@ -365,22 +365,70 @@ async def get_servers(current_user: dict = Depends(get_current_user)):
 @router.get("/usuarios-asignables")
 async def get_usuarios_asignables(current_user: dict = Depends(get_current_user)):
     """
-    Lista usuarios que pueden ser asignados a responsabilidades.
+    Lista usuarios asignables con permisos de catálogos persistidos en SQL.
     """
     require_admin(current_user)
 
-    return execute_query("""
-    SELECT
-        CAST(UsuarioID AS NVARCHAR(100)) AS id,
-        Email AS email,
-        NombreCompleto AS name,
-        NombreCompleto AS nombre,
-        Puesto AS puesto,
-        ISNULL(Activo, 1) AS activo
-    FROM Usuario_Catalogo
-    WHERE ISNULL(Activo, 1) = 1
-    ORDER BY NombreCompleto, Email
-    """)
+    conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+    cur = conn.cursor(as_dict=True)
+    try:
+        cur.execute("""
+            SELECT
+                CAST(u.UsuarioID AS NVARCHAR(100)) AS id,
+                u.UsuarioID,
+                u.Email AS email,
+                COALESCE(NULLIF(u.NombreCompleto, ''), u.Email) AS name,
+                COALESCE(NULLIF(u.NombreCompleto, ''), u.Email) AS nombre,
+                u.Puesto AS puesto,
+                ISNULL(u.Activo, 1) AS activo,
+                COALESCE(r.NombreRol, r.CodigoRol, 'Usuario') AS role,
+                ISNULL(f.PuedeSolicitar, 0) AS puede_solicitar,
+                ISNULL(f.PuedeAutorizar, 0) AS puede_autorizar,
+                ISNULL(f.PuedeLiberar, 0) AS puede_liberar,
+                STUFF((
+                    SELECT ',' + CAST(pm.ModuloID AS NVARCHAR(20))
+                    FROM dbo.Usuario_PermisosCatalogosModulo pm
+                    WHERE pm.UsuarioID = u.UsuarioID
+                      AND ISNULL(pm.Activo, 1) = 1
+                      AND ISNULL(pm.Permitido, 1) = 1
+                    ORDER BY pm.ModuloID
+                    FOR XML PATH(''), TYPE
+                ).value('.', 'NVARCHAR(MAX)'), 1, 1, '') AS permisos_catalogos_csv
+            FROM dbo.Usuario_Catalogo u
+            LEFT JOIN dbo.Usuario_RolesAsignacion ura
+                ON ura.UsuarioID = u.UsuarioID
+               AND ISNULL(ura.Activo, 1) = 1
+               AND ISNULL(ura.EsPrincipal, 0) = 1
+            LEFT JOIN dbo.Usuario_Roles r
+                ON r.RolID = ura.RolID
+            LEFT JOIN dbo.Usuario_PermisosCatalogosFlujo f
+                ON f.UsuarioID = u.UsuarioID
+               AND ISNULL(f.Activo, 1) = 1
+            WHERE ISNULL(u.Activo, 1) = 1
+            ORDER BY COALESCE(NULLIF(u.NombreCompleto, ''), u.Email), u.Email
+        """)
+        rows = cur.fetchall() or []
+        result = []
+        for row in rows:
+            csv_value = row.get("permisos_catalogos_csv") or ""
+            permisos = [x for x in str(csv_value).split(",") if x]
+            result.append({
+                "id": str(row.get("id")),
+                "usuario_id": row.get("UsuarioID"),
+                "email": row.get("email"),
+                "name": row.get("name"),
+                "nombre": row.get("nombre"),
+                "puesto": row.get("puesto"),
+                "activo": bool(row.get("activo")),
+                "role": row.get("role") or "Usuario",
+                "puede_solicitar": bool(row.get("puede_solicitar")),
+                "puede_autorizar": bool(row.get("puede_autorizar")),
+                "puede_liberar": bool(row.get("puede_liberar")),
+                "permisos_catalogos": permisos,
+            })
+        return result
+    finally:
+        conn.close()
 
 
 @router.get("/catalogos-disponibles")
@@ -406,21 +454,129 @@ async def get_catalogos_disponibles(current_user: dict = Depends(get_current_use
 @router.post("/permisos-catalogos")
 async def save_permisos_catalogos(payload: dict, current_user: dict = Depends(get_current_user)):
     """
-    Guarda configuración de permisos de catálogos.
-    
-    NOTA: Fase inicial - solo recibe y confirma el payload.
-    La persistencia granular requiere tablas adicionales.
+    Guarda configuración de permisos de catálogos por usuario en EDARSAHUB SQL.
     """
     require_admin(current_user)
 
-    logging.info(f"[ADMIN_SQL] Permisos recibidos de {current_user.get('email')}: {payload}")
+    raw_user_id = str(payload.get("user_id") or payload.get("usuario_id") or "").strip()
+    if not raw_user_id:
+        raise HTTPException(status_code=400, detail="user_id requerido")
 
-    return {
-        "success": True,
-        "source": "EDARSAHUB_SQL",
-        "message": "Permisos recibidos correctamente",
-        "payload": payload
-    }
+    catalogos = payload.get("catalogos_permitidos") or []
+    if not isinstance(catalogos, list):
+        raise HTTPException(status_code=400, detail="catalogos_permitidos debe ser lista")
+
+    puede_solicitar = 1 if payload.get("puede_solicitar") else 0
+    puede_autorizar = 1 if payload.get("puede_autorizar") else 0
+    puede_liberar = 1 if payload.get("puede_liberar") else 0
+    actor = current_user.get("email") or current_user.get("username") or "admin-sql"
+
+    conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+    cur = conn.cursor(as_dict=True)
+    try:
+        cur.execute("""
+            SELECT TOP 1 UsuarioID
+            FROM dbo.Usuario_Catalogo
+            WHERE UsuarioID = TRY_CONVERT(INT, %s)
+               OR LOWER(CAST(PublicUUID AS NVARCHAR(36))) = LOWER(%s)
+               OR LOWER(ISNULL(MongoLegacyID, '')) = LOWER(%s)
+        """, (raw_user_id, raw_user_id, raw_user_id))
+        usuario = cur.fetchone()
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+        usuario_id = usuario["UsuarioID"]
+
+        cur.execute("""
+            UPDATE dbo.Usuario_PermisosCatalogosFlujo
+            SET PuedeSolicitar = %s,
+                PuedeAutorizar = %s,
+                PuedeLiberar = %s,
+                Activo = 1,
+                FechaModificacion = SYSUTCDATETIME(),
+                ModifiedBy = %s
+            WHERE UsuarioID = %s
+        """, (puede_solicitar, puede_autorizar, puede_liberar, actor, usuario_id))
+
+        if cur.rowcount == 0:
+            cur.execute("""
+                INSERT INTO dbo.Usuario_PermisosCatalogosFlujo
+                (UsuarioID, PuedeSolicitar, PuedeAutorizar, PuedeLiberar, Activo, CreatedBy)
+                VALUES (%s, %s, %s, %s, 1, %s)
+            """, (usuario_id, puede_solicitar, puede_autorizar, puede_liberar, actor))
+
+        cur.execute("""
+            UPDATE dbo.Usuario_PermisosCatalogosModulo
+            SET Activo = 0,
+                Permitido = 0,
+                FechaModificacion = SYSUTCDATETIME(),
+                ModifiedBy = %s
+            WHERE UsuarioID = %s
+        """, (actor, usuario_id))
+
+        guardados = []
+        for modulo_raw in catalogos:
+            modulo_raw = str(modulo_raw).strip()
+            if not modulo_raw:
+                continue
+
+            cur.execute("""
+                SELECT TOP 1 ModuloID
+                FROM dbo.Usuario_Modulos
+                WHERE ModuloID = TRY_CONVERT(INT, %s)
+                  AND ISNULL(Activo, 1) = 1
+            """, (modulo_raw,))
+            modulo = cur.fetchone()
+            if not modulo:
+                continue
+
+            modulo_id = modulo["ModuloID"]
+            guardados.append(str(modulo_id))
+
+            cur.execute("""
+                UPDATE dbo.Usuario_PermisosCatalogosModulo
+                SET Activo = 1,
+                    Permitido = 1,
+                    FechaModificacion = SYSUTCDATETIME(),
+                    ModifiedBy = %s
+                WHERE UsuarioID = %s
+                  AND ModuloID = %s
+            """, (actor, usuario_id, modulo_id))
+
+            if cur.rowcount == 0:
+                cur.execute("""
+                    INSERT INTO dbo.Usuario_PermisosCatalogosModulo
+                    (UsuarioID, ModuloID, Permitido, Activo, CreatedBy)
+                    VALUES (%s, %s, 1, 1, %s)
+                """, (usuario_id, modulo_id, actor))
+
+        conn.commit()
+        logging.info(
+            "[ADMIN_SQL] Permisos catalogos guardados usuario=%s catalogos=%s actor=%s",
+            usuario_id,
+            len(guardados),
+            actor,
+        )
+
+        return {
+            "success": True,
+            "source": "EDARSAHUB_SQL",
+            "message": "Permisos guardados correctamente",
+            "usuario_id": usuario_id,
+            "catalogos_guardados": guardados,
+            "puede_solicitar": bool(puede_solicitar),
+            "puede_autorizar": bool(puede_autorizar),
+            "puede_liberar": bool(puede_liberar),
+        }
+
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error guardando permisos de catálogos: {e}")
+    finally:
+        conn.close()
 
 
 @router.put("/roles/{role_id}")
