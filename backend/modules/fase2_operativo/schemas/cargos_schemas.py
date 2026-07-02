@@ -72,8 +72,6 @@ class CargoEconomicoCreate(BaseModel):
     """Schema para crear una propuesta de cargo económico."""
     responsabilidad_id: str = Field(..., description="ID del registro de responsabilidad económica origen")
     comentario: str = Field(..., min_length=10, max_length=2000, description="Justificación para crear el cargo")
-    usuario_id: str = Field(..., description="Usuario que crea la propuesta")
-    usuario_rol: str = Field(..., description="Rol del usuario")
     
     @field_validator('comentario')
     @classmethod
@@ -88,8 +86,6 @@ class CargoEconomicoCreate(BaseModel):
 
 class CargoAccionRequest(BaseModel):
     """Request genérico para ejecutar una acción sobre un cargo."""
-    usuario_id: str = Field(..., description="ID del usuario que ejecuta la acción")
-    usuario_rol: str = Field(..., description="Rol del usuario")
     comentario: str = Field(..., min_length=10, max_length=2000, description="Comentario obligatorio")
     motivo_codigo: Optional[str] = Field(None, description="Código de motivo predefinido")
     
@@ -106,8 +102,6 @@ class CargoAccionRequest(BaseModel):
 
 class CargoReversaRequest(BaseModel):
     """Request para revertir un cargo aplicado."""
-    usuario_id: str = Field(..., description="ID del usuario que ejecuta la reversa")
-    usuario_rol: str = Field(..., description="Rol del usuario")
     motivo_reversa: str = Field(..., min_length=20, max_length=2000, description="Motivo detallado de la reversa")
     motivo_codigo: Optional[str] = Field(None, description="Código de motivo predefinido")
     

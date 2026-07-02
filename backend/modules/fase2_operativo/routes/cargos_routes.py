@@ -53,6 +53,7 @@ from ..db_utils import get_database
 
 # RBAC - Fase 2D
 from core.rbac.middleware import require_permission, require_explicit_permission
+from core.rbac_helper_sql import get_role_code
 
 router = APIRouter(prefix="/cargos", tags=["Cargos Económicos"])
 logger = logging.getLogger(__name__)
@@ -62,6 +63,26 @@ def get_cargos_service():
     """Dependency injection para CargosService."""
     db = get_database()
     return CargosService(db)
+
+
+def _get_authenticated_cargos_actor(current_user: dict):
+    """Deriva identidad real desde JWT/RBAC, no desde el body del cliente."""
+    usuario_id = str(
+        current_user.get("id")
+        or current_user.get("user_id")
+        or current_user.get("sub")
+        or current_user.get("email")
+        or ""
+    ).strip()
+    usuario_rol = get_role_code(current_user)
+
+    if not usuario_id or not usuario_rol:
+        raise HTTPException(
+            status_code=403,
+            detail="No fue posible resolver identidad RBAC del usuario autenticado"
+        )
+
+    return usuario_id, usuario_rol
 
 
 # ==================== CREACIÓN ====================
@@ -84,10 +105,11 @@ async def crear_propuesta_cargo(
     y no tenga controversia activa, exoneración, ni cargo previo.
     """
     try:
+        usuario_id, usuario_rol = _get_authenticated_cargos_actor(current_user)
         resultado = await service.crear_propuesta_cargo(
             responsabilidad_id=request.responsabilidad_id,
-            usuario_id=request.usuario_id,
-            usuario_rol=request.usuario_rol,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
             comentario=request.comentario
         )
         return resultado
@@ -256,10 +278,11 @@ async def autorizar_cargo(
     - Requiere permiso CARGOS_AUTORIZAR
     """
     try:
+        usuario_id, usuario_rol = _get_authenticated_cargos_actor(current_user)
         return await service.autorizar_cargo(
             cargo_id=cargo_id,
-            usuario_id=request.usuario_id,
-            usuario_rol=request.usuario_rol,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
             comentario=request.comentario,
             motivo_codigo=request.motivo_codigo
         )
@@ -291,10 +314,11 @@ async def aplicar_cargo(
     Requiere permiso CARGOS_APLICAR.
     """
     try:
+        usuario_id, usuario_rol = _get_authenticated_cargos_actor(current_user)
         return await service.aplicar_cargo(
             cargo_id=cargo_id,
-            usuario_id=request.usuario_id,
-            usuario_rol=request.usuario_rol,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
             comentario=request.comentario,
             motivo_codigo=request.motivo_codigo
         )
@@ -315,7 +339,7 @@ async def aplicar_cargo(
 async def rechazar_cargo(
     cargo_id: str,
     request: CargoAccionRequest,
-    current_user: dict = Depends(require_permission("CARGOS_RECHAZAR")),
+    current_user: dict = Depends(require_explicit_permission("CARGOS_RECHAZAR")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """
@@ -325,10 +349,11 @@ async def rechazar_cargo(
     Requiere permiso CARGOS_RECHAZAR.
     """
     try:
+        usuario_id, usuario_rol = _get_authenticated_cargos_actor(current_user)
         return await service.rechazar_cargo(
             cargo_id=cargo_id,
-            usuario_id=request.usuario_id,
-            usuario_rol=request.usuario_rol,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
             comentario=request.comentario,
             motivo_codigo=request.motivo_codigo
         )
@@ -349,7 +374,7 @@ async def rechazar_cargo(
 async def revertir_cargo(
     cargo_id: str,
     request: CargoReversaRequest,
-    current_user: dict = Depends(require_permission("CARGOS_REVERTIR")),
+    current_user: dict = Depends(require_explicit_permission("CARGOS_REVERTIR")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """
@@ -361,10 +386,11 @@ async def revertir_cargo(
     - Permiso CARGOS_REVERTIR
     """
     try:
+        usuario_id, usuario_rol = _get_authenticated_cargos_actor(current_user)
         return await service.revertir_cargo(
             cargo_id=cargo_id,
-            usuario_id=request.usuario_id,
-            usuario_rol=request.usuario_rol,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
             motivo_reversa=request.motivo_reversa,
             motivo_codigo=request.motivo_codigo
         )
@@ -385,7 +411,7 @@ async def revertir_cargo(
 async def cancelar_cargo(
     cargo_id: str,
     request: CargoAccionRequest,
-    current_user: dict = Depends(require_permission("CARGOS_CANCELAR")),
+    current_user: dict = Depends(require_explicit_permission("CARGOS_CANCELAR")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """
@@ -395,10 +421,11 @@ async def cancelar_cargo(
     Requiere permiso CARGOS_CANCELAR.
     """
     try:
+        usuario_id, usuario_rol = _get_authenticated_cargos_actor(current_user)
         return await service.cancelar_cargo(
             cargo_id=cargo_id,
-            usuario_id=request.usuario_id,
-            usuario_rol=request.usuario_rol,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
             comentario=request.comentario,
             motivo_codigo=request.motivo_codigo
         )
