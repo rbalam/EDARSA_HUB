@@ -1010,18 +1010,8 @@ class ResponsabilidadService:
         
         await self._validar_transicion(estado_actual, EstadoResponsabilidad.EN_DISPUTA.value)
         
-        # Disputa puede ser iniciada por afectado o supervisor+
-        roles_permitidos = [
-            RolAutorizacion.AFECTADO.value,
-            RolAutorizacion.SUPERVISOR.value,
-            RolAutorizacion.GERENTE_OPS.value,
-            RolAutorizacion.DIRECCION.value
-        ]
-        if usuario_rol not in roles_permitidos:
-            raise PermisoInsuficienteError(
-                f"Solo el afectado o un supervisor puede iniciar una disputa. Tu rol: {usuario_rol}"
-            )
-        
+        # La autorización se valida en la ruta mediante RESPONSABILIDAD_DISPUTAR.
+        # El service conserva validaciones de flujo/estado y registro de auditoría.
         monto = registro.get("monto_propuesto_mxn", 0)
         
         transicion_id = await self._registrar_transicion(
