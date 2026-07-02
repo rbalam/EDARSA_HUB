@@ -216,8 +216,6 @@ class ConfiguracionResponsabilidadUpdate(BaseModel):
 
 class AccionResponsabilidadRequest(BaseModel):
     """Request para ejecutar una acción sobre responsabilidad."""
-    usuario_id: str = Field(..., description="ID del usuario que ejecuta la acción")
-    usuario_rol: str = Field(..., description="Rol del usuario (AFECTADO, SUPERVISOR, GERENTE_OPS, DIRECCION)")
     comentario: str = Field(..., min_length=10, max_length=1000, description="Comentario obligatorio (mínimo 10 caracteres)")
     motivo_codigo: Optional[str] = Field(None, description="Código de motivo predefinido (opcional)")
     

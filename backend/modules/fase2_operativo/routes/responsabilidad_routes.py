@@ -50,6 +50,7 @@ from ..db_utils import get_database
 
 # RBAC - Fase 2D
 from core.rbac.middleware import require_permission, require_explicit_permission
+from core.rbac_helper_sql import get_role_code
 
 router = APIRouter()
 
@@ -84,7 +85,7 @@ async def calcular_responsabilidad(
     workflow_id: str,
     usuario_id: str = Query(..., description="ID del usuario que ejecuta el cálculo"),
     forzar_recalculo: bool = Query(False, description="Forzar recálculo si ya existe"),
-    current_user: dict = Depends(require_permission("RESPONSABILIDAD_CALCULAR"))
+    current_user: dict = Depends(require_explicit_permission("RESPONSABILIDAD_CALCULAR"))
 ):
     """Calcula el impacto económico de un workflow."""
     try:
@@ -301,6 +302,26 @@ async def obtener_metricas(
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 
+def _get_authenticated_responsabilidad_actor(current_user: dict):
+    """Deriva identidad real desde JWT/RBAC, no desde el body del cliente."""
+    usuario_id = str(
+        current_user.get("id")
+        or current_user.get("user_id")
+        or current_user.get("sub")
+        or current_user.get("email")
+        or ""
+    ).strip()
+    usuario_rol = get_role_code(current_user)
+
+    if not usuario_id or not usuario_rol:
+        raise HTTPException(
+            status_code=403,
+            detail="No fue posible resolver identidad RBAC del usuario autenticado"
+        )
+
+    return usuario_id, usuario_rol
+
+
 # ==================== FASE 2C.2: APROBACIONES ====================
 
 def _handle_aprobacion_error(e: Exception):
@@ -335,17 +356,19 @@ def _handle_aprobacion_error(e: Exception):
 async def proponer(
     responsabilidad_id: str,
     request: AccionResponsabilidadRequest,
-    current_user: dict = Depends(require_permission("RESPONSABILIDAD_PROPONER"))
+    current_user: dict = Depends(require_explicit_permission("RESPONSABILIDAD_PROPONER"))
 ):
     """Propone un monto para revisión."""
     try:
         db = get_db()
         service = ResponsabilidadService(db)
         
+        usuario_id, usuario_rol = _get_authenticated_responsabilidad_actor(current_user)
+
         return await service.proponer(
             responsabilidad_id=responsabilidad_id,
-            usuario_id=request.usuario_id,
-            usuario_rol=request.usuario_rol,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
             comentario=request.comentario,
             motivo_codigo=request.motivo_codigo
         )
@@ -373,17 +396,19 @@ async def proponer(
 async def aprobar(
     responsabilidad_id: str,
     request: AccionResponsabilidadRequest,
-    current_user: dict = Depends(require_permission("RESPONSABILIDAD_APROBAR"))
+    current_user: dict = Depends(require_explicit_permission("RESPONSABILIDAD_APROBAR"))
 ):
     """Aprueba un monto propuesto."""
     try:
         db = get_db()
         service = ResponsabilidadService(db)
         
+        usuario_id, usuario_rol = _get_authenticated_responsabilidad_actor(current_user)
+
         return await service.aprobar(
             responsabilidad_id=responsabilidad_id,
-            usuario_id=request.usuario_id,
-            usuario_rol=request.usuario_rol,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
             comentario=request.comentario,
             motivo_codigo=request.motivo_codigo
         )
@@ -409,17 +434,19 @@ async def aprobar(
 async def rechazar(
     responsabilidad_id: str,
     request: AccionResponsabilidadRequest,
-    current_user: dict = Depends(require_permission("RESPONSABILIDAD_RECHAZAR"))
+    current_user: dict = Depends(require_explicit_permission("RESPONSABILIDAD_RECHAZAR"))
 ):
     """Rechaza un cargo propuesto."""
     try:
         db = get_db()
         service = ResponsabilidadService(db)
         
+        usuario_id, usuario_rol = _get_authenticated_responsabilidad_actor(current_user)
+
         return await service.rechazar(
             responsabilidad_id=responsabilidad_id,
-            usuario_id=request.usuario_id,
-            usuario_rol=request.usuario_rol,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
             comentario=request.comentario,
             motivo_codigo=request.motivo_codigo
         )
@@ -447,17 +474,19 @@ async def rechazar(
 async def exonerar(
     responsabilidad_id: str,
     request: AccionResponsabilidadRequest,
-    current_user: dict = Depends(require_permission("RESPONSABILIDAD_EXONERAR"))
+    current_user: dict = Depends(require_explicit_permission("RESPONSABILIDAD_EXONERAR"))
 ):
     """Exonera un cargo."""
     try:
         db = get_db()
         service = ResponsabilidadService(db)
         
+        usuario_id, usuario_rol = _get_authenticated_responsabilidad_actor(current_user)
+
         return await service.exonerar(
             responsabilidad_id=responsabilidad_id,
-            usuario_id=request.usuario_id,
-            usuario_rol=request.usuario_rol,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
             comentario=request.comentario,
             motivo_codigo=request.motivo_codigo
         )
@@ -485,17 +514,19 @@ async def exonerar(
 async def disputar(
     responsabilidad_id: str,
     request: AccionResponsabilidadRequest,
-    current_user: dict = Depends(require_permission("RESPONSABILIDAD_DISPUTAR"))
+    current_user: dict = Depends(require_explicit_permission("RESPONSABILIDAD_DISPUTAR"))
 ):
     """Inicia una disputa."""
     try:
         db = get_db()
         service = ResponsabilidadService(db)
         
+        usuario_id, usuario_rol = _get_authenticated_responsabilidad_actor(current_user)
+
         return await service.disputar(
             responsabilidad_id=responsabilidad_id,
-            usuario_id=request.usuario_id,
-            usuario_rol=request.usuario_rol,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
             comentario=request.comentario,
             motivo_codigo=request.motivo_codigo
         )
@@ -526,10 +557,12 @@ async def resolver_disputa(
         db = get_db()
         service = ResponsabilidadService(db)
         
+        usuario_id, usuario_rol = _get_authenticated_responsabilidad_actor(current_user)
+
         return await service.resolver_disputa(
             responsabilidad_id=responsabilidad_id,
-            usuario_id=request.usuario_id,
-            usuario_rol=request.usuario_rol,
+            usuario_id=usuario_id,
+            usuario_rol=usuario_rol,
             comentario=request.comentario,
             motivo_codigo=request.motivo_codigo
         )
