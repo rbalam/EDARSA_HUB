@@ -49,7 +49,7 @@ from ..api_schemas import OperacionResponse
 from ..db_utils import get_database
 
 # RBAC - Fase 2D
-from core.rbac.middleware import require_permission
+from core.rbac.middleware import require_permission, require_explicit_permission
 
 router = APIRouter()
 
@@ -221,7 +221,7 @@ async def obtener_configuracion(
 )
 async def actualizar_configuracion(
     request: ConfiguracionResponsabilidadUpdate,
-    current_user: dict = Depends(require_permission("RESPONSABILIDAD_GESTIONAR"))
+    current_user: dict = Depends(require_explicit_permission("RESPONSABILIDAD_GESTIONAR"))
 ):
     """Actualiza la configuración de responsabilidad."""
     try:
@@ -250,7 +250,7 @@ async def actualizar_configuracion(
     description="Inicializa las claves de configuración del módulo si no existen. Requiere permiso RESPONSABILIDAD_GESTIONAR."
 )
 async def inicializar_configuracion(
-    current_user: dict = Depends(require_permission("RESPONSABILIDAD_GESTIONAR"))
+    current_user: dict = Depends(require_explicit_permission("RESPONSABILIDAD_GESTIONAR"))
 ):
     """Inicializa la configuración del módulo."""
     try:
@@ -519,7 +519,7 @@ async def disputar(
 async def resolver_disputa(
     responsabilidad_id: str,
     request: AccionResponsabilidadRequest,
-    current_user: dict = Depends(require_permission("RESPONSABILIDAD_GESTIONAR"))
+    current_user: dict = Depends(require_explicit_permission("RESPONSABILIDAD_GESTIONAR"))
 ):
     """Resuelve una disputa."""
     try:

@@ -23,7 +23,7 @@ from ..db_utils import get_database
 from ..services.sla_service import get_sla_service, EstadoSLA
 
 # RBAC - Fase 2D
-from core.rbac.middleware import require_permission
+from core.rbac.middleware import require_permission, require_explicit_permission
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ async def obtener_configuracion_sla(
 @router.put("/configuracion")
 async def actualizar_configuracion_sla(
     valores: Dict[str, int],
-    current_user: dict = Depends(require_permission("SLA_CONFIGURAR"))
+    current_user: dict = Depends(require_explicit_permission("SLA_CONFIGURAR"))
 ):
     """
     Actualiza la configuración de umbrales SLA.

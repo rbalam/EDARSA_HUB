@@ -8,7 +8,7 @@ PROTEGIDO CON RBAC
 Permisos:
 - AUDITORIA_VER: Ver programaciones, historial, KPIs, calendario
 - AUDITORIA_PROGRAMAR: Crear, editar, activar/desactivar
-- AUDITORIA_GESTIONAR: Ejecutar manualmente, eliminar
+- AUDITORIAS_GESTIONAR: Ejecutar manualmente, eliminar
 """
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional
@@ -28,7 +28,7 @@ from ..api_schemas import OperacionResponse
 from ..db_utils import get_database
 
 # RBAC
-from core.rbac.middleware import require_permission
+from core.rbac.middleware import require_permission, require_explicit_permission
 
 router = APIRouter()
 
@@ -208,11 +208,11 @@ async def actualizar_auditoria(
     "/{auditoria_id}",
     response_model=OperacionResponse,
     summary="Eliminar auditoría",
-    description="Elimina una auditoría programada. Requiere AUDITORIA_GESTIONAR."
+    description="Elimina una auditoría programada. Requiere AUDITORIAS_GESTIONAR."
 )
 async def eliminar_auditoria(
     auditoria_id: str,
-    current_user: dict = Depends(require_permission("AUDITORIA_GESTIONAR"))
+    current_user: dict = Depends(require_explicit_permission("AUDITORIAS_GESTIONAR"))
 ):
     """Elimina una auditoría programada."""
     try:
@@ -289,11 +289,11 @@ async def desactivar_auditoria(
     "/{auditoria_id}/ejecutar",
     response_model=OperacionResponse,
     summary="Ejecutar auditoría manualmente",
-    description="Ejecuta una auditoría de forma manual. Requiere AUDITORIA_GESTIONAR."
+    description="Ejecuta una auditoría de forma manual. Requiere AUDITORIAS_GESTIONAR."
 )
 async def ejecutar_auditoria(
     auditoria_id: str,
-    current_user: dict = Depends(require_permission("AUDITORIA_GESTIONAR"))
+    current_user: dict = Depends(require_explicit_permission("AUDITORIAS_GESTIONAR"))
 ):
     """Ejecuta una auditoría manualmente."""
     try:

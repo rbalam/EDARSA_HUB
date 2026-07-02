@@ -30,7 +30,7 @@ from pydantic import BaseModel
 import logging
 
 # RBAC - Fase 2D
-from core.rbac.middleware import require_permission
+from core.rbac.middleware import require_permission, require_explicit_permission
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +173,7 @@ async def get_config(
 @router.post("/config")
 async def create_config(
     request: ConfigCreateRequest,
-    current_user: dict = Depends(require_permission("NOTIFICACIONES_CONFIGURAR"))
+    current_user: dict = Depends(require_explicit_permission("NOTIFICACIONES_CONFIGURAR"))
 ):
     """Crea una nueva configuración."""
     db = get_db()
@@ -211,7 +211,7 @@ async def create_config(
 async def update_config(
     config_id: str,
     request: ConfigUpdateRequest,
-    current_user: dict = Depends(require_permission("NOTIFICACIONES_CONFIGURAR"))
+    current_user: dict = Depends(require_explicit_permission("NOTIFICACIONES_CONFIGURAR"))
 ):
     """Actualiza una configuración."""
     db = get_db()
@@ -267,7 +267,7 @@ async def get_template(
 @router.post("/templates")
 async def create_template(
     request: TemplateCreateRequest,
-    current_user: dict = Depends(require_permission("NOTIFICACIONES_CONFIGURAR"))
+    current_user: dict = Depends(require_explicit_permission("NOTIFICACIONES_CONFIGURAR"))
 ):
     """Crea un nuevo template."""
     db = get_db()
@@ -301,7 +301,7 @@ async def create_template(
 async def update_template(
     template_id: str,
     request: TemplateUpdateRequest,
-    current_user: dict = Depends(require_permission("NOTIFICACIONES_CONFIGURAR"))
+    current_user: dict = Depends(require_explicit_permission("NOTIFICACIONES_CONFIGURAR"))
 ):
     """Actualiza un template."""
     db = get_db()
@@ -445,7 +445,7 @@ async def test_notification(
 @router.post("/reprocesar")
 async def reprocess_queue(
     limit: int = Query(50, ge=1, le=200),
-    current_user: dict = Depends(require_permission("NOTIFICACIONES_CONFIGURAR"))
+    current_user: dict = Depends(require_explicit_permission("NOTIFICACIONES_CONFIGURAR"))
 ):
     """
     Reprocesa items pendientes de la cola.
@@ -468,7 +468,7 @@ async def reprocess_queue(
 
 @router.post("/inicializar")
 async def initialize_notification_system(
-    current_user: dict = Depends(require_permission("NOTIFICACIONES_CONFIGURAR"))
+    current_user: dict = Depends(require_explicit_permission("NOTIFICACIONES_CONFIGURAR"))
 ):
     """
     Inicializa/reinicializa el sistema de notificaciones.
@@ -647,7 +647,7 @@ async def test_real_notification(
 
 @router.post("/config/set-twilio")
 async def configure_twilio_provider(
-    current_user: dict = Depends(require_permission("NOTIFICACIONES_CONFIGURAR"))
+    current_user: dict = Depends(require_explicit_permission("NOTIFICACIONES_CONFIGURAR"))
 ):
     """
     Crea o actualiza la configuración del provider Twilio en la BD.
@@ -697,7 +697,7 @@ async def update_event_provider(
     config_id: str,
     provider: str = "twilio",
     modo: str = "real",
-    current_user: dict = Depends(require_permission("NOTIFICACIONES_CONFIGURAR"))
+    current_user: dict = Depends(require_explicit_permission("NOTIFICACIONES_CONFIGURAR"))
 ):
     """
     Cambia el provider de un evento de notificación.

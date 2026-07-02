@@ -52,7 +52,7 @@ from ..schemas.cargos_schemas import (
 from ..db_utils import get_database
 
 # RBAC - Fase 2D
-from core.rbac.middleware import require_permission
+from core.rbac.middleware import require_permission, require_explicit_permission
 
 router = APIRouter(prefix="/cargos", tags=["Cargos Económicos"])
 logger = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ def get_cargos_service():
 )
 async def crear_propuesta_cargo(
     request: CargoEconomicoCreate,
-    current_user: dict = Depends(require_permission("CARGOS_CREAR")),
+    current_user: dict = Depends(require_explicit_permission("CARGOS_CREAR")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """
@@ -244,7 +244,7 @@ async def obtener_log_cargo(
 async def autorizar_cargo(
     cargo_id: str,
     request: CargoAccionRequest,
-    current_user: dict = Depends(require_permission("CARGOS_AUTORIZAR")),
+    current_user: dict = Depends(require_explicit_permission("CARGOS_AUTORIZAR")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """
@@ -280,7 +280,7 @@ async def autorizar_cargo(
 async def aplicar_cargo(
     cargo_id: str,
     request: CargoAccionRequest,
-    current_user: dict = Depends(require_permission("CARGOS_APLICAR")),
+    current_user: dict = Depends(require_explicit_permission("CARGOS_APLICAR")),
     service: CargosService = Depends(get_cargos_service)
 ):
     """
