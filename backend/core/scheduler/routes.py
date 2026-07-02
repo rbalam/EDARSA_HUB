@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException, Query, Depends, BackgroundTasks
 import logging
 
-from core.rbac.middleware import require_permission
+from core.rbac.middleware import require_permission, require_explicit_permission
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +122,7 @@ async def get_job_info(
 @router.post("/jobs/{job_id}/run")
 async def run_job_now(
     job_id: str,
-    current_user: dict = Depends(require_permission("SCHEDULER_ADMIN"))
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN"))
 ):
     """
     Ejecuta un job inmediatamente (manual).
@@ -164,7 +164,7 @@ async def _run_netpay_manual_background(fecha_desde: date, fecha_hasta: date) ->
 async def run_netpay_manual(
     payload: NetPayManualRunRequest,
     background_tasks: BackgroundTasks,
-    current_user: dict = Depends(require_permission("SCHEDULER_ADMIN"))
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN"))
 ):
     """
     Inicia manualmente NetPay por rango controlado.
@@ -196,7 +196,7 @@ async def run_netpay_manual(
 @router.post("/jobs/{job_id}/pause")
 async def pause_job(
     job_id: str,
-    current_user: dict = Depends(require_permission("SCHEDULER_GESTIONAR"))
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_GESTIONAR"))
 ):
     """Pausa un job."""
     from .scheduler_manager import get_scheduler_manager
@@ -213,7 +213,7 @@ async def pause_job(
 @router.post("/jobs/{job_id}/resume")
 async def resume_job(
     job_id: str,
-    current_user: dict = Depends(require_permission("SCHEDULER_GESTIONAR"))
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_GESTIONAR"))
 ):
     """Reanuda un job pausado."""
     from .scheduler_manager import get_scheduler_manager
@@ -316,7 +316,7 @@ async def get_active_locks(
 @router.delete("/locks/{job_name}")
 async def force_release_lock(
     job_name: str,
-    current_user: dict = Depends(require_permission("SCHEDULER_ADMIN"))
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN"))
 ):
     """
     Fuerza liberación de un lock (admin/emergencia).
