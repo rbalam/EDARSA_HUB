@@ -28,7 +28,7 @@ import logging
 import json
 
 from core.security import get_current_user
-from core.rbac.middleware import require_permission
+from core.rbac.middleware import require_permission, require_explicit_permission
 from core.server_registry import get_server_by_unidad_codigo
 
 logger = logging.getLogger(__name__)
@@ -411,7 +411,7 @@ def _registrar_en_bitacora(
 @router.post("/resync/validate")
 async def validar_resync(
     request: ResyncValidateRequest,
-    current_user: dict = Depends(require_permission("SCHEDULER_ADMIN"))
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN"))
 ):
     """
     Valida parámetros de re-sincronización antes de ejecutar.
@@ -512,7 +512,7 @@ async def validar_resync(
 async def ejecutar_resync(
     request: ResyncExecuteRequest,
     background_tasks: BackgroundTasks,
-    current_user: dict = Depends(require_permission("SCHEDULER_ADMIN"))
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN"))
 ):
     """
     Ejecuta re-sincronización controlada.
@@ -994,7 +994,7 @@ async def listar_catalogo_sync(
 @router.post("/resync/catalogo")
 async def crear_tipo_sync(
     body: SyncTipoUpsert,
-    current_user: dict = Depends(require_permission("SCHEDULER_ADMIN"))
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN"))
 ):
     """Crea un nuevo tipo de sincronización canónico."""
     from modules.sistema.sync_catalogo_service import crear_tipo
@@ -1009,7 +1009,7 @@ async def crear_tipo_sync(
 async def actualizar_tipo_sync(
     codigo: str,
     body: SyncTipoUpsert,
-    current_user: dict = Depends(require_permission("SCHEDULER_ADMIN"))
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN"))
 ):
     """Edita un tipo de sincronización canónico existente."""
     from modules.sistema.sync_catalogo_service import actualizar_tipo
@@ -1023,7 +1023,7 @@ async def actualizar_tipo_sync(
 @router.patch("/resync/catalogo/{codigo}/toggle")
 async def toggle_tipo_sync(
     codigo: str,
-    current_user: dict = Depends(require_permission("SCHEDULER_ADMIN"))
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN"))
 ):
     """Activa/Inactiva un tipo de sincronización."""
     from modules.sistema.sync_catalogo_service import toggle_activo
