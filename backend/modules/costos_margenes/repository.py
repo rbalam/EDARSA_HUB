@@ -97,24 +97,41 @@ def _mpro_comercial_where(alias: str = "p") -> str:
     """
     Filtro comercial para MPRO dentro de Costos y Márgenes.
 
-    MPRO sincroniza elaborados de producción en Sync_Productos con:
-    - Activo = 1
-    - EsVendible = 1
-    - recetas estructurales reales
-    - PrecioVenta <= 0 o familia/subfamilia de producción
-
-    Para este módulo comercial no deben mezclarse con productos vendibles.
-    SoftRestaurant no se altera porque la condición solo restringe SystemType = MPRO.
+    MPRO mezcla catálogo comercial POS con insumos/elaborados de producción.
+    Para esta pantalla comercial se conserva el menú vendible/no inventariable
+    y se excluyen elaborados de producción.
     """
     prefix = f"{alias}." if alias else ""
     return f"""(
         UPPER(ISNULL({prefix}SystemType, '')) <> 'MPRO'
         OR (
-            ISNULL({prefix}PrecioVenta, 0) > 0
+            ISNULL({prefix}EsVendible, 0) = 1
+            AND ISNULL({prefix}EsInventariable, 0) = 0
             AND ISNULL({prefix}FamiliaCodigoFuente, '') <> '0019'
             AND ISNULL({prefix}SubFamiliaNombre, '') <> 'PRODUCCION'
         )
     )"""
+
+
+def _mpro_menu_pos_where(listas, alias: str = "p") -> str:
+    if not listas:
+        return "1=1"
+
+    prefix = f"{alias}." if alias else ""
+    listas_sql = ", ".join("'" + str(x).replace("'", "''") + "'" for x in listas)
+
+    return f"""(
+        UPPER(ISNULL({prefix}SystemType, '')) <> 'MPRO'
+        OR EXISTS (
+            SELECT 1
+            FROM dbo.Comercial_MPRO_MenuPOS_Sync mpos
+            WHERE mpos.ServerID = {prefix}ServerID
+              AND mpos.Activo = 1
+              AND mpos.ProductoCodigoFuentePadded = {prefix}CodigoFuente
+              AND mpos.Lista IN ({listas_sql})
+        )
+    )"""
+
 
 # ==================== PRODUCTOS ====================
 
@@ -132,7 +149,8 @@ def get_productos_con_costos(
     umbral_margen: int = 20,  # Umbral editable para margen bajo
     incluir_inactivos: bool = False,  # BUG-COSTOS-001: Por defecto excluir inactivos
     page: int = 1,
-    page_size: int = 50
+    page_size: int = 50,
+    mpro_menu_listas = None
 ) -> Tuple[List[Dict], int]:
     """
     Obtiene lista de productos con costos y márgenes.
@@ -176,7 +194,24 @@ def get_productos_con_costos(
           AND r_chk.ServerID = p.ServerID
     )"""
 
+    receta_comercial_sql = f"""(
+        (
+            UPPER(ISNULL(p.SystemType, '')) = 'MPRO'
+            AND (
+                ISNULL(p.EsCompuesto, 0) = 1
+                OR ISNULL(p.CantidadComponentesReceta, 0) > 0
+                OR {receta_real_sql}
+            )
+        )
+        OR (
+            UPPER(ISNULL(p.SystemType, '')) <> 'MPRO'
+            AND {receta_real_sql}
+        )
+    )"""
+
     where_clauses.append(_mpro_comercial_where("p"))
+    if mpro_menu_listas:
+        where_clauses.append(_mpro_menu_pos_where(mpro_menu_listas, "p"))
 
     if sistema_origen:
         where_clauses.append(f"p.SystemType = '{sistema_origen}'")
@@ -212,7 +247,7 @@ def get_productos_con_costos(
     if busqueda:
         where_clauses.append(f"(p.Nombre LIKE '%{busqueda}%' OR p.CodigoFuente LIKE '%{busqueda}%')")
     if solo_con_receta:
-        where_clauses.append(receta_real_sql)
+        where_clauses.append(receta_comercial_sql)
     
     # MARGEN BAJO: Filtrar productos con margen < umbral configurado
     # El costo real viene de Sync_Productos_Recetas (no de p.CostoReceta)
@@ -278,11 +313,29 @@ def get_productos_con_costos(
         p.MargenBrutoPesos as margen_pesos,
         p.MargenBrutoPorcentaje as margen_porcentaje,
         p.MargenObjetivo as margen_objetivo,
-        CAST(CASE WHEN EXISTS (
-            SELECT 1
-            FROM Sync_Productos_Recetas r_chk
-            WHERE r_chk.ProductoCodigoFuente = p.CodigoFuente
-              AND r_chk.ServerID = p.ServerID
+        CAST(CASE WHEN (
+            (
+                UPPER(ISNULL(p.SystemType, '')) = 'MPRO'
+                AND (
+                    ISNULL(p.EsCompuesto, 0) = 1
+                    OR ISNULL(p.CantidadComponentesReceta, 0) > 0
+                    OR EXISTS (
+                        SELECT 1
+                        FROM Sync_Productos_Recetas r_chk
+                        WHERE r_chk.ProductoCodigoFuente = p.CodigoFuente
+                          AND r_chk.ServerID = p.ServerID
+                    )
+                )
+            )
+            OR (
+                UPPER(ISNULL(p.SystemType, '')) <> 'MPRO'
+                AND EXISTS (
+                    SELECT 1
+                    FROM Sync_Productos_Recetas r_chk
+                    WHERE r_chk.ProductoCodigoFuente = p.CodigoFuente
+                      AND r_chk.ServerID = p.ServerID
+                )
+            )
         ) THEN 1 ELSE 0 END AS BIT) as tiene_receta,
         CAST(p.TieneSubRecetas AS BIT) as tiene_subrecetas,
         COALESCE(
@@ -384,7 +437,10 @@ def get_producto_by_id(producto_id: str) -> Optional[Dict]:
         SyncRunID,
         SyncedAtMexico
     FROM Sync_Productos
-    WHERE ProductoID = '{producto_id}'
+    WHERE (
+        TRY_CONVERT(UNIQUEIDENTIFIER, '{producto_id}') IS NOT NULL
+        AND ProductoID = TRY_CONVERT(UNIQUEIDENTIFIER, '{producto_id}')
+    )
     OR CodigoFuente = '{producto_id}'
     """
     result = execute_sql_query(*conn, query)
@@ -795,7 +851,7 @@ def get_unidades_negocio() -> List[Dict[str, Any]]:
 
 # ==================== FAMILIAS Y SUBFAMILIAS ====================
 
-def get_familias_productos(servidor_id: Optional[str] = None, servidores_ids: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+def get_familias_productos(servidor_id: Optional[str] = None, servidores_ids: Optional[List[str]] = None, mpro_menu_listas = None) -> List[Dict[str, Any]]:
     """
     Obtiene lista de familias únicas de productos desde EDARSAHUB.
     
@@ -808,21 +864,23 @@ def get_familias_productos(servidor_id: Optional[str] = None, servidores_ids: Op
     """
     conn = _get_edarsahub_connection()
     
-    where_clause = f"WHERE FamiliaNombre IS NOT NULL AND FamiliaNombre != '' AND {_mpro_comercial_where('')}"
+    where_clause = f"WHERE p.FamiliaNombre IS NOT NULL AND p.FamiliaNombre != '' AND {_mpro_comercial_where('p')}"
+    if mpro_menu_listas:
+        where_clause += f" AND {_mpro_menu_pos_where(mpro_menu_listas, 'p')}"
     if servidor_id:
         servidor_safe = servidor_id.replace("'", "''")
-        where_clause += f" AND CAST(ServerID AS NVARCHAR(36)) = '{servidor_safe}'"
+        where_clause += f" AND CAST(p.ServerID AS NVARCHAR(36)) = '{servidor_safe}'"
     
     # FASE P2: RBAC - Filtrar por múltiples servidores permitidos
     if servidores_ids and len(servidores_ids) > 0 and not servidor_id:
         servers_list = "', '".join(servidores_ids)
-        where_clause += f" AND CAST(ServerID AS NVARCHAR(36)) IN ('{servers_list}')"
+        where_clause += f" AND CAST(p.ServerID AS NVARCHAR(36)) IN ('{servers_list}')"
     
     query = f"""
     SELECT 
         FamiliaNombre as familia,
         COUNT(*) as total_productos
-    FROM Sync_Productos
+    FROM Sync_Productos p
     {where_clause}
     GROUP BY FamiliaNombre
     ORDER BY FamiliaNombre
@@ -841,7 +899,7 @@ def get_familias_productos(servidor_id: Optional[str] = None, servidores_ids: Op
     return familias
 
 
-def get_subfamilias_productos(familia: Optional[str] = None, servidor_id: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_subfamilias_productos(familia: Optional[str] = None, servidor_id: Optional[str] = None, mpro_menu_listas = None) -> List[Dict[str, Any]]:
     """
     Obtiene lista de subfamilias de productos desde EDARSAHUB.
     
@@ -854,20 +912,22 @@ def get_subfamilias_productos(familia: Optional[str] = None, servidor_id: Option
     """
     conn = _get_edarsahub_connection()
     
-    where_clause = f"WHERE SubFamiliaNombre IS NOT NULL AND SubFamiliaNombre != '' AND {_mpro_comercial_where('')}"
+    where_clause = f"WHERE p.SubFamiliaNombre IS NOT NULL AND p.SubFamiliaNombre != '' AND {_mpro_comercial_where('p')}"
+    if mpro_menu_listas:
+        where_clause += f" AND {_mpro_menu_pos_where(mpro_menu_listas, 'p')}"
     if familia:
         familia_safe = familia.replace("'", "''")
-        where_clause += f" AND FamiliaNombre = '{familia_safe}'"
+        where_clause += f" AND p.FamiliaNombre = '{familia_safe}'"
     if servidor_id:
         servidor_safe = servidor_id.replace("'", "''")
-        where_clause += f" AND CAST(ServerID AS NVARCHAR(36)) = '{servidor_safe}'"
+        where_clause += f" AND CAST(p.ServerID AS NVARCHAR(36)) = '{servidor_safe}'"
     
     query = f"""
     SELECT 
         FamiliaNombre as familia,
         SubFamiliaNombre as subfamilia,
         COUNT(*) as total_productos
-    FROM Sync_Productos
+    FROM Sync_Productos p
     {where_clause}
     GROUP BY FamiliaNombre, SubFamiliaNombre
     ORDER BY FamiliaNombre, SubFamiliaNombre

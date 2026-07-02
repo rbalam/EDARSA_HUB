@@ -23,6 +23,7 @@ import io
 import csv
 from datetime import datetime
 import logging
+import unicodedata
 
 from modules.costos_margenes.schemas import (
     CostosMargenesResumen,
@@ -197,6 +198,32 @@ async def _resolve_servidor_filtro(current_user: dict, unidad: Optional[str], se
     return servidor_id, servidores_ids_filtro, False
 
 
+
+def _mpro_menu_listas_para_unidad(unidad: Optional[str]) -> Optional[List[str]]:
+    """
+    Traduce la unidad seleccionada en Corporate Filters a listas POS MPRO.
+
+    None significa: no restringir por lista POS.
+    Lista vacía no se usa.
+    """
+    if not unidad:
+        return ["ORIGEN", "QRO", "QRO_ORIGEN", "TODOS"]
+
+    value = str(unidad).strip().upper()
+    value = "".join(
+        c for c in unicodedata.normalize("NFD", value)
+        if unicodedata.category(c) != "Mn"
+    )
+
+    if "QRO" in value or "QUERETARO" in value or "130" in value:
+        return ["QRO", "QRO_ORIGEN", "TODOS"]
+
+    if "ORIGEN" in value:
+        return ["ORIGEN", "QRO_ORIGEN", "TODOS"]
+
+    return ["ORIGEN", "QRO", "QRO_ORIGEN", "TODOS"]
+
+
 # ==================== RESUMEN ====================
 
 @router.get("/resumen", response_model=CostosMargenesResumen)
@@ -294,6 +321,7 @@ async def listar_productos(
     servidor_id_filtro, servidores_ids_filtro, _acc_denied = await _resolve_servidor_filtro(
         current_user, unidad, servidor_id
     )
+    mpro_menu_listas = _mpro_menu_listas_para_unidad(unidad)
     if _acc_denied:
         return ProductosListResponse(
             productos=[], total=0, page=page, page_size=page_size,
@@ -307,6 +335,7 @@ async def listar_productos(
             servidor_id=servidor_id_filtro,
             servidores_ids=servidores_ids_filtro,  # Nuevo parámetro para RBAC
             sistema_origen=sistema_origen,
+            mpro_menu_listas=mpro_menu_listas,
             familia=familia,
             subfamilia=subfamilia,
             busqueda=busqueda,
@@ -639,11 +668,12 @@ async def listar_familias(
     servidor_id_filtro, servidores_ids_filtro, _acc = await _resolve_servidor_filtro(
         current_user, unidad, servidor_id
     )
+    mpro_menu_listas = _mpro_menu_listas_para_unidad(unidad)
     if _acc:
         return {"familias": [], "total": 0, "source_type": "EDARSAHUB_SQL"}
     
     try:
-        familias = get_familias_productos(servidor_id_filtro, servidores_ids_filtro)
+        familias = get_familias_productos(servidor_id_filtro, servidores_ids_filtro, mpro_menu_listas)
         return {
             "familias": familias,
             "total": len(familias),
@@ -674,11 +704,12 @@ async def listar_subfamilias(
     _verify_costos_margenes_access(current_user)
     
     servidor_id_filtro, _sids, _acc = await _resolve_servidor_filtro(current_user, unidad, servidor_id)
+    mpro_menu_listas = _mpro_menu_listas_para_unidad(unidad)
     if _acc:
         return {"subfamilias": [], "total": 0, "source_type": "EDARSAHUB_SQL"}
     
     try:
-        subfamilias = get_subfamilias_productos(familia, servidor_id_filtro)
+        subfamilias = get_subfamilias_productos(familia, servidor_id_filtro, mpro_menu_listas)
         return {
             "subfamilias": subfamilias,
             "total": len(subfamilias),
