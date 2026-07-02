@@ -7,7 +7,7 @@ PROTEGIDO CON RBAC
 
 Permisos:
 - AUDITORIA_VER: Ver programaciones, historial, KPIs, calendario
-- AUDITORIA_PROGRAMAR: Crear, editar, activar/desactivar
+- AUDITORIAS_PROGRAMAR: Crear, editar, activar/desactivar
 - AUDITORIAS_GESTIONAR: Ejecutar manualmente, eliminar
 """
 from fastapi import APIRouter, HTTPException, Query, Depends
@@ -151,11 +151,11 @@ async def obtener_auditoria(
     response_model=OperacionResponse,
     status_code=201,
     summary="Crear auditoría programada",
-    description="Crea una nueva auditoría programada. Requiere AUDITORIA_PROGRAMAR."
+    description="Crea una nueva auditoría programada. Requiere AUDITORIAS_PROGRAMAR."
 )
 async def crear_auditoria(
     request: AuditoriaProgramadaCreate,
-    current_user: dict = Depends(require_permission("AUDITORIA_PROGRAMAR"))
+    current_user: dict = Depends(require_explicit_permission("AUDITORIAS_PROGRAMAR"))
 ):
     """Crea una nueva auditoría programada."""
     try:
@@ -179,12 +179,12 @@ async def crear_auditoria(
     "/{auditoria_id}",
     response_model=OperacionResponse,
     summary="Actualizar auditoría",
-    description="Actualiza una auditoría programada. Requiere AUDITORIA_PROGRAMAR."
+    description="Actualiza una auditoría programada. Requiere AUDITORIAS_PROGRAMAR."
 )
 async def actualizar_auditoria(
     auditoria_id: str,
     request: AuditoriaProgramadaUpdate,
-    current_user: dict = Depends(require_permission("AUDITORIA_PROGRAMAR"))
+    current_user: dict = Depends(require_explicit_permission("AUDITORIAS_PROGRAMAR"))
 ):
     """Actualiza una auditoría programada."""
     try:
@@ -237,11 +237,11 @@ async def eliminar_auditoria(
     "/{auditoria_id}/activar",
     response_model=OperacionResponse,
     summary="Activar auditoría",
-    description="Activa una auditoría programada. Requiere AUDITORIA_PROGRAMAR."
+    description="Activa una auditoría programada. Requiere AUDITORIAS_PROGRAMAR."
 )
 async def activar_auditoria(
     auditoria_id: str,
-    current_user: dict = Depends(require_permission("AUDITORIA_PROGRAMAR"))
+    current_user: dict = Depends(require_explicit_permission("AUDITORIAS_PROGRAMAR"))
 ):
     """Activa una auditoría programada."""
     try:
@@ -263,11 +263,11 @@ async def activar_auditoria(
     "/{auditoria_id}/desactivar",
     response_model=OperacionResponse,
     summary="Desactivar auditoría",
-    description="Desactiva una auditoría programada. Requiere AUDITORIA_PROGRAMAR."
+    description="Desactiva una auditoría programada. Requiere AUDITORIAS_PROGRAMAR."
 )
 async def desactivar_auditoria(
     auditoria_id: str,
-    current_user: dict = Depends(require_permission("AUDITORIA_PROGRAMAR"))
+    current_user: dict = Depends(require_explicit_permission("AUDITORIAS_PROGRAMAR"))
 ):
     """Desactiva una auditoría programada."""
     try:
