@@ -32,7 +32,6 @@ Fecha: 2025-12-XX
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from typing import Dict, List, Any, Optional
 import logging
 
@@ -42,10 +41,9 @@ from core.system_capability_resolver import (
     Module,
     get_resolver
 )
-from core.security import verify_token
+from core.rbac.middleware import require_permission
 
 logger = logging.getLogger(__name__)
-security = HTTPBearer()
 
 # Router - NOTA: El prefijo NO incluye /api porque api_router ya lo tiene
 router = APIRouter(
@@ -55,53 +53,18 @@ router = APIRouter(
 
 
 # ============================================================================
-# AUTENTICACIÓN
+# AUTORIZACIÓN RBAC
 # ============================================================================
 
-async def get_current_user_from_token(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> Dict:
-    """Obtiene usuario actual desde token JWT."""
-    try:
-        token = credentials.credentials
-        payload = verify_token(token)
-        if not payload:
-            raise HTTPException(status_code=401, detail="Token inválido o expirado")
-        return payload
-    except Exception as e:
-        logger.warning(f"[CATALOGOS-SISTEMAS-AUTH] Error verificando token: {e}")
-        raise HTTPException(status_code=401, detail="No autenticado")
-
-
-def check_catalogo_permission(user: Dict) -> bool:
-    """
-    Verifica permiso para catálogo de sistemas.
-    
-    FASE 5: Acceso a usuarios autenticados con roles Admin.
-    Los datos del catálogo no son sensibles, pero requieren autenticación.
-    """
-    role = user.get('role', '')
-    
-    # Roles permitidos (todos los que pueden ver el sistema)
-    allowed_roles = ['SuperAdministrador', 'Administrador', 'Gerente', 'Supervisor']
-    
-    return role in allowed_roles
+CATALOGOS_SISTEMAS_PERMISSION = "CATALOGOS_SISTEMAS_VER"
 
 
 def require_auth():
-    """Dependency para requerir autenticación."""
-    async def dependency(user: Dict = Depends(get_current_user_from_token)):
-        if not check_catalogo_permission(user):
-            logger.warning(
-                f"[CATALOGOS-SISTEMAS-RBAC] Acceso denegado. User: {user.get('email')}, "
-                f"Role: {user.get('role')}"
-            )
-            raise HTTPException(
-                status_code=403, 
-                detail="No tiene permiso para acceder al catálogo de sistemas"
-            )
-        return user
-    return dependency
+    """Dependency RBAC para catálogo de sistemas."""
+    return require_permission(
+        CATALOGOS_SISTEMAS_PERMISSION,
+        mensaje="No tiene permiso para acceder al catálogo de sistemas",
+    )
 
 
 # ============================================================================
