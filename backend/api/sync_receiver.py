@@ -34,6 +34,7 @@ from api.sync_schemas import (
     KPIRecord, SyncKPIsPayload, HeartbeatPayload,
     GenerateTokenRequest, GenerateTokenResponse, SyncResponse
 )
+from core.rbac.middleware import require_explicit_permission
 
 # ============================================================================
 # CONFIGURACIÓN
@@ -100,21 +101,6 @@ def verify_agent_token(token: str) -> Dict:
     except jwt.InvalidTokenError as e:
         raise HTTPException(401, f"Token inválido: {e}")
 
-
-def verify_user_admin_token(token: str) -> Dict:
-    """Verifica un token de usuario admin. Raises HTTPException si inválido."""
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        if payload.get("type") == "sync_agent":
-            raise HTTPException(403, "Este endpoint requiere autenticación de usuario")
-        user_role = payload.get("role", "").lower()
-        if user_role not in ["admin", "superadmin", "supervisor", "administrador", "superadministrador"]:
-            raise HTTPException(403, "Solo administradores pueden generar tokens")
-        return payload
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(401, "Token de usuario expirado")
-    except jwt.InvalidTokenError:
-        raise HTTPException(401, "Token de usuario inválido")
 
 
 async def get_agent_from_token(authorization: str = Header(...)) -> Dict:
@@ -246,13 +232,11 @@ async def test_agent_auth(agent: Dict = Depends(get_agent_from_token)):
 
 
 @router.post("/admin/agents/generate-token", response_model=GenerateTokenResponse)
-async def generate_agent_token_endpoint(request: GenerateTokenRequest, authorization: str = Header(...)):
-    """Genera un token JWT para un Sync Agent. Requiere autenticación de admin."""
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(401, "Authorization requerida")
-    
-    verify_user_admin_token(authorization[7:])
-    
+async def generate_agent_token_endpoint(
+    request: GenerateTokenRequest,
+    current_user: Dict = Depends(require_explicit_permission("SYNC_AGENT_GENERAR")),
+):
+    """Genera un token JWT para un Sync Agent. Requiere permiso SQL explícito."""
     from core.server_registry import get_server_connection_info
     server = get_server_connection_info(request.server_id)
     if not server:
