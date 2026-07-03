@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Activity,
@@ -46,6 +46,7 @@ import {
   filterEnterpriseMenuByRole,
   defaultFavoriteMenuIds
 } from "../../config/enterpriseMenuConfig";
+import { fetchMenuFavoritos, saveMenuFavoritos } from "../../services/menuContextService";
 
 const ICONS = {
   Activity,
@@ -185,6 +186,20 @@ function normalizeSqlEnterpriseGroups(sqlMenus = []) {
   return groups.filter(group => group.children.length > 0);
 }
 
+
+const MENU_FAVORITES_STORAGE_KEY = "edarsahub_menu_favorites";
+
+const cacheMenuFavorites = (rutas) => {
+  try {
+    localStorage.setItem(
+      MENU_FAVORITES_STORAGE_KEY,
+      JSON.stringify(Array.isArray(rutas) ? rutas : [])
+    );
+  } catch {
+    // cache local no disponible
+  }
+};
+
 export default function EnterpriseSidebarMenu({
   user,
   collapsed = false,
@@ -209,12 +224,34 @@ export default function EnterpriseSidebarMenu({
 
   const [favoriteIds, setFavoriteIds] = useState(() => {
     try {
-      const stored = JSON.parse(localStorage.getItem("edarsahub_menu_favorites") || "null");
+      const stored = JSON.parse(localStorage.getItem(MENU_FAVORITES_STORAGE_KEY) || "null");
       return Array.isArray(stored) && stored.length ? stored : defaultFavoriteMenuIds;
     } catch {
       return defaultFavoriteMenuIds;
     }
   });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchMenuFavoritos()
+      .then(result => {
+        if (cancelled) return;
+
+        const sqlFavorites = Array.isArray(result?.rutas) ? result.rutas : [];
+        if (result?.has_configuracion || sqlFavorites.length > 0) {
+          setFavoriteIds(sqlFavorites);
+          cacheMenuFavorites(sqlFavorites);
+        }
+      })
+      .catch(err => {
+        console.warn("[MENU_FAVORITES] No se pudieron cargar favoritos SQL:", err?.message || err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const sqlMenusForRender = Array.isArray(sqlMenus) && sqlMenus.length > 0
     ? sqlMenus
@@ -296,7 +333,19 @@ export default function EnterpriseSidebarMenu({
         ? current.filter(id => id !== favoriteKey && id !== item.id)
         : [favoriteKey, ...current].slice(0, 12);
 
-      localStorage.setItem("edarsahub_menu_favorites", JSON.stringify(next));
+      cacheMenuFavorites(next);
+
+      saveMenuFavoritos(next)
+        .then(result => {
+          const sqlFavorites = Array.isArray(result?.rutas) ? result.rutas : [];
+          if (result?.has_configuracion || sqlFavorites.length > 0 || next.length === 0) {
+            setFavoriteIds(sqlFavorites);
+            cacheMenuFavorites(sqlFavorites);
+          }
+        })
+        .catch(err => {
+          console.warn("[MENU_FAVORITES] No se pudieron guardar favoritos SQL:", err?.message || err);
+        });
       return next;
     });
   };

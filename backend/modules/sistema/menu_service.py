@@ -373,6 +373,186 @@ class MenuService:
 
         return resultado
 
+
+    def _normalizar_rutas_favoritas(self, rutas: Any) -> List[str]:
+        if not isinstance(rutas, list):
+            return []
+
+        normalizadas = []
+        vistas = set()
+
+        for value in rutas:
+            ruta = str(value or "").strip()
+            if not ruta or not ruta.startswith("/") or len(ruta) > 300:
+                continue
+            if ruta in vistas:
+                continue
+
+            vistas.add(ruta)
+            normalizadas.append(ruta)
+
+            if len(normalizadas) >= 12:
+                break
+
+        return normalizadas
+
+    def _tabla_favoritos_existe(self, cur) -> bool:
+        cur.execute("""
+            SELECT CASE
+                WHEN OBJECT_ID('dbo.Usuario_MenuFavoritos', 'U') IS NULL THEN 0
+                ELSE 1
+            END AS Existe
+        """)
+        row = cur.fetchone()
+        return bool(row and int(row.get("Existe") or 0) == 1)
+
+    def _rutas_menu_permitidas_usuario(self, cur, usuario_id: str) -> set:
+        roles = self._obtener_roles_usuario(cur, usuario_id)
+        superadmin = self._es_superadmin_from_roles(roles)
+        permisos_modulo = self._obtener_modulos_permitidos_usuario(
+            cur,
+            usuario_id,
+            None,
+            superadmin,
+        )
+        menus = self._obtener_menus_usuario_resuelto(cur, superadmin, permisos_modulo)
+
+        rutas = set()
+        for modulo in menus:
+            ruta_modulo = modulo.get("ruta")
+            if ruta_modulo:
+                rutas.add(str(ruta_modulo))
+
+            for menu in modulo.get("menus") or []:
+                ruta = menu.get("ruta")
+                if ruta:
+                    rutas.add(str(ruta))
+
+        return rutas
+
+    def _leer_favoritos_usuario_resuelto(self, cur, usuario_id: str, rutas_permitidas: set) -> Dict[str, Any]:
+        if not self._tabla_favoritos_existe(cur):
+            return {
+                "rutas": [],
+                "total": 0,
+                "has_configuracion": False,
+                "source": "SQL_USUARIO_MENU_FAVORITOS",
+            }
+
+        cur.execute("""
+            SELECT COUNT(1) AS Total
+            FROM dbo.Usuario_MenuFavoritos
+            WHERE TRY_CONVERT(NVARCHAR(100), UsuarioID) = %s
+        """, (str(usuario_id),))
+        row_total = cur.fetchone() or {}
+        total_historico = int(row_total.get("Total") or 0)
+
+        cur.execute("""
+            SELECT Ruta
+            FROM dbo.Usuario_MenuFavoritos
+            WHERE TRY_CONVERT(NVARCHAR(100), UsuarioID) = %s
+              AND ISNULL(Activo, 1) = 1
+            ORDER BY Orden ASC, UsuarioMenuFavoritoID ASC
+        """, (str(usuario_id),))
+
+        rutas = []
+        vistas = set()
+        for row in cur.fetchall() or []:
+            ruta = str(row.get("Ruta") or "").strip()
+            if not ruta or ruta in vistas:
+                continue
+            if rutas_permitidas and ruta not in rutas_permitidas:
+                continue
+
+            rutas.append(ruta)
+            vistas.add(ruta)
+
+        return {
+            "rutas": rutas,
+            "total": len(rutas),
+            "has_configuracion": total_historico > 0,
+            "source": "SQL_USUARIO_MENU_FAVORITOS",
+        }
+
+    def obtener_favoritos_current_user(self, current_user: Dict[str, Any]) -> Dict[str, Any]:
+        conn = self._get_connection()
+        try:
+            cur = conn.cursor(as_dict=True)
+            usuario_id = self._resolver_usuario_id_canonico(cur, current_user)
+            rutas_permitidas = self._rutas_menu_permitidas_usuario(cur, usuario_id)
+            return self._leer_favoritos_usuario_resuelto(cur, usuario_id, rutas_permitidas)
+        finally:
+            conn.close()
+
+    def actualizar_favoritos_current_user(self, current_user: Dict[str, Any], rutas: Any) -> Dict[str, Any]:
+        rutas_normalizadas = self._normalizar_rutas_favoritas(rutas)
+
+        conn = self._get_connection()
+        try:
+            cur = conn.cursor(as_dict=True)
+            usuario_id = self._resolver_usuario_id_canonico(cur, current_user)
+
+            if not self._tabla_favoritos_existe(cur):
+                raise HTTPException(
+                    status_code=500,
+                    detail="No existe dbo.Usuario_MenuFavoritos. Ejecutar migracion SQL.",
+                )
+
+            rutas_permitidas = self._rutas_menu_permitidas_usuario(cur, usuario_id)
+            rutas_validas = [ruta for ruta in rutas_normalizadas if ruta in rutas_permitidas]
+
+            cur.execute("""
+                UPDATE dbo.Usuario_MenuFavoritos
+                SET Activo = 0,
+                    FechaModificacion = SYSUTCDATETIME(),
+                    ModifiedBy = %s
+                WHERE TRY_CONVERT(NVARCHAR(100), UsuarioID) = %s
+                  AND ISNULL(Activo, 1) = 1
+            """, (str(usuario_id), str(usuario_id)))
+
+            for orden, ruta in enumerate(rutas_validas):
+                cur.execute("""
+                    DECLARE @UsuarioID INT = TRY_CONVERT(INT, %s);
+                    DECLARE @Ruta NVARCHAR(300) = %s;
+                    DECLARE @Orden INT = TRY_CONVERT(INT, %s);
+                    DECLARE @Actor NVARCHAR(100) = %s;
+
+                    IF EXISTS (
+                        SELECT 1
+                        FROM dbo.Usuario_MenuFavoritos
+                        WHERE UsuarioID = @UsuarioID
+                          AND Ruta = @Ruta
+                    )
+                    BEGIN
+                        UPDATE dbo.Usuario_MenuFavoritos
+                        SET Orden = @Orden,
+                            Activo = 1,
+                            FechaModificacion = SYSUTCDATETIME(),
+                            ModifiedBy = @Actor
+                        WHERE UsuarioID = @UsuarioID
+                          AND Ruta = @Ruta;
+                    END
+                    ELSE
+                    BEGIN
+                        INSERT INTO dbo.Usuario_MenuFavoritos (
+                            UsuarioID, Ruta, Orden, Activo, FechaAlta, CreatedBy
+                        )
+                        VALUES (
+                            @UsuarioID, @Ruta, @Orden, 1, SYSUTCDATETIME(), @Actor
+                        );
+                    END
+                """, (str(usuario_id), ruta, str(orden), str(usuario_id)))
+
+            conn.commit()
+            return self._leer_favoritos_usuario_resuelto(cur, usuario_id, rutas_permitidas)
+
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+
     def obtener_menus_current_user(
         self,
         current_user: Dict[str, Any],

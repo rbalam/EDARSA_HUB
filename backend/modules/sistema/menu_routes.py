@@ -5,8 +5,8 @@ API para obtener menús dinámicos 100% SQL canónico.
 NO HAY HARDCODES de emails ni roles.
 """
 
-from fastapi import APIRouter, Depends
-from typing import Dict, Optional
+from fastapi import APIRouter, Depends, Body
+from typing import Dict, Optional, Any
 import logging
 
 from core.security import get_current_user
@@ -40,3 +40,29 @@ async def obtener_menus_usuario(
         "source": "SQL_MENU_CANONICO",
         "hardcoded": False
     }
+
+@router.get("/favoritos", summary="Favoritos de Menú del Usuario Actual")
+async def obtener_menu_favoritos(
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Favoritos de menú por usuario desde SQL canónico.
+    No usa MongoDB. No duplica el menú: guarda solo rutas permitidas.
+    """
+    service = get_menu_service()
+    return service.obtener_favoritos_current_user(current_user)
+
+
+@router.put("/favoritos", summary="Actualizar Favoritos de Menú del Usuario Actual")
+async def actualizar_menu_favoritos(
+    payload: Dict[str, Any] = Body(...),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Persiste favoritos por usuario en SQL canónico.
+    Payload: { "rutas": ["/comercial", "/tablero-ejecutivo"] }
+    """
+    rutas = payload.get("rutas") if isinstance(payload, dict) else []
+    service = get_menu_service()
+    return service.actualizar_favoritos_current_user(current_user, rutas)
+
