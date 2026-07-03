@@ -164,7 +164,8 @@ async def ventas_periodos_tickets(unidad: str = Query(...), periodo: str = Query
 # ============================================================================
 @iscam_router.get("/cuentas")
 async def resumen_cuentas(unidad: str = Query(...), desde: Optional[str] = None, hasta: Optional[str] = None,
-                          group_by: str = Query("none"), limit: int = Query(2000, ge=1, le=5000)):
+                          group_by: str = Query("none"), limit: int = Query(2000, ge=1, le=5000),
+                          export_all: bool = Query(False)):
     d, h = _rango_fechas(desde, hasta)
     if group_by in ("anio", "mes", "dia"):
         pexpr = _period_sql("s.FechaHora", group_by)
@@ -187,17 +188,30 @@ async def resumen_cuentas(unidad: str = Query(...), desde: Optional[str] = None,
                              "consumo_promedio": round(imp / pax, 2) if pax else 0})
         return {"success": True, "unidad": unidad, "desde": d, "hasta": h, "group_by": group_by,
                 "agrupado": agrupado}
-    rows = _q(
-        """
-        SELECT TOP (%s) s.NumeroTicket AS folio, s.FechaHora AS fecha, s.MontoTotal AS importe,
-               s.Pax AS personas, s.status AS estado, s.id AS cuenta_id
-        FROM dbo.Sync_Sales s
-        WHERE s.UnidadNegocio = %s AND s.FechaHora >= %s AND s.FechaHora < %s
-        ORDER BY s.FechaHora DESC
-        """,
-        (limit, unidad, d, h),
-    )
+    if export_all:
+        rows = _q(
+            """
+            SELECT s.NumeroTicket AS folio, s.FechaHora AS fecha, s.MontoTotal AS importe,
+                   s.Pax AS personas, s.status AS estado, s.id AS cuenta_id
+            FROM dbo.Sync_Sales s
+            WHERE s.UnidadNegocio = %s AND s.FechaHora >= %s AND s.FechaHora < %s
+            ORDER BY s.FechaHora DESC
+            """,
+            (unidad, d, h),
+        )
+    else:
+        rows = _q(
+            """
+            SELECT TOP (%s) s.NumeroTicket AS folio, s.FechaHora AS fecha, s.MontoTotal AS importe,
+                   s.Pax AS personas, s.status AS estado, s.id AS cuenta_id
+            FROM dbo.Sync_Sales s
+            WHERE s.UnidadNegocio = %s AND s.FechaHora >= %s AND s.FechaHora < %s
+            ORDER BY s.FechaHora DESC
+            """,
+            (limit, unidad, d, h),
+        )
     return {"success": True, "unidad": unidad, "desde": d, "hasta": h, "group_by": "none",
+            "export_all": export_all, "limited": not export_all, "limit": None if export_all else limit,
             "cuentas": [{"folio": r["folio"], "fecha": r["fecha"].isoformat() if r["fecha"] else None,
                          "importe": round(_f(r["importe"]), 2), "personas": int(r["personas"] or 0),
                          "estado": r["estado"], "cuenta_id": r["cuenta_id"]} for r in rows]}
@@ -225,7 +239,8 @@ async def cuenta_detalle(unidad: str = Query(...), folio: str = Query(...)):
 # ============================================================================
 @iscam_router.get("/comandas")
 async def comandas_venta(unidad: str = Query(...), desde: Optional[str] = None, hasta: Optional[str] = None,
-                         group_by: str = Query("none"), limit: int = Query(1000, ge=1, le=5000)):
+                         group_by: str = Query("none"), limit: int = Query(1000, ge=1, le=5000),
+                         export_all: bool = Query(False)):
     d, h = _rango_fechas(desde, hasta)
     if group_by in ("anio", "mes", "dia"):
         pexpr = _period_sql("s.FechaHora", group_by)
@@ -245,19 +260,34 @@ async def comandas_venta(unidad: str = Query(...), desde: Optional[str] = None, 
                 "agrupado": [{"periodo": r["periodo"], "lineas": int(r["lineas"] or 0),
                               "tickets": int(r["tickets"] or 0), "cantidad": _f(r["cantidad"]),
                               "importe": round(_f(r["importe"]), 2)} for r in rows]}
-    rows = _q(
-        f"""
-        SELECT TOP (%s) s.NumeroTicket AS folio_cuenta, s.FechaHora AS fecha,
-               j.prod_id AS clave, j.prod_name AS descripcion, j.cantidad AS cantidad,
-               j.precio AS precio, j.importe AS importe
-        FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}
-        WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'
-          AND s.FechaHora >= %s AND s.FechaHora < %s
-        ORDER BY s.FechaHora DESC
-        """,
-        (limit, unidad, d, h),
-    )
+    if export_all:
+        rows = _q(
+            f"""
+            SELECT s.NumeroTicket AS folio_cuenta, s.FechaHora AS fecha,
+                   j.prod_id AS clave, j.prod_name AS descripcion, j.cantidad AS cantidad,
+                   j.precio AS precio, j.importe AS importe
+            FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}
+            WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'
+              AND s.FechaHora >= %s AND s.FechaHora < %s
+            ORDER BY s.FechaHora DESC
+            """,
+            (unidad, d, h),
+        )
+    else:
+        rows = _q(
+            f"""
+            SELECT TOP (%s) s.NumeroTicket AS folio_cuenta, s.FechaHora AS fecha,
+                   j.prod_id AS clave, j.prod_name AS descripcion, j.cantidad AS cantidad,
+                   j.precio AS precio, j.importe AS importe
+            FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}
+            WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'
+              AND s.FechaHora >= %s AND s.FechaHora < %s
+            ORDER BY s.FechaHora DESC
+            """,
+            (limit, unidad, d, h),
+        )
     return {"success": True, "unidad": unidad, "desde": d, "hasta": h, "group_by": "none",
+            "export_all": export_all, "limited": not export_all, "limit": None if export_all else limit,
             "comandas": [{"folio_cuenta": r["folio_cuenta"], "fecha": r["fecha"].isoformat() if r["fecha"] else None,
                           "clave": r["clave"], "descripcion": r["descripcion"], "cantidad": _f(r["cantidad"]),
                           "precio": round(_f(r["precio"]), 2), "importe": round(_f(r["importe"]), 2)} for r in rows]}
@@ -268,7 +298,8 @@ async def comandas_venta(unidad: str = Query(...), desde: Optional[str] = None, 
 # ============================================================================
 @iscam_router.get("/formas-pago")
 async def ventas_formas_pago(unidad: str = Query(...), desde: Optional[str] = None, hasta: Optional[str] = None,
-                             group_by: str = Query("none"), limit: int = Query(1000, ge=1, le=5000)):
+                             group_by: str = Query("none"), limit: int = Query(1000, ge=1, le=5000),
+                             export_all: bool = Query(False)):
     nombre = _nombre_unidad(unidad)
     if not nombre:
         raise HTTPException(status_code=404, detail=f"No se pudo resolver la unidad '{unidad}'")
@@ -302,22 +333,40 @@ async def ventas_formas_pago(unidad: str = Query(...), desde: Optional[str] = No
         return {"success": True, "source": "Finanzas_CortesCaja (canónica, compartida)", "unidad": unidad,
                 "unidad_nombre": nombre, "desde": d, "hasta": h, "group_by": group_by,
                 "totales": tot, "agrupado": agrupado}
-    rows = _q(
-        """
-        SELECT TOP (%s) FolioCorte AS folio, FechaCierre AS fecha, TotalVenta AS total,
-               TotalEfectivo AS efectivo, TotalTarjetaDebito AS tarjeta_debito,
-               TotalTarjetaCredito AS tarjeta_credito, TotalAmex AS amex,
-               TotalInternacional AS internacional, TotalVales AS vales, TotalOtros AS otros,
-               Propinas AS propina,
-               (ISNULL(ComisionDebito,0)+ISNULL(ComisionCredito,0)+ISNULL(ComisionAmex,0)+ISNULL(ComisionInternacional,0)) AS comision,
-               CajaNombre AS caja
-        FROM dbo.Finanzas_CortesCaja
-        WHERE UnidadNegocioNombre = %s AND ISNULL(Activo,1)=1
-          AND FechaCierre >= %s AND FechaCierre < %s
-        ORDER BY FechaCierre DESC
-        """,
-        (limit, nombre, d, h),
-    )
+    if export_all:
+        rows = _q(
+            """
+            SELECT FolioCorte AS folio, FechaCierre AS fecha, TotalVenta AS total,
+                   TotalEfectivo AS efectivo, TotalTarjetaDebito AS tarjeta_debito,
+                   TotalTarjetaCredito AS tarjeta_credito, TotalAmex AS amex,
+                   TotalInternacional AS internacional, TotalVales AS vales, TotalOtros AS otros,
+                   Propinas AS propina,
+                   (ISNULL(ComisionDebito,0)+ISNULL(ComisionCredito,0)+ISNULL(ComisionAmex,0)+ISNULL(ComisionInternacional,0)) AS comision,
+                   CajaNombre AS caja
+            FROM dbo.Finanzas_CortesCaja
+            WHERE UnidadNegocioNombre = %s AND ISNULL(Activo,1)=1
+              AND FechaCierre >= %s AND FechaCierre < %s
+            ORDER BY FechaCierre DESC
+            """,
+            (nombre, d, h),
+        )
+    else:
+        rows = _q(
+            """
+            SELECT TOP (%s) FolioCorte AS folio, FechaCierre AS fecha, TotalVenta AS total,
+                   TotalEfectivo AS efectivo, TotalTarjetaDebito AS tarjeta_debito,
+                   TotalTarjetaCredito AS tarjeta_credito, TotalAmex AS amex,
+                   TotalInternacional AS internacional, TotalVales AS vales, TotalOtros AS otros,
+                   Propinas AS propina,
+                   (ISNULL(ComisionDebito,0)+ISNULL(ComisionCredito,0)+ISNULL(ComisionAmex,0)+ISNULL(ComisionInternacional,0)) AS comision,
+                   CajaNombre AS caja
+            FROM dbo.Finanzas_CortesCaja
+            WHERE UnidadNegocioNombre = %s AND ISNULL(Activo,1)=1
+              AND FechaCierre >= %s AND FechaCierre < %s
+            ORDER BY FechaCierre DESC
+            """,
+            (limit, nombre, d, h),
+        )
     cortes = []
     tot = {"total": 0, "efectivo": 0, "tarjeta": 0, "amex": 0, "vales": 0, "otros": 0, "propina": 0, "comision": 0}
     for r in rows:
@@ -336,6 +385,7 @@ async def ventas_formas_pago(unidad: str = Query(...), desde: Optional[str] = No
         tot["propina"] += _f(r["propina"]); tot["comision"] += _f(r["comision"])
     return {"success": True, "source": "Finanzas_CortesCaja (canónica, compartida)", "unidad": unidad,
             "unidad_nombre": nombre, "desde": d, "hasta": h,
+            "export_all": export_all, "limited": not export_all, "limit": None if export_all else limit,
             "totales": {k: round(v, 2) for k, v in tot.items()}, "cortes": cortes}
 
 
@@ -346,7 +396,8 @@ async def ventas_formas_pago(unidad: str = Query(...), desde: Optional[str] = No
 @iscam_router.get("/formas-pago/por-ticket")
 async def formas_pago_por_ticket(unidad: str = Query(...), desde: Optional[str] = None,
                                  hasta: Optional[str] = None, group_by: str = Query("none"),
-                                 limit: int = Query(2000, ge=1, le=10000)):
+                                 limit: int = Query(2000, ge=1, le=10000),
+                                 export_all: bool = Query(False)):
     d, h = _rango_fechas(desde, hasta)
     if group_by in ("anio", "mes", "dia"):
         pexpr = _period_sql("FechaHora", group_by)
@@ -384,24 +435,39 @@ async def formas_pago_por_ticket(unidad: str = Query(...), desde: Optional[str] 
         """,
         (unidad, d, h),
     )
-    # Detalle por pago (limitado)
-    rows = _q(
-        """
-        SELECT TOP (%s) NumeroTicket AS folio, FechaHora AS fecha, FormaPago AS forma,
-               FormaPagoCodigo AS codigo, Importe AS importe, ISNULL(Propina,0) AS propina,
-               Referencia AS referencia, SistemaOrigen AS sistema
-        FROM dbo.Finanzas_CortesCaja_DetallePagos
-        WHERE UnidadNegocio = %s AND ISNULL(Activo,1)=1
-          AND FechaHora >= %s AND FechaHora < %s
-        ORDER BY FechaHora DESC, NumeroTicket DESC
-        """,
-        (limit, unidad, d, h),
-    )
+    # Detalle por pago. En pantalla puede limitarse; export_all entrega el conjunto completo.
+    if export_all:
+        rows = _q(
+            """
+            SELECT NumeroTicket AS folio, FechaHora AS fecha, FormaPago AS forma,
+                   FormaPagoCodigo AS codigo, Importe AS importe, ISNULL(Propina,0) AS propina,
+                   Referencia AS referencia, SistemaOrigen AS sistema
+            FROM dbo.Finanzas_CortesCaja_DetallePagos
+            WHERE UnidadNegocio = %s AND ISNULL(Activo,1)=1
+              AND FechaHora >= %s AND FechaHora < %s
+            ORDER BY FechaHora DESC, NumeroTicket DESC
+            """,
+            (unidad, d, h),
+        )
+    else:
+        rows = _q(
+            """
+            SELECT TOP (%s) NumeroTicket AS folio, FechaHora AS fecha, FormaPago AS forma,
+                   FormaPagoCodigo AS codigo, Importe AS importe, ISNULL(Propina,0) AS propina,
+                   Referencia AS referencia, SistemaOrigen AS sistema
+            FROM dbo.Finanzas_CortesCaja_DetallePagos
+            WHERE UnidadNegocio = %s AND ISNULL(Activo,1)=1
+              AND FechaHora >= %s AND FechaHora < %s
+            ORDER BY FechaHora DESC, NumeroTicket DESC
+            """,
+            (limit, unidad, d, h),
+        )
     tot_importe = sum(_f(r["importe"]) for r in resumen)
     tot_propina = sum(_f(r["propina"]) for r in resumen)
     return {
         "success": True, "source": "Finanzas_CortesCaja_DetallePagos (canónica, ticket)",
         "unidad": unidad, "desde": d, "hasta": h,
+        "export_all": export_all, "limited": not export_all, "limit": None if export_all else limit,
         "resumen_formas": [{"forma": r["forma"], "codigo": r["codigo"], "pagos": int(r["pagos"] or 0),
                             "tickets": int(r["tickets"] or 0), "importe": round(_f(r["importe"]), 2),
                             "propina": round(_f(r["propina"]), 2)} for r in resumen],

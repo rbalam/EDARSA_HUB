@@ -232,20 +232,26 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
 
   const onChangeSub = (id) => { setSub(id); setGroupBy(DEFAULT_GROUP[id]); setData(null); };
 
-  const fetchReport = useCallback(async () => {
-    if (sinUnidad) { setData(null); return; }
-    setLoading(true); setEstado(ESTADO.OK);
-    let path; const params = { unidad, desde: desdeStr, hasta: hastaStr };
+  const getReportRequest = useCallback((extraParams = {}) => {
+    let path;
+    const params = { unidad, desde: desdeStr, hasta: hastaStr, ...extraParams };
     if (sub === 'periodos') { path = '/inteligencia/iscam/ventas-periodos'; params.group_by = groupBy; }
     else if (sub === 'cuentas') { path = '/inteligencia/iscam/cuentas'; params.group_by = groupBy; }
     else if (sub === 'comandas') { path = '/inteligencia/iscam/comandas'; params.group_by = groupBy; }
     else if (sub === 'pagos-ticket') { path = '/inteligencia/iscam/formas-pago/por-ticket'; params.group_by = groupBy; }
     else { path = '/inteligencia/iscam/formas-pago'; params.group_by = groupBy; }
+    return { path, params };
+  }, [sub, groupBy, unidad, desdeStr, hastaStr]);
+
+  const fetchReport = useCallback(async () => {
+    if (sinUnidad) { setData(null); return; }
+    setLoading(true); setEstado(ESTADO.OK);
+    const { path, params } = getReportRequest();
     const res = await apiGet(path, params);
     setEstado(res.estado);
     setData(res.estado === ESTADO.OK ? res.data : null);
     setLoading(false);
-  }, [sub, groupBy, unidad, desdeStr, hastaStr, sinUnidad]);
+  }, [getReportRequest, sinUnidad]);
 
   useEffect(() => { fetchReport(); }, [fetchReport]);
 
@@ -293,8 +299,59 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
   const rangoTxt = `${MESES[desdeMes]} ${desdeAnio} — ${MESES[hastaMes]} ${hastaAnio}`;
   const baseName = `ISCAM_${sub}_${unidad}_${desdeAnio}${String(desdeMes).padStart(2, '0')}-${hastaAnio}${String(hastaMes).padStart(2, '0')}`;
   const puedeExportar = (descriptor.rows || []).length > 0;
-  const onExcel = () => exportToExcel(baseName, [{ name: descriptor.title, columns: descriptor.columns, rows: descriptor.rows }]);
-  const onPdf = () => exportToPDF(`${descriptor.title} — ${unidad}`, descriptor.columns, descriptor.rows, `${unidad} · ${rangoTxt}`);
+
+  const buildExportSheets = (exportData) => {
+    const exportDescriptor = buildDescriptor(sub, groupBy, exportData);
+
+    if (sub === 'pagos-ticket' && groupBy === 'none') {
+      return [
+        {
+          name: 'Resumen por forma',
+          columns: exportDescriptor.columns,
+          rows: exportData?.resumen_formas || [],
+        },
+        {
+          name: 'Detalle pagos',
+          columns: [
+            { key: 'folio', label: 'Folio' },
+            { key: 'fecha', label: 'Fecha' },
+            { key: 'forma', label: 'Forma' },
+            { key: 'codigo', label: 'Codigo' },
+            { key: 'importe', label: 'Importe' },
+            { key: 'propina', label: 'Propina' },
+            { key: 'referencia', label: 'Referencia' },
+            { key: 'sistema', label: 'Sistema' },
+          ],
+          rows: exportData?.pagos || [],
+        },
+      ];
+    }
+
+    return [{ name: exportDescriptor.title, columns: exportDescriptor.columns, rows: exportDescriptor.rows }];
+  };
+
+  const fetchExportData = async () => {
+    const { path, params } = getReportRequest({ export_all: true });
+    const res = await apiGet(path, params);
+    if (res.estado !== ESTADO.OK) {
+      setEstado(res.estado);
+      return null;
+    }
+    return res.data;
+  };
+
+  const onExcel = async () => {
+    const exportData = await fetchExportData();
+    if (!exportData) return;
+    exportToExcel(baseName, buildExportSheets(exportData));
+  };
+
+  const onPdf = async () => {
+    const exportData = await fetchExportData();
+    if (!exportData) return;
+    const exportDescriptor = buildDescriptor(sub, groupBy, exportData);
+    exportToPDF(`${exportDescriptor.title} — ${unidad}`, exportDescriptor.columns, exportDescriptor.rows, `${unidad} · ${rangoTxt}`);
+  };
 
   const groupOpts = GROUP_OPTS[sub] || [];
 
