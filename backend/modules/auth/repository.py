@@ -262,6 +262,10 @@ async def update_user(user_id: str, update_data: Dict[str, Any]) -> bool:
         if "password_hash" in update_data:
             sets.append("PasswordHashTexto = %s")
             params.append(update_data["password_hash"])
+            sets.append("PasswordHash = NULL")
+            sets.append("PasswordTemporal = 0")
+            sets.append("DebeCambiarPassword = 0")
+            sets.append("UltimoCambioPassword = SYSUTCDATETIME()")
         
         if "active" in update_data:
             sets.append("Activo = %s")

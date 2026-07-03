@@ -320,7 +320,7 @@ async def update_user(user_id: str, user_data: Dict, current_user: Dict) -> Dict
         valid_password, password_error = validate_password_strength(user_data['password'])
         if not valid_password:
             raise HTTPException(status_code=400, detail=password_error)
-        update_data['password'] = hash_password(user_data['password'])
+        update_data['password_hash'] = hash_password(user_data['password'])
     
     await repo.update_user(user_id, update_data)
     return {"message": "Usuario actualizado"}
