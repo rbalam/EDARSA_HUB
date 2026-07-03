@@ -101,7 +101,7 @@ def get_server_connection_config(server_id: str) -> Optional[Dict[str, Any]]:
         id, nombre, host, port, database_name,
         username, password_encrypted, system_type, activo
     FROM Servidores_Conexiones
-    WHERE id = '{id}'
+    WHERE id = '{server_id}'
     """
     
     rows = _execute_query(query)
