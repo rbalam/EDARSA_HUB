@@ -21,6 +21,7 @@ export async function fetchAccessContext(unidadNegocioId = null) {
 
   const res = await fetch(url.toString(), {
     method: "GET",
+    credentials: "include",
     headers: getAuthHeaders(),
   });
 
@@ -35,6 +36,7 @@ export async function fetchAccessContext(unidadNegocioId = null) {
 export async function selectAccessUnit(unidadNegocioId) {
   const res = await fetch(`${API_URL}/api/auth/access-context/select-unit`, {
     method: "POST",
+    credentials: "include",
     headers: getAuthHeaders(),
     body: JSON.stringify({ unidad_negocio_id: unidadNegocioId }),
   });

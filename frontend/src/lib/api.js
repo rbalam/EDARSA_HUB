@@ -21,6 +21,18 @@ const TOKEN_STORAGE_KEY = 'edarsa_memory_token';
 // Token en memoria como fallback adicional
 let memoryToken = null;
 
+// Fallback restringido a Preview/Emergent.
+// sessionStorage no se comparte entre ventanas; localStorage sí.
+// No usar como mecanismo primario en producción.
+const shouldUsePreviewTokenFallback = () => {
+  try {
+    const host = window.location.hostname || "";
+    return host.includes("preview.emergentagent.com") || host.includes("emergentagent.com");
+  } catch (e) {
+    return false;
+  }
+};
+
 /**
  * Obtener token (sessionStorage primero, luego memoria)
  */
@@ -34,6 +46,18 @@ export const getToken = () => {
   } catch (e) {
     // sessionStorage no disponible
   }
+
+  try {
+    if (shouldUsePreviewTokenFallback()) {
+      const storedPreviewToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+      if (storedPreviewToken) {
+        return storedPreviewToken;
+      }
+    }
+  } catch (e) {
+    // localStorage no disponible
+  }
+
   // Fallback a memoria
   return memoryToken;
 };
@@ -53,6 +77,18 @@ export const setMemoryToken = (token) => {
   } catch (e) {
     // sessionStorage no disponible
   }
+
+  try {
+    if (shouldUsePreviewTokenFallback()) {
+      if (token) {
+        localStorage.setItem(TOKEN_STORAGE_KEY, token);
+      } else {
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
+      }
+    }
+  } catch (e) {
+    // localStorage no disponible
+  }
 };
 
 /**
@@ -64,6 +100,12 @@ export const clearMemoryToken = () => {
     sessionStorage.removeItem(TOKEN_STORAGE_KEY);
   } catch (e) {
     // sessionStorage no disponible
+  }
+
+  try {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+  } catch (e) {
+    // localStorage no disponible
   }
 };
 

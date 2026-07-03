@@ -15,6 +15,7 @@ export function useAccessContext() {
 
       if (data?.unidad_activa) {
         sessionStorage.setItem("edarsahub_unidad_activa", data.unidad_activa);
+        localStorage.setItem("edarsahub_unidad_activa", data.unidad_activa);
       }
     } catch (err) {
       setError(err);
@@ -32,6 +33,7 @@ export function useAccessContext() {
 
       if (data?.unidad_activa) {
         sessionStorage.setItem("edarsahub_unidad_activa", data.unidad_activa);
+        localStorage.setItem("edarsahub_unidad_activa", data.unidad_activa);
       }
     } catch (err) {
       setError(err);
@@ -41,7 +43,9 @@ export function useAccessContext() {
   }, []);
 
   useEffect(() => {
-    const unidadGuardada = sessionStorage.getItem("edarsahub_unidad_activa");
+    const unidadGuardada =
+      sessionStorage.getItem("edarsahub_unidad_activa") ||
+      localStorage.getItem("edarsahub_unidad_activa");
     loadContext(unidadGuardada || null);
   }, [loadContext]);
 

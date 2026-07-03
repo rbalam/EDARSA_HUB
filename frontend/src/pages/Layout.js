@@ -144,7 +144,7 @@ const Layout = () => {
   // que ahora respeta la unidad activa. NO se rompe el menú Enterprise.
   const { context: accessContext } = useAccessContext();
   const unidadActiva = accessContext?.unidad_activa || null;
-  const { menus: ctxMenus, error: ctxMenusError } = useMenusByContext(unidadActiva);
+  const { menus: ctxMenus, error: ctxMenusError } = useMenusByContext(unidadActiva, Boolean(user));
 
   // NUEVO: Sincronizar menús SQL por contexto -> estado del Layout (con fallback)
   useEffect(() => {

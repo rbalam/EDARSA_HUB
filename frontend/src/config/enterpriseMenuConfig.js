@@ -421,11 +421,9 @@ export const enterpriseMenuGroups = [
 ];
 
 export const defaultFavoriteMenuIds = [
-  "direccion",
-  "comercial",
-  "inventarios",
-  "compras",
-  "centro-control"
+  "/comercial",
+  "/tablero-ejecutivo",
+  "/reportes"
 ];
 
 export function flattenEnterpriseMenu(groups = enterpriseMenuGroups) {
