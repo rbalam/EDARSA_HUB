@@ -15110,29 +15110,252 @@ async def ejecutar_script_con_credenciales(
 
 
 # ============================================================================
-# ========================= MÓDULO DE FINANZAS ===============================
+# ========================= MODULO DE FINANZAS ===============================
 # ============================================================================
 
-@api_router.get("/finanzas/dashboard")
-async def finanzas_dashboard(
-    anio: int = Query(default=None),
-    mes: int = Query(default=None),
-    sucursal_id: Optional[int] = None,
-    current_user: Dict = Depends(get_current_user)
+def _finanzas_get_conn():
+    from modules.compras.sync_service import get_edarsahub_connection
+    return get_edarsahub_connection()
+
+
+def _finanzas_pick(body: Dict, *keys, default=None):
+    for key in keys:
+        if key in body and body.get(key) is not None:
+            return body.get(key)
+    return default
+
+
+def _finanzas_to_int(value, default=None):
+    if value is None or value == "":
+        return default
+    try:
+        return int(value)
+    except Exception:
+        return default
+
+
+def _finanzas_to_float(value, default=0.0):
+    if value is None or value == "":
+        return default
+    try:
+        return float(value)
+    except Exception:
+        return default
+
+
+def _finanzas_money(value):
+    if value is None:
+        return 0.0
+    return float(value)
+
+
+def _finanzas_table_ready(cur) -> bool:
+    cur.execute("""
+        SELECT CASE
+            WHEN OBJECT_ID('dbo.Finanzas_Presupuestos', 'U') IS NOT NULL
+             AND COL_LENGTH('dbo.Finanzas_Presupuestos', 'UnidadNegocioID') IS NOT NULL
+            THEN 1 ELSE 0 END AS Ready
+    """)
+    row = cur.fetchone() or {}
+    return bool(row.get("Ready"))
+
+
+def _finanzas_resolve_unidad_negocio(cur, ref: Optional[str]) -> Optional[Dict]:
+    if ref is None or str(ref).strip() == "":
+        return None
+
+    value = str(ref).strip()
+
+    cur.execute("""
+        SELECT TOP 1
+            id,
+            nombre,
+            codigo,
+            server_id,
+            sucursal_origen_id,
+            system_type
+        FROM dbo.Unidades_Negocio
+        WHERE ISNULL(activo, 1) = 1
+          AND (
+                id = TRY_CONVERT(uniqueidentifier, %s)
+             OR codigo = %s
+             OR nombre = %s
+             OR server_id = %s
+             OR sucursal_origen_id = %s
+          )
+        ORDER BY
+            CASE
+                WHEN id = TRY_CONVERT(uniqueidentifier, %s) THEN 1
+                WHEN codigo = %s THEN 2
+                WHEN nombre = %s THEN 3
+                WHEN server_id = %s THEN 4
+                WHEN sucursal_origen_id = %s THEN 5
+                ELSE 9
+            END,
+            ISNULL(orden, 999),
+            nombre
+    """, (value, value, value, value, value, value, value, value, value, value))
+
+    row = cur.fetchone()
+    if not row:
+        return None
+
+    return {
+        "id": str(row.get("id")),
+        "nombre": row.get("nombre"),
+        "codigo": row.get("codigo"),
+        "server_id": row.get("server_id"),
+        "sucursal_origen_id": row.get("sucursal_origen_id"),
+        "system_type": row.get("system_type"),
+    }
+
+
+def _finanzas_unidad_ref(
+    sucursal_id: Optional[str] = None,
+    server_id: Optional[str] = None,
+    unidad_negocio_id: Optional[str] = None,
+    unidad_negocio_pk: Optional[str] = None,
 ):
-    """Dashboard general de finanzas con KPIs y comparativos"""
-    from datetime import datetime
-    
-    if not anio:
-        anio = datetime.now().year
-    if not mes:
-        mes = datetime.now().month
-    
-    # NOTA: La tabla Finanzas_Presupuestos no existe actualmente en EDARSA HUB
-    # Retornar estructura vacía para evitar corrupción del pool de conexiones
+    return unidad_negocio_id or unidad_negocio_pk or server_id or sucursal_id
+
+
+def _finanzas_body_unidad_ref(body: Dict):
+    return (
+        _finanzas_pick(body, "unidad_negocio_id", "UnidadNegocioID")
+        or _finanzas_pick(body, "unidad_negocio_pk")
+        or _finanzas_pick(body, "server_id")
+        or _finanzas_pick(body, "sucursal_id", "SucursalID")
+    )
+
+
+def _finanzas_row_to_api(row: Dict) -> Dict:
+    unidad_id = row.get("UnidadNegocioID")
+    return {
+        "PresupuestoID": row.get("PresupuestoID"),
+        "UnidadNegocioID": str(unidad_id) if unidad_id is not None else None,
+        "SucursalID": str(unidad_id) if unidad_id is not None else None,
+        "Nombre_Unidad": row.get("Nombre_Unidad"),
+        "Nombre_Sucursal": row.get("Nombre_Unidad"),
+        "Codigo_Unidad": row.get("Codigo_Unidad"),
+        "Categoria": row.get("Categoria"),
+        "SubCategoria": row.get("SubCategoria"),
+        "Tipo": row.get("Tipo"),
+        "Monto_Presupuestado": _finanzas_money(row.get("Monto_Presupuestado")),
+        "Monto_Ejecutado": _finanzas_money(row.get("Monto_Ejecutado")),
+        "Anio": row.get("Anio"),
+        "Mes": row.get("Mes"),
+        "Notas": row.get("Notas"),
+        "Activo": bool(row.get("Activo")) if row.get("Activo") is not None else True,
+        "Fecha_Creacion": row.get("Fecha_Creacion").isoformat() if row.get("Fecha_Creacion") else None,
+        "Fecha_Modificacion": row.get("Fecha_Modificacion").isoformat() if row.get("Fecha_Modificacion") else None,
+        "Creado_Por": row.get("Creado_Por"),
+        "Modificado_Por": row.get("Modificado_Por"),
+    }
+
+
+def _finanzas_build_where(anio=None, mes=None, unidad_negocio_id=None, categoria=None):
+    clauses = ["p.Activo = 1"]
+    params = []
+
+    if anio is not None:
+        clauses.append("p.Anio = %s")
+        params.append(anio)
+
+    if mes is not None:
+        clauses.append("p.Mes = %s")
+        params.append(mes)
+
+    if unidad_negocio_id:
+        clauses.append("p.UnidadNegocioID = %s")
+        params.append(unidad_negocio_id)
+
+    if categoria:
+        clauses.append("p.Categoria = %s")
+        params.append(categoria)
+
+    return " WHERE " + " AND ".join(clauses), params
+
+
+def _finanzas_select_presupuestos(cur, anio=None, mes=None, unidad_negocio_id=None, categoria=None):
+    if not _finanzas_table_ready(cur):
+        return []
+
+    where_sql, params = _finanzas_build_where(anio, mes, unidad_negocio_id, categoria)
+
+    cur.execute(f"""
+        SELECT
+            p.PresupuestoID,
+            p.UnidadNegocioID,
+            u.nombre AS Nombre_Unidad,
+            u.codigo AS Codigo_Unidad,
+            p.Categoria,
+            p.SubCategoria,
+            p.Tipo,
+            p.Monto_Presupuestado,
+            p.Monto_Ejecutado,
+            p.Anio,
+            p.Mes,
+            p.Notas,
+            p.Activo,
+            p.Fecha_Creacion,
+            p.Fecha_Modificacion,
+            p.Creado_Por,
+            p.Modificado_Por
+        FROM dbo.Finanzas_Presupuestos p
+        JOIN dbo.Unidades_Negocio u
+            ON u.id = p.UnidadNegocioID
+        {where_sql}
+        ORDER BY
+            ISNULL(u.orden, 999),
+            u.nombre,
+            p.Anio DESC,
+            p.Mes DESC,
+            p.Tipo,
+            p.Categoria,
+            p.SubCategoria
+    """, tuple(params))
+
+    return [_finanzas_row_to_api(r) for r in (cur.fetchall() or [])]
+
+
+def _finanzas_get_presupuesto_by_id(cur, presupuesto_id: int) -> Optional[Dict]:
+    if not _finanzas_table_ready(cur):
+        return None
+
+    cur.execute("""
+        SELECT
+            p.PresupuestoID,
+            p.UnidadNegocioID,
+            u.nombre AS Nombre_Unidad,
+            u.codigo AS Codigo_Unidad,
+            p.Categoria,
+            p.SubCategoria,
+            p.Tipo,
+            p.Monto_Presupuestado,
+            p.Monto_Ejecutado,
+            p.Anio,
+            p.Mes,
+            p.Notas,
+            p.Activo,
+            p.Fecha_Creacion,
+            p.Fecha_Modificacion,
+            p.Creado_Por,
+            p.Modificado_Por
+        FROM dbo.Finanzas_Presupuestos p
+        JOIN dbo.Unidades_Negocio u
+            ON u.id = p.UnidadNegocioID
+        WHERE p.PresupuestoID = %s
+          AND p.Activo = 1
+    """, (presupuesto_id,))
+
+    row = cur.fetchone()
+    return _finanzas_row_to_api(row) if row else None
+
+
+def _finanzas_empty_dashboard(anio: int, mes: int, mensaje: Optional[str] = None):
     return {
         "periodo": {"anio": anio, "mes": mes},
-        "mensaje": "Dashboard de presupuestos no disponible - tabla Finanzas_Presupuestos pendiente de creación",
+        "mensaje": mensaje,
         "kpis": {
             "ingresos_presupuestados": 0,
             "ingresos_ejecutados": 0,
@@ -15146,21 +15369,162 @@ async def finanzas_dashboard(
         },
         "presupuestos": [],
         "por_sucursal": [],
+        "por_unidad": [],
         "totales": []
     }
+
+
+@api_router.get("/finanzas/dashboard")
+async def finanzas_dashboard(
+    anio: int = Query(default=None),
+    mes: int = Query(default=None),
+    sucursal_id: Optional[str] = Query(default=None),
+    server_id: Optional[str] = Query(default=None),
+    unidad_negocio_id: Optional[str] = Query(default=None),
+    unidad_negocio_pk: Optional[str] = Query(default=None),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Dashboard de finanzas basado en presupuestos canonicos por Unidad de Negocio."""
+    now = datetime.now()
+    anio = _finanzas_to_int(anio, now.year)
+    mes = _finanzas_to_int(mes, now.month)
+
+    conn = _finanzas_get_conn()
+    try:
+        with conn.cursor(as_dict=True) as cur:
+            if not _finanzas_table_ready(cur):
+                return _finanzas_empty_dashboard(anio, mes, "Tabla Finanzas_Presupuestos pendiente de migracion canonica")
+
+            unidad = _finanzas_resolve_unidad_negocio(
+                cur,
+                _finanzas_unidad_ref(sucursal_id, server_id, unidad_negocio_id, unidad_negocio_pk)
+            )
+            unidad_id = unidad["id"] if unidad else None
+
+            presupuestos = _finanzas_select_presupuestos(cur, anio, mes, unidad_id)
+
+            prev_anio = anio
+            prev_mes = mes - 1
+            if prev_mes < 1:
+                prev_mes = 12
+                prev_anio -= 1
+
+            prev_rows = _finanzas_select_presupuestos(cur, prev_anio, prev_mes, unidad_id)
+
+            def sum_tipo(rows, tipo, campo):
+                return sum(_finanzas_money(r.get(campo)) for r in rows if r.get("Tipo") == tipo)
+
+            ingresos_pres = sum_tipo(presupuestos, "Ingreso", "Monto_Presupuestado")
+            ingresos_ejec = sum_tipo(presupuestos, "Ingreso", "Monto_Ejecutado")
+            egresos_pres = sum_tipo(presupuestos, "Egreso", "Monto_Presupuestado")
+            egresos_ejec = sum_tipo(presupuestos, "Egreso", "Monto_Ejecutado")
+
+            prev_ingresos_ejec = sum_tipo(prev_rows, "Ingreso", "Monto_Ejecutado")
+            prev_egresos_ejec = sum_tipo(prev_rows, "Egreso", "Monto_Ejecutado")
+
+            ingresos_var = ((ingresos_ejec - prev_ingresos_ejec) / prev_ingresos_ejec * 100) if prev_ingresos_ejec else 0
+            egresos_var = ((egresos_ejec - prev_egresos_ejec) / prev_egresos_ejec * 100) if prev_egresos_ejec else 0
+
+            utilidad_pres = ingresos_pres - egresos_pres
+            utilidad_real = ingresos_ejec - egresos_ejec
+            margen = (utilidad_real / ingresos_ejec * 100) if ingresos_ejec else 0
+
+            por_unidad_map = {}
+            for row in presupuestos:
+                key = row.get("UnidadNegocioID") or ""
+                if key not in por_unidad_map:
+                    por_unidad_map[key] = {
+                        "UnidadNegocioID": key,
+                        "Nombre_Unidad": row.get("Nombre_Unidad"),
+                        "Nombre_Sucursal": row.get("Nombre_Unidad"),
+                        "ingresos_presupuestados": 0,
+                        "ingresos_ejecutados": 0,
+                        "egresos_presupuestados": 0,
+                        "egresos_ejecutados": 0,
+                    }
+                bucket = por_unidad_map[key]
+                if row.get("Tipo") == "Ingreso":
+                    bucket["ingresos_presupuestados"] += _finanzas_money(row.get("Monto_Presupuestado"))
+                    bucket["ingresos_ejecutados"] += _finanzas_money(row.get("Monto_Ejecutado"))
+                elif row.get("Tipo") == "Egreso":
+                    bucket["egresos_presupuestados"] += _finanzas_money(row.get("Monto_Presupuestado"))
+                    bucket["egresos_ejecutados"] += _finanzas_money(row.get("Monto_Ejecutado"))
+
+            totales_map = {}
+            for row in presupuestos:
+                key = (row.get("Tipo"), row.get("Categoria"))
+                if key not in totales_map:
+                    totales_map[key] = {
+                        "Tipo": row.get("Tipo"),
+                        "Categoria": row.get("Categoria"),
+                        "Monto_Presupuestado": 0,
+                        "Monto_Ejecutado": 0,
+                    }
+                totales_map[key]["Monto_Presupuestado"] += _finanzas_money(row.get("Monto_Presupuestado"))
+                totales_map[key]["Monto_Ejecutado"] += _finanzas_money(row.get("Monto_Ejecutado"))
+
+            por_unidad = list(por_unidad_map.values())
+
+            return {
+                "periodo": {"anio": anio, "mes": mes},
+                "unidad_negocio": unidad,
+                "mensaje": None,
+                "kpis": {
+                    "ingresos_presupuestados": ingresos_pres,
+                    "ingresos_ejecutados": ingresos_ejec,
+                    "ingresos_var_mes_ant": ingresos_var,
+                    "egresos_presupuestados": egresos_pres,
+                    "egresos_ejecutados": egresos_ejec,
+                    "egresos_var_mes_ant": egresos_var,
+                    "utilidad_presupuestada": utilidad_pres,
+                    "utilidad_real": utilidad_real,
+                    "margen_utilidad": margen
+                },
+                "presupuestos": presupuestos,
+                "por_sucursal": por_unidad,
+                "por_unidad": por_unidad,
+                "totales": list(totales_map.values())
+            }
+    finally:
+        conn.close()
 
 
 @api_router.get("/finanzas/presupuestos")
 async def finanzas_listar_presupuestos(
     anio: int = Query(default=None),
     mes: int = Query(default=None),
-    sucursal_id: Optional[int] = None,
-    categoria: Optional[str] = None,
+    sucursal_id: Optional[str] = Query(default=None),
+    server_id: Optional[str] = Query(default=None),
+    unidad_negocio_id: Optional[str] = Query(default=None),
+    unidad_negocio_pk: Optional[str] = Query(default=None),
+    categoria: Optional[str] = Query(default=None),
     current_user: Dict = Depends(get_current_user)
 ):
-    """Lista presupuestos con filtros - TABLA NO DISPONIBLE"""
-    # NOTA: La tabla Finanzas_Presupuestos no existe actualmente
-    return {"presupuestos": [], "total": 0, "mensaje": "Tabla Finanzas_Presupuestos pendiente de creación"}
+    """Lista presupuestos canonicos con filtros por Unidad de Negocio."""
+    anio = _finanzas_to_int(anio)
+    mes = _finanzas_to_int(mes)
+
+    conn = _finanzas_get_conn()
+    try:
+        with conn.cursor(as_dict=True) as cur:
+            if not _finanzas_table_ready(cur):
+                return {"presupuestos": [], "total": 0, "mensaje": "Tabla Finanzas_Presupuestos pendiente de migracion canonica"}
+
+            unidad = _finanzas_resolve_unidad_negocio(
+                cur,
+                _finanzas_unidad_ref(sucursal_id, server_id, unidad_negocio_id, unidad_negocio_pk)
+            )
+            unidad_id = unidad["id"] if unidad else None
+
+            presupuestos = _finanzas_select_presupuestos(cur, anio, mes, unidad_id, categoria)
+            return {
+                "presupuestos": presupuestos,
+                "total": len(presupuestos),
+                "unidad_negocio": unidad,
+                "mensaje": None
+            }
+    finally:
+        conn.close()
 
 
 @api_router.post("/finanzas/presupuestos")
@@ -15168,8 +15532,82 @@ async def finanzas_crear_presupuesto(
     body: Dict,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Crea un nuevo presupuesto - TABLA NO DISPONIBLE"""
-    return {"success": False, "message": "Tabla Finanzas_Presupuestos pendiente de creación"}
+    """Crea presupuesto canonico por Unidad de Negocio."""
+    categoria = (_finanzas_pick(body, "categoria", "Categoria") or "").strip()
+    subcategoria = _finanzas_pick(body, "subcategoria", "SubCategoria")
+    tipo = (_finanzas_pick(body, "tipo", "Tipo") or "").strip()
+    monto_pres = _finanzas_to_float(_finanzas_pick(body, "monto_presupuestado", "monto", "Monto_Presupuestado"))
+    monto_ejec = _finanzas_to_float(_finanzas_pick(body, "monto_ejecutado", "Monto_Ejecutado"), 0.0)
+    anio = _finanzas_to_int(_finanzas_pick(body, "anio", "Anio"))
+    mes = _finanzas_to_int(_finanzas_pick(body, "mes", "Mes"))
+    notas = _finanzas_pick(body, "notas", "Notas")
+    creado_por = current_user.get("email") or current_user.get("username") or current_user.get("Usuario") or "sistema"
+
+    if not categoria:
+        raise HTTPException(status_code=400, detail="categoria es requerida")
+    if tipo not in ("Ingreso", "Egreso"):
+        raise HTTPException(status_code=400, detail="tipo debe ser Ingreso o Egreso")
+    if not anio:
+        raise HTTPException(status_code=400, detail="anio es requerido")
+    if not mes or mes < 1 or mes > 12:
+        raise HTTPException(status_code=400, detail="mes debe estar entre 1 y 12")
+
+    conn = _finanzas_get_conn()
+    try:
+        with conn.cursor(as_dict=True) as cur:
+            if not _finanzas_table_ready(cur):
+                raise HTTPException(status_code=500, detail="Tabla Finanzas_Presupuestos no esta migrada")
+
+            unidad = _finanzas_resolve_unidad_negocio(cur, _finanzas_body_unidad_ref(body))
+            if not unidad:
+                raise HTTPException(status_code=400, detail="Unidad de Negocio invalida o no encontrada")
+
+            cur.execute("""
+                INSERT INTO dbo.Finanzas_Presupuestos (
+                    UnidadNegocioID,
+                    Categoria,
+                    SubCategoria,
+                    Tipo,
+                    Monto_Presupuestado,
+                    Monto_Ejecutado,
+                    Anio,
+                    Mes,
+                    Notas,
+                    Creado_Por
+                )
+                OUTPUT INSERTED.PresupuestoID
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                unidad["id"],
+                categoria,
+                subcategoria,
+                tipo,
+                monto_pres,
+                monto_ejec,
+                anio,
+                mes,
+                notas,
+                creado_por,
+            ))
+            inserted = cur.fetchone() or {}
+            presupuesto_id = inserted.get("PresupuestoID")
+            conn.commit()
+
+            presupuesto = _finanzas_get_presupuesto_by_id(cur, presupuesto_id)
+            return {
+                "success": True,
+                "message": "Presupuesto creado",
+                "presupuesto": presupuesto
+            }
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as exc:
+        conn.rollback()
+        logging.exception("[FINANZAS] Error creando presupuesto")
+        raise HTTPException(status_code=500, detail=f"Error creando presupuesto: {str(exc)}")
+    finally:
+        conn.close()
 
 
 @api_router.put("/finanzas/presupuestos/{presupuesto_id}")
@@ -15178,8 +15616,108 @@ async def finanzas_actualizar_presupuesto(
     body: Dict,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Actualiza un presupuesto existente - TABLA NO DISPONIBLE"""
-    return {"success": False, "message": "Tabla Finanzas_Presupuestos pendiente de creación"}
+    """Actualiza presupuesto canonico."""
+    conn = _finanzas_get_conn()
+    try:
+        with conn.cursor(as_dict=True) as cur:
+            if not _finanzas_table_ready(cur):
+                raise HTTPException(status_code=500, detail="Tabla Finanzas_Presupuestos no esta migrada")
+
+            current = _finanzas_get_presupuesto_by_id(cur, presupuesto_id)
+            if not current:
+                raise HTTPException(status_code=404, detail="Presupuesto no encontrado")
+
+            sets = []
+            params = []
+
+            unidad_ref = _finanzas_body_unidad_ref(body)
+            if unidad_ref:
+                unidad = _finanzas_resolve_unidad_negocio(cur, unidad_ref)
+                if not unidad:
+                    raise HTTPException(status_code=400, detail="Unidad de Negocio invalida o no encontrada")
+                sets.append("UnidadNegocioID = %s")
+                params.append(unidad["id"])
+
+            if "categoria" in body or "Categoria" in body:
+                categoria = (_finanzas_pick(body, "categoria", "Categoria") or "").strip()
+                if not categoria:
+                    raise HTTPException(status_code=400, detail="categoria no puede estar vacia")
+                sets.append("Categoria = %s")
+                params.append(categoria)
+
+            if "subcategoria" in body or "SubCategoria" in body:
+                sets.append("SubCategoria = %s")
+                params.append(_finanzas_pick(body, "subcategoria", "SubCategoria"))
+
+            if "tipo" in body or "Tipo" in body:
+                tipo = (_finanzas_pick(body, "tipo", "Tipo") or "").strip()
+                if tipo not in ("Ingreso", "Egreso"):
+                    raise HTTPException(status_code=400, detail="tipo debe ser Ingreso o Egreso")
+                sets.append("Tipo = %s")
+                params.append(tipo)
+
+            if "monto_presupuestado" in body or "monto" in body or "Monto_Presupuestado" in body:
+                sets.append("Monto_Presupuestado = %s")
+                params.append(_finanzas_to_float(_finanzas_pick(body, "monto_presupuestado", "monto", "Monto_Presupuestado")))
+
+            if "monto_ejecutado" in body or "Monto_Ejecutado" in body:
+                sets.append("Monto_Ejecutado = %s")
+                params.append(_finanzas_to_float(_finanzas_pick(body, "monto_ejecutado", "Monto_Ejecutado")))
+
+            if "anio" in body or "Anio" in body:
+                anio = _finanzas_to_int(_finanzas_pick(body, "anio", "Anio"))
+                if not anio:
+                    raise HTTPException(status_code=400, detail="anio invalido")
+                sets.append("Anio = %s")
+                params.append(anio)
+
+            if "mes" in body or "Mes" in body:
+                mes = _finanzas_to_int(_finanzas_pick(body, "mes", "Mes"))
+                if not mes or mes < 1 or mes > 12:
+                    raise HTTPException(status_code=400, detail="mes debe estar entre 1 y 12")
+                sets.append("Mes = %s")
+                params.append(mes)
+
+            if "notas" in body or "Notas" in body:
+                sets.append("Notas = %s")
+                params.append(_finanzas_pick(body, "notas", "Notas"))
+
+            if not sets:
+                return {
+                    "success": True,
+                    "message": "Sin cambios",
+                    "presupuesto": current
+                }
+
+            modificado_por = current_user.get("email") or current_user.get("username") or current_user.get("Usuario") or "sistema"
+            sets.append("Fecha_Modificacion = SYSUTCDATETIME()")
+            sets.append("Modificado_Por = %s")
+            params.append(modificado_por)
+            params.append(presupuesto_id)
+
+            cur.execute(f"""
+                UPDATE dbo.Finanzas_Presupuestos
+                SET {", ".join(sets)}
+                WHERE PresupuestoID = %s
+                  AND Activo = 1
+            """, tuple(params))
+            conn.commit()
+
+            presupuesto = _finanzas_get_presupuesto_by_id(cur, presupuesto_id)
+            return {
+                "success": True,
+                "message": "Presupuesto actualizado",
+                "presupuesto": presupuesto
+            }
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as exc:
+        conn.rollback()
+        logging.exception("[FINANZAS] Error actualizando presupuesto")
+        raise HTTPException(status_code=500, detail=f"Error actualizando presupuesto: {str(exc)}")
+    finally:
+        conn.close()
 
 
 @api_router.delete("/finanzas/presupuestos/{presupuesto_id}")
@@ -15187,8 +15725,43 @@ async def finanzas_eliminar_presupuesto(
     presupuesto_id: int,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Elimina un presupuesto - TABLA NO DISPONIBLE"""
-    return {"success": False, "message": "Tabla Finanzas_Presupuestos pendiente de creación"}
+    """Elimina presupuesto con baja logica."""
+    modificado_por = current_user.get("email") or current_user.get("username") or current_user.get("Usuario") or "sistema"
+
+    conn = _finanzas_get_conn()
+    try:
+        with conn.cursor(as_dict=True) as cur:
+            if not _finanzas_table_ready(cur):
+                raise HTTPException(status_code=500, detail="Tabla Finanzas_Presupuestos no esta migrada")
+
+            cur.execute("""
+                UPDATE dbo.Finanzas_Presupuestos
+                SET
+                    Activo = 0,
+                    Fecha_Modificacion = SYSUTCDATETIME(),
+                    Modificado_Por = %s
+                WHERE PresupuestoID = %s
+                  AND Activo = 1
+            """, (modificado_por, presupuesto_id))
+            affected = cur.rowcount
+            conn.commit()
+
+            if affected == 0:
+                raise HTTPException(status_code=404, detail="Presupuesto no encontrado")
+
+            return {
+                "success": True,
+                "message": "Presupuesto eliminado"
+            }
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as exc:
+        conn.rollback()
+        logging.exception("[FINANZAS] Error eliminando presupuesto")
+        raise HTTPException(status_code=500, detail=f"Error eliminando presupuesto: {str(exc)}")
+    finally:
+        conn.close()
 
 
 @api_router.get("/finanzas/categorias")
@@ -15218,352 +15791,126 @@ async def finanzas_registrar_movimiento(
     body: Dict,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Registra un movimiento y actualiza el monto ejecutado del presupuesto - TABLA NO DISPONIBLE"""
-    return {"success": False, "message": "Tabla Finanzas_Presupuestos pendiente de creación"}
+    """Actualiza monto ejecutado de un presupuesto canonico."""
+    presupuesto_id = _finanzas_to_int(_finanzas_pick(body, "presupuesto_id", "PresupuestoID"))
+    monto = _finanzas_to_float(_finanzas_pick(body, "monto", "monto_ejecutado", "Monto_Ejecutado"), 0.0)
+    modo = (_finanzas_pick(body, "modo", default="incrementar") or "incrementar").lower()
+    modificado_por = current_user.get("email") or current_user.get("username") or current_user.get("Usuario") or "sistema"
 
+    conn = _finanzas_get_conn()
+    try:
+        with conn.cursor(as_dict=True) as cur:
+            if not _finanzas_table_ready(cur):
+                raise HTTPException(status_code=500, detail="Tabla Finanzas_Presupuestos no esta migrada")
+
+            if presupuesto_id:
+                if modo in ("set", "reemplazar", "replace"):
+                    cur.execute("""
+                        UPDATE dbo.Finanzas_Presupuestos
+                        SET
+                            Monto_Ejecutado = %s,
+                            Fecha_Modificacion = SYSUTCDATETIME(),
+                            Modificado_Por = %s
+                        WHERE PresupuestoID = %s
+                          AND Activo = 1
+                    """, (monto, modificado_por, presupuesto_id))
+                else:
+                    cur.execute("""
+                        UPDATE dbo.Finanzas_Presupuestos
+                        SET
+                            Monto_Ejecutado = Monto_Ejecutado + %s,
+                            Fecha_Modificacion = SYSUTCDATETIME(),
+                            Modificado_Por = %s
+                        WHERE PresupuestoID = %s
+                          AND Activo = 1
+                    """, (monto, modificado_por, presupuesto_id))
+            else:
+                unidad = _finanzas_resolve_unidad_negocio(cur, _finanzas_body_unidad_ref(body))
+                categoria = _finanzas_pick(body, "categoria", "Categoria")
+                tipo = _finanzas_pick(body, "tipo", "Tipo")
+                anio = _finanzas_to_int(_finanzas_pick(body, "anio", "Anio"))
+                mes = _finanzas_to_int(_finanzas_pick(body, "mes", "Mes"))
+
+                if not unidad or not categoria or not tipo or not anio or not mes:
+                    raise HTTPException(status_code=400, detail="Debe enviar presupuesto_id o unidad/categoria/tipo/anio/mes")
+
+                cur.execute("""
+                    UPDATE dbo.Finanzas_Presupuestos
+                    SET
+                        Monto_Ejecutado = Monto_Ejecutado + %s,
+                        Fecha_Modificacion = SYSUTCDATETIME(),
+                        Modificado_Por = %s
+                    WHERE UnidadNegocioID = %s
+                      AND Categoria = %s
+                      AND Tipo = %s
+                      AND Anio = %s
+                      AND Mes = %s
+                      AND Activo = 1
+                """, (monto, modificado_por, unidad["id"], categoria, tipo, anio, mes))
+
+            affected = cur.rowcount
+            conn.commit()
+
+            return {
+                "success": affected > 0,
+                "message": "Movimiento aplicado" if affected > 0 else "No se encontro presupuesto para actualizar",
+                "actualizados": affected
+            }
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as exc:
+        conn.rollback()
+        logging.exception("[FINANZAS] Error registrando movimiento")
+        raise HTTPException(status_code=500, detail=f"Error registrando movimiento: {str(exc)}")
+    finally:
+        conn.close()
 
 @api_router.get("/finanzas/script-inicializacion")
 async def finanzas_obtener_script_inicializacion(
     current_user: Dict = Depends(get_current_user)
 ):
-    """Retorna el script SQL para crear las tablas de finanzas en EDARSA HUB"""
-    
+    """Retorna el script canonico vigente para Finanzas Presupuestos."""
     script = """
--- ============================================
--- SCRIPT DE INICIALIZACIÓN - MÓDULO FINANZAS
--- Ejecutar en la base de datos EDARSA HUB
--- ============================================
+/*
+EDARSAHUB Finanzas / Presupuestos
+Script canonico sin datos demo.
+FK: dbo.Unidades_Negocio(id)
+*/
 
--- Tabla de Presupuestos
-IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Finanzas_Presupuestos' AND xtype='U')
+IF OBJECT_ID('dbo.Unidades_Negocio', 'U') IS NULL
 BEGIN
-    CREATE TABLE Finanzas_Presupuestos (
-        PresupuestoID INT IDENTITY(1,1) PRIMARY KEY,
-        SucursalID INT NOT NULL,
+    THROW 51000, 'Falta tabla canonica dbo.Unidades_Negocio.', 1;
+END;
+
+IF OBJECT_ID('dbo.Finanzas_Presupuestos', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Finanzas_Presupuestos (
+        PresupuestoID INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        UnidadNegocioID UNIQUEIDENTIFIER NOT NULL,
         Categoria NVARCHAR(100) NOT NULL,
-        SubCategoria NVARCHAR(100),
+        SubCategoria NVARCHAR(100) NULL,
         Tipo NVARCHAR(20) NOT NULL CHECK (Tipo IN ('Ingreso', 'Egreso')),
-        Monto_Presupuestado DECIMAL(18,2) DEFAULT 0,
-        Monto_Ejecutado DECIMAL(18,2) DEFAULT 0,
+        Monto_Presupuestado DECIMAL(18,2) NOT NULL DEFAULT (0),
+        Monto_Ejecutado DECIMAL(18,2) NOT NULL DEFAULT (0),
         Anio INT NOT NULL,
         Mes INT NOT NULL CHECK (Mes BETWEEN 1 AND 12),
-        Notas NVARCHAR(500),
-        Fecha_Creacion DATETIME DEFAULT GETDATE(),
-        Fecha_Modificacion DATETIME,
-        Creado_Por NVARCHAR(100),
-        
-        CONSTRAINT FK_Presupuesto_Sucursal FOREIGN KEY (SucursalID) 
-            REFERENCES RH_Cat_Sucursales(SucursalID)
+        Notas NVARCHAR(500) NULL,
+        Activo BIT NOT NULL DEFAULT (1),
+        Fecha_Creacion DATETIME2(0) NOT NULL DEFAULT (SYSUTCDATETIME()),
+        Fecha_Modificacion DATETIME2(0) NULL,
+        Creado_Por NVARCHAR(100) NULL,
+        Modificado_Por NVARCHAR(100) NULL,
+        CONSTRAINT FK_Finanzas_Presupuestos_UnidadNegocio
+            FOREIGN KEY (UnidadNegocioID)
+            REFERENCES dbo.Unidades_Negocio(id)
     );
-    
-    CREATE INDEX IX_Presupuestos_Periodo ON Finanzas_Presupuestos(Anio, Mes);
-    CREATE INDEX IX_Presupuestos_Sucursal ON Finanzas_Presupuestos(SucursalID);
-    
-    PRINT 'Tabla Finanzas_Presupuestos creada exitosamente';
-END
-ELSE
-    PRINT 'Tabla Finanzas_Presupuestos ya existe';
-GO
-
--- Insertar presupuestos de ejemplo para el mes actual
-DECLARE @Anio INT = YEAR(GETDATE())
-DECLARE @Mes INT = MONTH(GETDATE())
-
--- Solo insertar si no hay datos del periodo actual
-IF NOT EXISTS (SELECT 1 FROM Finanzas_Presupuestos WHERE Anio = @Anio AND Mes = @Mes)
-BEGIN
-    -- Obtener sucursales activas
-    INSERT INTO Finanzas_Presupuestos (SucursalID, Categoria, SubCategoria, Tipo, Monto_Presupuestado, Anio, Mes, Creado_Por)
-    SELECT 
-        s.SucursalID,
-        'Ventas',
-        'Ventas Generales',
-        'Ingreso',
-        100000.00,
-        @Anio,
-        @Mes,
-        'SISTEMA'
-    FROM RH_Cat_Sucursales s
-    WHERE s.Nombre_Sucursal IS NOT NULL;
-    
-    INSERT INTO Finanzas_Presupuestos (SucursalID, Categoria, SubCategoria, Tipo, Monto_Presupuestado, Anio, Mes, Creado_Por)
-    SELECT 
-        s.SucursalID,
-        'Nómina',
-        'Sueldos y Salarios',
-        'Egreso',
-        50000.00,
-        @Anio,
-        @Mes,
-        'SISTEMA'
-    FROM RH_Cat_Sucursales s
-    WHERE s.Nombre_Sucursal IS NOT NULL;
-    
-    PRINT 'Presupuestos de ejemplo insertados';
-END
-GO
-
-PRINT '=== Script de inicialización completado ===';
+END;
 """
-    
     return {
         "script": script,
-        "instrucciones": [
-            "1. Copia el script SQL",
-            "2. Ve a 'Explorador BD' en el menú lateral",
-            "3. Selecciona el servidor EDARSA HUB",
-            "4. Pega y ejecuta el script con credenciales de administrador",
-            "5. Regresa a Finanzas para ver los datos"
-        ]
+        "mensaje": "Script canonico. No usa RH_Cat_Sucursales y no inserta datos demo."
     }
-
-
-# ============================================================================
-# ========================= MÓDULO DE RECLUTAMIENTO ==========================
-# ============================================================================
-
-# ============================================================================
-# ENDPOINTS DE RECLUTAMIENTO - COMENTADOS (FASE 6H-B)
-# ============================================================================
-# Migrados a: modules/rh/routes.py
-# Fecha: Diciembre 2025
-#
-# Endpoints migrados:
-# - GET    /rrhh/vacantes
-# - POST   /rrhh/vacantes
-# - PUT    /rrhh/vacantes/{vacante_id}
-# - DELETE /rrhh/vacantes/{vacante_id}
-# - GET    /rrhh/candidatos
-# - POST   /rrhh/candidatos
-# - PUT    /rrhh/candidatos/{candidato_id}
-# - DELETE /rrhh/candidatos/{candidato_id}
-# - GET    /rrhh/reclutamiento/dashboard
-# - GET    /rrhh/reclutamiento/script-inicializacion
-# ============================================================================
-
-# @api_router.get("/rrhh/vacantes")
-# async def rrhh_listar_vacantes(
-#     sucursal_id: Optional[int] = None,
-#     estatus: Optional[str] = None,
-#     current_user: Dict = Depends(get_current_user)
-# ):
-#     """Lista vacantes disponibles"""
-#     ... # Código original comentado - ver modules/rh/routes.py
-
-
-# @api_router.post("/rrhh/vacantes")
-# async def rrhh_crear_vacante(
-#     body: Dict,
-#     current_user: Dict = Depends(get_current_user)
-# ):
-#     """Crea una nueva vacante"""
-#     ... # Código original comentado - ver modules/rh/routes.py
-
-
-# @api_router.put("/rrhh/vacantes/{vacante_id}")
-# async def rrhh_actualizar_vacante(
-#     vacante_id: int,
-#     body: Dict,
-#     current_user: Dict = Depends(get_current_user)
-# ):
-#     """Actualiza una vacante"""
-#     ... # Código original comentado - ver modules/rh/routes.py
-
-
-# @api_router.delete("/rrhh/vacantes/{vacante_id}")
-# async def rrhh_eliminar_vacante(
-#     vacante_id: int,
-#     current_user: Dict = Depends(get_current_user)
-# ):
-#     """Elimina una vacante"""
-#     ... # Código original comentado - ver modules/rh/routes.py
-
-
-# @api_router.get("/rrhh/candidatos")
-# async def rrhh_listar_candidatos(
-#     vacante_id: Optional[int] = None,
-#     estatus: Optional[str] = None,
-#     current_user: Dict = Depends(get_current_user)
-# ):
-#     """Lista candidatos"""
-#     ... # Código original comentado - ver modules/rh/routes.py
-
-
-# @api_router.post("/rrhh/candidatos")
-# async def rrhh_crear_candidato(
-#     body: Dict,
-#     current_user: Dict = Depends(get_current_user)
-# ):
-#     """Registra un nuevo candidato"""
-#     ... # Código original comentado - ver modules/rh/routes.py
-
-
-# @api_router.put("/rrhh/candidatos/{candidato_id}")
-# async def rrhh_actualizar_candidato(
-#     candidato_id: int,
-#     body: Dict,
-#     current_user: Dict = Depends(get_current_user)
-# ):
-#     """Actualiza el estatus de un candidato"""
-#     ... # Código original comentado - ver modules/rh/routes.py
-
-
-# @api_router.delete("/rrhh/candidatos/{candidato_id}")
-# async def rrhh_eliminar_candidato(
-#     candidato_id: int,
-#     current_user: Dict = Depends(get_current_user)
-# ):
-#     """Elimina un candidato"""
-#     ... # Código original comentado - ver modules/rh/routes.py
-
-
-# @api_router.get("/rrhh/reclutamiento/dashboard")
-# async def rrhh_reclutamiento_dashboard(
-#     current_user: Dict = Depends(get_current_user)
-# ):
-#     """Dashboard de reclutamiento con métricas"""
-#     ... # Código original comentado - ver modules/rh/routes.py
-
-
-# @api_router.get("/rrhh/reclutamiento/script-inicializacion")
-# async def rrhh_reclutamiento_script(
-#     current_user: Dict = Depends(get_current_user)
-# ):
-#     """Retorna el script SQL para crear las tablas de reclutamiento"""
-#     ... # Código original comentado - ver modules/rh/routes.py
-
-
-def _escape_like_pattern(value: str) -> str:
-    """
-    Escapa caracteres especiales para LIKE en SQL Server.
-    FASE 1A - Sanitización SQL Injection.
-    Caracteres escapados: [ ] % _ '
-    """
-    if not value:
-        return value
-    # Escapar en orden: primero [ (para no afectar los escapes posteriores)
-    result = value.replace('[', '[[]')
-    result = result.replace('%', '[%]')
-    result = result.replace('_', '[_]')
-    result = result.replace("'", "''")
-    return result
-
-
-def _validate_identifier(value: str, max_length: int = 128) -> bool:
-    """
-    FASE 1B - Valida que un identificador sea seguro para usar en SQL.
-    Solo permite caracteres alfanuméricos, guiones bajos y guiones.
-    """
-    if not value or not isinstance(value, str):
-        return False
-    if len(value) > max_length:
-        return False
-    # Solo alfanuméricos, guiones bajos, guiones y puntos (para esquemas)
-    import re
-    return bool(re.match(r'^[a-zA-Z0-9_\-\.]+$', value))
-
-
-def _sanitize_identifier(value: str) -> str:
-    """
-    FASE 1B - Sanitiza un identificador escapando comillas.
-    Usar SOLO después de validar con _validate_identifier().
-    """
-    if not value:
-        return value
-    return value.replace("'", "''")
-
-
-# FASE 1B - Whitelist de tablas permitidas para explorador SQL
-# Actualizar esta lista según las tablas que deben ser consultables
-EXPLORADOR_TABLAS_PERMITIDAS = {
-    # SoftRestaurant
-    'almacen', 'cheques', 'cheqdet', 'productos', 'categorias', 'turnos',
-    'meseros', 'cuentas', 'folios', 'formasdepago', 'movsinventario', 
-    'movsalmacen', 'gruposi', 'gruposiclasificacion', 'productosreceta',
-    'productosi', 'usuarios', 'tiposdecheques', 'impuestos', 'preciosi',
-    # MPRO
-    'producto', 'almacen', 'sucursal', 'proveedor', 'movimiento', 
-    'entrada', 'salida', 'fisico', 'compras', 'ventas', 'clientes',
-    'categoria', 'familia', 'subfamilia', 'unidad', 'tipo_movimiento',
-    # Tablas de sistema
-    'information_schema.tables', 'information_schema.columns',
-}
-
-
-def _validate_table_name(tabla: str, system_type: str = None, user_role: str = None) -> tuple:
-    """
-    FASE 1B - Valida nombre de tabla contra whitelist.
-    
-    Args:
-        tabla: Nombre de la tabla
-        system_type: Tipo de sistema (SoftRestaurant, MPRO, etc.)
-        user_role: Rol del usuario (superadmin bypasea whitelist)
-    
-    Returns:
-        tuple: (is_valid: bool, error_message: str or None)
-    """
-    if not tabla:
-        return (False, "Nombre de tabla vacío")
-    
-    tabla_lower = tabla.lower().strip()
-    
-    # Verificar caracteres básicos primero
-    if not _validate_identifier(tabla_lower, max_length=128):
-        return (False, f"Nombre de tabla inválido: caracteres no permitidos")
-    
-    # SUPERADMIN BYPASS: El usuario superadministrador no tiene restricciones
-    if user_role and user_role.lower() in ('superadmin', 'superadministrador'):
-        return (True, None)
-    
-    # Verificar contra whitelist
-    if tabla_lower in EXPLORADOR_TABLAS_PERMITIDAS:
-        return (True, None)
-    
-    # Verificar prefijos comunes seguros
-    safe_prefixes = ('dbo.', 'sys.', 'information_schema.')
-    for prefix in safe_prefixes:
-        if tabla_lower.startswith(prefix):
-            base_table = tabla_lower[len(prefix):]
-            if base_table in EXPLORADOR_TABLAS_PERMITIDAS:
-                return (True, None)
-    
-    return (False, f"Tabla '{tabla}' no está en la lista permitida")
-
-
-def _build_safe_folios_condition(folios: list, column_name: str, max_folios: int = 50) -> tuple:
-    """
-    FASE 1B - Construye condición IN segura para lista de folios.
-    
-    Args:
-        folios: Lista de folios
-        column_name: Nombre de la columna (ya validado)
-        max_folios: Máximo de folios permitidos
-        
-    Returns:
-        tuple: (sql_condition: str, params: tuple)
-        Si folios vacío, retorna condición que no coincide con nada.
-    """
-    if not folios:
-        return ("1=0", ())  # Condición que nunca se cumple
-    
-    # Limitar cantidad
-    folios_limitados = folios[:max_folios]
-    
-    # Validar cada folio
-    folios_validos = []
-    for f in folios_limitados:
-        if f and isinstance(f, str) and _validate_identifier(f, max_length=50):
-            folios_validos.append(f)
-    
-    if not folios_validos:
-        return ("1=0", ())
-    
-    # Construir placeholders dinámicos (%s para cada folio)
-    placeholders = ", ".join(["%s"] * len(folios_validos))
-    sql_condition = f"{column_name} IN ({placeholders})"
-    
-    return (sql_condition, tuple(folios_validos))
-
 
 @api_router.get("/explorador/buscar/{server_id}")
 async def buscar_en_bd(
