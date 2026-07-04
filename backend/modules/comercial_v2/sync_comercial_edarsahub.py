@@ -199,6 +199,303 @@ def execute_query_on_server(
             return [], ConnectionStatus.OFFLINE
 
 
+# ============================================================
+# AGREGACION CANONICA POR FECHA_OPERACION
+# Ventas cerradas V2:
+# - La query conserva fecha_hora real.
+# - La fecha_operacion se calcula con Sistema_TurnosOperativosUnidad.
+# - Los mappers actuales siguen recibiendo rows agregadas con campo fecha.
+# ============================================================
+
+def _normalizar_fecha_operacion_value(value):
+    from datetime import date, datetime
+
+    if value is None:
+        return None
+
+    if isinstance(value, datetime):
+        return value.date()
+
+    if isinstance(value, date):
+        return value
+
+    if isinstance(value, str):
+        raw = value.strip()
+        if not raw:
+            return None
+        raw = raw.replace("Z", "+00:00")
+        try:
+            return datetime.fromisoformat(raw).date()
+        except ValueError:
+            return datetime.strptime(raw[:10], "%Y-%m-%d").date()
+
+    raise ValueError(f"No se pudo normalizar fecha_operacion: {value!r}")
+
+
+def _normalizar_fecha_hora_value(value):
+    from datetime import date, datetime, time
+
+    if value is None:
+        return None
+
+    if isinstance(value, datetime):
+        return value
+
+    if isinstance(value, date):
+        return datetime.combine(value, time.min)
+
+    if isinstance(value, str):
+        raw = value.strip()
+        if not raw:
+            return None
+        raw = raw.replace("Z", "+00:00")
+        try:
+            return datetime.fromisoformat(raw)
+        except ValueError:
+            return datetime.strptime(raw[:19], "%Y-%m-%d %H:%M:%S")
+
+    raise ValueError(f"No se pudo normalizar fecha_hora: {value!r}")
+
+
+def _get_config_value(config, key):
+    if config is None:
+        return None
+
+    if isinstance(config, dict):
+        return config.get(key)
+
+    return getattr(config, key, None)
+
+
+def _resolver_unidad_negocio_pk_from_config(config):
+    candidatos = (
+        "unidad_negocio_pk",
+        "UnidadNegocioPK",
+        "unidad_negocio_id",
+        "UnidadNegocioID",
+        "id_unidad_negocio",
+        "IdUnidadNegocio",
+        "unidad_id",
+        "UnidadID",
+    )
+
+    for key in candidatos:
+        value = _get_config_value(config, key)
+        if value not in (None, ""):
+            return value
+
+    for nested_key in ("unidad_negocio", "unidad", "business_unit"):
+        nested = _get_config_value(config, nested_key)
+        if isinstance(nested, dict):
+            for key in candidatos:
+                value = nested.get(key)
+                if value not in (None, ""):
+                    return value
+
+    raise ValueError(
+        "No se encontro unidad_negocio_pk en config. "
+        "Ventas cerradas V2 requiere unidad para calcular fecha_operacion canonica."
+    )
+
+
+def _row_to_dict(row):
+    if row is None:
+        return {}
+
+    if isinstance(row, dict):
+        return dict(row)
+
+    if hasattr(row, "items"):
+        return dict(row.items())
+
+    if hasattr(row, "_asdict"):
+        return dict(row._asdict())
+
+    raise ValueError(f"Row no convertible a dict para ventas cerradas V2: {row!r}")
+
+
+def _is_number_for_operational_group(value):
+    from decimal import Decimal
+
+    if isinstance(value, bool):
+        return False
+
+    return isinstance(value, (int, float, Decimal))
+
+
+def _is_metric_key_for_operational_group(key):
+    k = str(key).lower()
+
+    excluded_exact = {
+        "fecha",
+        "fecha_hora",
+        "fecha_operacion",
+        "fecha_hora_min",
+        "fecha_hora_max",
+        "server_id",
+        "servidor_id",
+        "sucursal_id",
+        "unidad_negocio_id",
+        "unidad_negocio_pk",
+        "almacen_id",
+        "cliente_id",
+        "producto_id",
+        "id",
+    }
+
+    excluded_fragments = (
+        "codigo",
+        "folio",
+        "uuid",
+        "guid",
+        "nombre",
+        "sucursal",
+        "unidad",
+        "servidor",
+        "fecha",
+        "hora",
+        "promedio",
+        "average",
+        "avg",
+        "porcentaje",
+        "percent",
+        "ratio",
+        "margen",
+    )
+
+    excluded_suffixes = ("_id", "id", "_pk", "pk")
+
+    if k in excluded_exact:
+        return False
+
+    if any(fragment in k for fragment in excluded_fragments):
+        return False
+
+    if any(k.endswith(suffix) for suffix in excluded_suffixes):
+        return False
+
+    return True
+
+
+def _recalcular_derivados_ventas_cerradas(row):
+    total_keys = (
+        "ventas_total",
+        "total_ventas",
+        "venta_total",
+        "ventas",
+        "importe_total",
+        "total",
+        "Vn_Precio_Neto_Importe",
+    )
+    ticket_keys = (
+        "num_cheques",
+        "num_folios",
+        "tickets",
+        "total_tickets",
+        "cantidad_tickets",
+        "num_tickets",
+        "numero_tickets",
+        "transacciones",
+        "total_transacciones",
+    )
+    promedio_keys = (
+        "ticket_promedio",
+        "promedio_ticket",
+        "avg_ticket",
+        "average_ticket",
+    )
+
+    total = None
+    tickets = None
+
+    for key in total_keys:
+        if key in row and row.get(key) is not None:
+            total = row.get(key)
+            break
+
+    for key in ticket_keys:
+        if key in row and row.get(key) not in (None, 0):
+            tickets = row.get(key)
+            break
+
+    if total is None or not tickets:
+        return row
+
+    for key in promedio_keys:
+        if key in row:
+            row[key] = total / tickets
+
+    return row
+
+
+def _agrupar_ventas_cerradas_por_fecha_operacion(rows, config, fecha_inicio=None, fecha_fin=None):
+    from collections import OrderedDict
+    from backend.core.utils.operational_window import get_fecha_operacion
+
+    unidad_negocio_pk = _resolver_unidad_negocio_pk_from_config(config)
+
+    fecha_inicio_op = _normalizar_fecha_operacion_value(fecha_inicio)
+    fecha_fin_op = _normalizar_fecha_operacion_value(fecha_fin)
+
+    agrupadas = OrderedDict()
+
+    for row in rows or []:
+        row_dict = _row_to_dict(row)
+
+        fecha_hora = (
+            row_dict.get("fecha_hora")
+            or row_dict.get("fecha")
+            or row_dict.get("Vn_Fecha")
+            or row_dict.get("vn_fecha")
+        )
+        fecha_hora = _normalizar_fecha_hora_value(fecha_hora)
+
+        if fecha_hora is None:
+            raise ValueError(f"Row sin fecha_hora para ventas cerradas V2: {row_dict!r}")
+
+        fecha_operacion = _normalizar_fecha_operacion_value(
+            get_fecha_operacion(unidad_negocio_pk, fecha_hora)
+        )
+
+        if fecha_inicio_op and fecha_operacion < fecha_inicio_op:
+            continue
+
+        if fecha_fin_op and fecha_operacion > fecha_fin_op:
+            continue
+
+        if fecha_operacion not in agrupadas:
+            base = {}
+            for col, value in row_dict.items():
+                if _is_number_for_operational_group(value) and _is_metric_key_for_operational_group(col):
+                    base[col] = 0
+                elif col not in ("fecha", "fecha_hora"):
+                    base[col] = value
+
+            base["fecha"] = fecha_operacion
+            base["fecha_operacion"] = fecha_operacion
+            base["fecha_hora_min"] = fecha_hora
+            base["fecha_hora_max"] = fecha_hora
+            agrupadas[fecha_operacion] = base
+
+        target = agrupadas[fecha_operacion]
+        target["fecha_hora_min"] = min(target["fecha_hora_min"], fecha_hora)
+        target["fecha_hora_max"] = max(target["fecha_hora_max"], fecha_hora)
+
+        for col, value in row_dict.items():
+            if (
+                value is not None
+                and _is_number_for_operational_group(value)
+                and _is_metric_key_for_operational_group(col)
+            ):
+                target[col] = target.get(col, 0) + value
+
+    rows_agrupadas = [
+        _recalcular_derivados_ventas_cerradas(row)
+        for row in agrupadas.values()
+    ]
+
+    return rows_agrupadas
+
 # =============================================================================
 # QUERIES POR SISTEMA
 # =============================================================================
@@ -207,17 +504,17 @@ def execute_query_on_server(
 
 QUERY_SOFTRESTAURANT_VENTAS_CERRADAS = """
 SELECT 
-    CAST(fecha AS DATE) as fecha,
-    SUM(total) as ventas_total,
-    SUM(total - ISNULL(propina, 0)) as ventas_sin_propina,
-    SUM(ISNULL(propina, 0)) as propinas,
-    COUNT(DISTINCT folio) as num_cheques,
-    SUM(ISNULL(nopersonas, 1)) as num_personas
+    fecha as fecha_hora,
+    total as ventas_total,
+    total - ISNULL(propina, 0) as ventas_sin_propina,
+    ISNULL(propina, 0) as propinas,
+    1 as num_cheques,
+    ISNULL(nopersonas, 1) as num_personas
 FROM cheques
-WHERE CAST(fecha AS DATE) BETWEEN '{fecha_inicio}' AND '{fecha_fin}'
+WHERE fecha >= DATEADD(DAY, -1, CAST('{fecha_inicio}' AS DATETIME))
+  AND fecha < DATEADD(DAY, 2, CAST('{fecha_fin}' AS DATETIME))
   AND cancelado = 0
   AND cierre IS NOT NULL  -- Solo cheques cerrados
-GROUP BY CAST(fecha AS DATE)
 ORDER BY fecha
 """
 
@@ -237,16 +534,16 @@ WHERE cancelado = 0
 
 QUERY_MPRO_VENTAS_CERRADAS = """
 SELECT 
-    CAST(ve.Vn_Fecha AS DATE) as fecha,
-    SUM(ve.Vn_Precio_Neto_Importe) as Vn_Precio_Neto_Importe,
-    COUNT(DISTINCT ve.Vn_Folio) as num_folios,
-    SUM(ISNULL(c.Co_Personas, 1)) as total_personas
+    ve.Vn_Fecha as fecha_hora,
+    ve.Vn_Precio_Neto_Importe as Vn_Precio_Neto_Importe,
+    1 as num_folios,
+    ISNULL(c.Co_Personas, 1) as total_personas
 FROM Venta_Encabezado ve
 LEFT JOIN Comanda c ON ve.Vn_Documento = c.Co_Folio AND ve.Sc_Cve_Sucursal = c.Sc_Cve_Sucursal
-WHERE CAST(ve.Vn_Fecha AS DATE) BETWEEN '{fecha_inicio}' AND '{fecha_fin}'
+WHERE ve.Vn_Fecha >= DATEADD(DAY, -1, CAST('{fecha_inicio}' AS DATETIME))
+  AND ve.Vn_Fecha < DATEADD(DAY, 2, CAST('{fecha_fin}' AS DATETIME))
   AND ve.Sc_Cve_Sucursal = '{sucursal_id}'
-GROUP BY CAST(ve.Vn_Fecha AS DATE)
-ORDER BY fecha
+ORDER BY ve.Vn_Fecha
 """
 
 QUERY_MPRO_VENTAS_ABIERTAS = """
@@ -314,13 +611,19 @@ def sync_softrestaurant_ventas_cerradas(
             insert_sync_log(log)
             return result
         
-        # Procesar cada día
+        # Agrupar detalle por fecha_operacion canonica y procesar cada dia operativo
         inserted = 0
         updated = 0
         skipped = 0
         errored = 0
         
-        for row in rows:
+        rows_agrupadas = _agrupar_ventas_cerradas_por_fecha_operacion(
+            rows,
+            config,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+        )
+        for row in rows_agrupadas:
             try:
                 kpi = map_softrestaurant_ventas_cerradas(row, config, run_id)
                 upsert_result = upsert_kpi_diario(kpi)
@@ -338,7 +641,7 @@ def sync_softrestaurant_ventas_cerradas(
         
         # Registrar en log
         result.success = errored == 0
-        result.records_processed = len(rows)
+        result.records_processed = len(rows_agrupadas)
         result.records_inserted = inserted
         result.records_updated = updated
         result.records_skipped = skipped
@@ -434,13 +737,19 @@ def sync_mpro_ventas_cerradas(
             activo=True
         )
         
-        # Procesar cada día
+        # Agrupar detalle por fecha_operacion canonica y procesar cada dia operativo
         inserted = 0
         updated = 0
         skipped = 0
         errored = 0
         
-        for row in rows:
+        rows_agrupadas = _agrupar_ventas_cerradas_por_fecha_operacion(
+            rows,
+            config_with_sucursal,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+        )
+        for row in rows_agrupadas:
             try:
                 kpi = map_mpro_ventas_cerradas(row, config_with_sucursal, run_id)
                 upsert_result = upsert_kpi_diario(kpi)
@@ -458,7 +767,7 @@ def sync_mpro_ventas_cerradas(
         
         # Registrar resultado
         result.success = errored == 0
-        result.records_processed = len(rows)
+        result.records_processed = len(rows_agrupadas)
         result.records_inserted = inserted
         result.records_updated = updated
         result.records_skipped = skipped
