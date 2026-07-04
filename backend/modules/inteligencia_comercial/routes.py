@@ -221,6 +221,49 @@ def _ultimo_dia_con_datos(unidad_db: Optional[str]) -> date:
     return date.today()
 
 
+
+def _ultimo_dia_con_kpis(unidad_db: Optional[str], periodo: Optional[str] = None) -> date:
+    """Ancla canonica para KPI principal desde vw_Comercial_KPIs_Diarios_v2_Runtime.
+
+    Para periodo=mes usa el ultimo cierre mensual disponible, no el MAX parcial
+    del mes en curso. Esto evita que un mes parcialmente sincronizado desplace el
+    dashboard mensual antes del cierre real.
+    """
+    where = "1=1"
+    if unidad_db:
+        where += f" AND unidad_negocio_nombre = '{unidad_db}'"
+
+    p = (periodo or "").strip().lower()
+    if p in ("mes", "month", "mensual"):
+        sql = f"""
+            SELECT MAX(CAST(fecha_operacion AS date)) AS m
+            FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+            WHERE {where}
+              AND CAST(fecha_operacion AS date) = EOMONTH(fecha_operacion)
+        """
+    else:
+        sql = f"""
+            SELECT MAX(CAST(fecha_operacion AS date)) AS m
+            FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+            WHERE {where}
+        """
+
+    rows = execute_query(sql)
+    m = rows[0].get("m") if rows else None
+
+    if isinstance(m, datetime):
+        return m.date()
+    if isinstance(m, date):
+        return m
+    if isinstance(m, str) and len(m) >= 10:
+        try:
+            return datetime.strptime(m[:10], "%Y-%m-%d").date()
+        except ValueError:
+            pass
+
+    return _ultimo_dia_con_datos(unidad_db)
+
+
 def _periodo_rango(periodo: str, anchor: date):
     """Resuelve (inicio, fin, prev_inicio, prev_fin, etiqueta) para el periodo
     seleccionado, anclado al último día con datos. 'prev_*' = periodo anterior
@@ -728,7 +771,7 @@ async def get_dashboard_data(
     # Si se especifica periodo y NO se pasaron fechas explícitas, se resuelve el
     # rango anclado al último día con datos (NO-LIVE, evita rangos vacíos).
     if periodo and not (fecha_inicio and fecha_fin):
-        anchor = _ultimo_dia_con_datos(unidad_db)
+        anchor = _ultimo_dia_con_kpis(unidad_db, periodo)
         ini, fin, prev_inicio, prev_fin, periodo_label = _periodo_rango(periodo, anchor)
         fecha_inicio = ini.strftime("%Y-%m-%d")
         fecha_fin = fin.strftime("%Y-%m-%d")
