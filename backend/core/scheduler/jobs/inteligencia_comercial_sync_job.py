@@ -1,7 +1,7 @@
 """
 EDARSA HUB - Job: Sincronización Inteligencia Comercial
 =======================================================
-Extrae datos de ventas desde sistemas POS origen y los consolida en EDARSAHUB.
+LEGACY DESHABILITADO COMO ESCRITOR: Inteligencia Comercial solo debe leer EDARSAHUB SQL canonico.
 
 Sistemas origen:
 - SoftRestaurant: 130MID, CIENFUEGOS, ESTELAR
@@ -9,7 +9,7 @@ Sistemas origen:
 
 Tablas destino en EDARSAHUB:
 - Sync_Sales (detalle de transacciones con items JSON)
-- Comercial_KPIs_Diarios_v2 (KPIs consolidados por día)
+- Comercial_KPIs_Diarios_v2 (PROHIBIDO escribir desde este job legacy)
 """
 
 import logging
@@ -568,6 +568,38 @@ def job_inteligencia_comercial_sync(
         Dict con estadísticas de la ejecución
     """
     logger.info("[INTELIGENCIA_SYNC] ========== INICIO ==========")
+
+    # GUARDRAIL CANONICO EDARSAHUB COMERCIAL:
+    # Inteligencia Comercial NO es escritor de ventas/KPIs.
+    # Este job legacy queda bloqueado para evitar doble verdad comercial.
+    # El unico pipeline autorizado para KPIs historicos es sync_comercial_v2_job
+    # -> sync_comercial_edarsahub -> mappers -> upsert_kpi_diario.
+    blocked_reason = (
+        "Job legacy inteligencia_comercial_sync deshabilitado como escritor. "
+        "Inteligencia Comercial debe leer EDARSAHUB SQL canonico; no consultar POS, "
+        "no insertar Sync_Sales y no recalcular Comercial_KPIs_Diarios_v2."
+    )
+
+    if not dry_run:
+        logger.warning("[INTELIGENCIA_SYNC] BLOQUEADO: %s", blocked_reason)
+        try:
+            registrar_syncpos_bitacora(
+                tipo_ejecucion,
+                "SKIPPED",
+                blocked_reason,
+                fecha_inicio=fecha_inicio,
+                fecha_fin=fecha_fin,
+            )
+        except Exception:
+            pass
+        return {
+            "success": True,
+            "skipped": True,
+            "legacy_writer_disabled": True,
+            "reason": blocked_reason,
+            "tipo_ejecucion": tipo_ejecucion,
+            "dry_run": dry_run,
+        }
     
     # Fechas a sincronizar.
     # Backfill explícito: fecha_inicio/fecha_fin en YYYY-MM-DD (fecha_fin EXCLUSIVA en la extracción).
