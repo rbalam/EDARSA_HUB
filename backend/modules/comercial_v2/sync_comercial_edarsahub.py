@@ -314,6 +314,17 @@ def _row_to_dict(row):
     raise ValueError(f"Row no convertible a dict para ventas cerradas V2: {row!r}")
 
 
+def _normalizar_distinct_key(value):
+    if value is None:
+        return None
+
+    raw = str(value).strip()
+    if not raw:
+        return None
+
+    return raw
+
+
 def _is_number_for_operational_group(value):
     from decimal import Decimal
 
@@ -481,6 +492,17 @@ def _agrupar_ventas_cerradas_por_fecha_operacion(rows, config, fecha_inicio=None
         target["fecha_hora_min"] = min(target["fecha_hora_min"], fecha_hora)
         target["fecha_hora_max"] = max(target["fecha_hora_max"], fecha_hora)
 
+        soft_folio = _normalizar_distinct_key(row_dict.get("folio"))
+        if soft_folio is not None:
+            target.setdefault("_distinct_num_cheques", set()).add(soft_folio)
+
+        mpro_folio_value = row_dict.get("Vn_Folio")
+        if mpro_folio_value is None:
+            mpro_folio_value = row_dict.get("vn_folio")
+        mpro_folio = _normalizar_distinct_key(mpro_folio_value)
+        if mpro_folio is not None:
+            target.setdefault("_distinct_num_folios", set()).add(mpro_folio)
+
         for col, value in row_dict.items():
             if (
                 value is not None
@@ -489,10 +511,17 @@ def _agrupar_ventas_cerradas_por_fecha_operacion(rows, config, fecha_inicio=None
             ):
                 target[col] = target.get(col, 0) + value
 
-    rows_agrupadas = [
-        _recalcular_derivados_ventas_cerradas(row)
-        for row in agrupadas.values()
-    ]
+    rows_agrupadas = []
+    for row in agrupadas.values():
+        distinct_num_cheques = row.pop("_distinct_num_cheques", None)
+        if distinct_num_cheques is not None:
+            row["num_cheques"] = len(distinct_num_cheques)
+
+        distinct_num_folios = row.pop("_distinct_num_folios", None)
+        if distinct_num_folios is not None:
+            row["num_folios"] = len(distinct_num_folios)
+
+        rows_agrupadas.append(_recalcular_derivados_ventas_cerradas(row))
 
     return rows_agrupadas
 
@@ -505,10 +534,10 @@ def _agrupar_ventas_cerradas_por_fecha_operacion(rows, config, fecha_inicio=None
 QUERY_SOFTRESTAURANT_VENTAS_CERRADAS = """
 SELECT 
     fecha as fecha_hora,
+    folio as folio,
     total as ventas_total,
     total - ISNULL(propina, 0) as ventas_sin_propina,
     ISNULL(propina, 0) as propinas,
-    1 as num_cheques,
     ISNULL(nopersonas, 1) as num_personas
 FROM cheques
 WHERE fecha >= DATEADD(DAY, -1, CAST('{fecha_inicio}' AS DATETIME))
@@ -535,8 +564,8 @@ WHERE cancelado = 0
 QUERY_MPRO_VENTAS_CERRADAS = """
 SELECT 
     ve.Vn_Fecha as fecha_hora,
+    ve.Vn_Folio as Vn_Folio,
     ve.Vn_Precio_Neto_Importe as Vn_Precio_Neto_Importe,
-    1 as num_folios,
     ISNULL(c.Co_Personas, 1) as total_personas
 FROM Venta_Encabezado ve
 LEFT JOIN Comanda c ON ve.Vn_Documento = c.Co_Folio AND ve.Sc_Cve_Sucursal = c.Sc_Cve_Sucursal
