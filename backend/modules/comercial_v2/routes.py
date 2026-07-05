@@ -681,37 +681,76 @@ async def comercial_v2_dashboard(
         # COMBINAR CON VENTAS ABIERTAS DEL DÍA ACTUAL
         # =====================================================================
         
-        # =================================================================
-        # FIX 2026-05-15: Usar FechaOperacion activa, NO fecha calendario
-        # =================================================================
-        import pytz
-        from datetime import time as dt_time, timedelta as td
-        
-        mexico_tz = pytz.timezone('America/Mexico_City')
-        now_mx = datetime.now(mexico_tz)
-        
-        # =========================================================================
-        # REGLA CANÓNICA: FechaOperacion con corte a las 06:00 AM
-        # ACTUALIZACIÓN 16-May-2026: Corte operativo cambiado de 03:00 a 06:00
-        # =========================================================================
-        hora_actual = now_mx.time()
-        hora_fin_default = dt_time(6, 0, 0)
-        
-        if hora_actual < hora_fin_default:
-            # Estamos entre 00:00 y 06:00: FechaOperacion = día anterior
-            fecha_operativa = now_mx.date() - td(days=1)
-        else:
-            fecha_operativa = now_mx.date()
-        
-        # Incluye hoy si la fecha_fin incluye la FechaOperacion activa
-        incluye_hoy = fecha_fin >= fecha_operativa
+        # =====================================================================
+        # FECHA OPERATIVA CANONICA POR UNIDAD
+        # =====================================================================
+        # No usar corte fijo por codigo. La FechaOperacion se resuelve desde
+        # backend/core/utils/operational_window.py y la configuracion de turnos.
+        from collections import defaultdict
+
+        def _fecha_operativa_unidad(unidad_id: str) -> date:
+            try:
+                from core.utils.operational_window import get_fecha_operacion_now
+
+                llamadas = (
+                    lambda: get_fecha_operacion_now(unidad_id),
+                    lambda: get_fecha_operacion_now(unidad_negocio_pk=unidad_id),
+                    lambda: get_fecha_operacion_now(unidad_negocio_id=unidad_id),
+                )
+
+                ultimo_type_error = None
+                for llamada in llamadas:
+                    try:
+                        resultado = llamada()
+                        if resultado:
+                            return resultado
+                    except TypeError as exc:
+                        ultimo_type_error = exc
+
+                if ultimo_type_error:
+                    raise ultimo_type_error
+
+            except Exception as exc:
+                logger.warning(
+                    "[V2-DASHBOARD] Fallback FechaOperacion civil para unidad=%s: %s",
+                    unidad_id,
+                    exc
+                )
+
+            try:
+                import pytz
+                mexico_tz = pytz.timezone("America/Mexico_City")
+                return datetime.now(mexico_tz).date()
+            except Exception:
+                return datetime.utcnow().date()
+
+        fechas_operativas_por_unidad = {
+            unidad_id: _fecha_operativa_unidad(unidad_id)
+            for unidad_id in unidades_permitidas
+        }
+
+        fechas_operativas = set(fechas_operativas_por_unidad.values())
+        fecha_operativa = max(fechas_operativas) if fechas_operativas else fecha_fin
+
         ventas_abiertas_hoy = []
-        
-        if incluye_hoy:
-            # Obtener ventas abiertas del día operativo (actualizadas cada 5 min)
-            logger.info(f"[V2-DASHBOARD] Consultando ventas abiertas para FechaOperacion={fecha_operativa}")
-            ventas_abiertas_hoy = get_ventas_dia_abiertas(fecha_operativa, unidades_permitidas)
-        
+        unidades_por_fecha_operativa = defaultdict(list)
+
+        for unidad_id, fecha_op in fechas_operativas_por_unidad.items():
+            if fecha_inicio <= fecha_op <= fecha_fin:
+                unidades_por_fecha_operativa[fecha_op].append(unidad_id)
+
+        incluye_hoy = bool(unidades_por_fecha_operativa)
+
+        for fecha_op, unidades_fecha in sorted(unidades_por_fecha_operativa.items()):
+            logger.info(
+                "[V2-DASHBOARD] Consultando ventas abiertas FechaOperacion=%s unidades=%s",
+                fecha_op,
+                unidades_fecha
+            )
+            ventas_abiertas_hoy.extend(
+                get_ventas_dia_abiertas(fecha_op, unidades_fecha)
+            )
+
         # =====================================================================
         # UNIÓN DE UNIDADES: CERRADAS + ABIERTAS
         # Regla: Incluir unidad si tiene cerradas O abiertas O SyncLog exitoso
@@ -1254,43 +1293,45 @@ async def comercial_v2_ventas_dia(
     - dato_vencido: true si > 10 minutos sin actualizar
     """
     try:
-        if fecha is None:
-            # =================================================================
-            # FIX 2026-05-15: Usar FechaOperacion activa, NO fecha calendario
-            # =================================================================
-            # REGLA: A las 00:30 del día 15, si el horario es 13:00-03:00,
-            # la jornada del día 14 sigue abierta y eso es lo que debe mostrar.
-            import pytz
-            from datetime import time as dt_time, timedelta as td
-            from core.utils.operational_window import get_operational_window
-            
-            mexico_tz = pytz.timezone('America/Mexico_City')
-            now_mx = datetime.now(mexico_tz)
-            
-            # Usar horario por defecto 13:00-03:00 para calcular fecha operativa global
-            # (todas las unidades del grupo usan este horario aproximadamente)
-            hora_actual = now_mx.time()
-            hora_fin_default = dt_time(3, 0, 0)
-            
-            if hora_actual < hora_fin_default:
-                # Estamos entre 00:00 y 03:00: FechaOperacion = día anterior
-                fecha = now_mx.date() - td(days=1)
-                logger.info(
-                    f"[V2-VENTAS-DIA] FechaOperacion={fecha} (hora actual={now_mx.strftime('%H:%M')}, antes de cierre 03:00)"
-                )
-            else:
-                fecha = now_mx.date()
-                logger.info(
-                    f"[V2-VENTAS-DIA] FechaOperacion={fecha} (hora actual={now_mx.strftime('%H:%M')}, después de apertura)"
-                )
-        
         unidades_permitidas = await get_unidades_permitidas_v2(current_user)
-        
+
         if not unidades_permitidas:
             raise HTTPException(status_code=403, detail="No tiene unidades asignadas")
-        
+
         # Obtener datos de ventas desde EDARSAHUB SQL
-        datos = get_ventas_dia_abiertas(fecha, unidades_permitidas)
+        # Si no se recibe fecha, calcular FechaOperacion por unidad desde turnos configurados.
+        datos = []
+
+        if fecha is None:
+            from collections import defaultdict
+            from core.utils.operational_window import get_fecha_operacion_now
+
+            unidades_por_fecha_operativa = defaultdict(list)
+
+            for unidad_id in unidades_permitidas:
+                try:
+                    fecha_op = get_fecha_operacion_now(unidad_id)
+                except Exception as exc:
+                    logger.warning(
+                        "[V2-VENTAS-DIA] Fallback FechaOperacion civil para unidad=%s: %s",
+                        unidad_id,
+                        exc
+                    )
+                    fecha_op = datetime.now(timezone.utc).date()
+
+                unidades_por_fecha_operativa[fecha_op].append(unidad_id)
+
+            fecha = max(unidades_por_fecha_operativa.keys()) if unidades_por_fecha_operativa else datetime.now(timezone.utc).date()
+
+            for fecha_op, unidades_fecha in sorted(unidades_por_fecha_operativa.items()):
+                logger.info(
+                    "[V2-VENTAS-DIA] Consultando FechaOperacion=%s unidades=%s",
+                    fecha_op,
+                    unidades_fecha
+                )
+                datos.extend(get_ventas_dia_abiertas(fecha_op, unidades_fecha))
+        else:
+            datos = get_ventas_dia_abiertas(fecha, unidades_permitidas)
         
         # Hora actual para calcular frescura
         ahora = datetime.now(timezone.utc)

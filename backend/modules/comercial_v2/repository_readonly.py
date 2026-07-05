@@ -84,6 +84,97 @@ def _unidad_filter_runtime(unidades_permitidas: Optional[List[str]]) -> Optional
     )
 
 
+def _resolver_unidades_abiertas(unidades_permitidas: Optional[List[str]]):
+    """
+    Resuelve unidades para Comercial_Ventas_Dia_Abiertas_v2.
+
+    La tabla abierta solo guarda unidad_negocio_id/codigo operativo.
+    RBAC puede entregar GUID. Por eso:
+    - codigos: se usan para filtrar a.unidad_negocio_id
+    - codigo_to_pk: se usa para devolver unidad_negocio_pk alineado con runtime
+    """
+    codigos = set()
+    codigo_to_pk = {}
+
+    if not unidades_permitidas:
+        return codigos, codigo_to_pk
+
+    for valor in unidades_permitidas:
+        if valor in (None, ""):
+            continue
+
+        raw = str(valor).strip()
+        if not raw:
+            continue
+
+        raw_codigos = {raw}
+        raw_pk = None
+
+        try:
+            from uuid import UUID
+            UUID(raw)
+            raw_pk = raw
+        except Exception:
+            pass
+
+        try:
+            info = CorporateFilterService.resolver_unidad(raw) or {}
+            for pk_key in ("pk", "unidad_negocio_pk", "id"):
+                v = info.get(pk_key)
+                if v not in (None, ""):
+                    raw_pk = str(v).strip()
+                    break
+
+            for key in ("codigo", "unidad_negocio_id", "unidad_codigo", "unidad_negocio_codigo"):
+                v = info.get(key)
+                if v not in (None, ""):
+                    raw_codigos.add(str(v).strip())
+        except Exception as exc:
+            logger.debug("[COMERCIAL_V2] resolver_unidad fallo para abiertas %s: %s", raw, exc)
+
+        try:
+            pk = UnidadesService.resolver_pk(raw)
+            if pk not in (None, ""):
+                raw_pk = str(pk).strip()
+        except Exception as exc:
+            logger.debug("[COMERCIAL_V2] resolver_pk fallo para abiertas %s: %s", raw, exc)
+
+        try:
+            codigo = UnidadesService.resolver_codigo(raw)
+            if codigo not in (None, ""):
+                raw_codigos.add(str(codigo).strip())
+        except Exception as exc:
+            logger.debug("[COMERCIAL_V2] resolver_codigo fallo para abiertas %s: %s", raw, exc)
+
+        for codigo in raw_codigos:
+            if not codigo:
+                continue
+            codigos.add(codigo)
+            if raw_pk:
+                codigo_to_pk[codigo] = raw_pk
+
+    return codigos, codigo_to_pk
+
+
+def _unidad_filter_abiertas(unidades_permitidas: Optional[List[str]]) -> Optional[str]:
+    """
+    Filtro canonico para Comercial_Ventas_Dia_Abiertas_v2.
+
+    No referencia columnas de Unidades_Negocio. Solo filtra contra
+    a.unidad_negocio_id, que si existe en Comercial_Ventas_Dia_Abiertas_v2.
+    """
+    codigos, _ = _resolver_unidades_abiertas(unidades_permitidas)
+
+    if not codigos:
+        return None
+
+    codigos_quoted = ",".join(_sql_quote(v) for v in sorted(codigos) if v)
+    if not codigos_quoted:
+        return None
+
+    return f"a.unidad_negocio_id IN ({codigos_quoted})"
+
+
 # =============================================================================
 # FUNCIONES DE LECTURA - KPIs DIARIOS
 # =============================================================================
@@ -299,62 +390,60 @@ def get_ventas_dia_abiertas(
     unidades_permitidas: Optional[List[str]] = None
 ) -> List[Dict]:
     """
-    Obtiene ventas del día (abiertas/sin corte) desde Comercial_Ventas_Dia_Abiertas_v2.
-    
-    Esta tabla contiene el snapshot más reciente del día actual para cada unidad,
-    actualizado cada 5 minutos por el job sync_comercial_abiertas_v2.
-    
-    Columnas principales:
-    - ventas_abiertas: Ventas sin cierre aún
-    - ventas_cerradas_dia: Ventas ya cerradas del mismo día
-    - total_estimado_dia: ventas_abiertas + ventas_cerradas_dia
-    
-    NOTA: Por desfase de zona horaria UTC vs México, los datos pueden estar
-    guardados con fecha UTC (día siguiente). Se buscan ambas fechas y se
-    prioriza la más reciente.
+    Obtiene ventas abiertas del dia operativo desde Comercial_Ventas_Dia_Abiertas_v2.
+
+    Reglas:
+    - La tabla abierta guarda unidad_negocio_id/codigo operativo.
+    - RBAC puede entregar GUID.
+    - El filtro SQL se hace por codigo operativo.
+    - La respuesta intenta devolver unidad_negocio_pk canonico para poder unir
+      correctamente abiertas + cerradas en routes.py.
+    - No se consulta fecha siguiente; FechaOperacion ya viene resuelta por caller.
     """
-    from datetime import timedelta
-    
-    fecha_siguiente = fecha + timedelta(days=1)
-    
     where_clauses = [
-        f"(fecha_operacion = '{fecha.isoformat()}' OR fecha_operacion = '{fecha_siguiente.isoformat()}')"
+        f"a.fecha_operacion = '{fecha.isoformat()}'"
     ]
-    
-    if unidades_permitidas:
-        ids_quoted = ','.join([f"'{u}'" for u in unidades_permitidas])
-        where_clauses.append(f"unidad_negocio_id IN ({ids_quoted})")
-    
-    # Usar ROW_NUMBER para obtener solo el registro más reciente por unidad
+
+    codigos_filter, codigo_to_pk = _resolver_unidades_abiertas(unidades_permitidas)
+
+    unidad_filter = _unidad_filter_abiertas(unidades_permitidas)
+    if unidad_filter:
+        where_clauses.append(unidad_filter)
+
     query = f"""
     WITH RankedData AS (
-        SELECT 
-            id,
-            unidad_negocio_id AS unidad_negocio_pk,
-            unidad_negocio_nombre,
-            server_id,
-            sucursal_id,
-            sucursal_nombre,
-            sistema_origen,
-            snapshot_timestamp,
-            fecha_operacion,
-            ventas_abiertas,
-            tickets_abiertos,
-            pax_abiertos,
-            ventas_cerradas_dia,
-            tickets_cerrados_dia,
-            pax_cerrados_dia,
-            total_estimado_dia,
-            fuente_original,
-            sync_run_id,
-            fecha_ultima_actualizacion,
-            ROW_NUMBER() OVER (PARTITION BY unidad_negocio_id ORDER BY snapshot_timestamp DESC) as rn
-        FROM Comercial_Ventas_Dia_Abiertas_v2
+        SELECT
+            a.id,
+            a.unidad_negocio_id AS unidad_negocio_pk,
+            a.unidad_negocio_id AS unidad_negocio_codigo,
+            a.unidad_negocio_nombre,
+            a.server_id,
+            a.sucursal_id,
+            a.sucursal_nombre,
+            a.sistema_origen,
+            a.snapshot_timestamp,
+            a.fecha_operacion,
+            a.ventas_abiertas,
+            a.tickets_abiertos,
+            a.pax_abiertos,
+            a.ventas_cerradas_dia,
+            a.tickets_cerrados_dia,
+            a.pax_cerrados_dia,
+            a.total_estimado_dia,
+            a.fuente_original,
+            a.sync_run_id,
+            a.fecha_ultima_actualizacion,
+            ROW_NUMBER() OVER (
+                PARTITION BY a.unidad_negocio_id
+                ORDER BY a.snapshot_timestamp DESC
+            ) AS rn
+        FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 a
         WHERE {' AND '.join(where_clauses)}
     )
-    SELECT 
+    SELECT
         id,
         unidad_negocio_pk,
+        unidad_negocio_codigo,
         unidad_negocio_nombre,
         server_id,
         sucursal_id,
@@ -376,8 +465,39 @@ def get_ventas_dia_abiertas(
     WHERE rn = 1
     ORDER BY unidad_negocio_pk
     """
-    
-    return _execute_readonly_query(query)
+
+    rows = _execute_readonly_query(query)
+
+    for row in rows:
+        codigo = str(
+            row.get("unidad_negocio_codigo")
+            or row.get("unidad_negocio_pk")
+            or ""
+        ).strip()
+
+        resolved_pk = codigo_to_pk.get(codigo)
+
+        if not resolved_pk:
+            try:
+                pk = UnidadesService.resolver_pk(codigo)
+                if pk not in (None, ""):
+                    resolved_pk = str(pk).strip()
+            except Exception as exc:
+                logger.debug("[COMERCIAL_V2] resolver_pk post-query fallo para %s: %s", codigo, exc)
+
+        if not resolved_pk:
+            try:
+                info = CorporateFilterService.resolver_unidad(codigo) or {}
+                pk = info.get("pk") or info.get("unidad_negocio_pk") or info.get("id")
+                if pk not in (None, ""):
+                    resolved_pk = str(pk).strip()
+            except Exception as exc:
+                logger.debug("[COMERCIAL_V2] resolver_unidad post-query fallo para %s: %s", codigo, exc)
+
+        if resolved_pk:
+            row["unidad_negocio_pk"] = resolved_pk
+
+    return rows
 
 
 # =============================================================================
