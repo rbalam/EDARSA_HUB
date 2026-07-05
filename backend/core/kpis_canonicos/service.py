@@ -160,8 +160,8 @@ class KPIsCanonicosService:
                    SUM(CAST(tickets_total AS float))      AS cheques,
                    SUM(CAST(pax_total AS float))          AS pax,
                    COUNT(DISTINCT fecha_operacion)        AS dias
-            FROM dbo.Comercial_KPIs_Diarios_v2
-            WHERE ISNULL(activo,1)=1 AND ISNULL(es_demo,0)=0
+            FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime
+            WHERE 1=1
               AND unidad_negocio_pk IS NOT NULL
               AND fecha_operacion >= %s AND fecha_operacion < %s
             GROUP BY CONVERT(varchar(36), unidad_negocio_pk)
@@ -275,7 +275,7 @@ class KPIsCanonicosService:
 
         return {
             "source": "KPIsCanonicosService",
-            "source_table": "dbo.Comercial_KPIs_Diarios_v2",
+            "source_table": "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime",
             "periodo": {"desde": desde, "hasta_exclusivo": hasta},
             "atomos": atomos,
             "metricas": KPIsCanonicosService._metricas_para_agregado(atomos),
@@ -326,7 +326,7 @@ class KPIsCanonicosService:
                 SUM(CAST(tickets_total AS float)) AS cheques,
                 SUM(CAST(pax_total AS float)) AS pax,
                 COUNT(DISTINCT fecha_operacion) AS dias
-            FROM dbo.Comercial_KPIs_Diarios_v2
+            FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime
             WHERE ISNULL(activo,1)=1
               AND ISNULL(es_demo,0)=0
               AND fecha_operacion >= %s

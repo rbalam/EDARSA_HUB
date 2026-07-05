@@ -14,7 +14,7 @@ definiciones en lugar de recalcularlas. Glosario canónico con sinónimos:
   ticket_promedio  = ventas_sin_propina / PAX       (promedio por COMENSAL; = venta_por_pax)
   cheques_por_pax  = rotación por comensal           (cheques / pax)
 
-Fuente NO-LIVE: dbo.Comercial_KPIs_Diarios_v2 (tabla canónica diaria).
+Fuente NO-LIVE: dbo.vw_Comercial_KPIs_Diarios_v2_Runtime (vista runtime canónica diaria).
 Llave de unidad: unidad_negocio_pk (catálogo canónico Unidades_Negocio /
 UnidadesService). NUNCA server_id operacional (MPRO comparte server).
 """
