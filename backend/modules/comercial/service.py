@@ -2353,6 +2353,7 @@ __all__ = [
     'get_kpis_mpro_con_estado',
     # FASE 7-FIX: Dashboard Comercial desde EDARSAHUB
     'get_dashboard_kpis_from_edarsahub',
+    'resolver_unidad_pks_dashboard',
 ]
 
 
@@ -2506,6 +2507,15 @@ def _resolver_unidad_pks_dashboard(server_id: str, sucursal_id: str = "DEFAULT")
         )
 
     return por_nombre
+
+
+
+def resolver_unidad_pks_dashboard(server_id: str, sucursal_id: str = "DEFAULT") -> List[str]:
+    """
+    Resolver público canónico para endpoints de Comercial.
+    Delega al resolver interno basado en Unidades_Negocio/Servidores_Conexiones.
+    """
+    return _resolver_unidad_pks_dashboard(server_id, sucursal_id)
 
 
 def _ventas_periodo_canonicas(fecha_ini: str, fecha_fin: str, unidad_pks: List[str]) -> float:

@@ -3259,7 +3259,7 @@ async def comercial_detalle_movimientos(
     
     # FIX 2026-06-04: MODAL DETALLE DESDE EDARSAHUB SQL, NO LIVE
     try:
-        from .service import _query_edarsahub_tablero, _obtener_unidad_ids_desde_servidor
+        from .service import _query_edarsahub_tablero, resolver_unidad_pks_dashboard
 
         hoy = datetime.now()
 
@@ -3296,7 +3296,7 @@ async def comercial_detalle_movimientos(
             unidad_ids.append(server.get("unidad_negocio_pk"))
         if server.get("codigo_unidad"):
             unidad_ids.append(server.get("codigo_unidad"))
-        unidad_ids_extra = _obtener_unidad_ids_desde_servidor(server_id) or []
+        unidad_ids_extra = resolver_unidad_pks_dashboard(server_id, sucursal_sql) or []
         unidad_ids.extend(unidad_ids_extra)
 
         unidad_ids = list(dict.fromkeys([u for u in unidad_ids if u]))
