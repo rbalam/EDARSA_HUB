@@ -766,7 +766,7 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
                   <div>
                     <p className="text-xs text-zinc-500">Pax Promedio</p>
                     <p className="text-2xl font-bold text-purple-600">
-                      {formatCurrency(kpis.pax_total > 0 ? (kpis.ventas_periodo / kpis.pax_total) : 0)}
+                      {formatCurrency(kpis.pax_promedio ?? 0)}
                     </p>
                     <p className="text-xs text-zinc-400">Ventas ÷ PAX</p>
                   </div>
