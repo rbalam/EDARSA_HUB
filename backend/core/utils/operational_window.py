@@ -58,6 +58,115 @@ _cache_timestamp: Optional[datetime] = None
 _CACHE_TTL_MINUTES = 15
 
 
+def _resolver_unidad_turnos_id(unidad_negocio_pk: str) -> str:
+    """
+    Normaliza el identificador usado para buscar turnos operativos.
+
+    Sistema_TurnosOperativosUnidad.unidad_negocio_id guarda el codigo operativo
+    de unidad, por ejemplo: 130QRO, ORIGEN, CIENFUEGOS.
+
+    Algunos flujos comerciales pasan unidad_negocio_pk como GUID canonico.
+    Para evitar fallback operativo incorrecto, aqui se resuelve GUID -> codigo.
+    """
+    raw = str(unidad_negocio_pk or "").strip()
+    if not raw:
+        return raw
+
+    def _extraer_codigo(info):
+        if not isinstance(info, dict):
+            return None
+
+        for key in (
+            "codigo",
+            "unidad_codigo",
+            "unidad_negocio_codigo",
+            "unidad_negocio_id",
+            "UnidadNegocioID",
+            "UnidadCodigo",
+            "Codigo",
+        ):
+            value = info.get(key)
+            if value not in (None, ""):
+                value = str(value).strip()
+                if value:
+                    return value
+
+        return None
+
+    # Resolver directo si el servicio ofrece una funcion canonica GUID -> codigo.
+    try:
+        resolver_codigo = getattr(UnidadesService, "resolver_codigo", None)
+        if callable(resolver_codigo):
+            codigo = resolver_codigo(raw)
+            if codigo not in (None, ""):
+                codigo = str(codigo).strip()
+                if codigo:
+                    return codigo
+    except Exception as exc:
+        logger.debug(
+            "[OPERATIONAL_WINDOW] resolver_codigo fallo para %s: %s",
+            raw,
+            exc,
+        )
+
+    # Intentos por metodos de lectura conocidos.
+    for method_name in ("get_by_pk", "get_by_id", "get_by_codigo"):
+        try:
+            method = getattr(UnidadesService, method_name, None)
+            if not callable(method):
+                continue
+            info = method(raw) or {}
+            codigo = _extraer_codigo(info)
+            if codigo:
+                return codigo
+        except Exception as exc:
+            logger.debug(
+                "[OPERATIONAL_WINDOW] %s fallo para %s: %s",
+                method_name,
+                raw,
+                exc,
+            )
+
+    # Fallback SQL defensivo: solo para resolver metadata canonica EDARSAHUB.
+    try:
+        conn = get_sql_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT TOP 1
+                COALESCE(
+                    CAST(codigo AS varchar(100)),
+                    CAST(unidad_codigo AS varchar(100)),
+                    CAST(unidad_negocio_codigo AS varchar(100)),
+                    CAST(unidad_negocio_id AS varchar(100))
+                ) AS codigo
+            FROM Unidades_Negocio
+            WHERE CAST(id AS varchar(100)) = %s
+               OR CAST(unidad_negocio_pk AS varchar(100)) = %s
+               OR CAST(codigo AS varchar(100)) = %s
+               OR CAST(unidad_codigo AS varchar(100)) = %s
+               OR CAST(unidad_negocio_codigo AS varchar(100)) = %s
+               OR CAST(unidad_negocio_id AS varchar(100)) = %s
+        """, (raw, raw, raw, raw, raw, raw))
+
+        row = cursor.fetchone()
+        conn.close()
+
+        if row:
+            codigo = row[0] if not isinstance(row, dict) else row.get("codigo")
+            if codigo not in (None, ""):
+                return str(codigo).strip()
+
+    except Exception as exc:
+        logger.debug(
+            "[OPERATIONAL_WINDOW] fallback SQL Unidades_Negocio fallo para %s: %s",
+            raw,
+            exc,
+        )
+
+    return raw
+
+
 @dataclass
 class ResultadoVentanaOperativa:
     """Estructura de resultado del cálculo de ventana operativa."""
@@ -77,32 +186,32 @@ class ResultadoVentanaOperativa:
 def _get_turnos_unidad(unidad_negocio_pk: str) -> List[Dict]:
     """
     Obtiene los turnos operativos activos de una unidad desde EDARSAHUB SQL.
-    
-    Returns:
-        Lista de turnos ordenados por 'orden'.
+
+    La tabla Sistema_TurnosOperativosUnidad.unidad_negocio_id guarda codigo
+    operativo de unidad, no GUID. Este metodo acepta ambos:
+    - codigo: 130QRO, ORIGEN, CIENFUEGOS
+    - GUID canonico de Unidades_Negocio
     """
     global _turnos_cache, _cache_timestamp
-    
+
+    unidad_turnos_id = _resolver_unidad_turnos_id(unidad_negocio_pk)
+
     now = datetime.now(MEXICO_TZ)
-    
-    # Verificar cache
+
+    # Verificar cache por identificador operativo real.
     if _cache_timestamp and (now - _cache_timestamp).total_seconds() < _CACHE_TTL_MINUTES * 60:
-        if unidad_negocio_pk in _turnos_cache:
-            return _turnos_cache[unidad_negocio_pk]
+        if unidad_turnos_id in _turnos_cache:
+            return _turnos_cache[unidad_turnos_id]
     else:
         _turnos_cache = {}
         _cache_timestamp = now
-    
-    # Consultar BD
-    # NOTA: la tabla usa la columna canónica `unidad_negocio_id` (NO existe
-    # `unidad_negocio_pk`). El parámetro recibe el código de unidad ('130QRO',
-    # 'ORIGEN', etc.). El cursor de pymssql devuelve tuplas → se convierte a dict.
+
     try:
         conn = get_sql_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT 
+            SELECT
                 turno_codigo,
                 turno_nombre,
                 CAST(hora_inicio AS VARCHAR(8)) AS hora_inicio,
@@ -116,7 +225,7 @@ def _get_turnos_unidad(unidad_negocio_pk: str) -> List[Dict]:
               AND activo = 1
               AND aplica_ventas_dia = 1
             ORDER BY orden
-        """, (unidad_negocio_pk,))
+        """, (unidad_turnos_id,))
 
         rows = cursor.fetchall()
         cols = [c[0] for c in cursor.description] if cursor.description else []
@@ -128,28 +237,37 @@ def _get_turnos_unidad(unidad_negocio_pk: str) -> List[Dict]:
             if isinstance(v, timedelta):
                 total_sec = int(v.total_seconds())
                 return time(total_sec // 3600, (total_sec % 3600) // 60, total_sec % 60)
-            parts = str(v).split(':')
+            parts = str(v).split(":")
             return time(int(parts[0]), int(parts[1]), int(parts[2]) if len(parts) > 2 else 0)
 
         turnos: List[Dict] = []
         for r in rows:
             t = r if isinstance(r, dict) else dict(zip(cols, r))
-            t['hora_inicio'] = _parse_time(t['hora_inicio'])
-            t['hora_fin'] = _parse_time(t['hora_fin'])
-            t['cruza_medianoche'] = bool(t.get('cruza_medianoche'))
-            t['aplica_ventas_dia'] = bool(t.get('aplica_ventas_dia'))
-            t['es_turno_principal'] = bool(t.get('es_turno_principal'))
-            # Tolerancias por defecto (no existen como columnas en BD)
-            t['tolerancia_inicio_minutos'] = 5
-            t['tolerancia_fin_minutos'] = 30
+            t["hora_inicio"] = _parse_time(t["hora_inicio"])
+            t["hora_fin"] = _parse_time(t["hora_fin"])
+            t["cruza_medianoche"] = bool(t.get("cruza_medianoche"))
+            t["aplica_ventas_dia"] = bool(t.get("aplica_ventas_dia"))
+            t["es_turno_principal"] = bool(t.get("es_turno_principal"))
+            t["tolerancia_inicio_minutos"] = 5
+            t["tolerancia_fin_minutos"] = 30
             turnos.append(t)
 
-        _turnos_cache[unidad_negocio_pk] = turnos
-        logger.debug(f"[OPERATIONAL_WINDOW] {unidad_negocio_pk}: {len(turnos)} turnos cargados")
+        _turnos_cache[unidad_turnos_id] = turnos
+        logger.debug(
+            "[OPERATIONAL_WINDOW] %s -> %s: %s turnos cargados",
+            unidad_negocio_pk,
+            unidad_turnos_id,
+            len(turnos),
+        )
         return turnos
 
     except Exception as e:
-        logger.error(f"[OPERATIONAL_WINDOW] Error consultando turnos para {unidad_negocio_pk}: {e}")
+        logger.error(
+            "[OPERATIONAL_WINDOW] Error consultando turnos para %s -> %s: %s",
+            unidad_negocio_pk,
+            unidad_turnos_id,
+            e,
+        )
         return []
 
 
