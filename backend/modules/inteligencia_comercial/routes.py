@@ -28,6 +28,7 @@ from core.config.edarsahub_config import get_edarsahub_sql_config
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
 from core.sql_first.db import get_sql_connection
+from core.kpis_canonicos.service import KPIsCanonicosService
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -222,13 +223,191 @@ def _ultimo_dia_con_datos(unidad_db: Optional[str]) -> date:
 
 
 
-def _ultimo_dia_con_kpis(unidad_db: Optional[str], periodo: Optional[str] = None) -> date:
-    """Ancla canonica para KPI principal desde vw_Comercial_KPIs_Diarios_v2_Runtime.
+def _sql_literal(value):
+    return str(value or "").replace("'", "''")
 
-    Para periodo=mes usa el ultimo cierre mensual disponible, no el MAX parcial
-    del mes en curso. Esto evita que un mes parcialmente sincronizado desplace el
-    dashboard mensual antes del cierre real.
+
+def _kpi_num(row, *keys, default=0):
+    """Lee un valor numérico de un dict canónico aceptando alias legacy."""
+    for k in keys:
+        if isinstance(row, dict) and k in row and row.get(k) is not None:
+            return row.get(k)
+    return default
+
+
+def _kpi_int(row, *keys):
+    try:
+        return int(_kpi_num(row, *keys, default=0) or 0)
+    except Exception:
+        return 0
+
+
+def _kpi_float(row, *keys):
+    try:
+        return float(_kpi_num(row, *keys, default=0) or 0)
+    except Exception:
+        return 0.0
+
+
+def _normalizar_resumen_kpi_portal(row):
+    """Convierte KPIsCanonicosService al contrato legacy del portal.
+
+    Estructura real:
+    - row["metricas"] contiene KPIs canónicos y ratios.
+    - row["atomos"] contiene agregados base.
     """
+    row = row or {}
+    metricas = row.get("metricas") if isinstance(row.get("metricas"), dict) else {}
+    atomos = row.get("atomos") if isinstance(row.get("atomos"), dict) else {}
+
+    base = {}
+    base.update(atomos)
+    base.update(metricas)
+    base.update(row)
+
+    return {
+        "ventas_totales": round(_kpi_float(base, "ventas", "ventas_sin_propina", "ventas_netas", "ventas_totales"), 2),
+        "pax_total": _kpi_int(base, "pax", "pax_total"),
+        "cheques_total": _kpi_int(base, "cheques", "tickets", "tickets_total", "cheques_total"),
+        "propinas_total": round(_kpi_float(base, "propinas", "propinas_total"), 2),
+        "cheque_promedio": round(_kpi_float(base, "cheque_promedio"), 2),
+        "ticket_promedio": round(_kpi_float(base, "ticket_promedio", "consumo_promedio_pax"), 2),
+    }
+
+
+def _kpi_cero_portal():
+    return {
+        "ventas_totales": 0.0,
+        "pax_total": 0,
+        "cheques_total": 0,
+        "propinas_total": 0.0,
+        "cheque_promedio": 0.0,
+        "ticket_promedio": 0.0,
+    }
+
+
+def _unidad_pks_canonicas_portal(unidad_db=None):
+    """Resuelve unidad_nombre normalizado del portal a unidad_negocio_pk canónica."""
+    if not unidad_db:
+        return None
+
+    unidad_lit = _sql_literal(unidad_db)
+    sql = f"""
+        SELECT DISTINCT CONVERT(varchar(36), unidad_negocio_pk) AS unidad_pk
+        FROM dbo.Comercial_KPIs_Diarios_v2
+        WHERE ISNULL(activo,1)=1
+          AND ISNULL(es_demo,0)=0
+          AND unidad_negocio_pk IS NOT NULL
+          AND UPPER(LTRIM(RTRIM(unidad_negocio_nombre))) = UPPER(LTRIM(RTRIM('{unidad_lit}')))
+    """
+    rows = execute_query(sql)
+    return [str(r["unidad_pk"]) for r in rows if r.get("unidad_pk")]
+
+
+def _fecha_fin_exclusiva(fecha_fin):
+    """Convierte fecha_fin inclusiva del endpoint a hasta exclusivo del servicio canónico."""
+    if isinstance(fecha_fin, date):
+        return (fecha_fin + timedelta(days=1)).strftime("%Y-%m-%d")
+    return (datetime.strptime(str(fecha_fin)[:10], "%Y-%m-%d").date() + timedelta(days=1)).strftime("%Y-%m-%d")
+
+
+def _resumen_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db=None):
+    """KPIs principales desde la fuente canónica única."""
+    unidad_pks = _unidad_pks_canonicas_portal(unidad_db)
+    hasta_excl = _fecha_fin_exclusiva(fecha_fin)
+
+    if unidad_db and not unidad_pks:
+        return _kpi_cero_portal()
+
+    try:
+        data = KPIsCanonicosService.resumen_periodo(
+            desde=fecha_inicio,
+            hasta=hasta_excl,
+            unidad_pks=unidad_pks
+        )
+    except TypeError:
+        data = KPIsCanonicosService.resumen_periodo(
+            fecha_inicio,
+            hasta_excl,
+            unidad_pks
+        )
+
+    return _normalizar_resumen_kpi_portal(data or {})
+
+
+def _series_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db=None):
+    """Serie diaria desde KPIsCanonicosService."""
+    hasta_excl = _fecha_fin_exclusiva(fecha_fin)
+
+    try:
+        rows = KPIsCanonicosService.series_periodo(
+            desde=fecha_inicio,
+            hasta=hasta_excl,
+            nivel="dia",
+            unidad_nombre=unidad_db
+        )
+    except TypeError:
+        rows = KPIsCanonicosService.series_periodo(
+            fecha_inicio,
+            hasta_excl,
+            "dia",
+            unidad_db
+        )
+
+    out = []
+    for r in rows or []:
+        k = _normalizar_resumen_kpi_portal(r or {})
+        out.append({
+            "fecha": str(_kpi_num(
+                r,
+                "fecha",
+                "fecha_operacion",
+                "dia",
+                "periodo",
+                "bucket",
+                "fecha_inicio",
+                default=""
+            )),
+            "ventas": k["ventas_totales"],
+            "pax": k["pax_total"],
+            "tickets": k["cheques_total"],
+            "propinas": k["propinas_total"],
+            "cheque_promedio": k["cheque_promedio"],
+        })
+    return out
+
+
+def _ventas_por_unidad_canonico_portal(fecha_inicio, fecha_fin):
+    """Distribución por unidad desde la tabla canónica base."""
+    sql = f"""
+        SELECT
+            unidad_negocio_nombre AS unidad,
+            SUM(ventas_sin_propina) AS ventas,
+            SUM(pax_total) AS pax_total,
+            SUM(tickets_total) AS tickets,
+            SUM(propinas_total) AS propinas
+        FROM dbo.Comercial_KPIs_Diarios_v2
+        WHERE ISNULL(activo,1)=1
+          AND ISNULL(es_demo,0)=0
+          AND fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'
+        GROUP BY unidad_negocio_nombre
+        ORDER BY SUM(ventas_sin_propina) DESC
+    """
+    return execute_query(sql)
+
+
+def _trend_pct(cur, prv):
+    try:
+        cur, prv = float(cur or 0), float(prv or 0)
+        if prv <= 0:
+            return None
+        return round((cur - prv) / prv * 100, 1)
+    except Exception:
+        return None
+
+
+def _ultimo_dia_con_kpis(unidad_db: Optional[str], periodo: Optional[str] = None) -> date:
+    """Ancla canónica para KPI principal desde dbo.Comercial_KPIs_Diarios_v2."""
     where = "1=1"
     if unidad_db:
         where += f" AND unidad_negocio_nombre = '{unidad_db}'"
@@ -236,15 +415,15 @@ def _ultimo_dia_con_kpis(unidad_db: Optional[str], periodo: Optional[str] = None
     p = (periodo or "").strip().lower()
     if p in ("mes", "month", "mensual"):
         sql = f"""
-            SELECT MAX(CAST(fecha_operacion AS date)) AS m
-            FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+            SELECT MAX(fecha_operacion) AS m
+            FROM dbo.Comercial_KPIs_Diarios_v2
             WHERE {where}
-              AND CAST(fecha_operacion AS date) = EOMONTH(fecha_operacion)
+              AND fecha_operacion = EOMONTH(fecha_operacion)
         """
     else:
         sql = f"""
-            SELECT MAX(CAST(fecha_operacion AS date)) AS m
-            FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+            SELECT MAX(fecha_operacion) AS m
+            FROM dbo.Comercial_KPIs_Diarios_v2
             WHERE {where}
         """
 
@@ -762,123 +941,60 @@ async def get_dashboard_data(
 ):
     """
     Dashboard principal con KPIs consolidados.
-    Fuente: vw_Comercial_KPIs_Diarios_v2_Runtime
+    Fuente KPI principal: KPIsCanonicosService / dbo.Comercial_KPIs_Diarios_v2.
     """
     unidad_db = normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
 
     periodo_label = None
     prev_inicio = prev_fin = None
-    # Si se especifica periodo y NO se pasaron fechas explícitas, se resuelve el
-    # rango anclado al último día con datos (NO-LIVE, evita rangos vacíos).
+
     if periodo and not (fecha_inicio and fecha_fin):
         anchor = _ultimo_dia_con_kpis(unidad_db, periodo)
         ini, fin, prev_inicio, prev_fin, periodo_label = _periodo_rango(periodo, anchor)
         fecha_inicio = ini.strftime("%Y-%m-%d")
         fecha_fin = fin.strftime("%Y-%m-%d")
 
-    # Defaults para fechas (compatibilidad: últimos 30 días)
     if not fecha_inicio:
         fecha_inicio = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
     if not fecha_fin:
         fecha_fin = datetime.now().strftime("%Y-%m-%d")
     if periodo_label is None:
         periodo_label = _label_rango_personalizado(fecha_inicio, fecha_fin)
-    
-    try:
-        # WHERE dinámico
-        where_parts = [f"fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
-        if unidad_db:
-            where_parts.append(f"unidad_negocio_nombre = '{unidad_db}'")
-        where_sql = " AND ".join(where_parts)
-        
-        # Query KPIs principales
-        kpis_sql = f"""
-            SELECT 
-                COALESCE(SUM(ventas_sin_propina), 0) AS ventas_totales,
-                COALESCE(SUM(pax_total), 0) AS pax_total,
-                COALESCE(SUM(tickets_total), 0) AS cheques_total,
-                COALESCE(SUM(propinas_total), 0) AS propinas_total,
-                CASE WHEN SUM(tickets_total) > 0 
-                    THEN SUM(ventas_sin_propina) / SUM(tickets_total) 
-                    ELSE 0 END AS cheque_promedio,
-                CASE WHEN SUM(pax_total) > 0
-                    THEN SUM(ventas_sin_propina) / SUM(pax_total)
-                    ELSE 0 END AS ticket_promedio
-            FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-            WHERE {where_sql}
-        """
-        kpis = execute_query(kpis_sql)
-        kpi_data = kpis[0] if kpis else {}
 
-        # ========== TENDENCIAS REALES vs periodo anterior equivalente ==========
+    try:
+        kpi_data = _resumen_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db)
+
         kpis_trends = {}
         if prev_inicio and prev_fin:
-            prev_where = [f"fecha_operacion BETWEEN '{prev_inicio}' AND '{prev_fin}'"]
-            if unidad_db:
-                prev_where.append(f"unidad_negocio_nombre = '{unidad_db}'")
-            prev_sql = f"""
-                SELECT
-                    COALESCE(SUM(ventas_sin_propina), 0) AS ventas_totales,
-                    COALESCE(SUM(pax_total), 0) AS pax_total,
-                    COALESCE(SUM(tickets_total), 0) AS cheques_total,
-                    COALESCE(SUM(propinas_total), 0) AS propinas_total
-                FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-                WHERE {' AND '.join(prev_where)}
-            """
-            prev_rows = execute_query(prev_sql)
-            prev = prev_rows[0] if prev_rows else {}
-
-            def _trend(cur, prv):
-                try:
-                    cur, prv = float(cur or 0), float(prv or 0)
-                    if prv <= 0:
-                        return None
-                    return round((cur - prv) / prv * 100, 1)
-                except Exception:
-                    return None
-
+            prev = _resumen_periodo_canonico_portal(
+                prev_inicio.strftime("%Y-%m-%d") if hasattr(prev_inicio, "strftime") else str(prev_inicio),
+                prev_fin.strftime("%Y-%m-%d") if hasattr(prev_fin, "strftime") else str(prev_fin),
+                unidad_db
+            )
             kpis_trends = {
-                "ventas_totales": _trend(kpi_data.get("ventas_totales"), prev.get("ventas_totales")),
-                "pax_total": _trend(kpi_data.get("pax_total"), prev.get("pax_total")),
-                "cheques_total": _trend(kpi_data.get("cheques_total"), prev.get("cheques_total")),
-                "propinas_total": _trend(kpi_data.get("propinas_total"), prev.get("propinas_total")),
+                "ventas_totales": _trend_pct(kpi_data.get("ventas_totales"), prev.get("ventas_totales")),
+                "pax_total": _trend_pct(kpi_data.get("pax_total"), prev.get("pax_total")),
+                "cheques_total": _trend_pct(kpi_data.get("cheques_total"), prev.get("cheques_total")),
+                "propinas_total": _trend_pct(kpi_data.get("propinas_total"), prev.get("propinas_total")),
             }
-        
-        # Query por unidad (si es consolidado)
+
         ventas_por_unidad = []
         if not unidad_db:
-            unidad_sql = f"""
-                SELECT 
-                    unidad_negocio_nombre AS unidad,
-                    SUM(ventas_sin_propina) AS ventas,
-                    SUM(pax_total) AS pax_total,
-                    SUM(tickets_total) AS tickets,
-                    SUM(propinas_total) AS propinas
-                FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-                WHERE {where_sql}
-                GROUP BY unidad_negocio_nombre
-                ORDER BY SUM(ventas_sin_propina) DESC
-            """
-            ventas_por_unidad = execute_query(unidad_sql)
-        
+            ventas_por_unidad = _ventas_por_unidad_canonico_portal(fecha_inicio, fecha_fin)
+
         total_ventas = float(kpi_data.get("ventas_totales", 0)) or 1
-        total_pax = int(kpi_data.get("pax_total", 0))
-        total_tickets = int(kpi_data.get("cheques_total", 0))
-        
-        # ========== BLOQUES REALES (NO-LIVE) desde el detalle de ventas ==========
-        # Antes: porcentajes/productos HARDCODEADOS. Ahora: agregados reales de
-        # Comercial_Inteligencia_VentasDetalleProducto. Bloque vacío => SIN_DATOS_SYNC.
+
+        # Bloques de detalle/análisis operativo. No se tocan en este parche.
         det_total = _real_detalle_total(unidad_db, fecha_inicio, fecha_fin)
         ventas_horario = _real_horario(unidad_db, fecha_inicio, fecha_fin)
         top_productos = _real_top_productos(unidad_db, fecha_inicio, fecha_fin, limit=7)
         casas_distribuidoras = _real_casas(unidad_db, fecha_inicio, fecha_fin, total_ventas=det_total)
         ventas_familia = _real_familias(unidad_db, fecha_inicio, fecha_fin, total_ventas=det_total)
         ventas_clasificacion = _real_clasificacion_nested(unidad_db, fecha_inicio, fecha_fin)
-        
-        # Construir respuesta
+
         response = {
             "success": True,
-            "_source": "SQL_COMERCIAL_KPIS_DIARIOS_V2",
+            "_source": "KPIS_CANONICOS_SERVICE",
             "_blocks_source": _DETALLE_TABLA,
             "_detalle_total": round(det_total, 2),
             "_unidad": unidad_db or "TODAS",
@@ -916,17 +1032,24 @@ async def get_dashboard_data(
             "ventas_familia": ventas_familia,
             "ventas_clasificacion": ventas_clasificacion
         }
-        
-        logger.info(f"[INTELIGENCIA] Dashboard OK - {unidad_db or 'TODAS'} - ${total_ventas:,.2f}")
+
+        logger.info(f"[INTELIGENCIA] Dashboard OK canonico - {unidad_db or 'TODAS'} - ${total_ventas:,.2f}")
         return response
-        
+
     except Exception as e:
         logger.error(f"[INTELIGENCIA] Error dashboard: {e}")
         return {
             "success": False,
             "_source": "ERROR",
             "_error": str(e),
-            "kpis": {"ventas_totales": 0, "pax_total": 0, "cheques_total": 0, "propinas_total": 0, "cheque_promedio": 0}
+            "kpis": {
+                "ventas_totales": 0,
+                "pax_total": 0,
+                "cheques_total": 0,
+                "propinas_total": 0,
+                "cheque_promedio": 0,
+                "ticket_promedio": 0
+            }
         }
 
 
@@ -941,56 +1064,25 @@ async def get_tendencia_diaria(
     fecha_fin: Optional[str] = Query(None, description="Fecha fin (YYYY-MM-DD)")
 ):
     """
-    Tendencia diaria de ventas para gráficos de línea.
-    Fuente: vw_Comercial_KPIs_Diarios_v2_Runtime
+    Tendencia diaria para gráficos.
+    Fuente KPI principal: KPIsCanonicosService / dbo.Comercial_KPIs_Diarios_v2.
     """
     unidad_db = normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
-    
+
     if not fecha_inicio:
         fecha_inicio = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
     if not fecha_fin:
         fecha_fin = datetime.now().strftime("%Y-%m-%d")
-    
+
     try:
-        where_parts = [f"fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
-        if unidad_db:
-            where_parts.append(f"unidad_negocio_nombre = '{unidad_db}'")
-        where_sql = " AND ".join(where_parts)
-        
-        sql = f"""
-            SELECT 
-                fecha_operacion AS fecha,
-                SUM(ventas_sin_propina) AS ventas,
-                SUM(pax_total) AS pax_total,
-                SUM(tickets_total) AS tickets,
-                SUM(propinas_total) AS propinas,
-                CASE WHEN SUM(tickets_total) > 0 
-                    THEN SUM(ventas_sin_propina) / SUM(tickets_total) 
-                    ELSE 0 END AS cheque_promedio
-            FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-            WHERE {where_sql}
-            GROUP BY fecha_operacion
-            ORDER BY fecha_operacion ASC
-        """
-        
-        datos = execute_query(sql)
-        
+        datos_diarios = _series_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db)
+
         return {
             "success": True,
-            "_source": "SQL_COMERCIAL_KPIS_DIARIOS_V2",
+            "_source": "KPIS_CANONICOS_SERVICE",
             "_unidad": unidad_db or "TODAS",
-            "total_dias": len(datos),
-            "datos_diarios": [
-                {
-                    "fecha": str(d["fecha"]),
-                    "ventas": round(float(d["ventas"] or 0), 2),
-                    "pax": int(d["pax"] or 0),
-                    "tickets": int(d["tickets"] or 0),
-                    "propinas": round(float(d["propinas"] or 0), 2),
-                    "cheque_promedio": round(float(d["cheque_promedio"] or 0), 2)
-                }
-                for d in datos
-            ]
+            "total_dias": len(datos_diarios),
+            "datos_diarios": datos_diarios
         }
     except Exception as e:
         logger.error(f"[INTELIGENCIA] Error tendencia: {e}")
@@ -1076,7 +1168,7 @@ async def get_ventas_horario(
         
         kpi_sql = f"""
             SELECT SUM(ventas_sin_propina) AS total, SUM(pax_total) AS pax_total, SUM(tickets_total) AS tickets
-            FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+            FROM dbo.Comercial_KPIs_Diarios_v2
             WHERE {" AND ".join(where_kpi)}
         """
         kpis = execute_query(kpi_sql)
