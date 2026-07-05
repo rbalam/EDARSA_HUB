@@ -378,7 +378,7 @@ def _series_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db=None):
 
 
 def _ventas_por_unidad_canonico_portal(fecha_inicio, fecha_fin):
-    """Distribución por unidad desde la tabla canónica base."""
+    """Distribución por unidad desde la fuente KPI runtime canónica."""
     sql = f"""
         SELECT
             unidad_negocio_nombre AS unidad,
@@ -386,10 +386,9 @@ def _ventas_por_unidad_canonico_portal(fecha_inicio, fecha_fin):
             SUM(pax_total) AS pax_total,
             SUM(tickets_total) AS tickets,
             SUM(propinas_total) AS propinas
-        FROM dbo.Comercial_KPIs_Diarios_v2
-        WHERE ISNULL(activo,1)=1
-          AND ISNULL(es_demo,0)=0
-          AND fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'
+        FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime
+        WHERE fecha_operacion >= '{fecha_inicio}'
+          AND fecha_operacion < DATEADD(day, 1, CAST('{fecha_fin}' AS date))
         GROUP BY unidad_negocio_nombre
         ORDER BY SUM(ventas_sin_propina) DESC
     """
@@ -407,25 +406,16 @@ def _trend_pct(cur, prv):
 
 
 def _ultimo_dia_con_kpis(unidad_db: Optional[str], periodo: Optional[str] = None) -> date:
-    """Ancla canónica para KPI principal desde dbo.Comercial_KPIs_Diarios_v2."""
+    """Ancla canónica para KPI principal desde dbo.vw_Comercial_KPIs_Diarios_v2_Runtime."""
     where = "1=1"
     if unidad_db:
         where += f" AND unidad_negocio_nombre = '{unidad_db}'"
 
-    p = (periodo or "").strip().lower()
-    if p in ("mes", "month", "mensual"):
-        sql = f"""
-            SELECT MAX(fecha_operacion) AS m
-            FROM dbo.Comercial_KPIs_Diarios_v2
-            WHERE {where}
-              AND fecha_operacion = EOMONTH(fecha_operacion)
-        """
-    else:
-        sql = f"""
-            SELECT MAX(fecha_operacion) AS m
-            FROM dbo.Comercial_KPIs_Diarios_v2
-            WHERE {where}
-        """
+    sql = f"""
+        SELECT MAX(fecha_operacion) AS m
+        FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime
+        WHERE {where}
+    """
 
     rows = execute_query(sql)
     m = rows[0].get("m") if rows else None
