@@ -1091,102 +1091,56 @@ async def get_ventas_horario(
 ):
     """
     Distribución de ventas por bloque horario.
-    Si Sync_PAX_Detalle está vacío, calcula proporciones desde KPIs.
+
+    Fuente única:
+    - Comercial_Inteligencia_VentasDetalleProducto
+    - Sistema_TurnosOperativosUnidad para rangos operativos
+
+    Sin fallback proporcional, sin datos inventados, sin cortes hardcodeados.
     """
     unidad_db = normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
-    
-    if not fecha_inicio:
-        fecha_inicio = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
-    if not fecha_fin:
-        fecha_fin = datetime.now().strftime("%Y-%m-%d")
-    
+
+    if not fecha_inicio or not fecha_fin:
+        anchor = _ultimo_dia_con_kpis(unidad_db)
+        ini, fin, _, _, _ = _periodo_rango("mes", anchor)
+        fecha_inicio = fecha_inicio or ini.strftime("%Y-%m-%d")
+        fecha_fin = fecha_fin or fin.strftime("%Y-%m-%d")
+
     try:
-        # Primero intenta con Sync_PAX_Detalle
-        where_parts = [f"FechaOperacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
-        if unidad_db:
-            sucursal = UNIDAD_TO_SUCURSAL.get(unidad_db, unidad_db)
-            where_parts.append(f"SucursalNombre = '{sucursal}'")
-        where_sql = " AND ".join(where_parts)
-        
-        sql = f"""
-            SELECT 
-                CASE 
-                    WHEN DATEPART(HOUR, FechaHora) BETWEEN 6 AND 11 THEN 'Desayuno'
-                    WHEN DATEPART(HOUR, FechaHora) BETWEEN 12 AND 17 THEN 'Comida'
-                    WHEN DATEPART(HOUR, FechaHora) BETWEEN 18 AND 23 THEN 'Cena'
-                    ELSE 'Madrugada'
-                END AS horario,
-                SUM(NumeroComensales) AS pax,
-                SUM(VentaCuenta) AS ventas,
-                COUNT(*) AS mesas,
-                AVG(ConsumoPromedioPAX) AS consumo_promedio
-            FROM Sync_PAX_Detalle
-            WHERE {where_sql}
-            GROUP BY 
-                CASE 
-                    WHEN DATEPART(HOUR, FechaHora) BETWEEN 6 AND 11 THEN 'Desayuno'
-                    WHEN DATEPART(HOUR, FechaHora) BETWEEN 12 AND 17 THEN 'Comida'
-                    WHEN DATEPART(HOUR, FechaHora) BETWEEN 18 AND 23 THEN 'Cena'
-                    ELSE 'Madrugada'
-                END
-        """
-        
-        datos = execute_query(sql)
-        
-        # Si hay datos reales, usarlos
-        if datos and any(d.get("ventas") for d in datos):
-            return {
-                "success": True,
-                "_source": "SQL_SYNC_PAX_DETALLE",
-                "_unidad": unidad_db or "TODAS",
-                "ventas_horario": [
-                    {
-                        "horario": d["horario"],
-                        "ventas": round(float(d["ventas"] or 0), 2),
-                        "pax": int(d["pax"] or 0),
-                        "mesas": int(d["mesas"] or 0),
-                        "consumo_promedio": round(float(d["consumo_promedio"] or 0), 2)
-                    }
-                    for d in datos
-                ]
-            }
-        
-        # FALLBACK: Calcular desde KPIs con proporciones estándar restaurante
-        where_kpi = [f"fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
-        if unidad_db:
-            where_kpi.append(f"unidad_negocio_nombre = '{unidad_db}'")
-        
-        kpi_sql = f"""
-            SELECT SUM(ventas_sin_propina) AS total, SUM(pax_total) AS pax_total, SUM(tickets_total) AS tickets
-            FROM dbo.Comercial_KPIs_Diarios_v2
-            WHERE {" AND ".join(where_kpi)}
-        """
-        kpis = execute_query(kpi_sql)
-        total_ventas = float(kpis[0]["total"] or 0) if kpis else 0
-        total_pax = int(kpis[0]["pax"] or 0) if kpis else 0
-        total_tickets = int(kpis[0]["tickets"] or 0) if kpis else 0
-        
-        # Proporciones típicas de restaurante
+        datos = _real_horario(unidad_db, fecha_inicio, fecha_fin)
+
         return {
             "success": True,
-            "_source": "FALLBACK_PROPORCIONAL",
+            "_source": "Comercial_Inteligencia_VentasDetalleProducto",
+            "_config_source": "Sistema_TurnosOperativosUnidad",
             "_unidad": unidad_db or "TODAS",
-            "_nota": "Datos calculados proporcionalmente desde KPIs diarios",
+            "_sin_fallback_proporcional": True,
             "ventas_horario": [
-                {"horario": "Desayuno", "ventas": round(total_ventas * 0.20, 2), "pax": int(total_pax * 0.20), "mesas": int(total_tickets * 0.20)},
-                {"horario": "Comida", "ventas": round(total_ventas * 0.50, 2), "pax": int(total_pax * 0.50), "mesas": int(total_tickets * 0.50)},
-                {"horario": "Cena", "ventas": round(total_ventas * 0.30, 2), "pax": int(total_pax * 0.30), "mesas": int(total_tickets * 0.30)},
+                {
+                    "horario": d.get("horario"),
+                    "ventas": round(float(d.get("ventas") or 0), 2),
+                    "pax": int(d.get("pax") or 0),
+                    "cheques": int(d.get("cheques") or 0),
+                    "mesas": int(d.get("cheques") or 0),
+                    "propinas": round(float(d.get("propinas") or 0), 2),
+                    "ticket_promedio": round(float(d.get("ticket_promedio") or 0), 2),
+                    "consumo_promedio": round(float(d.get("ticket_promedio") or 0), 2),
+                    "rango": d.get("rango") or ""
+                }
+                for d in datos
             ]
         }
     except Exception as e:
-        logger.error(f"[INTELIGENCIA] Error horarios: {e}")
-        return {"success": False, "_error": str(e), "ventas_horario": []}
+        logger.error(f"[INTELIGENCIA] Error horarios canonicos: {e}")
+        return {
+            "success": False,
+            "_source": "ERROR",
+            "_error": str(e),
+            "_sin_fallback_proporcional": True,
+            "ventas_horario": []
+        }
 
 
-# ============================================================================
-# ENDPOINT: Análisis PAX (Demográficos)
-# Fuente: Sync_PAX_Detalle
-# ============================================================================
 @router.get("/dashboard/pax")
 async def get_analisis_pax(
     unidad: Optional[str] = Query(None, description="Unidad de negocio"),
