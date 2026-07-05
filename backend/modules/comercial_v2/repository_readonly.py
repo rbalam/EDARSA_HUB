@@ -61,6 +61,29 @@ def _execute_readonly_query(query: str) -> List[Dict]:
         raise
 
 
+def _sql_quote(value) -> str:
+    return "'" + str(value).replace("'", "''") + "'"
+
+
+def _unidad_filter_runtime(unidades_permitidas: Optional[List[str]]) -> Optional[str]:
+    """
+    Filtro canónico de unidad para vw_Comercial_KPIs_Diarios_v2_Runtime.
+    RBAC entrega unidad_negocio_pk GUID.
+    La vista conserva unidad_negocio_id/código legacy.
+    """
+    if not unidades_permitidas:
+        return None
+
+    ids_quoted = ",".join(_sql_quote(u) for u in unidades_permitidas if u)
+    if not ids_quoted:
+        return None
+
+    return (
+        f"(CONVERT(varchar(36), unidad_negocio_pk) IN ({ids_quoted}) "
+        f"OR unidad_negocio_id IN ({ids_quoted}))"
+    )
+
+
 # =============================================================================
 # FUNCIONES DE LECTURA - KPIs DIARIOS
 # =============================================================================
@@ -85,9 +108,9 @@ def get_kpis_diarios(
         f"fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'"
     ]
     
-    if unidades_permitidas:
-        ids_quoted = ','.join([f"'{u}'" for u in unidades_permitidas])
-        where_clauses.append(f"unidad_negocio_id IN ({ids_quoted})")
+    unidad_filter = _unidad_filter_runtime(unidades_permitidas)
+    if unidad_filter:
+        where_clauses.append(unidad_filter)
     
     query = f"""
     SELECT 
@@ -142,9 +165,9 @@ def get_kpis_diarios_agregados(
         f"fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'"
     ]
     
-    if unidades_permitidas:
-        ids_quoted = ','.join([f"'{str(u).replace(chr(39), chr(39)+chr(39))}'" for u in unidades_permitidas])
-        where_clauses.append(f"unidad_negocio_id IN ({ids_quoted})")
+    unidad_filter = _unidad_filter_runtime(unidades_permitidas)
+    if unidad_filter:
+        where_clauses.append(unidad_filter)
     
     # FIX 2026-06-08: Sumar EXACTAMENTE los meses seleccionados (no el rango intermedio)
     if meses:
@@ -154,7 +177,7 @@ def get_kpis_diarios_agregados(
     query = f"""
     SELECT 
         COUNT(*) as total_registros,
-        COUNT(DISTINCT unidad_negocio_id) as total_unidades,
+        COUNT(DISTINCT unidad_negocio_pk) as total_unidades,
         COUNT(DISTINCT fecha_operacion) as total_dias,
         SUM(ISNULL(ventas_sin_propina, 0)) as ventas_total,
         SUM(ISNULL(propinas_total, 0)) as propinas_total,
@@ -188,9 +211,9 @@ def get_kpis_por_unidad(
         f"fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'"
     ]
 
-    if unidades_permitidas:
-        ids_quoted = ','.join([f"'{str(u).replace(chr(39), chr(39)+chr(39))}'" for u in unidades_permitidas])
-        where_clauses.append(f"unidad_negocio_id IN ({ids_quoted})")
+    unidad_filter = _unidad_filter_runtime(unidades_permitidas)
+    if unidad_filter:
+        where_clauses.append(unidad_filter)
 
     # FIX 2026-06-08: Sumar EXACTAMENTE los meses seleccionados (no el rango intermedio)
     if meses:
@@ -199,7 +222,8 @@ def get_kpis_por_unidad(
 
     query = f"""
     SELECT 
-        unidad_negocio_id as unidad_negocio_pk,
+        CONVERT(varchar(36), unidad_negocio_pk) as unidad_negocio_pk,
+        MAX(unidad_negocio_id) as unidad_negocio_codigo,
         MAX(unidad_negocio_nombre) as unidad_negocio_nombre,
         MAX(sistema_origen) as sistema_origen,
         COUNT(DISTINCT fecha_operacion) as dias,
@@ -215,7 +239,7 @@ def get_kpis_por_unidad(
         MAX(fecha_operacion) as fecha_max
     FROM vw_Comercial_KPIs_Diarios_v2_Runtime
     WHERE {' AND '.join(where_clauses)}
-    GROUP BY unidad_negocio_id
+    GROUP BY unidad_negocio_pk
     ORDER BY ventas_total DESC
     """
 
