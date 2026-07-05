@@ -46,6 +46,7 @@ from core.source_resolver import (
 from modules.comercial.adapters import sumar_ventas_api_local_a_sucursal
 from modules.comercial import repository as repo
 from core.server_registry import resolve_unidad_by_server_sucursal
+from core.kpis_canonicos import KPIsCanonicosService
 
 # BLOQUE 4: Import de queries centralizadas (Fase 1 Plan Migración)
 from modules.comercial.queries.softrestaurant import query_ventas_periodo_sr
@@ -2371,6 +2372,154 @@ __all__ = [
 # MÁXIMA: EDARSAHUB SQL es el cerebro del sistema.
 # ============================================================================
 
+
+def _fecha_fin_exclusiva(fecha_fin: str) -> str:
+    """Convierte fecha_fin inclusiva del endpoint a límite exclusivo canónico."""
+    try:
+        return (datetime.fromisoformat(str(fecha_fin)).date() + timedelta(days=1)).isoformat()
+    except Exception:
+        return str(fecha_fin)
+
+
+
+def _normalizar_clave_unidad(valor: str) -> str:
+    """
+    Normaliza nombres/códigos para empatar API_LOCAL contra catálogo canónico:
+    '130° QRO LOCAL' -> '130QRO'
+    'ORIGEN LOCAL'   -> 'ORIGEN'
+    """
+    raw = str(valor or "").upper()
+    raw = raw.replace("LOCAL", "")
+    raw = raw.replace("Á", "A").replace("É", "E").replace("Í", "I").replace("Ó", "O").replace("Ú", "U")
+    return "".join(ch for ch in raw if ch.isalnum())
+
+
+def _obtener_servidor_conexion(server_id: str) -> Optional[Dict]:
+    """Lee metadata del servidor desde EDARSAHUB SQL, sin hardcode."""
+    sid = str(server_id or "").strip()
+    if not sid:
+        return None
+
+    conn = None
+    try:
+        conn = get_sql_connection()
+        cur = conn.cursor(as_dict=True)
+        cur.execute("""
+            SELECT TOP 1
+                CONVERT(varchar(36), id) AS id,
+                nombre,
+                tipo_conexion,
+                system_type,
+                activo
+            FROM dbo.Servidores_Conexiones
+            WHERE CONVERT(varchar(36), id) = %s
+        """, (sid,))
+        row = cur.fetchone()
+        return dict(row) if row else None
+    except Exception as exc:
+        logging.warning("[DASHBOARD-CANONICO] No se pudo leer Servidores_Conexiones para %s: %s", sid[:8], exc)
+        return None
+    finally:
+        try:
+            if conn:
+                conn.close()
+        except Exception:
+            pass
+
+
+def _resolver_unidad_pks_dashboard(server_id: str, sucursal_id: str = "DEFAULT") -> List[str]:
+    """
+    Resuelve unidades desde catálogo canónico.
+
+    Orden:
+    1. Match directo por Unidades_Negocio.server_id.
+    2. Si el server es API_LOCAL, match por nombre/código normalizado contra
+       Unidades_Negocio.codigo/nombre. Esto cubre MPRO local sin hardcode.
+    3. Si viene sucursal explícita, se respeta sucursal_origen_id/sucursal_id.
+    """
+    sid = str(server_id or "").strip().lower()
+    suc = str(sucursal_id or "").strip().upper()
+    usar_sucursal = bool(suc and suc != "DEFAULT")
+
+    unidades = UnidadesService.get_all()
+
+    def add_pk(target: List[str], u: Dict):
+        pk = u.get("unidad_negocio_pk") or u.get("id")
+        if pk and str(pk) not in target:
+            target.append(str(pk))
+
+    directas: List[str] = []
+    for u in unidades:
+        u_server = str(u.get("server_id") or u.get("servidor_id") or "").strip().lower()
+        if u_server != sid:
+            continue
+
+        if usar_sucursal:
+            suc_values = {
+                str(u.get("sucursal_origen_id") or "").strip().upper(),
+                str(u.get("sucursal_id") or "").strip().upper(),
+                str(u.get("codigo_sucursal") or "").strip().upper(),
+                str(u.get("sucursal_codigo") or "").strip().upper(),
+            }
+            if suc not in suc_values:
+                continue
+
+        add_pk(directas, u)
+
+    if directas:
+        return directas
+
+    servidor = _obtener_servidor_conexion(server_id)
+    servidor_nombre_norm = _normalizar_clave_unidad((servidor or {}).get("nombre"))
+
+    if not servidor_nombre_norm:
+        return []
+
+    por_nombre: List[str] = []
+    for u in unidades:
+        if usar_sucursal:
+            suc_values = {
+                str(u.get("sucursal_origen_id") or "").strip().upper(),
+                str(u.get("sucursal_id") or "").strip().upper(),
+                str(u.get("codigo_sucursal") or "").strip().upper(),
+                str(u.get("sucursal_codigo") or "").strip().upper(),
+            }
+            if suc not in suc_values:
+                continue
+
+        claves = {
+            _normalizar_clave_unidad(u.get("codigo")),
+            _normalizar_clave_unidad(u.get("unidad_negocio_codigo")),
+            _normalizar_clave_unidad(u.get("nombre")),
+            _normalizar_clave_unidad(u.get("unidad_negocio_nombre")),
+        }
+
+        if servidor_nombre_norm in claves:
+            add_pk(por_nombre, u)
+
+    if por_nombre:
+        logging.info(
+            "[DASHBOARD-CANONICO] server API/local %s resuelto por nombre normalizado '%s' -> %s",
+            str(server_id)[:8],
+            servidor_nombre_norm,
+            por_nombre,
+        )
+
+    return por_nombre
+
+
+def _ventas_periodo_canonicas(fecha_ini: str, fecha_fin: str, unidad_pks: List[str]) -> float:
+    if not fecha_ini or not fecha_fin or fecha_ini == "PENDIENTE":
+        return 0.0
+    resumen = KPIsCanonicosService.resumen_periodo(
+        fecha_ini,
+        _fecha_fin_exclusiva(fecha_fin),
+        unidad_pks=unidad_pks
+    )
+    metricas = resumen.get("metricas") or {}
+    return float(metricas.get("ventas") or 0)
+
+
 def get_dashboard_kpis_from_edarsahub(
     server_id: str,
     fecha_ini: str,  # YYYY-MM-DD
@@ -2382,249 +2531,82 @@ def get_dashboard_kpis_from_edarsahub(
     sucursal_id: str = 'DEFAULT'
 ) -> Dict:
     """
-    DASHBOARD COMERCIAL - KPIs desde EDARSAHUB (vw_Comercial_KPIs_Diarios_v2_Runtime)
-    ======================================================================
-    
-    Usa la MISMA fuente que el Tablero Ejecutivo para garantizar consistencia.
-    
-    FUENTE: vw_Comercial_KPIs_Diarios_v2_Runtime en EDARSAHUB
-    NO consulta: Servidores remotos SoftRestaurant
-    NO consulta: MongoDB
-    
-    Args:
-        server_id: UUID del servidor
-        fecha_ini, fecha_fin: Período actual (YYYY-MM-DD)
-        fecha_ini_ant, fecha_fin_ant: Período anterior para comparativo
-        fecha_ini_ano_ant, fecha_fin_ano_ant: Año anterior para comparativo
-        sucursal_id: ID de sucursal (DEFAULT si no se especifica)
-    
-    Returns:
-        Dict con KPIs o None si no hay datos
+    Dashboard Comercial desde KPIsCanonicosService.
+
+    Fuente única:
+    KPIsCanonicosService -> dbo.Comercial_KPIs_Diarios_v2
+
+    Mantiene contrato legacy de respuesta para routes.py, pero elimina:
+    - cálculo de KPIs en la ruta/servicio legacy;
+    - lectura de vw_Comercial_KPIs_Diarios_v2_Runtime como fuente paralela;
+    - fallback MPRO por mapeo hardcodeado de server_id.
     """
     logging.info(
-        f"[DASHBOARD-EDARSAHUB] server_id={server_id[:8]}... "
-        f"período={fecha_ini} a {fecha_fin} sucursal={sucursal_id}"
+        f"[DASHBOARD-CANONICO] server_id={str(server_id)[:8]} "
+        f"periodo={fecha_ini} a {fecha_fin} sucursal={sucursal_id}"
     )
-    
-    # 1. OBTENER DATOS DEL PERÍODO ACTUAL
-    # Primero intentar sin filtro de sucursal (para detectar si hay datos)
-    kpis_actual = _get_kpis_periodo_edarsahub_flexible(server_id, fecha_ini, fecha_fin, sucursal_id)
-    
-    if not kpis_actual['existe_data']:
+
+    unidad_pks = _resolver_unidad_pks_dashboard(server_id, sucursal_id)
+
+    if not unidad_pks and sucursal_id and sucursal_id != "DEFAULT":
+        logging.info(
+            f"[DASHBOARD-CANONICO] Sin match con sucursal={sucursal_id}; "
+            f"reintentando solo por server_id={str(server_id)[:8]}"
+        )
+        unidad_pks = _resolver_unidad_pks_dashboard(server_id, "DEFAULT")
+
+    if not unidad_pks:
         logging.warning(
-            f"[DASHBOARD-EDARSAHUB] Sin datos para server_id={server_id[:8]}... "
-            f"en período {fecha_ini} a {fecha_fin} (sucursal={sucursal_id})"
+            f"[DASHBOARD-CANONICO] No se resolvieron unidades canónicas para "
+            f"server_id={str(server_id)[:8]} sucursal={sucursal_id}"
         )
         return None
-    
-    ventas = kpis_actual['ventas']
-    pax = kpis_actual['pax']
-    cheques = kpis_actual['cheques']
-    
-    logging.info(
-        f"[DASHBOARD-EDARSAHUB] Datos encontrados: "
-        f"ventas=${ventas:,.2f}, pax={pax}, cheques={cheques}"
-    )
-    
-    # 2. CALCULAR MÉTRICAS DERIVADAS
-    ticket_promedio = ventas / cheques if cheques > 0 else 0
-    pax_promedio = pax / cheques if cheques > 0 else 0
-    consumo_persona = ventas / pax if pax > 0 else 0
-    
-    # 3. OBTENER DATOS DEL PERÍODO ANTERIOR (si se proporcionan fechas)
-    ventas_ant = 0
-    pax_ant = 0
-    cheques_ant = 0
-    
-    if fecha_ini_ant and fecha_fin_ant and fecha_ini_ant != "PENDIENTE":
-        kpis_ant = _get_kpis_periodo_edarsahub_flexible(server_id, fecha_ini_ant, fecha_fin_ant, sucursal_id)
-        if kpis_ant['existe_data']:
-            ventas_ant = kpis_ant['ventas']
-            pax_ant = kpis_ant['pax']
-            cheques_ant = kpis_ant['cheques']
-    
-    # 4. OBTENER DATOS DEL AÑO ANTERIOR (si se proporcionan fechas)
-    ventas_ano_ant = 0
-    pax_ano_ant = 0
-    cheques_ano_ant = 0
-    
-    if fecha_ini_ano_ant and fecha_fin_ano_ant:
-        kpis_ano = _get_kpis_periodo_edarsahub_flexible(server_id, fecha_ini_ano_ant, fecha_fin_ano_ant, sucursal_id)
-        if kpis_ano['existe_data']:
-            ventas_ano_ant = kpis_ano['ventas']
-            pax_ano_ant = kpis_ano['pax']
-            cheques_ano_ant = kpis_ano['cheques']
-    
-    # 5. CALCULAR COMPARATIVOS
+
+    hasta_excl = _fecha_fin_exclusiva(fecha_fin)
+    resumen = KPIsCanonicosService.resumen_periodo(fecha_ini, hasta_excl, unidad_pks=unidad_pks)
+    metricas = resumen.get("metricas") or {}
+    atomos = resumen.get("atomos") or {}
+    registros = int(atomos.get("dias") or 0)
+
+    ventas = float(metricas.get("ventas") or 0)
+    if registros <= 0 or ventas <= 0:
+        logging.warning(
+            f"[DASHBOARD-CANONICO] Sin datos canónicos para "
+            f"server_id={str(server_id)[:8]} periodo={fecha_ini} a {fecha_fin}"
+        )
+        return None
+
+    ventas_ant = _ventas_periodo_canonicas(fecha_ini_ant, fecha_fin_ant, unidad_pks) if fecha_ini_ant and fecha_fin_ant else 0.0
+    ventas_ano_ant = _ventas_periodo_canonicas(fecha_ini_ano_ant, fecha_fin_ano_ant, unidad_pks) if fecha_ini_ano_ant and fecha_fin_ano_ant else 0.0
+
     vs_periodo_anterior = round(((ventas - ventas_ant) / ventas_ant * 100), 1) if ventas_ant > 0 else 0
     vs_ano_anterior = round(((ventas - ventas_ano_ant) / ventas_ano_ant * 100), 1) if ventas_ano_ant > 0 else 0
-    
-    # 6. CONSTRUIR RESPUESTA
+
     return {
         'ventas_periodo': ventas,
-        'pax_total': pax,
-        'cheques_total': cheques,
-        'ticket_promedio': ticket_promedio,
-        'pax_promedio': pax_promedio,
-        'consumo_persona': consumo_persona,
-        'mesas_atendidas': cheques,  # Aproximación
-        'rotacion_mesas': 1.0,  # No disponible en datos consolidados
-        'venta_por_hora': 0,  # No disponible en datos consolidados
-        # Comparativos
+        'pax_total': float(metricas.get("pax") or 0),
+        'cheques_total': float(metricas.get("cheques") or 0),
+        'ticket_promedio': float(metricas.get("ticket_promedio") or 0),
+        'pax_promedio': float(metricas.get("pax_promedio") or 0),
+        'consumo_persona': float(metricas.get("consumo_promedio_pax") or 0),
+        'mesas_atendidas': float(metricas.get("cheques") or 0),
+        'rotacion_mesas': float(metricas.get("cheques_por_pax") or 0),
+        'venta_por_hora': 0,
         'ventas_anterior': ventas_ant,
-        'pax_anterior': pax_ant,
-        'cheques_anterior': cheques_ant,
+        'pax_anterior': 0,
+        'cheques_anterior': 0,
         'ventas_ano_anterior': ventas_ano_ant,
-        'pax_ano_anterior': pax_ano_ant,
-        'cheques_ano_anterior': cheques_ano_ant,
+        'pax_ano_anterior': 0,
+        'cheques_ano_anterior': 0,
         'vs_periodo_anterior': vs_periodo_anterior,
         'vs_ano_anterior': vs_ano_anterior,
-        'vs_presupuesto': 0,  # No disponible en EDARSAHUB
-        # Metadata
-        'source': 'EDARSAHUB_SQL',
-        'source_table': 'vw_Comercial_KPIs_Diarios_v2_Runtime',
-        'registros_consultados': kpis_actual['registros'],
+        'vs_presupuesto': 0,
+        'source': 'KPIsCanonicosService',
+        'source_table': resumen.get("source_table"),
+        'registros_consultados': registros,
+        'unidad_pks': unidad_pks,
     }
 
-
-def _get_kpis_periodo_edarsahub_flexible(
-    server_id: str,
-    fecha_ini: str,
-    fecha_fin: str,
-    sucursal_id: str = 'DEFAULT'
-) -> Dict:
-    """
-    Obtiene KPIs de EDARSAHUB con lógica flexible de sucursal.
-    
-    Si sucursal_id='DEFAULT' y no hay datos, intenta sin filtro de sucursal.
-    Esto maneja casos donde los datos no tienen sucursal_id configurada.
-    
-    FIX MPRO: Si no encuentra por server_id, intenta buscar por unidad_negocio_pk
-    derivado del nombre del servidor. Esto maneja casos donde los datos MPRO
-    tienen un server_id diferente al de Servidores_Conexiones.
-    """
-    # Primer intento: con sucursal específica
-    kpis = _get_kpis_periodo_edarsahub(server_id, fecha_ini, fecha_fin, sucursal_id)
-    
-    if kpis['existe_data']:
-        return kpis
-    
-    # Si no hay datos con sucursal DEFAULT, intentar SIN filtro de sucursal
-    if sucursal_id == 'DEFAULT':
-        query = f"""
-        SELECT 
-            ISNULL(SUM(ventas_sin_propina), 0) as ventas,
-            ISNULL(SUM(pax_total), 0) as pax_total,
-            ISNULL(SUM(tickets_total), 0) as cheques,
-            COUNT(*) as registros
-        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-        WHERE server_id = '{server_id}'
-          AND fecha_operacion >= '{fecha_ini}'
-          AND fecha_operacion <= '{fecha_fin}'
-          AND ventas_sin_propina > 0
-        """
-        result = _query_edarsahub_tablero(query)
-        
-        if result and len(result) > 0:
-            row = result[0]
-            ventas = float(row.get('ventas') or 0)
-            pax = int(row.get('pax_total') or 0)
-            cheques = int(row.get('cheques') or 0)
-            registros = int(row.get('registros') or 0)
-            
-            if registros > 0:
-                logging.info(
-                    f"[DASHBOARD-EDARSAHUB] Datos encontrados SIN filtro sucursal: "
-                    f"ventas=${ventas:,.2f}, registros={registros}"
-                )
-                return {
-                    'ventas': ventas,
-                    'pax': pax,
-                    'cheques': cheques,
-                    'registros': registros,
-                    'existe_data': True
-                }
-    
-    # =========================================================================
-    # FIX MPRO: Buscar por unidad_negocio_pk si no encontramos por server_id
-    # =========================================================================
-    # Este fallback maneja el caso donde los datos MPRO en vw_Comercial_KPIs_Diarios_v2_Runtime
-    # tienen un server_id diferente (ej: ManagmentPro) pero el unidad_negocio_pk
-    # corresponde a la unidad correcta (ORIGEN, 130QRO, etc.)
-    
-    # Obtener nombre del servidor para derivar unidad_negocio_pk
-    unidad_ids = _obtener_unidad_ids_desde_servidor(server_id)
-    
-    if unidad_ids:
-        logging.info(f"[DASHBOARD-EDARSAHUB-MPRO-FIX] Intentando búsqueda por unidad_negocio_pk: {unidad_ids}")
-        
-        # Construir condición IN para múltiples posibles IDs
-        ids_str = ", ".join([f"'{uid}'" for uid in unidad_ids])
-        
-        query_mpro = f"""
-        SELECT 
-            ISNULL(SUM(ventas_sin_propina), 0) as ventas,
-            ISNULL(SUM(pax_total), 0) as pax_total,
-            ISNULL(SUM(tickets_total), 0) as cheques,
-            COUNT(*) as registros
-        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-        WHERE unidad_negocio_pk IN ({ids_str})
-          AND fecha_operacion >= '{fecha_ini}'
-          AND fecha_operacion <= '{fecha_fin}'
-          AND ventas_sin_propina > 0
-        """
-        
-        result_mpro = _query_edarsahub_tablero(query_mpro)
-        
-        if result_mpro and len(result_mpro) > 0:
-            row = result_mpro[0]
-            ventas = float(row.get('ventas') or 0)
-            pax = int(row.get('pax_total') or 0)
-            cheques = int(row.get('cheques') or 0)
-            registros = int(row.get('registros') or 0)
-            
-            if registros > 0:
-                logging.info(
-                    f"[DASHBOARD-EDARSAHUB-MPRO-FIX] Datos MPRO encontrados por unidad_negocio_pk: "
-                    f"ventas=${ventas:,.2f}, registros={registros}"
-                )
-                return {
-                    'ventas': ventas,
-                    'pax': pax,
-                    'cheques': cheques,
-                    'registros': registros,
-                    'existe_data': True
-                }
-    
-    return {
-        'ventas': 0,
-        'pax': 0,
-        'cheques': 0,
-        'registros': 0,
-        'existe_data': False
-    }
-
-
-def _obtener_unidad_ids_desde_servidor(server_id: str) -> List[str]:
-    """
-    Obtiene posibles unidad_negocio_pk a partir del server_id.
-    
-    Mapeo basado en nombres de servidor:
-    - ORIGEN LOCAL -> [UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN']
-    - 130° QRO LOCAL -> [UnidadesService.resolver_codigo('130QRO') or '130QRO', '130-QRO']
-    - etc.
-    """
-    # Mapeo de server_id a posibles unidad_negocio_pk
-    mapeo_servidor_unidad = {
-        # ORIGEN LOCAL
-        '817a0aa8-6170-4738-a8f6-a72ac36ba0df': [UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN'],
-        # 130° QRO LOCAL
-        '72f6e9a7-8ea2-4eb2-802e-4ee31753435e': [UnidadesService.resolver_codigo('130QRO') or '130QRO', '130-QRO'],
-        # ManagmentPro (servidor MPRO principal) - no necesita fallback
-        '1b230a06-ffaf-4c70-bd27-b1be3579dea6': [],
-    }
-    
-    return mapeo_servidor_unidad.get(server_id, [])
 
 
 
