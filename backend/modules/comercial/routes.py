@@ -2861,371 +2861,261 @@ async def comercial_ventas_tiempo(
 
 @router.get("/comercial/mesas/{server_id}")
 async def comercial_mesas(
-    server_id: str, 
+    server_id: str,
     sucursal: str = Query(default=""),
     fecha: str = Query(default=""),
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Análisis de mesas por sucursal.
-    
-    FASE DDL COMERCIAL: MIGRADO A SQL-FIRST
-    Consulta tabla Sync_Mesas en EDARSAHUB.
+
+    Fuente única:
+    - dbo.Sync_Mesas en EDARSAHUB SQL.
+
+    Sin MongoDB, sin live, sin queries a SoftRestaurant/MPRO,
+    sin estimaciones desde servidores fuente.
     """
-    from modules.comercial.cache_service import (
-        SourceStatus, build_envelope_response
-    )
-    
+
+    def _safe_int(value, default=0):
+        try:
+            return int(value or default)
+        except Exception:
+            return default
+
+    def _safe_float(value, default=0.0):
+        try:
+            return float(value or default)
+        except Exception:
+            return default
+
+    def _empty_mesas_unidad(nombre="Unidad"):
+        return {
+            "nombre": nombre or "Unidad",
+            "total_mesas": 0,
+            "capacidad_total": 0,
+            "mesas_atendidas_mes": 0,
+            "comensales_mes": 0,
+            "rotacion_promedio": 0,
+            "ticket_promedio": 0,
+            "cheque_promedio": 0,
+            "pax_promedio": 0,
+            "vueltas_por_dia": 0,
+            "vueltas_por_hora_pico": 0
+        }
+
     server = await get_server_by_id(server_id)
+    server_name = server.get("name") if server else "Servidor no encontrado"
+
     if not server:
-        return build_envelope_response(
-            source_status=SourceStatus.ERROR,
-            data={"mesas": []},
-            source_message="Servidor no encontrado"
-        )
-    
-    # FASE 6-8: Validación centralizada de acceso
+        return {
+            "success": False,
+            "source_status": "ERROR",
+            "source_type": "ERROR",
+            "source_message": "Servidor no encontrado",
+            "unidad": _empty_mesas_unidad(server_name),
+            "rotacion": [],
+            "mesas": []
+        }
+
     await validate_server_access_rbac(current_user, server_id)
-    
-    # SQL-FIRST: Consultar tabla sincronizada
+
+    conn = None
     try:
-        import pymssql
         conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
-        cursor = conn.cursor()
-        
-        # Determinar fecha (default hoy)
+        cursor = conn.cursor(as_dict=True)
+
+        sucursal_val = (sucursal or "").strip()
+        filtrar_sucursal = bool(
+            sucursal_val and sucursal_val.lower() not in ("all", "default", "todas", "todos")
+        )
+
         if fecha:
-            fecha_op = datetime.strptime(fecha, '%Y-%m-%d').date()
+            fecha_op = datetime.strptime(fecha[:10], "%Y-%m-%d").date()
         else:
-            fecha_op = datetime.now().date()
-        
-        if sucursal:
+            if filtrar_sucursal:
+                cursor.execute("""
+                    SELECT MAX(FechaOperacion) AS fecha_op
+                    FROM dbo.Sync_Mesas
+                    WHERE ServerID = %s AND SucursalID = %s
+                """, (server_id, sucursal_val))
+            else:
+                cursor.execute("""
+                    SELECT MAX(FechaOperacion) AS fecha_op
+                    FROM dbo.Sync_Mesas
+                    WHERE ServerID = %s
+                """, (server_id,))
+
+            fecha_row = cursor.fetchone() or {}
+            fecha_op = fecha_row.get("fecha_op")
+
+            if hasattr(fecha_op, "date"):
+                fecha_op = fecha_op.date()
+            elif isinstance(fecha_op, str) and len(fecha_op) >= 10:
+                fecha_op = datetime.strptime(fecha_op[:10], "%Y-%m-%d").date()
+
+        if not fecha_op:
+            cursor.close()
+            conn.close()
+            conn = None
+            return {
+                "success": True,
+                "source_status": "SIN_DATOS_EDARSAHUB",
+                "source_type": "EDARSAHUB_SQL_SYNC_MESAS",
+                "source_table": "dbo.Sync_Mesas",
+                "source_message": "Sin datos en dbo.Sync_Mesas para el servidor solicitado",
+                "server_name": server_name,
+                "fecha": None,
+                "unidad": _empty_mesas_unidad(server_name),
+                "rotacion": [],
+                "mesas": []
+            }
+
+        if filtrar_sucursal:
             cursor.execute("""
-                SELECT * FROM Sync_Mesas
-                WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s
+                SELECT *
+                FROM dbo.Sync_Mesas
+                WHERE ServerID = %s
+                  AND SucursalID = %s
+                  AND FechaOperacion = %s
                 ORDER BY MesaNumero
-            """, (server_id, sucursal, fecha_op))
+            """, (server_id, sucursal_val, fecha_op))
         else:
             cursor.execute("""
-                SELECT * FROM Sync_Mesas
-                WHERE ServerID = %s AND FechaOperacion = %s
+                SELECT *
+                FROM dbo.Sync_Mesas
+                WHERE ServerID = %s
+                  AND FechaOperacion = %s
                 ORDER BY SucursalNombre, MesaNumero
             """, (server_id, fecha_op))
-        
-        rows = cursor.fetchall()
+
+        rows = list(cursor.fetchall() or [])
         cursor.close()
         conn.close()
-        
-        mesas = []
+        conn = None
+
+        if not rows:
+            return {
+                "success": True,
+                "source_status": "SIN_DATOS_EDARSAHUB",
+                "source_type": "EDARSAHUB_SQL_SYNC_MESAS",
+                "source_table": "dbo.Sync_Mesas",
+                "source_message": f"Sin mesas sincronizadas en dbo.Sync_Mesas para {fecha_op}",
+                "server_name": server_name,
+                "fecha": str(fecha_op),
+                "unidad": _empty_mesas_unidad(server_name),
+                "rotacion": [],
+                "mesas": []
+            }
+
+        total_mesas = len(rows)
+        total_capacidad = 0
         total_cuentas = 0
         total_comensales = 0
-        total_venta = 0
-        
+        total_venta = 0.0
+        mesas = []
+        rotacion_por_mesa = []
+
+        nombre_unidad = rows[0].get("SucursalNombre") or server_name
+
         for row in rows:
-            cuentas = int(row.get("TotalCuentas") or 0)
-            comensales = int(row.get("TotalComensales") or 0)
-            venta = float(row.get("VentaTotal") or 0)
-            
+            capacidad = _safe_int(row.get("Capacidad"), 0)
+            cuentas = _safe_int(row.get("TotalCuentas"), 0)
+            comensales = _safe_int(row.get("TotalComensales"), 0)
+            venta = _safe_float(row.get("VentaTotal"), 0.0)
+            rotacion_dia = _safe_float(row.get("RotacionDia"), cuentas)
+            mesa_nombre = row.get("MesaNombre") or row.get("MesaNumero") or "SIN_MESA"
+
+            total_capacidad += capacidad
             total_cuentas += cuentas
             total_comensales += comensales
             total_venta += venta
-            
+
+            capacidad_servicio = capacidad * max(cuentas, 1)
+            ocupacion = round((comensales / capacidad_servicio) * 100, 1) if capacidad_servicio > 0 else 0
+            ocupacion = max(0, min(100, ocupacion))
+
             mesas.append({
                 "mesa_numero": row.get("MesaNumero"),
-                "mesa_nombre": row.get("MesaNombre"),
+                "mesa_nombre": mesa_nombre,
                 "zona_id": row.get("ZonaID"),
                 "zona_nombre": row.get("ZonaNombre"),
-                "capacidad": int(row.get("Capacidad") or 4),
+                "capacidad": capacidad,
                 "total_cuentas": cuentas,
                 "total_comensales": comensales,
-                "venta_total": venta,
-                "ticket_promedio": float(row.get("TicketPromedio") or 0),
-                "tiempo_promedio_ocupacion": int(row.get("TiempoPromedioOcupacion") or 0),
-                "rotacion_dia": float(row.get("RotacionDia") or 0),
+                "venta_total": round(venta, 2),
+                "ticket_promedio": round(_safe_float(row.get("TicketPromedio"), 0.0), 2),
+                "tiempo_promedio_ocupacion": _safe_int(row.get("TiempoPromedioOcupacion"), 0),
+                "rotacion_dia": round(rotacion_dia, 2),
                 "estado_actual": row.get("EstadoActual") or "DESCONOCIDO",
                 "sucursal_id": row.get("SucursalID"),
                 "sucursal_nombre": row.get("SucursalNombre"),
             })
-        
-        resumen = {
-            "total_mesas": len(mesas),
-            "total_cuentas": total_cuentas,
-            "total_comensales": total_comensales,
-            "venta_total": total_venta,
-            "ticket_promedio": total_venta / total_cuentas if total_cuentas > 0 else 0,
+
+            rotacion_por_mesa.append({
+                "mesa": mesa_nombre,
+                "capacidad": capacidad,
+                "vueltas": round(rotacion_dia, 2),
+                "ocupacion": ocupacion
+            })
+
+        ticket_promedio = total_venta / total_cuentas if total_cuentas > 0 else 0
+        pax_promedio = total_comensales / total_cuentas if total_cuentas > 0 else 0
+        rotacion_promedio = total_cuentas / total_mesas if total_mesas > 0 else 0
+        vueltas_por_hora_pico = max([_safe_float(m.get("vueltas"), 0) for m in rotacion_por_mesa], default=0)
+
+        unidad_data = {
+            "nombre": nombre_unidad,
+            "total_mesas": total_mesas,
+            "capacidad_total": total_capacidad,
+            "mesas_atendidas_mes": total_cuentas,
+            "comensales_mes": total_comensales,
+            "rotacion_promedio": round(rotacion_promedio, 2),
+            "ticket_promedio": round(ticket_promedio, 2),
+            "cheque_promedio": round(ticket_promedio, 2),
+            "pax_promedio": round(pax_promedio, 2),
+            "vueltas_por_dia": round(total_cuentas, 2),
+            "vueltas_por_hora_pico": round(vueltas_por_hora_pico, 2)
         }
-        
-        return build_envelope_response(
-            source_status=SourceStatus.SUCCESS if mesas else SourceStatus.SUCCESS,
-            data={"mesas": mesas, "resumen": resumen, "fecha": str(fecha_op)},
-            source_message=f"SQL-First: {len(mesas)} mesas desde Sync_Mesas",
-            cache_used=False
-        )
-        
-    except Exception as e:
-        logging.error(f"[MESAS] Error SQL: {e}")
-        return build_envelope_response(
-            source_status=SourceStatus.ERROR,
-            data={"mesas": []},
-            source_message=f"Error consultando mesas: {str(e)}"
-        )
-    
-    # CÓDIGO LEGACY (solo se ejecuta si ENABLE_LIVE_GUARD_RAIL = False)
-    # ARQUITECTURA: Obtener nombre de unidad desde EDARSAHUB (primario) o MongoDB (LEGACY_FALLBACK)
-    nombre_unidad_mostrar, nombre_source = await get_sucursal_nombre(server_id, sucursal, server['name'])
-    if nombre_source == 'MONGO_LEGACY_FALLBACK':
-        logging.warning(f"[LEGACY_FALLBACK] Mesas: Nombre de sucursal {sucursal} obtenido de MongoDB")
-    
-    try:
-        hoy = datetime.now()
-        fecha_ini = hoy.replace(day=1).strftime('%Y-%m-%d')
-        fecha_fin = hoy.strftime('%Y-%m-%d')
-        
-        # FASE 3A.2: Migrado a helper centralizado
-        if is_softrestaurant_system(server.get('system_type')):
-            # Formato YYYYMMDD universal para SQL Server
-            f_ini = fecha_ini.replace('-', '')
-            f_fin = fecha_fin.replace('-', '')
-            
-            # Verificar si la tabla cheques tiene columna 'propina'
-            has_propina = check_column_exists(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], 'cheques', 'propina'
-            )
-            propina_expr = get_propina_safe_column(has_propina)
-            
-            # KPIs generales de mesas - sin usar numcuenta que no existe en todas las instalaciones
-            # NOTA: Se excluyen propinas de las ventas SI existe la columna
-            query_unidad = f"""
-SELECT 
-    COUNT(DISTINCT cheques.folio) as cheques_mes,
-    ISNULL(SUM(cheques.nopersonas), 0) as comensales_mes,
-    AVG(cheques.total{propina_expr}) as ticket_promedio,
-    ISNULL(AVG(CAST(cheques.nopersonas as float)), 0) as pax_promedio
-FROM cheques
-INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE CONVERT(varchar, turnos.apertura, 112) >= '{f_ini}'
-  AND CONVERT(varchar, turnos.apertura, 112) <= '{f_fin}'
-  AND cheques.cancelado = 0
-  AND cheques.total > 0
-"""
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_unidad
-            )
-            
-            if result and len(result) > 0:
-                row = result[0]
-                cheques_mes = int(row['cheques_mes'] or 0)
-                comensales_mes = int(row['comensales_mes'] or 0)
-                ticket_promedio = float(row['ticket_promedio'] or 0)
-                pax_promedio = float(row['pax_promedio'] or 0)
-                # Estimamos mesas únicas como cheques / 2 (asumiendo 2 servicios por mesa por día en promedio)
-                total_mesas = max(1, cheques_mes // max(1, hoy.day * 2))
-            else:
-                total_mesas = 0
-                cheques_mes = 0
-                comensales_mes = 0
-                ticket_promedio = 0
-                pax_promedio = 0
-            
-            rotacion_promedio = round(cheques_mes / total_mesas, 1) if total_mesas > 0 else 0
-            
-            # Obtener número de días del mes hasta hoy
-            dias_mes = hoy.day
-            vueltas_por_dia = round(cheques_mes / dias_mes, 0) if dias_mes > 0 else 0
-            
-            # BLINDAJE: Usar nombre obtenido de MongoDB
-            unidad_data = {
-                "nombre": nombre_unidad_mostrar,
-                "total_mesas": total_mesas,
-                "capacidad_total": total_mesas * 4,  # Estimado 4 personas por mesa
-                "mesas_atendidas_mes": cheques_mes,
-                "comensales_mes": comensales_mes,
-                "rotacion_promedio": rotacion_promedio,
-                "ticket_promedio": round(ticket_promedio, 2),
-                "cheque_promedio": round(ticket_promedio * pax_promedio, 2) if pax_promedio > 0 else ticket_promedio,
-                "pax_promedio": round(pax_promedio, 1),
-                "vueltas_por_dia": vueltas_por_dia,
-                "vueltas_por_hora_pico": round(vueltas_por_dia / 4, 0)  # Estimado 4 horas pico
-            }
-            
-            # Rotación por hora - más útil sin numcuenta
-            query_rotacion = f"""
-SELECT TOP 15
-    DATEPART(HOUR, turnos.apertura) as hora,
-    COUNT(*) as vueltas,
-    ISNULL(AVG(CAST(cheques.nopersonas as float)), 2) as capacidad_promedio
-FROM cheques
-INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE CONVERT(varchar, turnos.apertura, 112) >= '{f_ini}'
-  AND CONVERT(varchar, turnos.apertura, 112) <= '{f_fin}'
-  AND cheques.cancelado = 0
-  AND cheques.total > 0
-GROUP BY DATEPART(HOUR, turnos.apertura)
-ORDER BY COUNT(*) DESC
-"""
-            result_rot = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_rotacion
-            )
-            
-            max_vueltas = max([int(r['vueltas'] or 0) for r in result_rot]) if result_rot else 1
-            
-            rotacion_por_mesa = []
-            for r in result_rot:
-                vueltas = int(r['vueltas'] or 0)
-                ocupacion = round((vueltas / max_vueltas * 100), 0) if max_vueltas > 0 else 0
-                hora = int(r['hora'] or 0)
-                rotacion_por_mesa.append({
-                    "mesa": f"Hora {hora:02d}:00",
-                    "capacidad": int(r['capacidad_promedio'] or 2),
-                    "vueltas": vueltas,
-                    "ocupacion": ocupacion
-                })
-            
-            return {
-                "unidad": unidad_data,
-                "rotacion": rotacion_por_mesa
-            }
-        
-        # FASE 3A.2: Migrado a helper centralizado
-        elif is_mpro_system(server.get('system_type')):
-            # BLINDAJE: Definir f_fin para MPRO
-            f_fin = fecha_fin.replace('-', '')
-            
-            # Filtro de sucursal para MPRO - no filtrar si es "default" o nombre del servidor
-            sucursal_filter = ""
-            nombre_servidor_2 = server.get('name', '').lower()
-            sucursal_lower_2 = (sucursal or '').lower()
-            skip_filter_2 = (not sucursal or sucursal_lower_2 == 'default' or sucursal_lower_2 == nombre_servidor_2)
-            if sucursal and not skip_filter_2:
-                # BLINDAJE: Detectar si es código o nombre de sucursal
-                es_codigo_2 = sucursal.isdigit() or (len(sucursal) == 4 and sucursal[0] == '0')
-                if es_codigo_2:
-                    sucursal_filter = f"AND VE.Sc_Cve_Sucursal = '{sucursal}'"
-                else:
-                    sucursal_filter = f"AND S.Sc_Descripcion LIKE '%{sucursal}%'"
-            
-            # KPIs generales de mesas para MPRO
-            query_unidad = f"""
-SELECT 
-    COUNT(DISTINCT VE.Vn_Folio) as cheques_mes,
-    ISNULL(SUM(C.Co_Personas), 0) as comensales_mes,
-    AVG(VE.Vn_Precio_Neto_Importe) as ticket_promedio,
-    ISNULL(AVG(CAST(C.Co_Personas as float)), 0) as pax_promedio
-FROM Venta_Encabezado VE
-LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
-LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
-WHERE VE.Vn_Fecha >= CONVERT(datetime, '{fecha_ini} 00:00:00', 120)
-  AND VE.Vn_Fecha <= CONVERT(datetime, '{f_fin} 23:59:59', 120)
-  AND VE.Es_Cve_Estado <> 'CA'
-  AND VE.Vn_Precio_Neto_Importe > 0
-  {sucursal_filter}
-"""
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_unidad
-            )
-            
-            if result and len(result) > 0:
-                row = result[0]
-                cheques_mes = int(row['cheques_mes'] or 0)
-                comensales_mes = int(row['comensales_mes'] or 0)
-                ticket_promedio = float(row['ticket_promedio'] or 0)
-                pax_promedio = float(row['pax_promedio'] or 0)
-                total_mesas = max(1, cheques_mes // max(1, hoy.day * 2))
-            else:
-                total_mesas = 0
-                cheques_mes = 0
-                comensales_mes = 0
-                ticket_promedio = 0
-                pax_promedio = 0
-            
-            rotacion_promedio = round(cheques_mes / total_mesas, 1) if total_mesas > 0 else 0
-            dias_mes = hoy.day
-            vueltas_por_dia = round(cheques_mes / dias_mes, 0) if dias_mes > 0 else 0
-            
-            # BLINDAJE MPRO: Usar nombre de MongoDB (ya obtenido arriba), con fallback a SQL si no se encontró
-            nombre_final_mpro = nombre_unidad_mostrar
-            # Si MongoDB no encontró el nombre (aún es server['name']), intentar con SQL
-            if nombre_final_mpro == server['name'] and sucursal:
-                es_codigo_suc = sucursal.isdigit() or (len(sucursal) == 4 and sucursal[0] == '0')
-                if es_codigo_suc:
-                    query_nombre = f"""
-SELECT TOP 1 Sc_Descripcion as nombre FROM Sucursal WHERE Sc_Cve_Sucursal = '{sucursal}'
-"""
-                    try:
-                        result_nombre = execute_sql_query(
-                            server['host'], server['port'], server['database'],
-                            server['username'], server['password'], query_nombre
-                        )
-                        if result_nombre and len(result_nombre) > 0 and result_nombre[0].get('nombre'):
-                            nombre_final_mpro = result_nombre[0]['nombre']
-                    except Exception as e:
-                        logging.warning(f"No se pudo obtener nombre de sucursal {sucursal} desde SQL: {e}")
-            
-            unidad_data = {
-                "nombre": nombre_final_mpro,
-                "total_mesas": total_mesas,
-                "capacidad_total": total_mesas * 4,
-                "mesas_atendidas_mes": cheques_mes,
-                "comensales_mes": comensales_mes,
-                "rotacion_promedio": rotacion_promedio,
-                "ticket_promedio": round(ticket_promedio, 2),
-                "cheque_promedio": round(ticket_promedio * pax_promedio, 2) if pax_promedio > 0 else ticket_promedio,
-                "pax_promedio": round(pax_promedio, 1),
-                "vueltas_por_dia": vueltas_por_dia,
-                "vueltas_por_hora_pico": round(vueltas_por_dia / 4, 0)
-            }
-            
-            # Rotación por hora para MPRO
-            query_rotacion = f"""
-SELECT TOP 15
-    DATEPART(HOUR, VE.Vn_Fecha) as hora,
-    COUNT(*) as vueltas,
-    ISNULL(AVG(CAST(C.Co_Personas as float)), 2) as capacidad_promedio
-FROM Venta_Encabezado VE
-LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
-LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
-WHERE VE.Vn_Fecha >= CONVERT(datetime, '{fecha_ini} 00:00:00', 120)
-  AND VE.Vn_Fecha <= CONVERT(datetime, '{f_fin} 23:59:59', 120)
-  AND VE.Es_Cve_Estado <> 'CA'
-  AND VE.Vn_Precio_Neto_Importe > 0
-  {sucursal_filter}
-GROUP BY DATEPART(HOUR, VE.Vn_Fecha)
-ORDER BY COUNT(*) DESC
-"""
-            result_rotacion = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_rotacion
-            )
-            
-            rotacion_por_mesa = []
-            for r in (result_rotacion or []):
-                hora = int(r['hora'] or 0)
-                vueltas = int(r['vueltas'] or 0)
-                ocupacion = min(100, round((vueltas / max(1, vueltas_por_dia)) * 100, 1)) if vueltas_por_dia > 0 else 0
-                rotacion_por_mesa.append({
-                    "mesa": f"Hora {hora:02d}:00",
-                    "capacidad": int(r['capacidad_promedio'] or 2),
-                    "vueltas": vueltas,
-                    "ocupacion": ocupacion
-                })
-            
-            return {
-                "unidad": unidad_data,
-                "rotacion": rotacion_por_mesa
-            }
-        
+
         return {
-            "unidad": {"nombre": server['name'], "total_mesas": 0},
-            "rotacion": []
+            "success": True,
+            "source_status": "SUCCESS",
+            "source_type": "EDARSAHUB_SQL_SYNC_MESAS",
+            "source_table": "dbo.Sync_Mesas",
+            "source_message": f"{total_mesas} mesas desde dbo.Sync_Mesas",
+            "server_name": server_name,
+            "fecha": str(fecha_op),
+            "unidad": unidad_data,
+            "rotacion": rotacion_por_mesa,
+            "mesas": mesas,
+            "resumen": {
+                "total_mesas": total_mesas,
+                "total_cuentas": total_cuentas,
+                "total_comensales": total_comensales,
+                "venta_total": round(total_venta, 2),
+                "ticket_promedio": round(ticket_promedio, 2)
+            }
         }
-        
+
     except Exception as e:
-        logging.error(f"Error en mesas: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logging.error(f"[MESAS-SQL-CANONICO] Error consultando dbo.Sync_Mesas: {e}")
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+        return {
+            "success": False,
+            "source_status": "ERROR",
+            "source_type": "ERROR_EDARSAHUB_SQL_SYNC_MESAS",
+            "source_table": "dbo.Sync_Mesas",
+            "source_message": f"Error consultando dbo.Sync_Mesas: {str(e)[:180]}",
+            "server_name": server_name,
+            "unidad": _empty_mesas_unidad(server_name),
+            "rotacion": [],
+            "mesas": []
+        }
 
 
 @router.get("/comercial/detalle-movimientos/{server_id}")
