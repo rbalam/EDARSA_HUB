@@ -17875,7 +17875,7 @@ app.include_router(rbac_router, prefix="/api/v2", tags=["RBAC"])
 # ============= COMERCIAL V2 - ENDPOINTS AISLADOS =============
 # Endpoints que leen SOLO desde EDARSAHUB v2
 # NO reemplazan el tablero actual
-# Feature Flag: COMERCIAL_V2_ENABLED=false (default OFF)
+# Feature Flag: COMERCIAL_V2_ENABLED=true (default ON)
 try:
     from modules.comercial_v2 import get_comercial_v2_router
     comercial_v2_router = get_comercial_v2_router()

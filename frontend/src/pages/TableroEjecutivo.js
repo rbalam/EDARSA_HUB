@@ -523,51 +523,17 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
           return;
         }
         
-        // Solo para modo mensual/anual: Cargar datos adicionales
-        if (!unidad?.server_id) {
-          // Sin server_id, no podemos cargar datos adicionales
-          setDetalleData({
-            dashboard: null,
-            ventasTiempo: null,
-            mesas: null
-          });
-          setLoading(false);
-          return;
-        }
-        
-        // Parámetros con sucursal (si existe)
-        const params = unidad.sucursal ? `?sucursal=${encodeURIComponent(unidad.sucursal)}` : '';
-        const periodParams = unidad.sucursal ? `?periodo=mes&sucursal=${encodeURIComponent(unidad.sucursal)}` : '?periodo=mes';
-        
-        // CORRECCIÓN: Intentar cargar datos adicionales de forma silenciosa
-        // Los datos básicos del modal ya están en `unidad`, estos son opcionales para enriquecer
-        let dashboard = null, ventasTiempo = null, mesas = null;
-        
-        try {
-          const results = await Promise.allSettled([
-            api.get(`/comercial/dashboard/${unidad.server_id}${periodParams}`),
-            api.get(`/comercial/ventas-tiempo/${unidad.server_id}${params}`),
-            api.get(`/comercial/mesas/${unidad.server_id}${params}`)
-          ]);
-          
-          // Extraer solo las respuestas exitosas
-          if (results[0].status === 'fulfilled') dashboard = results[0].value.data;
-          if (results[1].status === 'fulfilled') ventasTiempo = results[1].value.data;
-          if (results[2].status === 'fulfilled') mesas = results[2].value.data;
-          
-          // Log silencioso si alguna falló (no mostrar toast)
-          const failedCount = results.filter(r => r.status === 'rejected').length;
-          if (failedCount > 0) {
-            logger.warn(`[DetalleUnidad] ${failedCount} endpoints opcionales fallaron para ${unidad.server_id} - datos básicos disponibles`);
-          }
-        } catch (e) {
-          logger.warn('[DetalleUnidad] Error cargando datos opcionales:', e);
-        }
-        
+        // V2 ES FUENTE ÚNICA:
+        // No llamar endpoints legacy /comercial/dashboard, /comercial/ventas-tiempo ni /comercial/mesas.
+        // El modal conserva KPIs desde la respuesta canónica V2 ya cargada.
+        // Sin MongoDB, sin live, sin fuentes paralelas.
         setDetalleData({
-          dashboard,
-          ventasTiempo,
-          mesas
+          dashboard: null,
+          ventasTiempo: null,
+          mesas: null,
+          modoVentasDia: false,
+          fuente: 'EDARSAHUB_SQL_V2',
+          sinLegacy: true
         });
       } catch (error) {
         logger.error('Error cargando detalle:', error);
