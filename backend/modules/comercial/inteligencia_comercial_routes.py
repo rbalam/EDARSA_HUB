@@ -5,7 +5,7 @@ Endpoints SQL-first para dashboard ejecutivo.
 
 Reglas:
 - Lee EDARSAHUB SQL Server EXCLUSIVAMENTE.
-- Usa vistas canónicas: Comercial_Inteligencia_VW_KPIsEjecutivos
+- Usa KPIsCanonicosService como servicio canónico único
 - Usa SP canónico: Sp_Validar_Inteligencia_Comercial_Status
 - No consulta SoftRestaurant/MPRO en vivo desde dashboard.
 - No usa MongoDB como fuente de datos comerciales.
@@ -25,6 +25,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.security import get_current_user
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.kpis_canonicos import KPIsCanonicosService
 
 # P2-01 Config Central
 def _get_edarsahub_config_dict() -> dict:
@@ -96,6 +97,40 @@ def _exec_sp(sp_name: str) -> List[Dict[str, Any]]:
         logger.exception(f"Error ejecutando SP {sp_name}")
         raise HTTPException(status_code=500, detail=f"Error SP {sp_name}: {str(exc)[:300]}")
 
+
+
+
+# V1_0_INTELIGENCIA_CANONICA
+def _fecha_iso(value: date) -> str:
+    return value.isoformat() if hasattr(value, "isoformat") else str(value)
+
+
+def _hasta_exclusivo(fecha_fin: date) -> str:
+    return (fecha_fin + timedelta(days=1)).isoformat()
+
+
+def _rango_default(fecha_inicio: Optional[date], fecha_fin: Optional[date], dias: int = 30) -> tuple[str, str]:
+    fi = fecha_inicio or (date.today() - timedelta(days=dias))
+    ff = fecha_fin or date.today()
+    return _fecha_iso(fi), _hasta_exclusivo(ff)
+
+
+def _filtrar_resumen_por_unidad(
+    resumen: Dict[str, Any],
+    unidad_negocio_nombre: Optional[str],
+    desde: str,
+    hasta: str
+) -> Dict[str, Any]:
+    if not unidad_negocio_nombre:
+        return resumen
+
+    target = str(unidad_negocio_nombre).strip().upper()
+    filtradas = [
+        u for u in resumen.get("por_unidad", [])
+        if str(u.get("unidad_nombre") or "").strip().upper() == target
+        or str(u.get("unidad_codigo") or "").strip().upper() == target
+    ]
+    return KPIsCanonicosService.resumen_desde_agregados(filtradas, desde, hasta)
 
 # ============================================================
 # RBAC / PERMISOS
@@ -170,38 +205,35 @@ async def get_inteligencia_kpis(
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     """
-    KPIs consolidados desde vista canónica.
-    Fuente: dbo.Comercial_Inteligencia_VW_KPIsEjecutivos
+    KPIs consolidados desde servicio canónico único.
+    Fuente: KPIsCanonicosService -> dbo.Comercial_KPIs_Diarios_v2
     """
     _require_permission(current_user)
-    where_sql, params = _where_kpis(unidad_negocio_nombre, fecha_inicio, fecha_fin, anio, mes)
 
-    sql = f"""
-    SELECT
-        SUM(ventas_total) AS ventas_total,
-        SUM(ventas_sin_propina) AS ventas_sin_propina,
-        SUM(propinas_total) AS propinas_total,
-        SUM(tickets_total) AS tickets_total,
-        SUM(pax_total) AS pax_total,
-        CASE WHEN SUM(tickets_total) > 0
-             THEN SUM(ventas_sin_propina) / SUM(tickets_total)
-             ELSE 0 END AS ticket_promedio,
-        CASE WHEN SUM(pax_total) > 0
-             THEN SUM(ventas_sin_propina) / SUM(pax_total)
-             ELSE 0 END AS consumo_promedio_pax,
-        AVG(pax_promedio) AS pax_promedio,
-        SUM(ventas_cerradas) AS ventas_cerradas,
-        SUM(ventas_abiertas) AS ventas_abiertas,
-        SUM(total_estimado_dia) AS total_estimado_dia,
-        MIN(fecha_operacion) AS fecha_inicio_real,
-        MAX(fecha_operacion) AS fecha_fin_real,
-        MAX(fecha_sincronizacion) AS ultima_sincronizacion
-    FROM dbo.Comercial_Inteligencia_VW_KPIsEjecutivos
-    WHERE {where_sql};
-    """
-    rows = _query(sql, params)
-    return {"source": "Comercial_Inteligencia_VW_KPIsEjecutivos", "data": rows[0] if rows else {}}
+    if anio and mes:
+        mes_i = int(mes)
+        anio_i = int(anio)
+        desde = date(anio_i, mes_i, 1)
+        hasta = date(anio_i + 1, 1, 1) if mes_i == 12 else date(anio_i, mes_i + 1, 1)
+        desde_s, hasta_s = desde.isoformat(), hasta.isoformat()
+    else:
+        desde_s, hasta_s = _rango_default(fecha_inicio, fecha_fin)
 
+    resumen = KPIsCanonicosService.resumen_periodo(desde_s, hasta_s)
+    resumen = _filtrar_resumen_por_unidad(resumen, unidad_negocio_nombre, desde_s, hasta_s)
+
+    data = {
+        **(resumen.get("metricas") or {}),
+        "fecha_inicio_real": desde_s,
+        "fecha_fin_real": resumen.get("periodo", {}).get("hasta_exclusivo"),
+        "ultima_sincronizacion": None,
+    }
+
+    return {
+        "source": "KPIsCanonicosService",
+        "source_table": resumen.get("source_table"),
+        "data": data,
+    }
 
 @router.get("/ventas-comparativo")
 async def get_ventas_comparativo(
@@ -212,49 +244,23 @@ async def get_ventas_comparativo(
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     """
-    Comparativo de ventas por período.
-    Fuente: dbo.Comercial_Inteligencia_VW_KPIsEjecutivos
+    Comparativo de ventas por período desde servicio canónico.
     """
     _require_permission(current_user)
-    fecha_inicio = fecha_inicio or (date.today() - timedelta(days=30))
-    fecha_fin = fecha_fin or date.today()
 
-    params: Dict[str, Any] = {"fecha_inicio": fecha_inicio, "fecha_fin": fecha_fin}
-    where = ["fecha_operacion >= %(fecha_inicio)s", "fecha_operacion <= %(fecha_fin)s"]
-    if unidad_negocio_nombre:
-        where.append("unidad_negocio_nombre = %(unidad)s")
-        params["unidad"] = unidad_negocio_nombre
+    desde_s, hasta_s = _rango_default(fecha_inicio, fecha_fin)
+    data = KPIsCanonicosService.series_periodo(
+        desde_s,
+        hasta_s,
+        nivel=nivel,
+        unidad_nombre=unidad_negocio_nombre,
+    )
 
-    if nivel == "dia":
-        periodo_expr = "CONVERT(VARCHAR(10), fecha_operacion, 120)"
-        order_expr = "MIN(fecha_operacion)"
-    elif nivel == "mes":
-        periodo_expr = "CONCAT(anio, '-', RIGHT('0' + CAST(mes AS VARCHAR(2)), 2))"
-        order_expr = "MIN(fecha_operacion)"
-    else:
-        periodo_expr = "CAST(anio AS VARCHAR(4))"
-        order_expr = "MIN(fecha_operacion)"
-
-    sql = f"""
-    SELECT
-        {periodo_expr} AS periodo,
-        SUM(ventas_total) AS ventas_total,
-        SUM(ventas_sin_propina) AS ventas_sin_propina,
-        SUM(propinas_total) AS propinas_total,
-        SUM(tickets_total) AS tickets_total,
-        SUM(pax_total) AS pax_total,
-        CASE WHEN SUM(tickets_total) > 0
-             THEN SUM(ventas_sin_propina) / SUM(tickets_total) ELSE 0 END AS ticket_promedio,
-        CASE WHEN SUM(pax_total) > 0
-             THEN SUM(ventas_sin_propina) / SUM(pax_total) ELSE 0 END AS consumo_promedio_pax,
-        MAX(fecha_sincronizacion) AS ultima_sincronizacion
-    FROM dbo.Comercial_Inteligencia_VW_KPIsEjecutivos
-    WHERE {' AND '.join(where)}
-    GROUP BY {periodo_expr}
-    ORDER BY {order_expr};
-    """
-    return {"source": "Comercial_Inteligencia_VW_KPIsEjecutivos", "nivel": nivel, "data": _query(sql, params)}
-
+    return {
+        "source": "KPIsCanonicosService",
+        "nivel": nivel,
+        "data": data,
+    }
 
 @router.get("/pax")
 async def get_pax_inteligencia(
@@ -350,33 +356,23 @@ async def get_tendencia_diaria(
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     """
-    Tendencia diaria de ventas.
-    Fuente: dbo.Comercial_Inteligencia_VW_KPIsEjecutivos
+    Tendencia diaria de ventas desde servicio canónico.
     """
     _require_permission(current_user)
-    
-    params: Dict[str, Any] = {"dias": dias}
-    where = ["fecha_operacion >= DATEADD(DAY, -%(dias)s, GETDATE())"]
-    
-    if unidad_negocio_nombre:
-        where.append("unidad_negocio_nombre = %(unidad)s")
-        params["unidad"] = unidad_negocio_nombre
 
-    sql = f"""
-    SELECT
-        fecha_operacion,
-        SUM(ventas_total) AS ventas_total,
-        SUM(tickets_total) AS tickets_total,
-        SUM(pax_total) AS pax_total,
-        CASE WHEN SUM(tickets_total) > 0
-             THEN SUM(ventas_total) / SUM(tickets_total) ELSE 0 END AS ticket_promedio
-    FROM dbo.Comercial_Inteligencia_VW_KPIsEjecutivos
-    WHERE {' AND '.join(where)}
-    GROUP BY fecha_operacion
-    ORDER BY fecha_operacion;
-    """
-    return {"source": "Comercial_Inteligencia_VW_KPIsEjecutivos", "data": _query(sql, params)}
+    desde = (date.today() - timedelta(days=dias)).isoformat()
+    hasta = (date.today() + timedelta(days=1)).isoformat()
+    data = KPIsCanonicosService.series_periodo(
+        desde,
+        hasta,
+        nivel="dia",
+        unidad_nombre=unidad_negocio_nombre,
+    )
 
+    return {
+        "source": "KPIsCanonicosService",
+        "data": data,
+    }
 
 @router.get("/kpis-por-unidad")
 async def get_kpis_por_unidad(
@@ -385,32 +381,29 @@ async def get_kpis_por_unidad(
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     """
-    KPIs desglosados por unidad de negocio.
-    Fuente: dbo.Comercial_Inteligencia_VW_KPIsEjecutivos
+    KPIs desglosados por unidad desde servicio canónico.
     """
     _require_permission(current_user)
-    
-    fecha_inicio = fecha_inicio or (date.today() - timedelta(days=30))
-    fecha_fin = fecha_fin or date.today()
-    
-    params: Dict[str, Any] = {"fecha_inicio": fecha_inicio, "fecha_fin": fecha_fin}
 
-    sql = """
-    SELECT
-        unidad_negocio_nombre,
-        unidad_negocio_id,
-        sistema_origen,
-        SUM(ventas_total) AS ventas_total,
-        SUM(ventas_sin_propina) AS ventas_sin_propina,
-        SUM(propinas_total) AS propinas_total,
-        SUM(tickets_total) AS tickets_total,
-        SUM(pax_total) AS pax_total,
-        CASE WHEN SUM(tickets_total) > 0
-             THEN SUM(ventas_sin_propina) / SUM(tickets_total) ELSE 0 END AS ticket_promedio,
-        MAX(fecha_sincronizacion) AS ultima_sincronizacion
-    FROM dbo.Comercial_Inteligencia_VW_KPIsEjecutivos
-    WHERE fecha_operacion >= %(fecha_inicio)s AND fecha_operacion <= %(fecha_fin)s
-    GROUP BY unidad_negocio_nombre, unidad_negocio_id, sistema_origen
-    ORDER BY ventas_total DESC;
-    """
-    return {"source": "Comercial_Inteligencia_VW_KPIsEjecutivos", "data": _query(sql, params)}
+    desde_s, hasta_s = _rango_default(fecha_inicio, fecha_fin)
+    resumen = KPIsCanonicosService.resumen_periodo(desde_s, hasta_s)
+
+    data = []
+    for u in resumen.get("por_unidad", []):
+        metricas = u.get("metricas") or {}
+        data.append({
+            "unidad_negocio_nombre": u.get("unidad_nombre"),
+            "unidad_negocio_id": u.get("unidad_pk"),
+            "unidad_codigo": u.get("unidad_codigo"),
+            "server_id": u.get("server_id"),
+            "dias": u.get("dias"),
+            **metricas,
+        })
+
+    data = sorted(data, key=lambda x: float(x.get("ventas") or 0), reverse=True)
+
+    return {
+        "source": "KPIsCanonicosService",
+        "data": data,
+    }
+

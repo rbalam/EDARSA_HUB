@@ -32,20 +32,30 @@ async def resumen(
     except Exception:
         hasta_excl = fecha_fin
 
-    agg = KPIsCanonicosService.agregados_por_unidad(fecha_inicio, hasta_excl)
-    agg = sorted(agg, key=lambda x: float(x.get("ventas_sin_propina") or 0), reverse=True)
+    resumen_kpis = KPIsCanonicosService.resumen_periodo(fecha_inicio, hasta_excl)
+    unidades_kpi = sorted(
+        resumen_kpis.get("por_unidad", []),
+        key=lambda x: float((x.get("metricas") or {}).get("ventas") or 0),
+        reverse=True
+    )
 
-    ventas = [{
-        "server_id": a.get("server_id"),
-        "unidad": a.get("unidad_nombre"),
-        "unidad_codigo": a.get("unidad_codigo"),
-        "dias": a.get("dias"),
-        "ventas": float(a.get("ventas_sin_propina") or 0),   # neto (canónico)
-        "ventas_brutas": float(a.get("ventas") or 0),         # con propina (referencia)
-        "tickets": float(a.get("cheques") or 0),              # alias retrocompatible
-        "cheques": float(a.get("cheques") or 0),
-        "pax": float(a.get("pax") or 0),
-    } for a in agg]
+    ventas = []
+    for a in unidades_kpi:
+        m = a.get("metricas") or {}
+        ventas.append({
+            "server_id": a.get("server_id"),
+            "unidad": a.get("unidad_nombre"),
+            "unidad_codigo": a.get("unidad_codigo"),
+            "dias": a.get("dias"),
+            "ventas": float(m.get("ventas") or 0),
+            "ventas_brutas": float(m.get("ventas_brutas") or 0),
+            "tickets": float(m.get("tickets") or 0),
+            "cheques": float(m.get("cheques") or 0),
+            "pax": float(m.get("pax") or 0),
+            "cheque_promedio": float(m.get("cheque_promedio") or 0),
+            "ticket_promedio": float(m.get("ticket_promedio") or 0),
+            "pax_promedio": float(m.get("pax_promedio") or 0),
+        })
 
     precios = q("""
     SELECT
@@ -82,13 +92,7 @@ async def resumen(
     ORDER BY eventos DESC
     """)
 
-    total_ventas = sum(float(x.get("ventas") or 0) for x in ventas)         # neto (sin propina)
-    total_ventas_brutas = sum(float(x.get("ventas_brutas") or 0) for x in ventas)
-    total_tickets = sum(float(x.get("cheques") or 0) for x in ventas)
-    total_pax = sum(float(x.get("pax") or 0) for x in ventas)
-
-    cheque_promedio = total_ventas / total_tickets if total_tickets else 0  # neto / cheques
-    ticket_promedio = total_ventas / total_pax if total_pax else 0          # neto / pax (canónico)
+    metricas = resumen_kpis.get("metricas") or {}
 
     return {
         "success": True,
@@ -96,15 +100,16 @@ async def resumen(
         "kpis_origen": "KPIsCanonicosService",
         "periodo": {"inicio": fecha_inicio, "fin": fecha_fin},
         "kpis": {
-            "ventas": total_ventas,                    # NETO (canónico, sin propina)
-            "ventas_brutas": total_ventas_brutas,      # con propina (referencia)
-            "tickets": total_tickets,                  # alias retrocompatible
-            "cheques": total_tickets,
-            "pax": total_pax,
-            "cheque_promedio": cheque_promedio,        # neto / cheques (por cuenta)
-            "ticket_promedio": ticket_promedio,        # neto / pax (canónico, por comensal)
-            "consumo_promedio_pax": ticket_promedio,   # alias retrocompatible (= ticket_promedio)
-            "cheques_por_pax": total_tickets / total_pax if total_pax else 0
+            "ventas": float(metricas.get("ventas") or 0),
+            "ventas_brutas": float(metricas.get("ventas_brutas") or 0),
+            "tickets": float(metricas.get("tickets") or 0),
+            "cheques": float(metricas.get("cheques") or 0),
+            "pax": float(metricas.get("pax") or 0),
+            "cheque_promedio": float(metricas.get("cheque_promedio") or 0),
+            "ticket_promedio": float(metricas.get("ticket_promedio") or 0),
+            "consumo_promedio_pax": float(metricas.get("consumo_promedio_pax") or 0),
+            "pax_promedio": float(metricas.get("pax_promedio") or 0),
+            "cheques_por_pax": float(metricas.get("cheques_por_pax") or 0)
         },
         "ventas_por_unidad": ventas,
         "precios": precios[0] if precios else {},

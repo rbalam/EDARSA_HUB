@@ -195,3 +195,164 @@ class KPIsCanonicosService:
         for a in base:
             a["metricas"] = {cod: aplicar_definicion(a, d) for cod, d in defs.items()}
         return base
+
+
+    # ============================================================================
+    # V1_0_RESUMEN_CANONICO
+    # ============================================================================
+    @staticmethod
+    def _div0(n, d) -> float:
+        try:
+            n = float(n or 0)
+            d = float(d or 0)
+            return n / d if d else 0.0
+        except Exception:
+            return 0.0
+
+    @staticmethod
+    def _metricas_para_agregado(agregado: Dict) -> Dict:
+        """
+        Único punto Python para materializar aliases/ratios operativos.
+        La base sigue siendo SQL canónica; las fórmulas declarativas se leen
+        de Comercial_Metricas_Canonicas cuando existen.
+        """
+        ventas_brutas = float(agregado.get("ventas") or 0)
+        ventas_netas = float(agregado.get("ventas_sin_propina") or 0)
+        propinas = float(agregado.get("propinas") or 0)
+        cheques = float(agregado.get("cheques") or 0)
+        pax = float(agregado.get("pax") or 0)
+
+        metricas = {}
+
+        try:
+            for cod, definicion in _Catalogo.defs().items():
+                try:
+                    val = aplicar_definicion(agregado, definicion)
+                    metricas[cod] = float(val or 0)
+                except Exception:
+                    metricas[cod] = 0.0
+        except Exception as exc:
+            logger.warning("[KPI-CANON] catálogo no disponible, usando aliases base: %s", exc)
+
+        # Aliases obligatorios V1.0. Se fijan aquí, no en rutas/endpoints.
+        metricas.update({
+            "ventas": ventas_netas,
+            "ventas_sin_propina": ventas_netas,
+            "ventas_brutas": ventas_brutas,
+            "propinas": propinas,
+            "tickets": cheques,
+            "cheques": cheques,
+            "pax": pax,
+            "cheque_promedio": KPIsCanonicosService._div0(ventas_netas, cheques),
+            "ticket_promedio": KPIsCanonicosService._div0(ventas_netas, pax),
+            "consumo_promedio_pax": KPIsCanonicosService._div0(ventas_netas, pax),
+            "pax_promedio": KPIsCanonicosService._div0(pax, cheques),
+            "cheques_por_pax": KPIsCanonicosService._div0(cheques, pax),
+        })
+
+        return metricas
+
+    @staticmethod
+    def resumen_desde_agregados(base: List[Dict], desde: str, hasta: str) -> Dict:
+        """
+        Resume un conjunto de agregados ya filtrados.
+        Mantiene la lógica de totales y promedios dentro del servicio canónico.
+        """
+        atomos = {
+            "ventas": sum(float(a.get("ventas") or 0) for a in base),
+            "ventas_sin_propina": sum(float(a.get("ventas_sin_propina") or 0) for a in base),
+            "propinas": sum(float(a.get("propinas") or 0) for a in base),
+            "cheques": sum(float(a.get("cheques") or 0) for a in base),
+            "pax": sum(float(a.get("pax") or 0) for a in base),
+            "dias": max([int(a.get("dias") or 0) for a in base], default=0),
+        }
+
+        por_unidad = []
+        for a in base:
+            item = dict(a)
+            item["metricas"] = KPIsCanonicosService._metricas_para_agregado(item)
+            por_unidad.append(item)
+
+        return {
+            "source": "KPIsCanonicosService",
+            "source_table": "dbo.Comercial_KPIs_Diarios_v2",
+            "periodo": {"desde": desde, "hasta_exclusivo": hasta},
+            "atomos": atomos,
+            "metricas": KPIsCanonicosService._metricas_para_agregado(atomos),
+            "por_unidad": por_unidad,
+        }
+
+    @staticmethod
+    def resumen_periodo(desde: str, hasta: str,
+                        unidad_pks: Optional[Iterable[str]] = None) -> Dict:
+        """
+        Resumen canónico para Ejecutivo, Comercial e Inteligencia.
+        Rango [desde, hasta).
+        """
+        base = KPIsCanonicosService.agregados_por_unidad(desde, hasta, unidad_pks)
+        return KPIsCanonicosService.resumen_desde_agregados(base, desde, hasta)
+
+    @staticmethod
+    def series_periodo(desde: str, hasta: str, nivel: str = "dia",
+                      unidad_nombre: Optional[str] = None) -> List[Dict]:
+        """
+        Serie canónica agregada por día/mes/año.
+        No expone fórmulas en endpoints.
+        """
+        nivel = (nivel or "dia").lower()
+        if nivel == "dia":
+            periodo_expr = "CONVERT(varchar(10), fecha_operacion, 120)"
+        elif nivel == "mes":
+            periodo_expr = "CONCAT(anio, '-', RIGHT('0' + CAST(mes AS varchar(2)), 2))"
+        elif nivel == "anio":
+            periodo_expr = "CAST(anio AS varchar(4))"
+        else:
+            raise ValueError(f"Nivel no soportado: {nivel}")
+
+        params = [desde, hasta]
+        unidad_filter = ""
+        if unidad_nombre:
+            unidad_filter = "AND unidad_negocio_nombre = %s"
+            params.append(unidad_nombre)
+
+        sql = f"""
+            SELECT
+                {periodo_expr} AS periodo,
+                MIN(fecha_operacion) AS fecha_inicio,
+                MAX(fecha_operacion) AS fecha_fin,
+                SUM(CAST(ventas_total AS float)) AS ventas,
+                SUM(CAST(ventas_sin_propina AS float)) AS ventas_sin_propina,
+                SUM(CAST(propinas_total AS float)) AS propinas,
+                SUM(CAST(tickets_total AS float)) AS cheques,
+                SUM(CAST(pax_total AS float)) AS pax,
+                COUNT(DISTINCT fecha_operacion) AS dias
+            FROM dbo.Comercial_KPIs_Diarios_v2
+            WHERE ISNULL(activo,1)=1
+              AND ISNULL(es_demo,0)=0
+              AND fecha_operacion >= %s
+              AND fecha_operacion < %s
+              {unidad_filter}
+            GROUP BY {periodo_expr}
+            ORDER BY MIN(fecha_operacion)
+        """
+
+        rows = execute_sql_query_params(*_conn(), sql, tuple(params))
+        out = []
+        for r in rows:
+            agg = {
+                "ventas": float(r.get("ventas") or 0),
+                "ventas_sin_propina": float(r.get("ventas_sin_propina") or 0),
+                "propinas": float(r.get("propinas") or 0),
+                "cheques": float(r.get("cheques") or 0),
+                "pax": float(r.get("pax") or 0),
+                "dias": int(r.get("dias") or 0),
+            }
+            metricas = KPIsCanonicosService._metricas_para_agregado(agg)
+            out.append({
+                "periodo": r.get("periodo"),
+                "fecha_inicio": r.get("fecha_inicio"),
+                "fecha_fin": r.get("fecha_fin"),
+                **metricas,
+                "metricas": metricas,
+            })
+        return out
