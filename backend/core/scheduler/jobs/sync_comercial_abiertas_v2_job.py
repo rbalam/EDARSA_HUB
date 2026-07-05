@@ -129,6 +129,27 @@ EDARSAHUB_LOCK_CONFIG = {
 }
 
 
+def _coerce_mx_datetime(value):
+    """Normaliza datetime SQL a datetime aware America/Mexico_City."""
+    from zoneinfo import ZoneInfo
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        dt = value
+    elif isinstance(value, str):
+        raw = value.strip().replace("T", " ").replace("Z", "")
+        if "." in raw:
+            base, frac = raw.split(".", 1)
+            frac = "".join(ch for ch in frac if ch.isdigit())[:6]
+            raw = base + ("." + frac if frac else "")
+        dt = datetime.fromisoformat(raw)
+    else:
+        raise TypeError(f"Tipo datetime no soportado: {type(value)}")
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=ZoneInfo("America/Mexico_City"))
+    return dt.astimezone(ZoneInfo("America/Mexico_City"))
+
+
 def _acquire_sync_lock_sync(run_id: str, pid: int) -> bool:
     """Adquiere lock (versión síncrona). Retorna True si OK, False si hay lock activo."""
     import pymssql
@@ -149,9 +170,7 @@ def _acquire_sync_lock_sync(run_id: str, pid: int) -> bool:
         active = cursor.fetchone()
         
         if active:
-            started = active['StartedAtMexico']
-            if started.tzinfo is None:
-                started = started.replace(tzinfo=ZoneInfo("America/Mexico_City"))
+            started = _coerce_mx_datetime(active['StartedAtMexico'])
             if started < timeout_threshold:
                 logger.warning(f"[LOCK] Timeout detectado: {active['SyncRunID']}")
                 cursor.execute("""
@@ -195,10 +214,8 @@ def _release_sync_lock_sync(run_id: str, status: str, processed: int, errors: in
         row = cursor.fetchone()
         duration = 0
         if row and row[0]:
-            started = row[0]
-            if started.tzinfo is None:
-                started = started.replace(tzinfo=ZoneInfo("America/Mexico_City"))
-            duration = int((now_mx - started).total_seconds())
+            started = _coerce_mx_datetime(row[0])
+            duration = int((now_mx - started).total_seconds()) if started else 0
         
         cursor.execute("""
             UPDATE Sync_Control_Ejecuciones
@@ -749,7 +766,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 
                 # Crear modelo y upsert
                 ventas_model = VentasDiaAbiertasV2(
-                    unidad_negocio_id=unidad_id,
+                    unidad_negocio_pk=unidad_id,
                     unidad_negocio_nombre=nombre,
                     server_id=server_id,
                     sucursal_id=unidad["sucursal_id"],
@@ -791,7 +808,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 log = SyncLogV2(
                     run_id=run_id,
                     run_type=SyncRunType.VENTAS_DIA,
-                    unidad_negocio_id=unidad_id,
+                    unidad_negocio_pk=unidad_id,
                     server_id=server_id,
                     fecha_inicio=fecha_operacion,  # Usar fecha_operacion
                     fecha_fin=fecha_operacion,
@@ -823,7 +840,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 log = SyncLogV2(
                     run_id=run_id,
                     run_type=SyncRunType.VENTAS_DIA,
-                    unidad_negocio_id=unidad_id,
+                    unidad_negocio_pk=unidad_id,
                     server_id=server_id,
                     fecha_inicio=fecha_operacion if 'fecha_operacion' in dir() else fecha_hoy,
                     fecha_fin=fecha_operacion if 'fecha_operacion' in dir() else fecha_hoy,
@@ -953,7 +970,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                     log = SyncLogV2(
                         run_id=run_id,
                         run_type=SyncRunType.ABIERTAS,
-                        unidad_negocio_id=unidad_id,
+                        unidad_negocio_pk=unidad_id,
                         server_id=server_id,
                         sucursal_id=sucursal_id,
                         fecha_inicio=fecha_operacion,
@@ -1001,7 +1018,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                         log = SyncLogV2(
                             run_id=run_id,
                             run_type=SyncRunType.ABIERTAS,
-                            unidad_negocio_id=unidad_id,
+                            unidad_negocio_pk=unidad_id,
                             server_id=server_id,
                             sucursal_id=sucursal_id,
                             fecha_inicio=fecha_operacion,
@@ -1065,7 +1082,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 
                 # Crear modelo y upsert
                 ventas_model = VentasDiaAbiertasV2(
-                    unidad_negocio_id=unidad_id,
+                    unidad_negocio_pk=unidad_id,
                     unidad_negocio_nombre=nombre,
                     server_id=server_id,
                     sucursal_id=sucursal_id,
@@ -1108,7 +1125,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 log = SyncLogV2(
                     run_id=run_id,
                     run_type=SyncRunType.VENTAS_DIA,
-                    unidad_negocio_id=unidad_id,
+                    unidad_negocio_pk=unidad_id,
                     server_id=server_id,
                     fecha_inicio=fecha_operacion,  # Usar fecha_operacion
                     fecha_fin=fecha_operacion,
@@ -1141,7 +1158,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 log = SyncLogV2(
                     run_id=run_id,
                     run_type=SyncRunType.VENTAS_DIA,
-                    unidad_negocio_id=unidad_id,
+                    unidad_negocio_pk=unidad_id,
                     server_id=unidad.get("server_id", "UNKNOWN"),
                     fecha_inicio=fecha_operacion if 'fecha_operacion' in dir() else fecha_hoy,
                     fecha_fin=fecha_operacion if 'fecha_operacion' in dir() else fecha_hoy,

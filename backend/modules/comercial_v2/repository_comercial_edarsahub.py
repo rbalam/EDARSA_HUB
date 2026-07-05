@@ -16,6 +16,7 @@ FIX 2026-05-26: Normalización automática de nombres (elimina acentos)
 para prevenir duplicados por variantes de caracteres especiales.
 """
 
+import os
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
@@ -377,7 +378,7 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
     check_query = f"""
     SELECT id, total_estimado_dia, fecha_operacion, sync_run_id
     FROM Comercial_Ventas_Dia_Abiertas_v2
-    WHERE unidad_negocio_pk = '{ventas.unidad_negocio_pk}'
+    WHERE unidad_negocio_id = '{ventas.unidad_negocio_pk}'
       AND sucursal_id = '{ventas.sucursal_id}'
     """
     
@@ -443,7 +444,7 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
         new_id = str(uuid.uuid4())
         insert_query = f"""
         INSERT INTO Comercial_Ventas_Dia_Abiertas_v2 (
-            id, unidad_negocio_pk, unidad_negocio_nombre, server_id, sucursal_id,
+            id, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
             sucursal_nombre, sistema_origen, snapshot_timestamp, fecha_operacion,
             ventas_abiertas, tickets_abiertos, pax_abiertos,
             ventas_cerradas_dia, tickets_cerrados_dia, pax_cerrados_dia,
