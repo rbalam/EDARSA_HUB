@@ -274,6 +274,15 @@ def get_kpis_diarios_agregados(
         SUM(ISNULL(propinas_total, 0)) as propinas_total,
         SUM(ISNULL(tickets_total, 0)) as tickets_total,
         SUM(ISNULL(pax_total, 0)) as pax_total,
+        CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
+             THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(tickets_total, 0))
+             ELSE 0 END as cheque_promedio,
+        CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
+             THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(tickets_total, 0))
+             ELSE 0 END as ticket_promedio,
+        CASE WHEN SUM(ISNULL(pax_total, 0)) > 0
+             THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(pax_total, 0))
+             ELSE 0 END as pax_promedio,
         MIN(fecha_operacion) as fecha_min,
         MAX(fecha_operacion) as fecha_max
     FROM vw_Comercial_KPIs_Diarios_v2_Runtime
@@ -326,6 +335,12 @@ def get_kpis_por_unidad(
         CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
              THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(tickets_total, 0))
              ELSE 0 END as ticket_promedio_avg,
+        CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
+             THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(tickets_total, 0))
+             ELSE 0 END as cheque_promedio,
+        CASE WHEN SUM(ISNULL(pax_total, 0)) > 0
+             THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(pax_total, 0))
+             ELSE 0 END as pax_promedio_avg,
         MIN(fecha_operacion) as fecha_min,
         MAX(fecha_operacion) as fecha_max
     FROM vw_Comercial_KPIs_Diarios_v2_Runtime

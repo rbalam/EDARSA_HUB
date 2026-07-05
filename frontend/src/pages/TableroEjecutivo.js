@@ -117,10 +117,10 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       // CORRECCIÓN GLOBAL: Nomenclatura correcta de KPIs
       // cheque_promedio = ventas / cheques
       // pax_promedio = ventas / pax
-      cheque_promedio: u.tickets_total > 0 ? u.ventas_total / u.tickets_total : 0,
-      pax_promedio: u.pax_total > 0 ? u.ventas_total / u.pax_total : 0,
+      cheque_promedio: u.cheque_promedio ?? u.ticket_promedio ?? (u.tickets_total > 0 ? u.ventas_total / u.tickets_total : 0),
+      pax_promedio: u.pax_promedio ?? (u.pax_total > 0 ? u.ventas_total / u.pax_total : 0),
       // ACTUALIZADO: Usar días GLOBALES (FechaOperacionActual.day), NO u.dias
-      proyeccion: calcularProyeccion(u.ventas_total || 0),
+      proyeccion: u.proyeccion ?? calcularProyeccion(u.ventas_total || 0),
       // FASE 3: Variaciones vienen directamente de V2 (EDARSAHUB)
       // null = sin base comparativa (mostrar "-")
       // 0.0 = variación real cero (mostrar "0.0%")
@@ -167,7 +167,7 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
         // CORRECCIÓN GLOBAL: Nomenclatura correcta de promedios
         cheque_promedio: chequePromedio,
         pax_prom: paxPromedio,
-        proyeccion: calcularProyeccion(totales.ventas_total || 0),
+        proyeccion: totales.proyeccion ?? calcularProyeccion(totales.ventas_total || 0),
         // CORRECCIÓN: Usar valores de backend si existen, si no null (no 0 falso)
         var_vs_mes_ant: totales.var_vs_mes_ant !== undefined ? totales.var_vs_mes_ant : null,
         var_vs_año_ant: totales.var_vs_año_ant !== undefined ? totales.var_vs_año_ant : null,

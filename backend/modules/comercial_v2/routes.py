@@ -176,6 +176,67 @@ def _calcular_dias_periodo(fecha_inicio: date, fecha_fin: date, fecha_max_datos:
     return max(0, dias)
 
 
+
+def _sql_literal_local(value) -> str:
+    return "'" + str(value).strip().replace("'", "''") + "'"
+
+
+def _unidad_runtime_where_sql(unidad_id: str) -> str:
+    """
+    Filtro canonico para vw_Comercial_KPIs_Diarios_v2_Runtime.
+
+    Soporta:
+    - unidad_negocio_pk GUID
+    - unidad_negocio_id codigo operativo
+    """
+    raw = str(unidad_id or "").strip()
+    valores = {raw} if raw else set()
+
+    try:
+        mapa = globals().get("MAPEO_KPI_A_CODIGO_CANONICO", {}) or {}
+        mapped = mapa.get(raw)
+        if mapped:
+            valores.add(str(mapped).strip())
+    except Exception:
+        pass
+
+    valores = {v for v in valores if v}
+    if not valores:
+        return "1 = 0"
+
+    quoted = ",".join(_sql_literal_local(v) for v in sorted(valores))
+    return (
+        f"(CONVERT(varchar(36), unidad_negocio_pk) IN ({quoted}) "
+        f"OR unidad_negocio_id IN ({quoted}))"
+    )
+
+
+def _unidades_runtime_where_sql(unidades) -> str:
+    valores = set()
+    for unidad in unidades or []:
+        raw = str(unidad or "").strip()
+        if not raw:
+            continue
+        valores.add(raw)
+        try:
+            mapa = globals().get("MAPEO_KPI_A_CODIGO_CANONICO", {}) or {}
+            mapped = mapa.get(raw)
+            if mapped:
+                valores.add(str(mapped).strip())
+        except Exception:
+            pass
+
+    valores = {v for v in valores if v}
+    if not valores:
+        return "1 = 0"
+
+    quoted = ",".join(_sql_literal_local(v) for v in sorted(valores))
+    return (
+        f"(CONVERT(varchar(36), unidad_negocio_pk) IN ({quoted}) "
+        f"OR unidad_negocio_id IN ({quoted}))"
+    )
+
+
 def _get_variaciones_comparativas(
     unidad_negocio_pk: str,
     fecha_inicio: date,
@@ -246,10 +307,10 @@ def _get_variaciones_comparativas(
         query_actual = f"""
         SELECT 
             SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
-            SUM(pax_total) as pax_total,
+            SUM(pax_total) as pax,
             SUM(tickets_total) as cheques
         FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-        WHERE unidad_negocio_id = '{unidad_negocio_pk}'
+        WHERE {_unidad_runtime_where_sql(unidad_negocio_pk)}
           AND fecha_operacion >= '{fecha_inicio.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_efectiva + timedelta(days=1)).isoformat()}'
         """
@@ -266,11 +327,11 @@ def _get_variaciones_comparativas(
         query_mes_ant = f"""
         SELECT 
             SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
-            SUM(pax_total) as pax_total,
+            SUM(pax_total) as pax,
             SUM(tickets_total) as cheques,
             COUNT(*) as dias
         FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-        WHERE unidad_negocio_id = '{unidad_negocio_pk}'
+        WHERE {_unidad_runtime_where_sql(unidad_negocio_pk)}
           AND fecha_operacion >= '{fecha_inicio_mes_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_mes_ant + timedelta(days=1)).isoformat()}'
         """
@@ -290,11 +351,11 @@ def _get_variaciones_comparativas(
         query_año_ant = f"""
         SELECT 
             SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
-            SUM(pax_total) as pax_total,
+            SUM(pax_total) as pax,
             SUM(tickets_total) as cheques,
             COUNT(*) as dias
         FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-        WHERE unidad_negocio_id = '{unidad_negocio_pk}'
+        WHERE {_unidad_runtime_where_sql(unidad_negocio_pk)}
           AND fecha_operacion >= '{fecha_inicio_año_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_año_ant + timedelta(days=1)).isoformat()}'
         """
@@ -434,17 +495,17 @@ def _calcular_totales_variaciones(
         fecha_fin_año_ant = fecha_fin_efectiva - relativedelta(years=1)
         
         # IDs en formato de tabla KPI
-        ids_quoted = ','.join([f"'{u}'" for u in unidades_permitidas])
+        unidad_filter_sql = _unidades_runtime_where_sql(unidades_permitidas)
         
         # Query mes anterior
         query_mes_ant = f"""
         SELECT 
             SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
-            SUM(pax_total) as pax_total,
+            SUM(pax_total) as pax,
             SUM(tickets_total) as cheques,
             COUNT(DISTINCT fecha_operacion) as dias
         FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-        WHERE unidad_negocio_id IN ({ids_quoted})
+        WHERE {unidad_filter_sql}
           AND fecha_operacion >= '{fecha_inicio_mes_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_mes_ant + timedelta(days=1)).isoformat()}'
         """
@@ -460,11 +521,11 @@ def _calcular_totales_variaciones(
         query_año_ant = f"""
         SELECT 
             SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
-            SUM(pax_total) as pax_total,
+            SUM(pax_total) as pax,
             SUM(tickets_total) as cheques,
             COUNT(DISTINCT fecha_operacion) as dias
         FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-        WHERE unidad_negocio_id IN ({ids_quoted})
+        WHERE {unidad_filter_sql}
           AND fecha_operacion >= '{fecha_inicio_año_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_año_ant + timedelta(days=1)).isoformat()}'
         """
@@ -948,6 +1009,41 @@ async def comercial_v2_dashboard(
             unidades_permitidas
         )
         
+        # Completar KPIs derivados canonicos en backend.
+        # Regla: el frontend no debe recalcular estos KPIs.
+        fecha_fin_efectiva_calc = min(fecha_fin, fecha_max_datos) if fecha_max_datos else fecha_fin
+        dias_transcurridos_calc = max(1, (fecha_fin_efectiva_calc - fecha_inicio).days + 1)
+        dias_periodo_calc = max(1, (fecha_fin - fecha_inicio).days + 1)
+
+        ventas_total_calc = float(totales_con_variaciones.get('ventas_total') or 0)
+        tickets_total_calc = float(totales_con_variaciones.get('tickets_total') or 0)
+        pax_total_calc = float(totales_con_variaciones.get('pax_total') or 0)
+
+        totales_con_variaciones['cheque_promedio'] = (
+            round(ventas_total_calc / tickets_total_calc, 2) if tickets_total_calc > 0 else 0
+        )
+        totales_con_variaciones['ticket_promedio'] = totales_con_variaciones['cheque_promedio']
+        totales_con_variaciones['pax_promedio'] = (
+            round(ventas_total_calc / pax_total_calc, 2) if pax_total_calc > 0 else 0
+        )
+        totales_con_variaciones['proyeccion'] = (
+            round((ventas_total_calc / dias_transcurridos_calc) * dias_periodo_calc, 2)
+            if dias_transcurridos_calc > 0 else 0
+        )
+
+        for unidad_calc in por_unidad:
+            ventas_u = float(unidad_calc.get('ventas_total') or 0)
+            tickets_u = float(unidad_calc.get('tickets_total') or 0)
+            pax_u = float(unidad_calc.get('pax_total') or 0)
+
+            unidad_calc['cheque_promedio'] = round(ventas_u / tickets_u, 2) if tickets_u > 0 else 0
+            unidad_calc['ticket_promedio_avg'] = unidad_calc['cheque_promedio']
+            unidad_calc['pax_promedio'] = round(ventas_u / pax_u, 2) if pax_u > 0 else 0
+            unidad_calc['proyeccion'] = (
+                round((ventas_u / dias_transcurridos_calc) * dias_periodo_calc, 2)
+                if dias_transcurridos_calc > 0 else 0
+            )
+
         # Ordenar unidades por ventas_total DESC (corrección bug ordenamiento)
         por_unidad.sort(key=lambda x: float(x.get('ventas_total') or 0), reverse=True)
         
@@ -1173,7 +1269,7 @@ async def comercial_v2_kpis_diarios_unidad(
         query_ultima_fecha = f"""
         SELECT MAX(fecha_operacion) as ultima_fecha
         FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-        WHERE unidad_negocio_id = '{unidad_negocio_pk}'
+        WHERE {_unidad_runtime_where_sql(unidad_negocio_pk)}
         """
         result = _execute_readonly_query(query_ultima_fecha)
         
