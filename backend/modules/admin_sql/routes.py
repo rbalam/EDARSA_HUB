@@ -164,12 +164,18 @@ async def get_users(
         if uid:
             map_serv.setdefault(uid, []).append(str(s.get("ServidorID", "")))
 
-    # Mapear sucursales por usuario
+    # Mapear sucursales por usuario y servidor.
+    # El PUT /users/{id}/permissions espera:
+    # allowed_sucursales = { servidor_id: [sucursal_codigo, ...] }
     map_suc = {}
     for s in sucursales:
-        uid = str(s.get("UsuarioID", ""))
-        if uid:
-            map_suc.setdefault(uid, []).append(str(s.get("SucursalCodigo", "")))
+        uid = str(s.get("UsuarioID", "") or "")
+        sid = str(s.get("ServidorID", "") or "")
+        codigo = str(s.get("SucursalCodigo", "") or "")
+        if uid and sid and codigo:
+            map_suc.setdefault(uid, {}).setdefault(sid, [])
+            if codigo not in map_suc[uid][sid]:
+                map_suc[uid][sid].append(codigo)
 
     # Enriquecer usuarios con asignaciones
     rbac_map = rbac_pilot_service.get_rbac_map()
@@ -179,9 +185,14 @@ async def get_users(
         # existía `activo` → todos se mostraban "Inactivo". Exponemos ambos.
         u["active"] = bool(u.get("activo"))
         u["allowed_servers"] = map_serv.get(uid, [])
-        u["allowed_sucursales"] = map_suc.get(uid, [])
-        u["allowed_warehouses"] = []
-        u["sucursales"] = u["allowed_sucursales"]
+        allowed_sucursales = map_suc.get(uid, {})
+        u["allowed_sucursales"] = allowed_sucursales
+        u["allowed_warehouses"] = {}
+        u["sucursales"] = [
+            codigo
+            for codigos in allowed_sucursales.values()
+            for codigo in codigos
+        ]
         rbac = rbac_map.get(uid, {})
         u["sec_perfil"] = rbac.get("sec_perfil")
         u["sec_roles"] = rbac.get("sec_roles", [])
