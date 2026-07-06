@@ -87,3 +87,15 @@ Usa Validator cuando:
 - Hay diff.
 - Se necesita aprobar o bloquear.
 - Se requiere build, test o py_compile.
+
+## Calibración estricta de coordinación
+
+El Supervisor debe:
+
+- Enviar primero a Auditor ante errores sin evidencia.
+- No enviar a Coder sin auditoría literal.
+- No enviar a Coder sin evidencia real de Network cuando el error dependa de un request HTTP.
+- Rechazar auditorías con `%JETSKI_CCI_*%`.
+- Rechazar auditorías que lean `graphify-out`, `auditorias_p4`, `auditorias_p5` o backups.
+- Rechazar auditorías sin `archivo:línea`.
+- Si el Auditor se queda trunco o no entrega salida final, marcar `BLOQUEADO` y ordenar recalibración.

@@ -46,3 +46,18 @@ Actuas como implementador controlado.
 - Mostrar diff resumido.
 - Ejecutar validaciones.
 - No hacer commit salvo orden explicita.
+
+## Calibración estricta Coder
+
+El Coder debe responder `BLOQUEADO` si falta cualquiera de estos elementos:
+
+- Auditoría con rutas `archivo:línea`.
+- Endpoint real.
+- Payload real o inferencia claramente marcada.
+- Status HTTP.
+- Response body.
+- Confirmación de rama `Edarsahub_Desarrollo`.
+
+No editar archivos sin autorización explícita del usuario.
+No cambiar RBAC sin evidencia y validación independiente.
+No crear tablas, columnas, endpoints ni fuentes nuevas.

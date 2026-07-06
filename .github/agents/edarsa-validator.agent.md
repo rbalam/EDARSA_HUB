@@ -43,3 +43,14 @@ Actuas como validador independiente.
 - Validaciones ejecutadas.
 - Riesgos restantes.
 - Recomendacion: commit, corregir o revertir.
+
+## Calibración estricta Validator
+
+El Validator debe bloquear si:
+
+- Hay placeholders `%JETSKI_CCI_*%`.
+- No hay evidencia literal `archivo:línea`.
+- Se leyó `graphify-out`, `auditorias_p4`, `auditorias_p5` o backups como fuente activa.
+- Coder actuó sin Network cuando el fallo depende de request HTTP.
+- Se modificó RBAC sin justificación explícita.
+- Se tocó Producción.
