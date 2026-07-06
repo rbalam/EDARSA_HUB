@@ -8,7 +8,7 @@ Prioridad operativa:
 3. VS Code custom agents
 4. Claude minimizado
 
-No crear ni usar `.claude/agents` como fuente principal de configuración.
+No usar `.claude/agents` como fuente principal de configuración. Excepción permitida: únicamente `.claude/agents/edarsa-claude-haiku-auditor.md` como auditor Claude Haiku de solo lectura, uso excepcional y bajo autorización explícita.
 
 ## Rama y entorno
 

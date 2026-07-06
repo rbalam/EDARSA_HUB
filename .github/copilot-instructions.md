@@ -14,7 +14,7 @@ Agentes Copilot disponibles:
 - EDARSA Coder: implementa cambios minimos.
 - EDARSA Validator: valida y bloquea.
 
-No crear `.claude/agents`.
+No crear `.claude/agents` excepto `.claude/agents/edarsa-claude-haiku-auditor.md`, permitido solo como auditor Claude Haiku de solo lectura, uso excepcional y bajo autorización explícita.
 
 Reglas críticas:
 - Rama obligatoria: `Edarsahub_Desarrollo`.

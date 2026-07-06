@@ -19,10 +19,14 @@ find .github/agents .github/instructions .agents/rules .agents/skills scripts/ag
 echo
 echo "===== CLAUDE MINIMIZADO ====="
 if [ -d ".claude/agents" ]; then
-  echo "BLOQUEADO: existe .claude/agents"
-  exit 1
+  BAD_CLAUDE_FILES="$(find .claude/agents -type f ! -path ".claude/agents/edarsa-claude-haiku-auditor.md" | sort | head -50)"
+  if [ -n "$BAD_CLAUDE_FILES" ]; then
+    echo "ERROR: .claude/agents solo permite .claude/agents/edarsa-claude-haiku-auditor.md"
+    echo "$BAD_CLAUDE_FILES"
+    exit 1
+  fi
 fi
-echo "OK: no existe .claude/agents"
+echo "OK: .claude/agents limitado a auditor Claude Haiku controlado"
 
 echo
 echo "===== BLOQUEOS DE REGLAS OBSOLETAS ====="
