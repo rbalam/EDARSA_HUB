@@ -145,7 +145,7 @@ def get_mapeo_kpi_a_canonico() -> dict:
             if nombre:
                 mapeo[nombre] = codigo
                 mapeo[nombre.upper()] = codigo
-    
+
     # Agregar variantes legacy conocidas (compatibilidad)
     mapeo.update(UnidadesService._VARIANTES_MAP)
     return mapeo
@@ -168,7 +168,7 @@ MAPEO_CODIGO_CANONICO_A_KPI = get_mapeo_canonico_a_kpi()
 def _calcular_dias_periodo(fecha_inicio: date, fecha_fin: date, fecha_max_datos: date) -> int:
     """
     Calcula días efectivos del período basado en último día con datos.
-    
+
     REGLA: Si el mes está parcial, usar hasta el último día con ventas.
     """
     fecha_efectiva = min(fecha_fin, fecha_max_datos)
@@ -245,28 +245,28 @@ def _get_variaciones_comparativas(
 ) -> dict:
     """
     FASE 2: Calcula variaciones vs mes anterior y año anterior.
-    
+
     FUENTE: EDARSAHUB.vw_Comercial_KPIs_Diarios_v2_Runtime
-    
+
     REGLAS:
     - Usa rangos semiabiertos: fecha >= inicio AND fecha < fin_exclusiva
     - Si mes actual parcial: compara mismos días del mes anterior
     - Si no hay datos comparativos: devuelve null (NO 0 falso)
     - Si variación real es 0.0%: devuelve 0.0
-    
+
     Args:
         unidad_negocio_pk: ID en tabla KPI (ej: '130-MER', 'LA-ESTELAR')
         fecha_inicio: Inicio del período actual
         fecha_fin: Fin del período actual
         fecha_max_datos: Último día con datos en el período actual
-    
+
     Returns:
         dict con variaciones o null si no hay base comparativa
     """
     try:
         # Calcular días efectivos del período actual
         dias_efectivos = _calcular_dias_periodo(fecha_inicio, fecha_fin, fecha_max_datos)
-        
+
         if dias_efectivos <= 0:
             return {
                 'ventas_ant': None,
@@ -283,29 +283,29 @@ def _get_variaciones_comparativas(
                 'var_cheques_año': None,
                 '_meta_variaciones': {'error': 'Sin días efectivos'}
             }
-        
+
         # =====================================================================
         # CALCULAR RANGOS DE COMPARACIÓN
         # =====================================================================
-        
+
         # Período actual efectivo (hasta último día con datos)
         fecha_fin_efectiva = min(fecha_fin, fecha_max_datos)
-        
+
         # Mes anterior: mismo rango de días
         from dateutil.relativedelta import relativedelta
         fecha_inicio_mes_ant = fecha_inicio - relativedelta(months=1)
         fecha_fin_mes_ant = fecha_fin_efectiva - relativedelta(months=1)
-        
+
         # Año anterior: mismo rango de días
         fecha_inicio_año_ant = fecha_inicio - relativedelta(years=1)
         fecha_fin_año_ant = fecha_fin_efectiva - relativedelta(years=1)
-        
+
         # =====================================================================
         # CONSULTAR DATOS DE PERÍODO ACTUAL (ya tenemos, pero necesitamos PAX)
         # =====================================================================
-        
+
         query_actual = f"""
-        SELECT 
+        SELECT
             SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
             SUM(pax_total) as pax,
             SUM(tickets_total) as cheques
@@ -314,18 +314,18 @@ def _get_variaciones_comparativas(
           AND fecha_operacion >= '{fecha_inicio.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_efectiva + timedelta(days=1)).isoformat()}'
         """
-        
+
         result_actual = _execute_readonly_query(query_actual)
         ventas_actual = float(result_actual[0].get('ventas') or 0) if result_actual else 0
         pax_actual = int(result_actual[0].get('pax') or 0) if result_actual else 0
         cheques_actual = int(result_actual[0].get('cheques') or 0) if result_actual else 0
-        
+
         # =====================================================================
         # CONSULTAR DATOS DE MES ANTERIOR
         # =====================================================================
-        
+
         query_mes_ant = f"""
-        SELECT 
+        SELECT
             SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
             SUM(pax_total) as pax,
             SUM(tickets_total) as cheques,
@@ -335,21 +335,21 @@ def _get_variaciones_comparativas(
           AND fecha_operacion >= '{fecha_inicio_mes_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_mes_ant + timedelta(days=1)).isoformat()}'
         """
-        
+
         result_mes_ant = _execute_readonly_query(query_mes_ant)
-        
+
         # Verificar si hay datos del mes anterior
         tiene_datos_mes_ant = result_mes_ant and result_mes_ant[0].get('dias', 0) > 0
         ventas_ant = float(result_mes_ant[0].get('ventas') or 0) if tiene_datos_mes_ant else None
         pax_ant = int(result_mes_ant[0].get('pax') or 0) if tiene_datos_mes_ant else None
         cheques_ant = int(result_mes_ant[0].get('cheques') or 0) if tiene_datos_mes_ant else None
-        
+
         # =====================================================================
         # CONSULTAR DATOS DE AÑO ANTERIOR
         # =====================================================================
-        
+
         query_año_ant = f"""
-        SELECT 
+        SELECT
             SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
             SUM(pax_total) as pax,
             SUM(tickets_total) as cheques,
@@ -359,20 +359,20 @@ def _get_variaciones_comparativas(
           AND fecha_operacion >= '{fecha_inicio_año_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_año_ant + timedelta(days=1)).isoformat()}'
         """
-        
+
         result_año_ant = _execute_readonly_query(query_año_ant)
-        
+
         # Verificar si hay datos del año anterior
         tiene_datos_año_ant = result_año_ant and result_año_ant[0].get('dias', 0) > 0
         ventas_año = float(result_año_ant[0].get('ventas') or 0) if tiene_datos_año_ant else None
         pax_año = int(result_año_ant[0].get('pax') or 0) if tiene_datos_año_ant else None
         cheques_año = int(result_año_ant[0].get('cheques') or 0) if tiene_datos_año_ant else None
-        
+
         # =====================================================================
         # CALCULAR VARIACIONES
         # REGLA: Si no hay base, devolver null. Si variación real es 0, devolver 0.0
         # =====================================================================
-        
+
         # Variación vs mes anterior
         if ventas_ant is not None and ventas_ant > 0:
             var_vs_mes_ant = round(((ventas_actual - ventas_ant) / ventas_ant) * 100, 1)
@@ -380,7 +380,7 @@ def _get_variaciones_comparativas(
             var_vs_mes_ant = 0.0 if ventas_actual == 0 else None  # División por cero
         else:
             var_vs_mes_ant = None  # Sin base comparativa
-        
+
         # Variación vs año anterior
         if ventas_año is not None and ventas_año > 0:
             var_vs_año_ant = round(((ventas_actual - ventas_año) / ventas_año) * 100, 1)
@@ -388,7 +388,7 @@ def _get_variaciones_comparativas(
             var_vs_año_ant = 0.0 if ventas_actual == 0 else None
         else:
             var_vs_año_ant = None  # Sin base comparativa
-        
+
         # Variaciones de PAX
         if pax_ant is not None and pax_ant > 0:
             var_pax_mes = round(((pax_actual - pax_ant) / pax_ant) * 100, 1)
@@ -396,14 +396,14 @@ def _get_variaciones_comparativas(
             var_pax_mes = 0.0 if pax_actual == 0 else None
         else:
             var_pax_mes = None
-        
+
         if pax_año is not None and pax_año > 0:
             var_pax_año = round(((pax_actual - pax_año) / pax_año) * 100, 1)
         elif pax_año is not None and pax_año == 0:
             var_pax_año = 0.0 if pax_actual == 0 else None
         else:
             var_pax_año = None
-        
+
         # Variaciones de cheques
         if cheques_ant is not None and cheques_ant > 0:
             var_cheques_mes = round(((cheques_actual - cheques_ant) / cheques_ant) * 100, 1)
@@ -411,14 +411,14 @@ def _get_variaciones_comparativas(
             var_cheques_mes = 0.0 if cheques_actual == 0 else None
         else:
             var_cheques_mes = None
-        
+
         if cheques_año is not None and cheques_año > 0:
             var_cheques_año = round(((cheques_actual - cheques_año) / cheques_año) * 100, 1)
         elif cheques_año is not None and cheques_año == 0:
             var_cheques_año = 0.0 if cheques_actual == 0 else None
         else:
             var_cheques_año = None
-        
+
         return {
             'ventas_ant': ventas_ant,
             'ventas_año': ventas_año,
@@ -442,7 +442,7 @@ def _get_variaciones_comparativas(
                 'tiene_datos_año_ant': tiene_datos_año_ant
             }
         }
-        
+
     except Exception as e:
         logger.error(f"Error calculando variaciones para {unidad_negocio_pk}: {e}")
         return {
@@ -471,35 +471,35 @@ def _calcular_totales_variaciones(
 ) -> dict:
     """
     FASE 2: Calcula variaciones agregadas para totales del dashboard.
-    
+
     Args:
         totales_actual: Totales del período actual
         fecha_inicio: Inicio del período
         fecha_fin: Fin del período
         fecha_max_datos: Último día con datos
         unidades_permitidas: Lista de unidades a incluir
-    
+
     Returns:
         dict con totales enriquecidos con variaciones
     """
     try:
         from dateutil.relativedelta import relativedelta
-        
+
         # Período efectivo
         fecha_fin_efectiva = min(fecha_fin, fecha_max_datos) if fecha_max_datos else fecha_fin
-        
+
         # Rangos de comparación
         fecha_inicio_mes_ant = fecha_inicio - relativedelta(months=1)
         fecha_fin_mes_ant = fecha_fin_efectiva - relativedelta(months=1)
         fecha_inicio_año_ant = fecha_inicio - relativedelta(years=1)
         fecha_fin_año_ant = fecha_fin_efectiva - relativedelta(years=1)
-        
+
         # IDs en formato de tabla KPI
         unidad_filter_sql = _unidades_runtime_where_sql(unidades_permitidas)
-        
+
         # Query mes anterior
         query_mes_ant = f"""
-        SELECT 
+        SELECT
             SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
             SUM(pax_total) as pax,
             SUM(tickets_total) as cheques,
@@ -509,17 +509,17 @@ def _calcular_totales_variaciones(
           AND fecha_operacion >= '{fecha_inicio_mes_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_mes_ant + timedelta(days=1)).isoformat()}'
         """
-        
+
         result_mes_ant = _execute_readonly_query(query_mes_ant)
         tiene_datos_mes_ant = result_mes_ant and result_mes_ant[0].get('dias', 0) > 0
-        
+
         ventas_ant = float(result_mes_ant[0].get('ventas') or 0) if tiene_datos_mes_ant else None
         pax_ant = int(result_mes_ant[0].get('pax') or 0) if tiene_datos_mes_ant else None
         cheques_ant = int(result_mes_ant[0].get('cheques') or 0) if tiene_datos_mes_ant else None
-        
+
         # Query año anterior
         query_año_ant = f"""
-        SELECT 
+        SELECT
             SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
             SUM(pax_total) as pax,
             SUM(tickets_total) as cheques,
@@ -529,52 +529,52 @@ def _calcular_totales_variaciones(
           AND fecha_operacion >= '{fecha_inicio_año_ant.isoformat()}'
           AND fecha_operacion < '{(fecha_fin_año_ant + timedelta(days=1)).isoformat()}'
         """
-        
+
         result_año_ant = _execute_readonly_query(query_año_ant)
         tiene_datos_año_ant = result_año_ant and result_año_ant[0].get('dias', 0) > 0
-        
+
         ventas_año = float(result_año_ant[0].get('ventas') or 0) if tiene_datos_año_ant else None
         pax_año = int(result_año_ant[0].get('pax') or 0) if tiene_datos_año_ant else None
         cheques_año = int(result_año_ant[0].get('cheques') or 0) if tiene_datos_año_ant else None
-        
+
         # Calcular variaciones
         ventas_actual = float(totales_actual.get('ventas_total') or 0)
         pax_actual = int(totales_actual.get('pax_total') or 0)
         cheques_actual = int(totales_actual.get('tickets_total') or 0)
-        
+
         # Variaciones de ventas
         if ventas_ant is not None and ventas_ant > 0:
             var_vs_mes_ant = round(((ventas_actual - ventas_ant) / ventas_ant) * 100, 1)
         else:
             var_vs_mes_ant = None if ventas_ant is None else 0.0
-        
+
         if ventas_año is not None and ventas_año > 0:
             var_vs_año_ant = round(((ventas_actual - ventas_año) / ventas_año) * 100, 1)
         else:
             var_vs_año_ant = None if ventas_año is None else 0.0
-        
+
         # Variaciones de PAX
         if pax_ant is not None and pax_ant > 0:
             var_pax_mes = round(((pax_actual - pax_ant) / pax_ant) * 100, 1)
         else:
             var_pax_mes = None if pax_ant is None else 0.0
-        
+
         if pax_año is not None and pax_año > 0:
             var_pax_año = round(((pax_actual - pax_año) / pax_año) * 100, 1)
         else:
             var_pax_año = None if pax_año is None else 0.0
-        
+
         # Variaciones de cheques
         if cheques_ant is not None and cheques_ant > 0:
             var_cheques_mes = round(((cheques_actual - cheques_ant) / cheques_ant) * 100, 1)
         else:
             var_cheques_mes = None if cheques_ant is None else 0.0
-        
+
         if cheques_año is not None and cheques_año > 0:
             var_cheques_año = round(((cheques_actual - cheques_año) / cheques_año) * 100, 1)
         else:
             var_cheques_año = None if cheques_año is None else 0.0
-        
+
         return {
             **totales_actual,
             'ventas_ant': ventas_ant,
@@ -590,7 +590,7 @@ def _calcular_totales_variaciones(
             'var_cheques_mes': var_cheques_mes,
             'var_cheques_año': var_cheques_año
         }
-        
+
     except Exception as e:
         logger.error(f"Error calculando totales variaciones: {e}")
         return totales_actual
@@ -603,32 +603,32 @@ def _calcular_totales_variaciones(
 async def get_unidades_permitidas_v2(current_user: dict) -> List[str]:
     """
     Obtiene las unidades de negocio permitidas por RBAC.
-    
+
     POST FASE T1 (2026-05-13): Ahora usa códigos canónicos oficiales de EDARSAHUB.
     FUENTE: Unidades_Negocio.codigo via UnidadesService
-    
+
     REFACTORIZADO 2026-06-05: Eliminados hardcodes. Usa UnidadesService.
     """
     # Import local para evitar dependencias circulares
     from core.rbac_helper_sql import has_full_access
     from core.unidades_service import UnidadesService
-    
+
     try:
         # RBAC dinámico: Verificar si el usuario tiene acceso total (NivelJerarquia >= 80)
         if has_full_access(current_user):
             return UnidadesService.get_codigos()
-        
+
         # Obtener unidades asignadas al usuario desde el contexto
         unidades_mongo = await get_user_unidades_negocio(current_user)
-        
+
         # Mapear a códigos canónicos oficiales usando UnidadesService
         unidades_v2 = []
         codigos_validos = UnidadesService.get_codigos_set()
-        
+
         for u in unidades_mongo:
             codigo = u.get('codigo', '').upper().strip()
             nombre = u.get('nombre', '').upper().strip()
-            
+
             # Mapeo por código directo (preferido)
             if codigo in codigos_validos:
                 unidades_v2.append(codigo)
@@ -637,9 +637,9 @@ async def get_unidades_permitidas_v2(current_user: dict) -> List[str]:
                 codigo_resuelto = UnidadesService.resolver_codigo(nombre) or UnidadesService.resolver_codigo(codigo)
                 if codigo_resuelto:
                     unidades_v2.append(codigo_resuelto)
-        
+
         return list(set(unidades_v2)) if unidades_v2 else []
-        
+
     except Exception as e:
         logger.warning(f"Error obteniendo unidades permitidas: {e}")
         return []
@@ -667,7 +667,7 @@ def serialize_response(data: any) -> any:
 async def comercial_v2_health():
     """
     Estado de salud de Comercial v2.
-    
+
     Verifica:
     - Conexión a EDARSAHUB
     - Datos disponibles en tablas v2
@@ -696,13 +696,13 @@ async def comercial_v2_dashboard(
 ):
     """
     Dashboard de KPIs comerciales v2.
-    
-    Lee desde: 
+
+    Lee desde:
     - vw_Comercial_KPIs_Diarios_v2_Runtime (ventas cerradas)
     - Comercial_Ventas_Dia_Abiertas_v2 (ventas del día en curso)
-    
+
     Fuente: EDARSAHUB (NO SQL vivo, NO MongoDB)
-    
+
     REGLA DE NEGOCIO:
     - Si fecha_fin >= hoy: incluye ventas abiertas del día actual
     - Las ventas abiertas se suman a los totales pero se identifican como estimadas
@@ -711,13 +711,13 @@ async def comercial_v2_dashboard(
     try:
         # Obtener unidades permitidas
         unidades_permitidas = await get_unidades_permitidas_v2(current_user)
-        
+
         if not unidades_permitidas:
             raise HTTPException(
-                status_code=403, 
+                status_code=403,
                 detail="No tiene unidades de negocio asignadas"
             )
-        
+
         # Filtrar por unidad específica si se solicita
         if unidad_negocio_pk:
             if unidad_negocio_pk not in unidades_permitidas:
@@ -726,7 +726,7 @@ async def comercial_v2_dashboard(
                     detail=f"No tiene acceso a la unidad {unidad_negocio_pk}"
                 )
             unidades_permitidas = [unidad_negocio_pk]
-        
+
         # FIX 2026-06-08: Parsear meses exactos seleccionados (suma solo esos meses)
         meses_list = None
         if meses:
@@ -734,14 +734,14 @@ async def comercial_v2_dashboard(
 
         # Obtener datos agregados de ventas cerradas
         totales = get_kpis_diarios_agregados(fecha_inicio, fecha_fin, unidades_permitidas, meses_list)
-        
+
         # Obtener datos por unidad (cerradas)
         por_unidad_cerradas = get_kpis_por_unidad(fecha_inicio, fecha_fin, unidades_permitidas, meses_list)
-        
+
         # =====================================================================
         # COMBINAR CON VENTAS ABIERTAS DEL DÍA ACTUAL
         # =====================================================================
-        
+
         # =====================================================================
         # FECHA OPERATIVA CANONICA POR UNIDAD
         # =====================================================================
@@ -816,30 +816,30 @@ async def comercial_v2_dashboard(
         # UNIÓN DE UNIDADES: CERRADAS + ABIERTAS
         # Regla: Incluir unidad si tiene cerradas O abiertas O SyncLog exitoso
         # =====================================================================
-        
+
         # Indexar unidades cerradas por ID
         cerradas_por_unidad = {
             u['unidad_negocio_pk']: u for u in por_unidad_cerradas
         }
-        
+
         # Indexar unidades abiertas por ID
         abiertas_por_unidad = {
             v['unidad_negocio_pk']: v for v in ventas_abiertas_hoy
         } if ventas_abiertas_hoy else {}
-        
+
         # Unión de todas las unidades (cerradas + abiertas)
         todas_unidades_ids = set(cerradas_por_unidad.keys()) | set(abiertas_por_unidad.keys())
-        
+
         # Si no hay ninguna unidad con datos, incluir todas las permitidas (mostrar como "sin operación")
         if not todas_unidades_ids and unidades_permitidas:
             todas_unidades_ids = set(unidades_permitidas)
-        
+
         # Construir lista combinada de unidades
         por_unidad = []
         for uid in sorted(todas_unidades_ids):
             tiene_cerradas = uid in cerradas_por_unidad
             tiene_abiertas = uid in abiertas_por_unidad
-            
+
             if tiene_cerradas:
                 # Usar datos de cerradas como base
                 u = cerradas_por_unidad[uid].copy()
@@ -876,7 +876,7 @@ async def comercial_v2_dashboard(
                     'fecha_min': None,
                     'fecha_max': None
                 }
-            
+
             # Enriquecer con datos de abiertas si existen
             if tiene_abiertas:
                 ab = abiertas_por_unidad[uid]
@@ -887,13 +887,13 @@ async def comercial_v2_dashboard(
                 u['_pax_abiertos_hoy'] = int(ab.get('pax_abiertos') or 0)
                 u['_snapshot_timestamp'] = str(ab.get('snapshot_timestamp') or '')
                 u['_incluye_ventas_abiertas'] = True
-                
+
                 # Si NO tiene cerradas, sumar abiertas al total de la unidad
                 if not tiene_cerradas:
                     total_dia = float(ab.get('total_estimado_dia') or 0)
                     tickets = int(ab.get('tickets_abiertos') or 0) + int(ab.get('tickets_cerrados_dia') or 0)
                     pax = int(ab.get('pax_abiertos') or 0) + int(ab.get('pax_cerrados_dia') or 0)
-                    
+
                     u['ventas_total'] = total_dia
                     u['tickets_total'] = tickets
                     u['pax_total'] = pax
@@ -909,12 +909,12 @@ async def comercial_v2_dashboard(
                 u['_pax_abiertos_hoy'] = 0
                 u['_snapshot_timestamp'] = ''
                 u['_incluye_ventas_abiertas'] = False
-            
+
             # =====================================================================
             # ESTADO V2 DE LA UNIDAD
             # =====================================================================
             ventas_total_unidad = float(u.get('ventas_total') or 0) + float(u.get('_total_estimado_hoy') or 0)
-            
+
             if tiene_cerradas or (tiene_abiertas and ventas_total_unidad > 0):
                 u['_status_v2'] = 'ACTUALIZADO'
                 u['_status_v2_desc'] = 'Datos vigentes de EDARSAHUB'
@@ -924,13 +924,13 @@ async def comercial_v2_dashboard(
             else:
                 u['_status_v2'] = 'SIN_DATOS'
                 u['_status_v2_desc'] = 'Sin registros en período'
-            
+
             por_unidad.append(u)
-        
+
         # =====================================================================
         # RECALCULAR TOTALES INCLUYENDO ABIERTAS
         # =====================================================================
-        
+
         # Sumar totales de unidades que SOLO tienen abiertas (no están en cerradas)
         if incluye_hoy and ventas_abiertas_hoy:
             for venta in ventas_abiertas_hoy:
@@ -940,18 +940,18 @@ async def comercial_v2_dashboard(
                     total_dia = float(venta.get('total_estimado_dia') or 0)
                     tickets = int(venta.get('tickets_abiertos') or 0) + int(venta.get('tickets_cerrados_dia') or 0)
                     pax = int(venta.get('pax_abiertos') or 0) + int(venta.get('pax_cerrados_dia') or 0)
-                    
+
                     totales['ventas_total'] = float(totales.get('ventas_total') or 0) + total_dia
                     totales['tickets_total'] = int(totales.get('tickets_total') or 0) + tickets
                     totales['pax_total'] = int(totales.get('pax_total') or 0) + pax
-        
+
         # Actualizar conteo de unidades
         totales['total_unidades'] = len(por_unidad)
-        
+
         # =====================================================================
         # FASE 2: CALCULAR VARIACIONES Y ENRIQUECER CON CÓDIGO CANÓNICO
         # =====================================================================
-        
+
         # Determinar último día con datos para rangos de comparación
         fecha_max_datos = None
         for u in por_unidad:
@@ -966,25 +966,25 @@ async def comercial_v2_dashboard(
                         fecha_max_datos = fm
                 except:
                     pass
-        
+
         if fecha_max_datos is None:
             fecha_max_datos = fecha_fin
-        
+
         # Calcular variaciones por unidad
         for u in por_unidad:
             uid = u['unidad_negocio_pk']
-            
+
             # FASE 2: Agregar código canónico oficial
             u['unidad_negocio_codigo'] = MAPEO_KPI_A_CODIGO_CANONICO.get(uid, uid)
-            
+
             # Calcular variaciones comparativas
             variaciones = _get_variaciones_comparativas(
-                uid, 
-                fecha_inicio, 
+                uid,
+                fecha_inicio,
                 fecha_fin,
                 fecha_max_datos
             )
-            
+
             # Agregar variaciones al diccionario de la unidad
             u['ventas_ant'] = variaciones.get('ventas_ant')
             u['ventas_año'] = variaciones.get('ventas_año')
@@ -999,16 +999,16 @@ async def comercial_v2_dashboard(
             u['var_cheques_mes'] = variaciones.get('var_cheques_mes')
             u['var_cheques_año'] = variaciones.get('var_cheques_año')
             u['_meta_variaciones'] = variaciones.get('_meta_variaciones', {})
-        
+
         # Calcular variaciones para totales
         totales_con_variaciones = _calcular_totales_variaciones(
-            totales, 
-            fecha_inicio, 
-            fecha_fin, 
+            totales,
+            fecha_inicio,
+            fecha_fin,
             fecha_max_datos,
             unidades_permitidas
         )
-        
+
         # Completar KPIs derivados canonicos en backend.
         # Regla: el frontend no debe recalcular estos KPIs.
         fecha_fin_efectiva_calc = min(fecha_fin, fecha_max_datos) if fecha_max_datos else fecha_fin
@@ -1046,7 +1046,7 @@ async def comercial_v2_dashboard(
 
         # Ordenar unidades por ventas_total DESC (corrección bug ordenamiento)
         por_unidad.sort(key=lambda x: float(x.get('ventas_total') or 0), reverse=True)
-        
+
         # Construir respuesta
         response_data = {
             "totales": serialize_response({
@@ -1152,13 +1152,13 @@ async def comercial_v2_dashboard(
                 "unidad_especifica": unidad_negocio_pk
             }
         }
-        
+
         return DashboardResponse(
             success=True,
             data=response_data,
             metadata=MetadataV2()
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1182,23 +1182,23 @@ async def comercial_v2_kpis_diarios(
 ):
     """
     KPIs diarios detallados v2.
-    
+
     Lee desde: vw_Comercial_KPIs_Diarios_v2_Runtime
     """
     try:
         unidades_permitidas = await get_unidades_permitidas_v2(current_user)
-        
+
         if not unidades_permitidas:
             raise HTTPException(status_code=403, detail="No tiene unidades asignadas")
-        
+
         if unidad_negocio_pk:
             if unidad_negocio_pk not in unidades_permitidas:
                 raise HTTPException(status_code=403, detail="No tiene acceso a esa unidad")
             unidades_permitidas = [unidad_negocio_pk]
-        
+
         # Obtener datos
         datos = get_kpis_diarios(fecha_inicio, fecha_fin, unidades_permitidas)
-        
+
         return KPIsDiariosResponse(
             success=True,
             data=serialize_response(datos),
@@ -1209,7 +1209,7 @@ async def comercial_v2_kpis_diarios(
             },
             metadata=MetadataV2()
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1230,33 +1230,33 @@ async def comercial_v2_kpis_diarios_unidad(
 ):
     """
     KPIs diarios de una unidad específica.
-    
+
     Lee desde: vw_Comercial_KPIs_Diarios_v2_Runtime (EDARSAHUB SQL)
     NO consulta en vivo.
-    
+
     Usado para: Modal de detalle - Ventas por Día de Semana
     """
     try:
         from datetime import timedelta
-        
+
         unidades_permitidas = await get_unidades_permitidas_v2(current_user)
-        
+
         if not unidades_permitidas:
             raise HTTPException(status_code=403, detail="No tiene unidades asignadas")
-        
+
         if unidad_negocio_pk not in unidades_permitidas:
             raise HTTPException(status_code=403, detail="No tiene acceso a esa unidad")
-        
+
         # Buscar la última fecha disponible para esta unidad
         from modules.comercial_v2.repository_readonly import _execute_readonly_query
-        
+
         query_ultima_fecha = f"""
         SELECT MAX(fecha_operacion) as ultima_fecha
         FROM vw_Comercial_KPIs_Diarios_v2_Runtime
         WHERE {_unidad_runtime_where_sql(unidad_negocio_pk)}
         """
         result = _execute_readonly_query(query_ultima_fecha)
-        
+
         if not result or not result[0].get('ultima_fecha'):
             return {
                 "success": True,
@@ -1265,15 +1265,15 @@ async def comercial_v2_kpis_diarios_unidad(
                 "unidad_negocio_pk": unidad_negocio_pk,
                 "periodo": None
             }
-        
+
         fecha_fin = result[0]['ultima_fecha']
         if isinstance(fecha_fin, str):
             fecha_fin = date.fromisoformat(fecha_fin)
         fecha_inicio = fecha_fin - timedelta(days=dias)
-        
+
         # Obtener datos desde EDARSAHUB SQL
         datos = get_kpis_diarios(fecha_inicio, fecha_fin, [unidad_negocio_pk])
-        
+
         return {
             "success": True,
             "data": serialize_response(datos),
@@ -1285,7 +1285,7 @@ async def comercial_v2_kpis_diarios_unidad(
                 "dias": dias
             }
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1308,23 +1308,23 @@ async def comercial_v2_kpis_mensuales(
 ):
     """
     KPIs mensuales v2.
-    
+
     Lee desde: vw_Comercial_KPIs_Mensuales_v2_Runtime
     """
     try:
         unidades_permitidas = await get_unidades_permitidas_v2(current_user)
-        
+
         if not unidades_permitidas:
             raise HTTPException(status_code=403, detail="No tiene unidades asignadas")
-        
+
         if unidad_negocio_pk:
             if unidad_negocio_pk not in unidades_permitidas:
                 raise HTTPException(status_code=403, detail="No tiene acceso a esa unidad")
             unidades_permitidas = [unidad_negocio_pk]
-        
+
         # Obtener datos
         datos = get_kpis_mensuales(anio, mes_inicio, mes_fin, unidades_permitidas)
-        
+
         return KPIsMensualesResponse(
             success=True,
             data=serialize_response(datos),
@@ -1332,7 +1332,7 @@ async def comercial_v2_kpis_mensuales(
             anio=anio,
             metadata=MetadataV2()
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1351,21 +1351,21 @@ async def comercial_v2_ventas_dia(
 ):
     """
     Ventas del día v2.
-    
+
     Lee desde: Comercial_Ventas_Dia_Abiertas_v2 (EDARSAHUB SQL)
     Actualizado cada 5 minutos por sync_comercial_abiertas_v2_job.py
-    
+
     REGLAS IMPLEMENTADAS:
     - Tablero lee SOLO desde EDARSAHUB SQL (no conexiones live)
     - Muestra última actualización (snapshot_timestamp)
     - Ordenamiento por venta DESC (mayor a menor)
     - dato_vencido si última actualización > 10 minutos
     - NO mostrar $0 falso si no hay dato sincronizado válido
-    
+
     FIX 2026-05-15: Calcula FechaOperacion activa usando operational_window.py
     - A las 00:30 del día 15, si el restaurante cierra a las 03:00, muestra ventas del día 14
     - No usa fecha calendario simple
-    
+
     Retorna:
     - total_estimado_dia: Total del día (abiertas + cerradas)
     - snapshot_timestamp: Última actualización del dato
@@ -1412,10 +1412,10 @@ async def comercial_v2_ventas_dia(
                 datos.extend(get_ventas_dia_abiertas(fecha_op, unidades_fecha))
         else:
             datos = get_ventas_dia_abiertas(fecha, unidades_permitidas)
-        
+
         # Hora actual para calcular frescura
         ahora = datetime.now(timezone.utc)
-        
+
         # Procesar y enriquecer datos
         datos_enriquecidos = []
         for d in datos:
@@ -1423,17 +1423,17 @@ async def comercial_v2_ventas_dia(
             snapshot = d.get('snapshot_timestamp')
             minutos_desde_actualizacion = None
             dato_vencido = False
-            
+
             if snapshot:
                 try:
                     if isinstance(snapshot, str):
                         snapshot_dt = datetime.fromisoformat(snapshot.replace('Z', '+00:00'))
                     else:
                         snapshot_dt = snapshot
-                    
+
                     if snapshot_dt.tzinfo is None:
                         snapshot_dt = snapshot_dt.replace(tzinfo=timezone.utc)
-                    
+
                     diff = ahora - snapshot_dt
                     minutos_desde_actualizacion = int(diff.total_seconds() / 60)
                     dato_vencido = minutos_desde_actualizacion > 10
@@ -1442,13 +1442,17 @@ async def comercial_v2_ventas_dia(
                     dato_vencido = True
             else:
                 dato_vencido = True
-            
+
             total_dia = float(d.get('total_estimado_dia') or 0)
-            
+            tickets_dia = int(d.get('tickets_abiertos') or 0) + int(d.get('tickets_cerrados_dia') or 0)
+            pax_dia = int(d.get('pax_abiertos') or 0) + int(d.get('pax_cerrados_dia') or 0)
+            cheque_promedio = round(total_dia / tickets_dia, 2) if tickets_dia > 0 else 0
+            pax_promedio = round(total_dia / pax_dia, 2) if pax_dia > 0 else 0
+
             # Obtener comparativos diarios desde EDARSAHUB SQL
             unidad_id = d['unidad_negocio_pk']
             comparativos = get_comparativos_diarios(unidad_id, fecha)
-            
+
             datos_enriquecidos.append({
                 "unidad_negocio_pk": d['unidad_negocio_pk'],
                 "unidad_negocio_nombre": d['unidad_negocio_nombre'],
@@ -1461,6 +1465,8 @@ async def comercial_v2_ventas_dia(
                 "tickets_cerrados_dia": int(d.get('tickets_cerrados_dia') or 0),
                 "pax_cerrados_dia": int(d.get('pax_cerrados_dia') or 0),
                 "total_estimado_dia": total_dia,
+                "cheque_promedio": cheque_promedio,
+                "pax_promedio": pax_promedio,
                 # Comparativos diarios (de EDARSAHUB SQL)
                 "dia_anterior_ventas": comparativos['dia_anterior']['ventas'],
                 "dia_anterior_pax": comparativos['dia_anterior']['pax'],
@@ -1477,13 +1483,13 @@ async def comercial_v2_ventas_dia(
                 "sync_run_id": d.get('sync_run_id'),
                 "_fuente": "EDARSAHUB_SQL"
             })
-        
+
         # ORDENAMIENTO: Mayor venta a menor venta
         # Regla: Ventas positivas primero (DESC), luego ceros, luego sin dato/vencido
         def sort_key(item):
             venta = item.get('total_estimado_dia', 0)
             vencido = item.get('dato_vencido', True)
-            # Prioridad: 
+            # Prioridad:
             # 1. Ventas positivas válidas (orden desc)
             # 2. Ventas en cero válidas
             # 3. Sin dato o vencido
@@ -1493,16 +1499,18 @@ async def comercial_v2_ventas_dia(
                 return (1, 0, item.get('unidad_negocio_nombre', ''))
             else:
                 return (0, -venta, item.get('unidad_negocio_nombre', ''))
-        
+
         datos_ordenados = sorted(datos_enriquecidos, key=sort_key)
-        
+
         # Calcular totales (solo de datos válidos)
         total_ventas_abiertas = sum(d['ventas_abiertas'] for d in datos_ordenados)
         total_ventas_cerradas = sum(d['ventas_cerradas_dia'] for d in datos_ordenados)
         total_estimado = sum(d['total_estimado_dia'] for d in datos_ordenados)
         total_tickets = sum(d['tickets_abiertos'] + d['tickets_cerrados_dia'] for d in datos_ordenados)
         total_pax = sum(d['pax_abiertos'] + d['pax_cerrados_dia'] for d in datos_ordenados)
-        
+        cheque_promedio_total = round(total_estimado / total_tickets, 2) if total_tickets > 0 else 0
+        pax_promedio_total = round(total_estimado / total_pax, 2) if total_pax > 0 else 0
+
         return VentasDiaResponse(
             success=True,
             data=serialize_response({
@@ -1513,6 +1521,8 @@ async def comercial_v2_ventas_dia(
                     "total_estimado_dia": total_estimado,
                     "total_tickets": total_tickets,
                     "total_pax": total_pax,
+                    "cheque_promedio": cheque_promedio_total,
+                    "pax_promedio": pax_promedio_total,
                     "unidades_con_datos": len(datos_ordenados),
                     "unidades_dato_vencido": sum(1 for d in datos_ordenados if d['dato_vencido'])
                 },
@@ -1527,7 +1537,7 @@ async def comercial_v2_ventas_dia(
             fecha=fecha.isoformat(),
             metadata=MetadataV2()
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1545,22 +1555,22 @@ async def comercial_v2_unidades(
 ):
     """
     Unidades de negocio disponibles en v2.
-    
+
     Lee desde: vw_Comercial_KPIs_Diarios_v2_Runtime (DISTINCT)
     """
     try:
         unidades_permitidas = await get_unidades_permitidas_v2(current_user)
-        
+
         # Obtener unidades con datos
         unidades = get_unidades_disponibles(unidades_permitidas if unidades_permitidas else None)
-        
+
         return UnidadesResponse(
             success=True,
             unidades=serialize_response(unidades),
             total=len(unidades),
             metadata=MetadataV2()
         )
-        
+
     except Exception as e:
         logger.error(f"Unidades v2 error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -1577,25 +1587,25 @@ async def comercial_v2_sync_status(
 ):
     """
     Estado de sincronización v2.
-    
+
     Lee desde: Comercial_SyncLog_v2
     """
     try:
         unidades_permitidas = await get_unidades_permitidas_v2(current_user)
-        
+
         # Obtener logs
         logs = get_sync_status(unidades_permitidas, limit)
-        
+
         # Obtener última sync por unidad
         ultima_sync = get_last_sync_by_unidad(unidades_permitidas)
-        
+
         return SyncStatusResponse(
             success=True,
             logs=serialize_response(logs),
             ultima_sync_por_unidad=serialize_response(ultima_sync),
             metadata=MetadataV2()
         )
-        
+
     except Exception as e:
         logger.error(f"Sync status v2 error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

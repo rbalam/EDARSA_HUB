@@ -12,8 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Checkbox } from '../components/ui/checkbox';
 import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
-import { 
-  Loader2, TrendingUp, TrendingDown, RefreshCw, Building2, Users, Receipt, 
+import {
+  Loader2, TrendingUp, TrendingDown, RefreshCw, Building2, Users, Receipt,
   DollarSign, ArrowLeft, ChevronRight, Target, Clock, Utensils, X,
   BarChart3, Wallet, UserCircle, Award, ChevronDown, AlertTriangle
 } from 'lucide-react';
@@ -39,7 +39,7 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
     const totales = data.totales || {};
     const unidades = data.unidades || [];
     const periodo = data.periodo || {};
-    
+
     // =========================================================================
     // PROYECCIÓN MENSUAL V2 — REGLA DE NEGOCIO
     // =========================================================================
@@ -48,39 +48,39 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
     // - dias_proyectables: días totales del mes (excepción enero = 30)
     // - Futuro: Se reemplazará por calendario operativo EDARSAHUB
     // =========================================================================
-    
+
     const hoy = new Date();
     const mesSeleccionado = parseInt(selectedMeses[0]) || (hoy.getMonth() + 1);
     const anioSeleccionado = parseInt(selectedAnios[0]) || hoy.getFullYear();
-    
+
     // Días totales del mes seleccionado
     const diasTotalesMes = new Date(anioSeleccionado, mesSeleccionado, 0).getDate();
-    
+
     // Días proyectables: enero = 30 (1 de enero no laborable), otros meses = días naturales
     // TODO: Reemplazar por calendario operativo EDARSAHUB cuando exista
     const diasProyectables = (mesSeleccionado === 1) ? 30 : diasTotalesMes;
-    
+
     // Determinar si es el mes actual
     const esElMesActual = (mesSeleccionado === (hoy.getMonth() + 1)) && (anioSeleccionado === hoy.getFullYear());
-    
+
     // Días transcurridos válidos: si es mes actual, usar día calendario; si es mes pasado, usar días completos
     const diasTranscurridos = esElMesActual ? hoy.getDate() : diasTotalesMes;
-    
+
     // Función para calcular proyección mensual
     const calcularProyeccion = (ventas) => {
       if (diasTranscurridos <= 0 || ventas <= 0) return 0;
       return Math.round((ventas / diasTranscurridos) * diasProyectables);
     };
-    
+
     logger.log(`[COMERCIAL_V2] Proyección: mes=${mesSeleccionado}, diasTranscurridos=${diasTranscurridos}, diasProyectables=${diasProyectables}`);
-    
+
     // Calcular promedios
     // CORRECCIÓN GLOBAL: Nomenclatura correcta
     // cheque_promedio = ventas / cheques (tickets_total)
     // pax_promedio = ventas / pax (pax_total)
     const chequePromedio = Number(totales.cheque_promedio || 0);
     const paxPromedio = Number(totales.pax_promedio || 0);
-    
+
     // Transformar unidades al formato v1
     // =========================================================================
     // FASE 3 (Junio 2026): V2 es la fuente ÚNICA para Tablero Ejecutivo Comercial
@@ -90,7 +90,7 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
     // - Si variación es null: mostrar "-"
     // - Si variación es 0.0: mostrar "0.0%" (valor real)
     // =========================================================================
-    
+
     // =========================================================================
     // REGLA CANÓNICA: Proyección usa DiasTranscurridosOperativos GLOBAL
     // ACTUALIZACIÓN 16-May-2026: Usar FechaOperacionActual.day para TODAS las unidades
@@ -101,7 +101,7 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
     // Queda PROHIBIDO usar u.dias (último día con datos de cada unidad)
     // =========================================================================
     // NOTA: calcularProyeccion ya está definida arriba (línea 62-65)
-    
+
     const unidadesTransformadas = unidades.map(u => ({
       id: u.unidad_negocio_id,
       unidad: u.unidad_negocio_nombre,
@@ -145,7 +145,7 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       _v2_tabla: u._v2_tabla || 'Comercial_KPIs_Diarios_v2',
       _variaciones_source: 'V2_EDARSAHUB'  // FASE 3: Marcador de origen
     }));
-    
+
     // Construir respuesta en formato v1
     // CORRECCIÓN MAYO 2026: Preservar variaciones si V2 las devuelve, si no usar null
     const resultado = {
@@ -186,10 +186,10 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       _v2_source: true,
       _v2_metadata: data.metadata || { source: 'EDARSAHUB_V2' }
     };
-    
+
     logger.log('[COMERCIAL_V2] Datos transformados correctamente desde EDARSAHUB v2');
     return resultado;
-    
+
   } catch (error) {
     logger.error('[COMERCIAL_V2] Error transformando respuesta v2:', error);
     throw error;
@@ -247,13 +247,13 @@ const VariacionBadge = ({ valor, size = 'sm' }) => {
   if (valor === null || valor === undefined) {
     return <span className="text-zinc-400">-</span>;
   }
-  
+
   // Valor 0 real: mostrar "0%" con estilo neutro (ni verde ni rojo)
   if (valor === 0) {
     const sizeClass = size === 'lg' ? 'text-lg font-bold' : 'text-sm font-semibold';
     return <span className={`${sizeClass} text-zinc-500`}>0%</span>;
   }
-  
+
   const isPositive = valor > 0;
   const sizeClass = size === 'lg' ? 'text-lg font-bold' : 'text-sm font-semibold';
   return (
@@ -273,13 +273,13 @@ const formatLastUpdate = (isoDate) => {
     const diffMs = now - date;
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
-    
+
     if (diffMins < 1) return 'hace un momento';
     if (diffMins < 60) return `hace ${diffMins} min`;
     if (diffHours < 24) return `hace ${diffHours}h`;
-    
-    return date.toLocaleDateString('es-MX', { 
-      day: '2-digit', 
+
+    return date.toLocaleDateString('es-MX', {
+      day: '2-digit',
       month: '2-digit',
       hour: '2-digit',
       minute: '2-digit'
@@ -292,13 +292,13 @@ const formatLastUpdate = (isoDate) => {
 // Tarjeta de Unidad clickeable - P0: Usando data_status y live_status separados
 const UnidadCard = ({ unidad, onClick, esMultiMes = false, modoVentasDia = false }) => {
   const isPositive = unidad.var_vs_mes_ant >= 0;
-  
+
   // P0 TAREA 6: Determinar estado visual basado en data_status y live_status
   const dataStatus = unidad.data_status || (unidad.status === 'online' ? 'DATA_OK' : 'DATA_ERROR');
   const liveStatus = unidad.live_status || (unidad.status === 'online' ? 'LIVE_CONNECTED' : 'LIVE_UNKNOWN');
   const sourceUsed = unidad.source_used || (unidad.status === 'online' ? 'REAL_SOURCE' : 'NONE');
   const cacheWarning = unidad.cache_warning;
-  
+
   // Determinar color del indicador
   const getStatusIndicator = () => {
     // Caso A: DATA_OK + REAL_SOURCE + LIVE_CONNECTED = Verde
@@ -326,17 +326,17 @@ const UnidadCard = ({ unidad, onClick, esMultiMes = false, modoVentasDia = false
     if (dataStatus === 'NO_DATA_CONFIRMED') {
       return { color: 'bg-zinc-400', title: 'Sin datos confirmados para el período' };
     }
-    // Default
+    // Defaul
     return { color: 'bg-zinc-300', title: 'Estado desconocido' };
   };
-  
+
   const statusIndicator = getStatusIndicator();
   const hasValidData = dataStatus === 'DATA_OK' || dataStatus === 'DATA_FROM_CACHE';
   const isFromCache = dataStatus === 'DATA_FROM_CACHE' || sourceUsed === 'CACHE';
   const hasError = dataStatus === 'DATA_ERROR';
-  
+
   return (
-    <Card 
+    <Card
       className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] border-2 ${
         isPositive ? 'hover:border-green-400' : 'hover:border-red-400'
       } ${hasError ? 'bg-red-50' : isFromCache ? 'bg-amber-50' : ''}`}
@@ -347,15 +347,15 @@ const UnidadCard = ({ unidad, onClick, esMultiMes = false, modoVentasDia = false
         <div className="flex justify-between items-start mb-3">
           <div className="flex items-center gap-2">
             {/* P0 TAREA 6: Indicador de estado basado en data_status/live_status */}
-            <span 
-              className={`h-2.5 w-2.5 rounded-full ${statusIndicator.color}`} 
-              title={statusIndicator.title} 
+            <span
+              className={`h-2.5 w-2.5 rounded-full ${statusIndicator.color}`}
+              title={statusIndicator.title}
             />
             <h3 className="font-bold text-zinc-800 text-sm truncate max-w-[160px]">{formatNombreSucursal(unidad.unidad)}</h3>
           </div>
           <ChevronRight className="h-4 w-4 text-zinc-400" />
         </div>
-        
+
         {/* P0 TAREA 6 Caso D: Advertencia de caché visible */}
         {isFromCache && cacheWarning && (
           <div className="mb-2 px-2 py-1 bg-amber-100 rounded text-xs text-amber-700 flex items-center gap-1">
@@ -363,7 +363,7 @@ const UnidadCard = ({ unidad, onClick, esMultiMes = false, modoVentasDia = false
             <span>Datos en caché</span>
           </div>
         )}
-        
+
         {/* P0 TAREA 6 Caso E: Error controlado */}
         {hasError && (
           <div className="mb-2 px-2 py-1 bg-red-100 rounded text-xs text-red-700 flex items-center gap-1">
@@ -371,14 +371,14 @@ const UnidadCard = ({ unidad, onClick, esMultiMes = false, modoVentasDia = false
             <span className="truncate">{unidad.error_message || 'Error de conexión'}</span>
           </div>
         )}
-        
+
         {/* P0: Live status secundario si aplica */}
         {hasValidData && liveStatus === 'LIVE_UNREACHABLE_PREVIEW_ENV' && (
           <div className="mb-2 px-2 py-1 bg-zinc-100 rounded text-xs text-zinc-600">
             Venta en vivo no disponible desde Preview
           </div>
         )}
-        
+
         <div className="space-y-2">
           {/* ============================================================ */}
           {/* BLOQUE PRINCIPAL: Ventas + Proyección                        */}
@@ -390,14 +390,14 @@ const UnidadCard = ({ unidad, onClick, esMultiMes = false, modoVentasDia = false
               {hasError && !unidad.ventas ? '-' : formatCurrency(unidad.ventas)}
             </span>
           </div>
-          
+
           {hasValidData && (
             <div className="flex justify-between items-center">
               <span className="text-xs text-zinc-500">Proyección</span>
               <span className="font-semibold text-orange-600">{formatCurrency(unidad.proyeccion)}</span>
             </div>
           )}
-          
+
           {/* ============================================================ */}
           {/* BLOQUE COMPARATIVOS: vs Día/Mes Ant. + vs Año Ant.           */}
           {/* ============================================================ */}
@@ -410,14 +410,14 @@ const UnidadCard = ({ unidad, onClick, esMultiMes = false, modoVentasDia = false
                   <VariacionBadge valor={unidad.var_vs_mes_ant} />
                 </div>
               )}
-              
+
               <div className="flex justify-between items-center">
                 <span className="text-xs text-zinc-500">{modoVentasDia ? 'vs Mismo Día Año Ant.' : (esMultiMes ? 'vs Periodo Ant.' : 'vs Año Ant.')}</span>
                 <VariacionBadge valor={unidad.var_vs_año_ant} />
               </div>
             </div>
           )}
-          
+
           {/* ============================================================ */}
           {/* BLOQUE OPERATIVO: PAX + Cheques en 2 columnas                */}
           {/* FIX UI 15-May-2026: PAX Prom debajo de PAX, Cheque Prom debajo de Cheques */}
@@ -456,9 +456,9 @@ const UnidadCard = ({ unidad, onClick, esMultiMes = false, modoVentasDia = false
 const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) => {
   const [detalleData, setDetalleData] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+
   // CORRECCIÓN GLOBAL: Leyendas dinámicas según selector de periodo
-  const leyendasComparativo = modoVentasDia 
+  const leyendasComparativo = modoVentasDia
     ? { actual: 'Día Actual', anterior: 'Día Anterior', anioAnt: 'Día Año Ant.' }
     : { actual: 'Mes Actual', anterior: 'Mes Anterior', anioAnt: 'Mes Año Ant.' };
 
@@ -472,18 +472,18 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
           // Intentar obtener datos de ventas por día de semana desde el historial
           // Esto usa Comercial_KPIs_Diarios_v2 que ya está sincronizado
           let ventasPorDia = null;
-          
+
           try {
             // Obtener últimos 7 días de la unidad para mostrar tendencia semanal
             const histResponse = await api.get(`/v2/comercial/kpis-diarios/${unidad.unidad_negocio_id || unidad.id}`, {
               params: { dias: 7 }
             });
-            
+
             if (histResponse.data?.success && histResponse.data?.data?.length > 0) {
               // Agrupar por día de semana
               const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
               const ventasPorDiaSemana = {};
-              
+
               histResponse.data.data.forEach(d => {
                 const fecha = new Date(d.fecha_operacion);
                 const diaNombre = diasSemana[fecha.getDay()];
@@ -494,7 +494,7 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
                 ventasPorDiaSemana[diaNombre].pax += d.pax_total || 0;
                 ventasPorDiaSemana[diaNombre].count++;
               });
-              
+
               ventasPorDia = Object.entries(ventasPorDiaSemana).map(([dia, data]) => ({
                 dia,
                 ventas: data.ventas,
@@ -504,12 +504,12 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
           } catch (e) {
             logger.warn('[DetalleUnidad] No se pudo obtener historial para día de semana:', e.message);
           }
-          
+
           setDetalleData({
             dashboard: null,
-            ventasTiempo: ventasPorDia ? { 
+            ventasTiempo: ventasPorDia ? {
               por_hora: null, // No hay datos de hora sincronizados en EDARSAHUB
-              por_dia: ventasPorDia 
+              por_dia: ventasPorDia
             } : null,
             mesas: null,
             modoVentasDia: true,
@@ -518,7 +518,7 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
           setLoading(false);
           return;
         }
-        
+
         // V2 ES FUENTE ÚNICA:
         // No llamar endpoints legacy /comercial/dashboard, /comercial/ventas-tiempo ni /comercial/mesas.
         // El modal conserva KPIs desde la respuesta canónica V2 ya cargada.
@@ -543,7 +543,7 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
         setLoading(false);
       }
     };
-    
+
     // CORRECCIÓN: En modo Ventas del Día, cargar inmediatamente sin server_id
     if (modoVentasDia || unidad?.server_id) {
       cargarDetalle();
@@ -567,7 +567,7 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
             {formatNombreSucursal(unidad.unidad)}
           </DialogTitle>
         </DialogHeader>
-        
+
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
@@ -589,7 +589,7 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-blue-50 border-blue-200">
                 <CardContent className="p-3 text-center">
                   <div className="flex items-center justify-center gap-2 mb-1">
@@ -605,7 +605,7 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-purple-50 border-purple-200">
                 <CardContent className="p-3 text-center">
                   <div className="flex items-center justify-center gap-2 mb-1">
@@ -621,7 +621,7 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-orange-50 border-orange-200">
                 <CardContent className="p-3 text-center">
                   <div className="flex items-center justify-center gap-2 mb-1">
@@ -720,20 +720,20 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
                         const diaKey = d.dia.substring(0, 3);
                         diasMap[diaKey] = d;
                       });
-                      
+
                       const diasCompletos = diasSemana.map(dia => ({
                         dia: dia,
                         ventas: diasMap[dia]?.ventas || 0,
                         pax: diasMap[dia]?.pax || 0
                       }));
-                      
+
                       const maxVenta = Math.max(...diasCompletos.map(x => x.ventas), 1);
-                      
+
                       return diasCompletos.map((d) => {
                         const height = (d.ventas / maxVenta * 60) + 20;
                         return (
                           <div key={`dia-${d.dia}`} className="text-center">
-                            <div 
+                            <div
                               className={`rounded-t mx-auto w-8 transition-all ${d.ventas > 0 ? 'bg-blue-500' : 'bg-zinc-200'}`}
                               style={{ height: `${height}px` }}
                             />
@@ -757,7 +757,7 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
 export default function TableroEjecutivo() {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
-  
+
   // Estados para filtros multiselección (homologado con Dashboard Comercial)
   const [selectedMeses, setSelectedMeses] = useState(() => {
     const saved = localStorage.getItem('tablero_filtros_v2');
@@ -769,7 +769,7 @@ export default function TableroEjecutivo() {
     }
     return [String(new Date().getMonth() + 1).padStart(2, '0')];
   });
-  
+
   const [selectedAnios, setSelectedAnios] = useState(() => {
     const saved = localStorage.getItem('tablero_filtros_v2');
     if (saved) {
@@ -780,15 +780,15 @@ export default function TableroEjecutivo() {
     }
     return [new Date().getFullYear().toString()];
   });
-  
+
   const [tipoComparacion, setTipoComparacion] = useState('dias_equiv');
   const [showMesesDropdown, setShowMesesDropdown] = useState(false);
   const [showAniosDropdown, setShowAniosDropdown] = useState(false);
-  
+
   const ANIOS = getAniosDisponibles();
-  
+
   const [unidadSeleccionada, setUnidadSeleccionada] = useState(null);
-  
+
   // P0 TAREA 1 & 4: Control de request_id y TTL para evitar race conditions
   const [lastRefreshTime, setLastRefreshTime] = useState(null);
   const [requestId, setRequestId] = useState(0);
@@ -856,7 +856,7 @@ export default function TableroEjecutivo() {
 
   // Detectar si es modo "Ventas del Día"
   const esVentasDelDia = selectedAnios.includes('-1');
-  
+
   // Detectar si hay multiselección de meses (para deshabilitar "vs mes")
   const esMultiMes = selectedMeses.length > 1;
 
@@ -870,17 +870,17 @@ export default function TableroEjecutivo() {
     setRequestId(currentRequestId);
     setLatestRequestId(currentRequestId);
     setRefreshError(null); // Limpiar error previo
-    
+
     // REGLA: Loading NO limpia datos existentes
     if (retry === 0) {
       setLoading(true);
       logger.log(`[REFRESH_LOG] START: requestId=${currentRequestId}, forceRefresh=${forceRefresh}, dataExists=${!!data}, source=V2_ONLY`);
     }
-    
+
     try {
       let responseData = null;
       let usedV2 = false;
-      
+
       // =========================================================================
       // V2 ES FUENTE ÚNICA - NO HAY FALLBACK A V1 NI MONGO
       // =========================================================================
@@ -888,25 +888,21 @@ export default function TableroEjecutivo() {
         try {
           if (esVentasDelDia) {
             logger.log('[COMERCIAL_V2] Consultando ventas-dia desde EDARSAHUB SQL...');
-            
+
             const v2VentasDia = await api.get(`/v2/comercial/ventas-dia`, { timeout: 30000 });
-            
+
             if (v2VentasDia.data?.success) {
               const ventasDiaData = v2VentasDia.data.data;
               const resumen = ventasDiaData.resumen || {};
               const porUnidad = ventasDiaData.por_unidad || [];
-              
+
               responseData = {
                 totales: {
                   ventas: resumen.total_estimado_dia || 0,
                   pax: resumen.total_pax || 0,
                   cheques: resumen.total_tickets || 0,
-                  cheque_promedio: resumen.total_tickets > 0 
-                    ? (resumen.total_estimado_dia / resumen.total_tickets) 
-                    : 0,
-                  pax_prom: resumen.total_pax > 0
-                    ? (resumen.total_estimado_dia / resumen.total_pax)
-                    : 0,
+                    cheque_promedio: resumen.cheque_promedio ?? 0,
+                    pax_prom: resumen.pax_promedio ?? 0,
                   var_vs_mes_ant: null,
                   var_vs_año_ant: null,
                   proyeccion: null
@@ -932,12 +928,8 @@ export default function TableroEjecutivo() {
                     ventas: u.total_estimado_dia || 0,
                     pax: (u.pax_abiertos || 0) + (u.pax_cerrados_dia || 0),
                     cheques: (u.tickets_abiertos || 0) + (u.tickets_cerrados_dia || 0),
-                    cheque_promedio: ((u.tickets_abiertos || 0) + (u.tickets_cerrados_dia || 0)) > 0
-                      ? u.total_estimado_dia / ((u.tickets_abiertos || 0) + (u.tickets_cerrados_dia || 0))
-                      : 0,
-                    pax_promedio: ((u.pax_abiertos || 0) + (u.pax_cerrados_dia || 0)) > 0
-                      ? u.total_estimado_dia / ((u.pax_abiertos || 0) + (u.pax_cerrados_dia || 0))
-                      : 0,
+                    cheque_promedio: u.cheque_promedio ?? 0,
+                    pax_promedio: u.pax_promedio ?? 0,
                     proyeccion: 0,
                     ventas_ant: u.dia_anterior_ventas || 0,
                     pax_ant: u.dia_anterior_pax || 0,
@@ -963,33 +955,33 @@ export default function TableroEjecutivo() {
             } else {
               throw new Error('Respuesta ventas-dia v2 no exitosa');
             }
-            
+
           } else {
             logger.log('[COMERCIAL_V2] Consultando dashboard V2...');
-          
+
             const anioActual = parseInt(selectedAnios[0]) || new Date().getFullYear();
             const mesInicio = Math.min(...selectedMeses.map(m => parseInt(m)));
             const mesFin = Math.max(...selectedMeses.map(m => parseInt(m)));
             const fechaInicio = `${anioActual}-${String(mesInicio).padStart(2, '0')}-01`;
             const ultimoDia = new Date(anioActual, mesFin, 0).getDate();
             const fechaFin = `${anioActual}-${String(mesFin).padStart(2, '0')}-${ultimoDia}`;
-            
+
             const v2Response = await api.get(`/v2/comercial/dashboard`, {
-              params: { 
+              params: {
                 fecha_inicio: fechaInicio,
                 fecha_fin: fechaFin,
                 meses: selectedMeses.map(m => parseInt(m)).join(',')
               },
               timeout: 30000
             });
-            
+
             if (v2Response.data?.success) {
               responseData = transformV2ToV1Format(v2Response.data, selectedMeses, selectedAnios, logger);
-              
+
               if (responseData.unidades && responseData.unidades.length > 0) {
                 responseData.unidades.sort((a, b) => (b.ventas || 0) - (a.ventas || 0));
               }
-              
+
               usedV2 = true;
               responseData._v2_source = true;
               logger.log(`[FASE3] V2 fuente ÚNICA: ${responseData.unidades?.length} unidades desde EDARSAHUB`);
@@ -997,7 +989,7 @@ export default function TableroEjecutivo() {
               throw new Error('Respuesta v2 no exitosa');
             }
           }
-          
+
         } catch (v2Error) {
           logger.error(`[COMERCIAL_V2] Error V2: ${v2Error.message}`);
           throw v2Error; // NO hay fallback, propagar error
@@ -1006,7 +998,7 @@ export default function TableroEjecutivo() {
         // V2 deshabilitado - error
         throw new Error('V2 deshabilitado. No hay fuente de datos alternativa.');
       }
-      
+
       // =========================================================================
       // VALIDACIÓN RACE CONDITION: Solo aplicar si es el request más reciente
       // =========================================================================
@@ -1015,7 +1007,7 @@ export default function TableroEjecutivo() {
         setLoading(false);
         return;
       }
-      
+
       // =========================================================================
       // PROTECCIÓN CONTRA CEROS: No sobrescribir datos válidos con respuesta vacía
       // Si: source=V2, unidades.length > 0, pero totales=0 y ya hay datos > 0
@@ -1025,11 +1017,11 @@ export default function TableroEjecutivo() {
       const newChequesTotal = responseData?.totales?.cheques || 0;
       const newUnidadesCount = responseData?.unidades?.length || 0;
       const existingVentasTotal = data?.totales?.ventas || 0;
-      
+
       const isResponseEmpty = newVentasTotal === 0 && newPaxTotal === 0 && newChequesTotal === 0;
       const hasUnidadesButEmpty = newUnidadesCount > 0 && isResponseEmpty;
       const existingDataHasValue = existingVentasTotal > 0;
-      
+
       if (hasUnidadesButEmpty && existingDataHasValue && responseData?._v2_source) {
         // BLOQUEAR: No sobrescribir datos válidos con ceros
         logger.warn(`[REFRESH_LOG] BLOCKED_ZERO_OVERWRITE: requestId=${currentRequestId}, newVentas=${newVentasTotal}, existingVentas=${existingVentasTotal}, unidades=${newUnidadesCount}, applied=false, reason=v2_returned_zeros_existing_data_valid`);
@@ -1038,21 +1030,21 @@ export default function TableroEjecutivo() {
         setLoading(false);
         return;
       }
-      
+
       // =========================================================================
       // APLICAR DATOS: Respuesta válida
       // =========================================================================
       setData(responseData);
       setLastRefreshTime(new Date());
       setRefreshError(null);
-      
+
       logger.log(`[REFRESH_LOG] APPLIED: requestId=${currentRequestId}, ventasTotal=${newVentasTotal}, unidades=${newUnidadesCount}, source=V2, applied=true, reason=valid_response`);
       setLoading(false);
-      
+
     } catch (error) {
       logger.error('Error cargando tablero:', error);
       const statusCode = error.response?.status;
-      
+
       // =========================================================================
       // VALIDACIÓN RACE CONDITION EN ERROR
       // =========================================================================
@@ -1061,7 +1053,7 @@ export default function TableroEjecutivo() {
         setLoading(false);
         return;
       }
-      
+
       if (statusCode === 401) {
         clearSession();
         window.location.href = '/login';
@@ -1077,18 +1069,18 @@ export default function TableroEjecutivo() {
         // =========================================================================
         const errorMsg = `Error al actualizar: ${error.message || 'Conexión no disponible'}`;
         setRefreshError(errorMsg);
-        
+
         // NO setData(null) - mantener datos anteriores
         // Sin fallback con cifras inventadas (eliminado 2026-06-09): V2 es fuente única.
-        
+
         logger.warn(`[REFRESH_LOG] ERROR_PRESERVED_DATA: requestId=${currentRequestId}, statusCode=${statusCode}, error=${error.message}, existingDataPreserved=${!!data}, applied=false, reason=error_no_fallback`);
-        
+
         if (data) {
           toast.error('Error al actualizar. Se mantienen los datos anteriores.', { duration: 5000 });
         } else {
           toast.error('No se pudieron cargar los datos. Intente nuevamente.', { duration: 5000 });
         }
-        
+
         setLoading(false);
       }
     }
@@ -1099,7 +1091,7 @@ export default function TableroEjecutivo() {
     logger.log('[P0-LOG] tablero_init: Carga inicial del tablero');
     cargarDatos(0, true);
   }, []);  // Solo en montaje inicial
-  
+
   // P0 TAREA 1: Recargar cuando cambien los filtros
   useEffect(() => {
     if (lastRefreshTime) {  // Solo si ya hubo una carga inicial
@@ -1107,7 +1099,7 @@ export default function TableroEjecutivo() {
       cargarDatos(0, true);
     }
   }, [selectedMeses, selectedAnios, tipoComparacion]);
-  
+
   // P0 TAREA 1: Refresco automático cuando la página vuelve a ser visible
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -1127,7 +1119,7 @@ export default function TableroEjecutivo() {
         }
       }
     };
-    
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [lastRefreshTime, cargarDatos]);
@@ -1280,16 +1272,16 @@ export default function TableroEjecutivo() {
                   )}
                 </div>
 
-                <Button 
+                <Button
                   onClick={() => {
                     setShowMesesDropdown(false);
                     setShowAniosDropdown(false);
                     // P0 TAREA 7: Forzar recarga contra fuente real
                     logger.log('[P0-LOG] tablero_manual_refresh: Botón Actualizar presionado');
                     cargarDatos(0, true);
-                  }} 
-                  disabled={loading} 
-                  size="sm" 
+                  }}
+                  disabled={loading}
+                  size="sm"
                   className="mt-5"
                   data-testid="tablero-btn-actualizar"
                 >
@@ -1298,7 +1290,7 @@ export default function TableroEjecutivo() {
                 </Button>
                 {data?.periodo && (
                   <span className="text-xs text-zinc-500 ml-auto bg-zinc-100 px-2 py-1 rounded mt-5">
-                    {data.periodo.modo_ventas_dia 
+                    {data.periodo.modo_ventas_dia
                       ? <span className="text-amber-600 font-medium">🔴 Ventas del Día (sin corte)</span>
                       : `${data.periodo.mes ? MESES.find(m => m.value === String(data.periodo.mes).padStart(2, '0'))?.label : ''} ${data.periodo.anio} • Día ${data.periodo.dias_transcurridos} de ${data.periodo.dias_mes}`
                     }
@@ -1325,8 +1317,8 @@ export default function TableroEjecutivo() {
                 <p className="text-xs text-amber-600">Los datos mostrados son de la última actualización exitosa.</p>
               </div>
             </div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               className="border-amber-500 text-amber-700 hover:bg-amber-100"
               onClick={() => {
@@ -1351,8 +1343,8 @@ export default function TableroEjecutivo() {
                 <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
                 <p className="text-lg font-semibold text-amber-400">Error de Conexión</p>
                 <p className="text-sm text-zinc-400 mt-2">{data.errorMessage || 'No se pudieron cargar los datos'}</p>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="mt-4 border-amber-500 text-amber-400 hover:bg-amber-500/10"
                   onClick={() => cargarDatos()}
                 >
@@ -1384,12 +1376,12 @@ export default function TableroEjecutivo() {
                   </div>
                 </div>
               </div>
-              
+
               {/* PAX Total */}
               <div className="flex flex-col text-center">
                 <p className="text-xs text-zinc-400 uppercase tracking-wide">PAX Total</p>
                 <p className="text-2xl font-bold">{data.totales.pax?.toLocaleString()}</p>
-                <p className="text-xs text-zinc-400 mt-1">Pax Prom: {formatCurrency(data.totales.pax_prom || (data.totales.pax > 0 ? data.totales.ventas / data.totales.pax : 0))}</p>
+                <p className="text-xs text-zinc-400 mt-1">Pax Prom: {formatCurrency(data.totales.pax_prom ?? 0)}</p>
                 <div className="flex gap-4 mt-auto pt-2 justify-center">
                   {!esMultiMes && (
                     <div className="text-center">
@@ -1407,12 +1399,12 @@ export default function TableroEjecutivo() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Cheques */}
               <div className="flex flex-col text-center">
                 <p className="text-xs text-zinc-400 uppercase tracking-wide">Cheques</p>
                 <p className="text-2xl font-bold">{data.totales.cheques?.toLocaleString()}</p>
-                <p className="text-xs text-zinc-400 mt-1">Cheque Prom: {formatCurrency(data.totales.cheque_promedio || (data.totales.cheques > 0 ? data.totales.ventas / data.totales.cheques : 0))}</p>
+                <p className="text-xs text-zinc-400 mt-1">Cheque Prom: {formatCurrency(data.totales.cheque_promedio ?? 0)}</p>
                 <div className="flex gap-4 mt-auto pt-2 justify-center">
                   {!esMultiMes && (
                     <div className="text-center">
@@ -1430,11 +1422,11 @@ export default function TableroEjecutivo() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Proyección Mes/Anual/Día - Dinámico según selector */}
               <div className="flex flex-col text-center">
                 <p className="text-xs text-zinc-400 uppercase tracking-wide">
-                  {data?.periodo?.modo_ventas_dia 
+                  {data?.periodo?.modo_ventas_dia
                     ? 'Proyección del Día'
                     : (esMultiMes ? 'Proyección Anual' : 'Proyección Mes')
                   }
@@ -1443,7 +1435,7 @@ export default function TableroEjecutivo() {
                   {formatCurrency(
                     data?.periodo?.modo_ventas_dia
                       ? data.totales.ventas  // En Ventas del Día, la proyección ES la venta actual (al cierre será = venta real)
-                      : (esMultiMes 
+                      : (esMultiMes
                           ? (data.totales.ventas / (data.periodo?.dias_transcurridos || 1)) * 365
                           : data.totales.proyeccion
                         )
@@ -1452,7 +1444,7 @@ export default function TableroEjecutivo() {
                 <p className="text-xs text-zinc-400 mt-1">
                   {data?.periodo?.modo_ventas_dia
                     ? 'Al cierre del día'
-                    : (esMultiMes 
+                    : (esMultiMes
                         ? `${data.periodo?.dias_transcurridos || 0} días → 365 días`
                         : 'Si mantiene ritmo'
                       )
@@ -1485,7 +1477,7 @@ export default function TableroEjecutivo() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Unidades - P0 TAREA 9: Consolidado con estados separados */}
               <div className="flex flex-col text-center">
                 <p className="text-xs text-zinc-400 uppercase tracking-wide">Unidades</p>
@@ -1543,9 +1535,9 @@ export default function TableroEjecutivo() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {data.unidades.map((unidad, idx) => (
-              <UnidadCard 
-                key={unidad.id || unidad.nombre || `unidad-${idx}`} 
-                unidad={unidad} 
+              <UnidadCard
+                key={unidad.id || unidad.nombre || `unidad-${idx}`}
+                unidad={unidad}
                 onClick={setUnidadSeleccionada}
                 esMultiMes={esMultiMes}
                 modoVentasDia={data?.periodo?.modo_ventas_dia || false}
@@ -1562,7 +1554,7 @@ export default function TableroEjecutivo() {
           <span className="ml-2 text-zinc-500">Consultando todas las unidades...</span>
         </div>
       )}
-      
+
       {/* Loading Overlay - Mostrar indicador sutil cuando hay datos y está recargando */}
       {loading && data && (
         <div className="fixed bottom-4 right-4 bg-white shadow-lg rounded-lg px-4 py-2 flex items-center gap-2 z-50 border">
@@ -1608,8 +1600,8 @@ export default function TableroEjecutivo() {
 
       {/* Modal de Detalle */}
       {unidadSeleccionada && (
-        <DetalleUnidad 
-          unidad={unidadSeleccionada} 
+        <DetalleUnidad
+          unidad={unidadSeleccionada}
           onClose={() => setUnidadSeleccionada(null)}
           mes={selectedMeses.length > 0 ? selectedMeses[0] : null}
           anio={selectedAnios.length > 0 ? selectedAnios[0] : null}
