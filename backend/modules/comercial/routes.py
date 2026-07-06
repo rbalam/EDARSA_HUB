@@ -1984,7 +1984,7 @@ async def obtener_sucursales(
         edarsahub_password = cfg.password
         
         # Query para obtener sucursales mapeadas al servidor
-        query_sucursales = f'''
+        query_sucursales = '''
         SELECT 
             ss.SucursalID as id,
             ss.CodigoSucursal as codigo,
@@ -1994,19 +1994,20 @@ async def obtener_sucursales(
             sm.SucursalOrigenID
         FROM Sistema_Sucursales ss
         JOIN Sistema_SucursalServidorMapeo sm ON ss.SucursalID = sm.SucursalID
-        WHERE CAST(sm.ServidorID AS VARCHAR(50)) = '{server_id}'
+        WHERE CAST(sm.ServidorID AS VARCHAR(50)) = %s
           AND ss.Activo = 1
           AND sm.Activo = 1
         ORDER BY ss.NombreSucursal
         '''
         
-        result = execute_sql_query(
+        result = execute_sql_query_params(
             edarsahub_host,
             edarsahub_port,
             edarsahub_database,
             edarsahub_username,
             edarsahub_password,
-            query_sucursales
+            query_sucursales,
+            (str(server_id),)
         ) or []
         
         if result:
