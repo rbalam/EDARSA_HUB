@@ -30,3 +30,20 @@ Reglas críticas:
 - DB solo `SELECT` para auditorías.
 - KPI Ventas = `ventas_total` con IVA.
 - Unidad de negocio: fuente `dbo.Unidades_Negocio`, llave `unidad_negocio_pk`.
+
+## EDARSA Committer
+
+- EDARSA Committer: crea commits locales solo despues de Validator APROBADO.
+- No hace push.
+- No deploy.
+- No Produccion.
+- No reset.
+- No checkout destructivo.
+
+## Flujo autonomo
+
+Usar cadena:
+
+`Supervisor -> Auditor -> Coder -> Validator -> Committer -> Supervisor`
+
+Cada agente debe terminar con bloque `HANDOFF`.

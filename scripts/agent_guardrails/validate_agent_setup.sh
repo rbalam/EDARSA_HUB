@@ -53,3 +53,17 @@ git diff --check
 
 echo
 echo "OK: agent setup validado"
+
+
+echo
+echo "===== COMMITTER / WORKFLOW ====="
+test -f .github/agents/edarsa-committer.agent.md
+test -f .agents/skills/edarsa-committer/SKILL.md
+test -f .agents/rules/edarsa-agent-workflow.md
+grep -RInE "EDARSA Committer|edarsa-committer|HANDOFF|Flujo autonomo" \
+  .github/agents/edarsa-committer.agent.md \
+  .agents/skills/edarsa-committer/SKILL.md \
+  .agents/rules/edarsa-agent-workflow.md \
+  AGENTS.md \
+  .github/copilot-instructions.md >/dev/null
+echo "OK: committer y workflow autonomo configurados"

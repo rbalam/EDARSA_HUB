@@ -202,3 +202,27 @@ Uso recomendado:
 2. Supervisor manda a Auditor si falta evidencia.
 3. Supervisor manda a Coder solo si hay autorización.
 4. Supervisor manda a Validator para aprobar o bloquear.
+
+### EDARSA Committer
+
+Committer controlado. Solo crea commits locales despues de `EDARSA Validator` con veredicto `APROBADO`.
+
+Reglas:
+
+- No push.
+- No deploy.
+- No Produccion.
+- No reset.
+- No checkout destructivo.
+- No SQL.
+- No secretos.
+- Stage solo archivos aprobados.
+- Commit local con mensaje convencional.
+
+### Flujo autonomo entre agentes
+
+Cadena por defecto:
+
+`Supervisor -> Auditor -> Coder dry-run -> Validator pre-patch -> Coder patch -> Validator final -> Committer -> Supervisor`
+
+Cada agente debe emitir bloque `HANDOFF` con `next_agent`, `reason` y `mode`.
