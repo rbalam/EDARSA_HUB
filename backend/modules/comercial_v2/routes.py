@@ -1057,6 +1057,10 @@ async def comercial_v2_dashboard(
                 "total_registros": totales_con_variaciones.get('total_registros', 0),
                 "total_unidades": totales_con_variaciones.get('total_unidades', 0),
                 "total_dias": totales_con_variaciones.get('total_dias', 0),
+                "cheque_promedio": totales_con_variaciones.get('cheque_promedio', 0),
+                "ticket_promedio": totales_con_variaciones.get('ticket_promedio', 0),
+                "pax_promedio": totales_con_variaciones.get('pax_promedio', 0),
+                "proyeccion": totales_con_variaciones.get('proyeccion', 0),
                 # FASE 2: Variaciones en totales
                 "ventas_ant": totales_con_variaciones.get('ventas_ant'),
                 "ventas_año": totales_con_variaciones.get('ventas_año'),
