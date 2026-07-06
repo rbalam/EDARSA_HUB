@@ -2770,7 +2770,8 @@ async def comercial_ventas_tiempo(
                 ventas_por_hora.append({
                     "hora": f"{hora_int:02d}:00",
                     "ventas": float(r['ventas'] or 0),
-                    "pax": int(r['tickets'] or 0)  # Usando tickets como aproximación de pax
+                    "tickets": int(r['tickets'] or 0),
+                    "cheques": int(r['tickets'] or 0)
                 })
             
             # Formatear ventas por día
@@ -2784,31 +2785,39 @@ async def comercial_ventas_tiempo(
                     "ventas": float(r['ventas'] or 0)
                 })
             
-            # Calcular totales del día actual (si hay datos de hoy)
+            # Calcular totales del día actual (si hay datos de hoy) desde fuente canónica
             hoy_str = hoy.strftime('%Y-%m-%d')
             cursor_hoy = None
+            ventas_hoy = 0
+            cheques_hoy = 0
+            pax_hoy = 0
+            fuente_pax_hoy = "SIN_DATOS_CANONICOS_DIA"
+
             try:
                 conn_hoy = get_edarsahub_pymssql_connection(timeout=10, login_timeout=10)
                 cursor_hoy = conn_hoy.cursor(as_dict=True)
+
+                # Intentar leer desde Comercial_Ventas_Dia_Abiertas_v2 (canónica)
                 cursor_hoy.execute("""
                     SELECT 
-                        SUM(VentaHora) as ventas,
-                        SUM(NumTicketsHora) as tickets
-                    FROM Sync_Ventas_PorHora
-                    WHERE ServerID = %s
-                      AND FechaOperacion = %s
+                        SUM(ISNULL(ventas_abiertas, 0) + ISNULL(ventas_cerradas_dia, 0)) as ventas,
+                        SUM(ISNULL(tickets_abiertos, 0) + ISNULL(tickets_cerrados_dia, 0)) as tickets,
+                        SUM(ISNULL(pax_abiertos, 0) + ISNULL(pax_cerrados_dia, 0)) as pax
+                    FROM Comercial_Ventas_Dia_Abiertas_v2
+                    WHERE server_id = %s
+                      AND fecha_operacion = %s
                 """, (server_id, hoy_str))
-                
+
                 hoy_data = cursor_hoy.fetchone()
                 conn_hoy.close()
-                
-                ventas_hoy = float(hoy_data['ventas'] or 0) if hoy_data else 0
-                cheques_hoy = int(hoy_data['tickets'] or 0) if hoy_data else 0
-                pax_hoy = cheques_hoy  # Aproximación
-            except:
-                ventas_hoy = 0
-                cheques_hoy = 0
-                pax_hoy = 0
+
+                if hoy_data and (hoy_data['ventas'] is not None or hoy_data['tickets'] is not None or hoy_data['pax'] is not None):
+                    ventas_hoy = float(hoy_data['ventas'] or 0)
+                    cheques_hoy = int(hoy_data['tickets'] or 0)
+                    pax_hoy = int(hoy_data['pax'] or 0)
+                    fuente_pax_hoy = "EDARSAHUB_SQL_CANONICA_DIA"
+            except Exception as e:
+                logging.error(f"Error consultando Comercial_Ventas_Dia_Abiertas_v2: {e}")
             
             # Determinar source_type
             if is_stale:
@@ -2827,11 +2836,14 @@ async def comercial_ventas_tiempo(
                 "source_type": source_type,
                 "source_message": source_message,
                 "server_name": server.get('name'),
+                "por_hora": ventas_por_hora,
+                "por_dia": ventas_por_dia,
                 "ventas_por_hora": ventas_por_hora,
                 "ventas_por_dia": ventas_por_dia,
                 "pax_hoy": pax_hoy,
                 "ventas_hoy": ventas_hoy,
-                "cheques_hoy": cheques_hoy
+                "cheques_hoy": cheques_hoy,
+                "fuente_pax_hoy": fuente_pax_hoy
             }
             
         except Exception as e:

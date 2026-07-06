@@ -1406,7 +1406,11 @@ function VentasPorTiempo({ servers, unidadesNegocio, selectedUnidad, setSelected
             </div>
             {fuentePaxHoy && (
               <p className="text-xs text-zinc-400 mt-3 text-center">
-                Fuente: {fuentePaxHoy === 'tempcheques' ? 'Ventas sin corte (tempcheques)' : fuentePaxHoy === 'api_local' ? 'API Local MPRO' : fuentePaxHoy}
+                Fuente: {
+                  fuentePaxHoy === 'EDARSAHUB_SQL_CANONICA_DIA' ? 'EDARSAHUB SQL canónico' :
+                  fuentePaxHoy === 'SIN_DATOS_CANONICOS_DIA' ? 'Sin datos canónicos del día' :
+                  'Fuente no canónica'
+                }
               </p>
             )}
           </CardContent>
@@ -1431,7 +1435,7 @@ function VentasPorTiempo({ servers, unidadesNegocio, selectedUnidad, setSelected
                     <span className="text-xs text-white font-medium">{formatCurrency(v.ventas)}</span>
                   </div>
                 </div>
-                <span className="w-16 text-xs text-zinc-500">{v.pax} pax</span>
+                <span className="w-16 text-xs text-zinc-500">{v.tickets ?? v.cheques ?? 0} tickets</span>
               </div>
             ))}
           </CardContent>
