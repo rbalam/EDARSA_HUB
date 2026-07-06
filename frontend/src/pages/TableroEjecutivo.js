@@ -78,12 +78,8 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
     // CORRECCIÓN GLOBAL: Nomenclatura correcta
     // cheque_promedio = ventas / cheques (tickets_total)
     // pax_promedio = ventas / pax (pax_total)
-    const chequePromedio = totales.tickets_total > 0 
-      ? totales.ventas_total / totales.tickets_total 
-      : 0;
-    const paxPromedio = totales.pax_total > 0 
-      ? totales.ventas_total / totales.pax_total 
-      : 0;
+    const chequePromedio = Number(totales.cheque_promedio || 0);
+    const paxPromedio = Number(totales.pax_promedio || 0);
     
     // Transformar unidades al formato v1
     // =========================================================================
@@ -117,8 +113,8 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       // CORRECCIÓN GLOBAL: Nomenclatura correcta de KPIs
       // cheque_promedio = ventas / cheques
       // pax_promedio = ventas / pax
-      cheque_promedio: u.cheque_promedio ?? u.ticket_promedio ?? (u.tickets_total > 0 ? u.ventas_total / u.tickets_total : 0),
-      pax_promedio: u.pax_promedio ?? (u.pax_total > 0 ? u.ventas_total / u.pax_total : 0),
+      cheque_promedio: u.cheque_promedio ?? u.ticket_promedio ?? 0,
+      pax_promedio: u.pax_promedio ?? 0,
       // ACTUALIZADO: Usar días GLOBALES (FechaOperacionActual.day), NO u.dias
       proyeccion: u.proyeccion ?? calcularProyeccion(u.ventas_total || 0),
       // FASE 3: Variaciones vienen directamente de V2 (EDARSAHUB)
