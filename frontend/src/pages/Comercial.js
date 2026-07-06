@@ -766,9 +766,9 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
                   <div>
                     <p className="text-xs text-zinc-500">Pax Promedio</p>
                     <p className="text-2xl font-bold text-purple-600">
-                      {formatCurrency(kpis.pax_promedio ?? 0)}
+                      {formatNumber(kpis.pax_promedio ?? 0)}
                     </p>
-                    <p className="text-xs text-zinc-400">Ventas ÷ PAX</p>
+                    <p className="text-xs text-zinc-400">Pax Promedio</p>
                   </div>
                   <Users className="h-8 w-8 text-purple-200" />
                 </div>
@@ -1553,7 +1553,7 @@ function MesasComensales({ servers, unidadesNegocio, selectedUnidad, setSelected
                   <p className="text-xs text-zinc-400">Ticket Prom.</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-purple-400">{datosUnidad.pax_promedio}</p>
+                  <p className="text-3xl font-bold text-purple-400">{formatNumber(datosUnidad.pax_promedio)}</p>
                   <p className="text-xs text-zinc-400">PAX Prom.</p>
                 </div>
               </div>
@@ -1824,7 +1824,7 @@ function ReportePax({ servers, unidadesNegocio, selectedUnidad, setSelectedUnida
           <Card className="border bg-gradient-to-br from-blue-50 to-white">
             <CardContent className="py-3 text-center">
               <p className="text-xs text-zinc-500">Pax Promedio</p>
-              <p className="text-xl font-bold text-blue-600">{formatCurrency(data.resumen.pax_promedio)}</p>
+              <p className="text-xl font-bold text-blue-600">{formatNumber(data.resumen.pax_promedio)}</p>
             </CardContent>
           </Card>
           <Card className="border bg-gradient-to-br from-yellow-50 to-white">
@@ -1944,14 +1944,14 @@ function ReportePax({ servers, unidadesNegocio, selectedUnidad, setSelectedUnida
                         </td>
                         <td className="py-2 px-3 text-center">
                           <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
-                            <Users className="h-3 w-3" /> {item.pax}
+                            <Users className="h-3 w-3" /> {formatNumber(item.pax)}
                           </span>
                         </td>
                         <td className="py-2 px-3 text-right font-semibold text-green-600">
                           {formatCurrency(item.total)}
                         </td>
                         <td className="py-2 px-3 text-right font-semibold text-blue-600">
-                          {formatCurrency(item.pax_promedio)}
+                          {formatNumber(item.pax_promedio)}
                         </td>
                         {viewMode === 'vendedor' && (
                           <td className="py-2 px-3 text-center text-zinc-500">
@@ -1971,9 +1971,9 @@ function ReportePax({ servers, unidadesNegocio, selectedUnidad, setSelectedUnida
                               <span>{det.vendedor}</span>
                             )}
                           </td>
-                          <td className="py-1 px-3 text-center text-sm">{det.pax}</td>
+                          <td className="py-1 px-3 text-center text-sm">{formatNumber(det.pax)}</td>
                           <td className="py-1 px-3 text-right text-sm text-green-600">{formatCurrency(det.total)}</td>
-                          <td className="py-1 px-3 text-right text-sm text-blue-600">{formatCurrency(det.pax_promedio)}</td>
+                          <td className="py-1 px-3 text-right text-sm text-blue-600">{formatNumber(det.pax_promedio)}</td>
                           {viewMode === 'vendedor' && <td className="py-1 px-3"></td>}
                         </tr>
                       ))}
