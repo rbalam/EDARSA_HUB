@@ -101,7 +101,6 @@ from core.utils.date_filters import (
 from modules.comercial.service import (
     get_kpis_softrestaurant,
     get_kpis_mpro,
-    get_kpis_mpro_por_sucursal,
     # P0: Nuevas estructuras de respuesta
     build_unit_response,
     classify_connection_error,
@@ -147,7 +146,7 @@ from modules.comercial.cache_service import (
 )
 
 # FASE P0.5: Import para leer ventas del día desde EDARSAHUB SQL (NO LIVE)
-from modules.comercial_v2.repository_readonly import get_ventas_dia_abiertas
+from modules.comercial_v2.repository_readonly import get_ventas_dia_abiertas, get_kpis_diarios
 
 # =============================================================================
 # FIX 2026-05-15: Import de Ventana Operativa para FechaOperacion correcta
@@ -1513,127 +1512,157 @@ async def _tablero_ejecutivo_internal(
                         )
                         resultados.append(unit_response)
                 else:
-                    # MPRO modo HUB (NO ventas del día)
+                    # MPRO modo HUB: leer exclusivamente desde EDARSAHUB SQL canonico.
+                    # No API local, no SQL directo a MPRO, no cache legacy, no PAX inventado.
                     try:
-                        unidades_mpro = get_kpis_mpro_por_sucursal(
-                            server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant,
-                            fecha_ini_año_ant, fecha_fin_año_ant, dias_transcurridos, dias_mes, solo_ventas_dia
+                        periodo_ini_dt = datetime.strptime(fecha_ini, "%Y-%m-%d").date()
+                        periodo_fin_dt = datetime.strptime(fecha_fin, "%Y-%m-%d").date()
+                        periodo_ant_ini_dt = datetime.strptime(fecha_ini_ant, "%Y-%m-%d").date()
+                        periodo_ant_fin_dt = datetime.strptime(fecha_fin_ant, "%Y-%m-%d").date()
+                        periodo_anio_ini_dt = datetime.strptime(fecha_ini_año_ant, "%Y-%m-%d").date()
+                        periodo_anio_fin_dt = datetime.strptime(fecha_fin_año_ant, "%Y-%m-%d").date()
+
+                        server_id_actual = str(server.get('id') or '')
+
+                        def _filtrar_server(rows):
+                            return [
+                                row for row in rows
+                                if str(row.get('server_id') or '') == server_id_actual
+                            ]
+
+                        def _agrupar_por_unidad(rows):
+                            agrupado = {}
+                            for row in rows:
+                                unidad_pk = str(
+                                    row.get('unidad_negocio_pk')
+                                    or row.get('unidad_negocio_id')
+                                    or row.get('unidad_negocio_nombre')
+                                    or 'unknown'
+                                )
+                                item = agrupado.setdefault(unidad_pk, {
+                                    'unidad_negocio_pk': unidad_pk,
+                                    'unidad_negocio_codigo': row.get('unidad_negocio_id') or unidad_pk,
+                                    'unidad_negocio_nombre': row.get('unidad_negocio_nombre') or unidad_pk,
+                                    'unidad': row.get('unidad_negocio_nombre') or unidad_pk,
+                                    'sistema_origen': row.get('sistema_origen') or 'MPRO',
+                                    'ventas': 0.0,
+                                    'pax': 0,
+                                    'cheques': 0,
+                                    '_rows': 0,
+                                })
+                                item['ventas'] += float(row.get('ventas_sin_propina') or row.get('ventas_total') or 0)
+                                item['pax'] += int(row.get('pax_total') or 0)
+                                item['cheques'] += int(row.get('tickets_total') or 0)
+                                item['_rows'] += 1
+                            return agrupado
+
+                        rows_actual = _filtrar_server(get_kpis_diarios(periodo_ini_dt, periodo_fin_dt, None))
+                        rows_ant = _filtrar_server(get_kpis_diarios(periodo_ant_ini_dt, periodo_ant_fin_dt, None))
+                        rows_anio = _filtrar_server(get_kpis_diarios(periodo_anio_ini_dt, periodo_anio_fin_dt, None))
+
+                        actual_por_unidad = _agrupar_por_unidad(rows_actual)
+                        ant_por_unidad = _agrupar_por_unidad(rows_ant)
+                        anio_por_unidad = _agrupar_por_unidad(rows_anio)
+
+                        unidades_keys = sorted(
+                            set(actual_por_unidad.keys())
+                            | set(ant_por_unidad.keys())
+                            | set(anio_por_unidad.keys())
                         )
-                        logging.info(f"MPRO {server['name']}: {len(unidades_mpro)} unidades")
-                        unidades_mpro = await filtrar_unidades_por_visibilidad(unidades_mpro, server['id'])
-                        await save_server_connection_status(server['id'], True)
-                        
-                        for unidad in unidades_mpro:
-                            unidad_nombre = unidad.get('unidad', 'unknown')
-                            
-                            if unidad.get("source_status") == "NO_DATA" or unidad.get("status") == "offline":
-                                unit_response = build_unit_response(
-                                    server=server,
-                                    kpis=unidad if unidad.get('ventas') else None,
-                                    data_status=DataStatus.DATA_FROM_CACHE if unidad.get('ventas') else DataStatus.NO_DATA_CONFIRMED,
-                                    live_status=LiveStatus.LIVE_API_UNREACHABLE if unidad.get("status") == "offline" else LiveStatus.LIVE_CONNECTED,
-                                    cache_status=CacheStatus.USED_CONNECTION_FALLBACK if unidad.get('ventas') else CacheStatus.MISSING,
-                                    source_used=SourceUsed.CACHE if unidad.get('ventas') else SourceUsed.NONE,
-                                    source_real_attempted=True,
-                                    source_real_status=SourceRealStatus.API_UNREACHABLE if unidad.get("status") == "offline" else SourceRealStatus.SUCCESS,
-                                    source_period="CACHE_VALIDATED" if unidad.get('ventas') else "NONE",
-                                    source_live="NOT_USED",
-                                    sucursal=unidad_nombre,
-                                )
-                            else:
-                                origen = unidad.get('origen', 'unknown')
-                                if origen == 'api_local':
-                                    source_period_mpro, source_live_mpro = "MPRO_API_LOCAL", "LOCAL_API"
-                                    live_status_mpro = LiveStatus.LIVE_CONNECTED
-                                elif origen == 'EDARSAHUB_SQL':
-                                    source_period_mpro, source_live_mpro = "EDARSAHUB_SQL", "EDARSAHUB_SQL"
-                                    live_status_mpro = LiveStatus.LIVE_NOT_APPLICABLE
-                                else:
-                                    source_period_mpro, source_live_mpro = "MPRO_SQL_DIRECT", "SQL_DIRECT"
-                                    live_status_mpro = LiveStatus.LIVE_CONNECTED
-                                
-                                unit_response = build_unit_response(
-                                    server=server, kpis=unidad,
-                                    data_status=DataStatus.DATA_OK,
-                                    live_status=live_status_mpro,
-                                    cache_status=CacheStatus.NOT_USED,
-                                    source_used=SourceUsed.REAL_SOURCE,
-                                    source_real_attempted=True,
-                                    source_real_status=SourceRealStatus.SUCCESS,
-                                    source_period=source_period_mpro,
-                                    source_live=source_live_mpro,
-                                    sucursal=unidad_nombre,
-                                )
-                            
-                            resultados.append(unit_response)
-                            
-                            if unidad.get("source_status") != "NO_DATA" and unidad.get('ventas'):
-                                unidad_cache_key = f"{periodo_key}-{unidad_nombre}"
-                                await save_kpis_cache(server['id'], unidad_cache_key, unidad)
-                            
-                            for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año", 
-                                      "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
-                                totales[k] += unidad.get(k, 0) or 0
-                                
-                    except Exception as mpro_error:
-                        logging.error(f"[P0-LOG] MPRO error: {server['name']}: {mpro_error}")
-                        await save_server_connection_status(server['id'], False)
-                        
-                        live_status, source_real_status = classify_connection_error(mpro_error, server)
-                        
-                        if solo_ventas_dia:
+
+                        unidades_canonicas = []
+                        for unidad_key in unidades_keys:
+                            actual = actual_por_unidad.get(unidad_key, {})
+                            ant = ant_por_unidad.get(unidad_key, {})
+                            anio_ref = anio_por_unidad.get(unidad_key, {})
+                            base = actual or ant or anio_ref
+
+                            ventas = float(actual.get('ventas') or 0)
+                            cheques = int(actual.get('cheques') or 0)
+                            pax = int(actual.get('pax') or 0)
+
+                            kpis_mpro = {
+                                'unidad': base.get('unidad') or unidad_key,
+                                'unidad_negocio_pk': base.get('unidad_negocio_pk') or unidad_key,
+                                'unidad_negocio_codigo': base.get('unidad_negocio_codigo') or unidad_key,
+                                'unidad_negocio_nombre': base.get('unidad_negocio_nombre') or unidad_key,
+                                'ventas': ventas,
+                                'ventas_ant': float(ant.get('ventas') or 0),
+                                'ventas_año': float(anio_ref.get('ventas') or 0),
+                                'pax': pax,
+                                'pax_ant': int(ant.get('pax') or 0),
+                                'pax_año': int(anio_ref.get('pax') or 0),
+                                'cheques': cheques,
+                                'cheques_ant': int(ant.get('cheques') or 0),
+                                'cheques_año': int(anio_ref.get('cheques') or 0),
+                                'ticket_prom': round(ventas / cheques, 2) if cheques > 0 else 0,
+                                'cheque_prom': round(ventas / cheques, 2) if cheques > 0 else 0,
+                                'pax_prom': round(pax / cheques, 2) if cheques > 0 else 0,
+                                'proyeccion': round((ventas / dias_transcurridos) * dias_mes, 2) if dias_transcurridos > 0 else ventas,
+                                'origen': 'EDARSAHUB_SQL',
+                                'fuente': 'EDARSAHUB_SQL',
+                                '_rows_actual': int(actual.get('_rows') or 0),
+                            }
+                            unidades_canonicas.append(kpis_mpro)
+
+                        unidades_canonicas = await filtrar_unidades_por_visibilidad(unidades_canonicas, server['id'])
+                        logging.info(f"[MPRO-CANONICO] {server['name']}: {len(unidades_canonicas)} unidades desde EDARSAHUB SQL")
+
+                        if not unidades_canonicas:
                             unit_response = build_unit_response(
-                                server=server, kpis=None,
-                                data_status=DataStatus.DATA_ERROR,
-                                live_status=live_status,
-                                cache_status=CacheStatus.NOT_USED,
+                                server=server,
+                                kpis={'ventas': 0, 'pax': 0, 'cheques': 0},
+                                data_status=DataStatus.NO_DATA_CONFIRMED,
+                                live_status=LiveStatus.LIVE_NOT_APPLICABLE,
+                                cache_status=CacheStatus.MISSING,
                                 source_used=SourceUsed.NONE,
                                 source_real_attempted=True,
-                                source_real_status=source_real_status,
-                                source_period="NONE",
-                                source_live="ERROR",
-                                error_code="MPRO_ERROR",
-                                error_message=f"MPRO no disponible: {str(mpro_error)[:100]}",
+                                source_real_status=SourceRealStatus.SUCCESS,
+                                source_period="EDARSAHUB_SQL",
+                                source_live="EDARSAHUB_SQL",
+                                sucursal=server.get('name', 'MPRO'),
                             )
                             resultados.append(unit_response)
                         else:
-                            cached_list = await get_cached_kpis_by_prefix(server['id'], periodo_key)
-                            if cached_list:
-                                logging.info(f"[P0-LOG] MPRO caché: {len(cached_list)} unidades")
-                                for cached_kpi in cached_list:
-                                    unidad_nombre = cached_kpi.get('unidad', 'unknown')
-                                    unit_response = build_unit_response(
-                                        server=server, kpis=cached_kpi,
-                                        data_status=DataStatus.DATA_FROM_CACHE,
-                                        live_status=live_status,
-                                        cache_status=CacheStatus.USED_CONNECTION_FALLBACK,
-                                        source_used=SourceUsed.CACHE,
-                                        source_real_attempted=True,
-                                        source_real_status=source_real_status,
-                                        source_period="CACHE_VALIDATED",
-                                        source_live="NOT_USED",
-                                        sucursal=unidad_nombre,
-                                        cache_warning="MPRO caída, usando caché",
-                                    )
-                                    resultados.append(unit_response)
-                                    for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año", 
-                                              "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
-                                        totales[k] += cached_kpi.get(k, 0) or 0
-                            else:
+                            for unidad in unidades_canonicas:
+                                tiene_dato_actual = unidad.get('_rows_actual', 0) > 0
+
                                 unit_response = build_unit_response(
-                                    server=server, kpis=None,
-                                    data_status=DataStatus.NO_DATA_CONFIRMED,
-                                    live_status=live_status,
-                                    cache_status=CacheStatus.MISSING,
-                                    source_used=SourceUsed.NONE,
+                                    server=server,
+                                    kpis=unidad,
+                                    data_status=DataStatus.DATA_OK if tiene_dato_actual else DataStatus.NO_DATA_CONFIRMED,
+                                    live_status=LiveStatus.LIVE_NOT_APPLICABLE,
+                                    cache_status=CacheStatus.NOT_USED,
+                                    source_used=SourceUsed.REAL_SOURCE if tiene_dato_actual else SourceUsed.NONE,
                                     source_real_attempted=True,
-                                    source_real_status=source_real_status,
-                                    source_period="NONE",
-                                    source_live="NOT_USED",
-                                    error_code="NO_CACHE",
-                                    error_message="Sin datos MPRO",
+                                    source_real_status=SourceRealStatus.SUCCESS,
+                                    source_period="EDARSAHUB_SQL",
+                                    source_live="EDARSAHUB_SQL",
+                                    sucursal=unidad.get('unidad', 'MPRO'),
                                 )
                                 resultados.append(unit_response)
+
+                                for k in ["ventas", "ventas_ant", "ventas_año", "pax", "pax_ant", "pax_año",
+                                          "cheques", "cheques_ant", "cheques_año", "proyeccion"]:
+                                    totales[k] += unidad.get(k, 0) or 0
+
+                    except Exception as mpro_error:
+                        logging.error(f"[MPRO-CANONICO] Error EDARSAHUB SQL: {server['name']}: {mpro_error}")
+                        unit_response = build_unit_response(
+                            server=server,
+                            kpis=None,
+                            data_status=DataStatus.DATA_ERROR,
+                            live_status=LiveStatus.LIVE_NOT_APPLICABLE,
+                            cache_status=CacheStatus.MISSING,
+                            source_used=SourceUsed.NONE,
+                            source_real_attempted=True,
+                            source_real_status=SourceRealStatus.QUERY_ERROR,
+                            source_period="EDARSAHUB_SQL",
+                            source_live="EDARSAHUB_SQL",
+                            error_code="MPRO_EDARSAHUB_SQL_ERROR",
+                            error_message=str(mpro_error)[:100],
+                        )
+                        resultados.append(unit_response)
         except Exception as server_error:
             # =========================================================================
             # BLINDAJE NIVEL 2: Captura de error por servidor individual
