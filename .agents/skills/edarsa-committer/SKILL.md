@@ -60,3 +60,37 @@ Reglas de handoff:
 - Validator envia a Committer solo si el veredicto es `APROBADO`.
 - Committer devuelve a Supervisor despues del commit.
 - Ningun agente debe saltarse Validator antes de Committer.
+
+## Recalibración obligatoria SQL, secretos y handoff
+
+Reglas estrictas adicionales:
+
+- No usar `dotenv`.
+- No llamar `load_dotenv`.
+- No abrir `/app/.env`.
+- No abrir `/app/backend/.env`.
+- No imprimir variables de entorno.
+- No ejecutar `printenv`.
+- No ejecutar `env`.
+- No ejecutar `cat .env`.
+- No probar conexiones directas con `get_sql_connection` salvo autorización explícita del usuario.
+- Si se requiere SQL, pedir autorización y entregar primero un script SELECT revisable.
+- SQL permitido solo `SELECT`; prohibido `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `TRUNCATE`, `CREATE`, `MERGE`.
+- No leer scripts sueltos de reparación/migración como `fix_*.py`, `*_sql.py`, `migration*.py` o `scripts_pendientes` salvo que el usuario los autorice explícitamente.
+- No salir del alcance de archivos indicado por el usuario.
+
+Formato HANDOFF obligatorio:
+
+El último bloque de toda respuesta operativa debe ser exactamente:
+
+HANDOFF:
+next_agent: <EDARSA Auditor | EDARSA Coder | EDARSA Validator | EDARSA Committer | EDARSA Copilot Supervisor>
+reason: <motivo concreto>
+mode: auto_if_available_otherwise_user_confirm
+
+Reglas del HANDOFF:
+
+- No usar `NEXT AGENT` como sustituto.
+- No usar `STATUS: Ready for Validator` como sustituto.
+- No poner texto después del bloque `HANDOFF`.
+- Si falta `HANDOFF` exacto, el siguiente Validator debe marcar `BLOQUEADO`.
