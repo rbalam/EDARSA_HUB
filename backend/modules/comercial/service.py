@@ -2579,9 +2579,9 @@ def get_dashboard_kpis_from_edarsahub(
     registros = int(atomos.get("dias") or 0)
 
     ventas = float(metricas.get("ventas") or 0)
-    if registros <= 0 or ventas <= 0:
+    if registros <= 0:
         logging.warning(
-            f"[DASHBOARD-CANONICO] Sin datos canónicos para "
+            f"[DASHBOARD-CANONICO] Sin registros canónicos para "
             f"server_id={str(server_id)[:8]} periodo={fecha_ini} a {fecha_fin}"
         )
         return None
