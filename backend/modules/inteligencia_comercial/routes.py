@@ -312,27 +312,62 @@ def _fecha_fin_exclusiva(fecha_fin):
 
 
 def _resumen_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db=None):
-    """KPIs principales desde la fuente canónica única."""
-    unidad_pks = _unidad_pks_canonicas_portal(unidad_db)
-    hasta_excl = _fecha_fin_exclusiva(fecha_fin)
+    """KPIs principales desde runtime canónico.
 
-    if unidad_db and not unidad_pks:
+    Dashboard IA ancla el periodo con vw_Comercial_KPIs_Diarios_v2_Runtime.
+    El resumen debe leer la misma fuente para no perder el último día disponible.
+    Ventas del portal = ventas_sin_propina, venta comercial con IVA sin propina,
+    manteniendo propinas_total separado.
+    """
+    where = [
+        f"fecha_operacion >= '{_sql_literal(fecha_inicio)}'",
+        f"fecha_operacion < DATEADD(day, 1, CAST('{_sql_literal(fecha_fin)}' AS date))",
+    ]
+
+    if unidad_db:
+        unidad_lit = _sql_literal(unidad_db)
+        unidad_pks = _unidad_pks_canonicas_portal(unidad_db)
+        if unidad_pks:
+            pks_sql = ",".join(f"'{_sql_literal(pk)}'" for pk in unidad_pks)
+            where.append(
+                "("
+                f"CONVERT(varchar(36), unidad_negocio_pk) IN ({pks_sql}) "
+                f"OR UPPER(LTRIM(RTRIM(unidad_negocio_nombre))) = UPPER(LTRIM(RTRIM('{unidad_lit}')))"
+                ")"
+            )
+        else:
+            where.append(
+                f"UPPER(LTRIM(RTRIM(unidad_negocio_nombre))) = UPPER(LTRIM(RTRIM('{unidad_lit}')))"
+            )
+
+    sql = f"""
+        SELECT
+            SUM(ISNULL(ventas_sin_propina, 0)) AS ventas_totales,
+            SUM(ISNULL(pax_total, 0)) AS pax_total,
+            SUM(ISNULL(tickets_total, 0)) AS cheques_total,
+            SUM(ISNULL(propinas_total, 0)) AS propinas_total,
+            CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
+                THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(tickets_total, 0))
+                ELSE 0 END AS cheque_promedio,
+            CASE WHEN SUM(ISNULL(pax_total, 0)) > 0
+                THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(pax_total, 0))
+                ELSE 0 END AS ticket_promedio
+        FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime
+        WHERE {' AND '.join(where)}
+    """
+    rows = execute_query(sql)
+    if not rows:
         return _kpi_cero_portal()
 
-    try:
-        data = KPIsCanonicosService.resumen_periodo(
-            desde=fecha_inicio,
-            hasta=hasta_excl,
-            unidad_pks=unidad_pks
-        )
-    except TypeError:
-        data = KPIsCanonicosService.resumen_periodo(
-            fecha_inicio,
-            hasta_excl,
-            unidad_pks
-        )
-
-    return _normalizar_resumen_kpi_portal(data or {})
+    row = rows[0] or {}
+    return {
+        "ventas_totales": round(_kpi_float(row, "ventas_totales"), 2),
+        "pax_total": _kpi_int(row, "pax_total"),
+        "cheques_total": _kpi_int(row, "cheques_total"),
+        "propinas_total": round(_kpi_float(row, "propinas_total"), 2),
+        "cheque_promedio": round(_kpi_float(row, "cheque_promedio"), 2),
+        "ticket_promedio": round(_kpi_float(row, "ticket_promedio"), 2),
+    }
 
 
 def _series_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db=None):
