@@ -435,7 +435,7 @@ async def get_usuarios_asignables(current_user: dict = Depends(get_current_user)
                     ON r.RolID = ura.RolID
                 WHERE ura.UsuarioID = u.UsuarioID
                   AND ISNULL(ura.Activo, 1) = 1
-                ORDER BY ISNULL(r.EsSistema, 0) DESC, r.NombreRol
+                ORDER BY ISNULL(r.EsRolSistema, 0) DESC, r.NombreRol
             ) rol
             LEFT JOIN dbo.Usuario_PermisosCatalogosFlujo f
                 ON f.UsuarioID = u.UsuarioID
