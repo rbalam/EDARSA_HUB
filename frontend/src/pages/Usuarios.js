@@ -2078,21 +2078,71 @@ const Usuarios = () => {
             <div className="space-y-2">
               <Label>Permisos de Módulos</Label>
               <p className="text-xs text-zinc-500 mb-2">Selecciona los módulos a los que tendrá acceso este rol</p>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-64 overflow-y-auto border rounded-lg p-3">
-                {modulos.map((modulo) => (
-                  <div key={modulo.id} className="flex items-start gap-2 p-2 rounded hover:bg-zinc-50">
-                    <Checkbox
-                      id={`perm-${modulo.id}`}
-                      checked={roleFormData.permisos.includes(modulo.id)}
-                      onCheckedChange={() => togglePermiso(modulo.id)}
-                    />
-                    <label htmlFor={`perm-${modulo.id}`} className="cursor-pointer">
-                      <span className="text-sm font-medium">{modulo.nombre}</span>
-                      <p className="text-xs text-zinc-500">{modulo.descripcion}</p>
-                    </label>
-                  </div>
-                ))}
-              </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-64 overflow-y-auto border rounded-lg p-3">
+                  {(() => {
+                    const byId = new Map(modulos.map((modulo) => [String(modulo.id), modulo]));
+                    const childrenByParent = new Map();
+                    const roots = [];
+
+                    modulos.forEach((modulo) => {
+                      const parentRaw = modulo.modulo_padre_id ?? modulo.ModuloPadreID ?? modulo.moduloPadreId;
+                      const parentId = parentRaw === null || parentRaw === undefined || parentRaw === '' ? null : String(parentRaw);
+
+                      if (parentId && byId.has(parentId)) {
+                        if (!childrenByParent.has(parentId)) {
+                          childrenByParent.set(parentId, []);
+                        }
+                        childrenByParent.get(parentId).push(modulo);
+                      } else {
+                        roots.push(modulo);
+                      }
+                    });
+
+                    const renderPermissionItem = (modulo, compactLabel = null) => (
+                      <div key={`perm-item-${modulo.id}`} className="flex items-start gap-2 p-2 rounded hover:bg-zinc-50">
+                        <Checkbox
+                          id={`perm-${modulo.id}`}
+                          checked={roleFormData.permisos.includes(String(modulo.id))}
+                          onCheckedChange={() => togglePermiso(String(modulo.id))}
+                        />
+                        <label htmlFor={`perm-${modulo.id}`} className="cursor-pointer">
+                          <span className="text-sm font-medium">{compactLabel || modulo.nombre}</span>
+                          <p className="text-xs text-zinc-500">{modulo.descripcion}</p>
+                        </label>
+                      </div>
+                    );
+
+                    return roots.map((grupo) => {
+                      const children = childrenByParent.get(String(grupo.id)) || [];
+                      const hasOwnAssignablePermission =
+                        Boolean(grupo.ruta) ||
+                        Boolean(grupo.tiene_permiso_menu_propio) ||
+                        Boolean(grupo.tienePermisoMenuPropio) ||
+                        roleFormData.permisos.includes(String(grupo.id));
+
+                      if (children.length === 0) {
+                        return renderPermissionItem(grupo);
+                      }
+
+                      return (
+                        <div
+                          key={`grupo-${grupo.id}`}
+                          className="col-span-2 md:col-span-3 rounded-lg border border-zinc-100 bg-zinc-50/60 p-2"
+                        >
+                          <div className="px-2 pb-2">
+                            <p className="text-sm font-semibold text-zinc-900">{grupo.nombre}</p>
+                            <p className="text-xs text-zinc-500">{grupo.descripcion}</p>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {hasOwnAssignablePermission && renderPermissionItem(grupo, 'Acceso general')}
+                            {children.map((child) => renderPermissionItem(child))}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
               <p className="text-xs text-zinc-400 mt-1">
                 {roleFormData.permisos.length} módulo(s) seleccionado(s)
               </p>

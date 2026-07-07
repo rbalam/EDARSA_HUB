@@ -326,27 +326,58 @@ async def get_roles(current_user: dict = Depends(get_current_user)):
 async def get_modulos(current_user: dict = Depends(get_current_user)):
     """
     Lista todos los módulos del sistema desde EDARSAHUB SQL.
+    Devuelve jerarquía RBAC para que la UI trate MODULO como grupo y SUBMODULO como permiso.
     """
     require_admin(current_user)
 
     return execute_query("""
-    SELECT
-        CAST(ModuloID AS NVARCHAR(100)) AS id,
-        ModuloID,
-        CodigoModulo AS codigo,
-        NombreModulo AS name,
-        NombreModulo AS nombre,
-        Descripcion AS descripcion,
-        Ruta AS ruta,
-        Icono AS icono,
-        OrdenMenu AS orden,
-        ISNULL(EsVisibleMenu, 1) AS visible,
-        ISNULL(Activo, 1) AS activo
-    FROM Usuario_Modulos
-    WHERE ISNULL(Activo, 1) = 1
-    ORDER BY OrdenMenu, NombreModulo
-    """)
-
+      SELECT
+          CAST(m.ModuloID AS NVARCHAR(100)) AS id,
+          m.ModuloID,
+          CAST(m.ModuloPadreID AS NVARCHAR(100)) AS modulo_padre_id,
+          m.ModuloPadreID,
+          p.CodigoModulo AS padre_codigo,
+          p.NombreModulo AS padre_nombre,
+          m.CodigoModulo AS codigo,
+          m.NombreModulo AS name,
+          m.NombreModulo AS nombre,
+          m.Descripcion AS descripcion,
+          m.TipoModulo AS tipo_modulo,
+          m.TipoModulo,
+          m.Ruta AS ruta,
+          m.Icono AS icono,
+          m.OrdenMenu AS orden,
+          ISNULL(m.EsVisibleMenu, 1) AS visible,
+          ISNULL(m.Activo, 1) AS activo,
+          CASE
+              WHEN EXISTS (
+                  SELECT 1
+                  FROM dbo.Usuario_Modulos h
+                  WHERE h.ModuloPadreID = m.ModuloID
+                    AND ISNULL(h.Activo, 1) = 1
+              ) THEN 1 ELSE 0
+          END AS tiene_hijos,
+          CASE
+              WHEN EXISTS (
+                  SELECT 1
+                  FROM dbo.Sistema_Modulos sm
+                  INNER JOIN dbo.Sistema_ModulosMenus smm
+                      ON smm.ModuloID = sm.ModuloID
+                  WHERE ISNULL(sm.Activo, 1) = 1
+                    AND ISNULL(smm.Activo, 1) = 1
+                    AND LOWER(LTRIM(RTRIM(smm.RequierePermiso))) = LOWER(LTRIM(RTRIM(m.CodigoModulo)))
+              ) THEN 1 ELSE 0
+          END AS tiene_permiso_menu_propio
+      FROM dbo.Usuario_Modulos m
+      LEFT JOIN dbo.Usuario_Modulos p
+          ON p.ModuloID = m.ModuloPadreID
+      WHERE ISNULL(m.Activo, 1) = 1
+      ORDER BY
+          COALESCE(p.OrdenMenu, m.OrdenMenu),
+          CASE WHEN m.ModuloPadreID IS NULL THEN 0 ELSE 1 END,
+          m.OrdenMenu,
+          m.NombreModulo
+      """)
 
 @router.get("/servers")
 async def get_servers(current_user: dict = Depends(get_current_user)):
