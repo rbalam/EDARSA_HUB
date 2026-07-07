@@ -41,9 +41,7 @@ import {
 } from "lucide-react";
 
 import {
-  enterpriseMenuGroups,
   flattenEnterpriseMenu,
-  filterEnterpriseMenuByRole,
   defaultFavoriteMenuIds
 } from "../../config/enterpriseMenuConfig";
 import { fetchMenuFavoritos, saveMenuFavoritos } from "../../services/menuContextService";
@@ -116,76 +114,66 @@ function getSqlMenuLabel(moduloCodigo, modulo, menu) {
 function normalizeSqlEnterpriseGroups(sqlMenus = []) {
   if (!Array.isArray(sqlMenus) || sqlMenus.length === 0) return null;
 
-  const groupMap = {
-    DIRECCION: "inteligencia",
-    REPORTES_BI: "inteligencia",
-    IA: "inteligencia",
-    CALIDAD: "inteligencia",
-    COMERCIAL: "operacion",
-    COMPRAS: "operacion",
-    INVENTARIOS: "operacion",
-    TABLAJERIA: "operacion",
-    FINANZAS: "finanzas-group",
-    HOST_TO_HOST: "finanzas-group",
-    CONTABILIDAD: "finanzas-group",
-    COMISIONES: "finanzas-group",
-    RH: "personas",
-    CRM: "personas",
-    CAVA_SOCIOS: "personas",
-    PROYECTOS: "gestion",
-    MARKETING: "gestion",
-    ACTIVOS_FIJOS: "corporativo",
-    CATALOGOS: "corporativo",
-    INTEGRACIONES: "integraciones",
-    SISTEMA: "administracion",
-    PORTAL_PROVEEDORES: "satelites",
-    PORTAL_COMISIONISTAS: "satelites",
-    PORTAL_CLIENTES: "satelites",
-    COMANDERO_RESTAURANTERO: "satelites",
-    POS_GENERICO: "satelites",
-    EDARSA_GO: "satelites",
-    CHEF_IA: "satelites"
+  const normalizeId = (value, fallback) => {
+    const raw = String(value || fallback || "modulo").trim().toLowerCase();
+    return raw
+      .replace(/[^a-z0-9_.-]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "modulo";
   };
 
-  const groups = enterpriseMenuGroups.map(group => ({ ...group, children: [] }));
+  return sqlMenus
+    .map((modulo, index) => {
+      if (!modulo || modulo.visible === false) return null;
 
-  sqlMenus.forEach(modulo => {
-    const codigo = String(modulo.codigo || "").toUpperCase();
-    const menus = Array.isArray(modulo.menus) ? modulo.menus : [];
-    const targetGroupId = groupMap[codigo] || (modulo.es_satelite || modulo.es_portal ? "satelites" : "operacion");
-    const group = groups.find(g => g.id === targetGroupId);
-    if (!group) return;
+      const codigo = String(modulo.codigo || "").trim();
+      const menus = Array.isArray(modulo.menus) ? modulo.menus : [];
+      const groupId = normalizeId(codigo || modulo.id, `sql-${index}`);
 
-    if (menus.length > 1) {
-      menus.forEach(m => {
-        if (m.visible === false || !m.ruta) return;
-        group.children.push({
-          id: String(m.codigo || `${codigo}-${m.id || m.nombre}`),
+      const children = menus
+        .filter(m => m && m.visible !== false && m.ruta)
+        .map((m, menuIndex) => ({
+          id: normalizeId(m.codigo || m.id, `${groupId}-${menuIndex}`),
           label: getSqlMenuLabel(codigo, modulo, m),
           path: m.ruta,
           icon: m.icono || modulo.icono || "Grid3X3",
-          section: modulo.nombre || group.label,
-          keywords: [m.nombre, m.codigo, modulo.nombre, codigo].filter(Boolean)
+          section: modulo.nombre || codigo || "Modulo SQL",
+          source: "SQL_CANONICAL_RBAC",
+          keywords: [
+            m.nombre,
+            m.codigo,
+            m.requiere_permiso,
+            modulo.nombre,
+            codigo
+          ].filter(Boolean)
+        }));
+
+      const fallbackPath = modulo.ruta || modulo.url_externa;
+      if (children.length === 0 && fallbackPath) {
+        children.push({
+          id: groupId,
+          label: modulo.nombre || codigo || `Modulo ${index + 1}`,
+          path: fallbackPath,
+          icon: modulo.icono || "Grid3X3",
+          section: modulo.nombre || codigo || "Modulo SQL",
+          source: "SQL_CANONICAL_RBAC",
+          keywords: [modulo.nombre, codigo].filter(Boolean)
         });
-      });
-    } else {
-      const first = menus[0] || {};
-      const path = first.ruta || modulo.ruta || modulo.url_externa;
-      if (!path) return;
-      group.children.push({
-        id: String(modulo.codigo || modulo.id || first.codigo || first.id),
-        label: modulo.nombre || first.nombre || codigo,
-        path,
-        icon: modulo.icono || first.icono || "Grid3X3",
-        section: group.label,
-        keywords: [modulo.nombre, codigo, first.nombre, first.codigo].filter(Boolean)
-      });
-    }
-  });
+      }
 
-  return groups.filter(group => group.children.length > 0);
+      if (children.length === 0) return null;
+
+      return {
+        id: groupId,
+        label: modulo.nombre || codigo || `Modulo ${index + 1}`,
+        icon: modulo.icono || "Grid3X3",
+        color: modulo.color || "#71717A",
+        description: modulo.descripcion || "",
+        source: "SQL_CANONICAL_RBAC",
+        children
+      };
+    })
+    .filter(Boolean);
 }
-
 
 const MENU_FAVORITES_STORAGE_KEY = "edarsahub_menu_favorites";
 
@@ -422,6 +410,7 @@ export default function EnterpriseSidebarMenu({
           return (
             <button
               key={group.id}
+              type="button"
               onClick={() => toggleGroup(group.id)}
               className="w-full h-11 flex items-center justify-center rounded-xl text-zinc-400 hover:bg-white/8 hover:text-white"
               title={group.label}
@@ -435,107 +424,76 @@ export default function EnterpriseSidebarMenu({
   }
 
   return (
-    <nav className="px-4 py-4 space-y-5" data-testid="enterprise-sidebar-menu">
-      {/* Buscador */}
-      <div className="relative">
+    <div className="space-y-4" data-testid="enterprise-sidebar-menu">
+      <div className="relative px-3">
         <Search
           size={18}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
+          className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-500"
         />
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="Buscar módulo o tablero..."
           data-testid="enterprise-menu-search"
-          className="w-full bg-zinc-900/80 border border-white/10 rounded-xl py-2.5 pl-10 pr-3 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-amber-500/60"
+          className="w-full bg-zinc-900/80 border border-white/10 rounded-xl py-2.5 pl-10 pr-3 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-amber-500/60 transition-all"
         />
       </div>
 
-      {query.trim() ? (
-        /* Resultados de búsqueda */
-        <section className="space-y-2">
-          <div className="text-xs font-bold tracking-widest text-amber-500 uppercase">
+      {searchResults.length > 0 && (
+        <div className="px-3 space-y-1">
+          <p className="px-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
             Resultados
-          </div>
-
-          <div className="space-y-1">
-            {searchResults.length ? (
-              searchResults.map(item => renderItem(item, true))
-            ) : (
-              <div className="text-sm text-zinc-500 px-2 py-3">
-                Sin resultados.
-              </div>
-            )}
-          </div>
-        </section>
-      ) : (
-        <>
-          {/* Favoritos */}
-          <section className="space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold tracking-widest text-amber-500 uppercase">
-              <Star size={14} />
-              Mis Favoritos
-            </div>
-
-            <div className="grid grid-cols-1 gap-1">
-              {favorites.map(item => renderItem(item, true))}
-            </div>
-          </section>
-
-          {/* Menú SQL canónico */}
-          <section className="space-y-2">
-            {groups.map(group => {
-              const Icon = getIcon(group.icon);
-              const open = expanded[group.id];
-              const sections = groupBySection(group.children);
-
-              return (
-                <div key={group.id} className="rounded-2xl overflow-hidden" data-testid={`menu-group-${group.id}`}>
-                  <button
-                    onClick={() => toggleGroup(group.id)}
-                    className="w-full flex items-start justify-between gap-3 px-4 py-3 rounded-2xl text-zinc-300 hover:bg-white/8 hover:text-white transition-all"
-                  >
-                    <div className="flex items-start gap-3 min-w-0">
-                      <Icon
-                        size={22}
-                        className="shrink-0"
-                        style={{ color: group.color }}
-                      />
-
-                      <div className="min-w-0 text-left">
-                        <div className="font-bold leading-snug whitespace-normal break-words">
-                          {group.label}
-                        </div>
-                        <div className="text-xs text-zinc-500 whitespace-normal break-words">
-                          {group.description}
-                        </div>
-                      </div>
-                    </div>
-
-                    {open ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                  </button>
-
-                  {open && (
-                    <div className="mt-1 ml-4 pl-3 border-l border-white/10 space-y-3">
-                      {Object.entries(sections).map(([section, items]) => (
-                        <div key={`${group.id}-${section}`} className="space-y-1">
-                          {Object.keys(sections).length > 1 && (
-                            <div className="px-4 pt-2 text-[11px] font-bold uppercase tracking-widest text-zinc-600">
-                              {section}
-                            </div>
-                          )}
-
-                          {items.map(item => renderItem(item))}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </section>
-        </>
+          </p>
+          {searchResults.map(item => renderItem(item, true))}
+        </div>
       )}
-    </nav>
+
+      {!query && favorites.length > 0 && (
+        <div className="px-3 space-y-1">
+          <p className="px-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+            Favoritos
+          </p>
+          {favorites.map(item => renderItem(item, true))}
+        </div>
+      )}
+
+      {!query && groups.map(group => {
+        const Icon = getIcon(group.icon);
+        const isExpanded = expanded[group.id] !== false;
+        const groupedChildren = groupBySection(group.children || []);
+
+        return (
+          <div key={group.id} className="px-3 space-y-1">
+            <button
+              type="button"
+              onClick={() => toggleGroup(group.id)}
+              className="w-full flex items-center gap-2 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500 hover:text-zinc-300 transition-all"
+              data-testid={`menu-group-${group.id}`}
+            >
+              <Icon size={16} className="shrink-0" />
+              <span className="flex-1">{group.label}</span>
+              <span className="text-zinc-600">{isExpanded ? "▾" : "▸"}</span>
+            </button>
+
+            {isExpanded && Object.entries(groupedChildren).map(([section, items]) => (
+              <div key={`${group.id}-${section}`} className="space-y-1">
+                {section && section !== group.label && (
+                  <p className="px-4 pt-1 text-[10px] font-medium text-zinc-600">
+                    {section}
+                  </p>
+                )}
+                {items.map(item => renderItem(item))}
+              </div>
+            ))}
+          </div>
+        );
+      })}
+
+      {!query && groups.length === 0 && (
+        <div className="px-5 py-6 text-sm text-zinc-500">
+          No hay menús disponibles para este contexto.
+        </div>
+      )}
+    </div>
   );
 }
