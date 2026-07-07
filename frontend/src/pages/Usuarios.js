@@ -330,7 +330,7 @@ const Usuarios = () => {
   const handleAbrirPermisosCatalogos = (usuario) => {
     setUsuarioSeleccionadoCat(usuario);
     setFormPermisosCat({
-      catalogos_permitidos: usuario.permisos_catalogos || [],
+      catalogos_permitidos: (usuario.permisos_catalogos || []).map(String),
       puede_solicitar: usuario.puede_solicitar || false,
       puede_autorizar: usuario.puede_autorizar || false,
       puede_liberar: usuario.puede_liberar || false
@@ -1363,24 +1363,53 @@ const Usuarios = () => {
                   <CardContent>
                     <p className="text-sm text-zinc-600 mb-3">{role.descripcion || 'Sin descripción'}</p>
 
-                    <div className="mb-3">
-                      <p className="text-xs font-medium text-zinc-500 mb-1">Permisos ({role.permisos?.length || 0}):</p>
-                      <div className="flex flex-wrap gap-1">
-                        {(role.permisos || []).slice(0, 5).map(p => {
-                          const modulo = modulos.find(m => m.id === p);
+                      <div className="mb-3">
+                        {(() => {
+                          const selectedIds = Array.from(new Set((role.permisos || []).map(String)));
+                          const selectedSet = new Set(selectedIds);
+                          const childrenByParentId = new Map();
+
+                          modulos.forEach((modulo) => {
+                            const parentRaw = modulo.modulo_padre_id ?? modulo.ModuloPadreID ?? modulo.moduloPadreId;
+                            const parentId = parentRaw === null || parentRaw === undefined || parentRaw === '' ? null : String(parentRaw);
+
+                            if (parentId) {
+                              if (!childrenByParentId.has(parentId)) {
+                                childrenByParentId.set(parentId, []);
+                              }
+                              childrenByParentId.get(parentId).push(modulo);
+                            }
+                          });
+
+                          const displayPermissions = selectedIds.filter((permId) => {
+                            const selectedChildren = childrenByParentId.get(String(permId)) || [];
+                            return !selectedChildren.some((child) => selectedSet.has(String(child.id)));
+                          });
+
                           return (
-                            <Badge key={p} variant="outline" className="text-xs">
-                              {modulo?.nombre || p}
-                            </Badge>
+                            <>
+                              <p className="text-xs font-medium text-zinc-500 mb-1">
+                                Permisos ({displayPermissions.length}):
+                              </p>
+                              <div className="flex flex-wrap gap-1">
+                                {displayPermissions.slice(0, 5).map((p) => {
+                                  const modulo = modulos.find((m) => String(m.id) === String(p));
+                                  return (
+                                    <Badge key={p} variant="outline" className="text-xs">
+                                      {modulo?.nombre || p}
+                                    </Badge>
+                                  );
+                                })}
+                                {displayPermissions.length > 5 && (
+                                  <Badge variant="outline" className="text-xs bg-zinc-100">
+                                    +{displayPermissions.length - 5} más
+                                  </Badge>
+                                )}
+                              </div>
+                            </>
                           );
-                        })}
-                        {(role.permisos?.length || 0) > 5 && (
-                          <Badge variant="outline" className="text-xs bg-zinc-100">
-                            +{role.permisos.length - 5} más
-                          </Badge>
-                        )}
+                        })()}
                       </div>
-                    </div>
 
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" className="flex-1" onClick={() => openRoleDialog(role)} data-testid="edit-role-button">
@@ -1826,26 +1855,42 @@ const Usuarios = () => {
               <div className="space-y-2">
                 <Label>Catálogos Permitidos:</Label>
                 <div className="grid grid-cols-2 gap-2 p-3 border rounded-lg max-h-[300px] overflow-y-auto">
-                  {catalogosDisponibles.map((cat) => (
-                    <label key={cat.id} className="flex items-center gap-2 p-2 hover:bg-zinc-50 rounded cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formPermisosCat.catalogos_permitidos.includes(cat.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setFormPermisosCat({...formPermisosCat, catalogos_permitidos: [...formPermisosCat.catalogos_permitidos, cat.id]});
-                          } else {
-                            setFormPermisosCat({...formPermisosCat, catalogos_permitidos: formPermisosCat.catalogos_permitidos.filter(c => c !== cat.id)});
-                          }
-                        }}
-                        className="h-4 w-4"
-                      />
-                      <div>
-                        <span className="text-sm font-medium">{cat.nombre}</span>
-                        <span className="text-xs text-zinc-500 block">{cat.modulo}</span>
+                    {Object.entries(
+                      catalogosDisponibles.reduce((acc, cat) => {
+                        const modulo = cat.modulo || cat.TipoConfiguracion || cat.tipo_configuracion || 'Catálogos Workflow';
+                        if (!acc[modulo]) {
+                          acc[modulo] = [];
+                        }
+                        acc[modulo].push(cat);
+                        return acc;
+                      }, {})
+                    ).map(([modulo, catalogos]) => (
+                      <div key={modulo} className="col-span-2 rounded-lg border border-zinc-100 bg-zinc-50/60 p-2">
+                        <p className="px-2 pb-2 text-sm font-semibold text-zinc-900">{modulo}</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {catalogos.map((cat) => (
+                            <label key={cat.id} className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={(formPermisosCat.catalogos_permitidos || []).map(String).includes(String(cat.id))}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setFormPermisosCat({...formPermisosCat, catalogos_permitidos: Array.from(new Set([...(formPermisosCat.catalogos_permitidos || []).map(String), String(cat.id)]))});
+                                  } else {
+                                    setFormPermisosCat({...formPermisosCat, catalogos_permitidos: (formPermisosCat.catalogos_permitidos || []).filter(c => String(c) !== String(cat.id))});
+                                  }
+                                }}
+                                className="h-4 w-4"
+                              />
+                              <div>
+                                <span className="text-sm font-medium">{cat.nombre}</span>
+                                <span className="text-xs text-zinc-500 block">{cat.descripcion || cat.codigo || cat.modulo}</span>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                    </label>
-                  ))}
+                    ))}
                 </div>
               </div>
               </>
