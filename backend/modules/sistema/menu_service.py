@@ -332,15 +332,39 @@ class MenuService:
         for menu in cur.fetchall() or []:
             menus_por_modulo.setdefault(menu.get("ModuloID"), []).append(menu)
 
+        def _norm_ruta_permiso(ruta: Any) -> str:
+            ruta_limpia = str(ruta or "").strip().strip("/")
+            if not ruta_limpia:
+                return ""
+            return self._norm(ruta_limpia.replace("-", "_").replace("/", "."))
+
+        def _menu_autorizado(menu: Dict[str, Any]) -> bool:
+            if superadmin:
+                return True
+
+            candidatos = {
+                self._norm(menu.get("RequierePermiso")),
+                self._norm(menu.get("Codigo")),
+                _norm_ruta_permiso(menu.get("Ruta")),
+            }
+            candidatos.discard("")
+            return bool(candidatos.intersection(permisos_modulo))
+
         resultado = []
         for modulo in modulos:
             modulo_codigo = self._norm(modulo.get("Codigo"))
+            menus = menus_por_modulo.get(modulo.get("ModuloID"), [])
+            menus_autorizados = [m for m in menus if _menu_autorizado(m)]
 
-            # Si no es superadmin, solo mostrar modulos autorizados por SQL.
-            if not superadmin and modulo_codigo not in permisos_modulo:
+            modulo_autorizado = (
+                superadmin
+                or modulo_codigo in permisos_modulo
+                or bool(menus_autorizados)
+            )
+
+            if not modulo_autorizado:
                 continue
 
-            menus = menus_por_modulo.get(modulo.get("ModuloID"), [])
             resultado.append({
                 "id": modulo["ModuloID"],
                 "codigo": modulo.get("Codigo"),
@@ -367,7 +391,7 @@ class MenuService:
                         "requiere_permiso": m.get("RequierePermiso"),
                         "visible": True,
                     }
-                    for m in menus
+                    for m in menus_autorizados
                 ],
             })
 
