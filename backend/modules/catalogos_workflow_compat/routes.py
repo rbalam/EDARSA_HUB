@@ -60,12 +60,22 @@ async def compat_get_historial_solicitud(solicitud_id: int, current_user: Dict =
 
 @router.post("/sistema/solicitudes")
 async def compat_post_solicitud_catalogo(body: Dict, current_user: Dict = Depends(get_current_user)):
-    solicitud_id = repo.crear_solicitud_catalogo(body, current_user)
+    try:
+        solicitud_id = repo.crear_solicitud_catalogo(body, current_user)
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     return {"ok": True, "message": "Solicitud creada en SQL (compat)", "solicitud_id": solicitud_id}
 
 @router.post("/sistema/solicitudes/{solicitud_id}/aprobar")
 async def compat_aprobar_solicitud(solicitud_id: int, body: Dict, current_user: Dict = Depends(get_current_user)):
-    updated = repo.aprobar_solicitud(solicitud_id, body, current_user)
+    try:
+        updated = repo.aprobar_solicitud(solicitud_id, body, current_user)
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     if not updated:
         raise HTTPException(status_code=404, detail="Solicitud no encontrada")
     return {"ok": True, "message": "Solicitud aprobada en SQL (compat)"}
@@ -76,6 +86,19 @@ async def compat_rechazar_solicitud(solicitud_id: int, body: Dict, current_user:
     if not updated:
         raise HTTPException(status_code=404, detail="Solicitud no encontrada")
     return {"ok": True, "message": "Solicitud rechazada en SQL (compat)"}
+
+
+@router.post("/sistema/solicitudes/{solicitud_id}/liberar")
+async def compat_liberar_solicitud(solicitud_id: int, body: Dict, current_user: Dict = Depends(get_current_user)):
+    try:
+        updated = repo.liberar_solicitud(solicitud_id, body, current_user)
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if not updated:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    return {"ok": True, "message": "Solicitud liberada y aplicada en SQL (compat)"}
 
 @router.put("/sistema/solicitudes/{solicitud_id}/corregir")
 async def compat_corregir_solicitud(solicitud_id: int, body: Dict, current_user: Dict = Depends(get_current_user)):

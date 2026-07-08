@@ -1,4 +1,16 @@
 from core.sql_first.db import get_sql_connection
+from modules.catalogos_workflow_sql.fecha_operativa_service import (
+    normalize_fecha_operativa_request,
+    json_loads,
+    json_dumps,
+    get_target_from_payload,
+    apply_fecha_operativa,
+    insert_rbac_bitacora,
+    can_authorize_fecha_operativa,
+    can_release_fecha_operativa,
+    ensure_sql_user_id,
+    current_user_email,
+)
 
 class CatalogosWorkflowSQLRepository:
     # =========================================================
@@ -57,7 +69,7 @@ class CatalogosWorkflowSQLRepository:
             if row:
                 cur.execute(sql_update, (
                     body.get("config_json"),
-                    current_user.get("email") or str(current_user.get("id")),
+                    current_user.get("email") or str(ensure_sql_user_id(cur, current_user)),
                     row[0]
                 ))
             else:
@@ -69,7 +81,7 @@ class CatalogosWorkflowSQLRepository:
                     body.get("unidad_negocio_id"),
                     body.get("sucursal_id"),
                     body.get("config_json"),
-                    current_user.get("email") or str(current_user.get("id"))
+                    current_user.get("email") or str(ensure_sql_user_id(cur, current_user))
                 ))
             conn.commit()
             return 1
@@ -153,7 +165,7 @@ class CatalogosWorkflowSQLRepository:
                     body.get("puede_editar", False),
                     body.get("puede_eliminar", False),
                     body.get("puede_aprobar", False),
-                    current_user.get("email") or str(current_user.get("id")),
+                    current_user.get("email") or str(ensure_sql_user_id(cur, current_user)),
                     row[0]
                 ))
             else:
@@ -169,7 +181,7 @@ class CatalogosWorkflowSQLRepository:
                     body.get("empresa_id"),
                     body.get("unidad_negocio_id"),
                     body.get("sucursal_id"),
-                    current_user.get("email") or str(current_user.get("id"))
+                    current_user.get("email") or str(ensure_sql_user_id(cur, current_user))
                 ))
             conn.commit()
             return 1
@@ -201,6 +213,7 @@ class CatalogosWorkflowSQLRepository:
     def crear_solicitud_catalogo(self, body, current_user):
         with get_sql_connection() as conn:
             cur = conn.cursor()
+            body = normalize_fecha_operativa_request(cur, body, current_user)
 
             cur.execute("""
                 INSERT INTO Sistema_CatalogosSolicitudes (
@@ -223,10 +236,10 @@ class CatalogosWorkflowSQLRepository:
                 body.get("registro_objetivo_id"),
                 body.get("datos_solicitud_json"),
                 body.get("comentarios"),
-                current_user.get("id"),
+                ensure_sql_user_id(cur, current_user),
                 body.get("nivel_aprobacion_actual"),
                 body.get("total_niveles_aprobacion"),
-                current_user.get("email") or str(current_user.get("id"))
+                current_user.get("email") or str(ensure_sql_user_id(cur, current_user))
             ))
 
             cur.execute("SELECT @@IDENTITY")
@@ -241,8 +254,8 @@ class CatalogosWorkflowSQLRepository:
                 solicitud_id,
                 body.get("estado_solicitud", "PENDIENTE"),
                 body.get("comentarios"),
-                current_user.get("id"),
-                current_user.get("email") or str(current_user.get("id"))
+                ensure_sql_user_id(cur, current_user),
+                current_user.get("email") or str(ensure_sql_user_id(cur, current_user))
             ))
 
             if body.get("asignado_a_usuario_id"):
@@ -254,8 +267,12 @@ class CatalogosWorkflowSQLRepository:
                         AsignadoAUsuarioID, CreadoPorUsuarioID, FechaLimite, MetadataJSON,
                         CreatedAt, CreatedBy
                     )
-                    VALUES (%s, 'SOLICITUD_CATALOGO', 'PENDIENTE', %s, %s, %s, 'CATALOGOS_WORKFLOW',
-                            'SOLICITUD_CATALOGO', %s, %s, %s, %s, %s, %s, %s, %s, GETDATE(), %s)
+                    VALUES (
+                        %s, 'SOLICITUD_CATALOGO', 'PENDIENTE', %s, %s, %s,
+                        'CATALOGOS_WORKFLOW', 'SOLICITUD_CATALOGO', %s, %s,
+                        %s, %s, %s, %s, %s, %s, %s,
+                        GETDATE(), %s
+                    )
                 """, (
                     body.get("codigo_tarea"),
                     body.get("prioridad"),
@@ -267,10 +284,10 @@ class CatalogosWorkflowSQLRepository:
                     body.get("unidad_negocio_id"),
                     body.get("sucursal_id"),
                     body.get("asignado_a_usuario_id"),
-                    current_user.get("id"),
+                    ensure_sql_user_id(cur, current_user),
                     body.get("fecha_limite"),
                     body.get("metadata_tarea_json"),
-                    current_user.get("email") or str(current_user.get("id"))
+                    current_user.get("email") or str(ensure_sql_user_id(cur, current_user))
                 ))
 
             conn.commit()
@@ -321,7 +338,15 @@ class CatalogosWorkflowSQLRepository:
             cur = conn.cursor()
 
             cur.execute("""
-                SELECT EstadoSolicitud, NivelAprobacionActual, TotalNivelesAprobacion
+                SELECT
+                    EstadoSolicitud,
+                    NivelAprobacionActual,
+                    TotalNivelesAprobacion,
+                    CodigoCatalogo,
+                    TipoSolicitud,
+                    DatosSolicitudJSON,
+                    RegistroObjetivoID,
+                    SolicitadoPorUsuarioID
                 FROM Sistema_CatalogosSolicitudes
                 WHERE CatalogoSolicitudID = %s
             """, (solicitud_id,))
@@ -329,12 +354,154 @@ class CatalogosWorkflowSQLRepository:
             if not row:
                 return 0
 
-            estado_anterior, nivel_actual, total_niveles = row
+            (
+                estado_anterior,
+                nivel_actual,
+                total_niveles,
+                codigo_catalogo,
+                tipo_solicitud,
+                datos_json,
+                registro_objetivo_id,
+                solicitado_por_usuario_id,
+            ) = row
+
+            payload = json_loads(datos_json)
+            is_fecha_operativa = (
+                codigo_catalogo == "FECHA_OPERATIVA"
+                or payload.get("tipo") == "CAMBIO_FECHA_OPERATIVA"
+            )
+
             nivel_actual = nivel_actual or 0
             total_niveles = total_niveles or 1
-
             nuevo_nivel = nivel_actual + 1
             estado_nuevo = 'APROBADO' if nuevo_nivel >= total_niveles else 'EN_REVISION'
+
+            metadata = json_loads(body.get("metadata_json"))
+
+            if is_fecha_operativa:
+                target = get_target_from_payload(payload)
+                module_code = target["module"]
+
+                if not can_authorize_fecha_operativa(cur, current_user, module_code):
+                    raise PermissionError("El usuario no tiene permiso para autorizar cambio de fecha operativa.")
+
+                puede_liberar = can_release_fecha_operativa(cur, current_user, module_code)
+                aplicado = False
+                before = None
+                after = None
+                evento_tipo = "APROBACION"
+
+                if estado_nuevo == "APROBADO" and puede_liberar:
+                    before, after = apply_fecha_operativa(cur, payload)
+                    aplicado = True
+                    evento_tipo = "APROBACION_LIBERACION_APLICACION"
+                    metadata.update({
+                        "accion_compuesta": True,
+                        "autorizado": True,
+                        "liberado": True,
+                        "aplicado": True,
+                        "autorizado_por": ensure_sql_user_id(cur, current_user),
+                        "liberado_por": ensure_sql_user_id(cur, current_user),
+                        "before": before,
+                        "after": after,
+                    })
+                elif estado_nuevo == "APROBADO":
+                    estado_nuevo = "APROBADO_PENDIENTE_LIBERACION"
+                    metadata.update({
+                        "accion_compuesta": False,
+                        "autorizado": True,
+                        "liberado": False,
+                        "aplicado": False,
+                        "autorizado_por": ensure_sql_user_id(cur, current_user),
+                    })
+
+                cur.execute("""
+                    UPDATE Sistema_CatalogosSolicitudes
+                    SET EstadoSolicitud = %s,
+                        NivelAprobacionActual = %s,
+                        AprobadoPorUsuarioID = %s,
+                        AprobacionMetadataJSON = %s,
+                        FechaResolucion = CASE WHEN %s = 'APROBADO' THEN GETDATE() ELSE FechaResolucion END,
+                        UpdatedAt = GETDATE(),
+                        UpdatedBy = %s
+                    WHERE CatalogoSolicitudID = %s
+                """, (
+                    estado_nuevo,
+                    nuevo_nivel,
+                    ensure_sql_user_id(cur, current_user),
+                    json_dumps(metadata),
+                    estado_nuevo,
+                    current_user_email(current_user),
+                    solicitud_id
+                ))
+
+                cur.execute("""
+                    INSERT INTO Sistema_CatalogosSolicitudesHistorial (
+                        CatalogoSolicitudID,
+                        EstadoAnterior,
+                        EstadoNuevo,
+                        EventoTipo,
+                        Observaciones,
+                        BeforeJSON,
+                        AfterJSON,
+                        UsuarioID,
+                        CreatedBy
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    solicitud_id,
+                    estado_anterior,
+                    estado_nuevo,
+                    evento_tipo,
+                    body.get("comentarios"),
+                    json_dumps(before) if before else None,
+                    json_dumps(after) if after else None,
+                    ensure_sql_user_id(cur, current_user),
+                    current_user_email(current_user)
+                ))
+
+                if aplicado:
+                    cur.execute("""
+                        UPDATE Sistema_Tareas
+                        SET EstadoTarea = 'CERRADA',
+                            FechaCierre = GETDATE(),
+                            UpdatedAt = GETDATE(),
+                            UpdatedBy = %s
+                        WHERE CatalogoSolicitudID = %s
+                          AND EstadoTarea IN ('PENDIENTE','EN_PROCESO')
+                    """, (current_user_email(current_user), solicitud_id))
+
+                    insert_rbac_bitacora(
+                        cur,
+                        current_user,
+                        "APROBAR_LIBERAR_APLICAR",
+                        "OK",
+                        "Cambio de FechaOperativa aprobado, liberado y aplicado en una sola acción.",
+                        {
+                            "solicitud_id": solicitud_id,
+                            "payload": payload,
+                            "before": before,
+                            "after": after,
+                        },
+                        usuario_afectado_id=solicitado_por_usuario_id,
+                    )
+                else:
+                    insert_rbac_bitacora(
+                        cur,
+                        current_user,
+                        "APROBAR",
+                        "OK",
+                        "Cambio de FechaOperativa autorizado, pendiente de liberación.",
+                        {
+                            "solicitud_id": solicitud_id,
+                            "payload": payload,
+                            "estado_nuevo": estado_nuevo,
+                        },
+                        usuario_afectado_id=solicitado_por_usuario_id,
+                    )
+
+                conn.commit()
+                return 1
 
             cur.execute("""
                 UPDATE Sistema_CatalogosSolicitudes
@@ -349,10 +516,10 @@ class CatalogosWorkflowSQLRepository:
             """, (
                 estado_nuevo,
                 nuevo_nivel,
-                current_user.get("id"),
+                ensure_sql_user_id(cur, current_user),
                 body.get("metadata_json"),
                 estado_nuevo,
-                current_user.get("email") or str(current_user.get("id")),
+                current_user_email(current_user),
                 solicitud_id
             ))
 
@@ -366,8 +533,8 @@ class CatalogosWorkflowSQLRepository:
                 estado_anterior,
                 estado_nuevo,
                 body.get("comentarios"),
-                current_user.get("id"),
-                current_user.get("email") or str(current_user.get("id"))
+                ensure_sql_user_id(cur, current_user),
+                current_user_email(current_user)
             ))
 
             if estado_nuevo == 'APROBADO':
@@ -379,7 +546,117 @@ class CatalogosWorkflowSQLRepository:
                         UpdatedBy = %s
                     WHERE CatalogoSolicitudID = %s
                       AND EstadoTarea IN ('PENDIENTE','EN_PROCESO')
-                """, (current_user.get("email") or str(current_user.get("id")), solicitud_id))
+                """, (current_user_email(current_user), solicitud_id))
+
+            conn.commit()
+            return 1
+
+    def liberar_solicitud(self, solicitud_id, body, current_user):
+        with get_sql_connection() as conn:
+            cur = conn.cursor()
+
+            cur.execute("""
+                SELECT
+                    EstadoSolicitud,
+                    CodigoCatalogo,
+                    TipoSolicitud,
+                    DatosSolicitudJSON,
+                    SolicitadoPorUsuarioID
+                FROM Sistema_CatalogosSolicitudes
+                WHERE CatalogoSolicitudID = %s
+            """, (solicitud_id,))
+            row = cur.fetchone()
+            if not row:
+                return 0
+
+            estado_anterior, codigo_catalogo, tipo_solicitud, datos_json, solicitado_por_usuario_id = row
+            payload = json_loads(datos_json)
+            is_fecha_operativa = (
+                codigo_catalogo == "FECHA_OPERATIVA"
+                or payload.get("tipo") == "CAMBIO_FECHA_OPERATIVA"
+            )
+            if not is_fecha_operativa:
+                raise ValueError("La solicitud no es de cambio de fecha operativa.")
+
+            if estado_anterior != "APROBADO_PENDIENTE_LIBERACION":
+                raise ValueError("La solicitud no está pendiente de liberación.")
+
+            target = get_target_from_payload(payload)
+            module_code = target["module"]
+            if not can_release_fecha_operativa(cur, current_user, module_code):
+                raise PermissionError("El usuario no tiene permiso para liberar cambio de fecha operativa.")
+
+            before, after = apply_fecha_operativa(cur, payload)
+            metadata = json_loads(body.get("metadata_json"))
+            metadata.update({
+                "liberado": True,
+                "aplicado": True,
+                "liberado_por": ensure_sql_user_id(cur, current_user),
+                "before": before,
+                "after": after,
+            })
+
+            cur.execute("""
+                UPDATE Sistema_CatalogosSolicitudes
+                SET EstadoSolicitud = 'APROBADO',
+                    AprobacionMetadataJSON = %s,
+                    FechaResolucion = GETDATE(),
+                    UpdatedAt = GETDATE(),
+                    UpdatedBy = %s
+                WHERE CatalogoSolicitudID = %s
+            """, (
+                json_dumps(metadata),
+                current_user_email(current_user),
+                solicitud_id
+            ))
+
+            cur.execute("""
+                INSERT INTO Sistema_CatalogosSolicitudesHistorial (
+                    CatalogoSolicitudID,
+                    EstadoAnterior,
+                    EstadoNuevo,
+                    EventoTipo,
+                    Observaciones,
+                    BeforeJSON,
+                    AfterJSON,
+                    UsuarioID,
+                    CreatedBy
+                )
+                VALUES (%s, %s, 'APROBADO', 'LIBERACION_APLICACION', %s, %s, %s, %s, %s)
+            """, (
+                solicitud_id,
+                estado_anterior,
+                body.get("comentarios"),
+                json_dumps(before),
+                json_dumps(after),
+                ensure_sql_user_id(cur, current_user),
+                current_user_email(current_user)
+            ))
+
+            cur.execute("""
+                UPDATE Sistema_Tareas
+                SET EstadoTarea = 'CERRADA',
+                    FechaCierre = GETDATE(),
+                    UpdatedAt = GETDATE(),
+                    UpdatedBy = %s
+                WHERE CatalogoSolicitudID = %s
+                  AND EstadoTarea IN ('PENDIENTE','EN_PROCESO')
+            """, (current_user_email(current_user), solicitud_id))
+
+            insert_rbac_bitacora(
+                cur,
+                current_user,
+                "LIBERAR_APLICAR",
+                "OK",
+                "Cambio de FechaOperativa liberado y aplicado.",
+                {
+                    "solicitud_id": solicitud_id,
+                    "payload": payload,
+                    "before": before,
+                    "after": after,
+                },
+                usuario_afectado_id=solicitado_por_usuario_id,
+            )
 
             conn.commit()
             return 1
@@ -406,8 +683,8 @@ class CatalogosWorkflowSQLRepository:
                 WHERE CatalogoSolicitudID = %s
             """, (
                 body.get("motivo_rechazo") or body.get("comentarios"),
-                current_user.get("id"),
-                current_user.get("email") or str(current_user.get("id")),
+                ensure_sql_user_id(cur, current_user),
+                current_user.get("email") or str(ensure_sql_user_id(cur, current_user)),
                 solicitud_id
             ))
 
@@ -420,8 +697,8 @@ class CatalogosWorkflowSQLRepository:
                 solicitud_id,
                 estado_anterior,
                 body.get("motivo_rechazo") or body.get("comentarios"),
-                current_user.get("id"),
-                current_user.get("email") or str(current_user.get("id"))
+                ensure_sql_user_id(cur, current_user),
+                current_user.get("email") or str(ensure_sql_user_id(cur, current_user))
             ))
 
             cur.execute("""
@@ -432,7 +709,7 @@ class CatalogosWorkflowSQLRepository:
                     UpdatedBy = %s
                 WHERE CatalogoSolicitudID = %s
                   AND EstadoTarea IN ('PENDIENTE','EN_PROCESO')
-            """, (current_user.get("email") or str(current_user.get("id")), solicitud_id))
+            """, (current_user.get("email") or str(ensure_sql_user_id(cur, current_user)), solicitud_id))
 
             conn.commit()
             return 1
@@ -460,10 +737,10 @@ class CatalogosWorkflowSQLRepository:
                 WHERE CatalogoSolicitudID = %s
             """, (
                 body.get("motivo_correccion"),
-                current_user.get("id"),
+                ensure_sql_user_id(cur, current_user),
                 body.get("datos_solicitud_json"),
                 body.get("comentarios"),
-                current_user.get("email") or str(current_user.get("id")),
+                current_user.get("email") or str(ensure_sql_user_id(cur, current_user)),
                 solicitud_id
             ))
 
@@ -476,8 +753,8 @@ class CatalogosWorkflowSQLRepository:
                 solicitud_id,
                 estado_anterior,
                 body.get("motivo_correccion") or body.get("comentarios"),
-                current_user.get("id"),
-                current_user.get("email") or str(current_user.get("id"))
+                ensure_sql_user_id(cur, current_user),
+                current_user.get("email") or str(ensure_sql_user_id(cur, current_user))
             ))
 
             conn.commit()
@@ -514,10 +791,10 @@ class CatalogosWorkflowSQLRepository:
                 body.get("unidad_negocio_id"),
                 body.get("sucursal_id"),
                 body.get("asignado_a_usuario_id"),
-                current_user.get("id"),
+                ensure_sql_user_id(cur, current_user),
                 body.get("fecha_limite"),
                 body.get("metadata_json"),
-                current_user.get("email") or str(current_user.get("id"))
+                current_user.get("email") or str(ensure_sql_user_id(cur, current_user))
             ))
             conn.commit()
             return 1
