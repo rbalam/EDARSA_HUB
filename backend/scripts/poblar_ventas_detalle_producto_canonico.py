@@ -26,6 +26,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from core.sql_first.db import get_sql_connection
+from core.secret_manager import decrypt_secret, is_encrypted_secret
 
 
 DESTINO = "dbo.Comercial_Inteligencia_VentasDetalleProducto"
@@ -104,6 +105,24 @@ def get_unidades_negocio_pos(unidades: Optional[List[str]] = None) -> List[Dict[
     return out
 
 
+def _secret_value(value: Any) -> str:
+    """
+    Devuelve secreto usable en memoria.
+    No imprime ni persiste valores descifrados.
+    """
+    raw = _s(value)
+    if not raw:
+        return ""
+
+    try:
+        if is_encrypted_secret(raw):
+            return decrypt_secret(raw)
+    except Exception as exc:
+        raise RuntimeError(f"No se pudo descifrar secreto POS: {type(exc).__name__}")
+
+    return raw
+
+
 def get_pos_config_for_unidad(unidad_row: Dict[str, Any]) -> Dict[str, Any]:
     """
     Resuelve conexión POS desde dbo.Servidores_Conexiones.
@@ -131,8 +150,9 @@ def get_pos_config_for_unidad(unidad_row: Dict[str, Any]) -> Dict[str, Any]:
         "port": _first(selected, ["port", "Port", "puerto", "Puerto"], 1433),
         "database": _first(selected, ["database", "Database", "base_datos", "BaseDatos", "database_name", "db_name", "nombre_bd"]),
         "username": _first(selected, ["username", "Username", "usuario", "Usuario", "user", "User", "db_user"]),
-        "password": _first(selected, [
+        "password": _secret_value(_first(selected, [
             "password", "Password",
+            "password_encrypted", "PasswordEncrypted",
             "contrasena", "Contrasena",
             "contraseña", "Contraseña",
             "clave", "Clave",
@@ -144,7 +164,7 @@ def get_pos_config_for_unidad(unidad_row: Dict[str, Any]) -> Dict[str, Any]:
             "password_conexion", "PasswordConexion",
             "clave_conexion", "ClaveConexion",
             "conexion_password", "ConexionPassword",
-        ]),
+        ])),
         "system_type": _s(unidad_row.get("system_type") or _first(selected, ["system_type", "tipo_sistema", "sistema", "Sistema"])).upper(),
         "sucursal_origen_id": unidad_row.get("sucursal_origen_id"),
         "unidad_codigo": unidad_row.get("unidad_codigo"),
