@@ -84,9 +84,6 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
       ticketPromedio: Number(kpis.ticket_promedio || 0),
       trends: result.kpis_trends || {},
       periodoLabel: result.filtros?.periodo_label || '',
-      fechaInicio: result.filtros?.fecha_inicio || '',
-      fechaFin: result.filtros?.fecha_fin || '',
-      periodoBackend: result.filtros?.periodo || periodoActivo,
       ventasHorario: result.ventas_horario || [],
       topProductos: (result.top_productos || []).map(p => ({ nombre: p.producto, ventas: p.ventas, cantidad: p.cantidad })),
       topCasas: result.casas_distribuidoras || [],
@@ -285,9 +282,8 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
       </div>
 
       <TicketDrilldownModal open={drill} onClose={() => setDrill(false)}
-        unidad={unidadSeleccionada} periodo={data.periodoBackend || periodoActivo}
-        fechaInicio={data.fechaInicio || (esCustom ? rangoInicio : undefined)}
-        fechaFin={data.fechaFin || (esCustom ? rangoFin : undefined)}
+        unidad={unidadSeleccionada} periodo={periodoActivo}
+        fechaInicio={esCustom ? rangoInicio : undefined} fechaFin={esCustom ? rangoFin : undefined}
         titulo="Reconstrucción de Tickets" />
     </div>
   );
