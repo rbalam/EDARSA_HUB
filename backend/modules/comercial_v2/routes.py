@@ -306,7 +306,7 @@ def _get_variaciones_comparativas(
 
         query_actual = f"""
         SELECT
-            SUM(ISNULL(ventas_total, 0)) as ventas,
+            SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
             SUM(pax_total) as pax,
             SUM(tickets_total) as cheques
         FROM vw_Comercial_KPIs_Diarios_v2_Runtime
@@ -326,7 +326,7 @@ def _get_variaciones_comparativas(
 
         query_mes_ant = f"""
         SELECT
-            SUM(ISNULL(ventas_total, 0)) as ventas,
+            SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
             SUM(pax_total) as pax,
             SUM(tickets_total) as cheques,
             COUNT(*) as dias
@@ -350,7 +350,7 @@ def _get_variaciones_comparativas(
 
         query_año_ant = f"""
         SELECT
-            SUM(ISNULL(ventas_total, 0)) as ventas,
+            SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
             SUM(pax_total) as pax,
             SUM(tickets_total) as cheques,
             COUNT(*) as dias
@@ -500,7 +500,7 @@ def _calcular_totales_variaciones(
         # Query mes anterior
         query_mes_ant = f"""
         SELECT
-            SUM(ISNULL(ventas_total, 0)) as ventas,
+            SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
             SUM(pax_total) as pax,
             SUM(tickets_total) as cheques,
             COUNT(DISTINCT fecha_operacion) as dias
@@ -520,7 +520,7 @@ def _calcular_totales_variaciones(
         # Query año anterior
         query_año_ant = f"""
         SELECT
-            SUM(ISNULL(ventas_total, 0)) as ventas,
+            SUM(ISNULL(ventas_sin_propina, 0)) as ventas,
             SUM(pax_total) as pax,
             SUM(tickets_total) as cheques,
             COUNT(DISTINCT fecha_operacion) as dias

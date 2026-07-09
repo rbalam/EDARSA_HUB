@@ -37,16 +37,22 @@ def calcular_hash_origen(
     fecha: date,
     ventas_total: Decimal,
     tickets_total: int,
-    pax_total: int
+    pax_total: int,
+    ventas_sin_propina=None
 ) -> str:
     """
     Calcula un hash SHA256 único para identificar el origen de los datos.
     Permite detectar duplicados y cambios en el sync.
     
     Composición del hash:
-    - server_id + sucursal_id + fecha + ventas + tickets + pax
+    - server_id + sucursal_id + fecha + ventas_total + ventas_sin_propina + tickets + pax + version_semantica
     """
-    data_string = f"{server_id}|{sucursal_id}|{fecha.isoformat()}|{ventas_total}|{tickets_total}|{pax_total}"
+    ventas_hash = ventas_sin_propina if ventas_sin_propina is not None else ventas_total
+    data_string = (
+        f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
+        f"{ventas_total}|{ventas_hash}|{tickets_total}|{pax_total}|"
+        "kpi_visible_sin_propina_v1"
+    )
     return hashlib.sha256(data_string.encode('utf-8')).hexdigest()[:32]
 
 
@@ -95,8 +101,8 @@ def map_softrestaurant_ventas_cerradas(
     pax = int(row.get('num_personas', 0) or 0)
     
     # Calcular métricas derivadas
-    ticket_promedio = ventas_total / pax if pax > 0 else Decimal("0")
-    pax_promedio = ventas_total / pax if pax > 0 else Decimal("0")
+    ticket_promedio = ventas_sin_propina / pax if pax > 0 else Decimal("0")
+    pax_promedio = ventas_sin_propina / pax if pax > 0 else Decimal("0")
     
     # Hash para idempotencia
     hash_origen = calcular_hash_origen(
@@ -105,7 +111,8 @@ def map_softrestaurant_ventas_cerradas(
         fecha,
         ventas_total,
         tickets,
-        pax
+        pax,
+        ventas_sin_propina
     )
     
     return KPIsDiariosV2(
@@ -226,8 +233,8 @@ def map_mpro_ventas_cerradas(
     pax = int(row.get('total_personas', 0) or 0)
     
     # Calcular métricas derivadas
-    ticket_promedio = ventas_total / pax if pax > 0 else Decimal("0")
-    pax_promedio = ventas_total / pax if pax > 0 else Decimal("0")
+    ticket_promedio = ventas_sin_propina / pax if pax > 0 else Decimal("0")
+    pax_promedio = ventas_sin_propina / pax if pax > 0 else Decimal("0")
     
     # Hash para idempotencia
     hash_origen = calcular_hash_origen(
@@ -236,7 +243,8 @@ def map_mpro_ventas_cerradas(
         fecha,
         ventas_total,
         tickets,
-        pax
+        pax,
+        ventas_sin_propina
     )
     
     return KPIsDiariosV2(

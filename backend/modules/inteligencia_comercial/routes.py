@@ -342,15 +342,15 @@ def _resumen_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db=None):
 
     sql = f"""
         SELECT
-            SUM(ISNULL(ventas_total, 0)) AS ventas_totales,
+            SUM(ISNULL(ventas_sin_propina, 0)) AS ventas_totales,
             SUM(ISNULL(pax_total, 0)) AS pax_total,
             SUM(ISNULL(tickets_total, 0)) AS cheques_total,
             SUM(ISNULL(propinas_total, 0)) AS propinas_total,
             CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
-                THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(tickets_total, 0))
+                THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(tickets_total, 0))
                 ELSE 0 END AS cheque_promedio,
             CASE WHEN SUM(ISNULL(pax_total, 0)) > 0
-                THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(pax_total, 0))
+                THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(pax_total, 0))
                 ELSE 0 END AS ticket_promedio
         FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime
         WHERE {' AND '.join(where)}
