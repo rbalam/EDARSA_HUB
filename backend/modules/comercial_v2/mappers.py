@@ -96,7 +96,7 @@ def map_softrestaurant_ventas_cerradas(
     
     # Calcular métricas derivadas
     ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
-    pax_promedio = Decimal(str(pax / tickets)) if tickets > 0 else Decimal("0")
+    pax_promedio = ventas_total / pax if pax > 0 else Decimal("0")
     
     # Hash para idempotencia
     hash_origen = calcular_hash_origen(
@@ -138,7 +138,7 @@ def map_softrestaurant_ventas_cerradas(
         es_demo=False,
         activo=True,
         
-        fuente_original=FuenteOriginal.SQL_LIVE,
+        fuente_original=FuenteOriginal.API_LOCAL,
         id_origen=row.get('id_origen'),
         hash_origen=hash_origen,
         sync_run_id=sync_run_id
@@ -227,7 +227,7 @@ def map_mpro_ventas_cerradas(
     
     # Calcular métricas derivadas
     ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
-    pax_promedio = Decimal(str(pax / tickets)) if tickets > 0 else Decimal("0")
+    pax_promedio = ventas_total / pax if pax > 0 else Decimal("0")
     
     # Hash para idempotencia
     hash_origen = calcular_hash_origen(
@@ -269,7 +269,7 @@ def map_mpro_ventas_cerradas(
         es_demo=False,
         activo=True,
         
-        fuente_original=FuenteOriginal.SQL_LIVE,
+        fuente_original=FuenteOriginal.API_LOCAL,
         id_origen=row.get('id_origen'),
         hash_origen=hash_origen,
         sync_run_id=sync_run_id

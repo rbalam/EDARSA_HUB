@@ -176,7 +176,7 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
 
     # Verificar si existe
     check_query = f"""
-    SELECT id, hash_origen, version 
+    SELECT id, hash_origen, version, fuente_original
     FROM dbo.Comercial_KPIs_Diarios_v2
     WHERE unidad_negocio_pk = '{kpi.unidad_negocio_pk}'
       AND sucursal_id = '{kpi.sucursal_id}'
@@ -187,7 +187,7 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
     
     if existing:
         record = existing[0]
-        if record.get('hash_origen') == kpi.hash_origen:
+        if record.get('hash_origen') == kpi.hash_origen and str(record.get('fuente_original') or '') == str(kpi.fuente_original):
             # Mismos datos, no actualizar
             return {'action': 'SKIP', 'id': record.get('id')}
         else:
@@ -206,6 +206,7 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
                 ventas_abiertas = {kpi.ventas_abiertas},
                 total_estimado_dia = {kpi.total_estimado_dia},
                 es_corte_cerrado = {1 if kpi.es_corte_cerrado else 0},
+                fuente_original = '{kpi.fuente_original}',
                 hash_origen = '{kpi.hash_origen}',
                 sync_run_id = '{kpi.sync_run_id}',
                 fecha_ultima_actualizacion = SYSUTCDATETIME(),

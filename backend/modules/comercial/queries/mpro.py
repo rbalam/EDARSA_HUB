@@ -684,6 +684,7 @@ FROM Venta_Encabezado VE
 INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 LEFT JOIN Comanda C ON C.Co_Folio = VE.Vn_Folio AND C.Sc_Cve_Sucursal = VE.Sc_Cve_Sucursal
 WHERE VE.Vn_Fecha >= CONVERT(datetime, '{fi}', 120) AND VE.Vn_Fecha <= CONVERT(datetime, '{ff}', 120)
+  AND ISNULL(VE.Es_Cve_Estado, '') <> 'CA'
 GROUP BY S.Sc_Cve_Sucursal, S.Sc_Descripcion
 ORDER BY SUM(VE.Vn_Precio_Neto_Importe) DESC
 """
