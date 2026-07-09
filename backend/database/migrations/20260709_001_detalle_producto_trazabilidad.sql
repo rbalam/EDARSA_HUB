@@ -1,11 +1,11 @@
 /*
   EDARSAHUB V1.0
-  Comercial Inteligencia - trazabilidad de cancelados sin tabla paralela
+  Comercial Inteligencia - trazabilidad de cancelados sin tabla paralela.
 
   Objetivo:
-  - Preservar cancelados/consecutivos para trazabilidad.
-  - Separar filas KPI validas de filas no KPI.
-  - Evitar bloqueo pesado al agregar es_kpi_valido.
+  - Preservar cancelados/consecutivos.
+  - Separar filas KPI validas de filas de trazabilidad.
+  - Evitar ADD NOT NULL pesado sobre tabla con datos.
 */
 
 IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'estado_origen') IS NULL
@@ -29,9 +29,15 @@ BEGIN
 END
 GO
 
-UPDATE dbo.Comercial_Inteligencia_VentasDetalleProducto
-SET es_kpi_valido = 1
-WHERE es_kpi_valido IS NULL;
+WHILE 1 = 1
+BEGIN
+    UPDATE TOP (50000) dbo.Comercial_Inteligencia_VentasDetalleProducto
+    SET es_kpi_valido = 1
+    WHERE es_kpi_valido IS NULL;
+
+    IF @@ROWCOUNT = 0
+        BREAK;
+END
 GO
 
 IF EXISTS (
@@ -92,7 +98,11 @@ IF NOT EXISTS (
 )
 BEGIN
     CREATE NONCLUSTERED INDEX IX_Comercial_Intel_VentasDetalle_KPI
-    ON dbo.Comercial_Inteligencia_VentasDetalleProducto (es_kpi_valido);
+    ON dbo.Comercial_Inteligencia_VentasDetalleProducto (
+        es_kpi_valido,
+        fecha_operacion,
+        unidad_negocio_id
+    );
 END
 GO
 
