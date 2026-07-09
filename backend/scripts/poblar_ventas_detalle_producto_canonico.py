@@ -440,6 +440,7 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             SELECT
                 ch.folio,
                 ch.fecha,
+                  ISNULL(ch.cancelado, 0) AS cancelado_origen,
                 ISNULL(ch.nopersonas, 0) AS pax_ticket,
                 ISNULL(ch.total, 0) AS importe_neto_ticket,
                 {prop_expr} AS propina_ticket,
@@ -447,12 +448,12 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             FROM cheques ch WITH (NOLOCK)
             WHERE ch.fecha >= %s
               AND ch.fecha < %s
-              AND ISNULL(ch.cancelado, 0) = 0
         ),
         l AS (
             SELECT
                 h.folio,
                 h.fecha,
+                  h.cancelado_origen,
                 h.pax_ticket,
                 h.importe_neto_ticket,
                 h.propina_ticket,
@@ -478,6 +479,7 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             GROUP BY
                 h.folio,
                 h.fecha,
+                  h.cancelado_origen,
                 h.pax_ticket,
                 h.importe_neto_ticket,
                 h.propina_ticket,
@@ -493,6 +495,17 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             CONVERT(varchar(64), l.folio) AS numero_ticket,
             CONCAT('SOFT:', CONVERT(varchar(64), l.folio)) AS id_transaccion,
             l.fecha AS fecha_hora,
+              l.cancelado_origen,
+              CASE
+                  WHEN ISNULL(l.cancelado_origen, 0) = 0 THEN 'ACTIVO'
+                  ELSE 'CANCELADO'
+              END AS estado_origen,
+              CASE
+                  WHEN ISNULL(l.cancelado_origen, 0) = 0 THEN 1
+                  ELSE 0
+              END AS es_kpi_valido,
+              CONVERT(varchar(64), l.folio) AS folio_origen,
+              CONVERT(varchar(64), l.folio) AS documento_origen,
             l.pax_ticket,
             l.importe_neto_ticket,
             l.propina_ticket,
@@ -541,6 +554,7 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 v.Vn_Documento,
                 v.Vn_Fecha,
                 v.Sc_Cve_Sucursal,
+                  ISNULL(v.Es_Cve_Estado, '') AS estado_origen,
                 ISNULL(c.Co_Personas, 0) AS pax_ticket,
                 ISNULL(v.Vn_Precio_Neto_Importe, 0) AS importe_neto_ticket,
                 ISNULL(c.Co_Propina, 0) AS propina_ticket,
@@ -554,13 +568,14 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
               AND v.Vn_Fecha < %s
               AND v.Sc_Cve_Sucursal = %s
               AND ISNULL(v.Vn_Tabla, '') = 'Comanda'
-              AND ISNULL(v.Es_Cve_Estado, '') <> 'CA'
+              AND ISNULL(v.Es_Cve_Estado, '') IN ('AC', 'FA', 'CA')
         ),
         l AS (
             SELECT
                 h.Vn_Folio,
                 h.Vn_Documento,
                 h.Vn_Fecha,
+                  h.estado_origen,
                 h.pax_ticket,
                 h.importe_neto_ticket,
                 h.propina_ticket,
@@ -581,11 +596,12 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             FROM h
             LEFT JOIN Comanda_Detalle d WITH (NOLOCK)
                 ON d.Co_Folio = h.Vn_Documento
-               AND ISNULL(d.Es_Cve_Estado, '') <> 'CA'
+               AND ISNULL(d.Es_Cve_Estado, '') IN ('AC', 'FA')
             GROUP BY
                 h.Vn_Folio,
                 h.Vn_Documento,
                 h.Vn_Fecha,
+                  h.estado_origen,
                 h.pax_ticket,
                 h.importe_neto_ticket,
                 h.propina_ticket,
@@ -601,6 +617,17 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             CONVERT(varchar(64), l.Vn_Folio) AS numero_ticket,
             CONCAT('MPRO:', %s, ':', CONVERT(varchar(64), l.Vn_Folio)) AS id_transaccion,
             l.Vn_Fecha AS fecha_hora,
+              CASE
+                  WHEN ISNULL(l.estado_origen, '') = 'CA' THEN 1
+                  ELSE 0
+              END AS cancelado_origen,
+              l.estado_origen,
+              CASE
+                  WHEN ISNULL(l.estado_origen, '') IN ('AC', 'FA') THEN 1
+                  ELSE 0
+              END AS es_kpi_valido,
+              CONVERT(varchar(64), l.Vn_Folio) AS folio_origen,
+              CONVERT(varchar(64), l.Vn_Documento) AS documento_origen,
             l.pax_ticket,
             l.importe_neto_ticket,
             l.propina_ticket,
@@ -629,6 +656,7 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         conn.close()
 
 
+
 def _materialize_rows(cfg: Dict[str, Any], dia: date, src_rows: List[Dict[str, Any]], run_id: str) -> List[Dict[str, Any]]:
     seen_ticket = set()
     out: List[Dict[str, Any]] = []
@@ -638,8 +666,24 @@ def _materialize_rows(cfg: Dict[str, Any], dia: date, src_rows: List[Dict[str, A
         first_for_ticket = ticket_key not in seen_ticket
         seen_ticket.add(ticket_key)
 
+        cancelado_raw = _first(r, ["cancelado_origen"], None)
+        cancelado_origen = None
+        if cancelado_raw is not None:
+            cancelado_origen = _s(cancelado_raw).upper() in {"1", "TRUE", "SI", "YES"}
+
+        es_kpi_raw = _s(_first(r, ["es_kpi_valido"], 1)).upper()
+        es_kpi_valido = es_kpi_raw not in {"0", "FALSE", "NO", "NONE", ""}
+
+        cantidad = _d(r.get("cantidad"))
+        precio_unitario = _d(r.get("precio_unitario"))
         importe_bruto = _d(r.get("importe_bruto"))
         importe_neto = _d(r.get("importe_neto"))
+
+        if not es_kpi_valido:
+            cantidad = Decimal("0")
+            precio_unitario = Decimal("0")
+            importe_bruto = Decimal("0")
+            importe_neto = Decimal("0")
 
         row = {
             "id": str(uuid.uuid4()),
@@ -653,6 +697,12 @@ def _materialize_rows(cfg: Dict[str, Any], dia: date, src_rows: List[Dict[str, A
             "fecha_hora": r.get("fecha_hora"),
             "numero_ticket": _s(r.get("numero_ticket")),
             "id_transaccion": _s(r.get("id_transaccion")),
+            "estado_origen": _s(r.get("estado_origen")),
+            "cancelado_origen": cancelado_origen,
+            "es_kpi_valido": es_kpi_valido,
+            "folio_origen": _s(r.get("folio_origen") or r.get("numero_ticket")),
+            "documento_origen": _s(r.get("documento_origen") or r.get("numero_ticket")),
+            "fuente_original": _s(r.get("sistema_origen")),
             "producto_codigo_fuente": _s(r.get("producto_codigo_fuente")) or "SIN_CODIGO",
             "producto_id": None,
             "producto_nombre": _s(r.get("producto_nombre"))[:300],
@@ -663,13 +713,13 @@ def _materialize_rows(cfg: Dict[str, Any], dia: date, src_rows: List[Dict[str, A
             "casa": None,
             "porcentaje_alcohol": None,
             "es_alcohol": None,
-            "cantidad": _d(r.get("cantidad")),
-            "precio_unitario": _d(r.get("precio_unitario")),
+            "cantidad": cantidad,
+            "precio_unitario": precio_unitario,
             "importe_bruto": importe_bruto,
             "importe_neto": importe_neto,
             "descuento": importe_bruto - importe_neto,
-            "propina": _d(r.get("propina_ticket")) if first_for_ticket else Decimal("0"),
-            "pax": int(_d(r.get("pax_ticket"))) if first_for_ticket else None,
+            "propina": _d(r.get("propina_ticket")) if first_for_ticket and es_kpi_valido else Decimal("0"),
+            "pax": int(_d(r.get("pax_ticket"))) if first_for_ticket and es_kpi_valido else None,
             "sync_run_id": run_id,
             "hash_origen": None,
             "fecha_sincronizacion": datetime.utcnow(),
@@ -683,7 +733,12 @@ def _materialize_rows(cfg: Dict[str, Any], dia: date, src_rows: List[Dict[str, A
 
 def _validate(src_rows: List[Dict[str, Any]], runtime: Dict[str, Any]) -> Dict[str, Any]:
     tickets: Dict[str, Dict[str, Any]] = {}
+
     for r in src_rows:
+        es_kpi_raw = _s(_first(r, ["es_kpi_valido"], 1)).upper()
+        if es_kpi_raw in {"0", "FALSE", "NO", "NONE", ""}:
+            continue
+
         k = _s(r.get("id_transaccion"))
         if k not in tickets:
             tickets[k] = {
@@ -756,6 +811,12 @@ def _insert_rows(rows: List[Dict[str, Any]]) -> int:
             fecha_hora,
             numero_ticket,
             id_transaccion,
+            estado_origen,
+            cancelado_origen,
+            es_kpi_valido,
+            folio_origen,
+            documento_origen,
+            fuente_original,
             producto_codigo_fuente,
             producto_id,
             producto_nombre,
@@ -780,7 +841,8 @@ def _insert_rows(rows: List[Dict[str, Any]]) -> int:
         ) VALUES (
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
-            %s,%s,%s,%s,%s,%s,%s,%s
+            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+            %s,%s
         )
         """
 
@@ -799,6 +861,12 @@ def _insert_rows(rows: List[Dict[str, Any]]) -> int:
                     r["fecha_hora"],
                     r["numero_ticket"],
                     r["id_transaccion"],
+                    r["estado_origen"],
+                    None if r["cancelado_origen"] is None else (1 if r["cancelado_origen"] else 0),
+                    1 if r["es_kpi_valido"] else 0,
+                    r["folio_origen"],
+                    r["documento_origen"],
+                    r["fuente_original"],
                     r["producto_codigo_fuente"],
                     r["producto_id"],
                     r["producto_nombre"],
@@ -830,7 +898,6 @@ def _insert_rows(rows: List[Dict[str, Any]]) -> int:
         raise
     finally:
         conn.close()
-
 
 def main() -> int:
     ap = argparse.ArgumentParser()
