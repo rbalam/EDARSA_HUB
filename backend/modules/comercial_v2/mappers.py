@@ -10,7 +10,7 @@ hacia el formato EDARSAHUB v2.
 Incluye:
 - Cálculo de HashOrigen para idempotencia
 - Mapeo de campos específicos por sistema
-- Cálculo de métricas derivadas (ticket_promedio, pax_promedio)
+- Cálculo de métrica derivada canónica (ticket_promedio)
 """
 
 import hashlib
@@ -102,7 +102,6 @@ def map_softrestaurant_ventas_cerradas(
     
     # Calcular métricas derivadas
     ticket_promedio = ventas_sin_propina / pax if pax > 0 else Decimal("0")
-    pax_promedio = ventas_sin_propina / pax if pax > 0 else Decimal("0")
     
     # Hash para idempotencia
     hash_origen = calcular_hash_origen(
@@ -134,7 +133,7 @@ def map_softrestaurant_ventas_cerradas(
         tickets_total=tickets,
         pax_total=pax,
         ticket_promedio=ticket_promedio,
-        pax_promedio=pax_promedio,
+        pax_promedio=ticket_promedio,  # espejo legacy DB
         
         ventas_cerradas=ventas_sin_propina,
         ventas_abiertas=Decimal("0"),
@@ -234,7 +233,6 @@ def map_mpro_ventas_cerradas(
     
     # Calcular métricas derivadas
     ticket_promedio = ventas_sin_propina / pax if pax > 0 else Decimal("0")
-    pax_promedio = ventas_sin_propina / pax if pax > 0 else Decimal("0")
     
     # Hash para idempotencia
     hash_origen = calcular_hash_origen(
@@ -266,7 +264,7 @@ def map_mpro_ventas_cerradas(
         tickets_total=tickets,
         pax_total=pax,
         ticket_promedio=ticket_promedio,
-        pax_promedio=pax_promedio,
+        pax_promedio=ticket_promedio,  # espejo legacy DB
         
         ventas_cerradas=ventas_sin_propina,
         ventas_abiertas=Decimal("0"),

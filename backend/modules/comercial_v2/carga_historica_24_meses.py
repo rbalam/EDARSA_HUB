@@ -369,8 +369,7 @@ def cargar_mes_softrestaurant(
             reporte.cheques_origen += tickets
             reporte.pax_origen += pax
             
-            ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
-            pax_promedio = Decimal(str(pax / tickets)) if tickets > 0 else Decimal("0")
+            ticket_promedio = ventas_sin_propina / pax if pax > 0 else Decimal("0")
             
             # Hash estable basado en datos de negocio
             hash_origen = calcular_hash_origen(
@@ -401,7 +400,7 @@ def cargar_mes_softrestaurant(
                 tickets_total=tickets,
                 pax_total=pax,
                 ticket_promedio=ticket_promedio,
-                pax_promedio=pax_promedio,
+                pax_promedio=ticket_promedio,  # espejo legacy DB
                 
                 ventas_cerradas=ventas_total,
                 ventas_abiertas=Decimal("0"),
@@ -517,8 +516,7 @@ def cargar_mes_mpro(
             reporte.cheques_origen += tickets
             reporte.pax_origen += pax
             
-            ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
-            pax_promedio = Decimal(str(pax / tickets)) if tickets > 0 else Decimal("0")
+            ticket_promedio = ventas_total / pax if pax > 0 else Decimal("0")
             
             # Hash estable basado en datos de negocio (no depende de fuente)
             hash_origen = calcular_hash_origen(
@@ -549,7 +547,7 @@ def cargar_mes_mpro(
                 tickets_total=tickets,
                 pax_total=pax,
                 ticket_promedio=ticket_promedio,
-                pax_promedio=pax_promedio,
+                pax_promedio=ticket_promedio,  # espejo legacy DB
                 
                 ventas_cerradas=ventas_total,
                 ventas_abiertas=Decimal("0"),

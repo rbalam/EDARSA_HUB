@@ -221,7 +221,6 @@ def get_kpis_diarios(
         tickets_total,
         pax_total,
         ticket_promedio,
-        pax_promedio,
         ventas_cerradas,
         ventas_abiertas,
         total_estimado_dia,
@@ -277,12 +276,9 @@ def get_kpis_diarios_agregados(
         CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
              THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(tickets_total, 0))
              ELSE 0 END as cheque_promedio,
-        CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
-             THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(tickets_total, 0))
-             ELSE 0 END as ticket_promedio,
         CASE WHEN SUM(ISNULL(pax_total, 0)) > 0
              THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(pax_total, 0))
-             ELSE 0 END as pax_promedio,
+             ELSE 0 END as ticket_promedio,
         MIN(fecha_operacion) as fecha_min,
         MAX(fecha_operacion) as fecha_max
     FROM vw_Comercial_KPIs_Diarios_v2_Runtime
@@ -382,7 +378,6 @@ def get_kpis_mensuales(
         tickets_total,
         pax_total,
         ticket_promedio,
-        pax_promedio,
         dias_con_venta,
         fecha_ultima_actualizacion
     FROM vw_Comercial_KPIs_Mensuales_v2_Runtime

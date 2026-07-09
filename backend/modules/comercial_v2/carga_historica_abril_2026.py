@@ -351,8 +351,7 @@ def cargar_unidad_softrestaurant(
             reporte.pax_origen += pax
             
             # Calcular métricas
-            ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
-            pax_promedio = Decimal(str(pax / tickets)) if tickets > 0 else Decimal("0")
+            ticket_promedio = ventas_sin_propina / pax if pax > 0 else Decimal("0")
             
             # Hash para idempotencia
             hash_origen = calcular_hash_origen(
@@ -387,7 +386,7 @@ def cargar_unidad_softrestaurant(
                 tickets_total=tickets,
                 pax_total=pax,
                 ticket_promedio=ticket_promedio,
-                pax_promedio=pax_promedio,
+                pax_promedio=ticket_promedio,  # espejo legacy DB
                 
                 ventas_cerradas=ventas_total,
                 ventas_abiertas=Decimal("0"),
@@ -520,8 +519,7 @@ def cargar_unidad_mpro(
             reporte.pax_origen += pax
             
             # Calcular métricas
-            ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
-            pax_promedio = Decimal(str(pax / tickets)) if tickets > 0 else Decimal("0")
+            ticket_promedio = ventas_sin_propina / pax if pax > 0 else Decimal("0")
             
             # Hash para idempotencia
             hash_origen = calcular_hash_origen(
@@ -556,7 +554,7 @@ def cargar_unidad_mpro(
                 tickets_total=tickets,
                 pax_total=pax,
                 ticket_promedio=ticket_promedio,
-                pax_promedio=pax_promedio,
+                pax_promedio=ticket_promedio,  # espejo legacy DB
                 
                 ventas_cerradas=ventas_total,
                 ventas_abiertas=Decimal("0"),
