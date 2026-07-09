@@ -572,7 +572,7 @@ LEFT JOIN Comanda c ON ve.Vn_Documento = c.Co_Folio AND ve.Sc_Cve_Sucursal = c.S
 WHERE ve.Vn_Fecha >= DATEADD(DAY, -1, CAST('{fecha_inicio}' AS DATETIME))
   AND ve.Vn_Fecha < DATEADD(DAY, 2, CAST('{fecha_fin}' AS DATETIME))
   AND ve.Sc_Cve_Sucursal = '{sucursal_id}'
-  AND ISNULL(ve.Es_Cve_Estado, '') <> 'CA'
+  AND ISNULL(ve.Es_Cve_Estado, '') IN ('AC', 'FA')
 ORDER BY ve.Vn_Fecha
 """
 
@@ -585,7 +585,7 @@ FROM Venta_Encabezado ve
 LEFT JOIN Comanda c ON ve.Vn_Documento = c.Co_Folio AND ve.Sc_Cve_Sucursal = c.Sc_Cve_Sucursal
 WHERE CAST(ve.Vn_Fecha AS DATE) = CAST(GETDATE() AS DATE)
   AND ve.Sc_Cve_Sucursal = '{sucursal_id}'
-  AND ISNULL(ve.Es_Cve_Estado, '') <> 'CA'
+  AND ISNULL(ve.Es_Cve_Estado, '') IN ('AC', 'FA')
   AND ve.Vn_Tabla = 'Comanda'  -- Ventas aún en comanda (no cerradas)
 """
 

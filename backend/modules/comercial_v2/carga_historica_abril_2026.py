@@ -271,6 +271,7 @@ FROM Venta_Encabezado ve
 LEFT JOIN Comanda c ON ve.Vn_Documento = c.Co_Folio AND ve.Sc_Cve_Sucursal = c.Sc_Cve_Sucursal
 WHERE CAST(ve.Vn_Fecha AS DATE) BETWEEN '{fecha_inicio}' AND '{fecha_fin}'
   AND ve.Sc_Cve_Sucursal = '{sucursal_id}'
+  AND ISNULL(ve.Es_Cve_Estado, '') IN ('AC', 'FA')
 GROUP BY CAST(ve.Vn_Fecha AS DATE)
 ORDER BY fecha
 """
