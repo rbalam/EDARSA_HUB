@@ -549,7 +549,7 @@ ORDER BY fecha
 
 QUERY_SOFTRESTAURANT_VENTAS_ABIERTAS = """
 SELECT 
-    SUM(total) as ventas_abiertas,
+    SUM(total - ISNULL(propina, 0)) as ventas_abiertas,
     COUNT(DISTINCT folio) as tickets_abiertos,
     SUM(ISNULL(nopersonas, 1)) as pax_abiertos
 FROM cheques

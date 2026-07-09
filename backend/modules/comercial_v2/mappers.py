@@ -136,9 +136,9 @@ def map_softrestaurant_ventas_cerradas(
         ticket_promedio=ticket_promedio,
         pax_promedio=pax_promedio,
         
-        ventas_cerradas=ventas_total,
+        ventas_cerradas=ventas_sin_propina,
         ventas_abiertas=Decimal("0"),
-        total_estimado_dia=ventas_total,
+        total_estimado_dia=ventas_sin_propina,
         
         es_venta_abierta=False,
         es_corte_cerrado=True,
@@ -268,9 +268,9 @@ def map_mpro_ventas_cerradas(
         ticket_promedio=ticket_promedio,
         pax_promedio=pax_promedio,
         
-        ventas_cerradas=ventas_total,
+        ventas_cerradas=ventas_sin_propina,
         ventas_abiertas=Decimal("0"),
-        total_estimado_dia=ventas_total,
+        total_estimado_dia=ventas_sin_propina,
         
         es_venta_abierta=False,
         es_corte_cerrado=True,
