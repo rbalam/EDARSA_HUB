@@ -332,8 +332,8 @@ def get_kpis_por_unidad(
         SUM(ISNULL(propinas_total, 0)) as propinas_total,
         SUM(ISNULL(tickets_total, 0)) as tickets_total,
         SUM(ISNULL(pax_total, 0)) as pax_total,
-        CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
-             THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(tickets_total, 0))
+        CASE WHEN SUM(ISNULL(pax_total, 0)) > 0
+             THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(pax_total, 0))
              ELSE 0 END as ticket_promedio_avg,
         CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
              THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(tickets_total, 0))

@@ -1022,10 +1022,10 @@ async def comercial_v2_dashboard(
         totales_con_variaciones['cheque_promedio'] = (
             round(ventas_total_calc / tickets_total_calc, 2) if tickets_total_calc > 0 else 0
         )
-        totales_con_variaciones['ticket_promedio'] = totales_con_variaciones['cheque_promedio']
-        totales_con_variaciones['pax_promedio'] = (
+        totales_con_variaciones['ticket_promedio'] = (
             round(ventas_total_calc / pax_total_calc, 2) if pax_total_calc > 0 else 0
         )
+        totales_con_variaciones['pax_promedio'] = totales_con_variaciones['ticket_promedio']
         totales_con_variaciones['proyeccion'] = (
             round((ventas_total_calc / dias_transcurridos_calc) * dias_periodo_calc, 2)
             if dias_transcurridos_calc > 0 else 0
@@ -1037,8 +1037,8 @@ async def comercial_v2_dashboard(
             pax_u = float(unidad_calc.get('pax_total') or 0)
 
             unidad_calc['cheque_promedio'] = round(ventas_u / tickets_u, 2) if tickets_u > 0 else 0
-            unidad_calc['ticket_promedio_avg'] = unidad_calc['cheque_promedio']
-            unidad_calc['pax_promedio'] = round(ventas_u / pax_u, 2) if pax_u > 0 else 0
+            unidad_calc['ticket_promedio_avg'] = round(ventas_u / pax_u, 2) if pax_u > 0 else 0
+            unidad_calc['pax_promedio'] = unidad_calc['ticket_promedio_avg']
             unidad_calc['proyeccion'] = (
                 round((ventas_u / dias_transcurridos_calc) * dias_periodo_calc, 2)
                 if dias_transcurridos_calc > 0 else 0
