@@ -95,7 +95,7 @@ def map_softrestaurant_ventas_cerradas(
     pax = int(row.get('num_personas', 0) or 0)
     
     # Calcular métricas derivadas
-    ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
+    ticket_promedio = ventas_total / pax if pax > 0 else Decimal("0")
     pax_promedio = ventas_total / pax if pax > 0 else Decimal("0")
     
     # Hash para idempotencia
@@ -226,7 +226,7 @@ def map_mpro_ventas_cerradas(
     pax = int(row.get('total_personas', 0) or 0)
     
     # Calcular métricas derivadas
-    ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
+    ticket_promedio = ventas_total / pax if pax > 0 else Decimal("0")
     pax_promedio = ventas_total / pax if pax > 0 else Decimal("0")
     
     # Hash para idempotencia
