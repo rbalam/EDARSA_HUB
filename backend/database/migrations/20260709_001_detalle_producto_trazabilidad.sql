@@ -1,26 +1,17 @@
 /*
-Migracion: trazabilidad minima para detalle comercial canonico
-Tabla: dbo.Comercial_Inteligencia_VentasDetalleProducto
+  EDARSAHUB V1.0
+  Comercial Inteligencia - trazabilidad de cancelados sin tabla paralela
 
-Objetivo:
-- Preservar consecutivo / folio.
-- Conservar cancelados de SoftRestaurant.
-- Conservar estados AC / FA / CA de MPRO.
-- Separar filas KPI-validas de filas de trazabilidad.
-- Evitar tabla paralela si la tabla canonica existente puede sostener el dato.
-
-Notas:
-- es_kpi_valido se crea por fases:
-  1) ADD nullable
-  2) UPDATE existentes a 1
-  3) ALTER NOT NULL
-  4) DEFAULT constraint
+  Objetivo:
+  - Preservar cancelados/consecutivos para trazabilidad.
+  - Separar filas KPI validas de filas no KPI.
+  - Evitar bloqueo pesado al agregar es_kpi_valido.
 */
 
 IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'estado_origen') IS NULL
 BEGIN
     ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto
-    ADD estado_origen nvarchar(20) NULL;
+    ADD estado_origen nvarchar(50) NULL;
 END
 GO
 
@@ -45,11 +36,10 @@ GO
 
 IF EXISTS (
     SELECT 1
-    FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_SCHEMA = 'dbo'
-      AND TABLE_NAME = 'Comercial_Inteligencia_VentasDetalleProducto'
-      AND COLUMN_NAME = 'es_kpi_valido'
-      AND IS_NULLABLE = 'YES'
+    FROM sys.columns
+    WHERE object_id = OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto')
+      AND name = 'es_kpi_valido'
+      AND is_nullable = 1
 )
 BEGIN
     ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto
@@ -60,8 +50,11 @@ GO
 IF NOT EXISTS (
     SELECT 1
     FROM sys.default_constraints dc
+    JOIN sys.columns c
+      ON c.object_id = dc.parent_object_id
+     AND c.column_id = dc.parent_column_id
     WHERE dc.parent_object_id = OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto')
-      AND dc.name = 'DF_Comercial_Intel_VentasDetalle_es_kpi_valido'
+      AND c.name = 'es_kpi_valido'
 )
 BEGIN
     ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto
@@ -73,14 +66,14 @@ GO
 IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'folio_origen') IS NULL
 BEGIN
     ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto
-    ADD folio_origen nvarchar(64) NULL;
+    ADD folio_origen nvarchar(100) NULL;
 END
 GO
 
 IF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'documento_origen') IS NULL
 BEGIN
     ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto
-    ADD documento_origen nvarchar(64) NULL;
+    ADD documento_origen nvarchar(100) NULL;
 END
 GO
 
@@ -94,34 +87,28 @@ GO
 IF NOT EXISTS (
     SELECT 1
     FROM sys.indexes
-    WHERE name = 'IX_Comercial_Intel_VentasDetalle_KPI'
-      AND object_id = OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto')
+    WHERE object_id = OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto')
+      AND name = 'IX_Comercial_Intel_VentasDetalle_KPI'
 )
 BEGIN
-    CREATE INDEX IX_Comercial_Intel_VentasDetalle_KPI
-    ON dbo.Comercial_Inteligencia_VentasDetalleProducto (
-        fecha_operacion,
-        unidad_negocio_id,
-        sistema_origen,
-        es_kpi_valido
-    );
+    CREATE NONCLUSTERED INDEX IX_Comercial_Intel_VentasDetalle_KPI
+    ON dbo.Comercial_Inteligencia_VentasDetalleProducto (es_kpi_valido);
 END
 GO
 
 IF NOT EXISTS (
     SELECT 1
     FROM sys.indexes
-    WHERE name = 'IX_Comercial_Intel_VentasDetalle_Trazabilidad'
-      AND object_id = OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto')
+    WHERE object_id = OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto')
+      AND name = 'IX_Comercial_Intel_VentasDetalle_Trazabilidad'
 )
 BEGIN
-    CREATE INDEX IX_Comercial_Intel_VentasDetalle_Trazabilidad
+    CREATE NONCLUSTERED INDEX IX_Comercial_Intel_VentasDetalle_Trazabilidad
     ON dbo.Comercial_Inteligencia_VentasDetalleProducto (
-        sistema_origen,
-        fecha_operacion,
-        numero_ticket,
+        fuente_original,
         estado_origen,
-        cancelado_origen
+        folio_origen,
+        documento_origen
     );
 END
 GO
