@@ -1025,7 +1025,6 @@ async def comercial_v2_dashboard(
         totales_con_variaciones['ticket_promedio'] = (
             round(ventas_total_calc / pax_total_calc, 2) if pax_total_calc > 0 else 0
         )
-        totales_con_variaciones['pax_promedio'] = totales_con_variaciones['ticket_promedio']
         totales_con_variaciones['proyeccion'] = (
             round((ventas_total_calc / dias_transcurridos_calc) * dias_periodo_calc, 2)
             if dias_transcurridos_calc > 0 else 0
@@ -1038,7 +1037,6 @@ async def comercial_v2_dashboard(
 
             unidad_calc['cheque_promedio'] = round(ventas_u / tickets_u, 2) if tickets_u > 0 else 0
             unidad_calc['ticket_promedio'] = round(ventas_u / pax_u, 2) if pax_u > 0 else 0
-            unidad_calc['pax_promedio'] = unidad_calc['ticket_promedio']
             unidad_calc['proyeccion'] = (
                 round((ventas_u / dias_transcurridos_calc) * dias_periodo_calc, 2)
                 if dias_transcurridos_calc > 0 else 0
@@ -1059,7 +1057,6 @@ async def comercial_v2_dashboard(
                 "total_dias": totales_con_variaciones.get('total_dias', 0),
                 "cheque_promedio": totales_con_variaciones.get('cheque_promedio', 0),
                 "ticket_promedio": totales_con_variaciones.get('ticket_promedio', 0),
-                "pax_promedio": totales_con_variaciones.get('pax_promedio', 0),
                 "proyeccion": totales_con_variaciones.get('proyeccion', 0),
                 # FASE 2: Variaciones en totales
                 "ventas_ant": totales_con_variaciones.get('ventas_ant'),
@@ -1089,7 +1086,6 @@ async def comercial_v2_dashboard(
                     "pax_total": u['pax_total'],
                     "cheque_promedio": u.get('cheque_promedio'),
                     "ticket_promedio": u.get('ticket_promedio'),
-                    "pax_promedio": u.get('pax_promedio'),
                     "dias": u['dias'],
                     "fecha_min": u['fecha_min'],
                     "fecha_max": u['fecha_max'],
@@ -1447,7 +1443,7 @@ async def comercial_v2_ventas_dia(
             tickets_dia = int(d.get('tickets_abiertos') or 0) + int(d.get('tickets_cerrados_dia') or 0)
             pax_dia = int(d.get('pax_abiertos') or 0) + int(d.get('pax_cerrados_dia') or 0)
             cheque_promedio = round(total_dia / tickets_dia, 2) if tickets_dia > 0 else 0
-            pax_promedio = round(total_dia / pax_dia, 2) if pax_dia > 0 else 0
+            ticket_promedio = round(total_dia / pax_dia, 2) if pax_dia > 0 else 0
 
             # Obtener comparativos diarios desde EDARSAHUB SQL
             unidad_id = d['unidad_negocio_pk']
@@ -1466,7 +1462,7 @@ async def comercial_v2_ventas_dia(
                 "pax_cerrados_dia": int(d.get('pax_cerrados_dia') or 0),
                 "total_estimado_dia": total_dia,
                 "cheque_promedio": cheque_promedio,
-                "pax_promedio": pax_promedio,
+                "ticket_promedio": ticket_promedio,
                 # Comparativos diarios (de EDARSAHUB SQL)
                 "dia_anterior_ventas": comparativos['dia_anterior']['ventas'],
                 "dia_anterior_pax": comparativos['dia_anterior']['pax'],
@@ -1509,7 +1505,7 @@ async def comercial_v2_ventas_dia(
         total_tickets = sum(d['tickets_abiertos'] + d['tickets_cerrados_dia'] for d in datos_ordenados)
         total_pax = sum(d['pax_abiertos'] + d['pax_cerrados_dia'] for d in datos_ordenados)
         cheque_promedio_total = round(total_estimado / total_tickets, 2) if total_tickets > 0 else 0
-        pax_promedio_total = round(total_estimado / total_pax, 2) if total_pax > 0 else 0
+        ticket_promedio_total = round(total_estimado / total_pax, 2) if total_pax > 0 else 0
 
         return VentasDiaResponse(
             success=True,
@@ -1522,7 +1518,7 @@ async def comercial_v2_ventas_dia(
                     "total_tickets": total_tickets,
                     "total_pax": total_pax,
                     "cheque_promedio": cheque_promedio_total,
-                    "pax_promedio": pax_promedio_total,
+                    "ticket_promedio": ticket_promedio_total,
                     "unidades_con_datos": len(datos_ordenados),
                     "unidades_dato_vencido": sum(1 for d in datos_ordenados if d['dato_vencido'])
                 },

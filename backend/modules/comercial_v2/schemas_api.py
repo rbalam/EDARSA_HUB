@@ -31,7 +31,6 @@ class UnidadKPIResponse(BaseModel):
     tickets_total: int
     pax_total: int
     ticket_promedio: Optional[float] = None
-    pax_promedio: Optional[float] = None
     
     # Período
     dias: Optional[int] = None

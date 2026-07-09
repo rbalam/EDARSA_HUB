@@ -766,7 +766,7 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
                   <div>
                     <p className="text-xs text-zinc-500">Pax Promedio</p>
                     <p className="text-2xl font-bold text-purple-600">
-                      {formatCurrency(kpis.pax_promedio ?? 0)}
+                      {formatCurrency(kpis.ticket_promedio ?? 0)}
                     </p>
                     <p className="text-xs text-zinc-400">Ventas ÷ PAX</p>
                   </div>
@@ -1553,7 +1553,7 @@ function MesasComensales({ servers, unidadesNegocio, selectedUnidad, setSelected
                   <p className="text-xs text-zinc-400">Ticket Prom.</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-purple-400">{formatCurrency(datosUnidad.pax_promedio)}</p>
+                  <p className="text-3xl font-bold text-purple-400">{formatCurrency(datosUnidad.ticket_promedio)}</p>
                   <p className="text-xs text-zinc-400">PAX Prom.</p>
                 </div>
               </div>
@@ -1824,7 +1824,7 @@ function ReportePax({ servers, unidadesNegocio, selectedUnidad, setSelectedUnida
           <Card className="border bg-gradient-to-br from-blue-50 to-white">
             <CardContent className="py-3 text-center">
               <p className="text-xs text-zinc-500">Pax Promedio</p>
-              <p className="text-xl font-bold text-blue-600">{formatCurrency(data.resumen.pax_promedio)}</p>
+              <p className="text-xl font-bold text-blue-600">{formatCurrency(data.resumen.ticket_promedio)}</p>
             </CardContent>
           </Card>
           <Card className="border bg-gradient-to-br from-yellow-50 to-white">
@@ -1910,7 +1910,7 @@ function ReportePax({ servers, unidadesNegocio, selectedUnidad, setSelectedUnida
                     <SortableHeader label={viewMode === 'vendedor' ? 'Vendedor' : 'Folio'} sortKey="nombre" className="text-left" />
                     <SortableHeader label="PAX" sortKey="pax" className="text-center" />
                     <SortableHeader label="Total" sortKey="total" className="text-right" />
-                    <SortableHeader label="Pax Promedio" sortKey="pax_promedio" className="text-right" />
+                    <SortableHeader label="Pax Promedio" sortKey="ticket_promedio" className="text-right" />
                     {viewMode === 'vendedor' && <SortableHeader label="Cheques" sortKey="num_cheques" className="text-center" />}
                   </tr>
                 </thead>
@@ -1951,7 +1951,7 @@ function ReportePax({ servers, unidadesNegocio, selectedUnidad, setSelectedUnida
                           {formatCurrency(item.total)}
                         </td>
                         <td className="py-2 px-3 text-right font-semibold text-blue-600">
-                          {formatCurrency(item.pax_promedio)}
+                          {formatCurrency(item.ticket_promedio)}
                         </td>
                         {viewMode === 'vendedor' && (
                           <td className="py-2 px-3 text-center text-zinc-500">
@@ -1973,7 +1973,7 @@ function ReportePax({ servers, unidadesNegocio, selectedUnidad, setSelectedUnida
                           </td>
                           <td className="py-1 px-3 text-center text-sm">{formatNumber(det.pax)}</td>
                           <td className="py-1 px-3 text-right text-sm text-green-600">{formatCurrency(det.total)}</td>
-                          <td className="py-1 px-3 text-right text-sm text-blue-600">{formatCurrency(det.pax_promedio)}</td>
+                          <td className="py-1 px-3 text-right text-sm text-blue-600">{formatCurrency(det.ticket_promedio)}</td>
                           {viewMode === 'vendedor' && <td className="py-1 px-3"></td>}
                         </tr>
                       ))}
