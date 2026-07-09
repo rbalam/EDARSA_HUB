@@ -9,8 +9,8 @@ Objetivo:
 - Separar filas KPI-validas de filas de trazabilidad.
 - Evitar tabla paralela si la tabla canonica existente puede sostener el dato.
 
-Notas operativas:
-- es_kpi_valido se crea por fases para evitar ALTER pesado:
+Notas:
+- es_kpi_valido se crea por fases:
   1) ADD nullable
   2) UPDATE existentes a 1
   3) ALTER NOT NULL
