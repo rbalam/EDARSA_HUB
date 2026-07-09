@@ -113,7 +113,7 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       // CORRECCIÓN GLOBAL: Nomenclatura correcta de KPIs
       // cheque_promedio = ventas / cheques
       // pax_promedio = ventas / pax
-      cheque_promedio: u.cheque_promedio ?? u.ticket_promedio ?? 0,
+      cheque_promedio: u.cheque_promedio ?? 0,
       pax_promedio: u.pax_promedio ?? 0,
       // ACTUALIZADO: Usar días GLOBALES (FechaOperacionActual.day), NO u.dias
       proyeccion: u.proyeccion ?? calcularProyeccion(u.ventas_total || 0),
