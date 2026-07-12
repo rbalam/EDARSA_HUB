@@ -151,83 +151,237 @@ def _coerce_mx_datetime(value):
 
 
 def _acquire_sync_lock_sync(run_id: str, pid: int) -> bool:
-    """Adquiere lock (versión síncrona). Retorna True si OK, False si hay lock activo."""
-    import pymssql
+    """
+    Adquiere lock SQL transaccional para VENTAS_DIA_ABIERTAS.
+
+    Garantías:
+    - SERIALIZABLE + UPDLOCK + HOLDLOCK evita dos INSERT concurrentes.
+    - Locks vencidos se marcan TIMEOUT dentro de la misma transacción.
+    - Ante cualquier error opera fail-closed: no inicia el job.
+    """
     from datetime import timedelta
     from zoneinfo import ZoneInfo
-    
+
+    conn = None
+    cursor = None
+
     try:
         conn = get_sql_connection()
         cursor = conn.cursor(as_dict=True)
+
         now_mx = datetime.now(ZoneInfo("America/Mexico_City"))
-        timeout_threshold = now_mx - timedelta(minutes=LOCK_TIMEOUT_MINUTES)
-        
+        now_sql = now_mx.replace(tzinfo=None)
+        timeout_threshold = (
+            now_mx - timedelta(minutes=LOCK_TIMEOUT_MINUTES)
+        ).replace(tzinfo=None)
+
+        cursor.execute("SET XACT_ABORT ON")
+        cursor.execute(
+            "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE"
+        )
+        cursor.execute("BEGIN TRANSACTION")
+
+        # Liberar todas las ejecuciones activas que ya excedieron el lease.
         cursor.execute("""
-            SELECT SyncControlID, SyncRunID, StartedAtMexico
-            FROM Sync_Control_Ejecuciones
-            WHERE SyncType=%s AND Status='IN_PROGRESS' AND FinishedAtMexico IS NULL
+            UPDATE dbo.Sync_Control_Ejecuciones
+               WITH (UPDLOCK, HOLDLOCK)
+            SET
+                Status = 'TIMEOUT',
+                FinishedAtMexico = %s,
+                ErrorMessage = COALESCE(
+                    ErrorMessage,
+                    'Lock vencido antes de nueva ejecución'
+                )
+            WHERE SyncType = %s
+              AND Status = 'IN_PROGRESS'
+              AND FinishedAtMexico IS NULL
+              AND (
+                    StartedAtMexico IS NULL
+                    OR StartedAtMexico < %s
+              )
+        """, (
+            now_sql,
+            SYNC_TYPE_VENTAS_DIA,
+            timeout_threshold,
+        ))
+
+        stale_count = cursor.rowcount
+        if stale_count and stale_count > 0:
+            logger.warning(
+                "[LOCK] Ejecuciones vencidas marcadas TIMEOUT: "
+                f"{stale_count}"
+            )
+
+        # La lectura y el INSERT quedan serializados en la misma transacción.
+        cursor.execute("""
+            SELECT TOP (1)
+                SyncControlID,
+                SyncRunID,
+                StartedAtMexico
+            FROM dbo.Sync_Control_Ejecuciones
+                 WITH (UPDLOCK, HOLDLOCK)
+            WHERE SyncType = %s
+              AND Status = 'IN_PROGRESS'
+              AND FinishedAtMexico IS NULL
+            ORDER BY StartedAtMexico
         """, (SYNC_TYPE_VENTAS_DIA,))
+
         active = cursor.fetchone()
-        
+
         if active:
-            started = _coerce_mx_datetime(active['StartedAtMexico'])
-            if started < timeout_threshold:
-                logger.warning(f"[LOCK] Timeout detectado: {active['SyncRunID']}")
-                cursor.execute("""
-                    UPDATE Sync_Control_Ejecuciones SET Status='TIMEOUT', FinishedAtMexico=%s
-                    WHERE SyncControlID=%s
-                """, (now_mx.replace(tzinfo=None), active['SyncControlID']))
-                conn.commit()
-            else:
-                logger.info(f"[LOCK] Activo: {active['SyncRunID']}")
-                conn.close()
-                return False
-        
+            conn.commit()
+            logger.info(
+                "[LOCK] Ejecución activa: "
+                f"{active.get('SyncRunID')}"
+            )
+            return False
+
         today = now_mx.date()
+
         cursor.execute("""
-            INSERT INTO Sync_Control_Ejecuciones (
-                SyncRunID, SyncType, FechaInicio, FechaFin, VentanaInicioHoraConfig,
-                VentanaFinHoraConfig, IsDryRun, RegistrosProcesados, RegistrosInsertados,
-                RegistrosActualizados, RegistrosError, Status, StartedAtMexico, CreatedAt
-            ) VALUES (%s,%s,%s,%s,0,0,0,0,0,0,0,'IN_PROGRESS',%s,%s)
-        """, (run_id, SYNC_TYPE_VENTAS_DIA, today, today, now_mx.replace(tzinfo=None), now_mx.replace(tzinfo=None)))
+            INSERT INTO dbo.Sync_Control_Ejecuciones (
+                SyncRunID,
+                SyncType,
+                FechaInicio,
+                FechaFin,
+                VentanaInicioHoraConfig,
+                VentanaFinHoraConfig,
+                IsDryRun,
+                RegistrosProcesados,
+                RegistrosInsertados,
+                RegistrosActualizados,
+                RegistrosError,
+                Status,
+                StartedAtMexico,
+                CreatedAt
+            )
+            VALUES (
+                %s, %s, %s, %s,
+                0, 0, 0, 0, 0, 0, 0,
+                'IN_PROGRESS', %s, %s
+            )
+        """, (
+            run_id,
+            SYNC_TYPE_VENTAS_DIA,
+            today,
+            today,
+            now_sql,
+            now_sql,
+        ))
+
         conn.commit()
-        conn.close()
-        logger.info(f"[LOCK] 🔒 Adquirido: {run_id}")
-        return True
-    except Exception as e:
-        logger.error(f"[LOCK] Error: {e}")
+
+        logger.info(
+            f"[LOCK] Adquirido: {run_id}, pid={pid}"
+        )
         return True
 
+    except Exception as exc:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
 
-def _release_sync_lock_sync(run_id: str, status: str, processed: int, errors: int, error_msg: str = None):
-    """Libera lock (versión síncrona)."""
-    import pymssql
+        logger.error(
+            "[LOCK] No se pudo adquirir lock; "
+            f"ejecución bloqueada: {exc}"
+        )
+        return False
+
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+def _release_sync_lock_sync(
+    run_id: str,
+    status: str,
+    processed: int,
+    errors: int,
+    error_msg: str = None,
+):
+    """Finaliza la ejecución SQL y libera su estado IN_PROGRESS."""
     from zoneinfo import ZoneInfo
-    
+
+    conn = None
+    cursor = None
+
     try:
         conn = get_sql_connection()
         cursor = conn.cursor()
+
         now_mx = datetime.now(ZoneInfo("America/Mexico_City"))
-        
-        cursor.execute("SELECT StartedAtMexico FROM Sync_Control_Ejecuciones WHERE SyncRunID=%s", (run_id,))
+        now_sql = now_mx.replace(tzinfo=None)
+
+        cursor.execute("""
+            SELECT StartedAtMexico
+            FROM dbo.Sync_Control_Ejecuciones
+            WHERE SyncRunID = %s
+        """, (run_id,))
+
         row = cursor.fetchone()
         duration = 0
+
         if row and row[0]:
             started = _coerce_mx_datetime(row[0])
-            duration = int((now_mx - started).total_seconds()) if started else 0
-        
-        cursor.execute("""
-            UPDATE Sync_Control_Ejecuciones
-            SET Status=%s, FinishedAtMexico=%s, DurationSeconds=%s, RegistrosProcesados=%s, RegistrosError=%s, ErrorMessage=%s
-            WHERE SyncRunID=%s
-        """, (status, now_mx.replace(tzinfo=None), duration, processed, errors, error_msg[:500] if error_msg else None, run_id))
-        conn.commit()
-        conn.close()
-        logger.info(f"[LOCK] 🔓 Liberado: {run_id}")
-    except Exception as e:
-        logger.error(f"[LOCK] Error liberando: {e}")
+            if started:
+                duration = int((now_mx - started).total_seconds())
 
+        cursor.execute("""
+            UPDATE dbo.Sync_Control_Ejecuciones
+            SET
+                Status = %s,
+                FinishedAtMexico = %s,
+                DurationSeconds = %s,
+                RegistrosProcesados = %s,
+                RegistrosError = %s,
+                ErrorMessage = %s
+            WHERE SyncRunID = %s
+        """, (
+            status,
+            now_sql,
+            duration,
+            processed,
+            errors,
+            error_msg[:500] if error_msg else None,
+            run_id,
+        ))
+
+        conn.commit()
+        logger.info(f"[LOCK] Liberado: {run_id}")
+
+    except Exception as exc:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+
+        logger.error(
+            f"[LOCK] Error liberando {run_id}: {exc}"
+        )
+
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 def _get_api_local_config(unidad_codigo: str) -> Optional[Dict]:
     """
@@ -674,8 +828,9 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                     fecha_operacion=fecha_operacion_str
                 )
                 rows_abiertas, conn_status = execute_query_on_server(
-                    server_config, 
-                    query_abiertas
+                    server_config,
+                    query_abiertas,
+                    context="jobs",
                 )
             
                 # REGLA: Si falla conexión, NO escribir $0
@@ -692,8 +847,9 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                     fecha_operacion=fecha_operacion_str
                 )
                 rows_cerradas, _ = execute_query_on_server(
-                    server_config, 
-                    query_cerradas
+                    server_config,
+                    query_cerradas,
+                    context="jobs",
                 )
             
                 # Extraer valores
@@ -746,7 +902,12 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                     logger.info(f"[SYNC_ABIERTAS_V2] {nombre} (SR): Total=$0 confirmado (sin dato existente o nuevo día)")
             
                 # Determinar fuente original
-                fuente = FuenteOriginal.TEMPCHEQUES if ventas_abiertas > 0 else FuenteOriginal.CHEQUES
+                if ventas_abiertas > 0 and ventas_cerradas_dia > 0:
+                    fuente = FuenteOriginal.MIXTA
+                elif ventas_abiertas > 0:
+                    fuente = FuenteOriginal.TEMPCHEQUES
+                else:
+                    fuente = FuenteOriginal.CHEQUES
             
                 # =================================================================
                 # GUARD RAIL P0.H: VALIDAR FECHA_OPERACION ANTES DE ESCRIBIR

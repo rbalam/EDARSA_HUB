@@ -148,7 +148,7 @@ function AnalisisVentas({ data, meta }) {
       </div>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Kpi label="Ventas" value={money(k.ventas)} icon={DollarSign} color="emerald" />
-        <Kpi label="Ticket Prom." sub="ventas ÷ pax" value={money2(k.ticket_promedio)} icon={Users} color="cyan" />
+        <Kpi label="PAX Prom." sub="ventas ÷ pax" value={money2(k.pax_promedio)} icon={Users} color="cyan" />
         <Kpi label="Cheque Prom." sub="ventas ÷ cuentas" value={money2(k.cheque_promedio)} icon={Receipt} color="violet" />
         <Kpi label="PAX" value={k.pax.toLocaleString()} icon={Users} color="blue" />
         <Kpi label="Cuentas" value={k.cuentas.toLocaleString()} icon={Receipt} color="purple" />
@@ -250,7 +250,7 @@ function VentasMes({ data, meta }) {
           <Kpi label="vs Año anterior" value={c.var_anio_anterior != null ? `${c.var_anio_anterior}%` : '—'} icon={CalendarRange} trend={c.var_anio_anterior} color="purple" />
         </div>
         <ExportButtons filename="bi_ventas_mes" title="BI · Ventas por Mes" meta={meta}
-          columns={[{ key: 'label', label: 'Mes' }, { key: 'ventas', label: 'Ventas' }, { key: 'pax', label: 'PAX' }, { key: 'cuentas', label: 'Cuentas' }, { key: 'ticket_promedio', label: 'Ticket Prom' }]}
+          columns={[{ key: 'label', label: 'Mes' }, { key: 'ventas', label: 'Ventas' }, { key: 'pax', label: 'PAX' }, { key: 'cuentas', label: 'Cuentas' }, { key: 'pax_promedio', label: 'PAX Prom' }]}
           rows={data.series} testid="bi-vm-export" />
       </div>
       <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
@@ -350,12 +350,12 @@ function KpisMes({ data, meta }) {
         <span className="text-sm text-slate-400">Mes: <span className="text-white font-semibold">{data.filtros?.periodo_label}</span></span>
         <ExportButtons filename="bi_kpis_mes" title="BI · KPIs Mes Actual" meta={meta}
           columns={[{ key: 'kpi', label: 'KPI' }, { key: 'valor', label: 'Valor' }]}
-          rows={[{ kpi: 'Ventas', valor: k.ventas }, { kpi: 'Ticket Promedio', valor: k.ticket_promedio }, { kpi: 'Cheque Promedio', valor: k.cheque_promedio }, { kpi: 'PAX', valor: k.pax }, { kpi: 'Cuentas', valor: k.cuentas }]}
+          rows={[{ kpi: 'Ventas', valor: k.ventas }, { kpi: 'PAX Promedio', valor: k.pax_promedio }, { kpi: 'Cheque Promedio', valor: k.cheque_promedio }, { kpi: 'PAX', valor: k.pax }, { kpi: 'Cuentas', valor: k.cuentas }]}
           testid="bi-km-export" />
       </div>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Kpi label="Ventas" value={money(k.ventas)} icon={DollarSign} color="emerald" trend={v.ventas} />
-        <Kpi label="Ticket Prom." sub="ventas ÷ pax" value={money2(k.ticket_promedio)} icon={Users} color="cyan" trend={v.ticket_promedio} />
+        <Kpi label="PAX Prom." sub="ventas ÷ pax" value={money2(k.pax_promedio)} icon={Users} color="cyan" trend={v.pax_promedio} />
         <Kpi label="Cheque Prom." sub="ventas ÷ cuentas" value={money2(k.cheque_promedio)} icon={Receipt} color="violet" trend={v.cheque_promedio} />
         <Kpi label="PAX" value={k.pax.toLocaleString()} icon={Users} color="blue" trend={v.pax} />
         <Kpi label="Cuentas" value={k.cuentas.toLocaleString()} icon={Receipt} color="purple" trend={v.cuentas} />

@@ -101,8 +101,8 @@ def map_softrestaurant_ventas_cerradas(
     pax = int(row.get('num_personas', 0) or 0)
     
     # Calcular métricas derivadas
-    ticket_promedio = ventas_sin_propina / pax if pax > 0 else Decimal("0")
-    
+    ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
+    pax_promedio = ventas_total / pax if pax > 0 else Decimal("0")
     # Hash para idempotencia
     hash_origen = calcular_hash_origen(
         config.server_id,
@@ -133,8 +133,7 @@ def map_softrestaurant_ventas_cerradas(
         tickets_total=tickets,
         pax_total=pax,
         ticket_promedio=ticket_promedio,
-        pax_promedio=ticket_promedio,  # espejo legacy DB
-        
+        pax_promedio=pax_promedio,
         ventas_cerradas=ventas_sin_propina,
         ventas_abiertas=Decimal("0"),
         total_estimado_dia=ventas_sin_propina,
@@ -232,8 +231,8 @@ def map_mpro_ventas_cerradas(
     pax = int(row.get('total_personas', 0) or 0)
     
     # Calcular métricas derivadas
-    ticket_promedio = ventas_sin_propina / pax if pax > 0 else Decimal("0")
-    
+    ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
+    pax_promedio = ventas_total / pax if pax > 0 else Decimal("0")
     # Hash para idempotencia
     hash_origen = calcular_hash_origen(
         config.server_id,
@@ -264,8 +263,7 @@ def map_mpro_ventas_cerradas(
         tickets_total=tickets,
         pax_total=pax,
         ticket_promedio=ticket_promedio,
-        pax_promedio=ticket_promedio,  # espejo legacy DB
-        
+        pax_promedio=pax_promedio,
         ventas_cerradas=ventas_sin_propina,
         ventas_abiertas=Decimal("0"),
         total_estimado_dia=ventas_sin_propina,

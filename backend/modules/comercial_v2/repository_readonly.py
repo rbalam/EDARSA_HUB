@@ -269,16 +269,20 @@ def get_kpis_diarios_agregados(
         COUNT(*) as total_registros,
         COUNT(DISTINCT unidad_negocio_pk) as total_unidades,
         COUNT(DISTINCT fecha_operacion) as total_dias,
-        SUM(ISNULL(ventas_sin_propina, 0)) as ventas_total,
+        SUM(ISNULL(ventas_total, 0)) as ventas_total,
+        SUM(ISNULL(ventas_sin_propina, 0)) as ventas_sin_propina,
         SUM(ISNULL(propinas_total, 0)) as propinas_total,
         SUM(ISNULL(tickets_total, 0)) as tickets_total,
         SUM(ISNULL(pax_total, 0)) as pax_total,
         CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
-             THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(tickets_total, 0))
+             THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(tickets_total, 0))
+             ELSE 0 END as ticket_promedio,
+        CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
+             THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(tickets_total, 0))
              ELSE 0 END as cheque_promedio,
         CASE WHEN SUM(ISNULL(pax_total, 0)) > 0
-             THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(pax_total, 0))
-             ELSE 0 END as ticket_promedio,
+             THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(pax_total, 0))
+             ELSE 0 END as pax_promedio,
         MIN(fecha_operacion) as fecha_min,
         MAX(fecha_operacion) as fecha_max
     FROM vw_Comercial_KPIs_Diarios_v2_Runtime
@@ -300,7 +304,8 @@ def get_kpis_por_unidad(
 
     MÁXIMA:
     - Se agrupa por unidad_negocio_id canónico (sin LIKE/nombre, sin SQL inválido).
-    - KPI ventas = ventas_sin_propina; propinas_total queda separado y FUERA del KPI.
+    - KPI visible de ventas = ventas_total con IVA incluido.
+    - ventas_sin_propina y propinas_total permanecen separados.
     - Fuente: vw_Comercial_KPIs_Diarios_v2_Runtime (NO live, NO Mongo).
     """
     where_clauses = [
@@ -323,17 +328,20 @@ def get_kpis_por_unidad(
         MAX(unidad_negocio_nombre) as unidad_negocio_nombre,
         MAX(sistema_origen) as sistema_origen,
         COUNT(DISTINCT fecha_operacion) as dias,
-        SUM(ISNULL(ventas_sin_propina, 0)) as ventas_total,
+        SUM(ISNULL(ventas_total, 0)) as ventas_total,
         SUM(ISNULL(ventas_sin_propina, 0)) as ventas_sin_propina,
         SUM(ISNULL(propinas_total, 0)) as propinas_total,
         SUM(ISNULL(tickets_total, 0)) as tickets_total,
         SUM(ISNULL(pax_total, 0)) as pax_total,
-        CASE WHEN SUM(ISNULL(pax_total, 0)) > 0
-             THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(pax_total, 0))
+        CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
+             THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(tickets_total, 0))
              ELSE 0 END as ticket_promedio,
         CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
-             THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(tickets_total, 0))
+             THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(tickets_total, 0))
              ELSE 0 END as cheque_promedio,
+        CASE WHEN SUM(ISNULL(pax_total, 0)) > 0
+             THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(pax_total, 0))
+             ELSE 0 END as pax_promedio,
         MIN(fecha_operacion) as fecha_min,
         MAX(fecha_operacion) as fecha_max
     FROM vw_Comercial_KPIs_Diarios_v2_Runtime
@@ -507,6 +515,70 @@ def get_ventas_dia_abiertas(
     return rows
 
 
+def get_ultimas_fechas_operacion_abiertas(
+    unidades_permitidas: Optional[List[str]] = None
+) -> Dict[str, date]:
+    """
+    Obtiene la última fecha_operacion almacenada por unidad desde
+    Comercial_Ventas_Dia_Abiertas_v2.
+
+    Uso:
+    - Fallback controlado cuando falla el motor de ventana operativa.
+    - Nunca usa fecha civil.
+    - Respeta el contexto de unidades recibido por RBAC.
+    """
+    unidad_filter = _unidad_filter_abiertas(unidades_permitidas)
+
+    if not unidad_filter:
+        return {}
+
+    query = f"""
+    SELECT
+        a.unidad_negocio_id,
+        MAX(a.fecha_operacion) AS ultima_fecha_operacion
+    FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 a
+    WHERE {unidad_filter}
+      AND a.fecha_operacion IS NOT NULL
+    GROUP BY a.unidad_negocio_id
+    """
+
+    rows = _execute_readonly_query(query)
+    fechas: Dict[str, date] = {}
+
+    for row in rows:
+        codigo = str(
+            row.get("unidad_negocio_id") or ""
+        ).strip().upper()
+
+        raw_fecha = row.get("ultima_fecha_operacion")
+
+        if not codigo or raw_fecha in (None, ""):
+            continue
+
+        try:
+            if type(raw_fecha) is date:
+                fecha_normalizada = raw_fecha
+            elif isinstance(raw_fecha, date):
+                fecha_normalizada = raw_fecha.date()
+            else:
+                fecha_normalizada = date.fromisoformat(
+                    str(raw_fecha).strip()[:10]
+                )
+        except Exception as exc:
+            logger.warning(
+                "[COMERCIAL_V2] fecha_operacion SQL inválida "
+                "para unidad=%s valor=%r error=%s",
+                codigo,
+                raw_fecha,
+                exc,
+            )
+            continue
+
+        fechas[codigo] = fecha_normalizada
+
+    return fechas
+
+
 # =============================================================================
 # FUNCIONES DE LECTURA - SYNC LOG
 # =============================================================================
@@ -664,7 +736,7 @@ def check_v2_health() -> Dict:
 # =============================================================================
 
 def get_comparativos_diarios(
-    unidad_negocio_pk: str,
+    unidad_negocio_codigo: str,
     fecha_actual: date
 ) -> Dict[str, Any]:
     """
@@ -678,13 +750,19 @@ def get_comparativos_diarios(
     from datetime import timedelta
     
     fecha_anterior = fecha_actual - timedelta(days=1)
-    fecha_anio_ant = fecha_actual.replace(year=fecha_actual.year - 1)
-    
-    # Manejar año bisiesto: si fecha_anio_ant no existe (29 feb), usar 28 feb
+
+    # Manejar 29 de febrero antes de construir la fecha del año anterior.
     try:
-        _ = fecha_anio_ant.isoformat()  # Validar que la fecha es válida
+        fecha_anio_ant = fecha_actual.replace(year=fecha_actual.year - 1)
     except ValueError:
-        fecha_anio_ant = fecha_actual.replace(year=fecha_actual.year - 1, day=28)
+        fecha_anio_ant = fecha_actual.replace(
+            year=fecha_actual.year - 1,
+            day=28
+        )
+
+    fecha_anterior_inicio = fecha_actual - timedelta(days=7)
+    fecha_anio_ant_inicio = fecha_anio_ant - timedelta(days=7)
+    fecha_anio_ant_fin = fecha_anio_ant + timedelta(days=7)
     
     result = {
         'dia_actual': {'ventas': 0, 'pax': 0, 'cheques': 0},
@@ -699,7 +777,7 @@ def get_comparativos_diarios(
         ISNULL(pax_abiertos, 0) + ISNULL(pax_cerrados_dia, 0) as pax,
         ISNULL(tickets_abiertos, 0) + ISNULL(tickets_cerrados_dia, 0) as cheques
     FROM Comercial_Ventas_Dia_Abiertas_v2
-    WHERE unidad_negocio_id = '{unidad_negocio_pk}'
+    WHERE unidad_negocio_id = '{unidad_negocio_codigo}'
       AND fecha_operacion = '{fecha_actual.isoformat()}'
     """
     
@@ -716,21 +794,22 @@ def get_comparativos_diarios(
     # con una ventana máxima de 7 días para evitar mostrar datos muy antiguos
     query_anterior = f"""
     SELECT TOP 1
-        ISNULL(ventas_sin_propina, 0) as ventas,
+        ISNULL(ventas_total, 0) as ventas,
         ISNULL(pax_total, 0) as pax_total,
         ISNULL(tickets_total, 0) as cheques,
         anio, mes, dia
     FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-    WHERE unidad_negocio_id = '{unidad_negocio_pk}'
-      AND (
-        -- Primero intentar día exacto anterior
-        (anio = {fecha_anterior.year} AND mes = {fecha_anterior.month} AND dia = {fecha_anterior.day})
-        OR
-        -- Si no existe, buscar cualquier día en los últimos 7 días
-        (anio * 10000 + mes * 100 + dia) >= ({fecha_anterior.year} * 10000 + {fecha_anterior.month} * 100 + {fecha_anterior.day} - 7)
-        AND (anio * 10000 + mes * 100 + dia) < ({fecha_actual.year} * 10000 + {fecha_actual.month} * 100 + {fecha_actual.day})
-      )
-    ORDER BY anio DESC, mes DESC, dia DESC
+    WHERE unidad_negocio_id = '{unidad_negocio_codigo}'
+      AND fecha_operacion BETWEEN
+          '{fecha_anterior_inicio.isoformat()}'
+          AND '{fecha_anterior.isoformat()}'
+    ORDER BY
+        CASE
+            WHEN fecha_operacion = '{fecha_anterior.isoformat()}'
+                THEN 0
+            ELSE 1
+        END,
+        fecha_operacion DESC
     """
     
     rows_anterior = _execute_readonly_query(query_anterior)
@@ -744,30 +823,33 @@ def get_comparativos_diarios(
         dia_usado = f"{rows_anterior[0].get('anio')}-{rows_anterior[0].get('mes'):02d}-{rows_anterior[0].get('dia'):02d}"
         dia_esperado = fecha_anterior.isoformat()
         if dia_usado != dia_esperado:
-            logger.info(f"[COMPARATIVOS] {unidad_negocio_pk}: Usando {dia_usado} en lugar de {dia_esperado} (último disponible)")
+            logger.info(f"[COMPARATIVOS] {unidad_negocio_codigo}: Usando {dia_usado} en lugar de {dia_esperado} (último disponible)")
     
     # Obtener mismo día año anterior (de KPIs Diarios)
     # CORRECCIÓN: Similar lógica de fallback para año anterior
     query_anio_ant = f"""
     SELECT TOP 1
-        ISNULL(ventas_sin_propina, 0) as ventas,
+        ISNULL(ventas_total, 0) as ventas,
         ISNULL(pax_total, 0) as pax_total,
         ISNULL(tickets_total, 0) as cheques,
         anio, mes, dia
     FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-    WHERE unidad_negocio_id = '{unidad_negocio_pk}'
-      AND (
-        -- Primero intentar día exacto año anterior
-        (anio = {fecha_anio_ant.year} AND mes = {fecha_anio_ant.month} AND dia = {fecha_anio_ant.day})
-        OR
-        -- Si no existe, buscar cualquier día en ±7 días del mismo período año anterior
-        (anio * 10000 + mes * 100 + dia) >= ({fecha_anio_ant.year} * 10000 + {fecha_anio_ant.month} * 100 + {fecha_anio_ant.day} - 7)
-        AND (anio * 10000 + mes * 100 + dia) <= ({fecha_anio_ant.year} * 10000 + {fecha_anio_ant.month} * 100 + {fecha_anio_ant.day} + 7)
-      )
-    ORDER BY 
-        -- Priorizar día exacto, luego el más cercano
-        CASE WHEN anio = {fecha_anio_ant.year} AND mes = {fecha_anio_ant.month} AND dia = {fecha_anio_ant.day} THEN 0 ELSE 1 END,
-        ABS((anio * 10000 + mes * 100 + dia) - ({fecha_anio_ant.year} * 10000 + {fecha_anio_ant.month} * 100 + {fecha_anio_ant.day}))
+    WHERE unidad_negocio_id = '{unidad_negocio_codigo}'
+      AND fecha_operacion BETWEEN
+          '{fecha_anio_ant_inicio.isoformat()}'
+          AND '{fecha_anio_ant_fin.isoformat()}'
+    ORDER BY
+        CASE
+            WHEN fecha_operacion = '{fecha_anio_ant.isoformat()}'
+                THEN 0
+            ELSE 1
+        END,
+        ABS(DATEDIFF(
+            day,
+            fecha_operacion,
+            '{fecha_anio_ant.isoformat()}'
+        )),
+        fecha_operacion DESC
     """
     
     rows_anio_ant = _execute_readonly_query(query_anio_ant)

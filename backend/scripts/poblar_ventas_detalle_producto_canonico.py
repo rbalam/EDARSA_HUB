@@ -165,11 +165,60 @@ def get_pos_config_for_unidad(unidad_row: Dict[str, Any]) -> Dict[str, Any]:
             "clave_conexion", "ClaveConexion",
             "conexion_password", "ConexionPassword",
         ])),
-        "system_type": _s(unidad_row.get("system_type") or _first(selected, ["system_type", "tipo_sistema", "sistema", "Sistema"])).upper(),
-        "sucursal_origen_id": unidad_row.get("sucursal_origen_id"),
-        "unidad_codigo": unidad_row.get("unidad_codigo"),
-        "unidad_nombre": unidad_row.get("unidad_nombre"),
-        "source": "dbo.Servidores_Conexiones",
+        "system_type": _s(
+            _first(
+                unidad_row,
+                ["system_type", "tipo_sistema", "sistema", "Sistema"],
+            )
+            or _first(
+                selected,
+                ["system_type", "tipo_sistema", "sistema", "Sistema"],
+            )
+        ).upper(),
+
+        # Identidad canónica: dbo.Unidades_Negocio
+        "unidad_pk": _first(
+            unidad_row,
+            [
+                "unidad_pk",
+                "unidad_id",
+                "unidad_negocio_pk",
+                "unidad_negocio_id",
+                "UnidadNegocioID",
+                "id",
+                "ID",
+            ],
+        ),
+        "unidad_codigo": _first(
+            unidad_row,
+            [
+                "unidad_codigo",
+                "codigo",
+                "Codigo",
+                "Código",
+            ],
+        ),
+        "unidad_nombre": _first(
+            unidad_row,
+            [
+                "unidad_nombre",
+                "nombre",
+                "Nombre",
+            ],
+        ),
+        "sucursal_origen_id": _first(
+            unidad_row,
+            [
+                "sucursal_origen_id",
+                "SucursalOrigenID",
+                "sucursal_id",
+                "SucursalID",
+            ],
+        ),
+
+        # Relación canónica:
+        # dbo.Unidades_Negocio.server_id -> dbo.Servidores_Conexiones.id
+        "source": "dbo.Unidades_Negocio.server_id->dbo.Servidores_Conexiones.id",
     }
 
     missing = [k for k in ["host", "database", "username", "password"] if not cfg.get(k)]
@@ -182,11 +231,63 @@ def get_pos_config_for_unidad(unidad_row: Dict[str, Any]) -> Dict[str, Any]:
     return cfg
 
 
+def _parse_sql_server_host_port(raw_host: Any, raw_port: Any = None) -> Tuple[str, int, Optional[str]]:
+    """
+    Normaliza el host canónico guardado en dbo.Servidores_Conexiones.
+
+    Soporta formatos usados por SQL Server / UI:
+    - server
+    - server,1433
+    - server,6669\\instance
+    - server\\instance
+    - server:1433
+
+    La fuente canónica no se reescribe aquí; el consumidor parsea antes de conectar.
+    """
+    host = _s(raw_host).strip()
+    port = int(raw_port or 1433)
+    instance = None
+
+    if "," in host:
+        left, right = host.split(",", 1)
+        host = left.strip()
+        right = right.strip()
+
+        if "\\" in right:
+            port_part, instance_part = right.split("\\", 1)
+            instance = instance_part.strip() or None
+        else:
+            port_part = right
+
+        if str(port_part).strip().isdigit():
+            port = int(str(port_part).strip())
+
+    if "\\" in host:
+        left, instance_part = host.split("\\", 1)
+        host = left.strip()
+        instance = instance_part.strip() or instance
+
+    if ":" in host and host.count(":") == 1:
+        left, port_part = host.split(":", 1)
+        if port_part.strip().isdigit():
+            host = left.strip()
+            port = int(port_part.strip())
+
+    if not host:
+        raise RuntimeError("host POS vacío después de parsear configuración canónica")
+
+    return host, port, instance
+
+
 def get_pos_connection(config: Dict[str, Any]):
-    """Conexión real read-only al POS origen."""
+    host, port, _instance = _parse_sql_server_host_port(
+        config.get("host"),
+        config.get("port") or 1433,
+    )
+
     return pymssql.connect(
-        server=config["host"],
-        port=int(config.get("port") or 1433),
+        server=host,
+        port=int(port),
         user=config["username"],
         password=config["password"],
         database=config["database"],
@@ -416,6 +517,69 @@ def _sistema(cfg: Dict[str, Any]) -> str:
     raise RuntimeError(f"system_type no reconocido: {st}")
 
 
+def _unidad_operativa_id_for_window(cfg: Dict[str, Any]) -> str:
+    """
+    Identificador canónico para Sistema_TurnosOperativosUnidad.
+    """
+    for key in (
+        "unidad_codigo",
+        "unidad_negocio_id",
+        "unidad_id",
+        "codigo",
+        "unidad_negocio_pk",
+    ):
+        value = cfg.get(key)
+        if value not in (None, ""):
+            value = str(value).strip()
+            if value:
+                return value
+
+    safe_context = {
+        "unidad_pk": cfg.get("unidad_pk"),
+        "unidad_codigo": cfg.get("unidad_codigo"),
+        "unidad_nombre": cfg.get("unidad_nombre"),
+        "server_id": cfg.get("server_id"),
+        "system_type": cfg.get("system_type"),
+        "sucursal_origen_id": cfg.get("sucursal_origen_id"),
+        "source": cfg.get("source"),
+    }
+    raise RuntimeError(
+        f"No se pudo resolver unidad operativa para ventana POS: {safe_context}"
+    )
+
+
+def _soft_operational_datetime_range(cfg: Dict[str, Any], dia: date) -> Tuple[str, str]:
+    """
+    Rango POS canónico para SoftRestaurant usando FechaOperacion.
+    Reemplaza el rango civil dia 00:00 -> dia+1 00:00.
+    No usa Mongo.
+    """
+    from core.utils.operational_window import (
+        get_operational_datetime_range_for_fecha_operacion,
+    )
+
+    unidad_operativa = _unidad_operativa_id_for_window(cfg)
+    inicio, fin, meta = get_operational_datetime_range_for_fecha_operacion(
+        unidad_operativa,
+        dia,
+    )
+
+    print({
+        "soft_operational_window": unidad_operativa,
+        "fecha_operacion": dia.isoformat(),
+        "turno_inicio_codigo": meta.get("turno_inicio_codigo"),
+        "turno_fin_codigo": meta.get("turno_fin_codigo"),
+        "hora_inicio": str(meta.get("hora_inicio")),
+        "hora_fin": str(meta.get("hora_fin")),
+        "cruza_medianoche": bool(meta.get("cruza_medianoche")),
+        "turnos_count": meta.get("turnos_count"),
+        "query_inicio": inicio.strftime("%Y-%m-%d %H:%M:%S"),
+        "query_fin": fin.strftime("%Y-%m-%d %H:%M:%S"),
+    })
+
+    return inicio.strftime("%Y-%m-%d %H:%M:%S"), fin.strftime("%Y-%m-%d %H:%M:%S")
+
+
 def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
     conn = get_pos_connection(cfg)
     if not conn:
@@ -432,8 +596,7 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         prop_expr = f"ISNULL(ch.{prop_col}, 0)" if prop_col else "CAST(0 AS decimal(18,4))"
         desc_expr = f"ISNULL(ch.{desc_col}, 0)" if desc_col else "CAST(0 AS decimal(18,4))"
 
-        fi = dia.isoformat()
-        ff = (dia + timedelta(days=1)).isoformat()
+        fi, ff = _soft_operational_datetime_range(cfg, dia)
 
         sql = f"""
         WITH h AS (
@@ -534,6 +697,39 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         conn.close()
 
 
+def _mpro_operational_datetime_range(
+    cfg: Dict[str, Any],
+    dia: date,
+) -> Tuple[str, str]:
+    """
+    Resuelve la ventana datetime MPRO desde la configuración operativa
+    canónica de la unidad. No usa día civil ni horarios hardcodeados.
+    """
+    from core.utils.operational_window import (
+        get_operational_datetime_range_for_fecha_operacion,
+    )
+
+    unidad_operativa_id = _unidad_operativa_id_for_window(cfg)
+
+    inicio, fin, meta = (
+        get_operational_datetime_range_for_fecha_operacion(
+            unidad_operativa_id,
+            dia,
+        )
+    )
+
+    if inicio >= fin:
+        raise RuntimeError(
+            f"Ventana MPRO inválida para {unidad_operativa_id}: "
+            f"inicio={inicio}, fin={fin}, metadata={meta}"
+        )
+
+    return (
+        inicio.strftime("%Y-%m-%d %H:%M:%S"),
+        fin.strftime("%Y-%m-%d %H:%M:%S"),
+    )
+
+
 def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
     suc = cfg.get("sucursal_origen_id")
     if not suc:
@@ -544,8 +740,7 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         raise RuntimeError(f"sin conexión POS para {cfg.get('unidad_codigo')}")
 
     try:
-        fi = dia.isoformat()
-        ff = (dia + timedelta(days=1)).isoformat()
+        fi, ff = _mpro_operational_datetime_range(cfg, dia)
 
         sql = """
         WITH h AS (

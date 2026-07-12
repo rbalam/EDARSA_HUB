@@ -58,7 +58,7 @@ def _kwhere(unidad_db: Optional[str], fi: str, ff: str) -> str:
 
 
 def _kpis_rango(unidad_db: Optional[str], fi: str, ff: str) -> Dict[str, float]:
-    """KPIs canónicos del rango (ticket=ventas÷pax, cheque=ventas÷cuentas)."""
+    """KPIs canónicos: ticket/cheque=ventas÷cuentas y pax_promedio=ventas÷pax."""
     rows = execute_query(f"""
         SELECT ISNULL(SUM(ventas_total),0) ventas, ISNULL(SUM(ventas_sin_propina),0) ventas_sp,
                ISNULL(SUM(propinas_total),0) propinas, ISNULL(SUM(tickets_total),0) cuentas,
@@ -76,8 +76,9 @@ def _kpis_rango(unidad_db: Optional[str], fi: str, ff: str) -> Dict[str, float]:
         "propinas": round(float(r.get("propinas") or 0), 2),
         "cuentas": int(cuentas),
         "pax": int(pax),
-        "ticket_promedio": round(ventas_sp / pax, 2) if pax else 0,
-        "cheque_promedio": round(ventas_sp / cuentas, 2) if cuentas else 0,
+        "ticket_promedio": round(ventas / cuentas, 2) if cuentas else 0,
+        "cheque_promedio": round(ventas / cuentas, 2) if cuentas else 0,
+        "pax_promedio": round(ventas / pax, 2) if pax else 0,
     }
 
 
@@ -182,8 +183,9 @@ async def ventas_mes(unidad: Optional[str] = Query(None), meses: int = Query(24,
             serie.append({"anio": int(r["anio"]), "mes": int(r["mes"]),
                           "label": f"{MESES_ES[int(r['mes'])]} {int(r['anio'])}",
                           "ventas": ventas, "pax": pax, "cuentas": cuentas,
-                          "ticket_promedio": round(ventas_sp / pax, 2) if pax else 0,
-                          "cheque_promedio": round(ventas_sp / cuentas, 2) if cuentas else 0})
+                          "ticket_promedio": round(ventas / cuentas, 2) if cuentas else 0,
+                          "cheque_promedio": round(ventas / cuentas, 2) if cuentas else 0,
+                          "pax_promedio": round(ventas / pax, 2) if pax else 0})
         # Comparativos mes actual vs anterior vs año anterior
         comp = {}
         if serie:
@@ -308,6 +310,7 @@ async def kpis_mes(unidad: Optional[str] = Query(None)):
                 "cuentas": _var(actual["cuentas"], anterior["cuentas"]),
                 "ticket_promedio": _var(actual["ticket_promedio"], anterior["ticket_promedio"]),
                 "cheque_promedio": _var(actual["cheque_promedio"], anterior["cheque_promedio"]),
+                "pax_promedio": _var(actual["pax_promedio"], anterior["pax_promedio"]),
             }
         return _envelope(True,
             filtros={"fecha_inicio": fi, "fecha_fin": ff, "periodo_label": label},

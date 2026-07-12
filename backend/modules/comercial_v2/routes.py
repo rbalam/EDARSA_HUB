@@ -36,6 +36,7 @@ from .repository_readonly import (
     get_kpis_por_unidad,
     get_kpis_mensuales,
     get_ventas_dia_abiertas,
+    get_ultimas_fechas_operacion_abiertas,
     get_comparativos_diarios,
     get_sync_status,
     get_last_sync_by_unidad,
@@ -653,6 +654,8 @@ def serialize_response(data: any) -> any:
         return [serialize_response(item) for item in data]
     elif isinstance(data, (date, datetime)):
         return data.isoformat()
+    elif isinstance(data, bool):
+        return data
     elif hasattr(data, '__float__'):
         return float(data)
     else:
@@ -975,7 +978,10 @@ async def comercial_v2_dashboard(
             uid = u['unidad_negocio_pk']
 
             # FASE 2: Agregar código canónico oficial
-            u['unidad_negocio_codigo'] = MAPEO_KPI_A_CODIGO_CANONICO.get(uid, uid)
+            u['unidad_negocio_codigo'] = (
+                u.get('unidad_negocio_codigo')
+                or MAPEO_KPI_A_CODIGO_CANONICO.get(uid, uid)
+            )
 
             # Calcular variaciones comparativas
             variaciones = _get_variaciones_comparativas(
@@ -1019,10 +1025,13 @@ async def comercial_v2_dashboard(
         tickets_total_calc = float(totales_con_variaciones.get('tickets_total') or 0)
         pax_total_calc = float(totales_con_variaciones.get('pax_total') or 0)
 
-        totales_con_variaciones['cheque_promedio'] = (
+        totales_con_variaciones['ticket_promedio'] = (
             round(ventas_total_calc / tickets_total_calc, 2) if tickets_total_calc > 0 else 0
         )
-        totales_con_variaciones['ticket_promedio'] = (
+        totales_con_variaciones['cheque_promedio'] = (
+            totales_con_variaciones['ticket_promedio']
+        )
+        totales_con_variaciones['pax_promedio'] = (
             round(ventas_total_calc / pax_total_calc, 2) if pax_total_calc > 0 else 0
         )
         totales_con_variaciones['proyeccion'] = (
@@ -1035,8 +1044,9 @@ async def comercial_v2_dashboard(
             tickets_u = float(unidad_calc.get('tickets_total') or 0)
             pax_u = float(unidad_calc.get('pax_total') or 0)
 
-            unidad_calc['cheque_promedio'] = round(ventas_u / tickets_u, 2) if tickets_u > 0 else 0
-            unidad_calc['ticket_promedio'] = round(ventas_u / pax_u, 2) if pax_u > 0 else 0
+            unidad_calc['ticket_promedio'] = round(ventas_u / tickets_u, 2) if tickets_u > 0 else 0
+            unidad_calc['cheque_promedio'] = unidad_calc['ticket_promedio']
+            unidad_calc['pax_promedio'] = round(ventas_u / pax_u, 2) if pax_u > 0 else 0
             unidad_calc['proyeccion'] = (
                 round((ventas_u / dias_transcurridos_calc) * dias_periodo_calc, 2)
                 if dias_transcurridos_calc > 0 else 0
@@ -1057,6 +1067,7 @@ async def comercial_v2_dashboard(
                 "total_dias": totales_con_variaciones.get('total_dias', 0),
                 "cheque_promedio": totales_con_variaciones.get('cheque_promedio', 0),
                 "ticket_promedio": totales_con_variaciones.get('ticket_promedio', 0),
+                "pax_promedio": totales_con_variaciones.get('pax_promedio', 0),
                 "proyeccion": totales_con_variaciones.get('proyeccion', 0),
                 # FASE 2: Variaciones en totales
                 "ventas_ant": totales_con_variaciones.get('ventas_ant'),
@@ -1086,6 +1097,7 @@ async def comercial_v2_dashboard(
                     "pax_total": u['pax_total'],
                     "cheque_promedio": u.get('cheque_promedio'),
                     "ticket_promedio": u.get('ticket_promedio'),
+                    "pax_promedio": u.get('pax_promedio'),
                     "dias": u['dias'],
                     "fecha_min": u['fecha_min'],
                     "fecha_max": u['fecha_max'],
@@ -1374,46 +1386,123 @@ async def comercial_v2_ventas_dia(
         if not unidades_permitidas:
             raise HTTPException(status_code=403, detail="No tiene unidades asignadas")
 
-        # Obtener datos de ventas desde EDARSAHUB SQL
-        # Si no se recibe fecha, calcular FechaOperacion por unidad desde turnos configurados.
+        # Obtener datos exclusivamente desde EDARSAHUB SQL.
+        # Sin fecha explicita:
+        # 1. Motor operativo configurado.
+        # 2. Ultima fecha_operacion almacenada en SQL.
+        # Nunca usar fecha civil como fallback.
         datos = []
+        fechas_consultadas = set()
+        unidades_sin_fecha_operativa = []
 
         if fecha is None:
             from collections import defaultdict
             from core.utils.operational_window import get_fecha_operacion_now
 
             unidades_por_fecha_operativa = defaultdict(list)
+            ultimas_fechas_sql = get_ultimas_fechas_operacion_abiertas(
+                unidades_permitidas
+            )
 
             for unidad_id in unidades_permitidas:
+                unidad_codigo = (
+                    _resolver_unidad_codigo_runtime(unidad_id)
+                    or _cv2_resolver_unidad_codigo(unidad_id)
+                    or str(unidad_id).strip()
+                )
+
+                codigo_canonico = str(
+                    unidad_codigo or ""
+                ).strip().upper()
+
+                codigo_original = str(
+                    unidad_id or ""
+                ).strip().upper()
+
                 try:
                     fecha_op = get_fecha_operacion_now(unidad_id)
                 except Exception as exc:
-                    logger.warning(
-                        "[V2-VENTAS-DIA] Fallback FechaOperacion civil para unidad=%s: %s",
-                        unidad_id,
-                        exc
+                    fecha_op = (
+                        ultimas_fechas_sql.get(codigo_canonico)
+                        or ultimas_fechas_sql.get(codigo_original)
                     )
-                    fecha_op = datetime.now(timezone.utc).date()
 
-                unidades_por_fecha_operativa[fecha_op].append(unidad_id)
+                    if fecha_op is not None:
+                        logger.warning(
+                            "[V2-VENTAS-DIA] Motor FechaOperacion fallo; "
+                            "se usa ultima fecha SQL. unidad=%s "
+                            "codigo=%s fecha_operacion=%s error=%s",
+                            unidad_id,
+                            codigo_canonico,
+                            fecha_op,
+                            exc,
+                        )
+                    else:
+                        logger.error(
+                            "[V2-VENTAS-DIA] FechaOperacion no disponible. "
+                            "unidad=%s codigo=%s error=%s",
+                            unidad_id,
+                            codigo_canonico,
+                            exc,
+                        )
+                        unidades_sin_fecha_operativa.append(
+                            codigo_canonico or codigo_original
+                        )
+                        continue
 
-            fecha = max(unidades_por_fecha_operativa.keys()) if unidades_por_fecha_operativa else datetime.now(timezone.utc).date()
+                if isinstance(fecha_op, datetime):
+                    fecha_op = fecha_op.date()
 
-            for fecha_op, unidades_fecha in sorted(unidades_por_fecha_operativa.items()):
-                logger.info(
-                    "[V2-VENTAS-DIA] Consultando FechaOperacion=%s unidades=%s",
-                    fecha_op,
-                    unidades_fecha
+                unidades_por_fecha_operativa[fecha_op].append(
+                    unidad_id
                 )
-                datos.extend(get_ventas_dia_abiertas(fecha_op, unidades_fecha))
+                fechas_consultadas.add(fecha_op)
+
+            if not unidades_por_fecha_operativa:
+                raise HTTPException(
+                    status_code=503,
+                    detail={
+                        "error": "FECHA_OPERACION_NO_DISPONIBLE",
+                        "message": (
+                            "No fue posible resolver fecha_operacion "
+                            "para ninguna unidad permitida"
+                        ),
+                        "unidades_sin_fecha_operativa": (
+                            unidades_sin_fecha_operativa
+                        ),
+                    },
+                )
+
+            for fecha_op, unidades_fecha in sorted(
+                unidades_por_fecha_operativa.items()
+            ):
+                logger.info(
+                    "[V2-VENTAS-DIA] Consultando "
+                    "FechaOperacion=%s unidades=%s",
+                    fecha_op,
+                    unidades_fecha,
+                )
+                datos.extend(
+                    get_ventas_dia_abiertas(
+                        fecha_op,
+                        unidades_fecha,
+                    )
+                )
         else:
-            datos = get_ventas_dia_abiertas(fecha, unidades_permitidas)
+            fechas_consultadas.add(fecha)
+            datos = get_ventas_dia_abiertas(
+                fecha,
+                unidades_permitidas,
+            )
 
         # Hora actual para calcular frescura
         ahora = datetime.now(timezone.utc)
 
-        # Procesar y enriquecer datos
+        # Procesar y enriquecer datos.
+        # Cada fila conserva la fecha_operacion devuelta por SQL.
         datos_enriquecidos = []
+        fechas_operacion_datos = set()
+
         for d in datos:
             # Calcular minutos desde última actualización
             snapshot = d.get('snapshot_timestamp')
@@ -1439,19 +1528,68 @@ async def comercial_v2_ventas_dia(
             else:
                 dato_vencido = True
 
+            raw_fecha_fila = d.get("fecha_operacion")
+
+            try:
+                if isinstance(raw_fecha_fila, datetime):
+                    fecha_fila = raw_fecha_fila.date()
+                elif isinstance(raw_fecha_fila, date):
+                    fecha_fila = raw_fecha_fila
+                elif raw_fecha_fila not in (None, ""):
+                    fecha_fila = date.fromisoformat(
+                        str(raw_fecha_fila).strip()[:10]
+                    )
+                else:
+                    raise ValueError("fecha_operacion ausente")
+            except Exception as exc:
+                logger.error(
+                    "[V2-VENTAS-DIA] fecha_operacion SQL invalida. "
+                    "unidad=%s valor=%r error=%s",
+                    d.get("unidad_negocio_id")
+                    or d.get("unidad_negocio_codigo")
+                    or d.get("unidad_negocio_pk"),
+                    raw_fecha_fila,
+                    exc,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail={
+                        "error": "FECHA_OPERACION_INVALIDA_EN_SQL",
+                        "unidad": (
+                            d.get("unidad_negocio_id")
+                            or d.get("unidad_negocio_codigo")
+                            or d.get("unidad_negocio_pk")
+                        ),
+                    },
+                )
+
+            fechas_operacion_datos.add(fecha_fila)
+
             total_dia = float(d.get('total_estimado_dia') or 0)
             tickets_dia = int(d.get('tickets_abiertos') or 0) + int(d.get('tickets_cerrados_dia') or 0)
             pax_dia = int(d.get('pax_abiertos') or 0) + int(d.get('pax_cerrados_dia') or 0)
-            cheque_promedio = round(total_dia / tickets_dia, 2) if tickets_dia > 0 else 0
-            ticket_promedio = round(total_dia / pax_dia, 2) if pax_dia > 0 else 0
+            ticket_promedio = round(total_dia / tickets_dia, 2) if tickets_dia > 0 else 0
+            cheque_promedio = ticket_promedio
+            pax_promedio = round(total_dia / pax_dia, 2) if pax_dia > 0 else 0
 
-            # Obtener comparativos diarios desde EDARSAHUB SQL
-            unidad_id = d['unidad_negocio_pk']
-            comparativos = get_comparativos_diarios(unidad_id, fecha)
+            # Obtener comparativos usando el codigo operativo almacenado
+            # en unidad_negocio_id de las tablas comerciales.
+            unidad_codigo = (
+                d.get("unidad_negocio_codigo")
+                or d.get("unidad_negocio_id")
+                or d["unidad_negocio_pk"]
+            )
+            comparativos = get_comparativos_diarios(
+                unidad_codigo,
+                fecha_fila,
+            )
 
             datos_enriquecidos.append({
-                "unidad_negocio_pk": d['unidad_negocio_pk'],
-                "unidad_negocio_nombre": d['unidad_negocio_nombre'],
+                "unidad_negocio_pk": d["unidad_negocio_pk"],
+                "unidad_negocio_codigo": unidad_codigo,
+                "unidad_negocio_id": unidad_codigo,
+                "unidad_negocio_nombre": d["unidad_negocio_nombre"],
+                "fecha_operacion": fecha_fila.isoformat(),
                 "server_id": d.get('server_id'),
                 "sistema_origen": d['sistema_origen'],
                 "ventas_abiertas": float(d.get('ventas_abiertas') or 0),
@@ -1463,6 +1601,7 @@ async def comercial_v2_ventas_dia(
                 "total_estimado_dia": total_dia,
                 "cheque_promedio": cheque_promedio,
                 "ticket_promedio": ticket_promedio,
+                "pax_promedio": pax_promedio,
                 # Comparativos diarios (de EDARSAHUB SQL)
                 "dia_anterior_ventas": comparativos['dia_anterior']['ventas'],
                 "dia_anterior_pax": comparativos['dia_anterior']['pax'],
@@ -1504,14 +1643,48 @@ async def comercial_v2_ventas_dia(
         total_estimado = sum(d['total_estimado_dia'] for d in datos_ordenados)
         total_tickets = sum(d['tickets_abiertos'] + d['tickets_cerrados_dia'] for d in datos_ordenados)
         total_pax = sum(d['pax_abiertos'] + d['pax_cerrados_dia'] for d in datos_ordenados)
-        cheque_promedio_total = round(total_estimado / total_tickets, 2) if total_tickets > 0 else 0
-        ticket_promedio_total = round(total_estimado / total_pax, 2) if total_pax > 0 else 0
+        ticket_promedio_total = round(total_estimado / total_tickets, 2) if total_tickets > 0 else 0
+        cheque_promedio_total = ticket_promedio_total
+        pax_promedio_total = round(total_estimado / total_pax, 2) if total_pax > 0 else 0
+
+        fechas_operacion_efectivas = sorted(
+            fechas_operacion_datos or fechas_consultadas
+        )
+
+        if not fechas_operacion_efectivas:
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "error": "FECHA_OPERACION_NO_DISPONIBLE",
+                    "message": (
+                        "No existe una fecha_operacion efectiva "
+                        "para construir la respuesta"
+                    ),
+                    "unidades_sin_fecha_operativa": (
+                        unidades_sin_fecha_operativa
+                    ),
+                },
+            )
+
+        fecha_referencia = max(fechas_operacion_efectivas)
+
+        fechas_operacion_iso = [
+            fecha_item.isoformat()
+            for fecha_item in fechas_operacion_efectivas
+        ]
+
+        fecha_operacion_multiple = (
+            len(fechas_operacion_efectivas) > 1
+        )
 
         return VentasDiaResponse(
             success=True,
             data=serialize_response({
+                "fecha_operacion": fecha_referencia.isoformat(),
+                "fechas_operacion": fechas_operacion_iso,
+                "fecha_operacion_multiple": fecha_operacion_multiple,
                 "resumen": {
-                    "fecha": fecha.isoformat(),
+                    "fecha": fecha_referencia.isoformat(),
                     "total_ventas_abiertas": total_ventas_abiertas,
                     "total_ventas_cerradas_dia": total_ventas_cerradas,
                     "total_estimado_dia": total_estimado,
@@ -1519,6 +1692,7 @@ async def comercial_v2_ventas_dia(
                     "total_pax": total_pax,
                     "cheque_promedio": cheque_promedio_total,
                     "ticket_promedio": ticket_promedio_total,
+                    "pax_promedio": pax_promedio_total,
                     "unidades_con_datos": len(datos_ordenados),
                     "unidades_dato_vencido": sum(1 for d in datos_ordenados if d['dato_vencido'])
                 },
@@ -1527,10 +1701,16 @@ async def comercial_v2_ventas_dia(
                     "fuente": "EDARSAHUB_SQL",
                     "tabla": "Comercial_Ventas_Dia_Abiertas_v2",
                     "frecuencia_sync": "5 minutos",
-                    "ordenamiento": "venta_desc"
+                    "ordenamiento": "venta_desc",
+                    "criterio_fecha_global": (
+                        "max_fecha_operacion_para_compatibilidad"
+                    ),
+                    "unidades_sin_fecha_operativa": (
+                        unidades_sin_fecha_operativa
+                    )
                 }
             }),
-            fecha=fecha.isoformat(),
+            fecha=fecha_referencia.isoformat(),
             metadata=MetadataV2()
         )
 

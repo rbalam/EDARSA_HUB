@@ -30,7 +30,8 @@ export default function AnalisisPAXPage({ unidadSeleccionada }) {
     setResumen({
       paxTotal: pax,
       propinaTotal: propinas,
-      ticketPromedio: Number(k.cheque_promedio || 0),
+      chequePromedio: Number(k.cheque_promedio || 0),
+      paxPromedio: Number(k.pax_promedio || 0),
       chequesTotal: cheques,
       propinaPorPax: pax > 0 ? propinas / pax : 0,
       paxPorCheque: cheques > 0 ? pax / cheques : 0,
@@ -41,7 +42,8 @@ export default function AnalisisPAXPage({ unidadSeleccionada }) {
       cheques: Number(u.tickets || 0),
       propina: Number(u.propinas || 0),
       ventas: Number(u.ventas || 0),
-      ticketPromedio: Number(u.tickets) > 0 ? Number(u.ventas || 0) / Number(u.tickets) : 0,
+      chequePromedio: Number(u.cheque_promedio || 0),
+      paxPromedio: Number(u.pax_promedio || 0),
     })));
     setEstado(ESTADO.OK);
   };
@@ -77,7 +79,7 @@ export default function AnalisisPAXPage({ unidadSeleccionada }) {
         </div>
         <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/30 rounded-xl p-5">
           <Receipt className="h-8 w-8 text-purple-400 mb-3" />
-          <p className="text-3xl font-bold text-white">${resumen.ticketPromedio.toLocaleString('es-MX', { maximumFractionDigits: 0 })}</p>
+          <p className="text-3xl font-bold text-white">${resumen.chequePromedio.toLocaleString('es-MX', { maximumFractionDigits: 0 })}</p>
           <p className="text-sm text-slate-400 mt-1">Cheque Promedio</p>
         </div>
         <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/30 rounded-xl p-5">
@@ -112,7 +114,7 @@ export default function AnalisisPAXPage({ unidadSeleccionada }) {
                   </div>
                   <div className="flex justify-between mt-1 text-xs text-slate-500">
                     <span>Propina: {formatMoney(u.propina)}</span>
-                    <span>Cheque prom.: ${u.ticketPromedio.toLocaleString('es-MX', { maximumFractionDigits: 0 })}</span>
+                    <span>Cheque prom.: ${u.chequePromedio.toLocaleString('es-MX', { maximumFractionDigits: 0 })}</span>
                   </div>
                 </div>
               );
@@ -146,7 +148,7 @@ export default function AnalisisPAXPage({ unidadSeleccionada }) {
                   <td className="px-4 py-3 text-right text-slate-300">{u.cheques > 0 ? (u.pax / u.cheques).toFixed(2) : '—'}</td>
                   <td className="px-4 py-3 text-right text-emerald-400">{formatMoney(u.propina)}</td>
                   <td className="px-4 py-3 text-right text-amber-400">${u.pax > 0 ? (u.propina / u.pax).toFixed(2) : '0.00'}</td>
-                  <td className="px-4 py-3 text-right text-purple-400">${u.ticketPromedio.toLocaleString('es-MX', { maximumFractionDigits: 0 })}</td>
+                  <td className="px-4 py-3 text-right text-purple-400">${u.chequePromedio.toLocaleString('es-MX', { maximumFractionDigits: 0 })}</td>
                 </tr>
               ))}
             </tbody>
@@ -158,7 +160,7 @@ export default function AnalisisPAXPage({ unidadSeleccionada }) {
                 <td className="px-4 py-3 text-right text-white font-bold">{resumen.paxPorCheque.toFixed(2)}</td>
                 <td className="px-4 py-3 text-right text-emerald-400 font-bold">{formatMoney(resumen.propinaTotal)}</td>
                 <td className="px-4 py-3 text-right text-amber-400 font-bold">${resumen.propinaPorPax.toFixed(2)}</td>
-                <td className="px-4 py-3 text-right text-purple-400 font-bold">${resumen.ticketPromedio.toLocaleString('es-MX', { maximumFractionDigits: 0 })}</td>
+                <td className="px-4 py-3 text-right text-purple-400 font-bold">${resumen.chequePromedio.toLocaleString('es-MX', { maximumFractionDigits: 0 })}</td>
               </tr>
             </tfoot>
           </table>

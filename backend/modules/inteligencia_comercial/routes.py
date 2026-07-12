@@ -266,12 +266,13 @@ def _normalizar_resumen_kpi_portal(row):
     base.update(row)
 
     return {
-        "ventas_totales": round(_kpi_float(base, "ventas", "ventas_sin_propina", "ventas_netas", "ventas_totales"), 2),
+        "ventas_totales": round(_kpi_float(base, "ventas_total", "ventas", "ventas_totales"), 2),
         "pax_total": _kpi_int(base, "pax", "pax_total"),
         "cheques_total": _kpi_int(base, "cheques", "tickets", "tickets_total", "cheques_total"),
         "propinas_total": round(_kpi_float(base, "propinas", "propinas_total"), 2),
-        "cheque_promedio": round(_kpi_float(base, "cheque_promedio"), 2),
-        "ticket_promedio": round(_kpi_float(base, "ticket_promedio", "consumo_promedio_pax"), 2),
+        "ticket_promedio": round(_kpi_float(base, "ticket_promedio", "cheque_promedio"), 2),
+        "cheque_promedio": round(_kpi_float(base, "cheque_promedio", "ticket_promedio"), 2),
+        "pax_promedio": round(_kpi_float(base, "pax_promedio", "consumo_promedio_pax"), 2),
     }
 
 
@@ -281,8 +282,9 @@ def _kpi_cero_portal():
         "pax_total": 0,
         "cheques_total": 0,
         "propinas_total": 0.0,
-        "cheque_promedio": 0.0,
         "ticket_promedio": 0.0,
+        "cheque_promedio": 0.0,
+        "pax_promedio": 0.0,
     }
 
 
@@ -316,8 +318,8 @@ def _resumen_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db=None):
 
     Dashboard IA ancla el periodo con vw_Comercial_KPIs_Diarios_v2_Runtime.
     El resumen debe leer la misma fuente para no perder el último día disponible.
-    Ventas del portal = ventas_sin_propina, venta comercial con IVA sin propina,
-    manteniendo propinas_total separado.
+    Ventas visibles del portal = ventas_total con IVA incluido.
+    ventas_sin_propina y propinas_total permanecen separados.
     """
     where = [
         f"fecha_operacion >= '{_sql_literal(fecha_inicio)}'",
@@ -342,16 +344,20 @@ def _resumen_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db=None):
 
     sql = f"""
         SELECT
-            SUM(ISNULL(ventas_sin_propina, 0)) AS ventas_totales,
+            SUM(ISNULL(ventas_total, 0)) AS ventas_totales,
+            SUM(ISNULL(ventas_sin_propina, 0)) AS ventas_sin_propina,
             SUM(ISNULL(pax_total, 0)) AS pax_total,
             SUM(ISNULL(tickets_total, 0)) AS cheques_total,
             SUM(ISNULL(propinas_total, 0)) AS propinas_total,
             CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
-                THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(tickets_total, 0))
+                THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(tickets_total, 0))
+                ELSE 0 END AS ticket_promedio,
+            CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
+                THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(tickets_total, 0))
                 ELSE 0 END AS cheque_promedio,
             CASE WHEN SUM(ISNULL(pax_total, 0)) > 0
-                THEN SUM(ISNULL(ventas_sin_propina, 0)) / SUM(ISNULL(pax_total, 0))
-                ELSE 0 END AS ticket_promedio
+                THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(pax_total, 0))
+                ELSE 0 END AS pax_promedio
         FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime
         WHERE {' AND '.join(where)}
     """
@@ -365,8 +371,9 @@ def _resumen_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db=None):
         "pax_total": _kpi_int(row, "pax_total"),
         "cheques_total": _kpi_int(row, "cheques_total"),
         "propinas_total": round(_kpi_float(row, "propinas_total"), 2),
-        "cheque_promedio": round(_kpi_float(row, "cheque_promedio"), 2),
         "ticket_promedio": round(_kpi_float(row, "ticket_promedio"), 2),
+        "cheque_promedio": round(_kpi_float(row, "cheque_promedio"), 2),
+        "pax_promedio": round(_kpi_float(row, "pax_promedio"), 2),
     }
 
 
@@ -417,15 +424,25 @@ def _ventas_por_unidad_canonico_portal(fecha_inicio, fecha_fin):
     sql = f"""
         SELECT
             unidad_negocio_nombre AS unidad,
-            SUM(ventas_sin_propina) AS ventas,
+            SUM(ventas_total) AS ventas,
+            SUM(ventas_sin_propina) AS ventas_sin_propina,
             SUM(pax_total) AS pax_total,
             SUM(tickets_total) AS tickets,
-            SUM(propinas_total) AS propinas
+            SUM(propinas_total) AS propinas,
+            CASE WHEN SUM(tickets_total) > 0
+                THEN SUM(ventas_total) / SUM(tickets_total)
+                ELSE 0 END AS ticket_promedio,
+            CASE WHEN SUM(tickets_total) > 0
+                THEN SUM(ventas_total) / SUM(tickets_total)
+                ELSE 0 END AS cheque_promedio,
+            CASE WHEN SUM(pax_total) > 0
+                THEN SUM(ventas_total) / SUM(pax_total)
+                ELSE 0 END AS pax_promedio
         FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime
         WHERE fecha_operacion >= '{fecha_inicio}'
           AND fecha_operacion < DATEADD(day, 1, CAST('{fecha_fin}' AS date))
         GROUP BY unidad_negocio_nombre
-        ORDER BY SUM(ventas_sin_propina) DESC
+        ORDER BY SUM(ventas_total) DESC
     """
     return execute_query(sql)
 
@@ -947,10 +964,16 @@ def _real_horario(unidad_db, fecha_inicio, fecha_fin):
     for r in execute_query(sql):
         ventas = round(float(r["ventas"] or 0), 2)
         cheques = int(r["cheques"] or 0)
+        pax = int(r["pax"] or 0)
+        ticket_promedio = round(ventas / cheques, 2) if cheques else 0
+        pax_promedio = round(ventas / pax, 2) if pax else 0
+
         out.append({"horario": r["horario"], "ventas": ventas,
-                    "pax": int(r["pax"] or 0), "cheques": cheques,
+                    "pax": pax, "cheques": cheques,
                     "propinas": round(float(r["propinas"] or 0), 2),
-                    "ticket_promedio": round(ventas / pax, 2) if pax else 0,
+                    "ticket_promedio": ticket_promedio,
+                    "cheque_promedio": ticket_promedio,
+                    "pax_promedio": pax_promedio,
                     "rango": rango_map.get(r["horario"], "")})
     out.sort(key=lambda x: orden_map.get(x["horario"], 9))
     return out
@@ -1037,8 +1060,9 @@ async def get_dashboard_data(
                 "pax_total": int(kpi_data.get("pax_total", 0)),
                 "cheques_total": int(kpi_data.get("cheques_total", 0)),
                 "propinas_total": round(float(kpi_data.get("propinas_total", 0)), 2),
+                "ticket_promedio": round(float(kpi_data.get("ticket_promedio", 0)), 2),
                 "cheque_promedio": round(float(kpi_data.get("cheque_promedio", 0)), 2),
-                "ticket_promedio": round(float(kpi_data.get("ticket_promedio", 0)), 2)
+                "pax_promedio": round(float(kpi_data.get("pax_promedio", 0)), 2)
             },
             "ventas_por_unidad": [
                 {
@@ -1047,6 +1071,9 @@ async def get_dashboard_data(
                     "pax": int(u["pax_total"] or 0),
                     "tickets": int(u["tickets"] or 0),
                     "propinas": round(float(u["propinas"] or 0), 2),
+                    "ticket_promedio": round(float(u["ticket_promedio"] or 0), 2),
+                    "cheque_promedio": round(float(u["cheque_promedio"] or 0), 2),
+                    "pax_promedio": round(float(u["pax_promedio"] or 0), 2),
                     "participacion": round((float(u["ventas"] or 0) / total_ventas) * 100, 2)
                 }
                 for u in ventas_por_unidad
@@ -1072,8 +1099,9 @@ async def get_dashboard_data(
                 "pax_total": 0,
                 "cheques_total": 0,
                 "propinas_total": 0,
+                "ticket_promedio": 0,
                 "cheque_promedio": 0,
-                "ticket_promedio": 0
+                "pax_promedio": 0
             }
         }
 

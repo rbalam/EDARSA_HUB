@@ -568,6 +568,51 @@ def debug_operational_window(unidad_negocio_pk: str):
     return resultado
 
 
+
+
+def get_operational_datetime_range_for_fecha_operacion(
+    unidad_negocio_pk: str,
+    fecha_operacion: date
+) -> Tuple[datetime, datetime, Dict[str, Any]]:
+    """
+    Retorna el rango datetime canónico completo para consultar POS por FechaOperacion.
+
+    Usa todos los turnos activos con aplica_ventas_dia=1 desde
+    Sistema_TurnosOperativosUnidad. No usa día civil ni Mongo.
+    """
+    turnos = _get_turnos_unidad(unidad_negocio_pk)
+    if not turnos:
+        raise RuntimeError(
+            f"Sin turnos operativos activos para unidad {unidad_negocio_pk}"
+        )
+
+    ordenados = sorted(turnos, key=lambda t: int(t.get("orden") or 0))
+    primer_turno = ordenados[0]
+    ultimo_turno = ordenados[-1]
+
+    hora_inicio = primer_turno["hora_inicio"]
+    hora_fin = ultimo_turno["hora_fin"]
+
+    inicio = datetime.combine(fecha_operacion, hora_inicio)
+    fin = datetime.combine(fecha_operacion, hora_fin)
+
+    if bool(ultimo_turno.get("cruza_medianoche")) or fin <= inicio:
+        fin = fin + timedelta(days=1)
+
+    metadata = {
+        "unidad_negocio_pk": unidad_negocio_pk,
+        "turno_inicio_codigo": primer_turno.get("turno_codigo"),
+        "turno_fin_codigo": ultimo_turno.get("turno_codigo"),
+        "hora_inicio": hora_inicio,
+        "hora_fin": hora_fin,
+        "cruza_medianoche": bool(ultimo_turno.get("cruza_medianoche")) or fin.date() > fecha_operacion,
+        "turnos_count": len(ordenados),
+        "turnos": ordenados,
+    }
+
+    return inicio, fin, metadata
+
+
 # =============================================================================
 # FUNCIONES LEGACY PARA COMPATIBILIDAD
 # =============================================================================

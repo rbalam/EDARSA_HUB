@@ -138,7 +138,8 @@ def get_server_connection_config(server_id: str) -> Optional[Dict[str, Any]]:
 
 def execute_query_on_server(
     server_config: Dict[str, Any],
-    query: str
+    query: str,
+    context: str = "web",
 ) -> Tuple[List[Dict], ConnectionStatus]:
     """
     Ejecuta una query en un servidor de origen (SoftRestaurant/MPRO).
@@ -167,7 +168,8 @@ def execute_query_on_server(
             database,
             username,
             password,
-            query
+            query,
+            context=context,
         )
         
         # execute_sql_query retorna [] tanto para error como para consulta vacía.
@@ -182,7 +184,15 @@ def execute_query_on_server(
         # Si no hay resultados, validamos con una query simple
         # para diferenciar "sin datos" de "sin conexión"
         test_query = "SELECT 1 AS test"
-        test_result = execute_sql_query(host, port, database, username, password, test_query)
+        test_result = execute_sql_query(
+            host,
+            port,
+            database,
+            username,
+            password,
+            test_query,
+            context=context,
+        )
         
         if test_result:
             return [], ConnectionStatus.ONLINE  # Conexión OK, solo no hay datos
@@ -441,7 +451,7 @@ def _recalcular_derivados_ventas_cerradas(row):
 
 def _agrupar_ventas_cerradas_por_fecha_operacion(rows, config, fecha_inicio=None, fecha_fin=None):
     from collections import OrderedDict
-    from backend.core.utils.operational_window import get_fecha_operacion
+    from core.utils.operational_window import get_fecha_operacion
 
     unidad_negocio_pk = _resolver_unidad_negocio_pk_from_config(config)
 

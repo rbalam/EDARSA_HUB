@@ -1,6 +1,6 @@
 /**
  * Dashboard IA - Vista principal con KPIs canónicos (datos reales, sin mock).
- * KPIs: Ventas, Ticket Promedio (ventas÷PAX) y Cheque Promedio (ventas÷cheques)
+ * KPIs: Ventas, PAX Promedio (ventas÷PAX) y Cheque Promedio (ventas÷cheques)
  * en la fila superior. Drill-down a tickets y export Excel/PDF.
  */
 import React, { useState, useEffect, useRef } from 'react';
@@ -81,7 +81,7 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
       chequesTotal: Number(kpis.cheques_total || 0),
       propinaTotal: Number(kpis.propinas_total || 0),
       chequePromedio: Number(kpis.cheque_promedio || 0),
-      ticketPromedio: Number(kpis.ticket_promedio || 0),
+      paxPromedio: Number(kpis.pax_promedio || 0),
       trends: result.kpis_trends || {},
       periodoLabel: result.filtros?.periodo_label || '',
       ventasHorario: result.ventas_horario || [],
@@ -107,7 +107,7 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
   // Fila superior: Ventas + los 2 promedios canónicos (lo que pidió el usuario arriba).
   const kpiPrincipales = [
     { title: 'Ventas Totales', value: formatMoney(data.ventasTotales), icon: DollarSign, color: 'emerald', trend: data.trends?.ventas_totales },
-    { title: 'Ticket Promedio', sub: 'Ventas ÷ PAX', value: money2(data.ticketPromedio), icon: Users, color: 'cyan', trend: null },
+    { title: 'PAX Promedio', sub: 'Ventas ÷ PAX', value: money2(data.paxPromedio), icon: Users, color: 'cyan', trend: null },
     { title: 'Cheque Promedio', sub: 'Ventas ÷ cheques', value: money2(data.chequePromedio), icon: Receipt, color: 'violet', trend: null },
   ];
   const kpiSecundarios = [
@@ -119,7 +119,7 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
   // Datos para export del resumen
   const exportRows = [
     { kpi: 'Ventas Totales', valor: data.ventasTotales },
-    { kpi: 'Ticket Promedio (ventas/PAX)', valor: data.ticketPromedio },
+    { kpi: 'PAX Promedio (ventas/PAX)', valor: data.paxPromedio },
     { kpi: 'Cheque Promedio (ventas/cheques)', valor: data.chequePromedio },
     { kpi: 'PAX Total', valor: data.paxTotal },
     { kpi: 'Cheques Emitidos', valor: data.chequesTotal },

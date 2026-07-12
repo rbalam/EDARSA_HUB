@@ -684,7 +684,22 @@ def ejecutar_backfill(
             if dry_run:
                 resultados.append(_backfill_ventas(cur, server_id, fecha_inicio, fecha_fin, dry_run))
             else:
-                resultados.append(_backfill_ventas_real(cur, server_id, fecha_inicio, fecha_fin, dry_run))
+                resultados.append({
+                    "success": True,
+                    "skipped": True,
+                    "legacy_writer_disabled": True,
+                    "status": "LEGACY_WRITER_DISABLED",
+                    "modulo": "VENTAS",
+                    "mode": "BLOCKED",
+                    "server_id": server_id,
+                    "insertados": 0,
+                    "actualizados": 0,
+                    "message": (
+                        "VENTAS_REAL legacy deshabilitado. "
+                        "Use sync_comercial_v2_job -> sync_comercial_edarsahub "
+                        "-> mappers -> upsert_kpi_diario."
+                    ),
+                })
         elif modulo == "VENTAS_HORA":
             resultados.append(_backfill_ventas_hora(cur, server_id, fecha_inicio, fecha_fin, dry_run))
         elif modulo == "PRODUCTOS":
@@ -796,9 +811,47 @@ def _get_source_connection_config(cur, server_id: str):
 def _backfill_ventas_real(cur, server_id: str, fecha_inicio: str, fecha_fin: str, dry_run: bool):
     """
     Backfill real de ventas.
-    Detecta faltantes/cero en EDARSAHUB.
-    Si existe fuente autorizada y trae datos, actualiza Comercial_KPIs_Diarios_v2.
+
+    DESHABILITADO:
+    Esta ruta legacy no puede consultar POS ni escribir directamente
+    Comercial_KPIs_Diarios_v2. El unico escritor autorizado es:
+
+    sync_comercial_v2_job
+    -> sync_comercial_edarsahub
+    -> mappers
+    -> upsert_kpi_diario
     """
+    blocked_reason = (
+        "LEGACY_WRITER_DISABLED: backfill_corporativo VENTAS_REAL no puede "
+        "consultar POS ni escribir Comercial_KPIs_Diarios_v2. "
+        "Use sync_comercial_v2_job -> sync_comercial_edarsahub "
+        "-> mappers -> upsert_kpi_diario."
+    )
+
+    _log_backfill(
+        cur,
+        server_id,
+        "VENTAS_REAL",
+        fecha_inicio,
+        fecha_fin,
+        "SKIPPED",
+        0,
+        blocked_reason,
+    )
+
+    return {
+        "success": True,
+        "skipped": True,
+        "legacy_writer_disabled": True,
+        "status": "LEGACY_WRITER_DISABLED",
+        "modulo": "VENTAS",
+        "mode": "DRY_RUN" if dry_run else "BLOCKED",
+        "server_id": server_id,
+        "insertados": 0,
+        "actualizados": 0,
+        "message": blocked_reason,
+    }
+
     import pymssql
     from datetime import datetime
 

@@ -2289,12 +2289,11 @@ def _sql_insert_script_log(log_data: Dict) -> None:
         cur = conn.cursor(as_dict=True)
         cur.execute("""
             INSERT INTO dbo.ConsultasSQL_EjecucionesLog (
-                EjecucionID, ConsultaID, ServidorID, UsuarioID, FechaEjecucion,
+                ConsultaID, ServidorID, UsuarioID, FechaEjecucion,
                 ParametrosJSON, ConsultaSQLEjecutada, Estado, RegistrosDevueltos, ErrorMensaje
             )
-            VALUES (%s, 0, TRY_CONVERT(uniqueidentifier,%s), %s, GETDATE(), %s, %s, %s, %s, %s)
+            VALUES (0, TRY_CONVERT(uniqueidentifier,%s), %s, GETDATE(), %s, %s, %s, %s, %s)
         """, (
-            _sql_next_id(cur, "ConsultasSQL_EjecucionesLog", "EjecucionID"),
             log_data.get("server_id"),
             log_data.get("usuario") or log_data.get("usuario_app") or "sistema",
             json.dumps(log_data, default=str, ensure_ascii=False),

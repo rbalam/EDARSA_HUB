@@ -76,10 +76,12 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
 
     // Calcular promedios
     // CORRECCIÓN GLOBAL: Nomenclatura correcta
-    // cheque_promedio = ventas / cheques (tickets_total)
-    // ticket_promedio = ventas / pax (pax_total)
-    const chequePromedio = Number(totales.cheque_promedio || 0);
-    const ticketPromedio = Number(totales.ticket_promedio || 0);
+    // ticket_promedio / cheque_promedio = ventas / tickets
+    // pax_promedio = ventas / pax
+    const chequePromedio = Number(
+      totales.cheque_promedio ?? totales.ticket_promedio ?? 0
+    );
+    const paxPromedio = Number(totales.pax_promedio || 0);
 
     // Transformar unidades al formato v1
     // =========================================================================
@@ -111,10 +113,10 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       pax: u.pax_total || 0,
       cheques: u.tickets_total || 0,
       // CORRECCIÓN GLOBAL: Nomenclatura correcta de KPIs
-      // cheque_promedio = ventas / cheques
-      // ticket_promedio = ventas / pax
-      cheque_promedio: u.cheque_promedio ?? 0,
+      // cheque_promedio es alias compatible de ticket_promedio
+      cheque_promedio: u.cheque_promedio ?? u.ticket_promedio ?? 0,
       ticket_promedio: u.ticket_promedio ?? 0,
+      pax_promedio: u.pax_promedio ?? 0,
       // ACTUALIZADO: Usar días GLOBALES (FechaOperacionActual.day), NO u.dias
       proyeccion: u.proyeccion ?? calcularProyeccion(u.ventas_total || 0),
       // FASE 3: Variaciones vienen directamente de V2 (EDARSAHUB)
@@ -162,7 +164,8 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
         cheques: totales.tickets_total || 0,
         // CORRECCIÓN GLOBAL: Nomenclatura correcta de promedios
         cheque_promedio: chequePromedio,
-        ticket_promedio: ticketPromedio,
+        ticket_promedio: chequePromedio,
+        pax_promedio: paxPromedio,
         proyeccion: totales.proyeccion ?? calcularProyeccion(totales.ventas_total || 0),
         // CORRECCIÓN: Usar valores de backend si existen, si no null (no 0 falso)
         var_vs_mes_ant: totales.var_vs_mes_ant !== undefined ? totales.var_vs_mes_ant : null,
@@ -437,7 +440,7 @@ const UnidadCard = ({ unidad, onClick, esMultiMes = false, modoVentasDia = false
               {/* Columna izquierda: PAX Promedio */}
               <div>
                 <span className="text-zinc-500">PAX Prom.</span>
-                <p className="font-semibold">{unidad.ticket_promedio ? formatCurrency(unidad.ticket_promedio) : '-'}</p>
+                <p className="font-semibold">{unidad.pax_promedio ? formatCurrency(unidad.pax_promedio) : '-'}</p>
               </div>
               {/* Columna derecha: Cheque Promedio */}
               <div>
@@ -597,7 +600,7 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
                     <span className="text-xs text-zinc-600">PAX</span>
                   </div>
                   <p className="text-xl font-bold text-blue-600">{unidad.pax?.toLocaleString()}</p>
-                  <p className="text-xs text-zinc-500">Pax Prom: {formatCurrency(unidad.ticket_promedio)}</p>
+                  <p className="text-xs text-zinc-500">Pax Prom: {formatCurrency(unidad.pax_promedio)}</p>
                   <div className="flex justify-center gap-2 mt-1">
                     {/* CORRECCIÓN: Etiquetas dinámicas según selector */}
                     <span className="text-xs">{modoVentasDia ? 'Día Ant:' : 'Mes:'} <VariacionBadge valor={unidad.pax_ant > 0 ? ((unidad.pax - unidad.pax_ant) / unidad.pax_ant * 100) : 0} /></span>
@@ -1381,7 +1384,7 @@ export default function TableroEjecutivo() {
               <div className="flex flex-col text-center">
                 <p className="text-xs text-zinc-400 uppercase tracking-wide">PAX Total</p>
                 <p className="text-2xl font-bold">{data.totales.pax?.toLocaleString()}</p>
-                <p className="text-xs text-zinc-400 mt-1">Pax Prom: {formatCurrency(data.totales.ticket_promedio ?? 0)}</p>
+                <p className="text-xs text-zinc-400 mt-1">Pax Prom: {formatCurrency(data.totales.pax_promedio ?? 0)}</p>
                 <div className="flex gap-4 mt-auto pt-2 justify-center">
                   {!esMultiMes && (
                     <div className="text-center">

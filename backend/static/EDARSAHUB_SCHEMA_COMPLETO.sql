@@ -2865,7 +2865,7 @@ GO
 -- TABLA: [dbo].[ConsultasSQL_EjecucionesLog]
 -- ============================================================
 CREATE TABLE [dbo].[ConsultasSQL_EjecucionesLog] (
-    [EjecucionID] BIGINT NOT NULL,
+    [EjecucionID] BIGINT IDENTITY(1,1) NOT NULL,
     [ConsultaID] INT NOT NULL,
     [ServidorID] UNIQUEIDENTIFIER NULL,
     [UsuarioID] NVARCHAR(100) NOT NULL,

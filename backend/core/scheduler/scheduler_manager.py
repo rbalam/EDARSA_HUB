@@ -10,6 +10,7 @@ Responsabilidades:
 - Evitar registros duplicados
 """
 
+import asyncio
 from typing import Optional, Dict, Any
 import logging
 
@@ -36,7 +37,7 @@ from .jobs.sync_propinas_tpv_job import execute_sync_propinas_tpv_incremental
 # SUBFASE 4: Job de sincronización Comercial V2 (Tablero Ejecutivo Blindado)
 from .jobs.sync_comercial_v2_job import execute_sync_comercial_v2
 # P0: Job de sincronización Ventas Abiertas V2 (cada 5 minutos)
-from .jobs.sync_comercial_abiertas_v2_job import execute_sync_comercial_abiertas_v2
+from .jobs.sync_comercial_abiertas_v2_job import run_sync_comercial_abiertas_v2_manual
 # Cava de Socios: Job de envío mensual de estados de cuenta
 from .jobs.cava_socios_monthly_job import execute_cava_socios_monthly
 # CRM: Jobs de sincronización y seguimiento
@@ -583,26 +584,62 @@ class SchedulerManager:
         
         try:
             logger.info("[SYNC_ABIERTAS_V2] Iniciando sincronización de ventas abiertas del día")
-            result = await execute_sync_comercial_abiertas_v2(self.db)
-            
-            # Finalizar log con éxito
-            await job_logger.finish_execution(
-                log_entry=log_entry,
-                status=result.get("estatus_general", "unknown").lower(),
-                processed_count=result.get("unidades_procesadas", 0),
-                success_count=result.get("unidades_exitosas", 0),
-                skipped_count=0,
-                message=f"Unidades: {result.get('unidades_exitosas', 0)}/{result.get('unidades_procesadas', 0)}, "
-                        f"Abiertas: ${result.get('total_ventas_abiertas', 0):,.2f}, "
-                        f"Total día: ${result.get('total_estimado_dia', 0):,.2f}",
-                extra_metadata={"result_summary": result}
+            result = await asyncio.to_thread(
+                run_sync_comercial_abiertas_v2_manual
             )
             
+            processed_count = int(
+                result.get("unidades_procesadas") or 0
+            )
+            success_count = int(
+                result.get("unidades_exitosas") or 0
+            )
+            failed_count = int(
+                result.get("unidades_fallidas") or 0
+            )
+            result_status = str(
+                result.get("status") or ""
+            ).upper()
+
+            if result_status == "SKIPPED_LOCKED":
+                final_status = "skipped"
+                skipped_count = 1
+            elif processed_count > 0 and failed_count == 0:
+                final_status = "success"
+                skipped_count = 0
+            elif success_count > 0:
+                final_status = "partial"
+                skipped_count = 0
+            else:
+                final_status = "failed"
+                skipped_count = 0
+
+            duracion_segundos = float(
+                result.get("duracion_segundos") or 0
+            )
+
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status=final_status,
+                processed_count=processed_count,
+                success_count=success_count,
+                failed_count=failed_count,
+                skipped_count=skipped_count,
+                message=(
+                    f"Unidades: {success_count}/{processed_count}, "
+                    f"Abiertas: ${result.get('total_ventas_abiertas', 0):,.2f}, "
+                    f"Total día: ${result.get('total_estimado_dia', 0):,.2f}"
+                ),
+                extra_metadata={"result_summary": result},
+            )
+
             logger.info(
-                f"[SYNC_ABIERTAS_V2] Completado: {result.get('unidades_exitosas', 0)}/{result.get('unidades_procesadas', 0)} unidades, "
+                "[SYNC_ABIERTAS_V2] Completado: "
+                f"status={final_status}, "
+                f"{success_count}/{processed_count} unidades, "
                 f"abiertas=${result.get('total_ventas_abiertas', 0):,.2f}, "
                 f"total_dia=${result.get('total_estimado_dia', 0):,.2f}, "
-                f"{result.get('duracion_ms', 0)}ms"
+                f"duracion={duracion_segundos:.3f}s"
             )
         except Exception as e:
             logger.error(f"[SYNC_ABIERTAS_V2] Error: {e}")
@@ -1202,19 +1239,25 @@ class SchedulerManager:
             else:
                 trigger = IntervalTrigger(seconds=sync_comercial_abiertas_v2_config.interval_seconds)
             
-            # P0C: Deshabilitar misfire para evitar ejecuciones fantasma durante reinicio
+            # Usar la configuración canónica del job.
             self._scheduler.add_job(
                 self._run_sync_comercial_abiertas_v2_job,
                 trigger=trigger,
                 id="sync_comercial_abiertas_v2",
                 name="SYNC Ventas Abiertas V2",
                 replace_existing=True,
-                max_instances=1,
-                coalesce=True,
-                misfire_grace_time=1  # P0C: Mínimo 1 segundo para evitar misfires
+                max_instances=sync_comercial_abiertas_v2_config.max_instances,
+                coalesce=sync_comercial_abiertas_v2_config.coalesce,
+                misfire_grace_time=sync_comercial_abiertas_v2_config.misfire_grace_time
             )
             self._jobs["sync_comercial_abiertas_v2"] = sync_comercial_abiertas_v2_config
-            logger.info(f"Job SYNC_ABIERTAS_V2 registrado: intervalo={sync_comercial_abiertas_v2_config.interval_seconds}s (misfire_grace_time=1s)")
+            logger.info(
+                "Job SYNC_ABIERTAS_V2 registrado: "
+                f"intervalo={sync_comercial_abiertas_v2_config.interval_seconds}s, "
+                f"max_instances={sync_comercial_abiertas_v2_config.max_instances}, "
+                f"coalesce={sync_comercial_abiertas_v2_config.coalesce}, "
+                f"misfire_grace_time={sync_comercial_abiertas_v2_config.misfire_grace_time}s"
+            )
         
         # ========================================
         # Cava de Socios: Envío mensual de estados de cuenta

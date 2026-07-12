@@ -28,6 +28,7 @@ class FuenteOriginal(str, Enum):
     API_LOCAL = "API_LOCAL"
     TEMPCHEQUES = "TEMPCHEQUES"
     CHEQUES = "CHEQUES"  # Tabla definitiva de SoftRestaurant (turno cerrado)
+    MIXTA = "MIXTA"
 
 
 class SyncRunType(str, Enum):

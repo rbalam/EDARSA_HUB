@@ -251,8 +251,8 @@ async def upsert_kpi_comercial(
     tickets_total = _sql_int(kpis.get("tickets_total", kpis.get("tickets", kpis.get("cheques", 0))))
     pax_total = _sql_int(kpis.get("pax_total", kpis.get("pax", kpis.get("personas", 0))))
 
-    ticket_promedio = ventas_sin_propina / pax_total if pax_total > 0 else _sql_decimal(0)
-
+    ticket_promedio = ventas_total / tickets_total if tickets_total > 0 else _sql_decimal(0)
+    pax_promedio = ventas_total / pax_total if pax_total > 0 else _sql_decimal(0)
     sync_run_id = source_info.get("scheduler_job_id") or source_info.get("agent_id") or updated_by
     hash_origen = _sql_build_hash(server_id, sucursal_id, fecha, kpis)
 
@@ -273,7 +273,7 @@ async def upsert_kpi_comercial(
         tickets_total=tickets_total,
         pax_total=pax_total,
         ticket_promedio=ticket_promedio,
-        pax_promedio=ticket_promedio,  # espejo legacy DB
+        pax_promedio=pax_promedio,
         ventas_cerradas=_sql_decimal(kpis.get("ventas_cerradas", ventas_total)),
         ventas_abiertas=_sql_decimal(kpis.get("ventas_abiertas", 0)),
         total_estimado_dia=_sql_decimal(kpis.get("total_estimado_dia", ventas_total)),
