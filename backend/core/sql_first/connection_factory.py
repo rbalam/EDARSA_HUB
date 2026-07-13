@@ -1,26 +1,88 @@
-from core.sql_first.db import get_sql_connection
 from core.config.edarsahub_config import get_edarsahub_sql_config
 
-def get_edarsahub_connection():
-    return get_sql_connection()
+ODBC_DRIVER_NAME = "ODBC Driver 17 for SQL Server"
 
-def get_edarsahub_pymssql_connection(timeout: int = 30, login_timeout: int = 10, autocommit: bool = False):
-    """
-    Conexión EDARSAHUB centralizada vía pymssql.
-    Se conserva para módulos legacy que usan cursor(as_dict=True).
-    """
+
+def _connect_edarsahub_pymssql(
+    cfg,
+    *,
+    timeout: int = 30,
+    login_timeout: int = 10,
+    autocommit: bool = False,
+    tds_version: str | None = None,
+):
     import pymssql
 
+    connect_kwargs = {
+        "server": cfg.host,
+        "port": cfg.port,
+        "user": cfg.user,
+        "password": cfg.password,
+        "database": cfg.database,
+        "login_timeout": login_timeout,
+        "timeout": timeout,
+        "autocommit": autocommit,
+    }
+
+    if tds_version is not None:
+        connect_kwargs["tds_version"] = tds_version
+
+    return pymssql.connect(**connect_kwargs)
+
+
+def get_edarsahub_connection(profile: str = "default"):
+    """
+    Abre una conexion canonica a EDARSAHUB.
+
+    Solo usa pymssql como fallback cuando pyodbc no puede importarse
+    o cuando el driver ODBC requerido no esta instalado.
+
+    Los errores reales de conexion pyodbc se propagan sin fallback.
+    """
+    cfg = get_edarsahub_sql_config(profile)
+
+    try:
+        import pyodbc
+    except ImportError:
+        return _connect_edarsahub_pymssql(
+            cfg,
+            tds_version="7.0",
+        )
+
+    installed_drivers = set(pyodbc.drivers())
+
+    if ODBC_DRIVER_NAME not in installed_drivers:
+        return _connect_edarsahub_pymssql(
+            cfg,
+            tds_version="7.0",
+        )
+
+    return pyodbc.connect(
+        f"DRIVER={{{ODBC_DRIVER_NAME}}};"
+        f"SERVER={cfg.host},{cfg.port};"
+        f"DATABASE={cfg.database};"
+        f"UID={cfg.user};"
+        f"PWD={cfg.password};"
+        "TrustServerCertificate=yes;Encrypt=no;"
+    )
+
+
+def get_edarsahub_pymssql_connection(
+    timeout: int = 30,
+    login_timeout: int = 10,
+    autocommit: bool = False,
+):
+    """
+    Conexion EDARSAHUB centralizada via pymssql.
+
+    Se conserva para modulos legacy que usan cursor(as_dict=True).
+    """
     cfg = get_edarsahub_sql_config()
 
-    return pymssql.connect(
-        server=cfg.host,
-        port=cfg.port,
-        user=cfg.user,
-        password=cfg.password,
-        database=cfg.database,
-        login_timeout=login_timeout,
+    return _connect_edarsahub_pymssql(
+        cfg,
         timeout=timeout,
+        login_timeout=login_timeout,
         autocommit=autocommit,
     )
 

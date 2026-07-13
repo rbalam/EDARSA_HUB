@@ -110,9 +110,9 @@ def _validate_identity(identity: Mapping[str, Any]) -> None:
     )
 
     valid = (
-        database_name.casefold() == EXPECTED_DATABASE.casefold()
-        and login_name.casefold() == EXPECTED_LOGIN.casefold()
-        and database_user.casefold() == EXPECTED_USER.casefold()
+        database_name == EXPECTED_DATABASE
+        and login_name == EXPECTED_LOGIN
+        and database_user == EXPECTED_USER
     )
 
     if not valid:

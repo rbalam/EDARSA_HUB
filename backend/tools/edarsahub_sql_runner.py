@@ -1,5 +1,5 @@
 """
-EDARSAHUB SQL Runner (pymssql version)
+EDARSAHUB SQL Runner (canonical connection factory)
 Herramienta controlada para ejecutar diagnósticos, migraciones y validaciones SQL Server.
 
 Uso recomendado:
@@ -9,7 +9,7 @@ Uso recomendado:
     python backend/tools/edarsahub_sql_runner.py --mode validate --script backend/database/validation/001_validacion.sql
 
 Variables de entorno requeridas:
-    EDARSAHUB_SQL_SERVER
+    EDARSAHUB_SQL_HOST
     EDARSAHUB_SQL_DATABASE
     EDARSAHUB_SQL_USER
     EDARSAHUB_SQL_PASSWORD
@@ -25,9 +25,16 @@ import re
 import sys
 from pathlib import Path
 
-import pymssql
 from core.config.edarsahub_config import get_edarsahub_sql_config
-_edarsa_cfg = get_edarsahub_sql_config()
+from core.connections.edarsahub_readonly_repository import (
+    validate_readonly_identity,
+)
+from core.connections.hrlectura_connection_factory import (
+    build_hrlectura_connection_factory,
+)
+from core.sql_first.connection_factory import (
+    get_edarsahub_pymssql_connection,
+)
 
 
 
@@ -66,25 +73,54 @@ def get_int_env(name: str, default: int) -> int:
         raise RuntimeError(f"Variable de entorno invalida para entero: {name}") from exc
 
 
-def get_connection():
-    """Crea conexión pymssql a EDARSAHUB."""
-    server = get_env("EDARSAHUB_SQL_SERVER")
-    database = get_env("EDARSAHUB_SQL_DATABASE")
-    user = get_env("EDARSAHUB_SQL_USER")
-    password = get_env("EDARSAHUB_SQL_PASSWORD")
-    port = int(get_env("EDARSAHUB_SQL_PORT", required=False, default="1433"))
-    timeout = get_int_env("EDARSAHUB_SQL_TIMEOUT_SECONDS", 60)
-    login_timeout = get_int_env("EDARSAHUB_SQL_LOGIN_TIMEOUT_SECONDS", 15)
-    
-    return pymssql.connect(
-        server=server,
-        port=port,
-        user=user,
-        password=password,
-        database=database,
-        timeout=timeout,
-        login_timeout=login_timeout,
-        autocommit=False
+def _load_readonly_profile(profile: str) -> dict[str, str]:
+    cfg = get_edarsahub_sql_config(profile)
+    return {"user": cfg.user}
+
+
+def _open_readonly_profile(profile: str):
+    if profile != "default":
+        raise RuntimeError(
+            f"Perfil SQL read-only no autorizado: {profile!r}"
+        )
+
+    return get_edarsahub_pymssql_connection(
+        timeout=get_int_env(
+            "EDARSAHUB_SQL_TIMEOUT_SECONDS",
+            60,
+        ),
+        login_timeout=get_int_env(
+            "EDARSAHUB_SQL_LOGIN_TIMEOUT_SECONDS",
+            15,
+        ),
+        autocommit=False,
+    )
+
+
+def get_connection(mode: str):
+    """
+    Obtiene una conexion mediante el adaptador canonico.
+
+    diagnostic y validate exigen HRLectura antes de abrir.
+    migrate conserva un contrato separado y su guardrail explicito.
+    """
+    if mode in {"diagnostic", "validate"}:
+        readonly_factory = build_hrlectura_connection_factory(
+            config_loader=_load_readonly_profile,
+            connection_opener=_open_readonly_profile,
+        )
+        return readonly_factory()
+
+    return get_edarsahub_pymssql_connection(
+        timeout=get_int_env(
+            "EDARSAHUB_SQL_TIMEOUT_SECONDS",
+            60,
+        ),
+        login_timeout=get_int_env(
+            "EDARSAHUB_SQL_LOGIN_TIMEOUT_SECONDS",
+            15,
+        ),
+        autocommit=False,
     )
 
 
@@ -152,11 +188,17 @@ def execute_sql(sql: str, mode: str) -> dict:
 
     batches = split_sql_batches(sql)
     results = []
-
-    conn = get_connection()
-    cursor = conn.cursor(as_dict=True)
+    conn = None
+    cursor = None
 
     try:
+        conn = get_connection(mode)
+
+        if mode in {"diagnostic", "validate"}:
+            validate_readonly_identity(conn)
+
+        cursor = conn.cursor(as_dict=True)
+
         for index, batch in enumerate(batches, start=1):
             cursor.execute(batch)
 
@@ -186,22 +228,38 @@ def execute_sql(sql: str, mode: str) -> dict:
         else:
             conn.rollback()
 
-        cursor.close()
-        conn.close()
-
         return {
             "success": True,
             "mode": mode,
-            "message": "Ejecución completada.",
+            "message": "Ejecucion completada.",
             "batches": len(batches),
             "results": results,
         }
 
     except Exception as exc:
-        conn.rollback()
-        cursor.close()
-        conn.close()
-        raise RuntimeError(f"Error ejecutando SQL. Se hizo rollback. Detalle: {exc}") from exc
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+
+        raise RuntimeError(
+            "Error ejecutando SQL. Se hizo rollback. "
+            f"Detalle: {exc}"
+        ) from exc
+
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 def write_report(script_path: Path, mode: str, sql: str, result: dict | None, error: str | None) -> Path:
@@ -210,8 +268,14 @@ def write_report(script_path: Path, mode: str, sql: str, result: dict | None, er
     timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
     report_path = REPORT_DIR / f"{timestamp}_{mode}_{script_path.stem}.md"
 
-    server = os.getenv("EDARSAHUB_SQL_SERVER", "NO_DEFINIDO")
-    database = _edarsa_cfg.database
+    try:
+        cfg = get_edarsahub_sql_config()
+    except RuntimeError:
+        server = "NO_DEFINIDO"
+        database = "NO_DEFINIDO"
+    else:
+        server = cfg.host
+        database = cfg.database
 
     content = []
     content.append(f"# EDARSAHUB SQL Runner Report\n")
@@ -266,7 +330,12 @@ def write_report(script_path: Path, mode: str, sql: str, result: dict | None, er
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="EDARSAHUB SQL Runner (pymssql)")
+    parser = argparse.ArgumentParser(
+        description=(
+            "EDARSAHUB SQL Runner "
+            "(canonical connection factory)"
+        )
+    )
     parser.add_argument("--mode", required=True, choices=sorted(ALLOWED_MODES))
     parser.add_argument("--script", required=True)
 

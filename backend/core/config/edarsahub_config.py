@@ -14,8 +14,6 @@ class EdarsaHubSQLConfig:
 
 _PROFILE_PREFIXES = {
     "default": "EDARSAHUB_SQL",
-    "gptread": "EDARSAHUB_GPTREAD_SQL",
-    "gptwrite": "EDARSAHUB_GPTWRITE_SQL",
 }
 
 
@@ -30,10 +28,10 @@ def get_edarsahub_sql_config(profile: str = "default") -> EdarsaHubSQLConfig:
     """
     Config canónica EDARSAHUB SQL.
 
-    Perfiles:
-    - default: compatibilidad existente EDARSAHUB_SQL_*
-    - gptread: usuario GptLectura
-    - gptwrite: usuario GptEscritura
+    Perfil permitido:
+    - default: configuracion canonica EDARSAHUB_SQL_*
+
+    Los perfiles alternativos estan prohibidos.
     """
     normalized = (profile or "default").lower()
     prefix = _PROFILE_PREFIXES.get(normalized)

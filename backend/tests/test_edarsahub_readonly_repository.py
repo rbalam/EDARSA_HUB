@@ -239,3 +239,33 @@ def test_modulo_no_abre_conexiones_ni_descifra_secretos():
 
     for term in forbidden_terms:
         assert term not in source
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("database_name", "edarsahub"),
+        ("login_name", "hrlectura"),
+        ("login_name", "HRLECTURA"),
+        ("database_user", "HrLectura"),
+    ],
+)
+def test_rechaza_identidad_con_casing_incorrecto(
+    field,
+    value,
+):
+    invalid_identity = {
+        **VALID_IDENTITY,
+        field: value,
+    }
+    connection, factory = make_factory(
+        [invalid_identity, dict(VALID_METADATA)]
+    )
+
+    with pytest.raises(DatabaseIdentityMismatch):
+        get_unit_server_metadata_readonly(
+            unidad_codigo="130MID",
+            connection_factory=factory,
+        )
+
+    assert len(connection.executions) == 1
+    assert connection.closed is True

@@ -1,32 +1,13 @@
 from contextlib import contextmanager
-from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.connection_factory import get_edarsahub_connection
 
 
 def get_sql_connection(profile: str = "default"):
-    cfg = get_edarsahub_sql_config(profile)
-
-    try:
-        import pyodbc
-        return pyodbc.connect(
-            "DRIVER={ODBC Driver 17 for SQL Server};"
-            f"SERVER={cfg.host},{cfg.port};"
-            f"DATABASE={cfg.database};"
-            f"UID={cfg.user};"
-            f"PWD={cfg.password};"
-            "TrustServerCertificate=yes;Encrypt=no;"
-        )
-    except Exception:
-        import pymssql
-        return pymssql.connect(
-            server=cfg.host,
-            port=cfg.port,
-            user=cfg.user,
-            password=cfg.password,
-            database=cfg.database,
-            login_timeout=10,
-            timeout=30,
-            tds_version="7.0",
-        )
+    """
+    Fachada compatible para consumidores SQL-first existentes.
+    La apertura fisica pertenece a connection_factory.
+    """
+    return get_edarsahub_connection(profile)
 
 
 @contextmanager
