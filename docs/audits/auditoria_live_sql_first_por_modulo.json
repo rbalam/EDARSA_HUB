@@ -32796,7 +32796,7 @@
       "pattern": "direct host ddns",
       "file": "/app/backend/scripts/validacion_propinas_tpv.py",
       "line": 47,
-      "code": "'password': os.environ.get('SOFTREST_130MID_PASS', 'Sr2022$'),"
+      "code": "'password': os.environ.get('SOFTREST_130MID_PASS', '<REDACTED_CREDENTIAL_REMOVED>'),"
     },
     {
       "module": "Finanzas / Propinas TPV",

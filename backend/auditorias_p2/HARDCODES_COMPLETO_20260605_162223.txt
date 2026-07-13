@@ -358,18 +358,18 @@
 /app/backend/scripts/validacion_propinas_tpv.py:28:        'port': int(os.environ.get('SOFTREST_CIENFUEGOS_PORT', '51741')),
 /app/backend/scripts/validacion_propinas_tpv.py:29:        'database': os.environ.get('SOFTREST_CIENFUEGOS_DB', 'Abordo'),
 /app/backend/scripts/validacion_propinas_tpv.py:30:        'user': os.environ.get('SOFTREST_CIENFUEGOS_USER', 'sa'),
-/app/backend/scripts/validacion_propinas_tpv.py:31:        'password': os.environ.get('SOFTREST_CIENFUEGOS_PASS', 'Sr2022$'),
+/app/backend/scripts/validacion_propinas_tpv.py:31:        'password': os.environ.get('SOFTREST_CIENFUEGOS_PASS', '<REDACTED_CREDENTIAL_REMOVED>'),
 /app/backend/scripts/validacion_propinas_tpv.py:34:    'LA_ESTELAR': {
 /app/backend/scripts/validacion_propinas_tpv.py:35:        'host': os.environ.get('SOFTREST_ESTELAR_HOST', '187.188.198.241'),
 /app/backend/scripts/validacion_propinas_tpv.py:36:        'port': int(os.environ.get('SOFTREST_ESTELAR_PORT', '51742')),
 /app/backend/scripts/validacion_propinas_tpv.py:37:        'database': os.environ.get('SOFTREST_ESTELAR_DB', 'Bordo'),
 /app/backend/scripts/validacion_propinas_tpv.py:38:        'user': os.environ.get('SOFTREST_ESTELAR_USER', 'sa'),
-/app/backend/scripts/validacion_propinas_tpv.py:39:        'password': os.environ.get('SOFTREST_ESTELAR_PASS', 'Sr2022$'),
+/app/backend/scripts/validacion_propinas_tpv.py:39:        'password': os.environ.get('SOFTREST_ESTELAR_PASS', '<REDACTED_CREDENTIAL_REMOVED>'),
 /app/backend/scripts/validacion_propinas_tpv.py:43:        'host': os.environ.get('SOFTREST_130MID_HOST', '187.188.198.241'),
 /app/backend/scripts/validacion_propinas_tpv.py:44:        'port': int(os.environ.get('SOFTREST_130MID_PORT', '51743')),
 /app/backend/scripts/validacion_propinas_tpv.py:45:        'database': os.environ.get('SOFTREST_130MID_DB', 'Abordo'),
 /app/backend/scripts/validacion_propinas_tpv.py:46:        'user': os.environ.get('SOFTREST_130MID_USER', 'sa'),
-/app/backend/scripts/validacion_propinas_tpv.py:47:        'password': os.environ.get('SOFTREST_130MID_PASS', 'Sr2022$'),
+/app/backend/scripts/validacion_propinas_tpv.py:47:        'password': os.environ.get('SOFTREST_130MID_PASS', '<REDACTED_CREDENTIAL_REMOVED>'),
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:3:BACKFILL OFICIAL: CIENFUEGOS Días 19 y 20 de Mayo 2026
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:8:- Acceso de red al servidor SoftRestaurant de CIENFUEGOS (189.162.155.142:6669)
 /app/backend/scripts/backfill_cienfuegos_mayo_2026.py:18:TICKET: P0-B RECONCILIACION CIENFUEGOS

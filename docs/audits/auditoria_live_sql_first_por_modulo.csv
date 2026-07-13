@@ -3642,7 +3642,7 @@ BAJA,PERMITIDO_SYNC_BACKFILL_DIAGNOSTICO,Finanzas / Propinas TPV,direct host ddn
 BAJA,PERMITIDO_SYNC_BACKFILL_DIAGNOSTICO,Finanzas / Propinas TPV,direct host ddns,/app/backend/scripts/validacion_propinas_tpv.py,44,"'port': int(os.environ.get('SOFTREST_130MID_PORT', '51743')),"
 BAJA,PERMITIDO_SYNC_BACKFILL_DIAGNOSTICO,Finanzas / Propinas TPV,direct host ddns,/app/backend/scripts/validacion_propinas_tpv.py,45,"'database': os.environ.get('SOFTREST_130MID_DB', 'Abordo'),"
 BAJA,PERMITIDO_SYNC_BACKFILL_DIAGNOSTICO,Finanzas / Propinas TPV,direct host ddns,/app/backend/scripts/validacion_propinas_tpv.py,46,"'user': os.environ.get('SOFTREST_130MID_USER', 'sa'),"
-BAJA,PERMITIDO_SYNC_BACKFILL_DIAGNOSTICO,Finanzas / Propinas TPV,direct host ddns,/app/backend/scripts/validacion_propinas_tpv.py,47,"'password': os.environ.get('SOFTREST_130MID_PASS', 'Sr2022$'),"
+BAJA,PERMITIDO_SYNC_BACKFILL_DIAGNOSTICO,Finanzas / Propinas TPV,direct host ddns,/app/backend/scripts/validacion_propinas_tpv.py,47,"'password': os.environ.get('SOFTREST_130MID_PASS', '<REDACTED_CREDENTIAL_REMOVED>'),"
 BAJA,PERMITIDO_SYNC_BACKFILL_DIAGNOSTICO,Finanzas / Propinas TPV,remote POS names,/app/backend/scripts/validacion_propinas_tpv.py,56,"""""""Ejecuta query SQL en servidor SoftRestaurant"""""""
 BAJA,PERMITIDO_SYNC_BACKFILL_DIAGNOSTICO,Finanzas / Propinas TPV,pytds.connect,/app/backend/scripts/validacion_propinas_tpv.py,64,with pytds.connect(
 BAJA,PERMITIDO_SYNC_BACKFILL_DIAGNOSTICO,Finanzas / Propinas TPV,remote POS names,/app/backend/scripts/validacion_propinas_tpv.py,496,"""Los datos de propinas dependen de que los cajeros capturen correctamente en SoftRestaurant"""

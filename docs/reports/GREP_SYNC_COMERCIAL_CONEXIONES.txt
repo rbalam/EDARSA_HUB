@@ -3914,17 +3914,17 @@ backend/scripts/validacion_propinas_tpv.py:27:        'host': os.environ.get('SO
 backend/scripts/validacion_propinas_tpv.py:28:        'port': int(os.environ.get('SOFTREST_CIENFUEGOS_PORT', '51741')),
 backend/scripts/validacion_propinas_tpv.py:29:        'database': os.environ.get('SOFTREST_CIENFUEGOS_DB', 'Abordo'),
 backend/scripts/validacion_propinas_tpv.py:30:        'user': os.environ.get('SOFTREST_CIENFUEGOS_USER', 'sa'),
-backend/scripts/validacion_propinas_tpv.py:31:        'password': os.environ.get('SOFTREST_CIENFUEGOS_PASS', 'Sr2022$'),
+backend/scripts/validacion_propinas_tpv.py:31:        'password': os.environ.get('SOFTREST_CIENFUEGOS_PASS', '<REDACTED_CREDENTIAL_REMOVED>'),
 backend/scripts/validacion_propinas_tpv.py:35:        'host': os.environ.get('SOFTREST_ESTELAR_HOST', '187.188.198.241'),
 backend/scripts/validacion_propinas_tpv.py:36:        'port': int(os.environ.get('SOFTREST_ESTELAR_PORT', '51742')),
 backend/scripts/validacion_propinas_tpv.py:37:        'database': os.environ.get('SOFTREST_ESTELAR_DB', 'Bordo'),
 backend/scripts/validacion_propinas_tpv.py:38:        'user': os.environ.get('SOFTREST_ESTELAR_USER', 'sa'),
-backend/scripts/validacion_propinas_tpv.py:39:        'password': os.environ.get('SOFTREST_ESTELAR_PASS', 'Sr2022$'),
+backend/scripts/validacion_propinas_tpv.py:39:        'password': os.environ.get('SOFTREST_ESTELAR_PASS', '<REDACTED_CREDENTIAL_REMOVED>'),
 backend/scripts/validacion_propinas_tpv.py:43:        'host': os.environ.get('SOFTREST_130MID_HOST', '187.188.198.241'),
 backend/scripts/validacion_propinas_tpv.py:44:        'port': int(os.environ.get('SOFTREST_130MID_PORT', '51743')),
 backend/scripts/validacion_propinas_tpv.py:45:        'database': os.environ.get('SOFTREST_130MID_DB', 'Abordo'),
 backend/scripts/validacion_propinas_tpv.py:46:        'user': os.environ.get('SOFTREST_130MID_USER', 'sa'),
-backend/scripts/validacion_propinas_tpv.py:47:        'password': os.environ.get('SOFTREST_130MID_PASS', 'Sr2022$'),
+backend/scripts/validacion_propinas_tpv.py:47:        'password': os.environ.get('SOFTREST_130MID_PASS', '<REDACTED_CREDENTIAL_REMOVED>'),
 backend/scripts/validacion_propinas_tpv.py:55:def connect_and_query(server_id: str, query: str) -> List[Dict]:
 backend/scripts/validacion_propinas_tpv.py:56:    """Ejecuta query SQL en servidor SoftRestaurant"""
 backend/scripts/validacion_propinas_tpv.py:59:    config = SOFTREST_SERVERS.get(server_id)
