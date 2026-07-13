@@ -22,6 +22,11 @@ from ..config import JobConfig
 logger = logging.getLogger(__name__)
 
 
+CANONICAL_NOTIFICATION_QUEUE_TABLE = (
+    "dbo.Operativo_Notificaciones_Queue"
+)
+
+
 class NotificationsDispatcherJob(BaseJob):
     """
     Job de despacho de notificaciones.
@@ -37,7 +42,17 @@ class NotificationsDispatcherJob(BaseJob):
         Returns:
             Dict con métricas de procesamiento
         """
-        logger.info(f"Iniciando despacho de notificaciones (batch_size={self.config.batch_size})")
+        if not self._is_sql_queue_available():
+            raise RuntimeError(
+                "notifications_dispatcher fue habilitado, "
+                "pero no existe la cola SQL canónica requerida: "
+                f"{CANONICAL_NOTIFICATION_QUEUE_TABLE}"
+            )
+
+        logger.info(
+            "Iniciando despacho de notificaciones "
+            f"(batch_size={self.config.batch_size})"
+        )
         
         # Verificar horario permitido
         if not self._is_within_allowed_hours():
@@ -115,13 +130,30 @@ class NotificationsDispatcherJob(BaseJob):
             logger.warning(f"Error verificando horario: {e}, permitiendo ejecución")
             return True  # En caso de error, permitir ejecución
     
-    async def _get_pending_count(self) -> int:
-        """Obtiene cantidad de notificaciones pendientes."""
-        from core.communications.notifications.schemas import NotificationStatus
-        count = await self.db.notification_queue.count_documents({
-            "estado": NotificationStatus.PENDIENTE.value
-        })
-        return count
+    def _is_sql_queue_available(self) -> bool:
+        """Confirma la disponibilidad de la cola SQL canónica."""
+        try:
+            from core.sql_first.db import fetch_one_dict
+
+            row = fetch_one_dict(
+                """
+                SELECT
+                    CASE
+                        WHEN OBJECT_ID(%s, 'U') IS NOT NULL
+                        THEN 1
+                        ELSE 0
+                    END AS queue_available
+                """,
+                [CANONICAL_NOTIFICATION_QUEUE_TABLE],
+            )
+        except Exception:
+            logger.exception(
+                "No fue posible validar la cola SQL canónica %s",
+                CANONICAL_NOTIFICATION_QUEUE_TABLE,
+            )
+            return False
+
+        return bool((row or {}).get("queue_available", 0))
 
 
 def create_notifications_job(db, config: JobConfig = None) -> NotificationsDispatcherJob:

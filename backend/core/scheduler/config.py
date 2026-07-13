@@ -54,7 +54,7 @@ class SchedulerConfig(BaseModel):
         
         # Notifications Job config
         notif_interval = int(os.environ.get("SCHEDULER_NOTIFICATIONS_INTERVAL_SECONDS", "120"))
-        notif_enabled = os.environ.get("SCHEDULER_NOTIFICATIONS_ENABLED", "true").lower() == "true"
+        notif_enabled = os.environ.get("SCHEDULER_NOTIFICATIONS_ENABLED", "false").lower() == "true"
         
         # Auditorías Programadas Job config
         audit_interval = int(os.environ.get("SCHEDULER_AUDITORIAS_INTERVAL_SECONDS", "3600"))  # 1 hora
