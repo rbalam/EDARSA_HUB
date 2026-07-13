@@ -134,8 +134,131 @@ def read_sql_file(script_path: Path) -> str:
     return script_path.read_text(encoding="utf-8")
 
 
+def _strip_sql_comments_for_safety(sql: str) -> str:
+    """
+    Retira comentarios SQL antes de evaluar patrones peligrosos.
+
+    Conserva strings e identificadores citados para que SQL dinámico
+    peligroso no quede oculto al escáner.
+    """
+    output: list[str] = []
+    index = 0
+    state = "normal"
+    block_depth = 0
+
+    while index < len(sql):
+        char = sql[index]
+        next_char = (
+            sql[index + 1]
+            if index + 1 < len(sql)
+            else ""
+        )
+
+        if state == "line_comment":
+            if char in "\r\n":
+                output.append(char)
+                state = "normal"
+            else:
+                output.append(" ")
+
+            index += 1
+            continue
+
+        if state == "block_comment":
+            if char == "/" and next_char == "*":
+                output.extend((" ", " "))
+                block_depth += 1
+                index += 2
+                continue
+
+            if char == "*" and next_char == "/":
+                output.extend((" ", " "))
+                block_depth -= 1
+                index += 2
+
+                if block_depth == 0:
+                    state = "normal"
+
+                continue
+
+            output.append(
+                char if char in "\r\n" else " "
+            )
+            index += 1
+            continue
+
+        if state == "single_quote":
+            output.append(char)
+
+            if char == "'" and next_char == "'":
+                output.append(next_char)
+                index += 2
+                continue
+
+            if char == "'":
+                state = "normal"
+
+            index += 1
+            continue
+
+        if state == "double_quote":
+            output.append(char)
+
+            if char == '"' and next_char == '"':
+                output.append(next_char)
+                index += 2
+                continue
+
+            if char == '"':
+                state = "normal"
+
+            index += 1
+            continue
+
+        if state == "bracket_identifier":
+            output.append(char)
+
+            if char == "]" and next_char == "]":
+                output.append(next_char)
+                index += 2
+                continue
+
+            if char == "]":
+                state = "normal"
+
+            index += 1
+            continue
+
+        if char == "-" and next_char == "-":
+            output.extend((" ", " "))
+            state = "line_comment"
+            index += 2
+            continue
+
+        if char == "/" and next_char == "*":
+            output.extend((" ", " "))
+            state = "block_comment"
+            block_depth = 1
+            index += 2
+            continue
+
+        output.append(char)
+
+        if char == "'":
+            state = "single_quote"
+        elif char == '"':
+            state = "double_quote"
+        elif char == "[":
+            state = "bracket_identifier"
+
+        index += 1
+
+    return "".join(output)
+
+
 def validate_sql_safety(sql: str, mode: str) -> None:
-    sql_upper = sql.upper()
+    sql_without_comments = _strip_sql_comments_for_safety(sql)
+    sql_upper = sql_without_comments.upper()
 
     for pattern in FORBIDDEN_PATTERNS:
         if re.search(pattern, sql_upper, re.IGNORECASE):

@@ -214,3 +214,39 @@ def test_reporte_no_exige_configuracion_sql(
 
     content = report.read_text(encoding="utf-8")
     assert "NO_DEFINIDO" in content
+
+
+def test_validate_ignora_tokens_peligrosos_en_comentarios():
+    runner.validate_sql_safety(
+        """
+        -- DROP TABLE dbo.NoDebeContar;
+        /*
+        UPDATE dbo.NoDebeContar
+        SET valor = 1;
+        */
+        SELECT 1;
+        """,
+        "validate",
+    )
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "DROP TABLE dbo.DebeBloquearse;",
+        (
+            "UPDATE dbo.DebeBloquearse "
+            "SET valor = 1;"
+        ),
+        (
+            "DELETE FROM dbo.DebeBloquearse "
+            "WHERE id = 1;"
+        ),
+    ],
+)
+def test_validate_sigue_bloqueando_sql_ejecutable(sql):
+    with pytest.raises(RuntimeError):
+        runner.validate_sql_safety(
+            sql,
+            "validate",
+        )
