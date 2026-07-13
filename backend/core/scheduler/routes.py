@@ -251,7 +251,7 @@ async def get_job_logs(
     db = get_db()
     from .job_logger import get_job_logger
     
-    job_logger = get_job_logger(db)
+    job_logger = get_job_logger()
     
     since = datetime.now(timezone.utc) - timedelta(hours=hours)
     logs = await job_logger.get_logs(
@@ -282,7 +282,7 @@ async def get_job_stats(
     db = get_db()
     from .job_logger import get_job_logger
     
-    job_logger = get_job_logger(db)
+    job_logger = get_job_logger()
     stats = await job_logger.get_stats(job_name=job_name, hours=hours)
     
     return {

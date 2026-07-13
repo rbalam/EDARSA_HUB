@@ -213,7 +213,7 @@ class SchedulerManager:
             logger.warning("[SYNC-S] No se pudo obtener lock - ya hay una ejecución en progreso")
             return
         
-        job_logger = get_job_logger(self.db)
+        job_logger = get_job_logger()
         log_entry = await job_logger.start_execution("sync_short_comercial")
         
         try:
@@ -269,7 +269,7 @@ class SchedulerManager:
             logger.warning("[SYNC-N] No se pudo obtener lock - ya hay una ejecución en progreso")
             return
         
-        job_logger = get_job_logger(self.db)
+        job_logger = get_job_logger()
         log_entry = await job_logger.start_execution("sync_nightly_comercial")
         
         try:
@@ -330,7 +330,7 @@ class SchedulerManager:
             logger.warning("[SYNC_INGRESOS] No se pudo obtener lock - ya hay una ejecución en progreso")
             return
         
-        job_logger = get_job_logger(self.db)
+        job_logger = get_job_logger()
         log_entry = await job_logger.start_execution("sync_ingresos_incremental")
         
         try:
@@ -381,7 +381,7 @@ class SchedulerManager:
             logger.warning("[SYNC_COMPRAS] No se pudo obtener lock - ya hay una ejecución en progreso")
             return
 
-        job_logger = get_job_logger(self.db)
+        job_logger = get_job_logger()
         log_entry = await job_logger.start_execution("sync_compras")
 
         try:
@@ -413,7 +413,7 @@ class SchedulerManager:
         if not await lock.acquire(timeout_seconds=600):
             logger.warning("[SYNC_CXP] Lock ocupado - ejecución en progreso")
             return
-        job_logger = get_job_logger(self.db)
+        job_logger = get_job_logger()
         log_entry = await job_logger.start_execution("sync_cxp_facturas")
         try:
             from .jobs.cxp_sync_job import run_cxp_sync_async
@@ -457,7 +457,7 @@ class SchedulerManager:
             logger.warning("[SYNC_PROPINAS_TPV] No se pudo obtener lock - ya hay una ejecución en progreso")
             return
         
-        job_logger = get_job_logger(self.db)
+        job_logger = get_job_logger()
         log_entry = await job_logger.start_execution("sync_propinas_tpv_incremental")
         
         try:
@@ -518,7 +518,7 @@ class SchedulerManager:
             logger.warning("[SYNC_COMERCIAL_V2] No se pudo obtener lock - ya hay una ejecución en progreso")
             return
         
-        job_logger = get_job_logger(self.db)
+        job_logger = get_job_logger()
         log_entry = await job_logger.start_execution("sync_comercial_v2")
         
         try:
@@ -579,7 +579,7 @@ class SchedulerManager:
             logger.warning("[SYNC_ABIERTAS_V2] No se pudo obtener lock - ya hay una ejecución en progreso")
             return
         
-        job_logger = get_job_logger(self.db)
+        job_logger = get_job_logger()
         log_entry = await job_logger.start_execution("sync_comercial_abiertas_v2")
         
         try:
@@ -670,7 +670,7 @@ class SchedulerManager:
             logger.warning("[CAVA_MONTHLY] No se pudo obtener lock - ya hay una ejecución en progreso")
             return
         
-        job_logger = get_job_logger(self.db)
+        job_logger = get_job_logger()
         log_entry = await job_logger.start_execution("cava_socios_monthly")
         
         try:
@@ -725,7 +725,7 @@ class SchedulerManager:
             logger.warning("[CRM_SYNC] No se pudo obtener lock - ya hay una ejecución en progreso")
             return
         
-        job_logger = get_job_logger(self.db)
+        job_logger = get_job_logger()
         log_entry = await job_logger.start_execution("crm_sync")
         
         try:
@@ -768,7 +768,7 @@ class SchedulerManager:
             logger.warning("[CRM_SLA] No se pudo obtener lock")
             return
         
-        job_logger = get_job_logger(self.db)
+        job_logger = get_job_logger()
         log_entry = await job_logger.start_execution("crm_sla_check")
         
         try:
@@ -811,7 +811,7 @@ class SchedulerManager:
             logger.warning("[CRM_ACT] No se pudo obtener lock")
             return
         
-        job_logger = get_job_logger(self.db)
+        job_logger = get_job_logger()
         log_entry = await job_logger.start_execution("crm_actividades_vencidas")
         
         try:
@@ -853,7 +853,7 @@ class SchedulerManager:
             logger.warning("[VTIGER_SYNC] No se pudo obtener lock - ya hay una ejecución en progreso")
             return
         
-        job_logger = get_job_logger(self.db)
+        job_logger = get_job_logger()
         log_entry = await job_logger.start_execution("vtiger_sync")
         
         try:
@@ -899,7 +899,7 @@ class SchedulerManager:
             logger.warning("[INTELIGENCIA_SYNC] No se pudo obtener lock - ya hay una ejecución en progreso")
             return
         
-        job_logger = get_job_logger(self.db)
+        job_logger = get_job_logger()
         log_entry = await job_logger.start_execution("inteligencia_comercial_sync")
         
         try:
@@ -944,7 +944,7 @@ class SchedulerManager:
             logger.warning("[NETPAY_SYNC] No se pudo obtener lock - ya hay una ejecución en progreso")
             return
 
-        job_logger = get_job_logger(self.db)
+        job_logger = get_job_logger()
         log_entry = await job_logger.start_execution("netpay_sync_diario")
 
         try:
@@ -1423,7 +1423,7 @@ class SchedulerManager:
         lock_manager = get_lock_manager(self.db)
         await lock_manager.ensure_indexes()
         
-        job_logger = get_job_logger(self.db)
+        job_logger = get_job_logger()
         await job_logger.ensure_indexes()
         
         # Limpiar locks expirados

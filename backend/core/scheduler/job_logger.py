@@ -42,8 +42,7 @@ class JobLogger:
     No usa almacén legacy ni fallback.
     """
 
-    def __init__(self, db=None):
-        self.db = None
+    def __init__(self):
         logger.info("[JOB_LOGGER] Inicializado SQL-only → dbo.Scheduler_BitacoraJobs")
 
     def _insert_bitacora(
@@ -301,14 +300,14 @@ class JobLogger:
 _job_logger_instance = None
 
 
-def get_job_logger(db=None) -> JobLogger:
+def get_job_logger() -> JobLogger:
     """
     Factory singleton esperado por scheduler_manager y jobs.
-    Mantiene compatibilidad sin Mongo; JobLogger ignora db y registra en SQL.
+    Retorna el singleton SQL de bitácora.
     """
     global _job_logger_instance
     if _job_logger_instance is None:
-        _job_logger_instance = JobLogger(db)
+        _job_logger_instance = JobLogger()
     return _job_logger_instance
 
 

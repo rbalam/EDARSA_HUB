@@ -37,7 +37,7 @@ class BaseJob(ABC):
         self.config = config
         self.job_name = config.job_id
         self.lock_manager = get_lock_manager(db)
-        self.job_logger = get_job_logger(db)
+        self.job_logger = get_job_logger()
     
     @abstractmethod
     async def execute(self) -> Dict[str, Any]:

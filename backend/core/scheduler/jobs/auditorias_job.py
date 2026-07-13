@@ -28,7 +28,7 @@ class AuditoriasSchedulerJob:
     def __init__(self, db, config: Optional[dict] = None):
         self.db = db
         self.config = config or {}
-        self.job_logger = get_job_logger(db)
+        self.job_logger = get_job_logger()
     
     async def run(self):
         """

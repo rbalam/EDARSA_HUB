@@ -116,17 +116,9 @@ MPRO_API_LOCAL_CONFIG = MPRO_API_LOCAL_CONFIG_LEGACY
 SYNC_TYPE_VENTAS_DIA = "VENTAS_DIA_ABIERTAS"
 LOCK_TIMEOUT_MINUTES = 30
 
-# P2-01: Config centralizado
-from core.config.edarsahub_config import get_edarsahub_sql_config
+# Conexion SQL resuelta solamente cuando se ejecuta una operacion.
+# No evaluar credenciales ni configuracion SQL durante el import.
 from core.sql_first.db import get_sql_connection
-_edarsa_cfg = get_edarsahub_sql_config()
-EDARSAHUB_LOCK_CONFIG = {
-    'host': _edarsa_cfg.host,
-    'port': _edarsa_cfg.port,
-    'database': _edarsa_cfg.database,
-    'username': _edarsa_cfg.user,
-    'password': _edarsa_cfg.password
-}
 
 
 def _coerce_mx_datetime(value):

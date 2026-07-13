@@ -83,7 +83,7 @@ class PedidosDetectorJob:
         
         self.db = db
         self.config = config or {}
-        self.job_logger = get_job_logger(db)
+        self.job_logger = get_job_logger()
         self._use_sql = True  # Flag para usar SQL como tracking operativo
     
     def _is_stub_db(self) -> bool:

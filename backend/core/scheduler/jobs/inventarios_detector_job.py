@@ -151,7 +151,7 @@ class InventariosDetectorJob:
         
         self.db = db
         self.config = config or {}
-        self.job_logger = get_job_logger(db)
+        self.job_logger = get_job_logger()
         
         # Estadísticas de ejecución
         self.stats = {
