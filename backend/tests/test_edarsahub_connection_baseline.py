@@ -267,4 +267,3 @@ def test_rechaza_perfiles_sql_alternativos(profile):
         match="Perfil EDARSAHUB SQL no soportado",
     ):
         get_edarsahub_sql_config(profile)
-
