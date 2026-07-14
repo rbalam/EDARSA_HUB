@@ -33,14 +33,9 @@ jobs:
       EDARSAHUB_SQL_HOST: "54.39.104.176"
       EDARSAHUB_SQL_PORT: "1433"
       EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
-      EDARSAHUB_SQL_USER: "GptLectura"
-      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_GPTREAD_SQL_PASSWORD }}
+      EDARSAHUB_SQL_USER: "HRLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
 
-      EDARSAHUB_GPTREAD_SQL_HOST: "54.39.104.176"
-      EDARSAHUB_GPTREAD_SQL_PORT: "1433"
-      EDARSAHUB_GPTREAD_SQL_DATABASE: "EDARSAHUB"
-      EDARSAHUB_GPTREAD_SQL_USER: "GptLectura"
-      EDARSAHUB_GPTREAD_SQL_PASSWORD: ${{ secrets.EDARSAHUB_GPTREAD_SQL_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -186,9 +181,16 @@ jobs:
       - name: EDARSAHUB menu/RBAC SQL probe
         run: |
           PYTHONPATH="$GITHUB_WORKSPACE/backend" python - <<'PY'
-          from core.sql_first.db import get_sql_connection
+          from core.connections.edarsahub_readonly_repository import (
+              validate_readonly_identity,
+          )
+          from core.connections.hrlectura_connection_factory import (
+              build_hrlectura_connection_factory,
+          )
 
-          conn = get_sql_connection("gptread")
+          connection_factory = build_hrlectura_connection_factory()
+          conn = connection_factory()
+          validate_readonly_identity(conn)
           cur = conn.cursor()
 
           def rows():

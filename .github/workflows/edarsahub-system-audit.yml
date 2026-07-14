@@ -33,20 +33,10 @@ jobs:
       EDARSAHUB_SQL_HOST: "54.39.104.176"
       EDARSAHUB_SQL_PORT: "1433"
       EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
-      EDARSAHUB_SQL_USER: "GptLectura"
-      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_GPTREAD_SQL_PASSWORD }}
+      EDARSAHUB_SQL_USER: "HRLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
 
-      EDARSAHUB_GPTREAD_SQL_HOST: "54.39.104.176"
-      EDARSAHUB_GPTREAD_SQL_PORT: "1433"
-      EDARSAHUB_GPTREAD_SQL_DATABASE: "EDARSAHUB"
-      EDARSAHUB_GPTREAD_SQL_USER: "GptLectura"
-      EDARSAHUB_GPTREAD_SQL_PASSWORD: ${{ secrets.EDARSAHUB_GPTREAD_SQL_PASSWORD }}
 
-      EDARSAHUB_GPTWRITE_SQL_HOST: "54.39.104.176"
-      EDARSAHUB_GPTWRITE_SQL_PORT: "1433"
-      EDARSAHUB_GPTWRITE_SQL_DATABASE: "EDARSAHUB"
-      EDARSAHUB_GPTWRITE_SQL_USER: "GptEscritura"
-      EDARSAHUB_GPTWRITE_SQL_PASSWORD: ${{ secrets.EDARSAHUB_GPTWRITE_SQL_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -129,7 +119,7 @@ jobs:
 
       - name: Audit SQL canonical helpers
         run: |
-          grep -nE "get_edarsahub_sql_config|gptread|gptwrite|profile" \
+          grep -nE "get_edarsahub_sql_config|get_sql_connection|profile|EDARSAHUB_SQL_" \
             backend/core/config/edarsahub_config.py \
             backend/core/sql_first/db.py
 
@@ -137,16 +127,23 @@ jobs:
         if: ${{ inputs.run_sql_probe == 'true' }}
         run: |
           PYTHONPATH="$GITHUB_WORKSPACE/backend" python - <<'PY'
-          from core.sql_first.db import get_sql_connection
+          from core.connections.edarsahub_readonly_repository import (
+              validate_readonly_identity,
+          )
+          from core.connections.hrlectura_connection_factory import (
+              build_hrlectura_connection_factory,
+          )
 
           def fetch_one(cur):
               cols = [d[0] for d in cur.description]
               row = cur.fetchone()
               return dict(zip(cols, row)) if row else None
 
-          for profile in ("gptread", "default"):
+          for profile in ("default",):
               print(f"----- {profile} -----")
-              conn = get_sql_connection(profile)
+              connection_factory = build_hrlectura_connection_factory()
+              conn = connection_factory()
+              validate_readonly_identity(conn)
               cur = conn.cursor()
 
               cur.execute("""
