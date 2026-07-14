@@ -150,33 +150,11 @@ jobs:
             --exclude="*.bak*" \
             | head -700 || true
 
-      - name: Inventory menu hardcodes, live and mongo risks
+      - name: Audit executable menu/runtime risks
         run: |
-          echo "===== Inventario no bloqueante: hardcodes/live/mongo/menu drift ====="
-          matches=$(
-            grep -RInE "MongoClient|pymongo|mongodb|mongo|SoftRestaurant|ManagementPro|MPRO|get_external_sql_connection|Servidores_Conexiones|localhost:|127\.0\.0\.1|http://|https://|CIENFUEGOS|ESTELAR|130MID|130QRO|ORIGEN|CHAPUR" \
-              frontend/src backend \
-              --include="*.py" \
-              --include="*.js" \
-              --include="*.jsx" \
-              --include="*.ts" \
-              --include="*.tsx" \
-              --exclude-dir=node_modules \
-              --exclude-dir=graphify-out \
-              --exclude="*.bak*" \
-              || true
-          )
-
-          if [ -n "$matches" ]; then
-            echo "$matches" | head -900
-            if [ "${{ inputs.strict_mode }}" = "true" ]; then
-              echo "strict_mode=true: revisar hardcodes/live/mongo/menu drift detectados."
-              exit 1
-            fi
-            echo "strict_mode=false: inventario no bloqueante."
-          else
-            echo "OK: no se detectaron marcadores de riesgo."
-          fi
+          python backend/tools/ci_runtime_risk_audit.py \
+            --scope menu \
+            --strict "${{ inputs.strict_mode }}"
 
       - name: EDARSAHUB menu/RBAC SQL probe
         run: |

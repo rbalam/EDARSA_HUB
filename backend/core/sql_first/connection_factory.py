@@ -86,43 +86,89 @@ def get_edarsahub_pymssql_connection(
         autocommit=autocommit,
     )
 
+
 def get_external_sql_connection(config: dict):
     """
-    Conexión centralizada a servidores externos.
-    No lee secretos de variables.
-    No imprime secretos.
+    Abre una conexión centralizada a un servidor SQL externo.
+
+    La configuración debe provenir de un resolvedor canónico. Este helper no
+    lee variables de entorno, no descifra secretos y no imprime credenciales.
     """
-    if not config:
+    if not isinstance(config, dict) or not config:
         raise ValueError("Config externa requerida")
 
-    host = config.get("host") or config.get("server") or config.get("servidor")
-    port = int(config.get("port") or config.get("puerto") or 1433)
-    database = config.get("database_name") or config.get("database") or config.get("base_datos") or config.get("bd")
-    username = config.get("username") or config.get("usuario") or config.get("user")
-    password = config.get("password_decrypted") or config.get("password") or config.get("pwd")
+    host = (
+        config.get("host")
+        or config.get("server")
+        or config.get("servidor")
+    )
+    port = int(
+        config.get("port")
+        or config.get("puerto")
+        or 1433
+    )
+    database = (
+        config.get("database_name")
+        or config.get("database")
+        or config.get("base_datos")
+        or config.get("bd")
+    )
+    username = (
+        config.get("username")
+        or config.get("usuario")
+        or config.get("user")
+    )
+    password = (
+        config.get("password_decrypted")
+        or config.get("password")
+        or config.get("pwd")
+    )
+
+    login_timeout = int(
+        config.get("login_timeout")
+        or 10
+    )
+    timeout = int(
+        config.get("timeout")
+        or 30
+    )
+    tds_version = str(
+        config.get("tds_version")
+        or "7.0"
+    )
+    as_dict = bool(
+        config.get("as_dict", False)
+    )
 
     if not host or not database or not username or not password:
-        raise ValueError("Config externa incompleta: host/database/username/password requeridos")
+        raise ValueError(
+            "Config externa incompleta: "
+            "host/database/username/password requeridos"
+        )
 
     try:
         import pymssql
+
         return pymssql.connect(
             server=host,
             port=port,
             user=username,
             password=password,
             database=database,
-            login_timeout=10,
-            timeout=30,
-            tds_version="7.0",
+            login_timeout=login_timeout,
+            timeout=timeout,
+            tds_version=tds_version,
+            as_dict=as_dict,
         )
     except Exception:
         import pyodbc
+
         return pyodbc.connect(
             "DRIVER={ODBC Driver 17 for SQL Server};"
             f"SERVER={host},{port};"
             f"DATABASE={database};"
             f"UID={username};"
             f"PWD={password};"
-            "TrustServerCertificate=yes;Encrypt=no;"
+            "TrustServerCertificate=yes;Encrypt=no;",
+            timeout=login_timeout,
         )

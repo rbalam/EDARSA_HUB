@@ -118,7 +118,10 @@ LOCK_TIMEOUT_MINUTES = 30
 
 # Conexion SQL resuelta solamente cuando se ejecuta una operacion.
 # No evaluar credenciales ni configuracion SQL durante el import.
-from core.sql_first.db import get_sql_connection
+from core.sql_first.db import (
+    fetch_one_dict_readonly,
+    get_sql_connection,
+)
 
 
 def _coerce_mx_datetime(value):
@@ -375,61 +378,89 @@ def _release_sync_lock_sync(
             except Exception:
                 pass
 
-def _get_api_local_config(unidad_codigo: str) -> Optional[Dict]:
+def _get_api_local_config(
+    unidad_codigo: str,
+) -> Optional[Dict]:
     """
-    Obtiene la configuración de API local para una unidad MPRO desde EDARSAHUB.
-    
-    Returns:
-        Dict con api_url, api_key, sucursal_id o None si no existe
+    Obtiene la configuración API local MPRO mediante una lectura EDARSAHUB
+    validada como HRLectura.
     """
-    from core.db import execute_sql_query
     from core.secret_manager import decrypt_secret
-    
-    config = MPRO_API_LOCAL_CONFIG.get(unidad_codigo)
+
+    config = MPRO_API_LOCAL_CONFIG.get(
+        unidad_codigo
+    )
+
     if not config:
-        logger.warning(f"[SYNC_ABIERTAS_V2] Unidad {unidad_codigo} no tiene config en MPRO_API_LOCAL_CONFIG")
+        logger.warning(
+            "[SYNC_ABIERTAS_V2] Unidad %s no tiene "
+            "config en MPRO_API_LOCAL_CONFIG",
+            unidad_codigo,
+        )
         return None
-    
+
     try:
-        rows = execute_sql_query(
-            os.getenv('EDARSAHUB_SQL_HOST'), 1433, 'EDARSAHUB', os.getenv('EDARSAHUB_SQL_USER'), os.getenv('EDARSAHUB_SQL_PASSWORD'),
-            f'''
-            SELECT id, nombre, api_url, api_key_encrypted
-            FROM Servidores_Conexiones
-            WHERE nombre = '{config["server_config_name"]}' 
+        row = fetch_one_dict_readonly(
+            """
+            SELECT TOP (1)
+                id,
+                nombre,
+                api_url,
+                api_key_encrypted
+            FROM dbo.Servidores_Conexiones
+            WHERE nombre = %s
               AND tipo_conexion = 'API_LOCAL'
               AND activo = 1
-            '''
+            """,
+            (config["server_config_name"],),
         )
-        
-        if not rows:
-            logger.warning(f"[SYNC_ABIERTAS_V2] No se encontró servidor '{config['server_config_name']}' en EDARSAHUB")
+
+        if not row:
+            logger.warning(
+                "[SYNC_ABIERTAS_V2] No se encontró "
+                "servidor %r en EDARSAHUB",
+                config["server_config_name"],
+            )
             return None
-        
-        row = rows[0]
+
         api_key = ""
-        if row.get('api_key_encrypted'):
+
+        if row.get("api_key_encrypted"):
             try:
-                api_key = decrypt_secret(row['api_key_encrypted'])
-            except Exception as e:
-                logger.error(f"[SYNC_ABIERTAS_V2] Error descifrando API key: {e}")
+                api_key = decrypt_secret(
+                    row["api_key_encrypted"]
+                )
+            except Exception as exc:
+                logger.error(
+                    "[SYNC_ABIERTAS_V2] Error "
+                    "descifrando API key: %s",
+                    exc,
+                )
                 return None
-        
-        # Convertir server_id a string si es UUID
-        server_id = row['id']
-        if hasattr(server_id, 'hex') or str(type(server_id)) == "<class 'uuid.UUID'>":
+
+        server_id = row["id"]
+
+        if (
+            hasattr(server_id, "hex")
+            or str(type(server_id))
+            == "<class 'uuid.UUID'>"
+        ):
             server_id = str(server_id)
-        
+
         return {
             "server_id": server_id,
-            "server_name": row['nombre'],
-            "api_url": row['api_url'],
+            "server_name": row["nombre"],
+            "api_url": row["api_url"],
             "api_key": api_key,
-            "sucursal_id": config["sucursal_id"]
+            "sucursal_id": config["sucursal_id"],
         }
-        
-    except Exception as e:
-        logger.error(f"[SYNC_ABIERTAS_V2] Error obteniendo config API local: {e}")
+
+    except Exception as exc:
+        logger.error(
+            "[SYNC_ABIERTAS_V2] Error obteniendo "
+            "config API local: %s",
+            exc,
+        )
         return None
 
 
@@ -474,43 +505,40 @@ def _execute_query_via_api_local(api_config: Dict, query: str) -> Tuple[List[Dic
         return [], "API_LOCAL_FAILED"
 
 
-def _get_existing_ventas_dia(unidad_negocio_id: str, sucursal_id: str) -> Optional[Dict]:
+def _get_existing_ventas_dia(
+    unidad_negocio_id: str,
+    sucursal_id: str,
+) -> Optional[Dict]:
     """
-    Consulta el dato existente en Comercial_Ventas_Dia_Abiertas_v2 para una unidad.
-    
-    Se usa para verificar si hay un dato válido antes de sobrescribir con $0.
-    
-    Args:
-        unidad_negocio_id: Código de la unidad (ej: 'ORIGEN', '130QRO')
-        sucursal_id: ID de la sucursal
-        
-    Returns:
-        Dict con los datos existentes o None si no hay
+    Consulta el último dato persistido mediante una conexión EDARSAHUB
+    read-only validada como HRLectura.
     """
-    from core.db import execute_sql_query
-    
-    query = f"""
-    SELECT 
-        total_estimado_dia,
-        ventas_abiertas,
-        ventas_cerradas_dia,
-        fecha_operacion,
-        snapshot_timestamp
-    FROM Comercial_Ventas_Dia_Abiertas_v2
-    WHERE unidad_negocio_id = '{unidad_negocio_id}'
-      AND sucursal_id = '{sucursal_id}'
-    """
-    
     try:
-        rows = execute_sql_query(
-            os.getenv('EDARSAHUB_SQL_HOST'), 1433, 'EDARSAHUB', os.getenv('EDARSAHUB_SQL_USER'), os.getenv('EDARSAHUB_SQL_PASSWORD'),
-            query
+        return fetch_one_dict_readonly(
+            """
+            SELECT TOP (1)
+                total_estimado_dia,
+                ventas_abiertas,
+                ventas_cerradas_dia,
+                fecha_operacion,
+                snapshot_timestamp
+            FROM dbo.Comercial_Ventas_Dia_Abiertas_v2
+            WHERE unidad_negocio_id = %s
+              AND sucursal_id = %s
+            ORDER BY snapshot_timestamp DESC
+            """,
+            (
+                unidad_negocio_id,
+                sucursal_id,
+            ),
         )
-        if rows:
-            return rows[0]
-        return None
-    except Exception as e:
-        logger.warning(f"[SYNC_ABIERTAS_V2] Error consultando dato existente para {unidad_negocio_id}: {e}")
+    except Exception as exc:
+        logger.warning(
+            "[SYNC_ABIERTAS_V2] Error consultando "
+            "dato existente para %s: %s",
+            unidad_negocio_id,
+            exc,
+        )
         return None
 
 

@@ -65,29 +65,11 @@ jobs:
             backend/core/config/edarsahub_config.py \
             backend/core/sql_first/db.py
 
-      - name: Inventory direct SQL connection drift
+      - name: Audit executable SQL connection drift
         run: |
-          echo "Inventario de conexiones directas SQL fuera de helpers canónicos."
-          matches=$(
-            grep -RInE "pymssql\.connect|pyodbc\.connect" backend \
-              --exclude-dir=__pycache__ \
-              --exclude-dir=graphify-out \
-              --exclude="*.bak*" \
-              | grep -v "backend/core/sql_first/db.py" \
-              | grep -v "backend/core/sql_first/connection_factory.py" \
-              || true
-          )
-
-          if [ -n "$matches" ]; then
-            echo "$matches"
-            if [ "${{ inputs.strict_mode }}" = "true" ]; then
-              echo "strict_mode=true: conexiones directas detectadas fuera de helpers canónicos."
-              exit 1
-            fi
-            echo "strict_mode=false: inventario no bloqueante."
-          else
-            echo "OK: no se detectaron conexiones directas fuera de helpers permitidos."
-          fi
+          python backend/tools/ci_runtime_risk_audit.py \
+            --scope sql \
+            --strict "${{ inputs.strict_mode }}"
 
       - name: EDARSAHUB SQL canonical read-only permissions probe
         run: |

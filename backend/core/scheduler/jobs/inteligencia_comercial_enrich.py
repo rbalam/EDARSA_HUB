@@ -23,8 +23,9 @@ import hashlib
 import logging
 from datetime import datetime
 
-import pymssql
-
+from core.sql_first.connection_factory import (
+    get_external_sql_connection,
+)
 from core.sql_first.db import get_sql_connection
 from core.scheduler.jobs.inteligencia_comercial_sync_job import (
     get_unidades_negocio_pos,
@@ -38,10 +39,14 @@ BATCH_SIZE = 500
 
 
 def _connect_pos(cfg):
-    return pymssql.connect(
-        server=cfg["host"], port=int(cfg.get("port") or 1433),
-        user=cfg["username"], password=cfg["password"], database=cfg["database"],
-        login_timeout=10, timeout=240, tds_version="7.0", as_dict=True,
+    connection_config = dict(cfg)
+    connection_config.setdefault("login_timeout", 10)
+    connection_config.setdefault("timeout", 240)
+    connection_config.setdefault("tds_version", "7.0")
+    connection_config.setdefault("as_dict", True)
+
+    return get_external_sql_connection(
+        connection_config
     )
 
 

@@ -101,27 +101,11 @@ jobs:
             --exclude="*.bak*" \
             | head -300 || true
 
-      - name: Inventory scheduler direct live risks
+      - name: Audit executable scheduler risks
         run: |
-          echo "Inventario no bloqueante de posibles accesos LIVE dentro de jobs."
-          matches=$(
-            grep -RInE "SoftRestaurant|ManagementPro|MPRO|live|Servidores_Conexiones|execute_sql_query|get_external_sql_connection" \
-              backend/core/scheduler/jobs backend/core/scheduler backend/api \
-              --include="*.py" \
-              --exclude="*.bak*" \
-              || true
-          )
-
-          if [ -n "$matches" ]; then
-            echo "$matches" | head -300
-            if [ "${{ inputs.strict_mode }}" = "true" ]; then
-              echo "strict_mode=true: revisar accesos live/directos detectados en scheduler."
-              exit 1
-            fi
-            echo "strict_mode=false: inventario no bloqueante."
-          else
-            echo "OK: no se detectaron marcadores live/directos en scheduler."
-          fi
+          python backend/tools/ci_runtime_risk_audit.py \
+            --scope scheduler \
+            --strict "${{ inputs.strict_mode }}"
 
       - name: EDARSAHUB scheduler SQL probe
         run: |

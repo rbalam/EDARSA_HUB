@@ -16,10 +16,16 @@ import logging
 import json
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
-import pymssql
 import os
 from core.config.edarsahub_config import get_edarsahub_sql_config
-from core.sql_first.db import get_sql_connection, fetch_all_dict, execute_sql
+from core.sql_first.connection_factory import (
+    get_external_sql_connection,
+)
+from core.sql_first.db import (
+    execute_sql,
+    fetch_all_dict,
+    get_sql_connection,
+)
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -56,41 +62,66 @@ def get_edarsahub_connection():
     return get_sql_connection()
 
 
-def get_pos_connection(config: Dict) -> Optional[pymssql.Connection]:
+def get_pos_connection(
+    config: Dict,
+) -> Optional[Any]:
     """
-    Conexión REAL al servidor POS origen (SoftRestaurant/MPRO).
+    Abre una conexión POS mediante el factory externo centralizado.
 
-    NOTA P0: este método es SOLO para ETL/sync autorizado; los dashboards NO
-    consultan el POS en vivo. NO debe usar get_sql_connection() porque eso
-    conectaba a EDARSAHUB (destino) en vez del POS origen (bug del stub previo).
-
-    Si faltan credenciales (p.ej. *_DB_PASS vacío), retorna None sin intentar
-    conectar, evitando cuelgues; el job se vuelve no-op seguro.
+    La configuración debe haber sido resuelta desde la relación canónica
+    Unidades_Negocio.server_id -> Servidores_Conexiones.id.
     """
-    required = ["host", "database", "username", "password"]
-    missing = [k for k in required if not config.get(k)]
+    required = [
+        "host",
+        "database",
+        "username",
+        "password",
+    ]
+    missing = [
+        key
+        for key in required
+        if not config.get(key)
+    ]
+
     if missing:
         logger.error(
-            f"[SYNC] Config POS incompleta (host={config.get('host')}); "
-            f"faltan/vacios={missing}. No se intenta conexión."
+            "[SYNC] Config POS incompleta "
+            "(host=%s); faltan/vacíos=%s. "
+            "No se intenta conexión.",
+            config.get("host"),
+            missing,
         )
         return None
+
+    connection_config = dict(config)
+    connection_config.setdefault(
+        "login_timeout",
+        15,
+    )
+    connection_config.setdefault(
+        "timeout",
+        180,
+    )
+    connection_config.setdefault(
+        "tds_version",
+        "7.0",
+    )
+    connection_config.setdefault(
+        "as_dict",
+        True,
+    )
+
     try:
-        return pymssql.connect(
-            server=config["host"],
-            port=int(config.get("port", 1433)),
-            user=config["username"],
-            password=config["password"],
-            database=config["database"],
-            login_timeout=int(config.get("login_timeout", 15)),
-            timeout=int(config.get("timeout", 180)),
-            tds_version=str(config.get("tds_version", "7.0")),
-            as_dict=True,
+        return get_external_sql_connection(
+            connection_config
         )
-    except Exception as e:
+    except Exception as exc:
         logger.error(
-            f"[SYNC] Error conectando a POS host={config.get('host')} "
-            f"db={config.get('database')}: {e}"
+            "[SYNC] Error conectando a POS "
+            "host=%s db=%s: %s",
+            config.get("host"),
+            config.get("database"),
+            exc,
         )
         return None
 

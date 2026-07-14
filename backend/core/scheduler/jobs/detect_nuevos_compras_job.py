@@ -212,7 +212,16 @@ def _execute_with_timeout(host, port, database, username, password, query, timeo
         signal.alarm(timeout_seconds)
     
     try:
-        result = execute_sql_query(host, port, database, username, password, query, timeout=timeout_seconds)
+        result = execute_sql_query(
+            host,
+            port,
+            database,
+            username,
+            password,
+            query,
+            timeout_seconds=timeout_seconds,
+            context="jobs",
+        )
         return result
     except Exception as e:
         if 'timeout' in str(e).lower() or 'connection' in str(e).lower():
