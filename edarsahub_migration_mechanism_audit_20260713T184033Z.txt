@@ -37,13 +37,13 @@ runner_help_exit=0
      1	"""
      2	EDARSAHUB SQL Runner (canonical connection factory)
      3	Herramienta controlada para ejecutar diagnósticos, migraciones y validaciones SQL Server.
-     4	
+     4
      5	Uso recomendado:
      6	    python backend/tools/edarsahub_sql_runner.py --mode diagnostic --script backend/database/diagnostics/001_diagnostico.sql
      7	    python backend/tools/edarsahub_sql_runner.py --mode dry-run --script backend/database/migrations/001_migracion.sql
      8	    python backend/tools/edarsahub_sql_runner.py --mode migrate --script backend/database/migrations/001_migracion.sql
      9	    python backend/tools/edarsahub_sql_runner.py --mode validate --script backend/database/validation/001_validacion.sql
-    10	
+    10
     11	Variables de entorno requeridas:
     12	    EDARSAHUB_SQL_HOST
     13	    EDARSAHUB_SQL_DATABASE
@@ -53,14 +53,14 @@ runner_help_exit=0
     17	    EDARSAHUB_SQL_LOGIN_TIMEOUT_SECONDS=15    # Opcional
     18	    EDARSAHUB_ALLOW_MIGRATIONS=true   # Solo para modo migrate
     19	"""
-    20	
+    20
     21	import argparse
     22	import datetime as dt
     23	import os
     24	import re
     25	import sys
     26	from pathlib import Path
-    27	
+    27
     28	from core.config.edarsahub_config import get_edarsahub_sql_config
     29	from core.connections.edarsahub_readonly_repository import (
     30	    validate_readonly_identity,
@@ -71,14 +71,14 @@ runner_help_exit=0
     35	from core.sql_first.connection_factory import (
     36	    get_edarsahub_pymssql_connection,
     37	)
-    38	
-    39	
-    40	
+    38
+    39
+    40
     41	ROOT_DIR = Path(__file__).resolve().parents[2]
     42	REPORT_DIR = ROOT_DIR / "docs" / "reports" / "sql_runner_logs"
-    43	
+    43
     44	ALLOWED_MODES = {"diagnostic", "dry-run", "migrate", "validate"}
-    45	
+    45
     46	FORBIDDEN_PATTERNS = [
     47	    r"\bDROP\s+TABLE\b",
     48	    r"\bTRUNCATE\s+TABLE\b",
@@ -87,39 +87,39 @@ runner_help_exit=0
     51	    r"\bEXEC\s+xp_cmdshell\b",
     52	    r"\bsp_configure\b",
     53	]
-    54	
+    54
     55	DANGEROUS_DELETE_PATTERN = r"\bDELETE\s+FROM\b(?![\s\S]*\bWHERE\b)"
-    56	
-    57	
+    56
+    57
     58	def get_env(name: str, required: bool = True, default: str | None = None) -> str | None:
     59	    value = os.getenv(name, default)
     60	    if required and not value:
     61	        raise RuntimeError(f"Falta variable de entorno requerida: {name}")
     62	    return value
-    63	
-    64	
+    63
+    64
     65	def get_int_env(name: str, default: int) -> int:
     66	    value = os.getenv(name)
     67	    if value is None or value == "":
     68	        return default
-    69	
+    69
     70	    try:
     71	        return int(value)
     72	    except ValueError as exc:
     73	        raise RuntimeError(f"Variable de entorno invalida para entero: {name}") from exc
-    74	
-    75	
+    74
+    75
     76	def _load_readonly_profile(profile: str) -> dict[str, str]:
     77	    cfg = get_edarsahub_sql_config(profile)
     78	    return {"user": cfg.user}
-    79	
-    80	
+    79
+    80
     81	def _open_readonly_profile(profile: str):
     82	    if profile != "default":
     83	        raise RuntimeError(
     84	            f"Perfil SQL read-only no autorizado: {profile!r}"
     85	        )
-    86	
+    86
     87	    return get_edarsahub_pymssql_connection(
     88	        timeout=get_int_env(
     89	            "EDARSAHUB_SQL_TIMEOUT_SECONDS",
@@ -131,12 +131,12 @@ runner_help_exit=0
     95	        ),
     96	        autocommit=False,
     97	    )
-    98	
-    99	
+    98
+    99
    100	def get_connection(mode: str):
    101	    """
    102	    Obtiene una conexion mediante el adaptador canonico.
-   103	
+   103
    104	    diagnostic y validate exigen HRLectura antes de abrir.
    105	    migrate conserva un contrato separado y su guardrail explicito.
    106	    """
@@ -146,7 +146,7 @@ runner_help_exit=0
    110	            connection_opener=_open_readonly_profile,
    111	        )
    112	        return readonly_factory()
-   113	
+   113
    114	    return get_edarsahub_pymssql_connection(
    115	        timeout=get_int_env(
    116	            "EDARSAHUB_SQL_TIMEOUT_SECONDS",
@@ -158,28 +158,28 @@ runner_help_exit=0
    122	        ),
    123	        autocommit=False,
    124	    )
-   125	
-   126	
+   125
+   126
    127	def read_sql_file(script_path: Path) -> str:
    128	    if script_path.suffix.lower() != ".sql":
    129	        raise RuntimeError("Solo se permiten archivos .sql")
-   130	
+   130
    131	    if not script_path.exists():
    132	        raise RuntimeError(f"No existe el script: {script_path}")
-   133	
+   133
    134	    return script_path.read_text(encoding="utf-8")
-   135	
-   136	
+   135
+   136
    137	def validate_sql_safety(sql: str, mode: str) -> None:
    138	    sql_upper = sql.upper()
-   139	
+   139
    140	    for pattern in FORBIDDEN_PATTERNS:
    141	        if re.search(pattern, sql_upper, re.IGNORECASE):
    142	            raise RuntimeError(f"SQL bloqueado por patrón peligroso: {pattern}")
-   143	
+   143
    144	    if re.search(DANGEROUS_DELETE_PATTERN, sql_upper, re.IGNORECASE):
    145	        raise RuntimeError("SQL bloqueado: DELETE sin WHERE.")
-   146	
+   146
    147	    if mode in {"diagnostic", "validate"}:
    148	        blocked = [
    149	            r"\bCREATE\s+TABLE\b",
@@ -195,23 +195,23 @@ runner_help_exit=0
    159	                raise RuntimeError(
    160	                    f"El modo {mode} no permite cambios de estructura o datos. Patrón detectado: {pattern}"
    161	                )
-   162	
+   162
    163	    if mode == "migrate":
    164	        allow = os.getenv("EDARSAHUB_ALLOW_MIGRATIONS", "").lower()
    165	        if allow != "true":
    166	            raise RuntimeError(
    167	                "Migración bloqueada. Define EDARSAHUB_ALLOW_MIGRATIONS=true para permitir ejecución."
    168	            )
-   169	
-   170	
+   169
+   170
    171	def split_sql_batches(sql: str) -> list[str]:
    172	    """
    173	    Divide scripts SQL Server por GO en línea independiente.
    174	    """
    175	    batches = re.split(r"^\s*GO\s*$", sql, flags=re.IGNORECASE | re.MULTILINE)
    176	    return [batch.strip() for batch in batches if batch.strip()]
-   177	
-   178	
+   177
+   178
    179	def execute_sql(sql: str, mode: str) -> dict:
    180	    if mode == "dry-run":
    181	        return {
@@ -221,23 +221,23 @@ runner_help_exit=0
    185	            "batches": len(split_sql_batches(sql)),
    186	            "results": [],
    187	        }
-   188	
+   188
    189	    batches = split_sql_batches(sql)
    190	    results = []
    191	    conn = None
    192	    cursor = None
-   193	
+   193
    194	    try:
    195	        conn = get_connection(mode)
-   196	
+   196
    197	        if mode in {"diagnostic", "validate"}:
    198	            validate_readonly_identity(conn)
-   199	
+   199
    200	        cursor = conn.cursor(as_dict=True)
-   201	
+   201
    202	        for index, batch in enumerate(batches, start=1):
    203	            cursor.execute(batch)
-   204	
+   204
    205	            if cursor.description:
    206	                columns = [col[0] for col in cursor.description]
    207	                rows = cursor.fetchall()
@@ -258,12 +258,12 @@ runner_help_exit=0
    222	                        "rowcount": cursor.rowcount,
    223	                    }
    224	                )
-   225	
+   225
    226	        if mode == "migrate":
    227	            conn.commit()
    228	        else:
    229	            conn.rollback()
-   230	
+   230
    231	        return {
    232	            "success": True,
    233	            "mode": mode,
@@ -271,39 +271,39 @@ runner_help_exit=0
    235	            "batches": len(batches),
    236	            "results": results,
    237	        }
-   238	
+   238
    239	    except Exception as exc:
    240	        if conn is not None:
    241	            try:
    242	                conn.rollback()
    243	            except Exception:
    244	                pass
-   245	
+   245
    246	        raise RuntimeError(
    247	            "Error ejecutando SQL. Se hizo rollback. "
    248	            f"Detalle: {exc}"
    249	        ) from exc
-   250	
+   250
    251	    finally:
    252	        if cursor is not None:
    253	            try:
    254	                cursor.close()
    255	            except Exception:
    256	                pass
-   257	
+   257
    258	        if conn is not None:
    259	            try:
    260	                conn.close()
    261	            except Exception:
    262	                pass
-   263	
-   264	
+   263
+   264
    265	def write_report(script_path: Path, mode: str, sql: str, result: dict | None, error: str | None) -> Path:
    266	    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-   267	
+   267
    268	    timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
    269	    report_path = REPORT_DIR / f"{timestamp}_{mode}_{script_path.stem}.md"
-   270	
+   270
    271	    try:
    272	        cfg = get_edarsahub_sql_config()
    273	    except RuntimeError:
@@ -312,7 +312,7 @@ runner_help_exit=0
    276	    else:
    277	        server = cfg.host
    278	        database = cfg.database
-   279	
+   279
    280	    content = []
    281	    content.append(f"# EDARSAHUB SQL Runner Report\n")
    282	    content.append(f"- Fecha: {dt.datetime.now().isoformat()}")
@@ -321,7 +321,7 @@ runner_help_exit=0
    285	    content.append(f"- Base de datos: `{database}`")
    286	    content.append(f"- Script: `{script_path}`")
    287	    content.append("")
-   288	
+   288
    289	    if error:
    290	        content.append("## Resultado")
    291	        content.append("ERROR")
@@ -337,7 +337,7 @@ runner_help_exit=0
    301	            content.append(f"- Batches ejecutados: {result.get('batches', 0)}")
    302	            content.append(f"- Mensaje: {result.get('message', '')}")
    303	            content.append("")
-   304	            
+   304
    305	            for r in result.get("results", []):
    306	                content.append(f"### Batch {r.get('batch')}")
    307	                if r.get("type") == "resultset":
@@ -354,17 +354,17 @@ runner_help_exit=0
    318	                    content.append(f"- Tipo: Comando")
    319	                    content.append(f"- Filas afectadas: {r.get('rowcount', 0)}")
    320	                content.append("")
-   321	
+   321
    322	    content.append("")
    323	    content.append("## SQL ejecutado / revisado")
    324	    content.append("```sql")
    325	    content.append(sql[:20000])
    326	    content.append("```")
-   327	
+   327
    328	    report_path.write_text("\n".join(content), encoding="utf-8")
    329	    return report_path
-   330	
-   331	
+   330
+   331
    332	def main() -> int:
    333	    parser = argparse.ArgumentParser(
    334	        description=(
@@ -374,51 +374,51 @@ runner_help_exit=0
    338	    )
    339	    parser.add_argument("--mode", required=True, choices=sorted(ALLOWED_MODES))
    340	    parser.add_argument("--script", required=True)
-   341	
+   341
    342	    args = parser.parse_args()
-   343	
+   343
    344	    mode = args.mode
    345	    script_path = Path(args.script).resolve()
-   346	
+   346
    347	    result = None
    348	    error = None
    349	    sql = ""
-   350	
+   350
    351	    try:
    352	        sql = read_sql_file(script_path)
    353	        validate_sql_safety(sql, mode)
    354	        result = execute_sql(sql, mode)
-   355	
+   355
    356	    except Exception as exc:
    357	        error = str(exc)
-   358	
+   358
    359	    report_path = write_report(script_path, mode, sql, result, error)
-   360	
+   360
    361	    if error:
    362	        print(f"ERROR: {error}")
    363	        print(f"Reporte generado: {report_path}")
    364	        return 1
-   365	
+   365
    366	    print("Ejecución completada correctamente.")
    367	    print(f"Reporte generado: {report_path}")
-   368	    
+   368
    369	    # Imprimir resumen de resultados
    370	    if result:
    371	        for r in result.get("results", []):
    372	            if r.get("type") == "resultset":
    373	                print(f"  Batch {r.get('batch')}: {r.get('row_count')} filas")
-   374	    
+   374
    375	    return 0
-   376	
-   377	
+   376
+   377
    378	if __name__ == "__main__":
    379	    sys.exit(main())
 
 ===== CONFIG SQL COMPLETA =====
      1	import os
      2	from dataclasses import dataclass
-     3	
-     4	
+     3
+     4
      5	@dataclass(frozen=True)
      6	class EdarsaHubSQLConfig:
      7	    host: str
@@ -427,34 +427,34 @@ runner_help_exit=0
     10	    user: str
     11	    password: str
     12	    profile: str = "default"
-    13	
-    14	
+    13
+    14
     15	_PROFILE_PREFIXES = {
     16	    "default": "EDARSAHUB_SQL",
     17	}
-    18	
-    19	
+    18
+    19
     20	def _required(name: str) -> str:
     21	    value = os.getenv(name)
     22	    if not value:
     23	        raise RuntimeError(f"Variable obligatoria no configurada: {name}")
     24	    return value
-    25	
-    26	
+    25
+    26
     27	def get_edarsahub_sql_config(profile: str = "default") -> EdarsaHubSQLConfig:
     28	    """
     29	    Config canónica EDARSAHUB SQL.
-    30	
+    30
     31	    Perfil permitido:
     32	    - default: configuracion canonica EDARSAHUB_SQL_*
-    33	
+    33
     34	    Los perfiles alternativos estan prohibidos.
     35	    """
     36	    normalized = (profile or "default").lower()
     37	    prefix = _PROFILE_PREFIXES.get(normalized)
     38	    if not prefix:
     39	        raise ValueError(f"Perfil EDARSAHUB SQL no soportado: {profile}")
-    40	
+    40
     41	    return EdarsaHubSQLConfig(
     42	        host=_required(f"{prefix}_HOST"),
     43	        port=int(os.getenv(f"{prefix}_PORT", "1433")),
@@ -466,10 +466,10 @@ runner_help_exit=0
 
 ===== FACTORY SQL COMPLETA =====
      1	from core.config.edarsahub_config import get_edarsahub_sql_config
-     2	
+     2
      3	ODBC_DRIVER_NAME = "ODBC Driver 17 for SQL Server"
-     4	
-     5	
+     4
+     5
      6	def _connect_edarsahub_pymssql(
      7	    cfg,
      8	    *,
@@ -479,7 +479,7 @@ runner_help_exit=0
     12	    tds_version: str | None = None,
     13	):
     14	    import pymssql
-    15	
+    15
     16	    connect_kwargs = {
     17	        "server": cfg.host,
     18	        "port": cfg.port,
@@ -490,24 +490,24 @@ runner_help_exit=0
     23	        "timeout": timeout,
     24	        "autocommit": autocommit,
     25	    }
-    26	
+    26
     27	    if tds_version is not None:
     28	        connect_kwargs["tds_version"] = tds_version
-    29	
+    29
     30	    return pymssql.connect(**connect_kwargs)
-    31	
-    32	
+    31
+    32
     33	def get_edarsahub_connection(profile: str = "default"):
     34	    """
     35	    Abre una conexion canonica a EDARSAHUB.
-    36	
+    36
     37	    Solo usa pymssql como fallback cuando pyodbc no puede importarse
     38	    o cuando el driver ODBC requerido no esta instalado.
-    39	
+    39
     40	    Los errores reales de conexion pyodbc se propagan sin fallback.
     41	    """
     42	    cfg = get_edarsahub_sql_config(profile)
-    43	
+    43
     44	    try:
     45	        import pyodbc
     46	    except ImportError:
@@ -515,15 +515,15 @@ runner_help_exit=0
     48	            cfg,
     49	            tds_version="7.0",
     50	        )
-    51	
+    51
     52	    installed_drivers = set(pyodbc.drivers())
-    53	
+    53
     54	    if ODBC_DRIVER_NAME not in installed_drivers:
     55	        return _connect_edarsahub_pymssql(
     56	            cfg,
     57	            tds_version="7.0",
     58	        )
-    59	
+    59
     60	    return pyodbc.connect(
     61	        f"DRIVER={{{ODBC_DRIVER_NAME}}};"
     62	        f"SERVER={cfg.host},{cfg.port};"
@@ -532,8 +532,8 @@ runner_help_exit=0
     65	        f"PWD={cfg.password};"
     66	        "TrustServerCertificate=yes;Encrypt=no;"
     67	    )
-    68	
-    69	
+    68
+    69
     70	def get_edarsahub_pymssql_connection(
     71	    timeout: int = 30,
     72	    login_timeout: int = 10,
@@ -541,18 +541,18 @@ runner_help_exit=0
     74	):
     75	    """
     76	    Conexion EDARSAHUB centralizada via pymssql.
-    77	
+    77
     78	    Se conserva para modulos legacy que usan cursor(as_dict=True).
     79	    """
     80	    cfg = get_edarsahub_sql_config()
-    81	
+    81
     82	    return _connect_edarsahub_pymssql(
     83	        cfg,
     84	        timeout=timeout,
     85	        login_timeout=login_timeout,
     86	        autocommit=autocommit,
     87	    )
-    88	
+    88
     89	def get_external_sql_connection(config: dict):
     90	    """
     91	    Conexión centralizada a servidores externos.
@@ -561,16 +561,16 @@ runner_help_exit=0
     94	    """
     95	    if not config:
     96	        raise ValueError("Config externa requerida")
-    97	
+    97
     98	    host = config.get("host") or config.get("server") or config.get("servidor")
     99	    port = int(config.get("port") or config.get("puerto") or 1433)
    100	    database = config.get("database_name") or config.get("database") or config.get("base_datos") or config.get("bd")
    101	    username = config.get("username") or config.get("usuario") or config.get("user")
    102	    password = config.get("password_decrypted") or config.get("password") or config.get("pwd")
-   103	
+   103
    104	    if not host or not database or not username or not password:
    105	        raise ValueError("Config externa incompleta: host/database/username/password requeridos")
-   106	
+   106
    107	    try:
    108	        import pymssql
    109	        return pymssql.connect(
@@ -599,24 +599,24 @@ runner_help_exit=0
      2	EDARSAHUB V1.0
      3	Migracion: Scheduler_DistributedLocks
      4	Fecha: 2026-07-12
-     5	
+     5
      6	Objetivo:
      7	- Sustituir scheduler_locks de MongoDB.
      8	- Proporcionar exclusion mutua entre procesos y workers.
      9	- Soportar expiracion, heartbeat, liberacion por propietario
     10	  y liberacion administrativa.
     11	- No modificar las tablas existentes del scheduler.
-    12	
+    12
     13	Esta migracion no migra datos porque el lock Mongo actual
     14	se encuentra neutralizado mediante NullLock.
     15	*/
-    16	
+    16
     17	SET NOCOUNT ON;
     18	SET XACT_ABORT ON;
-    19	
+    19
     20	BEGIN TRY
     21	    BEGIN TRANSACTION;
-    22	
+    22
     23	    IF OBJECT_ID(
     24	        'dbo.Scheduler_DistributedLocks',
     25	        'U'
@@ -626,37 +626,37 @@ runner_help_exit=0
     29	        (
     30	            JobName VARCHAR(100) NOT NULL,
     31	            OwnerID VARCHAR(200) NOT NULL,
-    32	
+    32
     33	            AcquiredAt DATETIME2(3) NOT NULL
     34	                CONSTRAINT DF_Scheduler_DistributedLocks_AcquiredAt
     35	                DEFAULT SYSUTCDATETIME(),
-    36	
+    36
     37	            HeartbeatAt DATETIME2(3) NOT NULL
     38	                CONSTRAINT DF_Scheduler_DistributedLocks_HeartbeatAt
     39	                DEFAULT SYSUTCDATETIME(),
-    40	
+    40
     41	            LockUntil DATETIME2(3) NOT NULL,
-    42	
+    42
     43	            CONSTRAINT PK_Scheduler_DistributedLocks
     44	                PRIMARY KEY CLUSTERED (JobName),
-    45	
+    45
     46	            CONSTRAINT CK_Scheduler_DistributedLocks_Expiration
     47	                CHECK (LockUntil >= HeartbeatAt)
     48	        );
     49	    END;
-    50	
+    50
     51	    DECLARE @ObjectID INT = OBJECT_ID(
     52	        N'dbo.Scheduler_DistributedLocks',
     53	        N'U'
     54	    );
-    55	
+    55
     56	    IF @ObjectID IS NULL
     57	    BEGIN
     58	        ;THROW 51003,
     59	            N'Migracion abortada: no existe dbo.Scheduler_DistributedLocks.',
     60	            1;
     61	    END;
-    62	
+    62
     63	    IF EXISTS (
     64	        SELECT 1
     65	        FROM (
@@ -735,7 +735,7 @@ runner_help_exit=0
    138	            N'Validacion abortada: contrato de columnas incompatible.',
    139	            1;
    140	    END;
-   141	
+   141
    142	    IF (
    143	        SELECT COUNT_BIG(*)
    144	        FROM sys.default_constraints AS dc
@@ -804,7 +804,7 @@ runner_help_exit=0
    207	            N'Validacion abortada: defaults UTC incompatibles.',
    208	            1;
    209	    END;
-   210	
+   210
    211	    IF NOT EXISTS (
    212	        SELECT 1
    213	        FROM sys.indexes AS i
@@ -843,7 +843,7 @@ runner_help_exit=0
    246	            N'Validacion abortada: primary key incompatible.',
    247	            1;
    248	    END;
-   249	
+   249
    250	    IF (
    251	        SELECT COUNT_BIG(*)
    252	        FROM sys.check_constraints AS cc
@@ -881,7 +881,7 @@ runner_help_exit=0
    284	            N'Validacion abortada: check de expiracion incompatible.',
    285	            1;
    286	    END;
-   287	
+   287
    288	    IF NOT EXISTS
    289	    (
    290	        SELECT 1
@@ -901,7 +901,7 @@ runner_help_exit=0
    304	        INCLUDE
    305	            (OwnerID, HeartbeatAt);
    306	    END;
-   307	
+   307
    308	    IF NOT EXISTS
    309	    (
    310	        SELECT 1
@@ -919,7 +919,7 @@ runner_help_exit=0
    322	        ON dbo.Scheduler_DistributedLocks
    323	            (OwnerID);
    324	    END;
-   325	
+   325
    326	    IF NOT EXISTS (
    327	        SELECT 1
    328	        FROM sys.indexes AS i
@@ -987,7 +987,7 @@ runner_help_exit=0
    390	            N'Validacion abortada: indice LockUntil incompatible.',
    391	            1;
    392	    END;
-   393	
+   393
    394	    IF NOT EXISTS (
    395	        SELECT 1
    396	        FROM sys.indexes AS i
@@ -1033,13 +1033,13 @@ runner_help_exit=0
    436	            N'Validacion abortada: indice OwnerID incompatible.',
    437	            1;
    438	    END;
-   439	
+   439
    440	    COMMIT TRANSACTION;
    441	END TRY
    442	BEGIN CATCH
    443	    IF XACT_STATE() <> 0
    444	        ROLLBACK TRANSACTION;
-   445	
+   445
    446	    THROW;
    447	END CATCH;
 
@@ -1047,20 +1047,20 @@ runner_help_exit=0
      1	/*
      2	Validacion posterior:
      3	dbo.Scheduler_DistributedLocks
-     4	
+     4
      5	Archivo de solo lectura:
      6	- SELECT para evidencia.
      7	- IF/THROW para validacion fail-closed.
      8	- Sin INSERT, UPDATE, DELETE, MERGE, CREATE, ALTER ni DROP.
-     9	
+     9
     10	Debe ejecutarse exclusivamente con:
     11	- DB_NAME() = EDARSAHUB
     12	- SUSER_SNAME() = HRLectura
     13	- USER_NAME() = HRLectura
     14	*/
-    15	
+    15
     16	SET NOCOUNT ON;
-    17	
+    17
     18	DECLARE
     19	    @DatabaseName SYSNAME = DB_NAME(),
     20	    @LoginName SYSNAME = SUSER_SNAME(),
@@ -1069,13 +1069,13 @@ runner_help_exit=0
     23	        N'dbo.Scheduler_DistributedLocks',
     24	        N'U'
     25	    );
-    26	
+    26
     27	SELECT
     28	    @DatabaseName AS DatabaseName,
     29	    @LoginName AS LoginName,
     30	    @DatabaseUser AS DatabaseUser,
     31	    @ObjectID AS ObjectID;
-    32	
+    32
     33	IF @DatabaseName IS NULL
     34	   OR CONVERT(VARBINARY(256), @DatabaseName)
     35	      <> CONVERT(VARBINARY(256), N'EDARSAHUB')
@@ -1084,7 +1084,7 @@ runner_help_exit=0
     38	        N'Validacion abortada: DB_NAME() debe ser EDARSAHUB.',
     39	        1;
     40	END;
-    41	
+    41
     42	IF @LoginName IS NULL
     43	   OR CONVERT(VARBINARY(256), @LoginName)
     44	      <> CONVERT(VARBINARY(256), N'HRLectura')
@@ -1093,7 +1093,7 @@ runner_help_exit=0
     47	        N'Validacion abortada: SUSER_SNAME() debe ser HRLectura.',
     48	        1;
     49	END;
-    50	
+    50
     51	IF @DatabaseUser IS NULL
     52	   OR CONVERT(VARBINARY(256), @DatabaseUser)
     53	      <> CONVERT(VARBINARY(256), N'HRLectura')
@@ -1102,14 +1102,14 @@ runner_help_exit=0
     56	        N'Validacion abortada: USER_NAME() debe ser HRLectura.',
     57	        1;
     58	END;
-    59	
+    59
     60	IF @ObjectID IS NULL
     61	BEGIN
     62	    ;THROW 51003,
     63	        N'Validacion abortada: no existe dbo.Scheduler_DistributedLocks.',
     64	        1;
     65	END;
-    66	
+    66
     67	IF EXISTS (
     68	    SELECT 1
     69	    FROM (
@@ -1188,7 +1188,7 @@ runner_help_exit=0
    142	        N'Validacion abortada: contrato de columnas incompatible.',
    143	        1;
    144	END;
-   145	
+   145
    146	IF (
    147	    SELECT COUNT_BIG(*)
    148	    FROM sys.default_constraints AS dc
@@ -1257,7 +1257,7 @@ runner_help_exit=0
    211	        N'Validacion abortada: defaults UTC incompatibles.',
    212	        1;
    213	END;
-   214	
+   214
    215	IF NOT EXISTS (
    216	    SELECT 1
    217	    FROM sys.indexes AS i
@@ -1296,7 +1296,7 @@ runner_help_exit=0
    250	        N'Validacion abortada: primary key incompatible.',
    251	        1;
    252	END;
-   253	
+   253
    254	IF (
    255	    SELECT COUNT_BIG(*)
    256	    FROM sys.check_constraints AS cc
@@ -1334,7 +1334,7 @@ runner_help_exit=0
    288	        N'Validacion abortada: check de expiracion incompatible.',
    289	        1;
    290	END;
-   291	
+   291
    292	IF NOT EXISTS (
    293	    SELECT 1
    294	    FROM sys.indexes AS i
@@ -1402,7 +1402,7 @@ runner_help_exit=0
    356	        N'Validacion abortada: indice LockUntil incompatible.',
    357	        1;
    358	END;
-   359	
+   359
    360	IF NOT EXISTS (
    361	    SELECT 1
    362	    FROM sys.indexes AS i
@@ -1448,7 +1448,7 @@ runner_help_exit=0
    402	        N'Validacion abortada: indice OwnerID incompatible.',
    403	        1;
    404	END;
-   405	
+   405
    406	SELECT
    407	    c.column_id AS ColumnID,
    408	    c.name AS ColumnName,
@@ -1464,7 +1464,7 @@ runner_help_exit=0
    418	WHERE c.object_id = @ObjectID
    419	ORDER BY
    420	    c.column_id;
-   421	
+   421
    422	SELECT
    423	    i.name AS IndexName,
    424	    i.is_unique AS IsUnique,
@@ -1487,7 +1487,7 @@ runner_help_exit=0
    441	    ic.is_included_column,
    442	    ic.key_ordinal,
    443	    c.column_id;
-   444	
+   444
    445	SELECT
    446	    cc.name AS ConstraintName,
    447	    cc.definition AS ConstraintDefinition,
@@ -1497,7 +1497,7 @@ runner_help_exit=0
    451	WHERE cc.parent_object_id = @ObjectID
    452	ORDER BY
    453	    cc.name;
-   454	
+   454
    455	SELECT
    456	    COUNT_BIG(*) AS TotalLocks,
    457	    COALESCE(
@@ -2552,7 +2552,7 @@ docs/reports/DIAGNOSTICO_MAPEO_RBAC_MONGO_A_SQL.md:11047:/app/docs/reports/sql_r
 docs/reports/DIAGNOSTICO_MAPEO_RBAC_MONGO_A_SQL.md:11048:/app/docs/reports/sql_runner_logs/20260602_195522_migrate_030_diagnostico_mapeo_rbac_mongo_a_sql.md:270:        UNION ALL SELECT 'rbac_usuarios_roles', 'Usuario_RolesAsignacion', 'Usuarios/RBAC', 'P0', 'PENDIENTE_DIAGNOSTICO', 'Mapear asignaciones solo después de validar usuarios.'
 docs/reports/DIAGNOSTICO_MAPEO_RBAC_MONGO_A_SQL.md:11049:/app/docs/reports/sql_runner_logs/20260602_195522_migrate_030_diagnostico_mapeo_rbac_mongo_a_sql.md:271:        UNION ALL SELECT 'rbac_permisos', 'Usuario_PermisosRolModulo', 'Usuarios/RBAC', 'P0', 'PENDIENTE_DIAGNOSTICO', 'Mapear permisos Mongo contra módulo/acción SQL.'
 docs/reports/DIAGNOSTICO_MAPEO_RBAC_MONGO_A_SQL.md:11050:/app/docs/reports/sql_runner_logs/20260602_195522_migrate_030_diagnostico_mapeo_rbac_mongo_a_sql.md:272:        UNION ALL SELECT 'rbac_audit_log', 'Usuario_LogRBACVerificacion', 'Usuarios/RBAC/Auditoría', 'P1', 'PENDIENTE_DIAGNOSTICO', 'Migrar logs después de usuarios/roles.'
-docs/reports/EJECUCION_GOBIERNO_RBAC_INTELIGENCIA_20260602.md:4:**Ejecutado por**: SQL Runner (`edarsahub_sql_runner.py`)  
+docs/reports/EJECUCION_GOBIERNO_RBAC_INTELIGENCIA_20260602.md:4:**Ejecutado por**: SQL Runner (`edarsahub_sql_runner.py`)
 docs/reports/EJECUCION_GOBIERNO_RBAC_INTELIGENCIA_20260602.md:86:- `/app/backend/database/diagnostics/014_diagnostico_tablas_rbac_usuario.sql`
 docs/reports/EJECUCION_GOBIERNO_RBAC_INTELIGENCIA_20260602.md:87:- `/app/backend/database/diagnostics/015_diagnostico_completo_rbac_canonico.sql`
 docs/reports/EJECUCION_GOBIERNO_RBAC_INTELIGENCIA_20260602.md:88:- `/app/backend/database/diagnostics/016_verificar_datos_rbac.sql`

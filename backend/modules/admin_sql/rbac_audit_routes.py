@@ -896,4 +896,3 @@ def execute_schema_section_audit(
 
         if connection is not None:
             connection.close()
-
