@@ -76,6 +76,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { Checkbox } from '../components/ui/checkbox';
+import { isSuperAdmin as isSuperAdminRole } from '../lib/roleUtils';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -155,7 +156,7 @@ export default function ConfigAsignaciones() {
     }
   };
   
-  const isSuperAdmin = userRole === 'SuperAdministrador';
+  const isSuperAdmin = isSuperAdminRole(userRole);
   
   // =========================================================================
   // FETCH DATA

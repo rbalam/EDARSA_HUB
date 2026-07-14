@@ -33,6 +33,7 @@ import {
   PropinasConfigForm,
   PropinasConfigList
 } from './finanzas/propinas';
+import { isAdminRole } from '../lib/roleUtils';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -318,7 +319,7 @@ function PropinasTPVContent() {
   };
   
   const isAdmin = useMemo(() => {
-    return ['admin', 'superadmin', 'Admin', 'Administrador'].includes(userRole);
+    return isAdminRole(userRole);
   }, [userRole]);
   
   // SUBFASE 3.5: Usar totales del servidor si están disponibles

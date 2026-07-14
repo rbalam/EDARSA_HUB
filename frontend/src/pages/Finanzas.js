@@ -28,6 +28,7 @@ import { useFinanzasCorporateFilters } from '../filters';
 import { FinanzasCuentasPorPagar, FinanzasControlIngresos, FinanzasDashboard, FinanzasPresupuestos } from '../components/finanzas';
 import { CuentasBancariasPage } from '../components/finanzas/cuentas-bancarias';
 import { Landmark } from 'lucide-react';
+import { isAdminRole } from '../lib/roleUtils';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -90,7 +91,7 @@ function FinanzasContent() {
   const userPermissions = useMemo(() => {
     // Si hay unidades cargadas, el usuario tiene acceso según RBAC
     const user = getSessionUser();
-    const isAdmin = user?.role === 'Administrador';
+    const isAdmin = isAdminRole(user);
     
     // Extraer sucursales únicas de todas las unidades de negocio
     const allowedSucursales = [];

@@ -777,6 +777,8 @@ from modules.admin_sql.routes import router as admin_sql_router
 from modules.admin_sql import rbac_pilot_service
 from core.rbac_helper_sql import es_superadmin, es_admin, es_supervisor_o_superior
 app.include_router(admin_sql_router)
+from modules.admin_sql.rbac_audit_routes import router as rbac_audit_router
+app.include_router(rbac_audit_router)
 
 # ============================================================================
 # FASE 4E: Cache Management Endpoints (Admin Only)

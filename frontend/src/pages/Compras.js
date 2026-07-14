@@ -36,6 +36,7 @@ import {
   Calculator, Check, Plus, Trash2, Maximize2, Minimize2, Building2
 } from 'lucide-react';
 import PortalProveedoresTab from '../components/PortalProveedoresTab';
+import { isAdminRole } from '../lib/roleUtils';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 const STORAGE_KEY = 'compras_params';
@@ -1598,7 +1599,7 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
   const currentUser = getSessionUser() || {};
   
   // Verificar si el usuario puede editar días objetivo (admin o roles autorizados)
-  const puedeEditarDiasObjetivo = currentUser?.role === 'admin' || currentUser?.role === 'Administrador' || currentUser?.role === 'gerente' || currentUser?.permisos?.includes('editar_dias_inventario');
+  const puedeEditarDiasObjetivo = isAdminRole(currentUser) || currentUser?.role === 'gerente' || currentUser?.permisos?.includes('editar_dias_inventario');
   
   // Calcular fecha mínima de inventarios iniciales para filtrar finales (util CANÓNICO)
   const fechaMinimaInvInicial = useMemo(

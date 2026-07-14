@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from 'sonner';
 import { RefreshCw, AlertTriangle, Tag } from 'lucide-react';
 import { getAccionResultLabel } from '../utils/styleHelpers';
+import { isAdminRole, normalizeRole } from '../lib/roleUtils';
 import {
   ESTADOS_COLORES,
   ICONOS_CATALOGO,
@@ -41,7 +42,12 @@ export function GestionSolicitudesCatalogo() {
 
   // FASE AUTH-SECURITY-01 / FASE 4.1: Auth viaja en cookie httpOnly
   const user = getSessionUser() || {};
-  const userRole = user.role || 'Usuario';
+  const userRole = normalizeRole(user);
+  const puedeCrearCatalogo = (
+    userRole === 'SUPERVISOR'
+    || isAdminRole(user)
+  );
+  const puedeAutorizarCatalogo = isAdminRole(user);
 
   const fetchSolicitudes = useCallback(async () => {
     setLoading(true);
@@ -107,14 +113,14 @@ export function GestionSolicitudesCatalogo() {
   const getAccionesDisponibles = (solicitud) => {
     const acciones = [];
     
-    if (userRole === 'Supervisor' || userRole === 'Administrador') {
+    if (puedeCrearCatalogo) {
       if (solicitud.estado === 'pendiente') {
         acciones.push({ id: 'crear', label: 'Crear Elemento', color: 'bg-blue-600 hover:bg-blue-700' });
         acciones.push({ id: 'rechazar', label: 'Rechazar', color: 'bg-red-600 hover:bg-red-700' });
       }
     }
     
-    if (userRole === 'Administrador') {
+    if (puedeAutorizarCatalogo) {
       if (solicitud.estado === 'creado') {
         acciones.push({ id: 'autorizar', label: 'Autorizar', color: 'bg-green-600 hover:bg-green-700' });
         acciones.push({ id: 'rechazar', label: 'Rechazar', color: 'bg-red-600 hover:bg-red-700' });

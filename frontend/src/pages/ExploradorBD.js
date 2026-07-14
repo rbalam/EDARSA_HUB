@@ -21,6 +21,7 @@ import {
   Plus, Upload, Terminal, CheckCircle2, XCircle, AlertTriangle, Pencil,
   Maximize2, Minimize2, Building2, AlertCircle
 } from 'lucide-react';
+import { isAdminRole } from '../lib/roleUtils';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -890,7 +891,7 @@ export default function ExploradorBD() {
     
     // Verificar si el usuario es admin
     const user = getSessionUser() || {};
-    setIsAdmin(user.rol === 'Administrador' || user.email === 'admin@inventario.com' || user.role === 'Administrador');
+    setIsAdmin(isAdminRole(user));
   }, []);
   
   // Handler para cambio de conexión/servidor

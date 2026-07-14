@@ -1,5 +1,6 @@
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
+from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
 """
 CENTRO DE CONTROL EDARSA - API Routes
 ======================================
@@ -95,43 +96,11 @@ router = APIRouter(prefix="/api/centro-control", tags=["Centro de Control"])
 # HELPERS SQL-FIRST PARA JOBS DEL CENTRO DE CONTROL
 # ============================================================================
 
-def _cc_sql_env(name_options):
-    for name in name_options:
-        value = os.environ.get(name)
-        if value:
-            return value
-    return None
 
 
 def _cc_sql_connection():
-    """Conexión SQL Server centralizada por variables de entorno; sin credenciales hardcodeadas."""
-    try:
-        import pymssql
-    except Exception as exc:
-        raise RuntimeError(f"pymssql no disponible: {exc}")
-
-    host = _cc_sql_env(["EDARSAHUB_SQL_HOST", "SQL_HOST", "MSSQL_HOST"])
-    database = _cc_sql_env(["EDARSAHUB_SQL_DATABASE", "SQL_DATABASE", "MSSQL_DATABASE"])
-    user = _cc_sql_env(["EDARSAHUB_SQL_USER", "SQL_USER", "MSSQL_USER"])
-    password = _cc_sql_env(["EDARSAHUB_SQL_PASSWORD", "SQL_PASSWORD", "MSSQL_PASSWORD"])
-
-    missing = []
-    if not host: missing.append("EDARSAHUB_SQL_HOST")
-    if not database: missing.append("EDARSAHUB_SQL_DATABASE")
-    if not user: missing.append("EDARSAHUB_SQL_USER")
-    if not password: missing.append("EDARSAHUB_SQL_PASSWORD")
-    if missing:
-        raise RuntimeError("Variables SQL faltantes: " + ", ".join(missing))
-
-    return pymssql.connect(
-        server=host,
-        database=database,
-        user=user,
-        password=password,
-        as_dict=True,
-        login_timeout=15,
-        timeout=60,
-    )
+    """Abrir EDARSAHUB mediante la factory pymssql canónica."""
+    return get_edarsahub_pymssql_connection(autocommit=False)
 
 
 def _cc_execute(sql: str, params: tuple = ()):

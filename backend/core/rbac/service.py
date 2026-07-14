@@ -40,7 +40,7 @@ class RBACService:
     # FASE 4B-RBAC: Actualizado para usar roles SQL con permisos poblados
     LEGACY_ROLE_MAPPING = {
         "SuperAdministrador": "SUPERADMIN",   # Nivel 100, acceso total
-        "Administrador": "SUPERADMIN",        # Administrador completo -> SUPERADMIN
+        "Administrador": "ADMIN",              # Nivel administrador, sin elevar a SUPERADMIN
         "Supervisor": "SUPERVISOR",           # Nivel 50
         "Usuario": "OPERADOR",                # Nivel 20
         "Gerente": "GERENTE_OPS",             # Nivel 60

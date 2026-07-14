@@ -16,6 +16,7 @@ import {
   ExternalLink, Search
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { isAdminRole } from '../lib/roleUtils';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -116,7 +117,7 @@ export default function MisTareas() {
   
   // FASE AUTH-SECURITY-01 / FASE 4.1: Auth viaja en cookie httpOnly
   const currentUser = getSessionUser() || {};
-  const isAdmin = currentUser?.role === 'Administrador';
+  const isAdmin = isAdminRole(currentUser);
   const isSupervisor = currentUser?.role === 'Supervisor';
   const canApprove = isAdmin || isSupervisor;
   

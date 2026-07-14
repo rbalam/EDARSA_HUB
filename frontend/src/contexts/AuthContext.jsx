@@ -21,6 +21,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { getSessionUser, setSessionUser, clearSession } from '../services/authStorage';
 import api, { setMemoryToken, clearMemoryToken } from '../lib/api';
+import { hasMinimumRole, isAdminRole } from '../lib/roleUtils';
 import { isPreviewMode, clearPreviewFrontendCache, clearCacheOnLogout, clearPreviewBackendCache } from '../lib/previewCacheUtils';
 
 // Crear el contexto
@@ -74,7 +75,7 @@ export function AuthProvider({ children }) {
         }
         
         // P0-CACHE-PREVIEW: Limpiar caché del backend si es admin en preview
-        if (isPreviewMode() && (serverUser.role === 'SuperAdministrador' || serverUser.role === 'Administrador')) {
+        if (isPreviewMode() && isAdminRole(serverUser)) {
           try {
             await clearPreviewBackendCache(api);
           } catch (e) {
@@ -142,7 +143,7 @@ export function AuthProvider({ children }) {
     setUser(userData);
     
     // P0-CACHE-PREVIEW: Intentar limpiar caché del backend
-    if (isPreviewMode() && (userData?.role === 'SuperAdministrador' || userData?.role === 'Administrador')) {
+    if (isPreviewMode() && isAdminRole(userData)) {
       try {
         await clearPreviewBackendCache(api);
       } catch (e) {
@@ -195,20 +196,14 @@ export function AuthProvider({ children }) {
    * Verificar roles
    */
   const hasRole = useCallback((requiredRole) => {
-    if (!user) return false;
-    
-    const roles = ['Usuario', 'Supervisor', 'Administrador'];
-    const userRoleIndex = roles.indexOf(user.role);
-    const requiredRoleIndex = roles.indexOf(requiredRole);
-    
-    return userRoleIndex >= requiredRoleIndex;
+    return hasMinimumRole(user, requiredRole);
   }, [user]);
 
   /**
    * Verificar si es admin
    */
   const isAdmin = useMemo(() => {
-    return user?.role === 'Administrador' || user?.role === 'admin' || user?.role === 'SuperAdministrador';
+    return isAdminRole(user);
   }, [user]);
 
   // Valor del contexto

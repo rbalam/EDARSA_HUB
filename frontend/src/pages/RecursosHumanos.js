@@ -40,6 +40,7 @@ import {
   EstatusLaboralBadge, 
   RhEmptyState 
 } from '../components/recursos-humanos';
+import { isAdminRole } from '../lib/roleUtils';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -68,7 +69,7 @@ export default function RecursosHumanos() {
   
   // Verificar si es Administrador
   const currentUser = getSessionUser() || {};
-  const isAdmin = currentUser?.role === 'Administrador' || currentUser?.role === 'admin';
+  const isAdmin = isAdminRole(currentUser);
   const isSupervisor = currentUser?.role === 'Supervisor';
   
   // Filters

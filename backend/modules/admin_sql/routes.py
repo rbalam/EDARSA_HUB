@@ -22,6 +22,7 @@ from fastapi import APIRouter, Depends, HTTPException
 import re
 from typing import Dict, Any, List
 from core.security import get_current_user
+from core.rbac_helper_sql import es_admin
 from core.config.edarsahub_sql import get_edarsahub_connection
 from modules.admin_sql import rbac_pilot_service
 import logging
@@ -30,14 +31,8 @@ router = APIRouter(prefix="/api/admin-sql", tags=["Admin SQL"])
 
 
 def is_admin(user: Dict[str, Any]) -> bool:
-    """Verifica si el usuario es administrador."""
-    role = str(user.get("role") or user.get("rol") or "").upper()
-    email = str(user.get("email") or "").lower()
-    return (
-        "ADMIN" in role
-        or "SUPER" in role
-        or email in ["admin@edarsa.com", "ricardo@edarsa.com.mx"]
-    )
+    """True para ADMIN o SUPERADMIN según resolución RBAC canónica."""
+    return es_admin(user)
 
 
 def require_admin(user: Dict[str, Any]) -> None:

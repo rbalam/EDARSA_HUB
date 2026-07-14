@@ -12,6 +12,7 @@
 
 import { getSessionUser, clearSession } from '../services/authStorage';
 import api from './api';
+import { hasMinimumRole } from './roleUtils';
 
 /**
  * Verifica si hay sesión cacheada
@@ -37,13 +38,7 @@ export const getUser = () => {
  */
 export const hasRole = (requiredRole) => {
   const user = getUser();
-  if (!user) return false;
-  
-  const roles = ['Usuario', 'Supervisor', 'Administrador', 'SuperAdministrador'];
-  const userRoleIndex = roles.indexOf(user.role);
-  const requiredRoleIndex = roles.indexOf(requiredRole);
-  
-  return userRoleIndex >= requiredRoleIndex;
+  return hasMinimumRole(user, requiredRole);
 };
 
 /**
