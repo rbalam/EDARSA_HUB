@@ -10,12 +10,12 @@ from core.config.edarsahub_config import (
     EdarsaHubSQLConfig,
     get_edarsahub_sql_config,
 )
-from core.sql_first.connection_factory import (
-    get_edarsahub_pymssql_connection,
-)
 from core.connections.edarsahub_writer_connection import (
     SQLWriterIdentity,
     validate_writer_identity,
+)
+from core.sql_first.connection_factory import (
+    get_edarsahub_pymssql_connection,
 )
 from tools.reset_admin_password_phase2b import (
     confirm_target,
@@ -40,9 +40,13 @@ class IdentityCursor:
 class IdentityConnection:
     def __init__(self, row):
         self.row = row
+        self.close_calls = 0
 
     def cursor(self):
         return IdentityCursor(self.row)
+
+    def close(self):
+        self.close_calls += 1
 
 
 class RecordingCursor:
@@ -65,8 +69,8 @@ class RecordingConnection:
         return self.recording_cursor
 
 
-def writer_config(
-    user="WriterLoginTest",
+def canonical_config(
+    user="HRLectura",
     database="EDARSAHUB",
 ):
     return EdarsaHubSQLConfig(
@@ -74,44 +78,56 @@ def writer_config(
         port=1433,
         database=database,
         user=user,
-        password="not-used",
-        profile="writer",
+        password="test-secret",
+        profile="default",
     )
 
 
-def test_writer_identity_accepts_exact_contract():
+def canonical_identity():
+    return SQLWriterIdentity(
+        database_name="EDARSAHUB",
+        login_name="HRLectura",
+        user_name="HRLectura",
+    )
+
+
+def test_writer_identity_accepts_canonical_contract():
     conn = IdentityConnection(
         (
             "EDARSAHUB",
-            "WriterLoginTest",
-            "WriterDbUserTest",
+            "HRLectura",
+            "HRLectura",
         )
     )
 
     identity = validate_writer_identity(
         conn,
-        config=writer_config(),
-        expected_db_user="WriterDbUserTest",
+        config=canonical_config(),
     )
 
     assert identity.database_name == "EDARSAHUB"
-    assert identity.login_name == "WriterLoginTest"
-    assert identity.user_name == "WriterDbUserTest"
+    assert identity.login_name == "HRLectura"
+    assert identity.user_name == "HRLectura"
 
 
-def test_writer_identity_rejects_readonly_login():
+def test_writer_config_rejects_noncanonical_login():
     conn = IdentityConnection(
-        ("EDARSAHUB", "HRLectura", "HRLectura")
+        (
+            "EDARSAHUB",
+            "OtherLogin",
+            "OtherLogin",
+        )
     )
 
     with pytest.raises(
         RuntimeError,
-        match="prohibida",
+        match="login canonico",
     ):
         validate_writer_identity(
             conn,
-            config=writer_config(user="HRLectura"),
-            expected_db_user="HRLectura",
+            config=canonical_config(
+                user="OtherLogin"
+            ),
         )
 
 
@@ -120,7 +136,7 @@ def test_writer_identity_rejects_runtime_mismatch():
         (
             "EDARSAHUB",
             "UnexpectedLogin",
-            "WriterDbUserTest",
+            "HRLectura",
         )
     )
 
@@ -130,8 +146,7 @@ def test_writer_identity_rejects_runtime_mismatch():
     ):
         validate_writer_identity(
             conn,
-            config=writer_config(),
-            expected_db_user="WriterDbUserTest",
+            config=canonical_config(),
         )
 
 
@@ -167,36 +182,31 @@ def test_target_confirmation_rejects_mismatch(
 
 def test_update_and_audit_share_one_connection():
     conn = RecordingConnection()
-    identity = SQLWriterIdentity(
-        database_name="EDARSAHUB",
-        login_name="WriterLoginTest",
-        user_name="WriterDbUserTest",
-    )
 
     update_password_and_audit(
         conn,
         usuario_id=42,
         email="user@example.com",
         password_hash="$2b$12$not-a-real-hash",
-        identity=identity,
+        identity=canonical_identity(),
     )
 
     calls = conn.recording_cursor.calls
 
     assert len(calls) == 2
-    assert "UPDATE dbo.Usuario_Catalogo" in calls[0][0]
-    assert "INSERT INTO dbo.Usuario_LogRecuperacion" in calls[1][0]
+    assert (
+        "UPDATE dbo.Usuario_Catalogo"
+        in calls[0][0]
+    )
+    assert (
+        "INSERT INTO dbo.Usuario_LogRecuperacion"
+        in calls[1][0]
+    )
 
 
 def test_update_rejects_zero_rows():
     conn = RecordingConnection()
     conn.recording_cursor.rowcount = 0
-
-    identity = SQLWriterIdentity(
-        database_name="EDARSAHUB",
-        login_name="WriterLoginTest",
-        user_name="WriterDbUserTest",
-    )
 
     with pytest.raises(
         RuntimeError,
@@ -206,23 +216,26 @@ def test_update_rejects_zero_rows():
             conn,
             usuario_id=42,
             email="user@example.com",
-            password_hash="$2b$12$not-a-real-hash",
-            identity=identity,
+            password_hash=(
+                "$2b$12$not-a-real-hash"
+            ),
+            identity=canonical_identity(),
         )
 
-    assert len(conn.recording_cursor.calls) == 1
+    assert len(
+        conn.recording_cursor.calls
+    ) == 1
 
 
-
-def test_writer_config_uses_isolated_prefix(
+def test_config_uses_only_canonical_prefix(
     monkeypatch,
 ):
     values = {
-        "EDARSAHUB_SQL_WRITER_HOST": "writer-host",
-        "EDARSAHUB_SQL_WRITER_PORT": "1444",
-        "EDARSAHUB_SQL_WRITER_DATABASE": "EDARSAHUB",
-        "EDARSAHUB_SQL_WRITER_USER": "WriterLoginTest",
-        "EDARSAHUB_SQL_WRITER_PASSWORD": (
+        "EDARSAHUB_SQL_HOST": "canonical-host",
+        "EDARSAHUB_SQL_PORT": "1444",
+        "EDARSAHUB_SQL_DATABASE": "EDARSAHUB",
+        "EDARSAHUB_SQL_USER": "HRLectura",
+        "EDARSAHUB_SQL_PASSWORD": (
             "test-only-password"
         ),
     }
@@ -230,14 +243,20 @@ def test_writer_config_uses_isolated_prefix(
     for name, value in values.items():
         monkeypatch.setenv(name, value)
 
-    cfg = get_edarsahub_sql_config("writer")
+    cfg = get_edarsahub_sql_config("default")
 
-    assert cfg.profile == "writer"
-    assert cfg.host == "writer-host"
+    assert cfg.profile == "default"
+    assert cfg.host == "canonical-host"
     assert cfg.port == 1444
     assert cfg.database == "EDARSAHUB"
-    assert cfg.user == "WriterLoginTest"
+    assert cfg.user == "HRLectura"
     assert cfg.password == "test-only-password"
+
+    with pytest.raises(
+        ValueError,
+        match="no soportado",
+    ):
+        get_edarsahub_sql_config("writer")
 
 
 def test_pymssql_profile_is_keyword_only():
@@ -251,26 +270,21 @@ def test_pymssql_profile_is_keyword_only():
     )
 
 
-def test_open_writer_uses_explicit_pymssql_profile(
+def test_open_writer_uses_canonical_default_profile(
     monkeypatch,
 ):
     calls = []
     conn = IdentityConnection(
         (
             "EDARSAHUB",
-            "WriterLoginTest",
-            "WriterDbUserTest",
+            "HRLectura",
+            "HRLectura",
         )
-    )
-
-    monkeypatch.setenv(
-        "EDARSAHUB_SQL_WRITER_DB_USER",
-        "WriterDbUserTest",
     )
 
     def fake_config(profile):
         calls.append(("config", profile))
-        return writer_config()
+        return canonical_config()
 
     def fake_connection(*, profile):
         calls.append(("connect", profile))
@@ -292,28 +306,23 @@ def test_open_writer_uses_explicit_pymssql_profile(
     )
 
     assert opened is conn
-    assert identity.login_name == "WriterLoginTest"
+    assert identity.login_name == "HRLectura"
     assert calls == [
-        ("config", "writer"),
-        ("connect", "writer"),
+        ("config", "default"),
+        ("connect", "default"),
     ]
 
 
-def test_readonly_writer_config_rejected_before_open(
+def test_noncanonical_config_rejected_before_open(
     monkeypatch,
 ):
     opened = []
 
-    monkeypatch.setenv(
-        "EDARSAHUB_SQL_WRITER_DB_USER",
-        "HRLectura",
-    )
-
     monkeypatch.setattr(
         writer_module,
         "get_edarsahub_sql_config",
-        lambda profile: writer_config(
-            user="HRLectura"
+        lambda profile: canonical_config(
+            user="OtherLogin"
         ),
     )
     monkeypatch.setattr(
@@ -324,12 +333,11 @@ def test_readonly_writer_config_rejected_before_open(
 
     with pytest.raises(
         RuntimeError,
-        match="prohibida",
+        match="login canonico",
     ):
         writer_module.open_validated_writer_connection()
 
     assert opened == []
-
 
 
 class TransactionConnection:
@@ -361,12 +369,6 @@ def _configure_main_happy_path(
     monkeypatch,
     conn,
 ):
-    identity = SQLWriterIdentity(
-        database_name="EDARSAHUB",
-        login_name="WriterLoginTest",
-        user_name="WriterDbUserTest",
-    )
-
     monkeypatch.setattr(
         reset_tool,
         "parse_args",
@@ -375,14 +377,22 @@ def _configure_main_happy_path(
     monkeypatch.setattr(
         reset_tool,
         "open_validated_writer_connection",
-        lambda: (conn, identity),
+        lambda: (
+            conn,
+            canonical_identity(),
+        ),
     )
     monkeypatch.setattr(
         reset_tool,
         "resolve_single_active_user",
         lambda active_conn, email: (
             42,
-            [{"UsuarioID": 42, "Email": email}],
+            [
+                {
+                    "UsuarioID": 42,
+                    "Email": email,
+                }
+            ],
         ),
     )
     monkeypatch.setattr(
@@ -404,7 +414,10 @@ def _configure_main_happy_path(
         reset_tool,
         "fetch_user_metadata",
         lambda active_conn, email: [
-            {"UsuarioID": 42, "Email": email}
+            {
+                "UsuarioID": 42,
+                "Email": email,
+            }
         ],
     )
     monkeypatch.setattr(

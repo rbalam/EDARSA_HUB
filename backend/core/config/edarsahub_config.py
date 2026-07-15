@@ -14,37 +14,52 @@ class EdarsaHubSQLConfig:
 
 _PROFILE_PREFIXES = {
     "default": "EDARSAHUB_SQL",
-    "writer": "EDARSAHUB_SQL_WRITER",
 }
 
 
 def _required(name: str) -> str:
     value = os.getenv(name)
     if not value:
-        raise RuntimeError(f"Variable obligatoria no configurada: {name}")
+        raise RuntimeError(
+            f"Variable obligatoria no configurada: {name}"
+        )
     return value
 
 
-def get_edarsahub_sql_config(profile: str = "default") -> EdarsaHubSQLConfig:
+def get_edarsahub_sql_config(
+    profile: str = "default",
+) -> EdarsaHubSQLConfig:
     """
-    Config canónica EDARSAHUB SQL.
+    Configuracion SQL canonica de EDARSAHUB.
 
-    Perfiles permitidos:
-    - default: configuracion canonica EDARSAHUB_SQL_*
-    - writer: configuracion de escritura EDARSAHUB_SQL_WRITER_*
+    El unico perfil permitido es ``default`` y usa
+    exclusivamente las variables ``EDARSAHUB_SQL_*``.
 
-    Cualquier otro perfil esta prohibido.
+    No se permiten perfiles paralelos o alternativos.
     """
     normalized = (profile or "default").lower()
     prefix = _PROFILE_PREFIXES.get(normalized)
+
     if not prefix:
-        raise ValueError(f"Perfil EDARSAHUB SQL no soportado: {profile}")
+        raise ValueError(
+            "Perfil EDARSAHUB SQL no soportado: "
+            f"{profile}"
+        )
 
     return EdarsaHubSQLConfig(
         host=_required(f"{prefix}_HOST"),
-        port=int(os.getenv(f"{prefix}_PORT", "1433")),
-        database=_required(f"{prefix}_DATABASE"),
+        port=int(
+            os.getenv(
+                f"{prefix}_PORT",
+                "1433",
+            )
+        ),
+        database=_required(
+            f"{prefix}_DATABASE"
+        ),
         user=_required(f"{prefix}_USER"),
-        password=_required(f"{prefix}_PASSWORD"),
+        password=_required(
+            f"{prefix}_PASSWORD"
+        ),
         profile=normalized,
     )

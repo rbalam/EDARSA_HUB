@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 
 from core.config.edarsahub_config import (
@@ -12,17 +11,10 @@ from core.sql_first.connection_factory import (
 )
 
 
+CANONICAL_PROFILE = "default"
 EXPECTED_DATABASE = "EDARSAHUB"
-
-# Identidades exclusivamente read-only y, por tanto,
-# invalidas dentro del contrato de escritura.
-PROHIBITED_WRITER_IDENTITIES = frozenset(
-    {
-        "hrlectura",
-        "gptlectura",
-        "gptread",
-    }
-)
+EXPECTED_LOGIN = "HRLectura"
+EXPECTED_USER = "HRLectura"
 
 
 @dataclass(frozen=True)
@@ -36,74 +28,48 @@ def _normalized(value) -> str:
     return str(value or "").strip()
 
 
-def _required_writer_db_user() -> str:
-    value = os.getenv(
-        "EDARSAHUB_SQL_WRITER_DB_USER"
-    )
-    if not value:
-        raise RuntimeError(
-            "Variable obligatoria no configurada: "
-            "EDARSAHUB_SQL_WRITER_DB_USER"
-        )
-    return value.strip()
-
-
 def validate_writer_config(
     *,
     config: EdarsaHubSQLConfig | None = None,
-    expected_db_user: str | None = None,
-) -> tuple[EdarsaHubSQLConfig, str]:
+) -> EdarsaHubSQLConfig:
+    """
+    Valida la configuracion canonica antes de abrir SQL.
+
+    HRLectura es la identidad canonica confirmada para
+    EDARSAHUB y dispone de los permisos requeridos.
+    No se admiten perfiles o credenciales paralelas.
+    """
     cfg = config or get_edarsahub_sql_config(
-        "writer"
+        CANONICAL_PROFILE
     )
 
-    if cfg.profile != "writer":
+    if cfg.profile != CANONICAL_PROFILE:
         raise RuntimeError(
-            "La conexion no usa el perfil writer."
+            "La conexion debe usar el perfil canonico "
+            "default."
         )
 
     if cfg.database.casefold() != (
         EXPECTED_DATABASE.casefold()
     ):
         raise RuntimeError(
-            "El perfil writer debe apuntar a "
+            "La conexion canonica debe apuntar a "
             "EDARSAHUB."
         )
 
-    db_user_source = (
-        expected_db_user
-        if expected_db_user is not None
-        else _required_writer_db_user()
-    )
-    db_user = db_user_source.strip()
-
-    if not db_user:
+    if cfg.user.casefold() != (
+        EXPECTED_LOGIN.casefold()
+    ):
         raise RuntimeError(
-            "EDARSAHUB_SQL_WRITER_DB_USER "
-            "no puede estar vacio."
+            "El login canonico debe ser HRLectura."
         )
 
-    configured_identities = {
-        cfg.user.casefold(),
-        db_user.casefold(),
-    }
-
-    prohibited = (
-        configured_identities
-        & PROHIBITED_WRITER_IDENTITIES
-    )
-
-    if prohibited:
-        raise RuntimeError(
-            "Identidad SQL prohibida para escritura: "
-            + ", ".join(sorted(prohibited))
-        )
-
-    return cfg, db_user
+    return cfg
 
 
 def _read_identity(conn) -> SQLWriterIdentity:
     cur = conn.cursor()
+
     try:
         cur.execute(
             """
@@ -135,21 +101,17 @@ def validate_writer_identity(
     conn,
     *,
     config: EdarsaHubSQLConfig | None = None,
-    expected_db_user: str | None = None,
 ) -> SQLWriterIdentity:
-    cfg, db_user = validate_writer_config(
-        config=config,
-        expected_db_user=expected_db_user,
+    cfg = validate_writer_config(
+        config=config
     )
-
     identity = _read_identity(conn)
 
     expected = {
         "database_name": EXPECTED_DATABASE,
         "login_name": cfg.user,
-        "user_name": db_user,
+        "user_name": EXPECTED_USER,
     }
-
     actual = {
         "database_name": identity.database_name,
         "login_name": identity.login_name,
@@ -172,7 +134,7 @@ def validate_writer_identity(
             for key in mismatches
         )
         raise RuntimeError(
-            "Identidad SQL writer invalida: "
+            "Identidad SQL canonica invalida: "
             + details
         )
 
@@ -180,19 +142,22 @@ def validate_writer_identity(
 
 
 def open_validated_writer_connection():
-    # Validar configuracion e identidad declarada antes
-    # de intentar abrir una conexion.
-    cfg, db_user = validate_writer_config()
+    """
+    Abre la conexion EDARSAHUB canonica mediante pymssql.
+
+    El uso explicito de pymssql conserva el contrato de
+    parametros ``%s`` del reset transaccional.
+    """
+    cfg = validate_writer_config()
 
     conn = get_edarsahub_pymssql_connection(
-        profile="writer"
+        profile=CANONICAL_PROFILE
     )
 
     try:
         identity = validate_writer_identity(
             conn,
             config=cfg,
-            expected_db_user=db_user,
         )
     except Exception:
         conn.close()
