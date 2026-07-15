@@ -1,8 +1,8 @@
 """EDARSA HUB Comercial module.
 
-The module is SQL-first. The canonical detail router is registered before the
-legacy router so the existing public path resolves to the canonical handler
-without changing frontend URLs.
+The module is SQL-first. The canonical detail route replaces the duplicated
+legacy GET route while every other Comercial route remains registered without
+changing public URLs.
 """
 
 from fastapi import APIRouter
@@ -22,10 +22,11 @@ from modules.comercial.adapters import (
     query_api_mpro_local,
     sumar_ventas_api_local_a_sucursal,
 )
+from modules.comercial.router_filter import without_legacy_detail_route
 
 
 def get_router():
-    """Return Comercial routes with canonical overrides registered first."""
+    """Return Comercial routes with one canonical daily-detail GET route."""
 
     from modules.comercial.canonical_detail_routes import (
         router as canonical_detail_router,
@@ -34,7 +35,7 @@ def get_router():
 
     router = APIRouter()
     router.include_router(canonical_detail_router)
-    router.include_router(legacy_router)
+    router.routes.extend(without_legacy_detail_route(legacy_router.routes))
     return router
 
 
