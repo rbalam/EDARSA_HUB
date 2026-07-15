@@ -474,9 +474,25 @@ def _agrupar_ventas_cerradas_por_fecha_operacion(rows, config, fecha_inicio=None
         if fecha_hora is None:
             raise ValueError(f"Row sin fecha_hora para ventas cerradas V2: {row_dict!r}")
 
-        fecha_operacion = _normalizar_fecha_operacion_value(
-            get_fecha_operacion(unidad_negocio_pk, fecha_hora)
-        )
+        sistema_origen = getattr(config, "sistema_origen", None)
+
+        if sistema_origen == SistemaOrigen.MPRO:
+            # MPRO entrega Vn_Fecha como fecha comercial con hora 00:00:00.
+            # Aplicar nuevamente la ventana operativa desplaza el registro
+            # artificialmente al día anterior.
+            fecha_operacion = _normalizar_fecha_operacion_value(
+                fecha_hora
+            )
+        elif sistema_origen == SistemaOrigen.SOFTRESTAURANT:
+            # SoftRestaurant sí entrega un timestamp real del cheque.
+            fecha_operacion = _normalizar_fecha_operacion_value(
+                get_fecha_operacion(unidad_negocio_pk, fecha_hora)
+            )
+        else:
+            raise ValueError(
+                "Sistema origen no soportado para resolver "
+                f"fecha_operacion: {sistema_origen!r}"
+            )
 
         if fecha_inicio_op and fecha_operacion < fecha_inicio_op:
             continue
