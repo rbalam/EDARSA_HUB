@@ -12,18 +12,20 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import getpass
+import json
 import os
 import sys
 from pathlib import Path
 from typing import Any
 
 from modules.auth.password_reset import (
-    _update_password_sql,
-    audit_log_sql,
     hash_password,
     validate_password_strength,
 )
-from core.sql_first.db import get_sql_connection
+from core.connections.edarsahub_writer_connection import (
+    SQLWriterIdentity,
+    open_validated_writer_connection,
+)
 from tools import validate_rbac_menu_phase1 as rbac_validator
 
 
@@ -31,23 +33,11 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 REPORT_DIR = ROOT_DIR / "docs" / "reports" / "rbac_phase1"
 
 
-def load_env_file(path: Path) -> None:
-    if not path.exists():
-        return
 
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if key and key not in os.environ:
-            os.environ[key] = value
-
-
-def fetch_user_metadata(email: str) -> list[dict[str, Any]]:
-    conn = get_sql_connection()
+def fetch_user_metadata(
+    conn,
+    email: str,
+) -> list[dict[str, Any]]:
     cur = conn.cursor()
     try:
         cur.execute(
@@ -59,7 +49,10 @@ def fetch_user_metadata(email: str) -> list[dict[str, Any]]:
                 u.Activo,
                 CASE
                     WHEN u.PasswordHashTexto IS NOT NULL
-                     AND LTRIM(RTRIM(CONVERT(NVARCHAR(MAX), u.PasswordHashTexto))) <> ''
+                     AND LTRIM(RTRIM(CONVERT(
+                         NVARCHAR(MAX),
+                         u.PasswordHashTexto
+                     ))) <> ''
                     THEN 'SI'
                     ELSE 'NO'
                 END AS tiene_password_hash,
@@ -82,13 +75,22 @@ def fetch_user_metadata(email: str) -> list[dict[str, Any]]:
             (email, email),
         )
         cols = [col[0] for col in cur.description]
-        return [dict(zip(cols, row)) for row in cur.fetchall()]
+        return [
+            dict(zip(cols, row))
+            for row in cur.fetchall()
+        ]
     finally:
-        conn.close()
+        close = getattr(cur, "close", None)
+        if close:
+            close()
 
 
-def resolve_single_active_user(email: str) -> tuple[int, list[dict[str, Any]]]:
-    rows = fetch_user_metadata(email)
+
+def resolve_single_active_user(
+    conn,
+    email: str,
+) -> tuple[int, list[dict[str, Any]]]:
+    rows = fetch_user_metadata(conn, email)
     user_ids = {row.get("UsuarioID") for row in rows if row.get("UsuarioID") is not None}
 
     if len(user_ids) != 1:
@@ -179,6 +181,91 @@ def prompt_new_password(email: str) -> str:
     return password
 
 
+def confirm_target(email: str, usuario_id: int) -> None:
+    print(
+        f"Usuario objetivo: {email} "
+        f"(UsuarioID={usuario_id})"
+    )
+    confirmation = input(
+        "Escribe el email exacto para confirmar: "
+    ).strip()
+
+    if confirmation.casefold() != email.casefold():
+        raise RuntimeError(
+            "Confirmacion del usuario objetivo incorrecta."
+        )
+
+
+def update_password_and_audit(
+    conn,
+    usuario_id: int,
+    email: str,
+    password_hash: str,
+    identity: SQLWriterIdentity,
+) -> None:
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            UPDATE dbo.Usuario_Catalogo
+            SET PasswordHashTexto = %s,
+                UltimoCambioPassword = GETUTCDATE(),
+                FechaModificacion = GETUTCDATE(),
+                DebeCambiarPassword = 0,
+                PasswordTemporal = 0
+            WHERE UsuarioID = %s
+              AND Activo = 1
+            """,
+            (password_hash, usuario_id),
+        )
+
+        if cur.rowcount != 1:
+            raise RuntimeError(
+                "La actualizacion no afecto exactamente "
+                "un usuario activo."
+            )
+
+        detail = json.dumps(
+            {
+                "usuario_id_sql": usuario_id,
+                "tool": "reset_admin_password_phase2b.py",
+                "password_plaintext_stored": False,
+                "hash_reported": False,
+                "database_name": identity.database_name,
+                "login_name": identity.login_name,
+                "user_name": identity.user_name,
+                "transactional_audit": True,
+            },
+            sort_keys=True,
+        )
+
+        cur.execute(
+            """
+            INSERT INTO dbo.Usuario_LogRecuperacion (
+                Evento,
+                Email,
+                IPOrigen,
+                UserAgent,
+                Resultado,
+                Detalle
+            )
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            (
+                "admin_manual_password_reset_success",
+                email,
+                "local-cli",
+                "reset_admin_password_phase2b.py",
+                1,
+                detail,
+            ),
+        )
+    finally:
+        close = getattr(cur, "close", None)
+        if close:
+            close()
+
+
 def run_rbac_validation(email: str, password: str, base_url: str) -> tuple[Path, dict[str, Any]]:
     specs = [
         {
@@ -199,8 +286,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Reset controlado de password admin y validacion RBAC/menu Fase 2B."
     )
-    parser.add_argument("--email", default="admin@edarsa.com")
-    parser.add_argument("--env-file", default=str(ROOT_DIR / "backend" / ".env"))
+    parser.add_argument(
+        "--email",
+        required=True,
+        help="Email exacto del usuario objetivo.",
+    )
     parser.add_argument(
         "--base-url",
         default=(
@@ -224,48 +314,76 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+
     if not args.i_understand_this_updates_sql:
         print(
-            "Bloqueado: agrega --i-understand-this-updates-sql para confirmar la escritura.",
+            "Bloqueado: agrega "
+            "--i-understand-this-updates-sql "
+            "para confirmar la escritura.",
             file=sys.stderr,
         )
         return 2
 
-    load_env_file(Path(args.env_file))
-    if os.getenv("EDARSAHUB_SQL_HOST") and not os.getenv("EDARSAHUB_SQL_SERVER"):
-        os.environ["EDARSAHUB_SQL_SERVER"] = os.environ["EDARSAHUB_SQL_HOST"]
-
     password = ""
+    conn = None
+    writer_identity = None
+    before_rows = []
+    after_rows = []
+
     try:
-        usuario_id, before_rows = resolve_single_active_user(args.email)
+        conn, writer_identity = (
+            open_validated_writer_connection()
+        )
+
+        usuario_id, before_rows = (
+            resolve_single_active_user(
+                conn,
+                args.email,
+            )
+        )
+
+        confirm_target(args.email, usuario_id)
         password = prompt_new_password(args.email)
         new_hash = hash_password(password)
 
-        updated = _update_password_sql(usuario_id, new_hash)
-        if not updated:
-            raise RuntimeError("No se actualizo ningun registro.")
-
-        after_rows = fetch_user_metadata(args.email)
-        audit_log_sql(
-            "admin_manual_password_reset_success",
+        update_password_and_audit(
+            conn,
+            usuario_id,
             args.email,
-            "local-cli",
-            "reset_admin_password_phase2b.py",
-            True,
-            {
-                "usuario_id_sql": usuario_id,
-                "tool": "reset_admin_password_phase2b.py",
-                "password_plaintext_stored": False,
-                "hash_reported": False,
-            },
+            new_hash,
+            writer_identity,
         )
+
+        after_rows = fetch_user_metadata(
+            conn,
+            args.email,
+        )
+
+        conn.commit()
+    except Exception as exc:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    finally:
+        if conn is not None:
+            conn.close()
+
+    try:
         validation_md = None
         validation_summary = None
+
         if not args.skip_validation:
-            validation_md, validation_summary = run_rbac_validation(
-                args.email,
-                password,
-                args.base_url,
+            validation_md, validation_summary = (
+                run_rbac_validation(
+                    args.email,
+                    password,
+                    args.base_url,
+                )
             )
 
         reset_report = write_reset_report(
@@ -276,12 +394,26 @@ def main() -> int:
             validation_summary,
         )
 
-        print("Password admin actualizado sin exponer secretos.")
-        print("Auditoria SQL registrada: admin_manual_password_reset_success")
+        print(
+            "Password actualizado sin exponer secretos."
+        )
+        print(
+            "Escritura y auditoria confirmadas "
+            "en una sola transaccion."
+        )
+        print(
+            "Identidad SQL: "
+            f"database={writer_identity.database_name}, "
+            f"login={writer_identity.login_name}, "
+            f"user={writer_identity.user_name}"
+        )
         print(f"Reporte reset: {reset_report}")
 
         if args.skip_validation:
-            print("Validacion RBAC/Menu omitida por --skip-validation.")
+            print(
+                "Validacion RBAC/Menu omitida "
+                "por --skip-validation."
+            )
             return 0
 
         print(f"Reporte RBAC/Menu: {validation_md}")
@@ -292,11 +424,19 @@ def main() -> int:
             f"FAIL={validation_summary.get('fail', 0)}"
         )
 
-        if validation_summary.get("fail", 0) or validation_summary.get("warn", 0):
+        if (
+            validation_summary.get("fail", 0)
+            or validation_summary.get("warn", 0)
+        ):
             return 1
+
         return 0
     except Exception as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
+        print(
+            "SQL confirmado, pero fallo la validacion "
+            f"posterior: {exc}",
+            file=sys.stderr,
+        )
         return 1
     finally:
         password = ""

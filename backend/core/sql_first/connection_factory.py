@@ -71,13 +71,16 @@ def get_edarsahub_pymssql_connection(
     timeout: int = 30,
     login_timeout: int = 10,
     autocommit: bool = False,
+    *,
+    profile: str = "default",
 ):
     """
     Conexion EDARSAHUB centralizada via pymssql.
 
-    Se conserva para modulos legacy que usan cursor(as_dict=True).
+    El perfil es explicito y se resuelve mediante la configuracion
+    canonica. Los consumidores existentes conservan ``default``.
     """
-    cfg = get_edarsahub_sql_config()
+    cfg = get_edarsahub_sql_config(profile)
 
     return _connect_edarsahub_pymssql(
         cfg,

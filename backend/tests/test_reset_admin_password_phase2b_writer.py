@@ -1,0 +1,484 @@
+import inspect
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+
+import core.connections.edarsahub_writer_connection as writer_module
+import tools.reset_admin_password_phase2b as reset_tool
+from core.config.edarsahub_config import (
+    EdarsaHubSQLConfig,
+    get_edarsahub_sql_config,
+)
+from core.sql_first.connection_factory import (
+    get_edarsahub_pymssql_connection,
+)
+from core.connections.edarsahub_writer_connection import (
+    SQLWriterIdentity,
+    validate_writer_identity,
+)
+from tools.reset_admin_password_phase2b import (
+    confirm_target,
+    update_password_and_audit,
+)
+
+
+class IdentityCursor:
+    def __init__(self, row):
+        self.row = row
+
+    def execute(self, _sql):
+        return None
+
+    def fetchone(self):
+        return self.row
+
+    def close(self):
+        return None
+
+
+class IdentityConnection:
+    def __init__(self, row):
+        self.row = row
+
+    def cursor(self):
+        return IdentityCursor(self.row)
+
+
+class RecordingCursor:
+    def __init__(self):
+        self.calls = []
+        self.rowcount = 1
+
+    def execute(self, sql, params):
+        self.calls.append((sql, params))
+
+    def close(self):
+        return None
+
+
+class RecordingConnection:
+    def __init__(self):
+        self.recording_cursor = RecordingCursor()
+
+    def cursor(self):
+        return self.recording_cursor
+
+
+def writer_config(
+    user="WriterLoginTest",
+    database="EDARSAHUB",
+):
+    return EdarsaHubSQLConfig(
+        host="sql.internal",
+        port=1433,
+        database=database,
+        user=user,
+        password="not-used",
+        profile="writer",
+    )
+
+
+def test_writer_identity_accepts_exact_contract():
+    conn = IdentityConnection(
+        (
+            "EDARSAHUB",
+            "WriterLoginTest",
+            "WriterDbUserTest",
+        )
+    )
+
+    identity = validate_writer_identity(
+        conn,
+        config=writer_config(),
+        expected_db_user="WriterDbUserTest",
+    )
+
+    assert identity.database_name == "EDARSAHUB"
+    assert identity.login_name == "WriterLoginTest"
+    assert identity.user_name == "WriterDbUserTest"
+
+
+def test_writer_identity_rejects_readonly_login():
+    conn = IdentityConnection(
+        ("EDARSAHUB", "HRLectura", "HRLectura")
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="prohibida",
+    ):
+        validate_writer_identity(
+            conn,
+            config=writer_config(user="HRLectura"),
+            expected_db_user="HRLectura",
+        )
+
+
+def test_writer_identity_rejects_runtime_mismatch():
+    conn = IdentityConnection(
+        (
+            "EDARSAHUB",
+            "UnexpectedLogin",
+            "WriterDbUserTest",
+        )
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="login_name",
+    ):
+        validate_writer_identity(
+            conn,
+            config=writer_config(),
+            expected_db_user="WriterDbUserTest",
+        )
+
+
+def test_target_confirmation_is_exact(monkeypatch):
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _prompt: "user@example.com",
+    )
+
+    confirm_target(
+        "user@example.com",
+        42,
+    )
+
+
+def test_target_confirmation_rejects_mismatch(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _prompt: "other@example.com",
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="incorrecta",
+    ):
+        confirm_target(
+            "user@example.com",
+            42,
+        )
+
+
+def test_update_and_audit_share_one_connection():
+    conn = RecordingConnection()
+    identity = SQLWriterIdentity(
+        database_name="EDARSAHUB",
+        login_name="WriterLoginTest",
+        user_name="WriterDbUserTest",
+    )
+
+    update_password_and_audit(
+        conn,
+        usuario_id=42,
+        email="user@example.com",
+        password_hash="$2b$12$not-a-real-hash",
+        identity=identity,
+    )
+
+    calls = conn.recording_cursor.calls
+
+    assert len(calls) == 2
+    assert "UPDATE dbo.Usuario_Catalogo" in calls[0][0]
+    assert "INSERT INTO dbo.Usuario_LogRecuperacion" in calls[1][0]
+
+
+def test_update_rejects_zero_rows():
+    conn = RecordingConnection()
+    conn.recording_cursor.rowcount = 0
+
+    identity = SQLWriterIdentity(
+        database_name="EDARSAHUB",
+        login_name="WriterLoginTest",
+        user_name="WriterDbUserTest",
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="exactamente un usuario activo",
+    ):
+        update_password_and_audit(
+            conn,
+            usuario_id=42,
+            email="user@example.com",
+            password_hash="$2b$12$not-a-real-hash",
+            identity=identity,
+        )
+
+    assert len(conn.recording_cursor.calls) == 1
+
+
+
+def test_writer_config_uses_isolated_prefix(
+    monkeypatch,
+):
+    values = {
+        "EDARSAHUB_SQL_WRITER_HOST": "writer-host",
+        "EDARSAHUB_SQL_WRITER_PORT": "1444",
+        "EDARSAHUB_SQL_WRITER_DATABASE": "EDARSAHUB",
+        "EDARSAHUB_SQL_WRITER_USER": "WriterLoginTest",
+        "EDARSAHUB_SQL_WRITER_PASSWORD": (
+            "test-only-password"
+        ),
+    }
+
+    for name, value in values.items():
+        monkeypatch.setenv(name, value)
+
+    cfg = get_edarsahub_sql_config("writer")
+
+    assert cfg.profile == "writer"
+    assert cfg.host == "writer-host"
+    assert cfg.port == 1444
+    assert cfg.database == "EDARSAHUB"
+    assert cfg.user == "WriterLoginTest"
+    assert cfg.password == "test-only-password"
+
+
+def test_pymssql_profile_is_keyword_only():
+    parameter = inspect.signature(
+        get_edarsahub_pymssql_connection
+    ).parameters["profile"]
+
+    assert (
+        parameter.kind
+        is inspect.Parameter.KEYWORD_ONLY
+    )
+
+
+def test_open_writer_uses_explicit_pymssql_profile(
+    monkeypatch,
+):
+    calls = []
+    conn = IdentityConnection(
+        (
+            "EDARSAHUB",
+            "WriterLoginTest",
+            "WriterDbUserTest",
+        )
+    )
+
+    monkeypatch.setenv(
+        "EDARSAHUB_SQL_WRITER_DB_USER",
+        "WriterDbUserTest",
+    )
+
+    def fake_config(profile):
+        calls.append(("config", profile))
+        return writer_config()
+
+    def fake_connection(*, profile):
+        calls.append(("connect", profile))
+        return conn
+
+    monkeypatch.setattr(
+        writer_module,
+        "get_edarsahub_sql_config",
+        fake_config,
+    )
+    monkeypatch.setattr(
+        writer_module,
+        "get_edarsahub_pymssql_connection",
+        fake_connection,
+    )
+
+    opened, identity = (
+        writer_module.open_validated_writer_connection()
+    )
+
+    assert opened is conn
+    assert identity.login_name == "WriterLoginTest"
+    assert calls == [
+        ("config", "writer"),
+        ("connect", "writer"),
+    ]
+
+
+def test_readonly_writer_config_rejected_before_open(
+    monkeypatch,
+):
+    opened = []
+
+    monkeypatch.setenv(
+        "EDARSAHUB_SQL_WRITER_DB_USER",
+        "HRLectura",
+    )
+
+    monkeypatch.setattr(
+        writer_module,
+        "get_edarsahub_sql_config",
+        lambda profile: writer_config(
+            user="HRLectura"
+        ),
+    )
+    monkeypatch.setattr(
+        writer_module,
+        "get_edarsahub_pymssql_connection",
+        lambda **kwargs: opened.append(kwargs),
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="prohibida",
+    ):
+        writer_module.open_validated_writer_connection()
+
+    assert opened == []
+
+
+
+class TransactionConnection:
+    def __init__(self):
+        self.commit_calls = 0
+        self.rollback_calls = 0
+        self.close_calls = 0
+
+    def commit(self):
+        self.commit_calls += 1
+
+    def rollback(self):
+        self.rollback_calls += 1
+
+    def close(self):
+        self.close_calls += 1
+
+
+def _main_args():
+    return SimpleNamespace(
+        email="user@example.com",
+        base_url="http://localhost.invalid",
+        i_understand_this_updates_sql=True,
+        skip_validation=True,
+    )
+
+
+def _configure_main_happy_path(
+    monkeypatch,
+    conn,
+):
+    identity = SQLWriterIdentity(
+        database_name="EDARSAHUB",
+        login_name="WriterLoginTest",
+        user_name="WriterDbUserTest",
+    )
+
+    monkeypatch.setattr(
+        reset_tool,
+        "parse_args",
+        _main_args,
+    )
+    monkeypatch.setattr(
+        reset_tool,
+        "open_validated_writer_connection",
+        lambda: (conn, identity),
+    )
+    monkeypatch.setattr(
+        reset_tool,
+        "resolve_single_active_user",
+        lambda active_conn, email: (
+            42,
+            [{"UsuarioID": 42, "Email": email}],
+        ),
+    )
+    monkeypatch.setattr(
+        reset_tool,
+        "confirm_target",
+        lambda email, usuario_id: None,
+    )
+    monkeypatch.setattr(
+        reset_tool,
+        "prompt_new_password",
+        lambda email: "TestPassword123",
+    )
+    monkeypatch.setattr(
+        reset_tool,
+        "hash_password",
+        lambda password: "test-hash",
+    )
+    monkeypatch.setattr(
+        reset_tool,
+        "fetch_user_metadata",
+        lambda active_conn, email: [
+            {"UsuarioID": 42, "Email": email}
+        ],
+    )
+    monkeypatch.setattr(
+        reset_tool,
+        "write_reset_report",
+        lambda *args, **kwargs: Path(
+            "/tmp/test-reset-report.md"
+        ),
+    )
+
+
+def test_main_commits_writer_transaction_once(
+    monkeypatch,
+):
+    conn = TransactionConnection()
+    calls = []
+
+    _configure_main_happy_path(
+        monkeypatch,
+        conn,
+    )
+
+    monkeypatch.setattr(
+        reset_tool,
+        "update_password_and_audit",
+        lambda active_conn,
+        usuario_id,
+        email,
+        password_hash,
+        identity: calls.append(
+            (
+                active_conn,
+                usuario_id,
+                email,
+                password_hash,
+                identity,
+            )
+        ),
+    )
+
+    result = reset_tool.main()
+
+    assert result == 0
+    assert len(calls) == 1
+    assert calls[0][0] is conn
+    assert conn.commit_calls == 1
+    assert conn.rollback_calls == 0
+    assert conn.close_calls == 1
+
+
+def test_main_rolls_back_when_update_or_audit_fails(
+    monkeypatch,
+):
+    conn = TransactionConnection()
+
+    _configure_main_happy_path(
+        monkeypatch,
+        conn,
+    )
+
+    def fail_update(*args, **kwargs):
+        raise RuntimeError(
+            "simulated transactional failure"
+        )
+
+    monkeypatch.setattr(
+        reset_tool,
+        "update_password_and_audit",
+        fail_update,
+    )
+
+    result = reset_tool.main()
+
+    assert result == 1
+    assert conn.commit_calls == 0
+    assert conn.rollback_calls == 1
+    assert conn.close_calls == 1

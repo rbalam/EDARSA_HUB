@@ -14,6 +14,7 @@ class EdarsaHubSQLConfig:
 
 _PROFILE_PREFIXES = {
     "default": "EDARSAHUB_SQL",
+    "writer": "EDARSAHUB_SQL_WRITER",
 }
 
 
@@ -28,10 +29,11 @@ def get_edarsahub_sql_config(profile: str = "default") -> EdarsaHubSQLConfig:
     """
     Config canónica EDARSAHUB SQL.
 
-    Perfil permitido:
+    Perfiles permitidos:
     - default: configuracion canonica EDARSAHUB_SQL_*
+    - writer: configuracion de escritura EDARSAHUB_SQL_WRITER_*
 
-    Los perfiles alternativos estan prohibidos.
+    Cualquier otro perfil esta prohibido.
     """
     normalized = (profile or "default").lower()
     prefix = _PROFILE_PREFIXES.get(normalized)
