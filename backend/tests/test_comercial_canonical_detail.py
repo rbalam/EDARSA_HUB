@@ -1,17 +1,35 @@
 from datetime import date
+import importlib.util
+from pathlib import Path
+import sys
 
 import pytest
 
-from modules.comercial.canonical_detail import (
-    CanonicalDailyDuplicateError,
-    CanonicalUnitResolutionError,
-    assert_one_row_per_operation_date,
-    build_canonical_unit_query,
-    build_daily_folio,
-    build_daily_kpi_detail_query,
-    build_daily_kpi_total_query,
-    resolve_canonical_unit,
+
+MODULE_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "modules"
+    / "comercial"
+    / "canonical_detail.py"
 )
+MODULE_NAME = "edarsahub_comercial_canonical_detail_under_test"
+
+spec = importlib.util.spec_from_file_location(MODULE_NAME, MODULE_PATH)
+if spec is None or spec.loader is None:
+    raise RuntimeError(f"No se pudo cargar el helper canónico: {MODULE_PATH}")
+
+module = importlib.util.module_from_spec(spec)
+sys.modules[MODULE_NAME] = module
+spec.loader.exec_module(module)
+
+CanonicalDailyDuplicateError = module.CanonicalDailyDuplicateError
+CanonicalUnitResolutionError = module.CanonicalUnitResolutionError
+assert_one_row_per_operation_date = module.assert_one_row_per_operation_date
+build_canonical_unit_query = module.build_canonical_unit_query
+build_daily_folio = module.build_daily_folio
+build_daily_kpi_detail_query = module.build_daily_kpi_detail_query
+build_daily_kpi_total_query = module.build_daily_kpi_total_query
+resolve_canonical_unit = module.resolve_canonical_unit
 
 
 def test_specific_selector_uses_parameterized_canonical_lookup():
@@ -119,10 +137,7 @@ def test_folio_is_unique_by_unit_and_operation_date():
 
 
 def test_helper_contains_no_live_or_mongo_dependencies():
-    import inspect
-    import modules.comercial.canonical_detail as module
-
-    source = inspect.getsource(module)
+    source = MODULE_PATH.read_text(encoding="utf-8")
 
     assert "pymongo" not in source
     assert "motor.motor" not in source
