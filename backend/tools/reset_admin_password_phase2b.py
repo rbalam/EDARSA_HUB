@@ -29,8 +29,7 @@ from core.connections.edarsahub_writer_connection import (
 from tools import validate_rbac_menu_phase1 as rbac_validator
 
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-REPORT_DIR = ROOT_DIR / "docs" / "reports" / "rbac_phase1"
+REPORT_DIR = Path("/tmp/edarsahub/rbac_phase1")
 
 
 
@@ -129,27 +128,67 @@ def write_reset_report(
     after_rows: list[dict[str, Any]],
     validation_md: Path | None,
     validation_summary: dict[str, Any] | None,
+    rotation_sql_status: str,
+    post_validation_status: str,
 ) -> Path:
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
-    report_path = REPORT_DIR / f"{timestamp}_phase2b_admin_password_reset.md"
+    timestamp = dt.datetime.now().strftime(
+        "%Y%m%d_%H%M%S"
+    )
+    report_path = (
+        REPORT_DIR
+        / f"{timestamp}_phase2b_admin_password_reset.md"
+    )
 
     lines = [
         "# Fase 2B admin password reset",
         "",
-        f"- Fecha: {dt.datetime.now().isoformat(timespec='seconds')}",
+        (
+            "- Fecha: "
+            f"{dt.datetime.now().isoformat(timespec='seconds')}"
+        ),
         f"- Usuario objetivo: `{email}`",
         "- Password plano: no impreso, no guardado",
         "- Hash bcrypt: no impreso, no guardado en reporte",
-        "- Tabla actualizada: `dbo.Usuario_Catalogo.PasswordHashTexto`",
+        (
+            "- Tabla actualizada: "
+            "`dbo.Usuario_Catalogo.PasswordHashTexto`"
+        ),
+        "",
+        "## Estados operativos",
+        "",
+        f"- ROTATION_SQL_STATUS={rotation_sql_status}",
+        (
+            "- POST_VALIDATION_STATUS="
+            f"{post_validation_status}"
+        ),
+        "- REPORT_STATUS=PASS",
         "",
         "## Estado previo",
         "",
         "```",
     ]
-    lines.extend(f"  {row}" for row in sanitized_rows(before_rows))
-    lines.extend(["```", "", "## Estado posterior", "", "```"])
-    lines.extend(f"  {row}" for row in sanitized_rows(after_rows))
+
+    lines.extend(
+        f"  {row}"
+        for row in sanitized_rows(before_rows)
+    )
+
+    lines.extend(
+        [
+            "```",
+            "",
+            "## Estado posterior",
+            "",
+            "```",
+        ]
+    )
+
+    lines.extend(
+        f"  {row}"
+        for row in sanitized_rows(after_rows)
+    )
+
     lines.extend(["```", ""])
 
     if validation_summary:
@@ -157,14 +196,22 @@ def write_reset_report(
             [
                 "## Validacion RBAC/Menu",
                 "",
-                f"- OK/WARN/FAIL: {validation_summary.get('ok', 0)}/"
-                f"{validation_summary.get('warn', 0)}/{validation_summary.get('fail', 0)}",
+                (
+                    "- OK/WARN/FAIL: "
+                    f"{validation_summary.get('ok', 0)}/"
+                    f"{validation_summary.get('warn', 0)}/"
+                    f"{validation_summary.get('fail', 0)}"
+                ),
                 f"- Reporte MD: `{validation_md}`",
                 "",
             ]
         )
 
-    report_path.write_text("\n".join(lines), encoding="utf-8")
+    report_path.write_text(
+        "\n".join(lines),
+        encoding="utf-8",
+    )
+
     return report_path
 
 
@@ -266,20 +313,56 @@ def update_password_and_audit(
             close()
 
 
-def run_rbac_validation(email: str, password: str, base_url: str) -> tuple[Path, dict[str, Any]]:
+def run_rbac_validation(
+    email: str,
+    password: str,
+    base_url: str,
+) -> tuple[Path, dict[str, Any]]:
     specs = [
         {
-            "label": "Admin",
+            "label": "UsuarioObjetivo",
             "email": email,
             "password": password,
-            "expect_global_access": True,
             "expected_min_permissions": 1,
         }
     ]
-    results = [rbac_validator.validate_user(specs[0], base_url=base_url, timeout=20)]
-    _, md_path = rbac_validator.write_reports(base_url, specs, results)
-    summary = rbac_validator.summarize_results(results)
+
+    results = [
+        rbac_validator.validate_user(
+            specs[0],
+            base_url=base_url,
+            timeout=20,
+        )
+    ]
+
+    _, md_path = rbac_validator.write_reports(
+        base_url,
+        specs,
+        results,
+    )
+
+    summary = rbac_validator.summarize_results(
+        results
+    )
+
     return md_path, summary
+
+
+def print_operation_statuses(
+    rotation_sql_status: str,
+    post_validation_status: str,
+    report_status: str,
+) -> None:
+    print(
+        f"ROTATION_SQL_STATUS={rotation_sql_status}"
+    )
+    print(
+        "POST_VALIDATION_STATUS="
+        f"{post_validation_status}"
+    )
+    print(
+        f"REPORT_STATUS={report_status}"
+    )
 
 
 def parse_args() -> argparse.Namespace:
@@ -322,124 +405,213 @@ def main() -> int:
             "para confirmar la escritura.",
             file=sys.stderr,
         )
+        print_operation_statuses(
+            "SKIPPED",
+            "SKIPPED",
+            "SKIPPED",
+        )
         return 2
 
     password = ""
+    new_hash = ""
     conn = None
     writer_identity = None
     before_rows = []
     after_rows = []
 
-    try:
-        conn, writer_identity = (
-            open_validated_writer_connection()
-        )
+    rotation_sql_status = "SKIPPED"
+    post_validation_status = "SKIPPED"
+    report_status = "SKIPPED"
 
-        usuario_id, before_rows = (
-            resolve_single_active_user(
-                conn,
-                args.email,
+    validation_md = None
+    validation_summary = None
+    reset_report = None
+
+    try:
+        try:
+            conn, writer_identity = (
+                open_validated_writer_connection()
             )
-        )
 
-        confirm_target(args.email, usuario_id)
-        password = prompt_new_password(args.email)
-        new_hash = hash_password(password)
-
-        update_password_and_audit(
-            conn,
-            usuario_id,
-            args.email,
-            new_hash,
-            writer_identity,
-        )
-
-        after_rows = fetch_user_metadata(
-            conn,
-            args.email,
-        )
-
-        conn.commit()
-    except Exception as exc:
-        if conn is not None:
-            try:
-                conn.rollback()
-            except Exception:
-                pass
-
-        print(f"ERROR: {exc}", file=sys.stderr)
-        return 1
-    finally:
-        if conn is not None:
-            conn.close()
-
-    try:
-        validation_md = None
-        validation_summary = None
-
-        if not args.skip_validation:
-            validation_md, validation_summary = (
-                run_rbac_validation(
+            usuario_id, before_rows = (
+                resolve_single_active_user(
+                    conn,
                     args.email,
-                    password,
-                    args.base_url,
                 )
             )
 
-        reset_report = write_reset_report(
-            args.email,
-            before_rows,
-            after_rows,
-            validation_md,
-            validation_summary,
-        )
+            confirm_target(
+                args.email,
+                usuario_id,
+            )
+
+            password = prompt_new_password(
+                args.email
+            )
+            new_hash = hash_password(password)
+
+            update_password_and_audit(
+                conn,
+                usuario_id,
+                args.email,
+                new_hash,
+                writer_identity,
+            )
+
+            after_rows = fetch_user_metadata(
+                conn,
+                args.email,
+            )
+
+            conn.commit()
+            rotation_sql_status = "COMMITTED"
+            new_hash = ""
+
+            print(
+                "Password y auditoria SQL confirmados "
+                "en una sola transaccion."
+            )
+            print(
+                "ROTATION_SQL_STATUS=COMMITTED"
+            )
+        except Exception as exc:
+            rollback_succeeded = False
+
+            if conn is not None:
+                try:
+                    conn.rollback()
+                    rollback_succeeded = True
+                except Exception as rollback_exc:
+                    print(
+                        f"ROLLBACK_ERROR={rollback_exc}",
+                        file=sys.stderr,
+                    )
+
+            rotation_sql_status = (
+                "ROLLED_BACK"
+                if rollback_succeeded
+                else "ERROR"
+            )
+
+            print(
+                f"ERROR_SQL_ROTATION={exc}",
+                file=sys.stderr,
+            )
+
+            print_operation_statuses(
+                rotation_sql_status,
+                "SKIPPED",
+                "SKIPPED",
+            )
+
+            return 1
+        finally:
+            if conn is not None:
+                conn.close()
+
+        if args.skip_validation:
+            post_validation_status = "SKIPPED"
+            password = ""
+        else:
+            try:
+                validation_md, validation_summary = (
+                    run_rbac_validation(
+                        args.email,
+                        password,
+                        args.base_url,
+                    )
+                )
+
+                if (
+                    validation_summary.get("fail", 0)
+                    or validation_summary.get("warn", 0)
+                ):
+                    post_validation_status = (
+                        "WARN_OR_FAIL"
+                    )
+                else:
+                    post_validation_status = "PASS"
+            except Exception as exc:
+                post_validation_status = "ERROR"
+
+                print(
+                    "SQL ya confirmado; fallo la "
+                    "validacion posterior: "
+                    f"{exc}",
+                    file=sys.stderr,
+                )
+            finally:
+                password = ""
+
+        try:
+            reset_report = write_reset_report(
+                email=args.email,
+                before_rows=before_rows,
+                after_rows=after_rows,
+                validation_md=validation_md,
+                validation_summary=validation_summary,
+                rotation_sql_status=(
+                    rotation_sql_status
+                ),
+                post_validation_status=(
+                    post_validation_status
+                ),
+            )
+            report_status = "PASS"
+        except Exception as exc:
+            report_status = "ERROR"
+
+            print(
+                "SQL ya confirmado; fallo la "
+                "generacion del reporte reset: "
+                f"{exc}",
+                file=sys.stderr,
+            )
 
         print(
-            "Password actualizado sin exponer secretos."
-        )
-        print(
-            "Escritura y auditoria confirmadas "
-            "en una sola transaccion."
-        )
-        print(
-            "Identidad SQL: "
+            "Identidad SQL confirmada: "
             f"database={writer_identity.database_name}, "
             f"login={writer_identity.login_name}, "
             f"user={writer_identity.user_name}"
         )
-        print(f"Reporte reset: {reset_report}")
 
-        if args.skip_validation:
+        if reset_report is not None:
             print(
-                "Validacion RBAC/Menu omitida "
-                "por --skip-validation."
+                f"Reporte reset: {reset_report}"
             )
-            return 0
 
-        print(f"Reporte RBAC/Menu: {validation_md}")
-        print(
-            "Resultado Fase 2B RBAC/Menu: "
-            f"OK={validation_summary.get('ok', 0)} "
-            f"WARN={validation_summary.get('warn', 0)} "
-            f"FAIL={validation_summary.get('fail', 0)}"
+        if validation_md is not None:
+            print(
+                f"Reporte RBAC/Menu: {validation_md}"
+            )
+
+        if validation_summary is not None:
+            print(
+                "Resultado Fase 2B RBAC/Menu: "
+                f"OK={validation_summary.get('ok', 0)} "
+                f"WARN={validation_summary.get('warn', 0)} "
+                f"FAIL={validation_summary.get('fail', 0)}"
+            )
+
+        print_operation_statuses(
+            rotation_sql_status,
+            post_validation_status,
+            report_status,
         )
 
-        if (
-            validation_summary.get("fail", 0)
-            or validation_summary.get("warn", 0)
-        ):
+        if post_validation_status in {
+            "WARN_OR_FAIL",
+            "ERROR",
+        }:
+            return 1
+
+        if report_status == "ERROR":
             return 1
 
         return 0
-    except Exception as exc:
-        print(
-            "SQL confirmado, pero fallo la validacion "
-            f"posterior: {exc}",
-            file=sys.stderr,
-        )
-        return 1
     finally:
         password = ""
+        new_hash = ""
 
 
 if __name__ == "__main__":

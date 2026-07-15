@@ -4,7 +4,7 @@ Phase 1 RBAC/Menu API validator for EDARSAHUB.
 
 This tool is intentionally read-only. It logs in with operator-provided test
 users, calls the canonical RBAC endpoints, and writes a redacted validation
-report under docs/reports/rbac_phase1/.
+report under /tmp/edarsahub/rbac_phase1/.
 """
 
 from __future__ import annotations
@@ -21,8 +21,7 @@ from pathlib import Path
 from typing import Any
 
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-REPORT_DIR = ROOT_DIR / "docs" / "reports" / "rbac_phase1"
+REPORT_DIR = Path("/tmp/edarsahub/rbac_phase1")
 
 DEFAULT_MENU_KEYS = [
     "mis_tareas",

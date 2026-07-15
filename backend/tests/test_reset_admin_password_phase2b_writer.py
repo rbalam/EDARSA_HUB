@@ -356,24 +356,31 @@ class TransactionConnection:
         self.close_calls += 1
 
 
-def _main_args():
+def _main_args(
+    skip_validation=True,
+):
     return SimpleNamespace(
         email="user@example.com",
         base_url="http://localhost.invalid",
         i_understand_this_updates_sql=True,
-        skip_validation=True,
+        skip_validation=skip_validation,
     )
 
 
 def _configure_main_happy_path(
     monkeypatch,
     conn,
+    *,
+    skip_validation=True,
 ):
     monkeypatch.setattr(
         reset_tool,
         "parse_args",
-        _main_args,
+        lambda: _main_args(
+            skip_validation=skip_validation,
+        ),
     )
+
     monkeypatch.setattr(
         reset_tool,
         "open_validated_writer_connection",
@@ -382,6 +389,7 @@ def _configure_main_happy_path(
             canonical_identity(),
         ),
     )
+
     monkeypatch.setattr(
         reset_tool,
         "resolve_single_active_user",
@@ -395,21 +403,31 @@ def _configure_main_happy_path(
             ],
         ),
     )
+
     monkeypatch.setattr(
         reset_tool,
         "confirm_target",
         lambda email, usuario_id: None,
     )
+
     monkeypatch.setattr(
         reset_tool,
         "prompt_new_password",
         lambda email: "TestPassword123",
     )
+
     monkeypatch.setattr(
         reset_tool,
         "hash_password",
         lambda password: "test-hash",
     )
+
+    monkeypatch.setattr(
+        reset_tool,
+        "update_password_and_audit",
+        lambda *args, **kwargs: None,
+    )
+
     monkeypatch.setattr(
         reset_tool,
         "fetch_user_metadata",
@@ -420,6 +438,7 @@ def _configure_main_happy_path(
             }
         ],
     )
+
     monkeypatch.setattr(
         reset_tool,
         "write_reset_report",
@@ -495,3 +514,203 @@ def test_main_rolls_back_when_update_or_audit_fails(
     assert conn.commit_calls == 0
     assert conn.rollback_calls == 1
     assert conn.close_calls == 1
+
+
+def test_operational_report_dirs_are_outside_repository():
+    expected = Path(
+        "/tmp/edarsahub/rbac_phase1"
+    )
+
+    assert reset_tool.REPORT_DIR == expected
+    assert (
+        reset_tool.rbac_validator.REPORT_DIR
+        == expected
+    )
+    assert (
+        "docs/reports"
+        not in str(reset_tool.REPORT_DIR)
+    )
+
+
+def test_reset_report_records_separate_statuses(
+    monkeypatch,
+    tmp_path,
+):
+    monkeypatch.setattr(
+        reset_tool,
+        "REPORT_DIR",
+        tmp_path,
+    )
+
+    report_path = reset_tool.write_reset_report(
+        email="user@example.com",
+        before_rows=[],
+        after_rows=[],
+        validation_md=None,
+        validation_summary=None,
+        rotation_sql_status="COMMITTED",
+        post_validation_status="WARN_OR_FAIL",
+    )
+
+    report = report_path.read_text(
+        encoding="utf-8"
+    )
+
+    assert (
+        "ROTATION_SQL_STATUS=COMMITTED"
+        in report
+    )
+    assert (
+        "POST_VALIDATION_STATUS=WARN_OR_FAIL"
+        in report
+    )
+    assert "REPORT_STATUS=PASS" in report
+
+
+def test_rotation_validation_does_not_force_global_access(
+    monkeypatch,
+):
+    captured = {}
+
+    def fake_validate_user(
+        spec,
+        base_url,
+        timeout,
+    ):
+        captured["spec"] = spec
+        captured["base_url"] = base_url
+        captured["timeout"] = timeout
+
+        return {
+            "status": "OK",
+        }
+
+    monkeypatch.setattr(
+        reset_tool.rbac_validator,
+        "validate_user",
+        fake_validate_user,
+    )
+
+    monkeypatch.setattr(
+        reset_tool.rbac_validator,
+        "write_reports",
+        lambda *args, **kwargs: (
+            Path("/tmp/test-rbac.json"),
+            Path("/tmp/test-rbac.md"),
+        ),
+    )
+
+    _, summary = reset_tool.run_rbac_validation(
+        "user@example.com",
+        "TestPassword123",
+        "http://localhost.invalid",
+    )
+
+    assert (
+        "expect_global_access"
+        not in captured["spec"]
+    )
+    assert (
+        captured["spec"]["expected_min_permissions"]
+        == 1
+    )
+    assert summary["ok"] == 1
+
+
+def test_commit_remains_explicit_when_validation_fails(
+    monkeypatch,
+    capsys,
+):
+    conn = TransactionConnection()
+
+    _configure_main_happy_path(
+        monkeypatch,
+        conn,
+        skip_validation=False,
+    )
+
+    def fail_validation(*args, **kwargs):
+        raise RuntimeError(
+            "simulated validation failure"
+        )
+
+    monkeypatch.setattr(
+        reset_tool,
+        "run_rbac_validation",
+        fail_validation,
+    )
+
+    result = reset_tool.main()
+    captured = capsys.readouterr()
+    output = captured.out + captured.err
+
+    assert result == 1
+    assert conn.commit_calls == 1
+    assert conn.rollback_calls == 0
+    assert conn.close_calls == 1
+
+    assert (
+        "ROTATION_SQL_STATUS=COMMITTED"
+        in output
+    )
+    assert (
+        "POST_VALIDATION_STATUS=ERROR"
+        in output
+    )
+    assert "REPORT_STATUS=PASS" in output
+
+
+def test_commit_remains_explicit_when_report_fails(
+    monkeypatch,
+    capsys,
+):
+    conn = TransactionConnection()
+
+    _configure_main_happy_path(
+        monkeypatch,
+        conn,
+        skip_validation=True,
+    )
+
+    def fail_report(*args, **kwargs):
+        raise RuntimeError(
+            "simulated report failure"
+        )
+
+    monkeypatch.setattr(
+        reset_tool,
+        "write_reset_report",
+        fail_report,
+    )
+
+    result = reset_tool.main()
+    captured = capsys.readouterr()
+    output = captured.out + captured.err
+
+    assert result == 1
+    assert conn.commit_calls == 1
+    assert conn.rollback_calls == 0
+    assert conn.close_calls == 1
+
+    assert (
+        "ROTATION_SQL_STATUS=COMMITTED"
+        in output
+    )
+    assert (
+        "POST_VALIDATION_STATUS=SKIPPED"
+        in output
+    )
+    assert "REPORT_STATUS=ERROR" in output
+
+
+def test_main_clears_sensitive_local_values():
+    source = inspect.getsource(
+        reset_tool.main
+    )
+
+    final_cleanup = source[
+        source.rfind("finally:"):
+    ]
+
+    assert 'password = ""' in final_cleanup
+    assert 'new_hash = ""' in final_cleanup
