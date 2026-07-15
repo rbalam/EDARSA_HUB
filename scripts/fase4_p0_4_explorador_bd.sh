@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+: "${EDARSAHUB_TEST_AUTH_EMAIL:?Variable requerida}"
+: "${EDARSAHUB_TEST_AUTH_PASSWORD:?Variable requerida}"
+export EDARSAHUB_TEST_AUTH_EMAIL EDARSAHUB_TEST_AUTH_PASSWORD
+
+LOGIN_PAYLOAD="$(python3 -c 'import json,os; print(json.dumps({
+    "email": os.environ["EDARSAHUB_TEST_AUTH_EMAIL"],
+    "password": os.environ["EDARSAHUB_TEST_AUTH_PASSWORD"],
+}))')"
+
 # FASE 4 - P0-4  Explorador BD: reponer _execute_sql_direct_with_error en core/db.py
 BACK_DIR="/app/backend"
 OUT_DIR="/app/auditorias_p5"
@@ -83,7 +92,7 @@ sleep 9
 sudo supervisorctl status backend | head -1 | tee -a "$RAW"
 
 echo "===== 6) LOGIN ADMIN =====" | tee -a "$RAW"
-TOKEN=$(curl -sS --max-time 20 -X POST "http://127.0.0.1:8001/api/auth/login" -H "Content-Type: application/json" -d '{"email":"admin@edarsa.com","password":"pruebas123"}' | python3 -c "import sys,json;print(json.load(sys.stdin).get('token',''))")
+TOKEN=$(curl -sS --max-time 20 -X POST "http://127.0.0.1:8001/api/auth/login" -H "Content-Type: application/json" -d "$LOGIN_PAYLOAD" | python3 -c "import sys,json;print(json.load(sys.stdin).get('token',''))")
 echo "TOKEN_LEN=${#TOKEN}" | tee -a "$RAW"
 [ -n "$TOKEN" ] || { echo "SIN TOKEN" | tee -a "$RAW"; echo "RAW=$RAW"; exit 1; }
 

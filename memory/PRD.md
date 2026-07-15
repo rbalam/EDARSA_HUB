@@ -508,7 +508,7 @@ Verificado vía cURL: login Ricardo OK, `/api/config-asignaciones` 200 (antes 40
 Regresión: `tests/test_rol_canonicidad_normalize_user.py` (4 tests) + `tests/test_rbac_helper.py` (5).
 Equivalencia respetada: SUPERADMIN↔SuperAdministrador, ADMIN↔Administrador,
 SUPERVISOR↔Supervisor, USUARIO↔Usuario, VISOR↔Visor.
-También: password de `ricardo@edarsa.com.mx` restablecido a `Ricardo2835!` (bcrypt) y verificado.
+- La contraseña del usuario fue restablecida mediante procedimiento controlado; el valor no se conserva en Git.
 
 ---
 
@@ -590,7 +590,7 @@ usuario en MODO SEGURO:
 ### P0 - Corrección Exposición de Secretos / POS SQL-First ✅ COMPLETE (2026-06-08)
 Script `.sh` del usuario AUDITADO y RECHAZADO (Parche 1 duplicaba helpers de P1B; Parche 2 rompía
 la pantalla viva de Finanzas CxP y NO redactaba el secreto real; Parche 3 rompía URLs funcionales).
-Único secreto en texto plano real: `C0ntr4s3ña#2026` en `repository_softrestaurant.py`. Corregido
+- Se detectó y eliminó un secreto en texto plano; el valor no se conserva en Git y requiere rotación.
 manualmente con autorización:
 - **`modules/finanzas/repository_softrestaurant.py`** (LIVE): `SOFTRESTAURANT_SERVERS` migrado a
   builder `_build_softrestaurant_servers()` que resuelve host/puerto/db/usuario/password desde

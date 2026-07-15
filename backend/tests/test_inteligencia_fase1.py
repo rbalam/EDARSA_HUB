@@ -10,10 +10,15 @@ import requests
 import pytest
 
 API = os.environ.get("REACT_APP_BACKEND_URL", "http://localhost:8001").rstrip("/")
-EMAIL = "admin@edarsa.com"
-PASSWORD = "pruebas123"
+EMAIL = os.environ.get("EDARSAHUB_TEST_AUTH_EMAIL")
+PASSWORD = os.environ.get("EDARSAHUB_TEST_AUTH_PASSWORD")
 
-
+if not EMAIL or not PASSWORD:
+    pytest.skip(
+        "E2E omitido: faltan EDARSAHUB_TEST_AUTH_EMAIL y "
+        "EDARSAHUB_TEST_AUTH_PASSWORD",
+        allow_module_level=True,
+    )
 @pytest.fixture(scope="module")
 def token():
     r = requests.post(f"{API}/api/auth/login", json={"email": EMAIL, "password": PASSWORD}, timeout=30)

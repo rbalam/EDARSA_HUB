@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
+: "${EDARSAHUB_TEST_AUTH_EMAIL:?Variable requerida}"
+: "${EDARSAHUB_TEST_AUTH_PASSWORD:?Variable requerida}"
+export EDARSAHUB_TEST_AUTH_EMAIL EDARSAHUB_TEST_AUTH_PASSWORD
+
+LOGIN_PAYLOAD="$(python3 -c 'import json,os; print(json.dumps({
+    "email": os.environ["EDARSAHUB_TEST_AUTH_EMAIL"],
+    "password": os.environ["EDARSAHUB_TEST_AUTH_PASSWORD"],
+}))')"
 OUT_DIR="/app/auditorias_p5"; TS="$(date +%Y%m%d_%H%M%S)"
 RAW="$OUT_DIR/FASE20_OPERATIVO_SNAPSHOT_MODULOS_CRITICOS_${TS}.txt"
 JSON_DIR="$OUT_DIR/FASE20_OPERATIVO_${TS}"
@@ -8,7 +17,7 @@ API=$(grep REACT_APP_BACKEND_URL /app/frontend/.env | cut -d '=' -f2)
 echo "FASE 20 - SNAPSHOT OPERATIVO MODULOS CRITICOS $(date)" | tee "$RAW"
 echo "===== 1) LOGIN =====" | tee -a "$RAW"
 curl -sS --max-time 15 -X POST "$API/api/auth/login" -H "Content-Type: application/json" \
-  -d '{"email":"admin@edarsa.com","password":"pruebas123"}' -o "$JSON_DIR/login.json" \
+  -d "$LOGIN_PAYLOAD" -o "$JSON_DIR/login.json" \
   -w "LOGIN HTTP=%{http_code} t=%{time_total}s\n" | tee -a "$RAW"
 TOKEN=$(python3 -c "import json;d=json.load(open('$JSON_DIR/login.json'));print(d.get('token') or d.get('access_token') or '')")
 [ -z "$TOKEN" ] && { echo "ERROR: no token" | tee -a "$RAW"; exit 2; }

@@ -1,12 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+: "${EDARSAHUB_TEST_AUTH_EMAIL:?Variable requerida}"
+: "${EDARSAHUB_TEST_AUTH_PASSWORD:?Variable requerida}"
+export EDARSAHUB_TEST_AUTH_EMAIL EDARSAHUB_TEST_AUTH_PASSWORD
+
+LOGIN_PAYLOAD="$(python3 -c 'import json,os; print(json.dumps({
+    "email": os.environ["EDARSAHUB_TEST_AUTH_EMAIL"],
+    "password": os.environ["EDARSAHUB_TEST_AUTH_PASSWORD"],
+}))')"
+
 BASE_URL="${1:-http://127.0.0.1:8001}"
 
 echo "===== LOGIN ====="
 curl -sS --max-time 15 -X POST "$BASE_URL/api/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@edarsa.com","password":"pruebas123"}' \
+  -d "$LOGIN_PAYLOAD" \
   -o /tmp/fase6_val_login.json \
   -w "HTTP=%{http_code} t=%{time_total}s\n"
 

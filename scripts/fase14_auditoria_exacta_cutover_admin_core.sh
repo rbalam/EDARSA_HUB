@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
+: "${EDARSAHUB_TEST_AUTH_EMAIL:?Variable requerida}"
+: "${EDARSAHUB_TEST_AUTH_PASSWORD:?Variable requerida}"
+export EDARSAHUB_TEST_AUTH_EMAIL EDARSAHUB_TEST_AUTH_PASSWORD
+
+LOGIN_PAYLOAD="$(python3 -c 'import json,os; print(json.dumps({
+    "email": os.environ["EDARSAHUB_TEST_AUTH_EMAIL"],
+    "password": os.environ["EDARSAHUB_TEST_AUTH_PASSWORD"],
+}))')"
 OUT_DIR="/app/auditorias_p5"; TS="$(date +%Y%m%d_%H%M%S)"
 RAW="$OUT_DIR/FASE14_AUDITORIA_EXACTA_CUTOVER_ADMIN_CORE_${TS}.txt"
 JSON_DIR="$OUT_DIR/FASE14_ADMIN_CORE_${TS}"
@@ -7,7 +16,7 @@ mkdir -p "$OUT_DIR" "$JSON_DIR" /app/scripts; cd /app || exit 1
 echo "FASE 14 - AUDITORIA EXACTA CUTOVER ADMIN CORE $(date)" | tee "$RAW"
 echo "===== 1) LOGIN =====" | tee -a "$RAW"
 curl -sS --max-time 15 -X POST "http://127.0.0.1:8001/api/auth/login" -H "Content-Type: application/json" \
-  -d '{"email":"admin@edarsa.com","password":"pruebas123"}' -o "$JSON_DIR/login.json" \
+  -d "$LOGIN_PAYLOAD" -o "$JSON_DIR/login.json" \
   -w "HTTP=%{http_code} t=%{time_total}s\n" | tee -a "$RAW"
 TOKEN=$(python3 -c "import json;d=json.load(open('$JSON_DIR/login.json'));print(d.get('token') or d.get('access_token') or '')" 2>/dev/null)
 [ -z "$TOKEN" ] && { echo "ERROR: no token" | tee -a "$RAW"; exit 2; }

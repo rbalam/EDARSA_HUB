@@ -105,7 +105,7 @@ Unidades activas (Junio 2026), códigos canónicos: `130MID, 130QRO, CIENFUEGOS,
 ```bash
 API=$(grep REACT_APP_BACKEND_URL /app/frontend/.env | cut -d= -f2)
 TOKEN=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" \
-  -d '{"email":"admin@edarsa.com","password":"pruebas123"}' | python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
+  -d '<credenciales suministradas en runtime>' | python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
 curl -s "$API/api/v2/comercial/dashboard?fecha_inicio=2026-06-01&fecha_fin=2026-06-30" \
   -H "Authorization: Bearer $TOKEN" | python3 -m json.tool
 ```
@@ -132,7 +132,7 @@ curl -s "$API/api/v2/comercial/dashboard?fecha_inicio=2026-06-01&fecha_fin=2026-
 ---
 
 ## 5) CREDENCIAL DE PRUEBA
-`admin@edarsa.com` / `pruebas123` (Rol: SUPERADMIN).
+- Credenciales de prueba: suministradas mediante variables de entorno.
 
 ---
 
