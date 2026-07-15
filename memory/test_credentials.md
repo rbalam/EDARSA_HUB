@@ -1,16 +1,8 @@
-# Credenciales de prueba — EDARSA HUB
+# Credenciales de prueba
 
-## CRM principal (interno)
-- **Email:** admin@edarsa.com
-- **Password:** pruebas123
-- **Rol:** SuperAdministrador
-
-## Portal Inteligencia Comercial (EXTERNO) — /inteligencia-comercial
-- **Email:** socio@externo.com
-- **Password:** socio123
-- **Unidades asignadas:** ORIGEN, LA ESTELAR (ESTELAR)
-- Creado vía: Proveedores → pestaña "Usuarios Inteligencia"
-- Login externo propio (cookie httpOnly `edarsa_intel_access_token`)
-
-> Nota: los usuarios externos del portal de inteligencia se almacenan en SQL
-> (`dbo.Portal_Inteligencia_Usuarios`), NO en MongoDB.
+No almacenar credenciales, contraseñas, tokens ni secretos reales en Git.
+TEST_USERNAME=<TEST_USERNAME>
+TEST_PASSWORD=<TEST_PASSWORD>
+TEST_API_KEY=<TEST_API_KEY>
+TEST_TOKEN=<TEST_TOKEN>
+Toda credencial expuesta previamente debe rotarse.
