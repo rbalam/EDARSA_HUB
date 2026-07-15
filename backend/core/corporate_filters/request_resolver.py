@@ -28,6 +28,15 @@ from typing import Optional, List, Dict, Any
 import logging
 
 from core.unidades_service import UnidadesService
+from core.connections.edarsahub_readonly_repository import (
+    get_unit_scope_metadata_readonly,
+)
+from core.connections.hrlectura_connection_factory import (
+    build_hrlectura_connection_factory,
+)
+from core.rbac_sql.runtime import (
+    can_access_unit_metadata_sql,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +56,8 @@ class UnidadScope:
     server_id: Optional[str] = None
     sucursal_origen_id: Optional[str] = None
     system_type: Optional[str] = None
+    active_units_on_server: int = 0
+    denial_reason: Optional[str] = None
     allowed_server_ids: List[str] = field(default_factory=list)
     effective_server_ids: List[str] = field(default_factory=list)
     sucursal_labels: Optional[List[str]] = None
@@ -59,13 +70,28 @@ def _find_unidad(valor: Optional[str]) -> Optional[Dict[str, Any]]:
 
 
 def _find_unidad_by_server(server_id: Optional[str]) -> Optional[Dict[str, Any]]:
+    """
+    Compatibilidad legacy únicamente para servidores no ambiguos.
+
+    Un servidor compartido nunca puede resolverse eligiendo la primera unidad.
+    """
     if not server_id:
         return None
+
     sid = str(server_id).strip().lower()
-    for u in UnidadesService.get_all():
-        if str(u.get("server_id", "")).strip().lower() == sid:
-            return u
-    return None
+
+    matches = [
+        unit
+        for unit in UnidadesService.get_all()
+        if str(
+            unit.get("server_id", "")
+        ).strip().lower() == sid
+    ]
+
+    if len(matches) != 1:
+        return None
+
+    return matches[0]
 
 
 def _shared_server(server_id: Optional[str]) -> bool:
@@ -220,3 +246,148 @@ async def resolve_unidad_scope(
         scope.sucursal_labels = labels or None
 
     return scope
+
+def _denied_scope(reason: str) -> UnidadScope:
+    return UnidadScope(
+        access_denied=True,
+        denial_reason=reason,
+        effective_server_ids=[
+            NO_ACCESS_SENTINEL_SERVER_ID
+        ],
+    )
+
+
+def _get_sql_usuario_id(
+    current_user: Optional[Dict[str, Any]],
+) -> Optional[int]:
+    user = current_user or {}
+
+    value = user.get("_sql_usuario_id")
+
+    if value in (None, ""):
+        value = user.get("UsuarioID")
+
+    if isinstance(value, bool):
+        return None
+
+    try:
+        usuario_id = int(value)
+    except (TypeError, ValueError):
+        return None
+
+    if usuario_id <= 0:
+        return None
+
+    return usuario_id
+
+
+async def resolve_authorized_unidad_scope(
+    current_user: Optional[Dict[str, Any]],
+    permission_code: str,
+    unidad: str,
+) -> UnidadScope:
+    """
+    Resuelve y autoriza una unidad mediante SQL canónico.
+
+    El cliente únicamente puede proporcionar código o PK de unidad.
+    server_id, sucursal, system_type y alcance se reconstruyen internamente.
+    """
+    usuario_id = _get_sql_usuario_id(
+        current_user
+    )
+
+    if usuario_id is None:
+        return _denied_scope(
+            "sql_usuario_id_required"
+        )
+
+    normalized_permission = str(
+        permission_code or ""
+    ).strip()
+
+    if not normalized_permission:
+        return _denied_scope(
+            "permission_code_required"
+        )
+
+    normalized_unit = str(
+        unidad or ""
+    ).strip()
+
+    if not normalized_unit:
+        return _denied_scope(
+            "canonical_unit_required"
+        )
+
+    try:
+        connection_factory = (
+            build_hrlectura_connection_factory()
+        )
+
+        metadata = get_unit_scope_metadata_readonly(
+            unidad=normalized_unit,
+            connection_factory=connection_factory,
+        )
+
+        allowed = can_access_unit_metadata_sql(
+            usuario_id,
+            normalized_permission,
+            metadata,
+        )
+
+        if not allowed:
+            return _denied_scope(
+                "unit_scope_denied"
+            )
+
+        scope = UnidadScope(
+            unidad_codigo=metadata.get(
+                "unidad_negocio_codigo"
+            ),
+            unidad_nombre=metadata.get(
+                "unidad_negocio_nombre"
+            ),
+            unidad_pk=metadata.get(
+                "unidad_negocio_pk"
+            ),
+            server_id=metadata.get("server_id"),
+            sucursal_origen_id=metadata.get(
+                "sucursal_origen_id"
+            ),
+            system_type=metadata.get(
+                "system_type"
+            ),
+            active_units_on_server=int(
+                metadata.get(
+                    "active_units_on_server"
+                )
+            ),
+            effective_server_ids=[
+                metadata.get("server_id")
+            ],
+        )
+
+        if scope.active_units_on_server > 1:
+            labels = []
+
+            if scope.unidad_codigo:
+                labels.append(scope.unidad_codigo)
+
+            if scope.unidad_nombre:
+                labels.append(scope.unidad_nombre)
+
+            scope.sucursal_labels = (
+                labels or None
+            )
+
+        return scope
+    except Exception as exc:
+        logger.warning(
+            "[UNIDAD_SCOPE] autorización SQL "
+            "falló cerrada: %s",
+            exc,
+        )
+
+        return _denied_scope(
+            "authorization_error"
+        )

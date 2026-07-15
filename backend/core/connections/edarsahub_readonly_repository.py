@@ -252,3 +252,167 @@ def get_unit_server_metadata_readonly(
         }
     finally:
         connection.close()
+
+UNIT_SCOPE_METADATA_SQL = """
+WITH candidates AS (
+    SELECT
+        CONVERT(varchar(36), u.id)
+            AS unidad_negocio_pk,
+        u.codigo AS unidad_negocio_codigo,
+        u.nombre AS unidad_negocio_nombre,
+        CONVERT(varchar(36), u.server_id)
+            AS server_id,
+        u.sucursal_origen_id,
+        u.system_type,
+        u.activo AS unidad_activo,
+        s.activo AS servidor_activo,
+        CONVERT(varchar(36), s.empresa_id)
+            AS empresa_id,
+        s.visible_en_operaciones
+    FROM dbo.Unidades_Negocio AS u
+    INNER JOIN dbo.Servidores_Conexiones AS s
+        ON s.id = u.server_id
+    WHERE
+        UPPER(LTRIM(RTRIM(u.codigo))) = UPPER(%s)
+        OR CONVERT(varchar(36), u.id) = %s
+)
+SELECT
+    c.unidad_negocio_pk,
+    c.unidad_negocio_codigo,
+    c.unidad_negocio_nombre,
+    c.server_id,
+    c.sucursal_origen_id,
+    c.system_type,
+    c.unidad_activo,
+    c.servidor_activo,
+    c.empresa_id,
+    c.visible_en_operaciones,
+    (
+        SELECT COUNT_BIG(*)
+        FROM dbo.Unidades_Negocio AS sibling
+        WHERE sibling.server_id = c.server_id
+          AND ISNULL(sibling.activo, 0) = 1
+    ) AS active_units_on_server
+FROM candidates AS c
+WHERE (
+    SELECT COUNT_BIG(*)
+    FROM candidates
+) = 1
+"""
+
+
+def get_unit_scope_metadata_readonly(
+    *,
+    unidad: str,
+    connection_factory: Callable[[], Any],
+) -> Dict[str, Any]:
+    """
+    Resuelve una unidad exclusivamente por PK o código canónico.
+
+    No acepta server_id como selector y valida primero la identidad SQL.
+    """
+    normalized_selector = _normalize_text(unidad)
+
+    if not normalized_selector:
+        raise UnitCodeRequired(
+            "Unidad canónica requerida"
+        )
+
+    if not callable(connection_factory):
+        raise InvalidConnectionFactory(
+            "Fábrica de conexiones requerida"
+        )
+
+    connection = connection_factory()
+
+    if connection is None:
+        raise InvalidConnectionFactory(
+            "La fábrica no devolvió una conexión"
+        )
+
+    try:
+        validate_readonly_identity(connection)
+
+        cursor = connection.cursor()
+        cursor.execute(
+            UNIT_SCOPE_METADATA_SQL,
+            (
+                normalized_selector,
+                normalized_selector,
+            ),
+        )
+
+        row = _row_to_dict(
+            cursor,
+            cursor.fetchone(),
+        )
+
+        if not row:
+            raise UnitServerMappingNotFound(
+                "Unidad canónica inexistente o ambigua"
+            )
+
+        if not _normalize_text(row.get("server_id")):
+            raise UnitServerMappingNotFound(
+                "Unidad sin servidor canónico"
+            )
+
+        if not bool(row.get("unidad_activo")):
+            raise UnitServerMappingNotFound(
+                "Unidad de negocio inactiva"
+            )
+
+        if not bool(row.get("servidor_activo")):
+            raise UnitServerMappingNotFound(
+                "Servidor asociado inactivo"
+            )
+
+        try:
+            active_units_on_server = int(
+                row.get("active_units_on_server")
+            )
+        except (TypeError, ValueError) as exc:
+            raise UnitServerMappingNotFound(
+                "Topología de servidor inválida"
+            ) from exc
+
+        if active_units_on_server < 1:
+            raise UnitServerMappingNotFound(
+                "Topología de servidor inválida"
+            )
+
+        return {
+            "unidad_negocio_pk": row.get(
+                "unidad_negocio_pk"
+            ),
+            "unidad_negocio_codigo": row.get(
+                "unidad_negocio_codigo"
+            ),
+            "unidad_negocio_nombre": row.get(
+                "unidad_negocio_nombre"
+            ),
+            "server_id": row.get("server_id"),
+            "sucursal_origen_id": row.get(
+                "sucursal_origen_id"
+            ),
+            "system_type": row.get("system_type"),
+            "unidad_activo": bool(
+                row.get("unidad_activo")
+            ),
+            "servidor_activo": bool(
+                row.get("servidor_activo")
+            ),
+            "active_units_on_server": (
+                active_units_on_server
+            ),
+            "empresa_id": row.get("empresa_id"),
+            "visible_en_operaciones": bool(
+                row.get("visible_en_operaciones")
+            ),
+            "config_origin": (
+                "EDARSAHUB_SQL_HRLECTURA"
+            ),
+            "secrets_exposed": False,
+        }
+    finally:
+        connection.close()
