@@ -16,6 +16,10 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
+class CortesCajaRepositoryError(RuntimeError):
+    """Falla de infraestructura o consulta en el repositorio de Cortes Z."""
+
+
 def get_edarsahub_connection():
     """Obtiene conexión a EDARSAHUB SQL Server."""
     from core.unidades_registry import _get_edarsahub_connection
@@ -61,11 +65,18 @@ class RepositoryCortesCajaEdarsahub:
         try:
             conn = get_edarsahub_connection()
             if not conn:
-                self.logger.error("[CORTES_CAJA_SQL] No se pudo obtener conexión a EDARSAHUB")
-                return []
+                raise CortesCajaRepositoryError(
+                    "No se pudo obtener conexión a EDARSAHUB"
+                )
+        except CortesCajaRepositoryError:
+            raise
         except Exception as conn_error:
-            self.logger.error(f"[CORTES_CAJA_SQL] Error de conexión a EDARSAHUB: {conn_error}")
-            return []
+            self.logger.error(
+                f"[CORTES_CAJA_SQL] Error de conexión a EDARSAHUB: {conn_error}"
+            )
+            raise CortesCajaRepositoryError(
+                "Error de conexión a EDARSAHUB"
+            ) from conn_error
         
         try:
             cursor = conn.cursor(as_dict=True)
@@ -142,9 +153,13 @@ class RepositoryCortesCajaEdarsahub:
             rows = cursor.fetchall()
             
             return [self._formatear_corte(row) for row in rows]
+        except CortesCajaRepositoryError:
+            raise
         except Exception as e:
             self.logger.error(f"[CORTES_CAJA_SQL] Error listando cortes: {e}")
-            return []
+            raise CortesCajaRepositoryError(
+                "Error consultando Finanzas_CortesCaja"
+            ) from e
         finally:
             try:
                 conn.close()
@@ -301,7 +316,9 @@ class RepositoryCortesCajaEdarsahub:
             return cursor.fetchone()[0]
         except Exception as e:
             self.logger.error(f"[CORTES_CAJA_SQL] Error contando cortes: {e}")
-            return 0
+            raise CortesCajaRepositoryError(
+                "Error contando registros de Finanzas_CortesCaja"
+            ) from e
         finally:
             conn.close()
     
@@ -452,6 +469,7 @@ def calcular_fecha_deposito_esperada(fecha_corte: str) -> str:
 # ============================================================================
 
 __all__ = [
+    'CortesCajaRepositoryError',
     'RepositoryCortesCajaEdarsahub',
     'get_cortes_caja_repository_sql',
     'get_edarsahub_connection',
