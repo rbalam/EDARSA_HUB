@@ -247,7 +247,7 @@ def get_kpis_diarios_agregados(
     """
     Obtiene KPIs diarios agregados (totales) para el dashboard.
 
-    MÁXIMA: KPI de ventas = ventas_sin_propina (las propinas NO cuentan como venta);
+    MÁXIMA: KPI visible de ventas = ventas_total con IVA incluido;
     propinas_total se informa por separado. Filtro por unidad_negocio_id canónico.
     Fuente: vw_Comercial_KPIs_Diarios_v2_Runtime (EDARSAHUB SQL, NO live, NO Mongo).
     """
