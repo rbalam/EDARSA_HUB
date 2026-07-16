@@ -1,0 +1,23 @@
+tool,available,path,version,returncode
+bash,True,/usr/bin/bash,"GNU bash, version 5.2.15(1)-release (aarch64-unknown-linux-gnu)",0
+git,True,/usr/bin/git,git version 2.39.5,0
+python,True,/usr/local/bin/python,Python 3.11.15,0
+python3,True,/usr/local/bin/python3,Python 3.11.15,0
+pip,True,/usr/local/bin/pip,pip 24.0 from /usr/local/lib/python3.11/site-packages/pip (python 3.11),0
+pip3,True,/usr/local/bin/pip3,pip 24.0 from /usr/local/lib/python3.11/site-packages/pip (python 3.11),0
+node,True,/usr/bin/node,v20.20.2,0
+npm,True,/usr/bin/npm,10.8.2,0
+yarn,True,/usr/bin/yarn,1.22.22,0
+pnpm,False,,,
+curl,True,/usr/bin/curl,curl 7.88.1 (aarch64-unknown-linux-gnu) libcurl/7.88.1 OpenSSL/3.0.20 zlib/1.2.13 brotli/1.0.9 zstd/1.5.4 libidn2/2.3.3 libpsl/0.21.2 (+libidn2/2.3.3) libssh2/1.10.0 nghttp2/1.52.0 librtmp/2.3 OpenLDAP/2.5.13,0
+wget,True,/usr/bin/wget,GNU Wget 1.21.3 built on linux-gnu.,0
+jq,True,/usr/bin/jq,jq-1.6,0
+grep,True,/usr/bin/grep,grep (GNU grep) 3.8,0
+sed,True,/usr/bin/sed,/usr/bin/sed (GNU sed) 4.9,0
+awk,True,/usr/bin/awk,,0
+sqlcmd,False,,,
+tsql,False,,,
+isql,False,,,
+docker,False,,,
+gcc,True,/usr/bin/gcc,gcc (Debian 12.2.0-14+deb12u1) 12.2.0,0
+make,True,/usr/bin/make,GNU Make 4.3,0
