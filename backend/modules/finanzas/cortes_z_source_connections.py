@@ -16,6 +16,8 @@ _REQUIRED_KEYS = ("host", "port", "database", "user", "password")
 
 def build_cortes_z_source_config(
     conn_info: Dict[str, Any],
+    *,
+    as_dict: bool = True,
 ) -> Dict[str, Any]:
     """Construye configuración externa validada, sin imprimir credenciales."""
     if not isinstance(conn_info, dict):
@@ -41,14 +43,45 @@ def build_cortes_z_source_config(
         "password": conn_info["password"],
         "login_timeout": 30,
         "timeout": 30,
-        "as_dict": True,
+        "as_dict": as_dict,
     }
 
 
 def open_cortes_z_source_connection(
     conn_info: Dict[str, Any],
     *,
+    as_dict: bool = True,
     opener: Callable[[Dict[str, Any]], Any] = get_external_sql_connection,
 ):
     """Abre exclusivamente una conexión SQL externa al POS configurado."""
-    return opener(build_cortes_z_source_config(conn_info))
+    return opener(
+        build_cortes_z_source_config(conn_info, as_dict=as_dict)
+    )
+
+
+def sincronizar_unidad_softrestaurant_canonica(**kwargs):
+    """Ejecuta el sincronizador existente usando conexión externa canónica."""
+    from modules.finanzas import sync_cortes_softrestaurant as sync_module
+
+    original = sync_module.get_softrestaurant_connection
+    sync_module.get_softrestaurant_connection = lambda conn_info: (
+        open_cortes_z_source_connection(conn_info, as_dict=False)
+    )
+    try:
+        return sync_module.sincronizar_unidad_softrestaurant(**kwargs)
+    finally:
+        sync_module.get_softrestaurant_connection = original
+
+
+def sincronizar_unidad_mpro_canonica(**kwargs):
+    """Ejecuta el sincronizador existente usando conexión externa canónica."""
+    from modules.finanzas import sync_cortes_mpro as sync_module
+
+    original = sync_module.get_mpro_connection
+    sync_module.get_mpro_connection = lambda conn_info: (
+        open_cortes_z_source_connection(conn_info, as_dict=True)
+    )
+    try:
+        return sync_module.sincronizar_unidad_mpro(**kwargs)
+    finally:
+        sync_module.get_mpro_connection = original
