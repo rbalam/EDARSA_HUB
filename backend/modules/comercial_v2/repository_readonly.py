@@ -590,6 +590,9 @@ def get_sync_status(
     """
     Obtiene el estado de sincronización desde Comercial_SyncLog_v2.
     """
+    if unidades_permitidas == []:
+        return []
+
     where_clauses = ["1=1"]
     
     if unidades_permitidas:
@@ -629,6 +632,9 @@ def get_last_sync_by_unidad(
     """
     Obtiene la última sincronización por unidad.
     """
+    if unidades_permitidas == []:
+        return []
+
     where_clauses = ["status = 'SUCCESS'"]
     
     if unidades_permitidas:
@@ -659,6 +665,9 @@ def get_unidades_disponibles(
     """
     Obtiene las unidades que tienen datos en Comercial v2.
     """
+    if unidades_permitidas == []:
+        return []
+
     where_clauses = []
     
     if unidades_permitidas:

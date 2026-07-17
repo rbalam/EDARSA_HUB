@@ -23,13 +23,17 @@ sys.modules[MODULE_NAME] = module
 spec.loader.exec_module(module)
 
 CanonicalDailyDuplicateError = module.CanonicalDailyDuplicateError
+CanonicalUnit = module.CanonicalUnit
+CanonicalUnitAccessError = module.CanonicalUnitAccessError
 CanonicalUnitResolutionError = module.CanonicalUnitResolutionError
+assert_canonical_unit_access = module.assert_canonical_unit_access
 assert_one_row_per_operation_date = module.assert_one_row_per_operation_date
 build_canonical_unit_query = module.build_canonical_unit_query
 build_daily_folio = module.build_daily_folio
 build_daily_kpi_detail_query = module.build_daily_kpi_detail_query
 build_daily_kpi_total_query = module.build_daily_kpi_total_query
 resolve_canonical_unit = module.resolve_canonical_unit
+resolve_allowed_canonical_unit_pks = module.resolve_allowed_canonical_unit_pks
 
 
 def test_specific_selector_uses_parameterized_canonical_lookup():
@@ -94,6 +98,89 @@ def test_resolver_returns_exact_canonical_unit():
 
     assert unit.codigo == "ORIGEN"
     assert unit.sucursal_origen_id == "0023"
+
+
+def test_shared_server_scope_allows_only_exact_canonical_unit_pk():
+    canonical_units = [
+        {
+            "unidad_negocio_pk": "1",
+            "codigo": "130QRO",
+        },
+        {
+            "unidad_negocio_pk": "2",
+            "codigo": "ORIGEN",
+        },
+    ]
+    allowed = resolve_allowed_canonical_unit_pks(
+        [{"codigo": "130QRO"}],
+        canonical_units,
+    )
+    qro = CanonicalUnit("1", "130QRO", "130 QUERETARO", "shared", "0021", "MPRO")
+    origen = CanonicalUnit("2", "ORIGEN", "ORIGEN", "shared", "0023", "MPRO")
+
+    assert_canonical_unit_access(qro, allowed)
+    with pytest.raises(CanonicalUnitAccessError):
+        assert_canonical_unit_access(origen, allowed)
+
+
+def test_shared_server_scope_accepts_only_exact_assigned_source_branch():
+    qro = CanonicalUnit(
+        "1",
+        "130QRO",
+        "130 QUERETARO",
+        "shared",
+        "0021",
+        "MPRO",
+    )
+    origen = CanonicalUnit(
+        "2",
+        "ORIGEN",
+        "ORIGEN",
+        "shared",
+        "0023",
+        "MPRO",
+    )
+
+    assert_canonical_unit_access(
+        qro,
+        frozenset(),
+        allowed_source_branch_ids=["0021"],
+    )
+    with pytest.raises(CanonicalUnitAccessError):
+        assert_canonical_unit_access(
+            origen,
+            frozenset(),
+            allowed_source_branch_ids=["0021"],
+        )
+
+
+def test_duplicate_canonical_code_fails_closed():
+    allowed = resolve_allowed_canonical_unit_pks(
+        [{"codigo": "DUPLICADA"}],
+        [
+            {"unidad_negocio_pk": "1", "codigo": "DUPLICADA"},
+            {"unidad_negocio_pk": "2", "codigo": "DUPLICADA"},
+        ],
+    )
+
+    assert allowed == frozenset()
+
+
+def test_canonical_unit_scope_fails_closed_when_assignment_is_empty():
+    unit = CanonicalUnit("2", "ORIGEN", "ORIGEN", "shared", "0023", "MPRO")
+
+    with pytest.raises(CanonicalUnitAccessError):
+        assert_canonical_unit_access(unit, frozenset())
+
+
+def test_canonical_unit_scope_preserves_explicit_global_access():
+    unit = CanonicalUnit("2", "ORIGEN", "ORIGEN", "shared", "0023", "MPRO")
+
+    assert_canonical_unit_access(
+        unit,
+        frozenset(),
+        has_global_access=True,
+    )
 
 
 def test_runtime_queries_filter_only_by_canonical_unit_code():

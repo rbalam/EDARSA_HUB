@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Callable, Iterable, Mapping, Sequence
 
 
 CANONICAL_RUNTIME_VIEW = "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime"
@@ -23,6 +23,10 @@ class CanonicalUnitResolutionError(RuntimeError):
 
 class CanonicalDailyDuplicateError(RuntimeError):
     """Raised when Runtime contains multiple rows for one unit/date."""
+
+
+class CanonicalUnitAccessError(RuntimeError):
+    """Raised when the resolved unit is outside the user's canonical scope."""
 
 
 @dataclass(frozen=True)
@@ -132,6 +136,70 @@ def resolve_canonical_unit(
         server_id=resolved_server_id,
         sucursal_origen_id=_clean(row.get("sucursal_origen_id")) or None,
         system_type=_clean(row.get("system_type")) or None,
+    )
+
+
+def resolve_allowed_canonical_unit_pks(
+    assigned_units: Sequence[Mapping[str, Any]],
+    canonical_units: Sequence[Mapping[str, Any]],
+) -> frozenset[str]:
+    """Translate assigned legacy unit codes to canonical business-unit PKs."""
+
+    canonical_by_code: dict[str, set[str]] = {}
+    canonical_pks: set[str] = set()
+    for row in canonical_units:
+        code = _clean(row.get("codigo")).casefold()
+        canonical_pk = _clean(row.get("unidad_negocio_pk")).casefold()
+        if not code or not canonical_pk:
+            continue
+        canonical_by_code.setdefault(code, set()).add(canonical_pk)
+        canonical_pks.add(canonical_pk)
+
+    allowed_pks: set[str] = set()
+    for row in assigned_units:
+        explicit_pk = _clean(row.get("unidad_negocio_pk"))
+        if explicit_pk.casefold() in canonical_pks:
+            allowed_pks.add(explicit_pk.casefold())
+
+        code = _clean(row.get("codigo")).casefold()
+        code_matches = canonical_by_code.get(code, set())
+        if len(code_matches) == 1:
+            allowed_pks.update(code_matches)
+
+    return frozenset(allowed_pks)
+
+
+def assert_canonical_unit_access(
+    unit: CanonicalUnit,
+    allowed_unit_pks: Iterable[str],
+    *,
+    allowed_source_branch_ids: Iterable[str] = (),
+    has_global_access: bool = False,
+) -> None:
+    """Fail closed unless the exact canonical PK or source branch is in scope."""
+
+    if has_global_access:
+        return
+
+    allowed_pks = {
+        _clean(value).casefold()
+        for value in allowed_unit_pks
+        if _clean(value)
+    }
+    if unit.unidad_negocio_pk.casefold() in allowed_pks:
+        return
+
+    allowed_branches = {
+        _clean(value).casefold()
+        for value in allowed_source_branch_ids
+        if _clean(value)
+    }
+    resolved_branch = _clean(unit.sucursal_origen_id).casefold()
+    if resolved_branch and resolved_branch in allowed_branches:
+        return
+
+    raise CanonicalUnitAccessError(
+        "Resolved canonical unit is outside the effective user scope"
     )
 
 

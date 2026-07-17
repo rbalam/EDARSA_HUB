@@ -55,6 +55,25 @@ def _fila(unidad: str, fecha_operacion: date):
     }
 
 
+def test_scope_vacio_falla_cerrado_antes_de_consultar_repositorio():
+    with pytest.raises(HTTPException) as exc_info:
+        routes._require_unidades_permitidas([])
+
+    assert exc_info.value.status_code == 403
+
+
+def test_scope_explicito_se_conserva_para_filtrar_repositorio():
+    unidades = ["130QRO"]
+
+    assert routes._require_unidades_permitidas(unidades) is unidades
+
+
+def test_repositorio_no_consulta_cuando_scope_es_vacio():
+    assert routes.get_unidades_disponibles([]) == []
+    assert routes.get_sync_status([], limit=50) == []
+    assert routes.get_last_sync_by_unidad([]) == []
+
+
 def test_ventas_dia_conserva_fecha_operativa_por_unidad(
     monkeypatch,
 ):

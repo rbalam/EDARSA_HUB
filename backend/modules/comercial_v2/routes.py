@@ -646,6 +646,18 @@ async def get_unidades_permitidas_v2(current_user: dict) -> List[str]:
         return []
 
 
+def _require_unidades_permitidas(
+    unidades_permitidas: List[str],
+) -> List[str]:
+    """Fail closed before a repository can interpret an empty scope globally."""
+    if not unidades_permitidas:
+        raise HTTPException(
+            status_code=403,
+            detail="No tiene unidades de negocio asignadas",
+        )
+    return unidades_permitidas
+
+
 def serialize_response(data: any) -> any:
     """Serializa datos para respuesta JSON."""
     if isinstance(data, dict):
@@ -1735,10 +1747,12 @@ async def comercial_v2_unidades(
     Lee desde: vw_Comercial_KPIs_Diarios_v2_Runtime (DISTINCT)
     """
     try:
-        unidades_permitidas = await get_unidades_permitidas_v2(current_user)
+        unidades_permitidas = _require_unidades_permitidas(
+            await get_unidades_permitidas_v2(current_user)
+        )
 
         # Obtener unidades con datos
-        unidades = get_unidades_disponibles(unidades_permitidas if unidades_permitidas else None)
+        unidades = get_unidades_disponibles(unidades_permitidas)
 
         return UnidadesResponse(
             success=True,
@@ -1747,6 +1761,8 @@ async def comercial_v2_unidades(
             metadata=MetadataV2()
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Unidades v2 error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -1767,7 +1783,9 @@ async def comercial_v2_sync_status(
     Lee desde: Comercial_SyncLog_v2
     """
     try:
-        unidades_permitidas = await get_unidades_permitidas_v2(current_user)
+        unidades_permitidas = _require_unidades_permitidas(
+            await get_unidades_permitidas_v2(current_user)
+        )
 
         # Obtener logs
         logs = get_sync_status(unidades_permitidas, limit)
@@ -1782,6 +1800,8 @@ async def comercial_v2_sync_status(
             metadata=MetadataV2()
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Sync status v2 error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

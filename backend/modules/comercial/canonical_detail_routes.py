@@ -15,17 +15,22 @@ from typing import Dict
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.context_resolver import get_user_unidades_negocio
 from core.db import execute_sql_query_params
 from core.security import get_current_user
+from core.unidades_service import UnidadesService
 from core.user_access_context import has_server_access, resolve_user_access_context
 from modules.comercial.canonical_detail import (
     CanonicalDailyDuplicateError,
+    CanonicalUnitAccessError,
     CanonicalUnitResolutionError,
+    assert_canonical_unit_access,
     assert_one_row_per_operation_date,
     build_daily_folio,
     build_daily_kpi_detail_query,
     build_daily_kpi_total_query,
     resolve_canonical_unit,
+    resolve_allowed_canonical_unit_pks,
 )
 from modules.comercial.repository import get_server_by_id
 
@@ -74,10 +79,11 @@ def _resolve_period(meses: str, anios: str) -> tuple[str, str]:
     return date_from, date_to
 
 
-async def _validate_server_scope(current_user: Dict, server_id: str) -> None:
+async def _validate_server_scope(current_user: Dict, server_id: str):
     context = await resolve_user_access_context(current_user)
     if not has_server_access(context, server_id):
         raise HTTPException(status_code=403, detail="No tiene acceso a este servidor")
+    return context
 
 
 @router.get("/comercial/detalle-movimientos/{server_id}")
@@ -105,7 +111,7 @@ async def comercial_detalle_movimientos_canonical(
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
 
-    await _validate_server_scope(current_user, server_id)
+    access_context = await _validate_server_scope(current_user, server_id)
     date_from, date_to = _resolve_period(meses, anios)
     offset = (page - 1) * limit
 
@@ -114,6 +120,24 @@ async def comercial_detalle_movimientos_canonical(
             _execute_edarsahub_parameterized,
             server_id,
             sucursal,
+        )
+        allowed_unit_pks = frozenset()
+        if not access_context.tiene_acceso_global:
+            assigned_units = await get_user_unidades_negocio(current_user)
+            allowed_unit_pks = resolve_allowed_canonical_unit_pks(
+                assigned_units,
+                UnidadesService.get_all(),
+            )
+        assert_canonical_unit_access(
+            unit,
+            allowed_unit_pks,
+            allowed_source_branch_ids=(
+                access_context.sucursales_por_server.get(
+                    server_id.strip().casefold(),
+                    [],
+                )
+            ),
+            has_global_access=access_context.tiene_acceso_global,
         )
 
         total_query = build_daily_kpi_total_query(
@@ -200,6 +224,19 @@ async def comercial_detalle_movimientos_canonical(
                 "pax_total": int(summary.get("pax_total") or 0),
             },
         }
+    except CanonicalUnitAccessError as exc:
+        logging.warning(
+            "[DETALLE_CANONICO] Acceso denegado server=%s: %s",
+            server_id,
+            exc,
+        )
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "CANONICAL_UNIT_ACCESS_DENIED",
+                "message": "No tiene acceso a la unidad solicitada",
+            },
+        ) from exc
     except CanonicalUnitResolutionError as exc:
         logging.error("[DETALLE_CANONICO] Resolución de unidad fallida: %s", exc)
         raise HTTPException(
