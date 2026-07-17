@@ -1,5 +1,3 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
 """
 API Router para Tesorería - Cuadre de Cortes Z
 PROTEGIDO CON RBAC (Fase 3.1)
@@ -23,7 +21,7 @@ import logging
 import base64
 import os
 
-from core.security import get_current_user, get_user_empresas_permitidas, get_servers_for_empresas
+from core.security import get_current_user
 from .tesoreria_models import (
     CuadreCorteZCreate, CuadreCorteZUpdate, CuadreCorteZResponse,
     EstadoCuadre, ConteoEfectivo, FichaDeposito
@@ -35,74 +33,21 @@ from .repository_cortes_caja_edarsahub import (
 )
 # FINANZAS-TESORERIA-MONGO-002: Migrado a repositorio SQL
 from .repository_cuadres_z_edarsahub import (
-    get_cuadres_z_repository_sql, 
-    RepositoryCuadresZEdarsahub
+    get_cuadres_z_repository_sql,
+    RepositoryCuadresZEdarsahub,
+)
+from .tesoreria_access import (
+    TES_CUADRES_Z_CREAR,
+    TES_CUADRES_Z_EDITAR,
+    TES_CUADRES_Z_ELIMINAR,
+    TES_CUADRES_Z_VALIDAR,
+    TES_CUADRES_Z_VER,
+    require_tesoreria_access_scope,
 )
 
 router = APIRouter(prefix="/finanzas/tesoreria", tags=["Tesorería"])
 logger = logging.getLogger(__name__)
 
-
-async def _get_empresas_codigos_sql(empresas_ids):
-    """Obtiene códigos/nombres de empresas desde SQL canónico, sin Mongo."""
-    if not empresas_ids:
-        return []
-    try:
-        from core.db import execute_sql_query
-        ids = [str(x).replace("'", "''") for x in empresas_ids if x]
-        if not ids:
-            return []
-        in_clause = ",".join([f"'{x}'" for x in ids])
-        rows = execute_sql_query(f"""
-            SELECT id, codigo, nombre
-            FROM Empresas
-            WHERE id IN ({in_clause})
-        """) or []
-        codigos = []
-        for e in rows:
-            codigo = e.get("codigo") or e.get("Codigo")
-            nombre = e.get("nombre") or e.get("Nombre")
-            if codigo:
-                codigos.append(str(codigo).upper())
-            if nombre:
-                codigos.append(str(nombre).upper())
-        return codigos
-    except Exception:
-        return []
-
-
-async def get_user_sucursales_permitidas(current_user: Dict[str, Any]) -> List[str]:
-    """
-    RBAC Fase 3.1: Obtiene los CÓDIGOS de sucursales permitidas para el usuario.
-    Retorna lista vacía si el usuario tiene acceso total (admin).
-    
-    Para Finanzas, usamos códigos de empresa ya que los datos demo usan códigos
-    como 'CIENFUEGOS', 'LA_ESTELAR', etc.
-    """
-    empresas_permitidas = await get_user_empresas_permitidas(current_user)
-    if not empresas_permitidas:
-        return []  # Sin restricción (admin)
-    
-    return await _get_empresas_codigos_sql(empresas_permitidas)
-
-
-def filtrar_cortes_por_permisos(cortes: List[Dict], codigos_permitidos: List[str]) -> List[Dict]:
-    """Filtra cortes por códigos de sucursal permitidos. Si vacío, devuelve todo."""
-    if not codigos_permitidos:
-        return cortes
-    
-    resultado = []
-    for c in cortes:
-        suc_id = str(c.get('sucursal_id', '')).upper()
-        suc_nombre = str(c.get('sucursal_nombre', '')).upper()
-        
-        # Verificar si algún código permitido coincide
-        for codigo in codigos_permitidos:
-            if codigo in suc_id or codigo in suc_nombre or suc_id in codigo:
-                resultado.append(c)
-                break
-    
-    return resultado
 
 
 @router.get("/cortes-z")
@@ -125,9 +70,10 @@ async def listar_cortes_z(
     Incluye indicador si ya tiene cuadre registrado.
     """
     try:
-        # RBAC Fase 3.1: Obtener sucursales permitidas
-        sucursales_permitidas = await get_user_sucursales_permitidas(current_user)
-        
+        scope = require_tesoreria_access_scope(current_user, TES_CUADRES_Z_VER)
+        if server_id:
+            scope.require_server_id(server_id)
+
         # FINANZAS-TESORERIA-SQL-001: Usar repositorio SQL
         repo_cortes = get_cortes_caja_repository_sql()
         repo_cuadres = get_cuadres_z_repository_sql()
@@ -196,9 +142,8 @@ async def listar_cortes_z(
                 "advertencia": advertencia or "EDARSAHUB SQL no está respondiendo temporalmente."
             }
         
-        # RBAC Fase 3.1: Filtrar por sucursales permitidas
-        if sucursales_permitidas:
-            cortes = filtrar_cortes_por_permisos(cortes, sucursales_permitidas)
+        # Defensa en profundidad: solo registros del alcance resuelto.
+        cortes = scope.filter_records(cortes)
         
         # Filtrar por sucursal si se especifica (filtro manual del usuario)
         if sucursal:
@@ -238,6 +183,8 @@ async def listar_cortes_z(
         logger.info(f"[CORTES_Z_SQL] Listados {len(cortes)} cortes desde EDARSAHUB SQL")
         return response
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"[CORTES_Z_SQL] Error inesperado listando cortes: {e}")
         # Retornar estado controlado en lugar de error 500
@@ -270,6 +217,7 @@ async def obtener_corte_z(
     FINANZAS-TESORERIA-SQL-001: Migrado a EDARSAHUB SQL
     """
     try:
+        scope = require_tesoreria_access_scope(current_user, TES_CUADRES_Z_VER)
         repo_cortes = get_cortes_caja_repository_sql()
         
         # Buscar en EDARSAHUB SQL
@@ -278,7 +226,8 @@ async def obtener_corte_z(
             'limit': 100
         }
         cortes = repo_cortes.listar_cortes_caja(filtros)
-        
+        cortes = scope.filter_records(cortes)
+
         # Filtrar por folio
         cortes = [c for c in cortes if str(c.get('folio_corte', '')) == str(folio)]
         
@@ -316,6 +265,12 @@ async def listar_cuadres(
     - server_id se resuelve desde EDARSAHUB SQL
     """
     try:
+        scope = require_tesoreria_access_scope(current_user, TES_CUADRES_Z_VER)
+        if server_id:
+            scope.require_server_id(server_id)
+        if sucursal_id:
+            scope.require_unit_identifier(sucursal_id)
+
         # FINANZAS-TESORERIA-MONGO-002: Usar repositorio SQL
         repo = get_cuadres_z_repository_sql()
         
@@ -339,8 +294,12 @@ async def listar_cuadres(
             filtros['unidad_negocio_pk'] = sucursal_id
             cuadres = repo.listar_cuadres_z(filtros)
         else:
+            if not scope.global_access:
+                filtros['unidades_permitidas'] = sorted(scope.unit_ids)
             cuadres = repo.listar_cuadres_z(filtros)
-        
+
+        cuadres = scope.filter_records(cuadres)
+
         return {
             "cuadres": cuadres,
             "total": len(cuadres),
@@ -352,6 +311,8 @@ async def listar_cuadres(
                 "sucursal_id": sucursal_id
             }
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"[CUADRES_SQL] Error listando cuadres: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -372,6 +333,10 @@ async def obtener_resumen_cuadres(
     - Usa repository_cuadres_z_edarsahub.py
     """
     try:
+        scope = require_tesoreria_access_scope(current_user, TES_CUADRES_Z_VER)
+        if server_id:
+            scope.require_server_id(server_id)
+
         # FINANZAS-TESORERIA-MONGO-002: Usar repositorio SQL
         repo = get_cuadres_z_repository_sql()
         
@@ -386,6 +351,8 @@ async def obtener_resumen_cuadres(
             resultado = repo.obtener_resumen_por_server_id(server_id, filtros)
             resumen = resultado.get('resumen', {})
         else:
+            if not scope.global_access:
+                filtros['unidades_permitidas'] = sorted(scope.unit_ids)
             resumen_data = repo.obtener_resumen_cuadres_z(filtros)
             # Formatear para compatibilidad con contrato frontend
             resumen = {
@@ -407,6 +374,8 @@ async def obtener_resumen_cuadres(
                 "server_id": server_id
             }
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"[RESUMEN_SQL] Error obteniendo resumen: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -423,6 +392,8 @@ async def obtener_cuadre(
     FINANZAS-TESORERIA-MONGO-002: Migrado a EDARSAHUB SQL
     """
     try:
+        scope = require_tesoreria_access_scope(current_user, TES_CUADRES_Z_VER)
+
         # FINANZAS-TESORERIA-MONGO-002: Usar repositorio SQL
         repo = get_cuadres_z_repository_sql()
         
@@ -436,7 +407,9 @@ async def obtener_cuadre(
         
         if not cuadre:
             raise HTTPException(status_code=404, detail="Cuadre no encontrado")
-        
+
+        scope.require_record(cuadre)
+
         return {
             "cuadre": cuadre,
             "fuente": "EDARSAHUB_SQL"
@@ -463,19 +436,22 @@ async def crear_cuadre(
     from core.auditoria_helpers import registrar_auditoria_tesoreria
     
     try:
+        scope = require_tesoreria_access_scope(current_user, TES_CUADRES_Z_CREAR)
+
         # FINANZAS-TESORERIA-MONGO-002: Usar repositorio SQL
         repo = get_cuadres_z_repository_sql()
-        
+
         corte_z = data.get('corte_z', {})
+        canonical_unit = scope.require_record(corte_z)
         user_id = current_user.get('sub') or current_user.get('email')
         user_nombre = current_user.get('nombre') or current_user.get('email')
         
         # Preparar datos para repositorio SQL
         cuadre_data = {
-            'unidad_negocio_pk': corte_z.get('sucursal_id') or corte_z.get('server_id'),
-            'unidad_negocio_nombre': corte_z.get('sucursal_nombre') or corte_z.get('nombre_servidor'),
-            'empresa_id': corte_z.get('empresa_id'),
-            'server_id': corte_z.get('server_id') or corte_z.get('sucursal_id'),
+            'unidad_negocio_pk': canonical_unit.unidad_negocio_pk,
+            'unidad_negocio_nombre': canonical_unit.unidad_negocio_nombre,
+            'empresa_id': canonical_unit.empresa_id or None,
+            'server_id': canonical_unit.server_id,
             'sistema_origen': corte_z.get('sistema_origen', 'MANUAL'),
             'fecha_operacion': corte_z.get('fecha_corte'),
             'fecha_corte': corte_z.get('fecha_corte'),
@@ -548,6 +524,8 @@ async def actualizar_cuadre(
     from core.auditoria_helpers import registrar_auditoria_tesoreria
     
     try:
+        scope = require_tesoreria_access_scope(current_user, TES_CUADRES_Z_EDITAR)
+
         # FINANZAS-TESORERIA-MONGO-002: Usar repositorio SQL
         repo = get_cuadres_z_repository_sql()
         
@@ -556,6 +534,14 @@ async def actualizar_cuadre(
         except ValueError:
             raise HTTPException(status_code=400, detail="ID de cuadre inválido")
         
+        existing = repo.obtener_cuadre_z(cuadre_id_int)
+        if not existing:
+            raise HTTPException(
+                status_code=404,
+                detail="Cuadre no encontrado",
+            )
+        scope.require_record(existing)
+
         user_id = current_user.get('sub') or current_user.get('email')
         user_nombre = current_user.get('nombre') or current_user.get('email')
         
@@ -599,6 +585,8 @@ async def eliminar_cuadre(
     FINANZAS-TESORERIA-MONGO-002: Migrado a EDARSAHUB SQL
     """
     try:
+        scope = require_tesoreria_access_scope(current_user, TES_CUADRES_Z_ELIMINAR)
+
         # FINANZAS-TESORERIA-MONGO-002: Usar repositorio SQL
         repo = get_cuadres_z_repository_sql()
         
@@ -607,6 +595,14 @@ async def eliminar_cuadre(
         except ValueError:
             raise HTTPException(status_code=400, detail="ID de cuadre inválido")
         
+        existing = repo.obtener_cuadre_z(cuadre_id_int)
+        if not existing:
+            raise HTTPException(
+                status_code=404,
+                detail="Cuadre no encontrado",
+            )
+        scope.require_record(existing)
+
         # Soft delete: marcar como inactivo
         resultado = repo.actualizar_cuadre_z(cuadre_id_int, {'activo': False})
         
@@ -635,6 +631,25 @@ async def subir_ficha_deposito(
     Devuelve los datos extraídos para validación.
     """
     try:
+        scope = require_tesoreria_access_scope(current_user, TES_CUADRES_Z_EDITAR)
+        repo = get_cuadres_z_repository_sql()
+
+        try:
+            cuadre_id_int = int(cuadre_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="ID de cuadre inválido",
+            )
+
+        existing = repo.obtener_cuadre_z(cuadre_id_int)
+        if not existing:
+            raise HTTPException(
+                status_code=404,
+                detail="Cuadre no encontrado",
+            )
+        scope.require_record(existing)
+
         # Leer archivo
         contents = await file.read()
         
@@ -669,6 +684,8 @@ async def subir_ficha_deposito(
             "ocr_data": ocr_data,
             "filepath": filepath
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error subiendo ficha de depósito: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -687,6 +704,8 @@ async def validar_ficha_deposito(
     FINANZAS-TESORERIA-MONGO-002: Migrado a EDARSAHUB SQL
     """
     try:
+        scope = require_tesoreria_access_scope(current_user, TES_CUADRES_Z_VALIDAR)
+
         # FINANZAS-TESORERIA-MONGO-002: Usar repositorio SQL
         repo = get_cuadres_z_repository_sql()
         
@@ -699,7 +718,9 @@ async def validar_ficha_deposito(
         
         if not cuadre:
             raise HTTPException(status_code=404, detail="Cuadre no encontrado")
-        
+
+        scope.require_record(cuadre)
+
         fecha_venta = cuadre.get('fecha_corte')
         fecha_deposito = data.get('fecha_deposito')
         importe_deposito = float(data.get('importe', 0))
@@ -752,135 +773,6 @@ async def validar_ficha_deposito(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-async def get_tesoreria_sucursales_operativas() -> List[Dict]:
-    """
-    P1-FASE4A: Obtiene sucursales/servidores OPERATIVOS para Cuadre de Cortes Z.
-    
-    FUENTE PRIMARIA: EDARSAHUB.Servidores_Conexiones
-    FALLBACK: MongoDB (solo si EDARSAHUB falla, con warning)
-    
-    Criterios operativos:
-    - activo = True
-    - visible_en_operaciones = True
-    - tipo_conexion != 'CORE' y != 'API_LOCAL'
-    - system_type in ['SOFTRESTAURANT', 'SR', 'MANAGEMENTPRO', 'MPRO']
-    
-    NOTA TÉCNICA: MongoDB se mantiene como registry legacy parcial para fallback.
-    EDARSAHUB es la fuente maestra operativa.
-    """
-    sucursales = []
-    
-    try:
-        # FUENTE PRIMARIA: EDARSAHUB SQL
-        from core.db import execute_sql_query
-        from core.server_registry import EDARSAHUB_CONFIG
-        
-        query = """
-        SELECT 
-            id,
-            nombre,
-            system_type,
-            tipo_conexion,
-            activo,
-            visible_en_operaciones,
-            host,
-            port
-        FROM Servidores_Conexiones
-        WHERE activo = 1
-          AND visible_en_operaciones = 1
-          AND (tipo_conexion != 'CORE' OR tipo_conexion IS NULL)
-          AND (tipo_conexion != 'API_LOCAL' OR tipo_conexion IS NULL)
-        ORDER BY nombre
-        """
-        
-        results = execute_sql_query(
-            EDARSAHUB_CONFIG['host'],
-            EDARSAHUB_CONFIG['port'],
-            EDARSAHUB_CONFIG['database'],
-            EDARSAHUB_CONFIG['username'],
-            EDARSAHUB_CONFIG['password'],
-            query
-        )
-        
-        if results:
-            logger.info(f"[TESORERIA][EDARSAHUB_HIT] Obtenidos {len(results)} servidores operativos desde EDARSAHUB")
-            
-            for row in results:
-                system_type = (row.get('system_type') or '').upper()
-                
-                # Solo incluir sistemas de Tesorería (SoftRestaurant y MPRO)
-                if system_type not in ['SOFTRESTAURANT', 'SR', 'MANAGEMENTPRO', 'MPRO']:
-                    continue
-                
-                # Determinar fuente para el frontend
-                if system_type in ['SOFTRESTAURANT', 'SR']:
-                    fuente = 'SOFTRESTAURANT'
-                elif system_type in ['MANAGEMENTPRO', 'MPRO']:
-                    fuente = 'MPRO'
-                else:
-                    fuente = system_type or 'UNKNOWN'
-                
-                sucursales.append({
-                    "id": str(row.get('id')),
-                    "nombre": row.get('nombre', ''),
-                    "fuente": fuente,
-                    "system_type": system_type,
-                    "activo": bool(row.get('activo', True))
-                })
-            
-            return sucursales
-        else:
-            logger.warning("[TESORERIA][EDARSAHUB_EMPTY] EDARSAHUB no retornó servidores, intentando fallback MongoDB")
-            
-    except Exception as e:
-        logger.warning(f"[TESORERIA][EDARSAHUB_ERROR] Error consultando EDARSAHUB: {e}. Usando fallback server_registry.")
-    
-    # FALLBACK: server_registry.py (FASE T2.2: Reemplaza MongoDB)
-    # Este fallback usa la capa centralizada que también lee de EDARSAHUB
-    try:
-        from core.server_registry import list_operational_servers
-        
-        logger.info("[TESORERIA][REGISTRY_FALLBACK] Usando server_registry.py como fallback")
-        
-        registry_servers = list_operational_servers()
-        
-        for s in registry_servers:
-            # Verificar visible_en_operaciones
-            vis_op = s.get('visible_en_operaciones')
-            
-            if vis_op is None or not vis_op:
-                # No visible en operaciones - excluir
-                continue
-            
-            system_type = (s.get('system_type') or s.get('system_type_normalized') or '').upper()
-            
-            # Solo incluir sistemas de Tesorería (SoftRestaurant y MPRO)
-            if system_type not in ['SOFTRESTAURANT', 'SR', 'MANAGEMENTPRO', 'MPRO']:
-                continue
-            
-            if system_type in ['SOFTRESTAURANT', 'SR']:
-                fuente = 'SOFTRESTAURANT'
-            elif system_type in ['MANAGEMENTPRO', 'MPRO']:
-                fuente = 'MPRO'
-            else:
-                fuente = system_type or 'UNKNOWN'
-            
-            sucursales.append({
-                "id": s.get('id'),
-                "nombre": s.get('name') or s.get('nombre', ''),
-                "fuente": fuente,
-                "system_type": system_type,
-                "activo": s.get('active', True)
-            })
-        
-        logger.info(f"[TESORERIA][REGISTRY_FALLBACK] Obtenidos {len(sucursales)} servidores operativos desde server_registry")
-        
-    except Exception as e:
-        logger.error(f"[TESORERIA][REGISTRY_ERROR] Error en fallback server_registry: {e}")
-    
-    return sucursales
-
-
 @router.get("/sucursales")
 async def listar_sucursales(
     current_user: Dict = Depends(get_current_user)
@@ -888,15 +780,16 @@ async def listar_sucursales(
     """
     Lista las sucursales/servidores OPERATIVOS para consultar Cortes Z.
     
-    P1-FASE4A: Usa EDARSAHUB como fuente primaria.
-    FASE T2.2: Fallback migrado a server_registry.py (elimina MongoDB).
-    Solo devuelve servidores con visible_en_operaciones = True.
+    Fuente única: catálogo canónico de unidades en EDARSAHUB SQL.
+    Sin fallback, fuentes paralelas ni conexiones directas a POS.
+    Solo devuelve unidades autorizadas por el alcance RBAC efectivo.
     """
     try:
-        sucursales = await get_tesoreria_sucursales_operativas()
-        
-        return {"sucursales": sucursales}
-        
+        scope = require_tesoreria_access_scope(current_user, TES_CUADRES_Z_VER)
+        return {"sucursales": scope.to_sucursales()}
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error listando sucursales operativas: {e}")
         return {

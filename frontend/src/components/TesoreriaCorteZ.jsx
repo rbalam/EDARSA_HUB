@@ -34,7 +34,7 @@ import {
 // Componente Principal
 // ============================================================================
 
-const TesoreriaCorteZ = () => {
+const TesoreriaCorteZ = ({ permissions }) => {
   const {
     loading,
     cortesZ,
@@ -60,6 +60,8 @@ const TesoreriaCorteZ = () => {
     updateFichaDeposito
   } = useTesoreriaCorteZData();
 
+  const canCreate = permissions?.canCreate === true;
+
   // Renderizar lista de cortes pendientes
   const renderCortesPendientes = () => {
     const pendientes = cortesZ.filter(c => !c.tiene_cuadre);
@@ -74,7 +76,7 @@ const TesoreriaCorteZ = () => {
           <CorteCard
             key={`${corte.sucursal_id}_${corte.folio_corte}`}
             corte={corte}
-            onIniciarCuadre={handleIniciarCuadre}
+            onIniciarCuadre={canCreate ? handleIniciarCuadre : null}
           />
         ))}
       </div>
@@ -151,7 +153,7 @@ const TesoreriaCorteZ = () => {
 
   // Modal de cuadre
   const renderModal = () => {
-    if (!modalOpen || !selectedCorte) return null;
+    if (!modalOpen || !selectedCorte || !canCreate) return null;
     
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

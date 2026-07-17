@@ -61,6 +61,8 @@ function FinanzasContent() {
   const { user, loading: authLoading } = useAuth();
   
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [effectivePermissions, setEffectivePermissions] = useState(null);
+  const [effectivePermissionsLoading, setEffectivePermissionsLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [dashboard, setDashboard] = useState(null);
   const [presupuestos, setPresupuestos] = useState([]);
@@ -115,6 +117,33 @@ function FinanzasContent() {
       role: user?.role || ''
     };
   }, [unidadesNegocio]);
+
+  useEffect(() => {
+    if (authLoading) return undefined;
+
+    let mounted = true;
+    setEffectivePermissionsLoading(true);
+
+    api.get('/auth/me/effective-permissions')
+      .then((response) => {
+        if (mounted) setEffectivePermissions(response.data || {});
+      })
+      .catch((error) => {
+        logger.error(
+          'Error cargando permisos efectivos de Tesorería:',
+          error
+        );
+        if (mounted) setEffectivePermissions({});
+      })
+      .finally(() => {
+        if (mounted) setEffectivePermissionsLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [authLoading]);
+
   const [cxpFechaCorte, setCxpFechaCorte] = useState('');
   const [cxpSoloVencidas, setCxpSoloVencidas] = useState(false);
   const [cxpSoloDecision, setCxpSoloDecision] = useState(false);
@@ -926,6 +955,81 @@ function FinanzasContent() {
     }
   };
   
+  const tesoreriaPermissions = useMemo(() => {
+    const normalize = (value) => String(value || '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9_]/g, '');
+
+    const flat = effectivePermissions?.permissions_flat;
+    const structured = effectivePermissions?.permissions;
+
+    const permissionCodes = (
+      Array.isArray(flat)
+        ? flat
+        : Array.isArray(structured)
+          ? structured.map((permission) => (
+              typeof permission === 'string'
+                ? permission
+                : permission?.codigo ||
+                  permission?.code ||
+                  permission?.permission ||
+                  permission?.name
+            ))
+          : []
+    ).filter(Boolean).map(normalize);
+
+    const roleCodes = (
+      Array.isArray(effectivePermissions?.roles)
+        ? effectivePermissions.roles
+        : []
+    ).map((role) => (
+      typeof role === 'string'
+        ? role
+        : role?.codigo ||
+          role?.code ||
+          role?.nombre ||
+          role?.name
+    )).filter(Boolean).map(normalize);
+
+    const isSuperAdmin = (
+      roleCodes.includes('SUPERADMIN') ||
+      roleCodes.includes('SUPERADMINISTRADOR')
+    );
+
+    const allowed = (code) => (
+      !effectivePermissionsLoading &&
+      (
+        isSuperAdmin ||
+        permissionCodes.includes(normalize(code))
+      )
+    );
+
+    return {
+      canView: allowed('TES_CUADRES_Z_VER'),
+      canCreate: allowed('TES_CUADRES_Z_CREAR'),
+      canEdit: allowed('TES_CUADRES_Z_EDITAR'),
+      canDelete: allowed('TES_CUADRES_Z_ELIMINAR'),
+      canValidate: allowed('TES_CUADRES_Z_VALIDAR')
+    };
+  }, [
+    effectivePermissions,
+    effectivePermissionsLoading
+  ]);
+
+  useEffect(() => {
+    if (
+      !effectivePermissionsLoading &&
+      activeTab === 'tesoreria' &&
+      !tesoreriaPermissions.canView
+    ) {
+      setActiveTab('dashboard');
+    }
+  }, [
+    activeTab,
+    effectivePermissionsLoading,
+    tesoreriaPermissions.canView
+  ]);
+
   // Tabs
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: PieChart },
@@ -936,7 +1040,12 @@ function FinanzasContent() {
     { id: 'cuentas-bancarias', label: 'Cuentas Bancarias', icon: Landmark },
     { id: 'presupuestos', label: 'Presupuestos', icon: DollarSign },
     { id: 'reportes', label: 'Reportes', icon: FileText },
-  ];
+  ].filter(
+    (tab) => (
+      tab.id !== 'tesoreria' ||
+      tesoreriaPermissions.canView
+    )
+  );
   
   // Format currency
   const formatCurrency = (value) => {
@@ -1277,7 +1386,12 @@ function FinanzasContent() {
           {activeTab === 'ingresos' && renderControlIngresos()}
           {activeTab === 'cxp' && renderCuentasPorPagar()}
           {activeTab === 'propinas' && <PropinasTPV />}
-          {activeTab === 'tesoreria' && <TesoreriaCorteZ />}
+          {activeTab === 'tesoreria' &&
+            tesoreriaPermissions.canView && (
+              <TesoreriaCorteZ
+                permissions={tesoreriaPermissions}
+              />
+            )}
           {activeTab === 'cuentas-bancarias' && <CuentasBancariasPage />}
           {activeTab === 'presupuestos' && renderPresupuestos()}
           {activeTab === 'reportes' && renderReportes()}

@@ -232,13 +232,15 @@ export function CorteCard({ corte, onIniciarCuadre }) {
               <p className="font-medium text-blue-600">{formatDate(corte.fecha_deposito_esperada)}</p>
             </div>
           </div>
-          <Button 
-            onClick={() => onIniciarCuadre(corte)}
-            className="bg-amber-500 hover:bg-amber-600"
-          >
-            <DollarSign className="h-4 w-4 mr-1" />
-            Cuadrar
-          </Button>
+          {typeof onIniciarCuadre === 'function' && (
+            <Button
+              onClick={() => onIniciarCuadre(corte)}
+              className="bg-amber-500 hover:bg-amber-600"
+            >
+              <DollarSign className="h-4 w-4 mr-1" />
+              Cuadrar
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
