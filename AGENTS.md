@@ -12,7 +12,12 @@ No usar `.claude/agents` como fuente principal de configuración. Excepción per
 
 ## Rama y entorno
 
-- Trabajar siempre en `/app`.
+- Trabajar desde la raíz del checkout verificado mediante
+  `git rev-parse --show-toplevel`.
+- En Preview puede usarse `/app`. Cuando `/app` no esté disponible, se permite
+  un checkout limpio en el workspace, siempre que la rama sea
+  `Edarsahub_Desarrollo`, el HEAD haya sido verificado y no se realicen cambios
+  remotos sin autorización explícita.
 - Rama obligatoria: `Edarsahub_Desarrollo`.
 - No trabajar directo en `Edarsahub_Produccion`.
 - No hacer push, deploy, redeploy ni cambios remotos sin autorización explícita.
