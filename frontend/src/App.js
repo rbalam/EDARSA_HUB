@@ -93,6 +93,7 @@ import ComingSoonPage from '@/pages/ComingSoonPage';
 import DashboardEjecutivo from './pages/DashboardEjecutivo';
 import CentroExcepciones from './pages/CentroExcepciones';
 import AdminHub from './pages/AdminHub';
+import IAAsistente from './pages/IAAsistente';
 
 function App() {
   return (
@@ -118,6 +119,7 @@ function App() {
               <Route path="dashboard" element={<Navigate to="/reportes" replace />} />
               <Route path="servidores" element={<Servidores />} />
               <Route path="reportes" element={<Reportes />} />
+              <Route path="ia" element={<IAAsistente />} />
               <Route path="compras" element={<Compras />} />
               <Route path="comercial" element={<Comercial />} />
               {/* Rutas Comercial/Ventas - Integración Menú SQL (FASE 1A) */}

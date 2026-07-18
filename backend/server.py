@@ -513,6 +513,11 @@ api_router.include_router(pricing_ia_router)
 from modules.comercial.routes_pricing_ai import router as pricing_ai_gpt_router
 api_router.include_router(pricing_ai_gpt_router)
 
+# Menú IA: Asistente conversacional (OpenAI gpt-5.5 vía EMERGENT_LLM_KEY)
+# ===========================================
+from modules.ia_assistant.routes import router as ia_assistant_router
+api_router.include_router(ia_assistant_router)
+
 # FASE 1C-3I-G: Listas Manuales de Competidores para Pricing IA
 # ===========================================
 from modules.comercial.routes_listas_competidores import router as listas_competidores_router

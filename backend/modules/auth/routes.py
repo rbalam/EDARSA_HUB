@@ -499,6 +499,9 @@ async def get_my_access_context(current_user: Dict = Depends(get_user_dual)):
 
 MENU_PERMISSION_MAP = {
     "mis_tareas": [],
+    "ia": [
+        "IA_ASSISTANT_VER",
+    ],
     "tablero_ejecutivo": [
         "TABLERO_EJECUTIVO_VER",
         "COMERCIAL_TABLERO_VER",

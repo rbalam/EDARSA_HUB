@@ -54,7 +54,8 @@ import {
   LayoutGrid,
   Calculator,
   ShoppingBag,
-  Users2
+  Users2,
+  Sparkles
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import api from '@/lib/api';
@@ -103,6 +104,7 @@ const ICON_MAP = {
   'Link': LinkIcon,
   'ChefHat': ChefHat,
   'Users2': Users2,
+  'Sparkles': Sparkles,
   'UserPlus': UserPlus,
   'Briefcase': Briefcase,
   'Kanban': Kanban,
