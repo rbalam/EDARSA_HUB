@@ -27,6 +27,7 @@ from passlib.context import CryptContext
 
 from core.sql_first.db import get_sql_connection
 from core.security import JWT_SECRET, JWT_ALGORITHM, get_current_user_dual
+from core.rbac import require_explicit_permission_dual
 
 logger = logging.getLogger(__name__)
 
@@ -266,12 +267,15 @@ async def me_intel(request: Request):
 # ============================================================================
 # ADMIN (protegido por admin del CRM)
 # ============================================================================
-async def _require_crm_admin(request: Request) -> Dict[str, Any]:
-    user = await get_current_user_dual(request)
-    role = str(user.get("role") or user.get("rol") or "").lower()
-    if not ("admin" in role or "super" in role):
-        raise HTTPException(status_code=403, detail="Requiere rol administrador")
-    return user
+async def _require_crm_admin(
+    current_user: Dict[str, Any] = Depends(
+        require_explicit_permission_dual(
+            "INTELIGENCIA_COMERCIAL_GESTIONAR"
+        )
+    ),
+) -> Dict[str, Any]:
+    """Exige permiso efectivo SQL, no texto del rol."""
+    return current_user
 
 
 @router.get("/admin/usuarios")

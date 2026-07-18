@@ -346,6 +346,70 @@ class RBACExplicitDependency:
         return user
 
 
+class RBACExplicitDualDependency:
+    """Permiso SQL explícito con autenticación Header/Cookie."""
+
+    def __init__(
+        self,
+        permiso: str,
+        mensaje_error: Optional[str] = None,
+    ):
+        self.permiso = permiso
+        self.mensaje_error = mensaje_error
+        self._delegate = RBACExplicitDependency(
+            permiso,
+            mensaje_error,
+        )
+
+    async def __call__(self, request: Request):
+        from core.security import (
+            AUTH_COOKIE_NAME,
+            get_current_user_dual,
+        )
+
+        await get_current_user_dual(request)
+
+        token = None
+        auth_header = request.headers.get(
+            "authorization",
+            "",
+        )
+
+        if auth_header.startswith("Bearer "):
+            candidate = auth_header.replace(
+                "Bearer ",
+                "",
+            ).strip()
+
+            if candidate not in (
+                "",
+                "null",
+                "undefined",
+            ):
+                token = candidate
+
+        if not token:
+            token = request.cookies.get(
+                AUTH_COOKIE_NAME
+            )
+
+        if not token:
+            raise HTTPException(
+                status_code=401,
+                detail="Token de autenticación requerido",
+            )
+
+        credentials = HTTPAuthorizationCredentials(
+            scheme="Bearer",
+            credentials=token,
+        )
+
+        return await self._delegate(
+            request,
+            credentials,
+        )
+
+
 # =============================================================================
 # FUNCIONES DE ATAJO
 # =============================================================================
@@ -356,6 +420,17 @@ def require_explicit_permission(permiso: str, mensaje: Optional[str] = None):
     No permite bypass por ADMIN legacy.
     """
     return RBACExplicitDependency(permiso, mensaje)
+
+
+def require_explicit_permission_dual(
+    permiso: str,
+    mensaje: Optional[str] = None,
+):
+    """Dependency SQL explícita compatible con Header/Cookie."""
+    return RBACExplicitDualDependency(
+        permiso,
+        mensaje,
+    )
 
 
 def require_permission(permiso: str, audit: bool = True, mensaje: Optional[str] = None):

@@ -47,6 +47,7 @@ from .service import (
 from .middleware import (
     require_permission,
     require_explicit_permission,
+    require_explicit_permission_dual,
     require_any_permission,
     require_all_permissions,
 )
@@ -70,6 +71,7 @@ __all__ = [
     # Middleware
     'require_permission',
     'require_explicit_permission',
+    'require_explicit_permission_dual',
     'require_any_permission',
     'require_all_permissions',
 ]

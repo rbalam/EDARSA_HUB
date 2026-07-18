@@ -29,6 +29,7 @@ from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
 from core.sql_first.db import get_sql_connection
 from core.kpis_canonicos.service import KPIsCanonicosService
+from core.rbac import require_explicit_permission_dual
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -147,22 +148,84 @@ def get_connection():
     return get_sql_connection()
 
 
-def execute_query(sql: str, params: tuple = None) -> List[Dict]:
-    """Ejecuta query y retorna lista de diccionarios."""
+class InteligenciaSQLSourceError(HTTPException):
+    """Una falla SQL no equivale a una consulta vacía."""
+
+    def __init__(self):
+        super().__init__(
+            status_code=503,
+            detail={
+                "code": "INTELIGENCIA_SQL_UNAVAILABLE",
+                "message": (
+                    "La fuente SQL de Inteligencia "
+                    "Comercial no está disponible."
+                ),
+            },
+        )
+
+
+class InteligenciaNoDataError(HTTPException):
+    """No existe fecha_operacion sincronizada."""
+
+    def __init__(self, unidad=None):
+        super().__init__(
+            status_code=503,
+            detail={
+                "code": "INTELIGENCIA_NO_SYNC_DATA",
+                "message": (
+                    "No existe fecha_operacion "
+                    "sincronizada para el alcance."
+                ),
+                "unidad": (
+                    str(unidad)
+                    if unidad
+                    else None
+                ),
+            },
+        )
+
+
+def execute_query(
+    sql: str,
+    params: tuple = None,
+) -> List[Dict]:
+    """Distingue cero filas de una falla SQL."""
+    conn = None
+    cursor = None
+
     try:
         conn = get_connection()
         cursor = conn.cursor(as_dict=True)
+
         if params:
             cursor.execute(sql, params)
         else:
             cursor.execute(sql)
-        results = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return results
-    except Exception as e:
-        logger.error(f"[INTELIGENCIA] Error SQL: {e}")
-        return []
+
+        return list(cursor.fetchall())
+
+    except HTTPException:
+        raise
+
+    except Exception as exc:
+        logger.error(
+            "[INTELIGENCIA] Falla SQL controlada type=%s",
+            type(exc).__name__,
+        )
+        raise InteligenciaSQLSourceError() from exc
+
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 def execute_write(sql: str, params: tuple = None) -> int:
@@ -180,14 +243,15 @@ def execute_write(sql: str, params: tuple = None) -> int:
     return affected
 
 
-async def require_admin(request: Request) -> Dict[str, Any]:
-    """Auth dual (Bearer/Cookie) + rol administrador para escrituras de catálogo."""
-    from core.security import get_current_user_dual
-    user = await get_current_user_dual(request)
-    role = str(user.get("role") or user.get("rol") or "").lower()
-    if not ("admin" in role or "super" in role):
-        raise HTTPException(status_code=403, detail="Requiere rol administrador")
-    return user
+async def require_admin(
+    current_user: Dict[str, Any] = Depends(
+        require_explicit_permission_dual(
+            "INTELIGENCIA_COMERCIAL_GESTIONAR"
+        )
+    ),
+) -> Dict[str, Any]:
+    """Exige permiso efectivo SQL para gestionar catálogos."""
+    return current_user
 
 
 # ============================================================================
@@ -223,7 +287,7 @@ def _ultimo_dia_con_datos(unidad_db: Optional[str]) -> date:
             return datetime.strptime(m[:10], "%Y-%m-%d").date()
         except ValueError:
             pass
-    return date.today()
+    raise InteligenciaNoDataError(unidad_db)
 
 
 
