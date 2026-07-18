@@ -1,4 +1,5 @@
 import os
+from unittest.mock import Mock
 
 # TEST-ONLY EDARSAHUB SQL CONFIG BOOTSTRAP
 # Los módulos canónicos validan configuración al importarse.
@@ -83,3 +84,80 @@ def test_catalogo_declara_formulas_canonicas():
         "pax",
         "cheques",
     )
+
+
+def test_series_periodo_resuelve_nombre_legacy_a_unidad_pk(monkeypatch):
+    captured = {}
+    unidad_pk = "9bc05ced-6b2b-4a0a-aa90-ce649b78e12c"
+
+    monkeypatch.setattr(
+        service_module.UnidadesService,
+        "resolver_pk",
+        staticmethod(lambda valor: unidad_pk),
+    )
+
+    def fake_execute_sql_query_params(*args):
+        captured["sql"] = args[-2]
+        captured["params"] = args[-1]
+        return [{
+            "periodo": "2026-07-01",
+            "fecha_inicio": "2026-07-01",
+            "fecha_fin": "2026-07-01",
+            "ventas": 1200,
+            "propinas": 200,
+            "cheques": 10,
+            "pax": 20,
+            "dias": 1,
+        }]
+
+    monkeypatch.setattr(
+        service_module,
+        "execute_sql_query_params",
+        fake_execute_sql_query_params,
+    )
+    monkeypatch.setattr(
+        service_module._Catalogo,
+        "defs",
+        staticmethod(lambda: {}),
+    )
+
+    rows = service_module.KPIsCanonicosService.series_periodo(
+        desde="2026-07-01",
+        hasta="2026-07-02",
+        nivel="dia",
+        unidad_nombre="130° Mérida",
+    )
+
+    assert "CONVERT(varchar(36), unidad_negocio_pk) = %s" in captured["sql"]
+    assert "unidad_negocio_nombre = %s" not in captured["sql"]
+    assert captured["params"] == (
+        "2026-07-01",
+        "2026-07-02",
+        unidad_pk,
+    )
+    assert rows[0]["ventas"] == 1200
+    assert rows[0]["cheque_promedio"] == 120
+    assert rows[0]["pax_promedio"] == 60
+
+
+def test_series_periodo_falla_cerrado_si_unidad_no_resuelve(monkeypatch):
+    execute = Mock(side_effect=AssertionError("no debe consultar sin unidad_pk"))
+
+    monkeypatch.setattr(
+        service_module.UnidadesService,
+        "resolver_pk",
+        staticmethod(lambda valor: None),
+    )
+    monkeypatch.setattr(
+        service_module,
+        "execute_sql_query_params",
+        execute,
+    )
+
+    assert service_module.KPIsCanonicosService.series_periodo(
+        desde="2026-07-01",
+        hasta="2026-07-02",
+        nivel="dia",
+        unidad_nombre="unidad inexistente",
+    ) == []
+    execute.assert_not_called()

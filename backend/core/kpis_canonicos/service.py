@@ -315,7 +315,8 @@ class KPIsCanonicosService:
 
     @staticmethod
     def series_periodo(desde: str, hasta: str, nivel: str = "dia",
-                      unidad_nombre: Optional[str] = None) -> List[Dict]:
+                      unidad_nombre: Optional[str] = None,
+                      unidad_pk: Optional[str] = None) -> List[Dict]:
         """
         Serie canónica agregada por día/mes/año.
         No expone fórmulas en endpoints.
@@ -332,9 +333,17 @@ class KPIsCanonicosService:
 
         params = [desde, hasta]
         unidad_filter = ""
-        if unidad_nombre:
-            unidad_filter = "AND unidad_negocio_nombre = %s"
-            params.append(unidad_nombre)
+        unidad_ref = unidad_pk or unidad_nombre
+        if unidad_ref:
+            unidad_pk_resuelta = UnidadesService.resolver_pk(unidad_ref)
+            if not unidad_pk_resuelta:
+                logger.warning(
+                    "[KPI-CANON] unidad no resuelta para series_periodo: %s",
+                    unidad_ref,
+                )
+                return []
+            unidad_filter = "AND CONVERT(varchar(36), unidad_negocio_pk) = %s"
+            params.append(unidad_pk_resuelta)
 
         sql = f"""
             SELECT
