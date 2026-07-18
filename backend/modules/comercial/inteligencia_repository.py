@@ -64,15 +64,14 @@ class InteligenciaComercialRepository:
         sql = text(f"""
             SELECT
                 SUM(ventas_total) AS ventas_total,
-                SUM(ventas_sin_propina) AS ventas_sin_propina,
                 SUM(propinas_total) AS propinas_total,
                 SUM(tickets_total) AS tickets_total,
                 SUM(pax_total) AS pax_total,
                 CASE WHEN SUM(tickets_total) > 0
-                    THEN SUM(ventas_sin_propina) / SUM(tickets_total)
+                    THEN SUM(ventas_total) / SUM(tickets_total)
                     ELSE 0 END AS ticket_promedio,
                 CASE WHEN SUM(pax_total) > 0
-                    THEN SUM(ventas_sin_propina) / SUM(pax_total)
+                    THEN SUM(ventas_total) / SUM(pax_total)
                     ELSE 0 END AS consumo_promedio_pax,
                 SUM(ventas_cerradas) AS ventas_cerradas,
                 SUM(ventas_abiertas) AS ventas_abiertas,
@@ -112,12 +111,11 @@ class InteligenciaComercialRepository:
                 unidad_negocio_pk,
                 sistema_origen,
                 SUM(ventas_total) AS ventas_total,
-                SUM(ventas_sin_propina) AS ventas_sin_propina,
                 SUM(propinas_total) AS propinas_total,
                 SUM(tickets_total) AS tickets_total,
                 SUM(pax_total) AS pax_total,
                 CASE WHEN SUM(tickets_total) > 0
-                    THEN SUM(ventas_sin_propina) / SUM(tickets_total)
+                    THEN SUM(ventas_total) / SUM(tickets_total)
                     ELSE 0 END AS ticket_promedio,
                 MAX(fecha_sincronizacion) AS ultima_sincronizacion
             FROM dbo.Comercial_Inteligencia_VW_KPIsEjecutivos

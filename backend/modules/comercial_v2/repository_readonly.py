@@ -216,7 +216,6 @@ def get_kpis_diarios(
         mes,
         dia,
         ventas_total,
-        ventas_sin_propina,
         propinas_total,
         tickets_total,
         pax_total,
@@ -270,7 +269,6 @@ def get_kpis_diarios_agregados(
         COUNT(DISTINCT unidad_negocio_pk) as total_unidades,
         COUNT(DISTINCT fecha_operacion) as total_dias,
         SUM(ISNULL(ventas_total, 0)) as ventas_total,
-        SUM(ISNULL(ventas_sin_propina, 0)) as ventas_sin_propina,
         SUM(ISNULL(propinas_total, 0)) as propinas_total,
         SUM(ISNULL(tickets_total, 0)) as tickets_total,
         SUM(ISNULL(pax_total, 0)) as pax_total,
@@ -305,7 +303,7 @@ def get_kpis_por_unidad(
     MÁXIMA:
     - Se agrupa por unidad_negocio_id canónico (sin LIKE/nombre, sin SQL inválido).
     - KPI visible de ventas = ventas_total con IVA incluido.
-    - ventas_sin_propina y propinas_total permanecen separados.
+    - propinas_total permanece separado de ventas_total.
     - Fuente: vw_Comercial_KPIs_Diarios_v2_Runtime (NO live, NO Mongo).
     """
     where_clauses = [
@@ -329,7 +327,6 @@ def get_kpis_por_unidad(
         MAX(sistema_origen) as sistema_origen,
         COUNT(DISTINCT fecha_operacion) as dias,
         SUM(ISNULL(ventas_total, 0)) as ventas_total,
-        SUM(ISNULL(ventas_sin_propina, 0)) as ventas_sin_propina,
         SUM(ISNULL(propinas_total, 0)) as propinas_total,
         SUM(ISNULL(tickets_total, 0)) as tickets_total,
         SUM(ISNULL(pax_total, 0)) as pax_total,
@@ -683,7 +680,7 @@ def get_unidades_disponibles(
         MIN(fecha_operacion) as fecha_min,
         MAX(fecha_operacion) as fecha_max,
         COUNT(*) as total_dias,
-        SUM(ISNULL(ventas_sin_propina, 0)) as ventas_historicas
+        SUM(ISNULL(ventas_total, 0)) as ventas_historicas
     FROM vw_Comercial_KPIs_Diarios_v2_Runtime
     WHERE {' AND '.join(where_clauses)}
     GROUP BY unidad_negocio_pk, unidad_negocio_nombre, sistema_origen, server_id

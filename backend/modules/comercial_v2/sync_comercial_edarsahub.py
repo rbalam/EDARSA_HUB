@@ -562,7 +562,6 @@ SELECT
     fecha as fecha_hora,
     folio as folio,
     total as ventas_total,
-    total - ISNULL(propina, 0) as ventas_sin_propina,
     ISNULL(propina, 0) as propinas,
     ISNULL(nopersonas, 1) as num_personas
 FROM cheques
@@ -575,7 +574,7 @@ ORDER BY fecha
 
 QUERY_SOFTRESTAURANT_VENTAS_ABIERTAS = """
 SELECT 
-    SUM(total - ISNULL(propina, 0)) as ventas_abiertas,
+    SUM(total) as ventas_abiertas,
     COUNT(DISTINCT folio) as tickets_abiertos,
     SUM(ISNULL(nopersonas, 1)) as pax_abiertos
 FROM cheques

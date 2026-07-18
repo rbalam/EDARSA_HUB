@@ -249,7 +249,6 @@ QUERY_SOFTRESTAURANT_ABRIL = """
 SELECT 
     CAST(fecha AS DATE) as fecha,
     SUM(total) as ventas_total,
-    SUM(total - ISNULL(propina, 0)) as ventas_sin_propina,
     SUM(ISNULL(propina, 0)) as propinas,
     COUNT(DISTINCT folio) as num_cheques,
     SUM(ISNULL(nopersonas, 1)) as num_personas
@@ -341,7 +340,6 @@ def cargar_unidad_softrestaurant(
                 fecha = datetime.strptime(fecha[:10], '%Y-%m-%d').date()
             
             ventas_total = safe_decimal(row.get('ventas_total', 0))
-            ventas_sin_propina = safe_decimal(row.get('ventas_sin_propina', 0))
             propinas = safe_decimal(row.get('propinas', 0))
             tickets = safe_int(row.get('num_cheques', 0))
             pax = safe_int(row.get('num_personas', 0))
@@ -352,7 +350,8 @@ def cargar_unidad_softrestaurant(
             reporte.pax_origen += pax
             
             # Calcular métricas
-            ticket_promedio = ventas_sin_propina / pax if pax > 0 else Decimal("0")
+            ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
+            pax_promedio = ventas_total / pax if pax > 0 else Decimal("0")
             
             # Hash para idempotencia
             hash_origen = calcular_hash_origen(
@@ -382,12 +381,11 @@ def cargar_unidad_softrestaurant(
                 dia=fecha.day,
                 
                 ventas_total=ventas_total,
-                ventas_sin_propina=ventas_sin_propina,
                 propinas_total=propinas,
                 tickets_total=tickets,
                 pax_total=pax,
                 ticket_promedio=ticket_promedio,
-                pax_promedio=ticket_promedio,  # espejo legacy DB
+                pax_promedio=pax_promedio,
                 
                 ventas_cerradas=ventas_total,
                 ventas_abiertas=Decimal("0"),
@@ -509,7 +507,6 @@ def cargar_unidad_mpro(
                 fecha = datetime.strptime(fecha[:10], '%Y-%m-%d').date()
             
             ventas_total = safe_decimal(row.get('Vn_Precio_Neto_Importe', 0))
-            ventas_sin_propina = ventas_total  # MPRO no separa propinas aquí
             propinas = Decimal("0")
             tickets = safe_int(row.get('num_folios', 0))
             pax = safe_int(row.get('total_personas', 0))
@@ -520,7 +517,8 @@ def cargar_unidad_mpro(
             reporte.pax_origen += pax
             
             # Calcular métricas
-            ticket_promedio = ventas_sin_propina / pax if pax > 0 else Decimal("0")
+            ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
+            pax_promedio = ventas_total / pax if pax > 0 else Decimal("0")
             
             # Hash para idempotencia
             hash_origen = calcular_hash_origen(
@@ -550,12 +548,11 @@ def cargar_unidad_mpro(
                 dia=fecha.day,
                 
                 ventas_total=ventas_total,
-                ventas_sin_propina=ventas_sin_propina,
                 propinas_total=propinas,
                 tickets_total=tickets,
                 pax_total=pax,
                 ticket_promedio=ticket_promedio,
-                pax_promedio=ticket_promedio,  # espejo legacy DB
+                pax_promedio=pax_promedio,
                 
                 ventas_cerradas=ventas_total,
                 ventas_abiertas=Decimal("0"),

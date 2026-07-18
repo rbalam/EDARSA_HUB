@@ -196,7 +196,6 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
             update_query = f"""
             UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
                 ventas_total = {kpi.ventas_total},
-                ventas_sin_propina = {kpi.ventas_sin_propina},
                 propinas_total = {kpi.propinas_total},
                 tickets_total = {kpi.tickets_total},
                 pax_total = {kpi.pax_total},
@@ -222,7 +221,7 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
         INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
             id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
             sucursal_nombre, sistema_origen, fecha_operacion, anio, mes, dia,
-            ventas_total, ventas_sin_propina, propinas_total, tickets_total, pax_total,
+            ventas_total, propinas_total, tickets_total, pax_total,
             ticket_promedio, pax_promedio, ventas_cerradas, ventas_abiertas, total_estimado_dia,
             es_venta_abierta, es_corte_cerrado, es_demo, activo,
             fuente_original, id_origen, hash_origen, sync_run_id,
@@ -238,7 +237,7 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
             '{kpi.sistema_origen}',
             '{kpi.fecha_operacion.isoformat()}',
             {kpi.anio}, {kpi.mes}, {kpi.dia},
-            {kpi.ventas_total}, {kpi.ventas_sin_propina}, {kpi.propinas_total},
+            {kpi.ventas_total}, {kpi.propinas_total},
             {kpi.tickets_total}, {kpi.pax_total}, {kpi.ticket_promedio}, {kpi.pax_promedio},
             {kpi.ventas_cerradas}, {kpi.ventas_abiertas}, {kpi.total_estimado_dia},
             {1 if kpi.es_venta_abierta else 0},

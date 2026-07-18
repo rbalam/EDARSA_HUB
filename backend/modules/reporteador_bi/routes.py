@@ -15,13 +15,14 @@ Fuente única: EDARSAHUB SQL. Prefijo: /api/reporteador-bi
 import logging
 from typing import Optional, Dict, Any, List
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 
 # Reutiliza helpers canónicos del módulo de inteligencia (misma fuente SQL).
 from modules.inteligencia_comercial.routes import (
-    execute_query, normalizar_unidad, _resolver_rango,
+    execute_query, _resolver_rango, _unidad_codigo_filtro,
     _real_top_productos, _real_clasificacion_nested, _real_tickets, _real_horario,
 )
+from core.unidades_service import UnidadesService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/reporteador-bi", tags=["Reporteador BI (MECA MPRO)"])
@@ -47,32 +48,38 @@ PAGINAS = [
 
 
 def _u(unidad: Optional[str]) -> Optional[str]:
-    return normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
+    if not unidad or unidad.lower() == "todas":
+        return None
+    unidad_pk = UnidadesService.resolver_pk(unidad)
+    if not unidad_pk:
+        raise HTTPException(status_code=400, detail="Unidad de negocio inválida o inactiva.")
+    return str(unidad_pk)
 
 
-def _kwhere(unidad_db: Optional[str], fi: str, ff: str) -> str:
-    parts = [f"fecha_operacion BETWEEN '{fi}' AND '{ff}'"]
-    if unidad_db:
-        parts.append(f"unidad_negocio_nombre = '{unidad_db}'")
-    return " AND ".join(parts)
+def _kwhere(unidad_pk: Optional[str], fi: str, ff: str):
+    parts = ["fecha_operacion BETWEEN %s AND %s"]
+    params = [fi, ff]
+    if unidad_pk:
+        parts.append("CONVERT(varchar(36), unidad_negocio_pk) = %s")
+        params.append(unidad_pk)
+    return " AND ".join(parts), tuple(params)
 
 
-def _kpis_rango(unidad_db: Optional[str], fi: str, ff: str) -> Dict[str, float]:
+def _kpis_rango(unidad_pk: Optional[str], fi: str, ff: str) -> Dict[str, float]:
     """KPIs canónicos: ticket/cheque=ventas÷cuentas y pax_promedio=ventas÷pax."""
+    where, params = _kwhere(unidad_pk, fi, ff)
     rows = execute_query(f"""
-        SELECT ISNULL(SUM(ventas_total),0) ventas, ISNULL(SUM(ventas_sin_propina),0) ventas_sp,
+        SELECT ISNULL(SUM(ventas_total),0) ventas,
                ISNULL(SUM(propinas_total),0) propinas, ISNULL(SUM(tickets_total),0) cuentas,
                ISNULL(SUM(pax_total),0) pax
-        FROM {_KPIS_VIEW} WHERE {_kwhere(unidad_db, fi, ff)}
-    """)
+        FROM {_KPIS_VIEW} WHERE {where}
+    """, params)
     r = rows[0] if rows else {}
     ventas = float(r.get("ventas") or 0)
-    ventas_sp = float(r.get("ventas_sp") or 0)
     cuentas = float(r.get("cuentas") or 0)
     pax = float(r.get("pax") or 0)
     return {
         "ventas": round(ventas, 2),
-        "ventas_sin_propina": round(ventas_sp, 2),
         "propinas": round(float(r.get("propinas") or 0), 2),
         "cuentas": int(cuentas),
         "pax": int(pax),
@@ -82,13 +89,14 @@ def _kpis_rango(unidad_db: Optional[str], fi: str, ff: str) -> Dict[str, float]:
     }
 
 
-def _serie_diaria(unidad_db, fi, ff) -> List[Dict]:
+def _serie_diaria(unidad_pk, fi, ff) -> List[Dict]:
+    where, params = _kwhere(unidad_pk, fi, ff)
     rows = execute_query(f"""
         SELECT fecha_operacion AS fecha, SUM(ventas_total) ventas, SUM(pax_total) pax,
                SUM(tickets_total) cuentas
-        FROM {_KPIS_VIEW} WHERE {_kwhere(unidad_db, fi, ff)}
+        FROM {_KPIS_VIEW} WHERE {where}
         GROUP BY fecha_operacion ORDER BY fecha_operacion
-    """)
+    """, params)
     return [{"fecha": str(r["fecha"])[:10], "ventas": round(float(r["ventas"] or 0), 2),
              "pax": int(r["pax"] or 0), "cuentas": int(r["cuentas"] or 0)} for r in rows]
 
@@ -134,14 +142,15 @@ async def ventas_semana(unidad: Optional[str] = Query(None), periodo: Optional[s
     udb = _u(unidad)
     fi, ff, _, _, label = _resolver_rango(udb, periodo, fecha_inicio, fecha_fin)
     try:
+        where, params = _kwhere(udb, fi, ff)
         rows = execute_query(f"""
             SELECT YEAR(fecha_operacion) anio, DATEPART(ISO_WEEK, fecha_operacion) semana,
                    MIN(fecha_operacion) ini, MAX(fecha_operacion) fin,
                    SUM(ventas_total) ventas, SUM(pax_total) pax, SUM(tickets_total) cuentas
-            FROM {_KPIS_VIEW} WHERE {_kwhere(udb, fi, ff)}
+            FROM {_KPIS_VIEW} WHERE {where}
             GROUP BY YEAR(fecha_operacion), DATEPART(ISO_WEEK, fecha_operacion)
             ORDER BY anio, semana
-        """)
+        """, params)
         serie = []
         prev = None
         for r in rows:
@@ -166,20 +175,23 @@ async def ventas_mes(unidad: Optional[str] = Query(None), meses: int = Query(24,
     udb = _u(unidad)
     MESES_ES = ["", "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
     try:
-        where = "1=1" + (f" AND unidad_negocio_nombre = '{udb}'" if udb else "")
+        where = "1=1"
+        params = ()
+        if udb:
+            where += " AND CONVERT(varchar(36), unidad_negocio_pk) = %s"
+            params = (udb,)
         rows = execute_query(f"""
-            SELECT TOP {int(meses)} anio, mes, SUM(ventas_total) ventas, SUM(ventas_sin_propina) ventas_sp,
+            SELECT TOP {int(meses)} anio, mes, SUM(ventas_total) ventas,
                    SUM(pax_total) pax, SUM(tickets_total) cuentas
             FROM {_KPIS_VIEW} WHERE {where}
             GROUP BY anio, mes ORDER BY anio DESC, mes DESC
-        """)
+        """, params)
         rows = list(reversed(rows))
         serie = []
         for r in rows:
             ventas = round(float(r["ventas"] or 0), 2)
             pax = int(r["pax"] or 0)
             cuentas = int(r["cuentas"] or 0)
-            ventas_sp = float(r["ventas_sp"] or 0)
             serie.append({"anio": int(r["anio"]), "mes": int(r["mes"]),
                           "label": f"{MESES_ES[int(r['mes'])]} {int(r['anio'])}",
                           "ventas": ventas, "pax": pax, "cuentas": cuentas,
@@ -211,15 +223,21 @@ async def ambientacion(unidad: Optional[str] = Query(None), periodo: Optional[st
     fi, ff, _, _, label = _resolver_rango(udb, periodo, fecha_inicio, fecha_fin)
     try:
         # Ventas por hora del día (real, desde fecha_hora del detalle)
+        unidad_filter = ""
+        params = [fi, ff]
+        if udb:
+            unidad_codigo = _unidad_codigo_filtro(udb)
+            unidad_filter = "AND d.unidad_negocio_id = %s"
+            params.append(unidad_codigo)
         rows = execute_query(f"""
             SELECT DATEPART(HOUR, d.fecha_hora) AS hora, SUM(d.importe_neto) ventas,
                    SUM(d.pax) pax, COUNT(DISTINCT d.numero_ticket) cuentas
             FROM Comercial_Inteligencia_VentasDetalleProducto d
             WHERE ISNULL(d.activo,1)=1 AND d.fecha_hora IS NOT NULL
-              AND d.fecha_operacion BETWEEN '{fi}' AND '{ff}'
-              {"AND d.unidad_negocio_nombre = '" + udb + "'" if udb else ""}
+              AND d.fecha_operacion BETWEEN %s AND %s
+              {unidad_filter}
             GROUP BY DATEPART(HOUR, d.fecha_hora) ORDER BY hora
-        """)
+        """, tuple(params))
         por_hora = [{"hora": f"{int(r['hora']):02d}:00", "hora_num": int(r["hora"]),
                      "ventas": round(float(r["ventas"] or 0), 2), "pax": int(r["pax"] or 0),
                      "cuentas": int(r["cuentas"] or 0)} for r in rows]

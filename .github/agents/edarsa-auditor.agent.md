@@ -1,7 +1,7 @@
 ---
 name: EDARSA Auditor
 description: Auditor tecnico de EDARSAHUB. Solo lectura, evidencia exacta, sin patches.
-tools: ["search", "read", "execute"]
+tools: [execute, read, search]
 handoffs:
   - label: Pasar a EDARSA Coder
     agent: edarsa-coder

@@ -191,7 +191,6 @@ QUERY_SR_MENSUAL = """
 SELECT 
     CAST(fecha AS DATE) as fecha,
     SUM(total) as ventas_total,
-    SUM(total - ISNULL(propina, 0)) as ventas_sin_propina,
     SUM(ISNULL(propina, 0)) as propinas,
     COUNT(DISTINCT folio) as num_cheques,
     SUM(ISNULL(nopersonas, 1)) as num_personas
@@ -361,7 +360,6 @@ def cargar_mes_softrestaurant(
                 fecha = datetime.strptime(fecha[:10], '%Y-%m-%d').date()
             
             ventas_total = safe_decimal(row.get('ventas_total', 0))
-            ventas_sin_propina = safe_decimal(row.get('ventas_sin_propina', 0))
             propinas = safe_decimal(row.get('propinas', 0))
             tickets = safe_int(row.get('num_cheques', 0))
             pax = safe_int(row.get('num_personas', 0))
@@ -370,7 +368,8 @@ def cargar_mes_softrestaurant(
             reporte.cheques_origen += tickets
             reporte.pax_origen += pax
             
-            ticket_promedio = ventas_sin_propina / pax if pax > 0 else Decimal("0")
+            ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
+            pax_promedio = ventas_total / pax if pax > 0 else Decimal("0")
             
             # Hash estable basado en datos de negocio
             hash_origen = calcular_hash_origen(
@@ -396,12 +395,11 @@ def cargar_mes_softrestaurant(
                 dia=fecha.day,
                 
                 ventas_total=ventas_total,
-                ventas_sin_propina=ventas_sin_propina,
                 propinas_total=propinas,
                 tickets_total=tickets,
                 pax_total=pax,
                 ticket_promedio=ticket_promedio,
-                pax_promedio=ticket_promedio,  # espejo legacy DB
+                pax_promedio=pax_promedio,
                 
                 ventas_cerradas=ventas_total,
                 ventas_abiertas=Decimal("0"),
@@ -517,7 +515,8 @@ def cargar_mes_mpro(
             reporte.cheques_origen += tickets
             reporte.pax_origen += pax
             
-            ticket_promedio = ventas_total / pax if pax > 0 else Decimal("0")
+            ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
+            pax_promedio = ventas_total / pax if pax > 0 else Decimal("0")
             
             # Hash estable basado en datos de negocio (no depende de fuente)
             hash_origen = calcular_hash_origen(
@@ -543,12 +542,11 @@ def cargar_mes_mpro(
                 dia=fecha.day,
                 
                 ventas_total=ventas_total,
-                ventas_sin_propina=ventas_total,
                 propinas_total=Decimal("0"),
                 tickets_total=tickets,
                 pax_total=pax,
                 ticket_promedio=ticket_promedio,
-                pax_promedio=ticket_promedio,  # espejo legacy DB
+                pax_promedio=pax_promedio,
                 
                 ventas_cerradas=ventas_total,
                 ventas_abiertas=Decimal("0"),

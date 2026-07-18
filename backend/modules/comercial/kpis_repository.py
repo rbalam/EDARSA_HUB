@@ -189,7 +189,6 @@ def _sql_build_hash(server_id: str, sucursal_id: str, fecha: str, kpis: dict) ->
         "sucursal_id": str(sucursal_id),
         "fecha": str(fecha),
         "ventas": str(kpis.get("ventas", kpis.get("ventas_total", 0)) or 0),
-        "ventas_sin_propina": str(kpis.get("ventas_sin_propina", kpis.get("ventas", 0)) or 0),
         "propinas": str(kpis.get("propinas", kpis.get("propinas_total", 0)) or 0),
         "tickets": str(kpis.get("tickets", kpis.get("cheques", kpis.get("tickets_total", 0))) or 0),
         "pax": str(kpis.get("pax", kpis.get("pax_total", 0)) or 0),
@@ -244,9 +243,6 @@ async def upsert_kpi_comercial(
 
     ventas_total = _sql_decimal(kpis.get("ventas_total", kpis.get("ventas", 0)))
     propinas_total = _sql_decimal(kpis.get("propinas_total", kpis.get("propinas", 0)))
-    ventas_sin_propina = _sql_decimal(
-        kpis.get("ventas_sin_propina", ventas_total - propinas_total)
-    )
 
     tickets_total = _sql_int(kpis.get("tickets_total", kpis.get("tickets", kpis.get("cheques", 0))))
     pax_total = _sql_int(kpis.get("pax_total", kpis.get("pax", kpis.get("personas", 0))))
@@ -268,7 +264,6 @@ async def upsert_kpi_comercial(
         mes=fecha_op.month,
         dia=fecha_op.day,
         ventas_total=ventas_total,
-        ventas_sin_propina=ventas_sin_propina,
         propinas_total=propinas_total,
         tickets_total=tickets_total,
         pax_total=pax_total,
@@ -341,9 +336,8 @@ async def get_kpi_comercial(
         **row,
         "version": row.get("version", 1),
         "kpis": {
-            "ventas": row.get("ventas_sin_propina") or row.get("ventas_total") or 0,
+            "ventas": row.get("ventas_total") or 0,
             "ventas_total": row.get("ventas_total") or 0,
-            "ventas_sin_propina": row.get("ventas_sin_propina") or 0,
             "propinas_total": row.get("propinas_total") or 0,
             "tickets_total": row.get("tickets_total") or 0,
             "pax_total": row.get("pax_total") or 0,

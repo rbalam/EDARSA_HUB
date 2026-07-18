@@ -1,0 +1,4493 @@
+{
+  "generated_at": "2026-07-17T03:43:09.017361Z",
+  "scope": "SELECT-only IVA inventory and reconciliation",
+  "units_expected": [
+    "CIENFUEGOS",
+    "ESTELAR",
+    "130MID",
+    "130QRO",
+    "ORIGEN"
+  ],
+  "units_found": [
+    "130MID",
+    "130QRO",
+    "CIENFUEGOS",
+    "ESTELAR",
+    "ORIGEN"
+  ],
+  "servers": [
+    {
+      "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+      "server_name": "130° MERIDA",
+      "system_type": "SOFTRESTAURANT",
+      "units": [
+        "130MID"
+      ],
+      "database_name": "softrestaurant10",
+      "login_permissions": {
+        "can_insert": 0,
+        "can_update": 0,
+        "can_delete": 0,
+        "can_alter": 0
+      },
+      "inventory": [
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 7,
+          "columna": "precio",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 8,
+          "columna": "impuesto1",
+          "tipo": "numeric",
+          "precision": 5,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 9,
+          "columna": "impuesto2",
+          "tipo": "numeric",
+          "precision": 5,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 10,
+          "columna": "impuesto3",
+          "tipo": "numeric",
+          "precision": 5,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 11,
+          "columna": "preciosinimpuestos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 24,
+          "columna": "preciocatalogo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 41,
+          "columna": "subtotalsrx",
+          "tipo": "numeric",
+          "precision": 7,
+          "scale": 5
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 42,
+          "columna": "totalsrx",
+          "tipo": "numeric",
+          "precision": 7,
+          "scale": 5
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 43,
+          "columna": "idlistaprecio",
+          "tipo": "int",
+          "precision": 10,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 46,
+          "columna": "impuestoimporte3",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 51,
+          "columna": "preciosinimpuestos_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 52,
+          "columna": "precio_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdetf",
+          "column_id": 7,
+          "columna": "precio",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdetf",
+          "column_id": 8,
+          "columna": "impuesto1",
+          "tipo": "numeric",
+          "precision": 5,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdetf",
+          "column_id": 9,
+          "columna": "impuesto2",
+          "tipo": "numeric",
+          "precision": 5,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdetf",
+          "column_id": 10,
+          "columna": "impuesto3",
+          "tipo": "numeric",
+          "precision": 5,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdetf",
+          "column_id": 11,
+          "columna": "preciosinimpuestos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdetf",
+          "column_id": 24,
+          "columna": "preciocatalogo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdetf",
+          "column_id": 36,
+          "columna": "preciosinimpuestos_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdetf",
+          "column_id": 37,
+          "columna": "precio_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdetfeliminados",
+          "column_id": 5,
+          "columna": "precio",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqerp",
+          "column_id": 8,
+          "columna": "propina",
+          "tipo": "bit",
+          "precision": 1,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 36,
+          "columna": "propinapagada",
+          "tipo": "bit",
+          "precision": 1,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 37,
+          "columna": "propinafoliomovtocaja",
+          "tipo": "numeric",
+          "precision": 8,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 39,
+          "columna": "propinaincluida",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 43,
+          "columna": "propinamanual",
+          "tipo": "bit",
+          "precision": 1,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 49,
+          "columna": "totalarticulos",
+          "tipo": "numeric",
+          "precision": 11,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 50,
+          "columna": "subtotal",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 51,
+          "columna": "subtotalsinimpuestos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 52,
+          "columna": "total",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 53,
+          "columna": "totalconpropina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 56,
+          "columna": "totalimpuesto1",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 82,
+          "columna": "totalconcargo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 83,
+          "columna": "totalconpropinacargo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 84,
+          "columna": "descuentoimporte",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 89,
+          "columna": "propina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 90,
+          "columna": "propinatarjeta",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 97,
+          "columna": "importecomision",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 104,
+          "columna": "totalsindescuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 105,
+          "columna": "totalalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 106,
+          "columna": "totalbebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 107,
+          "columna": "totalotros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 108,
+          "columna": "totaldescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 109,
+          "columna": "totaldescuentoalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 110,
+          "columna": "totaldescuentobebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 111,
+          "columna": "totaldescuentootros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 112,
+          "columna": "totalcortesias",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 113,
+          "columna": "totalcortesiaalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 114,
+          "columna": "totalcortesiabebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 115,
+          "columna": "totalcortesiaotros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 116,
+          "columna": "totaldescuentoycortesia",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 117,
+          "columna": "totalalimentossindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 118,
+          "columna": "totalbebidassindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 119,
+          "columna": "totalotrossindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 123,
+          "columna": "subtotalcondescuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 140,
+          "columna": "totalimpuestod1",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 141,
+          "columna": "totalimpuestod2",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 142,
+          "columna": "totalimpuestod3",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 182,
+          "columna": "totalcondonativo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 183,
+          "columna": "totalconpropinacargodonativo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 199,
+          "columna": "sl_importe_descuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 206,
+          "columna": "subtotal_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 207,
+          "columna": "total_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 208,
+          "columna": "totalconpropinacargo_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 36,
+          "columna": "propinapagada",
+          "tipo": "bit",
+          "precision": 1,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 37,
+          "columna": "propinafoliomovtocaja",
+          "tipo": "bigint",
+          "precision": 19,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 39,
+          "columna": "propinaincluida",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 42,
+          "columna": "propinamanual",
+          "tipo": "bit",
+          "precision": 1,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 50,
+          "columna": "totalarticulos",
+          "tipo": "numeric",
+          "precision": 11,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 51,
+          "columna": "subtotal",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 52,
+          "columna": "subtotalsinimpuestos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 53,
+          "columna": "total",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 54,
+          "columna": "totalconpropina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 55,
+          "columna": "totalimpuesto1",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 57,
+          "columna": "totalconcargo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 58,
+          "columna": "totalconpropinacargo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 59,
+          "columna": "descuentoimporte",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 64,
+          "columna": "propina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 65,
+          "columna": "propinatarjeta",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 69,
+          "columna": "importecomision",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 77,
+          "columna": "totalsindescuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 78,
+          "columna": "totalalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 79,
+          "columna": "totalbebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 80,
+          "columna": "totalotros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 81,
+          "columna": "totaldescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 82,
+          "columna": "totaldescuentoalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 83,
+          "columna": "totaldescuentobebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 84,
+          "columna": "totaldescuentootros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 85,
+          "columna": "totalcortesias",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 86,
+          "columna": "totalcortesiaalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 87,
+          "columna": "totalcortesiabebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 88,
+          "columna": "totalcortesiaotros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 89,
+          "columna": "totaldescuentoycortesia",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 90,
+          "columna": "totalalimentossindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 91,
+          "columna": "totalbebidassindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 92,
+          "columna": "totalotrossindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 96,
+          "columna": "subtotalcondescuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 108,
+          "columna": "totalimpuestod1",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 109,
+          "columna": "totalimpuestod2",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 110,
+          "columna": "totalimpuestod3",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 136,
+          "columna": "totalcondonativo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 137,
+          "columna": "totalconpropinacargodonativo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 150,
+          "columna": "sl_importe_descuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 155,
+          "columna": "subtotal_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 156,
+          "columna": "total_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 157,
+          "columna": "totalconpropinacargo_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagos",
+          "column_id": 3,
+          "columna": "importe",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagos",
+          "column_id": 4,
+          "columna": "propina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagos",
+          "column_id": 10,
+          "columna": "importe_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagos",
+          "column_id": 11,
+          "columna": "propina_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagos",
+          "column_id": 14,
+          "columna": "importe_cashdro",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagosf",
+          "column_id": 3,
+          "columna": "importe",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagosf",
+          "column_id": 4,
+          "columna": "propina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagosf",
+          "column_id": 8,
+          "columna": "importe_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagosf",
+          "column_id": 9,
+          "columna": "propina_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 7,
+          "columna": "precio",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 8,
+          "columna": "impuesto1",
+          "tipo": "numeric",
+          "precision": 5,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 9,
+          "columna": "impuesto2",
+          "tipo": "numeric",
+          "precision": 5,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 10,
+          "columna": "impuesto3",
+          "tipo": "numeric",
+          "precision": 5,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 11,
+          "columna": "preciosinimpuestos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 24,
+          "columna": "preciocatalogo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 41,
+          "columna": "subtotalsrx",
+          "tipo": "numeric",
+          "precision": 7,
+          "scale": 5
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 42,
+          "columna": "totalsrx",
+          "tipo": "numeric",
+          "precision": 7,
+          "scale": 5
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 43,
+          "columna": "idlistaprecio",
+          "tipo": "int",
+          "precision": 10,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 46,
+          "columna": "impuestoimporte3",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 53,
+          "columna": "preciosinimpuestos_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 54,
+          "columna": "precio_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 36,
+          "columna": "propinapagada",
+          "tipo": "bit",
+          "precision": 1,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 37,
+          "columna": "propinafoliomovtocaja",
+          "tipo": "bigint",
+          "precision": 19,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 39,
+          "columna": "propinaincluida",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 42,
+          "columna": "propinamanual",
+          "tipo": "bit",
+          "precision": 1,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 50,
+          "columna": "totalarticulos",
+          "tipo": "numeric",
+          "precision": 11,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 51,
+          "columna": "subtotal",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 52,
+          "columna": "subtotalsinimpuestos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 53,
+          "columna": "total",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 54,
+          "columna": "totalconpropina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 55,
+          "columna": "totalimpuesto1",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 57,
+          "columna": "totalconcargo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 58,
+          "columna": "totalconpropinacargo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 59,
+          "columna": "descuentoimporte",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 64,
+          "columna": "propina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 65,
+          "columna": "propinatarjeta",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 69,
+          "columna": "importecomision",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 76,
+          "columna": "totalsindescuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 77,
+          "columna": "totalalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 78,
+          "columna": "totalbebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 79,
+          "columna": "totalotros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 80,
+          "columna": "totaldescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 81,
+          "columna": "totaldescuentoalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 82,
+          "columna": "totaldescuentobebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 83,
+          "columna": "totaldescuentootros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 84,
+          "columna": "totalcortesias",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 85,
+          "columna": "totalcortesiaalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 86,
+          "columna": "totalcortesiabebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 87,
+          "columna": "totalcortesiaotros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 88,
+          "columna": "totaldescuentoycortesia",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 89,
+          "columna": "totalalimentossindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 90,
+          "columna": "totalbebidassindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 91,
+          "columna": "totalotrossindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 95,
+          "columna": "subtotalcondescuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 112,
+          "columna": "totalimpuestod1",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 113,
+          "columna": "totalimpuestod2",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 114,
+          "columna": "totalimpuestod3",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 156,
+          "columna": "totalcondonativo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 157,
+          "columna": "totalconpropinacargodonativo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 173,
+          "columna": "sl_importe_descuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 184,
+          "columna": "subtotal_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 185,
+          "columna": "total_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 186,
+          "columna": "totalconpropinacargo_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempchequespagos",
+          "column_id": 3,
+          "columna": "importe",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempchequespagos",
+          "column_id": 4,
+          "columna": "propina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempchequespagos",
+          "column_id": 8,
+          "columna": "importe_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempchequespagos",
+          "column_id": 9,
+          "columna": "propina_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempchequespagos",
+          "column_id": 12,
+          "columna": "importe_cashdro",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "xpPasoVentaCabecero",
+          "column_id": 7,
+          "columna": "Importe",
+          "tipo": "decimal",
+          "precision": 12,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "xpPasoVentaCabecero",
+          "column_id": 9,
+          "columna": "Impuestos",
+          "tipo": "decimal",
+          "precision": 12,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "xpPasoVentaDetalle",
+          "column_id": 5,
+          "columna": "Impuesto1",
+          "tipo": "float",
+          "precision": 53,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "xpPasoVentaDetalle",
+          "column_id": 6,
+          "columna": "Impuesto2",
+          "tipo": "float",
+          "precision": 53,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "xpPasoVentaDetalle",
+          "column_id": 7,
+          "columna": "Impuesto3",
+          "tipo": "float",
+          "precision": 53,
+          "scale": 0
+        }
+      ],
+      "softrestaurant_reconciliation": {
+        "tickets_muestreados": 200,
+        "tickets_con_detalle": 200,
+        "tickets_detalle_con_diferencia_impuestos": 200,
+        "tickets_venta_visible_coincide_detalle_con_impuestos": 50,
+        "tickets_venta_visible_coincide_detalle_sin_impuestos": 0,
+        "suma_venta_sin_propina": "748693.3400",
+        "suma_propina": "83963.6600",
+        "suma_detalle_con_impuestos": "844398.3393",
+        "suma_detalle_sin_impuestos": "727929.5901"
+      },
+      "status": "ok"
+    },
+    {
+      "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+      "server_name": "ManagmentPro",
+      "system_type": "MPRO",
+      "units": [
+        "130QRO",
+        "ORIGEN"
+      ],
+      "database_name": "CENTRAL2020",
+      "login_permissions": {
+        "can_insert": 0,
+        "can_update": 0,
+        "can_delete": 0,
+        "can_alter": 0
+      },
+      "inventory": [
+        {
+          "esquema": "dbo",
+          "tabla": "Cheque",
+          "column_id": 9,
+          "columna": "Ch_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Cheque_Rebotado",
+          "column_id": 9,
+          "columna": "Cr_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Cheque_x_Aplicar",
+          "column_id": 8,
+          "columna": "Cxa_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Comanda",
+          "column_id": 14,
+          "columna": "Co_Propina",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Comanda",
+          "column_id": 15,
+          "columna": "Co_Comision_Propina",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Comanda",
+          "column_id": 16,
+          "columna": "Co_Propina_Pagada",
+          "tipo": "char",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Comanda",
+          "column_id": 18,
+          "columna": "Co_Descuento_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Comanda",
+          "column_id": 26,
+          "columna": "Co_Credito_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Comanda",
+          "column_id": 27,
+          "columna": "Co_Cargo_Habitacion_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Comanda_Detalle",
+          "column_id": 9,
+          "columna": "Cd_Precio",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Comanda_Detalle",
+          "column_id": 10,
+          "columna": "Cd_Impuesto_Factor",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Comanda_Detalle",
+          "column_id": 12,
+          "columna": "Cd_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Condicion_Venta",
+          "column_id": 20,
+          "columna": "Cv_Impuesto_Interes",
+          "tipo": "nvarchar",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Contrato_Consignacion_Venta_Detalle",
+          "column_id": 6,
+          "columna": "Ccvd_Precio",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Corte_Consignacion_Venta_Detalle",
+          "column_id": 12,
+          "columna": "Ccvd_Precio",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Cupon_Pv_Venta",
+          "column_id": 6,
+          "columna": "Cpv_Precio_Lista",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Cupon_Pv_Venta",
+          "column_id": 8,
+          "columna": "Cpv_Impuesto_Factor",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Cupon_Pv_Venta",
+          "column_id": 9,
+          "columna": "Cpv_Precio_Neto",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Cupon_Pv_Venta",
+          "column_id": 10,
+          "columna": "Cpv_Precio_Neto_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Descuento_Pv_Venta",
+          "column_id": 9,
+          "columna": "Dpv_Precio_Lista",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Descuento_Pv_Venta",
+          "column_id": 11,
+          "columna": "Dpv_Impuesto_Factor",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Descuento_Pv_Venta",
+          "column_id": 12,
+          "columna": "Dpv_Precio_Neto",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Descuento_Pv_Venta",
+          "column_id": 13,
+          "columna": "Dpv_Precio_Neto_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Documento_Condicion_Venta",
+          "column_id": 10,
+          "columna": "Dcv_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Movimiento_Consignacion_Venta_Detalle",
+          "column_id": 8,
+          "columna": "Mcvd_Precio",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Movimiento_Consignacion_Venta_Detalle",
+          "column_id": 9,
+          "columna": "Mcvd_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "PDA_Venta",
+          "column_id": 18,
+          "columna": "Vn_Precio_Lista",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "PDA_Venta",
+          "column_id": 20,
+          "columna": "Vn_Impuesto_Factor",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "PDA_Venta_Detalle",
+          "column_id": 10,
+          "columna": "Vn_Precio_Lista",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "PDA_Venta_Detalle",
+          "column_id": 11,
+          "columna": "Vn_Precio_Lista_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "PDA_Venta_Detalle",
+          "column_id": 13,
+          "columna": "Vn_Descuento_Global_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "PDA_Venta_Detalle",
+          "column_id": 15,
+          "columna": "Vn_Descuento_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "PDA_Venta_Detalle",
+          "column_id": 16,
+          "columna": "Vn_Precio_Descontado",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "PDA_Venta_Detalle",
+          "column_id": 17,
+          "columna": "Vn_Precio_Descontado_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "PDA_Venta_Detalle",
+          "column_id": 18,
+          "columna": "Vn_Impuesto_Factor",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "PDA_Venta_Detalle",
+          "column_id": 19,
+          "columna": "Vn_Impuesto_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "PDA_Venta_Detalle",
+          "column_id": 20,
+          "columna": "Vn_Precio_Neto",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "PDA_Venta_Detalle",
+          "column_id": 21,
+          "columna": "Vn_Precio_Neto_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "POS_Venta_Pendiente",
+          "column_id": 5,
+          "columna": "Pvp_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "POS_Ventas",
+          "column_id": 9,
+          "columna": "POS_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Presupuesto_Venta",
+          "column_id": 10,
+          "columna": "Pv_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Promocion_Pv_Venta",
+          "column_id": 4,
+          "columna": "Ppv_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Solicitud_Cheque",
+          "column_id": 11,
+          "columna": "Sch_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Solicitud_Cheque_Detalle",
+          "column_id": 5,
+          "columna": "Scd_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta",
+          "column_id": 25,
+          "columna": "Vn_Descuento_Global_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta",
+          "column_id": 40,
+          "columna": "Vn_Costo_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta",
+          "column_id": 42,
+          "columna": "Vn_Precio_Lista",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta",
+          "column_id": 43,
+          "columna": "Vn_Precio_Lista_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta",
+          "column_id": 45,
+          "columna": "Vn_Descuento_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta",
+          "column_id": 46,
+          "columna": "Vn_Precio_Descontado",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta",
+          "column_id": 47,
+          "columna": "Vn_Precio_Descontado_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta",
+          "column_id": 48,
+          "columna": "Vn_Impuesto_Factor",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta",
+          "column_id": 49,
+          "columna": "Vn_Impuesto_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta",
+          "column_id": 50,
+          "columna": "Vn_Precio_Neto",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta",
+          "column_id": 51,
+          "columna": "Vn_Precio_Neto_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta",
+          "column_id": 69,
+          "columna": "Vn_Objeto_Impuesto",
+          "tipo": "nvarchar",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Descuento",
+          "column_id": 8,
+          "columna": "Ds_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Encabezado",
+          "column_id": 25,
+          "columna": "Vn_Descuento_Global_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Encabezado",
+          "column_id": 26,
+          "columna": "Vn_Precio_Lista_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Encabezado",
+          "column_id": 27,
+          "columna": "Vn_Descuento_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Encabezado",
+          "column_id": 28,
+          "columna": "Vn_Precio_Descontado_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Encabezado",
+          "column_id": 29,
+          "columna": "Vn_Impuesto_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Encabezado",
+          "column_id": 30,
+          "columna": "Vn_Precio_Neto_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Encabezado",
+          "column_id": 31,
+          "columna": "Vn_Cargo_Monedero_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Impuesto",
+          "column_id": 6,
+          "columna": "Im_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Impuesto",
+          "column_id": 9,
+          "columna": "Im_Cve_Impuesto",
+          "tipo": "nvarchar",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Kit",
+          "column_id": 6,
+          "columna": "Vn_Descuento_Global_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Kit",
+          "column_id": 20,
+          "columna": "Vn_Costo_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Kit",
+          "column_id": 22,
+          "columna": "Vn_Precio_Lista",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Kit",
+          "column_id": 23,
+          "columna": "Vn_Precio_Lista_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Kit",
+          "column_id": 25,
+          "columna": "Vn_Descuento_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Kit",
+          "column_id": 26,
+          "columna": "Vn_Precio_Descontado",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Kit",
+          "column_id": 27,
+          "columna": "Vn_Precio_Descontado_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Kit",
+          "column_id": 28,
+          "columna": "Vn_Impuesto_Factor",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Kit",
+          "column_id": 29,
+          "columna": "Vn_Impuesto_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Kit",
+          "column_id": 30,
+          "columna": "Vn_Precio_Neto",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Kit",
+          "column_id": 31,
+          "columna": "Vn_Precio_Neto_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Total_Impuesto",
+          "column_id": 3,
+          "columna": "Vt_Impuesto",
+          "tipo": "nvarchar",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Total_Impuesto",
+          "column_id": 4,
+          "columna": "Vt_SubTotal_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Total_Impuesto",
+          "column_id": 5,
+          "columna": "Vt_Impuesto_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "Venta_Total_Impuesto",
+          "column_id": 6,
+          "columna": "Vt_Total_Importe",
+          "tipo": "decimal",
+          "precision": 18,
+          "scale": 9
+        }
+      ],
+      "mpro_samples": {
+        "Venta_Encabezado": {
+          "filas_muestreadas": 500,
+          "columnas": {
+            "Vn_Impuesto_Importe": {
+              "valores": 500,
+              "no_cero": 476,
+              "suma": "236381.309103443",
+              "min": "0E-9",
+              "max": "5529.931034482"
+            },
+            "Vn_Descuento_Global_Importe": {
+              "valores": 500,
+              "no_cero": 46,
+              "suma": "17919.816896556",
+              "min": "0E-9",
+              "max": "2393.965517239"
+            },
+            "Vn_Precio_Lista_Importe": {
+              "valores": 500,
+              "no_cero": 500,
+              "suma": "1517052.454827577",
+              "min": "43.103448276",
+              "max": "34562.068965513"
+            },
+            "Vn_Descuento_Importe": {
+              "valores": 500,
+              "no_cero": 23,
+              "suma": "21749.456034481",
+              "min": "0E-9",
+              "max": "4555.893965517"
+            },
+            "Vn_Precio_Descontado_Importe": {
+              "valores": 500,
+              "no_cero": 500,
+              "suma": "1495302.998793084",
+              "min": "43.103448276",
+              "max": "34562.068965513"
+            },
+            "Vn_Precio_Neto_Importe": {
+              "valores": 500,
+              "no_cero": 476,
+              "suma": "1713764.490999972",
+              "min": "0E-9",
+              "max": "40091.999999995"
+            },
+            "Vn_Cargo_Monedero_Importe": {
+              "valores": 500,
+              "no_cero": 0,
+              "suma": "0E-9",
+              "min": "0E-9",
+              "max": "0E-9"
+            }
+          }
+        },
+        "Venta": {
+          "filas_muestreadas": 500,
+          "columnas": {
+            "Vn_Impuesto_Factor": {
+              "valores": 500,
+              "no_cero": 500,
+              "suma": "80.000000000",
+              "min": "0.160000000",
+              "max": "0.160000000"
+            },
+            "Vn_Impuesto_Importe": {
+              "valores": 500,
+              "no_cero": 373,
+              "suma": "9787.561793095",
+              "min": "0E-9",
+              "max": "441.379310345"
+            },
+            "Vn_Descuento_Global_Importe": {
+              "valores": 500,
+              "no_cero": 11,
+              "suma": "2546.982758618",
+              "min": "0E-9",
+              "max": "1538.171826589"
+            },
+            "Vn_Costo_Importe": {
+              "valores": 500,
+              "no_cero": 0,
+              "suma": "0E-9",
+              "min": "0E-9",
+              "max": "0E-9"
+            },
+            "Vn_Precio_Lista": {
+              "valores": 500,
+              "no_cero": 373,
+              "suma": "47990.405172419",
+              "min": "0E-9",
+              "max": "1206.896551724"
+            },
+            "Vn_Precio_Lista_Importe": {
+              "valores": 500,
+              "no_cero": 373,
+              "suma": "70533.767241385",
+              "min": "0E-9",
+              "max": "6698.275862069"
+            },
+            "Vn_Descuento_Importe": {
+              "valores": 500,
+              "no_cero": 6,
+              "suma": "6814.523275862",
+              "min": "0E-9",
+              "max": "4163.648275862"
+            },
+            "Vn_Precio_Descontado": {
+              "valores": 500,
+              "no_cero": 373,
+              "suma": "44744.723275865",
+              "min": "0E-9",
+              "max": "1206.896551724"
+            },
+            "Vn_Precio_Descontado_Importe": {
+              "valores": 500,
+              "no_cero": 373,
+              "suma": "63719.243965521",
+              "min": "0E-9",
+              "max": "2758.620689655"
+            },
+            "Vn_Precio_Neto": {
+              "valores": 500,
+              "no_cero": 373,
+              "suma": "50732.146217723",
+              "min": "0E-9",
+              "max": "1400.000000000"
+            },
+            "Vn_Precio_Neto_Importe": {
+              "valores": 500,
+              "no_cero": 373,
+              "suma": "70959.822999998",
+              "min": "0E-9",
+              "max": "3200.000000000"
+            }
+          }
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+      "server_name": "CIENFUEGOS",
+      "system_type": "SOFTRESTAURANT",
+      "units": [
+        "CIENFUEGOS"
+      ],
+      "status": "error",
+      "error_type": "ImportError"
+    },
+    {
+      "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+      "server_name": "LA ESTELAR",
+      "system_type": "SOFTRESTAURANT",
+      "units": [
+        "ESTELAR"
+      ],
+      "database_name": "softrestaurant12",
+      "login_permissions": {
+        "can_insert": 0,
+        "can_update": 0,
+        "can_delete": 0,
+        "can_alter": 0
+      },
+      "inventory": [
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 7,
+          "columna": "precio",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 8,
+          "columna": "impuesto1",
+          "tipo": "numeric",
+          "precision": 5,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 9,
+          "columna": "impuesto2",
+          "tipo": "numeric",
+          "precision": 5,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 10,
+          "columna": "impuesto3",
+          "tipo": "numeric",
+          "precision": 5,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 11,
+          "columna": "preciosinimpuestos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 24,
+          "columna": "preciocatalogo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 41,
+          "columna": "subtotalsrx",
+          "tipo": "numeric",
+          "precision": 7,
+          "scale": 5
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 42,
+          "columna": "totalsrx",
+          "tipo": "numeric",
+          "precision": 7,
+          "scale": 5
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 44,
+          "columna": "idlistaprecio",
+          "tipo": "int",
+          "precision": 10,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 46,
+          "columna": "impuestoimporte3",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 51,
+          "columna": "preciosinimpuestos_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdet",
+          "column_id": 52,
+          "columna": "precio_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdetf",
+          "column_id": 7,
+          "columna": "precio",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdetf",
+          "column_id": 8,
+          "columna": "impuesto1",
+          "tipo": "numeric",
+          "precision": 5,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdetf",
+          "column_id": 9,
+          "columna": "impuesto2",
+          "tipo": "numeric",
+          "precision": 5,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdetf",
+          "column_id": 10,
+          "columna": "impuesto3",
+          "tipo": "numeric",
+          "precision": 5,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdetf",
+          "column_id": 11,
+          "columna": "preciosinimpuestos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdetf",
+          "column_id": 24,
+          "columna": "preciocatalogo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdetf",
+          "column_id": 36,
+          "columna": "preciosinimpuestos_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdetf",
+          "column_id": 37,
+          "columna": "precio_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqdetfeliminados",
+          "column_id": 5,
+          "columna": "precio",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheqerp",
+          "column_id": 8,
+          "columna": "propina",
+          "tipo": "bit",
+          "precision": 1,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 36,
+          "columna": "propinapagada",
+          "tipo": "bit",
+          "precision": 1,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 37,
+          "columna": "propinafoliomovtocaja",
+          "tipo": "numeric",
+          "precision": 8,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 39,
+          "columna": "propinaincluida",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 43,
+          "columna": "propinamanual",
+          "tipo": "bit",
+          "precision": 1,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 49,
+          "columna": "totalarticulos",
+          "tipo": "numeric",
+          "precision": 11,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 50,
+          "columna": "subtotal",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 51,
+          "columna": "subtotalsinimpuestos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 52,
+          "columna": "total",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 53,
+          "columna": "totalconpropina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 54,
+          "columna": "totalimpuesto1",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 56,
+          "columna": "totalconcargo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 57,
+          "columna": "totalconpropinacargo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 58,
+          "columna": "descuentoimporte",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 63,
+          "columna": "propina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 64,
+          "columna": "propinatarjeta",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 68,
+          "columna": "importecomision",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 75,
+          "columna": "totalsindescuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 76,
+          "columna": "totalalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 77,
+          "columna": "totalbebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 78,
+          "columna": "totalotros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 79,
+          "columna": "totaldescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 80,
+          "columna": "totaldescuentoalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 81,
+          "columna": "totaldescuentobebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 82,
+          "columna": "totaldescuentootros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 83,
+          "columna": "totalcortesias",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 84,
+          "columna": "totalcortesiaalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 85,
+          "columna": "totalcortesiabebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 86,
+          "columna": "totalcortesiaotros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 87,
+          "columna": "totaldescuentoycortesia",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 88,
+          "columna": "totalalimentossindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 89,
+          "columna": "totalbebidassindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 90,
+          "columna": "totalotrossindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 94,
+          "columna": "subtotalcondescuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 111,
+          "columna": "totalimpuestod1",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 112,
+          "columna": "totalimpuestod2",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 113,
+          "columna": "totalimpuestod3",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 154,
+          "columna": "totalcondonativo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 155,
+          "columna": "totalconpropinacargodonativo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 170,
+          "columna": "sl_importe_descuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 177,
+          "columna": "subtotal_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 178,
+          "columna": "total_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 179,
+          "columna": "totalconpropinacargo_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques",
+          "column_id": 182,
+          "columna": "totalsindescuentoimp",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 13,
+          "columna": "totalarticulos",
+          "tipo": "decimal",
+          "precision": 11,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 14,
+          "columna": "subtotal",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 15,
+          "columna": "total",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 16,
+          "columna": "totalconpropina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 17,
+          "columna": "totalimpuesto1",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 18,
+          "columna": "totalconcargo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 19,
+          "columna": "totalconpropinacargo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 20,
+          "columna": "descuentoimporte",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 25,
+          "columna": "propina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 26,
+          "columna": "propinatarjeta",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 27,
+          "columna": "totalsindescuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 28,
+          "columna": "totalalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 29,
+          "columna": "totalbebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 30,
+          "columna": "totalotros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 31,
+          "columna": "totaldescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 32,
+          "columna": "totaldescuentoalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 33,
+          "columna": "totaldescuentobebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 34,
+          "columna": "totaldescuentootros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 35,
+          "columna": "totalcortesias",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 36,
+          "columna": "totalcortesiaalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 37,
+          "columna": "totalcortesiabebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 38,
+          "columna": "totalcortesiaotros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 39,
+          "columna": "totaldescuentoycortesia",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 40,
+          "columna": "totalalimentossindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 41,
+          "columna": "totalbebidassindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 42,
+          "columna": "totalotrossindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 44,
+          "columna": "subtotalcondescuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 45,
+          "columna": "totalimpuestod1",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "cheques_log",
+          "column_id": 47,
+          "columna": "totalsindescuentoimp",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 36,
+          "columna": "propinapagada",
+          "tipo": "bit",
+          "precision": 1,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 37,
+          "columna": "propinafoliomovtocaja",
+          "tipo": "bigint",
+          "precision": 19,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 39,
+          "columna": "propinaincluida",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 42,
+          "columna": "propinamanual",
+          "tipo": "bit",
+          "precision": 1,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 50,
+          "columna": "totalarticulos",
+          "tipo": "numeric",
+          "precision": 11,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 51,
+          "columna": "subtotal",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 52,
+          "columna": "subtotalsinimpuestos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 53,
+          "columna": "total",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 54,
+          "columna": "totalconpropina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 55,
+          "columna": "totalimpuesto1",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 57,
+          "columna": "totalconcargo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 58,
+          "columna": "totalconpropinacargo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 59,
+          "columna": "descuentoimporte",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 64,
+          "columna": "propina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 65,
+          "columna": "propinatarjeta",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 69,
+          "columna": "importecomision",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 77,
+          "columna": "totalsindescuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 78,
+          "columna": "totalalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 79,
+          "columna": "totalbebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 80,
+          "columna": "totalotros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 81,
+          "columna": "totaldescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 82,
+          "columna": "totaldescuentoalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 83,
+          "columna": "totaldescuentobebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 84,
+          "columna": "totaldescuentootros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 85,
+          "columna": "totalcortesias",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 86,
+          "columna": "totalcortesiaalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 87,
+          "columna": "totalcortesiabebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 88,
+          "columna": "totalcortesiaotros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 89,
+          "columna": "totaldescuentoycortesia",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 90,
+          "columna": "totalalimentossindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 91,
+          "columna": "totalbebidassindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 92,
+          "columna": "totalotrossindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 96,
+          "columna": "subtotalcondescuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 108,
+          "columna": "totalimpuestod1",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 109,
+          "columna": "totalimpuestod2",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 110,
+          "columna": "totalimpuestod3",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 136,
+          "columna": "totalcondonativo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 137,
+          "columna": "totalconpropinacargodonativo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 150,
+          "columna": "sl_importe_descuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 155,
+          "columna": "subtotal_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 156,
+          "columna": "total_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 157,
+          "columna": "totalconpropinacargo_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequesf",
+          "column_id": 162,
+          "columna": "totalsindescuentoimp",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagos",
+          "column_id": 3,
+          "columna": "importe",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagos",
+          "column_id": 4,
+          "columna": "propina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagos",
+          "column_id": 10,
+          "columna": "importe_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagos",
+          "column_id": 11,
+          "columna": "propina_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagos",
+          "column_id": 14,
+          "columna": "importe_cashdro",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagos_log",
+          "column_id": 4,
+          "columna": "importe",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagosf",
+          "column_id": 3,
+          "columna": "importe",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagosf",
+          "column_id": 4,
+          "columna": "propina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagosf",
+          "column_id": 8,
+          "columna": "importe_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "chequespagosf",
+          "column_id": 9,
+          "columna": "propina_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 7,
+          "columna": "precio",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 8,
+          "columna": "impuesto1",
+          "tipo": "numeric",
+          "precision": 5,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 9,
+          "columna": "impuesto2",
+          "tipo": "numeric",
+          "precision": 5,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 10,
+          "columna": "impuesto3",
+          "tipo": "numeric",
+          "precision": 5,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 11,
+          "columna": "preciosinimpuestos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 24,
+          "columna": "preciocatalogo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 41,
+          "columna": "subtotalsrx",
+          "tipo": "numeric",
+          "precision": 7,
+          "scale": 5
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 42,
+          "columna": "totalsrx",
+          "tipo": "numeric",
+          "precision": 7,
+          "scale": 5
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 44,
+          "columna": "idlistaprecio",
+          "tipo": "int",
+          "precision": 10,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 46,
+          "columna": "impuestoimporte3",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 53,
+          "columna": "preciosinimpuestos_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheqdet",
+          "column_id": 54,
+          "columna": "precio_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 36,
+          "columna": "propinapagada",
+          "tipo": "bit",
+          "precision": 1,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 37,
+          "columna": "propinafoliomovtocaja",
+          "tipo": "bigint",
+          "precision": 19,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 39,
+          "columna": "propinaincluida",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 42,
+          "columna": "propinamanual",
+          "tipo": "bit",
+          "precision": 1,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 50,
+          "columna": "totalarticulos",
+          "tipo": "numeric",
+          "precision": 11,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 51,
+          "columna": "subtotal",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 52,
+          "columna": "subtotalsinimpuestos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 53,
+          "columna": "total",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 54,
+          "columna": "totalconpropina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 55,
+          "columna": "totalimpuesto1",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 57,
+          "columna": "totalconcargo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 58,
+          "columna": "totalconpropinacargo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 59,
+          "columna": "descuentoimporte",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 64,
+          "columna": "propina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 65,
+          "columna": "propinatarjeta",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 69,
+          "columna": "importecomision",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 76,
+          "columna": "totalsindescuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 77,
+          "columna": "totalalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 78,
+          "columna": "totalbebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 79,
+          "columna": "totalotros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 80,
+          "columna": "totaldescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 81,
+          "columna": "totaldescuentoalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 82,
+          "columna": "totaldescuentobebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 83,
+          "columna": "totaldescuentootros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 84,
+          "columna": "totalcortesias",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 85,
+          "columna": "totalcortesiaalimentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 86,
+          "columna": "totalcortesiabebidas",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 87,
+          "columna": "totalcortesiaotros",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 88,
+          "columna": "totaldescuentoycortesia",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 89,
+          "columna": "totalalimentossindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 90,
+          "columna": "totalbebidassindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 91,
+          "columna": "totalotrossindescuentos",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 95,
+          "columna": "subtotalcondescuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 112,
+          "columna": "totalimpuestod1",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 113,
+          "columna": "totalimpuestod2",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 114,
+          "columna": "totalimpuestod3",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 157,
+          "columna": "totalcondonativo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 158,
+          "columna": "totalconpropinacargodonativo",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 173,
+          "columna": "sl_importe_descuento",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 184,
+          "columna": "subtotal_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 185,
+          "columna": "total_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 186,
+          "columna": "totalconpropinacargo_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempcheques",
+          "column_id": 189,
+          "columna": "totalsindescuentoimp",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempchequespagos",
+          "column_id": 3,
+          "columna": "importe",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempchequespagos",
+          "column_id": 4,
+          "columna": "propina",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempchequespagos",
+          "column_id": 8,
+          "columna": "importe_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempchequespagos",
+          "column_id": 9,
+          "columna": "propina_ec",
+          "tipo": "varbinary",
+          "precision": 0,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "tempchequespagos",
+          "column_id": 12,
+          "columna": "importe_cashdro",
+          "tipo": "money",
+          "precision": 19,
+          "scale": 4
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "xpPasoVentaCabecero",
+          "column_id": 7,
+          "columna": "Importe",
+          "tipo": "decimal",
+          "precision": 12,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "xpPasoVentaCabecero",
+          "column_id": 9,
+          "columna": "Impuestos",
+          "tipo": "decimal",
+          "precision": 12,
+          "scale": 2
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "xpPasoVentaDetalle",
+          "column_id": 5,
+          "columna": "Impuesto1",
+          "tipo": "float",
+          "precision": 53,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "xpPasoVentaDetalle",
+          "column_id": 6,
+          "columna": "Impuesto2",
+          "tipo": "float",
+          "precision": 53,
+          "scale": 0
+        },
+        {
+          "esquema": "dbo",
+          "tabla": "xpPasoVentaDetalle",
+          "column_id": 7,
+          "columna": "Impuesto3",
+          "tipo": "float",
+          "precision": 53,
+          "scale": 0
+        }
+      ],
+      "softrestaurant_reconciliation": {
+        "tickets_muestreados": 200,
+        "tickets_con_detalle": 200,
+        "tickets_detalle_con_diferencia_impuestos": 200,
+        "tickets_venta_visible_coincide_detalle_con_impuestos": 67,
+        "tickets_venta_visible_coincide_detalle_sin_impuestos": 0,
+        "suma_venta_sin_propina": "214203.0900",
+        "suma_propina": "22591.9100",
+        "suma_detalle_con_impuestos": "236795.0000",
+        "suma_detalle_sin_impuestos": "204133.6049"
+      },
+      "status": "ok"
+    }
+  ]
+}

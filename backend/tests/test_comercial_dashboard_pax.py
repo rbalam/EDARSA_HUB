@@ -49,10 +49,10 @@ def test_pax_no_es_cero_y_coincide_con_canonico():
 
 
 def test_pax_promedio_derivado_correcto():
-    """pax_promedio = pax / cheques (> 0)."""
+    """El consumo por persona canónico es ventas_total / pax_total."""
     kpi = _get_kpis_periodo_edarsahub(SERVER_130MID, DESDE, HASTA, 'DEFAULT')
-    pax_prom = kpi['pax'] / kpi['cheques'] if kpi['cheques'] else 0
-    assert pax_prom > 0
+    consumo_persona = kpi['ventas'] / kpi['pax'] if kpi['pax'] else 0
+    assert consumo_persona > 0
 
 
 def test_detalle_view_sin_columna_activo_devuelve_filas():

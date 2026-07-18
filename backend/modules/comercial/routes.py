@@ -1550,7 +1550,7 @@ async def _tablero_ejecutivo_internal(
                                     'cheques': 0,
                                     '_rows': 0,
                                 })
-                                item['ventas'] += float(row.get('ventas_sin_propina') or row.get('ventas_total') or 0)
+                                item['ventas'] += float(row.get('ventas_total') or 0)
                                 item['pax'] += int(row.get('pax_total') or 0)
                                 item['cheques'] += int(row.get('tickets_total') or 0)
                                 item['_rows'] += 1
@@ -3101,7 +3101,8 @@ async def comercial_mesas(
             })
 
         ticket_promedio = total_venta / total_cuentas if total_cuentas > 0 else 0
-        pax_promedio = total_comensales / total_cuentas if total_cuentas > 0 else 0
+        pax_promedio = total_venta / total_comensales if total_comensales > 0 else 0
+        pax_por_cheque = total_comensales / total_cuentas if total_cuentas > 0 else 0
         rotacion_promedio = total_cuentas / total_mesas if total_mesas > 0 else 0
         vueltas_por_hora_pico = max([_safe_float(m.get("vueltas"), 0) for m in rotacion_por_mesa], default=0)
 
@@ -3115,6 +3116,7 @@ async def comercial_mesas(
             "ticket_promedio": round(ticket_promedio, 2),
             "cheque_promedio": round(ticket_promedio, 2),
             "pax_promedio": round(pax_promedio, 2),
+            "pax_por_cheque": round(pax_por_cheque, 2),
             "vueltas_por_dia": round(total_cuentas, 2),
             "vueltas_por_hora_pico": round(vueltas_por_hora_pico, 2)
         }

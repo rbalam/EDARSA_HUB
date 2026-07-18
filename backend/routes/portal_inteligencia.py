@@ -189,12 +189,25 @@ async def intel_portal_guard(request: Request):
     # 2) ¿Usuario externo del portal de inteligencia?
     user = get_current_intel_user(request)  # lanza 401/403 si no válido
     allowed = user.get("unidades") or []
-    request.state.intel_unidades = allowed
+    from core.unidades_service import UnidadesService
+
+    allowed_pks = {
+        str(pk)
+        for value in allowed
+        for pk in (UnidadesService.resolver_pk(value),)
+        if pk
+    }
+    if not allowed_pks:
+        raise HTTPException(
+            status_code=403,
+            detail="El usuario no tiene unidades canónicas activas asignadas.",
+        )
+    request.state.intel_unidades = sorted(allowed_pks)
     request.state.intel_user = user
 
     # Exentos del chequeo de unidad (endpoints que no filtran por unidad)
     path = request.url.path.rstrip("/")
-    exentos = ("/unidades",)
+    exentos = ("/unidades", "/paginas")
     if any(path.endswith(e) for e in exentos):
         return
 
@@ -204,8 +217,15 @@ async def intel_portal_guard(request: Request):
             status_code=403,
             detail="Selecciona una de tus unidades asignadas (la vista consolidada de todas no está disponible para tu usuario).",
         )
-    if unidad not in allowed:
+    unidad_pk = UnidadesService.resolver_pk(unidad)
+    if not unidad_pk:
+        raise HTTPException(
+            status_code=400,
+            detail="Unidad de negocio inválida o inactiva.",
+        )
+    if str(unidad_pk) not in allowed_pks:
         raise HTTPException(status_code=403, detail="No tienes acceso a esa unidad de negocio.")
+    request.state.intel_unidad_pk = str(unidad_pk)
 
 
 # ============================================================================

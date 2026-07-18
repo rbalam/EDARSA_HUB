@@ -229,7 +229,6 @@ class SyncComercialEndpointsJob:
                     cursor.execute("""
                         SELECT 
                             ISNULL(SUM(ventas_total), 0) as VentaBrutaActual,
-                            ISNULL(SUM(ventas_sin_propina), 0) as VentaNetaActual,
                             ISNULL(AVG(ticket_promedio), 0) as TicketPromedioActual,
                             ISNULL(SUM(tickets_total), 0) as CuentasActual,
                             ISNULL(SUM(pax_total), 0) as ComensalesActual,

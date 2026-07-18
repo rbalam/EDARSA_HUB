@@ -5,13 +5,13 @@ Servicio CANÓNICO de KPIs Comerciales (centralizado — máxima de centralizaci
 Compras, Inteligencia Comercial, Benchmark, Pricing) DEBE consumir estas
 definiciones en lugar de recalcularlas. Glosario canónico con sinónimos:
 
-  ventas           = venta NETA (sin propina)  ·  la propina NO es venta
-  ventas_brutas    = venta con propina (referencia)
+  ventas           = ventas_total con IVA; propinas separadas
   propinas         = propinas_total
   cheques          = tickets = comandas = cuentas cerradas
-  cheque_promedio  = ventas_sin_propina / CHEQUES   (promedio por CUENTA)
+  cheque_promedio  = ventas_total / CHEQUES   (promedio por CUENTA)
   pax              = comensales
-  ticket_promedio  = ventas_sin_propina / PAX       (promedio por COMENSAL; = venta_por_pax)
+  ticket_promedio  = alias legacy de cheque_promedio
+  pax_promedio     = ventas_total / PAX
   cheques_por_pax  = rotación por comensal           (cheques / pax)
 
 Fuente NO-LIVE: dbo.vw_Comercial_KPIs_Diarios_v2_Runtime (vista runtime canónica diaria).

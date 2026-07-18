@@ -151,7 +151,6 @@ TIPOS_SYNC = {
         'rango_max_dias': 30,
         'nivel_riesgo': 'MEDIO',
         'separa_propinas': True,
-        'campo_venta_sin_propina': 'ventas_sin_propina',
         'handler_implementado': True
     }
 }
@@ -282,7 +281,6 @@ def _validar_dias_existentes(unidad_negocio_id: str, fecha_inicio: date, fecha_f
         SELECT 
             fecha_operacion,
             ventas_total,
-            ventas_sin_propina,
             propinas_total,
             tickets_total,
             sync_run_id
@@ -300,7 +298,6 @@ def _validar_dias_existentes(unidad_negocio_id: str, fecha_inicio: date, fecha_f
                 {
                     'fecha': str(r['fecha_operacion']),
                     'ventas_total': float(r['ventas_total'] or 0),
-                    'ventas_sin_propina': float(r['ventas_sin_propina'] or 0),
                     'propinas': float(r.get('propinas_total') or 0),
                     'tickets': int(r.get('tickets_total') or 0),
                     'sync_run_id': r.get('sync_run_id')
@@ -1084,7 +1081,6 @@ async def _ejecutar_dry_run(
                 SELECT 
                     CAST(fecha AS DATE) AS fecha_operacion,
                     SUM(total) AS ventas_total,
-                    SUM(total - ISNULL(propina, 0)) AS ventas_sin_propina,
                     SUM(ISNULL(propina, 0)) AS propinas_total,
                     COUNT(DISTINCT folio) AS tickets_total,
                     SUM(ISNULL(nopersonas, 1)) AS pax_total
@@ -1100,7 +1096,6 @@ async def _ejecutar_dry_run(
                 SELECT 
                     CAST(ve.Vn_Fecha AS DATE) AS fecha_operacion,
                     SUM(ve.Vn_Precio_Neto_Importe) AS ventas_total,
-                    SUM(ve.Vn_Precio_Neto_Importe) AS ventas_sin_propina,
                     0 AS propinas_total,
                     COUNT(DISTINCT ve.Vn_Folio) AS tickets_total,
                     SUM(ISNULL(c.Co_Personas, 1)) AS pax_total
@@ -1131,7 +1126,6 @@ async def _ejecutar_dry_run(
                 'fecha': str(d['fecha_operacion']),
                 'accion': 'INSERT/UPDATE',
                 'ventas_total': float(d['ventas_total'] or 0),
-                'ventas_sin_propina': float(d['ventas_sin_propina'] or 0),
                 'propinas_total': float(d['propinas_total'] or 0),
                 'tickets_total': int(d['tickets_total'] or 0),
                 'pax_total': int(d['pax_total'] or 0)

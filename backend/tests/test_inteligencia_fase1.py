@@ -39,10 +39,9 @@ def test_dashboard_kpis_canonicos(token):
     d = _get(token, "/dashboard", periodo="mes")
     k = d["kpis"]
     assert k["ventas_totales"] > 0
-    assert k["ticket_promedio"] > 0, "ticket_promedio (ventas/PAX) debe existir y ser > 0"
+    assert k["ticket_promedio"] > 0, "ticket_promedio (ventas/tickets) debe existir y ser > 0"
     assert k["cheque_promedio"] > 0, "cheque_promedio (ventas/cheques) debe existir y ser > 0"
-    # cheque_promedio (por cuenta) >= ticket_promedio (por persona) salvo pax<cheques
-    assert k["cheque_promedio"] >= k["ticket_promedio"]
+    assert k["cheque_promedio"] == k["ticket_promedio"]
 
 
 def test_clasificacion_alimentos_bebidas_otros(token):

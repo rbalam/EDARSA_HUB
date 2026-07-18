@@ -204,10 +204,14 @@ def _ultimo_dia_con_datos(unidad_db: Optional[str]) -> date:
     tarjetas (horario/productos/casas/familias) se nutren del detalle; anclando
     aquí se evita que 'Día' caiga en una fecha con KPI pero sin detalle (vacío)."""
     where = "ISNULL(activo,1)=1"
-    if unidad_db:
-        where += f" AND unidad_negocio_nombre = '{unidad_db}'"
+    params = ()
+    unidad_codigo = _unidad_codigo_filtro(unidad_db)
+    if unidad_codigo:
+        where += " AND unidad_negocio_id = %s"
+        params = (unidad_codigo,)
     rows = execute_query(
-        f"SELECT MAX(fecha_operacion) AS m FROM Comercial_Inteligencia_VentasDetalleProducto WHERE {where}"
+        f"SELECT MAX(fecha_operacion) AS m FROM Comercial_Inteligencia_VentasDetalleProducto WHERE {where}",
+        params,
     )
     m = rows[0].get("m") if rows else None
     if isinstance(m, datetime):
@@ -289,21 +293,12 @@ def _kpi_cero_portal():
 
 
 def _unidad_pks_canonicas_portal(unidad_db=None):
-    """Resuelve unidad_nombre normalizado del portal a unidad_negocio_pk canónica."""
+    """Resuelve una unidad del portal a su PK mediante servicios canónicos."""
     if not unidad_db:
         return None
 
-    unidad_lit = _sql_literal(unidad_db)
-    sql = f"""
-        SELECT DISTINCT CONVERT(varchar(36), unidad_negocio_pk) AS unidad_pk
-        FROM dbo.Comercial_KPIs_Diarios_v2
-        WHERE ISNULL(activo,1)=1
-          AND ISNULL(es_demo,0)=0
-          AND unidad_negocio_pk IS NOT NULL
-          AND UPPER(LTRIM(RTRIM(unidad_negocio_nombre))) = UPPER(LTRIM(RTRIM('{unidad_lit}')))
-    """
-    rows = execute_query(sql)
-    return [str(r["unidad_pk"]) for r in rows if r.get("unidad_pk")]
+    unidad_pk = _resolver_unidad_pk_runtime(unidad_db)
+    return [str(unidad_pk)] if unidad_pk else []
 
 
 def _fecha_fin_exclusiva(fecha_fin):
@@ -319,7 +314,7 @@ def _resumen_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db=None):
     Dashboard IA ancla el periodo con vw_Comercial_KPIs_Diarios_v2_Runtime.
     El resumen debe leer la misma fuente para no perder el último día disponible.
     Ventas visibles del portal = ventas_total con IVA incluido.
-    ventas_sin_propina y propinas_total permanecen separados.
+    ventas_total y propinas_total permanecen separados.
     """
     where = [
         f"fecha_operacion >= '{_sql_literal(fecha_inicio)}'",
@@ -327,25 +322,15 @@ def _resumen_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db=None):
     ]
 
     if unidad_db:
-        unidad_lit = _sql_literal(unidad_db)
         unidad_pks = _unidad_pks_canonicas_portal(unidad_db)
-        if unidad_pks:
-            pks_sql = ",".join(f"'{_sql_literal(pk)}'" for pk in unidad_pks)
-            where.append(
-                "("
-                f"CONVERT(varchar(36), unidad_negocio_pk) IN ({pks_sql}) "
-                f"OR UPPER(LTRIM(RTRIM(unidad_negocio_nombre))) = UPPER(LTRIM(RTRIM('{unidad_lit}')))"
-                ")"
-            )
-        else:
-            where.append(
-                f"UPPER(LTRIM(RTRIM(unidad_negocio_nombre))) = UPPER(LTRIM(RTRIM('{unidad_lit}')))"
-            )
+        if not unidad_pks:
+            raise HTTPException(status_code=400, detail="Unidad de negocio inválida o inactiva.")
+        pks_sql = ",".join(f"'{_sql_literal(pk)}'" for pk in unidad_pks)
+        where.append(f"CONVERT(varchar(36), unidad_negocio_pk) IN ({pks_sql})")
 
     sql = f"""
         SELECT
             SUM(ISNULL(ventas_total, 0)) AS ventas_totales,
-            SUM(ISNULL(ventas_sin_propina, 0)) AS ventas_sin_propina,
             SUM(ISNULL(pax_total, 0)) AS pax_total,
             SUM(ISNULL(tickets_total, 0)) AS cheques_total,
             SUM(ISNULL(propinas_total, 0)) AS propinas_total,
@@ -425,7 +410,6 @@ def _ventas_por_unidad_canonico_portal(fecha_inicio, fecha_fin):
         SELECT
             unidad_negocio_nombre AS unidad,
             SUM(ventas_total) AS ventas,
-            SUM(ventas_sin_propina) AS ventas_sin_propina,
             SUM(pax_total) AS pax_total,
             SUM(tickets_total) AS tickets,
             SUM(propinas_total) AS propinas,
@@ -460,8 +444,11 @@ def _trend_pct(cur, prv):
 def _ultimo_dia_con_kpis(unidad_db: Optional[str], periodo: Optional[str] = None) -> date:
     """Ancla canónica para KPI principal desde dbo.vw_Comercial_KPIs_Diarios_v2_Runtime."""
     where = "1=1"
-    if unidad_db:
-        where += f" AND unidad_negocio_nombre = '{unidad_db}'"
+    params = ()
+    unidad_pk = _unidad_pk_filtro(unidad_db)
+    if unidad_pk:
+        where += " AND CONVERT(varchar(36), unidad_negocio_pk) = %s"
+        params = (unidad_pk,)
 
     sql = f"""
         SELECT MAX(fecha_operacion) AS m
@@ -469,7 +456,7 @@ def _ultimo_dia_con_kpis(unidad_db: Optional[str], periodo: Optional[str] = None
         WHERE {where}
     """
 
-    rows = execute_query(sql)
+    rows = execute_query(sql, params)
     m = rows[0].get("m") if rows else None
 
     if isinstance(m, datetime):
@@ -580,13 +567,35 @@ _SYNC_PROD = "Sync_Productos"                        # clasificación macro can�
 _CLAS_TABLA = "Comercial_ClasificacionesProducto"    # catálogo controlado de clasificación comercial
 
 
-def _detalle_where(unidad_db: Optional[str], fecha_inicio: str, fecha_fin: str, alias: str = "") -> str:
+def _unidad_pk_filtro(unidad_db: Optional[str]) -> Optional[str]:
+    if not unidad_db:
+        return None
+    unidad_pk = _resolver_unidad_pk_runtime(unidad_db)
+    if not unidad_pk:
+        raise HTTPException(status_code=400, detail="Unidad de negocio inválida o inactiva.")
+    return str(unidad_pk)
+
+
+def _unidad_codigo_filtro(unidad_db: Optional[str]) -> Optional[str]:
+    """Traduce la PK/código/nombre canónico al código usado por el detalle legacy."""
+    if not unidad_db:
+        return None
+    unidad_codigo = _resolver_unidad_codigo_runtime(unidad_db)
+    if not unidad_codigo:
+        raise HTTPException(status_code=400, detail="Unidad de negocio inválida o inactiva.")
+    return str(unidad_codigo)
+
+
+def _detalle_where(unidad_db: Optional[str], fecha_inicio: str, fecha_fin: str, alias: str = ""):
     a = (alias + ".") if alias else ""
     parts = [f"ISNULL({a}activo,1)=1",
-             f"{a}fecha_operacion BETWEEN '{fecha_inicio}' AND '{fecha_fin}'"]
-    if unidad_db:
-        parts.append(f"{a}unidad_negocio_nombre = '{unidad_db}'")
-    return " AND ".join(parts)
+             f"{a}fecha_operacion BETWEEN %s AND %s"]
+    params = [fecha_inicio, fecha_fin]
+    unidad_codigo = _unidad_codigo_filtro(unidad_db)
+    if unidad_codigo:
+        parts.append(f"{a}unidad_negocio_id = %s")
+        params.append(unidad_codigo)
+    return " AND ".join(parts), tuple(params)
 
 
 def _resolver_rango(unidad_db, periodo, fecha_inicio, fecha_fin):
@@ -610,13 +619,15 @@ def _resolver_rango(unidad_db, periodo, fecha_inicio, fecha_fin):
 
 
 def _real_detalle_total(unidad_db, fecha_inicio, fecha_fin) -> float:
+    where, params = _detalle_where(unidad_db, fecha_inicio, fecha_fin)
     rows = execute_query(
         f"SELECT SUM(importe_neto) AS t FROM {_DETALLE_TABLA} "
-        f"WHERE {_detalle_where(unidad_db, fecha_inicio, fecha_fin)}")
+        f"WHERE {where}", params)
     return float(rows[0]["t"] or 0) if rows and rows[0].get("t") is not None else 0.0
 
 
 def _real_top_productos(unidad_db, fecha_inicio, fecha_fin, limit=7):
+    where, params = _detalle_where(unidad_db, fecha_inicio, fecha_fin)
     sql = f"""
         SELECT TOP {int(limit)}
                producto_nombre AS nombre,
@@ -629,13 +640,13 @@ def _real_top_productos(unidad_db, fecha_inicio, fecha_fin, limit=7):
                SUM(importe_neto) AS ventas,
                SUM(propina) AS propina
         FROM {_DETALLE_TABLA}
-        WHERE {_detalle_where(unidad_db, fecha_inicio, fecha_fin)}
+        WHERE {where}
           AND producto_nombre IS NOT NULL AND producto_nombre <> ''
         GROUP BY producto_nombre
         ORDER BY SUM(importe_neto) DESC
     """
     out = []
-    for i, r in enumerate(execute_query(sql)):
+    for i, r in enumerate(execute_query(sql, params)):
         out.append({
             "id": i + 1,
             "producto": r["nombre"],
@@ -653,15 +664,16 @@ def _real_top_productos(unidad_db, fecha_inicio, fecha_fin, limit=7):
 
 
 def _real_familias(unidad_db, fecha_inicio, fecha_fin, total_ventas=None, limit=12):
+    where, params = _detalle_where(unidad_db, fecha_inicio, fecha_fin)
     sql = f"""
         SELECT TOP {int(limit)} familia_nombre AS familia, SUM(importe_neto) AS ventas
         FROM {_DETALLE_TABLA}
-        WHERE {_detalle_where(unidad_db, fecha_inicio, fecha_fin)}
+        WHERE {where}
           AND familia_nombre IS NOT NULL AND familia_nombre <> ''
         GROUP BY familia_nombre
         ORDER BY SUM(importe_neto) DESC
     """
-    rows = execute_query(sql)
+    rows = execute_query(sql, params)
     base = total_ventas if total_ventas else (sum(float(r["ventas"] or 0) for r in rows) or 1)
     return [{"familia": (r["familia"] or "").strip(),
              "ventas": round(float(r["ventas"] or 0), 2),
@@ -669,19 +681,20 @@ def _real_familias(unidad_db, fecha_inicio, fecha_fin, total_ventas=None, limit=
 
 
 def _real_familias_nested(unidad_db, fecha_inicio, fecha_fin, limit_fam=20):
+    where, params = _detalle_where(unidad_db, fecha_inicio, fecha_fin)
     """Familias con sus subfamilias (datos reales). Para la pantalla Familia/Subfamilia."""
     sql = f"""
         SELECT familia_nombre AS familia,
                ISNULL(NULLIF(LTRIM(RTRIM(subfamilia_nombre)), ''), '(Sin subfamilia)') AS subfamilia,
                SUM(importe_neto) AS ventas, SUM(cantidad) AS cantidad
         FROM {_DETALLE_TABLA}
-        WHERE {_detalle_where(unidad_db, fecha_inicio, fecha_fin)}
+        WHERE {where}
           AND familia_nombre IS NOT NULL AND familia_nombre <> ''
         GROUP BY familia_nombre,
                  ISNULL(NULLIF(LTRIM(RTRIM(subfamilia_nombre)), ''), '(Sin subfamilia)')
     """
     fam_map = {}
-    for r in execute_query(sql):
+    for r in execute_query(sql, params):
         fam = (r["familia"] or "").strip()
         v = float(r["ventas"] or 0)
         c = float(r["cantidad"] or 0)
@@ -712,7 +725,7 @@ def _real_casas(unidad_db, fecha_inicio, fecha_fin, total_ventas=None, limit=12)
     # Ricard, etc.), unido por producto_id. NO-LIVE (ambas tablas en EDARSAHUB).
     # Productos sin enriquecer (alimentos, etc.) quedan fuera (correcto: solo bebidas
     # tienen casa distribuidora).
-    where_d = _detalle_where(unidad_db, fecha_inicio, fecha_fin, alias="d")
+    where_d, params = _detalle_where(unidad_db, fecha_inicio, fecha_fin, alias="d")
     sql = f"""
         SELECT TOP {int(limit)} e.grupo_comercial AS casa,
                SUM(d.importe_neto) AS ventas, SUM(d.cantidad) AS cantidad
@@ -723,7 +736,7 @@ def _real_casas(unidad_db, fecha_inicio, fecha_fin, total_ventas=None, limit=12)
         GROUP BY e.grupo_comercial
         ORDER BY SUM(d.importe_neto) DESC
     """
-    rows = execute_query(sql)
+    rows = execute_query(sql, params)
     base = total_ventas if total_ventas else (sum(float(r["ventas"] or 0) for r in rows) or 1)
     return [{"casa": (r["casa"] or "").strip(),
              "ventas": round(float(r["ventas"] or 0), 2),
@@ -736,7 +749,7 @@ def _real_clasificacion_nested(unidad_db, fecha_inicio, fecha_fin):
     (ALIMENTOS/BEBIDAS/OTROS/PENDIENTE_CLASIFICACION) es DATO CANÓNICO del producto:
     se lee de Sync_Productos.ClasificacionProductoID → Comercial_ClasificacionesProducto
     (catálogo controlado), unido por producto_id. SIN CASE en el endpoint."""
-    where_d = _detalle_where(unidad_db, fecha_inicio, fecha_fin, alias="d")
+    where_d, params = _detalle_where(unidad_db, fecha_inicio, fecha_fin, alias="d")
     sql = f"""
         SELECT ISNULL(cc.Codigo, 'PENDIENTE_CLASIFICACION') AS clasificacion,
                ISNULL(NULLIF(LTRIM(RTRIM(d.familia_nombre)), ''), '(Sin familia)') AS familia,
@@ -754,7 +767,7 @@ def _real_clasificacion_nested(unidad_db, fecha_inicio, fecha_fin):
     fam_cat_ventas = {}   # familia -> {clasificacion: ventas}
     fam_subs = {}         # familia -> {subfamilia: {ventas, cantidad}}
     fam_tot = {}          # familia -> {ventas, cantidad}
-    for r in execute_query(sql):
+    for r in execute_query(sql, params):
         clas = r["clasificacion"]
         fam = r["familia"]
         sub = r["subfamilia"]
@@ -805,7 +818,7 @@ _GRADO_BUCKETS = [(0, 0, "Sin alcohol (0°)"), (0.1, 15, "1–15°"),
 def _real_alcohol(unidad_db, fecha_inicio, fecha_fin):
     """Reporte de bebidas: con/sin alcohol y por grado, desde el Catálogo
     Enriquecido (es_alcoholico/grado_alcohol), unido por producto_id. NO-LIVE."""
-    where_d = _detalle_where(unidad_db, fecha_inicio, fecha_fin, alias="d")
+    where_d, params = _detalle_where(unidad_db, fecha_inicio, fecha_fin, alias="d")
     sql = f"""
         SELECT e.es_alcoholico AS es_alcoholico, e.grado_alcohol AS grado,
                SUM(d.importe_neto) AS ventas, SUM(d.cantidad) AS cantidad
@@ -814,7 +827,7 @@ def _real_alcohol(unidad_db, fecha_inicio, fecha_fin):
         WHERE {where_d}
         GROUP BY e.es_alcoholico, e.grado_alcohol
     """
-    rows = execute_query(sql)
+    rows = execute_query(sql, params)
     con = {"label": "Con alcohol", "ventas": 0.0, "cantidad": 0.0}
     sin = {"label": "Sin alcohol", "ventas": 0.0, "cantidad": 0.0}
     grados = {b[2]: {"rango": b[2], "ventas": 0.0, "cantidad": 0.0} for b in _GRADO_BUCKETS}
@@ -847,7 +860,7 @@ def _real_alcohol(unidad_db, fecha_inicio, fecha_fin):
 
 def _real_tickets(unidad_db, fecha_inicio, fecha_fin, limit=200):
     """Lista de tickets (cuentas) reconstruidos desde el detalle — nivel cuenta."""
-    where_d = _detalle_where(unidad_db, fecha_inicio, fecha_fin)
+    where_d, params = _detalle_where(unidad_db, fecha_inicio, fecha_fin)
     sql = f"""
         SELECT TOP {int(limit)} unidad_negocio_nombre AS unidad, sucursal_nombre AS sucursal,
                fecha_operacion, numero_ticket, MIN(fecha_hora) AS fh, MAX(pax) AS pax,
@@ -858,7 +871,7 @@ def _real_tickets(unidad_db, fecha_inicio, fecha_fin, limit=200):
         ORDER BY MIN(fecha_hora) DESC, SUM(importe_neto) DESC
     """
     out = []
-    for r in execute_query(sql):
+    for r in execute_query(sql, params):
         out.append({
             "unidad": r["unidad"], "sucursal": r.get("sucursal"),
             "fecha": str(r["fecha_operacion"])[:10], "numero_ticket": r["numero_ticket"],
@@ -877,9 +890,10 @@ def _real_ticket_lineas(unidad_db, fecha, numero_ticket):
     if fecha:
         where.append("d.fecha_operacion = %s")
         params.append(fecha)
-    if unidad_db:
-        where.append("d.unidad_negocio_nombre = %s")
-        params.append(unidad_db)
+    unidad_codigo = _unidad_codigo_filtro(unidad_db)
+    if unidad_codigo:
+        where.append("d.unidad_negocio_id = %s")
+        params.append(unidad_codigo)
     sql = f"""
         SELECT d.producto_codigo_fuente AS codigo, d.producto_nombre AS producto,
                d.familia_nombre AS familia, d.subfamilia_nombre AS subfamilia,
@@ -945,13 +959,14 @@ def _real_horario(unidad_db, fecha_inicio, fecha_fin):
                      "WHEN DATEPART(hour, fh) BETWEEN 13 AND 18 THEN 'Comida' ELSE 'Cena' END")
         orden_map = {"Desayuno": 0, "Comida": 1, "Cena": 2}
         rango_map = {}
+    where_d, params = _detalle_where(unidad_db, fecha_inicio, fecha_fin)
     sql = f"""
         WITH tk AS (
             SELECT unidad_negocio_nombre, fecha_operacion, numero_ticket,
                    MIN(fecha_hora) AS fh, MAX(pax) AS pax,
                    SUM(importe_neto) AS ventas, SUM(propina) AS propinas
             FROM {_DETALLE_TABLA}
-            WHERE {_detalle_where(unidad_db, fecha_inicio, fecha_fin)}
+            WHERE {where_d}
             GROUP BY unidad_negocio_nombre, fecha_operacion, numero_ticket
         )
         SELECT {case_expr} AS horario,
@@ -961,7 +976,7 @@ def _real_horario(unidad_db, fecha_inicio, fecha_fin):
         GROUP BY {case_expr}
     """
     out = []
-    for r in execute_query(sql):
+    for r in execute_query(sql, params):
         ventas = round(float(r["ventas"] or 0), 2)
         cheques = int(r["cheques"] or 0)
         pax = int(r["pax"] or 0)
@@ -1517,8 +1532,8 @@ def _real_productos_subfamilia(unidad_db, fi, ff, familia, subfamilia, limit=200
     """Productos de venta dentro de una familia/subfamilia (nivel más bajo del
     reporte Familia→Subfamilia→Producto). Maneja los marcadores '(Sin familia)'
     y '(Sin subfamilia)' como NULL/vacío en la fuente."""
-    where = [_detalle_where(unidad_db, fi, ff)]
-    params = []
+    detalle_where, detalle_params = _detalle_where(unidad_db, fi, ff)
+    where, params = [detalle_where], list(detalle_params)
     if familia == "(Sin familia)":
         where.append("(familia_nombre IS NULL OR LTRIM(RTRIM(familia_nombre))='')")
     else:

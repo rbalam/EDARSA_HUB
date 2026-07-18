@@ -63,25 +63,173 @@ END;
 
 # (codigo, label, descripcion, formato, operacion, campo_base, numerador, denominador, excluye_propina, orden)
 METRICAS = [
-    ("ventas", "Ventas (neto, sin propina)", "Venta neta; la propina NO es venta.", "moneda", "campo", "ventas_sin_propina", None, None, 1, 10),
-    ("ventas_brutas", "Ventas brutas (con propina)", "Venta incluyendo propina (referencia).", "moneda", "campo", "ventas", None, None, 0, 20),
-    ("propinas", "Propinas", "Total de propinas.", "moneda", "campo", "propinas", None, None, 0, 30),
-    ("cheques", "Cheques", "Número de cuentas/cheques (tickets/comandas).", "entero", "campo", "cheques", None, None, 0, 40),
-    ("pax", "PAX (comensales)", "Número de comensales.", "entero", "campo", "pax", None, None, 0, 50),
-    ("cheque_promedio", "Cheque promedio (x cuenta)", "Ventas (sin propina) / cheques.", "moneda", "ratio", None, "ventas_sin_propina", "cheques", 1, 60),
-    ("ticket_promedio", "Ticket promedio (x comensal)", "Ventas (sin propina) / PAX.", "moneda", "ratio", None, "ventas_sin_propina", "pax", 1, 70),
-    ("cheques_por_pax", "Cheques por PAX", "Cheques / PAX (rotación por comensal).", "decimal", "ratio", None, "cheques", "pax", 0, 80),
+    (
+        "ventas",
+        "Ventas con IVA",
+        "Venta visible para tableros y reportes; propinas separadas.",
+        "moneda",
+        "campo",
+        "ventas",
+        None,
+        None,
+        0,
+        10,
+    ),
+    (
+        "ventas_sin_propina",
+        "Ventas sin propina",
+        "Métrica auxiliar; no sustituye la venta visible.",
+        "moneda",
+        "campo",
+        "ventas_sin_propina",
+        None,
+        None,
+        1,
+        20,
+    ),
+    (
+        "propinas",
+        "Propinas",
+        "Total de propinas separado de ventas.",
+        "moneda",
+        "campo",
+        "propinas",
+        None,
+        None,
+        0,
+        30,
+    ),
+    (
+        "cheques",
+        "Cheques",
+        "Número de cuentas, tickets o comandas.",
+        "entero",
+        "campo",
+        "cheques",
+        None,
+        None,
+        0,
+        40,
+    ),
+    (
+        "pax",
+        "PAX",
+        "Número de comensales.",
+        "entero",
+        "campo",
+        "pax",
+        None,
+        None,
+        0,
+        50,
+    ),
+    (
+        "cheque_promedio",
+        "Cheque promedio",
+        "Ventas con IVA / cheques.",
+        "moneda",
+        "ratio",
+        None,
+        "ventas",
+        "cheques",
+        0,
+        60,
+    ),
+    (
+        "ticket_promedio",
+        "Cheque promedio (alias legacy)",
+        "Alias compatible de cheque_promedio.",
+        "moneda",
+        "ratio",
+        None,
+        "ventas",
+        "cheques",
+        0,
+        70,
+    ),
+    (
+        "pax_promedio",
+        "Consumo promedio por PAX",
+        "Ventas con IVA / PAX.",
+        "moneda",
+        "ratio",
+        None,
+        "ventas",
+        "pax",
+        0,
+        80,
+    ),
+    (
+        "pax_por_cheque",
+        "PAX por cheque",
+        "PAX / cheques.",
+        "decimal",
+        "ratio",
+        None,
+        "pax",
+        "cheques",
+        0,
+        90,
+    ),
+    (
+        "cheques_por_pax",
+        "Cheques por PAX",
+        "Cheques / PAX.",
+        "decimal",
+        "ratio",
+        None,
+        "cheques",
+        "pax",
+        0,
+        100,
+    ),
 ]
 
 SINONIMOS = {
-    "ventas": ["venta_neta", "ventas_netas", "ventas_sin_propina"],
-    "ventas_brutas": ["venta_total", "ventas_total", "ventas_con_propina"],
-    "propinas": ["propina", "propinas_total"],
-    "cheques": ["tickets", "comandas", "cuentas", "tickets_total"],
-    "pax": ["comensales", "pax_total"],
-    "cheque_promedio": ["cheque_medio"],
-    "ticket_promedio": ["venta_por_pax", "consumo_per_capita", "consumo_promedio_pax", "venta_pax", "ticket_medio"],
-    "cheques_por_pax": ["rotacion_por_comensal"],
+    "ventas": [
+        "venta_total",
+        "ventas_total",
+        "ventas_con_iva",
+        "ventas_visibles",
+    ],
+    "ventas_sin_propina": [
+        "venta_neta",
+        "ventas_netas",
+    ],
+    "propinas": [
+        "propina",
+        "propinas_total",
+    ],
+    "cheques": [
+        "tickets",
+        "comandas",
+        "cuentas",
+        "tickets_total",
+    ],
+    "pax": [
+        "comensales",
+        "pax_total",
+    ],
+    "cheque_promedio": [
+        "cheque_medio",
+    ],
+    "ticket_promedio": [
+        "ticket_medio",
+    ],
+    "pax_promedio": [
+        "venta_por_pax",
+        "consumo_per_capita",
+        "consumo_promedio_pax",
+        "venta_pax",
+    ],
+    "pax_por_cheque": [
+        "personas_por_cheque",
+        "personas_por_cuenta",
+        "pax_por_ticket",
+    ],
+    "cheques_por_pax": [
+        "rotacion_por_comensal",
+    ],
 }
 
 UPSERT_METRICA = """
@@ -90,15 +238,35 @@ USING (SELECT %s AS codigo) AS s ON t.codigo = s.codigo
 WHEN MATCHED THEN UPDATE SET
     label=%s, descripcion=%s, formato=%s, operacion=%s, campo_base=%s,
     numerador=%s, denominador=%s, excluye_propina=%s, orden=%s,
-    version=t.version+1, updated_at=SYSUTCDATETIME(), modified_by='migration', activo=1
+    version=t.version, updated_at=SYSUTCDATETIME(), modified_by='migration', activo=1
 WHEN NOT MATCHED THEN INSERT
     (codigo, label, descripcion, formato, operacion, campo_base, numerador, denominador, excluye_propina, orden, created_by)
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'migration');
 """
 
 UPSERT_SINONIMO = """
-IF NOT EXISTS (SELECT 1 FROM dbo.Comercial_Metricas_Sinonimos WHERE sinonimo=%s)
-INSERT INTO dbo.Comercial_Metricas_Sinonimos (metrica_codigo, sinonimo) VALUES (%s, %s);
+MERGE dbo.Comercial_Metricas_Sinonimos AS target
+USING (
+    SELECT
+        %s AS sinonimo,
+        %s AS metrica_codigo
+) AS source
+ON target.sinonimo = source.sinonimo
+WHEN MATCHED THEN
+    UPDATE SET
+        metrica_codigo = source.metrica_codigo,
+        activo = 1
+WHEN NOT MATCHED THEN
+    INSERT (
+        metrica_codigo,
+        sinonimo,
+        activo
+    )
+    VALUES (
+        source.metrica_codigo,
+        source.sinonimo,
+        1
+    );
 """
 
 
@@ -111,6 +279,8 @@ def run():
 
     for m in METRICAS:
         codigo, label, desc, fmt, op, cb, num, den, exprop, orden = m
+        if codigo == "ventas_sin_propina":
+            continue
         cur.execute(UPSERT_METRICA, (
             codigo, label, desc, fmt, op, cb, num, den, exprop, orden,
             codigo, label, desc, fmt, op, cb, num, den, exprop, orden,
@@ -118,13 +288,35 @@ def run():
     conn.commit()
     logger.info("UPSERT %d métricas", len(METRICAS))
 
+    cur.execute("""
+        UPDATE dbo.Comercial_Metricas_Canonicas
+        SET
+            activo = 0,
+            updated_at = SYSUTCDATETIME(),
+            modified_by = 'migration'
+        WHERE codigo IN ('ventas_brutas', 'ventas_sin_propina');
+    """)
+    conn.commit()
+
     n_sin = 0
     for codigo, alias in SINONIMOS.items():
+        if codigo == "ventas_sin_propina":
+            continue
         for a in alias:
-            cur.execute(UPSERT_SINONIMO, (a, codigo, a))
+            cur.execute(UPSERT_SINONIMO, (a, codigo))
             n_sin += 1
     conn.commit()
     logger.info("UPSERT %d sinónimos", n_sin)
+    cur.execute("""
+        UPDATE dbo.Comercial_Metricas_Sinonimos
+        SET activo = 0
+        WHERE sinonimo IN (
+            'venta_neta',
+            'ventas_netas',
+            'ventas_con_propina'
+        );
+    """)
+    conn.commit()
 
     cur.execute("SELECT COUNT(*) FROM dbo.Comercial_Metricas_Canonicas")
     nm = cur.fetchone()[0]

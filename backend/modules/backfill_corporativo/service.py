@@ -946,7 +946,8 @@ def _backfill_ventas_real(cur, server_id: str, fecha_inicio: str, fecha_fin: str
                 scur.execute("""
                 SELECT
                     CAST(t.apertura AS DATE) AS fecha,
-                    SUM(ISNULL(c.total,0) - ISNULL(c.propina,0)) AS ventas_netas,
+                    SUM(ISNULL(c.total,0)) AS ventas_total,
+                    SUM(ISNULL(c.propina,0)) AS propinas_total,
                     COUNT(*) AS num_cheques,
                     SUM(ISNULL(c.nopersonas,0)) AS pax
                 FROM cheques c
@@ -962,7 +963,8 @@ def _backfill_ventas_real(cur, server_id: str, fecha_inicio: str, fecha_fin: str
                 scur.execute("""
                 SELECT
                     CAST(VE.Vn_Fecha AS DATE) AS fecha,
-                    SUM(ISNULL(VE.Vn_Precio_Neto_Importe,0)) AS ventas_netas,
+                    SUM(ISNULL(VE.Vn_Precio_Neto_Importe,0)) AS ventas_total,
+                    CAST(0 AS DECIMAL(18,2)) AS propinas_total,
                     COUNT(*) AS num_cheques,
                     SUM(ISNULL(C.Co_Personas,0)) AS pax
                 FROM Venta_Encabezado VE
@@ -992,7 +994,7 @@ def _backfill_ventas_real(cur, server_id: str, fecha_inicio: str, fecha_fin: str
             })
             continue
 
-        # data viene como tupla (fecha, ventas_netas, num_cheques, pax) por índice
+        # data: (fecha, ventas_total, propinas_total, num_cheques, pax)
         ventas_raw = data[1] if data else 0
         if not data or float(ventas_raw or 0) <= 0:
             sin_datos += 1
@@ -1003,9 +1005,11 @@ def _backfill_ventas_real(cur, server_id: str, fecha_inicio: str, fecha_fin: str
             continue
 
         ventas = float(data[1] or 0)
-        cheques = int(data[2] or 0)
-        pax = int(data[3] or 0)
+        propinas = float(data[2] or 0)
+        cheques = int(data[3] or 0)
+        pax = int(data[4] or 0)
         ticket_promedio = ventas / cheques if cheques else 0
+        pax_promedio = ventas / pax if pax else 0
 
         cur.execute("""
         SELECT COUNT(*) AS cnt
@@ -1021,14 +1025,19 @@ def _backfill_ventas_real(cur, server_id: str, fecha_inicio: str, fecha_fin: str
             UPDATE Comercial_KPIs_Diarios_v2
             SET
                 ventas_total = %s,
+                propinas_total = %s,
                 tickets_total = %s,
                 pax_total = %s,
                 ticket_promedio = %s,
+                pax_promedio = %s,
                 source_status = 'BACKFILL_REAL',
                 fecha_sync = GETDATE()
             WHERE CAST(server_id AS NVARCHAR(100)) = CAST(%s AS NVARCHAR(100))
               AND fecha_operacion = %s
-            """, (ventas, cheques, pax, ticket_promedio, server_id, fecha_str))
+            """, (
+                ventas, propinas, cheques, pax, ticket_promedio, pax_promedio,
+                server_id, fecha_str,
+            ))
             actualizados += 1
         else:
             cur.execute("""
@@ -1036,22 +1045,29 @@ def _backfill_ventas_real(cur, server_id: str, fecha_inicio: str, fecha_fin: str
                 server_id,
                 fecha_operacion,
                 ventas_total,
+                propinas_total,
                 tickets_total,
                 pax_total,
                 ticket_promedio,
+                pax_promedio,
                 source_status,
                 fecha_sync
             )
-            VALUES (%s, %s, %s, %s, %s, %s, 'BACKFILL_REAL', GETDATE())
-            """, (server_id, fecha_str, ventas, cheques, pax, ticket_promedio))
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'BACKFILL_REAL', GETDATE())
+            """, (
+                server_id, fecha_str, ventas, propinas, cheques, pax,
+                ticket_promedio, pax_promedio,
+            ))
             insertados += 1
 
         source_results.append({
             "fecha": fecha_str,
             "status": "SYNCED",
             "ventas_total": ventas,
+            "propinas_total": propinas,
             "tickets_total": cheques,
-            "pax_total": pax
+            "pax_total": pax,
+            "pax_promedio": pax_promedio,
         })
 
     src.close()

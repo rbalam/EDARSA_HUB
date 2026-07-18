@@ -51,10 +51,10 @@ def test_kpis_periodo_no_fuerza_sucursal_default():
     )
 
 
-def test_kpis_periodo_usa_ventas_sin_propina():
+def test_kpis_periodo_usa_ventas_total():
     bloque = _extraer_bloque("_get_kpis_periodo_edarsahub")
-    assert "SUM(ventas_sin_propina)" in bloque
-    assert "SUM(ventas_total)" not in bloque
+    assert "SUM(ventas_total)" in bloque
+    assert "SUM(ventas_sin_propina)" not in bloque
 
 
 def test_gatekeeper_ultimo_dia_usa_unidad_negocio_id():

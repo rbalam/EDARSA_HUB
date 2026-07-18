@@ -37,21 +37,19 @@ def calcular_hash_origen(
     fecha: date,
     ventas_total: Decimal,
     tickets_total: int,
-    pax_total: int,
-    ventas_sin_propina=None
+    pax_total: int
 ) -> str:
     """
     Calcula un hash SHA256 único para identificar el origen de los datos.
     Permite detectar duplicados y cambios en el sync.
     
     Composición del hash:
-    - server_id + sucursal_id + fecha + ventas_total + ventas_sin_propina + tickets + pax + version_semantica
+    - server_id + sucursal_id + fecha + ventas_total + tickets + pax + version_semantica
     """
-    ventas_hash = ventas_sin_propina if ventas_sin_propina is not None else ventas_total
     data_string = (
         f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
-        f"{ventas_total}|{ventas_hash}|{tickets_total}|{pax_total}|"
-        "kpi_visible_sin_propina_v1"
+        f"{ventas_total}|{tickets_total}|{pax_total}|"
+        "kpi_ventas_total_v2"
     )
     return hashlib.sha256(data_string.encode('utf-8')).hexdigest()[:32]
 
@@ -85,7 +83,6 @@ def map_softrestaurant_ventas_cerradas(
     Campos esperados del query SoftRestaurant:
     - fecha: date
     - ventas_total: Decimal (total de cheques)
-    - ventas_sin_propina: Decimal (total - propinas)
     - propinas: Decimal
     - num_cheques: int
     - num_personas: int
@@ -95,7 +92,6 @@ def map_softrestaurant_ventas_cerradas(
         fecha = datetime.strptime(fecha, '%Y-%m-%d').date()
     
     ventas_total = Decimal(str(row.get('ventas_total', 0) or 0))
-    ventas_sin_propina = Decimal(str(row.get('ventas_sin_propina', 0) or 0))
     propinas = Decimal(str(row.get('propinas', 0) or 0))
     tickets = int(row.get('num_cheques', 0) or 0)
     pax = int(row.get('num_personas', 0) or 0)
@@ -110,8 +106,7 @@ def map_softrestaurant_ventas_cerradas(
         fecha,
         ventas_total,
         tickets,
-        pax,
-        ventas_sin_propina
+        pax
     )
     
     return KPIsDiariosV2(
@@ -128,15 +123,14 @@ def map_softrestaurant_ventas_cerradas(
         dia=fecha.day,
         
         ventas_total=ventas_total,
-        ventas_sin_propina=ventas_sin_propina,
         propinas_total=propinas,
         tickets_total=tickets,
         pax_total=pax,
         ticket_promedio=ticket_promedio,
         pax_promedio=pax_promedio,
-        ventas_cerradas=ventas_sin_propina,
+        ventas_cerradas=ventas_total,
         ventas_abiertas=Decimal("0"),
-        total_estimado_dia=ventas_sin_propina,
+        total_estimado_dia=ventas_total,
         
         es_venta_abierta=False,
         es_corte_cerrado=True,
@@ -225,7 +219,6 @@ def map_mpro_ventas_cerradas(
     
     # MPRO no maneja propinas en la venta directa
     ventas_total = Decimal(str(row.get('Vn_Precio_Neto_Importe', 0) or 0))
-    ventas_sin_propina = ventas_total  # MPRO: ventas ya son netas
     propinas = Decimal("0")  # Propinas se manejan aparte en MPRO
     tickets = int(row.get('num_folios', 0) or 0)
     pax = int(row.get('total_personas', 0) or 0)
@@ -240,8 +233,7 @@ def map_mpro_ventas_cerradas(
         fecha,
         ventas_total,
         tickets,
-        pax,
-        ventas_sin_propina
+        pax
     )
     
     return KPIsDiariosV2(
@@ -258,15 +250,14 @@ def map_mpro_ventas_cerradas(
         dia=fecha.day,
         
         ventas_total=ventas_total,
-        ventas_sin_propina=ventas_sin_propina,
         propinas_total=propinas,
         tickets_total=tickets,
         pax_total=pax,
         ticket_promedio=ticket_promedio,
         pax_promedio=pax_promedio,
-        ventas_cerradas=ventas_sin_propina,
+        ventas_cerradas=ventas_total,
         ventas_abiertas=Decimal("0"),
-        total_estimado_dia=ventas_sin_propina,
+        total_estimado_dia=ventas_total,
         
         es_venta_abierta=False,
         es_corte_cerrado=True,

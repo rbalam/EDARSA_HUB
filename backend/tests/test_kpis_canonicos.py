@@ -3,38 +3,40 @@
 - Catálogo SQL (resolver_metrica/calcular_metrica): integración (skip si no hay BD).
 
 CANÓNICO:
-- la propina NO es venta -> 'ventas' usa ventas_sin_propina.
-- cheque_promedio = ventas / CHEQUES (por cuenta)  [DISTINTO de ticket_promedio]
-- ticket_promedio = ventas / PAX (por comensal)
+- ventas = ventas_total con IVA; propinas se informan separadas.
+- cheque_promedio y ticket_promedio = ventas / cheques.
+- consumo_persona = ventas / pax.
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import pytest  # noqa: E402
 from core.kpis_canonicos import aplicar_definicion  # noqa: E402
 
-AGG = {"ventas": 1100.0, "ventas_sin_propina": 1000.0, "propinas": 100.0, "cheques": 50.0, "pax": 80.0}
+AGG = {"ventas": 1100.0, "propinas": 100.0, "cheques": 50.0, "pax": 80.0}
 
-DEF_VENTAS = {"operacion": "campo", "campo_base": "ventas_sin_propina"}
-DEF_BRUTAS = {"operacion": "campo", "campo_base": "ventas"}
-DEF_CHEQUE_PROM = {"operacion": "ratio", "numerador": "ventas_sin_propina", "denominador": "cheques"}
-DEF_TICKET_PROM = {"operacion": "ratio", "numerador": "ventas_sin_propina", "denominador": "pax"}
+DEF_VENTAS = {"operacion": "campo", "campo_base": "ventas"}
+DEF_CHEQUE_PROM = {"operacion": "ratio", "numerador": "ventas", "denominador": "cheques"}
+DEF_TICKET_PROM = {"operacion": "ratio", "numerador": "ventas", "denominador": "cheques"}
+DEF_CONSUMO_PERSONA = {"operacion": "ratio", "numerador": "ventas", "denominador": "pax"}
 
 
 # ---- Intérprete PURO (sin BD) ----
-def test_interprete_campo_ventas_sin_propina():
-    assert aplicar_definicion(AGG, DEF_VENTAS) == 1000.0       # propina NO es venta
-    assert aplicar_definicion(AGG, DEF_BRUTAS) == 1100.0
+def test_interprete_campo_ventas_total():
+    assert aplicar_definicion(AGG, DEF_VENTAS) == 1100.0
+    assert AGG["propinas"] == 100.0
 
 
-def test_interprete_cheque_vs_ticket_distintos():
-    assert aplicar_definicion(AGG, DEF_CHEQUE_PROM) == 20.0    # ventas/cheques
-    assert aplicar_definicion(AGG, DEF_TICKET_PROM) == 12.5    # ventas/pax
+def test_interprete_ratios_canonicos():
+    assert aplicar_definicion(AGG, DEF_CHEQUE_PROM) == 22.0
+    assert aplicar_definicion(AGG, DEF_TICKET_PROM) == 22.0
+    assert aplicar_definicion(AGG, DEF_CONSUMO_PERSONA) == 13.75
 
 
 def test_interprete_division_cero_segura():
-    a = {"ventas_sin_propina": 90.0, "cheques": 0.0, "pax": 0.0}
+    a = {"ventas": 90.0, "cheques": 0.0, "pax": 0.0}
     assert aplicar_definicion(a, DEF_CHEQUE_PROM) is None
     assert aplicar_definicion(a, DEF_TICKET_PROM) is None
+    assert aplicar_definicion(a, DEF_CONSUMO_PERSONA) is None
 
 
 def test_interprete_operacion_invalida():
@@ -56,9 +58,7 @@ def _sql_ok():
 def test_sql_glosario_y_sinonimos():
     from core.kpis_canonicos import KPIsCanonicosService, resolver_metrica
     assert resolver_metrica("tickets") == "cheques"
-    assert resolver_metrica("ventas_total") == "ventas_brutas"
-    assert resolver_metrica("ventas_sin_propina") == "ventas"
-    # ticket_promedio NO es sinónimo de cheque_promedio
+    assert resolver_metrica("ventas_total") == "ventas"
     assert resolver_metrica("cheque_promedio") == "cheque_promedio"
     assert resolver_metrica("ticket_promedio") == "ticket_promedio"
     assert resolver_metrica("venta_por_pax") == "ticket_promedio"
@@ -69,6 +69,6 @@ def test_sql_glosario_y_sinonimos():
 @pytest.mark.skipif(not _sql_ok(), reason="SQL no disponible")
 def test_sql_calcular_metrica():
     from core.kpis_canonicos import KPIsCanonicosService
-    assert KPIsCanonicosService.calcular_metrica(AGG, "cheque_promedio") == 20.0
-    assert KPIsCanonicosService.calcular_metrica(AGG, "ticket_promedio") == 12.5
-    assert KPIsCanonicosService.calcular_metrica(AGG, "ventas") == 1000.0
+    assert KPIsCanonicosService.calcular_metrica(AGG, "cheque_promedio") == 22.0
+    assert KPIsCanonicosService.calcular_metrica(AGG, "ticket_promedio") == 22.0
+    assert KPIsCanonicosService.calcular_metrica(AGG, "ventas") == 1100.0

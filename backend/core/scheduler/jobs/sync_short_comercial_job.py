@@ -254,7 +254,6 @@ def _normalize_kpis(raw_kpis: dict) -> dict:
     """
     return {
         "ventas": float(raw_kpis.get("ventas", 0) or 0),
-        "ventas_netas": float(raw_kpis.get("ventas_netas", raw_kpis.get("ventas", 0)) or 0),
         "pax": int(raw_kpis.get("pax", 0) or 0),
         "cheques": int(raw_kpis.get("cheques", raw_kpis.get("cuentas", 0)) or 0),
         "ticket_promedio": float(raw_kpis.get("ticket_promedio", 0) or 0),

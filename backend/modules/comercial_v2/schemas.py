@@ -68,7 +68,6 @@ class KPIsDiariosInput(BaseModel):
     
     # KPIs
     ventas_total: Decimal = Decimal("0")
-    ventas_sin_propina: Decimal = Decimal("0")
     propinas_total: Decimal = Decimal("0")
     tickets_total: int = 0
     pax_total: int = 0
@@ -120,7 +119,6 @@ class KPIsDiariosV2(BaseModel):
     
     # KPIs principales
     ventas_total: Decimal = Decimal("0")
-    ventas_sin_propina: Decimal = Decimal("0")
     propinas_total: Decimal = Decimal("0")
     tickets_total: int = 0
     pax_total: int = 0

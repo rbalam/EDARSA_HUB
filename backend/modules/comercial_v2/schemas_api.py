@@ -26,7 +26,6 @@ class UnidadKPIResponse(BaseModel):
     
     # Métricas
     ventas_total: float
-    ventas_sin_propina: Optional[float] = None
     propinas_total: Optional[float] = None
     tickets_total: int
     pax_total: int

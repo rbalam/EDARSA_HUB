@@ -74,7 +74,7 @@ def _meta(metrica, desde, hasta, ctx, source_table, advertencias):
 @router.get("/interno/unidades")
 async def benchmark_unidades(
     unidad: Optional[str] = Query(None, description="Unidad propia (codigo/pk) para diferencia/percentil"),
-    metrica: str = Query("cheque_promedio", pattern="^(ventas|ventas_brutas|ventas_sin_propina|propinas|tickets|cheques|pax|ticket_promedio|cheque_promedio|venta_por_pax|consumo_promedio_pax|cheques_por_pax)$"),
+    metrica: str = Query("cheque_promedio", pattern="^(ventas|propinas|tickets|cheques|pax|ticket_promedio|cheque_promedio|venta_por_pax|consumo_promedio_pax|cheques_por_pax)$"),
     desde: Optional[str] = None,
     hasta: Optional[str] = None,
     current_user: dict = Depends(get_current_user),

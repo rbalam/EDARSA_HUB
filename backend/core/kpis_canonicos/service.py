@@ -5,7 +5,7 @@ Las DEFINICIONES viven en SQL (dbo.Comercial_Metricas_Canonicas + _Sinonimos):
 administrables, documentables, auditables y versionables. Este servicio solo
 INTERPRETA la definición declarativa (operacion='campo'|'ratio') sobre los
 átomos base agregados desde dbo.Comercial_KPIs_Diarios_v2:
-  ventas, ventas_sin_propina, propinas, cheques, pax.
+  ventas, propinas, cheques, pax.
 
 Ver glosario en core/kpis_canonicos/__init__.py
 """
@@ -26,7 +26,7 @@ def _conn():
 
 
 # Átomos base disponibles (provienen de agregados_por_unidad)
-ATOMOS = {"ventas", "ventas_sin_propina", "propinas", "cheques", "pax"}
+ATOMOS = {"ventas", "propinas", "cheques", "pax"}
 
 
 def _safe_div(n, d):
@@ -69,6 +69,10 @@ class _Catalogo:
             )
             for r in rows:
                 defs[r["codigo"]] = dict(r)
+            if not defs:
+                raise RuntimeError(
+                    "Catálogo canónico vacío: dbo.Comercial_Metricas_Canonicas no devolvió métricas activas"
+                )
             sin = {c: c for c in defs}  # el código es su propio "sinónimo"
             srows = execute_sql_query_params(
                 *_conn(),
@@ -149,13 +153,12 @@ class KPIsCanonicosService:
         """
         Átomos base canónicos por unidad en [desde, hasta):
         {unidad_pk, unidad_codigo, unidad_nombre, server_id,
-         ventas, ventas_sin_propina, propinas, cheques, pax, dias}
+         ventas, propinas, cheques, pax, dias}
         Identidad resuelta SIEMPRE desde el catálogo canónico (UnidadesService).
         """
         sql = """
             SELECT CONVERT(varchar(36), unidad_negocio_pk) AS unidad_pk,
                    SUM(CAST(ventas_total AS float))       AS ventas,
-                   SUM(CAST(ventas_sin_propina AS float)) AS ventas_sin_propina,
                    SUM(CAST(propinas_total AS float))     AS propinas,
                    SUM(CAST(tickets_total AS float))      AS cheques,
                    SUM(CAST(pax_total AS float))          AS pax,
@@ -179,7 +182,6 @@ class KPIsCanonicosService:
                 continue
             out.append({**ident,
                         "ventas": float(r.get("ventas") or 0),
-                        "ventas_sin_propina": float(r.get("ventas_sin_propina") or 0),
                         "propinas": float(r.get("propinas") or 0),
                         "cheques": float(r.get("cheques") or 0),
                         "pax": float(r.get("pax") or 0),
@@ -217,7 +219,6 @@ class KPIsCanonicosService:
         de Comercial_Metricas_Canonicas cuando existen.
         """
         ventas_brutas = float(agregado.get("ventas") or 0)
-        ventas_netas = float(agregado.get("ventas_sin_propina") or 0)
         propinas = float(agregado.get("propinas") or 0)
         cheques = float(agregado.get("cheques") or 0)
         pax = float(agregado.get("pax") or 0)
@@ -234,20 +235,41 @@ class KPIsCanonicosService:
         except Exception as exc:
             logger.warning("[KPI-CANON] catálogo no disponible, usando aliases base: %s", exc)
 
-        # Aliases obligatorios V1.0. Se fijan aquí, no en rutas/endpoints.
+        # Contrato comercial V1.0:
+        # - ventas visibles = ventas_total, con IVA;
+        # - cheque_promedio = ventas / cheques;
+        # - pax_promedio = ventas / pax;
+        # - ticket_promedio se conserva exclusivamente como alias legacy
+        #   de cheque_promedio;
+        # - pax_por_cheque identifica personas por cuenta.
+        cheque_promedio = KPIsCanonicosService._div0(
+            ventas_brutas,
+            cheques,
+        )
+        pax_promedio = KPIsCanonicosService._div0(
+            ventas_brutas,
+            pax,
+        )
+
         metricas.update({
-            "ventas": ventas_netas,
-            "ventas_sin_propina": ventas_netas,
-            "ventas_brutas": ventas_brutas,
+            "ventas": ventas_brutas,
+            "ventas_total": ventas_brutas,
             "propinas": propinas,
             "tickets": cheques,
             "cheques": cheques,
             "pax": pax,
-            "cheque_promedio": KPIsCanonicosService._div0(ventas_netas, cheques),
-            "ticket_promedio": KPIsCanonicosService._div0(ventas_netas, pax),
-            "consumo_promedio_pax": KPIsCanonicosService._div0(ventas_netas, pax),
-            "pax_promedio": KPIsCanonicosService._div0(pax, cheques),
-            "cheques_por_pax": KPIsCanonicosService._div0(cheques, pax),
+            "cheque_promedio": cheque_promedio,
+            "ticket_promedio": cheque_promedio,
+            "consumo_promedio_pax": pax_promedio,
+            "pax_promedio": pax_promedio,
+            "pax_por_cheque": KPIsCanonicosService._div0(
+                pax,
+                cheques,
+            ),
+            "cheques_por_pax": KPIsCanonicosService._div0(
+                cheques,
+                pax,
+            ),
         })
 
         return metricas
@@ -260,7 +282,6 @@ class KPIsCanonicosService:
         """
         atomos = {
             "ventas": sum(float(a.get("ventas") or 0) for a in base),
-            "ventas_sin_propina": sum(float(a.get("ventas_sin_propina") or 0) for a in base),
             "propinas": sum(float(a.get("propinas") or 0) for a in base),
             "cheques": sum(float(a.get("cheques") or 0) for a in base),
             "pax": sum(float(a.get("pax") or 0) for a in base),
@@ -321,7 +342,6 @@ class KPIsCanonicosService:
                 MIN(fecha_operacion) AS fecha_inicio,
                 MAX(fecha_operacion) AS fecha_fin,
                 SUM(CAST(ventas_total AS float)) AS ventas,
-                SUM(CAST(ventas_sin_propina AS float)) AS ventas_sin_propina,
                 SUM(CAST(propinas_total AS float)) AS propinas,
                 SUM(CAST(tickets_total AS float)) AS cheques,
                 SUM(CAST(pax_total AS float)) AS pax,
@@ -341,7 +361,6 @@ class KPIsCanonicosService:
         for r in rows:
             agg = {
                 "ventas": float(r.get("ventas") or 0),
-                "ventas_sin_propina": float(r.get("ventas_sin_propina") or 0),
                 "propinas": float(r.get("propinas") or 0),
                 "cheques": float(r.get("cheques") or 0),
                 "pax": float(r.get("pax") or 0),

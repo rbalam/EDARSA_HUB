@@ -24,7 +24,7 @@ async def resumen(
     current_user: dict = Depends(get_current_user)
 ):
     # KPIs comerciales: fuente ÚNICA canónica (KPIsCanonicosService, NO-LIVE).
-    # Promedios usan ventas_sin_propina (neto) por definición canónica en SQL.
+    # Promedios usan ventas_total con IVA; propinas permanecen separadas.
     # El rango del servicio es [desde, hasta); convertimos fecha_fin a límite
     # exclusivo (+1 día) para preservar la semántica inclusiva del endpoint.
     try:

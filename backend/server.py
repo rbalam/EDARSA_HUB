@@ -571,7 +571,10 @@ api_router.include_router(portal_intel_router)
 # Endpoints: /api/reporteador-bi/*  | Fuente: EDARSAHUB SQL (NO-LIVE)
 # ============================================================================
 from modules.reporteador_bi.routes import router as reporteador_bi_router
-api_router.include_router(reporteador_bi_router)
+api_router.include_router(
+    reporteador_bi_router,
+    dependencies=[_DependsIntel(intel_portal_guard)],
+)
 
 # ============================================================================
 # INTELIGENCIA COMERCIAL FASE 1 - Endpoints SQL-First
@@ -18221,42 +18224,33 @@ async def shutdown_scheduler():
 # ==========================================
 @app.get("/api/download/schema")
 async def download_schema_zip():
-    """Descarga directa del schema EDARSAHUB en ZIP."""
-    import os
-    zip_path = "/app/backend/static/EDARSAHUB_SCHEMA_COMPLETO.zip"
-    if os.path.exists(zip_path):
-        return FileResponse(
-            path=zip_path,
-            filename="EDARSAHUB_SCHEMA_COMPLETO.zip",
-            media_type="application/zip"
-        )
-    raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "La descarga legacy fue retirada por seguridad. "
+            "Los respaldos no se publican desde la aplicación."
+        ),
+    )
 
 @app.get("/api/download/schema-sql")
 async def download_schema_sql():
-    """Descarga directa del schema EDARSAHUB en SQL."""
-    import os
-    sql_path = "/app/backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql"
-    if os.path.exists(sql_path):
-        return FileResponse(
-            path=sql_path,
-            filename="EDARSAHUB_SCHEMA_COMPLETO.sql",
-            media_type="application/sql"
-        )
-    raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "La descarga legacy fue retirada por seguridad. "
+            "El esquema no se publica desde la aplicación."
+        ),
+    )
 
 @app.get("/api/download/backup-full")
 async def download_backup_full():
-    """Descarga directa del backup completo EDARSAHUB (DDL + Data) en ZIP."""
-    import os
-    zip_path = "/app/backend/static/EDARSAHUB_BACKUP_FULL_20260603.zip"
-    if os.path.exists(zip_path):
-        return FileResponse(
-            path=zip_path,
-            filename="EDARSAHUB_BACKUP_FULL_20260603.zip",
-            media_type="application/zip"
-        )
-    raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "La descarga legacy fue retirada por seguridad. "
+            "Los respaldos no se publican desde la aplicación."
+        ),
+    )
 
 @app.get("/api/download/manual-desarrollo")
 async def download_manual_desarrollo():
@@ -18274,46 +18268,32 @@ async def download_manual_desarrollo():
 
 @app.get("/api/download/backup-db-completo")
 async def download_backup_db_completo():
-    """Descarga del respaldo completo de EDARSAHUB SQL (466 tablas en JSON)."""
-    import os
-    zip_path = "/app/backend/static/backup_db.zip"
-    if os.path.exists(zip_path):
-        return FileResponse(
-            path=zip_path,
-            filename="EDARSAHUB_SQL_BACKUP_COMPLETO.zip",
-            media_type="application/zip"
-        )
-    raise HTTPException(status_code=404, detail="Archivo de backup no encontrado")
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "La descarga legacy fue retirada por seguridad. "
+            "Los respaldos no se publican desde la aplicación."
+        ),
+    )
 
 @app.get("/api/download/backup-codigo-fuente")
 async def download_backup_codigo_fuente():
-    """Descarga del código fuente completo de EDARSAHUB (backend + frontend)."""
-    import os
-    zip_path = "/app/backend/static/backup_codigo.zip"
-    if os.path.exists(zip_path):
-        return FileResponse(
-            path=zip_path,
-            filename="EDARSAHUB_CODIGO_FUENTE_COMPLETO.zip",
-            media_type="application/zip"
-        )
-    raise HTTPException(status_code=404, detail="Archivo de código fuente no encontrado")
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "La descarga legacy fue retirada por seguridad. "
+            "Los respaldos no se publican desde la aplicación."
+        ),
+    )
 
 
 
 @app.get("/api/descargar/codigo")
 async def descargar_codigo_simple():
-    """Descarga directa del código - endpoint simplificado"""
-    from fastapi.responses import FileResponse
-    import os
-    zip_path = "/app/backend/static/backup_codigo.zip"
-    if os.path.exists(zip_path):
-        return FileResponse(
-            path=zip_path,
-            filename="codigo_edarsahub.zip",
-            media_type="application/octet-stream",
-            headers={
-                "Content-Disposition": "attachment; filename=codigo_edarsahub.zip",
-                "Cache-Control": "no-cache"
-            }
-        )
-    raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "La descarga legacy fue retirada por seguridad. "
+            "Los respaldos no se publican desde la aplicación."
+        ),
+    )

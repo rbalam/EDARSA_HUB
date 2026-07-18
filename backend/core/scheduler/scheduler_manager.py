@@ -53,6 +53,23 @@ from .jobs.sync_compras_job import execute_sync_compras
 logger = logging.getLogger(__name__)
 
 
+
+def _normalize_comercial_sync_status(value) -> str:
+    """Traduce estados del job Comercial V2 al contrato de JobLogger."""
+    normalized = str(value or "").strip().upper()
+
+    return {
+        "COMPLETADO": "success",
+        "COMPLETED": "success",
+        "SUCCESS": "success",
+        "PARCIAL": "partial",
+        "PARTIAL": "partial",
+        "FALLIDO": "failed",
+        "FAILED": "failed",
+        "ERROR": "failed",
+    }.get(normalized, "failed")
+
+
 class SchedulerManager:
     """
     Manager central del scheduler.
@@ -528,7 +545,9 @@ class SchedulerManager:
             # Finalizar log con éxito
             await job_logger.finish_execution(
                 log_entry=log_entry,
-                status=result.get("estatus_general", "unknown").lower(),
+                status=_normalize_comercial_sync_status(
+                    result.get("estatus_general")
+                ),
                 processed_count=result.get("total_insertados", 0) + result.get("total_actualizados", 0) + result.get("total_omitidos", 0),
                 success_count=result.get("unidades_exitosas", 0),
                 skipped_count=result.get("total_omitidos", 0),

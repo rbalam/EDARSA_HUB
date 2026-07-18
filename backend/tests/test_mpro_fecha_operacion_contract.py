@@ -138,7 +138,6 @@ def test_softrestaurant_conserva_calculo_por_timestamp_operativo(
             "fecha_hora": datetime(2026, 7, 11, 1, 30, 0),
             "folio": "CHEQUE-1",
             "ventas_total": 1000.00,
-            "ventas_sin_propina": 900.00,
             "propinas": 100.00,
             "num_personas": 4,
         }

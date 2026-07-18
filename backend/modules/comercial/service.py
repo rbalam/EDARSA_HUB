@@ -514,7 +514,7 @@ def _get_ultimo_dia_con_datos_edarsahub(server_id: str, mes: int, anio: int) -> 
     WHERE server_id = '{server_id}'
       AND anio = {anio}
       AND mes = {mes}
-      AND ventas_sin_propina > 0
+      AND ventas_total > 0
     """
     result = _query_edarsahub_tablero(query)
     if result and result[0].get('ultimo_dia'):
@@ -565,7 +565,7 @@ def _get_kpis_periodo_edarsahub(
     # Usar rangos semiabiertos: fecha >= ini AND fecha <= fin
     query = f"""
     SELECT 
-        ISNULL(SUM(ventas_sin_propina), 0) as ventas,
+        ISNULL(SUM(ventas_total), 0) as ventas,
         ISNULL(SUM(pax_total), 0) as pax_total,
         ISNULL(SUM(tickets_total), 0) as cheques,
         COUNT(*) as registros
@@ -573,7 +573,7 @@ def _get_kpis_periodo_edarsahub(
     WHERE {filtro_principal}
       AND fecha_operacion >= '{fecha_ini}'
       AND fecha_operacion <= '{fecha_fin}'
-      AND ventas_sin_propina > 0
+      AND ventas_total > 0
     """
     result = _query_edarsahub_tablero(query)
     
@@ -857,7 +857,7 @@ def _obtener_kpis_tablero_desde_edarsahub(
     WHERE unidad_negocio_id = '{unidad_negocio_pk}'
       AND fecha_operacion >= '{fecha_ini}'
       AND fecha_operacion <= '{fecha_fin}'
-      AND ventas_sin_propina > 0
+      AND ventas_total > 0
     """
     result_ultimo = _query_edarsahub_tablero(query_ultimo_dia)
     
@@ -1050,20 +1050,25 @@ def _obtener_kpis_tablero_desde_edarsahub(
 # - NUNCA usar aliases legacy (130-MER, 130-QRO, LA-ESTELAR)
 # - Los códigos canónicos son: 130MID, 130QRO, CIENFUEGOS, ESTELAR, ORIGEN
 # ============================================================================
-UNIDADES_EDARSAHUB_MAP = {
-    # SoftRestaurant
-    "a5547321-1139-4d2b-9d53-182ca737b6b6": {"unidad_negocio_pk": UnidadesService.resolver_codigo("130MID") or "130MID", "nombre": "130° MÉRIDA", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
-    "6d053c22-523e-48c0-b72b-96081e2d781b": {"unidad_negocio_pk": UnidadesService.resolver_codigo("CIENFUEGOS") or "CIENFUEGOS", "nombre": UnidadesService.resolver_codigo("CIENFUEGOS") or "CIENFUEGOS", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
-    "a5ff0e25-f029-43db-b634-d4ac814c904f": {"unidad_negocio_pk": UnidadesService.resolver_codigo("ESTELAR") or "ESTELAR", "nombre": "LA ESTELAR", "sucursal_id": "DEFAULT", "sistema": "SoftRestaurant"},
-    # MPRO (necesitan sucursal específica)
-    "1b230a06-ffaf-4c70-bd27-b1be3579dea6": {
-        "sucursales": {
-            "0021": {"unidad_negocio_pk": UnidadesService.resolver_codigo("130QRO") or "130QRO", "nombre": "130° QUERÉTARO"},
-            "0023": {"unidad_negocio_pk": UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN", "nombre": UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN"}
-        },
-        "sistema": "MPRO"
-    }
-}
+def _obtener_config_mpro_canonica(server_id: str) -> Dict[str, Any]:
+    """Construye el alcance MPRO desde dbo.Unidades_Negocio, sin mapas locales."""
+    sucursales = {}
+    for unidad in UnidadesService.get_all():
+        if str(unidad.get("server_id") or "") != str(server_id or ""):
+            continue
+        if str(unidad.get("system_type") or unidad.get("sistema") or "").upper() != "MPRO":
+            continue
+        sucursal_id = str(unidad.get("sucursal_origen_id") or "").strip()
+        unidad_pk = unidad.get("unidad_negocio_pk")
+        if not sucursal_id or not unidad_pk:
+            continue
+        sucursales[sucursal_id] = {
+            "unidad_negocio_pk": str(unidad_pk),
+            "nombre": unidad.get("nombre") or unidad.get("unidad_negocio_nombre") or sucursal_id,
+        }
+    if not sucursales:
+        return {}
+    return {"sucursales": sucursales, "sistema": "MPRO"}
 
 
 # ============================================================================
@@ -1530,7 +1535,7 @@ def get_kpis_mpro(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fe
     nombre = server.get('name', 'MPRO')
     
     # Obtener configuración de unidades MPRO
-    mpro_config = UNIDADES_EDARSAHUB_MAP.get(server_id, {})
+    mpro_config = _obtener_config_mpro_canonica(server_id)
     
     if not mpro_config or 'sucursales' not in mpro_config:
         logging.warning(f"[TABLERO-EDARSAHUB] {nombre}: server_id {server_id} no tiene mapeo de unidad MPRO")
@@ -2645,7 +2650,6 @@ def get_last_valid_snapshot_edarsahub(server_id: str) -> Dict:
                 fecha_operacion,
                 fecha_sincronizacion,
                 ventas_total,
-                ventas_sin_propina,
                 tickets_total,
                 pax_total,
                 ticket_promedio,
@@ -2672,7 +2676,7 @@ def get_last_valid_snapshot_edarsahub(server_id: str) -> Dict:
         return {
             'fecha_snapshot': fecha_snapshot,
             'kpis': {
-                'ventas_periodo': float(row['ventas_sin_propina'] or row['ventas_total'] or 0),
+                'ventas_periodo': float(row['ventas_total'] or 0),
                 'ticket_promedio': float(row['ticket_promedio'] or 0),
                 'cheques_total': int(row['tickets_total'] or 0),
                 'pax_total': int(row['pax_total'] or 0),
