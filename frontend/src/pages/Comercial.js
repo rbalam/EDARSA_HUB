@@ -1553,7 +1553,7 @@ function MesasComensales({ servers, unidadesNegocio, selectedUnidad, setSelected
                   <p className="text-xs text-zinc-400">Ticket Prom.</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-purple-400">{formatCurrency(datosUnidad.ticket_promedio)}</p>
+                  <p className="text-3xl font-bold text-purple-400">{formatCurrency(datosUnidad.pax_promedio ?? 0)}</p>
                   <p className="text-xs text-zinc-400">PAX Prom.</p>
                 </div>
               </div>
@@ -1812,19 +1812,19 @@ function ReportePax({ servers, unidadesNegocio, selectedUnidad, setSelectedUnida
           <Card className="border bg-gradient-to-br from-purple-50 to-white">
             <CardContent className="py-3 text-center">
               <p className="text-xs text-zinc-500">PAX Total</p>
-              <p className="text-2xl font-bold text-purple-600">{formatNumber(data.resumen.pax_total)}</p>
+              <p className="text-2xl font-bold text-purple-600">{formatNumber(data.resumen.pax_total ?? data.resumen.total_comensales)}</p>
             </CardContent>
           </Card>
           <Card className="border bg-gradient-to-br from-green-50 to-white">
             <CardContent className="py-3 text-center">
               <p className="text-xs text-zinc-500">Ventas Total</p>
-              <p className="text-xl font-bold text-green-600">{formatCurrency(data.resumen.ventas_total)}</p>
+              <p className="text-xl font-bold text-green-600">{formatCurrency(data.resumen.ventas_total ?? data.resumen.venta_total)}</p>
             </CardContent>
           </Card>
           <Card className="border bg-gradient-to-br from-blue-50 to-white">
             <CardContent className="py-3 text-center">
               <p className="text-xs text-zinc-500">Pax Promedio</p>
-              <p className="text-xl font-bold text-blue-600">{formatCurrency(data.resumen.ticket_promedio)}</p>
+              <p className="text-xl font-bold text-blue-600">{formatCurrency(data.resumen.pax_promedio ?? data.resumen.consumo_promedio_global ?? data.resumen.consumo_promedio_pax ?? 0)}</p>
             </CardContent>
           </Card>
           <Card className="border bg-gradient-to-br from-yellow-50 to-white">
@@ -1836,7 +1836,7 @@ function ReportePax({ servers, unidadesNegocio, selectedUnidad, setSelectedUnida
           <Card className="border bg-gradient-to-br from-zinc-50 to-white">
             <CardContent className="py-3 text-center">
               <p className="text-xs text-zinc-500">Total Cheques</p>
-              <p className="text-xl font-bold text-zinc-600">{data.resumen.total_cheques}</p>
+              <p className="text-xl font-bold text-zinc-600">{data.resumen.total_cheques ?? data.resumen.num_cheques ?? 0}</p>
             </CardContent>
           </Card>
         </div>

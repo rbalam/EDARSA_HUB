@@ -78,11 +78,11 @@ export default function DashboardEjecutivo() {
       {data && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <Kpi title="Ventas (neto)" value={money(data.kpis?.ventas)} />
+            <Kpi title="Ventas Totales" value={money(data.kpis?.ventas)} />
             <Kpi title="Cheques" value={num(data.kpis?.cheques ?? data.kpis?.tickets)} />
             <Kpi title="PAX" value={num(data.kpis?.pax)} />
             <Kpi title="Cheque Prom." value={money(data.kpis?.cheque_promedio)} />
-            <Kpi title="Consumo/PAX" value={money(data.kpis?.ticket_promedio ?? data.kpis?.consumo_promedio_pax)} />
+            <Kpi title="Consumo/PAX" value={money(data.kpis?.consumo_promedio_pax ?? data.kpis?.pax_promedio)} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -91,7 +91,7 @@ export default function DashboardEjecutivo() {
                 <thead>
                   <tr className="text-left border-b">
                     <th className="py-2">Unidad</th>
-                    <th className="py-2 text-right">Ventas (neto)</th>
+                    <th className="py-2 text-right">Ventas Totales</th>
                     <th className="py-2 text-right">Cheques</th>
                     <th className="py-2 text-right">PAX</th>
                   </tr>

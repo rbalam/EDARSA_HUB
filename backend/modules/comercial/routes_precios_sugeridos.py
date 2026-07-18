@@ -13,9 +13,11 @@ REGLAS:
 - CERO MongoDB
 """
 
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException
 from typing import Optional
 from pydantic import BaseModel, Field
+from core.security import get_current_user
+from core.rbac.middleware import require_permission
 
 from modules.comercial.services.precios_sugeridos_consolidado_service import (
     obtener_precios_sugeridos,
@@ -26,6 +28,17 @@ from modules.comercial.services.precios_sugeridos_consolidado_service import (
 )
 
 router = APIRouter(prefix="/comercial/pricing", tags=["Precios Sugeridos"])
+
+_PERMISO_PRECIOS_SUGERIDOS = "comercial.precios_sugeridos.generar"
+
+
+def _actor_from_user(current_user: dict, usuario: Optional[str] = None) -> str:
+    return (
+        (current_user or {}).get("email")
+        or (current_user or {}).get("username")
+        or usuario
+        or "sistema"
+    )
 
 
 # =============================================================================
@@ -71,7 +84,9 @@ async def get_precios_sugeridos(
     search: Optional[str] = Query(None, description="Buscar por nombre o codigo"),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
-    margen_objetivo: float = Query(0.35, ge=0.01, le=0.99, description="Margen objetivo para calculo")
+    margen_objetivo: float = Query(0.35, ge=0.01, le=0.99, description="Margen objetivo para calculo"),
+    current_user: dict = Depends(get_current_user),
+    _auth: dict = Depends(require_permission(_PERMISO_PRECIOS_SUGERIDOS))
 ):
     """
     Obtiene lista de productos con precios sugeridos calculados.
@@ -116,7 +131,10 @@ async def get_precios_sugeridos(
 # =============================================================================
 
 @router.get("/reglas/vinos/rangos")
-async def get_rangos_vinos():
+async def get_rangos_vinos(
+    current_user: dict = Depends(get_current_user),
+    _auth: dict = Depends(require_permission(_PERMISO_PRECIOS_SUGERIDOS))
+):
     """
     Lista todos los rangos de VINOS_RANGOS_MX.
     
@@ -128,7 +146,9 @@ async def get_rangos_vinos():
 @router.post("/reglas/vinos/rangos")
 async def post_crear_rango_vino(
     rango: RangoVinoCreate,
-    usuario: str = Query(..., description="Usuario que crea el rango")
+    usuario: Optional[str] = Query(None, description="DEPRECATED: se usa el usuario autenticado"),
+    current_user: dict = Depends(get_current_user),
+    _auth: dict = Depends(require_permission(_PERMISO_PRECIOS_SUGERIDOS))
 ):
     """
     Crea un nuevo rango para VINOS_RANGOS_MX.
@@ -141,7 +161,7 @@ async def post_crear_rango_vino(
         multiplicador=rango.multiplicador,
         descripcion=rango.descripcion,
         orden=rango.orden,
-        usuario=usuario
+        usuario=_actor_from_user(current_user, usuario)
     )
     
     if not result.get('success'):
@@ -154,7 +174,9 @@ async def post_crear_rango_vino(
 async def put_actualizar_rango_vino(
     rango_id: str,
     rango: RangoVinoUpdate,
-    usuario: str = Query(..., description="Usuario que modifica el rango")
+    usuario: Optional[str] = Query(None, description="DEPRECATED: se usa el usuario autenticado"),
+    current_user: dict = Depends(get_current_user),
+    _auth: dict = Depends(require_permission(_PERMISO_PRECIOS_SUGERIDOS))
 ):
     """
     Actualiza un rango existente de VINOS_RANGOS_MX.
@@ -169,7 +191,7 @@ async def put_actualizar_rango_vino(
         descripcion=rango.descripcion,
         orden=rango.orden,
         activo=rango.activo,
-        usuario=usuario
+        usuario=_actor_from_user(current_user, usuario)
     )
     
     if not result.get('success'):
@@ -181,14 +203,19 @@ async def put_actualizar_rango_vino(
 @router.patch("/reglas/vinos/rangos/{rango_id}/desactivar")
 async def patch_desactivar_rango_vino(
     rango_id: str,
-    usuario: str = Query(..., description="Usuario que desactiva el rango")
+    usuario: Optional[str] = Query(None, description="DEPRECATED: se usa el usuario autenticado"),
+    current_user: dict = Depends(get_current_user),
+    _auth: dict = Depends(require_permission(_PERMISO_PRECIOS_SUGERIDOS))
 ):
     """
     Desactiva un rango de VINOS_RANGOS_MX (soft delete).
     
     No elimina fisicamente, solo marca Activo = 0.
     """
-    result = desactivar_rango_vino(rango_id=rango_id, usuario=usuario)
+    result = desactivar_rango_vino(
+        rango_id=rango_id,
+        usuario=_actor_from_user(current_user, usuario),
+    )
     
     if not result.get('success'):
         raise HTTPException(status_code=400, detail=result.get('mensaje'))
@@ -199,14 +226,20 @@ async def patch_desactivar_rango_vino(
 @router.patch("/reglas/vinos/rangos/{rango_id}/activar")
 async def patch_activar_rango_vino(
     rango_id: str,
-    usuario: str = Query(..., description="Usuario que activa el rango")
+    usuario: Optional[str] = Query(None, description="DEPRECATED: se usa el usuario autenticado"),
+    current_user: dict = Depends(get_current_user),
+    _auth: dict = Depends(require_permission(_PERMISO_PRECIOS_SUGERIDOS))
 ):
     """
     Activa un rango previamente desactivado.
     
     Valida que no haya traslapes con otros rangos activos.
     """
-    result = actualizar_rango_vino(rango_id=rango_id, activo=True, usuario=usuario)
+    result = actualizar_rango_vino(
+        rango_id=rango_id,
+        activo=True,
+        usuario=_actor_from_user(current_user, usuario),
+    )
     
     if not result.get('success'):
         raise HTTPException(status_code=400, detail=result.get('mensaje'))

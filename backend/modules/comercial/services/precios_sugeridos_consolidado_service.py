@@ -20,10 +20,19 @@ from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
 from enum import Enum
 
-from core.db import execute_sql_query
+from core.db import execute_sql_query, execute_sql_query_params
 from core.server_registry import EDARSAHUB_CONFIG
 
 logger = logging.getLogger(__name__)
+
+
+def _normalizar_uuid(valor: str) -> Optional[str]:
+    try:
+        from uuid import UUID
+
+        return str(UUID(str(valor)))
+    except Exception:
+        return None
 
 
 class FuenteSugerencia(str, Enum):
@@ -140,56 +149,63 @@ def obtener_precios_sugeridos(
     NO modifica precios oficiales.
     """
     conn = _get_conn()
-    
+
     # Obtener rangos de vinos una vez
     rangos_vinos = _obtener_rangos_vinos()
-    
+
+    page = max(int(page or 1), 1)
+    page_size = min(max(int(page_size or 50), 1), 200)
+
     # BUG-COSTOS-001-R2: Solo usar Activo = 1, NO PrecioVenta > 0
-    if not incluir_inactivos:
-        where_clauses = ["p.Activo = 1"]
-    else:
-        where_clauses = ["1=1"]
-    
+    where_clauses = ["p.Activo = 1"] if not incluir_inactivos else ["1=1"]
+    params = []
+
     if server_id:
-        where_clauses.append(f"p.ServerID = '{server_id}'")
-    
+        where_clauses.append("p.ServerID = %s")
+        params.append(server_id)
+
     if familia:
-        where_clauses.append(f"p.FamiliaNombre = '{familia}'")
-    
+        where_clauses.append("p.FamiliaNombre = %s")
+        params.append(familia)
+
     if subfamilia:
-        where_clauses.append(f"p.SubfamiliaNombre = '{subfamilia}'")
-    
+        where_clauses.append("p.SubfamiliaNombre = %s")
+        params.append(subfamilia)
+
     if solo_vinos:
-        familias_str = "', '".join(FAMILIAS_VINO)
-        where_clauses.append(f"p.FamiliaNombre IN ('{familias_str}')")
-    
+        placeholders = ", ".join(["%s"] * len(FAMILIAS_VINO))
+        where_clauses.append(f"p.FamiliaNombre IN ({placeholders})")
+        params.extend(FAMILIAS_VINO)
+
     if solo_con_receta:
         where_clauses.append("p.TieneReceta = 1")
-    
+
     if margen_bajo:
         where_clauses.append("""(
             p.TieneReceta = 1
-            AND p.PrecioVenta > 0 
+            AND p.PrecioVenta > 0
             AND COALESCE(
-                (SELECT SUM(r.CostoTotal) FROM Sync_Productos_Recetas r 
+                (SELECT SUM(r.CostoTotal) FROM Sync_Productos_Recetas r
                  WHERE r.ProductoCodigoFuente = p.CodigoFuente AND r.ServerID = p.ServerID),
                 p.CostoReceta, 0
             ) > 0
             AND (
                 (p.PrecioVenta - COALESCE(
-                    (SELECT SUM(r.CostoTotal) FROM Sync_Productos_Recetas r 
+                    (SELECT SUM(r.CostoTotal) FROM Sync_Productos_Recetas r
                      WHERE r.ProductoCodigoFuente = p.CodigoFuente AND r.ServerID = p.ServerID),
                     p.CostoReceta, 0
                 )) / p.PrecioVenta * 100
             ) < 20
         )""")
-    
+
     if search:
-        where_clauses.append(f"(p.Nombre LIKE '%{search}%' OR p.CodigoFuente LIKE '%{search}%')")
-    
+        like = f"%{search}%"
+        where_clauses.append("(p.Nombre LIKE %s OR p.CodigoFuente LIKE %s)")
+        params.extend([like, like])
+
     where_sql = " AND ".join(where_clauses)
-    
-    # Query principal
+
+    # Query principal. offset/page_size vienen normalizados como int.
     offset = (page - 1) * page_size
     
     query = f"""
@@ -224,8 +240,8 @@ def obtener_precios_sugeridos(
     WHERE {where_sql}
     """
     
-    productos_raw = execute_sql_query(*conn, query) or []
-    count_result = execute_sql_query(*conn, count_query)
+    productos_raw = execute_sql_query_params(*conn, query, tuple(params)) or []
+    count_result = execute_sql_query_params(*conn, count_query, tuple(params))
     total = count_result[0]['total'] if count_result else 0
     
     # Procesar productos y calcular precios sugeridos
@@ -417,7 +433,7 @@ def crear_rango_vino(
 ) -> Dict[str, Any]:
     """Crea un nuevo rango para VINOS_RANGOS_MX"""
     conn = _get_conn()
-    
+
     # Validaciones
     if limite_inferior < 0:
         return {'success': False, 'mensaje': 'Limite inferior debe ser >= 0'}
@@ -425,8 +441,7 @@ def crear_rango_vino(
         return {'success': False, 'mensaje': 'Limite superior debe ser > limite inferior'}
     if multiplicador <= 0:
         return {'success': False, 'mensaje': 'Multiplicador debe ser > 0'}
-    
-    # Obtener ReglaPrecioID de VINOS_RANGOS_MX
+
     query_regla = """
     SELECT CAST(ReglaPrecioID AS NVARCHAR(36)) as regla_id
     FROM Comercial_ReglasPrecio
@@ -435,43 +450,60 @@ def crear_rango_vino(
     regla = execute_sql_query(*conn, query_regla)
     if not regla:
         return {'success': False, 'mensaje': 'Regla VINOS_RANGOS_MX no encontrada'}
-    
-    regla_id = regla[0]['regla_id']
-    
-    # Verificar traslape con rangos activos existentes
-    query_traslape = f"""
+
+    regla_id = _normalizar_uuid(regla[0]['regla_id'])
+    if not regla_id:
+        return {'success': False, 'mensaje': 'Regla VINOS_RANGOS_MX inválida'}
+
+    query_traslape = """
     SELECT COUNT(*) as count
     FROM Comercial_ReglasPrecioRangos r
-    WHERE r.ReglaPrecioID = '{regla_id}'
+    WHERE r.ReglaPrecioID = %s
     AND r.Activo = 1
     AND (
-        ({limite_inferior} BETWEEN r.LimiteInferior AND r.LimiteSuperior)
-        OR ({limite_superior} BETWEEN r.LimiteInferior AND r.LimiteSuperior)
-        OR (r.LimiteInferior BETWEEN {limite_inferior} AND {limite_superior})
+        (%s BETWEEN r.LimiteInferior AND r.LimiteSuperior)
+        OR (%s BETWEEN r.LimiteInferior AND r.LimiteSuperior)
+        OR (r.LimiteInferior BETWEEN %s AND %s)
     )
     """
-    traslape = execute_sql_query(*conn, query_traslape)
+    traslape = execute_sql_query_params(
+        *conn,
+        query_traslape,
+        (regla_id, limite_inferior, limite_superior, limite_inferior, limite_superior),
+    )
     if traslape and traslape[0]['count'] > 0:
         return {'success': False, 'mensaje': f'El rango ${limite_inferior}-${limite_superior} se traslapa con rangos activos existentes'}
-    
-    # Insertar
+
     import uuid
     rango_id = str(uuid.uuid4())
-    
-    insert_query = f"""
+
+    insert_query = """
     INSERT INTO Comercial_ReglasPrecioRangos (
         ReglaPrecioRangoID, ReglaPrecioID, LimiteInferior, LimiteSuperior,
         MargenMultiplicador, Orden, Descripcion, Activo,
         FechaCreacion, UsuarioCreacion
     ) VALUES (
-        '{rango_id}', '{regla_id}', {limite_inferior}, {limite_superior},
-        {multiplicador}, {Orden}, N'{Descripcion}', 1,
-        GETDATE(), N'{usuario}'
+        %s, %s, %s, %s,
+        %s, %s, %s, 1,
+        GETDATE(), %s
     )
     """
-    
+
     try:
-        execute_sql_query(*conn, insert_query)
+        execute_sql_query_params(
+            *conn,
+            insert_query,
+            (
+                rango_id,
+                regla_id,
+                limite_inferior,
+                limite_superior,
+                multiplicador,
+                orden,
+                descripcion,
+                usuario,
+            ),
+        )
         logger.info(f"[VINOS_RANGOS] Rango creado: ${limite_inferior}-${limite_superior} x{multiplicador} por {usuario}")
         return {
             'success': True,
@@ -495,85 +527,99 @@ def actualizar_rango_vino(
 ) -> Dict[str, Any]:
     """Actualiza un rango existente"""
     conn = _get_conn()
-    
-    # Verificar que el rango existe
-    query_existe = f"""
+    rango_uuid = _normalizar_uuid(rango_id)
+    if not rango_uuid:
+        return {'success': False, 'mensaje': 'Rango no encontrado'}
+
+    query_existe = """
     SELECT r.ReglaPrecioRangoID, r.LimiteInferior, r.LimiteSuperior, r.Activo,
            CAST(r.ReglaPrecioID AS NVARCHAR(36)) as regla_id
     FROM Comercial_ReglasPrecioRangos r
-    WHERE LOWER(CAST(r.ReglaPrecioRangoID AS NVARCHAR(36))) = LOWER('{rango_id}')
+    WHERE LOWER(CAST(r.ReglaPrecioRangoID AS NVARCHAR(36))) = LOWER(%s)
     """
-    rango = execute_sql_query(*conn, query_existe)
+    rango = execute_sql_query_params(*conn, query_existe, (rango_uuid,))
     if not rango:
         return {'success': False, 'mensaje': 'Rango no encontrado'}
-    
+
     rango_actual = rango[0]
-    regla_id = rango_actual['regla_id']
-    
-    # Validaciones de límites si se actualizan
+    regla_id = _normalizar_uuid(rango_actual['regla_id'])
+    if not regla_id:
+        return {'success': False, 'mensaje': 'Regla asociada inválida'}
+
     lim_inf = limite_inferior if limite_inferior is not None else float(rango_actual['LimiteInferior'])
     lim_sup = limite_superior if limite_superior is not None else float(rango_actual['LimiteSuperior'])
-    
+
     if lim_inf < 0:
         return {'success': False, 'mensaje': 'Limite inferior debe ser >= 0'}
     if lim_sup <= lim_inf:
         return {'success': False, 'mensaje': 'Limite superior debe ser > limite inferior'}
     if multiplicador is not None and multiplicador <= 0:
         return {'success': False, 'mensaje': 'Multiplicador debe ser > 0'}
-    
-    # Verificar traslape si se actualizan límites o se activa
+
     nuevo_activo = activo if activo is not None else rango_actual['Activo']
     if nuevo_activo and (limite_inferior is not None or limite_superior is not None or activo is True):
-        query_traslape = f"""
+        query_traslape = """
         SELECT COUNT(*) as count
         FROM Comercial_ReglasPrecioRangos r
-        WHERE r.ReglaPrecioID = '{regla_id}'
+        WHERE r.ReglaPrecioID = %s
         AND r.Activo = 1
-        AND LOWER(CAST(r.ReglaPrecioRangoID AS NVARCHAR(36))) != LOWER('{rango_id}')
+        AND LOWER(CAST(r.ReglaPrecioRangoID AS NVARCHAR(36))) != LOWER(%s)
         AND (
-            ({lim_inf} BETWEEN r.LimiteInferior AND r.LimiteSuperior)
-            OR ({lim_sup} BETWEEN r.LimiteInferior AND r.LimiteSuperior)
-            OR (r.LimiteInferior BETWEEN {lim_inf} AND {lim_sup})
+            (%s BETWEEN r.LimiteInferior AND r.LimiteSuperior)
+            OR (%s BETWEEN r.LimiteInferior AND r.LimiteSuperior)
+            OR (r.LimiteInferior BETWEEN %s AND %s)
         )
         """
-        traslape = execute_sql_query(*conn, query_traslape)
+        traslape = execute_sql_query_params(
+            *conn,
+            query_traslape,
+            (regla_id, rango_uuid, lim_inf, lim_sup, lim_inf, lim_sup),
+        )
         if traslape and traslape[0]['count'] > 0:
             return {'success': False, 'mensaje': f'El rango ${lim_inf}-${lim_sup} se traslapa con otros rangos activos'}
-    
-    # Construir UPDATE dinámico
+
     updates = []
+    params = []
     if limite_inferior is not None:
-        updates.append(f"LimiteInferior = {limite_inferior}")
+        updates.append("LimiteInferior = %s")
+        params.append(limite_inferior)
     if limite_superior is not None:
-        updates.append(f"LimiteSuperior = {limite_superior}")
+        updates.append("LimiteSuperior = %s")
+        params.append(limite_superior)
     if multiplicador is not None:
-        updates.append(f"MargenMultiplicador = {multiplicador}")
+        updates.append("MargenMultiplicador = %s")
+        params.append(multiplicador)
     if descripcion is not None:
-        updates.append(f"Descripcion = N'{descripcion}'")
+        updates.append("Descripcion = %s")
+        params.append(descripcion)
     if orden is not None:
-        updates.append(f"Orden = {orden}")
+        updates.append("Orden = %s")
+        params.append(orden)
     if activo is not None:
-        updates.append(f"Activo = {1 if activo else 0}")
-    
+        updates.append("Activo = %s")
+        params.append(1 if activo else 0)
+
     if not updates:
         return {'success': False, 'mensaje': 'No hay campos para actualizar'}
-    
+
     updates.append("FechaModificacion = GETDATE()")
     if usuario:
-        updates.append(f"UsuarioModificacion = N'{usuario}'")
-    
+        updates.append("UsuarioModificacion = %s")
+        params.append(usuario)
+
+    params.append(rango_uuid)
     update_query = f"""
     UPDATE Comercial_ReglasPrecioRangos
     SET {', '.join(updates)}
-    WHERE LOWER(CAST(ReglaPrecioRangoID AS NVARCHAR(36))) = LOWER('{rango_id}')
+    WHERE LOWER(CAST(ReglaPrecioRangoID AS NVARCHAR(36))) = LOWER(%s)
     """
-    
+
     try:
-        execute_sql_query(*conn, update_query)
-        logger.info(f"[VINOS_RANGOS] Rango actualizado: {rango_id} por {usuario}")
+        execute_sql_query_params(*conn, update_query, tuple(params))
+        logger.info(f"[VINOS_RANGOS] Rango actualizado: {rango_uuid} por {usuario}")
         return {
             'success': True,
-            'rango_id': rango_id,
+            'rango_id': rango_uuid,
             'mensaje': 'Rango actualizado exitosamente'
         }
     except Exception as e:
