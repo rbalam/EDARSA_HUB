@@ -989,7 +989,7 @@ def _obtener_kpis_tablero_desde_edarsahub(
         logging.info(f"[TABLERO-EDARSAHUB] {nombre_unidad}: Sin datos de año anterior ({fecha_ini_anio_ant} a {fecha_fin_anio_ant})")
     
     # 6. CALCULAR MÉTRICAS DERIVADAS
-    ticket_prom = round(ventas / pax, 2) if pax and pax > 0 else 0
+    ticket_prom = round(ventas / cheques, 2) if cheques and cheques > 0 else 0
     cheque_prom = round(ventas / cheques, 2) if cheques and cheques > 0 else 0
     proyeccion = round((ventas / dias_transcurridos) * dias_mes, 2) if dias_transcurridos > 0 else 0
     
@@ -1450,7 +1450,7 @@ def get_kpis_softrestaurant(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_f
             if pax == 0 and cheques > 0:
                 pax = cheques
             
-            ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
+            ticket_prom = round(ventas / cheques, 2) if cheques > 0 else 0
             cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
             
             return {
@@ -1604,7 +1604,7 @@ def get_kpis_mpro(server, fecha_ini, fecha_fin, fecha_ini_ant, fecha_fin_ant, fe
         return None
     
     # Calcular métricas derivadas
-    ticket_prom = round(ventas_total / pax_total, 2) if pax_total > 0 else 0
+    ticket_prom = round(ventas_total / cheques_total, 2) if cheques_total > 0 else 0
     cheque_prom = round(ventas_total / cheques_total, 2) if cheques_total > 0 else 0
     
     # =========================================================================
@@ -1747,7 +1747,7 @@ def get_kpis_mpro_por_sucursal(server, fecha_ini, fecha_fin, fecha_ini_ant, fech
                 cheques = datos_edarsahub.get('cheques', 0)
                 pax = datos_edarsahub.get('pax', 0) or cheques
                 
-                ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
+                ticket_prom = round(ventas / cheques, 2) if cheques > 0 else 0
                 cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
                 
                 unidades.append({
@@ -2220,7 +2220,7 @@ WHERE VE.Sc_Cve_Sucursal = '{sucursal_id}'
         # ============= FIN INTEGRACIÓN API LOCAL =============
         
         # Cálculos
-        ticket_prom = round(ventas / pax, 2) if pax > 0 else 0
+        ticket_prom = round(ventas / cheques, 2) if cheques > 0 else 0
         cheque_prom = round(ventas / cheques, 2) if cheques > 0 else 0
         proyeccion = round((ventas / dias_transcurridos) * dias_mes, 2) if dias_transcurridos > 0 else 0
         
