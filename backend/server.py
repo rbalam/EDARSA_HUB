@@ -4515,44 +4515,11 @@ async def get_report_filters(server_id: str, current_user: Dict = Depends(get_cu
 # Esta variable se asigna después de definir el endpoint
 _inventory_analysis_endpoint_ref = None
 
-
-def _classify_inventory_sql_error(exc: Exception) -> str:
-    """Clasifica errores SQL del análisis de inventario para manejo seguro."""
-    msg = str(exc or "").lower()
-    if "dbprocess is dead" in msg or "not enabled" in msg:
-        return "DEAD_DBPROCESS"
-    if "adaptive server connection timed out" in msg or "login timeout" in msg:
-        return "CONNECTION_TIMEOUT"
-    if "timeout expired" in msg or "query timeout" in msg:
-        return "QUERY_TIMEOUT"
-    if "invalid column name" in msg or "invalid object name" in msg or "syntax" in msg:
-        return "SCHEMA"
-    if "login failed" in msg or "not associated with a trusted sql server connection" in msg:
-        return "AUTHENTICATION"
-    if "communication link failure" in msg or "connection was reset" in msg or "network" in msg:
-        return "NETWORK"
-    return "PROCESSING"
-
-
-def _is_inventory_transient_error(classification: str) -> bool:
-    return classification in {"CONNECTION_TIMEOUT", "QUERY_TIMEOUT", "DEAD_DBPROCESS", "NETWORK"}
-
-
-def _should_retry_inventory_once(classification: str, attempt: int) -> bool:
-    return attempt == 1 and _is_inventory_transient_error(classification)
-
-
-def _inventory_analysis_safe_http_exception(exc: Exception) -> HTTPException:
-    classification = _classify_inventory_sql_error(exc)
-    if _is_inventory_transient_error(classification):
-        return HTTPException(
-            status_code=503,
-            detail="Servicio SQL canónico temporalmente no disponible. Reintente en unos segundos.",
-        )
-    return HTTPException(
-        status_code=500,
-        detail="Error generando análisis canónico SoftRestaurant.",
-    )
+from core.inventarios.sql_error_policy import (
+    classify_inventory_sql_error as _classify_inventory_sql_error,
+    should_retry_inventory_once as _should_retry_inventory_once,
+    inventory_analysis_safe_http_exception as _inventory_analysis_safe_http_exception,
+)
 
 
 
@@ -4573,6 +4540,7 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     NO FUENTE: MongoDB db.servers
     """
     from core.server_registry import get_server_connection_info
+    from core.inventarios.contracts import build_normalized_inventory_request
 
     from core.corporate_filters.request_resolver import canonical_server_id
 
@@ -4581,68 +4549,25 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
         raise HTTPException(status_code=400, detail='server_id es requerido')
     report_params['server_id'] = server_id
     access_context = await validate_server_access_unified(current_user, server_id)
-    sucursal_id_param = report_params.get('sucursal_id')
-    sucursal = report_params.get('sucursal')
-    almacen = report_params.get('almacen')
-    almacenes = report_params.get('almacenes', [])  # Multi-almacén
-    fecha_ini = report_params.get('fecha_ini')
-    fecha_fin = report_params.get('fecha_fin')
-    folio_inicial = report_params.get('folio_inicial')
-    folio_final = report_params.get('folio_final')
+    normalized_request = build_normalized_inventory_request(report_params, server_id)
 
-    # Multi-folios (nuevo)
-    folios_iniciales = report_params.get('folios_iniciales', [])
-    folios_finales = report_params.get('folios_finales', [])
+    sucursal_id_param = normalized_request.sucursal_id_param
+    sucursal = normalized_request.sucursal
+    almacen = normalized_request.almacen
+    almacenes = normalized_request.almacenes
+    fecha_ini = normalized_request.fecha_ini
+    fecha_fin = normalized_request.fecha_fin
+    lista_folios_ini = normalized_request.lista_folios_ini
+    lista_folios_fin = normalized_request.lista_folios_fin
 
-    # Info completa de inventarios (folio + comentario) para MPRO
-    inventarios_iniciales_info = report_params.get('inventarios_iniciales_info', [])
-    inventarios_finales_info = report_params.get('inventarios_finales_info', [])
+    # Info completa de inventarios (reservado para evolución de contratos).
+    inventarios_iniciales_info = normalized_request.inventarios_iniciales_info
+    inventarios_finales_info = normalized_request.inventarios_finales_info
 
-    # Normalizar a listas - si hay multi-folios, usarlos; si no, usar el individual
-    if folios_iniciales:
-        lista_folios_ini = folios_iniciales
-    elif folio_inicial:
-        lista_folios_ini = [folio_inicial]
-    else:
-        lista_folios_ini = []
-
-    if folios_finales:
-        lista_folios_fin = folios_finales
-    elif folio_final:
-        lista_folios_fin = [folio_final]
-    else:
-        lista_folios_fin = []
-
-    # FASE 1B: Validar y sanitizar folios para prevenir SQL Injection
-    MAX_FOLIOS = 50  # Límite máximo de folios por solicitud
-
-    def _sanitize_folio_list(folios: list, max_count: int = MAX_FOLIOS) -> list:
-        """Valida y sanitiza una lista de folios."""
-        if not folios:
-            return []
-        sanitized = []
-        for f in folios[:max_count]:
-            folio_text = str(f or '').strip()
-            if folio_text:
-                # Solo permitir caracteres alfanuméricos, guiones y guiones bajos
-                if _validate_identifier(folio_text, max_length=50):
-                    # Escapar comillas simples
-                    sanitized.append(folio_text.replace("'", "''"))
-                else:
-                    logging.warning(f"[A04-SANITIZADO] Folio inválido rechazado: {folio_text[:20]}")
-        return sanitized
-
-    # Aplicar sanitización a las listas de folios
-    lista_folios_ini = _sanitize_folio_list(lista_folios_ini)
-    lista_folios_fin = _sanitize_folio_list(lista_folios_fin)
-
-    # Filtros adicionales del frontend
-    filtro_categorias_frontend = report_params.get('categorias', [])
-    filtro_familias_frontend = report_params.get('familias', [])
-    filtro_subfamilias_frontend = report_params.get('subfamilias', [])
-
-    # Opción de agrupación de insumos (por defecto NO agrupar)
-    agrupar_insumos = report_params.get('agrupar_insumos', False)
+    filtro_categorias_frontend = normalized_request.filtro_categorias_frontend
+    filtro_familias_frontend = normalized_request.filtro_familias_frontend
+    filtro_subfamilias_frontend = normalized_request.filtro_subfamilias_frontend
+    agrupar_insumos = normalized_request.agrupar_insumos
 
     logging.info(f"Filtros recibidos del frontend - Categorias: {filtro_categorias_frontend}, Familias: {filtro_familias_frontend}, SubFamilias: {filtro_subfamilias_frontend}")
     logging.info(f"Agrupar insumos: {agrupar_insumos}")
@@ -8187,6 +8112,9 @@ async def obtener_inventarios_fisicos(server_id: str, unidad: str = None, sucurs
     server = access["server"]
     context = access["context"]  # FASE 8: Obtener contexto RBAC
 
+    from modules.compras.access import require_compras_permission, COMPRAS_VER
+    require_compras_permission(access["user"], COMPRAS_VER)
+
     # FASE 8: Obtener almacenes permitidos
     almacenes_permitidos = get_almacenes_permitidos(context, server_id)
 
@@ -8357,6 +8285,10 @@ async def obtener_pedidos_vigentes(server_id: str, sucursal: str = None, credent
 
     server_id = canonical_server_id(server_id)
     scope = await _compras_resolve_scope(server_id, sucursal, credentials)
+
+    from modules.compras.access import require_compras_permission, COMPRAS_VER
+    require_compras_permission(scope["user"], COMPRAS_VER)
+
     unidad = scope.get("unidad") or {}
     unidad_negocio_id = unidad.get("unidad_negocio_pk") or unidad.get("id")
 
@@ -8393,6 +8325,10 @@ async def obtener_detalle_pedido_manual(
 
     server_id = canonical_server_id(server_id)
     scope = await _compras_resolve_scope(server_id, sucursal, credentials)
+
+    from modules.compras.access import require_compras_permission, COMPRAS_VER
+    require_compras_permission(scope["user"], COMPRAS_VER)
+
     conn = None
     try:
         conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=10)
@@ -8531,7 +8467,11 @@ async def obtener_detalle_movimientos(server_id: str, codigo_producto: str, alma
     from core.corporate_filters.request_resolver import canonical_server_id
 
     server_id = canonical_server_id(server_id)
-    await validate_server_access_by_empresa(server_id, credentials)
+    access = await validate_server_access_by_empresa(server_id, credentials)
+
+    from modules.compras.access import require_compras_permission, COMPRAS_VER
+    require_compras_permission(access["user"], COMPRAS_VER)
+
     request = SimpleNamespace(
         server_id=server_id,
         codigo=codigo_producto,
@@ -8550,7 +8490,11 @@ async def obtener_detalle_consumos(server_id: str, codigo_producto: str, sucursa
     from core.corporate_filters.request_resolver import canonical_server_id
 
     server_id = canonical_server_id(server_id)
-    await validate_server_access_by_empresa(server_id, credentials)
+    access = await validate_server_access_by_empresa(server_id, credentials)
+
+    from modules.compras.access import require_compras_permission, COMPRAS_VER
+    require_compras_permission(access["user"], COMPRAS_VER)
+
     request = SimpleNamespace(
         server_id=server_id,
         codigo=codigo_producto,
@@ -8578,6 +8522,10 @@ async def obtener_detalle_pedido(
 
     server_id = canonical_server_id(server_id)
     scope = await _compras_resolve_scope(server_id, sucursal, credentials)
+
+    from modules.compras.access import require_compras_permission, COMPRAS_VER
+    require_compras_permission(scope["user"], COMPRAS_VER)
+
     logging.info(
         "[RBAC-DETALLE-PEDIDO][NOLIVE] User=%s Server=%s Folio=%s Tipo=%s Source=%s",
         scope["user"].get("email"),
@@ -8645,6 +8593,9 @@ async def calcular_pedido_sugerido(request: CalculoPedidoRequest, credentials: H
     server_id = scope["server_id"]
     context = scope["context"]
     almacenes = _compras_almacenes_scope(context, server_id, request.almacenes)
+
+    from modules.compras.access import require_compras_permission, COMPRAS_EJECUTAR
+    require_compras_permission(scope["user"], COMPRAS_EJECUTAR)
 
     try:
         fecha_ini_dt = datetime.strptime(request.fecha_inventario_fisico, "%Y-%m-%d")
@@ -8819,11 +8770,14 @@ async def obtener_parametros_compra(
 
     MIGRADO: Ahora lee desde EDARSAHUB SQL (Compras_Parametros_Sucursal).
     """
-    verify_token(credentials.credentials)
-
     # CANONICAL-UNIDAD: el path puede traer una unidad canónica o un server_id legacy.
     from core.corporate_filters.request_resolver import canonical_server_id
     server_id = canonical_server_id(server_id)
+
+    # RBAC: validar alcance por servidor/unidad y permiso funcional de Compras.
+    access = await validate_server_access_by_empresa(server_id, credentials)
+    from modules.compras.access import require_compras_permission, COMPRAS_VER
+    require_compras_permission(access["user"], COMPRAS_VER)
 
     # Usar servicio del módulo compras que lee de SQL
     from modules.compras.service import obtener_parametros
@@ -8844,13 +8798,17 @@ async def guardar_parametros_compra(params: dict, credentials: HTTPAuthorization
 
     MIGRADO: Ahora escribe a EDARSAHUB SQL (Compras_Parametros_Sucursal).
     """
-    verify_token(credentials.credentials)
-
     # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy.
     from core.corporate_filters.request_resolver import canonical_server_id
     server_id = canonical_server_id(params.get('server_id'))
     if not server_id:
         raise HTTPException(status_code=400, detail="server_id es requerido")
+
+    # RBAC: validar alcance por servidor/unidad y permiso funcional de Compras
+    # (guardar parametros es una accion de configuracion, no solo lectura).
+    access = await validate_server_access_by_empresa(server_id, credentials)
+    from modules.compras.access import require_compras_permission, COMPRAS_CONFIGURAR
+    require_compras_permission(access["user"], COMPRAS_CONFIGURAR)
 
     # Usar servicio del módulo compras que escribe a SQL
     from modules.compras.service import guardar_parametros
@@ -8902,6 +8860,9 @@ async def obtener_productos_para_captura(request: ProductosParaCapturaRequest, c
 
     request.server_id = canonical_server_id(request.server_id)
     scope = await _compras_resolve_scope(request.server_id, request.sucursal, credentials)
+
+    from modules.compras.access import require_compras_permission, COMPRAS_VER
+    require_compras_permission(scope["user"], COMPRAS_VER)
 
     conn = None
     try:
@@ -9089,6 +9050,9 @@ async def realizar_auditoria_operativa(request: AuditoriaOperativaRequest, crede
     server_id = scope["server_id"]
     context = scope["context"]
     almacenes = _compras_almacenes_scope(context, server_id, request.almacenes)
+
+    from modules.compras.access import require_compras_permission, COMPRAS_EJECUTAR
+    require_compras_permission(scope["user"], COMPRAS_EJECUTAR)
 
     try:
         fecha_ini_dt = datetime.strptime(request.fecha_inv_inicial, "%Y-%m-%d")
@@ -9814,6 +9778,15 @@ async def guardar_inventario_provisional(
     Permite persistir la captura manual del inventario físico antes de ejecutar la auditoría.
     """
     from modules.comercial.service import EDARSAHUB_TABLERO_CONFIG
+    from core.corporate_filters.request_resolver import canonical_server_id
+    from core.user_access_context import resolve_user_access_context, has_server_access
+    from modules.compras.access import require_compras_permission, COMPRAS_GESTIONAR
+
+    require_compras_permission(current_user, COMPRAS_GESTIONAR)
+    resolved_server_id = canonical_server_id(request.server_id)
+    access_context = await resolve_user_access_context(current_user)
+    if not has_server_access(access_context, resolved_server_id):
+        raise HTTPException(status_code=403, detail="No tiene acceso a esta unidad de negocio.")
 
     try:
         usuario_id = current_user.get('_sql_usuario_id', current_user.get('id'))
@@ -9876,6 +9849,17 @@ async def obtener_inventarios_provisionales(
     Obtiene inventarios provisionales guardados para una unidad de negocio.
     """
     from modules.comercial.service import EDARSAHUB_TABLERO_CONFIG
+    from core.unidades_service import UnidadesService
+    from core.user_access_context import resolve_user_access_context, has_server_access
+    from modules.compras.access import require_compras_permission, COMPRAS_VER
+
+    require_compras_permission(current_user, COMPRAS_VER)
+    unidad = UnidadesService.get_by_id(unidad_negocio_id)
+    if not unidad or not unidad.get("server_id"):
+        raise HTTPException(status_code=404, detail="Unidad de negocio no encontrada.")
+    access_context = await resolve_user_access_context(current_user)
+    if not has_server_access(access_context, str(unidad["server_id"])):
+        raise HTTPException(status_code=403, detail="No tiene acceso a esta unidad de negocio.")
 
     try:
         conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
@@ -9928,12 +9912,28 @@ async def eliminar_inventario_provisional(
     Elimina un item del inventario provisional.
     """
     from modules.comercial.service import EDARSAHUB_TABLERO_CONFIG
+    from core.user_access_context import resolve_user_access_context, has_server_access
+    from modules.compras.access import require_compras_permission, COMPRAS_GESTIONAR
+
+    require_compras_permission(current_user, COMPRAS_GESTIONAR)
 
     try:
         conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
-        cursor = conn.cursor()
+        cursor = conn.cursor(as_dict=True)
 
-        # Verificar que existe y está en estado PROVISIONAL
+        # Resolver el server_id del item ANTES de borrar, para validar alcance RBAC.
+        cursor.execute("""
+            SELECT server_id FROM Auditoria_Inventario_Provisional
+            WHERE id = %s AND estado = 'PROVISIONAL'
+        """, (item_id,))
+        item_row = cursor.fetchone()
+        if not item_row:
+            raise HTTPException(status_code=404, detail="Item no encontrado o ya procesado")
+
+        access_context = await resolve_user_access_context(current_user)
+        if not has_server_access(access_context, str(item_row.get("server_id") or "")):
+            raise HTTPException(status_code=403, detail="No tiene acceso a esta unidad de negocio.")
+
         cursor.execute("""
             DELETE FROM Auditoria_Inventario_Provisional
             WHERE id = %s AND estado = 'PROVISIONAL'
@@ -9966,6 +9966,17 @@ async def limpiar_inventarios_provisionales(
     Limpia todos los inventarios provisionales de una unidad (para una fecha específica o todos).
     """
     from modules.comercial.service import EDARSAHUB_TABLERO_CONFIG
+    from core.unidades_service import UnidadesService
+    from core.user_access_context import resolve_user_access_context, has_server_access
+    from modules.compras.access import require_compras_permission, COMPRAS_GESTIONAR
+
+    require_compras_permission(current_user, COMPRAS_GESTIONAR)
+    unidad = UnidadesService.get_by_id(unidad_negocio_id)
+    if not unidad or not unidad.get("server_id"):
+        raise HTTPException(status_code=404, detail="Unidad de negocio no encontrada.")
+    access_context = await resolve_user_access_context(current_user)
+    if not has_server_access(access_context, str(unidad["server_id"])):
+        raise HTTPException(status_code=403, detail="No tiene acceso a esta unidad de negocio.")
 
     try:
         conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
@@ -10022,6 +10033,14 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
     server = await get_server_connection_info(request.server_id, db=db)
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
+
+    # RBAC: alcance por servidor/unidad y permiso funcional de Compras.
+    from core.user_access_context import resolve_user_access_context, has_server_access
+    from modules.compras.access import require_compras_permission, COMPRAS_VER
+    require_compras_permission(current_user, COMPRAS_VER)
+    access_context = await resolve_user_access_context(current_user)
+    if not has_server_access(access_context, request.server_id):
+        raise HTTPException(status_code=403, detail="No tiene acceso a esta unidad de negocio.")
 
     # =====================================================================
     # NO-LIVE: el detalle de movimientos se lee EXCLUSIVAMENTE de las tablas
@@ -10267,6 +10286,14 @@ async def obtener_detalle_consumos_post(request: DetalleConsumosRequest, current
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
 
+    # RBAC: alcance por servidor/unidad y permiso funcional de Compras.
+    from core.user_access_context import resolve_user_access_context, has_server_access
+    from modules.compras.access import require_compras_permission, COMPRAS_VER
+    require_compras_permission(current_user, COMPRAS_VER)
+    access_context = await resolve_user_access_context(current_user)
+    if not has_server_access(access_context, request.server_id):
+        raise HTTPException(status_code=403, detail="No tiene acceso a esta unidad de negocio.")
+
     if is_softrestaurant_system(server.get('system_type')):
         try:
             return _obtener_detalle_softrestaurant_canonico(request, solo_ventas=True)
@@ -10309,6 +10336,10 @@ async def obtener_dashboard_compras(
 ):
     """Obtiene KPIs de Compras exclusivamente desde EDARSAHUB SQL canónico."""
     scope = await _compras_resolve_scope(server_id, sucursal, credentials)
+
+    from modules.compras.access import require_compras_permission, COMPRAS_VER
+    require_compras_permission(scope["user"], COMPRAS_VER)
+
     anios_param = anios or anio
     if not meses:
         meses = str(datetime.now().month).zfill(2)
@@ -10407,6 +10438,10 @@ async def obtener_analisis_compras(request: AnalisisComprasRequest, credentials:
     from core.corporate_filters.request_resolver import canonical_server_id
     request.server_id = canonical_server_id(request.server_id)
     scope = await _compras_resolve_scope(request.server_id, request.sucursal, credentials)
+
+    from modules.compras.access import require_compras_permission, COMPRAS_VER
+    require_compras_permission(scope["user"], COMPRAS_VER)
+
     anios = request.anios or ([str(request.anio)] if request.anio else [str(datetime.now().year)])
     meses = request.meses or [str(datetime.now().month).zfill(2)]
     periodo_where, periodo_params = _compras_period_where("FechaRecepcion", meses, anios)
@@ -10474,6 +10509,10 @@ async def obtener_facturas_proveedor(server_id: str, proveedor_codigo: str, anio
     from core.corporate_filters.request_resolver import canonical_server_id
     server_id = canonical_server_id(server_id)
     scope = await _compras_resolve_scope(server_id, sucursal, credentials)
+
+    from modules.compras.access import require_compras_permission, COMPRAS_VER
+    require_compras_permission(scope["user"], COMPRAS_VER)
+
     periodo_where, periodo_params = _compras_period_where("FechaRecepcion", meses, [anio])
     conn = None
     try:
@@ -10528,6 +10567,10 @@ async def obtener_detalle_factura(server_id: str, folio: str, sucursal: str = No
     from core.corporate_filters.request_resolver import canonical_server_id
     server_id = canonical_server_id(server_id)
     scope = await _compras_resolve_scope(server_id, sucursal, credentials)
+
+    from modules.compras.access import require_compras_permission, COMPRAS_VER
+    require_compras_permission(scope["user"], COMPRAS_VER)
+
     conn = None
     try:
         conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=10)

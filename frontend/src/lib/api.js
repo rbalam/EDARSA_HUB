@@ -12,8 +12,15 @@
 import axios from 'axios';
 import { clearSession } from '../services/authStorage';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API_URL = `${BACKEND_URL}/api`;
+const normalizeApiBaseUrl = (rawUrl) => {
+  const baseUrl = String(rawUrl || '').trim().replace(/[/]+$/, '');
+  if (!baseUrl) {
+    return '/api';
+  }
+  return baseUrl.endsWith('/api') ? baseUrl : baseUrl + '/api';
+};
+
+const API_URL = normalizeApiBaseUrl(process.env.REACT_APP_BACKEND_URL);
 
 // Token key en sessionStorage
 const TOKEN_STORAGE_KEY = 'edarsa_memory_token';

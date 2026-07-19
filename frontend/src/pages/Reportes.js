@@ -49,6 +49,11 @@ import {
 // Estilos para los selectores nativos
 const selectStyle = "w-full h-10 px-3 py-2 text-sm border border-zinc-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-zinc-100 disabled:cursor-not-allowed";
 
+const normalizeReportQueryType = (queryType) => {
+  const normalized = String(queryType || '').trim();
+  return normalized === 'pendientes' ? 'pendientes' : 'analisis';
+};
+
 // Helper: Texto para selector de almacén según estado
 const getAlmacenPlaceholder = (selectedAlmacenes, selectedServer, selectedUnidad, almacenes, filters) => {
   if (selectedAlmacenes.length > 0) {
@@ -188,7 +193,7 @@ const Reportes = () => {
   // servers se deriva de unidadesNegocio para compatibilidad interna
   const servers = useMemo(() => {
     return unidadesNegocio.map(u => ({
-      id: u.server_id,
+      id: String(u.server_id || '').trim(),
       name: u.nombre,
       system_type: u.system_type,
       unidad_id: u.id,
@@ -261,7 +266,10 @@ const Reportes = () => {
         const parsed = JSON.parse(saved);
         // Validar que tenga la estructura correcta
         if (parsed && typeof parsed === 'object' && parsed.server_id !== undefined) {
-          return parsed;
+          return {
+            ...parsed,
+            query_type: normalizeReportQueryType(parsed.query_type)
+          };
         }
       }
     } catch (e) {
@@ -692,6 +700,22 @@ const Reportes = () => {
     sessionStorage.setItem('selectedInventariosFin', JSON.stringify(selectedInventariosFin));
   }, [selectedInventariosFin]);
 
+  useEffect(() => {
+    if (!selectedServer) return;
+
+    const normalizedQueryType = normalizeReportQueryType(filters.query_type);
+    const supportedQueryType = normalizedQueryType === 'pendientes' && selectedServer.system_type !== 'SoftRestaurant'
+      ? 'analisis'
+      : normalizedQueryType;
+
+    if (supportedQueryType !== filters.query_type) {
+      setFilters(prev => ({
+        ...prev,
+        query_type: supportedQueryType
+      }));
+    }
+  }, [filters.query_type, selectedServer]);
+
   // Cerrar dropdowns de inventarios al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -998,6 +1022,7 @@ const Reportes = () => {
       // Auto-seleccionar si el usuario tiene solo una unidad
       if (unidades.length === 1) {
         const unidad = unidades[0];
+        const unidadServerId = String(unidad.server_id || '').trim();
         setSelectedUnidad(unidad.id);
         
         // Si tiene sucursal_origen_id (MPRO con sucursal auto-definida), también auto-seleccionar sucursal
@@ -1006,7 +1031,7 @@ const Reportes = () => {
           setFilters(prev => ({
             ...prev,
             unidad_id: unidad.id,
-            server_id: unidad.server_id,
+            server_id: unidadServerId,
             sucursal_id: unidad.sucursal_origen_id,
             sucursal: nombreSucursal
           }));
@@ -1014,13 +1039,13 @@ const Reportes = () => {
           setFilters(prev => ({
             ...prev,
             unidad_id: unidad.id,
-            server_id: unidad.server_id
+            server_id: unidadServerId
           }));
         }
         
         // Establecer el servidor seleccionado para compatibilidad
         setSelectedServer({
-          id: unidad.server_id,
+          id: unidadServerId,
           name: unidad.nombre,
           system_type: unidad.system_type,
           sucursal_origen_id: unidad.sucursal_origen_id
@@ -1036,8 +1061,37 @@ const Reportes = () => {
               setSelectedUnidad(params.unidad_id);
               const unidad = unidades.find(u => u.id === params.unidad_id);
               if (unidad) {
+                const unidadServerId = String(unidad.server_id || '').trim();
+                const serverChanged = String(params.server_id || '') !== unidadServerId;
+                const usaSucursalUnidad = unidad.sucursal_origen_id && unidad.system_type === 'MPRO';
+                const nombreSucursal = unidad.sucursales?.[0]?.nombre || unidad.nombre;
+
+                setFilters(prev => ({
+                  ...prev,
+                  ...params,
+                  unidad_id: unidad.id,
+                  server_id: unidadServerId,
+                  query_type: normalizeReportQueryType(params.query_type),
+                  sucursal_id: usaSucursalUnidad ? unidad.sucursal_origen_id : (serverChanged ? '' : params.sucursal_id || ''),
+                  sucursal: usaSucursalUnidad ? nombreSucursal : (serverChanged ? '' : params.sucursal || ''),
+                  almacen_id: serverChanged ? '' : params.almacen_id || '',
+                  almacen: serverChanged ? '' : params.almacen || '',
+                  inventario_inicial: serverChanged ? '' : params.inventario_inicial || '',
+                  inventario_final: serverChanged ? '' : params.inventario_final || '',
+                  inventario_inicial_fecha: serverChanged ? '' : params.inventario_inicial_fecha || '',
+                  inventario_final_fecha: serverChanged ? '' : params.inventario_final_fecha || '',
+                  fecha_ini: serverChanged ? '' : params.fecha_ini || '',
+                  fecha_fin: serverChanged ? '' : params.fecha_fin || ''
+                }));
+
+                if (serverChanged) {
+                  setSelectedAlmacenes([]);
+                  setSelectedInventariosIni([]);
+                  setSelectedInventariosFin([]);
+                }
+
                 setSelectedServer({
-                  id: unidad.server_id,
+                  id: unidadServerId,
                   name: unidad.nombre,
                   system_type: unidad.system_type,
                   sucursal_origen_id: unidad.sucursal_origen_id
@@ -1116,7 +1170,7 @@ const Reportes = () => {
     
     setLoadingPendientes(true);
     try {
-      let url = `/api/inventarios/pendientes/${filters.server_id}`;
+      let url = `/inventarios/pendientes/${filters.server_id}`;
       if (almacenId) {
         url += `?almacen_id=${almacenId}`;
       }
@@ -1641,8 +1695,21 @@ const Reportes = () => {
       return;
     }
 
+    const reportQueryType = normalizeReportQueryType(filters.query_type);
+    if (reportQueryType !== filters.query_type) {
+      setFilters(prev => ({
+        ...prev,
+        query_type: reportQueryType
+      }));
+    }
+
+    if (reportQueryType === 'pendientes') {
+      toast.info('Los insumos pendientes se cargan automáticamente');
+      return;
+    }
+
     // Validar campos requeridos para análisis completo
-    if (filters.query_type === 'analisis') {
+    if (reportQueryType === 'analisis') {
       if (!filters.sucursal) {
         toast.error('Selecciona una sucursal');
         return;
@@ -1692,82 +1759,76 @@ const Reportes = () => {
     setLoading(true);
     try {
       let response;
-      
-      if (filters.query_type === 'analisis') {
-        // Obtener folios de inventarios (multi-select o single)
-        const foliosIniciales = selectedInventariosIni.length > 0 
-          ? selectedInventariosIni.map(i => i.folio)
-          : [filters.inventario_inicial];
-        const foliosFinales = selectedInventariosFin.length > 0 
-          ? selectedInventariosFin.map(i => i.folio)
-          : [filters.inventario_final];
-        
-        // Log para debugging
-        logger.log('Filtros a enviar:', {
-          categorias: selectedCategorias,
-          familias: selectedFamilias,
-          subfamilias: selectedSubfamilias,
-          folios_iniciales: foliosIniciales,
-          folios_finales: foliosFinales
-        });
-        
-        // Preparar info de inventarios para MPRO (folio + comentario + almacen_id para el cache)
-        const inventariosIniInfo = selectedInventariosIni.map(i => ({ 
-          folio: i.folio, 
-          comentario: i.comentario || '',
-          almacen_id: i.almacen_id || '',
-          fecha: i.fecha || ''
-        }));
-        const inventariosFinInfo = selectedInventariosFin.map(i => ({ 
-          folio: i.folio, 
-          comentario: i.comentario || '',
-          almacen_id: i.almacen_id || '',
-          fecha: i.fecha || ''
-        }));
-        
-        // Llamar al endpoint de análisis completo con filtros adicionales
-        const almacenesAnalisis = selectedAlmacenes
-          .map((a) => a.nombre ?? a.almacen ?? a.Al_Descripcion ?? a.label ?? a.id ?? a.almacen_id)
-          .filter(Boolean)
-          .map(String);
 
-        response = await api.post('/reports/inventory-analysis', {
-          server_id: filters.server_id,
-          sucursal_id: filters.sucursal_id,
-          sucursal: filters.sucursal,
-          almacen: filters.almacen,
-          almacenes: almacenesAnalisis.length > 0 ? almacenesAnalisis : undefined,
-          fecha_ini: filters.fecha_ini,
-          fecha_fin: filters.fecha_fin,
-          folio_inicial: foliosIniciales.length === 1 ? foliosIniciales[0] : undefined,
-          folio_final: foliosFinales.length === 1 ? foliosFinales[0] : undefined,
-          folios_iniciales: foliosIniciales.length > 1 ? foliosIniciales : undefined,
-          folios_finales: foliosFinales.length > 1 ? foliosFinales : undefined,
-          // Info completa de inventarios para MPRO
-          inventarios_iniciales_info: inventariosIniInfo,
-          inventarios_finales_info: inventariosFinInfo,
-          // Opción de agrupación
-          agrupar_insumos: agruparInsumos,
-          // Filtros adicionales
-          categorias: selectedCategorias,
-          familias: selectedFamilias,
-          subfamilias: selectedSubfamilias
-        }, {
-          timeout: 120000
-        });
-      } else {
-        // Llamar al endpoint normal de reportes
-        response = await api.post('/reports/inventory', {
-          server_id: filters.server_id,
-          query_type: filters.query_type,
-          params: {
-            sucursal: filters.sucursal,
-            almacen: filters.almacen,
-            fecha_ini: filters.fecha_ini,
-            fecha_fin: filters.fecha_fin
-          }
-        });
-      }
+      // Obtener folios de inventarios (multi-select o single)
+      const foliosIniciales = selectedInventariosIni.length > 0
+        ? selectedInventariosIni.map(i => i.folio)
+        : [filters.inventario_inicial];
+      const foliosFinales = selectedInventariosFin.length > 0
+        ? selectedInventariosFin.map(i => i.folio)
+        : [filters.inventario_final];
+
+      // Log para debugging
+      logger.log('Filtros a enviar:', {
+        categorias: selectedCategorias,
+        familias: selectedFamilias,
+        subfamilias: selectedSubfamilias,
+        folios_iniciales: foliosIniciales,
+        folios_finales: foliosFinales
+      });
+
+      // Preparar info de inventarios para MPRO (folio + comentario + almacen_id para el cache)
+      const inventariosIniInfo = selectedInventariosIni.map(i => ({
+        folio: i.folio,
+        comentario: i.comentario || '',
+        almacen_id: i.almacen_id || '',
+        fecha: i.fecha || ''
+      }));
+      const inventariosFinInfo = selectedInventariosFin.map(i => ({
+        folio: i.folio,
+        comentario: i.comentario || '',
+        almacen_id: i.almacen_id || '',
+        fecha: i.fecha || ''
+      }));
+
+      // Llamar al endpoint de análisis completo con filtros adicionales
+      const almacenesAnalisis = selectedAlmacenes
+        .map((a) => {
+          const almacenId = String(a.almacen_id ?? a.id ?? '').trim();
+          const almacenNombre = String(a.nombre ?? a.almacen ?? a.Al_Descripcion ?? a.label ?? '').trim();
+          return {
+            id: almacenId,
+            almacen_id: almacenId,
+            nombre: almacenNombre,
+            almacen: almacenNombre
+          };
+        })
+        .filter((a) => a.almacen_id || a.nombre);
+
+      response = await api.post('/reports/inventory-analysis', {
+        server_id: String(filters.server_id || '').trim(),
+        sucursal_id: filters.sucursal_id,
+        sucursal: filters.sucursal,
+        almacen: filters.almacen,
+        almacenes: almacenesAnalisis.length > 0 ? almacenesAnalisis : undefined,
+        fecha_ini: filters.fecha_ini,
+        fecha_fin: filters.fecha_fin,
+        folio_inicial: foliosIniciales.length === 1 ? foliosIniciales[0] : undefined,
+        folio_final: foliosFinales.length === 1 ? foliosFinales[0] : undefined,
+        folios_iniciales: foliosIniciales.length > 1 ? foliosIniciales : undefined,
+        folios_finales: foliosFinales.length > 1 ? foliosFinales : undefined,
+        // Info completa de inventarios para MPRO
+        inventarios_iniciales_info: inventariosIniInfo,
+        inventarios_finales_info: inventariosFinInfo,
+        // Opción de agrupación
+        agrupar_insumos: agruparInsumos,
+        // Filtros adicionales
+        categorias: selectedCategorias,
+        familias: selectedFamilias,
+        subfamilias: selectedSubfamilias
+      }, {
+        timeout: 120000
+      });
       
       logger.log('Respuesta del reporte:', response.data);
 
@@ -2343,7 +2404,7 @@ const Reportes = () => {
       const fechaReferencia = filters.fecha_fin || new Date().toISOString().split('T')[0];
       
       const response = await api.post('/reports/export/comparativo-inventarios', {
-        server_id: filters.server_id,
+        server_id: String(filters.server_id || '').trim(),
         sucursal_id: filters.sucursal_id || '',
         sucursal_nombre: filters.sucursal || '',
         almacenes: almacenesParaComparativo,
@@ -2492,7 +2553,7 @@ const Reportes = () => {
       const response = await api.post(
         '/reports/inverse-recipe-usage',
         {
-          server_id: filters.server_id,
+          server_id: String(filters.server_id || '').trim(),
           codigo,
           producto: nombre,
           unidad,
@@ -2600,9 +2661,10 @@ const Reportes = () => {
                         setSelectedUnidad(unidadId);
                         const unidad = unidadesNegocio.find(u => u.id === unidadId);
                         if (unidad) {
+                          const unidadServerId = String(unidad.server_id || '').trim();
                           // Establecer el servidor seleccionado
                           const newServer = {
-                            id: unidad.server_id,
+                            id: unidadServerId,
                             name: unidad.nombre,
                             system_type: unidad.system_type,
                             sucursal_origen_id: unidad.sucursal_origen_id
@@ -2616,7 +2678,7 @@ const Reportes = () => {
                             setFilters({
                               ...filters, 
                               unidad_id: unidadId,
-                              server_id: unidad.server_id, 
+                              server_id: unidadServerId,
                               sucursal_id: unidad.sucursal_origen_id, 
                               sucursal: nombreSucursal, // Nombre real de sucursal para queries SQL LIKE
                               almacen_id: '', 
@@ -2626,7 +2688,7 @@ const Reportes = () => {
                             setFilters({
                               ...filters, 
                               unidad_id: unidadId,
-                              server_id: unidad.server_id, 
+                              server_id: unidadServerId,
                               sucursal_id: '', 
                               almacen_id: '', 
                               sucursal: '', 
@@ -2655,14 +2717,10 @@ const Reportes = () => {
               <select 
                 className={selectStyle}
                 data-testid="query-type-select"
-                value={filters.query_type}
-                onChange={(e) => setFilters({...filters, query_type: e.target.value})}
+                value={normalizeReportQueryType(filters.query_type)}
+                onChange={(e) => setFilters({...filters, query_type: normalizeReportQueryType(e.target.value)})}
               >
                 <option value="analisis">Análisis de Inventarios</option>
-                <option value="ventas">Ventas</option>
-                <option value="movimientos">Movimientos</option>
-                <option value="productos">Productos</option>
-                <option value="inventarios">Inventarios Físicos</option>
                 {selectedServer?.system_type === 'SoftRestaurant' && (
                   <option value="pendientes">Insumos Pendientes de Descargar</option>
                 )}
