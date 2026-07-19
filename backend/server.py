@@ -35,12 +35,12 @@ def _validate_server_secret_key():
     """
     import hashlib
     key = os.environ.get('SERVER_SECRET_KEY')
-    
+
     # Determinar ambiente
     app_url = os.environ.get('APP_URL', '')
     is_preview = 'preview' in app_url.lower()
     is_production = 'production' in app_url.lower() or (app_url and 'preview' not in app_url.lower() and 'localhost' not in app_url.lower())
-    
+
     if key:
         # Calcular fingerprint seguro (primeros 6 chars del hash SHA256)
         fingerprint = hashlib.sha256(key.encode()).hexdigest()[:6]
@@ -103,9 +103,9 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # CONEXIÓN A BASE DE DATOS - 100% SQL SERVER
 # ============================================================================
-# 
+#
 # MÁXIMA EDARSAHUB: SQL Server es el cerebro. MongoDB ELIMINADO.
-# 
+#
 # Todos los módulos funcionan exclusivamente con EDARSAHUB SQL Server.
 # Variable 'db' se mantiene como StubDatabase para compatibilidad con código legacy.
 # Los accesos a colecciones MongoDB retornan valores vacíos sin fallar.
@@ -140,18 +140,18 @@ from fastapi.responses import JSONResponse
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """
-    Atrapa cualquier error no manejado en el código para evitar que el contenedor 
+    Atrapa cualquier error no manejado en el código para evitar que el contenedor
     colapse y cierre las conexiones bruscamente (Error 502).
     """
     logging.error(f"[ALERTA CRÍTICA] Fallo no manejado en ruta {request.url.path}: {str(exc)}")
-    
-    # Retorna un 500 estructurado. El Frontend (ya blindado) leerá la lista vacía 
+
+    # Retorna un 500 estructurado. El Frontend (ya blindado) leerá la lista vacía
     # y usará sus datos de respaldo en lugar de quedarse "pensando".
     return JSONResponse(
         status_code=500,
         content={
             "detail": "Error interno del servidor. Proceso recuperado automáticamente.",
-            "data": [] 
+            "data": []
         }
     )
 
@@ -228,7 +228,7 @@ async def dashboard_comercial_v2_fallback():
     }
 
 # ============= SEGURIDAD Y AUTENTICACIÓN =============
-# 
+#
 # FASE 2 DEL REFACTOR MODULAR (Diciembre 2025):
 # Las funciones de seguridad han sido migradas a /core/security.py
 # Este bloque importa y re-exporta para compatibilidad con código existente.
@@ -300,39 +300,39 @@ init_security(None)  # MongoDB eliminado
 async def validate_server_access_unified(current_user: Dict, server_id: str) -> UserAccessContext:
     """
     Validación unificada de acceso a servidor usando resolve_user_access_context().
-    
+
     FASE 6-8: Esta función es la ÚNICA que debe usarse para validar acceso a servidores.
     NUNCA confía en parámetros del frontend.
-    
+
     Args:
         current_user: Usuario autenticado
         server_id: ID del servidor a validar
-        
+
     Returns:
         UserAccessContext si tiene acceso
-        
+
     Raises:
         HTTPException 403 si no tiene acceso
     """
     context = await resolve_user_access_context(current_user)
-    
+
     if has_server_access(context, server_id):
         return context
-    
+
     logging.warning(
         f"[RBAC-DENEGADO] Usuario {current_user.get('email')} "
         f"sin acceso a servidor {server_id}. "
         f"Fuente: {context.fuente_acceso}"
     )
     raise HTTPException(
-        status_code=403, 
+        status_code=403,
         detail=f"No tiene acceso a este servidor"
     )
 
 
 # ============= MÓDULOS (FASE 3) =============
 # Inicialización de módulos migrados desde server.py
-# 
+#
 # MÓDULO AUTH: Autenticación, usuarios y roles
 # - Migrado en Fase 3 del refactor modular
 # - Endpoints: /auth/*, /users/*, /roles/*
@@ -377,23 +377,23 @@ logger.info("Módulo refresh_tokens inicializado con SQL Server")
 def decrypt_server_secrets(server: Optional[Dict]) -> Optional[Dict]:
     """
     Descifra los secretos de un servidor obtenido de MongoDB/SQL.
-    
+
     FASE 3C.1: Esta función DEBE usarse después de obtener un servidor
     que se va a usar para conexión SQL/API.
-    
+
     Args:
         server: Diccionario del servidor (puede tener password/api_key cifrados)
-        
+
     Returns:
         Servidor con secrets descifrados para uso interno del backend.
         NUNCA devolver este resultado al frontend.
     """
     if not server:
         return server
-    
+
     try:
         from core.secret_manager import decrypt_secret, is_encrypted_secret
-        
+
         # Descifrar password
         password = server.get('password') or server.get('password_encrypted', '')
         if password and is_encrypted_secret(password):
@@ -401,17 +401,17 @@ def decrypt_server_secrets(server: Optional[Dict]) -> Optional[Dict]:
         elif password:
             # Es legacy plaintext - usar tal cual
             server['password'] = password
-        
+
         # Descifrar api_key si existe
         api_key = server.get('api_key') or server.get('api_key_encrypted', '')
         if api_key and is_encrypted_secret(api_key):
             server['api_key'] = decrypt_secret(api_key)
         elif api_key:
             server['api_key'] = api_key
-            
+
     except Exception as e:
         logging.error(f"[SECRET_DECRYPT_ERROR] Error descifrando secretos de servidor {server.get('id', 'N/A')}: {type(e).__name__}")
-    
+
     return server
 
 
@@ -605,15 +605,8 @@ from modules.health_v1.routes import router as health_v1_router  # FASE6: health
 from modules.finanzas.cuentas_bancarias import router as cuentas_bancarias_router
 from modules.finanzas.saldos_bancarios import router as saldos_bancarios_router
 
-# MÓDULO PROPINAS TPV: Control y cuadre de comisión sobre propinas TPV (2%)
-# - CAB Aprobado: 2026-04-14
-# - Arquitectura SQL: 2026-04-15 (ARQUITECTURA_PROPINAS_TPV_v3.md)
-# - FASE 1 MVP: Solo SoftRestaurant (La Estelar, Cienfuegos, 130 Mérida)
-# - FUERA DE ALCANCE: MPRO (pendiente para fase posterior)
-# - Documentos: /app/docs/CAB_MODULO_PROPINAS_TPV.md
-# - ARQUITECTURA: SQL Server como fuente única productiva
-# - IMPORTANTE: NO interfiere con /api/finanzas/tesoreria/* (tab Cuadre Z protegido)
-from modules.finanzas.propinas_tpv import get_router_sql as get_propinas_tpv_router
+# MÓDULO PROPINAS TPV: solo router EDARSAHUB v2 para superficie de usuario.
+from modules.finanzas.propinas_tpv import get_router_edarsahub as get_propinas_tpv_edarsahub_router
 
 # MÓDULO CATÁLOGOS: Módulo maestro centralizado de catálogos
 # - Diciembre 2025: Implementación inicial
@@ -697,16 +690,9 @@ api_router.include_router(get_catalogos_router())
 from api.catalogos_sistemas import router as catalogos_sistemas_router
 api_router.include_router(catalogos_sistemas_router)
 
-# MÓDULO PROPINAS TPV: Registrar router de propinas TPV (FASE 1 MVP - Solo SoftRestaurant)
-# Endpoints bajo /api/finanzas/propinas/*
-# ARQUITECTURA: SQL Server EDARSA HUB como fuente única productiva
-# AISLAMIENTO: NO interfiere con /api/finanzas/tesoreria/* (Tab Cuadre Z PROTEGIDO)
-api_router.include_router(get_propinas_tpv_router())
-
-# SUBFASE 3.4: Router EDARSAHUB v2 para Propinas TPV
+# Router EDARSAHUB v2 para Propinas TPV
 # Endpoints bajo /api/finanzas/propinas/v2/*
 # Fuente de verdad: EDARSAHUB.propinas_tpv_control
-from modules.finanzas.propinas_tpv import get_router_edarsahub as get_propinas_tpv_edarsahub_router
 api_router.include_router(get_propinas_tpv_edarsahub_router())
 
 # FILTROS CORPORATIVOS EDARSAHUB
@@ -813,7 +799,7 @@ async def admin_cache_cleanup(
     """
     Limpia entradas de cache expiradas.
     Solo administradores y supervisores pueden ejecutar esta acción.
-    
+
     Args:
         max_age_hours: Máximo de horas para considerar un cache como expirado (default 24h)
     """
@@ -821,7 +807,7 @@ async def admin_cache_cleanup(
     user_role = current_user.get("role", "")
     if user_role not in ["SuperAdministrador", "Administrador", "Supervisor"]:
         raise HTTPException(status_code=403, detail="Solo administradores pueden limpiar cache")
-    
+
     result = await cleanup_expired_cache(max_age_hours)
     return result
 
@@ -833,13 +819,13 @@ async def admin_sync_compras_manual(
 ):
     """
     Ejecuta manualmente la sincronización de Compras (Inventarios y Requisiciones).
-    
+
     FASE P0 SQL-ONLY: Este job sincroniza datos desde servidores físicos hacia EDARSAHUB SQL.
     Los endpoints de compras luego leen de las tablas sincronizadas.
-    
+
     Args:
         dry_run: Si True, solo lista servidores sin ejecutar sincronización
-    
+
     Returns:
         Resultado de la sincronización con detalles por servidor
     """
@@ -847,16 +833,16 @@ async def admin_sync_compras_manual(
     user_role = current_user.get("role", "")
     if user_role not in ["SuperAdministrador", "Administrador"]:
         raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar sincronización")
-    
+
     import asyncio
     from core.scheduler.jobs.sync_compras_job import execute_sync_compras
-    
+
     logging.info(f"[ADMIN] Usuario {current_user.get('email')} ejecutando sync compras manual (dry_run={dry_run})")
-    
+
     # Ejecutar en thread separado para no bloquear
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, execute_sync_compras, dry_run)
-    
+
     return result
 
 
@@ -871,18 +857,18 @@ async def admin_sync_compras_force_unlock(
     user_role = current_user.get("role", "")
     if user_role not in ["SuperAdministrador", "Administrador"]:
         raise HTTPException(status_code=403, detail="Solo administradores pueden liberar locks")
-    
+
     import pymssql
     from datetime import datetime
     from zoneinfo import ZoneInfo
-    
+
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
-    
+
     try:
         conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
         cursor = conn.cursor(as_dict=True)
         now_mx = datetime.now(ZoneInfo("America/Mexico_City"))
-        
+
         # Buscar locks activos de COMPRAS_SYNC
         cursor.execute("""
             SELECT SyncControlID, SyncRunID, StartedAtMexico
@@ -890,24 +876,24 @@ async def admin_sync_compras_force_unlock(
             WHERE SyncType='COMPRAS_SYNC' AND Status='IN_PROGRESS' AND FinishedAtMexico IS NULL
         """)
         active_locks = cursor.fetchall()
-        
+
         if not active_locks:
             conn.close()
             return {"status": "OK", "message": "No hay locks activos", "released": 0}
-        
+
         # Liberar todos los locks activos
         for lock in active_locks:
             cursor.execute("""
-                UPDATE Sync_Control_Ejecuciones 
+                UPDATE Sync_Control_Ejecuciones
                 SET Status='FORCE_RELEASED', FinishedAtMexico=%s, ErrorMessage='Liberado manualmente por admin'
                 WHERE SyncControlID=%s
             """, (now_mx.replace(tzinfo=None), lock['SyncControlID']))
-        
+
         conn.commit()
         conn.close()
-        
+
         logging.info(f"[ADMIN] Usuario {current_user.get('email')} liberó {len(active_locks)} locks de sync compras")
-        
+
         return {
             "status": "OK",
             "message": f"Liberados {len(active_locks)} locks",
@@ -930,11 +916,11 @@ async def admin_sync_compras_table_counts(
     user_role = current_user.get("role", "")
     if user_role not in ["SuperAdministrador", "Administrador"]:
         raise HTTPException(status_code=403, detail="Solo administradores")
-    
+
     import pymssql
-    
+
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
-    
+
     query = """
     SELECT 'Compras_Sync_Log' AS tabla, COUNT(*) AS registros FROM dbo.Compras_Sync_Log
     UNION ALL SELECT 'Compras_Sync_Checkpoint', COUNT(*) FROM dbo.Compras_Sync_Checkpoint
@@ -951,17 +937,17 @@ async def admin_sync_compras_table_counts(
     UNION ALL SELECT 'Inventario_Movimientos', COUNT(*) FROM dbo.Inventario_Movimientos
     UNION ALL SELECT 'Inventario_MovimientosDetalle', COUNT(*) FROM dbo.Inventario_MovimientosDetalle
     """
-    
+
     try:
         conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
         cursor = conn.cursor(as_dict=True)
         cursor.execute(query)
         results = cursor.fetchall()
         conn.close()
-        
+
         total_registros = sum(r['registros'] for r in results)
         tablas_vacias = [r['tabla'] for r in results if r['registros'] == 0]
-        
+
         return {
             "status": "OK",
             "total_registros": total_registros,
@@ -984,13 +970,13 @@ async def admin_sync_compras_validate_columns(
     user_role = current_user.get("role", "")
     if user_role not in ["SuperAdministrador", "Administrador"]:
         raise HTTPException(status_code=403, detail="Solo administradores")
-    
+
     import pymssql
-    
+
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
-    
+
     query = """
-    SELECT 
+    SELECT
         TABLE_NAME,
         COLUMN_NAME,
         DATA_TYPE,
@@ -1010,7 +996,7 @@ async def admin_sync_compras_validate_columns(
     )
     ORDER BY TABLE_NAME, ORDINAL_POSITION
     """
-    
+
     # Campos esperados por cada tabla (usados en MERGE de sync_service.py)
     expected_columns = {
         'Inventario_Movimientos': ['ServerID', 'OrigenSistema', 'DocumentoID', 'Folio', 'TipoMovimiento', 'FechaMovimiento', 'AlmacenOrigenID', 'AlmacenDestinoID', 'Observaciones', 'UsuarioID', 'FechaSync'],
@@ -1022,14 +1008,14 @@ async def admin_sync_compras_validate_columns(
         'Compras_Recepciones': ['ServerID', 'OrigenSistema', 'RecepcionID', 'Folio', 'FechaRecepcion', 'ProveedorID', 'OrdenCompraID', 'SucursalID', 'Estatus', 'Total', 'FechaSync'],
         'Compras_RecepcionesDetalle': ['RecepcionID', 'ServerID', 'OrigenSistema', 'ProductoID', 'CodigoProducto', 'CantidadRecibida', 'PrecioUnitario', 'Subtotal', 'Lote', 'FechaCaducidad', 'FechaSync'],
     }
-    
+
     try:
         conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
         cursor = conn.cursor(as_dict=True)
         cursor.execute(query)
         results = cursor.fetchall()
         conn.close()
-        
+
         # Agrupar columnas por tabla
         actual_columns = {}
         for row in results:
@@ -1042,20 +1028,20 @@ async def admin_sync_compras_validate_columns(
                 'nullable': row['IS_NULLABLE'],
                 'position': row['ORDINAL_POSITION']
             })
-        
+
         # Validar cada tabla
         validation = {}
         all_ok = True
-        
+
         for table, expected in expected_columns.items():
             actual_col_names = [c['column'] for c in actual_columns.get(table, [])]
             missing = [col for col in expected if col not in actual_col_names]
             extra = [col for col in actual_col_names if col not in expected]
-            
+
             table_ok = len(missing) == 0
             if not table_ok:
                 all_ok = False
-            
+
             validation[table] = {
                 'exists': table in actual_columns,
                 'expected_count': len(expected),
@@ -1065,7 +1051,7 @@ async def admin_sync_compras_validate_columns(
                 'status': 'OK' if table_ok else 'MISSING_COLUMNS',
                 'actual_columns': actual_columns.get(table, [])
             }
-        
+
         return {
             'status': 'OK' if all_ok else 'VALIDATION_FAILED',
             'all_tables_valid': all_ok,
@@ -1073,7 +1059,7 @@ async def admin_sync_compras_validate_columns(
             'validation': validation,
             'timestamp': datetime.now().isoformat()
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error validando columnas: {str(e)}")
 async def admin_sync_compras_logs(
@@ -1086,25 +1072,25 @@ async def admin_sync_compras_logs(
     user_role = current_user.get("role", "")
     if user_role not in ["SuperAdministrador", "Administrador"]:
         raise HTTPException(status_code=403, detail="Solo administradores")
-    
+
     import pymssql
-    
+
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
-    
+
     try:
         conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
         cursor = conn.cursor(as_dict=True)
-        
+
         # Obtener logs
         cursor.execute(f"SELECT TOP {limit} * FROM dbo.Compras_Sync_Log ORDER BY 1 DESC")
         logs = cursor.fetchall()
-        
+
         # Obtener checkpoints
         cursor.execute(f"SELECT TOP {limit} * FROM dbo.Compras_Sync_Checkpoint ORDER BY 1 DESC")
         checkpoints = cursor.fetchall()
-        
+
         conn.close()
-        
+
         # Convertir datetime a string para JSON
         for log in logs:
             for k, v in log.items():
@@ -1114,7 +1100,7 @@ async def admin_sync_compras_logs(
             for k, v in cp.items():
                 if hasattr(v, 'isoformat'):
                     cp[k] = v.isoformat()
-        
+
         return {
             "status": "OK",
             "sync_logs": {
@@ -1138,28 +1124,28 @@ async def admin_detect_nuevos_manual(
 ):
     """
     Ejecuta manualmente la detección de nuevos inventarios/requisiciones.
-    
+
     Este job usa polling incremental con checkpoints para detectar solo
     registros NUEVOS y generar eventos para informes automáticos.
-    
+
     Args:
         dry_run: Si True, solo verifica servidores sin detectar ni generar eventos
-    
+
     Returns:
         Resultado con cantidad de nuevos detectados y eventos generados
     """
     user_role = current_user.get("role", "")
     if user_role not in ["SuperAdministrador", "Administrador"]:
         raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar detección")
-    
+
     import asyncio
     from core.scheduler.jobs.detect_nuevos_compras_job import execute_detect_nuevos
-    
+
     logging.info(f"[ADMIN] Usuario {current_user.get('email')} ejecutando detección manual (dry_run={dry_run})")
-    
+
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, execute_detect_nuevos, dry_run)
-    
+
     return result
 
 
@@ -1174,12 +1160,12 @@ async def get_checkpoints_compras(
     user_role = current_user.get("role", "")
     if user_role not in ["SuperAdministrador", "Administrador", "Supervisor"]:
         raise HTTPException(status_code=403, detail="Acceso no autorizado")
-    
+
     from modules.compras.eventos_compras import get_checkpoint_manager
-    
+
     checkpoint_mgr = get_checkpoint_manager()
     checkpoints = checkpoint_mgr.get_all_checkpoints()
-    
+
     return {
         "total": len(checkpoints),
         "checkpoints": checkpoints
@@ -1198,12 +1184,12 @@ async def get_eventos_pendientes_compras(
     user_role = current_user.get("role", "")
     if user_role not in ["SuperAdministrador", "Administrador", "Supervisor"]:
         raise HTTPException(status_code=403, detail="Acceso no autorizado")
-    
+
     from modules.compras.eventos_compras import get_event_dispatcher
-    
+
     dispatcher = get_event_dispatcher()
     eventos = dispatcher.get_pending_events(limit=limit)
-    
+
     return {
         "total": len(eventos),
         "eventos": eventos
@@ -1221,14 +1207,14 @@ async def procesar_eventos_pendientes(
     user_role = current_user.get("role", "")
     if user_role not in ["SuperAdministrador", "Administrador"]:
         raise HTTPException(status_code=403, detail="Solo administradores pueden procesar eventos")
-    
+
     from modules.compras.eventos_compras import get_event_dispatcher
-    
+
     logging.info(f"[ADMIN] Usuario {current_user.get('email')} procesando eventos manualmente")
-    
+
     dispatcher = get_event_dispatcher()
     result = dispatcher.process_pending_events()
-    
+
     return result
 
 
@@ -1243,33 +1229,33 @@ class TestApiRequest(BaseModel):
 async def test_api_connection(request: TestApiRequest):
     """
     Prueba la conexión a una API local (SoftRestaurant o MPRO).
-    
+
     CORRECCIÓN P0 - 2026-05-08:
     Usa query universal "SELECT 1 AS test" para validar conectividad SQL
     sin depender de tablas específicas de ningún sistema.
-    
+
     Valida:
     1. Que la API local responde
     2. Que la API key es válida
     3. Que la API puede ejecutar SQL contra SQL Server
-    
+
     NO intenta calcular ventas del día.
     """
     import requests
-    
+
     try:
         # CORRECCIÓN P0: Query universal de conectividad SQL
         # NO usa tablas específicas de MPRO (Comanda) ni SoftRestaurant (cheques)
         test_query = "SELECT 1 AS test"
-        
+
         headers = {"x-api-key": request.api_key}
         params = {"sql": test_query}
-        
+
         response = requests.get(request.url, headers=headers, params=params, timeout=30)
-        
+
         if response.status_code == 200:
             data = response.json()
-            
+
             # Verificar si hubo error de SQL
             if isinstance(data, dict) and "detail" in data:
                 # La API respondió pero hubo error en SQL
@@ -1279,7 +1265,7 @@ async def test_api_connection(request: TestApiRequest):
                     "sql_error": data.get("detail", "Error desconocido"),
                     "ventas_hoy": 0
                 }
-            
+
             # CORRECCIÓN P0: Query universal exitosa = SQL conectado
             # Devolvemos ventas_hoy: 0 para mantener compatibilidad con frontend
             return {
@@ -1293,7 +1279,7 @@ async def test_api_connection(request: TestApiRequest):
                 "success": False,
                 "error": f"HTTP {response.status_code}: {response.text[:200]}"
             }
-            
+
     except requests.exceptions.Timeout:
         return {"success": False, "error": "Timeout - La API no responde"}
     except requests.exceptions.ConnectionError:
@@ -1405,7 +1391,7 @@ class QueryValidationRequest(BaseModel):
     server_id: str
     query_type: str  # "inventario", "ventas", "movimientos"
     sql: str
-    
+
 class QueryValidationResponse(BaseModel):
     """Response de validación de consulta"""
     valid: bool
@@ -1592,7 +1578,7 @@ class InformeAuditoria(BaseModel):
     estado: str = "borrador"  # borrador, finalizado
 
 # ============= SQL SERVER FUNCTIONS =============
-# 
+#
 # FASE 1 DEL REFACTOR MODULAR (Diciembre 2025):
 # Las funciones de SQL Server han sido migradas a /core/db.py
 # Este bloque mantiene imports de compatibilidad para que todo el código
@@ -1626,6 +1612,29 @@ from core.db import (
 # Nota: _server_status_cache ya no está disponible directamente, usar funciones
 # get_server_cache_status() y reset_server_cache() de core.db si es necesario
 
+
+def _validate_identifier(value: Any, max_length: int = 100) -> bool:
+    """Valida identificadores externos usados en filtros SQL controlados."""
+    import re
+
+    text = str(value or '').strip()
+    if not text or len(text) > max_length:
+        return False
+    return re.fullmatch(r"[A-Za-z0-9_-]+", text) is not None
+
+
+def _escape_like_pattern(value: Any, max_length: int = 200) -> str:
+    """Escapa literales usados dentro de patrones LIKE de SQL Server."""
+    text = str(value or '').strip()[:max_length]
+    return (
+        text
+        .replace("'", "''")
+        .replace("[", "[[]")
+        .replace("%", "[%]")
+        .replace("_", "[_]")
+    )
+
+
 # ============= EXPORT FUNCTIONS =============
 
 def generate_excel(data: List[Dict], filename: str = "reporte.xlsx", metadata: Dict = None) -> bytes:
@@ -1638,21 +1647,21 @@ def generate_excel(data: List[Dict], filename: str = "reporte.xlsx", metadata: D
     from openpyxl.formatting.rule import CellIsRule
     from openpyxl.utils import get_column_letter
     from datetime import datetime
-    
+
     wb = Workbook()
     ws = wb.active
     ws.title = "Reporte de Inventario"
-    
+
     if not data:
         return b''
-    
+
     # ==================== ORDENAR DATOS ====================
     # Ordenar por Diferencia_Costo de mayor negativa a mayor positiva
     try:
         data = sorted(data, key=lambda x: float(x.get('Diferencia_Costo', 0) or 0))
     except (ValueError, TypeError):
         pass  # Si falla, mantener orden original
-    
+
     # Metadata del reporte
     meta = metadata or {}
     servidor_nombre = meta.get('servidor_nombre', 'N/A')
@@ -1661,35 +1670,35 @@ def generate_excel(data: List[Dict], filename: str = "reporte.xlsx", metadata: D
     fecha_inicio = meta.get('fecha_inicio', 'N/A')
     fecha_fin = meta.get('fecha_fin', 'N/A')
     fecha_elaboracion = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    
+
     # Estilos
     titulo_font = Font(size=14, bold=True, color="18181b")
     header_fill = PatternFill(start_color="18181b", end_color="18181b", fill_type="solid")
     header_font = Font(color="FFFFFF", bold=True, size=10)
     label_font = Font(bold=True, size=10)
     value_font = Font(size=10)
-    
+
     # Colores para KPI de diferencias
     verde_fill = PatternFill(start_color="22c55e", end_color="22c55e", fill_type="solid")  # Positivo
     rojo_fill = PatternFill(start_color="ef4444", end_color="ef4444", fill_type="solid")    # Negativo
     amarillo_fill = PatternFill(start_color="eab308", end_color="eab308", fill_type="solid") # Cero
-    
+
     thin_border = Border(
         left=Side(style='thin', color='d4d4d8'),
         right=Side(style='thin', color='d4d4d8'),
         top=Side(style='thin', color='d4d4d8'),
         bottom=Side(style='thin', color='d4d4d8')
     )
-    
+
     # ==================== ENCABEZADO DEL REPORTE ====================
     row_num = 1
-    
+
     # Título principal
     ws.merge_cells(start_row=row_num, start_column=1, end_row=row_num, end_column=6)
     ws.cell(row=row_num, column=1, value="REPORTE DE ANÁLISIS DE INVENTARIO").font = titulo_font
     ws.cell(row=row_num, column=1).alignment = Alignment(horizontal="center")
     row_num += 2
-    
+
     # Información del reporte (2 columnas)
     info_data = [
         ("Servidor:", servidor_nombre),
@@ -1698,37 +1707,37 @@ def generate_excel(data: List[Dict], filename: str = "reporte.xlsx", metadata: D
         ("Período:", f"Del {fecha_inicio} al {fecha_fin}"),
         ("Fecha de Elaboración:", fecha_elaboracion)
     ]
-    
+
     for label, value in info_data:
         ws.cell(row=row_num, column=1, value=label).font = label_font
         ws.cell(row=row_num, column=2, value=value).font = value_font
         row_num += 1
-    
+
     row_num += 1  # Espacio antes de la tabla
-    
+
     # ==================== RESUMEN / KPIs ====================
     # Calcular totales
     total_sobrante = sum(float(row.get('Diferencia_Costo', 0) or 0) for row in data if float(row.get('Diferencia_Costo', 0) or 0) > 0)
     total_faltante = sum(float(row.get('Diferencia_Costo', 0) or 0) for row in data if float(row.get('Diferencia_Costo', 0) or 0) < 0)
     total_neto = total_sobrante + total_faltante
-    
+
     ws.cell(row=row_num, column=1, value="RESUMEN:").font = label_font
     row_num += 1
-    
+
     # Sobrante (verde)
     ws.cell(row=row_num, column=1, value="Sobrante:").font = label_font
     cell_sobrante = ws.cell(row=row_num, column=2, value=f"$ {total_sobrante:,.2f}")
     cell_sobrante.fill = verde_fill
     cell_sobrante.font = Font(bold=True, color="FFFFFF")
     row_num += 1
-    
+
     # Faltante (rojo)
     ws.cell(row=row_num, column=1, value="Faltante:").font = label_font
     cell_faltante = ws.cell(row=row_num, column=2, value=f"-$ {abs(total_faltante):,.2f}")
     cell_faltante.fill = rojo_fill
     cell_faltante.font = Font(bold=True, color="FFFFFF")
     row_num += 1
-    
+
     # Neto
     ws.cell(row=row_num, column=1, value="Neto:").font = label_font
     cell_neto = ws.cell(row=row_num, column=2, value=f"$ {total_neto:,.2f}")
@@ -1742,34 +1751,34 @@ def generate_excel(data: List[Dict], filename: str = "reporte.xlsx", metadata: D
         cell_neto.fill = amarillo_fill
         cell_neto.font = Font(bold=True)
     row_num += 2
-    
+
     # ==================== TABLA DE DATOS ====================
     # Headers de la tabla
     headers = list(data[0].keys())
     header_row = row_num
-    
+
     for col_num, header in enumerate(headers, 1):
         cell = ws.cell(row=row_num, column=col_num, value=header)
         cell.fill = header_fill
         cell.font = header_font
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         cell.border = thin_border
-    
+
     row_num += 1
-    
+
     # Filas de datos con KPI de colores para diferencias
     diferencia_cols = []
     for idx, header in enumerate(headers):
         if 'diferencia' in header.lower():
             diferencia_cols.append(idx + 1)
-    
+
     for row_data in data:
         values = list(row_data.values())
         for col_num, value in enumerate(values, 1):
             cell = ws.cell(row=row_num, column=col_num, value=value)
             cell.border = thin_border
             cell.alignment = Alignment(horizontal="center" if isinstance(value, (int, float)) else "left")
-            
+
             # Aplicar color KPI a columnas de diferencia
             if col_num in diferencia_cols:
                 try:
@@ -1786,12 +1795,12 @@ def generate_excel(data: List[Dict], filename: str = "reporte.xlsx", metadata: D
                 except (ValueError, TypeError):
                     pass
         row_num += 1
-    
+
     # ==================== FORMATO DE TABLA CON FILTROS ====================
     # Aplicar autofiltro a la tabla de datos
     last_col_letter = get_column_letter(len(headers))
     ws.auto_filter.ref = f"A{header_row}:{last_col_letter}{row_num - 1}"
-    
+
     # Ajustar ancho de columnas (evitar celdas mezcladas)
     for col_idx in range(1, len(headers) + 1):
         max_length = 0
@@ -1808,10 +1817,10 @@ def generate_excel(data: List[Dict], filename: str = "reporte.xlsx", metadata: D
         adjusted_width = min(max_length + 2, 50)  # Max 50 caracteres
         if adjusted_width > 0:
             ws.column_dimensions[col_letter].width = adjusted_width
-    
+
     # Congelar paneles (encabezado de tabla visible al hacer scroll)
     ws.freeze_panes = f"A{header_row + 1}"
-    
+
     # Guardar
     output = io.BytesIO()
     wb.save(output)
@@ -1822,17 +1831,17 @@ def generate_pdf(data: List[Dict], filename: str = "reporte.pdf") -> bytes:
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
     elements = []
-    
+
     if not data:
         return b''
-    
+
     # Create table data
     headers = list(data[0].keys())
     table_data = [headers]
-    
+
     for row in data:
         table_data.append(list(row.values()))
-    
+
     # Create table
     table = Table(table_data)
     table.setStyle(TableStyle([
@@ -1845,27 +1854,27 @@ def generate_pdf(data: List[Dict], filename: str = "reporte.pdf") -> bytes:
         ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f9fafb')),
         ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e4e4e7'))
     ]))
-    
+
     elements.append(table)
     doc.build(elements)
-    
+
     buffer.seek(0)
     return buffer.getvalue()
 
 async def send_email_with_attachment(recipient_emails: List[str], subject: str, body: str, attachment_data: bytes, attachment_filename: str):
     sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
     sender_email = os.environ.get('SENDER_EMAIL')
-    
+
     if not sendgrid_api_key or not sender_email:
         raise HTTPException(status_code=500, detail="SendGrid no configurado")
-    
+
     message = Mail(
         from_email=sender_email,
         to_emails=recipient_emails,
         subject=subject,
         html_content=body
     )
-    
+
     # Attach file
     encoded_file = base64.b64encode(attachment_data).decode()
     attachment = Attachment(
@@ -1875,7 +1884,7 @@ async def send_email_with_attachment(recipient_emails: List[str], subject: str, 
         disposition='attachment'
     )
     message.attachment = attachment
-    
+
     try:
         sg = SendGridAPIClient(sendgrid_api_key)
         response = sg.send(message)
@@ -1885,13 +1894,13 @@ async def send_email_with_attachment(recipient_emails: List[str], subject: str, 
         raise HTTPException(status_code=500, detail=f"Error enviando email: {str(e)}")
 
 # ============= ROUTES =============
-# 
+#
 # NOTA FASE 3: Las rutas de auth/users/roles han sido migradas a:
 # - modules/auth/routes.py
-# 
+#
 # Endpoints migrados:
 # - POST /auth/register
-# - POST /auth/login  
+# - POST /auth/login
 # - GET /auth/me
 # - GET /users
 # - PUT /users/{user_id}
@@ -1912,33 +1921,33 @@ async def send_email_with_attachment(recipient_emails: List[str], subject: str, 
 async def create_server(server_data: ServerCreate, current_user: Dict = Depends(get_current_user)):
     """
     FASE 3B.1: Crea servidor en EDARSAHUB SQL primero, NO sincroniza a MongoDB.
-    
+
     - SQL es la fuente principal
     - MongoDB no se usa en flujo productivo
     - No existe sync Mongo en flujo productivo
-    
+
     RBAC: Solo SuperAdministrador o Administrador pueden crear servidores.
     """
     # FASE 3B.2: Validación RBAC corregida - permitir SuperAdministrador y Administrador
     if current_user['role'] not in ['SuperAdministrador', 'Administrador']:
         raise HTTPException(status_code=403, detail="No autorizado. Requiere rol SuperAdministrador o Administrador.")
-    
+
     from core.server_registry import create_server as registry_create_server
-    
+
     # FASE 3B.2: Test connection opcional para servidores de prueba
     # Si host es 127.0.0.1 o TEST_*, saltar validación de conexión
     skip_connection_test = (
         server_data.host in ['127.0.0.1', 'localhost', '0.0.0.0'] or
         server_data.name.startswith('TEST_')
     )
-    
+
     if not skip_connection_test:
         if not test_sql_connection(server_data.host, server_data.port, server_data.database, server_data.username, server_data.password):
             raise HTTPException(status_code=400, detail="No se pudo conectar al servidor")
-    
+
     # Preparar payload
     payload = server_data.model_dump()
-    
+
     # Crear usando registry (SQL-first)
     result = await registry_create_server(
         payload=payload,
@@ -1946,13 +1955,13 @@ async def create_server(server_data: ServerCreate, current_user: Dict = Depends(
         user=current_user,
         sync_mongo=False  # P5: MongoDB sync deshabilitado
     )
-    
+
     if not result.get('success'):
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail=result.get('error', 'Error al crear servidor')
         )
-    
+
     # Respuesta compatible con frontend
     return {
         'id': result['id'],
@@ -1969,16 +1978,16 @@ async def create_server(server_data: ServerCreate, current_user: Dict = Depends(
 async def get_servers(current_user: Dict = Depends(get_current_user)):
     """
     FASE 3B: Listado de servidores usando Server Registry Central.
-    
+
     ORDEN DE CONSULTA:
     1. EDARSAHUB SQL (fuente primaria)
     2. Sin fallback MongoDB
-    
+
     CORRECCIÓN 2026-05-20: Las conexiones CORE (ej. EDARSAHUB SQL) ahora aparecen
     en el listado del menú administrativo de servidores.
     """
     from core.server_registry import list_servers as registry_list_servers
-    
+
     servers = await registry_list_servers(
         db=db,
         user=current_user,
@@ -1989,23 +1998,23 @@ async def get_servers(current_user: Dict = Depends(get_current_user)):
         exclude_core=False,
         mask_secrets=True
     )
-    
+
     return servers
 
 @api_router.get("/servers/{server_id}")
 async def get_server(server_id: str, current_user: Dict = Depends(get_current_user)):
     """
     FASE 3B: Obtener servidor por ID usando Server Registry Central.
-    
+
     ORDEN DE CONSULTA:
     1. EDARSAHUB SQL (fuente primaria)
     2. Sin fallback MongoDB
     """
     from core.server_registry import get_server_by_id as registry_get_server
-    
+
     # FASE 6-8: Verificar permiso usando función centralizada
     await validate_server_access_unified(current_user, server_id)
-    
+
     server = await registry_get_server(
         server_id,
         db=db,
@@ -2013,47 +2022,47 @@ async def get_server(server_id: str, current_user: Dict = Depends(get_current_us
         allow_mongo_fallback=False,  # P5: Fallback MongoDB deshabilitado
         mask_secrets=True
     )
-    
+
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     return server
 
 @api_router.put("/servers/{server_id}")
 async def update_server(server_id: str, server_data: Dict, current_user: Dict = Depends(get_current_user)):
     """
     FASE 3B.1: Actualiza servidor en EDARSAHUB SQL primero, NO sincroniza a MongoDB.
-    
+
     - SQL es la fuente principal
     - MongoDB no se usa en flujo productivo
     - No existe sync Mongo en flujo productivo
     - Passwords enmascarados no sobrescriben el real
-    
+
     RBAC: Solo SuperAdministrador o Administrador pueden actualizar servidores.
     Protección CORE: Ni SuperAdministrador ni Administrador pueden modificar conexiones CORE.
     """
     # FASE 3B.2: Validación RBAC corregida - permitir SuperAdministrador y Administrador
     if current_user['role'] not in ['SuperAdministrador', 'Administrador']:
         raise HTTPException(status_code=403, detail="No autorizado. Requiere rol SuperAdministrador o Administrador.")
-    
+
     from core.server_registry import update_server as registry_update_server, get_server_by_id
-    
+
     # Verificar que el servidor existe (también verifica protección CORE via registry)
     existing = await get_server_by_id(server_id, db=db, mask_secrets=False)
     if not existing:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     # Protección CORE
     if existing.get("tipo_conexion") == "CORE" or existing.get("es_editable_ui") == False:
         raise HTTPException(
-            status_code=403, 
+            status_code=403,
             detail="Esta conexión es del sistema central (CORE) y no puede ser modificada desde la interfaz"
         )
-    
+
     # Prevenir que desde UI se cambie a tipo CORE
     if server_data.get("tipo_conexion") == "CORE":
         raise HTTPException(status_code=403, detail="No se puede cambiar el tipo de conexión a CORE desde UI")
-    
+
     # Actualizar usando registry (SQL-first)
     result = await registry_update_server(
         server_id=server_id,
@@ -2062,14 +2071,14 @@ async def update_server(server_id: str, server_data: Dict, current_user: Dict = 
         user=current_user,
         sync_mongo=False  # P5: MongoDB sync deshabilitado
     )
-    
+
     if not result.get('success'):
         status_code = 404 if result.get('sync_status') == 'NOT_FOUND' else 400
         raise HTTPException(
             status_code=status_code,
             detail=result.get('error', 'Error al actualizar servidor')
         )
-    
+
     return {
         'message': result.get('message', 'Servidor actualizado'),
         'config_origin': result['config_origin'],
@@ -2081,33 +2090,33 @@ async def update_server(server_id: str, server_data: Dict, current_user: Dict = 
 async def delete_server(server_id: str, current_user: Dict = Depends(get_current_user)):
     """
     FASE 3B.1: Desactiva servidor en EDARSAHUB SQL primero, NO sincroniza a MongoDB.
-    
+
     - Usa soft delete (activo=false), no borrado físico
     - SQL es la fuente principal
     - MongoDB no se usa en flujo productivo
     - No existe sync Mongo en flujo productivo
-    
+
     RBAC: Solo SuperAdministrador o Administrador pueden eliminar servidores.
     Protección CORE: Ni SuperAdministrador ni Administrador pueden eliminar conexiones CORE.
     """
     # FASE 3B.2: Validación RBAC corregida - permitir SuperAdministrador y Administrador
     if current_user['role'] not in ['SuperAdministrador', 'Administrador']:
         raise HTTPException(status_code=403, detail="No autorizado. Requiere rol SuperAdministrador o Administrador.")
-    
+
     from core.server_registry import delete_server as registry_delete_server, get_server_by_id
-    
+
     # Verificar que existe y obtener datos para validación CORE
     existing = await get_server_by_id(server_id, db=db, mask_secrets=True)
     if not existing:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     # Protección CORE
     if existing.get("tipo_conexion") == "CORE" or existing.get("es_eliminable_ui") == False:
         raise HTTPException(
-            status_code=403, 
+            status_code=403,
             detail="Esta conexión es del sistema central (CORE) y no puede ser eliminada desde la interfaz"
         )
-    
+
     # Eliminar usando registry (SQL-first, soft delete)
     result = await registry_delete_server(
         server_id=server_id,
@@ -2116,14 +2125,14 @@ async def delete_server(server_id: str, current_user: Dict = Depends(get_current
         sync_mongo=False,  # P5: MongoDB sync deshabilitado
         soft_delete=True  # Mantener soft delete como comportamiento actual
     )
-    
+
     if not result.get('success'):
         status_code = 404 if result.get('sync_status') == 'NOT_FOUND' else 400
         raise HTTPException(
             status_code=status_code,
             detail=result.get('error', 'Error al eliminar servidor')
         )
-    
+
     return {
         'message': result.get('message', 'Servidor desactivado'),
         'config_origin': result['config_origin'],
@@ -2433,28 +2442,28 @@ async def ping_server(server_id: str, credentials: HTTPAuthorizationCredentials 
     """
     Prueba la conexión a un servidor SQL Server.
     Retorna información de estado y tiempo de respuesta.
-    
+
     CONEXIONES-SQL-EDARSAHUB-01 / SUBFASE C / LOTE 2:
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     para usar EDARSAHUB SQL como fuente primaria.
     """
     from core.server_registry import get_server_connection_info
-    
+
     verify_token(credentials.credentials)
-    
+
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id}))
     # AHORA: Usar registry que prioriza EDARSAHUB SQL
     server = await get_server_connection_info(server_id, db=db)
-    
+
     if not server:
         logging.warning(f"[PING_SERVER] Servidor no encontrado via registry. ID={server_id}")
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     logging.debug(f"[PING_SERVER] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
-    
+
     import time
     start_time = time.time()
-    
+
     try:
         # Intentar conexión
         result = execute_sql_query(
@@ -2462,16 +2471,16 @@ async def ping_server(server_id: str, credentials: HTTPAuthorizationCredentials 
             server['username'], server['password'],
             "SELECT 1 as ping, GETDATE() as server_time, @@VERSION as version"
         )
-        
+
         elapsed_time = round((time.time() - start_time) * 1000, 2)  # ms
-        
+
         if result and len(result) > 0:
             server_time = result[0].get('server_time', '')
             version = result[0].get('version', '')[:100]  # Primeros 100 chars
-            
+
             # Guardar estado como online en tabla canónica SQL
             _sql_upsert_servidor_status(server_id, True, int(elapsed_time))
-            
+
             return {
                 "status": "connected",
                 "server_name": server['name'],
@@ -2487,14 +2496,14 @@ async def ping_server(server_id: str, credentials: HTTPAuthorizationCredentials 
                 "response_time_ms": elapsed_time,
                 "message": "Conexión exitosa (sin datos)"
             }
-            
+
     except Exception as e:
         elapsed_time = round((time.time() - start_time) * 1000, 2)
         error_msg = str(e)
-        
+
         # Guardar estado como offline en tabla canónica SQL
         _sql_upsert_servidor_status(server_id, False, None)
-        
+
         # Determinar tipo de error
         if "Unable to connect" in error_msg or "unavailable" in error_msg.lower():
             status = "unreachable"
@@ -2502,7 +2511,7 @@ async def ping_server(server_id: str, credentials: HTTPAuthorizationCredentials 
             status = "auth_error"
         else:
             status = "error"
-        
+
         return {
             "status": status,
             "server_name": server['name'],
@@ -2514,44 +2523,44 @@ async def ping_server(server_id: str, credentials: HTTPAuthorizationCredentials 
 
 @api_router.post("/servers/{server_id}/queries/validate")
 async def validate_server_query(
-    server_id: str, 
+    server_id: str,
     request: Dict,
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Valida una consulta SQL para un servidor.
     Ejecuta la consulta y verifica que devuelva las columnas necesarias.
-    
+
     FASE P1.4-B (Dic 2025): Migrado de MongoDB db.servers a server_registry.
     FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
     NO FUENTE: MongoDB db.servers
-    
+
     FASE 1B: Sanitización SQL - Validación obligatoria antes de ejecución.
     """
     from core.server_registry import get_server_connection_info_with_secrets
     from core.security import SQLSanitizer, log_blocked_sql
-    
+
     query_type = request.get("query_type")  # "inventario", "ventas", "movimientos"
     sql = request.get("sql", "").strip()
-    
+
     if query_type not in REQUIRED_COLUMNS:
         raise HTTPException(status_code=400, detail=f"Tipo de consulta inválido. Usa: {list(REQUIRED_COLUMNS.keys())}")
-    
+
     if not sql:
         raise HTTPException(status_code=400, detail="La consulta SQL es requerida")
-    
+
     # FASE 1B: Validar SQL antes de ejecutar
     validation = SQLSanitizer.validate_for_catalog(sql)
     if not validation.is_safe:
         log_blocked_sql(validation, endpoint="/servers/queries/validate", user_email=current_user.get('email'))
         raise HTTPException(status_code=400, detail=f"SQL bloqueado: {validation.blocked_reason}")
-    
+
     # FASE P1.4-B: Obtener servidor desde EDARSAHUB SQL via server_registry
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
     server = decrypt_server_secrets(get_server_connection_info_with_secrets(server_id))
     if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     try:
         # Ejecutar consulta con límite para validación
         # Agregar TOP 10 si no existe para evitar traer muchos datos
@@ -2559,9 +2568,9 @@ async def validate_server_query(
         if "TOP" not in sql.upper() and "LIMIT" not in sql.upper():
             # Insertar TOP 10 después de SELECT
             sql_test = sql.replace("SELECT", "SELECT TOP 10", 1).replace("select", "SELECT TOP 10", 1)
-        
+
         logging.info(f"Validando consulta tipo '{query_type}' para servidor {server_id}")
-        
+
         results = execute_sql_query(
             server['host'],
             server['port'],
@@ -2570,7 +2579,7 @@ async def validate_server_query(
             server['password'],
             sql_test
         )
-        
+
         if not results:
             return {
                 "valid": False,
@@ -2581,19 +2590,19 @@ async def validate_server_query(
                 "sample_data": [],
                 "row_count": 0
             }
-        
+
         # Obtener columnas de los resultados
         columns = list(results[0].keys())
-        
+
         # Validar columnas
         validation = validate_query_columns(columns, query_type)
-        
+
         if validation["valid"]:
             message = f"✅ Consulta válida. Se encontraron todas las columnas requeridas."
         else:
             missing = ", ".join(validation["columns_missing"])
             message = f"❌ Faltan columnas requeridas: {missing}. Revisa los alias permitidos en la documentación."
-        
+
         return {
             "valid": validation["valid"],
             "message": message,
@@ -2605,7 +2614,7 @@ async def validate_server_query(
             "row_count": len(results),
             "description": REQUIRED_COLUMNS[query_type]["description"]
         }
-        
+
     except Exception as e:
         logging.error(f"Error validando consulta: {str(e)}")
         return {
@@ -2628,28 +2637,28 @@ async def save_server_query(
 ):
     """
     Guarda una consulta SQL validada para un servidor.
-    
+
     FASE P1.4-B (Dic 2025): Migrado de MongoDB db.servers a server_registry.
     FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
     NO FUENTE: MongoDB db.servers
     """
     from core.server_registry import get_server_connection_info_with_secrets, update_server as registry_update_server, get_server_by_id
-    
+
     if query_type not in REQUIRED_COLUMNS:
         raise HTTPException(status_code=400, detail=f"Tipo de consulta inválido. Usa: {list(REQUIRED_COLUMNS.keys())}")
-    
+
     sql = request.get("sql", "").strip()
     validated = request.get("validated", False)
-    
+
     if not sql:
         raise HTTPException(status_code=400, detail="La consulta SQL es requerida")
-    
+
     # FASE P1.4-B: Verificar que el servidor existe via server_registry
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     server = get_server_connection_info_with_secrets(server_id)
     if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     # Crear objeto de configuración de consulta
     query_config = {
         "sql": sql,
@@ -2657,7 +2666,7 @@ async def save_server_query(
         "last_validated": datetime.now(timezone.utc).isoformat() if validated else None,
         "validation_message": "Validada correctamente" if validated else "Pendiente de validación"
     }
-    
+
     # FASE P1.4-B: Actualizar el servidor via server_registry (SQL-first)
     field_name = f"query_{query_type}"
     # ANTES: await db.servers.update_one({"id": server_id}, {"$set": {field_name: query_config}})
@@ -2668,10 +2677,10 @@ async def save_server_query(
         user=current_user,
         sync_mongo=False  # P5: MongoDB sync deshabilitado  # Mantener espejo MongoDB para compatibilidad
     )
-    
+
     if not result.get('success'):
         raise HTTPException(status_code=500, detail=result.get('error', 'Error al guardar query'))
-    
+
     # FASE P1.4-B: Verificar si todas las consultas están configuradas
     # ANTES: updated_server = decrypt_server_secrets(await db.servers.find_one({"id": server_id}, {"_id": 0}))
     updated_server = await get_server_by_id(server_id, db=db, mask_secrets=True)
@@ -2681,7 +2690,7 @@ async def save_server_query(
             (updated_server.get("query_ventas") or {}).get("validated", False),
             (updated_server.get("query_movimientos") or {}).get("validated", False)
         ])
-        
+
         # ANTES: await db.servers.update_one({"id": server_id}, {"$set": {"queries_configured": all_configured}})
         await registry_update_server(
             server_id=server_id,
@@ -2692,7 +2701,7 @@ async def save_server_query(
         )
     else:
         all_configured = False
-    
+
     return {
         "message": f"Consulta de {query_type} guardada exitosamente",
         "query_type": query_type,
@@ -2705,19 +2714,19 @@ async def save_server_query(
 async def get_server_queries(server_id: str, current_user: Dict = Depends(get_current_user)):
     """
     Obtiene el estado de configuración de consultas de un servidor.
-    
+
     FASE P1.4-B (Dic 2025): Migrado de MongoDB db.servers a server_registry.
     FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
     NO FUENTE: MongoDB db.servers
     """
     from core.server_registry import get_server_by_id
-    
+
     # FASE P1.4-B: Obtener servidor desde EDARSAHUB SQL
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
     server = await get_server_by_id(server_id, db=db, mask_secrets=True)
     if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     return {
         "server_id": server_id,
         "server_name": server.get("name"),
@@ -2764,22 +2773,22 @@ async def delete_server_query(
 ):
     """
     Elimina una consulta configurada de un servidor.
-    
+
     FASE P1.4-B (Dic 2025): Migrado de MongoDB db.servers a server_registry.
     FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
     NO FUENTE: MongoDB db.servers
     """
     from core.server_registry import get_server_connection_info_with_secrets, update_server as registry_update_server
-    
+
     if query_type not in REQUIRED_COLUMNS:
         raise HTTPException(status_code=400, detail=f"Tipo de consulta inválido")
-    
+
     # FASE P1.4-B: Verificar que el servidor existe via server_registry
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     server = get_server_connection_info_with_secrets(server_id)
     if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     # FASE P1.4-B: Actualizar via server_registry (SQL-first)
     field_name = f"query_{query_type}"
     # ANTES: await db.servers.update_one({"id": server_id}, {"$set": {field_name: None, "queries_configured": False}})
@@ -2790,10 +2799,10 @@ async def delete_server_query(
         user=current_user,
         sync_mongo=False  # P5: MongoDB sync deshabilitado
     )
-    
+
     if not result.get('success'):
         raise HTTPException(status_code=500, detail=result.get('error', 'Error al eliminar query'))
-    
+
     return {"message": f"Consulta de {query_type} eliminada"}
 
 # ============= REPORTS =============
@@ -2802,43 +2811,43 @@ async def delete_server_query(
 async def get_tipos_movimiento(server_id: str, current_user: Dict = Depends(get_current_user)):
     """
     Obtiene la lista de tipos de movimiento.
-    
+
     FASE T3.4-B4/MODAL: EDARSAHUB-FIRST.
-    
+
     ESTRATEGIA:
     1. PRIMERO: Leer tipos_movimiento desde EDARSAHUB/server_registry
     2. Si existen tipos en EDARSAHUB → devolverlos directamente (sin conexión viva obligatoria)
     3. La conexión viva queda para refresh/sincronización/diagnóstico futuro
-    
+
     MÁXIMAS:
     - EDARSAHUB es el cerebro del sistema
     - No usar MongoDB
     - No depender de conexión viva para cargar el modal
     - Mantener contrato API compatible con frontend
-    
+
     Returns:
         Lista de objetos [{codigo, descripcion, tipo}] compatibles con frontend
     """
     from core.server_registry import get_server_connection_info
-    
+
     # Obtener servidor desde registry (EDARSAHUB-first)
     server = await get_server_connection_info(server_id, db=db)
-    
+
     if not server:
         logging.warning(f"[GET_TIPOS_MOVIMIENTO] Servidor no encontrado via registry. ID={server_id}")
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     logging.info(f"[GET_TIPOS_MOVIMIENTO] Servidor obtenido. Origin={server.get('config_origin', 'UNKNOWN')}, Name={server.get('name', 'N/A')}")
-    
+
     # EDARSAHUB-FIRST: Leer tipos_movimiento desde EDARSAHUB
     tipos_edarsahub = server.get('tipos_movimiento', [])
-    
+
     if tipos_edarsahub:
         # Hay tipos configurados en EDARSAHUB → devolverlos directamente
         result = _build_tipos_from_edarsahub(server)
         logging.info(f"[GET_TIPOS_MOVIMIENTO] EDARSAHUB-FIRST: {len(result)} tipos. Server={server.get('name', 'N/A')}")
         return result
-    
+
     # No hay tipos en EDARSAHUB → retornar lista vacía
     # (La conexión viva queda para sincronización/diagnóstico, no para carga obligatoria del modal)
     logging.info(f"[GET_TIPOS_MOVIMIENTO] Sin tipos en EDARSAHUB. Server={server.get('name', 'N/A')}")
@@ -2848,31 +2857,31 @@ async def get_tipos_movimiento(server_id: str, current_user: Dict = Depends(get_
 def _build_tipos_from_edarsahub(server: dict) -> list:
     """
     FASE T3.4-B4 / P1: Construye lista de tipos de movimiento desde EDARSAHUB.
-    
+
     Soporta dos formatos en tipos_movimiento:
     A) Lista de strings: ["ECA", "EDE"] → convierte a objetos
     B) Lista de objetos: [{"codigo":"ECA","descripcion":"...","tipo":"EN"}] → devuelve directo
-    
+
     El frontend espera: [{codigo, descripcion, tipo}]
-    
+
     Args:
         server: Dict con datos del servidor (debe tener 'tipos_movimiento')
-    
+
     Returns:
         Lista de tipos en formato compatible con frontend
     """
     tipos_data = server.get('tipos_movimiento', [])
-    
+
     if not tipos_data:
         return []
-    
+
     # Si ya son objetos enriquecidos, devolverlos directamente
     if tipos_data and isinstance(tipos_data[0], dict):
         return tipos_data
-    
+
     # Son códigos simples, convertir a objetos
     is_mpro = is_mpro_system(server.get('system_type', ''))
-    
+
     result = []
     for codigo in tipos_data:
         if codigo:
@@ -2882,48 +2891,48 @@ def _build_tipos_from_edarsahub(server: dict) -> list:
                 'descripcion': codigo_str,  # Fallback: descripcion = codigo
                 'tipo': _infer_tipo_from_codigo(codigo_str, is_mpro)
             })
-    
+
     return result
 
 
 def _infer_tipo_from_codigo(codigo: str, is_mpro: bool = False) -> str:
     """
     Infiere si un tipo de movimiento es entrada, salida u otro.
-    
+
     Reglas de inferencia:
     - SoftRestaurant: E* = EN (entrada), S* = SA (salida)
     - MPRO: 0* = EN (entrada), 4* = SA (salida) (según configuración validada)
     - Si no se puede inferir: otro
-    
+
     Returns:
         'EN' (entrada), 'SA' (salida) o 'otro' - Compatible con frontend
-    
+
     Frontend espera: tipo === '+' || tipo === 'EN' → verde (Entrada)
                     otro → rojo (Salida)
     """
     if not codigo:
         return 'otro'
-    
+
     codigo_str = str(codigo).strip()
-    
+
     if not codigo_str:
         return 'otro'
-    
+
     primer_char = codigo_str[0].upper()
-    
+
     # SoftRestaurant: E* = EN (entrada), S* = SA (salida)
     if primer_char == 'E':
         return 'EN'
     elif primer_char == 'S':
         return 'SA'
-    
+
     # MPRO: 0* = EN (entrada), 4* = SA (salida)
     if is_mpro:
         if primer_char == '0':
             return 'EN'
         elif primer_char == '4':
             return 'SA'
-    
+
     # No se puede inferir con seguridad
     return 'otro'
 
@@ -2931,34 +2940,34 @@ def _infer_tipo_from_codigo(codigo: str, is_mpro: bool = False) -> str:
 async def get_categorias(server_id: str, current_user: Dict = Depends(get_current_user)):
     """
     Obtiene la lista de categorías/grupos.
-    
+
     P0 CATÁLOGOS EDARSAHUB-FIRST:
     Lee categorías desde EDARSAHUB.Servidores_Conexiones.categorias
     NO consulta BD viva del restaurante.
     NO consulta MongoDB.
-    
+
     MÁXIMA: EDARSAHUB es el cerebro del sistema.
     El modal no debe depender de conexión viva.
-    
+
     Returns:
         Lista de objetos [{codigo, descripcion}] o [] si no hay datos
     """
     from core.server_registry import get_server_by_id
-    
+
     # Obtener servidor desde EDARSAHUB
     server = await get_server_by_id(server_id, db=db)
-    
+
     if not server:
         logging.warning(f"[GET_CATEGORIAS] Servidor no encontrado. ID={server_id}")
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     # P0: Leer categorías desde EDARSAHUB
     categorias = server.get('categorias', [])
-    
+
     if categorias:
         logging.info(f"[GET_CATEGORIAS] EDARSAHUB-FIRST: {len(categorias)} categorías. Server={server.get('name', 'N/A')}")
         return categorias
-    
+
     # Sin datos en EDARSAHUB
     logging.info(f"[GET_CATEGORIAS] Sin categorías en EDARSAHUB (pendiente sync). Server={server.get('name', 'N/A')}")
     return []
@@ -2968,30 +2977,30 @@ async def get_categorias(server_id: str, current_user: Dict = Depends(get_curren
 async def get_departamentos(server_id: str, current_user: Dict = Depends(get_current_user)):
     """
     Obtiene la lista de departamentos/almacenes.
-    
+
     P0 CATÁLOGOS EDARSAHUB-FIRST:
     Lee departamentos desde EDARSAHUB.Servidores_Conexiones.departamentos
     NO consulta BD viva del restaurante.
     NO consulta MongoDB.
-    
+
     MÁXIMA: EDARSAHUB es el cerebro del sistema.
     El modal no debe depender de conexión viva.
-    
+
     Returns:
         Lista de objetos [{codigo, descripcion}] o [] si no hay datos
     """
     from core.server_registry import get_server_by_id
-    
+
     # Obtener servidor desde EDARSAHUB
     server = await get_server_by_id(server_id, db=db)
-    
+
     if not server:
         logging.warning(f"[GET_DEPARTAMENTOS] Servidor no encontrado. ID={server_id}")
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     # P0: Leer departamentos desde EDARSAHUB
     departamentos_raw = server.get('departamentos', [])
-    
+
     if departamentos_raw:
         # BUG-RBAC-PERM-001: Normalizar formato de respuesta
         # Frontend espera [{codigo, descripcion}] pero EDARSAHUB puede tener strings o dicts
@@ -3015,10 +3024,10 @@ async def get_departamentos(server_id: str, current_user: Dict = Depends(get_cur
                     'codigo': str(dep),
                     'descripcion': str(dep)
                 })
-        
+
         logging.info(f"[GET_DEPARTAMENTOS] EDARSAHUB-FIRST: {len(departamentos)} departamentos. Server={server.get('name', 'N/A')}")
         return departamentos
-    
+
     # Sin datos en EDARSAHUB
     logging.info(f"[GET_DEPARTAMENTOS] Sin departamentos en EDARSAHUB (pendiente sync). Server={server.get('name', 'N/A')}")
     return []
@@ -3249,27 +3258,27 @@ async def filter_sucursales_by_config(sucursales: List[Dict], server_id: str) ->
     """
     # Buscar configuración existente en EDARSAHUB SQL
     configs = _sql_list_sucursales_config(server_id=server_id, activas=True)
-    
+
     # Si no hay configuración, devolver todas (backward compatible)
     if not configs or len(configs) == 0:
         return sucursales
-    
+
     # Crear set de IDs visibles
     visibles_ids = {
-        str(c.get("sucursal_origen_id")).strip() 
-        for c in configs 
+        str(c.get("sucursal_origen_id")).strip()
+        for c in configs
         if c.get("visible_en_operaciones", True)
     }
-    
+
     # Si todas están ocultas, devolver todas (safety)
     if not visibles_ids:
         logging.warning(f"Todas las sucursales de {server_id} están ocultas, mostrando todas por seguridad")
         return sucursales
-    
+
     # Filtrar y ordenar
     orden_map = {str(c.get("sucursal_origen_id")).strip(): c.get("orden", 999) for c in configs}
     nombre_map = {str(c.get("sucursal_origen_id")).strip(): c.get("nombre_visible") for c in configs}
-    
+
     resultado = []
     for suc in sucursales:
         suc_id = str(suc.get("id", "")).strip()
@@ -3279,14 +3288,14 @@ async def filter_sucursales_by_config(sucursales: List[Dict], server_id: str) ->
                 suc = {**suc, "nombre_visible": nombre_map[suc_id]}
             suc["_orden"] = orden_map.get(suc_id, 999)
             resultado.append(suc)
-    
+
     # Ordenar por orden configurado
     resultado.sort(key=lambda x: x.get("_orden", 999))
-    
+
     # Limpiar campo temporal
     for r in resultado:
         r.pop("_orden", None)
-    
+
     return resultado
 
 def _is_edarsahub_shared_host(server: Optional[Dict]) -> bool:
@@ -3366,24 +3375,24 @@ def _derive_almacenes_from_sync(server_id: str, sucursal_id: Optional[str] = Non
 async def get_sucursales(server_id: str, include_hidden: bool = False, current_user: Dict = Depends(get_current_user)):
     """
     Obtiene la lista de sucursales desde SQL Server, filtradas por permisos y configuración.
-    
+
     CONEXIONES-SQL-EDARSAHUB-01 / SUBFASE C / LOTE 1:
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     para usar EDARSAHUB SQL como fuente primaria.
-    
+
     Args:
         include_hidden: Si True, devuelve todas sin filtrar por configuración (para admin UI)
     """
     from core.server_registry import get_server_connection_info
-    
+
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
     # AHORA: Usar registry que prioriza EDARSAHUB SQL
     server = await get_server_connection_info(server_id, db=db)
-    
+
     if not server:
         logging.warning(f"[GET_SUCURSALES] Servidor no encontrado via registry. ID={server_id}")
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     logging.debug(f"[GET_SUCURSALES] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
 
     # === NO-LIVE / EDARSAHUB EXCLUSIVO (todos los sistemas) ===
@@ -3402,7 +3411,7 @@ async def get_sucursales(server_id: str, include_hidden: bool = False, current_u
 
     try:
         sucursales_raw = []
-        
+
         if is_mpro_system(server.get('system_type')):
             # Intentar obtener sucursales de MPRO
             query = "SELECT Sc_Cve_Sucursal as id, Sc_Descripcion as nombre FROM Sucursal WHERE Es_Cve_Estado <> 'BA'"
@@ -3421,7 +3430,7 @@ async def get_sucursales(server_id: str, include_hidden: bool = False, current_u
                     sucursales_raw = results
             except Exception as e:
                 logging.warning(f"MPRO Sucursales query failed: {e}")
-            
+
             # Si no hay sucursales en la tabla Sucursal, intentar usar Almacenes
             if not sucursales_raw:
                 try:
@@ -3438,11 +3447,11 @@ async def get_sucursales(server_id: str, include_hidden: bool = False, current_u
                         sucursales_raw = almacenes
                 except Exception as e:
                     logging.warning(f"MPRO Almacenes query failed: {e}")
-            
+
             # Si no hay nada, devolver sucursal virtual "Principal"
             if not sucursales_raw:
                 sucursales_raw = [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
-            
+
         elif is_softrestaurant_system(server.get('system_type')):
             # SoftRestaurant NO tiene tabla Sucursal - devolvemos una sucursal virtual con el nombre del servidor
             sucursales_raw = [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
@@ -3465,16 +3474,16 @@ async def get_sucursales(server_id: str, include_hidden: bool = False, current_u
             # Fallback: sucursal virtual
             if not sucursales_raw:
                 sucursales_raw = [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
-        
+
         # Aplicar filtro de permisos de usuario
         sucursales_filtradas = filter_sucursales_by_permissions(sucursales_raw, current_user, server_id)
-        
+
         # Aplicar filtro de configuración de visibilidad (si no se pide include_hidden)
         if not include_hidden:
             sucursales_filtradas = await filter_sucursales_by_config(sucursales_filtradas, server_id)
-        
+
         return sucursales_filtradas
-        
+
     except Exception as e:
         logging.error(f"Error obteniendo sucursales: {str(e)}")
         # En caso de error, devolver sucursal virtual en lugar de array vacío
@@ -3485,33 +3494,33 @@ async def get_almacenes(server_id: str, sucursal_id: Optional[str] = None, sucur
     """
     Obtiene la lista de almacenes desde SQL Server.
     FASE 8: Aplica filtro RBAC por almacenes permitidos.
-    
+
     CONEXIONES-SQL-EDARSAHUB-01 / SUBFASE C / LOTE 1:
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     para usar EDARSAHUB SQL como fuente primaria.
     """
     from core.server_registry import get_server_connection_info
-    
+
     # FASE 8: Validar acceso y obtener contexto
     context = await resolve_user_access_context(current_user)
-    
+
     if not has_server_access(context, server_id):
         logging.warning(f"[RBAC-ALMACENES] {current_user.get('email')} sin acceso a servidor {server_id}")
         raise HTTPException(status_code=403, detail="No tiene acceso a este servidor")
-    
+
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
     # AHORA: Usar registry que prioriza EDARSAHUB SQL
     server = await get_server_connection_info(server_id, db=db)
-    
+
     if not server:
         logging.warning(f"[GET_ALMACENES] Servidor no encontrado via registry. ID={server_id}")
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     logging.debug(f"[GET_ALMACENES] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
-    
+
     # FASE 8: Obtener almacenes permitidos
     almacenes_permitidos = get_almacenes_permitidos(context, server_id)
-    
+
     logging.info(
         f"[RBAC-ALMACENES] Usuario={current_user.get('email')}, "
         f"Server={server_id}, AlmacenesPermitidos={almacenes_permitidos or 'TODOS'}"
@@ -3530,17 +3539,17 @@ async def get_almacenes(server_id: str, sucursal_id: Optional[str] = None, sucur
     try:
         # FASE 1B: Importar execute_sql_query_params para parametrización segura
         from core.db import execute_sql_query_params
-        
+
         # FASE 1B: Validar sucursal_id si se proporciona
         if sucursal_id:
             if not _validate_identifier(sucursal_id, max_length=50):
                 logging.warning(f"[A01-SANITIZADO] sucursal_id inválido rechazado: {sucursal_id[:50]}")
                 raise HTTPException(status_code=400, detail="sucursal_id contiene caracteres no permitidos")
-        
+
         if is_mpro_system(server.get('system_type')):
             # FASE 8: Filtro por almacenes permitidos
             almacen_filter = get_almacenes_sql_filter(context, server_id, "Al_Cve_Almacen")
-            
+
             # FASE 1B: Parametrización segura de sucursal_id
             if sucursal_id:
                 query = f"SELECT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen WHERE Sc_Cve_Sucursal = %s AND Es_Cve_Estado <> 'BA'{almacen_filter}"
@@ -3556,14 +3565,14 @@ async def get_almacenes(server_id: str, sucursal_id: Optional[str] = None, sucur
                 )
             logging.info(f"[RBAC-ALMACENES] MPRO devolvió {len(results)} almacenes (filtrado RBAC)")
             return results
-        
+
         elif is_softrestaurant_system(server.get('system_type')):
             # FASE 8: Filtro por almacenes permitidos (usa ID numérico)
             almacen_filter = get_almacenes_sql_filter(context, server_id, "idalmacen")
-            
+
             query = f"""
-SELECT 
-    idalmacen as id, 
+SELECT
+    idalmacen as id,
     nombre,
     ISNULL(tipo, 1) as tipo
 FROM almacen
@@ -3576,7 +3585,7 @@ ORDER BY nombre
             )
             logging.info(f"[RBAC-ALMACENES] SoftRestaurant devolvió {len(results)} almacenes (filtrado RBAC)")
             return results
-        
+
         else:
             # Query genérica para otros sistemas con filtro RBAC
             almacen_filter = get_almacenes_sql_filter(context, server_id, "Al_Cve_Almacen")
@@ -3605,26 +3614,26 @@ async def get_sucursales_config(server_id: str, current_user: Dict = Depends(get
     """
     Obtiene la configuración de visibilidad de sucursales para un servidor.
     Retorna lista vacía si no hay configuración (comportamiento legacy).
-    
+
     CONEXIONES-SQL-EDARSAHUB-01 / SUBFASE C / LOTE 2:
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     para usar EDARSAHUB SQL como fuente primaria.
     """
     from core.server_registry import get_server_connection_info
-    
+
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     # AHORA: Usar registry que prioriza EDARSAHUB SQL
     server = await get_server_connection_info(server_id, db=db)
-    
+
     if not server:
         logging.warning(f"[GET_SUCURSALES_CONFIG] Servidor no encontrado via registry. ID={server_id}")
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     logging.debug(f"[GET_SUCURSALES_CONFIG] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
-    
+
     # Obtener configuración existente desde EDARSAHUB SQL
     configs = _sql_list_sucursales_config(server_id=server_id, activas=True)
-    
+
     return {
         "server_id": server_id,
         "server_name": server.get("name"),
@@ -3639,26 +3648,26 @@ async def sync_sucursales_config(server_id: str, current_user: Dict = Depends(ge
     - Detecta nuevas sucursales y las agrega como visibles por defecto
     - NO elimina configuraciones existentes (soft delete)
     - Mantiene configuración de sucursales ya existentes
-    
+
     CONEXIONES-SQL-EDARSAHUB-01 / SUBFASE C / LOTE 2:
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     para usar EDARSAHUB SQL como fuente primaria.
     """
     from core.server_registry import get_server_connection_info
-    
+
     if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo administradores pueden sincronizar")
-    
+
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     # AHORA: Usar registry que prioriza EDARSAHUB SQL
     server = await get_server_connection_info(server_id, db=db)
-    
+
     if not server:
         logging.warning(f"[SYNC_SUCURSALES_CONFIG] Servidor no encontrado via registry. ID={server_id}")
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     logging.debug(f"[SYNC_SUCURSALES_CONFIG] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
-    
+
     # Obtener sucursales desde EDARSAHUB SQL sync, sin conexión live al POS
     sucursales_sql = _derive_sucursales_from_sync(server_id)
     if not sucursales_sql:
@@ -3666,17 +3675,17 @@ async def sync_sucursales_config(server_id: str, current_user: Dict = Depends(ge
 
     existing_configs = _sql_list_sucursales_config(server_id=server_id, activas=False)
     existing_ids = {str(c.get("sucursal_origen_id")) for c in existing_configs}
-    
+
     # Agregar nuevas sucursales
     nuevas = 0
     actualizadas = 0
     now = datetime.now(timezone.utc)
     user_email = current_user.get("email", "sistema")
-    
+
     for idx, suc in enumerate(sucursales_sql):
         suc_id = str(suc.get("id", "")).strip()
         suc_nombre = str(suc.get("nombre", "")).strip()
-        
+
         created = _sql_upsert_sucursal_config(
             server_id=server_id,
             sucursal_origen_id=suc_id,
@@ -3692,7 +3701,7 @@ async def sync_sucursales_config(server_id: str, current_user: Dict = Depends(ge
 
     # Obtener configuración actualizada desde EDARSAHUB SQL
     configs = _sql_list_sucursales_config(server_id=server_id, activas=True)
-    
+
     return {
         "message": f"Sincronización completada: {nuevas} nuevas, {actualizadas} actualizadas",
         "nuevas": nuevas,
@@ -3703,20 +3712,20 @@ async def sync_sucursales_config(server_id: str, current_user: Dict = Depends(ge
 
 @api_router.put("/servers/{server_id}/sucursales-config/{sucursal_origen_id}")
 async def update_sucursal_config(
-    server_id: str, 
-    sucursal_origen_id: str, 
+    server_id: str,
+    sucursal_origen_id: str,
     update_data: SucursalConfigUpdate,
     current_user: Dict = Depends(get_current_user)
 ):
     """Actualiza la configuración de una sucursal específica."""
     if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo administradores pueden modificar")
-    
+
     # Verificar que existe en EDARSAHUB SQL
     existing = _sql_get_sucursal_config(server_id, sucursal_origen_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Configuración de sucursal no encontrada")
-    
+
     # Preparar actualización SQL
     update_fields = {}
     if update_data.visible_en_operaciones is not None:
@@ -3732,28 +3741,28 @@ async def update_sucursal_config(
         update_fields,
         current_user.get("email"),
     )
-    
+
     return {"message": "Configuración actualizada", "sucursal_origen_id": sucursal_origen_id}
 
 @api_router.put("/servers/{server_id}/sucursales-config/bulk")
 async def update_sucursales_config_bulk(
-    server_id: str, 
+    server_id: str,
     bulk_data: SucursalConfigBulkUpdate,
     current_user: Dict = Depends(get_current_user)
 ):
     """Actualiza múltiples sucursales en una sola operación."""
     if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo administradores pueden modificar")
-    
+
     now = datetime.now(timezone.utc)
     user_email = current_user.get("email")
     updated = 0
-    
+
     for suc in bulk_data.sucursales:
         suc_id = suc.get("sucursal_origen_id")
         if not suc_id:
             continue
-        
+
         update_fields = {"fecha_modificacion": now, "usuario_modificacion": user_email}
         if "visible_en_operaciones" in suc:
             update_fields["visible_en_operaciones"] = suc["visible_en_operaciones"]
@@ -3761,7 +3770,7 @@ async def update_sucursales_config_bulk(
             update_fields["orden"] = suc["orden"]
         if "nombre_visible" in suc:
             update_fields["nombre_visible"] = suc["nombre_visible"]
-        
+
         result_count = _sql_update_sucursal_config_fields(
             server_id,
             suc_id,
@@ -3770,7 +3779,7 @@ async def update_sucursales_config_bulk(
         )
         if result_count > 0:
             updated += 1
-    
+
     return {"message": f"{updated} sucursales actualizadas", "updated": updated}
 
 # ============= FIN ENDPOINTS DE CONFIGURACIÓN DE SUCURSALES =============
@@ -3785,12 +3794,12 @@ async def get_all_sucursales(
     """
     Obtiene todas las sucursales configuradas.
     Endpoint global para componentes que necesitan listar sucursales sin conocer el server_id.
-    
+
     Migrado de db.servers.find() a server_registry.list_servers()
     CONEXIONES-SQL-EDARSAHUB-01 / LOTE 5
     """
     sucursales = _sql_list_sucursales_config(server_id=server_id, activas=activas)
-    
+
     # Enriquecer con nombre de servidor usando registry
     # ANTES: server_cursor = db.servers.find({"id": {"$in": server_ids}}, {"_id": 0, "id": 1, "name": 1})
     from core.server_registry import list_servers
@@ -3801,10 +3810,10 @@ async def get_all_sucursales(
         for srv in all_servers:
             if srv.get("id") in server_ids:
                 servers[srv["id"]] = srv.get("name", srv["id"])
-    
+
     for suc in sucursales:
         suc["server_nombre"] = servers.get(suc.get("server_id"), "")
-    
+
     return sucursales
 # ============= FIN ENDPOINT GLOBAL DE SUCURSALES =============
 
@@ -3820,16 +3829,16 @@ async def get_unidades_negocio(
     """
     ============================================================================
     CORRECCIÓN AUDITORIA-UNIDADES-NEGOCIO-01 (2026-04-29):
-    
+
     MANDATO ARQUITECTÓNICO: EDARSAHUB SQL es la ÚNICA fuente maestra de verdad
     para la resolución de unidades de negocio, servidores, empresas y sucursales.
-    
+
     MongoDB NO se usa como fuente, ni como fallback, ni como respaldo.
     Si EDARSAHUB SQL no tiene el dato, retornamos error controlado.
-    
+
     TABLA FUENTE: EDARSAHUB.dbo.Unidades_Negocio
     ============================================================================
-    
+
     Returns:
         Lista de unidades con:
         - id: ID de la unidad de negocio (UUID)
@@ -3842,13 +3851,13 @@ async def get_unidades_negocio(
     """
     from core.server_registry import EDARSAHUB_CONFIG
     from core.db import execute_sql_query
-    
+
     try:
         # ============================================================================
         # FUENTE ÚNICA: EDARSAHUB SQL
         # ============================================================================
         query = """
-        SELECT 
+        SELECT
             CAST(un.id AS VARCHAR(50)) as id,
             un.nombre,
             un.codigo,
@@ -3868,7 +3877,7 @@ async def get_unidades_negocio(
           AND sc.activo = 1
         ORDER BY un.orden, un.nombre
         """
-        
+
         unidades_sql = execute_sql_query(
             EDARSAHUB_CONFIG['host'],
             EDARSAHUB_CONFIG['port'],
@@ -3877,23 +3886,23 @@ async def get_unidades_negocio(
             EDARSAHUB_CONFIG['password'],
             query
         )
-        
+
         logging.info(f"[UNIDADES_NEGOCIO] execute_sql_query retornó: {len(unidades_sql) if unidades_sql else 'None'} registros")
-        
+
         if unidades_sql is None:
             logging.error("[UNIDADES_NEGOCIO] EDARSAHUB_SQL_ERROR: Sin respuesta de la base de datos")
             raise HTTPException(
                 status_code=503,
                 detail="Error de conexión con la base de datos central. No se usa fallback por política arquitectónica."
             )
-        
+
         logging.info(f"[UNIDADES_NEGOCIO] Obtenidas {len(unidades_sql)} unidades desde EDARSAHUB SQL")
-        
+
         # ============================================================================
         # APLICAR RBAC: Filtrar por permisos del usuario
         # ============================================================================
         user_role = (current_user.get('role') or '').strip()
-        
+
         # SuperAdministrador y Administrador ven todas las unidades
         # (se aceptan tanto los nombres visibles como los códigos canónicos RBAC)
         is_admin_global = (
@@ -3906,17 +3915,17 @@ async def get_unidades_negocio(
             # Otros roles: filtrar por empresas permitidas
             empresas_permitidas = await get_user_empresas_permitidas(current_user)
             allowed_servers = set(current_user.get('allowed_servers', []))
-            
+
             # Filtrar unidades cuyos server_id estén en allowed_servers
             # o cuyo ID esté en empresas_permitidas (para compatibilidad)
             unidades_filtradas = [
-                u for u in unidades_sql 
+                u for u in unidades_sql
                 if u.get('server_id') in allowed_servers or u.get('id') in empresas_permitidas
             ]
-            
+
             if not unidades_filtradas:
                 logging.warning(f"[UNIDADES_NEGOCIO] Usuario {current_user.get('email')} sin unidades permitidas")
-        
+
         # ============================================================================
         # CONSTRUIR RESPUESTA
         # ============================================================================
@@ -3924,14 +3933,14 @@ async def get_unidades_negocio(
         for u in unidades_filtradas:
             sucursal_origen_id = u.get('sucursal_origen_id')
             system_type = u.get('system_type', '')
-            
+
             # Para SoftRestaurant (single-tenant), sucursal_origen_id debe ser null
             if system_type == 'SoftRestaurant' and sucursal_origen_id:
                 logging.warning(
                     f"[UNIDADES_NEGOCIO] Inconsistencia: {u['nombre']} es SoftRestaurant pero tiene sucursal_origen_id={sucursal_origen_id}"
                 )
                 sucursal_origen_id = None  # Forzar null para SR
-            
+
             resultado.append({
                 "id": u['id'],
                 "codigo": u.get('codigo', ''),
@@ -3951,9 +3960,9 @@ async def get_unidades_negocio(
                 "config_origin": "EDARSAHUB_SQL",
                 "orden": u.get('orden', 999)
             })
-        
+
         return resultado
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3967,57 +3976,57 @@ async def get_unidades_negocio(
 
 @api_router.get("/servers/{server_id}/almacenes-softrestaurant")
 async def get_almacenes_softrestaurant(
-    server_id: str, 
+    server_id: str,
     solo_consumo: bool = False,  # Filtrar solo almacenes de consumo (tipo=1)
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Obtiene la lista de almacenes de SoftRestaurant (no requiere sucursal).
     FASE 8: Aplica filtro RBAC por almacenes permitidos.
-    
+
     CONEXIONES-SQL-EDARSAHUB-01 / SUBFASE C / LOTE 3:
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     para usar EDARSAHUB SQL como fuente primaria.
     """
     from core.server_registry import get_server_connection_info
-    
+
     # FASE 8: Validar acceso y obtener contexto
     context = await resolve_user_access_context(current_user)
-    
+
     if not has_server_access(context, server_id):
         logging.warning(f"[RBAC-ALMACENES-SR] {current_user.get('email')} sin acceso a servidor {server_id}")
         raise HTTPException(status_code=403, detail="No tiene acceso a este servidor")
-    
+
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
     # AHORA: Usar registry que prioriza EDARSAHUB SQL
     server = await get_server_connection_info(server_id, db=db)
-    
+
     if not server:
         logging.warning(f"[GET_ALMACENES_SR] Servidor no encontrado via registry. ID={server_id}")
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     logging.debug(f"[GET_ALMACENES_SR] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
-    
+
     if not is_softrestaurant_system(server.get('system_type')):
         raise HTTPException(status_code=400, detail="Este endpoint es solo para SoftRestaurant")
-    
+
     # FASE 8: Obtener almacenes permitidos
     almacenes_permitidos = get_almacenes_permitidos(context, server_id)
     almacen_filter = get_almacenes_sql_filter(context, server_id, "idalmacen")
-    
+
     logging.info(
         f"[RBAC-ALMACENES-SR] Usuario={current_user.get('email')}, "
         f"Server={server_id}, AlmacenesPermitidos={almacenes_permitidos or 'TODOS'}"
     )
-    
+
     try:
         # Query para obtener almacenes de SoftRestaurant incluyendo el tipo
         # TIPO = 1: Almacén de consumo (tiene ventas) - Se usa para pendientes de descargar
         # TIPO = 2: Almacén de presentaciones (NO tiene ventas)
         where_clause = "WHERE ISNULL(tipo, 1) = 1" if solo_consumo else "WHERE 1=1"
         query = f"""
-SELECT 
-    idalmacen as id, 
+SELECT
+    idalmacen as id,
     nombre,
     ISNULL(tipo, 1) as tipo
 FROM almacen
@@ -4040,7 +4049,7 @@ ORDER BY nombre
 
 @api_router.get("/servers/{server_id}/inventarios")
 async def get_inventarios_list(
-    server_id: str, 
+    server_id: str,
     sucursal_id: Optional[str] = None,
     almacen_id: Optional[str] = None,
     current_user: Dict = Depends(get_current_user)
@@ -4048,43 +4057,43 @@ async def get_inventarios_list(
     """
     Obtiene la lista de inventarios físicos disponibles con sus fechas.
     FASE 8: Aplica filtro RBAC por almacenes permitidos.
-    
+
     CONEXIONES-SQL-EDARSAHUB-01 / SUBFASE C / LOTE 3:
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     para usar EDARSAHUB SQL como fuente primaria.
     """
     from core.server_registry import get_server_connection_info
-    
+
     # FASE 8: Validar acceso y obtener contexto
     context = await resolve_user_access_context(current_user)
-    
+
     if not has_server_access(context, server_id):
         logging.warning(f"[RBAC-INVENTARIOS-LIST] {current_user.get('email')} sin acceso a servidor {server_id}")
         raise HTTPException(status_code=403, detail="No tiene acceso a este servidor")
-    
+
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
     # AHORA: Usar registry que prioriza EDARSAHUB SQL
     server = await get_server_connection_info(server_id, db=db)
-    
+
     if not server:
         logging.warning(f"[GET_INVENTARIOS_LIST] Servidor no encontrado via registry. ID={server_id}")
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     logging.debug(f"[GET_INVENTARIOS_LIST] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
-    
+
     # FASE 8: Obtener almacenes permitidos
     almacenes_permitidos = get_almacenes_permitidos(context, server_id)
-    
+
     logging.info(
         f"[RBAC-INVENTARIOS-LIST] Usuario={current_user.get('email')}, "
         f"Server={server_id}, AlmacenesPermitidos={almacenes_permitidos or 'TODOS'}"
     )
-    
+
     try:
         if is_mpro_system(server.get('system_type')):
             # FASE 8: Filtro RBAC
             almacen_rbac_filter = get_almacenes_sql_filter(context, server_id, "F.Al_Cve_Almacen")
-            
+
             where_clause = "WHERE F.Es_Cve_Estado not in ('BA')"
             if sucursal_id:
                 where_clause += f" AND F.Sc_Cve_Sucursal = '{sucursal_id}'"
@@ -4092,9 +4101,9 @@ async def get_inventarios_list(
                 where_clause += f" AND F.Al_Cve_Almacen = '{almacen_id}'"
             # FASE 8: Agregar filtro RBAC
             where_clause += almacen_rbac_filter
-            
+
             query = f"""
-                SELECT 
+                SELECT
                     F.Fi_Folio as folio,
                     CONVERT(varchar, F.fi_fecha, 120) as fecha,
                     F.Sc_Cve_Sucursal as sucursal_id,
@@ -4113,16 +4122,16 @@ async def get_inventarios_list(
         elif is_softrestaurant_system(server.get('system_type')):
             # FASE 8: Filtro RBAC para SoftRestaurant
             almacen_rbac_filter = get_almacenes_sql_filter(context, server_id, "INV.idalmacen1")
-            
+
             # Query para SoftRestaurant - fecha en formato YYYY-MM-DD HH:MM:SS
             where_clause = "WHERE 1=1"
             if almacen_id:
                 where_clause += f" AND INV.idalmacen1 = '{almacen_id}'"
             # FASE 8: Agregar filtro RBAC
             where_clause += almacen_rbac_filter
-            
+
             query = f"""
-                SELECT 
+                SELECT
                     INV.folio as folio,
                     CONVERT(varchar, INV.fecha, 120) as fecha,
                     INV.idalmacen1 as almacen_id,
@@ -4136,7 +4145,7 @@ async def get_inventarios_list(
             logging.info(f"[RBAC-INVENTARIOS-LIST] SR Query con filtro RBAC aplicado")
         else:
             query = "SELECT Fi_Folio as folio, CONVERT(varchar, fi_fecha, 120) as fecha FROM Fisico GROUP BY Fi_Folio, fi_fecha ORDER BY fi_fecha DESC"
-        
+
         results = execute_sql_query(
             server['host'],
             server['port'],
@@ -4165,7 +4174,7 @@ async def get_insumos_pendientes(
     FASE 8: Aplica filtro RBAC por almacenes permitidos.
     - SoftRestaurant: Usa tabla inventariopendiente
     - MPRO: Calcula diferencia entre ventas/consumos y existencias
-    
+
     CONEXIONES-SQL-EDARSAHUB-01 / SUBFASE C / LOTE 3:
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     para usar EDARSAHUB SQL como fuente primaria.
@@ -4180,22 +4189,22 @@ async def get_insumos_pendientes(
     if _unidad_token and _matched_by == 'unidad':
         server_id = _unidad_token.get('server_id') or server_id
 
-    
+
     # FASE 8: Validar acceso y obtener contexto
     context = await resolve_user_access_context(current_user)
-    
+
     if not has_server_access(context, server_id):
         logging.warning(f"[RBAC-PENDIENTES] {current_user.get('email')} sin acceso a servidor {server_id}")
         raise HTTPException(status_code=403, detail="No tiene acceso a este servidor")
-    
+
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
     # AHORA: Usar registry que prioriza EDARSAHUB SQL
     server = await get_server_connection_info(server_id, db=db)
-    
+
     if not server:
         logging.warning(f"[GET_PENDIENTES_DESCARGAR] Servidor no encontrado via registry. ID={server_id}")
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     logging.debug(f"[GET_PENDIENTES_DESCARGAR] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
 
     # ====================================================================
@@ -4227,28 +4236,28 @@ async def get_insumos_pendientes(
             f"Almacén solicitado={almacen_id}, Permitidos={almacenes_permitidos}"
         )
         raise HTTPException(status_code=403, detail="No tiene acceso a este almacén")
-    
+
     system_type = server.get('system_type', '')
-    
+
     logging.info(
         f"[RBAC-PENDIENTES] Usuario={current_user.get('email')}, "
         f"Server={server_id}, AlmacenesPermitidos={almacenes_permitidos or 'TODOS'}"
     )
-    
+
     try:
         if is_softrestaurant_system(system_type):
             # FASE 8: Filtro RBAC
             almacen_rbac_filter = get_almacenes_sql_filter(context, server_id, "ip.idalmacen")
-            
+
             # Query para SoftRestaurant
             where_clause = "WHERE 1=1"
             if almacen_id:
                 where_clause += f" AND ip.idalmacen = '{almacen_id}'"
             # FASE 8: Agregar filtro RBAC
             where_clause += almacen_rbac_filter
-            
+
             query = f"""
-                SELECT 
+                SELECT
                     ip.fecha,
                     ip.idinsumo as codigo,
                     i.descripcion as insumo,
@@ -4265,20 +4274,20 @@ async def get_insumos_pendientes(
                 {where_clause}
                 ORDER BY ABS(ip.costo * ip.cantidad) DESC
             """
-            
+
         elif is_mpro_system(system_type):
             # Query para MPRO - Insumos vendidos sin existencia suficiente
             # Obtener nombre de sucursal desde el servidor
             sucursal_nombre = server.get('name', '').split(' ')[0]  # Tomar primera palabra del nombre
-            
+
             almacen_filter = f"AND venta.Al_Cve_Almacen = '{almacen_id}'" if almacen_id else ""
-            
+
             query = f"""
                 DECLARE @sucursal NVARCHAR(50) = '{sucursal_nombre}'
                 DECLARE @fecha_ini NVARCHAR(12) = (SELECT TOP 1 CONVERT(DATETIME, DATEFROMPARTS(YEAR(Pr_Fecha_Inicial), MONTH(Pr_Fecha_Inicial), 1), 103) FROM Periodo_Operativo WHERE Pr_Compras = 'NO' ORDER BY Pr_Fecha_final ASC)
                 DECLARE @fecha_fin NVARCHAR(12) = (SELECT TOP 1 Pr_Fecha_final FROM Periodo_Operativo WHERE Pr_Compras = 'NO' ORDER BY Pr_Fecha_final DESC)
-                
-                SELECT  
+
+                SELECT
                     venta.Al_Cve_Almacen AS almacen,
                     Producto_Kit.Pk_Producto AS codigo,
                     categoria.Ct_Descripcion AS categoria,
@@ -4290,30 +4299,30 @@ async def get_insumos_pendientes(
                     ROUND(SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) - MOV.CANT, 3) AS diferencia,
                     ISNULL(producto.Pr_Precio_Lista, 0) AS costo,
                     ROUND((SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) - MOV.CANT) * ISNULL(producto.Pr_Precio_Lista, 0), 2) AS total
-                FROM venta 
+                FROM venta
                 LEFT JOIN producto_kit ON Producto_Kit.Pr_Cve_Producto = venta.Pr_Cve_Producto
                 LEFT JOIN producto ON producto.Pr_Cve_Producto = Producto_kit.Pk_Producto
                 INNER JOIN Categoria ON categoria.Ct_Cve_Categoria = producto.Ct_Cve_Categoria
                 INNER JOIN Familia ON familia.Fm_Cve_Familia = Producto.Fm_Cve_Familia
                 INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
                 INNER JOIN (
-                    SELECT  
+                    SELECT
                         Pr_Cve_Producto,
                         SUM(Mv_Cantidad_Control_1) CANT
-                    FROM Movimiento 
+                    FROM Movimiento
                     INNER JOIN Sucursal ON SUCURSAL.Sc_Cve_Sucursal = MOVIMIENTO.Sc_Cve_Sucursal
-                    WHERE MV_FECHA <= @fecha_fin 
+                    WHERE MV_FECHA <= @fecha_fin
                     AND SUCURSAL.Sc_Descripcion LIKE '%' + @sucursal + '%'
                     AND Movimiento.Al_Cve_Almacen = '0001'
                     GROUP BY MOVIMIENTO.Pr_Cve_Producto
                 ) MOV ON MOV.Pr_Cve_Producto = Producto_Kit.Pk_Producto
                 WHERE sucursal.Sc_Descripcion LIKE '%' + @sucursal + '%'
-                AND venta.Es_Cve_Estado <> 'CA' 
+                AND venta.Es_Cve_Estado <> 'CA'
                 AND venta.Vn_Fecha BETWEEN @fecha_ini AND @fecha_fin
                 AND producto.Ct_Cve_Categoria IN ('0001','0002','0004')
                 AND producto.Dp_Cve_Departamento IN ('0003','0004','0007','0002')
                 {almacen_filter}
-                GROUP BY 
+                GROUP BY
                     MOV.CANT,
                     Producto_Kit.Pk_Producto,
                     producto.Pr_Descripcion,
@@ -4322,7 +4331,7 @@ async def get_insumos_pendientes(
                     familia.Fm_Descripcion,
                     venta.Al_Cve_Almacen,
                     producto.Pr_Precio_Lista
-                HAVING (SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) - MOV.CANT) > 0 
+                HAVING (SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) - MOV.CANT) > 0
                 ORDER BY categoria.Ct_Descripcion, familia.Fm_Descripcion, diferencia DESC
             """
         else:
@@ -4331,7 +4340,7 @@ async def get_insumos_pendientes(
                 "totales": {"cantidad": 0, "valor": 0, "items": 0},
                 "mensaje": f"Este reporte no está disponible para {system_type}"
             }
-        
+
         results = execute_sql_query(
             server['host'],
             server['port'],
@@ -4340,27 +4349,27 @@ async def get_insumos_pendientes(
             server['password'],
             query
         )
-        
+
         if not results:
             return {
                 "items": [],
                 "totales": {"cantidad": 0, "valor": 0, "items": 0},
                 "almacenes": []
             }
-        
+
         # Procesar resultados según el tipo de sistema
         if is_mpro_system(system_type):
             # Para MPRO, usar 'diferencia' como cantidad y 'total' como valor
             total_cantidad = sum(abs(float(r.get('diferencia') or 0)) for r in results)
             total_valor = sum(abs(float(r.get('total') or 0)) for r in results)
-            
+
             items_con_pareto = []
             acumulado = 0
             for idx, item in enumerate(results):
                 total_item = abs(float(item.get('total') or 0))
                 acumulado += total_item
                 porcentaje_acumulado = (acumulado / total_valor * 100) if total_valor > 0 else 0
-                
+
                 items_con_pareto.append({
                     "no": idx + 1,
                     "codigo": str(item.get('codigo', '')).strip(),
@@ -4380,14 +4389,14 @@ async def get_insumos_pendientes(
             # Para SoftRestaurant
             total_cantidad = sum(abs(float(r.get('cantidad') or 0)) for r in results)
             total_valor = sum(float(r.get('total') or 0) for r in results)
-            
+
             items_con_pareto = []
             acumulado = 0
             for idx, item in enumerate(results):
                 total_item = float(item.get('total') or 0)
                 acumulado += total_item
                 porcentaje_acumulado = (acumulado / total_valor * 100) if total_valor > 0 else 0
-                
+
                 items_con_pareto.append({
                     "no": idx + 1,
                     "fecha": str(item.get('fecha', ''))[:19] if item.get('fecha') else '',
@@ -4402,11 +4411,11 @@ async def get_insumos_pendientes(
                     "idturno": item.get('idturno'),
                     "pareto": round(porcentaje_acumulado, 0)
                 })
-        
+
         # Obtener lista de almacenes únicos
         almacenes_unicos = list(set(str(item.get('almacen', '')).strip() for item in results if item.get('almacen')))
         almacenes_unicos.sort()
-        
+
         return {
             "items": items_con_pareto,
             "totales": {
@@ -4417,7 +4426,7 @@ async def get_insumos_pendientes(
             "almacenes": almacenes_unicos,
             "system_type": system_type
         }
-        
+
     except Exception as e:
         logging.error(f"Error obteniendo insumos pendientes: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
@@ -4507,6 +4516,45 @@ async def get_report_filters(server_id: str, current_user: Dict = Depends(get_cu
 _inventory_analysis_endpoint_ref = None
 
 
+def _classify_inventory_sql_error(exc: Exception) -> str:
+    """Clasifica errores SQL del análisis de inventario para manejo seguro."""
+    msg = str(exc or "").lower()
+    if "dbprocess is dead" in msg or "not enabled" in msg:
+        return "DEAD_DBPROCESS"
+    if "adaptive server connection timed out" in msg or "login timeout" in msg:
+        return "CONNECTION_TIMEOUT"
+    if "timeout expired" in msg or "query timeout" in msg:
+        return "QUERY_TIMEOUT"
+    if "invalid column name" in msg or "invalid object name" in msg or "syntax" in msg:
+        return "SCHEMA"
+    if "login failed" in msg or "not associated with a trusted sql server connection" in msg:
+        return "AUTHENTICATION"
+    if "communication link failure" in msg or "connection was reset" in msg or "network" in msg:
+        return "NETWORK"
+    return "PROCESSING"
+
+
+def _is_inventory_transient_error(classification: str) -> bool:
+    return classification in {"CONNECTION_TIMEOUT", "QUERY_TIMEOUT", "DEAD_DBPROCESS", "NETWORK"}
+
+
+def _should_retry_inventory_once(classification: str, attempt: int) -> bool:
+    return attempt == 1 and _is_inventory_transient_error(classification)
+
+
+def _inventory_analysis_safe_http_exception(exc: Exception) -> HTTPException:
+    classification = _classify_inventory_sql_error(exc)
+    if _is_inventory_transient_error(classification):
+        return HTTPException(
+            status_code=503,
+            detail="Servicio SQL canónico temporalmente no disponible. Reintente en unos segundos.",
+        )
+    return HTTPException(
+        status_code=500,
+        detail="Error generando análisis canónico SoftRestaurant.",
+    )
+
+
 
 @api_router.post("/reports/inventory-analysis")
 async def generate_inventory_analysis(report_params: Dict, current_user: Dict = Depends(get_current_user)):
@@ -4519,14 +4567,20 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     - Cálculo de diferencias
     Usa filtros configurables por servidor (tipos_movimiento, categorias, departamentos)
     Acepta filtros adicionales del frontend (categorias, familias, subfamilias)
-    
+
     FASE P1.4-C (Dic 2025): Migrado de MongoDB db.servers a server_registry.
     FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
     NO FUENTE: MongoDB db.servers
     """
-    from core.server_registry import get_server_connection_info_with_secrets
-    
-    server_id = report_params.get('server_id')
+    from core.server_registry import get_server_connection_info
+
+    from core.corporate_filters.request_resolver import canonical_server_id
+
+    server_id = str(canonical_server_id(report_params.get('server_id')) or '').strip()
+    if not server_id:
+        raise HTTPException(status_code=400, detail='server_id es requerido')
+    report_params['server_id'] = server_id
+    access_context = await validate_server_access_unified(current_user, server_id)
     sucursal_id_param = report_params.get('sucursal_id')
     sucursal = report_params.get('sucursal')
     almacen = report_params.get('almacen')
@@ -4535,15 +4589,15 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
     fecha_fin = report_params.get('fecha_fin')
     folio_inicial = report_params.get('folio_inicial')
     folio_final = report_params.get('folio_final')
-    
+
     # Multi-folios (nuevo)
     folios_iniciales = report_params.get('folios_iniciales', [])
     folios_finales = report_params.get('folios_finales', [])
-    
+
     # Info completa de inventarios (folio + comentario) para MPRO
     inventarios_iniciales_info = report_params.get('inventarios_iniciales_info', [])
     inventarios_finales_info = report_params.get('inventarios_finales_info', [])
-    
+
     # Normalizar a listas - si hay multi-folios, usarlos; si no, usar el individual
     if folios_iniciales:
         lista_folios_ini = folios_iniciales
@@ -4551,69 +4605,54 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
         lista_folios_ini = [folio_inicial]
     else:
         lista_folios_ini = []
-    
+
     if folios_finales:
         lista_folios_fin = folios_finales
     elif folio_final:
         lista_folios_fin = [folio_final]
     else:
         lista_folios_fin = []
-    
+
     # FASE 1B: Validar y sanitizar folios para prevenir SQL Injection
     MAX_FOLIOS = 50  # Límite máximo de folios por solicitud
-    
+
     def _sanitize_folio_list(folios: list, max_count: int = MAX_FOLIOS) -> list:
         """Valida y sanitiza una lista de folios."""
         if not folios:
             return []
         sanitized = []
         for f in folios[:max_count]:
-            if f and isinstance(f, str):
+            folio_text = str(f or '').strip()
+            if folio_text:
                 # Solo permitir caracteres alfanuméricos, guiones y guiones bajos
-                if _validate_identifier(str(f), max_length=50):
+                if _validate_identifier(folio_text, max_length=50):
                     # Escapar comillas simples
-                    sanitized.append(str(f).replace("'", "''"))
+                    sanitized.append(folio_text.replace("'", "''"))
                 else:
-                    logging.warning(f"[A04-SANITIZADO] Folio inválido rechazado: {str(f)[:20]}")
+                    logging.warning(f"[A04-SANITIZADO] Folio inválido rechazado: {folio_text[:20]}")
         return sanitized
-    
+
     # Aplicar sanitización a las listas de folios
     lista_folios_ini = _sanitize_folio_list(lista_folios_ini)
     lista_folios_fin = _sanitize_folio_list(lista_folios_fin)
-    
+
     # Filtros adicionales del frontend
     filtro_categorias_frontend = report_params.get('categorias', [])
     filtro_familias_frontend = report_params.get('familias', [])
     filtro_subfamilias_frontend = report_params.get('subfamilias', [])
-    
+
     # Opción de agrupación de insumos (por defecto NO agrupar)
     agrupar_insumos = report_params.get('agrupar_insumos', False)
-    
+
     logging.info(f"Filtros recibidos del frontend - Categorias: {filtro_categorias_frontend}, Familias: {filtro_familias_frontend}, SubFamilias: {filtro_subfamilias_frontend}")
     logging.info(f"Agrupar insumos: {agrupar_insumos}")
-    
-    # FASE P1.4-C: Obtener servidor desde EDARSAHUB SQL via server_registry
-    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
-    server = decrypt_server_secrets(get_server_connection_info_with_secrets(server_id))
+
+    # FASE P1.4-C: Obtener metadatos desde EDARSAHUB SQL via server_registry sin secretos.
+    server = await get_server_connection_info(server_id, db=db)
     if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
 
     from time import perf_counter
-    request_started_at = perf_counter()
-
-    def _timed_inventory_sql(label: str, query: str):
-        started_at = perf_counter()
-        logging.info("[INV-ANALYSIS-TIMING] start label=%s server_id=%s system_type=%s", label, server_id, server.get('system_type'))
-        try:
-            rows = execute_sql_query(server['host'], server['port'], server['database'], server['username'], server['password'], query)
-            elapsed_ms = int((perf_counter() - started_at) * 1000)
-            row_count = len(rows) if hasattr(rows, '__len__') else 'unknown'
-            logging.info("[INV-ANALYSIS-TIMING] done label=%s elapsed_ms=%s rows=%s", label, elapsed_ms, row_count)
-            return rows
-        except Exception:
-            elapsed_ms = int((perf_counter() - started_at) * 1000)
-            logging.exception("[INV-ANALYSIS-TIMING] error label=%s elapsed_ms=%s", label, elapsed_ms)
-            raise
 
     async def _generate_soft_inventory_analysis_canonical():
         from datetime import datetime as _datetime, timedelta as _timedelta
@@ -4666,16 +4705,23 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
         selected_subfamilia_codes = _as_filter_set(filtro_subfamilias_frontend)
 
         selected_almacenes = []
+
+        def _append_almacen_candidate(value):
+            value_text = _as_text(value)
+            if value_text and value_text not in selected_almacenes:
+                selected_almacenes.append(value_text)
+
         if almacenes:
             for item in almacenes:
                 if isinstance(item, dict):
-                    selected_almacenes.append(_as_text(item.get('id') or item.get('almacen_id') or item.get('nombre')))
+                    for field in ('almacen_id', 'id', 'nombre', 'almacen', 'label', 'value'):
+                        _append_almacen_candidate(item.get(field))
                 else:
-                    selected_almacenes.append(_as_text(item))
+                    _append_almacen_candidate(item)
         elif almacen:
-            selected_almacenes.append(_as_text(almacen))
-        selected_almacenes = [a for a in selected_almacenes if a]
+            _append_almacen_candidate(almacen)
 
+        selected_almacenes = _compras_almacenes_scope(access_context, server_id, selected_almacenes)
         folios_all = list(dict.fromkeys([*lista_folios_ini, *lista_folios_fin]))
         folio_placeholders = ",".join(["%s"] * len(folios_all))
 
@@ -4683,40 +4729,118 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
         try:
             from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
 
+            open_started_at = perf_counter()
             conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+            open_elapsed_ms = int((perf_counter() - open_started_at) * 1000)
             cursor = conn.cursor(as_dict=True)
+            logging.info(
+                "[INV-STAGE] stage=CONNECTION_OPEN open_ms=%s classification=OK",
+                open_elapsed_ms,
+            )
+
+            # Validación obligatoria de identidad SQL canónica antes de consultas.
+            v_exec_started = perf_counter()
+            cursor.execute("SELECT DB_NAME() AS db_name, SUSER_SNAME() AS suser_name, USER_NAME() AS user_name")
+            v_exec_ms = int((perf_counter() - v_exec_started) * 1000)
+            v_fetch_started = perf_counter()
+            identity_rows = cursor.fetchall() or []
+            v_fetch_ms = int((perf_counter() - v_fetch_started) * 1000)
+            identity = identity_rows[0] if identity_rows else {}
+            db_name = _as_text(identity.get("db_name"))
+            suser_name = _as_text(identity.get("suser_name"))
+            user_name = _as_text(identity.get("user_name"))
+            logging.info(
+                "[INV-STAGE] stage=SESSION_VALIDATION execute_ms=%s fetch_ms=%s rows=%s classification=OK",
+                v_exec_ms,
+                v_fetch_ms,
+                len(identity_rows),
+            )
+            if db_name.upper() != "EDARSAHUB" or suser_name.upper() != "HRLECTURA" or user_name.upper() != "HRLECTURA":
+                raise HTTPException(
+                    status_code=500,
+                    detail="Validación de sesión SQL canónica inválida.",
+                )
 
             header_params = [server_id, *folios_all]
-            header_filters = ["server_id = %s", f"folio IN ({folio_placeholders})", "sync_status = 'ACTIVE'"]
+            header_filters = ["server_id = %s", f"folio IN ({folio_placeholders})", "sync_status IN ('ACTIVE', 'REPLACED')"]
             if selected_almacenes:
                 almacen_placeholders = ",".join(["%s"] * len(selected_almacenes))
                 header_filters.append(f"(almacen_id IN ({almacen_placeholders}) OR almacen IN ({almacen_placeholders}))")
                 header_params.extend(selected_almacenes)
                 header_params.extend(selected_almacenes)
 
+            h_exec_started = perf_counter()
             cursor.execute(
                 f"""
-SELECT
-    folio,
-    fecha,
-    almacen,
-    almacen_id,
-    sucursal,
-    sucursal_id
-FROM Compras_Inventarios_Fisicos_Sync
-WHERE {' AND '.join(header_filters)}
+	SELECT
+	    folio,
+	    fecha,
+	    almacen,
+	    almacen_id,
+	    sucursal,
+	    sucursal_id,
+	    sync_status
+	FROM (
+	    SELECT
+	        folio,
+	        fecha,
+	        almacen,
+	        almacen_id,
+	        sucursal,
+	        sucursal_id,
+	        sync_status,
+	        ROW_NUMBER() OVER (
+	            PARTITION BY server_id, sucursal_id, almacen_id, folio
+	            ORDER BY CASE WHEN sync_status = 'ACTIVE' THEN 0 ELSE 1 END, sync_timestamp DESC
+	        ) AS _rn
+	    FROM Compras_Inventarios_Fisicos_Sync
+	    WHERE {' AND '.join(header_filters)}
+	) t
+	WHERE t._rn = 1
 ORDER BY fecha, folio
 """,
                 tuple(header_params),
             )
+            h_exec_ms = int((perf_counter() - h_exec_started) * 1000)
+            h_fetch_started = perf_counter()
             header_rows = cursor.fetchall()
+            h_fetch_ms = int((perf_counter() - h_fetch_started) * 1000)
+            logging.info(
+                "[INV-STAGE] stage=HEADERS execute_ms=%s fetch_ms=%s rows=%s classification=OK",
+                h_exec_ms,
+                h_fetch_ms,
+                len(header_rows),
+            )
             if not header_rows:
-                raise HTTPException(status_code=404, detail="No se encontraron inventarios canónicos para los folios seleccionados")
+                raise HTTPException(
+                    status_code=404,
+                    detail={
+                        "code": "INVENTORY_PHYSICAL_HEADERS_MISSING",
+                        "message": "No se encontraron inventarios canónicos para los folios seleccionados. Ejecuta/resincroniza inventarios físicos y vuelve a generar el reporte.",
+                        "folios": folios_all,
+                        "source": "dbo.Compras_Inventarios_Fisicos_Sync",
+                    },
+                )
+
+            replaced_headers = [r for r in header_rows if _as_text(r.get('sync_status')).upper() == 'REPLACED']
+            if replaced_headers:
+                logging.warning(
+                    "[SOFT-CANONICAL-NOLIVE] usando inventarios REPLACED deduplicados por respaldo canónico folios=%s",
+                    sorted({_as_text(r.get('folio')) for r in replaced_headers}),
+                )
 
             matched_folios = {_as_text(r.get('folio')) for r in header_rows}
             missing_folios = [f for f in folios_all if _as_text(f) not in matched_folios]
             if missing_folios:
-                raise HTTPException(status_code=404, detail=f"Folios sin respaldo canónico: {', '.join(missing_folios)}")
+                raise HTTPException(
+                    status_code=404,
+                    detail={
+                        "code": "INVENTORY_PHYSICAL_HEADERS_MISSING",
+                        "message": f"Folios sin respaldo canónico: {', '.join(missing_folios)}. Ejecuta/resincroniza inventarios físicos y vuelve a generar el reporte.",
+                        "folios": missing_folios,
+                        "source": "dbo.Compras_Inventarios_Fisicos_Sync",
+                    },
+                )
 
             header_by_folio = {}
             for row in header_rows:
@@ -4756,7 +4880,7 @@ ORDER BY fecha, folio
             )
 
             detail_params = [server_id, *folios_all]
-            detail_filters = ["server_id = %s", f"folio IN ({folio_placeholders})", "sync_status = 'ACTIVE'"]
+            detail_filters = ["server_id = %s", f"folio IN ({folio_placeholders})", "sync_status IN ('ACTIVE', 'REPLACED')"]
             if almacen_ids:
                 ids = sorted(almacen_ids)
                 detail_filters.append(f"almacen_id IN ({','.join(['%s'] * len(ids))})")
@@ -4766,9 +4890,12 @@ ORDER BY fecha, folio
                 detail_filters.append(f"almacen IN ({','.join(['%s'] * len(names))})")
                 detail_params.extend(names)
 
-            try:
-                cursor.execute(
-                    f"""
+            def _fetch_inventory_detail_rows(filters, params, label):
+                nonlocal conn, cursor
+                try:
+                    d_exec_started = perf_counter()
+                    cursor.execute(
+                        f"""
 SELECT
     folio,
     codigo_producto,
@@ -4779,18 +4906,46 @@ SELECT
     costo_unitario,
     almacen,
     almacen_id
-FROM Compras_Inventarios_Fisicos_Detalle_Sync
-WHERE {' AND '.join(detail_filters)}
+FROM (
+    SELECT
+        folio,
+        codigo_producto,
+        nombre_producto,
+        unidad,
+        existencia_fisica,
+        ISNULL(Rendimiento, 1) AS rendimiento,
+        costo_unitario,
+        almacen,
+        almacen_id,
+        ROW_NUMBER() OVER (
+            PARTITION BY server_id, almacen_id, folio, codigo_producto
+            ORDER BY CASE WHEN sync_status = 'ACTIVE' THEN 0 ELSE 1 END
+        ) AS _rn
+    FROM Compras_Inventarios_Fisicos_Detalle_Sync
+    WHERE {' AND '.join(filters)}
+) t
+WHERE t._rn = 1
 """,
-                    tuple(detail_params),
-                )
-            except Exception as detail_rendimiento_error:
-                logging.warning(
-                    "[SOFT-CANONICAL-NOLIVE] detalle sin rendimiento canonico, usando 1: %s",
-                    str(detail_rendimiento_error),
-                )
-                cursor.execute(
-                    f"""
+                        tuple(params),
+                    )
+                    d_exec_ms = int((perf_counter() - d_exec_started) * 1000)
+                except Exception as detail_rendimiento_error:
+                    first_classification = _classify_inventory_sql_error(detail_rendimiento_error)
+                    logging.warning(
+                        "[INV-STAGE] stage=DETAILS label=%s execute_ms=%s classification=%s error_type=%s",
+                        label,
+                        int((perf_counter() - d_exec_started) * 1000),
+                        first_classification,
+                        type(detail_rendimiento_error).__name__,
+                    )
+                    # Si el primer intento dejó DBPROCESS muerto, NO reutilizar sesión.
+                    try:
+                        if conn:
+                            conn.close()
+                    except Exception:
+                        pass
+
+                    detail_fallback_sql = f"""
 SELECT
     folio,
     codigo_producto,
@@ -4801,14 +4956,107 @@ SELECT
     costo_unitario,
     almacen,
     almacen_id
-FROM Compras_Inventarios_Fisicos_Detalle_Sync
-WHERE {' AND '.join(detail_filters)}
-""",
-                    tuple(detail_params),
+FROM (
+    SELECT
+        folio,
+        codigo_producto,
+        nombre_producto,
+        unidad,
+        existencia_fisica,
+        1 AS rendimiento,
+        costo_unitario,
+        almacen,
+        almacen_id,
+        ROW_NUMBER() OVER (
+            PARTITION BY server_id, almacen_id, folio, codigo_producto
+            ORDER BY CASE WHEN sync_status = 'ACTIVE' THEN 0 ELSE 1 END
+        ) AS _rn
+    FROM Compras_Inventarios_Fisicos_Detalle_Sync
+    WHERE {' AND '.join(filters)}
+) t
+WHERE t._rn = 1
+"""
+
+                    last_error = detail_rendimiento_error
+                    for attempt in (1, 2):
+                        try:
+                            local_conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+                            local_cursor = local_conn.cursor(as_dict=True)
+                            f_exec_started = perf_counter()
+                            local_cursor.execute(detail_fallback_sql, tuple(params))
+                            f_exec_ms = int((perf_counter() - f_exec_started) * 1000)
+                            f_fetch_started = perf_counter()
+                            rows = local_cursor.fetchall()
+                            f_fetch_ms = int((perf_counter() - f_fetch_started) * 1000)
+                            logging.info(
+                                "[INV-STAGE] stage=DETAILS_FALLBACK label=%s attempt=%s execute_ms=%s fetch_ms=%s rows=%s classification=OK",
+                                label,
+                                attempt,
+                                f_exec_ms,
+                                f_fetch_ms,
+                                len(rows),
+                            )
+                            conn = local_conn
+                            cursor = local_cursor
+                            return rows
+                        except Exception as fallback_error:
+                            last_error = fallback_error
+                            classification = _classify_inventory_sql_error(fallback_error)
+                            logging.warning(
+                                "[INV-STAGE] stage=DETAILS_FALLBACK label=%s attempt=%s classification=%s error_type=%s",
+                                label,
+                                attempt,
+                                classification,
+                                type(fallback_error).__name__,
+                            )
+                            if not _should_retry_inventory_once(classification, attempt):
+                                raise
+                    raise last_error
+
+                d_fetch_started = perf_counter()
+                rows = cursor.fetchall()
+                d_fetch_ms = int((perf_counter() - d_fetch_started) * 1000)
+                logging.info(
+                    "[INV-STAGE] stage=DETAILS label=%s execute_ms=%s fetch_ms=%s rows=%s classification=OK",
+                    label,
+                    d_exec_ms,
+                    d_fetch_ms,
+                    len(rows),
                 )
-            detail_rows = cursor.fetchall()
+                return rows
+
+            detail_rows = _fetch_inventory_detail_rows(detail_filters, detail_params, "almacen")
+
+            if not detail_rows and (almacen_ids or almacen_names):
+                folio_only_filters = [
+                    "server_id = %s",
+                    f"folio IN ({folio_placeholders})",
+                    "sync_status IN ('ACTIVE', 'REPLACED')",
+                ]
+                folio_only_params = [server_id, *folios_all]
+                detail_rows = _fetch_inventory_detail_rows(
+                    folio_only_filters,
+                    folio_only_params,
+                    "folio",
+                )
+                if detail_rows:
+                    logging.warning(
+                        "[SOFT-CANONICAL-NOLIVE] detalle recuperado por folio sin filtro de almacen; server_id=%s folios=%s almacenes=%s",
+                        server_id,
+                        folios_all,
+                        sorted(almacen_ids or almacen_names),
+                    )
+
             if not detail_rows:
-                raise HTTPException(status_code=404, detail="No hay detalle canónico para los folios seleccionados")
+                raise HTTPException(
+                    status_code=404,
+                    detail={
+                        "code": "INVENTORY_PHYSICAL_DETAIL_MISSING",
+                        "message": "No hay detalle canónico para los folios seleccionados. Ejecuta/resincroniza inventarios físicos y vuelve a generar el reporte.",
+                        "folios": folios_all,
+                        "source": "dbo.Compras_Inventarios_Fisicos_Detalle_Sync",
+                    },
+                )
 
             ini_set = {_as_text(f) for f in lista_folios_ini}
             fin_set = {_as_text(f) for f in lista_folios_fin}
@@ -4860,6 +5108,7 @@ WHERE {' AND '.join(detail_filters)}
                 movement_params.extend(names)
 
             try:
+                m_exec_started = perf_counter()
                 cursor.execute(
                     f"""
 SELECT
@@ -4871,14 +5120,28 @@ GROUP BY codigo_producto
 """,
                     tuple(movement_params),
                 )
+                m_exec_ms = int((perf_counter() - m_exec_started) * 1000)
+                m_fetch_started = perf_counter()
                 movimientos = {
                     _as_text(row.get('codigo_producto')): _as_float(row.get('cantidad'))
                     for row in cursor.fetchall()
                     if _as_text(row.get('codigo_producto'))
                 }
+                m_fetch_ms = int((perf_counter() - m_fetch_started) * 1000)
+                logging.info(
+                    "[INV-STAGE] stage=MOVIMIENTOS execute_ms=%s fetch_ms=%s rows=%s classification=OK",
+                    m_exec_ms,
+                    m_fetch_ms,
+                    len(movimientos),
+                )
             except Exception as mov_error:
-                logging.exception("[SOFT-CANONICAL-NOLIVE] movimientos canonicos no disponibles")
-                raise HTTPException(status_code=500, detail=f"Movimientos canónicos no disponibles: {str(mov_error)}")
+                mov_class = _classify_inventory_sql_error(mov_error)
+                logging.exception(
+                    "[INV-STAGE] stage=MOVIMIENTOS classification=%s error_type=%s",
+                    mov_class,
+                    type(mov_error).__name__,
+                )
+                raise
 
             ventas = {}
             sales_params = [server_id, sales_start, sales_end]
@@ -4901,6 +5164,7 @@ GROUP BY codigo_producto
                 sales_params.extend(names)
 
             try:
+                s_exec_started = perf_counter()
                 cursor.execute(
                     f"""
 SELECT
@@ -4912,13 +5176,27 @@ GROUP BY codigo_producto
 """,
                     tuple(sales_params),
                 )
+                s_exec_ms = int((perf_counter() - s_exec_started) * 1000)
+                s_fetch_started = perf_counter()
                 ventas = {
                     _as_text(row.get('codigo_producto')): abs(_as_float(row.get('cantidad')))
                     for row in cursor.fetchall()
                     if _as_text(row.get('codigo_producto'))
                 }
+                s_fetch_ms = int((perf_counter() - s_fetch_started) * 1000)
+                logging.info(
+                    "[INV-STAGE] stage=VENTAS execute_ms=%s fetch_ms=%s rows=%s classification=OK",
+                    s_exec_ms,
+                    s_fetch_ms,
+                    len(ventas),
+                )
             except Exception as sales_error:
-                logging.warning("[SOFT-CANONICAL-NOLIVE] ventas canonicas no disponibles: %s", str(sales_error))
+                sales_class = _classify_inventory_sql_error(sales_error)
+                logging.warning(
+                    "[INV-STAGE] stage=VENTAS classification=%s error_type=%s",
+                    sales_class,
+                    type(sales_error).__name__,
+                )
 
             all_codes = sorted(set(productos.keys()) | set(inv_inicial.keys()) | set(inv_final.keys()) | set(movimientos.keys()) | set(ventas.keys()))
             catalogo_productos = {}
@@ -4963,6 +5241,7 @@ GROUP BY codigo_producto
                     catalogo_productos[codigo] = current
 
                 try:
+                    ci_exec_started = perf_counter()
                     cursor.execute(
                         f"""
 SELECT
@@ -5004,20 +5283,37 @@ WHERE i.ServerID = %s
 """,
                         tuple([server_id, *all_codes]),
                     )
+                    ci_exec_ms = int((perf_counter() - ci_exec_started) * 1000)
+                    ci_fetch_started = perf_counter()
                     insumo_catalog_rows = cursor.fetchall()
+                    ci_fetch_ms = int((perf_counter() - ci_fetch_started) * 1000)
                     for row in insumo_catalog_rows:
                         _merge_catalog_row(_as_text(row.get('Codigo')), row)
+                    ci_resolved = len([
+                        row for row in insumo_catalog_rows
+                        if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
+                    ])
+                    logging.info(
+                        "[INV-STAGE] stage=CATALOGO_INSUMOS execute_ms=%s fetch_ms=%s rows=%s resolved=%s classification=OK",
+                        ci_exec_ms,
+                        ci_fetch_ms,
+                        len(insumo_catalog_rows),
+                        ci_resolved,
+                    )
                     logging.warning(
                         "[SOFT-CANONICAL-NOLIVE] sync insumo classifier rows=%s resolved=%s",
                         len(insumo_catalog_rows),
-                        len([
-                            row for row in insumo_catalog_rows
-                            if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
-                        ]),
+                        ci_resolved,
                     )
                 except Exception as catalog_error:
-                    logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo insumos canonico no disponible: %s", str(catalog_error))
+                    ci_class = _classify_inventory_sql_error(catalog_error)
+                    logging.warning(
+                        "[INV-STAGE] stage=CATALOGO_INSUMOS classification=%s error_type=%s",
+                        ci_class,
+                        type(catalog_error).__name__,
+                    )
                     try:
+                        cif_exec_started = perf_counter()
                         cursor.execute(
                             f"""
 SELECT
@@ -5039,12 +5335,28 @@ WHERE i.ServerID = %s
 """,
                             tuple([server_id, *all_codes]),
                         )
-                        for row in cursor.fetchall():
+                        cif_exec_ms = int((perf_counter() - cif_exec_started) * 1000)
+                        cif_fetch_started = perf_counter()
+                        insumo_fallback_rows = cursor.fetchall()
+                        cif_fetch_ms = int((perf_counter() - cif_fetch_started) * 1000)
+                        for row in insumo_fallback_rows:
                             _merge_catalog_row(_as_text(row.get('Codigo')), row)
+                        logging.info(
+                            "[INV-STAGE] stage=CATALOGO_INSUMOS_FALLBACK execute_ms=%s fetch_ms=%s rows=%s classification=OK",
+                            cif_exec_ms,
+                            cif_fetch_ms,
+                            len(insumo_fallback_rows),
+                        )
                     except Exception as fallback_catalog_error:
-                        logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo insumos fallback no disponible: %s", str(fallback_catalog_error))
+                        cif_class = _classify_inventory_sql_error(fallback_catalog_error)
+                        logging.warning(
+                            "[INV-STAGE] stage=CATALOGO_INSUMOS_FALLBACK classification=%s error_type=%s",
+                            cif_class,
+                            type(fallback_catalog_error).__name__,
+                        )
 
                 try:
+                    cp_exec_started = perf_counter()
                     cursor.execute(
                         f"""
 SELECT
@@ -5071,19 +5383,35 @@ WHERE p.ServerID = %s
 """,
                         tuple([server_id, *all_codes]),
                     )
+                    cp_exec_ms = int((perf_counter() - cp_exec_started) * 1000)
+                    cp_fetch_started = perf_counter()
                     sync_product_rows = cursor.fetchall()
+                    cp_fetch_ms = int((perf_counter() - cp_fetch_started) * 1000)
                     for row in sync_product_rows:
                         _merge_catalog_row(_as_text(row.get('Codigo')), row)
+                    cp_resolved = len([
+                        row for row in sync_product_rows
+                        if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
+                    ])
+                    logging.info(
+                        "[INV-STAGE] stage=CATALOGO_PRODUCTOS_SYNC execute_ms=%s fetch_ms=%s rows=%s resolved=%s classification=OK",
+                        cp_exec_ms,
+                        cp_fetch_ms,
+                        len(sync_product_rows),
+                        cp_resolved,
+                    )
                     logging.warning(
                         "[SOFT-CANONICAL-NOLIVE] sync product classifier rows=%s resolved=%s",
                         len(sync_product_rows),
-                        len([
-                            row for row in sync_product_rows
-                            if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
-                        ]),
+                        cp_resolved,
                     )
                 except Exception as product_catalog_error:
-                    logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo productos canonico no disponible: %s", str(product_catalog_error))
+                    cp_class = _classify_inventory_sql_error(product_catalog_error)
+                    logging.warning(
+                        "[INV-STAGE] stage=CATALOGO_PRODUCTOS_SYNC classification=%s error_type=%s",
+                        cp_class,
+                        type(product_catalog_error).__name__,
+                    )
 
                 unresolved_catalog_codes = [
                     code for code in all_codes
@@ -5096,6 +5424,7 @@ WHERE p.ServerID = %s
                     unresolved_placeholders = ",".join(["%s"] * len(unresolved_catalog_codes))
 
                     try:
+                        cf_exec_started = perf_counter()
                         cursor.execute(
                             f"""
 WITH catalogo_base AS (
@@ -5157,21 +5486,38 @@ GROUP BY cb.Codigo
 """,
                             tuple([*unresolved_catalog_codes, *unresolved_catalog_codes, *unresolved_catalog_codes]),
                         )
+                        cf_exec_ms = int((perf_counter() - cf_exec_started) * 1000)
+                        cf_fetch_started = perf_counter()
                         catalogo_canonico_rows = cursor.fetchall()
+                        cf_fetch_ms = int((perf_counter() - cf_fetch_started) * 1000)
                         for row in catalogo_canonico_rows:
                             _merge_catalog_row(_as_text(row.get('Codigo')), row)
+                        cf_resolved = len([
+                            row for row in catalogo_canonico_rows
+                            if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
+                        ])
+                        logging.info(
+                            "[INV-STAGE] stage=CATALOGO_FALLBACK_BASE execute_ms=%s fetch_ms=%s rows=%s resolved=%s classification=OK",
+                            cf_exec_ms,
+                            cf_fetch_ms,
+                            len(catalogo_canonico_rows),
+                            cf_resolved,
+                        )
                         logging.warning(
                             "[SOFT-CANONICAL-NOLIVE] fallback catalog classifier rows=%s resolved=%s",
                             len(catalogo_canonico_rows),
-                            len([
-                                row for row in catalogo_canonico_rows
-                                if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
-                            ]),
+                            cf_resolved,
                         )
                     except Exception as canonical_catalog_error:
-                        logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo producto canonico no disponible: %s", str(canonical_catalog_error))
+                        cf_class = _classify_inventory_sql_error(canonical_catalog_error)
+                        logging.warning(
+                            "[INV-STAGE] stage=CATALOGO_FALLBACK_BASE classification=%s error_type=%s",
+                            cf_class,
+                            type(canonical_catalog_error).__name__,
+                        )
 
                     try:
+                        cm_exec_started = perf_counter()
                         cursor.execute(
                             f"""
 SELECT
@@ -5210,19 +5556,35 @@ GROUP BY LTRIM(RTRIM(m.CodigoFuente))
 """,
                             tuple([server_id, *unresolved_catalog_codes]),
                         )
+                        cm_exec_ms = int((perf_counter() - cm_exec_started) * 1000)
+                        cm_fetch_started = perf_counter()
                         mapped_catalog_rows = cursor.fetchall()
+                        cm_fetch_ms = int((perf_counter() - cm_fetch_started) * 1000)
                         for row in mapped_catalog_rows:
                             _merge_catalog_row(_as_text(row.get('Codigo')), row)
+                        cm_resolved = len([
+                            row for row in mapped_catalog_rows
+                            if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
+                        ])
+                        logging.info(
+                            "[INV-STAGE] stage=CATALOGO_FALLBACK_MAPEO execute_ms=%s fetch_ms=%s rows=%s resolved=%s classification=OK",
+                            cm_exec_ms,
+                            cm_fetch_ms,
+                            len(mapped_catalog_rows),
+                            cm_resolved,
+                        )
                         logging.warning(
                             "[SOFT-CANONICAL-NOLIVE] fallback mapped classifier rows=%s resolved=%s",
                             len(mapped_catalog_rows),
-                            len([
-                                row for row in mapped_catalog_rows
-                                if not _is_missing_classifier(row.get('Categoria'), 'SIN CATEGORIA')
-                            ]),
+                            cm_resolved,
                         )
                     except Exception as mapped_catalog_error:
-                        logging.warning("[SOFT-CANONICAL-NOLIVE] catalogo mapeo origen no disponible: %s", str(mapped_catalog_error))
+                        cm_class = _classify_inventory_sql_error(mapped_catalog_error)
+                        logging.warning(
+                            "[INV-STAGE] stage=CATALOGO_FALLBACK_MAPEO classification=%s error_type=%s",
+                            cm_class,
+                            type(mapped_catalog_error).__name__,
+                        )
 
                 for codigo, catalog_row in catalogo_productos.items():
                     productos.setdefault(codigo, {})
@@ -5248,6 +5610,7 @@ GROUP BY LTRIM(RTRIM(m.CodigoFuente))
                     productos[codigo]['SubFamiliaCodigo'] = _as_text(catalog_row.get('SubFamiliaCodigo'))
 
                 try:
+                    fp_exec_started = perf_counter()
                     cursor.execute(
                         f"""
 SELECT
@@ -5290,19 +5653,35 @@ GROUP BY Codigo
 """,
                         tuple([*all_codes, *all_codes, *all_codes]),
                     )
+                    fp_exec_ms = int((perf_counter() - fp_exec_started) * 1000)
+                    fp_fetch_started = perf_counter()
                     factor_rows = cursor.fetchall()
+                    fp_fetch_ms = int((perf_counter() - fp_fetch_started) * 1000)
                     for factor_row in factor_rows:
                         codigo_factor = _as_text(factor_row.get('Codigo'))
                         rendimiento_factor = _as_float(factor_row.get('Rendimiento')) or 1
                         if codigo_factor in productos and rendimiento_factor > _as_float(productos[codigo_factor].get('Rendimiento')):
                             productos[codigo_factor]['Rendimiento'] = rendimiento_factor
+                    fp_gt1 = len([p for p in productos.values() if _as_float(p.get('Rendimiento')) > 1])
+                    logging.info(
+                        "[INV-STAGE] stage=FACTORES_PRESENTACION execute_ms=%s fetch_ms=%s rows=%s rendimiento_gt1=%s classification=OK",
+                        fp_exec_ms,
+                        fp_fetch_ms,
+                        len(factor_rows),
+                        fp_gt1,
+                    )
                     logging.info(
                         "[SOFT-CANONICAL-NOLIVE] presentation factor rows=%s rendimiento_gt1=%s",
                         len(factor_rows),
-                        len([p for p in productos.values() if _as_float(p.get('Rendimiento')) > 1]),
+                        fp_gt1,
                     )
                 except Exception as factor_error:
-                    logging.warning("[SOFT-CANONICAL-NOLIVE] factores presentacion canonicos no disponibles: %s", str(factor_error))
+                    fp_class = _classify_inventory_sql_error(factor_error)
+                    logging.warning(
+                        "[INV-STAGE] stage=FACTORES_PRESENTACION classification=%s error_type=%s",
+                        fp_class,
+                        type(factor_error).__name__,
+                    )
 
                 logging.warning(
                     "[SOFT-CANONICAL-NOLIVE] catalog rows=%s missing=%s sin_categoria=%s rendimiento_gt1=%s",
@@ -5406,1803 +5785,187 @@ GROUP BY Codigo
         except HTTPException:
             raise
         except Exception as error:
-            logging.exception("[SOFT-CANONICAL-NOLIVE] error: %s", str(error))
-            raise HTTPException(status_code=500, detail=f"Error generando análisis canónico SoftRestaurant: {str(error)}")
+            error_class = _classify_inventory_sql_error(error)
+            logging.exception(
+                "[SOFT-CANONICAL-NOLIVE] error classification=%s error_type=%s",
+                error_class,
+                type(error).__name__,
+            )
+            raise _inventory_analysis_safe_http_exception(error)
         finally:
             if conn:
                 conn.close()
-    
+
     try:
-        if is_mpro_system(server.get('system_type')):
-            logging.warning(
-                "[MPRO-INV-ANALYSIS] start server_id=%s sucursal_id=%s sucursal=%s almacen=%s almacenes=%s fecha_ini=%s fecha_fin=%s folios_ini=%s folios_fin=%s",
-                server_id,
-                sucursal_id_param,
-                sucursal,
-                almacen,
-                almacenes,
-                fecha_ini,
-                fecha_fin,
-                lista_folios_ini,
-                lista_folios_fin,
+        if is_softrestaurant_system(server.get('system_type')):
+            logging.info(
+                "Generando análisis de inventario SoftRestaurant desde EDARSAHUB SQL canónico (NO-LIVE)"
             )
-
-            def _mpro_folio_candidates(folio: str) -> List[str]:
-                """Acepta folio visible canónico y folio físico real de MPRO."""
-                folio_text = str(folio or '').strip()
-                candidates = [folio_text] if folio_text else []
-                if '-' in folio_text:
-                    suffix = folio_text.rsplit('-', 1)[-1].strip()
-                    if suffix and suffix not in candidates:
-                        candidates.append(suffix)
-                return candidates
-
-            lista_folios_ini_sql = list(dict.fromkeys(
-                candidate
-                for folio in lista_folios_ini
-                for candidate in _mpro_folio_candidates(folio)
-            ))
-            lista_folios_fin_sql = list(dict.fromkeys(
-                candidate
-                for folio in lista_folios_fin
-                for candidate in _mpro_folio_candidates(folio)
-            ))
-            logging.warning("[MPRO-INV-ANALYSIS] folios_sql ini=%s fin=%s", lista_folios_ini_sql, lista_folios_fin_sql)
-            
-            # Generar cadenas SQL para folios múltiples
-            folios_ini_sql = ",".join([f"'{f}'" for f in lista_folios_ini_sql]) if lista_folios_ini_sql else "''"
-            folios_fin_sql = ",".join([f"'{f}'" for f in lista_folios_fin_sql]) if lista_folios_fin_sql else "''"
-            
-            # Obtener filtros configurados del servidor
-            tipos_movimiento = server.get('tipos_movimiento', [])
-            categorias_servidor = server.get('categorias', [])
-            
-            # PRIORIDAD: Si el frontend envía filtros, usarlos. Si no, usar los del servidor.
-            categorias = filtro_categorias_frontend if filtro_categorias_frontend else categorias_servidor
-            
-            logging.info(f"Filtros finales - Tipos Mov: {len(tipos_movimiento)}, Categorias: {len(categorias)}")
-            
-            # Construir filtros SQL dinámicos
-            if tipos_movimiento:
-                tipos_mov_sql = ",".join([f"'{t}'" for t in tipos_movimiento])
-                filtro_tipos_mov = f"AND E.Tm_Cve_Tipo_Movimiento IN ({tipos_mov_sql})"
-            else:
-                filtro_tipos_mov = ""
-            
-            if categorias:
-                categorias_sql = ",".join([f"'{c}'" for c in categorias])
-                filtro_categorias_p = f"AND P.Ct_Cve_Categoria IN ({categorias_sql})"
-            else:
-                filtro_categorias_p = ""
-            
-            # Filtros de familia y subfamilia del frontend
-            if filtro_familias_frontend:
-                familias_sql = ",".join([f"'{f}'" for f in filtro_familias_frontend])
-                filtro_familias_p = f"AND P.Fm_Cve_Familia IN ({familias_sql})"
-            else:
-                filtro_familias_p = ""
-            
-            if filtro_subfamilias_frontend:
-                subfamilias_sql = ",".join([f"'{s}'" for s in filtro_subfamilias_frontend])
-                filtro_subfamilias_p = f"AND P.Sf_Cve_SubFamilia IN ({subfamilias_sql})"
-            else:
-                filtro_subfamilias_p = ""
-            
-            # ==================== LÓGICA MPRO CORREGIDA ====================
-            # El reporte muestra productos del departamento '0007' (INSUMOS)
-            # - Si el INSUMO tiene presentaciones (en Producto_Presentacion) → mostrar el INSUMO
-            # - Si NO tiene presentaciones → mostrar la clave de COMPRA
-            # - Las ventas se calculan usando Producto_Kit (recetas)
-            # 
-            # FECHAS MPRO:
-            # - Movimientos y Ventas: desde (fecha_inventario_inicial + 1 día) hasta fecha_inventario_final
-            # - Ejemplo: Si inventario inicial es 28-Feb-2026, movimientos/ventas desde 01-Mar-2026
-            # ===============================================================
-            
-            # Obtener fechas de los inventarios si no se proporcionan explícitamente
-            from datetime import datetime, timedelta
-            
-            fecha_inventario_inicial = None
-            if inventarios_iniciales_info and inventarios_iniciales_info[0].get('fecha'):
-                fecha_inventario_inicial = inventarios_iniciales_info[0]['fecha'][:10]
-
-            # Si no hay fecha_ini, intentar obtenerla de inventarios_iniciales_info o del folio
-            if not fecha_ini:
-                if fecha_inventario_inicial:
-                    fecha_ini = fecha_inventario_inicial  # YYYY-MM-DD
-                elif lista_folios_ini_sql:
-                    # Obtener fecha del primer folio inicial
-                    fecha_folio_query = f"SELECT TOP 1 CONVERT(varchar, Fi_Fecha, 120) as fecha FROM Fisico WHERE Fi_Folio IN ({folios_ini_sql})"
-                    fecha_result = _timed_inventory_sql("mpro.fecha_inicial_folio", fecha_folio_query)
-                    if fecha_result:
-                        fecha_ini = fecha_result[0]['fecha'][:10]
-                        fecha_inventario_inicial = fecha_ini
-                    else:
-                        raise HTTPException(status_code=400, detail="No se pudo determinar la fecha inicial")
-                else:
-                    raise HTTPException(status_code=400, detail="Se requiere fecha_ini o inventarios_iniciales_info")
-            
-            if not fecha_fin:
-                if inventarios_finales_info and inventarios_finales_info[0].get('fecha'):
-                    fecha_fin = inventarios_finales_info[0]['fecha'][:10]
-                elif lista_folios_fin_sql:
-                    fecha_folio_query = f"SELECT TOP 1 CONVERT(varchar, Fi_Fecha, 120) as fecha FROM Fisico WHERE Fi_Folio IN ({folios_fin_sql})"
-                    fecha_result = _timed_inventory_sql("mpro.fecha_final_folio", fecha_folio_query)
-                    if fecha_result:
-                        fecha_fin = fecha_result[0]['fecha'][:10]
-                    else:
-                        raise HTTPException(status_code=400, detail="No se pudo determinar la fecha final")
-                else:
-                    raise HTTPException(status_code=400, detail="Se requiere fecha_fin o inventarios_finales_info")
-            
-            # El frontend moderno envia fecha_ini como inicio real de movimientos/ventas.
-            # Compatibilidad: si viene igual a la fecha cruda del inventario inicial,
-            # entonces aplicar la regla MPRO (+1 dia) aqui.
-            fecha_ini_base = str(fecha_ini).split()[0]
-            if fecha_inventario_inicial and fecha_ini_base == fecha_inventario_inicial:
-                fecha_ini_mov = (datetime.strptime(fecha_inventario_inicial, '%Y-%m-%d') + timedelta(days=1)).strftime('%Y-%m-%d')
-            else:
-                fecha_ini_mov = fecha_ini_base
-            logging.info(f"MPRO - Fecha movimientos/ventas: {fecha_ini_mov} a {fecha_fin}")
-            
-            # 1. Obtener códigos de TODOS los almacenes seleccionados
-            # Si hay almacenes múltiples, usarlos; si no, usar el almacén simple
-            lista_almacenes = almacenes if almacenes else [almacen] if almacen else []
-            
-            if not lista_almacenes:
-                raise HTTPException(status_code=400, detail="Debe seleccionar al menos un almacén")
-            
-            # FASE 1B: Escapar caracteres especiales de LIKE para prevenir SQL Injection
-            almacenes_like_conditions = " OR ".join([f"A.Al_Descripcion LIKE '%{_escape_like_pattern(alm)}%'" for alm in lista_almacenes])
-            if sucursal_id_param and _validate_identifier(str(sucursal_id_param), max_length=50):
-                sucursal_condition = f"AND S.Sc_Cve_Sucursal = '{str(sucursal_id_param).replace(chr(39), chr(39)+chr(39))}'"
-            else:
-                sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
-                sucursal_condition = f"AND S.Sc_Descripcion LIKE '%{sucursal_safe}%'"
-            
-            almacen_query = f"""
-SELECT 
-    A.Al_Cve_Almacen as codigo,
-    A.Al_Descripcion as nombre,
-    A.Sc_Cve_Sucursal as sucursal_codigo
-FROM Almacen A
-INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
-WHERE ({almacenes_like_conditions})
-    {sucursal_condition}
-"""
-            almacen_result = _timed_inventory_sql("mpro.almacenes", almacen_query)
-            if not almacen_result:
-                logging.error(f"Almacén(es) no encontrado(s) en MPRO - SucursalID: '{sucursal_id_param}', Sucursal: '{sucursal}', Almacenes: {lista_almacenes}, Servidor: {server.get('name', server_id)}")
-                raise HTTPException(status_code=404, detail=f"Almacén no encontrado en sucursal '{sucursal}'. Verifique la conexión al servidor SQL o que el almacén exista.")
-            
-            # Lista de códigos de almacén
-            almacenes_codigos = [r['codigo'] for r in almacen_result]
-            almacenes_nombres = [r['nombre'] for r in almacen_result]
-            sucursal_codigo = almacen_result[0]['sucursal_codigo']
-            
-            # Para compatibilidad: usar el primer almacén como principal
-            almacen_codigo = almacenes_codigos[0]
-            almacen_nombre = almacenes_nombres[0]
-            
-            # Construir SQL IN clause para múltiples almacenes
-            almacenes_sql = ",".join([f"'{c}'" for c in almacenes_codigos])
-            
-            # MPRO: Detectar si ALGÚN almacén es tipo BODEGA
-            es_almacen_bodega = any('BODEGA' in (n.upper() if n else '') for n in almacenes_nombres)
-            
-            logging.warning(
-                "[MPRO-INV-ANALYSIS] almacenes rows=%s codigos=%s nombres=%s sucursal_codigo=%s es_bodega=%s",
-                len(almacen_result),
-                almacenes_codigos,
-                almacenes_nombres,
-                sucursal_codigo,
-                es_almacen_bodega,
-            )
-            
-            # 2. Obtener productos que se controlan en inventario:
-            # a) INSUMOS (Dp_Cve_Departamento = '0007') que tienen presentaciones configuradas
-            # b) Productos de COMPRA (cualquier depto != 0007) que NO están como presentación de ningún insumo
-            # NOTA: Traemos productos que tengan inventario físico O movimientos O ventas en el período
-            productos_query = f"""
-SELECT DISTINCT
-    P.Pr_Cve_Producto as Codigo,
-    P.Pr_Descripcion as Producto,
-    F.Fm_Descripcion as Familia,
-    SF.Sf_Descripcion as SubFamilia,
-    C.Ct_Descripcion as Categoria,
-    P.Pr_Unidad_Control_1 as Unidad,
-    P.Pr_ultimo_costo as Costo_Unitario,
-    D.Dp_Descripcion as Departamento,
-    CASE 
-        WHEN P.Dp_Cve_Departamento = '0007' THEN 'INSUMO'
-        ELSE 'COMPRA'
-    END as Tipo_Producto,
-    CASE 
-        WHEN EXISTS (SELECT 1 FROM Producto_Presentacion PP WHERE PP.Pr_Cve_Producto = P.Pr_Cve_Producto) THEN 1
-        ELSE 0
-    END as Tiene_Presentaciones
-FROM Producto P
-INNER JOIN Familia F ON F.Fm_Cve_Familia = P.Fm_Cve_Familia
-INNER JOIN SubFamilia SF ON SF.Sf_Cve_SubFamilia = P.Sf_Cve_SubFamilia
-INNER JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
-INNER JOIN Departamento D ON D.Dp_Cve_Departamento = P.Dp_Cve_Departamento
-WHERE P.Es_Cve_Estado <> 'BA'
-    AND (
-        -- Caso A: Es un INSUMO (depto 0007) que tiene presentaciones configuradas
-        (P.Dp_Cve_Departamento = '0007' AND EXISTS (SELECT 1 FROM Producto_Presentacion PP WHERE PP.Pr_Cve_Producto = P.Pr_Cve_Producto))
-        OR
-        -- Caso B: Es un producto de COMPRA (depto != 0007) que NO está registrado como presentación de otro producto
-        (P.Dp_Cve_Departamento <> '0007' AND NOT EXISTS (SELECT 1 FROM Producto_Presentacion PP WHERE PP.Pp_Producto = P.Pr_Cve_Producto))
-    )
-    {filtro_categorias_p}
-    {filtro_familias_p}
-    {filtro_subfamilias_p}
-    -- Productos que tienen: inventario físico O movimientos en el período
-    AND (
-        -- Tiene inventario físico capturado
-        EXISTS (
-            SELECT 1 FROM Fisico FIS 
-            WHERE FIS.Pr_Cve_Producto = P.Pr_Cve_Producto 
-            AND FIS.Fi_Folio IN ({folios_ini_sql}, {folios_fin_sql})
-            AND FIS.Al_Cve_Almacen IN ({almacenes_sql})
-        )
-        OR
-        -- Tiene movimientos en el período (entradas/salidas/traspasos)
-        EXISTS (
-            SELECT 1 FROM Movimiento MOV
-            WHERE MOV.Pr_Cve_Producto = P.Pr_Cve_Producto
-            AND MOV.Sc_Cve_Sucursal = '{sucursal_codigo}'
-            AND MOV.Al_Cve_Almacen IN ({almacenes_sql})
-            AND MOV.Es_Cve_Estado <> 'CA'
-            AND MOV.Mv_Fecha BETWEEN '{fecha_ini_mov}' AND '{fecha_fin} 23:59:59'
-        )
-    )
-ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
-"""
-            logging.info("Obteniendo catalogo de productos MPRO (INSUMOS con presentaciones + COMPRAS sin presentacion)...")
-            productos = _timed_inventory_sql("mpro.productos", productos_query)
-            productos_by_codigo = {str(p.get('Codigo') or '').strip(): p for p in productos if str(p.get('Codigo') or '').strip()}
-            logging.warning("[MPRO-INV-ANALYSIS] productos rows=%s", len(productos))
-            
-            # 3. Obtener ventas - UNION ALL de ventas KIT + ventas DIRECTAS
-            # Consulta proporcionada por el usuario para MPRO
-            # MPRO: Ventas desde (fecha_inventario_inicial + 1 día) hasta fecha_inventario_final
-            # NOTA: Los almacenes tipo BODEGA no tienen ventas
-            ventas_dict = {}
-            
-            if not es_almacen_bodega:
-                ventas_query = f"""
-SELECT Producto_Codigo, SUM(cantidad) as Total_Ventas FROM (
-    -- Ventas de productos KIT (usando recetas de Producto_Kit)
-    SELECT 
-        Producto_Kit.Pk_Producto as Producto_Codigo,
-        SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) as cantidad
-    FROM venta 
-    LEFT JOIN producto_kit ON Producto_Kit.Pr_Cve_Producto = venta.Pr_Cve_Producto
-    LEFT JOIN producto ON producto.Pr_Cve_Producto = Producto_kit.Pk_Producto
-    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
-    WHERE sucursal.Sc_Cve_Sucursal = '{sucursal_codigo}'
-        AND venta.Es_Cve_Estado <> 'CA'
-        AND venta.Vn_Fecha BETWEEN '{fecha_ini_mov}' AND '{fecha_fin} 23:59:59'
-        AND producto_kit.Pk_Producto IS NOT NULL
-    GROUP BY Producto_Kit.Pk_Producto
-
-    UNION ALL
-
-    -- Ventas DIRECTAS (productos vendidos directamente sin receta)
-    SELECT 
-        venta.Pr_Cve_Producto as Producto_Codigo,
-        SUM(venta.Vn_Cantidad_Control_1) as cantidad
-    FROM venta 
-    INNER JOIN producto ON producto.Pr_Cve_Producto = venta.Pr_Cve_Producto 
-    INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
-    WHERE sucursal.Sc_Cve_Sucursal = '{sucursal_codigo}'
-        AND venta.Es_Cve_Estado <> 'CA'
-        AND venta.Vn_Fecha BETWEEN '{fecha_ini_mov}' AND '{fecha_fin} 23:59:59'
-    GROUP BY venta.Pr_Cve_Producto
-) AS VentasCombinadas
-GROUP BY Producto_Codigo
-"""
-                logging.info("Obteniendo ventas (KIT + DIRECTAS)...")
-                ventas_result = _timed_inventory_sql("mpro.ventas", ventas_query)
-                ventas_dict = {v['Producto_Codigo']: float(v['Total_Ventas'] or 0) for v in ventas_result}
-                logging.warning("[MPRO-INV-ANALYSIS] ventas productos=%s", len(ventas_dict))
-            else:
-                logging.warning("[MPRO-INV-ANALYSIS] ventas omitidas por almacen bodega=%s", almacen_nombre)
-            
-            # 4. Obtener movimientos por producto FILTRADO POR ALMACÉN
-            # Consulta proporcionada por el usuario para MPRO
-            # Lógica especial de fecha para tipos '508' y '108':
-            # - Si Mv_Tabla = 'CONVERSION_PRODUCTO' → usa Mv_Fecha
-            # - Si no → busca la fecha en la tabla Compra a través de Conversion_Producto
-            # MPRO: Movimientos desde (fecha_inventario_inicial + 1 día) hasta fecha_inventario_final
-            movimientos_query = f"""
-SELECT 
-    E.Pr_Cve_Producto as Producto_Codigo,
-    SUM(E.Mv_Cantidad_Control_1) as Total_Movimientos
-FROM Movimiento E
-INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = E.Sc_Cve_Sucursal
-INNER JOIN Almacen A ON A.Al_Cve_Almacen = E.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = S.Sc_Cve_Sucursal
-INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = E.Tm_Cve_Tipo_Movimiento
-INNER JOIN Producto P ON P.Pr_Cve_Producto = E.Pr_Cve_Producto
-WHERE S.Sc_Descripcion LIKE '%{_escape_like_pattern(sucursal) if sucursal else ""}%'
-    AND E.Al_Cve_Almacen IN ({almacenes_sql})
-    AND E.Es_Cve_Estado <> 'CA'
-    {filtro_tipos_mov}
-    AND (
-        CASE   
-            WHEN TM.Tm_Cve_Tipo_Movimiento IN('508','108') 
-            THEN 
-                CASE WHEN E.Mv_Tabla = 'CONVERSION_PRODUCTO' THEN E.Mv_Fecha 
-                ELSE (
-                    SELECT TOP 1 C.Co_Fecha FROM Conversion_Producto CN
-                    INNER JOIN COMPRA C ON C.Co_Folio = CN.Cp_Documento AND C.Pr_Cve_Producto = CN.Pr_Cve_Producto
-                    WHERE CN.Cp_Folio = E.Mv_Documento
-                )
-                END
-            ELSE E.Mv_Fecha
-        END
-    ) BETWEEN '{fecha_ini_mov}' AND '{fecha_fin} 23:59:59'
-GROUP BY E.Pr_Cve_Producto
-"""
-            logging.info("Obteniendo movimientos (con lógica especial de fechas para tipos 508/108)...")
-            movimientos_result = _timed_inventory_sql("mpro.movimientos", movimientos_query)
-            movimientos_dict = {m['Producto_Codigo']: float(m['Total_Movimientos'] or 0) for m in movimientos_result}
-            logging.warning("[MPRO-INV-ANALYSIS] movimientos productos=%s", len(movimientos_dict))
-            
-            # 5. Detectar errores de captura de inventario
-            # Si un producto está en Producto_Presentacion como Pp_Producto (es una presentación)
-            # Y también fue capturado en inventario físico, es un ERROR
-            errores_captura_query = f"""
-SELECT DISTINCT 
-    PP.Pp_Producto as Codigo_Presentacion,
-    P_PRES.Pr_Descripcion as Descripcion_Presentacion,
-    PP.Pr_Cve_Producto as Codigo_Insumo,
-    P_INS.Pr_Descripcion as Descripcion_Insumo
-FROM Producto_Presentacion PP
-INNER JOIN Producto P_PRES ON P_PRES.Pr_Cve_Producto = PP.Pp_Producto
-INNER JOIN Producto P_INS ON P_INS.Pr_Cve_Producto = PP.Pr_Cve_Producto
-INNER JOIN Fisico F ON F.Pr_Cve_Producto = PP.Pp_Producto
-    AND F.Al_Cve_Almacen IN ({almacenes_sql})
-    AND F.Fi_Folio IN ({folios_ini_sql}, {folios_fin_sql})
-WHERE P_INS.Dp_Cve_Departamento = '0007'
-"""
-            errores_result = _timed_inventory_sql("mpro.errores_captura", errores_captura_query)
-            if errores_result:
-                logging.warning(f"ERRORES DE CAPTURA DETECTADOS: {len(errores_result)} presentaciones capturadas incorrectamente")
-                for err in errores_result:
-                    logging.warning(f"  - Presentación {err['Codigo_Presentacion']} ({err['Descripcion_Presentacion']}) capturada en inventario, pero debería capturarse como INSUMO {err['Codigo_Insumo']} ({err['Descripcion_Insumo']})")
-            
-            # 6. Combinar resultados
-            logging.info("Combinando resultados...")
-            logging.info(f"Modo de agrupación: {'AGRUPADO' if agrupar_insumos else 'SIN AGRUPAR'}")
-            results = []
-            errores_list = []
-
-            # El catálogo base no trae cantidades físicas; se leen por folio para ambos modos.
-            inv_detalle_query = f"""
-SELECT
-    F.Fi_Folio as Folio,
-    F.Pr_Cve_Producto as Codigo,
-    F.Fi_Cantidad_Control_1 as Cantidad,
-    F.Al_Cve_Almacen as Almacen_Codigo,
-    ISNULL(F.Fi_Comentario, '') as Comentario
-FROM Fisico F
-WHERE F.Fi_Folio IN ({folios_ini_sql}, {folios_fin_sql})
-    AND F.Al_Cve_Almacen IN ({almacenes_sql})
-ORDER BY F.Pr_Cve_Producto, F.Fi_Folio
-"""
-            inv_detalle = _timed_inventory_sql("mpro.inventario_detalle", inv_detalle_query)
-
-            folios_ini_set = set(lista_folios_ini_sql)
-            folios_fin_set = set(lista_folios_fin_sql)
-
-            inv_por_codigo = {}
-            for row in inv_detalle:
-                codigo = str(row['Codigo'] or '').strip()
-                folio = str(row['Folio'] or '').strip()
-                cantidad = float(row['Cantidad'] or 0)
-                comentario = row['Comentario'] or ''
-                almacen_cod = row['Almacen_Codigo']
-
-                if not codigo:
-                    continue
-
-                if codigo not in inv_por_codigo:
-                    inv_por_codigo[codigo] = {'ini': {}, 'fin': {}}
-
-                if folio in folios_ini_set:
-                    inv_por_codigo[codigo]['ini'][folio] = {'cantidad': cantidad, 'comentario': comentario, 'almacen': almacen_cod}
-                elif folio in folios_fin_set:
-                    inv_por_codigo[codigo]['fin'][folio] = {'cantidad': cantidad, 'comentario': comentario, 'almacen': almacen_cod}
-
-            active_codes = set(inv_por_codigo.keys()) | {str(c).strip() for c in movimientos_dict.keys()} | {str(c).strip() for c in ventas_dict.keys()}
-            missing_catalog_codes = sorted(c for c in active_codes if c and c not in productos_by_codigo)
-            logging.warning(
-                "MPRO universo actividad: catalogo=%s inventario=%s movimientos=%s ventas=%s missing_catalog=%s",
-                len(productos_by_codigo),
-                len(inv_por_codigo),
-                len(movimientos_dict),
-                len(ventas_dict),
-                len(missing_catalog_codes),
-            )
-
-            if missing_catalog_codes:
-                missing_codes_sql = ",".join([f"'{c.replace(chr(39), chr(39)+chr(39))}'" for c in missing_catalog_codes])
-                productos_fallback_query = f"""
-SELECT DISTINCT
-    P.Pr_Cve_Producto as Codigo,
-    P.Pr_Descripcion as Producto,
-    F.Fm_Descripcion as Familia,
-    SF.Sf_Descripcion as SubFamilia,
-    C.Ct_Descripcion as Categoria,
-    P.Pr_Unidad_Control_1 as Unidad,
-    P.Pr_ultimo_costo as Costo_Unitario,
-    D.Dp_Descripcion as Departamento,
-    CASE
-        WHEN P.Dp_Cve_Departamento = '0007' THEN 'INSUMO'
-        ELSE 'COMPRA'
-    END as Tipo_Producto,
-    CASE
-        WHEN EXISTS (SELECT 1 FROM Producto_Presentacion PP WHERE PP.Pr_Cve_Producto = P.Pr_Cve_Producto) THEN 1
-        ELSE 0
-    END as Tiene_Presentaciones
-FROM Producto P
-LEFT JOIN Familia F ON F.Fm_Cve_Familia = P.Fm_Cve_Familia
-LEFT JOIN SubFamilia SF ON SF.Sf_Cve_SubFamilia = P.Sf_Cve_SubFamilia
-LEFT JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
-LEFT JOIN Departamento D ON D.Dp_Cve_Departamento = P.Dp_Cve_Departamento
-WHERE P.Es_Cve_Estado <> 'BA'
-    AND P.Pr_Cve_Producto IN ({missing_codes_sql})
-    {filtro_categorias_p}
-    {filtro_familias_p}
-    {filtro_subfamilias_p}
-ORDER BY F.Fm_Descripcion, SF.Sf_Descripcion, P.Pr_Descripcion
-"""
-                productos_fallback = _timed_inventory_sql("mpro.productos_fallback_actividad", productos_fallback_query)
-                for prod in productos_fallback:
-                    codigo_fb = str(prod.get('Codigo') or '').strip()
-                    if codigo_fb and codigo_fb not in productos_by_codigo:
-                        productos_by_codigo[codigo_fb] = prod
-                        productos.append(prod)
-                logging.warning("MPRO productos fallback actividad: %s incorporados, catalogo_total=%s", len(productos_fallback), len(productos_by_codigo))
-            
-            if agrupar_insumos:
-                # MODO AGRUPADO: Una fila por producto (comportamiento original)
-                for prod in productos:
-                    codigo = prod['Codigo']
-                    ventas_total = ventas_dict.get(codigo, 0)
-                    movimientos = movimientos_dict.get(codigo, 0)
-                    inv_data = inv_por_codigo.get(codigo, {'ini': {}, 'fin': {}})
-                    inv_inicial = sum(item.get('cantidad', 0) for item in inv_data['ini'].values())
-                    inv_final = sum(item.get('cantidad', 0) for item in inv_data['fin'].values())
-                    costo = float(prod.get('Costo_Unitario', 0) or 0)
-                    tipo_producto = prod.get('Tipo_Producto', 'COMPRA')
-                    
-                    # Solo incluir productos con alguna actividad
-                    if inv_inicial == 0 and inv_final == 0 and ventas_total == 0 and movimientos == 0:
-                        continue
-                    
-                    # Calcular inventario teórico: Inicial + Movimientos - Ventas
-                    inv_teorico = inv_inicial + movimientos - ventas_total
-                    
-                    # Calcular diferencias
-                    diferencia_cantidad = inv_final - inv_teorico
-                    diferencia_costo = diferencia_cantidad * costo
-                    diferencia_porcentaje = (diferencia_cantidad / inv_teorico * 100) if inv_teorico != 0 else 0
-                    valor_real = diferencia_cantidad * costo
-                    teorico_ventas = ventas_total * costo
-                    
-                    # Construir strings de folios y comentarios (agrupados)
-                    folios_ini_str = ', '.join([i.get('folio', '') for i in inventarios_iniciales_info]) if inventarios_iniciales_info else ', '.join(lista_folios_ini)
-                    folios_fin_str = ', '.join([i.get('folio', '') for i in inventarios_finales_info]) if inventarios_finales_info else ', '.join(lista_folios_fin)
-                    comentarios_ini_str = ', '.join([i.get('comentario', '') for i in inventarios_iniciales_info if i.get('comentario')]) if inventarios_iniciales_info else ''
-                    comentarios_fin_str = ', '.join([i.get('comentario', '') for i in inventarios_finales_info if i.get('comentario')]) if inventarios_finales_info else ''
-                    
-                    results.append({
-                        'ID_Inv_Ini': folios_ini_str,
-                        'Comentario_Ini': comentarios_ini_str,
-                        'ID_Inv_Fin': folios_fin_str,
-                        'Comentario_Fin': comentarios_fin_str,
-                        'Tipo': tipo_producto,
-                        'Categoria': prod.get('Categoria'),
-                        'Familia': prod.get('Familia'),
-                        'SubFamilia': prod.get('SubFamilia'),
-                        'Codigo': codigo,
-                        'Producto': prod.get('Producto'),
-                        'Unidad': prod.get('Unidad'),
-                        'Costo_Unitario': round(costo, 2),
-                        'Inv_Inicial_Cantidad': round(inv_inicial, 2),
-                        'Inv_Inicial_Costo': round(inv_inicial * costo, 2),
-                        'Movimientos': round(movimientos, 2),
-                        'Movimientos_Costo': round(movimientos * costo, 2),
-                        'Ventas': round(ventas_total, 2),
-                        'Ventas_Costo': round(ventas_total * costo, 2),
-                        'Inv_Teorico_Cantidad': round(inv_teorico, 2),
-                        'Inv_Teorico_Costo': round(inv_teorico * costo, 2),
-                        'Inv_Final_Cantidad': round(inv_final, 2),
-                        'Inv_Final_Costo': round(inv_final * costo, 2),
-                        'Diferencia_Cantidad': round(diferencia_cantidad, 2),
-                        'Diferencia_Costo': round(diferencia_costo, 2),
-                        'Diferencia_Porcentaje': round(diferencia_porcentaje, 2),
-                        'Valor_Real': round(valor_real, 2),
-                        'Teorico': round(teorico_ventas, 2)
-                    })
-            else:
-                # MODO SIN AGRUPAR: Una fila por cada combinación producto + inventario
-                # Procesar productos con inventarios detallados
-                for prod in productos:
-                    codigo = prod['Codigo']
-                    costo = float(prod.get('Costo_Unitario', 0) or 0)
-                    tipo_producto = prod.get('Tipo_Producto', 'COMPRA')
-                    
-                    inv_data = inv_por_codigo.get(codigo, {'ini': {}, 'fin': {}})
-                    
-                    has_period_activity = bool(inv_data['ini'] or inv_data['fin'] or movimientos_dict.get(codigo, 0) or ventas_dict.get(codigo, 0))
-                    if not has_period_activity:
-                        continue
-                    
-                    # Crear filas por cada combinación de folios
-                    # Emparejar por orden de selección
-                    folios_ini_list = list(inv_data['ini'].keys()) if inv_data['ini'] else ['']
-                    folios_fin_list = list(inv_data['fin'].keys()) if inv_data['fin'] else ['']
-                    
-                    # Generar tantas filas como sea necesario (máximo entre ini y fin)
-                    max_filas = max(len(folios_ini_list), len(folios_fin_list), 1)
-                    
-                    for idx in range(max_filas):
-                        folio_ini = folios_ini_list[idx] if idx < len(folios_ini_list) else ''
-                        folio_fin = folios_fin_list[idx] if idx < len(folios_fin_list) else ''
-                        
-                        inv_inicial = inv_data['ini'].get(folio_ini, {}).get('cantidad', 0) if folio_ini else 0
-                        inv_final = inv_data['fin'].get(folio_fin, {}).get('cantidad', 0) if folio_fin else 0
-                        comentario_ini = inv_data['ini'].get(folio_ini, {}).get('comentario', '') if folio_ini else ''
-                        comentario_fin = inv_data['fin'].get(folio_fin, {}).get('comentario', '') if folio_fin else ''
-                        
-                        # Movimientos y ventas totales del producto (no se dividen, aplican al consolidado)
-                        # En modo sin agrupar, cada fila representa un almacén diferente
-                        # Los movimientos y ventas son globales del producto
-                        mov_fila = movimientos_dict.get(codigo, 0)
-                        ven_fila = ventas_dict.get(codigo, 0)
-                        
-                        # Solo incluir si hay actividad
-                        if inv_inicial == 0 and inv_final == 0 and mov_fila == 0 and ven_fila == 0:
-                            continue
-                        
-                        # Calcular inventario teórico: Inicial + Movimientos - Ventas
-                        inv_teorico = inv_inicial + mov_fila - ven_fila
-                        
-                        # Calcular diferencias
-                        diferencia_cantidad = inv_final - inv_teorico
-                        diferencia_costo = diferencia_cantidad * costo
-                        diferencia_porcentaje = (diferencia_cantidad / inv_teorico * 100) if inv_teorico != 0 else 0
-                        valor_real = diferencia_cantidad * costo
-                        teorico_ventas = ven_fila * costo
-                        
-                        results.append({
-                            'ID_Inv_Ini': folio_ini,
-                            'Comentario_Ini': comentario_ini,
-                            'ID_Inv_Fin': folio_fin,
-                            'Comentario_Fin': comentario_fin,
-                            'Tipo': tipo_producto,
-                            'Categoria': prod.get('Categoria'),
-                            'Familia': prod.get('Familia'),
-                            'SubFamilia': prod.get('SubFamilia'),
-                            'Codigo': codigo,
-                            'Producto': prod.get('Producto'),
-                            'Unidad': prod.get('Unidad'),
-                            'Costo_Unitario': round(costo, 2),
-                            'Inv_Inicial_Cantidad': round(inv_inicial, 2),
-                            'Inv_Inicial_Costo': round(inv_inicial * costo, 2),
-                            'Movimientos': round(mov_fila, 2),
-                            'Movimientos_Costo': round(mov_fila * costo, 2),
-                            'Ventas': round(ven_fila, 2),
-                            'Ventas_Costo': round(ven_fila * costo, 2),
-                            'Inv_Teorico_Cantidad': round(inv_teorico, 2),
-                            'Inv_Teorico_Costo': round(inv_teorico * costo, 2),
-                            'Inv_Final_Cantidad': round(inv_final, 2),
-                            'Inv_Final_Costo': round(inv_final * costo, 2),
-                            'Diferencia_Cantidad': round(diferencia_cantidad, 2),
-                            'Diferencia_Costo': round(diferencia_costo, 2),
-                            'Diferencia_Porcentaje': round(diferencia_porcentaje, 2),
-                            'Valor_Real': round(valor_real, 2),
-                            'Teorico': round(teorico_ventas, 2)
-                        })
-            
-            # Agregar errores de captura al resultado si existen
-            for err in errores_result:
-                errores_list.append({
-                    'tipo': 'ERROR_CAPTURA',
-                    'mensaje': f"Presentación '{err['Descripcion_Presentacion']}' ({err['Codigo_Presentacion']}) capturada en inventario. Debería capturarse como INSUMO '{err['Descripcion_Insumo']}' ({err['Codigo_Insumo']})"
-                })
-            
-            logging.warning("[MPRO-INV-ANALYSIS] done rows=%s errores=%s", len(results), len(errores_list))
-            logging.info("[INV-ANALYSIS-TIMING] done label=mpro.total elapsed_ms=%s rows=%s", int((perf_counter() - request_started_at) * 1000), len(results))
-            
-            # ===== GUARDAR DIFERENCIAS EN CACHE PARA COMPARATIVO DE 4 CORTES =====
-            try:
-                # Extraer info de los inventarios FINALES para el cache
-                # El comparativo requiere las diferencias del inventario FINAL (físico vs teórico)
-                logging.info(f"CACHE: Procesando {len(inventarios_finales_info)} inventarios finales para cache")
-                
-                for inv_info in inventarios_finales_info:
-                    folio_cache = inv_info.get('folio', '')
-                    comentario_cache = inv_info.get('comentario', '')
-                    almacen_id_cache = inv_info.get('almacen_id', '') or almacen_codigo
-                    fecha_cache = inv_info.get('fecha', '')
-                    
-                    if not folio_cache:
-                        logging.warning(f"CACHE: Inventario sin folio, saltando")
-                        continue
-                    
-                    logging.info(f"CACHE: Procesando folio {folio_cache}, comentario: {comentario_cache}, almacen_id: {almacen_id_cache}")
-                    
-                    # Guardar TODOS los productos con diferencia != 0
-                    productos_cache = []
-                    for r in results:
-                        dif = r.get('Diferencia_Cantidad', 0)
-                        if dif != 0:
-                            productos_cache.append({
-                                'codigo': r.get('Codigo', ''),
-                                'producto': r.get('Producto', ''),
-                                'diferencia_cantidad': round(dif, 2),
-                                'diferencia_costo': round(r.get('Diferencia_Costo', 0), 2)
-                            })
-                    
-                    logging.info(f"CACHE: {len(productos_cache)} productos con diferencia para folio {folio_cache}")
-                    
-                    if productos_cache:
-                        cache_key = {
-                            "server_id": server_id,
-                            "almacen_id": almacen_id_cache,
-                            "sucursal_id": sucursal_codigo or "",
-                            "comentario": comentario_cache or "",
-                            "folio": folio_cache
-                        }
-                        
-                        cache_doc = {
-                            **cache_key,
-                            "fecha_inventario": fecha_cache,
-                            "fecha_cache": datetime.now(timezone.utc).isoformat(),
-                            "productos": productos_cache
-                        }
-                        
-                        _sql_save_inventario_diferencias_cache(cache_key, cache_doc)
-                        logging.info(f"CACHE: ✅ Guardado folio {folio_cache} ({comentario_cache}): {len(productos_cache)} productos")
-                    else:
-                        logging.info(f"CACHE: ⚠️ Folio {folio_cache} sin productos con diferencia, no se guarda")
-            except Exception as cache_error:
-                logging.error(f"CACHE ERROR: {str(cache_error)}")
-                import traceback
-                logging.error(traceback.format_exc())
-            # ===== FIN CACHE =====
-            
-            # ===== ORQUESTACIÓN FASE 2A: Crear workflow automático si hay diferencias =====
-            try:
-                from modules.fase2_operativo.services.orquestador_service import get_orquestador_service
-                
-                # Determinar folio_inventario principal (el folio final más relevante)
-                folio_inventario_principal = lista_folios_fin[0] if lista_folios_fin else None
-                
-                orquestador = get_orquestador_service(db)  # MongoDB ELIMINADO - StubDatabase
-                orq_resultado = await orquestador.procesar_analisis(
-                    server_id=server_id,
-                    server_name=server.get('name', ''),
-                    sucursal_id=sucursal or "",
-                    sucursal_nombre=sucursal or "",
-                    almacen_id=almacen or "",
-                    almacen_nombre=almacen or "",
-                    resultados_analisis=results,
-                    folios_iniciales=lista_folios_ini,
-                    folios_finales=lista_folios_fin,
-                    fecha_ini=fecha_ini or "",
-                    fecha_fin=fecha_fin or "",
-                    usuario_ejecutor_id=current_user.get('id', ''),
-                    usuario_ejecutor_nombre=current_user.get('name', ''),
-                    folio_inventario=folio_inventario_principal  # NUEVO: Pasar folio explícito
-                )
-                
-                if orq_resultado.get('workflow_creado'):
-                    logging.info(f"ORQUESTADOR: ✅ Workflow {orq_resultado.get('workflow_id')} creado automáticamente")
-                else:
-                    logging.info(f"ORQUESTADOR: {orq_resultado.get('mensaje', 'Sin acción')}")
-                    
-            except Exception as orq_error:
-                # NO romper el flujo principal si falla la orquestación
-                logging.error(f"ORQUESTADOR ERROR (no crítico): {str(orq_error)}")
-                import traceback
-                logging.error(traceback.format_exc())
-            # ===== FIN ORQUESTACIÓN =====
-            
-            return {"data": results, "count": len(results), "errores_captura": errores_list}
-            
-        elif is_softrestaurant_system(server.get('system_type')):
-            # Análisis de inventario para SoftRestaurant
-            logging.info("Generando análisis de inventario SoftRestaurant desde EDARSAHUB SQL canónico (NO-LIVE)")
             return await _generate_soft_inventory_analysis_canonical()
 
-            logging.info(f"Generando análisis de inventario SoftRestaurant: {almacen}")
-            logging.info(f"Folios iniciales: {lista_folios_ini}, finales: {lista_folios_fin}")
-            logging.info(f"Filtros frontend - Categorias: {filtro_categorias_frontend}, Familias: {filtro_familias_frontend}, SubFamilias: {filtro_subfamilias_frontend}")
-            
-            # Generar cadenas SQL para folios múltiples
-            folios_ini_sql_sr = ",".join([str(f) for f in lista_folios_ini]) if lista_folios_ini else "0"
-            folios_fin_sql_sr = ",".join([str(f) for f in lista_folios_fin]) if lista_folios_fin else "0"
-            all_folios_sql = f"{folios_ini_sql_sr},{folios_fin_sql_sr}"
-            
-            # Obtener fechas de los folios de inventario
-            fechas_query = f"""
-SELECT folio, fecha
-FROM invfisico
-WHERE folio IN ({all_folios_sql})
-ORDER BY folio
-"""
-            fechas_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], fechas_query
+        if is_mpro_system(server.get('system_type')):
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "code": "INVENTORY_ANALYSIS_CANONICAL_PENDING",
+                    "message": (
+                        "Análisis de inventario MPRO pendiente de fuente canónica EDARSAHUB. "
+                        "Por regla NO-LIVE no se consulta POS en vivo."
+                    ),
+                    "source": "EDARSAHUB_SQL_CANONICAL",
+                },
             )
-            
-            # Extraer fechas con hora completa (usar primera y última)
-            fecha_ini = None
-            fecha_fin = None
-            folios_ini_set = set(str(f) for f in lista_folios_ini)
-            folios_fin_set = set(str(f) for f in lista_folios_fin)
-            for row in fechas_result:
-                folio_str = str(row['folio'])
-                fecha_str = str(row['fecha'])[:19].replace('T', ' ')  # Normalizar formato
-                if folio_str in folios_ini_set:
-                    if not fecha_ini or fecha_str < fecha_ini:
-                        fecha_ini = fecha_str
-                elif folio_str in folios_fin_set:
-                    if not fecha_fin or fecha_str > fecha_fin:
-                        fecha_fin = fecha_str
-            
-            if not fecha_ini or not fecha_fin:
-                logging.warning(f"No se encontraron fechas para los folios {lista_folios_ini} y {lista_folios_fin}")
-                fecha_ini = fecha_ini or "2000-01-01 00:00:00"
-                fecha_fin = fecha_fin or "2099-12-31 23:59:59"
-            
-            logging.info(f"Fechas de inventarios: ini={fecha_ini}, fin={fecha_fin}")
-            
-            # Ajustar fechas: +1 segundo al inicio, -1 segundo al final
-            # para no incluir el momento exacto del inventario
-            try:
-                from datetime import datetime, timedelta
-                dt_ini = datetime.strptime(fecha_ini, "%Y-%m-%d %H:%M:%S")
-                dt_fin = datetime.strptime(fecha_fin, "%Y-%m-%d %H:%M:%S")
-                
-                logging.info(f"Fechas ANTES de verificación: ini={dt_ini}, fin={dt_fin}")
-                
-                # IMPORTANTE: Si las fechas están invertidas, intercambiarlas
-                # Esto pasa cuando el usuario selecciona el inventario inicial con fecha más reciente
-                if dt_ini > dt_fin:
-                    logging.info(f"Fechas invertidas detectadas. Intercambiando...")
-                    dt_ini, dt_fin = dt_fin, dt_ini
-                    logging.info(f"Fechas DESPUÉS de intercambio: ini={dt_ini}, fin={dt_fin}")
-                else:
-                    logging.info(f"Fechas en orden correcto (ini <= fin)")
-                
-                dt_ini = dt_ini + timedelta(seconds=1)
-                dt_fin = dt_fin - timedelta(seconds=1)
-                fecha_ini = dt_ini.strftime("%Y-%m-%d %H:%M:%S")
-                fecha_fin = dt_fin.strftime("%Y-%m-%d %H:%M:%S")
-            except Exception as e:
-                logging.warning(f"Error ajustando fechas: {e}")
-            
-            logging.info(f"Fechas calculadas de inventarios (con hora): {fecha_ini} a {fecha_fin}")
-            
-            # 1. Obtener información del almacén incluyendo el TIPO
-            # TIPO = 1: Almacén de consumo (tiene ventas)
-            # TIPO = 2: Almacén de presentaciones (NO tiene ventas)
-            # FASE 1B: Escapar caracteres especiales de LIKE
-            almacen_safe = _escape_like_pattern(almacen) if almacen else ""
-            almacen_query = f"""
-SELECT TOP 1 
-    idalmacen as codigo,
-    nombre,
-    ISNULL(tipo, 1) as tipo
-FROM almacen
-WHERE nombre LIKE '%{almacen_safe}%'
-"""
-            almacen_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], almacen_query
-            )
-            if not almacen_result:
-                logging.error(f"Almacén '{almacen}' no encontrado en servidor {server.get('name', server_id)} ({server['host']})")
-                raise HTTPException(status_code=404, detail=f"Almacén '{almacen}' no encontrado. Verifique la conexión al servidor SQL o que el almacén exista en la base de datos.")
-            
-            almacen_id = almacen_result[0]['codigo']
-            almacen_nombre = almacen_result[0]['nombre']
-            almacen_tipo = almacen_result[0]['tipo']
-            
-            # Determinar si el almacén tiene ventas
-            es_almacen_consumo = (almacen_tipo == 1)
-            logging.info(f"Almacén: {almacen_nombre}, ID: {almacen_id}, Tipo: {almacen_tipo}, Es Consumo (tiene ventas): {es_almacen_consumo}")
-            
-            # Construir filtros SQL para SoftRestaurant
-            # Categoria = clasificacionventa (1=BEBIDAS, 2=ALIMENTOS, 3=OTROS) en tabla gruposiclasificacion
-            # Familia = idgruposiclasificacion en tabla gruposiclasificacion
-            # SubFamilia = idgruposi en tabla gruposi
-            
-            # Construir valores SQL para los filtros
-            cats_sql = ",".join([f"'{c}'" for c in filtro_categorias_frontend]) if filtro_categorias_frontend else ""
-            fams_sql = ",".join([f"'{f}'" for f in filtro_familias_frontend]) if filtro_familias_frontend else ""
-            sfs_sql = ",".join([f"'{s}'" for s in filtro_subfamilias_frontend]) if filtro_subfamilias_frontend else ""
-            
-            # Filtros para INSUMOS (usa GC para gruposiclasificacion, GS para gruposi)
-            filtro_categoria_insumos = f"AND GC.clasificacionventa IN ({cats_sql})" if cats_sql else ""
-            filtro_familia_insumos = f"AND GC.idgruposiclasificacion IN ({fams_sql})" if fams_sql else ""
-            filtro_subfamilia_insumos = f"AND GS.idgruposi IN ({sfs_sql})" if sfs_sql else ""
-            
-            # Filtros para PRESENTACIONES (usa GC para gruposiclasificacion, GP para gruposi)
-            filtro_categoria_pres = f"AND GC.clasificacionventa IN ({cats_sql})" if cats_sql else ""
-            filtro_familia_pres = f"AND GC.idgruposiclasificacion IN ({fams_sql})" if fams_sql else ""
-            filtro_subfamilia_pres = f"AND GP.idgruposi IN ({sfs_sql})" if sfs_sql else ""
-            
-            logging.info(f"Filtros construidos - Categorias: {cats_sql}, Familias: {fams_sql}, SubFamilias: {sfs_sql}")
-            
-            # 2. Obtener productos (catálogo) según el tipo de almacén
-            # - Almacén CONSUMO (tipo 1): Usa INSUMOS (tabla insumos)
-            # - Almacén BODEGA/PRESENTACIONES (tipo 2): Usa PRESENTACIONES (tabla insumospresentaciones)
-            
-            if es_almacen_consumo:
-                # ALMACÉN DE CONSUMO: Solo INSUMOS
-                logging.info("Obteniendo catálogo de productos: INSUMOS (almacén de consumo)")
-                
-                productos_query = f"""
-SELECT 
-    'INSUMO' as TABLA,
-    GC.descripcion as CATEGORIA,
-    GS.descripcion as GRUPO,
-    RTRIM(LTRIM(insumos.idinsumo)) as CODIGO,
-    insumos.descripcion as DESCRIPCION,
-    insumos.unidad as UM,
-    1 as RENDIMIENTO,
-    IDET.costo as COSTO
-FROM insumos
-INNER JOIN insumosdetalle IDET ON IDET.idinsumo = insumos.idinsumo
-INNER JOIN gruposi GS ON GS.idgruposi = insumos.idgruposi
-INNER JOIN gruposiclasificacion GC ON GC.idgruposiclasificacion = GS.idgruposiclasificacion
-WHERE LEFT(insumos.descripcion, 3) <> 'zzz'
-  AND IDET.inventariable = 1
-  {filtro_categoria_insumos}
-  {filtro_familia_insumos}
-  {filtro_subfamilia_insumos}
-"""
-            else:
-                # ALMACÉN DE BODEGA/PRESENTACIONES: Solo PRESENTACIONES
-                logging.info("Obteniendo catálogo de productos: PRESENTACIONES (almacén de bodega)")
-                
-                productos_query = f"""
-SELECT 
-    'PRESENTACION' as TABLA,
-    GC.descripcion as CATEGORIA,
-    GP.descripcion as GRUPO,
-    RTRIM(LTRIM(INPRE.idinsumospresentaciones)) as CODIGO,
-    INPRE.descripcion as DESCRIPCION,
-    INSUMOS.unidad as UM,
-    ISNULL(INPRE.rendimiento, 0) as RENDIMIENTO,
-    INPRED.costo as COSTO
-FROM insumospresentaciones INPRE
-INNER JOIN gruposi GP ON GP.idgruposi = INPRE.idgruposi
-INNER JOIN insumospresentacionesdetalle INPRED ON INPRED.idinsumospresentaciones = INPRE.idinsumospresentaciones
-INNER JOIN insumos INSUMOS ON INSUMOS.idinsumo = INPRE.idinsumo
-INNER JOIN insumosdetalle IDET_PRES ON IDET_PRES.idinsumo = INPRE.idinsumo
-INNER JOIN gruposiclasificacion GC ON GC.idgruposiclasificacion = GP.idgruposiclasificacion
-WHERE LEFT(INPRE.descripcion, 3) <> 'zzz'
-  AND IDET_PRES.inventariable = 1
-  {filtro_categoria_pres}
-  {filtro_familia_pres}
-  {filtro_subfamilia_pres}
-"""
-            
-            productos_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], productos_query
-            )
-            # Crear diccionario de productos por código
-            productos_dict = {p['CODIGO']: p for p in productos_result}
-            logging.info(f"Productos en catálogo: {len(productos_dict)}")
-            
-            # DEBUG: Mostrar códigos de presentaciones para verificar
-            codigos_130009 = [c for c in productos_dict.keys() if '130009' in str(c)]
-            if codigos_130009:
-                logging.info(f"DEBUG Códigos con 130009 en CATALOGO: {codigos_130009}")
-            
-            # 3. Obtener inventarios (inicial y final) de invfisicomovtos
-            # La consulta maneja AMBOS tipos: si idinsumo='' usa idpresentacion, sino usa idinsumo
-            logging.info(f"Obteniendo inventarios de folios {folio_inicial} y {folio_final}")
-            
-            inventarios_query = f"""
-SELECT 
-    FMOV.folio,
-    CASE WHEN RTRIM(ISNULL(FMOV.idinsumo,'')) = '' THEN 'PRESENTACION' ELSE 'INSUMO' END as TIPO,
-    CASE 
-        WHEN RTRIM(ISNULL(FMOV.idinsumo,'')) = '' 
-        THEN RTRIM(LTRIM(FMOV.idpresentacion))
-        ELSE RTRIM(LTRIM(FMOV.idinsumo))
-    END as CODIGO,
-    FMOV.costo,
-    FMOV.fisicoalmacen1 as EXISTENCIA,
-    CASE WHEN RTRIM(ISNULL(FMOV.idinsumo,'')) = '' THEN ISNULL(IP.rendimiento, 1) ELSE 1 END as RENDIMIENTO,
-    CASE WHEN RTRIM(ISNULL(FMOV.idinsumo,'')) = '' THEN I_PRES.unidad ELSE I_INS.unidad END as UNIDAD
-FROM invfisicomovtos FMOV
-INNER JOIN invfisico FISICO ON FISICO.folio = FMOV.folio
-INNER JOIN almacen AL ON AL.idalmacen = FISICO.idalmacen1
--- JOINs para PRESENTACIONES (cuando idinsumo está vacío)
-LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = FMOV.idpresentacion
-LEFT JOIN gruposi GP_PRES ON GP_PRES.idgruposi = IP.idgruposi
-LEFT JOIN gruposiclasificacion GC_PRES ON GC_PRES.idgruposiclasificacion = GP_PRES.idgruposiclasificacion
-LEFT JOIN insumos I_PRES ON I_PRES.idinsumo = IP.idinsumo
--- JOINs para INSUMOS (cuando idinsumo NO está vacío)
-LEFT JOIN insumos I_INS ON I_INS.idinsumo = FMOV.idinsumo
-LEFT JOIN gruposi GP_INS ON GP_INS.idgruposi = I_INS.idgruposi
-LEFT JOIN gruposiclasificacion GC_INS ON GC_INS.idgruposiclasificacion = GP_INS.idgruposiclasificacion
-WHERE FMOV.folio IN ({all_folios_sql})
-  AND AL.nombre LIKE '%{almacen_safe}%'
-ORDER BY FMOV.folio, CODIGO
-"""
-            
-            inventarios_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], inventarios_query
-            )
-            
-            # Separar inventarios inicial y final - SOLO productos con existencia != 0
-            inv_inicial_dict = {}
-            inv_final_dict = {}
-            for inv in inventarios_result:
-                codigo = inv['CODIGO']
-                existencia = float(inv['EXISTENCIA'] or 0)
-                
-                # Solo incluir si tiene existencia != 0
-                if existencia == 0:
-                    continue
-                
-                folio_str = str(inv['folio'])
-                
-                # Acumular inventarios iniciales
-                if folio_str in folios_ini_set:
-                    if codigo not in inv_inicial_dict:
-                        inv_inicial_dict[codigo] = {
-                            'existencia': 0,
-                            'costo': float(inv['costo'] or 0),
-                            'tipo': inv['TIPO']
-                        }
-                    inv_inicial_dict[codigo]['existencia'] += existencia
-                # Acumular inventarios finales
-                elif folio_str in folios_fin_set:
-                    if codigo not in inv_final_dict:
-                        inv_final_dict[codigo] = {
-                            'existencia': 0,
-                            'costo': float(inv['costo'] or 0),
-                            'tipo': inv['TIPO']
-                        }
-                    inv_final_dict[codigo]['existencia'] += existencia
-            
-            logging.info(f"Inventario inicial: {len(inv_inicial_dict)} productos, Final: {len(inv_final_dict)} productos")
-            
-            # DEBUG: Mostrar códigos de inventarios para verificar
-            inv_130009 = [c for c in inv_inicial_dict.keys() if '130009' in str(c)]
-            if inv_130009:
-                logging.info(f"DEBUG Códigos con 130009 en INVENTARIOS: {inv_130009}")
-            
-            # 4. Obtener TODOS los códigos que aparecen en inventarios (inicial o final)
-            todos_codigos = set(inv_inicial_dict.keys()) | set(inv_final_dict.keys())
-            logging.info(f"Total códigos únicos en inventarios: {len(todos_codigos)}")
-            
-            # 5. Obtener movimientos - UNION de movsinv (INSUMOS) + movtosalmacen (PRESENTACIONES)
-            # Usar los tipos de movimiento configurados en el servidor
-            # Formato de fecha: YYYYMMDD HH:MM:SS (sin guiones, con espacio)
-            fecha_ini_fmt = fecha_ini.replace('-', '').replace('T', ' ') if fecha_ini else ''
-            fecha_fin_fmt = fecha_fin.replace('-', '').replace('T', ' ') if fecha_fin else ''
-            logging.info(f"DEBUG fechas originales: fecha_ini={fecha_ini}, fecha_fin={fecha_fin}")
-            logging.info(f"Obteniendo movimientos entre {fecha_ini_fmt} y {fecha_fin_fmt} para almacén {almacen_nombre}")
-            
-            # Obtener tipos de movimiento configurados en el servidor
-            tipos_movimiento = server.get('tipos_movimiento', [])
-            
-            # CORRECCIÓN: Excluir tipos de VENTA de la columna MOVIMIENTOS
-            # Las ventas (SPV, SCP, SCS) se muestran en la columna VENTAS por separado
-            tipos_venta = ['SPV', 'SCP', 'SCS']
-            
-            if tipos_movimiento:
-                # Filtrar tipos de movimiento EXCLUYENDO los de venta
-                tipos_mov_sin_ventas = [t for t in tipos_movimiento if t not in tipos_venta]
-                if tipos_mov_sin_ventas:
-                    conceptos_filter = ", ".join([f"'{t}'" for t in tipos_mov_sin_ventas])
-                    filtro_conceptos_insumos = f"AND movsinv.idconcepto IN ({conceptos_filter})"
-                    filtro_conceptos_presentaciones = f"AND movtosalmacen.idconcepto IN ({conceptos_filter})"
-                else:
-                    # Si solo hay tipos de venta, no hay movimientos (evitar query vacía)
-                    filtro_conceptos_insumos = "AND 1=0"  # No devuelve nada
-                    filtro_conceptos_presentaciones = "AND 1=0"
-                logging.info(f"Tipos de movimiento configurados: {tipos_movimiento}")
-                logging.info(f"Tipos de movimiento para columna MOVIMIENTOS (sin ventas): {tipos_mov_sin_ventas}")
-            else:
-                # Si no hay configuración, excluir vacíos Y tipos de venta
-                filtro_conceptos_insumos = f"AND movsinv.idconcepto NOT IN ('', 'SPV', 'SCP', 'SCS')"
-                filtro_conceptos_presentaciones = f"AND movtosalmacen.idconcepto NOT IN ('', 'SPV', 'SCP', 'SCS')"
-                logging.info("No hay tipos de movimiento configurados, usando todos excepto vacíos y ventas")
-            
-            movimientos_query = f"""
--- MOVIMIENTOS DE INSUMOS (movsinv) - usar código natural (ya incluye prefijo)
-SELECT 
-    RTRIM(LTRIM(movsinv.idinsumo)) as CODIGO,
-    SUM(movsinv.cantidad) as CANTIDAD
-FROM movsinv
-INNER JOIN insumos ON insumos.idinsumo = movsinv.idinsumo
-INNER JOIN gruposi GP ON GP.idgruposi = insumos.idgruposi
-INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = GP.idgruposiclasificacion
-LEFT JOIN almacen ON almacen.idalmacen = movsinv.idalmacen
-WHERE movsinv.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
-  AND almacen.nombre LIKE '%{almacen_safe}%'
-  {filtro_conceptos_insumos}
-GROUP BY RTRIM(LTRIM(movsinv.idinsumo))
 
-UNION ALL
-
--- MOVIMIENTOS DE PRESENTACIONES (movtosalmacen)
-SELECT 
-    RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones)) as CODIGO,
-    SUM(movtosalmacen.cantidad) as CANTIDAD
-FROM movtosalmacen
-INNER JOIN insumospresentaciones ON insumospresentaciones.idinsumospresentaciones = movtosalmacen.idinsumospresentaciones
-INNER JOIN gruposi ON gruposi.idgruposi = insumospresentaciones.idgruposi
-INNER JOIN gruposiclasificacion ON gruposiclasificacion.idgruposiclasificacion = gruposi.idgruposiclasificacion
-LEFT JOIN almacen ON almacen.idalmacen = movtosalmacen.idalmacen
-WHERE movtosalmacen.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
-  AND almacen.nombre LIKE '%{almacen_safe}%'
-  {filtro_conceptos_presentaciones}
-GROUP BY RTRIM(LTRIM(movtosalmacen.idinsumospresentaciones))
-"""
-            
-            try:
-                movimientos_result = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], movimientos_query
-                )
-                movimientos_dict = {m['CODIGO']: float(m['CANTIDAD'] or 0) for m in movimientos_result}
-                logging.info(f"Movimientos obtenidos para {len(movimientos_dict)} productos")
-                # DEBUG: Mostrar el valor de B130009
-                if 'B130009' in movimientos_dict:
-                    logging.info(f"DEBUG B130009 movimientos: {movimientos_dict['B130009']}")
-            except Exception as e:
-                logging.warning(f"Error al obtener movimientos: {str(e)}, continuando con movimientos = 0")
-                movimientos_dict = {}
-            
-            # 6. Obtener ventas SOLO si es almacén de consumo (tipo = 1)
-            # Consulta basada en recetasalmacenes + costos + turnos
-            ventas_dict = {}
-            if es_almacen_consumo:
-                logging.info("Obteniendo ventas (almacén de CONSUMO tipo=1)...")
-                
-                # Calcular fechas para ventas:
-                # - fecha_ini: Día del inventario inicial a las 00:00:00
-                # - fecha_fin: Día ANTERIOR al inventario final a las 23:59:59
-                # Esto asegura incluir TODOS los turnos del período correcto
-                try:
-                    from datetime import datetime, timedelta
-                    dt_ini = datetime.strptime(fecha_ini, "%Y-%m-%d %H:%M:%S")
-                    dt_fin = datetime.strptime(fecha_fin, "%Y-%m-%d %H:%M:%S")
-                    
-                    # Fecha inicio: inicio del día del inventario inicial
-                    fecha_ini_ventas = dt_ini.replace(hour=0, minute=0, second=0)
-                    
-                    # Fecha fin: final del día ANTERIOR al inventario final (23:59:59)
-                    fecha_fin_ventas = (dt_fin - timedelta(days=1)).replace(hour=23, minute=59, second=59)
-                    
-                    fecha_ini_sql = fecha_ini_ventas.strftime("%d/%m/%Y %H:%M:%S")
-                    fecha_fin_sql = fecha_fin_ventas.strftime("%d/%m/%Y %H:%M:%S")
-                except Exception as e:
-                    logging.warning(f"Error calculando fechas de ventas: {e}")
-                    fecha_ini_sql = fecha_ini
-                    fecha_fin_sql = fecha_fin
-                
-                logging.info(f"Fechas para ventas: ini={fecha_ini_sql}, fin={fecha_fin_sql}")
-                
-                # Ventas de INSUMOS - usando código natural (ya incluye prefijo)
-                # El filtro usa el día del inventario inicial hasta el final del día anterior al inventario final
-                ventas_insumos_query = f"""
-SELECT 
-    RTRIM(LTRIM(receta.idinsumo)) as CODIGO,
-    SUM(venta.cantidad * COSTOS.cantidad) as CONSUMIDO
-FROM cheqdet venta
-INNER JOIN cheques ON venta.foliodet = cheques.folio 
-INNER JOIN costos ON costos.idproducto = venta.idproducto
-INNER JOIN recetasalmacenes RC ON RC.idproducto = venta.idproducto 
-    AND RC.idinsumo = COSTOS.idinsumo 
-    AND cheques.idarearestaurant = RC.idarearestaurant 
-    AND cheques.idempresa = RC.idempresa
-INNER JOIN almacen AL ON AL.idalmacen = RC.idalmacen
-INNER JOIN insumos receta ON receta.idinsumo = costos.idinsumo
-INNER JOIN gruposi Grupo ON Grupo.idgruposi = receta.idgruposi
-INNER JOIN gruposiclasificacion GP ON GP.idgruposiclasificacion = Grupo.idgruposiclasificacion
-INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE turnos.APERTURA BETWEEN CONVERT(datetime, CONVERT(nvarchar(30),'{fecha_ini_sql}',103),103) 
-                          AND CONVERT(datetime, CONVERT(nvarchar(30),'{fecha_fin_sql}',103),103)
-  AND cheques.cancelado = 0
-  AND AL.nombre LIKE '%{almacen_safe}%'
-GROUP BY RTRIM(LTRIM(receta.idinsumo))
-"""
-                try:
-                    logging.info(f"Ejecutando consulta ventas INSUMOS para almacén {almacen}")
-                    ventas_result = execute_sql_query(
-                        server['host'], server['port'], server['database'],
-                        server['username'], server['password'], ventas_insumos_query
-                    )
-                    # Sumar las ventas por código
-                    for v in ventas_result:
-                        if v['CODIGO']:
-                            codigo = v['CODIGO']
-                            cantidad = float(v['CONSUMIDO'] or 0)
-                            ventas_dict[codigo] = ventas_dict.get(codigo, 0) + cantidad
-                    logging.info(f"Ventas cheques cerrados: {len(ventas_result)} registros, {len(ventas_dict)} productos únicos")
-                except Exception as e:
-                    logging.warning(f"Error al obtener ventas de cheques cerrados: {str(e)}")
-                
-                # Intentar obtener ventas de tablas temporales (cuentas no cerradas)
-                # Estas tablas pueden no existir en todas las instalaciones de SoftRestaurant
-                ventas_temp_query = f"""
-SELECT 
-    RTRIM(LTRIM(receta.idinsumo)) as CODIGO,
-    SUM(venta.cantidad * COSTOS.cantidad) as CONSUMIDO
-FROM temcheqdet venta
-INNER JOIN temcheques cheques ON venta.foliodet = cheques.folio 
-INNER JOIN costos ON costos.idproducto = venta.idproducto
-INNER JOIN recetasalmacenes RC ON RC.idproducto = venta.idproducto 
-    AND RC.idinsumo = COSTOS.idinsumo 
-    AND cheques.idarearestaurant = RC.idarearestaurant 
-    AND cheques.idempresa = RC.idempresa
-INNER JOIN almacen AL ON AL.idalmacen = RC.idalmacen
-INNER JOIN insumos receta ON receta.idinsumo = costos.idinsumo
-INNER JOIN gruposi Grupo ON Grupo.idgruposi = receta.idgruposi
-INNER JOIN gruposiclasificacion GP ON GP.idgruposiclasificacion = Grupo.idgruposiclasificacion
-INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE turnos.APERTURA BETWEEN CONVERT(datetime, CONVERT(nvarchar(30),'{fecha_ini_sql}',103),103) 
-                          AND CONVERT(datetime, CONVERT(nvarchar(30),'{fecha_fin_sql}',103),103)
-  AND cheques.cancelado = 0
-  AND AL.nombre LIKE '%{almacen_safe}%'
-GROUP BY RTRIM(LTRIM(receta.idinsumo))
-"""
-                try:
-                    logging.info("Intentando obtener ventas de cuentas temporales (temcheques/temcheqdet)...")
-                    ventas_temp_result = execute_sql_query(
-                        server['host'], server['port'], server['database'],
-                        server['username'], server['password'], ventas_temp_query
-                    )
-                    for v in ventas_temp_result:
-                        if v['CODIGO']:
-                            codigo = v['CODIGO']
-                            cantidad = float(v['CONSUMIDO'] or 0)
-                            ventas_dict[codigo] = ventas_dict.get(codigo, 0) + cantidad
-                    logging.info(f"Ventas temporales: {len(ventas_temp_result)} registros adicionales")
-                except Exception as e:
-                    # Es normal que falle si las tablas temporales no existen
-                    logging.info(f"Tablas temporales no disponibles (esto es normal): {str(e)[:100]}")
-                
-                # NOTA: La tabla recetasalmacenes solo tiene idinsumo, no tiene idinsumospresentaciones
-                # Por lo tanto, las ventas de PRESENTACIONES no se pueden calcular de la misma manera
-                # Las presentaciones se descuentan del inventario a través de los INSUMOS que las componen
-                logging.info("Ventas de PRESENTACIONES no disponibles - recetasalmacenes solo tiene idinsumo")
-                
-                logging.info(f"Total ventas obtenidas: {len(ventas_dict)} productos")
-            else:
-                logging.info(f"Almacén tipo {almacen_tipo} (NO es consumo) - ventas = 0 para todos los productos")
-            
-            # 7. Combinar resultados - Solo productos que aparecen en inventarios Y están en el catálogo
-            # El catálogo ya está filtrado por inventariable = 1 para insumos
-            results = []
-            for codigo in todos_codigos:
-                # Obtener datos del catálogo de productos
-                prod_info = productos_dict.get(codigo, None)
-                
-                # FILTRO IMPORTANTE: Solo incluir productos que están en el catálogo (inventariables)
-                if prod_info is None:
-                    continue
-                
-                # Obtener datos de inventarios
-                inv_ini = inv_inicial_dict.get(codigo, {'existencia': 0, 'costo': 0, 'tipo': ''})
-                inv_fin = inv_final_dict.get(codigo, {'existencia': 0, 'costo': 0, 'tipo': ''})
-                
-                inv_inicial = inv_ini['existencia']
-                inv_final = inv_fin['existencia']
-                
-                # El costo viene del inventario o del catálogo
-                costo = inv_ini['costo'] or inv_fin['costo'] or float(prod_info.get('COSTO', 0) or 0)
-                
-                # Movimientos y ventas
-                movimientos = movimientos_dict.get(codigo, 0)
-                ventas_total = ventas_dict.get(codigo, 0)
-                
-                # Cálculos
-                inv_teorico = inv_inicial + movimientos - ventas_total
-                diferencia_cantidad = inv_final - inv_teorico
-                diferencia_costo = diferencia_cantidad * costo
-                diferencia_porcentaje = (diferencia_cantidad / inv_teorico * 100) if inv_teorico != 0 else 0
-                valor_real = (inv_inicial + movimientos - inv_final) * costo
-                teorico_ventas = ventas_total * costo
-                
-                # Tipo del producto (INSUMO o PRESENTACION)
-                tipo_producto = inv_ini.get('tipo') or inv_fin.get('tipo') or prod_info.get('TABLA', '')
-                
-                # Construir strings de folios para SoftRestaurant
-                # Para Soft, el "comentario" es el nombre del almacén
-                folios_ini_str = ', '.join([str(f) for f in lista_folios_ini])
-                folios_fin_str = ', '.join([str(f) for f in lista_folios_fin])
-                almacen_nombre_soft = almacen or ''  # El almacén viene como nombre en SoftRestaurant
-                
-                results.append({
-                    'ID_Inv_Ini': folios_ini_str,
-                    'Comentario_Ini': almacen_nombre_soft,
-                    'ID_Inv_Fin': folios_fin_str,
-                    'Comentario_Fin': almacen_nombre_soft,
-                    'Categoria': prod_info.get('CATEGORIA', 'Sin Categoría'),
-                    'Familia': prod_info.get('GRUPO', 'Sin Familia'),
-                    'SubFamilia': tipo_producto,  # Mostrar si es INSUMO o PRESENTACION
-                    'Codigo': codigo,
-                    'Producto': prod_info.get('DESCRIPCION', f'Producto {codigo}'),
-                    'Unidad': prod_info.get('UM', 'PZA'),
-                    'Costo_Unitario': round(costo, 4),
-                    'Inv_Inicial_Cantidad': round(inv_inicial, 4),
-                    'Inv_Inicial_Costo': round(inv_inicial * costo, 2),
-                    'Movimientos': round(movimientos, 4),
-                    'Movimientos_Costo': round(movimientos * costo, 2),
-                    'Ventas': round(ventas_total, 4),
-                    'Ventas_Costo': round(ventas_total * costo, 2),
-                    'Inv_Teorico_Cantidad': round(inv_teorico, 4),
-                    'Inv_Teorico_Costo': round(inv_teorico * costo, 2),
-                    'Inv_Final_Cantidad': round(inv_final, 4),
-                    'Inv_Final_Costo': round(inv_final * costo, 2),
-                    'Diferencia_Cantidad': round(diferencia_cantidad, 4),
-                    'Diferencia_Costo': round(diferencia_costo, 2),
-                    'Diferencia_Porcentaje': round(diferencia_porcentaje, 2),
-                    'Valor_Real': round(valor_real, 2),
-                    'Teorico': round(teorico_ventas, 2)
-                })
-            
-            # Ordenar por Categoría, Familia, Código
-            results.sort(key=lambda x: (x['Categoria'] or '', x['Familia'] or '', x['Codigo'] or ''))
-            
-            logging.info(f"Reporte SoftRestaurant generado: {len(results)} productos")
-            
-            # ===== GUARDAR DIFERENCIAS EN CACHE PARA COMPARATIVO DE 4 CORTES (SR) =====
-            try:
-                # Para SR, guardar por cada folio final
-                for folio_fin in lista_folios_fin:
-                    productos_cache = []
-                    for r in results:
-                        dif = r.get('Diferencia_Cantidad', 0)
-                        if dif != 0:
-                            productos_cache.append({
-                                'codigo': r.get('Codigo', ''),
-                                'producto': r.get('Producto', ''),
-                                'diferencia_cantidad': round(dif, 2),
-                                'diferencia_costo': round(r.get('Diferencia_Costo', 0), 2)
-                            })
-                    
-                    if productos_cache:
-                        # Obtener info del almacén - manejar tanto strings como diccionarios
-                        almacen_id_sr = ""
-                        for alm in almacenes:
-                            if isinstance(alm, dict):
-                                if alm.get('nombre') == almacen or alm.get('id'):
-                                    almacen_id_sr = alm.get('id', '')
-                                    break
-                            elif isinstance(alm, str):
-                                # Si es string, usar directamente
-                                if alm == almacen:
-                                    almacen_id_sr = alm
-                                    break
-                        
-                        # Convertir folio a string (puede venir como Decimal de SQL Server)
-                        folio_str = str(int(folio_fin)) if isinstance(folio_fin, (int, float)) else str(folio_fin)
-                        
-                        cache_key = {
-                            "server_id": server_id,
-                            "almacen_id": almacen_id_sr or almacen,
-                            "sucursal_id": "",
-                            "comentario": "",  # SR no usa comentarios
-                            "folio": folio_str
-                        }
-                        
-                        cache_doc = {
-                            **cache_key,
-                            "fecha_inventario": fecha_fin or "",
-                            "fecha_cache": datetime.now(timezone.utc).isoformat(),
-                            "productos": productos_cache
-                        }
-                        
-                        _sql_save_inventario_diferencias_cache(cache_key, cache_doc)
-                        logging.info(f"Cache SR guardado para folio {folio_fin}: {len(productos_cache)} productos con diferencia")
-            except Exception as cache_error:
-                logging.warning(f"Error guardando cache SR: {str(cache_error)}")
-            # ===== FIN CACHE SR =====
-            
-            # ===== ORQUESTACIÓN FASE 2A: Crear workflow automático si hay diferencias (SR) =====
-            try:
-                from modules.fase2_operativo.services.orquestador_service import get_orquestador_service
-                
-                # Determinar folio_inventario principal para SR
-                folio_inventario_principal = lista_folios_fin[0] if lista_folios_fin else None
-                
-                orquestador = get_orquestador_service(db)  # MongoDB ELIMINADO - StubDatabase
-                orq_resultado = await orquestador.procesar_analisis(
-                    server_id=server_id,
-                    server_name=server.get('name', ''),
-                    sucursal_id=sucursal or "",
-                    sucursal_nombre=sucursal or "",
-                    almacen_id=almacen or "",
-                    almacen_nombre=almacen or "",
-                    resultados_analisis=results,
-                    folios_iniciales=lista_folios_ini,
-                    folios_finales=lista_folios_fin,
-                    fecha_ini=fecha_ini or "",
-                    fecha_fin=fecha_fin or "",
-                    usuario_ejecutor_id=current_user.get('id', ''),
-                    usuario_ejecutor_nombre=current_user.get('name', ''),
-                    folio_inventario=folio_inventario_principal  # NUEVO: Pasar folio explícito
-                )
-                
-                if orq_resultado.get('workflow_creado'):
-                    logging.info(f"ORQUESTADOR SR: ✅ Workflow {orq_resultado.get('workflow_id')} creado automáticamente")
-                else:
-                    logging.info(f"ORQUESTADOR SR: {orq_resultado.get('mensaje', 'Sin acción')}")
-                    
-            except Exception as orq_error:
-                # NO romper el flujo principal si falla la orquestación
-                logging.error(f"ORQUESTADOR SR ERROR (no crítico): {str(orq_error)}")
-                import traceback
-                logging.error(traceback.format_exc())
-            # ===== FIN ORQUESTACIÓN SR =====
-            
-            return {"data": results, "count": len(results)}
-        
-        else:
-            raise HTTPException(status_code=400, detail="Sistema no soportado para análisis completo")
-        
+        raise HTTPException(
+            status_code=400,
+            detail="Sistema no soportado para análisis canónico de inventario",
+        )
+    except HTTPException:
+        raise
     except Exception as e:
-        logging.error(f"Error en análisis de inventario: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error generando análisis: {str(e)}")
+        logging.error(f"Error en análisis canónico de inventario: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error generando análisis canónico")
 
 
 # CAB-003 Fase 1A: Asignar referencia para uso desde Core Service
 _inventory_analysis_endpoint_ref = generate_inventory_analysis
 
 
+def _report_detalle_float(value) -> float:
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _report_detalle_fecha_fin(value) -> str:
+    text = str(value or '').strip()
+    if len(text) == 10 and text[4:5] == '-' and text[7:8] == '-':
+        return f"{text} 23:59:59"
+    return text
+
+
+def _report_detalle_almacenes(params: Dict) -> List[str]:
+    value = params.get('almacenes')
+    if value is None:
+        value = params.get('almacen')
+    return _compras_clean_almacenes(value)
+
+
+def _report_movimiento_legacy(row: Dict, producto_nombre: str = '') -> Dict[str, Any]:
+    cantidad_raw = _report_detalle_float(row.get('cantidad'))
+    tipo = str(row.get('tipo') or '').upper()
+    es_entrada = tipo == 'E' or (tipo not in {'S', 'SALIDA'} and cantidad_raw >= 0)
+    return {
+        'folio': row.get('referencia') or row.get('folio') or '',
+        'fecha': row.get('fecha') or '',
+        'cantidad': abs(cantidad_raw),
+        'tipo_codigo': row.get('concepto') or '',
+        'tipo_descripcion': row.get('descripcion') or row.get('tipo_descripcion') or '',
+        'tipo_movimiento': 'Entrada' if es_entrada else 'Salida',
+        'producto': producto_nombre or row.get('producto') or '',
+        'almacen': row.get('almacen') or '',
+        'observaciones': row.get('observaciones') or '',
+    }
+
+
+def _report_consumo_legacy(row: Dict, producto_nombre: str = '', sucursal: str = '') -> Dict[str, Any]:
+    cantidad = abs(_report_detalle_float(row.get('cantidad') or row.get('consumo')))
+    return {
+        'folio': row.get('referencia') or row.get('documento') or row.get('folio') or '',
+        'fecha': row.get('fecha') or '',
+        'cantidad': cantidad,
+        'tipo_venta': row.get('concepto') or row.get('tipo_venta') or 'CANONICA',
+        'producto_vendido': row.get('descripcion') or row.get('producto_vendido') or producto_nombre,
+        'producto': producto_nombre or row.get('producto') or '',
+        'precio_unitario': _report_detalle_float(row.get('precio_unitario')),
+        'sucursal': row.get('almacen') or sucursal or '',
+    }
+
+
 @api_router.post("/reports/movement-details")
 async def get_movement_details(params: Dict, current_user: Dict = Depends(get_current_user)):
-    """
-    Obtiene el detalle de los movimientos para un producto específico.
-    Devuelve: folio, fecha, cantidad, tipo de movimiento, descripción.
-    
-    FASE P1.4-C (Dic 2025): Migrado de MongoDB db.servers a server_registry.
-    FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
-    NO FUENTE: MongoDB db.servers
-    """
-    from core.server_registry import get_server_connection_info_with_secrets
-    
-    server_id = params.get('server_id')
-    producto_codigo = params.get('producto_codigo')
-    sucursal = params.get('sucursal')
-    almacen = params.get('almacen')
-    fecha_ini = params.get('fecha_ini')
-    fecha_fin = params.get('fecha_fin')
-    
-    # FASE P1.4-C: Obtener servidor desde EDARSAHUB SQL via server_registry
-    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
-    server = decrypt_server_secrets(get_server_connection_info_with_secrets(server_id))
-    if not server or not server.get('active', True):
-        raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
-    try:
-        if is_mpro_system(server.get('system_type')):
-            # MPRO: Movimientos desde (fecha_inventario_inicial + 1 día) hasta fecha_inventario_final
-            from datetime import datetime, timedelta
-            fecha_ini_dt = datetime.strptime(fecha_ini, '%Y-%m-%d')
-            fecha_ini_mov = (fecha_ini_dt + timedelta(days=1)).strftime('%Y-%m-%d')
-            
-            # FASE 1C: Sanitizar entradas LIKE
-            almacen_safe = _escape_like_pattern(almacen) if almacen else ""
-            sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
-            
-            # Obtener código del almacén
-            almacen_query = f"""
-SELECT TOP 1 A.Al_Cve_Almacen as codigo
-FROM Almacen A
-INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
-WHERE A.Al_Descripcion LIKE '%{almacen_safe}%'
-    AND S.Sc_Descripcion LIKE '%{sucursal_safe}%'
-"""
-            almacen_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], almacen_query
-            )
-            if not almacen_result:
-                raise HTTPException(status_code=404, detail="Almacén no encontrado")
-            almacen_codigo = almacen_result[0]['codigo']
-            
-            # Obtener filtros de tipos de movimiento configurados
-            tipos_movimiento = server.get('tipos_movimiento', [])
-            if tipos_movimiento:
-                tipos_mov_sql = ",".join([f"'{t}'" for t in tipos_movimiento])
-                filtro_tipos_mov = f"AND M.Tm_Cve_Tipo_Movimiento IN ({tipos_mov_sql})"
-            else:
-                filtro_tipos_mov = ""
-            
-            # Consulta detalle de movimientos - CON LÓGICA ESPECIAL DE FECHAS PARA TIPOS 508/108
-            # La fecha real de los movimientos tipo 508/108 se calcula de Conversion_Producto/Compra
-            query = f"""
-SELECT 
-    M.Mv_Folio as Folio,
-    CASE   
-        WHEN TM.Tm_Cve_Tipo_Movimiento IN('508','108') 
-        THEN 
-            CASE WHEN M.Mv_Tabla = 'CONVERSION_PRODUCTO' THEN M.Mv_Fecha 
-            ELSE ISNULL((
-                SELECT TOP 1 C.Co_Fecha FROM Conversion_Producto CN
-                INNER JOIN COMPRA C ON C.Co_Folio = CN.Cp_Documento AND C.Pr_Cve_Producto = CN.Pr_Cve_Producto
-                WHERE CN.Cp_Folio = M.Mv_Documento
-            ), M.Mv_Fecha)
-            END
-        ELSE M.Mv_Fecha
-    END as Fecha,
-    M.Mv_Cantidad_Control_1 as Cantidad,
-    M.Tm_Cve_Tipo_Movimiento as Tipo_Codigo,
-    TM.Tm_Descripcion as Tipo_Descripcion,
-    TM.Tm_Tipo as Tipo_Movimiento,
-    P.Pr_Descripcion as Producto,
-    A.Al_Descripcion as Almacen,
-    M.Mv_Documento as Documento
-FROM Movimiento M
-INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
-INNER JOIN Producto P ON P.Pr_Cve_Producto = M.Pr_Cve_Producto
-INNER JOIN Almacen A ON A.Al_Cve_Almacen = M.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
-INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
-WHERE M.Pr_Cve_Producto = '{producto_codigo}'
-    AND S.Sc_Descripcion LIKE '%{sucursal_safe}%'
-    AND M.Al_Cve_Almacen = '{almacen_codigo}'
-    AND M.Es_Cve_Estado <> 'CA'
-    {filtro_tipos_mov}
-    AND (
-        CASE   
-            WHEN TM.Tm_Cve_Tipo_Movimiento IN('508','108') 
-            THEN 
-                CASE WHEN M.Mv_Tabla = 'CONVERSION_PRODUCTO' THEN M.Mv_Fecha 
-                ELSE ISNULL((
-                    SELECT TOP 1 C.Co_Fecha FROM Conversion_Producto CN
-                    INNER JOIN COMPRA C ON C.Co_Folio = CN.Cp_Documento AND C.Pr_Cve_Producto = CN.Pr_Cve_Producto
-                    WHERE CN.Cp_Folio = M.Mv_Documento
-                ), M.Mv_Fecha)
-                END
-            ELSE M.Mv_Fecha
-        END
-    ) BETWEEN '{fecha_ini_mov}' AND '{fecha_fin} 23:59:59'
-ORDER BY Fecha DESC
-"""
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
-            )
-            
-            # Formatear resultados
-            movements = []
-            for row in result:
-                # Usar Tipo_Movimiento de la BD (E=Entrada, S=Salida)
-                tipo_bd = row.get('Tipo_Movimiento', '')
-                if tipo_bd == 'E':
-                    tipo_texto = 'Entrada'
-                elif tipo_bd == 'S':
-                    tipo_texto = 'Salida'
-                else:
-                    # Fallback por signo
-                    cantidad = float(row.get('Cantidad') or 0)
-                    tipo_texto = 'Entrada' if cantidad >= 0 else 'Salida'
-                # Formatear fecha sin la "T" (2026-03-21T00:00:00 -> 2026-03-21 00:00:00)
-                fecha_str = str(row.get('Fecha'))[:19].replace('T', ' ') if row.get('Fecha') else ''
-                movements.append({
-                    'folio': row.get('Folio'),
-                    'fecha': fecha_str,
-                    'cantidad': float(row.get('Cantidad') or 0),
-                    'tipo_codigo': row.get('Tipo_Codigo'),
-                    'tipo_descripcion': row.get('Tipo_Descripcion'),
-                    'tipo_movimiento': tipo_texto,
-                    'producto': row.get('Producto'),
-                    'almacen': row.get('Almacen'),
-                    'observaciones': ''
-                })
-            
-            return {"data": movements, "count": len(movements)}
-            
-        elif is_softrestaurant_system(server.get('system_type')):
-            # Para SoftRestaurant - detectar si es INSUMO o PRESENTACIÓN
-            # PRESENTACIONES: el idinsumospresentaciones ya tiene el código completo (ej: B130009)
-            # INSUMOS: el código se genera como prefijo + idinsumo (ej: B + 12345 = B12345)
-            
-            # FASE 1C: Sanitizar entradas LIKE
-            almacen_safe = _escape_like_pattern(almacen) if almacen else ""
-            
-            # Formatear fechas para SQL Server: YYYYMMDD HH:MM:SS
-            # Si solo viene fecha (YYYY-MM-DD), agregar hora inicio/fin
-            fecha_ini_fmt = fecha_ini.replace('-', '').replace('T', ' ') if fecha_ini else ''
-            fecha_fin_fmt = fecha_fin.replace('-', '').replace('T', ' ') if fecha_fin else ''
-            
-            # Asegurar que tengan hora
-            if fecha_ini_fmt and ' ' not in fecha_ini_fmt:
-                fecha_ini_fmt = f"{fecha_ini_fmt} 00:00:00"
-            if fecha_fin_fmt and ' ' not in fecha_fin_fmt:
-                fecha_fin_fmt = f"{fecha_fin_fmt} 23:59:59"
-            
-            logging.info(f"Detalle movimientos SoftRestaurant - Código: {producto_codigo}, Almacén: {almacen}, Fechas: {fecha_ini_fmt} a {fecha_fin_fmt}")
-            
-            # Primero intentar buscar en PRESENTACIONES (movtosalmacen)
-            query_presentaciones = f"""
-SELECT 
-    COALESCE(CAST(M.idcompra AS VARCHAR(50)), CAST(M.traspaso AS VARCHAR(50)), CAST(M.invfisico AS VARCHAR(50)), '') as Folio,
-    M.fecha as Fecha,
-    M.cantidad as Cantidad,
-    M.idconcepto as Tipo_Codigo,
-    C.descripcion as Tipo_Descripcion,
-    CASE WHEN C.tipo = 1 THEN 'Entrada' ELSE 'Salida' END as Tipo_Movimiento,
-    IP.descripcion as Producto,
-    A.nombre as Almacen,
-    M.costo as Costo
-FROM movtosalmacen M
-INNER JOIN conceptos C ON C.idconcepto = M.idconcepto
-INNER JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = M.idinsumospresentaciones
-LEFT JOIN almacen A ON A.idalmacen = M.idalmacen
-WHERE RTRIM(LTRIM(M.idinsumospresentaciones)) = '{producto_codigo}'
-    AND A.nombre LIKE '%{almacen_safe}%'
-    AND M.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
-    AND M.idconcepto <> ''
-ORDER BY M.fecha DESC
-"""
-            logging.info(f"Query detalle movimientos PRESENTACIONES: {query_presentaciones[:300]}...")
-            
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_presentaciones
-            )
-            
-            # Si no hay resultados en presentaciones, buscar en INSUMOS
-            if not result:
-                # El código ya es el idinsumo completo (incluyendo el prefijo, ej: B130001)
-                # No necesitamos quitar ningún carácter
-                logging.info(f"No encontrado en presentaciones, buscando en INSUMOS con ID: {producto_codigo}")
-                
-                query_insumos = f"""
-SELECT 
-    COALESCE(CAST(M.foliocheque AS VARCHAR(50)), CAST(M.idcompra AS VARCHAR(50)), CAST(M.traspaso AS VARCHAR(50)), CAST(M.invfisico AS VARCHAR(50)), '') as Folio,
-    M.fecha as Fecha,
-    M.cantidad as Cantidad,
-    M.idconcepto as Tipo_Codigo,
-    C.descripcion as Tipo_Descripcion,
-    CASE WHEN C.tipo = 1 THEN 'Entrada' ELSE 'Salida' END as Tipo_Movimiento,
-    I.descripcion as Producto,
-    A.nombre as Almacen,
-    M.costo as Costo
-FROM movsinv M
-INNER JOIN conceptos C ON C.idconcepto = M.idconcepto
-INNER JOIN insumos I ON I.idinsumo = M.idinsumo
-LEFT JOIN almacen A ON A.idalmacen = M.idalmacen
-WHERE RTRIM(LTRIM(M.idinsumo)) = '{producto_codigo}'
-    AND A.nombre LIKE '%{almacen_safe}%'
-    AND M.fecha BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
-    AND M.idconcepto <> ''
-ORDER BY M.fecha DESC
-"""
-                result = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], query_insumos
-                )
-            
-            logging.info(f"Movimientos encontrados: {len(result)}")
-            
-            movements = []
-            for row in result:
-                # Usar el campo Tipo_Movimiento de la BD (viene del query SQL)
-                tipo_movimiento = row.get('Tipo_Movimiento', '')
-                if not tipo_movimiento:
-                    # Fallback: Si no viene de BD, inferir por el signo
-                    cantidad = float(row.get('Cantidad') or 0)
-                    tipo_movimiento = 'Entrada' if cantidad >= 0 else 'Salida'
-                movements.append({
-                    'folio': row.get('Folio') or '',
-                    'fecha': str(row.get('Fecha'))[:19] if row.get('Fecha') else '',
-                    'cantidad': float(row.get('Cantidad') or 0),
-                    'tipo_codigo': row.get('Tipo_Codigo'),
-                    'tipo_descripcion': row.get('Tipo_Descripcion'),
-                    'tipo_movimiento': tipo_movimiento,
-                    'producto': row.get('Producto'),
-                    'almacen': row.get('Almacen'),
-                    'observaciones': f"Costo: ${row.get('Costo', 0):.2f}" if row.get('Costo') else ''
-                })
-            
-            return {"data": movements, "count": len(movements)}
-        else:
-            return {"data": [], "count": 0}
-            
-    except Exception as e:
-        logging.error(f"Error obteniendo detalle de movimientos: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+    """Wrapper legacy NO-LIVE sobre el detalle canonico de Compras."""
+    from types import SimpleNamespace
+    from core.corporate_filters.request_resolver import canonical_server_id
+
+    server_id = str(canonical_server_id(params.get('server_id')) or '').strip()
+    codigo = str(params.get('producto_codigo') or params.get('codigo') or '').strip()
+    if not server_id:
+        raise HTTPException(status_code=400, detail="server_id es requerido")
+    if not codigo:
+        raise HTTPException(status_code=400, detail="producto_codigo es requerido")
+
+    await validate_server_access_unified(current_user, server_id)
+    request = SimpleNamespace(
+        server_id=server_id,
+        sucursal=str(params.get('sucursal') or ''),
+        codigo=codigo,
+        fecha_inicio=str(params.get('fecha_ini') or params.get('fecha_inicio') or ''),
+        fecha_fin=_report_detalle_fecha_fin(params.get('fecha_fin') or params.get('fecha_final')),
+        almacenes=_report_detalle_almacenes(params),
+    )
+    result = await obtener_detalle_movimientos_post(request, current_user)
+    if isinstance(result, dict) and result.get('error'):
+        return {
+            "data": [],
+            "count": 0,
+            "error": result.get('error'),
+            "source": result.get('source') or "EDARSAHUB_SQL_CANONICAL",
+        }
+    movimientos = result.get('movimientos', []) if isinstance(result, dict) else []
+    data = [_report_movimiento_legacy(row, params.get('producto') or '') for row in movimientos]
+    return {
+        "data": data,
+        "count": len(data),
+        "source": (result or {}).get('source') or "EDARSAHUB_SQL_CANONICAL",
+    }
+
 
 @api_router.post("/reports/sales-details")
 async def get_sales_details(params: Dict, current_user: Dict = Depends(get_current_user)):
-    """
-    Obtiene el detalle de las ventas para un producto específico.
-    Devuelve: folio, fecha, cantidad, tipo de venta (directa/kit).
-    
-    FASE P1.4-C (Dic 2025): Migrado de MongoDB db.servers a server_registry.
-    FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
-    NO FUENTE: MongoDB db.servers
-    """
-    from core.server_registry import get_server_connection_info_with_secrets
-    
-    server_id = params.get('server_id')
-    producto_codigo = params.get('producto_codigo')
-    sucursal = params.get('sucursal')
-    fecha_ini = params.get('fecha_ini')
-    fecha_fin = params.get('fecha_fin')
-    
-    # FASE P1.4-C: Obtener servidor desde EDARSAHUB SQL via server_registry
-    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
-    server = decrypt_server_secrets(get_server_connection_info_with_secrets(server_id))
-    if not server or not server.get('active', True):
-        raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
-    try:
-        if is_mpro_system(server.get('system_type')):
-            # FASE 1C: Sanitizar entradas LIKE
-            sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
-            
-            # Consulta detalle de ventas - combina ventas directas y de kits
-            query = f"""
-SELECT * FROM (
-    -- Ventas de productos KIT
-    SELECT 
-        V.Vn_Folio as Folio,
-        V.Vn_Fecha as Fecha,
-        (V.Vn_Cantidad_1 * PK.Pk_Cantidad) as Cantidad,
-        'KIT' as Tipo_Venta,
-        PV.Pr_Descripcion as Producto_Vendido,
-        P.Pr_Descripcion as Producto,
-        V.Vn_Precio_Lista as Precio_Unitario,
-        S.Sc_Descripcion as Sucursal
-    FROM venta V
-    INNER JOIN producto_kit PK ON PK.Pr_Cve_Producto = V.Pr_Cve_Producto
-    INNER JOIN producto P ON P.Pr_Cve_Producto = PK.Pk_Producto
-    INNER JOIN producto PV ON PV.Pr_Cve_Producto = V.Pr_Cve_Producto
-    INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
-    WHERE PK.Pk_Producto = '{producto_codigo}'
-        AND S.Sc_Descripcion LIKE '%{sucursal_safe}%'
-        AND V.Es_Cve_Estado <> 'CA'
-        AND V.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
-    
-    UNION ALL
-    
-    -- Ventas DIRECTAS
-    SELECT 
-        V.Vn_Folio as Folio,
-        V.Vn_Fecha as Fecha,
-        V.Vn_Cantidad_Control_1 as Cantidad,
-        'DIRECTA' as Tipo_Venta,
-        P.Pr_Descripcion as Producto_Vendido,
-        P.Pr_Descripcion as Producto,
-        V.Vn_Precio_Lista as Precio_Unitario,
-        S.Sc_Descripcion as Sucursal
-    FROM venta V
-    INNER JOIN producto P ON P.Pr_Cve_Producto = V.Pr_Cve_Producto
-    INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
-    WHERE V.Pr_Cve_Producto = '{producto_codigo}'
-        AND S.Sc_Descripcion LIKE '%{sucursal_safe}%'
-        AND V.Es_Cve_Estado <> 'CA'
-        AND V.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
-) AS VentasDetalle
-ORDER BY Fecha DESC
-"""
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
-            )
-            
-            sales = []
-            for row in result:
-                sales.append({
-                    'folio': row.get('Folio'),
-                    'fecha': str(row.get('Fecha'))[:19] if row.get('Fecha') else '',
-                    'cantidad': float(row.get('Cantidad') or 0),
-                    'tipo_venta': row.get('Tipo_Venta'),
-                    'producto_vendido': row.get('Producto_Vendido'),
-                    'producto': row.get('Producto'),
-                    'precio_unitario': float(row.get('Precio_Unitario') or 0),
-                    'sucursal': row.get('Sucursal')
-                })
-            
-            return {"data": sales, "count": len(sales)}
-            
-        elif is_softrestaurant_system(server.get('system_type')):
-            # Para SoftRestaurant - detalle de ventas usando recetasalmacenes
-            # El código puede ser INSUMO (con prefijo) o PRESENTACION (código directo)
-            almacen = params.get('almacen', '')
-            
-            # FASE 1C: Sanitizar entradas LIKE
-            almacen_safe = _escape_like_pattern(almacen) if almacen else ""
-            
-            # Formatear fechas para SQL Server: YYYYMMDD HH:MM:SS
-            fecha_ini_fmt = fecha_ini.replace('-', '').replace('T', ' ') if fecha_ini else ''
-            fecha_fin_fmt = fecha_fin.replace('-', '').replace('T', ' ') if fecha_fin else ''
-            
-            # Asegurar que tengan hora
-            if fecha_ini_fmt and ' ' not in fecha_ini_fmt:
-                fecha_ini_fmt = f"{fecha_ini_fmt} 00:00:00"
-            if fecha_fin_fmt and ' ' not in fecha_fin_fmt:
-                fecha_fin_fmt = f"{fecha_fin_fmt} 23:59:59"
-            
-            logging.info(f"Detalle ventas SoftRestaurant - Código: {producto_codigo}, Almacén: {almacen}, Fechas: {fecha_ini_fmt} a {fecha_fin_fmt}")
-            
-            # La tabla recetasalmacenes solo tiene idinsumo, no tiene idinsumospresentaciones
-            # Por lo tanto, buscamos directamente por el código de INSUMO (que ya incluye el prefijo)
-            query_insumos = f"""
-SELECT 
-    cheques.folio as Folio,
-    turnos.APERTURA as Fecha,
-    venta.cantidad * COSTOS.cantidad as Cantidad,
-    'RECETA' as Tipo_Venta,
-    productos.descripcion as Producto_Vendido,
-    receta.descripcion as Producto,
-    venta.precio as Precio_Unitario,
-    AL.nombre as Almacen
-FROM cheqdet venta
-INNER JOIN cheques ON venta.foliodet = cheques.folio 
-INNER JOIN costos ON costos.idproducto = venta.idproducto
-INNER JOIN recetasalmacenes RC ON RC.idproducto = venta.idproducto 
-    AND RC.idinsumo = COSTOS.idinsumo 
-    AND cheques.idarearestaurant = RC.idarearestaurant 
-    AND cheques.idempresa = RC.idempresa
-INNER JOIN almacen AL ON AL.idalmacen = RC.idalmacen
-INNER JOIN insumos receta ON receta.idinsumo = costos.idinsumo
-INNER JOIN productos ON productos.idproducto = venta.idproducto
-INNER JOIN turnos ON turnos.idturno = cheques.idturno
-WHERE RTRIM(LTRIM(receta.idinsumo)) = '{producto_codigo}'
-  AND turnos.APERTURA BETWEEN '{fecha_ini_fmt}' AND '{fecha_fin_fmt}'
-  AND cheques.cancelado = 0
-  AND AL.nombre LIKE '%{almacen_safe}%'
-ORDER BY turnos.APERTURA DESC
-"""
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_insumos
-            )
-            
-            logging.info(f"Ventas encontradas: {len(result)}")
-            
-            sales = []
-            for row in result:
-                sales.append({
-                    'folio': row.get('Folio'),
-                    'fecha': str(row.get('Fecha'))[:19] if row.get('Fecha') else '',
-                    'cantidad': float(row.get('Cantidad') or 0),
-                    'tipo_venta': row.get('Tipo_Venta'),
-                    'producto_vendido': row.get('Producto_Vendido'),
-                    'producto': row.get('Producto'),
-                    'precio_unitario': float(row.get('Precio_Unitario') or 0),
-                    'sucursal': row.get('Almacen', '')
-                })
-            
-            return {"data": sales, "count": len(sales)}
-        else:
-            return {"data": [], "count": 0}
-            
-    except Exception as e:
-        logging.error(f"Error obteniendo detalle de ventas: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+    """Wrapper legacy NO-LIVE sobre el detalle canonico de consumos."""
+    from types import SimpleNamespace
+    from core.corporate_filters.request_resolver import canonical_server_id
+
+    server_id = str(canonical_server_id(params.get('server_id')) or '').strip()
+    codigo = str(params.get('producto_codigo') or params.get('codigo') or '').strip()
+    if not server_id:
+        raise HTTPException(status_code=400, detail="server_id es requerido")
+    if not codigo:
+        raise HTTPException(status_code=400, detail="producto_codigo es requerido")
+
+    await validate_server_access_unified(current_user, server_id)
+    request = SimpleNamespace(
+        server_id=server_id,
+        sucursal=str(params.get('sucursal') or ''),
+        codigo=codigo,
+        fecha_inicio=str(params.get('fecha_ini') or params.get('fecha_inicio') or ''),
+        fecha_fin=_report_detalle_fecha_fin(params.get('fecha_fin') or params.get('fecha_final')),
+        almacenes=_report_detalle_almacenes(params),
+    )
+    result = await obtener_detalle_consumos_post(request, current_user)
+    if isinstance(result, dict) and result.get('error'):
+        return {
+            "data": [],
+            "count": 0,
+            "error": result.get('error'),
+            "source": result.get('source') or "EDARSAHUB_SQL_CANONICAL",
+        }
+    consumos = (result.get('consumos') or result.get('movimientos')) if isinstance(result, dict) else []
+    data = [_report_consumo_legacy(row, params.get('producto') or '', params.get('sucursal') or '') for row in (consumos or [])]
+    return {
+        "data": data,
+        "count": len(data),
+        "source": (result or {}).get('source') or "EDARSAHUB_SQL_CANONICAL",
+    }
+
 
 @api_router.post("/reports/export/excel")
 async def export_excel(data: Dict, current_user: Dict = Depends(get_current_user)):
     report_data = data.get('data', [])
     filename = data.get('filename', 'reporte_inventario.xlsx')
-    
+
     # Metadatos para el encabezado del reporte
     metadata = {
         'servidor_nombre': data.get('servidor_nombre', 'N/A'),
@@ -7211,9 +5974,9 @@ async def export_excel(data: Dict, current_user: Dict = Depends(get_current_user
         'fecha_inicio': data.get('fecha_inicio', 'N/A'),
         'fecha_fin': data.get('fecha_fin', 'N/A')
     }
-    
+
     excel_bytes = generate_excel(report_data, filename, metadata)
-    
+
     return StreamingResponse(
         io.BytesIO(excel_bytes),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -7224,9 +5987,9 @@ async def export_excel(data: Dict, current_user: Dict = Depends(get_current_user
 async def export_pdf(data: Dict, current_user: Dict = Depends(get_current_user)):
     report_data = data.get('data', [])
     filename = data.get('filename', 'reporte_inventario.pdf')
-    
+
     pdf_bytes = generate_pdf(report_data, filename)
-    
+
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",
@@ -7264,87 +6027,97 @@ async def get_diferencias_from_cache(
 ) -> Optional[Dict]:
     """
     Lee las diferencias del cache inventario_diferencias_detalle.
-    Este cache se llena cuando el usuario genera el reporte normal de "Generar Reporte".
+    Los cortes se resuelven exclusivamente desde EDARSAHUB SQL canonico.
+    El cache se llena cuando el usuario genera el reporte normal de "Generar Reporte".
     Retorna los últimos 4 cortes con sus diferencias.
     """
+    conn = None
     try:
         logging.info(f"get_diferencias_from_cache: almacen_id={almacen_id}, sucursal_id={sucursal_id}, comentario={comentario}, fecha_ref={fecha_referencia}")
-        
-        # 1. Obtener los últimos 4 folios de inventario para este almacén/comentario
+
+        server_id = str(server.get('id') or server.get('server_id') or '').strip()
+        if not server_id:
+            logging.warning("No se pudo resolver server_id canonico para cache de diferencias")
+            return None
+
+        fecha_ref_clean = fecha_referencia.replace('T', ' ')[:10] if fecha_referencia else '2099-12-31'
+        filters = [
+            "server_id = %s",
+            "sync_status IN ('ACTIVE', 'REPLACED')",
+            "CONVERT(date, fecha) <= CONVERT(date, %s)",
+        ]
+        params: List[Any] = [server_id, fecha_ref_clean]
+
+        almacen_text = str(almacen_id or '').strip()
+        if almacen_text:
+            filters.append("(almacen_id = %s OR almacen = %s)")
+            params.extend([almacen_text, almacen_text])
+
         if is_mpro_system(server.get('system_type')):
-            sucursal_filtro = f"AND F.Sc_Cve_Sucursal = '{sucursal_id}'" if sucursal_id else ""
-            comentario_filtro = f"AND F.Fi_Comentario = '{comentario.replace(chr(39), chr(39)+chr(39))}'" if comentario else ""
-            
-            logging.info(f"Filtros: sucursal_filtro=[{sucursal_filtro}], comentario_filtro=[{comentario_filtro}]")
-            
-            # Asegurar formato de fecha correcto para SQL Server
-            # Formato: YYYY-MM-DD o YYYYMMDD
-            fecha_ref_clean = fecha_referencia.replace('T', ' ')[:10] if fecha_referencia else '2099-12-31'
-            
-            query_cortes = f"""
-            SELECT TOP 4 
-                F.Fi_Folio as folio,
-                CONVERT(varchar, F.Fi_Fecha, 120) as fecha,
-                A.Al_Descripcion as almacen,
-                ISNULL(F.Fi_Comentario, '') as comentario
-            FROM Fisico F
-            INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = F.Sc_Cve_Sucursal
-            WHERE A.Al_Cve_Almacen = '{almacen_id}'
-                {sucursal_filtro}
-                {comentario_filtro}
-                AND CONVERT(date, F.Fi_Fecha) <= CONVERT(date, '{fecha_ref_clean}')
-            GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion, F.Fi_Comentario
-            ORDER BY F.Fi_Fecha DESC
-            """
-            
-            logging.info(f"Query SQL para cortes (fecha_ref={fecha_ref_clean}): folios TOP 4...")
-        else:  # SoftRestaurant
-            # Asegurar formato de fecha correcto para SQL Server
-            fecha_ref_clean_sr = fecha_referencia.replace('T', ' ')[:10] if fecha_referencia else '2099-12-31'
-            
-            query_cortes = f"""
-            SELECT TOP 4 
-                INV.folio as folio,
-                CONVERT(varchar, INV.fecha, 120) as fecha,
-                A.nombre as almacen,
-                '' as comentario
-            FROM invfisico INV
-            INNER JOIN almacen A ON A.idalmacen = INV.idalmacen1
-            WHERE INV.idalmacen1 = '{almacen_id}'
-                AND CONVERT(date, INV.fecha) <= CONVERT(date, '{fecha_ref_clean_sr}')
-            GROUP BY INV.folio, INV.fecha, A.nombre
-            ORDER BY INV.fecha DESC
-            """
-        
-        cortes_result = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], query_cortes
+            sucursal_text = str(sucursal_id or '').strip()
+            comentario_text = str(comentario or '').strip()
+            if sucursal_text:
+                filters.append("(sucursal_id = %s OR sucursal = %s)")
+                params.extend([sucursal_text, sucursal_text])
+            if comentario_text:
+                filters.append("ISNULL(comentario, '') = %s")
+                params.append(comentario_text)
+
+        from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
+
+        conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=10)
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute(
+            f"""
+SELECT TOP 4
+    folio,
+    CONVERT(varchar, fecha, 120) AS fecha,
+    almacen,
+    ISNULL(comentario, '') AS comentario
+FROM (
+    SELECT
+        folio,
+        fecha,
+        almacen,
+        comentario,
+        ROW_NUMBER() OVER (
+            PARTITION BY server_id, sucursal_id, almacen_id, folio
+            ORDER BY CASE WHEN sync_status = 'ACTIVE' THEN 0 ELSE 1 END, sync_timestamp DESC
+        ) AS _rn
+    FROM dbo.Compras_Inventarios_Fisicos_Sync
+    WHERE {' AND '.join(filters)}
+) t
+WHERE t._rn = 1
+ORDER BY fecha DESC, folio DESC
+""",
+            tuple(params),
         )
-        
+        cortes_result = cursor.fetchall() or []
+
         if not cortes_result:
             logging.warning(f"No se encontraron inventarios para almacén {almacen_id}/{comentario}")
             return None
-        
+
         logging.info(f"Encontrados {len(cortes_result)} cortes para {almacen_id}/{comentario}: {[c['folio'] for c in cortes_result]}")
-        
+
         # 2. Buscar cada folio en el cache de diferencias
         productos_dict = {}
         cortes_con_cache = []
         cortes_sin_cache = []
-        
+
         for idx, corte in enumerate(cortes_result):
             folio_raw = corte['folio']
             # Convertir folio a string (puede venir como Decimal de SQL Server)
             folio = str(int(folio_raw)) if isinstance(folio_raw, (int, float)) or (hasattr(folio_raw, '__float__')) else str(folio_raw)
-            
+
             # Buscar en cache
             cache_key = {
-                "server_id": server['id'],
+                "server_id": server_id,
                 "folio": folio
             }
-            
+
             cached = _sql_get_inventario_diferencias_cache(cache_key)
-            
+
             if cached and cached.get('productos'):
                 cortes_con_cache.append(folio)
                 for prod in cached['productos']:
@@ -7358,12 +6131,12 @@ async def get_diferencias_from_cache(
                     productos_dict[codigo]['diferencias'][idx] = prod.get('diferencia_cantidad', 0)
             else:
                 cortes_sin_cache.append(folio)
-        
+
         logging.info(f"Cache HIT: {len(cortes_con_cache)}, Cache MISS: {len(cortes_sin_cache)}")
-        
+
         if cortes_sin_cache:
             logging.warning(f"Folios sin cache (genera el reporte normal primero): {cortes_sin_cache}")
-        
+
         # Aunque no haya productos, retornar el resultado con cortes_sin_cache
         # para que el endpoint pueda mostrar un mensaje descriptivo
         if not productos_dict:
@@ -7373,13 +6146,13 @@ async def get_diferencias_from_cache(
                 'productos': [],
                 'cortes_sin_cache': cortes_sin_cache
             }
-        
+
         # 3. Calcular totales y patrones
         for codigo, data in productos_dict.items():
             diferencias = data['diferencias']
             difs_validas = [d for d in diferencias if d is not None and d != 0]
             data['total_diferencia'] = round(sum(difs_validas), 2) if difs_validas else 0
-            
+
             # Detectar patrón
             if len(difs_validas) >= 2:
                 todos_negativos = all(d < 0 for d in difs_validas if d != 0)
@@ -7392,26 +6165,29 @@ async def get_diferencias_from_cache(
                     data['patron'] = ''
             else:
                 data['patron'] = ''
-        
+
         # 4. Filtrar productos sin diferencias
         productos_list = [p for p in productos_dict.values() if any(d is not None and d != 0 for d in p.get('diferencias', []))]
-        
+
         # Siempre retornar el resultado, incluso si productos está vacío
         # El endpoint debe manejar el caso de cortes_sin_cache
         # Convertir folios a string para evitar problemas con Decimal
         def folio_to_str(f):
             return str(int(f)) if isinstance(f, (int, float)) or hasattr(f, '__float__') else str(f)
-        
+
         return {
             'almacen_nombre': almacen_nombre,
             'cortes': [{'folio': folio_to_str(c['folio']), 'fecha': c['fecha'], 'comentario': c.get('comentario', '')} for c in cortes_result],
             'productos': productos_list,
             'cortes_sin_cache': [folio_to_str(f) for f in cortes_sin_cache]
         }
-        
+
     except Exception as e:
         logging.error(f"Error leyendo cache de diferencias: {str(e)}")
         return None
+    finally:
+        if conn:
+            conn.close()
 
 
 
@@ -7424,18 +6200,18 @@ def generate_excel_comparativo_inventarios(data: List[Dict], metadata: Dict) -> 
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.utils import get_column_letter
     from datetime import datetime
-    
+
     wb = Workbook()
     ws = wb.active
     ws.title = "Comparativo 4 Cortes"
-    
+
     if not data:
         ws.cell(row=1, column=1, value="No hay datos para mostrar")
         output = io.BytesIO()
         wb.save(output)
         output.seek(0)
         return output.getvalue()
-    
+
     # Estilos
     titulo_font = Font(size=14, bold=True, color="18181b")
     header_fill = PatternFill(start_color="18181b", end_color="18181b", fill_type="solid")
@@ -7446,22 +6222,22 @@ def generate_excel_comparativo_inventarios(data: List[Dict], metadata: Dict) -> 
     rojo_fill = PatternFill(start_color="ef4444", end_color="ef4444", fill_type="solid")
     amarillo_fill = PatternFill(start_color="fbbf24", end_color="fbbf24", fill_type="solid")
     gris_fill = PatternFill(start_color="e4e4e7", end_color="e4e4e7", fill_type="solid")
-    
+
     thin_border = Border(
         left=Side(style='thin', color='d4d4d8'),
         right=Side(style='thin', color='d4d4d8'),
         top=Side(style='thin', color='d4d4d8'),
         bottom=Side(style='thin', color='d4d4d8')
     )
-    
+
     row_num = 1
-    
+
     # Título
     ws.merge_cells(start_row=row_num, start_column=1, end_row=row_num, end_column=8)
     ws.cell(row=row_num, column=1, value="REPORTE COMPARATIVO DE AUDITORÍA - 4 ÚLTIMOS INVENTARIOS").font = titulo_font
     ws.cell(row=row_num, column=1).alignment = Alignment(horizontal="center")
     row_num += 2
-    
+
     # Metadatos
     info_data = [
         ("Servidor:", metadata.get('servidor_nombre', 'N/A')),
@@ -7470,14 +6246,14 @@ def generate_excel_comparativo_inventarios(data: List[Dict], metadata: Dict) -> 
         ("Comentario/Tipo:", metadata.get('comentario', 'N/A')),
         ("Fecha de Elaboración:", datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
     ]
-    
+
     for label, value in info_data:
         ws.cell(row=row_num, column=1, value=label).font = label_font
         ws.cell(row=row_num, column=2, value=value).font = value_font
         row_num += 1
-    
+
     row_num += 1
-    
+
     # Fechas de los cortes
     cortes = metadata.get('cortes', [])
     ws.cell(row=row_num, column=1, value="FECHAS DE CORTES:").font = label_font
@@ -7486,9 +6262,9 @@ def generate_excel_comparativo_inventarios(data: List[Dict], metadata: Dict) -> 
         ws.cell(row=row_num, column=1, value=f"Corte {i}:").font = label_font
         ws.cell(row=row_num, column=2, value=f"{corte.get('fecha', 'N/A')} (Folio: {corte.get('folio', 'N/A')})").font = value_font
         row_num += 1
-    
+
     row_num += 1
-    
+
     # Headers dinámicos
     headers = ['Código', 'Producto']
     for i, corte in enumerate(cortes, 1):
@@ -7496,7 +6272,7 @@ def generate_excel_comparativo_inventarios(data: List[Dict], metadata: Dict) -> 
         headers.append(f'Dif {fecha_corta}')
     headers.append('TOTAL DIF')
     headers.append('PATRÓN')
-    
+
     header_row = row_num
     for col_num, header in enumerate(headers, 1):
         cell = ws.cell(row=row_num, column=col_num, value=header)
@@ -7504,21 +6280,21 @@ def generate_excel_comparativo_inventarios(data: List[Dict], metadata: Dict) -> 
         cell.font = header_font
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         cell.border = thin_border
-    
+
     row_num += 1
-    
+
     # Datos ordenados por Total (de mayor faltante a mayor sobrante)
     data_sorted = sorted(data, key=lambda x: float(x.get('total_diferencia', 0) or 0))
-    
+
     for row_data in data_sorted:
         # Código
         cell = ws.cell(row=row_num, column=1, value=row_data.get('codigo', ''))
         cell.border = thin_border
-        
+
         # Producto
         cell = ws.cell(row=row_num, column=2, value=row_data.get('producto', ''))
         cell.border = thin_border
-        
+
         # Diferencias por corte
         diferencias = row_data.get('diferencias', [])
         for i, dif in enumerate(diferencias):
@@ -7526,7 +6302,7 @@ def generate_excel_comparativo_inventarios(data: List[Dict], metadata: Dict) -> 
             cell = ws.cell(row=row_num, column=col, value=dif if dif is not None else '-')
             cell.border = thin_border
             cell.alignment = Alignment(horizontal="right")
-            
+
             if dif is not None:
                 try:
                     num_val = float(dif)
@@ -7538,14 +6314,14 @@ def generate_excel_comparativo_inventarios(data: List[Dict], metadata: Dict) -> 
                         cell.font = Font(bold=True, color="FFFFFF")
                 except (ValueError, TypeError):
                     pass
-        
+
         # Rellenar columnas faltantes si hay menos de 4 cortes
         for i in range(len(diferencias), 4):
             col = 3 + i
             cell = ws.cell(row=row_num, column=col, value='-')
             cell.border = thin_border
             cell.fill = gris_fill
-        
+
         # Total
         total = row_data.get('total_diferencia', 0)
         col_total = 3 + len(cortes)
@@ -7553,7 +6329,7 @@ def generate_excel_comparativo_inventarios(data: List[Dict], metadata: Dict) -> 
         cell.border = thin_border
         cell.alignment = Alignment(horizontal="right")
         cell.font = Font(bold=True)
-        
+
         if total is not None:
             try:
                 num_val = float(total)
@@ -7565,7 +6341,7 @@ def generate_excel_comparativo_inventarios(data: List[Dict], metadata: Dict) -> 
                     cell.font = Font(bold=True, color="FFFFFF")
             except (ValueError, TypeError):
                 pass
-        
+
         # Patrón (si hay faltante constante)
         patron = row_data.get('patron', '')
         col_patron = col_total + 1
@@ -7574,22 +6350,22 @@ def generate_excel_comparativo_inventarios(data: List[Dict], metadata: Dict) -> 
         if 'CONSTANTE' in patron.upper():
             cell.fill = amarillo_fill
             cell.font = Font(bold=True)
-        
+
         row_num += 1
-    
+
     # Autofiltro
     last_col = get_column_letter(len(headers))
     ws.auto_filter.ref = f"A{header_row}:{last_col}{row_num - 1}"
-    
+
     # Ajustar anchos
     ws.column_dimensions['A'].width = 15
     ws.column_dimensions['B'].width = 40
     for i in range(3, len(headers) + 1):
         ws.column_dimensions[get_column_letter(i)].width = 15
-    
+
     # Congelar encabezado
     ws.freeze_panes = f"A{header_row + 1}"
-    
+
     output = io.BytesIO()
     wb.save(output)
     output.seek(0)
@@ -7600,41 +6376,46 @@ def generate_excel_comparativo_inventarios(data: List[Dict], metadata: Dict) -> 
 async def export_comparativo_inventarios(request: ComparativoInventariosRequest, current_user: Dict = Depends(get_current_user)):
     """
     Genera un Excel comparativo con las diferencias de los últimos 4 cortes de inventario.
-    Usa cache en MongoDB para evitar recalcular.
+    Usa cache SQL canónico para evitar recalcular.
     Soporta múltiples almacenes (multi-selección).
     FASE 8: Aplica validación RBAC de servidor y almacenes.
-    
+
     FASE P1.4-E3 (Dic 2025): Migrado de MongoDB db.servers a server_registry.
     FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
     NO FUENTE: MongoDB db.servers
     """
-    from core.server_registry import get_server_connection_info_with_secrets
-    
+    from core.corporate_filters.request_resolver import canonical_server_id
+    from core.server_registry import get_server_connection_info
+
+    server_id = str(canonical_server_id(request.server_id) or '').strip()
+    if not server_id:
+        raise HTTPException(status_code=400, detail="server_id es requerido")
+
     # FASE 8: Validar acceso y obtener contexto
     context = await resolve_user_access_context(current_user)
-    
-    if not has_server_access(context, request.server_id):
-        logging.warning(f"[RBAC-EXPORT-INV] {current_user.get('email')} sin acceso a servidor {request.server_id}")
+
+    if not has_server_access(context, server_id):
+        logging.warning(f"[RBAC-EXPORT-INV] {current_user.get('email')} sin acceso a servidor {server_id}")
         raise HTTPException(status_code=403, detail="No tiene acceso a este servidor")
-    
-    # FASE P1.4-E3: Obtener servidor desde EDARSAHUB SQL via server_registry
-    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": request.server_id, "active": True}))
-    server = decrypt_server_secrets(get_server_connection_info_with_secrets(request.server_id))
+
+    # FASE P1.4-E3: Obtener metadatos desde EDARSAHUB SQL via server_registry sin secretos.
+    server = await get_server_connection_info(server_id, db=db)
     if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+    server = {**server, "id": server_id}
+
     # FASE 8: Obtener almacenes permitidos
-    almacenes_permitidos = get_almacenes_permitidos(context, request.server_id)
-    
+    almacenes_permitidos = get_almacenes_permitidos(context, server_id)
+
     logging.info(
         f"[RBAC-EXPORT-INV] Usuario={current_user.get('email')}, "
-        f"Server={request.server_id}, AlmacenesPermitidos={almacenes_permitidos or 'TODOS'}"
+        f"Server={server_id}, AlmacenesPermitidos={almacenes_permitidos or 'TODOS'}"
     )
-    
+
     try:
         # Construir lista de almacenes a procesar
         almacenes_a_procesar = []
-        
+
         # Soportar nuevo formato (lista de almacenes) y formato anterior (single almacén)
         if request.almacenes and len(request.almacenes) > 0:
             almacenes_a_procesar = request.almacenes
@@ -7645,10 +6426,10 @@ async def export_comparativo_inventarios(request: ComparativoInventariosRequest,
                 nombre=request.almacen_nombre or '',
                 comentario=request.comentario
             )]
-        
+
         if not almacenes_a_procesar:
             raise HTTPException(status_code=400, detail="Debe seleccionar al menos un almacén")
-        
+
         # FASE 8: Validar que todos los almacenes solicitados estén en el alcance
         if almacenes_permitidos:
             for almacen in almacenes_a_procesar:
@@ -7658,16 +6439,16 @@ async def export_comparativo_inventarios(request: ComparativoInventariosRequest,
                         f"Almacén fuera de alcance: {almacen.id}"
                     )
                     raise HTTPException(
-                        status_code=403, 
+                        status_code=403,
                         detail=f"No tiene acceso al almacén {almacen.nombre or almacen.id}"
                     )
-        
+
         # Procesar cada almacén usando cache
         all_productos = []
         all_cortes = []
         almacenes_procesados = []
         folios_sin_cache = []
-        
+
         for almacen in almacenes_a_procesar:
             cache_result = await get_diferencias_from_cache(
                 server=server,
@@ -7677,15 +6458,15 @@ async def export_comparativo_inventarios(request: ComparativoInventariosRequest,
                 comentario=almacen.comentario,
                 fecha_referencia=request.fecha_referencia
             )
-            
+
             if cache_result:
                 # Verificar si hay folios sin cache
                 if cache_result.get('cortes_sin_cache'):
                     folios_sin_cache.extend(cache_result.get('cortes_sin_cache', []))
-                
+
                 # Agregar prefijo de almacén/comentario a los productos si hay múltiples
                 productos = cache_result.get('productos', [])
-                
+
                 # Solo procesar si hay productos
                 if productos:
                     if len(almacenes_a_procesar) > 1:
@@ -7694,30 +6475,30 @@ async def export_comparativo_inventarios(request: ComparativoInventariosRequest,
                             prefijo += f" ({almacen.comentario})"
                         for prod in productos:
                             prod['almacen_comentario'] = prefijo
-                    
+
                     all_productos.extend(productos)
-                
+
                 # Guardar info de cortes (solo del primer almacén para simplificar)
                 if not all_cortes:
                     all_cortes = cache_result.get('cortes', [])
-                
+
                 if productos:
                     almacenes_procesados.append({
                         'nombre': almacen.nombre,
                         'comentario': almacen.comentario or '',
                         'productos_count': len(productos)
                     })
-        
+
         if not all_productos:
             # Mensaje más descriptivo si faltan reportes en cache
             logging.info(f"all_productos vacío. folios_sin_cache: {folios_sin_cache}")
             if folios_sin_cache:
                 raise HTTPException(
-                    status_code=404, 
+                    status_code=404,
                     detail=f"No hay datos en cache. Primero genera el reporte normal 'Generar Reporte' para los siguientes folios: {', '.join(folios_sin_cache[:4])}"
                 )
             raise HTTPException(status_code=404, detail="No se encontraron diferencias de inventario para los almacenes seleccionados")
-        
+
         # Preparar metadata para el Excel
         if len(almacenes_procesados) == 1:
             almacen_info = almacenes_procesados[0]['nombre']
@@ -7725,7 +6506,7 @@ async def export_comparativo_inventarios(request: ComparativoInventariosRequest,
         else:
             almacen_info = f"{len(almacenes_procesados)} almacenes"
             comentario_info = ', '.join([f"{a['nombre']}({a['comentario']})" if a['comentario'] else a['nombre'] for a in almacenes_procesados])
-        
+
         metadata = {
             'servidor_nombre': server.get('name', 'N/A'),
             'sucursal_nombre': request.sucursal_nombre or 'N/A',
@@ -7734,10 +6515,10 @@ async def export_comparativo_inventarios(request: ComparativoInventariosRequest,
             'cortes': all_cortes,
             'desde_cache': True
         }
-        
+
         # Generar Excel
         excel_bytes = generate_excel_comparativo_inventarios(all_productos, metadata)
-        
+
         # Nombre del archivo
         if len(almacenes_procesados) == 1:
             nombre_archivo = almacenes_procesados[0]['nombre']
@@ -7745,15 +6526,15 @@ async def export_comparativo_inventarios(request: ComparativoInventariosRequest,
                 nombre_archivo += f"_{almacenes_procesados[0]['comentario']}"
         else:
             nombre_archivo = f"{len(almacenes_procesados)}_almacenes"
-        
+
         filename = f"comparativo_inventarios_{nombre_archivo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-        
+
         return StreamingResponse(
             io.BytesIO(excel_bytes),
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -7763,14 +6544,14 @@ async def export_comparativo_inventarios(request: ComparativoInventariosRequest,
 @api_router.post("/reports/email")
 async def email_report(request: EmailReportRequest, background_tasks: BackgroundTasks, current_user: Dict = Depends(get_current_user)):
     report_data = request.report_data.get('data', [])
-    
+
     if request.format_type == 'excel':
         attachment_data = generate_excel(report_data)
         filename = 'reporte_inventario.xlsx'
     else:
         attachment_data = generate_pdf(report_data)
         filename = 'reporte_inventario.pdf'
-    
+
     body = f"""
     <html>
         <body>
@@ -7780,7 +6561,7 @@ async def email_report(request: EmailReportRequest, background_tasks: Background
         </body>
     </html>
     """
-    
+
     background_tasks.add_task(
         send_email_with_attachment,
         request.recipient_emails,
@@ -7789,7 +6570,7 @@ async def email_report(request: EmailReportRequest, background_tasks: Background
         attachment_data,
         filename
     )
-    
+
     return {"message": "Reporte enviado por correo"}
 
 # ============= ALERTS =============
@@ -7799,9 +6580,9 @@ async def create_alert(alert_data: AlertCreate, current_user: Dict = Depends(get
     alert = Alert(**alert_data.model_dump())
     doc = alert.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
-    
+
     _sql_create_alert(doc)
-    
+
     return alert.model_dump()
 
 @api_router.get("/alerts", response_model=List[Alert])
@@ -7827,7 +6608,7 @@ async def get_catalogo_consultas(system_type: str = None, current_user: Dict = D
     Puede filtrar por tipo de sistema (MPRO o SoftRestaurant).
     """
     result = {}
-    
+
     if system_type is None or is_mpro_system(system_type):
         result["MPRO"] = {
             nombre: {
@@ -7837,7 +6618,7 @@ async def get_catalogo_consultas(system_type: str = None, current_user: Dict = D
             }
             for nombre, consulta in CONSULTAS_MPRO.items()
         }
-    
+
     if system_type is None or is_softrestaurant_system(system_type):
         result["SoftRestaurant"] = {
             nombre: {
@@ -7847,7 +6628,7 @@ async def get_catalogo_consultas(system_type: str = None, current_user: Dict = D
             }
             for nombre, consulta in CONSULTAS_SOFTRESTAURANT.items()
         }
-    
+
     return result
 
 @api_router.get("/catalogo/estructura-tablas")
@@ -7857,45 +6638,45 @@ async def get_estructura_tablas(system_type: str = None, current_user: Dict = De
     Útil para entender la base de datos y crear consultas personalizadas.
     """
     result = {}
-    
+
     if system_type is None or is_mpro_system(system_type):
         result["MPRO"] = ESTRUCTURA_TABLAS_MPRO
-    
+
     if system_type is None or is_softrestaurant_system(system_type):
         result["SoftRestaurant"] = ESTRUCTURA_TABLAS_SOFTRESTAURANT
-    
+
     return result
 
 @api_router.post("/catalogo/ejecutar-consulta")
 async def ejecutar_consulta_catalogo(params: Dict, current_user: Dict = Depends(get_current_user)):
     """
     Ejecuta una consulta del catálogo en un servidor específico.
-    
+
     Parámetros:
     - server_id: ID del servidor donde ejecutar
     - consulta: Nombre de la consulta del catálogo (ej: "ventas", "productos", "proveedores")
     - parametros: Diccionario con los parámetros requeridos por la consulta
-    
+
     CONEXIONES-SQL-EDARSAHUB-01 / SUBFASE C / LOTE 3:
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     para usar EDARSAHUB SQL como fuente primaria.
     """
     from core.server_registry import get_server_connection_info
-    
+
     server_id = params.get('server_id')
     consulta_nombre = params.get('consulta')
     parametros = params.get('parametros', {})
-    
+
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
     # AHORA: Usar registry que prioriza EDARSAHUB SQL
     server = await get_server_connection_info(server_id, db=db)
-    
+
     if not server:
         logging.warning(f"[EJECUTAR_CONSULTA_CATALOGO] Servidor no encontrado via registry. ID={server_id}")
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     logging.debug(f"[EJECUTAR_CONSULTA_CATALOGO] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
-    
+
     # Obtener consulta del catálogo según el tipo de sistema
     if is_mpro_system(server.get('system_type')):
         consultas = CONSULTAS_MPRO
@@ -7903,18 +6684,18 @@ async def ejecutar_consulta_catalogo(params: Dict, current_user: Dict = Depends(
         consultas = CONSULTAS_SOFTRESTAURANT
     else:
         raise HTTPException(status_code=400, detail="Tipo de sistema no soportado")
-    
+
     if consulta_nombre not in consultas:
         raise HTTPException(status_code=404, detail=f"Consulta '{consulta_nombre}' no encontrada en el catálogo")
-    
+
     consulta = consultas[consulta_nombre]
-    
+
     try:
         # Formatear la consulta con los parámetros
         sql = consulta["sql"].format(**parametros)
-        
+
         logging.info(f"Ejecutando consulta: {consulta_nombre}")
-        
+
         results = execute_sql_query(
             server['host'],
             server['port'],
@@ -7923,14 +6704,14 @@ async def ejecutar_consulta_catalogo(params: Dict, current_user: Dict = Depends(
             server['password'],
             sql
         )
-        
+
         return {
             "consulta": consulta_nombre,
             "descripcion": consulta["descripcion"],
             "count": len(results),
             "data": results
         }
-        
+
     except KeyError as e:
         raise HTTPException(status_code=400, detail=f"Parámetro requerido faltante: {str(e)}")
     except Exception as e:
@@ -7942,12 +6723,12 @@ async def ejecutar_consulta_personalizada(params: Dict, current_user: Dict = Dep
     """
     Ejecuta una consulta SQL personalizada en un servidor específico.
     Solo para usuarios administradores.
-    
+
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     CONEXIONES-SQL-EDARSAHUB-01 / LOTE 5
-    
+
     SEGURIDAD: Mantiene validación de rol Admin/Administrador.
-    
+
     Parámetros:
     - server_id: ID del servidor donde ejecutar
     - sql: Consulta SQL a ejecutar
@@ -7955,23 +6736,23 @@ async def ejecutar_consulta_personalizada(params: Dict, current_user: Dict = Dep
     user_role = current_user.get('role', '').lower()
     if user_role not in ['admin', 'administrador']:
         raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar consultas personalizadas")
-    
+
     server_id = params.get('server_id')
     sql = params.get('sql')
-    
+
     if not sql:
         raise HTTPException(status_code=400, detail="SQL es requerido")
-    
+
     # Obtener servidor usando registry
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
     from core.server_registry import get_server_connection_info
     conn_info = await get_server_connection_info(server_id, db=db)
     if not conn_info:
         raise HTTPException(status_code=404, detail="Servidor no encontrado o sin acceso")
-    
+
     try:
         logging.info(f"Ejecutando consulta personalizada")
-        
+
         results = execute_sql_query(
             conn_info['host'],
             conn_info['port'],
@@ -7980,12 +6761,12 @@ async def ejecutar_consulta_personalizada(params: Dict, current_user: Dict = Dep
             conn_info['password'],
             sql
         )
-        
+
         return {
             "count": len(results),
             "data": results
         }
-        
+
     except Exception as e:
         logging.error(f"Error ejecutando consulta personalizada: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
@@ -8004,10 +6785,10 @@ async def debug_test_connection(params: Dict, current_user: Dict = Depends(get_c
     username = params.get('username')
     password = params.get('password')
     query = params.get('query', 'SELECT 1 AS test')
-    
+
     if not all([host, database, username, password]):
         raise HTTPException(status_code=400, detail="host, database, username y password son requeridos")
-    
+
     hostname, parsed_port, instance = parse_sql_server_host(host, port)
     parsed_info = {
         "hostname": hostname,
@@ -8015,7 +6796,7 @@ async def debug_test_connection(params: Dict, current_user: Dict = Depends(get_c
         "instance": instance,
         "original_host": host
     }
-    
+
     try:
         logging.info(f"DEBUG: Probando conexión a {host}")
         results = execute_sql_query(host, port, database, username, password, query)
@@ -8044,16 +6825,16 @@ async def debug_tipos_movimiento_live(server_id: str, current_user: Dict = Depen
     Para diagnóstico de enriquecimiento de datos en EDARSAHUB.
     """
     from core.server_registry import get_server_connection_info
-    
+
     server = await get_server_connection_info(server_id, db=db)
-    
+
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     try:
         if is_mpro_system(server.get('system_type')):
             query = """
-                SELECT 
+                SELECT
                     Tm_Cve_Tipo_Movimiento as codigo,
                     Tm_Descripcion as descripcion,
                     Tm_Tipo as tipo
@@ -8063,7 +6844,7 @@ async def debug_tipos_movimiento_live(server_id: str, current_user: Dict = Depen
             """
         elif is_softrestaurant_system(server.get('system_type')):
             query = """
-                SELECT 
+                SELECT
                     idconcepto as codigo,
                     descripcion,
                     CASE WHEN tipo = 1 THEN 'EN' ELSE 'SA' END as tipo
@@ -8072,7 +6853,7 @@ async def debug_tipos_movimiento_live(server_id: str, current_user: Dict = Depen
             """
         else:
             return {"error": "Sistema no soportado", "system_type": server.get('system_type')}
-        
+
         results = execute_sql_query(
             server['host'],
             server['port'],
@@ -8081,7 +6862,7 @@ async def debug_tipos_movimiento_live(server_id: str, current_user: Dict = Depen
             server['password'],
             query
         )
-        
+
         return {
             "server_name": server.get('name'),
             "system_type": server.get('system_type'),
@@ -8100,7 +6881,7 @@ async def debug_tipos_movimiento_live(server_id: str, current_user: Dict = Depen
 async def debug_test_queries(params: Dict, current_user: Dict = Depends(get_current_user)):
     """
     Endpoint de depuración simplificado para probar consultas de un producto.
-    
+
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     CONEXIONES-SQL-EDARSAHUB-01 / LOTE 4
     """
@@ -8110,20 +6891,20 @@ async def debug_test_queries(params: Dict, current_user: Dict = Depends(get_curr
     fecha_ini = params.get('fecha_ini')
     fecha_fin = params.get('fecha_fin')
     producto_codigo = params.get('producto_codigo', '0000000546')
-    
+
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}, {"_id": 0}))
     from core.server_registry import get_server_connection_info
     conn_info = await get_server_connection_info(server_id, db=db)
     if not conn_info:
         raise HTTPException(status_code=404, detail="Servidor no encontrado o sin acceso")
-    
+
     results = {"parametros": params}
-    
+
     try:
         # FASE 1C: Sanitizar entradas LIKE
         sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
         almacen_safe = _escape_like_pattern(almacen) if almacen else ""
-        
+
         # Obtener código del almacén si se proporcionó nombre
         almacen_codigo = None
         if almacen:
@@ -8135,12 +6916,12 @@ async def debug_test_queries(params: Dict, current_user: Dict = Depends(get_curr
             if almacen_result:
                 almacen_codigo = almacen_result[0]['codigo']
                 results["almacen_codigo"] = almacen_codigo
-        
+
         # Consulta de movimientos CON filtro de almacén si se proporciona
         filtro_almacen = f"AND E.Al_Cve_Almacen = '{almacen_codigo}'" if almacen_codigo else ""
-        
+
         query_mov_simple = f"""
-SELECT 
+SELECT
     COUNT(*) as Total_Registros,
     SUM(E.Mv_Cantidad_Control_1) as Movimientos_Neto
 FROM Movimiento E
@@ -8158,14 +6939,14 @@ WHERE S.Sc_Descripcion LIKE '%{sucursal_safe}%'
             conn_info['username'], conn_info['password'], query_mov_simple
         )
         results["movimientos_simple"] = mov_result
-        
+
         # Consulta de ventas combinada - Exacta a la original de Power Query
         # IMPORTANTE: La consulta original NO filtra por categorías/departamentos específicamente
         # sino que suma todas las ventas donde el producto aparece (ya sea como kit o directo)
         query_ventas = f"""
 SELECT SUM(cantidad) as Total_Ventas FROM (
     -- Ventas de productos KIT: cuando el producto es componente de otro
-    SELECT 
+    SELECT
         SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) as cantidad
     FROM venta
     INNER JOIN producto_kit ON Producto_Kit.Pr_Cve_Producto = venta.Pr_Cve_Producto
@@ -8174,11 +6955,11 @@ SELECT SUM(cantidad) as Total_Ventas FROM (
         AND venta.Es_Cve_Estado <> 'CA'
         AND venta.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
         AND Producto_Kit.Pk_Producto = '{producto_codigo}'
-    
+
     UNION ALL
-    
+
     -- Ventas DIRECTAS: cuando el producto se vende directamente
-    SELECT 
+    SELECT
         SUM(venta.Vn_Cantidad_Control_1) as cantidad
     FROM venta
     INNER JOIN sucursal ON sucursal.Sc_Cve_Sucursal = venta.Sc_Cve_Sucursal
@@ -8193,7 +6974,7 @@ SELECT SUM(cantidad) as Total_Ventas FROM (
             conn_info['username'], conn_info['password'], query_ventas
         )
         results["ventas"] = ventas_result
-        
+
         # Detalle de movimientos CON ALMACÉN
         query_detalle = f"""
 SELECT TOP 10
@@ -8220,11 +7001,11 @@ ORDER BY E.Mv_Fecha DESC
             conn_info['username'], conn_info['password'], query_detalle
         )
         results["detalle_movimientos"] = detalle
-        
+
         # Detalle de ventas Kit
         query_detalle_kit = f"""
-SELECT TOP 10 V.Vn_Folio, V.Vn_Fecha, V.Pr_Cve_Producto as Producto_Vendido, 
-    PK.Pk_Producto as Producto_Componente, V.Vn_Cantidad_1 as Qty_Venta, 
+SELECT TOP 10 V.Vn_Folio, V.Vn_Fecha, V.Pr_Cve_Producto as Producto_Vendido,
+    PK.Pk_Producto as Producto_Componente, V.Vn_Cantidad_1 as Qty_Venta,
     PK.Pk_Cantidad as Qty_Kit, V.Vn_Cantidad_1 * PK.Pk_Cantidad as Cantidad_Total
 FROM venta V
 INNER JOIN producto_kit PK ON PK.Pr_Cve_Producto = V.Pr_Cve_Producto
@@ -8240,10 +7021,10 @@ ORDER BY V.Vn_Fecha DESC
             conn_info['username'], conn_info['password'], query_detalle_kit
         )
         results["detalle_ventas_kit"] = detalle_kit
-        
+
         # Detalle de ventas directas
         query_detalle_directas = f"""
-SELECT TOP 10 V.Vn_Folio, V.Vn_Fecha, V.Pr_Cve_Producto, 
+SELECT TOP 10 V.Vn_Folio, V.Vn_Fecha, V.Pr_Cve_Producto,
     V.Vn_Cantidad_1, V.Vn_Cantidad_Control_1
 FROM venta V
 INNER JOIN sucursal S ON S.Sc_Cve_Sucursal = V.Sc_Cve_Sucursal
@@ -8258,9 +7039,9 @@ ORDER BY V.Vn_Fecha DESC
             conn_info['username'], conn_info['password'], query_detalle_directas
         )
         results["detalle_ventas_directas"] = detalle_directas
-        
+
         return results
-        
+
     except Exception as e:
         logging.error(f"Error en debug: {str(e)}")
         results["error"] = str(e)
@@ -8280,15 +7061,15 @@ def get_dashboard_inventory_query_softrestaurant(departamentos=None, categorias=
     if departamentos and len(departamentos) > 0:
         almacenes_sql = ",".join([f"'{d}'" for d in departamentos])
         filtro_almacen = f"AND INV.idalmacen1 IN ({almacenes_sql})"
-    
+
     filtro_categoria = ""
     if categorias and len(categorias) > 0:
         categorias_sql = ",".join([f"'{c}'" for c in categorias])
         filtro_categoria = f"AND COALESCE(IP.idgruposi, I.idgruposi) IN ({categorias_sql})"
-    
+
     return f"""
     WITH InventariosMes AS (
-        SELECT 
+        SELECT
             idalmacen1 as idalmacen,
             MIN(folio) as primer_folio,
             MAX(folio) as ultimo_folio,
@@ -8301,7 +7082,7 @@ def get_dashboard_inventory_query_softrestaurant(departamentos=None, categorias=
             {filtro_almacen.replace('INV.', '')}
         GROUP BY idalmacen1
     )
-    SELECT 
+    SELECT
         INV.folio,
         INV.fecha,
         INV.idalmacen1 as idalmacen,
@@ -8314,14 +7095,14 @@ def get_dashboard_inventory_query_softrestaurant(departamentos=None, categorias=
         DET.fisicoalmacen1 as existencia_fisica,
         DET.diferenciaalmacen1 as diferencia,
         (DET.diferenciaalmacen1 * DET.costo) as costo_diferencia,
-        CASE 
+        CASE
             WHEN INV.folio = IM.primer_folio THEN 'INICIAL'
             WHEN INV.folio = IM.ultimo_folio THEN 'FINAL'
             ELSE 'INTERMEDIO'
         END as tipo_inventario
     FROM invfisico INV
     INNER JOIN invfisicomovtos DET ON DET.folio = INV.folio
-    INNER JOIN InventariosMes IM ON IM.idalmacen = INV.idalmacen1 
+    INNER JOIN InventariosMes IM ON IM.idalmacen = INV.idalmacen1
         AND (INV.folio = IM.primer_folio OR INV.folio = IM.ultimo_folio)
     LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = DET.idpresentacion
     LEFT JOIN insumos I ON I.idinsumo = RTRIM(DET.idinsumo)
@@ -8346,16 +7127,16 @@ def get_dashboard_inventory_query_mpro(departamentos=None, categorias=None):
     if departamentos and len(departamentos) > 0:
         dept_sql = ",".join([f"'{d}'" for d in departamentos])
         filtro_departamento = f"AND P.Dp_Cve_Departamento IN ({dept_sql})"
-    
+
     filtro_categoria = ""
     if categorias and len(categorias) > 0:
         cat_sql = ",".join([f"'{c}'" for c in categorias])
         filtro_categoria = f"AND P.Ct_Cve_Categoria IN ({cat_sql})"
-    
+
     return f"""
     WITH InventarioMesAnterior AS (
         -- Último inventario del mes anterior (INICIAL)
-        SELECT 
+        SELECT
             Al_Cve_Almacen as almacen,
             MAX(Fi_Folio) as folio_inicial
         FROM Fisico
@@ -8366,7 +7147,7 @@ def get_dashboard_inventory_query_mpro(departamentos=None, categorias=None):
     ),
     InventarioMesActual AS (
         -- Último inventario del mes actual (FINAL)
-        SELECT 
+        SELECT
             Al_Cve_Almacen as almacen,
             MAX(Fi_Folio) as folio_final
         FROM Fisico
@@ -8388,7 +7169,7 @@ def get_dashboard_inventory_query_mpro(departamentos=None, categorias=None):
         F.Fi_Cantidad_Control_1 as existencia_fisica,
         (F.Fi_Cantidad_Control_1 - F.Fi_Cantidad_1) as diferencia,
         ((F.Fi_Cantidad_Control_1 - F.Fi_Cantidad_1) * F.Fi_Costo) as costo_diferencia,
-        CASE 
+        CASE
             WHEN F.Fi_Folio = IMA.folio_inicial THEN 'INICIAL'
             WHEN F.Fi_Folio = IMC.folio_final THEN 'FINAL'
             ELSE 'INTERMEDIO'
@@ -8417,7 +7198,7 @@ async def get_dashboard_inventory_summary(
     Obtiene resumen de inventarios para el dashboard.
     Incluye datos para gráficos de diferencias, top faltantes, etc.
     Aplica los filtros configurados en el servidor (departamentos, categorías).
-    
+
     FASE P1.4-E2 (Dic 2025): Migrado de MongoDB db.servers a server_registry.
     FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
     NO FUENTE: MongoDB db.servers
@@ -8442,7 +7223,7 @@ async def get_dashboard_inventory_summary(
         # ANTES: query = {"active": True, "queries_configured": True}
         # ANTES: if server_id: query["id"] = server_id
         # ANTES: server = decrypt_server_secrets(await db.servers.find_one(query))
-        
+
         server = None
         if resolved_server_id:
             # Servidor específico (resuelto desde la unidad canónica)
@@ -8456,14 +7237,14 @@ async def get_dashboard_inventory_summary(
                 if s.get('active', True) and s.get('queries_configured', False):
                     server = decrypt_server_secrets(s)
                     break
-        
+
         if not server:
             return {
                 "success": False,
                 "message": "No hay servidores configurados con consultas SQL",
                 "data": {}
             }
-        
+
         # ====================================================================
         # PROTECCIÓN NO-LIVE / HOST COMPARTIDO (crítico):
         # El POS de MPRO comparte IP con EDARSAHUB (54.39.104.176). Un intento
@@ -8483,14 +7264,14 @@ async def get_dashboard_inventory_summary(
                 "message": "Métricas en vivo no disponibles para esta unidad (regla NO-LIVE). Usa la pestaña Análisis para ver sus inventarios.",
                 "data": {}
             }
-        
+
         # Obtener filtros configurados
         departamentos = server.get('departamentos', [])
         categorias = server.get('categorias', [])
-        
+
         logging.info(f"Dashboard - Servidor: {server['name']}, Sistema: {server['system_type']}")
         logging.info(f"Filtros - Departamentos: {departamentos}, Categorías: {categorias}")
-        
+
         # Ejecutar consulta según el tipo de sistema con filtros
         if is_softrestaurant_system(server.get('system_type')):
             query_sql = get_dashboard_inventory_query_softrestaurant(departamentos, categorias)
@@ -8502,7 +7283,7 @@ async def get_dashboard_inventory_summary(
                 "message": f"Dashboard no implementado para {server['system_type']}",
                 "data": {}
             }
-        
+
         try:
             results = execute_sql_query(
                 server['host'],
@@ -8528,7 +7309,7 @@ async def get_dashboard_inventory_summary(
                     "kpis": {}
                 }
             }
-        
+
         if not results:
             return {
                 "success": True,
@@ -8543,40 +7324,40 @@ async def get_dashboard_inventory_summary(
                     "kpis": {}
                 }
             }
-        
+
         import pandas as pd
         from decimal import Decimal
-        
+
         # Convertir a DataFrame para análisis
         df = pd.DataFrame(results)
-        
+
         # Convertir Decimal a float
         numeric_cols = ['costo_unitario', 'existencia_teorica', 'existencia_fisica', 'diferencia', 'costo_diferencia']
         for col in numeric_cols:
             if col in df.columns:
                 df[col] = df[col].apply(lambda x: float(x) if isinstance(x, Decimal) else x)
-        
+
         # Separar inventarios inicial y final
         df_inicial = df[df['tipo_inventario'] == 'INICIAL'].copy()
         df_final = df[df['tipo_inventario'] == 'FINAL'].copy()
-        
+
         # KPIs generales (basados en inventario final)
         total_diferencia_costo = df_final['costo_diferencia'].sum() if 'costo_diferencia' in df_final.columns else 0
         total_items_con_diferencia = len(df_final[df_final['diferencia'] != 0])
         total_items = len(df_final)
         precision = ((total_items - total_items_con_diferencia) / total_items * 100) if total_items > 0 else 0
-        
+
         # Top 10 faltantes por costo (diferencia negativa = faltante)
         df_faltantes = df_final[df_final['diferencia'] < 0].copy()
         top_faltantes_costo = df_faltantes.nsmallest(10, 'costo_diferencia')[
             ['codigo', 'descripcion', 'almacen_nombre', 'diferencia', 'costo_unitario', 'costo_diferencia']
         ].to_dict('records')
-        
+
         # Top 10 faltantes por cantidad
         top_faltantes_cantidad = df_faltantes.nsmallest(10, 'diferencia')[
             ['codigo', 'descripcion', 'almacen_nombre', 'diferencia', 'costo_unitario', 'costo_diferencia']
         ].to_dict('records')
-        
+
         # Resumen por almacén
         resumen_almacen = df_final.groupby(['idalmacen', 'almacen_nombre']).agg({
             'diferencia': 'sum',
@@ -8585,7 +7366,7 @@ async def get_dashboard_inventory_summary(
         }).reset_index()
         resumen_almacen.columns = ['idalmacen', 'almacen', 'total_diferencia', 'total_costo_diferencia', 'total_items']
         resumen_almacen = resumen_almacen.to_dict('records')
-        
+
         # Resumen por grupo/categoría
         resumen_grupo = df_final.groupby('grupo').agg({
             'diferencia': 'sum',
@@ -8594,14 +7375,14 @@ async def get_dashboard_inventory_summary(
         }).reset_index()
         resumen_grupo.columns = ['grupo', 'total_diferencia', 'total_costo_diferencia', 'total_items']
         resumen_grupo = resumen_grupo.nsmallest(15, 'total_costo_diferencia').to_dict('records')
-        
+
         # Comparativo inicial vs final por almacén
         comparativo_almacen = []
         almacenes = df['idalmacen'].unique()
         for alm in almacenes:
             df_alm_ini = df_inicial[df_inicial['idalmacen'] == alm]
             df_alm_fin = df_final[df_final['idalmacen'] == alm]
-            
+
             if len(df_alm_ini) > 0 or len(df_alm_fin) > 0:
                 alm_nombre = df_alm_fin['almacen_nombre'].iloc[0] if len(df_alm_fin) > 0 else df_alm_ini['almacen_nombre'].iloc[0]
                 comparativo_almacen.append({
@@ -8614,10 +7395,10 @@ async def get_dashboard_inventory_summary(
                     'fecha_inicial': str(df_alm_ini['fecha'].iloc[0]) if len(df_alm_ini) > 0 else None,
                     'fecha_final': str(df_alm_fin['fecha'].iloc[0]) if len(df_alm_fin) > 0 else None
                 })
-        
+
         # Obtener lista de almacenes únicos
         almacenes_list = df[['idalmacen', 'almacen_nombre']].drop_duplicates().to_dict('records')
-        
+
         return {
             "success": True,
             "message": "Datos obtenidos correctamente",
@@ -8641,7 +7422,7 @@ async def get_dashboard_inventory_summary(
                 "comparativo_almacen": comparativo_almacen
             }
         }
-        
+
     except Exception as e:
         logging.error(f"Error en dashboard inventory summary: {str(e)}")
         return {
@@ -8655,14 +7436,14 @@ async def get_dashboard_inventory_summary(
 async def get_dashboard_servers(current_user: Dict = Depends(get_current_user)):
     """
     Obtiene lista de servidores configurados para el selector del dashboard.
-    
+
     Migrado de db.servers.find() a server_registry.list_servers()
     CONEXIONES-SQL-EDARSAHUB-01 / LOTE 5
     """
     # ANTES: servers = await db.servers.find({"active": True, "queries_configured": True}, {...}).to_list(100)
     from core.server_registry import list_servers
     all_servers = await list_servers(db=db, prefer_sql=True)
-    
+
     # Filtrar solo los activos y con queries configuradas
     servers = []
     for s in all_servers:
@@ -8674,7 +7455,7 @@ async def get_dashboard_servers(current_user: Dict = Depends(get_current_user)):
                 "visible_en_operaciones": s.get("visible_en_operaciones", True),
                 "config_origin": s.get("config_origin", "Unknown")
             })
-    
+
     return servers
 
 
@@ -8682,23 +7463,23 @@ async def get_dashboard_servers(current_user: Dict = Depends(get_current_user)):
 async def get_dashboard_metrics(current_user: Dict = Depends(get_current_user)):
     """
     Métricas básicas para el dashboard - mantenido por compatibilidad
-    
+
     FASE P1.4-E4 (Dic 2025): Parcialmente migrado a server_registry.
     SQL-FIRST: métricas desde registry y catálogos canónicos.
     """
     from core.server_registry import list_servers as registry_list_servers
-    
+
     # FASE P1.4-E4: Obtener contadores de servidores desde EDARSAHUB SQL
     # ANTES: total_servers = await db.servers.count_documents({"active": True})
     # ANTES: servers_configured = await db.servers.count_documents({"active": True, "queries_configured": True})
     all_servers = await registry_list_servers(db=db, filter_active=True, mask_secrets=True)
     total_servers = len(all_servers)
     servers_configured = len([s for s in all_servers if s.get('queries_configured', False)])
-    
+
     # SQL-FIRST: contadores desde catálogos canónicos
     total_users = _sql_count_active_users()
     total_alerts = _sql_count_active_alerts()
-    
+
     return {
         "total_servers": total_servers,
         "total_users": total_users,
@@ -8730,7 +7511,7 @@ class CalculoPedidoRequest(BaseModel):
 # ============= MÓDULO DE COMPRAS - ENDPOINTS =============
 #
 # FASE 4B DEL REFACTOR MODULAR (Diciembre 2025):
-# 
+#
 # ESTADO ACTUAL:
 # - La estructura modular está creada (schemas, repository, service)
 # - Los ENDPOINTS permanecen aquí por su complejidad (~2000 líneas de lógica)
@@ -8738,7 +7519,7 @@ class CalculoPedidoRequest(BaseModel):
 #
 # ENDPOINTS EN ESTE ARCHIVO:
 # - GET /compras/inventarios-fisicos/{server_id}
-# - GET /compras/pedidos-vigentes/{server_id}  
+# - GET /compras/pedidos-vigentes/{server_id}
 # - GET /compras/parametros/{server_id}
 # - POST /compras/parametros
 # - GET /compras/detalle-pedido/{server_id}/{folio}
@@ -8771,28 +7552,28 @@ class CalculoPedidoRequest(BaseModel):
 async def validate_server_access_by_empresa(server_id: str, credentials: HTTPAuthorizationCredentials) -> dict:
     """
     FASE 6-8: Valida acceso al servidor usando resolve_user_access_context().
-    
+
     Esta función reemplaza la lógica dispersa de validación por la función centralizada.
     NUNCA confía en parámetros del frontend.
-    
+
     CONEXIONES-SQL-EDARSAHUB-01 / SUBFASE C / LOTE 1:
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     para usar EDARSAHUB SQL como fuente primaria.
-    
+
     FASE 2-G FIX: Usar get_current_user que busca en SQL en lugar de db.users (MongoDB)
-    
+
     Returns:
         dict con usuario, servidor y contexto de acceso
-    
+
     Raises:
         HTTPException 403 si no tiene acceso
         HTTPException 404 si servidor no existe
     """
     from core.server_registry import get_server_connection_info
-    
+
     # FASE 2-G FIX: Usar get_current_user (SQL-only) en lugar de db.users (MongoDB)
     user = await get_current_user(credentials)
-    
+
     # CANONICAL-UNIDAD (2026-06-09): El identificador recibido puede ser una
     # unidad canónica (codigo o pk) — contrato nuevo — o un server_id del POS
     # (deprecated, compatibilidad). Se resuelve SIEMPRE al server_id real de
@@ -8814,20 +7595,20 @@ async def validate_server_access_by_empresa(server_id: str, credentials: HTTPAut
             server_id = _u.get("server_id")
     except Exception as _e:
         logging.debug(f"[CANONICAL-UNIDAD] resolución no aplicada: {_e}")
-    
+
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     # AHORA: Usar registry que prioriza EDARSAHUB SQL
     server = await get_server_connection_info(server_id, db=db)
-    
+
     if not server:
         logging.warning(f"[VALIDATE_SERVER_ACCESS] Servidor no encontrado via registry. ID={server_id}")
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     logging.debug(f"[VALIDATE_SERVER_ACCESS] Servidor obtenido via registry. Origin={server.get('config_origin', 'UNKNOWN')}")
-    
+
     # FASE 6-8: Validar acceso usando función centralizada
     context = await resolve_user_access_context(user)
-    
+
     if not has_server_access(context, server_id):
         logging.warning(
             f"[RBAC-DENEGADO] Usuario {user.get('email')} "
@@ -8835,11 +7616,544 @@ async def validate_server_access_by_empresa(server_id: str, credentials: HTTPAut
             f"Fuente: {context.fuente_acceso}, Servidores: {context.servers_ids}"
         )
         raise HTTPException(
-            status_code=403, 
+            status_code=403,
             detail="No tiene acceso a este servidor"
         )
-    
+
     return {"user": user, "server": server, "context": context}
+
+
+def _compras_list_values(value: Any) -> List[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        raw = value.split(',')
+    elif isinstance(value, (list, tuple, set)):
+        raw = value
+    else:
+        raw = [value]
+    return [str(v).strip() for v in raw if str(v or '').strip()]
+
+
+def _compras_int_values(value: Any, min_value: int, max_value: int) -> List[int]:
+    values = []
+    for item in _compras_list_values(value):
+        try:
+            parsed = int(item)
+        except (TypeError, ValueError):
+            continue
+        if min_value <= parsed <= max_value and parsed not in values:
+            values.append(parsed)
+    return values
+
+
+def _compras_period_where(column_name: str, meses: Any, anios: Any) -> tuple[str, List[Any]]:
+    month_values = _compras_int_values(meses, 1, 12)
+    year_values = _compras_int_values(anios, 2000, 2100)
+    filters = []
+    params: List[Any] = []
+    if year_values:
+        filters.append(f"YEAR({column_name}) IN ({','.join(['%s'] * len(year_values))})")
+        params.extend(year_values)
+    if month_values:
+        filters.append(f"MONTH({column_name}) IN ({','.join(['%s'] * len(month_values))})")
+        params.extend(month_values)
+    return (" AND ".join(filters) if filters else "1=1", params)
+
+
+def _compras_find_unidad(server_id: str, sucursal: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    from core.unidades_service import UnidadesService
+
+    sid = str(server_id or '').strip().lower()
+    suc = str(sucursal or '').strip().upper()
+    unidades = [
+        u for u in UnidadesService.get_all()
+        if str(u.get('server_id') or '').strip().lower() == sid
+    ]
+    if not unidades:
+        return None
+    if suc:
+        for unidad in unidades:
+            candidatos = {
+                str(unidad.get('sucursal_origen_id') or '').strip().upper(),
+                str(unidad.get('codigo') or '').strip().upper(),
+                str(unidad.get('unidad_negocio_codigo') or '').strip().upper(),
+                str(unidad.get('nombre') or '').strip().upper(),
+                str(unidad.get('unidad_negocio_nombre') or '').strip().upper(),
+                str(unidad.get('unidad_negocio_pk') or '').strip().upper(),
+            }
+            if suc in candidatos:
+                return unidad
+    if len(unidades) == 1:
+        return unidades[0]
+    return None
+
+
+async def _compras_resolve_scope(
+    server_id: str,
+    sucursal: Optional[str],
+    credentials: HTTPAuthorizationCredentials,
+) -> Dict[str, Any]:
+    access = await validate_server_access_by_empresa(server_id, credentials)
+    server = access["server"]
+    resolved_server_id = str(server.get('id') or server.get('server_id') or server_id)
+    unidad = _compras_find_unidad(resolved_server_id, sucursal)
+    if not unidad:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "COMPRAS_UNIDAD_CANONICA_NO_RESUELTA",
+                "message": "No se pudo resolver la unidad de negocio canónica para Compras.",
+                "server_id": resolved_server_id,
+                "sucursal": sucursal,
+            },
+        )
+
+    from core.inventarios.resolver_canonico import resolver_empresa_id, resolver_sucursal_id
+
+    unidad_codigo = unidad.get('codigo') or unidad.get('unidad_negocio_codigo')
+    empresa = resolver_empresa_id(unidad_codigo)
+    sucursal_resuelta = resolver_sucursal_id(
+        resolved_server_id,
+        unidad.get('sucursal_origen_id'),
+    )
+    if not empresa.resuelto or not sucursal_resuelta.resuelto:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "COMPRAS_CONTEXTO_CANONICO_INCOMPLETO",
+                "message": "Falta mapeo canónico Empresa/Sucursal para consultar Compras sin conexión live.",
+                "unidad": unidad_codigo,
+                "empresa": empresa.motivo,
+                "sucursal": sucursal_resuelta.motivo,
+            },
+        )
+
+    return {
+        **access,
+        "server_id": resolved_server_id,
+        "unidad": unidad,
+        "empresa_id": int(empresa.canonical_id),
+        "sucursal_id": int(sucursal_resuelta.canonical_id),
+        "source": "EDARSAHUB_SQL_CANONICAL",
+    }
+
+
+def _compras_as_text(value: Any) -> str:
+    return "" if value is None else str(value).strip()
+
+
+def _compras_as_float(value: Any) -> float:
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _compras_clean_almacenes(almacenes: Any) -> List[str]:
+    values = []
+    for item in _compras_list_values(almacenes):
+        if item.upper() == "TODOS":
+            return []
+        if item not in values:
+            values.append(item)
+    return values
+
+
+def _compras_apply_almacen_filter(filters: List[str], params: List[Any], almacenes: List[str]) -> None:
+    if not almacenes:
+        return
+    placeholders = ",".join(["%s"] * len(almacenes))
+    filters.append(f"(almacen_id IN ({placeholders}) OR almacen IN ({placeholders}))")
+    params.extend(almacenes)
+    params.extend(almacenes)
+
+
+def _compras_almacenes_scope(context: Dict[str, Any], server_id: str, requested: Any) -> List[str]:
+    selected = _compras_clean_almacenes(requested)
+    permitidos = [str(a) for a in (get_almacenes_permitidos(context, server_id) or []) if str(a or '').strip()]
+    if not permitidos:
+        return selected
+    if not selected:
+        return permitidos
+    permitidos_set = set(permitidos)
+    denied = [a for a in selected if a not in permitidos_set]
+    if denied and all(str(a).isdigit() for a in selected):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "COMPRAS_ALMACEN_NO_AUTORIZADO",
+                "message": "El usuario no tiene permisos para uno o más almacenes solicitados.",
+                "almacenes": denied,
+            },
+        )
+    return selected
+
+
+def _compras_fetch_latest_inventory_folio(cursor, server_id: str, fecha_ref: str, almacenes: List[str]) -> Optional[str]:
+    filters = [
+        "server_id = %s",
+        "sync_status IN ('ACTIVE', 'REPLACED')",
+        "CONVERT(date, fecha) <= CONVERT(date, %s)",
+    ]
+    params: List[Any] = [server_id, fecha_ref]
+    _compras_apply_almacen_filter(filters, params, almacenes)
+    cursor.execute(
+        f"""
+SELECT TOP 1 folio
+FROM (
+    SELECT
+        folio,
+        fecha,
+        ROW_NUMBER() OVER (
+            PARTITION BY server_id, almacen_id, folio
+            ORDER BY CASE WHEN sync_status = 'ACTIVE' THEN 0 ELSE 1 END, sync_timestamp DESC
+        ) AS _rn
+    FROM dbo.Compras_Inventarios_Fisicos_Sync
+    WHERE {' AND '.join(filters)}
+) t
+WHERE t._rn = 1
+ORDER BY fecha DESC, folio DESC
+""",
+        tuple(params),
+    )
+    row = cursor.fetchone()
+    return _compras_as_text(row.get("folio")) if row else None
+
+
+def _compras_fetch_inventory_header_rows(cursor, server_id: str, folios: List[str], almacenes: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+    if not folios:
+        return []
+    placeholders = ",".join(["%s"] * len(folios))
+    filters = [
+        "server_id = %s",
+        f"folio IN ({placeholders})",
+        "sync_status IN ('ACTIVE', 'REPLACED')",
+    ]
+    params: List[Any] = [server_id, *folios]
+    _compras_apply_almacen_filter(filters, params, almacenes or [])
+    cursor.execute(
+        f"""
+SELECT
+    folio,
+    fecha,
+    almacen,
+    almacen_id,
+    sucursal,
+    sucursal_id,
+    sync_status
+FROM (
+    SELECT
+        folio,
+        fecha,
+        almacen,
+        almacen_id,
+        sucursal,
+        sucursal_id,
+        sync_status,
+        ROW_NUMBER() OVER (
+            PARTITION BY server_id, sucursal_id, almacen_id, folio
+            ORDER BY CASE WHEN sync_status = 'ACTIVE' THEN 0 ELSE 1 END, sync_timestamp DESC
+        ) AS _rn
+    FROM dbo.Compras_Inventarios_Fisicos_Sync
+    WHERE {' AND '.join(filters)}
+) t
+WHERE t._rn = 1
+ORDER BY fecha, folio
+""",
+        tuple(params),
+    )
+    return list(cursor.fetchall() or [])
+
+
+def _compras_fetch_inventory_detail(
+    cursor,
+    server_id: str,
+    folios: List[str],
+    almacenes: Optional[List[str]] = None,
+) -> Dict[str, Dict[str, Any]]:
+    if not folios:
+        return {}
+    placeholders = ",".join(["%s"] * len(folios))
+    filters = [
+        "server_id = %s",
+        f"folio IN ({placeholders})",
+        "sync_status IN ('ACTIVE', 'REPLACED')",
+    ]
+    params: List[Any] = [server_id, *folios]
+    _compras_apply_almacen_filter(filters, params, almacenes or [])
+
+    cursor.execute(
+        """
+SELECT TOP 1 COLUMN_NAME
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = 'dbo'
+  AND TABLE_NAME = 'Compras_Inventarios_Fisicos_Detalle_Sync'
+  AND LOWER(COLUMN_NAME) = 'rendimiento'
+""",
+    )
+    has_rendimiento = bool(cursor.fetchone())
+    rendimiento_expr = "ISNULL(rendimiento, 1)" if has_rendimiento else "1"
+
+    cursor.execute(
+        f"""
+SELECT
+    folio,
+    codigo_producto,
+    nombre_producto,
+    unidad,
+    existencia_fisica,
+    {rendimiento_expr} AS rendimiento,
+    costo_unitario,
+    almacen,
+    almacen_id
+FROM (
+    SELECT
+        folio,
+        codigo_producto,
+        nombre_producto,
+        unidad,
+        existencia_fisica,
+        {rendimiento_expr} AS rendimiento,
+        costo_unitario,
+        almacen,
+        almacen_id,
+        ROW_NUMBER() OVER (
+            PARTITION BY server_id, almacen_id, folio, codigo_producto
+            ORDER BY CASE WHEN sync_status = 'ACTIVE' THEN 0 ELSE 1 END, sync_timestamp DESC
+        ) AS _rn
+    FROM dbo.Compras_Inventarios_Fisicos_Detalle_Sync
+    WHERE {' AND '.join(filters)}
+) t
+WHERE t._rn = 1
+""",
+        tuple(params),
+    )
+    products: Dict[str, Dict[str, Any]] = {}
+    for row in cursor.fetchall() or []:
+        codigo = _compras_as_text(row.get("codigo_producto"))
+        if not codigo:
+            continue
+        item = products.setdefault(
+            codigo,
+            {
+                "codigo": codigo,
+                "producto": row.get("nombre_producto") or f"SKU: {codigo}",
+                "unidad": row.get("unidad") or "",
+                "cantidad": 0.0,
+                "costo": 0.0,
+                "rendimiento": 1.0,
+                "almacenes": set(),
+                "folios": set(),
+            },
+        )
+        item["cantidad"] += _compras_as_float(row.get("existencia_fisica"))
+        costo = _compras_as_float(row.get("costo_unitario"))
+        if costo:
+            item["costo"] = costo
+        rendimiento = _compras_as_float(row.get("rendimiento")) or 1.0
+        if rendimiento > _compras_as_float(item.get("rendimiento")):
+            item["rendimiento"] = rendimiento
+        almacen = _compras_as_text(row.get("almacen") or row.get("almacen_id"))
+        folio = _compras_as_text(row.get("folio"))
+        if almacen:
+            item["almacenes"].add(almacen)
+        if folio:
+            item["folios"].add(folio)
+    for item in products.values():
+        item["almacenes"] = sorted(item["almacenes"])
+        item["folios"] = sorted(item["folios"])
+    return products
+
+
+def _compras_fetch_movimientos(
+    cursor,
+    server_id: str,
+    fecha_ini: str,
+    fecha_fin: str,
+    almacenes: Optional[List[str]],
+    *,
+    solo_consumos: bool,
+) -> Dict[str, float]:
+    concept_filter = (
+        "ISNULL(idconcepto, '') IN ('SPV', 'SCP', 'SCS')"
+        if solo_consumos
+        else "ISNULL(idconcepto, '') NOT IN ('', 'SPV', 'SCP', 'SCS')"
+    )
+    filters = [
+        "server_id = %s",
+        "fecha >= %s",
+        "fecha <= %s",
+        "sync_status = 'ACTIVE'",
+        concept_filter,
+        _soft_date_only_final_day_guard("fecha"),
+    ]
+    params: List[Any] = [server_id, fecha_ini, fecha_fin, fecha_fin, fecha_fin]
+    _compras_apply_almacen_filter(filters, params, almacenes or [])
+    cursor.execute(
+        f"""
+SELECT codigo_producto, SUM(cantidad) AS cantidad
+FROM dbo.Compras_Inventarios_Movimientos_Sync
+WHERE {' AND '.join(filters)}
+GROUP BY codigo_producto
+""",
+        tuple(params),
+    )
+    values = {}
+    for row in cursor.fetchall() or []:
+        codigo = _compras_as_text(row.get("codigo_producto"))
+        if not codigo:
+            continue
+        cantidad = _compras_as_float(row.get("cantidad"))
+        values[codigo] = abs(cantidad) if solo_consumos else cantidad
+    return values
+
+
+def _compras_fetch_pedido_detalle(
+    cursor,
+    empresa_id: int,
+    sucursal_id: int,
+    folios: List[str],
+) -> Dict[str, Dict[str, Any]]:
+    if not folios:
+        return {}
+    placeholders = ",".join(["%s"] * len(folios))
+    cursor.execute(
+        f"""
+SELECT
+    CAST(d.ProductoID AS VARCHAR(50)) AS codigo,
+    COALESCE(NULLIF(pc.NombreProducto, ''), CAST(d.ProductoID AS VARCHAR(50))) AS producto,
+    pc.UnidadCompra AS unidad,
+    p.FolioPedido AS folio_pedido,
+    SUM(ISNULL(d.Cantidad, 0)) AS cantidad,
+    MAX(ISNULL(d.PrecioEstimado, 0)) AS costo
+FROM dbo.Compras_Pedidos p
+INNER JOIN dbo.Compras_PedidosDetalle d ON d.PedidoCompraID = p.PedidoCompraID
+LEFT JOIN dbo.Producto_Catalogo pc ON pc.ProductoID = d.ProductoID
+WHERE p.EmpresaID = %s
+  AND p.SucursalID = %s
+  AND p.Activo = 1
+  AND d.Activo = 1
+  AND p.FolioPedido IN ({placeholders})
+GROUP BY CAST(d.ProductoID AS VARCHAR(50)), pc.NombreProducto, pc.UnidadCompra, p.FolioPedido
+ORDER BY p.FolioPedido, CAST(d.ProductoID AS VARCHAR(50))
+""",
+        tuple([empresa_id, sucursal_id, *folios]),
+    )
+    products: Dict[str, Dict[str, Any]] = {}
+    for row in cursor.fetchall() or []:
+        codigo = _compras_as_text(row.get("codigo"))
+        if not codigo:
+            continue
+        item = products.setdefault(
+            codigo,
+            {
+                "codigo": codigo,
+                "producto": row.get("producto") or f"SKU: {codigo}",
+                "unidad": row.get("unidad") or "",
+                "cantidad": 0.0,
+                "costo": 0.0,
+                "proveedor": "",
+                "folios": [],
+            },
+        )
+        item["cantidad"] += _compras_as_float(row.get("cantidad"))
+        costo = _compras_as_float(row.get("costo"))
+        if costo:
+            item["costo"] = costo
+        folio = _compras_as_text(row.get("folio_pedido"))
+        if folio and folio not in item["folios"]:
+            item["folios"].append(folio)
+    return products
+
+
+def _compras_fetch_pedido_detalle_rows(
+    cursor,
+    empresa_id: int,
+    sucursal_id: int,
+    folio: str,
+) -> List[Dict[str, Any]]:
+    folio = _compras_as_text(folio)
+    if not folio:
+        return []
+    cursor.execute(
+        """
+SELECT TOP 500
+    p.FolioPedido AS folio,
+    p.MotivoCompra AS comentario,
+    CAST(d.ProductoID AS VARCHAR(50)) AS codigo,
+    COALESCE(NULLIF(pc.NombreProducto, ''), CAST(d.ProductoID AS VARCHAR(50))) AS producto,
+    pc.UnidadCompra AS unidad,
+    d.Cantidad AS cantidad,
+    d.PrecioEstimado AS costo,
+    d.SubtotalLinea AS importe,
+    d.Renglon AS renglon
+FROM dbo.Compras_Pedidos p
+INNER JOIN dbo.Compras_PedidosDetalle d ON d.PedidoCompraID = p.PedidoCompraID
+LEFT JOIN dbo.Producto_Catalogo pc ON pc.ProductoID = d.ProductoID
+WHERE p.EmpresaID = %s
+  AND p.SucursalID = %s
+  AND p.Activo = 1
+  AND d.Activo = 1
+  AND p.FolioPedido = %s
+ORDER BY d.Renglon, d.ProductoID
+""",
+        (empresa_id, sucursal_id, folio),
+    )
+    return list(cursor.fetchall() or [])
+
+
+def _compras_format_pedido_detalle_rows(rows: List[Dict[str, Any]], folio: str, tipo: str = "PEDIDO") -> Dict[str, Any]:
+    detalle = []
+    for row in rows:
+        codigo = _compras_as_text(row.get("codigo"))
+        if not codigo:
+            continue
+        detalle.append({
+            "codigo": codigo,
+            "producto": row.get("producto") or f"SKU: {codigo}",
+            "unidad": row.get("unidad") or "",
+            "cantidad": _compras_as_float(row.get("cantidad")),
+            "costo": _compras_as_float(row.get("costo")),
+            "importe": _compras_as_float(row.get("importe")),
+        })
+    return {
+        "folio": _compras_as_text(rows[0].get("folio")) if rows else _compras_as_text(folio),
+        "tipo": _compras_as_text(tipo or "PEDIDO").upper(),
+        "comentario": rows[0].get("comentario") if rows else "",
+        "detalle": detalle,
+        "source": "EDARSAHUB_SQL_CANONICAL",
+    }
+
+
+def _compras_manual_inventory(items: Any) -> Dict[str, Dict[str, Any]]:
+    products: Dict[str, Dict[str, Any]] = {}
+    for row in items or []:
+        if not isinstance(row, dict):
+            continue
+        codigo = _compras_as_text(row.get("codigo") or row.get("codigo_producto"))
+        if not codigo:
+            continue
+        item = products.setdefault(
+            codigo,
+            {
+                "codigo": codigo,
+                "producto": row.get("producto") or row.get("nombre_producto") or f"SKU: {codigo}",
+                "unidad": row.get("unidad") or "",
+                "cantidad": 0.0,
+                "costo": 0.0,
+                "rendimiento": 1.0,
+            },
+        )
+        item["cantidad"] += _compras_as_float(row.get("cantidad") or row.get("existencia_fisica"))
+        costo = _compras_as_float(row.get("costo") or row.get("costo_unitario"))
+        if costo:
+            item["costo"] = costo
+        rendimiento = _compras_as_float(row.get("rendimiento")) or 1.0
+        if rendimiento > _compras_as_float(item.get("rendimiento")):
+            item["rendimiento"] = rendimiento
+    return products
+
 
 @api_router.get("/compras/inventarios-fisicos/{server_id}")
 async def obtener_inventarios_fisicos(server_id: str, unidad: str = None, sucursal: str = None, sucursal_id: str = None, almacen_id: str = None, almacen: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -8872,16 +8186,16 @@ async def obtener_inventarios_fisicos(server_id: str, unidad: str = None, sucurs
     access = await validate_server_access_by_empresa(server_id, credentials)
     server = access["server"]
     context = access["context"]  # FASE 8: Obtener contexto RBAC
-    
+
     # FASE 8: Obtener almacenes permitidos
     almacenes_permitidos = get_almacenes_permitidos(context, server_id)
-    
+
     logging.info(
         f"[COMPRAS-NOLIVE] Inventarios físicos - "
         f"Usuario={access['user'].get('email')}, Unidad={unidad or '-'}, Server={server_id}, "
         f"Sucursal={sucursal_id or sucursal or '-'}, AlmacenesPermitidos={almacenes_permitidos or 'TODOS'}"
     )
-    
+
     # =========================================================================
     # ÚNICA FUENTE: EDARSAHUB Sync (NO-LIVE). Sin fallback a POS en vivo.
     # =========================================================================
@@ -8903,18 +8217,18 @@ async def obtener_inventarios_fisicos(server_id: str, unidad: str = None, sucurs
             almacen=almacen,
             limit=500
         )
-        
+
         if inventarios and len(inventarios) > 0:
             # Aplicar filtro RBAC
             if almacenes_permitidos:
                 inventarios = [
-                    inv for inv in inventarios 
-                    if inv.get('almacen_id') in almacenes_permitidos 
+                    inv for inv in inventarios
+                    if inv.get('almacen_id') in almacenes_permitidos
                     or not almacenes_permitidos
                 ]
-            
+
             logging.info(f"[COMPRAS-NOLIVE] ✅ Inventarios desde EDARSAHUB SYNC: {len(inventarios)} registros")
-            
+
             return [{
                 "folio": str(inv.get('folio', '')),
                 "fecha": str(inv.get('fecha', '')),
@@ -8930,7 +8244,7 @@ async def obtener_inventarios_fisicos(server_id: str, unidad: str = None, sucurs
     except Exception as e:
         logging.error(f"[COMPRAS-NOLIVE] Error leyendo EDARSAHUB Sync: {e}")
         raise HTTPException(status_code=503, detail="No se pudieron leer los inventarios desde EDARSAHUB en este momento.")
-    
+
     # Sin datos en EDARSAHUB para este scope (NO-LIVE: no se consulta el POS)
     logging.info(f"[COMPRAS-NOLIVE] Sin inventarios en EDARSAHUB Sync para server={server_id} sucursal={sucursal_id or sucursal or '-'}")
     return []
@@ -8938,25 +8252,25 @@ async def obtener_inventarios_fisicos(server_id: str, unidad: str = None, sucurs
 
 @api_router.get("/compras/inventarios-fisicos-sql-first/{server_id}")
 async def obtener_inventarios_fisicos_sql_first(
-    server_id: str, 
-    sucursal: str = None, 
+    server_id: str,
+    sucursal: str = None,
     almacen: str = None,
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     [SQL-FIRST] Obtiene inventarios físicos SOLO desde EDARSAHUB SQL.
-    
+
     Este endpoint lee EXCLUSIVAMENTE de dbo.Compras_Inventarios_Fisicos_Sync.
     NO conecta a SoftRestaurant/MPRO directamente.
     NO tiene fallback LIVE.
-    
+
     Feature flag: COMPRAS_SQL_FIRST_ENABLED
     """
     import os
     import pymssql
-    
+
     await get_current_user(credentials)
-    
+
     # Verificar feature flag
     if os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false').lower() != 'true':
         return {
@@ -8964,27 +8278,27 @@ async def obtener_inventarios_fisicos_sql_first(
             'message': 'Endpoint SQL-First deshabilitado. Use /compras/inventarios-fisicos/{server_id}',
             'inventarios': []
         }
-    
+
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
-    
+
     try:
         conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
         cursor = conn.cursor(as_dict=True)
-        
+
         # Construir filtros opcionales
         filtros = ["ServerID = %s"]
         params = [server_id]
-        
+
         if sucursal:
             filtros.append("SucursalID = %s")
             params.append(sucursal)
-        
+
         if almacen:
             filtros.append("AlmacenID = %s")
             params.append(almacen)
-        
+
         where_clause = " AND ".join(filtros)
-        
+
         query = f"""
         SELECT TOP 500
             FolioInventario AS folio,
@@ -9000,11 +8314,11 @@ async def obtener_inventarios_fisicos_sql_first(
         WHERE {where_clause}
         ORDER BY FechaInventario DESC
         """
-        
+
         cursor.execute(query, tuple(params))
         result = cursor.fetchall()
         conn.close()
-        
+
         inventarios = []
         for r in result:
             inventarios.append({
@@ -9019,14 +8333,14 @@ async def obtener_inventarios_fisicos_sql_first(
                 'sync_status': r['sync_status'] or 'SYNCED',
                 'origen_sistema': r['origen_sistema'] or ''
             })
-        
+
         return {
             'status': 'SQL_FIRST',
             'source': 'EDARSAHUB',
             'total': len(inventarios),
             'inventarios': inventarios
         }
-        
+
     except Exception as e:
         logging.error(f"[SQL-FIRST] Error obteniendo inventarios físicos: {str(e)}")
         return {
@@ -9038,221 +8352,99 @@ async def obtener_inventarios_fisicos_sql_first(
 
 @api_router.get("/compras/pedidos-vigentes/{server_id}")
 async def obtener_pedidos_vigentes(server_id: str, sucursal: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """
-    Obtiene la lista de REQUISICIONES de compra SIN AUTORIZAR (estado PXA) para comparar.
-    
-    ESTRATEGIA HÍBRIDA:
-    1. Primero intenta leer de EDARSAHUB (tabla Compras_Requisiciones_Sync)
-    2. Si Sync está vacío, hace fallback a consulta LIVE al servidor físico
-    """
-    # FASE 3.1: Validar acceso por empresa
-    access = await validate_server_access_by_empresa(server_id, credentials)
-    server = access["server"]
-    
-    logging.info(
-        f"[COMPRAS-HIBRIDO] Requisiciones - "
-        f"Usuario={access['user'].get('email')}, Server={server_id}"
+    """Obtiene requisiciones/pedidos vigentes exclusivamente desde EDARSAHUB SQL sync."""
+    from core.corporate_filters.request_resolver import canonical_server_id
+
+    server_id = canonical_server_id(server_id)
+    scope = await _compras_resolve_scope(server_id, sucursal, credentials)
+    unidad = scope.get("unidad") or {}
+    unidad_negocio_id = unidad.get("unidad_negocio_pk") or unidad.get("id")
+
+    requisiciones = obtener_requisiciones_sync(
+        unidad_negocio_id=unidad_negocio_id,
+        server_id=scope["server_id"],
+        sucursal=sucursal,
+        limit=500,
     )
-    
-    # =========================================================================
-    # PASO 1: Intentar leer de EDARSAHUB Sync
-    # =========================================================================
-    try:
-        unidad_negocio_id = None
-        try:
-            from core.unidades_registry import get_unidad_by_server_id
-            unidad_info = get_unidad_by_server_id(server_id)
-            if unidad_info:
-                unidad_negocio_id = unidad_info.id
-        except Exception:
-            pass
-        
-        requisiciones = obtener_requisiciones_sync(
-            unidad_negocio_id=unidad_negocio_id,
-            server_id=server_id,
-            sucursal=sucursal,
-            limit=500
-        )
-        
-        if requisiciones and len(requisiciones) > 0:
-            logging.info(f"[COMPRAS-HIBRIDO] ✅ Requisiciones desde SYNC: {len(requisiciones)} registros")
-            
-            return [{
-                "tipo": req.get('tipo', 'OC'),
-                "folio": str(req.get('folio', '')),
-                "fecha": str(req.get('fecha', '')),
-                "comentario": '',
-                "estado": req.get('estatus', 'PENDIENTE'),
-                "comprador": req.get('proveedor', ''),
-                "productos": int(req.get('total_productos', 0)),
-                "importe": float(req.get('importe', 0) or 0),
-                "source": "EDARSAHUB_SYNC",
-                "sync_status": req.get('sync_status', 'SYNCED'),
-            } for req in requisiciones]
-    except Exception as e:
-        logging.warning(f"[COMPRAS-HIBRIDO] Error leyendo Sync requisiciones: {e}")
+    return [{
+        "tipo": req.get("tipo", "OC"),
+        "folio": str(req.get("folio", "")),
+        "fecha": str(req.get("fecha", "")),
+        "comentario": "",
+        "estado": req.get("estatus", "PENDIENTE"),
+        "comprador": req.get("proveedor", ""),
+        "productos": int(req.get("total_productos", 0) or 0),
+        "importe": float(req.get("importe", 0) or 0),
+        "source": "EDARSAHUB_SYNC",
+        "sync_status": req.get("sync_status", "SYNCED"),
+    } for req in requisiciones]
 
-    # =========================================================================
-    # NO-LIVE / EDARSAHUB EXCLUSIVO: si el sync no trae requisiciones, devolvemos
-    # vacío. NUNCA se hace fallback a consulta viva al POS — eso disparaba el
-    # "Error de conexión" en Auditoría (MPRO) y el cooldown de EDARSAHUB.
-    # =========================================================================
-    logging.info(f"[COMPRAS-NOLIVE] Requisiciones sync vacío para server={server_id}; devolviendo [] (sin conexión viva).")
-    return []
-
-    # ---- (código LIVE legacy deshabilitado por política NO-LIVE) ----
-    # =========================================================================
-    # PASO 2: Fallback a consulta LIVE (si Sync está vacío o falló)
-    # =========================================================================
-    logging.info(f"[COMPRAS-HIBRIDO] Sync vacío/fallido, consultando LIVE: {server.get('name')}")
-    
-    if is_mpro_system(server.get('system_type')):
-        sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
-        
-        sucursal_filtro = "1=1"
-        if sucursal:
-            sucursal_filtro = f"(S.Sc_Cve_Sucursal = '{sucursal}' OR S.Sc_Descripcion LIKE '%{sucursal_safe}%')"
-        
-        query = f"""
-SELECT 'OC' as tipo, OC.Oc_Folio as folio, OC.Oc_Fecha as fecha, 
-       OC.Oc_Comentario as comentario, OC.Es_Cve_Estado as estado,
-       P.Pv_Descripcion as proveedor,
-       COUNT(OC.Pr_Cve_Producto) as total_productos,
-       0 as importe_total
-FROM Orden_Compra OC
-INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = OC.Sc_Cve_Sucursal
-LEFT JOIN Proveedor P ON P.Pv_Cve_Proveedor = OC.Pv_Cve_Proveedor
-WHERE {sucursal_filtro}
-    AND OC.Es_Cve_Estado IN ('PXA', 'AC', 'RCT')
-    AND OC.Oc_Fecha >= DATEADD(day, -30, GETDATE())
-GROUP BY OC.Oc_Folio, OC.Oc_Fecha, OC.Oc_Comentario, OC.Es_Cve_Estado, P.Pv_Descripcion
-ORDER BY OC.Oc_Fecha DESC
-"""
-        try:
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query, timeout=30
-            )
-            logging.info(f"[COMPRAS-HIBRIDO] ✅ MPRO LIVE: {len(result)} requisiciones")
-            return [{"tipo": r['tipo'], "folio": r['folio'], "fecha": str(r['fecha']), 
-                     "comentario": r['comentario'] or '', "estado": r['estado'],
-                     "comprador": r['proveedor'] or '', "productos": r['total_productos'],
-                     "importe": float(r['importe_total'] or 0), "source": "LIVE"} for r in result]
-        except Exception as e:
-            error_msg = str(e)
-            log_compras_error("pedidos-vigentes", server_id, "CONNECTION_ERROR", error_msg[:200], server.get('system_type'))
-            if 'timeout' in error_msg.lower() or 'connection' in error_msg.lower():
-                raise HTTPException(status_code=503, detail=f"Servidor temporalmente inaccesible: {server['host']}")
-            raise HTTPException(status_code=500, detail=f"Error consultando requisiciones: {error_msg[:200]}")
-    
-    elif is_softrestaurant_system(server.get('system_type')):
-        query = """
-SELECT 'ORDEN' as tipo, OC.folio as folio, OC.fechacaptura as fecha,
-       '' as comentario, 
-       CASE WHEN OC.aplicada = 0 THEN 'PXA' ELSE 'AUT' END as estado,
-       PR.nombre as proveedor,
-       COUNT(OCM.idinsumo) as total_productos,
-       ISNULL(OC.total, 0) as importe_total
-FROM ordenescompra OC
-LEFT JOIN proveedores PR ON PR.idproveedor = OC.idproveedor
-LEFT JOIN ordenescompramov OCM ON OCM.idordencompra = OC.idordencompra
-WHERE OC.aplicada = 0 AND OC.cancelado = 0
-    AND OC.fechacaptura >= DATEADD(day, -30, GETDATE())
-GROUP BY OC.folio, OC.fechacaptura, OC.aplicada, PR.nombre, OC.total
-ORDER BY OC.fechacaptura DESC
-"""
-        try:
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
-            )
-            logging.info(f"[COMPRAS-HIBRIDO] ✅ SoftRestaurant LIVE: {len(result)} requisiciones")
-            return [{"tipo": r['tipo'], "folio": str(r['folio']), "fecha": str(r['fecha']), 
-                     "comentario": r['comentario'] or '', "estado": r['estado'],
-                     "comprador": r['proveedor'] or '', "productos": r['total_productos'],
-                     "importe": float(r['importe_total'] or 0), "source": "LIVE"} for r in result]
-        except Exception as e:
-            logging.warning(f"Error obteniendo pedidos SoftRestaurant: {e}")
-            return []
-    
-    return []
 
 @api_router.get("/compras/detalle-pedido-manual/{server_id}")
-async def obtener_detalle_pedido_manual(server_id: str, folio: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Obtiene el detalle de una requisición por folio manual"""
-    # FASE 3.1: Validar acceso por empresa
-    access = await validate_server_access_by_empresa(server_id, credentials)
-    server = access["server"]
-    
-    if is_mpro_system(server.get('system_type')):
-        # Buscar primero en REQUISICION_COMPRA_DETALLE (tabla principal)
-        query = f"""
-SELECT 'REQUI' as tipo, RCD.Pr_Cve_Producto as codigo, P.Pr_Descripcion as producto,
-       RCD.Rc_Cantidad as cantidad, RCD.Rc_Costo as costo,
-       RC.Rc_Comentario as comentario
-FROM Requisicion_Compra_Detalle RCD
-INNER JOIN Producto P ON P.Pr_Cve_Producto = RCD.Pr_Cve_Producto
-INNER JOIN Requisicion_Compra RC ON RC.Rc_Folio = RCD.Rc_Folio
-WHERE RCD.Rc_Folio = '{folio}'
-"""
-        result = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], query
+async def obtener_detalle_pedido_manual(
+    server_id: str,
+    folio: str,
+    sucursal: str = None,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Obtiene detalle de pedido por folio manual desde EDARSAHUB SQL canónico."""
+    from core.corporate_filters.request_resolver import canonical_server_id
+    from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
+
+    server_id = canonical_server_id(server_id)
+    scope = await _compras_resolve_scope(server_id, sucursal, credentials)
+    conn = None
+    try:
+        conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=10)
+        cursor = conn.cursor(as_dict=True)
+        rows = _compras_fetch_pedido_detalle_rows(
+            cursor,
+            scope["empresa_id"],
+            scope["sucursal_id"],
+            folio,
         )
-        if result:
-            return {"folio": folio, "tipo": result[0]['tipo'], "comentario": result[0].get('comentario', ''), "detalle": [
-                {"codigo": r['codigo'], "producto": r['producto'], "cantidad": float(r['cantidad'] or 0), "costo": float(r['costo'] or 0)}
-                for r in result
-            ]}
-        
-        # Si no encuentra en requisición, buscar en pedido/orden (legacy)
-        query_legacy = f"""
-SELECT 'PEDIDO' as tipo, PDD.Pr_Cve_Producto as codigo, P.Pr_Descripcion as producto,
-       PDD.Pd_Cantidad as cantidad, PDD.Pd_Costo as costo
-FROM Pedido_Detalle PDD
-INNER JOIN Producto P ON P.Pr_Cve_Producto = PDD.Pr_Cve_Producto
-WHERE PDD.Pd_Folio = '{folio}'
-UNION ALL
-SELECT 'ORDEN' as tipo, OCD.Pr_Cve_Producto as codigo, P.Pr_Descripcion as producto,
-       OCD.Oc_Cantidad as cantidad, OCD.Oc_Costo as costo
-FROM Orden_Compra_Detalle OCD
-INNER JOIN Producto P ON P.Pr_Cve_Producto = OCD.Pr_Cve_Producto
-WHERE OCD.Oc_Folio = '{folio}'
-"""
-        result = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], query_legacy
-        )
-        if not result:
-            raise HTTPException(status_code=404, detail=f"No se encontró el folio '{folio}'")
-        return {"folio": folio, "tipo": result[0]['tipo'], "comentario": '', "detalle": [
-            {"codigo": r['codigo'], "producto": r['producto'], "cantidad": float(r['cantidad'] or 0), "costo": float(r['costo'] or 0)}
-            for r in result
-        ]}
-    
-    return {"detail": "Sistema no soportado"}
+        if not rows:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "COMPRAS_PEDIDO_DETALLE_CANONICO_NO_ENCONTRADO",
+                    "message": "No se encontró detalle canónico para el folio solicitado.",
+                    "folio": folio,
+                    "server_id": scope["server_id"],
+                    "sucursal": sucursal,
+                },
+            )
+        return _compras_format_pedido_detalle_rows(rows, folio, "PEDIDO")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"[COMPRAS-DETALLE-PEDIDO-MANUAL][NOLIVE] Error: {e}")
+        raise HTTPException(status_code=503, detail="Error leyendo detalle canónico del pedido.")
+    finally:
+        if conn:
+            conn.close()
 
 
 @api_router.get("/compras/pedidos-vigentes-sql-first/{server_id}")
 async def obtener_pedidos_vigentes_sql_first(
-    server_id: str, 
+    server_id: str,
     sucursal: str = None,
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     [SQL-FIRST] Obtiene pedidos/requisiciones vigentes SOLO desde EDARSAHUB SQL.
-    
+
     Este endpoint lee EXCLUSIVAMENTE de dbo.Compras_Pedidos y dbo.Compras_PedidosDetalle.
     NO conecta a SoftRestaurant/MPRO directamente.
     NO tiene fallback LIVE.
-    
+
     Feature flag: COMPRAS_SQL_FIRST_ENABLED
     """
     import os
     import pymssql
-    
+
     await get_current_user(credentials)
-    
+
     # Verificar feature flag
     if os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false').lower() != 'true':
         return {
@@ -9260,23 +8452,23 @@ async def obtener_pedidos_vigentes_sql_first(
             'message': 'Endpoint SQL-First deshabilitado. Use /compras/pedidos-vigentes/{server_id}',
             'pedidos': []
         }
-    
+
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
-    
+
     try:
         conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
         cursor = conn.cursor(as_dict=True)
-        
+
         # Construir filtros
         filtros = ["p.ServerID = %s", "p.Estatus IN ('PXA', 'PENDIENTE', 'AC', 'RCT')"]
         params = [server_id]
-        
+
         if sucursal:
             filtros.append("p.SucursalID = %s")
             params.append(sucursal)
-        
+
         where_clause = " AND ".join(filtros)
-        
+
         query = f"""
         SELECT TOP 500
             p.PedidoID,
@@ -9295,11 +8487,11 @@ async def obtener_pedidos_vigentes_sql_first(
           AND p.FechaPedido >= DATEADD(day, -30, GETDATE())
         ORDER BY p.FechaPedido DESC
         """
-        
+
         cursor.execute(query, tuple(params))
         result = cursor.fetchall()
         conn.close()
-        
+
         pedidos = []
         for r in result:
             pedidos.append({
@@ -9315,14 +8507,14 @@ async def obtener_pedidos_vigentes_sql_first(
                 'sync_status': r['sync_status'] or 'SYNCED',
                 'origen_sistema': r['origen_sistema'] or ''
             })
-        
+
         return {
             'status': 'SQL_FIRST',
             'source': 'EDARSAHUB',
             'total': len(pedidos),
             'pedidos': pedidos
         }
-        
+
     except Exception as e:
         logging.error(f"[SQL-FIRST] Error obteniendo pedidos vigentes: {str(e)}")
         return {
@@ -9334,583 +8526,314 @@ async def obtener_pedidos_vigentes_sql_first(
 
 @api_router.get("/compras/detalle-movimientos/{server_id}")
 async def obtener_detalle_movimientos(server_id: str, codigo_producto: str, almacenes: str, fecha_ini: str, fecha_fin: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Obtiene el detalle de movimientos de un producto para mostrar en popup"""
-    # FASE 3.1: Validar acceso por empresa
-    access = await validate_server_access_by_empresa(server_id, credentials)
-    server = access["server"]
-    
-    almacen_list = almacenes.split(',')
-    almacen_codigos_str = ",".join([f"'{a}'" for a in almacen_list])
-    
-    if is_mpro_system(server.get('system_type')):
-        query = f"""
-SELECT 
-    E.Mv_Fecha as fecha,
-    E.Mv_Documento as documento,
-    TM.Tm_Descripcion as tipo_movimiento,
-    TM.Tm_Tipo as tipo,
-    E.Mv_Cantidad_Control_1 as cantidad,
-    A.Al_Descripcion as almacen
-FROM Movimiento E
-INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = E.Tm_Cve_Tipo_Movimiento
-INNER JOIN Almacen A ON A.Al_Cve_Almacen = E.Al_Cve_Almacen
-WHERE E.Pr_Cve_Producto = '{codigo_producto}'
-    AND E.Al_Cve_Almacen IN ({almacen_codigos_str})
-    AND E.Es_Cve_Estado <> 'CA'
-    AND E.Mv_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
-ORDER BY E.Mv_Fecha
-"""
-        result = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], query
-        )
-        return [{"fecha": str(r['fecha']), "documento": r['documento'], "tipo": r['tipo_movimiento'],
-                 "entrada_salida": r['tipo'], "cantidad": float(r['cantidad'] or 0), "almacen": r['almacen']} for r in result]
-    
-    return []
+    """Detalle de movimientos desde tabla canónica Compras_Inventarios_Movimientos_Sync."""
+    from types import SimpleNamespace
+    from core.corporate_filters.request_resolver import canonical_server_id
+
+    server_id = canonical_server_id(server_id)
+    await validate_server_access_by_empresa(server_id, credentials)
+    request = SimpleNamespace(
+        server_id=server_id,
+        codigo=codigo_producto,
+        fecha_inicio=fecha_ini,
+        fecha_fin=f"{fecha_fin} 23:59:59",
+        almacenes=_compras_list_values(almacenes),
+    )
+    result = _obtener_detalle_softrestaurant_canonico(request, solo_ventas=False)
+    return result.get("movimientos", []) if isinstance(result, dict) else []
+
 
 @api_router.get("/compras/detalle-consumos/{server_id}")
 async def obtener_detalle_consumos(server_id: str, codigo_producto: str, sucursal_codigo: str, fecha_ini: str, fecha_fin: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Obtiene el detalle de consumos/ventas de un producto para mostrar en popup"""
-    # FASE 3.1: Validar acceso por empresa
-    access = await validate_server_access_by_empresa(server_id, credentials)
-    server = access["server"]
-    
-    if is_mpro_system(server.get('system_type')):
-        query = f"""
-SELECT 
-    V.Vn_Fecha as fecha,
-    V.Vn_Documento as documento,
-    P_VENTA.Pr_Descripcion as producto_vendido,
-    PK.Pk_Cantidad as cantidad_receta,
-    V.Vn_Cantidad_1 as cantidad_vendida,
-    (V.Vn_Cantidad_1 * PK.Pk_Cantidad) as consumo_insumo
-FROM Venta V
-INNER JOIN Producto_Kit PK ON PK.Pr_Cve_Producto = V.Pr_Cve_Producto
-INNER JOIN Producto P_VENTA ON P_VENTA.Pr_Cve_Producto = V.Pr_Cve_Producto
-WHERE PK.Pk_Producto = '{codigo_producto}'
-    AND V.Sc_Cve_Sucursal = '{sucursal_codigo}'
-    AND V.Es_Cve_Estado <> 'CA'
-    AND V.Vn_Fecha BETWEEN '{fecha_ini}' AND '{fecha_fin} 23:59:59'
-ORDER BY V.Vn_Fecha
-"""
-        result = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], query
-        )
-        return [{"fecha": str(r['fecha']), "documento": r['documento'], "producto_vendido": r['producto_vendido'],
-                 "cantidad_receta": float(r['cantidad_receta'] or 0), "cantidad_vendida": float(r['cantidad_vendida'] or 0),
-                 "consumo": float(r['consumo_insumo'] or 0)} for r in result]
-    
-    return []
+    """Detalle de consumos desde tabla canónica Compras_Inventarios_Movimientos_Sync."""
+    from types import SimpleNamespace
+    from core.corporate_filters.request_resolver import canonical_server_id
+
+    server_id = canonical_server_id(server_id)
+    await validate_server_access_by_empresa(server_id, credentials)
+    request = SimpleNamespace(
+        server_id=server_id,
+        codigo=codigo_producto,
+        fecha_inicio=fecha_ini,
+        fecha_fin=f"{fecha_fin} 23:59:59",
+        almacenes=[],
+    )
+    result = _obtener_detalle_softrestaurant_canonico(request, solo_ventas=True)
+    return result.get("consumos", []) if isinstance(result, dict) else []
+
 
 @api_router.get("/compras/detalle-pedido/{server_id}/{folio}")
-async def obtener_detalle_pedido(server_id: str, folio: str, tipo: str = "PEDIDO", credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def obtener_detalle_pedido(
+    server_id: str,
+    folio: str,
+    tipo: str = "PEDIDO",
+    sucursal: str = None,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
     """
-    Obtiene el detalle de un pedido/orden de compra para comparar.
-    FASE 8: Aplica validación RBAC de servidor.
+    Obtiene el detalle de un pedido de compra para comparar desde EDARSAHUB SQL canónico.
     """
-    # FASE 8: Validar acceso por empresa y servidor
-    access = await validate_server_access_by_empresa(server_id, credentials)
-    server = access["server"]
-    access["context"]
-    
+    from core.corporate_filters.request_resolver import canonical_server_id
+    from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
+
+    server_id = canonical_server_id(server_id)
+    scope = await _compras_resolve_scope(server_id, sucursal, credentials)
     logging.info(
-        f"[RBAC-DETALLE-PEDIDO] Usuario={access['user'].get('email')}, "
-        f"Server={server_id}, Folio={folio}, Tipo={tipo}"
+        "[RBAC-DETALLE-PEDIDO][NOLIVE] User=%s Server=%s Folio=%s Tipo=%s Source=%s",
+        scope["user"].get("email"),
+        scope["server_id"],
+        folio,
+        tipo,
+        scope["source"],
     )
-    
-    if is_mpro_system(server.get('system_type')):
-        if tipo == "PEDIDO":
-            query = f"""
-SELECT 
-    PDD.Pr_Cve_Producto as codigo,
-    P.Pr_Descripcion as producto,
-    PDD.Pd_Cantidad as cantidad,
-    PDD.Pd_Costo as costo,
-    PDD.Pd_Importe as importe
-FROM Pedido_Detalle PDD
-INNER JOIN Producto P ON P.Pr_Cve_Producto = PDD.Pr_Cve_Producto
-WHERE PDD.Pd_Folio = '{folio}'
-"""
-        else:
-            query = f"""
-SELECT 
-    OCD.Pr_Cve_Producto as codigo,
-    P.Pr_Descripcion as producto,
-    OCD.Oc_Cantidad as cantidad,
-    OCD.Oc_Costo as costo,
-    OCD.Oc_Importe as importe
-FROM Orden_Compra_Detalle OCD
-INNER JOIN Producto P ON P.Pr_Cve_Producto = OCD.Pr_Cve_Producto
-WHERE OCD.Oc_Folio = '{folio}'
-"""
-        result = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], query
+
+    conn = None
+    try:
+        conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=10)
+        cursor = conn.cursor(as_dict=True)
+        rows = _compras_fetch_pedido_detalle_rows(
+            cursor,
+            scope["empresa_id"],
+            scope["sucursal_id"],
+            folio,
         )
-        return {r['codigo']: {"cantidad": float(r['cantidad'] or 0), "costo": float(r['costo'] or 0)} for r in result}
+        if not rows:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "COMPRAS_PEDIDO_DETALLE_CANONICO_NO_ENCONTRADO",
+                    "message": "No se encontró detalle canónico para el folio solicitado.",
+                    "folio": folio,
+                    "server_id": scope["server_id"],
+                    "sucursal": sucursal,
+                },
+            )
+        return {
+            _compras_as_text(row.get("codigo")): {
+                "producto": row.get("producto") or f"SKU: {_compras_as_text(row.get('codigo'))}",
+                "unidad": row.get("unidad") or "",
+                "cantidad": _compras_as_float(row.get("cantidad")),
+                "costo": _compras_as_float(row.get("costo")),
+                "importe": _compras_as_float(row.get("importe")),
+                "source": scope["source"],
+            }
+            for row in rows
+            if _compras_as_text(row.get("codigo"))
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"[COMPRAS-DETALLE-PEDIDO][NOLIVE] Error: {e}")
+        raise HTTPException(status_code=503, detail="Error leyendo detalle canónico del pedido.")
+    finally:
+        if conn:
+            conn.close()
 
 @api_router.post("/compras/calculo-pedido")
 async def calcular_pedido_sugerido(request: CalculoPedidoRequest, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
-    Calcula el pedido sugerido basándose en:
-    1. Inventario inicial (físico capturado en fecha_inventario_fisico)
-    2. + Compras del período (movimientos tipo entrada)
-    3. - Consumos/Ventas del período
-    4. = Inventario Teórico Actual
-    5. Cantidad a pedir según método:
-       - consumo: (Promedio Diario × Días Inventario) - Disponible
-       - stock: Stock Máximo - Disponible
-    FASE 8: Aplica validación RBAC de servidor y almacenes.
+    Calcula pedido sugerido desde tablas canónicas EDARSAHUB SQL.
+
+    NO-LIVE: no consulta POS ni usa credenciales de servidor origen.
     """
-    # FASE 8: Validar acceso por empresa y servidor
-    access = await validate_server_access_by_empresa(request.server_id, credentials)
-    server = access["server"]
-    context = access["context"]
-    
-    # FASE 8: Obtener almacenes permitidos
-    almacenes_permitidos = get_almacenes_permitidos(context, request.server_id)
-    
-    logging.info(
-        f"[RBAC-CALCULO-PEDIDO] Usuario={access['user'].get('email')}, "
-        f"Server={request.server_id}, AlmacenesPermitidos={almacenes_permitidos or 'TODOS'}"
-    )
-    
-    sucursal = request.sucursal
-    almacenes = request.almacenes  # Lista de almacenes o ["TODOS"]
-    fecha_inv_fisico = request.fecha_inventario_fisico
-    fecha_fin = request.fecha_fin_periodo
-    dias_inventario = request.dias_inventario
-    metodo = request.metodo_calculo  # "consumo" o "stock"
-    folio_inv = request.folio_inventario_fisico
-    
-    # Calcular días del período para promedio
     from datetime import datetime, timedelta
-    fecha_ini_dt = datetime.strptime(fecha_inv_fisico, '%Y-%m-%d')
-    fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d')
-    dias_periodo = (fecha_fin_dt - fecha_ini_dt).days
-    if dias_periodo <= 0:
-        dias_periodo = 1
-    
-    # Para movimientos: desde fecha_inv_fisico + 1 día
-    fecha_mov_ini = (fecha_ini_dt + timedelta(days=1)).strftime('%Y-%m-%d')
-    
-    logging.info(f"[COMPRAS] Parámetros: sucursal={sucursal}, almacenes={almacenes}")
-    logging.info(f"[COMPRAS] Período: {fecha_inv_fisico} al {fecha_fin} ({dias_periodo} días)")
-    logging.info(f"[COMPRAS] Método: {metodo}, Días inventario: {dias_inventario}")
-    
-    if is_mpro_system(server.get('system_type')):
-        # FASE 8: Agregar filtro RBAC a la query de almacenes
-        almacen_rbac_filter = get_almacenes_sql_filter(context, request.server_id, "A.Al_Cve_Almacen")
-        
-        # FASE 1C: Sanitizar entradas LIKE
-        sucursal_safe = _escape_like_pattern(sucursal) if sucursal else ""
-        
-        # Obtener códigos de almacenes
-        if "TODOS" in almacenes:
-            almacen_query = f"""
-SELECT A.Al_Cve_Almacen as codigo, A.Al_Descripcion as nombre, A.Sc_Cve_Sucursal as sucursal_codigo
-FROM Almacen A
-INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
-WHERE S.Sc_Descripcion LIKE '%{sucursal_safe}%' AND A.Es_Cve_Estado <> 'BA'{almacen_rbac_filter}
-"""
-        else:
-            # FASE 1C: Sanitizar cada almacén de la lista
-            almacen_likes = " OR ".join([f"A.Al_Descripcion LIKE '%{_escape_like_pattern(a)}%'" for a in almacenes])
-            almacen_query = f"""
-SELECT A.Al_Cve_Almacen as codigo, A.Al_Descripcion as nombre, A.Sc_Cve_Sucursal as sucursal_codigo
-FROM Almacen A
-INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
-WHERE S.Sc_Descripcion LIKE '%{sucursal_safe}%' AND ({almacen_likes}) AND A.Es_Cve_Estado <> 'BA'{almacen_rbac_filter}
-"""
-        
-        almacen_result = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], almacen_query
+    from core.corporate_filters.request_resolver import canonical_server_id
+    from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
+
+    request.server_id = canonical_server_id(request.server_id)
+    scope = await _compras_resolve_scope(request.server_id, request.sucursal, credentials)
+    server_id = scope["server_id"]
+    context = scope["context"]
+    almacenes = _compras_almacenes_scope(context, server_id, request.almacenes)
+
+    try:
+        fecha_ini_dt = datetime.strptime(request.fecha_inventario_fisico, "%Y-%m-%d")
+        fecha_fin_dt = datetime.strptime(request.fecha_fin_periodo, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Fechas inválidas. Use formato YYYY-MM-DD")
+
+    dias_periodo = max(1, (fecha_fin_dt - fecha_ini_dt).days)
+    fecha_mov_ini = (fecha_ini_dt + timedelta(days=1)).strftime("%Y-%m-%d")
+    fecha_mov_fin = f"{request.fecha_fin_periodo} 23:59:59"
+
+    conn = None
+    try:
+        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+        cursor = conn.cursor(as_dict=True)
+
+        folios_inv = _compras_list_values(request.folio_inventario_fisico)
+        if not folios_inv:
+            latest_folio = _compras_fetch_latest_inventory_folio(
+                cursor,
+                server_id,
+                request.fecha_inventario_fisico,
+                almacenes,
+            )
+            folios_inv = [latest_folio] if latest_folio else []
+        if not folios_inv:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "INVENTORY_PHYSICAL_HEADER_MISSING",
+                    "message": "No se encontraron inventarios canónicos para calcular el pedido.",
+                    "source": "dbo.Compras_Inventarios_Fisicos_Sync",
+                },
+            )
+
+        header_rows = _compras_fetch_inventory_header_rows(cursor, server_id, folios_inv, almacenes)
+        inv_inicial = _compras_fetch_inventory_detail(cursor, server_id, folios_inv, almacenes)
+        if not inv_inicial and almacenes:
+            inv_inicial = _compras_fetch_inventory_detail(cursor, server_id, folios_inv, [])
+        if not inv_inicial:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "INVENTORY_PHYSICAL_DETAIL_MISSING",
+                    "message": "No hay detalle canónico para los folios seleccionados.",
+                    "folios": folios_inv,
+                    "source": "dbo.Compras_Inventarios_Fisicos_Detalle_Sync",
+                },
+            )
+
+        movimientos = _compras_fetch_movimientos(
+            cursor,
+            server_id,
+            fecha_mov_ini,
+            fecha_mov_fin,
+            almacenes,
+            solo_consumos=False,
         )
-        if not almacen_result:
-            raise HTTPException(status_code=404, detail=f"No se encontraron almacenes para sucursal '{sucursal}'")
-        
-        almacen_codigos = [a['codigo'] for a in almacen_result]
-        almacen_nombres = [a['nombre'] for a in almacen_result]
-        sucursal_codigo = almacen_result[0]['sucursal_codigo']
-        # Solo es bodega si TODOS los almacenes seleccionados son bodegas (no solo algunos)
-        es_bodega = all('BODEGA' in (a['nombre'] or '').upper() for a in almacen_result)
-        
-        almacen_codigos_str = ",".join([f"'{c}'" for c in almacen_codigos])
-        
-        logging.info(f"[COMPRAS] Almacenes encontrados: {almacen_nombres}")
-        
-        # Construir filtros
-        filtro_categorias = ""
-        if request.categorias:
-            cats = ",".join([f"'{c}'" for c in request.categorias])
-            filtro_categorias = f"AND P.Ct_Cve_Categoria IN ({cats})"
-        
-        filtro_familias = ""
-        if request.familias:
-            fams = ",".join([f"'{f}'" for f in request.familias])
-            filtro_familias = f"AND P.Fm_Cve_Familia IN ({fams})"
-        
-        # Verificar folio de inventario físico
-        if folio_inv:
-            folio_inventario = folio_inv
-            fecha_inventario = fecha_inv_fisico
-            tiene_inventario_fisico = True
-        else:
-            # Buscar el más reciente
-            inv_query = f"""
-SELECT TOP 1 Fi_Folio as folio, Fi_Fecha as fecha
-FROM Fisico WHERE Al_Cve_Almacen IN ({almacen_codigos_str})
-ORDER BY Fi_Fecha DESC
-"""
-            inv_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], inv_query
-            )
-            tiene_inventario_fisico = len(inv_result) > 0
-            folio_inventario = inv_result[0]['folio'] if tiene_inventario_fisico else None
-            fecha_inventario = inv_result[0]['fecha'] if tiene_inventario_fisico else None
-        
-        logging.info(f"[COMPRAS] Inventario físico: folio={folio_inventario}, fecha={fecha_inventario}")
-        
-        # 1. Obtener catálogo de productos - MISMA LÓGICA DEL REPORTE DE INVENTARIOS
-        productos_query = f"""
-WITH InsumosConPresentaciones AS (
-    SELECT DISTINCT P.Pr_Cve_Producto
-    FROM Producto P
-    INNER JOIN Producto_Presentacion PP ON PP.Pr_Cve_Producto = P.Pr_Cve_Producto
-    WHERE P.Dp_Cve_Departamento = '0007' AND P.Es_Cve_Estado <> 'BA'
-),
-ProductosComoPresentacion AS (
-    SELECT DISTINCT Pp_Producto as Pr_Cve_Producto FROM Producto_Presentacion
-)
-SELECT 
-    P.Pr_Cve_Producto as Codigo,
-    P.Pr_Descripcion as Producto,
-    F.Fm_Descripcion as Familia,
-    C.Ct_Descripcion as Categoria,
-    P.Pr_Unidad_Control_1 as Unidad,
-    P.Pr_ultimo_costo as Costo_Unitario,
-    CASE WHEN ICP.Pr_Cve_Producto IS NOT NULL THEN 1 ELSE 0 END as Tiene_Presentaciones
-FROM Producto P
-INNER JOIN Familia F ON F.Fm_Cve_Familia = P.Fm_Cve_Familia
-INNER JOIN Categoria C ON C.Ct_Cve_Categoria = P.Ct_Cve_Categoria
-LEFT JOIN InsumosConPresentaciones ICP ON ICP.Pr_Cve_Producto = P.Pr_Cve_Producto
-LEFT JOIN ProductosComoPresentacion PCP ON PCP.Pr_Cve_Producto = P.Pr_Cve_Producto
-WHERE P.Es_Cve_Estado <> 'BA'
-    AND (
-        (P.Dp_Cve_Departamento = '0007' AND ICP.Pr_Cve_Producto IS NOT NULL)
-        OR
-        (P.Dp_Cve_Departamento <> '0007' AND PCP.Pr_Cve_Producto IS NULL)
-    )
-    {filtro_categorias}
-    {filtro_familias}
-"""
-        productos = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], productos_query
+        consumos = _compras_fetch_movimientos(
+            cursor,
+            server_id,
+            fecha_mov_ini,
+            fecha_mov_fin,
+            almacenes,
+            solo_consumos=True,
         )
-        logging.info(f"[COMPRAS] Productos obtenidos: {len(productos)}")
-        
-        # 2. Obtener inventario físico
-        inventario_dict = {}
-        if tiene_inventario_fisico:
-            inv_detalle_query = f"""
-SELECT Pr_Cve_Producto as Codigo, SUM(Fi_Cantidad_Control_1) as Cantidad
-FROM Fisico
-WHERE Al_Cve_Almacen IN ({almacen_codigos_str}) AND Fi_Folio = '{folio_inventario}'
-GROUP BY Pr_Cve_Producto
-"""
-            inv_detalle = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], inv_detalle_query
-            )
-            inventario_dict = {i['Codigo']: float(i['Cantidad'] or 0) for i in inv_detalle}
-            logging.info(f"[COMPRAS] Inventario físico: {len(inventario_dict)} productos")
-        
-        # 3. Obtener movimientos (entradas = compras) del período
-        # Usa la misma lógica de fechas del reporte de inventarios: desde fecha_inv + 1
-        movimientos_query = f"""
-SELECT E.Pr_Cve_Producto as Codigo, SUM(E.Mv_Cantidad_Control_1) as Total_Mov
-FROM Movimiento E
-INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = E.Tm_Cve_Tipo_Movimiento
-WHERE E.Al_Cve_Almacen IN ({almacen_codigos_str})
-    AND E.Es_Cve_Estado <> 'CA'
-    AND TM.Tm_Cve_Tipo_Movimiento IN ('050','100','106','108','112','202','400','500','506','508','510','512')
-    AND (
-        CASE   
-            WHEN TM.Tm_Cve_Tipo_Movimiento IN('508','108') 
-            THEN CASE WHEN E.Mv_Tabla = 'CONVERSION_PRODUCTO' THEN E.Mv_Fecha 
-                 ELSE (SELECT TOP 1 C.Co_Fecha FROM Conversion_Producto CN
-                       INNER JOIN COMPRA C ON C.Co_Folio = CN.Cp_Documento AND C.Pr_Cve_Producto = CN.Pr_Cve_Producto
-                       WHERE CN.Cp_Folio = E.Mv_Documento) END
-            ELSE E.Mv_Fecha
-        END
-    ) BETWEEN '{fecha_mov_ini}' AND '{fecha_fin} 23:59:59'
-GROUP BY E.Pr_Cve_Producto
-"""
-        mov_result = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], movimientos_query
+        pedido_existente = _compras_fetch_pedido_detalle(
+            cursor,
+            scope["empresa_id"],
+            scope["sucursal_id"],
+            _compras_list_values(request.folio_pedido_comparar),
         )
-        movimientos_dict = {m['Codigo']: float(m['Total_Mov'] or 0) for m in mov_result}
-        logging.info(f"[COMPRAS] Movimientos obtenidos: {len(movimientos_dict)} productos")
-        
-        # 4. Obtener consumos/ventas del período - MISMA LÓGICA DEL REPORTE
-        consumos_dict = {}
-        if not es_bodega:
-            ventas_query = f"""
-SELECT Producto_Codigo, SUM(cantidad) as Total_Consumo FROM (
-    SELECT Producto_Kit.Pk_Producto as Producto_Codigo,
-           SUM(venta.Vn_Cantidad_1 * Producto_Kit.Pk_Cantidad) as cantidad
-    FROM venta 
-    LEFT JOIN producto_kit ON Producto_Kit.Pr_Cve_Producto = venta.Pr_Cve_Producto
-    LEFT JOIN producto ON producto.Pr_Cve_Producto = Producto_kit.Pk_Producto
-    WHERE venta.Sc_Cve_Sucursal = '{sucursal_codigo}'
-        AND venta.Es_Cve_Estado <> 'CA'
-        AND venta.Vn_Fecha BETWEEN '{fecha_mov_ini}' AND '{fecha_fin} 23:59:59'
-        AND producto_kit.Pk_Producto IS NOT NULL
-    GROUP BY Producto_Kit.Pk_Producto
-    UNION ALL
-    SELECT venta.Pr_Cve_Producto as Producto_Codigo,
-           SUM(venta.Vn_Cantidad_Control_1) as cantidad
-    FROM venta 
-    INNER JOIN producto ON producto.Pr_Cve_Producto = venta.Pr_Cve_Producto 
-    WHERE venta.Sc_Cve_Sucursal = '{sucursal_codigo}'
-        AND venta.Es_Cve_Estado <> 'CA'
-        AND venta.Vn_Fecha BETWEEN '{fecha_mov_ini}' AND '{fecha_fin} 23:59:59'
-    GROUP BY venta.Pr_Cve_Producto
-) AS ConsumosCombinados
-GROUP BY Producto_Codigo
-"""
-            ventas_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], ventas_query
-            )
-            consumos_dict = {v['Producto_Codigo']: float(v['Total_Consumo'] or 0) for v in ventas_result}
-            logging.info(f"[COMPRAS] Consumos obtenidos: {len(consumos_dict)} productos")
-        else:
-            # Para bodegas: salidas como consumo
-            salidas_query = f"""
-SELECT M.Pr_Cve_Producto as Codigo, SUM(ABS(M.Mv_Cantidad_Control_1)) as Total
-FROM Movimiento M
-INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
-WHERE M.Al_Cve_Almacen IN ({almacen_codigos_str}) AND TM.Tm_Tipo = 'S'
-    AND M.Mv_Fecha BETWEEN '{fecha_mov_ini}' AND '{fecha_fin} 23:59:59'
-GROUP BY M.Pr_Cve_Producto
-"""
-            salidas_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], salidas_query
-            )
-            consumos_dict = {s['Codigo']: float(s['Total'] or 0) for s in salidas_result}
-            logging.info(f"[COMPRAS] Salidas (bodega): {len(consumos_dict)} productos")
-        
-        # 5. Obtener inventario físico FINAL (si existe folio en fecha_fin)
-        inv_final_dict = {}
-        folio_inv_final = None
-        fecha_inv_final = None
-        inv_final_query = f"""
-SELECT TOP 1 Fi_Folio as folio, Fi_Fecha as fecha
-FROM Fisico 
-WHERE Al_Cve_Almacen IN ({almacen_codigos_str})
-    AND CONVERT(date, Fi_Fecha) = CONVERT(date, '{fecha_fin}')
-ORDER BY Fi_Fecha DESC
-"""
-        inv_final_result = execute_sql_query(
-            server['host'], server['port'], server['database'],
-            server['username'], server['password'], inv_final_query
-        )
-        if inv_final_result:
-            folio_inv_final = inv_final_result[0]['folio']
-            fecha_inv_final = inv_final_result[0]['fecha']
-            # Obtener detalle del inventario final
-            inv_final_detalle_query = f"""
-SELECT Pr_Cve_Producto as Codigo, SUM(Fi_Cantidad_Control_1) as Cantidad
-FROM Fisico
-WHERE Al_Cve_Almacen IN ({almacen_codigos_str}) AND Fi_Folio = '{folio_inv_final}'
-GROUP BY Pr_Cve_Producto
-"""
-            inv_final_detalle = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], inv_final_detalle_query
-            )
-            inv_final_dict = {i['Codigo']: float(i['Cantidad'] or 0) for i in inv_final_detalle}
-            logging.info(f"[COMPRAS] Inventario FINAL encontrado: folio={folio_inv_final}, {len(inv_final_dict)} productos")
-        else:
-            logging.info(f"[COMPRAS] No hay inventario físico en fecha fin {fecha_fin}")
-        
-        # 6. Obtener pedido existente para comparar (si se especificó)
-        pedido_existente = {}
-        productos_pedido = set()  # Para filtrar 1:1
-        if request.folio_pedido_comparar:
-            # Buscar primero en REQUISICION_COMPRA_DETALLE
-            ped_query = f"""
-SELECT RCD.Pr_Cve_Producto as codigo, RCD.Rc_Cantidad as cantidad
-FROM Requisicion_Compra_Detalle RCD WHERE RCD.Rc_Folio = '{request.folio_pedido_comparar}'
-"""
-            ped_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], ped_query
-            )
-            
-            # Si no encuentra en requisición, buscar en pedido/orden (legacy)
-            if not ped_result:
-                ped_query_legacy = f"""
-SELECT PDD.Pr_Cve_Producto as codigo, PDD.Pd_Cantidad as cantidad
-FROM Pedido_Detalle PDD WHERE PDD.Pd_Folio = '{request.folio_pedido_comparar}'
-UNION ALL
-SELECT OCD.Pr_Cve_Producto as codigo, OCD.Oc_Cantidad as cantidad
-FROM Orden_Compra_Detalle OCD WHERE OCD.Oc_Folio = '{request.folio_pedido_comparar}'
-"""
-                ped_result = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], ped_query_legacy
-                )
-            
-            pedido_existente = {p['codigo']: float(p['cantidad'] or 0) for p in ped_result}
-            productos_pedido = set(pedido_existente.keys())
-            logging.info(f"[COMPRAS] Pedido a comparar: {len(pedido_existente)} productos")
-        
-        # 7. Calcular pedido sugerido
+
+        all_codes = sorted(set(inv_inicial.keys()) | set(movimientos.keys()) | set(consumos.keys()) | set(pedido_existente.keys()))
         results = []
         productos_sin_inventario = []
-        
-        for prod in productos:
-            codigo = prod['Codigo']
-            
-            # FILTRO 1:1: Si se está comparando con un pedido, SOLO incluir productos de ese pedido
-            if productos_pedido and codigo not in productos_pedido:
-                continue
-            
-            inv_fisico = inventario_dict.get(codigo, 0)
-            movimientos = movimientos_dict.get(codigo, 0)
-            consumos = consumos_dict.get(codigo, 0)
-            inv_final = inv_final_dict.get(codigo, None)  # None si no hay folio final
-            costo = float(prod.get('Costo_Unitario', 0) or 0)
-            # Stock min/max no disponible en esta versión
-            stock_min = 0
-            stock_max = 0
-            
-            # Inventario Teórico = Inv. Físico + Movimientos - Consumos
-            inventario_teorico = inv_fisico + movimientos - consumos
-            
-            # Promedio diario de consumo
-            promedio_diario = consumos / dias_periodo if dias_periodo > 0 else 0
-            
-            # Cantidad a pedir según método
-            if metodo == "stock" and stock_max > 0:
-                # Método stock: pedir hasta llegar al máximo
-                cantidad_pedir = max(0, stock_max - inventario_teorico)
-            else:
-                # Método consumo: pedir para cubrir X días
-                consumo_esperado = promedio_diario * dias_inventario
-                cantidad_pedir = max(0, consumo_esperado - inventario_teorico)
-            
-            # Días de inventario actual
+        for codigo in all_codes:
+            base = inv_inicial.get(codigo) or pedido_existente.get(codigo) or {}
+            inv_fisico = _compras_as_float(inv_inicial.get(codigo, {}).get("cantidad"))
+            mov = _compras_as_float(movimientos.get(codigo))
+            consumo = _compras_as_float(consumos.get(codigo))
+            costo = _compras_as_float(base.get("costo") or pedido_existente.get(codigo, {}).get("costo"))
+            inventario_teorico = inv_fisico + mov - consumo
+            promedio_diario = consumo / dias_periodo if dias_periodo > 0 else 0
+            consumo_esperado = promedio_diario * max(0, int(request.dias_inventario or 0))
+            cantidad_pedir = max(0.0, consumo_esperado - inventario_teorico)
             dias_inv_actual = inventario_teorico / promedio_diario if promedio_diario > 0 else 999
-            
-            # Flag sin inventario físico inicial
-            sin_inv_fisico_ini = inv_fisico == 0 and (movimientos != 0 or consumos > 0)
-            # Flag sin inventario final (existe folio pero el producto no está)
-            sin_inv_final = folio_inv_final is not None and inv_final is None and (inv_fisico > 0 or movimientos != 0 or consumos > 0)
-            
-            # Cantidad en pedido existente
-            cant_pedido_exist = pedido_existente.get(codigo, 0)
-            diferencia_pedido = cantidad_pedir - cant_pedido_exist if cant_pedido_exist > 0 else None
-            
-            # Solo incluir productos con actividad
-            if inv_fisico > 0 or movimientos != 0 or consumos > 0 or cant_pedido_exist > 0 or (inv_final is not None and inv_final > 0):
-                item = {
-                    'Codigo': codigo,
-                    'Producto': prod.get('Producto'),
-                    'Familia': prod.get('Familia'),
-                    'Categoria': prod.get('Categoria'),
-                    'Unidad': prod.get('Unidad'),
-                    'Costo_Unitario': round(costo, 2),
-                    'Inventario_Inicial': round(inv_fisico, 2),
-                    'Movimientos_Periodo': round(movimientos, 2),
-                    'Consumos_Periodo': round(consumos, 2),
-                    'Inventario_Final': round(inv_final, 2) if inv_final is not None else None,
-                    'Inventario_Teorico': round(inventario_teorico, 2),
-                    'Promedio_Diario': round(promedio_diario, 3),
-                    'Dias_Inventario': round(dias_inv_actual, 1) if dias_inv_actual < 999 else 999,
-                    'Stock_Minimo': round(stock_min, 2),
-                    'Stock_Maximo': round(stock_max, 2),
-                    'Cantidad_Pedir': round(cantidad_pedir, 2),
-                    'Costo_Pedido': round(cantidad_pedir * costo, 2),
-                    'Sin_Inventario_Inicial': sin_inv_fisico_ini,
-                    'Sin_Inventario_Final': sin_inv_final,
-                    'Cantidad_Pedido_Existente': round(cant_pedido_exist, 2) if cant_pedido_exist > 0 else None,
-                    'Diferencia_Pedido': round(diferencia_pedido, 2) if diferencia_pedido is not None else None
-                }
-                results.append(item)
-                
-                if sin_inv_fisico_ini:
-                    productos_sin_inventario.append(codigo)
-        
-        # Ordenar por cantidad a pedir (mayor primero)
-        results.sort(key=lambda x: x['Cantidad_Pedir'], reverse=True)
-        
-        logging.info(f"[COMPRAS] Cálculo completado: {len(results)} productos")
-        
+            pedido_qty = _compras_as_float(pedido_existente.get(codigo, {}).get("cantidad"))
+            diferencia_pedido = cantidad_pedir - pedido_qty if pedido_qty > 0 else None
+            sin_inv_fisico = inv_fisico == 0 and (mov != 0 or consumo > 0)
+            if sin_inv_fisico:
+                productos_sin_inventario.append(codigo)
+            results.append({
+                "Codigo": codigo,
+                "Producto": base.get("producto") or f"SKU: {codigo}",
+                "Familia": None,
+                "Categoria": None,
+                "Unidad": base.get("unidad") or "",
+                "Costo_Unitario": round(costo, 2),
+                "Inventario_Inicial": round(inv_fisico, 2),
+                "Movimientos_Periodo": round(mov, 2),
+                "Consumos_Periodo": round(consumo, 2),
+                "Inventario_Final": None,
+                "Inventario_Teorico": round(inventario_teorico, 2),
+                "Promedio_Diario": round(promedio_diario, 3),
+                "Dias_Inventario": round(dias_inv_actual, 1) if dias_inv_actual < 999 else 999,
+                "Stock_Minimo": 0,
+                "Stock_Maximo": 0,
+                "Cantidad_Pedir": round(cantidad_pedir, 2),
+                "Costo_Pedido": round(cantidad_pedir * costo, 2),
+                "Sin_Inventario_Inicial": sin_inv_fisico,
+                "Sin_Inventario_Final": False,
+                "Cantidad_Pedido_Existente": round(pedido_qty, 2) if pedido_qty > 0 else None,
+                "Diferencia_Pedido": round(diferencia_pedido, 2) if diferencia_pedido is not None else None,
+            })
+
+        results.sort(key=lambda item: item["Cantidad_Pedir"], reverse=True)
+        almacen_display = sorted({
+            _compras_as_text(row.get("almacen") or row.get("almacen_id"))
+            for row in header_rows
+            if _compras_as_text(row.get("almacen") or row.get("almacen_id"))
+        })
         return {
+            "status": "OK",
+            "source": scope["source"],
             "data": results,
             "count": len(results),
-            "tiene_inventario_fisico": tiene_inventario_fisico,
-            "fecha_inventario_fisico": str(fecha_inventario) if fecha_inventario else fecha_inv_fisico,
-            "folio_inventario_fisico": folio_inventario,
-            "tiene_inventario_final": folio_inv_final is not None,
-            "fecha_inventario_final": str(fecha_inv_final) if fecha_inv_final else None,
-            "folio_inventario_final": folio_inv_final,
+            "tiene_inventario_fisico": True,
+            "fecha_inventario_fisico": request.fecha_inventario_fisico,
+            "folio_inventario_fisico": folios_inv[0] if len(folios_inv) == 1 else ",".join(folios_inv),
+            "tiene_inventario_final": False,
+            "fecha_inventario_final": None,
+            "folio_inventario_final": None,
             "productos_sin_inventario": len(productos_sin_inventario),
-            "es_bodega": es_bodega,
-            "almacenes": almacen_nombres,
-            "almacen_codigos": almacen_codigos,
-            "sucursal_codigo": sucursal_codigo,
+            "es_bodega": False,
+            "almacenes": almacen_display or almacenes or request.almacenes,
+            "almacen_codigos": almacenes,
+            "sucursal_codigo": request.sucursal,
             "dias_periodo": dias_periodo,
             "comparando_con_pedido": request.folio_pedido_comparar,
-            "metodo_calculo": metodo,
+            "metodo_calculo": request.metodo_calculo,
             "parametros": {
-                "fecha_inventario_fisico": fecha_inv_fisico,
-                "fecha_fin_periodo": fecha_fin,
-                "dias_inventario": dias_inventario,
-                "sucursal": sucursal
-            }
+                "fecha_inventario_fisico": request.fecha_inventario_fisico,
+                "fecha_fin_periodo": request.fecha_fin_periodo,
+                "dias_inventario": request.dias_inventario,
+                "sucursal": request.sucursal,
+            },
         }
-    
-    # SoftRestaurant - Por implementar
-    return {"detail": "SoftRestaurant no implementado aún", "data": [], "count": 0}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logging.exception("[COMPRAS-CALCULO][NOLIVE] Error calculando pedido sugerido")
+        raise HTTPException(status_code=500, detail=f"Error interno calculando pedido canónico: {str(exc)[:180]}")
+    finally:
+        if conn:
+            conn.close()
+
+
+# Implementación live legacy desregistrada: sin SQL live ni uso operativo.
+async def _legacy_calcular_pedido_sugerido_live_disabled(request: CalculoPedidoRequest, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    raise RuntimeError("Implementación legacy live deshabilitada; use /compras/calculo-pedido canónico.")
 
 
 @api_router.get("/compras/parametros/{server_id}")
 async def obtener_parametros_compra(
-    server_id: str, 
+    server_id: str,
     sucursal: str = Query(None, description="ID de sucursal"),
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Obtiene los parámetros de compra configurados para un servidor/sucursal.
-    
+
     MIGRADO: Ahora lee desde EDARSAHUB SQL (Compras_Parametros_Sucursal).
     """
     verify_token(credentials.credentials)
-    
+
     # CANONICAL-UNIDAD: el path puede traer una unidad canónica o un server_id legacy.
     from core.corporate_filters.request_resolver import canonical_server_id
     server_id = canonical_server_id(server_id)
-    
+
     # Usar servicio del módulo compras que lee de SQL
     from modules.compras.service import obtener_parametros
-    
+
     # Si no se especifica sucursal, usar "DEFAULT"
     sucursal_id = sucursal or "DEFAULT"
-    
+
     params = await obtener_parametros(server_id, sucursal_id)
     params['server_id'] = server_id  # Asegurar que siempre incluya server_id
-    
+
     return params
 
 
@@ -9918,25 +8841,25 @@ async def obtener_parametros_compra(
 async def guardar_parametros_compra(params: dict, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
     Guarda los parámetros de compra para un servidor/sucursal.
-    
+
     MIGRADO: Ahora escribe a EDARSAHUB SQL (Compras_Parametros_Sucursal).
     """
     verify_token(credentials.credentials)
-    
+
     # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy.
     from core.corporate_filters.request_resolver import canonical_server_id
     server_id = canonical_server_id(params.get('server_id'))
     if not server_id:
         raise HTTPException(status_code=400, detail="server_id es requerido")
-    
+
     # Usar servicio del módulo compras que escribe a SQL
     from modules.compras.service import guardar_parametros
-    
+
     # Si no se especifica sucursal, usar "DEFAULT"
     sucursal_id = params.get('sucursal') or "DEFAULT"
-    
+
     result = await guardar_parametros(server_id, sucursal_id, params)
-    
+
     return result
 
 
@@ -9963,232 +8886,106 @@ class AuditoriaOperativaRequest(BaseModel):
 
 class ProductosParaCapturaRequest(BaseModel):
     server_id: str
+    sucursal: Optional[str] = None
     folios_inv_inicial: Optional[List[str]] = None
     folios_requisiciones: Optional[List[str]] = None
 
 @api_router.post("/compras/productos-para-captura")
 async def obtener_productos_para_captura(request: ProductosParaCapturaRequest, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
-    Obtiene la lista de productos de los inventarios iniciales y/o requisiciones
-    para inicializar la captura manual de inventario físico.
+    Obtiene productos para captura desde tablas canónicas EDARSAHUB SQL.
+
+    NO-LIVE: no consulta POS.
     """
-    await get_current_user(credentials)
-    
-    # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy.
     from core.corporate_filters.request_resolver import canonical_server_id
+    from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
+
     request.server_id = canonical_server_id(request.server_id)
-    
-    # FASE T3.3: Migrado de db.servers a server_registry (EDARSAHUB)
-    from core.server_registry import get_server_connection_info
-    server = await get_server_connection_info(request.server_id, db=db)
-    if not server:
-        raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
-    productos = {}
-    
+    scope = await _compras_resolve_scope(request.server_id, request.sucursal, credentials)
+
+    conn = None
     try:
-        if is_softrestaurant_system(server.get('system_type')):
-            # Obtener productos de inventarios iniciales
-            if request.folios_inv_inicial:
-                for folio in request.folios_inv_inicial:
-                    query = f"""
-SELECT 
-    RTRIM(COALESCE(
-        NULLIF(RTRIM(IP.idinsumo), ''),
-        NULLIF(RTRIM(INM.idinsumo), ''),
-        INM.idpresentacion
-    )) as codigo,
-    COALESCE(I.descripcion, IP.descripcion, 'Sin descripción') as producto,
-    ISNULL(IP.rendimiento, 1) as rendimiento
-FROM invfisicomovtos INM
-LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RTRIM(INM.idpresentacion)
-LEFT JOIN insumos I ON I.idinsumo = COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), NULLIF(RTRIM(INM.idinsumo), ''))
-WHERE INM.folio = {folio}
-"""
-                    result = execute_sql_query(
-                        server['host'], server['port'], server['database'],
-                        server['username'], server['password'], query
-                    )
-                    for r in result:
-                        codigo = str(r['codigo'] or '').strip()
-                        if codigo and codigo not in productos:
-                            productos[codigo] = {
-                                'codigo': codigo,
-                                'producto': r['producto'] or f'SKU: {codigo}',
-                                'rendimiento': float(r['rendimiento'] or 1)
-                            }
-            
-            # Obtener productos de requisiciones
-            if request.folios_requisiciones:
-                folios_sql = ", ".join([f"'{f}'" for f in request.folios_requisiciones])
-                query_requi = f"""
-SELECT 
-    RTRIM(OCM.idinsumo) as codigo,
-    COALESCE(I.descripcion, IP.descripcion, 'Sin descripción') as producto,
-    ISNULL(IP.rendimiento, 1) as rendimiento
-FROM ordenescompramov OCM
-INNER JOIN ordenescompra OC ON OC.idordencompra = OCM.idordencompra
-LEFT JOIN insumos I ON I.idinsumo = OCM.idinsumo
-LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = OCM.idinsumo
-WHERE OC.folio IN ({folios_sql})
-"""
-                result = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], query_requi
+        conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=10)
+        cursor = conn.cursor(as_dict=True)
+        productos = {}
+
+        folios_inv = _compras_list_values(request.folios_inv_inicial)
+        if folios_inv:
+            detalle = _compras_fetch_inventory_detail(cursor, scope["server_id"], folios_inv, [])
+            if not detalle:
+                raise HTTPException(
+                    status_code=404,
+                    detail={
+                        "code": "INVENTORY_PHYSICAL_DETAIL_MISSING",
+                        "message": "No hay detalle canónico para los folios seleccionados.",
+                        "folios": folios_inv,
+                        "source": "dbo.Compras_Inventarios_Fisicos_Detalle_Sync",
+                    },
                 )
-                for r in result:
-                    codigo = str(r['codigo'] or '').strip()
-                    if codigo and codigo not in productos:
-                        productos[codigo] = {
-                            'codigo': codigo,
-                            'producto': r['producto'] or f'SKU: {codigo}',
-                            'rendimiento': float(r['rendimiento'] or 1)
-                        }
-        
-        elif is_mpro_system(server.get('system_type')):
-            # Para MPRO - Obtener productos de inventarios iniciales
-            if request.folios_inv_inicial:
-                for folio in request.folios_inv_inicial:
-                    query = f"""
-SELECT 
-    P.Pr_Clave as codigo,
-    P.Pr_Descripcion as producto,
-    1 as rendimiento
-FROM Fi_Detalle D
-INNER JOIN Producto P ON P.Pr_Clave = D.Fi_Producto
-WHERE D.Fi_Folio = '{folio}'
-"""
-                    result = execute_sql_query(
-                        server['host'], server['port'], server['database'],
-                        server['username'], server['password'], query
-                    )
-                    for r in result:
-                        codigo = str(r['codigo'] or '').strip()
-                        if codigo and codigo not in productos:
-                            productos[codigo] = {
-                                'codigo': codigo,
-                                'producto': r['producto'] or f'SKU: {codigo}',
-                                'rendimiento': 1
-                            }
-            
-            # MPRO - Obtener productos de requisiciones/órdenes de compra
-            if request.folios_requisiciones:
-                folios_sql = ", ".join([f"'{f}'" for f in request.folios_requisiciones])
-                
-                # En algunos esquemas MPRO, los productos están directamente en Orden_Compra
-                # (no en una tabla separada de detalle)
-                query_oc_direct = f"""
-SELECT DISTINCT
-    OC.Pr_Cve_Producto as codigo,
-    P.Pr_Descripcion as producto,
-    1 as rendimiento
-FROM Orden_Compra OC
-INNER JOIN Producto P ON P.Pr_Cve_Producto = OC.Pr_Cve_Producto
-WHERE OC.Oc_Folio IN ({folios_sql})
-"""
-                try:
-                    result = execute_sql_query(
-                        server['host'], server['port'], server['database'],
-                        server['username'], server['password'], query_oc_direct
-                    )
-                    for r in result:
-                        codigo = str(r['codigo'] or '').strip()
-                        if codigo and codigo not in productos:
-                            productos[codigo] = {
-                                'codigo': codigo,
-                                'producto': r['producto'] or f'SKU: {codigo}',
-                                'rendimiento': 1
-                            }
-                except Exception as e:
-                    logging.warning(f"[MPRO] Error en Orden_Compra directa: {e}")
-                
-                # Si no encontró productos, intentar con Orden_Compra_Detalle (esquema alternativo)
-                if len(productos) == 0:
-                    query_oc_detail = f"""
-SELECT DISTINCT
-    OCD.Pr_Cve_Producto as codigo,
-    P.Pr_Descripcion as producto,
-    1 as rendimiento
-FROM Orden_Compra_Detalle OCD
-INNER JOIN Producto P ON P.Pr_Cve_Producto = OCD.Pr_Cve_Producto
-WHERE OCD.Oc_Folio IN ({folios_sql})
-"""
-                    try:
-                        result = execute_sql_query(
-                            server['host'], server['port'], server['database'],
-                            server['username'], server['password'], query_oc_detail
-                        )
-                        for r in result:
-                            codigo = str(r['codigo'] or '').strip()
-                            if codigo and codigo not in productos:
-                                productos[codigo] = {
-                                    'codigo': codigo,
-                                    'producto': r['producto'] or f'SKU: {codigo}',
-                                    'rendimiento': 1
-                                }
-                    except Exception as e:
-                        logging.warning(f"[MPRO] Error en Orden_Compra_Detalle (esperado si no existe): {e}")
-                
-                # Último intento: Requisicion_Compra_Detalle
-                if len(productos) == 0:
-                    query_requi = f"""
-SELECT DISTINCT
-    RCD.Pr_Cve_Producto as codigo,
-    P.Pr_Descripcion as producto,
-    1 as rendimiento
-FROM Requisicion_Compra_Detalle RCD
-INNER JOIN Producto P ON P.Pr_Cve_Producto = RCD.Pr_Cve_Producto
-WHERE RCD.Rc_Folio IN ({folios_sql})
-"""
-                    try:
-                        result = execute_sql_query(
-                            server['host'], server['port'], server['database'],
-                            server['username'], server['password'], query_requi
-                        )
-                        for r in result:
-                            codigo = str(r['codigo'] or '').strip()
-                            if codigo and codigo not in productos:
-                                productos[codigo] = {
-                                    'codigo': codigo,
-                                    'producto': r['producto'] or f'SKU: {codigo}',
-                                    'rendimiento': 1
-                                }
-                    except Exception as e:
-                        logging.warning(f"[MPRO] Error en Requisicion_Compra_Detalle (esperado si no existe): {e}")
-        
+            for codigo, row in detalle.items():
+                productos[codigo] = {
+                    "codigo": codigo,
+                    "producto": row.get("producto") or f"SKU: {codigo}",
+                    "rendimiento": _compras_as_float(row.get("rendimiento")) or 1,
+                }
+
+        pedidos = _compras_fetch_pedido_detalle(
+            cursor,
+            scope["empresa_id"],
+            scope["sucursal_id"],
+            _compras_list_values(request.folios_requisiciones),
+        )
+        for codigo, row in pedidos.items():
+            productos.setdefault(codigo, {
+                "codigo": codigo,
+                "producto": row.get("producto") or f"SKU: {codigo}",
+                "rendimiento": 1,
+            })
+
         return {
-            'productos': list(productos.values()),
-            'total': len(productos)
+            "status": "OK",
+            "source": scope["source"],
+            "productos": list(productos.values()),
+            "total": len(productos),
         }
-        
-    except Exception as e:
-        logging.error(f"Error obteniendo productos para captura: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logging.exception("[PRODUCTOS-CAPTURA][NOLIVE] Error leyendo productos canónicos")
+        raise HTTPException(status_code=500, detail=f"Error interno leyendo productos canónicos: {str(exc)[:180]}")
+    finally:
+        if conn:
+            conn.close()
+
+
+# Implementación live legacy desregistrada: sin SQL live ni uso operativo.
+async def _legacy_obtener_productos_para_captura_live_disabled(request: ProductosParaCapturaRequest, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    raise RuntimeError("Implementación legacy live deshabilitada; use /compras/productos-para-captura canónico.")
 
 
 @api_router.post("/compras/productos-para-captura-sql-first")
 async def obtener_productos_para_captura_sql_first(
-    request: ProductosParaCapturaRequest, 
+    request: ProductosParaCapturaRequest,
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     [SQL-FIRST] Obtiene productos para captura desde EDARSAHUB SQL.
-    
+
     Este endpoint lee EXCLUSIVAMENTE de tablas sincronizadas en EDARSAHUB.
     NO conecta a SoftRestaurant/MPRO directamente.
-    
+
     Requiere que el job sync_compras haya llenado las tablas:
     - Compras_Pedidos
     - Compras_PedidosDetalle
     - Compras_Requisiciones_Sync
-    
+
     Feature flag: COMPRAS_SQL_FIRST_ENABLED
     """
     await get_current_user(credentials)
-    
+
     import os
     import pymssql
-    
+
     # Verificar feature flag
     if os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false').lower() != 'true':
         return {
@@ -10197,19 +8994,19 @@ async def obtener_productos_para_captura_sql_first(
             'productos': [],
             'total': 0
         }
-    
+
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
-    
+
     productos = {}
-    
+
     try:
         conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
         cursor = conn.cursor(as_dict=True)
-        
+
         # Obtener productos de pedidos/requisiciones sincronizados
         if request.folios_requisiciones:
             placeholders = ",".join([f"'{f}'" for f in request.folios_requisiciones])
-            
+
             query = f"""
             SELECT
                 d.CodigoProducto AS codigo,
@@ -10222,10 +9019,10 @@ async def obtener_productos_para_captura_sql_first(
               AND p.FolioPedido IN ({placeholders})
             GROUP BY d.CodigoProducto, d.NombreProducto, d.Rendimiento
             """
-            
+
             cursor.execute(query, (request.server_id,))
             result = cursor.fetchall()
-            
+
             for r in result:
                 codigo = str(r['codigo'] or '').strip()
                 if codigo and codigo not in productos:
@@ -10234,11 +9031,11 @@ async def obtener_productos_para_captura_sql_first(
                         'producto': r['producto'] or f'SKU: {codigo}',
                         'rendimiento': float(r['rendimiento'] or 1)
                     }
-        
+
         # Obtener productos de inventarios físicos sincronizados
         if request.folios_inv_inicial:
             placeholders = ",".join([f"'{f}'" for f in request.folios_inv_inicial])
-            
+
             query_inv = f"""
             SELECT
                 d.CodigoProducto AS codigo,
@@ -10249,10 +9046,10 @@ async def obtener_productos_para_captura_sql_first(
               AND d.FolioInventario IN ({placeholders})
             GROUP BY d.CodigoProducto, d.NombreProducto, d.Rendimiento
             """
-            
+
             cursor.execute(query_inv, (request.server_id,))
             result = cursor.fetchall()
-            
+
             for r in result:
                 codigo = str(r['codigo'] or '').strip()
                 if codigo and codigo not in productos:
@@ -10261,16 +9058,16 @@ async def obtener_productos_para_captura_sql_first(
                         'producto': r['producto'] or f'SKU: {codigo}',
                         'rendimiento': float(r['rendimiento'] or 1)
                     }
-        
+
         conn.close()
-        
+
         return {
             'status': 'SQL_FIRST',
             'source': 'EDARSAHUB',
             'productos': list(productos.values()),
             'total': len(productos)
         }
-        
+
     except Exception as e:
         logging.error(f"[SQL-FIRST] Error obteniendo productos: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error SQL-First: {str(e)}")
@@ -10279,60 +9076,33 @@ async def obtener_productos_para_captura_sql_first(
 @api_router.post("/compras/auditoria-operativa")
 async def realizar_auditoria_operativa(request: AuditoriaOperativaRequest, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
-    Realiza Auditoría Operativa:
-    1. Inventario Inicial + Compras - Consumos = Existencia Teórica
-    2. Compara vs Inventario Físico (folio o captura manual)
-    3. Calcula diferencias (favor +, en contra -)
-    4. Genera acta de auditoría si hay diferencias en contra
-    5. Calcula días de consumo y compara vs requisición
-    
-    FASE P1.4-E1 (Dic 2025): Migrado de MongoDB db.servers a server_registry.
-    FUENTE: EDARSAHUB.dbo.Servidores_Conexiones (incluye tipos_movimiento)
-    NO FUENTE: MongoDB db.servers
+    Realiza auditoría operativa desde tablas canónicas EDARSAHUB SQL.
+
+    NO-LIVE: no consulta POS ni usa credenciales de servidor origen.
     """
-    from core.server_registry import get_server_connection_info_with_secrets
-    
-    verify_token(credentials.credentials)
-    
-    # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy.
+    from datetime import datetime, timedelta
     from core.corporate_filters.request_resolver import canonical_server_id
+    from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
+
     request.server_id = canonical_server_id(request.server_id)
-    
-    logging.info(f"[AUDITORIA] Iniciando auditoría - server: {request.server_id}, sucursal: {request.sucursal}")
-    
-    # FASE P1.4-E1: Obtener servidor desde EDARSAHUB SQL via server_registry
-    # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": request.server_id, "active": True}))
-    server = decrypt_server_secrets(get_server_connection_info_with_secrets(request.server_id))
-    if not server or not server.get('active', True):
-        raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
-    # Probar conexión primero
-    import time
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            test_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'],
-                "SELECT 1 as test"
-            )
-            if test_result:
-                logging.info(f"[AUDITORIA] Conexión verificada en intento {attempt + 1}")
-                break
-        except Exception as e:
-            logging.warning(f"[AUDITORIA] Intento {attempt + 1} fallido: {e}")
-            if attempt == max_retries - 1:
-                raise HTTPException(status_code=503, detail=f"No se puede conectar al servidor después de {max_retries} intentos. Por favor intente de nuevo.")
-            time.sleep(2)  # Esperar antes de reintentar
-    
-    fecha_ini = request.fecha_inv_inicial
-    fecha_fin = request.fecha_auditoria
-    
-    # Convertir fechas a formato YYYYMMDD para pytds (evita error de conversión datetime)
-    fecha_ini_sql = fecha_ini.replace('-', '')
-    fecha_fin_sql = fecha_fin.replace('-', '')
-    
-    resultados = []
+    scope = await _compras_resolve_scope(request.server_id, request.sucursal, credentials)
+    server_id = scope["server_id"]
+    context = scope["context"]
+    almacenes = _compras_almacenes_scope(context, server_id, request.almacenes)
+
+    try:
+        fecha_ini_dt = datetime.strptime(request.fecha_inv_inicial, "%Y-%m-%d")
+        fecha_fin_dt = datetime.strptime(request.fecha_auditoria, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Fechas inválidas. Use formato YYYY-MM-DD")
+
+    dias_periodo = max(1, (fecha_fin_dt - fecha_ini_dt).days)
+    fecha_mov_ini = (fecha_ini_dt + timedelta(days=1)).strftime("%Y-%m-%d")
+    fecha_mov_fin = f"{request.fecha_auditoria} 23:59:59"
+    folios_ini = _compras_list_values(request.folios_inv_inicial) or _compras_list_values(request.folio_inv_inicial)
+    folios_fin = _compras_list_values(request.folios_inv_final) or _compras_list_values(request.folio_inv_final)
+    folios_req = _compras_list_values(request.folios_requisiciones) or _compras_list_values(request.folio_requisicion)
+
     resumen = {
         "total_teorico": 0,
         "total_fisico": 0,
@@ -10341,653 +9111,182 @@ async def realizar_auditoria_operativa(request: AuditoriaOperativaRequest, crede
         "productos_contra": 0,
         "importe_favor": 0,
         "importe_contra": 0,
-        "requiere_acta": False
+        "requiere_acta": False,
     }
-    
+
+    conn = None
     try:
-        if is_softrestaurant_system(server.get('system_type')):
-            # PASO 1: Determinar tipo de almacenes seleccionados
-            # tipo=1: Consumo (INSUMOS) - Barra, Cava, Producción
-            # tipo=2: Bodega (PRESENTACIONES) - Bodega, Congelador
-            almacenes_str = ", ".join([f"'{a}'" for a in request.almacenes])
-            query_tipos_alm = f"""
-SELECT idalmacen, nombre, ISNULL(tipo, 1) as tipo
-FROM almacen
-WHERE nombre IN ({almacenes_str}) OR idalmacen IN ({almacenes_str})
-"""
-            tipos_alm_result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_tipos_alm
+        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+        cursor = conn.cursor(as_dict=True)
+
+        inv_ini = _compras_fetch_inventory_detail(cursor, server_id, folios_ini, almacenes)
+        if folios_ini and not inv_ini and almacenes:
+            inv_ini = _compras_fetch_inventory_detail(cursor, server_id, folios_ini, [])
+        if folios_ini and not inv_ini:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "INVENTORY_PHYSICAL_DETAIL_MISSING",
+                    "message": "No hay detalle canónico para los folios iniciales seleccionados.",
+                    "folios": folios_ini,
+                    "source": "dbo.Compras_Inventarios_Fisicos_Detalle_Sync",
+                },
             )
-            
-            almacenes_bodega = [a['idalmacen'] for a in tipos_alm_result if a['tipo'] == 2]
-            almacenes_consumo = [a['idalmacen'] for a in tipos_alm_result if a['tipo'] == 1]
-            
-            es_solo_bodega = len(almacenes_bodega) > 0 and len(almacenes_consumo) == 0
-            es_solo_consumo = len(almacenes_consumo) > 0 and len(almacenes_bodega) == 0
-            es_mixto = len(almacenes_bodega) > 0 and len(almacenes_consumo) > 0
-            
-            logging.info(f"[AUDITORIA] Almacenes - Bodega: {almacenes_bodega}, Consumo: {almacenes_consumo}")
-            logging.info(f"[AUDITORIA] Tipo: solo_bodega={es_solo_bodega}, solo_consumo={es_solo_consumo}, mixto={es_mixto}")
-            
-            # PASO 2: Obtener SKUs de las requisiciones seleccionadas (para filtrar)
-            folios_req = request.folios_requisiciones if request.folios_requisiciones else ([request.folio_requisicion] if request.folio_requisicion else [])
-            
-            skus_requisicion = set()
-            requi_dict = {}
-            requi_list = []  # Lista para mantener el orden por proveedor-pedido
-            
-            if folios_req:
-                folios_sql = ", ".join([f"'{f}'" for f in folios_req])
-                # Las órdenes de compra en SoftRestaurant usan códigos que pueden ser presentaciones
-                # Obtener cada línea de pedido con su folio y proveedor
-                query_requi = f"""
-SELECT 
-    OCM.idinsumo as codigo, 
-    COALESCE(I.descripcion, IP.descripcion, 'Sin descripción') as producto, 
-    OCM.cantidad as cantidad_pedido,
-    ISNULL(OCM.costo, 0) as costo,
-    ISNULL(ID.costo, 0) as costo_insumo,
-    ISNULL(IPD.costo, ISNULL(OCM.costo, 0)) as costo_presentacion,
-    COALESCE(P.nombre, 'Sin proveedor') as proveedor,
-    OC.folio as folio_pedido,
-    ISNULL(IP.rendimiento, 1) as rendimiento,
-    COALESCE(I.unidad, IP.unidad, '') as unidad
-FROM ordenescompramov OCM
-INNER JOIN ordenescompra OC ON OC.idordencompra = OCM.idordencompra
-LEFT JOIN insumos I ON I.idinsumo = OCM.idinsumo
-LEFT JOIN insumosdetalle ID ON ID.idinsumo = OCM.idinsumo
-LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = OCM.idinsumo
-LEFT JOIN insumospresentacionesdetalle IPD ON IPD.idinsumospresentaciones = OCM.idinsumo
-LEFT JOIN proveedores P ON P.idproveedor = OC.idproveedor
-WHERE OC.folio IN ({folios_sql})
-ORDER BY P.nombre, OC.folio, OCM.idinsumo
-"""
-                requi_result = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], query_requi
+
+        manual_final = request.inventario_fisico_actual or request.inventario_manual
+        inv_fin = _compras_manual_inventory(manual_final)
+        if not inv_fin and folios_fin:
+            inv_fin = _compras_fetch_inventory_detail(cursor, server_id, folios_fin, almacenes)
+            if not inv_fin and almacenes:
+                inv_fin = _compras_fetch_inventory_detail(cursor, server_id, folios_fin, [])
+            if not inv_fin:
+                raise HTTPException(
+                    status_code=404,
+                    detail={
+                        "code": "INVENTORY_PHYSICAL_DETAIL_MISSING",
+                        "message": "No hay detalle canónico para los folios finales seleccionados.",
+                        "folios": folios_fin,
+                        "source": "dbo.Compras_Inventarios_Fisicos_Detalle_Sync",
+                    },
                 )
-                for r in requi_result:
-                    codigo = str(r['codigo']).strip()
-                    skus_requisicion.add(codigo)
-                    
-                    # Guardar en lista para mantener orden por proveedor-pedido
-                    requi_list.append({
-                        'codigo': codigo,
-                        'cantidad': float(r['cantidad_pedido'] or 0),
-                        'producto': r['producto'] or '',
-                        'costo': float(r.get('costo', 0) or 0),
-                        'costo_insumo': float(r.get('costo_insumo', 0) or 0),
-                        'costo_presentacion': float(r.get('costo_presentacion', 0) or r.get('costo', 0) or 0),
-                        'proveedor': r.get('proveedor', '') or '',
-                        'folio_pedido': str(r.get('folio_pedido', '')).strip(),
-                        'rendimiento': float(r.get('rendimiento', 1) or 1),
-                        'unidad': r.get('unidad', '') or ''
-                    })
-                    
-                    # También mantener dict para lookup rápido
-                    if codigo not in requi_dict:
-                        requi_dict[codigo] = {
-                            'cantidad': float(r['cantidad_pedido'] or 0),
-                            'producto': r['producto'] or '',
-                            'costo': float(r.get('costo', 0) or 0),
-                            'costo_insumo': float(r.get('costo_insumo', 0) or 0),
-                            'costo_presentacion': float(r.get('costo_presentacion', 0) or r.get('costo', 0) or 0),
-                            'proveedor': r.get('proveedor', '') or '',
-                            'folio_pedido': str(r.get('folio_pedido', '')).strip(),
-                            'rendimiento': float(r.get('rendimiento', 1) or 1),
-                            'unidad': r.get('unidad', '') or ''
-                        }
-                logging.info(f"[AUDITORIA] SKUs en requisiciones: {len(skus_requisicion)}, Líneas de pedido: {len(requi_list)}")
-            
-            # PASO 3: Obtener inventario inicial
-            # Para BODEGA: usar idpresentacion como código
-            # Para CONSUMO: usar idinsumo como código
-            # NUEVO: Procesar múltiples folios y normalizar TODO a INSUMOS
-            inv_ini_dict = {}
-            
-            # Combinar folios (legacy + nuevo formato)
-            folios_iniciales = []
-            if request.folios_inv_inicial:
-                folios_iniciales = request.folios_inv_inicial
-            elif request.folio_inv_inicial:
-                folios_iniciales = [request.folio_inv_inicial]
-            
-            if folios_iniciales:
-                for folio_inv in folios_iniciales:
-                    # Determinar el tipo de almacén de este inventario específico
-                    query_tipo_alm = f"""
-SELECT A.tipo, A.nombre, INV.idalmacen1
-FROM invfisico INV
-LEFT JOIN almacen A ON A.idalmacen = INV.idalmacen1
-WHERE INV.folio = {folio_inv}
-"""
-                    tipo_result = execute_sql_query(
-                        server['host'], server['port'], server['database'],
-                        server['username'], server['password'], query_tipo_alm
-                    )
-                    
-                    # tipo=1: Consumo (insumos), tipo=2: Bodega (presentaciones)
-                    tipo_almacen = tipo_result[0]['tipo'] if tipo_result else 1
-                    es_bodega = tipo_almacen == 2
-                    
-                    logging.info(f"[AUDITORIA] Procesando inv inicial folio={folio_inv}, tipo_almacen={tipo_almacen}, es_bodega={es_bodega}")
-                    
-                    # Query para obtener datos del inventario
-                    # SIEMPRE traemos el código de insumo para normalizar
-                    query_inv_ini = f"""
-SELECT 
-    RTRIM(COALESCE(
-        NULLIF(RTRIM(IP.idinsumo), ''),
-        NULLIF(RTRIM(INM.idinsumo), ''),
-        INM.idpresentacion
-    )) as codigo_insumo,
-    RTRIM(INM.idpresentacion) as codigo_presentacion,
-    COALESCE(I.descripcion, IP.descripcion, 'Sin descripción') as producto, 
-    INM.fisicoalmacen1 as cantidad,
-    ISNULL(ID.costo, 0) as costo_insumo,
-    ISNULL(IPD.costo, ISNULL(INM.costo, 0)) as costo_presentacion,
-    ISNULL(IP.rendimiento, 1) as rendimiento
-FROM invfisicomovtos INM
-LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RTRIM(INM.idpresentacion)
-LEFT JOIN insumos I ON I.idinsumo = COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), NULLIF(RTRIM(INM.idinsumo), ''))
-LEFT JOIN insumosdetalle ID ON ID.idinsumo = COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), NULLIF(RTRIM(INM.idinsumo), ''))
-LEFT JOIN insumospresentacionesdetalle IPD ON IPD.idinsumospresentaciones = RTRIM(INM.idpresentacion)
-WHERE INM.folio = {folio_inv}
-"""
-                    result_ini = execute_sql_query(
-                        server['host'], server['port'], server['database'],
-                        server['username'], server['password'], query_inv_ini
-                    )
-                    
-                    for r in result_ini:
-                        codigo = str(r['codigo_insumo'] or r['codigo_presentacion'] or '').strip()
-                        if not codigo:
-                            continue
-                        
-                        cantidad_raw = float(r['cantidad'] or 0)
-                        rendimiento = float(r['rendimiento'] or 1)
-                        
-                        # NORMALIZAR A INSUMOS:
-                        # - Si viene de BODEGA (tipo 2): cantidad está en presentaciones → multiplicar × rendimiento
-                        # - Si viene de CONSUMO (tipo 1): cantidad ya está en insumos → mantener
-                        if es_bodega:
-                            cantidad_en_insumos = cantidad_raw * rendimiento
-                        else:
-                            cantidad_en_insumos = cantidad_raw
-                        
-                        # Sumar al diccionario (puede haber mismo producto en múltiples inventarios)
-                        if codigo in inv_ini_dict:
-                            inv_ini_dict[codigo]['cantidad'] += cantidad_en_insumos
-                        else:
-                            inv_ini_dict[codigo] = {
-                                "producto": r['producto'],
-                                "cantidad": cantidad_en_insumos,
-                                "costo": float(r['costo_presentacion'] or 0),
-                                "costo_insumo": float(r['costo_insumo'] or 0),
-                                "costo_presentacion": float(r['costo_presentacion'] or 0),
-                                "rendimiento": rendimiento
-                            }
-                    
-                    logging.info(f"[AUDITORIA] Folio {folio_inv}: {len(result_ini)} productos procesados")
-            
-            # PASO 4: Obtener MOVIMIENTOS según tipo de almacén
-            # - Solo Bodega: Movimientos = Entradas activas del filtro en Servidores SQL
-            # - Solo Consumo: Movimientos = Traspasos entrada - Traspasos salida del período
-            # - Mixto: Compras bodega + Traspasos entrada consumo - Salidas traspasos
-            
-            # Obtener tipos de movimiento activos del servidor (filtros configurados en Servidores SQL)
-            tipos_mov_activos = server.get('tipos_movimiento', [])
-            
-            # Separar tipos de movimiento por tipo (entrada vs salida)
-            # Los que empiezan con 'E' son entradas, los que empiezan con 'S' son salidas
-            tipos_entrada_activos = [t for t in tipos_mov_activos if t.startswith('E')]
-            tipos_salida_activos = [t for t in tipos_mov_activos if t.startswith('S')]
-            
-            # Tipos específicos
-            tipos_entrada_compra = [t for t in tipos_entrada_activos if t in ['EPC', 'ECS', 'EPB', 'EDE', 'EEH', 'ECO', 'ECA', 'EPL', 'EPR']]
-            tipos_entrada_traspaso = [t for t in tipos_entrada_activos if t in ['ETR', 'ETA', 'EAL']]
-            tipos_salida_traspaso = [t for t in tipos_salida_activos if t in ['STR', 'STA', 'SAL']]
-            [t for t in tipos_salida_activos if t in ['SPV', 'SCP', 'SCS']]
-            
-            logging.info(f"[AUDITORIA] Tipos entrada activos: {tipos_entrada_activos}")
-            logging.info(f"[AUDITORIA] Tipos salida activos: {tipos_salida_activos}")
-            
-            movimientos_dict = {}
-            
-            if es_solo_bodega:
-                # BODEGA: Solo movimientos de entrada activos (EPC, ECS, etc.)
-                # NORMALIZAR A INSUMOS: cantidad × rendimiento
-                if tipos_entrada_compra:
-                    query_mov = f"""
-SELECT 
-    COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), RTRIM(M.idinsumospresentaciones)) as codigo, 
-    SUM(M.cantidad * ISNULL(IP.rendimiento, 1)) as cantidad
-FROM movtosalmacen M
-LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RTRIM(M.idinsumospresentaciones)
-WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in tipos_entrada_compra])})
-    AND M.fecha >= '{fecha_ini_sql}'
-    AND M.fecha <= '{fecha_fin_sql} 23:59:59'
-GROUP BY COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), RTRIM(M.idinsumospresentaciones))
-"""
-                    mov_result = execute_sql_query(
-                        server['host'], server['port'], server['database'],
-                        server['username'], server['password'], query_mov
-                    )
-                    for m in mov_result:
-                        codigo = str(m['codigo']).strip()
-                        movimientos_dict[codigo] = movimientos_dict.get(codigo, 0) + float(m['cantidad'] or 0)
-            
-            elif es_solo_consumo:
-                # CONSUMO: Traspasos entrada - Traspasos salida del período
-                # Entradas por traspaso
-                if tipos_entrada_traspaso:
-                    query_entrada = f"""
-SELECT RTRIM(M.idinsumo) as codigo, SUM(M.cantidad) as cantidad
-FROM movsinv M
-WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in tipos_entrada_traspaso])})
-    AND M.fecha >= '{fecha_ini_sql}'
-    AND M.fecha <= '{fecha_fin_sql} 23:59:59'
-GROUP BY RTRIM(M.idinsumo)
-"""
-                    entrada_result = execute_sql_query(
-                        server['host'], server['port'], server['database'],
-                        server['username'], server['password'], query_entrada
-                    )
-                    for e in entrada_result:
-                        codigo = str(e['codigo']).strip()
-                        movimientos_dict[codigo] = movimientos_dict.get(codigo, 0) + float(e['cantidad'] or 0)
-                
-                # Salidas por traspaso (restar)
-                if tipos_salida_traspaso:
-                    query_salida = f"""
-SELECT RTRIM(M.idinsumo) as codigo, SUM(M.cantidad) as cantidad
-FROM movsinv M
-WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in tipos_salida_traspaso])})
-    AND M.fecha >= '{fecha_ini_sql}'
-    AND M.fecha <= '{fecha_fin_sql} 23:59:59'
-GROUP BY RTRIM(M.idinsumo)
-"""
-                    salida_result = execute_sql_query(
-                        server['host'], server['port'], server['database'],
-                        server['username'], server['password'], query_salida
-                    )
-                    for s in salida_result:
-                        codigo = str(s['codigo']).strip()
-                        # Las salidas restan
-                        movimientos_dict[codigo] = movimientos_dict.get(codigo, 0) - float(s['cantidad'] or 0)
-            
-            else:  # es_mixto
-                # MIXTO: Compras bodega + Traspasos entrada consumo
-                # NORMALIZAR A INSUMOS: cantidad × rendimiento
-                if tipos_entrada_compra:
-                    query_mov = f"""
-SELECT 
-    COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), RTRIM(M.idinsumospresentaciones)) as codigo, 
-    SUM(M.cantidad * ISNULL(IP.rendimiento, 1)) as cantidad
-FROM movtosalmacen M
-LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RTRIM(M.idinsumospresentaciones)
-WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in tipos_entrada_compra])})
-    AND M.fecha >= '{fecha_ini_sql}'
-    AND M.fecha <= '{fecha_fin_sql} 23:59:59'
-GROUP BY COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), RTRIM(M.idinsumospresentaciones))
-"""
-                    mov_result = execute_sql_query(
-                        server['host'], server['port'], server['database'],
-                        server['username'], server['password'], query_mov
-                    )
-                    for m in mov_result:
-                        codigo = str(m['codigo']).strip()
-                        movimientos_dict[codigo] = movimientos_dict.get(codigo, 0) + float(m['cantidad'] or 0)
-            
-            logging.info(f"[AUDITORIA] Movimientos encontrados: {len(movimientos_dict)}")
-            
-            # PASO 5: Obtener consumos/salidas según tipo de almacén
-            # - Solo Bodega: Salidas = Tipos de salida activos en filtros (STR, etc.)
-            # - Solo Consumo: Salidas = Ventas (SPV) o tipos de salida consumo activos
-            # - Mixto: Ventas (el consumo final)
-            
-            consumos_dict = {}
-            
-            if es_solo_bodega:
-                # Para bodega, las salidas son traspasos a consumo (usa movtosalmacen)
-                # NORMALIZAR A INSUMOS: cantidad × rendimiento
-                if tipos_salida_traspaso:
-                    query_salidas = f"""
-SELECT 
-    COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), RTRIM(M.idinsumospresentaciones)) as codigo, 
-    SUM(M.cantidad * ISNULL(IP.rendimiento, 1)) as cantidad
-FROM movtosalmacen M
-LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RTRIM(M.idinsumospresentaciones)
-WHERE M.idconcepto IN ({", ".join([f"'{t}'" for t in tipos_salida_traspaso])})
-    AND M.fecha >= '{fecha_ini_sql}'
-    AND M.fecha <= '{fecha_fin_sql} 23:59:59'
-GROUP BY COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), RTRIM(M.idinsumospresentaciones))
-"""
-                    salidas_result = execute_sql_query(
-                        server['host'], server['port'], server['database'],
-                        server['username'], server['password'], query_salidas
-                    )
-                    for s in salidas_result:
-                        codigo = str(s['codigo']).strip()
-                        consumos_dict[codigo] = float(s['cantidad'] or 0)
+
+        movimientos = _compras_fetch_movimientos(
+            cursor,
+            server_id,
+            fecha_mov_ini,
+            fecha_mov_fin,
+            almacenes,
+            solo_consumos=False,
+        )
+        consumos = _compras_fetch_movimientos(
+            cursor,
+            server_id,
+            fecha_mov_ini,
+            fecha_mov_fin,
+            almacenes,
+            solo_consumos=True,
+        )
+        pedido = _compras_fetch_pedido_detalle(
+            cursor,
+            scope["empresa_id"],
+            scope["sucursal_id"],
+            folios_req,
+        )
+
+        if request.solo_skus_requisicion and pedido:
+            codigos = sorted(pedido.keys())
+        else:
+            codigos = sorted(set(inv_ini.keys()) | set(inv_fin.keys()) | set(movimientos.keys()) | set(consumos.keys()) | set(pedido.keys()))
+
+        resultados = []
+        for codigo in codigos:
+            ini = inv_ini.get(codigo) or {}
+            fin = inv_fin.get(codigo) or {}
+            ped = pedido.get(codigo) or {}
+            inv_inicial = _compras_as_float(ini.get("cantidad"))
+            entradas = _compras_as_float(movimientos.get(codigo))
+            consumo = _compras_as_float(consumos.get(codigo))
+            inv_fisico = _compras_as_float(fin.get("cantidad"))
+            costo = _compras_as_float(fin.get("costo") or ini.get("costo") or ped.get("costo"))
+            existencia_teorica = inv_inicial + entradas - consumo
+            diferencia = inv_fisico - existencia_teorica
+            importe_dif = diferencia * costo
+            consumo_diario = consumo / dias_periodo if dias_periodo > 0 else 0
+            dias_inv = inv_fisico / consumo_diario if consumo_diario > 0 else 999
+            dias_objetivo = request.dias_objetivo_default or 10
+            if request.dias_objetivo_por_sku and codigo in request.dias_objetivo_por_sku:
+                dias_objetivo = request.dias_objetivo_por_sku[codigo]
+            cantidad_pedido = _compras_as_float(ped.get("cantidad"))
+            debe_comprar = dias_inv < dias_objetivo
+
+            producto = (
+                ped.get("producto")
+                or fin.get("producto")
+                or ini.get("producto")
+                or f"SKU: {codigo}"
+            )
+            rendimiento = (
+                _compras_as_float(fin.get("rendimiento"))
+                or _compras_as_float(ini.get("rendimiento"))
+                or 1
+            )
+            unidad = fin.get("unidad") or ini.get("unidad") or ""
+            folio_pedido = ", ".join(ped.get("folios") or [])
+
+            resultados.append({
+                "codigo": codigo,
+                "producto": producto,
+                "proveedor": ped.get("proveedor") or "",
+                "folio_pedido": folio_pedido,
+                "inv_inicial": round(inv_inicial, 2),
+                "movimientos": round(entradas, 2),
+                "entradas": round(entradas, 2),
+                "consumos": round(consumo, 2),
+                "existencia_teorica": round(existencia_teorica, 2),
+                "inv_fisico": round(inv_fisico, 2),
+                "diferencia": round(diferencia, 2),
+                "costo": round(costo, 4),
+                "costo_insumo": round(costo, 4),
+                "costo_presentacion": round(costo, 4),
+                "importe_diferencia": round(importe_dif, 2),
+                "tipo_diferencia": "favor" if diferencia >= 0 else "contra",
+                "consumo_diario": round(consumo_diario, 2),
+                "dias_inventario": round(dias_inv, 1) if dias_inv < 999 else "N/A",
+                "dias_objetivo": dias_objetivo,
+                "cantidad_pedido": round(cantidad_pedido, 2) if cantidad_pedido else 0,
+                "debe_comprar": debe_comprar,
+                "recomendacion": "COMPRAR" if debe_comprar and cantidad_pedido > 0 else "OK" if not debe_comprar else "SIN PEDIDO",
+                "rendimiento": rendimiento,
+                "unidad": unidad,
+            })
+
+            resumen["total_teorico"] += existencia_teorica * costo
+            resumen["total_fisico"] += inv_fisico * costo
+            resumen["total_diferencia"] += importe_dif
+            if diferencia >= 0:
+                resumen["productos_favor"] += 1
+                resumen["importe_favor"] += importe_dif
             else:
-                # Para consumo o mixto, las salidas son ventas
-                query_consumos = f"""
-SELECT C.idinsumo as codigo, SUM(CD.cantidad * C.cantidad) as consumo
-FROM cheqdet CD
-INNER JOIN cheques CH ON CH.folio = CD.foliodet
-INNER JOIN turnos T ON T.idturno = CH.idturno
-INNER JOIN costos C ON C.idproducto = CD.idproducto
-WHERE T.apertura >= '{fecha_ini_sql}'
-    AND T.apertura <= '{fecha_fin_sql} 23:59:59'
-    AND CH.cancelado = 0
-GROUP BY C.idinsumo
-"""
-                consumos_result = execute_sql_query(
-                    server['host'], server['port'], server['database'],
-                    server['username'], server['password'], query_consumos
-                )
-                for c in consumos_result:
-                    codigo = str(c['codigo']).strip()
-                    consumos_dict[codigo] = float(c['consumo'] or 0)
-            
-            logging.info(f"[AUDITORIA] Consumos/Salidas encontradas: {len(consumos_dict)}")
-            
-            # PASO 6: Obtener inventario final (físico del día del pedido)
-            # NUEVO: Procesar múltiples folios y normalizar TODO a INSUMOS
-            inv_fin_dict = {}
-            if request.inventario_fisico_actual:
-                # Captura manual del inventario físico del día del pedido
-                inv_fin_dict = {str(item['codigo']).strip(): {
-                    "producto": item.get('producto', ''),
-                    "cantidad": float(item.get('cantidad', 0)),
-                    "costo": float(item.get('costo', 0))
-                } for item in request.inventario_fisico_actual}
-            else:
-                # Combinar folios (legacy + nuevo formato)
-                folios_finales = []
-                if request.folios_inv_final:
-                    folios_finales = request.folios_inv_final
-                elif request.folio_inv_final:
-                    folios_finales = [request.folio_inv_final]
-                
-                if folios_finales:
-                    for folio_inv in folios_finales:
-                        # Determinar el tipo de almacén de este inventario específico
-                        query_tipo_alm = f"""
-SELECT A.tipo, A.nombre, INV.idalmacen1
-FROM invfisico INV
-LEFT JOIN almacen A ON A.idalmacen = INV.idalmacen1
-WHERE INV.folio = {folio_inv}
-"""
-                        tipo_result = execute_sql_query(
-                            server['host'], server['port'], server['database'],
-                            server['username'], server['password'], query_tipo_alm
-                        )
-                        
-                        tipo_almacen = tipo_result[0]['tipo'] if tipo_result else 1
-                        es_bodega = tipo_almacen == 2
-                        
-                        logging.info(f"[AUDITORIA] Procesando inv final folio={folio_inv}, tipo_almacen={tipo_almacen}, es_bodega={es_bodega}")
-                        
-                        query_inv_fin = f"""
-SELECT 
-    RTRIM(COALESCE(
-        NULLIF(RTRIM(IP.idinsumo), ''),
-        NULLIF(RTRIM(INM.idinsumo), ''),
-        INM.idpresentacion
-    )) as codigo_insumo,
-    RTRIM(INM.idpresentacion) as codigo_presentacion,
-    COALESCE(I.descripcion, IP.descripcion, 'Sin descripción') as producto,
-    INM.fisicoalmacen1 as cantidad, 
-    ISNULL(ID.costo, 0) as costo_insumo,
-    ISNULL(IPD.costo, ISNULL(INM.costo, 0)) as costo_presentacion,
-    ISNULL(IP.rendimiento, 1) as rendimiento
-FROM invfisicomovtos INM
-LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = RTRIM(INM.idpresentacion)
-LEFT JOIN insumos I ON I.idinsumo = COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), NULLIF(RTRIM(INM.idinsumo), ''))
-LEFT JOIN insumosdetalle ID ON ID.idinsumo = COALESCE(NULLIF(RTRIM(IP.idinsumo), ''), NULLIF(RTRIM(INM.idinsumo), ''))
-LEFT JOIN insumospresentacionesdetalle IPD ON IPD.idinsumospresentaciones = RTRIM(INM.idpresentacion)
-WHERE INM.folio = {folio_inv}
-"""
-                        result_fin = execute_sql_query(
-                            server['host'], server['port'], server['database'],
-                            server['username'], server['password'], query_inv_fin
-                        )
-                        
-                        for r in result_fin:
-                            codigo = str(r['codigo_insumo'] or r['codigo_presentacion'] or '').strip()
-                            if not codigo:
-                                continue
-                            
-                            cantidad_raw = float(r['cantidad'] or 0)
-                            rendimiento = float(r['rendimiento'] or 1)
-                            
-                            # NORMALIZAR A INSUMOS
-                            if es_bodega:
-                                cantidad_en_insumos = cantidad_raw * rendimiento
-                            else:
-                                cantidad_en_insumos = cantidad_raw
-                            
-                            if codigo in inv_fin_dict:
-                                inv_fin_dict[codigo]['cantidad'] += cantidad_en_insumos
-                            else:
-                                inv_fin_dict[codigo] = {
-                                    "producto": r['producto'],
-                                    "cantidad": cantidad_en_insumos,
-                                    "costo": float(r['costo_presentacion'] or 0),
-                                    "costo_insumo": float(r['costo_insumo'] or 0),
-                                    "costo_presentacion": float(r['costo_presentacion'] or 0),
-                                    "rendimiento": rendimiento
-                                }
-                        
-                        logging.info(f"[AUDITORIA] Folio final {folio_inv}: {len(result_fin)} productos procesados")
-                elif request.inventario_manual:
-                    inv_fin_dict = {str(item['codigo']).strip(): {
-                        "producto": item.get('producto', ''),
-                        "cantidad": float(item.get('cantidad', 0)),
-                        "costo": float(item.get('costo', 0))
-                    } for item in request.inventario_manual}
-            
-            # PASO 7: Calcular diferencias y días de consumo
-            # FILTRAR SOLO POR SKUs DE LA REQUISICIÓN (si solo_skus_requisicion está activo)
-            from datetime import datetime
-            dias_periodo = (datetime.strptime(fecha_fin, '%Y-%m-%d') - datetime.strptime(fecha_ini, '%Y-%m-%d')).days
-            if dias_periodo <= 0:
-                dias_periodo = 1
-            
-            # Determinar qué procesar: usar requi_list para mantener orden por proveedor-pedido
-            if request.solo_skus_requisicion and requi_list:
-                # Procesar en orden por proveedor-pedido usando la lista de requisiciones
-                logging.info(f"[AUDITORIA] Procesando {len(requi_list)} líneas de pedido por proveedor-pedido")
-                
-                for item in requi_list:
-                    codigo = item['codigo']
-                    inv_inicial = inv_ini_dict.get(codigo, {}).get('cantidad', 0)
-                    movimientos = movimientos_dict.get(codigo, 0)
-                    consumos = consumos_dict.get(codigo, 0)
-                    inv_fisico = inv_fin_dict.get(codigo, {}).get('cantidad', 0)
-                    costo = inv_ini_dict.get(codigo, {}).get('costo', 0) or inv_fin_dict.get(codigo, {}).get('costo', 0) or item.get('costo', 0)
-                    
-                    producto = item.get('producto', '')
-                    if not producto:
-                        producto = inv_ini_dict.get(codigo, {}).get('producto', '') or inv_fin_dict.get(codigo, {}).get('producto', '')
-                    
-                    cantidad_pedido = item.get('cantidad', 0)
-                    proveedor = item.get('proveedor', '')
-                    folio_pedido = item.get('folio_pedido', '')
-                    rendimiento = item.get('rendimiento', 1)
-                    unidad = item.get('unidad', '')
-                    
-                    # Existencia teórica = inicial + movimientos - consumos
-                    existencia_teorica = inv_inicial + movimientos - consumos
-                    diferencia = inv_fisico - existencia_teorica
-                    importe_dif = diferencia * costo
-                    
-                    # Consumo diario promedio
-                    consumo_diario = abs(consumos) / dias_periodo if dias_periodo > 0 else 0
-                    dias_inv = inv_fisico / consumo_diario if consumo_diario > 0 else 999
-                    
-                    # Días objetivo para este SKU (personalizado o default)
-                    dias_objetivo_sku = 10  # Default
-                    if request.dias_objetivo_por_sku and codigo in request.dias_objetivo_por_sku:
-                        dias_objetivo_sku = request.dias_objetivo_por_sku[codigo]
-                    elif hasattr(request, 'dias_objetivo_default') and request.dias_objetivo_default:
-                        dias_objetivo_sku = request.dias_objetivo_default
-                    
-                    debe_comprar = dias_inv < dias_objetivo_sku
-                    
-                    resultados.append({
-                        "codigo": codigo,
-                        "producto": producto or f"SKU: {codigo}",
-                        "proveedor": proveedor,
-                        "folio_pedido": folio_pedido,
-                        "inv_inicial": inv_inicial,
-                        "movimientos": movimientos,
-                        "entradas": movimientos,
-                        "consumos": abs(consumos),
-                        "existencia_teorica": round(existencia_teorica, 2),
-                        "inv_fisico": inv_fisico,
-                        "diferencia": round(diferencia, 2),
-                        "costo": costo,
-                        "costo_insumo": item.get('costo_insumo', 0),
-                        "costo_presentacion": item.get('costo_presentacion', costo),
-                        "importe_diferencia": round(importe_dif, 2),
-                        "tipo_diferencia": "favor" if diferencia >= 0 else "contra",
-                        "consumo_diario": round(consumo_diario, 2),
-                        "dias_inventario": round(dias_inv, 1) if dias_inv < 999 else "N/A",
-                        "dias_objetivo": dias_objetivo_sku,
-                        "cantidad_pedido": cantidad_pedido,
-                        "debe_comprar": debe_comprar,
-                        "recomendacion": "COMPRAR" if debe_comprar and cantidad_pedido > 0 else "OK" if not debe_comprar else "SIN PEDIDO",
-                        "rendimiento": rendimiento,
-                        "unidad": unidad
-                    })
-                    
-                    resumen["total_teorico"] += existencia_teorica * costo
-                    resumen["total_fisico"] += inv_fisico * costo
-                    resumen["total_diferencia"] += importe_dif
-                    if diferencia >= 0:
-                        resumen["productos_favor"] += 1
-                        resumen["importe_favor"] += importe_dif
-                    else:
-                        resumen["productos_contra"] += 1
-                        resumen["importe_contra"] += abs(importe_dif)
-            else:
-                # Todos los códigos encontrados (sin orden específico)
-                todos_codigos = set(inv_ini_dict.keys()) | set(movimientos_dict.keys()) | set(consumos_dict.keys()) | set(inv_fin_dict.keys())
-                
-                for codigo in todos_codigos:
-                    inv_inicial = inv_ini_dict.get(codigo, {}).get('cantidad', 0)
-                    movimientos = movimientos_dict.get(codigo, 0)  # Entradas según tipo de almacén
-                    consumos = consumos_dict.get(codigo, 0)
-                    inv_fisico = inv_fin_dict.get(codigo, {}).get('cantidad', 0)
-                    costo = inv_ini_dict.get(codigo, {}).get('costo', 0) or inv_fin_dict.get(codigo, {}).get('costo', 0)
-                    
-                    # Obtener producto desde requisición primero, luego de inventarios
-                    producto = requi_dict.get(codigo, {}).get('producto', '') if isinstance(requi_dict.get(codigo), dict) else ''
-                    if not producto:
-                        producto = inv_ini_dict.get(codigo, {}).get('producto', '') or inv_fin_dict.get(codigo, {}).get('producto', '')
-                    
-                    cantidad_pedido = requi_dict.get(codigo, {}).get('cantidad', 0) if isinstance(requi_dict.get(codigo), dict) else requi_dict.get(codigo, 0)
-                    
-                    # Obtener proveedor de la requisición
-                    proveedor = requi_dict.get(codigo, {}).get('proveedor', '') if isinstance(requi_dict.get(codigo), dict) else ''
-                    
-                    # Existencia teórica = inicial + movimientos - consumos
-                    existencia_teorica = inv_inicial + movimientos - consumos
-                    
-                    # Diferencia = físico - teórico
-                    diferencia = inv_fisico - existencia_teorica
-                    importe_dif = diferencia * costo
-                    
-                    # Consumo diario promedio
-                    consumo_diario = abs(consumos) / dias_periodo if dias_periodo > 0 else 0
-                    
-                    # Días de inventario disponible
-                    dias_inv = inv_fisico / consumo_diario if consumo_diario > 0 else 999
-                    
-                    # Días objetivo para este SKU (personalizado o default)
-                    dias_objetivo_sku = 10  # Default
-                    if request.dias_objetivo_por_sku and codigo in request.dias_objetivo_por_sku:
-                        dias_objetivo_sku = request.dias_objetivo_por_sku[codigo]
-                    elif hasattr(request, 'dias_objetivo_default') and request.dias_objetivo_default:
-                        dias_objetivo_sku = request.dias_objetivo_default
-                    
-                    # ¿Debe comprar?
-                    debe_comprar = dias_inv < dias_objetivo_sku
-                    
-                    # Obtener rendimiento y unidad de la requisición
-                    rendimiento = requi_dict.get(codigo, {}).get('rendimiento', 1) if isinstance(requi_dict.get(codigo), dict) else 1
-                    unidad = requi_dict.get(codigo, {}).get('unidad', '') if isinstance(requi_dict.get(codigo), dict) else ''
-                    
-                    # Incluir producto si tiene nombre o está en la requisición
-                    if producto or codigo in skus_requisicion:
-                        # Obtener folio_pedido si existe
-                        folio_pedido = requi_dict.get(codigo, {}).get('folio_pedido', '') if isinstance(requi_dict.get(codigo), dict) else ''
-                        costo_insumo = requi_dict.get(codigo, {}).get('costo_insumo', 0) if isinstance(requi_dict.get(codigo), dict) else 0
-                        costo_presentacion = requi_dict.get(codigo, {}).get('costo_presentacion', costo) if isinstance(requi_dict.get(codigo), dict) else costo
-                        
-                        resultados.append({
-                            "codigo": codigo,
-                            "producto": producto or f"SKU: {codigo}",
-                            "proveedor": proveedor,
-                            "folio_pedido": folio_pedido,
-                            "inv_inicial": inv_inicial,
-                            "movimientos": movimientos,
-                            "entradas": movimientos,
-                            "consumos": abs(consumos),
-                            "existencia_teorica": round(existencia_teorica, 2),
-                            "inv_fisico": inv_fisico,
-                            "diferencia": round(diferencia, 2),
-                            "costo": costo,
-                            "costo_insumo": costo_insumo,
-                            "costo_presentacion": costo_presentacion,
-                            "importe_diferencia": round(importe_dif, 2),
-                            "tipo_diferencia": "favor" if diferencia >= 0 else "contra",
-                            "consumo_diario": round(consumo_diario, 2),
-                            "dias_inventario": round(dias_inv, 1) if dias_inv < 999 else "N/A",
-                            "dias_objetivo": dias_objetivo_sku,
-                            "cantidad_pedido": cantidad_pedido,
-                            "debe_comprar": debe_comprar,
-                            "recomendacion": "COMPRAR" if debe_comprar and cantidad_pedido > 0 else "OK" if not debe_comprar else "SIN PEDIDO",
-                            "rendimiento": rendimiento,
-                            "unidad": unidad
-                        })
-                        
-                        resumen["total_teorico"] += existencia_teorica * costo
-                        resumen["total_fisico"] += inv_fisico * costo
-                        resumen["total_diferencia"] += importe_dif
-                        if diferencia >= 0:
-                            resumen["productos_favor"] += 1
-                            resumen["importe_favor"] += importe_dif
-                        else:
-                            resumen["productos_contra"] += 1
-                            resumen["importe_contra"] += abs(importe_dif)
-            
-            resumen["requiere_acta"] = resumen["productos_contra"] > 0 or resumen["importe_contra"] > 100
-            
-            # Solo ordenar por importe cuando NO se filtra por SKUs de requisición
-            # (cuando se filtra, ya viene ordenado por proveedor-pedido)
-            if not (request.solo_skus_requisicion and requi_list):
-                resultados = sorted(resultados, key=lambda x: x['importe_diferencia'])
-        
-        elif is_mpro_system(server.get('system_type')):
-            # Lógica similar para MPRO
-            # TODO: Implementar para MPRO si es necesario
-            pass
-        
+                resumen["productos_contra"] += 1
+                resumen["importe_contra"] += abs(importe_dif)
+
+        resumen = {
+            **resumen,
+            "total_teorico": round(resumen["total_teorico"], 2),
+            "total_fisico": round(resumen["total_fisico"], 2),
+            "total_diferencia": round(resumen["total_diferencia"], 2),
+            "importe_favor": round(resumen["importe_favor"], 2),
+            "importe_contra": round(resumen["importe_contra"], 2),
+            "requiere_acta": resumen["productos_contra"] > 0 or resumen["importe_contra"] > 100,
+        }
+        if not (request.solo_skus_requisicion and pedido):
+            resultados.sort(key=lambda row: row["importe_diferencia"])
+
         return {
+            "status": "OK",
+            "source": scope["source"],
             "resultados": resultados,
             "resumen": resumen,
-            "periodo": {"inicio": fecha_ini, "fin": fecha_fin, "dias": dias_periodo if 'dias_periodo' in dir() else 0},
-            "folios_requisiciones": folios_req
+            "periodo": {
+                "inicio": request.fecha_inv_inicial,
+                "fin": request.fecha_auditoria,
+                "dias": dias_periodo,
+            },
+            "folios_requisiciones": folios_req,
         }
-        
-    except Exception as e:
-        logging.error(f"[AUDITORIA] Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logging.exception("[AUDITORIA][NOLIVE] Error en auditoría canónica")
+        raise HTTPException(status_code=500, detail=f"Error interno en auditoría canónica: {str(exc)[:180]}")
+    finally:
+        if conn:
+            conn.close()
+
+
+# Implementación live legacy desregistrada: sin SQL live ni uso operativo.
+async def _legacy_realizar_auditoria_operativa_live_disabled(request: AuditoriaOperativaRequest, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    raise RuntimeError("Implementación legacy live deshabilitada; use /compras/auditoria-operativa canónico.")
 
 
 # ============= DETALLE DE MOVIMIENTOS =============
@@ -11515,20 +9814,20 @@ async def guardar_inventario_provisional(
     Permite persistir la captura manual del inventario físico antes de ejecutar la auditoría.
     """
     from modules.comercial.service import EDARSAHUB_TABLERO_CONFIG
-    
+
     try:
         usuario_id = current_user.get('_sql_usuario_id', current_user.get('id'))
         usuario_email = current_user.get('email', 'unknown')
-        
+
         conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
         cursor = conn.cursor()
-        
+
         items_guardados = 0
         for item in request.items:
             total = item.cantidad * (item.costo_unitario or 0)
             cursor.execute("""
-                INSERT INTO Auditoria_Inventario_Provisional 
-                (unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal, 
+                INSERT INTO Auditoria_Inventario_Provisional
+                (unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal,
                  fecha_auditoria, usuario_id, usuario_email,
                  codigo_producto, nombre_producto, cantidad, costo_unitario, total,
                  almacen, notas, estado)
@@ -11550,18 +9849,18 @@ async def guardar_inventario_provisional(
                 item.notas
             ))
             items_guardados += 1
-        
+
         conn.commit()
         conn.close()
-        
+
         logging.info(f"[INV-PROVISIONAL] Guardados {items_guardados} items por {usuario_email}")
-        
+
         return {
             "success": True,
             "message": f"Guardados {items_guardados} productos provisionales",
             "items_guardados": items_guardados
         }
-        
+
     except Exception as e:
         logging.error(f"[INV-PROVISIONAL] Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -11577,11 +9876,11 @@ async def obtener_inventarios_provisionales(
     Obtiene inventarios provisionales guardados para una unidad de negocio.
     """
     from modules.comercial.service import EDARSAHUB_TABLERO_CONFIG
-    
+
     try:
         conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
         cursor = conn.cursor(as_dict=True)
-        
+
         query = """
             SELECT id, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal,
                    fecha_captura, fecha_auditoria, usuario_email,
@@ -11591,30 +9890,30 @@ async def obtener_inventarios_provisionales(
             WHERE unidad_negocio_id = %s AND estado = 'PROVISIONAL'
         """
         params = [unidad_negocio_id]
-        
+
         if fecha_auditoria:
             query += " AND fecha_auditoria = %s"
             params.append(fecha_auditoria)
-        
+
         query += " ORDER BY fecha_captura DESC"
-        
+
         cursor.execute(query, params)
         rows = cursor.fetchall()
         conn.close()
-        
+
         # Convertir datetime a string
         for row in rows:
             if row.get('fecha_captura'):
                 row['fecha_captura'] = str(row['fecha_captura'])
             if row.get('fecha_auditoria'):
                 row['fecha_auditoria'] = str(row['fecha_auditoria'])
-        
+
         return {
             "success": True,
             "data": rows,
             "total": len(rows)
         }
-        
+
     except Exception as e:
         logging.error(f"[INV-PROVISIONAL] Error obteniendo: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -11629,27 +9928,27 @@ async def eliminar_inventario_provisional(
     Elimina un item del inventario provisional.
     """
     from modules.comercial.service import EDARSAHUB_TABLERO_CONFIG
-    
+
     try:
         conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
         cursor = conn.cursor()
-        
+
         # Verificar que existe y está en estado PROVISIONAL
         cursor.execute("""
-            DELETE FROM Auditoria_Inventario_Provisional 
+            DELETE FROM Auditoria_Inventario_Provisional
             WHERE id = %s AND estado = 'PROVISIONAL'
         """, (item_id,))
-        
+
         rows_affected = cursor.rowcount
         conn.commit()
         conn.close()
-        
+
         if rows_affected > 0:
             logging.info(f"[INV-PROVISIONAL] Eliminado item {item_id} por {current_user.get('email')}")
             return {"success": True, "message": "Item eliminado correctamente"}
         else:
             raise HTTPException(status_code=404, detail="Item no encontrado o ya procesado")
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -11667,34 +9966,34 @@ async def limpiar_inventarios_provisionales(
     Limpia todos los inventarios provisionales de una unidad (para una fecha específica o todos).
     """
     from modules.comercial.service import EDARSAHUB_TABLERO_CONFIG
-    
+
     try:
         conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
         cursor = conn.cursor()
-        
+
         if fecha_auditoria:
             cursor.execute("""
-                DELETE FROM Auditoria_Inventario_Provisional 
+                DELETE FROM Auditoria_Inventario_Provisional
                 WHERE unidad_negocio_id = %s AND fecha_auditoria = %s AND estado = 'PROVISIONAL'
             """, (unidad_negocio_id, fecha_auditoria))
         else:
             cursor.execute("""
-                DELETE FROM Auditoria_Inventario_Provisional 
+                DELETE FROM Auditoria_Inventario_Provisional
                 WHERE unidad_negocio_id = %s AND estado = 'PROVISIONAL'
             """, (unidad_negocio_id,))
-        
+
         rows_affected = cursor.rowcount
         conn.commit()
         conn.close()
-        
+
         logging.info(f"[INV-PROVISIONAL] Limpiados {rows_affected} items de {unidad_negocio_id} por {current_user.get('email')}")
-        
+
         return {
             "success": True,
             "message": f"Se eliminaron {rows_affected} items provisionales",
             "items_eliminados": rows_affected
         }
-        
+
     except Exception as e:
         logging.error(f"[INV-PROVISIONAL] Error limpiando: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -11713,17 +10012,17 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
     print("Fecha inicial:", request.fecha_inicio)
     print("Fecha final:", request.fecha_fin)
     print("Server ID:", request.server_id)
-    
+
     # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy (detalle-movimientos).
     from core.corporate_filters.request_resolver import canonical_server_id
     request.server_id = canonical_server_id(request.server_id)
-    
+
     # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)
     from core.server_registry import get_server_connection_info
     server = await get_server_connection_info(request.server_id, db=db)
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     # =====================================================================
     # NO-LIVE: el detalle de movimientos se lee EXCLUSIVAMENTE de las tablas
     # canónicas de EDARSAHUB (Inventario_Movimientos/Detalle), pobladas por el
@@ -11832,25 +10131,25 @@ async def obtener_detalle_movimientos_post(request: DetalleMovimientosRequest, c
 
 @api_router.post("/compras/detalle-movimientos-sql-first")
 async def obtener_detalle_movimientos_sql_first(
-    request: DetalleMovimientosRequest, 
+    request: DetalleMovimientosRequest,
     current_user: Dict = Depends(get_current_user)
 ):
     """
     [SQL-FIRST] Obtiene detalle de movimientos desde EDARSAHUB SQL.
-    
+
     Este endpoint lee EXCLUSIVAMENTE de tablas sincronizadas en EDARSAHUB.
     NO conecta a SoftRestaurant/MPRO directamente.
-    
+
     Requiere que el job sync_compras haya llenado las tablas:
     - Inventario_Movimientos
     - Inventario_MovimientosDetalle
     - Inventario_Almacenes
-    
+
     Feature flag: COMPRAS_SQL_FIRST_ENABLED
     """
     import os
     import pymssql
-    
+
     # Verificar feature flag
     if os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false').lower() != 'true':
         return {
@@ -11859,18 +10158,18 @@ async def obtener_detalle_movimientos_sql_first(
             'movimientos': [],
             'totales': {'entradas': 0, 'salidas': 0, 'neto': 0}
         }
-    
+
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
-    
+
     movimientos = []
     totales = {'entradas': 0, 'salidas': 0, 'neto': 0}
-    
+
     try:
         conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
         cursor = conn.cursor(as_dict=True)
-        
+
         codigo_limpio = request.codigo.strip()
-        
+
         # Filtro de almacenes
         filtro_almacenes = ""
         if request.almacenes:
@@ -11878,7 +10177,7 @@ async def obtener_detalle_movimientos_sql_first(
             if almacenes_limpios:
                 almacenes_sql = ", ".join([f"'{a}'" for a in almacenes_limpios])
                 filtro_almacenes = f" AND a.CodigoAlmacen IN ({almacenes_sql}) "
-        
+
         query = f"""
         SELECT TOP 500
             m.FechaMovimiento AS fecha,
@@ -11900,14 +10199,14 @@ async def obtener_detalle_movimientos_sql_first(
           {filtro_almacenes}
         ORDER BY m.FechaMovimiento DESC, m.Folio DESC
         """
-        
+
         cursor.execute(query, (request.server_id, codigo_limpio, request.fecha_inicio, request.fecha_fin))
         result = cursor.fetchall()
-        
+
         for r in result:
             cantidad = float(r['cantidad'] or 0)
             tipo = r['tipo'] or 'S'
-            
+
             movimientos.append({
                 'fecha': r['fecha'].isoformat() if hasattr(r['fecha'], 'isoformat') else str(r['fecha']),
                 'concepto': r['concepto'] or '',
@@ -11917,23 +10216,23 @@ async def obtener_detalle_movimientos_sql_first(
                 'referencia': r['referencia'] or '',
                 'tipo': tipo
             })
-            
+
             if tipo == 'E':
                 totales['entradas'] += cantidad
             else:
                 totales['salidas'] += cantidad
-        
+
         totales['neto'] = totales['entradas'] - totales['salidas']
-        
+
         conn.close()
-        
+
         return {
             'status': 'SQL_FIRST',
             'source': 'EDARSAHUB',
             'movimientos': movimientos,
             'totales': totales
         }
-        
+
     except Exception as e:
         logging.error(f"[SQL-FIRST] Error obteniendo detalle movimientos: {str(e)}")
         return {
@@ -11956,8 +10255,7 @@ class DetalleConsumosRequest(BaseModel):
 async def obtener_detalle_consumos_post(request: DetalleConsumosRequest, current_user: Dict = Depends(get_current_user)):
     """
     Detalle de consumos/ventas de un producto en un período.
-    UNIFICACIÓN CANÓNICA (Fase B): reutiliza la MISMA lógica que el detalle de ventas
-    de Análisis (/reports/sales-details), que SÍ funciona para MPRO y SoftRestaurant.
+    UNIFICACIÓN CANÓNICA (Fase B): utiliza fuentes sincronizadas en EDARSAHUB.
     La fecha inicial proviene del inventario inicial (la envía el frontend en fecha_inicio).
     """
     # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy.
@@ -11977,53 +10275,15 @@ async def obtener_detalle_consumos_post(request: DetalleConsumosRequest, current
             return {"consumos": [], "movimientos": [], "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
                     "error": f"Error al obtener consumos: {str(e)[:100]}"}
 
-    almacen = ''
-    if isinstance(request.almacenes, list) and request.almacenes:
-        almacen = request.almacenes[0]
-    elif isinstance(request.almacenes, str):
-        almacen = request.almacenes
-
-    params = {
-        "server_id": request.server_id,
-        "producto_codigo": (request.codigo or '').strip(),
-        "sucursal": request.sucursal,
-        "almacen": almacen,
-        "fecha_ini": request.fecha_inicio,
-        "fecha_fin": request.fecha_fin,
-    }
-
-    try:
-        result = await get_sales_details(params, current_user)
-    except Exception as e:
-        logging.error(f"[DETALLE_CONSUMOS] Error delegando a sales-details: {e}")
-        return {"consumos": [], "movimientos": [], "totales": {"total": 0},
-                "error": f"Error al obtener consumos: {str(e)[:100]}"}
-
-    ventas = result.get("data", []) if isinstance(result, dict) else []
-    consumos = []
-    total = 0.0
-    for v in ventas:
-        cant = float(v.get('cantidad') or 0)
-        consumos.append({
-            "fecha": v.get('fecha'),
-            "concepto": v.get('tipo_venta') or 'VENTA',
-            "descripcion": v.get('producto_vendido') or v.get('producto') or '',
-            "cantidad": cant,
-            "tipo": "S",
-            "almacen": v.get('sucursal') or '',
-            "referencia": str(v.get('folio') or ''),
-            # compat con render/legacy
-            "documento": str(v.get('folio') or ''),
-            "producto_vendido": v.get('producto_vendido'),
-            "cantidad_vendida": cant,
-            "consumo": cant,
-        })
-        total += cant
-
     return {
-        "consumos": consumos,
-        "movimientos": consumos,
-        "totales": {"total": round(total, 4), "entradas": 0, "salidas": round(total, 4), "neto": -round(total, 4)},
+        "consumos": [],
+        "movimientos": [],
+        "totales": {"total": 0, "entradas": 0, "salidas": 0, "neto": 0},
+        "source": "EDARSAHUB_SQL_CANONICAL_PENDING",
+        "error": (
+            "Detalle canónico de consumos para este sistema pendiente de sincronización. "
+            "Por regla NO-LIVE no se consulta POS en vivo."
+        ),
     }
 
 
@@ -12038,8 +10298,8 @@ class AnalisisComprasRequest(BaseModel):
 
 @api_router.get("/compras/dashboard/{server_id}")
 async def obtener_dashboard_compras(
-    server_id: str, 
-    sucursal: str = None, 
+    server_id: str,
+    sucursal: str = None,
     meses: str = Query(default=""),  # "01,02,03" - Lista de meses separados por coma
     anio: str = Query(default=""),  # "2025" - Año específico (compatibilidad)
     anios: str = Query(default=""),  # "2025,2024" - Múltiples años
@@ -12047,600 +10307,266 @@ async def obtener_dashboard_compras(
     periodo_ano: str = Query(default="actual"),  # Mantener para compatibilidad
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
-    """Obtiene KPIs y alertas para el dashboard de compras. Soporta multiselección de meses y años."""
-    # FASE 3.1: Validar acceso por empresa
-    access = await validate_server_access_by_empresa(server_id, credentials)
-    server = access["server"]
-    
-    if not sucursal:
-        return {"kpis": {"total_compras_mes": 0, "requisiciones_pendientes": 0, "proveedores_activos": 0, "alertas_activas": 0}, "alertas": [], "top_proveedores": []}
-    
+    """Obtiene KPIs de Compras exclusivamente desde EDARSAHUB SQL canónico."""
+    scope = await _compras_resolve_scope(server_id, sucursal, credentials)
+    anios_param = anios or anio
+    if not meses:
+        meses = str(datetime.now().month).zfill(2)
+    if not anios_param:
+        anios_param = str(datetime.now().year)
+
+    periodo_where, periodo_params = _compras_period_where("FechaRecepcion", meses, anios_param)
+    pedido_where, pedido_params = _compras_period_where("FechaPedido", meses, anios_param)
+    conn = None
     try:
-        # Calcular fechas según período seleccionado
-        from datetime import datetime
-        now = datetime.now()
-        
-        # Obtener lista de años (priorizar 'anios' sobre 'anio')
-        if anios:
-            lista_anios = [int(a.strip()) for a in anios.split(',') if a.strip()]
-        elif anio:
-            lista_anios = [int(anio)]
-        else:
-            lista_anios = None
-        
-        # Nueva lógica: meses y años específicos
-        if meses and lista_anios:
-            lista_meses = [m.strip() for m in meses.split(',') if m.strip()]
-            year = max(lista_anios)  # Usar el año más reciente
-            
-            mes_min = min([int(m) for m in lista_meses])
-            mes_max = max([int(m) for m in lista_meses])
-            
-            fecha_inicio = f"{year}-{str(mes_min).zfill(2)}-01"
-            
-            # Último día del mes máximo + 1 para el filtro < fecha_fin
-            if mes_max == 12:
-                fecha_fin = f"{year + 1}-01-01"
-            else:
-                fecha_fin = f"{year}-{str(mes_max + 1).zfill(2)}-01"
-            
-            logging.info(f"Dashboard Compras (multiselección): Meses: {lista_meses} Año: {year} ({fecha_inicio} a {fecha_fin})")
-        else:
-            # Lógica antigua para compatibilidad
-            # Determinar el año
-            if periodo_ano == "anterior":
-                year = now.year - 1
-            else:
-                year = now.year
-            
-            # Determinar el mes
-            if periodo_mes == "anterior":
-                if now.month == 1:
-                    month = 12
-                    year = year - 1
-                else:
-                    month = now.month - 1
-            else:
-                month = now.month
-            
-            # Calcular fecha inicio y fin del período
-            fecha_inicio = f"{year}-{month:02d}-01"
-            # Calcular último día del mes
-            if month == 12:
-                next_month_year = year + 1
-                next_month = 1
-            else:
-                next_month_year = year
-                next_month = month + 1
-            fecha_fin = f"{next_month_year}-{next_month:02d}-01"
-            
-            logging.info(f"Dashboard Compras: período {fecha_inicio} a {fecha_fin}")
-        
-        if is_mpro_system(server.get('system_type')):
-            # ============================================================================
-            # CORRECCIÓN AUDITORIA-COMPRAS-DASHBOARD-MPRO-01 (2026-04-29):
-            # 
-            # PROBLEMAS CORREGIDOS:
-            # 1. Tm_Tipo = 'E' incorrecto -> debe ser 'EN' para entradas en MPRO
-            # 2. Filtro LIKE '%sucursal%' impreciso -> usar Sc_Cve_Sucursal exacto
-            # 3. Tabla Movimiento no refleja compras reales -> usar Compra_Encabezado
-            # 
-            # VALIDACIÓN SQL DIRECTA (2026-04-29):
-            # - 130 QRO (0021): 398 facturas, $2,911,864.47 (Compra_Encabezado)
-            # - ORIGEN (0023): 377 facturas, $2,006,042.58 (Compra_Encabezado)
-            # ============================================================================
-            
-            # Determinar sucursal_origen_id (código exacto MPRO)
-            # El parámetro 'sucursal' puede venir como código o nombre
-            # Intentar resolver a código exacto
-            sucursal_codigo = sucursal
-            
-            # Total compras del período usando Compra_Encabezado (fuente correcta)
-            # Filtro por Sc_Cve_Sucursal exacto, no LIKE
-            query_compras = f"""
-SELECT 
-    COUNT(DISTINCT Co.Co_Folio) as total_facturas,
-    ISNULL(SUM(Co.Co_Precio_Neto_Importe), 0) as total
-FROM Compra_Encabezado Co
-WHERE Co.Co_Fecha >= '{fecha_inicio}'
-    AND Co.Co_Fecha < '{fecha_fin}'
-    AND ISNULL(Co.Es_Cve_Estado, '') <> 'CA'
-    AND Co.Sc_Cve_Sucursal = '{sucursal_codigo}'
-"""
-            logging.info(f"[COMPRAS_DASHBOARD_MPRO] Sucursal={sucursal_codigo}, Período={fecha_inicio} a {fecha_fin}")
-            
-            result_compras = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_compras
-            )
-            
-            # TAREA 7: Prohibir ceros silenciosos - verificar respuesta real
-            if not result_compras:
-                logging.error(f"[COMPRAS_DASHBOARD_MPRO] COMPRAS_QUERY_ERROR: Sin respuesta para sucursal {sucursal_codigo}")
-                return {
-                    "kpis": {"total_compras_mes": 0, "facturas_mes": 0, "requisiciones_pendientes": 0, "proveedores_activos": 0, "alertas_activas": 0},
-                    "alertas": [{"tipo": "error", "mensaje": "Error en consulta de compras"}],
-                    "top_proveedores": [],
-                    "meta": {"status": "COMPRAS_QUERY_ERROR", "sucursal": sucursal_codigo, "mensaje": "La consulta no retornó datos"}
-                }
-            
-            total_compras = float(result_compras[0]['total'] or 0)
-            total_facturas = int(result_compras[0]['total_facturas'] or 0)
-            
-            # Requisiciones pendientes FILTRADO POR SUCURSAL EXACTA
-            query_req = f"""
-SELECT COUNT(*) as total FROM Requisicion_Compra RC
-WHERE RC.Es_Cve_Estado = 'PXA' 
-    AND RC.Sc_Cve_Sucursal = '{sucursal_codigo}'
-"""
-            result_req = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_req
-            )
-            req_pendientes = result_req[0]['total'] if result_req else 0
-            
-            # Proveedores activos (con compras en últimos 90 días) FILTRADO POR SUCURSAL EXACTA
-            query_prov = f"""
-SELECT COUNT(DISTINCT Co.Pv_Cve_Proveedor) as total
-FROM Compra_Encabezado Co
-WHERE Co.Co_Fecha >= DATEADD(day, -90, GETDATE())
-    AND Co.Pv_Cve_Proveedor IS NOT NULL
-    AND ISNULL(Co.Es_Cve_Estado, '') <> 'CA'
-    AND Co.Sc_Cve_Sucursal = '{sucursal_codigo}'
-"""
-            result_prov = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_prov
-            )
-            prov_activos = result_prov[0]['total'] if result_prov else 0
-            
-            # Top 5 proveedores usando Compra_Encabezado
-            query_top = f"""
-SELECT TOP 5 
-    ISNULL(P.Pv_Nombre, 'Sin proveedor') as nombre,
-    COUNT(DISTINCT Co.Co_Folio) as facturas,
-    ISNULL(SUM(Co.Co_Precio_Neto_Importe), 0) as total
-FROM Compra_Encabezado Co
-LEFT JOIN Proveedor P ON P.Pv_Cve_Proveedor = Co.Pv_Cve_Proveedor
-WHERE Co.Co_Fecha >= '{fecha_inicio}'
-    AND Co.Co_Fecha < '{fecha_fin}'
-    AND ISNULL(Co.Es_Cve_Estado, '') <> 'CA'
-    AND Co.Sc_Cve_Sucursal = '{sucursal_codigo}'
-GROUP BY P.Pv_Nombre
-ORDER BY SUM(Co.Co_Precio_Neto_Importe) DESC
-"""
-            result_top = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_top
-            )
-            top_proveedores = [{"nombre": r['nombre'], "total": float(r['total'] or 0)} for r in (result_top or [])]
-            
-            logging.info(f"[COMPRAS_DASHBOARD_MPRO] Resultado: {total_facturas} facturas, ${total_compras:,.2f}, {prov_activos} proveedores")
-            
-            return {
-                "kpis": {
-                    "total_compras_mes": total_compras,
-                    "facturas_mes": total_facturas,
-                    "requisiciones_pendientes": req_pendientes,
-                    "proveedores_activos": prov_activos,
-                    "alertas_activas": 0
-                },
-                "alertas": [],
-                "top_proveedores": top_proveedores,
-                "meta": {
-                    "status": "OK",
-                    "source": "Compra_Encabezado",
-                    "sucursal_codigo": sucursal_codigo,
-                    "fecha_inicio": fecha_inicio,
-                    "fecha_fin": fecha_fin,
-                    "system_type": "MPRO"
-                }
-            }
-        
-        elif is_softrestaurant_system(server.get('system_type')):
-            # ============================================================================
-            # CORRECCIÓN AUDITORIA-COMPRAS-DASHBOARD-SR-01 (2026-04-29):
-            # 
-            # SoftRestaurant - Usando tabla compras del catálogo
-            # Base single-tenant: no requiere filtro por sucursal
-            #
-            # VALIDACIÓN SQL DIRECTA (2026-04-29):
-            # - 130 MID: 452 facturas, $2,738,483.56 (Abril 2026)
-            # ============================================================================
-            
-            # CORRECCIÓN AUDITORIA-COMPRAS-DASHBOARD-VS-ANALISIS-01:
-            # Usar MONTH()/YEAR() en lugar de rangos de fecha para consistencia con /api/compras/analisis
-            meses_cond = " OR ".join([f"MONTH(c.fechaaplicacion) = {int(m)}" for m in lista_meses]) if meses and lista_meses else f"MONTH(c.fechaaplicacion) = {now.month}"
-            anios_cond = " OR ".join([f"YEAR(c.fechaaplicacion) = {a}" for a in lista_anios]) if lista_anios else f"YEAR(c.fechaaplicacion) = {now.year}"
-            
-            logging.info(f"[COMPRAS_DASHBOARD_SR] Database={server.get('database')}, Filtros: ({anios_cond}) AND ({meses_cond})")
-            
-            # Total compras del período seleccionado
-            query_compras = f"""
-SELECT 
-    COUNT(DISTINCT c.idcompra) as Facturas,
-    ISNULL(SUM(c.total), 0) as Compra_Total
-FROM compras c
-WHERE ({anios_cond})
-    AND ({meses_cond})
-    AND ISNULL(c.cancelado, 0) = 0
-"""
-            result_compras = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_compras
-            )
-            
-            # TAREA 7: Prohibir ceros silenciosos - usar estados específicos
-            if not result_compras:
-                # Registrar el error con detalle para diagnóstico
-                logging.error(f"[COMPRAS_DASHBOARD_SR] COMPRAS_QUERY_ERROR: Sin respuesta para {server.get('database')} (host={server.get('host')})")
-                
-                return {
-                    "kpis": {"total_compras_mes": 0, "facturas_mes": 0, "requisiciones_pendientes": 0, "proveedores_activos": 0, "alertas_activas": 0},
-                    "alertas": [{"tipo": "error", "mensaje": "No fue posible conectar con el servidor SQL configurado"}],
-                    "top_proveedores": [],
-                    "meta": {
-                        "status": "SERVER_UNREACHABLE",
-                        "database": server.get('database'),
-                        "host": server.get('host'),
-                        "server_id": server_id,
-                        "config_origin": "EDARSAHUB_SQL",
-                        "mensaje": "No fue posible conectar con el servidor SQL configurado para esta unidad",
-                        "zero_confirmed": False
-                    }
-                }
-            
-            total_compras = float(result_compras[0]['Compra_Total'] or 0)
-            facturas = int(result_compras[0]['Facturas'] or 0)
-            
-            # Proveedores activos (con compras en últimos 90 días desde hoy)
-            from datetime import datetime, timedelta
-            fecha_90 = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
-            query_prov = f"""
-SELECT COUNT(DISTINCT c.idproveedor) as total
-FROM compras c
-WHERE c.fechaaplicacion >= '{fecha_90}'
-  AND c.idproveedor IS NOT NULL
-  AND ISNULL(c.cancelado, 0) = 0
-"""
-            result_prov = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_prov
-            )
-            prov_activos = result_prov[0]['total'] if result_prov else 0
-            
-            # Top proveedores usando tabla compras
-            query_top = f"""
-SELECT TOP 5 
-    ISNULL(p.nombre, 'Sin proveedor') as nombre,
-    COUNT(DISTINCT c.idcompra) as Facturas,
-    ISNULL(SUM(c.total), 0) as total
-FROM compras c
-LEFT JOIN proveedores p ON p.idproveedor = c.idproveedor
-WHERE ({anios_cond})
-    AND ({meses_cond})
-    AND ISNULL(c.cancelado, 0) = 0
-GROUP BY p.nombre
-ORDER BY SUM(c.total) DESC
-"""
-            result_top = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query_top
-            )
-            top_proveedores = [{"nombre": r['nombre'], "total": float(r['total'] or 0)} for r in (result_top or [])]
-            
-            logging.info(f"[COMPRAS_DASHBOARD_SR] Resultado: {facturas} facturas, ${total_compras:,.2f}, {prov_activos} proveedores")
-            
-            return {
-                "kpis": {
-                    "total_compras_mes": total_compras,
-                    "facturas_mes": facturas,
-                    "requisiciones_pendientes": 0,  # SoftRestaurant no tiene este concepto
-                    "proveedores_activos": prov_activos,
-                    "alertas_activas": 0
-                },
-                "alertas": [],
-                "top_proveedores": top_proveedores,
-                "meta": {
-                    "status": "OK",
-                    "source": "compras",
-                    "database": server.get('database'),
-                    "anios": lista_anios,
-                    "meses": lista_meses if meses else [now.month],
-                    "system_type": "SoftRestaurant"
-                }
-            }
-        
-        return {"kpis": {}, "alertas": [], "top_proveedores": []}
+        conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=10)
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute(
+            f"""
+SELECT
+    COUNT(DISTINCT FolioRecepcion) AS facturas,
+    ISNULL(SUM(Total), 0) AS total,
+    COUNT(DISTINCT ProveedorID) AS proveedores
+FROM dbo.Compras_Recepciones
+WHERE EmpresaID = %s
+  AND SucursalID = %s
+  AND Activo = 1
+  AND {periodo_where}
+""",
+            tuple([scope["empresa_id"], scope["sucursal_id"], *periodo_params]),
+        )
+        compras = cursor.fetchone() or {}
+
+        cursor.execute(
+            f"""
+SELECT COUNT(DISTINCT FolioPedido) AS total
+FROM dbo.Compras_Pedidos
+WHERE EmpresaID = %s
+  AND SucursalID = %s
+  AND Activo = 1
+  AND {pedido_where}
+""",
+            tuple([scope["empresa_id"], scope["sucursal_id"], *pedido_params]),
+        )
+        pedidos = cursor.fetchone() or {}
+
+        cursor.execute(
+            f"""
+SELECT TOP 5
+    CAST(ProveedorID AS VARCHAR(50)) AS nombre,
+    COUNT(DISTINCT FolioRecepcion) AS facturas,
+    ISNULL(SUM(Total), 0) AS total
+FROM dbo.Compras_Recepciones
+WHERE EmpresaID = %s
+  AND SucursalID = %s
+  AND Activo = 1
+  AND {periodo_where}
+GROUP BY ProveedorID
+ORDER BY ISNULL(SUM(Total), 0) DESC
+""",
+            tuple([scope["empresa_id"], scope["sucursal_id"], *periodo_params]),
+        )
+        top_proveedores = [
+            {"nombre": f"Proveedor {r.get('nombre')}", "total": float(r.get('total') or 0)}
+            for r in (cursor.fetchall() or [])
+        ]
+        return {
+            "kpis": {
+                "total_compras_mes": float(compras.get("total") or 0),
+                "facturas_mes": int(compras.get("facturas") or 0),
+                "requisiciones_pendientes": int(pedidos.get("total") or 0),
+                "proveedores_activos": int(compras.get("proveedores") or 0),
+                "alertas_activas": 0,
+            },
+            "alertas": [],
+            "top_proveedores": top_proveedores,
+            "meta": {
+                "status": "OK",
+                "source": scope["source"],
+                "unidad": scope["unidad"].get("codigo"),
+                "empresa_id": scope["empresa_id"],
+                "sucursal_id": scope["sucursal_id"],
+                "meses": _compras_int_values(meses, 1, 12),
+                "anios": _compras_int_values(anios_param, 2000, 2100),
+            },
+        }
+    except HTTPException:
+        raise
     except Exception as e:
-        logging.error(f"Error en dashboard compras: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logging.error(f"[COMPRAS-DASHBOARD][NOLIVE] Error: {e}")
+        raise HTTPException(status_code=503, detail=f"Error leyendo Compras canónico: {str(e)[:160]}")
+    finally:
+        if conn:
+            conn.close()
 
 
 @api_router.post("/compras/analisis")
 async def obtener_analisis_compras(request: AnalisisComprasRequest, credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Obtiene análisis de compras por proveedor y mes con alertas de desviación"""
-    verify_token(credentials.credentials)
-    
+    """Obtiene análisis de compras por proveedor y mes desde EDARSAHUB SQL canónico."""
     # CANONICAL-UNIDAD: acepta unidad canónica o server_id legacy.
     from core.corporate_filters.request_resolver import canonical_server_id
     request.server_id = canonical_server_id(request.server_id)
-    
-    # FASE T3.3: Migrado de db.servers a server_registry (EDARSAHUB)
-    from core.server_registry import get_server_connection_info
-    server = await get_server_connection_info(request.server_id, db=db)
-    if not server:
-        raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
-    # Obtener años (priorizar lista de años sobre año único)
-    if request.anios and len(request.anios) > 0:
-        anios = [int(a) for a in request.anios]
-    elif request.anio:
-        anios = [request.anio]
-    else:
-        anios = [datetime.now().year]
-    
-    max(anios)  # Usar el año más reciente para la consulta principal
-    
-    logging.info(f"Análisis compras: {server['name']} - Años: {anios}, Meses: {request.meses}")
-    
+    scope = await _compras_resolve_scope(request.server_id, request.sucursal, credentials)
+    anios = request.anios or ([str(request.anio)] if request.anio else [str(datetime.now().year)])
+    meses = request.meses or [str(datetime.now().month).zfill(2)]
+    periodo_where, periodo_params = _compras_period_where("FechaRecepcion", meses, anios)
+    conn = None
     try:
-        if is_mpro_system(server.get('system_type')):
-            # FASE 1C: Sanitizar entradas LIKE
-            sucursal_safe = _escape_like_pattern(request.sucursal) if request.sucursal else ""
-            
-            # Construir condición de meses
-            meses_cond = " OR ".join([f"MONTH(M.Mv_Fecha) = {int(m)}" for m in request.meses])
-            # Construir condición de años
-            anios_cond = " OR ".join([f"YEAR(M.Mv_Fecha) = {a}" for a in anios])
-            
-            query = f"""
-SELECT 
-    P.Pv_Cve_Proveedor as codigo,
-    P.Pv_Nombre as nombre,
-    MONTH(M.Mv_Fecha) as mes,
-    YEAR(M.Mv_Fecha) as anio,
-    SUM(M.Mv_Costo_Importe) as total
-FROM Movimiento M
-INNER JOIN Proveedor P ON P.Pv_Cve_Proveedor = M.Pv_Cve_Proveedor
-INNER JOIN Tipo_Movimiento TM ON TM.Tm_Cve_Tipo_Movimiento = M.Tm_Cve_Tipo_Movimiento
-INNER JOIN Sucursal S ON S.Sc_Cve_Sucursal = M.Sc_Cve_Sucursal
-WHERE TM.Tm_Tipo = 'E'
-    AND ({anios_cond})
-    AND ({meses_cond})
-    AND S.Sc_Descripcion LIKE '%{sucursal_safe}%'
-    AND ISNULL(M.Es_Cve_Estado, '') <> 'CA'
-GROUP BY P.Pv_Cve_Proveedor, P.Pv_Nombre, MONTH(M.Mv_Fecha), YEAR(M.Mv_Fecha)
-ORDER BY P.Pv_Nombre, YEAR(M.Mv_Fecha), MONTH(M.Mv_Fecha)
-"""
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
-            )
-            
-            # Pivot por proveedor y mes
-            proveedores = {}
-            for row in result:
-                codigo = row['codigo']
-                if codigo not in proveedores:
-                    proveedores[codigo] = {
-                        'codigo': codigo,
-                        'nombre': row['nombre'],
-                        'total': 0
-                    }
-                    for m in request.meses:
-                        proveedores[codigo][m] = 0
-                
-                mes_str = str(row['mes']).zfill(2)
-                if mes_str in request.meses:
-                    proveedores[codigo][mes_str] += float(row['total'] or 0)
-                    proveedores[codigo]['total'] += float(row['total'] or 0)
-            
-            # Ordenar por total descendente
-            proveedores_list = sorted(proveedores.values(), key=lambda x: x['total'], reverse=True)
-            
-            return {
-                "proveedores": proveedores_list[:100],  # Top 100
-                "alertas": []
-            }
-        
-        elif is_softrestaurant_system(server.get('system_type')):
-            # SoftRestaurant - Compras por proveedor usando tabla compras
-            meses_cond = " OR ".join([f"MONTH(c.fechaaplicacion) = {int(m)}" for m in request.meses])
-            anios_cond = " OR ".join([f"YEAR(c.fechaaplicacion) = {a}" for a in anios])
-            
-            query = f"""
-SELECT 
-    ISNULL(p.idproveedor, 0) as codigo,
-    ISNULL(p.nombre, 'Sin proveedor') as nombre,
-    MONTH(c.fechaaplicacion) as mes,
-    YEAR(c.fechaaplicacion) as anio,
-    SUM(c.total) as total
-FROM compras c
-LEFT JOIN proveedores p ON p.idproveedor = c.idproveedor
-WHERE ({anios_cond})
-    AND ({meses_cond})
-    AND ISNULL(c.cancelado, 0) = 0
-GROUP BY p.idproveedor, p.nombre, MONTH(c.fechaaplicacion), YEAR(c.fechaaplicacion)
-ORDER BY p.nombre, YEAR(c.fechaaplicacion), MONTH(c.fechaaplicacion)
-"""
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
-            )
-            
-            if not result:
-                return {"proveedores": [], "alertas": []}
-            
-            # Pivot por proveedor y mes
-            proveedores = {}
-            for row in result:
-                codigo = str(row['codigo'])
-                if codigo not in proveedores:
-                    proveedores[codigo] = {
-                        'codigo': codigo,
-                        'nombre': row['nombre'],
-                        'total': 0
-                    }
-                    for m in request.meses:
-                        proveedores[codigo][m] = 0
-                
-                mes_str = str(row['mes']).zfill(2)
-                if mes_str in request.meses:
-                    proveedores[codigo][mes_str] += float(row['total'] or 0)
-                    proveedores[codigo]['total'] += float(row['total'] or 0)
-            
-            # Ordenar por total descendente
-            proveedores_list = sorted(proveedores.values(), key=lambda x: x['total'], reverse=True)
-            
-            return {
-                "proveedores": proveedores_list[:100],  # Top 100
-                "alertas": []
-            }
-        
-        # FASE 3A: Blindaje - sistema no soportado
-        system_type = server.get('system_type', 'UNKNOWN')
-        normalize_system_type(system_type)
-        log_compras_error("analisis", request.server_id, "UNSUPPORTED_SYSTEM_TYPE", f"system_type={system_type}", system_type)
+        conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=10)
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute(
+            f"""
+SELECT TOP 1000
+    CAST(ProveedorID AS VARCHAR(50)) AS codigo,
+    MONTH(FechaRecepcion) AS mes,
+    YEAR(FechaRecepcion) AS anio,
+    ISNULL(SUM(Total), 0) AS total
+FROM dbo.Compras_Recepciones
+WHERE EmpresaID = %s
+  AND SucursalID = %s
+  AND Activo = 1
+  AND {periodo_where}
+GROUP BY ProveedorID, MONTH(FechaRecepcion), YEAR(FechaRecepcion)
+ORDER BY ISNULL(SUM(Total), 0) DESC
+""",
+            tuple([scope["empresa_id"], scope["sucursal_id"], *periodo_params]),
+        )
+        proveedores = {}
+        for row in cursor.fetchall() or []:
+            codigo = str(row.get("codigo") or "0")
+            if codigo not in proveedores:
+                proveedores[codigo] = {
+                    "codigo": codigo,
+                    "nombre": f"Proveedor {codigo}",
+                    "total": 0,
+                }
+                for mes in meses:
+                    proveedores[codigo][str(mes).zfill(2)] = 0
+            mes_str = str(row.get("mes") or "").zfill(2)
+            total = float(row.get("total") or 0)
+            if mes_str in proveedores[codigo]:
+                proveedores[codigo][mes_str] += total
+            proveedores[codigo]["total"] += total
+        proveedores_list = sorted(proveedores.values(), key=lambda x: x["total"], reverse=True)
         return {
-            "status": "UNSUPPORTED_SYSTEM_TYPE",
-            "proveedores": [],
+            "status": "OK",
+            "source": scope["source"],
+            "proveedores": proveedores_list[:100],
             "alertas": [],
-            "error": f"El tipo de sistema '{system_type}' no está soportado para análisis de compras"
+            "meta": {
+                "unidad": scope["unidad"].get("codigo"),
+                "empresa_id": scope["empresa_id"],
+                "sucursal_id": scope["sucursal_id"],
+            },
         }
     except Exception as e:
-        logging.error(f"Error en análisis compras: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logging.error(f"[COMPRAS-ANALISIS][NOLIVE] Error: {e}")
+        raise HTTPException(status_code=503, detail=f"Error leyendo análisis canónico de compras: {str(e)[:160]}")
+    finally:
+        if conn:
+            conn.close()
 
 
 @api_router.get("/compras/facturas-proveedor/{server_id}")
-async def obtener_facturas_proveedor(server_id: str, proveedor_codigo: str, anio: int, meses: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Obtiene las facturas/entradas de un proveedor específico"""
-    verify_token(credentials.credentials)
-    
+async def obtener_facturas_proveedor(server_id: str, proveedor_codigo: str, anio: int, meses: str, sucursal: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Obtiene facturas/recepciones de un proveedor desde EDARSAHUB SQL canónico."""
     # CANONICAL-UNIDAD: el path puede traer una unidad canónica o un server_id legacy.
     from core.corporate_filters.request_resolver import canonical_server_id
     server_id = canonical_server_id(server_id)
-    
-    # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)
-    from core.server_registry import get_server_connection_info
-    server = await get_server_connection_info(server_id, db=db)
-    if not server:
-        raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
-    system_type = server.get('system_type', 'UNKNOWN')
-    
+    scope = await _compras_resolve_scope(server_id, sucursal, credentials)
+    periodo_where, periodo_params = _compras_period_where("FechaRecepcion", meses, [anio])
+    conn = None
     try:
-        # FASE 3A: Usar normalización de system_type
-        if is_mpro_system(system_type):
-            log_compras_adapter_selected("facturas-proveedor", server_id, system_type, "MPRO_ADAPTER")
-            meses_list = meses.split(',')
-            meses_cond = " OR ".join([f"MONTH(M.Mv_Fecha) = {int(m)}" for m in meses_list])
-            
-            query = f"""
-SELECT 
-    M.Mv_Documento as folio,
-    M.Mv_Fecha as fecha,
-    COUNT(DISTINCT MD.Pr_Cve_Producto) as productos,
-    SUM(MD.Md_Importe) as importe,
-    CASE WHEN M.Es_Cve_Estado = 'PA' THEN 'pagada' ELSE 'pendiente' END as status
-FROM Movimiento M
-INNER JOIN Movimiento_Detalle MD ON MD.Mv_Folio = M.Mv_Folio
-WHERE M.Pv_Cve_Proveedor = '{proveedor_codigo}'
-    AND YEAR(M.Mv_Fecha) = {anio}
-    AND ({meses_cond})
-    AND M.Es_Cve_Estado <> 'CA'
-GROUP BY M.Mv_Documento, M.Mv_Fecha, M.Es_Cve_Estado
-ORDER BY M.Mv_Fecha DESC
-"""
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
-            )
-            
-            return [
-                {
-                    "folio": r['folio'],
-                    "fecha": str(r['fecha']),
-                    "productos": r['productos'],
-                    "importe": float(r['importe'] or 0),
-                    "status": r['status'],
-                    "tiene_pdf": False,  # TODO: verificar si existe archivo
-                    "tiene_xml": False
-                }
-                for r in result
-            ]
-        
-        # FASE 3A: Blindaje - funcionalidad solo disponible en MPRO
-        system_type = server.get('system_type', 'UNKNOWN')
-        log_compras_adapter_selected("facturas-proveedor", server_id, system_type, "NO_ADAPTER_AVAILABLE")
-        return {
-            "status": "NOT_AVAILABLE_FOR_SYSTEM",
-            "data": [],
-            "message": f"Las facturas de proveedor solo están disponibles para sistemas MPRO. Sistema actual: {system_type}"
-        }
+        conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=10)
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute(
+            f"""
+SELECT TOP 500
+    r.RecepcionID,
+    r.FolioRecepcion AS folio,
+    r.FechaRecepcion AS fecha,
+    r.Total AS importe,
+    r.EstatusRecepcionID AS estatus_id,
+    (SELECT COUNT(*)
+     FROM dbo.Compras_RecepcionesDetalle d
+     WHERE d.RecepcionID = r.RecepcionID) AS productos
+FROM dbo.Compras_Recepciones r
+WHERE r.EmpresaID = %s
+  AND r.SucursalID = %s
+  AND r.Activo = 1
+  AND CAST(r.ProveedorID AS VARCHAR(50)) = %s
+  AND {periodo_where}
+ORDER BY r.FechaRecepcion DESC
+""",
+            tuple([scope["empresa_id"], scope["sucursal_id"], str(proveedor_codigo), *periodo_params]),
+        )
+        return [
+            {
+                "folio": str(r.get("folio") or ""),
+                "fecha": r.get("fecha").isoformat() if hasattr(r.get("fecha"), "isoformat") else str(r.get("fecha") or ""),
+                "productos": int(r.get("productos") or 0),
+                "importe": float(r.get("importe") or 0),
+                "status": str(r.get("estatus_id") or "canonico"),
+                "source": scope["source"],
+                "tiene_pdf": False,
+                "tiene_xml": False,
+            }
+            for r in (cursor.fetchall() or [])
+        ]
     except Exception as e:
-        logging.error(f"Error obteniendo facturas: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logging.error(f"[COMPRAS-FACTURAS][NOLIVE] Error: {e}")
+        raise HTTPException(status_code=503, detail=f"Error leyendo facturas canónicas: {str(e)[:160]}")
+    finally:
+        if conn:
+            conn.close()
 
 
 @api_router.get("/compras/detalle-factura/{server_id}/{folio}")
-async def obtener_detalle_factura(server_id: str, folio: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Obtiene el detalle de productos de una factura/entrada"""
-    verify_token(credentials.credentials)
-    
+async def obtener_detalle_factura(server_id: str, folio: str, sucursal: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Obtiene detalle de factura/recepción desde EDARSAHUB SQL canónico."""
     # CANONICAL-UNIDAD: el path puede traer una unidad canónica o un server_id legacy.
     from core.corporate_filters.request_resolver import canonical_server_id
     server_id = canonical_server_id(server_id)
-    
-    # FASE T3.2: Migrado de db.servers a server_registry (EDARSAHUB)
-    from core.server_registry import get_server_connection_info
-    server = await get_server_connection_info(server_id, db=db)
-    if not server:
-        raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+    scope = await _compras_resolve_scope(server_id, sucursal, credentials)
+    conn = None
     try:
-        if is_mpro_system(server.get('system_type')):
-            query = f"""
-SELECT 
-    MD.Pr_Cve_Producto as codigo,
-    P.Pr_Descripcion as producto,
-    MD.Md_Cantidad as cantidad,
-    MD.Md_Costo as costo,
-    MD.Md_Importe as importe
-FROM Movimiento_Detalle MD
-INNER JOIN Movimiento M ON M.Mv_Folio = MD.Mv_Folio
-INNER JOIN Producto P ON P.Pr_Cve_Producto = MD.Pr_Cve_Producto
-WHERE M.Mv_Documento = '{folio}'
-ORDER BY P.Pr_Descripcion
-"""
-            result = execute_sql_query(
-                server['host'], server['port'], server['database'],
-                server['username'], server['password'], query
-            )
-            
-            return [
-                {
-                    "codigo": r['codigo'],
-                    "producto": r['producto'],
-                    "cantidad": float(r['cantidad'] or 0),
-                    "costo": float(r['costo'] or 0),
-                    "importe": float(r['importe'] or 0)
-                }
-                for r in result
-            ]
-        
-        # FASE 3A: Blindaje - funcionalidad solo disponible en MPRO
-        system_type = server.get('system_type', 'UNKNOWN')
-        log_compras_adapter_selected("detalle-factura", server_id, system_type, "NO_ADAPTER_AVAILABLE")
-        return {
-            "status": "NOT_AVAILABLE_FOR_SYSTEM",
-            "data": [],
-            "message": f"El detalle de factura solo está disponible para sistemas MPRO. Sistema actual: {system_type}"
-        }
+        conn = get_edarsahub_pymssql_connection(timeout=20, login_timeout=10)
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute(
+            """
+SELECT TOP 500
+    CAST(d.ProductoID AS VARCHAR(50)) AS codigo,
+    CAST(d.ProductoID AS VARCHAR(50)) AS producto,
+    d.CantidadRecibida AS cantidad,
+    d.PrecioUnitario AS costo,
+    d.Subtotal AS importe
+FROM dbo.Compras_Recepciones r
+INNER JOIN dbo.Compras_RecepcionesDetalle d ON d.RecepcionID = r.RecepcionID
+WHERE r.EmpresaID = %s
+  AND r.SucursalID = %s
+  AND r.Activo = 1
+  AND r.FolioRecepcion = %s
+ORDER BY d.ProductoID
+""",
+            (scope["empresa_id"], scope["sucursal_id"], str(folio)),
+        )
+        return [
+            {
+                "codigo": str(r.get("codigo") or ""),
+                "producto": str(r.get("producto") or r.get("codigo") or ""),
+                "cantidad": float(r.get("cantidad") or 0),
+                "costo": float(r.get("costo") or 0),
+                "importe": float(r.get("importe") or 0),
+                "source": scope["source"],
+            }
+            for r in (cursor.fetchall() or [])
+        ]
     except Exception as e:
-        logging.error(f"Error obteniendo detalle factura: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logging.error(f"[COMPRAS-DETALLE-FACTURA][NOLIVE] Error: {e}")
+        raise HTTPException(status_code=503, detail=f"Error leyendo detalle canónico: {str(e)[:160]}")
+    finally:
+        if conn:
+            conn.close()
 
 
 # ============================================================================
@@ -12662,25 +10588,25 @@ async def obtener_facturas_proveedor_sql_first(
     """
     import os
     import pymssql
-    
+
     await get_current_user(credentials)
-    
+
     if os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false').lower() != 'true':
         return {
             'status': 'DISABLED',
             'message': 'Endpoint SQL-First deshabilitado. Use /compras/facturas-proveedor/{server_id}',
             'facturas': []
         }
-    
+
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
-    
+
     try:
         conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
         cursor = conn.cursor(as_dict=True)
-        
+
         filtros = ["ServerID = %s"]
         params = [server_id]
-        
+
         if proveedor_id:
             filtros.append("ProveedorID = %s")
             params.append(proveedor_id)
@@ -12690,7 +10616,7 @@ async def obtener_facturas_proveedor_sql_first(
         if fecha_fin:
             filtros.append("FechaRecepcion <= %s")
             params.append(fecha_fin)
-        
+
         query = f"""
         SELECT TOP 500
             RecepcionID, FolioFactura AS folio, FechaRecepcion AS fecha,
@@ -12701,11 +10627,11 @@ async def obtener_facturas_proveedor_sql_first(
         WHERE {" AND ".join(filtros)}
         ORDER BY FechaRecepcion DESC
         """
-        
+
         cursor.execute(query, tuple(params))
         result = cursor.fetchall()
         conn.close()
-        
+
         facturas = [{
             'folio': str(r['folio'] or ''),
             'fecha': r['fecha'].isoformat() if hasattr(r['fecha'], 'isoformat') else str(r['fecha'] or ''),
@@ -12715,9 +10641,9 @@ async def obtener_facturas_proveedor_sql_first(
             'estado': r['estado'] or '',
             'source': 'EDARSAHUB_SQL_FIRST'
         } for r in result]
-        
+
         return {'status': 'SQL_FIRST', 'source': 'EDARSAHUB', 'total': len(facturas), 'facturas': facturas}
-        
+
     except Exception as e:
         logging.error(f"[SQL-FIRST] Error facturas-proveedor: {str(e)}")
         return {'status': 'ERROR', 'facturas': [], 'error': str(e)}
@@ -12736,24 +10662,24 @@ async def obtener_detalle_factura_sql_first(
     """
     import os
     import pymssql
-    
+
     await get_current_user(credentials)
-    
+
     if os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false').lower() != 'true':
         return {
             'status': 'DISABLED',
             'message': 'Endpoint SQL-First deshabilitado. Use /compras/detalle-factura/{server_id}/{folio}',
             'detalle': []
         }
-    
+
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
-    
+
     try:
         conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
         cursor = conn.cursor(as_dict=True)
-        
+
         query = """
-        SELECT 
+        SELECT
             d.CodigoProducto AS codigo, d.NombreProducto AS producto,
             d.Cantidad AS cantidad, d.Unidad AS unidad,
             d.PrecioUnitario AS precio, d.Importe AS importe
@@ -12762,11 +10688,11 @@ async def obtener_detalle_factura_sql_first(
         WHERE r.ServerID = %s AND r.FolioFactura = %s
         ORDER BY d.NombreProducto
         """
-        
+
         cursor.execute(query, (server_id, folio))
         result = cursor.fetchall()
         conn.close()
-        
+
         detalle = [{
             'codigo': str(r['codigo'] or ''),
             'producto': r['producto'] or '',
@@ -12775,9 +10701,9 @@ async def obtener_detalle_factura_sql_first(
             'precio': float(r['precio'] or 0),
             'importe': float(r['importe'] or 0)
         } for r in result]
-        
+
         return {'status': 'SQL_FIRST', 'source': 'EDARSAHUB', 'folio': folio, 'total': len(detalle), 'detalle': detalle}
-        
+
     except Exception as e:
         logging.error(f"[SQL-FIRST] Error detalle-factura: {str(e)}")
         return {'status': 'ERROR', 'detalle': [], 'error': str(e)}
@@ -12795,7 +10721,7 @@ async def obtener_detalle_consumos_sql_first(
     """
     import os
     import pymssql
-    
+
     if os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false').lower() != 'true':
         return {
             'status': 'DISABLED',
@@ -12803,15 +10729,15 @@ async def obtener_detalle_consumos_sql_first(
             'consumos': [],
             'totales': {'total': 0}
         }
-    
+
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
-    
+
     try:
         conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
         cursor = conn.cursor(as_dict=True)
-        
+
         codigo_limpio = request.codigo.strip()
-        
+
         query = """
         SELECT TOP 500
             m.FechaMovimiento AS fecha,
@@ -12829,11 +10755,11 @@ async def obtener_detalle_consumos_sql_first(
           AND m.FechaMovimiento < DATEADD(DAY, 1, CAST(%s AS DATE))
         ORDER BY m.FechaMovimiento DESC
         """
-        
+
         cursor.execute(query, (request.server_id, codigo_limpio, request.fecha_inicio, request.fecha_fin))
         result = cursor.fetchall()
         conn.close()
-        
+
         total_consumo = 0
         consumos = []
         for r in result:
@@ -12846,14 +10772,14 @@ async def obtener_detalle_consumos_sql_first(
                 'tipo': r['tipo'] or 'CONSUMO',
                 'almacen': r['almacen'] or ''
             })
-        
+
         return {
             'status': 'SQL_FIRST',
             'source': 'EDARSAHUB',
             'consumos': consumos,
             'totales': {'total': total_consumo}
         }
-        
+
     except Exception as e:
         logging.error(f"[SQL-FIRST] Error detalle-consumos: {str(e)}")
         return {'status': 'ERROR', 'consumos': [], 'totales': {'total': 0}, 'error': str(e)}
@@ -12874,28 +10800,28 @@ async def obtener_dashboard_compras_sql_first(
     import os
     import pymssql
     from datetime import datetime, timedelta
-    
+
     await get_current_user(credentials)
-    
+
     if os.environ.get('COMPRAS_SQL_FIRST_ENABLED', 'false').lower() != 'true':
         return {
             'status': 'DISABLED',
             'message': 'Endpoint SQL-First deshabilitado. Use /compras/dashboard/{server_id}',
             'dashboard': {}
         }
-    
+
     EDARSAHUB_CONFIG = _get_edarsahub_config_dict()
-    
+
     # Fechas por defecto: últimos 30 días
     if not fecha_fin:
         fecha_fin = datetime.now().strftime('%Y-%m-%d')
     if not fecha_inicio:
         fecha_inicio = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
-    
+
     try:
         conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=15)
         cursor = conn.cursor(as_dict=True)
-        
+
         # Pedidos pendientes
         cursor.execute("""
             SELECT COUNT(*) AS total, ISNULL(SUM(ImporteTotal), 0) AS importe
@@ -12904,7 +10830,7 @@ async def obtener_dashboard_compras_sql_first(
               AND FechaPedido >= %s AND FechaPedido <= %s
         """, (server_id, fecha_inicio, fecha_fin))
         pedidos = cursor.fetchone()
-        
+
         # Recepciones/Facturas
         cursor.execute("""
             SELECT COUNT(*) AS total, ISNULL(SUM(ImporteTotal), 0) AS importe
@@ -12913,10 +10839,10 @@ async def obtener_dashboard_compras_sql_first(
               AND FechaRecepcion >= %s AND FechaRecepcion <= %s
         """, (server_id, fecha_inicio, fecha_fin))
         recepciones = cursor.fetchone()
-        
+
         # Movimientos de inventario
         cursor.execute("""
-            SELECT 
+            SELECT
                 SUM(CASE WHEN EsEntrada = 1 THEN 1 ELSE 0 END) AS entradas,
                 SUM(CASE WHEN EsEntrada = 0 THEN 1 ELSE 0 END) AS salidas
             FROM dbo.Inventario_Movimientos
@@ -12924,9 +10850,9 @@ async def obtener_dashboard_compras_sql_first(
               AND FechaMovimiento >= %s AND FechaMovimiento <= %s
         """, (server_id, fecha_inicio, fecha_fin))
         movimientos = cursor.fetchone()
-        
+
         conn.close()
-        
+
         return {
             'status': 'SQL_FIRST',
             'source': 'EDARSAHUB',
@@ -12946,7 +10872,7 @@ async def obtener_dashboard_compras_sql_first(
                 }
             }
         }
-        
+
     except Exception as e:
         logging.error(f"[SQL-FIRST] Error dashboard-compras: {str(e)}")
         return {'status': 'ERROR', 'dashboard': {}, 'error': str(e)}
@@ -13062,7 +10988,7 @@ async def save_kpis_cache(server_id: str, periodo_key: str, kpis: dict):
 # - get_kpis_softrestaurant() -> modules/comercial/service.py
 # - get_kpis_mpro() -> modules/comercial/service.py
 # - get_kpis_mpro_por_sucursal() -> modules/comercial/service.py
-# 
+#
 # Ahora se importan directamente desde el módulo.
 # Ver línea ~125 donde se hace el import.
 # ============================================================================
@@ -13102,13 +11028,13 @@ async def listar_conexiones_explorables(
 ):
     """
     Lista todas las conexiones explorables activas desde EDARSAHUB SQL.
-    
-    CORRECCIÓN P1 (2026-05-15): 
+
+    CORRECCIÓN P1 (2026-05-15):
     - No usa MongoDB
     - No está hardcodeado a SoftRestaurant/MPRO
     - Incluye todos los tipos de conexión explorables (SQL_SERVER, API_LOCAL con /query)
     - Respeta permisos RBAC del usuario
-    
+
     Returns:
         Lista de conexiones explorables con:
         - id: ID de la conexión
@@ -13123,7 +11049,7 @@ async def listar_conexiones_explorables(
     """
     from modules.comercial.repository import EDARSAHUB_CONFIG
     from core.db import execute_sql_query
-    
+
     try:
         # Query para obtener conexiones explorables con su tipo de sistema
         # FIX P0 (May-2026): Separar claramente proveedor/sistema vs tipo de conexión
@@ -13132,7 +11058,7 @@ async def listar_conexiones_explorables(
         #   - tipo_conexion: conexión técnica (API_LOCAL, SQL_SERVER)
         #   - sistema_codigo/sistema_codigo_raw: para matching en Catálogo SQL
         query = """
-        SELECT 
+        SELECT
             sc.id,
             sc.nombre,
             sc.tipo_conexion,
@@ -13147,7 +11073,7 @@ async def listar_conexiones_explorables(
             -- Para grupo del Explorador BD: usar system_type RAW como proveedor
             sc.system_type as grupo_explorador_codigo,
             -- Label amigable del proveedor (actualizado Mayo 2026)
-            CASE 
+            CASE
                 WHEN UPPER(sc.system_type) = 'ENTERPRISE' THEN 'Enterprise'
                 WHEN UPPER(sc.system_type) = 'SOFRESATAURANT_ENTER' THEN 'Enterprise'
                 WHEN UPPER(sc.system_type) = 'SOFTRESTAURANT_PRO' THEN 'SoftRestaurant Pro'
@@ -13162,11 +11088,11 @@ async def listar_conexiones_explorables(
             COALESCE(st.CodigoSistema, sc.system_type) as sistema_codigo_normalizado,
             COALESCE(st.NombreSistema, sc.system_type) as sistema_nombre
         FROM Servidores_Conexiones sc
-        LEFT JOIN Sistema_TiposVariantes sv 
-            ON UPPER(sc.system_type) = UPPER(sv.VarianteNombre) 
+        LEFT JOIN Sistema_TiposVariantes sv
+            ON UPPER(sc.system_type) = UPPER(sv.VarianteNombre)
             AND sv.Activo = 1
-        LEFT JOIN Sistema_Tipos st 
-            ON sv.SistemaTipoID = st.SistemaTipoID 
+        LEFT JOIN Sistema_Tipos st
+            ON sv.SistemaTipoID = st.SistemaTipoID
             AND st.Activo = 1
         WHERE sc.activo = 1
           AND (
@@ -13176,7 +11102,7 @@ async def listar_conexiones_explorables(
           )
         ORDER BY sc.nombre
         """
-        
+
         results = execute_sql_query(
             EDARSAHUB_CONFIG['host'],
             EDARSAHUB_CONFIG['port'],
@@ -13185,7 +11111,7 @@ async def listar_conexiones_explorables(
             EDARSAHUB_CONFIG['password'],
             query
         )
-        
+
         # Construir respuesta sin exponer secrets
         conexiones = []
         for row in results:
@@ -13212,14 +11138,14 @@ async def listar_conexiones_explorables(
                 'explorable': _es_conexion_explorable(row)
             }
             conexiones.append(conexion)
-        
+
         logging.info(f"[EXPLORADOR] Listadas {len(conexiones)} conexiones explorables")
         return {
             "success": True,
             "data": conexiones,
             "total": len(conexiones)
         }
-        
+
     except Exception as e:
         logging.error(f"[EXPLORADOR] Error listando conexiones explorables: {e}")
         raise HTTPException(status_code=500, detail=f"Error obteniendo conexiones: {str(e)}")
@@ -13228,51 +11154,51 @@ async def listar_conexiones_explorables(
 def _es_conexion_explorable(row: Dict) -> bool:
     """
     Determina si una conexión es técnicamente explorable.
-    
+
     FASE 6 - Integración Catálogo Maestro:
     Ahora usa SystemCapabilityResolver para validar si el sistema
     tiene capacidad EXPLORADOR_BD activa en SQL.
-    
+
     Reglas:
     1. Validar técnicamente (host/database o api_url configurados)
     2. Validar por capacidad (sistema tiene EXPLORADOR_BD activo)
-    
+
     Fallback: Si el resolver falla, usa solo validación técnica (permisivo)
     """
     # Validación técnica básica
     tipo = row.get('tipo_conexion', '')
-    
+
     if tipo in ('SQL_SERVER', 'DATA_SOURCE'):
         tech_valid = bool(row.get('host')) and bool(row.get('database_name'))
     elif tipo == 'API_LOCAL':
         tech_valid = bool(row.get('api_url'))
     else:
         tech_valid = False
-    
+
     if not tech_valid:
         return False
-    
+
     # FASE 6: Validar capacidad EXPLORADOR_BD via Catálogo Maestro
     try:
         from core.system_capability_integration import is_system_explorable
-        
+
         system_type = row.get('sistema_codigo') or row.get('system_type') or ''
-        
+
         if not system_type:
             # Sin system_type, permitir por compatibilidad
             logging.debug(f"[EXPLORADOR] Conexión sin system_type, permitiendo por compatibilidad")
             return True
-        
+
         # Consultar resolver - es permisivo si hay errores
         is_explorable = is_system_explorable(system_type)
-        
+
         logging.debug(
             f"[EXPLORADOR-CAPACIDAD] {system_type}: "
             f"explorable={is_explorable} (via Catálogo Maestro)"
         )
-        
+
         return is_explorable
-        
+
     except Exception as e:
         # Fallback: Si el resolver falla, usar solo validación técnica
         logging.warning(
@@ -13289,21 +11215,21 @@ async def listar_tablas(
 ):
     """
     Lista todas las tablas de la base de datos del servidor.
-    
+
     CORRECCIÓN P1 (2026-05-15): Soporte Multi-Sistema
     - SQL_SERVER / DATA_SOURCE: Usa metadata SQL Server (INFORMATION_SCHEMA)
     - API_LOCAL: Usa endpoint /query con SELECT readonly
-    
+
     No limitado a SoftRestaurant. Soporta MPRO, Enterprise, NOMIPAQ, EDARSAHUB, etc.
     """
     from core.server_registry import get_server_connection_info
     from modules.api_connections.repository import get_api_connection_by_id_full
-    
+
     # Determinar tipo de conexión
     tipo_conexion = None
     conn_info = None
     api_conn = None
-    
+
     # Primero intentar como API_LOCAL
     try:
         api_conn = await get_api_connection_by_id_full(server_id)
@@ -13311,46 +11237,46 @@ async def listar_tablas(
             tipo_conexion = 'API_LOCAL'
     except Exception as e:
         logging.debug(f"[EXPLORADOR] {server_id} no es API_LOCAL: {e}")
-    
+
     # Si no es API_LOCAL, buscar como SQL_SERVER/DATA_SOURCE
     if tipo_conexion != 'API_LOCAL':
         conn_info = await get_server_connection_info(server_id, db=db)
         if conn_info:
             tipo_conexion = conn_info.get('tipo_conexion', 'DATA_SOURCE')
-    
+
     if not api_conn and not conn_info:
         raise HTTPException(status_code=404, detail="Servidor no encontrado o sin acceso")
-    
+
     # FASE 6-8: Validar acceso
     await validate_server_access_unified(current_user, server_id)
-    
+
     # === CASO 1: API_LOCAL (MPRO, Enterprise, etc. via API /query) ===
     if tipo_conexion == 'API_LOCAL' and api_conn:
         return await _cargar_tablas_api_local(api_conn, server_id)
-    
+
     # === CASO 2: SQL_SERVER / DATA_SOURCE (conexión directa SQL) ===
     if conn_info:
         return await _cargar_tablas_sql_server(conn_info)
-    
+
     raise HTTPException(status_code=400, detail="Tipo de conexión no soportado para exploración")
 
 
 async def _cargar_tablas_api_local(api_conn: Dict, server_id: str) -> Dict:
     """
     Carga tablas desde una conexión API_LOCAL usando endpoint /query.
-    
+
     CORRECCIÓN P1 (2026-05-16): Reutiliza execute_test_query que ya funciona
     para APIs Enterprise (CHAPUR NORTE, etc.) en lugar de httpx directo.
-    
+
     Usa INFORMATION_SCHEMA.TABLES que es más compatible que sys.tables.
     TOP 500 para obtener todas las tablas de la base de datos.
     """
     from modules.api_connections.repository import execute_test_query
-    
+
     nombre = api_conn.get('nombre', api_conn.get('name', 'API'))
     sistema = api_conn.get('tipo', api_conn.get('system_type', 'UNKNOWN'))
     api_url = api_conn.get('url', api_conn.get('api_url', ''))
-    
+
     if not api_url:
         return {
             "servidor": nombre,
@@ -13360,15 +11286,15 @@ async def _cargar_tablas_api_local(api_conn: Dict, server_id: str) -> Dict:
             "error": "URL de API no configurada",
             "tipo_conexion": "API_LOCAL"
         }
-    
+
     # Query compatible con Enterprise y SoftRestaurant - TOP 500 para metadata completa
     metadata_query = """
-SELECT TOP 500 TABLE_NAME as tabla 
-FROM INFORMATION_SCHEMA.TABLES 
-WHERE TABLE_TYPE = 'BASE TABLE' 
+SELECT TOP 500 TABLE_NAME as tabla
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_TYPE = 'BASE TABLE'
 ORDER BY TABLE_NAME
 """
-    
+
     try:
         # Usar la función ya probada que funciona con CHAPUR NORTE
         # CORRECCIÓN P1 (2026-05-16): limit=None para obtener TODAS las tablas
@@ -13378,19 +11304,19 @@ ORDER BY TABLE_NAME
             timeout=60,  # Más tiempo para queries de metadata grandes
             limit=None  # Sin límite para obtener todas las tablas de metadata
         )
-        
+
         if result.get('success') and result.get('status_code') == 200:
             # Extraer tablas de la respuesta
             preview_data = result.get('preview_data', result.get('data', []))
             tablas = []
-            
+
             if isinstance(preview_data, list):
                 for row in preview_data:
                     if isinstance(row, dict):
                         tabla_name = row.get('tabla', row.get('TABLE_NAME', row.get('name', '')))
                         if tabla_name:
                             tablas.append({"tabla": tabla_name, "tipo": "TABLE"})
-            
+
             logging.info(f"[EXPLORADOR][API_LOCAL] {nombre}: {len(tablas)} tablas obtenidas via test_query")
             return {
                 "servidor": nombre,
@@ -13410,7 +11336,7 @@ ORDER BY TABLE_NAME
                 "error": f"Error de API: {error_msg[:100]}",
                 "tipo_conexion": "API_LOCAL"
             }
-            
+
     except Exception as e:
         logging.error(f"[EXPLORADOR][API_LOCAL] {nombre}: {e}")
         return {
@@ -13426,14 +11352,14 @@ ORDER BY TABLE_NAME
 async def _cargar_tablas_sql_server(conn_info: Dict) -> Dict:
     """
     Carga tablas desde una conexión SQL Server directa.
-    
+
     Funciona para SoftRestaurant, NOMIPAQ, EDARSAHUB, cualquier SQL Server.
-    
+
     CORRECCIÓN P1 (2026-05-16): Mejor manejo de errores para mostrar
     mensaje claro cuando hay problemas de conexión o permisos.
     """
     query = """
-SELECT 
+SELECT
     TABLE_NAME as tabla,
     TABLE_TYPE as tipo
 FROM INFORMATION_SCHEMA.TABLES
@@ -13445,7 +11371,7 @@ ORDER BY TABLE_NAME
     database = conn_info.get('database', '')
     host = conn_info.get('host', '')
     tipo_conexion = conn_info.get('tipo_conexion', 'SQL_SERVER')
-    
+
     # Verificar que hay credenciales SQL
     if not host or not database:
         return {
@@ -13456,11 +11382,11 @@ ORDER BY TABLE_NAME
             "error": "Configuración SQL incompleta (falta host o database)",
             "tipo_conexion": tipo_conexion
         }
-    
+
     try:
         # Usar conexión directa con mejor manejo de errores
         from core.db import _execute_sql_direct_with_error
-        
+
         result, error_msg = await _execute_sql_direct_with_error(
             host,
             conn_info.get('port', 1433),
@@ -13469,7 +11395,7 @@ ORDER BY TABLE_NAME
             conn_info.get('password', ''),
             query
         )
-        
+
         if error_msg:
             logging.warning(f"[EXPLORADOR][SQL] {nombre}: {error_msg}")
             # Sanitizar mensaje de error (no exponer credenciales)
@@ -13482,7 +11408,7 @@ ORDER BY TABLE_NAME
                 "error": safe_error,
                 "tipo_conexion": tipo_conexion
             }
-        
+
         logging.info(f"[EXPLORADOR][SQL] {nombre}: {len(result)} tablas")
         return {
             "servidor": nombre,
@@ -13491,7 +11417,7 @@ ORDER BY TABLE_NAME
             "tablas": result,
             "tipo_conexion": tipo_conexion
         }
-        
+
     except Exception as e:
         logging.error(f"[EXPLORADOR][SQL] {nombre}: {e}")
         safe_error = _sanitize_error_message(str(e))
@@ -13516,16 +11442,16 @@ def _sanitize_error_message(error: str) -> str:
         (r"user[=:]\s*\S+", "user=***"),
         (r"uid[=:]\s*\S+", "uid=***"),
     ]
-    
+
     import re
     result = error
     for pattern, replacement in sensitive_patterns:
         result = re.sub(pattern, replacement, result, flags=re.IGNORECASE)
-    
+
     # Truncar si es muy largo
     if len(result) > 200:
         result = result[:200] + "..."
-    
+
     return result
 
 
@@ -13537,23 +11463,23 @@ async def listar_columnas(
 ):
     """
     Lista las columnas de una tabla específica.
-    
+
     CORRECCIÓN P1 (2026-05-16): Soporte Multi-Tipo de Conexión
     - DATA_SOURCE: Usa INFORMATION_SCHEMA.COLUMNS con SQL directo
     - API_LOCAL: Usa execute_test_query para consultar via API remota
-    
+
     La whitelist solo aplica para DATA_SOURCE (tablas conocidas del sistema).
     Para API_LOCAL las tablas son dinámicas del servidor remoto.
     """
     from core.server_registry import get_server_connection_info
     from core.db import execute_sql_query_params
     from modules.api_connections.repository import get_api_connection_by_id_full, execute_test_query
-    
+
     # Determinar tipo de conexión
     tipo_conexion = None
     conn_info = None
     api_conn = None
-    
+
     # Primero intentar como API_LOCAL
     try:
         api_conn = await get_api_connection_by_id_full(server_id)
@@ -13561,28 +11487,28 @@ async def listar_columnas(
             tipo_conexion = 'API_LOCAL'
     except Exception as e:
         logging.debug(f"[EXPLORADOR][COLUMNAS] {server_id} no es API_LOCAL: {e}")
-    
+
     # Si no es API_LOCAL, buscar como SQL_SERVER/DATA_SOURCE
     if tipo_conexion != 'API_LOCAL':
         conn_info = await get_server_connection_info(server_id, db=db)
         if conn_info:
             tipo_conexion = conn_info.get('tipo_conexion', 'DATA_SOURCE')
-    
+
     if not api_conn and not conn_info:
         raise HTTPException(status_code=404, detail="Servidor no encontrado o sin acceso")
-    
+
     # Validar acceso
     await validate_server_access_unified(current_user, server_id)
-    
+
     # === CASO 1: API_LOCAL ===
     if tipo_conexion == 'API_LOCAL' and api_conn:
         nombre = api_conn.get('nombre', api_conn.get('name', 'API'))
-        
+
         # Query para obtener columnas de la tabla via API remota
         # Usamos comillas simples escapadas en la query para el nombre de tabla
         tabla_escaped = tabla.replace("'", "''")
         columns_query = f"""
-SELECT 
+SELECT
     COLUMN_NAME as columna,
     DATA_TYPE as tipo,
     CHARACTER_MAXIMUM_LENGTH as longitud,
@@ -13599,7 +11525,7 @@ ORDER BY ORDINAL_POSITION
                 timeout=30,
                 limit=None  # Sin límite para metadata
             )
-            
+
             if result.get('success') and result.get('status_code') == 200:
                 columnas = result.get('preview_data', result.get('data', []))
                 return {
@@ -13616,7 +11542,7 @@ ORDER BY ORDINAL_POSITION
         except Exception as e:
             logging.error(f"[EXPLORADOR][COLUMNAS][API_LOCAL] {nombre}: {e}")
             raise HTTPException(status_code=500, detail=f"Error consultando columnas: {str(e)[:100]}")
-    
+
     # === CASO 2: DATA_SOURCE (SQL directo) ===
     if conn_info:
         # Validar tabla contra whitelist (superadmin bypasea whitelist)
@@ -13625,9 +11551,9 @@ ORDER BY ORDINAL_POSITION
         if not is_valid:
             logging.warning(f"[A03-SANITIZADO] Tabla rechazada por whitelist: {tabla[:50]} (rol={user_role})")
             raise HTTPException(status_code=400, detail=error_msg)
-        
+
         query = """
-SELECT 
+SELECT
     COLUMN_NAME as columna,
     DATA_TYPE as tipo,
     CHARACTER_MAXIMUM_LENGTH as longitud,
@@ -13660,7 +11586,7 @@ async def listar_relaciones(
 ):
     """
     Lista las relaciones (foreign keys) de una tabla.
-    
+
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     CONEXIONES-SQL-EDARSAHUB-01 / LOTE 4
     FASE 1B: Whitelist de tablas + parametrización
@@ -13668,24 +11594,24 @@ async def listar_relaciones(
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     from core.server_registry import get_server_connection_info
     from core.db import execute_sql_query_params
-    
+
     conn_info = await get_server_connection_info(server_id, db=db)
     if not conn_info:
         raise HTTPException(status_code=404, detail="Servidor no encontrado o sin acceso")
-    
+
     # FASE 6-8: Validar acceso usando función centralizada
     await validate_server_access_unified(current_user, server_id)
-    
+
     # FASE 1B: Validar tabla contra whitelist (superadmin bypasea)
     user_role = current_user.get('role', current_user.get('rol', 'visor'))
     is_valid, error_msg = _validate_table_name(tabla, conn_info.get('system_type'), user_role)
     if not is_valid:
         logging.warning(f"[A03-SANITIZADO] Tabla rechazada por whitelist: {tabla[:50]} (rol={user_role})")
         raise HTTPException(status_code=400, detail=error_msg)
-    
+
     # FASE 1B: Usar parametrización segura (tabla pasada 2 veces)
     query = """
-SELECT 
+SELECT
     fk.name as nombre_fk,
     tp.name as tabla_padre,
     cp.name as columna_padre,
@@ -13723,22 +11649,22 @@ async def preview_tabla(
 ):
     """
     Muestra las primeras N filas de una tabla.
-    
+
     CORRECCIÓN P1 (2026-05-16): Soporte Multi-Tipo de Conexión
     - DATA_SOURCE: Usa SELECT TOP N directo con SQL Server
     - API_LOCAL: Usa execute_test_query para consultar via API remota
-    
+
     La whitelist solo aplica para DATA_SOURCE (tablas conocidas del sistema).
     Para API_LOCAL las tablas son dinámicas del servidor remoto.
     """
     from core.server_registry import get_server_connection_info
     from modules.api_connections.repository import get_api_connection_by_id_full, execute_test_query
-    
+
     # Determinar tipo de conexión
     tipo_conexion = None
     conn_info = None
     api_conn = None
-    
+
     # Primero intentar como API_LOCAL
     try:
         api_conn = await get_api_connection_by_id_full(server_id)
@@ -13746,28 +11672,28 @@ async def preview_tabla(
             tipo_conexion = 'API_LOCAL'
     except Exception as e:
         logging.debug(f"[EXPLORADOR][PREVIEW] {server_id} no es API_LOCAL: {e}")
-    
+
     # Si no es API_LOCAL, buscar como SQL_SERVER/DATA_SOURCE
     if tipo_conexion != 'API_LOCAL':
         conn_info = await get_server_connection_info(server_id, db=db)
         if conn_info:
             tipo_conexion = conn_info.get('tipo_conexion', 'DATA_SOURCE')
-    
+
     if not api_conn and not conn_info:
         raise HTTPException(status_code=404, detail="Servidor no encontrado o sin acceso")
-    
+
     # Validar acceso
     await validate_server_access_unified(current_user, server_id)
-    
+
     # === CASO 1: API_LOCAL ===
     if tipo_conexion == 'API_LOCAL' and api_conn:
         nombre = api_conn.get('nombre', api_conn.get('name', 'API'))
-        
+
         # Query para preview de datos via API remota
         # Usamos brackets para identificador seguro
         tabla_safe = tabla.replace("]", "]]")  # Escapar corchetes
         preview_query = f"SELECT TOP {limite} * FROM [{tabla_safe}]"
-        
+
         try:
             result = await execute_test_query(
                 api_id=server_id,
@@ -13775,7 +11701,7 @@ async def preview_tabla(
                 timeout=30,
                 limit=limite  # Aplicar límite también a la respuesta
             )
-            
+
             if result.get('success') and result.get('status_code') == 200:
                 datos = result.get('preview_data', result.get('data', []))
                 return {
@@ -13793,7 +11719,7 @@ async def preview_tabla(
         except Exception as e:
             logging.error(f"[EXPLORADOR][PREVIEW][API_LOCAL] {nombre}: {e}")
             raise HTTPException(status_code=500, detail=f"Error consultando datos: {str(e)[:100]}")
-    
+
     # === CASO 2: DATA_SOURCE (SQL directo) ===
     if conn_info:
         # Validar tabla contra whitelist (superadmin bypasea whitelist)
@@ -13802,10 +11728,10 @@ async def preview_tabla(
         if not is_valid:
             logging.warning(f"[A03-SANITIZADO] Tabla rechazada por whitelist: {tabla[:50]} (rol={user_role})")
             raise HTTPException(status_code=400, detail=error_msg)
-        
+
         # Tabla validada, usar brackets para identificador seguro
         query = f"SELECT TOP {limite} * FROM [{tabla}]"
-        
+
         try:
             result = execute_sql_query(
                 conn_info['host'], conn_info['port'], conn_info['database'],
@@ -13831,33 +11757,33 @@ async def ejecutar_query_libre(
     """
     Ejecuta una query SQL personalizada (solo SELECT).
     Solo para administradores.
-    
+
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     CONEXIONES-SQL-EDARSAHUB-01 / LOTE 4
-    
+
     FASE 1B: Sanitización SQL completa con SQLSanitizer.
     SEGURIDAD: Validación estricta de rol Administrador + bloqueo de SQL peligroso.
     """
     # FASE 1B: Validación de rol
     if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar queries libres")
-    
+
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     from core.server_registry import get_server_connection_info
     from core.security import SQLSanitizer, log_blocked_sql
-    
+
     conn_info = await get_server_connection_info(server_id, db=db)
     if not conn_info:
         raise HTTPException(status_code=404, detail="Servidor no encontrado o sin acceso")
-    
+
     query = body.get('query', '').strip()
-    
+
     # FASE 1B: Validación SQL completa con sanitizador centralizado
     validation = SQLSanitizer.validate_for_explorer(query, user_role=current_user.get('role'))
     if not validation.is_safe:
         log_blocked_sql(validation, endpoint="/explorador/query", user_email=current_user.get('email'))
         raise HTTPException(status_code=400, detail=f"SQL bloqueado: {validation.blocked_reason}")
-    
+
     try:
         result = execute_sql_query(
             conn_info['host'], conn_info['port'], conn_info['database'],
@@ -13882,10 +11808,10 @@ async def ejecutar_script_sql(
     """
     Ejecuta un script SQL completo (CREATE, INSERT, UPDATE, DELETE, etc.).
     SOLO SUPERADMINISTRADOR - ENDPOINT ALTAMENTE RESTRINGIDO.
-    
+
     FASE 1B: BLOQUEADO por defecto. Solo SuperAdministrador puede usar.
     Este endpoint permite DDL/DML y es extremadamente peligroso.
-    
+
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     CONEXIONES-SQL-EDARSAHUB-01 / LOTE 4
     """
@@ -13897,42 +11823,42 @@ async def ejecutar_script_sql(
             f"Rol: {current_user.get('role')}. Solo SuperAdministrador permitido."
         )
         raise HTTPException(
-            status_code=403, 
+            status_code=403,
             detail="Solo SuperAdministrador puede ejecutar scripts SQL completos. "
                    "Este es un endpoint de alto riesgo."
         )
-    
+
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     from core.server_registry import get_server_connection_info
     conn_info = await get_server_connection_info(server_id, db=db)
     if not conn_info:
         raise HTTPException(status_code=404, detail="Servidor no encontrado o sin acceso")
-    
+
     script = body.get('script', '').strip()
     titulo = body.get('titulo', '').strip() or 'Script sin título'
-    
+
     if not script:
         raise HTTPException(status_code=400, detail="El script está vacío")
-    
+
     # FASE 1B: Log de auditoría para scripts SQL (sin exponer el script completo)
     logging.warning(
         f"[SQL-SCRIPT-AUDIT] SuperAdmin {current_user.get('email')} ejecutando script. "
         f"Server: {server_id}, Titulo: {titulo}, Length: {len(script)} chars"
     )
-    
+
     # Parsear el script en statements individuales
     # Dividir por GO (batch separator de SQL Server) o por punto y coma
     import re
-    
+
     # Reemplazar GO como separador de batch
     script_normalizado = re.sub(r'\bGO\b', ';', script, flags=re.IGNORECASE)
-    
+
     # Dividir por punto y coma, pero ignorar los que están dentro de strings
     statements = []
     current_statement = []
     in_string = False
     string_char = None
-    
+
     for char in script_normalizado:
         if char in ("'", '"') and not in_string:
             in_string = True
@@ -13940,7 +11866,7 @@ async def ejecutar_script_sql(
         elif char == string_char and in_string:
             in_string = False
             string_char = None
-        
+
         if char == ';' and not in_string:
             stmt = ''.join(current_statement).strip()
             if stmt:
@@ -13948,32 +11874,32 @@ async def ejecutar_script_sql(
             current_statement = []
         else:
             current_statement.append(char)
-    
+
     # Agregar el último statement si no termina en ;
     final_stmt = ''.join(current_statement).strip()
     if final_stmt:
         statements.append(final_stmt)
-    
+
     # Filtrar statements vacíos y comentarios puros
     statements = [s for s in statements if s and not s.startswith('--')]
-    
+
     if not statements:
         raise HTTPException(status_code=400, detail="No se encontraron comandos SQL válidos")
-    
+
     logging.info(f"[SCRIPT SQL] Usuario {current_user.get('email')} ejecutando {len(statements)} comandos en {conn_info['name']}")
-    
+
     resultados = []
     exitosos = 0
     fallidos = 0
-    
+
     # Ejecutar cada statement
     import pytds
-    
+
     try:
         # Parsear host y puerto
         host_str = conn_info['host']
         port = conn_info.get('port', 1433)
-        
+
         if ',' in host_str:
             parts = host_str.split(',')
             host = parts[0].strip()
@@ -13985,7 +11911,7 @@ async def ejecutar_script_sql(
                 host = host_str.split(',')[0].strip()
         else:
             host = host_str
-        
+
         with pytds.connect(
             server=host,
             port=port,
@@ -13997,13 +11923,13 @@ async def ejecutar_script_sql(
             autocommit=True  # Importante para DDL
         ) as conn:
             cursor = conn.cursor()
-            
+
             for idx, stmt in enumerate(statements):
                 stmt_tipo = stmt.split()[0].upper() if stmt.split() else 'UNKNOWN'
-                
+
                 try:
                     cursor.execute(stmt)
-                    
+
                     # Si es SELECT, obtener resultados
                     if stmt_tipo == 'SELECT':
                         try:
@@ -14029,9 +11955,9 @@ async def ejecutar_script_sql(
                             "mensaje": f"{filas} filas afectadas" if filas > 0 else "Ejecutado correctamente",
                             "filas_afectadas": filas
                         })
-                    
+
                     exitosos += 1
-                    
+
                 except Exception as e:
                     error_msg = str(e)
                     resultados.append({
@@ -14042,10 +11968,10 @@ async def ejecutar_script_sql(
                     })
                     fallidos += 1
                     logging.warning(f"[SCRIPT SQL] Error en statement {idx+1}: {error_msg}")
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error de conexión: {str(e)}")
-    
+
     # Guardar log en tabla canónica SQL
     _sql_insert_script_log({
         "server_id": server_id,
@@ -14058,7 +11984,7 @@ async def ejecutar_script_sql(
         "fallidos": fallidos,
         "resultados": resultados
     })
-    
+
     return {
         "servidor": conn_info['name'],
         "titulo": titulo,
@@ -14092,7 +12018,7 @@ class InformeAuditoriaCreate(BaseModel):
     almacen_nombre: str
     servidor_id: str
     servidor_nombre: str
-    
+
     # Periodo del análisis
     inventario_inicial_id: str
     inventario_inicial_fecha: str
@@ -14100,25 +12026,25 @@ class InformeAuditoriaCreate(BaseModel):
     inventario_final_fecha: str
     fecha_inicio_movimientos: Optional[str] = None
     fecha_fin_movimientos: Optional[str] = None
-    
+
     # Resumen del análisis
     total_productos: int = 0
     productos_con_diferencia: int = 0
     valor_total_diferencias: float = 0
     porcentaje_precision: float = 0
-    
+
     # Contenido del informe
     comentarios: str = ""
     conclusiones: str = ""
     recomendaciones: str = ""
-    
+
     # Opciones
     incluir_comparativo_4_cortes: bool = False
     datos_comparativo: Optional[List[Dict]] = None
-    
+
     # Datos del reporte (productos con diferencias)
     productos_diferencias: Optional[List[Dict]] = None
-    
+
     # Metadatos
     auditor: str = ""
     cargo_auditor: str = ""
@@ -14141,7 +12067,7 @@ class InformeAuditoriaResponse(BaseModel):
 # async def rrhh_listar_puestos(current_user: Dict = Depends(get_current_user)):
 #     """Lista catálogo de puestos desde RH_Cat_Puestos"""
 #     query = """
-#         SELECT 
+#         SELECT
 #             PuestoID,
 #             Descripcion,
 #             Departamento,
@@ -14158,7 +12084,7 @@ class InformeAuditoriaResponse(BaseModel):
 # async def rrhh_listar_sucursales(current_user: Dict = Depends(get_current_user)):
 #     """Lista catálogo de sucursales desde RH_Cat_Sucursales"""
 #     query = """
-#         SELECT 
+#         SELECT
 #             s.SucursalID,
 #             s.Nombre_Sucursal,
 #             s.Ciudad,
@@ -14190,25 +12116,25 @@ class InformeAuditoriaResponse(BaseModel):
 # ):
 #     """Crea un nuevo puesto en el catálogo (Solo Administrador)"""
 #     check_admin_role(current_user)
-#     
+#
 #     descripcion = body.get('descripcion', '').strip()
 #     departamento = body.get('departamento', '').strip()
 #     sueldo_base = body.get('sueldo_base', 0)
 #     nomipaq_id = body.get('nomipaq_id', '')  # ID para mapeo con NomiPAQ
 #     mpro_id = body.get('mpro_id', '')  # ID para mapeo con MPRO
-#     
+#
 #     if not descripcion:
 #         raise HTTPException(status_code=400, detail="La descripción del puesto es requerida")
-#     
+#
 #     # VULNERABILIDAD SQL INJECTION - CORREGIDA EN modules/rh/repository.py
 #     query = f"""
-#         INSERT INTO RH_Cat_Puestos 
+#         INSERT INTO RH_Cat_Puestos
 #         (Descripcion, Departamento, Sueldo_Base_Seman_SBC, NomiPAQ_ID, MPRO_ID, Fecha_Creacion, Creado_Por)
 #         OUTPUT INSERTED.PuestoID
-#         VALUES 
+#         VALUES
 #         ('{Descripcion}', '{Departamento}', {sueldo_base}, '{nomipaq_id}', '{mpro_id}', GETDATE(), '{current_user.get("email", "")}')
 #     """
-#     
+#
 #     await execute_edarsa_hub_query(query)
 #     return {"success": True, "message": "Puesto creado"}
 
@@ -14222,7 +12148,7 @@ class InformeAuditoriaResponse(BaseModel):
 # ):
 #     """Actualiza un puesto existente (Solo Administrador)"""
 #     check_admin_role(current_user)
-#     
+#
 #     updates = []
 #     if 'descripcion' in body:
 #         updates.append(f"Descripcion = '{body['descripcion']}'")
@@ -14234,17 +12160,17 @@ class InformeAuditoriaResponse(BaseModel):
 #         updates.append(f"NomiPAQ_ID = '{body['nomipaq_id']}'")
 #     if 'mpro_id' in body:
 #         updates.append(f"MPRO_ID = '{body['mpro_id']}'")
-#     
+#
 #     if not updates:
 #         raise HTTPException(status_code=400, detail="No hay campos para actualizar")
-#     
+#
 #     # VULNERABILIDAD SQL INJECTION - CORREGIDA EN modules/rh/repository.py
 #     query = f"""
 #         UPDATE RH_Cat_Puestos
 #         SET {', '.join(updates)}, Fecha_Modificacion = GETDATE()
 #         WHERE PuestoID = {puesto_id}
 #     """
-#     
+#
 #     await execute_edarsa_hub_query(query)
 #     return {"success": True, "message": "Puesto actualizado"}
 
@@ -14257,13 +12183,13 @@ class InformeAuditoriaResponse(BaseModel):
 # ):
 #     """Elimina un puesto del catálogo (Solo Administrador)"""
 #     check_admin_role(current_user)
-#     
+#
 #     # Verificar si hay colaboradores con este puesto
 #     query_check = f"SELECT COUNT(*) as total FROM RH_Colaboradores_Expediente WHERE PuestoID = {puesto_id}"
 #     result = await execute_edarsa_hub_query(query_check)
 #     if result.get('datos', [{}])[0].get('total', 0) > 0:
 #         raise HTTPException(status_code=400, detail="No se puede eliminar: hay colaboradores asignados a este puesto")
-#     
+#
 #     query = f"DELETE FROM RH_Cat_Puestos WHERE PuestoID = {puesto_id}"
 #     await execute_edarsa_hub_query(query)
 #     return {"success": True, "message": "Puesto eliminado"}
@@ -14276,7 +12202,7 @@ class InformeAuditoriaResponse(BaseModel):
 # async def rrhh_listar_tipos_incidencias(current_user: Dict = Depends(get_current_user)):
 #     """Lista catálogo de tipos de incidencias"""
 #     query = """
-#         SELECT 
+#         SELECT
 #             TipoIncidenciaID,
 #             Codigo,
 #             Descripcion,
@@ -14314,7 +12240,7 @@ class InformeAuditoriaResponse(BaseModel):
 # ):
 #     """Crea un nuevo tipo de incidencia (Solo Administrador)"""
 #     check_admin_role(current_user)
-#     
+#
 #     codigo = body.get('codigo', '').strip().upper()
 #     descripcion = body.get('descripcion', '').strip()
 #     categoria = body.get('categoria', 'Descuento')  # Ingreso o Descuento
@@ -14322,18 +12248,18 @@ class InformeAuditoriaResponse(BaseModel):
 #     calculo_monto = body.get('calculo_monto', 'Manual')  # Manual, Porcentaje, Formula
 #     nomipaq_id = body.get('nomipaq_id', '')
 #     mpro_id = body.get('mpro_id', '')
-#     
+#
 #     if not codigo or not descripcion:
 #         raise HTTPException(status_code=400, detail="Código y descripción son requeridos")
-#     
+#
 #     # VULNERABILIDAD SQL INJECTION - CORREGIDA EN modules/rh/repository.py
 #     query = f"""
-#         INSERT INTO RH_Cat_Tipos_Incidencias 
+#         INSERT INTO RH_Cat_Tipos_Incidencias
 #         (Codigo, Descripcion, Categoria, Afectacion, Calculo_Monto, Activo, NomiPAQ_ID, MPRO_ID, Fecha_Creacion, Creado_Por)
-#         VALUES 
+#         VALUES
 #         ('{codigo}', '{descripcion}', '{categoria}', {afectacion}, '{calculo_monto}', 1, '{nomipaq_id}', '{mpro_id}', GETDATE(), '{current_user.get("email", "")}')
 #     """
-#     
+#
 #     await execute_edarsa_hub_query(query)
 #     return {"success": True, "message": "Tipo de incidencia creado"}
 
@@ -14347,7 +12273,7 @@ class InformeAuditoriaResponse(BaseModel):
 # ):
 #     """Actualiza un tipo de incidencia (Solo Administrador)"""
 #     check_admin_role(current_user)
-#     
+#
 #     updates = []
 #     if 'codigo' in body:
 #         updates.append(f"Codigo = '{body['codigo'].upper()}'")
@@ -14364,17 +12290,17 @@ class InformeAuditoriaResponse(BaseModel):
 #         updates.append(f"NomiPAQ_ID = '{body['nomipaq_id']}'")
 #     if 'mpro_id' in body:
 #         updates.append(f"MPRO_ID = '{body['mpro_id']}'")
-#     
+#
 #     if not updates:
 #         raise HTTPException(status_code=400, detail="No hay campos para actualizar")
-#     
+#
 #     # VULNERABILIDAD SQL INJECTION - CORREGIDA EN modules/rh/repository.py
 #     query = f"""
 #         UPDATE RH_Cat_Tipos_Incidencias
 #         SET {', '.join(updates)}, Fecha_Modificacion = GETDATE()
 #         WHERE TipoIncidenciaID = {tipo_id}
 #     """
-#     
+#
 #     await execute_edarsa_hub_query(query)
 #     return {"success": True, "message": "Tipo de incidencia actualizado"}
 
@@ -14387,7 +12313,7 @@ class InformeAuditoriaResponse(BaseModel):
 # ):
 #     """Desactiva un tipo de incidencia (Solo Administrador) - No elimina para mantener histórico"""
 #     check_admin_role(current_user)
-#     
+#
 #     query = f"UPDATE RH_Cat_Tipos_Incidencias SET Activo = 0, Fecha_Modificacion = GETDATE() WHERE TipoIncidenciaID = {tipo_id}"
 #     await execute_edarsa_hub_query(query)
 #     return {"success": True, "message": "Tipo de incidencia desactivado"}
@@ -14495,7 +12421,7 @@ class InformeAuditoriaResponse(BaseModel):
 #     current_user: Dict = Depends(get_current_user)
 # ):
 #     """Lista registros del reloj checador"""
-#     
+#
 #     conditions = ["1=1"]
 #     if colaborador_id:
 #         conditions.append(f"r.ColaboradorID = {colaborador_id}")
@@ -14507,12 +12433,12 @@ class InformeAuditoriaResponse(BaseModel):
 #         conditions.append(f"CAST(r.FechaHora AS DATE) >= '{fecha_desde}'")
 #     if fecha_hasta:
 #         conditions.append(f"CAST(r.FechaHora AS DATE) <= '{fecha_hasta}'")
-#     
+#
 #     where_clause = " AND ".join(conditions)
 #     offset = (page - 1) * limit
-#     
+#
 #     query = f"""
-#         SELECT 
+#         SELECT
 #             r.CheckID,
 #             r.ColaboradorID,
 #             c.Nombre_Completo,
@@ -14531,9 +12457,9 @@ class InformeAuditoriaResponse(BaseModel):
 #         ORDER BY r.FechaHora DESC
 #         OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
 #     """
-#     
+#
 #     result = await execute_edarsa_hub_query(query)
-#     
+#
 #     return {
 #         "asistencias": result.get("datos", []),
 #         "total": result.get("registros", 0),
@@ -14548,24 +12474,24 @@ class InformeAuditoriaResponse(BaseModel):
 #     current_user: Dict = Depends(get_current_user)
 # ):
 #     """Registra una entrada o salida"""
-#     
+#
 #     colaborador_id = body.get('colaborador_id')
 #     tipo = body.get('tipo_registro')  # "Entrada" o "Salida"
 #     geo = body.get('geolocalizacion')
-#     
+#
 #     if not colaborador_id or not tipo:
 #         raise HTTPException(status_code=400, detail="Colaborador y tipo son requeridos")
-#     
+#
 #     query = f"""
-#         INSERT INTO RH_Reloj_Checador 
+#         INSERT INTO RH_Reloj_Checador
 #         (ColaboradorID, Tipo_Registro, FechaHora, Geolocalizacion, Validado_Gerencia)
 #         OUTPUT INSERTED.CheckID
-#         VALUES 
+#         VALUES
 #         ({colaborador_id}, '{tipo}', GETDATE(), {f"'{geo}'" if geo else 'NULL'}, 0)
 #     """
-#     
+#
 #     result = await execute_edarsa_hub_query(query)
-#     
+#
 #     return {
 #         "success": True,
 #         "message": "Asistencia registrada",
@@ -14579,15 +12505,15 @@ class InformeAuditoriaResponse(BaseModel):
 #     current_user: Dict = Depends(get_current_user)
 # ):
 #     """Valida un registro de asistencia (gerencia)"""
-#     
+#
 #     query = f"""
 #         UPDATE RH_Reloj_Checador
 #         SET Validado_Gerencia = 1
 #         WHERE CheckID = {check_id}
 #     """
-#     
+#
 #     await execute_edarsa_hub_query(query)
-#     
+#
 #     return {"success": True, "message": "Asistencia validada"}
 
 
@@ -14614,7 +12540,7 @@ class InformeAuditoriaResponse(BaseModel):
 #     current_user: Dict = Depends(get_current_user)
 # ):
 #     """Lista flujos de nómina por sucursal"""
-#     
+#
 #     conditions = ["1=1"]
 #     if sucursal_id:
 #         conditions.append(f"f.SucursalID = {sucursal_id}")
@@ -14622,11 +12548,11 @@ class InformeAuditoriaResponse(BaseModel):
 #         conditions.append(f"f.Semana_Anio = {semana_anio}")
 #     if estatus:
 #         conditions.append(f"f.Estatus_Flujo = '{estatus}'")
-#     
+#
 #     where_clause = " AND ".join(conditions)
-#     
+#
 #     query = f"""
-#         SELECT 
+#         SELECT
 #             f.FlujoID,
 #             f.SucursalID,
 #             s.Nombre_Sucursal,
@@ -14644,9 +12570,9 @@ class InformeAuditoriaResponse(BaseModel):
 #         WHERE {where_clause}
 #         ORDER BY f.Semana_Anio DESC, s.Nombre_Sucursal
 #     """
-#     
+#
 #     result = await execute_edarsa_hub_query(query)
-#     
+#
 #     return {
 #         "flujos": result.get("datos", []),
 #         "total": result.get("registros", 0)
@@ -14659,33 +12585,33 @@ class InformeAuditoriaResponse(BaseModel):
 #     current_user: Dict = Depends(get_current_user)
 # ):
 #     """Crea un nuevo periodo de nómina para una sucursal"""
-#     
+#
 #     sucursal_id = body.get('sucursal_id')
 #     semana_anio = body.get('semana_anio')  # Formato: 202614 (año + semana)
-#     
+#
 #     if not sucursal_id or not semana_anio:
 #         raise HTTPException(status_code=400, detail="Sucursal y semana son requeridos")
-#     
+#
 #     # Verificar si ya existe
 #     check_query = f"""
-#         SELECT FlujoID FROM RH_Flujo_Nomina_Sucursal 
+#         SELECT FlujoID FROM RH_Flujo_Nomina_Sucursal
 #         WHERE SucursalID = {SucursalID} AND Semana_Anio = {Semana_Anio}
 #     """
 #     existing = await execute_edarsa_hub_query(check_query)
-#     
+#
 #     if existing.get("datos"):
 #         raise HTTPException(status_code=400, detail="Ya existe un flujo para esta sucursal y semana")
-#     
+#
 #     query = f"""
-#         INSERT INTO RH_Flujo_Nomina_Sucursal 
+#         INSERT INTO RH_Flujo_Nomina_Sucursal
 #         (SucursalID, Semana_Anio, Estatus_Flujo, Intentos_Reenvio)
 #         OUTPUT INSERTED.FlujoID
-#         VALUES 
+#         VALUES
 #         ({SucursalID}, {Semana_Anio}, 'Captura', 0)
 #     """
-#     
+#
 #     result = await execute_edarsa_hub_query(query)
-#     
+#
 #     return {
 #         "success": True,
 #         "message": "Flujo de nómina creado",
@@ -14717,11 +12643,11 @@ class InformeAuditoriaResponse(BaseModel):
 #     """Validación de nómina por gerente"""
 #     aprobado = body.get('aprobado', True)
 #     motivo = body.get('motivo_rechazo', '')
-#     
+#
 #     if aprobado:
 #         query = f"""
 #             UPDATE RH_Flujo_Nomina_Sucursal
-#             SET Estatus_Flujo = 'Validacion_Gerente', 
+#             SET Estatus_Flujo = 'Validacion_Gerente',
 #                 Hora_Validacion_Gerente = GETDATE(),
 #                 Motivo_Rechazo_Gerente = NULL
 #             WHERE FlujoID = {flujo_id}
@@ -14729,12 +12655,12 @@ class InformeAuditoriaResponse(BaseModel):
 #     else:
 #         query = f"""
 #             UPDATE RH_Flujo_Nomina_Sucursal
-#             SET Estatus_Flujo = 'Rechazado_Gerente', 
+#             SET Estatus_Flujo = 'Rechazado_Gerente',
 #                 Motivo_Rechazo_Gerente = '{motivo or "Sin especificar"}',
 #                 Intentos_Reenvio = Intentos_Reenvio + 1
 #             WHERE FlujoID = {flujo_id}
 #         """
-#     
+#
 #     await execute_edarsa_hub_query(query)
 #     return {"success": True, "message": "Nómina validada" if aprobado else "Nómina rechazada"}
 
@@ -14801,7 +12727,7 @@ class InformeAuditoriaResponse(BaseModel):
 #     current_user: Dict = Depends(get_current_user)
 # ):
 #     """Lista auditoría fiscal de nóminas"""
-#     
+#
 #     conditions = ["1=1"]
 #     if colaborador_id:
 #         conditions.append(f"a.ColaboradorID = {colaborador_id}")
@@ -14809,11 +12735,11 @@ class InformeAuditoriaResponse(BaseModel):
 #         conditions.append(f"a.Semana = {semana}")
 #     if solo_alertas:
 #         conditions.append("a.Alerta_Fraude = 1")
-#     
+#
 #     where_clause = " AND ".join(conditions)
-#     
+#
 #     query = f"""
-#         SELECT 
+#         SELECT
 #             a.AuditoriaID,
 #             a.ColaboradorID,
 #             c.Nombre_Completo,
@@ -14831,10 +12757,10 @@ class InformeAuditoriaResponse(BaseModel):
 #         WHERE {where_clause}
 #         ORDER BY a.Alerta_Fraude DESC, a.Semana DESC
 #     """
-#     
+#
 #     result = await execute_edarsa_hub_query(query)
 #     alertas = sum(1 for r in result.get("datos", []) if r.get("Alerta_Fraude") == 1)
-#     
+#
 #     return {
 #         "auditoria": result.get("datos", []),
 #         "total": result.get("registros", 0),
@@ -14852,13 +12778,13 @@ class InformeAuditoriaResponse(BaseModel):
 #     current_user: Dict = Depends(get_current_user)
 # ):
 #     """Dashboard con métricas de RRHH"""
-#     
+#
 #     suc_filter = f"AND SucursalID = {sucursal_id}" if sucursal_id else ""
 #     suc_filter_c = f"AND c.SucursalID = {sucursal_id}" if sucursal_id else ""
-#     
+#
 #     # Total colaboradores
 #     query_total = f"""
-#         SELECT 
+#         SELECT
 #             COUNT(*) as total,
 #             SUM(CASE WHEN Colaborador_Activo = 1 THEN 1 ELSE 0 END) as activos,
 #             SUM(CASE WHEN Estatus_Laboral = 'Vacaciones' THEN 1 ELSE 0 END) as vacaciones,
@@ -14867,10 +12793,10 @@ class InformeAuditoriaResponse(BaseModel):
 #         FROM RH_Colaboradores_Expediente
 #         WHERE 1=1 {suc_filter}
 #     """
-#     
+#
 #     # Por departamento
 #     query_depto = f"""
-#         SELECT 
+#         SELECT
 #             ISNULL(p.Departamento, 'Sin asignar') as Departamento,
 #             COUNT(*) as total
 #         FROM RH_Colaboradores_Expediente c
@@ -14879,24 +12805,24 @@ class InformeAuditoriaResponse(BaseModel):
 #         GROUP BY p.Departamento
 #         ORDER BY total DESC
 #     """
-#     
+#
 #     # Incidencias del mes
 #     query_incidencias = f"""
-#         SELECT 
+#         SELECT
 #             Tipo_Incidencia,
 #             COUNT(*) as cantidad,
 #             SUM(ISNULL(Monto, 0)) as monto_total
 #         FROM RH_Incidencias_Nomina i
 #         LEFT JOIN RH_Colaboradores_Expediente c ON i.ColaboradorID = c.ColaboradorID
-#         WHERE MONTH(Fecha_Incidencia) = MONTH(GETDATE()) 
+#         WHERE MONTH(Fecha_Incidencia) = MONTH(GETDATE())
 #           AND YEAR(Fecha_Incidencia) = YEAR(GETDATE())
 #           {suc_filter_c}
 #         GROUP BY Tipo_Incidencia
 #     """
-#     
+#
 #     # Flujos pendientes
 #     query_flujos = f"""
-#         SELECT 
+#         SELECT
 #             Estatus_Flujo,
 #             COUNT(*) as cantidad
 #         FROM RH_Flujo_Nomina_Sucursal
@@ -14904,7 +12830,7 @@ class InformeAuditoriaResponse(BaseModel):
 #           {suc_filter}
 #         GROUP BY Estatus_Flujo
 #     """
-#     
+#
 #     # Alertas fraude
 #     query_alertas = f"""
 #         SELECT COUNT(*) as alertas
@@ -14912,13 +12838,13 @@ class InformeAuditoriaResponse(BaseModel):
 #         LEFT JOIN RH_Colaboradores_Expediente c ON a.ColaboradorID = c.ColaboradorID
 #         WHERE a.Alerta_Fraude = 1 {suc_filter_c}
 #     """
-#     
+#
 #     result_total = await execute_edarsa_hub_query(query_total)
 #     result_depto = await execute_edarsa_hub_query(query_depto)
 #     result_incidencias = await execute_edarsa_hub_query(query_incidencias)
 #     result_flujos = await execute_edarsa_hub_query(query_flujos)
 #     result_alertas = await execute_edarsa_hub_query(query_alertas)
-#     
+#
 #     return {
 #         "resumen": result_total.get("datos", [{}])[0] if result_total.get("datos") else {},
 #         "por_departamento": result_depto.get("datos", []),
@@ -14940,39 +12866,39 @@ async def ejecutar_script_con_credenciales(
     """
     Ejecuta un script SQL usando credenciales de administrador proporcionadas.
     Las credenciales se usan solo para esta ejecución (no se guardan).
-    
+
     FASE P1.4-E4 (Dic 2025): Migrado de MongoDB db.servers a server_registry.
     FUENTE: EDARSAHUB.dbo.Servidores_Conexiones
     NO FUENTE: MongoDB db.servers
     """
     from core.server_registry import get_server_connection_info_with_secrets
-    
+
     if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar scripts")
-    
+
     # FASE P1.4-E4: Obtener servidor desde EDARSAHUB SQL via server_registry
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
     server = decrypt_server_secrets(get_server_connection_info_with_secrets(server_id))
     if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     script_id = body.get('script_id')
     script = body.get('script', '').strip()
     titulo = body.get('titulo', 'Script sin título')
     admin_username = body.get('admin_username', '').strip()
     admin_password = body.get('admin_password', '')
-    
+
     if not admin_username or not admin_password:
         raise HTTPException(status_code=400, detail="Credenciales de administrador requeridas")
-    
+
     # FASE P5: MongoDB deprecado - scripts_pendientes migrado a SQL
     # Si hay script_id, se ignora (debe venir en body.script)
     if script_id:
         pass  # P5: db.scripts_pendientes eliminado - usar API SQL
-    
+
     if not script:
         raise HTTPException(status_code=400, detail="El script está vacío")
-    
+
     # Parsear statements
     import re
     script_normalizado = re.sub(r'\bGO\b', ';', script, flags=re.IGNORECASE)
@@ -14980,7 +12906,7 @@ async def ejecutar_script_con_credenciales(
     current_statement = []
     in_string = False
     string_char = None
-    
+
     for char in script_normalizado:
         if char in ("'", '"') and not in_string:
             in_string = True
@@ -14988,7 +12914,7 @@ async def ejecutar_script_con_credenciales(
         elif char == string_char and in_string:
             in_string = False
             string_char = None
-        
+
         if char == ';' and not in_string:
             stmt = ''.join(current_statement).strip()
             if stmt:
@@ -14996,28 +12922,28 @@ async def ejecutar_script_con_credenciales(
             current_statement = []
         else:
             current_statement.append(char)
-    
+
     final_stmt = ''.join(current_statement).strip()
     if final_stmt:
         statements.append(final_stmt)
-    
+
     statements = [s for s in statements if s and not s.startswith('--')]
-    
+
     if not statements:
         raise HTTPException(status_code=400, detail="No se encontraron comandos SQL válidos")
-    
+
     logging.info(f"[SCRIPT CON CREDS] Usuario {current_user.get('email')} ejecutando {len(statements)} comandos en {server['name']} con credenciales de {admin_username}")
-    
+
     resultados = []
     exitosos = 0
     fallidos = 0
-    
+
     import pytds
-    
+
     try:
         host_str = server['host']
         port = server.get('port', 1433)
-        
+
         if ',' in host_str:
             parts = host_str.split(',')
             host = parts[0].strip()
@@ -15027,7 +12953,7 @@ async def ejecutar_script_con_credenciales(
                 pass
         else:
             host = host_str
-        
+
         with pytds.connect(
             server=host,
             port=port,
@@ -15039,13 +12965,13 @@ async def ejecutar_script_con_credenciales(
             autocommit=True
         ) as conn:
             cursor = conn.cursor()
-            
+
             for idx, stmt in enumerate(statements):
                 stmt_tipo = stmt.split()[0].upper() if stmt.split() else 'UNKNOWN'
-                
+
                 try:
                     cursor.execute(stmt)
-                    
+
                     if stmt_tipo == 'SELECT':
                         try:
                             rows = cursor.fetchall()
@@ -15069,9 +12995,9 @@ async def ejecutar_script_con_credenciales(
                             "mensaje": f"{filas} filas afectadas" if filas > 0 else "Ejecutado correctamente",
                             "filas_afectadas": filas
                         })
-                    
+
                     exitosos += 1
-                    
+
                 except Exception as e:
                     error_msg = str(e)
                     resultados.append({
@@ -15082,12 +13008,12 @@ async def ejecutar_script_con_credenciales(
                     })
                     fallidos += 1
                     logging.warning(f"[SCRIPT CON CREDS] Error en statement {idx+1}: {error_msg}")
-    
+
     except pytds.LoginError:
         raise HTTPException(status_code=401, detail=f"Error de autenticación: Usuario o contraseña incorrectos")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error de conexión: {str(e)}")
-    
+
     # Guardar log en tabla canónica SQL
     _sql_insert_script_log({
         "server_id": server_id,
@@ -15102,12 +13028,12 @@ async def ejecutar_script_con_credenciales(
         "resultados": resultados,
         "tipo": "ejecutado_con_credenciales"
     })
-    
+
     # Si se ejecutó exitosamente y era un script pendiente, marcarlo como ejecutado
     # FASE P5: MongoDB deprecado - scripts_pendientes migrado a SQL
     if script_id and exitosos > 0:
         pass  # P5: db.scripts_pendientes.update_one eliminado - usar API SQL
-    
+
     return {
         "servidor": server['name'],
         "titulo": titulo,
@@ -15933,10 +13859,10 @@ async def buscar_en_bd(
     """
     Buscador global de la base de datos.
     Busca en nombres de tablas, columnas y opcionalmente en datos.
-    
+
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     CONEXIONES-SQL-EDARSAHUB-01 / LOTE 4
-    
+
     FASE 1A: Sanitizado contra SQL Injection usando _escape_like_pattern()
     """
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
@@ -15944,13 +13870,13 @@ async def buscar_en_bd(
     conn_info = await get_server_connection_info(server_id, db=db)
     if not conn_info:
         raise HTTPException(status_code=404, detail="Servidor no encontrado o sin acceso")
-    
+
     # FASE 6-8: Validar acceso usando función centralizada
     await validate_server_access_unified(current_user, server_id)
-    
+
     # FASE 1A: Sanitizar parámetro de búsqueda contra SQL Injection
     q_safe = _escape_like_pattern(q)
-    
+
     resultados = {
         "termino": q,
         "tablas": [],
@@ -15958,10 +13884,10 @@ async def buscar_en_bd(
         "datos": [],
         "total": 0
     }
-    
+
     # FASE 1A: Sanitizar nombre de tabla si se proporciona
     tabla_safe = _escape_like_pattern(tabla) if tabla else None
-    
+
     try:
         # 1. Buscar en nombres de TABLAS
         if tipo in ["todo", "tablas"]:
@@ -15977,11 +13903,11 @@ ORDER BY TABLE_NAME
                 conn_info['username'], conn_info['password'], query_tablas
             )
             resultados["tablas"] = tablas or []
-        
+
         # 2. Buscar en nombres de COLUMNAS
         if tipo in ["todo", "columnas"]:
             query_columnas = f"""
-SELECT 
+SELECT
     TABLE_NAME as tabla,
     COLUMN_NAME as columna,
     DATA_TYPE as tipo_dato
@@ -15994,7 +13920,7 @@ ORDER BY TABLE_NAME, COLUMN_NAME
                 conn_info['username'], conn_info['password'], query_columnas
             )
             resultados["columnas"] = columnas or []
-        
+
         # 3. Buscar en DATOS (opcional, más costoso)
         if tipo in ["todo", "datos"] and tabla:
             # Buscar en una tabla específica
@@ -16012,7 +13938,7 @@ WHERE TABLE_NAME = '{tabla_safe}'
                 conn_info['host'], conn_info['port'], conn_info['database'],
                 conn_info['username'], conn_info['password'], query_cols_texto
             )
-            
+
             if cols_texto:
                 # Construir WHERE con OR para cada columna de texto
                 # FASE 1A: Usar q_safe para prevenir SQL injection
@@ -16027,7 +13953,7 @@ WHERE {condiciones}
                     conn_info['username'], conn_info['password'], query_datos
                 )
                 resultados["datos"] = [{"tabla": tabla, "fila": d} for d in (datos or [])]
-        
+
         elif tipo == "datos" and not tabla:
             # Buscar en todas las tablas principales (limitado por rendimiento)
             # Solo busca en las primeras 5 tablas que contengan columnas de texto
@@ -16041,7 +13967,7 @@ WHERE DATA_TYPE IN ('varchar', 'nvarchar', 'char', 'nchar', 'text', 'ntext')
                 conn_info['host'], conn_info['port'], conn_info['database'],
                 conn_info['username'], conn_info['password'], query_tablas_texto
             )
-            
+
             datos_encontrados = []
             for t in (tablas_texto or [])[:5]:
                 tabla_nombre = t['TABLE_NAME']
@@ -16059,7 +13985,7 @@ WHERE TABLE_NAME = '{tabla_nombre_safe}'
                     conn_info['host'], conn_info['port'], conn_info['database'],
                     conn_info['username'], conn_info['password'], query_cols
                 )
-                
+
                 if cols:
                     # FASE 1A: Usar q_safe para prevenir SQL injection
                     condiciones = " OR ".join([f"[{c['COLUMN_NAME']}] LIKE '%{q_safe}%'" for c in cols[:5]])
@@ -16073,16 +13999,16 @@ WHERE TABLE_NAME = '{tabla_nombre_safe}'
                             datos_encontrados.append({"tabla": tabla_nombre, "fila": d})
                     except Exception:
                         pass  # Ignorar errores en tablas específicas
-                
+
                 if len(datos_encontrados) >= limite:
                     break
-            
+
             resultados["datos"] = datos_encontrados[:limite]
-        
+
         resultados["total"] = len(resultados["tablas"]) + len(resultados["columnas"]) + len(resultados["datos"])
-        
+
         return resultados
-        
+
     except Exception as e:
         logging.error(f"Error en búsqueda BD: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -16105,7 +14031,7 @@ async def listar_consultas_rich(
     """
     # Consultas predefinidas del catálogo
     consultas = catalogo_get_consultas(sistema, categoria)
-    
+
     # Formato amigable para el frontend
     resultado = []
     for key, c in consultas.items():
@@ -16119,15 +14045,15 @@ async def listar_consultas_rich(
             "sql": c["sql"],  # Incluir el SQL para visualización
             "tipo": "predefinida"
         })
-    
+
     # FASE P5: MongoDB deprecado - consultas_custom migrado a SQL
     # Las consultas personalizadas ahora se obtienen de Sistema_ConsultasSQL
     # consultas_custom = await db.consultas_custom.find(filtro).to_list(500)
     consultas_custom = []  # P5: db.consultas_custom eliminado - usar API SQL
-    
+
     # Obtener categorías (solo del catálogo base)
     categorias_base = set(catalogo_get_categorias())
-    
+
     return {
         "consultas": resultado,
         "categorias": sorted(list(categorias_base)),
@@ -16147,25 +14073,25 @@ async def ejecutar_consulta_catalogo(
     Ejecuta una consulta del catálogo (predefinida o personalizada) con los parámetros dados.
     Body debe contener: { "fecha_ini": "2026-03-01", "fecha_fin": "2026-03-27" }
     o { "parametros": { "fecha_ini": "...", ... } }
-    
+
     FASE 1B: Validación SQL obligatoria para consultas custom.
     """
     from core.security import SQLSanitizer, log_blocked_sql
-    
+
     # Buscar primero en consultas predefinidas
     consulta = None
     es_custom = False
-    
+
     if consulta_id in CATALOGO_CONSULTAS:
         consulta = CATALOGO_CONSULTAS[consulta_id]
     else:
         # FASE P5: MongoDB deprecado - consultas_custom migrado a SQL
         # Buscar en Sistema_ConsultasSQL via API
         consulta_custom = None  # P5: db.consultas_custom eliminado
-    
+
     if not consulta:
         raise HTTPException(status_code=404, detail=f"Consulta '{consulta_id}' no encontrada en el catálogo")
-    
+
     # FASE 1B: Validar SQL de consultas custom antes de ejecutar
     if es_custom:
         sql_to_validate = consulta.get('sql', '')
@@ -16173,17 +14099,17 @@ async def ejecutar_consulta_catalogo(
         if not validation.is_safe:
             log_blocked_sql(validation, endpoint=f"/catalogo/ejecutar-rich/{consulta_id}", user_email=current_user.get('email'))
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail=f"Consulta custom bloqueada: {validation.blocked_reason}. "
                        "Esta consulta contiene SQL no permitido y no puede ejecutarse."
             )
-    
+
     # Extraer parámetros del body (soporta ambos formatos)
     if body and 'parametros' in body:
         parametros = body['parametros']
     else:
         parametros = body or {}
-    
+
     # Verificar servidor
     # FASE P1.4-E4: Obtener servidor desde EDARSAHUB SQL via server_registry
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": server_id, "active": True}))
@@ -16191,11 +14117,11 @@ async def ejecutar_consulta_catalogo(
     server = decrypt_server_secrets(get_server_connection_info_with_secrets(server_id))
     if not server or not server.get('active', True):
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
+
     # Verificar que el sistema coincida
     sistema_server = server.get('system_type')
     sistema_consulta = consulta.get('sistema')
-    
+
     # Mapeo de tipos para consultas predefinidas
     if not es_custom:
         if is_mpro_system(sistema_server) and not consulta_id.startswith('MPRO_'):
@@ -16206,18 +14132,18 @@ async def ejecutar_consulta_catalogo(
         # Para consultas custom, verificar directamente
         if normalize_system_type(sistema_server) != normalize_system_type(sistema_consulta):
             raise HTTPException(status_code=400, detail=f"Esta consulta es para {sistema_consulta}, no para {sistema_server}")
-    
+
     # FASE 6-8: Validar acceso usando función centralizada
     await validate_server_access_unified(current_user, server_id)
-    
+
     # Preparar parámetros
     params = parametros or {}
-    
+
     # Validar parámetros requeridos
     for param in consulta['parametros']:
         if param not in params:
             raise HTTPException(status_code=400, detail=f"Falta parámetro requerido: {param}")
-    
+
     # Preparar SQL
     if es_custom:
         sql = consulta['sql']
@@ -16225,7 +14151,7 @@ async def ejecutar_consulta_catalogo(
             sql = sql.replace('{' + param + '}', str(valor))
     else:
         sql = catalogo_preparar_sql(consulta_id, params)
-    
+
     # Si hay límite (modo test), agregar TOP/LIMIT al SQL
     if limit and limit > 0:
         # Detectar si ya tiene TOP
@@ -16235,28 +14161,28 @@ async def ejecutar_consulta_catalogo(
             sql = sql.replace('SELECT', f'SELECT TOP {limit}', 1)
             sql = sql.replace('select', f'SELECT TOP {limit}', 1)
         logging.info(f"Modo TEST con límite de {limit} registros")
-    
+
     logging.info(f"Catálogo - Ejecutando {consulta_id} en {server['name']}")
-    
+
     # Convertir fechas al formato YYYYMMDD sin guiones para compatibilidad con SQL Server
     for key in ['fecha_ini', 'fecha_fin', 'fecha']:
         if key in params and params[key]:
             # Quitar guiones si existen
             params[key] = params[key].replace('-', '')
-    
+
     # Reemplazar los parámetros en el SQL
     sql_final = sql
     for key, val in params.items():
         sql_final = sql_final.replace('{' + key + '}', str(val))
-    
+
     logging.info(f"SQL Final: {sql_final[:200]}...")
-    
+
     try:
         result = execute_sql_query(
             server['host'], server['port'], server['database'],
             server['username'], server['password'], sql_final
         )
-        
+
         return {
             "consulta": consulta['nombre'],
             "servidor": server['name'],
@@ -16264,7 +14190,7 @@ async def ejecutar_consulta_catalogo(
             "registros": len(result),
             "datos": result
         }
-        
+
     except Exception as e:
         logging.error(f"Error ejecutando consulta del catálogo: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -16294,23 +14220,23 @@ async def ejecutar_consulta_custom(
     raise HTTPException(status_code=501, detail="P5: Endpoint deprecado - usar API /api/sql/consultas")
     if normalize_system_type(conn_info.get('system_type')) != normalize_system_type(consulta.get('sistema')):
         raise HTTPException(status_code=400, detail=f"Esta consulta es para {consulta['sistema']}, no para {conn_info.get('system_type')}")
-    
+
     # Preparar parámetros
     parametros = body.get('parametros', body) if body else {}
-    
+
     # Preparar SQL
     sql = consulta['sql']
     for param, valor in parametros.items():
         sql = sql.replace('{' + param + '}', str(valor))
-    
+
     logging.info(f"Ejecutando consulta custom {consulta_id} en {conn_info.get('name')}")
-    
+
     try:
         result = execute_sql_query(
             conn_info['host'], conn_info['port'], conn_info['database'],
             conn_info['username'], conn_info['password'], sql
         )
-        
+
         return {
             "consulta": consulta['nombre'],
             "servidor": conn_info.get('name'),
@@ -16335,14 +14261,14 @@ async def get_pool_statistics(current_user: Dict = Depends(get_current_user)):
     """
     if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo administradores pueden ver estadísticas del pool")
-    
+
     try:
         from core.pool import get_pool_statistics, get_pool_manager
         from core.db import get_server_cache_status
-        
+
         stats = get_pool_statistics()
         server_cache = get_server_cache_status()
-        
+
         return {
             "pool_stats": stats,
             "server_cooldown_cache": server_cache,
@@ -16363,14 +14289,14 @@ async def reset_pool_connections(current_user: Dict = Depends(get_current_user))
     """
     if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo administradores pueden resetear pools")
-    
+
     try:
         from core.pool import close_all_pools
         from core.db import reset_server_cache
-        
+
         close_all_pools()
         reset_server_cache()
-        
+
         return {
             "success": True,
             "mensaje": "Todos los pools de conexiones han sido reseteados"
@@ -16395,18 +14321,18 @@ async def sql_server_health_check(
 ):
     """
     Realiza un health check de conexión a SQL Server con diagnóstico detallado.
-    
+
     INTEGRACIÓN RESILIENTE (Abril 2026):
     - Prueba conectividad al servidor SQL remoto
     - Retorna latencia, estado y recomendaciones
     - Detecta tipo de error: red, auth, timeout, conexión muerta
-    
+
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     CONEXIONES-SQL-EDARSAHUB-01 / LOTE 4
-    
+
     Args:
         server_id: ID del servidor a probar (default: EDARSA HUB)
-    
+
     Returns:
         Dict con diagnóstico completo incluyendo:
         - healthy: bool
@@ -16421,12 +14347,12 @@ async def sql_server_health_check(
     """
     from core.db import sql_health_check, ResilientConfig
     from core.server_registry import get_server_connection_info
-    
+
     # Obtener servidor
     target_server_id = server_id or EDARSA_HUB_SERVER_ID
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": target_server_id, "active": True}))
     conn_info = await get_server_connection_info(target_server_id, db=db)
-    
+
     if not conn_info:
         return {
             "healthy": False,
@@ -16438,7 +14364,7 @@ async def sql_server_health_check(
             ],
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-    
+
     # Ejecutar health check
     result = sql_health_check(
         host=conn_info['host'],
@@ -16447,13 +14373,13 @@ async def sql_server_health_check(
         username=conn_info['username'],
         password=conn_info['password']
     )
-    
+
     # Agregar metadata del servidor
     result["server_id"] = target_server_id
     result["server_name"] = conn_info.get('name', 'Unknown')
     result["system_type"] = conn_info.get('system_type', 'Unknown')
     result["config_origin"] = conn_info.get('config_origin', 'Unknown')
-    
+
     return result
 
 
@@ -16465,39 +14391,39 @@ async def sql_server_test_query(
 ):
     """
     Ejecuta una query de prueba sobre SQL Server para validar conectividad real.
-    
+
     Usa la lógica resiliente con reintentos automáticos.
-    
+
     Migrado de db.servers.find_one() a server_registry.get_server_connection_info()
     CONEXIONES-SQL-EDARSAHUB-01 / LOTE 4
-    
+
     Args:
         server_id: ID del servidor (default: EDARSA HUB)
         tabla: Tabla a consultar (default: sys.tables)
-    
+
     Returns:
         Dict con resultado de la query de prueba
     """
     from core.db import execute_sql_query, ResilientConfig
     from core.server_registry import get_server_connection_info
-    
+
     target_server_id = server_id or EDARSA_HUB_SERVER_ID
     # ANTES: server = decrypt_server_secrets(await db.servers.find_one({"id": target_server_id, "active": True}))
     conn_info = await get_server_connection_info(target_server_id, db=db)
-    
+
     if not conn_info:
         return {
             "success": False,
             "error": f"Servidor '{target_server_id}' no encontrado",
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-    
+
     # Query de prueba simple - usar * para compatibilidad con todas las tablas
     query = f"SELECT TOP 5 * FROM {tabla}"
-    
+
     import time
     start = time.time()
-    
+
     results = execute_sql_query(
         host=conn_info['host'],
         port=conn_info['port'],
@@ -16507,9 +14433,9 @@ async def sql_server_test_query(
         query=query,
         timeout_seconds=ResilientConfig.QUERY_TIMEOUT
     )
-    
+
     elapsed = (time.time() - start) * 1000
-    
+
     if results:
         return {
             "success": True,
@@ -16549,22 +14475,22 @@ async def obtener_pendientes_unificados(current_user: Dict = Depends(get_current
     current_user.get("id")
     user_role = current_user.get("role")
     ahora = datetime.now(timezone.utc)
-    
+
     urgentes = []  # Vencidos y próximos a vencer (< 24h)
     pendientes_catalogos = []
     pendientes_proveedores = []
     pendientes_nominas = []
-    
+
     # ===== 1. SOLICITUDES DE CATÁLOGOS =====
     if user_role in ['Supervisor', 'Administrador']:
         # SQL-FIRST: legacy Mongo neutralizado.
         # Pendiente mapeo canónico funcional para solicitudes de catálogos.
         solicitudes = []
-        
+
         for sol in solicitudes:
             fecha_sol = datetime.fromisoformat(sol.get("fecha_solicitud", ahora.isoformat()).replace("Z", "+00:00"))
             horas_pendiente = (ahora - fecha_sol).total_seconds() / 3600
-            
+
             item = {
                 "id": sol.get("id"),
                 "tipo": "catalogo",
@@ -16577,18 +14503,18 @@ async def obtener_pendientes_unificados(current_user: Dict = Depends(get_current
                 "proximo_vencer": 24 < horas_pendiente <= 48,
                 "data": sol
             }
-            
+
             if item["vencido"] or item["proximo_vencer"]:
                 urgentes.append(item)
             else:
                 pendientes_catalogos.append(item)
-    
+
     # ===== 2. PROVEEDORES PENDIENTES DE APROBAR =====
     if user_role in ['Supervisor', 'Administrador']:
         # SQL-FIRST: legacy Mongo neutralizado.
         # Pendiente mapeo canónico funcional para proveedores pendientes.
         proveedores = []
-        
+
         for prov in proveedores:
             fecha_reg = prov.get("fecha_registro")
             if fecha_reg:
@@ -16599,7 +14525,7 @@ async def obtener_pendientes_unificados(current_user: Dict = Depends(get_current
                     horas_pendiente = 0
             else:
                 horas_pendiente = 0
-            
+
             item = {
                 "id": prov.get("id"),
                 "tipo": "proveedor",
@@ -16612,12 +14538,12 @@ async def obtener_pendientes_unificados(current_user: Dict = Depends(get_current
                 "proximo_vencer": 48 < horas_pendiente <= 72,
                 "data": prov
             }
-            
+
             if item["vencido"] or item["proximo_vencer"]:
                 urgentes.append(item)
             else:
                 pendientes_proveedores.append(item)
-    
+
     # ===== 3. NÓMINAS PENDIENTES POR ROL =====
     # Mapeo de etapas a roles
     etapas_por_rol = {
@@ -16628,13 +14554,13 @@ async def obtener_pendientes_unificados(current_user: Dict = Depends(get_current
         "Tesoreria": ["tesoreria"],
         "RH": ["validacion_rh"]
     }
-    
+
     etapas_usuario = etapas_por_rol.get(user_role, [])
-    
+
     if etapas_usuario:
         # SQL-FIRST: pendientes de nómina legacy neutralizados; flujo canónico vive en /rrhh/nominas/flujo.
         ciclos = []
-        
+
         # Obtener configuración para calcular vencimientos
         # SQL-FIRST: configuración legacy /nomina neutralizada.
         config = None
@@ -16646,7 +14572,7 @@ async def obtener_pendientes_unificados(current_user: Dict = Depends(get_current
             "maquilador": config.get("horario_maquilador", "12:00") if config else "12:00",
             "tesoreria": config.get("horario_tesoreria", "14:00") if config else "14:00"
         }
-        
+
         etapa_nombres = {
             "headcount": "Headcount",
             "incidencias": "Incidencias",
@@ -16655,12 +14581,12 @@ async def obtener_pendientes_unificados(current_user: Dict = Depends(get_current
             "autorizacion": "Autorización",
             "tesoreria": "Tesorería"
         }
-        
+
         for ciclo in ciclos:
             etapa = ciclo.get("etapa_actual", "")
             fecha_corte = ciclo.get("fecha_corte", "")
             sucursal = ciclo.get("sucursal_nombre", "Sucursal")
-            
+
             # Calcular si está vencido basado en deadline
             try:
                 deadline_str = ciclo.get(f"deadline_{etapa}")
@@ -16677,7 +14603,7 @@ async def obtener_pendientes_unificados(current_user: Dict = Depends(get_current
                 horas_restantes = 0
                 vencido = True
                 proximo_vencer = False
-            
+
             item = {
                 "id": ciclo.get("id"),
                 "tipo": "nomina",
@@ -16692,16 +14618,16 @@ async def obtener_pendientes_unificados(current_user: Dict = Depends(get_current
                 "proximo_vencer": proximo_vencer,
                 "data": ciclo
             }
-            
+
             if item["vencido"] or item["proximo_vencer"]:
                 urgentes.append(item)
             else:
                 pendientes_nominas.append(item)
-    
+
     # ===== ORDENAR URGENTES =====
     # Primero los vencidos (más antiguos primero), luego próximos a vencer
     urgentes.sort(key=lambda x: (not x["vencido"], x.get("horas_restantes", 0) if x["tipo"] == "nomina" else -x.get("horas_pendiente", 0)))
-    
+
     return {
         "urgentes": urgentes,
         "catalogos": pendientes_catalogos,
@@ -16748,10 +14674,10 @@ BEGIN
         FechaResolucion DATETIME,
         MotivoRechazo NVARCHAR(500)
     );
-    
+
     CREATE INDEX IX_LogSolicitudes_Estatus ON Sistema_Log_Solicitudes(Estatus);
     CREATE INDEX IX_LogSolicitudes_Fecha ON Sistema_Log_Solicitudes(FechaSolicitud);
-    
+
     PRINT 'Tabla Sistema_Log_Solicitudes creada exitosamente';
 END
 GO
@@ -16814,10 +14740,10 @@ async def listar_ciclos_nomina(
 ):
     """Lista los ciclos de nómina con filtros opcionales"""
     filtro = {}
-    
+
     if sucursal_id:
         filtro["sucursal_id"] = sucursal_id
-    
+
     # Filtrar por periodo
     ahora = datetime.now(timezone.utc)
     if periodo == "actual":
@@ -16828,14 +14754,14 @@ async def listar_ciclos_nomina(
         fecha_inicio = ahora - timedelta(days=60)
         fecha_fin = ahora - timedelta(days=30)
         filtro["fecha_creacion"] = {"$gte": fecha_inicio.isoformat(), "$lt": fecha_fin.isoformat()}
-    
+
     ciclos = []  # SQL-FIRST: legacy /nomina neutralizado; usar /rrhh/nominas/flujo
     ciclos = await cursor.to_list(length=100)
-    
+
     # Limpiar _id de MongoDB
     for ciclo in ciclos:
         ciclo.pop("_id", None)
-    
+
     return {"ciclos": ciclos, "total": len(ciclos)}
 
 
@@ -16845,7 +14771,7 @@ async def obtener_ciclo_nomina(ciclo_id: str, current_user: Dict = Depends(get_c
     ciclo = None  # SQL-FIRST: legacy /nomina neutralizado; usar /rrhh/nominas/flujo
     if not ciclo:
         raise HTTPException(status_code=404, detail="Ciclo no encontrado")
-    
+
     ciclo.pop("_id", None)
     return {"ciclo": ciclo}
 
@@ -16855,15 +14781,15 @@ async def crear_ciclo_nomina(body: Dict, current_user: Dict = Depends(get_curren
     """Crea un nuevo ciclo de nómina"""
     if not es_supervisor_o_superior(current_user):
         raise HTTPException(status_code=403, detail="No autorizado para crear ciclos de nómina")
-    
+
     sucursal_id = body.get('sucursal_id')
     fecha_corte = body.get('fecha_corte')
     tipo_nomina = body.get('tipo_nomina', 'quincenal')
     notas = body.get('notas', '')
-    
+
     if not sucursal_id or not fecha_corte:
         raise HTTPException(status_code=400, detail="Sucursal y fecha de corte son requeridos")
-    
+
     # Obtener nombre de sucursal
     sucursal_nombre = "Sucursal"
     try:
@@ -16873,23 +14799,23 @@ async def crear_ciclo_nomina(body: Dict, current_user: Dict = Depends(get_curren
             sucursal_nombre = result_suc["datos"][0].get("Nombre", "Sucursal")
     except Exception:
         pass
-    
+
     # Verificar si ya existe un ciclo activo para esta sucursal en la misma fecha
     # SQL-FIRST: validación legacy /nomina neutralizada; flujo canónico vive en /rrhh/nominas/flujo.
     ciclo_existente = None
     if ciclo_existente:
         raise HTTPException(status_code=400, detail="Ya existe un ciclo activo para esta sucursal y fecha de corte")
-    
+
     # Obtener configuración
     config = None  # SQL-FIRST: configuración legacy /nomina neutralizada
     config = config or {}
-    
+
     ahora = datetime.now(timezone.utc)
-    
+
     # Calcular deadline inicial (para headcount)
     horario_headcount = config.get('horario_headcount', '10:00')
     deadline_inicial = calcular_deadline(ahora, horario_headcount)
-    
+
     ciclo_id = str(uuid.uuid4())
     ciclo = {
         "id": ciclo_id,
@@ -16916,9 +14842,9 @@ async def crear_ciclo_nomina(body: Dict, current_user: Dict = Depends(get_curren
             "timestamp": ahora.isoformat()
         }]
     }
-    
+
     # SQL-FIRST: insert legacy /nomina neutralizado; flujo canónico vive en /rrhh/nominas/flujo.
-    
+
     return {"success": True, "ciclo_id": ciclo_id, "message": "Ciclo de nómina creado correctamente"}
 
 
@@ -16927,48 +14853,48 @@ async def avanzar_etapa_nomina(ciclo_id: str, body: Dict, current_user: Dict = D
     """Avanza el ciclo de nómina a la siguiente etapa (requiere firma de autorización)"""
     password = body.get('password')
     comentario = body.get('comentario', '')
-    
+
     if not password:
         raise HTTPException(status_code=400, detail="Se requiere contraseña de autorización")
-    
+
     # Verificar contraseña
     # SQL-FIRST: usuario actual ya proviene de get_current_user.
     user = current_user
     if not user or not bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
         raise HTTPException(status_code=401, detail="Contraseña incorrecta")
-    
+
     # Obtener ciclo
     ciclo = None  # SQL-FIRST: legacy /nomina neutralizado; usar /rrhh/nominas/flujo
     if not ciclo:
         raise HTTPException(status_code=404, detail="Ciclo no encontrado")
-    
+
     etapa_actual = ciclo.get("etapa_actual")
     if etapa_actual == "pagada":
         raise HTTPException(status_code=400, detail="El ciclo ya está finalizado")
-    
+
     # Verificar permisos para la etapa actual
     etapa_info = next((e for e in ETAPAS_NOMINA if e["id"] == etapa_actual), None)
     if not etapa_info:
         raise HTTPException(status_code=400, detail="Etapa no válida")
-    
+
     roles_permitidos = ROLES_NOMINA.get(etapa_info["responsable"], [])
     if current_user.get("role") not in roles_permitidos:
         raise HTTPException(status_code=403, detail=f"No tiene permisos para actuar en la etapa {etapa_info['nombre']}")
-    
+
     # Determinar siguiente etapa
     idx_actual = next((i for i, e in enumerate(ETAPAS_NOMINA) if e["id"] == etapa_actual), -1)
     if idx_actual == -1 or idx_actual >= len(ETAPAS_NOMINA) - 1:
         raise HTTPException(status_code=400, detail="No hay siguiente etapa")
-    
+
     siguiente_etapa = ETAPAS_NOMINA[idx_actual + 1]
-    
+
     # Obtener configuración para calcular nuevo deadline
     config = None  # SQL-FIRST: configuración legacy /nomina neutralizada
     config = config or {}
-    
+
     ahora = datetime.now(timezone.utc)
     nuevo_deadline = None
-    
+
     # Calcular deadline según la etapa
     if siguiente_etapa["id"] == "incidencias":
         nuevo_deadline = calcular_deadline(ahora, config.get('horario_headcount', '10:00'))
@@ -16980,7 +14906,7 @@ async def avanzar_etapa_nomina(ciclo_id: str, body: Dict, current_user: Dict = D
         nuevo_deadline = calcular_deadline(ahora, config.get('horario_maquilador', '12:00'))
     elif siguiente_etapa["id"] == "tesoreria":
         nuevo_deadline = calcular_deadline(ahora, config.get('horario_tesoreria', '14:00'))
-    
+
     # Actualizar ciclo
     update_data = {
         "etapa_actual": siguiente_etapa["id"],
@@ -16988,9 +14914,9 @@ async def avanzar_etapa_nomina(ciclo_id: str, body: Dict, current_user: Dict = D
     }
     if nuevo_deadline:
         update_data["deadline_actual"] = nuevo_deadline.isoformat()
-    
+
     # SQL-FIRST: write legacy /nomina neutralizado; flujo canónico vive en /rrhh/nominas/flujo.
-    
+
     # Registrar evento
     await agregar_evento_nomina(ciclo_id, {
         "tipo": "avance",
@@ -17003,9 +14929,9 @@ async def avanzar_etapa_nomina(ciclo_id: str, body: Dict, current_user: Dict = D
         "usuario_nombre": current_user.get("name"),
         "comentario": comentario
     })
-    
+
     return {
-        "success": True, 
+        "success": True,
         "message": f"Nómina avanzada a etapa: {siguiente_etapa['nombre']}",
         "etapa_anterior": etapa_actual,
         "etapa_nueva": siguiente_etapa["id"]
@@ -17016,32 +14942,32 @@ async def avanzar_etapa_nomina(ciclo_id: str, body: Dict, current_user: Dict = D
 async def rechazar_ciclo_nomina(ciclo_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
     """Rechaza/devuelve el ciclo de nómina a la etapa de validación RH"""
     motivo = body.get('motivo', '')
-    
+
     if not motivo:
         raise HTTPException(status_code=400, detail="Se requiere motivo del rechazo")
-    
+
     # Obtener ciclo
     ciclo = None  # SQL-FIRST: legacy /nomina neutralizado; usar /rrhh/nominas/flujo
     if not ciclo:
         raise HTTPException(status_code=404, detail="Ciclo no encontrado")
-    
+
     etapa_actual = ciclo.get("etapa_actual")
-    
+
     # Solo se puede rechazar desde autorizacion
     if etapa_actual not in ["autorizacion", "maquilador"]:
         raise HTTPException(status_code=400, detail="Solo se puede devolver desde las etapas de Autorización o Maquilador")
-    
+
     # Verificar permisos
     etapa_info = next((e for e in ETAPAS_NOMINA if e["id"] == etapa_actual), None)
     roles_permitidos = ROLES_NOMINA.get(etapa_info["responsable"], [])
     if current_user.get("role") not in roles_permitidos:
         raise HTTPException(status_code=403, detail="No tiene permisos para rechazar en esta etapa")
-    
+
     ahora = datetime.now(timezone.utc)
-    
+
     # Devolver a validación RH
     # SQL-FIRST: write legacy /nomina neutralizado; flujo canónico vive en /rrhh/nominas/flujo.
-    
+
     # Registrar evento
     await agregar_evento_nomina(ciclo_id, {
         "tipo": "rechazo",
@@ -17054,7 +14980,7 @@ async def rechazar_ciclo_nomina(ciclo_id: str, body: Dict, current_user: Dict = 
         "usuario_email": current_user.get("email"),
         "usuario_nombre": current_user.get("name")
     })
-    
+
     return {"success": True, "message": "Nómina devuelta para corrección"}
 
 
@@ -17065,13 +14991,13 @@ async def listar_movimientos_nomina(ciclo_id: str, current_user: Dict = Depends(
     ciclo = None  # SQL-FIRST: legacy /nomina neutralizado; usar /rrhh/nominas/flujo
     if not ciclo:
         raise HTTPException(status_code=404, detail="Ciclo no encontrado")
-    
+
     movimientos = []  # SQL-FIRST: movimientos legacy /nomina neutralizados
     movimientos = await cursor.to_list(length=500)
-    
+
     for mov in movimientos:
         mov.pop("_id", None)
-    
+
     return {"movimientos": movimientos, "total": len(movimientos)}
 
 
@@ -17082,20 +15008,20 @@ async def agregar_movimiento_nomina(ciclo_id: str, body: Dict, current_user: Dic
     ciclo = None  # SQL-FIRST: legacy /nomina neutralizado; usar /rrhh/nominas/flujo
     if not ciclo:
         raise HTTPException(status_code=404, detail="Ciclo no encontrado")
-    
+
     etapa_actual = ciclo.get("etapa_actual")
     if etapa_actual not in ["headcount", "incidencias", "validacion_rh"]:
         raise HTTPException(status_code=400, detail="No se pueden agregar movimientos en esta etapa")
-    
+
     colaborador_id = body.get('colaborador_id')
     tipo_incidencia = body.get('tipo_incidencia')
     monto = body.get('monto', 0)
     unidades = body.get('unidades', 0)
     notas = body.get('notas', '')
-    
+
     if not colaborador_id or not tipo_incidencia:
         raise HTTPException(status_code=400, detail="Colaborador y tipo de incidencia son requeridos")
-    
+
     # Obtener nombre del colaborador
     colaborador_nombre = "Colaborador"
     try:
@@ -17105,10 +15031,10 @@ async def agregar_movimiento_nomina(ciclo_id: str, body: Dict, current_user: Dic
             colaborador_nombre = result_col["datos"][0].get("NombreCompleto", "Colaborador")
     except Exception:
         pass
-    
+
     ahora = datetime.now(timezone.utc)
     movimiento_id = str(uuid.uuid4())
-    
+
     movimiento = {
         "id": movimiento_id,
         "ciclo_id": ciclo_id,
@@ -17123,12 +15049,12 @@ async def agregar_movimiento_nomina(ciclo_id: str, body: Dict, current_user: Dic
         "registrado_por_id": current_user.get("id"),
         "registrado_por": current_user.get("email")
     }
-    
+
     # SQL-FIRST: insert movimiento legacy /nomina neutralizado.
-    
+
     # Actualizar contador en el ciclo
     # SQL-FIRST: write legacy /nomina neutralizado; flujo canónico vive en /rrhh/nominas/flujo.
-    
+
     return {"success": True, "movimiento_id": movimiento_id, "message": "Movimiento agregado"}
 
 
@@ -17138,19 +15064,19 @@ async def eliminar_movimiento_nomina(movimiento_id: str, current_user: Dict = De
     movimiento = None  # SQL-FIRST: movimientos legacy /nomina neutralizados
     if not movimiento:
         raise HTTPException(status_code=404, detail="Movimiento no encontrado")
-    
+
     ciclo_id = movimiento.get("ciclo_id")
-    
+
     # Verificar etapa del ciclo
     ciclo = None  # SQL-FIRST: legacy /nomina neutralizado; usar /rrhh/nominas/flujo
     if ciclo and ciclo.get("etapa_actual") not in ["headcount", "incidencias", "validacion_rh"]:
         raise HTTPException(status_code=400, detail="No se pueden eliminar movimientos en esta etapa")
-    
+
     # SQL-FIRST: delete movimiento legacy /nomina neutralizado.
-    
+
     # Actualizar contador
     # SQL-FIRST: write legacy /nomina neutralizado; flujo canónico vive en /rrhh/nominas/flujo.
-    
+
     return {"success": True, "message": "Movimiento eliminado"}
 
 
@@ -17158,7 +15084,7 @@ async def eliminar_movimiento_nomina(movimiento_id: str, current_user: Dict = De
 async def obtener_configuracion_nomina(current_user: Dict = Depends(get_current_user)):
     """Obtiene la configuración de nóminas"""
     config = None  # SQL-FIRST: configuración legacy /nomina neutralizada
-    
+
     if not config:
         # Configuración por defecto
         config = {
@@ -17171,7 +15097,7 @@ async def obtener_configuracion_nomina(current_user: Dict = Depends(get_current_
             "horario_maquilador": "12:00",
             "horario_tesoreria": "14:00"
         }
-    
+
     config.pop("_id", None)
     return {"configuracion": config}
 
@@ -17181,7 +15107,7 @@ async def guardar_configuracion_nomina(body: Dict, current_user: Dict = Depends(
     """Guarda la configuración de nóminas (Solo Admin)"""
     if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo Administradores pueden configurar nóminas")
-    
+
     config = {
         "tipo": "general",
         "dia_corte": body.get('dia_corte', 0),
@@ -17194,9 +15120,9 @@ async def guardar_configuracion_nomina(body: Dict, current_user: Dict = Depends(
         "actualizado_por": current_user.get("email"),
         "fecha_actualizacion": datetime.now(timezone.utc).isoformat()
     }
-    
+
     # SQL-FIRST: update configuración legacy /nomina neutralizado.
-    
+
     return {"success": True, "message": "Configuración guardada correctamente"}
 
 
@@ -17205,10 +15131,10 @@ async def listar_kpis_nomina(current_user: Dict = Depends(get_current_user)):
     """Lista los KPIs configurados por puesto"""
     kpis = []  # SQL-FIRST: KPIs legacy /nomina neutralizados
     kpis = await cursor.to_list(length=100)
-    
+
     for kpi in kpis:
         kpi.pop("_id", None)
-    
+
     return {"kpis": kpis, "total": len(kpis)}
 
 
@@ -17217,13 +15143,13 @@ async def crear_kpi_nomina(body: Dict, current_user: Dict = Depends(get_current_
     """Crea o actualiza KPIs para un puesto"""
     if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="Solo Administradores pueden configurar KPIs")
-    
+
     puesto_id = body.get('puesto_id')
     indicadores = body.get('indicadores', [])
-    
+
     if not puesto_id:
         raise HTTPException(status_code=400, detail="Puesto es requerido")
-    
+
     # Obtener nombre del puesto
     puesto_nombre = "Puesto"
     try:
@@ -17233,7 +15159,7 @@ async def crear_kpi_nomina(body: Dict, current_user: Dict = Depends(get_current_
             puesto_nombre = result["datos"][0].get("Descripcion", "Puesto")
     except Exception:
         pass
-    
+
     kpi_id = str(uuid.uuid4())
     kpi = {
         "id": kpi_id,
@@ -17243,10 +15169,10 @@ async def crear_kpi_nomina(body: Dict, current_user: Dict = Depends(get_current_
         "actualizado_por": current_user.get("email"),
         "fecha_actualizacion": datetime.now(timezone.utc).isoformat()
     }
-    
+
     # Upsert por puesto
     # SQL-FIRST: update KPIs legacy /nomina neutralizado.
-    
+
     return {"success": True, "message": "KPIs guardados correctamente"}
 
 
@@ -17277,7 +15203,7 @@ BEGIN
         Activo BIT DEFAULT 1,
         Fecha_Creacion DATETIME DEFAULT GETDATE()
     );
-    
+
     -- Conceptos base
     INSERT INTO Nomina_Cat_Conceptos (Codigo, Descripcion, Tipo, Categoria, Afectacion) VALUES
     ('SUELDO', 'Sueldo Base', 'Percepcion', 'Empresa', 1),
@@ -17295,7 +15221,7 @@ BEGIN
     ('RETARDO', 'Descuento por Retardo', 'Deduccion', 'Empresa', -1),
     ('PRESTAMO', 'Préstamo Empresa', 'Deduccion', 'Empresa', -1),
     ('UNIFORME', 'Descuento Uniforme', 'Deduccion', 'Empresa', -1);
-    
+
     PRINT 'Tabla Nomina_Cat_Conceptos creada';
 END
 GO
@@ -17314,7 +15240,7 @@ BEGIN
         Estatus NVARCHAR(20) DEFAULT 'Abierto', -- 'Abierto', 'Cerrado', 'Pagado'
         CONSTRAINT UQ_Periodo UNIQUE (Año, Numero, Tipo)
     );
-    
+
     CREATE INDEX IX_Periodos_Año ON Nomina_Periodos(Año);
     PRINT 'Tabla Nomina_Periodos creada';
 END
@@ -17335,7 +15261,7 @@ BEGIN
         Fecha_Calculo DATETIME DEFAULT GETDATE(),
         Calculado_Por NVARCHAR(100)
     );
-    
+
     CREATE INDEX IX_Resumen_Ciclo ON Nomina_Resumen(CicloID);
     PRINT 'Tabla Nomina_Resumen creada';
 END
@@ -17382,7 +15308,7 @@ async def verificar_permiso_v6(user: dict, permiso: str) -> bool:
     """
     FASE 6: Verifica permiso con múltiples roles.
     Coexiste con legacy - no lo reemplaza.
-    
+
     Orden de resolución (4 capas):
     1. Permisos directos (sec_permisos) → FASE 4
     2. Múltiples roles (sec_roles array) → FASE 6
@@ -17393,7 +15319,7 @@ async def verificar_permiso_v6(user: dict, permiso: str) -> bool:
     permisos_directos = user.get('sec_permisos', [])
     if permiso in permisos_directos:
         return True
-    
+
     # 2. Múltiples roles (FASE 6)
     sec_roles = user.get('sec_roles', [])
     for rol_codigo in sec_roles:
@@ -17402,7 +15328,7 @@ async def verificar_permiso_v6(user: dict, permiso: str) -> bool:
             rol_doc = None
             if rol_doc and permiso in rol_doc.get('permisos', []):
                 return True
-    
+
     # 3. Rol único - compatibilidad FASE 5
     sec_rol = user.get('sec_rol')
     if sec_rol and sec_rol in ROLES_FASE_11_WHITELIST:
@@ -17410,11 +15336,11 @@ async def verificar_permiso_v6(user: dict, permiso: str) -> bool:
         rol_doc = None
         if rol_doc and permiso in rol_doc.get('permisos', []):
             return True
-    
+
     # 4. Fallback legacy (FASE 3)
     if es_superadmin(user):
         return True
-    
+
     return False
 
 
@@ -17431,10 +15357,10 @@ async def get_estructura_organizacional(current_user: Dict = Depends(get_current
     Resolución: permisos directos → múltiples roles → rol único → fallback SuperAdmin.
     """
     service = get_estructura_service(db)  # MongoDB ELIMINADO - StubDatabase
-    
+
     # FASE 6: Validación de permiso con múltiples roles
     tiene_permiso = await verificar_permiso_estructura_v6(current_user)
-    
+
     if not tiene_permiso:
         # Registrar intento denegado (desacoplado - no bloquea)
         await service.escribir_bitacora(
@@ -17446,10 +15372,10 @@ async def get_estructura_organizacional(current_user: Dict = Depends(get_current
             detalles={"permiso_requerido": "SISTEMA_ESTRUCTURA_VER", "fase": "FASE_3"}
         )
         raise HTTPException(
-            status_code=403, 
+            status_code=403,
             detail="Permiso requerido: SISTEMA_ESTRUCTURA_VER"
         )
-    
+
     # Registrar acceso permitido
     await service.escribir_bitacora(
         usuario_id=current_user.get('id', ''),
@@ -17459,7 +15385,7 @@ async def get_estructura_organizacional(current_user: Dict = Depends(get_current
         resultado="OK",
         detalles={"permiso_verificado": "SISTEMA_ESTRUCTURA_VER", "fase": "FASE_3"}
     )
-    
+
     return await service.get_estructura_organizacional()
 
 
@@ -17471,16 +15397,16 @@ async def get_mapeo_servidores(current_user: Dict = Depends(get_current_user)):
     """
     if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="No autorizado")
-    
+
     service = get_estructura_service(db)  # MongoDB ELIMINADO - StubDatabase
-    
+
     await service.escribir_bitacora(
         usuario_id=current_user.get('id', ''),
         usuario_email=current_user.get('email', ''),
         accion="VER_MAPEO_SERVIDORES",
         recurso="/api/sistema/mapeo-servidores"
     )
-    
+
     return await service.get_mapeo_servidores()
 
 
@@ -17492,16 +15418,16 @@ async def get_permisos_catalogo_v2(current_user: Dict = Depends(get_current_user
     """
     if not es_admin(current_user):
         raise HTTPException(status_code=403, detail="No autorizado")
-    
+
     service = get_estructura_service(db)  # MongoDB ELIMINADO - StubDatabase
-    
+
     await service.escribir_bitacora(
         usuario_id=current_user.get('id', ''),
         usuario_email=current_user.get('email', ''),
         accion="VER_PERMISOS_V2",
         recurso="/api/sistema/permisos-catalogo-v2"
     )
-    
+
     return await service.get_permisos_catalogo_v2()
 
 # ==============================================================================
@@ -17793,7 +15719,7 @@ app.add_middleware(
     # NOTA: El proxy de Kubernetes/Cloudflare puede sobrescribir estos headers.
     # Si las cookies no funcionan, memoryToken es el fallback para autenticación SPA.
     allow_origins=[
-        origin.strip() 
+        origin.strip()
         for origin in os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(',')
         if origin.strip() and origin.strip() != '*'
     ] or ["http://localhost:3000"],
@@ -17899,10 +15825,10 @@ except Exception as e:
 try:
     from api.admin_core_connections import router as admin_core_router
     from core.security import verify_token as verify_jwt_token
-    
+
     # Middleware para validar SuperAdministrador en rutas CORE admin
     from fastapi import Request
-    
+
     @app.middleware("http")
     async def validate_core_admin_access(request: Request, call_next):
         """
@@ -17917,9 +15843,9 @@ try:
                     status_code=401,
                     content={"detail": "Token de autenticación requerido"}
                 )
-            
+
             token = auth_header.replace("Bearer ", "")
-            
+
             try:
                 # Verificar token y obtener usuario
                 payload = verify_jwt_token(token)
@@ -17929,11 +15855,11 @@ try:
                         status_code=401,
                         content={"detail": "Token inválido o expirado"}
                     )
-                
+
                 # Verificar rol SuperAdministrador
                 role = payload.get('role', '').strip()
                 role_normalized = role.lower().replace(' ', '').replace('_', '')
-                
+
                 if role_normalized not in ['superadministrador', 'superadmin']:
                     logger.warning(
                         f"[CORE_ADMIN][PERMISSION_DENIED] Usuario {payload.get('email')} "
@@ -17944,10 +15870,10 @@ try:
                         status_code=403,
                         content={"detail": "Solo SuperAdministrador puede administrar conexiones CORE"}
                     )
-                
+
                 # Auditar acceso
                 logger.info(f"[CORE_ADMIN][ACCESS] SuperAdministrador {payload.get('email')} accediendo a {request.url.path}")
-                
+
             except Exception as e:
                 logger.error(f"[CORE_ADMIN][AUTH_ERROR] {type(e).__name__}: {str(e)[:100]}")
                 from fastapi.responses import JSONResponse
@@ -17955,9 +15881,9 @@ try:
                     status_code=401,
                     content={"detail": "Error de autenticación"}
                 )
-        
+
         return await call_next(request)
-    
+
     app.include_router(admin_core_router, prefix="/api", tags=["Admin CORE"])
     logger.info("✓ Admin CORE Connections router registrado")
 except Exception as e:
@@ -17996,6 +15922,309 @@ except Exception as e:
 # =============================================================================
 # CRM Vtiger Integration (REST API)
 # =============================================================================
+try:
+    from modules.crm.vtiger_routes import router as vtiger_router
+    app.include_router(vtiger_router, tags=["CRM - Vtiger"])
+    logger.info("✓ CRM Vtiger router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando CRM Vtiger router: {e}")
+
+# =============================================================================
+# CRM Enterprise Native (EDARSAHUB SQL)
+# =============================================================================
+try:
+    from modules.crm.native_routes import router as crm_native_router
+    app.include_router(crm_native_router, tags=["CRM - Native (EDARSAHUB SQL)"])
+    logger.info("✓ CRM Native router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando CRM Native router: {e}")
+
+# =============================================================================
+# CRM Integration Framework (Conectores Externos)
+# =============================================================================
+try:
+    from modules.crm.integration_routes import router as crm_integration_router
+    app.include_router(crm_integration_router, tags=["CRM - Integration Framework"])
+    logger.info("✓ CRM Integration router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando CRM Integration router: {e}")
+
+# =============================================================================
+# CRM COMERCIAL (Enterprise-Grade - EDARSAHUB SQL)
+# =============================================================================
+try:
+    from modules.crm.comercial_routes import router as crm_comercial_router
+    app.include_router(crm_comercial_router, tags=["CRM Comercial"])
+    logger.info("✓ CRM Comercial router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando CRM Comercial router: {e}")
+
+# CRM Router SQL-First (Fase 2 - Mayo 2026)
+try:
+    from modules.comercial import crm_router
+    app.include_router(crm_router.router, tags=["CRM SQL-First"])
+    logger.info("✓ CRM SQL-First router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando CRM SQL-First router: {e}")
+
+try:
+    from modules.crm.automation_routes import router as crm_automation_router
+    app.include_router(crm_automation_router, tags=["CRM - Automatización"])
+    logger.info("✓ CRM Automation router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando CRM Automation router: {e}")
+
+try:
+    from modules.crm.trigger_routes import router as crm_trigger_router
+    app.include_router(crm_trigger_router, tags=["CRM - Triggers"])
+    logger.info("✓ CRM Triggers router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando CRM Triggers router: {e}")
+
+# =============================================================================
+# TABLAJERÍA (Operaciones - Producción/Transformación)
+# =============================================================================
+try:
+    from modules.tablajeria.routes import router as tablajeria_router
+    app.include_router(tablajeria_router, tags=["Tablajería"])
+    logger.info("✓ Tablajería router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Tablajería router: {e}")
+
+# =============================================================================
+# SISTEMA - MENÚS GOBERNADOS
+# =============================================================================
+try:
+    from modules.sistema.menu_routes import router as menu_router
+    app.include_router(menu_router, tags=["Sistema - Menús"])
+    logger.info("✓ Sistema Menús router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Sistema Menús router: {e}")
+
+# =============================================================================
+# CAVA DE SOCIOS (Comercial - Experiencia Cliente)
+# =============================================================================
+try:
+    from modules.cava_socios.routes import router as cava_socios_router
+    app.include_router(cava_socios_router, tags=["Cava de Socios"])
+    logger.info("✓ Cava de Socios router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Cava de Socios router: {e}")
+
+# =============================================================================
+# SQL-FIRST HEALTH (P2-06)
+# =============================================================================
+try:
+    from modules.sqlfirst_health.routes import router as sqlfirst_health_router
+    app.include_router(sqlfirst_health_router)
+    logger.info("✓ SQL-First Health router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando SQL-First Health router: {e}")
+
+# PRICING IA (P3-05)
+# =============================================================================
+try:
+    app.include_router(pricing_ai_router)
+    logger.info("✓ Pricing IA router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Pricing IA router: {e}")
+
+# DASHBOARD EJECUTIVO (P3-06)
+# =============================================================================
+try:
+    app.include_router(dashboard_ejecutivo_router)
+    logger.info("✓ Dashboard Ejecutivo router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Dashboard Ejecutivo router: {e}")
+
+# RENTABILIDAD (P3-07)
+# =============================================================================
+try:
+    app.include_router(rentabilidad_router)
+    logger.info("✓ Rentabilidad router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Rentabilidad router: {e}")
+
+# ALERTAS ESTRATÉGICAS (P3-08)
+# =============================================================================
+try:
+    app.include_router(alertas_estrategicas_router)
+    logger.info("✓ Alertas Estratégicas router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Alertas Estratégicas router: {e}")
+
+
+# =============================================================================
+# MÓDULOS SQL-FIRST (Migración MongoDB Legacy)
+# =============================================================================
+try:
+    from modules.informes_auditoria.routes import router as informes_auditoria_sql_router
+    app.include_router(informes_auditoria_sql_router, tags=["Informes Auditoría SQL"])
+    logger.info("✓ Informes Auditoría SQL router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Informes Auditoría SQL router: {e}")
+
+try:
+    from modules.consultas_sql.routes import router as consultas_sql_router
+    app.include_router(consultas_sql_router, tags=["Consultas SQL"])
+    logger.info("✓ Consultas SQL router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Consultas SQL router: {e}")
+
+try:
+    from modules.catalogos_workflow_sql.routes import router as catalogos_workflow_sql_router
+    app.include_router(catalogos_workflow_sql_router, tags=["Catalogos Workflow SQL"])
+    logger.info("✓ Catalogos Workflow SQL router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Catalogos Workflow SQL router: {e}")
+
+try:
+    from modules.catalogos_workflow_compat.routes import router as catalogos_workflow_compat_router
+    app.include_router(catalogos_workflow_compat_router, tags=["Catalogos Workflow Compat"])
+    logger.info("✓ Catalogos Workflow Compat router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Catalogos Workflow Compat router: {e}")
+
+try:
+    from modules.sistema_users_sql.routes import router as sistema_users_sql_router
+    app.include_router(sistema_users_sql_router, tags=["Sistema Users SQL"])
+    logger.info("✓ Sistema Users SQL router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Sistema Users SQL router: {e}")
+
+try:
+    from modules.rbac_context_sql.routes import router as rbac_context_sql_router
+    app.include_router(rbac_context_sql_router, tags=["RBAC Context SQL"])
+    logger.info("✓ RBAC Context SQL router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando RBAC Context SQL router: {e}")
+
+try:
+    from modules.rbac_context_sql.context_routes import router as rbac_context_access_router
+    app.include_router(rbac_context_access_router, tags=["RBAC Context Access"])
+    logger.info("✓ RBAC Context Access router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando RBAC Context Access router: {e}")
+
+try:
+    from modules.scripts_pendientes.routes import router as scripts_pendientes_sql_router
+    app.include_router(scripts_pendientes_sql_router, tags=["Scripts Pendientes SQL"])
+    logger.info("✓ Scripts Pendientes SQL router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Scripts Pendientes SQL router: {e}")
+
+try:
+    from modules.sql_compat_bridge.routes import router as sql_compat_bridge_router
+    app.include_router(sql_compat_bridge_router, tags=["SQL Compat Bridge"])
+    logger.info("✓ SQL Compat Bridge router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando SQL Compat Bridge router: {e}")
+
+
+# Startup: Iniciar scheduler
+@app.on_event("startup")
+async def startup_scheduler():
+    """Inicia el scheduler de jobs automáticos."""
+    try:
+        from core.scheduler import start_scheduler
+        await start_scheduler(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad
+        logger.info("Scheduler iniciado correctamente (SQL-only mode)")
+    except Exception as e:
+        logger.error(f"Error iniciando scheduler: {e}")
+        # No fallar el startup por el scheduler
+
+# Shutdown: Detener scheduler
+@app.on_event("shutdown")
+async def shutdown_scheduler():
+    """Detiene el scheduler limpiamente."""
+    try:
+        from core.scheduler import stop_scheduler
+        await stop_scheduler()
+        logger.info("Scheduler detenido correctamente")
+    except Exception as e:
+        logger.error(f"Error deteniendo scheduler: {e}")
+
+
+# ==========================================
+# ENDPOINT DESCARGA SCHEMA SQL
+# ==========================================
+@app.get("/api/download/schema")
+async def download_schema_zip():
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "La descarga legacy fue retirada por seguridad. "
+            "Los respaldos no se publican desde la aplicación."
+        ),
+    )
+
+@app.get("/api/download/schema-sql")
+async def download_schema_sql():
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "La descarga legacy fue retirada por seguridad. "
+            "El esquema no se publica desde la aplicación."
+        ),
+    )
+
+@app.get("/api/download/backup-full")
+async def download_backup_full():
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "La descarga legacy fue retirada por seguridad. "
+            "Los respaldos no se publican desde la aplicación."
+        ),
+    )
+
+@app.get("/api/download/manual-desarrollo")
+async def download_manual_desarrollo():
+    """Descarga del Manual de Flujo Desarrollo-Producción en Word."""
+    import os
+    docx_path = "/app/backend/static/MANUAL_FLUJO_DESARROLLO_PRODUCCION_EDARSAHUB.docx"
+    if os.path.exists(docx_path):
+        return FileResponse(
+            path=docx_path,
+            filename="MANUAL_FLUJO_DESARROLLO_PRODUCCION_EDARSAHUB.docx",
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+    raise HTTPException(status_code=404, detail="Archivo no encontrado")
+
+
+@app.get("/api/download/backup-db-completo")
+async def download_backup_db_completo():
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "La descarga legacy fue retirada por seguridad. "
+            "Los respaldos no se publican desde la aplicación."
+        ),
+    )
+
+@app.get("/api/download/backup-codigo-fuente")
+async def download_backup_codigo_fuente():
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "La descarga legacy fue retirada por seguridad. "
+            "Los respaldos no se publican desde la aplicación."
+        ),
+    )
+
+
+
+@app.get("/api/descargar/codigo")
+async def descargar_codigo_simple():
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "La descarga legacy fue retirada por seguridad. "
+            "Los respaldos no se publican desde la aplicación."
+        ),
+    )
+
+
 try:
     from modules.crm.vtiger_routes import router as vtiger_router
     app.include_router(vtiger_router, tags=["CRM - Vtiger"])

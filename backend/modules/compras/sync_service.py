@@ -48,6 +48,327 @@ EDARSAHUB_CONFIG = {
 }
 
 
+def _sql_identifier(name: str) -> str:
+    return f"[{str(name).replace(']', ']]')}]"
+
+
+def _as_text(value: Any, max_length: Optional[int] = None) -> str:
+    text = str(value or "").strip()
+    if max_length is not None:
+        return text[:max_length]
+    return text
+
+
+def _as_float(value: Any, default: float = 0.0) -> float:
+    try:
+        if value is None or value == "":
+            return default
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _sql_literal(value: Any) -> str:
+    return "'" + str(value).replace("'", "''") + "'"
+
+
+def _folio_in_filter(column_expression: str, folios: Optional[List[Any]]) -> str:
+    values = []
+    seen = set()
+    for folio in folios or []:
+        text = _as_text(folio, 50)
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        values.append(_sql_literal(text))
+    if not values:
+        return ""
+    return f" AND CAST({column_expression} AS VARCHAR(50)) IN ({', '.join(values)})"
+
+
+def _fetch_table_columns(cursor, table_name: str) -> Dict[str, str]:
+    cursor.execute("""
+        SELECT COLUMN_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = 'dbo'
+          AND TABLE_NAME = %s
+    """, (table_name,))
+    return {
+        str(row[0]).strip().lower(): str(row[0]).strip()
+        for row in cursor.fetchall()
+        if row and row[0]
+    }
+
+
+def _inventarios_fisicos_detalle_query(
+    system_type: str,
+    folios: Optional[List[Any]] = None,
+) -> Optional[str]:
+    from core.system_type_utils import is_mpro_system, is_softrestaurant_system
+
+    if is_mpro_system(system_type):
+        folio_filter = _folio_in_filter("F.Fi_Folio", folios)
+        return f"""
+            SELECT
+                CAST(F.Fi_Folio AS VARCHAR(50)) as folio,
+                RTRIM(LTRIM(CAST(F.Pr_Cve_Producto AS VARCHAR(50)))) as codigo_producto,
+                COALESCE(P.Pr_Descripcion, CAST(F.Pr_Cve_Producto AS VARCHAR(100))) as nombre_producto,
+                COALESCE(P.Pr_Unidad_Control_1, '') as unidad,
+                ISNULL(F.Fi_Cantidad_Control_1, 0) as existencia_fisica,
+                1 as rendimiento,
+                ISNULL(F.Fi_Costo, ISNULL(P.Pr_ultimo_costo, 0)) as costo_unitario,
+                COALESCE(A.Al_Descripcion, CAST(F.Al_Cve_Almacen AS VARCHAR(50))) as almacen,
+                CAST(F.Al_Cve_Almacen AS VARCHAR(50)) as almacen_id
+            FROM Fisico F
+            INNER JOIN Almacen A
+                ON A.Al_Cve_Almacen = F.Al_Cve_Almacen
+               AND A.Sc_Cve_Sucursal = F.Sc_Cve_Sucursal
+            LEFT JOIN Producto P ON P.Pr_Cve_Producto = F.Pr_Cve_Producto
+            WHERE F.Fi_Fecha >= DATEADD(MONTH, -6, GETDATE())
+              AND ISNULL(F.Es_Cve_Estado, '') <> 'CA'
+              {folio_filter}
+            ORDER BY F.Fi_Fecha DESC, F.Fi_Folio, F.Pr_Cve_Producto
+        """
+
+    if is_softrestaurant_system(system_type):
+        folio_filter = _folio_in_filter("FISICO.folio", folios)
+        return f"""
+            SELECT
+                CAST(FMOV.folio AS VARCHAR(50)) as folio,
+                CASE
+                    WHEN NULLIF(RTRIM(LTRIM(CAST(ISNULL(FMOV.idinsumo, '') AS VARCHAR(50)))), '') IS NULL
+                    THEN RTRIM(LTRIM(CAST(FMOV.idpresentacion AS VARCHAR(50))))
+                    ELSE RTRIM(LTRIM(CAST(FMOV.idinsumo AS VARCHAR(50))))
+                END as codigo_producto,
+                CASE
+                    WHEN NULLIF(RTRIM(LTRIM(CAST(ISNULL(FMOV.idinsumo, '') AS VARCHAR(50)))), '') IS NULL
+                    THEN COALESCE(IP.descripcion, CAST(FMOV.idpresentacion AS VARCHAR(100)))
+                    ELSE COALESCE(I_INS.descripcion, CAST(FMOV.idinsumo AS VARCHAR(100)))
+                END as nombre_producto,
+                CASE
+                    WHEN NULLIF(RTRIM(LTRIM(CAST(ISNULL(FMOV.idinsumo, '') AS VARCHAR(50)))), '') IS NULL
+                    THEN COALESCE(I_PRES.unidad, '')
+                    ELSE COALESCE(I_INS.unidad, '')
+                END as unidad,
+                ISNULL(FMOV.fisicoalmacen1, 0) as existencia_fisica,
+                CASE
+                    WHEN NULLIF(RTRIM(LTRIM(CAST(ISNULL(FMOV.idinsumo, '') AS VARCHAR(50)))), '') IS NULL
+                    THEN ISNULL(IP.rendimiento, 1)
+                    ELSE 1
+                END as rendimiento,
+                ISNULL(FMOV.costo, 0) as costo_unitario,
+                COALESCE(AL.nombre, CAST(FISICO.idalmacen1 AS VARCHAR(50))) as almacen,
+                CAST(FISICO.idalmacen1 AS VARCHAR(50)) as almacen_id
+            FROM invfisicomovtos FMOV
+            INNER JOIN invfisico FISICO ON FISICO.folio = FMOV.folio
+            LEFT JOIN almacen AL ON AL.idalmacen = FISICO.idalmacen1
+            LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = FMOV.idpresentacion
+            LEFT JOIN insumos I_PRES ON I_PRES.idinsumo = IP.idinsumo
+            LEFT JOIN insumos I_INS ON I_INS.idinsumo = FMOV.idinsumo
+            WHERE FISICO.fecha >= DATEADD(MONTH, -6, GETDATE())
+              AND ISNULL(FISICO.cancelado, 0) = 0
+              {folio_filter}
+            ORDER BY FISICO.fecha DESC, FMOV.folio, codigo_producto
+        """
+
+    return None
+
+
+def _detail_values(row: Dict[str, Any], server_id: str, system_type: str, unidad_id: str, unidad_codigo: str) -> Dict[str, Any]:
+    return {
+        "unidad_negocio_id": unidad_id,
+        "unidad_negocio_codigo": unidad_codigo,
+        "server_id": server_id,
+        "system_type": system_type,
+        "folio": _as_text(row.get("folio"), 50),
+        "codigo_producto": _as_text(row.get("codigo_producto"), 100),
+        "nombre_producto": _as_text(row.get("nombre_producto"), 255),
+        "unidad": _as_text(row.get("unidad"), 50),
+        "existencia_fisica": _as_float(row.get("existencia_fisica")),
+        "rendimiento": _as_float(row.get("rendimiento"), 1.0),
+        "costo_unitario": _as_float(row.get("costo_unitario")),
+        "almacen": _as_text(row.get("almacen"), 100),
+        "almacen_id": _as_text(row.get("almacen_id"), 50),
+        "sync_source": "SYNC",
+        "sync_status": "ACTIVE",
+    }
+
+
+def _insert_detail_row(cursor, columns: Dict[str, str], values: Dict[str, Any]) -> None:
+    ordered = [
+        "unidad_negocio_id",
+        "unidad_negocio_codigo",
+        "server_id",
+        "system_type",
+        "folio",
+        "codigo_producto",
+        "nombre_producto",
+        "unidad",
+        "existencia_fisica",
+        "rendimiento",
+        "costo_unitario",
+        "almacen",
+        "almacen_id",
+        "sync_source",
+        "sync_timestamp",
+        "sync_status",
+    ]
+
+    insert_columns = []
+    placeholders = []
+    params = []
+    for logical_name in ordered:
+        column_name = columns.get(logical_name)
+        if not column_name:
+            continue
+        insert_columns.append(_sql_identifier(column_name))
+        if logical_name == "sync_timestamp":
+            placeholders.append("GETDATE()")
+        else:
+            placeholders.append("%s")
+            params.append(values.get(logical_name))
+
+    cursor.execute(
+        f"""
+            INSERT INTO dbo.Compras_Inventarios_Fisicos_Detalle_Sync
+            ({', '.join(insert_columns)})
+            VALUES ({', '.join(placeholders)})
+        """,
+        tuple(params),
+    )
+
+
+def _update_detail_row(cursor, columns: Dict[str, str], values: Dict[str, Any]) -> int:
+    key_names = ["server_id", "folio", "codigo_producto", "almacen_id"]
+    if any(not columns.get(key) for key in key_names):
+        return 0
+
+    update_names = [
+        "unidad_negocio_id",
+        "unidad_negocio_codigo",
+        "system_type",
+        "nombre_producto",
+        "unidad",
+        "existencia_fisica",
+        "rendimiento",
+        "costo_unitario",
+        "almacen",
+        "sync_source",
+        "sync_timestamp",
+        "sync_status",
+    ]
+    assignments = []
+    params = []
+    for logical_name in update_names:
+        column_name = columns.get(logical_name)
+        if not column_name:
+            continue
+        if logical_name == "sync_timestamp":
+            assignments.append(f"{_sql_identifier(column_name)} = GETDATE()")
+        else:
+            assignments.append(f"{_sql_identifier(column_name)} = %s")
+            params.append(values.get(logical_name))
+
+    where_clause = " AND ".join(
+        f"{_sql_identifier(columns[key])} = %s"
+        for key in key_names
+    )
+    params.extend(values.get(key) for key in key_names)
+
+    cursor.execute(
+        f"""
+            UPDATE dbo.Compras_Inventarios_Fisicos_Detalle_Sync
+            SET {', '.join(assignments)}
+            WHERE {where_clause}
+        """,
+        tuple(params),
+    )
+    return int(cursor.rowcount or 0)
+
+
+def _sync_inventarios_fisicos_detalle(
+    cursor,
+    detail_rows: List[Dict[str, Any]],
+    server_id: str,
+    system_type: str,
+    unidad_id: str,
+    unidad_codigo: str,
+) -> Dict[str, Any]:
+    table_name = "Compras_Inventarios_Fisicos_Detalle_Sync"
+    columns = _fetch_table_columns(cursor, table_name)
+    required_columns = [
+        "server_id",
+        "folio",
+        "codigo_producto",
+        "nombre_producto",
+        "unidad",
+        "existencia_fisica",
+        "costo_unitario",
+        "almacen",
+        "almacen_id",
+        "sync_status",
+    ]
+    missing_columns = [column for column in required_columns if not columns.get(column)]
+    if missing_columns:
+        return {
+            "status": "ERROR",
+            "details_synced": 0,
+            "details_updated": 0,
+            "detail_errors": len(missing_columns),
+            "error": f"Tabla {table_name} incompleta o inexistente. Faltan columnas: {', '.join(missing_columns)}",
+        }
+
+    cursor.execute("""
+        UPDATE dbo.Compras_Inventarios_Fisicos_Detalle_Sync
+        SET sync_status = 'REPLACED'
+        WHERE server_id = %s
+          AND sync_status = 'ACTIVE'
+    """, (server_id,))
+
+    details_synced = 0
+    details_updated = 0
+    detail_errors = 0
+    for row in detail_rows:
+        values = _detail_values(row, server_id, system_type, unidad_id, unidad_codigo)
+        if not values["folio"] or not values["codigo_producto"] or not values["almacen_id"]:
+            detail_errors += 1
+            logger.warning("[SYNC] Detalle inventario omitido por llave incompleta: %s", values)
+            continue
+
+        try:
+            _insert_detail_row(cursor, columns, values)
+            details_synced += 1
+        except Exception as insert_error:
+            try:
+                updated = _update_detail_row(cursor, columns, values)
+                if updated:
+                    details_updated += updated
+                    continue
+            except Exception as update_error:
+                logger.warning(
+                    "[SYNC] Error actualizando detalle inventario folio=%s producto=%s: %s",
+                    values["folio"],
+                    values["codigo_producto"],
+                    update_error,
+                )
+            detail_errors += 1
+            logger.warning(
+                "[SYNC] Error insertando detalle inventario folio=%s producto=%s: %s",
+                values["folio"],
+                values["codigo_producto"],
+                insert_error,
+            )
+
+    status = "OK" if detail_errors == 0 else "PARTIAL"
+    return {
+        "status": status,
+        "details_synced": details_synced,
+        "details_updated": details_updated,
+        "detail_errors": detail_errors,
+        "error": None if detail_errors == 0 else f"{detail_errors} detalles de inventario no sincronizados",
+    }
+
+
 
 
 TIPO_MOVIMIENTO_SR_TO_EDARSAHUB = {
@@ -466,7 +787,7 @@ def sync_inventarios_fisicos_from_server(
         else:
             return {"status": "ERROR", "records_synced": 0, "error": f"Sistema no soportado: {system_type}"}
         
-        # Ejecutar query en servidor origen
+        # Ejecutar encabezados en servidor origen
         rows = execute_sql_query_func(
             server_info['host'],
             server_info['port'],
@@ -485,10 +806,75 @@ def sync_inventarios_fisicos_from_server(
 
         if not rows:
             return {"status": "OK", "records_synced": 0, "error": None}
+
+        # Ejecutar detalle físico en servidor origen. El endpoint de análisis
+        # consume esta tabla canónica y no debe conectarse live al POS.
+        detail_query = _inventarios_fisicos_detalle_query(
+            system_type,
+            [row.get("folio") for row in rows],
+        )
+        detail_rows = []
+        if detail_query:
+            detail_rows = execute_sql_query_func(
+                server_info['host'],
+                server_info['port'],
+                server_info['database'],
+                server_info['username'],
+                server_info['password'],
+                detail_query
+            )
+            if detail_rows is None:
+                return {
+                    "status": "ERROR",
+                    "records_synced": 0,
+                    "details_synced": 0,
+                    "details_updated": 0,
+                    "detail_errors": 0,
+                    "error": "No se pudo consultar el detalle físico en el servidor origen",
+                }
+            if not detail_rows:
+                return {
+                    "status": "ERROR",
+                    "records_synced": 0,
+                    "details_synced": 0,
+                    "details_updated": 0,
+                    "detail_errors": len(rows),
+                    "error": (
+                        "Inventarios físicos con encabezado pero sin detalle origen. "
+                        "No se actualiza el canónico para evitar folios sin detalle."
+                    ),
+                }
         
         # Guardar en EDARSAHUB
         conn = get_edarsahub_connection()
         cursor = conn.cursor()
+
+        detail_result = {
+            "status": "OK",
+            "details_synced": 0,
+            "details_updated": 0,
+            "detail_errors": 0,
+            "error": None,
+        }
+        if detail_query:
+            detail_result = _sync_inventarios_fisicos_detalle(
+                cursor,
+                detail_rows,
+                str(server_id or ""),
+                system_type,
+                str(unidad_id or ""),
+                str(unidad_codigo or ""),
+            )
+            if detail_result["status"] == "ERROR":
+                conn.close()
+                return {
+                    "status": "ERROR",
+                    "records_synced": 0,
+                    "details_synced": detail_result.get("details_synced", 0),
+                    "details_updated": detail_result.get("details_updated", 0),
+                    "detail_errors": detail_result.get("detail_errors", 0),
+                    "error": detail_result.get("error"),
+                }
         
         # Marcar registros anteriores como inactivos
         cursor.execute("""
@@ -521,18 +907,88 @@ def sync_inventarios_fisicos_from_server(
                     (row.get('comentario') or '')[:50]
                 ))
                 records_synced += 1
-            except Exception as e:
-                logger.warning(f"[SYNC] Error insertando inventario {row.get('folio')}: {e}")
+            except Exception as insert_error:
+                try:
+                    cursor.execute("""
+                        UPDATE Compras_Inventarios_Fisicos_Sync
+                        SET unidad_negocio_id = %s,
+                            unidad_negocio_codigo = %s,
+                            system_type = %s,
+                            fecha = %s,
+                            almacen = %s,
+                            almacen_id = %s,
+                            sucursal = %s,
+                            sucursal_id = %s,
+                            tipo = %s,
+                            estatus = %s,
+                            total_productos = %s,
+                            comentario = %s,
+                            sync_source = 'SYNC',
+                            sync_timestamp = GETDATE(),
+                            sync_status = 'ACTIVE'
+                        WHERE server_id = %s
+                          AND folio = %s
+                    """, (
+                        unidad_id,
+                        unidad_codigo,
+                        system_type,
+                        row.get('fecha'),
+                        row.get('almacen', ''),
+                        str(row.get('almacen_id', '')),
+                        row.get('sucursal', ''),
+                        str(row.get('sucursal_id', '')),
+                        row.get('tipo', 'FISICO'),
+                        row.get('estatus', ''),
+                        row.get('total_productos', 0),
+                        (row.get('comentario') or '')[:50],
+                        str(server_id or ''),
+                        str(row.get('folio', '')),
+                    ))
+                    if cursor.rowcount:
+                        records_synced += int(cursor.rowcount)
+                        continue
+                except Exception as update_error:
+                    logger.warning(
+                        "[SYNC] Error actualizando inventario %s: %s",
+                        row.get('folio'),
+                        update_error,
+                    )
+                logger.warning(f"[SYNC] Error insertando inventario {row.get('folio')}: {insert_error}")
         
         conn.commit()
         conn.close()
         
-        logger.info(f"[SYNC] Inventarios sincronizados: {records_synced} de {len(rows)}")
-        return {"status": "OK", "records_synced": records_synced, "error": None}
+        details_synced = int(detail_result.get("details_synced") or 0)
+        details_updated = int(detail_result.get("details_updated") or 0)
+        detail_errors = int(detail_result.get("detail_errors") or 0)
+        status = "OK" if detail_result.get("status") == "OK" else "PARTIAL"
+        logger.info(
+            "[SYNC] Inventarios sincronizados: headers=%s/%s detalles_insertados=%s detalles_actualizados=%s errores_detalle=%s",
+            records_synced,
+            len(rows),
+            details_synced,
+            details_updated,
+            detail_errors,
+        )
+        return {
+            "status": status,
+            "records_synced": records_synced,
+            "details_synced": details_synced,
+            "details_updated": details_updated,
+            "detail_errors": detail_errors,
+            "error": detail_result.get("error"),
+        }
         
     except Exception as e:
         logger.error(f"[SYNC] Error sync inventarios {unidad_codigo}: {e}")
-        return {"status": "ERROR", "records_synced": 0, "error": str(e)}
+        return {
+            "status": "ERROR",
+            "records_synced": 0,
+            "details_synced": 0,
+            "details_updated": 0,
+            "detail_errors": 0,
+            "error": str(e),
+        }
 
 
 def sync_requisiciones_from_server(
