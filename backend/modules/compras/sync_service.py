@@ -37,6 +37,7 @@ _edarsa_cfg = get_edarsahub_sql_config()
 
 
 logger = logging.getLogger(__name__)
+SQL_SERVER_SAFE_PARAM_LIMIT = 2000
 
 # P2-01: Configuración EDARSAHUB centralizada (sin fallbacks legacy)
 EDARSAHUB_CONFIG = {
@@ -84,6 +85,63 @@ def _folio_in_filter(column_expression: str, folios: Optional[List[Any]]) -> str
     if not values:
         return ""
     return f" AND CAST({column_expression} AS VARCHAR(50)) IN ({', '.join(values)})"
+
+
+def _inventory_detail_batch_size() -> int:
+    try:
+        value = int(os.environ.get("SYNC_INVENTARIOS_FISICOS_DETAIL_BATCH_SIZE", "20"))
+    except (TypeError, ValueError):
+        value = 20
+    return max(1, min(value, 100))
+
+
+def _unique_folio_batches(rows: List[Dict[str, Any]], batch_size: int) -> List[List[str]]:
+    folios = []
+    seen = set()
+    for row in rows:
+        folio = _as_text(row.get("folio"), 50)
+        if folio and folio not in seen:
+            seen.add(folio)
+            folios.append(folio)
+    return [folios[i:i + batch_size] for i in range(0, len(folios), batch_size)]
+
+
+def _inventory_header_detail_key(row: Dict[str, Any]) -> tuple[str, str]:
+    return (_as_text(row.get("folio"), 50), _as_text(row.get("almacen_id"), 50))
+
+
+def _inventory_detail_key(row: Dict[str, Any]) -> tuple[str, str, str, str]:
+    return (
+        _as_text(row.get("server_id"), 100),
+        _as_text(row.get("folio"), 50),
+        _as_text(row.get("codigo_producto"), 100),
+        _as_text(row.get("almacen_id"), 50),
+    )
+
+
+def _filter_inventory_headers_with_detail(
+    rows: List[Dict[str, Any]],
+    detail_rows: List[Dict[str, Any]],
+) -> tuple[List[Dict[str, Any]], int]:
+    detail_counts: Dict[tuple[str, str], int] = {}
+    for detail in detail_rows:
+        key = _inventory_header_detail_key(detail)
+        if key[0] and key[1]:
+            detail_counts[key] = detail_counts.get(key, 0) + 1
+
+    filtered_rows = []
+    skipped = 0
+    for row in rows:
+        key = _inventory_header_detail_key(row)
+        count = detail_counts.get(key, 0)
+        if not count:
+            skipped += 1
+            continue
+        row_copy = dict(row)
+        if not _as_float(row_copy.get("total_productos")):
+            row_copy["total_productos"] = count
+        filtered_rows.append(row_copy)
+    return filtered_rows, skipped
 
 
 def _fetch_table_columns(cursor, table_name: str) -> Dict[str, str]:
@@ -195,6 +253,11 @@ def _detail_values(row: Dict[str, Any], server_id: str, system_type: str, unidad
 
 
 def _insert_detail_row(cursor, columns: Dict[str, str], values: Dict[str, Any]) -> None:
+    insert_sql, param_names = _detail_insert_statement(columns)
+    cursor.execute(insert_sql, tuple(values.get(name) for name in param_names))
+
+
+def _detail_insert_parts(columns: Dict[str, str]) -> tuple[List[str], List[str], List[str]]:
     ordered = [
         "unidad_negocio_id",
         "unidad_negocio_codigo",
@@ -226,22 +289,27 @@ def _insert_detail_row(cursor, columns: Dict[str, str], values: Dict[str, Any]) 
             placeholders.append("GETDATE()")
         else:
             placeholders.append("%s")
-            params.append(values.get(logical_name))
+            params.append(logical_name)
 
-    cursor.execute(
+    return insert_columns, placeholders, params
+
+
+def _detail_insert_statement(columns: Dict[str, str]) -> tuple[str, List[str]]:
+    insert_columns, placeholders, params = _detail_insert_parts(columns)
+    return (
         f"""
             INSERT INTO dbo.Compras_Inventarios_Fisicos_Detalle_Sync
             ({', '.join(insert_columns)})
             VALUES ({', '.join(placeholders)})
         """,
-        tuple(params),
+        params,
     )
 
 
-def _update_detail_row(cursor, columns: Dict[str, str], values: Dict[str, Any]) -> int:
+def _detail_update_statement(columns: Dict[str, str]) -> tuple[Optional[str], List[str]]:
     key_names = ["server_id", "folio", "codigo_producto", "almacen_id"]
     if any(not columns.get(key) for key in key_names):
-        return 0
+        return None, []
 
     update_names = [
         "unidad_negocio_id",
@@ -267,23 +335,225 @@ def _update_detail_row(cursor, columns: Dict[str, str], values: Dict[str, Any]) 
             assignments.append(f"{_sql_identifier(column_name)} = GETDATE()")
         else:
             assignments.append(f"{_sql_identifier(column_name)} = %s")
-            params.append(values.get(logical_name))
+            params.append(logical_name)
 
     where_clause = " AND ".join(
         f"{_sql_identifier(columns[key])} = %s"
         for key in key_names
     )
-    params.extend(values.get(key) for key in key_names)
-
-    cursor.execute(
+    params.extend(key_names)
+    return (
         f"""
             UPDATE dbo.Compras_Inventarios_Fisicos_Detalle_Sync
             SET {', '.join(assignments)}
             WHERE {where_clause}
         """,
-        tuple(params),
+        params,
     )
+
+
+def _bulk_insert_detail_values(
+    cursor,
+    columns: Dict[str, str],
+    values_list: List[Dict[str, Any]],
+) -> int:
+    if not values_list:
+        return 0
+
+    insert_columns, placeholders, param_names = _detail_insert_parts(columns)
+    params_per_row = max(1, len(param_names))
+    chunk_size = max(1, min(250, SQL_SERVER_SAFE_PARAM_LIMIT // params_per_row))
+    total = 0
+    for start in range(0, len(values_list), chunk_size):
+        chunk = values_list[start:start + chunk_size]
+        values_sql = ", ".join(f"({', '.join(placeholders)})" for _ in chunk)
+        params = []
+        for values in chunk:
+            params.extend(values.get(name) for name in param_names)
+        cursor.execute(
+            f"""
+                INSERT INTO dbo.Compras_Inventarios_Fisicos_Detalle_Sync
+                ({', '.join(insert_columns)})
+                VALUES {values_sql}
+            """,
+            tuple(params),
+        )
+        total += len(chunk)
+        logger.warning(
+            "[SYNC] Bulk detalle inventarios insertado: %s/%s",
+            total,
+            len(values_list),
+        )
+    return total
+
+
+def _bulk_update_detail_values(
+    cursor,
+    columns: Dict[str, str],
+    values_list: List[Dict[str, Any]],
+) -> int:
+    if not values_list:
+        return 0
+
+    key_names = ["server_id", "folio", "codigo_producto", "almacen_id"]
+    if any(not columns.get(key) for key in key_names):
+        return 0
+
+    update_names = [
+        "unidad_negocio_id",
+        "unidad_negocio_codigo",
+        "system_type",
+        "nombre_producto",
+        "unidad",
+        "existencia_fisica",
+        "rendimiento",
+        "costo_unitario",
+        "almacen",
+        "sync_source",
+        "sync_status",
+    ]
+    update_names = [name for name in update_names if columns.get(name)]
+    source_names = key_names + update_names
+    params_per_row = max(1, len(source_names))
+    chunk_size = max(1, min(120, SQL_SERVER_SAFE_PARAM_LIMIT // params_per_row))
+
+    source_columns = ", ".join(_sql_identifier(name) for name in source_names)
+    set_clauses = [
+        f"target.{_sql_identifier(columns[name])} = source.{_sql_identifier(name)}"
+        for name in update_names
+    ]
+    if columns.get("sync_timestamp"):
+        set_clauses.append(f"target.{_sql_identifier(columns['sync_timestamp'])} = GETDATE()")
+    join_clause = " AND ".join(
+        f"target.{_sql_identifier(columns[name])} = source.{_sql_identifier(name)}"
+        for name in key_names
+    )
+
+    total = 0
+    for start in range(0, len(values_list), chunk_size):
+        chunk = values_list[start:start + chunk_size]
+        row_placeholders = ", ".join(
+            f"({', '.join(['%s'] * len(source_names))})"
+            for _ in chunk
+        )
+        params = []
+        for values in chunk:
+            params.extend(values.get(name) for name in source_names)
+        cursor.execute(
+            f"""
+                UPDATE target
+                SET {', '.join(set_clauses)}
+                FROM dbo.Compras_Inventarios_Fisicos_Detalle_Sync AS target
+                INNER JOIN (VALUES {row_placeholders}) AS source ({source_columns})
+                    ON {join_clause}
+            """,
+            tuple(params),
+        )
+        total += len(chunk)
+        logger.warning(
+            "[SYNC] Bulk detalle inventarios actualizado: %s/%s",
+            total,
+            len(values_list),
+        )
+    return total
+
+
+def _update_detail_row(cursor, columns: Dict[str, str], values: Dict[str, Any]) -> int:
+    update_sql, param_names = _detail_update_statement(columns)
+    if not update_sql:
+        return 0
+
+    cursor.execute(update_sql, tuple(values.get(name) for name in param_names))
     return int(cursor.rowcount or 0)
+
+
+def _fetch_existing_detail_keys(
+    cursor,
+    columns: Dict[str, str],
+    values_list: List[Dict[str, Any]],
+) -> set[tuple[str, str, str, str]]:
+    if not values_list:
+        return set()
+
+    key_names = ["server_id", "folio", "codigo_producto", "almacen_id"]
+    if any(not columns.get(key) for key in key_names):
+        return set()
+
+    server_id = _as_text(values_list[0].get("server_id"), 100)
+    folios = []
+    seen_folios = set()
+    for values in values_list:
+        folio = _as_text(values.get("folio"), 50)
+        if folio and folio not in seen_folios:
+            seen_folios.add(folio)
+            folios.append(folio)
+    if not server_id or not folios:
+        return set()
+
+    existing = set()
+    server_column = _sql_identifier(columns["server_id"])
+    folio_column = _sql_identifier(columns["folio"])
+    select_columns = ", ".join(_sql_identifier(columns[key]) for key in key_names)
+    batch_size = 500
+    for start in range(0, len(folios), batch_size):
+        batch = folios[start:start + batch_size]
+        placeholders = ", ".join(["%s"] * len(batch))
+        cursor.execute(
+            f"""
+                SELECT {select_columns}
+                FROM dbo.Compras_Inventarios_Fisicos_Detalle_Sync
+                WHERE {server_column} = %s
+                  AND CAST({folio_column} AS VARCHAR(50)) IN ({placeholders})
+            """,
+            tuple([server_id] + batch),
+        )
+        for row in cursor.fetchall():
+            if isinstance(row, dict):
+                key = tuple(_as_text(row.get(columns[name]) or row.get(name), 100) for name in key_names)
+            else:
+                key = tuple(_as_text(row[index], 100) for index in range(4))
+            existing.add(key)
+    return existing
+
+
+def _collapse_detail_values_by_key(values_list: List[Dict[str, Any]]) -> tuple[List[Dict[str, Any]], int]:
+    ordered_keys = []
+    by_key: Dict[tuple[str, str, str, str], Dict[str, Any]] = {}
+    duplicates = 0
+    for values in values_list:
+        key = _inventory_detail_key(values)
+        if key in by_key:
+            duplicates += 1
+        else:
+            ordered_keys.append(key)
+        by_key[key] = values
+    return [by_key[key] for key in ordered_keys], duplicates
+
+
+def _bulk_upsert_detail_values(
+    cursor,
+    columns: Dict[str, str],
+    values_list: List[Dict[str, Any]],
+) -> tuple[int, int]:
+    values_list, duplicates = _collapse_detail_values_by_key(values_list)
+    if duplicates:
+        logger.warning(
+            "[SYNC] Detalle inventarios colapsado por llaves duplicadas: %s",
+            duplicates,
+        )
+
+    existing_keys = _fetch_existing_detail_keys(cursor, columns, values_list)
+    values_to_update = []
+    values_to_insert = []
+    for values in values_list:
+        if _inventory_detail_key(values) in existing_keys:
+            values_to_update.append(values)
+        else:
+            values_to_insert.append(values)
+
+    details_updated = _bulk_update_detail_values(cursor, columns, values_to_update)
+    details_synced = _bulk_insert_detail_values(cursor, columns, values_to_insert)
+    return details_synced, details_updated
 
 
 def _sync_inventarios_fisicos_detalle(
@@ -325,8 +595,7 @@ def _sync_inventarios_fisicos_detalle(
           AND sync_status = 'ACTIVE'
     """, (server_id,))
 
-    details_synced = 0
-    details_updated = 0
+    values_list = []
     detail_errors = 0
     for row in detail_rows:
         values = _detail_values(row, server_id, system_type, unidad_id, unidad_codigo)
@@ -334,30 +603,43 @@ def _sync_inventarios_fisicos_detalle(
             detail_errors += 1
             logger.warning("[SYNC] Detalle inventario omitido por llave incompleta: %s", values)
             continue
+        values_list.append(values)
 
-        try:
-            _insert_detail_row(cursor, columns, values)
-            details_synced += 1
-        except Exception as insert_error:
+    details_synced = 0
+    details_updated = 0
+    try:
+        details_synced, details_updated = _bulk_upsert_detail_values(cursor, columns, values_list)
+    except Exception as bulk_error:
+        logger.warning(
+            "[SYNC] Bulk upsert detalle inventarios no disponible/falló; fallback fila por fila: %s",
+            str(bulk_error)[:180],
+        )
+        details_synced = 0
+        details_updated = 0
+        for values in values_list:
             try:
-                updated = _update_detail_row(cursor, columns, values)
-                if updated:
-                    details_updated += updated
-                    continue
-            except Exception as update_error:
+                _insert_detail_row(cursor, columns, values)
+                details_synced += 1
+            except Exception as insert_error:
+                try:
+                    updated = _update_detail_row(cursor, columns, values)
+                    if updated:
+                        details_updated += updated
+                        continue
+                except Exception as update_error:
+                    logger.warning(
+                        "[SYNC] Error actualizando detalle inventario folio=%s producto=%s: %s",
+                        values["folio"],
+                        values["codigo_producto"],
+                        update_error,
+                    )
+                detail_errors += 1
                 logger.warning(
-                    "[SYNC] Error actualizando detalle inventario folio=%s producto=%s: %s",
+                    "[SYNC] Error insertando detalle inventario folio=%s producto=%s: %s",
                     values["folio"],
                     values["codigo_producto"],
-                    update_error,
+                    insert_error,
                 )
-            detail_errors += 1
-            logger.warning(
-                "[SYNC] Error insertando detalle inventario folio=%s producto=%s: %s",
-                values["folio"],
-                values["codigo_producto"],
-                insert_error,
-            )
 
     status = "OK" if detail_errors == 0 else "PARTIAL"
     return {
@@ -807,31 +1089,51 @@ def sync_inventarios_fisicos_from_server(
         if not rows:
             return {"status": "OK", "records_synced": 0, "error": None}
 
+        source_header_count = len(rows)
         # Ejecutar detalle físico en servidor origen. El endpoint de análisis
         # consume esta tabla canónica y no debe conectarse live al POS.
-        detail_query = _inventarios_fisicos_detalle_query(
-            system_type,
-            [row.get("folio") for row in rows],
-        )
+        detail_query = _inventarios_fisicos_detalle_query(system_type, [])
         detail_rows = []
         if detail_query:
-            detail_rows = execute_sql_query_func(
-                server_info['host'],
-                server_info['port'],
-                server_info['database'],
-                server_info['username'],
-                server_info['password'],
-                detail_query
+            batch_size = _inventory_detail_batch_size()
+            folio_batches = _unique_folio_batches(rows, batch_size)
+            logger.warning(
+                "[SYNC] Consultando detalle inventarios por lotes: headers=%s folios=%s batch_size=%s",
+                len(rows),
+                sum(len(batch) for batch in folio_batches),
+                batch_size,
             )
-            if detail_rows is None:
-                return {
-                    "status": "ERROR",
-                    "records_synced": 0,
-                    "details_synced": 0,
-                    "details_updated": 0,
-                    "detail_errors": 0,
-                    "error": "No se pudo consultar el detalle físico en el servidor origen",
-                }
+            for batch_index, folios_batch in enumerate(folio_batches, 1):
+                batch_query = _inventarios_fisicos_detalle_query(system_type, folios_batch)
+                batch_rows = execute_sql_query_func(
+                    server_info['host'],
+                    server_info['port'],
+                    server_info['database'],
+                    server_info['username'],
+                    server_info['password'],
+                    batch_query
+                )
+                if batch_rows is None:
+                    return {
+                        "status": "ERROR",
+                        "records_synced": 0,
+                        "details_synced": 0,
+                        "details_updated": 0,
+                        "detail_errors": 0,
+                        "error": (
+                            "No se pudo consultar el detalle físico en el servidor origen "
+                            f"(lote {batch_index}/{len(folio_batches)})"
+                        ),
+                    }
+                detail_rows.extend(batch_rows)
+                logger.warning(
+                    "[SYNC] Detalle inventarios lote %s/%s: folios=%s rows=%s acumulado=%s",
+                    batch_index,
+                    len(folio_batches),
+                    len(folios_batch),
+                    len(batch_rows),
+                    len(detail_rows),
+                )
             if not detail_rows:
                 return {
                     "status": "ERROR",
@@ -844,6 +1146,26 @@ def sync_inventarios_fisicos_from_server(
                         "No se actualiza el canónico para evitar folios sin detalle."
                     ),
                 }
+            rows, headers_without_detail = _filter_inventory_headers_with_detail(rows, detail_rows)
+            if not rows:
+                return {
+                    "status": "ERROR",
+                    "records_synced": 0,
+                    "details_synced": 0,
+                    "details_updated": 0,
+                    "detail_errors": headers_without_detail,
+                    "error": (
+                        "Inventarios físicos sin detalle coincidente por folio/almacén. "
+                        "No se actualiza el canónico para evitar folios sin detalle."
+                    ),
+                }
+            if headers_without_detail:
+                logger.warning(
+                    "[SYNC] Inventarios físicos omitidos por falta de detalle coincidente: %s",
+                    headers_without_detail,
+                )
+        else:
+            headers_without_detail = 0
         
         # Guardar en EDARSAHUB
         conn = get_edarsahub_connection()
@@ -960,12 +1282,16 @@ def sync_inventarios_fisicos_from_server(
         
         details_synced = int(detail_result.get("details_synced") or 0)
         details_updated = int(detail_result.get("details_updated") or 0)
-        detail_errors = int(detail_result.get("detail_errors") or 0)
-        status = "OK" if detail_result.get("status") == "OK" else "PARTIAL"
+        detail_errors = int(detail_result.get("detail_errors") or 0) + int(headers_without_detail or 0)
+        status = "OK" if detail_result.get("status") == "OK" and not headers_without_detail else "PARTIAL"
+        error_message = detail_result.get("error")
+        if headers_without_detail:
+            skipped_message = f"{headers_without_detail} inventarios físicos omitidos por falta de detalle coincidente"
+            error_message = f"{error_message}; {skipped_message}" if error_message else skipped_message
         logger.info(
             "[SYNC] Inventarios sincronizados: headers=%s/%s detalles_insertados=%s detalles_actualizados=%s errores_detalle=%s",
             records_synced,
-            len(rows),
+            source_header_count,
             details_synced,
             details_updated,
             detail_errors,
@@ -976,7 +1302,7 @@ def sync_inventarios_fisicos_from_server(
             "details_synced": details_synced,
             "details_updated": details_updated,
             "detail_errors": detail_errors,
-            "error": detail_result.get("error"),
+            "error": error_message,
         }
         
     except Exception as e:
@@ -1074,6 +1400,13 @@ def sync_requisiciones_from_server(
             query
         )
         
+        if rows is None:
+            return {
+                "status": "ERROR",
+                "records_synced": 0,
+                "error": "No se pudo consultar el servidor origen",
+            }
+
         if not rows:
             return {"status": "OK", "records_synced": 0, "error": None}
         
@@ -1090,7 +1423,10 @@ def sync_requisiciones_from_server(
         
         # Insertar nuevos registros
         records_synced = 0
+        records_errors = 0
         for row in rows:
+            tipo = row.get('tipo', 'OC')
+            folio = str(row.get('folio', ''))
             try:
                 cursor.execute("""
                     INSERT INTO Compras_Requisiciones_Sync
@@ -1098,11 +1434,14 @@ def sync_requisiciones_from_server(
                      tipo, folio, fecha, fecha_entrega, proveedor, proveedor_id,
                      sucursal, sucursal_id, total_productos, importe, estatus,
                      sync_source, sync_timestamp, sync_status)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'SYNC', GETDATE(), 'ACTIVE')
+                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'SYNC', GETDATE(), 'ACTIVE')
                 """, (
-                    unidad_id, unidad_codigo, server_id, system_type,
-                    row.get('tipo', 'OC'),
-                    str(row.get('folio', '')),
+                    unidad_id,
+                    unidad_codigo,
+                    server_id,
+                    system_type,
+                    tipo,
+                    folio,
                     row.get('fecha'),
                     row.get('fecha_entrega'),
                     row.get('proveedor', ''),
@@ -1114,14 +1453,73 @@ def sync_requisiciones_from_server(
                     row.get('estatus', '')
                 ))
                 records_synced += 1
-            except Exception as e:
-                logger.warning(f"[SYNC] Error insertando requisición {row.get('folio')}: {e}")
+            except Exception as insert_error:
+                try:
+                    cursor.execute("""
+                        UPDATE Compras_Requisiciones_Sync
+                        SET unidad_negocio_id = %s,
+                            unidad_negocio_codigo = %s,
+                            system_type = %s,
+                            fecha = %s,
+                            fecha_entrega = %s,
+                            proveedor = %s,
+                            proveedor_id = %s,
+                            sucursal = %s,
+                            sucursal_id = %s,
+                            total_productos = %s,
+                            importe = %s,
+                            estatus = %s,
+                            sync_source = 'SYNC',
+                            sync_timestamp = GETDATE(),
+                            sync_status = 'ACTIVE'
+                        WHERE server_id = %s
+                          AND folio = %s
+                          AND tipo = %s
+                    """, (
+                        unidad_id,
+                        unidad_codigo,
+                        system_type,
+                        row.get('fecha'),
+                        row.get('fecha_entrega'),
+                        row.get('proveedor', ''),
+                        str(row.get('proveedor_id', '')),
+                        row.get('sucursal', ''),
+                        str(row.get('sucursal_id', '')),
+                        row.get('total_productos', 0),
+                        row.get('importe', 0),
+                        row.get('estatus', ''),
+                        str(server_id or ''),
+                        folio,
+                        tipo,
+                    ))
+                    if cursor.rowcount:
+                        records_synced += int(cursor.rowcount)
+                        continue
+                except Exception as update_error:
+                    logger.warning(
+                        "[SYNC] Error actualizando requisición %s: %s",
+                        folio,
+                        update_error,
+                    )
+                records_errors += 1
+                logger.warning(
+                    "[SYNC] Error insertando requisición %s: %s",
+                    folio,
+                    insert_error,
+                )
         
         conn.commit()
         conn.close()
         
-        logger.info(f"[SYNC] Requisiciones sincronizadas: {records_synced} de {len(rows)}")
-        return {"status": "OK", "records_synced": records_synced, "error": None}
+        status = "OK" if records_errors == 0 else "PARTIAL"
+        error = None if records_errors == 0 else f"{records_errors} requisiciones no sincronizadas"
+        logger.info(
+            "[SYNC] Requisiciones sincronizadas: %s de %s errores=%s",
+            records_synced,
+            len(rows),
+            records_errors,
+        )
+        return {"status": status, "records_synced": records_synced, "error": error}
         
     except Exception as e:
         logger.error(f"[SYNC] Error sync requisiciones {unidad_codigo}: {e}")
