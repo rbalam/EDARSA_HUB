@@ -174,39 +174,8 @@ const Layout = () => {
         setPermissionsLoaded(true);
       } catch (error) {
         logger.error('Error loading menu permissions:', error);
-        // Fallback: dar acceso básico basado en rol legacy
-        const role = user?.role || '';
-        const isAdmin = role.toLowerCase().includes('admin') || role.toLowerCase().includes('super');
-        setMenuPermissions({
-          mis_tareas: true,
-          tablero_ejecutivo: isAdmin || role === 'Supervisor',
-          comercial: true,
-          crm: true,
-          compras: true,
-          operaciones: true,
-          finanzas: isAdmin || role === 'Supervisor',
-          produccion: isAdmin || role === 'Supervisor',
-          recursos_humanos: isAdmin || role === 'Supervisor',
-          reportes_bi: isAdmin || role === 'Supervisor',
-          catalogos: isAdmin || role === 'Supervisor',
-          centro_control: isAdmin || role === 'Supervisor' || role === 'Director',
-          servidores: isAdmin,
-          programacion: isAdmin || role === 'Supervisor',
-          automatizaciones: isAdmin || role === 'Supervisor',
-          asignaciones: isAdmin,
-          catalogo_sql: isAdmin || role === 'Supervisor',
-          explorador_bd: isAdmin,
-          alertas: isAdmin || role === 'Supervisor',
-          usuarios: isAdmin,
-          cava_socios: true,
-          pos_generico: isAdmin || role === 'Supervisor',
-          comandero: isAdmin || role === 'Supervisor',
-          edarsa_go: isAdmin || role === 'Supervisor',
-          chef_ia: isAdmin || role === 'Supervisor',
-          portal_proveedores: isAdmin,
-          portal_comisionistas: isAdmin,
-          portal_clientes: isAdmin,
-        });
+        // Falla cerrada: la visibilidad de módulos críticos solo viene de RBAC SQL.
+        setMenuPermissions({ mis_tareas: true });
         setPermissionsLoaded(true);
       }
     };

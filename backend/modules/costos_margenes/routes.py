@@ -1,6 +1,3 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
-from core.rbac_helper_sql import es_admin, tiene_acceso_lectura_comercial
 """
 Endpoints del módulo Costos y Márgenes.
 FASE 1C-3C - Endpoints NO-LIVE
@@ -17,13 +14,12 @@ IMPORTANTE:
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
-from typing import Optional, List
+from typing import Optional
 import math
 import io
 import csv
 from datetime import datetime
 import logging
-import unicodedata
 
 from modules.costos_margenes.schemas import (
     CostosMargenesResumen,
@@ -51,9 +47,11 @@ from modules.costos_margenes.repository import (
     get_subfamilias_productos,
 )
 from core.security import get_current_user
-from core.db import execute_sql_query
-from core.server_registry import EDARSAHUB_CONFIG
-from core.corporate_filters.request_resolver import resolve_unidad_scope
+from core.rbac_sql.service import RBACSQLService
+from core.corporate_filters.request_resolver import (
+    resolve_authorized_unidad_scope,
+    resolve_unidad_scope,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -62,172 +60,123 @@ router = APIRouter(prefix="/costos-margenes", tags=["Costos y Márgenes"])
 
 # ==================== RBAC HELPERS ====================
 
-def _get_edarsahub_connection():
-    """Obtiene conexión a EDARSAHUB SQL."""
-    return (
-        EDARSAHUB_CONFIG['host'],
-        EDARSAHUB_CONFIG['port'],
-        EDARSAHUB_CONFIG['database'],
-        EDARSAHUB_CONFIG['username'],
-        EDARSAHUB_CONFIG['password']
+COSTOS_MARGENES_VER = "COMERCIAL_VER"
+
+
+def _get_sql_usuario_id(user: dict) -> Optional[int]:
+    value = (
+        (user or {}).get("_sql_usuario_id")
+        or (user or {}).get("UsuarioID")
+        or (user or {}).get("usuario_id")
     )
-
-
-def _get_user_allowed_servers(user: dict) -> tuple[List[str], bool]:
-    """
-    FASE P2 - RBAC por Unidad de Negocio
-    
-    Obtiene los server_id permitidos para el usuario desde Usuario_ServidoresAsignacion.
-    
-    Returns:
-        (lista_server_ids, es_corporativo)
-        - es_corporativo=True si tiene acceso global (rol admin, superadmin, o 0 asignaciones)
-    """
-    role = user.get('role', '')
-    user_id = user.get('id', '')
-    email = user.get('email', '')
-    
-    # SuperAdministrador y Administrador tienen acceso global (RBAC canónico)
-    if es_admin(user):
-        logger.info(f"[RBAC] Usuario {email} tiene acceso global por rol {role}")
-        return [], True
-    
-    # Buscar UsuarioID y sus servidores asignados
-    conn = _get_edarsahub_connection()
-    
+    if isinstance(value, bool):
+        return None
     try:
-        # Buscar el UsuarioID por email o PublicUUID
-        user_query = f"""
-        SELECT UsuarioID 
-        FROM Usuario_Catalogo 
-        WHERE (Email = '{Email}' OR LOWER(CAST(PublicUUID AS VARCHAR(36))) = '{user_id.lower()}')
-        AND Activo = 1
-        """
-        user_result = execute_sql_query(*conn, user_query)
-        
-        if not user_result:
-            logger.warning(f"[RBAC] Usuario {email} no encontrado en Usuario_Catalogo")
-            return [], False  # Sin acceso si no está en catálogo
-        
-        usuario_id_sql = user_result[0].get('UsuarioID')
-        
-        # Obtener servidores asignados
-        servers_query = f"""
-        SELECT CAST(sa.ServidorID AS NVARCHAR(36)) as server_id
-        FROM Usuario_ServidoresAsignacion sa
-        WHERE sa.UsuarioID = {usuario_id_sql}
-        AND sa.Activo = 1
-        """
-        servers_result = execute_sql_query(*conn, servers_query) or []
-        
-        server_ids = [r.get('server_id') for r in servers_result if r.get('server_id')]
-        
-        # Si tiene 0 asignaciones, es corporativo (ve todo)
-        if len(server_ids) == 0:
-            logger.info(f"[RBAC] Usuario {email} tiene 0 asignaciones → acceso corporativo")
-            return [], True
-        
-        logger.info(f"[RBAC] Usuario {email} tiene acceso a {len(server_ids)} servidores: {server_ids[:3]}...")
-        return server_ids, False
-        
-    except Exception as e:
-        logger.error(f"[RBAC] Error obteniendo servidores para {email}: {e}")
-        return [], False
+        usuario_id = int(value)
+    except (TypeError, ValueError):
+        return None
+    return usuario_id if usuario_id > 0 else None
 
 
-def _check_admin_or_comercial(user: dict) -> bool:
-    """
-    FASE 1C-3E: Verifica si el usuario tiene acceso al módulo Costos y Márgenes.
-    
-    Roles permitidos:
-    - SuperAdministrador: Acceso total
-    - Administrador: Acceso total
-    - Supervisor: Acceso de lectura
-    - Usuario con rol comercial: Acceso de lectura
-    
-    NOTA: En futuras fases se puede integrar con require_permission() de core.rbac
-    """
-    # Acceso de lectura: cualquier rol canónico del staff (RBAC canónico,
-    # reemplaza la lista legacy ['Supervisor','Comercial','Gerente','Usuario']).
-    return tiene_acceso_lectura_comercial(user)
+def _verify_costos_margenes_access(
+    user: dict,
+    permission_code: str = COSTOS_MARGENES_VER,
+) -> dict:
+    """Exige permiso funcional desde RBAC SQL canónico."""
+    usuario_id = _get_sql_usuario_id(user)
+    normalized = str(permission_code or "").strip().upper()
+    if usuario_id is None or not normalized:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "PERMISO_DENEGADO",
+                "mensaje": "No existe identidad SQL canónica para Costos y Márgenes",
+                "permiso_requerido": normalized or COSTOS_MARGENES_VER,
+            },
+        )
 
+    try:
+        permission = RBACSQLService.get_permission_scope_by_code(
+            usuario_id,
+            normalized,
+        )
+    except Exception as exc:
+        logger.error("[COSTOS_MARGENES_RBAC] Error resolviendo permiso: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "RBAC_NO_DISPONIBLE",
+                "mensaje": "No fue posible resolver permisos de Costos y Márgenes",
+                "permiso_requerido": normalized,
+            },
+        ) from exc
 
-def _verify_costos_margenes_access(user: dict) -> None:
-    """
-    FASE 1C-3E: Verifica acceso al módulo y lanza 403 si no tiene permiso.
-    """
-    if not _check_admin_or_comercial(user):
+    if not permission:
         raise HTTPException(
             status_code=403,
             detail={
                 "error": "PERMISO_DENEGADO",
                 "mensaje": "No tiene acceso al módulo de Costos y Márgenes",
-                "permiso_requerido": "comercial.costos_margenes.ver"
-            }
+                "permiso_requerido": normalized,
+            },
         )
 
+    return permission
 
-async def _resolve_servidor_filtro(current_user: dict, unidad: Optional[str], servidor_id: Optional[str]):
+
+async def _resolve_servidor_filtro(
+    current_user: dict,
+    unidad: Optional[str],
+    servidor_id: Optional[str],
+    permission: Optional[dict] = None,
+):
     """
-    Resolución CANÓNICA de la unidad de negocio para Costos y Márgenes.
+    Resolución canónica de unidad para Costos y Márgenes.
 
-    - Si llega 'unidad' (codigo o id) → puerta única ``resolve_unidad_scope``
-      (resuelve server_id + valida RBAC reutilizando el sistema existente). Es el
-      contrato canónico, igual que el resto de tableros del ERP.
-    - 'servidor_id' queda SOLO como compatibilidad DEPRECATED.
-    - Sin filtro → fallback RBAC por servidores permitidos del usuario.
+    El contrato preferido es ``unidad`` (codigo o unidad_negocio_pk). ``servidor_id``
+    queda solo para compatibilidad y no se usa para saltar alcance RBAC.
 
-    Returns: (servidor_id_filtro, servidores_ids_filtro, access_denied)
+    Returns: (servidor_id_filtro, servidores_ids_filtro, access_denied, unidad_pk)
     """
+    permission = permission or _verify_costos_margenes_access(current_user)
+
     if unidad:
-        scope = await resolve_unidad_scope(current_user, unidad=unidad)
-        if scope.access_denied:
-            return None, None, True
-        return scope.server_id, None, False
-
-    allowed_servers, es_corporativo = _get_user_allowed_servers(current_user)
-    if servidor_id and not es_corporativo and servidor_id not in allowed_servers:
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "error": "ACCESO_DENEGADO_UNIDAD",
-                "mensaje": "No tiene acceso a esta unidad de negocio"
-            }
+        scope = await resolve_authorized_unidad_scope(
+            current_user,
+            COSTOS_MARGENES_VER,
+            unidad,
         )
-    servidores_ids_filtro = allowed_servers if (not es_corporativo and not servidor_id) else None
-    return servidor_id, servidores_ids_filtro, False
+        if scope.access_denied:
+            return None, None, True, None
+        return scope.server_id, None, False, scope.unidad_pk
 
+    if servidor_id:
+        if permission.get("restriccion_sucursal"):
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "UNIDAD_CANONICA_REQUERIDA",
+                    "mensaje": "Use unidad o unidad_negocio_pk para validar alcance RBAC",
+                },
+            )
+        scope = await resolve_unidad_scope(current_user, server_id_legacy=servidor_id)
+        if scope.access_denied:
+            return None, None, True, None
+        return scope.server_id or servidor_id, None, False, scope.unidad_pk
 
+    if permission.get("restriccion_sucursal"):
+        return None, None, True, None
 
-def _mpro_menu_listas_para_unidad(unidad: Optional[str]) -> Optional[List[str]]:
-    """
-    Traduce la unidad seleccionada en Corporate Filters a listas POS MPRO.
+    return None, None, False, None
 
-    None significa: no restringir por lista POS.
-    Lista vacía no se usa.
-    """
-    if not unidad:
-        return ["ORIGEN", "QRO", "QRO_ORIGEN", "TODOS"]
-
-    value = str(unidad).strip().upper()
-    value = "".join(
-        c for c in unicodedata.normalize("NFD", value)
-        if unicodedata.category(c) != "Mn"
-    )
-
-    if "QRO" in value or "QUERETARO" in value or "130" in value:
-        return ["QRO", "QRO_ORIGEN", "TODOS"]
-
-    if "ORIGEN" in value:
-        return ["ORIGEN", "QRO_ORIGEN", "TODOS"]
-
-    return ["ORIGEN", "QRO", "QRO_ORIGEN", "TODOS"]
 
 
 # ==================== RESUMEN ====================
 
 @router.get("/resumen", response_model=CostosMargenesResumen)
 async def obtener_resumen(
+    unidad: Optional[str] = Query(None, description="CANÓNICO: unidad de negocio (codigo o id)"),
+    unidad_negocio_pk: Optional[str] = Query(None, description="DEPRECATED: usar unidad"),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -244,11 +193,33 @@ async def obtener_resumen(
     - Alertas de margen bajo
     - Metadata de sincronización
     """
-    # FASE 1C-3E: Verificar permisos
-    _verify_costos_margenes_access(current_user)
+    permission = _verify_costos_margenes_access(current_user)
+    _, _, access_denied, unidad_pk = await _resolve_servidor_filtro(
+        current_user,
+        unidad or unidad_negocio_pk,
+        None,
+        permission,
+    )
+    if access_denied:
+        return CostosMargenesResumen(
+            total_productos=0,
+            productos_con_receta=0,
+            productos_sin_receta=0,
+            total_insumos=0,
+            total_recetas=0,
+            total_subrecetas=0,
+            costo_promedio_general=None,
+            margen_promedio_porcentaje=None,
+            productos_margen_bajo=0,
+            productos_sin_costo=0,
+            productos_sin_precio=0,
+            ultima_sincronizacion=None,
+            sync_run_id=None,
+            source_type=SourceType.EDARSAHUB_SQL,
+        )
     
     try:
-        data = get_resumen_costos_margenes()
+        data = get_resumen_costos_margenes(unidad_negocio_pk=unidad_pk)
         
         return CostosMargenesResumen(
             total_productos=data.get('total_productos', 0),
@@ -275,7 +246,7 @@ async def obtener_resumen(
 @router.get("/productos", response_model=ProductosListResponse)
 async def listar_productos(
     empresa_id: Optional[int] = Query(None, description="Filtrar por empresa"),
-    unidad_negocio_pk: Optional[int] = Query(None, description="Filtrar por unidad de negocio"),
+    unidad_negocio_pk: Optional[str] = Query(None, description="Filtrar por unidad de negocio"),
     unidad: Optional[str] = Query(None, description="CANÓNICO: unidad de negocio (codigo o id)"),
     servidor_id: Optional[str] = Query(None, description="DEPRECATED: usar 'unidad'"),
     sistema_origen: Optional[str] = Query(None, description="Filtrar por sistema (SOFTRESTAURANT_PRO, MPRO)"),
@@ -313,15 +284,14 @@ async def listar_productos(
     
     **Paginación**: page, page_size
     """
-    # FASE 1C-3E: Verificar permisos
-    _verify_costos_margenes_access(current_user)
-    
-    # CANÓNICO: 'unidad' (codigo/id) → server_id vía puerta única (RBAC incluido).
-    # 'servidor_id' queda DEPRECATED (compat).
-    servidor_id_filtro, servidores_ids_filtro, _acc_denied = await _resolve_servidor_filtro(
-        current_user, unidad, servidor_id
+    permission = _verify_costos_margenes_access(current_user)
+    unidad_selector = unidad or unidad_negocio_pk
+    servidor_id_filtro, servidores_ids_filtro, _acc_denied, unidad_pk_filtro = await _resolve_servidor_filtro(
+        current_user,
+        unidad_selector,
+        servidor_id,
+        permission,
     )
-    mpro_menu_listas = _mpro_menu_listas_para_unidad(unidad)
     if _acc_denied:
         return ProductosListResponse(
             productos=[], total=0, page=page, page_size=page_size,
@@ -331,11 +301,10 @@ async def listar_productos(
     try:
         productos_data, total = get_productos_con_costos(
             empresa_id=empresa_id,
-            unidad_negocio_pk=unidad_negocio_pk,
+            unidad_negocio_pk=unidad_pk_filtro,
             servidor_id=servidor_id_filtro,
             servidores_ids=servidores_ids_filtro,  # Nuevo parámetro para RBAC
             sistema_origen=sistema_origen,
-            mpro_menu_listas=mpro_menu_listas,
             familia=familia,
             subfamilia=subfamilia,
             busqueda=busqueda,
@@ -620,23 +589,18 @@ async def listar_unidades_negocio(
     
     **Retorna**: Lista de unidades con código, nombre, server_id
     """
-    _verify_costos_margenes_access(current_user)
-    
-    # FASE P2: RBAC por Unidad de Negocio
-    allowed_servers, es_corporativo = _get_user_allowed_servers(current_user)
+    permission = _verify_costos_margenes_access(current_user)
     
     try:
         unidades = get_unidades_negocio()
-        
-        # Filtrar por servidores permitidos si no es corporativo
-        if not es_corporativo and allowed_servers:
-            unidades = [u for u in unidades if u.get('server_id') in allowed_servers]
+        if permission.get("restriccion_sucursal"):
+            unidades = []
         
         return {
             "unidades": unidades,
             "total": len(unidades),
             "source_type": "EDARSAHUB_SQL",
-            "es_corporativo": es_corporativo  # Indicador para el frontend
+            "es_corporativo": not permission.get("restriccion_sucursal")
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error obteniendo unidades de negocio: {str(e)}")
@@ -662,18 +626,22 @@ async def listar_familias(
     
     **Retorna**: Lista de familias con total de productos por familia
     """
-    _verify_costos_margenes_access(current_user)
-    
-    # CANÓNICO: resolver 'unidad' → server_id (RBAC incluido). 'servidor_id' DEPRECATED.
-    servidor_id_filtro, servidores_ids_filtro, _acc = await _resolve_servidor_filtro(
-        current_user, unidad, servidor_id
+    permission = _verify_costos_margenes_access(current_user)
+    servidor_id_filtro, servidores_ids_filtro, _acc, unidad_pk = await _resolve_servidor_filtro(
+        current_user,
+        unidad,
+        servidor_id,
+        permission,
     )
-    mpro_menu_listas = _mpro_menu_listas_para_unidad(unidad)
     if _acc:
         return {"familias": [], "total": 0, "source_type": "EDARSAHUB_SQL"}
     
     try:
-        familias = get_familias_productos(servidor_id_filtro, servidores_ids_filtro, mpro_menu_listas)
+        familias = get_familias_productos(
+            servidor_id_filtro,
+            servidores_ids_filtro,
+            unidad_negocio_pk=unidad_pk,
+        )
         return {
             "familias": familias,
             "total": len(familias),
@@ -701,15 +669,22 @@ async def listar_subfamilias(
     
     **Retorna**: Lista de subfamilias con total de productos
     """
-    _verify_costos_margenes_access(current_user)
-    
-    servidor_id_filtro, _sids, _acc = await _resolve_servidor_filtro(current_user, unidad, servidor_id)
-    mpro_menu_listas = _mpro_menu_listas_para_unidad(unidad)
+    permission = _verify_costos_margenes_access(current_user)
+    servidor_id_filtro, _sids, _acc, unidad_pk = await _resolve_servidor_filtro(
+        current_user,
+        unidad,
+        servidor_id,
+        permission,
+    )
     if _acc:
         return {"subfamilias": [], "total": 0, "source_type": "EDARSAHUB_SQL"}
     
     try:
-        subfamilias = get_subfamilias_productos(familia, servidor_id_filtro, mpro_menu_listas)
+        subfamilias = get_subfamilias_productos(
+            familia,
+            servidor_id_filtro,
+            unidad_negocio_pk=unidad_pk,
+        )
         return {
             "subfamilias": subfamilias,
             "total": len(subfamilias),
@@ -724,6 +699,9 @@ async def listar_subfamilias(
 @router.get("/exportar")
 async def exportar_productos_csv(
     current_user: dict = Depends(get_current_user),
+    unidad: Optional[str] = Query(None, description="CANÓNICO: unidad de negocio (codigo o id)"),
+    unidad_negocio_pk: Optional[str] = Query(None, description="DEPRECATED: usar unidad"),
+    servidor_id: Optional[str] = Query(None, description="DEPRECATED: usar 'unidad'"),
     familia: Optional[str] = Query(None, description="Filtrar por familia"),
     sistema: Optional[str] = Query(None, description="Filtrar por sistema (SOFTRESTAURANT_PRO, MPRO)"),
     solo_con_receta: bool = Query(False, description="Solo productos con receta"),
@@ -747,11 +725,28 @@ async def exportar_productos_csv(
     - Incluye encabezados
     """
     # FASE 1C-3E: Verificar permisos
-    _verify_costos_margenes_access(current_user)
+    permission = _verify_costos_margenes_access(current_user)
+    servidor_id_filtro, servidores_ids_filtro, access_denied, unidad_pk_filtro = await _resolve_servidor_filtro(
+        current_user,
+        unidad or unidad_negocio_pk,
+        servidor_id,
+        permission,
+    )
+    if access_denied:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "UNIDAD_CANONICA_REQUERIDA",
+                "mensaje": "Use unidad o unidad_negocio_pk para validar alcance RBAC",
+            },
+        )
     
     try:
         # Obtener datos (máximo 10,000 para evitar sobrecarga)
         productos, total = get_productos_con_costos(
+            unidad_negocio_pk=unidad_pk_filtro,
+            servidor_id=servidor_id_filtro,
+            servidores_ids=servidores_ids_filtro,
             page=1,
             page_size=10000,
             familia=familia,
@@ -810,7 +805,7 @@ async def exportar_productos_csv(
         logger = logging.getLogger(__name__)
         logger.info(
             f"EXPORTACIÓN CSV: usuario={current_user.get('email')}, "
-            f"registros={len(productos)}, filtros={{familia={familia}, sistema={sistema}}}"
+            f"registros={len(productos)}, filtros={{unidad={unidad or unidad_negocio_pk}, familia={familia}, sistema={sistema}}}"
         )
         
         return StreamingResponse(

@@ -36,6 +36,7 @@ from modules.finanzas.repository_ingresos_edarsahub import (
     get_repositorio_ingresos,
     get_unidades_activas
 )
+from modules.finanzas.access import resolve_finanzas_unit_filter, require_finanzas_permission
 
 router = APIRouter(prefix="/finanzas/ingresos", tags=["Control de Ingresos"])
 logger = logging.getLogger(__name__)
@@ -342,34 +343,19 @@ async def listar_cortes_caja(
         # Obtener repositorio EDARSAHUB
         repo = get_repositorio_ingresos()
         
-        # Obtener unidades permitidas por RBAC
-        unidades_permitidas = await get_user_unidades_permitidas(current_user)
-        
-        # Si se especifica unidad_negocio_pk, validar que esté permitida
-        if unidad_negocio_pk and unidades_permitidas:
-            if unidad_negocio_pk not in unidades_permitidas:
-                return {
-                    "cortes": [],
-                    "total": 0,
-                    "fuente": "EDARSAHUB_REAL",
-                    "mensaje": "No tiene permisos para ver esta unidad de negocio",
-                    "resumen": {
-                        "total_efectivo": 0,
-                        "total_tarjetas_bruto": 0,
-                        "total_comisiones": 0,
-                        "total_neto_tarjetas": 0,
-                        "total_ventas": 0
-                    }
-                }
+        unidad_pk, unidades_permitidas = resolve_finanzas_unit_filter(
+            current_user,
+            unidad_negocio_pk or (str(sucursal_id) if sucursal_id else None),
+        )
         
         # Obtener cortes desde EDARSAHUB
         cortes = await repo.get_cortes_caja(
-            unidad_negocio_pk=unidad_negocio_pk,
+            unidad_negocio_pk=unidad_pk,
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
             sistema_origen=sistema_origen,
             solo_pendientes_deposito=solo_pendientes,
-            unidades_permitidas=unidades_permitidas if unidades_permitidas else None
+            unidades_permitidas=unidades_permitidas
         )
         
         if not cortes:
@@ -412,11 +398,6 @@ async def listar_cortes_caja(
         
     except Exception as e:
         logger.error(f"[INGRESOS] Error en listar_cortes_caja: {e}")
-        
-        # Si hay error y se pide demo, usar fallback
-        if use_demo:
-            logger.warning("[INGRESOS] Usando datos demo por error en EDARSAHUB")
-            return await _listar_cortes_demo(sucursal_id, fecha_inicio, fecha_fin, solo_pendientes)
         
         raise HTTPException(
             status_code=500,
@@ -475,18 +456,26 @@ async def _listar_cortes_demo(
 
 @router.get("/saldos-por-depositar")
 async def get_saldos_por_depositar(
-    sucursal_id: Optional[int] = None,
+    unidad_negocio_pk: Optional[str] = None,
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Obtener saldos pendientes de depositar (efectivo y tarjetas).
-    NOTA: Usa datos demo legacy. En próxima subfase se conectará a EDARSAHUB.
+    Fuente: EDARSAHUB.Finanzas_CortesCaja.
     """
-    cortes = _cortes_caja_db.copy()
-    datetime.now().strftime("%Y-%m-%d")
-    
-    if sucursal_id:
-        cortes = [c for c in cortes if c["sucursal_id"] == sucursal_id]
+    repo = get_repositorio_ingresos()
+    unidad_pk, unidades_permitidas = resolve_finanzas_unit_filter(
+        current_user,
+        unidad_negocio_pk,
+    )
+    cortes = await repo.get_cortes_caja(
+        unidad_negocio_pk=unidad_pk,
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin,
+        unidades_permitidas=unidades_permitidas,
+    )
     
     # Efectivo pendiente de depositar
     efectivo_pendiente = [c for c in cortes if not c["efectivo_depositado"]]
@@ -542,7 +531,8 @@ async def get_saldos_por_depositar(
             "cantidad_cortes": len(tarjetas_pendiente),
             "por_fecha": sorted(tarjetas_por_fecha.values(), key=lambda x: x["fecha"])
         },
-        "total_por_depositar": round(total_efectivo_pendiente + total_tarjetas_pendiente, 2)
+        "total_por_depositar": round(total_efectivo_pendiente + total_tarjetas_pendiente, 2),
+        "fuente": "EDARSAHUB_REAL"
     }
 
 
@@ -550,46 +540,46 @@ async def get_saldos_por_depositar(
 async def get_resumen_comisiones(
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
-    sucursal_id: Optional[int] = None,
+    unidad_negocio_pk: Optional[str] = None,
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Resumen de comisiones por tipo de tarjeta.
     """
-    cortes = _cortes_caja_db.copy()
-    
-    if sucursal_id:
-        cortes = [c for c in cortes if c["sucursal_id"] == sucursal_id]
-    if fecha_inicio:
-        cortes = [c for c in cortes if c["fecha_corte"] >= fecha_inicio]
-    if fecha_fin:
-        cortes = [c for c in cortes if c["fecha_corte"] <= fecha_fin]
-    
-    resumen = {
-        "debito": {
-            "ventas": sum(c["debito"] for c in cortes),
-            "comisiones": sum(c["debito_comision"] for c in cortes),
-            "neto": sum(c["debito_neto"] for c in cortes),
-            "tasa": "1.2% + IVA"
-        },
-        "credito": {
-            "ventas": sum(c["credito"] for c in cortes),
-            "comisiones": sum(c["credito_comision"] for c in cortes),
-            "neto": sum(c["credito_neto"] for c in cortes),
-            "tasa": "1.5% + IVA"
-        },
-        "amex": {
-            "ventas": sum(c["amex"] for c in cortes),
-            "comisiones": sum(c["amex_comision"] for c in cortes),
-            "neto": sum(c["amex_neto"] for c in cortes),
-            "tasa": "2.4% + IVA"
-        },
-        "internacional": {
-            "ventas": sum(c["internacional"] for c in cortes),
-            "comisiones": sum(c["internacional_comision"] for c in cortes),
-            "neto": sum(c["internacional_neto"] for c in cortes),
-            "tasa": "2.0% + IVA"
+    repo = get_repositorio_ingresos()
+    unidad_pk, unidades_permitidas = resolve_finanzas_unit_filter(
+        current_user,
+        unidad_negocio_pk,
+    )
+    cortes = await repo.get_cortes_caja(
+        unidad_negocio_pk=unidad_pk,
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin,
+        unidades_permitidas=unidades_permitidas,
+    )
+
+    def resumen_tipo(tipo, venta_key, comision_key, neto_key):
+        ventas = sum(float(c.get(venta_key) or 0) for c in cortes)
+        comisiones = sum(float(c.get(comision_key) or 0) for c in cortes)
+        neto = sum(float(c.get(neto_key) or 0) for c in cortes)
+        tasa = round((comisiones / ventas) * 100, 3) if ventas else 0
+        return {
+            "ventas": round(ventas, 2),
+            "comisiones": round(comisiones, 2),
+            "neto": round(neto, 2),
+            "tasa": f"{tasa}%"
         }
+
+    resumen = {
+        "debito": resumen_tipo("debito", "debito", "debito_comision", "debito_neto"),
+        "credito": resumen_tipo("credito", "credito", "credito_comision", "credito_neto"),
+        "amex": resumen_tipo("amex", "amex", "amex_comision", "amex_neto"),
+        "internacional": resumen_tipo(
+            "internacional",
+            "internacional",
+            "internacional_comision",
+            "internacional_neto",
+        )
     }
     
     # Redondear
@@ -612,7 +602,8 @@ async def get_resumen_comisiones(
         "periodo": {
             "inicio": fecha_inicio,
             "fin": fecha_fin
-        }
+        },
+        "fuente": "EDARSAHUB_REAL"
     }
 
 
@@ -623,19 +614,14 @@ async def registrar_deposito_efectivo(
     current_user: Dict = Depends(get_current_user)
 ):
     """Registrar depósito de efectivo de un corte"""
-    corte = next((c for c in _cortes_caja_db if c["corte_id"] == corte_id), None)
-    if not corte:
-        raise HTTPException(status_code=404, detail="Corte no encontrado")
-    
-    corte["efectivo_depositado"] = True
-    corte["efectivo_referencia_deposito"] = data.referencia_deposito
-    corte["observaciones"] = data.observaciones
-    
-    # Verificar si ya está completamente conciliado
-    if corte["tarjetas_depositadas"]:
-        corte["conciliado"] = True
-    
-    return {"success": True, "corte": corte}
+    require_finanzas_permission(current_user)
+    raise HTTPException(
+        status_code=409,
+        detail=(
+            "Registro de deposito bloqueado: no existe flujo canonico "
+            "de conciliacion sobre EDARSAHUB para este corte."
+        ),
+    )
 
 
 @router.put("/cortes-caja/{corte_id}/deposito-tarjetas")
@@ -645,18 +631,14 @@ async def registrar_deposito_tarjetas(
     current_user: Dict = Depends(get_current_user)
 ):
     """Registrar depósito de tarjetas (NetPay) de un corte"""
-    corte = next((c for c in _cortes_caja_db if c["corte_id"] == corte_id), None)
-    if not corte:
-        raise HTTPException(status_code=404, detail="Corte no encontrado")
-    
-    corte["tarjetas_depositadas"] = True
-    corte["tarjetas_referencia_netpay"] = referencia_netpay
-    
-    # Verificar si ya está completamente conciliado
-    if corte["efectivo_depositado"]:
-        corte["conciliado"] = True
-    
-    return {"success": True, "corte": corte}
+    require_finanzas_permission(current_user)
+    raise HTTPException(
+        status_code=409,
+        detail=(
+            "Registro de deposito bloqueado: no existe flujo canonico "
+            "de conciliacion sobre EDARSAHUB para este corte."
+        ),
+    )
 
 
 @router.post("/cargar-estado-cuenta")
@@ -672,33 +654,14 @@ async def cargar_estado_cuenta(
     # Por ahora solo guardamos la metadata
     # En producción: parsear el archivo y extraer movimientos
     
-    await archivo.read()
-    
-    # Simular extracción de movimientos
-    movimientos_extraidos = [
-        {
-            "id": len(_movimientos_banco_db) + i + 1,
-            "banco": banco,
-            "fecha": (datetime.now() - timedelta(days=demo_randint(1, 30))).strftime("%Y-%m-%d"),
-            "concepto": demo_choice(["DEPOSITO EFECTIVO", "NETPAY SA DE CV", "TRASPASO", "COMISION"]),
-            "cargo": round(demo_uniform(0, 5000), 2) if demo_random() > 0.7 else 0,
-            "abono": round(demo_uniform(5000, 100000), 2) if demo_random() > 0.3 else 0,
-            "saldo": round(demo_uniform(100000, 500000), 2),
-            "referencia": f"REF-{demo_randint(10000, 99999)}",
-            "conciliado": False,
-            "corte_id_relacionado": None
-        }
-        for i in range(demo_randint(15, 30))
-    ]
-    
-    _movimientos_banco_db.extend(movimientos_extraidos)
-    
-    return {
-        "success": True,
-        "mensaje": f"Estado de cuenta de {banco} cargado correctamente",
-        "archivo": archivo.filename,
-        "movimientos_extraidos": len(movimientos_extraidos)
-    }
+    require_finanzas_permission(current_user)
+    raise HTTPException(
+        status_code=409,
+        detail=(
+            "Carga de estado de cuenta bloqueada: no existe repositorio "
+            "canonico de conciliacion bancaria para este flujo."
+        ),
+    )
 
 
 @router.get("/movimientos-banco")
@@ -707,15 +670,13 @@ async def listar_movimientos_banco(
     current_user: Dict = Depends(get_current_user)
 ):
     """Listar movimientos bancarios cargados"""
-    movimientos = _movimientos_banco_db.copy()
-    
-    if solo_pendientes:
-        movimientos = [m for m in movimientos if not m["conciliado"]]
-    
+    require_finanzas_permission(current_user)
     return {
-        "movimientos": movimientos,
-        "total": len(movimientos),
-        "pendientes": len([m for m in _movimientos_banco_db if not m["conciliado"]])
+        "movimientos": [],
+        "total": 0,
+        "pendientes": 0,
+        "fuente": "EDARSAHUB_REAL",
+        "mensaje": "Sin repositorio canonico de conciliacion bancaria configurado."
     }
 
 
@@ -724,22 +685,14 @@ async def get_config_comisiones(
     current_user: Dict = Depends(get_current_user)
 ):
     """Obtener configuración de comisiones actual"""
+    require_finanzas_permission(current_user)
     return {
-        "comisiones": {
-            tipo: {
-                "nombre": config["nombre"],
-                "comision_porcentaje": config["comision"] * 100,
-                "dias_deposito": config["dias_deposito"],
-                "iva": IVA * 100,
-                "comision_total_porcentaje": round(config["comision"] * (1 + IVA) * 100, 3)
-            }
-            for tipo, config in COMISIONES_TARJETAS.items()
-        },
-        "proveedor": "NetPay",
-        "notas": [
-            "Comisiones incluyen IVA (16%)",
-            "Efectivo: depósito día siguiente (Vie/Sáb/Dom → Lunes)",
-            "Débito/Crédito: 24 hrs hábiles",
-            "AMEX/Internacional: 48 hrs hábiles"
-        ]
+        "comisiones": {},
+        "proveedor": None,
+        "notas": [],
+        "fuente": "EDARSAHUB_REAL",
+        "mensaje": (
+            "Las comisiones se leen desde cada corte sincronizado en "
+            "Finanzas_CortesCaja; no hay tabla canonica de reglas vigente."
+        )
     }

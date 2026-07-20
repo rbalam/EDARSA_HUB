@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import logger from '../services/logger';
-import { getSessionUser } from '../services/authStorage';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/api';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
@@ -28,7 +27,6 @@ import { useFinanzasCorporateFilters } from '../filters';
 import { FinanzasCuentasPorPagar, FinanzasControlIngresos, FinanzasDashboard, FinanzasPresupuestos } from '../components/finanzas';
 import { CuentasBancariasPage } from '../components/finanzas/cuentas-bancarias';
 import { Landmark } from 'lucide-react';
-import { isAdminRole } from '../lib/roleUtils';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -66,7 +64,6 @@ function FinanzasContent() {
   const [loading, setLoading] = useState(false);
   const [dashboard, setDashboard] = useState(null);
   const [presupuestos, setPresupuestos] = useState([]);
-  const [sucursales, setSucursales] = useState([]);
   const [categorias, setCategorias] = useState([]);
   
   // Filtros
@@ -88,36 +85,6 @@ function FinanzasContent() {
   const [cxpFiltroSucursal, setCxpFiltroSucursal] = useState('');
   const [cxpFiltroProveedor, setCxpFiltroProveedor] = useState('');
   
-  // === PERMISOS DE USUARIO - MIGRACIÓN A empresas_permitidas ===
-  // userPermissions ahora se deriva de unidadesNegocio (contexto RBAC)
-  const userPermissions = useMemo(() => {
-    // Si hay unidades cargadas, el usuario tiene acceso según RBAC
-    const user = getSessionUser();
-    const isAdmin = isAdminRole(user);
-    
-    // Extraer sucursales únicas de todas las unidades de negocio
-    const allowedSucursales = [];
-    unidadesNegocio.forEach(unidad => {
-      if (unidad.sucursales) {
-        unidad.sucursales.forEach(s => {
-          const sucId = s.id || s.nombre;
-          if (sucId && !allowedSucursales.includes(sucId)) {
-            allowedSucursales.push(sucId);
-          }
-        });
-      }
-      if (unidad.sucursal_origen_id && !allowedSucursales.includes(unidad.sucursal_origen_id)) {
-        allowedSucursales.push(unidad.sucursal_origen_id);
-      }
-    });
-    
-    return {
-      allowedSucursales,
-      canSeeAll: isAdmin || unidadesNegocio.length > 1,
-      role: user?.role || ''
-    };
-  }, [unidadesNegocio]);
-
   useEffect(() => {
     if (authLoading) return undefined;
 
@@ -290,7 +257,7 @@ function FinanzasContent() {
   
   // Form
   const [formPresupuesto, setFormPresupuesto] = useState({
-    sucursal_id: '',
+    unidad_negocio_pk: '',
     categoria: '',
     subcategoria: '',
     tipo: 'Egreso',
@@ -317,13 +284,6 @@ function FinanzasContent() {
     return unidadesNegocio.find(u => u.id === selectedUnidad) || null;
   }, [unidadesNegocio, selectedUnidad]);
   
-  // MIGRACIÓN: Auto-seleccionar sucursal para CxP si el usuario tiene una sola
-  useEffect(() => {
-    if (userPermissions.allowedSucursales.length === 1 && !userPermissions.canSeeAll) {
-      setCxpFiltroSucursal(userPermissions.allowedSucursales[0]);
-    }
-  }, [userPermissions]);
-  
   const meses = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
@@ -343,7 +303,7 @@ function FinanzasContent() {
       const params = new URLSearchParams({
         anio: filtroAnio,
         mes: filtroMes,
-        ...(selectedUnidad && { server_id: selectedUnidad })
+        ...(selectedUnidad && { unidad_negocio_pk: selectedUnidad })
       });
       const data = await fetchWithAuth(`/finanzas/dashboard?${params}`);
       setDashboard(data);
@@ -361,7 +321,7 @@ function FinanzasContent() {
       const params = new URLSearchParams({
         anio: filtroAnio,
         ...(filtroMes && { mes: filtroMes }),
-        ...(selectedUnidad && { server_id: selectedUnidad })
+        ...(selectedUnidad && { unidad_negocio_pk: selectedUnidad })
       });
       const data = await fetchWithAuth(`/finanzas/presupuestos?${params}`);
       setPresupuestos(data.presupuestos || []);
@@ -371,16 +331,6 @@ function FinanzasContent() {
       setLoading(false);
     }
   }, [fetchWithAuth, filtroAnio, filtroMes, selectedUnidad]);
-  
-  // Load sucursales (RH - para dashboard e ingresos)
-  const loadSucursales = useCallback(async () => {
-    try {
-      const data = await fetchWithAuth('/rrhh/catalogos/sucursales');
-      setSucursales(data.sucursales || []);
-    } catch (error) {
-      logger.error('Error:', error);
-    }
-  }, [fetchWithAuth]);
   
   // Load sucursales CxP (MPRO - para cuentas por pagar)
   const loadCxpSucursales = useCallback(async () => {
@@ -408,46 +358,8 @@ function FinanzasContent() {
     try {
       const params = new URLSearchParams();
       
-      // === FASE 1 CxP: Usar selectedUnidad como filtro principal ===
-      // DOCUMENTACIÓN: selectedUnidad contiene el UUID de la unidad de negocio
-      // El backend espera sucursal_id con el código/nombre de la unidad (ej: "CIENFUEGOS", "130MID")
-      // Mapeamos selectedUnidad → código de unidad para compatibilidad legacy
-      
-      let sucursalAEnviar = '';
-      
-      // Prioridad 1: Si hay unidad de negocio seleccionada, usar su código
-      if (selectedUnidad) {
-        const unidadObj = unidadesNegocio.find(u => u.id === selectedUnidad);
-        if (unidadObj) {
-          // Usar el código de la unidad (ej: "CIENFUEGOS", "130MID", "ESTELAR")
-          sucursalAEnviar = unidadObj.codigo || unidadObj.nombre;
-          logger.log(`[CxP] Filtro por unidad de negocio: ${unidadObj.nombre} → código: ${sucursalAEnviar}`);
-        }
-      }
-      
-      // Prioridad 2: Si no hay unidad pero hay filtro de sucursal específico, usarlo
-      if (!sucursalAEnviar && cxpFiltroSucursal) {
-        sucursalAEnviar = cxpFiltroSucursal;
-        logger.log(`[CxP] Filtro por sucursal legacy: ${sucursalAEnviar}`);
-      }
-      
-      // === SEGURIDAD: Validar permisos ===
-      // Si el usuario NO puede ver "Todas" y no seleccionó unidad, forzar su primera permitida
-      if (!userPermissions.canSeeAll && !sucursalAEnviar && userPermissions.allowedSucursales.length > 0) {
-        sucursalAEnviar = userPermissions.allowedSucursales[0];
-        logger.log(`[CxP] Usuario sin permiso global, forzando: ${sucursalAEnviar}`);
-      }
-      
-      // Si el usuario NO puede ver "Todas" pero seleccionó una sucursal no permitida, forzar la primera permitida
-      if (!userPermissions.canSeeAll && sucursalAEnviar && 
-          userPermissions.allowedSucursales.length > 0 && 
-          !userPermissions.allowedSucursales.includes(sucursalAEnviar)) {
-        sucursalAEnviar = userPermissions.allowedSucursales[0];
-        setCxpFiltroSucursal(sucursalAEnviar); // Corregir el estado también
-        logger.log(`[CxP] Sucursal no permitida, forzando: ${sucursalAEnviar}`);
-      }
-      
-      if (sucursalAEnviar) params.append('sucursal_id', sucursalAEnviar);
+      const unidadCxp = selectedUnidad || cxpFiltroSucursal || '';
+      if (unidadCxp) params.append('unidad_negocio_pk', unidadCxp);
       if (cxpFiltroProveedor) params.append('proveedor_id', cxpFiltroProveedor);
       if (cxpFechaCorte) params.append('fecha_corte', cxpFechaCorte);
       if (cxpSoloVencidas) params.append('solo_vencidas', 'true');
@@ -457,48 +369,18 @@ function FinanzasContent() {
       
       const [dataFacturas, dataResumen, dataProveedores] = await Promise.all([
         fetchWithAuth(`/finanzas/cuentas-por-pagar?${params}`),
-        fetchWithAuth(`/finanzas/cuentas-por-pagar/resumen${sucursalAEnviar ? `?sucursal_id=${sucursalAEnviar}` : ''}`),
-        fetchWithAuth(`/finanzas/cuentas-por-pagar/proveedores${sucursalAEnviar ? `?sucursal_id=${sucursalAEnviar}` : ''}`)
+        fetchWithAuth(`/finanzas/cuentas-por-pagar/resumen?${params}`),
+        fetchWithAuth(`/finanzas/cuentas-por-pagar/proveedores?${params}`)
       ]);
-      
-      // PRE-SELECCIONAR facturas vencidas automáticamente
-      let contadorVencidasPreseleccionadas = 0;
-      let contadorTotal = 0;
-      
-      const dataConPreseleccion = {
-        ...dataFacturas,
-        proveedores: (dataFacturas.proveedores || []).map(proveedor => ({
-          ...proveedor,
-          facturas: (proveedor.facturas || []).map(factura => {
-            contadorTotal++;
-            // Si está vencida (dias_vencida > 0), marcarla para pago
-            const diasVencida = parseInt(factura.dias_vencida) || 0;
-            const estaVencida = diasVencida > 0;
-            const saldo = parseFloat(factura.saldo) || 0;
-            
-            if (estaVencida) {
-              contadorVencidasPreseleccionadas++;
-            }
-            
-            return {
-              ...factura,
-              decision_pago: estaVencida,
-              importe_a_pagar: estaVencida ? saldo : 0
-            };
-          })
-        }))
-      };
-      
-      logger.log(`[CxP] Pre-selección: ${contadorVencidasPreseleccionadas} vencidas de ${contadorTotal} total`);
-      
-      setCxpData(dataConPreseleccion);
+
+      setCxpData(dataFacturas);
       setCxpResumen(dataResumen);
       setCxpProveedores(dataProveedores.proveedores || []);
       
       // PRESERVAR estado de expansión existente, solo agregar nuevos si no existen
       setCxpExpandidos(prevExpandidos => {
         const nuevosExpandidos = { ...prevExpandidos };
-        (dataConPreseleccion.proveedores || []).forEach(p => {
+        (dataFacturas.proveedores || []).forEach(p => {
           // Solo expandir si no existe estado previo (primera carga)
           if (nuevosExpandidos[p.proveedor_id] === undefined) {
             nuevosExpandidos[p.proveedor_id] = true;
@@ -510,7 +392,7 @@ function FinanzasContent() {
       // También preservar categorías expandidas
       setCxpCategoriasExpandidas(prevCategorias => {
         const nuevasCategorias = { ...prevCategorias };
-        (dataConPreseleccion.proveedores || []).forEach(p => {
+        (dataFacturas.proveedores || []).forEach(p => {
           const tipo = p.proveedor_id; // A, B, X, M
           if (nuevasCategorias[tipo] === undefined) {
             nuevasCategorias[tipo] = true;
@@ -525,7 +407,7 @@ function FinanzasContent() {
     } finally {
       setLoading(false);
     }
-  }, [fetchWithAuth, selectedUnidad, unidadesNegocio, cxpFiltroSucursal, cxpFiltroProveedor, cxpFechaCorte, cxpSoloVencidas, cxpSoloDecision, userPermissions]);
+  }, [fetchWithAuth, selectedUnidad, cxpFiltroSucursal, cxpFiltroProveedor, cxpFechaCorte, cxpSoloVencidas, cxpSoloDecision]);
   
   // Actualizar decisión de pago
   const handleDecisionPago = async (facturaId, decision, importeAPagar = null) => {
@@ -635,7 +517,7 @@ function FinanzasContent() {
       toast.success(`${data.actualizadas} facturas vencidas marcadas para pago`);
       loadCuentasPorPagar();
     } catch (error) {
-      toast.error('Error al marcar facturas');
+      toast.error(error.response?.data?.detail || 'Error al marcar facturas');
     } finally {
       setLoading(false);
     }
@@ -668,7 +550,7 @@ function FinanzasContent() {
       toast.success(`${data.actualizadas} facturas desmarcadas`);
       loadCuentasPorPagar();
     } catch (error) {
-      toast.error('Error al desmarcar facturas');
+      toast.error(error.response?.data?.detail || 'Error al desmarcar facturas');
     } finally {
       setLoading(false);
     }
@@ -687,54 +569,21 @@ function FinanzasContent() {
     const cantidadFacturas = proveedor.facturas.length;
     const proveedorNombre = proveedor.proveedor_nombre;
     
-    // Obtener los IDs de las facturas del proveedor
-    const facturasIdsSet = new Set(proveedor.facturas.map(f => f.factura_id));
-    
-    // Actualizar estado local PRIMERO (respuesta inmediata al usuario)
-    // La estructura es: proveedores = [categorías], cada categoría tiene facturas
-    // Las facturas tienen proveedor_nombre que indica a qué proveedor pertenecen
-    setCxpData(prevData => {
-      if (!prevData?.proveedores) return prevData;
-      
-      const nuevosProveedores = prevData.proveedores.map(categoria => {
-        // Actualizar solo las facturas que pertenecen al proveedor seleccionado
-        const nuevasFacturas = categoria.facturas.map(f => {
-          if (facturasIdsSet.has(f.factura_id)) {
-            return {
-              ...f,
-              decision_pago: nuevaDecision,
-              importe_a_pagar: nuevaDecision ? (parseFloat(f.saldo) || 0) : 0
-            };
-          }
-          return f;
-        });
-        
-        return {
-          ...categoria,
-          facturas: nuevasFacturas
-        };
-      });
-      
-      return { ...prevData, proveedores: nuevosProveedores };
-    });
-    
-    // Mostrar feedback inmediato
-    toast.success(
-      nuevaDecision 
-        ? `${cantidadFacturas} facturas de ${proveedorNombre} marcadas para pago` 
-        : `${cantidadFacturas} facturas de ${proveedorNombre} desmarcadas`
-    );
-    
-    // Intentar persistir en backend (no bloquea UI si falla)
     try {
       const facturasIds = proveedor.facturas.map(f => f.factura_id);
       await api.put('/finanzas/cuentas-por-pagar/decision-pago-masivo', {
         facturas_ids: facturasIds,
         decision_pago: nuevaDecision
       });
+      toast.success(
+        nuevaDecision
+          ? `${cantidadFacturas} facturas de ${proveedorNombre} marcadas para pago`
+          : `${cantidadFacturas} facturas de ${proveedorNombre} desmarcadas`
+      );
+      loadCuentasPorPagar();
     } catch (error) {
-      // Solo log, no mostrar error al usuario ya que el estado local ya se actualizó
-      logger.warn('[CxP] Backend sync failed (continuing with local state):', error);
+      logger.warn('[CxP] Decisión de pago bloqueada:', error);
+      toast.error(error.response?.data?.detail || 'No se pudo actualizar la decisión de pago');
     }
   };
   
@@ -780,7 +629,7 @@ function FinanzasContent() {
       
       const [dataCortes, dataSaldos, dataComisiones, dataConfig] = await Promise.all([
         fetchWithAuth(`/finanzas/ingresos/cortes-caja?${params}`),
-        fetchWithAuth(`/finanzas/ingresos/saldos-por-depositar${selectedUnidad ? `?unidad_negocio_id=${selectedUnidad}` : ''}`),
+        fetchWithAuth(`/finanzas/ingresos/saldos-por-depositar?${params}`),
         fetchWithAuth(`/finanzas/ingresos/resumen-comisiones?${params}`),
         fetchWithAuth('/finanzas/ingresos/config-comisiones')
       ]);
@@ -810,7 +659,7 @@ function FinanzasContent() {
       toast.success('Depósito de efectivo registrado');
       loadIngresos();
     } catch (error) {
-      toast.error('Error al registrar depósito');
+      toast.error(error.response?.data?.detail || 'Error al registrar depósito');
     }
   };
   
@@ -822,16 +671,15 @@ function FinanzasContent() {
       toast.success('Depósito de tarjetas registrado');
       loadIngresos();
     } catch (error) {
-      toast.error('Error al registrar depósito');
+      toast.error(error.response?.data?.detail || 'Error al registrar depósito');
     }
   };
   
   // Initial load
   useEffect(() => {
-    loadSucursales();
     loadCategorias();
-    loadCxpSucursales();  // Cargar sucursales de MPRO para CxP
-  }, [loadSucursales, loadCategorias, loadCxpSucursales]);
+    loadCxpSucursales();
+  }, [loadCategorias, loadCxpSucursales]);
   
   // Load data on tab change or filter change
   useEffect(() => {
@@ -858,7 +706,7 @@ function FinanzasContent() {
   const handleNuevoPresupuesto = () => {
     setEditingPresupuesto(null);
     setFormPresupuesto({
-      sucursal_id: '',
+      unidad_negocio_pk: selectedUnidad || '',
       categoria: '',
       subcategoria: '',
       tipo: 'Egreso',
@@ -873,7 +721,7 @@ function FinanzasContent() {
   const handleEditarPresupuesto = (pres) => {
     setEditingPresupuesto(pres);
     setFormPresupuesto({
-      sucursal_id: pres.SucursalID?.toString() || '',
+      unidad_negocio_pk: pres.UnidadNegocioID?.toString() || '',
       categoria: pres.Categoria || '',
       subcategoria: pres.SubCategoria || '',
       tipo: pres.Tipo || 'Egreso',
@@ -886,8 +734,8 @@ function FinanzasContent() {
   };
   
   const handleGuardarPresupuesto = async () => {
-    if (!formPresupuesto.sucursal_id || !formPresupuesto.categoria) {
-      toast.error('Sucursal y categoría son requeridos');
+    if (!formPresupuesto.unidad_negocio_pk || !formPresupuesto.categoria) {
+      toast.error('Unidad de negocio y categoría son requeridas');
       return;
     }
     
@@ -1152,7 +1000,6 @@ function FinanzasContent() {
         unidadesNegocio={unidadesNegocio}
         selectedUnidad={selectedUnidad}
         loadingUnidades={loadingUnidades}
-        userPermissions={userPermissions}
         cxpFiltroSucursal={cxpFiltroSucursal}
         cxpFiltroProveedor={cxpFiltroProveedor}
         cxpBusquedaProveedor={cxpBusquedaProveedor}
@@ -1414,16 +1261,16 @@ function FinanzasContent() {
             
             <div className="p-6 space-y-4">
               <div>
-                <Label className="text-sm font-medium">Sucursal *</Label>
+                <Label className="text-sm font-medium">Unidad de Negocio *</Label>
                 <select
-                  value={formPresupuesto.sucursal_id}
-                  onChange={(e) => setFormPresupuesto({...formPresupuesto, sucursal_id: e.target.value})}
+                  value={formPresupuesto.unidad_negocio_pk}
+                  onChange={(e) => setFormPresupuesto({...formPresupuesto, unidad_negocio_pk: e.target.value})}
                   className="mt-1 w-full px-3 py-2 border rounded-lg text-sm"
                   disabled={editingPresupuesto}
                 >
                   <option value="">Seleccionar...</option>
-                  {sucursales.map(s => (
-                    <option key={s.SucursalID} value={s.SucursalID}>{s.Nombre_Sucursal}</option>
+                  {unidadesNegocio.map(u => (
+                    <option key={u.id} value={u.id}>{u.nombre}</option>
                   ))}
                 </select>
               </div>

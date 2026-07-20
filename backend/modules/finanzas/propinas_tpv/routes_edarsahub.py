@@ -27,6 +27,18 @@ from fastapi import APIRouter, HTTPException, Depends, Query, Request
 
 from core.security import get_current_user_dual
 from .repository_edarsahub import PropinasTPVRepositoryEdarsahub
+from .models import PropinasConfigCreate
+from .sql_repository import PropinasTPVSQLRepository
+from modules.finanzas.access import (
+    FINANZAS_ADMINISTRAR,
+    FINANZAS_EDITAR,
+    FINANZAS_VER,
+    filter_unidades_for_finanzas,
+    get_finanzas_allowed_unidad_pks,
+    require_any_finanzas_permission,
+    require_finanzas_permission,
+    resolve_finanzas_unit_filter,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -61,58 +73,7 @@ async def get_unidades_permitidas_rbac(current_user: dict) -> Optional[List[str]
         None si es admin (sin restricción)
         Lista de UnidadNegocioID si tiene restricciones
     """
-    from server import db
-    
-    # Verificar rol admin
-    role = current_user.get('role', '')
-    if role.lower() in ['admin', 'superadmin', 'administrador', 'superadministrador']:
-        return None  # Sin restricción
-    
-    # Obtener empresas_permitidas del usuario
-    empresas_permitidas = current_user.get('empresas_permitidas', [])
-    if not empresas_permitidas:
-        return None  # Sin restricción (legacy)
-    
-    # Mapear empresas a UnidadNegocioID desde SQL canónico
-    try:
-        from core.db import execute_sql_query
-        ids = [str(x).replace("'", "''") for x in empresas_permitidas if x]
-        if not ids:
-            return None
-        in_clause = ",".join([f"'{x}'" for x in ids])
-        empresas = execute_sql_query(f"""
-            SELECT id, codigo, nombre
-            FROM Empresas
-            WHERE id IN ({in_clause})
-        """) or []
-        
-        if not empresas:
-            return None
-        
-        # Buscar unidades de negocio asociadas en EDARSAHUB
-        from .repository_edarsahub import PropinasTPVRepositoryEdarsahub
-        repo = PropinasTPVRepositoryEdarsahub()
-        unidades = repo.obtener_unidades_disponibles()
-        
-        # Filtrar por empresas permitidas (matching por nombre/código)
-        codigos_permitidos = set()
-        for e in empresas:
-            if e.get('codigo'):
-                codigos_permitidos.add(e['codigo'].upper())
-            if e.get('nombre'):
-                codigos_permitidos.add(e['nombre'].upper())
-        
-        unidades_ids = []
-        for u in unidades:
-            nombre_upper = (u.get('unidad_negocio_nombre') or '').upper()
-            if any(cod in nombre_upper for cod in codigos_permitidos):
-                unidades_ids.append(u['unidad_negocio_pk'])
-        
-        return unidades_ids if unidades_ids else None
-        
-    except Exception as e:
-        logger.warning(f"Error obteniendo unidades RBAC: {e}")
-        return None
+    return get_finanzas_allowed_unidad_pks(current_user, FINANZAS_VER)
 
 
 # ============================================================================
@@ -138,19 +99,22 @@ async def resumen_propinas_edarsahub(
     fecha_inicio: str = Query(..., description="Fecha inicio YYYY-MM-DD"),
     fecha_fin: str = Query(..., description="Fecha fin YYYY-MM-DD"),
     unidad_negocio_pk: Optional[str] = Query(None, description="Filtrar por UnidadNegocioID (o 'TODAS')"),
+    unidad_negocio_id: Optional[str] = Query(None, description="DEPRECATED: usar unidad_negocio_pk"),
     sistema_origen: Optional[str] = Query(None, description="Filtrar por SistemaOrigen (SoftRestaurant, MPRO)"),
     current_user: dict = Depends(get_user_v2)
 ):
     """Resumen de propinas TPV desde EDARSAHUB"""
     try:
-        # RBAC
-        unidades_permitidas = await get_unidades_permitidas_rbac(current_user)
+        unidad_pk, unidades_permitidas = resolve_finanzas_unit_filter(
+            current_user,
+            unidad_negocio_pk or unidad_negocio_id,
+        )
         
         repo = PropinasTPVRepositoryEdarsahub()
         result = repo.obtener_resumen(
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
-            unidad_negocio_pk=unidad_negocio_pk,
+            unidad_negocio_pk=unidad_pk,
             sistema_origen=sistema_origen,
             unidades_permitidas=unidades_permitidas
         )
@@ -185,6 +149,7 @@ async def detalle_propinas_edarsahub(
     fecha_inicio: str = Query(..., description="Fecha inicio YYYY-MM-DD"),
     fecha_fin: str = Query(..., description="Fecha fin YYYY-MM-DD"),
     unidad_negocio_pk: Optional[str] = Query(None, description="Filtrar por UnidadNegocioID"),
+    unidad_negocio_id: Optional[str] = Query(None, description="DEPRECATED: usar unidad_negocio_pk"),
     sistema_origen: Optional[str] = Query(None, description="Filtrar por SistemaOrigen"),
     forma_pago: Optional[str] = Query(None, description="Filtrar por FormaPagoNombre"),
     page: int = Query(1, ge=1, description="Página"),
@@ -193,14 +158,16 @@ async def detalle_propinas_edarsahub(
 ):
     """Detalle de propinas TPV desde EDARSAHUB"""
     try:
-        # RBAC
-        unidades_permitidas = await get_unidades_permitidas_rbac(current_user)
+        unidad_pk, unidades_permitidas = resolve_finanzas_unit_filter(
+            current_user,
+            unidad_negocio_pk or unidad_negocio_id,
+        )
         
         repo = PropinasTPVRepositoryEdarsahub()
         result = repo.obtener_detalle(
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
-            unidad_negocio_pk=unidad_negocio_pk,
+            unidad_negocio_pk=unidad_pk,
             sistema_origen=sistema_origen,
             forma_pago=forma_pago,
             page=page,
@@ -233,6 +200,7 @@ async def listado_propinas_edarsahub(
     fecha_inicio: Optional[str] = Query(None, description="Fecha inicio YYYY-MM-DD"),
     fecha_fin: Optional[str] = Query(None, description="Fecha fin YYYY-MM-DD"),
     unidad_negocio_pk: Optional[str] = Query(None, description="Filtrar por UnidadNegocioID"),
+    unidad_negocio_id: Optional[str] = Query(None, description="DEPRECATED: usar unidad_negocio_pk"),
     sistema_origen: Optional[str] = Query(None, description="Filtrar por SistemaOrigen"),
     forma_pago: Optional[str] = Query(None, description="Filtrar por FormaPagoNombre"),
     page: int = Query(1, ge=1),
@@ -247,14 +215,16 @@ async def listado_propinas_edarsahub(
         if not fecha_fin:
             fecha_fin = datetime.now().strftime('%Y-%m-%d')
         
-        # RBAC
-        unidades_permitidas = await get_unidades_permitidas_rbac(current_user)
+        unidad_pk, unidades_permitidas = resolve_finanzas_unit_filter(
+            current_user,
+            unidad_negocio_pk or unidad_negocio_id,
+        )
         
         repo = PropinasTPVRepositoryEdarsahub()
         result = repo.obtener_propinas(
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
-            unidad_negocio_pk=unidad_negocio_pk,
+            unidad_negocio_pk=unidad_pk,
             sistema_origen=sistema_origen,
             forma_pago=forma_pago,
             page=page,
@@ -289,7 +259,10 @@ async def unidades_disponibles(
     """Lista de unidades con propinas TPV"""
     try:
         repo = PropinasTPVRepositoryEdarsahub()
-        unidades = repo.obtener_unidades_disponibles()
+        unidades = filter_unidades_for_finanzas(
+            repo.obtener_unidades_disponibles(),
+            current_user,
+        )
         
         return {
             'unidades': unidades,
@@ -300,6 +273,133 @@ async def unidades_disponibles(
     except Exception as e:
         logger.error(f"Error obteniendo unidades: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# ENDPOINTS: CONFIGURACION SQL CANONICA
+# ============================================================================
+
+def _config_repo() -> PropinasTPVSQLRepository:
+    return PropinasTPVSQLRepository(None)
+
+
+def _enum_value(value):
+    return getattr(value, "value", value)
+
+
+def _config_request_to_sql(
+    request: PropinasConfigCreate,
+    current_user: dict,
+    *,
+    updating: bool = False,
+) -> dict:
+    payload = request.dict()
+    alcance = payload.get("alcance") or {}
+    vigencia = payload.get("vigencia") or {}
+    parametros = payload.get("parametros") or {}
+    usuario = (
+        current_user.get("email")
+        or current_user.get("username")
+        or str(current_user.get("UsuarioID") or "")
+        or "sistema"
+    )
+
+    data = {
+        "alcance_tipo": _enum_value(alcance.get("tipo")),
+        "alcance_server_id": alcance.get("server_id"),
+        "alcance_empresa_id": alcance.get("empresa_id"),
+        "alcance_sucursal_id": alcance.get("sucursal_id"),
+        "vigencia_inicio": vigencia.get("fecha_inicio"),
+        "vigencia_fin": vigencia.get("fecha_fin"),
+        "activa": bool(vigencia.get("activa", True)),
+        "porcentaje_comision": parametros.get("porcentaje_comision"),
+        "tolerancia_descuadre": parametros.get("tolerancia_descuadre"),
+        "dias_para_cuadrar": parametros.get("dias_para_cuadrar"),
+        "motivo_cambio": payload.get("motivo_cambio"),
+    }
+
+    data["updated_by" if updating else "created_by"] = usuario
+    return data
+
+
+@router.get(
+    "/config",
+    summary="Configuracion vigente de propinas TPV (SQL canonico)",
+)
+async def obtener_config_v2(
+    current_user: dict = Depends(get_user_v2),
+):
+    require_finanzas_permission(current_user, FINANZAS_VER)
+    configs = await _config_repo().listar_configs()
+    if len(configs) == 1 and configs[0].get("id") == "default":
+        return {
+            "config": None,
+            "fuente": "EDARSAHUB_REAL",
+            "mensaje": "Sin configuracion canonica de propinas registrada."
+        }
+    return {
+        "config": next((c for c in configs if c.get("vigencia", {}).get("activa")), None),
+        "fuente": "EDARSAHUB_REAL",
+    }
+
+
+@router.get(
+    "/config/all",
+    summary="Listar configuraciones de propinas TPV (SQL canonico)",
+)
+async def listar_configs_v2(
+    current_user: dict = Depends(get_user_v2),
+):
+    require_finanzas_permission(current_user, FINANZAS_VER)
+    configs = await _config_repo().listar_configs()
+    if len(configs) == 1 and configs[0].get("id") == "default":
+        configs = []
+    return {
+        "success": True,
+        "configs": configs,
+        "total": len(configs),
+        "fuente": "EDARSAHUB_REAL",
+    }
+
+
+@router.post(
+    "/config",
+    summary="Crear configuracion de propinas TPV (SQL canonico)",
+)
+async def crear_config_v2(
+    request: PropinasConfigCreate,
+    current_user: dict = Depends(get_user_v2),
+):
+    require_any_finanzas_permission(
+        current_user,
+        (FINANZAS_ADMINISTRAR, FINANZAS_EDITAR),
+    )
+    return await _config_repo().crear_config(
+        _config_request_to_sql(request, current_user)
+    )
+
+
+@router.put(
+    "/config/{config_id}",
+    summary="Actualizar configuracion de propinas TPV (SQL canonico)",
+)
+async def actualizar_config_v2(
+    config_id: str,
+    request: PropinasConfigCreate,
+    current_user: dict = Depends(get_user_v2),
+):
+    require_any_finanzas_permission(
+        current_user,
+        (FINANZAS_ADMINISTRAR, FINANZAS_EDITAR),
+    )
+    return await _config_repo().actualizar_config(
+        config_id,
+        _config_request_to_sql(
+            request,
+            current_user,
+            updating=True,
+        ),
+    )
 
 
 # ============================================================================

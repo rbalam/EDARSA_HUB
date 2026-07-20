@@ -13,6 +13,7 @@ Responsabilidades:
 import asyncio
 from typing import Optional, Dict, Any
 import logging
+from datetime import datetime, timedelta, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -385,40 +386,23 @@ class SchedulerManager:
     
     async def _run_sync_compras_job(self):
         """Wrapper async para sincronización canónica de Compras."""
+        logger.warning("[SYNC_COMPRAS] Ejecución solicitada por scheduler")
         job_config = self.config.jobs.get("sync_compras")
         if not job_config or not job_config.enabled:
             logger.debug("[SYNC_COMPRAS] Deshabilitado por configuración")
             return
 
-        lock_manager = get_lock_manager(self.db)
-        lock = lock_manager.get_lock("sync_compras")
-        lock_acquired = await lock.acquire(timeout_seconds=job_config.timeout_seconds)
-
-        if not lock_acquired:
-            logger.warning("[SYNC_COMPRAS] No se pudo obtener lock - ya hay una ejecución en progreso")
-            return
-
-        job_logger = get_job_logger()
-        log_entry = await job_logger.start_execution("sync_compras")
-
         try:
             import asyncio
             result = await asyncio.to_thread(execute_sync_compras, False)
-            ok = result.get("status") in ("SUCCESS", "PARTIAL", "WARNING")
-
-            await job_logger.finish_execution(
-                log_entry=log_entry,
-                status="completed" if ok else "failed",
-                processed_count=int(result.get("total_processed") or 0),
-                success_count=int(result.get("total_processed") or 0),
-                message=result.get("message") or f"SYNC Compras finalizado: {result.get('status')}",
-                extra_metadata={"result_summary": result}
+            logger.warning(
+                "[SYNC_COMPRAS] Finalizado: status=%s procesados=%s errores=%s",
+                result.get("status"),
+                result.get("total_processed"),
+                result.get("total_errors"),
             )
         except Exception as e:
             logger.error(f"[SYNC_COMPRAS] Error: {e}")
-            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
-        finally:
-            await lock.release()
 
     async def _run_sync_cxp_facturas_job(self):
         """Wrapper async: sincroniza Cuentas por Pagar hacia dbo.Finanzas_CxP_Sync (canónico)."""
@@ -1197,10 +1181,14 @@ class SchedulerManager:
                 name="SYNC Compras Integral",
                 replace_existing=True,
                 max_instances=1,
-                coalesce=True
+                coalesce=True,
+                next_run_time=datetime.now(timezone.utc) + timedelta(seconds=5)
             )
             self._jobs["sync_compras"] = sync_compras_config
-            logger.info(f"Job SYNC_COMPRAS registrado: intervalo={sync_compras_config.interval_seconds}s")
+            logger.warning(
+                "[SYNC_COMPRAS] Job registrado: intervalo=%ss run_inicial=5s",
+                sync_compras_config.interval_seconds,
+            )
 
         # ========================================
         # CxP: Job Sincronización Cuentas por Pagar (canónico)
@@ -1431,7 +1419,7 @@ class SchedulerManager:
     async def start(self):
         """Inicia el scheduler."""
         if not self.config.enabled:
-            logger.info("Scheduler deshabilitado por configuración")
+            logger.warning("Scheduler deshabilitado por configuración")
             return
         
         if self._running:
@@ -1454,8 +1442,8 @@ class SchedulerManager:
         # Iniciar scheduler
         self._scheduler.start()
         self._running = True
-        
-        logger.info(f"Scheduler iniciado con {len(self._jobs)} jobs")
+
+        logger.warning("Scheduler iniciado con %s jobs", len(self._jobs))
     
     async def stop(self):
         """Detiene el scheduler limpiamente."""

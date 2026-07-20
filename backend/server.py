@@ -13127,6 +13127,37 @@ def _finanzas_money(value):
     return float(value)
 
 
+def _finanzas_require_view_scope(
+    current_user: Dict,
+    unidad_ref: Optional[str] = None,
+):
+    from modules.finanzas.access import FINANZAS_VER, resolve_finanzas_unit_filter
+
+    return resolve_finanzas_unit_filter(current_user, unidad_ref, FINANZAS_VER)
+
+
+def _finanzas_require_write_scope(
+    current_user: Dict,
+    unidad_ref: Optional[str] = None,
+):
+    from modules.finanzas.access import (
+        FINANZAS_ADMINISTRAR,
+        FINANZAS_EDITAR,
+        require_any_finanzas_permission,
+        resolve_finanzas_unit_filter,
+    )
+
+    permission = require_any_finanzas_permission(
+        current_user,
+        (FINANZAS_ADMINISTRAR, FINANZAS_EDITAR),
+    )
+    return resolve_finanzas_unit_filter(
+        current_user,
+        unidad_ref,
+        permission["permission_code"],
+    )
+
+
 def _finanzas_table_ready(cur) -> bool:
     cur.execute("""
         SELECT CASE
@@ -13231,7 +13262,13 @@ def _finanzas_row_to_api(row: Dict) -> Dict:
     }
 
 
-def _finanzas_build_where(anio=None, mes=None, unidad_negocio_id=None, categoria=None):
+def _finanzas_build_where(
+    anio=None,
+    mes=None,
+    unidad_negocio_id=None,
+    categoria=None,
+    unidades_permitidas=None,
+):
     clauses = ["p.Activo = 1"]
     params = []
 
@@ -13244,8 +13281,16 @@ def _finanzas_build_where(anio=None, mes=None, unidad_negocio_id=None, categoria
         params.append(mes)
 
     if unidad_negocio_id:
-        clauses.append("p.UnidadNegocioID = %s")
-        params.append(unidad_negocio_id)
+        clauses.append("CONVERT(varchar(36), p.UnidadNegocioID) = %s")
+        params.append(str(unidad_negocio_id))
+    elif unidades_permitidas is not None:
+        allowed = [str(unit).strip() for unit in unidades_permitidas if str(unit).strip()]
+        if allowed:
+            placeholders = ",".join(["%s"] * len(allowed))
+            clauses.append(f"CONVERT(varchar(36), p.UnidadNegocioID) IN ({placeholders})")
+            params.extend(allowed)
+        else:
+            clauses.append("1=0")
 
     if categoria:
         clauses.append("p.Categoria = %s")
@@ -13254,11 +13299,24 @@ def _finanzas_build_where(anio=None, mes=None, unidad_negocio_id=None, categoria
     return " WHERE " + " AND ".join(clauses), params
 
 
-def _finanzas_select_presupuestos(cur, anio=None, mes=None, unidad_negocio_id=None, categoria=None):
+def _finanzas_select_presupuestos(
+    cur,
+    anio=None,
+    mes=None,
+    unidad_negocio_id=None,
+    categoria=None,
+    unidades_permitidas=None,
+):
     if not _finanzas_table_ready(cur):
         return []
 
-    where_sql, params = _finanzas_build_where(anio, mes, unidad_negocio_id, categoria)
+    where_sql, params = _finanzas_build_where(
+        anio,
+        mes,
+        unidad_negocio_id,
+        categoria,
+        unidades_permitidas,
+    )
 
     cur.execute(f"""
         SELECT
@@ -13366,6 +13424,16 @@ async def finanzas_dashboard(
     now = datetime.now()
     anio = _finanzas_to_int(anio, now.year)
     mes = _finanzas_to_int(mes, now.month)
+    unidad_ref = _finanzas_unidad_ref(
+        sucursal_id,
+        server_id,
+        unidad_negocio_id,
+        unidad_negocio_pk,
+    )
+    unidad_pk, unidades_permitidas = _finanzas_require_view_scope(
+        current_user,
+        unidad_ref,
+    )
 
     conn = _finanzas_get_conn()
     try:
@@ -13373,13 +13441,16 @@ async def finanzas_dashboard(
             if not _finanzas_table_ready(cur):
                 return _finanzas_empty_dashboard(anio, mes, "Tabla Finanzas_Presupuestos pendiente de migracion canonica")
 
-            unidad = _finanzas_resolve_unidad_negocio(
-                cur,
-                _finanzas_unidad_ref(sucursal_id, server_id, unidad_negocio_id, unidad_negocio_pk)
-            )
+            unidad = _finanzas_resolve_unidad_negocio(cur, unidad_pk) if unidad_pk else None
             unidad_id = unidad["id"] if unidad else None
 
-            presupuestos = _finanzas_select_presupuestos(cur, anio, mes, unidad_id)
+            presupuestos = _finanzas_select_presupuestos(
+                cur,
+                anio,
+                mes,
+                unidad_id,
+                unidades_permitidas=unidades_permitidas,
+            )
 
             prev_anio = anio
             prev_mes = mes - 1
@@ -13387,7 +13458,13 @@ async def finanzas_dashboard(
                 prev_mes = 12
                 prev_anio -= 1
 
-            prev_rows = _finanzas_select_presupuestos(cur, prev_anio, prev_mes, unidad_id)
+            prev_rows = _finanzas_select_presupuestos(
+                cur,
+                prev_anio,
+                prev_mes,
+                unidad_id,
+                unidades_permitidas=unidades_permitidas,
+            )
 
             def sum_tipo(rows, tipo, campo):
                 return sum(_finanzas_money(r.get(campo)) for r in rows if r.get("Tipo") == tipo)
@@ -13481,6 +13558,16 @@ async def finanzas_listar_presupuestos(
     """Lista presupuestos canonicos con filtros por Unidad de Negocio."""
     anio = _finanzas_to_int(anio)
     mes = _finanzas_to_int(mes)
+    unidad_ref = _finanzas_unidad_ref(
+        sucursal_id,
+        server_id,
+        unidad_negocio_id,
+        unidad_negocio_pk,
+    )
+    unidad_pk, unidades_permitidas = _finanzas_require_view_scope(
+        current_user,
+        unidad_ref,
+    )
 
     conn = _finanzas_get_conn()
     try:
@@ -13488,13 +13575,17 @@ async def finanzas_listar_presupuestos(
             if not _finanzas_table_ready(cur):
                 return {"presupuestos": [], "total": 0, "mensaje": "Tabla Finanzas_Presupuestos pendiente de migracion canonica"}
 
-            unidad = _finanzas_resolve_unidad_negocio(
-                cur,
-                _finanzas_unidad_ref(sucursal_id, server_id, unidad_negocio_id, unidad_negocio_pk)
-            )
+            unidad = _finanzas_resolve_unidad_negocio(cur, unidad_pk) if unidad_pk else None
             unidad_id = unidad["id"] if unidad else None
 
-            presupuestos = _finanzas_select_presupuestos(cur, anio, mes, unidad_id, categoria)
+            presupuestos = _finanzas_select_presupuestos(
+                cur,
+                anio,
+                mes,
+                unidad_id,
+                categoria,
+                unidades_permitidas,
+            )
             return {
                 "presupuestos": presupuestos,
                 "total": len(presupuestos),
@@ -13530,13 +13621,16 @@ async def finanzas_crear_presupuesto(
     if not mes or mes < 1 or mes > 12:
         raise HTTPException(status_code=400, detail="mes debe estar entre 1 y 12")
 
+    unidad_ref = _finanzas_body_unidad_ref(body)
+    unidad_pk, _ = _finanzas_require_write_scope(current_user, unidad_ref)
+
     conn = _finanzas_get_conn()
     try:
         with conn.cursor(as_dict=True) as cur:
             if not _finanzas_table_ready(cur):
                 raise HTTPException(status_code=500, detail="Tabla Finanzas_Presupuestos no esta migrada")
 
-            unidad = _finanzas_resolve_unidad_negocio(cur, _finanzas_body_unidad_ref(body))
+            unidad = _finanzas_resolve_unidad_negocio(cur, unidad_pk)
             if not unidad:
                 raise HTTPException(status_code=400, detail="Unidad de Negocio invalida o no encontrada")
 
@@ -13595,6 +13689,7 @@ async def finanzas_actualizar_presupuesto(
     current_user: Dict = Depends(get_current_user)
 ):
     """Actualiza presupuesto canonico."""
+    _finanzas_require_write_scope(current_user, _finanzas_body_unidad_ref(body))
     conn = _finanzas_get_conn()
     try:
         with conn.cursor(as_dict=True) as cur:
@@ -13604,13 +13699,18 @@ async def finanzas_actualizar_presupuesto(
             current = _finanzas_get_presupuesto_by_id(cur, presupuesto_id)
             if not current:
                 raise HTTPException(status_code=404, detail="Presupuesto no encontrado")
+            _finanzas_require_write_scope(
+                current_user,
+                current.get("UnidadNegocioID"),
+            )
 
             sets = []
             params = []
 
             unidad_ref = _finanzas_body_unidad_ref(body)
             if unidad_ref:
-                unidad = _finanzas_resolve_unidad_negocio(cur, unidad_ref)
+                unidad_pk, _ = _finanzas_require_write_scope(current_user, unidad_ref)
+                unidad = _finanzas_resolve_unidad_negocio(cur, unidad_pk)
                 if not unidad:
                     raise HTTPException(status_code=400, detail="Unidad de Negocio invalida o no encontrada")
                 sets.append("UnidadNegocioID = %s")
@@ -13712,6 +13812,14 @@ async def finanzas_eliminar_presupuesto(
             if not _finanzas_table_ready(cur):
                 raise HTTPException(status_code=500, detail="Tabla Finanzas_Presupuestos no esta migrada")
 
+            current = _finanzas_get_presupuesto_by_id(cur, presupuesto_id)
+            if not current:
+                raise HTTPException(status_code=404, detail="Presupuesto no encontrado")
+            _finanzas_require_write_scope(
+                current_user,
+                current.get("UnidadNegocioID"),
+            )
+
             cur.execute("""
                 UPDATE dbo.Finanzas_Presupuestos
                 SET
@@ -13746,22 +13854,36 @@ async def finanzas_eliminar_presupuesto(
 async def finanzas_listar_categorias(
     current_user: Dict = Depends(get_current_user)
 ):
-    """Lista las categorías únicas de presupuestos - TABLA NO DISPONIBLE"""
-    # Categorías por defecto (tabla no existe)
-    return {
-        "categorias": [
-            {"Categoria": "Ventas", "Tipo": "Ingreso"},
-            {"Categoria": "Servicios", "Tipo": "Ingreso"},
-            {"Categoria": "Otros Ingresos", "Tipo": "Ingreso"},
-            {"Categoria": "Nómina", "Tipo": "Egreso"},
-            {"Categoria": "Materia Prima", "Tipo": "Egreso"},
-            {"Categoria": "Servicios Básicos", "Tipo": "Egreso"},
-            {"Categoria": "Renta", "Tipo": "Egreso"},
-            {"Categoria": "Marketing", "Tipo": "Egreso"},
-            {"Categoria": "Mantenimiento", "Tipo": "Egreso"},
-            {"Categoria": "Gastos Administrativos", "Tipo": "Egreso"},
-        ]
-    }
+    """Lista categorias financieras desde presupuestos canonicos."""
+    _, unidades_permitidas = _finanzas_require_view_scope(current_user)
+
+    conn = _finanzas_get_conn()
+    try:
+        with conn.cursor(as_dict=True) as cur:
+            if not _finanzas_table_ready(cur):
+                return {
+                    "categorias": [],
+                    "mensaje": "Tabla Finanzas_Presupuestos pendiente de migracion canonica",
+                }
+
+            where_sql, params = _finanzas_build_where(
+                unidades_permitidas=unidades_permitidas,
+            )
+            cur.execute(f"""
+                SELECT DISTINCT
+                    p.Categoria,
+                    p.Tipo
+                FROM dbo.Finanzas_Presupuestos p
+                JOIN dbo.Unidades_Negocio u
+                    ON u.id = p.UnidadNegocioID
+                {where_sql}
+                  AND p.Categoria IS NOT NULL
+                  AND LTRIM(RTRIM(p.Categoria)) <> ''
+                ORDER BY p.Tipo, p.Categoria
+            """, tuple(params))
+            return {"categorias": cur.fetchall() or []}
+    finally:
+        conn.close()
 
 
 @api_router.post("/finanzas/registrar-movimiento")
@@ -13774,6 +13896,10 @@ async def finanzas_registrar_movimiento(
     monto = _finanzas_to_float(_finanzas_pick(body, "monto", "monto_ejecutado", "Monto_Ejecutado"), 0.0)
     modo = (_finanzas_pick(body, "modo", default="incrementar") or "incrementar").lower()
     modificado_por = current_user.get("email") or current_user.get("username") or current_user.get("Usuario") or "sistema"
+    movimiento_unidad_pk, _ = _finanzas_require_write_scope(
+        current_user,
+        _finanzas_body_unidad_ref(body),
+    )
 
     conn = _finanzas_get_conn()
     try:
@@ -13782,6 +13908,13 @@ async def finanzas_registrar_movimiento(
                 raise HTTPException(status_code=500, detail="Tabla Finanzas_Presupuestos no esta migrada")
 
             if presupuesto_id:
+                current = _finanzas_get_presupuesto_by_id(cur, presupuesto_id)
+                if not current:
+                    raise HTTPException(status_code=404, detail="Presupuesto no encontrado")
+                _finanzas_require_write_scope(
+                    current_user,
+                    current.get("UnidadNegocioID"),
+                )
                 if modo in ("set", "reemplazar", "replace"):
                     cur.execute("""
                         UPDATE dbo.Finanzas_Presupuestos
@@ -13803,7 +13936,7 @@ async def finanzas_registrar_movimiento(
                           AND Activo = 1
                     """, (monto, modificado_por, presupuesto_id))
             else:
-                unidad = _finanzas_resolve_unidad_negocio(cur, _finanzas_body_unidad_ref(body))
+                unidad = _finanzas_resolve_unidad_negocio(cur, movimiento_unidad_pk)
                 categoria = _finanzas_pick(body, "categoria", "Categoria")
                 tipo = _finanzas_pick(body, "tipo", "Tipo")
                 anio = _finanzas_to_int(_finanzas_pick(body, "anio", "Anio"))
@@ -13849,6 +13982,7 @@ async def finanzas_obtener_script_inicializacion(
     current_user: Dict = Depends(get_current_user)
 ):
     """Retorna el script canonico vigente para Finanzas Presupuestos."""
+    _finanzas_require_write_scope(current_user)
     script = """
 /*
 EDARSAHUB Finanzas / Presupuestos

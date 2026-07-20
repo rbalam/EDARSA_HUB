@@ -1687,6 +1687,7 @@ async def get_unidades_negocio(request: Request):
         unidades = _pic_unidades_activas()
         lista = [
             {
+                "unidad_negocio_pk": str(u.get("unidad_negocio_pk") or ""),
                 "codigo": u.get("codigo"),
                 "nombre": u.get("nombre"),
                 "sistema": u.get("system_type", "N/A")
@@ -1694,7 +1695,10 @@ async def get_unidades_negocio(request: Request):
             for u in unidades
         ]
         if allowed is not None:
-            lista = [u for u in lista if u["codigo"] in allowed]
+            lista = [
+                u for u in lista
+                if str(u.get("unidad_negocio_pk") or "") in allowed
+            ]
         return {"success": True, "unidades": lista}
     except Exception as e:
         logger.error(f"[INTELIGENCIA] Error unidades: {e}")
@@ -1703,11 +1707,19 @@ async def get_unidades_negocio(request: Request):
             from core.unidades_service import UnidadesService
             unidades = UnidadesService.get_all()
             lista = [
-                {"codigo": u.get("codigo"), "nombre": u.get("nombre"), "sistema": u.get("system_type", "N/A")}
+                {
+                    "unidad_negocio_pk": str(u.get("unidad_negocio_pk") or ""),
+                    "codigo": u.get("codigo"),
+                    "nombre": u.get("nombre"),
+                    "sistema": u.get("system_type", "N/A"),
+                }
                 for u in unidades
             ]
             if allowed is not None:
-                lista = [u for u in lista if u["codigo"] in allowed]
+                lista = [
+                    u for u in lista
+                    if str(u.get("unidad_negocio_pk") or "") in allowed
+                ]
             return {"success": True, "_source": "FALLBACK_UNIDADES_SERVICE", "unidades": lista}
         except:
             return {"success": False, "unidades": [], "error": str(e)}

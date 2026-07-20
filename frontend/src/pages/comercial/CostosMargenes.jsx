@@ -1449,12 +1449,13 @@ const TabProductos = ({ onSimularPrecio }) => {
   
   const loadResumen = useCallback(async () => {
     try {
-      const res = await api.get('/costos-margenes/resumen');
+      const params = unidadNegocio ? `?unidad=${encodeURIComponent(unidadNegocio)}` : '';
+      const res = await api.get(`/costos-margenes/resumen${params}`);
       setResumen(res.data);
     } catch (err) {
       console.error('Error cargando resumen:', err);
     }
-  }, []);
+  }, [unidadNegocio]);
   
   const loadSyncStatus = useCallback(async () => {
     try {

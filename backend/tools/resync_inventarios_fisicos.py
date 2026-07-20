@@ -15,9 +15,14 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
+
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(BACKEND_ROOT))
 
 from core.guards.server_secret_guard import require_server_secret_key
 from core.secret_manager import is_encryption_available
@@ -166,6 +171,9 @@ def main() -> int:
             "system_type": server_info["system_type"],
             "status": result.get("status"),
             "records_synced": result.get("records_synced", 0),
+            "details_synced": result.get("details_synced", 0),
+            "details_updated": result.get("details_updated", 0),
+            "detail_errors": result.get("detail_errors", 0),
             "error": result.get("error"),
         })
 
@@ -176,7 +184,12 @@ def main() -> int:
 
     print(payload["status"])
     for row in payload["results"]:
-        print(f"- {row['unidad']} | {row['server']} | {row['status']} | records={row['records_synced']} | error={row['error'] or ''}")
+        print(
+            f"- {row['unidad']} | {row['server']} | {row['status']} | "
+            f"headers={row['records_synced']} | detalles_insertados={row['details_synced']} | "
+            f"detalles_actualizados={row['details_updated']} | errores_detalle={row['detail_errors']} | "
+            f"error={row['error'] or ''}"
+        )
     print(f"Reporte: {report_path}")
     return 1 if errors else 0
 

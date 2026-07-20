@@ -64,7 +64,7 @@ export default function FinanzasCuentasPorPagar({
   unidadesNegocio,
   selectedUnidad,
   loadingUnidades,
-  userPermissions,
+  userPermissions = { canSeeAll: true, allowedSucursales: [] },
   cxpFiltroSucursal,
   cxpFiltroProveedor,
   cxpBusquedaProveedor,
@@ -101,14 +101,10 @@ export default function FinanzasCuentasPorPagar({
   // La lógica interna de sucursal_id se mantiene para compatibilidad legacy
   hideSucursalFilter = false
 }) {
-  // Memoizar filtrado de sucursales
+  // Las sucursales ya vienen filtradas por RBAC desde backend.
   const sucursalesFiltradas = useMemo(() => {
-    return cxpSucursales.filter(s => {
-      if (userPermissions.canSeeAll) return true;
-      if (userPermissions.allowedSucursales.length === 0) return true;
-      return userPermissions.allowedSucursales.includes(s.SucursalID);
-    });
-  }, [cxpSucursales, userPermissions.canSeeAll, userPermissions.allowedSucursales]);
+    return cxpSucursales;
+  }, [cxpSucursales]);
 
   // FASE 1 CxP FIX: Extraer proveedores únicos desde cxpData.proveedores (estructura anidada A/B/X)
   // Esto asegura que la búsqueda funcione correctamente para datos de SoftRestaurant y MPRO

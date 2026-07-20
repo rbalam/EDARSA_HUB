@@ -65,6 +65,7 @@ export default function FinanzasControlIngresos({
   const resumen = cortesData?.resumen || {};
   const saldos = saldosPendientes || {};
   const comisiones = configComisiones?.comisiones || {};
+  const comisionesEntries = Object.entries(comisiones);
 
   return (
     <div className="space-y-4" data-testid="control-ingresos-container">
@@ -379,27 +380,25 @@ export default function FinanzasControlIngresos({
               <CardTitle className="text-base">Configuracion de Comisiones (NetPay)</CardTitle>
             </CardHeader>
             <CardContent className="p-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {Object.entries(comisiones).map(([tipo, config]) => (
-                  <div key={tipo} className="p-4 border rounded-lg">
-                    <h4 className="font-medium mb-2">{config.nombre}</h4>
-                    <div className="space-y-1 text-sm">
-                      <p>Comision: <span className="font-bold">{config.comision_porcentaje}%</span></p>
-                      <p>IVA: <span className="font-bold">{config.iva}%</span></p>
-                      <p>Total: <span className="font-bold text-red-600">{config.comision_total_porcentaje}%</span></p>
-                      <p>Deposito: <span className="font-bold">{config.dias_deposito} dia(s) habil(es)</span></p>
+              {comisionesEntries.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {comisionesEntries.map(([tipo, config]) => (
+                    <div key={tipo} className="p-4 border rounded-lg">
+                      <h4 className="font-medium mb-2">{config.nombre}</h4>
+                      <div className="space-y-1 text-sm">
+                        <p>Comision: <span className="font-bold">{config.comision_porcentaje}%</span></p>
+                        <p>IVA: <span className="font-bold">{config.iva}%</span></p>
+                        <p>Total: <span className="font-bold text-red-600">{config.comision_total_porcentaje}%</span></p>
+                        <p>Deposito: <span className="font-bold">{config.dias_deposito} dia(s) habil(es)</span></p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 p-3 bg-yellow-50 rounded-lg text-sm">
-                <p className="font-medium text-yellow-800 mb-1">Reglas de Deposito:</p>
-                <ul className="list-disc list-inside text-yellow-700 space-y-1">
-                  <li>Efectivo: dia siguiente (Vie/Sab/Dom - Lunes)</li>
-                  <li>Debito/Credito: 24 hrs habiles</li>
-                  <li>AMEX/Internacional: 48 hrs habiles</li>
-                </ul>
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-zinc-500">
+                  {configComisiones?.mensaje || 'Sin configuracion canonica de comisiones.'}
+                </p>
+              )}
             </CardContent>
           </Card>
           

@@ -13,6 +13,7 @@ POLÍTICA P0 SQL-ONLY:
 
 TABLAS DESTINO:
 - Compras_Inventarios_Fisicos_Sync
+- Compras_Inventarios_Fisicos_Detalle_Sync
 - Compras_Requisiciones_Sync
 - Compras_Sync_Log
 
@@ -32,7 +33,10 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 from zoneinfo import ZoneInfo
 
-from core.db import execute_sql_query as _base_execute_sql_query
+from core.sql_first.connection_factory import (
+    get_edarsahub_pymssql_connection,
+    get_external_sql_connection,
+)
 from modules.compras.sync_service import (
     sync_inventarios_fisicos_from_server,
     sync_requisiciones_from_server,
@@ -52,7 +56,9 @@ logger = logging.getLogger(__name__)
 JOB_NAME = "sync_compras"
 SYNC_INTERVAL_SECONDS = int(os.environ.get("SCHEDULER_SYNC_COMPRAS_INTERVAL_SECONDS", "1800"))  # 30 min default
 SYNC_TYPE = "COMPRAS_SYNC"
-LOCK_TIMEOUT_MINUTES = 30
+LOCK_TIMEOUT_MINUTES = int(
+    os.environ.get("SCHEDULER_SYNC_COMPRAS_LOCK_TIMEOUT_MINUTES", "5")
+)
 
 # P2-01: Config centralizado
 from core.config.edarsahub_config import get_edarsahub_sql_config
@@ -67,6 +73,28 @@ EDARSAHUB_CONFIG = {
 }
 
 
+def _coerce_mx_datetime(value):
+    """Normaliza datetime de SQL; algunos cursores devuelven texto."""
+    if not value:
+        return None
+    if isinstance(value, str):
+        text = value.strip()
+        for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S"):
+            try:
+                value = datetime.strptime(text, fmt)
+                break
+            except ValueError:
+                continue
+        else:
+            try:
+                value = datetime.fromisoformat(text)
+            except ValueError:
+                return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=ZoneInfo("America/Mexico_City"))
+    return value.astimezone(ZoneInfo("America/Mexico_City"))
+
+
 # =============================================================================
 # LOCK ANTI-CONCURRENCIA SQL
 # =============================================================================
@@ -77,39 +105,78 @@ def _acquire_sync_lock(run_id: str) -> bool:
     Retorna True si OK, False si hay lock activo.
     """
     from datetime import timedelta
-    
+
+    conn = None
+    cursor = None
+
     try:
-        conn = get_sql_connection()
+        conn = get_edarsahub_pymssql_connection(
+            timeout=15,
+            login_timeout=10,
+        )
         cursor = conn.cursor(as_dict=True)
         now_mx = datetime.now(ZoneInfo("America/Mexico_City"))
-        timeout_threshold = now_mx - timedelta(minutes=LOCK_TIMEOUT_MINUTES)
-        
-        # Verificar locks activos
+        now_sql = now_mx.replace(tzinfo=None)
+        timeout_threshold = (
+            now_mx - timedelta(minutes=LOCK_TIMEOUT_MINUTES)
+        ).replace(tzinfo=None)
+
+        cursor.execute("SET XACT_ABORT ON")
+        cursor.execute("SET LOCK_TIMEOUT 10000")
+        cursor.execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+        cursor.execute("BEGIN TRANSACTION")
+
+        # Liberar locks vencidos sin depender del tipo devuelto por el driver.
         cursor.execute("""
-            SELECT SyncControlID, SyncRunID, StartedAtMexico
-            FROM Sync_Control_Ejecuciones
-            WHERE SyncType=%s AND Status='IN_PROGRESS' AND FinishedAtMexico IS NULL
+            UPDATE dbo.Sync_Control_Ejecuciones
+               WITH (UPDLOCK, HOLDLOCK)
+            SET
+                Status = 'TIMEOUT',
+                FinishedAtMexico = %s,
+                ErrorMessage = COALESCE(
+                    ErrorMessage,
+                    'Lock vencido antes de nueva ejecución'
+                )
+            WHERE SyncType = %s
+              AND Status = 'IN_PROGRESS'
+              AND FinishedAtMexico IS NULL
+              AND (
+                    StartedAtMexico IS NULL
+                    OR StartedAtMexico < %s
+              )
+        """, (now_sql, SYNC_TYPE, timeout_threshold))
+
+        stale_count = cursor.rowcount
+        if stale_count and stale_count > 0:
+            logger.warning(
+                "[SYNC-COMPRAS-LOCK] Locks vencidos marcados TIMEOUT: %s",
+                stale_count,
+            )
+
+        # La lectura y el INSERT quedan serializados en la misma transacción.
+        cursor.execute("""
+            SELECT TOP (1)
+                SyncControlID,
+                SyncRunID,
+                StartedAtMexico
+            FROM dbo.Sync_Control_Ejecuciones
+                 WITH (UPDLOCK, HOLDLOCK)
+            WHERE SyncType = %s
+              AND Status = 'IN_PROGRESS'
+              AND FinishedAtMexico IS NULL
+            ORDER BY StartedAtMexico
         """, (SYNC_TYPE,))
         active = cursor.fetchone()
-        
+
         if active:
-            started = active['StartedAtMexico']
-            if started.tzinfo is None:
-                started = started.replace(tzinfo=ZoneInfo("America/Mexico_City"))
-            if started < timeout_threshold:
-                # Timeout detectado - marcar como TIMEOUT
-                logger.warning(f"[SYNC-COMPRAS-LOCK] Timeout detectado: {active['SyncRunID']}")
-                cursor.execute("""
-                    UPDATE Sync_Control_Ejecuciones SET Status='TIMEOUT', FinishedAtMexico=%s
-                    WHERE SyncControlID=%s
-                """, (now_mx.replace(tzinfo=None), active['SyncControlID']))
-                conn.commit()
-            else:
-                # Lock activo válido
-                logger.info(f"[SYNC-COMPRAS-LOCK] Lock activo: {active['SyncRunID']} - Abortando")
-                conn.close()
-                return False
-        
+            conn.commit()
+            logger.warning(
+                "[SYNC-COMPRAS-LOCK] Lock activo: %s iniciado=%s - Abortando",
+                active.get("SyncRunID"),
+                active.get("StartedAtMexico"),
+            )
+            return False
+
         # Crear nuevo lock
         today = now_mx.date()
         cursor.execute("""
@@ -118,62 +185,119 @@ def _acquire_sync_lock(run_id: str) -> bool:
                 VentanaFinHoraConfig, IsDryRun, RegistrosProcesados, RegistrosInsertados,
                 RegistrosActualizados, RegistrosError, Status, StartedAtMexico, CreatedAt
             ) VALUES (%s,%s,%s,%s,0,0,0,0,0,0,0,'IN_PROGRESS',%s,%s)
-        """, (run_id, SYNC_TYPE, today, today, now_mx.replace(tzinfo=None), now_mx.replace(tzinfo=None)))
+        """, (run_id, SYNC_TYPE, today, today, now_sql, now_sql))
         conn.commit()
-        conn.close()
         logger.info(f"[SYNC-COMPRAS-LOCK] 🔒 Lock adquirido: {run_id}")
         return True
     except Exception as e:
-        logger.error(f"[SYNC-COMPRAS-LOCK] Error adquiriendo lock: {e}")
-        return True  # Permitir ejecución si falla el lock (fail-open)
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        logger.error(f"[SYNC-COMPRAS-LOCK] Error adquiriendo lock; ejecución bloqueada: {e}")
+        return False
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 def _release_sync_lock(run_id: str, status: str, processed: int, errors: int, error_msg: str = None):
     """Libera el lock de sincronización."""
+    conn = None
+    cursor = None
+
     try:
-        conn = get_sql_connection()
+        conn = get_edarsahub_pymssql_connection(
+            timeout=15,
+            login_timeout=10,
+        )
         cursor = conn.cursor()
         now_mx = datetime.now(ZoneInfo("America/Mexico_City"))
+        now_sql = now_mx.replace(tzinfo=None)
         
         # Calcular duración
         cursor.execute("SELECT StartedAtMexico FROM Sync_Control_Ejecuciones WHERE SyncRunID=%s", (run_id,))
         row = cursor.fetchone()
         duration = 0
         if row and row[0]:
-            started = row[0]
-            if started.tzinfo is None:
-                started = started.replace(tzinfo=ZoneInfo("America/Mexico_City"))
-            duration = int((now_mx - started).total_seconds())
+            started = _coerce_mx_datetime(row[0])
+            if started:
+                duration = int((now_mx - started).total_seconds())
         
         cursor.execute("""
             UPDATE Sync_Control_Ejecuciones
             SET Status=%s, FinishedAtMexico=%s, DurationSeconds=%s, RegistrosProcesados=%s, RegistrosError=%s, ErrorMessage=%s
             WHERE SyncRunID=%s
-        """, (status, now_mx.replace(tzinfo=None), duration, processed, errors, error_msg[:500] if error_msg else None, run_id))
+        """, (status, now_sql, duration, processed, errors, error_msg[:500] if error_msg else None, run_id))
         conn.commit()
-        conn.close()
         logger.info(f"[SYNC-COMPRAS-LOCK] 🔓 Lock liberado: {run_id} (status={status}, duration={duration}s)")
     except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
         logger.error(f"[SYNC-COMPRAS-LOCK] Error liberando lock: {e}")
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 # =============================================================================
 # OBTENER SERVIDORES PARA SINCRONIZAR
 # =============================================================================
 
-def _execute_sql_with_timeout(host, port, database, username, password, query, timeout_seconds=30):
+def _execute_sql_with_timeout(host, port, database, username, password, query, timeout_seconds=45):
     """
     Ejecuta query SQL con timeout usando el parámetro nativo de execute_sql_query.
     NOTA: Se eliminó signal.alarm() porque no funciona en threads secundarios (FastAPI async).
     El timeout se maneja directamente en la conexión SQL.
     """
+    conn = None
+    cursor = None
+
     try:
-        result = _base_execute_sql_query(
-            host, port, database, username, password, query, 
-            timeout_seconds=timeout_seconds, 
-            context="jobs"
-        )
-        return result
+        conn = get_external_sql_connection({
+            "host": host,
+            "port": port,
+            "database": database,
+            "username": username,
+            "password": password,
+            "timeout": timeout_seconds,
+            "login_timeout": min(10, max(1, int(timeout_seconds))),
+            "as_dict": True,
+        })
+        try:
+            cursor = conn.cursor(as_dict=True)
+        except TypeError:
+            cursor = conn.cursor()
+
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        if not rows:
+            return []
+        if isinstance(rows[0], dict):
+            return [dict(row) for row in rows]
+
+        columns = [col[0] for col in cursor.description]
+        return [dict(zip(columns, row)) for row in rows]
     except Exception as e:
         error_str = str(e).lower()
         if 'timeout' in error_str or 'connection' in error_str or 'timed out' in error_str:
@@ -181,6 +305,17 @@ def _execute_sql_with_timeout(host, port, database, username, password, query, t
             return None
         logger.error(f"[SYNC-COMPRAS] Error inesperado en query a {host}: {str(e)[:200]}")
         raise
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 def _get_servers_to_sync() -> List[Dict]:
@@ -211,6 +346,7 @@ def _get_servers_to_sync() -> List[Dict]:
               )
               AND u.id IS NOT NULL
               AND s.host IS NOT NULL AND s.host != ''
+            ORDER BY u.codigo, u.nombre, s.nombre
         """)
         rows = cursor.fetchall()
         conn.close()
@@ -307,7 +443,7 @@ def execute_sync_compras(dry_run: bool = False) -> Dict[str, Any]:
             server_name = server.get('name', 'UNKNOWN')
             unidad_codigo = server.get('unidad_codigo', '')
             
-            logger.info(f"[SYNC-COMPRAS] Procesando: {server_name} ({unidad_codigo})")
+            logger.warning(f"[SYNC-COMPRAS] Procesando: {server_name} ({unidad_codigo})")
             
             if not server.get('host') or not server.get('password'):
                 logger.warning(f"[SYNC-COMPRAS] Servidor {server_name} sin host/password - Saltando")
@@ -349,12 +485,23 @@ def execute_sync_compras(dry_run: bool = False) -> Dict[str, Any]:
                     "unidad": unidad_codigo,
                     "status": inv_result.get("status"),
                     "records": inv_result.get("records_synced", 0),
+                    "details_synced": inv_result.get("details_synced", 0),
+                    "details_updated": inv_result.get("details_updated", 0),
+                    "detail_errors": inv_result.get("detail_errors", 0),
                     "error": inv_result.get("error")
                 })
                 
                 if inv_result.get("status") == "OK" or inv_result.get("status") == "DRY_RUN":
                     total_processed += inv_result.get("records_synced", 0)
-                    logger.info(f"[SYNC-COMPRAS] ✅ Inventarios {server_name}: {inv_result.get('records_synced', 0)} registros")
+                    total_processed += inv_result.get("details_synced", 0)
+                    total_processed += inv_result.get("details_updated", 0)
+                    logger.warning(
+                        "[SYNC-COMPRAS] ✅ Inventarios %s: headers=%s detalles_insertados=%s detalles_actualizados=%s",
+                        server_name,
+                        inv_result.get("records_synced", 0),
+                        inv_result.get("details_synced", 0),
+                        inv_result.get("details_updated", 0),
+                    )
                 else:
                     total_errors += 1
                     error_messages.append(f"{server_name} INV: {inv_result.get('error', 'Error desconocido')}")

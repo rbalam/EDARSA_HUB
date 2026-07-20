@@ -9,7 +9,7 @@ from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime
 from decimal import Decimal
 
-from core.db import execute_sql_query
+from core.db import execute_sql_query, execute_sql_query_params
 from core.server_registry import EDARSAHUB_CONFIG
 
 
@@ -36,42 +36,81 @@ def _safe_decimal(value: Any, default: Optional[float] = None) -> Optional[float
 
 # ==================== RESUMEN ====================
 
-def get_resumen_costos_margenes() -> Dict[str, Any]:
+def get_resumen_costos_margenes(
+    unidad_negocio_pk: Optional[str] = None,
+) -> Dict[str, Any]:
     """
     Obtiene resumen general de costos y márgenes.
     Fuente: EDARSAHUB SQL (NO-LIVE)
     """
     conn = _get_edarsahub_connection()
+    params: List[Any] = []
+    unidad_where = ""
+    if unidad_negocio_pk:
+        unidad_where = "AND CONVERT(varchar(36), p.UnidadNegocioID) = %s"
+        params.append(str(unidad_negocio_pk))
     
     # Query principal de productos
-    productos_query = """
+    productos_query = f"""
     SELECT 
         COUNT(*) as total_productos,
-        SUM(CASE WHEN TieneReceta = 1 THEN 1 ELSE 0 END) as productos_con_receta,
-        SUM(CASE WHEN TieneReceta = 0 OR TieneReceta IS NULL THEN 1 ELSE 0 END) as productos_sin_receta,
-        AVG(CASE WHEN CostoReceta > 0 THEN CostoReceta END) as costo_promedio,
-        AVG(CASE WHEN MargenBrutoPorcentaje IS NOT NULL AND PrecioVenta > 0 THEN MargenBrutoPorcentaje END) as margen_promedio,
-        SUM(CASE WHEN MargenBrutoPorcentaje < 20 AND MargenBrutoPorcentaje IS NOT NULL THEN 1 ELSE 0 END) as margen_bajo,
-        SUM(CASE WHEN CostoReceta IS NULL OR CostoReceta = 0 THEN 1 ELSE 0 END) as sin_costo,
-        SUM(CASE WHEN PrecioVenta IS NULL OR PrecioVenta = 0 THEN 1 ELSE 0 END) as sin_precio,
-        MAX(SyncedAtMexico) as ultima_sync,
-        MAX(SyncRunID) as sync_run_id
-    FROM Sync_Productos
-    WHERE Activo = 1 OR Activo IS NULL
+        SUM(CASE WHEN p.TieneReceta = 1 THEN 1 ELSE 0 END) as productos_con_receta,
+        SUM(CASE WHEN p.TieneReceta = 0 OR p.TieneReceta IS NULL THEN 1 ELSE 0 END) as productos_sin_receta,
+        AVG(CASE WHEN p.CostoReceta > 0 THEN p.CostoReceta END) as costo_promedio,
+        AVG(CASE WHEN p.MargenBrutoPorcentaje IS NOT NULL AND p.PrecioVenta > 0 THEN p.MargenBrutoPorcentaje END) as margen_promedio,
+        SUM(CASE WHEN p.MargenBrutoPorcentaje < 20 AND p.MargenBrutoPorcentaje IS NOT NULL THEN 1 ELSE 0 END) as margen_bajo,
+        SUM(CASE WHEN p.CostoReceta IS NULL OR p.CostoReceta = 0 THEN 1 ELSE 0 END) as sin_costo,
+        SUM(CASE WHEN p.PrecioVenta IS NULL OR p.PrecioVenta = 0 THEN 1 ELSE 0 END) as sin_precio,
+        MAX(p.SyncedAtMexico) as ultima_sync,
+        MAX(p.SyncRunID) as sync_run_id
+    FROM Sync_Productos p
+    WHERE (p.Activo = 1 OR p.Activo IS NULL)
+      {unidad_where}
     """
-    productos_result = execute_sql_query(*conn, productos_query)
+    productos_result = execute_sql_query_params(*conn, productos_query, tuple(params))
     
-    # Conteo de insumos
-    insumos_query = "SELECT COUNT(*) as total FROM Sync_Productos_Insumos"
-    insumos_result = execute_sql_query(*conn, insumos_query)
-    
-    # Conteo de recetas
-    recetas_query = "SELECT COUNT(*) as total FROM Sync_Productos_Recetas"
-    recetas_result = execute_sql_query(*conn, recetas_query)
-    
-    # Conteo de elaborados (subrecetas)
-    elaborados_query = "SELECT COUNT(*) as total FROM Sync_Productos_Elaborados"
-    elaborados_result = execute_sql_query(*conn, elaborados_query)
+    if unidad_negocio_pk:
+        insumos_query = """
+        SELECT COUNT(DISTINCT i.InsumoID) as total
+        FROM Sync_Productos_Insumos i
+        WHERE EXISTS (
+            SELECT 1
+            FROM Sync_Productos p
+            WHERE p.ServerID = i.ServerID
+              AND CONVERT(varchar(36), p.UnidadNegocioID) = %s
+              AND (p.Activo = 1 OR p.Activo IS NULL)
+        )
+        """
+        recetas_query = """
+        SELECT COUNT(DISTINCT r.RecetaDetalleID) as total
+        FROM Sync_Productos_Recetas r
+        WHERE EXISTS (
+            SELECT 1
+            FROM Sync_Productos p
+            WHERE p.ServerID = r.ServerID
+              AND p.CodigoFuente = r.ProductoCodigoFuente
+              AND CONVERT(varchar(36), p.UnidadNegocioID) = %s
+              AND (p.Activo = 1 OR p.Activo IS NULL)
+        )
+        """
+        elaborados_query = """
+        SELECT COUNT(DISTINCT e.ElaboradoDetalleID) as total
+        FROM Sync_Productos_Elaborados e
+        WHERE EXISTS (
+            SELECT 1
+            FROM Sync_Productos p
+            WHERE p.ServerID = e.ServerID
+              AND CONVERT(varchar(36), p.UnidadNegocioID) = %s
+              AND (p.Activo = 1 OR p.Activo IS NULL)
+        )
+        """
+        insumos_result = execute_sql_query_params(*conn, insumos_query, (str(unidad_negocio_pk),))
+        recetas_result = execute_sql_query_params(*conn, recetas_query, (str(unidad_negocio_pk),))
+        elaborados_result = execute_sql_query_params(*conn, elaborados_query, (str(unidad_negocio_pk),))
+    else:
+        insumos_result = execute_sql_query(*conn, "SELECT COUNT(*) as total FROM Sync_Productos_Insumos")
+        recetas_result = execute_sql_query(*conn, "SELECT COUNT(*) as total FROM Sync_Productos_Recetas")
+        elaborados_result = execute_sql_query(*conn, "SELECT COUNT(*) as total FROM Sync_Productos_Elaborados")
     
     p = productos_result[0] if productos_result else {}
     
@@ -113,12 +152,9 @@ def _mpro_comercial_where(alias: str = "p") -> str:
     )"""
 
 
-def _mpro_menu_pos_where(listas, alias: str = "p") -> str:
-    if not listas:
-        return "1=1"
-
+def _mpro_menu_pos_where(alias: str = "p") -> str:
+    """Conserva productos MPRO que existen en el menú POS sincronizado."""
     prefix = f"{alias}." if alias else ""
-    listas_sql = ", ".join("'" + str(x).replace("'", "''") + "'" for x in listas)
 
     return f"""(
         UPPER(ISNULL({prefix}SystemType, '')) <> 'MPRO'
@@ -128,7 +164,6 @@ def _mpro_menu_pos_where(listas, alias: str = "p") -> str:
             WHERE mpos.ServerID = {prefix}ServerID
               AND mpos.Activo = 1
               AND mpos.ProductoCodigoFuentePadded = {prefix}CodigoFuente
-              AND mpos.Lista IN ({listas_sql})
         )
     )"""
 
@@ -137,7 +172,7 @@ def _mpro_menu_pos_where(listas, alias: str = "p") -> str:
 
 def get_productos_con_costos(
     empresa_id: Optional[int] = None,
-    unidad_negocio_pk: Optional[int] = None,
+    unidad_negocio_pk: Optional[str] = None,
     servidor_id: Optional[str] = None,
     servidores_ids: Optional[List[str]] = None,  # FASE P2: RBAC por Unidad
     sistema_origen: Optional[str] = None,
@@ -150,7 +185,6 @@ def get_productos_con_costos(
     incluir_inactivos: bool = False,  # BUG-COSTOS-001: Por defecto excluir inactivos
     page: int = 1,
     page_size: int = 50,
-    mpro_menu_listas = None
 ) -> Tuple[List[Dict], int]:
     """
     Obtiene lista de productos con costos y márgenes.
@@ -173,19 +207,29 @@ def get_productos_con_costos(
         where_clauses = ["p.Activo = 1"]
     else:
         where_clauses = ["1=1"]
+    query_params: List[Any] = []
     
     if empresa_id:
-        where_clauses.append(f"p.EmpresaID = {empresa_id}")
+        where_clauses.append("p.EmpresaID = %s")
+        query_params.append(empresa_id)
     if unidad_negocio_pk:
-        where_clauses.append(f"p.UnidadNegocioID = {unidad_negocio_pk}")
+        where_clauses.append("CONVERT(varchar(36), p.UnidadNegocioID) = %s")
+        query_params.append(str(unidad_negocio_pk))
     if servidor_id:
-        where_clauses.append(f"p.ServerID = '{servidor_id}'")
+        where_clauses.append("CAST(p.ServerID AS NVARCHAR(36)) = %s")
+        query_params.append(str(servidor_id))
     
     # FASE P2: RBAC - Filtrar por múltiples servidores permitidos
     if servidores_ids and len(servidores_ids) > 0:
-        # Crear lista de UUIDs para el IN clause
-        servers_list = "', '".join(servidores_ids)
-        where_clauses.append(f"CAST(p.ServerID AS NVARCHAR(36)) IN ('{servers_list}')")
+        servers = [str(s) for s in servidores_ids if str(s).strip()]
+        if servers:
+            placeholders = ",".join(["%s"] * len(servers))
+            where_clauses.append(
+                f"CAST(p.ServerID AS NVARCHAR(36)) IN ({placeholders})"
+            )
+            query_params.extend(servers)
+        else:
+            where_clauses.append("1=0")
     
     receta_real_sql = """EXISTS (
         SELECT 1
@@ -210,16 +254,17 @@ def get_productos_con_costos(
     )"""
 
     where_clauses.append(_mpro_comercial_where("p"))
-    if mpro_menu_listas:
-        where_clauses.append(_mpro_menu_pos_where(mpro_menu_listas, "p"))
+    where_clauses.append(_mpro_menu_pos_where("p"))
 
     if sistema_origen:
-        where_clauses.append(f"p.SystemType = '{sistema_origen}'")
+        where_clauses.append("p.SystemType = %s")
+        query_params.append(str(sistema_origen))
     if familia:
-        familia_safe = familia.replace("'", "''").strip()
-        where_clauses.append(f"""(
-            p.FamiliaNombre LIKE '%{familia_safe}%'
-            OR p.FamiliaCodigoFuente = '{familia_safe}'
+        familia_value = familia.strip()
+        familia_like = f"%{familia_value}%"
+        where_clauses.append("""(
+            p.FamiliaNombre LIKE %s
+            OR p.FamiliaCodigoFuente = %s
             OR EXISTS (
                 SELECT 1
                 FROM Sync_Productos pfam
@@ -229,8 +274,8 @@ def get_productos_con_costos(
                   AND pfam.FamiliaCodigoFuente IS NOT NULL
                   AND pfam.FamiliaCodigoFuente <> ''
                   AND (
-                      pfam.FamiliaNombre LIKE '%{familia_safe}%'
-                      OR pfam.FamiliaCodigoFuente = '{familia_safe}'
+                      pfam.FamiliaNombre LIKE %s
+                      OR pfam.FamiliaCodigoFuente = %s
                   )
                   AND (
                       p.FamiliaCodigoFuente = pfam.FamiliaCodigoFuente
@@ -241,11 +286,14 @@ def get_productos_con_costos(
                   )
             )
         )""")
+        query_params.extend([familia_like, familia_value, familia_like, familia_value])
     if subfamilia:
-        subfamilia_safe = subfamilia.replace("'", "''").strip()
-        where_clauses.append(f"p.SubFamiliaNombre LIKE '%{subfamilia_safe}%'")
+        where_clauses.append("p.SubFamiliaNombre LIKE %s")
+        query_params.append(f"%{subfamilia.strip()}%")
     if busqueda:
-        where_clauses.append(f"(p.Nombre LIKE '%{busqueda}%' OR p.CodigoFuente LIKE '%{busqueda}%')")
+        busqueda_like = f"%{busqueda.strip()}%"
+        where_clauses.append("(p.Nombre LIKE %s OR p.CodigoFuente LIKE %s)")
+        query_params.extend([busqueda_like, busqueda_like])
     if solo_con_receta:
         where_clauses.append(receta_comercial_sql)
     
@@ -267,8 +315,9 @@ def get_productos_con_costos(
                      WHERE r.ProductoCodigoFuente = p.CodigoFuente AND r.ServerID = p.ServerID),
                     p.CostoReceta, 0
                 )) / p.PrecioVenta * 100
-            ) < {umbral_margen}
+            ) < %s
         )""")
+        query_params.append(umbral_margen)
     
     where_sql = " AND ".join(where_clauses)
     
@@ -278,7 +327,7 @@ def get_productos_con_costos(
     FROM Sync_Productos p
     WHERE {where_sql}
     """
-    count_result = execute_sql_query(*conn, count_query)
+    count_result = execute_sql_query_params(*conn, count_query, tuple(query_params))
     total = count_result[0].get('total', 0) if count_result else 0
     
     # Query de datos con paginación
@@ -354,7 +403,7 @@ def get_productos_con_costos(
     OFFSET {offset} ROWS FETCH NEXT {page_size} ROWS ONLY
     """
     
-    data_result = execute_sql_query(*conn, data_query) or []
+    data_result = execute_sql_query_params(*conn, data_query, tuple(query_params)) or []
     
     # Procesar resultados y calcular márgenes dinámicamente
     productos = []
@@ -851,7 +900,11 @@ def get_unidades_negocio() -> List[Dict[str, Any]]:
 
 # ==================== FAMILIAS Y SUBFAMILIAS ====================
 
-def get_familias_productos(servidor_id: Optional[str] = None, servidores_ids: Optional[List[str]] = None, mpro_menu_listas = None) -> List[Dict[str, Any]]:
+def get_familias_productos(
+    servidor_id: Optional[str] = None,
+    servidores_ids: Optional[List[str]] = None,
+    unidad_negocio_pk: Optional[str] = None,
+) -> List[Dict[str, Any]]:
     """
     Obtiene lista de familias únicas de productos desde EDARSAHUB.
     
@@ -864,17 +917,29 @@ def get_familias_productos(servidor_id: Optional[str] = None, servidores_ids: Op
     """
     conn = _get_edarsahub_connection()
     
-    where_clause = f"WHERE p.FamiliaNombre IS NOT NULL AND p.FamiliaNombre != '' AND {_mpro_comercial_where('p')}"
-    if mpro_menu_listas:
-        where_clause += f" AND {_mpro_menu_pos_where(mpro_menu_listas, 'p')}"
-    if servidor_id:
-        servidor_safe = servidor_id.replace("'", "''")
-        where_clause += f" AND CAST(p.ServerID AS NVARCHAR(36)) = '{servidor_safe}'"
+    where_clause = (
+        "WHERE p.FamiliaNombre IS NOT NULL "
+        "AND p.FamiliaNombre != '' "
+        f"AND {_mpro_comercial_where('p')} "
+        f"AND {_mpro_menu_pos_where('p')}"
+    )
+    params: List[Any] = []
+    if unidad_negocio_pk:
+        where_clause += " AND CONVERT(varchar(36), p.UnidadNegocioID) = %s"
+        params.append(str(unidad_negocio_pk))
+    elif servidor_id:
+        where_clause += " AND CAST(p.ServerID AS NVARCHAR(36)) = %s"
+        params.append(str(servidor_id))
     
     # FASE P2: RBAC - Filtrar por múltiples servidores permitidos
-    if servidores_ids and len(servidores_ids) > 0 and not servidor_id:
-        servers_list = "', '".join(servidores_ids)
-        where_clause += f" AND CAST(p.ServerID AS NVARCHAR(36)) IN ('{servers_list}')"
+    if servidores_ids and len(servidores_ids) > 0 and not servidor_id and not unidad_negocio_pk:
+        servers = [str(s) for s in servidores_ids if str(s).strip()]
+        if servers:
+            placeholders = ",".join(["%s"] * len(servers))
+            where_clause += f" AND CAST(p.ServerID AS NVARCHAR(36)) IN ({placeholders})"
+            params.extend(servers)
+        else:
+            where_clause += " AND 1=0"
     
     query = f"""
     SELECT 
@@ -886,7 +951,7 @@ def get_familias_productos(servidor_id: Optional[str] = None, servidores_ids: Op
     ORDER BY FamiliaNombre
     """
     
-    result = execute_sql_query(*conn, query)
+    result = execute_sql_query_params(*conn, query, tuple(params))
     
     familias = []
     for row in result or []:
@@ -899,7 +964,11 @@ def get_familias_productos(servidor_id: Optional[str] = None, servidores_ids: Op
     return familias
 
 
-def get_subfamilias_productos(familia: Optional[str] = None, servidor_id: Optional[str] = None, mpro_menu_listas = None) -> List[Dict[str, Any]]:
+def get_subfamilias_productos(
+    familia: Optional[str] = None,
+    servidor_id: Optional[str] = None,
+    unidad_negocio_pk: Optional[str] = None,
+) -> List[Dict[str, Any]]:
     """
     Obtiene lista de subfamilias de productos desde EDARSAHUB.
     
@@ -912,15 +981,22 @@ def get_subfamilias_productos(familia: Optional[str] = None, servidor_id: Option
     """
     conn = _get_edarsahub_connection()
     
-    where_clause = f"WHERE p.SubFamiliaNombre IS NOT NULL AND p.SubFamiliaNombre != '' AND {_mpro_comercial_where('p')}"
-    if mpro_menu_listas:
-        where_clause += f" AND {_mpro_menu_pos_where(mpro_menu_listas, 'p')}"
+    where_clause = (
+        "WHERE p.SubFamiliaNombre IS NOT NULL "
+        "AND p.SubFamiliaNombre != '' "
+        f"AND {_mpro_comercial_where('p')} "
+        f"AND {_mpro_menu_pos_where('p')}"
+    )
+    params: List[Any] = []
     if familia:
-        familia_safe = familia.replace("'", "''")
-        where_clause += f" AND p.FamiliaNombre = '{familia_safe}'"
-    if servidor_id:
-        servidor_safe = servidor_id.replace("'", "''")
-        where_clause += f" AND CAST(p.ServerID AS NVARCHAR(36)) = '{servidor_safe}'"
+        where_clause += " AND p.FamiliaNombre = %s"
+        params.append(str(familia))
+    if unidad_negocio_pk:
+        where_clause += " AND CONVERT(varchar(36), p.UnidadNegocioID) = %s"
+        params.append(str(unidad_negocio_pk))
+    elif servidor_id:
+        where_clause += " AND CAST(p.ServerID AS NVARCHAR(36)) = %s"
+        params.append(str(servidor_id))
     
     query = f"""
     SELECT 
@@ -933,7 +1009,7 @@ def get_subfamilias_productos(familia: Optional[str] = None, servidor_id: Option
     ORDER BY FamiliaNombre, SubFamiliaNombre
     """
     
-    result = execute_sql_query(*conn, query)
+    result = execute_sql_query_params(*conn, query, tuple(params))
     
     subfamilias = []
     for row in result or []:

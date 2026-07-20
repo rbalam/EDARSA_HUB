@@ -34,6 +34,7 @@ import secrets  # Reemplaza random para generación de datos demo
 # Importar función de filtrado de visibilidad
 from modules.comercial.repository import get_sucursales_visibles_config
 from core.sql_first.db import get_sql_connection, fetch_all_dict
+from modules.finanzas.access import resolve_finanzas_unit_filter
 
 router = APIRouter(prefix="/finanzas/cuentas-por-pagar", tags=["Cuentas por Pagar"])
 
@@ -146,18 +147,38 @@ async def get_softrest_repo():
 # La pantalla de CxP lee EXCLUSIVAMENTE de esta tabla, poblada por el job
 # core/scheduler/jobs/cxp_sync_job.py (registrado en el scheduler).
 # ============================================================================
-def _cxp_rows_canonico(unidad=None, tipo=None, solo_vencidas=False):
-    where = ["Activo=1", "Saldo>0", "ISNULL(EsDemo,0)=0"]
+def _cxp_rows_canonico(
+    unidad_negocio_pk=None,
+    tipo=None,
+    solo_vencidas=False,
+    unidades_permitidas=None,
+):
+    where = ["c.Activo=1", "c.Saldo>0", "ISNULL(c.EsDemo,0)=0"]
     params = []
-    if unidad and str(unidad).lower() not in ("todas", "all", ""):
-        where.append("(UPPER(UnidadNegocio)=UPPER(%s) OR UPPER(ISNULL(UnidadNegocioNombre,''))=UPPER(%s) "
-                     "OR UPPER(ISNULL(UnidadNegocioNombre,'')) LIKE UPPER(%s))")
-        params += [unidad, unidad, f"%{unidad}%"]
+    if unidad_negocio_pk and str(unidad_negocio_pk).lower() not in ("todas", "all", ""):
+        where.append("CONVERT(varchar(36), u.id) = %s")
+        params.append(str(unidad_negocio_pk))
+    elif unidades_permitidas is not None:
+        allowed = [str(u) for u in unidades_permitidas if u]
+        if allowed:
+            placeholders = ",".join(["%s"] * len(allowed))
+            where.append(f"CONVERT(varchar(36), u.id) IN ({placeholders})")
+            params.extend(allowed)
+        else:
+            where.append("1=0")
     if tipo:
-        where.append("TipoProveedor=%s"); params.append(tipo)
+        where.append("c.TipoProveedor=%s"); params.append(tipo)
     if solo_vencidas:
-        where.append("DiasVencido>0")
-    sql = "SELECT * FROM dbo.Finanzas_CxP_Sync WHERE " + " AND ".join(where) + " ORDER BY Saldo DESC"
+        where.append("c.DiasVencido>0")
+    sql = (
+        "SELECT c.*, CONVERT(varchar(36), u.id) AS UnidadNegocioIDCanonica, "
+        "u.codigo AS UnidadNegocioCodigoCanonico, u.nombre AS UnidadNegocioNombreCanonico "
+        "FROM dbo.Finanzas_CxP_Sync c "
+        "INNER JOIN dbo.Unidades_Negocio u "
+        "  ON UPPER(LTRIM(RTRIM(c.UnidadNegocio))) = UPPER(LTRIM(RTRIM(u.codigo))) "
+        " AND ISNULL(u.activo, 1) = 1 "
+        "WHERE " + " AND ".join(where) + " ORDER BY c.Saldo DESC"
+    )
     return fetch_all_dict(sql, tuple(params))
 
 
@@ -172,8 +193,10 @@ def _cxp_factura_dict(r):
         "proveedor_rfc": r.get('ProveedorRFC') or '',
         "tipo_proveedor": r.get('TipoProveedor') or 'X',
         "tipo_proveedor_nombre": r.get('TipoProveedorNombre') or 'OTROS',
-        "sucursal_id": r.get('UnidadNegocio'),
-        "sucursal_nombre": r.get('UnidadNegocioNombre'),
+        "sucursal_id": r.get('UnidadNegocioCodigoCanonico') or r.get('UnidadNegocio'),
+        "sucursal_nombre": r.get('UnidadNegocioNombreCanonico') or r.get('UnidadNegocioNombre'),
+        "unidad_negocio_pk": r.get('UnidadNegocioIDCanonica'),
+        "unidad_negocio_codigo": r.get('UnidadNegocioCodigoCanonico') or r.get('UnidadNegocio'),
         "folio_entrada": r.get('FolioEntrada') or '-',
         "folio_factura": r.get('FolioFactura') or '-',
         "fecha_entrada": str(fe)[:10] if fe else None,
@@ -192,8 +215,16 @@ def _cxp_factura_dict(r):
     }
 
 
-def _cxp_listar_canonico(unidad, tipo, solo_vencidas):
-    facturas = [_cxp_factura_dict(r) for r in _cxp_rows_canonico(unidad, tipo, solo_vencidas)]
+def _cxp_listar_canonico(unidad_negocio_pk, tipo, solo_vencidas, unidades_permitidas=None):
+    facturas = [
+        _cxp_factura_dict(r)
+        for r in _cxp_rows_canonico(
+            unidad_negocio_pk,
+            tipo,
+            solo_vencidas,
+            unidades_permitidas,
+        )
+    ]
     nombres = {'A': 'ALIMENTOS', 'B': 'BEBIDAS', 'X': 'OTROS'}
     tipos = {}
     for f in facturas:
@@ -219,8 +250,11 @@ def _cxp_listar_canonico(unidad, tipo, solo_vencidas):
             "total_facturas": totales["cantidad_facturas"], "totales": totales}
 
 
-def _cxp_resumen_canonico(unidad):
-    rows = _cxp_rows_canonico(unidad)
+def _cxp_resumen_canonico(unidad_negocio_pk, unidades_permitidas=None):
+    rows = _cxp_rows_canonico(
+        unidad_negocio_pk,
+        unidades_permitidas=unidades_permitidas,
+    )
     b = {'c': [0, 0.0], 'v1': [0, 0.0], 'v2': [0, 0.0], 'v3': [0, 0.0], 'v4': [0, 0.0]}
     total = 0.0; n = 0
     for r in rows:
@@ -239,8 +273,11 @@ def _cxp_resumen_canonico(unidad):
                            "total_facturas": n, "total_saldo": round(total, 2)}}
 
 
-def _cxp_proveedores_canonico(unidad):
-    rows = _cxp_rows_canonico(unidad)
+def _cxp_proveedores_canonico(unidad_negocio_pk, unidades_permitidas=None):
+    rows = _cxp_rows_canonico(
+        unidad_negocio_pk,
+        unidades_permitidas=unidades_permitidas,
+    )
     provs = {}
     for r in rows:
         pid = r.get('ProveedorID')
@@ -253,13 +290,32 @@ def _cxp_proveedores_canonico(unidad):
             "proveedores": sorted(provs.values(), key=lambda x: -x["total_saldo"])}
 
 
-def _cxp_sucursales_canonico():
+def _cxp_sucursales_canonico(unidades_permitidas=None):
+    where = ["c.Activo=1", "c.Saldo>0", "ISNULL(c.EsDemo,0)=0"]
+    params = []
+    if unidades_permitidas is not None:
+        allowed = [str(u) for u in unidades_permitidas if u]
+        if allowed:
+            placeholders = ",".join(["%s"] * len(allowed))
+            where.append(f"CONVERT(varchar(36), u.id) IN ({placeholders})")
+            params.extend(allowed)
+        else:
+            where.append("1=0")
+
     rows = fetch_all_dict(
-        "SELECT UnidadNegocio, MAX(UnidadNegocioNombre) nombre, MAX(Fuente) fuente, "
-        "COUNT(*) n, SUM(Saldo) saldo FROM dbo.Finanzas_CxP_Sync "
-        "WHERE Activo=1 AND Saldo>0 AND ISNULL(EsDemo,0)=0 GROUP BY UnidadNegocio ORDER BY saldo DESC")
+        "SELECT CONVERT(varchar(36), u.id) unidad_negocio_pk, u.codigo, u.nombre, "
+        "MAX(c.Fuente) fuente, COUNT(*) n, SUM(c.Saldo) saldo "
+        "FROM dbo.Finanzas_CxP_Sync c "
+        "INNER JOIN dbo.Unidades_Negocio u "
+        "  ON UPPER(LTRIM(RTRIM(c.UnidadNegocio))) = UPPER(LTRIM(RTRIM(u.codigo))) "
+        " AND ISNULL(u.activo, 1) = 1 "
+        "WHERE " + " AND ".join(where) + " "
+        "GROUP BY u.id, u.codigo, u.nombre ORDER BY saldo DESC",
+        tuple(params),
+    )
     return {"fuente": "CANONICO_EDARSAHUB",
-            "sucursales": [{"SucursalID": r["UnidadNegocio"], "Nombre_Sucursal": r.get("nombre") or r["UnidadNegocio"],
+            "sucursales": [{"SucursalID": r["unidad_negocio_pk"], "Nombre_Sucursal": r.get("nombre") or r["codigo"],
+                            "unidad_negocio_pk": r["unidad_negocio_pk"], "codigo": r.get("codigo"),
                             "CantidadFacturas": int(r["n"] or 0), "SaldoTotal": float(r["saldo"] or 0),
                             "Sistema": r.get("fuente")} for r in rows]}
 
@@ -361,6 +417,7 @@ class ActualizarDecisionPagoMasivo(BaseModel):
 @router.get("")
 async def listar_facturas_pendientes(
     sucursal_id: Optional[str] = None,  # CIENFUEGOS, ESTELAR, 130MID o código MPRO
+    unidad_negocio_pk: Optional[str] = None,
     proveedor_id: Optional[str] = None,
     tipo_proveedor: Optional[str] = None,  # A=Alimentos, B=Bebidas, X=Otros
     fecha_corte: Optional[str] = None,  # YYYY-MM-DD
@@ -380,7 +437,16 @@ async def listar_facturas_pendientes(
     Agrupa por TIPO DE PROVEEDOR (A=Alimentos, B=Bebidas, X=Otros).
     """
     # === NO-LIVE: lee EXCLUSIVAMENTE de la tabla canónica Finanzas_CxP_Sync ===
-    return _cxp_listar_canonico(sucursal_id, tipo_proveedor, solo_vencidas)
+    unidad_pk, unidades_permitidas = resolve_finanzas_unit_filter(
+        current_user,
+        unidad_negocio_pk or sucursal_id,
+    )
+    return _cxp_listar_canonico(
+        unidad_pk,
+        tipo_proveedor,
+        solo_vencidas,
+        unidades_permitidas,
+    )
     if use_demo:
         # Ir directo a modo demo
         pass
@@ -948,6 +1014,7 @@ def _calcular_por_tipo_en_memoria(cxp_data: List[Dict]) -> Dict[str, Any]:
 @router.get("/resumen")
 async def get_resumen_cuentas_por_pagar(
     sucursal_id: Optional[str] = None,
+    unidad_negocio_pk: Optional[str] = None,
     use_demo: bool = Query(False, description="Usar datos demo en lugar de SQL real"),
     current_user: Dict = Depends(get_current_user)
 ):
@@ -964,7 +1031,14 @@ async def get_resumen_cuentas_por_pagar(
     Si una fuente falla, reporta resultado parcial con la otra.
     """
     # === NO-LIVE: lee EXCLUSIVAMENTE de la tabla canónica Finanzas_CxP_Sync ===
-    return _cxp_resumen_canonico(sucursal_id)
+    unidad_pk, unidades_permitidas = resolve_finanzas_unit_filter(
+        current_user,
+        unidad_negocio_pk or sucursal_id,
+    )
+    return _cxp_resumen_canonico(
+        unidad_pk,
+        unidades_permitidas,
+    )
     if use_demo:
         # Ir directo a modo demo (código existente abajo)
         pass
@@ -1132,11 +1206,19 @@ async def get_resumen_cuentas_por_pagar(
 @router.get("/proveedores")
 async def listar_proveedores_con_saldo(
     sucursal_id: Optional[str] = None,
+    unidad_negocio_pk: Optional[str] = None,
     use_demo: bool = Query(False, description="Usar datos demo en lugar de SQL real"),
     current_user: Dict = Depends(get_current_user)
 ):
     """Lista proveedores que tienen facturas pendientes - NO-LIVE (canónico)"""
-    return _cxp_proveedores_canonico(sucursal_id)
+    unidad_pk, unidades_permitidas = resolve_finanzas_unit_filter(
+        current_user,
+        unidad_negocio_pk or sucursal_id,
+    )
+    return _cxp_proveedores_canonico(
+        unidad_pk,
+        unidades_permitidas,
+    )
     mpro_repo = await get_mpro_repo()
     
     # Usar MPRO como fuente principal
@@ -1207,7 +1289,8 @@ async def listar_sucursales_cxp(
     - ManagementPro: ORIGEN (0023), 130° QRO (0021)
     """
     # === NO-LIVE: lee EXCLUSIVAMENTE de la tabla canónica Finanzas_CxP_Sync ===
-    return _cxp_sucursales_canonico()
+    _, unidades_permitidas = resolve_finanzas_unit_filter(current_user)
+    return _cxp_sucursales_canonico(unidades_permitidas)
     softrest_repo = await get_softrest_repo()
     mpro_repo = await get_mpro_repo()
     
@@ -1310,8 +1393,19 @@ async def actualizar_decision_pago(
 ):
     """
     Actualizar la decisión de pago de una factura.
-    Soporta IDs numéricos (legacy), MPRO_xxx, y SUCURSAL_xxx (SoftRestaurant).
+
+    Bloqueado hasta que exista una tabla canónica de decisiones de pago CxP.
+    No se permite persistencia local, demo ni parcial sobre fuentes operativas.
     """
+    resolve_finanzas_unit_filter(current_user)
+    raise HTTPException(
+        status_code=409,
+        detail=(
+            "No existe flujo canonico de decisiones de pago CxP. "
+            "No se aplico ningun cambio local ni demo."
+        ),
+    )
+
     from urllib.parse import unquote
     
     # Decodificar URL encoding si existe
@@ -1413,6 +1507,15 @@ async def actualizar_decision_pago_masivo(
     """
     Actualizar decisión de pago de múltiples facturas.
     """
+    resolve_finanzas_unit_filter(current_user)
+    raise HTTPException(
+        status_code=409,
+        detail=(
+            "No existe flujo canonico de decisiones de pago CxP. "
+            "Operacion masiva bloqueada preventivamente."
+        ),
+    )
+
     from core.auditoria_helpers import registrar_auditoria_cxp
     
     actualizadas = 0
