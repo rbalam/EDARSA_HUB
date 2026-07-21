@@ -471,12 +471,27 @@ def get_productos_con_costos(
 
 # ==================== RECETA EXPANDIDA ====================
 
-def get_producto_by_id(producto_id: str) -> Optional[Dict]:
-    """Obtiene un producto por su ID."""
+def get_producto_by_id(producto_id: str, server_id: Optional[str] = None) -> Optional[Dict]:
+    """Obtiene un producto por ID o código fuente dentro del alcance resuelto."""
     conn = _get_edarsahub_connection()
-    
+
+    where_clauses = [
+        """(
+            (
+                TRY_CONVERT(UNIQUEIDENTIFIER, %s) IS NOT NULL
+                AND ProductoID = TRY_CONVERT(UNIQUEIDENTIFIER, %s)
+            )
+            OR CodigoFuente = %s
+        )"""
+    ]
+    params = [str(producto_id), str(producto_id), str(producto_id)]
+
+    if server_id:
+        where_clauses.append("CAST(ServerID AS NVARCHAR(36)) = %s")
+        params.append(str(server_id))
+
     query = f"""
-    SELECT 
+    SELECT
         CAST(ProductoID AS NVARCHAR(36)) as ProductoID,
         CodigoFuente,
         Nombre,
@@ -486,13 +501,9 @@ def get_producto_by_id(producto_id: str) -> Optional[Dict]:
         SyncRunID,
         SyncedAtMexico
     FROM Sync_Productos
-    WHERE (
-        TRY_CONVERT(UNIQUEIDENTIFIER, '{producto_id}') IS NOT NULL
-        AND ProductoID = TRY_CONVERT(UNIQUEIDENTIFIER, '{producto_id}')
-    )
-    OR CodigoFuente = '{producto_id}'
+    WHERE {' AND '.join(where_clauses)}
     """
-    result = execute_sql_query(*conn, query)
+    result = execute_sql_query_params(*conn, query, tuple(params))
     return result[0] if result else None
 
 
@@ -502,38 +513,18 @@ def get_receta_producto(producto_id: str, server_id: Optional[str] = None) -> Tu
     Fuente: EDARSAHUB SQL (NO-LIVE)
     """
     conn = _get_edarsahub_connection()
-    
-    # Primero obtener el producto
-    producto = get_producto_by_id(producto_id)
-    if not producto:
-        # Intentar buscar por CodigoFuente con ServerID
-        if server_id:
-            query = f"""
-            SELECT 
-                CAST(ProductoID AS NVARCHAR(36)) as ProductoID,
-                CodigoFuente,
-                Nombre,
-                SystemType,
-                CAST(ServerID AS NVARCHAR(36)) as ServerID,
-                CostoReceta,
-                SyncRunID,
-                SyncedAtMexico
-            FROM Sync_Productos
-            WHERE CodigoFuente = '{producto_id}'
-            AND ServerID = '{server_id}'
-            """
-            result = execute_sql_query(*conn, query)
-            producto = result[0] if result else None
-    
+
+    producto = get_producto_by_id(producto_id, server_id)
     if not producto:
         return None, []
-    
-    # Obtener componentes de la receta
+
     srv_id = producto.get('ServerID') or producto.get('server_id') or server_id
     codigo_fuente = producto.get('CodigoFuente')
-    
-    receta_query = f"""
-    SELECT 
+    if not srv_id or not codigo_fuente:
+        return producto, []
+
+    receta_query = """
+    SELECT
         CAST(r.RecetaDetalleID AS NVARCHAR(36)) as componente_id,
         r.ComponenteCodigoFuente as codigo_fuente,
         r.ComponenteNombre as nombre,
@@ -547,22 +538,24 @@ def get_receta_producto(producto_id: str, server_id: Optional[str] = None) -> Tu
         CAST(r.EsElaborado AS BIT) as es_elaborado,
         r.RendimientoElaborado as rendimiento_elaborado
     FROM Sync_Productos_Recetas r
-    WHERE r.ProductoCodigoFuente = '{codigo_fuente}'
-    AND r.ServerID = '{srv_id}'
+    WHERE r.ProductoCodigoFuente = %s
+    AND CAST(r.ServerID AS NVARCHAR(36)) = %s
     ORDER BY r.OrdenVisual, r.ComponenteNombre
     """
-    
-    receta_result = execute_sql_query(*conn, receta_query) or []
-    
+
+    receta_result = execute_sql_query_params(
+        *conn, receta_query, (str(codigo_fuente), str(srv_id))
+    ) or []
+
     # Primero calcular el costo total de todos los componentes para el %
     costo_total_receta = sum(_safe_decimal(row.get('costo_total'), 0) for row in receta_result)
-    
+
     componentes = []
     for row in receta_result:
         costo_comp = _safe_decimal(row.get('costo_total'), 0)
         # Calcular porcentaje dinámicamente
         porcentaje = round((costo_comp / costo_total_receta * 100), 2) if costo_total_receta > 0 else 0
-        
+
         componentes.append({
             'componente_id': row.get('componente_id', ''),
             'codigo_fuente': row.get('codigo_fuente', ''),
@@ -577,7 +570,7 @@ def get_receta_producto(producto_id: str, server_id: Optional[str] = None) -> Tu
             'es_elaborado': bool(row.get('es_elaborado')),
             'rendimiento_elaborado': _safe_decimal(row.get('rendimiento_elaborado')),
         })
-    
+
     return producto, componentes
 
 
@@ -586,22 +579,25 @@ def get_receta_producto(producto_id: str, server_id: Optional[str] = None) -> Tu
 def get_receta_elaborado(codigo_elaborado: str, server_id: Optional[str] = None) -> Tuple[Optional[Dict], List[Dict]]:
     """
     Obtiene la receta de un insumo elaborado desde Sync_Productos_Elaborados.
-    
-    Los elaborados NO existen en Sync_Productos, sus recetas están en 
+
+    Los elaborados NO existen en Sync_Productos, sus recetas están en
     Sync_Productos_Elaborados donde InsumoElaboradoCodigoFuente es el código del elaborado.
-    
+
     Args:
         codigo_elaborado: Código fuente del insumo elaborado
         server_id: ServerID para filtrar
-    
+
     Returns:
         Tuple[producto_info, componentes]
     """
     conn = _get_edarsahub_connection()
-    
-    # Primero buscar info del elaborado en Sync_Productos_Insumos
-    where_srv = f"AND CAST(ServerID AS NVARCHAR(36)) = '{server_id}'" if server_id else ""
-    
+
+    server_filter = ""
+    insumo_params = [str(codigo_elaborado)]
+    if server_id:
+        server_filter = "AND CAST(ServerID AS NVARCHAR(36)) = %s"
+        insumo_params.append(str(server_id))
+
     insumo_query = f"""
     SELECT TOP 1
         CAST(InsumoID AS NVARCHAR(36)) as insumo_id,
@@ -615,13 +611,12 @@ def get_receta_elaborado(codigo_elaborado: str, server_id: Optional[str] = None)
         SyncRunID,
         SyncedAtMexico
     FROM Sync_Productos_Insumos
-    WHERE LTRIM(RTRIM(CodigoFuente)) = LTRIM(RTRIM('{codigo_elaborado}'))
-    {where_srv}
+    WHERE LTRIM(RTRIM(CodigoFuente)) = LTRIM(RTRIM(%s))
+    {server_filter}
     """
-    insumo_result = execute_sql_query(*conn, insumo_query)
-    
+    insumo_result = execute_sql_query_params(*conn, insumo_query, tuple(insumo_params))
+
     if not insumo_result:
-        # Intentar buscar en Sync_Productos (algunos elaborados pueden estar ahí)
         producto_query = f"""
         SELECT TOP 1
             CAST(ProductoID AS NVARCHAR(36)) as ProductoID,
@@ -634,25 +629,25 @@ def get_receta_elaborado(codigo_elaborado: str, server_id: Optional[str] = None)
             SyncRunID,
             SyncedAtMexico
         FROM Sync_Productos
-        WHERE LTRIM(RTRIM(CodigoFuente)) = LTRIM(RTRIM('{codigo_elaborado}'))
-        {where_srv}
+        WHERE LTRIM(RTRIM(CodigoFuente)) = LTRIM(RTRIM(%s))
+        {server_filter}
         """
-        insumo_result = execute_sql_query(*conn, producto_query)
-        
+        insumo_result = execute_sql_query_params(*conn, producto_query, tuple(insumo_params))
+
         if insumo_result:
             # Si lo encontramos como producto, usar get_receta_producto
             return get_receta_producto(codigo_elaborado, server_id)
-    
+
     if not insumo_result:
         return None, []
-    
+
     insumo_info = insumo_result[0]
-    srv_id = insumo_info.get('server_id') or server_id
-    
-    # Buscar los componentes del elaborado en Sync_Productos_Elaborados
-    # También verificar si cada componente es a su vez un elaborado
-    elaborado_query = f"""
-    SELECT 
+    srv_id = insumo_info.get('ServerID') or insumo_info.get('server_id') or server_id
+    if not srv_id:
+        return None, []
+
+    elaborado_query = """
+    SELECT
         CAST(e.ElaboradoDetalleID AS NVARCHAR(36)) as componente_id,
         LTRIM(RTRIM(e.ComponenteCodigoFuente)) as codigo_fuente,
         e.ComponenteNombre as nombre,
@@ -665,24 +660,26 @@ def get_receta_elaborado(codigo_elaborado: str, server_id: Optional[str] = None)
         COALESCE(i.EsElaborado, 0) as es_elaborado,
         i.RendimientoElaborado as rendimiento_elaborado
     FROM Sync_Productos_Elaborados e
-    LEFT JOIN Sync_Productos_Insumos i 
+    LEFT JOIN Sync_Productos_Insumos i
         ON LTRIM(RTRIM(i.CodigoFuente)) = LTRIM(RTRIM(e.ComponenteCodigoFuente))
         AND i.ServerID = e.ServerID
-    WHERE LTRIM(RTRIM(e.InsumoElaboradoCodigoFuente)) = LTRIM(RTRIM('{codigo_elaborado}'))
-    AND CAST(e.ServerID AS NVARCHAR(36)) = '{srv_id}'
+    WHERE LTRIM(RTRIM(e.InsumoElaboradoCodigoFuente)) = LTRIM(RTRIM(%s))
+    AND CAST(e.ServerID AS NVARCHAR(36)) = %s
     ORDER BY e.ComponenteNombre
     """
-    
-    elaborado_result = execute_sql_query(*conn, elaborado_query) or []
-    
+
+    elaborado_result = execute_sql_query_params(
+        *conn, elaborado_query, (str(codigo_elaborado), str(srv_id))
+    ) or []
+
     # Calcular costo total y porcentajes
     costo_total = sum(_safe_decimal(row.get('costo_total'), 0) for row in elaborado_result)
-    
+
     componentes = []
     for row in elaborado_result:
         costo_comp = _safe_decimal(row.get('costo_total'), 0)
         porcentaje = round((costo_comp / costo_total * 100), 2) if costo_total > 0 else 0
-        
+
         componentes.append({
             'componente_id': row.get('componente_id', ''),
             'codigo_fuente': row.get('codigo_fuente', ''),
@@ -697,7 +694,7 @@ def get_receta_elaborado(codigo_elaborado: str, server_id: Optional[str] = None)
             'es_elaborado': bool(row.get('es_elaborado')),
             'rendimiento_elaborado': _safe_decimal(row.get('rendimiento_elaborado')),
         })
-    
+
     # Construir info del "producto" (elaborado)
     elaborado_info = {
         'producto_id': insumo_info.get('insumo_id', ''),
@@ -709,7 +706,7 @@ def get_receta_elaborado(codigo_elaborado: str, server_id: Optional[str] = None)
         'SyncRunID': insumo_info.get('SyncRunID'),
         'SyncedAtMexico': insumo_info.get('SyncedAtMexico'),
     }
-    
+
     return elaborado_info, componentes
 
 

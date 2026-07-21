@@ -1,5 +1,3 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
 """
 Repository para Simulación de Precios y Solicitudes de Cambio
 FASE 1C-3F - Costos y Márgenes
@@ -12,10 +10,10 @@ IMPORTANTE:
 
 import uuid
 from datetime import datetime
-from typing import Optional, List, Dict, Tuple, Any
+from typing import Optional, List, Dict, Tuple
 from decimal import Decimal
 
-from core.db import execute_sql_query
+from core.db import execute_sql_query_params
 from core.server_registry import EDARSAHUB_CONFIG
 
 
@@ -42,21 +40,6 @@ def _safe_decimal(value) -> float:
         return 0.0
 
 
-def _escape_sql(value: str) -> str:
-    """Escapa comillas simples para SQL."""
-    if value is None:
-        return ''
-    return str(value).replace("'", "''")
-
-
-def _sql_string(value: Optional[str], unicode: bool = True) -> str:
-    """Convierte un valor a string SQL o NULL."""
-    if value is None:
-        return 'NULL'
-    escaped = _escape_sql(value)
-    prefix = 'N' if unicode else ''
-    return f"{prefix}'{escaped}'"
-
 
 def _generar_folio() -> str:
     """Genera folio único para solicitud."""
@@ -76,18 +59,20 @@ def obtener_datos_producto_para_simulacion(
     Fuente: EDARSAHUB SQL (NO-LIVE)
     """
     conn = _get_edarsahub_connection()
-    
-    # Normalizar UUIDs (quitar guiones si los tiene)
-    prod_id_clean = producto_id.replace('-', '').upper()
-    server_id_clean = server_id.replace('-', '').upper()
-    
-    query = f"""
-    SELECT 
-        p.ProductoID,
+
+    if not producto_id or not server_id:
+        return None
+
+    prod_id_clean = str(producto_id).replace('-', '').upper()
+    server_id_clean = str(server_id).replace('-', '').upper()
+
+    query = """
+    SELECT
+        CAST(p.ProductoID AS NVARCHAR(36)) as ProductoID,
         p.CodigoFuente,
         p.Nombre,
         p.NombreCorto,
-        p.ServerID,
+        CAST(p.ServerID AS NVARCHAR(36)) as ServerID,
         p.SystemType,
         p.FamiliaCodigoFuente,
         p.FamiliaNombre,
@@ -98,15 +83,15 @@ def obtener_datos_producto_para_simulacion(
         p.MargenObjetivo,
         p.SyncRunID
     FROM Sync_Productos p
-    WHERE REPLACE(CAST(p.ProductoID AS VARCHAR(50)), '-', '') = '{prod_id_clean}'
-    AND REPLACE(CAST(p.ServerID AS VARCHAR(50)), '-', '') = '{server_id_clean}'
+    WHERE REPLACE(CAST(p.ProductoID AS VARCHAR(50)), '-', '') = %s
+    AND REPLACE(CAST(p.ServerID AS VARCHAR(50)), '-', '') = %s
     """
-    
-    result = execute_sql_query(*conn, query)
-    
+
+    result = execute_sql_query_params(*conn, query, (prod_id_clean, server_id_clean))
+
     if not result:
         return None
-    
+
     r = result[0]
     return {
         'producto_id': str(r['ProductoID']),
@@ -123,7 +108,7 @@ def obtener_datos_producto_para_simulacion(
         'margen_actual_porcentaje': _safe_decimal(r.get('MargenBrutoPorcentaje', 0)),
         'margen_objetivo': _safe_decimal(r.get('MargenObjetivo')) if r.get('MargenObjetivo') else None,
         'sync_run_id': r.get('SyncRunID'),
-        'fecha_datos_costo': None,  # Campo no disponible en tabla actual
+        'fecha_datos_costo': None,
     }
 
 
@@ -202,15 +187,8 @@ def guardar_simulacion(
     """
     conn = _get_edarsahub_connection()
     simulacion_id = str(uuid.uuid4())
-    
-    nombre_escaped = _escape_sql(datos_producto["nombre_producto"])
-    impacto_escaped = _escape_sql(datos_simulacion["impacto_estimado"])
-    sync_run = _sql_string(datos_producto.get('sync_run_id'), unicode=False)
-    ip_val = _sql_string(ip, unicode=False)
-    margen_obj = datos_producto.get("margen_objetivo")
-    margen_obj_sql = str(margen_obj) if margen_obj is not None else 'NULL'
-    
-    query = f"""
+
+    query = """
     INSERT INTO Comercial_SimulacionesPrecios (
         SimulacionID, ProductoID, CodigoProducto, NombreProducto,
         ServerID, SystemType,
@@ -220,32 +198,41 @@ def guardar_simulacion(
         MargenObjetivo, Recomendacion, ImpactoEstimado,
         SyncRunID, UsuarioID, UsuarioEmail, IPSimulacion
     ) VALUES (
-        '{simulacion_id}',
-        '{ProductoID}',
-        '{datos_producto["codigo_producto"]}',
-        N'{nombre_escaped}',
-        '{ServerID}',
-        '{datos_producto["SystemType"]}',
-        {datos_producto["precio_actual"]},
-        {datos_producto["costo_actual"]},
-        {datos_producto["margen_actual_pesos"]},
-        {datos_producto["margen_actual_porcentaje"]},
-        {datos_simulacion["precio_simulado"]},
-        {datos_simulacion["margen_simulado_pesos"]},
-        {datos_simulacion["margen_simulado_porcentaje"]},
-        {datos_simulacion["variacion_pesos"]},
-        {datos_simulacion["variacion_porcentaje"]},
-        {margen_obj_sql},
-        '{datos_simulacion["Recomendacion"]}',
-        N'{impacto_escaped}',
-        {sync_run},
-        '{usuario_id}',
-        '{usuario_email}',
-        {ip_val}
+        %s, %s, %s, %s,
+        %s, %s,
+        %s, %s, %s, %s,
+        %s, %s, %s,
+        %s, %s,
+        %s, %s, %s,
+        %s, %s, %s, %s
     )
     """
-    
-    execute_sql_query(*conn, query)
+    params = (
+        simulacion_id,
+        datos_producto['producto_id'],
+        datos_producto['codigo_producto'],
+        datos_producto['nombre_producto'],
+        datos_producto['server_id'],
+        datos_producto['system_type'],
+        datos_producto['precio_actual'],
+        datos_producto['costo_actual'],
+        datos_producto['margen_actual_pesos'],
+        datos_producto['margen_actual_porcentaje'],
+        datos_simulacion['precio_simulado'],
+        datos_simulacion['margen_simulado_pesos'],
+        datos_simulacion['margen_simulado_porcentaje'],
+        datos_simulacion['variacion_pesos'],
+        datos_simulacion['variacion_porcentaje'],
+        datos_producto.get('margen_objetivo'),
+        datos_simulacion['recomendacion'],
+        datos_simulacion['impacto_estimado'],
+        datos_producto.get('sync_run_id'),
+        usuario_id,
+        usuario_email,
+        ip,
+    )
+
+    execute_sql_query_params(*conn, query, params)
     return simulacion_id
 
 
@@ -261,48 +248,35 @@ def crear_solicitud_cambio_precio(
     usuario_email: str,
     usuario_nombre: Optional[str] = None,
     simulacion_id: Optional[str] = None,
-    ip: Optional[str] = None
+    ip: Optional[str] = None,
+    unidad_negocio_pk: Optional[str] = None,
 ) -> Dict:
     """
     Crea una nueva solicitud de cambio de precio en estado BORRADOR.
     NO modifica precios oficiales.
     """
     conn = _get_edarsahub_connection()
-    
-    # Obtener datos actuales del producto
+
     datos_producto = obtener_datos_producto_para_simulacion(producto_id, server_id)
     if not datos_producto:
         raise ValueError(f"Producto no encontrado: {producto_id}")
-    
-    # Calcular simulación
+
     simulacion = calcular_simulacion(
         datos_producto['precio_actual'],
         datos_producto['costo_actual'],
         precio_solicitado,
         datos_producto.get('margen_objetivo')
     )
-    
+
     solicitud_id = str(uuid.uuid4())
     folio = _generar_folio()
-    
-    # Preparar valores escapados
-    nombre_prod = _escape_sql(datos_producto["nombre_producto"])
-    familia_codigo = _sql_string(datos_producto.get('familia_codigo'), unicode=False)
-    familia_nombre = _sql_string(datos_producto.get('familia_nombre'), unicode=True)
-    motivo_escaped = _escape_sql(motivo)
-    justif_sql = _sql_string(justificacion, unicode=True)
-    sync_run = _sql_string(datos_producto.get('sync_run_id'), unicode=False)
-    fecha_costo = _sql_string(str(datos_producto.get('fecha_datos_costo')) if datos_producto.get('fecha_datos_costo') else None, unicode=False)
-    usuario_nombre_sql = _sql_string(usuario_nombre, unicode=True)
-    ip_sql = _sql_string(ip, unicode=False)
-    margen_obj = datos_producto.get("margen_objetivo")
-    margen_obj_sql = str(margen_obj) if margen_obj is not None else 'NULL'
-    
-    query = f"""
+
+    query = """
     INSERT INTO Comercial_SolicitudesCambioPrecio (
         SolicitudID, FolioSolicitud,
         ProductoID, CodigoProducto, NombreProducto,
         ServerID, SystemType, FamiliaCodigoFuente, FamiliaNombre,
+        UnidadNegocioID,
         PrecioActual, PrecioSolicitado, VariacionPesos, VariacionPorcentaje,
         CostoActual, MargenActualPesos, MargenActualPorcentaje,
         MargenSolicitadoPesos, MargenSolicitadoPorcentaje, MargenObjetivo,
@@ -311,33 +285,58 @@ def crear_solicitud_cambio_precio(
         SolicitanteUsuarioID, SolicitanteEmail, SolicitanteNombre,
         IPCreacion
     ) VALUES (
-        '{solicitud_id}', '{folio}',
-        '{ProductoID}', '{datos_producto["codigo_producto"]}',
-        N'{nombre_prod}',
-        '{ServerID}', '{datos_producto["SystemType"]}',
-        {familia_codigo}, {familia_nombre},
-        {datos_producto["precio_actual"]}, {precio_solicitado},
-        {simulacion["variacion_pesos"]}, {simulacion["variacion_porcentaje"]},
-        {datos_producto["costo_actual"]},
-        {datos_producto["margen_actual_pesos"]}, {datos_producto["margen_actual_porcentaje"]},
-        {simulacion["margen_simulado_pesos"]}, {simulacion["margen_simulado_porcentaje"]},
-        {margen_obj_sql},
-        {sync_run}, {fecha_costo},
-        N'{motivo_escaped}', {justif_sql}, 'BORRADOR',
-        '{usuario_id}', '{usuario_email}', {usuario_nombre_sql},
-        {ip_sql}
+        %s, %s,
+        %s, %s, %s,
+        %s, %s, %s, %s,
+        %s,
+        %s, %s, %s, %s,
+        %s, %s, %s,
+        %s, %s, %s,
+        %s, %s,
+        %s, %s, 'BORRADOR',
+        %s, %s, %s,
+        %s
     )
     """
-    
-    execute_sql_query(*conn, query)
-    
-    # Registrar en historial
+    params = (
+        solicitud_id,
+        folio,
+        datos_producto['producto_id'],
+        datos_producto['codigo_producto'],
+        datos_producto['nombre_producto'],
+        datos_producto['server_id'],
+        datos_producto['system_type'],
+        datos_producto.get('familia_codigo'),
+        datos_producto.get('familia_nombre'),
+        unidad_negocio_pk,
+        datos_producto['precio_actual'],
+        precio_solicitado,
+        simulacion['variacion_pesos'],
+        simulacion['variacion_porcentaje'],
+        datos_producto['costo_actual'],
+        datos_producto['margen_actual_pesos'],
+        datos_producto['margen_actual_porcentaje'],
+        simulacion['margen_simulado_pesos'],
+        simulacion['margen_simulado_porcentaje'],
+        datos_producto.get('margen_objetivo'),
+        datos_producto.get('sync_run_id'),
+        datos_producto.get('fecha_datos_costo'),
+        motivo,
+        justificacion,
+        usuario_id,
+        usuario_email,
+        usuario_nombre,
+        ip,
+    )
+
+    execute_sql_query_params(*conn, query, params)
+
     _registrar_historial(
         conn, solicitud_id, 'CREAR', None, 'BORRADOR',
         usuario_id, usuario_email, usuario_nombre,
         'Solicitud creada', None, None, ip
     )
-    
+
     return {
         'solicitud_id': solicitud_id,
         'folio_solicitud': folio,
@@ -348,16 +347,16 @@ def crear_solicitud_cambio_precio(
 def obtener_solicitud(solicitud_id: str) -> Optional[Dict]:
     """Obtiene una solicitud por ID."""
     conn = _get_edarsahub_connection()
-    
-    query = f"""
+
+    query = """
     SELECT * FROM Comercial_SolicitudesCambioPrecio
-    WHERE SolicitudID = '{solicitud_id}'
+    WHERE SolicitudID = %s
     """
-    
-    result = execute_sql_query(*conn, query)
+
+    result = execute_sql_query_params(*conn, query, (str(solicitud_id),))
     if not result:
         return None
-    
+
     return _mapear_solicitud(result[0])
 
 
@@ -366,41 +365,47 @@ def listar_solicitudes(
     server_id: Optional[str] = None,
     solicitante_id: Optional[str] = None,
     page: int = 1,
-    page_size: int = 20
+    page_size: int = 20,
+    unidad_negocio_pk: Optional[str] = None,
 ) -> Tuple[List[Dict], int]:
     """Lista solicitudes con filtros y paginación."""
     conn = _get_edarsahub_connection()
-    
+
     where_clauses = ["1=1"]
+    params = []
     if estatus:
-        where_clauses.append(f"Estatus = '{estatus}'")
-    if server_id:
-        where_clauses.append(f"ServerID = '{server_id}'")
+        where_clauses.append("Estatus = %s")
+        params.append(str(estatus))
+    if unidad_negocio_pk:
+        where_clauses.append("UnidadNegocioID = %s")
+        params.append(str(unidad_negocio_pk))
+    elif server_id:
+        where_clauses.append("CAST(ServerID AS NVARCHAR(36)) = %s")
+        params.append(str(server_id))
     if solicitante_id:
-        where_clauses.append(f"SolicitanteUsuarioID = '{solicitante_id}'")
-    
+        where_clauses.append("SolicitanteUsuarioID = %s")
+        params.append(str(solicitante_id))
+
     where_sql = " AND ".join(where_clauses)
-    offset = (page - 1) * page_size
-    
-    # Contar total
+    offset = max(page - 1, 0) * page_size
+
     count_query = f"SELECT COUNT(*) as total FROM Comercial_SolicitudesCambioPrecio WHERE {where_sql}"
-    count_result = execute_sql_query(*conn, count_query)
+    count_result = execute_sql_query_params(*conn, count_query, tuple(params))
     total = count_result[0]['total'] if count_result else 0
-    
-    # Obtener página
+
     query = f"""
-    SELECT 
+    SELECT
         SolicitudID, FolioSolicitud, CodigoProducto, NombreProducto,
         SystemType, PrecioActual, PrecioSolicitado, VariacionPorcentaje,
         Estatus, SolicitanteEmail, FechaSolicitud, FechaAutorizacion, AutorizadorEmail
     FROM Comercial_SolicitudesCambioPrecio
     WHERE {where_sql}
     ORDER BY FechaCreacion DESC
-    OFFSET {offset} ROWS FETCH NEXT {page_size} ROWS ONLY
+    OFFSET {int(offset)} ROWS FETCH NEXT {int(page_size)} ROWS ONLY
     """
-    
-    result = execute_sql_query(*conn, query)
-    
+
+    result = execute_sql_query_params(*conn, query, tuple(params)) or []
+
     solicitudes = []
     for r in result:
         solicitudes.append({
@@ -418,7 +423,7 @@ def listar_solicitudes(
             'fecha_autorizacion': r.get('FechaAutorizacion'),
             'autorizador_email': r.get('AutorizadorEmail'),
         })
-    
+
     return solicitudes, total
 
 
@@ -437,15 +442,13 @@ def cambiar_estatus_solicitud(
     Valida transiciones permitidas.
     """
     conn = _get_edarsahub_connection()
-    
-    # Obtener solicitud actual
+
     solicitud = obtener_solicitud(solicitud_id)
     if not solicitud:
         raise ValueError(f"Solicitud no encontrada: {solicitud_id}")
-    
+
     estatus_actual = solicitud['estatus']
-    
-    # Validar transición
+
     transiciones_validas = {
         'BORRADOR': ['SOLICITADA', 'CANCELADA'],
         'SOLICITADA': ['EN_REVISION', 'CANCELADA'],
@@ -456,14 +459,13 @@ def cambiar_estatus_solicitud(
         'APLICADA': [],
         'ERROR_APLICACION': ['APROBADA'],
     }
-    
+
     if nuevo_estatus not in transiciones_validas.get(estatus_actual, []):
         raise ValueError(
             f"Transición no permitida: {estatus_actual} → {nuevo_estatus}. "
             f"Transiciones válidas: {transiciones_validas.get(estatus_actual, [])}"
         )
-    
-    # Determinar acción
+
     accion_map = {
         'SOLICITADA': 'ENVIAR',
         'EN_REVISION': 'REVISAR',
@@ -474,52 +476,56 @@ def cambiar_estatus_solicitud(
         'ERROR_APLICACION': 'ERROR_APLICACION',
     }
     accion = accion_map.get(nuevo_estatus, 'CAMBIAR_ESTATUS')
-    
-    # Construir UPDATE
+
     set_clauses = [
-        f"Estatus = '{nuevo_estatus}'",
-        "FechaModificacion = GETDATE()"
+        "Estatus = %s",
+        "FechaModificacion = GETDATE()",
     ]
-    
-    # Campos según la acción
-    nombre_sql = _sql_string(usuario_nombre, unicode=True)
-    comentario_sql = _sql_string(comentario, unicode=True)
-    
+    params = [nuevo_estatus]
+
     if nuevo_estatus == 'SOLICITADA':
         set_clauses.append("FechaSolicitud = GETDATE()")
     elif nuevo_estatus in ['APROBADA', 'RECHAZADA']:
         set_clauses.extend([
-            f"AutorizadorUsuarioID = '{usuario_id}'",
-            f"AutorizadorEmail = '{usuario_email}'",
-            f"AutorizadorNombre = {nombre_sql}",
+            "AutorizadorUsuarioID = %s",
+            "AutorizadorEmail = %s",
+            "AutorizadorNombre = %s",
             "FechaAutorizacion = GETDATE()",
-            f"ComentarioAutorizacion = {comentario_sql}"
+            "ComentarioAutorizacion = %s",
         ])
+        params.extend([usuario_id, usuario_email, usuario_nombre, comentario])
     elif nuevo_estatus == 'APLICADA':
         set_clauses.extend([
-            f"ModificadorUsuarioID = '{usuario_id}'",
-            f"ModificadorEmail = '{usuario_email}'",
-            f"ModificadorNombre = {nombre_sql}",
+            "ModificadorUsuarioID = %s",
+            "ModificadorEmail = %s",
+            "ModificadorNombre = %s",
             "FechaAplicacion = GETDATE()",
-            f"ComentarioAplicacion = {comentario_sql}",
-            f"PrecioAplicado = {solicitud['precio_solicitado']}"
+            "ComentarioAplicacion = %s",
+            "PrecioAplicado = %s",
         ])
-    
+        params.extend([
+            usuario_id,
+            usuario_email,
+            usuario_nombre,
+            comentario,
+            solicitud['precio_solicitado'],
+        ])
+
     update_query = f"""
     UPDATE Comercial_SolicitudesCambioPrecio
     SET {", ".join(set_clauses)}
-    WHERE SolicitudID = '{solicitud_id}'
+    WHERE SolicitudID = %s
     """
-    
-    execute_sql_query(*conn, update_query)
-    
-    # Registrar historial
+    params.append(str(solicitud_id))
+
+    execute_sql_query_params(*conn, update_query, tuple(params))
+
     _registrar_historial(
         conn, solicitud_id, accion, estatus_actual, nuevo_estatus,
         usuario_id, usuario_email, usuario_nombre,
         comentario, estatus_actual, nuevo_estatus, ip
     )
-    
+
     return {
         'solicitud_id': solicitud_id,
         'estatus_anterior': estatus_actual,
@@ -531,19 +537,19 @@ def cambiar_estatus_solicitud(
 def obtener_historial_solicitud(solicitud_id: str) -> List[Dict]:
     """Obtiene el historial completo de una solicitud."""
     conn = _get_edarsahub_connection()
-    
-    query = f"""
-    SELECT 
+
+    query = """
+    SELECT
         HistorialID, Accion, EstatusAnterior, EstatusNuevo,
         UsuarioEmail, UsuarioNombre, Comentario,
         ValorAnterior, ValorNuevo, FechaAccion
     FROM Comercial_SolicitudesCambioPrecioHistorial
-    WHERE SolicitudID = '{solicitud_id}'
+    WHERE SolicitudID = %s
     ORDER BY FechaAccion ASC
     """
-    
-    result = execute_sql_query(*conn, query)
-    
+
+    result = execute_sql_query_params(*conn, query, (str(solicitud_id),)) or []
+
     historial = []
     for r in result:
         historial.append({
@@ -558,7 +564,7 @@ def obtener_historial_solicitud(solicitud_id: str) -> List[Dict]:
             'valor_nuevo': r.get('ValorNuevo'),
             'fecha_accion': r['FechaAccion'],
         })
-    
+
     return historial
 
 
@@ -608,6 +614,7 @@ def _mapear_solicitud(r: Dict) -> Dict:
         'precio_aplicado': _safe_decimal(r.get('PrecioAplicado')) if r.get('PrecioAplicado') else None,
         'fecha_creacion': r['FechaCreacion'],
         'fecha_modificacion': r['FechaModificacion'],
+        'unidad_negocio_pk': str(r['UnidadNegocioID']) if r.get('UnidadNegocioID') else None,
     }
 
 
@@ -627,25 +634,31 @@ def _registrar_historial(
 ) -> None:
     """Registra una entrada en el historial de la solicitud."""
     historial_id = str(uuid.uuid4())
-    
-    nombre_sql = _sql_string(usuario_nombre, unicode=True)
-    comentario_sql = _sql_string(comentario, unicode=True)
-    val_ant_sql = _sql_string(valor_anterior, unicode=True)
-    val_nuevo_sql = _sql_string(valor_nuevo, unicode=True)
-    ip_sql = _sql_string(ip, unicode=False)
-    estatus_ant_sql = f"'{estatus_anterior}'" if estatus_anterior else 'NULL'
-    
-    query = f"""
+
+    query = """
     INSERT INTO Comercial_SolicitudesCambioPrecioHistorial (
         HistorialID, SolicitudID, Accion, EstatusAnterior, EstatusNuevo,
         UsuarioID, UsuarioEmail, UsuarioNombre,
         Comentario, ValorAnterior, ValorNuevo, IPAccion
     ) VALUES (
-        '{historial_id}', '{solicitud_id}', '{Accion}',
-        {estatus_ant_sql}, '{estatus_nuevo}',
-        '{usuario_id}', '{usuario_email}', {nombre_sql},
-        {comentario_sql}, {val_ant_sql}, {val_nuevo_sql}, {ip_sql}
+        %s, %s, %s, %s, %s,
+        %s, %s, %s,
+        %s, %s, %s, %s
     )
     """
-    
-    execute_sql_query(*conn, query)
+    params = (
+        historial_id,
+        solicitud_id,
+        accion,
+        estatus_anterior,
+        estatus_nuevo,
+        usuario_id,
+        usuario_email,
+        usuario_nombre,
+        comentario,
+        valor_anterior,
+        valor_nuevo,
+        ip,
+    )
+
+    execute_sql_query_params(*conn, query, params)

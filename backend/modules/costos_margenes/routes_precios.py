@@ -34,6 +34,11 @@ from modules.costos_margenes.schemas_precios import (
     AccionSolicitud,
     RecomendacionPrecio,
 )
+from modules.costos_margenes.routes import (
+    COSTOS_MARGENES_VER,
+    _resolve_servidor_filtro,
+    _verify_costos_margenes_access,
+)
 from modules.costos_margenes.repository_precios import (
     obtener_datos_producto_para_simulacion,
     calcular_simulacion,
@@ -118,6 +123,94 @@ def _require_permission(user: dict, permiso: str) -> None:
         )
 
 
+async def _resolve_precio_scope(
+    current_user: dict,
+    unidad: Optional[str],
+    unidad_negocio_pk: Optional[str],
+    server_id: Optional[str],
+    permission: Optional[dict] = None,
+    require_server: bool = False,
+    raise_on_denied: bool = True,
+):
+    """Resuelve alcance canónico para simulación y solicitudes de precio."""
+    servidor_id_filtro, _, access_denied, unidad_pk = await _resolve_servidor_filtro(
+        current_user,
+        unidad or unidad_negocio_pk,
+        server_id,
+        permission,
+    )
+    if access_denied:
+        if raise_on_denied:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "ALCANCE_DENEGADO",
+                    "mensaje": "No tiene acceso a la unidad solicitada",
+                    "permiso_requerido": COSTOS_MARGENES_VER,
+                },
+            )
+        return None, None, True
+
+    if require_server and not servidor_id_filtro:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "UNIDAD_CANONICA_REQUERIDA",
+                "mensaje": "Seleccione una unidad canónica para operar precios",
+            },
+        )
+
+    return servidor_id_filtro, unidad_pk, False
+
+
+async def _assert_solicitud_scope(
+    current_user: dict,
+    solicitud: dict,
+    permission: Optional[dict] = None,
+) -> None:
+    """Valida que la solicitud pertenezca al alcance RBAC del usuario."""
+    unidad_pk = solicitud.get('unidad_negocio_pk')
+    server_id = solicitud.get('server_id')
+
+    if unidad_pk:
+        resolved_server_id, _, _ = await _resolve_precio_scope(
+            current_user,
+            unidad_pk,
+            None,
+            None,
+            permission,
+            require_server=True,
+        )
+        if server_id and str(resolved_server_id).lower() != str(server_id).lower():
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "ALCANCE_DENEGADO",
+                    "mensaje": "La solicitud no corresponde a la unidad autorizada",
+                },
+            )
+        return
+
+    if server_id:
+        await _resolve_precio_scope(
+            current_user,
+            None,
+            None,
+            server_id,
+            permission,
+            require_server=True,
+        )
+        return
+
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "error": "ALCANCE_CANONICO_INCOMPLETO",
+            "mensaje": "La solicitud no tiene unidad canónica ni servidor asociado",
+        },
+    )
+
+
 def _get_acciones_disponibles(solicitud: dict, user: dict) -> list:
     """Determina acciones disponibles según estado y permisos."""
     permisos = _get_user_permissions(user)
@@ -173,13 +266,22 @@ async def simular_precio(
     **Importante**: La simulación NO modifica ningún precio oficial.
     Solo calcula el impacto de un cambio hipotético.
     """
+    permission = _verify_costos_margenes_access(current_user)
     _require_permission(current_user, 'simular_precio')
+    server_id_filtro, _, _ = await _resolve_precio_scope(
+        current_user,
+        data.unidad,
+        data.unidad_negocio_pk,
+        data.server_id,
+        permission,
+        require_server=True,
+    )
     
     try:
         # Obtener datos actuales del producto
         datos_producto = obtener_datos_producto_para_simulacion(
             data.producto_id, 
-            data.server_id
+            server_id_filtro
         )
         
         if not datos_producto:
@@ -202,7 +304,7 @@ async def simular_precio(
             ip = request.client.host if request.client else None
             simulacion_id = guardar_simulacion(
                 data.producto_id,
-                data.server_id,
+                server_id_filtro,
                 datos_producto,
                 simulacion,
                 current_user.get('id', ''),
@@ -261,14 +363,23 @@ async def crear_solicitud(
     **Importante**: La solicitud NO modifica precios. 
     Debe pasar por el flujo de autorización.
     """
+    permission = _verify_costos_margenes_access(current_user)
     _require_permission(current_user, 'solicitar_cambio_precio')
+    server_id_filtro, unidad_pk, _ = await _resolve_precio_scope(
+        current_user,
+        data.unidad,
+        data.unidad_negocio_pk,
+        data.server_id,
+        permission,
+        require_server=True,
+    )
     
     try:
         ip = request.client.host if request.client else None
         
         resultado = crear_solicitud_cambio_precio(
             producto_id=data.producto_id,
-            server_id=data.server_id,
+            server_id=server_id_filtro,
             precio_solicitado=data.precio_solicitado,
             motivo=data.motivo,
             justificacion=data.justificacion,
@@ -276,7 +387,8 @@ async def crear_solicitud(
             usuario_email=current_user.get('email', ''),
             usuario_nombre=current_user.get('nombre'),
             simulacion_id=data.simulacion_id,
-            ip=ip
+            ip=ip,
+            unidad_negocio_pk=unidad_pk
         )
         
         # Obtener solicitud completa
@@ -295,7 +407,9 @@ async def crear_solicitud(
 async def listar_solicitudes_precio(
     current_user: dict = Depends(get_current_user),
     estatus: Optional[str] = Query(None, description="Filtrar por estatus"),
-    server_id: Optional[str] = Query(None, description="Filtrar por servidor"),
+    unidad: Optional[str] = Query(None, description="CANÓNICO: unidad de negocio (codigo o id)"),
+    unidad_negocio_pk: Optional[str] = Query(None, description="DEPRECATED: usar unidad"),
+    server_id: Optional[str] = Query(None, description="DEPRECATED: usar unidad"),
     mis_solicitudes: bool = Query(False, description="Solo mis solicitudes"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100)
@@ -307,14 +421,33 @@ async def listar_solicitudes_precio(
     
     **Permisos**: comercial.costos_margenes.ver_solicitudes_precio
     """
+    permission = _verify_costos_margenes_access(current_user)
     _require_permission(current_user, 'ver_solicitudes_precio')
+    server_id_filtro, unidad_pk, access_denied = await _resolve_precio_scope(
+        current_user,
+        unidad,
+        unidad_negocio_pk,
+        server_id,
+        permission,
+        raise_on_denied=False,
+    )
+    if access_denied:
+        return SolicitudesListResponse(
+            solicitudes=[],
+            total=0,
+            page=page,
+            page_size=page_size,
+            total_pages=1,
+            source_type="EDARSAHUB_SQL"
+        )
     
     try:
         solicitante_id = current_user.get('id') if mis_solicitudes else None
         
         solicitudes, total = listar_solicitudes(
             estatus=estatus,
-            server_id=server_id,
+            server_id=server_id_filtro,
+            unidad_negocio_pk=unidad_pk,
             solicitante_id=solicitante_id,
             page=page,
             page_size=page_size
@@ -347,6 +480,7 @@ async def obtener_solicitud_precio(
     
     **Permisos**: comercial.costos_margenes.ver_solicitudes_precio
     """
+    permission = _verify_costos_margenes_access(current_user)
     _require_permission(current_user, 'ver_solicitudes_precio')
     
     try:
@@ -354,6 +488,7 @@ async def obtener_solicitud_precio(
         
         if not solicitud:
             raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+        await _assert_solicitud_scope(current_user, solicitud, permission)
         
         solicitud['acciones_disponibles'] = _get_acciones_disponibles(solicitud, current_user)
         
@@ -381,9 +516,15 @@ async def enviar_solicitud(
     
     **Permisos**: comercial.costos_margenes.solicitar_cambio_precio
     """
+    permission = _verify_costos_margenes_access(current_user)
     _require_permission(current_user, 'solicitar_cambio_precio')
     
     try:
+        solicitud = obtener_solicitud(solicitud_id)
+        if not solicitud:
+            raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+        await _assert_solicitud_scope(current_user, solicitud, permission)
+
         ip = request.client.host if request.client else None
         comentario = data.comentario if data else None
         
@@ -409,6 +550,8 @@ async def enviar_solicitud(
         
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error enviando solicitud: {str(e)}")
 
@@ -430,6 +573,7 @@ async def aprobar_solicitud(
     **Importante**: La aprobación NO aplica el cambio automáticamente.
     El cambio debe ser aplicado por un Modificador autorizado.
     """
+    permission = _verify_costos_margenes_access(current_user)
     _require_permission(current_user, 'aprobar_cambio_precio')
     
     try:
@@ -437,6 +581,7 @@ async def aprobar_solicitud(
         solicitud = obtener_solicitud(solicitud_id)
         if not solicitud:
             raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+        await _assert_solicitud_scope(current_user, solicitud, permission)
         
         # Si está en SOLICITADA, primero pasar a EN_REVISION
         if solicitud['estatus'] == 'SOLICITADA':
@@ -500,6 +645,7 @@ async def rechazar_solicitud(
     
     **Nota**: El comentario/motivo de rechazo es obligatorio.
     """
+    permission = _verify_costos_margenes_access(current_user)
     _require_permission(current_user, 'rechazar_cambio_precio')
     
     if not data or not data.comentario:
@@ -513,6 +659,7 @@ async def rechazar_solicitud(
         solicitud = obtener_solicitud(solicitud_id)
         if not solicitud:
             raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+        await _assert_solicitud_scope(current_user, solicitud, permission)
         
         if solicitud['estatus'] == 'SOLICITADA':
             cambiar_estatus_solicitud(
@@ -573,12 +720,14 @@ async def aplicar_solicitud(
     
     **El precio queda registrado como "aplicado" para auditoría.**
     """
+    permission = _verify_costos_margenes_access(current_user)
     _require_permission(current_user, 'aplicar_cambio_precio')
     
     try:
         solicitud = obtener_solicitud(solicitud_id)
         if not solicitud:
             raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+        await _assert_solicitud_scope(current_user, solicitud, permission)
         
         if solicitud['estatus'] != 'APROBADA':
             raise HTTPException(
@@ -635,12 +784,14 @@ async def cancelar_solicitud(
     
     **Permisos**: comercial.costos_margenes.solicitar_cambio_precio
     """
+    permission = _verify_costos_margenes_access(current_user)
     _require_permission(current_user, 'solicitar_cambio_precio')
     
     try:
         solicitud = obtener_solicitud(solicitud_id)
         if not solicitud:
             raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+        await _assert_solicitud_scope(current_user, solicitud, permission)
         
         estados_cancelables = ['BORRADOR', 'SOLICITADA', 'APROBADA']
         if solicitud['estatus'] not in estados_cancelables:
@@ -694,12 +845,14 @@ async def obtener_historial(
     
     **Permisos**: comercial.costos_margenes.ver_historial_precios
     """
+    permission = _verify_costos_margenes_access(current_user)
     _require_permission(current_user, 'ver_historial_precios')
     
     try:
         solicitud = obtener_solicitud(solicitud_id)
         if not solicitud:
             raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+        await _assert_solicitud_scope(current_user, solicitud, permission)
         
         historial = obtener_historial_solicitud(solicitud_id)
         

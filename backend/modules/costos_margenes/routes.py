@@ -48,6 +48,7 @@ from modules.costos_margenes.repository import (
 )
 from core.security import get_current_user
 from core.rbac_sql.service import RBACSQLService
+from core.rbac_helper_sql import tiene_acceso_lectura_comercial
 from core.corporate_filters.request_resolver import (
     resolve_authorized_unidad_scope,
     resolve_unidad_scope,
@@ -61,6 +62,11 @@ router = APIRouter(prefix="/costos-margenes", tags=["Costos y Márgenes"])
 # ==================== RBAC HELPERS ====================
 
 COSTOS_MARGENES_VER = "COMERCIAL_VER"
+
+
+def _check_admin_or_comercial(user: dict) -> bool:
+    """Helper legacy de lectura; los endpoints usan RBAC SQL canónico."""
+    return tiene_acceso_lectura_comercial(user)
 
 
 def _get_sql_usuario_id(user: dict) -> Optional[int]:
@@ -168,6 +174,32 @@ async def _resolve_servidor_filtro(
         return None, None, True, None
 
     return None, None, False, None
+
+
+async def _resolve_receta_servidor_filtro(
+    current_user: dict,
+    unidad: Optional[str],
+    unidad_negocio_pk: Optional[str],
+    server_id: Optional[str],
+    permission: Optional[dict] = None,
+) -> Optional[str]:
+    """Resuelve server_id para receta/insumos desde la unidad canónica."""
+    servidor_id_filtro, _, access_denied, _ = await _resolve_servidor_filtro(
+        current_user,
+        unidad or unidad_negocio_pk,
+        server_id,
+        permission,
+    )
+    if access_denied:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "ALCANCE_DENEGADO",
+                "mensaje": "No tiene acceso a la unidad solicitada",
+                "permiso_requerido": COSTOS_MARGENES_VER,
+            },
+        )
+    return servidor_id_filtro
 
 
 
@@ -365,7 +397,9 @@ async def listar_productos(
 @router.get("/productos/{producto_id}/receta", response_model=RecetaExpandida)
 async def obtener_receta_producto(
     producto_id: str,
-    server_id: Optional[str] = Query(None, description="ServerID para búsqueda por código fuente"),
+    unidad: Optional[str] = Query(None, description="CANÓNICO: unidad de negocio (codigo o id)"),
+    unidad_negocio_pk: Optional[str] = Query(None, description="DEPRECATED: usar unidad"),
+    server_id: Optional[str] = Query(None, description="DEPRECATED: usar 'unidad'"),
     es_elaborado: bool = Query(False, description="Si es true, busca en tabla de elaborados"),
     current_user: dict = Depends(get_current_user)
 ):
@@ -389,20 +423,26 @@ async def obtener_receta_producto(
     - Subrecetas
     - Costos por componente
     """
-    # FASE 1C-3E: Verificar permisos
-    _verify_costos_margenes_access(current_user)
+    permission = _verify_costos_margenes_access(current_user)
+    server_id_filtro = await _resolve_receta_servidor_filtro(
+        current_user,
+        unidad,
+        unidad_negocio_pk,
+        server_id,
+        permission,
+    )
     
     try:
         # Primero intentar como producto normal
-        producto, componentes = get_receta_producto(producto_id, server_id)
+        producto, componentes = get_receta_producto(producto_id, server_id_filtro)
         
         # Si no encuentra y es_elaborado=True, buscar en tabla de elaborados
         if not producto and es_elaborado:
-            producto, componentes = get_receta_elaborado(producto_id, server_id)
+            producto, componentes = get_receta_elaborado(producto_id, server_id_filtro)
         
         # Si aún no encuentra, intentar automáticamente como elaborado
         if not producto:
-            producto, componentes = get_receta_elaborado(producto_id, server_id)
+            producto, componentes = get_receta_elaborado(producto_id, server_id_filtro)
         
         if not producto:
             raise HTTPException(status_code=404, detail=f"Producto {producto_id} no encontrado")
@@ -458,7 +498,9 @@ async def obtener_receta_producto(
 @router.get("/productos/{producto_id}/insumos", response_model=InsumosProductoResponse)
 async def obtener_insumos_producto(
     producto_id: str,
-    server_id: Optional[str] = Query(None, description="ServerID para búsqueda por código fuente"),
+    unidad: Optional[str] = Query(None, description="CANÓNICO: unidad de negocio (codigo o id)"),
+    unidad_negocio_pk: Optional[str] = Query(None, description="DEPRECATED: usar unidad"),
+    server_id: Optional[str] = Query(None, description="DEPRECATED: usar 'unidad'"),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -475,11 +517,17 @@ async def obtener_insumos_producto(
     - Porcentaje del costo total
     - Origen (directo/subreceta/elaborado)
     """
-    # FASE 1C-3E: Verificar permisos
-    _verify_costos_margenes_access(current_user)
+    permission = _verify_costos_margenes_access(current_user)
+    server_id_filtro = await _resolve_receta_servidor_filtro(
+        current_user,
+        unidad,
+        unidad_negocio_pk,
+        server_id,
+        permission,
+    )
     
     try:
-        producto, insumos = get_insumos_producto(producto_id, server_id)
+        producto, insumos = get_insumos_producto(producto_id, server_id_filtro)
         
         if not producto:
             raise HTTPException(status_code=404, detail=f"Producto {producto_id} no encontrado")

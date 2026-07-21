@@ -52,7 +52,9 @@ class RecomendacionPrecio(str, Enum):
 class SimulacionPrecioRequest(BaseModel):
     """Request para simular un cambio de precio."""
     producto_id: str = Field(..., description="ID del producto")
-    server_id: str = Field(..., description="ID del servidor")
+    unidad: Optional[str] = Field(None, description="CANÓNICO: unidad de negocio (codigo o id)")
+    unidad_negocio_pk: Optional[str] = Field(None, description="DEPRECATED: usar unidad")
+    server_id: Optional[str] = Field(None, description="DEPRECATED: usar unidad")
     precio_nuevo: float = Field(..., gt=0, description="Precio nuevo a simular")
     guardar_simulacion: bool = Field(default=False, description="Guardar simulación en BD")
 
@@ -99,7 +101,9 @@ class SimulacionPrecioResponse(BaseModel):
 class SolicitudCambioPrecioCreate(BaseModel):
     """Request para crear una solicitud de cambio de precio."""
     producto_id: str = Field(..., description="ID del producto")
-    server_id: str = Field(..., description="ID del servidor")
+    unidad: Optional[str] = Field(None, description="CANÓNICO: unidad de negocio (codigo o id)")
+    unidad_negocio_pk: Optional[str] = Field(None, description="DEPRECATED: usar unidad")
+    server_id: Optional[str] = Field(None, description="DEPRECATED: usar unidad")
     precio_solicitado: float = Field(..., gt=0, description="Precio solicitado")
     motivo: str = Field(..., min_length=5, max_length=200, description="Motivo del cambio")
     justificacion: Optional[str] = Field(None, max_length=2000, description="Justificación detallada")

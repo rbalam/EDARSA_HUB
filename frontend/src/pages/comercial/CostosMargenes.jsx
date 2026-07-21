@@ -123,7 +123,7 @@ const EstatusBadge = ({ estatus }) => {
 
 // ==================== MODAL RECETA ====================
 
-const RecetaModal = ({ isOpen, onClose, productoId, serverId, onVerSubReceta }) => {
+const RecetaModal = ({ isOpen, onClose, productoId, serverId, unidad, onVerSubReceta }) => {
   const [receta, setReceta] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -147,6 +147,7 @@ const RecetaModal = ({ isOpen, onClose, productoId, serverId, onVerSubReceta }) 
     try {
       let url = `/costos-margenes/productos/${encodeURIComponent(id)}/receta`;
       const params = new URLSearchParams();
+      if (unidad) params.append('unidad', unidad);
       if (srvId) params.append('server_id', srvId);
       if (esElaborado) params.append('es_elaborado', 'true');
       if (params.toString()) url += `?${params.toString()}`;
@@ -159,7 +160,7 @@ const RecetaModal = ({ isOpen, onClose, productoId, serverId, onVerSubReceta }) 
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [unidad]);
   
   useEffect(() => {
     if (isOpen && productoId) {
@@ -168,7 +169,7 @@ const RecetaModal = ({ isOpen, onClose, productoId, serverId, onVerSubReceta }) 
       setPosition({ x: 0, y: 0 }); // Reset position on new open
       cargarReceta(productoId, serverId);
     }
-  }, [isOpen, productoId, serverId, cargarReceta]);
+  }, [isOpen, productoId, serverId, unidad, cargarReceta]);
   
   // Manejar doble click en elaborado para ver su sub-receta
   const handleVerSubReceta = (componente) => {
@@ -472,7 +473,7 @@ const RecetaModal = ({ isOpen, onClose, productoId, serverId, onVerSubReceta }) 
 
 // ==================== MODAL INSUMOS ====================
 
-const InsumosModal = ({ isOpen, onClose, productoId }) => {
+const InsumosModal = ({ isOpen, onClose, productoId, serverId, unidad }) => {
   const [insumos, setInsumos] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -484,14 +485,18 @@ const InsumosModal = ({ isOpen, onClose, productoId }) => {
       setError(null);
       setSortConfig({ key: null, direction: 'asc' });
       
-      api.get(`/costos-margenes/productos/${productoId}/insumos`)
+      const params = new URLSearchParams();
+      if (unidad) params.append('unidad', unidad);
+      if (serverId) params.append('server_id', serverId);
+      const qs = params.toString();
+      api.get(`/costos-margenes/productos/${productoId}/insumos${qs ? `?${qs}` : ''}`)
         .then(res => {
           setInsumos(res.data);
         })
         .catch(err => setError(err.response?.data?.detail || err.message))
         .finally(() => setLoading(false));
     }
-  }, [isOpen, productoId]);
+  }, [isOpen, productoId, serverId, unidad]);
   
   const handleSort = (key) => {
     setSortConfig(prev => ({
@@ -656,7 +661,7 @@ const InsumosModal = ({ isOpen, onClose, productoId }) => {
 
 // ==================== MODAL SIMULACIÓN DE PRECIO (FASE 1C-3F) ====================
 
-const SimulacionPrecioModal = ({ isOpen, onClose, producto, onCrearSolicitud }) => {
+const SimulacionPrecioModal = ({ isOpen, onClose, producto, unidad, onCrearSolicitud }) => {
   const [precioNuevo, setPrecioNuevo] = useState('');
   const [simulacion, setSimulacion] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -747,7 +752,8 @@ const SimulacionPrecioModal = ({ isOpen, onClose, producto, onCrearSolicitud }) 
     try {
       const response = await api.post('/costos-margenes/solicitudes-precio', {
         producto_id: producto.producto_id,
-        server_id: producto.server_id,
+        unidad: unidad || null,
+        server_id: producto.server_id || null,
         precio_solicitado: parseFloat(precioNuevo),
         motivo: motivo,
         justificacion: justificacion || null
@@ -2203,12 +2209,15 @@ const TabProductos = ({ onSimularPrecio }) => {
         onClose={() => setRecetaModal({ open: false, productoId: null, serverId: null })}
         productoId={recetaModal.productoId}
         serverId={recetaModal.serverId}
+        unidad={unidadNegocio}
       />
       
       <InsumosModal
         isOpen={insumosModal.open}
         onClose={() => setInsumosModal({ open: false, productoId: null, serverId: null })}
         productoId={insumosModal.productoId}
+        serverId={insumosModal.serverId}
+        unidad={unidadNegocio}
       />
     </div>
   );
@@ -3124,6 +3133,8 @@ const TabRangosVinos = () => {
 // ==================== TAB SOLICITUDES DE PRECIO (FASE 1C-3F) ====================
 
 const TabSolicitudesPrecio = () => {
+  const { selected: corpSelected } = useCorporateFilters();
+  const unidadNegocio = corpSelected?.unidades_negocio || '';
   const [solicitudes, setSolicitudes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -3146,6 +3157,7 @@ const TabSolicitudesPrecio = () => {
       });
       
       if (filtroEstatus) params.append('estatus', filtroEstatus);
+      if (unidadNegocio) params.append('unidad', unidadNegocio);
       if (misSolicitudes) params.append('mis_solicitudes', 'true');
       
       const res = await api.get(`/costos-margenes/solicitudes-precio?${params}`);
@@ -3159,7 +3171,7 @@ const TabSolicitudesPrecio = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, filtroEstatus, misSolicitudes]);
+  }, [page, pageSize, filtroEstatus, unidadNegocio, misSolicitudes]);
   
   useEffect(() => {
     loadSolicitudes();
@@ -3346,6 +3358,8 @@ const TabSolicitudesPrecio = () => {
 // ==================== COMPONENTE PRINCIPAL ====================
 
 const CostosMargenesContent = () => {
+  const { selected: corpSelected } = useCorporateFilters();
+  const unidadNegocio = corpSelected?.unidades_negocio || '';
   const [activeTab, setActiveTab] = useState('productos');
   const [simulacionModal, setSimulacionModal] = useState({ open: false, producto: null });
   
@@ -3472,6 +3486,7 @@ const CostosMargenesContent = () => {
         isOpen={simulacionModal.open}
         onClose={() => setSimulacionModal({ open: false, producto: null })}
         producto={simulacionModal.producto}
+        unidad={unidadNegocio}
         onCrearSolicitud={handleSolicitudCreada}
       />
     </div>
