@@ -22,9 +22,11 @@ TABLAS SQL:
 import logging
 import json
 from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 from enum import Enum
 import uuid
+
+from modules.fase2_operativo.access import get_legacy_server_ids_for_unidad_scope
 
 # Import del trigger de manuales operativos
 try:
@@ -513,42 +515,89 @@ class AutomatizacionComprasService:
     # =========================================================================
     # CONSULTAS SQL
     # =========================================================================
-    
+
+    def _build_scope_filter(
+        self,
+        unidad_negocio_pk: Optional[str] = None,
+        unidades_permitidas: Optional[Sequence[str]] = None,
+        server_id: Optional[str] = None,
+        sucursal_id: Optional[str] = None,
+        estado: Optional[str] = None,
+    ) -> Dict:
+        """Construye filtro SQL desde alcance canonico autorizado."""
+        filtro = {}
+        server_ids = get_legacy_server_ids_for_unidad_scope(
+            unidad_negocio_pk=unidad_negocio_pk,
+            unidades_permitidas=unidades_permitidas,
+        )
+
+        if server_ids is None:
+            if server_id:
+                filtro["server_id"] = server_id
+        elif not server_ids:
+            filtro["server_id"] = {"$in": ["__SIN_UNIDADES_AUTORIZADAS__"]}
+        elif len(server_ids) == 1:
+            filtro["server_id"] = server_ids[0]
+        else:
+            filtro["server_id"] = {"$in": server_ids}
+
+        if sucursal_id:
+            filtro["sucursal_id"] = sucursal_id
+        if estado:
+            filtro["estado"] = estado
+
+        return filtro
+
     def listar_automatizaciones(
         self,
         server_id: Optional[str] = None,
         sucursal_id: Optional[str] = None,
         estado: Optional[str] = None,
-        limite: int = 50
+        limite: int = 50,
+        unidad_negocio_pk: Optional[str] = None,
+        unidades_permitidas: Optional[Sequence[str]] = None,
     ) -> List[Dict]:
         """Lista automatizaciones - SQL."""
-        filtro = {}
-        if server_id:
-            filtro["server_id"] = server_id
-        if sucursal_id:
-            filtro["sucursal_id"] = sucursal_id
-        if estado:
-            filtro["estado"] = estado
-        
+        filtro = self._build_scope_filter(
+            unidad_negocio_pk=unidad_negocio_pk,
+            unidades_permitidas=unidades_permitidas,
+            server_id=server_id,
+            sucursal_id=sucursal_id,
+            estado=estado,
+        )
+
         cursor = self._repo.find(filtro).sort("fecha_creacion", -1).limit(limite)
         return [self._limpiar_respuesta(doc) for doc in cursor]
-    
-    def obtener_automatizacion(self, automatizacion_id: str) -> Optional[Dict]:
+
+    def obtener_automatizacion(
+        self,
+        automatizacion_id: str,
+        unidad_negocio_pk: Optional[str] = None,
+        unidades_permitidas: Optional[Sequence[str]] = None,
+    ) -> Optional[Dict]:
         """Obtiene una automatización - SQL."""
-        doc = self._repo.find_one({"id": automatizacion_id})
+        filtro = {"id": automatizacion_id}
+        filtro.update(
+            self._build_scope_filter(
+                unidad_negocio_pk=unidad_negocio_pk,
+                unidades_permitidas=unidades_permitidas,
+            )
+        )
+        doc = self._repo.find_one(filtro)
         return self._limpiar_respuesta(doc) if doc else None
-    
-    def obtener_kpis(self, server_id: Optional[str] = None) -> Dict:
+
+    def obtener_kpis(
+        self,
+        server_id: Optional[str] = None,
+        unidad_negocio_pk: Optional[str] = None,
+        unidades_permitidas: Optional[Sequence[str]] = None,
+    ) -> Dict:
         """KPIs de automatizaciones - SQL."""
-        filtro = {"server_id": server_id} if server_id else {}
-        
-        pipeline = [
-            {"$match": filtro},
-            {"$group": {"_id": "$estado", "count": {"$sum": 1}}},
-        ]
-        
-        resultados = list(self._repo.aggregate(pipeline))
-        
+        filtro = self._build_scope_filter(
+            unidad_negocio_pk=unidad_negocio_pk,
+            unidades_permitidas=unidades_permitidas,
+            server_id=server_id,
+        )
         kpis = {
             "total": 0,
             "pendientes_inventario": 0,
@@ -558,12 +607,17 @@ class AutomatizacionComprasService:
             "aprobados": 0,
             "rechazados": 0,
         }
-        
-        for r in resultados:
-            estado = r.get("_id", "")
-            count = r.get("count", 0)
+
+        resultados = list(self._repo.aggregate([
+            {"$match": filtro},
+            {"$group": {"_id": "$estado", "count": {"$sum": 1}}},
+        ]))
+
+        for row in resultados:
+            estado = row.get("_id", "")
+            count = row.get("count", 0)
             kpis["total"] += count
-            
+
             if estado == EstadoAutomatizacion.PENDIENTE_INVENTARIO_FISICO.value:
                 kpis["pendientes_inventario"] = count
             elif estado == EstadoAutomatizacion.AUDITORIA_EN_PROCESO.value:
@@ -576,8 +630,30 @@ class AutomatizacionComprasService:
                 kpis["aprobados"] = count
             elif estado == EstadoAutomatizacion.RECHAZADO.value:
                 kpis["rechazados"] = count
-        
+
         return kpis
+
+    def obtener_bitacora(
+        self,
+        automatizacion_id: str,
+        unidad_negocio_pk: Optional[str] = None,
+        unidades_permitidas: Optional[Sequence[str]] = None,
+        limite: int = 100,
+    ) -> List[Dict]:
+        """Obtiene bitacora de una automatizacion respetando alcance canonico."""
+        if not self.obtener_automatizacion(
+            automatizacion_id,
+            unidad_negocio_pk=unidad_negocio_pk,
+            unidades_permitidas=unidades_permitidas,
+        ):
+            return []
+
+        cursor = (
+            self._bitacora_repo.find({"automatizacion_id": automatizacion_id})
+            .sort("fecha", -1)
+            .limit(limite)
+        )
+        return [self._limpiar_respuesta(row) for row in cursor]
     
     # =========================================================================
     # AUDITORÍA Y CÁLCULOS

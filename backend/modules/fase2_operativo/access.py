@@ -247,3 +247,33 @@ def resolve_operativo_unit_filter(
         )
 
     return unidad_pk, None
+
+
+def get_legacy_server_ids_for_unidad_scope(
+    unidad_negocio_pk: Optional[str] = None,
+    unidades_permitidas: Optional[Sequence[str]] = None,
+) -> Optional[List[str]]:
+    """
+    Convierte alcance canonico por unidad a ServerID legacy para tablas historicas.
+
+    None = alcance global sin filtro legacy.
+    [] = alcance restringido sin unidades con ServerID asociado.
+    """
+    if unidad_negocio_pk:
+        unidad_scope = [_normalize(unidad_negocio_pk)]
+    elif unidades_permitidas is None:
+        return None
+    else:
+        unidad_scope = [_normalize(unit) for unit in unidades_permitidas if _normalize(unit)]
+
+    if not unidad_scope:
+        return []
+
+    allowed = set(unidad_scope)
+    server_ids = {
+        _normalize(unit.get("server_id"))
+        for unit in UnidadesService.get_all()
+        if _normalize(unit.get("server_id"))
+        and _normalize(unit.get("unidad_negocio_pk") or unit.get("id")) in allowed
+    }
+    return sorted(server_ids)

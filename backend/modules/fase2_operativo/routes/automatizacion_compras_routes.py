@@ -11,19 +11,30 @@ FASE 4.1 y 4.2 - Diciembre 2025:
 - Consulta de tareas operativas
 """
 
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Sequence
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from core.rbac.middleware import require_permission, require_explicit_permission
 from core.rbac_helper_sql import get_role_code
 from ..db_utils import get_database
+from modules.fase2_operativo.access import (
+    get_legacy_server_ids_for_unidad_scope,
+    resolve_operativo_unit_filter,
+)
 from modules.fase2_operativo.services.automatizacion_compras_service import (
     get_automatizacion_compras_service,
     EstadoAutomatizacion,
 )
 
 router = APIRouter(prefix="/automatizaciones/operativas", tags=["automatizaciones-operativas"])
+
+COMPRAS_FACT_VER = ("COMPRAS_FACT_VER",)
+COMPRAS_FACT_EJECUTAR = ("COMPRAS_FACT_EJECUTAR",)
+COMPRAS_FACT_GESTIONAR = ("COMPRAS_FACT_GESTIONAR",)
+COMPRAS_FACT_AUTORIZAR = ("COMPRAS_FACT_AUTORIZAR",)
+COMPRAS_FACT_APROBAR = ("COMPRAS_FACT_APROBAR",)
+COMPRAS_FACT_CONFIGURAR = ("COMPRAS_FACT_CONFIGURAR",)
 
 
 def _get_authenticated_compras_actor(current_user: Dict) -> tuple[str, str, str]:
@@ -45,6 +56,55 @@ def _get_authenticated_compras_actor(current_user: Dict) -> tuple[str, str, str]
         )
 
     return usuario_id, usuario_nombre, usuario_rol
+
+
+def _resolve_compras_unit_scope(
+    current_user: Dict,
+    unidad_negocio_pk: Optional[str] = None,
+    unidad: Optional[str] = None,
+    server_id: Optional[str] = None,
+    permission_codes: Sequence[str] = COMPRAS_FACT_VER,
+):
+    selector = unidad_negocio_pk or unidad or server_id
+    return resolve_operativo_unit_filter(current_user, selector, permission_codes)
+
+
+def _resolve_compras_server_scope(
+    current_user: Dict,
+    unidad_negocio_pk: Optional[str] = None,
+    unidad: Optional[str] = None,
+    server_id: Optional[str] = None,
+    permission_codes: Sequence[str] = COMPRAS_FACT_VER,
+):
+    unidad_pk, unidades_permitidas = _resolve_compras_unit_scope(
+        current_user,
+        unidad_negocio_pk=unidad_negocio_pk,
+        unidad=unidad,
+        server_id=server_id,
+        permission_codes=permission_codes,
+    )
+    return get_legacy_server_ids_for_unidad_scope(
+        unidad_negocio_pk=unidad_pk,
+        unidades_permitidas=unidades_permitidas,
+    )
+
+
+def _assert_automatizacion_scope(
+    service,
+    automatizacion_id: str,
+    current_user: Dict,
+    permission_codes: Sequence[str],
+) -> None:
+    _unidad_pk, unidades_permitidas = _resolve_compras_unit_scope(
+        current_user,
+        permission_codes=permission_codes,
+    )
+    registro = service.obtener_automatizacion(
+        automatizacion_id,
+        unidades_permitidas=unidades_permitidas,
+    )
+    if not registro:
+        raise HTTPException(status_code=404, detail="No encontrada")
 
 
 # ============================================================================
@@ -175,14 +235,27 @@ def _p2a_norm_tarea(r):
     }
 
 
+def _p2a_add_server_scope(where, params, server_ids):
+    if server_ids is None:
+        return
+    if not server_ids:
+        where.append("1=0")
+        return
+    placeholders = ", ".join(["%s"] * len(server_ids))
+    where.append(f"ServerID IN ({placeholders})")
+    params.extend(server_ids)
+
+
 def _p2a_list_tareas(ctx):
     estado = ctx.get("estado")
-    limit = int(ctx.get("limit") or 100)
+    limit = int(ctx.get("limite") or ctx.get("limit") or 100)
+    server_ids = ctx.get("server_ids")
     where = []
     params = []
     if estado:
         where.append("Estado=%s")
         params.append(estado)
+    _p2a_add_server_scope(where, params, server_ids)
     sql_where = ("WHERE " + " AND ".join(where)) if where else ""
     rows = _p2a_rows(f"""
         SELECT TOP {limit} *
@@ -193,11 +266,14 @@ def _p2a_list_tareas(ctx):
     return [_p2a_norm_tarea(r) for r in rows]
 
 
-def _p2a_get_tarea(tarea_id):
-    return _p2a_norm_tarea(_p2a_one("""
+def _p2a_get_tarea(tarea_id, server_ids=None):
+    where = ["TareaID=%s"]
+    params = [tarea_id]
+    _p2a_add_server_scope(where, params, server_ids)
+    return _p2a_norm_tarea(_p2a_one(f"""
         SELECT TOP 1 * FROM dbo.Operativo_TareasCompras
-        WHERE TareaID=%s
-    """, (tarea_id,)))
+        WHERE {" AND ".join(where)}
+    """, tuple(params)))
 
 
 def _p2a_completar_tarea(tarea_id, ctx):
@@ -239,7 +315,7 @@ def _p2a_asignar_tarea(tarea_id, ctx):
 
 
 def _p2a_list_bitacora(ctx):
-    limit = int(ctx.get("limit") or 100)
+    limit = int(ctx.get("limite") or ctx.get("limit") or 100)
     return _p2a_rows(f"""
         SELECT TOP {limit} *
         FROM dbo.Operativo_BitacoraCompras
@@ -248,12 +324,22 @@ def _p2a_list_bitacora(ctx):
 
 
 def _p2a_list_pedidos(ctx):
-    limit = int(ctx.get("limit") or 100)
+    limit = int(ctx.get("limite") or ctx.get("limit") or 100)
+    estado = ctx.get("estado")
+    server_ids = ctx.get("server_ids")
+    where = []
+    params = []
+    if estado:
+        where.append("Estado=%s")
+        params.append(estado)
+    _p2a_add_server_scope(where, params, server_ids)
+    sql_where = ("WHERE " + " AND ".join(where)) if where else ""
     return _p2a_rows(f"""
         SELECT TOP {limit} *
         FROM dbo.Operativo_PedidosProcesados
+        {sql_where}
         ORDER BY FechaProcesamiento DESC
-    """)
+    """, tuple(params))
 
 
 
@@ -340,6 +426,9 @@ async def obtener_estado_detector(
 @router.get("/compras/tareas")
 async def listar_tareas_operativas(
     empresa_id: Optional[str] = Query(None),
+    unidad_negocio_pk: Optional[str] = Query(None),
+    unidad: Optional[str] = Query(None),
+    server_id: Optional[str] = Query(None),
     estado: Optional[str] = Query(None),
     limite: int = Query(50, le=200),
     current_user: Dict = Depends(require_permission("COMPRAS_FACT_VER"))
@@ -350,7 +439,13 @@ async def listar_tareas_operativas(
     Filtrable por empresa y estado.
     """
     db = get_database()
-    
+    server_ids = _resolve_compras_server_scope(
+        current_user,
+        unidad_negocio_pk=unidad_negocio_pk,
+        unidad=unidad,
+        server_id=server_id,
+    )
+
     filtro = {}
     if empresa_id:
         filtro["empresa_id"] = empresa_id
@@ -372,8 +467,9 @@ async def obtener_tarea_operativa(
 ):
     """Obtiene detalle de una tarea operativa."""
     db = get_database()
-    
-    tarea = _p2a_get_tarea(tarea_id)
+    server_ids = _resolve_compras_server_scope(current_user)
+
+    tarea = _p2a_get_tarea(tarea_id, server_ids)
     
     if not tarea:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
@@ -395,10 +491,14 @@ async def completar_tarea_operativa(
     usuario_actor_id, usuario_actor_nombre, _usuario_actor_rol = _get_authenticated_compras_actor(current_user)
     payload = {"usuario_id": usuario_actor_id, "usuario_nombre": usuario_actor_nombre, "comentario": "Completada"}
     db = get_database()
-    
+    server_ids = _resolve_compras_server_scope(
+        current_user,
+        permission_codes=COMPRAS_FACT_EJECUTAR,
+    )
+
     from datetime import datetime, timezone
-    
-    tarea = _p2a_get_tarea(tarea_id)
+
+    tarea = _p2a_get_tarea(tarea_id, server_ids)
     if not tarea:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
     
@@ -421,10 +521,14 @@ async def asignar_tarea_operativa(
     """Asigna una tarea operativa a un usuario."""
     _get_authenticated_compras_actor(current_user)
     db = get_database()
-    
+    server_ids = _resolve_compras_server_scope(
+        current_user,
+        permission_codes=COMPRAS_FACT_GESTIONAR,
+    )
+
     from datetime import datetime, timezone
-    
-    tarea = _p2a_get_tarea(tarea_id)
+
+    tarea = _p2a_get_tarea(tarea_id, server_ids)
     if not tarea:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
     
@@ -442,17 +546,30 @@ async def asignar_tarea_operativa(
 @router.get("/compras/kpis")
 async def obtener_kpis(
     server_id: Optional[str] = Query(None),
+    unidad_negocio_pk: Optional[str] = Query(None),
+    unidad: Optional[str] = Query(None),
     current_user: Dict = Depends(require_permission("COMPRAS_FACT_VER"))
 ):
     """KPIs de automatizaciones operativas."""
     db = get_database()
     service = get_automatizacion_compras_service(db)
-    return service.obtener_kpis(server_id)
+    unidad_pk, unidades_permitidas = _resolve_compras_unit_scope(
+        current_user,
+        unidad_negocio_pk=unidad_negocio_pk,
+        unidad=unidad,
+        server_id=server_id,
+    )
+    return service.obtener_kpis(
+        unidad_negocio_pk=unidad_pk,
+        unidades_permitidas=unidades_permitidas,
+    )
 
 
 @router.get("/compras")
 async def listar_automatizaciones(
     server_id: Optional[str] = Query(None),
+    unidad_negocio_pk: Optional[str] = Query(None),
+    unidad: Optional[str] = Query(None),
     sucursal_id: Optional[str] = Query(None),
     estado: Optional[str] = Query(None),
     limite: int = Query(50, le=200),
@@ -461,7 +578,19 @@ async def listar_automatizaciones(
     """Lista automatizaciones."""
     db = get_database()
     service = get_automatizacion_compras_service(db)
-    return service.listar_automatizaciones(server_id, sucursal_id, estado, limite)
+    unidad_pk, unidades_permitidas = _resolve_compras_unit_scope(
+        current_user,
+        unidad_negocio_pk=unidad_negocio_pk,
+        unidad=unidad,
+        server_id=server_id,
+    )
+    return service.listar_automatizaciones(
+        sucursal_id=sucursal_id,
+        estado=estado,
+        limite=limite,
+        unidad_negocio_pk=unidad_pk,
+        unidades_permitidas=unidades_permitidas,
+    )
 
 
 # ============================================================================
@@ -491,6 +620,9 @@ async def obtener_bitacora_detector(
 @router.get("/compras/pedidos-procesados")
 async def listar_pedidos_procesados(
     empresa_id: Optional[str] = Query(None),
+    unidad_negocio_pk: Optional[str] = Query(None),
+    unidad: Optional[str] = Query(None),
+    server_id: Optional[str] = Query(None),
     estado: Optional[str] = Query(None),
     limite: int = Query(100, le=500),
     current_user: Dict = Depends(require_permission("COMPRAS_FACT_VER"))
@@ -501,7 +633,13 @@ async def listar_pedidos_procesados(
     Útil para verificar anti-duplicados y trazabilidad.
     """
     db = get_database()
-    
+    server_ids = _resolve_compras_server_scope(
+        current_user,
+        unidad_negocio_pk=unidad_negocio_pk,
+        unidad=unidad,
+        server_id=server_id,
+    )
+
     filtro = {}
     if empresa_id:
         filtro["empresa_id"] = empresa_id
@@ -529,7 +667,11 @@ async def obtener_automatizacion(
     db = get_database()
     service = get_automatizacion_compras_service(db)
     
-    registro = service.obtener_automatizacion(automatizacion_id)
+    _unidad_pk, unidades_permitidas = _resolve_compras_unit_scope(current_user)
+    registro = service.obtener_automatizacion(
+        automatizacion_id,
+        unidades_permitidas=unidades_permitidas,
+    )
     if not registro:
         raise HTTPException(status_code=404, detail="No encontrada")
     
@@ -548,7 +690,12 @@ async def procesar_pedido(
     usuario_id, usuario_nombre, _usuario_rol = _get_authenticated_compras_actor(current_user)
     db = get_database()
     service = get_automatizacion_compras_service(db)
-    
+    _resolve_compras_unit_scope(
+        current_user,
+        server_id=request.server_id,
+        permission_codes=COMPRAS_FACT_EJECUTAR,
+    )
+
     resultado = service.procesar_pedido_operativo(
         pedido_id=request.pedido_id,
         server_id=request.server_id,
@@ -586,6 +733,13 @@ async def autorizar_gerencia(
     db = get_database()
     service = get_automatizacion_compras_service(db)
     
+    _assert_automatizacion_scope(
+        service,
+        automatizacion_id,
+        current_user,
+        COMPRAS_FACT_AUTORIZAR,
+    )
+
     resultado = service.autorizar_gerencia(
         automatizacion_id=automatizacion_id,
         usuario_id=usuario_id,
@@ -620,6 +774,13 @@ async def autorizar_tesoreria(
     db = get_database()
     service = get_automatizacion_compras_service(db)
     
+    _assert_automatizacion_scope(
+        service,
+        automatizacion_id,
+        current_user,
+        COMPRAS_FACT_APROBAR,
+    )
+
     resultado = service.autorizar_tesoreria(
         automatizacion_id=automatizacion_id,
         usuario_id=usuario_id,
@@ -652,6 +813,13 @@ async def modificar_dias_objetivo(
     db = get_database()
     service = get_automatizacion_compras_service(db)
     
+    _assert_automatizacion_scope(
+        service,
+        automatizacion_id,
+        current_user,
+        COMPRAS_FACT_CONFIGURAR,
+    )
+
     resultado = service.modificar_dias_objetivo(
         automatizacion_id=automatizacion_id,
         nuevo_dias_objetivo=request.dias_objetivo,
@@ -690,7 +858,14 @@ async def modificar_parametros_consumo(
     usuario_id, _usuario_nombre, _usuario_rol = _get_authenticated_compras_actor(current_user)
     db = get_database()
     service = get_automatizacion_compras_service(db)
-    
+
+    _assert_automatizacion_scope(
+        service,
+        automatizacion_id,
+        current_user,
+        COMPRAS_FACT_CONFIGURAR,
+    )
+
     resultado = service.modificar_parametros_consumo(
         automatizacion_id=automatizacion_id,
         usuario_id=usuario_id,
@@ -713,9 +888,15 @@ async def modificar_parametros_consumo(
 @router.get("/compras/{automatizacion_id}/bitacora")
 async def obtener_bitacora(
     automatizacion_id: str,
+    limite: int = Query(100, le=500),
     current_user: Dict = Depends(require_permission("COMPRAS_FACT_VER"))
 ):
     """Obtiene bitácora de cambios."""
     db = get_database()
     service = get_automatizacion_compras_service(db)
-    return service.obtener_bitacora(automatizacion_id)
+    _unidad_pk, unidades_permitidas = _resolve_compras_unit_scope(current_user)
+    return service.obtener_bitacora(
+        automatizacion_id,
+        unidades_permitidas=unidades_permitidas,
+        limite=limite,
+    )
