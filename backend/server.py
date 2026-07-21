@@ -834,14 +834,11 @@ async def admin_sync_compras_manual(
     if user_role not in ["SuperAdministrador", "Administrador"]:
         raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar sincronización")
 
-    import asyncio
-    from core.scheduler.jobs.sync_compras_job import execute_sync_compras
+    from core.scheduler.jobs.sync_compras_job import run_sync_compras_job
 
     logging.info(f"[ADMIN] Usuario {current_user.get('email')} ejecutando sync compras manual (dry_run={dry_run})")
 
-    # Ejecutar en thread separado para no bloquear
-    loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(None, execute_sync_compras, dry_run)
+    result = await run_sync_compras_job(dry_run=dry_run)
 
     return result
 

@@ -1190,11 +1190,10 @@ class SchedulerManager:
                 replace_existing=True,
                 max_instances=1,
                 coalesce=True,
-                next_run_time=datetime.now(timezone.utc) + timedelta(seconds=5),
             )
             self._jobs["sync_compras"] = sync_compras_config
             logger.warning(
-                "[SYNC_COMPRAS] Job registrado: intervalo=%ss run_inicial=5s",
+                "[SYNC_COMPRAS] Job registrado: intervalo=%ss run_inicial=none",
                 sync_compras_config.interval_seconds,
             )
 

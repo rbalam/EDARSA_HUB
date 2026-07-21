@@ -683,10 +683,10 @@ def _is_sync_compras_execution_enabled() -> bool:
     """
     Guardrail P0.
 
-    La sincronización de Compras es la tubería canónica que alimenta
-    reportes NO-LIVE. Mantiene compatibilidad con el flag histórico
-    SCHEDULER_SYNC_COMPRAS_ENABLED y permite un override explícito
-    SCHEDULER_SYNC_COMPRAS_EXECUTION_ENABLED=false para apagar ejecución.
+    La ejecución de SYNC_COMPRAS es fail-closed: requiere
+    SCHEDULER_SYNC_COMPRAS_EXECUTION_ENABLED=true de forma explícita.
+    El flag histórico SCHEDULER_SYNC_COMPRAS_ENABLED sigue aplicando,
+    pero no autoriza ejecución por sí solo.
     """
     scheduler_enabled = (
         os.environ.get(
@@ -696,16 +696,14 @@ def _is_sync_compras_execution_enabled() -> bool:
         == "true"
     )
     raw_execution_enabled = os.environ.get(
-        "SCHEDULER_SYNC_COMPRAS_EXECUTION_ENABLED"
-    )
-    if raw_execution_enabled is None or not raw_execution_enabled.strip():
-        execution_enabled = scheduler_enabled
-    else:
-        execution_enabled = raw_execution_enabled.strip().lower() == "true"
+        "SCHEDULER_SYNC_COMPRAS_EXECUTION_ENABLED",
+        "",
+    ).strip().lower()
+    execution_enabled = raw_execution_enabled == "true"
     return scheduler_enabled and execution_enabled
 
 
-async def run_sync_compras_job():
+async def run_sync_compras_job(dry_run: bool = False):
     """Función async para el scheduler APScheduler."""
     import asyncio
 
@@ -723,7 +721,7 @@ async def run_sync_compras_job():
 
     # Ejecutar en thread separado para no bloquear el event loop
     loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(None, execute_sync_compras, False)
+    result = await loop.run_in_executor(None, execute_sync_compras, dry_run)
     
     logger.info(f"[SYNC-COMPRAS-JOB] Completado: {result.get('status')}")
     return result
