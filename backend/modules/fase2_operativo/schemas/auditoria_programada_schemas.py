@@ -1,12 +1,10 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
 """
 Schemas para Auditorías Programadas
 EDARSA HUB - Módulo Auditorías Programadas
 
-Colecciones:
-- auditorias_programadas: Configuración de programaciones
-- auditorias_programadas_log: Bitácora de ejecuciones
+Fuentes SQL:
+- Operativo_AuditoriasProgramadas: Configuración de programaciones
+- Workflow_Inventarios: workflows generados por ejecución
 """
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
@@ -53,9 +51,11 @@ class AuditoriaProgramada(BaseModel):
     nombre: str = Field(..., min_length=3, max_length=100)
     descripcion: Optional[str] = None
     
-    # Sucursal/Alcance
-    sucursal_id: str
-    sucursal_nombre: str
+    # Unidad/Alcance canonico
+    unidad_negocio_pk: Optional[str] = None
+    server_id: Optional[str] = None
+    sucursal_id: Optional[str] = None
+    sucursal_nombre: Optional[str] = None
     almacenes: List[str] = Field(default=[], description="IDs de almacenes específicos, vacío = todos")
     
     # Tipo y frecuencia
@@ -92,8 +92,10 @@ class AuditoriaProgramadaCreate(BaseModel):
     """Request para crear auditoría programada."""
     nombre: str = Field(..., min_length=3, max_length=100)
     descripcion: Optional[str] = None
-    sucursal_id: str
-    sucursal_nombre: str
+    unidad_negocio_pk: Optional[str] = Field(None, description="PK canonica de dbo.Unidades_Negocio")
+    server_id: Optional[str] = None
+    sucursal_id: Optional[str] = None
+    sucursal_nombre: Optional[str] = None
     almacenes: List[str] = []
     tipo_auditoria: TipoAuditoria
     frecuencia: FrecuenciaAuditoria
@@ -111,6 +113,10 @@ class AuditoriaProgramadaUpdate(BaseModel):
     """Request para actualizar auditoría programada."""
     nombre: Optional[str] = Field(None, min_length=3, max_length=100)
     descripcion: Optional[str] = None
+    unidad_negocio_pk: Optional[str] = None
+    server_id: Optional[str] = None
+    sucursal_id: Optional[str] = None
+    sucursal_nombre: Optional[str] = None
     almacenes: Optional[List[str]] = None
     tipo_auditoria: Optional[TipoAuditoria] = None
     frecuencia: Optional[FrecuenciaAuditoria] = None
@@ -128,8 +134,12 @@ class AuditoriaProgramadaResponse(BaseModel):
     id: str
     nombre: str
     descripcion: Optional[str]
-    sucursal_id: str
-    sucursal_nombre: str
+    unidad_negocio_pk: Optional[str] = None
+    unidad_negocio_codigo: Optional[str] = None
+    unidad_negocio_nombre: Optional[str] = None
+    server_id: Optional[str] = None
+    sucursal_id: Optional[str] = None
+    sucursal_nombre: Optional[str] = None
     almacenes: List[str]
     tipo_auditoria: str
     frecuencia: str

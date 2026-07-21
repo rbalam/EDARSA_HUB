@@ -1,11 +1,11 @@
 /**
  * useAuditoriasData - Hook para datos de Auditorías Programadas
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import logger from '../../services/logger';
 import api from '@/lib/api';
 
-export function useAuditoriasData() {
+export function useAuditoriasData(unidadNegocioPk = '', enabled = true) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -20,69 +20,96 @@ export function useAuditoriasData() {
 
   const [historialDias, setHistorialDias] = useState('30');
 
+  const unidadParams = useMemo(() => {
+    const value = String(unidadNegocioPk || '').trim();
+    return value && value !== 'all' ? { unidad_negocio_pk: value } : {};
+  }, [unidadNegocioPk]);
+
+  const clearData = useCallback(() => {
+    setAuditorias([]);
+    setKpis(null);
+    setHistorial([]);
+    setCalendario(prev => ({ ...prev, eventos: [] }));
+  }, []);
+
   const fetchAuditorias = useCallback(async () => {
+    if (!enabled) return;
     try {
-      const response = await api.get('/v2/auditorias-programadas');
+      const response = await api.get('/v2/auditorias-programadas', {
+        params: unidadParams,
+      });
       setAuditorias(response.data?.items || []);
     } catch (error) {
       logger.error('Error fetching auditorias:', error);
     }
-  }, []);
+  }, [enabled, unidadParams]);
 
   const fetchKpis = useCallback(async () => {
+    if (!enabled) return;
     try {
-      const response = await api.get('/v2/auditorias-programadas/kpis');
+      const response = await api.get('/v2/auditorias-programadas/kpis', {
+        params: unidadParams,
+      });
       setKpis(response.data || null);
     } catch (error) {
       logger.error('Error fetching KPIs:', error);
     }
-  }, []);
+  }, [enabled, unidadParams]);
 
   const fetchHistorial = useCallback(async () => {
+    if (!enabled) return;
     try {
       const response = await api.get('/v2/auditorias-programadas/historial', {
-        params: { dias: historialDias, limit: 100 }
+        params: { dias: historialDias, limit: 100, ...unidadParams }
       });
       setHistorial(response.data?.items || []);
     } catch (error) {
       logger.error('Error fetching historial:', error);
     }
-  }, [historialDias]);
+  }, [enabled, historialDias, unidadParams]);
 
   const fetchCalendario = useCallback(async () => {
+    if (!enabled) return;
     try {
       const response = await api.get('/v2/auditorias-programadas/calendario', {
-        params: { anio: calendario.anio, mes: calendario.mes }
+        params: { anio: calendario.anio, mes: calendario.mes, ...unidadParams }
       });
       setCalendario(prev => ({ ...prev, eventos: response.data?.eventos || [] }));
     } catch (error) {
       logger.error('Error fetching calendario:', error);
     }
-  }, [calendario.anio, calendario.mes]);
+  }, [enabled, calendario.anio, calendario.mes, unidadParams]);
 
   const loadAllData = useCallback(async () => {
+    if (!enabled) return;
     await Promise.all([
       fetchAuditorias(),
       fetchKpis(),
       fetchHistorial(),
       fetchCalendario()
     ]);
-  }, [fetchAuditorias, fetchKpis, fetchHistorial, fetchCalendario]);
+  }, [enabled, fetchAuditorias, fetchKpis, fetchHistorial, fetchCalendario]);
 
   useEffect(() => {
     const init = async () => {
+      if (!enabled) {
+        clearData();
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       await loadAllData();
       setLoading(false);
     };
     init();
-  }, [loadAllData]);
+  }, [enabled, clearData, loadAllData]);
 
   const handleRefresh = useCallback(async () => {
+    if (!enabled) return;
     setRefreshing(true);
     await loadAllData();
     setRefreshing(false);
-  }, [loadAllData]);
+  }, [enabled, loadAllData]);
 
   const cambiarMesCalendario = (delta) => {
     setCalendario(prev => {

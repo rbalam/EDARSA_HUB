@@ -550,6 +550,7 @@ MENU_PERMISSION_MAP = {
         "PROGRAMACION_VER",
     ],
     "automatizaciones": [
+        "AUDITORIA_VER",
         "AUTOMATIZACIONES_VER",
     ],
     "asignaciones": [

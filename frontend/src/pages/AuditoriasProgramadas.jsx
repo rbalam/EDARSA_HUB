@@ -13,7 +13,7 @@ import logger from '../services/logger';
  * - Auto-refresh
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -71,17 +71,38 @@ import {
   ListChecks,
 } from 'lucide-react';
 import { getUser } from '@/lib/auth';
+import { fetchUnidadesNegocio } from '@/services/unidadesNegocioService';
 import { toast } from 'sonner';
-import {
-  useAuditoriasData,
-  KPIsGrid,
-  CalendarioAuditorias,
-  EstadoBadge,
-  AccionesAuditoria,
-  EmptyState
-} from '@/components/auditorias';
+import { useAuditoriasData } from '@/components/auditorias';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const READ_PERMISSIONS = ['AUDITORIA_VER', 'AUTOMATIZACIONES_VER'];
+const PROGRAMAR_PERMISSIONS = ['AUDITORIAS_PROGRAMAR'];
+const GESTIONAR_PERMISSIONS = ['AUDITORIAS_GESTIONAR'];
+
+const normalizePermissionCode = (value) => String(value || '').trim().toUpperCase();
+
+const getUnidadId = (unidad) => String(unidad?.id || unidad?.unidad_negocio_pk || '');
+
+const getUnidadNombre = (unidad) => (
+  unidad?.nombre
+  || unidad?.unidad_negocio_nombre
+  || unidad?.codigo
+  || getUnidadId(unidad)
+);
+
+const buildInitialFormData = (unidadNegocioPk = '') => ({
+  nombre: '',
+  descripcion: '',
+  unidad_negocio_pk: unidadNegocioPk,
+  sucursal_id: '',
+  sucursal_nombre: '',
+  tipo_auditoria: 'INVENTARIO_COMPLETO',
+  frecuencia: 'SEMANAL',
+  dia_semana: 0,
+  dia_mes: 1,
+  hora_ejecucion: '08:00',
+  observaciones: '',
+});
 
 const formatDateTime = (isoString) => {
   if (!isoString) return '-';
@@ -163,7 +184,32 @@ const ExecutionBadge = ({ estado }) => {
 export default function AuditoriasProgramadas() {
   const user = getUser();
   const [autoRefresh, setAutoRefresh] = useState(true);
-  
+  const [unidadesNegocio, setUnidadesNegocio] = useState([]);
+  const [selectedUnidad, setSelectedUnidad] = useState('all');
+  const [loadingUnidades, setLoadingUnidades] = useState(true);
+  const [permissionsLoading, setPermissionsLoading] = useState(true);
+  const [functionalPermissions, setFunctionalPermissions] = useState([]);
+  const [globalAccess, setGlobalAccess] = useState(false);
+
+  const permissionSet = useMemo(
+    () => new Set(functionalPermissions.map(normalizePermissionCode)),
+    [functionalPermissions]
+  );
+
+  const hasAnyPermission = useCallback((codes) => {
+    if (globalAccess) return true;
+    return codes.some((code) => permissionSet.has(normalizePermissionCode(code)));
+  }, [globalAccess, permissionSet]);
+
+  const permisos = useMemo(() => ({
+    ver: hasAnyPermission(READ_PERMISSIONS),
+    programar: hasAnyPermission(PROGRAMAR_PERMISSIONS),
+    gestionar: hasAnyPermission(GESTIONAR_PERMISSIONS),
+  }), [hasAnyPermission]);
+
+  const selectedUnidadFiltro = selectedUnidad === 'all' ? '' : selectedUnidad;
+  const dataEnabled = !permissionsLoading && permisos.ver;
+
   // Hook para datos (extraído)
   const {
     loading,
@@ -176,10 +222,8 @@ export default function AuditoriasProgramadas() {
     setHistorialDias,
     handleRefresh,
     loadAllData,
-    fetchAuditorias,
-    fetchKpis,
     cambiarMesCalendario
-  } = useAuditoriasData();
+  } = useAuditoriasData(selectedUnidadFiltro, dataEnabled);
   
   // Filters
   const [filterStatus, setFilterStatus] = useState('all');
@@ -188,30 +232,65 @@ export default function AuditoriasProgramadas() {
   // Form
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({
-    nombre: '',
-    descripcion: '',
-    sucursal_id: '',
-    sucursal_nombre: '',
-    tipo_auditoria: 'INVENTARIO_COMPLETO',
-    frecuencia: 'SEMANAL',
-    dia_semana: 0,
-    dia_mes: 1,
-    hora_ejecucion: '08:00',
-    observaciones: '',
-  });
+  const [formData, setFormData] = useState(() => buildInitialFormData());
   const [formLoading, setFormLoading] = useState(false);
   
   // Confirm dialog
   const [confirmDialog, setConfirmDialog] = useState({ open: false, type: null, id: null, nombre: null });
   const [actionLoading, setActionLoading] = useState(false);
-  
-  // Permissions
-  const permisos = {
-    ver: ['Administrador', 'Supervisor', 'Gerente', 'Director', 'Auditor'].includes(user?.role),
-    programar: ['Administrador', 'Gerente', 'Director'].includes(user?.role),
-    gestionar: ['Administrador', 'Director'].includes(user?.role),
-  };
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadPermissions = async () => {
+      setPermissionsLoading(true);
+      try {
+        const response = await api.get('/auth/me/menu-permissions');
+        if (!mounted) return;
+        setFunctionalPermissions(response.data?.permisos_funcionales || []);
+        setGlobalAccess(Boolean(response.data?.tiene_acceso_global));
+      } catch (error) {
+        logger.error('[Automatizaciones] Error cargando permisos:', error);
+        if (mounted) {
+          setFunctionalPermissions([]);
+          setGlobalAccess(false);
+        }
+      } finally {
+        if (mounted) setPermissionsLoading(false);
+      }
+    };
+
+    loadPermissions();
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadUnidades = async () => {
+      setLoadingUnidades(true);
+      try {
+        const unidades = await fetchUnidadesNegocio();
+        if (!mounted) return;
+        const disponibles = unidades || [];
+        const ids = disponibles.map(getUnidadId).filter(Boolean);
+        setUnidadesNegocio(disponibles);
+        setSelectedUnidad((prev) => {
+          if (ids.length === 1) return ids[0];
+          if (prev && prev !== 'all' && !ids.includes(prev)) return 'all';
+          return prev || 'all';
+        });
+      } catch (error) {
+        logger.error('[Automatizaciones] Error cargando unidades:', error);
+        if (mounted) setUnidadesNegocio([]);
+      } finally {
+        if (mounted) setLoadingUnidades(false);
+      }
+    };
+
+    loadUnidades();
+    return () => { mounted = false; };
+  }, []);
 
   // Auto-refresh
   useEffect(() => {
@@ -219,6 +298,38 @@ export default function AuditoriasProgramadas() {
     const interval = setInterval(() => loadAllData(), 60000);
     return () => clearInterval(interval);
   }, [autoRefresh, loadAllData]);
+
+  const findUnidadById = useCallback((unidadId) => {
+    const target = String(unidadId || '');
+    return unidadesNegocio.find((unidad) => getUnidadId(unidad) === target);
+  }, [unidadesNegocio]);
+
+  const getDefaultUnidadPk = useCallback(() => {
+    if (selectedUnidad !== 'all') return selectedUnidad;
+    if (unidadesNegocio.length === 1) return getUnidadId(unidadesNegocio[0]);
+    return '';
+  }, [selectedUnidad, unidadesNegocio]);
+
+  const findUnidadForAuditoria = useCallback((auditoria) => {
+    const direct = auditoria?.unidad_negocio_pk;
+    if (direct && findUnidadById(direct)) return String(direct);
+
+    const serverId = String(auditoria?.server_id || '');
+    const sucursalId = String(auditoria?.sucursal_id || '');
+    const matched = unidadesNegocio.find((unidad) => (
+      String(unidad.server_id || '') === serverId
+      && [unidad.sucursal_origen_id, unidad.codigo, getUnidadId(unidad)]
+        .some((value) => String(value || '') === sucursalId)
+    ));
+
+    return matched ? getUnidadId(matched) : (direct || getDefaultUnidadPk());
+  }, [findUnidadById, getDefaultUnidadPk, unidadesNegocio]);
+
+  const openNewForm = useCallback(() => {
+    setEditingId(null);
+    setFormData(buildInitialFormData(getDefaultUnidadPk()));
+    setShowForm(true);
+  }, [getDefaultUnidadPk]);
 
   // Actions
   const handleAction = async (action, id) => {
@@ -239,8 +350,20 @@ export default function AuditoriasProgramadas() {
     setFormLoading(true);
     
     try {
+      const unidad = findUnidadById(formData.unidad_negocio_pk);
+      if (!unidad) {
+        toast.error('Selecciona una unidad de negocio válida');
+        setFormLoading(false);
+        return;
+      }
+
+      const unidadPk = getUnidadId(unidad);
       const payload = {
         ...formData,
+        unidad_negocio_pk: unidadPk,
+        server_id: unidad.server_id || '',
+        sucursal_id: unidad.sucursal_origen_id || unidad.codigo || unidadPk,
+        sucursal_nombre: getUnidadNombre(unidad),
         created_by: user?.email || 'unknown',
       };
       
@@ -252,14 +375,10 @@ export default function AuditoriasProgramadas() {
       
       setShowForm(false);
       setEditingId(null);
-      setFormData({
-        nombre: '', descripcion: '', sucursal_id: '', sucursal_nombre: '',
-        tipo_auditoria: 'INVENTARIO_COMPLETO', frecuencia: 'SEMANAL',
-        dia_semana: 0, dia_mes: 1, hora_ejecucion: '08:00', observaciones: '',
-      });
+      setFormData(buildInitialFormData(getDefaultUnidadPk()));
       await handleRefresh();
     } catch (error) {
-      alert(`Error: ${error.response?.data?.detail || 'Error de conexión'}`);
+      toast.error(`Error: ${error.response?.data?.detail || 'Error de conexión'}`);
     } finally {
       setFormLoading(false);
     }
@@ -269,8 +388,9 @@ export default function AuditoriasProgramadas() {
     setFormData({
       nombre: auditoria.nombre || '',
       descripcion: auditoria.descripcion || '',
+      unidad_negocio_pk: findUnidadForAuditoria(auditoria),
       sucursal_id: auditoria.sucursal_id || '',
-      sucursal_nombre: auditoria.sucursal_nombre || '',
+      sucursal_nombre: auditoria.sucursal_nombre || auditoria.unidad_negocio_nombre || '',
       tipo_auditoria: auditoria.tipo_auditoria || 'INVENTARIO_COMPLETO',
       frecuencia: auditoria.frecuencia || 'SEMANAL',
       dia_semana: auditoria.dia_semana || 0,
@@ -288,16 +408,33 @@ export default function AuditoriasProgramadas() {
     if (filterStatus === 'inactivas' && a.activo) return false;
     if (searchText) {
       const search = searchText.toLowerCase();
-      return a.nombre?.toLowerCase().includes(search) || a.sucursal_nombre?.toLowerCase().includes(search);
+      const target = [
+        a.nombre,
+        a.sucursal_nombre,
+        a.unidad_negocio_nombre,
+        a.unidad_negocio_codigo,
+      ].filter(Boolean).join(' ').toLowerCase();
+      return target.includes(search);
     }
     return true;
   });
 
-  if (loading) {
+  if (permissionsLoading || loadingUnidades || (permisos.ver && loading)) {
     return (
       <div className="flex items-center justify-center h-96" data-testid="auditorias-loading">
         <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
         <span className="ml-2 text-zinc-500">Cargando módulo...</span>
+      </div>
+    );
+  }
+
+  if (!permisos.ver) {
+    return (
+      <div className="flex items-center justify-center h-96" data-testid="auditorias-denied">
+        <div className="text-center text-zinc-500">
+          <AlertCircle className="w-8 h-8 mx-auto mb-2 text-amber-500" />
+          <p>Sin permiso para ver Automatizaciones</p>
+        </div>
       </div>
     );
   }
@@ -311,7 +448,22 @@ export default function AuditoriasProgramadas() {
           <p className="text-zinc-500 text-sm mt-1">Gestión de procesos automáticos del sistema</p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <Select value={selectedUnidad} onValueChange={setSelectedUnidad} disabled={loadingUnidades || unidadesNegocio.length === 0}>
+            <SelectTrigger className="w-[220px]">
+              <SelectValue placeholder="Unidad de negocio" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas las unidades</SelectItem>
+              {unidadesNegocio.map((unidad) => {
+                const unidadId = getUnidadId(unidad);
+                return unidadId ? (
+                  <SelectItem key={unidadId} value={unidadId}>{getUnidadNombre(unidad)}</SelectItem>
+                ) : null;
+              })}
+            </SelectContent>
+          </Select>
+
           <div className="flex items-center gap-2 text-sm">
             <Switch id="auto-refresh" checked={autoRefresh} onCheckedChange={setAutoRefresh} />
             <Label htmlFor="auto-refresh" className="text-zinc-600">Auto-refresh</Label>
@@ -346,7 +498,7 @@ export default function AuditoriasProgramadas() {
           {/* Botón Nueva Programación */}
           <div className="flex justify-end">
             {permisos.programar && (
-              <Button size="sm" onClick={() => { setEditingId(null); setShowForm(true); }} data-testid="new-auditoria-btn">
+              <Button size="sm" onClick={openNewForm} disabled={loadingUnidades || unidadesNegocio.length === 0} data-testid="new-auditoria-btn">
                 <Plus className="w-4 h-4 mr-1" />
                 Nueva Programación
               </Button>
@@ -492,7 +644,7 @@ export default function AuditoriasProgramadas() {
                         <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-zinc-600">
                           <span className="flex items-center gap-1">
                             <Building2 className="w-4 h-4 text-zinc-400" />
-                            {auditoria.sucursal_nombre}
+                            {auditoria.unidad_negocio_nombre || auditoria.sucursal_nombre || auditoria.unidad_negocio_pk || '-'}
                           </span>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-4 h-4 text-zinc-400" />
@@ -562,7 +714,7 @@ export default function AuditoriasProgramadas() {
                     <ClipboardList className="w-12 h-12 mx-auto mb-3 text-zinc-300" />
                     <p>No hay auditorías programadas</p>
                     {permisos.programar && (
-                      <Button variant="link" onClick={() => setShowForm(true)}>
+                      <Button variant="link" onClick={openNewForm} disabled={loadingUnidades || unidadesNegocio.length === 0}>
                         Crear primera programación
                       </Button>
                     )}
@@ -583,20 +735,14 @@ export default function AuditoriasProgramadas() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      const newDate = new Date(calendario.anio, calendario.mes - 2, 1);
-                      setCalendario(prev => ({ ...prev, mes: newDate.getMonth() + 1, anio: newDate.getFullYear() }));
-                    }}
+                    onClick={() => cambiarMesCalendario(-1)}
                   >
                     Anterior
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      const newDate = new Date(calendario.anio, calendario.mes, 1);
-                      setCalendario(prev => ({ ...prev, mes: newDate.getMonth() + 1, anio: newDate.getFullYear() }));
-                    }}
+                    onClick={() => cambiarMesCalendario(1)}
                   >
                     Siguiente
                   </Button>
@@ -615,7 +761,7 @@ export default function AuditoriasProgramadas() {
                             <Clock className="w-4 h-4 text-blue-500" />
                             <span>{a.hora_ejecucion}</span>
                             <span className="font-medium">{a.nombre}</span>
-                            <Badge variant="outline" className="text-xs">{a.sucursal_nombre}</Badge>
+                            <Badge variant="outline" className="text-xs">{a.unidad_negocio_nombre || a.sucursal_nombre}</Badge>
                           </div>
                         ))}
                       </div>
@@ -764,21 +910,25 @@ export default function AuditoriasProgramadas() {
                   minLength={3}
                 />
               </div>
-              <div>
-                <Label>Sucursal ID</Label>
-                <Input
-                  value={formData.sucursal_id}
-                  onChange={(e) => setFormData({ ...formData, sucursal_id: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label>Nombre Sucursal</Label>
-                <Input
-                  value={formData.sucursal_nombre}
-                  onChange={(e) => setFormData({ ...formData, sucursal_nombre: e.target.value })}
-                  required
-                />
+              <div className="col-span-2">
+                <Label>Unidad de negocio</Label>
+                <Select
+                  value={formData.unidad_negocio_pk || ''}
+                  onValueChange={(v) => setFormData({ ...formData, unidad_negocio_pk: v })}
+                  disabled={loadingUnidades || unidadesNegocio.length === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona unidad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unidadesNegocio.map((unidad) => {
+                      const unidadId = getUnidadId(unidad);
+                      return unidadId ? (
+                        <SelectItem key={unidadId} value={unidadId}>{getUnidadNombre(unidad)}</SelectItem>
+                      ) : null;
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>Tipo de Auditoría</Label>
@@ -846,7 +996,7 @@ export default function AuditoriasProgramadas() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-              <Button type="submit" disabled={formLoading}>
+              <Button type="submit" disabled={formLoading || !formData.unidad_negocio_pk}>
                 {formLoading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
                 {editingId ? 'Guardar Cambios' : 'Crear Programación'}
               </Button>

@@ -1,5 +1,3 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
 """
 Endpoints de Auditorías Programadas
 EDARSA HUB - Módulo Auditorías Programadas
@@ -12,8 +10,6 @@ Permisos:
 """
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional
-from datetime import datetime, timezone
-
 from ..services.auditoria_programada_service import (
     AuditoriaProgramadaService,
     AuditoriaNoEncontradaError,
@@ -26,9 +22,15 @@ from ..schemas.auditoria_programada_schemas import (
 )
 from ..api_schemas import OperacionResponse
 from ..db_utils import get_database
+from ..access import (
+    AUDITORIA_READ_PERMISSIONS,
+    AUDITORIAS_GESTIONAR,
+    AUDITORIAS_PROGRAMAR,
+    resolve_operativo_unit_filter,
+)
 
 # RBAC
-from core.rbac.middleware import require_permission, require_explicit_permission
+from core.rbac.middleware import require_any_permission, require_explicit_permission
 
 router = APIRouter()
 
@@ -49,16 +51,24 @@ def get_db():
 )
 async def listar_auditorias(
     sucursal_id: Optional[str] = Query(None, description="Filtrar por sucursal"),
+    unidad_negocio_pk: Optional[str] = Query(None, description="Filtrar por unidad de negocio canónica"),
     solo_activas: bool = Query(False, description="Solo auditorías activas"),
-    current_user: dict = Depends(require_permission("AUDITORIA_VER"))
+    current_user: dict = Depends(require_any_permission(list(AUDITORIA_READ_PERMISSIONS)))
 ):
     """Lista auditorías programadas."""
     db = get_db()
     service = AuditoriaProgramadaService(db)
+    unidad_pk, unidades_permitidas = resolve_operativo_unit_filter(
+        current_user,
+        unidad_negocio_pk or sucursal_id,
+        AUDITORIA_READ_PERMISSIONS,
+    )
     
     auditorias = service.listar(
-        sucursal_id=sucursal_id,
-        solo_activas=solo_activas
+        sucursal_id=None if unidad_pk else sucursal_id,
+        solo_activas=solo_activas,
+        unidad_negocio_pk=unidad_pk,
+        unidades_permitidas=unidades_permitidas,
     )
     
     activas = sum(1 for a in auditorias if a.get("activo"))
@@ -78,12 +88,21 @@ async def listar_auditorias(
     description="Obtiene métricas agregadas de auditorías programadas. Requiere AUDITORIA_VER."
 )
 async def obtener_kpis(
-    current_user: dict = Depends(require_permission("AUDITORIA_VER"))
+    unidad_negocio_pk: Optional[str] = Query(None, description="Filtrar por unidad de negocio canónica"),
+    current_user: dict = Depends(require_any_permission(list(AUDITORIA_READ_PERMISSIONS)))
 ):
     """Obtiene KPIs de auditorías."""
     db = get_db()
     service = AuditoriaProgramadaService(db)
-    return service.obtener_kpis()
+    unidad_pk, unidades_permitidas = resolve_operativo_unit_filter(
+        current_user,
+        unidad_negocio_pk,
+        AUDITORIA_READ_PERMISSIONS,
+    )
+    return service.obtener_kpis(
+        unidad_negocio_pk=unidad_pk,
+        unidades_permitidas=unidades_permitidas,
+    )
 
 
 @router.get(
@@ -94,12 +113,23 @@ async def obtener_kpis(
 async def obtener_calendario(
     anio: int = Query(..., ge=2020, le=2100),
     mes: int = Query(..., ge=1, le=12),
-    current_user: dict = Depends(require_permission("AUDITORIA_VER"))
+    unidad_negocio_pk: Optional[str] = Query(None, description="Filtrar por unidad de negocio canónica"),
+    current_user: dict = Depends(require_any_permission(list(AUDITORIA_READ_PERMISSIONS)))
 ):
     """Obtiene calendario de auditorías."""
     db = get_db()
     service = AuditoriaProgramadaService(db)
-    return service.obtener_calendario(anio, mes)
+    unidad_pk, unidades_permitidas = resolve_operativo_unit_filter(
+        current_user,
+        unidad_negocio_pk,
+        AUDITORIA_READ_PERMISSIONS,
+    )
+    return service.obtener_calendario(
+        anio,
+        mes,
+        unidad_negocio_pk=unidad_pk,
+        unidades_permitidas=unidades_permitidas,
+    )
 
 
 @router.get(
@@ -112,17 +142,25 @@ async def obtener_historial(
     estado: Optional[str] = Query(None, description="Filtrar por estado"),
     dias: int = Query(30, ge=1, le=365, description="Días hacia atrás"),
     limit: int = Query(100, ge=1, le=500),
-    current_user: dict = Depends(require_permission("AUDITORIA_VER"))
+    unidad_negocio_pk: Optional[str] = Query(None, description="Filtrar por unidad de negocio canónica"),
+    current_user: dict = Depends(require_any_permission(list(AUDITORIA_READ_PERMISSIONS)))
 ):
     """Obtiene historial de ejecuciones."""
     db = get_db()
     service = AuditoriaProgramadaService(db)
+    unidad_pk, unidades_permitidas = resolve_operativo_unit_filter(
+        current_user,
+        unidad_negocio_pk,
+        AUDITORIA_READ_PERMISSIONS,
+    )
     
     logs = service.obtener_historial(
         auditoria_id=auditoria_id,
         estado=estado,
         dias=dias,
-        limit=limit
+        limit=limit,
+        unidad_negocio_pk=unidad_pk,
+        unidades_permitidas=unidades_permitidas,
     )
     
     return {"items": logs, "total": len(logs)}
@@ -135,13 +173,18 @@ async def obtener_historial(
 )
 async def obtener_auditoria(
     auditoria_id: str,
-    current_user: dict = Depends(require_permission("AUDITORIA_VER"))
+    current_user: dict = Depends(require_any_permission(list(AUDITORIA_READ_PERMISSIONS)))
 ):
     """Obtiene una auditoría por ID."""
     try:
         db = get_db()
         service = AuditoriaProgramadaService(db)
-        return service.obtener(auditoria_id)
+        _, unidades_permitidas = resolve_operativo_unit_filter(
+            current_user,
+            None,
+            AUDITORIA_READ_PERMISSIONS,
+        )
+        return service.obtener(auditoria_id, unidades_permitidas)
     except AuditoriaNoEncontradaError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -155,20 +198,27 @@ async def obtener_auditoria(
 )
 async def crear_auditoria(
     request: AuditoriaProgramadaCreate,
-    current_user: dict = Depends(require_explicit_permission("AUDITORIAS_PROGRAMAR"))
+    current_user: dict = Depends(require_explicit_permission(AUDITORIAS_PROGRAMAR))
 ):
     """Crea una nueva auditoría programada."""
     try:
         db = get_db()
         service = AuditoriaProgramadaService(db)
+        unidad_pk, _ = resolve_operativo_unit_filter(
+            current_user,
+            request.unidad_negocio_pk or request.sucursal_id or request.server_id,
+            (AUDITORIAS_PROGRAMAR,),
+        )
         
-        auditoria = service.crear(request)
+        auditoria = service.crear(request, unidad_negocio_pk=unidad_pk)
         
         return OperacionResponse(
             success=True,
             message=f"Auditoría programada creada: {auditoria['nombre']}",
             data=auditoria
         )
+    except HTTPException:
+        raise
     except ConfiguracionInvalidaError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -184,14 +234,30 @@ async def crear_auditoria(
 async def actualizar_auditoria(
     auditoria_id: str,
     request: AuditoriaProgramadaUpdate,
-    current_user: dict = Depends(require_explicit_permission("AUDITORIAS_PROGRAMAR"))
+    current_user: dict = Depends(require_explicit_permission(AUDITORIAS_PROGRAMAR))
 ):
     """Actualiza una auditoría programada."""
     try:
         db = get_db()
         service = AuditoriaProgramadaService(db)
+        unidad_ref = request.unidad_negocio_pk or request.sucursal_id or request.server_id
+        if unidad_ref:
+            resolve_operativo_unit_filter(
+                current_user,
+                unidad_ref,
+                (AUDITORIAS_PROGRAMAR,),
+            )
+        _, unidades_permitidas = resolve_operativo_unit_filter(
+            current_user,
+            None,
+            (AUDITORIAS_PROGRAMAR,),
+        )
         
-        auditoria = service.actualizar(auditoria_id, request)
+        auditoria = service.actualizar(
+            auditoria_id,
+            request,
+            unidades_permitidas=unidades_permitidas,
+        )
         
         return OperacionResponse(
             success=True,
@@ -212,14 +278,19 @@ async def actualizar_auditoria(
 )
 async def eliminar_auditoria(
     auditoria_id: str,
-    current_user: dict = Depends(require_explicit_permission("AUDITORIAS_GESTIONAR"))
+    current_user: dict = Depends(require_explicit_permission(AUDITORIAS_GESTIONAR))
 ):
     """Elimina una auditoría programada."""
     try:
         db = get_db()
         service = AuditoriaProgramadaService(db)
+        _, unidades_permitidas = resolve_operativo_unit_filter(
+            current_user,
+            None,
+            (AUDITORIAS_GESTIONAR,),
+        )
         
-        service.eliminar(auditoria_id)
+        service.eliminar(auditoria_id, unidades_permitidas)
         
         return OperacionResponse(
             success=True,
@@ -241,14 +312,19 @@ async def eliminar_auditoria(
 )
 async def activar_auditoria(
     auditoria_id: str,
-    current_user: dict = Depends(require_explicit_permission("AUDITORIAS_PROGRAMAR"))
+    current_user: dict = Depends(require_explicit_permission(AUDITORIAS_PROGRAMAR))
 ):
     """Activa una auditoría programada."""
     try:
         db = get_db()
         service = AuditoriaProgramadaService(db)
+        _, unidades_permitidas = resolve_operativo_unit_filter(
+            current_user,
+            None,
+            (AUDITORIAS_PROGRAMAR,),
+        )
         
-        auditoria = service.activar(auditoria_id)
+        auditoria = service.activar(auditoria_id, unidades_permitidas)
         
         return OperacionResponse(
             success=True,
@@ -267,14 +343,19 @@ async def activar_auditoria(
 )
 async def desactivar_auditoria(
     auditoria_id: str,
-    current_user: dict = Depends(require_explicit_permission("AUDITORIAS_PROGRAMAR"))
+    current_user: dict = Depends(require_explicit_permission(AUDITORIAS_PROGRAMAR))
 ):
     """Desactiva una auditoría programada."""
     try:
         db = get_db()
         service = AuditoriaProgramadaService(db)
+        _, unidades_permitidas = resolve_operativo_unit_filter(
+            current_user,
+            None,
+            (AUDITORIAS_PROGRAMAR,),
+        )
         
-        auditoria = service.desactivar(auditoria_id)
+        auditoria = service.desactivar(auditoria_id, unidades_permitidas)
         
         return OperacionResponse(
             success=True,
@@ -293,15 +374,20 @@ async def desactivar_auditoria(
 )
 async def ejecutar_auditoria(
     auditoria_id: str,
-    current_user: dict = Depends(require_explicit_permission("AUDITORIAS_GESTIONAR"))
+    current_user: dict = Depends(require_explicit_permission(AUDITORIAS_GESTIONAR))
 ):
     """Ejecuta una auditoría manualmente."""
     try:
         db = get_db()
         service = AuditoriaProgramadaService(db)
+        _, unidades_permitidas = resolve_operativo_unit_filter(
+            current_user,
+            None,
+            (AUDITORIAS_GESTIONAR,),
+        )
         
-        usuario_id = current_user.get("user_id", "unknown")
-        resultado = service.ejecutar_manual(auditoria_id, usuario_id)
+        usuario_id = current_user.get("id") or current_user.get("user_id") or current_user.get("email") or "unknown"
+        resultado = service.ejecutar_manual(auditoria_id, usuario_id, unidades_permitidas)
         
         if resultado.get("estado") == "COMPLETADA":
             return OperacionResponse(
@@ -315,6 +401,8 @@ async def ejecutar_auditoria(
                 message=f"Error en ejecución: {resultado.get('error_detalle')}",
                 data=resultado
             )
+    except HTTPException:
+        raise
     except AuditoriaNoEncontradaError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except EjecucionDuplicadaError as e:
