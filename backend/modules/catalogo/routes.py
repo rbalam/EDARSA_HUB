@@ -18,7 +18,6 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from core.security import get_current_user
 from core.corporate_filters.request_resolver import resolve_unidad_scope
 from modules.costos_margenes.repository import _get_edarsahub_connection
-from modules.costos_margenes.routes import _get_user_allowed_servers
 from core.db import execute_sql_query
 
 router = APIRouter(prefix="/catalogo", tags=["Catálogo Canónico"])
@@ -54,22 +53,26 @@ async def obtener_clasificacion(
     """
     # Resolución canónica de la unidad -> server scope (RBAC incluido)
     servidor_id = None
+    scope = await resolve_unidad_scope(
+        current_user,
+        unidad=unidad,
+        server_id_legacy=server_id,
+    )
+    if scope.access_denied:
+        return {
+            "categorias": [],
+            "familias": [],
+            "subfamilias": [],
+            "source_type": "EDARSAHUB_SQL",
+        }
+
+    servidor_id = scope.server_id
     servidores_ids = None
-    if unidad:
-        scope = await resolve_unidad_scope(current_user, unidad=unidad)
-        if scope.access_denied:
-            return {"categorias": [], "familias": [], "subfamilias": [], "source_type": "EDARSAHUB_SQL"}
-        servidor_id = scope.server_id
-    elif server_id:
-        # Compat transición: server_id POS directo (Análisis). RBAC por servidores permitidos.
-        allowed, es_corporativo = _get_user_allowed_servers(current_user)
-        if not es_corporativo and server_id not in (allowed or []):
-            return {"categorias": [], "familias": [], "subfamilias": [], "source_type": "EDARSAHUB_SQL"}
-        servidor_id = server_id
-    else:
-        allowed, es_corporativo = _get_user_allowed_servers(current_user)
-        if not es_corporativo:
-            servidores_ids = allowed or ["00000000-0000-0000-0000-000000000000"]
+
+    if scope.is_global:
+        # Lista vacía significa alcance corporativo sin restricción.
+        # Una lista poblada limita la consulta a servidores autorizados.
+        servidores_ids = scope.effective_server_ids or None
 
     server_filter = _build_server_filter(servidor_id, servidores_ids)
     activo_filter = "" if incluir_inactivos else "AND Activo = 1"

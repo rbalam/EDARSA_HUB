@@ -49,7 +49,10 @@ from .jobs.vtiger_sync_job import execute_vtiger_sync
 from .jobs.inteligencia_comercial_sync_job import job_inteligencia_comercial_sync
 # NetPay: Sincronización diaria de reportes conciliables
 from .jobs.netpay_sync_job import execute_netpay_sync_diario
-from .jobs.sync_compras_job import execute_sync_compras
+from .jobs.sync_compras_job import (
+    get_job_config as get_sync_compras_job_config,
+    run_sync_compras_job,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -394,7 +397,7 @@ class SchedulerManager:
 
         try:
             import asyncio
-            result = await asyncio.to_thread(execute_sync_compras, False)
+            result = await run_sync_compras_job()
             logger.warning(
                 "[SYNC_COMPRAS] Finalizado: status=%s procesados=%s errores=%s",
                 result.get("status"),
@@ -1168,7 +1171,12 @@ class SchedulerManager:
         # Compras: Job Sincronización Integral
         # ========================================
         sync_compras_config = self.config.jobs.get("sync_compras")
-        if sync_compras_config and sync_compras_config.enabled:
+        sync_compras_job_definition = get_sync_compras_job_config()
+        if (
+            sync_compras_config
+            and sync_compras_config.enabled
+            and sync_compras_job_definition.get("enabled", False)
+        ):
             if sync_compras_config.cron_expression:
                 trigger = CronTrigger.from_crontab(sync_compras_config.cron_expression)
             else:
@@ -1182,7 +1190,7 @@ class SchedulerManager:
                 replace_existing=True,
                 max_instances=1,
                 coalesce=True,
-                next_run_time=datetime.now(timezone.utc) + timedelta(seconds=5)
+                next_run_time=datetime.now(timezone.utc) + timedelta(seconds=5),
             )
             self._jobs["sync_compras"] = sync_compras_config
             logger.warning(
