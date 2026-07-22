@@ -6,7 +6,7 @@ import React, { useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { Upload, FileText, File, X, CheckCircle, AlertCircle } from 'lucide-react';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+const UPLOAD_DISABLED_MESSAGE = 'Carga CFDI pendiente de flujo SQL canónico autorizado.';
 
 export default function UploadInvoicePage({ supplier, onNavigate }) {
   const [xmlFile, setXmlFile] = useState(null);
@@ -45,51 +45,12 @@ export default function UploadInvoicePage({ supplier, onNavigate }) {
       return;
     }
 
-    setUploading(true);
-    setUploadResult(null);
-
-    try {
-      const formData = new FormData();
-      formData.append('xml_file', xmlFile);
-      if (pdfFile) {
-        formData.append('pdf_file', pdfFile);
-      }
-
-      const response = await fetch(`${API_URL}/api/portal/invoices/upload`, {
-        method: 'POST',
-        credentials: 'include',  // FASE AUTH-SECURITY-01: Cookie httpOnly
-        body: formData
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Error al subir factura');
-      }
-
-      setUploadResult({
-        success: true,
-        message: 'Factura subida exitosamente',
-        invoice: data.invoice
-      });
-      
-      toast.success('Factura subida exitosamente');
-      
-      // Limpiar archivos
-      setXmlFile(null);
-      setPdfFile(null);
-      if (xmlInputRef.current) xmlInputRef.current.value = '';
-      if (pdfInputRef.current) pdfInputRef.current.value = '';
-
-    } catch (error) {
-      setUploadResult({
-        success: false,
-        message: error.message
-      });
-      toast.error(error.message);
-    } finally {
-      setUploading(false);
-    }
+    setUploading(false);
+    setUploadResult({
+      success: false,
+      message: UPLOAD_DISABLED_MESSAGE
+    });
+    toast.error(UPLOAD_DISABLED_MESSAGE);
   };
 
   const formatCurrency = (value) => {
@@ -104,7 +65,7 @@ export default function UploadInvoicePage({ supplier, onNavigate }) {
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-zinc-800">Subir Factura</h2>
-        <p className="text-zinc-500 mt-1">Carga tu factura CFDI en formato XML</p>
+        <p className="text-zinc-500 mt-1">Recepción CFDI pendiente de flujo SQL canónico</p>
       </div>
 
       {/* Área de carga */}
@@ -208,7 +169,7 @@ export default function UploadInvoicePage({ supplier, onNavigate }) {
           ) : (
             <>
               <Upload className="h-5 w-5" />
-              Subir Factura
+              Registrar en EDARSAHUB
             </>
           )}
         </button>
@@ -264,8 +225,8 @@ export default function UploadInvoicePage({ supplier, onNavigate }) {
         <ul className="text-sm text-blue-700 space-y-1">
           <li>• Solo se aceptan facturas CFDI 3.3 y 4.0</li>
           <li>• El RFC del emisor debe coincidir con tu RFC registrado</li>
-          <li>• Las facturas se validan automáticamente con el SAT</li>
-          <li>• Una vez subida, la factura será revisada para su conciliación</li>
+          <li>• La recepción directa requiere storage canónico y validación SQL</li>
+          <li>• No se envían archivos a endpoints deshabilitados</li>
         </ul>
       </div>
     </div>

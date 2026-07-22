@@ -8,11 +8,10 @@ Usa tablas canónicas:
 - Proveedor_Contactos
 - Proveedor_CuentasBancarias
 - Compras_DocumentosFiscales
-- Finanzas_CuentasPorPagar
+- Finanzas_CxP_Sync
 """
 
 from typing import Optional, Dict, List, Any
-from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
@@ -37,23 +36,48 @@ def _supplier_row_to_portal(row: Dict[str, Any], include_password: bool = False)
     if not row:
         return {}
 
-    status = "approved" if row.get("Activo") and row.get("PortalHabilitado") and not row.get("Bloqueado") else "suspended"
+    has_portal_user = bool(row.get("UsuarioPortalID")) and bool(row.get("UsuarioPortalActivo"))
+    role_active = row.get("RolPortalID") is None or bool(row.get("RolPortalActivo"))
+    is_enabled = bool(row.get("Activo")) and bool(row.get("PortalHabilitado"))
+    is_blocked = bool(row.get("Bloqueado"))
+
+    if is_enabled and has_portal_user and role_active and not is_blocked:
+        status = "approved"
+    elif bool(row.get("Activo")) and not bool(row.get("PortalHabilitado")):
+        status = "pending"
+    else:
+        status = "suspended"
+
+    contacto_nombre = " ".join(
+        str(part or "").strip()
+        for part in (row.get("NombreContacto"), row.get("ApellidosContacto"))
+        if str(part or "").strip()
+    )
 
     data = {
         "id": str(row.get("ProveedorID")),
         "proveedor_id": row.get("ProveedorID"),
+        "usuario_portal_id": row.get("UsuarioPortalID"),
         "rfc": row.get("RFC"),
         "razon_social": row.get("RazonSocial") or "",
-        "nombre_contacto": row.get("NombreUsuario") or row.get("NombreContacto") or "",
-        "email": row.get("Email") or row.get("EmailPrincipal") or "",
-        "telefono": row.get("Telefono") or row.get("TelefonoPrincipal") or "",
+        "nombre_contacto": row.get("NombreUsuario") or contacto_nombre or "",
+        "email": row.get("Email") or row.get("EmailContacto") or row.get("EmailPrincipal") or "",
+        "telefono": row.get("TelefonoContacto") or row.get("CelularContacto") or row.get("TelefonoPrincipal") or "",
         "status": status,
         "rol_portal_id": row.get("RolPortalID"),
+        "rol_portal": row.get("RolPortalDescripcion") or "",
         "sucursales_asignadas": [],
         "created_at": row.get("FechaAlta"),
-        "approved_at": row.get("FechaAlta"),
+        "approved_at": row.get("FechaAlta") if is_enabled else None,
         "approved_by": None,
         "approval_notes": "",
+        "cuenta_bancaria_id": row.get("CuentaBancariaID"),
+        "banco": row.get("NombreBanco") or "",
+        "clabe": row.get("CLABE") or "",
+        "cuenta": row.get("Cuenta") or "",
+        "titular_cuenta": row.get("TitularCuenta") or "",
+        "cuenta_bancaria_validada": bool(row.get("CuentaValidada")) if row.get("CuentaValidada") is not None else False,
+        "cuenta_moneda": row.get("CuentaMoneda") or "",
     }
 
     if include_password:
@@ -62,35 +86,121 @@ def _supplier_row_to_portal(row: Dict[str, Any], include_password: bool = False)
     return data
 
 
-async def get_supplier_by_id(supplier_id: str, include_password: bool = False) -> Optional[Dict[str, Any]]:
-    row = _fetch_one("""
-        SELECT TOP 1
+_SUPPLIER_COLUMNS = """
             p.ProveedorID, p.RFC, p.RazonSocial, p.NombreComercial,
             p.EmailPrincipal, p.TelefonoPrincipal, p.PortalHabilitado,
             p.Activo, p.FechaAlta,
             u.UsuarioPortalID, u.RolPortalID, u.NombreUsuario,
-            u.Email, u.PasswordHash, u.Bloqueado
+            u.Email, u.PasswordHash, u.Bloqueado,
+            u.Activo AS UsuarioPortalActivo,
+            rp.Descripcion AS RolPortalDescripcion,
+            rp.Activo AS RolPortalActivo,
+            pc.Nombre AS NombreContacto,
+            pc.Apellidos AS ApellidosContacto,
+            pc.Email AS EmailContacto,
+            pc.Telefono AS TelefonoContacto,
+            pc.Celular AS CelularContacto,
+            cb.CuentaBancariaID,
+            cb.Cuenta,
+            cb.CLABE,
+            cb.TitularCuenta,
+            cb.Validada AS CuentaValidada,
+            cb.NombreBanco,
+            cb.ClaveMoneda AS CuentaMoneda
+"""
+
+_SUPPLIER_FROM = """
         FROM dbo.Proveedor_Catalogo p
-        LEFT JOIN dbo.Proveedor_UsuariosPortal u
-            ON u.ProveedorID = p.ProveedorID AND u.Activo = 1
-        WHERE CAST(p.ProveedorID AS VARCHAR(50)) = %s
-    """, (str(supplier_id),))
+        OUTER APPLY (
+            SELECT TOP 1
+                up.UsuarioPortalID,
+                up.RolPortalID,
+                up.NombreUsuario,
+                up.Email,
+                up.PasswordHash,
+                up.Bloqueado,
+                up.Activo
+            FROM dbo.Proveedor_UsuariosPortal up
+            WHERE up.ProveedorID = p.ProveedorID
+              AND ISNULL(up.Activo, 1) = 1
+            ORDER BY ISNULL(up.Bloqueado, 0) ASC, up.UsuarioPortalID ASC
+        ) u
+        LEFT JOIN dbo.Proveedor_RolUsuarioPortal rp
+            ON rp.RolPortalID = u.RolPortalID
+        OUTER APPLY (
+            SELECT TOP 1
+                c.Nombre,
+                c.Apellidos,
+                c.Email,
+                c.Telefono,
+                c.Celular
+            FROM dbo.Proveedor_Contactos c
+            WHERE c.ProveedorID = p.ProveedorID
+              AND ISNULL(c.Activo, 1) = 1
+            ORDER BY ISNULL(c.EsPrincipal, 0) DESC, c.ContactoID ASC
+        ) pc
+        OUTER APPLY (
+            SELECT TOP 1
+                cuenta.CuentaBancariaID,
+                cuenta.Cuenta,
+                cuenta.CLABE,
+                cuenta.TitularCuenta,
+                cuenta.Validada,
+                banco.NombreBanco,
+                moneda.ClaveMoneda
+            FROM dbo.Proveedor_CuentasBancarias cuenta
+            LEFT JOIN dbo.Proveedor_Bancos banco
+                ON banco.BancoID = cuenta.BancoID
+               AND ISNULL(banco.Activo, 1) = 1
+            LEFT JOIN dbo.Proveedor_Monedas moneda
+                ON moneda.MonedaID = cuenta.MonedaID
+               AND ISNULL(moneda.Activo, 1) = 1
+            WHERE cuenta.ProveedorID = p.ProveedorID
+              AND ISNULL(cuenta.Activa, 1) = 1
+            ORDER BY ISNULL(cuenta.EsPrincipal, 0) DESC, cuenta.CuentaBancariaID ASC
+        ) cb
+"""
+
+
+def _supplier_sql(where_sql: str, limit: int = 1, order_by: str = "p.FechaAlta DESC") -> str:
+    return f"""
+        SELECT TOP {int(limit)}
+{_SUPPLIER_COLUMNS}
+{_SUPPLIER_FROM}
+        WHERE {where_sql}
+        ORDER BY {order_by}
+    """
+
+
+async def get_supplier_by_id(supplier_id: str, include_password: bool = False) -> Optional[Dict[str, Any]]:
+    row = _fetch_one(
+        _supplier_sql("CAST(p.ProveedorID AS VARCHAR(50)) = %s"),
+        (str(supplier_id),),
+    )
     return _supplier_row_to_portal(row, include_password) if row else None
 
 
 async def get_supplier_by_rfc(rfc: str, include_password: bool = False) -> Optional[Dict[str, Any]]:
-    row = _fetch_one("""
-        SELECT TOP 1
-            p.ProveedorID, p.RFC, p.RazonSocial, p.NombreComercial,
-            p.EmailPrincipal, p.TelefonoPrincipal, p.PortalHabilitado,
-            p.Activo, p.FechaAlta,
-            u.UsuarioPortalID, u.RolPortalID, u.NombreUsuario,
-            u.Email, u.PasswordHash, u.Bloqueado
-        FROM dbo.Proveedor_Catalogo p
-        LEFT JOIN dbo.Proveedor_UsuariosPortal u
-            ON u.ProveedorID = p.ProveedorID AND u.Activo = 1
-        WHERE UPPER(p.RFC) = UPPER(%s)
-    """, (str(rfc),))
+    row = _fetch_one(
+        _supplier_sql("UPPER(p.RFC) = UPPER(%s)"),
+        (str(rfc),),
+    )
+    return _supplier_row_to_portal(row, include_password) if row else None
+
+
+async def get_supplier_by_portal_user(
+    usuario_portal_id: str,
+    supplier_id: Optional[str] = None,
+    include_password: bool = False,
+) -> Optional[Dict[str, Any]]:
+    where = ["CAST(u.UsuarioPortalID AS VARCHAR(50)) = %s"]
+    params: List[str] = [str(usuario_portal_id)]
+
+    if supplier_id:
+        where.append("CAST(p.ProveedorID AS VARCHAR(50)) = %s")
+        params.append(str(supplier_id))
+
+    row = _fetch_one(_supplier_sql(" AND ".join(where)), tuple(params))
     return _supplier_row_to_portal(row, include_password) if row else None
 
 
@@ -101,20 +211,9 @@ async def list_suppliers(status: Optional[str] = None, limit: int = 500) -> List
     elif status == "approved":
         where.append("p.PortalHabilitado = 1")
 
-    sql = f"""
-        SELECT TOP {int(limit)}
-            p.ProveedorID, p.RFC, p.RazonSocial, p.NombreComercial,
-            p.EmailPrincipal, p.TelefonoPrincipal, p.PortalHabilitado,
-            p.Activo, p.FechaAlta,
-            u.UsuarioPortalID, u.RolPortalID, u.NombreUsuario,
-            u.Email, u.PasswordHash, u.Bloqueado
-        FROM dbo.Proveedor_Catalogo p
-        LEFT JOIN dbo.Proveedor_UsuariosPortal u
-            ON u.ProveedorID = p.ProveedorID AND u.Activo = 1
-        WHERE {' AND '.join(where)}
-        ORDER BY p.FechaAlta DESC
-    """
+    sql = _supplier_sql(" AND ".join(where), limit=limit, order_by="p.FechaAlta DESC")
     return [_supplier_row_to_portal(r, include_password=False) for r in _fetch_all(sql)]
+
 
 
 async def update_supplier_portal_status(supplier_id: str, approved: bool) -> bool:
@@ -127,14 +226,24 @@ async def update_supplier_portal_status(supplier_id: str, approved: bool) -> boo
     return affected > 0
 
 
-async def update_supplier_password(supplier_id: str, password_hash: str) -> bool:
-    affected = _execute("""
+async def update_supplier_password(
+    supplier_id: str,
+    password_hash: str,
+    usuario_portal_id: Optional[str] = None,
+) -> bool:
+    where = ["CAST(ProveedorID AS VARCHAR(50)) = %s", "Activo = 1"]
+    params: List[str] = [password_hash, str(supplier_id)]
+
+    if usuario_portal_id:
+        where.append("CAST(UsuarioPortalID AS VARCHAR(50)) = %s")
+        params.append(str(usuario_portal_id))
+
+    affected = _execute(f"""
         UPDATE dbo.Proveedor_UsuariosPortal
         SET PasswordHash = %s,
             FechaModificacion = SYSDATETIME()
-        WHERE CAST(ProveedorID AS VARCHAR(50)) = %s
-          AND Activo = 1
-    """, (password_hash, str(supplier_id)))
+        WHERE {' AND '.join(where)}
+    """, tuple(params))
     return affected > 0
 
 
@@ -199,73 +308,140 @@ async def get_supplier_invoice(invoice_id: str, supplier_id: str) -> Optional[Di
     return next((i for i in rows if str(i.get("id")) == str(invoice_id)), None)
 
 
-async def get_supplier_balances(supplier_id: str, limit: int = 500) -> Dict[str, Any]:
+async def get_supplier_balances(
+    supplier_id: str,
+    supplier_rfc: Optional[str] = None,
+    limit: int = 500,
+) -> Dict[str, Any]:
     """
     Saldos CxP SQL-only del proveedor.
-    Fuente canónica: dbo.Finanzas_CuentasPorPagar.
+    Fuente canónica: dbo.Finanzas_CxP_Sync + dbo.Unidades_Negocio.
     No consulta Mongo ni servidores LIVE.
     """
+    supplier_filters = ["CAST(c.ProveedorID AS VARCHAR(50)) = %s"]
+    params = [str(supplier_id)]
+
+    normalized_rfc = str(supplier_rfc or "").strip().upper()
+    if normalized_rfc:
+        supplier_filters.append("UPPER(LTRIM(RTRIM(c.ProveedorRFC))) = %s")
+        params.append(normalized_rfc)
+
     sql = f"""
         SELECT TOP {int(limit)}
-            cxp.CuentaPorPagarID,
-            cxp.DocumentoFiscalID,
-            cxp.ProveedorID,
-            cxp.SucursalID,
-            cxp.NumeroDocumento,
-            cxp.FechaDocumento,
-            cxp.FechaVencimiento,
-            cxp.FechaRecepcion,
-            cxp.MontoOriginal,
-            cxp.MontoPagado,
-            (cxp.MontoOriginal - cxp.MontoPagado) AS Saldo,
-            cxp.MonedaID,
-            cxp.TipoCambio,
-            cxp.EstatusPagoID,
-            ep.Codigo AS EstatusCodigo,
-            ep.Descripcion AS EstatusDescripcion,
-            df.UUID,
-            df.Serie,
-            df.Folio
-        FROM dbo.Finanzas_CuentasPorPagar cxp
-        LEFT JOIN dbo.Finanzas_EstatusPago ep
-            ON ep.EstatusPagoID = cxp.EstatusPagoID
-        LEFT JOIN dbo.Compras_DocumentosFiscales df
-            ON df.DocumentoFiscalID = cxp.DocumentoFiscalID
-        WHERE CAST(cxp.ProveedorID AS VARCHAR(50)) = %s
-          AND cxp.Activo = 1
-        ORDER BY cxp.FechaVencimiento ASC, cxp.FechaDocumento ASC
+            c.CxpSyncID,
+            c.HashOrigen,
+            c.ProveedorID,
+            c.ProveedorNombre,
+            c.ProveedorRFC,
+            c.UnidadNegocio,
+            c.UnidadNegocioNombre,
+            c.FolioEntrada,
+            c.FolioFactura,
+            c.FechaEntrada,
+            c.FechaVencimiento,
+            c.Referencia,
+            c.MontoOriginal,
+            c.Saldo,
+            c.TipoProveedor,
+            c.TipoProveedorNombre,
+            c.Fuente,
+            c.DiasVencido,
+            CONVERT(varchar(36), u.id) AS UnidadNegocioIDCanonica,
+            u.codigo AS UnidadNegocioCodigoCanonico,
+            u.nombre AS UnidadNegocioNombreCanonico
+        FROM dbo.Finanzas_CxP_Sync c
+        INNER JOIN dbo.Unidades_Negocio u
+            ON UPPER(LTRIM(RTRIM(c.UnidadNegocio))) = UPPER(LTRIM(RTRIM(u.codigo)))
+           AND ISNULL(u.activo, 1) = 1
+        WHERE ({' OR '.join(supplier_filters)})
+          AND c.Activo = 1
+          AND c.Saldo > 0
+          AND ISNULL(c.EsDemo, 0) = 0
+        ORDER BY c.FechaVencimiento ASC, c.FechaEntrada ASC
     """
-    rows = _fetch_all(sql, (str(supplier_id),))
+    rows = _fetch_all(sql, tuple(params))
 
     facturas = []
+    sucursales_map: Dict[str, Dict[str, Any]] = {}
     total_importe = 0.0
     total_pagado = 0.0
     total_saldo = 0.0
 
     for r in rows:
         importe = float(r.get("MontoOriginal") or 0)
-        pagado = float(r.get("MontoPagado") or 0)
         saldo = float(r.get("Saldo") or 0)
+        pagado = max(0.0, importe - saldo)
+        dias_vencido = int(r.get("DiasVencido") or 0)
+        hash_origen = str(r.get("HashOrigen") or "").strip()
+        cxp_sync_id = r.get("CxpSyncID")
+        unidad_pk = str(
+            r.get("UnidadNegocioIDCanonica")
+            or r.get("UnidadNegocioCodigoCanonico")
+            or r.get("UnidadNegocio")
+            or "SIN_UNIDAD"
+        )
+        unidad_nombre = (
+            r.get("UnidadNegocioNombreCanonico")
+            or r.get("UnidadNegocioNombre")
+            or r.get("UnidadNegocio")
+            or "Sin unidad"
+        )
 
         total_importe += importe
         total_pagado += pagado
         total_saldo += saldo
 
+        sucursal = sucursales_map.setdefault(
+            unidad_pk,
+            {
+                "id": unidad_pk,
+                "name": unidad_nombre,
+                "sistema_id": "EDARSAHUB_SQL",
+                "system_type": "EDARSAHUB_SQL",
+                "facturas": 0,
+                "importe": 0.0,
+                "pagado": 0.0,
+                "saldo": 0.0,
+            },
+        )
+        sucursal["facturas"] += 1
+        sucursal["importe"] += importe
+        sucursal["pagado"] += pagado
+        sucursal["saldo"] += saldo
+
+        folio = r.get("FolioFactura") or r.get("FolioEntrada") or r.get("Referencia") or ""
+        documento = r.get("FolioEntrada") or r.get("Referencia") or str(cxp_sync_id or "")
         facturas.append({
-            "cuenta_por_pagar_id": str(r.get("CuentaPorPagarID")),
-            "documento_fiscal_id": str(r.get("DocumentoFiscalID")) if r.get("DocumentoFiscalID") is not None else None,
+            "cuenta_por_pagar_id": f"CXP_{hash_origen or cxp_sync_id}",
+            "factura_sync_id": cxp_sync_id,
+            "hash_origen": hash_origen or None,
+            "documento_fiscal_id": None,
             "supplier_id": str(r.get("ProveedorID")),
-            "sucursal_id": str(r.get("SucursalID")),
-            "folio": r.get("NumeroDocumento") or r.get("Folio") or "",
-            "uuid": r.get("UUID"),
-            "fecha": str(r.get("FechaDocumento") or "")[:10],
+            "supplier_rfc": r.get("ProveedorRFC") or "",
+            "sucursal_id": unidad_pk,
+            "sucursal": unidad_nombre,
+            "unidad_negocio_pk": unidad_pk,
+            "unidad_negocio_codigo": r.get("UnidadNegocioCodigoCanonico") or r.get("UnidadNegocio"),
+            "folio": folio,
+            "documento": documento,
+            "referencia": r.get("Referencia") or str(cxp_sync_id or ""),
+            "uuid": None,
+            "fecha": str(r.get("FechaEntrada") or "")[:10],
             "vencimiento": str(r.get("FechaVencimiento") or "")[:10],
+            "dias_vencido": dias_vencido,
             "importe": importe,
             "pagado": pagado,
             "saldo": saldo,
-            "estatus_pago_id": r.get("EstatusPagoID"),
-            "estatus": r.get("EstatusDescripcion") or r.get("EstatusCodigo") or "",
+            "estatus_pago_id": None,
+            "estatus": "Vencida" if dias_vencido > 0 else "Pendiente",
+            "fuente": r.get("Fuente"),
         })
+
+    sucursales = sorted(
+        sucursales_map.values(),
+        key=lambda item: item.get("saldo", 0),
+        reverse=True,
+    )
 
     return {
         "sistemas": [{
@@ -278,7 +454,7 @@ async def get_supplier_balances(supplier_id: str, limit: int = 500) -> Dict[str,
             "saldo": total_saldo,
             "status": "connected"
         }],
-        "sucursales": [],
+        "sucursales": sucursales,
         "facturas_pendientes": [f for f in facturas if f.get("saldo", 0) > 0],
         "totales": {
             "importe": total_importe,
@@ -286,5 +462,5 @@ async def get_supplier_balances(supplier_id: str, limit: int = 500) -> Dict[str,
             "saldo": total_saldo,
             "facturas": len(facturas)
         },
-        "source_type": "EDARSAHUB_SQL"
+        "source_type": "EDARSAHUB_SQL_CANONICO"
     }

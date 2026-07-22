@@ -20,7 +20,6 @@ import {
 
 // Páginas
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import InvoicesPage from './pages/InvoicesPage';
 import UploadInvoicePage from './pages/UploadInvoicePage';
@@ -111,16 +110,9 @@ export default function PortalProveedoresApp() {
     );
   }
 
-  // Login/Register
+  // Login del portal externo.
   if (!supplier) {
-    if (currentPage === 'register') {
-      return (
-        <RegisterPage onBack={() => setCurrentPage('login')} onSuccess={() => setCurrentPage('login')} />
-      );
-    }
-    return (
-      <LoginPage onLogin={handleLogin} onRegister={() => setCurrentPage('register')} />
-    );
+    return <LoginPage onLogin={handleLogin} />;
   }
 
   const menuItems = [

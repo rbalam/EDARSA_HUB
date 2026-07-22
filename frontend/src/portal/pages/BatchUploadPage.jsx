@@ -73,8 +73,7 @@ export default function BatchUploadPage({ supplier, onNavigate }) {
         <div>
           <p className="font-medium text-yellow-800">Módulo en desarrollo</p>
           <p className="text-sm text-yellow-700 mt-1">
-            La carga masiva estará disponible próximamente. Por ahora, puedes subir facturas 
-            una por una desde la sección "Subir Factura".
+            La carga masiva requiere el flujo SQL canónico de recepción CFDI antes de habilitarse.
           </p>
         </div>
       </div>

@@ -7,9 +7,8 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import api from '../lib/api';
 import { 
-  Users, Search, Check, X, Clock, Eye, Edit, Trash2, 
-  Building2, Mail, Phone, CreditCard, RefreshCw, Filter,
-  ChevronDown, ExternalLink, UserPlus, AlertCircle, KeyRound
+  Users, Search, Check, X, Clock, Eye, Edit,
+  Mail, Phone, RefreshCw, ExternalLink, KeyRound
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +16,6 @@ import { Input } from '@/components/ui/input';
 import { getFilterLabel } from '../utils/styleHelpers';
 import UsuariosInteligencia from './UsuariosInteligencia';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 export default function Proveedores() {
   const [adminTab, setAdminTab] = useState('proveedores'); // 'proveedores' | 'inteligencia'
@@ -27,15 +25,12 @@ export default function Proveedores() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [servers, setServers] = useState([]);
-  const [selectedSucursales, setSelectedSucursales] = useState([]);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [resetResult, setResetResult] = useState(null);
 
   useEffect(() => {
     loadSuppliers();
-    loadServers();
   }, []);
 
   const loadSuppliers = async () => {
@@ -50,29 +45,17 @@ export default function Proveedores() {
     }
   };
 
-  const loadServers = async () => {
-    try {
-      const response = await api.get('/servers');
-      setServers(response.data.filter(s => s.active));
-    } catch (error) {
-      logger.error('Error cargando servidores:', error);
-    }
-  };
-
   const handleApprove = async (supplier) => {
     try {
       await api.post('/portal/admin/approve-supplier', {
         supplier_id: supplier.id,
-        action: 'approve',
-        sucursales: selectedSucursales,
-        approved_by: 'admin'
+        action: 'approve'
       });
       
       toast.success(`Proveedor ${supplier.rfc} aprobado`);
       loadSuppliers();
       setShowModal(false);
       setSelectedSupplier(null);
-      setSelectedSucursales([]);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Error al aprobar');
     }
@@ -85,8 +68,7 @@ export default function Proveedores() {
       await api.post('/portal/admin/approve-supplier', {
         supplier_id: supplier.id,
         action: 'reject',
-        notes: 'Rechazado por administrador',
-        approved_by: 'admin'
+        notes: 'Rechazado por administrador'
       });
       
       toast.success(`Proveedor ${supplier.rfc} rechazado`);
@@ -98,7 +80,6 @@ export default function Proveedores() {
 
   const openApprovalModal = (supplier) => {
     setSelectedSupplier(supplier);
-    setSelectedSucursales(supplier.sucursales_asignadas || []);
     setShowModal(true);
   };
 
@@ -119,11 +100,11 @@ export default function Proveedores() {
       const response = await api.post('/portal/admin/reset-password', {
         supplier_id: selectedSupplier.id,
         rfc: selectedSupplier.rfc,
-        new_password: newPassword,
-        reset_by: 'admin'
+        new_password: newPassword
       });
       
       setResetResult(response.data);
+      setNewPassword('');
       toast.success(`Contraseña actualizada para ${selectedSupplier.rfc}`);
     } catch (error) {
       logger.error('Error:', error);
@@ -132,11 +113,15 @@ export default function Proveedores() {
   };
 
   const generateRandomPassword = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-    let password = '';
-    for (let i = 0; i < 8; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    if (!window.crypto?.getRandomValues) {
+      toast.error('No se pudo generar una contraseña segura');
+      return;
     }
+
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    const values = new Uint32Array(10);
+    window.crypto.getRandomValues(values);
+    const password = Array.from(values, value => chars[value % chars.length]).join('');
     setNewPassword(password);
   };
 
@@ -308,7 +293,7 @@ export default function Proveedores() {
                         {supplier.sucursales_asignadas.length} asignada{supplier.sucursales_asignadas.length > 1 ? 's' : ''}
                       </span>
                     ) : (
-                      <span className="text-sm text-zinc-400">Sin asignar</span>
+                      <span className="text-sm text-zinc-500">RBAC SQL</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-sm text-zinc-500">
@@ -385,7 +370,7 @@ export default function Proveedores() {
                 {selectedSupplier.status === 'pending' ? 'Aprobar Proveedor' : 'Detalle del Proveedor'}
               </h2>
               <Button
-                onClick={() => { setShowModal(false); setSelectedSupplier(null); setSelectedSucursales([]); }}
+                onClick={() => { setShowModal(false); setSelectedSupplier(null); }}
                 variant="ghost"
                 size="sm"
               >
@@ -434,44 +419,17 @@ export default function Proveedores() {
                 )}
               </div>
 
-              {/* Asignación de sucursales */}
+              {/* Alcance canónico */}
               {(selectedSupplier.status === 'pending' || selectedSupplier.status === 'approved') && (
                 <div className="border-t pt-4">
                   <label className="text-xs text-zinc-500 uppercase block mb-3">
-                    Sucursales Asignadas (opcionales)
+                    Alcance canónico
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {servers.map(server => (
-                      <label
-                        key={server.id}
-                        className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-zinc-50 ${
-                          selectedSucursales.includes(server.id) ? 'border-green-500 bg-green-50' : ''
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedSucursales.includes(server.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedSucursales([...selectedSucursales, server.id]);
-                            } else {
-                              setSelectedSucursales(selectedSucursales.filter(id => id !== server.id));
-                            }
-                          }}
-                          className="rounded"
-                        />
-                        <div>
-                          <p className="font-medium text-sm">{server.name}</p>
-                          <p className="text-xs text-zinc-500">{server.system_type}</p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                  {servers.length === 0 && (
-                    <p className="text-sm text-zinc-500 text-center py-4">
-                      No hay servidores configurados
+                  <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                    <p className="text-sm text-zinc-600">
+                      El alcance operativo se resuelve con permisos RBAC SQL y unidades de negocio canónicas.
                     </p>
-                  )}
+                  </div>
                 </div>
               )}
 
@@ -565,7 +523,7 @@ export default function Proveedores() {
                     </label>
                     <div className="flex gap-2">
                       <Input
-                        type="text"
+                        type="password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="Mínimo 6 caracteres"
@@ -605,16 +563,6 @@ export default function Proveedores() {
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
                     <Check className="h-8 w-8 text-green-600 mx-auto mb-2" />
                     <p className="font-medium text-green-800">Contraseña Actualizada</p>
-                  </div>
-
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <p className="text-xs text-amber-600 uppercase font-medium mb-1">Nueva Contraseña</p>
-                    <p className="font-mono text-2xl font-bold text-zinc-800 select-all">
-                      {resetResult.new_password}
-                    </p>
-                    <p className="text-xs text-amber-600 mt-2">
-                      ⚠️ Guarda esta contraseña, no podrás verla de nuevo
-                    </p>
                   </div>
 
                   <div className="text-sm text-zinc-500">

@@ -12,7 +12,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 // Imagen de fondo - edificio corporativo de cristal
 const BACKGROUND_IMAGE = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1920&q=80';
 
-export default function LoginPage({ onLogin, onRegister }) {
+export default function LoginPage({ onLogin }) {
   const [rfc, setRfc] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -172,17 +172,10 @@ export default function LoginPage({ onLogin, onRegister }) {
               </button>
             </form>
 
-            {/* Registro */}
+            {/* Alta de proveedores */}
             <div className="mt-8 text-center">
-              <p className="text-gray-500">
-                ¿Primera vez en el portal?{' '}
-                <button
-                  onClick={onRegister}
-                  className="text-gray-900 font-semibold hover:underline"
-                  data-testid="portal-register-link"
-                >
-                  Regístrate aquí
-                </button>
+              <p className="text-gray-500 text-sm">
+                Las altas de proveedores se gestionan desde EDARSAHUB.
               </p>
             </div>
           </div>

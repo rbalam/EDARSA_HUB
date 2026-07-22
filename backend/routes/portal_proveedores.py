@@ -10,11 +10,10 @@ FASE AUTH-SECURITY-01 / FASE 3:
 
 P0-PORTAL-PROVEEDORES-AUTH-01:
 - Endpoints /admin/* protegidos con autenticación interna EDARSA HUB
-- Requiere rol SuperAdministrador o Administrador para acceso admin
+- Requiere permiso SQL canónico de Compras para acceso admin
 - Proveedor externo NO puede acceder a endpoints admin
 """
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, Header, Request, Response
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional, List, Dict
 from datetime import datetime, timezone
 import warnings
@@ -23,18 +22,16 @@ with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning, module="passlib")
     from passlib.context import CryptContext
 import jwt
-import uuid
 import logging
 import os
-import xml.etree.ElementTree as ET
-import base64
 
 logger = logging.getLogger(__name__)
 
 from routes import portal_proveedores_repository_sql as portal_sql
 
 # P0-PORTAL-PROVEEDORES-AUTH-01: Importar autenticación interna EDARSA HUB
-from core.security import get_current_user
+from core.security import get_current_user_dual
+from modules.compras.access import COMPRAS_GESTIONAR, require_compras_permission
 
 # Importar db desde server.py (se configurará en el registro del router)
 db = None
@@ -44,26 +41,19 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # ============================================================================
 # P0-PORTAL-PROVEEDORES-AUTH-01: Helper para endpoints admin
-# P5-10B: Incluir variantes de nombres de rol (SQL usa SUPERADMIN, legacy usa SuperAdministrador)
 # ============================================================================
-ADMIN_ROLES = ['SuperAdministrador', 'Administrador', 'SUPERADMIN', 'ADMIN', 'ADMINISTRADOR']
-
-
-async def require_portal_admin(
-    request: Request,
-    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=True))
-) -> dict:
+async def require_portal_admin(request: Request) -> dict:
     """
     Dependency para endpoints admin del Portal de Proveedores.
     
     Requiere:
     1. Token JWT válido de usuario interno EDARSA HUB
-    2. Rol SuperAdministrador o Administrador
+    2. Permiso COMPRAS_FACT_GESTIONAR desde RBAC SQL canónico
     
     Rechaza:
     - Usuarios no autenticados (401)
-    - Tokens de proveedor externo (type=portal_supplier) (401)
-    - Usuarios internos sin rol admin (403)
+    - Tokens de proveedor externo (401)
+    - Usuarios internos sin permiso funcional (403)
     
     Returns:
         dict: Datos del usuario autenticado
@@ -72,70 +62,14 @@ async def require_portal_admin(
         HTTPException 401: No autenticado, token inválido, o token de proveedor
         HTTPException 403: Usuario sin permiso administrativo
     """
-    from core.security import verify_token, get_db
-    
-    # 1. Verificar y decodificar token
-    try:
-        token = credentials.credentials
-        payload = verify_token(token)
-    except HTTPException:
-        raise HTTPException(
-            status_code=401,
-            detail="Token de autenticación inválido o expirado"
-        )
-    
-    # 2. Rechazar tokens de proveedor externo
-    token_type = payload.get('type', 'internal')
-    if token_type == 'portal_supplier':
-        logging.warning(
-            f"[PORTAL-ADMIN] Token de proveedor rechazado. "
-            f"RFC: {payload.get('rfc', '?')}, supplier_id: {payload.get('supplier_id', '?')}"
-        )
-        raise HTTPException(
-            status_code=401,
-            detail={
-                "error": "TOKEN_TIPO_INVALIDO",
-                "mensaje": "Este endpoint requiere autenticación de usuario interno EDARSA HUB. "
-                           "Los proveedores externos no pueden acceder a funciones administrativas."
-            }
-        )
-    
-    # 3. Extraer información del usuario desde el token (modo SQL)
-    user_email = payload.get('email')
-    user_role = payload.get('role', '')
-    user_id = payload.get('user_id')
-    
-    if not user_email:
-        raise HTTPException(
-            status_code=401,
-            detail="Token inválido: falta información de usuario"
-        )
-    
-    # Construir objeto de usuario desde el payload del token
-    user = {
-        'id': user_id,
-        'email': user_email,
-        'role': user_role,
-        'nombre': payload.get('nombre', user_email.split('@')[0])
-    }
-    
-    # 4. Verificar rol administrativo
-    if user_role not in ADMIN_ROLES:
-        logging.warning(
-            f"[PORTAL-ADMIN] Acceso denegado: Usuario {user_email} "
-            f"con rol '{user_role}' intentó acceder a endpoint admin"
-        )
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "error": "PERMISO_DENEGADO",
-                "mensaje": "Se requiere rol administrativo para acceder al Portal de Proveedores Admin",
-                "rol_actual": user_role,
-                "roles_permitidos": ADMIN_ROLES
-            }
-        )
-    
-    logging.info(f"[PORTAL-ADMIN] Acceso permitido: {user_email} ({user_role})")
+    user = await get_current_user_dual(request)
+    permission = require_compras_permission(user, COMPRAS_GESTIONAR)
+
+    logging.info(
+        "[PORTAL-ADMIN] Acceso permitido: %s (%s)",
+        user.get("email"),
+        permission.get("permission_code"),
+    )
     return user
 
 # Router del Portal de Proveedores
@@ -206,10 +140,17 @@ async def get_current_supplier(authorization: Optional[str] = Header(None)):
             raise HTTPException(status_code=401, detail="Token inválido para portal")
         
         supplier_id = payload.get("supplier_id")
-        supplier = await portal_sql.get_supplier_by_id(supplier_id)
+        usuario_portal_id = payload.get("usuario_portal_id")
+        if not usuario_portal_id:
+            raise HTTPException(status_code=401, detail="Sesión de proveedor no canónica")
+
+        supplier = await portal_sql.get_supplier_by_portal_user(
+            usuario_portal_id,
+            supplier_id=supplier_id,
+        )
         
         if not supplier:
-            raise HTTPException(status_code=401, detail="Proveedor no encontrado")
+            raise HTTPException(status_code=401, detail="Usuario de proveedor no encontrado")
         
         if supplier.get("status") == "suspended":
             raise HTTPException(status_code=403, detail="Cuenta suspendida")
@@ -252,10 +193,17 @@ async def get_current_supplier_dual(request: Request):
             raise HTTPException(status_code=401, detail="Token inválido para portal")
         
         supplier_id = payload.get("supplier_id")
-        supplier = await portal_sql.get_supplier_by_id(supplier_id)
+        usuario_portal_id = payload.get("usuario_portal_id")
+        if not usuario_portal_id:
+            raise HTTPException(status_code=401, detail="Sesión de proveedor no canónica")
+
+        supplier = await portal_sql.get_supplier_by_portal_user(
+            usuario_portal_id,
+            supplier_id=supplier_id,
+        )
         
         if not supplier:
-            raise HTTPException(status_code=401, detail="Proveedor no encontrado")
+            raise HTTPException(status_code=401, detail="Usuario de proveedor no encontrado")
         
         if supplier.get("status") == "suspended":
             raise HTTPException(status_code=403, detail="Cuenta suspendida")
@@ -308,8 +256,17 @@ async def login_supplier(data: dict, response: Response):
     
     if not supplier:
         raise HTTPException(status_code=401, detail="RFC o contraseña incorrectos")
-    
-    if not pwd_context.verify(password, supplier.get("password", "")):
+
+    password_hash = supplier.get("password") or ""
+    if not password_hash:
+        raise HTTPException(status_code=401, detail="RFC o contraseña incorrectos")
+
+    try:
+        password_ok = pwd_context.verify(password, password_hash)
+    except Exception:
+        password_ok = False
+
+    if not password_ok:
         raise HTTPException(status_code=401, detail="RFC o contraseña incorrectos")
     
     if supplier.get("status") == "pending":
@@ -324,7 +281,10 @@ async def login_supplier(data: dict, response: Response):
     # Crear token
     token = create_portal_token({
         "supplier_id": supplier["id"],
-        "rfc": supplier["rfc"]
+        "rfc": supplier["rfc"],
+        "usuario_portal_id": supplier.get("usuario_portal_id"),
+        "rol_portal_id": supplier.get("rol_portal_id"),
+        "rol_portal": supplier.get("rol_portal"),
     })
     
     # FASE AUTH-SECURITY-01: Setear cookie httpOnly
@@ -485,7 +445,11 @@ async def get_saldos_proveedor(
     if current_supplier.get("status") != "approved":
         raise HTTPException(status_code=403, detail="Cuenta no aprobada")
 
-    return await portal_sql.get_supplier_balances(current_supplier["id"], limit=500)
+    return await portal_sql.get_supplier_balances(
+        current_supplier["id"],
+        supplier_rfc=current_supplier.get("rfc"),
+        limit=500,
+    )
 
 
 
@@ -499,7 +463,7 @@ async def get_pending_suppliers(current_user: dict = Depends(require_portal_admi
     """
     Obtiene proveedores pendientes de aprobación.
     
-    P0-PORTAL-PROVEEDORES-AUTH-01: Requiere autenticación interna + rol admin.
+    P0-PORTAL-PROVEEDORES-AUTH-01: Requiere autenticación interna + RBAC SQL.
     """
     return await portal_sql.list_suppliers(status="pending", limit=100)
 
@@ -509,14 +473,16 @@ async def get_all_suppliers(current_user: dict = Depends(require_portal_admin)):
     """
     Obtiene todos los proveedores.
     
-    P0-PORTAL-PROVEEDORES-AUTH-01: Requiere autenticación interna + rol admin.
+    P0-PORTAL-PROVEEDORES-AUTH-01: Requiere autenticación interna + RBAC SQL.
     """
     try:
         return await portal_sql.list_suppliers(limit=500)
     except Exception as e:
         logger.error(f"[PORTAL] Error obteniendo proveedores: {e}")
-        # Retornar lista vacía en lugar de error 500
-        return []
+        raise HTTPException(
+            status_code=503,
+            detail="No fue posible consultar proveedores en SQL canónico.",
+        ) from e
 
 
 @portal_router.post("/admin/approve-supplier")
@@ -524,31 +490,16 @@ async def approve_supplier(data: dict, current_user: dict = Depends(require_port
     """
     Aprueba o rechaza un proveedor.
     
-    P0-PORTAL-PROVEEDORES-AUTH-01: Requiere autenticación interna + rol admin.
+    P0-PORTAL-PROVEEDORES-AUTH-01: Requiere autenticación interna + RBAC SQL.
     """
     supplier_id = data.get("supplier_id")
     action = data.get("action")  # "approve" o "reject"
-    sucursales = data.get("sucursales", [])
-    notes = data.get("notes", "")
-    # Usar email del admin autenticado en lugar de valor del body
-    approved_by = current_user.get("email", "admin")
-    
     if action not in ["approve", "reject"]:
         raise HTTPException(status_code=400, detail="Acción inválida")
     
     supplier = await portal_sql.get_supplier_by_id(supplier_id)
     if not supplier:
         raise HTTPException(status_code=404, detail="Proveedor no encontrado")
-    
-    update_data = {
-        "status": "approved" if action == "approve" else "rejected",
-        "approved_at": datetime.now(timezone.utc),
-        "approved_by": approved_by,
-        "approval_notes": notes
-    }
-    
-    if action == "approve":
-        update_data["sucursales_asignadas"] = sucursales
     
     ok = await portal_sql.update_supplier_portal_status(supplier_id, approved=(action == "approve"))
     if not ok:
@@ -562,7 +513,7 @@ async def admin_reset_supplier_password(data: dict, current_user: dict = Depends
     """
     Resetea/establece la contraseña de un proveedor.
     
-    P0-PORTAL-PROVEEDORES-AUTH-01: Requiere autenticación interna + rol admin.
+    P0-PORTAL-PROVEEDORES-AUTH-01: Requiere autenticación interna + RBAC SQL.
     
     Body:
         - supplier_id: ID del proveedor (opcional si se usa rfc)
@@ -572,19 +523,12 @@ async def admin_reset_supplier_password(data: dict, current_user: dict = Depends
     supplier_id = data.get("supplier_id")
     rfc = data.get("rfc", "").upper().strip()
     new_password = data.get("new_password", "").strip()
-    # Usar email del admin autenticado
-    reset_by = current_user.get("email", "admin")
+    reset_by = current_user.get("email") or current_user.get("id") or ""
     
     if not new_password or len(new_password) < 6:
         raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
     
-    # Buscar proveedor por ID o RFC
-    query = {}
-    if supplier_id:
-        query["id"] = supplier_id
-    elif rfc:
-        query["rfc"] = rfc
-    else:
+    if not supplier_id and not rfc:
         raise HTTPException(status_code=400, detail="Debe proporcionar supplier_id o rfc")
     
     supplier = await portal_sql.get_supplier_by_id(supplier_id) if supplier_id else await portal_sql.get_supplier_by_rfc(rfc)
@@ -595,7 +539,11 @@ async def admin_reset_supplier_password(data: dict, current_user: dict = Depends
     hashed_password = pwd_context.hash(new_password)
     
     # Actualizar contraseña
-    ok = await portal_sql.update_supplier_password(supplier["id"], hashed_password)
+    ok = await portal_sql.update_supplier_password(
+        supplier["id"],
+        hashed_password,
+        usuario_portal_id=supplier.get("usuario_portal_id"),
+    )
     if not ok:
         raise HTTPException(status_code=500, detail="No se pudo actualizar contraseña en SQL")
     
@@ -603,7 +551,7 @@ async def admin_reset_supplier_password(data: dict, current_user: dict = Depends
         "message": "Contraseña actualizada exitosamente",
         "supplier_rfc": supplier["rfc"],
         "supplier_razon_social": supplier.get("razon_social", ""),
-        "new_password": new_password,  # Devolver para que el admin la comunique
+        "password_returned": False,
         "reset_by": reset_by,
         "reset_at": datetime.now(timezone.utc).isoformat()
     }
@@ -614,7 +562,7 @@ async def admin_get_supplier_details(identifier: str, current_user: dict = Depen
     """
     Obtiene detalles completos de un proveedor por ID o RFC.
     
-    P0-PORTAL-PROVEEDORES-AUTH-01: Requiere autenticación interna + rol admin.
+    P0-PORTAL-PROVEEDORES-AUTH-01: Requiere autenticación interna + RBAC SQL.
     """
     # Buscar por ID primero, luego por RFC
     supplier = await portal_sql.get_supplier_by_id(identifier)
@@ -637,7 +585,7 @@ async def admin_get_all_invoices(
     """
     Obtiene todas las facturas.
     
-    P0-PORTAL-PROVEEDORES-AUTH-01: Requiere autenticación interna + rol admin.
+    P0-PORTAL-PROVEEDORES-AUTH-01: Requiere autenticación interna + RBAC SQL.
     """
     if not supplier_rfc:
         raise HTTPException(
