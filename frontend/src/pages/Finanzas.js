@@ -111,6 +111,79 @@ function FinanzasContent() {
     };
   }, [authLoading]);
 
+  const finanzasPermissions = useMemo(() => {
+    const normalize = (value) => String(value || '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9_]/g, '');
+
+    const flat = effectivePermissions?.permissions_flat;
+    const structured = effectivePermissions?.permissions;
+
+    const permissionCodes = (
+      Array.isArray(flat)
+        ? flat
+        : Array.isArray(structured)
+          ? structured.map((permission) => (
+              typeof permission === 'string'
+                ? permission
+                : permission?.codigo ||
+                  permission?.code ||
+                  permission?.permission ||
+                  permission?.name
+            ))
+          : []
+    ).filter(Boolean).map(normalize);
+
+    const roleCodes = (
+      Array.isArray(effectivePermissions?.roles)
+        ? effectivePermissions.roles
+        : []
+    ).map((role) => (
+      typeof role === 'string'
+        ? role
+        : role?.codigo ||
+          role?.code ||
+          role?.nombre ||
+          role?.name
+    )).filter(Boolean).map(normalize);
+
+    const isSuperAdmin = [
+      'SUPERADMIN',
+      'SUPER_ADMIN',
+      'SUPERADMINISTRADOR',
+      'SUPER_ADMINISTRADOR'
+    ].some((roleCode) => roleCodes.includes(roleCode));
+
+    const allowed = (code) => (
+      !effectivePermissionsLoading &&
+      (
+        isSuperAdmin ||
+        permissionCodes.includes(normalize(code))
+      )
+    );
+
+    const canView = allowed('FINANZAS_VER');
+
+    const canWrite = (
+      canView &&
+      (
+        allowed('FINANZAS_EDITAR') ||
+        allowed('FINANZAS_ADMINISTRAR')
+      )
+    );
+
+    return {
+      canView,
+      canCreate: canWrite,
+      canEdit: canWrite,
+      canDelete: canWrite,
+      canViewScript: canWrite
+    };
+  }, [
+    effectivePermissions,
+    effectivePermissionsLoading
+  ]);
+
   const [cxpFechaCorte, setCxpFechaCorte] = useState('');
   const [cxpSoloVencidas, setCxpSoloVencidas] = useState(false);
   const [cxpSoloDecision, setCxpSoloDecision] = useState(false);
@@ -316,6 +389,12 @@ function FinanzasContent() {
   
   // Load presupuestos
   const loadPresupuestos = useCallback(async () => {
+    if (!finanzasPermissions.canView) {
+      setPresupuestos([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -330,7 +409,13 @@ function FinanzasContent() {
     } finally {
       setLoading(false);
     }
-  }, [fetchWithAuth, filtroAnio, filtroMes, selectedUnidad]);
+  }, [
+    fetchWithAuth,
+    filtroAnio,
+    filtroMes,
+    selectedUnidad,
+    finanzasPermissions.canView
+  ]);
   
   // Load sucursales CxP (MPRO - para cuentas por pagar)
   const loadCxpSucursales = useCallback(async () => {
@@ -704,6 +789,11 @@ function FinanzasContent() {
   
   // CRUD handlers
   const handleNuevoPresupuesto = () => {
+    if (!finanzasPermissions.canCreate) {
+      toast.error('No tiene permiso para crear presupuestos');
+      return;
+    }
+
     setEditingPresupuesto(null);
     setFormPresupuesto({
       unidad_negocio_pk: selectedUnidad || '',
@@ -719,6 +809,11 @@ function FinanzasContent() {
   };
   
   const handleEditarPresupuesto = (pres) => {
+    if (!finanzasPermissions.canEdit) {
+      toast.error('No tiene permiso para editar presupuestos');
+      return;
+    }
+
     setEditingPresupuesto(pres);
     setFormPresupuesto({
       unidad_negocio_pk: pres.UnidadNegocioID?.toString() || '',
@@ -734,6 +829,15 @@ function FinanzasContent() {
   };
   
   const handleGuardarPresupuesto = async () => {
+    const canSave = editingPresupuesto
+      ? finanzasPermissions.canEdit
+      : finanzasPermissions.canCreate;
+
+    if (!canSave) {
+      toast.error('No tiene permiso para guardar presupuestos');
+      return;
+    }
+
     if (!formPresupuesto.unidad_negocio_pk || !formPresupuesto.categoria) {
       toast.error('Unidad de negocio y categoría son requeridas');
       return;
@@ -773,6 +877,11 @@ function FinanzasContent() {
   };
   
   const handleEliminarPresupuesto = async (pres) => {
+    if (!finanzasPermissions.canDelete) {
+      toast.error('No tiene permiso para eliminar presupuestos');
+      return;
+    }
+
     if (!window.confirm(`¿Eliminar presupuesto de ${pres.Categoria}?`)) return;
     
     try {
@@ -787,6 +896,13 @@ function FinanzasContent() {
   };
   
   const handleVerScript = async () => {
+    if (!finanzasPermissions.canViewScript) {
+      toast.error(
+        'No tiene permiso para consultar el script de inicializacion'
+      );
+      return;
+    }
+
     try {
       const data = await fetchWithAuth('/finanzas/script-inicializacion');
       setScriptData(data);
@@ -878,6 +994,20 @@ function FinanzasContent() {
     tesoreriaPermissions.canView
   ]);
 
+  useEffect(() => {
+    if (
+      !effectivePermissionsLoading &&
+      activeTab === 'presupuestos' &&
+      !finanzasPermissions.canView
+    ) {
+      setActiveTab('dashboard');
+    }
+  }, [
+    activeTab,
+    effectivePermissionsLoading,
+    finanzasPermissions.canView
+  ]);
+
   // Tabs
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: PieChart },
@@ -886,7 +1016,9 @@ function FinanzasContent() {
     { id: 'propinas', label: 'Propinas TPV', icon: DollarSign },
     { id: 'tesoreria', label: 'Tesorería', icon: Banknote },
     { id: 'cuentas-bancarias', label: 'Cuentas Bancarias', icon: Landmark },
-    { id: 'presupuestos', label: 'Presupuestos', icon: DollarSign },
+    ...(finanzasPermissions.canView
+      ? [{ id: 'presupuestos', label: 'Presupuestos', icon: DollarSign }]
+      : []),
     { id: 'reportes', label: 'Reportes', icon: FileText },
   ].filter(
     (tab) => (
@@ -938,6 +1070,10 @@ function FinanzasContent() {
       meses={meses}
       filtroAnio={filtroAnio}
       filtroMes={filtroMes}
+      canCreate={finanzasPermissions.canCreate}
+      canEdit={finanzasPermissions.canEdit}
+      canDelete={finanzasPermissions.canDelete}
+      canViewScript={finanzasPermissions.canViewScript}
       onUnidadChange={setSelectedUnidad}
       onAnioChange={setFiltroAnio}
       onMesChange={setFiltroMes}
@@ -1240,7 +1376,11 @@ function FinanzasContent() {
               />
             )}
           {activeTab === 'cuentas-bancarias' && <CuentasBancariasPage />}
-          {activeTab === 'presupuestos' && renderPresupuestos()}
+          {
+              activeTab === 'presupuestos' &&
+              finanzasPermissions.canView &&
+              renderPresupuestos()
+            }
           {activeTab === 'reportes' && renderReportes()}
         </>
       )}

@@ -29,6 +29,10 @@ import { Building2, FileText, Plus, Edit, Trash2 } from 'lucide-react';
  * @param {Function} props.formatCurrency - Funcion para formatear moneda
  */
 export default function FinanzasPresupuestos({
+  canCreate = false,
+  canEdit = false,
+  canDelete = false,
+  canViewScript = false,
   presupuestos,
   unidadesNegocio,
   selectedUnidad,
@@ -95,14 +99,18 @@ export default function FinanzasPresupuestos({
           </select>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={onVerScript} data-testid="presupuestos-ver-script-btn">
-            <FileText className="h-4 w-4 mr-1" />
-            Ver Script SQL
-          </Button>
-          <Button size="sm" className="bg-zinc-900 text-white" onClick={onNuevoPresupuesto} data-testid="presupuestos-nuevo-btn">
-            <Plus className="h-4 w-4 mr-1" />
-            Nuevo Presupuesto
-          </Button>
+          {canViewScript && (
+            <Button variant="outline" size="sm" onClick={onVerScript} data-testid="presupuestos-ver-script-btn">
+                        <FileText className="h-4 w-4 mr-1" />
+                        Ver Script SQL
+                      </Button>
+          )}
+          {canCreate && (
+            <Button size="sm" className="bg-zinc-900 text-white" onClick={onNuevoPresupuesto} data-testid="presupuestos-nuevo-btn">
+                        <Plus className="h-4 w-4 mr-1" />
+                        Nuevo Presupuesto
+                      </Button>
+          )}
         </div>
       </div>
       
@@ -170,12 +178,16 @@ export default function FinanzasPresupuestos({
                         </td>
                         <td className="p-3">
                           <div className="flex items-center justify-center gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => onEditarPresupuesto(pres)} title="Editar">
-                              <Edit className="h-4 w-4 text-amber-600" />
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => onEliminarPresupuesto(pres)} title="Eliminar">
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
+                            {canEdit && (
+                              <Button variant="ghost" size="sm" onClick={() => onEditarPresupuesto(pres)} title="Editar">
+                                                            <Edit className="h-4 w-4 text-amber-600" />
+                                                          </Button>
+                            )}
+                            {canDelete && (
+                              <Button variant="ghost" size="sm" onClick={() => onEliminarPresupuesto(pres)} title="Eliminar">
+                                                            <Trash2 className="h-4 w-4 text-red-600" />
+                                                          </Button>
+                            )}
                           </div>
                         </td>
                       </tr>
