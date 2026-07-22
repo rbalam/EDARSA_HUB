@@ -99,12 +99,16 @@ function DashboardCompras({ servers, unidadesNegocio, selectedUnidad, setSelecte
   const lastRequestRef = useRef({ unidadKey: null, requestId: 0 });
   
   const ANIOS = getAniosDisponibles();
+  const selectedUnidadInfo = useMemo(
+    () => unidadesNegocio.find(u => u.id === selectedUnidad) || null,
+    [unidadesNegocio, selectedUnidad]
+  );
 
   const cargarDashboard = useCallback(async () => {
-    if (!selectedSucursal || !selectedUnidad) return;
+    if (!selectedSucursal || !selectedUnidadInfo) return;
     
     // Generar unidad_key canónica para aislamiento
-    const unidadKey = generateUnidadKey(selectedUnidad);
+    const unidadKey = generateUnidadKey(selectedUnidadInfo);
     const requestId = generateRequestId(unidadKey, 'dashboard');
     
     // Guardar referencia para validar respuesta
@@ -116,7 +120,7 @@ function DashboardCompras({ servers, unidadesNegocio, selectedUnidad, setSelecte
       request_id: requestId,
       server_id: selectedServer,
       sucursal_id: selectedSucursal,
-      system_type: selectedUnidad?.system_type,
+      system_type: selectedUnidadInfo?.system_type,
       mes: selectedMeses.join(','),
       anio: selectedAnios.join(',')
     });
@@ -213,7 +217,7 @@ function DashboardCompras({ servers, unidadesNegocio, selectedUnidad, setSelecte
         setLoading(false);
       }
     }
-  }, [selectedServer, selectedSucursal, selectedMeses, selectedAnios, selectedUnidad]);
+  }, [selectedServer, selectedSucursal, selectedMeses, selectedAnios, selectedUnidadInfo]);
 
   useEffect(() => {
     if (selectedServer && selectedSucursal) {
@@ -935,16 +939,14 @@ function AnalisisCompras({ servers, unidadesNegocio, selectedUnidad, setSelected
         meses: mesesSeleccionados
       });
       const proveedores = response.data.proveedores || [];
+      const kpisBackend = response.data.kpis || {};
       setComprasPorProveedor(proveedores);
       setAlertasDesviacion(response.data.alertas || []);
-      
-      // Calcular KPIs
-      const total = proveedores.reduce((sum, p) => sum + (p.total || 0), 0);
       setKpis({
-        totalCompras: total,
-        numProveedores: proveedores.length,
-        numFacturas: 0, // Se actualizará cuando se carguen facturas
-        promedioFactura: proveedores.length > 0 ? total / proveedores.length : 0
+        totalCompras: kpisBackend.totalCompras ?? kpisBackend.total_compras ?? 0,
+        numProveedores: kpisBackend.numProveedores ?? kpisBackend.num_proveedores ?? 0,
+        numFacturas: kpisBackend.numFacturas ?? kpisBackend.num_facturas ?? 0,
+        promedioFactura: kpisBackend.promedioFactura ?? kpisBackend.promedio_factura ?? 0
       });
     } catch (error) {
       logger.error('Error:', error);
@@ -1138,7 +1140,7 @@ function AnalisisCompras({ servers, unidadesNegocio, selectedUnidad, setSelected
           </Card>
           <Card className="border bg-gradient-to-br from-purple-50 to-white" data-testid="kpi-promedio">
             <CardContent className="py-3">
-              <p className="text-xs text-zinc-500">Promedio x Proveedor</p>
+              <p className="text-xs text-zinc-500">Promedio x Factura</p>
               <p className="text-xl font-bold text-purple-600">{formatCurrency(kpis.promedioFactura)}</p>
             </CardContent>
           </Card>

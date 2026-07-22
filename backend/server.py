@@ -10381,21 +10381,36 @@ WHERE EmpresaID = %s
         cursor.execute(
             f"""
 SELECT TOP 5
-    CAST(ProveedorID AS VARCHAR(50)) AS nombre,
-    COUNT(DISTINCT FolioRecepcion) AS facturas,
-    ISNULL(SUM(Total), 0) AS total
-FROM dbo.Compras_Recepciones
-WHERE EmpresaID = %s
-  AND SucursalID = %s
-  AND Activo = 1
+    COALESCE(
+        NULLIF(pc.NombreComercial, ''),
+        NULLIF(pc.RazonSocial, ''),
+        NULLIF(pc.CodigoProveedor, ''),
+        CAST(r.ProveedorID AS VARCHAR(50))
+    ) AS nombre,
+    COUNT(DISTINCT r.FolioRecepcion) AS facturas,
+    ISNULL(SUM(r.Total), 0) AS total
+FROM dbo.Compras_Recepciones r
+LEFT JOIN dbo.Proveedor_Catalogo pc
+  ON pc.ProveedorID = r.ProveedorID
+ AND pc.Activo = 1
+WHERE r.EmpresaID = %s
+  AND r.SucursalID = %s
+  AND r.Activo = 1
   AND {periodo_where}
-GROUP BY ProveedorID
-ORDER BY ISNULL(SUM(Total), 0) DESC
+GROUP BY
+    r.ProveedorID,
+    COALESCE(
+        NULLIF(pc.NombreComercial, ''),
+        NULLIF(pc.RazonSocial, ''),
+        NULLIF(pc.CodigoProveedor, ''),
+        CAST(r.ProveedorID AS VARCHAR(50))
+    )
+ORDER BY ISNULL(SUM(r.Total), 0) DESC
 """,
             tuple([scope["empresa_id"], scope["sucursal_id"], *periodo_params]),
         )
         top_proveedores = [
-            {"nombre": f"Proveedor {r.get('nombre')}", "total": float(r.get('total') or 0)}
+            {"nombre": str(r.get('nombre') or ''), "total": float(r.get('total') or 0)}
             for r in (cursor.fetchall() or [])
         ]
         return {
@@ -10449,41 +10464,79 @@ async def obtener_analisis_compras(request: AnalisisComprasRequest, credentials:
         cursor.execute(
             f"""
 SELECT TOP 1000
-    CAST(ProveedorID AS VARCHAR(50)) AS codigo,
-    MONTH(FechaRecepcion) AS mes,
-    YEAR(FechaRecepcion) AS anio,
-    ISNULL(SUM(Total), 0) AS total
-FROM dbo.Compras_Recepciones
-WHERE EmpresaID = %s
-  AND SucursalID = %s
-  AND Activo = 1
+    CAST(r.ProveedorID AS VARCHAR(50)) AS codigo,
+    COALESCE(
+        NULLIF(pc.NombreComercial, ''),
+        NULLIF(pc.RazonSocial, ''),
+        NULLIF(pc.CodigoProveedor, ''),
+        CAST(r.ProveedorID AS VARCHAR(50))
+    ) AS nombre,
+    MONTH(r.FechaRecepcion) AS mes,
+    YEAR(r.FechaRecepcion) AS anio,
+    COUNT(DISTINCT r.FolioRecepcion) AS facturas,
+    ISNULL(SUM(r.Total), 0) AS total
+FROM dbo.Compras_Recepciones r
+LEFT JOIN dbo.Proveedor_Catalogo pc
+  ON pc.ProveedorID = r.ProveedorID
+ AND pc.Activo = 1
+WHERE r.EmpresaID = %s
+  AND r.SucursalID = %s
+  AND r.Activo = 1
   AND {periodo_where}
-GROUP BY ProveedorID, MONTH(FechaRecepcion), YEAR(FechaRecepcion)
-ORDER BY ISNULL(SUM(Total), 0) DESC
+GROUP BY
+    r.ProveedorID,
+    COALESCE(
+        NULLIF(pc.NombreComercial, ''),
+        NULLIF(pc.RazonSocial, ''),
+        NULLIF(pc.CodigoProveedor, ''),
+        CAST(r.ProveedorID AS VARCHAR(50))
+    ),
+    MONTH(r.FechaRecepcion),
+    YEAR(r.FechaRecepcion)
+ORDER BY ISNULL(SUM(r.Total), 0) DESC
 """,
             tuple([scope["empresa_id"], scope["sucursal_id"], *periodo_params]),
         )
         proveedores = {}
+        total_compras = 0.0
+        total_facturas = 0
         for row in cursor.fetchall() or []:
             codigo = str(row.get("codigo") or "0")
             if codigo not in proveedores:
                 proveedores[codigo] = {
                     "codigo": codigo,
-                    "nombre": f"Proveedor {codigo}",
+                    "nombre": str(row.get("nombre") or codigo),
                     "total": 0,
+                    "facturas": 0,
                 }
                 for mes in meses:
                     proveedores[codigo][str(mes).zfill(2)] = 0
             mes_str = str(row.get("mes") or "").zfill(2)
             total = float(row.get("total") or 0)
+            facturas = int(row.get("facturas") or 0)
             if mes_str in proveedores[codigo]:
                 proveedores[codigo][mes_str] += total
             proveedores[codigo]["total"] += total
+            proveedores[codigo]["facturas"] += facturas
+            total_compras += total
+            total_facturas += facturas
         proveedores_list = sorted(proveedores.values(), key=lambda x: x["total"], reverse=True)
+        promedio_factura = total_compras / total_facturas if total_facturas > 0 else 0
+        kpis = {
+            "total_compras": round(total_compras, 2),
+            "totalCompras": round(total_compras, 2),
+            "num_proveedores": len(proveedores_list),
+            "numProveedores": len(proveedores_list),
+            "num_facturas": total_facturas,
+            "numFacturas": total_facturas,
+            "promedio_factura": round(promedio_factura, 2),
+            "promedioFactura": round(promedio_factura, 2),
+        }
         return {
             "status": "OK",
             "source": scope["source"],
             "proveedores": proveedores_list[:100],
+            "kpis": kpis,
             "alertas": [],
             "meta": {
                 "unidad": scope["unidad"].get("codigo"),
