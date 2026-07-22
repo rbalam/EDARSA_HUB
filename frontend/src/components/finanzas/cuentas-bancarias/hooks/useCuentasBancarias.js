@@ -31,7 +31,9 @@ export function useCuentasBancarias() {
       if (params.bancoId) {
         queryParams.append('banco_id', params.bancoId);
       }
-      if (params.empresaCodigo) {
+      if (params.unidadNegocioPk) {
+        queryParams.append('unidad_negocio_pk', params.unidadNegocioPk);
+      } else if (params.empresaCodigo) {
         queryParams.append('empresa_codigo', params.empresaCodigo);
       }
       
@@ -66,8 +68,6 @@ export function useCuentasBancarias() {
     setError(null);
     try {
       const response = await api.post('/v2/finanzas/cuentas-bancarias', data);
-      // Refrescar lista
-      await fetchCuentas();
       return response.data;
     } catch (err) {
       console.error('Error creando cuenta:', err);
@@ -77,7 +77,7 @@ export function useCuentasBancarias() {
     } finally {
       setSaving(false);
     }
-  }, [fetchCuentas]);
+  }, []);
 
   // Editar cuenta bancaria (solo alias y es_principal)
   const editarCuenta = useCallback(async (id, data) => {
@@ -85,8 +85,6 @@ export function useCuentasBancarias() {
     setError(null);
     try {
       const response = await api.put(`/v2/finanzas/cuentas-bancarias/${id}`, data);
-      // Refrescar lista
-      await fetchCuentas();
       return response.data;
     } catch (err) {
       console.error('Error editando cuenta:', err);
@@ -96,7 +94,7 @@ export function useCuentasBancarias() {
     } finally {
       setSaving(false);
     }
-  }, [fetchCuentas]);
+  }, []);
 
   // Desactivar cuenta bancaria
   const desactivarCuenta = useCallback(async (id, motivo) => {
@@ -106,8 +104,6 @@ export function useCuentasBancarias() {
       const response = await api.post(`/v2/finanzas/cuentas-bancarias/${id}/desactivar`, {
         motivo
       });
-      // Refrescar lista
-      await fetchCuentas();
       return response.data;
     } catch (err) {
       console.error('Error desactivando cuenta:', err);
@@ -117,7 +113,7 @@ export function useCuentasBancarias() {
     } finally {
       setSaving(false);
     }
-  }, [fetchCuentas]);
+  }, []);
 
   return {
     cuentas,

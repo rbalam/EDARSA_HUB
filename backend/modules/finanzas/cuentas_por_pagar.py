@@ -1,14 +1,12 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
 """
 EDARSA HUB - Cuentas por Pagar (Facturas Pendientes)
 =====================================================
 Módulo para gestionar facturas pendientes de pago agrupadas por proveedor.
 PROTEGIDO CON RBAC (Fase 3.1)
 
-ABRIL 2026: Conectado a SQL Server real (Finanzas_CuentasPorPagar)
-- Si hay datos en SQL, usa datos reales
-- Si no hay datos, puede usar modo demo (parámetro use_demo=true)
+V1.0: lectura SQL-first no-live desde dbo.Finanzas_CxP_Sync
+- Decisiones de pago en dbo.Finanzas_CxP_DecisionesPago
+- Sin demo, MongoDB ni conexiones live en endpoints
 
 Datos a mostrar:
 1. Número de documento / Folio
@@ -23,138 +21,192 @@ Datos a mostrar:
 10. Estatus de pago
 """
 
-import logging
-from datetime import datetime, timezone, timedelta
+from datetime import date
+from decimal import Decimal, InvalidOperation
 from typing import Dict, Any, List, Optional
+from urllib.parse import unquote
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
-from core.security import get_current_user, get_user_empresas_permitidas, get_servers_for_empresas
-import secrets  # Reemplaza random para generación de datos demo
-
-# Importar función de filtrado de visibilidad
-from modules.comercial.repository import get_sucursales_visibles_config
-from core.sql_first.db import get_sql_connection, fetch_all_dict
-from modules.finanzas.access import resolve_finanzas_unit_filter
+from pydantic import BaseModel
+from core.security import get_current_user
+from core.sql_first.db import fetch_all_dict, execute_sql
+from modules.finanzas.access import (
+    FINANZAS_ADMINISTRAR,
+    FINANZAS_EDITAR,
+    FINANZAS_VER,
+    require_any_finanzas_permission,
+    resolve_finanzas_unit_filter,
+)
 
 router = APIRouter(prefix="/finanzas/cuentas-por-pagar", tags=["Cuentas por Pagar"])
 
 
-# Helper functions para datos demo (reemplazan random)
-def demo_uniform(min_val: float, max_val: float) -> float:
-    """Genera float aleatorio en rango [min_val, max_val] para datos demo."""
-    range_val = max_val - min_val
-    return min_val + (secrets.randbelow(int(range_val * 100)) / 100)
-
-def demo_randint(min_val: int, max_val: int) -> int:
-    """Genera int aleatorio en rango [min_val, max_val] para datos demo."""
-    return min_val + secrets.randbelow(max_val - min_val + 1)
-
-def demo_random() -> float:
-    """Genera float aleatorio en rango [0, 1) para datos demo."""
-    return secrets.randbelow(1000) / 1000
-
-def demo_choice(options: list):
-    """Selecciona elemento aleatorio de lista para datos demo."""
-    return options[secrets.randbelow(len(options))]
-
-
-async def _get_empresas_codigos_sql(empresas_ids):
-    """Obtiene códigos/nombres de empresas desde SQL canónico, sin Mongo."""
-    if not empresas_ids:
-        return []
-    try:
-        from core.db import execute_sql_query
-        ids = [str(x).replace("'", "''") for x in empresas_ids if x]
-        if not ids:
-            return []
-        in_clause = ",".join([f"'{x}'" for x in ids])
-        rows = execute_sql_query(f"""
-            SELECT id, codigo, nombre
-            FROM Empresas
-            WHERE id IN ({in_clause})
-        """) or []
-        codigos = []
-        for e in rows:
-            codigo = e.get("codigo") or e.get("Codigo")
-            nombre = e.get("nombre") or e.get("Nombre")
-            if codigo:
-                codigos.append(str(codigo).upper())
-            if nombre:
-                codigos.append(str(nombre).upper())
-        return codigos
-    except Exception:
-        return []
-
-
-async def get_user_sucursales_permitidas(current_user: Dict[str, Any]) -> List[str]:
-    """
-    RBAC Fase 3.1: Obtiene los CÓDIGOS de sucursales permitidas para el usuario.
-    Retorna lista vacía si el usuario tiene acceso total (admin).
-    """
-    empresas_permitidas = await get_user_empresas_permitidas(current_user)
-    if not empresas_permitidas:
-        return []  # Sin restricción (admin)
-    
-    return await _get_empresas_codigos_sql(empresas_permitidas)
-
 # ============================================================================
-# REPOSITORIO REAL
+# COMPATIBILIDAD SERVER.PY
 # ============================================================================
 
-# Variables globales para repositorios
-_finanzas_repo = None  # Repositorio EDARSA HUB (legacy)
-_mpro_repo = None      # Repositorio MPRO (datos reales CxP)
-_softrest_repo = None  # Repositorio SoftRestaurant (CF, Estelar, 130 Mid)
-
-def set_finanzas_repository(repo):
-    """Configura el repositorio de finanzas EDARSA HUB (llamado desde server.py)"""
-    global _finanzas_repo
-    _finanzas_repo = repo
-
-def set_mpro_repository(repo):
-    """Configura el repositorio MPRO para CxP reales (llamado desde server.py)"""
-    global _mpro_repo
-    _mpro_repo = repo
-
-def set_softrestaurant_repository(repo):
-    """Configura el repositorio SoftRestaurant para CxP (llamado desde server.py)"""
-    global _softrest_repo
-    _softrest_repo = repo
-
-async def get_repo():
-    """Obtiene el repositorio de finanzas (prefiere SoftRestaurant > MPRO > EDARSA HUB)"""
-    # Primero SoftRestaurant (CF, Estelar, 130 Mid)
-    if _softrest_repo:
-        return _softrest_repo
-    # Luego MPRO
-    if _mpro_repo:
-        return _mpro_repo
-    # Fallback a EDARSA HUB
-    if _finanzas_repo:
-        return _finanzas_repo
+def set_finanzas_repository(_repo):
+    """Hook legacy: CxP V1.0 no usa repos runtime en endpoints."""
     return None
 
-async def get_mpro_repo():
-    """Obtiene específicamente el repositorio MPRO"""
-    return _mpro_repo
+def set_mpro_repository(_repo):
+    """Hook legacy: la lectura funcional viene de dbo.Finanzas_CxP_Sync."""
+    return None
 
-async def get_softrest_repo():
-    """Obtiene específicamente el repositorio SoftRestaurant"""
-    return _softrest_repo
+def set_softrestaurant_repository(_repo):
+    """Hook legacy: la lectura funcional viene de dbo.Finanzas_CxP_Sync."""
+    return None
 
 # ============================================================================
 # LECTURA NO-LIVE (CANÓNICA) · dbo.Finanzas_CxP_Sync
 # La pantalla de CxP lee EXCLUSIVAMENTE de esta tabla, poblada por el job
 # core/scheduler/jobs/cxp_sync_job.py (registrado en el scheduler).
 # ============================================================================
+def _cxp_decisiones_schema_ready() -> bool:
+    rows = fetch_all_dict(
+        """
+        SELECT CASE WHEN
+            OBJECT_ID('dbo.Finanzas_CxP_DecisionesPago', 'U') IS NOT NULL
+            AND COL_LENGTH('dbo.Finanzas_CxP_DecisionesPago', 'HashOrigen') IS NOT NULL
+            AND COL_LENGTH('dbo.Finanzas_CxP_DecisionesPago', 'DecisionPago') IS NOT NULL
+            AND COL_LENGTH('dbo.Finanzas_CxP_DecisionesPago', 'ImporteAPagar') IS NOT NULL
+            AND COL_LENGTH('dbo.Finanzas_CxP_DecisionesPago', 'UnidadNegocioID') IS NOT NULL
+            AND COL_LENGTH('dbo.Finanzas_CxP_DecisionesPago', 'EstadoAutorizacion') IS NOT NULL
+        THEN 1 ELSE 0 END AS listo
+        """
+    )
+    return bool(rows and rows[0].get("listo"))
+
+
+def _cxp_queue_schema_ready() -> bool:
+    rows = fetch_all_dict(
+        """
+        SELECT CASE WHEN
+            OBJECT_ID('dbo.Finanzas_CxP_PagosOrigenQueue', 'U') IS NOT NULL
+            AND COL_LENGTH('dbo.Finanzas_CxP_PagosOrigenQueue', 'DecisionPagoID') IS NOT NULL
+            AND COL_LENGTH('dbo.Finanzas_CxP_PagosOrigenQueue', 'HashOrigen') IS NOT NULL
+            AND COL_LENGTH('dbo.Finanzas_CxP_PagosOrigenQueue', 'ImporteAPagar') IS NOT NULL
+            AND COL_LENGTH('dbo.Finanzas_CxP_PagosOrigenQueue', 'EstadoEnvio') IS NOT NULL
+        THEN 1 ELSE 0 END AS listo
+        """
+    )
+    return bool(rows and rows[0].get("listo"))
+
+
+def _cxp_decision_projection():
+    if not _cxp_decisiones_schema_ready():
+        return (
+            ", CAST(0 AS bit) AS DecisionPagoCanonica, "
+            "CAST(0 AS decimal(18,2)) AS ImporteAPagarCanonico, "
+            "CAST(NULL AS bigint) AS DecisionPagoIDCanonica, "
+            "CAST(NULL AS datetime2) AS FechaDecisionPago, "
+            "CAST('SIN_DECISION' AS nvarchar(30)) AS EstadoAutorizacionPago",
+            "",
+        )
+
+    return (
+        ", ISNULL(d.DecisionPago, 0) AS DecisionPagoCanonica, "
+        "ISNULL(d.ImporteAPagar, 0) AS ImporteAPagarCanonico, "
+        "d.DecisionPagoID AS DecisionPagoIDCanonica, "
+        "d.FechaDecision AS FechaDecisionPago, "
+        "ISNULL(d.EstadoAutorizacion, 'SIN_DECISION') AS EstadoAutorizacionPago",
+        "LEFT JOIN dbo.Finanzas_CxP_DecisionesPago d "
+        "  ON d.HashOrigen = c.HashOrigen AND ISNULL(d.Activo, 1) = 1",
+    )
+
+
+def _cxp_require_decisiones_schema():
+    if _cxp_decisiones_schema_ready():
+        return
+    raise HTTPException(
+        status_code=409,
+        detail=(
+            "Falta la tabla canonica dbo.Finanzas_CxP_DecisionesPago. "
+            "Revise y aplique la migracion "
+            "backend/database/migrations/20260722_001_finanzas_cxp_decisiones_pago.sql; "
+            "no se registro la decision."
+        ),
+    )
+
+
+def _cxp_require_queue_schema():
+    if _cxp_queue_schema_ready():
+        return
+    raise HTTPException(
+        status_code=409,
+        detail=(
+            "Falta la cola canonica dbo.Finanzas_CxP_PagosOrigenQueue. "
+            "Revise y aplique la migracion "
+            "backend/database/migrations/20260722_001_finanzas_cxp_decisiones_pago.sql; "
+            "no se programo carga a origen."
+        ),
+    )
+
+
+def _parse_cxp_factura_ref(factura_id: str):
+    decoded = unquote(str(factura_id or "")).strip()
+    payload = decoded[4:] if decoded.upper().startswith("CXP_") else decoded
+    payload = payload.strip()
+
+    if payload.isdigit():
+        return "sync_id", int(payload), decoded
+
+    lower = payload.lower()
+    if len(lower) == 64 and all(ch in "0123456789abcdef" for ch in lower):
+        return "hash", lower, decoded
+
+    raise HTTPException(
+        status_code=400,
+        detail="Factura CxP no canonica. Use el identificador CXP_<id_sync> o CXP_<hash_origen>.",
+    )
+
+
+def _validar_fecha_corte(fecha_corte: Optional[str]) -> Optional[str]:
+    if not fecha_corte:
+        return None
+    try:
+        date.fromisoformat(str(fecha_corte))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="fecha_corte debe tener formato YYYY-MM-DD.") from exc
+    return str(fecha_corte)
+
+
 def _cxp_rows_canonico(
     unidad_negocio_pk=None,
     tipo=None,
     solo_vencidas=False,
+    proveedor_id=None,
+    fecha_corte=None,
     unidades_permitidas=None,
+    cxp_sync_id=None,
+    cxp_sync_ids=None,
+    hash_origen=None,
+    hash_origenes=None,
 ):
     where = ["c.Activo=1", "c.Saldo>0", "ISNULL(c.EsDemo,0)=0"]
     params = []
+
+    ref_conditions = []
+    if cxp_sync_id is not None:
+        ref_conditions.append("c.CxpSyncID=%s")
+        params.append(int(cxp_sync_id))
+    if cxp_sync_ids:
+        ids = [int(v) for v in cxp_sync_ids if v is not None]
+        if ids:
+            placeholders = ",".join(["%s"] * len(ids))
+            ref_conditions.append(f"c.CxpSyncID IN ({placeholders})")
+            params.extend(ids)
+    if hash_origen:
+        ref_conditions.append("c.HashOrigen=%s")
+        params.append(str(hash_origen))
+    if hash_origenes:
+        hashes = [str(v) for v in hash_origenes if v]
+        if hashes:
+            placeholders = ",".join(["%s"] * len(hashes))
+            ref_conditions.append(f"c.HashOrigen IN ({placeholders})")
+            params.extend(hashes)
+    if ref_conditions:
+        where.append("(" + " OR ".join(ref_conditions) + ")")
+
     if unidad_negocio_pk and str(unidad_negocio_pk).lower() not in ("todas", "all", ""):
         where.append("CONVERT(varchar(36), u.id) = %s")
         params.append(str(unidad_negocio_pk))
@@ -167,27 +219,427 @@ def _cxp_rows_canonico(
         else:
             where.append("1=0")
     if tipo:
-        where.append("c.TipoProveedor=%s"); params.append(tipo)
+        where.append("c.TipoProveedor=%s")
+        params.append(tipo)
+    if proveedor_id:
+        where.append("c.ProveedorID=%s")
+        params.append(str(proveedor_id))
+    fecha_corte_validada = _validar_fecha_corte(fecha_corte)
+    if fecha_corte_validada:
+        where.append("c.FechaEntrada <= %s")
+        params.append(fecha_corte_validada)
     if solo_vencidas:
         where.append("c.DiasVencido>0")
+
+    decision_select, decision_join = _cxp_decision_projection()
     sql = (
         "SELECT c.*, CONVERT(varchar(36), u.id) AS UnidadNegocioIDCanonica, "
         "u.codigo AS UnidadNegocioCodigoCanonico, u.nombre AS UnidadNegocioNombreCanonico "
+        f"{decision_select} "
         "FROM dbo.Finanzas_CxP_Sync c "
         "INNER JOIN dbo.Unidades_Negocio u "
         "  ON UPPER(LTRIM(RTRIM(c.UnidadNegocio))) = UPPER(LTRIM(RTRIM(u.codigo))) "
         " AND ISNULL(u.activo, 1) = 1 "
+        f"{decision_join} "
         "WHERE " + " AND ".join(where) + " ORDER BY c.Saldo DESC"
     )
     return fetch_all_dict(sql, tuple(params))
+
+
+def _cxp_row_for_ref(factura_id: str, unidades_permitidas=None):
+    kind, value, decoded = _parse_cxp_factura_ref(factura_id)
+    rows = _cxp_rows_canonico(
+        unidades_permitidas=unidades_permitidas,
+        cxp_sync_id=value if kind == "sync_id" else None,
+        hash_origen=value if kind == "hash" else None,
+    )
+    if not rows:
+        raise HTTPException(
+            status_code=404,
+            detail="Factura CxP no encontrada en la fuente canonica o fuera de alcance RBAC.",
+        )
+    return rows[0], decoded
+
+
+def _cxp_rows_for_refs(facturas_ids: List[str], unidades_permitidas=None):
+    parsed = [_parse_cxp_factura_ref(fid) for fid in facturas_ids]
+    sync_ids = sorted({value for kind, value, _ in parsed if kind == "sync_id"})
+    hashes = sorted({value for kind, value, _ in parsed if kind == "hash"})
+    rows = _cxp_rows_canonico(
+        unidades_permitidas=unidades_permitidas,
+        cxp_sync_ids=sync_ids,
+        hash_origenes=hashes,
+    )
+    found_sync_ids = {int(row.get("CxpSyncID")) for row in rows if row.get("CxpSyncID") is not None}
+    found_hashes = {str(row.get("HashOrigen") or "").lower() for row in rows if row.get("HashOrigen")}
+    missing = [
+        decoded
+        for kind, value, decoded in parsed
+        if (kind == "sync_id" and value not in found_sync_ids)
+        or (kind == "hash" and value not in found_hashes)
+    ]
+    if missing:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Una o mas facturas CxP no existen en la fuente canonica "
+                f"o quedan fuera del alcance RBAC: {missing[:5]}"
+            ),
+        )
+    return rows
+
+
+def _get_cxp_usuario_id(current_user: Dict[str, Any]) -> Optional[int]:
+    value = (
+        current_user.get("_sql_usuario_id")
+        or current_user.get("UsuarioID")
+        or current_user.get("usuario_id")
+    )
+    if isinstance(value, bool):
+        return None
+    try:
+        usuario_id = int(value)
+    except (TypeError, ValueError):
+        return None
+    return usuario_id if usuario_id > 0 else None
+
+
+def _normalizar_importe_decision(row: Dict[str, Any], data: "ActualizarDecisionPago") -> Decimal:
+    try:
+        saldo = Decimal(str(row.get("Saldo") or "0"))
+    except InvalidOperation as exc:
+        raise HTTPException(status_code=409, detail="Saldo canonico invalido para la factura CxP.") from exc
+
+    if saldo <= 0:
+        raise HTTPException(status_code=409, detail="La factura CxP no tiene saldo pendiente.")
+
+    if not data.decision_pago:
+        return Decimal("0.00")
+
+    if data.importe_a_pagar is None:
+        importe = saldo
+    else:
+        try:
+            importe = Decimal(str(data.importe_a_pagar))
+        except InvalidOperation as exc:
+            raise HTTPException(status_code=400, detail="importe_a_pagar invalido.") from exc
+
+    if importe <= 0:
+        raise HTTPException(status_code=400, detail="importe_a_pagar debe ser mayor a cero.")
+    if importe > saldo:
+        raise HTTPException(status_code=400, detail="importe_a_pagar no puede exceder el saldo canonico.")
+
+    return importe.quantize(Decimal("0.01"))
+
+
+def _cxp_upsert_decision(row: Dict[str, Any], data: "ActualizarDecisionPago", current_user: Dict[str, Any]) -> Decimal:
+    hash_origen = str(row.get("HashOrigen") or "").strip().lower()
+    unidad_pk = str(row.get("UnidadNegocioIDCanonica") or "").strip()
+    if not hash_origen:
+        raise HTTPException(
+            status_code=409,
+            detail="La factura CxP canonica no tiene HashOrigen; no se puede persistir decision.",
+        )
+    if not unidad_pk:
+        raise HTTPException(
+            status_code=409,
+            detail="La factura CxP canonica no tiene unidad_negocio_pk.",
+        )
+
+    importe = _normalizar_importe_decision(row, data)
+    decision_bit = 1 if data.decision_pago else 0
+    usuario_id = _get_cxp_usuario_id(current_user)
+    cxp_sync_id = int(row.get("CxpSyncID"))
+    decision_pago_id = row.get("DecisionPagoIDCanonica")
+    decision_pago_id = int(decision_pago_id) if decision_pago_id else None
+    _cxp_block_if_pago_origen_locked(decision_pago_id)
+
+    execute_sql(
+        """
+        UPDATE dbo.Finanzas_CxP_DecisionesPago
+        SET
+            CxpSyncID = %s,
+            UnidadNegocioID = CONVERT(uniqueidentifier, %s),
+            DecisionPago = %s,
+            ImporteAPagar = %s,
+            UsuarioID = %s,
+            EstadoAutorizacion = CASE WHEN %s = 1 THEN 'PENDIENTE_AUTORIZACION' ELSE 'CANCELADO' END,
+            AutorizadoPorUsuarioID = NULL,
+            FechaAutorizacion = NULL,
+            RechazadoPorUsuarioID = NULL,
+            FechaRechazo = NULL,
+            ComentarioAutorizacion = NULL,
+            Activo = 1,
+            FechaDecision = SYSUTCDATETIME(),
+            FechaModificacion = SYSUTCDATETIME()
+        WHERE HashOrigen = %s
+          AND Activo = 1;
+
+        IF @@ROWCOUNT = 0
+        BEGIN
+            INSERT INTO dbo.Finanzas_CxP_DecisionesPago (
+                HashOrigen,
+                CxpSyncID,
+                UnidadNegocioID,
+                DecisionPago,
+                ImporteAPagar,
+                UsuarioID,
+                EstadoAutorizacion,
+                Activo,
+                FechaDecision,
+                FechaAlta
+            )
+            VALUES (
+                %s,
+                %s,
+                CONVERT(uniqueidentifier, %s),
+                %s,
+                %s,
+                %s,
+                CASE WHEN %s = 1 THEN 'PENDIENTE_AUTORIZACION' ELSE 'CANCELADO' END,
+                1,
+                SYSUTCDATETIME(),
+                SYSUTCDATETIME()
+            );
+        END;
+        """,
+        (
+            cxp_sync_id,
+            unidad_pk,
+            decision_bit,
+            str(importe),
+            usuario_id,
+            decision_bit,
+            hash_origen,
+            hash_origen,
+            cxp_sync_id,
+            unidad_pk,
+            decision_bit,
+            str(importe),
+            usuario_id,
+            decision_bit,
+        ),
+    )
+    _cxp_cancel_queue_pendiente(decision_pago_id)
+    return importe
+
+
+def _cxp_decision_row_for_hash(hash_origen: str) -> Dict[str, Any]:
+    rows = fetch_all_dict(
+        """
+        SELECT TOP 1
+            DecisionPagoID,
+            HashOrigen,
+            CxpSyncID,
+            CONVERT(varchar(36), UnidadNegocioID) AS UnidadNegocioID,
+            DecisionPago,
+            ImporteAPagar,
+            EstadoAutorizacion,
+            Activo
+        FROM dbo.Finanzas_CxP_DecisionesPago
+        WHERE HashOrigen = %s
+          AND Activo = 1
+        ORDER BY DecisionPagoID DESC
+        """,
+        (hash_origen,),
+    )
+    if not rows:
+        raise HTTPException(
+            status_code=404,
+            detail="No existe decision canonica de pago para la CxP seleccionada.",
+        )
+    return rows[0]
+
+
+def _cxp_queue_estados_for_decision(decision_pago_id: Optional[int]) -> List[str]:
+    if not decision_pago_id or not _cxp_queue_schema_ready():
+        return []
+    rows = fetch_all_dict(
+        """
+        SELECT EstadoEnvio
+        FROM dbo.Finanzas_CxP_PagosOrigenQueue
+        WHERE DecisionPagoID = %s
+          AND Activo = 1
+          AND EstadoEnvio IN ('PENDIENTE', 'ERROR', 'EN_PROCESO', 'ENVIADO')
+        """,
+        (int(decision_pago_id),),
+    )
+    return [str(row.get("EstadoEnvio") or "").upper() for row in rows]
+
+
+def _cxp_block_if_pago_origen_locked(decision_pago_id: Optional[int]) -> None:
+    estados = set(_cxp_queue_estados_for_decision(decision_pago_id))
+    if estados.intersection({"EN_PROCESO", "ENVIADO"}):
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "La decision de pago ya esta en proceso o enviada a origen; "
+                "no puede modificarse desde el tablero."
+            ),
+        )
+
+
+def _cxp_cancel_queue_pendiente(decision_pago_id: Optional[int]) -> None:
+    if not decision_pago_id or not _cxp_queue_schema_ready():
+        return
+    execute_sql(
+        """
+        UPDATE dbo.Finanzas_CxP_PagosOrigenQueue
+        SET
+            EstadoEnvio = 'CANCELADO',
+            Activo = 0,
+            FechaModificacion = SYSUTCDATETIME()
+        WHERE DecisionPagoID = %s
+          AND Activo = 1
+          AND EstadoEnvio IN ('PENDIENTE', 'ERROR');
+        """,
+        (int(decision_pago_id),),
+    )
+
+
+def _cxp_update_autorizacion(
+    decision: Dict[str, Any],
+    autorizar: bool,
+    comentario: Optional[str],
+    current_user: Dict[str, Any],
+) -> None:
+    if not bool(decision.get("DecisionPago")):
+        raise HTTPException(
+            status_code=409,
+            detail="La CxP no esta marcada para pago; no puede autorizarse.",
+        )
+    try:
+        importe = Decimal(str(decision.get("ImporteAPagar") or "0"))
+    except InvalidOperation as exc:
+        raise HTTPException(status_code=409, detail="Importe canonico de pago invalido.") from exc
+    if autorizar and importe <= 0:
+        raise HTTPException(
+            status_code=409,
+            detail="La CxP no tiene importe a pagar mayor a cero.",
+        )
+
+    usuario_id = _get_cxp_usuario_id(current_user)
+    comentario_normalizado = (comentario or "").strip()[:500] or None
+    if autorizar:
+        execute_sql(
+            """
+            UPDATE dbo.Finanzas_CxP_DecisionesPago
+            SET
+                EstadoAutorizacion = 'AUTORIZADO',
+                AutorizadoPorUsuarioID = %s,
+                FechaAutorizacion = SYSUTCDATETIME(),
+                RechazadoPorUsuarioID = NULL,
+                FechaRechazo = NULL,
+                ComentarioAutorizacion = %s,
+                FechaModificacion = SYSUTCDATETIME()
+            WHERE DecisionPagoID = %s
+              AND Activo = 1;
+            """,
+            (usuario_id, comentario_normalizado, int(decision["DecisionPagoID"])),
+        )
+        return
+
+    execute_sql(
+        """
+        UPDATE dbo.Finanzas_CxP_DecisionesPago
+        SET
+            EstadoAutorizacion = 'RECHAZADO',
+            AutorizadoPorUsuarioID = NULL,
+            FechaAutorizacion = NULL,
+            RechazadoPorUsuarioID = %s,
+            FechaRechazo = SYSUTCDATETIME(),
+            ComentarioAutorizacion = %s,
+            FechaModificacion = SYSUTCDATETIME()
+        WHERE DecisionPagoID = %s
+          AND Activo = 1;
+        """,
+        (usuario_id, comentario_normalizado, int(decision["DecisionPagoID"])),
+    )
+
+
+def _cxp_enqueue_pago_origen(decision: Dict[str, Any], current_user: Dict[str, Any]) -> None:
+    usuario_id = _get_cxp_usuario_id(current_user)
+    _cxp_block_if_pago_origen_locked(int(decision["DecisionPagoID"]))
+    execute_sql(
+        """
+        UPDATE dbo.Finanzas_CxP_PagosOrigenQueue
+        SET
+            CxpSyncID = %s,
+            ImporteAPagar = %s,
+            EstadoEnvio = 'PENDIENTE',
+            UsuarioAutorizacionID = %s,
+            UltimoError = NULL,
+            FechaProgramada = SYSUTCDATETIME(),
+            FechaModificacion = SYSUTCDATETIME()
+        WHERE DecisionPagoID = %s
+          AND Activo = 1
+          AND EstadoEnvio IN ('PENDIENTE', 'ERROR');
+
+        IF @@ROWCOUNT = 0
+           AND NOT EXISTS (
+                SELECT 1
+                FROM dbo.Finanzas_CxP_PagosOrigenQueue
+                WHERE DecisionPagoID = %s
+                  AND Activo = 1
+                  AND EstadoEnvio IN ('PENDIENTE', 'EN_PROCESO', 'ENVIADO')
+           )
+        BEGIN
+            INSERT INTO dbo.Finanzas_CxP_PagosOrigenQueue (
+                DecisionPagoID,
+                HashOrigen,
+                UnidadNegocioID,
+                CxpSyncID,
+                ImporteAPagar,
+                EstadoEnvio,
+                FechaProgramada,
+                UsuarioAutorizacionID,
+                Activo,
+                FechaAlta
+            )
+            VALUES (
+                %s,
+                %s,
+                CONVERT(uniqueidentifier, %s),
+                %s,
+                %s,
+                'PENDIENTE',
+                SYSUTCDATETIME(),
+                %s,
+                1,
+                SYSUTCDATETIME()
+            );
+        END;
+        """,
+        (
+            decision.get("CxpSyncID"),
+            str(decision.get("ImporteAPagar") or "0"),
+            usuario_id,
+            int(decision["DecisionPagoID"]),
+            int(decision["DecisionPagoID"]),
+            int(decision["DecisionPagoID"]),
+            str(decision.get("HashOrigen") or "").lower(),
+            str(decision.get("UnidadNegocioID") or ""),
+            decision.get("CxpSyncID"),
+            str(decision.get("ImporteAPagar") or "0"),
+            usuario_id,
+        ),
+    )
 
 
 def _cxp_factura_dict(r):
     dias = int(r.get('DiasVencido') or 0)
     saldo = float(r.get('Saldo') or 0)
     fe, fv = r.get('FechaEntrada'), r.get('FechaVencimiento')
+    decision = bool(r.get('DecisionPagoCanonica'))
+    importe_decision = float(r.get('ImporteAPagarCanonico') or 0) if decision else 0.0
+    hash_origen = str(r.get('HashOrigen') or '').strip()
+    fecha_decision = r.get('FechaDecisionPago')
+    estado_autorizacion = r.get('EstadoAutorizacionPago')
+    if decision and not estado_autorizacion:
+        estado_autorizacion = 'PENDIENTE_AUTORIZACION'
     return {
-        "factura_id": f"CXP_{r.get('CxpSyncID')}",
+        "factura_id": f"CXP_{hash_origen or r.get('CxpSyncID')}",
+        "factura_sync_id": r.get('CxpSyncID'),
         "proveedor_id": r.get('ProveedorID'),
         "proveedor_nombre": r.get('ProveedorNombre') or 'N/A',
         "proveedor_rfc": r.get('ProveedorRFC') or '',
@@ -210,21 +662,29 @@ def _cxp_factura_dict(r):
         "venc_31_60": saldo if 31 <= dias <= 60 else 0,
         "venc_61_90": saldo if 61 <= dias <= 90 else 0,
         "venc_91_plus": saldo if dias > 90 else 0,
-        "decision_pago": False, "importe_a_pagar": 0,
+        "decision_pago": decision,
+        "importe_a_pagar": importe_decision,
+        "estado_autorizacion_pago": estado_autorizacion or 'SIN_DECISION',
+        "requiere_autorizacion_pago": decision and estado_autorizacion != 'AUTORIZADO',
+        "fecha_decision_pago": str(fecha_decision)[:19] if fecha_decision else None,
         "fuente": r.get('Fuente'),
     }
 
 
-def _cxp_listar_canonico(unidad_negocio_pk, tipo, solo_vencidas, unidades_permitidas=None):
+def _cxp_listar_canonico(unidad_negocio_pk, tipo, solo_vencidas, solo_decision_pago=False, proveedor_id=None, fecha_corte=None, unidades_permitidas=None):
     facturas = [
         _cxp_factura_dict(r)
         for r in _cxp_rows_canonico(
             unidad_negocio_pk,
             tipo,
             solo_vencidas,
+            proveedor_id,
+            fecha_corte,
             unidades_permitidas,
         )
     ]
+    if solo_decision_pago:
+        facturas = [f for f in facturas if f["decision_pago"]]
     nombres = {'A': 'ALIMENTOS', 'B': 'BEBIDAS', 'X': 'OTROS'}
     tipos = {}
     for f in facturas:
@@ -232,19 +692,26 @@ def _cxp_listar_canonico(unidad_negocio_pk, tipo, solo_vencidas, unidades_permit
         if t not in tipos:
             tipos[t] = {"proveedor_id": t, "proveedor_nombre": f"{t} - {nombres.get(t, 'OTROS')}",
                         "proveedor_rfc": "", "cantidad_facturas": 0, "subtotal_importe": 0.0,
-                        "subtotal_saldo": 0.0, "cantidad_vencidas": 0, "facturas": []}
+                        "subtotal_saldo": 0.0, "subtotal_a_pagar": 0.0,
+                        "cantidad_vencidas": 0, "facturas": []}
         g = tipos[t]
         g["facturas"].append(f); g["cantidad_facturas"] += 1
         g["subtotal_importe"] += f["importe_original"]; g["subtotal_saldo"] += f["saldo"]
+        if f["decision_pago"]:
+            g["subtotal_a_pagar"] += f["importe_a_pagar"]
         if f["dias_vencida"] > 0:
             g["cantidad_vencidas"] += 1
     provs = [tipos[t] for t in ['A', 'B', 'X'] if t in tipos]
+    total_a_pagar = round(sum(p["subtotal_a_pagar"] for p in provs), 2)
     totales = {
         "total_saldo": round(sum(p["subtotal_saldo"] for p in provs), 2),
         "total_importe": round(sum(p["subtotal_importe"] for p in provs), 2),
+        "total_a_pagar": total_a_pagar,
+        "total_decision_pago": total_a_pagar,
         "total_proveedores": len(provs),
         "cantidad_facturas": sum(p["cantidad_facturas"] for p in provs),
         "cantidad_vencidas": sum(p["cantidad_vencidas"] for p in provs),
+        "facturas_con_decision": sum(1 for f in facturas if f["decision_pago"]),
     }
     return {"fuente": "CANONICO_EDARSAHUB", "proveedores": provs,
             "total_facturas": totales["cantidad_facturas"], "totales": totales}
@@ -256,18 +723,22 @@ def _cxp_resumen_canonico(unidad_negocio_pk, unidades_permitidas=None):
         unidades_permitidas=unidades_permitidas,
     )
     b = {'c': [0, 0.0], 'v1': [0, 0.0], 'v2': [0, 0.0], 'v3': [0, 0.0], 'v4': [0, 0.0]}
-    total = 0.0; n = 0
+    total = 0.0; n = 0; total_decision = 0.0; n_decision = 0
     for r in rows:
         s = float(r.get('Saldo') or 0); d = int(r.get('DiasVencido') or 0)
         if s <= 0:
             continue
         n += 1; total += s
+        if bool(r.get('DecisionPagoCanonica')):
+            total_decision += float(r.get('ImporteAPagarCanonico') or 0)
+            n_decision += 1
         k = 'c' if d <= 0 else 'v1' if d <= 30 else 'v2' if d <= 60 else 'v3' if d <= 90 else 'v4'
         b[k][0] += 1; b[k][1] += s
     bk = lambda k: {"cantidad": b[k][0], "monto": round(b[k][1], 2)}
     return {"fuente": "CANONICO_EDARSAHUB",
             "resumen": {"total_facturas": n, "total_saldo": round(total, 2),
-                        "total_decision_pago": 0, "facturas_con_decision": 0},
+                        "total_decision_pago": round(total_decision, 2),
+                        "facturas_con_decision": n_decision},
             "antiguedad": {"corriente": bk('c'), "vencidas_1_30": bk('v1'), "vencidas_31_60": bk('v2'),
                            "vencidas_61_90": bk('v3'), "vencidas_90_plus": bk('v4'),
                            "total_facturas": n, "total_saldo": round(total, 2)}}
@@ -320,83 +791,6 @@ def _cxp_sucursales_canonico(unidades_permitidas=None):
                             "Sistema": r.get("fuente")} for r in rows]}
 
 # ============================================================================
-# DATOS DEMO (Solo se usan si SQL no tiene datos o use_demo=true)
-# ============================================================================
-
-def generar_facturas_demo():
-    """Genera facturas demo para pruebas"""
-    proveedores = [
-        {"id": 1, "nombre": "SYSCOM S.A. de C.V.", "rfc": "SYS850101AB1"},
-        {"id": 2, "nombre": "DISTRIBUIDORA DE ALIMENTOS DEL SURESTE", "rfc": "DAS920315XY2"},
-        {"id": 3, "nombre": "CARNES Y EMBUTIDOS LA SUPERIOR", "rfc": "CES880612MN3"},
-        {"id": 4, "nombre": "PRODUCTOS LACTEOS DEL BAJIO", "rfc": "PLB950423QR4"},
-        {"id": 5, "nombre": "COMERCIALIZADORA DE ABARROTES PENINSULAR", "rfc": "CAP870908ST5"},
-        {"id": 6, "nombre": "VERDURAS Y FRUTAS YUCATAN", "rfc": "VFY900115UV6"},
-        {"id": 7, "nombre": "MARISCOS DEL GOLFO", "rfc": "MDG860720WX7"},
-        {"id": 8, "nombre": "BEBIDAS Y REFRESCOS DEL CARIBE", "rfc": "BRC910302YZ8"},
-    ]
-    
-    sucursales = [
-        {"id": 1, "nombre": "130° QUERETARO"},
-        {"id": 2, "nombre": UnidadesService.resolver_codigo("ORIGEN") or "ORIGEN"},
-        {"id": 3, "nombre": "130° TULUM"},
-        {"id": 4, "nombre": "CIEN FUEGOS"},
-        {"id": 5, "nombre": "XCANATUN"},
-    ]
-    
-    facturas = []
-    folio_entrada = 1000
-    
-    for _ in range(75):  # 75 facturas demo
-        proveedor = demo_choice(proveedores)
-        sucursal = demo_choice(sucursales)
-        
-        # Fechas aleatorias en los últimos 90 días
-        dias_atras = demo_randint(5, 90)
-        fecha_entrada = datetime.now() - timedelta(days=dias_atras)
-        dias_credito = demo_choice([15, 30, 45, 60])
-        fecha_vencimiento = fecha_entrada + timedelta(days=dias_credito)
-        
-        # Calcular días vencida
-        hoy = datetime.now()
-        dias_vencida = (hoy - fecha_vencimiento).days if hoy > fecha_vencimiento else 0
-        
-        # Importes
-        importe_total = round(demo_uniform(1500, 85000), 2)
-        pagos_realizados = round(demo_uniform(0, importe_total * 0.7), 2) if demo_random() > 0.4 else 0
-        saldo = round(importe_total - pagos_realizados, 2)
-        
-        facturas.append({
-            "factura_id": len(facturas) + 1,
-            "folio_entrada": f"ENT-{folio_entrada}",
-            "folio_factura": f"FA-{demo_randint(10000, 99999)}",
-            "fecha_entrada": fecha_entrada.strftime("%Y-%m-%d"),
-            "fecha_vencimiento": fecha_vencimiento.strftime("%Y-%m-%d"),
-            "dias_vencida": max(0, dias_vencida),
-            "referencia": f"Pedido #{demo_randint(100, 999)} - {demo_choice(['Mercancía', 'Insumos', 'Servicios', 'Materiales'])}",
-            "importe_total": importe_total,
-            "pagos_realizados": pagos_realizados,
-            "saldo": saldo,
-            "decision_pago": demo_choice([True, False]) if saldo > 0 else False,
-            "importe_a_pagar": saldo if demo_random() > 0.3 else round(saldo * demo_uniform(0.3, 1), 2),
-            "tiene_pdf_factura": demo_random() > 0.2,
-            "tiene_xml": demo_random() > 0.15,
-            "tiene_pdf_entrada": demo_random() > 0.1,
-            "proveedor_id": proveedor["id"],
-            "proveedor_nombre": proveedor["nombre"],
-            "proveedor_rfc": proveedor["rfc"],
-            "sucursal_id": sucursal["id"],
-            "sucursal_nombre": sucursal["nombre"],
-            "estatus": "Pendiente" if saldo > 0 else "Pagada"
-        })
-        
-        folio_entrada += 1
-    
-    return facturas
-
-_facturas_db = generar_facturas_demo()
-
-# ============================================================================
 # SCHEMAS
 # ============================================================================
 
@@ -407,8 +801,14 @@ class ActualizarDecisionPago(BaseModel):
 
 class ActualizarDecisionPagoMasivo(BaseModel):
     """Actualizar decisión de pago de múltiples facturas"""
-    facturas_ids: List[str]  # Cambiado de int a str para soportar IDs compuestos de SoftRestaurant
+    facturas_ids: List[str]  # CXP_<id_sync> o CXP_<hash_origen>
     decision_pago: bool
+
+class AutorizarDecisionPago(BaseModel):
+    """Autorizar o rechazar una decision de pago CxP."""
+    autorizar: bool = True
+    comentario: Optional[str] = None
+    programar_envio_origen: bool = True
 
 # ============================================================================
 # ENDPOINTS
@@ -416,24 +816,21 @@ class ActualizarDecisionPagoMasivo(BaseModel):
 
 @router.get("")
 async def listar_facturas_pendientes(
-    sucursal_id: Optional[str] = None,  # CIENFUEGOS, ESTELAR, 130MID o código MPRO
+    sucursal_id: Optional[str] = None,  # Deprecated: usar unidad_negocio_pk
     unidad_negocio_pk: Optional[str] = None,
     proveedor_id: Optional[str] = None,
     tipo_proveedor: Optional[str] = None,  # A=Alimentos, B=Bebidas, X=Otros
     fecha_corte: Optional[str] = None,  # YYYY-MM-DD
     solo_vencidas: bool = False,
     solo_decision_pago: bool = False,
-    use_demo: bool = Query(False, description="Usar datos demo en lugar de SQL real"),
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Listar facturas/cuentas pendientes de pago.
     
-    CONECTADO A SOFTRESTAURANT (CF, Estelar, 130 Mid) + MPRO (CENTRAL2020)
-    Combina datos de ambas fuentes para mostrar CxP de todas las operaciones.
-    Si use_demo=true, usa datos demo para pruebas.
-    
-    Filtros: sucursal, proveedor, tipo (A/B/X), fecha de corte, solo vencidas.
+    Lee exclusivamente dbo.Finanzas_CxP_Sync y aplica RBAC por unidad_negocio_pk.
+
+    Filtros: unidad/sucursal legacy, proveedor, tipo (A/B/X), fecha de corte, solo vencidas.
     Agrupa por TIPO DE PROVEEDOR (A=Alimentos, B=Bebidas, X=Otros).
     """
     # === NO-LIVE: lee EXCLUSIVAMENTE de la tabla canónica Finanzas_CxP_Sync ===
@@ -445,590 +842,22 @@ async def listar_facturas_pendientes(
         unidad_pk,
         tipo_proveedor,
         solo_vencidas,
+        solo_decision_pago,
+        proveedor_id,
+        fecha_corte,
         unidades_permitidas,
     )
-    if use_demo:
-        # Ir directo a modo demo
-        pass
-    else:
-        # Combinar datos de SoftRestaurant + MPRO
-        all_facturas = []
-        fuentes_activas = []
-        
-        softrest_repo = await get_softrest_repo()
-        mpro_repo = await get_mpro_repo()
-        
-        # 1. Obtener datos de SoftRestaurant (CF, Estelar, 130 Mid)
-        # FASE 1 CxP FIX: NO consultar SoftRestaurant si el filtro es exclusivamente MPRO
-        es_filtro_mpro_exclusivo = sucursal_id and any(
-            alias.upper() in sucursal_id.upper() or sucursal_id.upper() in alias.upper()
-            for alias in [UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', UnidadesService.resolver_codigo('130QRO') or '130QRO', '130 QRO', '130° QRO', '130° QUERETARO', '0021', '0023']
-        )
-        
-        if softrest_repo and not es_filtro_mpro_exclusivo:
-            try:
-                # Pasar siempre el sucursal_id - el repositorio hace el matching flexible
-                cxp_softrest = await softrest_repo.get_cuentas_por_pagar(
-                    sucursal_id=sucursal_id,  # El repo maneja el matching
-                    tipo_proveedor=tipo_proveedor
-                )
-                
-                for c in cxp_softrest:
-                    saldo = float(c.get('Saldo', 0) or 0)
-                    if saldo <= 0:
-                        continue
-                    
-                    tipo = c.get('TipoProveedor', 'X')
-                    dias_vencido = int(c.get('DiasVencido', 0) or 0)
-                    
-                    # ABRIL 2026: Ahora la query de SoftRestaurant incluye campos detallados:
-                    # FolioEntrada, FolioFactura, FechaVencimiento, FechaFactura, Referencia
-                    
-                    factura = {
-                        "factura_id": c.get('CuentaPorPagarID'),
-                        "proveedor_id": c.get('ProveedorID'),
-                        "proveedor_nombre": c.get('ProveedorNombre', 'N/A'),
-                        "proveedor_rfc": c.get('ProveedorRFC', ''),
-                        "tipo_proveedor": tipo,
-                        "tipo_proveedor_nombre": c.get('TipoProveedorNombre', 'OTROS'),
-                        "sucursal_id": c.get('SucursalID'),
-                        "sucursal_nombre": c.get('SucursalNombre'),
-                        # Campos detallados desde tabla compras (SoftRestaurant)
-                        "folio_entrada": c.get('FolioEntrada') or '-',
-                        "folio_factura": c.get('FolioFactura') or '-',
-                        "fecha_entrada": c.get('FechaEntrada') if isinstance(c.get('FechaEntrada'), str) else (c.get('FechaEntrada').isoformat() if c.get('FechaEntrada') else None),
-                        "fecha_factura": c.get('FechaFactura') or None,
-                        "fecha_vencimiento": c.get('FechaVencimiento') or '-',
-                        "referencia": c.get('Referencia') or '-',
-                        "observaciones": c.get('Observaciones', ''),
-                        "dias_vencida": dias_vencido,
-                        "importe_original": float(c.get('MontoOriginal', 0) or 0),
-                        "saldo": saldo,
-                        "por_vencer": float(c.get('PorVencer', 0) or 0),
-                        "venc_1_30": float(c.get('Venc1_30', 0) or 0),
-                        "venc_31_60": float(c.get('Venc31_60', 0) or 0),
-                        "venc_61_90": float(c.get('Venc61_90', 0) or 0),
-                        "venc_91_plus": float(c.get('Venc91Plus', 0) or 0),
-                        "decision_pago": False,
-                        "importe_a_pagar": 0,
-                        "fuente": "SOFTRESTAURANT"
-                    }
-                    all_facturas.append(factura)
-                
-                if cxp_softrest:
-                    fuentes_activas.append("SOFTRESTAURANT")
-                    logging.info(f"[CxP] SoftRestaurant: {len(cxp_softrest)} registros")
-            except Exception as e:
-                logging.error(f"[CxP] Error SoftRestaurant: {e}")
-        
-        # 2. Obtener datos de MPRO (CENTRAL2020)
-        # FINANZAS-CXP-MPRO-COMBINE-01: Consultar MPRO siempre que no sea filtro exclusivo SoftRestaurant
-        softrest_sucursales = [UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS', UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR', UnidadesService.resolver_codigo('130MID') or '130MID', 'CF', 'EST', '130M', 'LA ESTELAR', '130 MERIDA', '130° MERIDA', 'CIEN FUEGOS']
-        mpro_sucursales = [UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', UnidadesService.resolver_codigo('130QRO') or '130QRO', '130 QRO', '130° QRO', '130° QUERETARO', '0021', '0023']
-        
-        es_filtro_softrest = sucursal_id and any(
-            alias.upper() in sucursal_id.upper() or sucursal_id.upper() in alias.upper()
-            for alias in softrest_sucursales
-        )
-        es_filtro_mpro = sucursal_id and any(
-            alias.upper() in sucursal_id.upper() or sucursal_id.upper() in alias.upper()
-            for alias in mpro_sucursales
-        )
-        
-        # Consultar MPRO si: no hay filtro, o hay filtro MPRO, o no es filtro exclusivo SR
-        if mpro_repo and not es_filtro_softrest:
-            try:
-                # Mapear sucursal a código MPRO si aplica
-                mpro_sucursal = None
-                if es_filtro_mpro:
-                    if sucursal_id and (UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN' in sucursal_id.upper() or sucursal_id == '0023'):
-                        mpro_sucursal = '0023'
-                    elif sucursal_id and ('QRO' in sucursal_id.upper() or sucursal_id == '0021'):
-                        mpro_sucursal = '0021'
-                    else:
-                        mpro_sucursal = sucursal_id
-                
-                cxp_mpro = await mpro_repo.get_cuentas_por_pagar(
-                    sucursal_id=mpro_sucursal,
-                    proveedor_id=proveedor_id,
-                    solo_vencidas=solo_vencidas,
-                    fecha_corte=fecha_corte
-                )
-                
-                # Mapeo de códigos MPRO a nombres
-                mpro_nombres = {
-                    '0023': UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN',
-                    '0021': '130° QRO',
-                    '0012': '130° TULUM',
-                    '0026': 'MECA',
-                    '0027': 'CIEN FUEGOS MPRO'
-                }
-                
-                for c in cxp_mpro:
-                    saldo = float(c.get('Saldo', 0) or 0)
-                    if saldo <= 0:
-                        continue
-                    
-                    dias_vencido = int(c.get('DiasVencido', 0) or 0)
-                    suc_id = str(c.get('SucursalID', ''))
-                    suc_nombre = mpro_nombres.get(suc_id, c.get('SucursalNombre', f"MPRO {suc_id}"))
-                    
-                    # ABRIL 2026 - CLASIFICACIÓN MPRO por Grupo_Proveedor:
-                    # Gp_Cve_Grupo_Proveedor = '0001' → ALIMENTOS (A)
-                    # Gp_Cve_Grupo_Proveedor = '0002' → BEBIDAS (B)
-                    # Cualquier otro → OTROS (X)
-                    grupo_prov = str(c.get('GrupoProveedor', '') or '').strip()
-                    if grupo_prov == '0001':
-                        tipo_prov = 'A'
-                        tipo_prov_nombre = 'ALIMENTOS'
-                    elif grupo_prov == '0002':
-                        tipo_prov = 'B'
-                        tipo_prov_nombre = 'BEBIDAS'
-                    else:
-                        tipo_prov = 'X'
-                        tipo_prov_nombre = 'OTROS'
-                    
-                    # CORRECCIÓN MAPEO CAMPOS MPRO:
-                    # FolioEntrada = Cxp_Documento
-                    # FolioFactura = Cxp_Referencia
-                    # Referencia = Cxp_Concepto
-                    folio_entrada = c.get('FolioEntrada') or c.get('CuentaPorPagarID', 'N/A')
-                    folio_factura = c.get('FolioFactura') or ''
-                    referencia = c.get('Referencia') or ''
-                    
-                    factura = {
-                        "factura_id": f"MPRO_{c.get('CuentaPorPagarID')}",
-                        "proveedor_id": c.get('ProveedorID'),
-                        "proveedor_nombre": c.get('ProveedorNombre') or f"Proveedor {c.get('ProveedorID')}",
-                        "proveedor_rfc": c.get('ProveedorRFC', ''),
-                        "tipo_proveedor": tipo_prov,
-                        "tipo_proveedor_nombre": tipo_prov_nombre,
-                        "sucursal_id": suc_id,
-                        "sucursal_nombre": suc_nombre,
-                        "folio_entrada": folio_entrada,
-                        "folio_factura": folio_factura,
-                        "fecha_entrada": str(c.get('FechaEntrada', ''))[:10] if c.get('FechaEntrada') else None,
-                        "fecha_vencimiento": str(c.get('FechaVencimiento', ''))[:10] if c.get('FechaVencimiento') else None,
-                        "dias_vencida": max(0, dias_vencido),
-                        "referencia": referencia,
-                        "importe_original": float(c.get('MontoOriginal', 0) or 0),
-                        "saldo": saldo,
-                        "por_vencer": saldo if dias_vencido <= 0 else 0,
-                        "venc_1_30": saldo if 1 <= dias_vencido <= 30 else 0,
-                        "venc_31_60": saldo if 31 <= dias_vencido <= 60 else 0,
-                        "venc_61_90": saldo if 61 <= dias_vencido <= 90 else 0,
-                        "venc_91_plus": saldo if dias_vencido > 90 else 0,
-                        "decision_pago": False,
-                        "importe_a_pagar": 0,
-                        "fuente": "MANAGEMENTPRO"
-                    }
-                    all_facturas.append(factura)
-                
-                if cxp_mpro:
-                    fuentes_activas.append("MANAGEMENTPRO")
-                    logging.info(f"[CxP] MPRO: {len(cxp_mpro)} registros")
-            except Exception as e:
-                logging.error(f"[CxP] Error MPRO: {e}")
-        
-        # 3. Si hay datos, APLICAR FILTROS y agrupar por TIPO DE PROVEEDOR (A, B, X)
-        # El frontend espera: { proveedor_id: "A", proveedor_nombre: "A - ALIMENTOS", facturas: [...] }
-        # El frontend luego reagrupa las facturas por proveedor_nombre dentro de cada categoría
-        if all_facturas:
-            # APLICAR FILTROS antes de agrupar
-            if solo_vencidas:
-                all_facturas = [f for f in all_facturas if f.get('dias_vencida', 0) > 0]
-            
-            if solo_decision_pago:
-                all_facturas = [f for f in all_facturas if f.get('decision_pago', False)]
-            
-            # Agrupar por TIPO DE PROVEEDOR (A, B, X)
-            # REGLAS DE CLASIFICACIÓN:
-            # - SoftRestaurant: Según clave del proveedor (A = ALIMENTOS, B = BEBIDAS, X = OTROS)
-            # - MPRO: Según Grupo_Proveedor (0001 = ALIMENTOS, 0002 = BEBIDAS, otros = OTROS)
-            tipos = {}
-            nombres_tipos = {
-                'A': 'ALIMENTOS',
-                'B': 'BEBIDAS',
-                'X': 'OTROS'
-            }
-            
-            for factura in all_facturas:
-                tipo = factura.get('tipo_proveedor', 'X')
-                tipo_nombre = nombres_tipos.get(tipo, 'OTROS')
-                
-                if tipo not in tipos:
-                    tipos[tipo] = {
-                        "proveedor_id": tipo,
-                        "proveedor_nombre": f"{tipo} - {tipo_nombre}",
-                        "proveedor_rfc": "",
-                        "cantidad_facturas": 0,
-                        "subtotal_importe": 0.0,
-                        "subtotal_saldo": 0.0,
-                        "cantidad_vencidas": 0,
-                        "facturas": []
-                    }
-                
-                tipos[tipo]["facturas"].append(factura)
-                tipos[tipo]["cantidad_facturas"] += 1
-                tipos[tipo]["subtotal_importe"] += factura.get("importe_original", 0)
-                tipos[tipo]["subtotal_saldo"] += factura.get("saldo", 0)
-                if factura.get("dias_vencida", 0) > 0:
-                    tipos[tipo]["cantidad_vencidas"] += 1
-            
-            # Ordenar tipos: A, B, X (ALIMENTOS, BEBIDAS, OTROS)
-            orden_tipos = ['A', 'B', 'X']
-            proveedores_ordenados = [tipos.get(t) for t in orden_tipos if t in tipos]
-            
-            totales = {
-                "total_saldo": sum(p["subtotal_saldo"] for p in proveedores_ordenados),
-                "total_importe": sum(p["subtotal_importe"] for p in proveedores_ordenados),
-                "total_proveedores": len(proveedores_ordenados),
-                "cantidad_facturas": sum(p["cantidad_facturas"] for p in proveedores_ordenados),
-                "cantidad_vencidas": sum(p["cantidad_vencidas"] for p in proveedores_ordenados)
-            }
-            
-            return {
-                "fuente": "+".join(fuentes_activas) if fuentes_activas else "NINGUNA",
-                "proveedores": proveedores_ordenados,
-                "total_facturas": totales["cantidad_facturas"],
-                "totales": totales
-            }
-    
-    # Fallback a MPRO solo (si no se ejecutó el bloque combinado)
-    mpro_repo = await get_mpro_repo()
-    
-    # Usar MPRO como fuente principal de CxP
-    if mpro_repo and not use_demo:
-        try:
-            cxp_sql = await mpro_repo.get_cuentas_por_pagar(
-                sucursal_id=sucursal_id,
-                proveedor_id=proveedor_id,
-                solo_vencidas=solo_vencidas,
-                fecha_corte=fecha_corte
-            )
-            
-            # Si hay datos reales, usarlos
-            if cxp_sql:
-                # Transformar a formato del frontend
-                facturas = []
-                for c in cxp_sql:
-                    saldo = float(c.get('Saldo', 0) or 0)
-                    if saldo <= 0:
-                        continue  # Solo pendientes
-                    
-                    dias_vencido = int(c.get('DiasVencido', 0) or 0)
-                    
-                    factura = {
-                        "factura_id": c.get('CuentaPorPagarID'),
-                        "documento_fiscal_id": c.get('DocumentoFiscalID'),
-                        "proveedor_id": c.get('ProveedorID'),
-                        "proveedor_nombre": c.get('ProveedorNombre') or c.get('ProveedorNombreComercial') or f"Proveedor {c.get('ProveedorID')}",
-                        "proveedor_rfc": c.get('ProveedorRFC'),
-                        "sucursal_id": c.get('SucursalID'),
-                        "sucursal_nombre": c.get('SucursalNombre', f"Sucursal {c.get('SucursalID')}"),
-                        "numero_documento": c.get('NumeroDocumento'),
-                        "folio_entrada": c.get('NumeroDocumento'),
-                        "folio_factura": c.get('NumeroDocumento'),
-                        "fecha_documento": str(c.get('FechaDocumento', ''))[:10],
-                        "fecha_entrada": str(c.get('FechaDocumento', ''))[:10],
-                        "fecha_vencimiento": str(c.get('FechaVencimiento', ''))[:10],
-                        "fecha_recepcion": str(c.get('FechaRecepcion', ''))[:10] if c.get('FechaRecepcion') else None,
-                        "dias_credito": c.get('DiasCredito', 0),
-                        "dias_vencida": max(0, dias_vencido),
-                        "importe_total": float(c.get('MontoOriginal', 0) or 0),
-                        "monto_pagado": float(c.get('MontoPagado', 0) or 0),
-                        "saldo": saldo,
-                        "estatus_pago_id": c.get('EstatusPagoID'),
-                        "estatus_nombre": c.get('EstatusNombre', 'Pendiente'),
-                        "moneda_id": c.get('MonedaID', 1),
-                        "tipo_cambio": float(c.get('TipoCambio', 1) or 1),
-                        "observaciones": c.get('Observaciones'),
-                        "decision_pago": False,  # Campo para UI
-                        "importe_a_pagar": 0,     # Campo para UI
-                        "ruta_pdf_factura": None,
-                        "ruta_xml": None,
-                        "ruta_pdf_entrada": None,
-                        "fuente": "SQL_SERVER_REAL"
-                    }
-                    facturas.append(factura)
-                
-                # Agrupar por proveedor
-                proveedores_dict = {}
-                for f in facturas:
-                    prov_id = f["proveedor_id"]
-                    if prov_id not in proveedores_dict:
-                        proveedores_dict[prov_id] = {
-                            "proveedor_id": prov_id,
-                            "proveedor_nombre": f["proveedor_nombre"],
-                            "proveedor_rfc": f["proveedor_rfc"],
-                            "facturas": [],
-                            "subtotal_importe": 0,
-                            "subtotal_saldo": 0,
-                            "subtotal_a_pagar": 0,
-                            "cantidad_facturas": 0,
-                            "cantidad_vencidas": 0
-                        }
-                    
-                    proveedores_dict[prov_id]["facturas"].append(f)
-                    proveedores_dict[prov_id]["subtotal_importe"] += f["importe_total"]
-                    proveedores_dict[prov_id]["subtotal_saldo"] += f["saldo"]
-                    proveedores_dict[prov_id]["cantidad_facturas"] += 1
-                    if f["dias_vencida"] > 0:
-                        proveedores_dict[prov_id]["cantidad_vencidas"] += 1
-                
-                # Ordenar proveedores por saldo descendente
-                proveedores_list = sorted(
-                    proveedores_dict.values(),
-                    key=lambda x: x["subtotal_saldo"],
-                    reverse=True
-                )
-                
-                # Totales generales
-                total_importe = sum(f["importe_total"] for f in facturas)
-                total_saldo = sum(f["saldo"] for f in facturas)
-                total_vencidas = sum(1 for f in facturas if f["dias_vencida"] > 0)
-                
-                return {
-                    "proveedores": proveedores_list,
-                    "total_facturas": len(facturas),
-                    "fuente": "SQL_SERVER_REAL",
-                    "totales": {
-                        "total_importe": round(total_importe, 2),
-                        "total_saldo": round(total_saldo, 2),
-                        "total_a_pagar": 0,
-                        "cantidad_proveedores": len(proveedores_list),
-                        "cantidad_facturas": len(facturas),
-                        "cantidad_vencidas": total_vencidas
-                    }
-                }
-            else:
-                # Sin datos en SQL - retornar vacío
-                return {
-                    "proveedores": [],
-                    "total_facturas": 0,
-                    "fuente": "SQL_SERVER_REAL",
-                    "mensaje": "No hay cuentas por pagar registradas. La tabla Finanzas_CuentasPorPagar está vacía.",
-                    "totales": {
-                        "total_importe": 0,
-                        "total_saldo": 0,
-                        "total_a_pagar": 0,
-                        "cantidad_proveedores": 0,
-                        "cantidad_facturas": 0,
-                        "cantidad_vencidas": 0
-                    }
-                }
-        except Exception as e:
-            logging.error(f"Error obteniendo CxP de SQL: {e}")
-            # Continuar con datos demo si hay error
-    
-    # MODO DEMO - usar datos generados
-    facturas = [f for f in _facturas_db if f["saldo"] > 0]  # Solo pendientes
-    
-    # Aplicar filtros
-    if sucursal_id:
-        facturas = [f for f in facturas if f["sucursal_id"] == sucursal_id]
-    
-    if proveedor_id:
-        facturas = [f for f in facturas if f["proveedor_id"] == proveedor_id]
-    
-    if fecha_corte:
-        facturas = [f for f in facturas if f["fecha_entrada"] <= fecha_corte]
-    
-    if solo_vencidas:
-        facturas = [f for f in facturas if f["dias_vencida"] > 0]
-    
-    if solo_decision_pago:
-        facturas = [f for f in facturas if f["decision_pago"]]
-    
-    # Marcar fuente
-    for f in facturas:
-        f["fuente"] = "DEMO"
-    
-    # Agrupar por proveedor
-    proveedores_dict = {}
-    for f in facturas:
-        prov_id = f["proveedor_id"]
-        if prov_id not in proveedores_dict:
-            proveedores_dict[prov_id] = {
-                "proveedor_id": prov_id,
-                "proveedor_nombre": f["proveedor_nombre"],
-                "proveedor_rfc": f["proveedor_rfc"],
-                "facturas": [],
-                "subtotal_importe": 0,
-                "subtotal_saldo": 0,
-                "subtotal_a_pagar": 0,
-                "cantidad_facturas": 0,
-                "cantidad_vencidas": 0
-            }
-        
-        proveedores_dict[prov_id]["facturas"].append(f)
-        proveedores_dict[prov_id]["subtotal_importe"] += f["importe_total"]
-        proveedores_dict[prov_id]["subtotal_saldo"] += f["saldo"]
-        proveedores_dict[prov_id]["subtotal_a_pagar"] += f["importe_a_pagar"] if f["decision_pago"] else 0
-        proveedores_dict[prov_id]["cantidad_facturas"] += 1
-        if f["dias_vencida"] > 0:
-            proveedores_dict[prov_id]["cantidad_vencidas"] += 1
-    
-    # Ordenar facturas dentro de cada proveedor por fecha de vencimiento
-    for prov in proveedores_dict.values():
-        prov["facturas"].sort(key=lambda x: x["fecha_vencimiento"])
-    
-    # Convertir a lista ordenada por nombre de proveedor
-    proveedores_list = sorted(proveedores_dict.values(), key=lambda x: x["proveedor_nombre"])
-    
-    # Calcular totales generales
-    total_importe = sum(p["subtotal_importe"] for p in proveedores_list)
-    total_saldo = sum(p["subtotal_saldo"] for p in proveedores_list)
-    total_a_pagar = sum(p["subtotal_a_pagar"] for p in proveedores_list)
-    total_facturas = sum(p["cantidad_facturas"] for p in proveedores_list)
-    total_vencidas = sum(p["cantidad_vencidas"] for p in proveedores_list)
-    
-    return {
-        "proveedores": proveedores_list,
-        "total_facturas": total_facturas,
-        "fuente": "DEMO",
-        "mensaje": "Datos de demostración. Para usar datos reales, asegúrese de tener registros en Finanzas_CuentasPorPagar.",
-        "totales": {
-            "total_importe": round(total_importe, 2),
-            "total_saldo": round(total_saldo, 2),
-            "total_a_pagar": round(total_a_pagar, 2),
-            "cantidad_facturas": total_facturas,
-            "cantidad_vencidas": total_vencidas,
-            "cantidad_proveedores": len(proveedores_list)
-        },
-        "filtros_aplicados": {
-            "sucursal_id": sucursal_id,
-            "proveedor_id": proveedor_id,
-            "fecha_corte": fecha_corte,
-            "solo_vencidas": solo_vencidas,
-            "solo_decision_pago": solo_decision_pago
-        }
-    }
-
-
-def _calcular_antiguedad_en_memoria(cxp_data: List[Dict]) -> Dict[str, Any]:
-    """
-    Calcula la antigüedad de facturas EN MEMORIA a partir de una lista de CxP.
-    Evita queries adicionales a la base de datos.
-    
-    FASE 4A: Función implementada para corregir variable indefinida.
-    """
-    hoy = datetime.now().date()
-    
-    corriente = []
-    vencidas_1_30 = []
-    vencidas_31_60 = []
-    vencidas_61_90 = []
-    vencidas_90_plus = []
-    
-    for factura in cxp_data:
-        # Calcular días vencido
-        fecha_venc = factura.get('FechaVencimiento') or factura.get('fecha_vencimiento')
-        saldo = float(factura.get('Saldo', 0) or factura.get('saldo', 0) or 0)
-        
-        if saldo <= 0:
-            continue  # Solo facturas con saldo pendiente
-            
-        dias_vencido = 0
-        if fecha_venc:
-            if isinstance(fecha_venc, str):
-                try:
-                    fecha_venc = datetime.strptime(fecha_venc[:10], '%Y-%m-%d').date()
-                except (ValueError, TypeError):
-                    fecha_venc = hoy
-            elif hasattr(fecha_venc, 'date'):
-                fecha_venc = fecha_venc.date()
-            dias_vencido = max(0, (hoy - fecha_venc).days)
-        
-        item = {'saldo': saldo, 'dias_vencido': dias_vencido}
-        
-        if dias_vencido == 0:
-            corriente.append(item)
-        elif dias_vencido <= 30:
-            vencidas_1_30.append(item)
-        elif dias_vencido <= 60:
-            vencidas_31_60.append(item)
-        elif dias_vencido <= 90:
-            vencidas_61_90.append(item)
-        else:
-            vencidas_90_plus.append(item)
-    
-    total_facturas = len(corriente) + len(vencidas_1_30) + len(vencidas_31_60) + len(vencidas_61_90) + len(vencidas_90_plus)
-    total_saldo = sum(f['saldo'] for f in corriente + vencidas_1_30 + vencidas_31_60 + vencidas_61_90 + vencidas_90_plus)
-    
-    return {
-        "total_facturas": total_facturas,
-        "total_saldo": round(total_saldo, 2),
-        "corriente": {
-            "cantidad": len(corriente),
-            "monto": round(sum(f['saldo'] for f in corriente), 2)
-        },
-        "vencidas_1_30": {
-            "cantidad": len(vencidas_1_30),
-            "monto": round(sum(f['saldo'] for f in vencidas_1_30), 2)
-        },
-        "vencidas_31_60": {
-            "cantidad": len(vencidas_31_60),
-            "monto": round(sum(f['saldo'] for f in vencidas_31_60), 2)
-        },
-        "vencidas_61_90": {
-            "cantidad": len(vencidas_61_90),
-            "monto": round(sum(f['saldo'] for f in vencidas_61_90), 2)
-        },
-        "vencidas_90_plus": {
-            "cantidad": len(vencidas_90_plus),
-            "monto": round(sum(f['saldo'] for f in vencidas_90_plus), 2)
-        }
-    }
-
-
-def _calcular_por_tipo_en_memoria(cxp_data: List[Dict]) -> Dict[str, Any]:
-    """
-    Calcula distribución por tipo de documento EN MEMORIA.
-    Evita queries adicionales a la base de datos.
-    
-    FASE 4A: Función implementada para corregir variable indefinida.
-    """
-    por_tipo = {}
-    
-    for factura in cxp_data:
-        tipo = factura.get('TipoDocumento') or factura.get('tipo_documento') or 'FACTURA'
-        saldo = float(factura.get('Saldo', 0) or factura.get('saldo', 0) or 0)
-        
-        if saldo <= 0:
-            continue
-            
-        if tipo not in por_tipo:
-            por_tipo[tipo] = {'cantidad': 0, 'monto': 0.0}
-        
-        por_tipo[tipo]['cantidad'] += 1
-        por_tipo[tipo]['monto'] += saldo
-    
-    # Redondear montos
-    for tipo in por_tipo:
-        por_tipo[tipo]['monto'] = round(por_tipo[tipo]['monto'], 2)
-    
-    return por_tipo
-
 
 @router.get("/resumen")
 async def get_resumen_cuentas_por_pagar(
     sucursal_id: Optional[str] = None,
     unidad_negocio_pk: Optional[str] = None,
-    use_demo: bool = Query(False, description="Usar datos demo en lugar de SQL real"),
     current_user: Dict = Depends(get_current_user)
 ):
     """
     Resumen ejecutivo de cuentas por pagar.
     
-    FINANZAS-CXP-MPRO-COMBINE-01 (Dic 2025):
-    COMBINA SoftRestaurant + ManagementPro (no usa fallback).
-    
-    Fuentes:
-    - SoftRestaurant: CIENFUEGOS, LA ESTELAR, 130° MERIDA
-    - ManagementPro: ORIGEN (0023), 130° QRO (0021)
-    
-    Si una fuente falla, reporta resultado parcial con la otra.
+    Lee exclusivamente dbo.Finanzas_CxP_Sync y aplica RBAC por unidad_negocio_pk.
     """
     # === NO-LIVE: lee EXCLUSIVAMENTE de la tabla canónica Finanzas_CxP_Sync ===
     unidad_pk, unidades_permitidas = resolve_finanzas_unit_filter(
@@ -1039,175 +868,11 @@ async def get_resumen_cuentas_por_pagar(
         unidad_pk,
         unidades_permitidas,
     )
-    if use_demo:
-        # Ir directo a modo demo (código existente abajo)
-        pass
-    else:
-        # COMBINAR SR + MPRO (no fallback)
-        softrest_repo = await get_softrest_repo()
-        mpro_repo = await get_mpro_repo()
-        
-        fuentes_activas = []
-        fuentes_fallidas = []
-        all_cxp_data = []
-        
-        # Detectar si filtro es específico de una fuente
-        softrest_sucursales = [UnidadesService.resolver_codigo('CIENFUEGOS') or 'CIENFUEGOS', UnidadesService.resolver_codigo('ESTELAR') or 'ESTELAR', UnidadesService.resolver_codigo('130MID') or '130MID', 'CF', 'EST', '130M', 
-                               'LA ESTELAR', '130 MERIDA', '130° MERIDA', 'CIEN FUEGOS']
-        mpro_sucursales = [UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN', UnidadesService.resolver_codigo('130QRO') or '130QRO', '130 QRO', '130° QRO', '130° QUERETARO', 
-                          '0021', '0023']
-        
-        es_filtro_sr = sucursal_id and any(
-            alias.upper() in sucursal_id.upper() or sucursal_id.upper() in alias.upper()
-            for alias in softrest_sucursales
-        )
-        es_filtro_mpro = sucursal_id and any(
-            alias.upper() in sucursal_id.upper() or sucursal_id.upper() in alias.upper()
-            for alias in mpro_sucursales
-        )
-        
-        # 1. Consultar SoftRestaurant (si no es filtro exclusivo MPRO)
-        if softrest_repo and not es_filtro_mpro:
-            try:
-                cxp_sr = await softrest_repo.get_cuentas_por_pagar(
-                    sucursal_id=sucursal_id if es_filtro_sr else None, 
-                    limit=5000
-                )
-                if cxp_sr:
-                    for c in cxp_sr:
-                        c['_fuente'] = 'SOFTRESTAURANT'
-                    all_cxp_data.extend(cxp_sr)
-                    fuentes_activas.append("SOFTRESTAURANT")
-                    logging.info(f"[CxP Resumen] SoftRestaurant: {len(cxp_sr)} registros")
-            except Exception as e:
-                logging.error(f"[CxP Resumen] Error SoftRestaurant: {e}")
-                fuentes_fallidas.append(f"SOFTRESTAURANT: {str(e)[:50]}")
-        
-        # 2. Consultar MPRO (si no es filtro exclusivo SoftRestaurant)
-        if mpro_repo and not es_filtro_sr:
-            try:
-                # Mapear código de sucursal MPRO si aplica
-                mpro_suc = None
-                if es_filtro_mpro:
-                    if sucursal_id and (UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN' in sucursal_id.upper() or sucursal_id == '0023'):
-                        mpro_suc = '0023'
-                    elif sucursal_id and ('QRO' in sucursal_id.upper() or sucursal_id == '0021'):
-                        mpro_suc = '0021'
-                    else:
-                        mpro_suc = sucursal_id
-                
-                cxp_mpro = await mpro_repo.get_cuentas_por_pagar(sucursal_id=mpro_suc)
-                if cxp_mpro:
-                    for c in cxp_mpro:
-                        c['_fuente'] = 'MANAGEMENTPRO'
-                    all_cxp_data.extend(cxp_mpro)
-                    fuentes_activas.append("MANAGEMENTPRO")
-                    logging.info(f"[CxP Resumen] MPRO: {len(cxp_mpro)} registros")
-            except Exception as e:
-                logging.error(f"[CxP Resumen] Error MPRO: {e}")
-                fuentes_fallidas.append(f"MANAGEMENTPRO: {str(e)[:50]}")
-        
-        # 3. Si hay datos de cualquier fuente, calcular resumen combinado
-        if all_cxp_data:
-            antiguedad = _calcular_antiguedad_en_memoria(all_cxp_data)
-            por_tipo = _calcular_por_tipo_en_memoria(all_cxp_data)
-            
-            # Calcular resumen por fuente
-            por_fuente = {}
-            for c in all_cxp_data:
-                fuente = c.get('_fuente', 'UNKNOWN')
-                saldo = float(c.get('Saldo', 0) or 0)
-                if fuente not in por_fuente:
-                    por_fuente[fuente] = {'facturas': 0, 'saldo': 0}
-                por_fuente[fuente]['facturas'] += 1
-                por_fuente[fuente]['saldo'] += saldo
-            
-            return {
-                "fuente": "+".join(fuentes_activas) if fuentes_activas else "NINGUNA",
-                "fuentes_detalle": por_fuente,
-                "fuentes_fallidas": fuentes_fallidas if fuentes_fallidas else None,
-                "resumen": {
-                    "total_facturas": antiguedad['total_facturas'],
-                    "total_saldo": round(antiguedad['total_saldo'], 2),
-                    "total_decision_pago": 0,
-                    "facturas_con_decision": 0
-                },
-                "antiguedad": antiguedad,
-                "por_tipo": por_tipo
-            }
-        
-        # Si ambas fuentes fallaron, reportar error parcial (no $0 falso)
-        if fuentes_fallidas and not all_cxp_data:
-            return {
-                "fuente": "ERROR_PARCIAL",
-                "fuentes_fallidas": fuentes_fallidas,
-                "resumen": {
-                    "total_facturas": -1,  # Indicador de error, no $0 falso
-                    "total_saldo": -1,
-                    "total_decision_pago": 0,
-                    "facturas_con_decision": 0,
-                    "error": "No se pudieron obtener datos de ninguna fuente"
-                },
-                "antiguedad": None,
-                "por_tipo": None
-            }
-    
-    # MODO DEMO - usar datos generados
-    facturas = [f for f in _facturas_db if f["saldo"] > 0]
-    
-    if sucursal_id:
-        # Convertir a int si viene como string para demo
-        try:
-            suc_id = int(sucursal_id) if sucursal_id else None
-            facturas = [f for f in facturas if f["sucursal_id"] == suc_id]
-        except ValueError:
-            pass  # Si no es int, ignorar filtro
-    
-    # Clasificar por antigüedad
-    corriente = [f for f in facturas if f["dias_vencida"] == 0]
-    vencidas_1_30 = [f for f in facturas if 1 <= f["dias_vencida"] <= 30]
-    vencidas_31_60 = [f for f in facturas if 31 <= f["dias_vencida"] <= 60]
-    vencidas_61_90 = [f for f in facturas if 61 <= f["dias_vencida"] <= 90]
-    vencidas_90_plus = [f for f in facturas if f["dias_vencida"] > 90]
-    
-    return {
-        "fuente": "DEMO",
-        "resumen": {
-            "total_facturas": len(facturas),
-            "total_saldo": round(sum(f["saldo"] for f in facturas), 2),
-            "total_decision_pago": round(sum(f["importe_a_pagar"] for f in facturas if f["decision_pago"]), 2),
-            "facturas_con_decision": len([f for f in facturas if f["decision_pago"]])
-        },
-        "antiguedad": {
-            "corriente": {
-                "cantidad": len(corriente),
-                "monto": round(sum(f["saldo"] for f in corriente), 2)
-            },
-            "vencidas_1_30": {
-                "cantidad": len(vencidas_1_30),
-                "monto": round(sum(f["saldo"] for f in vencidas_1_30), 2)
-            },
-            "vencidas_31_60": {
-                "cantidad": len(vencidas_31_60),
-                "monto": round(sum(f["saldo"] for f in vencidas_31_60), 2)
-            },
-            "vencidas_61_90": {
-                "cantidad": len(vencidas_61_90),
-                "monto": round(sum(f["saldo"] for f in vencidas_61_90), 2)
-            },
-            "vencidas_90_plus": {
-                "cantidad": len(vencidas_90_plus),
-                "monto": round(sum(f["saldo"] for f in vencidas_90_plus), 2)
-            }
-        }
-    }
-
 
 @router.get("/proveedores")
 async def listar_proveedores_con_saldo(
     sucursal_id: Optional[str] = None,
     unidad_negocio_pk: Optional[str] = None,
-    use_demo: bool = Query(False, description="Usar datos demo en lugar de SQL real"),
     current_user: Dict = Depends(get_current_user)
 ):
     """Lista proveedores que tienen facturas pendientes - NO-LIVE (canónico)"""
@@ -1219,59 +884,6 @@ async def listar_proveedores_con_saldo(
         unidad_pk,
         unidades_permitidas,
     )
-    mpro_repo = await get_mpro_repo()
-    
-    # Usar MPRO como fuente principal
-    if mpro_repo and not use_demo:
-        try:
-            proveedores = await mpro_repo.get_resumen_por_proveedor(sucursal_id=sucursal_id)
-            
-            if proveedores:
-                return {
-                    "fuente": "MPRO_REAL",
-                    "proveedores": [
-                        {
-                            "proveedor_id": p.get('ProveedorID'),
-                            "proveedor_nombre": p.get('ProveedorNombre') or f"Proveedor {p.get('ProveedorID')}",
-                            "proveedor_rfc": p.get('ProveedorRFC'),
-                            "total_saldo": float(p.get('SaldoTotal', 0) or 0),
-                            "cantidad_facturas": int(p.get('CantidadFacturas', 0) or 0)
-                        }
-                        for p in proveedores
-                    ]
-                }
-        except Exception as e:
-            logging.error(f"Error obteniendo proveedores CxP de MPRO: {e}")
-    
-    # MODO DEMO
-    facturas = [f for f in _facturas_db if f["saldo"] > 0]
-    
-    if sucursal_id:
-        try:
-            suc_id = int(sucursal_id) if sucursal_id else None
-            facturas = [f for f in facturas if f["sucursal_id"] == suc_id]
-        except ValueError:
-            pass
-    
-    proveedores = {}
-    for f in facturas:
-        prov_id = f["proveedor_id"]
-        if prov_id not in proveedores:
-            proveedores[prov_id] = {
-                "proveedor_id": prov_id,
-                "proveedor_nombre": f["proveedor_nombre"],
-                "proveedor_rfc": f["proveedor_rfc"],
-                "total_saldo": 0,
-                "cantidad_facturas": 0
-            }
-        proveedores[prov_id]["total_saldo"] += f["saldo"]
-        proveedores[prov_id]["cantidad_facturas"] += 1
-    
-    return {
-        "fuente": "DEMO",
-        "proveedores": sorted(proveedores.values(), key=lambda x: x["proveedor_nombre"])
-    }
-
 
 @router.get("/sucursales")
 async def listar_sucursales_cxp(
@@ -1281,221 +893,123 @@ async def listar_sucursales_cxp(
     """
     Lista sucursales con datos de CxP.
     
-    FINANZAS-CXP-MPRO-COMBINE-01 (Dic 2025):
-    COMBINA SoftRestaurant + ManagementPro (no usa fallback).
-    
-    Fuentes:
-    - SoftRestaurant: CIENFUEGOS, LA ESTELAR, 130° MERIDA
-    - ManagementPro: ORIGEN (0023), 130° QRO (0021)
+    Lee exclusivamente dbo.Finanzas_CxP_Sync y aplica RBAC por unidad_negocio_pk.
     """
     # === NO-LIVE: lee EXCLUSIVAMENTE de la tabla canónica Finanzas_CxP_Sync ===
     _, unidades_permitidas = resolve_finanzas_unit_filter(current_user)
     return _cxp_sucursales_canonico(unidades_permitidas)
-    softrest_repo = await get_softrest_repo()
-    mpro_repo = await get_mpro_repo()
-    
-    all_sucursales = []
-    fuentes_activas = []
-    fuentes_fallidas = []
-    
-    # 1. Obtener sucursales de SoftRestaurant
-    if softrest_repo:
-        try:
-            resumen_sr = await softrest_repo.get_resumen_por_sucursal()
-            if resumen_sr:
-                for s in resumen_sr:
-                    all_sucursales.append({
-                        "SucursalID": s.get('SucursalID'),
-                        "Nombre_Sucursal": s.get('SucursalNombre') or f"Sucursal {s.get('SucursalID')}",
-                        "CantidadFacturas": int(s.get('CantidadFacturas', 0) or 0),
-                        "SaldoTotal": float(s.get('SaldoTotal', 0) or 0),
-                        "Sistema": "SOFTRESTAURANT"
-                    })
-                fuentes_activas.append("SOFTRESTAURANT")
-                logging.info(f"[CxP Sucursales] SoftRestaurant: {len(resumen_sr)} sucursales")
-        except Exception as e:
-            logging.error(f"[CxP Sucursales] Error SoftRestaurant: {e}")
-            fuentes_fallidas.append(f"SOFTRESTAURANT: {str(e)[:50]}")
-    
-    # 2. Obtener sucursales de MPRO
-    if mpro_repo:
-        try:
-            resumen_mpro = await mpro_repo.get_resumen_por_sucursal()
-            if resumen_mpro:
-                # Mapeo de códigos MPRO a nombres legibles
-                mpro_nombres = {
-                    '0023': UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN',
-                    '0021': '130° QRO',
-                    '0012': '130° TULUM',
-                    '0026': 'MECA',
-                    '0027': 'CIEN FUEGOS MPRO'
-                }
-                
-                for s in resumen_mpro:
-                    suc_id = s.get('SucursalID')
-                    nombre = mpro_nombres.get(str(suc_id), s.get('SucursalNombre') or f"MPRO {suc_id}")
-                    
-                    all_sucursales.append({
-                        "SucursalID": suc_id,
-                        "Nombre_Sucursal": nombre,
-                        "CantidadFacturas": int(s.get('CantidadFacturas', 0) or 0),
-                        "SaldoTotal": float(s.get('SaldoTotal', 0) or 0),
-                        "Sistema": "MANAGEMENTPRO"
-                    })
-                fuentes_activas.append("MANAGEMENTPRO")
-                logging.info(f"[CxP Sucursales] MPRO: {len(resumen_mpro)} sucursales")
-        except Exception as e:
-            logging.error(f"[CxP Sucursales] Error MPRO: {e}")
-            fuentes_fallidas.append(f"MANAGEMENTPRO: {str(e)[:50]}")
-    
-    # 3. Aplicar filtro de visibilidad si corresponde
-    if not include_hidden and all_sucursales:
-        try:
-            from modules.finanzas.repository_mpro import MPRO_SERVER_ID
-            config = await get_sucursales_visibles_config(MPRO_SERVER_ID)
-            if config:
-                sucursales_antes = len(all_sucursales)
-                all_sucursales = [s for s in all_sucursales if config.get(s['Nombre_Sucursal'], True)]
-                logging.info(f"[CxP Sucursales] Filtradas {len(all_sucursales)} de {sucursales_antes} por visibilidad")
-        except Exception as e:
-            logging.warning(f"[CxP Sucursales] Error aplicando filtro visibilidad: {e}")
-    
-    # 4. Retornar resultado combinado
-    if all_sucursales:
-        return {
-            "fuente": "+".join(fuentes_activas) if fuentes_activas else "NINGUNA",
-            "fuentes_fallidas": fuentes_fallidas if fuentes_fallidas else None,
-            "sucursales": all_sucursales
-        }
-    
-    # Si no hay datos, retornar demo o error
-    if fuentes_fallidas:
-        return {
-            "fuente": "ERROR_PARCIAL",
-            "fuentes_fallidas": fuentes_fallidas,
-            "sucursales": []
-        }
-    
-    return {
-        "fuente": "DEMO",
-        "sucursales": [
-            {"SucursalID": 1, "Nombre_Sucursal": "DEMO 1", "Sistema": "DEMO"},
-            {"SucursalID": 2, "Nombre_Sucursal": "DEMO 2", "Sistema": "DEMO"}
-        ]
-    }
-
 
 @router.put("/{factura_id}/decision-pago")
 async def actualizar_decision_pago(
-    factura_id: str,  # Cambiado a str para soportar IDs compuestos (ej: "MPRO_12345", "CIENFUEGOS_xxx")
+    factura_id: str,
     data: ActualizarDecisionPago,
     current_user: Dict = Depends(get_current_user)
 ):
-    """
-    Actualizar la decisión de pago de una factura.
-
-    Bloqueado hasta que exista una tabla canónica de decisiones de pago CxP.
-    No se permite persistencia local, demo ni parcial sobre fuentes operativas.
-    """
-    resolve_finanzas_unit_filter(current_user)
-    raise HTTPException(
-        status_code=409,
-        detail=(
-            "No existe flujo canonico de decisiones de pago CxP. "
-            "No se aplico ningun cambio local ni demo."
-        ),
+    """Actualizar decision de pago sobre la fuente canonica CxP."""
+    permission = require_any_finanzas_permission(
+        current_user,
+        (FINANZAS_EDITAR, FINANZAS_ADMINISTRAR),
     )
+    _cxp_require_decisiones_schema()
+    _, unidades_permitidas = resolve_finanzas_unit_filter(
+        current_user,
+        permission_code=permission["permission_code"],
+    )
+    row, factura_id_decoded = _cxp_row_for_ref(factura_id, unidades_permitidas)
+    importe = _cxp_upsert_decision(row, data, current_user)
 
-    from urllib.parse import unquote
-    
-    # Decodificar URL encoding si existe
-    factura_id_decoded = unquote(factura_id)
-    logging.info(f"[CxP] Decision-pago recibido: {factura_id_decoded} (original: {factura_id})")
-    
-    # Importar helper de auditoría
     from core.auditoria_helpers import registrar_auditoria_cxp
-    
-    # Detectar tipo de ID y procesar
-    if factura_id_decoded.startswith("MPRO_"):
-        # ID compuesto de MPRO
-        logging.info(f"[CxP] Factura MPRO {factura_id_decoded} - Decisión: {data.decision_pago}")
-        
-        # Registrar auditoría
-        await registrar_auditoria_cxp(
-            current_user=current_user,
-            accion='EDIT',
-            factura_id=factura_id_decoded,
-            valor_anterior={'decision_pago': not data.decision_pago},
-            valor_nuevo={'decision_pago': data.decision_pago, 'importe_a_pagar': data.importe_a_pagar},
-            motivo='Marcar/desmarcar factura para pago'
-        )
-        
-        return {
-            "success": True,
-            "factura_id": factura_id_decoded,
-            "decision_pago": data.decision_pago,
-            "fuente": "MPRO",
-            "mensaje": "Decisión registrada (persistencia MPRO pendiente)"
-        }
-    
-    # ID compuesto de SoftRestaurant (CIENFUEGOS_xxx, ESTELAR_xxx, 130MID_xxx)
-    softrest_prefixes = ['CIENFUEGOS_', 'ESTELAR_', '130MID_']
-    is_softrest = any(factura_id_decoded.startswith(p) for p in softrest_prefixes)
-    
-    if is_softrest:
-        logging.info(f"[CxP] Factura SoftRestaurant {factura_id_decoded} - Decisión: {data.decision_pago}")
-        
-        # Registrar auditoría
-        await registrar_auditoria_cxp(
-            current_user=current_user,
-            accion='EDIT',
-            factura_id=factura_id_decoded,
-            valor_anterior={'decision_pago': not data.decision_pago},
-            valor_nuevo={'decision_pago': data.decision_pago, 'importe_a_pagar': data.importe_a_pagar},
-            motivo='Marcar/desmarcar factura SoftRestaurant para pago'
-        )
-        
-        return {
-            "success": True,
-            "factura_id": factura_id_decoded,
-            "decision_pago": data.decision_pago,
-            "fuente": "SOFTRESTAURANT",
-            "mensaje": "Decisión registrada (persistencia SoftRestaurant pendiente)"
-        }
-    
-    # ID numérico - buscar en datos demo/cache
-    try:
-        numeric_id = int(factura_id_decoded)
-    except ValueError:
-        logging.warning(f"[CxP] ID de factura no reconocido: {factura_id_decoded}")
-        raise HTTPException(status_code=400, detail=f"ID de factura inválido: {factura_id_decoded}")
-    
-    factura = next((f for f in _facturas_db if f["factura_id"] == numeric_id), None)
-    if not factura:
-        raise HTTPException(status_code=404, detail="Factura no encontrada")
-    
-    factura["decision_pago"] = data.decision_pago
-    if data.importe_a_pagar is not None:
-        factura["importe_a_pagar"] = min(data.importe_a_pagar, factura["saldo"])
-    elif data.decision_pago:
-        factura["importe_a_pagar"] = factura["saldo"]
-    else:
-        factura["importe_a_pagar"] = 0
-    
-    logging.info(f"[CxP] Factura {factura_id_decoded} - Decisión: {data.decision_pago}, Importe: {factura['importe_a_pagar']}")
-    
-    # Registrar auditoría
+
     await registrar_auditoria_cxp(
         current_user=current_user,
         accion='EDIT',
         factura_id=factura_id_decoded,
-        valor_nuevo={'decision_pago': data.decision_pago, 'importe_a_pagar': factura['importe_a_pagar']},
-        motivo='Marcar/desmarcar factura para pago'
+        factura_folio=row.get('FolioFactura') or row.get('FolioEntrada'),
+        sucursal_id=row.get('UnidadNegocioCodigoCanonico'),
+        valor_anterior={
+            'decision_pago': bool(row.get('DecisionPagoCanonica')),
+            'importe_a_pagar': float(row.get('ImporteAPagarCanonico') or 0),
+        },
+        valor_nuevo={
+            'decision_pago': data.decision_pago,
+            'importe_a_pagar': float(importe),
+            'unidad_negocio_pk': row.get('UnidadNegocioIDCanonica'),
+            'estado_autorizacion_pago': 'PENDIENTE_AUTORIZACION' if data.decision_pago else 'CANCELADO',
+        },
+        motivo='Decision canonica de pago CxP',
     )
-    
+
+    refreshed, _ = _cxp_row_for_ref(factura_id, unidades_permitidas)
     return {
         "success": True,
-        "factura": factura
+        "fuente": "CANONICO_EDARSAHUB",
+        "factura_id": _cxp_factura_dict(refreshed)["factura_id"],
+        "factura_sync_id": refreshed.get("CxpSyncID"),
+        "decision_pago": data.decision_pago,
+        "importe_a_pagar": float(importe),
+        "factura": _cxp_factura_dict(refreshed),
+    }
+
+
+@router.post("/{factura_id}/decision-pago/autorizacion")
+async def autorizar_decision_pago(
+    factura_id: str,
+    data: AutorizarDecisionPago,
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Autorizar o rechazar una decision canonica de pago.
+
+    Si se autoriza, solo se programa una cola canonica para carga a origen;
+    el tablero no abre conexiones live ni escribe directamente al sistema origen.
+    """
+    permission = require_any_finanzas_permission(
+        current_user,
+        (FINANZAS_ADMINISTRAR,),
+    )
+    _cxp_require_decisiones_schema()
+    if data.autorizar and data.programar_envio_origen:
+        _cxp_require_queue_schema()
+
+    _, unidades_permitidas = resolve_finanzas_unit_filter(
+        current_user,
+        permission_code=permission["permission_code"],
+    )
+    row, factura_id_decoded = _cxp_row_for_ref(factura_id, unidades_permitidas)
+    hash_origen = str(row.get("HashOrigen") or "").strip().lower()
+    decision = _cxp_decision_row_for_hash(hash_origen)
+
+    _cxp_update_autorizacion(decision, data.autorizar, data.comentario, current_user)
+    if data.autorizar and data.programar_envio_origen:
+        _cxp_enqueue_pago_origen(decision, current_user)
+
+    from core.auditoria_helpers import registrar_auditoria_cxp
+
+    await registrar_auditoria_cxp(
+        current_user=current_user,
+        accion='EDIT',
+        factura_id=factura_id_decoded,
+        factura_folio=row.get('FolioFactura') or row.get('FolioEntrada'),
+        sucursal_id=row.get('UnidadNegocioCodigoCanonico'),
+        valor_anterior={
+            'estado_autorizacion_pago': decision.get('EstadoAutorizacion'),
+        },
+        valor_nuevo={
+            'estado_autorizacion_pago': 'AUTORIZADO' if data.autorizar else 'RECHAZADO',
+            'programar_envio_origen': bool(data.autorizar and data.programar_envio_origen),
+            'unidad_negocio_pk': row.get('UnidadNegocioIDCanonica'),
+        },
+        motivo='Autorizacion canonica de pago CxP',
+    )
+
+    refreshed, _ = _cxp_row_for_ref(factura_id, unidades_permitidas)
+    return {
+        "success": True,
+        "fuente": "CANONICO_EDARSAHUB",
+        "factura_id": _cxp_factura_dict(refreshed)["factura_id"],
+        "estado_autorizacion_pago": 'AUTORIZADO' if data.autorizar else 'RECHAZADO',
+        "programar_envio_origen": bool(data.autorizar and data.programar_envio_origen),
+        "factura": _cxp_factura_dict(refreshed),
     }
 
 
@@ -1504,60 +1018,64 @@ async def actualizar_decision_pago_masivo(
     data: ActualizarDecisionPagoMasivo,
     current_user: Dict = Depends(get_current_user)
 ):
-    """
-    Actualizar decisión de pago de múltiples facturas.
-    """
-    resolve_finanzas_unit_filter(current_user)
-    raise HTTPException(
-        status_code=409,
-        detail=(
-            "No existe flujo canonico de decisiones de pago CxP. "
-            "Operacion masiva bloqueada preventivamente."
-        ),
+    """Actualizar decision de pago de multiples facturas canonicas CxP."""
+    if not data.facturas_ids:
+        raise HTTPException(status_code=400, detail="Debe seleccionar al menos una factura CxP.")
+
+    permission = require_any_finanzas_permission(
+        current_user,
+        (FINANZAS_EDITAR, FINANZAS_ADMINISTRAR),
     )
+    _cxp_require_decisiones_schema()
+    _, unidades_permitidas = resolve_finanzas_unit_filter(
+        current_user,
+        permission_code=permission["permission_code"],
+    )
+    rows = _cxp_rows_for_refs(data.facturas_ids, unidades_permitidas)
+
+    actualizadas = 0
+    monto_total = Decimal("0.00")
+    for row in rows:
+        importe = _cxp_upsert_decision(
+            row,
+            ActualizarDecisionPago(decision_pago=data.decision_pago),
+            current_user,
+        )
+        actualizadas += 1
+        monto_total += importe
 
     from core.auditoria_helpers import registrar_auditoria_cxp
-    
-    actualizadas = 0
-    monto_total = 0.0
-    
-    for factura_id in data.facturas_ids:
-        # Comparar como string para soportar IDs compuestos de SoftRestaurant
-        factura = next((f for f in _facturas_db if str(f.get("factura_id", "")) == str(factura_id)), None)
-        if factura:
-            factura["decision_pago"] = data.decision_pago
-            factura["importe_a_pagar"] = factura["saldo"] if data.decision_pago else 0
-            monto_total += factura["importe_a_pagar"]
-            actualizadas += 1
-    
-    # Registrar auditoría para pago masivo (ALTO riesgo)
+
     await registrar_auditoria_cxp(
         current_user=current_user,
         accion='EDIT',
         factura_id=f'MASIVO_{len(data.facturas_ids)}',
         valor_nuevo={
-            'decision_pago': data.decision_pago, 
+            'decision_pago': data.decision_pago,
             'cantidad_facturas': actualizadas,
-            'monto_total': round(monto_total, 2)
+            'monto_total': float(monto_total),
         },
-        motivo=f'Pago masivo: {actualizadas} facturas'
+        motivo='Decision masiva canonica de pago CxP',
     )
-    
+
     return {
         "success": True,
+        "fuente": "CANONICO_EDARSAHUB",
         "actualizadas": actualizadas,
-        "total_solicitadas": len(data.facturas_ids)
+        "total_solicitadas": len(data.facturas_ids),
+        "monto_total": float(monto_total),
     }
 
 
 @router.get("/{factura_id}")
 async def get_factura_detalle(
-    factura_id: int,
+    factura_id: str,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Obtener detalle de una factura"""
-    factura = next((f for f in _facturas_db if f["factura_id"] == factura_id), None)
-    if not factura:
-        raise HTTPException(status_code=404, detail="Factura no encontrada")
-    
-    return {"factura": factura}
+    """Obtener detalle de una factura desde la fuente canonica CxP."""
+    _, unidades_permitidas = resolve_finanzas_unit_filter(
+        current_user,
+        permission_code=FINANZAS_VER,
+    )
+    row, _ = _cxp_row_for_ref(factura_id, unidades_permitidas)
+    return {"fuente": "CANONICO_EDARSAHUB", "factura": _cxp_factura_dict(row)}

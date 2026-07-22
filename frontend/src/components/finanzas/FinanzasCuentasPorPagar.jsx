@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -53,6 +53,8 @@ import {
  * @param {Function} props.onToggleCategoria - Callback toggle categoría
  * @param {Function} props.onToggleProveedor - Callback toggle proveedor
  * @param {Function} props.onDecisionPago - Callback decisión de pago
+ * @param {Function} props.onAutorizarDecisionPago - Callback autorización de pago
+ * @param {boolean} props.canAutorizarPagos - Permiso para autorizar pago CxP
  * @param {Function} props.formatCurrency - Función para formatear moneda
  * @param {Function} props.reagruparCxPPorProveedores - Función para reagrupar datos
  */
@@ -94,7 +96,9 @@ export default function FinanzasCuentasPorPagar({
   onToggleCategoria,
   onToggleProveedor,
   onDecisionPago,
+  onAutorizarDecisionPago,
   onTogglePagoProveedor,
+  canAutorizarPagos = false,
   formatCurrency,
   reagruparCxPPorProveedores,
   // FASE 1 CxP: Prop para ocultar filtro Sucursal visualmente
@@ -217,6 +221,97 @@ export default function FinanzasCuentasPorPagar({
   
   const antiguedad = cxpResumen?.antiguedad || {};
 
+  const [pagoParcialOpen, setPagoParcialOpen] = useState({});
+  const [pagoParcialDrafts, setPagoParcialDrafts] = useState({});
+  const [pagoParcialErrores, setPagoParcialErrores] = useState({});
+
+  const getFacturaId = (factura) => (
+    factura.factura_id || factura.factura_sync_id || factura.folio_factura || factura.folio_entrada
+  );
+
+  const getFacturaSaldo = (factura) => parseFloat(factura?.saldo) || 0;
+
+  const getFacturaImporteAPagar = (factura) => {
+    const importe = parseFloat(factura?.importe_a_pagar);
+    return importe > 0 ? importe : getFacturaSaldo(factura);
+  };
+
+  const formatEstadoAutorizacion = (estado) => {
+    const labels = {
+      PENDIENTE_AUTORIZACION: 'Pendiente autorización',
+      AUTORIZADO: 'Autorizado',
+      RECHAZADO: 'Rechazado',
+      CANCELADO: 'Cancelado',
+      SIN_DECISION: ''
+    };
+    return labels[estado] ?? estado;
+  };
+
+  const getEstadoPagoClass = (estado) => {
+    if (estado === 'AUTORIZADO') return 'bg-green-50 text-green-700 border-green-200';
+    if (estado === 'RECHAZADO') return 'bg-red-50 text-red-700 border-red-200';
+    if (estado === 'CANCELADO') return 'bg-zinc-50 text-zinc-500 border-zinc-200';
+    return 'bg-amber-50 text-amber-700 border-amber-200';
+  };
+
+  const abrirPagoParcial = (factura) => {
+    const facturaKey = getFacturaId(factura);
+    const importe = getFacturaImporteAPagar(factura);
+    setPagoParcialDrafts(prev => ({ ...prev, [facturaKey]: importe.toFixed(2) }));
+    setPagoParcialErrores(prev => ({ ...prev, [facturaKey]: null }));
+    setPagoParcialOpen(prev => ({ ...prev, [facturaKey]: true }));
+  };
+
+  const cerrarPagoParcial = (factura) => {
+    const facturaKey = getFacturaId(factura);
+    setPagoParcialOpen(prev => ({ ...prev, [facturaKey]: false }));
+    setPagoParcialErrores(prev => ({ ...prev, [facturaKey]: null }));
+  };
+
+  const handlePagoToggleClick = async (factura) => {
+    if (factura.decision_pago) {
+      try {
+        await onDecisionPago(factura.factura_id, false, 0);
+        cerrarPagoParcial(factura);
+      } catch (_) {
+        // El componente padre muestra el error canonico del backend.
+      }
+      return;
+    }
+    abrirPagoParcial(factura);
+  };
+
+  const handleGuardarPagoParcial = async (factura) => {
+    const facturaKey = getFacturaId(factura);
+    const saldo = getFacturaSaldo(factura);
+    const raw = pagoParcialDrafts[facturaKey];
+    const importe = parseFloat(String(raw ?? '').replace(',', '.'));
+
+    if (!Number.isFinite(importe) || importe <= 0) {
+      setPagoParcialErrores(prev => ({
+        ...prev,
+        [facturaKey]: 'Importe mayor a cero'
+      }));
+      return;
+    }
+
+    if (importe > saldo) {
+      setPagoParcialErrores(prev => ({
+        ...prev,
+        [facturaKey]: 'Importe excede saldo'
+      }));
+      return;
+    }
+
+    setPagoParcialErrores(prev => ({ ...prev, [facturaKey]: null }));
+    try {
+      await onDecisionPago(factura.factura_id, true, importe);
+      cerrarPagoParcial(factura);
+    } catch (_) {
+      // El editor queda abierto para corregir o reintentar.
+    }
+  };
+
   // SALDO TOTAL CxP = SUMA de los buckets de antigüedad (Corriente + 1-30 + 31-60 + 61-90 + +90).
   // Se calcula desde `cxpResumen.antiguedad` (fuente canónica del resumen), NO desde la lista
   // de facturas paginada — así el total es correcto aunque la lista esté limitada/filtrada.
@@ -275,8 +370,18 @@ export default function FinanzasCuentasPorPagar({
             </tr>
           </thead>
           <tbody>
-            {proveedor.facturas.map((factura, idx) => (
-              <tr key={factura.factura_id || idx} className={`border-b hover:bg-zinc-50 ${factura.dias_vencida > 0 ? 'bg-red-50' : ''}`}>
+            {proveedor.facturas.map((factura, idx) => {
+              const facturaKey = getFacturaId(factura);
+              const saldoFactura = getFacturaSaldo(factura);
+              const importeAPagar = getFacturaImporteAPagar(factura);
+              const editorPagoAbierto = Boolean(pagoParcialOpen[facturaKey]);
+              const estadoAutorizacion = factura.estado_autorizacion_pago || (
+                factura.decision_pago ? 'PENDIENTE_AUTORIZACION' : 'SIN_DECISION'
+              );
+              const estadoLabel = formatEstadoAutorizacion(estadoAutorizacion);
+
+              return (
+              <tr key={facturaKey || idx} className={`border-b hover:bg-zinc-50 ${factura.dias_vencida > 0 ? 'bg-red-50' : ''}`}>
                 <td className="p-2 font-mono text-zinc-700">{factura.folio_entrada || '-'}</td>
                 <td className="p-2 font-mono text-zinc-700">{factura.folio_factura || '-'}</td>
                 <td className="p-2 text-center text-zinc-600">{factura.fecha_entrada?.split('T')[0] || '-'}</td>
@@ -293,8 +398,10 @@ export default function FinanzasCuentasPorPagar({
                 <td className="p-2 text-right font-mono font-bold">{formatCurrency(factura.saldo)}</td>
                 <td className="p-2 text-center">
                   <button
-                    onClick={(e) => { e.stopPropagation(); onDecisionPago(factura.factura_id, !factura.decision_pago); }}
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handlePagoToggleClick(factura); }}
                     disabled={savingDecision === factura.factura_id}
+                    title={factura.decision_pago ? 'Desmarcar pago' : 'Capturar importe a pagar'}
                     className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition ${
                       factura.decision_pago 
                         ? 'bg-green-500 border-green-500 text-white' 
@@ -308,8 +415,104 @@ export default function FinanzasCuentasPorPagar({
                     ) : null}
                   </button>
                 </td>
-                <td className="p-2 text-right font-mono text-green-600 font-bold">
-                  {factura.decision_pago ? formatCurrency(factura.importe_a_pagar || factura.saldo) : '-'}
+                <td className="p-2 text-right font-mono">
+                  {editorPagoAbierto ? (
+                    <div className="min-w-[190px] space-y-1">
+                      <div className="flex items-center justify-end gap-1">
+                        <Input
+                          type="number"
+                          min="0.01"
+                          max={saldoFactura}
+                          step="0.01"
+                          value={pagoParcialDrafts[facturaKey] ?? ''}
+                          onChange={(e) => {
+                            setPagoParcialDrafts(prev => ({ ...prev, [facturaKey]: e.target.value }));
+                            setPagoParcialErrores(prev => ({ ...prev, [facturaKey]: null }));
+                          }}
+                          disabled={savingDecision === factura.factura_id}
+                          className="h-8 w-28 text-right font-mono text-xs"
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleGuardarPagoParcial(factura); }}
+                          disabled={savingDecision === factura.factura_id}
+                          className="h-8 w-8 rounded border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-60 flex items-center justify-center"
+                          title="Guardar importe"
+                        >
+                          {savingDecision === factura.factura_id ? (
+                            <RefreshCw className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="h-4 w-4" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); cerrarPagoParcial(factura); }}
+                          disabled={savingDecision === factura.factura_id}
+                          className="h-8 w-8 rounded border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 disabled:opacity-60 flex items-center justify-center"
+                          title="Cancelar"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      {pagoParcialErrores[facturaKey] && (
+                        <div className="text-[11px] leading-tight text-red-600">
+                          {pagoParcialErrores[facturaKey]}
+                        </div>
+                      )}
+                      <div className="text-[10px] leading-tight text-zinc-500">
+                        Saldo {formatCurrency(saldoFactura)}
+                      </div>
+                    </div>
+                  ) : factura.decision_pago ? (
+                    <div className="flex flex-col items-end gap-0.5">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); abrirPagoParcial(factura); }}
+                        className="font-bold text-green-700 underline decoration-dotted underline-offset-2 hover:text-green-800"
+                        title="Editar importe a pagar"
+                      >
+                        {formatCurrency(importeAPagar)}
+                      </button>
+                      {estadoLabel && (
+                        <span className={`inline-flex rounded border px-1.5 py-0.5 text-[10px] leading-none ${getEstadoPagoClass(estadoAutorizacion)}`}>
+                          {estadoLabel}
+                        </span>
+                      )}
+                      {canAutorizarPagos && estadoAutorizacion === 'PENDIENTE_AUTORIZACION' && (
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              Promise.resolve(onAutorizarDecisionPago?.(factura.factura_id, true, true)).catch(() => {});
+                            }}
+                            disabled={savingDecision === factura.factura_id}
+                            className="h-6 w-6 rounded border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-60 flex items-center justify-center"
+                            title="Autorizar y programar carga a origen"
+                          >
+                            {savingDecision === factura.factura_id ? (
+                              <RefreshCw className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              Promise.resolve(onAutorizarDecisionPago?.(factura.factura_id, false, false)).catch(() => {});
+                            }}
+                            disabled={savingDecision === factura.factura_id}
+                            className="h-6 w-6 rounded border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60 flex items-center justify-center"
+                            title="Rechazar pago"
+                          >
+                            <XCircle className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : '-'}
                 </td>
                 <td className="p-2">
                   <div className="flex items-center justify-center gap-1">
@@ -325,14 +528,15 @@ export default function FinanzasCuentasPorPagar({
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
             {/* Subtotal del proveedor */}
             <tr className="bg-zinc-200 font-bold">
               <td colSpan={6} className="p-2 text-right text-xs">SUBTOTAL {proveedor.proveedor_nombre}:</td>
               <td className="p-2 text-right font-mono">{formatCurrency(proveedor.subtotal_importe)}</td>
               <td className="p-2 text-right font-mono">{formatCurrency(proveedor.subtotal_saldo)}</td>
               <td className="p-2"></td>
-              <td className="p-2 text-right font-mono text-green-700">{formatCurrency(proveedor.facturas.reduce((sum, f) => sum + (f.decision_pago ? (f.importe_a_pagar || f.saldo || 0) : 0), 0))}</td>
+              <td className="p-2 text-right font-mono text-green-700">{formatCurrency(proveedor.facturas.reduce((sum, f) => sum + (f.decision_pago ? (parseFloat(f.importe_a_pagar) || parseFloat(f.saldo) || 0) : 0), 0))}</td>
               <td className="p-2"></td>
             </tr>
           </tbody>

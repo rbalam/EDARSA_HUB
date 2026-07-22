@@ -58,8 +58,9 @@ export function useSaldosBancarios() {
   const fetchSaldoActual = useCallback(async (cuentaId) => {
     try {
       const response = await api.get(`/v2/finanzas/cuentas-bancarias/${cuentaId}/saldo-actual`);
-      setSaldoActual(response.data);
-      return response.data;
+      const saldo = response.data?.ultimo_saldo || null;
+      setSaldoActual(saldo);
+      return saldo;
     } catch (err) {
       console.error('Error obteniendo saldo actual:', err);
       setSaldoActual(null);
@@ -80,6 +81,9 @@ export function useSaldosBancarios() {
       }
       if (params.fecha) {
         queryParams.append('fecha', params.fecha);
+      }
+      if (params.unidadNegocioPk) {
+        queryParams.append('unidad_negocio_pk', params.unidadNegocioPk);
       }
       
       const url = `/v2/finanzas/saldos-bancarios/total${queryParams.toString() ? '?' + queryParams.toString() : ''}`;

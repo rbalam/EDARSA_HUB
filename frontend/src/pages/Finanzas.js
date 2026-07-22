@@ -33,6 +33,14 @@ const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 // Colores para gráficos
 const COLORS = ['#10b981', '#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899'];
 
+const getApiErrorDetail = (error, fallback) => {
+  const detail = error?.response?.data?.detail;
+  if (typeof detail === 'string' && detail.trim()) return detail;
+  if (Array.isArray(detail) && detail.length > 0) return detail.map(item => item?.msg || item).join('; ');
+  if (detail && typeof detail === 'object') return JSON.stringify(detail);
+  return error?.message || fallback;
+};
+
 export default function Finanzas() {
   return (
     <CorporateFiltersProvider scope="finanzas">
@@ -171,13 +179,15 @@ function FinanzasContent() {
         allowed('FINANZAS_ADMINISTRAR')
       )
     );
+    const canAdmin = canView && allowed('FINANZAS_ADMINISTRAR');
 
     return {
       canView,
       canCreate: canWrite,
       canEdit: canWrite,
       canDelete: canWrite,
-      canViewScript: canWrite
+      canViewScript: canWrite,
+      canAdmin
     };
   }, [
     effectivePermissions,
@@ -488,7 +498,7 @@ function FinanzasContent() {
       
     } catch (error) {
       logger.error('Error CxP:', error);
-      toast.error('Error al cargar cuentas por pagar');
+      toast.error(getApiErrorDetail(error, 'Error al cargar cuentas por pagar'));
     } finally {
       setLoading(false);
     }
@@ -502,6 +512,7 @@ function FinanzasContent() {
         decision_pago: decision,
         importe_a_pagar: importeAPagar
       });
+      const facturaBackend = response.data?.factura || {};
       
       // Actualizar estado LOCAL sin recargar todo el tablero
       setCxpData(prevData => {
@@ -512,11 +523,18 @@ function FinanzasContent() {
           facturas: proveedor.facturas.map(factura => {
             if (factura.factura_id === facturaId) {
               const saldo = parseFloat(factura.saldo) || 0;
-              const nuevoImporte = decision ? (parseFloat(importeAPagar) || saldo) : 0;
+              const nuevoImporte = decision
+                ? (parseFloat(facturaBackend.importe_a_pagar) || parseFloat(importeAPagar) || saldo)
+                : 0;
               return {
                 ...factura,
+                ...facturaBackend,
                 decision_pago: decision,
-                importe_a_pagar: nuevoImporte
+                importe_a_pagar: nuevoImporte,
+                estado_autorizacion_pago: decision
+                  ? (facturaBackend.estado_autorizacion_pago || 'PENDIENTE_AUTORIZACION')
+                  : (facturaBackend.estado_autorizacion_pago || 'CANCELADO'),
+                requiere_autorizacion_pago: Boolean(decision)
               };
             }
             return factura;
@@ -533,7 +551,52 @@ function FinanzasContent() {
       // NO recargar - el estado local ya está actualizado
     } catch (error) {
       logger.error('[CxP] Error al actualizar:', error);
-      toast.error(`Error: ${error.message || 'Error al actualizar'}`);
+      toast.error(getApiErrorDetail(error, 'Error al actualizar decisión de pago'));
+      throw error;
+    } finally {
+      setSavingDecision(null);
+    }
+  };
+
+  const handleAutorizarDecisionPago = async (facturaId, autorizar, programarEnvioOrigen = true) => {
+    setSavingDecision(facturaId);
+    try {
+      const response = await api.post(`/finanzas/cuentas-por-pagar/${facturaId}/decision-pago/autorizacion`, {
+        autorizar,
+        programar_envio_origen: programarEnvioOrigen
+      });
+      const facturaBackend = response.data?.factura || {};
+
+      setCxpData(prevData => {
+        if (!prevData?.proveedores) return prevData;
+
+        const nuevosProveedores = prevData.proveedores.map(proveedor => ({
+          ...proveedor,
+          facturas: proveedor.facturas.map(factura => (
+            factura.factura_id === facturaId
+              ? {
+                  ...factura,
+                  ...facturaBackend,
+                  estado_autorizacion_pago: facturaBackend.estado_autorizacion_pago || (
+                    autorizar ? 'AUTORIZADO' : 'RECHAZADO'
+                  ),
+                  requiere_autorizacion_pago: autorizar ? false : factura.requiere_autorizacion_pago
+                }
+              : factura
+          ))
+        }));
+
+        return {
+          ...prevData,
+          proveedores: nuevosProveedores
+        };
+      });
+
+      toast.success(autorizar ? 'Pago autorizado' : 'Pago rechazado');
+    } catch (error) {
+      logger.error('[CxP] Error al autorizar decisión de pago:', error);
+      toast.error(getApiErrorDetail(error, 'Error al autorizar decisión de pago'));
+      throw error;
     } finally {
       setSavingDecision(null);
     }
@@ -602,7 +665,7 @@ function FinanzasContent() {
       toast.success(`${data.actualizadas} facturas vencidas marcadas para pago`);
       loadCuentasPorPagar();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Error al marcar facturas');
+      toast.error(getApiErrorDetail(error, 'Error al marcar facturas'));
     } finally {
       setLoading(false);
     }
@@ -635,7 +698,7 @@ function FinanzasContent() {
       toast.success(`${data.actualizadas} facturas desmarcadas`);
       loadCuentasPorPagar();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Error al desmarcar facturas');
+      toast.error(getApiErrorDetail(error, 'Error al desmarcar facturas'));
     } finally {
       setLoading(false);
     }
@@ -668,7 +731,7 @@ function FinanzasContent() {
       loadCuentasPorPagar();
     } catch (error) {
       logger.warn('[CxP] Decisión de pago bloqueada:', error);
-      toast.error(error.response?.data?.detail || 'No se pudo actualizar la decisión de pago');
+      toast.error(getApiErrorDetail(error, 'No se pudo actualizar la decisión de pago'));
     }
   };
   
@@ -1165,7 +1228,9 @@ function FinanzasContent() {
         onToggleCategoria={toggleCategoria}
         onToggleProveedor={toggleProveedor}
         onDecisionPago={handleDecisionPago}
+        onAutorizarDecisionPago={handleAutorizarDecisionPago}
         onTogglePagoProveedor={handleTogglePagoProveedor}
+        canAutorizarPagos={finanzasPermissions.canAdmin}
         formatCurrency={formatCurrency}
         reagruparCxPPorProveedores={reagruparCxPPorProveedores}
         // FASE 1 CxP: Ocultar filtro Sucursal - CxP opera exclusivamente por Unidad de Negocio

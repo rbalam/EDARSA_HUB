@@ -24,6 +24,7 @@ class CuentaBancariaCreate(BaseModel):
     alias: str = Field(..., min_length=3, max_length=50, description="Alias de la cuenta")
     moneda: str = Field("MXN", description="Moneda: MXN, USD, EUR, CAD")
     es_cuenta_principal: bool = Field(False, description="¿Es cuenta principal?")
+    unidad_negocio_pk: Optional[str] = Field(None, description="Unidad de negocio canónica")
     empresa_id: Optional[int] = Field(None, description="ID de empresa (opcional)")
     
     @validator('moneda')

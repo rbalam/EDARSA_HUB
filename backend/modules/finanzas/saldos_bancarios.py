@@ -1,5 +1,3 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
 """
 P1-FASE5A.1 - Router de Saldos Bancarios
 =========================================
@@ -42,6 +40,14 @@ from modules.finanzas.utils_bancarios import (
     mask_numero_cuenta,
 )
 from core.security import get_current_user
+from modules.finanzas.access import (
+    FINANZAS_ADMINISTRAR,
+    FINANZAS_EDITAR,
+    FINANZAS_VER,
+    require_any_finanzas_permission,
+    require_finanzas_permission,
+    resolve_finanzas_unit_filter,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,42 +58,45 @@ router = APIRouter(prefix="/v2/finanzas", tags=["Finanzas - Saldos Bancarios"])
 # HELPERS DE PERMISOS
 # =============================================================================
 
-def check_permission(user: dict, permission: str) -> bool:
-    """
-    Verifica si el usuario tiene el permiso requerido.
-    """
-    if not user:
-        return False
-    
-    user_role = user.get('role', user.get('rol', ''))
-    
-    # Roles con acceso total
-    roles_admin = ['superadmin', 'SuperAdministrador', 'admin', 'Director Finanzas']
-    if user_role in roles_admin:
-        return True
-    
-    # Roles con acceso a saldos
-    roles_finanzas = ['Contador', 'Tesorero', 'contador', 'tesorero']
-    if user_role in roles_finanzas:
-        if permission in ['finanzas.saldos.view', 'finanzas.saldos.manage']:
-            return True
-    
-    # Permisos explícitos
-    user_permissions = user.get('permissions', [])
-    return permission in user_permissions
+def require_cuenta_scope(
+    current_user: dict,
+    cuenta: dict,
+    permission_code: str = FINANZAS_VER,
+):
+    unidad_ref = (
+        cuenta.get("unidad_negocio_pk")
+        or cuenta.get("unidad_negocio_codigo")
+        or cuenta.get("empresa_codigo")
+    )
+    if unidad_ref:
+        resolve_finanzas_unit_filter(current_user, unidad_ref, permission_code)
+        return
+
+    _, allowed_units = resolve_finanzas_unit_filter(
+        current_user,
+        None,
+        permission_code,
+    )
+    if allowed_units is not None:
+        raise HTTPException(
+            status_code=403,
+            detail="La cuenta bancaria no tiene unidad de negocio canónica para validar alcance.",
+        )
 
 
 def get_user_id(user: dict) -> int:
-    """
-    Obtiene el ID del usuario para auditoría.
-    """
-    user_id = user.get('user_id') or user.get('id') or user.get('_id')
-    if user_id:
+    """Obtiene el UsuarioID SQL canónico; 0 se persiste como NULL en repositorio."""
+    for key in ("_sql_usuario_id", "UsuarioID", "usuario_id", "user_id", "id"):
+        value = user.get(key)
+        if value in (None, "") or isinstance(value, bool):
+            continue
         try:
-            return int(str(user_id).split('ObjectId')[-1].replace("('", "").replace("')", "")[:24])
-        except (ValueError, TypeError, AttributeError):
-            pass
-    return 1  # Default para pruebas
+            usuario_id = int(value)
+        except (TypeError, ValueError):
+            continue
+        if usuario_id > 0:
+            return usuario_id
+    return 0
 
 
 # =============================================================================
@@ -110,13 +119,13 @@ async def listar_saldos_cuenta(
     Tabla: Finanzas_SaldosBancarios
     """
     try:
-        if not check_permission(current_user, 'finanzas.saldos.view'):
-            raise HTTPException(status_code=403, detail="No tiene permiso para ver saldos")
-        
+        require_finanzas_permission(current_user, FINANZAS_VER)
+
         # Verificar cuenta existe
         cuenta = get_cuenta_by_id(cuenta_id)
         if not cuenta:
             raise HTTPException(status_code=404, detail="Cuenta bancaria no encontrada")
+        require_cuenta_scope(current_user, cuenta, FINANZAS_VER)
         
         saldos = get_saldos_cuenta(
             cuenta_id=cuenta_id,
@@ -153,13 +162,13 @@ async def obtener_saldo_actual(
     Incluye alerta si el saldo tiene más de 3 días sin actualizar.
     """
     try:
-        if not check_permission(current_user, 'finanzas.saldos.view'):
-            raise HTTPException(status_code=403, detail="No tiene permiso para ver saldos")
-        
+        require_finanzas_permission(current_user, FINANZAS_VER)
+
         # Verificar cuenta existe
         cuenta = get_cuenta_by_id(cuenta_id)
         if not cuenta:
             raise HTTPException(status_code=404, detail="Cuenta bancaria no encontrada")
+        require_cuenta_scope(current_user, cuenta, FINANZAS_VER)
         
         ultimo = get_ultimo_saldo_vigente(cuenta_id)
         
@@ -215,13 +224,16 @@ async def capturar_saldo(
     Si ya existe saldo vigente, usar endpoint de corrección.
     """
     try:
-        if not check_permission(current_user, 'finanzas.saldos.manage'):
-            raise HTTPException(status_code=403, detail="No tiene permiso para capturar saldos")
-        
+        permission = require_any_finanzas_permission(
+            current_user,
+            (FINANZAS_ADMINISTRAR, FINANZAS_EDITAR),
+        )
+
         # Verificar cuenta existe y está activa
         cuenta = get_cuenta_by_id(data.cuenta_bancaria_id)
         if not cuenta:
             raise HTTPException(status_code=404, detail="Cuenta bancaria no encontrada")
+        require_cuenta_scope(current_user, cuenta, permission["permission_code"])
         if not cuenta.get('Activo'):
             raise HTTPException(status_code=400, detail="La cuenta bancaria no está activa")
         
@@ -287,13 +299,16 @@ async def corregir_saldo(
     IMPORTANTE: No se edita el registro original, se crea historial.
     """
     try:
-        if not check_permission(current_user, 'finanzas.saldos.manage'):
-            raise HTTPException(status_code=403, detail="No tiene permiso para corregir saldos")
-        
+        permission = require_any_finanzas_permission(
+            current_user,
+            (FINANZAS_ADMINISTRAR, FINANZAS_EDITAR),
+        )
+
         # Verificar saldo existe
         saldo = get_saldo_by_id(saldo_id)
         if not saldo:
             raise HTTPException(status_code=404, detail="Saldo bancario no encontrado")
+        require_cuenta_scope(current_user, saldo, permission["permission_code"])
         
         # Verificar que es VIGENTE
         if saldo.get('Estatus') != 'VIGENTE' or not saldo.get('EsVigente'):
@@ -369,13 +384,16 @@ async def cancelar_saldo(
     IMPORTANTE: Motivo de cancelación es OBLIGATORIO.
     """
     try:
-        if not check_permission(current_user, 'finanzas.saldos.manage'):
-            raise HTTPException(status_code=403, detail="No tiene permiso para cancelar saldos")
-        
+        permission = require_any_finanzas_permission(
+            current_user,
+            (FINANZAS_ADMINISTRAR, FINANZAS_EDITAR),
+        )
+
         # Verificar saldo existe
         saldo = get_saldo_by_id(saldo_id)
         if not saldo:
             raise HTTPException(status_code=404, detail="Saldo bancario no encontrado")
+        require_cuenta_scope(current_user, saldo, permission["permission_code"])
         
         # Verificar que es VIGENTE
         if saldo.get('Estatus') != 'VIGENTE' or not saldo.get('EsVigente'):
@@ -428,13 +446,13 @@ async def obtener_historial_saldo(
     Muestra todas las versiones del saldo (original, correcciones, cancelaciones).
     """
     try:
-        if not check_permission(current_user, 'finanzas.saldos.view'):
-            raise HTTPException(status_code=403, detail="No tiene permiso para ver historial")
-        
+        require_finanzas_permission(current_user, FINANZAS_VER)
+
         # Verificar saldo existe
         saldo = get_saldo_by_id(saldo_id)
         if not saldo:
             raise HTTPException(status_code=404, detail="Saldo bancario no encontrado")
+        require_cuenta_scope(current_user, saldo, FINANZAS_VER)
         
         # Obtener historial
         historial_raw = get_historial_saldo(saldo_id)
@@ -484,6 +502,7 @@ async def obtener_historial_saldo(
 @router.get("/saldos-bancarios/total")
 async def obtener_saldo_total(
     fecha: Optional[date] = Query(None, description="Fecha de consulta (default: hoy)"),
+    unidad_negocio_pk: Optional[str] = Query(None, description="Filtrar por unidad de negocio canónica"),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -494,12 +513,19 @@ async def obtener_saldo_total(
     Usa el último saldo vigente de cada cuenta hasta la fecha indicada.
     """
     try:
-        if not check_permission(current_user, 'finanzas.saldos.view'):
-            raise HTTPException(status_code=403, detail="No tiene permiso para ver saldos")
-        
+        unidad_pk, unidades_permitidas = resolve_finanzas_unit_filter(
+            current_user,
+            unidad_negocio_pk,
+            FINANZAS_VER,
+        )
+
         fecha_consulta = fecha or date.today()
         
-        resultado = get_saldo_bancario_total(fecha_consulta)
+        resultado = get_saldo_bancario_total(
+            fecha_consulta,
+            unidad_negocio_pk=unidad_pk,
+            unidades_permitidas=unidades_permitidas,
+        )
         
         response = {
             "fecha_consulta": str(fecha_consulta),

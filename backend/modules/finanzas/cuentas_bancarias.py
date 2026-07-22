@@ -1,5 +1,3 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
 """
 P1-FASE5A.1 - Router de Cuentas Bancarias
 ==========================================
@@ -27,6 +25,7 @@ from modules.finanzas.repository_bancarios import (
     get_banco_by_id,
     get_cuentas_bancarias,
     get_cuenta_by_id,
+    get_empresa_id_for_unidad,
     existe_numero_cuenta,
     existe_alias,
     crear_cuenta_bancaria,
@@ -43,6 +42,14 @@ from modules.finanzas.utils_bancarios import (
     validar_alias,
 )
 from core.security import get_current_user
+from modules.finanzas.access import (
+    FINANZAS_ADMINISTRAR,
+    FINANZAS_EDITAR,
+    FINANZAS_VER,
+    require_any_finanzas_permission,
+    require_finanzas_permission,
+    resolve_finanzas_unit_filter,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,49 +60,61 @@ router = APIRouter(prefix="/v2/finanzas", tags=["Finanzas - Cuentas Bancarias"])
 # HELPERS DE PERMISOS
 # =============================================================================
 
-def check_permission(user: dict, permission: str) -> bool:
-    """
-    Verifica si el usuario tiene el permiso requerido.
-    
-    Implementación defensiva: SuperAdmin siempre tiene acceso.
-    Los permisos nuevos se validan si existen, si no, se permite a roles altos.
-    """
-    if not user:
-        return False
-    
-    user_role = user.get('role', user.get('rol', ''))
-    
-    # Roles con acceso total
-    roles_admin = ['superadmin', 'SuperAdministrador', 'admin', 'Director Finanzas']
-    if user_role in roles_admin:
-        return True
-    
-    # Roles con acceso de lectura a finanzas
-    roles_finanzas = ['Contador', 'Tesorero', 'contador', 'tesorero']
-    if permission.endswith('.view') and user_role in roles_finanzas:
-        return True
-    
-    # Permisos explícitos si existen
-    user_permissions = user.get('permissions', [])
-    if permission in user_permissions:
-        return True
-    
-    return False
+def require_view_scope(current_user: dict, unidad_ref: Optional[str] = None):
+    return resolve_finanzas_unit_filter(current_user, unidad_ref, FINANZAS_VER)
+
+
+def require_write_scope(current_user: dict, unidad_ref: Optional[str] = None):
+    permission = require_any_finanzas_permission(
+        current_user,
+        (FINANZAS_ADMINISTRAR, FINANZAS_EDITAR),
+    )
+    return resolve_finanzas_unit_filter(
+        current_user,
+        unidad_ref,
+        permission["permission_code"],
+    )
+
+
+def require_cuenta_scope(
+    current_user: dict,
+    cuenta: dict,
+    permission_code: str = FINANZAS_VER,
+):
+    unidad_ref = (
+        cuenta.get("unidad_negocio_pk")
+        or cuenta.get("unidad_negocio_codigo")
+        or cuenta.get("empresa_codigo")
+    )
+    if unidad_ref:
+        resolve_finanzas_unit_filter(current_user, unidad_ref, permission_code)
+        return
+
+    _, allowed_units = resolve_finanzas_unit_filter(
+        current_user,
+        None,
+        permission_code,
+    )
+    if allowed_units is not None:
+        raise HTTPException(
+            status_code=403,
+            detail="La cuenta bancaria no tiene unidad de negocio canónica para validar alcance.",
+        )
 
 
 def get_user_id(user: dict) -> int:
-    """
-    Obtiene el ID del usuario para auditoría.
-    
-    Retorna 1 como default si no se puede determinar (para pruebas).
-    """
-    user_id = user.get('user_id') or user.get('id') or user.get('_id')
-    if user_id:
+    """Obtiene el UsuarioID SQL canónico; 0 se persiste como NULL en repositorio."""
+    for key in ("_sql_usuario_id", "UsuarioID", "usuario_id", "user_id", "id"):
+        value = user.get(key)
+        if value in (None, "") or isinstance(value, bool):
+            continue
         try:
-            return int(str(user_id).split('ObjectId')[-1].replace("('", "").replace("')", "")[:24])
-        except (ValueError, TypeError, AttributeError):
-            pass
-    return 1  # Default para pruebas
+            usuario_id = int(value)
+        except (TypeError, ValueError):
+            continue
+        if usuario_id > 0:
+            return usuario_id
+    return 0
 
 
 # =============================================================================
@@ -111,9 +130,8 @@ async def listar_bancos(current_user: dict = Depends(get_current_user)):
     Tabla: Global_Cat_Bancos
     """
     try:
-        if not check_permission(current_user, 'finanzas.cuentas_bancarias.view'):
-            raise HTTPException(status_code=403, detail="No tiene permiso para ver bancos")
-        
+        require_finanzas_permission(current_user, FINANZAS_VER)
+
         bancos = get_bancos_activos()
         
         return {
@@ -137,7 +155,8 @@ async def listar_cuentas_bancarias(
     banco_id: Optional[int] = Query(None, description="Filtrar por banco"),
     activo: Optional[bool] = Query(True, description="Filtrar por estado"),
     include_inactive: bool = Query(False, description="Incluir inactivas"),
-    empresa_codigo: Optional[str] = Query(None, description="Filtrar por unidad de negocio (código canónico)"),
+    unidad_negocio_pk: Optional[str] = Query(None, description="Filtrar por unidad de negocio canónica"),
+    empresa_codigo: Optional[str] = Query(None, description="Deprecated: usar unidad_negocio_pk"),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -149,14 +168,17 @@ async def listar_cuentas_bancarias(
     IMPORTANTE: Número de cuenta y CLABE siempre enmascarados.
     """
     try:
-        if not check_permission(current_user, 'finanzas.cuentas_bancarias.view'):
-            raise HTTPException(status_code=403, detail="No tiene permiso para ver cuentas bancarias")
-        
+        unidad_pk, unidades_permitidas = require_view_scope(
+            current_user,
+            unidad_negocio_pk or empresa_codigo,
+        )
+
         cuentas = get_cuentas_bancarias(
             banco_id=banco_id,
             activo=activo,
             include_inactive=include_inactive,
-            empresa_codigo=empresa_codigo
+            unidad_negocio_pk=unidad_pk,
+            unidades_permitidas=unidades_permitidas,
         )
         
         # Serializar con enmascaramiento y agregar último saldo
@@ -210,13 +232,13 @@ async def obtener_cuenta_bancaria(
     IMPORTANTE: Número de cuenta y CLABE siempre enmascarados.
     """
     try:
-        if not check_permission(current_user, 'finanzas.cuentas_bancarias.view'):
-            raise HTTPException(status_code=403, detail="No tiene permiso para ver cuentas bancarias")
-        
+        require_finanzas_permission(current_user, FINANZAS_VER)
+
         cuenta = get_cuenta_by_id(cuenta_id)
         
         if not cuenta:
             raise HTTPException(status_code=404, detail="Cuenta bancaria no encontrada")
+        require_cuenta_scope(current_user, cuenta, FINANZAS_VER)
         
         cuenta_serializada = serialize_cuenta_bancaria(cuenta)
         
@@ -257,8 +279,15 @@ async def crear_cuenta(
     Response: Datos enmascarados
     """
     try:
-        if not check_permission(current_user, 'finanzas.cuentas_bancarias.manage'):
-            raise HTTPException(status_code=403, detail="No tiene permiso para crear cuentas bancarias")
+        if not data.unidad_negocio_pk:
+            raise HTTPException(status_code=400, detail="unidad_negocio_pk es requerida")
+        unidad_pk, _ = require_write_scope(current_user, data.unidad_negocio_pk)
+        empresa_id = get_empresa_id_for_unidad(unidad_pk)
+        if empresa_id is None:
+            raise HTTPException(
+                status_code=400,
+                detail="La unidad de negocio no tiene EmpresaID canónico para cuentas bancarias",
+            )
         
         # Validar banco existe
         banco = get_banco_by_id(data.banco_id)
@@ -291,7 +320,7 @@ async def crear_cuenta(
             usuario_creacion_id=usuario_id,
             clabe=data.clabe,
             es_cuenta_principal=data.es_cuenta_principal,
-            empresa_id=data.empresa_id
+            empresa_id=empresa_id
         )
         
         # Obtener cuenta creada para respuesta (para logging interno)
@@ -338,13 +367,21 @@ async def actualizar_cuenta(
     - moneda
     """
     try:
-        if not check_permission(current_user, 'finanzas.cuentas_bancarias.manage'):
-            raise HTTPException(status_code=403, detail="No tiene permiso para editar cuentas bancarias")
-        
+        permission = require_any_finanzas_permission(
+            current_user,
+            (FINANZAS_ADMINISTRAR, FINANZAS_EDITAR),
+        )
+
         # Verificar cuenta existe
         cuenta = get_cuenta_by_id(cuenta_id)
         if not cuenta:
             raise HTTPException(status_code=404, detail="Cuenta bancaria no encontrada")
+        require_cuenta_scope(current_user, cuenta, permission["permission_code"])
+        if data.empresa_id is not None:
+            raise HTTPException(
+                status_code=400,
+                detail="Cambiar EmpresaID directamente no es un flujo canónico; use unidad_negocio_pk.",
+            )
         
         # Validar alias único si se actualiza
         if data.alias and data.alias != cuenta.get('Alias'):
@@ -358,7 +395,7 @@ async def actualizar_cuenta(
             usuario_modificacion_id=usuario_id,
             alias=data.alias,
             es_cuenta_principal=data.es_cuenta_principal,
-            empresa_id=data.empresa_id
+            empresa_id=None
         )
         
         # Obtener cuenta actualizada
@@ -396,13 +433,16 @@ async def desactivar_cuenta(
     NOTA: No se elimina físicamente, solo se marca Activo = 0
     """
     try:
-        if not check_permission(current_user, 'finanzas.cuentas_bancarias.manage'):
-            raise HTTPException(status_code=403, detail="No tiene permiso para desactivar cuentas bancarias")
-        
+        permission = require_any_finanzas_permission(
+            current_user,
+            (FINANZAS_ADMINISTRAR, FINANZAS_EDITAR),
+        )
+
         # Verificar cuenta existe
         cuenta = get_cuenta_by_id(cuenta_id)
         if not cuenta:
             raise HTTPException(status_code=404, detail="Cuenta bancaria no encontrada")
+        require_cuenta_scope(current_user, cuenta, permission["permission_code"])
         
         if not cuenta.get('Activo'):
             raise HTTPException(status_code=400, detail="La cuenta ya está desactivada")

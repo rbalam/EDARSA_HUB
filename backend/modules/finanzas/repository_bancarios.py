@@ -12,7 +12,7 @@ Tablas:
 - Usuario_Catalogo
 """
 
-from typing import Optional, List, Tuple
+from typing import Optional, List, Sequence
 from datetime import date, datetime
 from decimal import Decimal
 import logging
@@ -21,6 +21,31 @@ from core.db import execute_sql_query
 from core.server_registry import EDARSAHUB_CONFIG
 
 logger = logging.getLogger(__name__)
+
+
+def _sql_literal(value) -> str:
+    return "'" + str(value).replace("'", "''") + "'"
+
+
+def _unidad_scope_condition(
+    un_alias: str,
+    unidad_negocio_pk: Optional[str] = None,
+    unidades_permitidas: Optional[Sequence[str]] = None,
+) -> Optional[str]:
+    if unidad_negocio_pk:
+        return f"CONVERT(varchar(36), {un_alias}.id) = {_sql_literal(unidad_negocio_pk)}"
+
+    if unidades_permitidas is not None:
+        allowed = [str(u).strip() for u in unidades_permitidas if str(u or '').strip()]
+        if not allowed:
+            return "1=0"
+        return (
+            f"CONVERT(varchar(36), {un_alias}.id) IN ("
+            + ",".join(_sql_literal(u) for u in allowed)
+            + ")"
+        )
+
+    return None
 
 
 def _execute_edarsahub(query: str, params: dict = None) -> List[dict]:
@@ -129,14 +154,16 @@ def get_cuentas_bancarias(
     banco_id: Optional[int] = None,
     activo: bool = True,
     include_inactive: bool = False,
-    empresa_codigo: Optional[str] = None
+    empresa_codigo: Optional[str] = None,
+    unidad_negocio_pk: Optional[str] = None,
+    unidades_permitidas: Optional[Sequence[str]] = None,
 ) -> List[dict]:
     """
     Lista cuentas bancarias con información de banco.
     
     Tabla: Finanzas_Cat_CuentasBancarias
-    JOIN: Global_Cat_Bancos, Sistema_Empresas (identidad canónica)
-    Filtro canónico opcional por unidad de negocio (empresa_codigo).
+    JOIN: Global_Cat_Bancos, Sistema_Empresas y Unidades_Negocio.
+    Filtro principal: unidad_negocio_pk canónica.
     """
     where_clauses = []
     params = {}
@@ -149,7 +176,14 @@ def get_cuentas_bancarias(
     if banco_id:
         where_clauses.append(f"cb.BancoID = {banco_id}")
     
-    if empresa_codigo:
+    unidad_condition = _unidad_scope_condition(
+        "un",
+        unidad_negocio_pk=unidad_negocio_pk,
+        unidades_permitidas=unidades_permitidas,
+    )
+    if unidad_condition:
+        where_clauses.append(unidad_condition)
+    elif empresa_codigo:
         where_clauses.append("se.CodigoEmpresa = @empresa_codigo")
         params['empresa_codigo'] = empresa_codigo
     
@@ -161,6 +195,9 @@ def get_cuentas_bancarias(
         cb.EmpresaID,
         se.NombreEmpresa AS empresa_nombre,
         se.CodigoEmpresa AS empresa_codigo,
+        CONVERT(varchar(36), un.id) AS unidad_negocio_pk,
+        un.codigo AS unidad_negocio_codigo,
+        un.nombre AS unidad_negocio_nombre,
         cb.BancoID,
         b.NombreBanco,
         b.CodigoBanco,
@@ -178,6 +215,9 @@ def get_cuentas_bancarias(
     FROM Finanzas_Cat_CuentasBancarias cb
     LEFT JOIN Global_Cat_Bancos b ON cb.BancoID = b.BancoID
     LEFT JOIN Sistema_Empresas se ON cb.EmpresaID = se.EmpresaID
+    LEFT JOIN Unidades_Negocio un
+        ON UPPER(LTRIM(RTRIM(un.codigo))) = UPPER(LTRIM(RTRIM(se.CodigoEmpresa)))
+       AND ISNULL(un.activo, 1) = 1
     {where_sql}
     ORDER BY cb.Alias
     """
@@ -192,6 +232,11 @@ def get_cuenta_by_id(cuenta_id: int) -> Optional[dict]:
     SELECT 
         cb.CuentaBancariaID,
         cb.EmpresaID,
+        se.NombreEmpresa AS empresa_nombre,
+        se.CodigoEmpresa AS empresa_codigo,
+        CONVERT(varchar(36), un.id) AS unidad_negocio_pk,
+        un.codigo AS unidad_negocio_codigo,
+        un.nombre AS unidad_negocio_nombre,
         cb.BancoID,
         b.NombreBanco,
         b.CodigoBanco,
@@ -208,10 +253,34 @@ def get_cuenta_by_id(cuenta_id: int) -> Optional[dict]:
         cb.UsuarioModificacionID
     FROM Finanzas_Cat_CuentasBancarias cb
     LEFT JOIN Global_Cat_Bancos b ON cb.BancoID = b.BancoID
+    LEFT JOIN Sistema_Empresas se ON cb.EmpresaID = se.EmpresaID
+    LEFT JOIN Unidades_Negocio un
+        ON UPPER(LTRIM(RTRIM(un.codigo))) = UPPER(LTRIM(RTRIM(se.CodigoEmpresa)))
+       AND ISNULL(un.activo, 1) = 1
     WHERE cb.CuentaBancariaID = {cuenta_id}
     """
     result = _execute_edarsahub(query)
     return result[0] if result else None
+
+
+def get_empresa_id_for_unidad(unidad_negocio_pk: str) -> Optional[int]:
+    """Resuelve EmpresaID desde la unidad canónica, sin crear fuentes paralelas."""
+    if not unidad_negocio_pk:
+        return None
+
+    query = f"""
+    SELECT TOP 1 se.EmpresaID
+    FROM Unidades_Negocio un
+    LEFT JOIN Sistema_Empresas se
+        ON UPPER(LTRIM(RTRIM(se.CodigoEmpresa))) = UPPER(LTRIM(RTRIM(un.codigo)))
+    WHERE CONVERT(varchar(36), un.id) = {_sql_literal(unidad_negocio_pk)}
+      AND ISNULL(un.activo, 1) = 1
+    """
+    result = _execute_edarsahub(query)
+    if not result:
+        return None
+    empresa_id = result[0].get('EmpresaID')
+    return int(empresa_id) if empresa_id is not None else None
 
 
 def existe_numero_cuenta(numero_cuenta: str, excluir_id: Optional[int] = None) -> bool:
@@ -272,7 +341,7 @@ def crear_cuenta_bancaria(
     OUTPUT INSERTED.CuentaBancariaID
     VALUES (
         {empresa_sql}, {banco_id}, '{numero_cuenta}', {clabe_sql}, '{alias_escaped}',
-        '{Moneda}', {1 if es_cuenta_principal else 0}, 1, GETDATE(), {usuario_sql}
+        '{moneda}', {1 if es_cuenta_principal else 0}, 1, GETDATE(), {usuario_sql}
     )
     """
     result = _execute_edarsahub(query)
@@ -476,9 +545,18 @@ def get_saldo_by_id(saldo_id: int) -> Optional[dict]:
         sb.FechaCancelacion,
         sb.UsuarioCancelacionID,
         sb.MotivoCancelacion,
-        cb.Alias
+        cb.Alias,
+        se.NombreEmpresa AS empresa_nombre,
+        se.CodigoEmpresa AS empresa_codigo,
+        CONVERT(varchar(36), un.id) AS unidad_negocio_pk,
+        un.codigo AS unidad_negocio_codigo,
+        un.nombre AS unidad_negocio_nombre
     FROM Finanzas_SaldosBancarios sb
     LEFT JOIN Finanzas_Cat_CuentasBancarias cb ON sb.CuentaBancariaID = cb.CuentaBancariaID
+    LEFT JOIN Sistema_Empresas se ON cb.EmpresaID = se.EmpresaID
+    LEFT JOIN Unidades_Negocio un
+        ON UPPER(LTRIM(RTRIM(un.codigo))) = UPPER(LTRIM(RTRIM(se.CodigoEmpresa)))
+       AND ISNULL(un.activo, 1) = 1
     WHERE sb.SaldoBancarioID = {saldo_id}
     """
     result = _execute_edarsahub(query)
@@ -513,7 +591,7 @@ def crear_saldo_bancario(
     )
     OUTPUT INSERTED.SaldoBancarioID
     VALUES (
-        {cuenta_id}, '{fecha_saldo.isoformat()}', {saldo_final}, '{Moneda}',
+        {cuenta_id}, '{fecha_saldo.isoformat()}', {saldo_final}, '{moneda}',
         '{fuente_datos}', {obs_sql}, 1, 1, 'VIGENTE',
         {usuario_sql}, GETDATE()
     )
@@ -572,14 +650,34 @@ def marcar_saldo_cancelado(
     return True
 
 
-def get_saldo_bancario_total(fecha_consulta: Optional[date] = None) -> dict:
+def get_saldo_bancario_total(
+    fecha_consulta: Optional[date] = None,
+    unidad_negocio_pk: Optional[str] = None,
+    unidades_permitidas: Optional[Sequence[str]] = None,
+) -> dict:
     """
-    Calcula el saldo bancario total de todas las cuentas activas.
+    Calcula el saldo bancario total de cuentas activas dentro del alcance canónico.
     
     Usa el último saldo vigente de cada cuenta.
     """
     if fecha_consulta is None:
         fecha_consulta = date.today()
+
+    unidad_condition = _unidad_scope_condition(
+        "un_scope",
+        unidad_negocio_pk=unidad_negocio_pk,
+        unidades_permitidas=unidades_permitidas,
+    )
+    scope_join = ""
+    scope_where = ""
+    if unidad_condition:
+        scope_join = """
+        LEFT JOIN Sistema_Empresas se_scope ON cb.EmpresaID = se_scope.EmpresaID
+        LEFT JOIN Unidades_Negocio un_scope
+            ON UPPER(LTRIM(RTRIM(un_scope.codigo))) = UPPER(LTRIM(RTRIM(se_scope.CodigoEmpresa)))
+           AND ISNULL(un_scope.activo, 1) = 1
+        """
+        scope_where = f" AND {unidad_condition}"
     
     # Query con CTE para obtener últimos saldos
     query = f"""
@@ -600,11 +698,13 @@ def get_saldo_bancario_total(fecha_consulta: Optional[date] = None) -> dict:
         INNER JOIN Finanzas_Cat_CuentasBancarias cb 
             ON sb.CuentaBancariaID = cb.CuentaBancariaID
         LEFT JOIN Global_Cat_Bancos b ON cb.BancoID = b.BancoID
+        {scope_join}
         WHERE sb.EsVigente = 1
           AND sb.Activo = 1
           AND sb.Estatus = 'VIGENTE'
           AND cb.Activo = 1
           AND sb.FechaSaldo <= '{fecha_consulta.isoformat()}'
+          {scope_where}
     )
     SELECT 
         COALESCE(SUM(CASE WHEN rn = 1 THEN SaldoFinal ELSE 0 END), 0) AS SaldoTotal,
@@ -615,10 +715,12 @@ def get_saldo_bancario_total(fecha_consulta: Optional[date] = None) -> dict:
     result = _execute_edarsahub(query)
     
     # Contar cuentas activas sin saldo
-    query_sin_saldo = """
+    query_sin_saldo = f"""
     SELECT COUNT(*) AS total
     FROM Finanzas_Cat_CuentasBancarias cb
+    {scope_join}
     WHERE cb.Activo = 1
+    {scope_where}
     AND NOT EXISTS (
         SELECT 1 FROM Finanzas_SaldosBancarios sb
         WHERE sb.CuentaBancariaID = cb.CuentaBancariaID
@@ -643,11 +745,13 @@ def get_saldo_bancario_total(fecha_consulta: Optional[date] = None) -> dict:
         INNER JOIN Finanzas_Cat_CuentasBancarias cb 
             ON sb.CuentaBancariaID = cb.CuentaBancariaID
         LEFT JOIN Global_Cat_Bancos b ON cb.BancoID = b.BancoID
+        {scope_join}
         WHERE sb.EsVigente = 1
           AND sb.Activo = 1
           AND sb.Estatus = 'VIGENTE'
           AND cb.Activo = 1
           AND sb.FechaSaldo <= '{fecha_consulta.isoformat()}'
+          {scope_where}
     )
     SELECT 
         BancoID,

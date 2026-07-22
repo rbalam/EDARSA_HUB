@@ -4,7 +4,7 @@ import { Button } from '../../ui/button';
 import { Alert, AlertDescription } from '../../ui/alert';
 import { Badge } from '../../ui/badge';
 import { 
-  Landmark, Plus, RefreshCw, AlertCircle, Wallet
+  Landmark, Plus, RefreshCw, AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -17,7 +17,7 @@ import TarjetaSaldoTotal from './saldos/TarjetaSaldoTotal';
 import { useCuentasBancarias } from './hooks/useCuentasBancarias';
 import { useBancos } from './hooks/useBancos';
 import { useSaldosBancarios } from './hooks/useSaldosBancarios';
-import { fetchUnidadesNegocio } from '../../../services/unidadesNegocioService';
+import { useFinanzasCorporateFilters } from '../../../filters';
 
 /**
  * Página principal del módulo Cuentas Bancarias
@@ -39,6 +39,12 @@ export function CuentasBancariasPage() {
   
   const { bancos, loading: loadingBancos } = useBancos();
   const { saldoTotal, fetchSaldoTotal } = useSaldosBancarios();
+  const {
+    unidadesNegocio,
+    selectedUnidad,
+    setSelectedUnidad,
+    loadingUnidades
+  } = useFinanzasCorporateFilters();
 
   // Estados UI
   const [showFormulario, setShowFormulario] = useState(false);
@@ -47,19 +53,16 @@ export function CuentasBancariasPage() {
   const [modoEdicion, setModoEdicion] = useState(false);
   const [vistaDetalle, setVistaDetalle] = useState(false);
 
-  // Filtro canónico por Unidad de Negocio
-  const [unidades, setUnidades] = useState([]);
-  const [unidadCodigo, setUnidadCodigo] = useState('');
-
-  // Cargar datos iniciales
-  useEffect(() => {
-    fetchUnidadesNegocio().then(data => setUnidades(data || [])).catch(() => setUnidades([]));
-  }, []);
+  const buildFiltroUnidad = useCallback(() => ({
+    soloActivas: true,
+    unidadNegocioPk: selectedUnidad || undefined
+  }), [selectedUnidad]);
 
   useEffect(() => {
-    fetchCuentas({ soloActivas: true, empresaCodigo: unidadCodigo || undefined });
-    fetchSaldoTotal();
-  }, [fetchCuentas, fetchSaldoTotal, unidadCodigo]);
+    const filtroUnidad = buildFiltroUnidad();
+    fetchCuentas(filtroUnidad);
+    fetchSaldoTotal({ unidadNegocioPk: selectedUnidad || undefined });
+  }, [fetchCuentas, fetchSaldoTotal, buildFiltroUnidad, selectedUnidad]);
 
   // Handlers
   const handleNuevaCuenta = () => {
@@ -91,8 +94,9 @@ export function CuentasBancariasPage() {
     setVistaDetalle(false);
     setCuentaSeleccionada(null);
     // Refrescar para obtener último saldo
-    fetchCuentas({ soloActivas: true, empresaCodigo: unidadCodigo || undefined });
-    fetchSaldoTotal();
+    const filtroUnidad = buildFiltroUnidad();
+    fetchCuentas(filtroUnidad);
+    fetchSaldoTotal({ unidadNegocioPk: selectedUnidad || undefined });
   };
 
   const handleGuardarCuenta = async (data) => {
@@ -101,12 +105,21 @@ export function CuentasBancariasPage() {
         await editarCuenta(cuentaSeleccionada.cuenta_bancaria_id, data);
         toast.success('Cuenta bancaria actualizada correctamente');
       } else {
-        await crearCuenta(data);
+        if (!selectedUnidad) {
+          toast.error('Seleccione una unidad de negocio para crear la cuenta');
+          return;
+        }
+        await crearCuenta({
+          ...data,
+          unidad_negocio_pk: selectedUnidad
+        });
         toast.success('Cuenta bancaria creada correctamente');
       }
       setShowFormulario(false);
       setCuentaSeleccionada(null);
-      fetchSaldoTotal();
+      const filtroUnidad = buildFiltroUnidad();
+      fetchCuentas(filtroUnidad);
+      fetchSaldoTotal({ unidadNegocioPk: selectedUnidad || undefined });
     } catch (err) {
       toast.error(err.message || 'Error al guardar cuenta');
     }
@@ -120,16 +133,19 @@ export function CuentasBancariasPage() {
       toast.success('Cuenta bancaria desactivada correctamente');
       setShowModalDesactivar(false);
       setCuentaSeleccionada(null);
-      fetchSaldoTotal();
+      const filtroUnidad = buildFiltroUnidad();
+      fetchCuentas(filtroUnidad);
+      fetchSaldoTotal({ unidadNegocioPk: selectedUnidad || undefined });
     } catch (err) {
       toast.error(err.message || 'Error al desactivar cuenta');
     }
   };
 
   const handleRefrescar = useCallback(() => {
-    fetchCuentas({ soloActivas: true, empresaCodigo: unidadCodigo || undefined });
-    fetchSaldoTotal();
-  }, [fetchCuentas, fetchSaldoTotal, unidadCodigo]);
+    const filtroUnidad = buildFiltroUnidad();
+    fetchCuentas(filtroUnidad);
+    fetchSaldoTotal({ unidadNegocioPk: selectedUnidad || undefined });
+  }, [fetchCuentas, fetchSaldoTotal, buildFiltroUnidad, selectedUnidad]);
 
   // Si está en vista detalle, mostrar solo el detalle
   if (vistaDetalle && cuentaSeleccionada) {
@@ -159,14 +175,15 @@ export function CuentasBancariasPage() {
         
         <div className="flex flex-wrap gap-2 items-center">
           <select
-            value={unidadCodigo}
-            onChange={(e) => setUnidadCodigo(e.target.value)}
+            value={selectedUnidad}
+            onChange={(e) => setSelectedUnidad(e.target.value)}
+            disabled={loadingUnidades}
             className="h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             data-testid="filtro-unidad-cuentas"
           >
             <option value="">Todas las unidades</option>
-            {unidades.map(u => (
-              <option key={u.id} value={u.codigo}>{u.nombre}</option>
+            {unidadesNegocio.map(u => (
+              <option key={u.id} value={u.id}>{u.nombre}</option>
             ))}
           </select>
           <Button
@@ -182,7 +199,7 @@ export function CuentasBancariasPage() {
           <Button
             size="sm"
             onClick={handleNuevaCuenta}
-            disabled={saving}
+            disabled={saving || !selectedUnidad}
             data-testid="btn-nueva-cuenta"
           >
             <Plus className="h-4 w-4 mr-2" />
