@@ -76,9 +76,9 @@ async def register_user(user_data: UserCreate) -> Dict[str, Any]:
     del user_dict['password']
     user = User(**user_dict)
     
-    # Preparar documento para MongoDB
+    # Preparar payload SQL-only para Usuario_Catalogo.
     doc = user.model_dump()
-    doc['password'] = hashed_pw
+    doc['password_hash'] = hashed_pw
     doc['created_at'] = doc['created_at'].isoformat()
     
     # Insertar
@@ -727,15 +727,15 @@ async def create_user_admin(user_data: Dict, current_user: Dict) -> Dict:
         "allowed_sucursales": user_data.get('allowed_sucursales', {}),
         "allowed_warehouses": user_data.get('allowed_warehouses', {}),
         "active": True,
-        "password": hashed_pw,
+        "password_hash": hashed_pw,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "created_by": current_user.get('id')  # Trazabilidad
     }
     
     await repo.create_user(new_user)
     
-    # Retornar sin password ni _id (MongoDB agrega _id al dict después de insert)
-    user_response = {k: v for k, v in new_user.items() if k not in ('password', '_id')}
+    # Retornar sin hash de password.
+    user_response = {k: v for k, v in new_user.items() if k not in ('password_hash',)}
     
     return {"message": "Usuario creado exitosamente", "user": user_response}
 

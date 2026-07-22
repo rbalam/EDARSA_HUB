@@ -1,7 +1,5 @@
 import logger from '../services/logger';
 // FASE AUTH-SECURITY-01 / FASE 4.1: getToken eliminado, auth viaja en cookie httpOnly
-import { getSessionUser } from '../services/authStorage';
-import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -13,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, User, Shield, Eye, Settings, Server, Building2, Warehouse, Edit, Key, Lock, CheckCircle2, XCircle, RefreshCw, Layers, X, Check, Mail, Phone, Clock, ExternalLink, Search, ChevronDown, ChevronUp, ShieldCheck, FileText } from 'lucide-react';
+import { Plus, Trash2, User, Shield, Eye, Settings, Server, Building2, Warehouse, Edit, Key, Lock, CheckCircle2, XCircle, RefreshCw, Layers, X, Check, Mail, Phone, Clock, ExternalLink, Search, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 // FASE 12: Componente de Bitácora RBAC (solo lectura)
 import BitacoraRBAC from '@/components/admin/BitacoraRBAC';
@@ -21,14 +19,8 @@ import BitacoraRBAC from '@/components/admin/BitacoraRBAC';
 import { getRoleBgClass, getNivelAprobacionClass, getNivelAprobacionDesc } from '../utils/styleHelpers';
 import { PasswordInput, PasswordRules, isPasswordPolicySatisfied } from '@/components/auth/PasswordControls';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 const Usuarios = () => {
-  // ============= USUARIO ACTUAL (para verificación de rol) =============
-  // AuthContext es la fuente primaria (persiste en estado React durante la
-  // navegación SPA); getSessionUser es el fallback de caché.
-  const { user: authUser } = useAuth();
-
   // RBAC canónico para visibilidad de tabs: fuente primaria /auth/me/effective-permissions
   const [effectivePermissions, setEffectivePermissions] = useState(null);
   const [effectivePermissionsLoading, setEffectivePermissionsLoading] = useState(true);
@@ -82,10 +74,6 @@ const Usuarios = () => {
   const [estructuraData, setEstructuraData] = useState(null);
   const [mapeoData, setMapeoData] = useState(null);
   const [estructuraLoading, setEstructuraLoading] = useState(false);
-
-  // ============= ESTADOS RBAC PILOTO (FASE 7 - UI mínima) =============
-  const [rbacExpandedUser, setRbacExpandedUser] = useState(null);
-  const [rbacSaving, setRbacSaving] = useState(false);
 
   // ============= ESTADOS PROVEEDORES =============
   const [proveedores, setProveedores] = useState([]);
@@ -424,6 +412,14 @@ const Usuarios = () => {
   const handleRoleSubmit = async (e) => {
     e.preventDefault();
     try {
+      if (editingRole && !canEditRoles()) {
+        toast.error('No tiene permiso efectivo para editar roles');
+        return;
+      }
+      if (!editingRole && !canCreateRoles()) {
+        toast.error('No tiene permiso efectivo para crear roles');
+        return;
+      }
       if (editingRole) {
         await api.put(`/admin-sql/roles/${editingRole.id}`, roleFormData);
         toast.success('Rol actualizado');
@@ -439,6 +435,10 @@ const Usuarios = () => {
   };
 
   const handleDeleteRole = async (roleId) => {
+    if (!canDeleteRoles()) {
+      toast.error('No tiene permiso efectivo para eliminar roles');
+      return;
+    }
     if (!window.confirm('¿Estás seguro de eliminar este rol?')) return;
     try {
       await api.delete(`/admin-sql/roles/${roleId}`);
@@ -497,14 +497,22 @@ const Usuarios = () => {
 
     try {
       if (editMode && editUserId) {
+        const targetUser = users.find((user) => String(user.id) === String(editUserId));
+        if (!canEditUser(targetUser)) {
+          toast.error('No tiene permiso efectivo para editar este usuario');
+          return;
+        }
         // Actualizar usuario existente
         const updateData = { ...formData };
         if (!updateData.password) delete updateData.password; // No enviar password vacío
         await api.put(`/users/${editUserId}`, updateData);
         toast.success('Usuario actualizado exitosamente');
       } else {
-        // Crear nuevo usuario
-        await api.post('/auth/register', formData);
+        if (!canCreateUsers()) {
+          toast.error('No tiene permiso efectivo para crear usuarios');
+          return;
+        }
+        await api.post('/users', formData);
         toast.success('Usuario creado exitosamente');
       }
       setDialogOpen(false);
@@ -529,6 +537,11 @@ const Usuarios = () => {
   };
 
   const handleDelete = async (userId) => {
+    const targetUser = users.find((user) => String(user.id) === String(userId));
+    if (!canDeleteUser(targetUser)) {
+      toast.error('No tiene permiso efectivo para eliminar este usuario');
+      return;
+    }
     if (!window.confirm('¿Estás seguro de eliminar este usuario?')) return;
     try {
       await api.delete(`/users/${userId}`);
@@ -560,6 +573,10 @@ const Usuarios = () => {
 
   const savePermissions = async () => {
     if (!selectedUser) return;
+    if (!canEditUser(selectedUser)) {
+      toast.error('No tiene permiso efectivo para modificar alcance de este usuario');
+      return;
+    }
     try {
       await api.put(`/users/${selectedUser.id}/permissions`, permissionsData);
       toast.success('Permisos guardados correctamente');
@@ -661,44 +678,50 @@ const Usuarios = () => {
     return <User className="h-4 w-4" />;
   };
 
-  // Jerarquía de roles - SuperAdministrador es el máximo
-  // P5-10B: Incluir variantes de nombres de rol (SQL usa SUPERADMIN, legacy usa SuperAdministrador)
-  const ROLE_HIERARCHY = {
-    'Usuario': 1,
-    'USUARIO': 1,
-    'Supervisor': 2,
-    'SUPERVISOR': 2,
-    'Administrador': 3,
-    'ADMINISTRADOR': 3,
-    'ADMIN': 3,
-    'SuperAdministrador': 100,
-    'SUPERADMIN': 100,
-    'SUPER_ADMIN': 100
+  const getEffectiveRoleLevel = () => {
+    const levels = (effectivePermissions?.roles || [])
+      .map((role) => Number(role?.nivel_jerarquia ?? role?.nivel ?? role?.NivelJerarquia ?? 0))
+      .filter((level) => Number.isFinite(level));
+    return levels.length ? Math.max(...levels) : 0;
   };
 
-  const getCurrentUserRole = () => {
-    const userData = authUser || getSessionUser() || {};
-    return userData.role || '';
+  const getRoleDefinitionLevel = (role) => {
+    const explicit = Number(role?.nivel ?? role?.nivel_jerarquia ?? role?.NivelJerarquia ?? role?.role_level ?? 0);
+    if (Number.isFinite(explicit) && explicit > 0) return explicit;
+    const roleCode = normalizeRbacCode(role?.codigo || role?.role_code || role?.nombre || role?.name);
+    const match = roles.find((item) => {
+      const itemCodes = [item?.codigo, item?.role_code, item?.nombre, item?.name].map(normalizeRbacCode);
+      return itemCodes.includes(roleCode);
+    });
+    return Number(match?.nivel ?? match?.nivel_jerarquia ?? match?.NivelJerarquia ?? 0) || 0;
   };
 
-  const canManageUser = (targetUser) => {
-    const currentRole = getCurrentUserRole();
-    const currentLevel = ROLE_HIERARCHY[currentRole] || 0;
-    const targetLevel = ROLE_HIERARCHY[targetUser?.role] || 0;
+  const getTargetRoleLevel = (targetUser) => getRoleDefinitionLevel({
+    nivel: targetUser?.role_level ?? targetUser?.nivel ?? targetUser?.nivel_jerarquia,
+    codigo: targetUser?.role_code,
+    nombre: targetUser?.role,
+  });
 
-    // SuperAdministrador puede gestionar a cualquiera
-    if (currentLevel >= 100) return true;
+  const isTargetSuperAdmin = (targetUser) => (
+    getTargetRoleLevel(targetUser) >= 100 || isSuperAdmin(targetUser?.role || targetUser?.role_code)
+  );
 
-    // Administrador puede gestionar usuarios de menor nivel (no SuperAdministrador)
-    if (currentLevel >= 3 && targetLevel < 100) return true;
+  const canCreateUsers = () => !effectivePermissionsLoading && (hasPermission('SISTEMA_USUARIOS_CREAR') || isEffectiveSuperAdmin());
+  const canEditUsers = () => !effectivePermissionsLoading && (hasPermission('SISTEMA_USUARIOS_EDITAR') || isEffectiveSuperAdmin());
+  const canDeleteUsers = () => !effectivePermissionsLoading && (hasPermission('SISTEMA_USUARIOS_ELIMINAR') || isEffectiveSuperAdmin());
+  const canCreateRoles = () => !effectivePermissionsLoading && (hasPermission('SISTEMA_ROLES_CREAR') || isEffectiveSuperAdmin());
+  const canEditRoles = () => !effectivePermissionsLoading && (hasPermission('SISTEMA_ROLES_EDITAR') || isEffectiveSuperAdmin());
+  const canDeleteRoles = () => !effectivePermissionsLoading && (hasPermission('SISTEMA_ROLES_ELIMINAR') || isEffectiveSuperAdmin());
 
-    return false;
+  const canManageByHierarchy = (targetUser) => {
+    if (!isTargetSuperAdmin(targetUser)) return true;
+    return getEffectiveRoleLevel() >= 100 || isEffectiveSuperAdmin();
   };
 
-  const canAssignSuperAdmin = () => {
-    const currentRole = getCurrentUserRole();
-    return ROLE_HIERARCHY[currentRole] >= 100;
-  };
+  const canEditUser = (targetUser) => canEditUsers() && canManageByHierarchy(targetUser);
+  const canDeleteUser = (targetUser) => canDeleteUsers() && canManageByHierarchy(targetUser);
+  const canManageUser = (targetUser) => canEditUser(targetUser) || canDeleteUser(targetUser);
+  const canAssignSuperAdmin = () => getEffectiveRoleLevel() >= 100 || isEffectiveSuperAdmin();
 
   // ============= RBAC CANÓNICO: VISIBILIDAD DE TABS =============
   // Fuente primaria: /auth/me/effective-permissions.
@@ -757,13 +780,9 @@ const Usuarios = () => {
       .includes(expected);
   };
 
-  const hasAnyPermission = (permissionCodes = []) => {
-    return permissionCodes.some((permissionCode) => hasPermission(permissionCode));
-  };
-
   const isEffectiveSuperAdmin = () => {
     const rolesEfectivos = getEffectiveRoleCodes().map(normalizeRbacCode);
-    return rolesEfectivos.includes('SUPERADMIN') || rolesEfectivos.includes('SUPERADMINISTRADOR');
+    return rolesEfectivos.includes('SUPERADMIN') || rolesEfectivos.includes('SUPERADMINISTRADOR') || getEffectiveRoleLevel() >= 100;
   };
 
   const canViewTab = (tabKey) => {
@@ -780,125 +799,6 @@ const Usuarios = () => {
   const canViewPermisosCatalogos = () => canViewTab('permisosCatalogos');
   const canViewEstructura = () => canViewTab('estructura');
   const canViewBitacora = () => canViewTab('bitacora');
-
-  // ============= FASE 7/8/10/11: FUNCIONES RBAC PILOTO =============
-  // Whitelist estricta FASE 11 - NO EXPANDIR sin autorización
-  const RBAC_PERMISOS_PILOTO = [
-    'SISTEMA_ESTRUCTURA_VER',
-    'SISTEMA_USUARIOS_VER',
-    'SISTEMA_USUARIOS_CREAR',     // FASE 11
-    'SISTEMA_USUARIOS_EDITAR',
-    'SISTEMA_USUARIOS_ELIMINAR',
-    'SISTEMA_ROLES_VER',
-    'SISTEMA_ROLES_CREAR',        // FASE 11
-    'SISTEMA_ROLES_EDITAR',
-    'SISTEMA_ROLES_ELIMINAR'
-  ];
-  const RBAC_ROLES_PILOTO = ['VISOR_ESTRUCTURA', 'VISOR_SISTEMA', 'VISOR_ADMIN', 'ADMIN_USUARIOS', 'GESTOR_SISTEMA'];
-
-  // FASE 13: Perfiles predefinidos
-  const RBAC_PERFILES_PILOTO = [
-    { codigo: 'PERFIL_VISOR_BASICO', nombre: 'Visor Básico', roles: ['VISOR_ESTRUCTURA'] },
-    { codigo: 'PERFIL_VISOR_SISTEMA', nombre: 'Visor Sistema', roles: ['VISOR_ESTRUCTURA', 'VISOR_SISTEMA'] },
-    { codigo: 'PERFIL_VISOR_COMPLETO', nombre: 'Visor Completo', roles: ['VISOR_ADMIN'] },
-    { codigo: 'PERFIL_ADMIN_USUARIOS', nombre: 'Admin Usuarios', roles: ['VISOR_ADMIN', 'ADMIN_USUARIOS'] },
-    { codigo: 'PERFIL_GESTOR_SISTEMA', nombre: 'Gestor Sistema', roles: ['GESTOR_SISTEMA'] }
-  ];
-
-  // Verifica si el usuario actual puede administrar RBAC piloto
-  const canAdminRBACPiloto = () => {
-    return isSuperAdmin(getCurrentUserRole());
-  };
-
-  // Verifica si se debe mostrar la sección RBAC para un usuario
-  const showRBACSection = (targetUser) => {
-    // Solo SuperAdmin puede ver la sección
-    if (!canAdminRBACPiloto()) return false;
-    // No mostrar en la propia tarjeta del SuperAdmin
-    if (isSuperAdmin(targetUser.role)) return false;
-    return true;
-  };
-
-  // Toggle permiso directo piloto (FASE 8: soporta múltiples permisos)
-  const handleTogglePermisoPiloto = async (userEmail, permisoCodigo, tienePermiso) => {
-    if (rbacSaving) return;
-    setRbacSaving(true);
-    try {
-      const response = await api.post('/admin/permisos/asignar', {
-        usuario_email: userEmail,
-        permiso: permisoCodigo,
-        accion: tienePermiso ? 'RETIRAR' : 'ASIGNAR'
-      });
-      if (response.data.success) {
-        toast.success(tienePermiso ? `Permiso ${permisoCodigo} retirado` : `Permiso ${permisoCodigo} asignado`);
-        loadUsers();
-      } else {
-        toast.error(response.data.detail || 'Error al modificar permiso');
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Error de conexión');
-    } finally {
-      setRbacSaving(false);
-    }
-  };
-
-  // Toggle rol piloto
-  const handleToggleRolPiloto = async (userEmail, rolCodigo, tieneRol) => {
-    if (rbacSaving) return;
-    setRbacSaving(true);
-    try {
-      const response = await api.post('/admin/roles/asignar', {
-        usuario_email: userEmail,
-        rol: rolCodigo,
-        accion: tieneRol ? 'RETIRAR' : 'ASIGNAR'
-      });
-      if (response.data.success) {
-        toast.success(tieneRol ? `Rol ${rolCodigo} retirado` : `Rol ${rolCodigo} asignado`);
-        loadUsers();
-      } else {
-        toast.error(response.data.detail || 'Error al modificar rol');
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Error de conexión');
-    } finally {
-      setRbacSaving(false);
-    }
-  };
-
-  // FASE 13: Asignar perfil predefinido
-  const handleAsignarPerfil = async (userEmail, perfilCodigo) => {
-    if (rbacSaving) return;
-    setRbacSaving(true);
-    try {
-      await api.post('/admin/perfiles/asignar', {
-        usuario_email: userEmail,
-        perfil: perfilCodigo
-      });
-      toast.success(`Perfil ${perfilCodigo} asignado`);
-      loadUsers();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Error de conexión');
-    } finally {
-      setRbacSaving(false);
-    }
-  };
-
-  // FASE 13: Retirar perfil
-  const handleRetirarPerfil = async (userEmail) => {
-    if (rbacSaving) return;
-    setRbacSaving(true);
-    try {
-      await api.post('/admin/perfiles/retirar', {
-        usuario_email: userEmail
-      });
-      toast.success('Perfil retirado');
-      loadUsers();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Error de conexión');
-    } finally {
-      setRbacSaving(false);
-    }
-  };
 
   return (
     <div className="space-y-6" data-testid="usuarios-page">
@@ -964,10 +864,12 @@ const Usuarios = () => {
                   {usersExpanded ? 'Contraer' : 'Expandir'}
                 </Button>
               </div>
-              <Button onClick={() => { resetForm(); setDialogOpen(true); }} className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800" data-testid="add-user-button">
-                <Plus className="h-4 w-4 mr-2" />
-                Agregar Usuario
-              </Button>
+              {canCreateUsers() && (
+                <Button onClick={() => { resetForm(); setDialogOpen(true); }} className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800" data-testid="add-user-button">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar Usuario
+                </Button>
+              )}
             </div>
             {/* Campo de búsqueda + filtro de inactivos */}
             <div className="flex items-center gap-4 flex-wrap">
@@ -1054,11 +956,13 @@ const Usuarios = () => {
                     <div className="flex gap-2 mt-4">
                       {canManageUser(user) ? (
                         <>
-                          <Button variant="outline" size="sm" className="flex-1" onClick={() => openEditDialog(user)} data-testid="edit-user-button">
-                            <Edit className="h-4 w-4 mr-1" />
-                            Editar
-                          </Button>
-                          {!isSuperAdmin(user.role) && (
+                          {canEditUser(user) && (
+                            <Button variant="outline" size="sm" className="flex-1" onClick={() => openEditDialog(user)} data-testid="edit-user-button">
+                              <Edit className="h-4 w-4 mr-1" />
+                              Editar
+                            </Button>
+                          )}
+                          {canEditUser(user) && !isTargetSuperAdmin(user) && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -1070,19 +974,21 @@ const Usuarios = () => {
                               {user.active ? 'Inactivar' : 'Activar'}
                             </Button>
                           )}
-                          {!isSuperAdmin(user.role) && (
+                          {canEditUser(user) && !isTargetSuperAdmin(user) && (
                             <Button variant="outline" size="sm" className="flex-1" onClick={() => openPermissionsDialog(user)} data-testid="permissions-button">
                               <Settings className="h-4 w-4 mr-1" />
                               Permisos
                             </Button>
                           )}
-                          <Button variant="outline" size="sm" className="flex-1" onClick={() => handleDelete(user.id)}
-                            disabled={(isAdmin(user.role) && !isSuperAdmin(user.role) && users.filter(u => isAdmin(u.role) && !isSuperAdmin(u.role)).length === 1) ||
-                                      (isSuperAdmin(user.role) && users.filter(u => isSuperAdmin(u.role)).length === 1)}
-                            data-testid="delete-user-button">
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Eliminar
-                          </Button>
+                          {canDeleteUser(user) && (
+                            <Button variant="outline" size="sm" className="flex-1" onClick={() => handleDelete(user.id)}
+                              disabled={(isAdmin(user.role) && !isSuperAdmin(user.role) && users.filter(u => isAdmin(u.role) && !isSuperAdmin(u.role)).length === 1) ||
+                                        (isSuperAdmin(user.role) && users.filter(u => isSuperAdmin(u.role)).length === 1)}
+                              data-testid="delete-user-button">
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Eliminar
+                            </Button>
+                          )}
                         </>
                       ) : (
                         <div className="text-xs text-zinc-500 italic w-full text-center py-2">
@@ -1091,125 +997,6 @@ const Usuarios = () => {
                       )}
                     </div>
 
-                    {/* ============= FASE 7: SECCIÓN RBAC PILOTO ============= */}
-                    {showRBACSection(user) && (
-                      <div className="mt-4 border-t pt-3">
-                        <button
-                          onClick={() => setRbacExpandedUser(rbacExpandedUser === user.id ? null : user.id)}
-                          className="w-full flex items-center justify-between text-sm font-medium text-indigo-700 hover:text-indigo-900 transition-colors"
-                          data-testid={`rbac-toggle-${user.id}`}
-                        >
-                          <span className="flex items-center gap-2">
-                            <ShieldCheck className="h-4 w-4" />
-                            Seguridad RBAC
-                          </span>
-                          {rbacExpandedUser === user.id ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </button>
-
-                        {rbacExpandedUser === user.id && (
-                          <div className="mt-3 space-y-3 bg-indigo-50 p-3 rounded-lg border border-indigo-100" data-testid={`rbac-section-${user.id}`}>
-                            {/* FASE 13: Perfil predefinido */}
-                            <div className="bg-white p-3 rounded border border-indigo-200">
-                              <p className="text-xs font-semibold text-indigo-800 mb-2">Perfil RBAC</p>
-                              <div className="flex items-center gap-2">
-                                <Select
-                                  value={user.sec_perfil || "none"}
-                                  onValueChange={(value) => {
-                                    if (value === "none") {
-                                      handleRetirarPerfil(user.email);
-                                    } else {
-                                      handleAsignarPerfil(user.email, value);
-                                    }
-                                  }}
-                                  disabled={rbacSaving}
-                                >
-                                  <SelectTrigger className="h-8 text-xs w-48" data-testid={`perfil-select-${user.id}`}>
-                                    <SelectValue placeholder="Sin perfil" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="none">Sin perfil</SelectItem>
-                                    {RBAC_PERFILES_PILOTO.map(p => (
-                                      <SelectItem key={p.codigo} value={p.codigo}>
-                                        {p.nombre}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                {rbacSaving && <RefreshCw className="h-3 w-3 animate-spin text-indigo-500" />}
-                              </div>
-                              {user.sec_perfil && (
-                                <p className="text-xs text-zinc-500 mt-1">
-                                  Roles del perfil: {RBAC_PERFILES_PILOTO.find(p => p.codigo === user.sec_perfil)?.roles.join(', ') || '-'}
-                                </p>
-                              )}
-                            </div>
-
-                            {/* Permisos directos (FASE 8: múltiples permisos) */}
-                            <div>
-                              <p className="text-xs font-semibold text-indigo-800 mb-2">Permisos directos (sec_permisos)</p>
-                              <div className="space-y-1">
-                                {RBAC_PERMISOS_PILOTO.map(permiso => {
-                                  const tienePermiso = (user.sec_permisos || []).includes(permiso);
-                                  return (
-                                    <label key={permiso} className="flex items-center gap-2 cursor-pointer">
-                                      <Checkbox
-                                        checked={tienePermiso}
-                                        onCheckedChange={() => handleTogglePermisoPiloto(user.email, permiso, tienePermiso)}
-                                        disabled={rbacSaving}
-                                        data-testid={`rbac-permiso-${permiso}-${user.id}`}
-                                      />
-                                      <span className="text-xs text-zinc-700">{permiso}</span>
-                                    </label>
-                                  );
-                                })}
-                                {rbacSaving && <RefreshCw className="h-3 w-3 animate-spin text-indigo-500" />}
-                              </div>
-                            </div>
-
-                            {/* Roles asignados (sec_roles - array FASE 6) */}
-                            <div>
-                              <p className="text-xs font-semibold text-indigo-800 mb-2">Roles asignados (sec_roles)</p>
-                              <div className="space-y-1">
-                                {RBAC_ROLES_PILOTO.map(rol => {
-                                  const tieneRol = (user.sec_roles || []).includes(rol);
-                                  return (
-                                    <label key={rol} className="flex items-center gap-2 cursor-pointer">
-                                      <Checkbox
-                                        checked={tieneRol}
-                                        onCheckedChange={() => handleToggleRolPiloto(user.email, rol, tieneRol)}
-                                        disabled={rbacSaving}
-                                        data-testid={`rbac-rol-${rol}-${user.id}`}
-                                      />
-                                      <span className="text-xs text-zinc-700">{rol}</span>
-                                    </label>
-                                  );
-                                })}
-                              </div>
-                            </div>
-
-                            {/* sec_rol (solo lectura - compatibilidad FASE 5) */}
-                            <div>
-                              <p className="text-xs font-semibold text-indigo-800 mb-1">Rol único legacy (sec_rol)</p>
-                              <p className="text-xs text-zinc-600 bg-white px-2 py-1 rounded border border-zinc-200">
-                                {user.sec_rol || <span className="italic text-zinc-400">Sin asignar</span>}
-                                <span className="ml-2 text-zinc-400">(solo lectura)</span>
-                              </p>
-                            </div>
-
-                            {/* Nota informativa */}
-                            <div className="bg-blue-50 border border-blue-200 rounded p-2">
-                              <p className="text-xs text-blue-700">
-                                <strong>Backend manda:</strong> La validación de seguridad siempre se resuelve en backend.
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -1251,10 +1038,12 @@ const Usuarios = () => {
                       </td>
                       <td className="py-2 px-4 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => openEditDialog(user)}>
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          {!isSuperAdmin(user.role) && (
+                          {canEditUser(user) && (
+                            <Button variant="ghost" size="sm" onClick={() => openEditDialog(user)}>
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {canEditUser(user) && !isTargetSuperAdmin(user) && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -1266,7 +1055,7 @@ const Usuarios = () => {
                               {user.active ? <XCircle className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
                             </Button>
                           )}
-                          {!isSuperAdmin(user.role) && (
+                          {canEditUser(user) && !isTargetSuperAdmin(user) && (
                             <Button variant="ghost" size="sm" onClick={() => openPermissionsDialog(user)}>
                               <Settings className="h-3 w-3" />
                             </Button>
@@ -1300,10 +1089,12 @@ const Usuarios = () => {
                   {rolesExpanded ? 'Contraer' : 'Expandir'}
                 </Button>
               </div>
-              <Button onClick={() => openRoleDialog()} className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800" data-testid="add-role-button">
-                <Plus className="h-4 w-4 mr-2" />
-                Nuevo Rol
-              </Button>
+              {canCreateRoles() && (
+                <Button onClick={() => openRoleDialog()} className="bg-zinc-900 text-zinc-50 hover:bg-zinc-800" data-testid="add-role-button">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nuevo Rol
+                </Button>
+              )}
             </div>
             {/* Campo de búsqueda */}
             <div className="relative max-w-md">
@@ -1412,11 +1203,13 @@ const Usuarios = () => {
                       </div>
 
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1" onClick={() => openRoleDialog(role)} data-testid="edit-role-button">
-                        <Edit className="h-4 w-4 mr-1" />
-                        Editar
-                      </Button>
-                      {!role.es_sistema && (
+                      {canEditRoles() && (
+                        <Button variant="outline" size="sm" className="flex-1" onClick={() => openRoleDialog(role)} data-testid="edit-role-button">
+                          <Edit className="h-4 w-4 mr-1" />
+                          Editar
+                        </Button>
+                      )}
+                      {canDeleteRoles() && !role.es_sistema && (
                         <Button variant="outline" size="sm" className="flex-1 text-red-600 hover:text-red-700" onClick={() => handleDeleteRole(role.id)} data-testid="delete-role-button">
                           <Trash2 className="h-4 w-4 mr-1" />
                           Eliminar
@@ -1466,10 +1259,12 @@ const Usuarios = () => {
                       </td>
                       <td className="py-2 px-4 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => openRoleDialog(role)}>
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          {!role.es_sistema && (
+                          {canEditRoles() && (
+                            <Button variant="ghost" size="sm" onClick={() => openRoleDialog(role)}>
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {canDeleteRoles() && !role.es_sistema && (
                             <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDeleteRole(role.id)}>
                               <Trash2 className="h-3 w-3" />
                             </Button>
@@ -1953,7 +1748,7 @@ const Usuarios = () => {
                     roles
                       .filter(role => {
                         // Si no es SuperAdministrador, no puede asignar ese rol
-                        if (isSuperAdmin(role.nombre) && !canAssignSuperAdmin()) {
+                        if (getRoleDefinitionLevel(role) >= 100 && !canAssignSuperAdmin()) {
                           return false;
                         }
                         return true;
@@ -1964,11 +1759,9 @@ const Usuarios = () => {
                         </SelectItem>
                       ))
                   ) : (
-                    <>
-                      <SelectItem value="Usuario">Usuario</SelectItem>
-                      <SelectItem value="Supervisor">Supervisor</SelectItem>
-                      <SelectItem value="Administrador">Administrador</SelectItem>
-                    </>
+                    <SelectItem value={formData.role || 'SIN_ROLES'} disabled>
+                      No hay roles canónicos disponibles
+                    </SelectItem>
                   )}
                 </SelectContent>
               </Select>

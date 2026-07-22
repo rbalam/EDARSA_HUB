@@ -117,6 +117,7 @@ async def get_users(
         ISNULL(u.Bloqueado, 0) AS bloqueado,
         r.NombreRol AS role,
         r.CodigoRol AS role_code,
+        r.NivelJerarquia AS role_level,
         r.RolID
     FROM Usuario_Catalogo u
     OUTER APPLY (
@@ -848,7 +849,7 @@ async def create_role_sql(role_data: dict, current_user: dict = Depends(get_curr
 @router.delete("/roles/{role_id}")
 async def delete_role_sql(role_id: str, current_user: dict = Depends(get_current_user)):
     require_admin(current_user)
-    execute_query("""
+    execute_write("""
         UPDATE dbo.Usuario_Roles
         SET Activo = 0, FechaModificacion = GETDATE()
         WHERE RolID = %s AND ISNULL(EsRolSistema, 0) = 0
