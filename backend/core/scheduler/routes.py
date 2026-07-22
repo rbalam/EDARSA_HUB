@@ -352,8 +352,7 @@ async def get_scheduler_config(
     # Complemento SQL-first: metadatos operativos editables/visibles desde Centro de Control.
     # No ejecuta comandos arbitrarios; solo expone instrucción, preview, parámetros y dependencias.
     try:
-        from core.centro_control.routes import _ensure_scheduler_job_config_table, _cc_fetchall
-        _ensure_scheduler_job_config_table()
+        from core.centro_control.routes import _cc_fetchall
         rows = _cc_fetchall("""
             SELECT
                 JobID,

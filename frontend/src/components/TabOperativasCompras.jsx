@@ -7,9 +7,7 @@
  * FASE 6: Refactorizado - Subcomponentes en /components/compras/operativas/
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-// FASE AUTH-SECURITY-01 / FASE 4: getToken eliminado, auth viaja en cookie httpOnly
-import { getSessionUser } from '../services/authStorage';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import logger from '../services/logger';
 // FASE AUTH-V2-ALIGN: auth canónica vía Bearer (authedFetch) + cookie httpOnly
 import { authedFetch } from '../services/operativoApi';
@@ -47,6 +45,11 @@ import {
 import { getAccionResultLabel, getDiferenciaClass } from '../utils/styleHelpers';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
+const COMPRAS_AUTORIZAR_PERMISSION = 'COMPRAS_FACT_AUTORIZAR';
+const COMPRAS_APROBAR_PERMISSION = 'COMPRAS_FACT_APROBAR';
+const COMPRAS_CONFIGURAR_PERMISSION = 'COMPRAS_FACT_CONFIGURAR';
+
+const normalizePermissionCode = (value) => String(value || '').trim().toUpperCase();
 
 const formatDate = (dateStr) => {
   if (!dateStr) return '-';
@@ -56,7 +59,11 @@ const formatDate = (dateStr) => {
   });
 };
 
-export default function TabOperativasCompras() {
+export default function TabOperativasCompras({
+  unidadNegocioPk = '',
+  permissionCodes = [],
+  globalAccess = false,
+}) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [kpis, setKpis] = useState({});
@@ -66,7 +73,6 @@ export default function TabOperativasCompras() {
   const [editingDias, setEditingDias] = useState(false);
   const [nuevoDiasObjetivo, setNuevoDiasObjetivo] = useState(10);
   const [bitacora, setBitacora] = useState([]);
-  const [userRole, setUserRole] = useState('');
   const [comentario, setComentario] = useState('');
   const [procesando, setProcesando] = useState(false);
   
@@ -77,24 +83,31 @@ export default function TabOperativasCompras() {
   const [porcentajeAjuste, setPorcentajeAjuste] = useState(0);
   const [motivoAjuste, setMotivoAjuste] = useState('');
   
-  // FASE AUTH-SECURITY-01: Auth headers reemplazados por credentials: 'include'
-  const getFetchOptions = (method = 'GET', body = null) => {
-    const options = {
-      method,
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' }
-    };
-    if (body) options.body = JSON.stringify(body);
-    return options;
-  };
-  
-  const isGerencia = ['Gerente', 'Director', 'Administrador'].includes(userRole);
-  const isTesoreria = ['Tesoreria', 'Director', 'Administrador'].includes(userRole);
-  
-  useEffect(() => {
-    const user = getSessionUser() || {};
-    setUserRole(user.role || '');
-  }, []);
+  const permissionSet = useMemo(
+    () => new Set((permissionCodes || []).map(normalizePermissionCode)),
+    [permissionCodes]
+  );
+
+  const hasPermission = useCallback((code) => (
+    globalAccess || permissionSet.has(normalizePermissionCode(code))
+  ), [globalAccess, permissionSet]);
+
+  const canAutorizarCompras = hasPermission(COMPRAS_AUTORIZAR_PERMISSION);
+  const canAprobarCompras = hasPermission(COMPRAS_APROBAR_PERMISSION);
+  const canConfigurarCompras = hasPermission(COMPRAS_CONFIGURAR_PERMISSION);
+
+  const buildComprasUrl = useCallback((path = '', params = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        query.set(key, String(value));
+      }
+    });
+    const unidad = String(unidadNegocioPk || '').trim();
+    if (unidad) query.set('unidad_negocio_pk', unidad);
+    const queryString = query.toString();
+    return `${API_URL}/api/v2/automatizaciones/operativas/compras${path}${queryString ? `?${queryString}` : ''}`;
+  }, [unidadNegocioPk]);
   
   const fetchData = useCallback(async (showLoader = true) => {
     if (showLoader) setLoading(true);
@@ -102,8 +115,8 @@ export default function TabOperativasCompras() {
     
     try {
       const [kpisRes, listRes] = await Promise.all([
-        authedFetch(`${API_URL}/api/v2/automatizaciones/operativas/compras/kpis`),
-        authedFetch(`${API_URL}/api/v2/automatizaciones/operativas/compras?limite=50`)
+        authedFetch(buildComprasUrl('/kpis')),
+        authedFetch(buildComprasUrl('', { limite: 50 }))
       ]);
       
       if (kpisRes.ok) setKpis(await kpisRes.json());
@@ -114,7 +127,7 @@ export default function TabOperativasCompras() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [buildComprasUrl]);
   
   useEffect(() => {
     fetchData();
@@ -129,7 +142,7 @@ export default function TabOperativasCompras() {
       if (res.ok) {
         const data = await res.json();
         setSelectedItem(data);
-        setNuevoDiasObjetivo(data.dias_objetivo || 10);
+        setNuevoDiasObjetivo(data.dias_objetivo ?? data.dias_objetivo_default ?? '');
         setFechaConsumoInicio(data.fecha_consumo_inicio?.split('T')[0] || '');
         setFechaConsumoFin(data.fecha_consumo_fin?.split('T')[0] || '');
         setPorcentajeAjuste(data.porcentaje_ajuste_consumo || 0);
@@ -386,7 +399,7 @@ export default function TabOperativasCompras() {
               {/* Periodo Estadístico (Editable) */}
               <PeriodoEstadisticoCard
                 selectedItem={selectedItem}
-                isGerencia={isGerencia}
+                isGerencia={canConfigurarCompras}
                 editandoConsumo={editandoConsumo}
                 setEditandoConsumo={setEditandoConsumo}
                 fechaConsumoInicio={fechaConsumoInicio}
@@ -426,7 +439,7 @@ export default function TabOperativasCompras() {
                       </CardTitle>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-zinc-500">Días Objetivo:</span>
-                        {editingDias && isGerencia ? (
+                        {editingDias && canConfigurarCompras ? (
                           <div className="flex items-center gap-1">
                             <Input
                               type="number" min="1" max="90"
@@ -444,8 +457,8 @@ export default function TabOperativasCompras() {
                           </div>
                         ) : (
                           <div className="flex items-center gap-1">
-                            <span className="font-medium">{selectedItem.dias_objetivo || 10}</span>
-                            {isGerencia && selectedItem.estado === 'EN_REVISION_GERENCIA' && (
+                            <span className="font-medium">{selectedItem.dias_objetivo ?? selectedItem.dias_objetivo_default ?? '-'}</span>
+                            {canConfigurarCompras && selectedItem.estado === 'EN_REVISION_GERENCIA' && (
                               <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setEditingDias(true)} data-testid="btn-edit-dias">
                                 <Settings2 className="w-3 h-3" />
                               </Button>
@@ -532,7 +545,7 @@ export default function TabOperativasCompras() {
               )}
               
               {/* Acciones Gerencia */}
-              {selectedItem.estado === 'EN_REVISION_GERENCIA' && isGerencia && (
+              {selectedItem.estado === 'EN_REVISION_GERENCIA' && canAutorizarCompras && (
                 <AccionesGerenciaCard
                   comentario={comentario}
                   setComentario={setComentario}
@@ -542,7 +555,7 @@ export default function TabOperativasCompras() {
               )}
               
               {/* Acciones Tesorería */}
-              {selectedItem.estado === 'PENDIENTE_TESORERIA' && isTesoreria && (
+              {selectedItem.estado === 'PENDIENTE_TESORERIA' && canAprobarCompras && (
                 <AccionesTesoreriaCard
                   selectedItem={selectedItem}
                   comentario={comentario}

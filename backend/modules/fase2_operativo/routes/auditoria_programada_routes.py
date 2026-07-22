@@ -40,6 +40,22 @@ def get_db():
     return get_database()
 
 
+def _get_authenticated_actor_id(current_user: dict) -> str:
+    usuario_id = str(
+        current_user.get("id")
+        or current_user.get("user_id")
+        or current_user.get("sub")
+        or current_user.get("email")
+        or ""
+    ).strip()
+    if not usuario_id:
+        raise HTTPException(
+            status_code=403,
+            detail="No fue posible resolver identidad RBAC del usuario autenticado"
+        )
+    return usuario_id
+
+
 # =============================================================================
 # CRUD
 # =============================================================================
@@ -210,7 +226,10 @@ async def crear_auditoria(
             (AUDITORIAS_PROGRAMAR,),
         )
         
-        auditoria = service.crear(request, unidad_negocio_pk=unidad_pk)
+        request_autenticado = request.model_copy(
+            update={"created_by": _get_authenticated_actor_id(current_user)}
+        )
+        auditoria = service.crear(request_autenticado, unidad_negocio_pk=unidad_pk)
         
         return OperacionResponse(
             success=True,

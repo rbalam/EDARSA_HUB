@@ -14,7 +14,7 @@ import logger from '../services/logger';
  * - FASE 0: Panel de Re-sincronización Manual
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -68,10 +68,13 @@ import {
   Database,
   Plus,
 } from 'lucide-react';
-import { getUser } from '@/lib/auth';
 // FASE AUTH-SECURITY-01 / FASE 4: getToken eliminado, auth viaja en cookie httpOnly
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const SCHEDULER_VIEW_PERMISSIONS = ['SCHEDULER_VER'];
+const SCHEDULER_MANAGE_PERMISSIONS = ['SCHEDULER_GESTIONAR'];
+const SCHEDULER_ADMIN_PERMISSIONS = ['SCHEDULER_ADMIN'];
+
+const normalizePermissionCode = (value) => String(value || '').trim().toUpperCase();
 
 // Formateo de fechas
 const formatDateTime = (isoString) => {
@@ -188,8 +191,10 @@ const ExecutionStatusBadge = ({ status }) => {
 };
 
 export default function Scheduler() {
-  const user = getUser();
   const [loading, setLoading] = useState(true);
+  const [permissionsLoading, setPermissionsLoading] = useState(true);
+  const [functionalPermissions, setFunctionalPermissions] = useState([]);
+  const [globalAccess, setGlobalAccess] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [autoRefreshInterval, setAutoRefreshInterval] = useState(30); // segundos
@@ -216,13 +221,46 @@ export default function Scheduler() {
 
   const [actionLoading, setActionLoading] = useState(false);
   
-  // Permisos RBAC (derivados del rol)
-  const normalizedRole = String(user?.role || '').toUpperCase();
-  const userPermissions = {
-    canView: ['SUPERADMIN', 'ADMIN', 'ADMINISTRADOR', 'SUPERVISOR', 'GERENTE', 'DIRECTOR', 'AUDITOR'].includes(normalizedRole),
-    canManage: ['SUPERADMIN', 'ADMIN', 'ADMINISTRADOR', 'SUPERVISOR', 'GERENTE', 'DIRECTOR'].includes(normalizedRole),
-    canAdmin: ['SUPERADMIN', 'ADMIN', 'ADMINISTRADOR', 'SUPERADMINISTRADOR', 'DIRECTOR'].includes(normalizedRole),
-  };
+  const permissionSet = useMemo(
+    () => new Set(functionalPermissions.map(normalizePermissionCode)),
+    [functionalPermissions]
+  );
+
+  const hasAnyPermission = useCallback((codes) => {
+    if (globalAccess) return true;
+    return codes.some((code) => permissionSet.has(normalizePermissionCode(code)));
+  }, [globalAccess, permissionSet]);
+
+  const userPermissions = useMemo(() => ({
+    canView: hasAnyPermission(SCHEDULER_VIEW_PERMISSIONS),
+    canManage: hasAnyPermission(SCHEDULER_MANAGE_PERMISSIONS),
+    canAdmin: hasAnyPermission(SCHEDULER_ADMIN_PERMISSIONS),
+  }), [hasAnyPermission]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadPermissions = async () => {
+      setPermissionsLoading(true);
+      try {
+        const response = await api.get('/auth/me/menu-permissions');
+        if (!mounted) return;
+        setFunctionalPermissions(response.data?.permisos_funcionales || []);
+        setGlobalAccess(Boolean(response.data?.tiene_acceso_global));
+      } catch (error) {
+        logger.error('[Scheduler] Error cargando permisos:', error);
+        if (mounted) {
+          setFunctionalPermissions([]);
+          setGlobalAccess(false);
+        }
+      } finally {
+        if (mounted) setPermissionsLoading(false);
+      }
+    };
+
+    loadPermissions();
+    return () => { mounted = false; };
+  }, []);
 
   // Fetch scheduler status
   const fetchSchedulerStatus = useCallback(async () => {
@@ -273,6 +311,13 @@ export default function Scheduler() {
 
   // Fetch all data
   const fetchAllData = useCallback(async (showRefreshing = false) => {
+    if (permissionsLoading) return;
+    if (!userPermissions.canView) {
+      setLoading(false);
+      if (showRefreshing) setRefreshing(false);
+      return;
+    }
+
     if (showRefreshing) setRefreshing(true);
     await Promise.all([
       fetchSchedulerStatus(),
@@ -282,30 +327,37 @@ export default function Scheduler() {
     ]);
     setLoading(false);
     if (showRefreshing) setRefreshing(false);
-  }, [fetchSchedulerStatus, fetchSchedulerConfig, fetchLogs, fetchStats]);
+  }, [
+    fetchSchedulerStatus,
+    fetchSchedulerConfig,
+    fetchLogs,
+    fetchStats,
+    permissionsLoading,
+    userPermissions.canView,
+  ]);
 
   // Initial load
   useEffect(() => {
-    fetchAllData();
-  }, [fetchAllData]);
+    if (!permissionsLoading) fetchAllData();
+  }, [fetchAllData, permissionsLoading]);
 
   // Refetch logs when filters change
   useEffect(() => {
-    if (!loading) {
+    if (!loading && !permissionsLoading && userPermissions.canView) {
       fetchLogs();
     }
-  }, [filterJob, filterStatus, filterHours, fetchLogs, loading]);
+  }, [filterJob, filterStatus, filterHours, fetchLogs, loading, permissionsLoading, userPermissions.canView]);
 
   // Auto-refresh
   useEffect(() => {
-    if (!autoRefresh) return;
+    if (!autoRefresh || permissionsLoading || !userPermissions.canView) return;
     
     const interval = setInterval(() => {
       fetchAllData(false);
     }, autoRefreshInterval * 1000);
     
     return () => clearInterval(interval);
-  }, [autoRefresh, autoRefreshInterval, fetchAllData]);
+  }, [autoRefresh, autoRefreshInterval, fetchAllData, permissionsLoading, userPermissions.canView]);
 
   // Job actions
   const handleJobAction = async (action, jobId) => {
@@ -368,11 +420,20 @@ export default function Scheduler() {
     );
   });
 
-  if (loading) {
+  if (loading || permissionsLoading) {
     return (
       <div className="flex items-center justify-center h-96" data-testid="scheduler-loading">
         <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
         <span className="ml-2 text-zinc-500">Cargando scheduler...</span>
+      </div>
+    );
+  }
+
+  if (!userPermissions.canView) {
+    return (
+      <div className="flex items-center justify-center h-96" data-testid="scheduler-no-permission">
+        <AlertCircle className="w-6 h-6 text-amber-500" />
+        <span className="ml-2 text-zinc-600">Sin permiso para ver Programación</span>
       </div>
     );
   }

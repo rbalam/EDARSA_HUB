@@ -70,7 +70,6 @@ import {
   Zap,
   ListChecks,
 } from 'lucide-react';
-import { getUser } from '@/lib/auth';
 import { fetchUnidadesNegocio } from '@/services/unidadesNegocioService';
 import { toast } from 'sonner';
 import { useAuditoriasData } from '@/components/auditorias';
@@ -182,7 +181,6 @@ const ExecutionBadge = ({ estado }) => {
 };
 
 export default function AuditoriasProgramadas() {
-  const user = getUser();
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [unidadesNegocio, setUnidadesNegocio] = useState([]);
   const [selectedUnidad, setSelectedUnidad] = useState('all');
@@ -364,7 +362,6 @@ export default function AuditoriasProgramadas() {
         server_id: unidad.server_id || '',
         sucursal_id: unidad.sucursal_origen_id || unidad.codigo || unidadPk,
         sucursal_nombre: getUnidadNombre(unidad),
-        created_by: user?.email || 'unknown',
       };
       
       if (editingId) {
@@ -836,7 +833,11 @@ export default function AuditoriasProgramadas() {
 
         {/* ========== TAB: OPERATIVAS ========== */}
         <TabsContent value="operativas" className="space-y-4">
-          <TabOperativasCompras />
+          <TabOperativasCompras
+            unidadNegocioPk={selectedUnidadFiltro}
+            permissionCodes={functionalPermissions}
+            globalAccess={globalAccess}
+          />
         </TabsContent>
 
         {/* ========== TAB: HISTORIAL GLOBAL ========== */}

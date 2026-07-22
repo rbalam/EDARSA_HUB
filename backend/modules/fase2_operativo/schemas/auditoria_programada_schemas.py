@@ -106,7 +106,7 @@ class AuditoriaProgramadaCreate(BaseModel):
     usuario_responsable_id: Optional[str] = None
     rol_responsable: Optional[str] = None
     observaciones: Optional[str] = None
-    created_by: str
+    created_by: Optional[str] = None
 
 
 class AuditoriaProgramadaUpdate(BaseModel):
