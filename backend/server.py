@@ -593,6 +593,7 @@ api_router.include_router(inteligencia_comercial_fase1_router)
 from modules.rh import init_rh_module, get_router as get_rh_router, get_importador_router as get_rh_importador_router
 from modules.rh.solicitudes_catalogo import router as rh_solicitudes_router
 from modules.finanzas.cuentas_por_pagar import router as cxp_router
+from modules.finanzas.comprobaciones import router as comprobaciones_router
 from modules.finanzas.ingresos import router as ingresos_router
 from modules.finanzas.tesoreria import router as tesoreria_router
 from modules.finanzas.health import router as finanzas_health_router
@@ -661,6 +662,9 @@ api_router.include_router(rh_solicitudes_router)
 
 # FASE FINANZAS: Registrar router de cuentas por pagar
 api_router.include_router(cxp_router)
+
+# FASE FINANZAS: Registrar router de comprobaciones
+api_router.include_router(comprobaciones_router)
 
 # FASE FINANZAS: Registrar router de ingresos
 api_router.include_router(ingresos_router)

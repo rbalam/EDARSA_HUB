@@ -12,7 +12,7 @@ import {
   ChevronUp, ChevronDown, AlertCircle, FileText, Copy,
   PieChart, BarChart3, Calendar, Download, Printer,
   CreditCard, Clock, CheckCircle2, XCircle, Eye,
-  FileSpreadsheet, File, ChevronRight, Upload, Banknote
+  FileSpreadsheet, File, ChevronRight, Upload, Banknote, FileCheck2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
@@ -24,7 +24,7 @@ import PropinasTPV from '../components/PropinasTPV';
 // MIGRACIÓN SQL-FIRST: Removido fetchUnidadesNegocio, ahora usa Corporate Filters
 import { CorporateFiltersProvider } from '../filters/CorporateFiltersProvider';
 import { useFinanzasCorporateFilters } from '../filters';
-import { FinanzasCuentasPorPagar, FinanzasControlIngresos, FinanzasDashboard, FinanzasPresupuestos } from '../components/finanzas';
+import { FinanzasComprobaciones, FinanzasCuentasPorPagar, FinanzasControlIngresos, FinanzasDashboard, FinanzasPresupuestos } from '../components/finanzas';
 import { CuentasBancariasPage } from '../components/finanzas/cuentas-bancarias';
 import { Landmark } from 'lucide-react';
 
@@ -1076,6 +1076,9 @@ function FinanzasContent() {
     { id: 'dashboard', label: 'Dashboard', icon: PieChart },
     { id: 'ingresos', label: 'Control de Ingresos', icon: TrendingUp },
     { id: 'cxp', label: 'Cuentas por Pagar', icon: CreditCard },
+    ...(finanzasPermissions.canView
+      ? [{ id: 'comprobaciones', label: 'Comprobaciones', icon: FileCheck2 }]
+      : []),
     { id: 'propinas', label: 'Propinas TPV', icon: DollarSign },
     { id: 'tesoreria', label: 'Tesorería', icon: Banknote },
     { id: 'cuentas-bancarias', label: 'Cuentas Bancarias', icon: Landmark },
@@ -1238,6 +1241,15 @@ function FinanzasContent() {
       />
     );
   };
+
+  const renderComprobaciones = () => (
+    <FinanzasComprobaciones
+      selectedUnidad={selectedUnidad}
+      unidadesNegocio={unidadesNegocio}
+      loadingUnidades={loadingUnidades}
+      onUnidadChange={setSelectedUnidad}
+    />
+  );
   
   // Render Reportes
   const renderReportes = () => {
@@ -1433,6 +1445,7 @@ function FinanzasContent() {
           {activeTab === 'dashboard' && renderDashboard()}
           {activeTab === 'ingresos' && renderControlIngresos()}
           {activeTab === 'cxp' && renderCuentasPorPagar()}
+          {activeTab === 'comprobaciones' && finanzasPermissions.canView && renderComprobaciones()}
           {activeTab === 'propinas' && <PropinasTPV />}
           {activeTab === 'tesoreria' &&
             tesoreriaPermissions.canView && (
