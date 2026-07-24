@@ -1,0 +1,131 @@
+name: One-time Agent-Reach import
+
+on:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - .github/workflows/import-agent-reach.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-time-agent-reach-import
+  cancel-in-progress: false
+
+jobs:
+  import-agent-reach:
+    if: github.event.head_commit.message == 'chore(automation): stage Agent-Reach import'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout EDARSAHUB
+        uses: actions/checkout@v4
+        with:
+          ref: Edarsahub_Desarrollo
+          fetch-depth: 0
+
+      - name: Import pinned Agent-Reach snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TARGET_DIR="third_party/agent-reach"
+          PROVENANCE_FILE="docs/third_party/agent-reach.md"
+          UPSTREAM_URL="https://github.com/Panniantong/Agent-Reach.git"
+          UPSTREAM_BRANCH="main"
+          UPSTREAM_SHA="71c541577238d87057af496e9588504e552f8952"
+
+          if [ -e "$TARGET_DIR" ]; then
+            echo "ERROR: $TARGET_DIR already exists"
+            exit 1
+          fi
+
+          if [ -e "$PROVENANCE_FILE" ]; then
+            echo "ERROR: $PROVENANCE_FILE already exists"
+            exit 1
+          fi
+
+          git fetch --no-tags "$UPSTREAM_URL" "$UPSTREAM_BRANCH"
+          git cat-file -e "${UPSTREAM_SHA}^{commit}"
+          git cat-file -e "${UPSTREAM_SHA}:LICENSE"
+          git cat-file -e "${UPSTREAM_SHA}:README.md"
+          git cat-file -e "${UPSTREAM_SHA}:pyproject.toml"
+
+          git read-tree --prefix="${TARGET_DIR}/" -u "$UPSTREAM_SHA"
+
+          mkdir -p "$(dirname "$PROVENANCE_FILE")"
+          cat > "$PROVENANCE_FILE" <<EOF
+          # Agent-Reach incorporado en EDARSAHUB
+
+          ## Procedencia
+
+          - Proyecto original: Panniantong/Agent-Reach
+          - Repositorio original: https://github.com/Panniantong/Agent-Reach
+          - Rama externa importada: ${UPSTREAM_BRANCH}
+          - Commit externo importado: ${UPSTREAM_SHA}
+          - Ruta interna: ${TARGET_DIR}
+          - Metodo de incorporacion: snapshot versionado mediante git fetch y git read-tree
+          - Licencia declarada por el proyecto: MIT
+
+          ## Objetivo dentro de EDARSA BOS
+
+          Agent-Reach se incorpora como componente externo para adquirir evidencia de
+          inteligencia competitiva desde redes sociales, sitios web, videos, RSS y otras
+          fuentes publicas.
+
+          Su codigo queda almacenado fisicamente dentro de EDARSAHUB para evitar una
+          dependencia operativa del repositorio externo.
+
+          ## Limites arquitectonicos
+
+          Agent-Reach no constituye una fuente canonica de ventas, costos, informacion
+          financiera, presupuestos, indicadores internos ni decisiones aprobadas por
+          Direccion.
+
+          La informacion recopilada debera conservarse como evidencia externa,
+          normalizarse y analizarse mediante componentes propios de EDARSA BOS.
+
+          ## Reglas obligatorias
+
+          1. No almacenar cookies, tokens, sesiones o credenciales en Git.
+          2. No ejecutar Agent-Reach dentro del proceso principal del backend.
+          3. Ejecutarlo posteriormente como worker o servicio aislado.
+          4. No concederle escritura directa sobre tablas canonicas.
+          5. Conservar URL, plataforma, competidor, fecha y trazabilidad.
+          6. Separar hechos observados, inferencias, hipotesis y recomendaciones.
+          7. Auditar dependencias antes de habilitarlo operativamente.
+          8. Respetar restricciones y limites de cada plataforma.
+          9. Toda actualizacion futura debe registrar el nuevo commit externo importado.
+          EOF
+
+          git add "$PROVENANCE_FILE"
+
+          STAGED_FILES="$(git diff --cached --name-only)"
+          OUTSIDE_FILES="$(printf '%s\n' "$STAGED_FILES" | grep -Ev '^(third_party/agent-reach/|docs/third_party/agent-reach\.md$)' || true)"
+
+          if [ -n "$OUTSIDE_FILES" ]; then
+            echo "ERROR: files outside allowed import scope"
+            printf '%s\n' "$OUTSIDE_FILES"
+            exit 1
+          fi
+
+          IMPORTED_COUNT="$(printf '%s\n' "$STAGED_FILES" | grep '^third_party/agent-reach/' | wc -l | tr -d ' ')"
+          TOTAL_COUNT="$(printf '%s\n' "$STAGED_FILES" | sed '/^$/d' | wc -l | tr -d ' ')"
+
+          if [ "$IMPORTED_COUNT" -ne 98 ] || [ "$TOTAL_COUNT" -ne 99 ]; then
+            echo "ERROR: unexpected file count: imported=$IMPORTED_COUNT total=$TOTAL_COUNT"
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git commit \
+            -m "feat(inteligencia): incorporar Agent-Reach como dependencia vendorizada" \
+            -m "Origen: Panniantong/Agent-Reach@${UPSTREAM_SHA}" \
+            -m "Ruta: ${TARGET_DIR}" \
+            -m "Sin instalacion ni deploy."
+
+          git push origin HEAD:Edarsahub_Desarrollo
