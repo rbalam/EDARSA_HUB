@@ -1,0 +1,53 @@
+name: Agent-Reach Runtime Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [Edarsahub_Desarrollo]
+    paths:
+      - "infra/agent-reach/**"
+      - "third_party/agent-reach/**"
+      - ".github/workflows/agent-reach-runtime-audit.yml"
+  pull_request:
+    paths:
+      - "infra/agent-reach/**"
+      - "third_party/agent-reach/**"
+      - ".github/workflows/agent-reach-runtime-audit.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f infra/agent-reach/Dockerfile
+          test -x infra/agent-reach/build.sh
+          test -x infra/agent-reach/healthcheck.sh
+          test -f infra/agent-reach/requirements.lock
+          test -f infra/agent-reach/versions.lock
+          test -f infra/agent-reach/yt-dlp.conf
+          test -f third_party/agent-reach/pyproject.toml
+          sh -n infra/agent-reach/build.sh
+          sh -n infra/agent-reach/healthcheck.sh
+          echo "CANONICAL_SOURCE_VALIDATION=PASS"
+
+      - name: Build and validate image
+        shell: bash
+        run: |
+          set -euo pipefail
+          infra/agent-reach/build.sh
+          . infra/agent-reach/versions.lock
+          IMAGE="${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+          test "$(docker image inspect --format '{{.Config.User}}' "$IMAGE")" = "edarsa-agent-reach"
+          docker run --rm --entrypoint /usr/local/bin/agent-reach-healthcheck "$IMAGE"
+          echo "CANONICAL_IMAGE_VALIDATION=PASS"
+          echo "IMAGE_PUSHED=0"
+          echo "DEPLOY_EXECUTED=0"
