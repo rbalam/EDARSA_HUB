@@ -39,8 +39,11 @@ jobs:
         run: |
           set -euo pipefail
           python -m compileall -q backend/modules/comercial_v2
-          python -m pytest -q \
-            backend/tests/test_comercial_v2_periodos.py
+          (
+            cd backend
+            PYTHONPATH="$GITHUB_WORKSPACE/backend" \
+              python -m pytest -q tests/test_comercial_v2_periodos.py
+          )
 
       - name: Validate frontend syntax
         working-directory: frontend
