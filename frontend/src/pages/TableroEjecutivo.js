@@ -116,7 +116,7 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       // cheque_promedio es alias compatible de ticket_promedio
       cheque_promedio: u.cheque_promedio ?? u.ticket_promedio ?? 0,
       ticket_promedio: u.ticket_promedio ?? 0,
-      pax_promedio: u.pax_promedio ?? 0,
+      pax_promedio: u.pax_promedio ?? null,
       // ACTUALIZADO: Usar días GLOBALES (FechaOperacionActual.day), NO u.dias
       proyeccion: u.proyeccion ?? calcularProyeccion(u.ventas_total || 0),
       // FASE 3: Variaciones vienen directamente de V2 (EDARSAHUB)
@@ -197,6 +197,141 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
     logger.error('[COMERCIAL_V2] Error transformando respuesta v2:', error);
     throw error;
   }
+};
+
+// Contrato dinamico compartido por Ejecutivo, Comercial e Inteligencia.
+// El frontend solo presenta; comparativos y proyeccion vienen del backend.
+const aplicarContratoPeriodo = (responseData, contratoGeneral, contratosUnidad = {}) => {
+  const contrato = contratoGeneral?.data || contratoGeneral || null;
+  if (!contrato || !responseData) return responseData;
+
+  const actual = contrato.actual || {};
+  const inmediato = contrato.comparativos?.inmediato || {};
+  const anual = contrato.comparativos?.anual || {};
+  const proyeccion = contrato.proyeccion || {};
+  const unidadesConDatos = contrato.unidades_con_datos || {};
+
+  responseData.periodo = {
+    ...(responseData.periodo || {}),
+    modo_periodo: contrato.modo_periodo,
+    fecha_corte_datos: contrato.periodos?.fecha_corte_datos,
+    periodo_cerrado: contrato.periodos?.periodo_cerrado,
+    etiquetas: contrato.etiquetas || {}
+  };
+
+  responseData.totales = {
+    ...(responseData.totales || {}),
+    pax_promedio: actual.pax_promedio ?? responseData.totales?.pax_promedio ?? null,
+    cheque_promedio: actual.cheque_promedio ?? responseData.totales?.cheque_promedio ?? null,
+    ticket_promedio: actual.cheque_promedio ?? responseData.totales?.ticket_promedio ?? null,
+    proyeccion: proyeccion.proyeccion_total ?? responseData.totales?.proyeccion ?? null,
+    var_vs_mes_ant: inmediato.var_ventas ?? responseData.totales?.var_vs_mes_ant ?? null,
+    var_vs_año_ant: anual.var_ventas ?? responseData.totales?.var_vs_año_ant ?? null,
+    var_pax_mes: inmediato.var_pax ?? responseData.totales?.var_pax_mes ?? null,
+    var_pax_año: anual.var_pax ?? responseData.totales?.var_pax_año ?? null,
+    var_cheques_mes: inmediato.var_cheques ?? responseData.totales?.var_cheques_mes ?? null,
+    var_cheques_año: anual.var_cheques ?? responseData.totales?.var_cheques_año ?? null,
+    var_proy_vs_mes: inmediato.var_proyeccion ?? responseData.totales?.var_proy_vs_mes ?? null,
+    var_proy_vs_año: anual.var_proyeccion ?? responseData.totales?.var_proy_vs_año ?? null,
+    ventas_ant: inmediato.ventas ?? responseData.totales?.ventas_ant ?? null,
+    ventas_año: anual.ventas ?? responseData.totales?.ventas_año ?? null,
+    pax_ant: inmediato.pax ?? responseData.totales?.pax_ant ?? null,
+    pax_año: anual.pax ?? responseData.totales?.pax_año ?? null,
+    cheques_ant: inmediato.cheques ?? responseData.totales?.cheques_ant ?? null,
+    cheques_año: anual.cheques ?? responseData.totales?.cheques_año ?? null,
+    unidades_periodo_ant: unidadesConDatos.periodo_anterior ?? null,
+    unidades_año_ant: unidadesConDatos.anio_anterior ?? null,
+    proyeccion_detalle: proyeccion.detalle || [],
+    proyeccion_metodo: proyeccion.metodo || null,
+    proyeccion_confianza: proyeccion.nivel_confianza || null
+  };
+
+  responseData.status_summary = {
+    ...(responseData.status_summary || {}),
+    unidades_data_ok: unidadesConDatos.actual ?? responseData.status_summary?.unidades_data_ok ?? responseData.unidades?.length ?? 0
+  };
+
+  responseData.unidades = (responseData.unidades || []).map((unidad) => {
+    const key = unidad.unidad_negocio_codigo || unidad.unidad_negocio_id || unidad.id || unidad.server_id;
+    const contratoUnidad = contratosUnidad[key]?.data || contratosUnidad[key] || null;
+    if (!contratoUnidad) return unidad;
+
+    const actualUnidad = contratoUnidad.actual || {};
+    const compInmediato = contratoUnidad.comparativos?.inmediato || {};
+    const compAnual = contratoUnidad.comparativos?.anual || {};
+    const proyUnidad = contratoUnidad.proyeccion || {};
+
+    return {
+      ...unidad,
+      pax_promedio: actualUnidad.pax_promedio ?? unidad.pax_promedio ?? null,
+      cheque_promedio: actualUnidad.cheque_promedio ?? unidad.cheque_promedio ?? null,
+      ticket_promedio: actualUnidad.cheque_promedio ?? unidad.ticket_promedio ?? null,
+      proyeccion: proyUnidad.proyeccion_total ?? unidad.proyeccion ?? null,
+      var_vs_mes_ant: compInmediato.var_ventas ?? unidad.var_vs_mes_ant ?? null,
+      var_vs_año_ant: compAnual.var_ventas ?? unidad.var_vs_año_ant ?? null,
+      var_pax_mes: compInmediato.var_pax ?? unidad.var_pax_mes ?? null,
+      var_pax_año: compAnual.var_pax ?? unidad.var_pax_año ?? null,
+      var_cheques_mes: compInmediato.var_cheques ?? unidad.var_cheques_mes ?? null,
+      var_cheques_año: compAnual.var_cheques ?? unidad.var_cheques_año ?? null,
+      var_proy_vs_mes: compInmediato.var_proyeccion ?? unidad.var_proy_vs_mes ?? null,
+      var_proy_vs_año: compAnual.var_proyeccion ?? unidad.var_proy_vs_año ?? null,
+      ventas_ant: compInmediato.ventas ?? unidad.ventas_ant ?? null,
+      ventas_año: compAnual.ventas ?? unidad.ventas_año ?? null,
+      pax_ant: compInmediato.pax ?? unidad.pax_ant ?? null,
+      pax_año: compAnual.pax ?? unidad.pax_año ?? null,
+      cheques_ant: compInmediato.cheques ?? unidad.cheques_ant ?? null,
+      cheques_año: compAnual.cheques ?? unidad.cheques_año ?? null,
+      proyeccion_detalle: proyUnidad.detalle || [],
+      proyeccion_metodo: proyUnidad.metodo || null,
+      proyeccion_confianza: proyUnidad.nivel_confianza || null
+    };
+  });
+
+  responseData._contrato_periodo = contrato;
+  return responseData;
+};
+
+const cargarContratosPeriodo = async ({ modo, fechaInicio, fechaFin, unidades = [] }) => {
+  const paramsBase = {
+    modo,
+    fecha_inicio: fechaInicio,
+    fecha_fin: fechaFin,
+    fecha_corte_datos: modo === 'ventas_dia' ? fechaFin : undefined
+  };
+
+  const generalPromise = api.get('/v2/comercial/periodos/contrato', {
+    params: paramsBase,
+    timeout: 30000
+  });
+
+  const unidadesUnicas = [...new Set(unidades.filter(Boolean))];
+  const unidadesPromise = Promise.allSettled(
+    unidadesUnicas.map(async (unidad) => {
+      const result = await api.get('/v2/comercial/periodos/contrato', {
+        params: { ...paramsBase, unidad_negocio_pk: unidad },
+        timeout: 30000
+      });
+      return [unidad, result.data];
+    })
+  );
+
+  const [generalResult, resultadosUnidad] = await Promise.all([
+    generalPromise,
+    unidadesPromise
+  ]);
+
+  const contratosUnidad = {};
+  resultadosUnidad.forEach((result) => {
+    if (result.status === 'fulfilled') {
+      const [unidad, payload] = result.value;
+      contratosUnidad[unidad] = payload;
+    }
+  });
+
+  return {
+    general: generalResult.data,
+    unidades: contratosUnidad
+  };
 };
 
 // Constantes para meses y años (homologado con Dashboard Comercial)
@@ -415,7 +550,7 @@ const UnidadCard = ({ unidad, onClick, esMultiMes = false, modoVentasDia = false
               )}
 
               <div className="flex justify-between items-center">
-                <span className="text-xs text-zinc-500">{modoVentasDia ? 'vs Mismo Día Año Ant.' : (esMultiMes ? 'vs Periodo Ant.' : 'vs Año Ant.')}</span>
+                <span className="text-xs text-zinc-500">{modoVentasDia ? 'vs Día Año Ant.' : (esMultiMes ? 'vs Periodo Ant.' : 'vs Mes Año Ant.')}</span>
                 <VariacionBadge valor={unidad.var_vs_año_ant} />
               </div>
             </div>
@@ -587,8 +722,8 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
                   </div>
                   <p className="text-xl font-bold text-green-600">{formatCurrency(unidad.ventas)}</p>
                   <div className="flex justify-center gap-2 mt-1">
-                    <span className="text-xs">Mes: <VariacionBadge valor={unidad.var_vs_mes_ant} /></span>
-                    <span className="text-xs">Año: <VariacionBadge valor={unidad.var_vs_año_ant} /></span>
+                    <span className="text-xs">{leyendasComparativo.anterior}: <VariacionBadge valor={unidad.var_vs_mes_ant} /></span>
+                    <span className="text-xs">{leyendasComparativo.anioAnt}: <VariacionBadge valor={unidad.var_vs_año_ant} /></span>
                   </div>
                 </CardContent>
               </Card>
@@ -603,8 +738,8 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
                   <p className="text-xs text-zinc-500">Pax Prom: {formatCurrency(unidad.pax_promedio)}</p>
                   <div className="flex justify-center gap-2 mt-1">
                     {/* CORRECCIÓN: Etiquetas dinámicas según selector */}
-                    <span className="text-xs">{modoVentasDia ? 'Día Ant:' : 'Mes:'} <VariacionBadge valor={unidad.pax_ant > 0 ? ((unidad.pax - unidad.pax_ant) / unidad.pax_ant * 100) : 0} /></span>
-                    <span className="text-xs">{modoVentasDia ? 'Año Ant:' : 'Año:'} <VariacionBadge valor={unidad.pax_año > 0 ? ((unidad.pax - unidad.pax_año) / unidad.pax_año * 100) : 0} /></span>
+                    <span className="text-xs">{leyendasComparativo.anterior}: <VariacionBadge valor={unidad.var_pax_mes} /></span>
+                    <span className="text-xs">{leyendasComparativo.anioAnt}: <VariacionBadge valor={unidad.var_pax_año} /></span>
                   </div>
                 </CardContent>
               </Card>
@@ -619,8 +754,8 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
                   <p className="text-xs text-zinc-500">Cheque Prom: {formatCurrency(unidad.cheque_promedio)}</p>
                   <div className="flex justify-center gap-2 mt-1">
                     {/* CORRECCIÓN: Etiquetas dinámicas según selector */}
-                    <span className="text-xs">{modoVentasDia ? 'Día Ant:' : 'Mes:'} <VariacionBadge valor={unidad.cheques_ant > 0 ? ((unidad.cheques - unidad.cheques_ant) / unidad.cheques_ant * 100) : 0} /></span>
-                    <span className="text-xs">{modoVentasDia ? 'Año Ant:' : 'Año:'} <VariacionBadge valor={unidad.cheques_año > 0 ? ((unidad.cheques - unidad.cheques_año) / unidad.cheques_año * 100) : 0} /></span>
+                    <span className="text-xs">{leyendasComparativo.anterior}: <VariacionBadge valor={unidad.var_cheques_mes} /></span>
+                    <span className="text-xs">{leyendasComparativo.anioAnt}: <VariacionBadge valor={unidad.var_cheques_año} /></span>
                   </div>
                 </CardContent>
               </Card>
@@ -933,7 +1068,7 @@ export default function TableroEjecutivo() {
                     cheques: (u.tickets_abiertos || 0) + (u.tickets_cerrados_dia || 0),
                     cheque_promedio: u.cheque_promedio ?? 0,
                     ticket_promedio: u.ticket_promedio ?? 0,
-                    proyeccion: 0,
+                    proyeccion: null,
                     ventas_ant: u.dia_anterior_ventas || 0,
                     pax_ant: u.dia_anterior_pax || 0,
                     cheques_ant: u.dia_anterior_cheques || 0,
@@ -953,6 +1088,22 @@ export default function TableroEjecutivo() {
                   })),
                 _v2_source: true
               };
+              try {
+                const fechaOperacion = ventasDiaData.fecha_operacion || resumen.fecha;
+                if (!fechaOperacion) {
+                  throw new Error('fecha_operacion ausente en respuesta ventas-dia');
+                }
+                const contratos = await cargarContratosPeriodo({
+                  modo: 'ventas_dia',
+                  fechaInicio: fechaOperacion,
+                  fechaFin: fechaOperacion,
+                  unidades: responseData.unidades.map(u => u.unidad_negocio_codigo || u.id)
+                });
+                responseData = aplicarContratoPeriodo(responseData, contratos.general, contratos.unidades);
+              } catch (contratoError) {
+                logger.warn(`[PERIODOS] Contrato diario no disponible; se conservan datos base: ${contratoError.message}`);
+              }
+
               usedV2 = true;
               logger.log(`[VENTAS_DIA_V2] Cargadas ${responseData.unidades.length} unidades desde EDARSAHUB SQL`);
             } else {
@@ -980,6 +1131,18 @@ export default function TableroEjecutivo() {
 
             if (v2Response.data?.success) {
               responseData = transformV2ToV1Format(v2Response.data, selectedMeses, selectedAnios, logger);
+
+              try {
+                const contratos = await cargarContratosPeriodo({
+                  modo: 'mensual',
+                  fechaInicio,
+                  fechaFin,
+                  unidades: responseData.unidades.map(u => u.unidad_negocio_codigo || u.id)
+                });
+                responseData = aplicarContratoPeriodo(responseData, contratos.general, contratos.unidades);
+              } catch (contratoError) {
+                logger.warn(`[PERIODOS] Contrato mensual no disponible; se conservan datos base: ${contratoError.message}`);
+              }
 
               if (responseData.unidades && responseData.unidades.length > 0) {
                 responseData.unidades.sort((a, b) => (b.ventas || 0) - (a.ventas || 0));
@@ -1372,7 +1535,7 @@ export default function TableroEjecutivo() {
                     </div>
                   )}
                   <div className="text-center">
-                    <span className="text-xs text-zinc-400 block">{data?.periodo?.modo_ventas_dia ? 'vs Año Ant.' : (esMultiMes ? 'vs Periodo Ant.' : 'vs Año')}</span>
+                    <span className="text-xs text-zinc-400 block">{data?.periodo?.modo_ventas_dia ? 'vs Día Año Ant.' : (esMultiMes ? 'vs Periodo Ant.' : 'vs Mes Año Ant.')}</span>
                     <p className={`font-bold ${data.totales.var_vs_año_ant >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                       {formatPercent(data.totales.var_vs_año_ant)}
                     </p>
@@ -1390,14 +1553,14 @@ export default function TableroEjecutivo() {
                     <div className="text-center">
                       <span className="text-xs text-zinc-400 block">{data?.periodo?.modo_ventas_dia ? 'vs Día Ant.' : 'vs Mes'}</span>
                       <p className={`text-sm font-bold ${(data.totales.var_pax_mes || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {formatPercent(data.totales.var_pax_mes || 0)}
+                        {formatPercent(data.totales.var_pax_mes)}
                       </p>
                     </div>
                   )}
                   <div className="text-center">
-                    <span className="text-xs text-zinc-400 block">{data?.periodo?.modo_ventas_dia ? 'vs Año Ant.' : (esMultiMes ? 'vs Periodo Ant.' : 'vs Año')}</span>
+                    <span className="text-xs text-zinc-400 block">{data?.periodo?.modo_ventas_dia ? 'vs Día Año Ant.' : (esMultiMes ? 'vs Periodo Ant.' : 'vs Mes Año Ant.')}</span>
                     <p className={`text-sm font-bold ${(data.totales.var_pax_año || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {formatPercent(data.totales.var_pax_año || 0)}
+                      {formatPercent(data.totales.var_pax_año)}
                     </p>
                   </div>
                 </div>
@@ -1413,14 +1576,14 @@ export default function TableroEjecutivo() {
                     <div className="text-center">
                       <span className="text-xs text-zinc-400 block">{data?.periodo?.modo_ventas_dia ? 'vs Día Ant.' : 'vs Mes'}</span>
                       <p className={`text-sm font-bold ${(data.totales.var_cheques_mes || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {formatPercent(data.totales.var_cheques_mes || 0)}
+                        {formatPercent(data.totales.var_cheques_mes)}
                       </p>
                     </div>
                   )}
                   <div className="text-center">
-                    <span className="text-xs text-zinc-400 block">{data?.periodo?.modo_ventas_dia ? 'vs Año Ant.' : (esMultiMes ? 'vs Periodo Ant.' : 'vs Año')}</span>
+                    <span className="text-xs text-zinc-400 block">{data?.periodo?.modo_ventas_dia ? 'vs Día Año Ant.' : (esMultiMes ? 'vs Periodo Ant.' : 'vs Mes Año Ant.')}</span>
                     <p className={`text-sm font-bold ${(data.totales.var_cheques_año || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {formatPercent(data.totales.var_cheques_año || 0)}
+                      {formatPercent(data.totales.var_cheques_año)}
                     </p>
                   </div>
                 </div>
@@ -1437,7 +1600,7 @@ export default function TableroEjecutivo() {
                 <p className="text-2xl font-bold text-orange-400">
                   {formatCurrency(
                     data?.periodo?.modo_ventas_dia
-                      ? data.totales.ventas  // En Ventas del Día, la proyección ES la venta actual (al cierre será = venta real)
+                      ? data.totales.proyeccion
                       : (esMultiMes
                           ? (data.totales.ventas / (data.periodo?.dias_transcurridos || 1)) * 365
                           : data.totales.proyeccion
@@ -1456,7 +1619,7 @@ export default function TableroEjecutivo() {
                 <div className="flex gap-4 mt-auto pt-2 justify-center">
                   <div className="text-center">
                     <span className="text-xs text-zinc-400 block">
-                      {data?.periodo?.modo_ventas_dia ? 'vs Mismo Día Año Ant.' : (esMultiMes ? 'vs Ventas Año Ant.' : 'vs Año Ant.')}
+                      {data?.periodo?.modo_ventas_dia ? 'vs Día Año Ant.' : (esMultiMes ? 'vs Ventas Año Ant.' : 'vs Año Ant.')}
                     </span>
                     <p className={`text-sm font-bold ${(() => {
                       if (esMultiMes) {
@@ -1465,7 +1628,7 @@ export default function TableroEjecutivo() {
                         const proy2025 = (data.totales.ventas_año / (data.periodo?.dias_transcurridos || 1)) * 365;
                         return proy2025 > 0 ? ((proy2026 - proy2025) / proy2025 * 100) : 0;
                       }
-                      return data.totales.var_proy_vs_año || 0;
+                      return data.totales.var_proy_vs_año ?? null;
                     })() >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                       {formatPercent((() => {
                         if (esMultiMes) {
@@ -1474,7 +1637,7 @@ export default function TableroEjecutivo() {
                           const proy2025 = (data.totales.ventas_año / (data.periodo?.dias_transcurridos || 1)) * 365;
                           return proy2025 > 0 ? ((proy2026 - proy2025) / proy2025 * 100) : 0;
                         }
-                        return data.totales.var_proy_vs_año || 0;
+                        return data.totales.var_proy_vs_año ?? null;
                       })())}
                     </p>
                   </div>
@@ -1512,14 +1675,22 @@ export default function TableroEjecutivo() {
                       </p>
                     </div>
                   )}
-                  {!data.status_summary && (
-                    <div className="text-center">
-                      <span className="text-xs text-zinc-400 block">Año Ant.</span>
-                      <p className="text-sm font-bold text-zinc-300">
-                        {data.totales?.unidades_año_ant || 0}
-                      </p>
-                    </div>
-                  )}
+                  <div className="text-center">
+                    <span className="text-xs text-zinc-400 block">
+                      {data?.periodo?.modo_ventas_dia ? 'Día Ant.' : 'Mes Ant.'}
+                    </span>
+                    <p className="text-sm font-bold text-zinc-300">
+                      {data.totales?.unidades_periodo_ant ?? '-'}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-xs text-zinc-400 block">
+                      {data?.periodo?.modo_ventas_dia ? 'Día Año Ant.' : 'Mes Año Ant.'}
+                    </span>
+                    <p className="text-sm font-bold text-zinc-300">
+                      {data.totales?.unidades_año_ant ?? '-'}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
