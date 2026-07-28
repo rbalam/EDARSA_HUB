@@ -1,0 +1,65 @@
+name: Connect Tablero Periodos
+
+on:
+  push:
+    branches: [Edarsahub_Desarrollo]
+    paths:
+      - "scripts/connect_tablero_periodos.py"
+      - ".github/workflows/connect-tablero-periodos.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: connect-tablero-periodos-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  connect:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: Edarsahub_Desarrollo
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Apply guarded connection
+        run: |
+          set -euo pipefail
+          python scripts/connect_tablero_periodos.py
+
+      - name: Validate Python contracts
+        run: |
+          set -euo pipefail
+          python -m compileall -q backend/modules/comercial_v2
+          python -m pytest -q \
+            backend/tests/test_comercial_v2_periodos.py
+
+      - name: Validate frontend syntax
+        working-directory: frontend
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts
+          CI=true npm test -- --watchAll=false --passWithNoTests
+
+      - name: Commit connected dashboard
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/src/pages/TableroEjecutivo.js
+          if git diff --cached --quiet; then
+            echo "NO_CHANGES=1"
+            exit 0
+          fi
+          git commit -m "feat(comercial): conectar tablero a contrato dinamico"
+          git push origin HEAD:Edarsahub_Desarrollo
+          echo "DEPLOY_EXECUTED=0"
+          echo "PRODUCTION_TOUCHED=0"
