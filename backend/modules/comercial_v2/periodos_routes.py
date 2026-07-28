@@ -92,10 +92,15 @@ def _consultar_agregado(
     """
     rows = _execute_readonly_query(query)
     row = rows[0] if rows else {}
+    ventas = float(row.get("ventas") or 0)
+    pax = int(row.get("pax") or 0)
+    cheques = int(row.get("cheques") or 0)
     return {
-        "ventas": float(row.get("ventas") or 0),
-        "pax": int(row.get("pax") or 0),
-        "cheques": int(row.get("cheques") or 0),
+        "ventas": ventas,
+        "pax": pax,
+        "cheques": cheques,
+        "pax_promedio": round(ventas / pax, 2) if pax > 0 else 0.0,
+        "cheque_promedio": round(ventas / cheques, 2) if cheques > 0 else 0.0,
         "dias": int(row.get("dias") or 0),
         "unidades_con_datos": int(row.get("unidades_con_datos") or 0),
     }
@@ -211,6 +216,24 @@ def _rango_to_dict(rango: Any) -> dict[str, str]:
     }
 
 
+def _resumen_unidades_comparables(
+    unidades_actuales: Iterable[str],
+    unidades_inmediatas: Iterable[str],
+    unidades_anuales: Iterable[str],
+) -> dict[str, Any]:
+    resumen = contar_unidades_comparables(unidades_actuales, unidades_anuales)
+    actuales = {str(value) for value in unidades_actuales if value not in (None, "")}
+    inmediatas = {str(value) for value in unidades_inmediatas if value not in (None, "")}
+    resumen.update(
+        {
+            "periodo_anterior": len(inmediatas),
+            "diferencia_periodo_anterior": len(actuales) - len(inmediatas),
+            "unidades_periodo_anterior": sorted(inmediatas),
+        }
+    )
+    return resumen
+
+
 @router.get("/periodos/contrato")
 async def obtener_contrato_periodo(
     modo: ModoPeriodo = Query(..., description="ventas_dia o mensual"),
@@ -256,6 +279,11 @@ async def obtener_contrato_periodo(
             fin=periodos.actual.fin,
             unidades=unidades,
         )
+        unidades_inmediatas = _consultar_unidades_con_datos(
+            inicio=periodos.inmediato.inicio,
+            fin=periodos.inmediato.fin,
+            unidades=unidades,
+        )
         unidades_anuales = _consultar_unidades_con_datos(
             inicio=periodos.anual.inicio,
             fin=periodos.anual.fin,
@@ -293,6 +321,8 @@ async def obtener_contrato_periodo(
             ).to_dict()
 
         proyeccion_total = float(proyeccion.get("proyeccion_total") or 0)
+        tiene_inmediato = inmediato["dias"] > 0
+        tiene_anual = anual["dias"] > 0
         response = {
             "modo_periodo": modo.value,
             "etiquetas": asdict(etiquetas),
@@ -308,35 +338,40 @@ async def obtener_contrato_periodo(
                 "inmediato": {
                     **inmediato,
                     "var_ventas": calcular_variacion(
-                        actual["ventas"], inmediato["ventas"] if inmediato["dias"] else None
+                        actual["ventas"], inmediato["ventas"] if tiene_inmediato else None
                     ),
                     "var_pax": calcular_variacion(
-                        actual["pax"], inmediato["pax"] if inmediato["dias"] else None
+                        actual["pax"], inmediato["pax"] if tiene_inmediato else None
                     ),
                     "var_cheques": calcular_variacion(
-                        actual["cheques"], inmediato["cheques"] if inmediato["dias"] else None
+                        actual["cheques"], inmediato["cheques"] if tiene_inmediato else None
+                    ),
+                    "var_proyeccion": calcular_variacion(
+                        proyeccion_total,
+                        inmediato["ventas"] if tiene_inmediato else None,
                     ),
                 },
                 "anual": {
                     **anual,
                     "var_ventas": calcular_variacion(
-                        actual["ventas"], anual["ventas"] if anual["dias"] else None
+                        actual["ventas"], anual["ventas"] if tiene_anual else None
                     ),
                     "var_pax": calcular_variacion(
-                        actual["pax"], anual["pax"] if anual["dias"] else None
+                        actual["pax"], anual["pax"] if tiene_anual else None
                     ),
                     "var_cheques": calcular_variacion(
-                        actual["cheques"], anual["cheques"] if anual["dias"] else None
+                        actual["cheques"], anual["cheques"] if tiene_anual else None
                     ),
                     "var_proyeccion": calcular_variacion(
                         proyeccion_total,
-                        anual["ventas"] if anual["dias"] else None,
+                        anual["ventas"] if tiene_anual else None,
                     ),
                 },
             },
             "proyeccion": proyeccion,
-            "unidades_con_datos": contar_unidades_comparables(
+            "unidades_con_datos": _resumen_unidades_comparables(
                 unidades_actuales,
+                unidades_inmediatas,
                 unidades_anuales,
             ),
             "trazabilidad": {
