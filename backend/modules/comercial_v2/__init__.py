@@ -1,35 +1,30 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
-"""
-MÓDULO COMERCIAL V2 - AISLADO
-=============================
+"""Modulo Comercial V2 conectado a la fuente canonica EDARSAHUB.
 
-Este módulo implementa:
-1. Sincronización de datos comerciales hacia EDARSAHUB (Subfases 1-2)
-2. Endpoints v2 aislados que leen de EDARSAHUB (Subfase 3)
-
-IMPORTANTE:
-- Este módulo NO está conectado al Tablero Ejecutivo actual
-- NO modifica el módulo comercial existente
-- Los endpoints v2 leen SOLO desde tablas EDARSAHUB v2
-- NO consultan SQL vivo ni MongoDB cache
-
-Tablas EDARSAHUB usadas:
-- vw_Comercial_KPIs_Diarios_v2_Runtime
-- vw_Comercial_KPIs_Mensuales_v2_Runtime
-- Comercial_Ventas_Dia_Abiertas_v2
-- Comercial_SyncLog_v2
-
-Feature Flag:
-- COMERCIAL_V2_ENABLED=false (default OFF)
-
-Fecha de creación: 01-Mayo-2026
-Estado: Subfase 3 - Endpoints v2 implementados
+Expone un router agregado para conservar las rutas existentes e incorporar el
+contrato dinamico de periodos sin duplicar prefijos ni fuentes de datos.
 """
 
-__version__ = "0.3.0"
-__status__ = "ENDPOINTS_V2_AISLADOS"
+from fastapi import APIRouter
 
-# Exports
-from .routes import get_comercial_v2_router
-from .feature_flag import is_comercial_v2_enabled, get_v2_status
+from .feature_flag import get_v2_status, is_comercial_v2_enabled
+from .periodos_routes import router as periodos_router
+from .routes import router as comercial_router
+
+__version__ = "0.4.0"
+__status__ = "ENDPOINTS_V2_CANONICOS_CON_PERIODOS"
+
+
+def get_comercial_v2_router() -> APIRouter:
+    """Retorna todas las rutas Comercial V2 bajo un unico router registrable."""
+
+    agregado = APIRouter()
+    agregado.include_router(comercial_router)
+    agregado.include_router(periodos_router)
+    return agregado
+
+
+__all__ = [
+    "get_comercial_v2_router",
+    "is_comercial_v2_enabled",
+    "get_v2_status",
+]
