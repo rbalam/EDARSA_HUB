@@ -28,6 +28,10 @@ def replace_all_required(text: str, old: str, new: str, label: str) -> str:
     return text.replace(old, new)
 
 
+def replace_optional(text: str, old: str, new: str) -> str:
+    return text.replace(old, new) if old in text else text
+
+
 def main() -> None:
     source = TARGET.read_text(encoding="utf-8")
     original = source
@@ -180,7 +184,10 @@ const cargarContratosPeriodo = async ({ modo, fechaInicio, fechaFin, unidades = 
     daily_anchor = """              usedV2 = true;
               logger.log(`[VENTAS_DIA_V2] Cargadas ${responseData.unidades.length} unidades desde EDARSAHUB SQL`);"""
     daily_new = """              try {
-                const fechaOperacion = ventasDiaResponse.data?.fecha || new Date().toISOString().slice(0, 10);
+                const fechaOperacion = ventasDiaData.fecha_operacion || resumen.fecha;
+                if (!fechaOperacion) {
+                  throw new Error('fecha_operacion ausente en respuesta ventas-dia');
+                }
                 const contratos = await cargarContratosPeriodo({
                   modo: 'ventas_dia',
                   fechaInicio: fechaOperacion,
@@ -232,19 +239,26 @@ const cargarContratosPeriodo = async ({ modo, fechaInicio, fechaFin, unidades = 
     for old, new in replacements.items():
         source = replace_all_required(source, old, new, f"reemplazo {old[:45]}")
 
-    source = replace_all_required(
+    source = replace_optional(
         source,
         "pax_promedio: u.pax_promedio ?? 0,",
         "pax_promedio: u.pax_promedio ?? null,",
-        "pax promedio diario inicial",
-    ) if "pax_promedio: u.pax_promedio ?? 0," in source else source
-
+    )
     source = replace_all_required(
         source,
         "proyeccion: 0,",
         "proyeccion: null,",
         "proyeccion diaria inicial",
     )
+
+    modal_replacements = {
+        "<span className=\"text-xs\">{modoVentasDia ? 'Día Ant:' : 'Mes:'} <VariacionBadge valor={unidad.pax_ant > 0 ? ((unidad.pax - unidad.pax_ant) / unidad.pax_ant * 100) : 0} /></span>": "<span className=\"text-xs\">{leyendasComparativo.anterior}: <VariacionBadge valor={unidad.var_pax_mes} /></span>",
+        "<span className=\"text-xs\">{modoVentasDia ? 'Año Ant:' : 'Año:'} <VariacionBadge valor={unidad.pax_año > 0 ? ((unidad.pax - unidad.pax_año) / unidad.pax_año * 100) : 0} /></span>": "<span className=\"text-xs\">{leyendasComparativo.anioAnt}: <VariacionBadge valor={unidad.var_pax_año} /></span>",
+        "<span className=\"text-xs\">{modoVentasDia ? 'Día Ant:' : 'Mes:'} <VariacionBadge valor={unidad.cheques_ant > 0 ? ((unidad.cheques - unidad.cheques_ant) / unidad.cheques_ant * 100) : 0} /></span>": "<span className=\"text-xs\">{leyendasComparativo.anterior}: <VariacionBadge valor={unidad.var_cheques_mes} /></span>",
+        "<span className=\"text-xs\">{modoVentasDia ? 'Año Ant:' : 'Año:'} <VariacionBadge valor={unidad.cheques_año > 0 ? ((unidad.cheques - unidad.cheques_año) / unidad.cheques_año * 100) : 0} /></span>": "<span className=\"text-xs\">{leyendasComparativo.anioAnt}: <VariacionBadge valor={unidad.var_cheques_año} /></span>",
+    }
+    for old, new in modal_replacements.items():
+        source = replace_all_required(source, old, new, f"modal {old[:45]}")
 
     units_anchor = """                  {!data.status_summary && (
                     <div className="text-center">
