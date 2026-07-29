@@ -49,6 +49,8 @@ async def resumen(
             "dias": a.get("dias"),
             "ventas": float(m.get("ventas") or 0),
             "ventas_brutas": float(m.get("ventas_brutas") or 0),
+            "propinas": float(m.get("propinas") or 0),
+            "propinas_total": float(m.get("propinas") or 0),
             "tickets": float(m.get("tickets") or 0),
             "cheques": float(m.get("cheques") or 0),
             "pax": float(m.get("pax") or 0),
@@ -102,6 +104,8 @@ async def resumen(
         "kpis": {
             "ventas": float(metricas.get("ventas") or 0),
             "ventas_brutas": float(metricas.get("ventas_brutas") or 0),
+            "propinas": float(metricas.get("propinas") or 0),
+            "propinas_total": float(metricas.get("propinas") or 0),
             "tickets": float(metricas.get("tickets") or 0),
             "cheques": float(metricas.get("cheques") or 0),
             "pax": float(metricas.get("pax") or 0),

@@ -546,47 +546,107 @@ def _get_existing_ventas_dia(
 # CONFIGURACIÓN DE UNIDADES
 # =============================================================================
 
-def _get_unidades_from_edarsahub() -> tuple:
-    """
-    Obtiene unidades desde EDARSAHUB.Unidades_Negocio.
-    
-    Returns:
-        (unidades_softrestaurant, unidades_mpro) con códigos canónicos
-    """
-    try:
-        from core.unidades_registry import get_unidades_by_sistema
-        
-        unidades_sr = []
-        unidades_mpro = []
-        
-        # Obtener unidades SoftRestaurant
-        for u in get_unidades_by_sistema('SoftRestaurant'):
-            unidades_sr.append({
-                "unidad_negocio_id": u.codigo,
-                "nombre": u.nombre,
-                "server_id": u.server_id,
-                "sucursal_id": u.sucursal_id or "DEFAULT",
-                "sistema": "SoftRestaurant"
-            })
-        
-        # Obtener unidades MPRO - Usarán API local
-        for u in get_unidades_by_sistema('MPRO'):
-            unidades_mpro.append({
-                "unidad_negocio_id": u.codigo,
-                "nombre": u.nombre,
-                "server_id": u.server_id,  # Se reemplazará con el de API local
-                "sucursal_id": u.sucursal_id or "DEFAULT",
-                "sistema": "MPRO"
-            })
-        
-        logger.info(f"[SYNC_ABIERTAS_V2] Cargadas {len(unidades_sr)} SoftRestaurant, {len(unidades_mpro)} MPRO desde EDARSAHUB")
-        
-        return unidades_sr, unidades_mpro
-        
-    except Exception as e:
-        logger.error(f"[SYNC_ABIERTAS_V2] Error cargando unidades: {e}")
-        return [], []
 
+def _get_unidades_from_edarsahub() -> tuple:
+    """Obtiene unidades comerciales desde UnidadesService.
+
+    Retorna simultáneamente:
+    - unidad_negocio_pk: UUID real de dbo.Unidades_Negocio.id
+    - unidad_negocio_id: código operativo legacy
+
+    No mantiene un catálogo comercial paralelo.
+    """
+
+    from core.unidades_service import UnidadesService
+
+    unidades_sr = []
+    unidades_mpro = []
+
+    for row in UnidadesService.get_all() or []:
+        unidad_pk = str(
+            row.get("unidad_negocio_pk")
+            or row.get("unidad_negocio_pk_real")
+            or row.get("id")
+            or ""
+        ).strip()
+
+        unidad_codigo = str(
+            row.get("codigo")
+            or row.get("unidad_negocio_codigo")
+            or ""
+        ).strip()
+
+        nombre = str(
+            row.get("nombre")
+            or row.get("unidad_negocio_nombre")
+            or ""
+        ).strip()
+
+        server_id = str(
+            row.get("server_id") or ""
+        ).strip()
+
+        sucursal_id = str(
+            row.get("sucursal_origen_id")
+            or "DEFAULT"
+        ).strip()
+
+        system_type = str(
+            row.get("system_type")
+            or row.get("sistema")
+            or ""
+        ).strip().upper()
+
+        if not (
+            unidad_pk
+            and unidad_codigo
+            and nombre
+            and server_id
+        ):
+            logger.error(
+                "[SYNC_ABIERTAS_V2] Unidad comercial incompleta: %s",
+                {
+                    "unidad_negocio_pk": unidad_pk,
+                    "unidad_negocio_id": unidad_codigo,
+                    "nombre": nombre,
+                    "server_id": server_id,
+                    "sucursal_id": sucursal_id,
+                    "system_type": system_type,
+                },
+            )
+            continue
+
+        unidad = {
+            "unidad_negocio_pk": unidad_pk,
+            "unidad_negocio_id": unidad_codigo,
+            "nombre": nombre,
+            "server_id": server_id,
+            "sucursal_id": sucursal_id or "DEFAULT",
+        }
+
+        if "SOFT" in system_type:
+            unidad["sistema"] = "SoftRestaurant"
+            unidades_sr.append(unidad)
+
+        elif "MPRO" in system_type or "MANAG" in system_type:
+            unidad["sistema"] = "MPRO"
+            unidades_mpro.append(unidad)
+
+        else:
+            logger.error(
+                "[SYNC_ABIERTAS_V2] Sistema no soportado para %s: %s",
+                unidad_codigo,
+                system_type,
+            )
+
+    logger.info(
+        "[SYNC_ABIERTAS_V2] Cargadas %s SoftRestaurant y %s MPRO "
+        "desde UnidadesService",
+        len(unidades_sr),
+        len(unidades_mpro),
+    )
+
+    return unidades_sr, unidades_mpro
 
 # =============================================================================
 # QUERIES PARA VENTAS DEL DÍA
@@ -609,31 +669,105 @@ def _get_unidades_from_edarsahub() -> tuple:
 # SoftRestaurant: Ventas abiertas (turno aún abierto)
 # Tabla: tempcheques (temporal mientras el turno está abierto)
 # Filtrar por fecha_operacion para evitar sumar cheques de días anteriores no cerrados
+
+
 QUERY_SOFTRESTAURANT_VENTAS_ABIERTAS = """
-SELECT 
-    '{fecha_operacion}' as fecha,
-    ISNULL(SUM(total), 0) as ventas_abiertas,
-    COUNT(*) as tickets_abiertos,
-    ISNULL(SUM(nopersonas), 0) as pax_abiertos,
-    MAX(fecha) as ultima_venta
+SELECT
+    '{fecha_operacion}' AS fecha,
+
+    ISNULL(
+        SUM(
+            CASE
+                WHEN ISNULL(total, 0) >= ISNULL(propina, 0)
+                THEN ISNULL(total, 0) - ISNULL(propina, 0)
+                ELSE ISNULL(total, 0)
+            END
+        ),
+        0
+    ) AS ventas_abiertas,
+
+    ISNULL(
+        SUM(ISNULL(propina, 0)),
+        0
+    ) AS propinas_abiertas,
+
+    COUNT(DISTINCT folio) AS tickets_abiertos,
+
+    ISNULL(
+        SUM(ISNULL(nopersonas, 1)),
+        0
+    ) AS pax_abiertos,
+
+    MAX(fecha) AS ultima_venta
+
 FROM tempcheques
-WHERE cancelado = 0
-  AND total > 0
-  AND CAST(fecha AS DATE) = '{fecha_operacion}'
+
+WHERE ISNULL(cancelado, 0) = 0
+  AND ISNULL(total, 0) > 0
+  AND fecha >= CONVERT(
+        DATETIME,
+        REPLACE('{fecha_operacion}', '-', ''),
+        112
+    )
+  AND fecha < DATEADD(
+        DAY,
+        1,
+        CONVERT(
+            DATETIME,
+            REPLACE('{fecha_operacion}', '-', ''),
+            112
+        )
+    )
 """
 
 # SoftRestaurant: Ventas cerradas del día (turno ya cerrado)
 # Tabla: cheques (tabla definitiva después del corte)
 # Buscar por fecha de apertura de la cuenta (campo 'fecha'), NO por GETDATE()
+
+
 QUERY_SOFTRESTAURANT_CERRADAS_HOY = """
-SELECT 
-    SUM(ISNULL(total, 0)) as ventas_cerradas_dia,
-    COUNT(DISTINCT folio) as tickets_cerrados_dia,
-    SUM(ISNULL(nopersonas, 1)) as pax_cerrados_dia
+SELECT
+    ISNULL(
+        SUM(
+            CASE
+                WHEN ISNULL(total, 0) >= ISNULL(propina, 0)
+                THEN ISNULL(total, 0) - ISNULL(propina, 0)
+                ELSE ISNULL(total, 0)
+            END
+        ),
+        0
+    ) AS ventas_cerradas_dia,
+
+    ISNULL(
+        SUM(ISNULL(propina, 0)),
+        0
+    ) AS propinas_cerradas_dia,
+
+    COUNT(DISTINCT folio) AS tickets_cerrados_dia,
+
+    ISNULL(
+        SUM(ISNULL(nopersonas, 1)),
+        0
+    ) AS pax_cerrados_dia
+
 FROM cheques
-WHERE cancelado = 0
+
+WHERE ISNULL(cancelado, 0) = 0
   AND cierre IS NOT NULL
-  AND CAST(fecha AS DATE) = '{fecha_operacion}'
+  AND fecha >= CONVERT(
+        DATETIME,
+        REPLACE('{fecha_operacion}', '-', ''),
+        112
+    )
+  AND fecha < DATEADD(
+        DAY,
+        1,
+        CONVERT(
+            DATETIME,
+            REPLACE('{fecha_operacion}', '-', ''),
+            112
+        )
+    )
 """
 
 # =============================================================================
@@ -648,33 +782,114 @@ WHERE cancelado = 0
 
 # MPRO ORIGEN: Ventas abiertas (Comanda + Comanda_Detalle)
 QUERY_MPRO_VENTAS_ABIERTAS_ORIGEN = """
-SELECT 
-    '{fecha_operacion}' as fecha,
-    SUM(ISNULL(cd.Cd_Importe, 0)) as ventas_abiertas,
-    COUNT(DISTINCT c.Co_Folio) as tickets_abiertos,
-    SUM(DISTINCT ISNULL(c.Co_Personas, 1)) as pax_abiertos
-FROM Comanda c
-INNER JOIN Comanda_Detalle cd ON c.Co_Folio = cd.Co_Folio
-WHERE CAST(c.Co_Fecha AS DATE) = '{fecha_operacion}'
-  AND c.Sc_Cve_Sucursal = '{sucursal_id}'
-  AND cd.Es_Cve_Estado = 'AC'
-  AND cd.Fecha_Baja IS NULL
-  AND c.Es_Cve_Estado = 'AC'
+SELECT
+    '{fecha_operacion}' AS fecha,
+
+    ISNULL(
+        SUM(ticket.ventas),
+        0
+    ) AS ventas_abiertas,
+
+    ISNULL(
+        SUM(ticket.propina),
+        0
+    ) AS propinas_abiertas,
+
+    COUNT(*)
+        AS tickets_abiertos,
+
+    ISNULL(
+        SUM(ticket.pax),
+        0
+    ) AS pax_abiertos
+
+FROM (
+    SELECT
+        c.Co_Folio,
+
+        SUM(
+            ISNULL(cd.Cd_Importe, 0)
+        ) AS ventas,
+
+        MAX(
+            ISNULL(c.Co_Propina, 0)
+        ) AS propina,
+
+        MAX(
+            ISNULL(c.Co_Personas, 0)
+        ) AS pax
+
+    FROM Comanda c
+
+    INNER JOIN Comanda_Detalle cd
+        ON cd.Co_Folio = c.Co_Folio
+
+    WHERE CAST(c.Co_Fecha AS date)
+            = '{fecha_operacion}'
+      AND c.Sc_Cve_Sucursal
+            = '{sucursal_id}'
+      AND c.Es_Cve_Estado = 'UN'
+      AND cd.Es_Cve_Estado = 'AC'
+      AND cd.Fecha_Baja IS NULL
+
+    GROUP BY
+        c.Co_Folio
+) AS ticket
 """
 
 # MPRO ORIGEN: Ventas cerradas del día
 QUERY_MPRO_CERRADAS_HOY_ORIGEN = """
-SELECT 
-    SUM(ISNULL(cd.Cd_Importe, 0)) as ventas_cerradas_dia,
-    COUNT(DISTINCT c.Co_Folio) as tickets_cerrados_dia,
-    SUM(DISTINCT ISNULL(c.Co_Personas, 1)) as pax_cerrados_dia
-FROM Comanda c
-INNER JOIN Comanda_Detalle cd ON c.Co_Folio = cd.Co_Folio
-WHERE CAST(c.Co_Fecha AS DATE) = '{fecha_operacion}'
-  AND c.Sc_Cve_Sucursal = '{sucursal_id}'
-  AND c.Es_Cve_Estado <> 'AC'
-  AND cd.Es_Cve_Estado = 'AC'
-  AND cd.Fecha_Baja IS NULL
+SELECT
+    ISNULL(
+        SUM(ticket.ventas),
+        0
+    ) AS ventas_cerradas_dia,
+
+    ISNULL(
+        SUM(ticket.propina),
+        0
+    ) AS propinas_cerradas_dia,
+
+    COUNT(*)
+        AS tickets_cerrados_dia,
+
+    ISNULL(
+        SUM(ticket.pax),
+        0
+    ) AS pax_cerrados_dia
+
+FROM (
+    SELECT
+        c.Co_Folio,
+
+        SUM(
+            ISNULL(cd.Cd_Importe, 0)
+        ) AS ventas,
+
+        MAX(
+            ISNULL(c.Co_Propina, 0)
+        ) AS propina,
+
+        MAX(
+            ISNULL(c.Co_Personas, 0)
+        ) AS pax
+
+    FROM Comanda c
+
+    INNER JOIN Comanda_Detalle cd
+        ON cd.Co_Folio = c.Co_Folio
+
+    WHERE CAST(c.Co_Fecha AS date)
+            = '{fecha_operacion}'
+      AND c.Sc_Cve_Sucursal
+            = '{sucursal_id}'
+      AND c.Es_Cve_Estado = 'PA'
+      AND cd.Es_Cve_Estado = 'AC'
+      AND cd.Fecha_Baja IS NULL
+
+    GROUP BY
+        c.Co_Folio
+) AS ticket
 """
 
 # =============================================================================
@@ -690,35 +905,116 @@ WHERE CAST(c.Co_Fecha AS DATE) = '{fecha_operacion}'
 # MPRO QRO: Ventas abiertas (Comanda + Comanda_Detalle, estado 'AC', sin baja)
 # {fecha_operacion} = fecha operativa calculada por backend en zona México
 QUERY_MPRO_VENTAS_ABIERTAS_QRO = """
-SELECT 
-    '{fecha_operacion}' as fecha,
-    SUM(ISNULL(cd.Cd_Importe, 0)) as ventas_abiertas,
-    COUNT(DISTINCT c.Co_Folio) as tickets_abiertos,
-    SUM(DISTINCT ISNULL(c.Co_Personas, 1)) as pax_abiertos
-FROM Comanda c
-INNER JOIN Comanda_Detalle cd ON c.Co_Folio = cd.Co_Folio
-WHERE CAST(c.Co_Fecha AS DATE) = '{fecha_operacion}'
-  AND c.Sc_Cve_Sucursal = '{sucursal_id}'
-  AND cd.Es_Cve_Estado = 'AC'
-  AND cd.Fecha_Baja IS NULL
-  AND c.Es_Cve_Estado = 'AC'
+SELECT
+    '{fecha_operacion}' AS fecha,
+
+    ISNULL(
+        SUM(ticket.ventas),
+        0
+    ) AS ventas_abiertas,
+
+    ISNULL(
+        SUM(ticket.propina),
+        0
+    ) AS propinas_abiertas,
+
+    COUNT(*)
+        AS tickets_abiertos,
+
+    ISNULL(
+        SUM(ticket.pax),
+        0
+    ) AS pax_abiertos
+
+FROM (
+    SELECT
+        c.Co_Folio,
+
+        SUM(
+            ISNULL(cd.Cd_Importe, 0)
+        ) AS ventas,
+
+        MAX(
+            ISNULL(c.Co_Propina, 0)
+        ) AS propina,
+
+        MAX(
+            ISNULL(c.Co_Personas, 0)
+        ) AS pax
+
+    FROM Comanda c
+
+    INNER JOIN Comanda_Detalle cd
+        ON cd.Co_Folio = c.Co_Folio
+
+    WHERE CAST(c.Co_Fecha AS date)
+            = '{fecha_operacion}'
+      AND c.Sc_Cve_Sucursal
+            = '{sucursal_id}'
+      AND c.Es_Cve_Estado = 'UN'
+      AND cd.Es_Cve_Estado = 'AC'
+      AND cd.Fecha_Baja IS NULL
+
+    GROUP BY
+        c.Co_Folio
+) AS ticket
 """
 
 # MPRO QRO: Ventas cerradas del día (Comanda con cierre)
 # NOTA: En QRO, las ventas cerradas se identifican por Es_Cve_Estado diferente o Fecha_Baja
 # {fecha_operacion} = fecha operativa calculada por backend en zona México
 QUERY_MPRO_CERRADAS_HOY_QRO = """
-SELECT 
-    SUM(ISNULL(cd.Cd_Importe, 0)) as ventas_cerradas_dia,
-    COUNT(DISTINCT c.Co_Folio) as tickets_cerrados_dia,
-    SUM(DISTINCT ISNULL(c.Co_Personas, 1)) as pax_cerrados_dia
-FROM Comanda c
-INNER JOIN Comanda_Detalle cd ON c.Co_Folio = cd.Co_Folio
-WHERE CAST(c.Co_Fecha AS DATE) = '{fecha_operacion}'
-  AND c.Sc_Cve_Sucursal = '{sucursal_id}'
-  AND c.Es_Cve_Estado <> 'AC'
-  AND cd.Es_Cve_Estado = 'AC'
-  AND cd.Fecha_Baja IS NULL
+SELECT
+    ISNULL(
+        SUM(ticket.ventas),
+        0
+    ) AS ventas_cerradas_dia,
+
+    ISNULL(
+        SUM(ticket.propina),
+        0
+    ) AS propinas_cerradas_dia,
+
+    COUNT(*)
+        AS tickets_cerrados_dia,
+
+    ISNULL(
+        SUM(ticket.pax),
+        0
+    ) AS pax_cerrados_dia
+
+FROM (
+    SELECT
+        c.Co_Folio,
+
+        SUM(
+            ISNULL(cd.Cd_Importe, 0)
+        ) AS ventas,
+
+        MAX(
+            ISNULL(c.Co_Propina, 0)
+        ) AS propina,
+
+        MAX(
+            ISNULL(c.Co_Personas, 0)
+        ) AS pax
+
+    FROM Comanda c
+
+    INNER JOIN Comanda_Detalle cd
+        ON cd.Co_Folio = c.Co_Folio
+
+    WHERE CAST(c.Co_Fecha AS date)
+            = '{fecha_operacion}'
+      AND c.Sc_Cve_Sucursal
+            = '{sucursal_id}'
+      AND c.Es_Cve_Estado = 'PA'
+      AND cd.Es_Cve_Estado = 'AC'
+      AND cd.Fecha_Baja IS NULL
+
+    GROUP BY
+        c.Co_Folio
+) AS ticket
 """
 
 
@@ -880,12 +1176,15 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 tickets_abiertos = int(abiertas_data.get('tickets_abiertos') or 0)
                 pax_abiertos = int(abiertas_data.get('pax_abiertos') or 0)
             
+                propinas_abiertas = Decimal(str(abiertas_data.get('propinas_abiertas') or 0))
                 ventas_cerradas_dia = Decimal(str(cerradas_data.get('ventas_cerradas_dia') or 0))
                 tickets_cerrados_dia = int(cerradas_data.get('tickets_cerrados_dia') or 0)
                 pax_cerrados_dia = int(cerradas_data.get('pax_cerrados_dia') or 0)
             
+                propinas_cerradas_dia = Decimal(str(cerradas_data.get('propinas_cerradas_dia') or 0))
                 total_estimado_dia = ventas_abiertas + ventas_cerradas_dia
             
+                propinas_total = propinas_abiertas + propinas_cerradas_dia
                 # =================================================================
                 # PROTECCIÓN ANTI-$0 PARA SOFTRESTAURANT
                 # =================================================================
@@ -947,7 +1246,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 
                 # Crear modelo y upsert
                 ventas_model = VentasDiaAbiertasV2(
-                    unidad_negocio_pk=unidad_id,
+                    unidad_negocio_pk=unidad["unidad_negocio_pk"],
                     unidad_negocio_nombre=nombre,
                     server_id=server_id,
                     sucursal_id=unidad["sucursal_id"],
@@ -958,10 +1257,13 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                     ventas_abiertas=ventas_abiertas,
                     tickets_abiertos=tickets_abiertos,
                     pax_abiertos=pax_abiertos,
+                    propinas_abiertas=propinas_abiertas,
                     ventas_cerradas_dia=ventas_cerradas_dia,
                     tickets_cerrados_dia=tickets_cerrados_dia,
                     pax_cerrados_dia=pax_cerrados_dia,
+                    propinas_cerradas_dia=propinas_cerradas_dia,
                     total_estimado_dia=total_estimado_dia,
+                    propinas_total=propinas_total,
                     fuente_original=fuente,
                     sync_run_id=run_id,
                     source_status="SYNC_OK"
@@ -989,7 +1291,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 log = SyncLogV2(
                     run_id=run_id,
                     run_type=SyncRunType.VENTAS_DIA,
-                    unidad_negocio_pk=unidad_id,
+                    unidad_negocio_pk=unidad["unidad_negocio_pk"],
                     server_id=server_id,
                     fecha_inicio=fecha_operacion,  # Usar fecha_operacion
                     fecha_fin=fecha_operacion,
@@ -1021,7 +1323,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 log = SyncLogV2(
                     run_id=run_id,
                     run_type=SyncRunType.VENTAS_DIA,
-                    unidad_negocio_pk=unidad_id,
+                    unidad_negocio_pk=unidad["unidad_negocio_pk"],
                     server_id=server_id,
                     fecha_inicio=fecha_operacion if 'fecha_operacion' in dir() else fecha_hoy,
                     fecha_fin=fecha_operacion if 'fecha_operacion' in dir() else fecha_hoy,
@@ -1151,7 +1453,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                     log = SyncLogV2(
                         run_id=run_id,
                         run_type=SyncRunType.ABIERTAS,
-                        unidad_negocio_pk=unidad_id,
+                        unidad_negocio_pk=unidad["unidad_negocio_pk"],
                         server_id=server_id,
                         sucursal_id=sucursal_id,
                         fecha_inicio=fecha_operacion,
@@ -1199,7 +1501,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                         log = SyncLogV2(
                             run_id=run_id,
                             run_type=SyncRunType.ABIERTAS,
-                            unidad_negocio_pk=unidad_id,
+                            unidad_negocio_pk=unidad["unidad_negocio_pk"],
                             server_id=server_id,
                             sucursal_id=sucursal_id,
                             fecha_inicio=fecha_operacion,
@@ -1234,6 +1536,10 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 tickets_cerrados_dia = int(cerradas_data.get('tickets_cerrados_dia') or 0)
                 pax_cerrados_dia = int(cerradas_data.get('pax_cerrados_dia') or 0)
             
+                propinas_abiertas = Decimal(str(abiertas_data.get('propinas_abiertas') or 0))
+                propinas_cerradas_dia = Decimal(str(cerradas_data.get('propinas_cerradas_dia') or 0))
+                propinas_total = propinas_abiertas + propinas_cerradas_dia
+
                 total_estimado_dia = ventas_abiertas + ventas_cerradas_dia
             
                 # FIX 2026-05-15: Log detallado para QRO (diagnóstico de bug $0)
@@ -1263,7 +1569,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 
                 # Crear modelo y upsert
                 ventas_model = VentasDiaAbiertasV2(
-                    unidad_negocio_pk=unidad_id,
+                    unidad_negocio_pk=unidad["unidad_negocio_pk"],
                     unidad_negocio_nombre=nombre,
                     server_id=server_id,
                     sucursal_id=sucursal_id,
@@ -1272,6 +1578,9 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                     snapshot_timestamp=datetime.now(timezone.utc),
                     fecha_operacion=fecha_operacion,  # Usar fecha_operacion calculada
                     ventas_abiertas=ventas_abiertas,
+                    propinas_abiertas=propinas_abiertas,
+                    propinas_cerradas_dia=propinas_cerradas_dia,
+                    propinas_total=propinas_total,
                     tickets_abiertos=tickets_abiertos,
                     pax_abiertos=pax_abiertos,
                     ventas_cerradas_dia=ventas_cerradas_dia,
@@ -1306,7 +1615,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 log = SyncLogV2(
                     run_id=run_id,
                     run_type=SyncRunType.VENTAS_DIA,
-                    unidad_negocio_pk=unidad_id,
+                    unidad_negocio_pk=unidad["unidad_negocio_pk"],
                     server_id=server_id,
                     fecha_inicio=fecha_operacion,  # Usar fecha_operacion
                     fecha_fin=fecha_operacion,
@@ -1339,7 +1648,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 log = SyncLogV2(
                     run_id=run_id,
                     run_type=SyncRunType.VENTAS_DIA,
-                    unidad_negocio_pk=unidad_id,
+                    unidad_negocio_pk=unidad["unidad_negocio_pk"],
                     server_id=unidad.get("server_id", "UNKNOWN"),
                     fecha_inicio=fecha_operacion if 'fecha_operacion' in dir() else fecha_hoy,
                     fecha_fin=fecha_operacion if 'fecha_operacion' in dir() else fecha_hoy,

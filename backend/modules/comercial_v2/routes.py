@@ -898,16 +898,21 @@ async def comercial_v2_dashboard(
                 u['_total_estimado_hoy'] = float(ab.get('total_estimado_dia') or 0)
                 u['_tickets_abiertos_hoy'] = int(ab.get('tickets_abiertos') or 0)
                 u['_pax_abiertos_hoy'] = int(ab.get('pax_abiertos') or 0)
+                u['_propinas_abiertas_hoy'] = float(ab.get('propinas_abiertas') or 0)
+                u['_propinas_cerradas_hoy'] = float(ab.get('propinas_cerradas_dia') or 0)
+                u['_propinas_total_hoy'] = float(ab.get('propinas_total') or 0)
                 u['_snapshot_timestamp'] = str(ab.get('snapshot_timestamp') or '')
                 u['_incluye_ventas_abiertas'] = True
 
                 # Si NO tiene cerradas, sumar abiertas al total de la unidad
                 if not tiene_cerradas:
                     total_dia = float(ab.get('total_estimado_dia') or 0)
+                    propinas_dia = float(ab.get('propinas_total') or 0)
                     tickets = int(ab.get('tickets_abiertos') or 0) + int(ab.get('tickets_cerrados_dia') or 0)
                     pax = int(ab.get('pax_abiertos') or 0) + int(ab.get('pax_cerrados_dia') or 0)
 
                     u['ventas_total'] = total_dia
+                    u['propinas_total'] = propinas_dia
                     u['tickets_total'] = tickets
                     u['pax_total'] = pax
                     u['dias'] = 1 if total_dia > 0 else 0
@@ -920,6 +925,9 @@ async def comercial_v2_dashboard(
                 u['_total_estimado_hoy'] = 0
                 u['_tickets_abiertos_hoy'] = 0
                 u['_pax_abiertos_hoy'] = 0
+                u['_propinas_abiertas_hoy'] = 0
+                u['_propinas_cerradas_hoy'] = 0
+                u['_propinas_total_hoy'] = 0
                 u['_snapshot_timestamp'] = ''
                 u['_incluye_ventas_abiertas'] = False
 
@@ -951,10 +959,12 @@ async def comercial_v2_dashboard(
                 # Solo sumar si la unidad NO tiene datos cerrados en el período
                 if uid not in cerradas_por_unidad:
                     total_dia = float(venta.get('total_estimado_dia') or 0)
+                    propinas_dia = float(venta.get('propinas_total') or 0)
                     tickets = int(venta.get('tickets_abiertos') or 0) + int(venta.get('tickets_cerrados_dia') or 0)
                     pax = int(venta.get('pax_abiertos') or 0) + int(venta.get('pax_cerrados_dia') or 0)
 
                     totales['ventas_total'] = float(totales.get('ventas_total') or 0) + total_dia
+                    totales['propinas_total'] = float(totales.get('propinas_total') or 0) + propinas_dia
                     totales['tickets_total'] = int(totales.get('tickets_total') or 0) + tickets
                     totales['pax_total'] = int(totales.get('pax_total') or 0) + pax
 
@@ -1129,6 +1139,9 @@ async def comercial_v2_dashboard(
                     "_total_estimado_hoy": u.get('_total_estimado_hoy', 0),
                     "_tickets_abiertos_hoy": u.get('_tickets_abiertos_hoy', 0),
                     "_pax_abiertos_hoy": u.get('_pax_abiertos_hoy', 0),
+                    "_propinas_abiertas_hoy": u.get('_propinas_abiertas_hoy', 0),
+                    "_propinas_cerradas_hoy": u.get('_propinas_cerradas_hoy', 0),
+                    "_propinas_total_hoy": u.get('_propinas_total_hoy', 0),
                     "_snapshot_timestamp": u.get('_snapshot_timestamp', ''),
                     "_incluye_ventas_abiertas": u.get('_incluye_ventas_abiertas', False),
                     # Estado V2 de la unidad
@@ -1152,8 +1165,13 @@ async def comercial_v2_dashboard(
                         "ventas_abiertas": float(v.get('ventas_abiertas') or 0),
                         "ventas_cerradas_dia": float(v.get('ventas_cerradas_dia') or 0),
                         "total_estimado_dia": float(v.get('total_estimado_dia') or 0),
+                        "propinas_abiertas": float(v.get('propinas_abiertas') or 0),
+                        "propinas_cerradas_dia": float(v.get('propinas_cerradas_dia') or 0),
+                        "propinas_total": float(v.get('propinas_total') or 0),
                         "tickets_abiertos": int(v.get('tickets_abiertos') or 0),
+                        "tickets_cerrados_dia": int(v.get('tickets_cerrados_dia') or 0),
                         "pax_abiertos": int(v.get('pax_abiertos') or 0),
+                        "pax_cerrados_dia": int(v.get('pax_cerrados_dia') or 0),
                         "snapshot_timestamp": str(v.get('snapshot_timestamp') or ''),
                         "_fuente": "Comercial_Ventas_Dia_Abiertas_v2"
                     }

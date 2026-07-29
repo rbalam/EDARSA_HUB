@@ -110,6 +110,8 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       server_id: u.unidad_negocio_id,
       sucursal: null,
       ventas: u.ventas_total || 0,
+      propinas: u.propinas_total || 0,
+      propinas_total: u.propinas_total || 0,
       pax: u.pax_total || 0,
       cheques: u.tickets_total || 0,
       // CORRECCIÓN GLOBAL: Nomenclatura correcta de KPIs
@@ -160,6 +162,8 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
       },
       totales: {
         ventas: totales.ventas_total || 0,
+        propinas: totales.propinas_total || 0,
+        propinas_total: totales.propinas_total || 0,
         pax: totales.pax_total || 0,
         cheques: totales.tickets_total || 0,
         // CORRECCIÓN GLOBAL: Nomenclatura correcta de promedios

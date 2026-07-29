@@ -148,38 +148,50 @@ class KPIsDiariosV2(BaseModel):
         use_enum_values = True
 
 
+
 class VentasDiaAbiertasV2(BaseModel):
-    """Registro para Comercial_Ventas_Dia_Abiertas_v2"""
-    
+    """
+    Snapshot mutable del día operativo para
+    Comercial_Ventas_Dia_Abiertas_v2.
+
+    ventas_*:
+        Venta con IVA, excluyendo propinas.
+
+    propinas_*:
+        Importe separado; nunca forma parte de ventas.
+    """
+
     unidad_negocio_pk: str
     unidad_negocio_nombre: str
     server_id: str
     sucursal_id: str = "DEFAULT"
     sucursal_nombre: Optional[str] = None
     sistema_origen: SistemaOrigen
-    
+
     snapshot_timestamp: datetime
     fecha_operacion: date
-    
+
     ventas_abiertas: Decimal = Decimal("0")
     tickets_abiertos: int = 0
     pax_abiertos: int = 0
-    
+    propinas_abiertas: Decimal = Decimal("0")
+
     ventas_cerradas_dia: Decimal = Decimal("0")
     tickets_cerrados_dia: int = 0
     pax_cerrados_dia: int = 0
-    
+    propinas_cerradas_dia: Decimal = Decimal("0")
+
     total_estimado_dia: Decimal = Decimal("0")
-    
+    propinas_total: Decimal = Decimal("0")
+
     fuente_original: FuenteOriginal
     sync_run_id: Optional[str] = None
-    
-    # Campo para diagnóstico técnico (no visual principal)
+
+    # Diagnóstico técnico; no sustituye la frescura del snapshot.
     source_status: Optional[str] = "SYNC_OK"
 
     class Config:
         use_enum_values = True
-
 
 class SyncLogV2(BaseModel):
     """Registro para Comercial_SyncLog_v2"""

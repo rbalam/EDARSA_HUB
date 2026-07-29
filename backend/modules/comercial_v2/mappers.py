@@ -31,6 +31,7 @@ from .schemas import (
 # CÁLCULO DE HASH ORIGEN
 # =============================================================================
 
+
 def calcular_hash_origen(
     server_id: str,
     sucursal_id: str,
@@ -53,6 +54,31 @@ def calcular_hash_origen(
     )
     return hashlib.sha256(data_string.encode('utf-8')).hexdigest()[:32]
 
+def calcular_hash_origen_mpro(
+    server_id: str,
+    sucursal_id: str,
+    fecha: date,
+    ventas_total: Decimal,
+    propinas_total: Decimal,
+    tickets_total: int,
+    pax_total: int,
+) -> str:
+    """
+    Hash idempotente exclusivo del contrato MPRO.
+
+    Incluye ventas, propinas, tickets y PAX, conservando el
+    contrato histórico de almacenamiento de 32 caracteres.
+    """
+    data_string = (
+        f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
+        f"{ventas_total}|{propinas_total}|"
+        f"{tickets_total}|{pax_total}|"
+        "kpi_mpro_ventas_total_propinas_v3"
+    )
+
+    return hashlib.sha256(
+        data_string.encode("utf-8")
+    ).hexdigest()[:32]
 
 def calcular_hash_ventas_abiertas(
     server_id: str,
@@ -209,7 +235,8 @@ def map_mpro_ventas_cerradas(
     
     Campos esperados del query MPRO:
     - fecha: date
-    - Vn_Precio_Neto_Importe: Decimal (ventas netas)
+    - Vn_Precio_Neto_Importe: Decimal (venta canónica con IVA, sin propina)
+    - propinas: Decimal (Comanda.Co_Propina)
     - num_folios: int (tickets)
     - total_personas: int (PAX desde Comanda)
     """
@@ -217,9 +244,9 @@ def map_mpro_ventas_cerradas(
     if isinstance(fecha, str):
         fecha = datetime.strptime(fecha, '%Y-%m-%d').date()
     
-    # MPRO no maneja propinas en la venta directa
+    # MPRO expone la propina en Comanda.Co_Propina.
     ventas_total = Decimal(str(row.get('Vn_Precio_Neto_Importe', 0) or 0))
-    propinas = Decimal("0")  # Propinas se manejan aparte en MPRO
+    propinas = Decimal(str(row.get('propinas', 0) or 0))
     tickets = int(row.get('num_folios', 0) or 0)
     pax = int(row.get('total_personas', 0) or 0)
     
@@ -227,11 +254,12 @@ def map_mpro_ventas_cerradas(
     ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
     pax_promedio = ventas_total / pax if pax > 0 else Decimal("0")
     # Hash para idempotencia
-    hash_origen = calcular_hash_origen(
+    hash_origen = calcular_hash_origen_mpro(
         config.server_id,
         config.sucursal_id,
         fecha,
         ventas_total,
+        propinas,
         tickets,
         pax
     )

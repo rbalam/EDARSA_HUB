@@ -80,71 +80,136 @@ def _execute_query(query: str, params: dict = None) -> List[Dict]:
 
 def get_unidades_negocio_config() -> List[UnidadNegocioConfig]:
     """
-    Obtiene la configuración de unidades de negocio desde EDARSAHUB.
-    Lee de Servidores_Conexiones para no hardcodear.
-    
-    Retorna lista de UnidadNegocioConfig con las 5 unidades activas.
+    Obtiene las unidades activas desde el catálogo canónico.
+
+    Identidad:
+        dbo.Unidades_Negocio
+
+    Conexión técnica:
+        dbo.Servidores_Conexiones, mediante server_registry
+
+    No deduce unidades por nombres y no contiene sucursales manuales.
     """
-    # FIX IDENTIDAD CANÓNICA (2026-05-16): Usar códigos CANÓNICOS, no aliases legacy
-    query = """
-    SELECT 
-        id as id,
-        nombre as unidad_nombre,
-        system_type,
-        host,
-        CASE 
-            WHEN nombre LIKE '%MERIDA%' OR nombre LIKE '%MID%' THEN '130MID'
-            WHEN nombre LIKE '%CIENFUEGOS%' AND nombre NOT LIKE '%TABLAJERIA%' THEN 'CIENFUEGOS'
-            WHEN nombre LIKE '%ESTELAR%' THEN 'ESTELAR'
-            WHEN nombre = 'ManagmentPro' THEN 'MPRO-MULTI'
-            ELSE REPLACE(UPPER(nombre), ' ', '-')
-        END as unidad_id_calculado
-    FROM Servidores_Conexiones
-    WHERE activo = 1 
-      AND (tipo_conexion = 'DATA_SOURCE' OR tipo_conexion IS NULL)
-      AND nombre NOT LIKE '%TABLAJERIA%'
-      AND nombre NOT LIKE '%PRUEBA%'
-      AND nombre NOT LIKE '%ESCRITURA%'
-    ORDER BY nombre
-    """
-    
-    rows = _execute_query(query)
-    
-    configs = []
+    from core.server_registry import list_unidades_negocio
+
+    rows = list_unidades_negocio(active_only=True)
+    if not rows:
+        raise RuntimeError(
+            "El catálogo canónico Unidades_Negocio no devolvió unidades activas"
+        )
+
+    configs: List[UnidadNegocioConfig] = []
+    llaves = set()
+
     for row in rows:
-        system_type = row.get('system_type', '').upper()
-        if 'SOFT' in system_type:
+        codigo = str(row.get("codigo") or "").strip()
+        unidad_pk = str(row.get("id") or "").strip()
+        nombre = str(row.get("nombre") or "").strip()
+        server_id = str(row.get("server_id") or "").strip()
+        sucursal_id = (
+            str(row.get("sucursal_origen_id") or "").strip()
+            or "DEFAULT"
+        )
+        system_type = str(row.get("system_type") or "").strip().upper()
+
+        faltantes = [
+            campo
+            for campo, valor in (
+                ("codigo", codigo),
+                ("id", unidad_pk),
+                ("nombre", nombre),
+                ("server_id", server_id),
+                ("system_type", system_type),
+            )
+            if not valor
+        ]
+        if faltantes:
+            raise RuntimeError(
+                f"Unidad canónica incompleta: codigo={codigo or 'VACIO'}, "
+                f"faltantes={','.join(faltantes)}"
+            )
+
+        if "SOFT" in system_type:
             sistema = SistemaOrigen.SOFTRESTAURANT
-        elif 'MPRO' in system_type or 'MANAG' in system_type:
+        elif "MPRO" in system_type or "MANAG" in system_type:
             sistema = SistemaOrigen.MPRO
         else:
-            continue  # Ignorar tipos desconocidos
-        
-        configs.append(UnidadNegocioConfig(
-            unidad_negocio_pk=row['unidad_id_calculado'],
-            unidad_negocio_nombre=row['unidad_nombre'],
-            server_id=str(row['server_id']),  # Convertir UUID a string
-            sucursal_id='DEFAULT',
-            sucursal_nombre=row['unidad_nombre'],
-            sistema_origen=sistema,
-            activo=True
-        ))
-    
+            raise RuntimeError(
+                f"Sistema no soportado en catálogo: "
+                f"unidad={codigo}, system_type={system_type}"
+            )
+
+        if sistema == SistemaOrigen.MPRO and sucursal_id == "DEFAULT":
+            raise RuntimeError(
+                f"Unidad MPRO sin sucursal_origen_id: {codigo}"
+            )
+
+        llave = (unidad_pk, sucursal_id)
+        if llave in llaves:
+            raise RuntimeError(
+                f"Unidad/sucursal duplicada en catálogo: {codigo}/{sucursal_id}"
+            )
+        llaves.add(llave)
+
+        configs.append(
+            UnidadNegocioConfig(
+                unidad_negocio_pk=unidad_pk,
+                unidad_negocio_nombre=nombre,
+                server_id=server_id,
+                sucursal_id=sucursal_id,
+                sucursal_nombre=nombre,
+                sistema_origen=sistema,
+                activo=True,
+            )
+        )
+
     return configs
+
 
 
 def get_sucursales_mpro(server_id: str) -> List[Dict[str, str]]:
     """
-    Para MPRO, obtiene las sucursales específicas (QRO=0021, ORIGEN=0023).
-    MPRO tiene múltiples sucursales en un solo server_id.
-    
-    FIX IDENTIDAD CANÓNICA (2026-05-16): Usar códigos CANÓNICOS
+    Compatibilidad temporal para consumidores antiguos.
+
+    Las sucursales se obtienen desde Unidades_Negocio; no están escritas
+    manualmente en el código.
     """
-    # Mapeo conocido de sucursales MPRO con códigos CANÓNICOS
-    return [
-        {'sucursal_id': '0021', 'nombre': '130° QUERÉTARO', 'unidad_id': '130QRO'},
-        {'sucursal_id': '0023', 'nombre': 'ORIGEN', 'unidad_id': 'ORIGEN'},
-    ]
+    from core.server_registry import list_unidades_negocio
+
+    server_id = str(server_id or "").strip()
+    if not server_id:
+        raise ValueError("server_id es obligatorio")
+
+    sucursales = []
+
+    for row in list_unidades_negocio(active_only=True):
+        row_server = str(row.get("server_id") or "").strip()
+        system_type = str(row.get("system_type") or "").upper()
+        sucursal_id = str(row.get("sucursal_origen_id") or "").strip()
+
+        if row_server != server_id:
+            continue
+        if "MPRO" not in system_type and "MANAG" not in system_type:
+            continue
+        if not sucursal_id:
+            raise RuntimeError(
+                f"Unidad MPRO sin sucursal_origen_id: {row.get('codigo')}"
+            )
+
+        sucursales.append({
+            "sucursal_id": sucursal_id,
+            "nombre": str(row.get("nombre") or ""),
+            "unidad_id": str(row.get("codigo") or ""),
+            "unidad_negocio_pk": str(row.get("id") or ""),
+        })
+
+    if not sucursales:
+        raise RuntimeError(
+            f"No existen unidades MPRO activas para server_id={server_id}"
+        )
+
+    return sucursales
+
 
 
 # =============================================================================
@@ -171,8 +236,16 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
     sucursal_normalizada = normalize_unidad_nombre(kpi.sucursal_nombre) if kpi.sucursal_nombre else None
 
     # FIX 2026-06-08: Resolver código de unidad (unidad_negocio_id es NOT NULL en la tabla base)
-    _unidad_info = UnidadesService.get_by_pk(kpi.unidad_negocio_pk) or {}
-    unidad_codigo = _unidad_info.get('codigo') or kpi.unidad_negocio_pk
+    # V1.0-COMERCIAL-KPI-UNIDAD-CODIGO
+    _unidad_info = UnidadesService.get_by_pk(kpi.unidad_negocio_pk)
+    unidad_codigo = str(
+        (_unidad_info or {}).get("codigo") or ""
+    ).strip()
+    if not unidad_codigo:
+        raise ValueError(
+            "Unidad comercial no encontrada para "
+            f"unidad_negocio_pk={kpi.unidad_negocio_pk}"
+        )
 
     # Verificar si existe
     check_query = f"""
@@ -280,7 +353,7 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
     """
     Upsert de snapshot de ventas abiertas.
     Solo mantiene 1 registro por unidad (sobrescribe).
-    
+
     REGLAS:
     1. ANTI-$0 FALSO: Si el nuevo valor es $0 pero existe un snapshot válido 
        con venta > 0 para la MISMA fecha_operacion, NO sobrescribir.
@@ -288,17 +361,64 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
        (esto permite corregir datos con fecha incorrecta).
     3. BARRERA P0C: Validar que FechaOperacion coincida con get_operational_window().
     """
+
+    # V1.0-COMERCIAL-ABIERTAS-UNIDAD-CODIGO
+    # La tabla de ventas abiertas conserva unidad_negocio_id
+    # como código operativo durante V1.0.
+    _unidad_info = UnidadesService.get_by_pk(
+        ventas.unidad_negocio_pk
+    )
+    unidad_codigo = str(
+        (_unidad_info or {}).get("codigo") or ""
+    ).strip()
+
+    if not unidad_codigo:
+        raise ValueError(
+            "No se pudo resolver el código comercial para "
+            f"unidad_negocio_pk={ventas.unidad_negocio_pk}"
+        )
     import logging
     import traceback
     logger = logging.getLogger(__name__)
-    
+
+    # V1.0-COMERCIAL-ABIERTAS-PROPINAS
+    from decimal import Decimal
+
+    propinas_calculadas = (
+        ventas.propinas_abiertas
+        + ventas.propinas_cerradas_dia
+    )
+
+    if abs(
+        ventas.propinas_total
+        - propinas_calculadas
+    ) > Decimal("0.01"):
+        raise ValueError(
+            "Contrato de propinas inválido: "
+            f"propinas_total={ventas.propinas_total}, "
+            f"calculado={propinas_calculadas}"
+        )
+
+    if abs(
+        ventas.total_estimado_dia
+        - ventas.ventas_abiertas
+        - ventas.ventas_cerradas_dia
+    ) > Decimal("0.01"):
+        raise ValueError(
+            "Contrato de ventas del día inválido: "
+            "total_estimado_dia debe ser igual a "
+            "ventas_abiertas + ventas_cerradas_dia"
+        )
+
+
+
     # =========================================================================
     # BARRERA P0C: Validación de trazabilidad y FechaOperacion
     # =========================================================================
     caller_info = traceback.extract_stack()[-3] if len(traceback.extract_stack()) >= 3 else None
     caller_file = caller_info.filename if caller_info else "UNKNOWN"
     caller_func = caller_info.name if caller_info else "UNKNOWN"
-    
+
     # VALIDACIÓN 1: Debe tener run_id válido
     if not ventas.sync_run_id or not ventas.sync_run_id.startswith("ABIERTA-"):
         logger.error(
@@ -311,20 +431,20 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
             'reason': f'run_id inválido: {ventas.sync_run_id}',
             'caller': f'{caller_file}::{caller_func}'
         }
-    
+
     # VALIDACIÓN 2: FechaOperacion debe coincidir con get_operational_window()
     try:
         from core.utils.operational_window import get_operational_window
-        resultado_ventana = get_operational_window(ventas.unidad_negocio_pk)
+        resultado_ventana = get_operational_window(unidad_codigo)
         fecha_correcta = resultado_ventana.fecha_operacion
         fecha_recibida = ventas.fecha_operacion
-        
+
         # Convertir a date si es necesario
         if hasattr(fecha_recibida, 'date'):
             fecha_recibida = fecha_recibida.date()
         if hasattr(fecha_correcta, 'date'):
             fecha_correcta = fecha_correcta.date()
-        
+
         if str(fecha_recibida) != str(fecha_correcta):
             logger.error(
                 f"[BARRERA-P0C] BLOQUEADO: FechaOperacion incorrecta. "
@@ -342,7 +462,7 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
             }
     except Exception as e:
         logger.warning(f"[BARRERA-P0C] No se pudo validar FechaOperacion: {e}")
-    
+
     # Log diagnóstico obligatorio con call stack
     logger.info(
         f"[UPSERT-DIAG] unidad={ventas.unidad_negocio_pk}, "
@@ -353,7 +473,7 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
         f"pid={os.getpid()}, "
         f"caller={caller_file}::{caller_func}"
     )
-    
+
     # =================================================================
     # GUARD RAIL P0.H (REPOSITORY): BLOQUEAR FECHA FUTURA
     # Esta es la ÚLTIMA línea de defensa antes de escribir en SQL
@@ -362,7 +482,7 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
     import pytz
     mexico_tz = pytz.timezone('America/Mexico_City')
     fecha_hoy_mx = datetime.now(mexico_tz).date()
-    
+
     if ventas.fecha_operacion > fecha_hoy_mx:
         logger.error(
             f"[UPSERT-GUARD-RAIL] ⛔ BLOQUEADO: fecha_operacion={ventas.fecha_operacion} > "
@@ -373,23 +493,23 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
             'reason': f'fecha_operacion futura: {ventas.fecha_operacion} > {fecha_hoy_mx}',
             'unidad': ventas.unidad_negocio_pk
         }
-    
+
     # Verificar si existe y obtener valores actuales
     check_query = f"""
     SELECT id, total_estimado_dia, fecha_operacion, sync_run_id
     FROM Comercial_Ventas_Dia_Abiertas_v2
-    WHERE unidad_negocio_id = '{ventas.unidad_negocio_pk}'
+    WHERE unidad_negocio_id = '{unidad_codigo}'
       AND sucursal_id = '{ventas.sucursal_id}'
     """
-    
+
     existing = _execute_query(check_query)
-    
+
     if existing:
         record_id = existing[0].get('id')
         existing_total = float(existing[0].get('total_estimado_dia') or 0)
         existing_fecha = str(existing[0].get('fecha_operacion'))
         new_fecha = str(ventas.fecha_operacion)
-        
+
         # =================================================================
         # REGLA 1: Si la fecha_operacion es DIFERENTE, SIEMPRE actualizar
         # Esto permite corregir datos con fecha incorrecta
@@ -401,7 +521,7 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
                 f"total existente=${existing_total:,.2f}, nuevo=${ventas.total_estimado_dia:,.2f}"
             )
             # Continuar con UPDATE (no retornar)
-        
+
         # =================================================================
         # REGLA 2: ANTI-$0 FALSO (solo aplica si MISMA fecha_operacion)
         # =================================================================
@@ -419,7 +539,7 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
                 'reason': f'Protección anti-$0: existente=${existing_total:,.2f}',
                 'preserved_total': existing_total
             }
-        
+
         update_query = f"""
         UPDATE Comercial_Ventas_Dia_Abiertas_v2 SET
             server_id = '{ventas.server_id}',
@@ -428,10 +548,13 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
             ventas_abiertas = {ventas.ventas_abiertas},
             tickets_abiertos = {ventas.tickets_abiertos},
             pax_abiertos = {ventas.pax_abiertos},
+            propinas_abiertas = {ventas.propinas_abiertas},
             ventas_cerradas_dia = {ventas.ventas_cerradas_dia},
             tickets_cerrados_dia = {ventas.tickets_cerrados_dia},
             pax_cerrados_dia = {ventas.pax_cerrados_dia},
+            propinas_cerradas_dia = {ventas.propinas_cerradas_dia},
             total_estimado_dia = {ventas.total_estimado_dia},
+            propinas_total = {ventas.propinas_total},
             fuente_original = '{ventas.fuente_original}',
             sync_run_id = '{ventas.sync_run_id}',
             fecha_ultima_actualizacion = SYSUTCDATETIME()
@@ -447,11 +570,14 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
             id, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
             sucursal_nombre, sistema_origen, snapshot_timestamp, fecha_operacion,
             ventas_abiertas, tickets_abiertos, pax_abiertos,
+            propinas_abiertas,
             ventas_cerradas_dia, tickets_cerrados_dia, pax_cerrados_dia,
-            total_estimado_dia, fuente_original, sync_run_id, fecha_ultima_actualizacion
+            propinas_cerradas_dia,
+            total_estimado_dia, propinas_total,
+            fuente_original, sync_run_id, fecha_ultima_actualizacion
         ) VALUES (
             '{new_id}',
-            '{ventas.unidad_negocio_pk}',
+            '{unidad_codigo}',
             '{ventas.unidad_negocio_nombre}',
             '{ventas.server_id}',
             '{ventas.sucursal_id}',
@@ -460,8 +586,10 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
             '{ventas.snapshot_timestamp.isoformat()}',
             '{ventas.fecha_operacion.isoformat()}',
             {ventas.ventas_abiertas}, {ventas.tickets_abiertos}, {ventas.pax_abiertos},
+            {ventas.propinas_abiertas},
             {ventas.ventas_cerradas_dia}, {ventas.tickets_cerrados_dia}, {ventas.pax_cerrados_dia},
-            {ventas.total_estimado_dia},
+            {ventas.propinas_cerradas_dia},
+            {ventas.total_estimado_dia}, {ventas.propinas_total},
             '{ventas.fuente_original}',
             '{ventas.sync_run_id}',
             SYSUTCDATETIME()
