@@ -22,11 +22,12 @@ import pymssql
 import uuid
 from collections import defaultdict
 from datetime import date, datetime, timedelta
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_DOWN, ROUND_HALF_UP
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from core.sql_first.db import get_sql_connection
 from core.secret_manager import decrypt_secret, is_encrypted_secret
+from core.system_type_utils import SystemType, normalize_system_type
 
 
 DESTINO = "dbo.Comercial_Inteligencia_VentasDetalleProducto"
@@ -55,54 +56,131 @@ def _query_edarsahub_dicts(sql: str, params: Optional[Tuple[Any, ...]] = None) -
         conn.close()
 
 
-def get_unidades_negocio_pos(unidades: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+def get_unidades_negocio_pos(
+    unidades: Optional[List[str]] = None,
+) -> List[Dict[str, Any]]:
     """
-    Resuelve unidades POS desde dbo.Unidades_Negocio.
-    No usa scheduler. No imprime secretos.
+    Obtiene el contexto POS mediante la relación canónica:
+
+        dbo.Unidades_Negocio.server_id
+            -> dbo.Servidores_Conexiones.id
+
+    No infiere sistema, servidor, sucursal o conexión por nombre.
+    No utiliza fallback operativo.
     """
-    rows = _query_edarsahub_dicts("SELECT * FROM dbo.Unidades_Negocio WITH (NOLOCK)")
+    rows = _query_edarsahub_dicts(
+        """
+        SELECT
+            CONVERT(varchar(36), u.id) AS unidad_pk,
+            CONVERT(varchar(50), u.codigo) AS unidad_codigo,
+            CONVERT(varchar(200), u.nombre) AS unidad_nombre,
 
-    wanted = {str(u).strip().upper() for u in (unidades or []) if str(u).strip()}
-    out: List[Dict[str, Any]] = []
+            CONVERT(varchar(36), u.server_id) AS server_id,
+            CONVERT(varchar(100), u.system_type)
+                AS unidad_system_type,
+            CONVERT(varchar(100), u.sucursal_origen_id)
+                AS sucursal_origen_id,
 
-    for r in rows:
-        codigo = _s(_first(r, ["codigo", "unidad_codigo", "Codigo", "UnidadCodigo", "id", "unidad_negocio_id"]))
-        nombre = _s(_first(r, ["nombre", "unidad_nombre", "Nombre", "UnidadNegocio", "unidad_negocio_nombre"], codigo))
-        unidad_id = _first(r, ["id", "unidad_id", "unidad_negocio_id", "UnidadNegocioID"], codigo)
-        server_id = _s(_first(r, ["server_id", "ServerID", "servidor_id", "ServidorID"]))
-        sucursal = _s(_first(r, ["sucursal_origen_id", "SucursalOrigenID", "sucursal_id", "SucursalID"]))
-        activo = _first(r, ["activo", "Activo", "is_active"], 1)
+            CONVERT(varchar(200), s.nombre)
+                AS servidor_nombre,
+            CONVERT(varchar(100), s.system_type)
+                AS servidor_system_type,
+            CONVERT(varchar(50), s.tipo_conexion)
+                AS tipo_conexion,
 
-        try:
-            activo_bool = bool(int(activo))
-        except Exception:
-            activo_bool = bool(activo)
+            s.host,
+            s.port,
+            s.database_name,
+            s.username,
+            s.password_encrypted
 
-        if not activo_bool:
-            continue
+        FROM dbo.Unidades_Negocio AS u
+
+        INNER JOIN dbo.Servidores_Conexiones AS s
+            ON s.id = u.server_id
+
+        WHERE ISNULL(u.activo, 1) = 1
+          AND ISNULL(s.activo, 1) = 1
+
+        ORDER BY u.codigo
+        """
+    )
+
+    wanted = {
+        str(value).strip().upper()
+        for value in (unidades or [])
+        if str(value).strip()
+    }
+
+    result: List[Dict[str, Any]] = []
+    seen_unit_ids = set()
+    seen_unit_codes = set()
+
+    for row in rows:
+        unit_pk = _s(row.get("unidad_pk"))
+        unit_code = _s(row.get("unidad_codigo"))
+        unit_name = _s(row.get("unidad_nombre"))
+        server_id = _s(row.get("server_id"))
+
+        if not unit_pk:
+            raise RuntimeError(
+                "Unidad canónica sin UUID"
+            )
+
+        if not unit_code:
+            raise RuntimeError(
+                f"Unidad canónica sin código: unidad_pk={unit_pk}"
+            )
+
+        if not unit_name:
+            raise RuntimeError(
+                f"Unidad canónica sin nombre: unidad={unit_code}"
+            )
 
         if not server_id:
+            raise RuntimeError(
+                f"Unidad sin server_id canónico: unidad={unit_code}"
+            )
+
+        unit_pk_key = unit_pk.lower()
+        unit_code_key = unit_code.upper()
+
+        if unit_pk_key in seen_unit_ids:
+            raise RuntimeError(
+                f"UUID de unidad duplicado: {unit_pk}"
+            )
+
+        if unit_code_key in seen_unit_codes:
+            raise RuntimeError(
+                f"Código de unidad duplicado: {unit_code}"
+            )
+
+        seen_unit_ids.add(unit_pk_key)
+        seen_unit_codes.add(unit_code_key)
+
+        identities = {
+            unit_pk.upper(),
+            unit_code.upper(),
+            unit_name.upper(),
+        }
+
+        if wanted and not (wanted & identities):
             continue
 
-        keys = {codigo.upper(), nombre.upper(), str(unidad_id).strip().upper()}
-        if wanted and not (keys & wanted):
-            continue
+        result.append(dict(row))
 
-        system_type = _s(_first(r, ["system_type", "sistema_origen", "SistemaOrigen", "tipo_sistema", "TipoSistema"]))
-        if not system_type:
-            system_type = "MPRO" if codigo.upper() in {"130QRO", "ORIGEN"} else "SOFTRESTAURANT"
+    if wanted and not result:
+        raise RuntimeError(
+            "Ninguna unidad configurada coincide con: "
+            + ", ".join(sorted(wanted))
+        )
 
-        out.append({
-            "unidad_id": unidad_id,
-            "unidad_codigo": codigo,
-            "unidad_nombre": nombre,
-            "server_id": server_id,
-            "sucursal_origen_id": sucursal,
-            "system_type": system_type.upper(),
-            "raw": r,
-        })
+    if not result:
+        raise RuntimeError(
+            "No existen unidades POS activas con servidor canónico"
+        )
 
-    return out
+    return result
 
 
 def _secret_value(value: Any) -> str:
@@ -123,110 +201,142 @@ def _secret_value(value: Any) -> str:
     return raw
 
 
-def get_pos_config_for_unidad(unidad_row: Dict[str, Any]) -> Dict[str, Any]:
+def get_pos_config_for_unidad(
+    unidad_row: Dict[str, Any],
+) -> Dict[str, Any]:
     """
-    Resuelve conexión POS desde dbo.Servidores_Conexiones.
-    No usa scheduler. No imprime secretos.
+    Construye el contexto exclusivamente con datos provenientes del JOIN
+    canónico de Unidades_Negocio y Servidores_Conexiones.
+
+    No realiza búsquedas secundarias ni inferencias silenciosas.
     """
+    unit_pk = _s(unidad_row.get("unidad_pk"))
+    unit_code = _s(unidad_row.get("unidad_codigo"))
+    unit_name = _s(unidad_row.get("unidad_nombre"))
     server_id = _s(unidad_row.get("server_id"))
-    if not server_id:
-        raise RuntimeError(f"Unidad sin server_id: {unidad_row}")
 
-    rows = _query_edarsahub_dicts("SELECT * FROM dbo.Servidores_Conexiones WITH (NOLOCK)")
+    unit_system_raw = _s(
+        unidad_row.get("unidad_system_type")
+    )
+    server_system_raw = _s(
+        unidad_row.get("servidor_system_type")
+    )
 
-    selected = None
-    for r in rows:
-        rid = _s(_first(r, ["id", "server_id", "ServerID", "servidor_id", "ServidorID"]))
-        if rid == server_id:
-            selected = r
-            break
+    unit_system = normalize_system_type(
+        unit_system_raw
+    )
+    server_system = normalize_system_type(
+        server_system_raw
+    )
 
-    if not selected:
-        raise RuntimeError(f"Servidor no encontrado en Servidores_Conexiones: {server_id}")
+    if unit_system == SystemType.UNKNOWN.value:
+        raise RuntimeError(
+            "Unidades_Negocio.system_type ausente o no soportado: "
+            f"unidad={unit_code!r} valor={unit_system_raw!r}"
+        )
+
+    if server_system == SystemType.UNKNOWN.value:
+        raise RuntimeError(
+            "Servidores_Conexiones.system_type ausente o no soportado: "
+            f"unidad={unit_code!r} "
+            f"server_id={server_id!r} "
+            f"valor={server_system_raw!r}"
+        )
+
+    if unit_system != server_system:
+        raise RuntimeError(
+            "Inconsistencia de system_type entre unidad y servidor: "
+            f"unidad={unit_code!r} "
+            f"unidad_system_type={unit_system!r} "
+            f"servidor_system_type={server_system!r}"
+        )
+
+    connection_type = _s(
+        unidad_row.get("tipo_conexion")
+    ).upper()
+
+    if not connection_type:
+        raise RuntimeError(
+            "Servidor sin tipo_conexion: "
+            f"unidad={unit_code!r} server_id={server_id!r}"
+        )
+
+    if connection_type in {"CORE", "API_LOCAL"}:
+        raise RuntimeError(
+            "La unidad apunta a una conexión no POS: "
+            f"unidad={unit_code!r} "
+            f"server_id={server_id!r} "
+            f"tipo_conexion={connection_type!r}"
+        )
+
+    branch_id = _s(
+        unidad_row.get("sucursal_origen_id")
+    )
+
+    if (
+        unit_system == SystemType.MANAGEMENTPRO.value
+        and not branch_id
+    ):
+        raise RuntimeError(
+            "ManagementPro requiere "
+            "Unidades_Negocio.sucursal_origen_id: "
+            f"unidad={unit_code!r}"
+        )
+
+    password = _secret_value(
+        unidad_row.get("password_encrypted")
+    )
 
     cfg = {
+        "unidad_pk": unit_pk,
+        "unidad_codigo": unit_code,
+        "unidad_nombre": unit_name,
+
         "server_id": server_id,
-        "host": _first(selected, ["host", "Host", "servidor", "Servidor", "server", "Server", "ip", "IP"]),
-        "port": _first(selected, ["port", "Port", "puerto", "Puerto"], 1433),
-        "database": _first(selected, ["database", "Database", "base_datos", "BaseDatos", "database_name", "db_name", "nombre_bd"]),
-        "username": _first(selected, ["username", "Username", "usuario", "Usuario", "user", "User", "db_user"]),
-        "password": _secret_value(_first(selected, [
-            "password", "Password",
-            "password_encrypted", "PasswordEncrypted",
-            "contrasena", "Contrasena",
-            "contraseña", "Contraseña",
-            "clave", "Clave",
-            "pwd", "PWD",
-            "db_password", "DB_PASSWORD",
-            "password_db", "PasswordDB",
-            "sql_password", "SQL_PASSWORD",
-            "pass", "Pass",
-            "password_conexion", "PasswordConexion",
-            "clave_conexion", "ClaveConexion",
-            "conexion_password", "ConexionPassword",
-        ])),
-        "system_type": _s(
-            _first(
-                unidad_row,
-                ["system_type", "tipo_sistema", "sistema", "Sistema"],
-            )
-            or _first(
-                selected,
-                ["system_type", "tipo_sistema", "sistema", "Sistema"],
-            )
-        ).upper(),
+        "servidor_nombre": _s(
+            unidad_row.get("servidor_nombre")
+        ),
+        "sucursal_origen_id": branch_id,
 
-        # Identidad canónica: dbo.Unidades_Negocio
-        "unidad_pk": _first(
-            unidad_row,
-            [
-                "unidad_pk",
-                "unidad_id",
-                "unidad_negocio_pk",
-                "unidad_negocio_id",
-                "UnidadNegocioID",
-                "id",
-                "ID",
-            ],
-        ),
-        "unidad_codigo": _first(
-            unidad_row,
-            [
-                "unidad_codigo",
-                "codigo",
-                "Codigo",
-                "Código",
-            ],
-        ),
-        "unidad_nombre": _first(
-            unidad_row,
-            [
-                "unidad_nombre",
-                "nombre",
-                "Nombre",
-            ],
-        ),
-        "sucursal_origen_id": _first(
-            unidad_row,
-            [
-                "sucursal_origen_id",
-                "SucursalOrigenID",
-                "sucursal_id",
-                "SucursalID",
-            ],
-        ),
+        "system_type": unit_system,
+        "tipo_conexion": connection_type,
 
-        # Relación canónica:
-        # dbo.Unidades_Negocio.server_id -> dbo.Servidores_Conexiones.id
-        "source": "dbo.Unidades_Negocio.server_id->dbo.Servidores_Conexiones.id",
+        "host": unidad_row.get("host"),
+        "port": unidad_row.get("port"),
+        "database": unidad_row.get("database_name"),
+        "username": unidad_row.get("username"),
+        "password": password,
+
+        "source": (
+            "dbo.Unidades_Negocio.server_id"
+            "->dbo.Servidores_Conexiones.id"
+        ),
     }
 
-    missing = [k for k in ["host", "database", "username", "password"] if not cfg.get(k)]
-    if missing:
-        raise RuntimeError(f"Config POS incompleta server_id={server_id}; faltan={missing}")
+    missing = [
+        key
+        for key in (
+            "unidad_pk",
+            "unidad_codigo",
+            "unidad_nombre",
+            "server_id",
+            "system_type",
+            "host",
+            "port",
+            "database",
+            "username",
+            "password",
+        )
+        if cfg.get(key) in (None, "")
+    ]
 
-    if not cfg["system_type"]:
-        cfg["system_type"] = "MPRO" if str(unidad_row.get("unidad_codigo")).upper() in {"130QRO", "ORIGEN"} else "SOFTRESTAURANT"
+    if missing:
+        raise RuntimeError(
+            "Configuración POS canónica incompleta: "
+            f"unidad={unit_code!r} "
+            f"server_id={server_id!r} "
+            f"faltan={missing}"
+        )
 
     return cfg
 
@@ -473,21 +583,35 @@ def _runtime_for(runtime_rows: List[Dict[str, Any]], cfg: Dict[str, Any], dia: d
 
 
 def _runtime_metrics(row: Dict[str, Any]) -> Dict[str, Any]:
-    ventas = _first(
-        row,
-        [
-            "ventas_total",
-            "ventas_con_iva",
-            "venta_total",
-            "ventas",
-            "ventas_sin_propina",
-            "venta",
-        ],
-        0,
+    """
+    Lee exclusivamente el contrato canónico de Runtime V2.
+
+    Campos obligatorios:
+    - ventas_total
+    - tickets_total
+    - pax_total
+
+    No acepta campos legacy ni aliases monetarios alternativos.
+    """
+    required_fields = (
+        "ventas_total",
+        "tickets_total",
+        "pax_total",
     )
-    tickets = _first(row, ["tickets_total", "cheques_total", "tickets", "cheques"], 0)
-    pax = _first(row, ["pax_total", "pax"], 0)
-    abiertas = _first(
+
+    missing = [
+        field
+        for field in required_fields
+        if field not in row or row.get(field) is None
+    ]
+
+    if missing:
+        raise RuntimeError(
+            "Runtime V2 no expone el contrato canónico requerido: "
+            f"faltan={missing}"
+        )
+
+    ventas_abiertas = _first(
         row,
         [
             "ventas_abiertas",
@@ -497,24 +621,40 @@ def _runtime_metrics(row: Dict[str, Any]) -> Dict[str, Any]:
         ],
         0,
     )
-    fuente = " ".join(str(v) for v in row.values() if v is not None)
-    es_abierta = "Comercial_Ventas_Dia_Abiertas_v2" in fuente
+
+    source_text = " ".join(
+        str(value)
+        for value in row.values()
+        if value is not None
+    )
+
     return {
-        "ventas": _d(ventas),
-        "tickets": int(_d(tickets)),
-        "pax": int(_d(pax)),
-        "ventas_abiertas": _d(abiertas),
-        "es_abierta": es_abierta,
+        "ventas": _d(row["ventas_total"]),
+        "tickets": int(_d(row["tickets_total"])),
+        "pax": int(_d(row["pax_total"])),
+        "ventas_abiertas": _d(ventas_abiertas),
+        "es_abierta": (
+            "Comercial_Ventas_Dia_Abiertas_v2"
+            in source_text
+        ),
     }
 
 
 def _sistema(cfg: Dict[str, Any]) -> str:
-    st = _s(cfg.get("system_type")).upper()
-    if "SOFT" in st:
-        return "SOFTRESTAURANT"
-    if "MPRO" in st or "MANAG" in st:
-        return "MPRO"
-    raise RuntimeError(f"system_type no reconocido: {st}")
+    raw_system_type = _s(cfg.get("system_type"))
+    normalized = normalize_system_type(raw_system_type)
+
+    if normalized == SystemType.SOFTRESTAURANT.value:
+        return SystemType.SOFTRESTAURANT.value
+
+    if normalized == SystemType.MANAGEMENTPRO.value:
+        return SystemType.MANAGEMENTPRO.value
+
+    raise RuntimeError(
+        "system_type no reconocido o no soportado: "
+        f"original={raw_system_type!r} "
+        f"normalizado={normalized!r}"
+    )
 
 
 def _unidad_operativa_id_for_window(cfg: Dict[str, Any]) -> str:
@@ -697,38 +837,33 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         conn.close()
 
 
+
 def _mpro_operational_datetime_range(
     cfg: Dict[str, Any],
     dia: date,
 ) -> Tuple[str, str]:
     """
-    Resuelve la ventana datetime MPRO desde la configuración operativa
-    canónica de la unidad. No usa día civil ni horarios hardcodeados.
+    Resuelve el rango fuente aplicable a ManagementPro.
+
+    Vn_Fecha es datetime, pero MPRO almacena la fecha comercial con
+    hora 00:00:00. Por ello no puede aplicarse una ventana horaria:
+    hacerlo desplaza la extracción al día calendario siguiente.
+
+    fecha_operacion sigue siendo la atribución canónica en EDARSAHUB.
     """
-    from core.utils.operational_window import (
-        get_operational_datetime_range_for_fecha_operacion,
+    del cfg
+
+    inicio = datetime.combine(
+        dia,
+        datetime.min.time(),
     )
 
-    unidad_operativa_id = _unidad_operativa_id_for_window(cfg)
-
-    inicio, fin, meta = (
-        get_operational_datetime_range_for_fecha_operacion(
-            unidad_operativa_id,
-            dia,
-        )
-    )
-
-    if inicio >= fin:
-        raise RuntimeError(
-            f"Ventana MPRO inválida para {unidad_operativa_id}: "
-            f"inicio={inicio}, fin={fin}, metadata={meta}"
-        )
+    fin = inicio + timedelta(days=1)
 
     return (
         inicio.strftime("%Y-%m-%d %H:%M:%S"),
         fin.strftime("%Y-%m-%d %H:%M:%S"),
     )
-
 
 def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
     suc = cfg.get("sucursal_origen_id")
@@ -753,6 +888,7 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 ISNULL(c.Co_Personas, 0) AS pax_ticket,
                 ISNULL(v.Vn_Precio_Neto_Importe, 0) AS importe_neto_ticket,
                 ISNULL(c.Co_Propina, 0) AS propina_ticket,
+                ISNULL(c.Co_Descuento_Importe, 0) AS descuento_comanda,
                 ISNULL(v.Vn_Descuento_Global_Importe, 0)
                   + ISNULL(v.Vn_Descuento_Importe, 0) AS descuento_ticket
             FROM Venta_Encabezado v WITH (NOLOCK)
@@ -774,6 +910,7 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 h.pax_ticket,
                 h.importe_neto_ticket,
                 h.propina_ticket,
+                h.descuento_comanda,
                 h.descuento_ticket,
                 CASE
                     WHEN MAX(d.Co_Folio) IS NULL THEN 'HEADER_SIN_DETALLE'
@@ -800,6 +937,7 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 h.pax_ticket,
                 h.importe_neto_ticket,
                 h.propina_ticket,
+                h.descuento_comanda,
                 h.descuento_ticket,
                 COALESCE(NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''), 'SIN_CODIGO')
         ),
@@ -826,6 +964,7 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             l.pax_ticket,
             l.importe_neto_ticket,
             l.propina_ticket,
+            l.descuento_comanda,
             l.descuento_ticket,
             l.producto_codigo_fuente,
             l.producto_nombre,
@@ -846,11 +985,146 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         rows = cur.fetchall() or []
         for r in rows:
             r["sistema_origen"] = "MPRO"
-        return rows
+        return _prorratear_mpro_por_ticket(rows)
     finally:
         conn.close()
 
 
+
+
+PRORRATEO_Q4 = Decimal("0.0001")
+
+
+def _q4(value: Any) -> Decimal:
+    return _d(value).quantize(
+        PRORRATEO_Q4,
+        rounding=ROUND_HALF_UP,
+    )
+
+
+def _mpro_row_es_kpi_valido(row: Dict[str, Any]) -> bool:
+    raw = _s(_first(row, ["es_kpi_valido"], 1)).upper()
+    return raw not in {"0", "FALSE", "NO", "NONE", ""}
+
+
+def _prorratear_mpro_por_ticket(
+    src_rows: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Distribuye el descuento de la comanda entre productos MPRO."""
+    rows = [dict(row) for row in src_rows]
+    grouped: Dict[str, List[Tuple[int, Dict[str, Any]]]] = defaultdict(list)
+
+    for position, row in enumerate(rows):
+        if not _mpro_row_es_kpi_valido(row):
+            continue
+
+        ticket_key = _s(row.get("id_transaccion"))
+        if not ticket_key:
+            raise RuntimeError("MPRO: fila valida sin id_transaccion")
+
+        grouped[ticket_key].append((position, row))
+
+    for ticket_key, items in grouped.items():
+        net_values = {_q4(row.get("importe_neto_ticket")) for _, row in items}
+        discount_values = {_q4(row.get("descuento_comanda")) for _, row in items}
+
+        if len(net_values) != 1:
+            raise RuntimeError(
+                f"MPRO: venta neta inconsistente en ticket {ticket_key}"
+            )
+
+        if len(discount_values) != 1:
+            raise RuntimeError(
+                f"MPRO: descuento inconsistente en ticket {ticket_key}"
+            )
+
+        target_net = next(iter(net_values))
+        total_discount = next(iter(discount_values))
+        gross_values = [_q4(row.get("importe_bruto")) for _, row in items]
+
+        if any(value < 0 for value in gross_values):
+            raise RuntimeError(f"MPRO: importe bruto negativo en ticket {ticket_key}")
+
+        gross_total = _q4(sum(gross_values, Decimal("0")))
+
+        if gross_total <= 0:
+            raise RuntimeError(
+                f"MPRO: ticket sin detalle monetario distribuible: {ticket_key}"
+            )
+
+        expected_discount = _q4(gross_total - target_net)
+
+        if expected_discount != total_discount:
+            raise RuntimeError(
+                "MPRO: no concilia bruto - descuento = neto: "
+                f"ticket={ticket_key}; bruto={gross_total}; "
+                f"descuento={total_discount}; neto={target_net}"
+            )
+
+        if total_discount < 0 or total_discount > gross_total:
+            raise RuntimeError(f"MPRO: descuento invalido en ticket {ticket_key}")
+
+        allocations: List[Decimal] = []
+        remainders: List[Decimal] = []
+
+        for gross in gross_values:
+            raw = total_discount * gross / gross_total
+            base = raw.quantize(PRORRATEO_Q4, rounding=ROUND_DOWN)
+            allocations.append(base)
+            remainders.append(raw - base)
+
+        residual = _q4(total_discount - sum(allocations, Decimal("0")))
+        residual_units = int(
+            (residual / PRORRATEO_Q4).to_integral_value(
+                rounding=ROUND_HALF_UP
+            )
+        )
+
+        if residual_units < 0 or residual_units > len(items):
+            raise RuntimeError(
+                f"MPRO: residuo de prorrateo invalido en ticket {ticket_key}"
+            )
+
+        ordered_indexes = sorted(
+            range(len(items)),
+            key=lambda index: (
+                -remainders[index],
+                _s(items[index][1].get("producto_codigo_fuente")),
+                _s(items[index][1].get("producto_nombre")),
+                items[index][0],
+            ),
+        )
+
+        for index in ordered_indexes[:residual_units]:
+            allocations[index] += PRORRATEO_Q4
+
+        allocated_total = _q4(sum(allocations, Decimal("0")))
+        if allocated_total != total_discount:
+            raise RuntimeError(
+                f"MPRO: descuento distribuido no concilia en ticket {ticket_key}"
+            )
+
+        net_total = Decimal("0")
+
+        for index, (_, row) in enumerate(items):
+            allocated_discount = _q4(allocations[index])
+            line_net = _q4(gross_values[index] - allocated_discount)
+
+            if line_net < 0:
+                raise RuntimeError(
+                    f"MPRO: importe neto negativo en ticket {ticket_key}"
+                )
+
+            row["descuento_prorrateado"] = allocated_discount
+            row["importe_neto"] = line_net
+            net_total += line_net
+
+        if _q4(net_total) != target_net:
+            raise RuntimeError(
+                f"MPRO: suma neta por productos no concilia en ticket {ticket_key}"
+            )
+
+    return rows
 
 def _materialize_rows(cfg: Dict[str, Any], dia: date, src_rows: List[Dict[str, Any]], run_id: str) -> List[Dict[str, Any]]:
     seen_ticket = set()
@@ -1103,10 +1377,8 @@ def main() -> int:
     ap.add_argument("--commit", action="store_true", default=False)
     ap.add_argument("--solo-ok-runtime", action="store_true", default=True)
     ap.add_argument("--excluir-abiertas", action="store_true", default=True)
-    ap.add_argument("--offset-pos-dias", type=int, default=0, help="Dias a sumar a fecha_operacion para consultar POS. MPRO historico usa +1.")
     args = ap.parse_args()
 
-    offset_pos_dias = int(args.offset_pos_dias or 0)
     fecha_inicio = _as_date(args.fecha_inicio)
     fecha_fin = _as_date(args.fecha_fin)
     if fecha_fin <= fecha_inicio:
@@ -1176,12 +1448,16 @@ def main() -> int:
                 continue
 
             try:
-                pos_dia = dia + timedelta(days=offset_pos_dias)
 
-                if sistema == "SOFTRESTAURANT":
-                    src_rows = _extract_soft(cfg, pos_dia)
+                if sistema == SystemType.SOFTRESTAURANT.value:
+                    src_rows = _extract_soft(cfg, dia)
+                elif sistema == SystemType.MANAGEMENTPRO.value:
+                    src_rows = _extract_mpro(cfg, dia)
                 else:
-                    src_rows = _extract_mpro(cfg, pos_dia)
+                    raise RuntimeError(
+                        "Sistema POS no soportado para extracción: "
+                        f"{sistema!r}"
+                    )
 
                 validation = _validate(src_rows, rm)
                 status = "OK_HEADER_CANONICO" if validation["ok"] else "NO_CUADRA_REVISAR"
@@ -1240,7 +1516,7 @@ def main() -> int:
     if args.commit and total_blocked > 0:
         print("ADVERTENCIA: hubo días bloqueados; solo se escribieron días OK_HEADER_CANONICO.")
 
-    return 0
+    return 1 if total_blocked > 0 else 0
 
 
 if __name__ == "__main__":
