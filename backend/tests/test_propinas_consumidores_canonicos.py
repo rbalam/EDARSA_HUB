@@ -8,6 +8,10 @@ COMERCIAL = ROOT / (
     "backend/modules/comercial_v2/routes.py"
 )
 
+COMERCIAL_REPOSITORY = ROOT / (
+    "backend/modules/comercial_v2/repository_readonly.py"
+)
+
 EJECUTIVO = ROOT / (
     "backend/modules/dashboard_ejecutivo/routes.py"
 )
@@ -45,6 +49,40 @@ def test_comercial_v2_publica_detalle_completo_de_propinas():
         '"pax_cerrados_dia":',
     ):
         assert marker in text
+
+
+def test_repository_comercial_v2_lee_propinas_del_dia():
+    text = COMERCIAL_REPOSITORY.read_text(
+        encoding="utf-8"
+    )
+
+    tree = ast.parse(text)
+
+    function = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef)
+        and node.name == "get_ventas_dia_abiertas"
+    )
+
+    source = "\n".join(
+        text.splitlines()[
+            function.lineno - 1:function.end_lineno
+        ]
+    )
+
+    normalized_lines = {
+        line.strip()
+        for line in source.splitlines()
+    }
+
+    for column in (
+        "propinas_abiertas",
+        "propinas_cerradas_dia",
+        "propinas_total",
+    ):
+        assert f"a.{column}," in normalized_lines
+        assert f"{column}," in normalized_lines
 
 
 def test_dashboard_ejecutivo_conserva_propinas_y_dia_separado():
