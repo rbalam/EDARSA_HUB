@@ -142,18 +142,82 @@ api.interceptors.request.use(
   }
 );
 
-// AUTH-REFRESH: Estado de refresco silencioso (single-flight).
-// Evita que múltiples 401 concurrentes disparen varios /auth/refresh.
-let isRefreshing = false;
-let refreshSubscribers = [];
+// AUTH-REFRESH: Coordinación de refresco entre pestañas.
+// Web Locks asegura que SOLO una pestaña del mismo origen refresque a la vez;
+// BroadcastChannel propaga el token nuevo a las demás pestañas (sessionStorage
+// no se comparte entre pestañas). Esto elimina la carrera multi-pestaña que
+// disparaba falsos "replay" y cerraba la sesión.
+let authChannel = null;
+try {
+  if (typeof BroadcastChannel !== 'undefined') {
+    authChannel = new BroadcastChannel('edarsa-auth');
+    authChannel.onmessage = (ev) => {
+      const data = (ev && ev.data) || {};
+      if (data.type === 'token' && data.token) {
+        // Actualizar token local sin re-emitir (evita bucles de broadcast).
+        memoryToken = data.token;
+        try { sessionStorage.setItem(TOKEN_STORAGE_KEY, data.token); } catch (e) {}
+      } else if (data.type === 'logout') {
+        clearMemoryToken();
+        // Notificar a la app (AuthContext) para limpiar estado y redirigir.
+        try { window.dispatchEvent(new CustomEvent('edarsa:remote-logout')); } catch (e) {}
+      }
+    };
+  }
+} catch (e) {
+  authChannel = null;
+}
 
-const subscribeTokenRefresh = (cb) => {
-  refreshSubscribers.push(cb);
+const broadcastToken = (token) => {
+  try { if (authChannel && token) authChannel.postMessage({ type: 'token', token }); } catch (e) {}
+};
+const broadcastLogout = () => {
+  try { if (authChannel) authChannel.postMessage({ type: 'logout' }); } catch (e) {}
 };
 
-const onRefreshed = (token) => {
-  refreshSubscribers.forEach((cb) => cb(token));
-  refreshSubscribers = [];
+// Exponer para que AuthContext propague el cierre de sesión a las demás pestañas.
+export const broadcastLogoutAllTabs = () => broadcastLogout();
+
+// Single-flight dentro de la pestaña.
+let inflightRefresh = null;
+
+const doRefresh = async () => {
+  // withCredentials envía la cookie httpOnly del refresh token (7 días).
+  const resp = await axios.post(
+    `${API_URL}/auth/refresh`,
+    {},
+    { withCredentials: true, headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+  );
+  const t = resp.data?.token;
+  if (t) {
+    setMemoryToken(t);
+    broadcastToken(t);
+  }
+  return t || null;
+};
+
+const refreshOnce = async (tokenAtFailure) => {
+  // Si otra pestaña/otra request ya renovó el token, reutilizarlo sin re-llamar.
+  const current = getToken();
+  if (current && tokenAtFailure && current !== tokenAtFailure) {
+    return current;
+  }
+  return await doRefresh();
+};
+
+const coordinatedRefresh = async (tokenAtFailure) => {
+  if (inflightRefresh) {
+    return inflightRefresh;
+  }
+  const run = async () => {
+    if (navigator.locks && typeof navigator.locks.request === 'function') {
+      // Candado compartido entre pestañas del mismo origen.
+      return await navigator.locks.request('edarsa-auth-refresh', async () => refreshOnce(tokenAtFailure));
+    }
+    return await refreshOnce(tokenAtFailure);
+  };
+  inflightRefresh = run().finally(() => { inflightRefresh = null; });
+  return inflightRefresh;
 };
 
 const redirectToLoginIfNeeded = () => {
@@ -195,48 +259,69 @@ api.interceptors.response.use(
     if (status === 401 && !isAuthEndpoint && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      // Si ya hay un refresco en curso, encolar esta request hasta que termine.
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          subscribeTokenRefresh((newToken) => {
-            if (newToken) {
-              originalRequest.headers = originalRequest.headers || {};
-              originalRequest.headers.Authorization = `Bearer ${newToken}`;
-              resolve(api(originalRequest));
-            } else {
-              reject(error);
-            }
-          });
-        });
+      const authHeader =
+        (originalRequest.headers &&
+          originalRequest.headers.Authorization) ||
+        '';
+
+      const tokenAtFailure =
+        authHeader.startsWith('Bearer ')
+          ? authHeader.slice(7)
+          : null;
+
+      const currentToken = getToken();
+
+      // La solicitud pudo salir antes de que terminara un login o refresh.
+      // Si ahora existe un token distinto, reintentar con la sesión vigente
+      // y no permitir que una respuesta 401 obsoleta la elimine.
+      if (
+        currentToken &&
+        currentToken !== tokenAtFailure
+      ) {
+        originalRequest.headers =
+          originalRequest.headers || {};
+
+        originalRequest.headers.Authorization =
+          `Bearer ${currentToken}`;
+
+        return api(originalRequest);
       }
 
-      isRefreshing = true;
       try {
-        // Usar axios "crudo" (no la instancia) para no re-disparar este interceptor.
-        // withCredentials envía la cookie httpOnly del refresh token (7 días).
-        const refreshResp = await axios.post(
-          `${API_URL}/auth/refresh`,
-          {},
-          { withCredentials: true, headers: { 'X-Requested-With': 'XMLHttpRequest' } }
-        );
-        const newToken = refreshResp.data?.token;
-        isRefreshing = false;
+        const newToken =
+          await coordinatedRefresh(tokenAtFailure);
 
         if (newToken) {
-          setMemoryToken(newToken);
-          onRefreshed(newToken);
-          originalRequest.headers = originalRequest.headers || {};
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          originalRequest.headers =
+            originalRequest.headers || {};
+
+          originalRequest.headers.Authorization =
+            `Bearer ${newToken}`;
+
           return api(originalRequest);
         }
-        // Sin token en la respuesta → tratar como fallo de sesión.
-        onRefreshed(null);
       } catch (refreshErr) {
-        isRefreshing = false;
-        onRefreshed(null);
+        // El refresh fallo. Antes de cerrar sesion se valida que
+        // ninguna operacion concurrente haya instalado un token nuevo.
       }
 
-      // El refresh falló (refresh token expirado/ inválido) → cerrar sesión.
+      const tokenAfterRefreshFailure = getToken();
+
+      if (
+        tokenAfterRefreshFailure &&
+        tokenAfterRefreshFailure !== tokenAtFailure
+      ) {
+        originalRequest.headers =
+          originalRequest.headers || {};
+
+        originalRequest.headers.Authorization =
+          `Bearer ${tokenAfterRefreshFailure}`;
+
+        return api(originalRequest);
+      }
+
+      // Solo cerrar cuando el 401 pertenece a la sesion que sigue vigente.
+      broadcastLogout();
       clearSession();
       redirectToLoginIfNeeded();
       return Promise.reject(error);
