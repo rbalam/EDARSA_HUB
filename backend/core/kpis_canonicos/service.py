@@ -33,6 +33,39 @@ def _safe_div(n, d):
     return (n / d) if d else None
 
 
+def runtime_dia_operativo_actual_predicate(
+    alias: str = "k",
+    modo: str = "incluir",
+) -> str:
+    """Predicado SQL canónico para el día operativo vigente por unidad.
+
+    ``incluir`` conserva el rango completo; ``excluir`` deja únicamente días
+    cerrados; ``solo`` aísla la operación vigente. La fecha se obtiene de la
+    tabla de overlay por código de unidad, sin usar fecha civil ni hardcodes.
+    """
+    modo_normalizado = str(modo or "incluir").strip().lower()
+    if modo_normalizado not in {"incluir", "excluir", "solo"}:
+        raise ValueError(f"Modo de corte no soportado: {modo}")
+    if modo_normalizado == "incluir":
+        return ""
+    if not alias or not alias.replace("_", "").isalnum():
+        raise ValueError("Alias SQL inválido")
+
+    existe = f"""EXISTS (
+        SELECT 1
+        FROM (
+            SELECT
+                unidad_negocio_id,
+                MAX(CAST(fecha_operacion AS date)) AS fecha_operacion
+            FROM dbo.Comercial_Ventas_Dia_Abiertas_v2
+            GROUP BY unidad_negocio_id
+        ) AS dia_operativo_actual
+        WHERE dia_operativo_actual.unidad_negocio_id = {alias}.unidad_negocio_id
+          AND dia_operativo_actual.fecha_operacion = CAST({alias}.fecha_operacion AS date)
+    )"""
+    return f"NOT ({existe})" if modo_normalizado == "excluir" else existe
+
+
 def aplicar_definicion(agg: Dict, definicion: Dict) -> Optional[float]:
     """Intérprete PURO (testable sin BD): aplica una definición declarativa
     de métrica a un agregado base."""
@@ -148,27 +181,36 @@ class KPIsCanonicosService:
         }
 
     @staticmethod
-    def agregados_por_unidad(desde: str, hasta: str,
-                             unidad_pks: Optional[Iterable[str]] = None) -> List[Dict]:
+    def agregados_por_unidad(
+        desde: str,
+        hasta: str,
+        unidad_pks: Optional[Iterable[str]] = None,
+        corte_dia_operativo: str = "incluir",
+    ) -> List[Dict]:
+        """Átomos base canónicos por unidad en ``[desde, hasta)``.
+
+        ``corte_dia_operativo`` aplica la misma semántica a todos los
+        consumidores: incluir, excluir o aislar el día operativo vigente.
         """
-        Átomos base canónicos por unidad en [desde, hasta):
-        {unidad_pk, unidad_codigo, unidad_nombre, server_id,
-         ventas, propinas, cheques, pax, dias}
-        Identidad resuelta SIEMPRE desde el catálogo canónico (UnidadesService).
-        """
-        sql = """
-            SELECT CONVERT(varchar(36), unidad_negocio_pk) AS unidad_pk,
-                   SUM(CAST(ventas_total AS float))       AS ventas,
-                   SUM(CAST(propinas_total AS float))     AS propinas,
-                   SUM(CAST(tickets_total AS float))      AS cheques,
-                   SUM(CAST(pax_total AS float))          AS pax,
-                   COUNT(DISTINCT fecha_operacion)        AS dias
-            FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime
+        filtro_corte = runtime_dia_operativo_actual_predicate(
+            "k",
+            corte_dia_operativo,
+        )
+        filtro_corte_sql = f"AND {filtro_corte}" if filtro_corte else ""
+        sql = f"""
+            SELECT CONVERT(varchar(36), k.unidad_negocio_pk) AS unidad_pk,
+                   SUM(CAST(k.ventas_total AS float))       AS ventas,
+                   SUM(CAST(k.propinas_total AS float))     AS propinas,
+                   SUM(CAST(k.tickets_total AS float))      AS cheques,
+                   SUM(CAST(k.pax_total AS float))          AS pax,
+                   COUNT(DISTINCT k.fecha_operacion)        AS dias
+            FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime AS k
             WHERE 1=1
-              AND unidad_negocio_pk IS NOT NULL
-              AND fecha_operacion >= %s AND fecha_operacion < %s
-            GROUP BY CONVERT(varchar(36), unidad_negocio_pk)
-            HAVING SUM(CAST(tickets_total AS float)) > 0
+              AND k.unidad_negocio_pk IS NOT NULL
+              AND k.fecha_operacion >= %s AND k.fecha_operacion < %s
+              {filtro_corte_sql}
+            GROUP BY CONVERT(varchar(36), k.unidad_negocio_pk)
+            HAVING SUM(CAST(k.tickets_total AS float)) > 0
         """
         rows = execute_sql_query_params(*_conn(), sql, (desde, hasta))
         pk_filter = {str(p) for p in unidad_pks} if unidad_pks else None
@@ -180,24 +222,34 @@ class KPIsCanonicosService:
             if not ident:
                 logger.warning("[KPI-CANON] PK %s no está en catálogo; omitida", r["unidad_pk"])
                 continue
-            out.append({**ident,
-                        "ventas": float(r.get("ventas") or 0),
-                        "propinas": float(r.get("propinas") or 0),
-                        "cheques": float(r.get("cheques") or 0),
-                        "pax": float(r.get("pax") or 0),
-                        "dias": r.get("dias")})
+            out.append({
+                **ident,
+                "ventas": float(r.get("ventas") or 0),
+                "propinas": float(r.get("propinas") or 0),
+                "cheques": float(r.get("cheques") or 0),
+                "pax": float(r.get("pax") or 0),
+                "dias": r.get("dias"),
+            })
         return out
 
     @staticmethod
-    def kpis_por_unidad(desde: str, hasta: str,
-                        unidad_pks: Optional[Iterable[str]] = None) -> List[Dict]:
-        """Agregados + TODAS las métricas canónicas calculadas, por unidad."""
-        base = KPIsCanonicosService.agregados_por_unidad(desde, hasta, unidad_pks)
+    def kpis_por_unidad(
+        desde: str,
+        hasta: str,
+        unidad_pks: Optional[Iterable[str]] = None,
+        corte_dia_operativo: str = "incluir",
+    ) -> List[Dict]:
+        """Agregados + métricas canónicas calculadas por unidad."""
+        base = KPIsCanonicosService.agregados_por_unidad(
+            desde,
+            hasta,
+            unidad_pks,
+            corte_dia_operativo,
+        )
         defs = _Catalogo.defs()
         for a in base:
             a["metricas"] = {cod: aplicar_definicion(a, d) for cod, d in defs.items()}
         return base
-
 
     # ============================================================================
     # V1_0_RESUMEN_CANONICO
@@ -304,14 +356,62 @@ class KPIsCanonicosService:
         }
 
     @staticmethod
-    def resumen_periodo(desde: str, hasta: str,
-                        unidad_pks: Optional[Iterable[str]] = None) -> Dict:
+    def resumen_periodo(
+        desde: str,
+        hasta: str,
+        unidad_pks: Optional[Iterable[str]] = None,
+        corte_dia_operativo: str = "incluir",
+    ) -> Dict:
+        """Resumen canónico para Ejecutivo, Comercial e Inteligencia.
+
+        Rango ``[desde, hasta)``. El corte puede incluir, excluir o aislar el
+        día operativo vigente, usando la misma regla SQL por unidad.
         """
-        Resumen canónico para Ejecutivo, Comercial e Inteligencia.
-        Rango [desde, hasta).
-        """
-        base = KPIsCanonicosService.agregados_por_unidad(desde, hasta, unidad_pks)
-        return KPIsCanonicosService.resumen_desde_agregados(base, desde, hasta)
+        base = KPIsCanonicosService.agregados_por_unidad(
+            desde,
+            hasta,
+            unidad_pks,
+            corte_dia_operativo,
+        )
+        resumen = KPIsCanonicosService.resumen_desde_agregados(base, desde, hasta)
+        resumen["corte_dia_operativo"] = corte_dia_operativo
+        return resumen
+
+    @staticmethod
+    def resumen_periodo_desglosado(
+        desde: str,
+        hasta: str,
+        unidad_pks: Optional[Iterable[str]] = None,
+    ) -> Dict:
+        """Contrato único: acumulado cerrado, día actual y total informativo."""
+        acumulado = KPIsCanonicosService.resumen_periodo(
+            desde,
+            hasta,
+            unidad_pks,
+            "excluir",
+        )
+        dia_actual = KPIsCanonicosService.resumen_periodo(
+            desde,
+            hasta,
+            unidad_pks,
+            "solo",
+        )
+        total = KPIsCanonicosService.resumen_periodo(
+            desde,
+            hasta,
+            unidad_pks,
+            "incluir",
+        )
+        return {
+            "contrato": {
+                "acumulado": "CERRADO_SIN_DIA_OPERATIVO_ACTUAL",
+                "dia_actual": "SEPARADO",
+                "total_incluyendo_dia": "INFORMATIVO",
+            },
+            "acumulado_cerrado": acumulado,
+            "dia_actual": dia_actual,
+            "total_incluyendo_dia": total,
+        }
 
     @staticmethod
     def series_periodo(desde: str, hasta: str, nivel: str = "dia",

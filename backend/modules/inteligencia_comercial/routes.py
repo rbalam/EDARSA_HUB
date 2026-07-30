@@ -372,59 +372,40 @@ def _fecha_fin_exclusiva(fecha_fin):
     return (datetime.strptime(str(fecha_fin)[:10], "%Y-%m-%d").date() + timedelta(days=1)).strftime("%Y-%m-%d")
 
 
+def _desglose_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db=None):
+    """Contrato KPI único para acumulado cerrado, día actual y total informativo."""
+    unidad_pks = _unidad_pks_canonicas_portal(unidad_db)
+    if unidad_db and not unidad_pks:
+        raise HTTPException(status_code=400, detail="Unidad de negocio inválida o inactiva.")
+    return KPIsCanonicosService.resumen_periodo_desglosado(
+        str(fecha_inicio)[:10],
+        _fecha_fin_exclusiva(fecha_fin),
+        unidad_pks,
+    )
+
+
 def _resumen_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db=None):
-    """KPIs principales desde runtime canónico.
+    desglose = _desglose_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db)
+    return _normalizar_resumen_kpi_portal(desglose.get("acumulado_cerrado") or {})
 
-    Dashboard IA ancla el periodo con vw_Comercial_KPIs_Diarios_v2_Runtime.
-    El resumen debe leer la misma fuente para no perder el último día disponible.
-    Ventas visibles del portal = ventas_total con IVA incluido.
-    ventas_total y propinas_total permanecen separados.
-    """
-    where = [
-        f"fecha_operacion >= '{_sql_literal(fecha_inicio)}'",
-        f"fecha_operacion < DATEADD(day, 1, CAST('{_sql_literal(fecha_fin)}' AS date))",
-    ]
 
-    if unidad_db:
-        unidad_pks = _unidad_pks_canonicas_portal(unidad_db)
-        if not unidad_pks:
-            raise HTTPException(status_code=400, detail="Unidad de negocio inválida o inactiva.")
-        pks_sql = ",".join(f"'{_sql_literal(pk)}'" for pk in unidad_pks)
-        where.append(f"CONVERT(varchar(36), unidad_negocio_pk) IN ({pks_sql})")
-
-    sql = f"""
-        SELECT
-            SUM(ISNULL(ventas_total, 0)) AS ventas_totales,
-            SUM(ISNULL(pax_total, 0)) AS pax_total,
-            SUM(ISNULL(tickets_total, 0)) AS cheques_total,
-            SUM(ISNULL(propinas_total, 0)) AS propinas_total,
-            CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
-                THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(tickets_total, 0))
-                ELSE 0 END AS ticket_promedio,
-            CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
-                THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(tickets_total, 0))
-                ELSE 0 END AS cheque_promedio,
-            CASE WHEN SUM(ISNULL(pax_total, 0)) > 0
-                THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(pax_total, 0))
-                ELSE 0 END AS pax_promedio
-        FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime
-        WHERE {' AND '.join(where)}
-    """
-    rows = execute_query(sql)
-    if not rows:
-        return _kpi_cero_portal()
-
-    row = rows[0] or {}
-    return {
-        "ventas_totales": round(_kpi_float(row, "ventas_totales"), 2),
-        "pax_total": _kpi_int(row, "pax_total"),
-        "cheques_total": _kpi_int(row, "cheques_total"),
-        "propinas_total": round(_kpi_float(row, "propinas_total"), 2),
-        "ticket_promedio": round(_kpi_float(row, "ticket_promedio"), 2),
-        "cheque_promedio": round(_kpi_float(row, "cheque_promedio"), 2),
-        "pax_promedio": round(_kpi_float(row, "pax_promedio"), 2),
-    }
-
+def _ventas_por_unidad_desde_resumen(resumen):
+    salida = []
+    for item in (resumen or {}).get("por_unidad") or []:
+        kpi = _normalizar_resumen_kpi_portal(item)
+        salida.append({
+            "unidad": item.get("unidad_nombre") or item.get("unidad_codigo"),
+            "unidad_codigo": item.get("unidad_codigo"),
+            "ventas": kpi["ventas_totales"],
+            "pax_total": kpi["pax_total"],
+            "tickets": kpi["cheques_total"],
+            "propinas": kpi["propinas_total"],
+            "ticket_promedio": kpi["ticket_promedio"],
+            "cheque_promedio": kpi["cheque_promedio"],
+            "pax_promedio": kpi["pax_promedio"],
+        })
+    salida.sort(key=lambda row: float(row.get("ventas") or 0), reverse=True)
+    return salida
 
 def _series_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db=None):
     """Serie diaria desde KPIsCanonicosService."""
@@ -469,31 +450,8 @@ def _series_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db=None):
 
 
 def _ventas_por_unidad_canonico_portal(fecha_inicio, fecha_fin):
-    """Distribución por unidad desde la fuente KPI runtime canónica."""
-    sql = f"""
-        SELECT
-            unidad_negocio_nombre AS unidad,
-            SUM(ventas_total) AS ventas,
-            SUM(pax_total) AS pax_total,
-            SUM(tickets_total) AS tickets,
-            SUM(propinas_total) AS propinas,
-            CASE WHEN SUM(tickets_total) > 0
-                THEN SUM(ventas_total) / SUM(tickets_total)
-                ELSE 0 END AS ticket_promedio,
-            CASE WHEN SUM(tickets_total) > 0
-                THEN SUM(ventas_total) / SUM(tickets_total)
-                ELSE 0 END AS cheque_promedio,
-            CASE WHEN SUM(pax_total) > 0
-                THEN SUM(ventas_total) / SUM(pax_total)
-                ELSE 0 END AS pax_promedio
-        FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime
-        WHERE fecha_operacion >= '{fecha_inicio}'
-          AND fecha_operacion < DATEADD(day, 1, CAST('{fecha_fin}' AS date))
-        GROUP BY unidad_negocio_nombre
-        ORDER BY SUM(ventas_total) DESC
-    """
-    return execute_query(sql)
-
+    desglose = _desglose_periodo_canonico_portal(fecha_inicio, fecha_fin)
+    return _ventas_por_unidad_desde_resumen(desglose.get("acumulado_cerrado") or {})
 
 def _trend_pct(cur, prv):
     try:
@@ -1066,10 +1024,7 @@ async def get_dashboard_data(
     fecha_inicio: Optional[str] = Query(None, description="Fecha inicio (YYYY-MM-DD)"),
     fecha_fin: Optional[str] = Query(None, description="Fecha fin (YYYY-MM-DD)")
 ):
-    """
-    Dashboard principal con KPIs consolidados.
-    Fuente KPI principal: KPIsCanonicosService / dbo.Comercial_KPIs_Diarios_v2.
-    """
+    """Dashboard principal con acumulado cerrado y operación vigente separada."""
     unidad_db = normalizar_unidad(unidad) if unidad and unidad.lower() != "todas" else None
 
     periodo_label = None
@@ -1089,14 +1044,20 @@ async def get_dashboard_data(
         periodo_label = _label_rango_personalizado(fecha_inicio, fecha_fin)
 
     try:
-        kpi_data = _resumen_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db)
+        desglose = _desglose_periodo_canonico_portal(fecha_inicio, fecha_fin, unidad_db)
+        acumulado = desglose.get("acumulado_cerrado") or {}
+        dia_actual = desglose.get("dia_actual") or {}
+        total_con_dia = desglose.get("total_incluyendo_dia") or {}
+        kpi_data = _normalizar_resumen_kpi_portal(acumulado)
+        kpi_dia = _normalizar_resumen_kpi_portal(dia_actual)
+        kpi_total = _normalizar_resumen_kpi_portal(total_con_dia)
 
         kpis_trends = {}
         if prev_inicio and prev_fin:
             prev = _resumen_periodo_canonico_portal(
                 prev_inicio.strftime("%Y-%m-%d") if hasattr(prev_inicio, "strftime") else str(prev_inicio),
                 prev_fin.strftime("%Y-%m-%d") if hasattr(prev_fin, "strftime") else str(prev_fin),
-                unidad_db
+                unidad_db,
             )
             kpis_trends = {
                 "ventas_totales": _trend_pct(kpi_data.get("ventas_totales"), prev.get("ventas_totales")),
@@ -1106,18 +1067,25 @@ async def get_dashboard_data(
             }
 
         ventas_por_unidad = []
+        ventas_dia_por_unidad = []
         if not unidad_db:
-            ventas_por_unidad = _ventas_por_unidad_canonico_portal(fecha_inicio, fecha_fin)
+            ventas_por_unidad = _ventas_por_unidad_desde_resumen(acumulado)
+            ventas_dia_por_unidad = _ventas_por_unidad_desde_resumen(dia_actual)
 
         total_ventas = float(kpi_data.get("ventas_totales", 0)) or 1
 
-        # Bloques de detalle/análisis operativo. No se tocan en este parche.
-        det_total = _real_detalle_total(unidad_db, fecha_inicio, fecha_fin)
-        ventas_horario = _real_horario(unidad_db, fecha_inicio, fecha_fin)
-        top_productos = _real_top_productos(unidad_db, fecha_inicio, fecha_fin, limit=7)
-        casas_distribuidoras = _real_casas(unidad_db, fecha_inicio, fecha_fin, total_ventas=det_total)
-        ventas_familia = _real_familias(unidad_db, fecha_inicio, fecha_fin, total_ventas=det_total)
-        ventas_clasificacion = _real_clasificacion_nested(unidad_db, fecha_inicio, fecha_fin)
+        fecha_fin_detalle = fecha_fin
+        if int((dia_actual.get("atomos") or {}).get("dias") or 0) > 0:
+            fecha_operativa = _ultimo_dia_con_kpis(unidad_db)
+            if date.fromisoformat(str(fecha_inicio)[:10]) <= fecha_operativa <= date.fromisoformat(str(fecha_fin)[:10]):
+                fecha_fin_detalle = (fecha_operativa - timedelta(days=1)).isoformat()
+
+        det_total = _real_detalle_total(unidad_db, fecha_inicio, fecha_fin_detalle)
+        ventas_horario = _real_horario(unidad_db, fecha_inicio, fecha_fin_detalle)
+        top_productos = _real_top_productos(unidad_db, fecha_inicio, fecha_fin_detalle, limit=7)
+        casas_distribuidoras = _real_casas(unidad_db, fecha_inicio, fecha_fin_detalle, total_ventas=det_total)
+        ventas_familia = _real_familias(unidad_db, fecha_inicio, fecha_fin_detalle, total_ventas=det_total)
+        ventas_clasificacion = _real_clasificacion_nested(unidad_db, fecha_inicio, fecha_fin_detalle)
 
         response = {
             "success": True,
@@ -1126,23 +1094,17 @@ async def get_dashboard_data(
             "_detalle_total": round(det_total, 2),
             "_unidad": unidad_db or "TODAS",
             "timestamp": datetime.utcnow().isoformat(),
+            "contrato_periodo": desglose.get("contrato") or {},
             "filtros": {
                 "fecha_inicio": fecha_inicio,
                 "fecha_fin": fecha_fin,
+                "fecha_fin_acumulado_cerrado": fecha_fin_detalle,
                 "unidad": unidad_db or "TODAS",
                 "periodo": periodo or None,
-                "periodo_label": periodo_label
+                "periodo_label": periodo_label,
             },
             "kpis_trends": kpis_trends,
-            "kpis": {
-                "ventas_totales": round(float(kpi_data.get("ventas_totales", 0)), 2),
-                "pax_total": int(kpi_data.get("pax_total", 0)),
-                "cheques_total": int(kpi_data.get("cheques_total", 0)),
-                "propinas_total": round(float(kpi_data.get("propinas_total", 0)), 2),
-                "ticket_promedio": round(float(kpi_data.get("ticket_promedio", 0)), 2),
-                "cheque_promedio": round(float(kpi_data.get("cheque_promedio", 0)), 2),
-                "pax_promedio": round(float(kpi_data.get("pax_promedio", 0)), 2)
-            },
+            "kpis": kpi_data,
             "ventas_por_unidad": [
                 {
                     "unidad": u["unidad"],
@@ -1153,18 +1115,27 @@ async def get_dashboard_data(
                     "ticket_promedio": round(float(u["ticket_promedio"] or 0), 2),
                     "cheque_promedio": round(float(u["cheque_promedio"] or 0), 2),
                     "pax_promedio": round(float(u["pax_promedio"] or 0), 2),
-                    "participacion": round((float(u["ventas"] or 0) / total_ventas) * 100, 2)
+                    "participacion": round((float(u["ventas"] or 0) / total_ventas) * 100, 2),
                 }
                 for u in ventas_por_unidad
             ] if ventas_por_unidad else [],
+            "ventas_dia_actual": {
+                "kpis": kpi_dia,
+                "ventas_por_unidad": ventas_dia_por_unidad,
+            },
+            "total_incluyendo_dia_actual": {"kpis": kpi_total},
             "ventas_horario": ventas_horario,
             "top_productos": top_productos,
             "casas_distribuidoras": casas_distribuidoras,
             "ventas_familia": ventas_familia,
-            "ventas_clasificacion": ventas_clasificacion
+            "ventas_clasificacion": ventas_clasificacion,
         }
 
-        logger.info(f"[INTELIGENCIA] Dashboard OK canonico - {unidad_db or 'TODAS'} - ${total_ventas:,.2f}")
+        logger.info(
+            "[INTELIGENCIA] Dashboard OK acumulado cerrado - %s - $%s",
+            unidad_db or "TODAS",
+            f"{float(kpi_data.get('ventas_totales') or 0):,.2f}",
+        )
         return response
 
     except Exception as e:
@@ -1173,17 +1144,8 @@ async def get_dashboard_data(
             "success": False,
             "_source": "ERROR",
             "_error": str(e),
-            "kpis": {
-                "ventas_totales": 0,
-                "pax_total": 0,
-                "cheques_total": 0,
-                "propinas_total": 0,
-                "ticket_promedio": 0,
-                "cheque_promedio": 0,
-                "pax_promedio": 0
-            }
+            "kpis": _kpi_cero_portal(),
         }
-
 
 # ============================================================================
 # ENDPOINT: Tendencia Diaria

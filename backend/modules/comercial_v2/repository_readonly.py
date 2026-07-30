@@ -27,6 +27,7 @@ import logging
 
 from core.db import execute_sql_query
 from core.sql_first.db import get_sql_connection
+from core.kpis_canonicos.service import runtime_dia_operativo_actual_predicate
 
 logger = logging.getLogger(__name__)
 
@@ -241,52 +242,51 @@ def get_kpis_diarios_agregados(
     fecha_inicio: date,
     fecha_fin: date,
     unidades_permitidas: Optional[List[str]] = None,
-    meses: Optional[List[int]] = None
+    meses: Optional[List[int]] = None,
+    excluir_dia_operativo_actual: bool = False,
 ) -> Dict:
-    """
-    Obtiene KPIs diarios agregados (totales) para el dashboard.
-
-    MÁXIMA: KPI visible de ventas = ventas_total con IVA incluido;
-    propinas_total se informa por separado. Filtro por unidad_negocio_id canónico.
-    Fuente: vw_Comercial_KPIs_Diarios_v2_Runtime (EDARSAHUB SQL, NO live, NO Mongo).
-    """
+    """KPIs agregados del dashboard; el día vigente puede excluirse del acumulado."""
     where_clauses = [
-        f"fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'"
+        f"k.fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'"
     ]
-    
+
     unidad_filter = _unidad_filter_runtime(unidades_permitidas)
     if unidad_filter:
         where_clauses.append(unidad_filter)
-    
-    # FIX 2026-06-08: Sumar EXACTAMENTE los meses seleccionados (no el rango intermedio)
+
+    if excluir_dia_operativo_actual:
+        where_clauses.append(
+            runtime_dia_operativo_actual_predicate("k", "excluir")
+        )
+
     if meses:
         meses_str = ','.join(str(int(m)) for m in meses)
-        where_clauses.append(f"MONTH(fecha_operacion) IN ({meses_str})")
-    
+        where_clauses.append(f"MONTH(k.fecha_operacion) IN ({meses_str})")
+
     query = f"""
-    SELECT 
+    SELECT
         COUNT(*) as total_registros,
-        COUNT(DISTINCT unidad_negocio_pk) as total_unidades,
-        COUNT(DISTINCT fecha_operacion) as total_dias,
-        SUM(ISNULL(ventas_total, 0)) as ventas_total,
-        SUM(ISNULL(propinas_total, 0)) as propinas_total,
-        SUM(ISNULL(tickets_total, 0)) as tickets_total,
-        SUM(ISNULL(pax_total, 0)) as pax_total,
-        CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
-             THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(tickets_total, 0))
+        COUNT(DISTINCT k.unidad_negocio_pk) as total_unidades,
+        COUNT(DISTINCT k.fecha_operacion) as total_dias,
+        SUM(ISNULL(k.ventas_total, 0)) as ventas_total,
+        SUM(ISNULL(k.propinas_total, 0)) as propinas_total,
+        SUM(ISNULL(k.tickets_total, 0)) as tickets_total,
+        SUM(ISNULL(k.pax_total, 0)) as pax_total,
+        CASE WHEN SUM(ISNULL(k.tickets_total, 0)) > 0
+             THEN SUM(ISNULL(k.ventas_total, 0)) / SUM(ISNULL(k.tickets_total, 0))
              ELSE 0 END as ticket_promedio,
-        CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
-             THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(tickets_total, 0))
+        CASE WHEN SUM(ISNULL(k.tickets_total, 0)) > 0
+             THEN SUM(ISNULL(k.ventas_total, 0)) / SUM(ISNULL(k.tickets_total, 0))
              ELSE 0 END as cheque_promedio,
-        CASE WHEN SUM(ISNULL(pax_total, 0)) > 0
-             THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(pax_total, 0))
+        CASE WHEN SUM(ISNULL(k.pax_total, 0)) > 0
+             THEN SUM(ISNULL(k.ventas_total, 0)) / SUM(ISNULL(k.pax_total, 0))
              ELSE 0 END as pax_promedio,
-        MIN(fecha_operacion) as fecha_min,
-        MAX(fecha_operacion) as fecha_max
-    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+        MIN(k.fecha_operacion) as fecha_min,
+        MAX(k.fecha_operacion) as fecha_max
+    FROM vw_Comercial_KPIs_Diarios_v2_Runtime AS k
     WHERE {' AND '.join(where_clauses)}
     """
-    
+
     result = _execute_readonly_query(query)
     return result[0] if result else {}
 
@@ -295,60 +295,56 @@ def get_kpis_por_unidad(
     fecha_inicio: date,
     fecha_fin: date,
     unidades_permitidas: Optional[List[str]] = None,
-    meses: Optional[List[int]] = None
+    meses: Optional[List[int]] = None,
+    excluir_dia_operativo_actual: bool = False,
 ) -> List[Dict]:
-    """
-    Obtiene KPIs agregados por unidad para el dashboard desde EDARSAHUB SQL.
-
-    MÁXIMA:
-    - Se agrupa por unidad_negocio_id canónico (sin LIKE/nombre, sin SQL inválido).
-    - KPI visible de ventas = ventas_total con IVA incluido.
-    - propinas_total permanece separado de ventas_total.
-    - Fuente: vw_Comercial_KPIs_Diarios_v2_Runtime (NO live, NO Mongo).
-    """
+    """KPIs por unidad; el día vigente puede excluirse del acumulado."""
     where_clauses = [
-        f"fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'"
+        f"k.fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'"
     ]
 
     unidad_filter = _unidad_filter_runtime(unidades_permitidas)
     if unidad_filter:
         where_clauses.append(unidad_filter)
 
-    # FIX 2026-06-08: Sumar EXACTAMENTE los meses seleccionados (no el rango intermedio)
+    if excluir_dia_operativo_actual:
+        where_clauses.append(
+            runtime_dia_operativo_actual_predicate("k", "excluir")
+        )
+
     if meses:
         meses_str = ','.join(str(int(m)) for m in meses)
-        where_clauses.append(f"MONTH(fecha_operacion) IN ({meses_str})")
+        where_clauses.append(f"MONTH(k.fecha_operacion) IN ({meses_str})")
 
     query = f"""
-    SELECT 
-        CONVERT(varchar(36), unidad_negocio_pk) as unidad_negocio_pk,
-        MAX(unidad_negocio_id) as unidad_negocio_codigo,
-        MAX(unidad_negocio_nombre) as unidad_negocio_nombre,
-        MAX(sistema_origen) as sistema_origen,
-        COUNT(DISTINCT fecha_operacion) as dias,
-        SUM(ISNULL(ventas_total, 0)) as ventas_total,
-        SUM(ISNULL(propinas_total, 0)) as propinas_total,
-        SUM(ISNULL(tickets_total, 0)) as tickets_total,
-        SUM(ISNULL(pax_total, 0)) as pax_total,
-        CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
-             THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(tickets_total, 0))
+    SELECT
+        CONVERT(varchar(36), k.unidad_negocio_pk) as unidad_negocio_pk,
+        MAX(k.unidad_negocio_id) as unidad_negocio_codigo,
+        MAX(k.unidad_negocio_nombre) as unidad_negocio_nombre,
+        MAX(k.sistema_origen) as sistema_origen,
+        COUNT(DISTINCT k.fecha_operacion) as dias,
+        SUM(ISNULL(k.ventas_total, 0)) as ventas_total,
+        SUM(ISNULL(k.propinas_total, 0)) as propinas_total,
+        SUM(ISNULL(k.tickets_total, 0)) as tickets_total,
+        SUM(ISNULL(k.pax_total, 0)) as pax_total,
+        CASE WHEN SUM(ISNULL(k.tickets_total, 0)) > 0
+             THEN SUM(ISNULL(k.ventas_total, 0)) / SUM(ISNULL(k.tickets_total, 0))
              ELSE 0 END as ticket_promedio,
-        CASE WHEN SUM(ISNULL(tickets_total, 0)) > 0
-             THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(tickets_total, 0))
+        CASE WHEN SUM(ISNULL(k.tickets_total, 0)) > 0
+             THEN SUM(ISNULL(k.ventas_total, 0)) / SUM(ISNULL(k.tickets_total, 0))
              ELSE 0 END as cheque_promedio,
-        CASE WHEN SUM(ISNULL(pax_total, 0)) > 0
-             THEN SUM(ISNULL(ventas_total, 0)) / SUM(ISNULL(pax_total, 0))
+        CASE WHEN SUM(ISNULL(k.pax_total, 0)) > 0
+             THEN SUM(ISNULL(k.ventas_total, 0)) / SUM(ISNULL(k.pax_total, 0))
              ELSE 0 END as pax_promedio,
-        MIN(fecha_operacion) as fecha_min,
-        MAX(fecha_operacion) as fecha_max
-    FROM vw_Comercial_KPIs_Diarios_v2_Runtime
+        MIN(k.fecha_operacion) as fecha_min,
+        MAX(k.fecha_operacion) as fecha_max
+    FROM vw_Comercial_KPIs_Diarios_v2_Runtime AS k
     WHERE {' AND '.join(where_clauses)}
-    GROUP BY unidad_negocio_pk
+    GROUP BY k.unidad_negocio_pk
     ORDER BY ventas_total DESC
     """
 
     return _execute_readonly_query(query)
-
 
 # =============================================================================
 # FUNCIONES DE LECTURA - KPIs MENSUALES

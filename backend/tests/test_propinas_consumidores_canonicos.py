@@ -21,29 +21,15 @@ KPI_SERVICE = ROOT / (
 )
 
 
-def test_comercial_v2_incorpora_propinas_del_snapshot():
+def test_comercial_v2_separa_propinas_del_dia_del_acumulado():
     text = COMERCIAL.read_text(encoding="utf-8")
 
     ast.parse(text)
 
-    assert (
-        "propinas_dia = "
-        "float(ab.get('propinas_total') or 0)"
-        in text
-    )
-
-    assert (
-        "u['propinas_total'] = propinas_dia"
-        in text
-    )
-
-    assert (
-        "totales['propinas_total'] = "
-        "float(totales.get('propinas_total') or 0) "
-        "+ propinas_dia"
-        in text
-    )
-
+    assert "excluir_dia_operativo_actual=True" in text
+    assert "'_dia_actual_separado'" in text
+    assert "u['propinas_total'] = propinas_dia" not in text
+    assert "totales['propinas_total'] =" not in text
 
 def test_comercial_v2_publica_detalle_completo_de_propinas():
     text = COMERCIAL.read_text(encoding="utf-8")
@@ -61,29 +47,15 @@ def test_comercial_v2_publica_detalle_completo_de_propinas():
         assert marker in text
 
 
-def test_dashboard_ejecutivo_conserva_propinas_canonicas():
+def test_dashboard_ejecutivo_conserva_propinas_y_dia_separado():
     text = EJECUTIVO.read_text(encoding="utf-8")
 
     ast.parse(text)
 
-    assert text.count(
-        '"propinas": float('
-    ) == 2
-
-    assert text.count(
-        '"propinas_total": float('
-    ) == 2
-
-    assert (
-        'm.get("propinas")'
-        in text
-    )
-
-    assert (
-        'metricas.get("propinas")'
-        in text
-    )
-
+    assert "resumen_periodo_desglosado" in text
+    assert '"ventas_dia_actual"' in text
+    assert '"propinas_total"' in text
+    assert '"CERRADO_SIN_DIA_OPERATIVO_ACTUAL"' in text
 
 def test_tablero_ejecutivo_no_descarta_propinas():
     text = TABLERO.read_text(encoding="utf-8")

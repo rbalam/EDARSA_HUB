@@ -719,9 +719,9 @@ async def comercial_v2_dashboard(
     Fuente: EDARSAHUB (NO SQL vivo, NO MongoDB)
 
     REGLA DE NEGOCIO:
-    - Si fecha_fin >= hoy: incluye ventas abiertas del día actual
-    - Las ventas abiertas se suman a los totales pero se identifican como estimadas
-    - No hay duplicación: ventas_cerradas_dia + ventas_abiertas = total_estimado_dia
+    - El acumulado contiene únicamente días operativos cerrados.
+    - El día operativo vigente se publica en ventas_dia_actual.
+    - El overlay nunca se suma al acumulado mensual.
     """
     try:
         # Obtener unidades permitidas
@@ -748,10 +748,22 @@ async def comercial_v2_dashboard(
             meses_list = [int(m) for m in meses.split(',') if m.strip().isdigit()]
 
         # Obtener datos agregados de ventas cerradas
-        totales = get_kpis_diarios_agregados(fecha_inicio, fecha_fin, unidades_permitidas, meses_list)
+        totales = get_kpis_diarios_agregados(
+            fecha_inicio,
+            fecha_fin,
+            unidades_permitidas,
+            meses_list,
+            excluir_dia_operativo_actual=True,
+        )
 
-        # Obtener datos por unidad (cerradas)
-        por_unidad_cerradas = get_kpis_por_unidad(fecha_inicio, fecha_fin, unidades_permitidas, meses_list)
+        # Obtener datos cerrados por unidad. El día vigente queda separado.
+        por_unidad_cerradas = get_kpis_por_unidad(
+            fecha_inicio,
+            fecha_fin,
+            unidades_permitidas,
+            meses_list,
+            excluir_dia_operativo_actual=True,
+        )
 
         # =====================================================================
         # COMBINAR CON VENTAS ABIERTAS DEL DÍA ACTUAL
@@ -904,21 +916,9 @@ async def comercial_v2_dashboard(
                 u['_snapshot_timestamp'] = str(ab.get('snapshot_timestamp') or '')
                 u['_incluye_ventas_abiertas'] = True
 
-                # Si NO tiene cerradas, sumar abiertas al total de la unidad
-                if not tiene_cerradas:
-                    total_dia = float(ab.get('total_estimado_dia') or 0)
-                    propinas_dia = float(ab.get('propinas_total') or 0)
-                    tickets = int(ab.get('tickets_abiertos') or 0) + int(ab.get('tickets_cerrados_dia') or 0)
-                    pax = int(ab.get('pax_abiertos') or 0) + int(ab.get('pax_cerrados_dia') or 0)
-
-                    u['ventas_total'] = total_dia
-                    u['propinas_total'] = propinas_dia
-                    u['tickets_total'] = tickets
-                    u['pax_total'] = pax
-                    u['dias'] = 1 if total_dia > 0 else 0
-                    # FIX: Usar fecha_operativa (definida en línea 629-631) en lugar de fecha_hoy
-                    u['fecha_min'] = fecha_operativa.isoformat()
-                    u['fecha_max'] = fecha_operativa.isoformat()
+                # El acumulado permanece cerrado. El día actual se conserva
+                # únicamente en los campos *_hoy y en ventas_dia_actual.
+                u['_acumulado_cerrado'] = True
             else:
                 u['_ventas_abiertas_hoy'] = 0
                 u['_ventas_cerradas_hoy'] = 0
@@ -949,24 +949,10 @@ async def comercial_v2_dashboard(
             por_unidad.append(u)
 
         # =====================================================================
-        # RECALCULAR TOTALES INCLUYENDO ABIERTAS
+        # CONTRATO: ACUMULADO CERRADO + DÍA ACTUAL SEPARADO
         # =====================================================================
-
-        # Sumar totales de unidades que SOLO tienen abiertas (no están en cerradas)
-        if incluye_hoy and ventas_abiertas_hoy:
-            for venta in ventas_abiertas_hoy:
-                uid = venta['unidad_negocio_pk']
-                # Solo sumar si la unidad NO tiene datos cerrados en el período
-                if uid not in cerradas_por_unidad:
-                    total_dia = float(venta.get('total_estimado_dia') or 0)
-                    propinas_dia = float(venta.get('propinas_total') or 0)
-                    tickets = int(venta.get('tickets_abiertos') or 0) + int(venta.get('tickets_cerrados_dia') or 0)
-                    pax = int(venta.get('pax_abiertos') or 0) + int(venta.get('pax_cerrados_dia') or 0)
-
-                    totales['ventas_total'] = float(totales.get('ventas_total') or 0) + total_dia
-                    totales['propinas_total'] = float(totales.get('propinas_total') or 0) + propinas_dia
-                    totales['tickets_total'] = int(totales.get('tickets_total') or 0) + tickets
-                    totales['pax_total'] = int(totales.get('pax_total') or 0) + pax
+        # No sumar el overlay a totales, incluso cuando no existan días cerrados.
+        totales['_dia_actual_separado'] = bool(incluye_hoy and ventas_abiertas_hoy)
 
         # Actualizar conteo de unidades
         totales['total_unidades'] = len(por_unidad)
@@ -991,7 +977,16 @@ async def comercial_v2_dashboard(
                     pass
 
         if fecha_max_datos is None:
-            fecha_max_datos = fecha_fin
+            cortes_cerrados = [
+                fecha_op - timedelta(days=1)
+                for fecha_op in fechas_operativas
+                if fecha_inicio <= fecha_op <= fecha_fin
+            ]
+            fecha_max_datos = (
+                min(fecha_fin, max(cortes_cerrados))
+                if cortes_cerrados
+                else fecha_fin
+            )
 
         # Calcular variaciones por unidad
         for u in por_unidad:
@@ -1102,7 +1097,8 @@ async def comercial_v2_dashboard(
                 "var_pax_año": totales_con_variaciones.get('var_pax_año'),
                 "var_cheques_mes": totales_con_variaciones.get('var_cheques_mes'),
                 "var_cheques_año": totales_con_variaciones.get('var_cheques_año'),
-                "_incluye_ventas_abiertas": incluye_hoy and len(ventas_abiertas_hoy) > 0
+                "_incluye_ventas_abiertas": False,
+                "_dia_actual_separado": incluye_hoy and len(ventas_abiertas_hoy) > 0
             }),
             "unidades": serialize_response([
                 {
@@ -1180,7 +1176,8 @@ async def comercial_v2_dashboard(
             }) if incluye_hoy else None,
             "periodo": {
                 "fecha_inicio": fecha_inicio.isoformat(),
-                "fecha_fin": fecha_fin.isoformat()
+                "fecha_fin": fecha_fin.isoformat(),
+                "contrato_acumulado": "CERRADO_SIN_DIA_OPERATIVO_ACTUAL"
             },
             "filtros_aplicados": {
                 "unidades": unidades_permitidas,

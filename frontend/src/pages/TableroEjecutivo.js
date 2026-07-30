@@ -191,6 +191,7 @@ const transformV2ToV1Format = (v2Response, selectedMeses, selectedAnios, logger)
         unidades_data_error: 0
       },
       _v2_source: true,
+      ventas_dia_actual: data.ventas_dia_actual || null,
       _v2_metadata: data.metadata || { source: 'EDARSAHUB_V2' }
     };
 
@@ -1526,7 +1527,7 @@ export default function TableroEjecutivo() {
             <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
               {/* Ventas Consolidadas */}
               <div className="col-span-2 md:col-span-1 flex flex-col text-center">
-                <p className="text-xs text-zinc-400 uppercase tracking-wide">Ventas Consolidadas</p>
+                <p className="text-xs text-zinc-400 uppercase tracking-wide">{data?.periodo?.modo_ventas_dia ? 'Ventas del Día' : 'Acumulado Cerrado'}</p>
                 <p className="text-3xl font-bold text-green-400">{data.totales.ventas != null ? formatCurrency(data.totales.ventas) : 'Sin datos'}</p>
                 <p className="text-xs text-zinc-400 mt-1">&nbsp;</p>
                 <div className="flex gap-4 mt-auto pt-2 justify-center">

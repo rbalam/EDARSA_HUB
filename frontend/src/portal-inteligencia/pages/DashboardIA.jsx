@@ -75,6 +75,7 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
       return;
     }
     const kpis = result.kpis || {};
+    const kpisDia = result.ventas_dia_actual?.kpis || {};
     setData({
       ventasTotales: Number(kpis.ventas_totales || 0),
       paxTotal: Number(kpis.pax_total || 0),
@@ -82,6 +83,12 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
       propinaTotal: Number(kpis.propinas_total || 0),
       chequePromedio: Number(kpis.cheque_promedio || 0),
       paxPromedio: Number(kpis.pax_promedio || 0),
+      ventasDia: {
+        ventas: Number(kpisDia.ventas_totales || 0),
+        propinas: Number(kpisDia.propinas_total || 0),
+        cheques: Number(kpisDia.cheques_total || 0),
+        pax: Number(kpisDia.pax_total || 0),
+      },
       trends: result.kpis_trends || {},
       periodoLabel: result.filtros?.periodo_label || '',
       ventasHorario: result.ventas_horario || [],
@@ -106,7 +113,7 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
 
   // Fila superior: Ventas + los 2 promedios canónicos (lo que pidió el usuario arriba).
   const kpiPrincipales = [
-    { title: 'Ventas Totales', value: formatMoney(data.ventasTotales), icon: DollarSign, color: 'emerald', trend: data.trends?.ventas_totales },
+    { title: 'Acumulado cerrado', value: formatMoney(data.ventasTotales), icon: DollarSign, color: 'emerald', trend: data.trends?.ventas_totales },
     { title: 'PAX Promedio', sub: 'Ventas ÷ PAX', value: money2(data.paxPromedio), icon: Users, color: 'cyan', trend: null },
     { title: 'Cheque Promedio', sub: 'Ventas ÷ cheques', value: money2(data.chequePromedio), icon: Receipt, color: 'violet', trend: null },
   ];
@@ -185,6 +192,21 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
       {/* KPIs secundarios */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {kpiSecundarios.map((kpi, idx) => <KpiCard key={idx + 3} kpi={kpi} idx={idx + 3} />)}
+      </div>
+
+      <div className="bg-slate-800/50 border border-amber-500/30 rounded-xl p-5" data-testid="dashboard-dia-actual">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-white">Operación del día</h3>
+            <p className="text-xs text-slate-400">Separada del acumulado cerrado</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div><p className="text-slate-500">Ventas</p><p className="text-xl font-bold text-amber-400">{money2(data.ventasDia?.ventas)}</p></div>
+          <div><p className="text-slate-500">Propinas</p><p className="text-xl font-bold text-white">{money2(data.ventasDia?.propinas)}</p></div>
+          <div><p className="text-slate-500">Cheques</p><p className="text-xl font-bold text-white">{Number(data.ventasDia?.cheques || 0).toLocaleString()}</p></div>
+          <div><p className="text-slate-500">PAX</p><p className="text-xl font-bold text-white">{Number(data.ventasDia?.pax || 0).toLocaleString()}</p></div>
+        </div>
       </div>
 
       {/* Main Grid */}

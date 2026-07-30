@@ -23,41 +23,66 @@ async def resumen(
     fecha_fin: str = Query(default="2026-06-30"),
     current_user: dict = Depends(get_current_user)
 ):
-    # KPIs comerciales: fuente ÚNICA canónica (KPIsCanonicosService, NO-LIVE).
-    # Promedios usan ventas_total con IVA; propinas permanecen separadas.
-    # El rango del servicio es [desde, hasta); convertimos fecha_fin a límite
-    # exclusivo (+1 día) para preservar la semántica inclusiva del endpoint.
+    """KPIs cerrados y operación vigente separada desde el contrato canónico."""
     try:
         hasta_excl = (datetime.fromisoformat(fecha_fin) + timedelta(days=1)).date().isoformat()
     except Exception:
         hasta_excl = fecha_fin
 
-    resumen_kpis = KPIsCanonicosService.resumen_periodo(fecha_inicio, hasta_excl)
-    unidades_kpi = sorted(
-        resumen_kpis.get("por_unidad", []),
-        key=lambda x: float((x.get("metricas") or {}).get("ventas") or 0),
-        reverse=True
+    desglose = KPIsCanonicosService.resumen_periodo_desglosado(
+        fecha_inicio,
+        hasta_excl,
     )
+    acumulado = desglose.get("acumulado_cerrado") or {}
+    dia_actual = desglose.get("dia_actual") or {}
+    total_con_dia = desglose.get("total_incluyendo_dia") or {}
 
-    ventas = []
-    for a in unidades_kpi:
-        m = a.get("metricas") or {}
-        ventas.append({
-            "server_id": a.get("server_id"),
-            "unidad": a.get("unidad_nombre"),
-            "unidad_codigo": a.get("unidad_codigo"),
-            "dias": a.get("dias"),
-            "ventas": float(m.get("ventas") or 0),
-            "ventas_brutas": float(m.get("ventas_brutas") or 0),
-            "propinas": float(m.get("propinas") or 0),
-            "propinas_total": float(m.get("propinas") or 0),
-            "tickets": float(m.get("tickets") or 0),
-            "cheques": float(m.get("cheques") or 0),
-            "pax": float(m.get("pax") or 0),
-            "cheque_promedio": float(m.get("cheque_promedio") or 0),
-            "ticket_promedio": float(m.get("ticket_promedio") or 0),
-            "pax_promedio": float(m.get("pax_promedio") or 0),
-        })
+    def metricas_payload(resumen_data):
+        metricas = resumen_data.get("metricas") or {}
+        return {
+            "ventas": float(metricas.get("ventas") or 0),
+            "ventas_brutas": float(metricas.get("ventas_brutas") or metricas.get("ventas") or 0),
+            "propinas": float(metricas.get("propinas") or 0),
+            "propinas_total": float(metricas.get("propinas") or 0),
+            "tickets": float(metricas.get("tickets") or 0),
+            "cheques": float(metricas.get("cheques") or 0),
+            "pax": float(metricas.get("pax") or 0),
+            "cheque_promedio": float(metricas.get("cheque_promedio") or 0),
+            "ticket_promedio": float(metricas.get("ticket_promedio") or 0),
+            "consumo_promedio_pax": float(metricas.get("consumo_promedio_pax") or 0),
+            "pax_promedio": float(metricas.get("pax_promedio") or 0),
+            "cheques_por_pax": float(metricas.get("cheques_por_pax") or 0),
+        }
+
+    def unidades_payload(resumen_data):
+        unidades = sorted(
+            resumen_data.get("por_unidad", []),
+            key=lambda x: float((x.get("metricas") or {}).get("ventas") or 0),
+            reverse=True,
+        )
+        salida = []
+        for item in unidades:
+            metricas = item.get("metricas") or {}
+            salida.append({
+                "server_id": item.get("server_id"),
+                "unidad": item.get("unidad_nombre"),
+                "unidad_codigo": item.get("unidad_codigo"),
+                "dias": item.get("dias"),
+                "ventas": float(metricas.get("ventas") or 0),
+                "ventas_brutas": float(metricas.get("ventas_brutas") or metricas.get("ventas") or 0),
+                "propinas": float(metricas.get("propinas") or 0),
+                "propinas_total": float(metricas.get("propinas") or 0),
+                "tickets": float(metricas.get("tickets") or 0),
+                "cheques": float(metricas.get("cheques") or 0),
+                "pax": float(metricas.get("pax") or 0),
+                "cheque_promedio": float(metricas.get("cheque_promedio") or 0),
+                "ticket_promedio": float(metricas.get("ticket_promedio") or 0),
+                "pax_promedio": float(metricas.get("pax_promedio") or 0),
+            })
+        return salida
+
+    ventas = unidades_payload(acumulado)
+    ventas_dia = unidades_payload(dia_actual)
 
     precios = q("""
     SELECT
@@ -94,32 +119,29 @@ async def resumen(
     ORDER BY eventos DESC
     """)
 
-    metricas = resumen_kpis.get("metricas") or {}
-
     return {
         "success": True,
         "source": "EDARSAHUB_SQL",
         "kpis_origen": "KPIsCanonicosService",
-        "periodo": {"inicio": fecha_inicio, "fin": fecha_fin},
-        "kpis": {
-            "ventas": float(metricas.get("ventas") or 0),
-            "ventas_brutas": float(metricas.get("ventas_brutas") or 0),
-            "propinas": float(metricas.get("propinas") or 0),
-            "propinas_total": float(metricas.get("propinas") or 0),
-            "tickets": float(metricas.get("tickets") or 0),
-            "cheques": float(metricas.get("cheques") or 0),
-            "pax": float(metricas.get("pax") or 0),
-            "cheque_promedio": float(metricas.get("cheque_promedio") or 0),
-            "ticket_promedio": float(metricas.get("ticket_promedio") or 0),
-            "consumo_promedio_pax": float(metricas.get("consumo_promedio_pax") or 0),
-            "pax_promedio": float(metricas.get("pax_promedio") or 0),
-            "cheques_por_pax": float(metricas.get("cheques_por_pax") or 0)
+        "periodo": {
+            "inicio": fecha_inicio,
+            "fin": fecha_fin,
+            "contrato_acumulado": "CERRADO_SIN_DIA_OPERATIVO_ACTUAL",
         },
+        "contrato_periodo": desglose.get("contrato") or {},
+        "kpis": metricas_payload(acumulado),
         "ventas_por_unidad": ventas,
+        "ventas_dia_actual": {
+            "kpis": metricas_payload(dia_actual),
+            "ventas_por_unidad": ventas_dia,
+        },
+        "total_incluyendo_dia_actual": {
+            "kpis": metricas_payload(total_con_dia),
+        },
         "precios": precios[0] if precios else {},
         "productos": productos[0] if productos else {},
         "compras": compras[0] if compras else {},
-        "sync_24h": sync
+        "sync_24h": sync,
     }
 
 @router.get("/rentabilidad-base")
