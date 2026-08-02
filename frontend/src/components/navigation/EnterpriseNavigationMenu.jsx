@@ -121,12 +121,15 @@ function unitLabel(unit) {
   if (typeof unit === "string") return unit;
 
   return (
+    unit.UnidadNegocioNombre ||
+    unit.NombreEmpresa ||
     unit.nombre ||
     unit.Nombre ||
     unit.codigo ||
     unit.Codigo ||
     unit.unidad_negocio_nombre ||
     unit.unidad_negocio_codigo ||
+    unit.UnidadNegocioID ||
     unit.id ||
     "Unidad activa"
   );
@@ -137,11 +140,16 @@ const stripMenuSequence = value =>
     .replace(/^\s*\d+\.\s*/, "")
     .trim();
 
+const normalizeSearchText = value =>
+  String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 
 const ENTERPRISE_GROUP_STYLE = Object.freeze([
   {
-    label: "Direccion e Inteligencia",
-    description: "Direccion, inteligencia comercial, BI e IA",
+    label: "Dirección e Inteligencia",
+    description: "Dirección, inteligencia comercial, BI e IA",
     color: "#3B82F6"
   },
   {
@@ -151,32 +159,32 @@ const ENTERPRISE_GROUP_STYLE = Object.freeze([
   },
   {
     label: "Operaciones y Abasto",
-    description: "Compras, inventarios, produccion y mantenimiento",
+    description: "Compras, inventarios, producción y mantenimiento",
     color: "#F97316"
   },
   {
     label: "Finanzas y Rentabilidad",
-    description: "Finanzas, tesoreria, contabilidad y costos",
+    description: "Finanzas, tesorería, contabilidad y costos",
     color: "#10B981"
   },
   {
-    label: "Personas y Organizacion",
+    label: "Personas y Organización",
     description: "RH, directorio y gobierno corporativo",
     color: "#8B5CF6"
   },
   {
-    label: "Control, Calidad y Gestion",
-    description: "Control operativo, auditoria, gestion y marketing",
+    label: "Control, Calidad y Gestión",
+    description: "Control operativo, auditoría, gestión y marketing",
     color: "#EC4899"
   },
   {
     label: "Plataforma e Integraciones",
-    description: "Conexiones, automatizacion, datos y seguridad",
+    description: "Conexiones, automatización, datos y seguridad",
     color: "#06B6D4"
   },
   {
-    label: "Portales y Aplicaciones Satelite",
-    description: "Portales externos y aplicaciones satelite",
+    label: "Portales y Aplicaciones Satélite",
+    description: "Portales externos y aplicaciones satélite",
     color: "#F97316"
   }
 ]);
@@ -413,6 +421,7 @@ export default function EnterpriseNavigationMenu({
     }
   }, [
     activeTrail,
+    expandedGroupId,
     navigation.groups
   ]);
 
@@ -483,24 +492,24 @@ export default function EnterpriseNavigationMenu({
   }, [allItems, favoriteRoutes]);
 
   const searchResults = useMemo(() => {
-    const normalized =
-      query.trim().toLowerCase();
+    const normalized = normalizeSearchText(query.trim());
 
     if (!normalized) return [];
 
     return allItems
       .filter(item => {
-        const haystack = [
-          item.label,
-          item.groupLabel,
-          item.sectionLabel,
-          item.cluster,
-          item.path,
-          ...(item.keywords || [])
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
+        const haystack = normalizeSearchText(
+          [
+            item.label,
+            item.groupLabel,
+            item.sectionLabel,
+            item.cluster,
+            item.path,
+            ...(item.keywords || [])
+          ]
+            .filter(Boolean)
+            .join(" ")
+        );
 
         return haystack.includes(normalized);
       })
@@ -705,6 +714,38 @@ export default function EnterpriseNavigationMenu({
     );
   };
 
+  const renderSectionItems = items => {
+    const renderedClusters = new Set();
+
+    return (items || []).flatMap(item => {
+      if (!item.cluster) return [renderItem(item)];
+      if (renderedClusters.has(item.cluster)) return [];
+
+      renderedClusters.add(item.cluster);
+      const clusterItems = items.filter(
+        candidate => candidate.cluster === item.cluster
+      );
+
+      return [
+        <div
+          key={"enterprise-cluster-" + item.cluster}
+          className="mt-2 rounded-lg border border-white/[0.05] bg-white/[0.02] px-2 py-2"
+          data-testid="enterprise-item-cluster"
+        >
+          <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-600">
+            {formatVisibleLabel(item.cluster)}
+          </p>
+
+          <div className="space-y-1">
+            {clusterItems.map(clusterItem =>
+              renderItem(clusterItem)
+            )}
+          </div>
+        </div>
+      ];
+    });
+  };
+
   const visibleGroups =
     navigation.groups.filter(group =>
       (group.sections || []).some(
@@ -750,7 +791,7 @@ export default function EnterpriseNavigationMenu({
 
   return (
     <div
-      className="space-y-4"
+      className="flex flex-col gap-4"
       data-testid="enterprise-navigation-menu"
       data-user-present={Boolean(user)}
     >
@@ -805,7 +846,7 @@ export default function EnterpriseNavigationMenu({
         </div>
       </section>
 
-      <div className="relative px-3">
+      <div className="order-first relative px-3">
         <Search
           size={17}
           className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-500"
@@ -823,7 +864,7 @@ export default function EnterpriseNavigationMenu({
       </div>
 
       {query && (
-        <section className="space-y-1 px-3">
+        <section className="order-first space-y-1 px-3">
           <p className="px-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
             Resultados
           </p>
@@ -941,9 +982,7 @@ export default function EnterpriseNavigationMenu({
 
                       {sectionExpanded && (
                         <div className="space-y-1 pl-1">
-                          {(section.items || []).map(
-                            item => renderItem(item)
-                          )}
+                          {renderSectionItems(section.items)}
                         </div>
                       )}
                     </div>

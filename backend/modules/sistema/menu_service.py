@@ -137,6 +137,15 @@ class MenuService:
                 return True
         return False
 
+    @staticmethod
+    def _es_superadmin_from_current_user(current_user: Dict[str, Any]) -> bool:
+        legacy_role = MenuService._norm(
+            current_user.get("role")
+            or current_user.get("rol")
+            or current_user.get("role_legacy")
+        )
+        return legacy_role in {"SUPERADMIN", "SUPERADMINISTRADOR", "SUPER_ADMIN"}
+
     def obtener_roles_usuario(self, usuario_id: str) -> List[Dict[str, Any]]:
         conn = self._get_connection()
         try:
@@ -325,7 +334,6 @@ class MenuService:
                 RequierePermiso,
                 Activo
             FROM dbo.Sistema_ModulosMenus
-            WHERE ISNULL(Activo,1)=1
             ORDER BY ModuloID, Orden, Nombre
         """)
         menus_por_modulo: Dict[Any, List[Dict[str, Any]]] = {}
@@ -354,7 +362,18 @@ class MenuService:
         for modulo in modulos:
             modulo_codigo = self._norm(modulo.get("Codigo"))
             menus = menus_por_modulo.get(modulo.get("ModuloID"), [])
-            menus_autorizados = [m for m in menus if _menu_autorizado(m)]
+            menus_autorizados = [
+                m
+                for m in menus
+                if _menu_autorizado(m)
+                or (
+                    not bool(m.get("Activo"))
+                    and (
+                        superadmin
+                        or modulo_codigo in permisos_modulo
+                    )
+                )
+            ]
 
             modulo_autorizado = (
                 superadmin
@@ -377,6 +396,7 @@ class MenuService:
                 "es_satelite": modulo.get("EsSatelite"),
                 "es_portal": modulo.get("EsPortal"),
                 "url_externa": modulo.get("URLExterna"),
+                "activo": bool(modulo.get("Activo")),
                 "visible": True,
                 "menus": [
                     {
@@ -389,6 +409,7 @@ class MenuService:
                         "orden": m.get("Orden"),
                         "padre_id": m.get("MenuPadreID"),
                         "requiere_permiso": m.get("RequierePermiso"),
+                        "activo": bool(m.get("Activo")),
                         "visible": True,
                     }
                     for m in menus_autorizados
@@ -448,6 +469,9 @@ class MenuService:
                 rutas.add(str(ruta_modulo))
 
             for menu in modulo.get("menus") or []:
+                if not bool(menu.get("activo")):
+                    continue
+
                 ruta = menu.get("ruta")
                 if ruta:
                     rutas.add(str(ruta))
@@ -587,7 +611,10 @@ class MenuService:
             cur = conn.cursor(as_dict=True)
             usuario_id = self._resolver_usuario_id_canonico(cur, current_user)
             roles = self._obtener_roles_usuario(cur, usuario_id)
-            superadmin = self._es_superadmin_from_roles(roles)
+            superadmin = (
+                self._es_superadmin_from_roles(roles)
+                or self._es_superadmin_from_current_user(current_user)
+            )
             permisos_modulo = self._obtener_modulos_permitidos_usuario(
                 cur,
                 usuario_id,

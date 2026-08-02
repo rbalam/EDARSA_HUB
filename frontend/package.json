@@ -63,7 +63,9 @@
   "scripts": {
     "start": "craco start",
     "build": "craco build",
-    "test": "craco test"
+    "test": "craco test",
+    "validate:navigation": "node scripts/validate_enterprise_navigation.js",
+    "prebuild": "yarn validate:navigation"
   },
   "browserslist": {
     "production": [

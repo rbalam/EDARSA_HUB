@@ -2,7 +2,7 @@ import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import logger from '@/services/logger';
 import { Button } from '@/components/ui/button';
-import EnterpriseSidebarMenu from '@/components/navigation/EnterpriseSidebarMenu';
+import EnterpriseNavigationMenu from '@/components/navigation/EnterpriseNavigationMenu';
 import { 
   LayoutDashboard, 
   Server, 
@@ -117,7 +117,7 @@ const ICON_MAP = {
 const ENABLE_HARDCODED_MENU_FALLBACK = false;
 
 // ENTERPRISE MENU: Flag para usar el nuevo menú Enterprise (agrupado y buscable)
-// Cuando esté en true, usa EnterpriseSidebarMenu en lugar del sidebar actual
+// Cuando esté en true, usa EnterpriseNavigationMenu en lugar del sidebar actual
 const USE_ENTERPRISE_MENU = true; // Enterprise visual activo con fuente SQL canónica
 
 const Layout = () => {
@@ -671,10 +671,11 @@ const Layout = () => {
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto" data-testid="sidebar-nav">
             {/* P5-10B: Menú Enterprise (agrupado y buscable) */}
             {USE_ENTERPRISE_MENU ? (
-              <EnterpriseSidebarMenu 
+              <EnterpriseNavigationMenu
                 user={user}
                 sqlMenus={sqlMenus}
                 collapsed={sidebarCollapsed}
+                activeBusinessUnit={unidadActiva}
               />
             ) : (
               <>

@@ -1,0 +1,1465 @@
+{
+  "version": 2,
+  "newBadgeDays": 30,
+  "groups": [
+    {
+      "id": "direccion-inteligencia",
+      "label": "1. Dirección e Inteligencia",
+      "icon": "BarChart3",
+      "order": 1,
+      "sections": [
+        {
+          "id": "direccion",
+          "label": "Dirección",
+          "order": 1
+        },
+        {
+          "id": "inteligencia-comercial",
+          "label": "Inteligencia Comercial",
+          "order": 2
+        },
+        {
+          "id": "analitica-bi",
+          "label": "Analítica y BI",
+          "order": 3
+        },
+        {
+          "id": "inteligencia-artificial",
+          "label": "Inteligencia Artificial",
+          "order": 4
+        }
+      ]
+    },
+    {
+      "id": "comercial-clientes",
+      "label": "2. Comercial y Clientes",
+      "icon": "ShoppingCart",
+      "order": 2,
+      "sections": [
+        {
+          "id": "operacion-comercial",
+          "label": "Operación Comercial",
+          "order": 1
+        },
+        {
+          "id": "crm",
+          "label": "CRM",
+          "order": 2
+        },
+        {
+          "id": "ciclo-comercial",
+          "label": "Ciclo Comercial",
+          "order": 3
+        }
+      ]
+    },
+    {
+      "id": "operaciones-abasto",
+      "label": "3. Operaciones y Abasto",
+      "icon": "Boxes",
+      "order": 3,
+      "sections": [
+        {
+          "id": "compras",
+          "label": "Compras",
+          "order": 1
+        },
+        {
+          "id": "inventarios-almacenes",
+          "label": "Inventarios y Almacenes",
+          "order": 2
+        },
+        {
+          "id": "produccion",
+          "label": "Producción",
+          "order": 3
+        },
+        {
+          "id": "activos-mantenimiento",
+          "label": "Activos y Mantenimiento",
+          "order": 4
+        }
+      ]
+    },
+    {
+      "id": "finanzas-rentabilidad",
+      "label": "4. Finanzas y Rentabilidad",
+      "icon": "DollarSign",
+      "order": 4,
+      "sections": [
+        {
+          "id": "direccion-financiera",
+          "label": "Dirección Financiera",
+          "order": 1
+        },
+        {
+          "id": "tesoreria-bancos",
+          "label": "Tesorería y Bancos",
+          "order": 2
+        },
+        {
+          "id": "cuentas-contabilidad",
+          "label": "Cuentas y Contabilidad",
+          "order": 3
+        },
+        {
+          "id": "costos-rentabilidad",
+          "label": "Costos y Rentabilidad",
+          "order": 4
+        }
+      ]
+    },
+    {
+      "id": "personas-organizacion",
+      "label": "5. Personas y Organización",
+      "icon": "Users",
+      "order": 5,
+      "sections": [
+        {
+          "id": "recursos-humanos",
+          "label": "Recursos Humanos",
+          "order": 1
+        },
+        {
+          "id": "directorio-corporativo",
+          "label": "Directorio Corporativo",
+          "order": 2
+        },
+        {
+          "id": "socios-gobierno",
+          "label": "Socios y Gobierno Corporativo",
+          "order": 3
+        }
+      ]
+    },
+    {
+      "id": "control-calidad-gestion",
+      "label": "6. Control, Calidad y Gestión",
+      "icon": "ShieldCheck",
+      "order": 6,
+      "sections": [
+        {
+          "id": "control-operativo",
+          "label": "Control Operativo",
+          "order": 1
+        },
+        {
+          "id": "calidad-auditoria",
+          "label": "Calidad y Auditoría",
+          "order": 2
+        },
+        {
+          "id": "gestion",
+          "label": "Gestión",
+          "order": 3
+        },
+        {
+          "id": "marketing",
+          "label": "Marketing",
+          "order": 4
+        }
+      ]
+    },
+    {
+      "id": "plataforma-integraciones",
+      "label": "7. Plataforma e Integraciones",
+      "icon": "Plug",
+      "order": 7,
+      "sections": [
+        {
+          "id": "conexiones",
+          "label": "Conexiones",
+          "order": 1
+        },
+        {
+          "id": "sincronizacion-automatizacion",
+          "label": "Sincronización y Automatización",
+          "order": 2
+        },
+        {
+          "id": "datos-infraestructura",
+          "label": "Datos e Infraestructura",
+          "order": 3
+        },
+        {
+          "id": "administracion-seguridad",
+          "label": "Administración y Seguridad",
+          "order": 4
+        }
+      ]
+    },
+    {
+      "id": "portales-satelites",
+      "label": "8. Portales y Aplicaciones Satélite",
+      "icon": "Grid3X3",
+      "order": 8,
+      "sections": [
+        {
+          "id": "portales-externos",
+          "label": "Portales Externos",
+          "order": 1
+        },
+        {
+          "id": "aplicaciones-satelite",
+          "label": "Aplicaciones Satélite",
+          "order": 2
+        }
+      ]
+    }
+  ],
+  "moduleMappings": {
+    "DIRECCION": {
+      "groupId": "direccion-inteligencia",
+      "sectionId": "direccion",
+      "label": "Dirección",
+      "status": "active"
+    },
+    "COMERCIAL": {
+      "groupId": "comercial-clientes",
+      "sectionId": "operacion-comercial",
+      "label": "Comercial",
+      "status": "active"
+    },
+    "COMANDERO_RESTAURANTERO": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "Comandero Restaurantero",
+      "status": "active"
+    },
+    "POS_GENERICO": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "Punto de Venta Genérico",
+      "status": "active"
+    },
+    "COMPRAS": {
+      "groupId": "operaciones-abasto",
+      "sectionId": "compras",
+      "label": "Compras",
+      "status": "active"
+    },
+    "INVENTARIOS": {
+      "groupId": "operaciones-abasto",
+      "sectionId": "inventarios-almacenes",
+      "label": "Inventarios y Almacenes",
+      "status": "active"
+    },
+    "TABLAJERIA": {
+      "groupId": "operaciones-abasto",
+      "sectionId": "produccion",
+      "label": "Producción",
+      "status": "active"
+    },
+    "CAVA_SOCIOS": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "Cava de Socios",
+      "status": "active"
+    },
+    "FINANZAS": {
+      "groupId": "finanzas-rentabilidad",
+      "sectionId": "direccion-financiera",
+      "label": "Finanzas",
+      "status": "active"
+    },
+    "HOST_TO_HOST": {
+      "groupId": "finanzas-rentabilidad",
+      "sectionId": "tesoreria-bancos",
+      "label": "Host to Host Bancario",
+      "status": "comingSoon"
+    },
+    "EDARSA_GO": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "EDARSA GO",
+      "status": "active"
+    },
+    "CONTABILIDAD": {
+      "groupId": "finanzas-rentabilidad",
+      "sectionId": "cuentas-contabilidad",
+      "label": "Contabilidad",
+      "status": "comingSoon"
+    },
+    "RH": {
+      "groupId": "personas-organizacion",
+      "sectionId": "recursos-humanos",
+      "label": "Recursos Humanos",
+      "status": "active"
+    },
+    "ACTIVOS_FIJOS": {
+      "groupId": "operaciones-abasto",
+      "sectionId": "activos-mantenimiento",
+      "label": "Activos Fijos",
+      "status": "comingSoon"
+    },
+    "CRM": {
+      "groupId": "comercial-clientes",
+      "sectionId": "crm",
+      "label": "CRM",
+      "status": "active"
+    },
+    "COMISIONES": {
+      "groupId": "finanzas-rentabilidad",
+      "sectionId": "cuentas-contabilidad",
+      "label": "Comisiones",
+      "status": "comingSoon"
+    },
+    "PORTAL_PROVEEDORES": {
+      "groupId": "portales-satelites",
+      "sectionId": "portales-externos",
+      "label": "Portal de Proveedores",
+      "status": "active"
+    },
+    "PORTAL_COMISIONISTAS": {
+      "groupId": "portales-satelites",
+      "sectionId": "portales-externos",
+      "label": "Portal de Comisionistas",
+      "status": "active"
+    },
+    "PORTAL_CLIENTES": {
+      "groupId": "portales-satelites",
+      "sectionId": "portales-externos",
+      "label": "Portal de Clientes",
+      "status": "active"
+    },
+    "CHEF_IA": {
+      "groupId": "finanzas-rentabilidad",
+      "sectionId": "costos-rentabilidad",
+      "label": "Chef IA",
+      "status": "active"
+    },
+    "IA": {
+      "groupId": "direccion-inteligencia",
+      "sectionId": "inteligencia-artificial",
+      "label": "Inteligencia Artificial",
+      "status": "active"
+    },
+    "CALIDAD": {
+      "groupId": "control-calidad-gestion",
+      "sectionId": "calidad-auditoria",
+      "label": "Calidad / Auditoría",
+      "status": "comingSoon"
+    },
+    "PROYECTOS": {
+      "groupId": "control-calidad-gestion",
+      "sectionId": "gestion",
+      "label": "Proyectos / Tareas",
+      "status": "comingSoon"
+    },
+    "MARKETING": {
+      "groupId": "control-calidad-gestion",
+      "sectionId": "marketing",
+      "label": "Marketing",
+      "status": "comingSoon"
+    },
+    "REPORTES_BI": {
+      "groupId": "direccion-inteligencia",
+      "sectionId": "analitica-bi",
+      "label": "Reportes BI",
+      "status": "active"
+    },
+    "INTEGRACIONES": {
+      "groupId": "plataforma-integraciones",
+      "sectionId": "conexiones",
+      "label": "Integraciones / Conectores",
+      "status": "comingSoon"
+    },
+    "CATALOGOS": {
+      "groupId": "plataforma-integraciones",
+      "sectionId": "administracion-seguridad",
+      "label": "Catálogos Maestros",
+      "status": "active"
+    },
+    "SISTEMA": {
+      "groupId": "plataforma-integraciones",
+      "sectionId": "administracion-seguridad",
+      "label": "Administración del Sistema",
+      "status": "active"
+    }
+  },
+  "menuMappings": {
+    "direccion.tablero": {
+      "groupId": "direccion-inteligencia",
+      "sectionId": "direccion",
+      "label": "Tablero Ejecutivo",
+      "expectedPath": "/tablero-ejecutivo",
+      "order": 10,
+      "status": "active",
+      "legacy": true
+    },
+    "comercial.dashboard": {
+      "groupId": "direccion-inteligencia",
+      "sectionId": "inteligencia-comercial",
+      "label": "Tablero Comercial",
+      "expectedPath": "/comercial",
+      "order": 10,
+      "status": "active",
+      "legacy": true
+    },
+    "comercial.clientes": {
+      "groupId": "comercial-clientes",
+      "sectionId": "operacion-comercial",
+      "label": "Clientes y Cuentas",
+      "expectedPath": "/comercial/clientes",
+      "order": 20,
+      "status": "active",
+      "legacy": true
+    },
+    "comercial.cotizaciones": {
+      "groupId": "comercial-clientes",
+      "sectionId": "ciclo-comercial",
+      "label": "Cotizaciones",
+      "expectedPath": "/crm/cotizaciones",
+      "order": 10,
+      "status": "active",
+      "legacy": true
+    },
+    "comercial.pedidos": {
+      "groupId": "comercial-clientes",
+      "sectionId": "ciclo-comercial",
+      "label": "Pedidos",
+      "expectedPath": "/crm/pedidos",
+      "order": 20,
+      "status": "active",
+      "legacy": true
+    },
+    "comercial.remisiones": {
+      "groupId": "comercial-clientes",
+      "sectionId": "ciclo-comercial",
+      "label": "Remisiones",
+      "expectedPath": "/crm/remisiones",
+      "order": 30,
+      "status": "active",
+      "legacy": true
+    },
+    "comercial.costos": {
+      "groupId": "finanzas-rentabilidad",
+      "sectionId": "costos-rentabilidad",
+      "label": "Costos y Márgenes",
+      "expectedPath": "/comercial/costos-margenes",
+      "order": 10,
+      "status": "active",
+      "legacy": true
+    },
+    "comercial.catalogo_enriquecido": {
+      "groupId": "direccion-inteligencia",
+      "sectionId": "inteligencia-comercial",
+      "label": "Catálogo Enriquecido",
+      "expectedPath": "/comercial/catalogo-enriquecido",
+      "order": 50,
+      "status": "active",
+      "legacy": true
+    },
+    "comercial.pricing_ia": {
+      "groupId": "direccion-inteligencia",
+      "sectionId": "inteligencia-comercial",
+      "label": "Pricing IA",
+      "expectedPath": "/comercial/pricing-ia",
+      "order": 40,
+      "status": "active",
+      "legacy": true
+    },
+    "comercial.inteligencia": {
+      "groupId": "direccion-inteligencia",
+      "sectionId": "inteligencia-comercial",
+      "label": "Portal de Inteligencia Comercial",
+      "expectedPath": "/inteligencia-comercial",
+      "order": 20,
+      "status": "active",
+      "legacy": true
+    },
+    "comandero.mesas": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "Mesas",
+      "expectedPath": "/comandero/mesas",
+      "order": 20,
+      "status": "comingSoon",
+      "cluster": "Comandero Restaurantero"
+    },
+    "comandero.comandas": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "Comandas",
+      "expectedPath": "/comandero/comandas",
+      "order": 30,
+      "status": "comingSoon",
+      "cluster": "Comandero Restaurantero"
+    },
+    "comandero.cuentas": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "Cuentas",
+      "expectedPath": "/comandero/cuentas",
+      "order": 40,
+      "status": "comingSoon",
+      "cluster": "Comandero Restaurantero"
+    },
+    "comandero.cortes": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "Cortes",
+      "expectedPath": "/comandero/cortes",
+      "order": 50,
+      "status": "comingSoon",
+      "cluster": "Comandero Restaurantero"
+    },
+    "comandero.dashboard": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "Comandero",
+      "expectedPath": "/comandero",
+      "order": 10,
+      "status": "active",
+      "cluster": "Comandero Restaurantero",
+      "legacy": true
+    },
+    "pos.dashboard": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "Punto de Venta",
+      "expectedPath": "/pos/generico",
+      "order": 10,
+      "status": "comingSoon",
+      "cluster": "Punto de Venta Genérico"
+    },
+    "pos.caja": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "Caja",
+      "expectedPath": "/pos/caja",
+      "order": 20,
+      "status": "comingSoon",
+      "cluster": "Punto de Venta Genérico"
+    },
+    "compras.dashboard": {
+      "groupId": "operaciones-abasto",
+      "sectionId": "compras",
+      "label": "Tablero de Compras",
+      "expectedPath": "/compras",
+      "order": 10,
+      "status": "active",
+      "legacy": true
+    },
+    "compras.proveedores": {
+      "groupId": "operaciones-abasto",
+      "sectionId": "compras",
+      "label": "Proveedores",
+      "expectedPath": "/compras/proveedores",
+      "order": 20,
+      "status": "comingSoon"
+    },
+    "compras.ordenes": {
+      "groupId": "operaciones-abasto",
+      "sectionId": "compras",
+      "label": "Órdenes de Compra",
+      "expectedPath": "/compras/ordenes",
+      "order": 40,
+      "status": "comingSoon"
+    },
+    "inventarios.dashboard": {
+      "groupId": "operaciones-abasto",
+      "sectionId": "inventarios-almacenes",
+      "label": "Tablero Operativo de Inventarios",
+      "expectedPath": "/reportes",
+      "order": 10,
+      "status": "active",
+      "legacy": true
+    },
+    "inventarios.existencias": {
+      "groupId": "operaciones-abasto",
+      "sectionId": "inventarios-almacenes",
+      "label": "Existencias",
+      "expectedPath": "/inventarios/existencias",
+      "order": 20,
+      "status": "comingSoon"
+    },
+    "tablajeria.dashboard": {
+      "groupId": "operaciones-abasto",
+      "sectionId": "produccion",
+      "label": "Tablero de Producción",
+      "expectedPath": "/tablajeria/dashboard",
+      "order": 10,
+      "status": "active",
+      "legacy": true
+    },
+    "tablajeria.ordenes": {
+      "groupId": "operaciones-abasto",
+      "sectionId": "produccion",
+      "label": "Órdenes",
+      "expectedPath": "/tablajeria/ordenes",
+      "order": 40,
+      "status": "active",
+      "legacy": true
+    },
+    "tablajeria.captura": {
+      "groupId": "operaciones-abasto",
+      "sectionId": "produccion",
+      "label": "Captura Directa",
+      "expectedPath": "/tablajeria/captura-directa",
+      "order": 50,
+      "status": "active",
+      "legacy": true
+    },
+    "tablajeria.plantillas": {
+      "groupId": "operaciones-abasto",
+      "sectionId": "produccion",
+      "label": "Plantillas",
+      "expectedPath": "/tablajeria/plantillas",
+      "order": 30,
+      "status": "active",
+      "legacy": true
+    },
+    "cava.dashboard": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "Tablero",
+      "expectedPath": "/cava-socios",
+      "order": 10,
+      "status": "active",
+      "cluster": "Cava de Socios",
+      "legacy": true
+    },
+    "cava.socios": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "Socios",
+      "expectedPath": "/cava-socios/socios",
+      "order": 20,
+      "status": "active",
+      "cluster": "Cava de Socios",
+      "legacy": true
+    },
+    "finanzas.dashboard": {
+      "groupId": "finanzas-rentabilidad",
+      "sectionId": "direccion-financiera",
+      "label": "Tablero Financiero",
+      "expectedPath": "/finanzas",
+      "order": 10,
+      "status": "active",
+      "legacy": true
+    },
+    "finanzas.super_caja": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "Super Caja",
+      "expectedPath": "/super-caja",
+      "order": 10,
+      "status": "active",
+      "cluster": "Super Caja",
+      "legacy": true
+    },
+    "edarsa_go.cobros": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "EDARSA GO",
+      "expectedPath": "/edarsa-go",
+      "order": 10,
+      "status": "comingSoon",
+      "cluster": "EDARSA GO"
+    },
+    "edarsa_go.links": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "Links de Pago",
+      "expectedPath": "/edarsa-go/links",
+      "order": 20,
+      "status": "comingSoon",
+      "cluster": "EDARSA GO"
+    },
+    "rh.dashboard": {
+      "groupId": "personas-organizacion",
+      "sectionId": "recursos-humanos",
+      "label": "Colaboradores",
+      "expectedPath": "/recursos-humanos",
+      "order": 10,
+      "status": "active",
+      "legacy": true
+    },
+    "rh.importador": {
+      "groupId": "personas-organizacion",
+      "sectionId": "recursos-humanos",
+      "label": "Importador RH",
+      "expectedPath": "/importador-rh",
+      "order": 30,
+      "status": "active",
+      "legacy": true
+    },
+    "crm.dashboard": {
+      "groupId": "comercial-clientes",
+      "sectionId": "crm",
+      "label": "Tablero CRM",
+      "expectedPath": "/crm/dashboard",
+      "order": 5,
+      "status": "active",
+      "legacy": true
+    },
+    "crm.cuentas": {
+      "groupId": "comercial-clientes",
+      "sectionId": "crm",
+      "label": "Cuentas",
+      "expectedPath": "/crm/cuentas",
+      "order": 10,
+      "status": "active",
+      "legacy": true
+    },
+    "crm.solicitudes": {
+      "groupId": "comercial-clientes",
+      "sectionId": "operacion-comercial",
+      "label": "Solicitudes de Alta",
+      "expectedPath": "/crm/solicitudes-alta",
+      "order": 30,
+      "status": "active",
+      "legacy": true
+    },
+    "crm.leads": {
+      "groupId": "comercial-clientes",
+      "sectionId": "crm",
+      "label": "Leads",
+      "expectedPath": "/crm/leads",
+      "order": 20,
+      "status": "active",
+      "legacy": true
+    },
+    "crm.oportunidades": {
+      "groupId": "comercial-clientes",
+      "sectionId": "crm",
+      "label": "Oportunidades",
+      "expectedPath": "/crm/oportunidades",
+      "order": 30,
+      "status": "active",
+      "legacy": true
+    },
+    "crm.pipeline": {
+      "groupId": "comercial-clientes",
+      "sectionId": "crm",
+      "label": "Pipeline",
+      "expectedPath": "/crm/pipeline",
+      "order": 40,
+      "status": "active",
+      "legacy": true
+    },
+    "crm.actividades": {
+      "groupId": "comercial-clientes",
+      "sectionId": "crm",
+      "label": "Actividades",
+      "expectedPath": "/crm/actividades",
+      "order": 50,
+      "status": "active",
+      "legacy": true
+    },
+    "crm.operaciones": {
+      "groupId": "comercial-clientes",
+      "sectionId": "crm",
+      "label": "Operaciones",
+      "expectedPath": "/crm/operaciones",
+      "order": 60,
+      "status": "active",
+      "legacy": true
+    },
+    "crm.implementaciones": {
+      "groupId": "comercial-clientes",
+      "sectionId": "ciclo-comercial",
+      "label": "Implementaciones",
+      "expectedPath": "/crm/implementaciones",
+      "order": 40,
+      "status": "active",
+      "legacy": true
+    },
+    "crm.postventa": {
+      "groupId": "comercial-clientes",
+      "sectionId": "ciclo-comercial",
+      "label": "Postventa",
+      "expectedPath": "/crm/postventa",
+      "order": 50,
+      "status": "active",
+      "legacy": true
+    },
+    "crm.kpis": {
+      "groupId": "comercial-clientes",
+      "sectionId": "crm",
+      "label": "KPIs",
+      "expectedPath": "/crm/kpis",
+      "order": 70,
+      "status": "active",
+      "legacy": true
+    },
+    "portal.proveedores": {
+      "groupId": "portales-satelites",
+      "sectionId": "portales-externos",
+      "label": "Portal de Proveedores",
+      "expectedPath": "/portal/proveedores",
+      "order": 10,
+      "status": "active",
+      "legacy": true
+    },
+    "portal.comisionistas": {
+      "groupId": "portales-satelites",
+      "sectionId": "portales-externos",
+      "label": "Portal de Comisionistas",
+      "expectedPath": "/portal/comisionistas",
+      "order": 30,
+      "status": "comingSoon"
+    },
+    "portal.clientes": {
+      "groupId": "portales-satelites",
+      "sectionId": "portales-externos",
+      "label": "Portal de Clientes",
+      "expectedPath": "/portal/clientes",
+      "order": 20,
+      "status": "comingSoon"
+    },
+    "portal.proveedores_admin": {
+      "groupId": "operaciones-abasto",
+      "sectionId": "compras",
+      "label": "Administración de Proveedores",
+      "expectedPath": "/proveedores",
+      "order": 30,
+      "status": "active",
+      "legacy": true
+    },
+    "chef_ia.calidad": {
+      "groupId": "finanzas-rentabilidad",
+      "sectionId": "costos-rentabilidad",
+      "label": "Chef IA",
+      "expectedPath": "/chef-ia",
+      "order": 20,
+      "status": "comingSoon"
+    },
+    "ia.assistant": {
+      "groupId": "direccion-inteligencia",
+      "sectionId": "inteligencia-artificial",
+      "label": "Asistente IA",
+      "expectedPath": "/ia",
+      "order": 10,
+      "status": "active",
+      "legacy": true
+    },
+    "bi.reportes": {
+      "groupId": "direccion-inteligencia",
+      "sectionId": "analitica-bi",
+      "label": "Reportes BI",
+      "expectedPath": "/reportes-bi",
+      "order": 10,
+      "status": "active",
+      "legacy": true
+    },
+    "catalogos.general": {
+      "groupId": "plataforma-integraciones",
+      "sectionId": "administracion-seguridad",
+      "label": "Catálogos Maestros",
+      "expectedPath": "/catalogos",
+      "order": 50,
+      "status": "active",
+      "legacy": true
+    },
+    "sistema.tareas": {
+      "groupId": "control-calidad-gestion",
+      "sectionId": "gestion",
+      "label": "Mis tareas",
+      "expectedPath": "/mis-tareas",
+      "order": 10,
+      "status": "active",
+      "fixedZone": "my-space",
+      "legacy": true
+    },
+    "sistema.control": {
+      "groupId": "control-calidad-gestion",
+      "sectionId": "control-operativo",
+      "label": "Centro de Control",
+      "expectedPath": "/centro-control",
+      "order": 10,
+      "status": "active",
+      "legacy": true
+    },
+    "sistema.servidores": {
+      "groupId": "plataforma-integraciones",
+      "sectionId": "datos-infraestructura",
+      "label": "Servidores",
+      "expectedPath": "/servidores",
+      "order": 10,
+      "status": "active",
+      "legacy": true
+    },
+    "sistema.sync_monitor": {
+      "groupId": "plataforma-integraciones",
+      "sectionId": "sincronizacion-automatizacion",
+      "label": "Monitor de Sincronización",
+      "expectedPath": "/admin/sync-monitor",
+      "order": 10,
+      "status": "active",
+      "legacy": true
+    },
+    "sistema.scheduler": {
+      "groupId": "plataforma-integraciones",
+      "sectionId": "sincronizacion-automatizacion",
+      "label": "Programación / Scheduler",
+      "expectedPath": "/scheduler",
+      "order": 20,
+      "status": "active",
+      "legacy": true
+    },
+    "sistema.automatizaciones": {
+      "groupId": "plataforma-integraciones",
+      "sectionId": "sincronizacion-automatizacion",
+      "label": "Automatizaciones",
+      "expectedPath": "/automatizaciones",
+      "order": 30,
+      "status": "active",
+      "legacy": true
+    },
+    "sistema.asignaciones": {
+      "groupId": "plataforma-integraciones",
+      "sectionId": "administracion-seguridad",
+      "label": "Asignaciones",
+      "expectedPath": "/configuracion/asignaciones",
+      "order": 40,
+      "status": "active",
+      "legacy": true
+    },
+    "sistema.sql": {
+      "groupId": "plataforma-integraciones",
+      "sectionId": "datos-infraestructura",
+      "label": "Catálogo SQL",
+      "expectedPath": "/catalogo-consultas",
+      "order": 30,
+      "status": "active",
+      "legacy": true
+    },
+    "sistema.explorador": {
+      "groupId": "plataforma-integraciones",
+      "sectionId": "datos-infraestructura",
+      "label": "Explorador de Base de Datos",
+      "expectedPath": "/explorador-bd",
+      "order": 20,
+      "status": "active",
+      "legacy": true
+    },
+    "sistema.alertas": {
+      "groupId": "control-calidad-gestion",
+      "sectionId": "control-operativo",
+      "label": "Alertas y notificaciones",
+      "expectedPath": "/alertas",
+      "order": 20,
+      "status": "active",
+      "fixedZone": "my-space",
+      "legacy": true
+    },
+    "sistema.usuarios": {
+      "groupId": "plataforma-integraciones",
+      "sectionId": "administracion-seguridad",
+      "label": "Usuarios",
+      "expectedPath": "/usuarios",
+      "order": 10,
+      "status": "active",
+      "legacy": true
+    },
+    "sistema.config": {
+      "groupId": "plataforma-integraciones",
+      "sectionId": "administracion-seguridad",
+      "label": "Configuración Operativa",
+      "expectedPath": "/admin/configuracion-operativa",
+      "order": 30,
+      "status": "active",
+      "legacy": true
+    },
+    "sistema.centro_excepciones": {
+      "groupId": "control-calidad-gestion",
+      "sectionId": "control-operativo",
+      "label": "Centro de Excepciones",
+      "expectedPath": "/admin/centro-excepciones",
+      "order": 20,
+      "status": "active",
+      "legacy": true
+    }
+  },
+  "plannedItems": [
+    {
+      "id": "planned.resumen-corporativo",
+      "groupId": "direccion-inteligencia",
+      "sectionId": "direccion",
+      "label": "Resumen Corporativo",
+      "order": 20,
+      "status": "planned"
+    },
+    {
+      "id": "planned.excepciones-estrategicas",
+      "groupId": "direccion-inteligencia",
+      "sectionId": "direccion",
+      "label": "Centro de Excepciones Estratégicas",
+      "order": 30,
+      "status": "planned"
+    },
+    {
+      "id": "planned.analisis-unidad",
+      "groupId": "direccion-inteligencia",
+      "sectionId": "inteligencia-comercial",
+      "label": "Análisis por Unidad",
+      "order": 30,
+      "status": "planned"
+    },
+    {
+      "id": "planned.competencia-benchmark",
+      "groupId": "direccion-inteligencia",
+      "sectionId": "inteligencia-comercial",
+      "label": "Competencia y Benchmark",
+      "order": 35,
+      "status": "planned"
+    },
+    {
+      "id": "planned.informes-ejecutivos",
+      "groupId": "direccion-inteligencia",
+      "sectionId": "analitica-bi",
+      "label": "Informes Ejecutivos",
+      "order": 20,
+      "status": "planned"
+    },
+    {
+      "id": "planned.exploracion-analitica",
+      "groupId": "direccion-inteligencia",
+      "sectionId": "analitica-bi",
+      "label": "Exploración Analítica",
+      "order": 30,
+      "status": "planned"
+    },
+    {
+      "id": "planned.analisis-causas",
+      "groupId": "direccion-inteligencia",
+      "sectionId": "inteligencia-artificial",
+      "label": "Análisis de Causas",
+      "order": 20,
+      "status": "planned"
+    },
+    {
+      "id": "planned.propuestas-accion",
+      "groupId": "direccion-inteligencia",
+      "sectionId": "inteligencia-artificial",
+      "label": "Propuestas de Acción",
+      "order": 30,
+      "status": "planned"
+    },
+    {
+      "id": "planned.modelos-pronosticos",
+      "groupId": "direccion-inteligencia",
+      "sectionId": "inteligencia-artificial",
+      "label": "Modelos y Pronósticos",
+      "order": 40,
+      "status": "planned"
+    },
+    {
+      "id": "planned.ventas",
+      "groupId": "comercial-clientes",
+      "sectionId": "operacion-comercial",
+      "label": "Ventas",
+      "order": 10,
+      "status": "planned"
+    },
+    {
+      "id": "planned.convenios",
+      "groupId": "comercial-clientes",
+      "sectionId": "ciclo-comercial",
+      "label": "Convenios y Acuerdos Comerciales",
+      "order": 60,
+      "status": "planned"
+    },
+    {
+      "id": "planned.requisiciones",
+      "groupId": "operaciones-abasto",
+      "sectionId": "compras",
+      "label": "Requisiciones y Pedidos",
+      "order": 35,
+      "status": "planned"
+    },
+    {
+      "id": "planned.recepciones",
+      "groupId": "operaciones-abasto",
+      "sectionId": "compras",
+      "label": "Recepciones",
+      "order": 50,
+      "status": "planned"
+    },
+    {
+      "id": "planned.movimientos",
+      "groupId": "operaciones-abasto",
+      "sectionId": "inventarios-almacenes",
+      "label": "Movimientos",
+      "order": 30,
+      "status": "planned"
+    },
+    {
+      "id": "planned.conteos",
+      "groupId": "operaciones-abasto",
+      "sectionId": "inventarios-almacenes",
+      "label": "Conteos",
+      "order": 40,
+      "status": "planned"
+    },
+    {
+      "id": "planned.diferencias-ajustes",
+      "groupId": "operaciones-abasto",
+      "sectionId": "inventarios-almacenes",
+      "label": "Diferencias y Ajustes",
+      "order": 50,
+      "status": "planned"
+    },
+    {
+      "id": "planned.tablajeria",
+      "groupId": "operaciones-abasto",
+      "sectionId": "produccion",
+      "label": "Tablajería",
+      "order": 20,
+      "status": "planned"
+    },
+    {
+      "id": "planned.platillos-recetas",
+      "groupId": "operaciones-abasto",
+      "sectionId": "produccion",
+      "label": "Platillos y Recetas",
+      "order": 60,
+      "status": "planned"
+    },
+    {
+      "id": "planned.flujo-efectivo",
+      "groupId": "finanzas-rentabilidad",
+      "sectionId": "direccion-financiera",
+      "label": "Flujo de Efectivo",
+      "order": 20,
+      "status": "planned"
+    },
+    {
+      "id": "planned.posicion-financiera",
+      "groupId": "finanzas-rentabilidad",
+      "sectionId": "direccion-financiera",
+      "label": "Posición Financiera",
+      "order": 30,
+      "status": "planned"
+    },
+    {
+      "id": "planned.bancos",
+      "groupId": "finanzas-rentabilidad",
+      "sectionId": "tesoreria-bancos",
+      "label": "Bancos",
+      "order": 10,
+      "status": "planned"
+    },
+    {
+      "id": "planned.pagos",
+      "groupId": "finanzas-rentabilidad",
+      "sectionId": "tesoreria-bancos",
+      "label": "Pagos",
+      "order": 30,
+      "status": "planned"
+    },
+    {
+      "id": "planned.conciliaciones",
+      "groupId": "finanzas-rentabilidad",
+      "sectionId": "tesoreria-bancos",
+      "label": "Conciliaciones",
+      "order": 40,
+      "status": "planned"
+    },
+    {
+      "id": "planned.cxp",
+      "groupId": "finanzas-rentabilidad",
+      "sectionId": "cuentas-contabilidad",
+      "label": "Cuentas por Pagar",
+      "order": 10,
+      "status": "planned"
+    },
+    {
+      "id": "planned.cxc",
+      "groupId": "finanzas-rentabilidad",
+      "sectionId": "cuentas-contabilidad",
+      "label": "Cuentas por Cobrar",
+      "order": 20,
+      "status": "planned"
+    },
+    {
+      "id": "planned.costos-recetas",
+      "groupId": "finanzas-rentabilidad",
+      "sectionId": "costos-rentabilidad",
+      "label": "Costos de Recetas",
+      "order": 30,
+      "status": "planned"
+    },
+    {
+      "id": "planned.rentabilidad-producto",
+      "groupId": "finanzas-rentabilidad",
+      "sectionId": "costos-rentabilidad",
+      "label": "Rentabilidad por Producto",
+      "order": 40,
+      "status": "planned"
+    },
+    {
+      "id": "planned.rentabilidad-unidad",
+      "groupId": "finanzas-rentabilidad",
+      "sectionId": "costos-rentabilidad",
+      "label": "Rentabilidad por Unidad",
+      "order": 50,
+      "status": "planned"
+    },
+    {
+      "id": "planned.expedientes",
+      "groupId": "personas-organizacion",
+      "sectionId": "recursos-humanos",
+      "label": "Expedientes",
+      "order": 20,
+      "status": "planned"
+    },
+    {
+      "id": "planned.organizacion",
+      "groupId": "personas-organizacion",
+      "sectionId": "recursos-humanos",
+      "label": "Organización",
+      "order": 40,
+      "status": "planned"
+    },
+    {
+      "id": "planned.personas",
+      "groupId": "personas-organizacion",
+      "sectionId": "directorio-corporativo",
+      "label": "Personas",
+      "order": 10,
+      "status": "planned"
+    },
+    {
+      "id": "planned.empresas",
+      "groupId": "personas-organizacion",
+      "sectionId": "directorio-corporativo",
+      "label": "Empresas",
+      "order": 20,
+      "status": "planned"
+    },
+    {
+      "id": "planned.unidades-negocio",
+      "groupId": "personas-organizacion",
+      "sectionId": "directorio-corporativo",
+      "label": "Unidades de Negocio",
+      "order": 30,
+      "status": "planned"
+    },
+    {
+      "id": "planned.relaciones-cargos",
+      "groupId": "personas-organizacion",
+      "sectionId": "directorio-corporativo",
+      "label": "Relaciones y Cargos",
+      "order": 40,
+      "status": "planned"
+    },
+    {
+      "id": "planned.socios",
+      "groupId": "personas-organizacion",
+      "sectionId": "socios-gobierno",
+      "label": "Socios",
+      "order": 10,
+      "status": "planned"
+    },
+    {
+      "id": "planned.consejo",
+      "groupId": "personas-organizacion",
+      "sectionId": "socios-gobierno",
+      "label": "Consejo de Administración",
+      "order": 20,
+      "status": "planned"
+    },
+    {
+      "id": "planned.representantes",
+      "groupId": "personas-organizacion",
+      "sectionId": "socios-gobierno",
+      "label": "Representantes Legales",
+      "order": 30,
+      "status": "planned"
+    },
+    {
+      "id": "planned.incidencias",
+      "groupId": "control-calidad-gestion",
+      "sectionId": "control-operativo",
+      "label": "Incidencias",
+      "order": 30,
+      "status": "planned"
+    },
+    {
+      "id": "planned.seguimiento-acuerdos",
+      "groupId": "control-calidad-gestion",
+      "sectionId": "control-operativo",
+      "label": "Seguimiento de Acuerdos",
+      "order": 40,
+      "status": "planned"
+    },
+    {
+      "id": "planned.auditorias",
+      "groupId": "control-calidad-gestion",
+      "sectionId": "calidad-auditoria",
+      "label": "Auditorías",
+      "order": 20,
+      "status": "planned"
+    },
+    {
+      "id": "planned.hallazgos",
+      "groupId": "control-calidad-gestion",
+      "sectionId": "calidad-auditoria",
+      "label": "Hallazgos",
+      "order": 30,
+      "status": "planned"
+    },
+    {
+      "id": "planned.acciones-correctivas",
+      "groupId": "control-calidad-gestion",
+      "sectionId": "calidad-auditoria",
+      "label": "Acciones Correctivas",
+      "order": 40,
+      "status": "planned"
+    },
+    {
+      "id": "planned.evidencias",
+      "groupId": "control-calidad-gestion",
+      "sectionId": "calidad-auditoria",
+      "label": "Evidencias",
+      "order": 50,
+      "status": "planned"
+    },
+    {
+      "id": "planned.workflows",
+      "groupId": "control-calidad-gestion",
+      "sectionId": "gestion",
+      "label": "Workflows",
+      "order": 20,
+      "status": "planned"
+    },
+    {
+      "id": "planned.responsables",
+      "groupId": "control-calidad-gestion",
+      "sectionId": "gestion",
+      "label": "Responsables",
+      "order": 30,
+      "status": "planned"
+    },
+    {
+      "id": "planned.calendarios",
+      "groupId": "control-calidad-gestion",
+      "sectionId": "gestion",
+      "label": "Calendarios",
+      "order": 40,
+      "status": "planned"
+    },
+    {
+      "id": "planned.conexiones-api",
+      "groupId": "plataforma-integraciones",
+      "sectionId": "conexiones",
+      "label": "Conexiones API",
+      "order": 20,
+      "status": "planned"
+    },
+    {
+      "id": "planned.conexiones-sql",
+      "groupId": "plataforma-integraciones",
+      "sectionId": "conexiones",
+      "label": "Conexiones SQL",
+      "order": 30,
+      "status": "planned"
+    },
+    {
+      "id": "planned.conexiones-bancarias",
+      "groupId": "plataforma-integraciones",
+      "sectionId": "conexiones",
+      "label": "Conexiones Bancarias",
+      "order": 40,
+      "status": "planned"
+    },
+    {
+      "id": "planned.sistemas-externos",
+      "groupId": "plataforma-integraciones",
+      "sectionId": "conexiones",
+      "label": "Sistemas Externos",
+      "order": 50,
+      "status": "planned"
+    },
+    {
+      "id": "planned.historial-ejecuciones",
+      "groupId": "plataforma-integraciones",
+      "sectionId": "sincronizacion-automatizacion",
+      "label": "Historial de Ejecuciones",
+      "order": 40,
+      "status": "planned"
+    },
+    {
+      "id": "planned.salud-servicios",
+      "groupId": "plataforma-integraciones",
+      "sectionId": "datos-infraestructura",
+      "label": "Salud de Servicios",
+      "order": 40,
+      "status": "planned"
+    },
+    {
+      "id": "planned.roles-permisos",
+      "groupId": "plataforma-integraciones",
+      "sectionId": "administracion-seguridad",
+      "label": "Roles y Permisos",
+      "order": 20,
+      "status": "planned"
+    },
+    {
+      "id": "planned.credenciales-admin",
+      "groupId": "plataforma-integraciones",
+      "sectionId": "administracion-seguridad",
+      "label": "Credenciales Administrativas",
+      "order": 60,
+      "status": "planned"
+    }
+  ],
+  "legacyActiveIds": [
+    "bi.reportes",
+    "catalogos.general",
+    "cava.dashboard",
+    "cava.socios",
+    "comandero.dashboard",
+    "comercial.catalogo_enriquecido",
+    "comercial.clientes",
+    "comercial.costos",
+    "comercial.cotizaciones",
+    "comercial.dashboard",
+    "comercial.inteligencia",
+    "comercial.pedidos",
+    "comercial.pricing_ia",
+    "comercial.remisiones",
+    "compras.dashboard",
+    "crm.actividades",
+    "crm.cuentas",
+    "crm.dashboard",
+    "crm.implementaciones",
+    "crm.kpis",
+    "crm.leads",
+    "crm.operaciones",
+    "crm.oportunidades",
+    "crm.pipeline",
+    "crm.postventa",
+    "crm.solicitudes",
+    "direccion.tablero",
+    "finanzas.dashboard",
+    "finanzas.super_caja",
+    "ia.assistant",
+    "inventarios.dashboard",
+    "portal.proveedores",
+    "portal.proveedores_admin",
+    "rh.dashboard",
+    "rh.importador",
+    "sistema.alertas",
+    "sistema.asignaciones",
+    "sistema.automatizaciones",
+    "sistema.centro_excepciones",
+    "sistema.config",
+    "sistema.control",
+    "sistema.explorador",
+    "sistema.scheduler",
+    "sistema.servidores",
+    "sistema.sql",
+    "sistema.sync_monitor",
+    "sistema.tareas",
+    "sistema.usuarios",
+    "tablajeria.captura",
+    "tablajeria.dashboard",
+    "tablajeria.ordenes",
+    "tablajeria.plantillas"
+  ],
+  "routeExemptions": []
+}
