@@ -30,6 +30,9 @@ def get_comercial_v2_router() -> APIRouter:
     agregado = APIRouter()
     agregado.include_router(comercial_router)
     agregado.include_router(periodos_router)
+
+    from modules.comercial_analytics import router as analytics_router
+    agregado.include_router(analytics_router)
     return agregado
 
 

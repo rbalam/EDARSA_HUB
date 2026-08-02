@@ -283,9 +283,12 @@ def test_queries_comerciales_usan_fecha_sql_112():
 def test_ventas_dia_soft_excluye_propina_y_usa_date112():
     from pathlib import Path as _Path
 
-    job_text = _Path(
-        "backend/core/scheduler/jobs/"
-        "sync_comercial_abiertas_v2_job.py"
+    job_text = (
+        Path(__file__).resolve().parents[1]
+        / "core"
+        / "scheduler"
+        / "jobs"
+        / "sync_comercial_abiertas_v2_job.py"
     ).read_text(encoding="utf-8")
 
     assert "FROM tempcheques" in job_text

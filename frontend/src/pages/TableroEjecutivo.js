@@ -18,6 +18,9 @@ import {
   BarChart3, Wallet, UserCircle, Award, ChevronDown, AlertTriangle
 } from 'lucide-react';
 import { formatNombreSucursal } from '../lib/formatSucursal';
+import CanonicalPeriodSelector, {
+  TEMPORAL_MODES,
+} from '../components/filters/CanonicalPeriodSelector';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -355,16 +358,6 @@ const MESES = [
   { value: '12', label: 'Diciembre' }
 ];
 
-const getAniosDisponibles = () => {
-  const currentYear = new Date().getFullYear();
-  const years = [
-    { value: '-1', label: '📊 Ventas del Día' }
-  ];
-  for (let y = currentYear; y >= currentYear - 3; y--) {
-    years.push({ value: y.toString(), label: y.toString() });
-  }
-  return years;
-};
 
 const formatCurrency = (num) => {
   if (num === null || num === undefined) return '-';
@@ -372,6 +365,89 @@ const formatCurrency = (num) => {
   if (num >= 1000) return `$${(num/1000).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}K`;
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(num);
 };
+
+const resolveProjectionPresentation = (data, esMultiMes) => {
+  const projection = data?.projection_semantics
+    || data?.proyeccion_semantica
+    || null;
+
+  if (projection) {
+    return {
+      enabled: Boolean(projection.enabled),
+      status: projection.status || 'NOT_APPLICABLE',
+      title: projection.title || 'No aplica',
+      subtitle: projection.subtitle || null,
+      value: projection.value ?? null,
+      comparisonValue: projection.comparison_value ?? null,
+      comparisonLabel: projection.comparison_label || null,
+    };
+  }
+
+  const isCurrentOperation = Boolean(
+    data?.periodo?.modo_ventas_dia
+  );
+
+  const isHistorical = Boolean(
+    data?.periodo?.modo_historico_explicito
+  );
+
+  const isDateRange = Boolean(
+    data?.periodo?.modo_rango_fechas
+  );
+
+  if (isCurrentOperation) {
+    return {
+      enabled: false,
+      status: 'IN_PROGRESS_NO_PROJECTION',
+      title: 'Operación en curso',
+      subtitle: 'Venta acumulada vigente',
+      value: data?.totales?.ventas ?? 0,
+      comparisonValue: null,
+      comparisonLabel: null,
+    };
+  }
+
+  if (isHistorical || isDateRange || esMultiMes) {
+    return {
+      enabled: false,
+      status: 'NOT_APPLICABLE',
+      title: 'Venta del periodo',
+      subtitle: 'Resultado real',
+      value: data?.totales?.ventas ?? 0,
+      comparisonValue: null,
+      comparisonLabel: null,
+    };
+  }
+
+  const backendProjection = data?.totales?.proyeccion;
+
+  if (
+    backendProjection !== null
+    && backendProjection !== undefined
+  ) {
+    return {
+      enabled: true,
+      status: 'IN_PROGRESS',
+      title: 'Proyección del periodo',
+      subtitle: 'Calculada por el backend',
+      value: backendProjection,
+      comparisonValue:
+        data?.totales?.var_proy_vs_año ?? null,
+      comparisonLabel: 'vs periodo comparable',
+    };
+  }
+
+  return {
+    enabled: false,
+    status: 'FINAL',
+    title: 'Venta final',
+    subtitle: 'Periodo cerrado',
+    value: data?.totales?.ventas ?? 0,
+    comparisonValue: null,
+    comparisonLabel: null,
+  };
+};
+
 
 const formatPercent = (num) => {
   // FASE 3 FIX: Distinguir correctamente 0.0 real de null/undefined
@@ -901,34 +977,39 @@ export default function TableroEjecutivo() {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
 
-  // Estados para filtros multiselección (homologado con Dashboard Comercial)
-  const [selectedMeses, setSelectedMeses] = useState(() => {
-    const saved = localStorage.getItem('tablero_filtros_v2');
+  // Selector temporal canónico.
+  // Ventas del Día es un modo explícito, no un año ficticio.
+  const [temporalSelection, setTemporalSelection] = useState(() => {
+    const saved = localStorage.getItem('tablero_periodo_canonico_v1');
+
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        return parsed.selectedMeses || [String(new Date().getMonth() + 1).padStart(2, '0')];
-      } catch (e) { return [String(new Date().getMonth() + 1).padStart(2, '0')]; }
+
+        if (
+          parsed
+          && Object.values(TEMPORAL_MODES).includes(parsed.mode)
+        ) {
+          return parsed;
+        }
+      } catch (error) {
+        logger.warn(
+          '[PERIODOS] Selección temporal almacenada inválida',
+          error
+        );
+      }
     }
-    return [String(new Date().getMonth() + 1).padStart(2, '0')];
+
+    return {
+      mode: TEMPORAL_MODES.CURRENT_OPERATIONAL_DAY,
+    };
   });
 
-  const [selectedAnios, setSelectedAnios] = useState(() => {
-    const saved = localStorage.getItem('tablero_filtros_v2');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.selectedAnios || [new Date().getFullYear().toString()];
-      } catch (e) { return [new Date().getFullYear().toString()]; }
-    }
-    return [new Date().getFullYear().toString()];
-  });
+  const [periodAvailability, setPeriodAvailability] = useState(null);
+  const [periodAvailabilityLoading, setPeriodAvailabilityLoading] = useState(true);
+  const [periodAvailabilityError, setPeriodAvailabilityError] = useState(null);
 
   const [tipoComparacion, setTipoComparacion] = useState('dias_equiv');
-  const [showMesesDropdown, setShowMesesDropdown] = useState(false);
-  const [showAniosDropdown, setShowAniosDropdown] = useState(false);
-
-  const ANIOS = getAniosDisponibles();
 
   const [unidadSeleccionada, setUnidadSeleccionada] = useState(null);
 
@@ -942,66 +1023,103 @@ export default function TableroEjecutivo() {
   const [refreshError, setRefreshError] = useState(null); // Error sin borrar datos
   const STATUS_TTL_SECONDS = 120; // TTL de 2 minutos para considerar datos stale
 
-  // Guardar filtros cuando cambien
   useEffect(() => {
-    localStorage.setItem('tablero_filtros_v2', JSON.stringify({ selectedMeses, selectedAnios, tipoComparacion }));
-  }, [selectedMeses, selectedAnios, tipoComparacion]);
+    localStorage.setItem(
+      'tablero_periodo_canonico_v1',
+      JSON.stringify(temporalSelection)
+    );
+  }, [temporalSelection]);
 
-  // Funciones para toggle de selección
-  const toggleMes = (mesValue) => {
-    if (selectedMeses.includes(mesValue)) {
-      if (selectedMeses.length > 1) {
-        setSelectedMeses(selectedMeses.filter(m => m !== mesValue));
+  useEffect(() => {
+    let active = true;
+
+    const cargarDisponibilidadTemporal = async () => {
+      setPeriodAvailabilityLoading(true);
+      setPeriodAvailabilityError(null);
+
+      try {
+        const response = await api.get(
+          '/v2/comercial/periodos/disponibles',
+          { timeout: 30000 }
+        );
+
+        if (!response.data?.success) {
+          throw new Error(
+            'Respuesta no exitosa de periodos disponibles'
+          );
+        }
+
+        if (active) {
+          setPeriodAvailability(response.data.data || null);
+        }
+      } catch (error) {
+        logger.error(
+          '[PERIODOS] Error cargando disponibilidad temporal',
+          error
+        );
+
+        if (active) {
+          setPeriodAvailabilityError(
+            'No fue posible cargar los periodos disponibles'
+          );
+        }
+      } finally {
+        if (active) {
+          setPeriodAvailabilityLoading(false);
+        }
       }
-    } else {
-      setSelectedMeses([...selectedMeses, mesValue].sort());
-    }
-  };
+    };
 
-  const toggleAnio = (anioValue) => {
-    // Si es "Ventas del Día", selección exclusiva
-    if (anioValue === '-1') {
-      setSelectedAnios(['-1']);
-      return;
-    }
-    // Si ya está en "Ventas del Día" y selecciona otro año, quitar -1
-    if (selectedAnios.includes('-1')) {
-      setSelectedAnios([anioValue]);
-      return;
-    }
-    if (selectedAnios.includes(anioValue)) {
-      if (selectedAnios.length > 1) {
-        setSelectedAnios(selectedAnios.filter(a => a !== anioValue));
-      }
-    } else {
-      setSelectedAnios([...selectedAnios, anioValue].sort().reverse());
-    }
-  };
+    cargarDisponibilidadTemporal();
 
-  // Labels para los dropdowns
-  const getMesesLabel = () => {
-    if (selectedMeses.length === 0) return 'Seleccionar';
-    if (selectedMeses.length === 1) {
-      return MESES.find(m => m.value === selectedMeses[0])?.label || 'Mes';
-    }
-    if (selectedMeses.length === 12) return 'Todo el año';
-    return `${selectedMeses.length} meses`;
-  };
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  const getAniosLabel = () => {
-    if (selectedAnios.includes('-1')) return '📊 Ventas del Día';
-    if (selectedAnios.length === 0) return 'Seleccionar';
-    if (selectedAnios.length === 1) {
-      return selectedAnios[0];
-    }
-    return `${selectedAnios.length} años`;
-  };
+  const esVentasDelDia = (
+    temporalSelection.mode
+    === TEMPORAL_MODES.CURRENT_OPERATIONAL_DAY
+  );
 
-  // Detectar si es modo "Ventas del Día"
-  const esVentasDelDia = selectedAnios.includes('-1');
+  const esRangoFechas = (
+    temporalSelection.mode
+    === TEMPORAL_MODES.DATE_RANGE
+  );
 
-  // Detectar si hay multiselección de meses (para deshabilitar "vs mes")
-  const esMultiMes = selectedMeses.length > 1;
+  const esHistoricoExplicito = (
+    temporalSelection.mode
+    === TEMPORAL_MODES.HISTORICAL_PERIODS
+  );
+
+  const periodosHistoricos = (
+    Array.isArray(temporalSelection.periods)
+      ? temporalSelection.periods
+      : []
+  );
+
+  const selectedAnios = periodosHistoricos.map(
+    periodo => String(periodo.year)
+  );
+
+  const selectedMeses = [
+    ...new Set(
+      periodosHistoricos.flatMap(
+        periodo => periodo.months || []
+      )
+    ),
+  ].map(
+    mes => String(mes).padStart(2, '0')
+  );
+
+  const esMultiMes = (
+    esHistoricoExplicito
+    && periodosHistoricos.reduce(
+      (total, periodo) => total + (periodo.months?.length || 0),
+      0
+    ) > 1
+  );
+
 
   const cargarDatos = useCallback(async (retry = 0, forceRefresh = false) => {
     // =========================================================================
@@ -1030,135 +1148,361 @@ export default function TableroEjecutivo() {
       if (USE_COMERCIAL_V2) {
         try {
           if (esVentasDelDia) {
-            logger.log('[COMERCIAL_V2] Consultando ventas-dia desde EDARSAHUB SQL...');
+            logger.log(
+              '[COMERCIAL_ANALYTICS] Consultando operación en curso canónica...'
+            );
 
-            const v2VentasDia = await api.get(`/v2/comercial/ventas-dia`, { timeout: 30000 });
+            const operationResponse = await api.get(
+              '/v2/comercial/analytics/operacion-en-curso',
+              {
+                timeout: 30000,
+              }
+            );
 
-            if (v2VentasDia.data?.success) {
-              const ventasDiaData = v2VentasDia.data.data;
-              const resumen = ventasDiaData.resumen || {};
-              const porUnidad = ventasDiaData.por_unidad || [];
+            if (!operationResponse.data?.success) {
+              throw new Error(
+                'Respuesta de operación en curso no exitosa'
+              );
+            }
 
-              responseData = {
-                totales: {
-                  ventas: resumen.total_estimado_dia || 0,
-                  pax: resumen.total_pax || 0,
-                  cheques: resumen.total_tickets || 0,
-                    cheque_promedio: resumen.cheque_promedio ?? 0,
-                    ticket_promedio: resumen.ticket_promedio ?? 0,
-                  var_vs_mes_ant: null,
-                  var_vs_año_ant: null,
-                  proyeccion: null
-                },
-                periodo: {
-                  mes: new Date().getMonth() + 1,
-                  anio: new Date().getFullYear(),
-                  dias_transcurridos: new Date().getDate(),
-                  dias_mes: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate(),
-                  modo_ventas_dia: true
-                },
-                unidades: porUnidad
-                  .sort((a, b) => (b.total_estimado_dia || 0) - (a.total_estimado_dia || 0))
-                  .map(u => ({
-                    unidad_negocio_id: u.unidad_negocio_id,
-                    id: u.unidad_negocio_id,
-                    sucursal_id: u.unidad_negocio_id,
-                    sucursal_nombre: u.unidad_negocio_nombre,
-                    unidad_negocio_codigo: u.unidad_negocio_id,
-                    unidad: u.unidad_negocio_nombre,
-                    server_id: u.server_id,
-                    sistema_tipo: u.sistema_origen,
-                    ventas: u.total_estimado_dia || 0,
-                    pax: (u.pax_abiertos || 0) + (u.pax_cerrados_dia || 0),
-                    cheques: (u.tickets_abiertos || 0) + (u.tickets_cerrados_dia || 0),
-                    cheque_promedio: u.cheque_promedio ?? 0,
-                    ticket_promedio: u.ticket_promedio ?? 0,
+            const operationData = operationResponse.data.data || {};
+            const operationTotals = (
+              operationData.totales?.operacion_estimada || {}
+            );
+            const closedTotals = (
+              operationData.totales?.cerradas || {}
+            );
+            const openTotals = (
+              operationData.totales?.abiertas || {}
+            );
+            const operationItems = Array.isArray(operationData.items)
+              ? operationData.items
+              : [];
+
+            const totalSales = Number(operationTotals.ventas || 0);
+            const totalChecks = Number(operationTotals.cheques || 0);
+            const totalPax = Number(operationTotals.pax || 0);
+
+            const checkAverage = (
+              totalChecks > 0 ? totalSales / totalChecks : 0
+            );
+            const paxAverage = (
+              totalPax > 0 ? totalSales / totalPax : 0
+            );
+
+            const effectiveDates = Array.isArray(
+              operationData.fechas_operacion
+            )
+              ? operationData.fechas_operacion
+              : [];
+
+            const singleEffectiveDate = (
+              !operationData.fecha_operacion_multiple
+                ? (
+                  operationData.fecha_operacion
+                  || effectiveDates[0]
+                  || null
+                )
+                : null
+            );
+
+            const effectiveDateParts = (
+              singleEffectiveDate
+                ? String(singleEffectiveDate)
+                  .slice(0, 10)
+                  .split('-')
+                  .map(Number)
+                : []
+            );
+
+            responseData = {
+              totales: {
+                ventas: totalSales,
+                ventas_cerradas: Number(closedTotals.ventas || 0),
+                ventas_abiertas: Number(openTotals.ventas || 0),
+                propinas: Number(operationTotals.propinas || 0),
+                pax: totalPax,
+                cheques: totalChecks,
+                cheque_promedio: checkAverage,
+                ticket_promedio: checkAverage,
+                pax_promedio: paxAverage,
+                var_vs_mes_ant: null,
+                var_vs_año_ant: null,
+                proyeccion: null,
+              },
+              periodo: {
+                mes: effectiveDateParts[1] || null,
+                anio: effectiveDateParts[0] || null,
+                dias_transcurridos: null,
+                dias_mes: null,
+                modo_ventas_dia: true,
+                fecha_operacion: singleEffectiveDate,
+                fechas_operacion: effectiveDates,
+                fecha_operacion_multiple: Boolean(
+                  operationData.fecha_operacion_multiple
+                ),
+              },
+              unidades: operationItems
+                .slice()
+                .sort(
+                  (a, b) => (
+                    Number(b.operacion_estimada?.ventas || 0)
+                    - Number(a.operacion_estimada?.ventas || 0)
+                  )
+                )
+                .map((item) => {
+                  const estimated = item.operacion_estimada || {};
+                  const closed = item.cerradas || {};
+                  const opened = item.abiertas || {};
+
+                  const unitSales = Number(estimated.ventas || 0);
+                  const unitChecks = Number(estimated.cheques || 0);
+                  const unitPax = Number(estimated.pax || 0);
+
+                  const unitCheckAverage = (
+                    unitChecks > 0 ? unitSales / unitChecks : 0
+                  );
+                  const unitPaxAverage = (
+                    unitPax > 0 ? unitSales / unitPax : 0
+                  );
+
+                  return {
+                    unidad_negocio_id: item.unidad_negocio_id,
+                    id: item.unidad_negocio_id,
+                    sucursal_id: item.unidad_negocio_id,
+                    sucursal_nombre: item.unidad_negocio_nombre,
+                    unidad_negocio_codigo: item.unidad_negocio_id,
+                    unidad: item.unidad_negocio_nombre,
+                    fecha_operacion: item.fecha_operacion,
+
+                    ventas: unitSales,
+                    ventas_cerradas: Number(closed.ventas || 0),
+                    ventas_abiertas: Number(opened.ventas || 0),
+
+                    propinas: Number(estimated.propinas || 0),
+                    propinas_cerradas: Number(closed.propinas || 0),
+                    propinas_abiertas: Number(opened.propinas || 0),
+
+                    pax: unitPax,
+                    pax_cerrados: Number(closed.pax || 0),
+                    pax_abiertos: Number(opened.pax || 0),
+
+                    cheques: unitChecks,
+                    cheques_cerrados: Number(closed.cheques || 0),
+                    cheques_abiertos: Number(opened.cheques || 0),
+
+                    cheque_promedio: unitCheckAverage,
+                    ticket_promedio: unitCheckAverage,
+                    pax_promedio: unitPaxAverage,
+
                     proyeccion: null,
-                    ventas_ant: u.dia_anterior_ventas || 0,
-                    pax_ant: u.dia_anterior_pax || 0,
-                    cheques_ant: u.dia_anterior_cheques || 0,
-                    ventas_año: u.dia_anio_ant_ventas || 0,
-                    pax_año: u.dia_anio_ant_pax || 0,
-                    cheques_año: u.dia_anio_ant_cheques || 0,
+                    ventas_ant: 0,
+                    pax_ant: 0,
+                    cheques_ant: 0,
+                    ventas_año: 0,
+                    pax_año: 0,
+                    cheques_año: 0,
                     var_vs_mes_ant: null,
                     var_vs_año_ant: null,
-                    data_status: u.dato_vencido ? 'DATA_FROM_CACHE' : 'DATA_OK',
-                    live_status: 'NOT_APPLICABLE',
-                    source_used: 'EDARSAHUB_SQL_V2',
-                    snapshot_timestamp: u.snapshot_timestamp,
-                    minutos_desde_ultima_actualizacion: u.minutos_desde_ultima_actualizacion,
-                    dato_vencido: u.dato_vencido,
-                    fuente_original: u.fuente_original,
-                    _fuente: 'EDARSAHUB_SQL_V2'
-                  })),
-                _v2_source: true
-              };
-              try {
-                const fechaOperacion = ventasDiaData.fecha_operacion || resumen.fecha;
-                if (!fechaOperacion) {
-                  throw new Error('fecha_operacion ausente en respuesta ventas-dia');
-                }
-                const contratos = await cargarContratosPeriodo({
-                  modo: 'ventas_dia',
-                  fechaInicio: fechaOperacion,
-                  fechaFin: fechaOperacion,
-                  unidades: responseData.unidades.map(u => u.unidad_negocio_codigo || u.id)
-                });
-                responseData = aplicarContratoPeriodo(responseData, contratos.general, contratos.unidades);
-              } catch (contratoError) {
-                logger.warn(`[PERIODOS] Contrato diario no disponible; se conservan datos base: ${contratoError.message}`);
-              }
 
-              usedV2 = true;
-              logger.log(`[VENTAS_DIA_V2] Cargadas ${responseData.unidades.length} unidades desde EDARSAHUB SQL`);
-            } else {
-              throw new Error('Respuesta ventas-dia v2 no exitosa');
+                    data_status: 'DATA_OK',
+                    live_status: 'OPERATIONAL',
+                    source_used: 'COMERCIAL_ANALYTICS_OPERATION',
+                    _fuente: 'COMERCIAL_ANALYTICS_OPERATION',
+                  };
+                }),
+              operacion_en_curso: {
+                fecha_operacion: singleEffectiveDate,
+                fechas_operacion: effectiveDates,
+                fecha_operacion_multiple: Boolean(
+                  operationData.fecha_operacion_multiple
+                ),
+                cerradas: closedTotals,
+                abiertas: openTotals,
+                operacion_estimada: operationTotals,
+                unidades_sin_fecha_operativa: (
+                  operationData.unidades_sin_fecha_operativa || []
+                ),
+                trazabilidad: operationData.traceability || {},
+              },
+              _v2_source: true,
+              _operacion_canonica: true,
+            };
+
+            usedV2 = true;
+
+            logger.log(
+              `[OPERACION_EN_CURSO] Cargadas ${
+                responseData.unidades.length
+              } unidades; fechas=${
+                effectiveDates.join(',') || 'SIN_FECHA'
+              }`
+            );
+
+          } else if (esRangoFechas) {
+            const fechaInicio = temporalSelection.startDate;
+            const fechaFin = temporalSelection.endDate;
+
+            if (!fechaInicio || !fechaFin) {
+              throw new Error(
+                'El rango temporal no tiene fecha inicial y final'
+              );
             }
+
+            logger.log(
+              `[COMERCIAL_V2] Consultando rango ${fechaInicio} a ${fechaFin}`
+            );
+
+            const v2Response = await api.get(
+              '/v2/comercial/dashboard',
+              {
+                params: {
+                  fecha_inicio: fechaInicio,
+                  fecha_fin: fechaFin,
+                },
+                timeout: 30000,
+              }
+            );
+
+            if (!v2Response.data?.success) {
+              throw new Error('Respuesta de rango no exitosa');
+            }
+
+            const startDate = new Date(`${fechaInicio}T12:00:00`);
+
+            responseData = transformV2ToV1Format(
+              v2Response.data,
+              [String(startDate.getMonth() + 1).padStart(2, '0')],
+              [String(startDate.getFullYear())],
+              logger
+            );
+
+            responseData.periodo = {
+              ...(responseData.periodo || {}),
+              fecha_inicio: fechaInicio,
+              fecha_fin: fechaFin,
+              modo_ventas_dia: false,
+              modo_rango_fechas: true,
+            };
+
+            if (responseData.unidades?.length > 0) {
+              responseData.unidades.sort(
+                (a, b) => (b.ventas || 0) - (a.ventas || 0)
+              );
+            }
+
+            usedV2 = true;
+            responseData._v2_source = true;
+
+          } else if (esHistoricoExplicito) {
+            if (periodosHistoricos.length === 0) {
+              throw new Error(
+                'No existen periodos históricos seleccionados'
+              );
+            }
+
+            logger.log(
+              '[COMERCIAL_V2] Consultando periodos históricos explícitos'
+            );
+
+            const historicalResponse = await api.post(
+              '/v2/comercial/periodos/agregado',
+              {
+                periodos: periodosHistoricos.map(periodo => ({
+                  anio: periodo.year,
+                  meses: periodo.months,
+                })),
+              },
+              { timeout: 30000 }
+            );
+
+            if (!historicalResponse.data?.success) {
+              throw new Error(
+                'Respuesta histórica multianual no exitosa'
+              );
+            }
+
+            const historicalData = historicalResponse.data.data || {};
+            const totals = historicalData.totales || {};
+            const units = historicalData.unidades || [];
+            const firstPeriod = periodosHistoricos[0] || {};
+            const firstMonth = firstPeriod.months?.[0] || 1;
+
+            responseData = {
+              totales: {
+                ventas: totals.ventas_total || 0,
+                propinas: totals.propinas_total || 0,
+                propinas_total: totals.propinas_total || 0,
+                pax: totals.pax_total || 0,
+                cheques: totals.tickets_total || 0,
+                cheque_promedio: totals.cheque_promedio || 0,
+                ticket_promedio: totals.ticket_promedio || 0,
+                pax_promedio: totals.pax_promedio || 0,
+                proyeccion: null,
+                var_vs_mes_ant: null,
+                var_vs_año_ant: null,
+              },
+              periodo: {
+                mes: firstMonth,
+                anio: firstPeriod.year,
+                fecha_inicio: totals.fecha_min || null,
+                fecha_fin: totals.fecha_max || null,
+                dias_transcurridos: totals.dias || 0,
+                dias_mes: totals.dias || 0,
+                modo_ventas_dia: false,
+                modo_historico_explicito: true,
+                periodos_seleccionados:
+                  historicalData.periodos_seleccionados || [],
+              },
+              unidades: units.map(unidad => ({
+                id:
+                  unidad.unidad_negocio_pk
+                  || unidad.unidad_negocio_codigo,
+                unidad_negocio_id:
+                  unidad.unidad_negocio_pk
+                  || unidad.unidad_negocio_codigo,
+                unidad_negocio_codigo:
+                  unidad.unidad_negocio_codigo,
+                unidad_negocio_nombre:
+                  unidad.unidad_negocio_nombre,
+                unidad:
+                  unidad.unidad_negocio_nombre
+                  || unidad.unidad_negocio_codigo,
+                sucursal_nombre:
+                  unidad.unidad_negocio_nombre,
+                sistema_tipo: unidad.sistema_origen,
+                ventas: unidad.ventas_total || 0,
+                propinas: unidad.propinas_total || 0,
+                propinas_total: unidad.propinas_total || 0,
+                pax: unidad.pax_total || 0,
+                cheques: unidad.tickets_total || 0,
+                cheque_promedio:
+                  unidad.cheque_promedio || 0,
+                ticket_promedio:
+                  unidad.ticket_promedio || 0,
+                pax_promedio:
+                  unidad.pax_promedio || 0,
+                proyeccion: null,
+                var_vs_mes_ant: null,
+                var_vs_año_ant: null,
+                data_status: 'DATA_OK',
+                source_used: 'EDARSAHUB_SQL_V2',
+                _fuente: 'EDARSAHUB_SQL_V2',
+              })),
+              _v2_source: true,
+              _historical_periods: true,
+            };
+
+            responseData.unidades.sort(
+              (a, b) => (b.ventas || 0) - (a.ventas || 0)
+            );
+
+            usedV2 = true;
 
           } else {
-            logger.log('[COMERCIAL_V2] Consultando dashboard V2...');
-
-            const anioActual = parseInt(selectedAnios[0]) || new Date().getFullYear();
-            const mesInicio = Math.min(...selectedMeses.map(m => parseInt(m)));
-            const mesFin = Math.max(...selectedMeses.map(m => parseInt(m)));
-            const fechaInicio = `${anioActual}-${String(mesInicio).padStart(2, '0')}-01`;
-            const ultimoDia = new Date(anioActual, mesFin, 0).getDate();
-            const fechaFin = `${anioActual}-${String(mesFin).padStart(2, '0')}-${ultimoDia}`;
-
-            const v2Response = await api.get(`/v2/comercial/dashboard`, {
-              params: {
-                fecha_inicio: fechaInicio,
-                fecha_fin: fechaFin,
-                meses: selectedMeses.map(m => parseInt(m)).join(',')
-              },
-              timeout: 30000
-            });
-
-            if (v2Response.data?.success) {
-              responseData = transformV2ToV1Format(v2Response.data, selectedMeses, selectedAnios, logger);
-
-              try {
-                const contratos = await cargarContratosPeriodo({
-                  modo: 'mensual',
-                  fechaInicio,
-                  fechaFin,
-                  unidades: responseData.unidades.map(u => u.unidad_negocio_codigo || u.id)
-                });
-                responseData = aplicarContratoPeriodo(responseData, contratos.general, contratos.unidades);
-              } catch (contratoError) {
-                logger.warn(`[PERIODOS] Contrato mensual no disponible; se conservan datos base: ${contratoError.message}`);
-              }
-
-              if (responseData.unidades && responseData.unidades.length > 0) {
-                responseData.unidades.sort((a, b) => (b.ventas || 0) - (a.ventas || 0));
-              }
-
-              usedV2 = true;
-              responseData._v2_source = true;
-              logger.log(`[FASE3] V2 fuente ÚNICA: ${responseData.unidades?.length} unidades desde EDARSAHUB`);
-            } else {
-              throw new Error('Respuesta v2 no exitosa');
-            }
+            throw new Error(
+              `Modo temporal no soportado: ${temporalSelection.mode}`
+            );
           }
 
         } catch (v2Error) {
@@ -1255,7 +1599,7 @@ export default function TableroEjecutivo() {
         setLoading(false);
       }
     }
-  }, [selectedMeses, selectedAnios, tipoComparacion, requestId, latestRequestId, esVentasDelDia, data]);
+  }, [temporalSelection, tipoComparacion, requestId, latestRequestId, esVentasDelDia, esRangoFechas, esHistoricoExplicito, data]);
 
   // P0 TAREA 1: Carga inicial
   useEffect(() => {
@@ -1269,7 +1613,7 @@ export default function TableroEjecutivo() {
       logger.log('[P0-LOG] tablero_filters_changed: Recargando por cambio de filtros');
       cargarDatos(0, true);
     }
-  }, [selectedMeses, selectedAnios, tipoComparacion]);
+  }, [temporalSelection, tipoComparacion]);
 
   // P0 TAREA 1: Refresco automático cuando la página vuelve a ser visible
   useEffect(() => {
@@ -1294,18 +1638,6 @@ export default function TableroEjecutivo() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [lastRefreshTime, cargarDatos]);
-
-  // Cerrar dropdowns cuando se hace click fuera
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!event.target.closest('[data-dropdown="meses"]') && !event.target.closest('[data-dropdown="anios"]')) {
-        setShowMesesDropdown(false);
-        setShowAniosDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   return (
     <div className="space-y-4" data-testid="tablero-ejecutivo">
@@ -1342,111 +1674,22 @@ export default function TableroEjecutivo() {
           <Card className="border bg-white">
             <CardContent className="py-3">
               <div className="flex items-center gap-4 flex-wrap">
-                {/* Selector de Meses (multiselección) */}
-                <div className="flex-1 min-w-[140px] max-w-[180px] relative" data-dropdown="meses">
-                  <Label className="text-xs mb-1 block">Mes(es)</Label>
-                  <button
-                    type="button"
-                    onClick={() => { setShowMesesDropdown(!showMesesDropdown); setShowAniosDropdown(false); }}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                    disabled={esVentasDelDia}
-                  >
-                    <span>{esVentasDelDia ? 'N/A' : getMesesLabel()}</span>
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </button>
-                  {showMesesDropdown && !esVentasDelDia && (
-                    <div className="absolute z-50 mt-1 w-full rounded-md border bg-white shadow-lg max-h-60 overflow-auto">
-                      <div className="p-2 border-b">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedMeses(MESES.map(m => m.value))}
-                          className="text-xs text-blue-600 hover:underline mr-3"
-                        >
-                          Todos
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedMeses([String(new Date().getMonth() + 1).padStart(2, '0')])}
-                          className="text-xs text-blue-600 hover:underline"
-                        >
-                          Solo actual
-                        </button>
-                      </div>
-                      {MESES.map(mes => (
-                        <label
-                          key={mes.value}
-                          className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-100 cursor-pointer"
-                        >
-                          <Checkbox
-                            checked={selectedMeses.includes(mes.value)}
-                            onCheckedChange={() => toggleMes(mes.value)}
-                          />
-                          <span className="text-sm">{mes.label}</span>
-                        </label>
-                      ))}
-                      <div className="p-2 border-t">
-                        <Button size="sm" onClick={() => setShowMesesDropdown(false)} className="w-full">
-                          Aplicar
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <CanonicalPeriodSelector
+                  value={temporalSelection}
+                  availability={periodAvailability}
+                  loading={periodAvailabilityLoading}
+                  onChange={setTemporalSelection}
+                  className="flex-1 min-w-[260px] max-w-[520px]"
+                />
 
-                {/* Selector de Año (multiselección + Ventas del Día) */}
-                <div className="flex-1 min-w-[140px] max-w-[180px] relative" data-dropdown="anios">
-                  <Label className="text-xs mb-1 block">Año(s)</Label>
-                  <button
-                    type="button"
-                    onClick={() => { setShowAniosDropdown(!showAniosDropdown); setShowMesesDropdown(false); }}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  >
-                    <span>{getAniosLabel()}</span>
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </button>
-                  {showAniosDropdown && (
-                    <div className="absolute z-50 mt-1 w-full rounded-md border bg-white shadow-lg max-h-60 overflow-auto">
-                      <div className="p-2 border-b">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedAnios([new Date().getFullYear().toString(), (new Date().getFullYear() - 1).toString()])}
-                          className="text-xs text-blue-600 hover:underline mr-3"
-                        >
-                          Actual + Anterior
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedAnios([new Date().getFullYear().toString()])}
-                          className="text-xs text-blue-600 hover:underline"
-                        >
-                          Solo actual
-                        </button>
-                      </div>
-                      {ANIOS.map(anio => (
-                        <label
-                          key={anio.value}
-                          className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-100 cursor-pointer"
-                        >
-                          <Checkbox
-                            checked={selectedAnios.includes(anio.value)}
-                            onCheckedChange={() => toggleAnio(anio.value)}
-                          />
-                          <span className="text-sm">{anio.label}</span>
-                        </label>
-                      ))}
-                      <div className="p-2 border-t">
-                        <Button size="sm" onClick={() => setShowAniosDropdown(false)} className="w-full">
-                          Aplicar
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                {periodAvailabilityError && (
+                  <span className="text-xs text-amber-600">
+                    {periodAvailabilityError}
+                  </span>
+                )}
 
                 <Button
                   onClick={() => {
-                    setShowMesesDropdown(false);
-                    setShowAniosDropdown(false);
                     // P0 TAREA 7: Forzar recarga contra fuente real
                     logger.log('[P0-LOG] tablero_manual_refresh: Botón Actualizar presionado');
                     cargarDatos(0, true);
@@ -1461,10 +1704,36 @@ export default function TableroEjecutivo() {
                 </Button>
                 {data?.periodo && (
                   <span className="text-xs text-zinc-500 ml-auto bg-zinc-100 px-2 py-1 rounded mt-5">
-                    {data.periodo.modo_ventas_dia
-                      ? <span className="text-amber-600 font-medium">🔴 Ventas del Día (sin corte)</span>
-                      : `${data.periodo.mes ? MESES.find(m => m.value === String(data.periodo.mes).padStart(2, '0'))?.label : ''} ${data.periodo.anio} • Día ${data.periodo.dias_transcurridos} de ${data.periodo.dias_mes}`
-                    }
+                    {data.periodo.modo_ventas_dia ? (
+                      <span className="text-amber-600 font-medium">
+                        🔴 Ventas del Día (sin corte)
+                      </span>
+                    ) : data.periodo.modo_rango_fechas ? (
+                      <span>
+                        {data.periodo.fecha_inicio}
+                        {' – '}
+                        {data.periodo.fecha_fin}
+                      </span>
+                    ) : data.periodo.modo_historico_explicito ? (
+                      <span>
+                        {data.periodo.periodos_seleccionados?.reduce(
+                          (total, periodo) => (
+                            total + (periodo.meses?.length || 0)
+                          ),
+                          0
+                        ) || 0}
+                        {' meses históricos'}
+                      </span>
+                    ) : (
+                      `${data.periodo.mes
+                        ? MESES.find(
+                          m => m.value === String(
+                            data.periodo.mes
+                          ).padStart(2, '0')
+                        )?.label
+                        : ''
+                      } ${data.periodo.anio}`
+                    )}
                     {/* P0: Mostrar timestamp de última actualización */}
                     {lastRefreshTime && (
                       <span className="ml-2 text-zinc-400">
@@ -1594,60 +1863,53 @@ export default function TableroEjecutivo() {
                 </div>
               </div>
 
-              {/* Proyección Mes/Anual/Día - Dinámico según selector */}
-              <div className="flex flex-col text-center">
-                <p className="text-xs text-zinc-400 uppercase tracking-wide">
-                  {data?.periodo?.modo_ventas_dia
-                    ? 'Proyección del Día'
-                    : (esMultiMes ? 'Proyección Anual' : 'Proyección Mes')
-                  }
-                </p>
-                <p className="text-2xl font-bold text-orange-400">
-                  {formatCurrency(
-                    data?.periodo?.modo_ventas_dia
-                      ? data.totales.proyeccion
-                      : (esMultiMes
-                          ? (data.totales.ventas / (data.periodo?.dias_transcurridos || 1)) * 365
-                          : data.totales.proyeccion
-                        )
-                  )}
-                </p>
-                <p className="text-xs text-zinc-400 mt-1">
-                  {data?.periodo?.modo_ventas_dia
-                    ? 'Al cierre del día'
-                    : (esMultiMes
-                        ? `${data.periodo?.dias_transcurridos || 0} días → 365 días`
-                        : 'Si mantiene ritmo'
-                      )
-                  }
-                </p>
-                <div className="flex gap-4 mt-auto pt-2 justify-center">
-                  <div className="text-center">
-                    <span className="text-xs text-zinc-400 block">
-                      {data?.periodo?.modo_ventas_dia ? 'vs Día Año Ant.' : (esMultiMes ? 'vs Ventas Año Ant.' : 'vs Año Ant.')}
-                    </span>
-                    <p className={`text-sm font-bold ${(() => {
-                      if (esMultiMes) {
-                        // Proyección 2026 vs Proyección 2025 (ambas anualizadas)
-                        const proy2026 = (data.totales.ventas / (data.periodo?.dias_transcurridos || 1)) * 365;
-                        const proy2025 = (data.totales.ventas_año / (data.periodo?.dias_transcurridos || 1)) * 365;
-                        return proy2025 > 0 ? ((proy2026 - proy2025) / proy2025 * 100) : 0;
-                      }
-                      return data.totales.var_proy_vs_año ?? null;
-                    })() >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {formatPercent((() => {
-                        if (esMultiMes) {
-                          // Proyección 2026 vs Proyección 2025 (ambas anualizadas)
-                          const proy2026 = (data.totales.ventas / (data.periodo?.dias_transcurridos || 1)) * 365;
-                          const proy2025 = (data.totales.ventas_año / (data.periodo?.dias_transcurridos || 1)) * 365;
-                          return proy2025 > 0 ? ((proy2026 - proy2025) / proy2025 * 100) : 0;
-                        }
-                        return data.totales.var_proy_vs_año ?? null;
-                      })())}
+              {/* Proyección/resultado — semántica canónica, sin cálculos frontend */}
+              {(() => {
+                const projection = resolveProjectionPresentation(
+                  data,
+                  esMultiMes
+                );
+
+                return (
+                  <div className="flex flex-col text-center">
+                    <p className="text-xs text-zinc-400 uppercase tracking-wide">
+                      {projection.title}
                     </p>
+
+                    <p className="text-2xl font-bold text-orange-400">
+                      {formatCurrency(projection.value)}
+                    </p>
+
+                    <p className="text-xs text-zinc-400 mt-1">
+                      {projection.subtitle || '—'}
+                    </p>
+
+                    {projection.comparisonValue !== null
+                      && projection.comparisonValue !== undefined
+                      && (
+                        <div className="flex gap-4 mt-auto pt-2 justify-center">
+                          <div className="text-center">
+                            <span className="text-xs text-zinc-400 block">
+                              {projection.comparisonLabel
+                                || 'vs periodo comparable'}
+                            </span>
+                            <p
+                              className={`text-sm font-bold ${
+                                projection.comparisonValue >= 0
+                                  ? 'text-green-400'
+                                  : 'text-red-400'
+                              }`}
+                            >
+                              {formatPercent(
+                                projection.comparisonValue
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                   </div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Unidades - P0 TAREA 9: Consolidado con estados separados */}
               <div className="flex flex-col text-center">

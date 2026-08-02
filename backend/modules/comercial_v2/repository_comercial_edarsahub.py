@@ -355,11 +355,12 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
     Solo mantiene 1 registro por unidad (sobrescribe).
 
     REGLAS:
-    1. ANTI-$0 FALSO: Si el nuevo valor es $0 pero existe un snapshot válido 
-       con venta > 0 para la MISMA fecha_operacion, NO sobrescribir.
-    2. FECHA CORRECTA: Si la nueva fecha_operacion es DIFERENTE, siempre actualizar
-       (esto permite corregir datos con fecha incorrecta).
-    3. BARRERA P0C: Validar que FechaOperacion coincida con get_operational_window().
+    1. El valor recibido, incluido cero, representa el resultado confirmado
+       para la fecha_operativa indicada.
+    2. Una fecha_operacion diferente siempre sustituye el snapshot anterior.
+    3. BARRERA P0C: validar FechaOperacion contra get_operational_window().
+    4. Un error de origen debe impedir llegar a este repositorio; nunca debe
+       convertirse aquí en cero ni reutilizar ventas anteriores.
     """
 
     # V1.0-COMERCIAL-ABIERTAS-UNIDAD-CODIGO
@@ -522,23 +523,20 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
             )
             # Continuar con UPDATE (no retornar)
 
-        # =================================================================
-        # REGLA 2: ANTI-$0 FALSO (solo aplica si MISMA fecha_operacion)
-        # =================================================================
-        elif ventas.total_estimado_dia == 0 and existing_total > 0:
-            # Nueva venta es $0 pero existe snapshot válido con venta > 0
-            # MISMA fecha_operacion -> NO sobrescribir
-            logger.warning(
-                f"[ANTI-$0] PROTECCIÓN ACTIVADA para {ventas.unidad_negocio_pk}: "
-                f"Nuevo=${ventas.total_estimado_dia:,.2f}, Existente=${existing_total:,.2f}, "
-                f"FechaOp={new_fecha}. NO se sobrescribe."
+        # El cero confirmado para la misma fecha operativa también se
+        # persiste. La validación de SOURCE_ERROR ocurre antes del repositorio.
+        if (
+            existing_fecha == new_fecha
+            and ventas.total_estimado_dia == 0
+            and existing_total > 0
+        ):
+            logger.info(
+                "[UPSERT-CERO-CONFIRMADO] %s: "
+                "actualizando misma fecha %s de $%s a $0.00",
+                ventas.unidad_negocio_pk,
+                new_fecha,
+                f"{existing_total:,.2f}",
             )
-            return {
-                'action': 'SKIP_ANTI_ZERO', 
-                'id': record_id,
-                'reason': f'Protección anti-$0: existente=${existing_total:,.2f}',
-                'preserved_total': existing_total
-            }
 
         update_query = f"""
         UPDATE Comercial_Ventas_Dia_Abiertas_v2 SET

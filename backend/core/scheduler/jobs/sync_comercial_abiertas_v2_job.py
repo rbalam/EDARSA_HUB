@@ -828,7 +828,7 @@ FROM (
             = '{fecha_operacion}'
       AND c.Sc_Cve_Sucursal
             = '{sucursal_id}'
-      AND c.Es_Cve_Estado = 'UN'
+      AND c.Es_Cve_Estado IN ('AC', 'IM')
       AND cd.Es_Cve_Estado = 'AC'
       AND cd.Fecha_Baja IS NULL
 
@@ -951,7 +951,7 @@ FROM (
             = '{fecha_operacion}'
       AND c.Sc_Cve_Sucursal
             = '{sucursal_id}'
-      AND c.Es_Cve_Estado = 'UN'
+      AND c.Es_Cve_Estado IN ('AC', 'IM')
       AND cd.Es_Cve_Estado = 'AC'
       AND cd.Fecha_Baja IS NULL
 
@@ -1022,7 +1022,10 @@ FROM (
 # FUNCIÓN PRINCIPAL DEL JOB
 # =============================================================================
 
-async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
+async def execute_sync_comercial_abiertas_v2(
+    db=None,
+    fecha_objetivo: date = None,
+) -> Dict[str, Any]:
     """
     Ejecuta sincronización de ventas del día actual.
     
@@ -1058,7 +1061,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
     # CORRECCIÓN: Usar zona horaria de México para fecha operativa
     mexico_tz = pytz.timezone('America/Mexico_City')
     now_mexico = datetime.now(mexico_tz)
-    fecha_hoy = now_mexico.date()
+    fecha_hoy = fecha_objetivo or now_mexico.date()
     pid = os.getpid()
     
     # LOG DIAGNÓSTICO OBLIGATORIO
@@ -1116,7 +1119,10 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 # FASE P0.4: Usando nuevo sistema de turnos operativos
                 # =================================================================
                 resultado_ventana = get_operational_window(unidad_id)
-                fecha_operacion = resultado_ventana.fecha_operacion
+                fecha_operacion = (
+                    fecha_objetivo
+                    or resultado_ventana.fecha_operacion
+                )
                 turno_codigo = resultado_ventana.turno_operativo_codigo
                 hora_inicio = resultado_ventana.window_start_mx
                 hora_fin = resultado_ventana.window_end_mx
@@ -1162,11 +1168,25 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 query_cerradas = QUERY_SOFTRESTAURANT_CERRADAS_HOY.format(
                     fecha_operacion=fecha_operacion_str
                 )
-                rows_cerradas, _ = execute_query_on_server(
+                rows_cerradas, cerradas_status = execute_query_on_server(
                     server_config,
                     query_cerradas,
                     context="jobs",
                 )
+
+                if cerradas_status != ConnectionStatus.ONLINE:
+                    raise Exception(
+                        "SOURCE_ERROR: consulta SoftRestaurant "
+                        "de ventas cerradas falló con estado "
+                        f"{cerradas_status}"
+                    )
+
+                if not rows_cerradas or rows_cerradas[0] is None:
+                    raise Exception(
+                        "SOURCE_ERROR: consulta SoftRestaurant "
+                        "de ventas cerradas no devolvió "
+                        "un contrato válido"
+                    )
             
                 # Extraer valores
                 abiertas_data = rows_abiertas[0] if rows_abiertas else {}
@@ -1185,41 +1205,20 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 total_estimado_dia = ventas_abiertas + ventas_cerradas_dia
             
                 propinas_total = propinas_abiertas + propinas_cerradas_dia
-                # =================================================================
-                # PROTECCIÓN ANTI-$0 PARA SOFTRESTAURANT
-                # =================================================================
-                # REGLA: No escribir $0 cuando:
-                # - La tabla temporal está vacía después del corte
-                # - Hay dato existente válido
-                # Solo escribir $0 si la fuente confirmó venta real cero
-                # =================================================================
-            
+                # Cero confirmado por ambas consultas es válido.
+                # Nunca se sustituye con ventas de otra fecha operativa.
                 if total_estimado_dia == 0:
-                    # Verificar si hay dato existente válido
-                    existing_data = _get_existing_ventas_dia(unidad_id, unidad["sucursal_id"])
-                    existing_total = float(existing_data.get('total_estimado_dia') or 0) if existing_data else 0
-                    existing_fecha = existing_data.get('fecha_operacion') if existing_data else None
-                
-                    if existing_total > 0 and str(existing_fecha) == fecha_operacion_str:
-                        # Dato existente válido del MISMO día - PROTEGER
-                        logger.warning(
-                            f"[SYNC_ABIERTAS_V2] {nombre} (SR): Total=$0 pero existe dato válido=${existing_total:,.2f}. "
-                            f"PROTECCIÓN: Conservando dato existente. Posible turno recién cerrado."
-                        )
-                        results["detalles_unidades"].append({
-                            "unidad_negocio_id": unidad_id,
-                            "unidad": nombre,
-                            "sistema": "SoftRestaurant",
-                            "estatus": "SKIPPED_ZERO_PROTECTION",
-                            "source_status": "SYNC_PROTECTED",
-                            "fecha_operacion": fecha_operacion_str,
-                            "existing_total": existing_total,
-                            "mensaje": "Conservando dato válido - tempcheques vacía pero cheques tiene dato"
-                        })
-                        continue  # NO sobrescribir
-                
-                    logger.info(f"[SYNC_ABIERTAS_V2] {nombre} (SR): Total=$0 confirmado (sin dato existente o nuevo día)")
-            
+                    source_status = "NO_DATA_CONFIRMED"
+                    logger.info(
+                        "[SYNC_ABIERTAS_V2] %s (SR): "
+                        "NO_DATA_CONFIRMED para fecha_operacion=%s. "
+                        "Se escribirá cero.",
+                        nombre,
+                        fecha_operacion_str,
+                    )
+                else:
+                    source_status = "DATA_OK"
+
                 # Determinar fuente original
                 if ventas_abiertas > 0 and ventas_cerradas_dia > 0:
                     fuente = FuenteOriginal.MIXTA
@@ -1266,7 +1265,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                     propinas_total=propinas_total,
                     fuente_original=fuente,
                     sync_run_id=run_id,
-                    source_status="SYNC_OK"
+                    source_status=source_status
                 )
             
                 upsert_result = upsert_ventas_dia_abiertas(ventas_model)
@@ -1279,7 +1278,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                     "unidad": nombre,
                     "sistema": "SoftRestaurant",
                     "estatus": "OK",
-                    "source_status": "SYNC_OK",
+                    "source_status": source_status,
                     "fecha_operacion": fecha_operacion_str,  # Agregar para debug
                     "ventas_abiertas": float(ventas_abiertas),
                     "total_estimado_dia": float(total_estimado_dia)
@@ -1366,7 +1365,10 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                 # =================================================================
             
                 resultado_ventana = get_operational_window(unidad_id)
-                fecha_operacion = resultado_ventana.fecha_operacion
+                fecha_operacion = (
+                    fecha_objetivo
+                    or resultado_ventana.fecha_operacion
+                )
                 turno_codigo = resultado_ventana.turno_operativo_codigo
                 hora_inicio = resultado_ventana.window_start_mx
                 hora_fin = resultado_ventana.window_end_mx
@@ -1419,114 +1421,82 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                     sucursal_id=sucursal_id,
                     fecha_operacion=fecha_operacion_str
                 )
-                rows_cerradas, _ = _execute_query_via_api_local(api_config, query_cerradas)
-                cerradas_data = rows_cerradas[0] if rows_cerradas else {}
+                rows_cerradas, cerradas_status = (
+                    _execute_query_via_api_local(
+                        api_config,
+                        query_cerradas,
+                    )
+                )
+
+                if cerradas_status != "API_LOCAL_OK":
+                    raise Exception(
+                        "SOURCE_ERROR: consulta MPRO "
+                        "de ventas cerradas falló con estado "
+                        f"{cerradas_status}"
+                    )
+
+                cerradas_data = (
+                    rows_cerradas[0]
+                    if rows_cerradas
+                    else {}
+                )
             
                 # Extraer valores ANTES de decidir
                 ventas_abiertas_raw = abiertas_data.get('ventas_abiertas')
                 ventas_cerradas_raw = cerradas_data.get('ventas_cerradas_dia')
             
-                # =================================================================
-                # FIX P0 2026-05-15: PROTECCIÓN ANTI-$0 PARA TODAS LAS UNIDADES MPRO
-                # =================================================================
-                # REGLA: Si AMBAS queries retornan NULL o $0, NO sobrescribir datos existentes.
-                # Esto protege contra:
-                # - fecha_operacion incorrecta
-                # - errores de conexión no detectados
-                # - problemas de esquema en la fuente
-                # =================================================================
-            
-                logger.info(f"[SYNC_ABIERTAS_V2] {nombre} RAW: abiertas={ventas_abiertas_raw}, cerradas={ventas_cerradas_raw}")
-            
-                # Calcular valores numéricos para evaluación
-                abiertas_valor = float(ventas_abiertas_raw) if ventas_abiertas_raw is not None else 0.0
-                cerradas_valor = float(ventas_cerradas_raw) if ventas_cerradas_raw is not None else 0.0
-                total_calculado = abiertas_valor + cerradas_valor
-            
-                # CASO 1: Hay datos válidos (al menos una query tiene valor > 0)
-                if total_calculado > 0:
-                    logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: Datos válidos detectados, total=${total_calculado:,.2f}")
-            
-                # CASO 2: AMBAS son NULL - NO sobrescribir
-                elif ventas_abiertas_raw is None and ventas_cerradas_raw is None:
-                    logger.warning(f"[SYNC_ABIERTAS_V2] {nombre}: AMBAS queries retornaron NULL - CONSERVANDO último dato válido")
-                    log = SyncLogV2(
-                        run_id=run_id,
-                        run_type=SyncRunType.ABIERTAS,
-                        unidad_negocio_pk=unidad["unidad_negocio_pk"],
-                        server_id=server_id,
-                        sucursal_id=sucursal_id,
-                        fecha_inicio=fecha_operacion,
-                        fecha_fin=fecha_operacion,
-                        status=SyncStatus.SKIPPED,
-                        records_processed=0,
-                        records_skipped=1,
-                        error_message=f"AMBAS queries NULL para fecha_operacion={fecha_operacion_str}. Conservando último dato válido.",
-                        source_connection_status="API_LOCAL_OK_BOTH_NULL"
+                logger.info(
+                    "[SYNC_ABIERTAS_V2] %s RAW: "
+                    "abiertas=%s, cerradas=%s",
+                    nombre,
+                    ventas_abiertas_raw,
+                    ventas_cerradas_raw,
+                )
+
+                # Dos NULL representan contrato inválido del origen.
+                # No representan una venta confirmada en cero.
+                if (
+                    ventas_abiertas_raw is None
+                    and ventas_cerradas_raw is None
+                ):
+                    raise Exception(
+                        "SOURCE_ERROR: ambas consultas MPRO "
+                        "devolvieron NULL"
                     )
-                    insert_sync_log(log)
-                    results["detalles_unidades"].append({
-                        "unidad_negocio_id": unidad_id,
-                        "unidad": nombre,
-                        "status": "SKIPPED_BOTH_NULL",
-                        "fecha_operacion": fecha_operacion_str,
-                        "mensaje": "Conservando último dato válido - AMBAS NULL"
-                    })
-                    continue  # NO sobrescribir con $0
-            
-                # CASO 3: Total es $0 pero hay dato existente válido - Verificar antes de sobrescribir
-                elif total_calculado == 0:
-                    # Consultar dato existente en EDARSAHUB
-                    existing_data = _get_existing_ventas_dia(unidad_id, sucursal_id)
-                    existing_total = float(existing_data.get('total_estimado_dia') or 0) if existing_data else 0
-                    existing_fecha = existing_data.get('fecha_operacion') if existing_data else None
-                
-                    # =================================================================
-                    # PROTECCIÓN MEJORADA ANTI-$0 (FIX 2026-05-15)
-                    # =================================================================
-                    # REGLA: NUNCA sobrescribir dato válido con $0
-                    # Si la API devuelve $0 pero hay un dato existente válido, 
-                    # es más probable que haya un error en la API que una venta real de $0.
-                    # 
-                    # Solo escribir $0 si:
-                    # - No hay dato existente (nueva unidad)
-                    # - El dato existente ya es $0
-                    # =================================================================
-                    if existing_total > 0:
-                        logger.warning(
-                            f"[SYNC_ABIERTAS_V2] {nombre}: Total calculado=$0 pero existe dato válido=${existing_total:,.2f} "
-                            f"(fecha_existente={existing_fecha}, fecha_nueva={fecha_operacion_str}). "
-                            f"PROTECCIÓN ACTIVADA - NO SE PERMITE SOBRESCRIBIR DATO VÁLIDO CON $0."
-                        )
-                        log = SyncLogV2(
-                            run_id=run_id,
-                            run_type=SyncRunType.ABIERTAS,
-                            unidad_negocio_pk=unidad["unidad_negocio_pk"],
-                            server_id=server_id,
-                            sucursal_id=sucursal_id,
-                            fecha_inicio=fecha_operacion,
-                            fecha_fin=fecha_operacion,
-                            status=SyncStatus.SKIPPED,
-                            records_processed=0,
-                            records_skipped=1,
-                            error_message=f"PROTECCIÓN: No sobrescribir ${existing_total:,.2f} con $0. API puede estar fallando.",
-                            source_connection_status="API_LOCAL_ZERO_BLOCKED"
-                        )
-                        insert_sync_log(log)
-                        results["detalles_unidades"].append({
-                            "unidad_negocio_id": unidad_id,
-                            "unidad": nombre,
-                            "status": "SKIPPED_ZERO_PROTECTION",
-                            "fecha_operacion": fecha_operacion_str,
-                            "existing_total": existing_total,
-                            "existing_fecha": str(existing_fecha),
-                            "mensaje": f"PROTECCIÓN: No se permite sobrescribir ${existing_total:,.2f} con $0"
-                        })
-                        continue  # NO sobrescribir dato válido con $0
-                    else:
-                        # No hay dato existente válido (o ya es $0), proceder normalmente
-                        logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: Total=$0 confirmado (sin dato existente válido)")
-            
+
+                abiertas_valor = float(
+                    ventas_abiertas_raw
+                    if ventas_abiertas_raw is not None
+                    else 0
+                )
+                cerradas_valor = float(
+                    ventas_cerradas_raw
+                    if ventas_cerradas_raw is not None
+                    else 0
+                )
+                total_calculado = (
+                    abiertas_valor
+                    + cerradas_valor
+                )
+
+                if total_calculado == 0:
+                    source_status = "NO_DATA_CONFIRMED"
+                    logger.info(
+                        "[SYNC_ABIERTAS_V2] %s: "
+                        "NO_DATA_CONFIRMED para fecha_operacion=%s. "
+                        "Se escribirá cero.",
+                        nombre,
+                        fecha_operacion_str,
+                    )
+                else:
+                    source_status = "DATA_OK"
+                    logger.info(
+                        "[SYNC_ABIERTAS_V2] %s: "
+                        "DATA_OK, total=$%s",
+                        nombre,
+                        f"{total_calculado:,.2f}",
+                    )
+
                 # Extraer valores finales (abiertas_data y cerradas_data ya están definidos arriba)
                 ventas_abiertas = Decimal(str(abiertas_data.get('ventas_abiertas') or 0))
                 tickets_abiertos = int(abiertas_data.get('tickets_abiertos') or 0)
@@ -1589,7 +1559,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                     total_estimado_dia=total_estimado_dia,
                     fuente_original=FuenteOriginal.API_LOCAL,
                     sync_run_id=run_id,
-                    source_status="SYNC_OK"
+                    source_status=source_status
                 )
             
                 upsert_result = upsert_ventas_dia_abiertas(ventas_model)
@@ -1603,7 +1573,7 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
                     "sistema": "MPRO",
                     "fuente": "API_LOCAL",
                     "estatus": "OK",
-                    "source_status": "SYNC_OK",
+                    "source_status": source_status,
                     "fecha_operacion": fecha_operacion_str,  # Agregar para debug
                     "ventas_abiertas": float(ventas_abiertas),
                     "total_estimado_dia": float(total_estimado_dia)
@@ -1685,10 +1655,17 @@ async def execute_sync_comercial_abiertas_v2(db=None) -> Dict[str, Any]:
 # EJECUCIÓN MANUAL PARA TESTING
 # =============================================================================
 
-def run_sync_comercial_abiertas_v2_manual(fecha: date = None):
-    """Ejecuta sincronización manualmente (para testing)."""
+def run_sync_comercial_abiertas_v2_manual(
+    fecha: date = None,
+):
+    """Ejecuta sincronización manual respetando la fecha solicitada."""
     import asyncio
-    return asyncio.run(execute_sync_comercial_abiertas_v2())
+
+    return asyncio.run(
+        execute_sync_comercial_abiertas_v2(
+            fecha_objetivo=fecha,
+        )
+    )
 
 
 # Exportar

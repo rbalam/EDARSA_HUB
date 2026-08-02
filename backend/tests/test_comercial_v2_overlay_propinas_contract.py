@@ -213,7 +213,7 @@ def test_mpro_usa_estados_reales_y_propina_por_folio():
 
         if "ABIERTAS" in name:
             assert "AS propinas_abiertas" in query
-            assert "c.Es_Cve_Estado = 'UN'" in query
+            assert "c.Es_Cve_Estado IN ('AC', 'IM')" in query
 
         if "CERRADAS" in name:
             assert "AS propinas_cerradas_dia" in query

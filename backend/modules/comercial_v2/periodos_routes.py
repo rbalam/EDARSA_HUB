@@ -10,11 +10,14 @@ from dataclasses import asdict
 from datetime import date, timedelta
 from statistics import mean
 from typing import Any, Iterable, Optional
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field, field_validator
 
 from core.security import get_current_user_dual_dependency
 from core.unidades_service import UnidadesService
+from core.comercial_temporal_availability import build_temporal_availability
 
 from .periodos import (
     ModoPeriodo,
@@ -35,6 +38,8 @@ from .routes import (
 
 
 router = APIRouter(prefix="/comercial", tags=["Comercial V2 - Periodos"])
+
+logger = logging.getLogger(__name__)
 
 
 def _fecha_sql(value: date) -> str:
@@ -232,6 +237,257 @@ def _resumen_unidades_comparables(
         }
     )
     return resumen
+
+
+def _consultar_periodos_disponibles(
+    *,
+    unidades: list[str],
+) -> dict[str, Any]:
+    """Compatibilidad del router con el servicio temporal compartido."""
+    return build_temporal_availability(
+        units=unidades,
+        readonly_query=_execute_readonly_query,
+        units_where_builder=_unidades_runtime_where_sql,
+    )
+
+
+@router.get("/periodos/disponibles")
+async def obtener_periodos_disponibles(
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user_dual_dependency()),
+):
+    """Cobertura temporal canónica disponible para filtros de tableros."""
+
+    try:
+        permitidas = _require_unidades_permitidas(
+            await get_unidades_permitidas_v2(current_user)
+        )
+        unidades = _scope_unidades(
+            permitidas,
+            unidad_negocio_pk,
+        )
+
+        disponibilidad = _consultar_periodos_disponibles(
+            unidades=unidades,
+        )
+
+        response = {
+            **disponibilidad,
+            "trazabilidad": {
+                "fuente": "vw_Comercial_KPIs_Diarios_v2_Runtime",
+                "campo_temporal": "fecha_operacion",
+                "sql_vivo": False,
+                "mongodb": False,
+                "hardcode": False,
+                "unidades_rbac": unidades,
+            },
+        }
+
+        return {
+            "success": True,
+            "data": serialize_response(response),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception(
+            "[PERIODOS-DISPONIBLES] Error consultando cobertura temporal: %s",
+            exc,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "No fue posible consultar la disponibilidad "
+                "temporal canónica"
+            ),
+        ) from exc
+
+
+class PeriodoHistoricoSeleccionado(BaseModel):
+    anio: int = Field(..., ge=1900, le=9999)
+    meses: list[int] = Field(..., min_length=1)
+
+    @field_validator("meses")
+    @classmethod
+    def validar_meses(cls, values: list[int]) -> list[int]:
+        normalized = sorted({int(value) for value in values})
+        if not normalized or any(value < 1 or value > 12 for value in normalized):
+            raise ValueError("Los meses deben estar entre 1 y 12")
+        return normalized
+
+
+class PeriodosHistoricosRequest(BaseModel):
+    periodos: list[PeriodoHistoricoSeleccionado] = Field(
+        ...,
+        min_length=1,
+    )
+    unidad_negocio_pk: Optional[str] = None
+
+
+def _normalizar_periodos_historicos(
+    periodos: list[PeriodoHistoricoSeleccionado],
+) -> list[dict[str, Any]]:
+    grouped: dict[int, set[int]] = {}
+
+    for periodo in periodos:
+        grouped.setdefault(periodo.anio, set()).update(periodo.meses)
+
+    return [
+        {
+            "anio": anio,
+            "meses": sorted(grouped[anio]),
+        }
+        for anio in sorted(grouped, reverse=True)
+    ]
+
+
+def _periodos_where_sql(
+    periodos: list[dict[str, Any]],
+    alias: str = "k",
+) -> str:
+    clauses = []
+
+    for periodo in periodos:
+        anio = int(periodo["anio"])
+        meses = ",".join(str(int(value)) for value in periodo["meses"])
+        clauses.append(
+            f"(YEAR({alias}.fecha_operacion) = {anio} "
+            f"AND MONTH({alias}.fecha_operacion) IN ({meses}))"
+        )
+
+    if not clauses:
+        return "1 = 0"
+
+    return "(" + " OR ".join(clauses) + ")"
+
+
+def _consultar_periodos_agregados(
+    *,
+    periodos: list[dict[str, Any]],
+    unidades: list[str],
+) -> dict[str, Any]:
+    """Agrega exclusivamente los meses/años solicitados.
+
+    No usa rangos continuos para selecciones discontinuas.
+    No incorpora el overlay del día operativo vigente.
+    """
+    where_unidades = _unidades_runtime_where_sql(unidades)
+    where_periodos = _periodos_where_sql(periodos, "k")
+
+    query_totales = f"""
+    SELECT
+        COUNT(DISTINCT k.fecha_operacion) AS dias,
+        COUNT(DISTINCT k.unidad_negocio_id) AS unidades_con_datos,
+        MIN(k.fecha_operacion) AS fecha_min,
+        MAX(k.fecha_operacion) AS fecha_max,
+        SUM(ISNULL(k.ventas_total, 0)) AS ventas_total,
+        SUM(ISNULL(k.propinas_total, 0)) AS propinas_total,
+        SUM(ISNULL(k.tickets_total, 0)) AS tickets_total,
+        SUM(ISNULL(k.pax_total, 0)) AS pax_total
+    FROM vw_Comercial_KPIs_Diarios_v2_Runtime AS k
+    WHERE {where_unidades}
+      AND {where_periodos}
+    """
+
+    query_unidades = f"""
+    SELECT
+        CONVERT(varchar(36), k.unidad_negocio_pk) AS unidad_negocio_pk,
+        MAX(k.unidad_negocio_id) AS unidad_negocio_codigo,
+        MAX(k.unidad_negocio_nombre) AS unidad_negocio_nombre,
+        MAX(k.sistema_origen) AS sistema_origen,
+        COUNT(DISTINCT k.fecha_operacion) AS dias,
+        MIN(k.fecha_operacion) AS fecha_min,
+        MAX(k.fecha_operacion) AS fecha_max,
+        SUM(ISNULL(k.ventas_total, 0)) AS ventas_total,
+        SUM(ISNULL(k.propinas_total, 0)) AS propinas_total,
+        SUM(ISNULL(k.tickets_total, 0)) AS tickets_total,
+        SUM(ISNULL(k.pax_total, 0)) AS pax_total
+    FROM vw_Comercial_KPIs_Diarios_v2_Runtime AS k
+    WHERE {where_unidades}
+      AND {where_periodos}
+    GROUP BY k.unidad_negocio_pk
+    ORDER BY ventas_total DESC
+    """
+
+    total_rows = _execute_readonly_query(query_totales)
+    unit_rows = _execute_readonly_query(query_unidades)
+
+    totals = total_rows[0] if total_rows else {}
+
+    def enrich(row: dict[str, Any]) -> dict[str, Any]:
+        ventas = float(row.get("ventas_total") or 0)
+        tickets = int(row.get("tickets_total") or 0)
+        pax = int(row.get("pax_total") or 0)
+
+        return {
+            **row,
+            "ventas_total": ventas,
+            "propinas_total": float(row.get("propinas_total") or 0),
+            "tickets_total": tickets,
+            "pax_total": pax,
+            "cheque_promedio": round(ventas / tickets, 2) if tickets else 0.0,
+            "ticket_promedio": round(ventas / tickets, 2) if tickets else 0.0,
+            "pax_promedio": round(ventas / pax, 2) if pax else 0.0,
+        }
+
+    return {
+        "totales": enrich(totals),
+        "unidades": [enrich(row) for row in unit_rows],
+    }
+
+
+@router.post("/periodos/agregado")
+async def obtener_periodos_agregados(
+    payload: PeriodosHistoricosRequest,
+    current_user: dict = Depends(get_current_user_dual_dependency()),
+):
+    """KPIs de periodos históricos explícitos y potencialmente discontinuos."""
+
+    try:
+        permitidas = _require_unidades_permitidas(
+            await get_unidades_permitidas_v2(current_user)
+        )
+        unidades = _scope_unidades(
+            permitidas,
+            payload.unidad_negocio_pk,
+        )
+        periodos = _normalizar_periodos_historicos(payload.periodos)
+
+        agregado = _consultar_periodos_agregados(
+            periodos=periodos,
+            unidades=unidades,
+        )
+
+        response = {
+            **agregado,
+            "modo_periodo": "historical_periods",
+            "periodos_seleccionados": periodos,
+            "overlay_dia_actual_incluido": False,
+            "trazabilidad": {
+                "fuente": "vw_Comercial_KPIs_Diarios_v2_Runtime",
+                "campo_temporal": "fecha_operacion",
+                "sql_vivo": False,
+                "mongodb": False,
+                "agregacion_frontend": False,
+                "unidades_rbac": unidades,
+            },
+        }
+
+        return {
+            "success": True,
+            "data": serialize_response(response),
+        }
+
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="No fue posible agregar los periodos históricos",
+        ) from exc
 
 
 @router.get("/periodos/contrato")
