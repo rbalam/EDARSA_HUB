@@ -456,9 +456,7 @@ class KPIsCanonicosService:
                 SUM(CAST(pax_total AS float)) AS pax,
                 COUNT(DISTINCT fecha_operacion) AS dias
             FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime
-            WHERE ISNULL(activo,1)=1
-              AND ISNULL(es_demo,0)=0
-              AND fecha_operacion >= %s
+            WHERE fecha_operacion >= %s
               AND fecha_operacion < %s
               {unidad_filter}
             GROUP BY {periodo_expr}
