@@ -241,8 +241,26 @@ async def upsert_kpi_comercial(
     sucursal_nombre = metadata.get("sucursal_nombre") or unidad_nombre
     sistema_origen = _sql_resolve_sistema(metadata.get("system_type") or source_info.get("system_type"))
 
-    ventas_total = _sql_decimal(kpis.get("ventas_total", kpis.get("ventas", 0)))
-    propinas_total = _sql_decimal(kpis.get("propinas_total", kpis.get("propinas", 0)))
+    ventas_origen = _sql_decimal(
+        kpis.get("ventas_total", kpis.get("ventas", 0))
+    )
+    propinas_total = _sql_decimal(
+        kpis.get("propinas_total", kpis.get("propinas", 0))
+    )
+
+    sistema_codigo = str(sistema_origen).upper()
+    ventas_sin_propina = _sql_decimal(
+        kpis.get(
+            "ventas_sin_propina",
+            max(
+                ventas_origen - propinas_total,
+                _sql_decimal(0),
+            )
+            if "SOFT" in sistema_codigo
+            else ventas_origen,
+        )
+    )
+    ventas_total = ventas_sin_propina
 
     tickets_total = _sql_int(kpis.get("tickets_total", kpis.get("tickets", kpis.get("cheques", 0))))
     pax_total = _sql_int(kpis.get("pax_total", kpis.get("pax", kpis.get("personas", 0))))
@@ -264,6 +282,7 @@ async def upsert_kpi_comercial(
         mes=fecha_op.month,
         dia=fecha_op.day,
         ventas_total=ventas_total,
+        ventas_sin_propina=ventas_sin_propina,
         propinas_total=propinas_total,
         tickets_total=tickets_total,
         pax_total=pax_total,

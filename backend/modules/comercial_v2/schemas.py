@@ -118,7 +118,9 @@ class KPIsDiariosV2(BaseModel):
     dia: int
     
     # KPIs principales
+    # Venta canónica visible: IVA incluido, propina excluida.
     ventas_total: Decimal = Decimal("0")
+    ventas_sin_propina: Optional[Decimal] = None
     propinas_total: Decimal = Decimal("0")
     tickets_total: int = 0
     pax_total: int = 0

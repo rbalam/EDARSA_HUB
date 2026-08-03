@@ -5,6 +5,10 @@ from core.corporate_filters.service import CorporateFilterService
 REPOSITORY READONLY - COMERCIAL V2
 ===================================
 
+KPI visible de ventas = ventas_total con IVA incluido
+La propina se conserva separada en propinas_total.
+ventas_total representa la venta canónica con IVA y sin propina.
+
 Funciones de SOLO LECTURA para endpoints v2.
 Lee exclusivamente de tablas Comercial_*_v2 en EDARSAHUB.
 

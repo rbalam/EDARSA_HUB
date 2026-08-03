@@ -38,7 +38,9 @@ def calcular_hash_origen(
     fecha: date,
     ventas_total: Decimal,
     tickets_total: int,
-    pax_total: int
+    pax_total: int,
+    ventas_sin_propina: Decimal | None = None,
+    propinas_total: Decimal = Decimal("0"),
 ) -> str:
     """
     Calcula un hash SHA256 único para identificar el origen de los datos.
@@ -47,10 +49,16 @@ def calcular_hash_origen(
     Composición del hash:
     - server_id + sucursal_id + fecha + ventas_total + tickets + pax + version_semantica
     """
+    venta_visible = (
+        ventas_sin_propina
+        if ventas_sin_propina is not None
+        else ventas_total
+    )
     data_string = (
         f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
-        f"{ventas_total}|{tickets_total}|{pax_total}|"
-        "kpi_ventas_total_v2"
+        f"{ventas_total}|{venta_visible}|{propinas_total}|"
+        f"{tickets_total}|{pax_total}|"
+        "kpi_ventas_sin_propina_v3"
     )
     return hashlib.sha256(data_string.encode('utf-8')).hexdigest()[:32]
 
@@ -117,22 +125,39 @@ def map_softrestaurant_ventas_cerradas(
     if isinstance(fecha, str):
         fecha = datetime.strptime(fecha, '%Y-%m-%d').date()
     
-    ventas_total = Decimal(str(row.get('ventas_total', 0) or 0))
+    ventas_brutas = Decimal(
+        str(row.get('ventas_total', 0) or 0)
+    )
     propinas = Decimal(str(row.get('propinas', 0) or 0))
+    ventas_sin_propina = max(
+        ventas_brutas - propinas,
+        Decimal("0"),
+    )
+    ventas_total = ventas_sin_propina
     tickets = int(row.get('num_cheques', 0) or 0)
     pax = int(row.get('num_personas', 0) or 0)
-    
-    # Calcular métricas derivadas
-    ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
-    pax_promedio = ventas_total / pax if pax > 0 else Decimal("0")
+
+    # KPIs visibles: IVA incluido y propina excluida.
+    ticket_promedio = (
+        ventas_total / tickets
+        if tickets > 0
+        else Decimal("0")
+    )
+    pax_promedio = (
+        ventas_total / pax
+        if pax > 0
+        else Decimal("0")
+    )
     # Hash para idempotencia
     hash_origen = calcular_hash_origen(
         config.server_id,
         config.sucursal_id,
         fecha,
-        ventas_total,
+        ventas_brutas,
         tickets,
-        pax
+        pax,
+        ventas_sin_propina=ventas_sin_propina,
+        propinas_total=propinas,
     )
     
     return KPIsDiariosV2(
@@ -149,6 +174,7 @@ def map_softrestaurant_ventas_cerradas(
         dia=fecha.day,
         
         ventas_total=ventas_total,
+        ventas_sin_propina=ventas_sin_propina,
         propinas_total=propinas,
         tickets_total=tickets,
         pax_total=pax,
@@ -245,7 +271,10 @@ def map_mpro_ventas_cerradas(
         fecha = datetime.strptime(fecha, '%Y-%m-%d').date()
     
     # MPRO expone la propina en Comanda.Co_Propina.
-    ventas_total = Decimal(str(row.get('Vn_Precio_Neto_Importe', 0) or 0))
+    ventas_total = Decimal(
+        str(row.get('Vn_Precio_Neto_Importe', 0) or 0)
+    )
+    ventas_sin_propina = ventas_total
     propinas = Decimal(str(row.get('propinas', 0) or 0))
     tickets = int(row.get('num_folios', 0) or 0)
     pax = int(row.get('total_personas', 0) or 0)
@@ -278,6 +307,7 @@ def map_mpro_ventas_cerradas(
         dia=fecha.day,
         
         ventas_total=ventas_total,
+        ventas_sin_propina=ventas_sin_propina,
         propinas_total=propinas,
         tickets_total=tickets,
         pax_total=pax,

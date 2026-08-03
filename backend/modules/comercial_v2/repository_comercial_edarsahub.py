@@ -1,5 +1,9 @@
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
+
+# KPI visible de ventas = ventas_total con IVA incluido
+# La propina se conserva separada en propinas_total.
+# ventas_total = ventas_sin_propina en el contrato canónico.
 """
 REPOSITORY EDARSAHUB - Comercial V2
 ===================================
@@ -217,6 +221,8 @@ def get_sucursales_mpro(server_id: str) -> List[Dict[str, str]]:
 # =============================================================================
 
 def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
+    from decimal import Decimal
+
     """
     Inserta o actualiza un KPI diario en vw_Comercial_KPIs_Diarios_v2_Runtime.
     
@@ -247,6 +253,19 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
             f"unidad_negocio_pk={kpi.unidad_negocio_pk}"
         )
 
+    # Contrato canónico: ventas visibles con IVA y sin propina.
+    ventas_sin_propina = (
+        kpi.ventas_sin_propina
+        if kpi.ventas_sin_propina is not None
+        else kpi.ventas_total
+    )
+
+    if abs(kpi.ventas_total - ventas_sin_propina) > Decimal("0.01"):
+        raise ValueError(
+            "Contrato de ventas inválido: ventas_total debe ser "
+            "igual a ventas_sin_propina"
+        )
+
     # Verificar si existe
     check_query = f"""
     SELECT id, hash_origen, version, fuente_original
@@ -269,6 +288,7 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
             update_query = f"""
             UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
                 ventas_total = {kpi.ventas_total},
+                ventas_sin_propina = {ventas_sin_propina},
                 propinas_total = {kpi.propinas_total},
                 tickets_total = {kpi.tickets_total},
                 pax_total = {kpi.pax_total},
@@ -294,7 +314,8 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
         INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
             id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
             sucursal_nombre, sistema_origen, fecha_operacion, anio, mes, dia,
-            ventas_total, propinas_total, tickets_total, pax_total,
+            ventas_total, ventas_sin_propina,
+            propinas_total, tickets_total, pax_total,
             ticket_promedio, pax_promedio, ventas_cerradas, ventas_abiertas, total_estimado_dia,
             es_venta_abierta, es_corte_cerrado, es_demo, activo,
             fuente_original, id_origen, hash_origen, sync_run_id,
@@ -310,8 +331,10 @@ def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
             '{kpi.sistema_origen}',
             '{kpi.fecha_operacion.isoformat()}',
             {kpi.anio}, {kpi.mes}, {kpi.dia},
-            {kpi.ventas_total}, {kpi.propinas_total},
-            {kpi.tickets_total}, {kpi.pax_total}, {kpi.ticket_promedio}, {kpi.pax_promedio},
+            {kpi.ventas_total}, {ventas_sin_propina},
+            {kpi.propinas_total},
+            {kpi.tickets_total}, {kpi.pax_total},
+            {kpi.ticket_promedio}, {kpi.pax_promedio},
             {kpi.ventas_cerradas}, {kpi.ventas_abiertas}, {kpi.total_estimado_dia},
             {1 if kpi.es_venta_abierta else 0},
             {1 if kpi.es_corte_cerrado else 0},
