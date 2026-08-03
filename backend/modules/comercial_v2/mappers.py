@@ -129,11 +129,10 @@ def map_softrestaurant_ventas_cerradas(
         str(row.get('ventas_total', 0) or 0)
     )
     propinas = Decimal(str(row.get('propinas', 0) or 0))
-    ventas_sin_propina = max(
-        ventas_brutas - propinas,
-        Decimal("0"),
-    )
-    ventas_total = ventas_sin_propina
+    # SoftRestaurant entrega total con impuestos y sin propina.
+    # La propina ya viene separada en su propia columna.
+    ventas_sin_propina = ventas_brutas
+    ventas_total = ventas_brutas
     tickets = int(row.get('num_cheques', 0) or 0)
     pax = int(row.get('num_personas', 0) or 0)
 

@@ -31,8 +31,8 @@ def test_soft_excluye_propina():
         "TEST-SOFT",
     )
 
-    assert kpi.ventas_total == Decimal("85.00")
-    assert kpi.ventas_sin_propina == Decimal("85.00")
+    assert kpi.ventas_total == Decimal("100.00")
+    assert kpi.ventas_sin_propina == Decimal("100.00")
     assert kpi.propinas_total == Decimal("15.00")
 
 

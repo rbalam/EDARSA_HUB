@@ -248,16 +248,10 @@ async def upsert_kpi_comercial(
         kpis.get("propinas_total", kpis.get("propinas", 0))
     )
 
-    sistema_codigo = str(sistema_origen).upper()
     ventas_sin_propina = _sql_decimal(
         kpis.get(
             "ventas_sin_propina",
-            max(
-                ventas_origen - propinas_total,
-                _sql_decimal(0),
-            )
-            if "SOFT" in sistema_codigo
-            else ventas_origen,
+            ventas_origen,
         )
     )
     ventas_total = ventas_sin_propina
