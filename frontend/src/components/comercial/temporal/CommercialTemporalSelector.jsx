@@ -916,17 +916,58 @@ export default function CommercialTemporalSelector({
                         un bloque desde la última fecha seleccionada.
                       </p>
 
-                      <DayPicker
-                        mode="multiple"
-                        locale={es}
-                        selected={
-                          normalizedSelection.dates.map(isoToDate)
-                        }
-                        onDayClick={(day, modifiers, event) => {
-                          applyCalendarBlock(day, event);
-                        }}
-                        showOutsideDays={false}
-                      />
+                      <div className="w-full max-w-[420px] overflow-x-auto">
+                        <DayPicker
+                          mode="multiple"
+                          locale={es}
+                          className="w-full p-2"
+                          classNames={{
+                            months: 'w-full',
+                            month: 'w-full space-y-4',
+                            caption:
+                              'relative flex items-center justify-center pt-1',
+                            caption_label:
+                              'text-base font-semibold capitalize',
+                            nav:
+                              'absolute inset-x-0 top-0 flex items-center justify-between',
+                            nav_button:
+                              'inline-flex h-8 w-8 items-center justify-center rounded-md border bg-white',
+                            table:
+                              'w-full table-fixed border-collapse',
+                            head_row:
+                              'grid w-full grid-cols-7',
+                            head_cell:
+                              'min-w-0 py-2 text-center text-xs font-semibold text-zinc-600',
+                            row:
+                              'mt-1 grid w-full grid-cols-7',
+                            cell:
+                              'relative min-w-0 p-0 text-center',
+                            day:
+                              'mx-auto inline-flex h-10 w-10 max-w-full items-center justify-center rounded-md text-sm font-normal hover:bg-zinc-100 aria-selected:bg-blue-600 aria-selected:text-white',
+                            day_selected:
+                              'bg-blue-600 text-white hover:bg-blue-700',
+                            day_today:
+                              'border border-blue-500 font-semibold',
+                            day_outside:
+                              'text-zinc-300 opacity-50',
+                            day_disabled:
+                              'text-zinc-300 opacity-40',
+                            day_range_start:
+                              'rounded-l-full bg-blue-600 text-white',
+                            day_range_middle:
+                              'rounded-none bg-blue-600 text-white',
+                            day_range_end:
+                              'rounded-r-full bg-blue-600 text-white',
+                          }}
+                          selected={
+                            normalizedSelection.dates.map(isoToDate)
+                          }
+                          onDayClick={(day, modifiers, event) => {
+                            applyCalendarBlock(day, event);
+                          }}
+                          showOutsideDays={false}
+                        />
+                      </div>
                     </div>
                   )}
 
