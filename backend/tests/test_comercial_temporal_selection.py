@@ -326,3 +326,142 @@ def test_weekend_definition_is_not_embedded_in_engine():
 
     assert "Fin de semana" not in source
     assert "[4, 5, 6, 7]" not in source
+
+
+def test_temporal_request_single_unit_is_compatible():
+    from modules.comercial_analytics.schemas import (
+        TemporalResolveRequest,
+    )
+
+    payload = TemporalResolveRequest(
+        selection={
+            "mode": "specific_dates",
+            "dates": ["2026-08-01"],
+        },
+        unidad_negocio_id="130MID",
+    )
+
+    assert payload.requested_unit_codes() == ["130MID"]
+    assert payload.resolve_unit_scope(
+        ["130MID", "130QRO"]
+    ) == ["130MID"]
+
+
+def test_temporal_request_multiple_units_are_normalized():
+    from modules.comercial_analytics.schemas import (
+        TemporalResolveRequest,
+    )
+
+    payload = TemporalResolveRequest(
+        selection={
+            "mode": "specific_dates",
+            "dates": ["2026-08-01"],
+        },
+        unidad_negocio_ids=[
+            "130QRO",
+            "130MID",
+            "130MID",
+            " ",
+        ],
+    )
+
+    assert payload.unidad_negocio_ids == [
+        "130MID",
+        "130QRO",
+    ]
+
+    assert payload.resolve_unit_scope(
+        ["130MID", "130QRO", "ORIGEN"]
+    ) == [
+        "130MID",
+        "130QRO",
+    ]
+
+
+def test_temporal_request_without_scope_uses_all_allowed_units():
+    from modules.comercial_analytics.schemas import (
+        TemporalResolveRequest,
+    )
+
+    payload = TemporalResolveRequest(
+        selection={
+            "mode": "specific_dates",
+            "dates": ["2026-08-01"],
+        },
+    )
+
+    assert payload.resolve_unit_scope([
+        "ORIGEN",
+        "130MID",
+        "130MID",
+    ]) == [
+        "130MID",
+        "ORIGEN",
+    ]
+
+
+def test_temporal_request_rejects_unauthorized_unit():
+    from modules.comercial_analytics.schemas import (
+        TemporalResolveRequest,
+    )
+
+    payload = TemporalResolveRequest(
+        selection={
+            "mode": "specific_dates",
+            "dates": ["2026-08-01"],
+        },
+        unidad_negocio_ids=[
+            "130MID",
+            "UNIDAD_NO_PERMITIDA",
+        ],
+    )
+
+    try:
+        payload.resolve_unit_scope(["130MID"])
+    except PermissionError as exc:
+        assert "UNIDAD_NO_PERMITIDA" in str(exc)
+    else:
+        raise AssertionError(
+            "La unidad no permitida debía rechazarse"
+        )
+
+
+def test_temporal_request_rejects_conflicting_scopes():
+    from modules.comercial_analytics.schemas import (
+        TemporalResolveRequest,
+    )
+
+    payload = TemporalResolveRequest(
+        selection={
+            "mode": "specific_dates",
+            "dates": ["2026-08-01"],
+        },
+        unidad_negocio_id="130MID",
+        unidad_negocio_ids=["130QRO"],
+    )
+
+    try:
+        payload.requested_unit_codes()
+    except ValueError as exc:
+        assert "alcances diferentes" in str(exc)
+    else:
+        raise AssertionError(
+            "Los alcances incompatibles debían rechazarse"
+        )
+
+
+def test_temporal_request_accepts_equivalent_single_and_multiple_scope():
+    from modules.comercial_analytics.schemas import (
+        TemporalResolveRequest,
+    )
+
+    payload = TemporalResolveRequest(
+        selection={
+            "mode": "specific_dates",
+            "dates": ["2026-08-01"],
+        },
+        unidad_negocio_id="130MID",
+        unidad_negocio_ids=["130MID"],
+    )
+
+    assert payload.requested_unit_codes() == ["130MID"]

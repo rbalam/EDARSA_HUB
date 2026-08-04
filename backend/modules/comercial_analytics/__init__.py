@@ -1,3 +1,8 @@
-from .routes import router
+"""Commercial Analytics package.
 
-__all__ = ["router"]
+El paquete no importa routers automáticamente. Esto permite utilizar
+componentes puros, como temporal_selection, sin inicializar seguridad,
+RBAC o configuración SQL.
+
+El router se registra explícitamente desde backend/server.py.
+"""

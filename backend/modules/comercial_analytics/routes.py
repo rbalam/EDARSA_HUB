@@ -261,22 +261,20 @@ async def commercial_temporal_resolve(
                 detail="El usuario no tiene unidades permitidas",
             )
 
-        requested_unit = str(
-            payload.unidad_negocio_id or ""
-        ).strip()
-
-        if requested_unit:
-            if requested_unit not in allowed_codes:
-                raise HTTPException(
-                    status_code=403,
-                    detail=(
-                        "No tiene acceso a la unidad "
-                        f"{requested_unit}"
-                    ),
-                )
-            scope_units = [requested_unit]
-        else:
-            scope_units = allowed_codes
+        try:
+            scope_units = payload.resolve_unit_scope(
+                allowed_codes
+            )
+        except PermissionError as exc:
+            raise HTTPException(
+                status_code=403,
+                detail=str(exc),
+            ) from exc
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=422,
+                detail=str(exc),
+            ) from exc
 
         availability = build_temporal_availability(
             units=scope_units,
