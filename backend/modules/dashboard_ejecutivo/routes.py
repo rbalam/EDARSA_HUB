@@ -1,37 +1,140 @@
+from typing import List, Optional
+
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from core.security import get_current_user
 from core.config.edarsahub_sql import get_edarsahub_connection
-from core.sql_first.db import get_sql_connection
 from core.kpis_canonicos import KPIsCanonicosService
-from datetime import datetime, timedelta
+from modules.comercial_v2.routes import get_unidades_permitidas_v2
+from datetime import date, timedelta
 
 router = APIRouter(prefix="/api/dashboard-ejecutivo", tags=["Dashboard Ejecutivo"])
 
 def q(sql, params=()):
     cn = get_edarsahub_connection()
     cur = cn.cursor(as_dict=True)
-    cur.execute(sql, params)
-    rows = cur.fetchall()
-    cn.close()
-    return rows
+    try:
+        cur.execute(sql, params)
+        return cur.fetchall()
+    finally:
+        cn.close()
+
+
+def _parse_iso_date(value: str, field_name: str) -> date:
+    try:
+        return date.fromisoformat(str(value or "").strip())
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"{field_name} debe usar formato YYYY-MM-DD",
+        ) from exc
+
+
+def _resolver_unidad_pk(value: str) -> Optional[str]:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+
+    try:
+        resolved = CorporateFilterService.resolver_unidad(raw) or {}
+        pk = resolved.get("pk") or resolved.get("unidad_negocio_pk")
+        if pk:
+            return str(pk)
+    except Exception:
+        pass
+
+    try:
+        pk = UnidadesService.resolver_pk(raw)
+        return str(pk) if pk else None
+    except Exception:
+        return None
+
+
+async def _resolver_scope_unidades(
+    current_user: dict,
+    unidades_solicitadas: Optional[List[str]],
+) -> List[str]:
+    unidades_permitidas = await get_unidades_permitidas_v2(current_user)
+
+    permitidas_pks = set()
+    for value in unidades_permitidas or []:
+        pk = _resolver_unidad_pk(value)
+        if pk:
+            permitidas_pks.add(pk)
+
+    if not permitidas_pks:
+        raise HTTPException(
+            status_code=403,
+            detail="El usuario no tiene unidades permitidas",
+        )
+
+    solicitadas = [
+        str(value).strip()
+        for value in (unidades_solicitadas or [])
+        if str(value or "").strip()
+    ]
+
+    if not solicitadas:
+        return sorted(permitidas_pks)
+
+    solicitadas_pks = set()
+    desconocidas = []
+
+    for value in solicitadas:
+        pk = _resolver_unidad_pk(value)
+        if not pk:
+            desconocidas.append(value)
+        else:
+            solicitadas_pks.add(pk)
+
+    if desconocidas:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "mensaje": "Existen unidades desconocidas",
+                "unidades": sorted(set(desconocidas)),
+            },
+        )
+
+    no_permitidas = solicitadas_pks - permitidas_pks
+    if no_permitidas:
+        raise HTTPException(
+            status_code=403,
+            detail="No tiene acceso a una o más unidades solicitadas",
+        )
+
+    return sorted(solicitadas_pks)
+
 
 @router.get("/resumen")
 async def resumen(
-    fecha_inicio: str = Query(default="2026-06-01"),
-    fecha_fin: str = Query(default="2026-06-30"),
-    current_user: dict = Depends(get_current_user)
+    fecha_inicio: str = Query(...),
+    fecha_fin: str = Query(...),
+    unidades: Optional[List[str]] = Query(default=None),
+    current_user: dict = Depends(get_current_user),
 ):
-    """KPIs cerrados y operación vigente separada desde el contrato canónico."""
-    try:
-        hasta_excl = (datetime.fromisoformat(fecha_fin) + timedelta(days=1)).date().isoformat()
-    except Exception:
-        hasta_excl = fecha_fin
+    """KPIs canónicos por fecha_operacion y alcance RBAC de unidades."""
+    inicio = _parse_iso_date(fecha_inicio, "fecha_inicio")
+    fin = _parse_iso_date(fecha_fin, "fecha_fin")
+
+    if inicio > fin:
+        raise HTTPException(
+            status_code=422,
+            detail="fecha_inicio no puede ser posterior a fecha_fin",
+        )
+
+    unidad_pks = await _resolver_scope_unidades(
+        current_user,
+        unidades,
+    )
+
+    hasta_excl = (fin + timedelta(days=1)).isoformat()
 
     desglose = KPIsCanonicosService.resumen_periodo_desglosado(
-        fecha_inicio,
+        inicio.isoformat(),
         hasta_excl,
+        unidad_pks=unidad_pks,
     )
     acumulado = desglose.get("acumulado_cerrado") or {}
     dia_actual = desglose.get("dia_actual") or {}
@@ -124,9 +227,15 @@ async def resumen(
         "source": "EDARSAHUB_SQL",
         "kpis_origen": "KPIsCanonicosService",
         "periodo": {
-            "inicio": fecha_inicio,
-            "fin": fecha_fin,
+            "inicio": inicio.isoformat(),
+            "fin": fin.isoformat(),
+            "hasta_exclusivo": hasta_excl,
             "contrato_acumulado": "CERRADO_SIN_DIA_OPERATIVO_ACTUAL",
+        },
+        "scope": {
+            "unidad_pks": unidad_pks,
+            "cantidad_unidades": len(unidad_pks),
+            "rbac_aplicado": True,
         },
         "contrato_periodo": desglose.get("contrato") or {},
         "kpis": metricas_payload(acumulado),

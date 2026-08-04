@@ -6,23 +6,53 @@ function getToken() {
   return sessionStorage.getItem('edarsa_memory_token') || localStorage.getItem('token') || '';
 }
 
+function formatLocalDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getDefaultDateRange() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  return {
+    start: formatLocalDate(start),
+    end: formatLocalDate(now)
+  };
+}
+
 export default function DashboardEjecutivo() {
   const [data, setData] = useState(null);
   const [rentabilidad, setRentabilidad] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [fechaInicio, setFechaInicio] = useState('2026-06-01');
-  const [fechaFin, setFechaFin] = useState('2026-06-30');
+  const defaultRange = getDefaultDateRange();
+  const [fechaInicio, setFechaInicio] = useState(defaultRange.start);
+  const [fechaFin, setFechaFin] = useState(defaultRange.end);
 
   const fetchData = async () => {
     setLoading(true);
     setError('');
 
     try {
+      if (!fechaInicio || !fechaFin) {
+        throw new Error('Debe seleccionar fecha inicial y fecha final');
+      }
+
+      if (fechaInicio > fechaFin) {
+        throw new Error('La fecha inicial no puede ser posterior a la fecha final');
+      }
+
       const token = getToken();
+      const params = new URLSearchParams({
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin
+      });
 
       const [resDash, resRent] = await Promise.all([
-        fetch(`${API_BASE}/api/dashboard-ejecutivo/resumen?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`, {
+        fetch(`${API_BASE}/api/dashboard-ejecutivo/resumen?${params.toString()}`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
         fetch(`${API_BASE}/api/rentabilidad/resumen`, {
@@ -33,7 +63,18 @@ export default function DashboardEjecutivo() {
       const dashJson = await resDash.json();
       const rentJson = await resRent.json();
 
-      if (!dashJson.success) throw new Error(dashJson.error || 'Error dashboard ejecutivo');
+      if (!resDash.ok || !dashJson.success) {
+        const detail = dashJson.detail;
+        const message =
+          typeof detail === 'string'
+            ? detail
+            : detail?.mensaje || dashJson.error || 'Error dashboard ejecutivo';
+        throw new Error(message);
+      }
+
+      if (!resRent.ok) {
+        throw new Error('No fue posible consultar rentabilidad');
+      }
 
       setData(dashJson);
       setRentabilidad(rentJson);
