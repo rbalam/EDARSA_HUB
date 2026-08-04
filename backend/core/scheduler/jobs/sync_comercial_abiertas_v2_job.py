@@ -897,24 +897,7 @@ FROM (
 # =============================================================================
 
 # MPRO ORIGEN: Ventas cerradas del día
-QUERY_MPRO_CERRADAS_HOY_ORIGEN = """WITH ventas_cerradas AS (
-    SELECT
-        ve.Vn_Documento,
-        SUM(
-            ISNULL(
-                ve.Vn_Precio_Neto_Importe,
-                0
-            )
-        ) AS venta_neta
-    FROM Venta_Encabezado ve
-    WHERE ve.Sc_Cve_Sucursal = '{sucursal_id}'
-      AND CAST(ve.Vn_Fecha AS date)
-            = '{fecha_operacion}'
-      AND ve.Es_Cve_Estado IN ('AC', 'FA')
-      AND ve.Fecha_Baja IS NULL
-    GROUP BY
-        ve.Vn_Documento
-)
+QUERY_MPRO_CERRADAS_HOY_ORIGEN = """
 SELECT
     ISNULL(
         SUM(vc.venta_neta),
@@ -939,7 +922,27 @@ SELECT
         0
     ) AS propinas_cerradas_dia
 
-FROM ventas_cerradas vc
+FROM (
+    SELECT
+        ve.Vn_Documento,
+        SUM(
+            ISNULL(
+                ve.Vn_Precio_Neto_Importe,
+                0
+            )
+        ) AS venta_neta
+
+    FROM Venta_Encabezado ve
+
+    WHERE ve.Sc_Cve_Sucursal = '{sucursal_id}'
+      AND CAST(ve.Vn_Fecha AS date)
+            = '{fecha_operacion}'
+      AND ve.Es_Cve_Estado IN ('AC', 'FA')
+      AND ve.Fecha_Baja IS NULL
+
+    GROUP BY
+        ve.Vn_Documento
+) AS vc
 
 LEFT JOIN Comanda c
     ON c.Co_Folio = vc.Vn_Documento

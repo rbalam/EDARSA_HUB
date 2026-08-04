@@ -248,3 +248,34 @@ def test_scheduler_never_sums_canonical_and_provisional():
 
     for expression in forbidden:
         assert expression not in block
+
+
+
+def test_canonical_query_starts_with_select_for_api_validator():
+    from core.scheduler.jobs.sync_comercial_abiertas_v2_job import (
+        QUERY_MPRO_CERRADAS_HOY_ORIGEN,
+    )
+
+    query = QUERY_MPRO_CERRADAS_HOY_ORIGEN.lstrip()
+
+    assert query.upper().startswith("SELECT")
+    assert not query.upper().startswith("WITH")
+
+
+def test_canonical_query_preserves_business_contract():
+    from core.scheduler.jobs.sync_comercial_abiertas_v2_job import (
+        QUERY_MPRO_CERRADAS_HOY_ORIGEN,
+    )
+
+    query = QUERY_MPRO_CERRADAS_HOY_ORIGEN.lower()
+
+    assert "venta_encabezado" in query
+    assert "vn_precio_neto_importe" in query
+    assert "vn_documento" in query
+    assert "co_folio" in query
+    assert "es_cve_estado in ('ac', 'fa')" in query
+    assert "fecha_baja is null" in query
+    assert "ventas_cerradas_dia" in query
+    assert "tickets_cerrados_dia" in query
+    assert "pax_cerrados_dia" in query
+    assert "propinas_cerradas_dia" in query
