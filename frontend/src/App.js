@@ -30,6 +30,7 @@ import CentroControl from '@/pages/CentroControl';
 import ConfigAsignaciones from '@/pages/ConfigAsignaciones';
 import DBACredentialManager from '@/pages/DBACredentialManager';
 import ConfiguracionOperativaUnidades from '@/pages/ConfiguracionOperativaUnidades';
+import CalendarioCorporativo from '@/pages/CalendarioCorporativo';
 
 // CRM Enterprise
 import CRMDashboard from '@/pages/crm/CRMDashboard';
@@ -187,6 +188,7 @@ function App() {
               <Route path="configuracion/asignaciones" element={<ConfigAsignaciones />} />
               <Route path="admin/dba-credential" element={<DBACredentialManager />} />
               <Route path="admin/configuracion-operativa" element={<ConfiguracionOperativaUnidades />} />
+              <Route path="admin/calendario-corporativo" element={<CalendarioCorporativo />} />
               <Route path="admin/sync-monitor" element={<SyncMonitor />} />
               {/* Módulos Satélites */}
               <Route path="super-caja" element={<SuperCajaPage />} />

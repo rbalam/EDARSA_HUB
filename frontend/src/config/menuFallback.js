@@ -34,7 +34,8 @@ export const subMenusFallback = {
   admin: [
     { id: 'admin-sync-monitor', label: 'Monitor de Sincronización', path: '/admin/sync-monitor' },
     { id: 'admin-dba', label: 'Credenciales DBA', path: '/admin/dba-credential' },
-    { id: 'admin-config', label: 'Configuración Operativa', path: '/admin/configuracion-operativa' }
+    { id: 'admin-config', label: 'Configuración Operativa', path: '/admin/configuracion-operativa' },
+    { id: 'admin-calendario-corporativo', label: 'Días Especiales Comerciales', path: '/admin/calendario-corporativo' }
   ]
 };
 

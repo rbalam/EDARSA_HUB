@@ -377,6 +377,21 @@ export const enterpriseMenuGroups = [
         icon: "Settings",
         section: "Configuración",
         keywords: ["configuracion", "operativa", "parametros"]
+      },
+      {
+        id: "calendario-corporativo",
+        label: "Días Especiales Comerciales",
+        path: "/admin/calendario-corporativo",
+        icon: "CalendarDays",
+        section: "Configuración",
+        keywords: [
+          "calendario",
+          "eventos",
+          "fechas importantes",
+          "filtros",
+          "empresa",
+          "unidad"
+        ]
       }
     ]
   },

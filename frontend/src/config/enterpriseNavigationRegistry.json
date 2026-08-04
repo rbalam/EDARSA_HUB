@@ -971,6 +971,16 @@
       "order": 20,
       "status": "active",
       "legacy": true
+    },
+    "sistema.calendario_corporativo": {
+      "groupId": "plataforma-integraciones",
+      "sectionId": "administracion-seguridad",
+      "label": "Días Especiales Comerciales",
+      "expectedPath": "/admin/calendario-corporativo",
+      "order": 70,
+      "status": "active",
+      "releasedAt": "2026-08-03",
+      "legacy": false
     }
   },
   "plannedItems": [
