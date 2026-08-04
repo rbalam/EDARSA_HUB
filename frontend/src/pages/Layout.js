@@ -55,7 +55,8 @@ import {
   Calculator,
   ShoppingBag,
   Users2,
-  Sparkles
+  Sparkles,
+  Search
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import api from '@/lib/api';
@@ -125,6 +126,7 @@ const Layout = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [enterpriseMenuQuery, setEnterpriseMenuQuery] = useState('');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
       return localStorage.getItem('edarsahub_sidebar_collapsed') === 'true';
@@ -146,6 +148,46 @@ const Layout = () => {
   // que ahora respeta la unidad activa. NO se rompe el menú Enterprise.
   const { context: accessContext } = useAccessContext();
   const unidadActiva = accessContext?.unidad_activa || null;
+
+  const unidadActivaDetalle = useMemo(() => {
+    const unidades = Array.isArray(accessContext?.unidades_permitidas)
+      ? accessContext.unidades_permitidas
+      : [];
+
+    if (!unidadActiva) {
+      return null;
+    }
+
+    return unidades.find(unidad => {
+      const id = (
+        unidad?.UnidadNegocioID
+        || unidad?.unidad_negocio_id
+        || unidad?.id
+        || ""
+      );
+
+      return String(id) === String(unidadActiva);
+    }) || null;
+  }, [accessContext?.unidades_permitidas, unidadActiva]);
+
+  const unidadActivaNombre = useMemo(() => {
+    if (!unidadActiva) {
+      return "Sin unidad seleccionada";
+    }
+
+    const nombre = (
+      unidadActivaDetalle?.UnidadNegocioNombre
+      || unidadActivaDetalle?.NombreUnidad
+      || unidadActivaDetalle?.CodigoUnidad
+      || unidadActivaDetalle?.Codigo
+      || unidadActivaDetalle?.NombreSucursal
+      || unidadActivaDetalle?.NombreEmpresa
+      || ""
+    );
+
+    return String(nombre || "").trim() || "Unidad seleccionada";
+  }, [unidadActiva, unidadActivaDetalle]);
+
   const { menus: ctxMenus, error: ctxMenusError } = useMenusByContext(unidadActiva, Boolean(user));
 
   // NUEVO: Sincronizar menús SQL por contexto -> estado del Layout (con fallback)
@@ -653,6 +695,14 @@ const Layout = () => {
                   </h1>
                   <p className="text-zinc-400 text-sm mt-1 break-words">{user?.name}</p>
                   <p className="text-zinc-500 text-xs break-words">{user?.role}</p>
+                  <p
+                    className="mt-1 text-xs text-zinc-500 break-words"
+                    data-testid="active-business-unit-name"
+                    title={unidadActivaNombre}
+                  >
+                    <span className="text-zinc-600">Unidad activa: </span>
+                    <span className="text-zinc-400">{unidadActivaNombre}</span>
+                  </p>
                 </div>
               )}
               <button
@@ -668,7 +718,31 @@ const Layout = () => {
             </div>
           </div>
 
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto" data-testid="sidebar-nav">
+          {USE_ENTERPRISE_MENU && !sidebarCollapsed && (
+            <div
+              className="shrink-0 border-b border-zinc-800 bg-zinc-900 px-4 py-3"
+              data-testid="enterprise-navigation-search-container"
+            >
+              <div className="relative">
+                <Search
+                  size={17}
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
+                />
+                <input
+                  value={enterpriseMenuQuery}
+                  onChange={event =>
+                    setEnterpriseMenuQuery(event.target.value)
+                  }
+                  placeholder="Buscar menú o tab..."
+                  aria-label="Buscar menú o tab"
+                  data-testid="enterprise-navigation-search"
+                  className="w-full rounded-xl border border-white/10 bg-zinc-950/80 py-2.5 pl-10 pr-3 text-sm text-white outline-none transition-all placeholder:text-zinc-500 focus:border-amber-500/60"
+                />
+              </div>
+            </div>
+          )}
+
+          <nav className="min-h-0 flex-1 overflow-y-auto p-4 space-y-1" data-testid="sidebar-nav">
             {/* P5-10B: Menú Enterprise (agrupado y buscable) */}
             {USE_ENTERPRISE_MENU ? (
               <EnterpriseNavigationMenu
@@ -676,6 +750,17 @@ const Layout = () => {
                 sqlMenus={sqlMenus}
                 collapsed={sidebarCollapsed}
                 activeBusinessUnit={unidadActiva}
+                query={enterpriseMenuQuery}
+                onQueryChange={setEnterpriseMenuQuery}
+                onRequestExpand={() => {
+                  setSidebarCollapsed(false);
+                  try {
+                    localStorage.setItem(
+                      'edarsahub_sidebar_collapsed',
+                      'false'
+                    );
+                  } catch {}
+                }}
               />
             ) : (
               <>

@@ -29,7 +29,6 @@ import {
   Percent,
   PieChart,
   Plug,
-  Search,
   Server,
   Settings,
   ShieldCheck,
@@ -40,7 +39,8 @@ import {
   UserCog,
   Users,
   Utensils,
-  Wine
+  Wine,
+  Search
 } from "lucide-react";
 
 import {
@@ -306,13 +306,16 @@ export default function EnterpriseNavigationMenu({
   user,
   collapsed = false,
   sqlMenus = null,
-  activeBusinessUnit = null
+  activeBusinessUnit = null,
+  query = "",
+  onQueryChange = null,
+  onRequestExpand = null
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  void onQueryChange;
   const currentPath = location.pathname;
 
-  const [query, setQuery] = useState("");
   const [expandedGroupId, setExpandedGroupId] =
     useState(null);
 
@@ -421,7 +424,6 @@ export default function EnterpriseNavigationMenu({
     }
   }, [
     activeTrail,
-    expandedGroupId,
     navigation.groups
   ]);
 
@@ -769,7 +771,21 @@ export default function EnterpriseNavigationMenu({
             <button
               key={group.id}
               type="button"
-              onClick={() => toggleGroup(group.id)}
+              onClick={() => {
+                const firstActiveItem = (group.sections || [])
+                  .flatMap(section => section.items || [])
+                  .find(
+                    item =>
+                      item?.status === "active" &&
+                      Boolean(item?.path)
+                  );
+
+                if (firstActiveItem) {
+                  navigateTo(firstActiveItem);
+                }
+              }}
+              aria-label={`Ir a ${groupStyle.label}`}
+              data-testid={`enterprise-collapsed-group-${group.id}`}
               className={[
                 "flex h-11 w-full items-center justify-center rounded-xl transition-all",
                 expandedGroupId === group.id
@@ -795,6 +811,7 @@ export default function EnterpriseNavigationMenu({
       data-testid="enterprise-navigation-menu"
       data-user-present={Boolean(user)}
     >
+      {!query && (
       <section
         className="space-y-2 px-3"
         data-testid="enterprise-my-space"
@@ -808,23 +825,6 @@ export default function EnterpriseNavigationMenu({
             compact: true
           })
         )}
-
-        <div className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2 text-zinc-500">
-          <MapPin
-            size={16}
-            className="mt-0.5 shrink-0"
-          />
-
-          <span className="min-w-0">
-            <span className="block text-[9px] uppercase tracking-wide text-zinc-600">
-              Unidad de negocio activa
-            </span>
-
-            <span className="block break-words text-xs text-zinc-400">
-              {unitLabel(activeBusinessUnit)}
-            </span>
-          </span>
-        </div>
 
         <div className="space-y-1">
           <p className="flex items-center gap-2 px-2 pt-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
@@ -845,29 +845,24 @@ export default function EnterpriseNavigationMenu({
           )}
         </div>
       </section>
-
-      <div className="order-first relative px-3">
-        <Search
-          size={17}
-          className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-500"
-        />
-
-        <input
-          value={query}
-          onChange={event =>
-            setQuery(event.target.value)
-          }
-          placeholder="Buscar menú o tab..."
-          data-testid="enterprise-navigation-search"
-          className="w-full rounded-xl border border-white/10 bg-zinc-900/80 py-2.5 pl-10 pr-3 text-sm text-white outline-none transition-all placeholder:text-zinc-500 focus:border-amber-500/60"
-        />
-      </div>
+      )}
 
       {query && (
-        <section className="order-first space-y-1 px-3">
-          <p className="px-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-            Resultados
-          </p>
+        <section
+          className="order-first space-y-1 px-3"
+          data-testid="enterprise-search-results"
+        >
+          <div className="flex items-center justify-between gap-3 px-2">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+              Resultados
+            </p>
+            <span
+              className="text-[10px] text-zinc-600"
+              data-testid="enterprise-search-result-count"
+            >
+              {searchResults.length}
+            </span>
+          </div>
 
           {searchResults.length > 0 ? (
             searchResults.map(item =>
