@@ -648,6 +648,53 @@ def _get_unidades_from_edarsahub() -> tuple:
 
     return unidades_sr, unidades_mpro
 
+
+def select_mpro_closed_sales(
+    canonical_result,
+    provisional_result,
+):
+    """
+    Selecciona una sola fuente de ventas cerradas MPRO.
+
+    Precedencia:
+    1. Venta_Encabezado cuando contiene tickets.
+    2. Comanda/Comanda_Detalle únicamente como provisional.
+    3. Nunca suma ambas fuentes.
+    """
+    canonical = dict(canonical_result or {})
+    provisional = dict(provisional_result or {})
+
+    canonical_tickets = int(
+        canonical.get("tickets_cerrados_dia") or 0
+    )
+
+    if canonical_tickets > 0:
+        selected = canonical
+        source_kind = "CANONICAL_VENTA_ENCABEZADO"
+        is_provisional = False
+    else:
+        selected = provisional
+        source_kind = "PROVISIONAL_COMANDA"
+        is_provisional = True
+
+    return {
+        "ventas_cerradas_dia": selected.get(
+            "ventas_cerradas_dia"
+        ) or 0,
+        "tickets_cerrados_dia": selected.get(
+            "tickets_cerrados_dia"
+        ) or 0,
+        "pax_cerrados_dia": selected.get(
+            "pax_cerrados_dia"
+        ) or 0,
+        "propinas_cerradas_dia": selected.get(
+            "propinas_cerradas_dia"
+        ) or 0,
+        "closed_sales_source": source_kind,
+        "is_provisional": is_provisional,
+    }
+
+
 # =============================================================================
 # QUERIES PARA VENTAS DEL DÍA
 # =============================================================================
@@ -837,59 +884,66 @@ FROM (
 ) AS ticket
 """
 
+# =============================================================================
+# DECISION ARQUITECTONICA
+# ADR-20260804-mpro-logicas-ventas-cerradas-por-unidad.md
+#
+# FUENTE CANONICA FINAL MPRO:
+# Venta_Encabezado.Vn_Precio_Neto_Importe.
+#
+# Comanda y Comanda_Detalle solo pueden actuar como fuente provisional
+# intradia mientras la venta final aun no haya sido sincronizada.
+# El dato provisional debe reconciliarse y sustituirse por el canonico.
+# =============================================================================
+
 # MPRO ORIGEN: Ventas cerradas del día
-QUERY_MPRO_CERRADAS_HOY_ORIGEN = """
+QUERY_MPRO_CERRADAS_HOY_ORIGEN = """WITH ventas_cerradas AS (
+    SELECT
+        ve.Vn_Documento,
+        SUM(
+            ISNULL(
+                ve.Vn_Precio_Neto_Importe,
+                0
+            )
+        ) AS venta_neta
+    FROM Venta_Encabezado ve
+    WHERE ve.Sc_Cve_Sucursal = '{sucursal_id}'
+      AND CAST(ve.Vn_Fecha AS date)
+            = '{fecha_operacion}'
+      AND ve.Es_Cve_Estado IN ('AC', 'FA')
+      AND ve.Fecha_Baja IS NULL
+    GROUP BY
+        ve.Vn_Documento
+)
 SELECT
     ISNULL(
-        SUM(ticket.ventas),
+        SUM(vc.venta_neta),
         0
     ) AS ventas_cerradas_dia,
 
-    ISNULL(
-        SUM(ticket.propina),
-        0
-    ) AS propinas_cerradas_dia,
-
-    COUNT(*)
-        AS tickets_cerrados_dia,
+    COUNT(
+        DISTINCT vc.Vn_Documento
+    ) AS tickets_cerrados_dia,
 
     ISNULL(
-        SUM(ticket.pax),
-        0
-    ) AS pax_cerrados_dia
-
-FROM (
-    SELECT
-        c.Co_Folio,
-
         SUM(
-            ISNULL(cd.Cd_Importe, 0)
-        ) AS ventas,
-
-        MAX(
-            ISNULL(c.Co_Propina, 0)
-        ) AS propina,
-
-        MAX(
             ISNULL(c.Co_Personas, 0)
-        ) AS pax
+        ),
+        0
+    ) AS pax_cerrados_dia,
 
-    FROM Comanda c
+    ISNULL(
+        SUM(
+            ISNULL(c.Co_Propina, 0)
+        ),
+        0
+    ) AS propinas_cerradas_dia
 
-    INNER JOIN Comanda_Detalle cd
-        ON cd.Co_Folio = c.Co_Folio
+FROM ventas_cerradas vc
 
-    WHERE CAST(c.Co_Fecha AS date)
-            = '{fecha_operacion}'
-      AND c.Sc_Cve_Sucursal
-            = '{sucursal_id}'
-      AND c.Es_Cve_Estado = 'PA'
-      AND cd.Es_Cve_Estado = 'AC'
-      AND cd.Fecha_Baja IS NULL
-
-    GROUP BY
-        c.Co_Folio
-) AS ticket
+LEFT JOIN Comanda c
+    ON c.Co_Folio = vc.Vn_Documento
+   AND c.Sc_Cve_Sucursal = '{sucursal_id}'
 """
 
 # =============================================================================
@@ -1415,30 +1469,99 @@ async def execute_sync_comercial_abiertas_v2(
                 # REGLA ANTI-$0 FALSO: Primero obtener AMBAS queries antes de decidir
                 abiertas_data = rows_abiertas[0] if rows_abiertas else {}
             
-                # Query ventas cerradas via API local
-                # FIX: Incluir fecha_operacion para QRO
-                query_cerradas = query_template_cerradas.format(
-                    sucursal_id=sucursal_id,
-                    fecha_operacion=fecha_operacion_str
+                # =============================================================
+                # VENTAS CERRADAS MPRO: CANONICO CON FALLBACK PROVISIONAL
+                # =============================================================
+                # Regla:
+                # 1. Venta_Encabezado es la fuente canónica final.
+                # 2. Comanda se consulta únicamente cuando el canónico no
+                #    contiene tickets para la fecha operativa.
+                # 3. Nunca se suman ambas fuentes.
+                query_cerradas_canonical = (
+                    QUERY_MPRO_CERRADAS_HOY_ORIGEN.format(
+                        sucursal_id=sucursal_id,
+                        fecha_operacion=fecha_operacion_str,
+                    )
                 )
-                rows_cerradas, cerradas_status = (
+
+                rows_canonical, canonical_status = (
                     _execute_query_via_api_local(
                         api_config,
-                        query_cerradas,
+                        query_cerradas_canonical,
                     )
                 )
 
-                if cerradas_status != "API_LOCAL_OK":
+                if canonical_status != "API_LOCAL_OK":
                     raise Exception(
-                        "SOURCE_ERROR: consulta MPRO "
+                        "SOURCE_ERROR: consulta canónica MPRO "
                         "de ventas cerradas falló con estado "
-                        f"{cerradas_status}"
+                        f"{canonical_status}"
                     )
 
-                cerradas_data = (
-                    rows_cerradas[0]
-                    if rows_cerradas
+                canonical_closed_data = (
+                    rows_canonical[0]
+                    if rows_canonical
                     else {}
+                )
+
+                canonical_tickets = int(
+                    canonical_closed_data.get(
+                        "tickets_cerrados_dia"
+                    )
+                    or 0
+                )
+
+                provisional_closed_data = {}
+
+                if canonical_tickets <= 0:
+                    query_cerradas_provisional = (
+                        QUERY_MPRO_CERRADAS_HOY_QRO.format(
+                            sucursal_id=sucursal_id,
+                            fecha_operacion=fecha_operacion_str,
+                        )
+                    )
+
+                    rows_provisional, provisional_status = (
+                        _execute_query_via_api_local(
+                            api_config,
+                            query_cerradas_provisional,
+                        )
+                    )
+
+                    if provisional_status != "API_LOCAL_OK":
+                        raise Exception(
+                            "SOURCE_ERROR: consulta provisional MPRO "
+                            "de ventas cerradas falló con estado "
+                            f"{provisional_status}"
+                        )
+
+                    provisional_closed_data = (
+                        rows_provisional[0]
+                        if rows_provisional
+                        else {}
+                    )
+
+                cerradas_data = select_mpro_closed_sales(
+                    canonical_closed_data,
+                    provisional_closed_data,
+                )
+
+                closed_sales_source = cerradas_data[
+                    "closed_sales_source"
+                ]
+                closed_sales_is_provisional = cerradas_data[
+                    "is_provisional"
+                ]
+
+                logger.info(
+                    "[SYNC_ABIERTAS_V2] %s: "
+                    "fuente_cerradas=%s, provisional=%s, "
+                    "canonical_tickets=%s, selected_tickets=%s",
+                    nombre,
+                    closed_sales_source,
+                    closed_sales_is_provisional,
+                    canonical_tickets,
+                    cerradas_data.get("tickets_cerrados_dia"),
                 )
             
                 # Extraer valores ANTES de decidir
@@ -1574,12 +1697,25 @@ async def execute_sync_comercial_abiertas_v2(
                     "fuente": "API_LOCAL",
                     "estatus": "OK",
                     "source_status": source_status,
+                    "closed_sales_source": closed_sales_source,
+                    "closed_sales_is_provisional": (
+                        closed_sales_is_provisional
+                    ),
                     "fecha_operacion": fecha_operacion_str,  # Agregar para debug
                     "ventas_abiertas": float(ventas_abiertas),
                     "total_estimado_dia": float(total_estimado_dia)
                 })
             
-                logger.info(f"[SYNC_ABIERTAS_V2] {nombre} (API Local): fecha_op={fecha_operacion_str}, total=${total_estimado_dia:,.2f}")
+                logger.info(
+                    "[SYNC_ABIERTAS_V2] %s (API Local): "
+                    "fecha_op=%s, total=$%s, fuente_cerradas=%s, "
+                    "provisional=%s",
+                    nombre,
+                    fecha_operacion_str,
+                    f"{total_estimado_dia:,.2f}",
+                    closed_sales_source,
+                    closed_sales_is_provisional,
+                )
             
                 # Log exitoso
                 log = SyncLogV2(
