@@ -24,6 +24,7 @@ from typing import Dict, Any, List, Optional
 import uuid
 import pymssql
 
+import hashlib
 from ..config import JobConfig
 from core.sql_first.db import get_sql_connection
 from core.connections.pos_runtime_resolver import PosRuntimeContext, list_pos_runtime_contexts
@@ -189,6 +190,7 @@ class SyncComercialEndpointsJob:
                 cursor.execute("""
                     SELECT
                         ISNULL(SUM(ventas_total), 0) as VentaBrutaActual,
+                        ISNULL(SUM(ventas_sin_propina), 0) as VentaNetaActual,
                         ISNULL(AVG(ticket_promedio), 0) as TicketPromedioActual,
                         ISNULL(SUM(tickets_total), 0) as CuentasActual,
                         ISNULL(SUM(pax_total), 0) as ComensalesActual,
@@ -303,7 +305,7 @@ class SyncComercialEndpointsJob:
                 """, (server_id, suc["SucursalID"], fecha_inicio))
 
                 for row in cursor.fetchall():
-                    ticket_id = f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
+                    ticket_id = f"{server_id}-{suc['SucursalID']}-{row['fecha_operacion']}"
 
                     # Objetivo de ticket perfecto (configurable, default 350)
                     ticket_objetivo = 350.0
@@ -319,9 +321,9 @@ class SyncComercialEndpointsJob:
                              TicketPromedioReal, TicketPerfectoObjetivo, PorcentajeCumplimiento)
                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """, (
-                        server_id, suc["SucursalID"], row["FechaOperacion"],
+                        server_id, suc["SucursalID"], row["fecha_operacion"],
                         ticket_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
-                        row["FechaOperacion"], row["TotalCuentas"], row["TotalComensales"],
+                        row["fecha_operacion"], row["TotalCuentas"], row["TotalComensales"],
                         row["VentaTotal"], ticket_real, ticket_objetivo, cumplimiento
                     ))
                     conn.commit()
@@ -446,7 +448,9 @@ class SyncComercialEndpointsJob:
                 """, (server_id, suc["SucursalID"], fecha_inicio))
 
                 for row in cursor.fetchall():
-                    pax_id = f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
+                    pax_id = hashlib.sha256(
+                        f"{server_id}|{suc['SucursalID']}|{row['FechaOperacion']}".encode("utf-8")
+                    ).hexdigest()[:50]
 
                     comensales = int(row["TotalComensales"] or 0)
                     venta = float(row["VentaTotal"] or 0)
