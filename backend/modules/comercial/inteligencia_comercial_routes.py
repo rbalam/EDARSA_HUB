@@ -270,6 +270,20 @@ async def get_pax_inteligencia(
     detalle_mesero: bool = Query(default=False),
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
+    raise HTTPException(
+        status_code=410,
+        detail={
+            "success": False,
+            "status": "deprecated",
+            "code": "COMERCIAL_INTELIGENCIA_PAX_ENDPOINT_DEPRECATED",
+            "message": (
+                "Endpoint deshabilitado: dependía de "
+                "Sync_PAX_Detalle, una fuente comercial "
+                "paralela no autorizada."
+            ),
+        },
+    )
+
     """
     Detalle de PAX (comensales).
     Fuente: dbo.Sync_PAX_Detalle (tabla sincronizada)

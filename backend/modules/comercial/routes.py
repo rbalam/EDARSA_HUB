@@ -3490,6 +3490,20 @@ async def comercial_reporte_pax(
     fecha_fin: str = Query(default=""),
     current_user: Dict = Depends(get_current_user)
 ):
+    raise HTTPException(
+        status_code=410,
+        detail={
+            "success": False,
+            "status": "deprecated",
+            "code": "COMERCIAL_REPORTE_PAX_ENDPOINT_DEPRECATED",
+            "message": (
+                "Endpoint deshabilitado: dependía de "
+                "Sync_PAX_Detalle, una fuente comercial "
+                "paralela no autorizada."
+            ),
+        },
+    )
+
     """
     Reporte de PAX (comensales) por sucursal.
     
