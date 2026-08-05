@@ -90,6 +90,20 @@ class SyncComercialEndpointsJob:
             self._conn = None
     
     async def execute(self) -> Dict[str, Any]:
+        logger.error(
+            "SYNC_COMERCIAL_ENDPOINTS_DISABLED: "
+            "job bloqueado para impedir fuentes comerciales paralelas"
+        )
+        return {
+            "success": False,
+            "status": "disabled",
+            "code": "SYNC_COMERCIAL_ENDPOINTS_DISABLED",
+            "message": (
+                "Job deshabilitado: Sync_* no puede persistir KPIs "
+                "que ya pertenecen a fuentes canónicas comerciales."
+            ),
+        }
+
         """
         Ejecuta sincronización de todos los endpoints.
         """
