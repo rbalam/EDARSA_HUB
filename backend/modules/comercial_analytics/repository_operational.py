@@ -256,6 +256,70 @@ def build_current_operation(
         )
     )
 
+
+    # EDARSAHUB_COMMON_OPERATION_DATE_V1
+    #
+    # Ventas del Día debe representar una sola fecha operativa efectiva.
+    # Si las unidades resuelven fechas distintas, se toma la fecha más
+    # reciente y las unidades que todavía pertenecen al día anterior
+    # se muestran en cero. Nunca se mezclan días operativos distintos.
+    common_operation_date = (
+        max(effective_dates)
+        if effective_dates
+        else None
+    )
+
+    if common_operation_date and len(effective_dates) > 1:
+        for item in items:
+            if item.get("fecha_operacion") == common_operation_date:
+                continue
+
+            for bucket_name in (
+                "cerradas",
+                "abiertas",
+                "operacion_estimada",
+            ):
+                bucket = item.get(bucket_name)
+
+                if not isinstance(bucket, dict):
+                    continue
+
+                for metric_name, metric_value in list(bucket.items()):
+                    if isinstance(metric_value, bool):
+                        continue
+
+                    if isinstance(metric_value, (int, float)):
+                        bucket[metric_name] = 0
+
+        # Reconstruir los totales únicamente con la fecha común.
+        for bucket_name, bucket_totals in totals.items():
+            if not isinstance(bucket_totals, dict):
+                continue
+
+            for metric_name, metric_value in list(
+                bucket_totals.items()
+            ):
+                if isinstance(metric_value, bool):
+                    continue
+
+                if not isinstance(metric_value, (int, float)):
+                    continue
+
+                bucket_totals[metric_name] = round(
+                    sum(
+                        float(
+                            (
+                                item.get(bucket_name)
+                                or {}
+                            ).get(metric_name)
+                            or 0
+                        )
+                        for item in items
+                    ),
+                    2,
+                )
+
+        effective_dates = {common_operation_date}
     return {
         "fecha_operacion": (
             next(iter(effective_dates))

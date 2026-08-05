@@ -5,7 +5,7 @@ from modules.comercial_analytics.repository_operational import (
 )
 
 
-def test_each_unit_uses_its_current_operational_date():
+def test_common_date_prevents_mixed_operational_days():
     requested = []
 
     def resolver(unit_code):
@@ -25,9 +25,11 @@ def test_each_unit_uses_its_current_operational_date():
                 "unidad_negocio_nombre": "Unidad A",
                 "fecha_operacion": "2026-08-02",
                 "ventas_abiertas": 50,
+                "propinas_abiertas": 5,
                 "tickets_abiertos": 1,
                 "pax_abiertos": 2,
                 "ventas_cerradas_dia": 100,
+                "propinas_cerradas_dia": 10,
                 "tickets_cerrados_dia": 2,
                 "pax_cerrados_dia": 4,
             }]
@@ -37,7 +39,13 @@ def test_each_unit_uses_its_current_operational_date():
             "unidad_negocio_nombre": "Unidad B",
             "fecha_operacion": "2026-08-01",
             "ventas_abiertas": 10,
+            "propinas_abiertas": 1,
+            "tickets_abiertos": 1,
+            "pax_abiertos": 1,
             "ventas_cerradas_dia": 20,
+            "propinas_cerradas_dia": 2,
+            "tickets_cerrados_dia": 1,
+            "pax_cerrados_dia": 1,
         }]
 
     result = build_current_operation(
@@ -50,10 +58,45 @@ def test_each_unit_uses_its_current_operational_date():
         ("2026-08-02", ("A",)),
         ("2026-08-01", ("B",)),
     ]
-    assert result["fecha_operacion_multiple"] is True
-    assert result["totales"]["operacion_estimada"][
-        "ventas"
-    ] == 180
+
+    assert result["fecha_operacion"] == "2026-08-02"
+    assert result["fechas_operacion"] == ["2026-08-02"]
+    assert result["fecha_operacion_multiple"] is False
+
+    by_unit = {
+        item["unidad_negocio_id"]: item
+        for item in result["items"]
+    }
+
+    assert by_unit["A"]["cerradas"]["ventas"] == 100
+    assert by_unit["A"]["abiertas"]["ventas"] == 50
+    assert by_unit["A"]["operacion_estimada"]["ventas"] == 150
+
+    assert by_unit["B"]["cerradas"]["ventas"] == 0
+    assert by_unit["B"]["abiertas"]["ventas"] == 0
+    assert by_unit["B"]["operacion_estimada"]["ventas"] == 0
+    assert by_unit["B"]["operacion_estimada"]["propinas"] == 0
+    assert by_unit["B"]["operacion_estimada"]["cheques"] == 0
+    assert by_unit["B"]["operacion_estimada"]["pax"] == 0
+
+    assert result["totales"]["cerradas"] == {
+        "ventas": 100.0,
+        "propinas": 10.0,
+        "cheques": 2.0,
+        "pax": 4.0,
+    }
+    assert result["totales"]["abiertas"] == {
+        "ventas": 50.0,
+        "propinas": 5.0,
+        "cheques": 1.0,
+        "pax": 2.0,
+    }
+    assert result["totales"]["operacion_estimada"] == {
+        "ventas": 150.0,
+        "propinas": 15.0,
+        "cheques": 3.0,
+        "pax": 6.0,
+    }
 
 
 def test_missing_current_snapshot_returns_zero():
