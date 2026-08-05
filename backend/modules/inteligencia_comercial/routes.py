@@ -1251,6 +1251,20 @@ async def get_analisis_pax(
     fecha_inicio: Optional[str] = Query(None),
     fecha_fin: Optional[str] = Query(None)
 ):
+    raise HTTPException(
+        status_code=410,
+        detail={
+            "success": False,
+            "status": "deprecated",
+            "code": "INTELIGENCIA_PAX_ENDPOINT_DEPRECATED",
+            "message": (
+                "Endpoint deshabilitado: dependía de una fuente "
+                "paralela Sync_PAX_Detalle sin contrato canónico "
+                "completo para TiempoMesa y Turno."
+            ),
+        },
+    )
+
     """
     Análisis detallado de PAX/Comensales.
     Fuente: Sync_PAX_Detalle
