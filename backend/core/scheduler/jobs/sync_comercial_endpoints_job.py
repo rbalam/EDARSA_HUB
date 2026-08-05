@@ -169,7 +169,7 @@ class SyncComercialEndpointsJob:
         logger.info(f"[{self.JOB_ID}] Sincronizando metas comerciales")
         
         conn = self._get_edarsahub_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(as_dict=True)
         
         now = datetime.now(timezone.utc)
         anio = now.year
@@ -256,6 +256,7 @@ class SyncComercialEndpointsJob:
                         
             except Exception as e:
                 logger.warning(f"[{self.JOB_ID}] Error sync metas {suc.get('SucursalID')}: {e}")
+                raise
 
         
         cursor.close()
@@ -273,7 +274,7 @@ class SyncComercialEndpointsJob:
         logger.info(f"[{self.JOB_ID}] Sincronizando ticket perfecto")
         
         conn = self._get_edarsahub_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(as_dict=True)
         
         # Sincronizar últimos 7 días
         fecha_inicio = datetime.now(timezone.utc).date() - timedelta(days=7)
@@ -328,6 +329,7 @@ class SyncComercialEndpointsJob:
                         
             except Exception as e:
                 logger.warning(f"[{self.JOB_ID}] Error sync ticket {suc.get('SucursalID')}: {e}")
+                raise
 
         
         cursor.close()
@@ -345,7 +347,7 @@ class SyncComercialEndpointsJob:
         logger.info(f"[{self.JOB_ID}] Sincronizando mesas")
         
         conn = self._get_edarsahub_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(as_dict=True)
         
         hoy = datetime.now(timezone.utc).date()
         count = 0
@@ -398,6 +400,7 @@ class SyncComercialEndpointsJob:
                         
             except Exception as e:
                 logger.warning(f"[{self.JOB_ID}] Error sync mesas {suc.get('SucursalID')}: {e}")
+                raise
 
         
         cursor.close()
@@ -415,7 +418,7 @@ class SyncComercialEndpointsJob:
         logger.info(f"[{self.JOB_ID}] Sincronizando PAX detalle")
         
         conn = self._get_edarsahub_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(as_dict=True)
         
         # Últimos 7 días
         fecha_inicio = datetime.now(timezone.utc).date() - timedelta(days=7)
@@ -468,6 +471,7 @@ class SyncComercialEndpointsJob:
                         
             except Exception as e:
                 logger.warning(f"[{self.JOB_ID}] Error sync PAX {suc.get('SucursalID')}: {e}")
+                raise
 
         
         cursor.close()
