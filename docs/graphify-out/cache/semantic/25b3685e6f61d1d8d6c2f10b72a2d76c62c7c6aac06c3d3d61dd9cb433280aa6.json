@@ -1,1 +1,0 @@
-{"nodes": [], "edges": [{"source": "comercial_queries_mpro_py", "target": "empresa_resolver_empresa_resolver_py", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "reports/FASE_5C_REFACTOR_MPRO_EMPRESARESOLVER.md", "source_location": null, "weight": 1.0}], "hyperedges": []}

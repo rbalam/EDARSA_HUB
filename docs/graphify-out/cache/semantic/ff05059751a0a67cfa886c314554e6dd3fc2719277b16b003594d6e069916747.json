@@ -1,1 +1,0 @@
-{"nodes": [{"id": "edarsahub_sql", "label": "EDARSAHUB SQL Server", "file_type": "concept", "source_file": "CONTEXTO_PARA_CHATGPT_EDARSAHUB.md"}, {"id": "mongodb_legacy", "label": "MongoDB Legacy", "file_type": "concept", "source_file": "CONTEXTO_PARA_CHATGPT_EDARSAHUB.md"}], "edges": [], "hyperedges": []}

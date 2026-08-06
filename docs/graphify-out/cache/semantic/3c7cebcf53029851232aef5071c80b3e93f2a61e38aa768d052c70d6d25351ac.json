@@ -1,1 +1,0 @@
-{"nodes": [{"id": "cierre_piloto_rbac_evidencia_verificar_usuario_en_alcance", "label": "verificar_usuario_en_alcance", "file_type": "code", "source_file": "/app/backend/core/alcance_helper.py", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}], "edges": [], "hyperedges": []}

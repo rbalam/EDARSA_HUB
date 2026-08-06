@@ -590,3 +590,7 @@ exports/edarsahub_sql_full/
 *.rar
 graphify-out/
 **/graphify-out/
+
+# Graphify generated outputs
+**/.graphify_analysis.json
+**/.graphify_labels.json
