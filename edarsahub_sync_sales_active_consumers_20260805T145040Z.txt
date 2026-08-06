@@ -1,0 +1,78 @@
+===== 1. GUARDRAILS =====
+RAMA=Edarsahub_Desarrollo
+HEAD=6f82b39fead3a73667241e88e580f0ea8faf51e8
+REMOTE_HEAD=6f82b39fead3a73667241e88e580f0ea8faf51e8
+CONTROL=PASS
+
+===== 2. AUDITAR SOLO ARCHIVOS PRODUCTIVOS TRACKED =====
+ACTIVE_FILES_SCANNED=1761
+WRITERS=1
+READERS=11
+SYNC_ONLY_READERS=9
+MIXED_READERS=2
+ROUTE_READERS=7
+FRONTEND_REFERENCES=1
+PARSE_ERRORS=0
+WRITER=backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:insert_into_sync_sales|LINES=243-293
+ROUTE_READER=backend/modules/inteligencia_comercial/iscam_routes.py:ventas_periodos|ROUTES=GET /ventas-periodos|CLASS=READER_SYNC_ONLY
+ROUTE_READER=backend/modules/inteligencia_comercial/iscam_routes.py:ventas_periodos_productos|ROUTES=GET /ventas-periodos/productos|CLASS=READER_SYNC_ONLY
+ROUTE_READER=backend/modules/inteligencia_comercial/iscam_routes.py:ventas_periodos_tickets|ROUTES=GET /ventas-periodos/tickets|CLASS=READER_SYNC_ONLY
+ROUTE_READER=backend/modules/inteligencia_comercial/iscam_routes.py:resumen_cuentas|ROUTES=GET /cuentas|CLASS=READER_SYNC_ONLY
+ROUTE_READER=backend/modules/inteligencia_comercial/iscam_routes.py:cuenta_detalle|ROUTES=GET /cuentas/detalle|CLASS=READER_SYNC_ONLY
+ROUTE_READER=backend/modules/inteligencia_comercial/iscam_routes.py:comandas_venta|ROUTES=GET /comandas|CLASS=READER_SYNC_ONLY
+ROUTE_READER=backend/modules/inteligencia_comercial/iscam_routes.py:ventas_periodos_tipos_servicio|ROUTES=GET /ventas-periodos/tipos-servicio|CLASS=READER_SYNC_ONLY
+SYNC_ONLY_READER=backend/core/scheduler/jobs/inteligencia_comercial_enrich.py:_write_enrichment
+SYNC_ONLY_READER=backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:insert_into_sync_sales
+SYNC_ONLY_READER=backend/modules/inteligencia_comercial/iscam_routes.py:ventas_periodos
+SYNC_ONLY_READER=backend/modules/inteligencia_comercial/iscam_routes.py:ventas_periodos_productos
+SYNC_ONLY_READER=backend/modules/inteligencia_comercial/iscam_routes.py:ventas_periodos_tickets
+SYNC_ONLY_READER=backend/modules/inteligencia_comercial/iscam_routes.py:resumen_cuentas
+SYNC_ONLY_READER=backend/modules/inteligencia_comercial/iscam_routes.py:cuenta_detalle
+SYNC_ONLY_READER=backend/modules/inteligencia_comercial/iscam_routes.py:comandas_venta
+SYNC_ONLY_READER=backend/modules/inteligencia_comercial/iscam_routes.py:ventas_periodos_tipos_servicio
+MIXED_READER=backend/core/scheduler/jobs/inteligencia_comercial_status_job.py:execute|CANONICAL=Comercial_KPIs_Diarios_v2,Comercial_Ventas_Dia_Abiertas_v2
+MIXED_READER=backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:update_kpis_diarios|CANONICAL=Comercial_KPIs_Diarios_v2
+FRONTEND_REF=frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx:3|REFERENCE
+ACTIVE_CONSUMER_AUDIT=PASS
+
+===== 3. DECISION =====
+RESULTADO=PASS
+AUDITORIA_CONSUMIDORES_ACTIVOS_SYNC_SALES=PASS
+ESCRITORES_ACTIVOS=1
+LECTORES_ACTIVOS=11
+LECTORES_SOLO_SYNC_SALES=9
+LECTORES_MIXTOS=2
+ENDPOINTS_LECTORES=7
+REFERENCIAS_FRONTEND=1
+DECISION=SYNC_SALES_ES_FUENTE_PARALELA_PRODUCTIVA
+SIGUIENTE_PASO=AUDITAR_CONTRATO_DE_CADA_LECTOR_SOLO_SYNC_SALES_Y_MAPEO_CANONICO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+
+===== 4. INTEGRIDAD FINAL =====
+RESULTADO=PASS
+AUDITORIA_CONSUMIDORES_ACTIVOS_SYNC_SALES=PASS
+ESCRITORES_ACTIVOS=1
+LECTORES_ACTIVOS=11
+LECTORES_SOLO_SYNC_SALES=9
+LECTORES_MIXTOS=2
+ENDPOINTS_LECTORES=7
+REFERENCIAS_FRONTEND=1
+DECISION=SYNC_SALES_ES_FUENTE_PARALELA_PRODUCTIVA
+SIGUIENTE_PASO=AUDITAR_CONTRATO_DE_CADA_LECTOR_SOLO_SYNC_SALES_Y_MAPEO_CANONICO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+JSON=/app/edarsahub_sync_sales_active_consumers_20260805T145040Z.json
+DETAIL=/app/edarsahub_sync_sales_active_consumers_20260805T145040Z_detail.txt
+REPORT=/app/edarsahub_sync_sales_active_consumers_20260805T145040Z.txt

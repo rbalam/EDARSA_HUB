@@ -1,0 +1,1699 @@
+{
+  "captured_at_utc": "2026-08-05T06:01:34.854258+00:00",
+  "source_json": "/app/edarsahub_sync_real_consumers_audit_20260805T060012Z.json",
+  "files": [
+    {
+      "file": "backend/auditorias_p4/backup_p4_01b_20260606_011251/server.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 5486,
+        "cursor_execute_calls": 24,
+        "sql_string_constants": 178
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [],
+          "reference_count": 1,
+          "reference_lines": [
+            531
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_endpoints_job.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 101,
+        "cursor_execute_calls": 11,
+        "sql_string_constants": 10
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [
+            "READ_RUNTIME",
+            "WRITE_RUNTIME"
+          ],
+          "reference_count": 4,
+          "reference_lines": [
+            7,
+            267,
+            269,
+            276
+          ]
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [
+            "READ_RUNTIME",
+            "WRITE_RUNTIME"
+          ],
+          "reference_count": 3,
+          "reference_lines": [
+            8,
+            356,
+            358
+          ]
+        },
+        "Sync_Mesas": {
+          "classifications": [
+            "READ_RUNTIME",
+            "WRITE_RUNTIME"
+          ],
+          "reference_count": 3,
+          "reference_lines": [
+            9,
+            422,
+            425
+          ]
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME",
+            "WRITE_RUNTIME"
+          ],
+          "reference_count": 3,
+          "reference_lines": [
+            12,
+            488,
+            490
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 1210,
+        "cursor_execute_calls": 12,
+        "sql_string_constants": 27
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            186,
+            2027,
+            2059,
+            2065,
+            2098
+          ]
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            187,
+            2364,
+            2404,
+            2411,
+            2444
+          ]
+        },
+        "Sync_Mesas": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            188,
+            2883,
+            2917,
+            2923,
+            2974
+          ]
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 4,
+          "reference_lines": [
+            3578,
+            3618,
+            3625,
+            3669
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_endpoints_job.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 104,
+        "cursor_execute_calls": 11,
+        "sql_string_constants": 10
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [
+            "READ_RUNTIME",
+            "WRITE_RUNTIME"
+          ],
+          "reference_count": 4,
+          "reference_lines": [
+            7,
+            267,
+            269,
+            276
+          ]
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [
+            "READ_RUNTIME",
+            "WRITE_RUNTIME"
+          ],
+          "reference_count": 3,
+          "reference_lines": [
+            8,
+            356,
+            358
+          ]
+        },
+        "Sync_Mesas": {
+          "classifications": [
+            "READ_RUNTIME",
+            "WRITE_RUNTIME"
+          ],
+          "reference_count": 3,
+          "reference_lines": [
+            9,
+            422,
+            425
+          ]
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME",
+            "WRITE_RUNTIME"
+          ],
+          "reference_count": 3,
+          "reference_lines": [
+            12,
+            488,
+            490
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 1228,
+        "cursor_execute_calls": 12,
+        "sql_string_constants": 27
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            186,
+            2027,
+            2059,
+            2065,
+            2098
+          ]
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            187,
+            2364,
+            2404,
+            2411,
+            2444
+          ]
+        },
+        "Sync_Mesas": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            188,
+            2883,
+            2917,
+            2923,
+            2974
+          ]
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 4,
+          "reference_lines": [
+            3578,
+            3618,
+            3625,
+            3669
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/auditorias_p4/backup_p4_02_20260606_012636/modules/inteligencia_comercial/routes.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 307,
+        "cursor_execute_calls": 2,
+        "sql_string_constants": 13
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 11,
+          "reference_lines": [
+            9,
+            394,
+            404,
+            414,
+            433,
+            498,
+            508,
+            532,
+            546,
+            560,
+            575
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/auditorias_p4/backup_p4_02_20260606_012636/server.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 5486,
+        "cursor_execute_calls": 24,
+        "sql_string_constants": 178
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [],
+          "reference_count": 1,
+          "reference_lines": [
+            531
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 1228,
+        "cursor_execute_calls": 12,
+        "sql_string_constants": 27
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            186,
+            2027,
+            2059,
+            2065,
+            2098
+          ]
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            187,
+            2364,
+            2404,
+            2411,
+            2444
+          ]
+        },
+        "Sync_Mesas": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            188,
+            2883,
+            2917,
+            2923,
+            2974
+          ]
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 4,
+          "reference_lines": [
+            3578,
+            3618,
+            3625,
+            3669
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/auditorias_p4/backup_p4_02b_20260606_013125/server.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 5486,
+        "cursor_execute_calls": 24,
+        "sql_string_constants": 178
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [],
+          "reference_count": 1,
+          "reference_lines": [
+            531
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 1228,
+        "cursor_execute_calls": 12,
+        "sql_string_constants": 27
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            186,
+            2027,
+            2059,
+            2065,
+            2098
+          ]
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            187,
+            2364,
+            2404,
+            2411,
+            2444
+          ]
+        },
+        "Sync_Mesas": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            188,
+            2883,
+            2917,
+            2923,
+            2974
+          ]
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 4,
+          "reference_lines": [
+            3578,
+            3618,
+            3625,
+            3669
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/auditorias_p4/backup_p4_02d_20260606_014556/server.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 5486,
+        "cursor_execute_calls": 24,
+        "sql_string_constants": 178
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [],
+          "reference_count": 1,
+          "reference_lines": [
+            531
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/auditorias_p4/backup_p4_02g_20260606_015931/server.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 5486,
+        "cursor_execute_calls": 24,
+        "sql_string_constants": 178
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [],
+          "reference_count": 1,
+          "reference_lines": [
+            531
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 1228,
+        "cursor_execute_calls": 12,
+        "sql_string_constants": 27
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            186,
+            2027,
+            2059,
+            2065,
+            2098
+          ]
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            187,
+            2364,
+            2404,
+            2411,
+            2444
+          ]
+        },
+        "Sync_Mesas": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            188,
+            2883,
+            2917,
+            2923,
+            2974
+          ]
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 4,
+          "reference_lines": [
+            3578,
+            3618,
+            3625,
+            3669
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/auditorias_p4/backup_p4_02h_20260606_020653/server.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 5486,
+        "cursor_execute_calls": 24,
+        "sql_string_constants": 178
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [],
+          "reference_count": 1,
+          "reference_lines": [
+            531
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 1228,
+        "cursor_execute_calls": 12,
+        "sql_string_constants": 27
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            186,
+            2027,
+            2059,
+            2065,
+            2098
+          ]
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            187,
+            2364,
+            2404,
+            2411,
+            2444
+          ]
+        },
+        "Sync_Mesas": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            188,
+            2883,
+            2917,
+            2923,
+            2974
+          ]
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 4,
+          "reference_lines": [
+            3578,
+            3618,
+            3625,
+            3669
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/auditorias_p4/backup_p4_02i_20260606_021615/server.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 5486,
+        "cursor_execute_calls": 24,
+        "sql_string_constants": 178
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [],
+          "reference_count": 1,
+          "reference_lines": [
+            531
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 1228,
+        "cursor_execute_calls": 12,
+        "sql_string_constants": 27
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            186,
+            2027,
+            2059,
+            2065,
+            2098
+          ]
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            187,
+            2364,
+            2404,
+            2411,
+            2444
+          ]
+        },
+        "Sync_Mesas": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            188,
+            2883,
+            2917,
+            2923,
+            2974
+          ]
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 4,
+          "reference_lines": [
+            3578,
+            3618,
+            3625,
+            3669
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/auditorias_p4/backup_p4_02j_20260606_022445/server.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 5486,
+        "cursor_execute_calls": 24,
+        "sql_string_constants": 178
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [],
+          "reference_count": 1,
+          "reference_lines": [
+            531
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/auditorias_p4/backup_p4_04_05_20260606_041128/server.py",
+      "classification": "DOCUMENTACION_O_AUDITORIA",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 5486,
+        "cursor_execute_calls": 24,
+        "sql_string_constants": 178
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [],
+          "reference_count": 1,
+          "reference_lines": [
+            531
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/core/scheduler/jobs/inteligencia_comercial_status_job.py",
+      "classification": "CODIGO_PRODUCTIVO_CANDIDATO",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 22,
+        "cursor_execute_calls": 1,
+        "sql_string_constants": 0
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 2,
+          "reference_lines": [
+            89,
+            93
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/database/diagnostics/002_diagnostico_inteligencia.sql",
+      "classification": "SQL_DEFINICION_O_MIGRACION",
+      "ast_context": {
+        "ast_parse": "NO_APLICA",
+        "execute_calls": 0,
+        "cursor_execute_calls": 0,
+        "sql_string_constants": 0
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 1,
+          "reference_lines": [
+            10
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/database/diagnostics/003_matriz_canonicidad.sql",
+      "classification": "SQL_DEFINICION_O_MIGRACION",
+      "ast_context": {
+        "ast_parse": "NO_APLICA",
+        "execute_calls": 0,
+        "cursor_execute_calls": 0,
+        "sql_string_constants": 0
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [],
+          "reference_count": 1,
+          "reference_lines": [
+            68
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/database/migrations/004_poblar_sistema_gobierno_tablas.sql",
+      "classification": "SQL_DEFINICION_O_MIGRACION",
+      "ast_context": {
+        "ast_parse": "NO_APLICA",
+        "execute_calls": 0,
+        "cursor_execute_calls": 0,
+        "sql_string_constants": 0
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [],
+          "reference_count": 1,
+          "reference_lines": [
+            23
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/database/migrations/009_crear_inteligencia_comercial_vistas_tablas.sql",
+      "classification": "SQL_DEFINICION_O_MIGRACION",
+      "ast_context": {
+        "ast_parse": "NO_APLICA",
+        "execute_calls": 0,
+        "cursor_execute_calls": 0,
+        "sql_string_constants": 0
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 2,
+          "reference_lines": [
+            70,
+            74
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/database/migrations/017_registrar_inteligencia_comercial_y_transicionales.sql",
+      "classification": "SQL_DEFINICION_O_MIGRACION",
+      "ast_context": {
+        "ast_parse": "NO_APLICA",
+        "execute_calls": 0,
+        "cursor_execute_calls": 0,
+        "sql_string_constants": 0
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [],
+          "reference_count": 5,
+          "reference_lines": [
+            214,
+            217,
+            227,
+            233,
+            272
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/database/migrations/031_diagnostico_sync_sales_pax_detalle.sql",
+      "classification": "SQL_DEFINICION_O_MIGRACION",
+      "ast_context": {
+        "ast_parse": "NO_APLICA",
+        "execute_calls": 0,
+        "cursor_execute_calls": 0,
+        "sql_string_constants": 0
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 10,
+          "reference_lines": [
+            2,
+            6,
+            17,
+            32,
+            55,
+            75,
+            80,
+            251,
+            260,
+            272
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/database/migrations/032_validacion_inteligencia_comercial_fase1.sql",
+      "classification": "SQL_DEFINICION_O_MIGRACION",
+      "ast_context": {
+        "ast_parse": "NO_APLICA",
+        "execute_calls": 0,
+        "cursor_execute_calls": 0,
+        "sql_string_constants": 0
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [],
+          "reference_count": 2,
+          "reference_lines": [
+            40,
+            169
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/database/validation/20260730_023_comercial_historical_coverage_certification.sql",
+      "classification": "SQL_DEFINICION_O_MIGRACION",
+      "ast_context": {
+        "ast_parse": "NO_APLICA",
+        "execute_calls": 0,
+        "cursor_execute_calls": 0,
+        "sql_string_constants": 0
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [],
+          "reference_count": 1,
+          "reference_lines": [
+            63
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/modules/comercial/inteligencia_comercial_routes.py",
+      "classification": "CODIGO_PRODUCTIVO_CANDIDATO",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 152,
+        "cursor_execute_calls": 2,
+        "sql_string_constants": 0
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 3,
+          "reference_lines": [
+            275,
+            305,
+            310
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "classification": "CODIGO_PRODUCTIVO_CANDIDATO",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 1223,
+        "cursor_execute_calls": 14,
+        "sql_string_constants": 24
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            185,
+            2067,
+            2096,
+            2102,
+            2135
+          ]
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 5,
+          "reference_lines": [
+            186,
+            2401,
+            2438,
+            2445,
+            2478
+          ]
+        },
+        "Sync_Mesas": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 15,
+          "reference_lines": [
+            187,
+            2915,
+            2980,
+            2986,
+            3006,
+            3007,
+            3018,
+            3027,
+            3043,
+            3044,
+            3128,
+            3129,
+            3145,
+            3156,
+            3157
+          ]
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 4,
+          "reference_lines": [
+            3497,
+            3534,
+            3541,
+            3585
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/modules/inteligencia_comercial/routes.py",
+      "classification": "CODIGO_PRODUCTIVO_CANDIDATO",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 760,
+        "cursor_execute_calls": 4,
+        "sql_string_constants": 28
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 7,
+          "reference_lines": [
+            9,
+            1188,
+            1256,
+            1280,
+            1294,
+            1308,
+            1323
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/scripts/ddl_sync_comercial_tablas.sql",
+      "classification": "SQL_ARCHIVO",
+      "ast_context": {
+        "ast_parse": "NO_APLICA",
+        "execute_calls": 0,
+        "cursor_execute_calls": 0,
+        "sql_string_constants": 0
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [
+            "DDL"
+          ],
+          "reference_count": 9,
+          "reference_lines": [
+            9,
+            23,
+            26,
+            28,
+            54,
+            57,
+            58,
+            60,
+            281
+          ]
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [
+            "DDL"
+          ],
+          "reference_count": 9,
+          "reference_lines": [
+            10,
+            65,
+            68,
+            70,
+            96,
+            99,
+            100,
+            102,
+            282
+          ]
+        },
+        "Sync_Mesas": {
+          "classifications": [
+            "DDL"
+          ],
+          "reference_count": 10,
+          "reference_lines": [
+            11,
+            107,
+            110,
+            112,
+            138,
+            141,
+            142,
+            143,
+            145,
+            283
+          ]
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "DDL"
+          ],
+          "reference_count": 10,
+          "reference_lines": [
+            14,
+            231,
+            234,
+            236,
+            261,
+            262,
+            263,
+            264,
+            266,
+            286
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/server.py",
+      "classification": "CODIGO_PRODUCTIVO_CANDIDATO",
+      "ast_context": {
+        "ast_parse": "PASS",
+        "execute_calls": 5067,
+        "cursor_execute_calls": 96,
+        "sql_string_constants": 116
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [],
+          "reference_count": 1,
+          "reference_lines": [
+            582
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/sql/inteligencia_comercial_validacion_fuentes.sql",
+      "classification": "SQL_ARCHIVO",
+      "ast_context": {
+        "ast_parse": "NO_APLICA",
+        "execute_calls": 0,
+        "cursor_execute_calls": 0,
+        "sql_string_constants": 0
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 3,
+          "reference_lines": [
+            34,
+            39,
+            47
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/sql/inteligencia_comercial_validacion_status_sp.sql",
+      "classification": "SQL_ARCHIVO",
+      "ast_context": {
+        "ast_parse": "NO_APLICA",
+        "execute_calls": 0,
+        "cursor_execute_calls": 0,
+        "sql_string_constants": 0
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 0,
+          "reference_lines": []
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [
+            "READ_RUNTIME"
+          ],
+          "reference_count": 2,
+          "reference_lines": [
+            30,
+            34
+          ]
+        }
+      }
+    },
+    {
+      "file": "backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql",
+      "classification": "SQL_DEFINICION_O_MIGRACION",
+      "ast_context": {
+        "ast_parse": "NO_APLICA",
+        "execute_calls": 0,
+        "cursor_execute_calls": 0,
+        "sql_string_constants": 0
+      },
+      "table_usages": {
+        "Sync_Metas_Comerciales": {
+          "classifications": [],
+          "reference_count": 3,
+          "reference_lines": [
+            7673,
+            7675,
+            7701
+          ]
+        },
+        "Sync_Ticket_Perfecto": {
+          "classifications": [],
+          "reference_count": 3,
+          "reference_lines": [
+            8047,
+            8049,
+            8073
+          ]
+        },
+        "Sync_Mesas": {
+          "classifications": [],
+          "reference_count": 3,
+          "reference_lines": [
+            7642,
+            7644,
+            7668
+          ]
+        },
+        "Sync_PAX_Detalle": {
+          "classifications": [],
+          "reference_count": 3,
+          "reference_lines": [
+            7741,
+            7743,
+            7766
+          ]
+        }
+      }
+    }
+  ],
+  "summary": {
+    "candidate_files": 36,
+    "runtime_reader_files": [
+      "backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_endpoints_job.py",
+      "backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py",
+      "backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_endpoints_job.py",
+      "backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py",
+      "backend/auditorias_p4/backup_p4_02_20260606_012636/modules/inteligencia_comercial/routes.py",
+      "backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py",
+      "backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py",
+      "backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py",
+      "backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py",
+      "backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py",
+      "backend/core/scheduler/jobs/inteligencia_comercial_status_job.py",
+      "backend/database/diagnostics/002_diagnostico_inteligencia.sql",
+      "backend/database/migrations/009_crear_inteligencia_comercial_vistas_tablas.sql",
+      "backend/database/migrations/031_diagnostico_sync_sales_pax_detalle.sql",
+      "backend/modules/comercial/inteligencia_comercial_routes.py",
+      "backend/modules/comercial/routes.py",
+      "backend/modules/inteligencia_comercial/routes.py",
+      "backend/sql/inteligencia_comercial_validacion_fuentes.sql",
+      "backend/sql/inteligencia_comercial_validacion_status_sp.sql"
+    ],
+    "runtime_writer_files": [
+      "backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_endpoints_job.py",
+      "backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_endpoints_job.py"
+    ],
+    "ddl_files": [
+      "backend/scripts/ddl_sync_comercial_tablas.sql"
+    ],
+    "test_files": [],
+    "nonfunctional_reference_files": [
+      "backend/auditorias_p4/backup_p4_01b_20260606_011251/server.py",
+      "backend/auditorias_p4/backup_p4_02_20260606_012636/server.py",
+      "backend/auditorias_p4/backup_p4_02b_20260606_013125/server.py",
+      "backend/auditorias_p4/backup_p4_02d_20260606_014556/server.py",
+      "backend/auditorias_p4/backup_p4_02g_20260606_015931/server.py",
+      "backend/auditorias_p4/backup_p4_02h_20260606_020653/server.py",
+      "backend/auditorias_p4/backup_p4_02i_20260606_021615/server.py",
+      "backend/auditorias_p4/backup_p4_02j_20260606_022445/server.py",
+      "backend/auditorias_p4/backup_p4_04_05_20260606_041128/server.py",
+      "backend/database/diagnostics/003_matriz_canonicidad.sql",
+      "backend/database/migrations/004_poblar_sistema_gobierno_tablas.sql",
+      "backend/database/migrations/017_registrar_inteligencia_comercial_y_transicionales.sql",
+      "backend/database/migrations/032_validacion_inteligencia_comercial_fase1.sql",
+      "backend/database/validation/20260730_023_comercial_historical_coverage_certification.sql",
+      "backend/scripts/ddl_sync_comercial_tablas.sql",
+      "backend/server.py",
+      "backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql"
+    ],
+    "runtime_reader_count": 19,
+    "runtime_writer_count": 2,
+    "ddl_count": 1,
+    "test_count": 0,
+    "nonfunctional_reference_count": 17
+  }
+}

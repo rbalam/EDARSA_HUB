@@ -1,0 +1,904 @@
+{
+  "project": "EKS-0001",
+  "stage": "FUENTES_NORMATIVAS",
+  "input_assets": 291,
+  "normative_before_dedup": 35,
+  "normative_unique": 35,
+  "decisions": {
+    "filosofia_bos": {
+      "status": "CONSOLIDAR_DESDE_HOSPITALITY",
+      "primary_source_id": "EKS-SRC-01112",
+      "primary_path": "docs/hospitality/architecture/EHAB_00_INDICE_MAESTRO.md",
+      "candidate_count": 1,
+      "candidates": [
+        "EKS-SRC-01112"
+      ]
+    },
+    "hospitality": {
+      "status": "FUENTE_PRIMARIA_CONFIRMADA",
+      "primary_source_id": "EKS-SRC-01112",
+      "primary_path": "docs/hospitality/architecture/EHAB_00_INDICE_MAESTRO.md",
+      "candidate_count": 4,
+      "candidates": [
+        "EKS-SRC-01112",
+        "EKS-SRC-00680",
+        "EKS-SRC-01241",
+        "EKS-SRC-08868"
+      ]
+    },
+    "arquitectura_global": {
+      "status": "CONSOLIDAR_DESDE_HOSPITALITY",
+      "primary_source_id": "EKS-SRC-01112",
+      "primary_path": "docs/hospitality/architecture/EHAB_00_INDICE_MAESTRO.md",
+      "candidate_count": 1,
+      "candidates": [
+        "EKS-SRC-01112"
+      ]
+    },
+    "constitucion_maximas": {
+      "status": "NO_EXISTE_DOCUMENTO_UNICO_CONFIRMADO",
+      "primary_source_id": null,
+      "primary_path": null,
+      "candidate_count": 12,
+      "candidates": [
+        "EKS-SRC-01112",
+        "EKS-SRC-01325",
+        "EKS-SRC-00001",
+        "EKS-SRC-00508",
+        "EKS-SRC-01337",
+        "EKS-SRC-00118",
+        "EKS-SRC-00116",
+        "EKS-SRC-01335",
+        "EKS-SRC-01336",
+        "EKS-SRC-00115",
+        "EKS-SRC-01241",
+        "EKS-SRC-08868"
+      ]
+    },
+    "conectores_universales": {
+      "status": "PARCIAL_HOSPITALITY_MAS_TOAST_NETPAY_PENDIENTE",
+      "primary_source_id": "EKS-SRC-01112",
+      "primary_path": "docs/hospitality/architecture/EHAB_00_INDICE_MAESTRO.md",
+      "candidate_count": 2,
+      "candidates": [
+        "EKS-SRC-01112",
+        "EKS-SRC-00357"
+      ]
+    },
+    "toast_netpay": {
+      "status": "FUENTE_PRIMARIA_FALTANTE",
+      "primary_source_id": null,
+      "primary_path": null,
+      "candidate_count": 3,
+      "candidates": [
+        "EKS-SRC-00389",
+        "EKS-SRC-01241",
+        "EKS-SRC-08868"
+      ]
+    },
+    "sql_datos": {
+      "status": "CONSOLIDACION_MULTIFUENTE",
+      "primary_source_id": "EKS-SRC-01112",
+      "primary_path": "docs/hospitality/architecture/EHAB_00_INDICE_MAESTRO.md",
+      "candidate_count": 14,
+      "candidates": [
+        "EKS-SRC-01112",
+        "EKS-SRC-00864",
+        "EKS-SRC-00680",
+        "EKS-SRC-00423",
+        "EKS-SRC-00369",
+        "EKS-SRC-00389",
+        "EKS-SRC-00426",
+        "EKS-SRC-01294",
+        "EKS-SRC-01291",
+        "EKS-SRC-01271",
+        "EKS-SRC-00377",
+        "EKS-SRC-00378",
+        "EKS-SRC-01241",
+        "EKS-SRC-08868"
+      ]
+    },
+    "rbac_seguridad": {
+      "status": "CONSOLIDACION_MULTIFUENTE",
+      "primary_source_id": "EKS-SRC-01112",
+      "primary_path": "docs/hospitality/architecture/EHAB_00_INDICE_MAESTRO.md",
+      "candidate_count": 34,
+      "candidates": [
+        "EKS-SRC-00316",
+        "EKS-SRC-01112",
+        "EKS-SRC-00864",
+        "EKS-SRC-00680",
+        "EKS-SRC-01338",
+        "EKS-SRC-01325",
+        "EKS-SRC-00001",
+        "EKS-SRC-00357",
+        "EKS-SRC-00478",
+        "EKS-SRC-00423",
+        "EKS-SRC-00372",
+        "EKS-SRC-00301",
+        "EKS-SRC-00369",
+        "EKS-SRC-00389",
+        "EKS-SRC-00426",
+        "EKS-SRC-00512",
+        "EKS-SRC-00508",
+        "EKS-SRC-00874",
+        "EKS-SRC-01294",
+        "EKS-SRC-01291",
+        "EKS-SRC-01271",
+        "EKS-SRC-01337",
+        "EKS-SRC-00377",
+        "EKS-SRC-00378",
+        "EKS-SRC-00118",
+        "EKS-SRC-00116",
+        "EKS-SRC-01335",
+        "EKS-SRC-01336",
+        "EKS-SRC-01334",
+        "EKS-SRC-00117",
+        "EKS-SRC-00115",
+        "EKS-SRC-01339",
+        "EKS-SRC-01241",
+        "EKS-SRC-08868"
+      ]
+    },
+    "ia_agentes": {
+      "status": "POLITICA_OPERATIVA_NO_CONSTITUCION",
+      "primary_source_id": "EKS-SRC-01338",
+      "primary_path": ".github/agents/edarsa-coder.agent.md",
+      "candidate_count": 31,
+      "candidates": [
+        "EKS-SRC-00316",
+        "EKS-SRC-01112",
+        "EKS-SRC-00864",
+        "EKS-SRC-00680",
+        "EKS-SRC-01338",
+        "EKS-SRC-01325",
+        "EKS-SRC-00001",
+        "EKS-SRC-00478",
+        "EKS-SRC-00423",
+        "EKS-SRC-00372",
+        "EKS-SRC-00301",
+        "EKS-SRC-00369",
+        "EKS-SRC-00389",
+        "EKS-SRC-00426",
+        "EKS-SRC-00508",
+        "EKS-SRC-00874",
+        "EKS-SRC-01294",
+        "EKS-SRC-01271",
+        "EKS-SRC-01337",
+        "EKS-SRC-00377",
+        "EKS-SRC-00378",
+        "EKS-SRC-00118",
+        "EKS-SRC-00116",
+        "EKS-SRC-01335",
+        "EKS-SRC-01336",
+        "EKS-SRC-01334",
+        "EKS-SRC-00117",
+        "EKS-SRC-00115",
+        "EKS-SRC-01339",
+        "EKS-SRC-01241",
+        "EKS-SRC-08868"
+      ]
+    },
+    "cambios_atomicos": {
+      "status": "POLITICA_OPERATIVA_PROPUESTA",
+      "primary_source_id": "EKS-SRC-00508",
+      "primary_path": "docs/operacion/MODO_TRABAJO_CAMBIOS_ATOMICOS.md",
+      "candidate_count": 9,
+      "candidates": [
+        "EKS-SRC-01325",
+        "EKS-SRC-00001",
+        "EKS-SRC-00508",
+        "EKS-SRC-01337",
+        "EKS-SRC-00118",
+        "EKS-SRC-00116",
+        "EKS-SRC-01335",
+        "EKS-SRC-01336",
+        "EKS-SRC-00115"
+      ]
+    },
+    "contratos_canonicos": {
+      "status": "CONSOLIDAR_POR_DOMINIO",
+      "primary_source_id": null,
+      "primary_path": null,
+      "candidate_count": 3,
+      "candidates": [
+        "EKS-SRC-01271",
+        "EKS-SRC-01241",
+        "EKS-SRC-08868"
+      ]
+    },
+    "roadmap_aceptacion": {
+      "status": "SEPARAR_PERMANENTE_DE_TEMPORAL",
+      "primary_source_id": "EKS-SRC-01112",
+      "primary_path": "docs/hospitality/architecture/EHAB_00_INDICE_MAESTRO.md",
+      "candidate_count": 5,
+      "candidates": [
+        "EKS-SRC-01112",
+        "EKS-SRC-00864",
+        "EKS-SRC-00680",
+        "EKS-SRC-01271",
+        "EKS-SRC-00378"
+      ]
+    }
+  },
+  "assets": [
+    {
+      "source_id": "EKS-SRC-00444",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "docs/ARQUITECTURA_CONEXIONES_RESOLVER.md",
+      "title": "ARQUITECTURA DE CONEXIONES - EDARSA HUB",
+      "sha256": "15effb15940c7b70f475c9bf113f5d572dcb51b3b4bdd56e336fbef5314d4eae",
+      "size": 6861,
+      "topics": [
+        "comercial"
+      ],
+      "authority_score": 9,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "ARQUITECTURA DE CONEXIONES - EDARSA HUB",
+      "excerpt": "# ARQUITECTURA DE CONEXIONES - EDARSA HUB ## Connection Resolver Central ## Fecha: 2026-04-19 --- ## PRINCIPIOS ARQUITECTÓNICOS 1. **EDARSA HUB es el cerebro** - Backend manda 2. **Menú \"Servidores SQL\"** es la fuente oficial de configuración 3. **Toda conexión SQL** debe resolverse desde ConnectionResolver 4. **Toda fuente de datos** se decide por tipo de sistema + tipo de métrica 5. **El fronten"
+    },
+    {
+      "source_id": "EKS-SRC-00316",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "docs/POLITICA_FECHAS_EDARSA_HUB.md",
+      "title": "POLÍTICA OFICIAL DE FECHAS - EDARSA HUB",
+      "sha256": "315767957b11eb52960266f7544ee91755122ef4970fc9c26549d66c8496dbc8",
+      "size": 12437,
+      "topics": [
+        "rbac_seguridad",
+        "ia_agentes",
+        "comercial",
+        "finanzas"
+      ],
+      "authority_score": 9,
+      "status_proposed": "BORRADOR_CANDIDATO",
+      "first_heading": "POLÍTICA OFICIAL DE FECHAS - EDARSA HUB",
+      "excerpt": "# POLÍTICA OFICIAL DE FECHAS - EDARSA HUB ## Documento Técnico-Funcional **Versión:** 1.0 **Fecha:** Diciembre 2025 **Estado:** DIAGNÓSTICO DOCUMENTADO (Sin cambios de código) **Autor:** Arquitectura de Software --- ## 1. RESUMEN EJECUTIVO Este documento establece las definiciones, reglas y lineamientos oficiales para el manejo de fechas/horas en EDARSA HUB, con el objetivo de: - Evitar inconsiste"
+    },
+    {
+      "source_id": "EKS-SRC-01112",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "docs/hospitality/architecture/EHAB_00_INDICE_MAESTRO.md",
+      "title": "EDARSAHUB Hospitality Architecture Book",
+      "sha256": "cb9ed4556f32465b713bbf015cfbb4637d3b2b47321df10542b6686520e04983",
+      "size": 1012,
+      "topics": [
+        "filosofia_bos",
+        "hospitality",
+        "constitucion_maximas",
+        "arquitectura_global",
+        "conectores_universales",
+        "sql_datos",
+        "rbac_seguridad",
+        "ia_agentes",
+        "finanzas",
+        "roadmap_aceptacion"
+      ],
+      "authority_score": 9,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "EDARSAHUB Hospitality Architecture Book",
+      "excerpt": "# EDARSAHUB Hospitality Architecture Book ## Objetivo Diseñar EDARSAHUB Hospitality como satélite nativo del ERP EDARSAHUB: global, configurable, multiconector, SQL-first, sin MongoDB, sin LIVE operativo y sin duplicar lógica existente. ## Tomos 1. Visión Estratégica 2. Máximas de Arquitectura 3. Arquitectura Empresarial 4. Arquitectura Funcional 5. Arquitectura Backend 6. Arquitectura Frontend / "
+    },
+    {
+      "source_id": "EKS-SRC-00864",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "docs/reports/DISENO_CONSOLA_GENERAL_SCHEDULER_SINCRONIZACIONES_EDARSAHUB.md",
+      "title": "DISEÑO TÉCNICO: Consola General de Scheduler y Sincronizaciones EDARSAHUB",
+      "sha256": "bc367c06f339defc917c2805ea924ff0ab3ee9091c015237f64372ca836b3cb8",
+      "size": 54706,
+      "topics": [
+        "sql_datos",
+        "rbac_seguridad",
+        "ia_agentes",
+        "comercial",
+        "finanzas",
+        "roadmap_aceptacion"
+      ],
+      "authority_score": 9,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "DISEÑO TÉCNICO: Consola General de Scheduler y Sincronizaciones EDARSAHUB",
+      "excerpt": "# DISEÑO TÉCNICO: Consola General de Scheduler y Sincronizaciones EDARSAHUB **Fecha:** 2026-05-25 **Versión:** 1.0 **Estado:** DISEÑO TÉCNICO - NO IMPLEMENTAR SIN AUTORIZACIÓN **Autor:** E1 Agent (Ingeniero Senior Fullstack + SQL Server) --- ## 1. RESUMEN EJECUTIVO Este documento describe el diseño técnico completo de la **Consola Administrativa General del Scheduler de EDARSAHUB**, un componente "
+    },
+    {
+      "source_id": "EKS-SRC-00680",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "docs/reports/FASE_0_5_VALIDACION_ARQUITECTURA_MENUS_Y_COMERCIAL.md",
+      "title": "FASE 0.5 - VALIDACIÓN ARQUITECTÓNICA: MENÚS GOBERNADOS Y COMERCIAL/VENTAS",
+      "sha256": "9b88029466133b8cdd30d23d42ee021a432b4165bd0e11b78065d71352dccd7d",
+      "size": 9805,
+      "topics": [
+        "hospitality",
+        "sql_datos",
+        "rbac_seguridad",
+        "ia_agentes",
+        "comercial",
+        "finanzas",
+        "roadmap_aceptacion"
+      ],
+      "authority_score": 9,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "FASE 0.5 - VALIDACIÓN ARQUITECTÓNICA: MENÚS GOBERNADOS Y COMERCIAL/VENTAS",
+      "excerpt": "# FASE 0.5 - VALIDACIÓN ARQUITECTÓNICA: MENÚS GOBERNADOS Y COMERCIAL/VENTAS **Fecha:** 24 Mayo 2026 **Autor:** Arquitecto ERP EDARSAHUB **Estado:** VALIDACIÓN COMPLETADA --- ## 1. RESUMEN EJECUTIVO La FASE 0 (Sistema de Menús Gobernados) fue implementada correctamente. Se crearon las tablas necesarias, los 27 módulos según el manifiesto ERP están registrados y el endpoint funciona. Sin embargo, se"
+    },
+    {
+      "source_id": "EKS-SRC-01338",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": ".github/agents/edarsa-coder.agent.md",
+      "title": "EDARSA Coder",
+      "sha256": "72dccabd756b3bcf11275a1d383efe6ed68b1c73c8af81596447e729ae2a69f6",
+      "size": 3836,
+      "topics": [
+        "rbac_seguridad",
+        "ia_agentes",
+        "comercial"
+      ],
+      "authority_score": 8,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "EDARSA Coder",
+      "excerpt": "--- name: EDARSA Coder description: Implementador de cambios minimos en EDARSAHUB bajo evidencia previa. tools: [\"search\", \"read\", \"edit\", \"execute\"] handoffs: - label: Pasar a EDARSA Validator agent: edarsa-validator prompt: \"Valida el diff, pruebas, build, DB safety, RBAC y reglas canonicas. No modifiques salvo instruccion explicita.\" send: false --- # EDARSA Coder Actuas como implementador cont"
+    },
+    {
+      "source_id": "EKS-SRC-01325",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": ".github/copilot-instructions.md",
+      "title": "EDARSAHUB V1.0 — instrucciones globales para GitHub Copilot / VS Code",
+      "sha256": "3e625e7fe5be9168981559b4d74744658f7223406b6625e816ed69b16cbbbb96",
+      "size": 2343,
+      "topics": [
+        "constitucion_maximas",
+        "rbac_seguridad",
+        "ia_agentes",
+        "cambios_atomicos"
+      ],
+      "authority_score": 8,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "EDARSAHUB V1.0 — instrucciones globales para GitHub Copilot / VS Code",
+      "excerpt": "# EDARSAHUB V1.0 — instrucciones globales para GitHub Copilot / VS Code Usar `AGENTS.md` como contrato principal del repositorio. Prioridad operativa: 1. Antigravity 2. Codex 3. GitHub Copilot / VS Code 4. Claude minimizado Agentes Copilot disponibles: - EDARSA Copilot Supervisor: coordina, no edita. - EDARSA Auditor: audita, no edita. - EDARSA Coder: implementa cambios minimos. - EDARSA Validator"
+    },
+    {
+      "source_id": "EKS-SRC-00001",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "AGENTS.md",
+      "title": "EDARSAHUB V1.0 — Agent Operating Protocol",
+      "sha256": "42a8434cce7d1e4b2c84993bfc3a69dbbedb8bd1c52bba42fdac0b831669054a",
+      "size": 6765,
+      "topics": [
+        "constitucion_maximas",
+        "rbac_seguridad",
+        "ia_agentes",
+        "cambios_atomicos",
+        "comercial"
+      ],
+      "authority_score": 8,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "EDARSAHUB V1.0 — Agent Operating Protocol",
+      "excerpt": "# EDARSAHUB V1.0 — Agent Operating Protocol ## Prioridad de herramientas Prioridad operativa: 1. Antigravity 2. Codex 3. VS Code custom agents 4. Claude minimizado No usar `.claude/agents` como fuente principal de configuración. Excepción permitida: únicamente `.claude/agents/edarsa-claude-haiku-auditor.md` como auditor Claude Haiku de solo lectura, uso excepcional y bajo autorización explícita. #"
+    },
+    {
+      "source_id": "EKS-SRC-00357",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "docs/API_CONNECTIONS_ARCHITECTURE_CORRECTION_REPORT.md",
+      "title": "Corrección Arquitectónica: Conexiones API",
+      "sha256": "ac651ed082eac4ba30162b4c48992bfaefad1c325ca5718769517697226ad41e",
+      "size": 4673,
+      "topics": [
+        "conectores_universales",
+        "rbac_seguridad",
+        "comercial"
+      ],
+      "authority_score": 8,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "Corrección Arquitectónica: Conexiones API",
+      "excerpt": "# Corrección Arquitectónica: Conexiones API ## Fecha: 2026-04-29 ## Resumen Se corrigió la arquitectura del módulo de conexiones API para que EDARSAHUB SQL sea la fuente primaria de verdad. ## Arquitectura Implementada ### Fuente Primaria (Autoritativa) - **EDARSAHUB SQL** (tabla `Servidores_Conexiones`) - Todas las operaciones CRUD van primero a SQL - Si SQL falla, la operación falla completament"
+    },
+    {
+      "source_id": "EKS-SRC-00478",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "docs/ARQUITECTURA_AUTOMATIZACION_INVENTARIOS_ADENDA_A.md",
+      "title": "ADENDA TÉCNICA: Definiciones Críticas de Automatización",
+      "sha256": "53d3cb65bd4fa13db2084d1330fe89073713889bab9f88bf01fbf23b4c3bd22b",
+      "size": 51991,
+      "topics": [
+        "rbac_seguridad",
+        "ia_agentes",
+        "finanzas"
+      ],
+      "authority_score": 8,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "ADENDA TÉCNICA: Definiciones Críticas de Automatización",
+      "excerpt": "# ADENDA TÉCNICA: Definiciones Críticas de Automatización ## EDARSA HUB - CAB-003 - Adenda A **Versión**: 1.1 **Fecha**: Diciembre 2025 **Estado**: DEFINICIONES TÉCNICAS FINALES **Requisito**: Aprobación obligatoria antes de implementación --- ## ÍNDICE DE DEFINICIONES CRÍTICAS 1. [Core Service de Análisis de Inventarios](#1-core-service-de-análisis-de-inventarios) 2. [Clave Única del Proceso (Ide"
+    },
+    {
+      "source_id": "EKS-SRC-00423",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "docs/ARQUITECTURA_AUTOMATIZACION_INVENTARIOS_ADENDA_B.md",
+      "title": "ADENDA TÉCNICA B: Ajustes Finales Obligatorios",
+      "sha256": "bcd215024e18d2ecb7705ff4c1d08273959bb856880f0f4658152d7260472e2f",
+      "size": 30832,
+      "topics": [
+        "sql_datos",
+        "rbac_seguridad",
+        "ia_agentes"
+      ],
+      "authority_score": 8,
+      "status_proposed": "CANDIDATO",
+      "first_heading": "ADENDA TÉCNICA B: Ajustes Finales Obligatorios",
+      "excerpt": "# ADENDA TÉCNICA B: Ajustes Finales Obligatorios ## EDARSA HUB - CAB-003 - Adenda B **Versión**: 1.2 **Fecha**: Diciembre 2025 **Estado**: AJUSTES FINALES APROBADOS **Referencia**: Correcciones a Adenda A por solicitud del Product Owner --- ## AJUSTES REQUERIDOS | # | Punto | Estado Anterior | Ajuste Requerido | |---|-------|-----------------|------------------| | 1 | Clave Única | Sin `sistema_or"
+    },
+    {
+      "source_id": "EKS-SRC-00372",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "docs/ARQUITECTURA_AUTOMATIZACION_INVENTARIOS_CONSOLIDACION_FINAL.md",
+      "title": "DOCUMENTO DE CONSOLIDACIÓN FINAL",
+      "sha256": "71226ea138dae4bf5219a72653f71358b09594c818158928eccf7b98c1c5bc43",
+      "size": 52670,
+      "topics": [
+        "rbac_seguridad",
+        "ia_agentes",
+        "finanzas"
+      ],
+      "authority_score": 8,
+      "status_proposed": "DEPRECADO_CANDIDATO",
+      "first_heading": "DOCUMENTO DE CONSOLIDACIÓN FINAL",
+      "excerpt": "# DOCUMENTO DE CONSOLIDACIÓN FINAL ## CAB-003: Automatización de Análisis de Inventarios - VALIDACIÓN PARA IMPLEMENTACIÓN **Versión**: 2.0 CONSOLIDADA **Fecha**: Diciembre 2025 **Estado**: VALIDACIÓN FINAL ANTES DE IMPLEMENTACIÓN **Documentos Fuente**: v1.md, ADENDA_A.md, ADENDA_B.md, ADENDA_C.md --- ## PARTE 1: VALIDACIÓN DE LO EXISTENTE ### 1.1 Core Service Reutilizable ``` ESTADO: ✅ CORRECTO - "
+    },
+    {
+      "source_id": "EKS-SRC-00301",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "docs/ARQUITECTURA_CLASIFICACION_DATOS_LIVE_VS_CONSOLIDADOS.md",
+      "title": "EDARSA HUB - Arquitectura de Clasificación de Datos",
+      "sha256": "ea957f93e92af7a3bfe2e175a91073dc80eb0791c08b5aacb98989e44fe1df1a",
+      "size": 13171,
+      "topics": [
+        "rbac_seguridad",
+        "ia_agentes",
+        "comercial",
+        "finanzas"
+      ],
+      "authority_score": 8,
+      "status_proposed": "DEPRECADO_CANDIDATO",
+      "first_heading": "EDARSA HUB - Arquitectura de Clasificación de Datos",
+      "excerpt": "# EDARSA HUB - Arquitectura de Clasificación de Datos ## LIVE OPERATIVO vs ANALÍTICO/CONSOLIDADO **Versión**: 1.0 **Fecha**: Abril 2026 **Autor**: Arquitectura Senior **Estado**: VIGENTE --- ## 1. DEFINICIONES FORMALES ### 1.1 TIPO A: LIVE OPERATIVO (\"LIVE FIRST, PERSIST SECOND\") **Definición**: Módulos que requieren información en tiempo real de los sistemas origen (SoftRestaurant, MPRO) para tom"
+    },
+    {
+      "source_id": "EKS-SRC-00369",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "docs/ARQUITECTURA_SEGURIDAD_EDARSA_HUB.md",
+      "title": "ARQUITECTURA DE SEGURIDAD EDARSA HUB",
+      "sha256": "73407da0d9cc18112912c1ad13cffc4e2cf20ee1916c7eb3fa87126205275dcd",
+      "size": 22251,
+      "topics": [
+        "sql_datos",
+        "rbac_seguridad",
+        "ia_agentes",
+        "comercial",
+        "finanzas"
+      ],
+      "authority_score": 8,
+      "status_proposed": "DEPRECADO_CANDIDATO",
+      "first_heading": "ARQUITECTURA DE SEGURIDAD EDARSA HUB",
+      "excerpt": "# ARQUITECTURA DE SEGURIDAD EDARSA HUB ## Diagnóstico, Diseño y Plan de Migración **Versión:** 1.0 **Fecha:** Diciembre 2025 **Autor:** Arquitecto de Software Senior **Estado:** PENDIENTE APROBACIÓN --- ## TABLA DE CONTENIDOS 1. [Diagnóstico del Sistema Actual](#1-diagnóstico-del-sistema-actual) 2. [Gap Analysis](#2-gap-analysis) 3. [Modelo Objetivo (Diseño)](#3-modelo-objetivo-diseño) 4. [Plan de"
+    },
+    {
+      "source_id": "EKS-SRC-00389",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "docs/EDARSAHUB_MAXIMAS_INQUEBRANTABLES.md",
+      "title": "EDARSAHUB - MÁXIMAS INQUEBRANTABLES",
+      "sha256": "d0da9deb37e4dc2a257ad7482fbf76bd3e8b995859fd7162dffa72a6afd2a19d",
+      "size": 10395,
+      "topics": [
+        "toast_netpay",
+        "sql_datos",
+        "rbac_seguridad",
+        "ia_agentes",
+        "comercial"
+      ],
+      "authority_score": 8,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "EDARSAHUB - MÁXIMAS INQUEBRANTABLES",
+      "excerpt": "# EDARSAHUB - MÁXIMAS INQUEBRANTABLES ## Documento de Arquitectura y Políticas Fundamentales **Versión:** 1.0 **Fecha:** 2026-06-02 **Estado:** VIGENTE - CUMPLIMIENTO OBLIGATORIO --- ## 🏛️ ARQUITECTURA CANÓNICA (OBLIGATORIA) ``` ┌─────────────────────────────────────────────────────────────────┐ │ FUENTES EXTERNAS │ │ SoftRestaurant / MPRO / NetPay │ └──────────────────────────────────────────────"
+    },
+    {
+      "source_id": "EKS-SRC-00426",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "docs/LOG_PENDIENTES_ARQUITECTURA.md",
+      "title": "SQLFIRST-LEGACY-001",
+      "sha256": "ac9506601ea6f531abc819f96b32a00633610e6525d796b1e5f294206b636758",
+      "size": 1023,
+      "topics": [
+        "sql_datos",
+        "rbac_seguridad",
+        "ia_agentes"
+      ],
+      "authority_score": 8,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "SQLFIRST-LEGACY-001",
+      "excerpt": "--- ## SQLFIRST-LEGACY-001 **Fecha:** 2026-06-04 **Estado:** PENDIENTE **Prioridad:** MEDIA ### Descripción Se estandarizaron los nombres de tablas sync mediante vistas de compatibilidad: | Vista Nueva | Tabla Legacy | |-------------|--------------| | `dbo.Inventario_Sync` | `dbo.Sync_Inventory` | | `dbo.Compras_Sync` | `dbo.Sync_Purchases` | ### Decisión Arquitectónica - ❌ NO eliminar tablas lega"
+    },
+    {
+      "source_id": "EKS-SRC-00512",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "docs/arquitectura/NAVEGACION_ENTERPRISE.md",
+      "title": "Navegación Enterprise EDARSAHUB",
+      "sha256": "c3ed7dd439ea3932c6b9497bc83263390566c473c23162d8b64e45040797359b",
+      "size": 2300,
+      "topics": [
+        "rbac_seguridad",
+        "comercial",
+        "finanzas"
+      ],
+      "authority_score": 8,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "Navegación Enterprise EDARSAHUB",
+      "excerpt": "# Navegación Enterprise EDARSAHUB ## Fuente canónica - SQL define módulos, menús, rutas y RBAC. - El registro Enterprise define su clasificación funcional. - React representa el catálogo autorizado. - La ruta canónica identifica los favoritos. - No existe fallback al menú clásico. ## Grupos 1. Dirección e Inteligencia 2. Comercial y Clientes 3. Operaciones y Abasto 4. Finanzas y Rentabilidad 5. Pe"
+    },
+    {
+      "source_id": "EKS-SRC-00508",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "docs/operacion/MODO_TRABAJO_CAMBIOS_ATOMICOS.md",
+      "title": "Máxima de Oro — Cambios Atómicos y Base Estable",
+      "sha256": "bc85c05bfe80ca9e05b44ad444b6e50e4db89b8ac9272288073e9440f3c51a43",
+      "size": 3871,
+      "topics": [
+        "constitucion_maximas",
+        "rbac_seguridad",
+        "ia_agentes",
+        "cambios_atomicos",
+        "comercial",
+        "finanzas"
+      ],
+      "authority_score": 8,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "Máxima de Oro — Cambios Atómicos y Base Estable",
+      "excerpt": "# Máxima de Oro — Cambios Atómicos y Base Estable **Proyecto:** EDARSAHUB **Vigencia:** permanente **Prioridad:** máxima arquitectónica y operativa ## 1. Principio central EDARSAHUB se desarrolla mediante cambios pequeños, aislados, reversibles, verificables y asociados a un único objetivo funcional. Queda prohibido mezclar en un mismo bloque de trabajo cambios de Comercial, Finanzas, Auth, Schedu"
+    },
+    {
+      "source_id": "EKS-SRC-00874",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "docs/reports/DECISION_EJECUTIVA_RBAC_20260602.md",
+      "title": "DECISIÓN EJECUTIVA RBAC - EDARSAHUB",
+      "sha256": "d596f4ceaec41551350d8b3212e3f5e674cd2fd4cdb1faeedf221f6d4eb17f02",
+      "size": 2729,
+      "topics": [
+        "rbac_seguridad",
+        "ia_agentes",
+        "comercial"
+      ],
+      "authority_score": 8,
+      "status_proposed": "CANDIDATO",
+      "first_heading": "DECISIÓN EJECUTIVA RBAC - EDARSAHUB",
+      "excerpt": "# DECISIÓN EJECUTIVA RBAC - EDARSAHUB **Fecha**: 2026-06-02 **Estado**: APROBADO --- ## 1. Arquitectura RBAC Definitiva ### RBAC Canónico: `Usuario_*` | Tabla | Propósito | Registros | |-------|-----------|-----------| | `Usuario_Modulos` | Catálogo de módulos del sistema | 59 | | `Usuario_Roles` | Catálogo de roles | 16 | | `Usuario_Acciones` | Catálogo de acciones | 16 | | `Usuario_PermisosRolMo"
+    },
+    {
+      "source_id": "EKS-SRC-01294",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "memory/ARQUITECTURA_CONECTIVIDAD_EDARSA.md",
+      "title": "DIAGNÓSTICO DE ARQUITECTURA DE CONECTIVIDAD - EDARSA HUB",
+      "sha256": "4a641f7a42c1db0b1c97b82f7551744c949ce09326340c5b66c3820b496e3f77",
+      "size": 18248,
+      "topics": [
+        "sql_datos",
+        "rbac_seguridad",
+        "ia_agentes",
+        "comercial"
+      ],
+      "authority_score": 8,
+      "status_proposed": "CANDIDATO",
+      "first_heading": "DIAGNÓSTICO DE ARQUITECTURA DE CONECTIVIDAD - EDARSA HUB",
+      "excerpt": "# DIAGNÓSTICO DE ARQUITECTURA DE CONECTIVIDAD - EDARSA HUB **Fecha:** 2026-04-23 **Autor:** E1 Agent (Rol: Arquitecto de Soluciones) **Versión:** 1.1 **Estado:** ✅ APROBADO POR USUARIO --- ## 0. DECISIONES APROBADAS ### Arquitectura Definitiva: AGENTES PUSH (Escenario C) ``` SQL local → Agente local → Push seguro HTTPS → EDARSA HUB → KPIs/tableros ``` ### Aclaraciones Conceptuales (por usuario): -"
+    },
+    {
+      "source_id": "EKS-SRC-01291",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "memory/DISENO_MODULO_CATALOGOS.md",
+      "title": "EDARSA HUB - Documento de Diseño Técnico-Funcional",
+      "sha256": "b588f2c882fe31955c1b9b08942858fb4687dfe64e11d5cfd9e6843075a71042",
+      "size": 8921,
+      "topics": [
+        "sql_datos",
+        "rbac_seguridad",
+        "finanzas"
+      ],
+      "authority_score": 8,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "EDARSA HUB - Documento de Diseño Técnico-Funcional",
+      "excerpt": "# EDARSA HUB - Documento de Diseño Técnico-Funcional # Módulo Maestro de Catálogos del Sistema ## 1. Objetivo Implementar un módulo centralizado para la gestión de catálogos del sistema EDARSA HUB, con arquitectura reutilizable que permita: - **Acceso central** desde el menú \"Catálogos\" - **Acceso contextual** desde módulos nativos (RH, Compras, Finanzas, etc.) - **Sin duplicidad** de catálogos en"
+    },
+    {
+      "source_id": "EKS-SRC-01271",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "memory/ROADMAP.md",
+      "title": "EDARSA HUB — ROADMAP / Backlog priorizado",
+      "sha256": "22deef05f297178f90976b646e395bd860afb3addf39061ad8288242279fed8b",
+      "size": 10794,
+      "topics": [
+        "contratos_canonicos",
+        "sql_datos",
+        "rbac_seguridad",
+        "ia_agentes",
+        "comercial",
+        "finanzas",
+        "roadmap_aceptacion"
+      ],
+      "authority_score": 8,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "EDARSA HUB — ROADMAP / Backlog priorizado",
+      "excerpt": "# EDARSA HUB — ROADMAP / Backlog priorizado ## En curso (orden acordado con usuario: a → d → c → b) - [x] (a) Precios Sugeridos: columnas $/%, fuente del %, filtro unidad canónico. (2026-06-08) - [x] (d) SYNC estatus inactivo/baja (SoftRestaurant `productosdetalle.bloqueado`, MPRO `Es_Cve_Estado`) + re-sync. (2026-06-08) - [x] (c) **Catálogo canónico NO-LIVE** Categoría→Familia→Subfamilia. (2026-0"
+    },
+    {
+      "source_id": "EKS-SRC-01337",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": ".github/agents/edarsa-copilot-supervisor.agent.md",
+      "title": "EDARSA Copilot Supervisor",
+      "sha256": "2d539da8047e2c74803b76ebdb866ad7ca2bdfffae722286c33040ff61052d31",
+      "size": 5855,
+      "topics": [
+        "constitucion_maximas",
+        "rbac_seguridad",
+        "ia_agentes",
+        "cambios_atomicos"
+      ],
+      "authority_score": 7,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "EDARSA Copilot Supervisor",
+      "excerpt": "--- name: EDARSA Copilot Supervisor description: Coordinador de GitHub Copilot para EDARSAHUB. Orquesta Auditor, Coder y Validator sin modificar archivos directamente. tools: [\"search\", \"read\", \"execute\"] handoffs: - label: Pasar a EDARSA Auditor agent: edarsa-auditor prompt: \"Audita este tema con evidencia exacta. No modifiques archivos.\" send: false - label: Pasar a EDARSA Coder agent: edarsa-co"
+    },
+    {
+      "source_id": "EKS-SRC-00377",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "docs/ARQUITECTURA_PROPINAS_TPV_v3.md",
+      "title": "PROPUESTA DE ARQUITECTURA AJUSTADA",
+      "sha256": "03ec7012a82daf46f3fea162b8d833abaa9cbffe734e26d5776e68de12d91c4c",
+      "size": 42050,
+      "topics": [
+        "sql_datos",
+        "rbac_seguridad",
+        "ia_agentes"
+      ],
+      "authority_score": 7,
+      "status_proposed": "BORRADOR_CANDIDATO",
+      "first_heading": "PROPUESTA DE ARQUITECTURA AJUSTADA",
+      "excerpt": "# PROPUESTA DE ARQUITECTURA AJUSTADA # Módulo de Control y Cuadre de Comisión de Propinas TPV **Versión:** 3.0 **Fecha:** 15 de Abril de 2026 **Autor:** Arquitectura EDARSA HUB **Estado:** PROPUESTA PARA REVISIÓN **Clasificación:** REDISEÑO ARQUITECTÓNICO - MÓDULO FINANCIERO --- ## RESUMEN EJECUTIVO ### Problema Identificado El módulo actual de Propinas TPV fue implementado usando **MongoDB como a"
+    },
+    {
+      "source_id": "EKS-SRC-00378",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "docs/ARQUITECTURA_PROPINAS_TPV_v3_ADENDA_CORTES_Z.md",
+      "title": "ADENDA ARQUITECTÓNICA",
+      "sha256": "8de651c48ae0d546f375a8e0352173081e3265457af2691289266a9af7393940",
+      "size": 40772,
+      "topics": [
+        "sql_datos",
+        "rbac_seguridad",
+        "ia_agentes",
+        "finanzas",
+        "roadmap_aceptacion"
+      ],
+      "authority_score": 7,
+      "status_proposed": "BORRADOR_CANDIDATO",
+      "first_heading": "ADENDA ARQUITECTÓNICA",
+      "excerpt": "# ADENDA ARQUITECTÓNICA # Extensión: Módulo de Cuadre de Cortes Z bajo Principio SQL Server **Versión:** 3.1 **Fecha:** 15 de Abril de 2026 **Autor:** Arquitectura EDARSA HUB **Estado:** PROPUESTA PARA REVISIÓN **Documento Padre:** `ARQUITECTURA_PROPINAS_TPV_v3.md` --- ## RESUMEN EJECUTIVO ### Objetivo de esta Adenda Extender la arquitectura definida para Propinas TPV al módulo de **Cuadre de Cort"
+    },
+    {
+      "source_id": "EKS-SRC-00118",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": ".agents/skills/edarsa-auditor/SKILL.md",
+      "title": "EDARSA Auditor Skill",
+      "sha256": "b08e62cca58a4419d9c2823acc03de50f45af79d58ba6cfce2a5c2906721d08a",
+      "size": 5035,
+      "topics": [
+        "constitucion_maximas",
+        "rbac_seguridad",
+        "ia_agentes",
+        "cambios_atomicos"
+      ],
+      "authority_score": 3,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "EDARSA Auditor Skill",
+      "excerpt": "--- name: edarsa-auditor description: Auditor de EDARSAHUB para inspeccionar codigo, SQL solo lectura, fuentes canonicas, KPIs, RBAC y riesgos sin modificar archivos. --- # EDARSA Auditor Skill Usa esta skill cuando la tarea sea auditar, investigar, comparar KPIs, revisar fuentes o detectar riesgos. ## Reglas - No modificar archivos. - No hacer patch. - No ejecutar SQL destructivo. - Solo usar `SE"
+    },
+    {
+      "source_id": "EKS-SRC-00116",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": ".agents/skills/edarsa-coder/SKILL.md",
+      "title": "EDARSA Coder Skill",
+      "sha256": "ddc363ccba3348dda31b8821d0f840dea17f1143a039eab869049158a48309c8",
+      "size": 3736,
+      "topics": [
+        "constitucion_maximas",
+        "rbac_seguridad",
+        "ia_agentes",
+        "cambios_atomicos",
+        "comercial"
+      ],
+      "authority_score": 3,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "EDARSA Coder Skill",
+      "excerpt": "--- name: edarsa-coder description: Implementador controlado de EDARSAHUB para aplicar patches minimos despues de evidencia del auditor. --- # EDARSA Coder Skill Usa esta skill solo cuando el usuario autorice implementar. ## Reglas - Cambios minimos. - No tocar produccion. - No push/deploy. - No crear tablas/columnas/migraciones sin autorizacion. - No mocks. - No hardcodes. - No MongoDB. - No live"
+    },
+    {
+      "source_id": "EKS-SRC-01335",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": ".github/agents/edarsa-auditor.agent.md",
+      "title": "EDARSA Auditor",
+      "sha256": "35452d5004f3ae7628ce4b8a4cb7e1ec9212681ee75e1a5b98afa5522e9ef374",
+      "size": 5161,
+      "topics": [
+        "constitucion_maximas",
+        "rbac_seguridad",
+        "ia_agentes",
+        "cambios_atomicos"
+      ],
+      "authority_score": 3,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "EDARSA Auditor",
+      "excerpt": "--- name: EDARSA Auditor description: Auditor tecnico de EDARSAHUB. Solo lectura, evidencia exacta, sin patches. tools: [execute, read, search] handoffs: - label: Pasar a EDARSA Coder agent: edarsa-coder prompt: \"Implementa solo el cambio minimo basado en la evidencia anterior. No amplíes alcance.\" send: false --- # EDARSA Auditor Actuas como auditor tecnico de EDARSAHUB. ## Prohibido - No modific"
+    },
+    {
+      "source_id": "EKS-SRC-01336",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": ".github/agents/edarsa-validator.agent.md",
+      "title": "EDARSA Validator",
+      "sha256": "5f82bd93b4926ef069e243e563fa498785fd7689788fcced1e2ee223c4d88814",
+      "size": 4513,
+      "topics": [
+        "constitucion_maximas",
+        "rbac_seguridad",
+        "ia_agentes",
+        "cambios_atomicos"
+      ],
+      "authority_score": 3,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "EDARSA Validator",
+      "excerpt": "--- name: EDARSA Validator description: Validador independiente de diff, build, DB safety, RBAC y reglas canonicas. tools: [\"search\", \"read\", \"execute\"] handoffs: - label: Regresar a EDARSA Auditor agent: edarsa-auditor prompt: \"Reaudita los riesgos detectados por Validator y determina si se corrige o revierte.\" send: false --- # EDARSA Validator Actuas como validador independiente. ## No debes - "
+    },
+    {
+      "source_id": "EKS-SRC-01334",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": ".github/agents/edarsahub-codex-auditor.agent.md",
+      "title": "EDARSAHUB Codex Auditor",
+      "sha256": "47807f18a76db03ba6ac27c699f3cdcd15dd847b53c90f3287f9c866523a19dc",
+      "size": 4196,
+      "topics": [
+        "rbac_seguridad",
+        "ia_agentes",
+        "comercial"
+      ],
+      "authority_score": 3,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "EDARSAHUB Codex Auditor",
+      "excerpt": "--- name: edarsahub-codex-auditor description: Auditor especializado para inspeccion y validacion controlada de EDARSAHUB V1.0. Solo lectura, evidencia exacta y SQL SELECT. No modifica archivos. argument-hint: Describe la tarea de inspeccion o validacion. Ejemplo: \"inspecciona Comercial.js y detecta endpoints legacy sin modificar archivos\". tools: ['read', 'search', 'execute'] --- # EDARSAHUB Code"
+    },
+    {
+      "source_id": "EKS-SRC-00117",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": ".agents/skills/edarsa-committer/SKILL.md",
+      "title": "EDARSA Committer Skill",
+      "sha256": "19c6bd2755c6524ecf0ff04d604d288ec6bbb56ed4e77f40993cbfd108fffc11",
+      "size": 3074,
+      "topics": [
+        "rbac_seguridad",
+        "ia_agentes"
+      ],
+      "authority_score": 2,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "EDARSA Committer Skill",
+      "excerpt": "--- name: edarsa-committer description: Committer controlado de EDARSAHUB para crear commits locales despues de Validator APROBADO, sin push ni deploy. --- # EDARSA Committer Skill Usar cuando el usuario autoriza commit despues de Auditor, Coder y Validator. ## Reglas - Solo rama `Edarsahub_Desarrollo`. - No push. - No deploy. - No Produccion. - No `.env`. - No secretos. - No SQL. - No reset. - No"
+    },
+    {
+      "source_id": "EKS-SRC-00115",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": ".agents/skills/edarsa-validator/SKILL.md",
+      "title": "EDARSA Validator Skill",
+      "sha256": "c731248387b316b34cc997eae9bd9fac46d7b000aaaa68d2a542d180262454be",
+      "size": 3693,
+      "topics": [
+        "constitucion_maximas",
+        "rbac_seguridad",
+        "ia_agentes",
+        "cambios_atomicos"
+      ],
+      "authority_score": 2,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "EDARSA Validator Skill",
+      "excerpt": "--- name: edarsa-validator description: Validador independiente de EDARSAHUB para revisar diff, build, py_compile, DB safety, RBAC y reglas canonicas. --- # EDARSA Validator Skill Usa esta skill despues de un patch. ## Validar - Rama correcta. - Working tree. - Diff. - `git diff --check`. - `py_compile` para Python modificado. - Build frontend si aplica. - No MongoDB nuevo. - No live nuevo. - No D"
+    },
+    {
+      "source_id": "EKS-SRC-01339",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": ".github/agents/edarsa-committer.agent.md",
+      "title": "EDARSA Committer",
+      "sha256": "9ac33d46756eceaa55d5b0081b9de4378b63ef4bc3c351a8bddf8e9b8b738533",
+      "size": 4001,
+      "topics": [
+        "rbac_seguridad",
+        "ia_agentes"
+      ],
+      "authority_score": 2,
+      "status_proposed": "OFICIALIDAD_POR_VALIDAR",
+      "first_heading": "EDARSA Committer",
+      "excerpt": "--- name: EDARSA Committer description: Committer controlado de EDARSAHUB. Solo crea commits locales despues de Validator APROBADO. No hace push ni deploy. --- # EDARSA Committer Rol: crear commits locales seguros en `Edarsahub_Desarrollo` despues de validacion completa. ## Reglas obligatorias - Solo trabajar en `/app`. - Solo trabajar en rama `Edarsahub_Desarrollo`. - No hacer push. - No hacer de"
+    },
+    {
+      "source_id": "EKS-SRC-01241",
+      "source_type": "WORKSPACE_ACTUAL",
+      "ref": "f570aedab8692cc060d45e1a46321f024f95d427",
+      "path": "memory/PRD.md",
+      "title": "EDARSA HUB - CRM COMERCIAL ENTERPRISE",
+      "sha256": "7ec8116a50ec8ae41ee23c71ce164ca4cecb447b35e0f4f3dc2db1d199b51350",
+      "size": 65161,
+      "topics": [
+        "hospitality",
+        "constitucion_maximas",
+        "contratos_canonicos",
+        "toast_netpay",
+        "sql_datos",
+        "rbac_seguridad",
+        "ia_agentes",
+        "comercial",
+        "finanzas"
+      ],
+      "authority_score": 2,
+      "status_proposed": "DEPRECADO_CANDIDATO",
+      "first_heading": "EDARSA HUB - CRM COMERCIAL ENTERPRISE",
+      "excerpt": "# EDARSA HUB - CRM COMERCIAL ENTERPRISE ## Product Requirements Document ### Original Problem Statement Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosistema EDARSA HUB. ### Core Requirements - **ESTRICTA PROHIBICIÓN**: Uso del subagente `testing_agent_v3_fork` totalmente prohibido - **MÁXIMA ARQUITECTÓNICA (NO-LIVE)**: EDARSAHUB SQL es la ÚNICA fuente de verdad product"
+    },
+    {
+      "source_id": "EKS-SRC-08868",
+      "source_type": "HOSPITALITY_BRANCH",
+      "ref": "origin/feature/hospitality-core-20260625_184401",
+      "path": "memory/PRD.md",
+      "title": "EDARSA HUB - CRM COMERCIAL ENTERPRISE",
+      "sha256": "d8af7440a5b3efcfc9c27bde791e8470c78e819101551eb26237caa493ac4a49",
+      "size": 65142,
+      "topics": [
+        "hospitality",
+        "constitucion_maximas",
+        "contratos_canonicos",
+        "toast_netpay",
+        "sql_datos",
+        "rbac_seguridad",
+        "ia_agentes",
+        "comercial",
+        "finanzas"
+      ],
+      "authority_score": 2,
+      "status_proposed": "DEPRECADO_CANDIDATO",
+      "first_heading": "EDARSA HUB - CRM COMERCIAL ENTERPRISE",
+      "excerpt": "# EDARSA HUB - CRM COMERCIAL ENTERPRISE ## Product Requirements Document ### Original Problem Statement Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosistema EDARSA HUB. ### Core Requirements - **ESTRICTA PROHIBICIÓN**: Uso del subagente `testing_agent_v3_fork` totalmente prohibido - **MÁXIMA ARQUITECTÓNICA (NO-LIVE)**: EDARSAHUB SQL es la ÚNICA fuente de verdad product"
+    }
+  ]
+}

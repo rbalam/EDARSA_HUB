@@ -1,0 +1,33 @@
+===== 1. GUARDRAILS =====
+RAMA=Edarsahub_Desarrollo
+HEAD=b81a1d52e2c9d2b54422bd618f49eea729012305
+TARGET_SHA=585b77f82cfef82d30bcbafc4b0fa70fefdf84104a56c87638f687c515160a6a
+REMOTE_HEAD=b81a1d52e2c9d2b54422bd618f49eea729012305
+CONTROL=PASS
+
+===== 2. ESTADO BACKEND ANTES DEL REINICIO =====
+backend                          RUNNING   pid 50, uptime 0:19:17
+PID_ANTES=50
+
+===== 3. REINICIAR SOLO BACKEND PREVIEW =====
+backend: stopped
+backend: started
+REINICIO_BACKEND_COMANDO=PASS
+backend                          RUNNING   pid 17469, uptime 0:00:05
+PID_DESPUES=17469
+BACKEND_RUNNING=PASS
+
+===== 4. VALIDAR HEALTH =====
+curl: (7) Failed to connect to 127.0.0.1 port 8001 after 0 ms: Couldn't connect to server
+HTTP_CODE=000
+HEALTH_BODY:
+
+ERROR=HEALTH_HTTP_NO_ES_200
+VALIDACION_PREVIEW_SYNC_RUNTIME=FALLO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+DEPLOY=NO
+REPORT=/app/edarsahub_sync_runtime_preview_restart_20260805T053853Z.txt
+COMPACT=/app/edarsahub_sync_runtime_preview_restart_20260805T053853Z_compact.txt

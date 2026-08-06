@@ -1,0 +1,150 @@
+EDARSAHUB EXACT SYNC CONSUMERS
+CAPTURED_AT_UTC=2026-08-05T06:01:34.854258+00:00
+
+FILE=backend/auditorias_p4/backup_p4_01b_20260606_011251/server.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=24
+FILE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_endpoints_job.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=11
+FILE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_endpoints_job.py|TABLE=Sync_Metas_Comerciales|USAGE=READ_RUNTIME,WRITE_RUNTIME|LINES=7,267,269,276
+FILE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_endpoints_job.py|TABLE=Sync_Ticket_Perfecto|USAGE=READ_RUNTIME,WRITE_RUNTIME|LINES=8,356,358
+FILE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_endpoints_job.py|TABLE=Sync_Mesas|USAGE=READ_RUNTIME,WRITE_RUNTIME|LINES=9,422,425
+FILE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_endpoints_job.py|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME,WRITE_RUNTIME|LINES=12,488,490
+FILE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=12
+FILE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py|TABLE=Sync_Metas_Comerciales|USAGE=READ_RUNTIME|LINES=186,2027,2059,2065,2098
+FILE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py|TABLE=Sync_Ticket_Perfecto|USAGE=READ_RUNTIME|LINES=187,2364,2404,2411,2444
+FILE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py|TABLE=Sync_Mesas|USAGE=READ_RUNTIME|LINES=188,2883,2917,2923,2974
+FILE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME|LINES=3578,3618,3625,3669
+FILE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_endpoints_job.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=11
+FILE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_endpoints_job.py|TABLE=Sync_Metas_Comerciales|USAGE=READ_RUNTIME,WRITE_RUNTIME|LINES=7,267,269,276
+FILE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_endpoints_job.py|TABLE=Sync_Ticket_Perfecto|USAGE=READ_RUNTIME,WRITE_RUNTIME|LINES=8,356,358
+FILE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_endpoints_job.py|TABLE=Sync_Mesas|USAGE=READ_RUNTIME,WRITE_RUNTIME|LINES=9,422,425
+FILE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_endpoints_job.py|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME,WRITE_RUNTIME|LINES=12,488,490
+FILE=backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=12
+FILE=backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py|TABLE=Sync_Metas_Comerciales|USAGE=READ_RUNTIME|LINES=186,2027,2059,2065,2098
+FILE=backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py|TABLE=Sync_Ticket_Perfecto|USAGE=READ_RUNTIME|LINES=187,2364,2404,2411,2444
+FILE=backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py|TABLE=Sync_Mesas|USAGE=READ_RUNTIME|LINES=188,2883,2917,2923,2974
+FILE=backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME|LINES=3578,3618,3625,3669
+FILE=backend/auditorias_p4/backup_p4_02_20260606_012636/modules/inteligencia_comercial/routes.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=2
+FILE=backend/auditorias_p4/backup_p4_02_20260606_012636/modules/inteligencia_comercial/routes.py|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME|LINES=9,394,404,414,433,498,508,532,546,560,575
+FILE=backend/auditorias_p4/backup_p4_02_20260606_012636/server.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=24
+FILE=backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=12
+FILE=backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py|TABLE=Sync_Metas_Comerciales|USAGE=READ_RUNTIME|LINES=186,2027,2059,2065,2098
+FILE=backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py|TABLE=Sync_Ticket_Perfecto|USAGE=READ_RUNTIME|LINES=187,2364,2404,2411,2444
+FILE=backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py|TABLE=Sync_Mesas|USAGE=READ_RUNTIME|LINES=188,2883,2917,2923,2974
+FILE=backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME|LINES=3578,3618,3625,3669
+FILE=backend/auditorias_p4/backup_p4_02b_20260606_013125/server.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=24
+FILE=backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=12
+FILE=backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py|TABLE=Sync_Metas_Comerciales|USAGE=READ_RUNTIME|LINES=186,2027,2059,2065,2098
+FILE=backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py|TABLE=Sync_Ticket_Perfecto|USAGE=READ_RUNTIME|LINES=187,2364,2404,2411,2444
+FILE=backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py|TABLE=Sync_Mesas|USAGE=READ_RUNTIME|LINES=188,2883,2917,2923,2974
+FILE=backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME|LINES=3578,3618,3625,3669
+FILE=backend/auditorias_p4/backup_p4_02d_20260606_014556/server.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=24
+FILE=backend/auditorias_p4/backup_p4_02g_20260606_015931/server.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=24
+FILE=backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=12
+FILE=backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py|TABLE=Sync_Metas_Comerciales|USAGE=READ_RUNTIME|LINES=186,2027,2059,2065,2098
+FILE=backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py|TABLE=Sync_Ticket_Perfecto|USAGE=READ_RUNTIME|LINES=187,2364,2404,2411,2444
+FILE=backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py|TABLE=Sync_Mesas|USAGE=READ_RUNTIME|LINES=188,2883,2917,2923,2974
+FILE=backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME|LINES=3578,3618,3625,3669
+FILE=backend/auditorias_p4/backup_p4_02h_20260606_020653/server.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=24
+FILE=backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=12
+FILE=backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py|TABLE=Sync_Metas_Comerciales|USAGE=READ_RUNTIME|LINES=186,2027,2059,2065,2098
+FILE=backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py|TABLE=Sync_Ticket_Perfecto|USAGE=READ_RUNTIME|LINES=187,2364,2404,2411,2444
+FILE=backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py|TABLE=Sync_Mesas|USAGE=READ_RUNTIME|LINES=188,2883,2917,2923,2974
+FILE=backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME|LINES=3578,3618,3625,3669
+FILE=backend/auditorias_p4/backup_p4_02i_20260606_021615/server.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=24
+FILE=backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=12
+FILE=backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py|TABLE=Sync_Metas_Comerciales|USAGE=READ_RUNTIME|LINES=186,2027,2059,2065,2098
+FILE=backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py|TABLE=Sync_Ticket_Perfecto|USAGE=READ_RUNTIME|LINES=187,2364,2404,2411,2444
+FILE=backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py|TABLE=Sync_Mesas|USAGE=READ_RUNTIME|LINES=188,2883,2917,2923,2974
+FILE=backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME|LINES=3578,3618,3625,3669
+FILE=backend/auditorias_p4/backup_p4_02j_20260606_022445/server.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=24
+FILE=backend/auditorias_p4/backup_p4_04_05_20260606_041128/server.py|CLASS=DOCUMENTACION_O_AUDITORIA|AST=PASS|CURSOR_EXECUTE_CALLS=24
+FILE=backend/core/scheduler/jobs/inteligencia_comercial_status_job.py|CLASS=CODIGO_PRODUCTIVO_CANDIDATO|AST=PASS|CURSOR_EXECUTE_CALLS=1
+FILE=backend/core/scheduler/jobs/inteligencia_comercial_status_job.py|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME|LINES=89,93
+FILE=backend/database/diagnostics/002_diagnostico_inteligencia.sql|CLASS=SQL_DEFINICION_O_MIGRACION|AST=NO_APLICA|CURSOR_EXECUTE_CALLS=0
+FILE=backend/database/diagnostics/002_diagnostico_inteligencia.sql|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME|LINES=10
+FILE=backend/database/diagnostics/003_matriz_canonicidad.sql|CLASS=SQL_DEFINICION_O_MIGRACION|AST=NO_APLICA|CURSOR_EXECUTE_CALLS=0
+FILE=backend/database/migrations/004_poblar_sistema_gobierno_tablas.sql|CLASS=SQL_DEFINICION_O_MIGRACION|AST=NO_APLICA|CURSOR_EXECUTE_CALLS=0
+FILE=backend/database/migrations/009_crear_inteligencia_comercial_vistas_tablas.sql|CLASS=SQL_DEFINICION_O_MIGRACION|AST=NO_APLICA|CURSOR_EXECUTE_CALLS=0
+FILE=backend/database/migrations/009_crear_inteligencia_comercial_vistas_tablas.sql|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME|LINES=70,74
+FILE=backend/database/migrations/017_registrar_inteligencia_comercial_y_transicionales.sql|CLASS=SQL_DEFINICION_O_MIGRACION|AST=NO_APLICA|CURSOR_EXECUTE_CALLS=0
+FILE=backend/database/migrations/031_diagnostico_sync_sales_pax_detalle.sql|CLASS=SQL_DEFINICION_O_MIGRACION|AST=NO_APLICA|CURSOR_EXECUTE_CALLS=0
+FILE=backend/database/migrations/031_diagnostico_sync_sales_pax_detalle.sql|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME|LINES=2,6,17,32,55,75,80,251,260,272
+FILE=backend/database/migrations/032_validacion_inteligencia_comercial_fase1.sql|CLASS=SQL_DEFINICION_O_MIGRACION|AST=NO_APLICA|CURSOR_EXECUTE_CALLS=0
+FILE=backend/database/validation/20260730_023_comercial_historical_coverage_certification.sql|CLASS=SQL_DEFINICION_O_MIGRACION|AST=NO_APLICA|CURSOR_EXECUTE_CALLS=0
+FILE=backend/modules/comercial/inteligencia_comercial_routes.py|CLASS=CODIGO_PRODUCTIVO_CANDIDATO|AST=PASS|CURSOR_EXECUTE_CALLS=2
+FILE=backend/modules/comercial/inteligencia_comercial_routes.py|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME|LINES=275,305,310
+FILE=backend/modules/comercial/routes.py|CLASS=CODIGO_PRODUCTIVO_CANDIDATO|AST=PASS|CURSOR_EXECUTE_CALLS=14
+FILE=backend/modules/comercial/routes.py|TABLE=Sync_Metas_Comerciales|USAGE=READ_RUNTIME|LINES=185,2067,2096,2102,2135
+FILE=backend/modules/comercial/routes.py|TABLE=Sync_Ticket_Perfecto|USAGE=READ_RUNTIME|LINES=186,2401,2438,2445,2478
+FILE=backend/modules/comercial/routes.py|TABLE=Sync_Mesas|USAGE=READ_RUNTIME|LINES=187,2915,2980,2986,3006,3007,3018,3027,3043,3044,3128,3129,3145,3156,3157
+FILE=backend/modules/comercial/routes.py|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME|LINES=3497,3534,3541,3585
+FILE=backend/modules/inteligencia_comercial/routes.py|CLASS=CODIGO_PRODUCTIVO_CANDIDATO|AST=PASS|CURSOR_EXECUTE_CALLS=4
+FILE=backend/modules/inteligencia_comercial/routes.py|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME|LINES=9,1188,1256,1280,1294,1308,1323
+FILE=backend/scripts/ddl_sync_comercial_tablas.sql|CLASS=SQL_ARCHIVO|AST=NO_APLICA|CURSOR_EXECUTE_CALLS=0
+FILE=backend/scripts/ddl_sync_comercial_tablas.sql|TABLE=Sync_Metas_Comerciales|USAGE=DDL|LINES=9,23,26,28,54,57,58,60,281
+FILE=backend/scripts/ddl_sync_comercial_tablas.sql|TABLE=Sync_Ticket_Perfecto|USAGE=DDL|LINES=10,65,68,70,96,99,100,102,282
+FILE=backend/scripts/ddl_sync_comercial_tablas.sql|TABLE=Sync_Mesas|USAGE=DDL|LINES=11,107,110,112,138,141,142,143,145,283
+FILE=backend/scripts/ddl_sync_comercial_tablas.sql|TABLE=Sync_PAX_Detalle|USAGE=DDL|LINES=14,231,234,236,261,262,263,264,266,286
+FILE=backend/server.py|CLASS=CODIGO_PRODUCTIVO_CANDIDATO|AST=PASS|CURSOR_EXECUTE_CALLS=96
+FILE=backend/sql/inteligencia_comercial_validacion_fuentes.sql|CLASS=SQL_ARCHIVO|AST=NO_APLICA|CURSOR_EXECUTE_CALLS=0
+FILE=backend/sql/inteligencia_comercial_validacion_fuentes.sql|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME|LINES=34,39,47
+FILE=backend/sql/inteligencia_comercial_validacion_status_sp.sql|CLASS=SQL_ARCHIVO|AST=NO_APLICA|CURSOR_EXECUTE_CALLS=0
+FILE=backend/sql/inteligencia_comercial_validacion_status_sp.sql|TABLE=Sync_PAX_Detalle|USAGE=READ_RUNTIME|LINES=30,34
+FILE=backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql|CLASS=SQL_DEFINICION_O_MIGRACION|AST=NO_APLICA|CURSOR_EXECUTE_CALLS=0
+
+SUMMARY
+{
+  "candidate_files": 36,
+  "runtime_reader_files": [
+    "backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_endpoints_job.py",
+    "backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py",
+    "backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_endpoints_job.py",
+    "backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py",
+    "backend/auditorias_p4/backup_p4_02_20260606_012636/modules/inteligencia_comercial/routes.py",
+    "backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py",
+    "backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py",
+    "backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py",
+    "backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py",
+    "backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py",
+    "backend/core/scheduler/jobs/inteligencia_comercial_status_job.py",
+    "backend/database/diagnostics/002_diagnostico_inteligencia.sql",
+    "backend/database/migrations/009_crear_inteligencia_comercial_vistas_tablas.sql",
+    "backend/database/migrations/031_diagnostico_sync_sales_pax_detalle.sql",
+    "backend/modules/comercial/inteligencia_comercial_routes.py",
+    "backend/modules/comercial/routes.py",
+    "backend/modules/inteligencia_comercial/routes.py",
+    "backend/sql/inteligencia_comercial_validacion_fuentes.sql",
+    "backend/sql/inteligencia_comercial_validacion_status_sp.sql"
+  ],
+  "runtime_writer_files": [
+    "backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_endpoints_job.py",
+    "backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_endpoints_job.py"
+  ],
+  "ddl_files": [
+    "backend/scripts/ddl_sync_comercial_tablas.sql"
+  ],
+  "test_files": [],
+  "nonfunctional_reference_files": [
+    "backend/auditorias_p4/backup_p4_01b_20260606_011251/server.py",
+    "backend/auditorias_p4/backup_p4_02_20260606_012636/server.py",
+    "backend/auditorias_p4/backup_p4_02b_20260606_013125/server.py",
+    "backend/auditorias_p4/backup_p4_02d_20260606_014556/server.py",
+    "backend/auditorias_p4/backup_p4_02g_20260606_015931/server.py",
+    "backend/auditorias_p4/backup_p4_02h_20260606_020653/server.py",
+    "backend/auditorias_p4/backup_p4_02i_20260606_021615/server.py",
+    "backend/auditorias_p4/backup_p4_02j_20260606_022445/server.py",
+    "backend/auditorias_p4/backup_p4_04_05_20260606_041128/server.py",
+    "backend/database/diagnostics/003_matriz_canonicidad.sql",
+    "backend/database/migrations/004_poblar_sistema_gobierno_tablas.sql",
+    "backend/database/migrations/017_registrar_inteligencia_comercial_y_transicionales.sql",
+    "backend/database/migrations/032_validacion_inteligencia_comercial_fase1.sql",
+    "backend/database/validation/20260730_023_comercial_historical_coverage_certification.sql",
+    "backend/scripts/ddl_sync_comercial_tablas.sql",
+    "backend/server.py",
+    "backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql"
+  ],
+  "runtime_reader_count": 19,
+  "runtime_writer_count": 2,
+  "ddl_count": 1,
+  "test_count": 0,
+  "nonfunctional_reference_count": 17
+}

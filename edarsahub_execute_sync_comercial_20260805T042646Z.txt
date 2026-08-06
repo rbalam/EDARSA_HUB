@@ -1,0 +1,256 @@
+===== 1. CONTROL DEL REPOSITORIO =====
+RAMA=Edarsahub_Desarrollo
+HEAD=3fc6e34f58b4b25c52e1341debcb2d6f70a46f4d
+TARGET_SHA=9c715e135e6f85b205ab16df18d7457cf810a198f695ba74401901bd955190aa
+STAGING:
+VACIO
+CAMBIOS_TRACKED:
+VACIO
+STATUS_TARGET:
+LIMPIO
+ARCHIVOS_NO_RASTREADOS=179
+CONTROL_REPOSITORIO=PASS
+
+===== 2. CONFIRMAR LOCAL, REMOTO Y BACKEND =====
+From https://github.com/rbalam/EDARSA_HUB
+ * branch              Edarsahub_Desarrollo -> FETCH_HEAD
+REMOTE_HEAD=3fc6e34f58b4b25c52e1341debcb2d6f70a46f4d
+COMMITS_AHEAD=0
+COMMITS_BEHIND=0
+backend                          RUNNING   pid 23405, uptime 0:03:04
+BACKEND_PID=23405
+HEALTH_HTTP_ANTES=200
+LOCAL_REMOTO_BACKEND=PASS
+
+===== 3. CARGAR ENTORNO EN MEMORIA =====
+ENV_CARGADO_EN_MEMORIA=SI
+SECRETOS_IMPRESOS=NO
+
+===== 4. VALIDAR CONTEXTOS CANONICOS =====
+CONTEXTOS_TOTAL=5
+CONTEXT|unidad=130MID|server_id=a5547321-1139-4d2b-9d53-182ca737b6b6|sucursal=DEFAULT|sistema=SOFTRESTAURANT
+CONTEXT|unidad=CIENFUEGOS|server_id=6d053c22-523e-48c0-b72b-96081e2d781b|sucursal=DEFAULT|sistema=SOFTRESTAURANT
+CONTEXT|unidad=ESTELAR|server_id=a5ff0e25-f029-43db-b634-d4ac814c904f|sucursal=DEFAULT|sistema=SOFTRESTAURANT
+CONTEXT|unidad=130QRO|server_id=1b230a06-ffaf-4c70-bd27-b1be3579dea6|sucursal=0021|sistema=MANAGEMENTPRO
+CONTEXT|unidad=ORIGEN|server_id=1b230a06-ffaf-4c70-bd27-b1be3579dea6|sucursal=0023|sistema=MANAGEMENTPRO
+CONTEXTOS_CANONICOS=PASS
+SECRETOS_IMPRESOS=NO
+POS_CONECTADO_DIRECTAMENTE=NO
+
+===== 5. GUARDAR OFFSETS DE LOGS =====
+OUT_LOG=/var/log/supervisor/backend.out.log
+OUT_SIZE_BEFORE=2180376
+ERR_LOG=/var/log/supervisor/backend.err.log
+ERR_SIZE_BEFORE=24297970
+
+===== 6. LEVANTAR BASELINE SQL READ-ONLY =====
+DATABASE=EDARSAHUB
+LOGIN=HRLectura
+DATABASE_USER=HRLectura
+BASELINE|table=Sync_Metas_Comerciales|rows=0|timestamp_column=FechaSync|max_timestamp=None
+BASELINE|table=Sync_Ticket_Perfecto|rows=0|timestamp_column=FechaSync|max_timestamp=None
+BASELINE|table=Sync_Mesas|rows=0|timestamp_column=FechaSync|max_timestamp=None
+BASELINE|table=Sync_PAX_Detalle|rows=0|timestamp_column=FechaSync|max_timestamp=None
+BASELINE_SQL_READONLY=PASS
+BASELINE_JSON=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/baseline.json
+
+===== 7. EJECUTAR JOB UNA SOLA VEZ =====
+[sync_comercial_endpoints] Error sync metas DEFAULT: tuple indices must be integers or slices, not str
+[sync_comercial_endpoints] Error sync metas DEFAULT: tuple indices must be integers or slices, not str
+[sync_comercial_endpoints] Error sync metas DEFAULT: tuple indices must be integers or slices, not str
+[sync_comercial_endpoints] Error sync metas 0021: tuple indices must be integers or slices, not str
+[sync_comercial_endpoints] Error sync metas 0023: tuple indices must be integers or slices, not str
+[sync_comercial_endpoints] Error sync ticket DEFAULT: tuple indices must be integers or slices, not str
+[sync_comercial_endpoints] Error sync ticket DEFAULT: tuple indices must be integers or slices, not str
+[sync_comercial_endpoints] Error sync ticket DEFAULT: tuple indices must be integers or slices, not str
+[sync_comercial_endpoints] Error sync ticket 0021: tuple indices must be integers or slices, not str
+[sync_comercial_endpoints] Error sync ticket 0023: tuple indices must be integers or slices, not str
+[sync_comercial_endpoints] Error sync PAX DEFAULT: tuple indices must be integers or slices, not str
+[sync_comercial_endpoints] Error sync PAX DEFAULT: tuple indices must be integers or slices, not str
+[sync_comercial_endpoints] Error sync PAX DEFAULT: tuple indices must be integers or slices, not str
+CONSTRUCTOR_SIGNATURE=(db=None, config: core.scheduler.config.JobConfig = None)
+JOB_CLASS=SyncComercialEndpointsJob
+JOB_ID=sync_comercial_endpoints
+JOB_INSTANCIADO=SI
+EJECUCIONES_SOLICITADAS=1
+{
+  "processed_count": 0,
+  "success_count": 4,
+  "failed_count": 0,
+  "skipped_count": 0,
+  "message": "Sincronización completada: 0 registros",
+  "details": {
+    "metas": {
+      "success": true,
+      "count": 0,
+      "error_type": null,
+      "has_error": false
+    },
+    "ticket_perfecto": {
+      "success": true,
+      "count": 0,
+      "error_type": null,
+      "has_error": false
+    },
+    "mesas": {
+      "success": true,
+      "count": 0,
+      "error_type": null,
+      "has_error": false
+    },
+    "pax": {
+      "success": true,
+      "count": 0,
+      "error_type": null,
+      "has_error": false
+    }
+  }
+}
+JOB_EJECUTADO=SI
+EJECUCIONES_REALIZADAS=1
+FAILED_COUNT=0
+SUCCESS_COUNT=4
+PROCESSED_COUNT=0
+RESULTADO_JOB=PASS
+POS_CONECTADO_DIRECTAMENTE=NO
+JOB_RESULT_JSON=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/job_result.json
+EJECUCION_JOB=PASS
+
+===== 8. LEVANTAR ESTADO SQL POSTERIOR =====
+POST|table=Sync_Metas_Comerciales|rows=0|timestamp_column=FechaSync|max_timestamp=None
+POST|table=Sync_Ticket_Perfecto|rows=0|timestamp_column=FechaSync|max_timestamp=None
+POST|table=Sync_Mesas|rows=0|timestamp_column=FechaSync|max_timestamp=None
+POST|table=Sync_PAX_Detalle|rows=0|timestamp_column=FechaSync|max_timestamp=None
+POST_SQL_READONLY=PASS
+POST_JSON=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/post_execution.json
+
+===== 9. COMPARAR BASELINE Y POST =====
+DELTA|table=Sync_Metas_Comerciales|before=0|after=0|delta=0|timestamp_changed=NO
+DELTA|table=Sync_Ticket_Perfecto|before=0|after=0|delta=0|timestamp_changed=NO
+DELTA|table=Sync_Mesas|before=0|after=0|delta=0|timestamp_changed=NO
+DELTA|table=Sync_PAX_Detalle|before=0|after=0|delta=0|timestamp_changed=NO
+JOB_PROCESSED_COUNT=0
+TOTAL_POSITIVE_ROW_DELTA=0
+ROW_COUNTS_NO_DISMINUYERON=SI
+COMPARACION_BASELINE_POST=PASS
+DELTA_JSON=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/delta.json
+
+===== 10. VALIDAR HEALTH POSTERIOR =====
+HEALTH_HTTP_DESPUES=200
+HEALTH_BODY_DESPUES:
+{"status":"operativo","sistema":"EDARSA HUB","version":"1.0"}
+backend                          RUNNING   pid 23405, uptime 0:03:09
+BACKEND_ESTABLE_POST_JOB=SI
+HEALTH_POST_JOB=PASS
+
+===== 11. EXTRAER Y ANALIZAR LOGS NUEVOS =====
+CRITICAL_PATTERNS_FOUND=0
+LOGS_NUEVOS=PASS
+
+===== 12. CONTROL FINAL DE INMUTABILIDAD =====
+HEAD_DESPUES=3fc6e34f58b4b25c52e1341debcb2d6f70a46f4d
+TARGET_SHA_DESPUES=9c715e135e6f85b205ab16df18d7457cf810a198f695ba74401901bd955190aa
+STAGING_DESPUES:
+VACIO
+CAMBIOS_TRACKED_DESPUES:
+VACIO
+REPOSITORIO_TRACKED_INTACTO=SI
+UNTRACKED_PRESERVADOS=SI
+
+===== 13. RESULTADO =====
+EJECUCION_CONTROLADA_JOB=PASS
+RAMA=Edarsahub_Desarrollo
+HEAD=3fc6e34f58b4b25c52e1341debcb2d6f70a46f4d
+REMOTE_HEAD=3fc6e34f58b4b25c52e1341debcb2d6f70a46f4d
+BACKEND_PID=23405
+BACKEND_ESTABLE_POST_JOB=SI
+HEALTH_ANTES=200
+HEALTH_DESPUES=200
+CONTEXTOS_CANONICOS=PASS
+CONTEXTOS_TOTAL=5
+RESOLVER_CANONICO=list_pos_runtime_contexts
+JOB=sync_comercial_endpoints
+JOB_INSTANCIADO=SI
+JOB_EJECUTADO=SI
+EJECUCIONES_REALIZADAS=1
+SUCCESS_COUNT=4
+FAILED_COUNT=0
+PROCESSED_COUNT=0
+COMPARACION_BASELINE_POST=PASS
+ROW_COUNTS_NO_DISMINUYERON=SI
+LOGS_NUEVOS=PASS
+POS_CONECTADO_DIRECTAMENTE=NO
+SQL_READONLY_BASELINE=SI
+SQL_DML_JOB=SI_CONTROLADO
+TABLAS_SYNC_AFECTABLES=4
+DATOS_MODIFICADOS=SI_SEGUN_LOGICA_IDEMPOTENTE_DEL_JOB
+CODIGO_MODIFICADO=NO
+STAGING_MODIFICADO=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+RESET=NO
+REBASE=NO
+MERGE=NO
+REPOSITORIO_TRACKED_INTACTO=SI
+ARCHIVOS_NO_RASTREADOS=179
+UNTRACKED_PRESERVADOS=SI
+BASELINE_JSON=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/baseline.json
+POST_JSON=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/post_execution.json
+DELTA_JSON=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/delta.json
+JOB_RESULT_JSON=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/job_result.json
+JOB_LOG=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/job_execution.log
+CONTEXTS_REPORT=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/contexts.txt
+NEW_BACKEND_LOGS=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/backend_logs_new.txt
+LOG_ANALYSIS=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/log_analysis.txt
+REPORT=/app/edarsahub_execute_sync_comercial_20260805T042646Z.txt
+COMPACT=/app/edarsahub_execute_sync_comercial_20260805T042646Z_compact.txt
+SIGUIENTE_ESTADO=EVALUAR_RESULTADO_REAL_DEL_JOB_Y_CONFIRMAR_POBLACION_DE_SYNC_MESAS
+EJECUCION_CONTROLADA_JOB=PASS
+RAMA=Edarsahub_Desarrollo
+HEAD=3fc6e34f58b4b25c52e1341debcb2d6f70a46f4d
+REMOTE_HEAD=3fc6e34f58b4b25c52e1341debcb2d6f70a46f4d
+BACKEND_PID=23405
+BACKEND_ESTABLE_POST_JOB=SI
+HEALTH_ANTES=200
+HEALTH_DESPUES=200
+CONTEXTOS_CANONICOS=PASS
+CONTEXTOS_TOTAL=5
+RESOLVER_CANONICO=list_pos_runtime_contexts
+JOB=sync_comercial_endpoints
+JOB_INSTANCIADO=SI
+JOB_EJECUTADO=SI
+EJECUCIONES_REALIZADAS=1
+SUCCESS_COUNT=4
+FAILED_COUNT=0
+PROCESSED_COUNT=0
+COMPARACION_BASELINE_POST=PASS
+ROW_COUNTS_NO_DISMINUYERON=SI
+LOGS_NUEVOS=PASS
+POS_CONECTADO_DIRECTAMENTE=NO
+SQL_READONLY_BASELINE=SI
+SQL_DML_JOB=SI_CONTROLADO
+TABLAS_SYNC_AFECTABLES=4
+DATOS_MODIFICADOS=SI_SEGUN_LOGICA_IDEMPOTENTE_DEL_JOB
+CODIGO_MODIFICADO=NO
+STAGING_MODIFICADO=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+RESET=NO
+REBASE=NO
+MERGE=NO
+REPOSITORIO_TRACKED_INTACTO=SI
+ARCHIVOS_NO_RASTREADOS=179
+UNTRACKED_PRESERVADOS=SI
+BASELINE_JSON=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/baseline.json
+POST_JSON=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/post_execution.json
+DELTA_JSON=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/delta.json
+JOB_RESULT_JSON=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/job_result.json
+JOB_LOG=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/job_execution.log
+CONTEXTS_REPORT=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/contexts.txt
+NEW_BACKEND_LOGS=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/backend_logs_new.txt
+LOG_ANALYSIS=/var/tmp/edarsahub_execute_sync_comercial_20260805T042646Z/log_analysis.txt
+REPORT=/app/edarsahub_execute_sync_comercial_20260805T042646Z.txt
+COMPACT=/app/edarsahub_execute_sync_comercial_20260805T042646Z_compact.txt
+SIGUIENTE_ESTADO=EVALUAR_RESULTADO_REAL_DEL_JOB_Y_CONFIRMAR_POBLACION_DE_SYNC_MESAS

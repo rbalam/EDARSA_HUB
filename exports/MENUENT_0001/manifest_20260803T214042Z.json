@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "audit_id": "MENUENT_0001",
+  "category": "MENUENT",
+  "created_utc": "2026-08-03T21:40:42Z",
+  "repository": {
+    "name": "rbalam/EDARSA_HUB",
+    "branch": "Edarsahub_Desarrollo",
+    "commit_sha": "68b65124cb00198c90447120d551716bd73a42da"
+  },
+  "commit_sha": "68b65124cb00198c90447120d551716bd73a42da",
+  "package": {
+    "filename": "MENUENT_0001_20260803T214042Z.tgz",
+    "sha256": "be3eee58f4fc04c4bad58129bceb836e2805b71d0d97c6fec9490367ddc6cae0",
+    "bytes": 16227
+  },
+  "package_sha256": "be3eee58f4fc04c4bad58129bceb836e2805b71d0d97c6fec9490367ddc6cae0",
+  "files_count": 8,
+  "classification": "EVIDENCIA_MENU_ENTERPRISE",
+  "contains_confirmed_secrets": false,
+  "status": "READY_FOR_RELAY"
+}

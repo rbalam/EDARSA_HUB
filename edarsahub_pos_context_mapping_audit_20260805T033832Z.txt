@@ -1,0 +1,33 @@
+===== 1. CONTROL =====
+RAMA=Edarsahub_Desarrollo
+HEAD=3dfba587c0b20a0a23537d12f8258dc0076206b4
+STAGING_ANTES:
+VACIO
+CONTROL=OK
+
+===== 2. RESOLVER CONTEXTOS CANONICOS SIN MOSTRAR SECRETOS =====
+Traceback (most recent call last):
+  File "<stdin>", line 7, in <module>
+  File "/app/backend/core/connections/pos_runtime_resolver.py", line 135, in list_pos_runtime_contexts
+    connection = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/backend/core/sql_first/connection_factory.py", line 83, in get_edarsahub_pymssql_connection
+    cfg = get_edarsahub_sql_config(profile)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/backend/core/config/edarsahub_config.py", line 50, in get_edarsahub_sql_config
+    host=_required(f"{prefix}_HOST"),
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/backend/core/config/edarsahub_config.py", line 23, in _required
+    raise RuntimeError(
+RuntimeError: Variable obligatoria no configurada: EDARSAHUB_SQL_HOST
+ERROR=RESOLVER_CONTEXTOS_FALLO
+AUDITORIA_MAPEO_POS_CANONICO=FALLO
+PATCH=NO
+CODIGO_MODIFICADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+REPORT=/app/edarsahub_pos_context_mapping_audit_20260805T033832Z.txt
+TERMINAL_PERMANECE_ABIERTA=SI

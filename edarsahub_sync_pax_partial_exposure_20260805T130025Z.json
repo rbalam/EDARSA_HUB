@@ -1,0 +1,332 @@
+{
+  "database": {
+    "name": "EDARSAHUB",
+    "login": "HRLectura",
+    "user": "HRLectura"
+  },
+  "sync_schema": [
+    {
+      "column_id": 1,
+      "column_name": "ID",
+      "data_type": "int"
+    },
+    {
+      "column_id": 2,
+      "column_name": "PAXRegistroID",
+      "data_type": "nvarchar"
+    },
+    {
+      "column_id": 3,
+      "column_name": "ServerID",
+      "data_type": "nvarchar"
+    },
+    {
+      "column_id": 4,
+      "column_name": "SucursalID",
+      "data_type": "nvarchar"
+    },
+    {
+      "column_id": 5,
+      "column_name": "SucursalNombre",
+      "data_type": "nvarchar"
+    },
+    {
+      "column_id": 6,
+      "column_name": "FechaOperacion",
+      "data_type": "date"
+    },
+    {
+      "column_id": 7,
+      "column_name": "FechaHora",
+      "data_type": "datetime2"
+    },
+    {
+      "column_id": 8,
+      "column_name": "CuentaID",
+      "data_type": "nvarchar"
+    },
+    {
+      "column_id": 9,
+      "column_name": "CuentaFolio",
+      "data_type": "nvarchar"
+    },
+    {
+      "column_id": 10,
+      "column_name": "MesaNumero",
+      "data_type": "nvarchar"
+    },
+    {
+      "column_id": 11,
+      "column_name": "MeseroID",
+      "data_type": "nvarchar"
+    },
+    {
+      "column_id": 12,
+      "column_name": "MeseroNombre",
+      "data_type": "nvarchar"
+    },
+    {
+      "column_id": 13,
+      "column_name": "NumeroComensales",
+      "data_type": "int"
+    },
+    {
+      "column_id": 14,
+      "column_name": "TipoPAX",
+      "data_type": "nvarchar"
+    },
+    {
+      "column_id": 15,
+      "column_name": "VentaCuenta",
+      "data_type": "decimal"
+    },
+    {
+      "column_id": 16,
+      "column_name": "ConsumoPromedioPAX",
+      "data_type": "decimal"
+    },
+    {
+      "column_id": 17,
+      "column_name": "TiempoMesa",
+      "data_type": "int"
+    },
+    {
+      "column_id": 18,
+      "column_name": "HoraEntrada",
+      "data_type": "datetime2"
+    },
+    {
+      "column_id": 19,
+      "column_name": "HoraSalida",
+      "data_type": "datetime2"
+    },
+    {
+      "column_id": 20,
+      "column_name": "Turno",
+      "data_type": "nvarchar"
+    },
+    {
+      "column_id": 21,
+      "column_name": "DiaSemana",
+      "data_type": "nvarchar"
+    },
+    {
+      "column_id": 22,
+      "column_name": "FechaSync",
+      "data_type": "datetime2"
+    }
+  ],
+  "sync_rows": [
+    {
+      "ID": 2,
+      "PAXRegistroID": "55708f66125c132d622b946c2fbff726301594ca2f6a4a6d24",
+      "ServerID": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+      "SucursalID": "DEFAULT",
+      "SucursalNombre": "130° MERIDA",
+      "FechaOperacion": "2026-08-04",
+      "FechaHora": "2026-08-05 05:47:16.2320000",
+      "CuentaID": null,
+      "CuentaFolio": null,
+      "MesaNumero": null,
+      "MeseroID": null,
+      "MeseroNombre": null,
+      "NumeroComensales": 0,
+      "TipoPAX": "NORMAL",
+      "VentaCuenta": "0.00",
+      "ConsumoPromedioPAX": "0.00",
+      "TiempoMesa": 0,
+      "HoraEntrada": null,
+      "HoraSalida": null,
+      "Turno": null,
+      "DiaSemana": null,
+      "FechaSync": "2026-08-05 05:47:16.2500000"
+    },
+    {
+      "ID": 3,
+      "PAXRegistroID": "c0460e55b20fd4430c5b3268fb07c587d44151b32e3c2e917b",
+      "ServerID": "6d053c22-523e-48c0-b72b-96081e2d781b",
+      "SucursalID": "DEFAULT",
+      "SucursalNombre": "CIENFUEGOS",
+      "FechaOperacion": "2026-08-04",
+      "FechaHora": "2026-08-05 05:47:16.3710000",
+      "CuentaID": null,
+      "CuentaFolio": null,
+      "MesaNumero": null,
+      "MeseroID": null,
+      "MeseroNombre": null,
+      "NumeroComensales": 1,
+      "TipoPAX": "NORMAL",
+      "VentaCuenta": "10000.00",
+      "ConsumoPromedioPAX": "10000.00",
+      "TiempoMesa": 0,
+      "HoraEntrada": null,
+      "HoraSalida": null,
+      "Turno": null,
+      "DiaSemana": null,
+      "FechaSync": "2026-08-05 05:47:16.3900000"
+    },
+    {
+      "ID": 4,
+      "PAXRegistroID": "379ef2b96dda3f4234b9290ac44c1ad9a65c1d0486251ce12c",
+      "ServerID": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+      "SucursalID": "DEFAULT",
+      "SucursalNombre": "LA ESTELAR",
+      "FechaOperacion": "2026-08-04",
+      "FechaHora": "2026-08-05 05:47:16.5020000",
+      "CuentaID": null,
+      "CuentaFolio": null,
+      "MesaNumero": null,
+      "MeseroID": null,
+      "MeseroNombre": null,
+      "NumeroComensales": 2,
+      "TipoPAX": "NORMAL",
+      "VentaCuenta": "603.00",
+      "ConsumoPromedioPAX": "301.50",
+      "TiempoMesa": 0,
+      "HoraEntrada": null,
+      "HoraSalida": null,
+      "Turno": null,
+      "DiaSemana": null,
+      "FechaSync": "2026-08-05 05:47:16.5200000"
+    }
+  ],
+  "canonical_matches": [
+    {
+      "server_id": "a5547321-1139-4d2b-9d53-182ca737b6b6",
+      "sucursal_id": "DEFAULT",
+      "fecha_operacion": "2026-08-04",
+      "canonical_rows": 1,
+      "sync_pax": null,
+      "canonical_pax": 66,
+      "pax_match": null,
+      "sync_venta": null,
+      "canonical_venta_neta": "94282.70",
+      "canonical_venta_total": "104043.00",
+      "venta_match_neta": null,
+      "venta_match_total": null
+    },
+    {
+      "server_id": "6d053c22-523e-48c0-b72b-96081e2d781b",
+      "sucursal_id": "DEFAULT",
+      "fecha_operacion": "2026-08-04",
+      "canonical_rows": 1,
+      "sync_pax": null,
+      "canonical_pax": 1,
+      "pax_match": null,
+      "sync_venta": null,
+      "canonical_venta_neta": "10000.00",
+      "canonical_venta_total": "10000.00",
+      "venta_match_neta": null,
+      "venta_match_total": null
+    },
+    {
+      "server_id": "a5ff0e25-f029-43db-b634-d4ac814c904f",
+      "sucursal_id": "DEFAULT",
+      "fecha_operacion": "2026-08-04",
+      "canonical_rows": 1,
+      "sync_pax": null,
+      "canonical_pax": 134,
+      "pax_match": null,
+      "sync_venta": null,
+      "canonical_venta_neta": "69247.20",
+      "canonical_venta_total": "76635.00",
+      "venta_match_neta": null,
+      "venta_match_total": null
+    }
+  ],
+  "active_consumers": [
+    {
+      "file": "backend/modules/comercial/inteligencia_comercial_routes.py",
+      "line": 275,
+      "text": "Fuente: dbo.Sync_PAX_Detalle (tabla sincronizada)"
+    },
+    {
+      "file": "backend/modules/comercial/inteligencia_comercial_routes.py",
+      "line": 305,
+      "text": "FROM dbo.Sync_PAX_Detalle"
+    },
+    {
+      "file": "backend/modules/comercial/inteligencia_comercial_routes.py",
+      "line": 310,
+      "text": "return {\"source\": \"Sync_PAX_Detalle\", \"data\": _query(sql, params)}"
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "line": 3497,
+      "text": "Consulta tabla Sync_PAX_Detalle en EDARSAHUB."
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "line": 3534,
+      "text": "SELECT * FROM Sync_PAX_Detalle"
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "line": 3541,
+      "text": "SELECT * FROM Sync_PAX_Detalle"
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "line": 3585,
+      "text": "source_message=f\"SQL-First: {len(pax_detalle)} registros desde Sync_PAX_Detalle\","
+    },
+    {
+      "file": "backend/modules/inteligencia_comercial/routes.py",
+      "line": 9,
+      "text": "- PAX/Demográficos: Sync_PAX_Detalle"
+    },
+    {
+      "file": "backend/modules/inteligencia_comercial/routes.py",
+      "line": 1188,
+      "text": "# Fuente: Sync_PAX_Detalle o fallback proporcional"
+    },
+    {
+      "file": "backend/modules/inteligencia_comercial/routes.py",
+      "line": 1256,
+      "text": "Fuente: Sync_PAX_Detalle"
+    },
+    {
+      "file": "backend/modules/inteligencia_comercial/routes.py",
+      "line": 1280,
+      "text": "FROM Sync_PAX_Detalle"
+    },
+    {
+      "file": "backend/modules/inteligencia_comercial/routes.py",
+      "line": 1294,
+      "text": "FROM Sync_PAX_Detalle"
+    },
+    {
+      "file": "backend/modules/inteligencia_comercial/routes.py",
+      "line": 1308,
+      "text": "FROM Sync_PAX_Detalle"
+    },
+    {
+      "file": "backend/modules/inteligencia_comercial/routes.py",
+      "line": 1323,
+      "text": "FROM Sync_PAX_Detalle"
+    },
+    {
+      "file": "backend/core/scheduler/jobs/inteligencia_comercial_status_job.py",
+      "line": 89,
+      "text": "'Sync_PAX_Detalle' AS Fuente,"
+    },
+    {
+      "file": "backend/core/scheduler/jobs/inteligencia_comercial_status_job.py",
+      "line": 93,
+      "text": "FROM dbo.Sync_PAX_Detalle"
+    }
+  ],
+  "summary": {
+    "sync_rows": 3,
+    "active_consumer_references": 16,
+    "active_consumer_files": [
+      "backend/core/scheduler/jobs/inteligencia_comercial_status_job.py",
+      "backend/modules/comercial/inteligencia_comercial_routes.py",
+      "backend/modules/comercial/routes.py",
+      "backend/modules/inteligencia_comercial/routes.py"
+    ],
+    "rows_without_canonical": 0,
+    "pax_mismatches": 0,
+    "venta_mismatches": 0
+  }
+}

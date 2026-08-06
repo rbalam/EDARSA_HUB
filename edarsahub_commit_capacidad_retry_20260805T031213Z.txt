@@ -1,0 +1,170 @@
+===== 1. IDENTIDAD Y ESTADO POST-FALLO =====
+RAMA=Edarsahub_Desarrollo
+HEAD_ANTES=fb5daedd48c11081e2c019adc2c77bffff51222b
+STAGING_ANTES:
+docs/architecture/decisions/ADR-EDARSAHUB-CAPACIDAD-INSTALADA-HISTORICA.md
+docs/business/comercial/capacidad_instalada/LEVANTAMIENTO-CAPACIDAD-130MID-ORIGEN.md
+STAGING_SELECTIVO_CONFIRMADO=SI
+
+===== 2. RESPALDAR Y NORMALIZAR EOF =====
+BYTES_ANTES=5763
+LINEAS_ANTES=178
+BYTES_DESPUES=5762
+LINEAS_DESPUES=177
+SALTO_FINAL_UNICO=SI
+EOF_CORREGIDO=SI
+RESPALDO=/var/tmp/edarsahub_commit_capacidad_retry_20260805T031213Z/adr.before.md
+
+===== 3. REVALIDAR CONTENIDO =====
+CONTENIDO=VALIDADO
+
+===== 4. ACTUALIZAR STAGING =====
+STAGING_DESPUES_CORRECCION:
+docs/architecture/decisions/ADR-EDARSAHUB-CAPACIDAD-INSTALADA-HISTORICA.md
+docs/business/comercial/capacidad_instalada/LEVANTAMIENTO-CAPACIDAD-130MID-ORIGEN.md
+ .../ADR-EDARSAHUB-CAPACIDAD-INSTALADA-HISTORICA.md | 177 ++++++++++++++++++
+ .../LEVANTAMIENTO-CAPACIDAD-130MID-ORIGEN.md       | 203 +++++++++++++++++++++
+ 2 files changed, 380 insertions(+)
+DIFF_CACHED_CHECK=PASS
+
+===== 5. CREAR COMMIT =====
+.vscode/tasks.json:1:1: warning: AGENT_GUARD: claim sin heartbeat, permanece bloqueado hasta liberacion manual: codex-comercial-tiempo
+.vscode/tasks.json:1:1: warning: AGENT_GUARD: claim sin heartbeat, permanece bloqueado hasta liberacion manual: github-finanzas-rbac
+AGENT_GUARD_OK
+[Edarsahub_Desarrollo 3dfba587] docs(comercial): definir capacidad instalada historica
+ 2 files changed, 380 insertions(+)
+ create mode 100644 docs/architecture/decisions/ADR-EDARSAHUB-CAPACIDAD-INSTALADA-HISTORICA.md
+ create mode 100644 docs/business/comercial/capacidad_instalada/LEVANTAMIENTO-CAPACIDAD-130MID-ORIGEN.md
+COMMIT_SHA=3dfba587c0b20a0a23537d12f8258dc0076206b4
+COMMIT_SUBJECT=docs(comercial): definir capacidad instalada historica
+ARCHIVOS_COMMIT:
+docs/architecture/decisions/ADR-EDARSAHUB-CAPACIDAD-INSTALADA-HISTORICA.md
+docs/business/comercial/capacidad_instalada/LEVANTAMIENTO-CAPACIDAD-130MID-ORIGEN.md
+COMMIT_EJECUTADO=SI
+
+===== 6. VALIDAR REMOTO Y FAST-FORWARD =====
+From https://github.com/rbalam/EDARSA_HUB
+ * branch              Edarsahub_Desarrollo -> FETCH_HEAD
+REMOTE_ANTES=fb5daedd48c11081e2c019adc2c77bffff51222b
+LOCAL_HEAD=3dfba587c0b20a0a23537d12f8258dc0076206b4
+FAST_FORWARD=SI
+
+===== 7. PUSH AUTORIZADO =====
+.vscode/tasks.json:1:1: warning: AGENT_GUARD: claim sin heartbeat, permanece bloqueado hasta liberacion manual: codex-comercial-tiempo
+.vscode/tasks.json:1:1: warning: AGENT_GUARD: claim sin heartbeat, permanece bloqueado hasta liberacion manual: github-finanzas-rbac
+AGENT_GUARD_OK
+To https://github.com/rbalam/EDARSA_HUB.git
+   fb5daedd..3dfba587  Edarsahub_Desarrollo -> Edarsahub_Desarrollo
+REMOTE_DESPUES=3dfba587c0b20a0a23537d12f8258dc0076206b4
+PUSH_EJECUTADO=SI
+
+===== 8. CONTROL FINAL =====
+RAMA_FINAL=Edarsahub_Desarrollo
+HEAD_FINAL=3dfba587c0b20a0a23537d12f8258dc0076206b4
+STAGING_FINAL:
+VACIO
+
+----- ESTADO GIT FINAL -----
+?? .emergent/system_deps.txt
+?? docs/EKS/
+?? docs/reports/sql_runner_logs/20260805_021458_diagnostic_intraday_metadata_inventory.md
+?? docs/reports/sql_runner_logs/20260805_021458_dry-run_intraday_metadata_inventory.md
+?? docs/reports/sql_runner_logs/20260805_021658_diagnostic_intraday_metadata_inventory.md
+?? docs/reports/sql_runner_logs/20260805_021749_diagnostic_intraday_metadata_inventory.md
+?? docs/reports/sql_runner_logs/20260805_021839_diagnostic_intraday_metadata_inventory.md
+?? docs/reports/sql_runner_logs/20260805_022033_diagnostic_intraday_metadata_inventory.md
+?? docs/reports/sql_runner_logs/20260805_022129_dry-run_metadata_simple.md
+?? docs/reports/sql_runner_logs/20260805_022130_diagnostic_metadata_simple.md
+?? docs/reports/sql_runner_logs/20260805_022213_dry-run_metadata_single_result.md
+?? docs/reports/sql_runner_logs/20260805_022214_diagnostic_metadata_single_result.md
+?? docs/reports/sql_runner_logs/20260805_022352_dry-run_candidate_objects.md
+?? docs/reports/sql_runner_logs/20260805_022354_diagnostic_candidate_objects.md
+?? docs/reports/sql_runner_logs/20260805_022438_dry-run_candidate_columns.md
+?? docs/reports/sql_runner_logs/20260805_022439_diagnostic_candidate_columns.md
+?? docs/reports/sql_runner_logs/20260805_022524_dry-run_columns_atomic.md
+?? docs/reports/sql_runner_logs/20260805_022525_diagnostic_columns_atomic.md
+?? docs/reports/sql_runner_logs/20260805_022637_dry-run_semantic_coverage.md
+?? docs/reports/sql_runner_logs/20260805_022638_diagnostic_semantic_coverage.md
+?? docs/reports/sql_runner_logs/20260805_022735_dry-run_semantic_coverage_single.md
+?? docs/reports/sql_runner_logs/20260805_022835_diagnostic_semantic_coverage_single.md
+?? docs/reports/sql_runner_logs/20260805_023247_dry-run_index_audit.md
+?? docs/reports/sql_runner_logs/20260805_023248_diagnostic_index_audit.md
+?? docs/reports/sql_runner_logs/20260805_023600_dry-run_index_columns.md
+?? docs/reports/sql_runner_logs/20260805_023601_diagnostic_index_columns.md
+?? docs/reports/sql_runner_logs/20260805_023638_dry-run_index_columns.md
+?? docs/reports/sql_runner_logs/20260805_023639_diagnostic_index_columns.md
+?? docs/reports/sql_runner_logs/20260805_023754_dry-run_01_global_range.md
+?? docs/reports/sql_runner_logs/20260805_023755_diagnostic_01_global_range.md
+?? docs/reports/sql_runner_logs/20260805_023755_dry-run_02_unit_year_coverage.md
+?? docs/reports/sql_runner_logs/20260805_023756_diagnostic_02_unit_year_coverage.md
+?? docs/reports/sql_runner_logs/20260805_023757_dry-run_03_origin_year_coverage.md
+?? docs/reports/sql_runner_logs/20260805_023758_diagnostic_03_origin_year_coverage.md
+?? docs/reports/sql_runner_logs/20260805_023917_diagnostic_historical_sources.md
+?? docs/reports/sql_runner_logs/20260805_023917_dry-run_historical_sources.md
+?? docs/reports/sql_runner_logs/20260805_024014_dry-run_historical_sources.md
+?? docs/reports/sql_runner_logs/20260805_024015_diagnostic_historical_sources.md
+?? docs/reports/sql_runner_logs/20260805_024114_dry-run_historical_sources_simple.md
+?? docs/reports/sql_runner_logs/20260805_024115_diagnostic_historical_sources_simple.md
+?? docs/reports/sql_runner_logs/20260805_024208_diagnostic_historical_candidate_columns.md
+?? docs/reports/sql_runner_logs/20260805_024208_dry-run_historical_candidate_columns.md
+?? docs/reports/sql_runner_logs/20260805_024254_diagnostic_historical_columns_atomic.md
+?? docs/reports/sql_runner_logs/20260805_024254_dry-run_historical_columns_atomic.md
+?? docs/reports/sql_runner_logs/20260805_024353_dry-run_historical_ranges.md
+?? docs/reports/sql_runner_logs/20260805_024354_diagnostic_historical_ranges.md
+?? docs/reports/sql_runner_logs/20260805_024722_diagnostic_capacity_inventory.md
+?? docs/reports/sql_runner_logs/20260805_024722_dry-run_capacity_inventory.md
+?? docs/reports/sql_runner_logs/20260805_024842_dry-run_01_columns.md
+?? docs/reports/sql_runner_logs/20260805_024843_diagnostic_01_columns.md
+?? docs/reports/sql_runner_logs/20260805_024843_dry-run_02_profile.md
+?? docs/reports/sql_runner_logs/20260805_024844_diagnostic_02_profile.md
+?? docs/reports/sql_runner_logs/20260805_024922_diagnostic_01_columns.md
+?? docs/reports/sql_runner_logs/20260805_024922_dry-run_01_columns.md
+?? docs/reports/sql_runner_logs/20260805_024922_dry-run_02_profile.md
+?? docs/reports/sql_runner_logs/20260805_024923_diagnostic_02_profile.md
+?? docs/reports/sql_runner_logs/20260805_024959_diagnostic_01_columns.md
+?? docs/reports/sql_runner_logs/20260805_024959_dry-run_01_columns.md
+?? docs/reports/sql_runner_logs/20260805_025000_diagnostic_02_profile.md
+?? docs/reports/sql_runner_logs/20260805_025000_dry-run_02_profile.md
+?? docs/reports/sql_runner_logs/20260805_025057_dry-run_capacity_sources.md
+?? docs/reports/sql_runner_logs/20260805_025058_diagnostic_capacity_sources.md
+?? docs/reports/sql_runner_logs/20260805_025123_dry-run_capacity_sources.md
+?? docs/reports/sql_runner_logs/20260805_025124_diagnostic_capacity_sources.md
+?? docs/reports/sql_runner_logs/20260805_030044_dry-run_01_columns.md
+?? docs/reports/sql_runner_logs/20260805_030045_diagnostic_01_columns.md
+?? docs/reports/sql_runner_logs/20260805_030045_dry-run_02_sample.md
+?? docs/reports/sql_runner_logs/20260805_030046_diagnostic_02_sample.md
+?? docs/reports/sql_runner_logs/20260805_030208_dry-run_model_patterns.md
+?? docs/reports/sql_runner_logs/20260805_030209_diagnostic_model_patterns.md
+?? docs/reports/sql_runner_logs/20260805_030238_dry-run_model_patterns.md
+?? docs/reports/sql_runner_logs/20260805_030239_diagnostic_model_patterns.md
+?? edarsahub_commit_capacidad_instalada_20260805T031130Z.txt
+?? edarsahub_commit_capacidad_retry_20260805T031213Z.txt
+?? exports/
+
+----- ULTIMO COMMIT -----
+3dfba587 (HEAD -> Edarsahub_Desarrollo, origin/Edarsahub_Desarrollo) docs(comercial): definir capacidad instalada historica
+ .../ADR-EDARSAHUB-CAPACIDAD-INSTALADA-HISTORICA.md | 177 ++++++++++++++++++
+ .../LEVANTAMIENTO-CAPACIDAD-130MID-ORIGEN.md       | 203 +++++++++++++++++++++
+ 2 files changed, 380 insertions(+)
+
+===== 9. RESULTADO =====
+DOCUMENTACION_CAPACIDAD_INSTALADA=PUBLICADA
+EOF_ADR_CORREGIDO=SI
+COMMIT=SI
+COMMIT_SHA=3dfba587c0b20a0a23537d12f8258dc0076206b4
+PUSH=SI
+REMOTE_HEAD=3dfba587c0b20a0a23537d12f8258dc0076206b4
+RAMA=Edarsahub_Desarrollo
+ARCHIVOS_COMMIT=2
+ADR=docs/architecture/decisions/ADR-EDARSAHUB-CAPACIDAD-INSTALADA-HISTORICA.md
+FICHA=docs/business/comercial/capacidad_instalada/LEVANTAMIENTO-CAPACIDAD-130MID-ORIGEN.md
+OTROS_NO_RASTREADOS_INCLUIDOS=NO
+EDARSA_ALLOW_PUSH_USADO_SOLO_EN_COMANDO=SI
+DEPLOY=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+PRODUCCION_TOCADA=NO
+STAGING_FINAL=VACIO
+REPORT=/app/edarsahub_commit_capacidad_retry_20260805T031213Z.txt
+PUSH_LOG=/var/tmp/edarsahub_commit_capacidad_retry_20260805T031213Z/push.log
+SIGUIENTE_ESTADO=RECABAR_EVIDENCIA_REAL_130MID_ORIGEN

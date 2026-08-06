@@ -1,0 +1,316 @@
+===== 1. GUARDRAILS =====
+RAMA=Edarsahub_Desarrollo
+HEAD=6f82b39fead3a73667241e88e580f0ea8faf51e8
+REMOTE_HEAD=6f82b39fead3a73667241e88e580f0ea8faf51e8
+CONTROL=PASS
+
+===== 2. AUDITAR CONTRATO USUARIO, AUTH E I18N =====
+USUARIO_CATALOGO_COLUMNS=33
+USUARIO_REGIONAL_COLUMNS=Idioma,ZonaHoraria
+FILES_MATCHED=459
+USUARIO_READERS=37
+USUARIO_WRITERS=4
+JWT_REGIONAL_CONSUMERS=10
+FRONTEND_REAL_I18N_FILES=0
+FRONTEND_LOCALE_FORMAT_ONLY_FILES=103
+REGIONAL_RUNTIME_FILES=96
+PARSE_ERRORS=0
+USUARIO_READER=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/repository.py|FUNCTIONS=get_all_users|ROUTES=NINGUNA
+SQL_READER=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/repository.py:111|SELECT u.UsuarioID, LOWER(CAST(u.PublicUUID AS VARCHAR(36))) as PublicUUID, LOWER(CAST(s.ServidorID AS VARCHAR(36))) as ServidorUUID FROM Usuario_Catalogo u LEFT JOIN Usuario_ServidoresAsignacion s ON u.UsuarioID = s.UsuarioID AND s.Activo = 1 WHERE u.Activo = 1
+SQL_READER=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/repository.py:132|SELECT LOWER(CAST(u.PublicUUID AS VARCHAR(36))) as PublicUUID, LOWER(CAST(s.ServidorID AS VARCHAR(36))) as ServidorUUID, s.SucursalCodigo FROM Usuario_Catalogo u JOIN Usuario_SucursalesAsignacion s ON u.UsuarioID = s.UsuarioID AND s.Activo = 1 WHERE u.Activo = 1
+SQL_READER=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/repository.py:149|SELECT LOWER(CAST(u.PublicUUID AS VARCHAR(36))) as PublicUUID, LOWER(CAST(a.ServidorID AS VARCHAR(36))) as ServidorUUID, a.AlmacenCodigo FROM Usuario_Catalogo u JOIN Usuario_AlmacenesAsignacion a ON u.UsuarioID = a.UsuarioID AND a.Activo = 1 WHERE u.Activo = 1
+USUARIO_READER=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/service.py|FUNCTIONS=_can_manage_user,get_users,update_user,delete_user,update_user_permissions,create_user_admin,get_roles,create_role,update_role,delete_role|ROUTES=NINGUNA
+SQL_READER=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/service.py:382|SELECT UsuarioID FROM Usuario_Catalogo WHERE LOWER(CAST(PublicUUID AS VARCHAR(36))) = %s AND Activo = 1
+USUARIO_READER=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/repository.py|FUNCTIONS=get_all_users|ROUTES=NINGUNA
+SQL_READER=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/repository.py:111|SELECT u.UsuarioID, LOWER(CAST(u.PublicUUID AS VARCHAR(36))) as PublicUUID, LOWER(CAST(s.ServidorID AS VARCHAR(36))) as ServidorUUID FROM Usuario_Catalogo u LEFT JOIN Usuario_ServidoresAsignacion s ON u.UsuarioID = s.UsuarioID AND s.Activo = 1 WHERE u.Activo = 1
+SQL_READER=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/repository.py:132|SELECT LOWER(CAST(u.PublicUUID AS VARCHAR(36))) as PublicUUID, LOWER(CAST(s.ServidorID AS VARCHAR(36))) as ServidorUUID, s.SucursalCodigo FROM Usuario_Catalogo u JOIN Usuario_SucursalesAsignacion s ON u.UsuarioID = s.UsuarioID AND s.Activo = 1 WHERE u.Activo = 1
+SQL_READER=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/repository.py:149|SELECT LOWER(CAST(u.PublicUUID AS VARCHAR(36))) as PublicUUID, LOWER(CAST(a.ServidorID AS VARCHAR(36))) as ServidorUUID, a.AlmacenCodigo FROM Usuario_Catalogo u JOIN Usuario_AlmacenesAsignacion a ON u.UsuarioID = a.UsuarioID AND a.Activo = 1 WHERE u.Activo = 1
+USUARIO_READER=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/service.py|FUNCTIONS=_can_manage_user,get_users,update_user,delete_user,update_user_permissions,create_user_admin,get_roles,create_role,update_role,delete_role|ROUTES=NINGUNA
+SQL_READER=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/service.py:395|SELECT UsuarioID FROM Usuario_Catalogo WHERE LOWER(CAST(PublicUUID AS VARCHAR(36))) = %s AND Activo = 1
+USUARIO_READER=backend/core/auth/sql_user_identity.py|FUNCTIONS=resolve_sql_usuario_id,enrich_current_user_with_sql_id|ROUTES=NINGUNA
+SQL_READER=backend/core/auth/sql_user_identity.py:36|SELECT TOP 1 UsuarioID FROM Usuario_Catalogo WHERE PublicUUID = %s
+SQL_READER=backend/core/auth/sql_user_identity.py:46|SELECT TOP 1 UsuarioID FROM Usuario_Catalogo WHERE Email = %s
+USUARIO_READER=backend/core/auth/user_repository_sql.py|FUNCTIONS=validate_superadmin_rule,create_user_sql,update_user_sql,deactivate_user_sql,_build_user_dict,get_user_by_email_sql,get_user_by_public_uuid_sql,list_all_users_sql|ROUTES=NINGUNA
+SQL_READER=backend/core/auth/user_repository_sql.py:379|SELECT u.Email, CAST(u.PublicUUID AS VARCHAR(36)) FROM Usuario_Catalogo u JOIN Usuario_RolesAsignacion ra ON u.UsuarioID = ra.UsuarioID AND ra.Activo = 1 JOIN Usuario_Roles r ON ra.RolID = r.RolID WHERE r.CodigoRol = 'SUPERADMIN'
+SQL_READER=backend/core/auth/user_repository_sql.py:476|SELECT UsuarioID FROM Usuario_Catalogo WHERE LOWER(Email) = %s
+SQL_READER=backend/core/auth/user_repository_sql.py:485|INSERT INTO Usuario_Catalogo (CodigoUsuario, Username, Email, Nombre, PasswordHashTexto, Activo, PublicUUID, FechaAlta, CreatedBy) VALUES (%s, %s, %s, %s, %s, 1, %s, GETDATE(), %s)
+SQL_READER=backend/core/auth/user_repository_sql.py:581|SELECT UsuarioID FROM Usuario_Catalogo WHERE LOWER(CAST(PublicUUID AS VARCHAR(36))) = LOWER(%s)
+SQL_READER=backend/core/auth/user_repository_sql.py:707|SELECT UsuarioID FROM Usuario_Catalogo WHERE LOWER(CAST(PublicUUID AS VARCHAR(36))) = LOWER(%s)
+SQL_READER=backend/core/auth/user_repository_sql.py:718|UPDATE Usuario_Catalogo SET Activo = 0, FechaModificacion = GETDATE(), ModifiedBy = 'RBAC-SCOPE-G' WHERE UsuarioID = %s
+SQL_READER=backend/core/auth/user_repository_sql.py:200|SELECT UsuarioID, Email, Nombre, PasswordHashTexto, Activo, CAST(PublicUUID AS VARCHAR(36)) as PublicUUID, MongoLegacyID FROM Usuario_Catalogo WHERE LOWER(Email) = LOWER(%s)
+SQL_READER=backend/core/auth/user_repository_sql.py:245|SELECT UsuarioID, Email, Nombre, PasswordHashTexto, Activo, CAST(PublicUUID AS VARCHAR(36)) as PublicUUID, MongoLegacyID FROM Usuario_Catalogo WHERE CAST(PublicUUID AS VARCHAR(36)) = %s
+SQL_READER=backend/core/auth/user_repository_sql.py:303|SELECT UsuarioID, Email, Nombre, PasswordHashTexto, Activo, CAST(PublicUUID AS VARCHAR(36)) as PublicUUID, MongoLegacyID FROM Usuario_Catalogo WHERE Activo = 1 ORDER BY UsuarioID
+SQL_READER=backend/core/auth/user_repository_sql.py:610|UPDATE Usuario_Catalogo SET
+USUARIO_READER=backend/core/communications/notifications/service.py|FUNCTIONS=_get_user_contact|ROUTES=NINGUNA
+SQL_READER=backend/core/communications/notifications/service.py:256|SELECT TOP 1 CONVERT(VARCHAR(50), PublicUUID) AS id, NombreCompleto AS name, Email AS email, COALESCE(Celular, Telefono) AS telefono FROM dbo.Usuario_Catalogo WHERE Activo=1 AND ( CodigoUsuario=%s OR Email=%s OR Username=%s OR CONVERT(VARCHAR(50), PublicUUID)=%s )
+USUARIO_READER=backend/core/connections/rbac_explicit_permission_repository.py|FUNCTIONS=NINGUNA|ROUTES=NINGUNA
+SQL_READER=backend/core/connections/rbac_explicit_permission_repository.py:20|SELECT TOP 1 1 AS permiso_concedido FROM dbo.Usuario_Catalogo AS u INNER JOIN dbo.Usuario_RolesAsignacion AS ura ON ura.UsuarioID = u.UsuarioID AND ura.Activo = 1 INNER JOIN dbo.Usuario_Roles AS r ON r.RolID = ura.RolID AND r.Activo = 1 INNER JOIN dbo.Usuario_PermisosRolModulo AS prm ON prm.RolID = r.RolID AND prm.Activo = 1 AND prm.Permitido = 1 INNER JOIN dbo.Usuario_Modulos AS m ON m.ModuloID = prm.ModuloID AND m.Activo = 1 INNER JOIN dbo.Usuario_Acciones AS a ON a.AccionID = prm.AccionID AND
+USUARIO_READER=backend/core/rbac/middleware.py|FUNCTIONS=get_current_user_from_token,require_explicit_permission_dual,__call__|ROUTES=NINGUNA
+SQL_READER=backend/core/rbac/middleware.py:299|SELECT TOP 1 1 FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = u.UsuarioID AND ura.Activo = 1 INNER JOIN dbo.Usuario_Roles r ON r.RolID = ura.RolID AND r.Activo = 1 INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID = r.RolID AND prm.Activo = 1 AND prm.Permitido = 1 INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID = prm.ModuloID AND m.Activo = 1 INNER JOIN dbo.Usuario_Acciones a ON a.AccionID = prm.AccionID AND a.Activo = 1 WHERE u.Activo = 1 AND LO
+USUARIO_READER=backend/core/rbac/repository_sql.py|FUNCTIONS=get_roles_usuario,asignar_rol,revocar_rol,log_verificacion|ROUTES=NINGUNA
+SQL_READER=backend/core/rbac/repository_sql.py:395|SELECT UsuarioID FROM Usuario_Catalogo WHERE CAST(PublicUUID AS VARCHAR(36)) = %s OR UsuarioID = %s
+SQL_READER=backend/core/rbac/repository_sql.py:471|SELECT UsuarioID FROM Usuario_Catalogo WHERE CAST(PublicUUID AS VARCHAR(36)) = %s
+SQL_READER=backend/core/rbac/repository_sql.py:542|SELECT UsuarioID FROM Usuario_Catalogo WHERE CAST(PublicUUID AS VARCHAR(36)) = %s
+SQL_READER=backend/core/rbac/repository_sql.py:611|SELECT UsuarioID FROM Usuario_Catalogo WHERE CAST(PublicUUID AS VARCHAR(36)) = %s
+USUARIO_READER=backend/core/user_access_context.py|FUNCTIONS=_get_user_id_sql,resolve_user_access_context|ROUTES=NINGUNA
+SQL_READER=backend/core/user_access_context.py:162|SELECT UsuarioID FROM Usuario_Catalogo WHERE LOWER(CAST(PublicUUID AS VARCHAR(36))) = LOWER(%s) AND Activo = 1
+USUARIO_READER=backend/database/migrations/20260630_010_reasignar_usuario_a_operador_rbac.sql|FUNCTIONS=NINGUNA|ROUTES=NINGUNA
+SQL_READER=backend/database/migrations/20260630_010_reasignar_usuario_a_operador_rbac.sql:26|IF OBJECT_ID('dbo.Usuario_Catalogo', 'U') IS NULL
+SQL_READER=backend/database/migrations/20260630_010_reasignar_usuario_a_operador_rbac.sql:27|THROW 51000, 'No existe dbo.Usuario_Catalogo.', 1;
+SQL_READER=backend/database/migrations/20260630_010_reasignar_usuario_a_operador_rbac.sql:81|FROM dbo.Usuario_Catalogo u
+SQL_READER=backend/database/migrations/20260630_010_reasignar_usuario_a_operador_rbac.sql:171|FROM dbo.Usuario_Catalogo u
+USUARIO_READER=backend/database/validation/20260713_017_rbac_menu_all_users_audit.sql|FUNCTIONS=NINGUNA|ROUTES=NINGUNA
+SQL_READER=backend/database/validation/20260713_017_rbac_menu_all_users_audit.sql:45|FROM dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/20260713_017_rbac_menu_all_users_audit.sql:86|FROM dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/20260713_017_rbac_menu_all_users_audit.sql:205|FROM dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/20260713_017_rbac_menu_all_users_audit.sql:255|FROM dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/20260713_017_rbac_menu_all_users_audit.sql:279|FROM dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/20260713_017_rbac_menu_all_users_audit.sql:344|FROM dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/20260713_017_rbac_menu_all_users_audit.sql:501|FROM dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/20260713_017_rbac_menu_all_users_audit.sql:526|FROM dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/20260713_017_rbac_menu_all_users_audit.sql:572|INNER JOIN dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/20260713_017_rbac_menu_all_users_audit.sql:591|INNER JOIN dbo.Usuario_Catalogo u
+USUARIO_READER=backend/database/validation/phase1_rbac_menu_seed_audit.sql|FUNCTIONS=NINGUNA|ROUTES=NINGUNA
+SQL_READER=backend/database/validation/phase1_rbac_menu_seed_audit.sql:17|'Usuario_Catalogo' AS tabla,
+SQL_READER=backend/database/validation/phase1_rbac_menu_seed_audit.sql:20|FROM dbo.Usuario_Catalogo;
+SQL_READER=backend/database/validation/phase1_rbac_menu_seed_audit.sql:98|FROM dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/phase1_rbac_menu_seed_audit.sql:150|FROM dbo.Usuario_Catalogo u
+USUARIO_READER=backend/database/validation/phase2_rbac_empty_roles_impact_audit.sql|FUNCTIONS=NINGUNA|ROUTES=NINGUNA
+SQL_READER=backend/database/validation/phase2_rbac_empty_roles_impact_audit.sql:93|LEFT JOIN dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/phase2_rbac_empty_roles_impact_audit.sql:136|FROM dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/phase2_rbac_empty_roles_impact_audit.sql:252|LEFT JOIN dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/phase2_rbac_empty_roles_impact_audit.sql:262|FROM dbo.Usuario_Catalogo u
+USUARIO_READER=backend/database/validation/phase2c_rbac_menu_multiuser_candidates.sql|FUNCTIONS=NINGUNA|ROUTES=NINGUNA
+SQL_READER=backend/database/validation/phase2c_rbac_menu_multiuser_candidates.sql:55|LEFT JOIN dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/phase2c_rbac_menu_multiuser_candidates.sql:94|FROM dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/phase2c_rbac_menu_multiuser_candidates.sql:121|FROM dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/phase2c_rbac_menu_multiuser_candidates.sql:157|FROM dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/phase2c_rbac_menu_multiuser_candidates.sql:194|FROM dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/phase2c_rbac_menu_multiuser_candidates.sql:216|FROM dbo.Usuario_Catalogo
+SQL_READER=backend/database/validation/phase2c_rbac_menu_multiuser_candidates.sql:222|FROM dbo.Usuario_Catalogo
+SQL_READER=backend/database/validation/phase2c_rbac_menu_multiuser_candidates.sql:230|FROM dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/phase2c_rbac_menu_multiuser_candidates.sql:245|FROM dbo.Usuario_Catalogo u
+USUARIO_READER=backend/database/validation/phase2c_rbac_usuario_operador_post_validation.sql|FUNCTIONS=NINGUNA|ROUTES=NINGUNA
+SQL_READER=backend/database/validation/phase2c_rbac_usuario_operador_post_validation.sql:21|LEFT JOIN dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/phase2c_rbac_usuario_operador_post_validation.sql:42|FROM dbo.Usuario_Catalogo u
+SQL_READER=backend/database/validation/phase2c_rbac_usuario_operador_post_validation.sql:59|FROM dbo.Usuario_Catalogo u
+USUARIO_READER=backend/database/validation/phase2e_rbac_bitacora_permiso_validation.sql|FUNCTIONS=NINGUNA|ROUTES=NINGUNA
+SQL_READER=backend/database/validation/phase2e_rbac_bitacora_permiso_validation.sql:73|FROM dbo.Usuario_Catalogo u
+USUARIO_READER=backend/modules/admin_sql/rbac_audit_routes.py|FUNCTIONS=_require_effective_superadmin,execute_all_users_rbac_audit,execute_schema_convergence_audit,execute_schema_section_audit|ROUTES=POST /users/execute,POST /schema/execute,POST /schema/sections/{section_number}/execute
+SQL_READER=backend/modules/admin_sql/rbac_audit_routes.py:142|SELECT TOP 1 u.UsuarioID, r.CodigoRol FROM dbo.Usuario_Catalogo AS u INNER JOIN dbo.Usuario_RolesAsignacion AS ura ON ura.UsuarioID = u.UsuarioID AND ISNULL(ura.Activo, 1) = 1 INNER JOIN dbo.Usuario_Roles AS r ON r.RolID = ura.RolID AND ISNULL(r.Activo, 1) = 1 WHERE ISNULL(u.Activo, 1) = 1 AND ( (NULLIF(%s, '') IS NOT NULL AND LOWER(LTRIM(RTRIM(ISNULL(u.Email, '')))) = LOWER(LTRIM(RTRIM(%s)))) OR (NULLIF(%s, '') IS NOT NULL AND LOWER(LTRIM(RTRIM(ISNULL(u.Username, '')))) = LOWER(LTRIM(RTRIM(%s))
+USUARIO_READER=backend/modules/admin_sql/rbac_pilot_service.py|FUNCTIONS=_resolve_usuario_id|ROUTES=NINGUNA
+SQL_READER=backend/modules/admin_sql/rbac_pilot_service.py:52|SELECT UsuarioID FROM dbo.Usuario_Catalogo WHERE LOWER(Email) = LOWER(%s)
+USUARIO_READER=backend/modules/admin_sql/routes.py|FUNCTIONS=get_users,toggle_user_activo,get_roles,get_modulos,get_servers,get_usuarios_asignables,get_catalogos_disponibles,save_permisos_catalogos,update_role_sql,create_role_sql,delete_role_sql|ROUTES=GET /users,PATCH /users/{user_id}/toggle-activo,GET /roles,GET /roles/modulos,GET /servers,GET /usuarios-asignables,GET /catalogos-disponibles,POST /permisos-catalogos,PUT /roles/{role_id},POST /roles,DELETE /roles/{role_id}
+SQL_READER=backend/modules/admin_sql/routes.py:213|SELECT CAST(UsuarioID AS NVARCHAR(100)) AS UsuarioID, PublicUUID, ISNULL(Activo, 1) AS activo, Email FROM Usuario_Catalogo WHERE UsuarioID = %s
+SQL_READER=backend/modules/admin_sql/routes.py:232|UPDATE Usuario_Catalogo SET Activo = %s WHERE UsuarioID = %s
+SQL_READER=backend/modules/admin_sql/routes.py:103|SELECT CAST(u.UsuarioID AS NVARCHAR(100)) AS id, CAST(u.UsuarioID AS NVARCHAR(100)) AS UsuarioID, u.PublicUUID, u.Username AS username, u.Email AS email, u.Nombre AS nombre, u.NombreCompleto AS name, u.NombreCompleto AS nombre_completo, u.Apellidos AS apellidos, u.Puesto AS puesto, u.Departamento AS departamento, ISNULL(u.Activo, 1) AS activo, ISNULL(u.Bloqueado, 0) AS bloqueado, r.NombreRol AS role, r.CodigoRol AS role_code, r.NivelJerarquia AS role_level, r.RolID FROM Usuario_Catalogo u OUTER 
+SQL_READER=backend/modules/admin_sql/routes.py:415|SELECT CAST(u.UsuarioID AS NVARCHAR(100)) AS id, u.UsuarioID AS usuario_id, ISNULL(NULLIF(LTRIM(RTRIM(u.NombreCompleto)), ''), u.Email) AS name, u.Email AS email, ISNULL(rol.NombreRol, 'Sin rol') AS role, CAST(ISNULL(f.PuedeSolicitar, 0) AS bit) AS puede_solicitar, CAST(ISNULL(f.PuedeAutorizar, 0) AS bit) AS puede_autorizar, CAST(ISNULL(f.PuedeLiberar, 0) AS bit) AS puede_liberar, pc.permisos_catalogos_csv FROM dbo.Usuario_Catalogo u OUTER APPLY ( SELECT TOP 1 r.NombreRol FROM dbo.Usuario_RolesA
+SQL_READER=backend/modules/admin_sql/routes.py:560|SELECT TOP 1 UsuarioID FROM dbo.Usuario_Catalogo WHERE UsuarioID = TRY_CONVERT(INT, %s) OR LOWER(CAST(PublicUUID AS NVARCHAR(36))) = LOWER(%s) OR LOWER(ISNULL(MongoLegacyID, '')) = LOWER(%s)
+USUARIO_READER=backend/modules/auth/context_service.py|FUNCTIONS=_get_user_by_public_uuid|ROUTES=NINGUNA
+SQL_READER=backend/modules/auth/context_service.py:60|SELECT UsuarioID, Email, Nombre, CAST(PublicUUID AS VARCHAR(36)) as PublicUUID, Activo FROM Usuario_Catalogo WHERE LOWER(CAST(PublicUUID AS VARCHAR(36))) = LOWER(%s) AND Activo = 1
+USUARIO_READER=backend/modules/auth/password_reset.py|FUNCTIONS=_find_user_by_email_sql,_find_user_by_id_sql,_update_password_sql,reset_password|ROUTES=NINGUNA
+SQL_READER=backend/modules/auth/password_reset.py:278|SELECT UsuarioID, Email, Nombre, Activo, CAST(PublicUUID AS VARCHAR(36)) as PublicUUID FROM Usuario_Catalogo WHERE LOWER(Email) = LOWER(%s)
+SQL_READER=backend/modules/auth/password_reset.py:311|SELECT UsuarioID, Email, Nombre, Activo, CAST(PublicUUID AS VARCHAR(36)) as PublicUUID FROM Usuario_Catalogo WHERE LOWER(CAST(PublicUUID AS VARCHAR(36))) = LOWER(%s)
+SQL_READER=backend/modules/auth/password_reset.py:441|UPDATE Usuario_Catalogo SET PasswordHashTexto = %s, UltimoCambioPassword = GETUTCDATE(), FechaModificacion = GETUTCDATE(), DebeCambiarPassword = 0, PasswordTemporal = 0 WHERE UsuarioID = %s
+SQL_READER=backend/modules/auth/password_reset.py:629|SELECT CAST(PublicUUID AS VARCHAR(36)) as PublicUUID FROM Usuario_Catalogo WHERE UsuarioID = %s AND Activo = 1
+USUARIO_READER=backend/modules/auth/repository.py|FUNCTIONS=create_user,update_user,delete_user,get_all_users,get_users_by_empresas,get_user_by_email,get_user_by_id|ROUTES=NINGUNA
+SQL_READER=backend/modules/auth/repository.py:393|SELECT DISTINCT uc.UsuarioID, uc.Email, uc.Username, uc.Nombre, uc.Apellidos, uc.NombreCompleto, uc.Activo, uc.PublicUUID, uc.MongoLegacyID, ur.CodigoRol, ur.NombreRol FROM dbo.Usuario_Catalogo uc INNER JOIN dbo.Usuario_RolesContexto urc ON urc.UsuarioID = uc.UsuarioID AND ISNULL(urc.Activo,1)=1 LEFT JOIN dbo.Usuario_Roles ur ON ur.RolID = urc.RolID WHERE urc.EmpresaID IN (
+SQL_READER=backend/modules/auth/repository.py:208|INSERT INTO dbo.Usuario_Catalogo (CodigoUsuario, Username, Email, PasswordHashTexto, Nombre, Apellidos, Activo, FechaAlta) VALUES (%s, %s, %s, %s, %s, %s, 1, GETDATE())
+SQL_READER=backend/modules/auth/repository.py:281|UPDATE dbo.Usuario_Catalogo SET
+SQL_READER=backend/modules/auth/repository.py:301|UPDATE dbo.Usuario_Catalogo SET Activo = 0, FechaModificacion = GETDATE() WHERE UsuarioID = TRY_CONVERT(INT, %s) OR LOWER(MongoLegacyID) = LOWER(%s) OR LOWER(PublicUUID) = LOWER(%s)
+SQL_READER=backend/modules/auth/repository.py:320|SELECT uc.UsuarioID, uc.Email, uc.Username, uc.Nombre, uc.Apellidos, uc.NombreCompleto, uc.Activo, uc.PublicUUID, uc.MongoLegacyID, ur.CodigoRol, ur.NombreRol FROM dbo.Usuario_Catalogo uc LEFT JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = uc.UsuarioID AND ISNULL(ura.Activo,1)=1 AND ISNULL(ura.EsPrincipal,0)=1 LEFT JOIN dbo.Usuario_Roles ur ON ur.RolID = ura.RolID ORDER BY uc.UsuarioID OFFSET %s ROWS FETCH NEXT %s ROWS ONLY
+SQL_READER=backend/modules/auth/repository.py:33|SELECT TOP 1 uc.UsuarioID, uc.Email, uc.Username, uc.PasswordHashTexto, uc.Nombre, uc.Apellidos, uc.NombreCompleto, uc.Activo, uc.PublicUUID, uc.MongoLegacyID, ur.CodigoRol, ur.NombreRol FROM dbo.Usuario_Catalogo uc LEFT JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = uc.UsuarioID AND ISNULL(ura.Activo,1)=1 AND ISNULL(ura.EsPrincipal,0)=1 LEFT JOIN dbo.Usuario_Roles ur ON ur.RolID = ura.RolID WHERE LOWER(uc.Email) = LOWER(%s) OR LOWER(uc.Username) = LOWER(%s)
+SQL_READER=backend/modules/auth/repository.py:82|SELECT TOP 1 uc.UsuarioID, uc.Email, uc.Username, uc.PasswordHashTexto, uc.Nombre, uc.Apellidos, uc.NombreCompleto, uc.Activo, uc.PublicUUID, uc.MongoLegacyID, ur.CodigoRol, ur.NombreRol FROM dbo.Usuario_Catalogo uc LEFT JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = uc.UsuarioID AND ISNULL(ura.Activo,1)=1 AND ISNULL(ura.EsPrincipal,0)=1 LEFT JOIN dbo.Usuario_Roles ur ON ur.RolID = ura.RolID WHERE uc.UsuarioID = TRY_CONVERT(INT, %s) OR LOWER(uc.PublicUUID) = LOWER(%s) OR LOWER(uc.MongoL
+USUARIO_READER=backend/modules/auth/service.py|FUNCTIONS=register_user,_can_manage_user,get_users,update_user,delete_user,update_user_permissions,create_user_admin,get_roles,create_role,update_role,delete_role|ROUTES=NINGUNA
+SQL_READER=backend/modules/auth/service.py:507|SELECT UsuarioID FROM Usuario_Catalogo WHERE (UsuarioID = TRY_CONVERT(INT, %s) OR LOWER(CAST(PublicUUID AS VARCHAR(36))) = LOWER(%s)) AND Activo = 1
+USUARIO_READER=backend/modules/catalogos_workflow_sql/fecha_operativa_service.py|FUNCTIONS=current_user_email,ensure_sql_user_id,normalize_fecha_operativa_request,insert_rbac_bitacora,can_authorize_fecha_operativa,can_release_fecha_operativa|ROUTES=NINGUNA
+SQL_READER=backend/modules/catalogos_workflow_sql/fecha_operativa_service.py:77|SELECT TOP 1 UsuarioID FROM dbo.Usuario_Catalogo WITH (NOLOCK) WHERE Email = %s AND Activo = 1 ORDER BY UsuarioID
+USUARIO_READER=backend/modules/catalogos_workflow_sql/repository.py|FUNCTIONS=upsert_niveles_catalogo,upsert_permisos_catalogo,listar_usuarios_asignables,crear_solicitud_catalogo,aprobar_solicitud,liberar_solicitud,rechazar_solicitud,corregir_solicitud,crear_tarea|ROUTES=NINGUNA
+SQL_READER=backend/modules/catalogos_workflow_sql/repository.py:190|SELECT u.UsuarioID, u.NombreCompleto, u.Email, r.NombreRol FROM Usuario_Catalogo u LEFT JOIN Usuario_RolesAsignacion ura ON u.UsuarioID = ura.UsuarioID AND ura.Activo = 1 LEFT JOIN Usuario_Roles r ON ura.RolID = r.RolID WHERE u.Activo = 1 ORDER BY u.NombreCompleto
+USUARIO_READER=backend/modules/configuracion/repositories/config_asignaciones_repository.py|FUNCTIONS=crear,actualizar,obtener_usuario|ROUTES=NINGUNA
+SQL_READER=backend/modules/configuracion/repositories/config_asignaciones_repository.py:319|SELECT CAST(UsuarioID AS VARCHAR(50)) as id, NombreCompleto as name, Email as email, Activo as activo FROM Usuario_Catalogo WHERE CAST(UsuarioID AS VARCHAR(50)) = %s OR MongoLegacyID = %s OR CAST(PublicUUID AS VARCHAR(50)) = %s
+USUARIO_READER=backend/modules/fase2_operativo/routes/notificaciones_routes.py|FUNCTIONS=get_notification_status,get_notification_log,verificar_tareas_vencidas,test_email|ROUTES=GET /status,GET /log,POST /verificar-vencidas,POST /test-email
+SQL_READER=backend/modules/fase2_operativo/routes/notificaciones_routes.py:218|SELECT TOP 1 Email AS email, NombreCompleto AS name FROM dbo.Usuario_Catalogo WHERE CodigoUsuario=%s OR Email=%s OR Username=%s OR CONVERT(VARCHAR(50), PublicUUID)=%s
+USUARIO_READER=backend/modules/finanzas/repository_bancarios.py|FUNCTIONS=_get_valid_usuario_id,crear_cuenta_bancaria,get_saldos_cuenta,get_ultimo_saldo_vigente,get_historial_saldo|ROUTES=NINGUNA
+SQL_READER=backend/modules/finanzas/repository_bancarios.py:453|sb.SaldoBancarioID, sb.CuentaBancariaID, sb.FechaSaldo, sb.SaldoFinal, sb.Moneda, sb.TipoCambio, sb.FuenteDatos, sb.Observaciones, sb.EsVigente, sb.Activo, sb.Estatus, sb.FechaCreacion, sb.UsuarioCreacionID, uc.NombreCompleto AS NombreUsuarioCreacion, sb.FechaCancelacion, sb.UsuarioCancelacionID, ucancel.NombreCompleto AS NombreUsuarioCancelacion, sb.MotivoCancelacion FROM Finanzas_SaldosBancarios sb LEFT JOIN Usuario_Catalogo uc ON sb.UsuarioCreacionID = uc.UsuarioID LEFT JOIN Usuario_Catalogo 
+SQL_READER=backend/modules/finanzas/repository_bancarios.py:486|SELECT TOP 1 sb.SaldoBancarioID, sb.CuentaBancariaID, sb.FechaSaldo, sb.SaldoFinal, sb.Moneda, sb.FuenteDatos, sb.FechaCreacion, uc.NombreCompleto AS NombreUsuarioCreacion, DATEDIFF(day, sb.FechaSaldo, GETDATE()) AS DiasDesdeActualizacion FROM Finanzas_SaldosBancarios sb LEFT JOIN Usuario_Catalogo uc ON sb.UsuarioCreacionID = uc.UsuarioID WHERE sb.CuentaBancariaID =
+SQL_READER=backend/modules/finanzas/repository_bancarios.py:795|SELECT sb.SaldoBancarioID, sb.FechaSaldo, sb.SaldoFinal, sb.Estatus, sb.FechaCreacion, uc.NombreCompleto AS UsuarioCreacion, sb.FechaCancelacion, ucancel.NombreCompleto AS UsuarioCancelacion, sb.MotivoCancelacion FROM Finanzas_SaldosBancarios sb LEFT JOIN Usuario_Catalogo uc ON sb.UsuarioCreacionID = uc.UsuarioID LEFT JOIN Usuario_Catalogo ucancel ON sb.UsuarioCancelacionID = ucancel.UsuarioID WHERE sb.CuentaBancariaID =
+SQL_READER=backend/modules/finanzas/repository_bancarios.py:99|SELECT COUNT(*) as total FROM Usuario_Catalogo WHERE UsuarioID =
+USUARIO_READER=backend/modules/health_v1/routes.py|FUNCTIONS=_check_users_roles,get_health_v1|ROUTES=NINGUNA
+SQL_READER=backend/modules/health_v1/routes.py:122|SELECT COUNT(*) AS total FROM Usuario_Catalogo
+USUARIO_READER=backend/modules/rbac_context_sql/context_service.py|FUNCTIONS=get_user_context|ROUTES=NINGUNA
+SQL_READER=backend/modules/rbac_context_sql/context_service.py:15|SELECT TOP 1 u.UsuarioID, u.PublicUUID, u.Email, u.NombreCompleto, u.Activo, u.FechaAlta, u.FechaModificacion FROM Usuario_Catalogo u WHERE u.UsuarioID = %s
+USUARIO_READER=backend/modules/sistema/estructura_service.py|FUNCTIONS=escribir_bitacora|ROUTES=NINGUNA
+SQL_READER=backend/modules/sistema/estructura_service.py:278|SELECT TOP 1 UsuarioID FROM dbo.Usuario_Catalogo WHERE CodigoUsuario=%s OR Email=%s OR Username=%s OR CONVERT(VARCHAR(50), PublicUUID)=%s
+USUARIO_READER=backend/modules/sistema/menu_service.py|FUNCTIONS=_get_usuario_catalogo_columns,_resolver_usuario_id_canonico,resolver_usuario_id_canonico,_es_superadmin_from_current_user,obtener_favoritos_current_user,actualizar_favoritos_current_user,obtener_menus_current_user|ROUTES=NINGUNA
+SQL_READER=backend/modules/sistema/menu_service.py:23|SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Usuario_Catalogo'
+SQL_READER=backend/modules/sistema/menu_service.py:90|SELECT TOP 1 UsuarioID FROM dbo.Usuario_Catalogo WHERE
+USUARIO_READER=backend/modules/sistema_users_sql/routes.py|FUNCTIONS=listar_usuarios,obtener_usuario,obtener_usuario_por_email,obtener_mi_usuario|ROUTES=GET /sistema/usuarios,GET /sistema/usuarios/{usuario_id},GET /sistema/usuarios/email/{email},GET /sistema/mi-usuario
+SQL_READER=backend/modules/sistema_users_sql/routes.py:36|SELECT u.UsuarioID, u.PublicUUID, u.Email, u.NombreCompleto, u.Activo, u.FechaAlta, u.FechaModificacion FROM Usuario_Catalogo u WHERE (%s IS NULL OR u.Activo = %s) ORDER BY u.NombreCompleto
+SQL_READER=backend/modules/sistema_users_sql/routes.py:59|SELECT u.UsuarioID, u.PublicUUID, u.Email, u.NombreCompleto, u.Activo, u.FechaAlta, u.FechaModificacion FROM Usuario_Catalogo u WHERE u.UsuarioID = %s
+SQL_READER=backend/modules/sistema_users_sql/routes.py:84|SELECT u.UsuarioID, u.PublicUUID, u.Email, u.NombreCompleto, u.Activo, u.FechaAlta, u.FechaModificacion FROM Usuario_Catalogo u WHERE u.Email = %s
+SQL_READER=backend/modules/sistema_users_sql/routes.py:110|SELECT u.UsuarioID, u.PublicUUID, u.Email, u.NombreCompleto, u.Activo, ura.RolID, r.NombreRol, ura.EsPrincipal, u.FechaAlta, u.FechaModificacion FROM Usuario_Catalogo u LEFT JOIN Usuario_RolesAsignacion ura ON u.UsuarioID = ura.UsuarioID AND ura.Activo = 1 LEFT JOIN Usuario_Roles r ON ura.RolID = r.RolID WHERE u.UsuarioID = %s ORDER BY r.NombreRol
+USUARIO_READER=backend/server.py|FUNCTIONS=validate_server_access_unified,admin_cache_stats,admin_cache_cleanup,admin_sync_compras_manual,admin_sync_compras_force_unlock,admin_sync_compras_table_counts,admin_sync_compras_validate_columns,admin_sync_compras_logs,admin_detect_nuevos_manual,get_checkpoints_compras,get_eventos_pendientes_compras,procesar_eventos_pendientes,create_server,get_servers,get_server,update_server,delete_server,_sql_count_active_users,validate_server_query,save_server_query,get_server_queries,delete_server_query,get_tipos_movimiento,get_categorias,get_departamentos,get_sucursales,get_almacenes,get_sucursales_config,sync_sucursales_config,update_sucursal_config,update_sucursales_config_bulk,get_all_sucursales,get_unidades_negocio,get_almacenes_softrestaurant,get_inventarios_list,get_insumos_pendientes,get_report_filters,generate_inventory_analysis,get_movement_details,get_sales_details,export_excel,export_pdf,export_comparativo_inventarios,email_report,create_alert,get_alerts,update_alert,delete_alert,get_catalogo_consultas,get_estructura_tablas,ejecutar_consulta_catalogo,ejecutar_consulta_personalizada,debug_test_connection,debug_tipos_movimiento_live,debug_test_queries,get_dashboard_inventory_summary,get_dashboard_servers,get_dashboard_metrics,validate_server_access_by_empresa,obtener_inventarios_fisicos_sql_first,obtener_pedidos_vigentes_sql_first,obtener_productos_para_captura_sql_first,obtener_uso_inverso_receta_reportes,guardar_inventario_provisional,obtener_inventarios_provisionales,eliminar_inventario_provisional,limpiar_inventarios_provisionales,obtener_detalle_movimientos_post,obtener_detalle_movimientos_sql_first,obtener_detalle_consumos_post,obtener_facturas_proveedor_sql_first,obtener_detalle_factura_sql_first,obtener_detalle_consumos_sql_first,obtener_dashboard_compras_sql_first,listar_conexiones_explorables,listar_tablas,listar_columnas,listar_relaciones,preview_tabla,ejecutar_query_libre,ejecutar_script_sql,ejecutar_script_con_credenciales,_finanzas_require_view_scope,_finanzas_require_write_scope,finanzas_dashboard,finanzas_listar_presupuestos,finanzas_crear_presupuesto,finanzas_actualizar_presupuesto,finanzas_eliminar_presupuesto,finanzas_listar_categorias,finanzas_registrar_movimiento,finanzas_obtener_script_inicializacion,buscar_en_bd,listar_consultas_rich,ejecutar_consulta_catalogo,actualizar_consulta_sql,ejecutar_consulta_custom,get_pool_statistics,reset_pool_connections,sql_server_health_check,sql_server_test_query,obtener_pendientes_unificados,marcar_tarea_leida,obtener_script_tareas,listar_ciclos_nomina,obtener_ciclo_nomina,crear_ciclo_nomina,avanzar_etapa_nomina,rechazar_ciclo_nomina,listar_movimientos_nomina,agregar_movimiento_nomina,eliminar_movimiento_nomina,obtener_configuracion_nomina,guardar_configuracion_nomina,listar_kpis_nomina,crear_kpi_nomina,obtener_script_tablas_nomina,get_estructura_organizacional,get_mapeo_servidores,get_permisos_catalogo_v2,admin_asignar_permiso,admin_asignar_rol,_require_rbac_bitacora_ver,get_bitacora_rbac,get_bitacora_evento_detalle,get_perfiles_disponibles,asignar_perfil_usuario,retirar_perfil_usuario|ROUTES=GET /api/health,GET /api/comercial/tablero-ejecutivo-fallback,GET /api/v2/comercial/dashboard-fallback,GET /admin/cache/stats,POST /admin/cache/cleanup,POST /admin/sync/compras,POST /admin/sync/compras/force-unlock,GET /admin/sync/compras/table-counts,GET /admin/sync/compras/validate-columns,POST /admin/detect/compras,GET /admin/compras/checkpoints,GET /admin/compras/eventos-pendientes,POST /admin/compras/procesar-eventos,POST /test-api-connection,POST /servers,GET /servers,GET /servers/{server_id},PUT /servers/{server_id},DELETE /servers/{server_id},GET /servers/{server_id}/ping,POST /servers/{server_id}/queries/validate,PUT /servers/{server_id}/queries/{query_type},GET /servers/{server_id}/queries,DELETE /servers/{server_id}/queries/{query_type},GET /servers/{server_id}/tipos-movimiento,GET /servers/{server_id}/categorias,GET /servers/{server_id}/departamentos,GET /servers/{server_id}/sucursales,GET /servers/{server_id}/almacenes,GET /servers/{server_id}/sucursales-config,POST /servers/{server_id}/sucursales-config/sync,PUT /servers/{server_id}/sucursales-config/{sucursal_origen_id},PUT /servers/{server_id}/sucursales-config/bulk,GET /sucursales,GET /unidades-negocio,GET /servers/{server_id}/almacenes-softrestaurant,GET /servers/{server_id}/inventarios,GET /inventarios/pendientes/{server_id},GET /servers/{server_id}/report-filters,POST /reports/inventory-analysis,POST /reports/movement-details,POST /reports/sales-details,POST /reports/export/excel,POST /reports/export/pdf,POST /reports/export/comparativo-inventarios,POST /reports/email,POST /alerts,GET /alerts,PUT /alerts/{alert_id},DELETE /alerts/{alert_id},GET /catalogo/consultas,GET /catalogo/estructura-tablas,POST /catalogo/ejecutar-consulta,POST /catalogo/consulta-personalizada,POST /debug/test-connection,GET /debug/tipos-movimiento-live/{server_id},POST /debug/test-queries,GET /dashboard/inventory-summary,GET /dashboard/servers-configured,GET /dashboard/metrics,GET /compras/inventarios-fisicos/{server_id},GET /compras/inventarios-fisicos-sql-first/{server_id},GET /compras/pedidos-vigentes/{server_id},GET /compras/detalle-pedido-manual/{server_id},GET /compras/pedidos-vigentes-sql-first/{server_id},GET /compras/detalle-movimientos/{server_id},GET /compras/detalle-consumos/{server_id},GET /compras/detalle-pedido/{server_id}/{folio},POST /compras/calculo-pedido,GET /compras/parametros/{server_id},POST /compras/parametros,POST /compras/productos-para-captura,POST /compras/productos-para-captura-sql-first,POST /compras/auditoria-operativa,POST /reports/inverse-recipe-usage,POST /compras/inventarios-provisionales,GET /compras/inventarios-provisionales/{unidad_negocio_id},DELETE /compras/inventarios-provisionales/{item_id},DELETE /compras/inventarios-provisionales/limpiar/{unidad_negocio_id},POST /compras/detalle-movimientos,POST /compras/detalle-movimientos-sql-first,POST /compras/detalle-consumos,GET /compras/dashboard/{server_id},POST /compras/analisis,GET /compras/facturas-proveedor/{server_id},GET /compras/detalle-factura/{server_id}/{folio},GET /compras/facturas-proveedor-sql-first/{server_id},GET /compras/detalle-factura-sql-first/{server_id}/{folio},POST /compras/detalle-consumos-sql-first,GET /compras/dashboard-sql-first/{server_id},GET /explorador/conexiones-explorables,GET /explorador/tablas/{server_id},GET /explorador/columnas/{server_id}/{tabla},GET /explorador/relaciones/{server_id}/{tabla},GET /explorador/preview/{server_id}/{tabla},POST /explorador/query/{server_id},POST /explorador/ejecutar-script/{server_id},GET /rrhh/catalogos/puestos,POST /explorador/ejecutar-con-credenciales/{server_id},GET /finanzas/dashboard,GET /finanzas/presupuestos,POST /finanzas/presupuestos,PUT /finanzas/presupuestos/{presupuesto_id},DELETE /finanzas/presupuestos/{presupuesto_id},GET /finanzas/categorias,POST /finanzas/registrar-movimiento,GET /finanzas/script-inicializacion,GET /explorador/buscar/{server_id},GET /catalogo/consultas-rich,POST /catalogo/ejecutar-rich/{consulta_id},PUT /catalogo/consultas/{consulta_id},POST /catalogo/ejecutar-custom/{consulta_id},GET /sistema/pool-stats,POST /sistema/pool-reset,GET /sistema/sql-health,POST /sistema/sql-health/test-query,GET /sistema/pendientes-unificados,GET /sistema/script-tareas,GET /nomina/ciclos,GET /nomina/ciclos/{ciclo_id},POST /nomina/ciclos,POST /nomina/ciclos/{ciclo_id}/avanzar,POST /nomina/ciclos/{ciclo_id}/rechazar,GET /nomina/ciclos/{ciclo_id}/movimientos,POST /nomina/ciclos/{ciclo_id}/movimientos,DELETE /nomina/movimientos/{movimiento_id},GET /nomina/configuracion,POST /nomina/configuracion,GET /nomina/kpis,POST /nomina/kpis,GET /nomina/script-tablas,GET /sistema/estructura-organizacional,GET /sistema/mapeo-servidores,GET /sistema/permisos-catalogo-v2,POST /admin/permisos/asignar,POST /admin/roles/asignar,GET /admin/bitacora,GET /admin/bitacora/{evento_id},GET /admin/perfiles,POST /admin/perfiles/asignar,POST /admin/perfiles/retirar,GET /api/download/schema,GET /api/download/schema-sql,GET /api/download/backup-full,GET /api/download/manual-desarrollo,GET /api/download/backup-db-completo,GET /api/download/backup-codigo-fuente,GET /api/descargar/codigo
+SQL_READER=backend/server.py:2285|SELECT COUNT(*) AS total FROM dbo.Usuario_Catalogo WHERE Activo=1
+SQL_READER=backend/server.py:15764|SELECT TOP 1 1 FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = u.UsuarioID AND ura.Activo = 1 INNER JOIN dbo.Usuario_Roles r ON r.RolID = ura.RolID AND r.Activo = 1 INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID = r.RolID AND prm.Activo = 1 AND prm.Permitido = 1 INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID = prm.ModuloID AND m.Activo = 1 INNER JOIN dbo.Usuario_Acciones a ON a.AccionID = prm.AccionID AND a.Activo = 1 WHERE u.Activo = 1 AND LO
+USUARIO_READER=backend/sql_scripts/SQL_VALIDACION_RBAC_CONTEXT.sql|FUNCTIONS=NINGUNA|ROUTES=NINGUNA
+SQL_READER=backend/sql_scripts/SQL_VALIDACION_RBAC_CONTEXT.sql:27|FROM dbo.Usuario_Catalogo u
+USUARIO_WRITER=backend/core/auth/user_repository_sql.py|ROUTES=NINGUNA
+SQL_WRITER=backend/core/auth/user_repository_sql.py:379|SELECT u.Email, CAST(u.PublicUUID AS VARCHAR(36)) FROM Usuario_Catalogo u JOIN Usuario_RolesAsignacion ra ON u.UsuarioID = ra.UsuarioID AND ra.Activo = 1 JOIN Usuario_Roles r ON ra.RolID = r.RolID WHERE r.CodigoRol = 'SUPERADMIN'
+SQL_WRITER=backend/core/auth/user_repository_sql.py:476|SELECT UsuarioID FROM Usuario_Catalogo WHERE LOWER(Email) = %s
+SQL_WRITER=backend/core/auth/user_repository_sql.py:485|INSERT INTO Usuario_Catalogo (CodigoUsuario, Username, Email, Nombre, PasswordHashTexto, Activo, PublicUUID, FechaAlta, CreatedBy) VALUES (%s, %s, %s, %s, %s, 1, %s, GETDATE(), %s)
+SQL_WRITER=backend/core/auth/user_repository_sql.py:581|SELECT UsuarioID FROM Usuario_Catalogo WHERE LOWER(CAST(PublicUUID AS VARCHAR(36))) = LOWER(%s)
+SQL_WRITER=backend/core/auth/user_repository_sql.py:707|SELECT UsuarioID FROM Usuario_Catalogo WHERE LOWER(CAST(PublicUUID AS VARCHAR(36))) = LOWER(%s)
+SQL_WRITER=backend/core/auth/user_repository_sql.py:718|UPDATE Usuario_Catalogo SET Activo = 0, FechaModificacion = GETDATE(), ModifiedBy = 'RBAC-SCOPE-G' WHERE UsuarioID = %s
+SQL_WRITER=backend/core/auth/user_repository_sql.py:200|SELECT UsuarioID, Email, Nombre, PasswordHashTexto, Activo, CAST(PublicUUID AS VARCHAR(36)) as PublicUUID, MongoLegacyID FROM Usuario_Catalogo WHERE LOWER(Email) = LOWER(%s)
+SQL_WRITER=backend/core/auth/user_repository_sql.py:245|SELECT UsuarioID, Email, Nombre, PasswordHashTexto, Activo, CAST(PublicUUID AS VARCHAR(36)) as PublicUUID, MongoLegacyID FROM Usuario_Catalogo WHERE CAST(PublicUUID AS VARCHAR(36)) = %s
+SQL_WRITER=backend/core/auth/user_repository_sql.py:303|SELECT UsuarioID, Email, Nombre, PasswordHashTexto, Activo, CAST(PublicUUID AS VARCHAR(36)) as PublicUUID, MongoLegacyID FROM Usuario_Catalogo WHERE Activo = 1 ORDER BY UsuarioID
+SQL_WRITER=backend/core/auth/user_repository_sql.py:610|UPDATE Usuario_Catalogo SET
+USUARIO_WRITER=backend/modules/admin_sql/routes.py|ROUTES=GET /users,PATCH /users/{user_id}/toggle-activo,GET /roles,GET /roles/modulos,GET /servers,GET /usuarios-asignables,GET /catalogos-disponibles,POST /permisos-catalogos,PUT /roles/{role_id},POST /roles,DELETE /roles/{role_id}
+SQL_WRITER=backend/modules/admin_sql/routes.py:213|SELECT CAST(UsuarioID AS NVARCHAR(100)) AS UsuarioID, PublicUUID, ISNULL(Activo, 1) AS activo, Email FROM Usuario_Catalogo WHERE UsuarioID = %s
+SQL_WRITER=backend/modules/admin_sql/routes.py:232|UPDATE Usuario_Catalogo SET Activo = %s WHERE UsuarioID = %s
+SQL_WRITER=backend/modules/admin_sql/routes.py:103|SELECT CAST(u.UsuarioID AS NVARCHAR(100)) AS id, CAST(u.UsuarioID AS NVARCHAR(100)) AS UsuarioID, u.PublicUUID, u.Username AS username, u.Email AS email, u.Nombre AS nombre, u.NombreCompleto AS name, u.NombreCompleto AS nombre_completo, u.Apellidos AS apellidos, u.Puesto AS puesto, u.Departamento AS departamento, ISNULL(u.Activo, 1) AS activo, ISNULL(u.Bloqueado, 0) AS bloqueado, r.NombreRol AS role, r.CodigoRol AS role_code, r.NivelJerarquia AS role_level, r.RolID FROM Usuario_Catalogo u OUTER 
+SQL_WRITER=backend/modules/admin_sql/routes.py:415|SELECT CAST(u.UsuarioID AS NVARCHAR(100)) AS id, u.UsuarioID AS usuario_id, ISNULL(NULLIF(LTRIM(RTRIM(u.NombreCompleto)), ''), u.Email) AS name, u.Email AS email, ISNULL(rol.NombreRol, 'Sin rol') AS role, CAST(ISNULL(f.PuedeSolicitar, 0) AS bit) AS puede_solicitar, CAST(ISNULL(f.PuedeAutorizar, 0) AS bit) AS puede_autorizar, CAST(ISNULL(f.PuedeLiberar, 0) AS bit) AS puede_liberar, pc.permisos_catalogos_csv FROM dbo.Usuario_Catalogo u OUTER APPLY ( SELECT TOP 1 r.NombreRol FROM dbo.Usuario_RolesA
+SQL_WRITER=backend/modules/admin_sql/routes.py:560|SELECT TOP 1 UsuarioID FROM dbo.Usuario_Catalogo WHERE UsuarioID = TRY_CONVERT(INT, %s) OR LOWER(CAST(PublicUUID AS NVARCHAR(36))) = LOWER(%s) OR LOWER(ISNULL(MongoLegacyID, '')) = LOWER(%s)
+USUARIO_WRITER=backend/modules/auth/password_reset.py|ROUTES=NINGUNA
+SQL_WRITER=backend/modules/auth/password_reset.py:278|SELECT UsuarioID, Email, Nombre, Activo, CAST(PublicUUID AS VARCHAR(36)) as PublicUUID FROM Usuario_Catalogo WHERE LOWER(Email) = LOWER(%s)
+SQL_WRITER=backend/modules/auth/password_reset.py:311|SELECT UsuarioID, Email, Nombre, Activo, CAST(PublicUUID AS VARCHAR(36)) as PublicUUID FROM Usuario_Catalogo WHERE LOWER(CAST(PublicUUID AS VARCHAR(36))) = LOWER(%s)
+SQL_WRITER=backend/modules/auth/password_reset.py:441|UPDATE Usuario_Catalogo SET PasswordHashTexto = %s, UltimoCambioPassword = GETUTCDATE(), FechaModificacion = GETUTCDATE(), DebeCambiarPassword = 0, PasswordTemporal = 0 WHERE UsuarioID = %s
+SQL_WRITER=backend/modules/auth/password_reset.py:629|SELECT CAST(PublicUUID AS VARCHAR(36)) as PublicUUID FROM Usuario_Catalogo WHERE UsuarioID = %s AND Activo = 1
+USUARIO_WRITER=backend/modules/auth/repository.py|ROUTES=NINGUNA
+SQL_WRITER=backend/modules/auth/repository.py:393|SELECT DISTINCT uc.UsuarioID, uc.Email, uc.Username, uc.Nombre, uc.Apellidos, uc.NombreCompleto, uc.Activo, uc.PublicUUID, uc.MongoLegacyID, ur.CodigoRol, ur.NombreRol FROM dbo.Usuario_Catalogo uc INNER JOIN dbo.Usuario_RolesContexto urc ON urc.UsuarioID = uc.UsuarioID AND ISNULL(urc.Activo,1)=1 LEFT JOIN dbo.Usuario_Roles ur ON ur.RolID = urc.RolID WHERE urc.EmpresaID IN (
+SQL_WRITER=backend/modules/auth/repository.py:208|INSERT INTO dbo.Usuario_Catalogo (CodigoUsuario, Username, Email, PasswordHashTexto, Nombre, Apellidos, Activo, FechaAlta) VALUES (%s, %s, %s, %s, %s, %s, 1, GETDATE())
+SQL_WRITER=backend/modules/auth/repository.py:281|UPDATE dbo.Usuario_Catalogo SET
+SQL_WRITER=backend/modules/auth/repository.py:301|UPDATE dbo.Usuario_Catalogo SET Activo = 0, FechaModificacion = GETDATE() WHERE UsuarioID = TRY_CONVERT(INT, %s) OR LOWER(MongoLegacyID) = LOWER(%s) OR LOWER(PublicUUID) = LOWER(%s)
+SQL_WRITER=backend/modules/auth/repository.py:320|SELECT uc.UsuarioID, uc.Email, uc.Username, uc.Nombre, uc.Apellidos, uc.NombreCompleto, uc.Activo, uc.PublicUUID, uc.MongoLegacyID, ur.CodigoRol, ur.NombreRol FROM dbo.Usuario_Catalogo uc LEFT JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = uc.UsuarioID AND ISNULL(ura.Activo,1)=1 AND ISNULL(ura.EsPrincipal,0)=1 LEFT JOIN dbo.Usuario_Roles ur ON ur.RolID = ura.RolID ORDER BY uc.UsuarioID OFFSET %s ROWS FETCH NEXT %s ROWS ONLY
+SQL_WRITER=backend/modules/auth/repository.py:33|SELECT TOP 1 uc.UsuarioID, uc.Email, uc.Username, uc.PasswordHashTexto, uc.Nombre, uc.Apellidos, uc.NombreCompleto, uc.Activo, uc.PublicUUID, uc.MongoLegacyID, ur.CodigoRol, ur.NombreRol FROM dbo.Usuario_Catalogo uc LEFT JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = uc.UsuarioID AND ISNULL(ura.Activo,1)=1 AND ISNULL(ura.EsPrincipal,0)=1 LEFT JOIN dbo.Usuario_Roles ur ON ur.RolID = ura.RolID WHERE LOWER(uc.Email) = LOWER(%s) OR LOWER(uc.Username) = LOWER(%s)
+SQL_WRITER=backend/modules/auth/repository.py:82|SELECT TOP 1 uc.UsuarioID, uc.Email, uc.Username, uc.PasswordHashTexto, uc.Nombre, uc.Apellidos, uc.NombreCompleto, uc.Activo, uc.PublicUUID, uc.MongoLegacyID, ur.CodigoRol, ur.NombreRol FROM dbo.Usuario_Catalogo uc LEFT JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = uc.UsuarioID AND ISNULL(ura.Activo,1)=1 AND ISNULL(ura.EsPrincipal,0)=1 LEFT JOIN dbo.Usuario_Roles ur ON ur.RolID = ura.RolID WHERE uc.UsuarioID = TRY_CONVERT(INT, %s) OR LOWER(uc.PublicUUID) = LOWER(%s) OR LOWER(uc.MongoL
+JWT_REGIONAL=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/service.py|CATEGORIES=usuario_table,jwt,current_user
+JWT_REGIONAL=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/service.py|CATEGORIES=usuario_table,jwt,current_user
+JWT_REGIONAL=backend/core/auth/user_repository_sql.py|CATEGORIES=usuario_table,jwt,current_user
+JWT_REGIONAL=backend/core/graphify-out/cache/ast/v0.8.39/49562463dddb16f8eb60a5cc6e76da3060ff6eb3365908e07ca710b3fdc035e2.json|CATEGORIES=usuario_table,jwt,current_user,language_storage
+JWT_REGIONAL=backend/core/graphify-out/graph.json|CATEGORIES=usuario_table,jwt,current_user,language_storage
+JWT_REGIONAL=backend/core/rbac/middleware.py|CATEGORIES=usuario_table,jwt,current_user,language_storage
+JWT_REGIONAL=backend/core/security.py|CATEGORIES=usuario_table,jwt,current_user,language_storage
+JWT_REGIONAL=backend/modules/auth/service.py|CATEGORIES=usuario_table,jwt,current_user
+JWT_REGIONAL=backend/server.py|CATEGORIES=usuario_table,jwt,current_user,timezone_runtime
+JWT_REGIONAL=graphify-out/cache/ast/v0.8.39/127df24593b4ebd7a706def92f16112d8683a0881e469dc59426247bab8aa0e7.json|CATEGORIES=usuario_table,jwt,current_user,language_storage
+FRONTEND_LOCALE_ONLY=frontend/src/components/SyncStatusIndicator.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/TabOperativasCompras.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/admin/ResyncPanel.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/admin/bitacora/BitacoraComponents.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/catalogo-consultas/ConsultasComponents.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/catalogo-consultas/useCatalogoConsultasData.js
+FRONTEND_LOCALE_ONLY=frontend/src/components/centro-control/CentroControlComponents.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/comercial/analytics/CanonicalTicketDrilldown.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/comercial/temporal/CommercialTemporalSelector.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/compras/DetalleProductoModal.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/compras/operativas/AccionesTesoreriaCard.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/compras/operativas/AutomatizacionesTable.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/compras/operativas/BitacoraList.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/compras/operativas/EstadoFinalCard.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/compras/operativas/PeriodoEstadisticoCard.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/crm/KPIDashboardIA.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/crm/OperacionesFlujoPanel.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/crm/PipelineKanban.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/crm/SolicitudesAltaPanel.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/fase2_operativo/AlertasBanner.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/fase2_operativo/OperativoDashboard.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/fase2_operativo/ResponsabilidadAccionesModal.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/fase2_operativo/ResponsabilidadCard.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/fase2_operativo/ResponsabilidadPendientesPanel.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/fase2_operativo/TareaList.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/fase2_operativo/WorkflowList.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/filters/CanonicalPeriodSelector.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/finanzas/FinanzasComprobaciones.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/finanzas/cuentas-bancarias/DetalleCuentaBancaria.jsx
+FRONTEND_LOCALE_ONLY=frontend/src/components/finanzas/cuentas-bancarias/ModalDesactivarCuenta.jsx
+REGIONAL_RUNTIME=backend/api/configuracion_operativa_unidades.py|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/api/graphify-out/cache/ast/v0.8.39/c87773e414d98744acd8f08ce007a226720cbca92d2dc3e5ce08ed309936382e.json|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/core/communications/notifications/schemas.py|CATEGORIES=language_column,language_storage
+REGIONAL_RUNTIME=backend/core/communications/routes.py|CATEGORIES=language_column,current_user,language_storage
+REGIONAL_RUNTIME=backend/core/communications/scripts/__init__.py|CATEGORIES=language_column,language_storage
+REGIONAL_RUNTIME=backend/core/communications/templates/template_service.py|CATEGORIES=language_column,language_storage
+REGIONAL_RUNTIME=backend/core/graphify-out/cache/ast/v0.8.39/0eb3850b42ffd360183c080a5fdaa6ead2569ab49b29db707d033a16c4477b7f.json|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/core/graphify-out/cache/ast/v0.8.39/115bdd551063a887131048df3818630500e90739ffaa8041cff0437f239468f2.json|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/core/graphify-out/cache/ast/v0.8.39/36a52aa87dde348e144415213a8c205a41ca3188b6b8875a7095512222de4719.json|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/core/graphify-out/cache/ast/v0.8.39/d56dba15c47db51349aea6903e7d4cb49da5da46141d7b30d64f0d5e7315bf36.json|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/core/scheduler/config.py|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/core/scheduler/jobs/detect_nuevos_compras_job.py|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/core/scheduler/jobs/notifications_job.py|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/core/scheduler/jobs/sync_compras_job.py|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/core/scheduler/scheduler_manager.py|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/core/utils/operational_window.py|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/modules/comercial/routes.py|CATEGORIES=current_user,timezone_runtime
+REGIONAL_RUNTIME=backend/modules/comercial/service.py|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/modules/comercial_v2/repository_comercial_edarsahub.py|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/modules/comercial_v2/routes.py|CATEGORIES=current_user,language_storage,timezone_runtime
+REGIONAL_RUNTIME=backend/modules/compras/eventos_compras.py|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/modules/crm/integration/staging_processor.py|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/modules/crm/integration/staging_service.py|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/modules/crm/repository.py|CATEGORIES=usuario_table,timezone_runtime
+REGIONAL_RUNTIME=backend/modules/fase2_operativo/services/auditoria_programada_service.py|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/modules/sync_historicos/service.py|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/modules/sync_recetas/sync_recetas.py|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/modules/tablajeria/ordenes_service.py|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/modules/tablajeria/sync_service.py|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=backend/server.py|CATEGORIES=usuario_table,jwt,current_user,timezone_runtime
+REGIONAL_RUNTIME=backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql|CATEGORIES=usuario_table,timezone_column,language_column,language_storage,timezone_runtime
+REGIONAL_RUNTIME=graphify-out/cache/ast/v0.8.39/059d2ea53120ccf9244e7e53d5a50a76c3ac996d2f7b872f255780e681486d7b.json|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=graphify-out/cache/ast/v0.8.39/076ffe215ec4b4340848f92ab3ea12512496a6c65813f19ae97e330234497b3b.json|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=graphify-out/cache/ast/v0.8.39/0cb4d56aeb338606d7e23a2dfd7434a8b3bb38ee0d36d40b7e18ffdbd3ab8667.json|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=graphify-out/cache/ast/v0.8.39/0eeaf6022dbd7063f945f333df198ce372a0ceb9f458e894c6cb6e8495d12a98.json|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=graphify-out/cache/ast/v0.8.39/15069b033f3c2acfa2dfd8ffd906b3d42467f992f5444870900224ac1424f15e.json|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=graphify-out/cache/ast/v0.8.39/15e0e92ed47dafdcfbe30535a7d3a5cf139ec1210f82e0d66af26824a775ab1f.json|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=graphify-out/cache/ast/v0.8.39/19b879f294d17c19f9fa3253b9e66e944c1a42eee91009ff4f84810011d0abb9.json|CATEGORIES=timezone_runtime
+REGIONAL_RUNTIME=graphify-out/cache/ast/v0.8.39/202b6e6fee3b40cf84c09077c8ecdbbb3434334cbb40be4bd8289efd3938cd5a.json|CATEGORIES=timezone_runtime
+USER_REGIONAL_PRECEDENCE_AUDIT=PASS
+
+===== 3. DECISION =====
+RESULTADO=PASS
+AUDITORIA_PRECEDENCIA_REGIONAL_USUARIO=PASS
+LECTORES_USUARIO_REGIONALES=0
+ESCRITORES_USUARIO_REGIONALES=0
+JWT_INCLUYE_CONTEXTO_REGIONAL=SI
+I18N_FRONTEND_REAL=NO
+ARCHIVOS_SOLO_FORMATO_LOCALE=103
+CONSUMIDORES_RUNTIME_REGIONALES=96
+DECISION=IDIOMA_EXISTE_EN_USUARIO_PERO_NO_HAY_I18N_FRONTEND_REAL_DEMOSTRADO
+SIGUIENTE_PASO=AUDITAR_PACKAGE_JSON_Y_BOOTSTRAP_FRONTEND_ANTES_DE_PROPONER_I18N
+CREAR_COLUMNAS_EMPRESA_UNIDAD_AHORA=NO
+PARCHEAR_OPERATIONAL_WINDOW_AHORA=NO
+PARCHEAR_IDIOMA_AHORA=NO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+
+===== 4. INTEGRIDAD FINAL =====
+RESULTADO=PASS
+AUDITORIA_PRECEDENCIA_REGIONAL_USUARIO=PASS
+LECTORES_USUARIO_REGIONALES=0
+ESCRITORES_USUARIO_REGIONALES=0
+JWT_INCLUYE_CONTEXTO_REGIONAL=SI
+I18N_FRONTEND_REAL=NO
+ARCHIVOS_SOLO_FORMATO_LOCALE=103
+CONSUMIDORES_RUNTIME_REGIONALES=96
+DECISION=IDIOMA_EXISTE_EN_USUARIO_PERO_NO_HAY_I18N_FRONTEND_REAL_DEMOSTRADO
+SIGUIENTE_PASO=AUDITAR_PACKAGE_JSON_Y_BOOTSTRAP_FRONTEND_ANTES_DE_PROPONER_I18N
+CREAR_COLUMNAS_EMPRESA_UNIDAD_AHORA=NO
+PARCHEAR_OPERATIONAL_WINDOW_AHORA=NO
+PARCHEAR_IDIOMA_AHORA=NO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+JSON=/app/edarsahub_user_regional_precedence_audit_20260805T174614Z.json
+DETAIL=/app/edarsahub_user_regional_precedence_audit_20260805T174614Z_detail.txt
+REPORT=/app/edarsahub_user_regional_precedence_audit_20260805T174614Z.txt

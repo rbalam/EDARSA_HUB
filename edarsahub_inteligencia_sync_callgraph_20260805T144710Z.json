@@ -1,0 +1,620 @@
+{
+  "file": "/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py",
+  "root_function": "job_inteligencia_comercial_sync",
+  "functions": {
+    "job_inteligencia_comercial_sync": {
+      "line_start": 583,
+      "line_end": 769,
+      "async": false,
+      "local_calls": [
+        "audit_syncpos_canonical_configs",
+        "detectar_faltantes_syncpos",
+        "extract_sales_from_pos",
+        "get_edarsahub_connection",
+        "get_pos_config_for_unidad",
+        "get_syncpos_config",
+        "get_unidades_negocio_pos",
+        "insert_into_sync_sales",
+        "registrar_syncpos_bitacora",
+        "should_run_syncpos_now",
+        "update_job_status",
+        "update_kpis_diarios"
+      ],
+      "external_calls": [
+        "append",
+        "current_date.strftime",
+        "datetime.now",
+        "datetime.strptime",
+        "enr.get",
+        "enrich_unidad",
+        "fecha_fin_dt.strftime",
+        "fecha_inicio_dt.strftime",
+        "hub_conn.close",
+        "hub_conn.commit",
+        "hub_conn.rollback",
+        "len",
+        "logger.error",
+        "logger.info",
+        "logger.warning",
+        "next",
+        "stats.setdefault",
+        "str",
+        "timedelta",
+        "u.get"
+      ],
+      "sql_literals": [],
+      "table_reads": [],
+      "table_writes": [],
+      "connection_markers": [
+        "get_edarsahub_connection()"
+      ],
+      "date_markers": [],
+      "sales_markers": [],
+      "mongo_markers": []
+    },
+    "get_syncpos_config": {
+      "line_start": 401,
+      "line_end": 423,
+      "async": false,
+      "local_calls": [],
+      "external_calls": [
+        "fetch_all_dict",
+        "logger.warning"
+      ],
+      "sql_literals": [
+        "SELECT TOP 1 * FROM dbo.Sistema_SyncPOS_Config WHERE Codigo='INTELIGENCIA_COMERCIAL_POS' AND ISNULL(Activo,1)=1"
+      ],
+      "table_reads": [
+        "dbo.Sistema_SyncPOS_Config"
+      ],
+      "table_writes": [],
+      "connection_markers": [],
+      "date_markers": [],
+      "sales_markers": [],
+      "mongo_markers": []
+    },
+    "should_run_syncpos_now": {
+      "line_start": 426,
+      "line_end": 444,
+      "async": false,
+      "local_calls": [
+        "get_syncpos_config"
+      ],
+      "external_calls": [
+        "bool",
+        "cfg.get",
+        "datetime.utcnow",
+        "delta.total_seconds",
+        "int"
+      ],
+      "sql_literals": [],
+      "table_reads": [],
+      "table_writes": [],
+      "connection_markers": [],
+      "date_markers": [],
+      "sales_markers": [],
+      "mongo_markers": []
+    },
+    "get_edarsahub_connection": {
+      "line_start": 60,
+      "line_end": 62,
+      "async": false,
+      "local_calls": [],
+      "external_calls": [
+        "get_sql_connection"
+      ],
+      "sql_literals": [],
+      "table_reads": [],
+      "table_writes": [],
+      "connection_markers": [
+        "get_sql_connection()"
+      ],
+      "date_markers": [],
+      "sales_markers": [],
+      "mongo_markers": []
+    },
+    "update_job_status": {
+      "line_start": 375,
+      "line_end": 383,
+      "async": false,
+      "local_calls": [],
+      "external_calls": [
+        "conn.cursor",
+        "cursor.close",
+        "cursor.execute"
+      ],
+      "sql_literals": [
+        "UPDATE Sys_Scheduler_Jobs SET LastRunDate = GETDATE(), Status = %s WHERE JobName = 'inteligencia_comercial_sync'"
+      ],
+      "table_reads": [],
+      "table_writes": [
+        "Sys_Scheduler_Jobs"
+      ],
+      "connection_markers": [],
+      "date_markers": [],
+      "sales_markers": [],
+      "mongo_markers": []
+    },
+    "registrar_syncpos_bitacora": {
+      "line_start": 540,
+      "line_end": 560,
+      "async": false,
+      "local_calls": [
+        "_syncpos_literal"
+      ],
+      "external_calls": [
+        "execute_sql",
+        "logger.warning"
+      ],
+      "sql_literals": [
+        "INSERT INTO dbo.Sistema_SyncPOS_Bitacora ( TipoEjecucion, UnidadNegocioID, FechaInicio, FechaFin, Estado, Mensaje, Tickets, Lineas, Venta, FechaFinEjecucion ) VALUES ("
+      ],
+      "table_reads": [],
+      "table_writes": [
+        "dbo.Sistema_SyncPOS_Bitacora"
+      ],
+      "connection_markers": [],
+      "date_markers": [
+        ", TRY_CONVERT(date,",
+        "), TRY_CONVERT(date,"
+      ],
+      "sales_markers": [],
+      "mongo_markers": []
+    },
+    "audit_syncpos_canonical_configs": {
+      "line_start": 501,
+      "line_end": 520,
+      "async": false,
+      "local_calls": [
+        "get_pos_config_for_unidad",
+        "get_unidades_negocio_pos"
+      ],
+      "external_calls": [
+        "bool",
+        "cfg.get",
+        "result.append",
+        "unidad.get"
+      ],
+      "sql_literals": [],
+      "table_reads": [],
+      "table_writes": [],
+      "connection_markers": [],
+      "date_markers": [],
+      "sales_markers": [],
+      "mongo_markers": []
+    },
+    "detectar_faltantes_syncpos": {
+      "line_start": 523,
+      "line_end": 537,
+      "async": false,
+      "local_calls": [
+        "get_unidades_negocio_pos"
+      ],
+      "external_calls": [
+        "u.get"
+      ],
+      "sql_literals": [],
+      "table_reads": [],
+      "table_writes": [],
+      "connection_markers": [],
+      "date_markers": [],
+      "sales_markers": [],
+      "mongo_markers": []
+    },
+    "get_unidades_negocio_pos": {
+      "line_start": 447,
+      "line_end": 469,
+      "async": false,
+      "local_calls": [
+        "_syncpos_literal"
+      ],
+      "external_calls": [
+        "fetch_all_dict",
+        "filters.append",
+        "join"
+      ],
+      "sql_literals": [
+        "SELECT CONVERT(NVARCHAR(100), u.id) AS unidad_pk, CONVERT(NVARCHAR(100), u.codigo) AS unidad_codigo, CONVERT(NVARCHAR(300), u.nombre) AS unidad_nombre, CONVERT(NVARCHAR(100), u.server_id) AS server_id, CONVERT(NVARCHAR(100), u.sucursal_origen_id) AS sucursal_origen_id, CONVERT(NVARCHAR(100), u.system_type) AS system_type FROM dbo.Unidades_Negocio u WHERE"
+      ],
+      "table_reads": [
+        "dbo.Unidades_Negocio"
+      ],
+      "table_writes": [],
+      "connection_markers": [],
+      "date_markers": [],
+      "sales_markers": [],
+      "mongo_markers": []
+    },
+    "get_pos_config_for_unidad": {
+      "line_start": 472,
+      "line_end": 498,
+      "async": false,
+      "local_calls": [],
+      "external_calls": [
+        "cfg.get",
+        "get_server_connection_config",
+        "int",
+        "unidad_row.get"
+      ],
+      "sql_literals": [],
+      "table_reads": [],
+      "table_writes": [],
+      "connection_markers": [],
+      "date_markers": [],
+      "sales_markers": [],
+      "mongo_markers": []
+    },
+    "extract_sales_from_pos": {
+      "line_start": 202,
+      "line_end": 240,
+      "async": false,
+      "local_calls": [
+        "get_mpro_query",
+        "get_pos_connection",
+        "get_softrestaurant_query"
+      ],
+      "external_calls": [
+        "conn.close",
+        "conn.cursor",
+        "cursor.close",
+        "cursor.execute",
+        "cursor.fetchall",
+        "len",
+        "logger.error",
+        "logger.info",
+        "logger.warning"
+      ],
+      "sql_literals": [],
+      "table_reads": [],
+      "table_writes": [],
+      "connection_markers": [
+        "get_pos_connection(config)"
+      ],
+      "date_markers": [],
+      "sales_markers": [],
+      "mongo_markers": []
+    },
+    "insert_into_sync_sales": {
+      "line_start": 243,
+      "line_end": 293,
+      "async": false,
+      "local_calls": [],
+      "external_calls": [
+        "conn.cursor",
+        "cursor.close",
+        "cursor.execute",
+        "cursor.fetchone",
+        "datetime.now",
+        "logger.warning",
+        "sale.get",
+        "str",
+        "timestamp"
+      ],
+      "sql_literals": [
+        "SELECT COUNT(*) FROM Sync_Sales WHERE NumeroTicket = %s AND UnidadNegocio = %s AND CAST(FechaHora AS DATE) = CAST(%s AS DATE)",
+        "INSERT INTO Sync_Sales ( id, branch, UnidadNegocio, NumeroTicket, MontoTotal, Pax, FechaHora, status, items, created_at, total ) VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, GETDATE(), %s )"
+      ],
+      "table_reads": [
+        "Sync_Sales"
+      ],
+      "table_writes": [
+        "Sync_Sales"
+      ],
+      "connection_markers": [],
+      "date_markers": [
+        "SELECT COUNT(*) FROM Sync_Sales WHERE NumeroTicket = %s AND UnidadNegocio = %s AND CAST(FechaHora AS DATE) = CAST(%s AS DATE)"
+      ],
+      "sales_markers": [],
+      "mongo_markers": []
+    },
+    "update_kpis_diarios": {
+      "line_start": 296,
+      "line_end": 372,
+      "async": false,
+      "local_calls": [],
+      "external_calls": [
+        "conn.cursor",
+        "cursor.close",
+        "cursor.execute",
+        "cursor.fetchone",
+        "datetime.strptime",
+        "logger.error"
+      ],
+      "sql_literals": [
+        "SELECT COUNT(DISTINCT NumeroTicket) AS tickets, SUM(MontoTotal) AS ventas, SUM(Pax) AS Pax FROM Sync_Sales WHERE UnidadNegocio = %s AND CAST(FechaHora AS DATE) = %s AND status = 'COMPLETED'",
+        "SELECT id FROM Comercial_KPIs_Diarios_v2 WHERE unidad_negocio_nombre = %s AND fecha_operacion = %s",
+        "UPDATE Comercial_KPIs_Diarios_v2 SET ventas_total = %s, pax_total = %s, tickets_total = %s, ticket_promedio = CASE WHEN %s > 0 THEN %s / %s ELSE 0 END, fecha_ultima_actualizacion = GETDATE() WHERE id = %s",
+        "INSERT INTO Comercial_KPIs_Diarios_v2 ( id, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id, sistema_origen, fecha_operacion, anio, mes, dia, ventas_total, pax_total, tickets_total, ticket_promedio, activo, fuente_original, fecha_alta ) VALUES ( NEWID(), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, 'SYNC_JOB', GETDATE() )"
+      ],
+      "table_reads": [
+        "Comercial_KPIs_Diarios_v2",
+        "Sync_Sales"
+      ],
+      "table_writes": [
+        "Comercial_KPIs_Diarios_v2"
+      ],
+      "connection_markers": [],
+      "date_markers": [
+        "SELECT COUNT(DISTINCT NumeroTicket) AS tickets, SUM(MontoTotal) AS ventas, SUM(Pax) AS Pax FROM Sync_Sales WHERE UnidadNegocio = %s AND CAST(FechaHora AS DATE) = %s AND status = 'COMPLETED'",
+        "SELECT id FROM Comercial_KPIs_Diarios_v2 WHERE unidad_negocio_nombre = %s AND fecha_operacion = %s",
+        "INSERT INTO Comercial_KPIs_Diarios_v2 ( id, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id, sistema_origen, fecha_operacion, anio, mes, dia, ventas_total, pax_total, tickets_total, ticket_promedio, activo, fuente_original, fecha_alta ) VALUES ( NEWID(), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, 'SYNC_JOB', GETDATE() )"
+      ],
+      "sales_markers": [
+        "UPDATE Comercial_KPIs_Diarios_v2 SET ventas_total = %s, pax_total = %s, tickets_total = %s, ticket_promedio = CASE WHEN %s > 0 THEN %s / %s ELSE 0 END, fecha_ultima_actualizacion = GETDATE() WHERE id = %s",
+        "INSERT INTO Comercial_KPIs_Diarios_v2 ( id, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id, sistema_origen, fecha_operacion, anio, mes, dia, ventas_total, pax_total, tickets_total, ticket_promedio, activo, fuente_original, fecha_alta ) VALUES ( NEWID(), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, 'SYNC_JOB', GETDATE() )"
+      ],
+      "mongo_markers": []
+    },
+    "_syncpos_literal": {
+      "line_start": 394,
+      "line_end": 398,
+      "async": false,
+      "local_calls": [],
+      "external_calls": [
+        "replace",
+        "str"
+      ],
+      "sql_literals": [],
+      "table_reads": [],
+      "table_writes": [],
+      "connection_markers": [],
+      "date_markers": [],
+      "sales_markers": [],
+      "mongo_markers": []
+    },
+    "get_pos_connection": {
+      "line_start": 65,
+      "line_end": 126,
+      "async": false,
+      "local_calls": [],
+      "external_calls": [
+        "config.get",
+        "connection_config.setdefault",
+        "dict",
+        "get_external_sql_connection",
+        "logger.error"
+      ],
+      "sql_literals": [],
+      "table_reads": [],
+      "table_writes": [],
+      "connection_markers": [],
+      "date_markers": [],
+      "sales_markers": [],
+      "mongo_markers": []
+    },
+    "get_softrestaurant_query": {
+      "line_start": 133,
+      "line_end": 162,
+      "async": false,
+      "local_calls": [],
+      "external_calls": [],
+      "sql_literals": [
+        "SELECT CONVERT(VARCHAR(64), ch.folio) AS NumeroTicket, CONVERT(VARCHAR(64), NEWID()) AS IdTransaccion, ch.nopersonas AS Pax, ch.total AS MontoTotal, t.apertura AS FechaHora, 'COMPLETED' AS status, ( SELECT p.idproducto AS id, p.descripcion AS name, dc.cantidad AS quantity, dc.precio AS price, (dc.cantidad * dc.precio) AS total FROM cheqdet dc INNER JOIN productos p ON dc.idproducto = p.idproducto WHERE dc.foliodet = ch.folio FOR JSON PATH ) AS items FROM cheques ch INNER JOIN turnos t ON t.idturno = ch.idturno WHERE t.apertura >= '"
+      ],
+      "table_reads": [
+        "cheqdet",
+        "cheques",
+        "productos",
+        "turnos"
+      ],
+      "table_writes": [],
+      "connection_markers": [],
+      "date_markers": [],
+      "sales_markers": [],
+      "mongo_markers": []
+    },
+    "get_mpro_query": {
+      "line_start": 165,
+      "line_end": 195,
+      "async": false,
+      "local_calls": [],
+      "external_calls": [],
+      "sql_literals": [
+        "SELECT CONVERT(VARCHAR(64), v.Vn_Folio) AS NumeroTicket, CONVERT(VARCHAR(64), NEWID()) AS IdTransaccion, ISNULL(c.Co_Personas, 1) AS Pax, v.Vn_Precio_Neto_Importe AS MontoTotal, v.Vn_Fecha AS FechaHora, CASE WHEN v.Es_Cve_Estado = 'CA' THEN 'CANCELLED' ELSE 'COMPLETED' END AS status, ( SELECT d.Ar_Cve_Articulo AS id, a.Ar_Descripcion AS name, d.Vd_Cantidad AS quantity, d.Vd_Precio_Unitario AS price, d.Vd_Importe AS total FROM Venta_Detalle d LEFT JOIN Articulo a ON d.Ar_Cve_Articulo = a.Ar_Cve_Articulo WHERE d.Vn_Folio = v.Vn_Folio AND d.Sc_Cve_Sucursal = v.Sc_Cve_Sucursal FOR JSON PATH ) AS items FROM Venta_Encabezado v LEFT JOIN Comanda c ON c.Co_Folio = v.Vn_Folio AND c.Sc_Cve_Sucursal = v.Sc_Cve_Sucursal WHERE v.Vn_Fecha >= '"
+      ],
+      "table_reads": [
+        "Articulo",
+        "Comanda",
+        "Venta_Detalle",
+        "Venta_Encabezado"
+      ],
+      "table_writes": [],
+      "connection_markers": [],
+      "date_markers": [],
+      "sales_markers": [],
+      "mongo_markers": []
+    }
+  },
+  "edges": [
+    {
+      "from": "job_inteligencia_comercial_sync",
+      "to": "get_syncpos_config",
+      "type": "local"
+    },
+    {
+      "from": "job_inteligencia_comercial_sync",
+      "to": "should_run_syncpos_now",
+      "type": "local"
+    },
+    {
+      "from": "job_inteligencia_comercial_sync",
+      "to": "get_edarsahub_connection",
+      "type": "local"
+    },
+    {
+      "from": "job_inteligencia_comercial_sync",
+      "to": "update_job_status",
+      "type": "local"
+    },
+    {
+      "from": "job_inteligencia_comercial_sync",
+      "to": "registrar_syncpos_bitacora",
+      "type": "local"
+    },
+    {
+      "from": "job_inteligencia_comercial_sync",
+      "to": "registrar_syncpos_bitacora",
+      "type": "local"
+    },
+    {
+      "from": "job_inteligencia_comercial_sync",
+      "to": "audit_syncpos_canonical_configs",
+      "type": "local"
+    },
+    {
+      "from": "job_inteligencia_comercial_sync",
+      "to": "detectar_faltantes_syncpos",
+      "type": "local"
+    },
+    {
+      "from": "job_inteligencia_comercial_sync",
+      "to": "audit_syncpos_canonical_configs",
+      "type": "local"
+    },
+    {
+      "from": "job_inteligencia_comercial_sync",
+      "to": "get_unidades_negocio_pos",
+      "type": "local"
+    },
+    {
+      "from": "job_inteligencia_comercial_sync",
+      "to": "get_pos_config_for_unidad",
+      "type": "local"
+    },
+    {
+      "from": "job_inteligencia_comercial_sync",
+      "to": "extract_sales_from_pos",
+      "type": "local"
+    },
+    {
+      "from": "job_inteligencia_comercial_sync",
+      "to": "insert_into_sync_sales",
+      "type": "local"
+    },
+    {
+      "from": "job_inteligencia_comercial_sync",
+      "to": "update_kpis_diarios",
+      "type": "local"
+    },
+    {
+      "from": "job_inteligencia_comercial_sync",
+      "to": "registrar_syncpos_bitacora",
+      "type": "local"
+    },
+    {
+      "from": "job_inteligencia_comercial_sync",
+      "to": "get_unidades_negocio_pos",
+      "type": "local"
+    },
+    {
+      "from": "should_run_syncpos_now",
+      "to": "get_syncpos_config",
+      "type": "local"
+    },
+    {
+      "from": "registrar_syncpos_bitacora",
+      "to": "_syncpos_literal",
+      "type": "local"
+    },
+    {
+      "from": "registrar_syncpos_bitacora",
+      "to": "_syncpos_literal",
+      "type": "local"
+    },
+    {
+      "from": "registrar_syncpos_bitacora",
+      "to": "_syncpos_literal",
+      "type": "local"
+    },
+    {
+      "from": "registrar_syncpos_bitacora",
+      "to": "_syncpos_literal",
+      "type": "local"
+    },
+    {
+      "from": "registrar_syncpos_bitacora",
+      "to": "_syncpos_literal",
+      "type": "local"
+    },
+    {
+      "from": "registrar_syncpos_bitacora",
+      "to": "_syncpos_literal",
+      "type": "local"
+    },
+    {
+      "from": "audit_syncpos_canonical_configs",
+      "to": "get_unidades_negocio_pos",
+      "type": "local"
+    },
+    {
+      "from": "audit_syncpos_canonical_configs",
+      "to": "get_pos_config_for_unidad",
+      "type": "local"
+    },
+    {
+      "from": "detectar_faltantes_syncpos",
+      "to": "get_unidades_negocio_pos",
+      "type": "local"
+    },
+    {
+      "from": "get_unidades_negocio_pos",
+      "to": "_syncpos_literal",
+      "type": "local"
+    },
+    {
+      "from": "extract_sales_from_pos",
+      "to": "get_pos_connection",
+      "type": "local"
+    },
+    {
+      "from": "extract_sales_from_pos",
+      "to": "get_softrestaurant_query",
+      "type": "local"
+    },
+    {
+      "from": "extract_sales_from_pos",
+      "to": "get_mpro_query",
+      "type": "local"
+    }
+  ],
+  "table_reads": [
+    "Articulo",
+    "Comanda",
+    "Comercial_KPIs_Diarios_v2",
+    "Sync_Sales",
+    "Venta_Detalle",
+    "Venta_Encabezado",
+    "cheqdet",
+    "cheques",
+    "dbo.Sistema_SyncPOS_Config",
+    "dbo.Unidades_Negocio",
+    "productos",
+    "turnos"
+  ],
+  "table_writes": [
+    "Comercial_KPIs_Diarios_v2",
+    "Sync_Sales",
+    "Sys_Scheduler_Jobs",
+    "dbo.Sistema_SyncPOS_Bitacora"
+  ],
+  "parallel_tables": [
+    "Sync_Sales"
+  ],
+  "canonical_tables": [
+    "Comercial_KPIs_Diarios_v2",
+    "dbo.Unidades_Negocio"
+  ],
+  "summary": {
+    "reachable_functions": 17,
+    "local_edges": 30,
+    "sql_literals": 12,
+    "table_reads": 12,
+    "table_writes": 4,
+    "parallel_tables": 1,
+    "canonical_tables": 2,
+    "connection_markers": 3,
+    "date_markers": 6,
+    "sales_markers": 2,
+    "mongo_markers": 0
+  }
+}

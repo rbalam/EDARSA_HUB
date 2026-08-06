@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "audit_id": "EKS_0001",
+  "created_utc": "20260803T163201Z",
+  "repository_branch": "Edarsahub_Desarrollo",
+  "repository_commit": "68b65124cb00198c90447120d551716bd73a42da",
+  "storage_root": "/data/db/EDARSAHUB-AUDIT-EVIDENCE",
+  "storage_class": "VOLUMEN_LOCAL_MONTADO",
+  "external_backup_confirmed": false,
+  "classification": "EVIDENCIA_GENERADA_FUERA_DE_GIT",
+  "contains_confirmed_secrets": false,
+  "files_count": 8,
+  "total_bytes": 15153704,
+  "files": [
+    {
+      "path": "evidencia/EKS_0001_BRECHAS_DE_FUENTES.md",
+      "bytes": 911,
+      "sha256": "926e18d4915ac69849252cd5fe37b99442e068c2952b8a812d1638290abea96b"
+    },
+    {
+      "path": "evidencia/EKS_0001_COLA_CONSOLIDACION.md",
+      "bytes": 990,
+      "sha256": "365ab627914bfc0786344aa04c62108b4c4511fa105f87759f6063c166aa23f5"
+    },
+    {
+      "path": "evidencia/EKS_0001_DUPLICADOS_CANDIDATOS.md",
+      "bytes": 1758450,
+      "sha256": "2c89b6e62639bfcb6ccbc414197d15c32ae9f8763845f9cba01b9a5543939fc5"
+    },
+    {
+      "path": "evidencia/EKS_0001_FUENTES_CURADAS.json",
+      "bytes": 1748837,
+      "sha256": "06f04041ef86d9ad737f68ca6ca47d3580b74d3f946d281c6597e45caac74a4a"
+    },
+    {
+      "path": "evidencia/EKS_0001_FUENTES_CURADAS.md",
+      "bytes": 474379,
+      "sha256": "ad780df8ec66ca6ec307911670c3d9f6939062c9792bb043ab10a2d7ca125dfa"
+    },
+    {
+      "path": "evidencia/EKS_0001_INVENTARIO.json",
+      "bytes": 11090980,
+      "sha256": "a00c15cd154161906e954f35c0df02dcdc7681b508378a5cf12fee79dc42f3f6"
+    },
+    {
+      "path": "evidencia/EKS_0001_INVENTARIO_MAESTRO.md",
+      "bytes": 77601,
+      "sha256": "1c9f6e26d09e960c1edbcdf6e6159275eab0eb29f57a84714baa5a3acdd2c9be"
+    },
+    {
+      "path": "evidencia/EKS_0001_MATRIZ_CONSOLIDACION.md",
+      "bytes": 1556,
+      "sha256": "2d7a8e542c4709ee99f545996d061c6b8d057a87913c906b6122d07afa2952a7"
+    }
+  ]
+}

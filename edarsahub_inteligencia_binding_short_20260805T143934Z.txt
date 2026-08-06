@@ -1,0 +1,120 @@
+===== 1. CONTROL =====
+RAMA=Edarsahub_Desarrollo
+HEAD=6f82b39fead3a73667241e88e580f0ea8faf51e8
+REMOTE_HEAD=6f82b39fead3a73667241e88e580f0ea8faf51e8
+CONTROL=PASS
+
+===== 2. BINDING EXACTO =====
+STATUS_SYMBOLS=InteligenciaComercialStatusJob,create_inteligencia_comercial_status_job
+SYNC_SYMBOLS=_syncpos_literal,actualizar_syncpos_config_estado,audit_syncpos_canonical_configs,detectar_faltantes_syncpos,get_syncpos_config,insert_into_sync_sales,job_inteligencia_comercial_sync,registrar_syncpos_bitacora,should_run_syncpos_now
+STATUS_BINDING_HITS=0
+SYNC_BINDING_HITS=2
+JOB_KEY_HITS=12
+SYNC_HIT=49|job_inteligencia_comercial_sync|from .jobs.inteligencia_comercial_sync_job import job_inteligencia_comercial_sync
+SYNC_HIT=915|job_inteligencia_comercial_sync|result = job_inteligencia_comercial_sync(dias_atras=1)
+JOB_KEY_HIT=49|from .jobs.inteligencia_comercial_sync_job import job_inteligencia_comercial_sync
+JOB_KEY_HIT=889|async def _run_inteligencia_comercial_sync_job(self):
+JOB_KEY_HIT=895|job_config = self.config.jobs.get("inteligencia_comercial_sync")
+JOB_KEY_HIT=901|lock = lock_manager.get_lock("inteligencia_comercial_sync")
+JOB_KEY_HIT=909|log_entry = await job_logger.start_execution("inteligencia_comercial_sync")
+JOB_KEY_HIT=915|result = job_inteligencia_comercial_sync(dias_atras=1)
+JOB_KEY_HIT=1383|inteligencia_sync_config = self.config.jobs.get("inteligencia_comercial_sync")
+JOB_KEY_HIT=1392|self._run_inteligencia_comercial_sync_job,
+JOB_KEY_HIT=1394|id="inteligencia_comercial_sync",
+JOB_KEY_HIT=1400|self._jobs["inteligencia_comercial_sync"] = inteligencia_sync_config
+JOB_KEY_HIT=1573|elif job_id == "inteligencia_comercial_sync":
+JOB_KEY_HIT=1574|await self._run_inteligencia_comercial_sync_job()
+DECISION=SYNC_JOB_ES_BINDING_RUNTIME_DEMOSTRADO
+CONFIG_JOB_KEY=PASS
+AUDITORIA_BINDING_CORTA=PASS
+
+===== 3. MOSTRAR BLOQUE RUNTIME REAL =====
+                success_count=result.get("total_inserted", 0) + result.get("total_updated", 0),
+                message=f"Obtenidos: {result.get('total_fetched', 0)}, "
+                        f"Insertados: {result.get('total_inserted', 0)}, "
+                        f"Actualizados: {result.get('total_updated', 0)}",
+                extra_metadata={"result_summary": result}
+            )
+            
+            logger.info(f"[VTIGER_SYNC] Completado en {result.get('duracion_ms', 0)}ms")
+        except Exception as e:
+            logger.error(f"[VTIGER_SYNC] Error: {e}")
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+        finally:
+            await lock.release()
+    
+    async def _run_inteligencia_comercial_sync_job(self):
+        """
+        Wrapper async para sincronización de Inteligencia Comercial.
+        Extrae ventas de SoftRestaurant/MPRO y las consolida en EDARSAHUB.
+        Programado: Cada hora (cron: 0 * * * *)
+        """
+        job_config = self.config.jobs.get("inteligencia_comercial_sync")
+        if not job_config or not job_config.enabled:
+            logger.debug("[INTELIGENCIA_SYNC] Deshabilitado por configuración")
+            return
+        
+        lock_manager = get_lock_manager(self.db)
+        lock = lock_manager.get_lock("inteligencia_comercial_sync")
+        lock_acquired = await lock.acquire(timeout_seconds=600)
+        
+        if not lock_acquired:
+            logger.warning("[INTELIGENCIA_SYNC] No se pudo obtener lock - ya hay una ejecución en progreso")
+            return
+        
+        job_logger = get_job_logger()
+        log_entry = await job_logger.start_execution("inteligencia_comercial_sync")
+        
+        try:
+            logger.info("[INTELIGENCIA_SYNC] Iniciando sincronización de ventas desde POS")
+            
+            # Ejecutar el job de sincronización
+            result = job_inteligencia_comercial_sync(dias_atras=1)
+            
+            status = "completed" if not result.get("errores") else "partial"
+            
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status=status,
+                processed_count=result.get("registros_extraidos", 0),
+                success_count=result.get("registros_insertados", 0),
+                message=f"Unidades: {result.get('unidades_procesadas', 0)}, "
+                        f"Extraídos: {result.get('registros_extraidos', 0)}, "
+                        f"Insertados: {result.get('registros_insertados', 0)}, "
+                        f"KPIs: {result.get('kpis_actualizados', 0)}",
+                extra_metadata={"result_summary": result}
+            )
+            
+
+===== 4. MOSTRAR REGISTRO CONFIG =====
+309-                interval_seconds=86400,
+310-                batch_size=2,
+311-                timeout_seconds=1800
+312-            ),
+313:            "inteligencia_comercial_sync": JobConfig(
+314:                job_id="inteligencia_comercial_sync",
+315-                job_name="Inteligencia Comercial - Sync Sales",
+316-                description="Extrae ventas de SoftRestaurant/MPRO y las consolida en Sync_Sales y KPIs diarios (cada hora)",
+317-                enabled=os.environ.get("SCHEDULER_INTELIGENCIA_SYNC_ENABLED", "true").lower() == "true",
+318-                cron_expression="0 * * * *",  # Cada hora en el minuto 0
+319-                interval_seconds=3600,  # Fallback: 1 hora
+320-                batch_size=500,
+321-                timeout_seconds=600  # 10 minutos max
+322-            )
+323-        }
+324-        
+325-        return cls(
+326-            enabled=enabled,
+
+===== 5. INTEGRIDAD FINAL =====
+RESULTADO=PASS
+AUDITORIA_BINDING_CORTA=PASS
+ARCHIVOS_AUDITADOS=4
+RECORRIDO_REPOSITORIO_COMPLETO=NO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+REPORT=/app/edarsahub_inteligencia_binding_short_20260805T143934Z.txt
+SIGUIENTE_PASO=RESOLVER_STATUS_JOB_VS_SYNC_JOB_CON_EVIDENCIA_DEL_BLOQUE_875_930

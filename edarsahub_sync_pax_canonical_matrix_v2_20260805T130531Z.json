@@ -1,0 +1,98 @@
+{
+  "source_json": "/app/edarsahub_sync_pax_endpoint_contracts_20260805T130141Z.json",
+  "canonical_table": "dbo.Comercial_KPIs_Diarios_v2",
+  "canonical_column_count": 34,
+  "functions": [
+    {
+      "file": "backend/modules/comercial/inteligencia_comercial_routes.py",
+      "function": "get_pax_inteligencia",
+      "routes": [
+        "router.get(\"/pax\")"
+      ],
+      "required_columns": [],
+      "mappings": [],
+      "missing_columns": [],
+      "ready_for_direct_migration": true
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "function": "comercial_reporte_pax",
+      "routes": [
+        "router.get(\"/comercial/reporte-pax/{server_id}\")"
+      ],
+      "required_columns": [
+        "fechaoperacion"
+      ],
+      "mappings": [
+        {
+          "sync": "fechaoperacion",
+          "canonical": "fecha_operacion",
+          "type": "date",
+          "mode": "ALIAS_OR_CALCULATED"
+        }
+      ],
+      "missing_columns": [],
+      "ready_for_direct_migration": true
+    },
+    {
+      "file": "backend/modules/inteligencia_comercial/routes.py",
+      "function": "get_analisis_pax",
+      "routes": [
+        "router.get(\"/dashboard/pax\")"
+      ],
+      "required_columns": [
+        "consumopromediopax",
+        "diasemana",
+        "numerocomensales",
+        "tiempomesa",
+        "turno",
+        "ventacuenta"
+      ],
+      "mappings": [
+        {
+          "sync": "consumopromediopax",
+          "canonical": "ticket_promedio",
+          "type": "decimal",
+          "mode": "ALIAS_OR_CALCULATED"
+        },
+        {
+          "sync": "diasemana",
+          "canonical": "fecha_operacion",
+          "type": "date",
+          "mode": "ALIAS_OR_CALCULATED"
+        },
+        {
+          "sync": "numerocomensales",
+          "canonical": "pax_total",
+          "type": "int",
+          "mode": "ALIAS_OR_CALCULATED"
+        },
+        {
+          "sync": "ventacuenta",
+          "canonical": "ventas_sin_propina",
+          "type": "decimal",
+          "mode": "ALIAS_OR_CALCULATED"
+        }
+      ],
+      "missing_columns": [
+        "tiempomesa",
+        "turno"
+      ],
+      "ready_for_direct_migration": false
+    },
+    {
+      "file": "backend/core/scheduler/jobs/inteligencia_comercial_status_job.py",
+      "function": "execute",
+      "routes": [],
+      "required_columns": [],
+      "mappings": [],
+      "missing_columns": [],
+      "ready_for_direct_migration": true
+    }
+  ],
+  "summary": {
+    "functions": 4,
+    "ready": 3,
+    "not_ready": 1
+  }
+}

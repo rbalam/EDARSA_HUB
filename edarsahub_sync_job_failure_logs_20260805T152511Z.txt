@@ -1,0 +1,18 @@
+252477:/root/.venv/lib/python3.11/site-packages/fastapi/openapi/utils.py:207: UserWarning: Duplicate Operation ID ejecutar_sync_api_crm_integration_conectores__conector_id__sync_post for function ejecutar_sync at /app/backend/modules/crm/integration_routes.py
+257278:/root/.venv/lib/python3.11/site-packages/fastapi/openapi/utils.py:207: UserWarning: Duplicate Operation ID ejecutar_sync_api_crm_integration_conectores__conector_id__sync_post for function ejecutar_sync at /app/backend/modules/crm/integration_routes.py
+266822:ERROR:root:[TICKET_PERFECTO] Error SQL: name 'get_edarsahub_pymssql_connection' is not defined
+267017:ERROR:root:[TICKET_PERFECTO] Error SQL: name 'get_edarsahub_pymssql_connection' is not defined
+267018:ERROR:root:[TICKET_PERFECTO] Error SQL: name 'get_edarsahub_pymssql_connection' is not defined
+267019:ERROR:root:[TICKET_PERFECTO] Error SQL: name 'get_edarsahub_pymssql_connection' is not defined
+267408:ERROR:root:[TICKET_PERFECTO] Error SQL: name 'get_edarsahub_pymssql_connection' is not defined
+267461:ERROR:root:[TICKET_PERFECTO] Error SQL: name 'get_edarsahub_pymssql_connection' is not defined
+301133:ERROR:root:[TICKET_PERFECTO] Error SQL: name 'get_edarsahub_pymssql_connection' is not defined
+252477:/root/.venv/lib/python3.11/site-packages/fastapi/openapi/utils.py:207: UserWarning: Duplicate Operation ID ejecutar_sync_api_crm_integration_conectores__conector_id__sync_post for function ejecutar_sync at /app/backend/modules/crm/integration_routes.py
+257278:/root/.venv/lib/python3.11/site-packages/fastapi/openapi/utils.py:207: UserWarning: Duplicate Operation ID ejecutar_sync_api_crm_integration_conectores__conector_id__sync_post for function ejecutar_sync at /app/backend/modules/crm/integration_routes.py
+266822:ERROR:root:[TICKET_PERFECTO] Error SQL: name 'get_edarsahub_pymssql_connection' is not defined
+267017:ERROR:root:[TICKET_PERFECTO] Error SQL: name 'get_edarsahub_pymssql_connection' is not defined
+267018:ERROR:root:[TICKET_PERFECTO] Error SQL: name 'get_edarsahub_pymssql_connection' is not defined
+267019:ERROR:root:[TICKET_PERFECTO] Error SQL: name 'get_edarsahub_pymssql_connection' is not defined
+267408:ERROR:root:[TICKET_PERFECTO] Error SQL: name 'get_edarsahub_pymssql_connection' is not defined
+267461:ERROR:root:[TICKET_PERFECTO] Error SQL: name 'get_edarsahub_pymssql_connection' is not defined
+301133:ERROR:root:[TICKET_PERFECTO] Error SQL: name 'get_edarsahub_pymssql_connection' is not defined

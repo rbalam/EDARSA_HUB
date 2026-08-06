@@ -1,0 +1,1236 @@
+{
+  "captured_at_utc": "2026-08-05T11:24:26.392039+00:00",
+  "mode": "SELECT_AND_METADATA_ONLY",
+  "database_name": "EDARSAHUB",
+  "fields": {
+    "dia_semana": [
+      {
+        "object": "dbo.Sistema_HorariosServicioUnidad",
+        "total_rows": 35,
+        "date_column": null,
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "dia_semana",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": false
+          }
+        ]
+      }
+    ],
+    "mesa_numero": [],
+    "mesas": [],
+    "mesas_atendidas": [],
+    "pax": [
+      {
+        "object": "Comercial.v_TableroComercialConsolidado",
+        "total_rows": 5,
+        "date_column": null,
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "PaxTotal",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "object": "dbo.Comercial_Inteligencia_VentasDetalleProducto",
+        "total_rows": 1249822,
+        "date_column": "fecha_operacion",
+        "min_date": "2024-06-01",
+        "max_date": "2026-07-07",
+        "columns": [
+          {
+            "name": "pax",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "object": "dbo.Comercial_Inteligencia_VW_KPIsEjecutivos",
+        "total_rows": 9624,
+        "date_column": "fecha_operacion",
+        "min_date": "2016-06-14",
+        "max_date": "2026-08-05",
+        "columns": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": false
+          }
+        ]
+      },
+      {
+        "object": "dbo.Comercial_KPIs_Diarios_v2",
+        "total_rows": 9660,
+        "date_column": "fecha_operacion",
+        "min_date": "2016-06-14",
+        "max_date": "2026-08-05",
+        "columns": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "object": "dbo.Comercial_KPIs_Mensuales_v2",
+        "total_rows": 0,
+        "date_column": null,
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "object": "dbo.Fact_Ventas_Consolidadas",
+        "total_rows": 3322,
+        "date_column": "Fecha",
+        "min_date": "2026-05-03",
+        "max_date": "2026-06-01",
+        "columns": [
+          {
+            "name": "Pax",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "object": "dbo.View_Inteligencia_Comercial",
+        "total_rows": null,
+        "date_column": null,
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "Pax",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "object": "dbo.vw_Comercial_KPIs_Diarios_v2_Canonica",
+        "total_rows": null,
+        "date_column": "fecha_operacion",
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "PAX",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "object": "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime",
+        "total_rows": null,
+        "date_column": "fecha_operacion",
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "object": "dbo.vw_Comercial_KPIs_Mensuales_v2_Canonica",
+        "total_rows": null,
+        "date_column": null,
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "PAX",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "object": "dbo.vw_Comercial_KPIs_Mensuales_v2_Runtime",
+        "total_rows": null,
+        "date_column": null,
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      }
+    ],
+    "ticket_perfecto_objetivo": [],
+    "tiempo_promedio_mesa": [],
+    "total_comensales": [
+      {
+        "object": "Comercial.v_TableroComercialConsolidado",
+        "total_rows": 5,
+        "date_column": null,
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "PaxTotal",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "object": "dbo.Comercial_Inteligencia_VW_KPIsEjecutivos",
+        "total_rows": 9624,
+        "date_column": "fecha_operacion",
+        "min_date": "2016-06-14",
+        "max_date": "2026-08-05",
+        "columns": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": false
+          }
+        ]
+      },
+      {
+        "object": "dbo.Comercial_KPIs_Diarios_v2",
+        "total_rows": 9660,
+        "date_column": "fecha_operacion",
+        "min_date": "2016-06-14",
+        "max_date": "2026-08-05",
+        "columns": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "object": "dbo.Comercial_KPIs_Mensuales_v2",
+        "total_rows": 0,
+        "date_column": null,
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "object": "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime",
+        "total_rows": null,
+        "date_column": "fecha_operacion",
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "object": "dbo.vw_Comercial_KPIs_Mensuales_v2_Runtime",
+        "total_rows": null,
+        "date_column": null,
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      }
+    ],
+    "turno": [
+      {
+        "object": "dbo.View_Inteligencia_Comercial",
+        "total_rows": null,
+        "date_column": null,
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "FranjaHoraria",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      }
+    ],
+    "venta_meta": [
+      {
+        "object": "dbo.Comercial_Metas",
+        "total_rows": 0,
+        "date_column": null,
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "MetaVentas",
+            "data_type": "decimal",
+            "max_length": 9,
+            "precision": 18,
+            "scale": 2,
+            "nullable": true
+          }
+        ]
+      }
+    ],
+    "venta_total": [
+      {
+        "object": "dbo.Comercial_Inteligencia_VW_KPIsEjecutivos",
+        "total_rows": 9624,
+        "date_column": "fecha_operacion",
+        "min_date": "2016-06-14",
+        "max_date": "2026-08-05",
+        "columns": [
+          {
+            "name": "ventas_total",
+            "data_type": "decimal",
+            "max_length": 9,
+            "precision": 18,
+            "scale": 2,
+            "nullable": false
+          }
+        ]
+      },
+      {
+        "object": "dbo.Comercial_KPIs_Diarios_v2",
+        "total_rows": 9660,
+        "date_column": "fecha_operacion",
+        "min_date": "2016-06-14",
+        "max_date": "2026-08-05",
+        "columns": [
+          {
+            "name": "ventas_total",
+            "data_type": "decimal",
+            "max_length": 9,
+            "precision": 18,
+            "scale": 2,
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "object": "dbo.Comercial_KPIs_Mensuales_v2",
+        "total_rows": 0,
+        "date_column": null,
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "ventas_total",
+            "data_type": "decimal",
+            "max_length": 9,
+            "precision": 18,
+            "scale": 2,
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "object": "dbo.Comercial_Ventas_Dia_Abiertas_v2",
+        "total_rows": 5,
+        "date_column": "fecha_operacion",
+        "min_date": "2026-08-04",
+        "max_date": "2026-08-04",
+        "columns": [
+          {
+            "name": "ventas_cerradas_dia",
+            "data_type": "decimal",
+            "max_length": 9,
+            "precision": 18,
+            "scale": 2,
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "object": "dbo.Finanzas_CortesCaja",
+        "total_rows": 4184,
+        "date_column": null,
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "TotalVenta",
+            "data_type": "decimal",
+            "max_length": 9,
+            "precision": 18,
+            "scale": 2,
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "object": "dbo.Finanzas_CuadresZ",
+        "total_rows": 0,
+        "date_column": "FechaOperacion",
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "TotalVenta",
+            "data_type": "decimal",
+            "max_length": 9,
+            "precision": 18,
+            "scale": 2,
+            "nullable": false
+          }
+        ]
+      },
+      {
+        "object": "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime",
+        "total_rows": null,
+        "date_column": "fecha_operacion",
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "ventas_total",
+            "data_type": "decimal",
+            "max_length": 9,
+            "precision": 18,
+            "scale": 2,
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "object": "dbo.vw_Comercial_KPIs_Mensuales_v2_Runtime",
+        "total_rows": null,
+        "date_column": null,
+        "min_date": null,
+        "max_date": null,
+        "columns": [
+          {
+            "name": "ventas_total",
+            "data_type": "decimal",
+            "max_length": 9,
+            "precision": 18,
+            "scale": 2,
+            "nullable": true
+          }
+        ]
+      }
+    ]
+  },
+  "objects": {
+    "Comercial.v_TableroComercialConsolidado": {
+      "type": "VIEW",
+      "matching_fields": {
+        "pax": [
+          {
+            "name": "PaxTotal",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ],
+        "total_comensales": [
+          {
+            "name": "PaxTotal",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      "total_rows": 5,
+      "count_error": null,
+      "date_column": null,
+      "min_date": null,
+      "max_date": null
+    },
+    "dbo.Comercial_Inteligencia_VentasDetalleProducto": {
+      "type": "USER_TABLE",
+      "matching_fields": {
+        "pax": [
+          {
+            "name": "pax",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      "total_rows": 1249822,
+      "count_error": null,
+      "date_column": "fecha_operacion",
+      "min_date": "2024-06-01",
+      "max_date": "2026-07-07"
+    },
+    "dbo.Comercial_Inteligencia_VW_KPIsEjecutivos": {
+      "type": "VIEW",
+      "matching_fields": {
+        "venta_total": [
+          {
+            "name": "ventas_total",
+            "data_type": "decimal",
+            "max_length": 9,
+            "precision": 18,
+            "scale": 2,
+            "nullable": false
+          }
+        ],
+        "pax": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": false
+          }
+        ],
+        "total_comensales": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": false
+          }
+        ]
+      },
+      "total_rows": 9624,
+      "count_error": null,
+      "date_column": "fecha_operacion",
+      "min_date": "2016-06-14",
+      "max_date": "2026-08-05"
+    },
+    "dbo.Comercial_KPIs_Diarios_v2": {
+      "type": "USER_TABLE",
+      "matching_fields": {
+        "venta_total": [
+          {
+            "name": "ventas_total",
+            "data_type": "decimal",
+            "max_length": 9,
+            "precision": 18,
+            "scale": 2,
+            "nullable": true
+          }
+        ],
+        "pax": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ],
+        "total_comensales": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      "total_rows": 9660,
+      "count_error": null,
+      "date_column": "fecha_operacion",
+      "min_date": "2016-06-14",
+      "max_date": "2026-08-05"
+    },
+    "dbo.Comercial_KPIs_Mensuales_v2": {
+      "type": "USER_TABLE",
+      "matching_fields": {
+        "venta_total": [
+          {
+            "name": "ventas_total",
+            "data_type": "decimal",
+            "max_length": 9,
+            "precision": 18,
+            "scale": 2,
+            "nullable": true
+          }
+        ],
+        "pax": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ],
+        "total_comensales": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      "total_rows": 0,
+      "count_error": null,
+      "date_column": null,
+      "min_date": null,
+      "max_date": null
+    },
+    "dbo.Comercial_Metas": {
+      "type": "USER_TABLE",
+      "matching_fields": {
+        "venta_meta": [
+          {
+            "name": "MetaVentas",
+            "data_type": "decimal",
+            "max_length": 9,
+            "precision": 18,
+            "scale": 2,
+            "nullable": true
+          }
+        ]
+      },
+      "total_rows": 0,
+      "count_error": null,
+      "date_column": null,
+      "min_date": null,
+      "max_date": null
+    },
+    "dbo.Comercial_Ventas_Dia_Abiertas_v2": {
+      "type": "USER_TABLE",
+      "matching_fields": {
+        "venta_total": [
+          {
+            "name": "ventas_cerradas_dia",
+            "data_type": "decimal",
+            "max_length": 9,
+            "precision": 18,
+            "scale": 2,
+            "nullable": true
+          }
+        ]
+      },
+      "total_rows": 5,
+      "count_error": null,
+      "date_column": "fecha_operacion",
+      "min_date": "2026-08-04",
+      "max_date": "2026-08-04"
+    },
+    "dbo.Fact_Ventas_Consolidadas": {
+      "type": "USER_TABLE",
+      "matching_fields": {
+        "pax": [
+          {
+            "name": "Pax",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      "total_rows": 3322,
+      "count_error": null,
+      "date_column": "Fecha",
+      "min_date": "2026-05-03",
+      "max_date": "2026-06-01"
+    },
+    "dbo.Finanzas_CortesCaja": {
+      "type": "USER_TABLE",
+      "matching_fields": {
+        "venta_total": [
+          {
+            "name": "TotalVenta",
+            "data_type": "decimal",
+            "max_length": 9,
+            "precision": 18,
+            "scale": 2,
+            "nullable": true
+          }
+        ]
+      },
+      "total_rows": 4184,
+      "count_error": null,
+      "date_column": null,
+      "min_date": null,
+      "max_date": null
+    },
+    "dbo.Finanzas_CuadresZ": {
+      "type": "USER_TABLE",
+      "matching_fields": {
+        "venta_total": [
+          {
+            "name": "TotalVenta",
+            "data_type": "decimal",
+            "max_length": 9,
+            "precision": 18,
+            "scale": 2,
+            "nullable": false
+          }
+        ]
+      },
+      "total_rows": 0,
+      "count_error": null,
+      "date_column": "FechaOperacion",
+      "min_date": null,
+      "max_date": null
+    },
+    "dbo.Sistema_HorariosServicioUnidad": {
+      "type": "USER_TABLE",
+      "matching_fields": {
+        "dia_semana": [
+          {
+            "name": "dia_semana",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": false
+          }
+        ]
+      },
+      "total_rows": 35,
+      "count_error": null,
+      "date_column": null,
+      "min_date": null,
+      "max_date": null
+    },
+    "dbo.View_Inteligencia_Comercial": {
+      "type": "VIEW",
+      "matching_fields": {
+        "pax": [
+          {
+            "name": "Pax",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ],
+        "turno": [
+          {
+            "name": "FranjaHoraria",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      "total_rows": null,
+      "count_error": "OperationalError",
+      "date_column": null,
+      "min_date": null,
+      "max_date": null
+    },
+    "dbo.vw_Comercial_KPIs_Diarios_v2_Canonica": {
+      "type": "VIEW",
+      "matching_fields": {
+        "pax": [
+          {
+            "name": "PAX",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      "total_rows": null,
+      "count_error": "InterfaceError",
+      "date_column": "fecha_operacion",
+      "min_date": null,
+      "max_date": null
+    },
+    "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime": {
+      "type": "VIEW",
+      "matching_fields": {
+        "venta_total": [
+          {
+            "name": "ventas_total",
+            "data_type": "decimal",
+            "max_length": 9,
+            "precision": 18,
+            "scale": 2,
+            "nullable": true
+          }
+        ],
+        "pax": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ],
+        "total_comensales": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      "total_rows": null,
+      "count_error": "InterfaceError",
+      "date_column": "fecha_operacion",
+      "min_date": null,
+      "max_date": null
+    },
+    "dbo.vw_Comercial_KPIs_Mensuales_v2_Canonica": {
+      "type": "VIEW",
+      "matching_fields": {
+        "pax": [
+          {
+            "name": "PAX",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      "total_rows": null,
+      "count_error": "InterfaceError",
+      "date_column": null,
+      "min_date": null,
+      "max_date": null
+    },
+    "dbo.vw_Comercial_KPIs_Mensuales_v2_Runtime": {
+      "type": "VIEW",
+      "matching_fields": {
+        "venta_total": [
+          {
+            "name": "ventas_total",
+            "data_type": "decimal",
+            "max_length": 9,
+            "precision": 18,
+            "scale": 2,
+            "nullable": true
+          }
+        ],
+        "pax": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ],
+        "total_comensales": [
+          {
+            "name": "pax_total",
+            "data_type": "int",
+            "max_length": 4,
+            "precision": 10,
+            "scale": 0,
+            "nullable": true
+          }
+        ]
+      },
+      "total_rows": null,
+      "count_error": "InterfaceError",
+      "date_column": null,
+      "min_date": null,
+      "max_date": null
+    }
+  },
+  "discarded_objects": [
+    {
+      "object": "Comercial.TableroEjecutivoCache",
+      "fields": [
+        "pax",
+        "total_comensales"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.Comercial_KPIs_Diarios_v2_backup_migracion_codigos_20260513_0558",
+      "fields": [
+        "pax",
+        "total_comensales",
+        "venta_total"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.Comercial_KPIs_Diarios_v2_BAK_BACKFILL_20260705_211009",
+      "fields": [
+        "pax",
+        "total_comensales",
+        "venta_total"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.Comercial_KPIs_Diarios_v2_BAK_MPRO_20260705_204245",
+      "fields": [
+        "pax",
+        "total_comensales",
+        "venta_total"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.Comercial_KPIs_Diarios_v2_BAK_MPRO_20260705_204439",
+      "fields": [
+        "pax",
+        "total_comensales",
+        "venta_total"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.Comercial_KPIs_Diarios_v2_BAK_SOFT_20260705_205041",
+      "fields": [
+        "pax",
+        "total_comensales",
+        "venta_total"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.Comercial_KPIs_Historico",
+      "fields": [
+        "pax",
+        "total_comensales",
+        "venta_total"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.Comercial_Ventas_Dia_Abiertas_v2_Backup_FechaOperacion_20260521",
+      "fields": [
+        "venta_total"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.Comercial_Ventas_Dia_Abiertas_v2_backup_migracion_codigos_20260513_0558",
+      "fields": [
+        "venta_total"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.Finanzas_KPIs_Historico",
+      "fields": [
+        "venta_total"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.Operativo_AuditoriasProgramadas",
+      "fields": [
+        "dia_semana"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.Sync_Mesas",
+      "fields": [
+        "mesa_numero",
+        "pax",
+        "total_comensales",
+        "venta_total"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.Sync_Movimientos_Detalle",
+      "fields": [
+        "mesa_numero"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.Sync_PAX_Detalle",
+      "fields": [
+        "dia_semana",
+        "mesa_numero",
+        "tiempo_promedio_mesa",
+        "turno"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.Sync_Sales",
+      "fields": [
+        "pax"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.Sync_Ticket_Perfecto",
+      "fields": [
+        "pax",
+        "ticket_perfecto_objetivo",
+        "tiempo_promedio_mesa",
+        "total_comensales",
+        "venta_total"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.Sync_Ventas_Historicas",
+      "fields": [
+        "venta_total"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.Sync_Ventas_PorDiaSemana",
+      "fields": [
+        "dia_semana"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.View_Sync_Sales_Detalle",
+      "fields": [
+        "pax"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    },
+    {
+      "object": "dbo.Vw_Sync_Sales_Unified",
+      "fields": [
+        "pax"
+      ],
+      "reason": "FUENTE_PARALELA_BACKUP_CACHE_HISTORICA_O_SYNC"
+    }
+  ],
+  "summary": {
+    "fields": {
+      "dia_semana": {
+        "status": "FUENTE_PRODUCTIVA_POBLADA_DETECTADA",
+        "candidate_objects": [
+          "dbo.Sistema_HorariosServicioUnidad"
+        ],
+        "populated_objects": [
+          "dbo.Sistema_HorariosServicioUnidad"
+        ]
+      },
+      "mesa_numero": {
+        "status": "SIN_FUENTE_PRODUCTIVA_DEMOSTRADA",
+        "candidate_objects": [],
+        "populated_objects": []
+      },
+      "mesas": {
+        "status": "SIN_FUENTE_PRODUCTIVA_DEMOSTRADA",
+        "candidate_objects": [],
+        "populated_objects": []
+      },
+      "mesas_atendidas": {
+        "status": "SIN_FUENTE_PRODUCTIVA_DEMOSTRADA",
+        "candidate_objects": [],
+        "populated_objects": []
+      },
+      "pax": {
+        "status": "FUENTE_PRODUCTIVA_POBLADA_DETECTADA",
+        "candidate_objects": [
+          "Comercial.v_TableroComercialConsolidado",
+          "dbo.Comercial_Inteligencia_VentasDetalleProducto",
+          "dbo.Comercial_Inteligencia_VW_KPIsEjecutivos",
+          "dbo.Comercial_KPIs_Diarios_v2",
+          "dbo.Comercial_KPIs_Mensuales_v2",
+          "dbo.Fact_Ventas_Consolidadas",
+          "dbo.View_Inteligencia_Comercial",
+          "dbo.vw_Comercial_KPIs_Diarios_v2_Canonica",
+          "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime",
+          "dbo.vw_Comercial_KPIs_Mensuales_v2_Canonica",
+          "dbo.vw_Comercial_KPIs_Mensuales_v2_Runtime"
+        ],
+        "populated_objects": [
+          "Comercial.v_TableroComercialConsolidado",
+          "dbo.Comercial_Inteligencia_VentasDetalleProducto",
+          "dbo.Comercial_Inteligencia_VW_KPIsEjecutivos",
+          "dbo.Comercial_KPIs_Diarios_v2",
+          "dbo.Fact_Ventas_Consolidadas"
+        ]
+      },
+      "ticket_perfecto_objetivo": {
+        "status": "SIN_FUENTE_PRODUCTIVA_DEMOSTRADA",
+        "candidate_objects": [],
+        "populated_objects": []
+      },
+      "tiempo_promedio_mesa": {
+        "status": "SIN_FUENTE_PRODUCTIVA_DEMOSTRADA",
+        "candidate_objects": [],
+        "populated_objects": []
+      },
+      "total_comensales": {
+        "status": "FUENTE_PRODUCTIVA_POBLADA_DETECTADA",
+        "candidate_objects": [
+          "Comercial.v_TableroComercialConsolidado",
+          "dbo.Comercial_Inteligencia_VW_KPIsEjecutivos",
+          "dbo.Comercial_KPIs_Diarios_v2",
+          "dbo.Comercial_KPIs_Mensuales_v2",
+          "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime",
+          "dbo.vw_Comercial_KPIs_Mensuales_v2_Runtime"
+        ],
+        "populated_objects": [
+          "Comercial.v_TableroComercialConsolidado",
+          "dbo.Comercial_Inteligencia_VW_KPIsEjecutivos",
+          "dbo.Comercial_KPIs_Diarios_v2"
+        ]
+      },
+      "turno": {
+        "status": "ESTRUCTURA_PRODUCTIVA_VACIA",
+        "candidate_objects": [
+          "dbo.View_Inteligencia_Comercial"
+        ],
+        "populated_objects": []
+      },
+      "venta_meta": {
+        "status": "ESTRUCTURA_PRODUCTIVA_VACIA",
+        "candidate_objects": [
+          "dbo.Comercial_Metas"
+        ],
+        "populated_objects": []
+      },
+      "venta_total": {
+        "status": "FUENTE_PRODUCTIVA_POBLADA_DETECTADA",
+        "candidate_objects": [
+          "dbo.Comercial_Inteligencia_VW_KPIsEjecutivos",
+          "dbo.Comercial_KPIs_Diarios_v2",
+          "dbo.Comercial_KPIs_Mensuales_v2",
+          "dbo.Comercial_Ventas_Dia_Abiertas_v2",
+          "dbo.Finanzas_CortesCaja",
+          "dbo.Finanzas_CuadresZ",
+          "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime",
+          "dbo.vw_Comercial_KPIs_Mensuales_v2_Runtime"
+        ],
+        "populated_objects": [
+          "dbo.Comercial_Inteligencia_VW_KPIsEjecutivos",
+          "dbo.Comercial_KPIs_Diarios_v2",
+          "dbo.Comercial_Ventas_Dia_Abiertas_v2",
+          "dbo.Finanzas_CortesCaja"
+        ]
+      }
+    },
+    "valid_object_count": 16,
+    "discarded_object_count": 20,
+    "fields_with_populated_source": [
+      "dia_semana",
+      "pax",
+      "total_comensales",
+      "venta_total"
+    ],
+    "fields_with_empty_structure": [
+      "turno",
+      "venta_meta"
+    ],
+    "fields_without_source": [
+      "mesa_numero",
+      "mesas",
+      "mesas_atendidas",
+      "ticket_perfecto_objetivo",
+      "tiempo_promedio_mesa"
+    ]
+  }
+}

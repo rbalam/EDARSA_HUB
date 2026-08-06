@@ -1,0 +1,159 @@
+===== 1. CONTROL =====
+RAMA=Edarsahub_Desarrollo
+HEAD=3dfba587c0b20a0a23537d12f8258dc0076206b4
+STAGING_ANTES:
+VACIO
+CONTROL=OK
+
+===== 2. AUDITORIA DE CODIGO =====
+CODE_DETAIL=/var/tmp/edarsahub_capacity_reuse_audit_20260805T031737Z/code_references_full.txt
+REFERENCIAS_SYNC_MESAS=164
+REFERENCIAS_TURNOS=122
+REFERENCIAS_CAPACIDAD=289
+
+TOP_REFERENCIAS:
+backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py:188:# - /comercial/mesas/{server_id} - Requiere: Sync_Mesas (no existe)
+backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py:2883:    Consulta tabla Sync_Mesas en EDARSAHUB.
+backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py:2917:                SELECT * FROM Sync_Mesas
+backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py:2923:                SELECT * FROM Sync_Mesas
+backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py:2974:            source_message=f"SQL-First: {len(mesas)} mesas desde Sync_Mesas",
+backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_endpoints_job.py:9:- Sync_Mesas
+backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_endpoints_job.py:422:                            IF NOT EXISTS (SELECT 1 FROM Sync_Mesas 
+backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_endpoints_job.py:425:                                INSERT INTO Sync_Mesas
+backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py:188:# - /comercial/mesas/{server_id} - Requiere: Sync_Mesas (no existe)
+backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py:2883:    Consulta tabla Sync_Mesas en EDARSAHUB.
+backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py:2917:                SELECT * FROM Sync_Mesas
+backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py:2923:                SELECT * FROM Sync_Mesas
+backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py:2974:            source_message=f"SQL-First: {len(mesas)} mesas desde Sync_Mesas",
+backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_endpoints_job.py:9:- Sync_Mesas
+backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_endpoints_job.py:422:                            IF NOT EXISTS (SELECT 1 FROM Sync_Mesas 
+backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_endpoints_job.py:425:                                INSERT INTO Sync_Mesas
+backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py:188:# - /comercial/mesas/{server_id} - Requiere: Sync_Mesas (no existe)
+backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py:2883:    Consulta tabla Sync_Mesas en EDARSAHUB.
+backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py:2917:                SELECT * FROM Sync_Mesas
+backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py:2923:                SELECT * FROM Sync_Mesas
+backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py:2974:            source_message=f"SQL-First: {len(mesas)} mesas desde Sync_Mesas",
+backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py:188:# - /comercial/mesas/{server_id} - Requiere: Sync_Mesas (no existe)
+backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py:2883:    Consulta tabla Sync_Mesas en EDARSAHUB.
+backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py:2917:                SELECT * FROM Sync_Mesas
+backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py:2923:                SELECT * FROM Sync_Mesas
+backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py:2974:            source_message=f"SQL-First: {len(mesas)} mesas desde Sync_Mesas",
+backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py:188:# - /comercial/mesas/{server_id} - Requiere: Sync_Mesas (no existe)
+backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py:2883:    Consulta tabla Sync_Mesas en EDARSAHUB.
+backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py:2917:                SELECT * FROM Sync_Mesas
+backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py:2923:                SELECT * FROM Sync_Mesas
+backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py:2974:            source_message=f"SQL-First: {len(mesas)} mesas desde Sync_Mesas",
+backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py:188:# - /comercial/mesas/{server_id} - Requiere: Sync_Mesas (no existe)
+backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py:2883:    Consulta tabla Sync_Mesas en EDARSAHUB.
+backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py:2917:                SELECT * FROM Sync_Mesas
+backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py:2923:                SELECT * FROM Sync_Mesas
+backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py:2974:            source_message=f"SQL-First: {len(mesas)} mesas desde Sync_Mesas",
+backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py:188:# - /comercial/mesas/{server_id} - Requiere: Sync_Mesas (no existe)
+backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py:2883:    Consulta tabla Sync_Mesas en EDARSAHUB.
+backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py:2917:                SELECT * FROM Sync_Mesas
+backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py:2923:                SELECT * FROM Sync_Mesas
+backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py:2974:            source_message=f"SQL-First: {len(mesas)} mesas desde Sync_Mesas",
+backend/modules/comercial/routes.py.bak_20260607_043255:188:# - /comercial/mesas/{server_id} - Requiere: Sync_Mesas (no existe)
+backend/modules/comercial/routes.py.bak_20260607_043255:2863:    Consulta tabla Sync_Mesas en EDARSAHUB.
+backend/modules/comercial/routes.py.bak_20260607_043255:2894:                SELECT * FROM Sync_Mesas
+backend/modules/comercial/routes.py.bak_20260607_043255:2900:                SELECT * FROM Sync_Mesas
+backend/modules/comercial/routes.py.bak_20260607_043255:2951:            source_message=f"SQL-First: {len(mesas)} mesas desde Sync_Mesas",
+backend/modules/comercial/routes.py:187:# - /comercial/mesas/{server_id} - Requiere: Sync_Mesas (no existe)
+backend/modules/comercial/routes.py:2915:    - dbo.Sync_Mesas en EDARSAHUB SQL.
+backend/modules/comercial/routes.py:2980:                    FROM dbo.Sync_Mesas
+backend/modules/comercial/routes.py:2986:                    FROM dbo.Sync_Mesas
+backend/modules/comercial/routes.py:3006:                "source_table": "dbo.Sync_Mesas",
+backend/modules/comercial/routes.py:3007:                "source_message": "Sin datos en dbo.Sync_Mesas para el servidor solicitado",
+backend/modules/comercial/routes.py:3018:                FROM dbo.Sync_Mesas
+backend/modules/comercial/routes.py:3027:                FROM dbo.Sync_Mesas
+backend/modules/comercial/routes.py:3043:                "source_table": "dbo.Sync_Mesas",
+backend/modules/comercial/routes.py:3044:                "source_message": f"Sin mesas sincronizadas en dbo.Sync_Mesas para {fecha_op}",
+backend/modules/comercial/routes.py:3128:            "source_table": "dbo.Sync_Mesas",
+backend/modules/comercial/routes.py:3129:            "source_message": f"{total_mesas} mesas desde dbo.Sync_Mesas",
+backend/modules/comercial/routes.py:3145:        logging.error(f"[MESAS-SQL-CANONICO] Error consultando dbo.Sync_Mesas: {e}")
+backend/modules/comercial/routes.py:3156:            "source_table": "dbo.Sync_Mesas",
+backend/modules/comercial/routes.py:3157:            "source_message": f"Error consultando dbo.Sync_Mesas: {str(e)[:180]}",
+backend/scripts/ddl_sync_comercial_tablas.sql:11:-- 3. Sync_Mesas
+backend/scripts/ddl_sync_comercial_tablas.sql:107:-- 3. Sync_Mesas
+backend/scripts/ddl_sync_comercial_tablas.sql:110:IF OBJECT_ID('dbo.Sync_Mesas', 'U') IS NULL
+backend/scripts/ddl_sync_comercial_tablas.sql:112:    CREATE TABLE dbo.Sync_Mesas (
+backend/scripts/ddl_sync_comercial_tablas.sql:141:    CREATE INDEX IX_Sync_Mesas_ServerSucursal ON dbo.Sync_Mesas (ServerID, SucursalID);
+backend/scripts/ddl_sync_comercial_tablas.sql:142:    CREATE INDEX IX_Sync_Mesas_Fecha ON dbo.Sync_Mesas (FechaOperacion);
+backend/scripts/ddl_sync_comercial_tablas.sql:143:    CREATE INDEX IX_Sync_Mesas_Estado ON dbo.Sync_Mesas (EstadoActual);
+backend/scripts/ddl_sync_comercial_tablas.sql:145:    PRINT 'Tabla Sync_Mesas creada exitosamente';
+backend/scripts/ddl_sync_comercial_tablas.sql:283:    'Sync_Mesas',
+backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql:7642:-- TABLA: [dbo].[Sync_Mesas]
+backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql:7644:CREATE TABLE [dbo].[Sync_Mesas] (
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:10:- Sync_Mesas
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:415:                            IF NOT EXISTS (SELECT 1 FROM Sync_Mesas 
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:418:                                INSERT INTO Sync_Mesas
+docs/audits/auditoria_detallada_comercial_routes_visuales_p0.json:144:        "Sync_Mesas",
+docs/audits/auditoria_detallada_comercial_routes_visuales_p0.csv:7:PERMITIDO_SYNC_BACKFILL_JOB,MANTENER_COMO_SYNC_CONTROLADO,GET,/comercial/mesas/{server_id},comercial_mesas,2869,True,True,False,False,True,False,Comanda;Sucursal;Sync_Mesas;Venta_Encabezado;cheques;modules.comercial.cache_service;turnos,20,"Verificar logs, idempotencia, helper central."
+docs/reports/MIGRACION_ENDPOINTS_COMERCIALES_SQL_FIRST.md:17:| `Sync_Mesas` | ✅ Creada |
+docs/reports/MIGRACION_ENDPOINTS_COMERCIALES_SQL_FIRST.md:45:Sync_Mesas
+docs/reports/FASE_B_P2_B_DDL_COMERCIAL_SQL.md:64:| `/comercial/mesas/{server_id}` | `Sync_Mesas` | DDL Diseñado |
+
+===== 3. PREPARAR SELECT DE ESTRUCTURAS EXISTENTES =====
+SQL_FILE=/var/tmp/edarsahub_capacity_reuse_audit_20260805T031737Z/reuse_candidates.sql
+SQL_SOLO_SELECT=SI
+
+===== 4. DRY-RUN =====
+Ejecución completada correctamente.
+Reporte generado: /app/docs/reports/sql_runner_logs/20260805_031739_dry-run_reuse_candidates.md
+DRY_RUN=PASS
+
+===== 5. EJECUTAR SELECT =====
+Ejecución completada correctamente.
+Reporte generado: /app/docs/reports/sql_runner_logs/20260805_031740_diagnostic_reuse_candidates.md
+  Batch 1: 132 filas
+SELECT=PASS
+SQL_REPORT=/app/docs/reports/sql_runner_logs/20260805_031740_diagnostic_reuse_candidates.md
+
+===== 6. RESUMEN DE ESTRUCTURAS =====
+  {'database_name': 'EDARSAHUB', 'login_name': 'HRLectura', 'schema_name': 'dbo', 'object_name': 'Sync_Mesas', 'object_type': 'USER_TABLE', 'approximate_rows': 0, 'column_id': 1, 'column_name': 'ID', 'data_type': 'int', 'max_length': 4, 'is_nullable': False}
+  {'database_name': 'EDARSAHUB', 'login_name': 'HRLectura', 'schema_name': 'dbo', 'object_name': 'Sync_Mesas', 'object_type': 'USER_TABLE', 'approximate_rows': 0, 'column_id': 2, 'column_name': 'MesaRegistroID', 'data_type': 'nvarchar', 'max_length': 100, 'is_nullable': False}
+  {'database_name': 'EDARSAHUB', 'login_name': 'HRLectura', 'schema_name': 'dbo', 'object_name': 'Sync_Mesas', 'object_type': 'USER_TABLE', 'approximate_rows': 0, 'column_id': 3, 'column_name': 'ServerID', 'data_type': 'nvarchar', 'max_length': 100, 'is_nullable': False}
+  {'database_name': 'EDARSAHUB', 'login_name': 'HRLectura', 'schema_name': 'dbo', 'object_name': 'Sync_Mesas', 'object_type': 'USER_TABLE', 'approximate_rows': 0, 'column_id': 4, 'column_name': 'SucursalID', 'data_type': 'nvarchar', 'max_length': 40, 'is_nullable': False}
+  {'database_name': 'EDARSAHUB', 'login_name': 'HRLectura', 'schema_name': 'dbo', 'object_name': 'Sync_Mesas', 'object_type': 'USER_TABLE', 'approximate_rows': 0, 'column_id': 5, 'column_name': 'SucursalNombre', 'data_type': 'nvarchar', 'max_length': 200, 'is_nullable': True}
+  {'database_name': 'EDARSAHUB', 'login_name': 'HRLectura', 'schema_name': 'dbo', 'object_name': 'Sync_Mesas', 'object_type': 'USER_TABLE', 'approximate_rows': 0, 'column_id': 6, 'column_name': 'FechaOperacion', 'data_type': 'date', 'max_length': 3, 'is_nullable': False}
+  {'database_name': 'EDARSAHUB', 'login_name': 'HRLectura', 'schema_name': 'dbo', 'object_name': 'Sync_Mesas', 'object_type': 'USER_TABLE', 'approximate_rows': 0, 'column_id': 7, 'column_name': 'MesaNumero', 'data_type': 'nvarchar', 'max_length': 40, 'is_nullable': False}
+  {'database_name': 'EDARSAHUB', 'login_name': 'HRLectura', 'schema_name': 'dbo', 'object_name': 'Sync_Mesas', 'object_type': 'USER_TABLE', 'approximate_rows': 0, 'column_id': 8, 'column_name': 'MesaNombre', 'data_type': 'nvarchar', 'max_length': 100, 'is_nullable': True}
+  {'database_name': 'EDARSAHUB', 'login_name': 'HRLectura', 'schema_name': 'dbo', 'object_name': 'Sync_Mesas', 'object_type': 'USER_TABLE', 'approximate_rows': 0, 'column_id': 9, 'column_name': 'ZonaID', 'data_type': 'nvarchar', 'max_length': 40, 'is_nullable': True}
+  {'database_name': 'EDARSAHUB', 'login_name': 'HRLectura', 'schema_name': 'dbo', 'object_name': 'Sync_Mesas', 'object_type': 'USER_TABLE', 'approximate_rows': 0, 'column_id': 10, 'column_name': 'ZonaNombre', 'data_type': 'nvarchar', 'max_length': 100, 'is_nullable': True}
+
+===== 7. CLASIFICACION PRELIMINAR =====
+SYNC_MESAS_FILAS=0
+PATRON_VERSIONADO_EXISTENTE=NO
+PATRON_VIGENCIAS_EXISTENTE=NO
+ESTRUCTURA_OPERATIVA_MESAS_EXISTENTE=SI
+
+===== 8. REGLA DE DECISION =====
+NO_CREAR_TABLA_AUN=SI
+NO_CREAR_JOB_AUN=SI
+NO_CREAR_SYNC_AUN=SI
+PRIORIDAD_1=REUTILIZAR_SYNC_MESAS_COMO_FUENTE_OPERATIVA
+PRIORIDAD_2=REUTILIZAR_PATRON_VERSIONADO_DE_TURNOS
+PRIORIDAD_3=REUTILIZAR_PATRON_DE_VIGENCIAS_EXISTENTE
+PRIORIDAD_4=CREAR_SOLO_SI_HAY_BRECHA_DEMOSTRADA
+
+===== 9. CONTROL FINAL =====
+STAGING_INTACTO=SI
+ESTADO_GIT_CAMBIO_SOLO_POR_REPORTES=SI
+
+===== 10. RESULTADO =====
+AUDITORIA_REUTILIZACION_CAPACIDAD=COMPLETADA
+EVIDENCIA_SQL=OBTENIDA
+EVIDENCIA_CODIGO=OBTENIDA
+TABLA_NUEVA_AUTORIZADA=NO
+JOB_NUEVO_AUTORIZADO=NO
+SYNC_NUEVO_AUTORIZADO=NO
+CODIGO_MODIFICADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+REPORT=/app/edarsahub_capacity_reuse_audit_20260805T031737Z.txt
+CODE_DETAIL=/var/tmp/edarsahub_capacity_reuse_audit_20260805T031737Z/code_references_full.txt
+SQL_REPORT=/app/docs/reports/sql_runner_logs/20260805_031740_diagnostic_reuse_candidates.md
+SIGUIENTE_ESTADO=DECIDIR_REUTILIZACION_EXACTA_CON_EVIDENCIA

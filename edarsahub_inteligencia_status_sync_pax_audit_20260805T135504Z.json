@@ -1,0 +1,65 @@
+{
+  "file": "backend/core/scheduler/jobs/inteligencia_comercial_status_job.py",
+  "function": "execute",
+  "line_start": 55,
+  "line_end": 122,
+  "async": true,
+  "sync_sql": [
+    "SELECT Fuente, UltimaFechaOperacion, UltimaFechaSincronizacion, Registros, CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado FROM ( SELECT 'Comercial_KPIs_Diarios_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_sincronizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_KPIs_Diarios_v2 WHERE ISNULL(activo, 1) = 1 UNION ALL SELECT 'Comercial_Ventas_Dia_Abiertas_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_ultima_actualizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 UNION ALL SELECT 'Sync_PAX_Detalle' AS Fuente, MAX(FechaOperacion) AS UltimaFechaOperacion, MAX(FechaSync) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_PAX_Detalle UNION ALL SELECT 'Sync_Sales' AS Fuente, CAST(MAX(FechaHora) AS DATE) AS UltimaFechaOperacion, MAX(last_modified) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_Sales ) s;"
+  ],
+  "canonical_sql": [
+    "SELECT Fuente, UltimaFechaOperacion, UltimaFechaSincronizacion, Registros, CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado FROM ( SELECT 'Comercial_KPIs_Diarios_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_sincronizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_KPIs_Diarios_v2 WHERE ISNULL(activo, 1) = 1 UNION ALL SELECT 'Comercial_Ventas_Dia_Abiertas_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_ultima_actualizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 UNION ALL SELECT 'Sync_PAX_Detalle' AS Fuente, MAX(FechaOperacion) AS UltimaFechaOperacion, MAX(FechaSync) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_PAX_Detalle UNION ALL SELECT 'Sync_Sales' AS Fuente, CAST(MAX(FechaHora) AS DATE) AS UltimaFechaOperacion, MAX(last_modified) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_Sales ) s;"
+  ],
+  "returns": [
+    "return { \"processed_count\": len(rows), \"success_count\": ok, \"failed_count\": failed, \"skipped_count\": stale, \"message\": f\"Inteligencia Comercial status: OK={ok}, STALE={stale}, SIN_DATOS/ERROR={failed}\", \"details\": {\"sources\": rows}, }"
+  ],
+  "conditions": [],
+  "calls": [
+    "len([r for r in rows if r.get(\"Estado\") in {\"SIN_DATOS\", \"ERROR\"}])",
+    "len([r for r in rows if r.get(\"Estado\") == \"STALE\"])",
+    "len([r for r in rows if r.get(\"Estado\") == \"OK\"])",
+    "_get_edarsahub_sql_connection()",
+    "len(rows)",
+    "conn.cursor()",
+    "cur.execute(sql)",
+    "_rows_to_dicts(cur.fetchall() or [])",
+    "cur.fetchall()",
+    "r.get(\"Estado\")",
+    "r.get(\"Estado\")",
+    "r.get(\"Estado\")"
+  ],
+  "runtime_references": [
+    {
+      "file": "scripts/06_apply_inteligencia_fase1_patch.py",
+      "line": 63,
+      "text": "\"from .jobs.inteligencia_comercial_status_job import create_inteligencia_comercial_status_job\\n\""
+    },
+    {
+      "file": "scripts/06_apply_inteligencia_fase1_patch.py",
+      "line": 69,
+      "text": "'''\\n    async def _run_inteligencia_comercial_sync_job(self):\\n        \"\"\"Wrapper async para validar frescura de Inteligencia Comercial.\"\"\"\\n        job_config = self.config.jobs.get(\"inteligencia_comercial_sync\")\\n        if not job_config or not job_config.enabled:\\n            return\\n\\n        job = create_inteligencia_comercial_status_job(self.db, job_config)\\n        await job.run()\\n'''"
+    },
+    {
+      "file": "scripts/06_apply_inteligencia_fase1_patch.py",
+      "line": 86,
+      "text": "print(\"- backend/core/scheduler/jobs/inteligencia_comercial_status_job.py\")"
+    }
+  ],
+  "sync_pax_runtime_files": [
+    "backend/core/scheduler/jobs/inteligencia_comercial_status_job.py",
+    "backend/core/scheduler/jobs/sync_comercial_endpoints_job.py",
+    "backend/modules/comercial/inteligencia_comercial_routes.py",
+    "backend/modules/comercial/routes.py",
+    "backend/modules/inteligencia_comercial/routes.py",
+    "backend/server.py"
+  ],
+  "contract": "CONDITIONAL_MIXED_SOURCE",
+  "summary": {
+    "sync_queries": 1,
+    "canonical_queries": 1,
+    "returns": 1,
+    "conditions": 0,
+    "runtime_references": 3,
+    "sync_pax_runtime_files": 6
+  }
+}

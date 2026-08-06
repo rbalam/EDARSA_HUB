@@ -1,0 +1,15 @@
+Inserta registros en Sync_Sales.
+
+SELECT COUNT(*) FROM Sync_Sales 
+                WHERE NumeroTicket = %s AND UnidadNegocio = %s 
+                  AND CAST(FechaHora AS DATE) = CAST(%s AS DATE)
+
+INSERT INTO Sync_Sales (
+                    id, branch, UnidadNegocio, NumeroTicket, 
+                    MontoTotal, Pax, FechaHora, status, items,
+                    created_at, total
+                ) VALUES (
+                    %s, %s, %s, %s, 
+                    %s, %s, %s, %s, %s,
+                    GETDATE(), %s
+                )

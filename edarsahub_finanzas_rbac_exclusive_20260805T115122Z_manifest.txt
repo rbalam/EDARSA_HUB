@@ -1,0 +1,21 @@
+EDARSAHUB FINANZAS RBAC EXCLUSIVE BUNDLE
+CREATED_AT_UTC=20260805T115122Z
+SOURCE_WORKTREE=/app/.agent-worktrees/finanzas-rbac
+SOURCE_HEAD=1ef065e65436e698757ed4af947d741fb85e880c
+BASE_HEAD=b81a1d52e2c9d2b54422bd618f49eea729012305
+TEMPORARY_REF=refs/tags/edarsahub-backup-finanzas-rbac-20260805T115122Z
+EXCLUSIVE_COMMIT_COUNT=11
+BUNDLE=/app/edarsahub_finanzas_rbac_exclusive_20260805T115122Z.bundle
+
+EXCLUSIVE_COMMITS:
+1ef065e6 (tag: edarsahub-backup-finanzas-rbac-20260805T115122Z, agent/recovery/finanzas-rbac) docs(finanzas): documentar desalineacion RBAC y evidencia SQL
+42e4d839 (agent/recovery/compras-inventarios, agent/recovery/comercial-ventas-tiempo) feat(comercial): integrar modulo y tests de salud comercial de ventas en el tiempo y auditorias de sincronizacion
+2a673c41 fix(compras): resolver sucursal_origen_id canonico para inventarios fisicos con server_id deprecated
+6efa0c5c fix(compras): remover restriccion de 6 meses en sync de inventarios fisicos
+4eb556fa fix(operaciones): habilitar interaccion por un solo clic y doble clic en tarjetas kpi y celdas de desglose transaccional
+26297edd feat(operaciones): restaurar tarjetas kpi resumen y desglose drilldown para movimientos y ventas en reporte analisis
+b3abf6a3 docs(comercial): agregar especificacion oficial del modulo de precios constantes
+6555db4f fix(comercial): valuar productos nuevos y descontinuados a precios de cada periodo
+86a59798 fix(comercial): calcular deflacion real interanual en analisis de precios constantes
+54278aa2 perf(comercial): optimizar solicitudes concurrentes en tab de precios constantes
+cdb47158 fix(comercial): restaurar calculo sql-first de precios constantes

@@ -1,0 +1,2125 @@
+{
+  "captured_at_utc": "2026-08-05T06:05:07.552855+00:00",
+  "functions": [
+    {
+      "file": "backend/core/scheduler/jobs/inteligencia_comercial_status_job.py",
+      "function": "execute",
+      "line_start": 55,
+      "line_end": 122,
+      "routes": [],
+      "parameters": [
+        "self"
+      ],
+      "sync_queries": [
+        {
+          "line": 56,
+          "sql": "SELECT Fuente, UltimaFechaOperacion, UltimaFechaSincronizacion, Registros, CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado FROM ( SELECT 'Comercial_KPIs_Diarios_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_sincronizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_KPIs_Diarios_v2 WHERE ISNULL(activo, 1) = 1 UNION ALL SELECT 'Comercial_Ventas_Dia_Abiertas_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_ultima_actualizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 UNION ALL SELECT 'Sync_PAX_Detalle' AS Fuente, MAX(FechaOperacion) AS UltimaFechaOperacion, MAX(FechaSync) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_PAX_Detalle UNION ALL SELECT 'Sync_Sales' AS Fuente, CAST(MAX(FechaHora) AS DATE) AS UltimaFechaOperacion, MAX(last_modified) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_Sales ) s;",
+          "select_columns": [
+            "Fuente",
+            "UltimaFechaOperacion",
+            "UltimaFechaSincronizacion",
+            "Registros",
+            "CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado"
+          ],
+          "filters": "ISNULL(activo, 1) = 1 UNION ALL SELECT 'Comercial_Ventas_Dia_Abiertas_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_ultima_actualizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 UNION ALL SELECT 'Sync_PAX_Detalle' AS Fuente, MAX(FechaOperacion) AS UltimaFechaOperacion, MAX(FechaSync) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_PAX_Detalle UNION ALL SELECT 'Sync_Sales' AS Fuente, CAST(MAX(FechaHora) AS DATE) AS UltimaFechaOperacion, MAX(last_modified) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_Sales ) s;",
+          "sources": [
+            "Comercial_KPIs_Diarios_v2",
+            "Comercial_Ventas_Dia_Abiertas_v2"
+          ]
+        }
+      ],
+      "canonical_queries": [
+        {
+          "line": 56,
+          "sql": "SELECT Fuente, UltimaFechaOperacion, UltimaFechaSincronizacion, Registros, CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado FROM ( SELECT 'Comercial_KPIs_Diarios_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_sincronizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_KPIs_Diarios_v2 WHERE ISNULL(activo, 1) = 1 UNION ALL SELECT 'Comercial_Ventas_Dia_Abiertas_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_ultima_actualizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 UNION ALL SELECT 'Sync_PAX_Detalle' AS Fuente, MAX(FechaOperacion) AS UltimaFechaOperacion, MAX(FechaSync) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_PAX_Detalle UNION ALL SELECT 'Sync_Sales' AS Fuente, CAST(MAX(FechaHora) AS DATE) AS UltimaFechaOperacion, MAX(last_modified) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_Sales ) s;",
+          "select_columns": [
+            "Fuente",
+            "UltimaFechaOperacion",
+            "UltimaFechaSincronizacion",
+            "Registros",
+            "CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado"
+          ],
+          "filters": "ISNULL(activo, 1) = 1 UNION ALL SELECT 'Comercial_Ventas_Dia_Abiertas_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_ultima_actualizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 UNION ALL SELECT 'Sync_PAX_Detalle' AS Fuente, MAX(FechaOperacion) AS UltimaFechaOperacion, MAX(FechaSync) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_PAX_Detalle UNION ALL SELECT 'Sync_Sales' AS Fuente, CAST(MAX(FechaHora) AS DATE) AS UltimaFechaOperacion, MAX(last_modified) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_Sales ) s;",
+          "sources": [
+            "Comercial_KPIs_Diarios_v2",
+            "Comercial_Ventas_Dia_Abiertas_v2"
+          ]
+        }
+      ],
+      "response_fragments": [
+        {
+          "line": 115,
+          "kind": "DICT",
+          "text": "{\n            \"processed_count\": len(rows),\n            \"success_count\": ok,\n            \"failed_count\": failed,\n            \"skipped_count\": stale,\n            \"message\": f\"Inteligencia Comercial status: OK={ok}, STALE={stale}, SIN_DATOS/ERROR={failed}\",\n            \"details\": {\"sources\": rows},\n        }"
+        },
+        {
+          "line": 115,
+          "kind": "RETURN",
+          "text": "{\n            \"processed_count\": len(rows),\n            \"success_count\": ok,\n            \"failed_count\": failed,\n            \"skipped_count\": stale,\n            \"message\": f\"Inteligencia Comercial status: OK={ok}, STALE={stale}, SIN_DATOS/ERROR={failed}\",\n            \"details\": {\"sources\": rows},\n        }"
+        },
+        {
+          "line": 121,
+          "kind": "DICT",
+          "text": "{\"sources\": rows}"
+        }
+      ],
+      "called_functions": [
+        "_get_edarsahub_sql_connection",
+        "_rows_to_dicts",
+        "cursor",
+        "execute",
+        "fetchall",
+        "get",
+        "len"
+      ],
+      "sync_columns": [
+        "CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado",
+        "Fuente",
+        "Registros",
+        "UltimaFechaOperacion",
+        "UltimaFechaSincronizacion"
+      ],
+      "canonical_columns": [
+        "CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado",
+        "Fuente",
+        "Registros",
+        "UltimaFechaOperacion",
+        "UltimaFechaSincronizacion"
+      ],
+      "demonstrated_common_aliases": [
+        "estado",
+        "fuente",
+        "registros",
+        "ultimafechaoperacion",
+        "ultimafechasincronizacion"
+      ],
+      "sync_aliases_without_canonical_match": [],
+      "replacement_status": "CANONICO_DEMOSTRADO_EN_MISMA_FUNCION"
+    },
+    {
+      "file": "backend/modules/comercial/inteligencia_comercial_routes.py",
+      "function": "get_pax_inteligencia",
+      "line_start": 266,
+      "line_end": 310,
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/pax"
+        }
+      ],
+      "parameters": [
+        "sucursal_nombre",
+        "fecha_inicio",
+        "fecha_fin",
+        "detalle_mesero",
+        "current_user"
+      ],
+      "sync_queries": [
+        {
+          "line": 293,
+          "sql": ", SUM(ISNULL(NumeroComensales, 0)) AS numero_comensales, SUM(ISNULL(VentaCuenta, 0)) AS venta_cuenta, CASE WHEN SUM(ISNULL(NumeroComensales, 0)) > 0 THEN SUM(ISNULL(VentaCuenta, 0)) / SUM(ISNULL(NumeroComensales, 0)) ELSE 0 END AS consumo_promedio_pax, AVG(CAST(ISNULL(TiempoMesa, 0) AS FLOAT)) AS tiempo_mesa_promedio, MAX(FechaSync) AS ultima_sync FROM dbo.Sync_PAX_Detalle WHERE",
+          "select_columns": [],
+          "filters": "",
+          "sources": [
+            "Sync_PAX_Detalle"
+          ]
+        }
+      ],
+      "canonical_queries": [],
+      "response_fragments": [
+        {
+          "line": 281,
+          "kind": "DICT",
+          "text": "{\"fecha_inicio\": fecha_inicio, \"fecha_fin\": fecha_fin}"
+        },
+        {
+          "line": 310,
+          "kind": "DICT",
+          "text": "{\"source\": \"Sync_PAX_Detalle\", \"data\": _query(sql, params)}"
+        },
+        {
+          "line": 310,
+          "kind": "RETURN",
+          "text": "{\"source\": \"Sync_PAX_Detalle\", \"data\": _query(sql, params)}"
+        }
+      ],
+      "called_functions": [
+        "Depends",
+        "Query",
+        "_query",
+        "_require_permission",
+        "append",
+        "get",
+        "join",
+        "timedelta",
+        "today"
+      ],
+      "sync_columns": [],
+      "canonical_columns": [],
+      "demonstrated_common_aliases": [],
+      "sync_aliases_without_canonical_match": [],
+      "replacement_status": "SIN_REEMPLAZO_CANONICO_DEMOSTRADO"
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "function": "comercial_metas",
+      "line_start": 2058,
+      "line_end": 2382,
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/comercial/metas/{server_id}"
+        }
+      ],
+      "parameters": [
+        "server_id",
+        "sucursal",
+        "current_user"
+      ],
+      "sync_queries": [
+        {
+          "line": 2095,
+          "sql": "SELECT * FROM Sync_Metas_Comerciales WHERE ServerID = %s AND SucursalID = %s AND Anio = %s AND Mes = %s ORDER BY SucursalNombre",
+          "select_columns": [
+            "*"
+          ],
+          "filters": "ServerID = %s AND SucursalID = %s AND Anio = %s AND Mes = %s",
+          "sources": [
+            "Sync_Metas_Comerciales"
+          ]
+        },
+        {
+          "line": 2101,
+          "sql": "SELECT * FROM Sync_Metas_Comerciales WHERE ServerID = %s AND Anio = %s AND Mes = %s ORDER BY SucursalNombre",
+          "select_columns": [
+            "*"
+          ],
+          "filters": "ServerID = %s AND Anio = %s AND Mes = %s",
+          "sources": [
+            "Sync_Metas_Comerciales"
+          ]
+        }
+      ],
+      "canonical_queries": [],
+      "response_fragments": [
+        {
+          "line": 2075,
+          "kind": "RETURN",
+          "text": "build_envelope_response(\n            source_status=SourceStatus.ERROR,\n            data={\"metas\": []},\n            source_message=\"Servidor no encontrado\"\n        )"
+        },
+        {
+          "line": 2077,
+          "kind": "DICT",
+          "text": "{\"metas\": []}"
+        },
+        {
+          "line": 2113,
+          "kind": "DICT",
+          "text": "{\n                \"sucursal_id\": row.get(\"SucursalID\"),\n                \"sucursal_nombre\": row.get(\"SucursalNombre\"),\n                \"anio\": row.get(\"Anio\"),\n                \"mes\": row.get(\"Mes\"),\n                \"meta_venta_bruta\": float(row.get(\"MetaVentaBruta\") or 0),\n                \"meta_venta_neta\": float(row.get(\"MetaVentaNeta\") or 0),\n                \"venta_bruta_actual\": float(row.get(\"VentaBrutaActual\") or 0),\n                \"venta_neta_actual\": float(row.get(\"VentaNetaActual\") or 0),\n                \"ticket_promedio_actual\": float(row.get(\"TicketPromedioActual\") or 0),\n                \"cuentas_actual\": int(row.get(\"CuentasActual\") or 0),\n                \"comensales_actual\": int(row.get(\"ComensalesActual\") or 0),\n                \"porcentaje_cumplimiento\": float(row.get(\"PorcentajeCumplimiento\") or 0),\n                \"dias_transcurridos\": int(row.get(\"DiasTranscurridos\") or 0),\n                \"dias_restantes\": int(row.get(\"DiasRestantes\") or 0),\n                \"proyeccion_mes\": float(row.get(\"ProyeccionMes\") or 0),\n                \"fecha_sync\": row.get(\"FechaSync\").isoformat() if row.get(\"FechaSync\") else None,\n            }"
+        },
+        {
+          "line": 2132,
+          "kind": "RETURN",
+          "text": "build_envelope_response(\n            source_status=SourceStatus.SUCCESS if metas else SourceStatus.SUCCESS,\n            data={\"metas\": metas, \"periodo\": f\"{anio}-{mes:02d}\"},\n            source_message=f\"SQL-First: {len(metas)} registros desde Sync_Metas_Comerciales\",\n            cache_used=False\n        )"
+        },
+        {
+          "line": 2134,
+          "kind": "DICT",
+          "text": "{\"metas\": metas, \"periodo\": f\"{anio}-{mes:02d}\"}"
+        },
+        {
+          "line": 2141,
+          "kind": "RETURN",
+          "text": "build_envelope_response(\n            source_status=SourceStatus.ERROR,\n            data={\"metas\": []},\n            source_message=f\"Error consultando metas: {str(e)}\"\n        )"
+        },
+        {
+          "line": 2143,
+          "kind": "DICT",
+          "text": "{\"metas\": []}"
+        },
+        {
+          "line": 2162,
+          "kind": "DICT",
+          "text": "{\"por_producto\": [], \"por_vendedor\": []}"
+        },
+        {
+          "line": 2162,
+          "kind": "RETURN",
+          "text": "{\"por_producto\": [], \"por_vendedor\": []}"
+        },
+        {
+          "line": 2211,
+          "kind": "DICT",
+          "text": "{\n                        \"producto\": r['producto'],\n                        \"meta\": meta_estimada,\n                        \"real\": real_ventas,\n                        \"cumplimiento\": cumplimiento\n                    }"
+        },
+        {
+          "line": 2242,
+          "kind": "DICT",
+          "text": "{\n                        \"vendedor\": r['vendedor'],\n                        \"meta\": meta_estimada,\n                        \"real\": real_ventas,\n                        \"cumplimiento\": cumplimiento\n                    }"
+        },
+        {
+          "line": 2257,
+          "kind": "DICT",
+          "text": "{\n                UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN': '0023',\n                'QUERETARO': '0021',\n                '130 QRO': '0021',\n                'QRO': '0021',\n            }"
+        },
+        {
+          "line": 2296,
+          "kind": "DICT",
+          "text": "{\n                        \"producto\": r['producto'],\n                        \"meta\": meta_estimada,\n                        \"real\": real_ventas,\n                        \"cumplimiento\": cumplimiento\n                    }"
+        },
+        {
+          "line": 2330,
+          "kind": "DICT",
+          "text": "{\n                        \"vendedor\": r['vendedor'],\n                        \"meta\": meta_estimada,\n                        \"real\": real_ventas,\n                        \"cumplimiento\": cumplimiento\n                    }"
+        },
+        {
+          "line": 2337,
+          "kind": "DICT",
+          "text": "{\"por_producto\": metas_producto, \"por_vendedor\": metas_vendedor}"
+        },
+        {
+          "line": 2344,
+          "kind": "RETURN",
+          "text": "build_envelope_response(\n                source_status=SourceStatus.SUCCESS if has_data else SourceStatus.NO_DATA,\n                data=data,\n                server_name=server['name'],\n                server_type=server['system_type'],\n                cache_used=False,\n                fecha_inicio=fecha_ini,\n                fecha_fin=fecha_fin\n            )"
+        },
+        {
+          "line": 2364,
+          "kind": "RETURN",
+          "text": "build_envelope_response(\n                source_status=SourceStatus.DEGRADED_CACHE,\n                data=cached[\"data\"],\n                server_name=server['name'],\n                server_type=server['system_type'],\n                cache_used=True,\n                last_successful_sync=cached.get(\"cached_at\"),\n                source_message=f\"Datos de cache (última actualización: {cached.get('cached_at', 'desconocido')})\"\n            )"
+        },
+        {
+          "line": 2375,
+          "kind": "RETURN",
+          "text": "build_envelope_response(\n            source_status=SourceStatus.SOURCE_UNREACHABLE,\n            data=empty_response(),\n            server_name=server['name'],\n            server_type=server['system_type'],\n            cache_used=False,\n            source_message=f\"No se pudo conectar a {server['name']} y no hay cache disponible\"\n        )"
+        }
+      ],
+      "called_functions": [
+        "Depends",
+        "Exception",
+        "Query",
+        "append",
+        "build_cache_key",
+        "build_envelope_response",
+        "check_column_exists",
+        "close",
+        "cursor",
+        "empty_response",
+        "error",
+        "execute",
+        "execute_sql_query",
+        "fetchall",
+        "float",
+        "get",
+        "get_cached_response",
+        "get_edarsahub_pymssql_connection",
+        "get_propina_safe_column",
+        "get_server_by_id",
+        "int",
+        "is_mpro_system",
+        "is_softrestaurant_system",
+        "isoformat",
+        "len",
+        "now",
+        "replace",
+        "resolver_codigo",
+        "round",
+        "save_to_cache",
+        "str",
+        "strftime",
+        "upper",
+        "validate_server_access_rbac",
+        "warning"
+      ],
+      "sync_columns": [
+        "*"
+      ],
+      "canonical_columns": [],
+      "demonstrated_common_aliases": [],
+      "sync_aliases_without_canonical_match": [],
+      "replacement_status": "SIN_REEMPLAZO_CANONICO_DEMOSTRADO"
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "function": "comercial_ticket_perfecto",
+      "line_start": 2390,
+      "line_end": 2679,
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/comercial/ticket-perfecto/{server_id}"
+        }
+      ],
+      "parameters": [
+        "server_id",
+        "sucursal",
+        "fecha_inicio",
+        "fecha_fin",
+        "current_user"
+      ],
+      "sync_queries": [
+        {
+          "line": 2437,
+          "sql": "SELECT * FROM Sync_Ticket_Perfecto WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY FechaOperacion DESC",
+          "select_columns": [
+            "*"
+          ],
+          "filters": "ServerID = %s AND SucursalID = %s AND FechaOperacion BETWEEN %s AND %s",
+          "sources": [
+            "Sync_Ticket_Perfecto"
+          ]
+        },
+        {
+          "line": 2444,
+          "sql": "SELECT * FROM Sync_Ticket_Perfecto WHERE ServerID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY SucursalNombre, FechaOperacion DESC",
+          "select_columns": [
+            "*"
+          ],
+          "filters": "ServerID = %s AND FechaOperacion BETWEEN %s AND %s",
+          "sources": [
+            "Sync_Ticket_Perfecto"
+          ]
+        }
+      ],
+      "canonical_queries": [],
+      "response_fragments": [
+        {
+          "line": 2409,
+          "kind": "RETURN",
+          "text": "build_envelope_response(\n            source_status=SourceStatus.ERROR,\n            data={\"tickets\": []},\n            source_message=\"Servidor no encontrado\"\n        )"
+        },
+        {
+          "line": 2411,
+          "kind": "DICT",
+          "text": "{\"tickets\": []}"
+        },
+        {
+          "line": 2456,
+          "kind": "DICT",
+          "text": "{\n                \"sucursal_id\": row.get(\"SucursalID\"),\n                \"sucursal_nombre\": row.get(\"SucursalNombre\"),\n                \"fecha\": row.get(\"FechaOperacion\").isoformat() if row.get(\"FechaOperacion\") else None,\n                \"total_cuentas\": int(row.get(\"TotalCuentas\") or 0),\n                \"total_comensales\": int(row.get(\"TotalComensales\") or 0),\n                \"venta_total\": float(row.get(\"VentaTotal\") or 0),\n                \"ticket_promedio_real\": float(row.get(\"TicketPromedioReal\") or 0),\n                \"ticket_perfecto_objetivo\": float(row.get(\"TicketPerfectoObjetivo\") or 0),\n                \"porcentaje_cumplimiento\": float(row.get(\"PorcentajeCumplimiento\") or 0),\n                \"cuentas_bajo_objetivo\": int(row.get(\"CuentasBajoObjetivo\") or 0),\n                \"cuentas_sobre_objetivo\": int(row.get(\"CuentasSobreObjetivo\") or 0),\n                \"cuentas_en_rango\": int(row.get(\"CuentasEnRango\") or 0),\n                \"promedio_entradas\": float(row.get(\"PromedioEntradas\") or 0),\n                \"promedio_fuertes\": float(row.get(\"PromedioFuertes\") or 0),\n                \"promedio_bebidas\": float(row.get(\"PromedioBebidas\") or 0),\n                \"promedio_postres\": float(row.get(\"PromedioPostres\") or 0),\n            }"
+        },
+        {
+          "line": 2475,
+          "kind": "RETURN",
+          "text": "build_envelope_response(\n            source_status=SourceStatus.SUCCESS if tickets else SourceStatus.SUCCESS,\n            data={\"tickets\": tickets, \"periodo\": f\"{f_inicio} a {f_fin}\"},\n            source_message=f\"SQL-First: {len(tickets)} registros desde Sync_Ticket_Perfecto\",\n            cache_used=False\n        )"
+        },
+        {
+          "line": 2477,
+          "kind": "DICT",
+          "text": "{\"tickets\": tickets, \"periodo\": f\"{f_inicio} a {f_fin}\"}"
+        },
+        {
+          "line": 2484,
+          "kind": "RETURN",
+          "text": "build_envelope_response(\n            source_status=SourceStatus.ERROR,\n            data={\"tickets\": []},\n            source_message=f\"Error consultando ticket perfecto: {str(e)}\"\n        )"
+        },
+        {
+          "line": 2486,
+          "kind": "DICT",
+          "text": "{\"tickets\": []}"
+        },
+        {
+          "line": 2504,
+          "kind": "DICT",
+          "text": "{\n            \"ticket\": {\"tickets_totales\": 0, \"tickets_completos\": 0, \"pct_completos\": 0},\n            \"rentabilidad\": []\n        }"
+        },
+        {
+          "line": 2504,
+          "kind": "RETURN",
+          "text": "{\n            \"ticket\": {\"tickets_totales\": 0, \"tickets_completos\": 0, \"pct_completos\": 0},\n            \"rentabilidad\": []\n        }"
+        },
+        {
+          "line": 2505,
+          "kind": "DICT",
+          "text": "{\"tickets_totales\": 0, \"tickets_completos\": 0, \"pct_completos\": 0}"
+        },
+        {
+          "line": 2554,
+          "kind": "DICT",
+          "text": "{\n                        \"tickets_totales\": tickets_totales,\n                        \"tickets_completos\": tickets_completos,\n                        \"pct_completos\": round((tickets_completos / tickets_totales * 100), 0) if tickets_totales > 0 else 0,\n                        \"con_entrada\": con_alimentos,\n                        \"pct_entrada\": round((con_alimentos / tickets_totales * 100), 0) if tickets_totales > 0 else 0,\n                        \"con_plato_fuerte\": con_alimentos,\n                        \"pct_plato_fuerte\": round((con_alimentos / tickets_totales * 100), 0) if tickets_totales > 0 else 0,\n                        \"con_postre\": 0,\n                        \"pct_postre\": 0,\n                        \"con_digestivo\": con_bebidas,\n                        \"pct_digestivo\": round((con_bebidas / tickets_totales * 100), 0) if tickets_totales > 0 else 0,\n                        \"oportunidad_perdida\": 0\n                    }"
+        },
+        {
+          "line": 2586,
+          "kind": "DICT",
+          "text": "{\n                            \"tickets_totales\": tickets_totales,\n                            \"tickets_completos\": 0,\n                            \"pct_completos\": 0,\n                            \"con_entrada\": 0, \"pct_entrada\": 0,\n                            \"con_plato_fuerte\": 0, \"pct_plato_fuerte\": 0,\n                            \"con_postre\": 0, \"pct_postre\": 0,\n                            \"con_digestivo\": 0, \"pct_digestivo\": 0,\n                            \"oportunidad_perdida\": 0\n                        }"
+        },
+        {
+          "line": 2629,
+          "kind": "DICT",
+          "text": "{\n                        \"codigo\": str(r['codigo']),\n                        \"producto\": r['producto'],\n                        \"ventas\": ventas,\n                        \"costo\": costo,\n                        \"margen\": margen,\n                        \"categoria\": categoria\n                    }"
+        },
+        {
+          "line": 2638,
+          "kind": "DICT",
+          "text": "{\"ticket\": ticket_data, \"rentabilidad\": rentabilidad}"
+        },
+        {
+          "line": 2644,
+          "kind": "RETURN",
+          "text": "build_envelope_response(\n                source_status=SourceStatus.SUCCESS if has_data else SourceStatus.NO_DATA,\n                data=data,\n                server_name=server['name'],\n                server_type=server['system_type'],\n                cache_used=False,\n                fecha_inicio=fecha_ini,\n                fecha_fin=fecha_fin\n            )"
+        },
+        {
+          "line": 2662,
+          "kind": "RETURN",
+          "text": "build_envelope_response(\n                source_status=SourceStatus.DEGRADED_CACHE,\n                data=cached[\"data\"],\n                server_name=server['name'],\n                server_type=server['system_type'],\n                cache_used=True,\n                last_successful_sync=cached.get(\"cached_at\"),\n                source_message=f\"Datos de cache (última actualización: {cached.get('cached_at', 'desconocido')})\"\n            )"
+        },
+        {
+          "line": 2672,
+          "kind": "RETURN",
+          "text": "build_envelope_response(\n            source_status=SourceStatus.SOURCE_UNREACHABLE,\n            data=empty_response(),\n            server_name=server['name'],\n            server_type=server['system_type'],\n            cache_used=False,\n            source_message=f\"No se pudo conectar a {server['name']} y no hay cache disponible\"\n        )"
+        }
+      ],
+      "called_functions": [
+        "Depends",
+        "Exception",
+        "Query",
+        "append",
+        "build_cache_key",
+        "build_envelope_response",
+        "close",
+        "cursor",
+        "date",
+        "empty_response",
+        "error",
+        "execute",
+        "execute_sql_query",
+        "fetchall",
+        "float",
+        "get",
+        "get_cached_response",
+        "get_edarsahub_pymssql_connection",
+        "get_server_by_id",
+        "int",
+        "is_softrestaurant_system",
+        "isoformat",
+        "len",
+        "min",
+        "now",
+        "replace",
+        "round",
+        "save_to_cache",
+        "str",
+        "strftime",
+        "strptime",
+        "timedelta",
+        "validate_server_access_rbac",
+        "warning"
+      ],
+      "sync_columns": [
+        "*"
+      ],
+      "canonical_columns": [],
+      "demonstrated_common_aliases": [],
+      "sync_aliases_without_canonical_match": [],
+      "replacement_status": "SIN_REEMPLAZO_CANONICO_DEMOSTRADO"
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "function": "comercial_mesas",
+      "line_start": 2905,
+      "line_end": 3162,
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/comercial/mesas/{server_id}"
+        }
+      ],
+      "parameters": [
+        "server_id",
+        "sucursal",
+        "fecha",
+        "current_user"
+      ],
+      "sync_queries": [
+        {
+          "line": 3016,
+          "sql": "SELECT * FROM dbo.Sync_Mesas WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s ORDER BY MesaNumero",
+          "select_columns": [
+            "*"
+          ],
+          "filters": "ServerID = %s AND SucursalID = %s AND FechaOperacion = %s",
+          "sources": [
+            "Sync_Mesas"
+          ]
+        },
+        {
+          "line": 3025,
+          "sql": "SELECT * FROM dbo.Sync_Mesas WHERE ServerID = %s AND FechaOperacion = %s ORDER BY SucursalNombre, MesaNumero",
+          "select_columns": [
+            "*"
+          ],
+          "filters": "ServerID = %s AND FechaOperacion = %s",
+          "sources": [
+            "Sync_Mesas"
+          ]
+        },
+        {
+          "line": 2978,
+          "sql": "SELECT MAX(FechaOperacion) AS fecha_op FROM dbo.Sync_Mesas WHERE ServerID = %s AND SucursalID = %s",
+          "select_columns": [
+            "MAX(FechaOperacion) AS fecha_op"
+          ],
+          "filters": "ServerID = %s AND SucursalID = %s",
+          "sources": [
+            "Sync_Mesas"
+          ]
+        },
+        {
+          "line": 2984,
+          "sql": "SELECT MAX(FechaOperacion) AS fecha_op FROM dbo.Sync_Mesas WHERE ServerID = %s",
+          "select_columns": [
+            "MAX(FechaOperacion) AS fecha_op"
+          ],
+          "filters": "ServerID = %s",
+          "sources": [
+            "Sync_Mesas"
+          ]
+        }
+      ],
+      "canonical_queries": [],
+      "response_fragments": [
+        {
+          "line": 2923,
+          "kind": "RETURN",
+          "text": "int(value or default)"
+        },
+        {
+          "line": 2925,
+          "kind": "RETURN",
+          "text": "default"
+        },
+        {
+          "line": 2929,
+          "kind": "RETURN",
+          "text": "float(value or default)"
+        },
+        {
+          "line": 2931,
+          "kind": "RETURN",
+          "text": "default"
+        },
+        {
+          "line": 2934,
+          "kind": "DICT",
+          "text": "{\n            \"nombre\": nombre or \"Unidad\",\n            \"total_mesas\": 0,\n            \"capacidad_total\": 0,\n            \"mesas_atendidas_mes\": 0,\n            \"comensales_mes\": 0,\n            \"rotacion_promedio\": 0,\n            \"ticket_promedio\": 0,\n            \"cheque_promedio\": 0,\n            \"pax_promedio\": 0,\n            \"vueltas_por_dia\": 0,\n            \"vueltas_por_hora_pico\": 0\n        }"
+        },
+        {
+          "line": 2934,
+          "kind": "RETURN",
+          "text": "{\n            \"nombre\": nombre or \"Unidad\",\n            \"total_mesas\": 0,\n            \"capacidad_total\": 0,\n            \"mesas_atendidas_mes\": 0,\n            \"comensales_mes\": 0,\n            \"rotacion_promedio\": 0,\n            \"ticket_promedio\": 0,\n            \"cheque_promedio\": 0,\n            \"pax_promedio\": 0,\n            \"vueltas_por_dia\": 0,\n            \"vueltas_por_hora_pico\": 0\n        }"
+        },
+        {
+          "line": 2952,
+          "kind": "DICT",
+          "text": "{\n            \"success\": False,\n            \"source_status\": \"ERROR\",\n            \"source_type\": \"ERROR\",\n            \"source_message\": \"Servidor no encontrado\",\n            \"unidad\": _empty_mesas_unidad(server_name),\n            \"rotacion\": [],\n            \"mesas\": []\n        }"
+        },
+        {
+          "line": 2952,
+          "kind": "RETURN",
+          "text": "{\n            \"success\": False,\n            \"source_status\": \"ERROR\",\n            \"source_type\": \"ERROR\",\n            \"source_message\": \"Servidor no encontrado\",\n            \"unidad\": _empty_mesas_unidad(server_name),\n            \"rotacion\": [],\n            \"mesas\": []\n        }"
+        },
+        {
+          "line": 2990,
+          "kind": "DICT",
+          "text": "{}"
+        },
+        {
+          "line": 3002,
+          "kind": "DICT",
+          "text": "{\n                \"success\": True,\n                \"source_status\": \"SIN_DATOS_EDARSAHUB\",\n                \"source_type\": \"EDARSAHUB_SQL_SYNC_MESAS\",\n                \"source_table\": \"dbo.Sync_Mesas\",\n                \"source_message\": \"Sin datos en dbo.Sync_Mesas para el servidor solicitado\",\n                \"server_name\": server_name,\n                \"fecha\": None,\n                \"unidad\": _empty_mesas_unidad(server_name),\n                \"rotacion\": [],\n                \"mesas\": []\n            }"
+        },
+        {
+          "line": 3002,
+          "kind": "RETURN",
+          "text": "{\n                \"success\": True,\n                \"source_status\": \"SIN_DATOS_EDARSAHUB\",\n                \"source_type\": \"EDARSAHUB_SQL_SYNC_MESAS\",\n                \"source_table\": \"dbo.Sync_Mesas\",\n                \"source_message\": \"Sin datos en dbo.Sync_Mesas para el servidor solicitado\",\n                \"server_name\": server_name,\n                \"fecha\": None,\n                \"unidad\": _empty_mesas_unidad(server_name),\n                \"rotacion\": [],\n                \"mesas\": []\n            }"
+        },
+        {
+          "line": 3039,
+          "kind": "DICT",
+          "text": "{\n                \"success\": True,\n                \"source_status\": \"SIN_DATOS_EDARSAHUB\",\n                \"source_type\": \"EDARSAHUB_SQL_SYNC_MESAS\",\n                \"source_table\": \"dbo.Sync_Mesas\",\n                \"source_message\": f\"Sin mesas sincronizadas en dbo.Sync_Mesas para {fecha_op}\",\n                \"server_name\": server_name,\n                \"fecha\": str(fecha_op),\n                \"unidad\": _empty_mesas_unidad(server_name),\n                \"rotacion\": [],\n                \"mesas\": []\n            }"
+        },
+        {
+          "line": 3039,
+          "kind": "RETURN",
+          "text": "{\n                \"success\": True,\n                \"source_status\": \"SIN_DATOS_EDARSAHUB\",\n                \"source_type\": \"EDARSAHUB_SQL_SYNC_MESAS\",\n                \"source_table\": \"dbo.Sync_Mesas\",\n                \"source_message\": f\"Sin mesas sincronizadas en dbo.Sync_Mesas para {fecha_op}\",\n                \"server_name\": server_name,\n                \"fecha\": str(fecha_op),\n                \"unidad\": _empty_mesas_unidad(server_name),\n                \"rotacion\": [],\n                \"mesas\": []\n            }"
+        },
+        {
+          "line": 3079,
+          "kind": "DICT",
+          "text": "{\n                \"mesa_numero\": row.get(\"MesaNumero\"),\n                \"mesa_nombre\": mesa_nombre,\n                \"zona_id\": row.get(\"ZonaID\"),\n                \"zona_nombre\": row.get(\"ZonaNombre\"),\n                \"capacidad\": capacidad,\n                \"total_cuentas\": cuentas,\n                \"total_comensales\": comensales,\n                \"venta_total\": round(venta, 2),\n                \"ticket_promedio\": round(_safe_float(row.get(\"TicketPromedio\"), 0.0), 2),\n                \"tiempo_promedio_ocupacion\": _safe_int(row.get(\"TiempoPromedioOcupacion\"), 0),\n                \"rotacion_dia\": round(rotacion_dia, 2),\n                \"estado_actual\": row.get(\"EstadoActual\") or \"DESCONOCIDO\",\n                \"sucursal_id\": row.get(\"SucursalID\"),\n                \"sucursal_nombre\": row.get(\"SucursalNombre\"),\n            }"
+        },
+        {
+          "line": 3096,
+          "kind": "DICT",
+          "text": "{\n                \"mesa\": mesa_nombre,\n                \"capacidad\": capacidad,\n                \"vueltas\": round(rotacion_dia, 2),\n                \"ocupacion\": ocupacion\n            }"
+        },
+        {
+          "line": 3109,
+          "kind": "DICT",
+          "text": "{\n            \"nombre\": nombre_unidad,\n            \"total_mesas\": total_mesas,\n            \"capacidad_total\": total_capacidad,\n            \"mesas_atendidas_mes\": total_cuentas,\n            \"comensales_mes\": total_comensales,\n            \"rotacion_promedio\": round(rotacion_promedio, 2),\n            \"ticket_promedio\": round(ticket_promedio, 2),\n            \"cheque_promedio\": round(ticket_promedio, 2),\n            \"pax_promedio\": round(pax_promedio, 2),\n            \"pax_por_cheque\": round(pax_por_cheque, 2),\n            \"vueltas_por_dia\": round(total_cuentas, 2),\n            \"vueltas_por_hora_pico\": round(vueltas_por_hora_pico, 2)\n        }"
+        },
+        {
+          "line": 3124,
+          "kind": "DICT",
+          "text": "{\n            \"success\": True,\n            \"source_status\": \"SUCCESS\",\n            \"source_type\": \"EDARSAHUB_SQL_SYNC_MESAS\",\n            \"source_table\": \"dbo.Sync_Mesas\",\n            \"source_message\": f\"{total_mesas} mesas desde dbo.Sync_Mesas\",\n            \"server_name\": server_name,\n            \"fecha\": str(fecha_op),\n            \"unidad\": unidad_data,\n            \"rotacion\": rotacion_por_mesa,\n            \"mesas\": mesas,\n            \"resumen\": {\n                \"total_mesas\": total_mesas,\n                \"total_cuentas\": total_cuentas,\n                \"total_comensales\": total_comensales,\n                \"venta_total\": round(total_venta, 2),\n                \"ticket_promedio\": round(ticket_promedio, 2)\n            }\n        }"
+        },
+        {
+          "line": 3124,
+          "kind": "RETURN",
+          "text": "{\n            \"success\": True,\n            \"source_status\": \"SUCCESS\",\n            \"source_type\": \"EDARSAHUB_SQL_SYNC_MESAS\",\n            \"source_table\": \"dbo.Sync_Mesas\",\n            \"source_message\": f\"{total_mesas} mesas desde dbo.Sync_Mesas\",\n            \"server_name\": server_name,\n            \"fecha\": str(fecha_op),\n            \"unidad\": unidad_data,\n            \"rotacion\": rotacion_por_mesa,\n            \"mesas\": mesas,\n            \"resumen\": {\n                \"total_mesas\": total_mesas,\n                \"total_cuentas\": total_cuentas,\n                \"total_comensales\": total_comensales,\n                \"venta_total\": round(total_venta, 2),\n                \"ticket_promedio\": round(ticket_promedio, 2)\n            }\n        }"
+        },
+        {
+          "line": 3135,
+          "kind": "DICT",
+          "text": "{\n                \"total_mesas\": total_mesas,\n                \"total_cuentas\": total_cuentas,\n                \"total_comensales\": total_comensales,\n                \"venta_total\": round(total_venta, 2),\n                \"ticket_promedio\": round(ticket_promedio, 2)\n            }"
+        },
+        {
+          "line": 3152,
+          "kind": "DICT",
+          "text": "{\n            \"success\": False,\n            \"source_status\": \"ERROR\",\n            \"source_type\": \"ERROR_EDARSAHUB_SQL_SYNC_MESAS\",\n            \"source_table\": \"dbo.Sync_Mesas\",\n            \"source_message\": f\"Error consultando dbo.Sync_Mesas: {str(e)[:180]}\",\n            \"server_name\": server_name,\n            \"unidad\": _empty_mesas_unidad(server_name),\n            \"rotacion\": [],\n            \"mesas\": []\n        }"
+        },
+        {
+          "line": 3152,
+          "kind": "RETURN",
+          "text": "{\n            \"success\": False,\n            \"source_status\": \"ERROR\",\n            \"source_type\": \"ERROR_EDARSAHUB_SQL_SYNC_MESAS\",\n            \"source_table\": \"dbo.Sync_Mesas\",\n            \"source_message\": f\"Error consultando dbo.Sync_Mesas: {str(e)[:180]}\",\n            \"server_name\": server_name,\n            \"unidad\": _empty_mesas_unidad(server_name),\n            \"rotacion\": [],\n            \"mesas\": []\n        }"
+        }
+      ],
+      "called_functions": [
+        "Depends",
+        "Query",
+        "_empty_mesas_unidad",
+        "_safe_float",
+        "_safe_int",
+        "append",
+        "bool",
+        "close",
+        "cursor",
+        "date",
+        "error",
+        "execute",
+        "fetchall",
+        "fetchone",
+        "float",
+        "get",
+        "get_edarsahub_pymssql_connection",
+        "get_server_by_id",
+        "hasattr",
+        "int",
+        "isinstance",
+        "len",
+        "list",
+        "lower",
+        "max",
+        "min",
+        "round",
+        "str",
+        "strip",
+        "strptime",
+        "validate_server_access_rbac"
+      ],
+      "sync_columns": [
+        "*",
+        "MAX(FechaOperacion) AS fecha_op"
+      ],
+      "canonical_columns": [],
+      "demonstrated_common_aliases": [],
+      "sync_aliases_without_canonical_match": [
+        "fecha_op"
+      ],
+      "replacement_status": "SIN_REEMPLAZO_CANONICO_DEMOSTRADO"
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "function": "comercial_reporte_pax",
+      "line_start": 3486,
+      "line_end": 3595,
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/comercial/reporte-pax/{server_id}"
+        }
+      ],
+      "parameters": [
+        "server_id",
+        "sucursal",
+        "fecha_inicio",
+        "fecha_fin",
+        "current_user"
+      ],
+      "sync_queries": [
+        {
+          "line": 3533,
+          "sql": "SELECT * FROM Sync_PAX_Detalle WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY FechaOperacion DESC",
+          "select_columns": [
+            "*"
+          ],
+          "filters": "ServerID = %s AND SucursalID = %s AND FechaOperacion BETWEEN %s AND %s",
+          "sources": [
+            "Sync_PAX_Detalle"
+          ]
+        },
+        {
+          "line": 3540,
+          "sql": "SELECT * FROM Sync_PAX_Detalle WHERE ServerID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY SucursalNombre, FechaOperacion DESC",
+          "select_columns": [
+            "*"
+          ],
+          "filters": "ServerID = %s AND FechaOperacion BETWEEN %s AND %s",
+          "sources": [
+            "Sync_PAX_Detalle"
+          ]
+        }
+      ],
+      "canonical_queries": [],
+      "response_fragments": [
+        {
+          "line": 3505,
+          "kind": "RETURN",
+          "text": "build_envelope_response(\n            source_status=SourceStatus.ERROR,\n            data={\"pax_detalle\": [], \"resumen\": {}},\n            source_message=\"Servidor no encontrado\"\n        )"
+        },
+        {
+          "line": 3507,
+          "kind": "DICT",
+          "text": "{\"pax_detalle\": [], \"resumen\": {}}"
+        },
+        {
+          "line": 3507,
+          "kind": "DICT",
+          "text": "{}"
+        },
+        {
+          "line": 3561,
+          "kind": "DICT",
+          "text": "{\n                \"sucursal_id\": row.get(\"SucursalID\"),\n                \"sucursal_nombre\": row.get(\"SucursalNombre\"),\n                \"fecha\": row.get(\"FechaOperacion\").isoformat() if row.get(\"FechaOperacion\") else None,\n                \"numero_comensales\": comensales,\n                \"tipo_pax\": row.get(\"TipoPAX\") or \"NORMAL\",\n                \"venta_cuenta\": venta,\n                \"consumo_promedio_pax\": float(row.get(\"ConsumoPromedioPAX\") or 0),\n                \"tiempo_mesa\": int(row.get(\"TiempoMesa\") or 0),\n                \"turno\": row.get(\"Turno\"),\n                \"dia_semana\": row.get(\"DiaSemana\"),\n            }"
+        },
+        {
+          "line": 3574,
+          "kind": "DICT",
+          "text": "{\n            \"total_registros\": len(pax_detalle),\n            \"total_comensales\": total_comensales,\n            \"venta_total\": total_venta,\n            \"consumo_promedio_global\": total_venta / total_comensales if total_comensales > 0 else 0,\n            \"periodo\": f\"{f_inicio} a {f_fin}\",\n        }"
+        },
+        {
+          "line": 3582,
+          "kind": "RETURN",
+          "text": "build_envelope_response(\n            source_status=SourceStatus.SUCCESS if pax_detalle else SourceStatus.SUCCESS,\n            data={\"pax_detalle\": pax_detalle, \"resumen\": resumen},\n            source_message=f\"SQL-First: {len(pax_detalle)} registros desde Sync_PAX_Detalle\",\n            cache_used=False\n        )"
+        },
+        {
+          "line": 3584,
+          "kind": "DICT",
+          "text": "{\"pax_detalle\": pax_detalle, \"resumen\": resumen}"
+        },
+        {
+          "line": 3591,
+          "kind": "RETURN",
+          "text": "build_envelope_response(\n            source_status=SourceStatus.ERROR,\n            data={\"pax_detalle\": [], \"resumen\": {}},\n            source_message=f\"Error consultando PAX: {str(e)}\"\n        )"
+        },
+        {
+          "line": 3593,
+          "kind": "DICT",
+          "text": "{\"pax_detalle\": [], \"resumen\": {}}"
+        },
+        {
+          "line": 3593,
+          "kind": "DICT",
+          "text": "{}"
+        }
+      ],
+      "called_functions": [
+        "Depends",
+        "Query",
+        "append",
+        "build_envelope_response",
+        "close",
+        "cursor",
+        "date",
+        "error",
+        "execute",
+        "fetchall",
+        "float",
+        "get",
+        "get_edarsahub_pymssql_connection",
+        "get_server_by_id",
+        "int",
+        "isoformat",
+        "len",
+        "now",
+        "str",
+        "strptime",
+        "timedelta",
+        "validate_server_access_rbac"
+      ],
+      "sync_columns": [
+        "*"
+      ],
+      "canonical_columns": [],
+      "demonstrated_common_aliases": [],
+      "sync_aliases_without_canonical_match": [],
+      "replacement_status": "SIN_REEMPLAZO_CANONICO_DEMOSTRADO"
+    },
+    {
+      "file": "backend/modules/inteligencia_comercial/routes.py",
+      "function": "get_analisis_pax",
+      "line_start": 1249,
+      "line_end": 1372,
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/dashboard/pax"
+        }
+      ],
+      "parameters": [
+        "unidad",
+        "fecha_inicio",
+        "fecha_fin"
+      ],
+      "sync_queries": [
+        {
+          "line": 1273,
+          "sql": "SELECT SUM(NumeroComensales) AS pax_total, SUM(VentaCuenta) AS ventas_total, COUNT(*) AS total_mesas, AVG(ConsumoPromedioPAX) AS consumo_promedio, AVG(TiempoMesa) AS tiempo_promedio_mesa FROM Sync_PAX_Detalle WHERE",
+          "select_columns": [
+            "SUM(NumeroComensales) AS pax_total",
+            "SUM(VentaCuenta) AS ventas_total",
+            "COUNT(*) AS total_mesas",
+            "AVG(ConsumoPromedioPAX) AS consumo_promedio",
+            "AVG(TiempoMesa) AS tiempo_promedio_mesa"
+          ],
+          "filters": "",
+          "sources": [
+            "Sync_PAX_Detalle"
+          ]
+        },
+        {
+          "line": 1287,
+          "sql": "SELECT Turno, SUM(NumeroComensales) AS pax, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas, AVG(ConsumoPromedioPAX) AS consumo_promedio FROM Sync_PAX_Detalle WHERE",
+          "select_columns": [
+            "Turno",
+            "SUM(NumeroComensales) AS pax",
+            "SUM(VentaCuenta) AS ventas",
+            "COUNT(*) AS mesas",
+            "AVG(ConsumoPromedioPAX) AS consumo_promedio"
+          ],
+          "filters": "",
+          "sources": [
+            "Sync_PAX_Detalle"
+          ]
+        },
+        {
+          "line": 1302,
+          "sql": "SELECT DiaSemana, SUM(NumeroComensales) AS pax, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas FROM Sync_PAX_Detalle WHERE",
+          "select_columns": [
+            "DiaSemana",
+            "SUM(NumeroComensales) AS pax",
+            "SUM(VentaCuenta) AS ventas",
+            "COUNT(*) AS mesas"
+          ],
+          "filters": "",
+          "sources": [
+            "Sync_PAX_Detalle"
+          ]
+        },
+        {
+          "line": 1316,
+          "sql": "SELECT TOP 10 MeseroNombre, SUM(NumeroComensales) AS pax_atendidos, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas_atendidas, AVG(ConsumoPromedioPAX) AS ticket_promedio FROM Sync_PAX_Detalle WHERE",
+          "select_columns": [
+            "TOP 10 MeseroNombre",
+            "SUM(NumeroComensales) AS pax_atendidos",
+            "SUM(VentaCuenta) AS ventas",
+            "COUNT(*) AS mesas_atendidas",
+            "AVG(ConsumoPromedioPAX) AS ticket_promedio"
+          ],
+          "filters": "",
+          "sources": [
+            "Sync_PAX_Detalle"
+          ]
+        }
+      ],
+      "canonical_queries": [],
+      "response_fragments": [
+        {
+          "line": 1284,
+          "kind": "DICT",
+          "text": "{}"
+        },
+        {
+          "line": 1330,
+          "kind": "DICT",
+          "text": "{\n            \"success\": True,\n            \"_source\": \"SQL_SYNC_PAX_DETALLE\",\n            \"_unidad\": unidad_db or \"TODAS\",\n            \"resumen\": {\n                \"pax_total\": int(resumen_data.get(\"pax_total\", 0) or 0),\n                \"ventas_total\": round(float(resumen_data.get(\"ventas_total\", 0) or 0), 2),\n                \"total_mesas\": int(resumen_data.get(\"total_mesas\", 0) or 0),\n                \"consumo_promedio\": round(float(resumen_data.get(\"consumo_promedio\", 0) or 0), 2),\n                \"tiempo_promedio_mesa\": int(resumen_data.get(\"tiempo_promedio_mesa\", 0) or 0)\n            },\n            \"por_turno\": [\n                {\n                    \"turno\": t[\"Turno\"],\n                    \"pax\": int(t[\"pax\"] or 0),\n                    \"ventas\": round(float(t[\"ventas\"] or 0), 2),\n                    \"mesas\": int(t[\"mesas\"] or 0)\n                }\n                for t in por_turno\n            ],\n            \"por_dia_semana\": [\n                {\n                    \"dia\": d[\"DiaSemana\"],\n                    \"pax\": int(d[\"pax\"] or 0),\n                    \"ventas\": round(float(d[\"ventas\"] or 0), 2),\n                    \"mesas\": int(d[\"mesas\"] or 0)\n                }\n                for d in por_dia\n            ],\n            \"top_meseros\": [\n                {\n                    \"mesero\": m[\"MeseroNombre\"],\n                    \"pax_atendidos\": int(m[\"pax_atendidos\"] or 0),\n                    \"ventas\": round(float(m[\"ventas\"] or 0), 2),\n                    \"mesas\": int(m[\"mesas_atendidas\"] or 0),\n                    \"ticket_promedio\": round(float(m[\"ticket_promedio\"] or 0), 2)\n                }\n                for m in top_meseros\n            ]\n        }"
+        },
+        {
+          "line": 1330,
+          "kind": "RETURN",
+          "text": "{\n            \"success\": True,\n            \"_source\": \"SQL_SYNC_PAX_DETALLE\",\n            \"_unidad\": unidad_db or \"TODAS\",\n            \"resumen\": {\n                \"pax_total\": int(resumen_data.get(\"pax_total\", 0) or 0),\n                \"ventas_total\": round(float(resumen_data.get(\"ventas_total\", 0) or 0), 2),\n                \"total_mesas\": int(resumen_data.get(\"total_mesas\", 0) or 0),\n                \"consumo_promedio\": round(float(resumen_data.get(\"consumo_promedio\", 0) or 0), 2),\n                \"tiempo_promedio_mesa\": int(resumen_data.get(\"tiempo_promedio_mesa\", 0) or 0)\n            },\n            \"por_turno\": [\n                {\n                    \"turno\": t[\"Turno\"],\n                    \"pax\": int(t[\"pax\"] or 0),\n                    \"ventas\": round(float(t[\"ventas\"] or 0), 2),\n                    \"mesas\": int(t[\"mesas\"] or 0)\n                }\n                for t in por_turno\n            ],\n            \"por_dia_semana\": [\n                {\n                    \"dia\": d[\"DiaSemana\"],\n                    \"pax\": int(d[\"pax\"] or 0),\n                    \"ventas\": round(float(d[\"ventas\"] or 0), 2),\n                    \"mesas\": int(d[\"mesas\"] or 0)\n                }\n                for d in por_dia\n            ],\n            \"top_meseros\": [\n                {\n                    \"mesero\": m[\"MeseroNombre\"],\n                    \"pax_atendidos\": int(m[\"pax_atendidos\"] or 0),\n                    \"ventas\": round(float(m[\"ventas\"] or 0), 2),\n                    \"mesas\": int(m[\"mesas_atendidas\"] or 0),\n                    \"ticket_promedio\": round(float(m[\"ticket_promedio\"] or 0), 2)\n                }\n                for m in top_meseros\n            ]\n        }"
+        },
+        {
+          "line": 1334,
+          "kind": "DICT",
+          "text": "{\n                \"pax_total\": int(resumen_data.get(\"pax_total\", 0) or 0),\n                \"ventas_total\": round(float(resumen_data.get(\"ventas_total\", 0) or 0), 2),\n                \"total_mesas\": int(resumen_data.get(\"total_mesas\", 0) or 0),\n                \"consumo_promedio\": round(float(resumen_data.get(\"consumo_promedio\", 0) or 0), 2),\n                \"tiempo_promedio_mesa\": int(resumen_data.get(\"tiempo_promedio_mesa\", 0) or 0)\n            }"
+        },
+        {
+          "line": 1342,
+          "kind": "DICT",
+          "text": "{\n                    \"turno\": t[\"Turno\"],\n                    \"pax\": int(t[\"pax\"] or 0),\n                    \"ventas\": round(float(t[\"ventas\"] or 0), 2),\n                    \"mesas\": int(t[\"mesas\"] or 0)\n                }"
+        },
+        {
+          "line": 1351,
+          "kind": "DICT",
+          "text": "{\n                    \"dia\": d[\"DiaSemana\"],\n                    \"pax\": int(d[\"pax\"] or 0),\n                    \"ventas\": round(float(d[\"ventas\"] or 0), 2),\n                    \"mesas\": int(d[\"mesas\"] or 0)\n                }"
+        },
+        {
+          "line": 1360,
+          "kind": "DICT",
+          "text": "{\n                    \"mesero\": m[\"MeseroNombre\"],\n                    \"pax_atendidos\": int(m[\"pax_atendidos\"] or 0),\n                    \"ventas\": round(float(m[\"ventas\"] or 0), 2),\n                    \"mesas\": int(m[\"mesas_atendidas\"] or 0),\n                    \"ticket_promedio\": round(float(m[\"ticket_promedio\"] or 0), 2)\n                }"
+        },
+        {
+          "line": 1372,
+          "kind": "DICT",
+          "text": "{\"success\": False, \"_error\": str(e)}"
+        },
+        {
+          "line": 1372,
+          "kind": "RETURN",
+          "text": "{\"success\": False, \"_error\": str(e)}"
+        }
+      ],
+      "called_functions": [
+        "Query",
+        "append",
+        "error",
+        "execute_query",
+        "float",
+        "get",
+        "int",
+        "join",
+        "lower",
+        "normalizar_unidad",
+        "now",
+        "round",
+        "str",
+        "strftime",
+        "timedelta"
+      ],
+      "sync_columns": [
+        "AVG(ConsumoPromedioPAX) AS consumo_promedio",
+        "AVG(ConsumoPromedioPAX) AS ticket_promedio",
+        "AVG(TiempoMesa) AS tiempo_promedio_mesa",
+        "COUNT(*) AS mesas",
+        "COUNT(*) AS mesas_atendidas",
+        "COUNT(*) AS total_mesas",
+        "DiaSemana",
+        "SUM(NumeroComensales) AS pax",
+        "SUM(NumeroComensales) AS pax_atendidos",
+        "SUM(NumeroComensales) AS pax_total",
+        "SUM(VentaCuenta) AS ventas",
+        "SUM(VentaCuenta) AS ventas_total",
+        "TOP 10 MeseroNombre",
+        "Turno"
+      ],
+      "canonical_columns": [],
+      "demonstrated_common_aliases": [],
+      "sync_aliases_without_canonical_match": [
+        "consumo_promedio",
+        "diasemana",
+        "mesas",
+        "mesas_atendidas",
+        "pax",
+        "pax_atendidos",
+        "pax_total",
+        "ticket_promedio",
+        "tiempo_promedio_mesa",
+        "total_mesas",
+        "turno",
+        "ventas",
+        "ventas_total"
+      ],
+      "replacement_status": "SIN_REEMPLAZO_CANONICO_DEMOSTRADO"
+    }
+  ],
+  "summary": {
+    "functions_audited": 7,
+    "unique_routes": [
+      {
+        "file": "backend/modules/comercial/inteligencia_comercial_routes.py",
+        "function": "get_pax_inteligencia",
+        "method": "GET",
+        "path": "/pax",
+        "replacement_status": "SIN_REEMPLAZO_CANONICO_DEMOSTRADO"
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_metas",
+        "method": "GET",
+        "path": "/comercial/metas/{server_id}",
+        "replacement_status": "SIN_REEMPLAZO_CANONICO_DEMOSTRADO"
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_ticket_perfecto",
+        "method": "GET",
+        "path": "/comercial/ticket-perfecto/{server_id}",
+        "replacement_status": "SIN_REEMPLAZO_CANONICO_DEMOSTRADO"
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_mesas",
+        "method": "GET",
+        "path": "/comercial/mesas/{server_id}",
+        "replacement_status": "SIN_REEMPLAZO_CANONICO_DEMOSTRADO"
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_reporte_pax",
+        "method": "GET",
+        "path": "/comercial/reporte-pax/{server_id}",
+        "replacement_status": "SIN_REEMPLAZO_CANONICO_DEMOSTRADO"
+      },
+      {
+        "file": "backend/modules/inteligencia_comercial/routes.py",
+        "function": "get_analisis_pax",
+        "method": "GET",
+        "path": "/dashboard/pax",
+        "replacement_status": "SIN_REEMPLAZO_CANONICO_DEMOSTRADO"
+      }
+    ],
+    "unique_route_count": 6,
+    "status_counts": {
+      "CANONICO_DEMOSTRADO_EN_MISMA_FUNCION": 1,
+      "SIN_REEMPLAZO_CANONICO_DEMOSTRADO": 6
+    },
+    "without_replacement": [
+      {
+        "file": "backend/modules/comercial/inteligencia_comercial_routes.py",
+        "function": "get_pax_inteligencia",
+        "line_start": 266,
+        "line_end": 310,
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/pax"
+          }
+        ],
+        "parameters": [
+          "sucursal_nombre",
+          "fecha_inicio",
+          "fecha_fin",
+          "detalle_mesero",
+          "current_user"
+        ],
+        "sync_queries": [
+          {
+            "line": 293,
+            "sql": ", SUM(ISNULL(NumeroComensales, 0)) AS numero_comensales, SUM(ISNULL(VentaCuenta, 0)) AS venta_cuenta, CASE WHEN SUM(ISNULL(NumeroComensales, 0)) > 0 THEN SUM(ISNULL(VentaCuenta, 0)) / SUM(ISNULL(NumeroComensales, 0)) ELSE 0 END AS consumo_promedio_pax, AVG(CAST(ISNULL(TiempoMesa, 0) AS FLOAT)) AS tiempo_mesa_promedio, MAX(FechaSync) AS ultima_sync FROM dbo.Sync_PAX_Detalle WHERE",
+            "select_columns": [],
+            "filters": "",
+            "sources": [
+              "Sync_PAX_Detalle"
+            ]
+          }
+        ],
+        "canonical_queries": [],
+        "response_fragments": [
+          {
+            "line": 281,
+            "kind": "DICT",
+            "text": "{\"fecha_inicio\": fecha_inicio, \"fecha_fin\": fecha_fin}"
+          },
+          {
+            "line": 310,
+            "kind": "DICT",
+            "text": "{\"source\": \"Sync_PAX_Detalle\", \"data\": _query(sql, params)}"
+          },
+          {
+            "line": 310,
+            "kind": "RETURN",
+            "text": "{\"source\": \"Sync_PAX_Detalle\", \"data\": _query(sql, params)}"
+          }
+        ],
+        "called_functions": [
+          "Depends",
+          "Query",
+          "_query",
+          "_require_permission",
+          "append",
+          "get",
+          "join",
+          "timedelta",
+          "today"
+        ],
+        "sync_columns": [],
+        "canonical_columns": [],
+        "demonstrated_common_aliases": [],
+        "sync_aliases_without_canonical_match": [],
+        "replacement_status": "SIN_REEMPLAZO_CANONICO_DEMOSTRADO"
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_metas",
+        "line_start": 2058,
+        "line_end": 2382,
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/comercial/metas/{server_id}"
+          }
+        ],
+        "parameters": [
+          "server_id",
+          "sucursal",
+          "current_user"
+        ],
+        "sync_queries": [
+          {
+            "line": 2095,
+            "sql": "SELECT * FROM Sync_Metas_Comerciales WHERE ServerID = %s AND SucursalID = %s AND Anio = %s AND Mes = %s ORDER BY SucursalNombre",
+            "select_columns": [
+              "*"
+            ],
+            "filters": "ServerID = %s AND SucursalID = %s AND Anio = %s AND Mes = %s",
+            "sources": [
+              "Sync_Metas_Comerciales"
+            ]
+          },
+          {
+            "line": 2101,
+            "sql": "SELECT * FROM Sync_Metas_Comerciales WHERE ServerID = %s AND Anio = %s AND Mes = %s ORDER BY SucursalNombre",
+            "select_columns": [
+              "*"
+            ],
+            "filters": "ServerID = %s AND Anio = %s AND Mes = %s",
+            "sources": [
+              "Sync_Metas_Comerciales"
+            ]
+          }
+        ],
+        "canonical_queries": [],
+        "response_fragments": [
+          {
+            "line": 2075,
+            "kind": "RETURN",
+            "text": "build_envelope_response(\n            source_status=SourceStatus.ERROR,\n            data={\"metas\": []},\n            source_message=\"Servidor no encontrado\"\n        )"
+          },
+          {
+            "line": 2077,
+            "kind": "DICT",
+            "text": "{\"metas\": []}"
+          },
+          {
+            "line": 2113,
+            "kind": "DICT",
+            "text": "{\n                \"sucursal_id\": row.get(\"SucursalID\"),\n                \"sucursal_nombre\": row.get(\"SucursalNombre\"),\n                \"anio\": row.get(\"Anio\"),\n                \"mes\": row.get(\"Mes\"),\n                \"meta_venta_bruta\": float(row.get(\"MetaVentaBruta\") or 0),\n                \"meta_venta_neta\": float(row.get(\"MetaVentaNeta\") or 0),\n                \"venta_bruta_actual\": float(row.get(\"VentaBrutaActual\") or 0),\n                \"venta_neta_actual\": float(row.get(\"VentaNetaActual\") or 0),\n                \"ticket_promedio_actual\": float(row.get(\"TicketPromedioActual\") or 0),\n                \"cuentas_actual\": int(row.get(\"CuentasActual\") or 0),\n                \"comensales_actual\": int(row.get(\"ComensalesActual\") or 0),\n                \"porcentaje_cumplimiento\": float(row.get(\"PorcentajeCumplimiento\") or 0),\n                \"dias_transcurridos\": int(row.get(\"DiasTranscurridos\") or 0),\n                \"dias_restantes\": int(row.get(\"DiasRestantes\") or 0),\n                \"proyeccion_mes\": float(row.get(\"ProyeccionMes\") or 0),\n                \"fecha_sync\": row.get(\"FechaSync\").isoformat() if row.get(\"FechaSync\") else None,\n            }"
+          },
+          {
+            "line": 2132,
+            "kind": "RETURN",
+            "text": "build_envelope_response(\n            source_status=SourceStatus.SUCCESS if metas else SourceStatus.SUCCESS,\n            data={\"metas\": metas, \"periodo\": f\"{anio}-{mes:02d}\"},\n            source_message=f\"SQL-First: {len(metas)} registros desde Sync_Metas_Comerciales\",\n            cache_used=False\n        )"
+          },
+          {
+            "line": 2134,
+            "kind": "DICT",
+            "text": "{\"metas\": metas, \"periodo\": f\"{anio}-{mes:02d}\"}"
+          },
+          {
+            "line": 2141,
+            "kind": "RETURN",
+            "text": "build_envelope_response(\n            source_status=SourceStatus.ERROR,\n            data={\"metas\": []},\n            source_message=f\"Error consultando metas: {str(e)}\"\n        )"
+          },
+          {
+            "line": 2143,
+            "kind": "DICT",
+            "text": "{\"metas\": []}"
+          },
+          {
+            "line": 2162,
+            "kind": "DICT",
+            "text": "{\"por_producto\": [], \"por_vendedor\": []}"
+          },
+          {
+            "line": 2162,
+            "kind": "RETURN",
+            "text": "{\"por_producto\": [], \"por_vendedor\": []}"
+          },
+          {
+            "line": 2211,
+            "kind": "DICT",
+            "text": "{\n                        \"producto\": r['producto'],\n                        \"meta\": meta_estimada,\n                        \"real\": real_ventas,\n                        \"cumplimiento\": cumplimiento\n                    }"
+          },
+          {
+            "line": 2242,
+            "kind": "DICT",
+            "text": "{\n                        \"vendedor\": r['vendedor'],\n                        \"meta\": meta_estimada,\n                        \"real\": real_ventas,\n                        \"cumplimiento\": cumplimiento\n                    }"
+          },
+          {
+            "line": 2257,
+            "kind": "DICT",
+            "text": "{\n                UnidadesService.resolver_codigo('ORIGEN') or 'ORIGEN': '0023',\n                'QUERETARO': '0021',\n                '130 QRO': '0021',\n                'QRO': '0021',\n            }"
+          },
+          {
+            "line": 2296,
+            "kind": "DICT",
+            "text": "{\n                        \"producto\": r['producto'],\n                        \"meta\": meta_estimada,\n                        \"real\": real_ventas,\n                        \"cumplimiento\": cumplimiento\n                    }"
+          },
+          {
+            "line": 2330,
+            "kind": "DICT",
+            "text": "{\n                        \"vendedor\": r['vendedor'],\n                        \"meta\": meta_estimada,\n                        \"real\": real_ventas,\n                        \"cumplimiento\": cumplimiento\n                    }"
+          },
+          {
+            "line": 2337,
+            "kind": "DICT",
+            "text": "{\"por_producto\": metas_producto, \"por_vendedor\": metas_vendedor}"
+          },
+          {
+            "line": 2344,
+            "kind": "RETURN",
+            "text": "build_envelope_response(\n                source_status=SourceStatus.SUCCESS if has_data else SourceStatus.NO_DATA,\n                data=data,\n                server_name=server['name'],\n                server_type=server['system_type'],\n                cache_used=False,\n                fecha_inicio=fecha_ini,\n                fecha_fin=fecha_fin\n            )"
+          },
+          {
+            "line": 2364,
+            "kind": "RETURN",
+            "text": "build_envelope_response(\n                source_status=SourceStatus.DEGRADED_CACHE,\n                data=cached[\"data\"],\n                server_name=server['name'],\n                server_type=server['system_type'],\n                cache_used=True,\n                last_successful_sync=cached.get(\"cached_at\"),\n                source_message=f\"Datos de cache (última actualización: {cached.get('cached_at', 'desconocido')})\"\n            )"
+          },
+          {
+            "line": 2375,
+            "kind": "RETURN",
+            "text": "build_envelope_response(\n            source_status=SourceStatus.SOURCE_UNREACHABLE,\n            data=empty_response(),\n            server_name=server['name'],\n            server_type=server['system_type'],\n            cache_used=False,\n            source_message=f\"No se pudo conectar a {server['name']} y no hay cache disponible\"\n        )"
+          }
+        ],
+        "called_functions": [
+          "Depends",
+          "Exception",
+          "Query",
+          "append",
+          "build_cache_key",
+          "build_envelope_response",
+          "check_column_exists",
+          "close",
+          "cursor",
+          "empty_response",
+          "error",
+          "execute",
+          "execute_sql_query",
+          "fetchall",
+          "float",
+          "get",
+          "get_cached_response",
+          "get_edarsahub_pymssql_connection",
+          "get_propina_safe_column",
+          "get_server_by_id",
+          "int",
+          "is_mpro_system",
+          "is_softrestaurant_system",
+          "isoformat",
+          "len",
+          "now",
+          "replace",
+          "resolver_codigo",
+          "round",
+          "save_to_cache",
+          "str",
+          "strftime",
+          "upper",
+          "validate_server_access_rbac",
+          "warning"
+        ],
+        "sync_columns": [
+          "*"
+        ],
+        "canonical_columns": [],
+        "demonstrated_common_aliases": [],
+        "sync_aliases_without_canonical_match": [],
+        "replacement_status": "SIN_REEMPLAZO_CANONICO_DEMOSTRADO"
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_ticket_perfecto",
+        "line_start": 2390,
+        "line_end": 2679,
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/comercial/ticket-perfecto/{server_id}"
+          }
+        ],
+        "parameters": [
+          "server_id",
+          "sucursal",
+          "fecha_inicio",
+          "fecha_fin",
+          "current_user"
+        ],
+        "sync_queries": [
+          {
+            "line": 2437,
+            "sql": "SELECT * FROM Sync_Ticket_Perfecto WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY FechaOperacion DESC",
+            "select_columns": [
+              "*"
+            ],
+            "filters": "ServerID = %s AND SucursalID = %s AND FechaOperacion BETWEEN %s AND %s",
+            "sources": [
+              "Sync_Ticket_Perfecto"
+            ]
+          },
+          {
+            "line": 2444,
+            "sql": "SELECT * FROM Sync_Ticket_Perfecto WHERE ServerID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY SucursalNombre, FechaOperacion DESC",
+            "select_columns": [
+              "*"
+            ],
+            "filters": "ServerID = %s AND FechaOperacion BETWEEN %s AND %s",
+            "sources": [
+              "Sync_Ticket_Perfecto"
+            ]
+          }
+        ],
+        "canonical_queries": [],
+        "response_fragments": [
+          {
+            "line": 2409,
+            "kind": "RETURN",
+            "text": "build_envelope_response(\n            source_status=SourceStatus.ERROR,\n            data={\"tickets\": []},\n            source_message=\"Servidor no encontrado\"\n        )"
+          },
+          {
+            "line": 2411,
+            "kind": "DICT",
+            "text": "{\"tickets\": []}"
+          },
+          {
+            "line": 2456,
+            "kind": "DICT",
+            "text": "{\n                \"sucursal_id\": row.get(\"SucursalID\"),\n                \"sucursal_nombre\": row.get(\"SucursalNombre\"),\n                \"fecha\": row.get(\"FechaOperacion\").isoformat() if row.get(\"FechaOperacion\") else None,\n                \"total_cuentas\": int(row.get(\"TotalCuentas\") or 0),\n                \"total_comensales\": int(row.get(\"TotalComensales\") or 0),\n                \"venta_total\": float(row.get(\"VentaTotal\") or 0),\n                \"ticket_promedio_real\": float(row.get(\"TicketPromedioReal\") or 0),\n                \"ticket_perfecto_objetivo\": float(row.get(\"TicketPerfectoObjetivo\") or 0),\n                \"porcentaje_cumplimiento\": float(row.get(\"PorcentajeCumplimiento\") or 0),\n                \"cuentas_bajo_objetivo\": int(row.get(\"CuentasBajoObjetivo\") or 0),\n                \"cuentas_sobre_objetivo\": int(row.get(\"CuentasSobreObjetivo\") or 0),\n                \"cuentas_en_rango\": int(row.get(\"CuentasEnRango\") or 0),\n                \"promedio_entradas\": float(row.get(\"PromedioEntradas\") or 0),\n                \"promedio_fuertes\": float(row.get(\"PromedioFuertes\") or 0),\n                \"promedio_bebidas\": float(row.get(\"PromedioBebidas\") or 0),\n                \"promedio_postres\": float(row.get(\"PromedioPostres\") or 0),\n            }"
+          },
+          {
+            "line": 2475,
+            "kind": "RETURN",
+            "text": "build_envelope_response(\n            source_status=SourceStatus.SUCCESS if tickets else SourceStatus.SUCCESS,\n            data={\"tickets\": tickets, \"periodo\": f\"{f_inicio} a {f_fin}\"},\n            source_message=f\"SQL-First: {len(tickets)} registros desde Sync_Ticket_Perfecto\",\n            cache_used=False\n        )"
+          },
+          {
+            "line": 2477,
+            "kind": "DICT",
+            "text": "{\"tickets\": tickets, \"periodo\": f\"{f_inicio} a {f_fin}\"}"
+          },
+          {
+            "line": 2484,
+            "kind": "RETURN",
+            "text": "build_envelope_response(\n            source_status=SourceStatus.ERROR,\n            data={\"tickets\": []},\n            source_message=f\"Error consultando ticket perfecto: {str(e)}\"\n        )"
+          },
+          {
+            "line": 2486,
+            "kind": "DICT",
+            "text": "{\"tickets\": []}"
+          },
+          {
+            "line": 2504,
+            "kind": "DICT",
+            "text": "{\n            \"ticket\": {\"tickets_totales\": 0, \"tickets_completos\": 0, \"pct_completos\": 0},\n            \"rentabilidad\": []\n        }"
+          },
+          {
+            "line": 2504,
+            "kind": "RETURN",
+            "text": "{\n            \"ticket\": {\"tickets_totales\": 0, \"tickets_completos\": 0, \"pct_completos\": 0},\n            \"rentabilidad\": []\n        }"
+          },
+          {
+            "line": 2505,
+            "kind": "DICT",
+            "text": "{\"tickets_totales\": 0, \"tickets_completos\": 0, \"pct_completos\": 0}"
+          },
+          {
+            "line": 2554,
+            "kind": "DICT",
+            "text": "{\n                        \"tickets_totales\": tickets_totales,\n                        \"tickets_completos\": tickets_completos,\n                        \"pct_completos\": round((tickets_completos / tickets_totales * 100), 0) if tickets_totales > 0 else 0,\n                        \"con_entrada\": con_alimentos,\n                        \"pct_entrada\": round((con_alimentos / tickets_totales * 100), 0) if tickets_totales > 0 else 0,\n                        \"con_plato_fuerte\": con_alimentos,\n                        \"pct_plato_fuerte\": round((con_alimentos / tickets_totales * 100), 0) if tickets_totales > 0 else 0,\n                        \"con_postre\": 0,\n                        \"pct_postre\": 0,\n                        \"con_digestivo\": con_bebidas,\n                        \"pct_digestivo\": round((con_bebidas / tickets_totales * 100), 0) if tickets_totales > 0 else 0,\n                        \"oportunidad_perdida\": 0\n                    }"
+          },
+          {
+            "line": 2586,
+            "kind": "DICT",
+            "text": "{\n                            \"tickets_totales\": tickets_totales,\n                            \"tickets_completos\": 0,\n                            \"pct_completos\": 0,\n                            \"con_entrada\": 0, \"pct_entrada\": 0,\n                            \"con_plato_fuerte\": 0, \"pct_plato_fuerte\": 0,\n                            \"con_postre\": 0, \"pct_postre\": 0,\n                            \"con_digestivo\": 0, \"pct_digestivo\": 0,\n                            \"oportunidad_perdida\": 0\n                        }"
+          },
+          {
+            "line": 2629,
+            "kind": "DICT",
+            "text": "{\n                        \"codigo\": str(r['codigo']),\n                        \"producto\": r['producto'],\n                        \"ventas\": ventas,\n                        \"costo\": costo,\n                        \"margen\": margen,\n                        \"categoria\": categoria\n                    }"
+          },
+          {
+            "line": 2638,
+            "kind": "DICT",
+            "text": "{\"ticket\": ticket_data, \"rentabilidad\": rentabilidad}"
+          },
+          {
+            "line": 2644,
+            "kind": "RETURN",
+            "text": "build_envelope_response(\n                source_status=SourceStatus.SUCCESS if has_data else SourceStatus.NO_DATA,\n                data=data,\n                server_name=server['name'],\n                server_type=server['system_type'],\n                cache_used=False,\n                fecha_inicio=fecha_ini,\n                fecha_fin=fecha_fin\n            )"
+          },
+          {
+            "line": 2662,
+            "kind": "RETURN",
+            "text": "build_envelope_response(\n                source_status=SourceStatus.DEGRADED_CACHE,\n                data=cached[\"data\"],\n                server_name=server['name'],\n                server_type=server['system_type'],\n                cache_used=True,\n                last_successful_sync=cached.get(\"cached_at\"),\n                source_message=f\"Datos de cache (última actualización: {cached.get('cached_at', 'desconocido')})\"\n            )"
+          },
+          {
+            "line": 2672,
+            "kind": "RETURN",
+            "text": "build_envelope_response(\n            source_status=SourceStatus.SOURCE_UNREACHABLE,\n            data=empty_response(),\n            server_name=server['name'],\n            server_type=server['system_type'],\n            cache_used=False,\n            source_message=f\"No se pudo conectar a {server['name']} y no hay cache disponible\"\n        )"
+          }
+        ],
+        "called_functions": [
+          "Depends",
+          "Exception",
+          "Query",
+          "append",
+          "build_cache_key",
+          "build_envelope_response",
+          "close",
+          "cursor",
+          "date",
+          "empty_response",
+          "error",
+          "execute",
+          "execute_sql_query",
+          "fetchall",
+          "float",
+          "get",
+          "get_cached_response",
+          "get_edarsahub_pymssql_connection",
+          "get_server_by_id",
+          "int",
+          "is_softrestaurant_system",
+          "isoformat",
+          "len",
+          "min",
+          "now",
+          "replace",
+          "round",
+          "save_to_cache",
+          "str",
+          "strftime",
+          "strptime",
+          "timedelta",
+          "validate_server_access_rbac",
+          "warning"
+        ],
+        "sync_columns": [
+          "*"
+        ],
+        "canonical_columns": [],
+        "demonstrated_common_aliases": [],
+        "sync_aliases_without_canonical_match": [],
+        "replacement_status": "SIN_REEMPLAZO_CANONICO_DEMOSTRADO"
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_mesas",
+        "line_start": 2905,
+        "line_end": 3162,
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/comercial/mesas/{server_id}"
+          }
+        ],
+        "parameters": [
+          "server_id",
+          "sucursal",
+          "fecha",
+          "current_user"
+        ],
+        "sync_queries": [
+          {
+            "line": 3016,
+            "sql": "SELECT * FROM dbo.Sync_Mesas WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s ORDER BY MesaNumero",
+            "select_columns": [
+              "*"
+            ],
+            "filters": "ServerID = %s AND SucursalID = %s AND FechaOperacion = %s",
+            "sources": [
+              "Sync_Mesas"
+            ]
+          },
+          {
+            "line": 3025,
+            "sql": "SELECT * FROM dbo.Sync_Mesas WHERE ServerID = %s AND FechaOperacion = %s ORDER BY SucursalNombre, MesaNumero",
+            "select_columns": [
+              "*"
+            ],
+            "filters": "ServerID = %s AND FechaOperacion = %s",
+            "sources": [
+              "Sync_Mesas"
+            ]
+          },
+          {
+            "line": 2978,
+            "sql": "SELECT MAX(FechaOperacion) AS fecha_op FROM dbo.Sync_Mesas WHERE ServerID = %s AND SucursalID = %s",
+            "select_columns": [
+              "MAX(FechaOperacion) AS fecha_op"
+            ],
+            "filters": "ServerID = %s AND SucursalID = %s",
+            "sources": [
+              "Sync_Mesas"
+            ]
+          },
+          {
+            "line": 2984,
+            "sql": "SELECT MAX(FechaOperacion) AS fecha_op FROM dbo.Sync_Mesas WHERE ServerID = %s",
+            "select_columns": [
+              "MAX(FechaOperacion) AS fecha_op"
+            ],
+            "filters": "ServerID = %s",
+            "sources": [
+              "Sync_Mesas"
+            ]
+          }
+        ],
+        "canonical_queries": [],
+        "response_fragments": [
+          {
+            "line": 2923,
+            "kind": "RETURN",
+            "text": "int(value or default)"
+          },
+          {
+            "line": 2925,
+            "kind": "RETURN",
+            "text": "default"
+          },
+          {
+            "line": 2929,
+            "kind": "RETURN",
+            "text": "float(value or default)"
+          },
+          {
+            "line": 2931,
+            "kind": "RETURN",
+            "text": "default"
+          },
+          {
+            "line": 2934,
+            "kind": "DICT",
+            "text": "{\n            \"nombre\": nombre or \"Unidad\",\n            \"total_mesas\": 0,\n            \"capacidad_total\": 0,\n            \"mesas_atendidas_mes\": 0,\n            \"comensales_mes\": 0,\n            \"rotacion_promedio\": 0,\n            \"ticket_promedio\": 0,\n            \"cheque_promedio\": 0,\n            \"pax_promedio\": 0,\n            \"vueltas_por_dia\": 0,\n            \"vueltas_por_hora_pico\": 0\n        }"
+          },
+          {
+            "line": 2934,
+            "kind": "RETURN",
+            "text": "{\n            \"nombre\": nombre or \"Unidad\",\n            \"total_mesas\": 0,\n            \"capacidad_total\": 0,\n            \"mesas_atendidas_mes\": 0,\n            \"comensales_mes\": 0,\n            \"rotacion_promedio\": 0,\n            \"ticket_promedio\": 0,\n            \"cheque_promedio\": 0,\n            \"pax_promedio\": 0,\n            \"vueltas_por_dia\": 0,\n            \"vueltas_por_hora_pico\": 0\n        }"
+          },
+          {
+            "line": 2952,
+            "kind": "DICT",
+            "text": "{\n            \"success\": False,\n            \"source_status\": \"ERROR\",\n            \"source_type\": \"ERROR\",\n            \"source_message\": \"Servidor no encontrado\",\n            \"unidad\": _empty_mesas_unidad(server_name),\n            \"rotacion\": [],\n            \"mesas\": []\n        }"
+          },
+          {
+            "line": 2952,
+            "kind": "RETURN",
+            "text": "{\n            \"success\": False,\n            \"source_status\": \"ERROR\",\n            \"source_type\": \"ERROR\",\n            \"source_message\": \"Servidor no encontrado\",\n            \"unidad\": _empty_mesas_unidad(server_name),\n            \"rotacion\": [],\n            \"mesas\": []\n        }"
+          },
+          {
+            "line": 2990,
+            "kind": "DICT",
+            "text": "{}"
+          },
+          {
+            "line": 3002,
+            "kind": "DICT",
+            "text": "{\n                \"success\": True,\n                \"source_status\": \"SIN_DATOS_EDARSAHUB\",\n                \"source_type\": \"EDARSAHUB_SQL_SYNC_MESAS\",\n                \"source_table\": \"dbo.Sync_Mesas\",\n                \"source_message\": \"Sin datos en dbo.Sync_Mesas para el servidor solicitado\",\n                \"server_name\": server_name,\n                \"fecha\": None,\n                \"unidad\": _empty_mesas_unidad(server_name),\n                \"rotacion\": [],\n                \"mesas\": []\n            }"
+          },
+          {
+            "line": 3002,
+            "kind": "RETURN",
+            "text": "{\n                \"success\": True,\n                \"source_status\": \"SIN_DATOS_EDARSAHUB\",\n                \"source_type\": \"EDARSAHUB_SQL_SYNC_MESAS\",\n                \"source_table\": \"dbo.Sync_Mesas\",\n                \"source_message\": \"Sin datos en dbo.Sync_Mesas para el servidor solicitado\",\n                \"server_name\": server_name,\n                \"fecha\": None,\n                \"unidad\": _empty_mesas_unidad(server_name),\n                \"rotacion\": [],\n                \"mesas\": []\n            }"
+          },
+          {
+            "line": 3039,
+            "kind": "DICT",
+            "text": "{\n                \"success\": True,\n                \"source_status\": \"SIN_DATOS_EDARSAHUB\",\n                \"source_type\": \"EDARSAHUB_SQL_SYNC_MESAS\",\n                \"source_table\": \"dbo.Sync_Mesas\",\n                \"source_message\": f\"Sin mesas sincronizadas en dbo.Sync_Mesas para {fecha_op}\",\n                \"server_name\": server_name,\n                \"fecha\": str(fecha_op),\n                \"unidad\": _empty_mesas_unidad(server_name),\n                \"rotacion\": [],\n                \"mesas\": []\n            }"
+          },
+          {
+            "line": 3039,
+            "kind": "RETURN",
+            "text": "{\n                \"success\": True,\n                \"source_status\": \"SIN_DATOS_EDARSAHUB\",\n                \"source_type\": \"EDARSAHUB_SQL_SYNC_MESAS\",\n                \"source_table\": \"dbo.Sync_Mesas\",\n                \"source_message\": f\"Sin mesas sincronizadas en dbo.Sync_Mesas para {fecha_op}\",\n                \"server_name\": server_name,\n                \"fecha\": str(fecha_op),\n                \"unidad\": _empty_mesas_unidad(server_name),\n                \"rotacion\": [],\n                \"mesas\": []\n            }"
+          },
+          {
+            "line": 3079,
+            "kind": "DICT",
+            "text": "{\n                \"mesa_numero\": row.get(\"MesaNumero\"),\n                \"mesa_nombre\": mesa_nombre,\n                \"zona_id\": row.get(\"ZonaID\"),\n                \"zona_nombre\": row.get(\"ZonaNombre\"),\n                \"capacidad\": capacidad,\n                \"total_cuentas\": cuentas,\n                \"total_comensales\": comensales,\n                \"venta_total\": round(venta, 2),\n                \"ticket_promedio\": round(_safe_float(row.get(\"TicketPromedio\"), 0.0), 2),\n                \"tiempo_promedio_ocupacion\": _safe_int(row.get(\"TiempoPromedioOcupacion\"), 0),\n                \"rotacion_dia\": round(rotacion_dia, 2),\n                \"estado_actual\": row.get(\"EstadoActual\") or \"DESCONOCIDO\",\n                \"sucursal_id\": row.get(\"SucursalID\"),\n                \"sucursal_nombre\": row.get(\"SucursalNombre\"),\n            }"
+          },
+          {
+            "line": 3096,
+            "kind": "DICT",
+            "text": "{\n                \"mesa\": mesa_nombre,\n                \"capacidad\": capacidad,\n                \"vueltas\": round(rotacion_dia, 2),\n                \"ocupacion\": ocupacion\n            }"
+          },
+          {
+            "line": 3109,
+            "kind": "DICT",
+            "text": "{\n            \"nombre\": nombre_unidad,\n            \"total_mesas\": total_mesas,\n            \"capacidad_total\": total_capacidad,\n            \"mesas_atendidas_mes\": total_cuentas,\n            \"comensales_mes\": total_comensales,\n            \"rotacion_promedio\": round(rotacion_promedio, 2),\n            \"ticket_promedio\": round(ticket_promedio, 2),\n            \"cheque_promedio\": round(ticket_promedio, 2),\n            \"pax_promedio\": round(pax_promedio, 2),\n            \"pax_por_cheque\": round(pax_por_cheque, 2),\n            \"vueltas_por_dia\": round(total_cuentas, 2),\n            \"vueltas_por_hora_pico\": round(vueltas_por_hora_pico, 2)\n        }"
+          },
+          {
+            "line": 3124,
+            "kind": "DICT",
+            "text": "{\n            \"success\": True,\n            \"source_status\": \"SUCCESS\",\n            \"source_type\": \"EDARSAHUB_SQL_SYNC_MESAS\",\n            \"source_table\": \"dbo.Sync_Mesas\",\n            \"source_message\": f\"{total_mesas} mesas desde dbo.Sync_Mesas\",\n            \"server_name\": server_name,\n            \"fecha\": str(fecha_op),\n            \"unidad\": unidad_data,\n            \"rotacion\": rotacion_por_mesa,\n            \"mesas\": mesas,\n            \"resumen\": {\n                \"total_mesas\": total_mesas,\n                \"total_cuentas\": total_cuentas,\n                \"total_comensales\": total_comensales,\n                \"venta_total\": round(total_venta, 2),\n                \"ticket_promedio\": round(ticket_promedio, 2)\n            }\n        }"
+          },
+          {
+            "line": 3124,
+            "kind": "RETURN",
+            "text": "{\n            \"success\": True,\n            \"source_status\": \"SUCCESS\",\n            \"source_type\": \"EDARSAHUB_SQL_SYNC_MESAS\",\n            \"source_table\": \"dbo.Sync_Mesas\",\n            \"source_message\": f\"{total_mesas} mesas desde dbo.Sync_Mesas\",\n            \"server_name\": server_name,\n            \"fecha\": str(fecha_op),\n            \"unidad\": unidad_data,\n            \"rotacion\": rotacion_por_mesa,\n            \"mesas\": mesas,\n            \"resumen\": {\n                \"total_mesas\": total_mesas,\n                \"total_cuentas\": total_cuentas,\n                \"total_comensales\": total_comensales,\n                \"venta_total\": round(total_venta, 2),\n                \"ticket_promedio\": round(ticket_promedio, 2)\n            }\n        }"
+          },
+          {
+            "line": 3135,
+            "kind": "DICT",
+            "text": "{\n                \"total_mesas\": total_mesas,\n                \"total_cuentas\": total_cuentas,\n                \"total_comensales\": total_comensales,\n                \"venta_total\": round(total_venta, 2),\n                \"ticket_promedio\": round(ticket_promedio, 2)\n            }"
+          },
+          {
+            "line": 3152,
+            "kind": "DICT",
+            "text": "{\n            \"success\": False,\n            \"source_status\": \"ERROR\",\n            \"source_type\": \"ERROR_EDARSAHUB_SQL_SYNC_MESAS\",\n            \"source_table\": \"dbo.Sync_Mesas\",\n            \"source_message\": f\"Error consultando dbo.Sync_Mesas: {str(e)[:180]}\",\n            \"server_name\": server_name,\n            \"unidad\": _empty_mesas_unidad(server_name),\n            \"rotacion\": [],\n            \"mesas\": []\n        }"
+          },
+          {
+            "line": 3152,
+            "kind": "RETURN",
+            "text": "{\n            \"success\": False,\n            \"source_status\": \"ERROR\",\n            \"source_type\": \"ERROR_EDARSAHUB_SQL_SYNC_MESAS\",\n            \"source_table\": \"dbo.Sync_Mesas\",\n            \"source_message\": f\"Error consultando dbo.Sync_Mesas: {str(e)[:180]}\",\n            \"server_name\": server_name,\n            \"unidad\": _empty_mesas_unidad(server_name),\n            \"rotacion\": [],\n            \"mesas\": []\n        }"
+          }
+        ],
+        "called_functions": [
+          "Depends",
+          "Query",
+          "_empty_mesas_unidad",
+          "_safe_float",
+          "_safe_int",
+          "append",
+          "bool",
+          "close",
+          "cursor",
+          "date",
+          "error",
+          "execute",
+          "fetchall",
+          "fetchone",
+          "float",
+          "get",
+          "get_edarsahub_pymssql_connection",
+          "get_server_by_id",
+          "hasattr",
+          "int",
+          "isinstance",
+          "len",
+          "list",
+          "lower",
+          "max",
+          "min",
+          "round",
+          "str",
+          "strip",
+          "strptime",
+          "validate_server_access_rbac"
+        ],
+        "sync_columns": [
+          "*",
+          "MAX(FechaOperacion) AS fecha_op"
+        ],
+        "canonical_columns": [],
+        "demonstrated_common_aliases": [],
+        "sync_aliases_without_canonical_match": [
+          "fecha_op"
+        ],
+        "replacement_status": "SIN_REEMPLAZO_CANONICO_DEMOSTRADO"
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_reporte_pax",
+        "line_start": 3486,
+        "line_end": 3595,
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/comercial/reporte-pax/{server_id}"
+          }
+        ],
+        "parameters": [
+          "server_id",
+          "sucursal",
+          "fecha_inicio",
+          "fecha_fin",
+          "current_user"
+        ],
+        "sync_queries": [
+          {
+            "line": 3533,
+            "sql": "SELECT * FROM Sync_PAX_Detalle WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY FechaOperacion DESC",
+            "select_columns": [
+              "*"
+            ],
+            "filters": "ServerID = %s AND SucursalID = %s AND FechaOperacion BETWEEN %s AND %s",
+            "sources": [
+              "Sync_PAX_Detalle"
+            ]
+          },
+          {
+            "line": 3540,
+            "sql": "SELECT * FROM Sync_PAX_Detalle WHERE ServerID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY SucursalNombre, FechaOperacion DESC",
+            "select_columns": [
+              "*"
+            ],
+            "filters": "ServerID = %s AND FechaOperacion BETWEEN %s AND %s",
+            "sources": [
+              "Sync_PAX_Detalle"
+            ]
+          }
+        ],
+        "canonical_queries": [],
+        "response_fragments": [
+          {
+            "line": 3505,
+            "kind": "RETURN",
+            "text": "build_envelope_response(\n            source_status=SourceStatus.ERROR,\n            data={\"pax_detalle\": [], \"resumen\": {}},\n            source_message=\"Servidor no encontrado\"\n        )"
+          },
+          {
+            "line": 3507,
+            "kind": "DICT",
+            "text": "{\"pax_detalle\": [], \"resumen\": {}}"
+          },
+          {
+            "line": 3507,
+            "kind": "DICT",
+            "text": "{}"
+          },
+          {
+            "line": 3561,
+            "kind": "DICT",
+            "text": "{\n                \"sucursal_id\": row.get(\"SucursalID\"),\n                \"sucursal_nombre\": row.get(\"SucursalNombre\"),\n                \"fecha\": row.get(\"FechaOperacion\").isoformat() if row.get(\"FechaOperacion\") else None,\n                \"numero_comensales\": comensales,\n                \"tipo_pax\": row.get(\"TipoPAX\") or \"NORMAL\",\n                \"venta_cuenta\": venta,\n                \"consumo_promedio_pax\": float(row.get(\"ConsumoPromedioPAX\") or 0),\n                \"tiempo_mesa\": int(row.get(\"TiempoMesa\") or 0),\n                \"turno\": row.get(\"Turno\"),\n                \"dia_semana\": row.get(\"DiaSemana\"),\n            }"
+          },
+          {
+            "line": 3574,
+            "kind": "DICT",
+            "text": "{\n            \"total_registros\": len(pax_detalle),\n            \"total_comensales\": total_comensales,\n            \"venta_total\": total_venta,\n            \"consumo_promedio_global\": total_venta / total_comensales if total_comensales > 0 else 0,\n            \"periodo\": f\"{f_inicio} a {f_fin}\",\n        }"
+          },
+          {
+            "line": 3582,
+            "kind": "RETURN",
+            "text": "build_envelope_response(\n            source_status=SourceStatus.SUCCESS if pax_detalle else SourceStatus.SUCCESS,\n            data={\"pax_detalle\": pax_detalle, \"resumen\": resumen},\n            source_message=f\"SQL-First: {len(pax_detalle)} registros desde Sync_PAX_Detalle\",\n            cache_used=False\n        )"
+          },
+          {
+            "line": 3584,
+            "kind": "DICT",
+            "text": "{\"pax_detalle\": pax_detalle, \"resumen\": resumen}"
+          },
+          {
+            "line": 3591,
+            "kind": "RETURN",
+            "text": "build_envelope_response(\n            source_status=SourceStatus.ERROR,\n            data={\"pax_detalle\": [], \"resumen\": {}},\n            source_message=f\"Error consultando PAX: {str(e)}\"\n        )"
+          },
+          {
+            "line": 3593,
+            "kind": "DICT",
+            "text": "{\"pax_detalle\": [], \"resumen\": {}}"
+          },
+          {
+            "line": 3593,
+            "kind": "DICT",
+            "text": "{}"
+          }
+        ],
+        "called_functions": [
+          "Depends",
+          "Query",
+          "append",
+          "build_envelope_response",
+          "close",
+          "cursor",
+          "date",
+          "error",
+          "execute",
+          "fetchall",
+          "float",
+          "get",
+          "get_edarsahub_pymssql_connection",
+          "get_server_by_id",
+          "int",
+          "isoformat",
+          "len",
+          "now",
+          "str",
+          "strptime",
+          "timedelta",
+          "validate_server_access_rbac"
+        ],
+        "sync_columns": [
+          "*"
+        ],
+        "canonical_columns": [],
+        "demonstrated_common_aliases": [],
+        "sync_aliases_without_canonical_match": [],
+        "replacement_status": "SIN_REEMPLAZO_CANONICO_DEMOSTRADO"
+      },
+      {
+        "file": "backend/modules/inteligencia_comercial/routes.py",
+        "function": "get_analisis_pax",
+        "line_start": 1249,
+        "line_end": 1372,
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/dashboard/pax"
+          }
+        ],
+        "parameters": [
+          "unidad",
+          "fecha_inicio",
+          "fecha_fin"
+        ],
+        "sync_queries": [
+          {
+            "line": 1273,
+            "sql": "SELECT SUM(NumeroComensales) AS pax_total, SUM(VentaCuenta) AS ventas_total, COUNT(*) AS total_mesas, AVG(ConsumoPromedioPAX) AS consumo_promedio, AVG(TiempoMesa) AS tiempo_promedio_mesa FROM Sync_PAX_Detalle WHERE",
+            "select_columns": [
+              "SUM(NumeroComensales) AS pax_total",
+              "SUM(VentaCuenta) AS ventas_total",
+              "COUNT(*) AS total_mesas",
+              "AVG(ConsumoPromedioPAX) AS consumo_promedio",
+              "AVG(TiempoMesa) AS tiempo_promedio_mesa"
+            ],
+            "filters": "",
+            "sources": [
+              "Sync_PAX_Detalle"
+            ]
+          },
+          {
+            "line": 1287,
+            "sql": "SELECT Turno, SUM(NumeroComensales) AS pax, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas, AVG(ConsumoPromedioPAX) AS consumo_promedio FROM Sync_PAX_Detalle WHERE",
+            "select_columns": [
+              "Turno",
+              "SUM(NumeroComensales) AS pax",
+              "SUM(VentaCuenta) AS ventas",
+              "COUNT(*) AS mesas",
+              "AVG(ConsumoPromedioPAX) AS consumo_promedio"
+            ],
+            "filters": "",
+            "sources": [
+              "Sync_PAX_Detalle"
+            ]
+          },
+          {
+            "line": 1302,
+            "sql": "SELECT DiaSemana, SUM(NumeroComensales) AS pax, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas FROM Sync_PAX_Detalle WHERE",
+            "select_columns": [
+              "DiaSemana",
+              "SUM(NumeroComensales) AS pax",
+              "SUM(VentaCuenta) AS ventas",
+              "COUNT(*) AS mesas"
+            ],
+            "filters": "",
+            "sources": [
+              "Sync_PAX_Detalle"
+            ]
+          },
+          {
+            "line": 1316,
+            "sql": "SELECT TOP 10 MeseroNombre, SUM(NumeroComensales) AS pax_atendidos, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas_atendidas, AVG(ConsumoPromedioPAX) AS ticket_promedio FROM Sync_PAX_Detalle WHERE",
+            "select_columns": [
+              "TOP 10 MeseroNombre",
+              "SUM(NumeroComensales) AS pax_atendidos",
+              "SUM(VentaCuenta) AS ventas",
+              "COUNT(*) AS mesas_atendidas",
+              "AVG(ConsumoPromedioPAX) AS ticket_promedio"
+            ],
+            "filters": "",
+            "sources": [
+              "Sync_PAX_Detalle"
+            ]
+          }
+        ],
+        "canonical_queries": [],
+        "response_fragments": [
+          {
+            "line": 1284,
+            "kind": "DICT",
+            "text": "{}"
+          },
+          {
+            "line": 1330,
+            "kind": "DICT",
+            "text": "{\n            \"success\": True,\n            \"_source\": \"SQL_SYNC_PAX_DETALLE\",\n            \"_unidad\": unidad_db or \"TODAS\",\n            \"resumen\": {\n                \"pax_total\": int(resumen_data.get(\"pax_total\", 0) or 0),\n                \"ventas_total\": round(float(resumen_data.get(\"ventas_total\", 0) or 0), 2),\n                \"total_mesas\": int(resumen_data.get(\"total_mesas\", 0) or 0),\n                \"consumo_promedio\": round(float(resumen_data.get(\"consumo_promedio\", 0) or 0), 2),\n                \"tiempo_promedio_mesa\": int(resumen_data.get(\"tiempo_promedio_mesa\", 0) or 0)\n            },\n            \"por_turno\": [\n                {\n                    \"turno\": t[\"Turno\"],\n                    \"pax\": int(t[\"pax\"] or 0),\n                    \"ventas\": round(float(t[\"ventas\"] or 0), 2),\n                    \"mesas\": int(t[\"mesas\"] or 0)\n                }\n                for t in por_turno\n            ],\n            \"por_dia_semana\": [\n                {\n                    \"dia\": d[\"DiaSemana\"],\n                    \"pax\": int(d[\"pax\"] or 0),\n                    \"ventas\": round(float(d[\"ventas\"] or 0), 2),\n                    \"mesas\": int(d[\"mesas\"] or 0)\n                }\n                for d in por_dia\n            ],\n            \"top_meseros\": [\n                {\n                    \"mesero\": m[\"MeseroNombre\"],\n                    \"pax_atendidos\": int(m[\"pax_atendidos\"] or 0),\n                    \"ventas\": round(float(m[\"ventas\"] or 0), 2),\n                    \"mesas\": int(m[\"mesas_atendidas\"] or 0),\n                    \"ticket_promedio\": round(float(m[\"ticket_promedio\"] or 0), 2)\n                }\n                for m in top_meseros\n            ]\n        }"
+          },
+          {
+            "line": 1330,
+            "kind": "RETURN",
+            "text": "{\n            \"success\": True,\n            \"_source\": \"SQL_SYNC_PAX_DETALLE\",\n            \"_unidad\": unidad_db or \"TODAS\",\n            \"resumen\": {\n                \"pax_total\": int(resumen_data.get(\"pax_total\", 0) or 0),\n                \"ventas_total\": round(float(resumen_data.get(\"ventas_total\", 0) or 0), 2),\n                \"total_mesas\": int(resumen_data.get(\"total_mesas\", 0) or 0),\n                \"consumo_promedio\": round(float(resumen_data.get(\"consumo_promedio\", 0) or 0), 2),\n                \"tiempo_promedio_mesa\": int(resumen_data.get(\"tiempo_promedio_mesa\", 0) or 0)\n            },\n            \"por_turno\": [\n                {\n                    \"turno\": t[\"Turno\"],\n                    \"pax\": int(t[\"pax\"] or 0),\n                    \"ventas\": round(float(t[\"ventas\"] or 0), 2),\n                    \"mesas\": int(t[\"mesas\"] or 0)\n                }\n                for t in por_turno\n            ],\n            \"por_dia_semana\": [\n                {\n                    \"dia\": d[\"DiaSemana\"],\n                    \"pax\": int(d[\"pax\"] or 0),\n                    \"ventas\": round(float(d[\"ventas\"] or 0), 2),\n                    \"mesas\": int(d[\"mesas\"] or 0)\n                }\n                for d in por_dia\n            ],\n            \"top_meseros\": [\n                {\n                    \"mesero\": m[\"MeseroNombre\"],\n                    \"pax_atendidos\": int(m[\"pax_atendidos\"] or 0),\n                    \"ventas\": round(float(m[\"ventas\"] or 0), 2),\n                    \"mesas\": int(m[\"mesas_atendidas\"] or 0),\n                    \"ticket_promedio\": round(float(m[\"ticket_promedio\"] or 0), 2)\n                }\n                for m in top_meseros\n            ]\n        }"
+          },
+          {
+            "line": 1334,
+            "kind": "DICT",
+            "text": "{\n                \"pax_total\": int(resumen_data.get(\"pax_total\", 0) or 0),\n                \"ventas_total\": round(float(resumen_data.get(\"ventas_total\", 0) or 0), 2),\n                \"total_mesas\": int(resumen_data.get(\"total_mesas\", 0) or 0),\n                \"consumo_promedio\": round(float(resumen_data.get(\"consumo_promedio\", 0) or 0), 2),\n                \"tiempo_promedio_mesa\": int(resumen_data.get(\"tiempo_promedio_mesa\", 0) or 0)\n            }"
+          },
+          {
+            "line": 1342,
+            "kind": "DICT",
+            "text": "{\n                    \"turno\": t[\"Turno\"],\n                    \"pax\": int(t[\"pax\"] or 0),\n                    \"ventas\": round(float(t[\"ventas\"] or 0), 2),\n                    \"mesas\": int(t[\"mesas\"] or 0)\n                }"
+          },
+          {
+            "line": 1351,
+            "kind": "DICT",
+            "text": "{\n                    \"dia\": d[\"DiaSemana\"],\n                    \"pax\": int(d[\"pax\"] or 0),\n                    \"ventas\": round(float(d[\"ventas\"] or 0), 2),\n                    \"mesas\": int(d[\"mesas\"] or 0)\n                }"
+          },
+          {
+            "line": 1360,
+            "kind": "DICT",
+            "text": "{\n                    \"mesero\": m[\"MeseroNombre\"],\n                    \"pax_atendidos\": int(m[\"pax_atendidos\"] or 0),\n                    \"ventas\": round(float(m[\"ventas\"] or 0), 2),\n                    \"mesas\": int(m[\"mesas_atendidas\"] or 0),\n                    \"ticket_promedio\": round(float(m[\"ticket_promedio\"] or 0), 2)\n                }"
+          },
+          {
+            "line": 1372,
+            "kind": "DICT",
+            "text": "{\"success\": False, \"_error\": str(e)}"
+          },
+          {
+            "line": 1372,
+            "kind": "RETURN",
+            "text": "{\"success\": False, \"_error\": str(e)}"
+          }
+        ],
+        "called_functions": [
+          "Query",
+          "append",
+          "error",
+          "execute_query",
+          "float",
+          "get",
+          "int",
+          "join",
+          "lower",
+          "normalizar_unidad",
+          "now",
+          "round",
+          "str",
+          "strftime",
+          "timedelta"
+        ],
+        "sync_columns": [
+          "AVG(ConsumoPromedioPAX) AS consumo_promedio",
+          "AVG(ConsumoPromedioPAX) AS ticket_promedio",
+          "AVG(TiempoMesa) AS tiempo_promedio_mesa",
+          "COUNT(*) AS mesas",
+          "COUNT(*) AS mesas_atendidas",
+          "COUNT(*) AS total_mesas",
+          "DiaSemana",
+          "SUM(NumeroComensales) AS pax",
+          "SUM(NumeroComensales) AS pax_atendidos",
+          "SUM(NumeroComensales) AS pax_total",
+          "SUM(VentaCuenta) AS ventas",
+          "SUM(VentaCuenta) AS ventas_total",
+          "TOP 10 MeseroNombre",
+          "Turno"
+        ],
+        "canonical_columns": [],
+        "demonstrated_common_aliases": [],
+        "sync_aliases_without_canonical_match": [
+          "consumo_promedio",
+          "diasemana",
+          "mesas",
+          "mesas_atendidas",
+          "pax",
+          "pax_atendidos",
+          "pax_total",
+          "ticket_promedio",
+          "tiempo_promedio_mesa",
+          "total_mesas",
+          "turno",
+          "ventas",
+          "ventas_total"
+        ],
+        "replacement_status": "SIN_REEMPLAZO_CANONICO_DEMOSTRADO"
+      }
+    ],
+    "without_replacement_count": 6,
+    "partial_replacement": [],
+    "partial_replacement_count": 0,
+    "demonstrated_replacement": [
+      {
+        "file": "backend/core/scheduler/jobs/inteligencia_comercial_status_job.py",
+        "function": "execute",
+        "line_start": 55,
+        "line_end": 122,
+        "routes": [],
+        "parameters": [
+          "self"
+        ],
+        "sync_queries": [
+          {
+            "line": 56,
+            "sql": "SELECT Fuente, UltimaFechaOperacion, UltimaFechaSincronizacion, Registros, CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado FROM ( SELECT 'Comercial_KPIs_Diarios_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_sincronizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_KPIs_Diarios_v2 WHERE ISNULL(activo, 1) = 1 UNION ALL SELECT 'Comercial_Ventas_Dia_Abiertas_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_ultima_actualizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 UNION ALL SELECT 'Sync_PAX_Detalle' AS Fuente, MAX(FechaOperacion) AS UltimaFechaOperacion, MAX(FechaSync) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_PAX_Detalle UNION ALL SELECT 'Sync_Sales' AS Fuente, CAST(MAX(FechaHora) AS DATE) AS UltimaFechaOperacion, MAX(last_modified) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_Sales ) s;",
+            "select_columns": [
+              "Fuente",
+              "UltimaFechaOperacion",
+              "UltimaFechaSincronizacion",
+              "Registros",
+              "CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado"
+            ],
+            "filters": "ISNULL(activo, 1) = 1 UNION ALL SELECT 'Comercial_Ventas_Dia_Abiertas_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_ultima_actualizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 UNION ALL SELECT 'Sync_PAX_Detalle' AS Fuente, MAX(FechaOperacion) AS UltimaFechaOperacion, MAX(FechaSync) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_PAX_Detalle UNION ALL SELECT 'Sync_Sales' AS Fuente, CAST(MAX(FechaHora) AS DATE) AS UltimaFechaOperacion, MAX(last_modified) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_Sales ) s;",
+            "sources": [
+              "Comercial_KPIs_Diarios_v2",
+              "Comercial_Ventas_Dia_Abiertas_v2"
+            ]
+          }
+        ],
+        "canonical_queries": [
+          {
+            "line": 56,
+            "sql": "SELECT Fuente, UltimaFechaOperacion, UltimaFechaSincronizacion, Registros, CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado FROM ( SELECT 'Comercial_KPIs_Diarios_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_sincronizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_KPIs_Diarios_v2 WHERE ISNULL(activo, 1) = 1 UNION ALL SELECT 'Comercial_Ventas_Dia_Abiertas_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_ultima_actualizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 UNION ALL SELECT 'Sync_PAX_Detalle' AS Fuente, MAX(FechaOperacion) AS UltimaFechaOperacion, MAX(FechaSync) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_PAX_Detalle UNION ALL SELECT 'Sync_Sales' AS Fuente, CAST(MAX(FechaHora) AS DATE) AS UltimaFechaOperacion, MAX(last_modified) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_Sales ) s;",
+            "select_columns": [
+              "Fuente",
+              "UltimaFechaOperacion",
+              "UltimaFechaSincronizacion",
+              "Registros",
+              "CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado"
+            ],
+            "filters": "ISNULL(activo, 1) = 1 UNION ALL SELECT 'Comercial_Ventas_Dia_Abiertas_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_ultima_actualizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 UNION ALL SELECT 'Sync_PAX_Detalle' AS Fuente, MAX(FechaOperacion) AS UltimaFechaOperacion, MAX(FechaSync) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_PAX_Detalle UNION ALL SELECT 'Sync_Sales' AS Fuente, CAST(MAX(FechaHora) AS DATE) AS UltimaFechaOperacion, MAX(last_modified) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_Sales ) s;",
+            "sources": [
+              "Comercial_KPIs_Diarios_v2",
+              "Comercial_Ventas_Dia_Abiertas_v2"
+            ]
+          }
+        ],
+        "response_fragments": [
+          {
+            "line": 115,
+            "kind": "DICT",
+            "text": "{\n            \"processed_count\": len(rows),\n            \"success_count\": ok,\n            \"failed_count\": failed,\n            \"skipped_count\": stale,\n            \"message\": f\"Inteligencia Comercial status: OK={ok}, STALE={stale}, SIN_DATOS/ERROR={failed}\",\n            \"details\": {\"sources\": rows},\n        }"
+          },
+          {
+            "line": 115,
+            "kind": "RETURN",
+            "text": "{\n            \"processed_count\": len(rows),\n            \"success_count\": ok,\n            \"failed_count\": failed,\n            \"skipped_count\": stale,\n            \"message\": f\"Inteligencia Comercial status: OK={ok}, STALE={stale}, SIN_DATOS/ERROR={failed}\",\n            \"details\": {\"sources\": rows},\n        }"
+          },
+          {
+            "line": 121,
+            "kind": "DICT",
+            "text": "{\"sources\": rows}"
+          }
+        ],
+        "called_functions": [
+          "_get_edarsahub_sql_connection",
+          "_rows_to_dicts",
+          "cursor",
+          "execute",
+          "fetchall",
+          "get",
+          "len"
+        ],
+        "sync_columns": [
+          "CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado",
+          "Fuente",
+          "Registros",
+          "UltimaFechaOperacion",
+          "UltimaFechaSincronizacion"
+        ],
+        "canonical_columns": [
+          "CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado",
+          "Fuente",
+          "Registros",
+          "UltimaFechaOperacion",
+          "UltimaFechaSincronizacion"
+        ],
+        "demonstrated_common_aliases": [
+          "estado",
+          "fuente",
+          "registros",
+          "ultimafechaoperacion",
+          "ultimafechasincronizacion"
+        ],
+        "sync_aliases_without_canonical_match": [],
+        "replacement_status": "CANONICO_DEMOSTRADO_EN_MISMA_FUNCION"
+      }
+    ],
+    "demonstrated_replacement_count": 1
+  }
+}

@@ -1,0 +1,299 @@
+===== 1. GUARDRAILS =====
+RAMA=Edarsahub_Desarrollo
+HEAD=6f82b39fead3a73667241e88e580f0ea8faf51e8
+REMOTE_HEAD=6f82b39fead3a73667241e88e580f0ea8faf51e8
+CONTROL=PASS
+
+===== 2. EXTRAER CONTRATO EXACTO DEL ARCHIVO =====
+FUNCTIONS=17
+IMPORTS=9
+SQL_LITERALS=2
+TIMEZONE_LITERALS=8
+TIME_LITERALS=11
+TOLERANCE_LITERALS=2
+FALLBACK_BLOCKS=4
+RUNTIME_REFERENCES=209
+FUNCTION=_resolver_unidad_turnos_id|LINES=61-167|CALLS=27|RETURNS=8|RAISES=0|TIMEZONE=NO|HORARIO=NO
+FUNCTION=_get_turnos_unidad|LINES=186-271|CALLS=35|RETURNS=6|RAISES=0|TIMEZONE=NO|HORARIO=SI
+FUNCTION=clear_turnos_cache|LINES=274-278|CALLS=0|RETURNS=0|RAISES=0|TIMEZONE=NO|HORARIO=NO
+FUNCTION=_hora_en_rango|LINES=281-311|CALLS=3|RETURNS=2|RAISES=0|TIMEZONE=NO|HORARIO=SI
+FUNCTION=get_operational_window|LINES=314-503|CALLS=26|RETURNS=5|RAISES=0|TIMEZONE=SI|HORARIO=SI
+FUNCTION=get_fecha_operacion|LINES=506-516|CALLS=1|RETURNS=1|RAISES=0|TIMEZONE=NO|HORARIO=NO
+FUNCTION=get_turno_operativo|LINES=519-530|CALLS=1|RETURNS=1|RAISES=0|TIMEZONE=NO|HORARIO=SI
+FUNCTION=get_mexico_now|LINES=533-535|CALLS=1|RETURNS=1|RAISES=0|TIMEZONE=NO|HORARIO=NO
+FUNCTION=get_fecha_operacion_now|LINES=538-540|CALLS=2|RETURNS=1|RAISES=0|TIMEZONE=NO|HORARIO=NO
+FUNCTION=is_within_operational_hours|LINES=543-551|CALLS=1|RETURNS=1|RAISES=0|TIMEZONE=NO|HORARIO=NO
+FUNCTION=debug_operational_window|LINES=554-568|CALLS=12|RETURNS=1|RAISES=0|TIMEZONE=NO|HORARIO=SI
+FUNCTION=get_operational_datetime_range_for_fecha_operacion|LINES=573-613|CALLS=16|RETURNS=1|RAISES=1|TIMEZONE=NO|HORARIO=SI
+FUNCTION=get_query_date_range|LINES=620-639|CALLS=6|RETURNS=1|RAISES=0|TIMEZONE=NO|HORARIO=NO
+FUNCTION=get_sync_operational_window|LINES=642-678|CALLS=9|RETURNS=1|RAISES=0|TIMEZONE=SI|HORARIO=SI
+FUNCTION=get_operational_window_legacy|LINES=691-708|CALLS=1|RETURNS=1|RAISES=0|TIMEZONE=NO|HORARIO=SI
+FUNCTION=_extraer_codigo|LINES=75-94|CALLS=4|RETURNS=3|RAISES=0|TIMEZONE=NO|HORARIO=NO
+FUNCTION=_parse_time|LINES=234-241|CALLS=12|RETURNS=3|RAISES=0|TIMEZONE=NO|HORARIO=NO
+TIMEZONE_LITERAL=44|MEXICO_TZ = ZoneInfo("America/Mexico_City")
+TIMEZONE_LITERAL=4|'\nEDARSA HUB - Módulo de Ventana Operativa y Cálculo de FechaOperacion\n=====================================================================\n\nFASE P0.3 (2026-05-20): Refactorización completa para soportar turnos operativos.\n\nREGLAS DE NEGOCIO:\n- La FechaOperacion se calcula según la configuración de turnos por unidad\n- Turnos soportados: DESAYUNO, COMIDA, CENA\n- Zona horaria obligatoria: America/Mexico_City\n- NO usar fecha calendario, hora de servidor local, UTC ni GETDATE()\n- Soporta cruza_medianoche\n- Soporta tolerancias de inicio/fin\n\nSALIDA ESTANDAR:\n{\n    "unidad_negocio_pk": str,\n    "fecha_operacion": date,\n    "turno_operativo_codigo": str,  # DESAYUNO, COMIDA, CENA, FUERA_HORARIO\n    "window_start_mx": time,\n    "window_end_mx": time,\n    "timezone": "America/Mexico_City",\n    "metodo_fecha_operacion": str,  # TURNO_ACTIVO, PRIMER_TURNO_DIA, ULTIMO_TURNO_DIA_ANTERIOR\n    "alertas": List[str]\n}\n\nAutor: EDARSA HUB P0\nFecha: 2026-05-20\n'
+TIMEZONE_LITERAL=44|'America/Mexico_City'
+TIMEZONE_LITERAL=381|'America/Mexico_City'
+TIMEZONE_LITERAL=456|'America/Mexico_City'
+TIMEZONE_LITERAL=484|'America/Mexico_City'
+TIMEZONE_LITERAL=499|'America/Mexico_City'
+TIMEZONE_LITERAL=422|'America/Mexico_City'
+TIME_LITERAL=593|hora_inicio = primer_turno["hora_inicio"]
+TIME_LITERAL=594|hora_fin = ultimo_turno["hora_fin"]
+TIME_LITERAL=596|inicio = datetime.combine(fecha_operacion, hora_inicio)
+TIME_LITERAL=597|fin = datetime.combine(fecha_operacion, hora_fin)
+TIME_LITERAL=602|metadata = { "unidad_negocio_pk": unidad_negocio_pk, "turno_inicio_codigo": primer_turno.get("turno_codigo"), "turno_fin_codigo": ultimo_turno.get("turno_codigo"), "hora_inicio": hora_inicio, "hora_fin": hora_fin, "cruza_medianoche": bool(ultimo_turno.get("cruza_medianoche")) or fin.date() > fecha_operacion, "turnos_count": len(ordenados), "turnos": ordenados, }
+TIME_LITERAL=662|hora_inicio = time(ventana_inicio_hora, 0, 0)
+TIME_LITERAL=663|hora_fin = time(ventana_fin_hora, 0, 0)
+TIME_LITERAL=357|hora_inicio = time(13, 0)
+TIME_LITERAL=358|hora_fin = time(6, 0)
+TIME_LITERAL=246|t["hora_inicio"] = _parse_time(t["hora_inicio"])
+TIME_LITERAL=247|t["hora_fin"] = _parse_time(t["hora_fin"])
+TOLERANCE_LITERAL=389|tolerancia_inicio = turno.get('tolerancia_inicio_minutos', 5)
+TOLERANCE_LITERAL=251|t["tolerancia_inicio_minutos"] = 5
+FALLBACK_BLOCK=337|TEST=timestamp is None
+FALLBACK_BLOCK=351|TEST=not turnos
+FALLBACK_BLOCK=584|TEST=not turnos
+FALLBACK_BLOCK=654|TEST=timestamp.tzinfo is None
+REFERENCE=backend/api/configuracion_operativa_unidades.py:159|(core.utils.operational_window.get_operational_window): la MISMA lógica que
+REFERENCE=backend/api/configuracion_operativa_unidades.py:166|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/api/configuracion_operativa_unidades.py:168|resultado = get_operational_window(unidad_negocio_id, fecha_hora_mexico)
+REFERENCE=backend/api/configuracion_operativa_unidades.py:347|from core.utils.operational_window import clear_turnos_cache
+REFERENCE=backend/api/configuracion_operativa_unidades.py:348|clear_turnos_cache()
+REFERENCE=backend/api/configuracion_operativa_unidades.py:412|def get_fecha_operacion_para_unidad(unidad_negocio_id: str) -> date:
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/api/configuracion_operativa_unidades.py:493|def get_fecha_operacion_para_unidad(unidad_negocio_id: str) -> date:
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:17|- get_operational_window() para FechaOperacion (NO date.today())
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:45|from core.utils.operational_window import (
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:46|get_operational_window,
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:47|get_operational_window_legacy,
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:48|is_within_operational_hours,
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:644|resultado_ventana = get_operational_window(unidad_id)
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:751|# fecha_operacion viene de get_operational_window()
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:881|resultado_ventana = get_operational_window(unidad_id)
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:75|def _get_turnos_unidad(unidad_negocio_pk: str) -> List[Dict]:
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:149|def _hora_en_rango(hora: time, inicio: time, fin: time, cruza_medianoche: bool,
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:182|def get_operational_window(
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:217|turnos = _get_turnos_unidad(unidad_negocio_pk)
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:259|if _hora_en_rango(
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:374|def get_fecha_operacion(
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:383|resultado = get_operational_window(unidad_negocio_pk, timestamp)
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:387|def get_turno_operativo(
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:397|resultado = get_operational_window(unidad_negocio_pk, timestamp)
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:401|def get_mexico_now() -> datetime:
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:406|def get_fecha_operacion_now(unidad_negocio_pk: str) -> date:
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:408|return get_fecha_operacion(unidad_negocio_pk, get_mexico_now())
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:411|def is_within_operational_hours(
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:418|resultado = get_operational_window(unidad_negocio_pk, timestamp)
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:422|def debug_operational_window(unidad_negocio_pk: str):
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:424|resultado = get_operational_window(unidad_negocio_pk)
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:443|def get_query_date_range(
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:452|resultado = get_operational_window(unidad_negocio_pk, timestamp)
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:465|def get_sync_operational_window(
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:474|NOTA: Preferir usar get_operational_window(unidad_id) para cálculos
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:514|def get_operational_window_legacy(
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:522|Nuevas implementaciones deben usar get_operational_window() que retorna
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/core/utils/operational_window.py:525|resultado = get_operational_window(unidad_negocio_pk, timestamp)
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py:156|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py:375|FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py:410|fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_pk, now_mx)
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py:895|from core.utils.operational_window import get_fecha_operacion
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py:913|fecha_op = get_fecha_operacion(unidad_codigo)
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py:1397|from core.utils.operational_window import get_fecha_operacion
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/routes.py:1410|fecha_op = get_fecha_operacion(unidad_codigo_mpro)
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/service.py:597|FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/service.py:621|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial/service.py:622|fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_pk, now_mx)
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial_v2/repository_comercial_edarsahub.py:277|3. BARRERA P0C: Validar que FechaOperacion coincida con get_operational_window().
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial_v2/repository_comercial_edarsahub.py:304|# VALIDACIÓN 2: FechaOperacion debe coincidir con get_operational_window()
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial_v2/repository_comercial_edarsahub.py:306|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/auditorias_p4/backup_p4_01c_20260606_012255/modules/comercial_v2/repository_comercial_edarsahub.py:307|resultado_ventana = get_operational_window(ventas.unidad_negocio_pk)
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/api/configuracion_operativa_unidades.py:493|def get_fecha_operacion_para_unidad(unidad_negocio_id: str) -> date:
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:17|- get_operational_window() para FechaOperacion (NO date.today())
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:45|from core.utils.operational_window import (
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:46|get_operational_window,
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:47|get_operational_window_legacy,
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:48|is_within_operational_hours,
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:644|resultado_ventana = get_operational_window(unidad_id)
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:751|# fecha_operacion viene de get_operational_window()
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:881|resultado_ventana = get_operational_window(unidad_id)
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:75|def _get_turnos_unidad(unidad_negocio_pk: str) -> List[Dict]:
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:149|def _hora_en_rango(hora: time, inicio: time, fin: time, cruza_medianoche: bool,
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:182|def get_operational_window(
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:217|turnos = _get_turnos_unidad(unidad_negocio_pk)
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:259|if _hora_en_rango(
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:374|def get_fecha_operacion(
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:383|resultado = get_operational_window(unidad_negocio_pk, timestamp)
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:387|def get_turno_operativo(
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:397|resultado = get_operational_window(unidad_negocio_pk, timestamp)
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:401|def get_mexico_now() -> datetime:
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:406|def get_fecha_operacion_now(unidad_negocio_pk: str) -> date:
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:408|return get_fecha_operacion(unidad_negocio_pk, get_mexico_now())
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:411|def is_within_operational_hours(
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:418|resultado = get_operational_window(unidad_negocio_pk, timestamp)
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:422|def debug_operational_window(unidad_negocio_pk: str):
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:424|resultado = get_operational_window(unidad_negocio_pk)
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:443|def get_query_date_range(
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:452|resultado = get_operational_window(unidad_negocio_pk, timestamp)
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:465|def get_sync_operational_window(
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:474|NOTA: Preferir usar get_operational_window(unidad_id) para cálculos
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:514|def get_operational_window_legacy(
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:522|Nuevas implementaciones deben usar get_operational_window() que retorna
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/core/utils/operational_window.py:525|resultado = get_operational_window(unidad_negocio_pk, timestamp)
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py:156|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py:375|FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py:410|fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_pk, now_mx)
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py:895|from core.utils.operational_window import get_fecha_operacion
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py:913|fecha_op = get_fecha_operacion(unidad_codigo)
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py:1397|from core.utils.operational_window import get_fecha_operacion
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/routes.py:1410|fecha_op = get_fecha_operacion(unidad_codigo_mpro)
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/service.py:597|FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/service.py:621|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/auditorias_p4/backup_p4_02_20260606_012636/modules/comercial/service.py:622|fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_pk, now_mx)
+REFERENCE=backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py:156|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py:375|FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py
+REFERENCE=backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py:410|fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_pk, now_mx)
+REFERENCE=backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py:895|from core.utils.operational_window import get_fecha_operacion
+REFERENCE=backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py:913|fecha_op = get_fecha_operacion(unidad_codigo)
+REFERENCE=backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py:1397|from core.utils.operational_window import get_fecha_operacion
+REFERENCE=backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/routes.py:1410|fecha_op = get_fecha_operacion(unidad_codigo_mpro)
+REFERENCE=backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/service.py:597|FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py
+REFERENCE=backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/service.py:621|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/auditorias_p4/backup_p4_02b_20260606_013125/modules/comercial/service.py:622|fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_pk, now_mx)
+REFERENCE=backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py:156|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py:375|FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py
+REFERENCE=backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py:410|fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_pk, now_mx)
+REFERENCE=backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py:895|from core.utils.operational_window import get_fecha_operacion
+REFERENCE=backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py:913|fecha_op = get_fecha_operacion(unidad_codigo)
+REFERENCE=backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py:1397|from core.utils.operational_window import get_fecha_operacion
+REFERENCE=backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/routes.py:1410|fecha_op = get_fecha_operacion(unidad_codigo_mpro)
+REFERENCE=backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/service.py:597|FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py
+REFERENCE=backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/service.py:621|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/auditorias_p4/backup_p4_02d_20260606_014556/modules/comercial/service.py:622|fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_pk, now_mx)
+REFERENCE=backend/auditorias_p4/backup_p4_02e_20260606_015229/modules/comercial/service.py:598|FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py
+REFERENCE=backend/auditorias_p4/backup_p4_02e_20260606_015229/modules/comercial/service.py:622|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/auditorias_p4/backup_p4_02e_20260606_015229/modules/comercial/service.py:623|fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_pk, now_mx)
+REFERENCE=backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py:156|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py:375|FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py
+REFERENCE=backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py:410|fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_pk, now_mx)
+REFERENCE=backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py:895|from core.utils.operational_window import get_fecha_operacion
+REFERENCE=backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py:913|fecha_op = get_fecha_operacion(unidad_codigo)
+REFERENCE=backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py:1397|from core.utils.operational_window import get_fecha_operacion
+REFERENCE=backend/auditorias_p4/backup_p4_02h_20260606_020653/modules/comercial/routes.py:1410|fecha_op = get_fecha_operacion(unidad_codigo_mpro)
+REFERENCE=backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py:156|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py:375|FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py
+REFERENCE=backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py:410|fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_pk, now_mx)
+REFERENCE=backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py:895|from core.utils.operational_window import get_fecha_operacion
+REFERENCE=backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py:913|fecha_op = get_fecha_operacion(unidad_codigo)
+REFERENCE=backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py:1397|from core.utils.operational_window import get_fecha_operacion
+REFERENCE=backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/routes.py:1410|fecha_op = get_fecha_operacion(unidad_codigo_mpro)
+REFERENCE=backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/service.py:598|FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py
+REFERENCE=backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/service.py:622|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/auditorias_p4/backup_p4_02i_20260606_021615/modules/comercial/service.py:623|fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_pk, now_mx)
+REFERENCE=backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py:156|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py:375|FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py
+REFERENCE=backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py:410|fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_pk, now_mx)
+REFERENCE=backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py:895|from core.utils.operational_window import get_fecha_operacion
+REFERENCE=backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py:913|fecha_op = get_fecha_operacion(unidad_codigo)
+REFERENCE=backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py:1397|from core.utils.operational_window import get_fecha_operacion
+REFERENCE=backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/routes.py:1410|fecha_op = get_fecha_operacion(unidad_codigo_mpro)
+REFERENCE=backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/service.py:598|FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py
+REFERENCE=backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/service.py:622|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/auditorias_p4/backup_p4_02j_20260606_022445/modules/comercial/service.py:623|fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_pk, now_mx)
+REFERENCE=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:17|- get_operational_window() para FechaOperacion (NO date.today())
+REFERENCE=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:45|from core.utils.operational_window import (
+REFERENCE=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:46|get_operational_window,
+REFERENCE=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:47|get_operational_window_legacy,
+REFERENCE=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:48|is_within_operational_hours,
+REFERENCE=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:1178|resultado_ventana = get_operational_window(unidad_id)
+REFERENCE=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:1291|# fecha_operacion viene de get_operational_window()
+REFERENCE=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:1424|resultado_ventana = get_operational_window(unidad_id)
+REFERENCE=backend/modules/comercial/routes.py:155|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/modules/comercial/routes.py:374|FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py
+REFERENCE=backend/modules/comercial/routes.py:409|fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_pk, now_mx)
+REFERENCE=backend/modules/comercial/routes.py:904|from core.utils.operational_window import get_fecha_operacion
+REFERENCE=backend/modules/comercial/routes.py:922|fecha_op = get_fecha_operacion(unidad_codigo)
+REFERENCE=backend/modules/comercial/routes.py:1406|from core.utils.operational_window import get_fecha_operacion
+REFERENCE=backend/modules/comercial/routes.py:1419|fecha_op = get_fecha_operacion(unidad_codigo_mpro)
+REFERENCE=backend/modules/comercial/service.py:609|FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py
+REFERENCE=backend/modules/comercial/service.py:633|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/modules/comercial/service.py:634|fecha_op_calc, hora_ini, hora_fin, cruza = get_operational_window(unidad_negocio_pk, now_mx)
+REFERENCE=backend/modules/comercial_analytics/repository_operational.py:6|from core.utils.operational_window import get_fecha_operacion_now
+REFERENCE=backend/modules/comercial_analytics/repository_operational.py:58|lambda: get_fecha_operacion_now(code),
+REFERENCE=backend/modules/comercial_analytics/repository_operational.py:59|lambda: get_fecha_operacion_now(
+REFERENCE=backend/modules/comercial_analytics/repository_operational.py:62|lambda: get_fecha_operacion_now(
+REFERENCE=backend/modules/comercial_analytics/repository_operational.py:88|f"Firma no compatible de get_fecha_operacion_now para {code}"
+REFERENCE=backend/modules/comercial_analytics/repository_operational.py:342|"core.utils.operational_window."
+REFERENCE=backend/modules/comercial_analytics/repository_operational.py:343|"get_fecha_operacion_now"
+REFERENCE=backend/modules/comercial_v2/repository_comercial_edarsahub.py:384|3. BARRERA P0C: validar FechaOperacion contra get_operational_window().
+REFERENCE=backend/modules/comercial_v2/repository_comercial_edarsahub.py:459|# VALIDACIÓN 2: FechaOperacion debe coincidir con get_operational_window()
+REFERENCE=backend/modules/comercial_v2/repository_comercial_edarsahub.py:461|from core.utils.operational_window import get_operational_window
+REFERENCE=backend/modules/comercial_v2/repository_comercial_edarsahub.py:462|resultado_ventana = get_operational_window(unidad_codigo)
+REFERENCE=backend/modules/comercial_v2/routes.py:776|# backend/core/utils/operational_window.py y la configuracion de turnos.
+REFERENCE=backend/modules/comercial_v2/routes.py:781|from core.utils.operational_window import get_fecha_operacion_now
+REFERENCE=backend/modules/comercial_v2/routes.py:784|lambda: get_fecha_operacion_now(unidad_id),
+REFERENCE=backend/modules/comercial_v2/routes.py:785|lambda: get_fecha_operacion_now(unidad_negocio_pk=unidad_id),
+REFERENCE=backend/modules/comercial_v2/routes.py:786|lambda: get_fecha_operacion_now(unidad_negocio_id=unidad_id),
+REFERENCE=backend/modules/comercial_v2/routes.py:1397|FIX 2026-05-15: Calcula FechaOperacion activa usando operational_window.py
+REFERENCE=backend/modules/comercial_v2/routes.py:1424|from core.utils.operational_window import get_fecha_operacion_now
+REFERENCE=backend/modules/comercial_v2/routes.py:1447|fecha_op = get_fecha_operacion_now(unidad_id)
+REFERENCE=backend/modules/comercial_v2/sync_comercial_edarsahub.py:668|from core.utils.operational_window import get_fecha_operacion
+REFERENCE=backend/modules/comercial_v2/sync_comercial_edarsahub.py:703|get_fecha_operacion(unidad_negocio_pk, fecha_hora)
+REFERENCE=backend/modules/sync_historicos/repository.py:27|from core.utils.operational_window import (
+REFERENCE=backend/modules/sync_historicos/repository.py:29|get_mexico_now,
+REFERENCE=backend/modules/sync_historicos/repository.py:30|get_sync_operational_window,
+REFERENCE=backend/modules/sync_historicos/repository.py:473|now = get_mexico_now()
+REFERENCE=backend/modules/sync_historicos/service.py:30|from core.utils.operational_window import (
+REFERENCE=backend/modules/sync_historicos/service.py:32|get_mexico_now,
+REFERENCE=backend/modules/sync_historicos/service.py:33|get_sync_operational_window,
+REFERENCE=backend/modules/sync_historicos/service.py:88|fecha_op_hoy, _, _, _ = get_sync_operational_window(
+REFERENCE=backend/modules/sync_historicos/service.py:89|get_mexico_now(),
+REFERENCE=backend/modules/sync_historicos/service.py:244|started_at = get_mexico_now()
+REFERENCE=backend/modules/sync_historicos/service.py:338|fecha_op, v_inicio, v_fin, cruza = get_sync_operational_window(
+REFERENCE=backend/modules/sync_historicos/service.py:408|synced_at_mexico=get_mexico_now(),
+REFERENCE=backend/modules/sync_historicos/service.py:449|finished_at = get_mexico_now()
+REFERENCE=backend/modules/sync_historicos/service.py:608|started_at = get_mexico_now()
+REFERENCE=backend/modules/sync_historicos/service.py:697|fecha_op, v_inicio, v_fin, cruza = get_sync_operational_window(
+REFERENCE=backend/modules/sync_historicos/service.py:752|synced_at_mexico=get_mexico_now(),
+REFERENCE=backend/modules/sync_historicos/service.py:790|finished_at = get_mexico_now()
+REFERENCE=backend/modules/sync_historicos/service.py:837|started_at = get_mexico_now()
+REFERENCE=backend/modules/sync_historicos/service.py:990|synced_at_mexico=get_mexico_now(),
+REFERENCE=backend/modules/sync_historicos/service.py:1036|finished_at = get_mexico_now()
+REFERENCE=backend/modules/sync_historicos/sync_ventas.py:15|from core.utils.operational_window import (
+REFERENCE=backend/modules/sync_historicos/sync_ventas.py:16|get_mexico_now,
+REFERENCE=backend/modules/sync_historicos/sync_ventas.py:17|get_sync_operational_window,
+REFERENCE=netpay_robot_edarsahub/netpay_robot_edarsahub/.vendor/pydantic/v1/datetime_parse.py:89|def _parse_timezone(value: Optional[str], error: Type[Exception]) -> Union[None, int, timezone]:
+REFERENCE=netpay_robot_edarsahub/netpay_robot_edarsahub/.vendor/pydantic/v1/datetime_parse.py:165|tzinfo = _parse_timezone(kw.pop('tzinfo'), errors.TimeError)
+REFERENCE=netpay_robot_edarsahub/netpay_robot_edarsahub/.vendor/pydantic/v1/datetime_parse.py:203|tzinfo = _parse_timezone(kw.pop('tzinfo'), errors.DateTimeError)
+OPERATIONAL_WINDOW_CODE_AUDIT=PASS
+
+===== 3. AUDITAR FUENTES SQL CANONICAS EXISTENTES =====
+Traceback (most recent call last):
+  File "/app/backend/core/sql_first/connection_factory.py", line 45, in get_edarsahub_connection
+    import pyodbc
+ImportError: libodbc.so.2: cannot open shared object file: No such file or directory
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "src/pymssql/_pymssql.pyx", line 651, in pymssql._pymssql.connect
+  File "src/pymssql/_mssql.pyx", line 2189, in pymssql._mssql.connect
+  File "src/pymssql/_mssql.pyx", line 722, in pymssql._mssql.MSSQLConnection.__init__
+  File "src/pymssql/_mssql.pyx", line 1915, in pymssql._mssql.maybe_raise_MSSQLDatabaseException
+  File "src/pymssql/_mssql.pyx", line 1932, in pymssql._mssql.raise_MSSQLDatabaseException
+pymssql._mssql.MSSQLDatabaseException: (20009, b'DB-Lib error message 20009, severity 9:\nUnable to connect: Adaptive Server is unavailable or does not exist (54.39.104.176)\nNet-Lib error during Connection timed out (110)\n')
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<stdin>", line 39, in <module>
+  File "/app/backend/core/sql_first/db.py", line 10, in get_sql_connection
+    return get_edarsahub_connection(profile)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/backend/core/sql_first/connection_factory.py", line 47, in get_edarsahub_connection
+    return _connect_edarsahub_pymssql(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/backend/core/sql_first/connection_factory.py", line 30, in _connect_edarsahub_pymssql
+    return pymssql.connect(**connect_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "src/pymssql/_pymssql.pyx", line 660, in pymssql._pymssql.connect
+pymssql.exceptions.OperationalError: (20009, b'DB-Lib error message 20009, severity 9:\nUnable to connect: Adaptive Server is unavailable or does not exist (54.39.104.176)\nNet-Lib error during Connection timed out (110)\n')

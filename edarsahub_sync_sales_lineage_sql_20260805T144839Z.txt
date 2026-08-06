@@ -1,0 +1,50 @@
+===== insert_into_sync_sales | LINES=243-293 =====
+----- SQL 1 -----
+SELECT COUNT(*) FROM Sync_Sales 
+                WHERE NumeroTicket = %s AND UnidadNegocio = %s 
+                  AND CAST(FechaHora AS DATE) = CAST(%s AS DATE)
+----- SQL 2 -----
+INSERT INTO Sync_Sales (
+                    id, branch, UnidadNegocio, NumeroTicket, 
+                    MontoTotal, Pax, FechaHora, status, items,
+                    created_at, total
+                ) VALUES (
+                    %s, %s, %s, %s, 
+                    %s, %s, %s, %s, %s,
+                    GETDATE(), %s
+                )
+===== update_kpis_diarios | LINES=296-372 =====
+----- SQL 1 -----
+SELECT 
+                COUNT(DISTINCT NumeroTicket) AS tickets,
+                SUM(MontoTotal) AS ventas,
+                SUM(Pax) AS Pax
+            FROM Sync_Sales
+            WHERE UnidadNegocio = %s
+              AND CAST(FechaHora AS DATE) = %s
+              AND status = 'COMPLETED'
+----- SQL 2 -----
+SELECT id FROM Comercial_KPIs_Diarios_v2
+            WHERE unidad_negocio_nombre = %s AND fecha_operacion = %s
+----- SQL 3 -----
+UPDATE Comercial_KPIs_Diarios_v2
+                SET ventas_total = %s,
+                    pax_total = %s,
+                    tickets_total = %s,
+                    ticket_promedio = CASE WHEN %s > 0 THEN %s / %s ELSE 0 END,
+                    fecha_ultima_actualizacion = GETDATE()
+                WHERE id = %s
+----- SQL 4 -----
+INSERT INTO Comercial_KPIs_Diarios_v2 (
+                    id, unidad_negocio_id, unidad_negocio_nombre,
+                    server_id, sucursal_id, sistema_origen,
+                    fecha_operacion, anio, mes, dia,
+                    ventas_total, pax_total, tickets_total, ticket_promedio,
+                    activo, fuente_original, fecha_alta
+                ) VALUES (
+                    NEWID(), %s, %s,
+                    %s, %s, %s,
+                    %s, %s, %s, %s,
+                    %s, %s, %s, %s,
+                    1, 'SYNC_JOB', GETDATE()
+                )

@@ -1,0 +1,95 @@
+===== 1. CONTROL =====
+RAMA=Edarsahub_Desarrollo
+HEAD=3dfba587c0b20a0a23537d12f8258dc0076206b4
+STAGING_ANTES:
+VACIO
+CONTROL=OK
+
+===== 2. CREAR COMPARACION DE RESULTADO UNICO =====
+SQL_FILE=/var/tmp/edarsahub_pos_mapping_single_result_20260805T034030Z/mapping_single_result.sql
+SELECTS_PRINCIPALES=9
+RESULTADO_FINAL_UNICO=SI
+SQL_SOLO_SELECT=SI
+
+===== 3. DRY-RUN =====
+Ejecución completada correctamente.
+Reporte generado: /app/docs/reports/sql_runner_logs/20260805_034031_dry-run_mapping_single_result.md
+DRY_RUN=PASS
+
+===== 4. EJECUTAR SELECT UNICO =====
+Ejecución completada correctamente.
+Reporte generado: /app/docs/reports/sql_runner_logs/20260805_034031_diagnostic_mapping_single_result.md
+  Batch 1: 5 filas
+SELECT_UNICO=PASS
+SQL_REPORT=/app/docs/reports/sql_runner_logs/20260805_034031_diagnostic_mapping_single_result.md
+
+===== 5. RESULTADO POR UNIDAD =====
+  {'database_name': 'EDARSAHUB', 'login_name': 'HRLectura', 'unidad_negocio_pk': '19E076FB-C6DE-4EA5-84AB-1CAA9E86082C', 'unidad_codigo': '130MID', 'unidad_nombre': '130° MERIDA', 'server_id': 'a5547321-1139-4d2b-9d53-182ca737b6b6', 'system_type': 'SOFTRESTAURANT_PRO', 'sucursal_origen_id': None, 'sucursal_legacy_id': None, 'ventas_sucursales_en_server': 1, 'ventas_filas_en_server': 1, 'kpi_sucursales_en_server': 1, 'kpi_filas_en_server': 3658, 'ventas_match_origen': 0, 'ventas_match_legacy': 0, 'kpi_match_origen': 0, 'kpi_match_legacy': 0, 'ventas_origen_fecha_min': None, 'ventas_origen_fecha_max': None, 'ventas_legacy_fecha_min': None, 'ventas_legacy_fecha_max': None, 'kpi_origen_fecha_min': None, 'kpi_origen_fecha_max': None, 'kpi_legacy_fecha_min': None, 'kpi_legacy_fecha_max': None, 'mapeo_match_origen': 0, 'mapeo_match_legacy': 0, 'contrato_sucursal_candidato': 'NO_CONCLUIDO'}
+  {'database_name': 'EDARSAHUB', 'login_name': 'HRLectura', 'unidad_negocio_pk': '9BC05CED-6B2B-4A0A-AA90-CE649B78E12C', 'unidad_codigo': '130QRO', 'unidad_nombre': '130° QUERETARO', 'server_id': '1b230a06-ffaf-4c70-bd27-b1be3579dea6', 'system_type': 'MPRO', 'sucursal_origen_id': '0021', 'sucursal_legacy_id': '21', 'ventas_sucursales_en_server': 0, 'ventas_filas_en_server': 0, 'kpi_sucursales_en_server': 2, 'kpi_filas_en_server': 3299, 'ventas_match_origen': 0, 'ventas_match_legacy': 0, 'kpi_match_origen': 1780, 'kpi_match_legacy': 0, 'ventas_origen_fecha_min': None, 'ventas_origen_fecha_max': None, 'ventas_legacy_fecha_min': None, 'ventas_legacy_fecha_max': None, 'kpi_origen_fecha_min': datetime.date(2021, 9, 17), 'kpi_origen_fecha_max': datetime.date(2026, 8, 3), 'kpi_legacy_fecha_min': None, 'kpi_legacy_fecha_max': None, 'mapeo_match_origen': 1, 'mapeo_match_legacy': 0, 'contrato_sucursal_candidato': 'SUCURSAL_ORIGEN_ID'}
+  {'database_name': 'EDARSAHUB', 'login_name': 'HRLectura', 'unidad_negocio_pk': 'B06EE652-0370-4267-B0A8-DA6FC39B590A', 'unidad_codigo': 'CIENFUEGOS', 'unidad_nombre': 'CIENFUEGOS', 'server_id': '6d053c22-523e-48c0-b72b-96081e2d781b', 'system_type': 'SOFTRESTAURANT_PRO', 'sucursal_origen_id': None, 'sucursal_legacy_id': None, 'ventas_sucursales_en_server': 1, 'ventas_filas_en_server': 1, 'kpi_sucursales_en_server': 1, 'kpi_filas_en_server': 2290, 'ventas_match_origen': 0, 'ventas_match_legacy': 0, 'kpi_match_origen': 0, 'kpi_match_legacy': 0, 'ventas_origen_fecha_min': None, 'ventas_origen_fecha_max': None, 'ventas_legacy_fecha_min': None, 'ventas_legacy_fecha_max': None, 'kpi_origen_fecha_min': None, 'kpi_origen_fecha_max': None, 'kpi_legacy_fecha_min': None, 'kpi_legacy_fecha_max': None, 'mapeo_match_origen': 0, 'mapeo_match_legacy': 0, 'contrato_sucursal_candidato': 'NO_CONCLUIDO'}
+  {'database_name': 'EDARSAHUB', 'login_name': 'HRLectura', 'unidad_negocio_pk': 'DFB86008-1B81-472A-9E50-8A0821DEC4B2', 'unidad_codigo': 'ESTELAR', 'unidad_nombre': 'LA ESTELAR', 'server_id': 'a5ff0e25-f029-43db-b634-d4ac814c904f', 'system_type': 'SOFTRESTAURANT_PRO', 'sucursal_origen_id': None, 'sucursal_legacy_id': None, 'ventas_sucursales_en_server': 1, 'ventas_filas_en_server': 1, 'kpi_sucursales_en_server': 1, 'kpi_filas_en_server': 410, 'ventas_match_origen': 0, 'ventas_match_legacy': 0, 'kpi_match_origen': 0, 'kpi_match_legacy': 0, 'ventas_origen_fecha_min': None, 'ventas_origen_fecha_max': None, 'ventas_legacy_fecha_min': None, 'ventas_legacy_fecha_max': None, 'kpi_origen_fecha_min': None, 'kpi_origen_fecha_max': None, 'kpi_legacy_fecha_min': None, 'kpi_legacy_fecha_max': None, 'mapeo_match_origen': 0, 'mapeo_match_legacy': 0, 'contrato_sucursal_candidato': 'NO_CONCLUIDO'}
+  {'database_name': 'EDARSAHUB', 'login_name': 'HRLectura', 'unidad_negocio_pk': '23CA0B76-6580-4874-BA9B-672B122CA197', 'unidad_codigo': 'ORIGEN', 'unidad_nombre': 'ORIGEN', 'server_id': '1b230a06-ffaf-4c70-bd27-b1be3579dea6', 'system_type': 'MPRO', 'sucursal_origen_id': '0023', 'sucursal_legacy_id': '23', 'ventas_sucursales_en_server': 0, 'ventas_filas_en_server': 0, 'kpi_sucursales_en_server': 2, 'kpi_filas_en_server': 3299, 'ventas_match_origen': 0, 'ventas_match_legacy': 0, 'kpi_match_origen': 1519, 'kpi_match_legacy': 0, 'ventas_origen_fecha_min': None, 'ventas_origen_fecha_max': None, 'ventas_legacy_fecha_min': None, 'ventas_legacy_fecha_max': None, 'kpi_origen_fecha_min': datetime.date(2022, 5, 19), 'kpi_origen_fecha_max': datetime.date(2026, 8, 4), 'kpi_legacy_fecha_min': None, 'kpi_legacy_fecha_max': None, 'mapeo_match_origen': 1, 'mapeo_match_legacy': 0, 'contrato_sucursal_candidato': 'SUCURSAL_ORIGEN_ID'}
+
+===== 6. CLASIFICAR ADAPTACION =====
+UNIDADES_ANALIZADAS=3
+UNIDAD=130MID|SISTEMA=SOFTRESTAURANT_PRO|CONTRATO=NO_CONCLUIDO|VENTAS_SERVER=1|KPI_SERVER=3658
+UNIDAD=CIENFUEGOS|SISTEMA=SOFTRESTAURANT_PRO|CONTRATO=NO_CONCLUIDO|VENTAS_SERVER=1|KPI_SERVER=2290
+UNIDAD=ESTELAR|SISTEMA=SOFTRESTAURANT_PRO|CONTRATO=NO_CONCLUIDO|VENTAS_SERVER=1|KPI_SERVER=410
+DECISION_ADAPTACION=NO_APLICAR_PATCH_UNIDADES_NO_CONCLUIDAS=130MID,CIENFUEGOS,ESTELAR
+SOFTRESTAURANT_POR_SERVER_UNICO=NO
+MANAGEMENTPRO_CON_SUCURSAL_EXPLICITA=NO
+RESOLVER_CANONICO=list_pos_runtime_contexts
+ELIMINAR_GET_ACTIVE_SERVERS_DIRECTO=SI
+ELIMINAR_MAPEO_LEGACY_DIRECTO=SI
+CREAR_TABLA_NUEVA=NO
+CREAR_JOB_NUEVO=NO
+CREAR_SYNC_NUEVO=NO
+CREAR_RESOLVER_NUEVO=NO
+
+===== 7. CONTROL FINAL =====
+STAGING_INTACTO=SI
+ESTADO_GIT_CAMBIO_SOLO_POR_REPORTES=SI
+AUDITORIA_MAPEO_UNICO=COMPLETADA
+SQL_RUNNER_MULTI_RESULT_PROBLEMA_EVITADO=SI
+RESULTADO_FINAL_UNICO=SI
+RESOLVER_CANONICO_OBLIGATORIO=SI
+DECISION_ADAPTACION=NO_APLICAR_PATCH_UNIDADES_NO_CONCLUIDAS=130MID,CIENFUEGOS,ESTELAR
+PATCH_APLICADO=NO
+TABLA_NUEVA=NO
+JOB_NUEVO=NO
+SYNC_NUEVO=NO
+RESOLVER_NUEVO=NO
+CODIGO_MODIFICADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+REPORT=/app/edarsahub_pos_mapping_single_result_20260805T034030Z.txt
+COMPACT=/app/edarsahub_pos_mapping_single_result_20260805T034030Z_compact.txt
+SQL_REPORT=/app/docs/reports/sql_runner_logs/20260805_034031_diagnostic_mapping_single_result.md
+DECISION_REPORT=/var/tmp/edarsahub_pos_mapping_single_result_20260805T034030Z/decision.txt
+SIGUIENTE_ESTADO=PREPARAR_PATCH_MINIMO_IDEMPOTENTE_DEL_JOB_CON_RESOLVER_CANONICO
+
+===== 8. RESULTADO =====
+AUDITORIA_MAPEO_UNICO=COMPLETADA
+SQL_RUNNER_MULTI_RESULT_PROBLEMA_EVITADO=SI
+RESULTADO_FINAL_UNICO=SI
+RESOLVER_CANONICO_OBLIGATORIO=SI
+DECISION_ADAPTACION=NO_APLICAR_PATCH_UNIDADES_NO_CONCLUIDAS=130MID,CIENFUEGOS,ESTELAR
+PATCH_APLICADO=NO
+TABLA_NUEVA=NO
+JOB_NUEVO=NO
+SYNC_NUEVO=NO
+RESOLVER_NUEVO=NO
+CODIGO_MODIFICADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+REPORT=/app/edarsahub_pos_mapping_single_result_20260805T034030Z.txt
+COMPACT=/app/edarsahub_pos_mapping_single_result_20260805T034030Z_compact.txt
+SQL_REPORT=/app/docs/reports/sql_runner_logs/20260805_034031_diagnostic_mapping_single_result.md
+DECISION_REPORT=/var/tmp/edarsahub_pos_mapping_single_result_20260805T034030Z/decision.txt
+SIGUIENTE_ESTADO=PREPARAR_PATCH_MINIMO_IDEMPOTENTE_DEL_JOB_CON_RESOLVER_CANONICO

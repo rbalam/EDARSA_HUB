@@ -1,0 +1,9 @@
+RESULTADO=FALLO
+ERROR=EJECUCION_JOB_FALLO
+JOB_EJECUTADO=SI
+SQL_DML_POSIBLE=SI
+COMMIT=NO
+PUSH=NO
+REINICIO_BACKEND=NO
+RESULT_JSON=/app/edarsahub_sync_runtime_controlled_execution_20260805T054605Z.json
+REPORT=/app/edarsahub_sync_runtime_controlled_execution_20260805T054605Z.txt

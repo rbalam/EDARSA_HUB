@@ -1,0 +1,799 @@
+===== 1. CONTROL =====
+RAMA=Edarsahub_Desarrollo
+HEAD=3dfba587c0b20a0a23537d12f8258dc0076206b4
+STAGING_ANTES:
+VACIO
+CONTROL=OK
+
+===== 2. LOCALIZAR IMPLEMENTACIONES REUTILIZABLES =====
+ARCHIVOS_CANDIDATOS=373
+FILES=/var/tmp/edarsahub_sucursal_resolver_reuse_20260805T034625Z/candidate_files.txt
+backend/api/admin_cache.py
+backend/api/admin_core_connections.py
+backend/api/admin_data_quality.py
+backend/api/admin_scheduler_resync.py
+backend/api/sync_receiver.py
+backend/core/__init__.py
+backend/core/alcance_helper.py
+backend/core/auditoria.py
+backend/core/auth/user_repository_sql.py
+backend/core/cache_key_builder.py
+backend/core/centro_control/alerts.py
+backend/core/centro_control/routes.py
+backend/core/centro_control/websocket.py
+backend/core/cerebro.py
+backend/core/comercial_temporal_availability.py
+backend/core/communications/audit/audit_service.py
+backend/core/communications/notifications/dedup.py
+backend/core/communications/notifications/repository.py
+backend/core/communications/notifications/schemas.py
+backend/core/communications/notifications/service.py
+backend/core/communications/providers/base.py
+backend/core/communications/providers/email_smtp_provider.py
+backend/core/communications/providers/whatsapp_provider.py
+backend/core/communications/scripts/__init__.py
+backend/core/communications/templates/template_service.py
+backend/core/confidencialidad/anonymizer.py
+backend/core/config/edarsahub_config.py
+backend/core/connection_resolver.py
+backend/core/connections/edarsahub_readonly_repository.py
+backend/core/connections/edarsahub_writer_connection.py
+backend/core/connections/hrlectura_connection_factory.py
+backend/core/connections/pos_runtime_resolver.py
+backend/core/context_resolver.py
+backend/core/corporate_filters/request_resolver.py
+backend/core/corporate_filters/service.py
+backend/core/db.py
+backend/core/health_checker.py
+backend/core/inventarios/contracts.py
+backend/core/inventarios/resolver_canonico.py
+backend/core/inventarios/sync_movimientos_canonico.py
+backend/core/inventory_analysis_core.py
+backend/core/kpis_canonicos/__init__.py
+backend/core/kpis_canonicos/service.py
+backend/core/pool.py
+backend/core/query_catalog.py
+backend/core/rbac/schemas.py
+backend/core/rbac_sql/service.py
+backend/core/refresh_tokens.py
+backend/core/regression_checker.py
+backend/core/scheduler/config.py
+backend/core/scheduler/job_logger.py
+backend/core/scheduler/jobs/cxp_sync_job.py
+backend/core/scheduler/jobs/detect_nuevos_compras_job.py
+backend/core/scheduler/jobs/inteligencia_comercial_enrich.py
+backend/core/scheduler/jobs/inteligencia_comercial_status_job.py
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py
+backend/core/scheduler/jobs/inventarios_detector_job.py
+backend/core/scheduler/jobs/netpay_sync_job.py
+backend/core/scheduler/jobs/notifications_job.py
+backend/core/scheduler/jobs/pedidos_detector_job.py
+backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py
+backend/core/scheduler/jobs/sync_comercial_v2_job.py
+backend/core/scheduler/jobs/sync_compras_job.py
+backend/core/scheduler/jobs/sync_ingresos_job.py
+backend/core/scheduler/jobs/sync_nightly_comercial_job.py
+backend/core/scheduler/jobs/sync_short_comercial_job.py
+backend/core/scheduler/jobs/vtiger_sync_job.py
+backend/core/scheduler/locks/sql_lock_repository.py
+backend/core/scheduler/routes.py
+backend/core/scheduler/scheduler_manager.py
+backend/core/scheduler/sql_repository.py
+backend/core/security.py
+backend/core/security_v2_passive.py
+backend/core/server_registry.py
+backend/core/source_resolver.py
+backend/core/sql_first/connection_factory.py
+backend/core/sql_first/db.py
+backend/core/sql_host_parser.py
+backend/core/system_capability_resolver.py
+backend/core/system_type_utils.py
+backend/core/unidades_registry.py
+backend/core/unidades_service.py
+backend/core/user_access_context.py
+backend/core/utils.py
+backend/core/utils/date_filters.py
+backend/core/utils/operational_window.py
+backend/migrations/aplicar_sucursalorigen_mpro.py
+backend/migrations/catalogo_filtros_sync_20260609.py
+backend/migrations/comercial_clasificacion_producto_20260609.py
+backend/migrations/comercial_ingesta_competencia_20260611.py
+backend/migrations/comercial_metricas_canonicas_20260609.py
+backend/migrations/comercial_productos_enriquecidos_20260609.py
+backend/migrations/cxp_sync_canonico_20260613.py
+backend/migrations/ejecutar_ddl_producto_mapeoorigen.py
+backend/migrations/ejecutar_ddl_seed_concepto_mapeo.py
+backend/migrations/eliminar_turno_legacy_comida_cena_20260610.py
+backend/migrations/p1b_sync_pos_config.py
+backend/migrations/portal_intel_usuarios_20260612.py
+backend/migrations/rbac_bitacora_sql_20260607.py
+backend/migrations/rbac_pilot_sql_20260607.py
+backend/migrations/sync_catalogo_canonico_20260612.py
+backend/modules/admin_sql/rbac_audit_routes.py
+backend/modules/admin_sql/rbac_pilot_service.py
+backend/modules/admin_sql/routes.py
+backend/modules/alertas_estrategicas/routes.py
+backend/modules/api_connections/repository.py
+backend/modules/api_connections/universal_test_routes.py
+backend/modules/auth/__init__.py
+backend/modules/auth/context_service.py
+backend/modules/auth/repository.py
+backend/modules/auth/routes.py
+backend/modules/auth/schemas.py
+backend/modules/auth/service.py
+backend/modules/automatizacion/repository.py
+backend/modules/automatizacion/schemas.py
+backend/modules/backfill_corporativo/service.py
+backend/modules/catalogos/repository.py
+backend/modules/catalogos_workflow_sql/fecha_operativa_service.py
+backend/modules/catalogos_workflow_sql/repository.py
+backend/modules/catalogos_workflow_sql/routes.py
+backend/modules/cava_socios/notification_service.py
+backend/modules/cava_socios/routes.py
+backend/modules/comercial/adapters.py
+backend/modules/comercial/alertas_margen_repository.py
+backend/modules/comercial/cache_service.py
+backend/modules/comercial/canonical_detail.py
+backend/modules/comercial/canonical_detail_routes.py
+backend/modules/comercial/historical_kpis_repository.py
+backend/modules/comercial/inteligencia_comercial_routes.py
+backend/modules/comercial/kpis_repository.py
+backend/modules/comercial/queries/mpro.py
+backend/modules/comercial/queries/softrestaurant.py
+backend/modules/comercial/repository.py
+backend/modules/comercial/routes.py
+backend/modules/comercial/routes_pricing_ai.py
+backend/modules/comercial/service.py
+backend/modules/comercial/services/benchmark_sectorial_service.py
+backend/modules/comercial/services/impuestos_service.py
+backend/modules/comercial/services/ingesta_competencia_service.py
+backend/modules/comercial/services/listas_competidores_service.py
+backend/modules/comercial/services/metricas_ia_service.py
+backend/modules/comercial/services/pricing_ai_service.py
+backend/modules/comercial/services/pricing_schemas.py
+backend/modules/comercial/services/pricing_sugerido_service.py
+backend/modules/comercial_analytics/operational_service.py
+backend/modules/comercial_analytics/repository_tickets.py
+backend/modules/comercial_analytics/service.py
+backend/modules/comercial_benchmark/repository.py
+backend/modules/comercial_benchmark/routes.py
+backend/modules/comercial_v2/carga_historica_24_meses.py
+backend/modules/comercial_v2/carga_historica_abril_2026.py
+backend/modules/comercial_v2/feature_flag.py
+backend/modules/comercial_v2/mappers.py
+backend/modules/comercial_v2/periodos.py
+backend/modules/comercial_v2/periodos_routes.py
+backend/modules/comercial_v2/repository_comercial_edarsahub.py
+backend/modules/comercial_v2/repository_readonly.py
+backend/modules/comercial_v2/routes.py
+backend/modules/comercial_v2/schemas.py
+
+===== 3. EXTRAER SIMBOLOS REUTILIZABLES =====
+SIMBOLOS_CANDIDATOS=362
+SYMBOLS=/var/tmp/edarsahub_sucursal_resolver_reuse_20260805T034625Z/candidate_symbols.txt
+FUNCTION|backend/api/admin_cache.py|89|clear_context_resolver_cache|ARGS=
+FUNCTION|backend/api/admin_scheduler_resync.py|180|_get_unidad_config|ARGS=unidad_negocio_id
+CLASS|backend/api/admin_scheduler_resync.py|972|ResolveRequest
+FUNCTION|backend/api/admin_scheduler_resync.py|1034|resolver_dependencias_sync|ARGS=body,current_user
+FUNCTION|backend/core/alcance_helper.py|67|_resolver_empresa|ARGS=alcance_data,_db
+FUNCTION|backend/core/alcance_helper.py|73|_resolver_unidad|ARGS=alcance_data,_db
+FUNCTION|backend/core/alcance_helper.py|114|_resolver_sucursal|ARGS=alcance_data,_db
+FUNCTION|backend/core/alcance_helper.py|153|_resolver_almacen|ARGS=alcance_data,_db
+FUNCTION|backend/core/alcance_helper.py|172|resolver_alcance_usuarios|ARGS=current_user,db
+METHOD|backend/core/auth/user_repository_sql.py|276|AuthRepositorySQL.get_user_auth_context_sql|ARGS=self,email_or_uuid
+CLASS|backend/core/cache_key_builder.py|38|CacheContext
+FUNCTION|backend/core/cache_key_builder.py|150|build_context_cache_key|ARGS=namespace,endpoint,server_id,sucursal_id,unidad_negocio_pk,empresa_id,system_type,system_type_normalized,user,user_id,permissions_hash,fecha_inicio,fecha_fin,fecha,filters,version,config_version
+FUNCTION|backend/core/cache_key_builder.py|276|build_cache_key_from_context|ARGS=ctx
+FUNCTION|backend/core/cache_key_builder.py|318|validate_cache_context|ARGS=cache_key,current_context
+METHOD|backend/core/communications/notifications/service.py|160|NotificationOrchestratorService._resolve_recipients|ARGS=self,event,config
+CLASS|backend/core/confidencialidad/anonymizer.py|55|ConfidentialityContext
+METHOD|backend/core/confidencialidad/anonymizer.py|79|AnonymizerService.build_context|ARGS=user,allowed_server_ids
+CLASS|backend/core/connection_resolver.py|72|ResolvedSource
+CLASS|backend/core/connection_resolver.py|233|ConnectionResolver
+METHOD|backend/core/connection_resolver.py|366|ConnectionResolver.resolve_source|ARGS=self,server_id,metric_type,sucursal_nombre
+FUNCTION|backend/core/connection_resolver.py|615|get_connection_resolver|ARGS=
+FUNCTION|backend/core/connection_resolver.py|623|resolve_source|ARGS=server_id,metric_type,sucursal_nombre
+CLASS|backend/core/connections/edarsahub_readonly_repository.py|35|UnitServerMappingNotFound
+CLASS|backend/core/connections/pos_runtime_resolver.py|19|PosRuntimeResolverError
+CLASS|backend/core/connections/pos_runtime_resolver.py|23|PosRuntimeMappingError
+CLASS|backend/core/connections/pos_runtime_resolver.py|28|PosRuntimeContext
+FUNCTION|backend/core/connections/pos_runtime_resolver.py|68|_row_to_context|ARGS=row
+FUNCTION|backend/core/connections/pos_runtime_resolver.py|130|list_pos_runtime_contexts|ARGS=
+FUNCTION|backend/core/connections/pos_runtime_resolver.py|170|resolve_pos_runtime_context|ARGS=unidad_identifier
+FUNCTION|backend/core/context_resolver.py|127|_get_sucursales_by_empresas_sql|ARGS=cursor,empresa_ids_sql
+FUNCTION|backend/core/context_resolver.py|174|_get_mapeos_by_sucursales_sql|ARGS=cursor,sucursal_ids_sql
+FUNCTION|backend/core/context_resolver.py|292|_get_sucursal_by_mapeo_server_sql|ARGS=cursor,server_id
+FUNCTION|backend/core/context_resolver.py|376|get_user_unidades_negocio|ARGS=user
+FUNCTION|backend/core/context_resolver.py|467|resolve_unidad_context|ARGS=user,unidad_id
+FUNCTION|backend/core/context_resolver.py|522|resolve_server_context|ARGS=user,server_id
+FUNCTION|backend/core/context_resolver.py|615|get_sucursal_for_query|ARGS=context
+CLASS|backend/core/corporate_filters/request_resolver.py|48|UnidadScope
+FUNCTION|backend/core/corporate_filters/request_resolver.py|66|_find_unidad|ARGS=valor
+FUNCTION|backend/core/corporate_filters/request_resolver.py|72|_find_unidad_by_server|ARGS=server_id
+FUNCTION|backend/core/corporate_filters/request_resolver.py|157|resolve_unidad_simple|ARGS=valor
+FUNCTION|backend/core/corporate_filters/request_resolver.py|178|resolve_unidad_scope|ARGS=current_user,unidad,server_id_legacy
+FUNCTION|backend/core/corporate_filters/request_resolver.py|284|resolve_authorized_unidad_scope|ARGS=current_user,permission_code,unidad
+METHOD|backend/core/corporate_filters/service.py|32|CorporateFilterService.get_unidades|ARGS=
+METHOD|backend/core/corporate_filters/service.py|37|CorporateFilterService.get_unidades_pk|ARGS=
+METHOD|backend/core/corporate_filters/service.py|42|CorporateFilterService.get_unidades_codigos|ARGS=
+METHOD|backend/core/corporate_filters/service.py|47|CorporateFilterService.resolver_unidad|ARGS=valor
+METHOD|backend/core/corporate_filters/service.py|61|CorporateFilterService.build_where_unidad|ARGS=alias,valor,param_name
+METHOD|backend/core/corporate_filters/service.py|90|CorporateFilterService.build_where_unidades_multiple|ARGS=alias,valores,param_prefix
+METHOD|backend/core/corporate_filters/service.py|116|CorporateFilterService.validar_acceso_unidad|ARGS=usuario_unidades,unidad_solicitada
+FUNCTION|backend/core/inventarios/resolver_canonico.py|72|clear_resolver_caches|ARGS=
+FUNCTION|backend/core/inventarios/resolver_canonico.py|136|_server_id_de_unidad|ARGS=unidad_codigo
+FUNCTION|backend/core/inventarios/resolver_canonico.py|154|precargar_productos_mapeo|ARGS=unidad_codigo,sistema_origen
+FUNCTION|backend/core/inventarios/resolver_canonico.py|178|resolver_producto_id|ARGS=unidad_codigo,sistema_origen,codigo_origen
+FUNCTION|backend/core/inventarios/resolver_canonico.py|220|resolver_almacen_id|ARGS=empresa_id,sucursal_id,codigo_almacen
+FUNCTION|backend/core/inventarios/resolver_canonico.py|248|resolver_empresa_id|ARGS=unidad_codigo
+FUNCTION|backend/core/inventarios/resolver_canonico.py|278|resolver_sucursal_id|ARGS=servidor_id,sucursal_origen_id
+FUNCTION|backend/core/inventarios/resolver_canonico.py|345|resolver_tipo_movimiento_por_codigo|ARGS=codigo_canonico
+FUNCTION|backend/core/inventarios/resolver_canonico.py|363|resolver_tipo_movimiento_desde_concepto|ARGS=system_type,concepto_origen
+FUNCTION|backend/core/kpis_canonicos/service.py|36|runtime_dia_operativo_actual_predicate|ARGS=alias,modo
+FUNCTION|backend/core/kpis_canonicos/service.py|137|resolver_metrica|ARGS=nombre
+METHOD|backend/core/kpis_canonicos/service.py|184|KPIsCanonicosService.agregados_por_unidad|ARGS=desde,hasta,unidad_pks,corte_dia_operativo
+METHOD|backend/core/kpis_canonicos/service.py|236|KPIsCanonicosService.kpis_por_unidad|ARGS=desde,hasta,unidad_pks,corte_dia_operativo
+METHOD|backend/core/rbac_sql/service.py|41|RBACSQLService.get_sucursales|ARGS=usuario_id
+METHOD|backend/core/rbac_sql/service.py|63|RBACSQLService.get_unidades|ARGS=usuario_id
+METHOD|backend/core/rbac_sql/service.py|89|RBACSQLService.build_context|ARGS=usuario_id
+METHOD|backend/core/rbac_sql/service.py|110|RBACSQLService.can_access_sucursal|ARGS=usuario_id,servidor_id,sucursal_codigo
+METHOD|backend/core/rbac_sql/service.py|131|RBACSQLService.can_access_unidad|ARGS=usuario_id,unidad_id
+CLASS|backend/core/regression_checker.py|323|ConexionesResolverCheck
+FUNCTION|backend/core/scheduler/jobs/inteligencia_comercial_enrich.py|248|enrich_unidad|ARGS=unidad_codigo,fecha_inicio,fecha_fin,dry_run
+FUNCTION|backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py|447|get_unidades_negocio_pos|ARGS=unidades
+FUNCTION|backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py|472|get_pos_config_for_unidad|ARGS=unidad_row
+FUNCTION|backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py|550|_get_unidades_from_edarsahub|ARGS=
+METHOD|backend/core/scheduler/jobs/sync_comercial_endpoints_job.py|181|SyncComercialEndpointsJob._get_sucursales_por_server|ARGS=self,server_id
+FUNCTION|backend/core/scheduler/jobs/sync_comercial_v2_job.py|55|_get_unidades_from_edarsahub|ARGS=
+FUNCTION|backend/core/security.py|583|filter_by_user_context|ARGS=user,items,entity_type
+FUNCTION|backend/core/security.py|671|filter_sucursales_by_permissions|ARGS=sucursales,user,server_id
+FUNCTION|backend/core/security_v2_passive.py|95|translate_server_to_sucursal|ARGS=server_id,mapeos
+FUNCTION|backend/core/security_v2_passive.py|108|translate_sucursal_to_server|ARGS=sucursal_id,mapeos
+FUNCTION|backend/core/security_v2_passive.py|182|get_user_accessible_sucursales|ARGS=user_contextos,tipo
+CLASS|backend/core/security_v2_passive.py|222|ContextoAccesoV2
+FUNCTION|backend/core/server_registry.py|498|resolve_server_context|ARGS=server_id,sucursal_id,unidad_negocio_pk,user,db
+FUNCTION|backend/core/server_registry.py|659|get_server_sucursales|ARGS=server_id,db,prefer_sql,allow_mongo_fallback
+FUNCTION|backend/core/server_registry.py|1388|normalize_unidad_codigo|ARGS=codigo
+FUNCTION|backend/core/server_registry.py|1413|_get_unidades_from_sql|ARGS=active_only
+FUNCTION|backend/core/server_registry.py|1480|list_unidades_negocio|ARGS=active_only
+FUNCTION|backend/core/server_registry.py|1510|get_server_by_unidad_codigo|ARGS=codigo
+FUNCTION|backend/core/server_registry.py|1612|resolve_unidad_by_server_sucursal|ARGS=server_id,sucursal_id
+CLASS|backend/core/system_capability_resolver.py|178|SystemCapabilityResolver
+FUNCTION|backend/core/system_capability_resolver.py|822|get_resolver|ARGS=
+CLASS|backend/core/unidades_registry.py|41|UnidadNegocioConfig
+FUNCTION|backend/core/unidades_registry.py|57|_cargar_catalogo_unidades|ARGS=
+FUNCTION|backend/core/unidades_registry.py|133|get_unidad_by_server_sucursal|ARGS=server_id,sucursal_id
+FUNCTION|backend/core/unidades_registry.py|168|get_all_unidades_for_sync|ARGS=
+FUNCTION|backend/core/unidades_registry.py|179|get_unidades_by_sistema|ARGS=sistema
+CLASS|backend/core/unidades_service.py|27|UnidadesService
+METHOD|backend/core/unidades_service.py|146|UnidadesService.resolver_pk|ARGS=cls,valor
+METHOD|backend/core/unidades_service.py|162|UnidadesService.resolver_codigo|ARGS=cls,valor
+CLASS|backend/core/user_access_context.py|85|UserAccessContext
+FUNCTION|backend/core/user_access_context.py|280|_get_user_sucursales_sql|ARGS=cursor,usuario_id
+FUNCTION|backend/core/user_access_context.py|330|resolve_user_access_context|ARGS=user
+FUNCTION|backend/core/user_access_context.py|476|_resolver_acceso_global_sql|ARGS=context
+FUNCTION|backend/core/utils/operational_window.py|61|_resolver_unidad_turnos_id|ARGS=unidad_negocio_pk
+FUNCTION|backend/core/utils/operational_window.py|186|_get_turnos_unidad|ARGS=unidad_negocio_pk
+FUNCTION|backend/modules/admin_sql/rbac_pilot_service.py|51|_resolve_usuario_id|ARGS=cur,email
+FUNCTION|backend/modules/auth/context_service.py|187|_get_sucursales_by_empresa_sql|ARGS=cursor,empresa_id_sql
+FUNCTION|backend/modules/auth/context_service.py|255|_get_user_allowed_sucursales_sql|ARGS=cursor,usuario_id
+FUNCTION|backend/modules/auth/context_service.py|282|get_user_context|ARGS=user_id
+FUNCTION|backend/modules/auth/context_service.py|378|get_user_context_for_empresa|ARGS=user_id,empresa_id
+FUNCTION|backend/modules/auth/routes.py|418|get_my_context|ARGS=current_user
+FUNCTION|backend/modules/auth/routes.py|432|change_context|ARGS=data,current_user
+FUNCTION|backend/modules/auth/routes.py|479|get_my_access_context|ARGS=current_user
+FUNCTION|backend/modules/comercial/adapters.py|87|_resolver_empresa_id_desde_alias|ARGS=alias
+FUNCTION|backend/modules/comercial/adapters.py|302|sumar_ventas_api_local_a_sucursal|ARGS=server_host,sucursal_nombre,fecha_fin,mes_solicitado,anio_solicitado,solo_ventas_dia
+FUNCTION|backend/modules/comercial/alertas_margen_repository.py|531|resolver_regla_aplicable|ARGS=producto_clave,subfamilia_codigo,familia_codigo,grupo_codigo,empresa_id,sucursal_id,server_id
+FUNCTION|backend/modules/comercial/canonical_detail.py|103|resolve_canonical_unit|ARGS=execute_query,server_id,sucursal
+FUNCTION|backend/modules/comercial/canonical_detail.py|142|resolve_allowed_canonical_unit_pks|ARGS=assigned_units,canonical_units
+FUNCTION|backend/modules/comercial/canonical_detail_routes.py|54|_resolve_period|ARGS=meses,anios
+FUNCTION|backend/modules/comercial/inteligencia_comercial_routes.py|118|_filtrar_resumen_por_unidad|ARGS=resumen,unidad_negocio_nombre,desde,hasta
+FUNCTION|backend/modules/comercial/inteligencia_comercial_routes.py|314|get_unidades_inteligencia|ARGS=current_user
+FUNCTION|backend/modules/comercial/inteligencia_comercial_routes.py|378|get_kpis_por_unidad|ARGS=fecha_inicio,fecha_fin,current_user
+FUNCTION|backend/modules/comercial/kpis_repository.py|199|_sql_resolve_unidad_pk|ARGS=server_id,empresa_id,metadata
+FUNCTION|backend/modules/comercial/kpis_repository.py|209|_sql_resolve_sistema|ARGS=system_type
+FUNCTION|backend/modules/comercial/queries/mpro.py|459|_build_sucursal_filter_mpro|ARGS=sucursal_id,alias
+FUNCTION|backend/modules/comercial/queries/mpro.py|475|_resolver_codigo_sucursal_mpro|ARGS=sucursal
+FUNCTION|backend/modules/comercial/queries/mpro.py|555|_build_sucursal_filter_mpro_flexible|ARGS=sucursal,alias_venta,alias_sucursal
+CLASS|backend/modules/comercial/queries/mpro.py|596|VentasPorSucursalResult
+FUNCTION|backend/modules/comercial/queries/mpro.py|611|query_ventas_por_sucursal_mpro|ARGS=server,fecha_ini,fecha_fin
+FUNCTION|backend/modules/comercial/queries/softrestaurant.py|235|_build_sucursal_filter_sr|ARGS=sucursal_id,alias
+FUNCTION|backend/modules/comercial/repository.py|238|get_sucursales_visibles_config|ARGS=server_id
+FUNCTION|backend/modules/comercial/repository.py|266|filtrar_unidades_por_visibilidad|ARGS=unidades,server_id
+FUNCTION|backend/modules/comercial/repository.py|297|_get_sucursal_nombre_sql|ARGS=server_id,sucursal_origen_id
+FUNCTION|backend/modules/comercial/repository.py|338|get_sucursal_nombre|ARGS=server_id,sucursal_origen_id,server_name
+FUNCTION|backend/modules/comercial/repository.py|472|get_metas_sucursal|ARGS=server_id,sucursal,mes,anio
+FUNCTION|backend/modules/comercial/repository.py|488|save_metas_sucursal|ARGS=server_id,sucursal,mes,anio,metas
+FUNCTION|backend/modules/comercial/routes.py|336|get_user_context_or_403|ARGS=current_user
+FUNCTION|backend/modules/comercial/routes.py|1955|obtener_sucursales|ARGS=server_id,include_hidden,current_user
+FUNCTION|backend/modules/comercial/service.py|109|_cargar_catalogo_unidades_negocio|ARGS=
+FUNCTION|backend/modules/comercial/service.py|187|obtener_unidad_negocio_edarsahub|ARGS=server_id,sucursal
+FUNCTION|backend/modules/comercial/service.py|304|_mapear_codigo_a_unidad_negocio_pk|ARGS=codigo_empresa
+FUNCTION|backend/modules/comercial/service.py|382|_obtener_sucursales_mpro_desde_resolver|ARGS=
+FUNCTION|backend/modules/comercial/service.py|1097|procesar_ventas_sucursal|ARGS=data,nombre_sucursal
+FUNCTION|backend/modules/comercial/service.py|1351|obtener_sucursales_servidor|ARGS=server_id
+FUNCTION|backend/modules/comercial/service.py|1693|get_kpis_mpro_por_sucursal|ARGS=server,fecha_ini,fecha_fin,fecha_ini_ant,fecha_fin_ant,fecha_ini_año_ant,fecha_fin_año_ant,dias_transcurridos,dias_mes,solo_ventas_dia
+FUNCTION|backend/modules/comercial/service.py|2391|_normalizar_clave_unidad|ARGS=valor
+FUNCTION|backend/modules/comercial/service.py|2436|_resolver_unidad_pks_dashboard|ARGS=server_id,sucursal_id
+FUNCTION|backend/modules/comercial/service.py|2518|resolver_unidad_pks_dashboard|ARGS=server_id,sucursal_id
+FUNCTION|backend/modules/comercial/services/impuestos_service.py|82|resolver_tasa_impuesto|ARGS=codigo_producto,server_id,unidad_negocio_pk,sucursal_id,familia_codigo,region_codigo,pais_codigo
+FUNCTION|backend/modules/comercial/services/pricing_ai_service.py|226|_obtener_contexto_unidad|ARGS=unidad_negocio_pk
+FUNCTION|backend/modules/comercial/services/pricing_ai_service.py|248|_obtener_competidores_para_contexto|ARGS=unidad_negocio_pk,limit,lista_id
+FUNCTION|backend/modules/comercial_benchmark/repository.py|59|agg_unidades|ARGS=metrica,desde,hasta
+FUNCTION|backend/modules/comercial_benchmark/repository.py|75|agg_producto_por_unidad|ARGS=producto_id,metrica,desde,hasta
+FUNCTION|backend/modules/comercial_benchmark/repository.py|96|top_productos_unidad|ARGS=unidad_codigo,metrica,desde,hasta,top
+FUNCTION|backend/modules/comercial_benchmark/routes.py|75|benchmark_unidades|ARGS=unidad,metrica,desde,hasta,current_user
+FUNCTION|backend/modules/comercial_benchmark/routes.py|171|mis_unidades|ARGS=current_user
+CLASS|backend/modules/comercial_v2/carga_historica_abril_2026.py|130|ReporteUnidad
+FUNCTION|backend/modules/comercial_v2/carga_historica_abril_2026.py|283|cargar_unidad_softrestaurant|ARGS=unidad,run_id,fecha_inicio,fecha_fin
+FUNCTION|backend/modules/comercial_v2/carga_historica_abril_2026.py|449|cargar_unidad_mpro|ARGS=unidad,run_id,fecha_inicio,fecha_fin
+FUNCTION|backend/modules/comercial_v2/periodos.py|97|resolver_etiquetas|ARGS=modo
+FUNCTION|backend/modules/comercial_v2/periodos.py|175|resolver_periodos_comparables|ARGS=
+FUNCTION|backend/modules/comercial_v2/periodos.py|357|contar_unidades_comparables|ARGS=unidades_actuales,unidades_anio_anterior
+FUNCTION|backend/modules/comercial_v2/periodos_routes.py|49|_normalizar_unidad_solicitada|ARGS=value
+FUNCTION|backend/modules/comercial_v2/periodos_routes.py|58|_scope_unidades|ARGS=unidades_permitidas,unidad_solicitada
+FUNCTION|backend/modules/comercial_v2/periodos_routes.py|114|_consultar_unidades_con_datos|ARGS=
+FUNCTION|backend/modules/comercial_v2/periodos_routes.py|224|_resumen_unidades_comparables|ARGS=unidades_actuales,unidades_inmediatas,unidades_anuales
+FUNCTION|backend/modules/comercial_v2/repository_comercial_edarsahub.py|85|get_unidades_negocio_config|ARGS=
+FUNCTION|backend/modules/comercial_v2/repository_comercial_edarsahub.py|174|get_sucursales_mpro|ARGS=server_id
+FUNCTION|backend/modules/comercial_v2/repository_comercial_edarsahub.py|700|get_stats_by_unidad_v2|ARGS=
+FUNCTION|backend/modules/comercial_v2/repository_readonly.py|73|_unidad_filter_runtime|ARGS=unidades_permitidas
+FUNCTION|backend/modules/comercial_v2/repository_readonly.py|92|_resolver_unidades_abiertas|ARGS=unidades_permitidas
+FUNCTION|backend/modules/comercial_v2/repository_readonly.py|164|_unidad_filter_abiertas|ARGS=unidades_permitidas
+FUNCTION|backend/modules/comercial_v2/repository_readonly.py|298|get_kpis_por_unidad|ARGS=fecha_inicio,fecha_fin,unidades_permitidas,meses,excluir_dia_operativo_actual
+FUNCTION|backend/modules/comercial_v2/repository_readonly.py|632|get_last_sync_by_unidad|ARGS=unidades_permitidas
+FUNCTION|backend/modules/comercial_v2/repository_readonly.py|665|get_unidades_disponibles|ARGS=unidades_permitidas
+FUNCTION|backend/modules/comercial_v2/routes.py|65|_cv2_resolver_unidad_pk|ARGS=valor
+FUNCTION|backend/modules/comercial_v2/routes.py|72|_cv2_resolver_unidad_codigo|ARGS=valor
+FUNCTION|backend/modules/comercial_v2/routes.py|79|_cv2_unidades_codigos_activas|ARGS=
+FUNCTION|backend/modules/comercial_v2/routes.py|93|_resolver_unidad_pk_runtime|ARGS=valor
+FUNCTION|backend/modules/comercial_v2/routes.py|105|_resolver_unidad_codigo_runtime|ARGS=valor
+FUNCTION|backend/modules/comercial_v2/routes.py|132|get_mapeo_kpi_a_canonico|ARGS=
+FUNCTION|backend/modules/comercial_v2/routes.py|154|get_mapeo_canonico_a_kpi|ARGS=
+FUNCTION|backend/modules/comercial_v2/routes.py|185|_unidad_runtime_where_sql|ARGS=unidad_id
+FUNCTION|backend/modules/comercial_v2/routes.py|215|_unidades_runtime_where_sql|ARGS=unidades
+FUNCTION|backend/modules/comercial_v2/routes.py|604|get_unidades_permitidas_v2|ARGS=current_user
+FUNCTION|backend/modules/comercial_v2/routes.py|649|_require_unidades_permitidas|ARGS=unidades_permitidas
+FUNCTION|backend/modules/comercial_v2/routes.py|1258|comercial_v2_kpis_diarios_unidad|ARGS=unidad_negocio_pk,dias,current_user
+FUNCTION|backend/modules/comercial_v2/routes.py|1753|comercial_v2_unidades|ARGS=current_user
+CLASS|backend/modules/comercial_v2/schemas.py|231|UnidadNegocioConfig
+CLASS|backend/modules/comercial_v2/schemas_api.py|21|UnidadKPIResponse
+CLASS|backend/modules/comercial_v2/schemas_api.py|113|UnidadesResponse
+FUNCTION|backend/modules/comercial_v2/sync_comercial_edarsahub.py|480|_resolver_unidad_negocio_pk_from_config|ARGS=config
+FUNCTION|backend/modules/comercial_v2/sync_comercial_edarsahub.py|1085|sync_unidad_ventas_cerradas|ARGS=unidad_config,fecha_inicio,fecha_fin
+FUNCTION|backend/modules/comercial_v2/sync_comercial_edarsahub.py|1117|sync_todas_unidades_ventas_cerradas|ARGS=fecha_inicio,fecha_fin
+FUNCTION|backend/modules/comercial_v2/sync_comercial_edarsahub.py|1212|test_sync_una_unidad_softrestaurant|ARGS=fecha
+FUNCTION|backend/modules/comercial_v2/sync_comercial_edarsahub.py|1225|test_sync_una_unidad_mpro|ARGS=fecha
+FUNCTION|backend/modules/comercial_v2/sync_comercial_edarsahub.py|1265|_sync_codigos_unidades_activas|ARGS=
+FUNCTION|backend/modules/comercial_v2/sync_comercial_edarsahub.py|1274|_resolver_unidad_negocio_pk_obligatoria|ARGS=unidad_codigo
+FUNCTION|backend/modules/comercial_v2/sync_comercial_edarsahub.py|1295|_validar_payload_kpi_unidad_pk|ARGS=payload
+FUNCTION|backend/modules/compras/sync_service.py|701|resolver_proveedor_edarsahub|ARGS=cursor,empresa_id,proveedor_origen_id,proveedor_nombre,proveedor_rfc
+FUNCTION|backend/modules/compras/sync_service.py|807|_get_edarsahub_context|ARGS=server_info,unidad_info
+FUNCTION|backend/modules/corporate_filters/router.py|193|get_unidades_negocio|ARGS=
+FUNCTION|backend/modules/corporate_filters/router.py|253|get_sucursales|ARGS=
+FUNCTION|backend/modules/corporate_filters/router.py|386|resolve|ARGS=payload
+FUNCTION|backend/modules/costos_margenes/repository.py|857|get_unidades_negocio|ARGS=
+FUNCTION|backend/modules/costos_margenes/routes.py|133|_resolve_servidor_filtro|ARGS=current_user,unidad,servidor_id,permission
+FUNCTION|backend/modules/costos_margenes/routes.py|179|_resolve_receta_servidor_filtro|ARGS=current_user,unidad,unidad_negocio_pk,server_id,permission
+FUNCTION|backend/modules/costos_margenes/routes.py|626|listar_unidades_negocio|ARGS=current_user
+METHOD|backend/modules/crm/integration/staging_processor.py|549|StagingProcessor._process_oportunidades|ARGS=self,conector_id,empresa_id,accion_duplicados,limit,result
+METHOD|backend/modules/crm/integration/staging_processor.py|593|StagingProcessor._create_oportunidad_from_staging|ARGS=self,cursor,empresa_id,staging
+METHOD|backend/modules/crm/integration/staging_processor.py|784|StagingProcessor.resolve_conflict|ARGS=self,staging_id,entidad,accion,empresa_id
+METHOD|backend/modules/crm/integration/staging_service.py|213|StagingService.upsert_staging_oportunidad|ARGS=self,conector_id,opp,direccion
+METHOD|backend/modules/crm/integration/staging_service.py|323|StagingService.bulk_upsert_oportunidades|ARGS=self,conector_id,opps,direccion
+CLASS|backend/modules/crm/integration_routes.py|81|ResolveConflictRequest
+FUNCTION|backend/modules/crm/integration_routes.py|562|listar_staging_oportunidades|ARGS=conector_id,estado,limit
+FUNCTION|backend/modules/crm/integration_routes.py|812|resolver_conflicto|ARGS=conector_id,staging_id,data,entidad
+FUNCTION|backend/modules/crm/integration_routes.py|876|resolver_todos_conflictos|ARGS=conector_id,data,entidad
+METHOD|backend/modules/crm/native_service.py|247|CRMNativeService.crear_oportunidad|ARGS=data,user_id
+METHOD|backend/modules/crm/native_service.py|252|CRMNativeService.obtener_oportunidad|ARGS=oportunidad_id
+METHOD|backend/modules/crm/native_service.py|257|CRMNativeService.listar_oportunidades|ARGS=empresa_id,pipeline_id,etapa_id,estatus_id,ejecutivo_id,cuenta_id,busqueda,page,page_size
+METHOD|backend/modules/crm/native_service.py|284|CRMNativeService.cambiar_etapa_oportunidad|ARGS=oportunidad_id,etapa_nueva_id,comentario,monto_nuevo,user_id
+METHOD|backend/modules/crm/native_service.py|297|CRMNativeService.cerrar_oportunidad|ARGS=oportunidad_id,es_ganada,motivo_id,razon_texto,monto_final,user_id
+
+===== 4. AUDITAR USOS RUNTIME =====
+REFERENCES=/var/tmp/edarsahub_sucursal_resolver_reuse_20260805T034625Z/runtime_references.txt
+USOS_POS_RUNTIME_CONTEXT=18
+USOS_SUCURSAL_ORIGEN=267
+USOS_DEFAULT=89
+
+TOP_REFERENCIAS:
+----- RESOLVER CANONICO -----
+/app/backend/modules/comercial/service.py:117:    - por_server_id: {server_id: {codigo, nombre, sucursal_origen_id}}
+/app/backend/modules/comercial/service.py:131:        sucursal_origen_id,
+/app/backend/modules/comercial/service.py:154:            sucursal = row.get('sucursal_origen_id', '') or ''
+/app/backend/modules/comercial/service.py:161:                'sucursal_origen_id': sucursal,
+/app/backend/modules/comercial/service.py:199:        Dict con codigo, nombre, sucursal_origen_id o valores por defecto
+/app/backend/modules/comercial/service.py:218:        'sucursal_origen_id': sucursal,
+/app/backend/modules/comercial/service.py:1061:        sucursal_id = str(unidad.get("sucursal_origen_id") or "").strip()
+/app/backend/modules/comercial/service.py:1418:    sucursal_id = unidad_edarsahub.get('sucursal_origen_id', '') or 'DEFAULT'
+/app/backend/modules/comercial/service.py:1783:                    "sucursal_origen_id": suc['sucursal_id'],
+/app/backend/modules/comercial/service.py:1820:                    "sucursal_origen_id": suc['sucursal_id'],
+/app/backend/modules/comercial/service.py:1879:            kpis['sucursal_origen_id'] = sucursal_id
+/app/backend/modules/comercial/service.py:1897:                "sucursal_origen_id": sucursal_id,
+/app/backend/modules/comercial/service.py:2058:            logging.info(f"[MPRO] Sucursal no visible omitida: sucursal_origen_id={sucursal_id}, nombre={sucursal_nombre}")
+/app/backend/modules/comercial/service.py:2245:            "sucursal_origen_id": sucursal_id,  # Trazabilidad
+/app/backend/modules/comercial/service.py:2444:    3. Si viene sucursal explícita, se respeta sucursal_origen_id/sucursal_id.
+/app/backend/modules/comercial/service.py:2465:                str(u.get("sucursal_origen_id") or "").strip().upper(),
+/app/backend/modules/comercial/service.py:2488:                str(u.get("sucursal_origen_id") or "").strip().upper(),
+/app/backend/modules/comercial/canonical_detail.py:40:    sucursal_origen_id: str | None
+/app/backend/modules/comercial/canonical_detail.py:82:            CAST(sucursal_origen_id AS NVARCHAR(100)) AS sucursal_origen_id,
+/app/backend/modules/comercial/canonical_detail.py:93:                CAST(sucursal_origen_id AS NVARCHAR(100)) = %s
+/app/backend/modules/comercial/canonical_detail.py:137:        sucursal_origen_id=_clean(row.get("sucursal_origen_id")) or None,
+/app/backend/modules/comercial/canonical_detail.py:197:    resolved_branch = _clean(unit.sucursal_origen_id).casefold()
+/app/backend/modules/comercial/canonical_detail_routes.py:218:                "sucursal_origen_id": unit.sucursal_origen_id,
+/app/backend/modules/comercial/repository.py:297:def _get_sucursal_nombre_sql(server_id: str, sucursal_origen_id: str) -> Optional[str]:
+/app/backend/modules/comercial/repository.py:306:        # Construir condición para sucursal_origen_id (puede ser NULL para SoftRestaurant)
+/app/backend/modules/comercial/repository.py:307:        if sucursal_origen_id and sucursal_origen_id not in ['default', '']:
+/app/backend/modules/comercial/repository.py:308:            suc_condition = f"sucursal_origen_id = '{sucursal_origen_id}'"
+/app/backend/modules/comercial/repository.py:310:            # Para SoftRestaurant sin código, buscar por server_id con sucursal_origen_id NULL
+/app/backend/modules/comercial/repository.py:311:            suc_condition = "sucursal_origen_id IS NULL"
+/app/backend/modules/comercial/repository.py:330:            logging.info(f"[EDARSAHUB] Unidad encontrada: {nombre} (server: {server_id[:8]}..., suc: {sucursal_origen_id or 'NULL'})")
+/app/backend/modules/comercial/repository.py:338:async def get_sucursal_nombre(server_id: str, sucursal_origen_id: str, server_name: str = "") -> tuple:
+/app/backend/modules/comercial/repository.py:347:    nombre = _get_sucursal_nombre_sql(server_id, sucursal_origen_id)
+/app/backend/modules/comercial/routes.py:1725:            suc = u.get('sucursal_origen_id', '')
+/app/backend/modules/comercial/routes.py:1727:            # Para SoftRestaurant: 1 unidad por servidor (sucursal_origen_id es NULL)
+/app/backend/modules/comercial/routes.py:1728:            # Para MPRO: usar server_id + sucursal_origen_id (ya corregido en P0)
+/app/backend/modules/fase2_operativo/repositories/auditoria_programada_repository.py:57:        unit.get("sucursal_origen_id"),
+/app/backend/modules/fase2_operativo/repositories/auditoria_programada_repository.py:85:        branch = _key(unit.get("sucursal_origen_id"))
+/app/backend/modules/fase2_operativo/repositories/auditoria_programada_repository.py:135:            branch = _clean(unit.get("sucursal_origen_id"))
+/app/backend/modules/fase2_operativo/access.py:52:            or row.get("sucursal_origen_id")
+/app/backend/modules/fase2_operativo/access.py:77:            unit.get("sucursal_origen_id"),
+/app/backend/modules/fase2_operativo/access.py:203:        branch = _normalize_key(unit.get("sucursal_origen_id"))
+/app/backend/modules/fase2_operativo/services/auditoria_programada_service.py:82:            "sucursal_id": unit.get("sucursal_origen_id") or unit.get("codigo") or unidad_pk,
+/app/backend/modules/sistema/estructura_service.py:85:                    sucursal_origen_id,
+/app/backend/modules/sistema/estructura_service.py:185:                    "sucursal_origen_id": r.get("SucursalOrigenID"),
+/app/backend/modules/costos_margenes/repository.py:872:        sucursal_origen_id,
+/app/backend/modules/costos_margenes/repository.py:890:            'sucursal_origen_id': row.get('sucursal_origen_id'),
+/app/backend/modules/configuracion/services/almacenes_sync_service.py:92:    - server_id, system_type, sucursal_origen_id via context_resolver
+/app/backend/modules/configuracion/services/almacenes_sync_service.py:126:        sucursal_origen_id = context.get("sucursal_origen_id")
+/app/backend/modules/configuracion/services/almacenes_sync_service.py:155:            if not sucursal_origen_id:
+/app/backend/modules/configuracion/services/almacenes_sync_service.py:157:                result.error_message = "MPRO requiere sucursal_origen_id configurado"
+/app/backend/modules/configuracion/services/almacenes_sync_service.py:161:            query = QUERY_ALMACENES_MPRO.replace(":sucursal_id", f"'{sucursal_origen_id}'")
+/app/backend/modules/comercial_v2/sync_comercial_edarsahub.py:80:        list_pos_runtime_contexts,
+/app/backend/modules/comercial_v2/sync_comercial_edarsahub.py:98:        contexts = list_pos_runtime_contexts(
+/app/backend/modules/comercial_v2/sync_comercial_edarsahub.py:171:        "sucursal_id": context.sucursal_origen_id,
+/app/backend/modules/comercial_v2/sync_comercial_edarsahub.py:1124:    Cada unidad MPRO ya contiene su server_id y sucursal_origen_id;
+/app/backend/modules/comercial_v2/sync_comercial_edarsahub.py:1183:        str(row.get("sucursal_origen_id") or "").strip()
+/app/backend/modules/comercial_v2/sync_comercial_edarsahub.py:1194:            f"Unidad MPRO sin sucursal_origen_id: {codigo}"
+/app/backend/modules/comercial_v2/repository_comercial_edarsahub.py:114:            str(row.get("sucursal_origen_id") or "").strip()
+/app/backend/modules/comercial_v2/repository_comercial_edarsahub.py:148:                f"Unidad MPRO sin sucursal_origen_id: {codigo}"
+/app/backend/modules/comercial_v2/repository_comercial_edarsahub.py:192:        sucursal_id = str(row.get("sucursal_origen_id") or "").strip()
+/app/backend/modules/comercial_v2/repository_comercial_edarsahub.py:200:                f"Unidad MPRO sin sucursal_origen_id: {row.get('codigo')}"
+/app/backend/modules/finanzas/tesoreria_access.py:198:    sucursal_origen_id: str
+/app/backend/modules/finanzas/tesoreria_access.py:215:                self.sucursal_origen_id,
+/app/backend/modules/finanzas/tesoreria_access.py:224:            _normalize(self.sucursal_origen_id),
+/app/backend/modules/finanzas/tesoreria_access.py:239:            _normalize(self.sucursal_origen_id),
+/app/backend/modules/finanzas/tesoreria_access.py:256:            "sucursal_origen_id": self.sucursal_origen_id or None,
+/app/backend/modules/finanzas/tesoreria_access.py:364:                record.get("sucursal_origen_id"),
+/app/backend/modules/finanzas/tesoreria_access.py:452:            CONVERT(NVARCHAR(100), u.sucursal_origen_id)
+/app/backend/modules/finanzas/tesoreria_access.py:453:                AS sucursal_origen_id,
+/app/backend/modules/finanzas/tesoreria_access.py:491:            sucursal_origen_id=str(
+/app/backend/modules/finanzas/tesoreria_access.py:492:                row.get("sucursal_origen_id") or ""
+/app/backend/modules/finanzas/tesoreria_access.py:568:            bool(unit.sucursal_origen_id)
+/app/backend/modules/finanzas/access.py:210:        branch = _normalize_key(unit.get("sucursal_origen_id"))
+/app/backend/modules/finanzas/cortes_z_runtime_sync.py:13:from core.connections.pos_runtime_resolver import PosRuntimeContext
+/app/backend/modules/finanzas/cortes_z_runtime_sync.py:36:def _sync_mapping(context: PosRuntimeContext) -> dict:
+/app/backend/modules/finanzas/cortes_z_runtime_sync.py:43:        "sucursal_origen_id": context.sucursal_origen_id,
+/app/backend/modules/finanzas/cortes_z_runtime_sync.py:44:        "sucursal_legacy_id": context.sucursal_legacy_id,
+/app/backend/modules/finanzas/cortes_z_runtime_sync.py:56:    context: PosRuntimeContext,
+/app/backend/modules/finanzas/cortes_z_runtime_sync.py:125:    context: PosRuntimeContext,
+/app/backend/modules/finanzas/cortes_z_runtime_sync.py:129:    if not context.sucursal_origen_id:
+/app/backend/modules/finanzas/cortes_z_runtime_sync.py:131:            f"Unidad {context.unidad_codigo} sin sucursal_origen_id canónica"
+/app/backend/modules/finanzas/cortes_z_runtime_sync.py:154:            (context.sucursal_origen_id, fecha_desde, fecha_hasta),
+/app/backend/modules/finanzas/cortes_z_runtime_sync.py:205:    context: PosRuntimeContext,
+/app/backend/modules/finanzas/sync_cortes_mpro.py:87:                u.sucursal_origen_id,
+/app/backend/modules/finanzas/sync_cortes_mpro.py:134:            'sucursal_origen_id': unidad['sucursal_origen_id'],
+/app/backend/modules/finanzas/sync_cortes_mpro.py:197:    sucursal_id = conn_info.get('sucursal_origen_id')
+/app/backend/modules/finanzas/sync_cortes_mpro.py:199:        raise ValueError(f"No se encontró sucursal_origen_id para {conn_info['unidad_nombre']}")
+/app/backend/modules/finanzas/sync_cortes_mpro.py:553:        resultado['sucursal_origen_id'] = conn_info['sucursal_origen_id']
+/app/backend/modules/compras/sync_service.py:817:    # SucursalID: intentar de unidad_info.sucursal_origen_id, sino usar 1 como default
+/app/backend/modules/compras/sync_service.py:820:        sucursal_origen = unidad_info.get('sucursal_origen_id')
+/app/backend/modules/compras/sync_service.py:1599:    suc = resolver_sucursal_id(str(server_id), (unidad_info or {}).get('sucursal_origen_id'))
+/app/backend/modules/compras/sync_service.py:1606:    sucursal_origen = (unidad_info or {}).get('sucursal_origen_id')
+/app/backend/scripts/discover_tiposervicio_pagos_schema.py:152:    out[key]["sucursal_origen_id"] = cfg.get("sucursal_origen_id") if cfg else None
+/app/backend/scripts/pilot_backfill_sync_sales.py:133:    FILTRADO por sucursal canónica (Sc_Cve_Sucursal = sucursal_origen_id).
+/app/backend/scripts/pilot_backfill_sync_sales.py:135:    suc = cfg.get("sucursal_origen_id")
+/app/backend/scripts/pilot_backfill_sync_sales.py:137:        raise ValueError("MPRO requiere sucursal_origen_id canónico (Sc_Cve_Sucursal)")
+/app/backend/scripts/discover_pagos_detalle2.py:59:        suc = cfg.get("sucursal_origen_id")
+/app/backend/scripts/diag_origen_almacenes_sucursal_safe.py:76:    sucursal_origen_un = unidad.get("sucursal_origen_id")
+/app/backend/scripts/diag_origen_almacenes_sucursal_safe.py:162:        marca = " <-- coincide con Unidades_Negocio.sucursal_origen_id" if s["coincide_unidad_negocio"] else ""
+/app/backend/scripts/diag_compras_canonico_safe.py:59:        sel = [c for c in ["id", "codigo", "nombre", "server_id", "sucursal_origen_id", "empresa_id", "activo"] if c in cols]
+/app/backend/scripts/create_unidades_negocio_table.py:59:            sucursal_origen_id NVARCHAR(50) NULL,
+/app/backend/scripts/create_unidades_negocio_table.py:67:            CONSTRAINT UQ_Unidades_Server_Sucursal UNIQUE (server_id, sucursal_origen_id)
+/app/backend/scripts/create_unidades_negocio_table.py:94:    # REGLA: SoftRestaurant -> sucursal_origen_id = NULL (1 servidor = 1 unidad)
+/app/backend/scripts/create_unidades_negocio_table.py:95:    #        MPRO -> sucursal_origen_id = código (1 servidor = múltiples sucursales)
+/app/backend/scripts/create_unidades_negocio_table.py:97:        # SoftRestaurant (sucursal_origen_id = NULL)
+/app/backend/scripts/create_unidades_negocio_table.py:102:            'sucursal_origen_id': None,  # SoftRestaurant NO usa código de sucursal
+/app/backend/scripts/create_unidades_negocio_table.py:110:            'sucursal_origen_id': None,
+/app/backend/scripts/create_unidades_negocio_table.py:118:            'sucursal_origen_id': None,
+/app/backend/scripts/create_unidades_negocio_table.py:122:        # MPRO (usa sucursal_origen_id para identificar sucursales dentro del servidor)
+/app/backend/scripts/create_unidades_negocio_table.py:127:            'sucursal_origen_id': '0021',
+/app/backend/scripts/create_unidades_negocio_table.py:135:            'sucursal_origen_id': '0023',
+/app/backend/scripts/create_unidades_negocio_table.py:143:        suc_id = f"'{u['sucursal_origen_id']}'" if u['sucursal_origen_id'] else 'NULL'
+/app/backend/scripts/create_unidades_negocio_table.py:149:            AND (sucursal_origen_id = {suc_id} OR (sucursal_origen_id IS NULL AND {suc_id} IS NULL))
+/app/backend/scripts/create_unidades_negocio_table.py:152:            INSERT INTO Unidades_Negocio (nombre, codigo, server_id, sucursal_origen_id, system_type, orden, activo)
+/app/backend/scripts/create_unidades_negocio_table.py:166:            AND (sucursal_origen_id = {suc_id} OR (sucursal_origen_id IS NULL AND {suc_id} IS NULL));
+/app/backend/scripts/create_unidades_negocio_table.py:187:        sucursal_origen_id,
+/app/backend/scripts/create_unidades_negocio_table.py:200:            suc_id = r.get('sucursal_origen_id') or 'NULL'
+/app/backend/scripts/poblar_ventas_detalle_producto_canonico.py:81:            CONVERT(varchar(100), u.sucursal_origen_id)
+/app/backend/scripts/poblar_ventas_detalle_producto_canonico.py:82:                AS sucursal_origen_id,
+/app/backend/scripts/poblar_ventas_detalle_producto_canonico.py:273:        unidad_row.get("sucursal_origen_id")
+/app/backend/scripts/poblar_ventas_detalle_producto_canonico.py:282:            "Unidades_Negocio.sucursal_origen_id: "
+/app/backend/scripts/poblar_ventas_detalle_producto_canonico.py:299:        "sucursal_origen_id": branch_id,
+/app/backend/scripts/poblar_ventas_detalle_producto_canonico.py:565:    for k in ["unidad", "unidad_codigo", "unidad_nombre", "unidad_pk", "sucursal_origen_id"]:
+/app/backend/scripts/poblar_ventas_detalle_producto_canonico.py:683:        "sucursal_origen_id": cfg.get("sucursal_origen_id"),
+/app/backend/scripts/poblar_ventas_detalle_producto_canonico.py:869:    suc = cfg.get("sucursal_origen_id")
+/app/backend/scripts/poblar_ventas_detalle_producto_canonico.py:871:        raise RuntimeError("MPRO requiere sucursal_origen_id")
+/app/backend/scripts/poblar_ventas_detalle_producto_canonico.py:1162:            "sucursal_id": _s(cfg.get("sucursal_origen_id")),
+/app/backend/scripts/poblar_ventas_detalle_producto.py:52:  CONVERT(varchar(50), agg.sucursal_origen_id), agg.unidad_nombre,
+/app/backend/scripts/poblar_ventas_detalle_producto.py:63:    u.sucursal_origen_id, u.system_type,
+/app/backend/scripts/poblar_ventas_detalle_producto.py:80:  GROUP BY u.codigo, u.nombre, u.server_id, u.sucursal_origen_id, u.system_type,
+/app/backend/server.py:1464:    sucursal_origen_id: str  # ID original de SQL Server (Sc_Cve_Sucursal)
+/app/backend/server.py:1477:    sucursal_origen_id: str
+/app/backend/server.py:1492:    sucursales: List[Dict[str, Any]]  # [{sucursal_origen_id, visible_en_operaciones, orden}]
+/app/backend/server.py:3044:    sucursal_origen_id = str(sucursal_codigo or sucursal_id or "").strip()
+/app/backend/server.py:3048:        "sucursal_origen_id": sucursal_origen_id,
+/app/backend/server.py:3105:def _sql_get_sucursal_config(server_id: str, sucursal_origen_id: str) -> Optional[Dict]:
+/app/backend/server.py:3107:    target = str(sucursal_origen_id).strip()
+/app/backend/server.py:3109:        if str(r.get("sucursal_origen_id", "")).strip() == target:
+/app/backend/server.py:3116:    sucursal_origen_id: str,
+/app/backend/server.py:3138:        """, (server_id, str(sucursal_origen_id)))
+/app/backend/server.py:3200:            str(sucursal_origen_id),
+/app/backend/server.py:3214:    sucursal_origen_id: str,
+/app/backend/server.py:3235:    params.extend([server_id, str(sucursal_origen_id)])
+/app/backend/server.py:3269:        str(c.get("sucursal_origen_id")).strip()
+/app/backend/server.py:3280:    orden_map = {str(c.get("sucursal_origen_id")).strip(): c.get("orden", 999) for c in configs}
+/app/backend/server.py:3281:    nombre_map = {str(c.get("sucursal_origen_id")).strip(): c.get("nombre_visible") for c in configs}
+/app/backend/server.py:3678:    existing_ids = {str(c.get("sucursal_origen_id")) for c in existing_configs}
+/app/backend/server.py:3692:            sucursal_origen_id=suc_id,
+/app/backend/server.py:3714:@api_router.put("/servers/{server_id}/sucursales-config/{sucursal_origen_id}")
+/app/backend/server.py:3717:    sucursal_origen_id: str,
+/app/backend/server.py:3726:    existing = _sql_get_sucursal_config(server_id, sucursal_origen_id)
+/app/backend/server.py:3741:        sucursal_origen_id,
+/app/backend/server.py:3746:    return {"message": "Configuración actualizada", "sucursal_origen_id": sucursal_origen_id}
+/app/backend/server.py:3763:        suc_id = suc.get("sucursal_origen_id")
+/app/backend/server.py:3850:        - sucursal_origen_id: Código de sucursal en sistema externo (solo MPRO)
+/app/backend/server.py:3866:            un.sucursal_origen_id,
+/app/backend/server.py:3935:            sucursal_origen_id = u.get('sucursal_origen_id')
+/app/backend/server.py:3938:            # Para SoftRestaurant (single-tenant), sucursal_origen_id debe ser null
+/app/backend/server.py:3939:            if system_type == 'SoftRestaurant' and sucursal_origen_id:
+/app/backend/server.py:3941:                    f"[UNIDADES_NEGOCIO] Inconsistencia: {u['nombre']} es SoftRestaurant pero tiene sucursal_origen_id={sucursal_origen_id}"
+/app/backend/server.py:3943:                sucursal_origen_id = None  # Forzar null para SR
+/app/backend/server.py:3954:                "sucursal_origen_id": sucursal_origen_id,
+/app/backend/server.py:3957:                    "id": sucursal_origen_id or u.get('codigo'),
+/app/backend/server.py:7604:                str(unidad.get('sucursal_origen_id') or '').strip().upper(),
+/app/backend/server.py:7644:        unidad.get('sucursal_origen_id'),
+/app/backend/server.py:8091:      resuelve server_id y sucursal_origen_id (desambigua MPRO ORIGEN/QRO).
+/app/backend/server.py:8106:        if matched_by == 'unidad' and u.get('sucursal_origen_id'):
+/app/backend/server.py:8107:            sucursal_id = sucursal_id or u.get('sucursal_origen_id')
+/app/backend/server.py:13238:            sucursal_origen_id,
+/app/backend/server.py:13247:             OR sucursal_origen_id = %s
+/app/backend/server.py:13255:                WHEN sucursal_origen_id = %s THEN 5
+/app/backend/server.py:13271:        "sucursal_origen_id": row.get("sucursal_origen_id"),
+/app/backend/api/admin_scheduler_resync.py:194:            'sucursal_id': server_data.get('sucursal_origen_id') or server_data.get('sucursal_id') or 'DEFAULT',
+/app/backend/core/server_registry.py:1436:            sucursal_origen_id,
+/app/backend/core/server_registry.py:1463:                'sucursal_origen_id': row.get('sucursal_origen_id'),
+/app/backend/core/server_registry.py:1494:        - sucursal_origen_id: Sucursal para MPRO (0021, 0023)
+/app/backend/core/server_registry.py:1547:            u.sucursal_origen_id,
+/app/backend/core/server_registry.py:1586:            'sucursal_origen_id': row.get('sucursal_origen_id'),
+/app/backend/core/server_registry.py:1656:                sucursal_origen_id,
+/app/backend/core/server_registry.py:1663:              AND sucursal_origen_id = '{safe_sucursal}'
+/app/backend/core/server_registry.py:1674:                sucursal_origen_id,
+/app/backend/core/server_registry.py:1681:              AND (sucursal_origen_id IS NULL OR sucursal_origen_id = '')
+/app/backend/core/server_registry.py:1703:                    sucursal_origen_id,
+/app/backend/core/server_registry.py:1733:            'sucursal_origen_id': row.get('sucursal_origen_id'),
+/app/backend/core/server_registry.py:1758:    - MPRO tiene sucursal_origen_id correcta (130QRO=0021, ORIGEN=0023)
+/app/backend/core/server_registry.py:1813:            if u['codigo'] == '130QRO' and u.get('sucursal_origen_id') != '0021':
+/app/backend/core/server_registry.py:1814:                result['errors'].append(f"130QRO debe tener sucursal_origen_id='0021', tiene '{u.get('sucursal_origen_id')}'")
+/app/backend/core/server_registry.py:1817:            if u['codigo'] == 'ORIGEN' and u.get('sucursal_origen_id') != '0023':
+/app/backend/core/server_registry.py:1818:                result['errors'].append(f"ORIGEN debe tener sucursal_origen_id='0023', tiene '{u.get('sucursal_origen_id')}'")
+/app/backend/core/unidades_registry.py:88:                sucursal_origen_id,
+/app/backend/core/unidades_registry.py:111:                sucursal_id=row['sucursal_origen_id'] or 'DEFAULT',
+/app/backend/core/scheduler/jobs/inteligencia_comercial_enrich.py:118:    suc = cfg.get("sucursal_origen_id")
+/app/backend/core/scheduler/jobs/inteligencia_comercial_enrich.py:120:        raise ValueError("MPRO requiere sucursal_origen_id canónico (Sc_Cve_Sucursal)")
+/app/backend/core/scheduler/jobs/sync_comercial_v2_job.py:78:                "sucursal_id": u.get('sucursal_origen_id') or "DEFAULT",
+/app/backend/core/scheduler/jobs/sync_compras_job.py:338:                u.sucursal_origen_id as sucursal_origen_id
+/app/backend/core/scheduler/jobs/sync_compras_job.py:377:                'sucursal_origen_id': row.get('sucursal_origen_id'),
+/app/backend/core/scheduler/jobs/sync_compras_job.py:467:                'sucursal_origen_id': server.get('sucursal_origen_id'),
+/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:464:            CONVERT(NVARCHAR(100), u.sucursal_origen_id) AS sucursal_origen_id,
+/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:489:        "sucursal_origen_id": unidad_row.get("sucursal_origen_id"),
+/app/backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:511:            "sucursal_origen_id": unidad.get("sucursal_origen_id"),
+/app/backend/core/scheduler/jobs/sync_ingresos_job.py:10:from core.connections.pos_runtime_resolver import list_pos_runtime_contexts
+/app/backend/core/scheduler/jobs/sync_ingresos_job.py:35:    contexts = list_pos_runtime_contexts(
+/app/backend/core/scheduler/jobs/cxp_sync_job.py:29:        "SELECT codigo, nombre, sucursal_origen_id FROM dbo.Unidades_Negocio "
+/app/backend/core/scheduler/jobs/cxp_sync_job.py:30:        "WHERE activo=1 AND system_type='MPRO' AND sucursal_origen_id IS NOT NULL"
+/app/backend/core/scheduler/jobs/cxp_sync_job.py:32:    return {str(r["sucursal_origen_id"]).strip(): (r["codigo"], r["nombre"]) for r in rows}
+/app/backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:590:            row.get("sucursal_origen_id")
+/app/backend/core/corporate_filters/request_resolver.py:12:    2. Resuelve server_id y sucursal_origen_id desde EDARSAHUB
+/app/backend/core/corporate_filters/request_resolver.py:21:- Para INVENTARIOS la desambiguación correcta es sucursal_origen_id (0021/0023).
+/app/backend/core/corporate_filters/request_resolver.py:57:    sucursal_origen_id: Optional[str] = None
+/app/backend/core/corporate_filters/request_resolver.py:223:    scope.sucursal_origen_id = u.get("sucursal_origen_id")
+/app/backend/core/corporate_filters/request_resolver.py:354:            sucursal_origen_id=metadata.get(
+/app/backend/core/corporate_filters/request_resolver.py:355:                "sucursal_origen_id"
+/app/backend/core/confidencialidad/anonymizer.py:30:    "server_id", "serverid", "sucursal_id", "sucursal_origen_id",
+/app/backend/core/unidades_service.py:80:                    sucursal_origen_id,
+/app/backend/core/context_resolver.py:19:- sucursal_origen_id (para MPRO)
+/app/backend/core/context_resolver.py:183:        Dict {sucursal_id_sql: {server_id, sucursal_origen_id, ...}}
+/app/backend/core/context_resolver.py:212:            'sucursal_origen_id': row[3],
+/app/backend/core/context_resolver.py:330:        'sucursal_origen_id': row[5],
+/app/backend/core/context_resolver.py:392:        - sucursal_origen_id: ID de sucursal en sistema externo (MPRO)
+/app/backend/core/context_resolver.py:444:                sucursal_origen_id = mapeo.get('sucursal_origen_id')
+/app/backend/core/context_resolver.py:453:                    'sucursal_origen_id': sucursal_origen_id,
+/app/backend/core/context_resolver.py:455:                        'id': sucursal_origen_id or sucursal_empresa.get('codigo'),
+/app/backend/core/context_resolver.py:485:            "sucursal_origen_id": str | None,
+/app/backend/core/context_resolver.py:517:        'sucursal_origen_id': unidad.get('sucursal_origen_id'),
+/app/backend/core/context_resolver.py:542:            "sucursal_origen_id": str | None,
+/app/backend/core/context_resolver.py:572:        sucursal_origen_id = None
+/app/backend/core/context_resolver.py:577:            sucursal_origen_id = sucursal_info.get('sucursal_origen_id')
+/app/backend/core/context_resolver.py:592:                'id': sucursal_origen_id or sucursal_info.get('codigo'),
+/app/backend/core/context_resolver.py:607:            'sucursal_origen_id': sucursal_origen_id,
+/app/backend/core/context_resolver.py:619:    Para MPRO: usa sucursal_origen_id (código como "0025")
+/app/backend/core/context_resolver.py:631:        # MPRO usa sucursal_origen_id (código numérico)
+/app/backend/core/context_resolver.py:632:        return context.get('sucursal_origen_id') or 'default'
+/app/backend/core/connections/pos_runtime_resolver.py:28:class PosRuntimeContext:
+/app/backend/core/connections/pos_runtime_resolver.py:34:    sucursal_origen_id: Optional[str]
+/app/backend/core/connections/pos_runtime_resolver.py:35:    sucursal_legacy_id: int
+/app/backend/core/connections/pos_runtime_resolver.py:68:def _row_to_context(row: dict) -> PosRuntimeContext:
+/app/backend/core/connections/pos_runtime_resolver.py:112:    return PosRuntimeContext(
+/app/backend/core/connections/pos_runtime_resolver.py:118:        sucursal_origen_id=(str(row["sucursal_origen_id"]).strip() if row.get("sucursal_origen_id") is not None else None),
+/app/backend/core/connections/pos_runtime_resolver.py:119:        sucursal_legacy_id=int(row.get("sucursal_legacy_id") or 0),
+/app/backend/core/connections/pos_runtime_resolver.py:130:def list_pos_runtime_contexts(
+/app/backend/core/connections/pos_runtime_resolver.py:132:) -> list[PosRuntimeContext]:
+/app/backend/core/connections/pos_runtime_resolver.py:145:                u.sucursal_origen_id,
+/app/backend/core/connections/pos_runtime_resolver.py:146:                COALESCE(TRY_CONVERT(INT, u.sucursal_origen_id), 0)
+/app/backend/core/connections/pos_runtime_resolver.py:147:                    AS sucursal_legacy_id,
+/app/backend/core/connections/pos_runtime_resolver.py:174:) -> PosRuntimeContext:
+/app/backend/core/connections/pos_runtime_resolver.py:182:        for context in list_pos_runtime_contexts(system_types=expected or None)
+/app/backend/core/connections/pos_runtime_resolver.py:194:    "PosRuntimeContext",
+/app/backend/core/connections/pos_runtime_resolver.py:197:    "list_pos_runtime_contexts",
+/app/backend/core/connections/edarsahub_readonly_repository.py:52:    u.sucursal_origen_id,
+/app/backend/core/connections/edarsahub_readonly_repository.py:222:            "sucursal_origen_id": row.get(
+/app/backend/core/connections/edarsahub_readonly_repository.py:223:                "sucursal_origen_id"
+/app/backend/core/connections/edarsahub_readonly_repository.py:265:        u.sucursal_origen_id,
+/app/backend/core/connections/edarsahub_readonly_repository.py:284:    c.sucursal_origen_id,
+/app/backend/core/connections/edarsahub_readonly_repository.py:395:            "sucursal_origen_id": row.get(
+/app/backend/core/connections/edarsahub_readonly_repository.py:396:                "sucursal_origen_id"
+/app/backend/core/inventarios/resolver_canonico.py:278:def resolver_sucursal_id(servidor_id: str, sucursal_origen_id: Optional[str] = None) -> ResultadoResolucion:
+/app/backend/core/inventarios/resolver_canonico.py:286:    2. Si el mapeo no trae SucursalOrigenID (NULL) pero hay `sucursal_origen_id`, intenta
+/app/backend/core/inventarios/resolver_canonico.py:293:    ckey = (str(servidor_id), str(sucursal_origen_id) if sucursal_origen_id is not None else None)
+/app/backend/core/inventarios/resolver_canonico.py:315:    if sucursal_origen_id:
+
+===== 5. RANKEAR CANDIDATOS =====
+RANKING:
+1|SCORE=180|FILE=backend/core/connections/pos_runtime_resolver.py|RAZONES=RESOLVER_CANONICO_EXISTENTE,USA_SUCURSAL_ORIGEN,USA_SUCURSAL_LEGACY,USA_CONTEXTOS_CANONICOS,CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=6,USOS_RUNTIME=16
+2|SCORE=123|FILE=backend/modules/comercial_v2/sync_comercial_edarsahub.py|RAZONES=USA_SUCURSAL_ORIGEN,USA_CONTEXTOS_CANONICOS,CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=8,USOS_RUNTIME=8,FUERA_DE_CORE,DENTRO_DE_DOMINIO
+3|SCORE=113|FILE=backend/modules/comercial/service.py|RAZONES=USA_SUCURSAL_ORIGEN,USA_KPI_CANONICO,CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=10,USOS_RUNTIME=68,FUERA_DE_CORE,DENTRO_DE_DOMINIO
+4|SCORE=105|FILE=backend/scripts/poblar_ventas_detalle_producto_canonico.py|RAZONES=USA_SUCURSAL_ORIGEN,USA_KPI_CANONICO,CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=6,USOS_RUNTIME=12,FUERA_DE_CORE
+5|SCORE=105|FILE=backend/server.py|RAZONES=USA_SUCURSAL_ORIGEN,USA_KPI_CANONICO,CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=24,USOS_RUNTIME=77,FUERA_DE_CORE
+6|SCORE=103|FILE=backend/modules/comercial_v2/repository_comercial_edarsahub.py|RAZONES=USA_SUCURSAL_ORIGEN,USA_KPI_CANONICO,CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=3,USOS_RUNTIME=14,FUERA_DE_CORE,DENTRO_DE_DOMINIO
+7|SCORE=98|FILE=backend/modules/comercial/canonical_detail.py|RAZONES=USA_SUCURSAL_ORIGEN,USA_KPI_CANONICO,CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=2,USOS_RUNTIME=7,FUERA_DE_CORE,DENTRO_DE_DOMINIO
+8|SCORE=98|FILE=backend/modules/comercial/routes.py|RAZONES=USA_SUCURSAL_ORIGEN,USA_KPI_CANONICO,CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=2,USOS_RUNTIME=28,FUERA_DE_CORE,DENTRO_DE_DOMINIO
+9|SCORE=95|FILE=backend/api/admin_scheduler_resync.py|RAZONES=USA_SUCURSAL_ORIGEN,USA_KPI_CANONICO,CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=3,USOS_RUNTIME=6,FUERA_DE_CORE
+10|SCORE=93|FILE=backend/modules/inteligencia_comercial/routes.py|RAZONES=USA_KPI_CANONICO,CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=14,USOS_RUNTIME=6,FUERA_DE_CORE,DENTRO_DE_DOMINIO
+11|SCORE=88|FILE=backend/modules/comercial/repository.py|RAZONES=USA_SUCURSAL_ORIGEN,CONTEMPLA_DEFAULT,SIMBOLOS_RELEVANTES=6,USOS_RUNTIME=16,FUERA_DE_CORE,DENTRO_DE_DOMINIO
+12|SCORE=86|FILE=backend/modules/finanzas/cortes_z_runtime_sync.py|RAZONES=USA_SUCURSAL_ORIGEN,USA_SUCURSAL_LEGACY,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=3,USOS_RUNTIME=10,FUERA_DE_CORE,DENTRO_DE_DOMINIO
+13|SCORE=86|FILE=backend/modules/finanzas/tesoreria_access.py|RAZONES=USA_SUCURSAL_ORIGEN,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=6,USOS_RUNTIME=11,FUERA_DE_CORE,DENTRO_DE_DOMINIO
+14|SCORE=85|FILE=backend/core/context_resolver.py|RAZONES=USA_SUCURSAL_ORIGEN,CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=7,USOS_RUNTIME=23
+15|SCORE=85|FILE=backend/core/corporate_filters/request_resolver.py|RAZONES=USA_SUCURSAL_ORIGEN,CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=6,USOS_RUNTIME=6
+16|SCORE=85|FILE=backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py|RAZONES=USA_SUCURSAL_ORIGEN,USA_KPI_CANONICO,CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=2,USOS_RUNTIME=8
+17|SCORE=85|FILE=backend/core/server_registry.py|RAZONES=USA_SUCURSAL_ORIGEN,CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=7,USOS_RUNTIME=23
+18|SCORE=84|FILE=backend/modules/comercial/canonical_detail_routes.py|RAZONES=USA_SUCURSAL_ORIGEN,USA_KPI_CANONICO,CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=1,USOS_RUNTIME=3,FUERA_DE_CORE,DENTRO_DE_DOMINIO
+19|SCORE=83|FILE=backend/modules/comercial_v2/carga_historica_abril_2026.py|RAZONES=USA_KPI_CANONICO,CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=3,USOS_RUNTIME=7,FUERA_DE_CORE,DENTRO_DE_DOMINIO
+20|SCORE=83|FILE=backend/modules/compras/sync_service.py|RAZONES=USA_SUCURSAL_ORIGEN,CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=2,USOS_RUNTIME=8,FUERA_DE_CORE,DENTRO_DE_DOMINIO
+21|SCORE=81|FILE=backend/modules/comercial_v2/repository_readonly.py|RAZONES=USA_KPI_CANONICO,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=6,USOS_RUNTIME=13,FUERA_DE_CORE,DENTRO_DE_DOMINIO
+22|SCORE=81|FILE=backend/modules/comercial_v2/routes.py|RAZONES=USA_KPI_CANONICO,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=13,USOS_RUNTIME=13,FUERA_DE_CORE,DENTRO_DE_DOMINIO
+23|SCORE=78|FILE=backend/modules/comercial/kpis_repository.py|RAZONES=USA_KPI_CANONICO,CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=2,USOS_RUNTIME=8,FUERA_DE_CORE,DENTRO_DE_DOMINIO
+24|SCORE=78|FILE=backend/modules/comercial/queries/mpro.py|RAZONES=CONTEMPLA_DEFAULT,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=5,USOS_RUNTIME=14,FUERA_DE_CORE,DENTRO_DE_DOMINIO
+25|SCORE=77|FILE=backend/modules/fase2_operativo/access.py|RAZONES=USA_SUCURSAL_ORIGEN,SEMANTICA_RESOLVER,SIMBOLOS_RELEVANTES=8,USOS_RUNTIME=3,FUERA_DE_CORE,DENTRO_DE_DOMINIO
+
+MEJOR_CANDIDATO=backend/core/connections/pos_runtime_resolver.py
+MEJOR_SCORE=180
+
+===== 6. ABRIR BLOQUES EXACTOS DEL MEJOR CANDIDATO =====
+BEST_FILE=backend/core/connections/pos_runtime_resolver.py
+LINEAS=199
+BYTES=6901
+SHA256=4b94694eb0de7d348cd0ef37f9dbedc6fb2e3aa812beacc4e82d6d7b7e860b85
+19:class PosRuntimeResolverError(RuntimeError):
+20:    """Error base del resolvedor POS interno."""
+23:class PosRuntimeMappingError(PosRuntimeResolverError):
+28:class PosRuntimeContext:
+34:    sucursal_origen_id: Optional[str]
+35:    sucursal_legacy_id: int
+62:def _normalize_types(values: Optional[Iterable[str]]) -> set[str]:
+68:def _row_to_context(row: dict) -> PosRuntimeContext:
+109:            f"No se pudo resolver el secreto POS de la unidad {unit_code}"
+112:    return PosRuntimeContext(
+118:        sucursal_origen_id=(str(row["sucursal_origen_id"]).strip() if row.get("sucursal_origen_id") is not None else None),
+119:        sucursal_legacy_id=int(row.get("sucursal_legacy_id") or 0),
+130:def list_pos_runtime_contexts(
+132:) -> list[PosRuntimeContext]:
+145:                u.sucursal_origen_id,
+146:                COALESCE(TRY_CONVERT(INT, u.sucursal_origen_id), 0)
+147:                    AS sucursal_legacy_id,
+170:def resolve_pos_runtime_context(
+174:) -> PosRuntimeContext:
+182:        for context in list_pos_runtime_contexts(system_types=expected or None)
+194:    "PosRuntimeContext",
+197:    "list_pos_runtime_contexts",
+198:    "resolve_pos_runtime_context",
+
+===== 7. DECISION DE REUTILIZACION =====
+RESOLVER_CANONICO_REUTILIZABLE=SI
+HELPER_SUCURSAL_EXISTENTE=NO
+MEJOR_CANDIDATO=backend/core/connections/pos_runtime_resolver.py
+MEJOR_SCORE=180
+DECISION=EXTENDER_COMPOSICION_LOCAL_DEL_JOB_SIN_CREAR_CORE
+
+===== 8. REGLAS DEL CANDIDATO TEMPORAL =====
+FUENTE_CONTEXTOS=list_pos_runtime_contexts
+FUENTE_SERVIDORES=Servidores_Conexiones_VIA_RESOLVER
+FUENTE_UNIDADES=Unidades_Negocio_VIA_RESOLVER
+SUCURSAL_MPRO=context.sucursal_origen_id
+SUCURSAL_SOFT=FUENTE_COMERCIAL_CANONICA_SERVER_UNICO
+CONSULTA_DIRECTA_SERVIDORES_EN_JOB=ELIMINAR
+CONSULTA_DIRECTA_MAPEO_LEGACY_EN_JOB=ELIMINAR
+NUEVA_TABLA=NO
+NUEVO_JOB=NO
+NUEVO_SYNC=NO
+NUEVO_RESOLVER=NO
+NUEVO_ARCHIVO=NO_SALVO_BRECHA_DEMOSTRADA
+CRECER_CORE=NO
+PATCH_ACTUAL=NO
+
+===== 9. CONTROL FINAL =====
+STAGING_INTACTO=SI
+ESTADO_GIT_INTACTO=SI
+AUDITORIA_REUTILIZACION_SUCURSAL=COMPLETADA
+ARCHIVOS_CANDIDATOS=373
+SIMBOLOS_CANDIDATOS=362
+MEJOR_CANDIDATO=backend/core/connections/pos_runtime_resolver.py
+MEJOR_SCORE=180
+RESOLVER_CANONICO_REUTILIZABLE=SI
+HELPER_SUCURSAL_EXISTENTE=NO
+DECISION=EXTENDER_COMPOSICION_LOCAL_DEL_JOB_SIN_CREAR_CORE
+PATCH_APLICADO=NO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+REPORT=/app/edarsahub_sucursal_resolver_reuse_20260805T034625Z.txt
+COMPACT=/app/edarsahub_sucursal_resolver_reuse_20260805T034625Z_compact.txt
+FILES=/var/tmp/edarsahub_sucursal_resolver_reuse_20260805T034625Z/candidate_files.txt
+SYMBOLS=/var/tmp/edarsahub_sucursal_resolver_reuse_20260805T034625Z/candidate_symbols.txt
+REFERENCES=/var/tmp/edarsahub_sucursal_resolver_reuse_20260805T034625Z/runtime_references.txt
+RANKING=/var/tmp/edarsahub_sucursal_resolver_reuse_20260805T034625Z/ranking.txt
+EXACT_BLOCKS=/var/tmp/edarsahub_sucursal_resolver_reuse_20260805T034625Z/exact_blocks.txt
+SIGUIENTE_ESTADO=CONSTRUIR_CANDIDATO_TEMPORAL_REUTILIZANDO_EL_MEJOR_COMPONENTE
+
+===== 10. RESULTADO =====
+AUDITORIA_REUTILIZACION_SUCURSAL=COMPLETADA
+ARCHIVOS_CANDIDATOS=373
+SIMBOLOS_CANDIDATOS=362
+MEJOR_CANDIDATO=backend/core/connections/pos_runtime_resolver.py
+MEJOR_SCORE=180
+RESOLVER_CANONICO_REUTILIZABLE=SI
+HELPER_SUCURSAL_EXISTENTE=NO
+DECISION=EXTENDER_COMPOSICION_LOCAL_DEL_JOB_SIN_CREAR_CORE
+PATCH_APLICADO=NO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+REPORT=/app/edarsahub_sucursal_resolver_reuse_20260805T034625Z.txt
+COMPACT=/app/edarsahub_sucursal_resolver_reuse_20260805T034625Z_compact.txt
+FILES=/var/tmp/edarsahub_sucursal_resolver_reuse_20260805T034625Z/candidate_files.txt
+SYMBOLS=/var/tmp/edarsahub_sucursal_resolver_reuse_20260805T034625Z/candidate_symbols.txt
+REFERENCES=/var/tmp/edarsahub_sucursal_resolver_reuse_20260805T034625Z/runtime_references.txt
+RANKING=/var/tmp/edarsahub_sucursal_resolver_reuse_20260805T034625Z/ranking.txt
+EXACT_BLOCKS=/var/tmp/edarsahub_sucursal_resolver_reuse_20260805T034625Z/exact_blocks.txt
+SIGUIENTE_ESTADO=CONSTRUIR_CANDIDATO_TEMPORAL_REUTILIZANDO_EL_MEJOR_COMPONENTE

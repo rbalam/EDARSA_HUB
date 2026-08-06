@@ -1,0 +1,170 @@
+EDARSAHUB TRUE CANONICAL SOURCES
+CAPTURED_AT_UTC=2026-08-05T11:24:26.392039+00:00
+
+DISCARDED=Comercial.TableroEjecutivoCache|FIELDS=pax,total_comensales
+CANDIDATE=Comercial.v_TableroComercialConsolidado|FIELDS=pax,total_comensales|ROWS=5|MIN_DATE=None|MAX_DATE=None
+CANDIDATE=dbo.Comercial_Inteligencia_VentasDetalleProducto|FIELDS=pax|ROWS=1249822|MIN_DATE=2024-06-01|MAX_DATE=2026-07-07
+CANDIDATE=dbo.Comercial_Inteligencia_VW_KPIsEjecutivos|FIELDS=pax,total_comensales,venta_total|ROWS=9624|MIN_DATE=2016-06-14|MAX_DATE=2026-08-05
+CANDIDATE=dbo.Comercial_KPIs_Diarios_v2|FIELDS=pax,total_comensales,venta_total|ROWS=9660|MIN_DATE=2016-06-14|MAX_DATE=2026-08-05
+DISCARDED=dbo.Comercial_KPIs_Diarios_v2_backup_migracion_codigos_20260513_0558|FIELDS=pax,total_comensales,venta_total
+DISCARDED=dbo.Comercial_KPIs_Diarios_v2_BAK_BACKFILL_20260705_211009|FIELDS=pax,total_comensales,venta_total
+DISCARDED=dbo.Comercial_KPIs_Diarios_v2_BAK_MPRO_20260705_204245|FIELDS=pax,total_comensales,venta_total
+DISCARDED=dbo.Comercial_KPIs_Diarios_v2_BAK_MPRO_20260705_204439|FIELDS=pax,total_comensales,venta_total
+DISCARDED=dbo.Comercial_KPIs_Diarios_v2_BAK_SOFT_20260705_205041|FIELDS=pax,total_comensales,venta_total
+DISCARDED=dbo.Comercial_KPIs_Historico|FIELDS=pax,total_comensales,venta_total
+CANDIDATE=dbo.Comercial_KPIs_Mensuales_v2|FIELDS=pax,total_comensales,venta_total|ROWS=0|MIN_DATE=None|MAX_DATE=None
+CANDIDATE=dbo.Comercial_Metas|FIELDS=venta_meta|ROWS=0|MIN_DATE=None|MAX_DATE=None
+CANDIDATE=dbo.Comercial_Ventas_Dia_Abiertas_v2|FIELDS=venta_total|ROWS=5|MIN_DATE=2026-08-04|MAX_DATE=2026-08-04
+DISCARDED=dbo.Comercial_Ventas_Dia_Abiertas_v2_Backup_FechaOperacion_20260521|FIELDS=venta_total
+DISCARDED=dbo.Comercial_Ventas_Dia_Abiertas_v2_backup_migracion_codigos_20260513_0558|FIELDS=venta_total
+CANDIDATE=dbo.Fact_Ventas_Consolidadas|FIELDS=pax|ROWS=3322|MIN_DATE=2026-05-03|MAX_DATE=2026-06-01
+CANDIDATE=dbo.Finanzas_CortesCaja|FIELDS=venta_total|ROWS=4184|MIN_DATE=None|MAX_DATE=None
+CANDIDATE=dbo.Finanzas_CuadresZ|FIELDS=venta_total|ROWS=0|MIN_DATE=None|MAX_DATE=None
+DISCARDED=dbo.Finanzas_KPIs_Historico|FIELDS=venta_total
+DISCARDED=dbo.Operativo_AuditoriasProgramadas|FIELDS=dia_semana
+CANDIDATE=dbo.Sistema_HorariosServicioUnidad|FIELDS=dia_semana|ROWS=35|MIN_DATE=None|MAX_DATE=None
+DISCARDED=dbo.Sync_Mesas|FIELDS=mesa_numero,pax,total_comensales,venta_total
+DISCARDED=dbo.Sync_Movimientos_Detalle|FIELDS=mesa_numero
+DISCARDED=dbo.Sync_PAX_Detalle|FIELDS=dia_semana,mesa_numero,tiempo_promedio_mesa,turno
+DISCARDED=dbo.Sync_Sales|FIELDS=pax
+DISCARDED=dbo.Sync_Ticket_Perfecto|FIELDS=pax,ticket_perfecto_objetivo,tiempo_promedio_mesa,total_comensales,venta_total
+DISCARDED=dbo.Sync_Ventas_Historicas|FIELDS=venta_total
+DISCARDED=dbo.Sync_Ventas_PorDiaSemana|FIELDS=dia_semana
+CANDIDATE=dbo.View_Inteligencia_Comercial|FIELDS=pax,turno|ROWS=NO_DISPONIBLE|MIN_DATE=None|MAX_DATE=None
+DISCARDED=dbo.View_Sync_Sales_Detalle|FIELDS=pax
+CANDIDATE=dbo.vw_Comercial_KPIs_Diarios_v2_Canonica|FIELDS=pax|ROWS=NO_DISPONIBLE|MIN_DATE=None|MAX_DATE=None
+CANDIDATE=dbo.vw_Comercial_KPIs_Diarios_v2_Runtime|FIELDS=pax,total_comensales,venta_total|ROWS=NO_DISPONIBLE|MIN_DATE=None|MAX_DATE=None
+CANDIDATE=dbo.vw_Comercial_KPIs_Mensuales_v2_Canonica|FIELDS=pax|ROWS=NO_DISPONIBLE|MIN_DATE=None|MAX_DATE=None
+CANDIDATE=dbo.vw_Comercial_KPIs_Mensuales_v2_Runtime|FIELDS=pax,total_comensales,venta_total|ROWS=NO_DISPONIBLE|MIN_DATE=None|MAX_DATE=None
+DISCARDED=dbo.Vw_Sync_Sales_Unified|FIELDS=pax
+
+SUMMARY
+{
+  "fields": {
+    "dia_semana": {
+      "status": "FUENTE_PRODUCTIVA_POBLADA_DETECTADA",
+      "candidate_objects": [
+        "dbo.Sistema_HorariosServicioUnidad"
+      ],
+      "populated_objects": [
+        "dbo.Sistema_HorariosServicioUnidad"
+      ]
+    },
+    "mesa_numero": {
+      "status": "SIN_FUENTE_PRODUCTIVA_DEMOSTRADA",
+      "candidate_objects": [],
+      "populated_objects": []
+    },
+    "mesas": {
+      "status": "SIN_FUENTE_PRODUCTIVA_DEMOSTRADA",
+      "candidate_objects": [],
+      "populated_objects": []
+    },
+    "mesas_atendidas": {
+      "status": "SIN_FUENTE_PRODUCTIVA_DEMOSTRADA",
+      "candidate_objects": [],
+      "populated_objects": []
+    },
+    "pax": {
+      "status": "FUENTE_PRODUCTIVA_POBLADA_DETECTADA",
+      "candidate_objects": [
+        "Comercial.v_TableroComercialConsolidado",
+        "dbo.Comercial_Inteligencia_VentasDetalleProducto",
+        "dbo.Comercial_Inteligencia_VW_KPIsEjecutivos",
+        "dbo.Comercial_KPIs_Diarios_v2",
+        "dbo.Comercial_KPIs_Mensuales_v2",
+        "dbo.Fact_Ventas_Consolidadas",
+        "dbo.View_Inteligencia_Comercial",
+        "dbo.vw_Comercial_KPIs_Diarios_v2_Canonica",
+        "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime",
+        "dbo.vw_Comercial_KPIs_Mensuales_v2_Canonica",
+        "dbo.vw_Comercial_KPIs_Mensuales_v2_Runtime"
+      ],
+      "populated_objects": [
+        "Comercial.v_TableroComercialConsolidado",
+        "dbo.Comercial_Inteligencia_VentasDetalleProducto",
+        "dbo.Comercial_Inteligencia_VW_KPIsEjecutivos",
+        "dbo.Comercial_KPIs_Diarios_v2",
+        "dbo.Fact_Ventas_Consolidadas"
+      ]
+    },
+    "ticket_perfecto_objetivo": {
+      "status": "SIN_FUENTE_PRODUCTIVA_DEMOSTRADA",
+      "candidate_objects": [],
+      "populated_objects": []
+    },
+    "tiempo_promedio_mesa": {
+      "status": "SIN_FUENTE_PRODUCTIVA_DEMOSTRADA",
+      "candidate_objects": [],
+      "populated_objects": []
+    },
+    "total_comensales": {
+      "status": "FUENTE_PRODUCTIVA_POBLADA_DETECTADA",
+      "candidate_objects": [
+        "Comercial.v_TableroComercialConsolidado",
+        "dbo.Comercial_Inteligencia_VW_KPIsEjecutivos",
+        "dbo.Comercial_KPIs_Diarios_v2",
+        "dbo.Comercial_KPIs_Mensuales_v2",
+        "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime",
+        "dbo.vw_Comercial_KPIs_Mensuales_v2_Runtime"
+      ],
+      "populated_objects": [
+        "Comercial.v_TableroComercialConsolidado",
+        "dbo.Comercial_Inteligencia_VW_KPIsEjecutivos",
+        "dbo.Comercial_KPIs_Diarios_v2"
+      ]
+    },
+    "turno": {
+      "status": "ESTRUCTURA_PRODUCTIVA_VACIA",
+      "candidate_objects": [
+        "dbo.View_Inteligencia_Comercial"
+      ],
+      "populated_objects": []
+    },
+    "venta_meta": {
+      "status": "ESTRUCTURA_PRODUCTIVA_VACIA",
+      "candidate_objects": [
+        "dbo.Comercial_Metas"
+      ],
+      "populated_objects": []
+    },
+    "venta_total": {
+      "status": "FUENTE_PRODUCTIVA_POBLADA_DETECTADA",
+      "candidate_objects": [
+        "dbo.Comercial_Inteligencia_VW_KPIsEjecutivos",
+        "dbo.Comercial_KPIs_Diarios_v2",
+        "dbo.Comercial_KPIs_Mensuales_v2",
+        "dbo.Comercial_Ventas_Dia_Abiertas_v2",
+        "dbo.Finanzas_CortesCaja",
+        "dbo.Finanzas_CuadresZ",
+        "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime",
+        "dbo.vw_Comercial_KPIs_Mensuales_v2_Runtime"
+      ],
+      "populated_objects": [
+        "dbo.Comercial_Inteligencia_VW_KPIsEjecutivos",
+        "dbo.Comercial_KPIs_Diarios_v2",
+        "dbo.Comercial_Ventas_Dia_Abiertas_v2",
+        "dbo.Finanzas_CortesCaja"
+      ]
+    }
+  },
+  "valid_object_count": 16,
+  "discarded_object_count": 20,
+  "fields_with_populated_source": [
+    "dia_semana",
+    "pax",
+    "total_comensales",
+    "venta_total"
+  ],
+  "fields_with_empty_structure": [
+    "turno",
+    "venta_meta"
+  ],
+  "fields_without_source": [
+    "mesa_numero",
+    "mesas",
+    "mesas_atendidas",
+    "ticket_perfecto_objetivo",
+    "tiempo_promedio_mesa"
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "registry": "EKS_MASTER",
+  "version": "0.1",
+  "status": "BORRADOR_CONSOLIDADO",
+  "generated_at": "2026-08-02T04:39:06.240932+00:00",
+  "branch": "Edarsahub_Desarrollo",
+  "head": "f570aedab8692cc060d45e1a46321f024f95d427",
+  "assets": [
+    {
+      "id": "EKS-CORE-001",
+      "title": "Definición Global de EDARSAHUB BOS",
+      "type": "DEFINICION",
+      "authority": 0,
+      "status": "BORRADOR_CONSOLIDADO",
+      "version": "0.1",
+      "path": "docs/EKS/consolidado/EKS_CORE_001_DEFINICION_EDARSAHUB_BOS.md",
+      "sources": [
+        "EKS-SOURCE-HOSPITALITY-001",
+        "EKS-SOURCE-ATOMIC-001",
+        "EKS-SOURCE-AGENTS-001",
+        "EKS-SOURCE-COPILOT-001",
+        "EKS-SOURCE-AUDITOR-001",
+        "EKS-SOURCE-CODER-001",
+        "EKS-SOURCE-VALIDATOR-001"
+      ]
+    },
+    {
+      "id": "EKS-CORE-002",
+      "title": "Principios Globales de EDARSAHUB",
+      "type": "PRINCIPIOS",
+      "authority": 1,
+      "status": "BORRADOR_CONSOLIDADO",
+      "version": "0.1",
+      "path": "docs/EKS/consolidado/EKS_CORE_002_PRINCIPIOS_GLOBALES.md",
+      "sources": [
+        "EKS-SOURCE-HOSPITALITY-001",
+        "EKS-SOURCE-ATOMIC-001",
+        "EKS-SOURCE-AGENTS-001",
+        "EKS-SOURCE-COPILOT-001",
+        "EKS-SOURCE-AUDITOR-001",
+        "EKS-SOURCE-CODER-001",
+        "EKS-SOURCE-VALIDATOR-001"
+      ]
+    },
+    {
+      "id": "EKS-OPS-001",
+      "title": "Cambios Atómicos y Base Estable",
+      "type": "POLITICA_OPERATIVA",
+      "authority": 4,
+      "status": "PROPUESTA_VIGENTE",
+      "version": "0.1",
+      "path": "docs/operacion/MODO_TRABAJO_CAMBIOS_ATOMICOS.md",
+      "sources": [
+        "EKS-SOURCE-ATOMIC-001"
+      ]
+    },
+    {
+      "id": "EKS-DOM-HOSP-001",
+      "title": "EDARSAHUB Hospitality Architecture Book",
+      "type": "ARQUITECTURA_DE_DOMINIO",
+      "authority": 2,
+      "status": "FUENTE_PRIMARIA_HISTORICA",
+      "version": "0.1",
+      "path": "docs/hospitality/architecture/EHAB_00_INDICE_MAESTRO.md",
+      "sources": [
+        "EKS-SOURCE-HOSPITALITY-001"
+      ]
+    },
+    {
+      "id": "EKS-DOM-CONN-001",
+      "title": "Conectores Universales",
+      "type": "ARQUITECTURA_TRANSVERSAL",
+      "authority": 2,
+      "status": "INCOMPLETO_PENDIENTE_TOAST_NETPAY",
+      "version": "0.0",
+      "path": null,
+      "sources": [
+        "EKS-SOURCE-HOSPITALITY-001"
+      ]
+    }
+  ],
+  "source_registry": {
+    "EKS-SOURCE-HOSPITALITY-001": {
+      "path": "docs/hospitality/architecture/EHAB_00_INDICE_MAESTRO.md",
+      "sha256": "cb9ed4556f32465b713bbf015cfbb4637d3b2b47321df10542b6686520e04983",
+      "size": 1012
+    },
+    "EKS-SOURCE-ATOMIC-001": {
+      "path": "docs/operacion/MODO_TRABAJO_CAMBIOS_ATOMICOS.md",
+      "sha256": "bc85c05bfe80ca9e05b44ad444b6e50e4db89b8ac9272288073e9440f3c51a43",
+      "size": 3871
+    },
+    "EKS-SOURCE-AGENTS-001": {
+      "path": "AGENTS.md",
+      "sha256": "42a8434cce7d1e4b2c84993bfc3a69dbbedb8bd1c52bba42fdac0b831669054a",
+      "size": 6765
+    },
+    "EKS-SOURCE-COPILOT-001": {
+      "path": ".github/copilot-instructions.md",
+      "sha256": "3e625e7fe5be9168981559b4d74744658f7223406b6625e816ed69b16cbbbb96",
+      "size": 2343
+    },
+    "EKS-SOURCE-AUDITOR-001": {
+      "path": ".github/agents/edarsa-auditor.agent.md",
+      "sha256": "35452d5004f3ae7628ce4b8a4cb7e1ec9212681ee75e1a5b98afa5522e9ef374",
+      "size": 5161
+    },
+    "EKS-SOURCE-CODER-001": {
+      "path": ".github/agents/edarsa-coder.agent.md",
+      "sha256": "72dccabd756b3bcf11275a1d383efe6ed68b1c73c8af81596447e729ae2a69f6",
+      "size": 3836
+    },
+    "EKS-SOURCE-VALIDATOR-001": {
+      "path": ".github/agents/edarsa-validator.agent.md",
+      "sha256": "5f82bd93b4926ef069e243e563fa498785fd7689788fcced1e2ee223c4d88814",
+      "size": 4513
+    }
+  },
+  "pending_primary_sources": [
+    "Chat original Hospitality",
+    "Chat Robots / Toast / NetPay"
+  ]
+}

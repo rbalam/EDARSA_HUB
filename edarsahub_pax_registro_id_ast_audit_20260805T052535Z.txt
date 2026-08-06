@@ -1,0 +1,794 @@
+===== 1. GUARDRAILS =====
+RAMA=Edarsahub_Desarrollo
+HEAD=8c29ad3553b39f73c3732cc5293fccc8b193b70c
+TARGET_SHA=5425286f02c70751191d7d31be96f679ed491991835cbf1dbc0b04b2bc4ceed1
+CONTROL=PASS
+
+===== 2. AUDITORIA AST EXACTA DE _sync_pax_detalle =====
+FUNCION=_sync_pax_detalle
+LINEA_INICIO=414
+LINEA_FIN=479
+
+===== SQL EN LA FUNCION =====
+CONSTANTES_SQL=2
+
+SQL_1_LINEA_INICIO=436
+SQL_1_LINEA_FIN=446
+SQL_1_CONTENIDO_BEGIN
+
+                    SELECT
+                        CAST(fecha_operacion AS DATE) as FechaOperacion,
+                        ISNULL(SUM(pax_cerrados_dia), 0) as TotalComensales,
+                        ISNULL(SUM(ventas_cerradas_dia), 0) as VentaTotal,
+                        ISNULL(SUM(tickets_cerrados_dia), 0) as TotalCuentas
+                    FROM Comercial_Ventas_Dia_Abiertas_v2
+                    WHERE server_id = %s AND sucursal_id = %s
+                      AND fecha_operacion >= %s
+                    GROUP BY CAST(fecha_operacion AS DATE)
+                
+SQL_1_CONTENIDO_END
+
+SQL_2_LINEA_INICIO=455
+SQL_2_LINEA_FIN=463
+SQL_2_CONTENIDO_BEGIN
+
+                        IF NOT EXISTS (SELECT 1 FROM Sync_PAX_Detalle
+                                      WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s)
+                            INSERT INTO Sync_PAX_Detalle
+                            (PAXRegistroID, ServerID, SucursalID, SucursalNombre,
+                             FechaOperacion, FechaHora, NumeroComensales,
+                             VentaCuenta, ConsumoPromedioPAX)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    
+SQL_2_CONTENIDO_END
+
+===== ASIGNACIONES DE LA FUNCION =====
+ASIGNACIONES_TOTAL=11
+
+ASIGNACION_1_LINEA=420
+ASIGNACION_1_TIPO=Assign
+ASIGNACION_1_BEGIN
+conn = self._get_edarsahub_connection()
+ASIGNACION_1_END
+
+ASIGNACION_2_LINEA=421
+ASIGNACION_2_TIPO=Assign
+ASIGNACION_2_BEGIN
+cursor = conn.cursor(as_dict=True)
+ASIGNACION_2_END
+
+ASIGNACION_3_LINEA=424
+ASIGNACION_3_TIPO=Assign
+ASIGNACION_3_BEGIN
+fecha_inicio = datetime.now(timezone.utc).date() - timedelta(days=7)
+ASIGNACION_3_END
+
+ASIGNACION_4_LINEA=425
+ASIGNACION_4_TIPO=Assign
+ASIGNACION_4_BEGIN
+count = 0
+ASIGNACION_4_END
+
+ASIGNACION_5_LINEA=428
+ASIGNACION_5_TIPO=Assign
+ASIGNACION_5_BEGIN
+server_id = str(context.server_id)
+ASIGNACION_5_END
+
+ASIGNACION_6_LINEA=429
+ASIGNACION_6_TIPO=Assign
+ASIGNACION_6_BEGIN
+suc = {
+                "SucursalID": str(
+                    context.sucursal_origen_id or "DEFAULT"
+                ).strip(),
+                "SucursalNombre": context.unidad_nombre,
+            }
+ASIGNACION_6_END
+
+ASIGNACION_7_LINEA=449
+ASIGNACION_7_TIPO=Assign
+ASIGNACION_7_BEGIN
+pax_id = f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
+ASIGNACION_7_END
+
+ASIGNACION_8_LINEA=451
+ASIGNACION_8_TIPO=Assign
+ASIGNACION_8_BEGIN
+comensales = int(row["TotalComensales"] or 0)
+ASIGNACION_8_END
+
+ASIGNACION_9_LINEA=452
+ASIGNACION_9_TIPO=Assign
+ASIGNACION_9_BEGIN
+venta = float(row["VentaTotal"] or 0)
+ASIGNACION_9_END
+
+ASIGNACION_10_LINEA=453
+ASIGNACION_10_TIPO=Assign
+ASIGNACION_10_BEGIN
+consumo_pax = venta / comensales if comensales > 0 else 0
+ASIGNACION_10_END
+
+ASIGNACION_11_LINEA=470
+ASIGNACION_11_TIPO=AugAssign
+ASIGNACION_11_BEGIN
+count += 1
+ASIGNACION_11_END
+
+===== LLAMADAS cursor.execute =====
+CURSOR_EXECUTE_TOTAL=2
+
+EXECUTE_1_LINEA_INICIO=436
+EXECUTE_1_LINEA_FIN=446
+EXECUTE_1_ARGUMENTOS=2
+EXECUTE_1_BEGIN
+cursor.execute("""
+                    SELECT
+                        CAST(fecha_operacion AS DATE) as FechaOperacion,
+                        ISNULL(SUM(pax_cerrados_dia), 0) as TotalComensales,
+                        ISNULL(SUM(ventas_cerradas_dia), 0) as VentaTotal,
+                        ISNULL(SUM(tickets_cerrados_dia), 0) as TotalCuentas
+                    FROM Comercial_Ventas_Dia_Abiertas_v2
+                    WHERE server_id = %s AND sucursal_id = %s
+                      AND fecha_operacion >= %s
+                    GROUP BY CAST(fecha_operacion AS DATE)
+                """, (server_id, suc["SucursalID"], fecha_inicio))
+EXECUTE_1_END
+EXECUTE_1_PARAMS_TIPO=Tuple
+EXECUTE_1_PARAMS_BEGIN
+(server_id, suc["SucursalID"], fecha_inicio)
+EXECUTE_1_PARAMS_END
+EXECUTE_1_PARAMS_TOTAL=3
+EXECUTE_1_PARAM_1=server_id
+EXECUTE_1_PARAM_1_TIPO=Name
+EXECUTE_1_PARAM_2=suc["SucursalID"]
+EXECUTE_1_PARAM_2_TIPO=Subscript
+EXECUTE_1_PARAM_3=fecha_inicio
+EXECUTE_1_PARAM_3_TIPO=Name
+
+EXECUTE_2_LINEA_INICIO=455
+EXECUTE_2_LINEA_FIN=468
+EXECUTE_2_ARGUMENTOS=2
+EXECUTE_2_BEGIN
+cursor.execute("""
+                        IF NOT EXISTS (SELECT 1 FROM Sync_PAX_Detalle
+                                      WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s)
+                            INSERT INTO Sync_PAX_Detalle
+                            (PAXRegistroID, ServerID, SucursalID, SucursalNombre,
+                             FechaOperacion, FechaHora, NumeroComensales,
+                             VentaCuenta, ConsumoPromedioPAX)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        server_id, suc["SucursalID"], row["FechaOperacion"],
+                        pax_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
+                        row["FechaOperacion"], datetime.now(timezone.utc),
+                        comensales, venta, consumo_pax
+                    ))
+EXECUTE_2_END
+EXECUTE_2_PARAMS_TIPO=Tuple
+EXECUTE_2_PARAMS_BEGIN
+(
+                        server_id, suc["SucursalID"], row["FechaOperacion"],
+                        pax_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
+                        row["FechaOperacion"], datetime.now(timezone.utc),
+                        comensales, venta, consumo_pax
+                    )
+EXECUTE_2_PARAMS_END
+EXECUTE_2_PARAMS_TOTAL=12
+EXECUTE_2_PARAM_1=server_id
+EXECUTE_2_PARAM_1_TIPO=Name
+EXECUTE_2_PARAM_2=suc["SucursalID"]
+EXECUTE_2_PARAM_2_TIPO=Subscript
+EXECUTE_2_PARAM_3=row["FechaOperacion"]
+EXECUTE_2_PARAM_3_TIPO=Subscript
+EXECUTE_2_PARAM_4=pax_id
+EXECUTE_2_PARAM_4_TIPO=Name
+EXECUTE_2_PARAM_5=server_id
+EXECUTE_2_PARAM_5_TIPO=Name
+EXECUTE_2_PARAM_6=suc["SucursalID"]
+EXECUTE_2_PARAM_6_TIPO=Subscript
+EXECUTE_2_PARAM_7=suc.get("SucursalNombre", "")
+EXECUTE_2_PARAM_7_TIPO=Call
+EXECUTE_2_PARAM_8=row["FechaOperacion"]
+EXECUTE_2_PARAM_8_TIPO=Subscript
+EXECUTE_2_PARAM_9=datetime.now(timezone.utc)
+EXECUTE_2_PARAM_9_TIPO=Call
+EXECUTE_2_PARAM_10=comensales
+EXECUTE_2_PARAM_10_TIPO=Name
+EXECUTE_2_PARAM_11=venta
+EXECUTE_2_PARAM_11_TIPO=Name
+EXECUTE_2_PARAM_12=consumo_pax
+EXECUTE_2_PARAM_12_TIPO=Name
+
+===== EXPRESIONES CANDIDATAS PARA PAXRegistroID =====
+CANDIDATOS_TOTAL=8
+
+CANDIDATO_1_BEGIN
+TIPO=Call
+LINEA_INICIO=436
+LINEA_FIN=446
+EXPRESION_BEGIN
+cursor.execute("""
+                    SELECT
+                        CAST(fecha_operacion AS DATE) as FechaOperacion,
+                        ISNULL(SUM(pax_cerrados_dia), 0) as TotalComensales,
+                        ISNULL(SUM(ventas_cerradas_dia), 0) as VentaTotal,
+                        ISNULL(SUM(tickets_cerrados_dia), 0) as TotalCuentas
+                    FROM Comercial_Ventas_Dia_Abiertas_v2
+                    WHERE server_id = %s AND sucursal_id = %s
+                      AND fecha_operacion >= %s
+                    GROUP BY CAST(fecha_operacion AS DATE)
+                """, (server_id, suc["SucursalID"], fecha_inicio))
+EXPRESION_END
+SENTENCIA_TIPO=Expr
+SENTENCIA_BEGIN
+cursor.execute("""
+                    SELECT
+                        CAST(fecha_operacion AS DATE) as FechaOperacion,
+                        ISNULL(SUM(pax_cerrados_dia), 0) as TotalComensales,
+                        ISNULL(SUM(ventas_cerradas_dia), 0) as VentaTotal,
+                        ISNULL(SUM(tickets_cerrados_dia), 0) as TotalCuentas
+                    FROM Comercial_Ventas_Dia_Abiertas_v2
+                    WHERE server_id = %s AND sucursal_id = %s
+                      AND fecha_operacion >= %s
+                    GROUP BY CAST(fecha_operacion AS DATE)
+                """, (server_id, suc["SucursalID"], fecha_inicio))
+SENTENCIA_END
+CONTEXTO_BEGIN
+   0432:                 ).strip(),
+   0433:                 "SucursalNombre": context.unidad_nombre,
+   0434:             }
+   0435:             try:
+>> 0436:                 cursor.execute("""
+>> 0437:                     SELECT
+>> 0438:                         CAST(fecha_operacion AS DATE) as FechaOperacion,
+>> 0439:                         ISNULL(SUM(pax_cerrados_dia), 0) as TotalComensales,
+>> 0440:                         ISNULL(SUM(ventas_cerradas_dia), 0) as VentaTotal,
+>> 0441:                         ISNULL(SUM(tickets_cerrados_dia), 0) as TotalCuentas
+>> 0442:                     FROM Comercial_Ventas_Dia_Abiertas_v2
+>> 0443:                     WHERE server_id = %s AND sucursal_id = %s
+>> 0444:                       AND fecha_operacion >= %s
+>> 0445:                     GROUP BY CAST(fecha_operacion AS DATE)
+>> 0446:                 """, (server_id, suc["SucursalID"], fecha_inicio))
+   0447: 
+   0448:                 for row in cursor.fetchall():
+   0449:                     pax_id = f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
+   0450: 
+CONTEXTO_END
+CANDIDATO_1_END
+
+CANDIDATO_2_BEGIN
+TIPO=Expr
+LINEA_INICIO=436
+LINEA_FIN=446
+EXPRESION_BEGIN
+cursor.execute("""
+                    SELECT
+                        CAST(fecha_operacion AS DATE) as FechaOperacion,
+                        ISNULL(SUM(pax_cerrados_dia), 0) as TotalComensales,
+                        ISNULL(SUM(ventas_cerradas_dia), 0) as VentaTotal,
+                        ISNULL(SUM(tickets_cerrados_dia), 0) as TotalCuentas
+                    FROM Comercial_Ventas_Dia_Abiertas_v2
+                    WHERE server_id = %s AND sucursal_id = %s
+                      AND fecha_operacion >= %s
+                    GROUP BY CAST(fecha_operacion AS DATE)
+                """, (server_id, suc["SucursalID"], fecha_inicio))
+EXPRESION_END
+SENTENCIA_TIPO=For
+SENTENCIA_BEGIN
+for context in contexts:
+            server_id = str(context.server_id)
+            suc = {
+                "SucursalID": str(
+                    context.sucursal_origen_id or "DEFAULT"
+                ).strip(),
+                "SucursalNombre": context.unidad_nombre,
+            }
+            try:
+                cursor.execute("""
+                    SELECT
+                        CAST(fecha_operacion AS DATE) as FechaOperacion,
+                        ISNULL(SUM(pax_cerrados_dia), 0) as TotalComensales,
+                        ISNULL(SUM(ventas_cerradas_dia), 0) as VentaTotal,
+                        ISNULL(SUM(tickets_cerrados_dia), 0) as TotalCuentas
+                    FROM Comercial_Ventas_Dia_Abiertas_v2
+                    WHERE server_id = %s AND sucursal_id = %s
+                      AND fecha_operacion >= %s
+                    GROUP BY CAST(fecha_operacion AS DATE)
+                """, (server_id, suc["SucursalID"], fecha_inicio))
+
+                for row in cursor.fetchall():
+                    pax_id = f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
+
+                    comensales = int(row["TotalComensales"] or 0)
+                    venta = float(row["VentaTotal"] or 0)
+                    consumo_pax = venta / comensales if comensales > 0 else 0
+
+                    cursor.execute("""
+                        IF NOT EXISTS (SELECT 1 FROM Sync_PAX_Detalle
+                                      WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s)
+                            INSERT INTO Sync_PAX_Detalle
+                            (PAXRegistroID, ServerID, SucursalID, SucursalNombre,
+                             FechaOperacion, FechaHora, NumeroComensales,
+                             VentaCuenta, ConsumoPromedioPAX)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        server_id, suc["SucursalID"], row["FechaOperacion"],
+                        pax_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
+                        row["FechaOperacion"], datetime.now(timezone.utc),
+                        comensales, venta, consumo_pax
+                    ))
+                    conn.commit()
+                    count += 1
+                        
+            except Exception as e:
+                logger.warning(f"[{self.JOB_ID}] Error sync PAX {suc.get('SucursalID')}: {e}")
+                raise
+SENTENCIA_END
+CONTEXTO_BEGIN
+   0432:                 ).strip(),
+   0433:                 "SucursalNombre": context.unidad_nombre,
+   0434:             }
+   0435:             try:
+>> 0436:                 cursor.execute("""
+>> 0437:                     SELECT
+>> 0438:                         CAST(fecha_operacion AS DATE) as FechaOperacion,
+>> 0439:                         ISNULL(SUM(pax_cerrados_dia), 0) as TotalComensales,
+>> 0440:                         ISNULL(SUM(ventas_cerradas_dia), 0) as VentaTotal,
+>> 0441:                         ISNULL(SUM(tickets_cerrados_dia), 0) as TotalCuentas
+>> 0442:                     FROM Comercial_Ventas_Dia_Abiertas_v2
+>> 0443:                     WHERE server_id = %s AND sucursal_id = %s
+>> 0444:                       AND fecha_operacion >= %s
+>> 0445:                     GROUP BY CAST(fecha_operacion AS DATE)
+>> 0446:                 """, (server_id, suc["SucursalID"], fecha_inicio))
+   0447: 
+   0448:                 for row in cursor.fetchall():
+   0449:                     pax_id = f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
+   0450: 
+CONTEXTO_END
+CANDIDATO_2_END
+
+CANDIDATO_3_BEGIN
+TIPO=Assign
+LINEA_INICIO=449
+LINEA_FIN=449
+EXPRESION_BEGIN
+pax_id = f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
+EXPRESION_END
+SENTENCIA_TIPO=For
+SENTENCIA_BEGIN
+for row in cursor.fetchall():
+                    pax_id = f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
+
+                    comensales = int(row["TotalComensales"] or 0)
+                    venta = float(row["VentaTotal"] or 0)
+                    consumo_pax = venta / comensales if comensales > 0 else 0
+
+                    cursor.execute("""
+                        IF NOT EXISTS (SELECT 1 FROM Sync_PAX_Detalle
+                                      WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s)
+                            INSERT INTO Sync_PAX_Detalle
+                            (PAXRegistroID, ServerID, SucursalID, SucursalNombre,
+                             FechaOperacion, FechaHora, NumeroComensales,
+                             VentaCuenta, ConsumoPromedioPAX)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        server_id, suc["SucursalID"], row["FechaOperacion"],
+                        pax_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
+                        row["FechaOperacion"], datetime.now(timezone.utc),
+                        comensales, venta, consumo_pax
+                    ))
+                    conn.commit()
+                    count += 1
+SENTENCIA_END
+CONTEXTO_BEGIN
+   0445:                     GROUP BY CAST(fecha_operacion AS DATE)
+   0446:                 """, (server_id, suc["SucursalID"], fecha_inicio))
+   0447: 
+   0448:                 for row in cursor.fetchall():
+>> 0449:                     pax_id = f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
+   0450: 
+   0451:                     comensales = int(row["TotalComensales"] or 0)
+   0452:                     venta = float(row["VentaTotal"] or 0)
+   0453:                     consumo_pax = venta / comensales if comensales > 0 else 0
+CONTEXTO_END
+CANDIDATO_3_END
+
+CANDIDATO_4_BEGIN
+TIPO=FormattedValue
+LINEA_INICIO=449
+LINEA_FIN=449
+EXPRESION_BEGIN
+f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
+EXPRESION_END
+SENTENCIA_TIPO=Assign
+SENTENCIA_BEGIN
+pax_id = f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
+SENTENCIA_END
+CONTEXTO_BEGIN
+   0445:                     GROUP BY CAST(fecha_operacion AS DATE)
+   0446:                 """, (server_id, suc["SucursalID"], fecha_inicio))
+   0447: 
+   0448:                 for row in cursor.fetchall():
+>> 0449:                     pax_id = f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
+   0450: 
+   0451:                     comensales = int(row["TotalComensales"] or 0)
+   0452:                     venta = float(row["VentaTotal"] or 0)
+   0453:                     consumo_pax = venta / comensales if comensales > 0 else 0
+CONTEXTO_END
+CANDIDATO_4_END
+
+CANDIDATO_5_BEGIN
+TIPO=JoinedStr
+LINEA_INICIO=449
+LINEA_FIN=449
+EXPRESION_BEGIN
+f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
+EXPRESION_END
+SENTENCIA_TIPO=Assign
+SENTENCIA_BEGIN
+pax_id = f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
+SENTENCIA_END
+CONTEXTO_BEGIN
+   0445:                     GROUP BY CAST(fecha_operacion AS DATE)
+   0446:                 """, (server_id, suc["SucursalID"], fecha_inicio))
+   0447: 
+   0448:                 for row in cursor.fetchall():
+>> 0449:                     pax_id = f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
+   0450: 
+   0451:                     comensales = int(row["TotalComensales"] or 0)
+   0452:                     venta = float(row["VentaTotal"] or 0)
+   0453:                     consumo_pax = venta / comensales if comensales > 0 else 0
+CONTEXTO_END
+CANDIDATO_5_END
+
+CANDIDATO_6_BEGIN
+TIPO=Call
+LINEA_INICIO=455
+LINEA_FIN=468
+EXPRESION_BEGIN
+cursor.execute("""
+                        IF NOT EXISTS (SELECT 1 FROM Sync_PAX_Detalle
+                                      WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s)
+                            INSERT INTO Sync_PAX_Detalle
+                            (PAXRegistroID, ServerID, SucursalID, SucursalNombre,
+                             FechaOperacion, FechaHora, NumeroComensales,
+                             VentaCuenta, ConsumoPromedioPAX)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        server_id, suc["SucursalID"], row["FechaOperacion"],
+                        pax_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
+                        row["FechaOperacion"], datetime.now(timezone.utc),
+                        comensales, venta, consumo_pax
+                    ))
+EXPRESION_END
+SENTENCIA_TIPO=Expr
+SENTENCIA_BEGIN
+cursor.execute("""
+                        IF NOT EXISTS (SELECT 1 FROM Sync_PAX_Detalle
+                                      WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s)
+                            INSERT INTO Sync_PAX_Detalle
+                            (PAXRegistroID, ServerID, SucursalID, SucursalNombre,
+                             FechaOperacion, FechaHora, NumeroComensales,
+                             VentaCuenta, ConsumoPromedioPAX)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        server_id, suc["SucursalID"], row["FechaOperacion"],
+                        pax_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
+                        row["FechaOperacion"], datetime.now(timezone.utc),
+                        comensales, venta, consumo_pax
+                    ))
+SENTENCIA_END
+CONTEXTO_BEGIN
+   0451:                     comensales = int(row["TotalComensales"] or 0)
+   0452:                     venta = float(row["VentaTotal"] or 0)
+   0453:                     consumo_pax = venta / comensales if comensales > 0 else 0
+   0454: 
+>> 0455:                     cursor.execute("""
+>> 0456:                         IF NOT EXISTS (SELECT 1 FROM Sync_PAX_Detalle
+>> 0457:                                       WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s)
+>> 0458:                             INSERT INTO Sync_PAX_Detalle
+>> 0459:                             (PAXRegistroID, ServerID, SucursalID, SucursalNombre,
+>> 0460:                              FechaOperacion, FechaHora, NumeroComensales,
+>> 0461:                              VentaCuenta, ConsumoPromedioPAX)
+>> 0462:                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+>> 0463:                     """, (
+>> 0464:                         server_id, suc["SucursalID"], row["FechaOperacion"],
+>> 0465:                         pax_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
+>> 0466:                         row["FechaOperacion"], datetime.now(timezone.utc),
+>> 0467:                         comensales, venta, consumo_pax
+>> 0468:                     ))
+   0469:                     conn.commit()
+   0470:                     count += 1
+   0471:                         
+   0472:             except Exception as e:
+CONTEXTO_END
+CANDIDATO_6_END
+
+CANDIDATO_7_BEGIN
+TIPO=Expr
+LINEA_INICIO=455
+LINEA_FIN=468
+EXPRESION_BEGIN
+cursor.execute("""
+                        IF NOT EXISTS (SELECT 1 FROM Sync_PAX_Detalle
+                                      WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s)
+                            INSERT INTO Sync_PAX_Detalle
+                            (PAXRegistroID, ServerID, SucursalID, SucursalNombre,
+                             FechaOperacion, FechaHora, NumeroComensales,
+                             VentaCuenta, ConsumoPromedioPAX)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        server_id, suc["SucursalID"], row["FechaOperacion"],
+                        pax_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
+                        row["FechaOperacion"], datetime.now(timezone.utc),
+                        comensales, venta, consumo_pax
+                    ))
+EXPRESION_END
+SENTENCIA_TIPO=For
+SENTENCIA_BEGIN
+for row in cursor.fetchall():
+                    pax_id = f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
+
+                    comensales = int(row["TotalComensales"] or 0)
+                    venta = float(row["VentaTotal"] or 0)
+                    consumo_pax = venta / comensales if comensales > 0 else 0
+
+                    cursor.execute("""
+                        IF NOT EXISTS (SELECT 1 FROM Sync_PAX_Detalle
+                                      WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s)
+                            INSERT INTO Sync_PAX_Detalle
+                            (PAXRegistroID, ServerID, SucursalID, SucursalNombre,
+                             FechaOperacion, FechaHora, NumeroComensales,
+                             VentaCuenta, ConsumoPromedioPAX)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        server_id, suc["SucursalID"], row["FechaOperacion"],
+                        pax_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
+                        row["FechaOperacion"], datetime.now(timezone.utc),
+                        comensales, venta, consumo_pax
+                    ))
+                    conn.commit()
+                    count += 1
+SENTENCIA_END
+CONTEXTO_BEGIN
+   0451:                     comensales = int(row["TotalComensales"] or 0)
+   0452:                     venta = float(row["VentaTotal"] or 0)
+   0453:                     consumo_pax = venta / comensales if comensales > 0 else 0
+   0454: 
+>> 0455:                     cursor.execute("""
+>> 0456:                         IF NOT EXISTS (SELECT 1 FROM Sync_PAX_Detalle
+>> 0457:                                       WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s)
+>> 0458:                             INSERT INTO Sync_PAX_Detalle
+>> 0459:                             (PAXRegistroID, ServerID, SucursalID, SucursalNombre,
+>> 0460:                              FechaOperacion, FechaHora, NumeroComensales,
+>> 0461:                              VentaCuenta, ConsumoPromedioPAX)
+>> 0462:                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+>> 0463:                     """, (
+>> 0464:                         server_id, suc["SucursalID"], row["FechaOperacion"],
+>> 0465:                         pax_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
+>> 0466:                         row["FechaOperacion"], datetime.now(timezone.utc),
+>> 0467:                         comensales, venta, consumo_pax
+>> 0468:                     ))
+   0469:                     conn.commit()
+   0470:                     count += 1
+   0471:                         
+   0472:             except Exception as e:
+CONTEXTO_END
+CANDIDATO_7_END
+
+CANDIDATO_8_BEGIN
+TIPO=Tuple
+LINEA_INICIO=463
+LINEA_FIN=468
+EXPRESION_BEGIN
+(
+                        server_id, suc["SucursalID"], row["FechaOperacion"],
+                        pax_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
+                        row["FechaOperacion"], datetime.now(timezone.utc),
+                        comensales, venta, consumo_pax
+                    )
+EXPRESION_END
+SENTENCIA_TIPO=Expr
+SENTENCIA_BEGIN
+cursor.execute("""
+                        IF NOT EXISTS (SELECT 1 FROM Sync_PAX_Detalle
+                                      WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s)
+                            INSERT INTO Sync_PAX_Detalle
+                            (PAXRegistroID, ServerID, SucursalID, SucursalNombre,
+                             FechaOperacion, FechaHora, NumeroComensales,
+                             VentaCuenta, ConsumoPromedioPAX)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        server_id, suc["SucursalID"], row["FechaOperacion"],
+                        pax_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
+                        row["FechaOperacion"], datetime.now(timezone.utc),
+                        comensales, venta, consumo_pax
+                    ))
+SENTENCIA_END
+LLAMADA_CONTENEDORA_TIPO=Attribute
+LLAMADA_CONTENEDORA_BEGIN
+cursor.execute("""
+                        IF NOT EXISTS (SELECT 1 FROM Sync_PAX_Detalle
+                                      WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s)
+                            INSERT INTO Sync_PAX_Detalle
+                            (PAXRegistroID, ServerID, SucursalID, SucursalNombre,
+                             FechaOperacion, FechaHora, NumeroComensales,
+                             VentaCuenta, ConsumoPromedioPAX)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        server_id, suc["SucursalID"], row["FechaOperacion"],
+                        pax_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
+                        row["FechaOperacion"], datetime.now(timezone.utc),
+                        comensales, venta, consumo_pax
+                    ))
+LLAMADA_CONTENEDORA_END
+CONTEXTO_BEGIN
+   0459:                             (PAXRegistroID, ServerID, SucursalID, SucursalNombre,
+   0460:                              FechaOperacion, FechaHora, NumeroComensales,
+   0461:                              VentaCuenta, ConsumoPromedioPAX)
+   0462:                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+>> 0463:                     """, (
+>> 0464:                         server_id, suc["SucursalID"], row["FechaOperacion"],
+>> 0465:                         pax_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
+>> 0466:                         row["FechaOperacion"], datetime.now(timezone.utc),
+>> 0467:                         comensales, venta, consumo_pax
+>> 0468:                     ))
+   0469:                     conn.commit()
+   0470:                     count += 1
+   0471:                         
+   0472:             except Exception as e:
+CONTEXTO_END
+CANDIDATO_8_END
+
+===== CLAVES row EN LA FUNCION =====
+ROW_KEYS_TOTAL=5
+ROW_KEY_1=linea:449;columna:64;clave:FechaOperacion
+ROW_KEY_1_SENTENCIA=pax_id = f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
+ROW_KEY_2=linea:451;columna:37;clave:TotalComensales
+ROW_KEY_2_SENTENCIA=comensales = int(row["TotalComensales"] or 0)
+ROW_KEY_3=linea:452;columna:34;clave:VentaTotal
+ROW_KEY_3_SENTENCIA=venta = float(row["VentaTotal"] or 0)
+ROW_KEY_4=linea:464;columna:54;clave:FechaOperacion
+ROW_KEY_4_SENTENCIA=cursor.execute("""
+                        IF NOT EXISTS (SELECT 1 FROM Sync_PAX_Detalle
+                                      WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s)
+                            INSERT INTO Sync_PAX_Detalle
+                            (PAXRegistroID, ServerID, SucursalID, SucursalNombre,
+                             FechaOperacion, FechaHora, NumeroComensales,
+                             VentaCuenta, ConsumoPromedioPAX)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        server_id, suc["SucursalID"], row["FechaOperacion"],
+                        pax_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
+                        row["FechaOperacion"], datetime.now(timezone.utc),
+                        comensales, venta, consumo_pax
+                    ))
+ROW_KEY_5=linea:466;columna:24;clave:FechaOperacion
+ROW_KEY_5_SENTENCIA=cursor.execute("""
+                        IF NOT EXISTS (SELECT 1 FROM Sync_PAX_Detalle
+                                      WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s)
+                            INSERT INTO Sync_PAX_Detalle
+                            (PAXRegistroID, ServerID, SucursalID, SucursalNombre,
+                             FechaOperacion, FechaHora, NumeroComensales,
+                             VentaCuenta, ConsumoPromedioPAX)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        server_id, suc["SucursalID"], row["FechaOperacion"],
+                        pax_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
+                        row["FechaOperacion"], datetime.now(timezone.utc),
+                        comensales, venta, consumo_pax
+                    ))
+
+===== REFERENCIAS TEXTUALES PAXRegistroID =====
+REFERENCIAS_TOTAL=3
+REFERENCIA_1=linea:456;texto:                        IF NOT EXISTS (SELECT 1 FROM Sync_PAX_Detalle
+REFERENCIA_2=linea:458;texto:                            INSERT INTO Sync_PAX_Detalle
+REFERENCIA_3=linea:459;texto:                            (PAXRegistroID, ServerID, SucursalID, SucursalNombre,
+
+AST_PARSE=PASS
+AUDITORIA_PAX=PASS
+ARCHIVO_MODIFICADO=NO
+
+===== 3. FUNCION COMPLETA NUMERADA =====
+FUNCION_RANGO=414:479
+FUNCION_COMPLETA_BEGIN
+0414:     def _sync_pax_detalle(self, contexts: List[PosRuntimeContext]) -> int:
+0415:         """
+0416:         Sincroniza detalle de PAX (comensales) desde ventas.
+0417:         """
+0418:         logger.info(f"[{self.JOB_ID}] Sincronizando PAX detalle")
+0419:         
+0420:         conn = self._get_edarsahub_connection()
+0421:         cursor = conn.cursor(as_dict=True)
+0422:         
+0423:         # Últimos 7 días
+0424:         fecha_inicio = datetime.now(timezone.utc).date() - timedelta(days=7)
+0425:         count = 0
+0426:         
+0427:         for context in contexts:
+0428:             server_id = str(context.server_id)
+0429:             suc = {
+0430:                 "SucursalID": str(
+0431:                     context.sucursal_origen_id or "DEFAULT"
+0432:                 ).strip(),
+0433:                 "SucursalNombre": context.unidad_nombre,
+0434:             }
+0435:             try:
+0436:                 cursor.execute("""
+0437:                     SELECT
+0438:                         CAST(fecha_operacion AS DATE) as FechaOperacion,
+0439:                         ISNULL(SUM(pax_cerrados_dia), 0) as TotalComensales,
+0440:                         ISNULL(SUM(ventas_cerradas_dia), 0) as VentaTotal,
+0441:                         ISNULL(SUM(tickets_cerrados_dia), 0) as TotalCuentas
+0442:                     FROM Comercial_Ventas_Dia_Abiertas_v2
+0443:                     WHERE server_id = %s AND sucursal_id = %s
+0444:                       AND fecha_operacion >= %s
+0445:                     GROUP BY CAST(fecha_operacion AS DATE)
+0446:                 """, (server_id, suc["SucursalID"], fecha_inicio))
+0447: 
+0448:                 for row in cursor.fetchall():
+0449:                     pax_id = f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
+0450: 
+0451:                     comensales = int(row["TotalComensales"] or 0)
+0452:                     venta = float(row["VentaTotal"] or 0)
+0453:                     consumo_pax = venta / comensales if comensales > 0 else 0
+0454: 
+0455:                     cursor.execute("""
+0456:                         IF NOT EXISTS (SELECT 1 FROM Sync_PAX_Detalle
+0457:                                       WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s)
+0458:                             INSERT INTO Sync_PAX_Detalle
+0459:                             (PAXRegistroID, ServerID, SucursalID, SucursalNombre,
+0460:                              FechaOperacion, FechaHora, NumeroComensales,
+0461:                              VentaCuenta, ConsumoPromedioPAX)
+0462:                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+0463:                     """, (
+0464:                         server_id, suc["SucursalID"], row["FechaOperacion"],
+0465:                         pax_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
+0466:                         row["FechaOperacion"], datetime.now(timezone.utc),
+0467:                         comensales, venta, consumo_pax
+0468:                     ))
+0469:                     conn.commit()
+0470:                     count += 1
+0471:                         
+0472:             except Exception as e:
+0473:                 logger.warning(f"[{self.JOB_ID}] Error sync PAX {suc.get('SucursalID')}: {e}")
+0474:                 raise
+0475: 
+0476:         
+0477:         cursor.close()
+0478:         logger.info(f"[{self.JOB_ID}] PAX sincronizado: {count}")
+0479:         return count
+FUNCION_COMPLETA_END
+
+===== 4. INTEGRIDAD FINAL =====
+TARGET_SHA_FINAL=5425286f02c70751191d7d31be96f679ed491991835cbf1dbc0b04b2bc4ceed1
+ARCHIVO_PRODUCTIVO_INTACTO=PASS
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+
+===== 5. RESULTADO =====
+AUDITORIA_PAX_REGISTRO_ID=PASS
+DECISION_DE_CAMBIO=NO_TOMADA
+REPORT=/app/edarsahub_pax_registro_id_ast_audit_20260805T052535Z.txt
+COMPACT=/app/edarsahub_pax_registro_id_ast_audit_20260805T052535Z_compact.txt
+TERMINAL_PERMANECE_ABIERTA=SI
+
+===== RESUMEN COMPACTO =====
+RESULTADO=PASS
+AUDITORIA_PAX_REGISTRO_ID=PASS
+FUNCION=_sync_pax_detalle
+SQL_FUNCION=DOCUMENTADO_EN_REPORT
+CURSOR_EXECUTE=DOCUMENTADO_EN_REPORT
+PARAMETROS_EXECUTE=DOCUMENTADOS_EN_REPORT
+CANDIDATOS_ID=DOCUMENTADOS_EN_REPORT
+FUNCION_COMPLETA=DOCUMENTADA_EN_REPORT
+DECISION_DE_CAMBIO=NO_TOMADA
+ARCHIVO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+REPORT=/app/edarsahub_pax_registro_id_ast_audit_20260805T052535Z.txt

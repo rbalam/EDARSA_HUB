@@ -1,0 +1,26 @@
+worktree /app
+HEAD b81a1d52e2c9d2b54422bd618f49eea729012305
+branch refs/heads/Edarsahub_Desarrollo
+
+worktree /app/.agent-worktrees/comercial-ventas-tiempo
+HEAD 42e4d839830b31ef258d1939f9536e74fc5a8195
+branch refs/heads/agent/recovery/comercial-ventas-tiempo
+
+worktree /app/.agent-worktrees/compras-inventarios
+HEAD 42e4d839830b31ef258d1939f9536e74fc5a8195
+branch refs/heads/agent/recovery/compras-inventarios
+
+worktree /app/.agent-worktrees/finanzas-rbac
+HEAD 1ef065e65436e698757ed4af947d741fb85e880c
+branch refs/heads/agent/recovery/finanzas-rbac
+
+worktree /var/tmp/edarsahub_recovery_20260802T040729Z
+HEAD 776269f7afe090790e0c89c6ce08ce71064e626c
+branch refs/heads/recovery/pre-ff-20260802T040729Z
+prunable gitdir file points to non-existent location
+
+worktree /var/tmp/enterprise-final-20260802T014704Z
+HEAD d464dc95e78fb7eafd48a5408aac5430d82df584
+branch refs/heads/enterprise-final-20260802T014704Z
+prunable gitdir file points to non-existent location
+

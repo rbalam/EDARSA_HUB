@@ -1,0 +1,24 @@
+{
+  "line_start": 243,
+  "line_end": 293,
+  "sql_literals": [
+    "SELECT COUNT(*) FROM Sync_Sales WHERE NumeroTicket = %s AND UnidadNegocio = %s AND CAST(FechaHora AS DATE) = CAST(%s AS DATE)",
+    "INSERT INTO Sync_Sales ( id, branch, UnidadNegocio, NumeroTicket, MontoTotal, Pax, FechaHora, status, items, created_at, total ) VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, GETDATE(), %s )"
+  ],
+  "select_by_business_key": true,
+  "insert_detected": true,
+  "update_detected": false,
+  "id_fragments": [],
+  "database": {
+    "summary": {
+      "total_rows": "112362",
+      "distinct_ids": "112362",
+      "missing_unidad": 0,
+      "missing_ticket": 0,
+      "min_fecha": "2024-06-01 00:00:00",
+      "max_fecha": "2026-07-26 13:09:22"
+    },
+    "duplicate_groups": 0,
+    "examples": []
+  }
+}

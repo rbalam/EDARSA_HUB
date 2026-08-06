@@ -1,0 +1,125 @@
+===== 1. CONTROL =====
+RAMA=Edarsahub_Desarrollo
+HEAD=6f82b39fead3a73667241e88e580f0ea8faf51e8
+REMOTE_HEAD=6f82b39fead3a73667241e88e580f0ea8faf51e8
+JOB_SHA=5fb2376d876e931fb7653a050e1e26827e4d9c5103ca906ee58ea70c09f35d9a
+CONTROL=PASS
+
+===== 2. BLOQUE EXACTO 243-293 =====
+   243	def insert_into_sync_sales(conn, sales: List[Dict]) -> int:
+   244	    """Inserta registros en Sync_Sales."""
+   245	    if not sales:
+   246	        return 0
+   247	    
+   248	    cursor = conn.cursor()
+   249	    inserted = 0
+   250	    
+   251	    for sale in sales:
+   252	        try:
+   253	            # Verificar si ya existe (por NumeroTicket + UnidadNegocio + FechaHora)
+   254	            cursor.execute("""
+   255	                SELECT COUNT(*) FROM Sync_Sales 
+   256	                WHERE NumeroTicket = %s AND UnidadNegocio = %s 
+   257	                  AND CAST(FechaHora AS DATE) = CAST(%s AS DATE)
+   258	            """, (sale["NumeroTicket"], sale["UnidadNegocio"], sale["FechaHora"]))
+   259	            
+   260	            if cursor.fetchone()[0] > 0:
+   261	                continue  # Ya existe, skip
+   262	            
+   263	            # Insertar nuevo registro
+   264	            cursor.execute("""
+   265	                INSERT INTO Sync_Sales (
+   266	                    id, branch, UnidadNegocio, NumeroTicket, 
+   267	                    MontoTotal, Pax, FechaHora, status, items,
+   268	                    created_at, total
+   269	                ) VALUES (
+   270	                    %s, %s, %s, %s, 
+   271	                    %s, %s, %s, %s, %s,
+   272	                    GETDATE(), %s
+   273	                )
+   274	            """, (
+   275	                sale.get("IdTransaccion", str(datetime.now().timestamp())),
+   276	                sale["UnidadNegocio"],
+   277	                sale["UnidadNegocio"],
+   278	                sale["NumeroTicket"],
+   279	                sale["MontoTotal"],
+   280	                sale["Pax"],
+   281	                sale["FechaHora"],
+   282	                sale.get("status", "COMPLETED"),
+   283	                sale.get("items", "[]"),
+   284	                sale["MontoTotal"]
+   285	            ))
+   286	            
+   287	            inserted += 1
+   288	            
+   289	        except Exception as e:
+   290	            logger.warning(f"[SYNC] Error insertando ticket {sale.get('NumeroTicket')}: {e}")
+   291	    
+   292	    cursor.close()
+   293	    return inserted
+
+===== 3. CLASIFICAR CONTROL DE FLUJO =====
+FUNCTION=insert_into_sync_sales
+LINES=243-293
+FETCHONE_CALLS=1
+FETCHONE_DIRECT_IF=1
+FETCHONE_ASSIGNMENTS=0
+INSERT_CALLS=1
+COMMIT_CALLS=0
+ROLLBACK_CALLS=0
+EXCEPTION_HANDLERS=1
+ID_VALUE_SOURCES=4
+OMITE_EXISTENTES=SI
+MODO_OMISION=FETCHONE_TRUE_CONTINUE
+FETCHONE_IF=260|TEST=cursor.fetchone()[0] > 0|BODY=Continue
+INSERT_ARGUMENT=254|""" SELECT COUNT(*) FROM Sync_Sales WHERE NumeroTicket = %s AND UnidadNegocio = %s AND CAST(FechaHora AS DATE) = CAST(%s AS DATE) """
+INSERT_ARGUMENT=254|(sale["NumeroTicket"], sale["UnidadNegocio"], sale["FechaHora"])
+INSERT_ARGUMENT=264|""" INSERT INTO Sync_Sales ( id, branch, UnidadNegocio, NumeroTicket, MontoTotal, Pax, FechaHora, status, items, created_at, total ) VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, GETDATE(), %s ) """
+INSERT_ARGUMENT=264|( sale.get("IdTransaccion", str(datetime.now().timestamp())), sale["UnidadNegocio"], sale["UnidadNegocio"], sale["NumeroTicket"], sale["MontoTotal"], sale["Pax"], sale["FechaHora"], sale.get("status", "COMPLETED"), sale.get("items", "[]"), sale["MontoTotal"] )
+EXCEPT=289|TYPE=Exception
+CONTROL_FLOW_AUDIT=PASS
+
+===== 4. DECISION =====
+RESULTADO=PASS
+AUDITORIA_CONTROL_FLUJO_SYNC_SALES=PASS
+OMITE_EXISTENTES=SI
+MODO_OMISION=FETCHONE_TRUE_CONTINUE
+COMMIT_DETECTADO=NO
+ROLLBACK_DETECTADO=NO
+MANEJO_EXCEPCIONES=SI
+ORIGEN_VALOR_ID_VISIBLE=SI
+DECISION=IDEMPOTENCIA_DEMOSTRADA_POR_SELECT_Y_OMISION
+SIGUIENTE_PASO=AUDITAR_DESFASE_2026_07_26_Y_ULTIMAS_EJECUCIONES_DEL_JOB
+NO_ELIMINAR_SYNC_SALES=SI
+NO_CREAR_TABLA_NUEVA=SI
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+
+===== 5. INTEGRIDAD FINAL =====
+RESULTADO=PASS
+AUDITORIA_CONTROL_FLUJO_SYNC_SALES=PASS
+OMITE_EXISTENTES=SI
+MODO_OMISION=FETCHONE_TRUE_CONTINUE
+COMMIT_DETECTADO=NO
+ROLLBACK_DETECTADO=NO
+MANEJO_EXCEPCIONES=SI
+ORIGEN_VALOR_ID_VISIBLE=SI
+DECISION=IDEMPOTENCIA_DEMOSTRADA_POR_SELECT_Y_OMISION
+SIGUIENTE_PASO=AUDITAR_DESFASE_2026_07_26_Y_ULTIMAS_EJECUCIONES_DEL_JOB
+NO_ELIMINAR_SYNC_SALES=SI
+NO_CREAR_TABLA_NUEVA=SI
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+JSON=/app/edarsahub_sync_sales_insert_control_flow_20260805T150628Z.json
+REPORT=/app/edarsahub_sync_sales_insert_control_flow_20260805T150628Z.txt

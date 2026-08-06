@@ -1,0 +1,47 @@
+===== 1. GUARDRAILS =====
+RAMA=Edarsahub_Desarrollo
+HEAD=6f82b39fead3a73667241e88e580f0ea8faf51e8
+REMOTE_HEAD=6f82b39fead3a73667241e88e580f0ea8faf51e8
+CONTROL=PASS
+
+===== 2. RESOLVER BINDING EXACTO DEL SCHEDULER =====
+JOB_KEY=inteligencia_comercial_sync
+IMPORTS=5
+CALLS=7
+ASSIGNMENTS=6
+MANAGER_BLOCKS=24
+CONFIG_ENTRIES=3
+STATUS_JOB_MENTIONS=23
+SYNC_JOB_MENTIONS=5
+ACTIVE_BINDING=BOTH_OR_AMBIGUOUS
+STATUS_BINDING=import:45|execute
+STATUS_BINDING=import:47|execute
+STATUS_BINDING=import:51|execute
+STATUS_BINDING=block:1517|execute
+STATUS_BINDING=block:1519|execute
+STATUS_BINDING=block:1522|execute
+STATUS_BINDING=block:1525|execute
+STATUS_BINDING=block:1528|execute
+STATUS_BINDING=block:1531|execute
+STATUS_BINDING=block:1534|execute
+STATUS_BINDING=block:1537|execute
+STATUS_BINDING=block:1540|execute
+STATUS_BINDING=block:1543|execute
+STATUS_BINDING=block:1546|execute
+STATUS_BINDING=block:1549|execute
+STATUS_BINDING=block:1552|execute
+STATUS_BINDING=block:1555|execute
+STATUS_BINDING=block:1558|execute
+STATUS_BINDING=block:1561|execute
+STATUS_BINDING=block:1564|execute
+STATUS_BINDING=block:1567|execute
+STATUS_BINDING=block:1570|execute
+STATUS_BINDING=block:1573|execute
+SYNC_BINDING=import:49|job_inteligencia_comercial_sync
+SYNC_BINDING=call:915|job_inteligencia_comercial_sync
+SYNC_BINDING=assignment:915|job_inteligencia_comercial_sync
+SYNC_BINDING=block:889|job_inteligencia_comercial_sync
+SYNC_BINDING=block:911|job_inteligencia_comercial_sync
+SCHEDULER_BINDING_AUDIT=PASS
+
+===== 3. VALIDAR REGISTRO RUNTIME FUERA DEL MANAGER =====

@@ -1,0 +1,156 @@
+# EKS-0001 — Historial Estratégico
+
+## Commits relevantes
+
+- `2026-07-30T01:32:16+00:00` `7320767df93f` — fix(comercial): separar acumulado cerrado del dia operativo actual
+- `2026-07-28T01:41:52+00:00` `55dd5a91f1d6` — fix(comercial): conectar KPIs diarios al contrato canonico
+- `2026-07-27T18:46:41-06:00` `4a07b02a3ce2` — feat(comercial): conectar contrato dinamico a SQL canonico
+- `2026-07-24T18:02:06-06:00` `d9a070c2728e` — feat(inteligencia): canonizar runtime aislado de Agent-Reach
+- `2026-07-24T22:32:54+00:00` `6c9158bba928` — feat(inteligencia): incorporar Agent-Reach como dependencia vendorizada
+- `2026-07-24T16:32:03-06:00` `0e77f9f28d57` — chore(automation): remove unused Agent-Reach import workflow
+- `2026-07-24T16:31:14-06:00` `24a2b01b349b` — chore(automation): stage Agent-Reach import
+- `2026-07-24T22:14:10+00:00` `fbc9f62e4032` — feat(inteligencia): incorporar Agent-Reach como dependencia vendorizada
+- `2026-07-24T08:23:33+00:00` `1ef065e65436` — docs(finanzas): documentar desalineacion RBAC y evidencia SQL
+- `2026-07-24T03:58:53+00:00` `8947b38fd27d` — docs(standards): definir politica documental transversal
+- `2026-07-23T23:03:57+00:00` `2a673c41d375` — fix(compras): resolver sucursal_origen_id canonico para inventarios fisicos con server_id deprecated
+- `2026-07-22T01:36:04+00:00` `f08505253723` — fix(finanzas): alinear control presupuestal a rbac canonico
+- `2026-07-22T00:52:14+00:00` `ab6930bd0779` — fix(usuarios): alinear gestion a rbac canonico
+- `2026-07-22T00:22:09+00:00` `9aa8e4459197` — fix(automatizaciones): alinear programacion a rbac canonico
+- `2026-07-21T22:54:41+00:00` `b47c1346021b` — fix(operaciones): estabilizar sync compras canonico
+- `2026-07-21T16:10:16+00:00` `fc7d617fe077` — fix(automatizaciones): alinear rbac y unidad canonica
+- `2026-07-20T21:24:40+00:00` `4a31e45ea6f5` — chore(v1): alinear menus canonicos y rbac
+- `2026-07-19T02:44:03+00:00` `2c7d55f876a2` — fix(reportes): cerrar analisis canonico y rbac compras
+- `2026-07-19T02:36:06+00:00` `8793168d2b75` — fix(compras): sincronizar canonicos sin duplicados
+- `2026-07-18T16:51:39+00:00` `c41ce7c642cd` — fix(inteligencia): cerrar RBAC y restaurar permiso SUPERADMIN
+- `2026-07-16T19:36:53-06:00` `4000affeae8c` — chore(agents): allow verified workspace checkout
+- `2026-07-15T19:58:29-06:00` `f7be77717636` — test(finanzas): guard canonical Cortes Z architecture
+- `2026-07-15T19:58:01-06:00` `208ffa298698` — refactor(scheduler): resolve Cortes Z units from canonical SQL
+- `2026-07-15T19:57:18-06:00` `2a7fa9d55000` — refactor(finanzas): add canonical Cortes Z runtime sync
+- `2026-07-15T19:56:52-06:00` `8cad8c3bc900` — refactor(connections): add canonical POS runtime resolver
+- `2026-07-15T19:35:35-06:00` `bd787e253e79` — fix(finanzas): complete canonical Cortes Z source adapter
+- `2026-07-15T11:39:42-06:00` `060102bedb45` — test(comercial): isolate canonical detail helper from package init
+- `2026-07-15T11:28:09-06:00` `d51735276112` — test(comercial): cover canonical daily detail invariants
+- `2026-07-15T11:27:54-06:00` `69a5230e6454` — fix(comercial): register canonical detail route before legacy router
+- `2026-07-15T11:27:43-06:00` `91fb683a2ef9` — fix(comercial): add canonical SQL-first detail endpoint
+- `2026-07-15T11:27:21-06:00` `539074eef1e5` — fix(comercial): restore canonical detail helper
+- `2026-07-15T11:26:47-06:00` `de83f2f69073` — fix(comercial): enforce canonical daily detail invariants
+- `2026-07-15T11:22:16-06:00` `2e4af96642af` — fix(comercial): add canonical daily detail resolver
+- `2026-07-15T07:32:58+00:00` `ada23366efee` — fix(sql): use canonical EDARSAHUB connection for password rotation
+- `2026-07-15T05:40:01+00:00` `f8fb92b68718` — feat(rbac): add canonical SQL unit scope authorization
+- `2026-07-15T04:30:23+00:00` `c5058f4c67ff` — feat(rbac): add canonical SQL unit scope authorization
+- `2026-07-14T09:35:08+00:00` `95092c031800` — fix(workflows): enforce canonical HRLectura SQL connection
+- `2026-07-13T07:59:50+00:00` `4d2952f54f40` — security(connections): add readonly explicit RBAC permission repository
+- `2026-07-09T07:15:04+00:00` `f644e7f9135b` — fix(comercial): preserve cancelled tickets in canonical detail
+- `2026-07-09T04:14:33+00:00` `f59ab1bb3000` — fix(comercial-v2): canonicalize internal pax average persistence
+- `2026-07-09T03:05:45+00:00` `dc63540eb679` — fix(comercial-v2): canonicalize average KPI field names
+- `2026-07-08T20:27:31+00:00` `4344ec7e94d6` — fix(comercial): decrypt POS credentials for canonical detail dry run
+- `2026-07-08T20:16:38+00:00` `433c98ae2073` — wip(comercial): checkpoint detalle canonico productos
+- `2026-07-08T04:15:19+00:00` `f587316b672d` — Revert "fix(inteligencia): pass canonical dashboard date range to ticket drilldown"
+- `2026-07-08T04:04:29+00:00` `73288fa2b9e2` — fix(inteligencia): pass canonical dashboard date range to ticket drilldown
+- `2026-07-08T03:44:09+00:00` `c7c769b5999a` — feat(workflow): approve operational date changes with RBAC
+- `2026-07-07T09:21:11+00:00` `72b1c9451b9a` — fix(usuarios): use canonical catalog permissions
+- `2026-07-07T09:21:11+00:00` `680a2a48c633` — fix(rbac): render permission modules as hierarchy
+- `2026-07-07T09:21:11+00:00` `08269a60b9d4` — chore(rbac): sync principal menu modules into permission catalog
+- `2026-07-07T09:21:11+00:00` `845a6c46f2d9` — fix(menu): render SQL RBAC modules without hardcoded grouping
+- `2026-07-07T09:21:11+00:00` `5b89ad10654b` — fix(menu): resolve SQL menu children by effective RBAC permissions
+- `2026-07-07T08:44:57+00:00` `0eb9511e4d46` — fix(usuarios): use canonical catalog permissions
+- `2026-07-07T07:39:33+00:00` `4db0ee478cdd` — fix(rbac): render permission modules as hierarchy
+- `2026-07-07T07:05:31+00:00` `8f5b5a40aabe` — chore(rbac): sync principal menu modules into permission catalog
+- `2026-07-07T05:41:28+00:00` `a09d6b71d45a` — fix(menu): render SQL RBAC modules without hardcoded grouping
+- `2026-07-07T00:46:07+00:00` `97c9ce7e0a86` — fix(menu): resolve SQL menu children by effective RBAC permissions
+- `2026-07-06T20:39:38+00:00` `e4e5caa59cc0` — chore(agents): enforce safe SQL and handoff protocol
+- `2026-07-06T19:49:16+00:00` `b6bfaab10af1` — chore(agents): add committer and autonomous workflow
+- `2026-07-06T18:29:19+00:00` `db411d978940` — chore(agents): harden EDARSA agent calibration
+- `2026-07-06T17:53:22+00:00` `5ef6ac743c4f` — chore(agents): add controlled Claude auditor fallback
+- `2026-07-06T16:35:45+00:00` `fb3c4054e1d8` — chore(agents): add EDARSAHUB multi-agent guardrails
+- `2026-07-06T08:42:03+00:00` `8d45ede2f6c2` — fix(comercial-v2): expose canonical average KPIs to executive dashboard
+- `2026-07-06T06:55:32+00:00` `8ad7c50afe28` — fix(comercial): preserve canonical zero sales dashboard data
+- `2026-07-06T06:28:30+00:00` `6d036962dc16` — fix(comercial): use canonical SQL for MPRO hub KPIs
+- `2026-07-06T05:44:18+00:00` `a79e58252fa0` — fix(comercial): use canonical pax for ventas tiempo
+- `2026-07-05T22:56:47+00:00` `e9ffdf118e6e` — chore(codex): add EDARSAHUB auditor agent
+- `2026-07-05T22:24:53+00:00` `6f8995756ca3` — fix(comercial): make mesas endpoint SQL canonical only
+- `2026-07-05T21:42:03+00:00` `498033c1e092` — fix(comercial): enforce V2 canonical dashboard consumption
+- `2026-07-05T20:17:01+00:00` `178207eae375` — fix(comercial-v2): complete canonical dashboard comparisons and averages
+- `2026-07-05T19:58:23+00:00` `8657f7f36bdb` — fix(comercial-v2): use canonical operational date for open sales
+- `2026-07-05T19:25:42+00:00` `d5dbffc5a485` — fix(comercial-v2): filter runtime KPIs by canonical unit pk
+- `2026-07-05T19:09:16+00:00` `e8b6bf7767c7` — fix(inteligencia): use runtime canonical KPI source
+- `2026-07-05T02:15:17+00:00` `f6bac16036b0` — fix(inteligencia): use canonical KPI service for portal dashboard
+- `2026-07-05T01:16:09+00:00` `2ac55a57fdd9` — fix(comercial): resolve dashboard drilldown units canonically
+- `2026-07-05T01:11:45+00:00` `94edcecfbafa` — fix(comercial): use canonical KPI service for commercial dashboard
+- `2026-07-05T00:57:18+00:00` `2b6100fc5aea` — fix(comercial): route dashboards through canonical KPI service
+- `2026-07-03T05:15:26+00:00` `79a33a237dbb` — fix(finanzas): enable budgets by canonical business unit
+- `2026-07-03T03:06:43+00:00` `2347180df9b3` — fix(rbac): stabilize enterprise menu preview state
+- `2026-07-02T21:49:11+00:00` `8658399b963d` — fix(rbac): persist user catalog permissions
+- `2026-07-02T07:34:49+00:00` `984d96256bf8` — fix(rbac): protect sync agent token generation
+- `2026-07-02T07:15:22+00:00` `116ce0739cd6` — fix(rbac): protect catalogos sistemas with sql permission
+- `2026-07-02T06:30:27+00:00` `67544654299d` — fix(rbac): remove responsabilidad dispute role hardcode
+- `2026-07-02T06:25:23+00:00` `e5b6dc2e610c` — fix(rbac): secure compras task endpoints
+- `2026-07-02T06:08:13+00:00` `f72fd7e1a1de` — fix(rbac): harden compras automation explicit permissions
+- `2026-07-02T05:57:34+00:00` `aa60fb9e22da` — fix(rbac): add compras tesoreria explicit permissions
+- `2026-07-02T05:37:57+00:00` `4ae70e01ede1` — fix(rbac): harden workflow escalation explicit permission
+- `2026-07-02T05:21:06+00:00` `28fc1730ed0f` — fix(rbac): align auditorias seed permission codes
+- `2026-07-02T05:10:56+00:00` `0e7f867327fa` — fix(rbac): harden auditorias programar explicit permission
+- `2026-07-02T04:57:49+00:00` `c35b99bff7f0` — fix(rbac): harden responsabilidad identity and explicit actions
+- `2026-07-02T04:24:42+00:00` `4b91dbd22d36` — fix(rbac): harden cargos identity and explicit actions
+- `2026-07-02T04:01:08+00:00` `78a11ab8901d` — fix(rbac): enforce explicit phase2 sensitive permissions
+- `2026-07-02T03:21:09+00:00` `0e73949cdece` — fix(rbac): enforce explicit cache admin permission
+- `2026-07-02T03:11:51+00:00` `38feffeb1d02` — fix(rbac): enforce explicit core rbac permissions
+- `2026-07-02T02:52:48+00:00` `8d5221e0ea5a` — fix(rbac): enforce explicit scheduler resync admin permissions
+- `2026-07-02T02:45:19+00:00` `531bb44c0c77` — fix(rbac): enforce explicit scheduler admin permissions
+- `2026-07-02T02:25:22+00:00` `e729e11dd659` — fix(rbac): grant explicit admin permissions to superadmin
+- `2026-07-02T02:16:13+00:00` `cdcd8aa51dfc` — feat(rbac): add explicit SQL permission dependency
+- `2026-07-02T01:31:55+00:00` `6b278fe57801` — fix(rbac): enforce explicit bitacora permission
+- `2026-07-01T23:05:39+00:00` `f5219acfef62` — fix(rbac): resolve menu from canonical current user
+- `2026-07-01T20:05:44+00:00` `8acb22c706a9` — fix(rbac): authorize bitacora by effective permission
+- `2026-06-30T23:35:03+00:00` `ebd2c0efc270` — fix(rbac): gate usuarios tabs with effective permissions
+- `2026-06-30T23:33:00+00:00` `31997912c53b` — fix(rbac): gate usuarios tabs with effective permissions
+- `2026-06-30T10:59:47+00:00` `2f90f49e5c35` — docs(rbac): add menu validation handoff
+- `2026-06-30T10:56:51+00:00` `0430d0d36ed3` — test(rbac): validate admin menu permissions from canonical SQL
+- `2026-06-30T01:38:16-06:00` `9bf0341efd24` — fix(rbac): deactivate empty roles without active users
+- `2026-06-30T01:16:25-06:00` `5319de969134` — fix(rbac): reassign usuario role users to operador
+- `2026-06-30T01:05:55-06:00` `affbaee2101b` — test(rbac): add phase 2 empty role impact audit
+- `2026-06-30T00:25:44-06:00` `f9dcf4c504d4` — test(rbac): add phase 1 menu validation
+- `2026-06-30T03:57:41+00:00` `ec955f48683d` — feat(rbac): expose effective permissions for menu
+- `2026-06-29T20:11:50+00:00` `5213c92c412c` — fix(rbac): harden user scope permissions endpoint
+- `2026-06-29T17:28:32+00:00` `fed7fe95c01e` — merge(rbac): deduplicate role module permissions
+- `2026-06-29T17:28:19+00:00` `94fe1fa41ac2` — fix(rbac): deduplicate role module permissions in admin UI
+- `2026-06-28T22:09:59+00:00` `e408b0762c0e` — merge(reportes): restore canonical inventory rules
+- `2026-06-28T21:42:01+00:00` `47973c162b16` — merge(reportes): restore canonical inventory analysis rules
+- `2026-06-28T17:21:04+00:00` `8d755a7200d3` — fix(sistema): resolve canonical SQL user for menus
+- `2026-06-28T02:48:24-06:00` `0f994d363d3b` — fix(reportes): accept canonical MPRO inventory folios
+- `2026-06-28T02:03:28-06:00` `bd15ccc89887` — fix(reportes): cascade canonical inventory filters
+- `2026-06-27T23:30:47-06:00` `c2ffb78dd248` — fix(reportes): resolve SoftRestaurant canonical classifiers
+- `2026-06-27T23:01:24-06:00` `5e8d2bfb4a3d` — fix(reportes): apply canonical SoftRestaurant filters
+- `2026-06-27T22:35:28-06:00` `fe727a307874` — fix(reportes): align canonical inventory conversion
+- `2026-06-27T21:43:34-06:00` `d190926dd6d5` — fix(reportes): align SoftRestaurant canonical detail window
+- `2026-06-27T21:20:53-06:00` `bf28613c6bf9` — fix(reportes): enrich SoftRestaurant canonical inventory catalog
+- `2026-06-27T20:53:17-06:00` `e64459290b39` — fix(reportes): complete canonical SoftRestaurant inventory interactions
+- `2026-06-27T20:29:57-06:00` `f698bbe064b1` — fix(reportes): map canonical inventory analysis fields
+- `2026-06-27T20:24:43-06:00` `4af3bb2188a5` — fix(reportes): isolate SoftRestaurant canonical date parsing
+- `2026-06-27T19:10:48-06:00` `2685438a2f36` — fix(reportes): use canonical SoftRestaurant inventory analysis
+- `2026-06-27T22:51:30+00:00` `2f0f1329ed1c` — fix(reportes): use canonical warehouses for SoftRestaurant
+- `2026-06-27T13:13:03-06:00` `80ff203ff9f6` — Merge pull request #2 from rbalam/backup/desarrollo-local-consolidado-20260627
+- `2026-06-27T18:57:48+00:00` `580fcba887b7` — docs(hospitality): add architecture book master index
+- `2026-06-27T18:57:48+00:00` `b391b7624c99` — feat(hospitality): add initial hospitality core blueprint and stubs
+- `2026-06-25T19:13:54+00:00` `28d50f80070e` — docs(hospitality): add architecture book master index
+- `2026-06-25T18:49:18+00:00` `8d9938bf5478` — feat(hospitality): add initial hospitality core blueprint and stubs
+- `2026-06-24T04:08:23+00:00` `73ef5adf7222` — ci: add minimal deps for SQL canonical audit
+- `2026-06-24T04:04:38+00:00` `94573c6e4338` — ci: add EDARSAHUB SQL canonical audit workflow
+- `2026-06-23T23:34:31+00:00` `f5f036153a7b` — fix(resync): skip POS validation for NetPay
+- `2026-06-23T23:26:10+00:00` `adde0fa27089` — fix(resync): support NetPay manual background handler
+- `2026-06-23T22:19:52+00:00` `f24e4e81efd7` — fix(scheduler): run NetPay manual in background
+- `2026-06-23T21:40:11+00:00` `ed73022eb7f7` — fix(scheduler): extend NetPay manual run timeout
+- `2026-06-23T19:05:34+00:00` `d6f5c4fb55f4` — fix(netpay): skip duplicate SQL imports by row hashes
+- `2026-06-23T17:36:59+00:00` `350ed44b3000` — fix(scheduler): show NetPay manual run result and enforce admin UI
+- `2026-06-23T16:40:12+00:00` `fc50ea4816a6` — fix(netpay): load robot environment in scheduler job
+- `2026-06-23T14:34:46+00:00` `425c34200688` — fix(netpay): close robot executions after pipeline run
+- `2026-06-23T13:56:57+00:00` `1cdc999a3ecd` — chore(netpay): remove tracked debug and backup artifacts
+- `2026-06-23T13:53:32+00:00` `2426fa1087f7` — fix(netpay): avoid tracked screenshots and plaintext fallback
+- `2026-06-22T23:39:40+00:00` `1d8703bee436` — Agrega auditoria de uso canonico SQL
+- `2026-06-22T23:22:45+00:00` `4049a9560cce` — Migra cache KPI y status de servidores a SQL canonico
+
+## Stashes identificados
+
+- `stash@{0}|8d883c6aeaf6f2b9c333728493d3363df9310fff|2026-08-02 04:06:28 +0000|On Edarsahub_Desarrollo: pre-ff-edarsahub-20260802T040627Z`
+- `stash@{1}|cf108af828054bcb881541480251da53b94b0a39|2026-07-15 23:29:47 +0000|On Edarsahub_Desarrollo: deuda-tecnica-edarsa-antigravity-20260718`
+- `stash@{2}|fb79d74e377216ff9121e3dc8cad5441e250ab5d|2026-06-26 16:12:45 +0000|On feature/hospitality-core-20260625_184401: WIP antes de volver a Edarsahub_Desarrollo 20260626_161245`

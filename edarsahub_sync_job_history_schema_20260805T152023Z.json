@@ -1,0 +1,260 @@
+{
+  "identity": {
+    "database_name": "EDARSAHUB",
+    "login_name": "HRLectura",
+    "database_user": "HRLectura"
+  },
+  "tables": {
+    "dbo.Sys_Scheduler_Jobs": {
+      "exists": true,
+      "columns": [
+        {
+          "column_id": 1,
+          "column_name": "JobID",
+          "data_type": "varchar"
+        },
+        {
+          "column_id": 2,
+          "column_name": "JobName",
+          "data_type": "varchar"
+        },
+        {
+          "column_id": 3,
+          "column_name": "CronExpression",
+          "data_type": "varchar"
+        },
+        {
+          "column_id": 4,
+          "column_name": "JobType",
+          "data_type": "varchar"
+        },
+        {
+          "column_id": 5,
+          "column_name": "Status",
+          "data_type": "varchar"
+        },
+        {
+          "column_id": 6,
+          "column_name": "LastRunDate",
+          "data_type": "datetime"
+        }
+      ],
+      "mapping": {
+        "job": "JobID",
+        "status": "Status",
+        "started": null,
+        "finished": null,
+        "message": null,
+        "unit": null
+      },
+      "rows": [
+        {
+          "JobID": "sync-inteligencia",
+          "JobName": "Actualizar Vista Inteligencia",
+          "CronExpression": "0 */6 * * *",
+          "JobType": "DB",
+          "Status": "activo",
+          "LastRunDate": null
+        },
+        {
+          "JobID": "SYNC-INTELIGENCIA-01",
+          "JobName": "inteligencia_comercial_sync",
+          "CronExpression": "0 * * * *",
+          "JobType": "DATA_SYNC",
+          "Status": "DISABLED",
+          "LastRunDate": "2026-06-27 12:00:30.560000"
+        }
+      ]
+    },
+    "dbo.Sistema_SyncPOS_Bitacora": {
+      "exists": true,
+      "columns": [
+        {
+          "column_id": 1,
+          "column_name": "BitacoraID",
+          "data_type": "bigint"
+        },
+        {
+          "column_id": 2,
+          "column_name": "BatchID",
+          "data_type": "uniqueidentifier"
+        },
+        {
+          "column_id": 3,
+          "column_name": "TipoEjecucion",
+          "data_type": "nvarchar"
+        },
+        {
+          "column_id": 4,
+          "column_name": "UnidadNegocioID",
+          "data_type": "nvarchar"
+        },
+        {
+          "column_id": 5,
+          "column_name": "FechaInicio",
+          "data_type": "date"
+        },
+        {
+          "column_id": 6,
+          "column_name": "FechaFin",
+          "data_type": "date"
+        },
+        {
+          "column_id": 7,
+          "column_name": "Estado",
+          "data_type": "nvarchar"
+        },
+        {
+          "column_id": 8,
+          "column_name": "Mensaje",
+          "data_type": "nvarchar"
+        },
+        {
+          "column_id": 9,
+          "column_name": "Tickets",
+          "data_type": "int"
+        },
+        {
+          "column_id": 10,
+          "column_name": "Lineas",
+          "data_type": "int"
+        },
+        {
+          "column_id": 11,
+          "column_name": "Venta",
+          "data_type": "decimal"
+        },
+        {
+          "column_id": 12,
+          "column_name": "DuracionSegundos",
+          "data_type": "int"
+        },
+        {
+          "column_id": 13,
+          "column_name": "FechaInicioEjecucion",
+          "data_type": "datetime2"
+        },
+        {
+          "column_id": 14,
+          "column_name": "FechaFinEjecucion",
+          "data_type": "datetime2"
+        }
+      ],
+      "mapping": {
+        "job": null,
+        "status": "Estado",
+        "started": "FechaInicio",
+        "finished": "FechaFin",
+        "message": "Mensaje",
+        "unit": "UnidadNegocioID"
+      },
+      "rows": []
+    }
+  },
+  "sync_units": [
+    {
+      "unidad": "130MID",
+      "filas": "26796",
+      "tickets": "26796",
+      "min_fecha": "2024-06-01 13:49:03",
+      "max_fecha": "2026-06-06 15:11:04"
+    },
+    {
+      "unidad": "130QRO",
+      "filas": "17612",
+      "tickets": "17612",
+      "min_fecha": "2024-06-01 00:00:00",
+      "max_fecha": "2026-06-06 00:00:00"
+    },
+    {
+      "unidad": "CIENFUEGOS",
+      "filas": "30232",
+      "tickets": "30232",
+      "min_fecha": "2024-06-01 12:11:23",
+      "max_fecha": "2026-07-26 13:09:22"
+    },
+    {
+      "unidad": "ESTELAR",
+      "filas": "16216",
+      "tickets": "16216",
+      "min_fecha": "2025-06-27 11:44:07",
+      "max_fecha": "2026-06-06 11:25:41"
+    },
+    {
+      "unidad": "ORIGEN",
+      "filas": "21506",
+      "tickets": "21506",
+      "min_fecha": "2024-06-01 00:00:00",
+      "max_fecha": "2026-06-06 00:00:00"
+    }
+  ],
+  "kpi_units": [
+    {
+      "unidad": "130MID",
+      "filas": "3659",
+      "min_fecha": "2016-06-14",
+      "max_fecha": "2026-08-04"
+    },
+    {
+      "unidad": "130QRO",
+      "filas": "1781",
+      "min_fecha": "2021-09-17",
+      "max_fecha": "2026-08-04"
+    },
+    {
+      "unidad": "CIENFUEGOS",
+      "filas": "2290",
+      "min_fecha": "2019-12-23",
+      "max_fecha": "2026-08-04"
+    },
+    {
+      "unidad": "ESTELAR",
+      "filas": "411",
+      "min_fecha": "2025-06-12",
+      "max_fecha": "2026-08-05"
+    },
+    {
+      "unidad": "ORIGEN",
+      "filas": "1519",
+      "min_fecha": "2022-05-19",
+      "max_fecha": "2026-08-04"
+    }
+  ],
+  "unit_comparison": [
+    {
+      "unidad": "130MID",
+      "sync_max": "2026-06-06 15:11:04",
+      "kpi_max": "2026-08-04",
+      "sync_rows": 26796,
+      "kpi_rows": 3659
+    },
+    {
+      "unidad": "130QRO",
+      "sync_max": "2026-06-06 00:00:00",
+      "kpi_max": "2026-08-04",
+      "sync_rows": 17612,
+      "kpi_rows": 1781
+    },
+    {
+      "unidad": "CIENFUEGOS",
+      "sync_max": "2026-07-26 13:09:22",
+      "kpi_max": "2026-08-04",
+      "sync_rows": 30232,
+      "kpi_rows": 2290
+    },
+    {
+      "unidad": "ESTELAR",
+      "sync_max": "2026-06-06 11:25:41",
+      "kpi_max": "2026-08-05",
+      "sync_rows": 16216,
+      "kpi_rows": 411
+    },
+    {
+      "unidad": "ORIGEN",
+      "sync_max": "2026-06-06 00:00:00",
+      "kpi_max": "2026-08-04",
+      "sync_rows": 21506,
+      "kpi_rows": 1519
+    }
+  ]
+}

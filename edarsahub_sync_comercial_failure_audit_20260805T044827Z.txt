@@ -1,0 +1,66 @@
+===== 1. CONTROL =====
+RAMA=Edarsahub_Desarrollo
+HEAD=8c29ad3553b39f73c3732cc5293fccc8b193b70c
+TARGET_SHA=5425286f02c70751191d7d31be96f679ed491991835cbf1dbc0b04b2bc4ceed1
+STAGING:
+VACIO
+CAMBIOS_TRACKED:
+VACIO
+STATUS_TARGET:
+LIMPIO
+ARCHIVOS_NO_RASTREADOS=201
+CONTROL=PASS
+
+===== 2. AUDITAR CONTRATO EXACTO DEL CODIGO MEDIANTE AST =====
+METHOD=_sync_metas_comerciales|LINES=164-264|EXECUTES=2|ROW_KEYS=6
+ROW_KEYS|_sync_metas_comerciales|ComensalesActual,CuentasActual,DiasTranscurridos,TicketPromedioActual,VentaBrutaActual,VentaNetaActual
+SQL_CALL|METHOD=_sync_metas_comerciales|INDEX=1|LINE=189|ALIASES=ComensalesActual,CuentasActual,DiasTranscurridos,TicketPromedioActual,VentaBrutaActual
+SQL_CALL|METHOD=_sync_metas_comerciales|INDEX=2|LINE=219|ALIASES=
+METHOD=_sync_ticket_perfecto|LINES=270-337|EXECUTES=2|ROW_KEYS=5
+ROW_KEYS|_sync_ticket_perfecto|FechaOperacion,TicketPromedioReal,TotalComensales,TotalCuentas,VentaTotal
+SQL_CALL|METHOD=_sync_ticket_perfecto|INDEX=1|LINE=292|ALIASES=TicketPromedioReal,TotalComensales,TotalCuentas,VentaTotal,fecha_operacion
+SQL_CALL|METHOD=_sync_ticket_perfecto|INDEX=2|LINE=313|ALIASES=
+METHOD=_sync_mesas|LINES=343-408|EXECUTES=2|ROW_KEYS=3
+ROW_KEYS|_sync_mesas|TotalComensales,TotalCuentas,VentaTotal
+SQL_CALL|METHOD=_sync_mesas|INDEX=1|LINE=365|ALIASES=DATE,FechaOp,TotalComensales,TotalCuentas,VentaTotal
+SQL_CALL|METHOD=_sync_mesas|INDEX=2|LINE=384|ALIASES=
+METHOD=_sync_pax_detalle|LINES=414-479|EXECUTES=2|ROW_KEYS=3
+ROW_KEYS|_sync_pax_detalle|FechaOperacion,TotalComensales,VentaTotal
+SQL_CALL|METHOD=_sync_pax_detalle|INDEX=1|LINE=436|ALIASES=DATE,FechaOperacion,TotalComensales,TotalCuentas,VentaTotal
+SQL_CALL|METHOD=_sync_pax_detalle|INDEX=2|LINE=455|ALIASES=
+CODE_REPORT=/var/tmp/edarsahub_sync_comercial_failure_audit_20260805T044827Z/code_contract.json
+AUDITORIA_AST_CODIGO=PASS
+REGEX_ESTRUCTURAL=NO
+REGEX_SOLO_SQL_ALIAS_EXTRACTION=SI
+
+===== 3. CARGAR VARIABLES SIN MOSTRAR SECRETOS =====
+ENV_CARGADO_EN_MEMORIA=SI
+SECRETOS_IMPRESOS=NO
+
+===== 4. AUDITAR SQL CANONICO Y ESTADO POSTERIOR =====
+Traceback (most recent call last):
+  File "src/pymssql/_pymssql.pyx", line 447, in pymssql._pymssql.Cursor.execute
+  File "src/pymssql/_mssql.pyx", line 1145, in pymssql._mssql.MSSQLConnection.execute_query
+  File "src/pymssql/_mssql.pyx", line 1176, in pymssql._mssql.MSSQLConnection.execute_query
+  File "src/pymssql/_mssql.pyx", line 1309, in pymssql._mssql.MSSQLConnection.format_and_run_query
+  File "src/pymssql/_mssql.pyx", line 1886, in pymssql._mssql.check_cancel_and_raise
+  File "src/pymssql/_mssql.pyx", line 1932, in pymssql._mssql.raise_MSSQLDatabaseException
+pymssql._mssql.MSSQLDatabaseException: (207, b"Invalid column name 'tickets_total'.DB-Lib error message 20018, severity 16:\nGeneral SQL Server error: Check messages from the SQL Server\nDB-Lib error message 20018, severity 16:\nGeneral SQL Server error: Check messages from the SQL Server\n")
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<stdin>", line 154, in <module>
+  File "src/pymssql/_pymssql.pyx", line 462, in pymssql._pymssql.Cursor.execute
+pymssql.exceptions.ProgrammingError: (207, b"Invalid column name 'tickets_total'.DB-Lib error message 20018, severity 16:\nGeneral SQL Server error: Check messages from the SQL Server\nDB-Lib error message 20018, severity 16:\nGeneral SQL Server error: Check messages from the SQL Server\n")
+ERROR=AUDITORIA_SQL_READONLY_FALLO
+AUDITORIA_FALLOS_SYNC_COMERCIAL=FALLO
+CODIGO_MODIFICADO=NO
+SQL_SOLO_SELECT=SI
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+REPORT=/app/edarsahub_sync_comercial_failure_audit_20260805T044827Z.txt
+TERMINAL_PERMANECE_ABIERTA=SI

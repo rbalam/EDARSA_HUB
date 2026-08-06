@@ -1,0 +1,82 @@
+===== 1. GUARDRAILS =====
+RAMA=Edarsahub_Desarrollo
+HEAD=6f82b39fead3a73667241e88e580f0ea8faf51e8
+REMOTE_HEAD=6f82b39fead3a73667241e88e580f0ea8faf51e8
+CONTROL=PASS
+
+===== 2. AUDITAR CALL GRAPH Y CONTRATO CANONICO =====
+FUNCTIONS=2
+PARSE_ERRORS=0
+UPSERT_COLUMNS=fecha_operacion,pax_promedio,pax_total,propinas_total,ticket_promedio,tickets_total,unidad_negocio_id,ventas_sin_propina,ventas_total
+FUNCTION=sync_softrestaurant_ventas_cerradas|LINES=837-948|CALLS_UPSERT=SI|CALLERS=3|SCHEDULER_REFS=5|ENDPOINTS=0|READ_TABLES=NINGUNA|LIVE=NO|MONGO=NO
+FORMULAS=sync_softrestaurant_ventas_cerradas|NINGUNA
+DATES=sync_softrestaurant_ventas_cerradas|fecha_operacion
+HARDCODES=sync_softrestaurant_ventas_cerradas|COUNT=2
+CALLER=sync_softrestaurant_ventas_cerradas|backend/api/admin_scheduler_resync.py:_ejecutar_sync_real|CLASS=JOB_OR_SCHEDULER|ROUTES=NINGUNA
+CALLER=sync_softrestaurant_ventas_cerradas|backend/core/scheduler/jobs/sync_comercial_v2_job.py:execute_sync_comercial_v2|CLASS=JOB_OR_SCHEDULER|ROUTES=NINGUNA
+CALLER=sync_softrestaurant_ventas_cerradas|backend/modules/comercial_v2/sync_comercial_edarsahub.py:sync_unidad_ventas_cerradas|CLASS=JOB_OR_SCHEDULER|ROUTES=NINGUNA
+SCHEDULER_REF=sync_softrestaurant_ventas_cerradas|backend/api/admin_scheduler_resync.py:143|'handler': 'sync_softrestaurant_ventas_cerradas',
+SCHEDULER_REF=sync_softrestaurant_ventas_cerradas|backend/api/admin_scheduler_resync.py:1163|sync_softrestaurant_ventas_cerradas,
+SCHEDULER_REF=sync_softrestaurant_ventas_cerradas|backend/api/admin_scheduler_resync.py:1184|resultado = sync_softrestaurant_ventas_cerradas(
+SCHEDULER_REF=sync_softrestaurant_ventas_cerradas|backend/core/scheduler/jobs/sync_comercial_v2_job.py:112|sync_softrestaurant_ventas_cerradas,
+SCHEDULER_REF=sync_softrestaurant_ventas_cerradas|backend/core/scheduler/jobs/sync_comercial_v2_job.py:181|resultado = sync_softrestaurant_ventas_cerradas(
+FUNCTION=sync_mpro_ventas_cerradas|LINES=951-1078|CALLS_UPSERT=SI|CALLERS=3|SCHEDULER_REFS=4|ENDPOINTS=0|READ_TABLES=NINGUNA|LIVE=NO|MONGO=NO
+FORMULAS=sync_mpro_ventas_cerradas|NINGUNA
+DATES=sync_mpro_ventas_cerradas|fecha_operacion
+HARDCODES=sync_mpro_ventas_cerradas|COUNT=3
+CALLER=sync_mpro_ventas_cerradas|backend/api/admin_scheduler_resync.py:_ejecutar_sync_real|CLASS=JOB_OR_SCHEDULER|ROUTES=NINGUNA
+CALLER=sync_mpro_ventas_cerradas|backend/core/scheduler/jobs/sync_comercial_v2_job.py:execute_sync_comercial_v2|CLASS=JOB_OR_SCHEDULER|ROUTES=NINGUNA
+CALLER=sync_mpro_ventas_cerradas|backend/modules/comercial_v2/sync_comercial_edarsahub.py:sync_unidad_ventas_cerradas|CLASS=JOB_OR_SCHEDULER|ROUTES=NINGUNA
+SCHEDULER_REF=sync_mpro_ventas_cerradas|backend/api/admin_scheduler_resync.py:1164|sync_mpro_ventas_cerradas
+SCHEDULER_REF=sync_mpro_ventas_cerradas|backend/api/admin_scheduler_resync.py:1191|resultado = sync_mpro_ventas_cerradas(
+SCHEDULER_REF=sync_mpro_ventas_cerradas|backend/core/scheduler/jobs/sync_comercial_v2_job.py:113|sync_mpro_ventas_cerradas,
+SCHEDULER_REF=sync_mpro_ventas_cerradas|backend/core/scheduler/jobs/sync_comercial_v2_job.py:260|resultado = sync_mpro_ventas_cerradas(
+CANONICAL_FLOW_AUDIT=PASS
+
+===== 3. DECISION =====
+RESULTADO=PASS
+AUDITORIA_FLUJO_CANONICO_COMERCIAL_V2=PASS
+FUNCIONES_AUDITADAS=2
+FUNCIONES_CON_BINDING=2
+FUNCIONES_CON_LIVE=0
+FUNCIONES_CON_MONGO=0
+FUNCIONES_CON_HARDCODES=2
+FUNCIONES_SIN_FECHA=0
+FUNCIONES_SIN_FORMULAS=2
+DECISION=FLUJO_CANONICO_CONTIENE_VALORES_HARDCODEADOS
+SIGUIENTE_PASO=CLASIFICAR_CADA_LITERAL_COMO_TECNICO_O_NEGOCIO
+LEGACY_INTELIGENCIA_SYNC_REACTIVAR=NO
+EJECUTAR_SYNC_CANONICO_AHORA=NO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+
+===== 4. INTEGRIDAD FINAL =====
+RESULTADO=PASS
+AUDITORIA_FLUJO_CANONICO_COMERCIAL_V2=PASS
+FUNCIONES_AUDITADAS=2
+FUNCIONES_CON_BINDING=2
+FUNCIONES_CON_LIVE=0
+FUNCIONES_CON_MONGO=0
+FUNCIONES_CON_HARDCODES=2
+FUNCIONES_SIN_FECHA=0
+FUNCIONES_SIN_FORMULAS=2
+DECISION=FLUJO_CANONICO_CONTIENE_VALORES_HARDCODEADOS
+SIGUIENTE_PASO=CLASIFICAR_CADA_LITERAL_COMO_TECNICO_O_NEGOCIO
+LEGACY_INTELIGENCIA_SYNC_REACTIVAR=NO
+EJECUTAR_SYNC_CANONICO_AHORA=NO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+JSON=/app/edarsahub_comercial_v2_canonical_flow_20260805T154047Z.json
+DETAIL=/app/edarsahub_comercial_v2_canonical_flow_20260805T154047Z_detail.txt
+REPORT=/app/edarsahub_comercial_v2_canonical_flow_20260805T154047Z.txt

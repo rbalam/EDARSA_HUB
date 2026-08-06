@@ -1,0 +1,33 @@
+EDARSAHUB SYNC PAX CANONICAL MATRIX
+SOURCE_JSON=/app/edarsahub_sync_pax_endpoint_contracts_20260805T130141Z.json
+CANONICAL_TABLE=dbo.Comercial_KPIs_Diarios_v2
+CANONICAL_COLUMNS=34
+
+FILE=backend/modules/comercial/inteligencia_comercial_routes.py
+FUNCTION=get_pax_inteligencia
+READY=SI
+REQUIRED=
+MAPPINGS=[]
+MISSING=NINGUNA
+
+FILE=backend/modules/comercial/routes.py
+FUNCTION=comercial_reporte_pax
+READY=SI
+REQUIRED=fechaoperacion
+MAPPINGS=[{"sync": "fechaoperacion", "canonical": "fecha_operacion", "type": "date", "mode": "ALIAS_OR_CALCULATED"}]
+MISSING=NINGUNA
+
+FILE=backend/modules/inteligencia_comercial/routes.py
+FUNCTION=get_analisis_pax
+READY=NO
+REQUIRED=consumopromediopax,diasemana,numerocomensales,tiempomesa,turno,ventacuenta
+MAPPINGS=[{"sync": "consumopromediopax", "canonical": "ticket_promedio", "type": "decimal", "mode": "ALIAS_OR_CALCULATED"}, {"sync": "diasemana", "canonical": "fecha_operacion", "type": "date", "mode": "ALIAS_OR_CALCULATED"}, {"sync": "numerocomensales", "canonical": "pax_total", "type": "int", "mode": "ALIAS_OR_CALCULATED"}, {"sync": "ventacuenta", "canonical": "ventas_sin_propina", "type": "decimal", "mode": "ALIAS_OR_CALCULATED"}]
+MISSING=tiempomesa,turno
+
+FILE=backend/core/scheduler/jobs/inteligencia_comercial_status_job.py
+FUNCTION=execute
+READY=SI
+REQUIRED=
+MAPPINGS=[]
+MISSING=NINGUNA
+

@@ -1,0 +1,154 @@
+EDARSAHUB CANONICAL FIELD MATRIX
+CAPTURED_AT_UTC=2026-08-05T06:06:23.228489+00:00
+
+FUNCTION=get_pax_inteligencia|ENDPOINT=/pax|FIELD=server_id|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "server_id", "data_type": "nvarchar"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "server_id", "data_type": "nvarchar"}]}
+FUNCTION=get_pax_inteligencia|ENDPOINT=/pax|FIELD=sucursal_id|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "sucursal_id", "data_type": "nvarchar"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "sucursal_id", "data_type": "nvarchar"}]}
+FUNCTION=get_pax_inteligencia|ENDPOINT=/pax|FIELD=fecha_operacion|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "fecha_operacion", "data_type": "date"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "fecha_operacion", "data_type": "date"}]}
+FUNCTION=get_pax_inteligencia|ENDPOINT=/pax|FIELD=pax_total|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "pax_total", "data_type": "int"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "pax_cerrados_dia", "data_type": "int"}]}
+FUNCTION=get_pax_inteligencia|ENDPOINT=/pax|FIELD=ventas_total|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "ventas_total", "data_type": "decimal"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "ventas_cerradas_dia", "data_type": "decimal"}]}
+FUNCTION=get_pax_inteligencia|ENDPOINT=/pax|FIELD=ticket_promedio|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "ticket_promedio", "data_type": "decimal"}]}
+FUNCTION=get_pax_inteligencia|ENDPOINT=/pax|FIELD=mesas|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["mesas", "total_mesas", "mesas_atendidas"]}
+FUNCTION=get_pax_inteligencia|ENDPOINT=/pax|FIELD=turno|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["turno", "Turno"]}
+FUNCTION=get_pax_inteligencia|ENDPOINT=/pax|FIELD=dia_semana|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["dia_semana", "DiaSemana"]}
+FUNCTION=comercial_metas|ENDPOINT=/comercial/metas/{server_id}|FIELD=server_id|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "server_id", "data_type": "nvarchar"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "server_id", "data_type": "nvarchar"}]}
+FUNCTION=comercial_metas|ENDPOINT=/comercial/metas/{server_id}|FIELD=sucursal_id|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "sucursal_id", "data_type": "nvarchar"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "sucursal_id", "data_type": "nvarchar"}]}
+FUNCTION=comercial_metas|ENDPOINT=/comercial/metas/{server_id}|FIELD=anio|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "anio", "data_type": "int"}, {"object": "Comercial_KPIs_Diarios_v2", "column": "anio", "data_type": "int"}]}
+FUNCTION=comercial_metas|ENDPOINT=/comercial/metas/{server_id}|FIELD=mes|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "mes", "data_type": "int"}, {"object": "Comercial_KPIs_Diarios_v2", "column": "mes", "data_type": "int"}]}
+FUNCTION=comercial_metas|ENDPOINT=/comercial/metas/{server_id}|FIELD=venta_meta|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["venta_meta", "VentaMeta"]}
+FUNCTION=comercial_metas|ENDPOINT=/comercial/metas/{server_id}|FIELD=venta_bruta_actual|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "ventas_total", "data_type": "decimal"}]}
+FUNCTION=comercial_metas|ENDPOINT=/comercial/metas/{server_id}|FIELD=venta_neta_actual|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "ventas_sin_propina", "data_type": "decimal"}]}
+FUNCTION=comercial_metas|ENDPOINT=/comercial/metas/{server_id}|FIELD=ticket_promedio_actual|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "ticket_promedio", "data_type": "decimal"}]}
+FUNCTION=comercial_metas|ENDPOINT=/comercial/metas/{server_id}|FIELD=cuentas_actual|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "tickets_total", "data_type": "int"}]}
+FUNCTION=comercial_metas|ENDPOINT=/comercial/metas/{server_id}|FIELD=comensales_actual|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "pax_total", "data_type": "int"}]}
+FUNCTION=comercial_metas|ENDPOINT=/comercial/metas/{server_id}|FIELD=dias_transcurridos|STATUS=CALCULABLE|EVIDENCE={"formula": "COUNT(DISTINCT fecha_operacion)", "dependencies": {"fecha_operacion": [{"object": "Comercial_KPIs_Diarios_v2", "column": "fecha_operacion", "data_type": "date"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "fecha_operacion", "data_type": "date"}]}}
+FUNCTION=comercial_metas|ENDPOINT=/comercial/metas/{server_id}|FIELD=proyeccion_mes|STATUS=CALCULABLE|EVIDENCE={"formula": "venta_neta_actual / dias_transcurridos * dias_mes", "dependencies": {"ventas_sin_propina": [{"object": "Comercial_KPIs_Diarios_v2", "column": "ventas_sin_propina", "data_type": "decimal"}], "fecha_operacion": [{"object": "Comercial_KPIs_Diarios_v2", "column": "fecha_operacion", "data_type": "date"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "fecha_operacion", "data_type": "date"}]}}
+FUNCTION=comercial_metas|ENDPOINT=/comercial/metas/{server_id}|FIELD=porcentaje_cumplimiento|STATUS=CALCULABLE|EVIDENCE={"formula": "valor_actual / objetivo * 100", "dependencies": {}}
+FUNCTION=comercial_ticket_perfecto|ENDPOINT=/comercial/ticket-perfecto/{server_id}|FIELD=server_id|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "server_id", "data_type": "nvarchar"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "server_id", "data_type": "nvarchar"}]}
+FUNCTION=comercial_ticket_perfecto|ENDPOINT=/comercial/ticket-perfecto/{server_id}|FIELD=sucursal_id|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "sucursal_id", "data_type": "nvarchar"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "sucursal_id", "data_type": "nvarchar"}]}
+FUNCTION=comercial_ticket_perfecto|ENDPOINT=/comercial/ticket-perfecto/{server_id}|FIELD=fecha_operacion|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "fecha_operacion", "data_type": "date"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "fecha_operacion", "data_type": "date"}]}
+FUNCTION=comercial_ticket_perfecto|ENDPOINT=/comercial/ticket-perfecto/{server_id}|FIELD=venta_total|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["venta_total"]}
+FUNCTION=comercial_ticket_perfecto|ENDPOINT=/comercial/ticket-perfecto/{server_id}|FIELD=total_cuentas|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "tickets_total", "data_type": "int"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "tickets_cerrados_dia", "data_type": "int"}]}
+FUNCTION=comercial_ticket_perfecto|ENDPOINT=/comercial/ticket-perfecto/{server_id}|FIELD=total_comensales|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["total_comensales"]}
+FUNCTION=comercial_ticket_perfecto|ENDPOINT=/comercial/ticket-perfecto/{server_id}|FIELD=ticket_promedio_real|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "ticket_promedio", "data_type": "decimal"}]}
+FUNCTION=comercial_ticket_perfecto|ENDPOINT=/comercial/ticket-perfecto/{server_id}|FIELD=ticket_perfecto_objetivo|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["ticket_perfecto_objetivo", "TicketPerfectoObjetivo"]}
+FUNCTION=comercial_ticket_perfecto|ENDPOINT=/comercial/ticket-perfecto/{server_id}|FIELD=porcentaje_cumplimiento|STATUS=CALCULABLE|EVIDENCE={"formula": "valor_actual / objetivo * 100", "dependencies": {}}
+FUNCTION=comercial_mesas|ENDPOINT=/comercial/mesas/{server_id}|FIELD=server_id|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "server_id", "data_type": "nvarchar"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "server_id", "data_type": "nvarchar"}]}
+FUNCTION=comercial_mesas|ENDPOINT=/comercial/mesas/{server_id}|FIELD=sucursal_id|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "sucursal_id", "data_type": "nvarchar"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "sucursal_id", "data_type": "nvarchar"}]}
+FUNCTION=comercial_mesas|ENDPOINT=/comercial/mesas/{server_id}|FIELD=fecha_operacion|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "fecha_operacion", "data_type": "date"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "fecha_operacion", "data_type": "date"}]}
+FUNCTION=comercial_mesas|ENDPOINT=/comercial/mesas/{server_id}|FIELD=mesa_numero|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["mesa_numero", "MesaNumero"]}
+FUNCTION=comercial_mesas|ENDPOINT=/comercial/mesas/{server_id}|FIELD=pax|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["pax"]}
+FUNCTION=comercial_mesas|ENDPOINT=/comercial/mesas/{server_id}|FIELD=venta_total|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["venta_total"]}
+FUNCTION=comercial_mesas|ENDPOINT=/comercial/mesas/{server_id}|FIELD=ticket_promedio|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "ticket_promedio", "data_type": "decimal"}]}
+FUNCTION=comercial_mesas|ENDPOINT=/comercial/mesas/{server_id}|FIELD=tiempo_promedio_mesa|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["tiempo_promedio_mesa"]}
+FUNCTION=comercial_mesas|ENDPOINT=/comercial/mesas/{server_id}|FIELD=turno|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["turno", "Turno"]}
+FUNCTION=comercial_reporte_pax|ENDPOINT=/comercial/reporte-pax/{server_id}|FIELD=server_id|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "server_id", "data_type": "nvarchar"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "server_id", "data_type": "nvarchar"}]}
+FUNCTION=comercial_reporte_pax|ENDPOINT=/comercial/reporte-pax/{server_id}|FIELD=sucursal_id|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "sucursal_id", "data_type": "nvarchar"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "sucursal_id", "data_type": "nvarchar"}]}
+FUNCTION=comercial_reporte_pax|ENDPOINT=/comercial/reporte-pax/{server_id}|FIELD=fecha_operacion|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "fecha_operacion", "data_type": "date"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "fecha_operacion", "data_type": "date"}]}
+FUNCTION=comercial_reporte_pax|ENDPOINT=/comercial/reporte-pax/{server_id}|FIELD=pax_total|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "pax_total", "data_type": "int"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "pax_cerrados_dia", "data_type": "int"}]}
+FUNCTION=comercial_reporte_pax|ENDPOINT=/comercial/reporte-pax/{server_id}|FIELD=ventas_total|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "ventas_total", "data_type": "decimal"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "ventas_cerradas_dia", "data_type": "decimal"}]}
+FUNCTION=comercial_reporte_pax|ENDPOINT=/comercial/reporte-pax/{server_id}|FIELD=ticket_promedio|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "ticket_promedio", "data_type": "decimal"}]}
+FUNCTION=comercial_reporte_pax|ENDPOINT=/comercial/reporte-pax/{server_id}|FIELD=consumo_promedio|STATUS=CALCULABLE|EVIDENCE={"formula": "ventas_total / pax_total", "dependencies": {"ventas_total": [{"object": "Comercial_KPIs_Diarios_v2", "column": "ventas_total", "data_type": "decimal"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "ventas_cerradas_dia", "data_type": "decimal"}], "pax_total": [{"object": "Comercial_KPIs_Diarios_v2", "column": "pax_total", "data_type": "int"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "pax_cerrados_dia", "data_type": "int"}]}}
+FUNCTION=comercial_reporte_pax|ENDPOINT=/comercial/reporte-pax/{server_id}|FIELD=mesas_atendidas|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["mesas_atendidas", "total_mesas"]}
+FUNCTION=comercial_reporte_pax|ENDPOINT=/comercial/reporte-pax/{server_id}|FIELD=turno|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["turno", "Turno"]}
+FUNCTION=comercial_reporte_pax|ENDPOINT=/comercial/reporte-pax/{server_id}|FIELD=dia_semana|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["dia_semana", "DiaSemana"]}
+FUNCTION=get_analisis_pax|ENDPOINT=/dashboard/pax|FIELD=server_id|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "server_id", "data_type": "nvarchar"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "server_id", "data_type": "nvarchar"}]}
+FUNCTION=get_analisis_pax|ENDPOINT=/dashboard/pax|FIELD=sucursal_id|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "sucursal_id", "data_type": "nvarchar"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "sucursal_id", "data_type": "nvarchar"}]}
+FUNCTION=get_analisis_pax|ENDPOINT=/dashboard/pax|FIELD=fecha_operacion|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "fecha_operacion", "data_type": "date"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "fecha_operacion", "data_type": "date"}]}
+FUNCTION=get_analisis_pax|ENDPOINT=/dashboard/pax|FIELD=pax_total|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "pax_total", "data_type": "int"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "pax_cerrados_dia", "data_type": "int"}]}
+FUNCTION=get_analisis_pax|ENDPOINT=/dashboard/pax|FIELD=ventas_total|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "ventas_total", "data_type": "decimal"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "ventas_cerradas_dia", "data_type": "decimal"}]}
+FUNCTION=get_analisis_pax|ENDPOINT=/dashboard/pax|FIELD=ticket_promedio|STATUS=DIRECTO|EVIDENCE={"matches": [{"object": "Comercial_KPIs_Diarios_v2", "column": "ticket_promedio", "data_type": "decimal"}]}
+FUNCTION=get_analisis_pax|ENDPOINT=/dashboard/pax|FIELD=consumo_promedio|STATUS=CALCULABLE|EVIDENCE={"formula": "ventas_total / pax_total", "dependencies": {"ventas_total": [{"object": "Comercial_KPIs_Diarios_v2", "column": "ventas_total", "data_type": "decimal"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "ventas_cerradas_dia", "data_type": "decimal"}], "pax_total": [{"object": "Comercial_KPIs_Diarios_v2", "column": "pax_total", "data_type": "int"}, {"object": "Comercial_Ventas_Dia_Abiertas_v2", "column": "pax_cerrados_dia", "data_type": "int"}]}}
+FUNCTION=get_analisis_pax|ENDPOINT=/dashboard/pax|FIELD=mesas_atendidas|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["mesas_atendidas", "total_mesas"]}
+FUNCTION=get_analisis_pax|ENDPOINT=/dashboard/pax|FIELD=tiempo_promedio_mesa|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["tiempo_promedio_mesa"]}
+FUNCTION=get_analisis_pax|ENDPOINT=/dashboard/pax|FIELD=turno|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["turno", "Turno"]}
+FUNCTION=get_analisis_pax|ENDPOINT=/dashboard/pax|FIELD=dia_semana|STATUS=NO_DEMOSTRADO|EVIDENCE={"searched_aliases": ["dia_semana", "DiaSemana"]}
+
+FUNCTION_SUMMARY
+{
+  "get_pax_inteligencia": {
+    "endpoint": "/pax",
+    "total_fields": 9,
+    "direct_fields": 6,
+    "calculable_fields": 0,
+    "configuration_fields": [],
+    "missing_fields": [
+      "mesas",
+      "turno",
+      "dia_semana"
+    ],
+    "replacement_ready": false
+  },
+  "comercial_metas": {
+    "endpoint": "/comercial/metas/{server_id}",
+    "total_fields": 13,
+    "direct_fields": 9,
+    "calculable_fields": 3,
+    "configuration_fields": [],
+    "missing_fields": [
+      "venta_meta"
+    ],
+    "replacement_ready": false
+  },
+  "comercial_ticket_perfecto": {
+    "endpoint": "/comercial/ticket-perfecto/{server_id}",
+    "total_fields": 9,
+    "direct_fields": 5,
+    "calculable_fields": 1,
+    "configuration_fields": [],
+    "missing_fields": [
+      "venta_total",
+      "total_comensales",
+      "ticket_perfecto_objetivo"
+    ],
+    "replacement_ready": false
+  },
+  "comercial_mesas": {
+    "endpoint": "/comercial/mesas/{server_id}",
+    "total_fields": 9,
+    "direct_fields": 4,
+    "calculable_fields": 0,
+    "configuration_fields": [],
+    "missing_fields": [
+      "mesa_numero",
+      "pax",
+      "venta_total",
+      "tiempo_promedio_mesa",
+      "turno"
+    ],
+    "replacement_ready": false
+  },
+  "comercial_reporte_pax": {
+    "endpoint": "/comercial/reporte-pax/{server_id}",
+    "total_fields": 10,
+    "direct_fields": 6,
+    "calculable_fields": 1,
+    "configuration_fields": [],
+    "missing_fields": [
+      "mesas_atendidas",
+      "turno",
+      "dia_semana"
+    ],
+    "replacement_ready": false
+  },
+  "get_analisis_pax": {
+    "endpoint": "/dashboard/pax",
+    "total_fields": 11,
+    "direct_fields": 6,
+    "calculable_fields": 1,
+    "configuration_fields": [],
+    "missing_fields": [
+      "mesas_atendidas",
+      "tiempo_promedio_mesa",
+      "turno",
+      "dia_semana"
+    ],
+    "replacement_ready": false
+  }
+}
+
+STATUS_COUNTS
+{
+  "DIRECTO": 36,
+  "NO_DEMOSTRADO": 19,
+  "CALCULABLE": 6
+}

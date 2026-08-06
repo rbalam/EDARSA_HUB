@@ -1,0 +1,6 @@
+{
+  "success": false,
+  "status": "disabled",
+  "code": "SYNC_COMERCIAL_ENDPOINTS_DISABLED",
+  "message": "Job deshabilitado: Sync_* no puede persistir KPIs que ya pertenecen a fuentes canónicas comerciales."
+}

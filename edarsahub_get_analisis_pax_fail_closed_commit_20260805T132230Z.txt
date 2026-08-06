@@ -1,0 +1,72 @@
+===== 1. GUARDRAILS =====
+RAMA=Edarsahub_Desarrollo
+HEAD=5b3807ac0c83487f30a68df570d30e2c19e858de
+REMOTE_HEAD=5b3807ac0c83487f30a68df570d30e2c19e858de
+TARGET_SHA=c2a276ff06373b7fccbe78a191cfecf5baf30b9ada821e20ffde628e3119c739
+CAMBIOS_TRACKED=backend/modules/inteligencia_comercial/routes.py
+CONTROL=PASS
+
+===== 2. VALIDAR CONTRATO =====
+AST=PASS
+FAIL_CLOSED_PRIMERO=PASS
+STATUS_HTTP=410
+CODIGO_DEPRECADO=PASS
+RUTA_PRESERVADA=PASS
+PY_COMPILE=PASS
+GIT_DIFF_CHECK=PASS
+
+===== 3. VALIDAR DIFF =====
+HUNKS=1
+INSERTIONS=14
+DELETIONS=0
+DIFF=PASS
+
+===== 4. STAGING SELECTIVO =====
+STAGING_SELECTIVO=PASS
+STAGED_SHA=c2a276ff06373b7fccbe78a191cfecf5baf30b9ada821e20ffde628e3119c739
+
+===== 5. CREAR COMMIT =====
+.vscode/tasks.json:1:1: warning: AGENT_GUARD: claim sin heartbeat, permanece bloqueado hasta liberacion manual: codex-comercial-tiempo
+.vscode/tasks.json:1:1: warning: AGENT_GUARD: claim sin heartbeat, permanece bloqueado hasta liberacion manual: github-finanzas-rbac
+AGENT_GUARD_OK
+[Edarsahub_Desarrollo 98308eac] fix(inteligencia): deprecar endpoint pax paralelo
+ 1 file changed, 14 insertions(+)
+COMMIT=98308eace0ef98f35c45e57a0c6fb724065e81ab
+PADRE=5b3807ac0c83487f30a68df570d30e2c19e858de
+ARCHIVO_COMMIT=backend/modules/inteligencia_comercial/routes.py
+COMMIT=PASS
+
+===== 6. INTEGRIDAD FINAL =====
+WORKTREE_TRACKED=LIMPIO
+STAGING=VACIO
+BACKEND_RUNNING=PASS
+AHEAD_LOCAL=1
+BEHIND_LOCAL=0
+
+===== 7. RESULTADO =====
+RESULTADO=PASS
+COMMIT_FAIL_CLOSED_GET_ANALISIS_PAX=PASS
+COMMIT=98308eace0ef98f35c45e57a0c6fb724065e81ab
+PADRE=5b3807ac0c83487f30a68df570d30e2c19e858de
+MENSAJE=fix(inteligencia): deprecar endpoint pax paralelo
+ARCHIVO=backend/modules/inteligencia_comercial/routes.py
+TARGET_SHA=c2a276ff06373b7fccbe78a191cfecf5baf30b9ada821e20ffde628e3119c739
+RUTA_COMPLETA=/inteligencia/dashboard/pax
+STATUS_HTTP=410
+CODIGO=INTELIGENCIA_PAX_ENDPOINT_DEPRECATED
+HUNKS=1
+AST=PASS
+PY_COMPILE=PASS
+GIT_DIFF_CHECK=PASS
+WORKTREE_TRACKED=LIMPIO
+STAGING=VACIO
+AHEAD_LOCAL=1
+BEHIND_LOCAL=0
+SQL_EJECUTADO=NO
+DATOS_MODIFICADOS=NO
+PUSH=NO
+REINICIO_BACKEND=NO
+DEPLOY=NO
+PATCH=/var/tmp/edarsahub_get_analisis_pax_fail_closed_20260805T132230Z.patch
+REPORT=/app/edarsahub_get_analisis_pax_fail_closed_commit_20260805T132230Z.txt
+SIGUIENTE_PASO=VALIDAR_PREPUSH_Y_PUBLICAR_COMMIT

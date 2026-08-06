@@ -1,0 +1,135 @@
+===== 1. GUARDRAILS =====
+RAMA=Edarsahub_Desarrollo
+HEAD=8c29ad3553b39f73c3732cc5293fccc8b193b70c
+TARGET_SHA=585b77f82cfef82d30bcbafc4b0fa70fefdf84104a56c87638f687c515160a6a
+CAMBIOS_TRACKED:
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py
+ARCHIVOS_NO_RASTREADOS=234
+ARCHIVOS_NO_RASTREADOS_SE_PRESERVAN=SI
+CONTROL=PASS
+
+===== 2. CAPTURAR PATCH PRECOMMIT =====
+PATCH_FILE=/var/tmp/edarsahub_sync_runtime_fix_commit_20260805T053552Z.patch
+HUNKS=5
+PATCH_PRECOMMIT=PASS
+
+===== 3. STAGING SELECTIVO =====
+STAGED_FILES:
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py
+STAGING_SELECTIVO=PASS
+STAGED_SHA=585b77f82cfef82d30bcbafc4b0fa70fefdf84104a56c87638f687c515160a6a
+
+===== 4. VALIDAR CONTENIDO STAGED =====
+diff --git a/backend/core/scheduler/jobs/sync_comercial_endpoints_job.py b/backend/core/scheduler/jobs/sync_comercial_endpoints_job.py
+index a4cbd7e7..51f3a9a4 100644
+--- a/backend/core/scheduler/jobs/sync_comercial_endpoints_job.py
++++ b/backend/core/scheduler/jobs/sync_comercial_endpoints_job.py
+@@ -24,6 +24,7 @@ from typing import Dict, Any, List, Optional
+ import uuid
+ import pymssql
+ 
++import hashlib
+ from ..config import JobConfig
+ from core.sql_first.db import get_sql_connection
+ from core.connections.pos_runtime_resolver import PosRuntimeContext, list_pos_runtime_contexts
+@@ -189,6 +190,7 @@ class SyncComercialEndpointsJob:
+                 cursor.execute("""
+                     SELECT
+                         ISNULL(SUM(ventas_total), 0) as VentaBrutaActual,
++                        ISNULL(SUM(ventas_sin_propina), 0) as VentaNetaActual,
+                         ISNULL(AVG(ticket_promedio), 0) as TicketPromedioActual,
+                         ISNULL(SUM(tickets_total), 0) as CuentasActual,
+                         ISNULL(SUM(pax_total), 0) as ComensalesActual,
+@@ -303,7 +305,7 @@ class SyncComercialEndpointsJob:
+                 """, (server_id, suc["SucursalID"], fecha_inicio))
+ 
+                 for row in cursor.fetchall():
+-                    ticket_id = f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
++                    ticket_id = f"{server_id}-{suc['SucursalID']}-{row['fecha_operacion']}"
+ 
+                     # Objetivo de ticket perfecto (configurable, default 350)
+                     ticket_objetivo = 350.0
+@@ -319,9 +321,9 @@ class SyncComercialEndpointsJob:
+                              TicketPromedioReal, TicketPerfectoObjetivo, PorcentajeCumplimiento)
+                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                     """, (
+-                        server_id, suc["SucursalID"], row["FechaOperacion"],
++                        server_id, suc["SucursalID"], row["fecha_operacion"],
+                         ticket_id, server_id, suc["SucursalID"], suc.get("SucursalNombre", ""),
+-                        row["FechaOperacion"], row["TotalCuentas"], row["TotalComensales"],
++                        row["fecha_operacion"], row["TotalCuentas"], row["TotalComensales"],
+                         row["VentaTotal"], ticket_real, ticket_objetivo, cumplimiento
+                     ))
+                     conn.commit()
+@@ -446,7 +448,9 @@ class SyncComercialEndpointsJob:
+                 """, (server_id, suc["SucursalID"], fecha_inicio))
+ 
+                 for row in cursor.fetchall():
+-                    pax_id = f"{server_id}-{suc['SucursalID']}-{row['FechaOperacion']}"
++                    pax_id = hashlib.sha256(
++                        f"{server_id}|{suc['SucursalID']}|{row['FechaOperacion']}".encode("utf-8")
++                    ).hexdigest()[:50]
+ 
+                     comensales = int(row["TotalComensales"] or 0)
+                     venta = float(row["VentaTotal"] or 0)
+STAGED_CONTENIDO=PASS
+
+===== 5. CREAR COMMIT =====
+.vscode/tasks.json:1:1: warning: AGENT_GUARD: claim sin heartbeat, permanece bloqueado hasta liberacion manual: codex-comercial-tiempo
+.vscode/tasks.json:1:1: warning: AGENT_GUARD: claim sin heartbeat, permanece bloqueado hasta liberacion manual: github-finanzas-rbac
+AGENT_GUARD_OK
+[Edarsahub_Desarrollo b81a1d52] fix(scheduler): corregir contratos runtime comerciales
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+COMMIT_NUEVO=b81a1d52e2c9d2b54422bd618f49eea729012305
+PADRE_COMMIT=8c29ad3553b39f73c3732cc5293fccc8b193b70c
+MENSAJE_COMMIT=fix(scheduler): corregir contratos runtime comerciales
+
+===== 6. VALIDAR COMMIT CREADO =====
+ARCHIVOS_COMMIT:
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py
+COMMIT_ARCHIVO_UNICO=PASS
+COMMIT_TARGET_SHA=585b77f82cfef82d30bcbafc4b0fa70fefdf84104a56c87638f687c515160a6a
+STAGING=VACIO
+TARGET_WORKTREE=LIMPIO
+ARCHIVOS_NO_RASTREADOS_PRESERVADOS=PASS
+
+===== 7. ESTADO LOCAL Y REMOTO =====
+REMOTE_REF=origin/Edarsahub_Desarrollo
+REMOTE_HEAD_CONOCIDO=8c29ad3553b39f73c3732cc5293fccc8b193b70c
+AHEAD_LOCAL=1
+BEHIND_LOCAL=0
+
+===== 8. RESULTADO =====
+COMMIT_SYNC_RUNTIME_FIX=PASS
+COMMIT=b81a1d52e2c9d2b54422bd618f49eea729012305
+PADRE=8c29ad3553b39f73c3732cc5293fccc8b193b70c
+ARCHIVO_COMMIT=backend/core/scheduler/jobs/sync_comercial_endpoints_job.py
+TARGET_SHA_COMMIT=585b77f82cfef82d30bcbafc4b0fa70fefdf84104a56c87638f687c515160a6a
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+PUSH=NO
+REINICIO_BACKEND=NO
+DEPLOY=NO
+REPORT=/app/edarsahub_sync_runtime_fix_commit_20260805T053552Z.txt
+COMPACT=/app/edarsahub_sync_runtime_fix_commit_20260805T053552Z_compact.txt
+TERMINAL_PERMANECE_ABIERTA=SI
+
+===== RESUMEN COMPACTO =====
+RESULTADO=PASS
+COMMIT_SYNC_RUNTIME_FIX=PASS
+COMMIT=b81a1d52e2c9d2b54422bd618f49eea729012305
+PADRE=8c29ad3553b39f73c3732cc5293fccc8b193b70c
+MENSAJE=fix(scheduler): corregir contratos runtime comerciales
+ARCHIVO=backend/core/scheduler/jobs/sync_comercial_endpoints_job.py
+TARGET_SHA=585b77f82cfef82d30bcbafc4b0fa70fefdf84104a56c87638f687c515160a6a
+HUNKS=5
+ARCHIVOS_COMMIT=1
+STAGING=VACIO
+TARGET_WORKTREE=LIMPIO
+ARCHIVOS_NO_RASTREADOS_PRESERVADOS=PASS
+SQL_EJECUTADO=NO
+PUSH=NO
+REINICIO_BACKEND=NO
+DEPLOY=NO
+REPORT=/app/edarsahub_sync_runtime_fix_commit_20260805T053552Z.txt

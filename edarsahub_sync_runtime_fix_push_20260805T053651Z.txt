@@ -1,0 +1,34 @@
+===== 1. GUARDRAILS LOCALES =====
+RAMA=Edarsahub_Desarrollo
+LOCAL_HEAD=b81a1d52e2c9d2b54422bd618f49eea729012305
+PADRE=8c29ad3553b39f73c3732cc5293fccc8b193b70c
+TARGET_SHA=585b77f82cfef82d30bcbafc4b0fa70fefdf84104a56c87638f687c515160a6a
+ARCHIVOS_COMMIT:
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py
+ARCHIVOS_NO_RASTREADOS=236
+CONTROL_LOCAL=PASS
+
+===== 2. ACTUALIZAR REFERENCIA REMOTA =====
+From https://github.com/rbalam/EDARSA_HUB
+ * branch              Edarsahub_Desarrollo -> FETCH_HEAD
+REMOTE_HEAD_ANTES=8c29ad3553b39f73c3732cc5293fccc8b193b70c
+AHEAD_ANTES=1
+BEHIND_ANTES=0
+FAST_FORWARD_PREVALIDADO=PASS
+
+===== 3. PUSH CON LEASE EXACTO =====
+.vscode/tasks.json:1:1: warning: AGENT_GUARD: claim sin heartbeat, permanece bloqueado hasta liberacion manual: codex-comercial-tiempo
+.vscode/tasks.json:1:1: warning: AGENT_GUARD: claim sin heartbeat, permanece bloqueado hasta liberacion manual: github-finanzas-rbac
+AGENT_GUARD_OK
+.vscode/tasks.json:1:1: error: AGENT_GUARD: push requiere EDARSA_ALLOW_PUSH=1
+error: failed to push some refs to 'https://github.com/rbalam/EDARSA_HUB.git'
+ERROR=PUSH_FALLO
+PUSH_SYNC_RUNTIME_FIX=FALLO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+REINICIO_BACKEND=NO
+JOB_EJECUTADO=NO
+DEPLOY=NO
+REPORT=/app/edarsahub_sync_runtime_fix_push_20260805T053651Z.txt
+COMPACT=/app/edarsahub_sync_runtime_fix_push_20260805T053651Z_compact.txt

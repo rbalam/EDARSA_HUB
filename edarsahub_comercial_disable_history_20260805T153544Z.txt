@@ -1,0 +1,36 @@
+----- COMMITS RELACIONADOS -----
+5a06104c28ecd40eabdb69051b717728f81cca0d|2026-07-04 18:43:11 +0000|Ricardo Balam|fix(comercial): disable legacy inteligencia sync writer
+240cb004f7e775fd53699e87252f087d6560ceb9|2026-06-23 13:11:26 +0000|Ricardo Balam|fix(scheduler): allow manual inteligencia comercial sync
+857988c9255f7b13bfd817c200739493f2606741|2026-06-08 00:06:59 +0000|emergent-agent-e1|auto-commit for 955627c7-4ce0-4773-9c8b-4aa2dbde04da
+542508e8e5223c0c6786131616c91ee239c2ec79|2026-06-07 23:16:19 +0000|emergent-agent-e1|auto-commit for b2d6ed96-724a-4077-9ec0-9c53cd337ce5
+29c0233f1ca27d24d132f00364e012bcfe7b4372|2026-06-02 06:39:27 +0000|emergent-agent-e1|auto-commit for 4791ee24-d510-4a59-bb29-7c2ff2c38102
+----- BLAME CONFIG SCHEDULER -----
+313:            "inteligencia_comercial_sync": JobConfig(
+314:                job_id="inteligencia_comercial_sync",
+317:                enabled=os.environ.get("SCHEDULER_INTELIGENCIA_SYNC_ENABLED", "true").lower() == "true",
+
+----- CONFIG SQL REFERENCES -----
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:390:# Control de ejecución: dbo.Sistema_SyncPOS_Config (Habilitado / PermitirPOSAutomatico)
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:406:            "SELECT TOP 1 * FROM dbo.Sistema_SyncPOS_Config "
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:415:            "PermitirPOSAutomatico": False,
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:419:            "BackfillAutomaticoHabilitado": False,
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:431:    if not bool(cfg.get("PermitirPOSAutomatico")):
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:432:        return False, "Conexión POS automática deshabilitada por configuración SQL (PermitirPOSAutomatico=0)"
+backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py:567:            UPDATE dbo.Sistema_SyncPOS_Config
+backend/migrations/p1b_sync_pos_config.py:6:- dbo.Sistema_SyncPOS_Config       (control de ejecución: Habilitado / PermitirPOSAutomatico / frecuencia)
+backend/migrations/p1b_sync_pos_config.py:13:  PermitirPOSAutomatico = 0
+backend/migrations/p1b_sync_pos_config.py:14:  BackfillAutomaticoHabilitado = 0
+backend/migrations/p1b_sync_pos_config.py:44:IF OBJECT_ID('dbo.Sistema_SyncPOS_Config', 'U') IS NULL
+backend/migrations/p1b_sync_pos_config.py:46:    CREATE TABLE dbo.Sistema_SyncPOS_Config (
+backend/migrations/p1b_sync_pos_config.py:54:        BackfillAutomaticoHabilitado BIT NOT NULL DEFAULT 0,
+backend/migrations/p1b_sync_pos_config.py:59:        PermitirPOSAutomatico BIT NOT NULL DEFAULT 0,
+backend/migrations/p1b_sync_pos_config.py:70:IF NOT EXISTS (SELECT 1 FROM dbo.Sistema_SyncPOS_Config WHERE Codigo='INTELIGENCIA_COMERCIAL_POS')
+backend/migrations/p1b_sync_pos_config.py:72:    INSERT INTO dbo.Sistema_SyncPOS_Config (
+backend/migrations/p1b_sync_pos_config.py:74:        DiasRevisionFaltantes, BackfillAutomaticoHabilitado, MaxDiasBackfillPorCorrida,
+backend/migrations/p1b_sync_pos_config.py:75:        MaxUnidadesPorCorrida, PermitirPOSAutomatico, Activo
+backend/migrations/p1b_sync_pos_config.py:84:        0,   -- BackfillAutomaticoHabilitado
+backend/migrations/p1b_sync_pos_config.py:87:        0,   -- PermitirPOSAutomatico
+backend/migrations/p1b_sync_pos_config.py:164:    OBJECT_ID('dbo.Sistema_SyncPOS_Config','U')       AS cfg,
+backend/migrations/p1b_sync_pos_config.py:187:            "SELECT Codigo, Habilitado, PermitirPOSAutomatico, BackfillAutomaticoHabilitado, "
+backend/migrations/p1b_sync_pos_config.py:188:            "FrecuenciaMinutos FROM dbo.Sistema_SyncPOS_Config WHERE Codigo='INTELIGENCIA_COMERCIAL_POS'"
+backend/migrations/p1b_sync_pos_config.py:193:              f"PermitirPOSAutomatico={cfg[2]} BackfillAutomaticoHabilitado={cfg[3]} "

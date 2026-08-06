@@ -1,0 +1,62 @@
+===== 1. CONTROL DEL REPOSITORIO =====
+RAMA=Edarsahub_Desarrollo
+HEAD=3fc6e34f58b4b25c52e1341debcb2d6f70a46f4d
+TARGET_SHA=9c715e135e6f85b205ab16df18d7457cf810a198f695ba74401901bd955190aa
+STAGING:
+VACIO
+CAMBIOS_TRACKED:
+VACIO
+STATUS_TARGET:
+LIMPIO
+ARCHIVOS_NO_RASTREADOS=176
+CONTROL_REPOSITORIO=PASS
+
+===== 2. CONFIRMAR SINCRONIA REMOTA =====
+From https://github.com/rbalam/EDARSA_HUB
+ * branch              Edarsahub_Desarrollo -> FETCH_HEAD
+REMOTE_HEAD=3fc6e34f58b4b25c52e1341debcb2d6f70a46f4d
+COMMITS_AHEAD=0
+COMMITS_BEHIND=0
+LOCAL_REMOTO_SINCRONIZADOS=SI
+
+===== 3. DESCUBRIR RUTAS HEALTH DESDE EL CODIGO REAL =====
+HEALTH_ROUTES_TOTAL=4
+HEALTH_ROUTE|method=GET|path=/api/health|function=health_check|line=162
+HEALTH_ROUTE|method=GET|path=/servers/{server_id}/ping|function=ping_server|line=2442
+HEALTH_ROUTE|method=GET|path=/sistema/sql-health|function=sql_server_health_check|line=14549
+HEALTH_ROUTE|method=POST|path=/sistema/sql-health/test-query|function=sql_server_test_query|line=14618
+DESCUBRIMIENTO_HEALTH=PASS
+ROUTES_JSON=/var/tmp/edarsahub_restart_backend_sync_context_20260805T042341Z/health_routes.json
+HEALTH_PATH=/api/health
+HEALTH_URL=http://127.0.0.1:8001/api/health
+
+===== 4. ESTADO Y LOGS PREVIOS =====
+backend                          RUNNING   pid 49, uptime 0:28:39
+PID_ANTES=49
+STATUS_ANTES=backend                          RUNNING   pid 49, uptime 0:28:39
+PRE_LOGS=/var/tmp/edarsahub_restart_backend_sync_context_20260805T042341Z/backend_logs_before.txt
+
+===== 5. REINICIO CONTROLADO DEL BACKEND =====
+backend: stopped
+backend: started
+RESTART_AT_UTC=2026-08-05T04:23:44Z
+backend                          RUNNING   pid 23405, uptime 0:00:01
+PID_ANTES=49
+PID_DESPUES=23405
+PROCESS_START_TEXT=Wed Aug  5 04:23:43 2026
+PROCESS_START_EPOCH=1785903823
+RESTART_AT_EPOCH=1785903824
+PROCESS_COMMAND=/root/.venv/bin/python /root/.venv/bin/uvicorn server:app --host 0.0.0.0 --port 8001 --workers 1
+ERROR=PROCESO_NO_INICIO_DESPUES_DEL_RESTART
+REINICIO_BACKEND_CONTROLADO=FALLO
+JOB_EJECUTADO=NO
+POS_CONECTADO=NO
+CODIGO_MODIFICADO=NO
+STAGING_MODIFICADO=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+REPORT=/app/edarsahub_restart_backend_sync_context_20260805T042341Z.txt
+TERMINAL_PERMANECE_ABIERTA=SI

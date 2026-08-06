@@ -1,0 +1,106 @@
+===== 1. CONTROL =====
+RAMA=Edarsahub_Desarrollo
+HEAD=3dfba587c0b20a0a23537d12f8258dc0076206b4
+TARGET_SHA_ANTES=cb2620a2a008c003f5bbad3cac2f8deb83e6158d176bbd11913aab8ec6ef8cee
+STAGING_ANTES:
+VACIO
+STATUS_TARGET_ANTES:
+LIMPIO
+CONTROL=OK
+
+===== 2. LOCALIZAR ULTIMO INTENTO FALLIDO =====
+LAST_RUN=/var/tmp/edarsahub_sync_context_ast_ranges_20260805T035735Z
+FAILED_CANDIDATE=/var/tmp/edarsahub_sync_context_ast_ranges_20260805T035735Z/sync_comercial_endpoints_job.py
+FAILED_EDITS=/var/tmp/edarsahub_sync_context_ast_ranges_20260805T035735Z/edits.json
+CANDIDATO_FALLIDO_EXISTE=NO
+EDITS_JSON_EXISTE=NO
+
+===== 3. REPRODUCIR RANGOS AST DEL ARCHIVO REAL =====
+RANGOS_BUCLES_ORIGINALES:
+_sync_metas_comerciales|LINE=222|END=298|COL=8|START_LINE=7342|START_AST=7350|PREFIX_REPR='        '|PRIMERA_LINEA_REPR='for server in servers:'
+_sync_ticket_perfecto|LINE=321|END=366|COL=8|START_LINE=12686|START_AST=12694|PREFIX_REPR='        '|PRIMERA_LINEA_REPR='for server in servers:'
+_sync_mesas|LINE=388|END=432|COL=8|START_LINE=16120|START_AST=16128|PREFIX_REPR='        '|PRIMERA_LINEA_REPR='for server in servers:'
+_sync_pax_detalle|LINE=455|END=498|COL=8|START_LINE=19578|START_AST=19586|PREFIX_REPR='        '|PRIMERA_LINEA_REPR='for server in servers:'
+DETAIL=/var/tmp/edarsahub_ast_range_indent_diagnostic_20260805T035840Z/diagnostic.json
+
+===== 4. MOSTRAR ZONA EXACTA DEL ERROR =====
+CANDIDATO_FALLIDO_NO_FUE_ESCRITO_ANTES_DEL_PARSE=SI
+
+===== 5. MOSTRAR BLOQUE ORIGINAL EQUIVALENTE =====
+METHOD=_sync_metas_comerciales|LOOP_LINE=222|COL_OFFSET=8
+    0217|SPACES=8|REPR='        now = datetime.now(timezone.utc)'
+    0218|SPACES=8|REPR='        anio = now.year'
+    0219|SPACES=8|REPR='        mes = now.month'
+    0220|SPACES=8|REPR='        count = 0'
+    0221|SPACES=8|REPR='        '
+>>> 0222|SPACES=8|REPR='        for server in servers:'
+    0223|SPACES=12|REPR='            server_id = server["ServerID"]'
+    0224|SPACES=12|REPR='            sucursales = self._get_sucursales_por_server(server_id)'
+    0225|SPACES=12|REPR='            '
+    0226|SPACES=12|REPR='            for suc in sucursales:'
+    0227|SPACES=16|REPR='                try:'
+    0228|SPACES=20|REPR='                    # Obtener ventas actuales del mes desde KPIs (columnas en minúsculas)'
+    0229|SPACES=20|REPR='                    cursor.execute("""'
+    0230|SPACES=24|REPR='                        SELECT '
+    0231|SPACES=28|REPR='                            ISNULL(SUM(ventas_total), 0) as VentaBrutaActual,'
+    0232|SPACES=28|REPR='                            ISNULL(AVG(ticket_promedio), 0) as TicketPromedioActual,'
+    0233|SPACES=28|REPR='                            ISNULL(SUM(tickets_total), 0) as CuentasActual,'
+    0234|SPACES=28|REPR='                            ISNULL(SUM(pax_total), 0) as ComensalesActual,'
+    0235|SPACES=28|REPR='                            COUNT(DISTINCT fecha_operacion) as DiasTranscurridos'
+    0236|SPACES=24|REPR='                        FROM Comercial_KPIs_Diarios_v2'
+    0237|SPACES=24|REPR='                        WHERE server_id = %s '
+    0238|SPACES=26|REPR='                          AND sucursal_id = %s'
+    0239|SPACES=26|REPR='                          AND anio = %s'
+    0240|SPACES=26|REPR='                          AND mes = %s'
+
+===== 6. DETERMINAR CAUSA EXACTA =====
+_sync_mesas|COL_OFFSET=8|PREFIX='        '|EXPECTED_PREFIX='        '
+_sync_metas_comerciales|COL_OFFSET=8|PREFIX='        '|EXPECTED_PREFIX='        '
+_sync_pax_detalle|COL_OFFSET=8|PREFIX='        '|EXPECTED_PREFIX='        '
+_sync_ticket_perfecto|COL_OFFSET=8|PREFIX='        '|EXPECTED_PREFIX='        '
+CAUSA_EXACTA=EL_RANGO_AST_COMIENZA_DESPUES_DE_LA_SANGRIA_Y_EL_REEMPLAZO_REINSERTA_SANGRIA_COMPLETA
+CORRECCION_REQUERIDA=INICIAR_REEMPLAZO_EN_EL_COMIENZO_FISICO_DE_LA_LINEA
+CORRECCION_ALTERNATIVA=NO_INCLUIR_INDENTACION_EN_LA_PRIMERA_LINEA_DEL_REEMPLAZO
+OPCION_RECOMENDADA=REEMPLAZAR_DESDE_INICIO_DE_LINEA_HASTA_FIN_AST
+PATCH_APLICADO=NO
+
+===== 7. CONTROL FINAL =====
+TARGET_SHA_DESPUES=cb2620a2a008c003f5bbad3cac2f8deb83e6158d176bbd11913aab8ec6ef8cee
+ARCHIVO_REAL_INTACTO=SI
+STAGING_INTACTO=SI
+
+===== 8. RESULTADO =====
+DIAGNOSTICO_INDENTACION_AST=COMPLETADO
+CAUSA_EXACTA=RANGO_AST_INICIA_DESPUES_DE_SANGRIA
+CORRECCION=USAR_INICIO_FISICO_DE_LINEA_PARA_REEMPLAZO_DEL_BUCLE
+REGEX_ESTRUCTURAL=NO
+ARCHIVO_REAL_MODIFICADO=NO
+CODIGO_OPERATIVO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+STAGING_MODIFICADO=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+REPORT=/app/edarsahub_ast_range_indent_diagnostic_20260805T035840Z.txt
+COMPACT=/app/edarsahub_ast_range_indent_diagnostic_20260805T035840Z_compact.txt
+DETAIL=/var/tmp/edarsahub_ast_range_indent_diagnostic_20260805T035840Z/diagnostic.json
+SIGUIENTE_ESTADO=RECONSTRUIR_CANDIDATO_CAMBIANDO_SOLO_EL_INICIO_DEL_RANGO_AL_COMIENZO_DE_LINEA
+DIAGNOSTICO_INDENTACION_AST=COMPLETADO
+CAUSA_EXACTA=RANGO_AST_INICIA_DESPUES_DE_SANGRIA
+CORRECCION=USAR_INICIO_FISICO_DE_LINEA_PARA_REEMPLAZO_DEL_BUCLE
+REGEX_ESTRUCTURAL=NO
+ARCHIVO_REAL_MODIFICADO=NO
+CODIGO_OPERATIVO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+STAGING_MODIFICADO=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+REPORT=/app/edarsahub_ast_range_indent_diagnostic_20260805T035840Z.txt
+COMPACT=/app/edarsahub_ast_range_indent_diagnostic_20260805T035840Z_compact.txt
+DETAIL=/var/tmp/edarsahub_ast_range_indent_diagnostic_20260805T035840Z/diagnostic.json
+SIGUIENTE_ESTADO=RECONSTRUIR_CANDIDATO_CAMBIANDO_SOLO_EL_INICIO_DEL_RANGO_AL_COMIENZO_DE_LINEA

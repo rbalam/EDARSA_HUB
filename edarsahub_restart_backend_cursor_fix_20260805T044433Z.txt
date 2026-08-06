@@ -1,0 +1,217 @@
+===== 1. CONTROL DEL REPOSITORIO =====
+RAMA=Edarsahub_Desarrollo
+HEAD=8c29ad3553b39f73c3732cc5293fccc8b193b70c
+TARGET_SHA=5425286f02c70751191d7d31be96f679ed491991835cbf1dbc0b04b2bc4ceed1
+STAGING:
+VACIO
+CAMBIOS_TRACKED:
+VACIO
+STATUS_TARGET:
+LIMPIO
+ARCHIVOS_NO_RASTREADOS=198
+CONTROL_REPOSITORIO=PASS
+
+===== 2. CONFIRMAR SINCRONIA CON REMOTO =====
+From https://github.com/rbalam/EDARSA_HUB
+ * branch              Edarsahub_Desarrollo -> FETCH_HEAD
+REMOTE_HEAD=8c29ad3553b39f73c3732cc5293fccc8b193b70c
+COMMITS_AHEAD=0
+COMMITS_BEHIND=0
+LOCAL_REMOTO_SINCRONIZADOS=SI
+
+===== 3. VALIDAR CONTRATO AST ANTES DEL REINICIO =====
+_sync_metas_comerciales|CURSORS_AS_DICT=1|BARE_RAISES=1|CURSOR_EXECUTES=2
+_sync_ticket_perfecto|CURSORS_AS_DICT=1|BARE_RAISES=1|CURSOR_EXECUTES=2
+_sync_mesas|CURSORS_AS_DICT=1|BARE_RAISES=1|CURSOR_EXECUTES=2
+_sync_pax_detalle|CURSORS_AS_DICT=1|BARE_RAISES=1|CURSOR_EXECUTES=2
+LIST_POS_RUNTIME_CONTEXTS_CALLS=1
+VALIDACION_AST_PRE_RESTART=PASS
+CURSORES_AS_DICT=4
+EXCEPCIONES_PROPAGADAS=4
+CURSOR_EXECUTES_TOTAL=8
+RESOLVER_CANONICO=SI
+
+===== 4. CAPTURAR ESTADO PREVIO DEL BACKEND =====
+backend                          RUNNING   pid 49, uptime 0:12:41
+     49 Wed Aug  5 04:31:52 2026     761 /root/.venv/bin/python /root/.venv/bin/uvicorn server:app --host 0.0.0.0 --port 8001 --workers 1
+STATUS_ANTES=backend                          RUNNING   pid 49, uptime 0:12:41
+PID_ANTES=49
+
+===== 5. REINICIO CONTROLADO DEL BACKEND =====
+backend: stopped
+backend: started
+RESTART_REQUEST_UTC=2026-08-05T04:44:33Z
+RESTART_REQUEST_EPOCH=1785905073
+ATTEMPT=1|backend                          RUNNING   pid 14047, uptime 0:00:01
+  14047 Wed Aug  5 04:44:35 2026       1 /root/.venv/bin/python /root/.venv/bin/uvicorn server:app --host 0.0.0.0 --port 8001 --workers 1
+STATUS_DESPUES=backend                          RUNNING   pid 14047, uptime 0:00:01
+PID_DESPUES=14047
+PROCESS_START_EPOCH=1785905075
+INICIO_MINIMO_ACEPTADO=1785905068
+TOLERANCIA_SEGUNDOS=5
+PID_CAMBIO=SI
+PROCESO_POST_RESTART=SI
+REINICIO_BACKEND_CONTROLADO=PASS
+
+===== 6. VALIDAR HEALTH =====
+ATTEMPT=1|HTTP_CODE=000
+ATTEMPT=2|HTTP_CODE=000
+ATTEMPT=3|HTTP_CODE=000
+ATTEMPT=4|HTTP_CODE=000
+ATTEMPT=5|HTTP_CODE=000
+ATTEMPT=6|HTTP_CODE=000
+ATTEMPT=7|HTTP_CODE=000
+ATTEMPT=8|HTTP_CODE=000
+ATTEMPT=9|HTTP_CODE=000
+ATTEMPT=10|HTTP_CODE=000
+ATTEMPT=11|HTTP_CODE=000
+ATTEMPT=12|HTTP_CODE=200
+HEALTH_URL=http://127.0.0.1:8001/api/health
+HTTP_CODE=200
+HEALTH_BODY:
+{"status":"operativo","sistema":"EDARSA HUB","version":"1.0"}HEALTH_JSON=PASS
+HEALTH_STATUS=operativo
+HEALTH_BACKEND=PASS
+
+===== 7. VALIDAR IMPORT POST-RESTART =====
+_sync_metas_comerciales|PARAMETERS=['self', 'contexts']
+_sync_ticket_perfecto|PARAMETERS=['self', 'contexts']
+_sync_mesas|PARAMETERS=['self', 'contexts']
+_sync_pax_detalle|PARAMETERS=['self', 'contexts']
+CONTEXTOS_TOTAL=5
+CONTEXT|unidad_codigo=130MID|unidad_nombre=130° MERIDA|server_id=a5547321-1139-4d2b-9d53-182ca737b6b6|sucursal_origen_id=|system_type=SOFTRESTAURANT
+CONTEXT|unidad_codigo=CIENFUEGOS|unidad_nombre=CIENFUEGOS|server_id=6d053c22-523e-48c0-b72b-96081e2d781b|sucursal_origen_id=|system_type=SOFTRESTAURANT
+CONTEXT|unidad_codigo=ESTELAR|unidad_nombre=LA ESTELAR|server_id=a5ff0e25-f029-43db-b634-d4ac814c904f|sucursal_origen_id=|system_type=SOFTRESTAURANT
+CONTEXT|unidad_codigo=130QRO|unidad_nombre=130° QUERETARO|server_id=1b230a06-ffaf-4c70-bd27-b1be3579dea6|sucursal_origen_id=0021|system_type=MANAGEMENTPRO
+CONTEXT|unidad_codigo=ORIGEN|unidad_nombre=ORIGEN|server_id=1b230a06-ffaf-4c70-bd27-b1be3579dea6|sucursal_origen_id=0023|system_type=MANAGEMENTPRO
+JOB_CLASS=SyncComercialEndpointsJob
+JOB_ID=sync_comercial_endpoints
+RESOLVER=list_pos_runtime_contexts
+CONTEXT_TYPE=PosRuntimeContext
+IMPORT_JOB_POST_RESTART=PASS
+CONTEXTOS_CANONICOS=PASS
+JOB_INSTANCIADO=NO
+JOB_EJECUTADO=NO
+POS_CONECTADO=NO
+
+===== 8. REVISAR LOGS POST-RESTART =====
+CRITICAL_PATTERNS_FOUND=0
+LOGS_BACKEND=PASS
+
+===== 9. CONTROL FINAL DE INMUTABILIDAD =====
+HEAD_DESPUES=8c29ad3553b39f73c3732cc5293fccc8b193b70c
+TARGET_SHA_DESPUES=5425286f02c70751191d7d31be96f679ed491991835cbf1dbc0b04b2bc4ceed1
+STAGING_DESPUES:
+VACIO
+CAMBIOS_TRACKED_DESPUES:
+VACIO
+STATUS_TARGET_DESPUES:
+LIMPIO
+REPOSITORIO_TRACKED_INTACTO=SI
+UNTRACKED_PRESERVADOS=SI
+
+===== 10. RESULTADO =====
+REINICIO_BACKEND_CURSOR_FIX=PASS
+RAMA=Edarsahub_Desarrollo
+HEAD=8c29ad3553b39f73c3732cc5293fccc8b193b70c
+REMOTE_HEAD=8c29ad3553b39f73c3732cc5293fccc8b193b70c
+LOCAL_REMOTO_SINCRONIZADOS=SI
+TARGET=backend/core/scheduler/jobs/sync_comercial_endpoints_job.py
+TARGET_SHA=5425286f02c70751191d7d31be96f679ed491991835cbf1dbc0b04b2bc4ceed1
+PID_ANTES=49
+PID_DESPUES=14047
+PID_CAMBIO=SI
+PROCESO_POST_RESTART=SI
+BACKEND_RUNNING=SI
+HEALTH_URL=http://127.0.0.1:8001/api/health
+HEALTH_HTTP_CODE=200
+HEALTH_BACKEND=PASS
+IMPORT_JOB_POST_RESTART=PASS
+CONTEXTOS_CANONICOS=PASS
+CONTEXTOS_TOTAL=5
+RESOLVER_CANONICO=list_pos_runtime_contexts
+CURSORES_AS_DICT=4
+EXCEPCIONES_PROPAGADAS=4
+LOGS_BACKEND=PASS
+CRITICAL_PATTERNS_FOUND=0
+BACKEND_REINICIADO=SI
+JOB_INSTANCIADO=NO
+JOB_EJECUTADO=NO
+POS_CONECTADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+CODIGO_MODIFICADO=NO
+STAGING_MODIFICADO=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+REPOSITORIO_TRACKED_INTACTO=SI
+ARCHIVOS_NO_RASTREADOS=198
+UNTRACKED_PRESERVADOS=SI
+STATUS_BEFORE=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/supervisor_status_before.txt
+STATUS_AFTER=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/supervisor_status_after.txt
+PROCESS_BEFORE=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/process_before.txt
+PROCESS_AFTER=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/process_after.txt
+HEALTH_ATTEMPTS=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/health_attempts.txt
+HEALTH_BODY=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/health_body.txt
+IMPORT_REPORT=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/job_import_validation.txt
+AST_REPORT=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/job_ast_validation.txt
+BACKEND_LOGS=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/backend_logs_after_restart.txt
+LOG_ANALYSIS=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/log_analysis.txt
+UNTRACKED_LIST=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/untracked_files.txt
+REPORT=/app/edarsahub_restart_backend_cursor_fix_20260805T044433Z.txt
+COMPACT=/app/edarsahub_restart_backend_cursor_fix_20260805T044433Z_compact.txt
+SIGUIENTE_ESTADO=PREPARAR_BASELINE_SQL_Y_EJECUCION_CONTROLADA_DEL_JOB_CON_VALIDACION_POSTERIOR
+REINICIO_BACKEND_CURSOR_FIX=PASS
+RAMA=Edarsahub_Desarrollo
+HEAD=8c29ad3553b39f73c3732cc5293fccc8b193b70c
+REMOTE_HEAD=8c29ad3553b39f73c3732cc5293fccc8b193b70c
+LOCAL_REMOTO_SINCRONIZADOS=SI
+TARGET=backend/core/scheduler/jobs/sync_comercial_endpoints_job.py
+TARGET_SHA=5425286f02c70751191d7d31be96f679ed491991835cbf1dbc0b04b2bc4ceed1
+PID_ANTES=49
+PID_DESPUES=14047
+PID_CAMBIO=SI
+PROCESO_POST_RESTART=SI
+BACKEND_RUNNING=SI
+HEALTH_URL=http://127.0.0.1:8001/api/health
+HEALTH_HTTP_CODE=200
+HEALTH_BACKEND=PASS
+IMPORT_JOB_POST_RESTART=PASS
+CONTEXTOS_CANONICOS=PASS
+CONTEXTOS_TOTAL=5
+RESOLVER_CANONICO=list_pos_runtime_contexts
+CURSORES_AS_DICT=4
+EXCEPCIONES_PROPAGADAS=4
+LOGS_BACKEND=PASS
+CRITICAL_PATTERNS_FOUND=0
+BACKEND_REINICIADO=SI
+JOB_INSTANCIADO=NO
+JOB_EJECUTADO=NO
+POS_CONECTADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+CODIGO_MODIFICADO=NO
+STAGING_MODIFICADO=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+REPOSITORIO_TRACKED_INTACTO=SI
+ARCHIVOS_NO_RASTREADOS=198
+UNTRACKED_PRESERVADOS=SI
+STATUS_BEFORE=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/supervisor_status_before.txt
+STATUS_AFTER=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/supervisor_status_after.txt
+PROCESS_BEFORE=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/process_before.txt
+PROCESS_AFTER=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/process_after.txt
+HEALTH_ATTEMPTS=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/health_attempts.txt
+HEALTH_BODY=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/health_body.txt
+IMPORT_REPORT=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/job_import_validation.txt
+AST_REPORT=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/job_ast_validation.txt
+BACKEND_LOGS=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/backend_logs_after_restart.txt
+LOG_ANALYSIS=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/log_analysis.txt
+UNTRACKED_LIST=/var/tmp/edarsahub_restart_backend_cursor_fix_20260805T044433Z/untracked_files.txt
+REPORT=/app/edarsahub_restart_backend_cursor_fix_20260805T044433Z.txt
+COMPACT=/app/edarsahub_restart_backend_cursor_fix_20260805T044433Z_compact.txt
+SIGUIENTE_ESTADO=PREPARAR_BASELINE_SQL_Y_EJECUCION_CONTROLADA_DEL_JOB_CON_VALIDACION_POSTERIOR

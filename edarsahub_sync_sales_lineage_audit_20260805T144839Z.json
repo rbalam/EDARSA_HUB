@@ -1,0 +1,751 @@
+{
+  "identity": {
+    "database_name": "EDARSAHUB",
+    "login_name": "HRLectura",
+    "database_user": "HRLectura"
+  },
+  "tables": {
+    "dbo.Sync_Sales": {
+      "columns": [
+        {
+          "column_id": 1,
+          "column_name": "id",
+          "data_type": "varchar",
+          "max_length": 64,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false
+        },
+        {
+          "column_id": 2,
+          "column_name": "branch",
+          "data_type": "nvarchar",
+          "max_length": 200,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false
+        },
+        {
+          "column_id": 3,
+          "column_name": "customer_id",
+          "data_type": "varchar",
+          "max_length": 64,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 4,
+          "column_name": "items",
+          "data_type": "nvarchar",
+          "max_length": -1,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 5,
+          "column_name": "total",
+          "data_type": "numeric",
+          "max_length": 9,
+          "precision": 18,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false
+        },
+        {
+          "column_id": 6,
+          "column_name": "currency",
+          "data_type": "varchar",
+          "max_length": 3,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 7,
+          "column_name": "status",
+          "data_type": "varchar",
+          "max_length": 32,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 8,
+          "column_name": "created_at",
+          "data_type": "datetime",
+          "max_length": 8,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 9,
+          "column_name": "last_modified",
+          "data_type": "datetime",
+          "max_length": 8,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 10,
+          "column_name": "sync_hash",
+          "data_type": "varchar",
+          "max_length": 64,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 11,
+          "column_name": "IdTransaccion",
+          "data_type": "varchar",
+          "max_length": 64,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 12,
+          "column_name": "UnidadNegocio",
+          "data_type": "nvarchar",
+          "max_length": 200,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 13,
+          "column_name": "MontoTotal",
+          "data_type": "numeric",
+          "max_length": 9,
+          "precision": 18,
+          "scale": 2,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 14,
+          "column_name": "Pax",
+          "data_type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 15,
+          "column_name": "NumeroTicket",
+          "data_type": "varchar",
+          "max_length": 64,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 16,
+          "column_name": "FechaHora",
+          "data_type": "datetime",
+          "max_length": 8,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 17,
+          "column_name": "TipoServicioID",
+          "data_type": "nvarchar",
+          "max_length": 40,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 18,
+          "column_name": "TipoServicio",
+          "data_type": "nvarchar",
+          "max_length": 240,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        }
+      ],
+      "indexes": [
+        {
+          "index_name": "PK__Sync_Sal__3213E83F7FC0676D",
+          "is_unique": true,
+          "is_primary_key": true,
+          "type_desc": "CLUSTERED",
+          "key_ordinal": 1,
+          "column_name": "id"
+        },
+        {
+          "index_name": "IX_SyncIndex_Sales_Branch",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 1,
+          "column_name": "branch"
+        },
+        {
+          "index_name": "IX_SyncIndex_Sales_CreatedAt",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 1,
+          "column_name": "created_at"
+        },
+        {
+          "index_name": "IX_SyncSales_Unidad_Fecha",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 0,
+          "column_name": "MontoTotal"
+        },
+        {
+          "index_name": "IX_SyncSales_Unidad_Fecha",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 0,
+          "column_name": "Pax"
+        },
+        {
+          "index_name": "IX_SyncSales_Unidad_Fecha",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 0,
+          "column_name": "NumeroTicket"
+        },
+        {
+          "index_name": "IX_SyncSales_Unidad_Fecha",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 0,
+          "column_name": "status"
+        },
+        {
+          "index_name": "IX_SyncSales_Unidad_Fecha",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 1,
+          "column_name": "UnidadNegocio"
+        },
+        {
+          "index_name": "IX_SyncSales_Unidad_Fecha",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 2,
+          "column_name": "FechaHora"
+        },
+        {
+          "index_name": "IX_SyncSales_Unidad_TipoServicio",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 1,
+          "column_name": "UnidadNegocio"
+        },
+        {
+          "index_name": "IX_SyncSales_Unidad_TipoServicio",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 2,
+          "column_name": "TipoServicioID"
+        },
+        {
+          "index_name": "IX_SyncSales_Unidad_Ticket",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 0,
+          "column_name": "FechaHora"
+        },
+        {
+          "index_name": "IX_SyncSales_Unidad_Ticket",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 1,
+          "column_name": "UnidadNegocio"
+        },
+        {
+          "index_name": "IX_SyncSales_Unidad_Ticket",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 2,
+          "column_name": "NumeroTicket"
+        }
+      ],
+      "row_count": 112362,
+      "date_column": null,
+      "date_range": null
+    },
+    "dbo.Comercial_KPIs_Diarios_v2": {
+      "columns": [
+        {
+          "column_id": 1,
+          "column_name": "id",
+          "data_type": "uniqueidentifier",
+          "max_length": 16,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false
+        },
+        {
+          "column_id": 2,
+          "column_name": "unidad_negocio_id",
+          "data_type": "nvarchar",
+          "max_length": 100,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false
+        },
+        {
+          "column_id": 3,
+          "column_name": "unidad_negocio_nombre",
+          "data_type": "nvarchar",
+          "max_length": 200,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false
+        },
+        {
+          "column_id": 4,
+          "column_name": "server_id",
+          "data_type": "nvarchar",
+          "max_length": 100,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false
+        },
+        {
+          "column_id": 5,
+          "column_name": "sucursal_id",
+          "data_type": "nvarchar",
+          "max_length": 100,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false
+        },
+        {
+          "column_id": 6,
+          "column_name": "sucursal_nombre",
+          "data_type": "nvarchar",
+          "max_length": 200,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 7,
+          "column_name": "sistema_origen",
+          "data_type": "nvarchar",
+          "max_length": 40,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false
+        },
+        {
+          "column_id": 8,
+          "column_name": "fecha_operacion",
+          "data_type": "date",
+          "max_length": 3,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false
+        },
+        {
+          "column_id": 9,
+          "column_name": "anio",
+          "data_type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false
+        },
+        {
+          "column_id": 10,
+          "column_name": "mes",
+          "data_type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false
+        },
+        {
+          "column_id": 11,
+          "column_name": "dia",
+          "data_type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false
+        },
+        {
+          "column_id": 12,
+          "column_name": "ventas_total",
+          "data_type": "decimal",
+          "max_length": 9,
+          "precision": 18,
+          "scale": 2,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 13,
+          "column_name": "ventas_sin_propina",
+          "data_type": "decimal",
+          "max_length": 9,
+          "precision": 18,
+          "scale": 2,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 14,
+          "column_name": "propinas_total",
+          "data_type": "decimal",
+          "max_length": 9,
+          "precision": 18,
+          "scale": 2,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 15,
+          "column_name": "tickets_total",
+          "data_type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 16,
+          "column_name": "pax_total",
+          "data_type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 17,
+          "column_name": "ticket_promedio",
+          "data_type": "decimal",
+          "max_length": 9,
+          "precision": 18,
+          "scale": 2,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 18,
+          "column_name": "pax_promedio",
+          "data_type": "decimal",
+          "max_length": 9,
+          "precision": 18,
+          "scale": 2,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 19,
+          "column_name": "ventas_cerradas",
+          "data_type": "decimal",
+          "max_length": 9,
+          "precision": 18,
+          "scale": 2,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 20,
+          "column_name": "ventas_abiertas",
+          "data_type": "decimal",
+          "max_length": 9,
+          "precision": 18,
+          "scale": 2,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 21,
+          "column_name": "total_estimado_dia",
+          "data_type": "decimal",
+          "max_length": 9,
+          "precision": 18,
+          "scale": 2,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 22,
+          "column_name": "es_venta_abierta",
+          "data_type": "bit",
+          "max_length": 1,
+          "precision": 1,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 23,
+          "column_name": "es_corte_cerrado",
+          "data_type": "bit",
+          "max_length": 1,
+          "precision": 1,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 24,
+          "column_name": "es_demo",
+          "data_type": "bit",
+          "max_length": 1,
+          "precision": 1,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 25,
+          "column_name": "activo",
+          "data_type": "bit",
+          "max_length": 1,
+          "precision": 1,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 26,
+          "column_name": "fuente_original",
+          "data_type": "nvarchar",
+          "max_length": 100,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false
+        },
+        {
+          "column_id": 27,
+          "column_name": "id_origen",
+          "data_type": "nvarchar",
+          "max_length": 200,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 28,
+          "column_name": "hash_origen",
+          "data_type": "nvarchar",
+          "max_length": 128,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 29,
+          "column_name": "sync_run_id",
+          "data_type": "nvarchar",
+          "max_length": 100,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 30,
+          "column_name": "fecha_sincronizacion",
+          "data_type": "datetime2",
+          "max_length": 8,
+          "precision": 27,
+          "scale": 7,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 31,
+          "column_name": "fecha_alta",
+          "data_type": "datetime2",
+          "max_length": 8,
+          "precision": 27,
+          "scale": 7,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 32,
+          "column_name": "fecha_ultima_actualizacion",
+          "data_type": "datetime2",
+          "max_length": 8,
+          "precision": 27,
+          "scale": 7,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 33,
+          "column_name": "version",
+          "data_type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        },
+        {
+          "column_id": 34,
+          "column_name": "unidad_negocio_pk",
+          "data_type": "uniqueidentifier",
+          "max_length": 16,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false
+        }
+      ],
+      "indexes": [
+        {
+          "index_name": "PK__Comercia__3213E83F6AD04994",
+          "is_unique": true,
+          "is_primary_key": true,
+          "type_desc": "CLUSTERED",
+          "key_ordinal": 1,
+          "column_name": "id"
+        },
+        {
+          "index_name": "UQ_KPIs_Diarios_v2",
+          "is_unique": true,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 1,
+          "column_name": "unidad_negocio_id"
+        },
+        {
+          "index_name": "UQ_KPIs_Diarios_v2",
+          "is_unique": true,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 2,
+          "column_name": "sucursal_id"
+        },
+        {
+          "index_name": "UQ_KPIs_Diarios_v2",
+          "is_unique": true,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 3,
+          "column_name": "fecha_operacion"
+        },
+        {
+          "index_name": "IX_KPIs_Diarios_v2_Fecha",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 1,
+          "column_name": "fecha_operacion"
+        },
+        {
+          "index_name": "IX_KPIs_Diarios_v2_Unidad",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 1,
+          "column_name": "unidad_negocio_id"
+        },
+        {
+          "index_name": "IX_KPIs_Diarios_v2_AnioMes",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 1,
+          "column_name": "anio"
+        },
+        {
+          "index_name": "IX_KPIs_Diarios_v2_AnioMes",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 2,
+          "column_name": "mes"
+        },
+        {
+          "index_name": "IX_KPIs_Diarios_v2_Hash",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 1,
+          "column_name": "hash_origen"
+        },
+        {
+          "index_name": "IX_KPIs_Diarios_v2_UnidadPK_Fecha",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 1,
+          "column_name": "unidad_negocio_pk"
+        },
+        {
+          "index_name": "IX_KPIs_Diarios_v2_UnidadPK_Fecha",
+          "is_unique": false,
+          "is_primary_key": false,
+          "type_desc": "NONCLUSTERED",
+          "key_ordinal": 2,
+          "column_name": "fecha_operacion"
+        }
+      ],
+      "row_count": 9660,
+      "date_column": "fecha_operacion",
+      "date_range": {
+        "min_date": "2016-06-14",
+        "max_date": "2026-08-05"
+      }
+    }
+  },
+  "references_file": "/app/edarsahub_sync_sales_runtime_refs_20260805T144839Z.txt"
+}

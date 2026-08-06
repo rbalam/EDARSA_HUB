@@ -1,0 +1,110 @@
+===== 1. CONTROL PREVIO =====
+RAMA=Edarsahub_Desarrollo
+HEAD=3dfba587c0b20a0a23537d12f8258dc0076206b4
+TARGET_SHA_ANTES=cb2620a2a008c003f5bbad3cac2f8deb83e6158d176bbd11913aab8ec6ef8cee
+STAGING_ANTES:
+VACIO
+STATUS_TARGET_ANTES:
+LIMPIO
+BACKUP=/var/tmp/edarsahub_apply_sync_context_v2_20260805T040412Z/sync_comercial_endpoints_job.before.py
+CONTROL_PREVIO=PASS
+
+===== 2. NORMALIZAR MENSAJE LOGGER MEDIANTE AST =====
+CONSTANTES_EXACTAS_OLD=0
+FRAGMENTOS_FSTRING_OLD=1
+FRAGMENTO_1|LINE=110|VALUE='] No hay servidores activos'
+FINAL_CANDIDATE=/var/tmp/edarsahub_apply_sync_context_v2_20260805T040412Z/sync_comercial_endpoints_job.final.py
+MENSAJES_CANONICOS=2
+TRANSFORMACION_LOG=AST_RANGO_EXACTO
+REGEX_ESTRUCTURAL=NO
+MENSAJE_LOG_CANONICO=SI
+CANDIDATO_FINAL=PASS
+
+===== 3. VALIDACION ESTRUCTURAL FINAL =====
+_get_active_servers_PRESENTE=NO
+_get_sucursales_por_server_PRESENTE=NO
+_sync_metas_comerciales|ARG=contexts|ANNOTATION=List[PosRuntimeContext]|CONTEXT_LOOPS=1|SUC_ADAPTERS=1
+_sync_ticket_perfecto|ARG=contexts|ANNOTATION=List[PosRuntimeContext]|CONTEXT_LOOPS=1|SUC_ADAPTERS=1
+_sync_mesas|ARG=contexts|ANNOTATION=List[PosRuntimeContext]|CONTEXT_LOOPS=1|SUC_ADAPTERS=1
+_sync_pax_detalle|ARG=contexts|ANNOTATION=List[PosRuntimeContext]|CONTEXT_LOOPS=1|SUC_ADAPTERS=1
+LIST_POS_RUNTIME_CONTEXTS_CALLS=1
+MENSAJES_LEGACY=0
+MENSAJES_CANONICOS=2
+IMPORT_CANONICO=SI
+VALIDACION_ESTRUCTURAL_FINAL=PASS
+SYNCS_CANONICOS=4
+METODOS_LEGACY=0
+MENSAJE_LOG_CANONICO=SI
+
+===== 4. APLICAR CANDIDATO =====
+FINAL_SHA=efc8c3cc5b02a4c718de1a191207d1916e92697e30138447f0c3a2ac1a433c0c
+TARGET_SHA_APLICADO=efc8c3cc5b02a4c718de1a191207d1916e92697e30138447f0c3a2ac1a433c0c
+APLICACION_CANDIDATO=PASS
+
+===== 5. PREPARAR PRUEBA CONTRA ARCHIVO REAL =====
+TEST_FILE=/var/tmp/edarsahub_apply_sync_context_v2_20260805T040412Z/test_applied_contract.py
+TARGET_PRUEBA=/app/backend/core/scheduler/jobs/sync_comercial_endpoints_job.py
+TRANSFORMACION_TEST=AST_RANGO_EXACTO
+REGEX_ESTRUCTURAL=NO
+PRUEBA_APLICADA_PREPARADA=SI
+
+===== 6. EJECUTAR PRUEBAS POST-APLICACION =====
+[CONTRACT_TEST] No hay contextos POS activos
+TEST_EXECUTE_DISPATCH=PASS
+TEST_EXECUTE_EMPTY=PASS
+TEST__SYNC_METAS_COMERCIALES=PASS|EXECUTIONS=3|SOFT_SUCURSAL=DEFAULT|MPRO_SUCURSAL_1=0021|MPRO_SUCURSAL_2=0023
+TEST__SYNC_TICKET_PERFECTO=PASS|EXECUTIONS=3|SOFT_SUCURSAL=DEFAULT|MPRO_SUCURSAL_1=0021|MPRO_SUCURSAL_2=0023
+TEST__SYNC_MESAS=PASS|EXECUTIONS=3|SOFT_SUCURSAL=DEFAULT|MPRO_SUCURSAL_1=0021|MPRO_SUCURSAL_2=0023
+TEST__SYNC_PAX_DETALLE=PASS|EXECUTIONS=3|SOFT_SUCURSAL=DEFAULT|MPRO_SUCURSAL_1=0021|MPRO_SUCURSAL_2=0023
+CONEXION_SQL_REAL=NO
+CONEXION_POS_REAL=NO
+DATOS_MODIFICADOS=NO
+PRUEBAS_CONTRATO=PASS
+PRUEBAS_POST_APLICACION=PASS
+
+===== 7. VALIDAR DIFF REAL =====
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:190: trailing whitespace.
++                    SELECT 
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:197: trailing whitespace.
++                    WHERE server_id = %s 
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:220: trailing whitespace.
++                        IF NOT EXISTS (SELECT 1 FROM Sync_Metas_Comerciales 
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:222: trailing whitespace.
++                            INSERT INTO Sync_Metas_Comerciales 
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:224: trailing whitespace.
++                             MetaVentaBruta, VentaBrutaActual, VentaNetaActual, 
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:292: trailing whitespace.
++                    SELECT 
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:299: trailing whitespace.
++                    WHERE server_id = %s 
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:313: trailing whitespace.
++                        IF NOT EXISTS (SELECT 1 FROM Sync_Ticket_Perfecto 
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:317: trailing whitespace.
++                             TotalCuentas, TotalComensales, VentaTotal, 
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:364: trailing whitespace.
++                    SELECT 
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:383: trailing whitespace.
++                        IF NOT EXISTS (SELECT 1 FROM Sync_Mesas 
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:384: trailing whitespace.
++                                      WHERE ServerID = %s AND SucursalID = %s 
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:393: trailing whitespace.
++                        hoy, 'TOTAL', row["TotalCuentas"], 
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:434: trailing whitespace.
++                    SELECT 
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:453: trailing whitespace.
++                        IF NOT EXISTS (SELECT 1 FROM Sync_PAX_Detalle 
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:456: trailing whitespace.
++                            (PAXRegistroID, ServerID, SucursalID, SucursalNombre, 
+backend/core/scheduler/jobs/sync_comercial_endpoints_job.py:457: trailing whitespace.
++                             FechaOperacion, FechaHora, NumeroComensales, 
+ERROR=GIT_DIFF_CHECK_FALLO
+ROLLBACK_ARCHIVO=EJECUTADO
+APLICACION_CANDIDATO=FALLO
+REGEX_ESTRUCTURAL=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+REPORT=/app/edarsahub_apply_sync_context_v2_20260805T040412Z.txt
+TERMINAL_PERMANECE_ABIERTA=SI

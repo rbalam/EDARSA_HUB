@@ -1,0 +1,493 @@
+===== 1. GUARDRAILS =====
+RAMA=Edarsahub_Desarrollo
+HEAD=6f82b39fead3a73667241e88e580f0ea8faf51e8
+REMOTE_HEAD=6f82b39fead3a73667241e88e580f0ea8faf51e8
+CONTROL=PASS
+
+===== 2. AUDITAR LINAJE EN REPOSITORIO =====
+FILES_MATCHED=1159
+SCHEDULE_CANDIDATES=153
+TIMEZONE_CANDIDATES=241
+TOLERANCE_CANDIDATES=38
+SCHEMA_CANDIDATES=74
+PARSE_ERRORS=0
+CANDIDATE=backend/modules/finanzas/propinas_tpv/service_sql.py|CLASS=REFERENCE|SCORE=20|TABLES=core,datetime,typing|COLUMNS=empresa_id,timezone|FUNCTIONS=sincronizar_propinas,obtener_propinas,registrar_pago,obtener_config,crear_config,actualizar_config
+HIT=backend/modules/finanzas/propinas_tpv/service_sql.py:28|from datetime import datetime, timezone
+HIT=backend/modules/finanzas/propinas_tpv/service_sql.py:237|'sucursal_id': server_name,
+HIT=backend/modules/finanzas/propinas_tpv/service_sql.py:241|'turno_id': corte.get('turno_id'),
+HIT=backend/modules/finanzas/propinas_tpv/service_sql.py:244|'turno_id_origen': corte.get('turno_id'),  # idturno
+HIT=backend/modules/finanzas/propinas_tpv/service_sql.py:247|'sucursal_nombre': server_name,
+HIT=backend/modules/finanzas/propinas_tpv/service_sql.py:248|'empresa_id': server.get('database'),
+HIT=backend/modules/finanzas/propinas_tpv/service_sql.py:261|'formula_aplicada': 'SUM(cheques.propinatarjeta) por turno/corte',
+HIT=backend/modules/finanzas/propinas_tpv/service_sql.py:262|'fecha_sincronizacion': datetime.now(timezone.utc),
+HIT=backend/modules/finanzas/propinas_tpv/service_sql.py:333|sucursal_id: Optional[str] = None,
+HIT=backend/modules/finanzas/propinas_tpv/service_sql.py:350|fecha_inicio, fecha_fin, server_id, sucursal_id, estado, page, limit
+CANDIDATE=backend/modules/finanzas/propinas_tpv/sql_repository.py|CLASS=REPOSITORY|SCORE=20|TABLES=INFORMATION_SCHEMA,SET,core,datetime,propinas_tpv_config,propinas_tpv_control,propinas_tpv_historial,typing|COLUMNS=empresa_id,timezone|FUNCTIONS=upsert_propina,obtener_propinas,obtener_propina_por_id,registrar_pago,obtener_config_vigente,_config_default,_format_config,_format_propinas_result,listar_configs,crear_config,actualizar_config,_format_config,_get_default_config
+HIT=backend/modules/finanzas/propinas_tpv/sql_repository.py:29|from datetime import datetime, date, timezone
+HIT=backend/modules/finanzas/propinas_tpv/sql_repository.py:172|(server_id, sucursal_id, folio_corte, fecha_corte)
+HIT=backend/modules/finanzas/propinas_tpv/sql_repository.py:189|sucursal_id = self._escape_sql(propina_data['sucursal_id'])
+HIT=backend/modules/finanzas/propinas_tpv/sql_repository.py:201|{sucursal_id} AS sucursal_id,
+HIT=backend/modules/finanzas/propinas_tpv/sql_repository.py:206|AND target.sucursal_id = source.sucursal_id
+HIT=backend/modules/finanzas/propinas_tpv/sql_repository.py:214|sucursal_nombre = {self._escape_sql(propina_data.get('sucursal_nombre'))},
+HIT=backend/modules/finanzas/propinas_tpv/sql_repository.py:215|empresa_id = {self._escape_sql(propina_data.get('empresa_id'))},
+HIT=backend/modules/finanzas/propinas_tpv/sql_repository.py:225|turno_id_origen = {self._escape_sql(propina_data.get('turno_id_origen'))},
+HIT=backend/modules/finanzas/propinas_tpv/sql_repository.py:241|id, server_id, sucursal_id, folio_corte, fecha_corte,
+HIT=backend/modules/finanzas/propinas_tpv/sql_repository.py:242|server_name, system_type, sucursal_nombre, empresa_id, estacion_id,
+CANDIDATE=backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql|CLASS=SCHEMA_OR_MIGRATION|SCORE=19|TABLES=Cat_Familias,Comercial,Comercial_CompetidoresCatalogo,Comercial_CompetidoresUnidad,Fact_Ventas_Consolidadas,Products,RH_Colaboradores_Expediente,Sync_Sales,View_Sync_Sales_Detalle,dbo,dbo.Sync_Sales|COLUMNS=cruza_medianoche,empresa_id,fecha_operacion,hora_fin,hora_inicio,timezone,unidad_negocio_id,zonahoraria|FUNCTIONS=NINGUNA
+HIT=backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql:66|[Sucursal] VARCHAR(120) NULL,
+HIT=backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql:250|[SucursalSistema] VARCHAR(120) NULL,
+HIT=backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql:615|[Sucursal] VARCHAR(120) NULL,
+HIT=backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql:656|[unidad_negocio_id] VARCHAR(50) NOT NULL,
+HIT=backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql:657|[unidad_negocio_nombre] VARCHAR(100) NULL,
+HIT=backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql:659|[sucursal] VARCHAR(100) NULL,
+HIT=backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql:686|[sucursal_id] NVARCHAR(20) NULL,
+HIT=backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql:689|[hora_inicio] TIME NULL,
+HIT=backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql:690|[hora_fin] TIME NULL,
+HIT=backend/static/EDARSAHUB_SCHEMA_COMPLETO.sql:706|[sucursal_id] NVARCHAR(20) NULL,
+CANDIDATE=backend/core/utils/operational_window.py|CLASS=OPERATIONAL_ENGINE|SCORE=18|TABLES=Sistema_TurnosOperativosUnidad,Unidades_Negocio,core,dataclasses,datetime,typing,zoneinfo|COLUMNS=cruza_medianoche,fecha_operacion,hora_fin,hora_inicio,timezone,tolerancia_fin_minutos,tolerancia_inicio_minutos,unidad_negocio_id,unidad_negocio_pk|FUNCTIONS=_resolver_unidad_turnos_id,_get_turnos_unidad,clear_turnos_cache,_hora_en_rango,get_operational_window,get_fecha_operacion,get_turno_operativo,get_fecha_operacion_now,is_within_operational_hours,debug_operational_window,get_operational_datetime_range_for_fecha_operacion,get_query_date_range,get_sync_operational_window,get_operational_window_legacy,_extraer_codigo
+HIT=backend/core/utils/operational_window.py:8|FASE P0.3 (2026-05-20): Refactorización completa para soportar turnos operativos.
+HIT=backend/core/utils/operational_window.py:11|- La FechaOperacion se calcula según la configuración de turnos por unidad
+HIT=backend/core/utils/operational_window.py:12|- Turnos soportados: DESAYUNO, COMIDA, CENA
+HIT=backend/core/utils/operational_window.py:15|- Soporta cruza_medianoche
+HIT=backend/core/utils/operational_window.py:16|- Soporta tolerancias de inicio/fin
+HIT=backend/core/utils/operational_window.py:20|"unidad_negocio_pk": str,
+HIT=backend/core/utils/operational_window.py:21|"fecha_operacion": date,
+HIT=backend/core/utils/operational_window.py:22|"turno_operativo_codigo": str,  # DESAYUNO, COMIDA, CENA, FUERA_HORARIO
+HIT=backend/core/utils/operational_window.py:25|"timezone": "America/Mexico_City",
+HIT=backend/core/utils/operational_window.py:26|"metodo_fecha_operacion": str,  # TURNO_ACTIVO, PRIMER_TURNO_DIA, ULTIMO_TURNO_DIA_ANTERIOR
+CANDIDATE=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py|CLASS=REFERENCE|SCORE=17|TABLES=Comanda,Comanda_Detalle,Venta_Encabezado,cheques,core,datetime,dbo.Comercial_Ventas_Dia_Abiertas_v2,dbo.Servidores_Conexiones,dbo.Sync_Control_Ejecuciones,decimal,modules,tempcheques,typing,zoneinfo|COLUMNS=cruza_medianoche,empresa_id,fecha_operacion,hora_fin,hora_inicio,timezone,unidad_negocio_id,unidad_negocio_pk|FUNCTIONS=_coerce_mx_datetime,_acquire_sync_lock_sync,_release_sync_lock_sync,_get_api_local_config,_get_existing_ventas_dia,_get_unidades_from_edarsahub,execute_sync_comercial_abiertas_v2
+HIT=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:13|- Integración con EmpresaResolver para resolución canónica
+HIT=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:15|- ORIGEN usa EmpresaID=1 + CodigoSucursalSistema=0023
+HIT=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:16|- 130QRO usa EmpresaID=2 + CodigoSucursalSistema=0021
+HIT=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:17|- get_operational_window() para FechaOperacion (NO date.today())
+HIT=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:32|Actualizado: 2026-05-16 (FASE 5D EmpresaResolver)
+HIT=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:40|from datetime import datetime, date, timezone, timedelta
+HIT=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:45|from core.utils.operational_window import (
+HIT=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:46|get_operational_window,
+HIT=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:47|get_operational_window_legacy,
+HIT=backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py:53|# FASE 5D: INTEGRACIÓN CON EmpresaResolver (Mayo 2026)
+CANDIDATE=backend/modules/comercial/routes.py|CLASS=API_OR_ROUTE|SCORE=17|TABLES=Comercial_Ventas_Dia_Abiertas_v2,Producto,Sistema_SucursalServidorMapeo,Sistema_Sucursales,Sync_Metas_Comerciales,Sync_PAX_Detalle,Sync_Precios_Historicos,Sync_Ticket_Perfecto,Sync_Ventas_PorHora,Vendedor,Venta,Venta_Encabezado,cheqdet,cheques,core,datetime,dbo.Sync_Mesas,fastapi,meseros,modules,productos,turnos,typing,vw_Comercial_KPIs_Diarios_v2_Runtime,zoneinfo|COLUMNS=empresa_id,fecha_operacion,hora_fin,timezone,unidad_negocio_id,unidad_negocio_pk|FUNCTIONS=get_ventas_dia_snapshot_from_edarsahub,tablero_ejecutivo,_tablero_ejecutivo_internal,obtener_sucursales,comercial_metas,comercial_ticket_perfecto,comercial_ventas_tiempo,comercial_mesas,comercial_detalle_movimientos,ventas_precios_constantes,comercial_reporte_pax,comercial_dashboard,resolver_codigo_dedup,_agrupar_por_unidad
+HIT=backend/modules/comercial/routes.py:16|║ - GET /comercial/sucursales/{server_id}                                    ║
+HIT=backend/modules/comercial/routes.py:32|- ✅ Endpoints /comercial/sucursales y /comercial/metas migrados (Fase 5B-4A)
+HIT=backend/modules/comercial/routes.py:45|- sumar_ventas_api_local_a_sucursal()
+HIT=backend/modules/comercial/routes.py:50|- get_kpis_mpro_por_sucursal()
+HIT=backend/modules/comercial/routes.py:54|- GET /comercial/sucursales/{server_id} (Fase 5B-4A)
+HIT=backend/modules/comercial/routes.py:72|from datetime import datetime, timedelta, timezone
+HIT=backend/modules/comercial/routes.py:78|get_user_empresas_permitidas,
+HIT=backend/modules/comercial/routes.py:79|get_servers_for_empresas,
+HIT=backend/modules/comercial/routes.py:84|has_empresa_access,
+HIT=backend/modules/comercial/routes.py:118|sumar_ventas_api_local_a_sucursal,
+CANDIDATE=backend/modules/comercial/service.py|CLASS=REFERENCE|SCORE=17|TABLES=Comanda,Comercial_Ventas_Dia_Abiertas_v2,RankedConnections,Servidores_Conexiones,Sistema_Empresas,Sistema_EmpresasServidores,Unidades_Negocio,Venta_Encabezado,core,datetime,dbo.Servidores_Conexiones,fastapi,modules,typing,vw_Comercial_KPIs_Diarios_v2_Runtime,zoneinfo|COLUMNS=empresa_id,fecha_operacion,hora_fin,timezone,unidad_negocio_id,unidad_negocio_pk|FUNCTIONS=_cargar_catalogo_unidades_negocio,obtener_unidad_negocio_edarsahub,_obtener_codigo_canonico_mpro,_mapear_codigo_a_unidad_negocio_pk,_obtener_sucursales_mpro_desde_resolver,_get_kpis_periodo_edarsahub,_get_ventas_abiertas_edarsahub,_obtener_kpis_tablero_desde_edarsahub,_obtener_config_mpro_canonica,procesar_ventas_sucursal,agregar_totales,build_unit_response,obtener_sucursales_servidor,obtener_metas,guardar_metas,get_kpis_softrestaurant,get_kpis_mpro,get_kpis_mpro_por_sucursal,get_kpis_mpro_con_estado,_resolver_unidad_pks_dashboard,resolver_unidad_pks_dashboard,get_dashboard_kpis_from_edarsahub,get_last_valid_snapshot_edarsahub,add_pk
+HIT=backend/modules/comercial/service.py:15|- Migrado: get_kpis_mpro_por_sucursal() desde server.py
+HIT=backend/modules/comercial/service.py:21|- sumar_ventas_api_local_a_sucursal() -> modules/comercial/adapters.py
+HIT=backend/modules/comercial/service.py:36|from datetime import datetime, timezone, timedelta
+HIT=backend/modules/comercial/service.py:46|from modules.comercial.adapters import sumar_ventas_api_local_a_sucursal
+HIT=backend/modules/comercial/service.py:48|from core.server_registry import resolve_unidad_by_server_sucursal
+HIT=backend/modules/comercial/service.py:53|from modules.comercial.queries.mpro import query_ventas_periodo_mpro, query_ventas_por_sucursal_mpro
+HIT=backend/modules/comercial/service.py:58|# FASE 5B: INTEGRACIÓN CON EmpresaResolver (Mayo 2026)
+HIT=backend/modules/comercial/service.py:60|# Importar EmpresaResolver para resolución canónica
+HIT=backend/modules/comercial/service.py:62|from core.empresa_resolver import (
+HIT=backend/modules/comercial/service.py:63|resolve_empresa_by_alias,
+CANDIDATE=backend/modules/manuales_operativos/triggers.py|CLASS=REFERENCE|SCORE=17|TABLES=core,datetime,modules,typing|COLUMNS=empresa_id,timezone|FUNCTIONS=verificar_y_generar_manuales_pendientes,_generar_manual_compras_sync
+HIT=backend/modules/manuales_operativos/triggers.py:128|- Ejecución en scheduler nocturno
+HIT=backend/modules/manuales_operativos/triggers.py:192|from datetime import datetime, timezone
+HIT=backend/modules/manuales_operativos/triggers.py:234|sucursal = proceso.get("sucursal_nombre", "Sin sucursal")
+HIT=backend/modules/manuales_operativos/triggers.py:236|nombre_proceso = f"Auditoría Operativa de Compras - {sucursal} - {almacen}"
+HIT=backend/modules/manuales_operativos/triggers.py:239|f"Validar y auditar el proceso de compras para {sucursal}, "
+HIT=backend/modules/manuales_operativos/triggers.py:246|f"Este proceso cubre la auditoría de compras del período para la sucursal {sucursal}, almacén {almacen}. "
+HIT=backend/modules/manuales_operativos/triggers.py:349|now = datetime.now(timezone.utc)
+HIT=backend/modules/manuales_operativos/triggers.py:356|"empresa_id": proceso.get("empresa_id", proceso.get("server_id", "")),
+HIT=backend/modules/manuales_operativos/triggers.py:357|"empresa_nombre": proceso.get("empresa_nombre", proceso.get("sucursal_nombre", "")),
+HIT=backend/modules/manuales_operativos/triggers.py:358|"sucursal_id": proceso.get("sucursal_id", ""),
+CANDIDATE=backend/modules/sync_historicos/service.py|CLASS=REFERENCE|SCORE=17|TABLES=Venta,cheques,core,cuentas,datetime,decimal,typing|COLUMNS=cruza_medianoche,empresa_id,fecha_operacion,unidad_negocio_id|FUNCTIONS=_calcular_rango_fechas,_obtener_ventas_dia_softrestaurant,_obtener_ventas_dia_mpro,sync_ventas_historicas,_obtener_ventas_por_hora_softrestaurant,_obtener_ventas_por_hora_mpro,sync_ventas_por_hora,sync_ventas_por_dia_semana
+HIT=backend/modules/sync_historicos/service.py:30|from core.utils.operational_window import (
+HIT=backend/modules/sync_historicos/service.py:33|get_sync_operational_window,
+HIT=backend/modules/sync_historicos/service.py:88|fecha_op_hoy, _, _, _ = get_sync_operational_window(
+HIT=backend/modules/sync_historicos/service.py:101|fecha_operacion: date,
+HIT=backend/modules/sync_historicos/service.py:114|# Si cruza medianoche, la query debe considerar fecha_operacion y fecha_operacion+1
+HIT=backend/modules/sync_historicos/service.py:115|fecha_str = fecha_operacion.strftime('%Y-%m-%d')
+HIT=backend/modules/sync_historicos/service.py:116|fecha_sig = (fecha_operacion + timedelta(days=1)).strftime('%Y-%m-%d')
+HIT=backend/modules/sync_historicos/service.py:175|fecha_operacion: date,
+HIT=backend/modules/sync_historicos/service.py:190|fecha_str = fecha_operacion.strftime('%Y-%m-%d')
+HIT=backend/modules/sync_historicos/service.py:284|empresa_id=None,
+CANDIDATE=backend/server.py|CLASS=REFERENCE|SCORE=17|TABLES=Almacen,Auditoria_Inventario_Provisional,Categoria,Compras_Inventarios_Fisicos_Detalle_Sync,Compras_Inventarios_Fisicos_Sync,Compras_Inventarios_Movimientos_Sync,Familia,Fisico,INFORMATION_SCHEMA,InventarioMesActual,InventarioMesAnterior,InventariosMes,KPIs,Movimiento,Nomina_Cat_Conceptos,Nomina_Periodos,Nomina_Resumen,Periodo_Operativo,Producto,Producto_Catalogo,Producto_Familias,Producto_Lineas,Producto_MapeoOrigen,Producto_Presentaciones,Producto_SubFamilias,RH_Auditoria_Fiscal,RH_Cat_Puestos,RH_Cat_Sucursales,RH_Cat_SucursalesFiscal,RH_Cat_Tipos_Incidencias,RH_Colaboradores_Expediente,RH_Flujo_Nomina_Sucursal,RH_Incidencias_Nomina,RH_Reloj_Checador,Servidores_Conexiones,Sistema_Log_Solicitudes,Sistema_Tipos,Sistema_TiposVariantes,Sucursal,Sync_Catalogo_Filtros,Sync_Control_Ejecuciones,Sync_Productos,Sync_Productos_Compuestos,Sync_Productos_Elaborados,Sync_Productos_Insumos,Sync_Productos_Recetas,Tipo_Movimiento,Unidades_Negocio,almacen,api,catalogo,catalogo_base,conceptos,configuraci,core,data,datetime,dbo,dbo.Alertas_Sistema,dbo.Compras_Inventarios_Fisicos_Detalle_Sync,dbo.Compras_Inventarios_Fisicos_Sync,dbo.Compras_Inventarios_Movimientos_Sync,dbo.Compras_Ordenes,dbo.Compras_OrdenesDetalle,dbo.Compras_Pedidos,dbo.Compras_PedidosDetalle,dbo.Compras_Recepciones,dbo.Compras_RecepcionesDetalle,dbo.Compras_Requisiciones_Sync,dbo.Compras_Sync_Checkpoint,dbo.Compras_Sync_Log,dbo.ConsultasSQL_EjecucionesLog,dbo.Finanzas_Presupuestos,dbo.Inventario_Almacenes,dbo.Inventario_Existencias,dbo.Inventario_Movimientos,dbo.Inventario_MovimientosDetalle,dbo.Inventario_TipoMovimiento,dbo.Producto_Catalogo,dbo.Producto_MapeoOrigen,dbo.Proveedor_Catalogo,dbo.Servidores_Status,dbo.Sistema_ServidorSucursalesConfig,dbo.Unidades_Negocio,dbo.Usuario_Acciones,dbo.Usuario_Catalogo,dbo.Usuario_Modulos,dbo.Usuario_PermisosRolModulo,dbo.Usuario_Roles,dbo.Usuario_RolesAsignacion,dbo.Workflow_DetalleDiferencias,decimal,dotenv,fastapi,gruposi,insumos,insumospresentaciones,inventariopendiente,invfisico,invfisicomovtos,modules,openpyxl,pathlib,producto,producto_kit,pydantic,reportlab,routes,sendgrid,starlette,sucursal,sys,sysobjects,table,time,types,typing,venta,zoneinfo|COLUMNS=empresa_id,timezone,unidad_negocio_id,unidad_negocio_pk|FUNCTIONS=tablero_ejecutivo_fallback,admin_sync_compras_force_unlock,admin_sync_compras_validate_columns,generate_excel,save_server_query,_sql_sucursal_config_row_to_api,_sql_list_sucursales_config,_sql_get_sucursal_config,_sql_upsert_sucursal_config,_sql_update_sucursal_config_fields,filter_sucursales_by_config,_derive_sucursales_from_sync,_derive_almacenes_from_sync,get_sucursales,get_almacenes,get_sucursales_config,sync_sucursales_config,update_sucursal_config,update_sucursales_config_bulk,get_all_sucursales,get_unidades_negocio,get_almacenes_softrestaurant,get_inventarios_list,get_insumos_pendientes,generate_inventory_analysis,_report_consumo_legacy,get_movement_details,get_sales_details,export_excel,get_diferencias_from_cache,generate_excel_comparativo_inventarios,export_comparativo_inventarios,debug_test_queries,validate_server_access_by_empresa,_compras_find_unidad,_compras_resolve_scope,_compras_fetch_inventory_header_rows,_compras_fetch_pedido_detalle,_compras_fetch_pedido_detalle_rows,obtener_inventarios_fisicos,obtener_inventarios_fisicos_sql_first,obtener_pedidos_vigentes,obtener_detalle_pedido_manual,obtener_pedidos_vigentes_sql_first,obtener_detalle_movimientos,obtener_detalle_consumos,obtener_detalle_pedido,calcular_pedido_sugerido,obtener_parametros_compra,guardar_parametros_compra,obtener_productos_para_captura,realizar_auditoria_operativa,guardar_inventario_provisional,obtener_inventarios_provisionales,limpiar_inventarios_provisionales,obtener_dashboard_compras,obtener_analisis_compras,obtener_facturas_proveedor,obtener_detalle_factura,is_server_recently_offline,_cargar_tablas_api_local,ejecutar_script_sql,ejecutar_script_con_credenciales,_finanzas_table_ready,_finanzas_resolve_unidad_negocio,_finanzas_unidad_ref,_finanzas_body_unidad_ref,_finanzas_row_to_api,_finanzas_build_where,_finanzas_select_presupuestos,_finanzas_get_presupuesto_by_id,_finanzas_empty_dashboard,finanzas_dashboard,finanzas_listar_presupuestos,finanzas_crear_presupuesto,finanzas_actualizar_presupuesto,finanzas_eliminar_presupuesto,finanzas_listar_categorias,finanzas_registrar_movimiento,finanzas_obtener_script_inicializacion,sql_server_health_check,sql_server_test_query,obtener_pendientes_unificados,agregar_evento_nomina,calcular_deadline,listar_ciclos_nomina,crear_ciclo_nomina,avanzar_etapa_nomina,rechazar_ciclo_nomina,agregar_movimiento_nomina,obtener_configuracion_nomina,guardar_configuracion_nomina,crear_kpi_nomina,obtener_script_tablas_nomina,get_mapeo_servidores,_generate_soft_inventory_analysis_canonical
+HIT=backend/server.py:79|from datetime import datetime, timezone, timedelta
+HIT=backend/server.py:182|"timestamp": datetime.now(timezone.utc).isoformat(),
+HIT=backend/server.py:242|#   - filter_sucursales_by_permissions()
+HIT=backend/server.py:267|filter_sucursales_by_permissions,
+HIT=backend/server.py:269|get_user_empresas_permitidas,
+HIT=backend/server.py:270|get_servers_for_empresas,
+HIT=backend/server.py:271|user_has_empresa_access,
+HIT=backend/server.py:281|has_empresa_access,
+HIT=backend/server.py:465|sumar_ventas_api_local_a_sucursal,
+HIT=backend/server.py:472|get_kpis_mpro_por_sucursal,
+CANDIDATE=backend/modules/comercial/kpis_repository.py|CLASS=REPOSITORY|SCORE=16|TABLES=core,datetime,dbo.vw_Comercial_KPIs_Diarios_v2_Runtime,decimal,modules,typing|COLUMNS=empresa_id,fecha_operacion,timezone,unidad_negocio_id,unidad_negocio_pk|FUNCTIONS=_calculate_diff,_build_filter_key,_get_utc_now,_sql_build_hash,_sql_resolve_unidad_pk,upsert_kpi_comercial,cambiar_estado_periodo,get_kpi_comercial,get_kpis_by_empresa_rango,get_kpis_by_server_rango
+HIT=backend/modules/comercial/kpis_repository.py:21|from datetime import datetime, timezone, timedelta
+HIT=backend/modules/comercial/kpis_repository.py:139|if abs(old_float - new_float) > 0.001:  # Pequeña tolerancia
+HIT=backend/modules/comercial/kpis_repository.py:148|def _build_filter_key(server_id: str, empresa_id: str, sucursal_id: str, fecha: str) -> dict:
+HIT=backend/modules/comercial/kpis_repository.py:152|"empresa_id": empresa_id,
+HIT=backend/modules/comercial/kpis_repository.py:153|"sucursal_id": str(sucursal_id),
+HIT=backend/modules/comercial/kpis_repository.py:160|return datetime.now(timezone.utc).isoformat()
+HIT=backend/modules/comercial/kpis_repository.py:185|def _sql_build_hash(server_id: str, sucursal_id: str, fecha: str, kpis: dict) -> str:
+HIT=backend/modules/comercial/kpis_repository.py:189|"sucursal_id": str(sucursal_id),
+HIT=backend/modules/comercial/kpis_repository.py:199|def _sql_resolve_unidad_pk(server_id: str, empresa_id: str, metadata: Optional[dict]) -> str:
+HIT=backend/modules/comercial/kpis_repository.py:202|metadata.get("unidad_negocio_pk")
+CANDIDATE=backend/modules/fase2_operativo/services/automatizacion_compras_service.py|CLASS=REFERENCE|SCORE=16|TABLES=core,datetime,enum,modules,typing|COLUMNS=empresa_id,timezone,unidad_negocio_pk|FUNCTIONS=procesar_pedido_operativo,autorizar_gerencia,autorizar_tesoreria,modificar_dias_objetivo,modificar_parametros_consumo,_build_scope_filter,listar_automatizaciones,obtener_automatizacion,obtener_kpis,obtener_bitacora,_auditar_producto,_marcar_pedido_procesado,_registrar_bitacora
+HIT=backend/modules/fase2_operativo/services/automatizacion_compras_service.py:24|from datetime import datetime, timezone, timedelta
+HIT=backend/modules/fase2_operativo/services/automatizacion_compras_service.py:78|TOLERANCIA_OPTIMO = 0.20
+HIT=backend/modules/fase2_operativo/services/automatizacion_compras_service.py:102|sucursal_id: str,
+HIT=backend/modules/fase2_operativo/services/automatizacion_compras_service.py:103|sucursal_nombre: str,
+HIT=backend/modules/fase2_operativo/services/automatizacion_compras_service.py:112|empresa_id: str = None,
+HIT=backend/modules/fase2_operativo/services/automatizacion_compras_service.py:113|empresa_nombre: str = None
+HIT=backend/modules/fase2_operativo/services/automatizacion_compras_service.py:128|now = datetime.now(timezone.utc)
+HIT=backend/modules/fase2_operativo/services/automatizacion_compras_service.py:141|"empresa_id": empresa_id,
+HIT=backend/modules/fase2_operativo/services/automatizacion_compras_service.py:142|"empresa_nombre": empresa_nombre,
+HIT=backend/modules/fase2_operativo/services/automatizacion_compras_service.py:143|"sucursal_id": sucursal_id,
+CANDIDATE=backend/modules/finanzas/propinas_tpv/repository.py|CLASS=REPOSITORY|SCORE=16|TABLES=cheques,core,datetime,estaciones,modules,movtoscaja,movtoscajadetalles,turnos,typing|COLUMNS=empresa_id|FUNCTIONS=get_propinas_cortes_defensivo,get_propinas_cortes_subprocess,crear_o_actualizar_propina,obtener_propinas,registrar_pago,obtener_config_vigente,crear_indices
+HIT=backend/modules/finanzas/propinas_tpv/repository.py:226|'turno_id': str(row.get('turno_id', 'N/A')),
+HIT=backend/modules/finanzas/propinas_tpv/repository.py:301|t.idturno AS turno_id,
+HIT=backend/modules/finanzas/propinas_tpv/repository.py:315|INNER JOIN turnos t ON ch.idturno = t.idturno
+HIT=backend/modules/finanzas/propinas_tpv/repository.py:316|LEFT JOIN movtoscaja mc ON t.idturno = mc.idturno AND mc.idtipomovtocaja = 3
+HIT=backend/modules/finanzas/propinas_tpv/repository.py:320|GROUP BY t.idturno, mc.folio, mc.fecha, ch.{estacion_col}, mc.idmovtocaja, mc.saldo
+HIT=backend/modules/finanzas/propinas_tpv/repository.py:356|'turno_id': str(row.get('turno_id', 'N/A')),
+HIT=backend/modules/finanzas/propinas_tpv/repository.py:397|Llave única: server_id + sucursal_id + folio_corte + fecha_corte
+HIT=backend/modules/finanzas/propinas_tpv/repository.py:401|'sucursal_id': propina_data['sucursal_id'],
+HIT=backend/modules/finanzas/propinas_tpv/repository.py:411|'sucursal_nombre': propina_data['sucursal_nombre'],
+HIT=backend/modules/finanzas/propinas_tpv/repository.py:412|'empresa_id': propina_data.get('empresa_id'),
+CANDIDATE=backend/modules/finanzas/sync_cortes_softrestaurant.py|CLASS=REFERENCE|SCORE=16|TABLES=Finanzas_CortesCaja,Finanzas_CortesCaja_SyncLog,Servidores_Conexiones,Unidades_Negocio,core,datetime,decimal,turnos,typing|COLUMNS=unidad_negocio_id|FUNCTIONS=get_unidad_connection_info,extraer_turnos_softrestaurant,sincronizar_a_edarsahub,registrar_sync_log,sincronizar_unidad_softrestaurant,sincronizar_todas_unidades_softrestaurant
+HIT=backend/modules/finanzas/sync_cortes_softrestaurant.py:4|Este módulo extrae cortes de caja (turnos cerrados) de SoftRestaurant
+HIT=backend/modules/finanzas/sync_cortes_softrestaurant.py:13|- tabla `turnos` (SoftRestaurant)
+HIT=backend/modules/finanzas/sync_cortes_softrestaurant.py:101|u.id as unidad_negocio_id,
+HIT=backend/modules/finanzas/sync_cortes_softrestaurant.py:112|FROM Unidades_Negocio u
+HIT=backend/modules/finanzas/sync_cortes_softrestaurant.py:145|'unidad_negocio_id': str(unidad['unidad_negocio_id']),
+HIT=backend/modules/finanzas/sync_cortes_softrestaurant.py:272|def extraer_turnos_softrestaurant(
+HIT=backend/modules/finanzas/sync_cortes_softrestaurant.py:278|Extrae turnos cerrados de SoftRestaurant para un rango de fechas.
+HIT=backend/modules/finanzas/sync_cortes_softrestaurant.py:288|logger.info(f"[SYNC_SR] Extrayendo turnos de {conn_info['unidad_nombre']} "
+HIT=backend/modules/finanzas/sync_cortes_softrestaurant.py:297|idturnointerno,
+HIT=backend/modules/finanzas/sync_cortes_softrestaurant.py:298|idturno,
+CANDIDATE=backend/modules/finanzas/tesoreria.py|CLASS=REFERENCE|SCORE=16|TABLES=core,datetime,fastapi,typing|COLUMNS=empresa_id,fecha_operacion,unidad_negocio_pk|FUNCTIONS=listar_cortes_z,obtener_corte_z,listar_cuadres,crear_cuadre,validar_ficha_deposito,listar_sucursales
+HIT=backend/modules/finanzas/tesoreria.py:57|sucursal: Optional[str] = Query(None, description="Filtrar por sucursal"),
+HIT=backend/modules/finanzas/tesoreria.py:69|PROTEGIDO: Filtra por empresas_permitidas del usuario.
+HIT=backend/modules/finanzas/tesoreria.py:148|# Filtrar por sucursal si se especifica (filtro manual del usuario)
+HIT=backend/modules/finanzas/tesoreria.py:149|if sucursal:
+HIT=backend/modules/finanzas/tesoreria.py:150|cortes = [c for c in cortes if sucursal.lower() in c.get('sucursal_nombre', '').lower()]
+HIT=backend/modules/finanzas/tesoreria.py:156|'unidad_negocio_pk': corte.get('sucursal_id'),
+HIT=backend/modules/finanzas/tesoreria.py:208|@router.get("/cortes-z/{sucursal}/{folio}")
+HIT=backend/modules/finanzas/tesoreria.py:210|sucursal: str,
+HIT=backend/modules/finanzas/tesoreria.py:215|Obtiene un corte Z específico por sucursal y folio.
+HIT=backend/modules/finanzas/tesoreria.py:225|'unidad_negocio_nombre': sucursal,
+CANDIDATE=backend/modules/tablajeria/fase6_service.py|CLASS=REFERENCE|SCORE=16|TABLES=Operaciones_Tablaje_Ordenes,Operaciones_Tablaje_OrdenesDetalle,Operaciones_Tablaje_Plantillas,Tablajeria_ConfigContable,Tablajeria_CosteoDetalle,Tablajeria_CosteoProduccion,Tablajeria_MovimientosInventario,Tablajeria_PolizasContables,Tablajeria_PolizasDetalle,core,cursor,dataclasses,datetime,decimal,enum,typing|COLUMNS=empresa_id,timezone|FUNCTIONS=_now_utc,obtener_config_contable,guardar_config_contable,afectar_inventario_orden,calcular_costeo_orden,generar_poliza_produccion
+HIT=backend/modules/tablajeria/fase6_service.py:17|from datetime import datetime, date, timezone
+HIT=backend/modules/tablajeria/fase6_service.py:50|"""Configuración contable por empresa."""
+HIT=backend/modules/tablajeria/fase6_service.py:51|empresa_id: str
+HIT=backend/modules/tablajeria/fase6_service.py:61|tolerancia_variacion: float = 5.0
+HIT=backend/modules/tablajeria/fase6_service.py:90|return datetime.now(timezone.utc)
+HIT=backend/modules/tablajeria/fase6_service.py:96|def obtener_config_contable(self, empresa_id: str) -> ConfigContable:
+HIT=backend/modules/tablajeria/fase6_service.py:97|"""Obtiene la configuración contable de una empresa."""
+HIT=backend/modules/tablajeria/fase6_service.py:98|if empresa_id in self._config_cache:
+HIT=backend/modules/tablajeria/fase6_service.py:99|return self._config_cache[empresa_id]
+HIT=backend/modules/tablajeria/fase6_service.py:106|WHERE EmpresaID = %s AND Activo = 1
+CANDIDATE=backend/modules/tablajeria/ordenes_service.py|CLASS=REFERENCE|SCORE=16|TABLES=Operaciones_Tablaje_Autorizaciones,Operaciones_Tablaje_Mermas,Operaciones_Tablaje_Ordenes,Operaciones_Tablaje_OrdenesDetalle,Operaciones_Tablaje_Plantillas,Operaciones_Tablaje_PlantillasDetalle,Operaciones_Tablaje_Rendimientos,core,datetime,decimal,typing,zoneinfo|COLUMNS=empresa_id,timezone,unidad_negocio_pk|FUNCTIONS=_generar_folio,crear_orden,crear_orden_captura_directa,obtener_orden,listar_ordenes,cerrar_orden,autorizar_orden
+HIT=backend/modules/tablajeria/ordenes_service.py:18|from datetime import datetime, date, timezone
+HIT=backend/modules/tablajeria/ordenes_service.py:20|from zoneinfo import ZoneInfo
+HIT=backend/modules/tablajeria/ordenes_service.py:29|MEXICO_TZ = ZoneInfo("America/Mexico_City")
+HIT=backend/modules/tablajeria/ordenes_service.py:54|def _generar_folio(self, cursor, empresa_id: str) -> str:
+HIT=backend/modules/tablajeria/ordenes_service.py:66|WHERE EmpresaID = %s AND FolioOrden LIKE %s
+HIT=backend/modules/tablajeria/ordenes_service.py:67|""", (empresa_id, f"{prefijo}%"))
+HIT=backend/modules/tablajeria/ordenes_service.py:110|ReglaCosteo, VersionActual, Estatus, EmpresaID
+HIT=backend/modules/tablajeria/ordenes_service.py:123|folio = self._generar_folio(cursor, data.empresa_id)
+HIT=backend/modules/tablajeria/ordenes_service.py:128|fecha_op = data.fecha_operacion_mexico or self._today_mexico()
+HIT=backend/modules/tablajeria/ordenes_service.py:132|OrdenID, EmpresaID, UnidadNegocioID, SucursalID,
+CANDIDATE=backend/api/configuracion_operativa_unidades.py|CLASS=OPERATIONAL_CONFIGURATION|SCORE=15|TABLES=Sistema_TurnosOperativosUnidad,core,cursor,datetime,fastapi,pydantic,typing,zoneinfo|COLUMNS=cruza_medianoche,fecha_operacion,hora_fin,hora_inicio,unidad_negocio_id|FUNCTIONS=get_turnos_por_unidad,calcular_fecha_operacion_por_unidad,get_todas_configuraciones,get_configuracion_operativa,update_configuracion_operativa,probar_fecha_operacion,get_fecha_operacion_para_unidad
+HIT=backend/api/configuracion_operativa_unidades.py:5|Endpoints para administrar turnos operativos y reglas de Ventas del Día
+HIT=backend/api/configuracion_operativa_unidades.py:12|- Sistema_TurnosOperativosUnidad
+HIT=backend/api/configuracion_operativa_unidades.py:24|from zoneinfo import ZoneInfo
+HIT=backend/api/configuracion_operativa_unidades.py:38|MEXICO_TZ = ZoneInfo("America/Mexico_City")
+HIT=backend/api/configuracion_operativa_unidades.py:54|class TurnoOperativoSchema(BaseModel):
+HIT=backend/api/configuracion_operativa_unidades.py:55|"""Schema de un turno operativo."""
+HIT=backend/api/configuracion_operativa_unidades.py:57|turno_codigo: str
+HIT=backend/api/configuracion_operativa_unidades.py:58|turno_nombre: str
+HIT=backend/api/configuracion_operativa_unidades.py:59|hora_inicio: str  # "HH:MM:SS"
+HIT=backend/api/configuracion_operativa_unidades.py:60|hora_fin: str
+CANDIDATE=backend/core/connection_resolver.py|CLASS=REFERENCE|SCORE=15|TABLES=Servidores_Conexiones,core,dataclasses,datetime,enum,typing|COLUMNS=timezone|FUNCTIONS=resolve_source,_get_server_config,_get_api_config,resolve_source,health_check
+HIT=backend/core/connection_resolver.py:27|from datetime import datetime, timezone
+HIT=backend/core/connection_resolver.py:98|resolved_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+HIT=backend/core/connection_resolver.py:140|"tables": ["cheques", "turnos"],
+HIT=backend/core/connection_resolver.py:158|"tables": ["cheques", "turnos"],
+HIT=backend/core/connection_resolver.py:164|"tables": ["cheques", "turnos"],
+HIT=backend/core/connection_resolver.py:186|"tables": ["Venta_Encabezado", "Sucursal"],
+HIT=backend/core/connection_resolver.py:204|"tables": ["Venta_Encabezado", "Sucursal"],
+HIT=backend/core/connection_resolver.py:319|"sucursales": row.get("sucursales"),
+HIT=backend/core/connection_resolver.py:327|def _get_api_config(self, server_host: str, sucursal: str) -> Optional[Dict[str, Any]]:
+HIT=backend/core/connection_resolver.py:336|# Buscar API_LOCAL que coincida con host y tenga la sucursal
+CANDIDATE=backend/core/providers.py|CLASS=REFERENCE|SCORE=15|TABLES=Comanda,Sucursal,Venta_Encabezado,cheques,core,dataclasses,datetime,tempcheques,turnos,typing|COLUMNS=timezone|FUNCTIONS=_log_query,get_accumulated_sales,get_daily_sales,get_accumulated_sales
+HIT=backend/core/providers.py:19|from datetime import datetime, timezone
+HIT=backend/core/providers.py:64|"timestamp": datetime.now(timezone.utc).isoformat()
+HIT=backend/core/providers.py:84|- Ventas acumuladas (cheques + turnos)
+HIT=backend/core/providers.py:85|- Ventas del día (tempcheques o cheques último turno)
+HIT=backend/core/providers.py:130|INNER JOIN turnos t ON c.idturno = t.idturno
+HIT=backend/core/providers.py:198|Usa tempcheques o cheques del último turno abierto.
+HIT=backend/core/providers.py:242|# Fallback a último turno cerrado hoy
+HIT=backend/core/providers.py:248|'ultimo_turno' as origen
+HIT=backend/core/providers.py:250|INNER JOIN turnos t ON c.idturno = t.idturno
+HIT=backend/core/providers.py:266|"origen": "ultimo_turno"
+CANDIDATE=backend/core/scheduler/jobs/sync_compras_job.py|CLASS=REFERENCE|SCORE=15|TABLES=Servidores_Conexiones,Sync_Control_Ejecuciones,Unidades_Negocio,core,datetime,dbo.Sync_Control_Ejecuciones,modules,typing,zoneinfo|COLUMNS=unidad_negocio_id|FUNCTIONS=_coerce_mx_datetime,_acquire_sync_lock,_release_sync_lock,_get_servers_to_sync,execute_sync_compras
+HIT=backend/core/scheduler/jobs/sync_compras_job.py:22|- Ejecutar fuera de horario pico para evitar saturar conexiones
+HIT=backend/core/scheduler/jobs/sync_compras_job.py:34|from zoneinfo import ZoneInfo
+HIT=backend/core/scheduler/jobs/sync_compras_job.py:94|return value.replace(tzinfo=ZoneInfo("America/Mexico_City"))
+HIT=backend/core/scheduler/jobs/sync_compras_job.py:95|return value.astimezone(ZoneInfo("America/Mexico_City"))
+HIT=backend/core/scheduler/jobs/sync_compras_job.py:118|now_mx = datetime.now(ZoneInfo("America/Mexico_City"))
+HIT=backend/core/scheduler/jobs/sync_compras_job.py:224|now_mx = datetime.now(ZoneInfo("America/Mexico_City"))
+HIT=backend/core/scheduler/jobs/sync_compras_job.py:324|Lee desde Servidores_Conexiones y Unidades_Negocio en EDARSAHUB.
+HIT=backend/core/scheduler/jobs/sync_compras_job.py:338|u.sucursal_origen_id as sucursal_origen_id
+HIT=backend/core/scheduler/jobs/sync_compras_job.py:340|LEFT JOIN Unidades_Negocio u ON u.server_id = CAST(s.id AS NVARCHAR(36))
+HIT=backend/core/scheduler/jobs/sync_compras_job.py:377|'sucursal_origen_id': row.get('sucursal_origen_id'),
+CANDIDATE=backend/modules/comercial_v2/routes.py|CLASS=API_OR_ROUTE|SCORE=15|TABLES=collections,core,datetime,dateutil,fastapi,modules,typing,vw_Comercial_KPIs_Diarios_v2_Runtime|COLUMNS=fecha_operacion,fecha_operativa,timezone,unidad_negocio_id,unidad_negocio_pk|FUNCTIONS=_unidad_runtime_where_sql,_unidades_runtime_where_sql,_get_variaciones_comparativas,_calcular_totales_variaciones,get_unidades_permitidas_v2,comercial_v2_dashboard,comercial_v2_kpis_diarios,comercial_v2_kpis_diarios_unidad,comercial_v2_kpis_mensuales,comercial_v2_ventas_dia,_fecha_operativa_unidad,sort_key
+HIT=backend/modules/comercial_v2/routes.py:22|from datetime import date, datetime, timedelta, timezone
+HIT=backend/modules/comercial_v2/routes.py:29|from core.context_resolver import get_user_unidades_negocio
+HIT=backend/modules/comercial_v2/routes.py:190|- unidad_negocio_pk GUID
+HIT=backend/modules/comercial_v2/routes.py:191|- unidad_negocio_id codigo operativo
+HIT=backend/modules/comercial_v2/routes.py:210|f"(CONVERT(varchar(36), unidad_negocio_pk) IN ({quoted}) "
+HIT=backend/modules/comercial_v2/routes.py:211|f"OR unidad_negocio_id IN ({quoted}))"
+HIT=backend/modules/comercial_v2/routes.py:236|f"(CONVERT(varchar(36), unidad_negocio_pk) IN ({quoted}) "
+HIT=backend/modules/comercial_v2/routes.py:237|f"OR unidad_negocio_id IN ({quoted}))"
+HIT=backend/modules/comercial_v2/routes.py:242|unidad_negocio_pk: str,
+HIT=backend/modules/comercial_v2/routes.py:259|unidad_negocio_pk: ID en tabla KPI (ej: '130-MER', 'LA-ESTELAR')
+CANDIDATE=backend/modules/finanzas/propinas_tpv/sql_scripts.py|CLASS=REFERENCE|SCORE=15|TABLES=INFORMATION_SCHEMA,core,propinas_tpv_config,propinas_tpv_control,propinas_tpv_historial|COLUMNS=empresa_id|FUNCTIONS=NINGUNA
+HIT=backend/modules/finanzas/propinas_tpv/sql_scripts.py:40|sucursal_id             VARCHAR(50)         NOT NULL,
+HIT=backend/modules/finanzas/propinas_tpv/sql_scripts.py:49|sucursal_nombre         VARCHAR(100)        NULL,
+HIT=backend/modules/finanzas/propinas_tpv/sql_scripts.py:50|empresa_id              VARCHAR(50)         NULL,
+HIT=backend/modules/finanzas/propinas_tpv/sql_scripts.py:69|turno_id_origen         VARCHAR(50)         NULL,  -- idturno de SoftRestaurant
+HIT=backend/modules/finanzas/propinas_tpv/sql_scripts.py:125|UNIQUE (server_id, sucursal_id, folio_corte, fecha_corte),
+HIT=backend/modules/finanzas/propinas_tpv/sql_scripts.py:159|-- Jerarquía: GLOBAL -> EMPRESA -> SUCURSAL
+HIT=backend/modules/finanzas/propinas_tpv/sql_scripts.py:171|-- ALCANCE (Jerarquía: GLOBAL → EMPRESA → SUCURSAL)
+HIT=backend/modules/finanzas/propinas_tpv/sql_scripts.py:175|alcance_empresa_id      VARCHAR(50)         NULL,
+HIT=backend/modules/finanzas/propinas_tpv/sql_scripts.py:176|alcance_sucursal_id     VARCHAR(50)         NULL,
+HIT=backend/modules/finanzas/propinas_tpv/sql_scripts.py:189|tolerancia_descuadre    DECIMAL(18,2)       NOT NULL DEFAULT 5.00,
+CANDIDATE=backend/scripts/paquete_piloto_sync_agent/sync_agent_piloto.py|CLASS=REFERENCE|SCORE=15|TABLES=cheques,datetime,turnos,typing|COLUMNS=timezone|FUNCTIONS=extract_kpis_softrestaurant,send_kpis_to_hub,send_heartbeat,generate_report,main
+HIT=backend/scripts/paquete_piloto_sync_agent/sync_agent_piloto.py:27|from datetime import datetime, timezone
+HIT=backend/scripts/paquete_piloto_sync_agent/sync_agent_piloto.py:143|Lista de KPIs por sucursal
+HIT=backend/scripts/paquete_piloto_sync_agent/sync_agent_piloto.py:155|JOIN turnos t ON c.turno = t.turno
+HIT=backend/scripts/paquete_piloto_sync_agent/sync_agent_piloto.py:175|'sucursal_id': '01',
+HIT=backend/scripts/paquete_piloto_sync_agent/sync_agent_piloto.py:176|'sucursal_nombre': 'Principal',
+HIT=backend/scripts/paquete_piloto_sync_agent/sync_agent_piloto.py:205|"timestamp": datetime.now(timezone.utc).isoformat(),
+HIT=backend/scripts/paquete_piloto_sync_agent/sync_agent_piloto.py:243|"timestamp": datetime.now(timezone.utc).isoformat(),
+HIT=backend/scripts/paquete_piloto_sync_agent/sync_agent_piloto.py:318|"timestamp": datetime.now(timezone.utc).isoformat(),
+HIT=backend/scripts/paquete_piloto_sync_agent/sync_agent_piloto.py:455|last_sync = datetime.now(timezone.utc).isoformat()
+HIT=backend/scripts/paquete_piloto_sync_agent/sync_agent_piloto.py:460|last_sync = datetime.now(timezone.utc).isoformat()
+CANDIDATE=backend/scripts/sync_agent_piloto.py|CLASS=REFERENCE|SCORE=15|TABLES=cheques,datetime,turnos,typing|COLUMNS=timezone|FUNCTIONS=extract_kpis_softrestaurant,send_kpis_to_hub,send_heartbeat,main
+HIT=backend/scripts/sync_agent_piloto.py:35|from datetime import datetime, timezone
+HIT=backend/scripts/sync_agent_piloto.py:160|Lista de KPIs por sucursal
+HIT=backend/scripts/sync_agent_piloto.py:165|# Query de KPIs consolidados por sucursal (si hay campo sucursal) o total
+HIT=backend/scripts/sync_agent_piloto.py:166|# NOTA: SoftRestaurant típicamente no tiene campo sucursal en cheques,
+HIT=backend/scripts/sync_agent_piloto.py:174|JOIN turnos t ON c.turno = t.turno
+HIT=backend/scripts/sync_agent_piloto.py:185|'sucursal_id': '01',  # SoftRestaurant típicamente es single-sucursal
+HIT=backend/scripts/sync_agent_piloto.py:186|'sucursal_nombre': 'Principal',
+HIT=backend/scripts/sync_agent_piloto.py:215|"timestamp": datetime.now(timezone.utc).isoformat(),
+HIT=backend/scripts/sync_agent_piloto.py:251|"timestamp": datetime.now(timezone.utc).isoformat(),
+HIT=backend/scripts/sync_agent_piloto.py:362|logger.info(f"  Sucursal {r['sucursal_id']}: Ventas=${kpis['ventas']:,.2f}, PAX={kpis['pax']}, Cheques={kpis['cheques']}")
+CANDIDATE=backend/core/communications/notifications/schemas.py|CLASS=REFERENCE|SCORE=14|TABLES=core,datetime,enum,pydantic,typing|COLUMNS=timezone|FUNCTIONS=NINGUNA
+HIT=backend/core/communications/notifications/schemas.py:17|from datetime import datetime, timezone
+HIT=backend/core/communications/notifications/schemas.py:114|# Horarios permitidos
+HIT=backend/core/communications/notifications/schemas.py:115|horario_permitido_inicio: Optional[str] = "08:00"  # HH:MM
+HIT=backend/core/communications/notifications/schemas.py:116|horario_permitido_fin: Optional[str] = "20:00"
+HIT=backend/core/communications/notifications/schemas.py:117|timezone: str = "America/Mexico_City"
+HIT=backend/core/communications/notifications/schemas.py:120|created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+HIT=backend/core/communications/notifications/schemas.py:146|created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+HIT=backend/core/communications/notifications/schemas.py:170|template_texto: str  # "EDARSA HUB: El caso {{folio}} en {{sucursal}}..."
+HIT=backend/core/communications/notifications/schemas.py:171|variables: List[str] = []  # ["folio", "sucursal", "fecha_limite"]
+HIT=backend/core/communications/notifications/schemas.py:177|created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+CANDIDATE=backend/modules/fase2_operativo/services/responsabilidad_service.py|CLASS=REFERENCE|SCORE=14|TABLES=core,datetime,typing|COLUMNS=timezone|FUNCTIONS=obtener_configuracion,actualizar_configuracion,calcular_responsabilidad,_calcular_impacto,_esta_dentro_tolerancia,_extraer_sucursal,_actualizar_workflow_por_uuid,_generar_mensaje_resumen,listar,_mapear_a_response,obtener_metricas_dashboard,_obtener_top_sucursales,_actualizar_estado_responsabilidad,obtener_pendientes_aprobacion,obtener_en_disputa,obtener_historial
+HIT=backend/modules/fase2_operativo/services/responsabilidad_service.py:11|from datetime import datetime, timezone
+HIT=backend/modules/fase2_operativo/services/responsabilidad_service.py:28|ToleranciaAplicada,
+HIT=backend/modules/fase2_operativo/services/responsabilidad_service.py:91|"TOLERANCIA_UNIDADES": ("2", "Tolerancia absoluta en unidades"),
+HIT=backend/modules/fase2_operativo/services/responsabilidad_service.py:92|"TOLERANCIA_PORCENTAJE_DIFERENCIA": ("1.5", "Tolerancia relativa en porcentaje"),
+HIT=backend/modules/fase2_operativo/services/responsabilidad_service.py:120|tolerancia_unidades = await self.config_repo.get_valor_int("TOLERANCIA_UNIDADES", 2)
+HIT=backend/modules/fase2_operativo/services/responsabilidad_service.py:121|tolerancia_porcentaje = await self.config_repo.get_valor_float("TOLERANCIA_PORCENTAJE_DIFERENCIA", 1.5)
+HIT=backend/modules/fase2_operativo/services/responsabilidad_service.py:132|tolerancia_unidades=tolerancia_unidades,
+HIT=backend/modules/fase2_operativo/services/responsabilidad_service.py:133|tolerancia_porcentaje_diferencia=tolerancia_porcentaje,
+HIT=backend/modules/fase2_operativo/services/responsabilidad_service.py:142|tolerancia_unidades: Optional[int] = None,
+HIT=backend/modules/fase2_operativo/services/responsabilidad_service.py:143|tolerancia_porcentaje_diferencia: Optional[float] = None,
+CANDIDATE=backend/scripts/poblar_ventas_detalle_producto_canonico.py|CLASS=REFERENCE|SCORE=14|TABLES=Comanda,Comanda_Detalle,INFORMATION_SCHEMA,Venta_Encabezado,__future__,can,cheqdet,cheques,collections,core,datetime,dbo.Servidores_Conexiones,dbo.Unidades_Negocio,decimal,h,l,productos,sys,t,typing|COLUMNS=cruza_medianoche,fecha_operacion,hora_fin,hora_inicio,unidad_negocio_id,unidad_negocio_pk|FUNCTIONS=get_unidades_negocio_pos,get_pos_config_for_unidad,_money_eq,_load_runtime_rows,_row_unit_values,_cfg_values,_runtime_for,_unidad_operativa_id_for_window,_soft_operational_datetime_range,_mpro_operational_datetime_range,_extract_mpro,_materialize_rows,_insert_rows,main
+HIT=backend/scripts/poblar_ventas_detalle_producto_canonico.py:36|TOLERANCIA_VENTAS = Decimal("0.05")
+HIT=backend/scripts/poblar_ventas_detalle_producto_canonico.py:59|def get_unidades_negocio_pos(
+HIT=backend/scripts/poblar_ventas_detalle_producto_canonico.py:65|dbo.Unidades_Negocio.server_id
+HIT=backend/scripts/poblar_ventas_detalle_producto_canonico.py:68|No infiere sistema, servidor, sucursal o conexión por nombre.
+HIT=backend/scripts/poblar_ventas_detalle_producto_canonico.py:81|CONVERT(varchar(100), u.sucursal_origen_id)
+HIT=backend/scripts/poblar_ventas_detalle_producto_canonico.py:82|AS sucursal_origen_id,
+HIT=backend/scripts/poblar_ventas_detalle_producto_canonico.py:97|FROM dbo.Unidades_Negocio AS u
+HIT=backend/scripts/poblar_ventas_detalle_producto_canonico.py:209|canónico de Unidades_Negocio y Servidores_Conexiones.
+HIT=backend/scripts/poblar_ventas_detalle_producto_canonico.py:234|"Unidades_Negocio.system_type ausente o no soportado: "
+HIT=backend/scripts/poblar_ventas_detalle_producto_canonico.py:272|branch_id = _s(
+CANDIDATE=memory/AUDITORIA_GOBIERNO_BENCHMARK.md|CLASS=REFERENCE|SCORE=14|TABLES=NINGUNA|COLUMNS=empresa_id|FUNCTIONS=NINGUNA
+HIT=memory/AUDITORIA_GOBIERNO_BENCHMARK.md:11|| 1 | ¿Existe tabla/campo de **grupo corporativo**? | ❌ NO | `Sistema_Empresas` NO tiene `GrupoCorporativoID`. No hay `Sistema_GruposCorporativos`. Solo `Cliente_Grupos` (grupos de CLIENTES del CRM, no de propiedad) y `RH_GruposNomina` (nómina). |
+HIT=memory/AUDITORIA_GOBIERNO_BENCHMARK.md:12|| 2 | ¿Relación empresa → grupo corporativo? | ❌ NO | No existe. La cúspide actual es Empresa. |
+HIT=memory/AUDITORIA_GOBIERNO_BENCHMARK.md:13|| 3 | ¿Relación unidad → empresa → grupo? | ⚠️ PARCIAL | `Unidades_Negocio` (id, codigo, nombre, server_id, sucursal_origen_id, system_type) **no** tiene empresa_id. El vínculo unidad→empresa es **indirecto** vía `server_id` → `Sistema_EmpresasServidores` → `Sistema_Empresas`. Falta el nivel grupo. |
+HIT=memory/AUDITORIA_GOBIERNO_BENCHMARK.md:15|| 5 | ¿Permisos por unidad? | ✅ SÍ | `Usuario_RolesContexto` (121 filas): Usuario→Rol→**EmpresaID/UnidadNegocioID/SucursalID**. `Usuario_EmpresasAsignacion` (38), `Usuario_SucursalesAsignacion`, `Usuario_ServidoresAsignacion`, `Usuario_AlmacenesAsignacion`. |
+HIT=memory/AUDITORIA_GOBIERNO_BENCHMARK.md:17|| 7 | ¿Forma de clasificar empresas externas comparables? | ❌ NO | No hay clasificación sectorial/segmento/comparable. Existe `Comercial_Competidores` (3 filas) y `Comercial_CompetidoresCatalogo` (competencia de precios, no benchmark de desempeño propio anónimo). |
+HIT=memory/AUDITORIA_GOBIERNO_BENCHMARK.md:19|| 9 | ¿Datos suficientes para benchmark sectorial? | ❌ NO | Solo 1 grupo (EDARSA). No hay datos de otros grupos/empresas externas para sector. `Comercial_PricingBenchmarkProducto` = 1 fila. |
+HIT=memory/AUDITORIA_GOBIERNO_BENCHMARK.md:21|| 11 | ¿Endpoints exponen nombres indebidamente? | ⚠️ SÍ (potencial) | Endpoints comerciales devuelven `unidad_negocio_nombre`, `sucursal_nombre`, `NombreEmpresa` en claro. Hoy sin riesgo (cada usuario ve solo lo suyo) pero **no hay capa de enmascaramiento** para escenarios de comparación. |
+HIT=memory/AUDITORIA_GOBIERNO_BENCHMARK.md:35|- `Usuario_PermisosRolModulo` (459 filas) con flags **`RestriccionPropietario`**, **`RestriccionSucursal`**, `RequiereAutorizacion`, `NivelAutorizacionRequerido` → infraestructura de restricción a nivel permiso ya disponible.
+HIT=memory/AUDITORIA_GOBIERNO_BENCHMARK.md:40|- `resolve_unidad_scope(user)` → `allowed_server_ids` vía `get_user_empresas_permitidas` → `get_servers_for_empresas`. Lista vacía = acceso total (admin).
+HIT=memory/AUDITORIA_GOBIERNO_BENCHMARK.md:42|- `Usuario_RolesContexto` (Usuario↔Rol↔Empresa/Unidad/Sucursal) = mecanismo de scope contextual ya poblado (121 filas).
+CANDIDATE=backend/api/sync_receiver.py|CLASS=API_OR_ROUTE|SCORE=13|TABLES=api,core,datetime,fastapi,modules,typing|COLUMNS=empresa_id,timezone|FUNCTIONS=create_agent_token,process_kpi_record,sync_kpis,sync_heartbeat,test_agent_auth,generate_agent_token_endpoint
+HIT=backend/api/sync_receiver.py:29|from datetime import datetime, timedelta, timezone
+HIT=backend/api/sync_receiver.py:77|now = datetime.now(timezone.utc)
+HIT=backend/api/sync_receiver.py:126|empresa_id: str,
+HIT=backend/api/sync_receiver.py:145|empresa_id=empresa_id,
+HIT=backend/api/sync_receiver.py:146|sucursal_id=record.sucursal_id,
+HIT=backend/api/sync_receiver.py:175|empresa_id = server.get("empresa_id") or server.get("EmpresaID") or "default"
+HIT=backend/api/sync_receiver.py:177|now = datetime.now(timezone.utc)
+HIT=backend/api/sync_receiver.py:185|result = await process_kpi_record(record, payload, empresa_id, system_type, received_at)
+HIT=backend/api/sync_receiver.py:189|errors.append(f"Error {record.sucursal_id}/{record.fecha}: {e}")
+HIT=backend/api/sync_receiver.py:213|now = datetime.now(timezone.utc)
+CANDIDATE=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/core/security.py|CLASS=REFERENCE|SCORE=13|TABLES=Sistema_Empresas,Sistema_EmpresasMongoMap,Sistema_SucursalServidorMapeo,Sistema_Sucursales,core,dataclasses,datetime,fastapi,typing|COLUMNS=empresa_id,timezone|FUNCTIONS=create_token,create_access_token,get_user_empresas_permitidas,get_servers_for_empresas,user_has_empresa_access,filter_by_user_context,filter_sucursales_by_permissions,_safe_user_for_log,compare_user_mongo_vs_sql_passive,log_auth_preflight_status,_get_all_empresas_sql,validate
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/core/security.py:18|- Migrado: user_has_server_access(), filter_servers_by_permissions(), filter_sucursales_by_permissions()
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/core/security.py:32|from datetime import datetime, timedelta, timezone
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/core/security.py:157|'exp': datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/core/security.py:180|'exp': datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_MINUTES)
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/core/security.py:488|async def get_user_empresas_permitidas(user: Dict[str, Any]) -> List[str]:
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/core/security.py:490|Obtiene las empresas permitidas para un usuario.
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/core/security.py:494|Lista de empresa_ids permitidos (UUIDs MongoDB para compatibilidad)
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/core/security.py:498|def _get_all_empresas_sql() -> List[str]:
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/core/security.py:499|"""Obtiene todas las empresas activas desde SQL."""
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/core/security.py:504|SELECT m.EmpresaMongoUUID
+CANDIDATE=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/repository.py|CLASS=REPOSITORY|SCORE=13|TABLES=Usuario_AlmacenesAsignacion,Usuario_Catalogo,Usuario_Roles,Usuario_RolesAsignacion,Usuario_ServidoresAsignacion,Usuario_SucursalesAsignacion,core,datetime,typing|COLUMNS=timezone|FUNCTIONS=get_all_users,get_users_by_empresas
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/repository.py:19|from datetime import datetime, timezone
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/repository.py:85|Permisos operativos (allowed_servers, allowed_sucursales,
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/repository.py:125|'allowed_sucursales': {},
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/repository.py:131|# 2. Sucursales asignadas por usuario/servidor
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/repository.py:136|s.SucursalCodigo
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/repository.py:138|JOIN Usuario_SucursalesAsignacion s ON u.UsuarioID = s.UsuarioID AND s.Activo = 1
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/repository.py:144|if servidor_uuid not in sql_perms[public_uuid]['allowed_sucursales']:
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/repository.py:145|sql_perms[public_uuid]['allowed_sucursales'][servidor_uuid] = []
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/repository.py:146|sql_perms[public_uuid]['allowed_sucursales'][servidor_uuid].append(suc_codigo)
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/repository.py:200|'allowed_sucursales': {},
+CANDIDATE=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/service.py|CLASS=REFERENCE|SCORE=13|TABLES=Servidores_Conexiones,Usuario_AlmacenesAsignacion,Usuario_Catalogo,Usuario_ServidoresAsignacion,Usuario_SucursalesAsignacion,core,datetime,fastapi,modules,typing|COLUMNS=timezone|FUNCTIONS=get_users,update_user,update_user_permissions,create_user_admin,create_role
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/service.py:20|from datetime import datetime, timezone
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/service.py:192|3. sec_roles_alcance con tipo específico → filtra por empresas del alcance
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/service.py:193|4. Sin sec_roles_alcance → fallback a empresas_permitidas
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/service.py:216|f"Empresas: {len(alcance['empresas_ids'])}")
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/service.py:221|return await repo.get_users_by_empresas(alcance['empresas_ids'])
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/service.py:281|for field in ['name', 'email', 'role', 'sucursales']:
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/service.py:350|- Usuario_SucursalesAsignacion
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/service.py:425|# 2. ACTUALIZAR SUCURSALES
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/service.py:426|if 'allowed_sucursales' in permissions:
+HIT=backend/auditorias_p5/backup_p5_05_auth_me_20260606_060628/modules/auth/service.py:427|allowed_sucursales = permissions['allowed_sucursales'] or {}
+CANDIDATE=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/core/security.py|CLASS=REFERENCE|SCORE=13|TABLES=Sistema_Empresas,Sistema_EmpresasMongoMap,Sistema_SucursalServidorMapeo,Sistema_Sucursales,core,dataclasses,datetime,fastapi,pymongo,typing|COLUMNS=empresa_id,timezone|FUNCTIONS=create_token,create_access_token,_get_user_sql_only,get_user_empresas_permitidas,get_servers_for_empresas,user_has_empresa_access,filter_by_user_context,filter_sucursales_by_permissions,_safe_user_for_log,compare_user_mongo_vs_sql_passive,log_auth_preflight_status,_get_all_empresas_sql,validate
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/core/security.py:31|- Migrado: user_has_server_access(), filter_servers_by_permissions(), filter_sucursales_by_permissions()
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/core/security.py:45|from datetime import datetime, timedelta, timezone
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/core/security.py:170|'exp': datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/core/security.py:193|'exp': datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_MINUTES)
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/core/security.py:394|"empresas_permitidas": mongo_user.get("empresas_permitidas", []),
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/core/security.py:395|"sucursales": mongo_user.get("sucursales", []),
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/core/security.py:534|async def get_user_empresas_permitidas(user: Dict[str, Any]) -> List[str]:
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/core/security.py:536|Obtiene las empresas permitidas para un usuario.
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/core/security.py:540|Lista de empresa_ids permitidos (UUIDs MongoDB para compatibilidad)
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/core/security.py:544|def _get_all_empresas_sql() -> List[str]:
+CANDIDATE=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/repository.py|CLASS=REPOSITORY|SCORE=13|TABLES=Usuario_AlmacenesAsignacion,Usuario_Catalogo,Usuario_Roles,Usuario_RolesAsignacion,Usuario_ServidoresAsignacion,Usuario_SucursalesAsignacion,core,datetime,typing|COLUMNS=timezone|FUNCTIONS=get_all_users,get_users_by_empresas
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/repository.py:19|from datetime import datetime, timezone
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/repository.py:85|Permisos operativos (allowed_servers, allowed_sucursales,
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/repository.py:125|'allowed_sucursales': {},
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/repository.py:131|# 2. Sucursales asignadas por usuario/servidor
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/repository.py:136|s.SucursalCodigo
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/repository.py:138|JOIN Usuario_SucursalesAsignacion s ON u.UsuarioID = s.UsuarioID AND s.Activo = 1
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/repository.py:144|if servidor_uuid not in sql_perms[public_uuid]['allowed_sucursales']:
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/repository.py:145|sql_perms[public_uuid]['allowed_sucursales'][servidor_uuid] = []
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/repository.py:146|sql_perms[public_uuid]['allowed_sucursales'][servidor_uuid].append(suc_codigo)
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/repository.py:200|'allowed_sucursales': {},
+CANDIDATE=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/service.py|CLASS=REFERENCE|SCORE=13|TABLES=Servidores_Conexiones,Usuario_AlmacenesAsignacion,Usuario_Catalogo,Usuario_ServidoresAsignacion,Usuario_SucursalesAsignacion,core,datetime,fastapi,modules,typing|COLUMNS=timezone|FUNCTIONS=get_users,update_user,update_user_permissions,create_user_admin,create_role
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/service.py:33|from datetime import datetime, timezone
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/service.py:205|3. sec_roles_alcance con tipo específico → filtra por empresas del alcance
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/service.py:206|4. Sin sec_roles_alcance → fallback a empresas_permitidas
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/service.py:229|f"Empresas: {len(alcance['empresas_ids'])}")
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/service.py:234|return await repo.get_users_by_empresas(alcance['empresas_ids'])
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/service.py:294|for field in ['name', 'email', 'role', 'sucursales']:
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/service.py:363|- Usuario_SucursalesAsignacion
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/service.py:438|# 2. ACTUALIZAR SUCURSALES
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/service.py:439|if 'allowed_sucursales' in permissions:
+HIT=backend/auditorias_p5/backup_p5_07_auth_sql_only_20260606_062908/modules/auth/service.py:440|allowed_sucursales = permissions['allowed_sucursales'] or {}
+CANDIDATE=backend/core/auditoria.py|CLASS=REFERENCE|SCORE=13|TABLES=auditoria_financiera,core,dataclasses,datetime,dbo.Finanzas_AuditoriaFinanciera,enum,typing|COLUMNS=empresa_id,timezone|FUNCTIONS=to_sql_params,_crear_evento_from_params,_crear_evento,registrar,_consultar_auditoria_sql,consultar_por_modulo
+HIT=backend/core/auditoria.py:115|empresa_id: Optional[str] = None
+HIT=backend/core/auditoria.py:116|sucursal_id: Optional[str] = None
+HIT=backend/core/auditoria.py:155|empresa_id: Optional[str] = None
+HIT=backend/core/auditoria.py:156|sucursal_id: Optional[str] = None
+HIT=backend/core/auditoria.py:180|self.empresa_id, self.sucursal_id, self.origen_sistema,
+HIT=backend/core/auditoria.py:208|empresa_id, sucursal_id, origen_sistema,
+HIT=backend/core/auditoria.py:317|empresa_id=p.empresa_id,
+HIT=backend/core/auditoria.py:318|sucursal_id=p.sucursal_id,
+HIT=backend/core/auditoria.py:343|empresa_id: Optional[str] = None,
+HIT=backend/core/auditoria.py:344|sucursal_id: Optional[str] = None,
+CANDIDATE=backend/core/cache_key_builder.py|CLASS=REFERENCE|SCORE=13|TABLES=core,dataclasses,datetime,typing|COLUMNS=empresa_id,timezone,unidad_negocio_pk|FUNCTIONS=build_permissions_hash,build_context_cache_key,build_cache_key_from_context
+HIT=backend/core/cache_key_builder.py:12|- Datos pegados entre sucursales
+HIT=backend/core/cache_key_builder.py:31|from datetime import datetime, timezone
+HIT=backend/core/cache_key_builder.py:43|sucursal_id: Optional[str] = None
+HIT=backend/core/cache_key_builder.py:44|unidad_negocio_pk: Optional[str] = None
+HIT=backend/core/cache_key_builder.py:45|empresa_id: Optional[str] = None
+HIT=backend/core/cache_key_builder.py:110|- Incluye: role, allowed_servers, allowed_sucursales
+HIT=backend/core/cache_key_builder.py:120|'allowed_sucursales': sorted(user.get('allowed_sucursales', [])),
+HIT=backend/core/cache_key_builder.py:154|sucursal_id: str = None,
+HIT=backend/core/cache_key_builder.py:155|unidad_negocio_pk: str = None,
+HIT=backend/core/cache_key_builder.py:156|empresa_id: str = None,
+CANDIDATE=backend/core/scheduler/config.py|CLASS=REFERENCE|SCORE=13|TABLES=pydantic,typing|COLUMNS=timezone|FUNCTIONS=from_env
+HIT=backend/core/scheduler/config.py:33|timezone: str = "America/Mexico_City"
+HIT=backend/core/scheduler/config.py:49|timezone = os.environ.get("SCHEDULER_TIMEZONE", "America/Mexico_City")
+HIT=backend/core/scheduler/config.py:75|# SYNC-N KPIs Comerciales (nocturno 03:00) - MACROFASE 2
+HIT=backend/core/scheduler/config.py:239|# CxP: Sincronización de Cuentas por Pagar a tabla canónica (nocturno 04:30)
+HIT=backend/core/scheduler/config.py:327|timezone=timezone,
+CANDIDATE=backend/core/scheduler/jobs/notifications_job.py|CLASS=REFERENCE|SCORE=13|TABLES=core,datetime,typing|COLUMNS=timezone|FUNCTIONS=execute,_is_within_allowed_hours
+HIT=backend/core/scheduler/jobs/notifications_job.py:10|- Respeta horarios permitidos
+HIT=backend/core/scheduler/jobs/notifications_job.py:15|from datetime import datetime, timezone
+HIT=backend/core/scheduler/jobs/notifications_job.py:57|# Verificar horario permitido
+HIT=backend/core/scheduler/jobs/notifications_job.py:64|"message": "Fuera de horario permitido de notificaciones",
+HIT=backend/core/scheduler/jobs/notifications_job.py:99|"timestamp": datetime.now(timezone.utc).isoformat()
+HIT=backend/core/scheduler/jobs/notifications_job.py:105|Verifica si estamos dentro del horario permitido para notificaciones.
+HIT=backend/core/scheduler/jobs/notifications_job.py:110|# Obtener configuración de horarios
+HIT=backend/core/scheduler/jobs/notifications_job.py:116|tz = pytz.timezone(tz_name)
+HIT=backend/core/scheduler/jobs/notifications_job.py:122|f"Fuera de horario permitido: {current_hour}:00 "
+HIT=backend/core/scheduler/jobs/notifications_job.py:130|logger.warning(f"Error verificando horario: {e}, permitiendo ejecución")
+REPOSITORY_LINEAGE_AUDIT=PASS
+
+===== 3. CLASIFICAR FUENTES CANONICAS CANDIDATAS =====
+RESULTADO=PASS
+AUDITORIA_LINAJE_CONFIG_OPERATIVA_REPOSITORIO=PASS
+FUENTES_ESQUEMA_HORARIOS=9
+FUENTES_CONFIG_OPERATIVA=1
+FUENTES_TIMEZONE_EMPRESA=94
+FUENTES_TIMEZONE_UNIDAD=143
+TABLAS_HORARIO_CANDIDATAS=Almacen,Cat_Familias,Comercial,Comercial_CompetidoresCatalogo,Comercial_CompetidoresUnidad,ConsultasSQL_Catalogo,ConsultasSQL_Parametros,Fact_Ventas_Consolidadas,INFORMATION_SCHEMA,Producto,Products,Proveedor,REQUISICION_COMPRA,REQUISICION_COMPRA_DETALLE,RH_Colaboradores_Expediente,SET,Sistema_TurnosOperativosUnidad,Sync_Sales,Venta,View_Sync_Sales_Detalle,almacen,cheqdet,cheques,chequespagos,compras,comprasmovtos,consultas_cursor,core,cursor,datetime,dbo,dbo.Sistema_Gobierno_Tablas,dbo.Sistema_SyncPOS_Bitacora,dbo.Sistema_SyncPOS_Config,dbo.Sistema_SyncPOS_EstadoUnidad,dbo.Sistema_SyncPOS_Faltantes,dbo.Sync_Mesas,dbo.Sync_Metas_Comerciales,dbo.Sync_Movimientos_Detalle,dbo.Sync_PAX_Detalle,dbo.Sync_Precios_Historicos,dbo.Sync_Sales,dbo.Sync_Ticket_Perfecto,dotenv,existenciasalmacen,fastapi,formaspago,insumos,meseros,pathlib,productos,proveedores,pydantic,sys,turnos,typing,zoneinfo
+TABLAS_TIMEZONE_CANDIDATAS=Alertas_Sistema,Almacen,Auditoria_Inventario_Provisional,CRM_Cat_EstatusLead,CRM_Cat_EstatusOportunidad,CRM_Cat_OrigenLead,CRM_Cat_Prioridades,CRM_Cat_TiposPipeline,CRM_Config_Etapas_Pipeline,CRM_Config_PipelineEtapas,CRM_Config_Pipelines,CRM_Leads,CRM_Oportunidades,CRM_Oportunidades_HistorialEtapas,CRM_Staging_Cuentas,CRM_Staging_Leads,CRM_Staging_Oportunidades,Cat_Familias,Categoria,Cliente_Catalogo,Comanda,Comanda_Detalle,Comercial,Comercial_CompetidoresCatalogo,Comercial_CompetidoresUnidad,Comercial_Dashboard_Cache,Comercial_KPIs_Cache,Comercial_KPIs_Diarios_v2,Comercial_Metas,Comercial_SyncLog_v2,Comercial_Ventas_Dia_Abiertas_v2,Comercial_Ventas_Sync,Compras_Eventos_Pendientes,Compras_Inventarios_Fisicos_Detalle_Sync,Compras_Inventarios_Fisicos_Sync,Compras_Inventarios_Movimientos_Sync,Compras_KPIs_Historico,Compras_Parametros_Sucursal,Compras_Sync_Checkpoint,Config_Asignaciones,Configuracion_Operativa,Existencia,Fact_Ventas_Consolidadas,Familia,Finanzas_KPIs_Historico,Fisico,Formula_Produccion,Formula_Produccion_Detalle,INFORMATION_SCHEMA,Impuesto,Impuesto_Grupo_Impuesto,ImpuestosPriorizados,InventarioMesActual,InventarioMesAnterior,InventariosMes,Inventarios_SinAsignar,KPIs,Movimiento,Nomina_Cat_Conceptos,Nomina_Periodos,Nomina_Resumen,Operaciones_Tablaje_Autorizaciones,Operaciones_Tablaje_Mermas,Operaciones_Tablaje_Ordenes,Operaciones_Tablaje_OrdenesDetalle,Operaciones_Tablaje_Plantillas,Operaciones_Tablaje_PlantillasDetalle,Operaciones_Tablaje_Rendimientos,Operaciones_Tablaje_SyncLog,Operativo_AuditoriasProgramadas,Operativo_BitacoraCompras,Operativo_CargosResponsabilidad,Operativo_DocumentosGenerados,Operativo_HistorialAsignaciones,Operativo_HistorialCargos,Operativo_Notificaciones_Log,Operativo_PedidosProcesados,Operativo_ResponsabilidadEconomica,Operativo_TareasCompras,Orden_Compra,Periodo_Operativo,Producto,Producto_Catalogo,Producto_Familias,Producto_Kit,Producto_Lineas,Producto_MapeoOrigen,Producto_Precio,Producto_Presentaciones,Producto_SubFamilias,Products,RH_Auditoria_Fiscal,RH_Cat_Puestos,RH_Cat_Sucursales,RH_Cat_SucursalesFiscal,RH_Cat_Tipos_Incidencias,RH_Colaboradores_Expediente,RH_Flujo_Nomina_Sucursal,RH_Incidencias_Nomina,RH_Reloj_Checador,RankedConnections,SET,Scheduler_BitacoraJobs,Scheduler_InventariosProcesados,Scheduler_PedidosProcesados,Servidores_Conexiones,Servidores_Conexiones_Log,Servidores_Status,Sistema_Empresas,Sistema_EmpresasMongoMap,Sistema_EmpresasServidores,Sistema_Log_Solicitudes,Sistema_SucursalServidorConfig,Sistema_SucursalServidorMapeo,Sistema_Sucursales,Sistema_Tipos,Sistema_TiposVariantes,Sistema_TurnosOperativosUnidad,SubFamilia,Sucursal,Sync_Catalogo_Filtros,Sync_Control_Ejecuciones,Sync_Mesas,Sync_Metas_Comerciales,Sync_PAX_Detalle,Sync_Precios_Historicos,Sync_Productos,Sync_Productos_Compuestos,Sync_Productos_Elaborados,Sync_Productos_Insumos,Sync_Productos_Recetas,Sync_Sales,Sync_Ticket_Perfecto,Sync_Ventas_Historicas,Sync_Ventas_PorHora,Tablajeria_ConfigContable,Tablajeria_CosteoDetalle,Tablajeria_CosteoProduccion,Tablajeria_MovimientosInventario,Tablajeria_PolizasContables,Tablajeria_PolizasDetalle,Tareas_Inventario,Tipo_Movimiento,Unidades_Negocio,Usuario_Acciones,Usuario_AlmacenesAsignacion,Usuario_Catalogo,Usuario_EmpresasAsignacion,Usuario_LogRBACVerificacion,Usuario_Modulos,Usuario_PermisosRolModulo,Usuario_Roles,Usuario_RolesAsignacion,Usuario_ServidoresAsignacion,Usuario_SucursalesAsignacion,Usuarios,Vendedor,Venta,Venta_Encabezado,View_Sync_Sales_Detalle,Workflow_DecisionesAuditoria,Workflow_DetalleDiferencias,Workflow_Inventarios,Workflow_Justificaciones,a,abc,almacen,api,auditoria_financiera,base_select,catalogo,catalogo_base,cheqdet,cheques,collections,con,conceptos,concurrent,configuraci,contextlib,contra,core,costos,cuentas,cursor,data,dataclasses,datetime,dateutil,dbo,dbo.Alertas_Sistema,dbo.CRM_Cat_EstatusContrato,dbo.CRM_Cat_EstatusLead,dbo.CRM_Cat_EstatusOportunidad,dbo.CRM_Cat_EstatusPropuesta,dbo.CRM_Cat_MotivosGanada,dbo.CRM_Cat_MotivosPerdida,dbo.CRM_Cat_OrigenLead,dbo.CRM_Cat_Prioridades,dbo.CRM_Cat_Sectores,dbo.CRM_Cat_TamanosCliente,dbo.CRM_Cat_TiposPipeline,dbo.CRM_Config_PipelineEtapas,dbo.CRM_Config_Pipelines,dbo.Comercial_KPIs_Diarios_v2,dbo.Comercial_MPRO_MenuPOS_Sync,dbo.Comercial_Ventas_Dia_Abiertas_v2,dbo.Compras_Inventarios_Fisicos_Detalle_Sync,dbo.Compras_Inventarios_Fisicos_Sync,dbo.Compras_Inventarios_Movimientos_Sync,dbo.Compras_Ordenes,dbo.Compras_OrdenesDetalle,dbo.Compras_Pedidos,dbo.Compras_PedidosDetalle,dbo.Compras_Recepciones,dbo.Compras_RecepcionesDetalle,dbo.Compras_Requisiciones_Sync,dbo.Compras_Sync_Checkpoint,dbo.Compras_Sync_Log,dbo.ConsultasSQL_EjecucionesLog,dbo.Finanzas_AuditoriaFinanciera,dbo.Finanzas_Presupuestos,dbo.Inventario_Almacenes,dbo.Inventario_Existencias,dbo.Inventario_Movimientos,dbo.Inventario_MovimientosDetalle,dbo.Inventario_TipoMovimiento,dbo.Operativo_BitacoraCompras,dbo.Operativo_PedidosProcesados,dbo.Operativo_TareasCompras,dbo.Producto_Catalogo,dbo.Producto_MapeoOrigen,dbo.Proveedor_Catalogo,dbo.Scheduler_BitacoraJobs,dbo.Servidores_Conexiones,dbo.Servidores_Status,dbo.Sistema_Empresas,dbo.Sistema_ServidorSucursalesConfig,dbo.Sistema_SucursalServidorMapeo,dbo.Sistema_Sucursales,dbo.Sync_Control_Ejecuciones,dbo.Sync_Mesas,dbo.Sync_Response_Cache,dbo.Sync_Sales,dbo.Unidades_Negocio,dbo.Usuario_Acciones,dbo.Usuario_Catalogo,dbo.Usuario_LogAccesos,dbo.Usuario_Modulos,dbo.Usuario_PermisosRolModulo,dbo.Usuario_Roles,dbo.Usuario_RolesAsignacion,dbo.Workflow_DetalleDiferencias,dbo.vw_Comercial_KPIs_Diarios_v2_Runtime,dbutils,deben,decimal,dias_inventario,din,dotenv,e,elaborados,en,enum,fastapi,grupos,gruposi,gruposiclasificacion,grupossubgrupos,insumos,insumosdetalle,insumospresentaciones,inventariopendiente,invfisico,invfisicomovtos,io,meseros,modificadores,modules,new_version,openpyxl,ordenescompra,para,params,passlib,pathlib,producto,producto_kit,productos,productosdetalle,propinas_tpv_config,propinas_tpv_control,propinas_tpv_historial,pydantic,pymongo,receta,reportlab,routes,sendgrid,server_id,set_parts,si,starlette,subgrupo_insumos,subgrupos,sucursal,sucursales,sys,sysobjects,table,tempcheques,time,turnos,types,typing,update_query,update_sql,updates,uuid,venta,vw_Comercial_KPIs_Diarios_v2_Runtime,zoneinfo
+DECISION=EXISTEN_FUENTES_REUTILIZABLES_DE_HORARIO_Y_TIMEZONE_EN_REPOSITORIO
+SIGUIENTE_PASO=AUDITAR_ESQUEMA_Y_CONTRATO_EXACTO_DE_LAS_TABLAS_CANDIDATAS
+PARCHEAR_OPERATIONAL_WINDOW_AHORA=NO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+
+===== 4. INTEGRIDAD FINAL =====
+RESULTADO=PASS
+AUDITORIA_LINAJE_CONFIG_OPERATIVA_REPOSITORIO=PASS
+FUENTES_ESQUEMA_HORARIOS=9
+FUENTES_CONFIG_OPERATIVA=1
+FUENTES_TIMEZONE_EMPRESA=94
+FUENTES_TIMEZONE_UNIDAD=143
+TABLAS_HORARIO_CANDIDATAS=Almacen,Cat_Familias,Comercial,Comercial_CompetidoresCatalogo,Comercial_CompetidoresUnidad,ConsultasSQL_Catalogo,ConsultasSQL_Parametros,Fact_Ventas_Consolidadas,INFORMATION_SCHEMA,Producto,Products,Proveedor,REQUISICION_COMPRA,REQUISICION_COMPRA_DETALLE,RH_Colaboradores_Expediente,SET,Sistema_TurnosOperativosUnidad,Sync_Sales,Venta,View_Sync_Sales_Detalle,almacen,cheqdet,cheques,chequespagos,compras,comprasmovtos,consultas_cursor,core,cursor,datetime,dbo,dbo.Sistema_Gobierno_Tablas,dbo.Sistema_SyncPOS_Bitacora,dbo.Sistema_SyncPOS_Config,dbo.Sistema_SyncPOS_EstadoUnidad,dbo.Sistema_SyncPOS_Faltantes,dbo.Sync_Mesas,dbo.Sync_Metas_Comerciales,dbo.Sync_Movimientos_Detalle,dbo.Sync_PAX_Detalle,dbo.Sync_Precios_Historicos,dbo.Sync_Sales,dbo.Sync_Ticket_Perfecto,dotenv,existenciasalmacen,fastapi,formaspago,insumos,meseros,pathlib,productos,proveedores,pydantic,sys,turnos,typing,zoneinfo
+TABLAS_TIMEZONE_CANDIDATAS=Alertas_Sistema,Almacen,Auditoria_Inventario_Provisional,CRM_Cat_EstatusLead,CRM_Cat_EstatusOportunidad,CRM_Cat_OrigenLead,CRM_Cat_Prioridades,CRM_Cat_TiposPipeline,CRM_Config_Etapas_Pipeline,CRM_Config_PipelineEtapas,CRM_Config_Pipelines,CRM_Leads,CRM_Oportunidades,CRM_Oportunidades_HistorialEtapas,CRM_Staging_Cuentas,CRM_Staging_Leads,CRM_Staging_Oportunidades,Cat_Familias,Categoria,Cliente_Catalogo,Comanda,Comanda_Detalle,Comercial,Comercial_CompetidoresCatalogo,Comercial_CompetidoresUnidad,Comercial_Dashboard_Cache,Comercial_KPIs_Cache,Comercial_KPIs_Diarios_v2,Comercial_Metas,Comercial_SyncLog_v2,Comercial_Ventas_Dia_Abiertas_v2,Comercial_Ventas_Sync,Compras_Eventos_Pendientes,Compras_Inventarios_Fisicos_Detalle_Sync,Compras_Inventarios_Fisicos_Sync,Compras_Inventarios_Movimientos_Sync,Compras_KPIs_Historico,Compras_Parametros_Sucursal,Compras_Sync_Checkpoint,Config_Asignaciones,Configuracion_Operativa,Existencia,Fact_Ventas_Consolidadas,Familia,Finanzas_KPIs_Historico,Fisico,Formula_Produccion,Formula_Produccion_Detalle,INFORMATION_SCHEMA,Impuesto,Impuesto_Grupo_Impuesto,ImpuestosPriorizados,InventarioMesActual,InventarioMesAnterior,InventariosMes,Inventarios_SinAsignar,KPIs,Movimiento,Nomina_Cat_Conceptos,Nomina_Periodos,Nomina_Resumen,Operaciones_Tablaje_Autorizaciones,Operaciones_Tablaje_Mermas,Operaciones_Tablaje_Ordenes,Operaciones_Tablaje_OrdenesDetalle,Operaciones_Tablaje_Plantillas,Operaciones_Tablaje_PlantillasDetalle,Operaciones_Tablaje_Rendimientos,Operaciones_Tablaje_SyncLog,Operativo_AuditoriasProgramadas,Operativo_BitacoraCompras,Operativo_CargosResponsabilidad,Operativo_DocumentosGenerados,Operativo_HistorialAsignaciones,Operativo_HistorialCargos,Operativo_Notificaciones_Log,Operativo_PedidosProcesados,Operativo_ResponsabilidadEconomica,Operativo_TareasCompras,Orden_Compra,Periodo_Operativo,Producto,Producto_Catalogo,Producto_Familias,Producto_Kit,Producto_Lineas,Producto_MapeoOrigen,Producto_Precio,Producto_Presentaciones,Producto_SubFamilias,Products,RH_Auditoria_Fiscal,RH_Cat_Puestos,RH_Cat_Sucursales,RH_Cat_SucursalesFiscal,RH_Cat_Tipos_Incidencias,RH_Colaboradores_Expediente,RH_Flujo_Nomina_Sucursal,RH_Incidencias_Nomina,RH_Reloj_Checador,RankedConnections,SET,Scheduler_BitacoraJobs,Scheduler_InventariosProcesados,Scheduler_PedidosProcesados,Servidores_Conexiones,Servidores_Conexiones_Log,Servidores_Status,Sistema_Empresas,Sistema_EmpresasMongoMap,Sistema_EmpresasServidores,Sistema_Log_Solicitudes,Sistema_SucursalServidorConfig,Sistema_SucursalServidorMapeo,Sistema_Sucursales,Sistema_Tipos,Sistema_TiposVariantes,Sistema_TurnosOperativosUnidad,SubFamilia,Sucursal,Sync_Catalogo_Filtros,Sync_Control_Ejecuciones,Sync_Mesas,Sync_Metas_Comerciales,Sync_PAX_Detalle,Sync_Precios_Historicos,Sync_Productos,Sync_Productos_Compuestos,Sync_Productos_Elaborados,Sync_Productos_Insumos,Sync_Productos_Recetas,Sync_Sales,Sync_Ticket_Perfecto,Sync_Ventas_Historicas,Sync_Ventas_PorHora,Tablajeria_ConfigContable,Tablajeria_CosteoDetalle,Tablajeria_CosteoProduccion,Tablajeria_MovimientosInventario,Tablajeria_PolizasContables,Tablajeria_PolizasDetalle,Tareas_Inventario,Tipo_Movimiento,Unidades_Negocio,Usuario_Acciones,Usuario_AlmacenesAsignacion,Usuario_Catalogo,Usuario_EmpresasAsignacion,Usuario_LogRBACVerificacion,Usuario_Modulos,Usuario_PermisosRolModulo,Usuario_Roles,Usuario_RolesAsignacion,Usuario_ServidoresAsignacion,Usuario_SucursalesAsignacion,Usuarios,Vendedor,Venta,Venta_Encabezado,View_Sync_Sales_Detalle,Workflow_DecisionesAuditoria,Workflow_DetalleDiferencias,Workflow_Inventarios,Workflow_Justificaciones,a,abc,almacen,api,auditoria_financiera,base_select,catalogo,catalogo_base,cheqdet,cheques,collections,con,conceptos,concurrent,configuraci,contextlib,contra,core,costos,cuentas,cursor,data,dataclasses,datetime,dateutil,dbo,dbo.Alertas_Sistema,dbo.CRM_Cat_EstatusContrato,dbo.CRM_Cat_EstatusLead,dbo.CRM_Cat_EstatusOportunidad,dbo.CRM_Cat_EstatusPropuesta,dbo.CRM_Cat_MotivosGanada,dbo.CRM_Cat_MotivosPerdida,dbo.CRM_Cat_OrigenLead,dbo.CRM_Cat_Prioridades,dbo.CRM_Cat_Sectores,dbo.CRM_Cat_TamanosCliente,dbo.CRM_Cat_TiposPipeline,dbo.CRM_Config_PipelineEtapas,dbo.CRM_Config_Pipelines,dbo.Comercial_KPIs_Diarios_v2,dbo.Comercial_MPRO_MenuPOS_Sync,dbo.Comercial_Ventas_Dia_Abiertas_v2,dbo.Compras_Inventarios_Fisicos_Detalle_Sync,dbo.Compras_Inventarios_Fisicos_Sync,dbo.Compras_Inventarios_Movimientos_Sync,dbo.Compras_Ordenes,dbo.Compras_OrdenesDetalle,dbo.Compras_Pedidos,dbo.Compras_PedidosDetalle,dbo.Compras_Recepciones,dbo.Compras_RecepcionesDetalle,dbo.Compras_Requisiciones_Sync,dbo.Compras_Sync_Checkpoint,dbo.Compras_Sync_Log,dbo.ConsultasSQL_EjecucionesLog,dbo.Finanzas_AuditoriaFinanciera,dbo.Finanzas_Presupuestos,dbo.Inventario_Almacenes,dbo.Inventario_Existencias,dbo.Inventario_Movimientos,dbo.Inventario_MovimientosDetalle,dbo.Inventario_TipoMovimiento,dbo.Operativo_BitacoraCompras,dbo.Operativo_PedidosProcesados,dbo.Operativo_TareasCompras,dbo.Producto_Catalogo,dbo.Producto_MapeoOrigen,dbo.Proveedor_Catalogo,dbo.Scheduler_BitacoraJobs,dbo.Servidores_Conexiones,dbo.Servidores_Status,dbo.Sistema_Empresas,dbo.Sistema_ServidorSucursalesConfig,dbo.Sistema_SucursalServidorMapeo,dbo.Sistema_Sucursales,dbo.Sync_Control_Ejecuciones,dbo.Sync_Mesas,dbo.Sync_Response_Cache,dbo.Sync_Sales,dbo.Unidades_Negocio,dbo.Usuario_Acciones,dbo.Usuario_Catalogo,dbo.Usuario_LogAccesos,dbo.Usuario_Modulos,dbo.Usuario_PermisosRolModulo,dbo.Usuario_Roles,dbo.Usuario_RolesAsignacion,dbo.Workflow_DetalleDiferencias,dbo.vw_Comercial_KPIs_Diarios_v2_Runtime,dbutils,deben,decimal,dias_inventario,din,dotenv,e,elaborados,en,enum,fastapi,grupos,gruposi,gruposiclasificacion,grupossubgrupos,insumos,insumosdetalle,insumospresentaciones,inventariopendiente,invfisico,invfisicomovtos,io,meseros,modificadores,modules,new_version,openpyxl,ordenescompra,para,params,passlib,pathlib,producto,producto_kit,productos,productosdetalle,propinas_tpv_config,propinas_tpv_control,propinas_tpv_historial,pydantic,pymongo,receta,reportlab,routes,sendgrid,server_id,set_parts,si,starlette,subgrupo_insumos,subgrupos,sucursal,sucursales,sys,sysobjects,table,tempcheques,time,turnos,types,typing,update_query,update_sql,updates,uuid,venta,vw_Comercial_KPIs_Diarios_v2_Runtime,zoneinfo
+DECISION=EXISTEN_FUENTES_REUTILIZABLES_DE_HORARIO_Y_TIMEZONE_EN_REPOSITORIO
+SIGUIENTE_PASO=AUDITAR_ESQUEMA_Y_CONTRATO_EXACTO_DE_LAS_TABLAS_CANDIDATAS
+PARCHEAR_OPERATIONAL_WINDOW_AHORA=NO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+JSON=/app/edarsahub_operational_config_repository_lineage_20260805T155935Z.json
+DETAIL=/app/edarsahub_operational_config_repository_lineage_20260805T155935Z_detail.txt
+REPORT=/app/edarsahub_operational_config_repository_lineage_20260805T155935Z.txt

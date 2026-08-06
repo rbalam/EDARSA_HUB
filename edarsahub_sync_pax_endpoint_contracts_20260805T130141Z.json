@@ -1,0 +1,154 @@
+{
+  "functions": [
+    {
+      "file": "backend/modules/comercial/inteligencia_comercial_routes.py",
+      "function": "get_pax_inteligencia",
+      "async": true,
+      "line_start": 266,
+      "line_end": 310,
+      "routes": [
+        "router.get(\"/pax\")"
+      ],
+      "parameters": [
+        "sucursal_nombre",
+        "fecha_inicio",
+        "fecha_fin",
+        "detalle_mesero",
+        "current_user"
+      ],
+      "sync_sql": [
+        "Detalle de PAX (comensales). Fuente: dbo.Sync_PAX_Detalle (tabla sincronizada)",
+        ", SUM(ISNULL(NumeroComensales, 0)) AS numero_comensales, SUM(ISNULL(VentaCuenta, 0)) AS venta_cuenta, CASE WHEN SUM(ISNULL(NumeroComensales, 0)) > 0 THEN SUM(ISNULL(VentaCuenta, 0)) / SUM(ISNULL(NumeroComensales, 0)) ELSE 0 END AS consumo_promedio_pax, AVG(CAST(ISNULL(TiempoMesa, 0) AS FLOAT)) AS tiempo_mesa_promedio, MAX(FechaSync) AS ultima_sync FROM dbo.Sync_PAX_Detalle WHERE",
+        "Sync_PAX_Detalle"
+      ],
+      "sync_columns": [
+        "CASE",
+        "CAST",
+        "ISNULL",
+        "MAX"
+      ],
+      "filters": [
+        "Sync_PAX_Detalle"
+      ],
+      "response_shapes": [
+        "return {\"source\": \"Sync_PAX_Detalle\", \"data\": _query(sql, params)}"
+      ],
+      "canonical_references_inside_function": []
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "function": "comercial_reporte_pax",
+      "async": true,
+      "line_start": 3486,
+      "line_end": 3595,
+      "routes": [
+        "router.get(\"/comercial/reporte-pax/{server_id}\")"
+      ],
+      "parameters": [
+        "server_id",
+        "sucursal",
+        "fecha_inicio",
+        "fecha_fin",
+        "current_user"
+      ],
+      "sync_sql": [
+        "Reporte de PAX (comensales) por sucursal. FASE DDL COMERCIAL: MIGRADO A SQL-FIRST Consulta tabla Sync_PAX_Detalle en EDARSAHUB.",
+        "SELECT * FROM Sync_PAX_Detalle WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY FechaOperacion DESC",
+        "SELECT * FROM Sync_PAX_Detalle WHERE ServerID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY SucursalNombre, FechaOperacion DESC",
+        "registros desde Sync_PAX_Detalle"
+      ],
+      "sync_columns": [
+        "FechaOperacion"
+      ],
+      "filters": [
+        "ServerID = %s AND FechaOperacion BETWEEN %s AND %s",
+        "ServerID = %s AND SucursalID = %s AND FechaOperacion BETWEEN %s AND %s"
+      ],
+      "response_shapes": [
+        "return build_envelope_response( source_status=SourceStatus.ERROR, data={\"pax_detalle\": [], \"resumen\": {}}, source_message=\"Servidor no encontrado\" )",
+        "return build_envelope_response( source_status=SourceStatus.SUCCESS if pax_detalle else SourceStatus.SUCCESS, data={\"pax_detalle\": pax_detalle, \"resumen\": resumen}, source_message=f\"SQL-First: {len(pax_detalle)} registros desde Sync_PAX_Detalle\", cache_used=False )",
+        "return build_envelope_response( source_status=SourceStatus.ERROR, data={\"pax_detalle\": [], \"resumen\": {}}, source_message=f\"Error consultando PAX: {str(e)}\" )"
+      ],
+      "canonical_references_inside_function": []
+    },
+    {
+      "file": "backend/modules/inteligencia_comercial/routes.py",
+      "function": "get_analisis_pax",
+      "async": true,
+      "line_start": 1249,
+      "line_end": 1372,
+      "routes": [
+        "router.get(\"/dashboard/pax\")"
+      ],
+      "parameters": [
+        "unidad",
+        "fecha_inicio",
+        "fecha_fin"
+      ],
+      "sync_sql": [
+        "Análisis detallado de PAX/Comensales. Fuente: Sync_PAX_Detalle",
+        "SELECT SUM(NumeroComensales) AS pax_total, SUM(VentaCuenta) AS ventas_total, COUNT(*) AS total_mesas, AVG(ConsumoPromedioPAX) AS consumo_promedio, AVG(TiempoMesa) AS tiempo_promedio_mesa FROM Sync_PAX_Detalle WHERE",
+        "SELECT Turno, SUM(NumeroComensales) AS pax, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas, AVG(ConsumoPromedioPAX) AS consumo_promedio FROM Sync_PAX_Detalle WHERE",
+        "SELECT DiaSemana, SUM(NumeroComensales) AS pax, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas FROM Sync_PAX_Detalle WHERE",
+        "SELECT TOP 10 MeseroNombre, SUM(NumeroComensales) AS pax_atendidos, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas_atendidas, AVG(ConsumoPromedioPAX) AS ticket_promedio FROM Sync_PAX_Detalle WHERE"
+      ],
+      "sync_columns": [
+        "COUNT",
+        "ConsumoPromedioPAX",
+        "DiaSemana",
+        "NumeroComensales",
+        "TOP",
+        "TiempoMesa",
+        "Turno",
+        "VentaCuenta"
+      ],
+      "filters": [
+        "SELECT Turno, SUM(NumeroComensales) AS pax, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas, AVG(ConsumoPromedioPAX) AS consumo_promedio FROM Sync_PAX_Detalle WHERE SELECT DiaSemana, SUM(NumeroComensales) AS pax, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas FROM Sync_PAX_Detalle WHERE SELECT TOP 10 MeseroNombre, SUM(NumeroComensales) AS pax_atendidos, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas_atendidas, AVG(ConsumoPromedioPAX) AS ticket_promedio FROM Sync_PAX_Detalle WHERE"
+      ],
+      "response_shapes": [
+        "return { \"success\": True, \"_source\": \"SQL_SYNC_PAX_DETALLE\", \"_unidad\": unidad_db or \"TODAS\", \"resumen\": { \"pax_total\": int(resumen_data.get(\"pax_total\", 0) or 0), \"ventas_total\": round(float(resumen_data.get(\"ventas_total\", 0) or 0), 2), \"total_mesas\": int(resumen_data.get(\"total_mesas\", 0) or 0), \"consumo_promedio\": round(float(resumen_data.get(\"consumo_promedio\", 0) or 0), 2), \"tiempo_promedio_mesa\": int(resumen_data.get(\"tiempo_promedio_mesa\", 0) or 0) }, \"por_turno\": [ { \"turno\": t[\"Turno\"], \"pax\": int(t[\"pax\"] or 0), \"ventas\": round(float(t[\"ventas\"] or 0), 2), \"mesas\": int(t[\"mesas\"] or 0) } for t in por_turno ], \"por_dia_semana\": [ { \"dia\": d[\"DiaSemana\"], \"pax\": int(d[\"pax\"] or 0), \"ventas\": round(float(d[\"ventas\"] or 0), 2), \"mesas\": int(d[\"mesas\"] or 0) } for d in por_dia ], \"top_meseros\": [ { \"mesero\": m[\"MeseroNombre\"], \"pax_atendidos\": int(m[\"pax_atendidos\"] or 0), \"ventas\": round(float(m[\"ventas\"] or 0), 2), \"mesas\": int(m[\"mesas_atendidas\"] or 0), \"ticket_promedio\": round(float(m[\"ticket_promedio\"] or 0), 2) } for m in top_meseros ] }",
+        "return {\"success\": False, \"_error\": str(e)}"
+      ],
+      "canonical_references_inside_function": []
+    },
+    {
+      "file": "backend/core/scheduler/jobs/inteligencia_comercial_status_job.py",
+      "function": "execute",
+      "async": true,
+      "line_start": 55,
+      "line_end": 122,
+      "routes": [],
+      "parameters": [
+        "self"
+      ],
+      "sync_sql": [
+        "SELECT Fuente, UltimaFechaOperacion, UltimaFechaSincronizacion, Registros, CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado FROM ( SELECT 'Comercial_KPIs_Diarios_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_sincronizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_KPIs_Diarios_v2 WHERE ISNULL(activo, 1) = 1 UNION ALL SELECT 'Comercial_Ventas_Dia_Abiertas_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_ultima_actualizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 UNION ALL SELECT 'Sync_PAX_Detalle' AS Fuente, MAX(FechaOperacion) AS UltimaFechaOperacion, MAX(FechaSync) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_PAX_Detalle UNION ALL SELECT 'Sync_Sales' AS Fuente, CAST(MAX(FechaHora) AS DATE) AS UltimaFechaOperacion, MAX(last_modified) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_Sales ) s;"
+      ],
+      "sync_columns": [
+        "CASE",
+        "CAST",
+        "COUNT",
+        "Fuente",
+        "MAX",
+        "Registros",
+        "UltimaFechaOperacion",
+        "UltimaFechaSincronizacion"
+      ],
+      "filters": [
+        "ISNULL(activo, 1) = 1 UNION ALL SELECT 'Comercial_Ventas_Dia_Abiertas_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_ultima_actualizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 UNION ALL SELECT 'Sync_PAX_Detalle' AS Fuente, MAX(FechaOperacion) AS UltimaFechaOperacion, MAX(FechaSync) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_PAX_Detalle UNION ALL SELECT 'Sync_Sales' AS Fuente, CAST(MAX(FechaHora) AS DATE) AS UltimaFechaOperacion, MAX(last_modified) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_Sales ) s;"
+      ],
+      "response_shapes": [
+        "return { \"processed_count\": len(rows), \"success_count\": ok, \"failed_count\": failed, \"skipped_count\": stale, \"message\": f\"Inteligencia Comercial status: OK={ok}, STALE={stale}, SIN_DATOS/ERROR={failed}\", \"details\": {\"sources\": rows}, }"
+      ],
+      "canonical_references_inside_function": [
+        "SELECT Fuente, UltimaFechaOperacion, UltimaFechaSincronizacion, Registros, CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado FROM ( SELECT 'Comercial_KPIs_Diarios_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_sincronizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_KPIs_Diarios_v2 WHERE ISNULL(activo, 1) = 1 UNION ALL SELECT 'Comercial_Ventas_Dia_Abiertas_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_ultima_actualizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 UNION ALL SELECT 'Sync_PAX_Detalle' AS Fuente, MAX(FechaOperacion) AS UltimaFechaOperacion, MAX(FechaSync) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_PAX_Detalle UNION ALL SELECT 'Sync_Sales' AS Fuente, CAST(MAX(FechaHora) AS DATE) AS UltimaFechaOperacion, MAX(last_modified) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_Sales ) s;"
+      ]
+    }
+  ],
+  "summary": {
+    "functions": 4,
+    "files": 4,
+    "routes": 3,
+    "functions_with_existing_canonical_reference": 1
+  }
+}

@@ -1,0 +1,104 @@
+===== 1. CONTROL =====
+RAMA=Edarsahub_Desarrollo
+HEAD=3dfba587c0b20a0a23537d12f8258dc0076206b4
+STAGING_ANTES:
+VACIO
+CONTROL=OK
+
+===== 2. EJECUTAR RESOLVER CANONICO =====
+CONTEXTOS_TOTAL=5
+CONTEXT|unidad_pk=19e076fb-c6de-4ea5-84ab-1caa9e86082c|unidad_codigo=130MID|unidad_nombre=130° MERIDA|server_id=a5547321-1139-4d2b-9d53-182ca737b6b6|sucursal_origen_id=|sucursal_legacy_id=0|system_type=SOFTRESTAURANT|config_completa=SI
+CONTEXT|unidad_pk=b06ee652-0370-4267-b0a8-da6fc39b590a|unidad_codigo=CIENFUEGOS|unidad_nombre=CIENFUEGOS|server_id=6d053c22-523e-48c0-b72b-96081e2d781b|sucursal_origen_id=|sucursal_legacy_id=0|system_type=SOFTRESTAURANT|config_completa=SI
+CONTEXT|unidad_pk=dfb86008-1b81-472a-9e50-8a0821dec4b2|unidad_codigo=ESTELAR|unidad_nombre=LA ESTELAR|server_id=a5ff0e25-f029-43db-b634-d4ac814c904f|sucursal_origen_id=|sucursal_legacy_id=0|system_type=SOFTRESTAURANT|config_completa=SI
+CONTEXT|unidad_pk=9bc05ced-6b2b-4a0a-aa90-ce649b78e12c|unidad_codigo=130QRO|unidad_nombre=130° QUERETARO|server_id=1b230a06-ffaf-4c70-bd27-b1be3579dea6|sucursal_origen_id=0021|sucursal_legacy_id=21|system_type=MANAGEMENTPRO|config_completa=SI
+CONTEXT|unidad_pk=23ca0b76-6580-4874-ba9b-672b122ca197|unidad_codigo=ORIGEN|unidad_nombre=ORIGEN|server_id=1b230a06-ffaf-4c70-bd27-b1be3579dea6|sucursal_origen_id=0023|sucursal_legacy_id=23|system_type=MANAGEMENTPRO|config_completa=SI
+ENV_CARGADO_EN_MEMORIA=SI
+DATABASE=EDARSAHUB
+LOGIN=HRLectura
+SECRETOS_IMPRESOS=NO
+POS_EXTERNOS_CONECTADOS=NO
+RESOLVER_CANONICO=PASS
+
+===== 3. PREPARAR COMPARACION SQL =====
+SQL_SOLO_SELECT=SI
+
+===== 4. DRY-RUN =====
+Ejecución completada correctamente.
+Reporte generado: /app/docs/reports/sql_runner_logs/20260805_033925_dry-run_mapping_contract.md
+DRY_RUN=PASS
+
+===== 5. EJECUTAR SELECT =====
+Ejecución completada correctamente.
+Reporte generado: /app/docs/reports/sql_runner_logs/20260805_033926_diagnostic_mapping_contract.md
+  Batch 1: 5 filas
+SELECT_COMPARACION=PASS
+SQL_REPORT=/app/docs/reports/sql_runner_logs/20260805_033926_diagnostic_mapping_contract.md
+
+===== 6. DECIDIR CONTRATO EXACTO =====
+UNIDAD=130MID|ORIGEN_MATCH=NO|LEGACY_MATCH=NO
+UNIDAD=CIENFUEGOS|ORIGEN_MATCH=NO|LEGACY_MATCH=NO
+UNIDAD=ESTELAR|ORIGEN_MATCH=NO|LEGACY_MATCH=NO
+UNIDAD=130QRO|ORIGEN_MATCH=NO|LEGACY_MATCH=NO
+UNIDAD=ORIGEN|ORIGEN_MATCH=NO|LEGACY_MATCH=NO
+CONTEXTOS=5
+MATCH_ORIGEN=0
+MATCH_LEGACY=0
+DECISION_ADAPTACION=NO_CONCLUYENTE_NO_APLICAR_PATCH
+RESOLVER_CANONICO=list_pos_runtime_contexts
+CONSULTA_DIRECTA_SERVIDORES_EN_JOB=ELIMINAR
+CONSULTA_DIRECTA_MAPEO_EN_JOB=ELIMINAR
+TABLA_JOB_SYNC_RESOLVER_NUEVO=NO
+
+===== 7. CONTROL FINAL =====
+STAGING_INTACTO=SI
+ESTADO_GIT_CAMBIO_SOLO_POR_REPORTES=SI
+AUDITORIA_MAPEO_POS_CANONICO=COMPLETADA
+ENV_CARGADO_EN_MEMORIA=SI
+RESOLVER_CANONICO=PASS
+CONTEXTOS=5
+DECISION_ADAPTACION=NO_CONCLUYENTE_NO_APLICAR_PATCH
+SECRETOS_IMPRESOS=NO
+POS_EXTERNOS_CONECTADOS=NO
+PATCH_APLICADO=NO
+TABLA_NUEVA=NO
+JOB_NUEVO=NO
+SYNC_NUEVO=NO
+RESOLVER_NUEVO=NO
+CODIGO_MODIFICADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+REPORT=/app/edarsahub_pos_context_mapping_retry_20260805T033924Z.txt
+COMPACT=/app/edarsahub_pos_context_mapping_retry_20260805T033924Z_compact.txt
+CONTEXTS=/var/tmp/edarsahub_pos_context_mapping_retry_20260805T033924Z/contexts_sanitized.txt
+SQL_REPORT=/app/docs/reports/sql_runner_logs/20260805_033926_diagnostic_mapping_contract.md
+DECISION_REPORT=/var/tmp/edarsahub_pos_context_mapping_retry_20260805T033924Z/decision.txt
+SIGUIENTE_ESTADO=PREPARAR_PATCH_MINIMO_DEL_JOB_CON_RESOLVER_CANONICO
+
+===== 8. RESULTADO =====
+AUDITORIA_MAPEO_POS_CANONICO=COMPLETADA
+ENV_CARGADO_EN_MEMORIA=SI
+RESOLVER_CANONICO=PASS
+CONTEXTOS=5
+DECISION_ADAPTACION=NO_CONCLUYENTE_NO_APLICAR_PATCH
+SECRETOS_IMPRESOS=NO
+POS_EXTERNOS_CONECTADOS=NO
+PATCH_APLICADO=NO
+TABLA_NUEVA=NO
+JOB_NUEVO=NO
+SYNC_NUEVO=NO
+RESOLVER_NUEVO=NO
+CODIGO_MODIFICADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+REPORT=/app/edarsahub_pos_context_mapping_retry_20260805T033924Z.txt
+COMPACT=/app/edarsahub_pos_context_mapping_retry_20260805T033924Z_compact.txt
+CONTEXTS=/var/tmp/edarsahub_pos_context_mapping_retry_20260805T033924Z/contexts_sanitized.txt
+SQL_REPORT=/app/docs/reports/sql_runner_logs/20260805_033926_diagnostic_mapping_contract.md
+DECISION_REPORT=/var/tmp/edarsahub_pos_context_mapping_retry_20260805T033924Z/decision.txt
+SIGUIENTE_ESTADO=PREPARAR_PATCH_MINIMO_DEL_JOB_CON_RESOLVER_CANONICO

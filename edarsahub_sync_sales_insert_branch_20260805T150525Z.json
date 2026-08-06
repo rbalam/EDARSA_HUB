@@ -1,0 +1,43 @@
+{
+  "function": "insert_into_sync_sales",
+  "line_start": 243,
+  "line_end": 293,
+  "sql_literals": [
+    {
+      "line": 254,
+      "sql": "SELECT COUNT(*) FROM Sync_Sales WHERE NumeroTicket = %s AND UnidadNegocio = %s AND CAST(FechaHora AS DATE) = CAST(%s AS DATE)"
+    },
+    {
+      "line": 264,
+      "sql": "INSERT INTO Sync_Sales ( id, branch, UnidadNegocio, NumeroTicket, MontoTotal, Pax, FechaHora, status, items, created_at, total ) VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, GETDATE(), %s )"
+    }
+  ],
+  "fetch_calls": [
+    {
+      "line": 260,
+      "text": "cursor.fetchone()"
+    }
+  ],
+  "exists_variables": [],
+  "skip_conditions": [],
+  "id_assignments": [],
+  "uuid_calls": [],
+  "returns": [
+    {
+      "line": 293,
+      "text": "return inserted"
+    },
+    {
+      "line": 246,
+      "text": "return 0"
+    }
+  ],
+  "continues": [
+    261
+  ],
+  "breaks": [],
+  "select_sql_count": 1,
+  "insert_sql_count": 1,
+  "update_sql_count": 0,
+  "skip_on_existing": false
+}

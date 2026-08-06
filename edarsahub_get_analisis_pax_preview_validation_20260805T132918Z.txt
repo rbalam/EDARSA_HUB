@@ -1,0 +1,53 @@
+===== 1. GUARDRAILS Y SINCRONIZACION =====
+From https://github.com/rbalam/EDARSA_HUB
+ * branch              Edarsahub_Desarrollo -> FETCH_HEAD
+RAMA=Edarsahub_Desarrollo
+LOCAL_HEAD=98308eace0ef98f35c45e57a0c6fb724065e81ab
+REMOTE_HEAD=98308eace0ef98f35c45e57a0c6fb724065e81ab
+TARGET_SHA=c2a276ff06373b7fccbe78a191cfecf5baf30b9ada821e20ffde628e3119c739
+AHEAD_LOCAL=0
+BEHIND_LOCAL=0
+LOCAL_REMOTO_SINCRONIZADOS=PASS
+PUSH_REQUERIDO=NO
+CONTROL=PASS
+
+===== 2. ESTADO BACKEND ANTES =====
+backend                          RUNNING   pid 50, uptime 0:08:15
+PID_ANTES=50
+
+===== 3. REINICIAR SOLO BACKEND PREVIEW =====
+backend: stopped
+backend: started
+backend                          RUNNING   pid 10792, uptime 0:00:15
+PID_DESPUES=10792
+HEALTH_HTTP=200
+HEALTH_STATUS=operativo
+REINICIO_BACKEND=PASS
+
+===== 4. VALIDAR CONTRATO RUNTIME 410 =====
+Traceback (most recent call last):
+  File "<stdin>", line 8, in <module>
+  File "/app/backend/modules/inteligencia_comercial/routes.py", line 31, in <module>
+    from core.kpis_canonicos.service import KPIsCanonicosService
+  File "/app/backend/core/kpis_canonicos/__init__.py", line 21, in <module>
+    from core.kpis_canonicos.service import (
+  File "/app/backend/core/kpis_canonicos/service.py", line 17, in <module>
+    from core.server_registry import EDARSAHUB_CONFIG
+  File "/app/backend/core/server_registry.py", line 35, in <module>
+    _cfg = get_edarsahub_sql_config()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/backend/core/config/edarsahub_config.py", line 50, in get_edarsahub_sql_config
+    host=_required(f"{prefix}_HOST"),
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/backend/core/config/edarsahub_config.py", line 23, in _required
+    raise RuntimeError(
+RuntimeError: Variable obligatoria no configurada: EDARSAHUB_SQL_HOST
+RESULTADO=FALLO
+ERROR=VALIDACION_RUNTIME_410_FALLO
+REINICIO_BACKEND=SI
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+PUSH=NO
+DEPLOY=NO
+REPORT=/app/edarsahub_get_analisis_pax_preview_validation_20260805T132918Z.txt

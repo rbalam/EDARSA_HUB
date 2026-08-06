@@ -1,0 +1,41 @@
+===== 1. AUTORIZACION Y GUARDRAILS =====
+RAMA=Edarsahub_Desarrollo
+HEAD=b81a1d52e2c9d2b54422bd618f49eea729012305
+REMOTE_HEAD=b81a1d52e2c9d2b54422bd618f49eea729012305
+TARGET_SHA=585b77f82cfef82d30bcbafc4b0fa70fefdf84104a56c87638f687c515160a6a
+AUTORIZACION_DML=SI
+backend                          RUNNING   pid 17469, uptime 0:08:20
+CONTROL=PASS
+
+===== 2. CONFIRMAR CONTRATO ASINCRONO =====
+EXECUTE_ASYNC=PASS
+EJECUCION_REQUERIDA=asyncio.run
+COROUTINE_PREVIA_NO_EJECUTADA=CONFIRMADO
+
+===== 3. CONFIRMAR DESTINO TODAVIA VACIO =====
+PRE_ASYNC=Sync_Metas_Comerciales|TOTAL=0
+PRE_ASYNC=Sync_Ticket_Perfecto|TOTAL=0
+PRE_ASYNC=Sync_Mesas|TOTAL=0
+PRE_ASYNC=Sync_PAX_Detalle|TOTAL=0
+COROUTINE_ANTERIOR_SIN_DML=PASS
+DESTINOS_VACIOS=PASS
+
+===== 4. PRIMERA EJECUCION ASINCRONA =====
+[sync_comercial_endpoints] Error sync metas DEFAULT: (2628, b"String or binary data would be truncated in table 'EDARSAHUB.dbo.Sync_Metas_Comerciales', column 'MetaID'. Truncated value: 'a5547321-1139-4d2b-9d53-182ca737b6b6-DEFAULT-2026-'.DB-Lib error message 20018, severity 16:\nGeneral SQL Server error: Check messages from the SQL Server\n")
+[sync_comercial_endpoints] Error en metas: (2628, b"String or binary data would be truncated in table 'EDARSAHUB.dbo.Sync_Metas_Comerciales', column 'MetaID'. Truncated value: 'a5547321-1139-4d2b-9d53-182ca737b6b6-DEFAULT-2026-'.DB-Lib error message 20018, severity 16:\nGeneral SQL Server error: Check messages from the SQL Server\n")
+[sync_comercial_endpoints] Error sync ticket DEFAULT: (2628, b"String or binary data would be truncated in table 'EDARSAHUB.dbo.Sync_Ticket_Perfecto', column 'TicketID'. Truncated value: 'a5547321-1139-4d2b-9d53-182ca737b6b6-DEFAULT-2026-'.DB-Lib error message 20018, severity 16:\nGeneral SQL Server error: Check messages from the SQL Server\n")
+[sync_comercial_endpoints] Error en ticket_perfecto: (2628, b"String or binary data would be truncated in table 'EDARSAHUB.dbo.Sync_Ticket_Perfecto', column 'TicketID'. Truncated value: 'a5547321-1139-4d2b-9d53-182ca737b6b6-DEFAULT-2026-'.DB-Lib error message 20018, severity 16:\nGeneral SQL Server error: Check messages from the SQL Server\n")
+Traceback (most recent call last):
+  File "<stdin>", line 50, in <module>
+RuntimeError: JOB_REPORTA_FALLO:"success": false
+ERROR=PRIMERA_EJECUCION_ASYNC_FALLO
+EJECUCION_ASYNC_SYNC_RUNTIME=FALLO
+JOB_CALLS=1
+SQL_DML_POSIBLE=SI
+COMMIT=NO
+PUSH=NO
+REINICIO_BACKEND=NO
+DEPLOY=NO
+RESULT_JSON=/app/edarsahub_sync_runtime_async_execution_20260805T054714Z.json
+REPORT=/app/edarsahub_sync_runtime_async_execution_20260805T054714Z.txt
+COMPACT=/app/edarsahub_sync_runtime_async_execution_20260805T054714Z_compact.txt

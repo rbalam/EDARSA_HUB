@@ -1,0 +1,79 @@
+===== 1. CONTROL =====
+RAMA=Edarsahub_Desarrollo
+HEAD=3fc6e34f58b4b25c52e1341debcb2d6f70a46f4d
+TARGET_SHA=9c715e135e6f85b205ab16df18d7457cf810a198f695ba74401901bd955190aa
+STAGING:
+VACIO
+CAMBIOS_TRACKED:
+VACIO
+STATUS_TARGET:
+LIMPIO
+ARCHIVOS_NO_RASTREADOS=184
+CONTROL=PASS
+
+===== 2. CONSTRUIR CANDIDATO CON AST WALK =====
+_sync_metas_comerciales|EXCEPT_HANDLERS_LOCALIZADOS=1
+_sync_ticket_perfecto|EXCEPT_HANDLERS_LOCALIZADOS=1
+_sync_mesas|EXCEPT_HANDLERS_LOCALIZADOS=1
+_sync_pax_detalle|EXCEPT_HANDLERS_LOCALIZADOS=1
+EDITS_TOTAL=8
+CURSORES_AS_DICT=4
+RAISE_AGREGADOS=4
+TRANSFORMACION=AST_WALK_Y_RANGOS_EXACTOS
+REGEX_ESTRUCTURAL=NO
+CANDIDATO_AST_PARSE=PASS
+CANDIDATE=/var/tmp/edarsahub_sync_cursor_error_candidate_v2_20260805T043259Z/sync_comercial_endpoints_job.py
+EDITS_JSON=/var/tmp/edarsahub_sync_cursor_error_candidate_v2_20260805T043259Z/edits.json
+
+===== 3. VALIDAR CANDIDATO =====
+_sync_metas_comerciales|CURSORS=1|CURSORS_AS_DICT=1|EXCEPTS=1|EXCEPTS_WITH_RAISE=1
+_sync_ticket_perfecto|CURSORS=1|CURSORS_AS_DICT=1|EXCEPTS=1|EXCEPTS_WITH_RAISE=1
+_sync_mesas|CURSORS=1|CURSORS_AS_DICT=1|EXCEPTS=1|EXCEPTS_WITH_RAISE=1
+_sync_pax_detalle|CURSORS=1|CURSORS_AS_DICT=1|EXCEPTS=1|EXCEPTS_WITH_RAISE=1
+VALIDACION_AST_CANDIDATO=PASS
+CURSORES_AS_DICT=4
+EXCEPCIONES_PROPAGADAS=4
+SYNCS_CANONICOS=4
+METODOS_LEGACY=0
+PY_COMPILE_CANDIDATO=PASS
+
+===== 4. GENERAR DIFF =====
+DIFF_HUNKS=8
+DIFF_ADDITIONS=8
+DIFF_DELETIONS=4
+DIFF_FILE=/var/tmp/edarsahub_sync_cursor_error_candidate_v2_20260805T043259Z/candidate.diff
+DIFF_CANDIDATO=PASS
+
+===== 5. CREAR PRUEBA DE CONTRATO =====
+TEST_FILE={test_file}
+TEST_LINEAS=190
+TEST_CREADO=SI
+TEST_PY_COMPILE=PASS
+
+===== 6. EJECUTAR PRUEBA =====
+Traceback (most recent call last):
+  File "/var/tmp/edarsahub_sync_cursor_error_candidate_v2_20260805T043259Z/test_candidate.py", line 190, in <module>
+    main()
+  File "/var/tmp/edarsahub_sync_cursor_error_candidate_v2_20260805T043259Z/test_candidate.py", line 179, in main
+    module = load_module()
+             ^^^^^^^^^^^^^
+  File "/var/tmp/edarsahub_sync_cursor_error_candidate_v2_20260805T043259Z/test_candidate.py", line 73, in load_module
+    spec.loader.exec_module(module)
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/var/tmp/edarsahub_sync_cursor_error_candidate_v2_20260805T043259Z/sync_comercial_endpoints_job.py", line 27, in <module>
+    from ..config import JobConfig
+ImportError: attempted relative import with no known parent package
+ERROR=PRUEBAS_RC_1
+CANDIDATO_CURSOR_ERROR_V2=FALLO
+ARCHIVO_REAL_MODIFICADO=NO
+CODIGO_PRODUCTIVO_MODIFICADO=NO
+STAGING_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+REPORT=/app/edarsahub_sync_cursor_error_candidate_v2_20260805T043259Z.txt
+TERMINAL_PERMANECE_ABIERTA=SI

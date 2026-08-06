@@ -1,0 +1,2891 @@
+{
+  "captured_at_utc": "2026-08-05T06:03:42.412492+00:00",
+  "files": [
+    {
+      "file": "backend/core/scheduler/jobs/inteligencia_comercial_status_job.py",
+      "functions": [
+        {
+          "file": "backend/core/scheduler/jobs/inteligencia_comercial_status_job.py",
+          "function": "execute",
+          "line_start": 55,
+          "line_end": 122,
+          "routes": [],
+          "sync_sources": [
+            "Sync_PAX_Detalle"
+          ],
+          "canonical_sources": [
+            "Comercial_KPIs_Diarios_v2",
+            "Comercial_Ventas_Dia_Abiertas_v2"
+          ],
+          "contract": "MIXED_WITH_FALLBACK_OR_BRANCH",
+          "called_functions": [
+            "_get_edarsahub_sql_connection",
+            "_rows_to_dicts",
+            "cursor",
+            "execute",
+            "fetchall",
+            "get",
+            "len"
+          ],
+          "sql_fragments": [
+            {
+              "sources": [
+                "Comercial_KPIs_Diarios_v2",
+                "Comercial_Ventas_Dia_Abiertas_v2",
+                "Sync_PAX_Detalle"
+              ],
+              "sql": "SELECT Fuente, UltimaFechaOperacion, UltimaFechaSincronizacion, Registros, CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado FROM ( SELECT 'Comercial_KPIs_Diarios_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_sincronizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_KPIs_Diarios_v2 WHERE ISNULL(activo, 1) = 1 UNION ALL SELECT 'Comercial_Ventas_Dia_Abiertas_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_ultima_actualizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 UNION ALL SELECT 'Sync_PAX_Detalle' AS Fuente, MAX(FechaOperacion) AS UltimaFechaOperacion, MAX(FechaSync) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_PAX_Detalle UNION ALL SELECT 'Sync_Sales' AS Fuente, CAST(MAX(FechaHora) AS DATE) AS UltimaFechaOperacion, MAX(last_modified) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_Sales ) s;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "backend/modules/comercial/inteligencia_comercial_routes.py",
+      "functions": [
+        {
+          "file": "backend/modules/comercial/inteligencia_comercial_routes.py",
+          "function": "get_inteligencia_kpis",
+          "line_start": 199,
+          "line_end": 236,
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/kpis"
+            }
+          ],
+          "sync_sources": [],
+          "canonical_sources": [
+            "Comercial_KPIs_Diarios_v2"
+          ],
+          "contract": "CANONICAL_ONLY",
+          "called_functions": [
+            "Depends",
+            "Query",
+            "_filtrar_resumen_por_unidad",
+            "_rango_default",
+            "_require_permission",
+            "date",
+            "get",
+            "int",
+            "isoformat",
+            "resumen_periodo"
+          ],
+          "sql_fragments": [
+            {
+              "sources": [
+                "Comercial_KPIs_Diarios_v2"
+              ],
+              "sql": "KPIs consolidados desde servicio canónico único. Fuente: KPIsCanonicosService -> dbo.Comercial_KPIs_Diarios_v2"
+            }
+          ]
+        },
+        {
+          "file": "backend/modules/comercial/inteligencia_comercial_routes.py",
+          "function": "get_pax_inteligencia",
+          "line_start": 266,
+          "line_end": 310,
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/pax"
+            }
+          ],
+          "sync_sources": [
+            "Sync_PAX_Detalle"
+          ],
+          "canonical_sources": [],
+          "contract": "SYNC_ONLY",
+          "called_functions": [
+            "Depends",
+            "Query",
+            "_query",
+            "_require_permission",
+            "append",
+            "get",
+            "join",
+            "timedelta",
+            "today"
+          ],
+          "sql_fragments": [
+            {
+              "sources": [
+                "Sync_PAX_Detalle"
+              ],
+              "sql": "Detalle de PAX (comensales). Fuente: dbo.Sync_PAX_Detalle (tabla sincronizada)"
+            },
+            {
+              "sources": [
+                "Sync_PAX_Detalle"
+              ],
+              "sql": ", SUM(ISNULL(NumeroComensales, 0)) AS numero_comensales, SUM(ISNULL(VentaCuenta, 0)) AS venta_cuenta, CASE WHEN SUM(ISNULL(NumeroComensales, 0)) > 0 THEN SUM(ISNULL(VentaCuenta, 0)) / SUM(ISNULL(NumeroComensales, 0)) ELSE 0 END AS consumo_promedio_pax, AVG(CAST(ISNULL(TiempoMesa, 0) AS FLOAT)) AS tiempo_mesa_promedio, MAX(FechaSync) AS ultima_sync FROM dbo.Sync_PAX_Detalle WHERE"
+            },
+            {
+              "sources": [
+                "Sync_PAX_Detalle"
+              ],
+              "sql": "Sync_PAX_Detalle"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "functions": [
+        {
+          "file": "backend/modules/comercial/routes.py",
+          "function": "get_ventas_dia_snapshot_from_edarsahub",
+          "line_start": 369,
+          "line_end": 532,
+          "routes": [],
+          "sync_sources": [],
+          "canonical_sources": [
+            "Comercial_Ventas_Dia_Abiertas_v2"
+          ],
+          "contract": "CANONICAL_ONLY",
+          "called_functions": [
+            "date",
+            "dt_time",
+            "error",
+            "execute_sql_query",
+            "float",
+            "fromisoformat",
+            "get",
+            "get_operational_window",
+            "info",
+            "int",
+            "isinstance",
+            "isoformat",
+            "len",
+            "now",
+            "replace",
+            "str",
+            "strftime",
+            "time",
+            "timedelta",
+            "timezone",
+            "total_seconds"
+          ],
+          "sql_fragments": [
+            {
+              "sources": [
+                "Comercial_Ventas_Dia_Abiertas_v2"
+              ],
+              "sql": "Obtiene snapshot de ventas del día desde EDARSAHUB. Tabla: Comercial_Ventas_Dia_Abiertas_v2 FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py en lugar de datetime.now().date() (fecha calendario). Args: server_id: ID del servidor fecha_operacion: Fecha en formato YYYY-MM-DD (si se provee explícitamente) unidad_negocio_pk: ID de la unidad para calcular FechaOperacion (opcional, pero recomendado) Returns: Dict con datos del snapshot o None si no existe { 'exists': True/False, 'ventas': Decimal, 'pax': int, 'cheques': int, 'ticket_promedio': Decimal, 'snapshot_timestamp': datetime, 'estado_dato': 'VIGENTE' | 'DESACTUALIZADO' | 'MUY_DESACTUALIZADO', 'minutos_desde_sync': int, 'fuente': 'EDARSAHUB_SNAPSHOT', 'fecha_operacion_usada': str # Para debug }"
+            },
+            {
+              "sources": [
+                "Comercial_Ventas_Dia_Abiertas_v2"
+              ],
+              "sql": "SELECT unidad_negocio_pk, unidad_negocio_nombre, server_id, sucursal_id, sucursal_nombre, snapshot_timestamp, fecha_operacion, ventas_abiertas, tickets_abiertos, pax_abiertos, ventas_cerradas_dia, tickets_cerrados_dia, pax_cerrados_dia, total_estimado_dia, fecha_ultima_actualizacion FROM Comercial_Ventas_Dia_Abiertas_v2 WHERE server_id = '"
+            }
+          ]
+        },
+        {
+          "file": "backend/modules/comercial/routes.py",
+          "function": "_tablero_ejecutivo_internal",
+          "line_start": 595,
+          "line_end": 1947,
+          "routes": [],
+          "sync_sources": [],
+          "canonical_sources": [
+            "Comercial_Ventas_Dia_Abiertas_v2"
+          ],
+          "contract": "CANONICAL_ONLY",
+          "called_functions": [
+            "ZoneInfo",
+            "_agrupar_por_unidad",
+            "_filtrar_server",
+            "add",
+            "append",
+            "build_unit_response",
+            "classify_connection_error",
+            "date",
+            "datetime",
+            "error",
+            "filtrar_unidades_por_visibilidad",
+            "float",
+            "get",
+            "get_cached_kpis",
+            "get_fecha_operacion",
+            "get_kpis_diarios",
+            "get_kpis_softrestaurant",
+            "get_servers_for_tablero",
+            "get_unidad_by_server_id",
+            "get_ventas_dia_abiertas",
+            "get_ventas_dia_snapshot_from_edarsahub",
+            "info",
+            "int",
+            "is_mpro_system",
+            "is_softrestaurant_system",
+            "isdigit",
+            "isoformat",
+            "keys",
+            "len",
+            "list",
+            "list_unidades_negocio",
+            "lower",
+            "max",
+            "min",
+            "monthrange",
+            "now",
+            "replace",
+            "resolve_user_access_context",
+            "resolver_codigo",
+            "resolver_codigo_dedup",
+            "round",
+            "save_kpis_cache",
+            "set",
+            "setdefault",
+            "sorted",
+            "split",
+            "str",
+            "strftime",
+            "strip",
+            "strptime",
+            "sum",
+            "timedelta",
+            "timezone",
+            "upper",
+            "values",
+            "warning"
+          ],
+          "sql_fragments": [
+            {
+              "sources": [
+                "Comercial_Ventas_Dia_Abiertas_v2"
+              ],
+              "sql": "Comercial_Ventas_Dia_Abiertas_v2"
+            },
+            {
+              "sources": [
+                "Comercial_Ventas_Dia_Abiertas_v2"
+              ],
+              "sql": ": Sin datos en Comercial_Ventas_Dia_Abiertas_v2"
+            }
+          ]
+        },
+        {
+          "file": "backend/modules/comercial/routes.py",
+          "function": "comercial_metas",
+          "line_start": 2058,
+          "line_end": 2382,
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/comercial/metas/{server_id}"
+            }
+          ],
+          "sync_sources": [
+            "Sync_Metas_Comerciales"
+          ],
+          "canonical_sources": [],
+          "contract": "SYNC_ONLY",
+          "called_functions": [
+            "Depends",
+            "Exception",
+            "Query",
+            "append",
+            "build_cache_key",
+            "build_envelope_response",
+            "check_column_exists",
+            "close",
+            "cursor",
+            "empty_response",
+            "error",
+            "execute",
+            "execute_sql_query",
+            "fetchall",
+            "float",
+            "get",
+            "get_cached_response",
+            "get_edarsahub_pymssql_connection",
+            "get_propina_safe_column",
+            "get_server_by_id",
+            "int",
+            "is_mpro_system",
+            "is_softrestaurant_system",
+            "isoformat",
+            "len",
+            "now",
+            "replace",
+            "resolver_codigo",
+            "round",
+            "save_to_cache",
+            "str",
+            "strftime",
+            "upper",
+            "validate_server_access_rbac",
+            "warning"
+          ],
+          "sql_fragments": [
+            {
+              "sources": [
+                "Sync_Metas_Comerciales"
+              ],
+              "sql": "Metas de ventas por sucursal/mes. FASE DDL COMERCIAL: MIGRADO A SQL-FIRST Consulta tabla Sync_Metas_Comerciales en EDARSAHUB."
+            },
+            {
+              "sources": [
+                "Sync_Metas_Comerciales"
+              ],
+              "sql": "SELECT * FROM Sync_Metas_Comerciales WHERE ServerID = %s AND SucursalID = %s AND Anio = %s AND Mes = %s ORDER BY SucursalNombre"
+            },
+            {
+              "sources": [
+                "Sync_Metas_Comerciales"
+              ],
+              "sql": "SELECT * FROM Sync_Metas_Comerciales WHERE ServerID = %s AND Anio = %s AND Mes = %s ORDER BY SucursalNombre"
+            },
+            {
+              "sources": [
+                "Sync_Metas_Comerciales"
+              ],
+              "sql": "registros desde Sync_Metas_Comerciales"
+            }
+          ]
+        },
+        {
+          "file": "backend/modules/comercial/routes.py",
+          "function": "comercial_ticket_perfecto",
+          "line_start": 2390,
+          "line_end": 2679,
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/comercial/ticket-perfecto/{server_id}"
+            }
+          ],
+          "sync_sources": [
+            "Sync_Ticket_Perfecto"
+          ],
+          "canonical_sources": [],
+          "contract": "SYNC_ONLY",
+          "called_functions": [
+            "Depends",
+            "Exception",
+            "Query",
+            "append",
+            "build_cache_key",
+            "build_envelope_response",
+            "close",
+            "cursor",
+            "date",
+            "empty_response",
+            "error",
+            "execute",
+            "execute_sql_query",
+            "fetchall",
+            "float",
+            "get",
+            "get_cached_response",
+            "get_edarsahub_pymssql_connection",
+            "get_server_by_id",
+            "int",
+            "is_softrestaurant_system",
+            "isoformat",
+            "len",
+            "min",
+            "now",
+            "replace",
+            "round",
+            "save_to_cache",
+            "str",
+            "strftime",
+            "strptime",
+            "timedelta",
+            "validate_server_access_rbac",
+            "warning"
+          ],
+          "sql_fragments": [
+            {
+              "sources": [
+                "Sync_Ticket_Perfecto"
+              ],
+              "sql": "Análisis de ticket perfecto por sucursal. FASE DDL COMERCIAL: MIGRADO A SQL-FIRST Consulta tabla Sync_Ticket_Perfecto en EDARSAHUB."
+            },
+            {
+              "sources": [
+                "Sync_Ticket_Perfecto"
+              ],
+              "sql": "SELECT * FROM Sync_Ticket_Perfecto WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY FechaOperacion DESC"
+            },
+            {
+              "sources": [
+                "Sync_Ticket_Perfecto"
+              ],
+              "sql": "SELECT * FROM Sync_Ticket_Perfecto WHERE ServerID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY SucursalNombre, FechaOperacion DESC"
+            },
+            {
+              "sources": [
+                "Sync_Ticket_Perfecto"
+              ],
+              "sql": "registros desde Sync_Ticket_Perfecto"
+            }
+          ]
+        },
+        {
+          "file": "backend/modules/comercial/routes.py",
+          "function": "comercial_ventas_tiempo",
+          "line_start": 2683,
+          "line_end": 2895,
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/comercial/ventas-tiempo/{server_id}"
+            }
+          ],
+          "sync_sources": [],
+          "canonical_sources": [
+            "Comercial_Ventas_Dia_Abiertas_v2"
+          ],
+          "contract": "CANONICAL_ONLY",
+          "called_functions": [
+            "Depends",
+            "HTTPException",
+            "Query",
+            "append",
+            "close",
+            "cursor",
+            "date",
+            "error",
+            "execute",
+            "fetchall",
+            "fetchone",
+            "float",
+            "get",
+            "get_edarsahub_pymssql_connection",
+            "get_server_by_id",
+            "hasattr",
+            "info",
+            "int",
+            "len",
+            "now",
+            "str",
+            "strftime",
+            "strptime",
+            "timedelta",
+            "validate_server_access_rbac",
+            "warning"
+          ],
+          "sql_fragments": [
+            {
+              "sources": [
+                "Comercial_Ventas_Dia_Abiertas_v2"
+              ],
+              "sql": "SELECT SUM(ISNULL(ventas_abiertas, 0) + ISNULL(ventas_cerradas_dia, 0)) as ventas, SUM(ISNULL(tickets_abiertos, 0) + ISNULL(tickets_cerrados_dia, 0)) as tickets, SUM(ISNULL(pax_abiertos, 0) + ISNULL(pax_cerrados_dia, 0)) as pax FROM Comercial_Ventas_Dia_Abiertas_v2 WHERE server_id = %s AND fecha_operacion = %s"
+            },
+            {
+              "sources": [
+                "Comercial_Ventas_Dia_Abiertas_v2"
+              ],
+              "sql": "Error consultando Comercial_Ventas_Dia_Abiertas_v2:"
+            }
+          ]
+        },
+        {
+          "file": "backend/modules/comercial/routes.py",
+          "function": "comercial_mesas",
+          "line_start": 2905,
+          "line_end": 3162,
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/comercial/mesas/{server_id}"
+            }
+          ],
+          "sync_sources": [
+            "Sync_Mesas"
+          ],
+          "canonical_sources": [],
+          "contract": "SYNC_ONLY",
+          "called_functions": [
+            "Depends",
+            "Query",
+            "_empty_mesas_unidad",
+            "_safe_float",
+            "_safe_int",
+            "append",
+            "bool",
+            "close",
+            "cursor",
+            "date",
+            "error",
+            "execute",
+            "fetchall",
+            "fetchone",
+            "float",
+            "get",
+            "get_edarsahub_pymssql_connection",
+            "get_server_by_id",
+            "hasattr",
+            "int",
+            "isinstance",
+            "len",
+            "list",
+            "lower",
+            "max",
+            "min",
+            "round",
+            "str",
+            "strip",
+            "strptime",
+            "validate_server_access_rbac"
+          ],
+          "sql_fragments": [
+            {
+              "sources": [
+                "Sync_Mesas"
+              ],
+              "sql": "Análisis de mesas por sucursal. Fuente única: - dbo.Sync_Mesas en EDARSAHUB SQL. Sin MongoDB, sin live, sin queries a SoftRestaurant/MPRO, sin estimaciones desde servidores fuente."
+            },
+            {
+              "sources": [
+                "Sync_Mesas"
+              ],
+              "sql": "EDARSAHUB_SQL_SYNC_MESAS"
+            },
+            {
+              "sources": [
+                "Sync_Mesas"
+              ],
+              "sql": "dbo.Sync_Mesas"
+            },
+            {
+              "sources": [
+                "Sync_Mesas"
+              ],
+              "sql": "EDARSAHUB_SQL_SYNC_MESAS"
+            },
+            {
+              "sources": [
+                "Sync_Mesas"
+              ],
+              "sql": "dbo.Sync_Mesas"
+            },
+            {
+              "sources": [
+                "Sync_Mesas"
+              ],
+              "sql": "Sin datos en dbo.Sync_Mesas para el servidor solicitado"
+            },
+            {
+              "sources": [
+                "Sync_Mesas"
+              ],
+              "sql": "SELECT * FROM dbo.Sync_Mesas WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s ORDER BY MesaNumero"
+            },
+            {
+              "sources": [
+                "Sync_Mesas"
+              ],
+              "sql": "SELECT * FROM dbo.Sync_Mesas WHERE ServerID = %s AND FechaOperacion = %s ORDER BY SucursalNombre, MesaNumero"
+            },
+            {
+              "sources": [
+                "Sync_Mesas"
+              ],
+              "sql": "EDARSAHUB_SQL_SYNC_MESAS"
+            },
+            {
+              "sources": [
+                "Sync_Mesas"
+              ],
+              "sql": "dbo.Sync_Mesas"
+            },
+            {
+              "sources": [
+                "Sync_Mesas"
+              ],
+              "sql": "mesas desde dbo.Sync_Mesas"
+            },
+            {
+              "sources": [
+                "Sync_Mesas"
+              ],
+              "sql": "ERROR_EDARSAHUB_SQL_SYNC_MESAS"
+            },
+            {
+              "sources": [
+                "Sync_Mesas"
+              ],
+              "sql": "dbo.Sync_Mesas"
+            },
+            {
+              "sources": [
+                "Sync_Mesas"
+              ],
+              "sql": "SELECT MAX(FechaOperacion) AS fecha_op FROM dbo.Sync_Mesas WHERE ServerID = %s AND SucursalID = %s"
+            },
+            {
+              "sources": [
+                "Sync_Mesas"
+              ],
+              "sql": "SELECT MAX(FechaOperacion) AS fecha_op FROM dbo.Sync_Mesas WHERE ServerID = %s"
+            },
+            {
+              "sources": [
+                "Sync_Mesas"
+              ],
+              "sql": "Sin mesas sincronizadas en dbo.Sync_Mesas para"
+            },
+            {
+              "sources": [
+                "Sync_Mesas"
+              ],
+              "sql": "[MESAS-SQL-CANONICO] Error consultando dbo.Sync_Mesas:"
+            },
+            {
+              "sources": [
+                "Sync_Mesas"
+              ],
+              "sql": "Error consultando dbo.Sync_Mesas:"
+            }
+          ]
+        },
+        {
+          "file": "backend/modules/comercial/routes.py",
+          "function": "comercial_detalle_movimientos",
+          "line_start": 3166,
+          "line_end": 3338,
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/comercial/detalle-movimientos/{server_id}"
+            }
+          ],
+          "sync_sources": [],
+          "canonical_sources": [
+            "Comercial_KPIs_Diarios_v2"
+          ],
+          "contract": "CANONICAL_ONLY",
+          "called_functions": [
+            "Depends",
+            "HTTPException",
+            "Query",
+            "_query_edarsahub_tablero",
+            "append",
+            "error",
+            "extend",
+            "float",
+            "fromkeys",
+            "get",
+            "get_server_by_id",
+            "hasattr",
+            "info",
+            "int",
+            "join",
+            "len",
+            "list",
+            "max",
+            "min",
+            "monthrange",
+            "now",
+            "resolver_unidad_pks_dashboard",
+            "split",
+            "str",
+            "strftime",
+            "strip",
+            "timedelta",
+            "validate_server_access_rbac",
+            "zfill"
+          ],
+          "sql_fragments": [
+            {
+              "sources": [
+                "Comercial_KPIs_Diarios_v2"
+              ],
+              "sql": "Detalle de movimientos para drill-down en KPIs. FIX 2026-06-04: MIGRADO A SQL-FIRST Este endpoint ahora lee de vw_Comercial_KPIs_Diarios_v2_Runtime en EDARSAHUB SQL. Ya no usa conexiones LIVE a SoftRestaurant/MPRO. Columnas reales de la tabla: - fecha_operacion, ventas_total, tickets_total, pax_total, sistema_origen"
+            },
+            {
+              "sources": [
+                "Comercial_KPIs_Diarios_v2"
+              ],
+              "sql": "SELECT ISNULL(SUM(ventas_total),0) AS venta_total, ISNULL(SUM(tickets_total),0) AS cheques_total, ISNULL(SUM(pax_total),0) AS pax_total, COUNT(*) AS total FROM vw_Comercial_KPIs_Diarios_v2_Runtime WHERE"
+            },
+            {
+              "sources": [
+                "Comercial_KPIs_Diarios_v2"
+              ],
+              "sql": "SELECT fecha_operacion, ventas_total, tickets_total, pax_total, ticket_promedio, sucursal_nombre, unidad_negocio_nombre, sistema_origen FROM vw_Comercial_KPIs_Diarios_v2_Runtime WHERE"
+            }
+          ]
+        },
+        {
+          "file": "backend/modules/comercial/routes.py",
+          "function": "comercial_reporte_pax",
+          "line_start": 3486,
+          "line_end": 3595,
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/comercial/reporte-pax/{server_id}"
+            }
+          ],
+          "sync_sources": [
+            "Sync_PAX_Detalle"
+          ],
+          "canonical_sources": [],
+          "contract": "SYNC_ONLY",
+          "called_functions": [
+            "Depends",
+            "Query",
+            "append",
+            "build_envelope_response",
+            "close",
+            "cursor",
+            "date",
+            "error",
+            "execute",
+            "fetchall",
+            "float",
+            "get",
+            "get_edarsahub_pymssql_connection",
+            "get_server_by_id",
+            "int",
+            "isoformat",
+            "len",
+            "now",
+            "str",
+            "strptime",
+            "timedelta",
+            "validate_server_access_rbac"
+          ],
+          "sql_fragments": [
+            {
+              "sources": [
+                "Sync_PAX_Detalle"
+              ],
+              "sql": "Reporte de PAX (comensales) por sucursal. FASE DDL COMERCIAL: MIGRADO A SQL-FIRST Consulta tabla Sync_PAX_Detalle en EDARSAHUB."
+            },
+            {
+              "sources": [
+                "Sync_PAX_Detalle"
+              ],
+              "sql": "SELECT * FROM Sync_PAX_Detalle WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY FechaOperacion DESC"
+            },
+            {
+              "sources": [
+                "Sync_PAX_Detalle"
+              ],
+              "sql": "SELECT * FROM Sync_PAX_Detalle WHERE ServerID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY SucursalNombre, FechaOperacion DESC"
+            },
+            {
+              "sources": [
+                "Sync_PAX_Detalle"
+              ],
+              "sql": "registros desde Sync_PAX_Detalle"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "backend/modules/inteligencia_comercial/routes.py",
+      "functions": [
+        {
+          "file": "backend/modules/inteligencia_comercial/routes.py",
+          "function": "_ultimo_dia_con_kpis",
+          "line_start": 466,
+          "line_end": 494,
+          "routes": [],
+          "sync_sources": [],
+          "canonical_sources": [
+            "Comercial_KPIs_Diarios_v2"
+          ],
+          "contract": "CANONICAL_ONLY",
+          "called_functions": [
+            "_ultimo_dia_con_datos",
+            "_unidad_pk_filtro",
+            "date",
+            "execute_query",
+            "get",
+            "isinstance",
+            "len",
+            "strptime"
+          ],
+          "sql_fragments": [
+            {
+              "sources": [
+                "Comercial_KPIs_Diarios_v2"
+              ],
+              "sql": "Ancla canónica para KPI principal desde dbo.vw_Comercial_KPIs_Diarios_v2_Runtime."
+            },
+            {
+              "sources": [
+                "Comercial_KPIs_Diarios_v2"
+              ],
+              "sql": "SELECT MAX(fecha_operacion) AS m FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE"
+            }
+          ]
+        },
+        {
+          "file": "backend/modules/inteligencia_comercial/routes.py",
+          "function": "get_tendencia_diaria",
+          "line_start": 1155,
+          "line_end": 1183,
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/dashboard/tendencia"
+            }
+          ],
+          "sync_sources": [],
+          "canonical_sources": [
+            "Comercial_KPIs_Diarios_v2"
+          ],
+          "contract": "CANONICAL_ONLY",
+          "called_functions": [
+            "Query",
+            "_series_periodo_canonico_portal",
+            "error",
+            "get",
+            "len",
+            "lower",
+            "normalizar_unidad",
+            "now",
+            "str",
+            "strftime",
+            "timedelta"
+          ],
+          "sql_fragments": [
+            {
+              "sources": [
+                "Comercial_KPIs_Diarios_v2"
+              ],
+              "sql": "Tendencia diaria para gráficos. Fuente KPI principal: KPIsCanonicosService / dbo.Comercial_KPIs_Diarios_v2."
+            }
+          ]
+        },
+        {
+          "file": "backend/modules/inteligencia_comercial/routes.py",
+          "function": "get_analisis_pax",
+          "line_start": 1249,
+          "line_end": 1372,
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/dashboard/pax"
+            }
+          ],
+          "sync_sources": [
+            "Sync_PAX_Detalle"
+          ],
+          "canonical_sources": [],
+          "contract": "SYNC_ONLY",
+          "called_functions": [
+            "Query",
+            "append",
+            "error",
+            "execute_query",
+            "float",
+            "get",
+            "int",
+            "join",
+            "lower",
+            "normalizar_unidad",
+            "now",
+            "round",
+            "str",
+            "strftime",
+            "timedelta"
+          ],
+          "sql_fragments": [
+            {
+              "sources": [
+                "Sync_PAX_Detalle"
+              ],
+              "sql": "Análisis detallado de PAX/Comensales. Fuente: Sync_PAX_Detalle"
+            },
+            {
+              "sources": [
+                "Sync_PAX_Detalle"
+              ],
+              "sql": "SELECT SUM(NumeroComensales) AS pax_total, SUM(VentaCuenta) AS ventas_total, COUNT(*) AS total_mesas, AVG(ConsumoPromedioPAX) AS consumo_promedio, AVG(TiempoMesa) AS tiempo_promedio_mesa FROM Sync_PAX_Detalle WHERE"
+            },
+            {
+              "sources": [
+                "Sync_PAX_Detalle"
+              ],
+              "sql": "SELECT Turno, SUM(NumeroComensales) AS pax, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas, AVG(ConsumoPromedioPAX) AS consumo_promedio FROM Sync_PAX_Detalle WHERE"
+            },
+            {
+              "sources": [
+                "Sync_PAX_Detalle"
+              ],
+              "sql": "SELECT DiaSemana, SUM(NumeroComensales) AS pax, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas FROM Sync_PAX_Detalle WHERE"
+            },
+            {
+              "sources": [
+                "Sync_PAX_Detalle"
+              ],
+              "sql": "SELECT TOP 10 MeseroNombre, SUM(NumeroComensales) AS pax_atendidos, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas_atendidas, AVG(ConsumoPromedioPAX) AS ticket_promedio FROM Sync_PAX_Detalle WHERE"
+            },
+            {
+              "sources": [
+                "Sync_PAX_Detalle"
+              ],
+              "sql": "SQL_SYNC_PAX_DETALLE"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "file": "backend/core/scheduler/jobs/inteligencia_comercial_status_job.py",
+      "function": "execute",
+      "line_start": 55,
+      "line_end": 122,
+      "routes": [],
+      "sync_sources": [
+        "Sync_PAX_Detalle"
+      ],
+      "canonical_sources": [
+        "Comercial_KPIs_Diarios_v2",
+        "Comercial_Ventas_Dia_Abiertas_v2"
+      ],
+      "contract": "MIXED_WITH_FALLBACK_OR_BRANCH",
+      "called_functions": [
+        "_get_edarsahub_sql_connection",
+        "_rows_to_dicts",
+        "cursor",
+        "execute",
+        "fetchall",
+        "get",
+        "len"
+      ],
+      "sql_fragments": [
+        {
+          "sources": [
+            "Comercial_KPIs_Diarios_v2",
+            "Comercial_Ventas_Dia_Abiertas_v2",
+            "Sync_PAX_Detalle"
+          ],
+          "sql": "SELECT Fuente, UltimaFechaOperacion, UltimaFechaSincronizacion, Registros, CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado FROM ( SELECT 'Comercial_KPIs_Diarios_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_sincronizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_KPIs_Diarios_v2 WHERE ISNULL(activo, 1) = 1 UNION ALL SELECT 'Comercial_Ventas_Dia_Abiertas_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_ultima_actualizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 UNION ALL SELECT 'Sync_PAX_Detalle' AS Fuente, MAX(FechaOperacion) AS UltimaFechaOperacion, MAX(FechaSync) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_PAX_Detalle UNION ALL SELECT 'Sync_Sales' AS Fuente, CAST(MAX(FechaHora) AS DATE) AS UltimaFechaOperacion, MAX(last_modified) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_Sales ) s;"
+        }
+      ]
+    },
+    {
+      "file": "backend/modules/comercial/inteligencia_comercial_routes.py",
+      "function": "get_inteligencia_kpis",
+      "line_start": 199,
+      "line_end": 236,
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/kpis"
+        }
+      ],
+      "sync_sources": [],
+      "canonical_sources": [
+        "Comercial_KPIs_Diarios_v2"
+      ],
+      "contract": "CANONICAL_ONLY",
+      "called_functions": [
+        "Depends",
+        "Query",
+        "_filtrar_resumen_por_unidad",
+        "_rango_default",
+        "_require_permission",
+        "date",
+        "get",
+        "int",
+        "isoformat",
+        "resumen_periodo"
+      ],
+      "sql_fragments": [
+        {
+          "sources": [
+            "Comercial_KPIs_Diarios_v2"
+          ],
+          "sql": "KPIs consolidados desde servicio canónico único. Fuente: KPIsCanonicosService -> dbo.Comercial_KPIs_Diarios_v2"
+        }
+      ]
+    },
+    {
+      "file": "backend/modules/comercial/inteligencia_comercial_routes.py",
+      "function": "get_pax_inteligencia",
+      "line_start": 266,
+      "line_end": 310,
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/pax"
+        }
+      ],
+      "sync_sources": [
+        "Sync_PAX_Detalle"
+      ],
+      "canonical_sources": [],
+      "contract": "SYNC_ONLY",
+      "called_functions": [
+        "Depends",
+        "Query",
+        "_query",
+        "_require_permission",
+        "append",
+        "get",
+        "join",
+        "timedelta",
+        "today"
+      ],
+      "sql_fragments": [
+        {
+          "sources": [
+            "Sync_PAX_Detalle"
+          ],
+          "sql": "Detalle de PAX (comensales). Fuente: dbo.Sync_PAX_Detalle (tabla sincronizada)"
+        },
+        {
+          "sources": [
+            "Sync_PAX_Detalle"
+          ],
+          "sql": ", SUM(ISNULL(NumeroComensales, 0)) AS numero_comensales, SUM(ISNULL(VentaCuenta, 0)) AS venta_cuenta, CASE WHEN SUM(ISNULL(NumeroComensales, 0)) > 0 THEN SUM(ISNULL(VentaCuenta, 0)) / SUM(ISNULL(NumeroComensales, 0)) ELSE 0 END AS consumo_promedio_pax, AVG(CAST(ISNULL(TiempoMesa, 0) AS FLOAT)) AS tiempo_mesa_promedio, MAX(FechaSync) AS ultima_sync FROM dbo.Sync_PAX_Detalle WHERE"
+        },
+        {
+          "sources": [
+            "Sync_PAX_Detalle"
+          ],
+          "sql": "Sync_PAX_Detalle"
+        }
+      ]
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "function": "get_ventas_dia_snapshot_from_edarsahub",
+      "line_start": 369,
+      "line_end": 532,
+      "routes": [],
+      "sync_sources": [],
+      "canonical_sources": [
+        "Comercial_Ventas_Dia_Abiertas_v2"
+      ],
+      "contract": "CANONICAL_ONLY",
+      "called_functions": [
+        "date",
+        "dt_time",
+        "error",
+        "execute_sql_query",
+        "float",
+        "fromisoformat",
+        "get",
+        "get_operational_window",
+        "info",
+        "int",
+        "isinstance",
+        "isoformat",
+        "len",
+        "now",
+        "replace",
+        "str",
+        "strftime",
+        "time",
+        "timedelta",
+        "timezone",
+        "total_seconds"
+      ],
+      "sql_fragments": [
+        {
+          "sources": [
+            "Comercial_Ventas_Dia_Abiertas_v2"
+          ],
+          "sql": "Obtiene snapshot de ventas del día desde EDARSAHUB. Tabla: Comercial_Ventas_Dia_Abiertas_v2 FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py en lugar de datetime.now().date() (fecha calendario). Args: server_id: ID del servidor fecha_operacion: Fecha en formato YYYY-MM-DD (si se provee explícitamente) unidad_negocio_pk: ID de la unidad para calcular FechaOperacion (opcional, pero recomendado) Returns: Dict con datos del snapshot o None si no existe { 'exists': True/False, 'ventas': Decimal, 'pax': int, 'cheques': int, 'ticket_promedio': Decimal, 'snapshot_timestamp': datetime, 'estado_dato': 'VIGENTE' | 'DESACTUALIZADO' | 'MUY_DESACTUALIZADO', 'minutos_desde_sync': int, 'fuente': 'EDARSAHUB_SNAPSHOT', 'fecha_operacion_usada': str # Para debug }"
+        },
+        {
+          "sources": [
+            "Comercial_Ventas_Dia_Abiertas_v2"
+          ],
+          "sql": "SELECT unidad_negocio_pk, unidad_negocio_nombre, server_id, sucursal_id, sucursal_nombre, snapshot_timestamp, fecha_operacion, ventas_abiertas, tickets_abiertos, pax_abiertos, ventas_cerradas_dia, tickets_cerrados_dia, pax_cerrados_dia, total_estimado_dia, fecha_ultima_actualizacion FROM Comercial_Ventas_Dia_Abiertas_v2 WHERE server_id = '"
+        }
+      ]
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "function": "_tablero_ejecutivo_internal",
+      "line_start": 595,
+      "line_end": 1947,
+      "routes": [],
+      "sync_sources": [],
+      "canonical_sources": [
+        "Comercial_Ventas_Dia_Abiertas_v2"
+      ],
+      "contract": "CANONICAL_ONLY",
+      "called_functions": [
+        "ZoneInfo",
+        "_agrupar_por_unidad",
+        "_filtrar_server",
+        "add",
+        "append",
+        "build_unit_response",
+        "classify_connection_error",
+        "date",
+        "datetime",
+        "error",
+        "filtrar_unidades_por_visibilidad",
+        "float",
+        "get",
+        "get_cached_kpis",
+        "get_fecha_operacion",
+        "get_kpis_diarios",
+        "get_kpis_softrestaurant",
+        "get_servers_for_tablero",
+        "get_unidad_by_server_id",
+        "get_ventas_dia_abiertas",
+        "get_ventas_dia_snapshot_from_edarsahub",
+        "info",
+        "int",
+        "is_mpro_system",
+        "is_softrestaurant_system",
+        "isdigit",
+        "isoformat",
+        "keys",
+        "len",
+        "list",
+        "list_unidades_negocio",
+        "lower",
+        "max",
+        "min",
+        "monthrange",
+        "now",
+        "replace",
+        "resolve_user_access_context",
+        "resolver_codigo",
+        "resolver_codigo_dedup",
+        "round",
+        "save_kpis_cache",
+        "set",
+        "setdefault",
+        "sorted",
+        "split",
+        "str",
+        "strftime",
+        "strip",
+        "strptime",
+        "sum",
+        "timedelta",
+        "timezone",
+        "upper",
+        "values",
+        "warning"
+      ],
+      "sql_fragments": [
+        {
+          "sources": [
+            "Comercial_Ventas_Dia_Abiertas_v2"
+          ],
+          "sql": "Comercial_Ventas_Dia_Abiertas_v2"
+        },
+        {
+          "sources": [
+            "Comercial_Ventas_Dia_Abiertas_v2"
+          ],
+          "sql": ": Sin datos en Comercial_Ventas_Dia_Abiertas_v2"
+        }
+      ]
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "function": "comercial_metas",
+      "line_start": 2058,
+      "line_end": 2382,
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/comercial/metas/{server_id}"
+        }
+      ],
+      "sync_sources": [
+        "Sync_Metas_Comerciales"
+      ],
+      "canonical_sources": [],
+      "contract": "SYNC_ONLY",
+      "called_functions": [
+        "Depends",
+        "Exception",
+        "Query",
+        "append",
+        "build_cache_key",
+        "build_envelope_response",
+        "check_column_exists",
+        "close",
+        "cursor",
+        "empty_response",
+        "error",
+        "execute",
+        "execute_sql_query",
+        "fetchall",
+        "float",
+        "get",
+        "get_cached_response",
+        "get_edarsahub_pymssql_connection",
+        "get_propina_safe_column",
+        "get_server_by_id",
+        "int",
+        "is_mpro_system",
+        "is_softrestaurant_system",
+        "isoformat",
+        "len",
+        "now",
+        "replace",
+        "resolver_codigo",
+        "round",
+        "save_to_cache",
+        "str",
+        "strftime",
+        "upper",
+        "validate_server_access_rbac",
+        "warning"
+      ],
+      "sql_fragments": [
+        {
+          "sources": [
+            "Sync_Metas_Comerciales"
+          ],
+          "sql": "Metas de ventas por sucursal/mes. FASE DDL COMERCIAL: MIGRADO A SQL-FIRST Consulta tabla Sync_Metas_Comerciales en EDARSAHUB."
+        },
+        {
+          "sources": [
+            "Sync_Metas_Comerciales"
+          ],
+          "sql": "SELECT * FROM Sync_Metas_Comerciales WHERE ServerID = %s AND SucursalID = %s AND Anio = %s AND Mes = %s ORDER BY SucursalNombre"
+        },
+        {
+          "sources": [
+            "Sync_Metas_Comerciales"
+          ],
+          "sql": "SELECT * FROM Sync_Metas_Comerciales WHERE ServerID = %s AND Anio = %s AND Mes = %s ORDER BY SucursalNombre"
+        },
+        {
+          "sources": [
+            "Sync_Metas_Comerciales"
+          ],
+          "sql": "registros desde Sync_Metas_Comerciales"
+        }
+      ]
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "function": "comercial_ticket_perfecto",
+      "line_start": 2390,
+      "line_end": 2679,
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/comercial/ticket-perfecto/{server_id}"
+        }
+      ],
+      "sync_sources": [
+        "Sync_Ticket_Perfecto"
+      ],
+      "canonical_sources": [],
+      "contract": "SYNC_ONLY",
+      "called_functions": [
+        "Depends",
+        "Exception",
+        "Query",
+        "append",
+        "build_cache_key",
+        "build_envelope_response",
+        "close",
+        "cursor",
+        "date",
+        "empty_response",
+        "error",
+        "execute",
+        "execute_sql_query",
+        "fetchall",
+        "float",
+        "get",
+        "get_cached_response",
+        "get_edarsahub_pymssql_connection",
+        "get_server_by_id",
+        "int",
+        "is_softrestaurant_system",
+        "isoformat",
+        "len",
+        "min",
+        "now",
+        "replace",
+        "round",
+        "save_to_cache",
+        "str",
+        "strftime",
+        "strptime",
+        "timedelta",
+        "validate_server_access_rbac",
+        "warning"
+      ],
+      "sql_fragments": [
+        {
+          "sources": [
+            "Sync_Ticket_Perfecto"
+          ],
+          "sql": "Análisis de ticket perfecto por sucursal. FASE DDL COMERCIAL: MIGRADO A SQL-FIRST Consulta tabla Sync_Ticket_Perfecto en EDARSAHUB."
+        },
+        {
+          "sources": [
+            "Sync_Ticket_Perfecto"
+          ],
+          "sql": "SELECT * FROM Sync_Ticket_Perfecto WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY FechaOperacion DESC"
+        },
+        {
+          "sources": [
+            "Sync_Ticket_Perfecto"
+          ],
+          "sql": "SELECT * FROM Sync_Ticket_Perfecto WHERE ServerID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY SucursalNombre, FechaOperacion DESC"
+        },
+        {
+          "sources": [
+            "Sync_Ticket_Perfecto"
+          ],
+          "sql": "registros desde Sync_Ticket_Perfecto"
+        }
+      ]
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "function": "comercial_ventas_tiempo",
+      "line_start": 2683,
+      "line_end": 2895,
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/comercial/ventas-tiempo/{server_id}"
+        }
+      ],
+      "sync_sources": [],
+      "canonical_sources": [
+        "Comercial_Ventas_Dia_Abiertas_v2"
+      ],
+      "contract": "CANONICAL_ONLY",
+      "called_functions": [
+        "Depends",
+        "HTTPException",
+        "Query",
+        "append",
+        "close",
+        "cursor",
+        "date",
+        "error",
+        "execute",
+        "fetchall",
+        "fetchone",
+        "float",
+        "get",
+        "get_edarsahub_pymssql_connection",
+        "get_server_by_id",
+        "hasattr",
+        "info",
+        "int",
+        "len",
+        "now",
+        "str",
+        "strftime",
+        "strptime",
+        "timedelta",
+        "validate_server_access_rbac",
+        "warning"
+      ],
+      "sql_fragments": [
+        {
+          "sources": [
+            "Comercial_Ventas_Dia_Abiertas_v2"
+          ],
+          "sql": "SELECT SUM(ISNULL(ventas_abiertas, 0) + ISNULL(ventas_cerradas_dia, 0)) as ventas, SUM(ISNULL(tickets_abiertos, 0) + ISNULL(tickets_cerrados_dia, 0)) as tickets, SUM(ISNULL(pax_abiertos, 0) + ISNULL(pax_cerrados_dia, 0)) as pax FROM Comercial_Ventas_Dia_Abiertas_v2 WHERE server_id = %s AND fecha_operacion = %s"
+        },
+        {
+          "sources": [
+            "Comercial_Ventas_Dia_Abiertas_v2"
+          ],
+          "sql": "Error consultando Comercial_Ventas_Dia_Abiertas_v2:"
+        }
+      ]
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "function": "comercial_mesas",
+      "line_start": 2905,
+      "line_end": 3162,
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/comercial/mesas/{server_id}"
+        }
+      ],
+      "sync_sources": [
+        "Sync_Mesas"
+      ],
+      "canonical_sources": [],
+      "contract": "SYNC_ONLY",
+      "called_functions": [
+        "Depends",
+        "Query",
+        "_empty_mesas_unidad",
+        "_safe_float",
+        "_safe_int",
+        "append",
+        "bool",
+        "close",
+        "cursor",
+        "date",
+        "error",
+        "execute",
+        "fetchall",
+        "fetchone",
+        "float",
+        "get",
+        "get_edarsahub_pymssql_connection",
+        "get_server_by_id",
+        "hasattr",
+        "int",
+        "isinstance",
+        "len",
+        "list",
+        "lower",
+        "max",
+        "min",
+        "round",
+        "str",
+        "strip",
+        "strptime",
+        "validate_server_access_rbac"
+      ],
+      "sql_fragments": [
+        {
+          "sources": [
+            "Sync_Mesas"
+          ],
+          "sql": "Análisis de mesas por sucursal. Fuente única: - dbo.Sync_Mesas en EDARSAHUB SQL. Sin MongoDB, sin live, sin queries a SoftRestaurant/MPRO, sin estimaciones desde servidores fuente."
+        },
+        {
+          "sources": [
+            "Sync_Mesas"
+          ],
+          "sql": "EDARSAHUB_SQL_SYNC_MESAS"
+        },
+        {
+          "sources": [
+            "Sync_Mesas"
+          ],
+          "sql": "dbo.Sync_Mesas"
+        },
+        {
+          "sources": [
+            "Sync_Mesas"
+          ],
+          "sql": "EDARSAHUB_SQL_SYNC_MESAS"
+        },
+        {
+          "sources": [
+            "Sync_Mesas"
+          ],
+          "sql": "dbo.Sync_Mesas"
+        },
+        {
+          "sources": [
+            "Sync_Mesas"
+          ],
+          "sql": "Sin datos en dbo.Sync_Mesas para el servidor solicitado"
+        },
+        {
+          "sources": [
+            "Sync_Mesas"
+          ],
+          "sql": "SELECT * FROM dbo.Sync_Mesas WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s ORDER BY MesaNumero"
+        },
+        {
+          "sources": [
+            "Sync_Mesas"
+          ],
+          "sql": "SELECT * FROM dbo.Sync_Mesas WHERE ServerID = %s AND FechaOperacion = %s ORDER BY SucursalNombre, MesaNumero"
+        },
+        {
+          "sources": [
+            "Sync_Mesas"
+          ],
+          "sql": "EDARSAHUB_SQL_SYNC_MESAS"
+        },
+        {
+          "sources": [
+            "Sync_Mesas"
+          ],
+          "sql": "dbo.Sync_Mesas"
+        },
+        {
+          "sources": [
+            "Sync_Mesas"
+          ],
+          "sql": "mesas desde dbo.Sync_Mesas"
+        },
+        {
+          "sources": [
+            "Sync_Mesas"
+          ],
+          "sql": "ERROR_EDARSAHUB_SQL_SYNC_MESAS"
+        },
+        {
+          "sources": [
+            "Sync_Mesas"
+          ],
+          "sql": "dbo.Sync_Mesas"
+        },
+        {
+          "sources": [
+            "Sync_Mesas"
+          ],
+          "sql": "SELECT MAX(FechaOperacion) AS fecha_op FROM dbo.Sync_Mesas WHERE ServerID = %s AND SucursalID = %s"
+        },
+        {
+          "sources": [
+            "Sync_Mesas"
+          ],
+          "sql": "SELECT MAX(FechaOperacion) AS fecha_op FROM dbo.Sync_Mesas WHERE ServerID = %s"
+        },
+        {
+          "sources": [
+            "Sync_Mesas"
+          ],
+          "sql": "Sin mesas sincronizadas en dbo.Sync_Mesas para"
+        },
+        {
+          "sources": [
+            "Sync_Mesas"
+          ],
+          "sql": "[MESAS-SQL-CANONICO] Error consultando dbo.Sync_Mesas:"
+        },
+        {
+          "sources": [
+            "Sync_Mesas"
+          ],
+          "sql": "Error consultando dbo.Sync_Mesas:"
+        }
+      ]
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "function": "comercial_detalle_movimientos",
+      "line_start": 3166,
+      "line_end": 3338,
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/comercial/detalle-movimientos/{server_id}"
+        }
+      ],
+      "sync_sources": [],
+      "canonical_sources": [
+        "Comercial_KPIs_Diarios_v2"
+      ],
+      "contract": "CANONICAL_ONLY",
+      "called_functions": [
+        "Depends",
+        "HTTPException",
+        "Query",
+        "_query_edarsahub_tablero",
+        "append",
+        "error",
+        "extend",
+        "float",
+        "fromkeys",
+        "get",
+        "get_server_by_id",
+        "hasattr",
+        "info",
+        "int",
+        "join",
+        "len",
+        "list",
+        "max",
+        "min",
+        "monthrange",
+        "now",
+        "resolver_unidad_pks_dashboard",
+        "split",
+        "str",
+        "strftime",
+        "strip",
+        "timedelta",
+        "validate_server_access_rbac",
+        "zfill"
+      ],
+      "sql_fragments": [
+        {
+          "sources": [
+            "Comercial_KPIs_Diarios_v2"
+          ],
+          "sql": "Detalle de movimientos para drill-down en KPIs. FIX 2026-06-04: MIGRADO A SQL-FIRST Este endpoint ahora lee de vw_Comercial_KPIs_Diarios_v2_Runtime en EDARSAHUB SQL. Ya no usa conexiones LIVE a SoftRestaurant/MPRO. Columnas reales de la tabla: - fecha_operacion, ventas_total, tickets_total, pax_total, sistema_origen"
+        },
+        {
+          "sources": [
+            "Comercial_KPIs_Diarios_v2"
+          ],
+          "sql": "SELECT ISNULL(SUM(ventas_total),0) AS venta_total, ISNULL(SUM(tickets_total),0) AS cheques_total, ISNULL(SUM(pax_total),0) AS pax_total, COUNT(*) AS total FROM vw_Comercial_KPIs_Diarios_v2_Runtime WHERE"
+        },
+        {
+          "sources": [
+            "Comercial_KPIs_Diarios_v2"
+          ],
+          "sql": "SELECT fecha_operacion, ventas_total, tickets_total, pax_total, ticket_promedio, sucursal_nombre, unidad_negocio_nombre, sistema_origen FROM vw_Comercial_KPIs_Diarios_v2_Runtime WHERE"
+        }
+      ]
+    },
+    {
+      "file": "backend/modules/comercial/routes.py",
+      "function": "comercial_reporte_pax",
+      "line_start": 3486,
+      "line_end": 3595,
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/comercial/reporte-pax/{server_id}"
+        }
+      ],
+      "sync_sources": [
+        "Sync_PAX_Detalle"
+      ],
+      "canonical_sources": [],
+      "contract": "SYNC_ONLY",
+      "called_functions": [
+        "Depends",
+        "Query",
+        "append",
+        "build_envelope_response",
+        "close",
+        "cursor",
+        "date",
+        "error",
+        "execute",
+        "fetchall",
+        "float",
+        "get",
+        "get_edarsahub_pymssql_connection",
+        "get_server_by_id",
+        "int",
+        "isoformat",
+        "len",
+        "now",
+        "str",
+        "strptime",
+        "timedelta",
+        "validate_server_access_rbac"
+      ],
+      "sql_fragments": [
+        {
+          "sources": [
+            "Sync_PAX_Detalle"
+          ],
+          "sql": "Reporte de PAX (comensales) por sucursal. FASE DDL COMERCIAL: MIGRADO A SQL-FIRST Consulta tabla Sync_PAX_Detalle en EDARSAHUB."
+        },
+        {
+          "sources": [
+            "Sync_PAX_Detalle"
+          ],
+          "sql": "SELECT * FROM Sync_PAX_Detalle WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY FechaOperacion DESC"
+        },
+        {
+          "sources": [
+            "Sync_PAX_Detalle"
+          ],
+          "sql": "SELECT * FROM Sync_PAX_Detalle WHERE ServerID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY SucursalNombre, FechaOperacion DESC"
+        },
+        {
+          "sources": [
+            "Sync_PAX_Detalle"
+          ],
+          "sql": "registros desde Sync_PAX_Detalle"
+        }
+      ]
+    },
+    {
+      "file": "backend/modules/inteligencia_comercial/routes.py",
+      "function": "_ultimo_dia_con_kpis",
+      "line_start": 466,
+      "line_end": 494,
+      "routes": [],
+      "sync_sources": [],
+      "canonical_sources": [
+        "Comercial_KPIs_Diarios_v2"
+      ],
+      "contract": "CANONICAL_ONLY",
+      "called_functions": [
+        "_ultimo_dia_con_datos",
+        "_unidad_pk_filtro",
+        "date",
+        "execute_query",
+        "get",
+        "isinstance",
+        "len",
+        "strptime"
+      ],
+      "sql_fragments": [
+        {
+          "sources": [
+            "Comercial_KPIs_Diarios_v2"
+          ],
+          "sql": "Ancla canónica para KPI principal desde dbo.vw_Comercial_KPIs_Diarios_v2_Runtime."
+        },
+        {
+          "sources": [
+            "Comercial_KPIs_Diarios_v2"
+          ],
+          "sql": "SELECT MAX(fecha_operacion) AS m FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE"
+        }
+      ]
+    },
+    {
+      "file": "backend/modules/inteligencia_comercial/routes.py",
+      "function": "get_tendencia_diaria",
+      "line_start": 1155,
+      "line_end": 1183,
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/dashboard/tendencia"
+        }
+      ],
+      "sync_sources": [],
+      "canonical_sources": [
+        "Comercial_KPIs_Diarios_v2"
+      ],
+      "contract": "CANONICAL_ONLY",
+      "called_functions": [
+        "Query",
+        "_series_periodo_canonico_portal",
+        "error",
+        "get",
+        "len",
+        "lower",
+        "normalizar_unidad",
+        "now",
+        "str",
+        "strftime",
+        "timedelta"
+      ],
+      "sql_fragments": [
+        {
+          "sources": [
+            "Comercial_KPIs_Diarios_v2"
+          ],
+          "sql": "Tendencia diaria para gráficos. Fuente KPI principal: KPIsCanonicosService / dbo.Comercial_KPIs_Diarios_v2."
+        }
+      ]
+    },
+    {
+      "file": "backend/modules/inteligencia_comercial/routes.py",
+      "function": "get_analisis_pax",
+      "line_start": 1249,
+      "line_end": 1372,
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/dashboard/pax"
+        }
+      ],
+      "sync_sources": [
+        "Sync_PAX_Detalle"
+      ],
+      "canonical_sources": [],
+      "contract": "SYNC_ONLY",
+      "called_functions": [
+        "Query",
+        "append",
+        "error",
+        "execute_query",
+        "float",
+        "get",
+        "int",
+        "join",
+        "lower",
+        "normalizar_unidad",
+        "now",
+        "round",
+        "str",
+        "strftime",
+        "timedelta"
+      ],
+      "sql_fragments": [
+        {
+          "sources": [
+            "Sync_PAX_Detalle"
+          ],
+          "sql": "Análisis detallado de PAX/Comensales. Fuente: Sync_PAX_Detalle"
+        },
+        {
+          "sources": [
+            "Sync_PAX_Detalle"
+          ],
+          "sql": "SELECT SUM(NumeroComensales) AS pax_total, SUM(VentaCuenta) AS ventas_total, COUNT(*) AS total_mesas, AVG(ConsumoPromedioPAX) AS consumo_promedio, AVG(TiempoMesa) AS tiempo_promedio_mesa FROM Sync_PAX_Detalle WHERE"
+        },
+        {
+          "sources": [
+            "Sync_PAX_Detalle"
+          ],
+          "sql": "SELECT Turno, SUM(NumeroComensales) AS pax, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas, AVG(ConsumoPromedioPAX) AS consumo_promedio FROM Sync_PAX_Detalle WHERE"
+        },
+        {
+          "sources": [
+            "Sync_PAX_Detalle"
+          ],
+          "sql": "SELECT DiaSemana, SUM(NumeroComensales) AS pax, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas FROM Sync_PAX_Detalle WHERE"
+        },
+        {
+          "sources": [
+            "Sync_PAX_Detalle"
+          ],
+          "sql": "SELECT TOP 10 MeseroNombre, SUM(NumeroComensales) AS pax_atendidos, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas_atendidas, AVG(ConsumoPromedioPAX) AS ticket_promedio FROM Sync_PAX_Detalle WHERE"
+        },
+        {
+          "sources": [
+            "Sync_PAX_Detalle"
+          ],
+          "sql": "SQL_SYNC_PAX_DETALLE"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "files_audited": 4,
+    "functions_with_commercial_sources": 14,
+    "unique_routes": [
+      {
+        "file": "backend/modules/comercial/inteligencia_comercial_routes.py",
+        "function": "get_inteligencia_kpis",
+        "method": "GET",
+        "path": "/kpis",
+        "contract": "CANONICAL_ONLY",
+        "sync_sources": [],
+        "canonical_sources": [
+          "Comercial_KPIs_Diarios_v2"
+        ]
+      },
+      {
+        "file": "backend/modules/comercial/inteligencia_comercial_routes.py",
+        "function": "get_pax_inteligencia",
+        "method": "GET",
+        "path": "/pax",
+        "contract": "SYNC_ONLY",
+        "sync_sources": [
+          "Sync_PAX_Detalle"
+        ],
+        "canonical_sources": []
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_metas",
+        "method": "GET",
+        "path": "/comercial/metas/{server_id}",
+        "contract": "SYNC_ONLY",
+        "sync_sources": [
+          "Sync_Metas_Comerciales"
+        ],
+        "canonical_sources": []
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_ticket_perfecto",
+        "method": "GET",
+        "path": "/comercial/ticket-perfecto/{server_id}",
+        "contract": "SYNC_ONLY",
+        "sync_sources": [
+          "Sync_Ticket_Perfecto"
+        ],
+        "canonical_sources": []
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_ventas_tiempo",
+        "method": "GET",
+        "path": "/comercial/ventas-tiempo/{server_id}",
+        "contract": "CANONICAL_ONLY",
+        "sync_sources": [],
+        "canonical_sources": [
+          "Comercial_Ventas_Dia_Abiertas_v2"
+        ]
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_mesas",
+        "method": "GET",
+        "path": "/comercial/mesas/{server_id}",
+        "contract": "SYNC_ONLY",
+        "sync_sources": [
+          "Sync_Mesas"
+        ],
+        "canonical_sources": []
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_detalle_movimientos",
+        "method": "GET",
+        "path": "/comercial/detalle-movimientos/{server_id}",
+        "contract": "CANONICAL_ONLY",
+        "sync_sources": [],
+        "canonical_sources": [
+          "Comercial_KPIs_Diarios_v2"
+        ]
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_reporte_pax",
+        "method": "GET",
+        "path": "/comercial/reporte-pax/{server_id}",
+        "contract": "SYNC_ONLY",
+        "sync_sources": [
+          "Sync_PAX_Detalle"
+        ],
+        "canonical_sources": []
+      },
+      {
+        "file": "backend/modules/inteligencia_comercial/routes.py",
+        "function": "get_tendencia_diaria",
+        "method": "GET",
+        "path": "/dashboard/tendencia",
+        "contract": "CANONICAL_ONLY",
+        "sync_sources": [],
+        "canonical_sources": [
+          "Comercial_KPIs_Diarios_v2"
+        ]
+      },
+      {
+        "file": "backend/modules/inteligencia_comercial/routes.py",
+        "function": "get_analisis_pax",
+        "method": "GET",
+        "path": "/dashboard/pax",
+        "contract": "SYNC_ONLY",
+        "sync_sources": [
+          "Sync_PAX_Detalle"
+        ],
+        "canonical_sources": []
+      }
+    ],
+    "unique_route_count": 10,
+    "contract_counts": {
+      "MIXED_WITH_FALLBACK_OR_BRANCH": 1,
+      "CANONICAL_ONLY": 7,
+      "SYNC_ONLY": 6
+    },
+    "sync_only_functions": [
+      {
+        "file": "backend/modules/comercial/inteligencia_comercial_routes.py",
+        "function": "get_pax_inteligencia",
+        "line_start": 266,
+        "line_end": 310,
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/pax"
+          }
+        ],
+        "sync_sources": [
+          "Sync_PAX_Detalle"
+        ],
+        "canonical_sources": [],
+        "contract": "SYNC_ONLY",
+        "called_functions": [
+          "Depends",
+          "Query",
+          "_query",
+          "_require_permission",
+          "append",
+          "get",
+          "join",
+          "timedelta",
+          "today"
+        ],
+        "sql_fragments": [
+          {
+            "sources": [
+              "Sync_PAX_Detalle"
+            ],
+            "sql": "Detalle de PAX (comensales). Fuente: dbo.Sync_PAX_Detalle (tabla sincronizada)"
+          },
+          {
+            "sources": [
+              "Sync_PAX_Detalle"
+            ],
+            "sql": ", SUM(ISNULL(NumeroComensales, 0)) AS numero_comensales, SUM(ISNULL(VentaCuenta, 0)) AS venta_cuenta, CASE WHEN SUM(ISNULL(NumeroComensales, 0)) > 0 THEN SUM(ISNULL(VentaCuenta, 0)) / SUM(ISNULL(NumeroComensales, 0)) ELSE 0 END AS consumo_promedio_pax, AVG(CAST(ISNULL(TiempoMesa, 0) AS FLOAT)) AS tiempo_mesa_promedio, MAX(FechaSync) AS ultima_sync FROM dbo.Sync_PAX_Detalle WHERE"
+          },
+          {
+            "sources": [
+              "Sync_PAX_Detalle"
+            ],
+            "sql": "Sync_PAX_Detalle"
+          }
+        ]
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_metas",
+        "line_start": 2058,
+        "line_end": 2382,
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/comercial/metas/{server_id}"
+          }
+        ],
+        "sync_sources": [
+          "Sync_Metas_Comerciales"
+        ],
+        "canonical_sources": [],
+        "contract": "SYNC_ONLY",
+        "called_functions": [
+          "Depends",
+          "Exception",
+          "Query",
+          "append",
+          "build_cache_key",
+          "build_envelope_response",
+          "check_column_exists",
+          "close",
+          "cursor",
+          "empty_response",
+          "error",
+          "execute",
+          "execute_sql_query",
+          "fetchall",
+          "float",
+          "get",
+          "get_cached_response",
+          "get_edarsahub_pymssql_connection",
+          "get_propina_safe_column",
+          "get_server_by_id",
+          "int",
+          "is_mpro_system",
+          "is_softrestaurant_system",
+          "isoformat",
+          "len",
+          "now",
+          "replace",
+          "resolver_codigo",
+          "round",
+          "save_to_cache",
+          "str",
+          "strftime",
+          "upper",
+          "validate_server_access_rbac",
+          "warning"
+        ],
+        "sql_fragments": [
+          {
+            "sources": [
+              "Sync_Metas_Comerciales"
+            ],
+            "sql": "Metas de ventas por sucursal/mes. FASE DDL COMERCIAL: MIGRADO A SQL-FIRST Consulta tabla Sync_Metas_Comerciales en EDARSAHUB."
+          },
+          {
+            "sources": [
+              "Sync_Metas_Comerciales"
+            ],
+            "sql": "SELECT * FROM Sync_Metas_Comerciales WHERE ServerID = %s AND SucursalID = %s AND Anio = %s AND Mes = %s ORDER BY SucursalNombre"
+          },
+          {
+            "sources": [
+              "Sync_Metas_Comerciales"
+            ],
+            "sql": "SELECT * FROM Sync_Metas_Comerciales WHERE ServerID = %s AND Anio = %s AND Mes = %s ORDER BY SucursalNombre"
+          },
+          {
+            "sources": [
+              "Sync_Metas_Comerciales"
+            ],
+            "sql": "registros desde Sync_Metas_Comerciales"
+          }
+        ]
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_ticket_perfecto",
+        "line_start": 2390,
+        "line_end": 2679,
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/comercial/ticket-perfecto/{server_id}"
+          }
+        ],
+        "sync_sources": [
+          "Sync_Ticket_Perfecto"
+        ],
+        "canonical_sources": [],
+        "contract": "SYNC_ONLY",
+        "called_functions": [
+          "Depends",
+          "Exception",
+          "Query",
+          "append",
+          "build_cache_key",
+          "build_envelope_response",
+          "close",
+          "cursor",
+          "date",
+          "empty_response",
+          "error",
+          "execute",
+          "execute_sql_query",
+          "fetchall",
+          "float",
+          "get",
+          "get_cached_response",
+          "get_edarsahub_pymssql_connection",
+          "get_server_by_id",
+          "int",
+          "is_softrestaurant_system",
+          "isoformat",
+          "len",
+          "min",
+          "now",
+          "replace",
+          "round",
+          "save_to_cache",
+          "str",
+          "strftime",
+          "strptime",
+          "timedelta",
+          "validate_server_access_rbac",
+          "warning"
+        ],
+        "sql_fragments": [
+          {
+            "sources": [
+              "Sync_Ticket_Perfecto"
+            ],
+            "sql": "Análisis de ticket perfecto por sucursal. FASE DDL COMERCIAL: MIGRADO A SQL-FIRST Consulta tabla Sync_Ticket_Perfecto en EDARSAHUB."
+          },
+          {
+            "sources": [
+              "Sync_Ticket_Perfecto"
+            ],
+            "sql": "SELECT * FROM Sync_Ticket_Perfecto WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY FechaOperacion DESC"
+          },
+          {
+            "sources": [
+              "Sync_Ticket_Perfecto"
+            ],
+            "sql": "SELECT * FROM Sync_Ticket_Perfecto WHERE ServerID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY SucursalNombre, FechaOperacion DESC"
+          },
+          {
+            "sources": [
+              "Sync_Ticket_Perfecto"
+            ],
+            "sql": "registros desde Sync_Ticket_Perfecto"
+          }
+        ]
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_mesas",
+        "line_start": 2905,
+        "line_end": 3162,
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/comercial/mesas/{server_id}"
+          }
+        ],
+        "sync_sources": [
+          "Sync_Mesas"
+        ],
+        "canonical_sources": [],
+        "contract": "SYNC_ONLY",
+        "called_functions": [
+          "Depends",
+          "Query",
+          "_empty_mesas_unidad",
+          "_safe_float",
+          "_safe_int",
+          "append",
+          "bool",
+          "close",
+          "cursor",
+          "date",
+          "error",
+          "execute",
+          "fetchall",
+          "fetchone",
+          "float",
+          "get",
+          "get_edarsahub_pymssql_connection",
+          "get_server_by_id",
+          "hasattr",
+          "int",
+          "isinstance",
+          "len",
+          "list",
+          "lower",
+          "max",
+          "min",
+          "round",
+          "str",
+          "strip",
+          "strptime",
+          "validate_server_access_rbac"
+        ],
+        "sql_fragments": [
+          {
+            "sources": [
+              "Sync_Mesas"
+            ],
+            "sql": "Análisis de mesas por sucursal. Fuente única: - dbo.Sync_Mesas en EDARSAHUB SQL. Sin MongoDB, sin live, sin queries a SoftRestaurant/MPRO, sin estimaciones desde servidores fuente."
+          },
+          {
+            "sources": [
+              "Sync_Mesas"
+            ],
+            "sql": "EDARSAHUB_SQL_SYNC_MESAS"
+          },
+          {
+            "sources": [
+              "Sync_Mesas"
+            ],
+            "sql": "dbo.Sync_Mesas"
+          },
+          {
+            "sources": [
+              "Sync_Mesas"
+            ],
+            "sql": "EDARSAHUB_SQL_SYNC_MESAS"
+          },
+          {
+            "sources": [
+              "Sync_Mesas"
+            ],
+            "sql": "dbo.Sync_Mesas"
+          },
+          {
+            "sources": [
+              "Sync_Mesas"
+            ],
+            "sql": "Sin datos en dbo.Sync_Mesas para el servidor solicitado"
+          },
+          {
+            "sources": [
+              "Sync_Mesas"
+            ],
+            "sql": "SELECT * FROM dbo.Sync_Mesas WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion = %s ORDER BY MesaNumero"
+          },
+          {
+            "sources": [
+              "Sync_Mesas"
+            ],
+            "sql": "SELECT * FROM dbo.Sync_Mesas WHERE ServerID = %s AND FechaOperacion = %s ORDER BY SucursalNombre, MesaNumero"
+          },
+          {
+            "sources": [
+              "Sync_Mesas"
+            ],
+            "sql": "EDARSAHUB_SQL_SYNC_MESAS"
+          },
+          {
+            "sources": [
+              "Sync_Mesas"
+            ],
+            "sql": "dbo.Sync_Mesas"
+          },
+          {
+            "sources": [
+              "Sync_Mesas"
+            ],
+            "sql": "mesas desde dbo.Sync_Mesas"
+          },
+          {
+            "sources": [
+              "Sync_Mesas"
+            ],
+            "sql": "ERROR_EDARSAHUB_SQL_SYNC_MESAS"
+          },
+          {
+            "sources": [
+              "Sync_Mesas"
+            ],
+            "sql": "dbo.Sync_Mesas"
+          },
+          {
+            "sources": [
+              "Sync_Mesas"
+            ],
+            "sql": "SELECT MAX(FechaOperacion) AS fecha_op FROM dbo.Sync_Mesas WHERE ServerID = %s AND SucursalID = %s"
+          },
+          {
+            "sources": [
+              "Sync_Mesas"
+            ],
+            "sql": "SELECT MAX(FechaOperacion) AS fecha_op FROM dbo.Sync_Mesas WHERE ServerID = %s"
+          },
+          {
+            "sources": [
+              "Sync_Mesas"
+            ],
+            "sql": "Sin mesas sincronizadas en dbo.Sync_Mesas para"
+          },
+          {
+            "sources": [
+              "Sync_Mesas"
+            ],
+            "sql": "[MESAS-SQL-CANONICO] Error consultando dbo.Sync_Mesas:"
+          },
+          {
+            "sources": [
+              "Sync_Mesas"
+            ],
+            "sql": "Error consultando dbo.Sync_Mesas:"
+          }
+        ]
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_reporte_pax",
+        "line_start": 3486,
+        "line_end": 3595,
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/comercial/reporte-pax/{server_id}"
+          }
+        ],
+        "sync_sources": [
+          "Sync_PAX_Detalle"
+        ],
+        "canonical_sources": [],
+        "contract": "SYNC_ONLY",
+        "called_functions": [
+          "Depends",
+          "Query",
+          "append",
+          "build_envelope_response",
+          "close",
+          "cursor",
+          "date",
+          "error",
+          "execute",
+          "fetchall",
+          "float",
+          "get",
+          "get_edarsahub_pymssql_connection",
+          "get_server_by_id",
+          "int",
+          "isoformat",
+          "len",
+          "now",
+          "str",
+          "strptime",
+          "timedelta",
+          "validate_server_access_rbac"
+        ],
+        "sql_fragments": [
+          {
+            "sources": [
+              "Sync_PAX_Detalle"
+            ],
+            "sql": "Reporte de PAX (comensales) por sucursal. FASE DDL COMERCIAL: MIGRADO A SQL-FIRST Consulta tabla Sync_PAX_Detalle en EDARSAHUB."
+          },
+          {
+            "sources": [
+              "Sync_PAX_Detalle"
+            ],
+            "sql": "SELECT * FROM Sync_PAX_Detalle WHERE ServerID = %s AND SucursalID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY FechaOperacion DESC"
+          },
+          {
+            "sources": [
+              "Sync_PAX_Detalle"
+            ],
+            "sql": "SELECT * FROM Sync_PAX_Detalle WHERE ServerID = %s AND FechaOperacion BETWEEN %s AND %s ORDER BY SucursalNombre, FechaOperacion DESC"
+          },
+          {
+            "sources": [
+              "Sync_PAX_Detalle"
+            ],
+            "sql": "registros desde Sync_PAX_Detalle"
+          }
+        ]
+      },
+      {
+        "file": "backend/modules/inteligencia_comercial/routes.py",
+        "function": "get_analisis_pax",
+        "line_start": 1249,
+        "line_end": 1372,
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/dashboard/pax"
+          }
+        ],
+        "sync_sources": [
+          "Sync_PAX_Detalle"
+        ],
+        "canonical_sources": [],
+        "contract": "SYNC_ONLY",
+        "called_functions": [
+          "Query",
+          "append",
+          "error",
+          "execute_query",
+          "float",
+          "get",
+          "int",
+          "join",
+          "lower",
+          "normalizar_unidad",
+          "now",
+          "round",
+          "str",
+          "strftime",
+          "timedelta"
+        ],
+        "sql_fragments": [
+          {
+            "sources": [
+              "Sync_PAX_Detalle"
+            ],
+            "sql": "Análisis detallado de PAX/Comensales. Fuente: Sync_PAX_Detalle"
+          },
+          {
+            "sources": [
+              "Sync_PAX_Detalle"
+            ],
+            "sql": "SELECT SUM(NumeroComensales) AS pax_total, SUM(VentaCuenta) AS ventas_total, COUNT(*) AS total_mesas, AVG(ConsumoPromedioPAX) AS consumo_promedio, AVG(TiempoMesa) AS tiempo_promedio_mesa FROM Sync_PAX_Detalle WHERE"
+          },
+          {
+            "sources": [
+              "Sync_PAX_Detalle"
+            ],
+            "sql": "SELECT Turno, SUM(NumeroComensales) AS pax, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas, AVG(ConsumoPromedioPAX) AS consumo_promedio FROM Sync_PAX_Detalle WHERE"
+          },
+          {
+            "sources": [
+              "Sync_PAX_Detalle"
+            ],
+            "sql": "SELECT DiaSemana, SUM(NumeroComensales) AS pax, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas FROM Sync_PAX_Detalle WHERE"
+          },
+          {
+            "sources": [
+              "Sync_PAX_Detalle"
+            ],
+            "sql": "SELECT TOP 10 MeseroNombre, SUM(NumeroComensales) AS pax_atendidos, SUM(VentaCuenta) AS ventas, COUNT(*) AS mesas_atendidas, AVG(ConsumoPromedioPAX) AS ticket_promedio FROM Sync_PAX_Detalle WHERE"
+          },
+          {
+            "sources": [
+              "Sync_PAX_Detalle"
+            ],
+            "sql": "SQL_SYNC_PAX_DETALLE"
+          }
+        ]
+      }
+    ],
+    "sync_only_function_count": 6,
+    "mixed_functions": [
+      {
+        "file": "backend/core/scheduler/jobs/inteligencia_comercial_status_job.py",
+        "function": "execute",
+        "line_start": 55,
+        "line_end": 122,
+        "routes": [],
+        "sync_sources": [
+          "Sync_PAX_Detalle"
+        ],
+        "canonical_sources": [
+          "Comercial_KPIs_Diarios_v2",
+          "Comercial_Ventas_Dia_Abiertas_v2"
+        ],
+        "contract": "MIXED_WITH_FALLBACK_OR_BRANCH",
+        "called_functions": [
+          "_get_edarsahub_sql_connection",
+          "_rows_to_dicts",
+          "cursor",
+          "execute",
+          "fetchall",
+          "get",
+          "len"
+        ],
+        "sql_fragments": [
+          {
+            "sources": [
+              "Comercial_KPIs_Diarios_v2",
+              "Comercial_Ventas_Dia_Abiertas_v2",
+              "Sync_PAX_Detalle"
+            ],
+            "sql": "SELECT Fuente, UltimaFechaOperacion, UltimaFechaSincronizacion, Registros, CASE WHEN Registros IS NULL OR Registros = 0 THEN 'SIN_DATOS' WHEN UltimaFechaOperacion IS NULL THEN 'SIN_DATOS' WHEN DATEDIFF(DAY, UltimaFechaOperacion, CAST(GETDATE() AS DATE)) > 2 THEN 'STALE' ELSE 'OK' END AS Estado FROM ( SELECT 'Comercial_KPIs_Diarios_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_sincronizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_KPIs_Diarios_v2 WHERE ISNULL(activo, 1) = 1 UNION ALL SELECT 'Comercial_Ventas_Dia_Abiertas_v2' AS Fuente, MAX(fecha_operacion) AS UltimaFechaOperacion, MAX(fecha_ultima_actualizacion) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 UNION ALL SELECT 'Sync_PAX_Detalle' AS Fuente, MAX(FechaOperacion) AS UltimaFechaOperacion, MAX(FechaSync) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_PAX_Detalle UNION ALL SELECT 'Sync_Sales' AS Fuente, CAST(MAX(FechaHora) AS DATE) AS UltimaFechaOperacion, MAX(last_modified) AS UltimaFechaSincronizacion, COUNT(*) AS Registros FROM dbo.Sync_Sales ) s;"
+          }
+        ]
+      }
+    ],
+    "mixed_function_count": 1,
+    "canonical_only_functions": [
+      {
+        "file": "backend/modules/comercial/inteligencia_comercial_routes.py",
+        "function": "get_inteligencia_kpis",
+        "line_start": 199,
+        "line_end": 236,
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/kpis"
+          }
+        ],
+        "sync_sources": [],
+        "canonical_sources": [
+          "Comercial_KPIs_Diarios_v2"
+        ],
+        "contract": "CANONICAL_ONLY",
+        "called_functions": [
+          "Depends",
+          "Query",
+          "_filtrar_resumen_por_unidad",
+          "_rango_default",
+          "_require_permission",
+          "date",
+          "get",
+          "int",
+          "isoformat",
+          "resumen_periodo"
+        ],
+        "sql_fragments": [
+          {
+            "sources": [
+              "Comercial_KPIs_Diarios_v2"
+            ],
+            "sql": "KPIs consolidados desde servicio canónico único. Fuente: KPIsCanonicosService -> dbo.Comercial_KPIs_Diarios_v2"
+          }
+        ]
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "get_ventas_dia_snapshot_from_edarsahub",
+        "line_start": 369,
+        "line_end": 532,
+        "routes": [],
+        "sync_sources": [],
+        "canonical_sources": [
+          "Comercial_Ventas_Dia_Abiertas_v2"
+        ],
+        "contract": "CANONICAL_ONLY",
+        "called_functions": [
+          "date",
+          "dt_time",
+          "error",
+          "execute_sql_query",
+          "float",
+          "fromisoformat",
+          "get",
+          "get_operational_window",
+          "info",
+          "int",
+          "isinstance",
+          "isoformat",
+          "len",
+          "now",
+          "replace",
+          "str",
+          "strftime",
+          "time",
+          "timedelta",
+          "timezone",
+          "total_seconds"
+        ],
+        "sql_fragments": [
+          {
+            "sources": [
+              "Comercial_Ventas_Dia_Abiertas_v2"
+            ],
+            "sql": "Obtiene snapshot de ventas del día desde EDARSAHUB. Tabla: Comercial_Ventas_Dia_Abiertas_v2 FIX 2026-05-15: Ahora calcula FechaOperacion usando operational_window.py en lugar de datetime.now().date() (fecha calendario). Args: server_id: ID del servidor fecha_operacion: Fecha en formato YYYY-MM-DD (si se provee explícitamente) unidad_negocio_pk: ID de la unidad para calcular FechaOperacion (opcional, pero recomendado) Returns: Dict con datos del snapshot o None si no existe { 'exists': True/False, 'ventas': Decimal, 'pax': int, 'cheques': int, 'ticket_promedio': Decimal, 'snapshot_timestamp': datetime, 'estado_dato': 'VIGENTE' | 'DESACTUALIZADO' | 'MUY_DESACTUALIZADO', 'minutos_desde_sync': int, 'fuente': 'EDARSAHUB_SNAPSHOT', 'fecha_operacion_usada': str # Para debug }"
+          },
+          {
+            "sources": [
+              "Comercial_Ventas_Dia_Abiertas_v2"
+            ],
+            "sql": "SELECT unidad_negocio_pk, unidad_negocio_nombre, server_id, sucursal_id, sucursal_nombre, snapshot_timestamp, fecha_operacion, ventas_abiertas, tickets_abiertos, pax_abiertos, ventas_cerradas_dia, tickets_cerrados_dia, pax_cerrados_dia, total_estimado_dia, fecha_ultima_actualizacion FROM Comercial_Ventas_Dia_Abiertas_v2 WHERE server_id = '"
+          }
+        ]
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "_tablero_ejecutivo_internal",
+        "line_start": 595,
+        "line_end": 1947,
+        "routes": [],
+        "sync_sources": [],
+        "canonical_sources": [
+          "Comercial_Ventas_Dia_Abiertas_v2"
+        ],
+        "contract": "CANONICAL_ONLY",
+        "called_functions": [
+          "ZoneInfo",
+          "_agrupar_por_unidad",
+          "_filtrar_server",
+          "add",
+          "append",
+          "build_unit_response",
+          "classify_connection_error",
+          "date",
+          "datetime",
+          "error",
+          "filtrar_unidades_por_visibilidad",
+          "float",
+          "get",
+          "get_cached_kpis",
+          "get_fecha_operacion",
+          "get_kpis_diarios",
+          "get_kpis_softrestaurant",
+          "get_servers_for_tablero",
+          "get_unidad_by_server_id",
+          "get_ventas_dia_abiertas",
+          "get_ventas_dia_snapshot_from_edarsahub",
+          "info",
+          "int",
+          "is_mpro_system",
+          "is_softrestaurant_system",
+          "isdigit",
+          "isoformat",
+          "keys",
+          "len",
+          "list",
+          "list_unidades_negocio",
+          "lower",
+          "max",
+          "min",
+          "monthrange",
+          "now",
+          "replace",
+          "resolve_user_access_context",
+          "resolver_codigo",
+          "resolver_codigo_dedup",
+          "round",
+          "save_kpis_cache",
+          "set",
+          "setdefault",
+          "sorted",
+          "split",
+          "str",
+          "strftime",
+          "strip",
+          "strptime",
+          "sum",
+          "timedelta",
+          "timezone",
+          "upper",
+          "values",
+          "warning"
+        ],
+        "sql_fragments": [
+          {
+            "sources": [
+              "Comercial_Ventas_Dia_Abiertas_v2"
+            ],
+            "sql": "Comercial_Ventas_Dia_Abiertas_v2"
+          },
+          {
+            "sources": [
+              "Comercial_Ventas_Dia_Abiertas_v2"
+            ],
+            "sql": ": Sin datos en Comercial_Ventas_Dia_Abiertas_v2"
+          }
+        ]
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_ventas_tiempo",
+        "line_start": 2683,
+        "line_end": 2895,
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/comercial/ventas-tiempo/{server_id}"
+          }
+        ],
+        "sync_sources": [],
+        "canonical_sources": [
+          "Comercial_Ventas_Dia_Abiertas_v2"
+        ],
+        "contract": "CANONICAL_ONLY",
+        "called_functions": [
+          "Depends",
+          "HTTPException",
+          "Query",
+          "append",
+          "close",
+          "cursor",
+          "date",
+          "error",
+          "execute",
+          "fetchall",
+          "fetchone",
+          "float",
+          "get",
+          "get_edarsahub_pymssql_connection",
+          "get_server_by_id",
+          "hasattr",
+          "info",
+          "int",
+          "len",
+          "now",
+          "str",
+          "strftime",
+          "strptime",
+          "timedelta",
+          "validate_server_access_rbac",
+          "warning"
+        ],
+        "sql_fragments": [
+          {
+            "sources": [
+              "Comercial_Ventas_Dia_Abiertas_v2"
+            ],
+            "sql": "SELECT SUM(ISNULL(ventas_abiertas, 0) + ISNULL(ventas_cerradas_dia, 0)) as ventas, SUM(ISNULL(tickets_abiertos, 0) + ISNULL(tickets_cerrados_dia, 0)) as tickets, SUM(ISNULL(pax_abiertos, 0) + ISNULL(pax_cerrados_dia, 0)) as pax FROM Comercial_Ventas_Dia_Abiertas_v2 WHERE server_id = %s AND fecha_operacion = %s"
+          },
+          {
+            "sources": [
+              "Comercial_Ventas_Dia_Abiertas_v2"
+            ],
+            "sql": "Error consultando Comercial_Ventas_Dia_Abiertas_v2:"
+          }
+        ]
+      },
+      {
+        "file": "backend/modules/comercial/routes.py",
+        "function": "comercial_detalle_movimientos",
+        "line_start": 3166,
+        "line_end": 3338,
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/comercial/detalle-movimientos/{server_id}"
+          }
+        ],
+        "sync_sources": [],
+        "canonical_sources": [
+          "Comercial_KPIs_Diarios_v2"
+        ],
+        "contract": "CANONICAL_ONLY",
+        "called_functions": [
+          "Depends",
+          "HTTPException",
+          "Query",
+          "_query_edarsahub_tablero",
+          "append",
+          "error",
+          "extend",
+          "float",
+          "fromkeys",
+          "get",
+          "get_server_by_id",
+          "hasattr",
+          "info",
+          "int",
+          "join",
+          "len",
+          "list",
+          "max",
+          "min",
+          "monthrange",
+          "now",
+          "resolver_unidad_pks_dashboard",
+          "split",
+          "str",
+          "strftime",
+          "strip",
+          "timedelta",
+          "validate_server_access_rbac",
+          "zfill"
+        ],
+        "sql_fragments": [
+          {
+            "sources": [
+              "Comercial_KPIs_Diarios_v2"
+            ],
+            "sql": "Detalle de movimientos para drill-down en KPIs. FIX 2026-06-04: MIGRADO A SQL-FIRST Este endpoint ahora lee de vw_Comercial_KPIs_Diarios_v2_Runtime en EDARSAHUB SQL. Ya no usa conexiones LIVE a SoftRestaurant/MPRO. Columnas reales de la tabla: - fecha_operacion, ventas_total, tickets_total, pax_total, sistema_origen"
+          },
+          {
+            "sources": [
+              "Comercial_KPIs_Diarios_v2"
+            ],
+            "sql": "SELECT ISNULL(SUM(ventas_total),0) AS venta_total, ISNULL(SUM(tickets_total),0) AS cheques_total, ISNULL(SUM(pax_total),0) AS pax_total, COUNT(*) AS total FROM vw_Comercial_KPIs_Diarios_v2_Runtime WHERE"
+          },
+          {
+            "sources": [
+              "Comercial_KPIs_Diarios_v2"
+            ],
+            "sql": "SELECT fecha_operacion, ventas_total, tickets_total, pax_total, ticket_promedio, sucursal_nombre, unidad_negocio_nombre, sistema_origen FROM vw_Comercial_KPIs_Diarios_v2_Runtime WHERE"
+          }
+        ]
+      },
+      {
+        "file": "backend/modules/inteligencia_comercial/routes.py",
+        "function": "_ultimo_dia_con_kpis",
+        "line_start": 466,
+        "line_end": 494,
+        "routes": [],
+        "sync_sources": [],
+        "canonical_sources": [
+          "Comercial_KPIs_Diarios_v2"
+        ],
+        "contract": "CANONICAL_ONLY",
+        "called_functions": [
+          "_ultimo_dia_con_datos",
+          "_unidad_pk_filtro",
+          "date",
+          "execute_query",
+          "get",
+          "isinstance",
+          "len",
+          "strptime"
+        ],
+        "sql_fragments": [
+          {
+            "sources": [
+              "Comercial_KPIs_Diarios_v2"
+            ],
+            "sql": "Ancla canónica para KPI principal desde dbo.vw_Comercial_KPIs_Diarios_v2_Runtime."
+          },
+          {
+            "sources": [
+              "Comercial_KPIs_Diarios_v2"
+            ],
+            "sql": "SELECT MAX(fecha_operacion) AS m FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE"
+          }
+        ]
+      },
+      {
+        "file": "backend/modules/inteligencia_comercial/routes.py",
+        "function": "get_tendencia_diaria",
+        "line_start": 1155,
+        "line_end": 1183,
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/dashboard/tendencia"
+          }
+        ],
+        "sync_sources": [],
+        "canonical_sources": [
+          "Comercial_KPIs_Diarios_v2"
+        ],
+        "contract": "CANONICAL_ONLY",
+        "called_functions": [
+          "Query",
+          "_series_periodo_canonico_portal",
+          "error",
+          "get",
+          "len",
+          "lower",
+          "normalizar_unidad",
+          "now",
+          "str",
+          "strftime",
+          "timedelta"
+        ],
+        "sql_fragments": [
+          {
+            "sources": [
+              "Comercial_KPIs_Diarios_v2"
+            ],
+            "sql": "Tendencia diaria para gráficos. Fuente KPI principal: KPIsCanonicosService / dbo.Comercial_KPIs_Diarios_v2."
+          }
+        ]
+      }
+    ],
+    "canonical_only_function_count": 7
+  }
+}

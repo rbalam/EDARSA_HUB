@@ -1,0 +1,233 @@
+===== 1. CONTROL =====
+RAMA=Edarsahub_Desarrollo
+HEAD=3fc6e34f58b4b25c52e1341debcb2d6f70a46f4d
+TARGET_SHA=9c715e135e6f85b205ab16df18d7457cf810a198f695ba74401901bd955190aa
+STAGING:
+VACIO
+CAMBIOS_TRACKED:
+VACIO
+STATUS_TARGET:
+LIMPIO
+ARCHIVOS_NO_RASTREADOS=181
+CONTROL=PASS
+
+===== 2. AUDITORIA AST EXACTA DEL JOB =====
+CURSOR_CREATIONS=4
+ROW_STRING_SUBSCRIPTS=30
+EXCEPT_BLOCKS=6
+RETURN_STATEMENTS=7
+CURSOR|method=_sync_metas_comerciales|line=172|source=conn.cursor()|keywords={}
+CURSOR|method=_sync_ticket_perfecto|line=276|source=conn.cursor()|keywords={}
+CURSOR|method=_sync_mesas|line=348|source=conn.cursor()|keywords={}
+CURSOR|method=_sync_pax_detalle|line=418|source=conn.cursor()|keywords={}
+ROW_ACCESS|method=_sync_metas_comerciales|line=209|key=VentaBrutaActual|source=row["VentaBrutaActual"]
+ROW_ACCESS|method=_sync_metas_comerciales|line=210|key=DiasTranscurridos|source=row["DiasTranscurridos"]
+ROW_ACCESS|method=_sync_metas_comerciales|line=245|key=VentaBrutaActual|source=row["VentaBrutaActual"]
+ROW_ACCESS|method=_sync_metas_comerciales|line=245|key=VentaNetaActual|source=row["VentaNetaActual"]
+ROW_ACCESS|method=_sync_metas_comerciales|line=246|key=TicketPromedioActual|source=row["TicketPromedioActual"]
+ROW_ACCESS|method=_sync_metas_comerciales|line=246|key=CuentasActual|source=row["CuentasActual"]
+ROW_ACCESS|method=_sync_metas_comerciales|line=247|key=ComensalesActual|source=row["ComensalesActual"]
+ROW_ACCESS|method=_sync_metas_comerciales|line=249|key=VentaBrutaActual|source=row["VentaBrutaActual"]
+ROW_ACCESS|method=_sync_metas_comerciales|line=249|key=VentaNetaActual|source=row["VentaNetaActual"]
+ROW_ACCESS|method=_sync_metas_comerciales|line=250|key=TicketPromedioActual|source=row["TicketPromedioActual"]
+ROW_ACCESS|method=_sync_metas_comerciales|line=250|key=CuentasActual|source=row["CuentasActual"]
+ROW_ACCESS|method=_sync_metas_comerciales|line=251|key=ComensalesActual|source=row["ComensalesActual"]
+ROW_ACCESS|method=_sync_ticket_perfecto|line=305|key=FechaOperacion|source=row['FechaOperacion']
+ROW_ACCESS|method=_sync_ticket_perfecto|line=309|key=TicketPromedioReal|source=row["TicketPromedioReal"]
+ROW_ACCESS|method=_sync_ticket_perfecto|line=321|key=FechaOperacion|source=row["FechaOperacion"]
+ROW_ACCESS|method=_sync_ticket_perfecto|line=323|key=FechaOperacion|source=row["FechaOperacion"]
+ROW_ACCESS|method=_sync_ticket_perfecto|line=323|key=TotalCuentas|source=row["TotalCuentas"]
+ROW_ACCESS|method=_sync_ticket_perfecto|line=323|key=TotalComensales|source=row["TotalComensales"]
+ROW_ACCESS|method=_sync_ticket_perfecto|line=324|key=VentaTotal|source=row["VentaTotal"]
+ROW_ACCESS|method=_sync_mesas|line=380|key=TotalCuentas|source=row["TotalCuentas"]
+ROW_ACCESS|method=_sync_mesas|line=393|key=TotalCuentas|source=row["TotalCuentas"]
+ROW_ACCESS|method=_sync_mesas|line=394|key=TotalComensales|source=row["TotalComensales"]
+ROW_ACCESS|method=_sync_mesas|line=394|key=VentaTotal|source=row["VentaTotal"]
+ROW_ACCESS|method=_sync_mesas|line=380|key=VentaTotal|source=row["VentaTotal"]
+ROW_ACCESS|method=_sync_mesas|line=380|key=TotalCuentas|source=row["TotalCuentas"]
+ROW_ACCESS|method=_sync_pax_detalle|line=446|key=FechaOperacion|source=row['FechaOperacion']
+ROW_ACCESS|method=_sync_pax_detalle|line=448|key=TotalComensales|source=row["TotalComensales"]
+ROW_ACCESS|method=_sync_pax_detalle|line=449|key=VentaTotal|source=row["VentaTotal"]
+ROW_ACCESS|method=_sync_pax_detalle|line=461|key=FechaOperacion|source=row["FechaOperacion"]
+ROW_ACCESS|method=_sync_pax_detalle|line=463|key=FechaOperacion|source=row["FechaOperacion"]
+EXCEPT|method=execute|line=135|type=Exception|raises=0|returns=0|body=['Expr', 'Assign', 'AugAssign']
+EXCEPT|method=execute|line=128|type=Exception|raises=0|returns=0|body=['Expr', 'Assign', 'AugAssign']
+EXCEPT|method=_sync_metas_comerciales|line=257|type=Exception|raises=0|returns=0|body=['Expr']
+EXCEPT|method=_sync_ticket_perfecto|line=329|type=Exception|raises=0|returns=0|body=['Expr']
+EXCEPT|method=_sync_mesas|line=399|type=Exception|raises=0|returns=0|body=['Expr']
+EXCEPT|method=_sync_pax_detalle|line=469|type=Exception|raises=0|returns=0|body=['Expr']
+RETURN|method=_get_edarsahub_connection|line=80|value=self._conn
+RETURN|method=execute|line=142|value=results
+RETURN|method=execute|line=112|value=results
+RETURN|method=_sync_metas_comerciales|line=263|value=count
+RETURN|method=_sync_ticket_perfecto|line=335|value=count
+RETURN|method=_sync_mesas|line=405|value=count
+RETURN|method=_sync_pax_detalle|line=475|value=count
+AST_JSON=/var/tmp/edarsahub_sync_cursor_error_contract_20260805T042838Z/job_contract.json
+SOURCE_BLOCKS=/var/tmp/edarsahub_sync_cursor_error_contract_20260805T042838Z/source_blocks.txt
+AUDITORIA_AST_JOB=PASS
+
+===== 3. AUDITAR CONTRATO DE CONEXION =====
+================================================================================
+FILE=job|PATH=/app/backend/core/scheduler/jobs/sync_comercial_endpoints_job.py
+================================================================================
+CALL|line=172|function=cursor|keywords={}|source=conn.cursor()
+CALL|line=276|function=cursor|keywords={}|source=conn.cursor()
+CALL|line=348|function=cursor|keywords={}|source=conn.cursor()
+CALL|line=418|function=cursor|keywords={}|source=conn.cursor()
+CALL|line=79|function=get_sql_connection|keywords={}|source=get_sql_connection()
+================================================================================
+FILE=factory|PATH=/app/backend/core/sql_first/connection_factory.py
+================================================================================
+CALL|line=30|function=connect|keywords={}|source=pymssql.connect(**connect_kwargs)
+CALL|line=60|function=connect|keywords={}|source=pyodbc.connect(
+        f"DRIVER={{{ODBC_DRIVER_NAME}}};"
+        f"SERVER={cfg.host},{cfg.port};"
+        f"DATABASE={cfg.database};"
+        f"UID={cfg.user};"
+        f"PWD={cfg.password};"
+        "TrustServerCertificate=yes;Encrypt=no;"
+    )
+CALL|line=155|function=connect|keywords={'server': 'host', 'port': 'port', 'user': 'username', 'password': 'password', 'database': 'database', 'login_timeout': 'login_timeout', 'timeout': 'timeout', 'tds_version': 'tds_version', 'as_dict': 'as_dict'}|source=pymssql.connect(
+            server=host,
+            port=port,
+            user=username,
+            password=password,
+            database=database,
+            login_timeout=login_timeout,
+            timeout=timeout,
+            tds_version=tds_version,
+            as_dict=as_dict,
+        )
+CALL|line=169|function=connect|keywords={'timeout': 'login_timeout'}|source=pyodbc.connect(
+            "DRIVER={ODBC Driver 17 for SQL Server};"
+            f"SERVER={host},{port};"
+            f"DATABASE={database};"
+            f"UID={username};"
+            f"PWD={password};"
+            "TrustServerCertificate=yes;Encrypt=no;",
+            timeout=login_timeout,
+        )
+================================================================================
+FILE=db|PATH=/app/backend/core/sql_first/db.py
+================================================================================
+CALL|line=15|function=get_sql_connection|keywords={}|source=get_sql_connection(profile)
+CALL|line=62|function=cursor|keywords={}|source=conn.cursor()
+CALL|line=80|function=cursor|keywords={}|source=conn.cursor()
+CALL|line=101|function=cursor|keywords={}|source=conn.cursor()
+AUDITORIA_CONEXION_ESTATICA=PASS
+
+===== 4. AUDITAR MANEJO DE ERRORES Y FALSO POSITIVO =====
+_sync_metas_comerciales|CURSOR_CALLS=1|CURSOR_AS_DICT_TRUE=NO|ROW_STRING_ACCESSES=12|EXCEPTS=1|SWALLOWED_EXCEPTS=1|RETURNS_COUNT=SI
+_sync_ticket_perfecto|CURSOR_CALLS=1|CURSOR_AS_DICT_TRUE=NO|ROW_STRING_ACCESSES=7|EXCEPTS=1|SWALLOWED_EXCEPTS=1|RETURNS_COUNT=SI
+_sync_mesas|CURSOR_CALLS=1|CURSOR_AS_DICT_TRUE=NO|ROW_STRING_ACCESSES=6|EXCEPTS=1|SWALLOWED_EXCEPTS=1|RETURNS_COUNT=SI
+_sync_pax_detalle|CURSOR_CALLS=1|CURSOR_AS_DICT_TRUE=NO|ROW_STRING_ACCESSES=5|EXCEPTS=1|SWALLOWED_EXCEPTS=1|RETURNS_COUNT=SI
+execute|EXCEPTS=2|SWALLOWED_EXCEPTS=2
+BRECHA_CONFIRMADA=TUPLE_DICT_MISMATCH:_sync_metas_comerciales
+BRECHA_CONFIRMADA=EXCEPCIONES_SILENCIADAS:_sync_metas_comerciales
+BRECHA_CONFIRMADA=TUPLE_DICT_MISMATCH:_sync_ticket_perfecto
+BRECHA_CONFIRMADA=EXCEPCIONES_SILENCIADAS:_sync_ticket_perfecto
+BRECHA_CONFIRMADA=TUPLE_DICT_MISMATCH:_sync_mesas
+BRECHA_CONFIRMADA=EXCEPCIONES_SILENCIADAS:_sync_mesas
+BRECHA_CONFIRMADA=TUPLE_DICT_MISMATCH:_sync_pax_detalle
+BRECHA_CONFIRMADA=EXCEPCIONES_SILENCIADAS:_sync_pax_detalle
+BRECHA_CONFIRMADA=EXECUTE_PUEDE_CONVERTIR_ERROR_EN_RESULTADO
+CAUSA_RAIZ_CURSOR=CONFIRMADA
+FALSO_POSITIVO_JOB=CONFIRMADO
+PATCH_APLICABLE_TODAVIA=NO
+AUDITORIA_MANEJO_ERRORES=PASS
+
+===== 5. VALIDAR TIPO REAL DE CURSOR SIN CONSULTAR DATOS =====
+CURSOR_TYPE=pymssql._pymssql.Cursor
+ROW_TYPE=builtins.tuple
+ROW_IS_TUPLE=SI
+ROW_HAS_KEYS=NO
+DATABASE=EDARSAHUB
+LOGIN=HRLectura
+DATABASE_USER=HRLectura
+PROBE_VALUE=1
+CURSOR_RUNTIME_TUPLE=CONFIRMADO
+SQL_SOLO_SELECT=SI
+DATOS_MODIFICADOS=NO
+
+===== 6. CONTROL FINAL =====
+HEAD_DESPUES=3fc6e34f58b4b25c52e1341debcb2d6f70a46f4d
+TARGET_SHA_DESPUES=9c715e135e6f85b205ab16df18d7457cf810a198f695ba74401901bd955190aa
+STAGING_DESPUES:
+VACIO
+CAMBIOS_TRACKED_DESPUES:
+VACIO
+REPOSITORIO_TRACKED_INTACTO=SI
+UNTRACKED_PRESERVADOS=SI
+
+===== 7. RESULTADO =====
+AUDITORIA_CURSOR_Y_ERRORES=PASS
+RAMA=Edarsahub_Desarrollo
+HEAD=3fc6e34f58b4b25c52e1341debcb2d6f70a46f4d
+TARGET=backend/core/scheduler/jobs/sync_comercial_endpoints_job.py
+EJECUCION_PREVIA_REAL=FALLO_FUNCIONAL
+PROCESSED_COUNT_PREVIO=0
+TABLAS_SYNC_POBLADAS=NO
+DATOS_MODIFICADOS_EN_EJECUCION_PREVIA=NO
+CAUSA_RAIZ_CURSOR=TUPLE_CONSUMIDO_COMO_DICT
+CURSOR_RUNTIME_TUPLE=CONFIRMADO
+INDEXACION_ROW_POR_NOMBRE=CONFIRMADA
+EXCEPCIONES_INTERNAS_SILENCIADAS=CONFIRMADAS
+FALSO_SUCCESS_COUNT=CONFIRMADO
+SUCCESS_COUNT_PREVIO_NO_CONFIABLE=SI
+PATCH_APLICADO=NO
+CODIGO_MODIFICADO=NO
+STAGING_MODIFICADO=NO
+SQL_SOLO_SELECT=SI
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+REPOSITORIO_TRACKED_INTACTO=SI
+ARCHIVOS_NO_RASTREADOS=181
+UNTRACKED_PRESERVADOS=SI
+AST_JSON=/var/tmp/edarsahub_sync_cursor_error_contract_20260805T042838Z/job_contract.json
+SOURCE_BLOCKS=/var/tmp/edarsahub_sync_cursor_error_contract_20260805T042838Z/source_blocks.txt
+CONNECTION_REPORT=/var/tmp/edarsahub_sync_cursor_error_contract_20260805T042838Z/connection_contract.txt
+ERROR_REPORT=/var/tmp/edarsahub_sync_cursor_error_contract_20260805T042838Z/error_handling_contract.txt
+RUNTIME_REPORT=/var/tmp/edarsahub_sync_cursor_error_contract_20260805T042838Z/runtime_cursor_contract.txt
+UNTRACKED_LIST=/var/tmp/edarsahub_sync_cursor_error_contract_20260805T042838Z/untracked_files.txt
+REPORT=/app/edarsahub_sync_cursor_error_contract_20260805T042838Z.txt
+COMPACT=/app/edarsahub_sync_cursor_error_contract_20260805T042838Z_compact.txt
+SIGUIENTE_ESTADO=DISEÑAR_PATCH_ATOMICO_CURSOR_AS_DICT_Y_PROPAGACION_REAL_DE_ERRORES
+AUDITORIA_CURSOR_Y_ERRORES=PASS
+RAMA=Edarsahub_Desarrollo
+HEAD=3fc6e34f58b4b25c52e1341debcb2d6f70a46f4d
+TARGET=backend/core/scheduler/jobs/sync_comercial_endpoints_job.py
+EJECUCION_PREVIA_REAL=FALLO_FUNCIONAL
+PROCESSED_COUNT_PREVIO=0
+TABLAS_SYNC_POBLADAS=NO
+DATOS_MODIFICADOS_EN_EJECUCION_PREVIA=NO
+CAUSA_RAIZ_CURSOR=TUPLE_CONSUMIDO_COMO_DICT
+CURSOR_RUNTIME_TUPLE=CONFIRMADO
+INDEXACION_ROW_POR_NOMBRE=CONFIRMADA
+EXCEPCIONES_INTERNAS_SILENCIADAS=CONFIRMADAS
+FALSO_SUCCESS_COUNT=CONFIRMADO
+SUCCESS_COUNT_PREVIO_NO_CONFIABLE=SI
+PATCH_APLICADO=NO
+CODIGO_MODIFICADO=NO
+STAGING_MODIFICADO=NO
+SQL_SOLO_SELECT=SI
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+COMMIT=NO
+PUSH=NO
+DEPLOY=NO
+REPOSITORIO_TRACKED_INTACTO=SI
+ARCHIVOS_NO_RASTREADOS=181
+UNTRACKED_PRESERVADOS=SI
+AST_JSON=/var/tmp/edarsahub_sync_cursor_error_contract_20260805T042838Z/job_contract.json
+SOURCE_BLOCKS=/var/tmp/edarsahub_sync_cursor_error_contract_20260805T042838Z/source_blocks.txt
+CONNECTION_REPORT=/var/tmp/edarsahub_sync_cursor_error_contract_20260805T042838Z/connection_contract.txt
+ERROR_REPORT=/var/tmp/edarsahub_sync_cursor_error_contract_20260805T042838Z/error_handling_contract.txt
+RUNTIME_REPORT=/var/tmp/edarsahub_sync_cursor_error_contract_20260805T042838Z/runtime_cursor_contract.txt
+UNTRACKED_LIST=/var/tmp/edarsahub_sync_cursor_error_contract_20260805T042838Z/untracked_files.txt
+REPORT=/app/edarsahub_sync_cursor_error_contract_20260805T042838Z.txt
+COMPACT=/app/edarsahub_sync_cursor_error_contract_20260805T042838Z_compact.txt
+SIGUIENTE_ESTADO=DISEÑAR_PATCH_ATOMICO_CURSOR_AS_DICT_Y_PROPAGACION_REAL_DE_ERRORES

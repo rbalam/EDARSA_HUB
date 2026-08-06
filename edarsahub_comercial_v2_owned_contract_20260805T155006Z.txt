@@ -1,0 +1,2430 @@
+===== 1. GUARDRAILS =====
+RAMA=Edarsahub_Desarrollo
+HEAD=6f82b39fead3a73667241e88e580f0ea8faf51e8
+REMOTE_HEAD=6f82b39fead3a73667241e88e580f0ea8faf51e8
+CONTROL=PASS
+
+===== 2. AUDITORIA PROPIETARIA SIN VENDOR =====
+FILES=5
+FUNCTIONS=16
+MONGO_FUNCTIONS=0
+OPERATIONAL_DATE_FUNCTIONS=8
+CANONICAL_CONNECTION_FUNCTIONS=3
+CLASSIFICATION=CANONICAL_FIELD_NAME|COUNT=4
+CLASSIFICATION=CANONICAL_SYSTEM_TYPE|COUNT=2
+CLASSIFICATION=CONTEXT_REVIEW_REQUIRED|COUNT=5
+CLASSIFICATION=DOCSTRING_OR_MESSAGE|COUNT=9
+CLASSIFICATION=HASH_STORAGE_LENGTH_CONTRACT|COUNT=2
+CLASSIFICATION=LOG_MESSAGE|COUNT=5
+CLASSIFICATION=SEMANTIC_VERSION_CONTRACT|COUNT=1
+CLASSIFICATION=SQL_CONTRACT|COUNT=6
+CLASSIFICATION=STRING_REVIEW_REQUIRED|COUNT=376
+CLASSIFICATION=TECHNICAL_CONSTANT|COUNT=74
+CLASSIFICATION=TECHNICAL_EMPTY|COUNT=11
+CLASSIFICATION=TECHNICAL_SQL_DEFAULT_PORT|COUNT=1
+FUNCTION=backend/core/connections/pos_runtime_resolver.py:external_connection_config|LINES=44-59|FORMULAS=NINGUNA|DATE_OPERATIONAL=NO|CANONICAL_CONNECTION=SI|MONGO=NO
+LITERAL=backend/core/connections/pos_runtime_resolver.py:external_connection_config:45|CLASS=STRING_REVIEW_REQUIRED|VALUE=EDARSAHUB
+CONTEXT=  43|
+CONTEXT=  44|    def external_connection_config(self, *, as_dict: bool) -> dict:
+CONTEXT=>>45|        if self.database.strip().upper() == "EDARSAHUB":
+CONTEXT=  46|            raise PosRuntimeMappingError(
+CONTEXT=  47|                "EDARSAHUB no puede utilizarse como base origen POS"
+LITERAL=backend/core/connections/pos_runtime_resolver.py:external_connection_config:51|CLASS=STRING_REVIEW_REQUIRED|VALUE=host
+CONTEXT=  49|        server = f"{self.host}\\{self.instance}" if self.instance else self.host
+CONTEXT=  50|        return {
+CONTEXT=>>51|            "host": server,
+CONTEXT=  52|            "port": self.port,
+CONTEXT=  53|            "database": self.database,
+LITERAL=backend/core/connections/pos_runtime_resolver.py:external_connection_config:52|CLASS=STRING_REVIEW_REQUIRED|VALUE=port
+CONTEXT=  50|        return {
+CONTEXT=  51|            "host": server,
+CONTEXT=>>52|            "port": self.port,
+CONTEXT=  53|            "database": self.database,
+CONTEXT=  54|            "username": self.username,
+LITERAL=backend/core/connections/pos_runtime_resolver.py:external_connection_config:53|CLASS=STRING_REVIEW_REQUIRED|VALUE=database
+CONTEXT=  51|            "host": server,
+CONTEXT=  52|            "port": self.port,
+CONTEXT=>>53|            "database": self.database,
+CONTEXT=  54|            "username": self.username,
+CONTEXT=  55|            "password": self.password,
+LITERAL=backend/core/connections/pos_runtime_resolver.py:external_connection_config:54|CLASS=STRING_REVIEW_REQUIRED|VALUE=username
+CONTEXT=  52|            "port": self.port,
+CONTEXT=  53|            "database": self.database,
+CONTEXT=>>54|            "username": self.username,
+CONTEXT=  55|            "password": self.password,
+CONTEXT=  56|            "login_timeout": 30,
+LITERAL=backend/core/connections/pos_runtime_resolver.py:external_connection_config:55|CLASS=STRING_REVIEW_REQUIRED|VALUE=password
+CONTEXT=  53|            "database": self.database,
+CONTEXT=  54|            "username": self.username,
+CONTEXT=>>55|            "password": self.password,
+CONTEXT=  56|            "login_timeout": 30,
+CONTEXT=  57|            "timeout": 30,
+LITERAL=backend/core/connections/pos_runtime_resolver.py:external_connection_config:56|CLASS=STRING_REVIEW_REQUIRED|VALUE=login_timeout
+CONTEXT=  54|            "username": self.username,
+CONTEXT=  55|            "password": self.password,
+CONTEXT=>>56|            "login_timeout": 30,
+CONTEXT=  57|            "timeout": 30,
+CONTEXT=  58|            "as_dict": as_dict,
+LITERAL=backend/core/connections/pos_runtime_resolver.py:external_connection_config:57|CLASS=STRING_REVIEW_REQUIRED|VALUE=timeout
+CONTEXT=  55|            "password": self.password,
+CONTEXT=  56|            "login_timeout": 30,
+CONTEXT=>>57|            "timeout": 30,
+CONTEXT=  58|            "as_dict": as_dict,
+CONTEXT=  59|        }
+LITERAL=backend/core/connections/pos_runtime_resolver.py:external_connection_config:58|CLASS=STRING_REVIEW_REQUIRED|VALUE=as_dict
+CONTEXT=  56|            "login_timeout": 30,
+CONTEXT=  57|            "timeout": 30,
+CONTEXT=>>58|            "as_dict": as_dict,
+CONTEXT=  59|        }
+CONTEXT=  60|
+LITERAL=backend/core/connections/pos_runtime_resolver.py:external_connection_config:47|CLASS=STRING_REVIEW_REQUIRED|VALUE=EDARSAHUB no puede utilizarse como base origen POS
+CONTEXT=  45|        if self.database.strip().upper() == "EDARSAHUB":
+CONTEXT=  46|            raise PosRuntimeMappingError(
+CONTEXT=>>47|                "EDARSAHUB no puede utilizarse como base origen POS"
+CONTEXT=  48|            )
+CONTEXT=  49|        server = f"{self.host}\\{self.instance}" if self.instance else self.host
+LITERAL=backend/core/connections/pos_runtime_resolver.py:external_connection_config:49|CLASS=STRING_REVIEW_REQUIRED|VALUE=\
+CONTEXT=  47|                "EDARSAHUB no puede utilizarse como base origen POS"
+CONTEXT=  48|            )
+CONTEXT=>>49|        server = f"{self.host}\\{self.instance}" if self.instance else self.host
+CONTEXT=  50|        return {
+CONTEXT=  51|            "host": server,
+FUNCTION=backend/core/connections/pos_runtime_resolver.py:list_pos_runtime_contexts|LINES=130-167|FORMULAS=NINGUNA|DATE_OPERATIONAL=NO|CANONICAL_CONNECTION=SI|MONGO=NO
+LITERAL=backend/core/connections/pos_runtime_resolver.py:list_pos_runtime_contexts:133|CLASS=STRING_REVIEW_REQUIRED|VALUE=Lista fuentes POS activas desde el catálogo canónico SQL.
+CONTEXT=  131|    *, system_types: Optional[Iterable[str]] = None
+CONTEXT=  132|) -> list[PosRuntimeContext]:
+CONTEXT=>>133|    """Lista fuentes POS activas desde el catálogo canónico SQL."""
+CONTEXT=  134|    requested = _normalize_types(system_types)
+CONTEXT=  135|    connection = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+FUNCTION=backend/core/utils/operational_window.py:get_fecha_operacion|LINES=506-516|FORMULAS=NINGUNA|DATE_OPERATIONAL=SI|CANONICAL_CONNECTION=NO|MONGO=NO
+FUNCTION=backend/core/utils/operational_window.py:get_operational_window|LINES=314-503|FORMULAS=NINGUNA|DATE_OPERATIONAL=SI|CANONICAL_CONNECTION=NO|MONGO=NO
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:465|CLASS=STRING_REVIEW_REQUIRED|VALUE=ENTRE_TURNOS_DIA_ACTUAL
+CONTEXT=  463|    # (sin turno que cruce medianoche activo)
+CONTEXT=  464|    fecha_operacion = fecha_calendario
+CONTEXT=>>465|    metodo = "ENTRE_TURNOS_DIA_ACTUAL"
+CONTEXT=  466|    alertas.append("ENTRE_TURNOS")
+CONTEXT=  467|    
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:466|CLASS=STRING_REVIEW_REQUIRED|VALUE=ENTRE_TURNOS
+CONTEXT=  464|    fecha_operacion = fecha_calendario
+CONTEXT=  465|    metodo = "ENTRE_TURNOS_DIA_ACTUAL"
+CONTEXT=>>466|    alertas.append("ENTRE_TURNOS")
+CONTEXT=  467|    
+CONTEXT=  468|    # Buscar el siguiente turno para window_start
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:353|CLASS=STRING_REVIEW_REQUIRED|VALUE=SIN_CONFIGURACION_TURNOS
+CONTEXT=  351|    if not turnos:
+CONTEXT=  352|        # Sin configuración: ALERTA y usar default 13:00-06:00
+CONTEXT=>>353|        alertas.append("SIN_CONFIGURACION_TURNOS")
+CONTEXT=  354|        logger.warning(f"[OPERATIONAL_WINDOW] {unidad_negocio_pk}: Sin turnos configurados")
+CONTEXT=  355|        
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:357|CLASS=CONTEXT_REVIEW_REQUIRED|VALUE=13
+CONTEXT=  355|        
+CONTEXT=  356|        # Fallback: 13:00-06:00 cruza medianoche
+CONTEXT=>>357|        hora_inicio = time(13, 0)
+CONTEXT=  358|        hora_fin = time(6, 0)
+CONTEXT=  359|        
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:358|CLASS=CONTEXT_REVIEW_REQUIRED|VALUE=6
+CONTEXT=  356|        # Fallback: 13:00-06:00 cruza medianoche
+CONTEXT=  357|        hora_inicio = time(13, 0)
+CONTEXT=>>358|        hora_fin = time(6, 0)
+CONTEXT=  359|        
+CONTEXT=  360|        if hora_actual < hora_fin:
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:363|CLASS=STRING_REVIEW_REQUIRED|VALUE=FALLBACK_CRUZA_MEDIANOCHE
+CONTEXT=  361|            # Antes del cierre (madrugada): día anterior
+CONTEXT=  362|            fecha_operacion = fecha_calendario - timedelta(days=1)
+CONTEXT=>>363|            metodo = "FALLBACK_CRUZA_MEDIANOCHE"
+CONTEXT=  364|        elif hora_actual >= hora_inicio:
+CONTEXT=  365|            # Después de apertura: día actual
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:389|CLASS=STRING_REVIEW_REQUIRED|VALUE=tolerancia_inicio_minutos
+CONTEXT=  387|    # Buscar turno activo actual
+CONTEXT=  388|    for turno in turnos:
+CONTEXT=>>389|        tolerancia_inicio = turno.get('tolerancia_inicio_minutos', 5)
+CONTEXT=  390|        
+CONTEXT=  391|        if _hora_en_rango(
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:389|CLASS=CONTEXT_REVIEW_REQUIRED|VALUE=5
+CONTEXT=  387|    # Buscar turno activo actual
+CONTEXT=  388|    for turno in turnos:
+CONTEXT=>>389|        tolerancia_inicio = turno.get('tolerancia_inicio_minutos', 5)
+CONTEXT=  390|        
+CONTEXT=  391|        if _hora_en_rango(
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:433|CLASS=STRING_REVIEW_REQUIRED|VALUE=hora_inicio
+CONTEXT=  431|    ultimo_turno = turnos[-1]
+CONTEXT=  432|    
+CONTEXT=>>433|    if hora_actual < primer_turno['hora_inicio']:
+CONTEXT=  434|        # Antes del primer turno del día
+CONTEXT=  435|        if ultimo_turno['cruza_medianoche']:
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:435|CLASS=STRING_REVIEW_REQUIRED|VALUE=cruza_medianoche
+CONTEXT=  433|    if hora_actual < primer_turno['hora_inicio']:
+CONTEXT=  434|        # Antes del primer turno del día
+CONTEXT=>>435|        if ultimo_turno['cruza_medianoche']:
+CONTEXT=  436|            # El último turno del día anterior aún podría estar activo
+CONTEXT=  437|            # (ya se manejó arriba), pero si llegamos aquí, estamos
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:440|CLASS=STRING_REVIEW_REQUIRED|VALUE=ANTES_PRIMER_TURNO_CRUZA
+CONTEXT=  438|            # en el "gap" entre turnos
+CONTEXT=  439|            fecha_operacion = fecha_calendario - timedelta(days=1)
+CONTEXT=>>440|            metodo = "ANTES_PRIMER_TURNO_CRUZA"
+CONTEXT=  441|        else:
+CONTEXT=  442|            # No hay turno que cruce medianoche
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:444|CLASS=STRING_REVIEW_REQUIRED|VALUE=ANTES_PRIMER_TURNO
+CONTEXT=  442|            # No hay turno que cruce medianoche
+CONTEXT=  443|            fecha_operacion = fecha_calendario - timedelta(days=1)
+CONTEXT=>>444|            metodo = "ANTES_PRIMER_TURNO"
+CONTEXT=  445|        
+CONTEXT=  446|        alertas.append("FUERA_HORARIO_OPERATIVO")
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:446|CLASS=STRING_REVIEW_REQUIRED|VALUE=FUERA_HORARIO_OPERATIVO
+CONTEXT=  444|            metodo = "ANTES_PRIMER_TURNO"
+CONTEXT=  445|        
+CONTEXT=>>446|        alertas.append("FUERA_HORARIO_OPERATIVO")
+CONTEXT=  447|        
+CONTEXT=  448|        return ResultadoVentanaOperativa(
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:354|CLASS=STRING_REVIEW_REQUIRED|VALUE=[OPERATIONAL_WINDOW] 
+CONTEXT=  352|        # Sin configuración: ALERTA y usar default 13:00-06:00
+CONTEXT=  353|        alertas.append("SIN_CONFIGURACION_TURNOS")
+CONTEXT=>>354|        logger.warning(f"[OPERATIONAL_WINDOW] {unidad_negocio_pk}: Sin turnos configurados")
+CONTEXT=  355|        
+CONTEXT=  356|        # Fallback: 13:00-06:00 cruza medianoche
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:354|CLASS=STRING_REVIEW_REQUIRED|VALUE=: Sin turnos configurados
+CONTEXT=  352|        # Sin configuración: ALERTA y usar default 13:00-06:00
+CONTEXT=  353|        alertas.append("SIN_CONFIGURACION_TURNOS")
+CONTEXT=>>354|        logger.warning(f"[OPERATIONAL_WINDOW] {unidad_negocio_pk}: Sin turnos configurados")
+CONTEXT=  355|        
+CONTEXT=  356|        # Fallback: 13:00-06:00 cruza medianoche
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:367|CLASS=STRING_REVIEW_REQUIRED|VALUE=FALLBACK_DIA_ACTUAL
+CONTEXT=  365|            # Después de apertura: día actual
+CONTEXT=  366|            fecha_operacion = fecha_calendario
+CONTEXT=>>367|            metodo = "FALLBACK_DIA_ACTUAL"
+CONTEXT=  368|        else:
+CONTEXT=  369|            # Entre cierre y apertura: día anterior
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:371|CLASS=STRING_REVIEW_REQUIRED|VALUE=FALLBACK_ENTRE_TURNOS
+CONTEXT=  369|            # Entre cierre y apertura: día anterior
+CONTEXT=  370|            fecha_operacion = fecha_calendario - timedelta(days=1)
+CONTEXT=>>371|            metodo = "FALLBACK_ENTRE_TURNOS"
+CONTEXT=  372|        
+CONTEXT=  373|        return ResultadoVentanaOperativa(
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:376|CLASS=STRING_REVIEW_REQUIRED|VALUE=FALLBACK
+CONTEXT=  374|            unidad_negocio_pk=unidad_negocio_pk,
+CONTEXT=  375|            fecha_operacion=fecha_operacion,
+CONTEXT=>>376|            turno_operativo_codigo="FALLBACK",
+CONTEXT=  377|            turno_nombre="Sin Configuración",
+CONTEXT=  378|            window_start_mx=hora_inicio,
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:377|CLASS=STRING_REVIEW_REQUIRED|VALUE=Sin Configuración
+CONTEXT=  375|            fecha_operacion=fecha_operacion,
+CONTEXT=  376|            turno_operativo_codigo="FALLBACK",
+CONTEXT=>>377|            turno_nombre="Sin Configuración",
+CONTEXT=  378|            window_start_mx=hora_inicio,
+CONTEXT=  379|            window_end_mx=hora_fin,
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:381|CLASS=STRING_REVIEW_REQUIRED|VALUE=America/Mexico_City
+CONTEXT=  379|            window_end_mx=hora_fin,
+CONTEXT=  380|            cruza_medianoche=True,
+CONTEXT=>>381|            timezone="America/Mexico_City",
+CONTEXT=  382|            metodo_fecha_operacion=metodo,
+CONTEXT=  383|            alertas=alertas,
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:393|CLASS=STRING_REVIEW_REQUIRED|VALUE=hora_inicio
+CONTEXT=  391|        if _hora_en_rango(
+CONTEXT=  392|            hora_actual, 
+CONTEXT=>>393|            turno['hora_inicio'], 
+CONTEXT=  394|            turno['hora_fin'],
+CONTEXT=  395|            turno['cruza_medianoche'],
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:394|CLASS=STRING_REVIEW_REQUIRED|VALUE=hora_fin
+CONTEXT=  392|            hora_actual, 
+CONTEXT=  393|            turno['hora_inicio'], 
+CONTEXT=>>394|            turno['hora_fin'],
+CONTEXT=  395|            turno['cruza_medianoche'],
+CONTEXT=  396|            tolerancia_inicio
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:395|CLASS=STRING_REVIEW_REQUIRED|VALUE=cruza_medianoche
+CONTEXT=  393|            turno['hora_inicio'], 
+CONTEXT=  394|            turno['hora_fin'],
+CONTEXT=>>395|            turno['cruza_medianoche'],
+CONTEXT=  396|            tolerancia_inicio
+CONTEXT=  397|        ):
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:402|CLASS=STRING_REVIEW_REQUIRED|VALUE=TURNO_CRUZA_MEDIANOCHE_MADRUGADA
+CONTEXT=  400|                # Estamos en la madrugada (00:00 - hora_fin): pertenece al día ANTERIOR
+CONTEXT=  401|                fecha_operacion = fecha_calendario - timedelta(days=1)
+CONTEXT=>>402|                metodo = "TURNO_CRUZA_MEDIANOCHE_MADRUGADA"
+CONTEXT=  403|            else:
+CONTEXT=  404|                # Estamos en horario normal del turno: día actual
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:406|CLASS=STRING_REVIEW_REQUIRED|VALUE=TURNO_ACTIVO
+CONTEXT=  404|                # Estamos en horario normal del turno: día actual
+CONTEXT=  405|                fecha_operacion = fecha_calendario
+CONTEXT=>>406|                metodo = "TURNO_ACTIVO"
+CONTEXT=  407|            
+CONTEXT=  408|            logger.info(
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:451|CLASS=STRING_REVIEW_REQUIRED|VALUE=FUERA_HORARIO
+CONTEXT=  449|            unidad_negocio_pk=unidad_negocio_pk,
+CONTEXT=  450|            fecha_operacion=fecha_operacion,
+CONTEXT=>>451|            turno_operativo_codigo="FUERA_HORARIO",
+CONTEXT=  452|            turno_nombre="Fuera de Horario",
+CONTEXT=  453|            window_start_mx=primer_turno['hora_inicio'],
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:452|CLASS=STRING_REVIEW_REQUIRED|VALUE=Fuera de Horario
+CONTEXT=  450|            fecha_operacion=fecha_operacion,
+CONTEXT=  451|            turno_operativo_codigo="FUERA_HORARIO",
+CONTEXT=>>452|            turno_nombre="Fuera de Horario",
+CONTEXT=  453|            window_start_mx=primer_turno['hora_inicio'],
+CONTEXT=  454|            window_end_mx=ultimo_turno['hora_fin'],
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:456|CLASS=STRING_REVIEW_REQUIRED|VALUE=America/Mexico_City
+CONTEXT=  454|            window_end_mx=ultimo_turno['hora_fin'],
+CONTEXT=  455|            cruza_medianoche=ultimo_turno['cruza_medianoche'],
+CONTEXT=>>456|            timezone="America/Mexico_City",
+CONTEXT=  457|            metodo_fecha_operacion=metodo,
+CONTEXT=  458|            alertas=alertas,
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:471|CLASS=STRING_REVIEW_REQUIRED|VALUE=hora_inicio
+CONTEXT=  469|    siguiente_turno = None
+CONTEXT=  470|    for turno in turnos:
+CONTEXT=>>471|        if turno['hora_inicio'] > hora_actual:
+CONTEXT=  472|            siguiente_turno = turno
+CONTEXT=  473|            break
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:484|CLASS=STRING_REVIEW_REQUIRED|VALUE=America/Mexico_City
+CONTEXT=  482|            window_end_mx=siguiente_turno['hora_fin'],
+CONTEXT=  483|            cruza_medianoche=siguiente_turno['cruza_medianoche'],
+CONTEXT=>>484|            timezone="America/Mexico_City",
+CONTEXT=  485|            metodo_fecha_operacion=metodo,
+CONTEXT=  486|            alertas=alertas,
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:494|CLASS=STRING_REVIEW_REQUIRED|VALUE=DESPUES_CIERRE
+CONTEXT=  492|            unidad_negocio_pk=unidad_negocio_pk,
+CONTEXT=  493|            fecha_operacion=fecha_operacion,
+CONTEXT=>>494|            turno_operativo_codigo="DESPUES_CIERRE",
+CONTEXT=  495|            turno_nombre="Después del Cierre",
+CONTEXT=  496|            window_start_mx=ultimo_turno['hora_inicio'],
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:495|CLASS=STRING_REVIEW_REQUIRED|VALUE=Después del Cierre
+CONTEXT=  493|            fecha_operacion=fecha_operacion,
+CONTEXT=  494|            turno_operativo_codigo="DESPUES_CIERRE",
+CONTEXT=>>495|            turno_nombre="Después del Cierre",
+CONTEXT=  496|            window_start_mx=ultimo_turno['hora_inicio'],
+CONTEXT=  497|            window_end_mx=ultimo_turno['hora_fin'],
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:499|CLASS=STRING_REVIEW_REQUIRED|VALUE=America/Mexico_City
+CONTEXT=  497|            window_end_mx=ultimo_turno['hora_fin'],
+CONTEXT=  498|            cruza_medianoche=ultimo_turno['cruza_medianoche'],
+CONTEXT=>>499|            timezone="America/Mexico_City",
+CONTEXT=  500|            metodo_fecha_operacion="DESPUES_ULTIMO_TURNO",
+CONTEXT=  501|            alertas=alertas + ["DESPUES_HORARIO_OPERATIVO"],
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:500|CLASS=STRING_REVIEW_REQUIRED|VALUE=DESPUES_ULTIMO_TURNO
+CONTEXT=  498|            cruza_medianoche=ultimo_turno['cruza_medianoche'],
+CONTEXT=  499|            timezone="America/Mexico_City",
+CONTEXT=>>500|            metodo_fecha_operacion="DESPUES_ULTIMO_TURNO",
+CONTEXT=  501|            alertas=alertas + ["DESPUES_HORARIO_OPERATIVO"],
+CONTEXT=  502|            timestamp_consulta=timestamp
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:399|CLASS=STRING_REVIEW_REQUIRED|VALUE=cruza_medianoche
+CONTEXT=  397|        ):
+CONTEXT=  398|            # Encontramos el turno activo
+CONTEXT=>>399|            if turno['cruza_medianoche'] and hora_actual < turno['hora_fin']:
+CONTEXT=  400|                # Estamos en la madrugada (00:00 - hora_fin): pertenece al día ANTERIOR
+CONTEXT=  401|                fecha_operacion = fecha_calendario - timedelta(days=1)
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:409|CLASS=STRING_REVIEW_REQUIRED|VALUE=[OPERATIONAL_WINDOW] 
+CONTEXT=  407|            
+CONTEXT=  408|            logger.info(
+CONTEXT=>>409|                f"[OPERATIONAL_WINDOW] {unidad_negocio_pk}: "
+CONTEXT=  410|                f"turno={turno['turno_codigo']}, hora={hora_actual.strftime('%H:%M')}, "
+CONTEXT=  411|                f"fecha_operacion={fecha_operacion}, metodo={metodo}"
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:409|CLASS=STRING_REVIEW_REQUIRED|VALUE=: turno=
+CONTEXT=  407|            
+CONTEXT=  408|            logger.info(
+CONTEXT=>>409|                f"[OPERATIONAL_WINDOW] {unidad_negocio_pk}: "
+CONTEXT=  410|                f"turno={turno['turno_codigo']}, hora={hora_actual.strftime('%H:%M')}, "
+CONTEXT=  411|                f"fecha_operacion={fecha_operacion}, metodo={metodo}"
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:409|CLASS=STRING_REVIEW_REQUIRED|VALUE=, hora=
+CONTEXT=  407|            
+CONTEXT=  408|            logger.info(
+CONTEXT=>>409|                f"[OPERATIONAL_WINDOW] {unidad_negocio_pk}: "
+CONTEXT=  410|                f"turno={turno['turno_codigo']}, hora={hora_actual.strftime('%H:%M')}, "
+CONTEXT=  411|                f"fecha_operacion={fecha_operacion}, metodo={metodo}"
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:409|CLASS=STRING_REVIEW_REQUIRED|VALUE=, fecha_operacion=
+CONTEXT=  407|            
+CONTEXT=  408|            logger.info(
+CONTEXT=>>409|                f"[OPERATIONAL_WINDOW] {unidad_negocio_pk}: "
+CONTEXT=  410|                f"turno={turno['turno_codigo']}, hora={hora_actual.strftime('%H:%M')}, "
+CONTEXT=  411|                f"fecha_operacion={fecha_operacion}, metodo={metodo}"
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:409|CLASS=STRING_REVIEW_REQUIRED|VALUE=, metodo=
+CONTEXT=  407|            
+CONTEXT=  408|            logger.info(
+CONTEXT=>>409|                f"[OPERATIONAL_WINDOW] {unidad_negocio_pk}: "
+CONTEXT=  410|                f"turno={turno['turno_codigo']}, hora={hora_actual.strftime('%H:%M')}, "
+CONTEXT=  411|                f"fecha_operacion={fecha_operacion}, metodo={metodo}"
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:422|CLASS=STRING_REVIEW_REQUIRED|VALUE=America/Mexico_City
+CONTEXT=  420|                window_end_mx=turno['hora_fin'],
+CONTEXT=  421|                cruza_medianoche=turno['cruza_medianoche'],
+CONTEXT=>>422|                timezone="America/Mexico_City",
+CONTEXT=  423|                metodo_fecha_operacion=metodo,
+CONTEXT=  424|                alertas=alertas,
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:453|CLASS=STRING_REVIEW_REQUIRED|VALUE=hora_inicio
+CONTEXT=  451|            turno_operativo_codigo="FUERA_HORARIO",
+CONTEXT=  452|            turno_nombre="Fuera de Horario",
+CONTEXT=>>453|            window_start_mx=primer_turno['hora_inicio'],
+CONTEXT=  454|            window_end_mx=ultimo_turno['hora_fin'],
+CONTEXT=  455|            cruza_medianoche=ultimo_turno['cruza_medianoche'],
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:454|CLASS=STRING_REVIEW_REQUIRED|VALUE=hora_fin
+CONTEXT=  452|            turno_nombre="Fuera de Horario",
+CONTEXT=  453|            window_start_mx=primer_turno['hora_inicio'],
+CONTEXT=>>454|            window_end_mx=ultimo_turno['hora_fin'],
+CONTEXT=  455|            cruza_medianoche=ultimo_turno['cruza_medianoche'],
+CONTEXT=  456|            timezone="America/Mexico_City",
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:455|CLASS=STRING_REVIEW_REQUIRED|VALUE=cruza_medianoche
+CONTEXT=  453|            window_start_mx=primer_turno['hora_inicio'],
+CONTEXT=  454|            window_end_mx=ultimo_turno['hora_fin'],
+CONTEXT=>>455|            cruza_medianoche=ultimo_turno['cruza_medianoche'],
+CONTEXT=  456|            timezone="America/Mexico_City",
+CONTEXT=  457|            metodo_fecha_operacion=metodo,
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:479|CLASS=STRING_REVIEW_REQUIRED|VALUE=turno_codigo
+CONTEXT=  477|            unidad_negocio_pk=unidad_negocio_pk,
+CONTEXT=  478|            fecha_operacion=fecha_operacion,
+CONTEXT=>>479|            turno_operativo_codigo=siguiente_turno['turno_codigo'],
+CONTEXT=  480|            turno_nombre=f"Esperando {siguiente_turno['turno_nombre']}",
+CONTEXT=  481|            window_start_mx=siguiente_turno['hora_inicio'],
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:480|CLASS=STRING_REVIEW_REQUIRED|VALUE=Esperando 
+CONTEXT=  478|            fecha_operacion=fecha_operacion,
+CONTEXT=  479|            turno_operativo_codigo=siguiente_turno['turno_codigo'],
+CONTEXT=>>480|            turno_nombre=f"Esperando {siguiente_turno['turno_nombre']}",
+CONTEXT=  481|            window_start_mx=siguiente_turno['hora_inicio'],
+CONTEXT=  482|            window_end_mx=siguiente_turno['hora_fin'],
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:481|CLASS=STRING_REVIEW_REQUIRED|VALUE=hora_inicio
+CONTEXT=  479|            turno_operativo_codigo=siguiente_turno['turno_codigo'],
+CONTEXT=  480|            turno_nombre=f"Esperando {siguiente_turno['turno_nombre']}",
+CONTEXT=>>481|            window_start_mx=siguiente_turno['hora_inicio'],
+CONTEXT=  482|            window_end_mx=siguiente_turno['hora_fin'],
+CONTEXT=  483|            cruza_medianoche=siguiente_turno['cruza_medianoche'],
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:482|CLASS=STRING_REVIEW_REQUIRED|VALUE=hora_fin
+CONTEXT=  480|            turno_nombre=f"Esperando {siguiente_turno['turno_nombre']}",
+CONTEXT=  481|            window_start_mx=siguiente_turno['hora_inicio'],
+CONTEXT=>>482|            window_end_mx=siguiente_turno['hora_fin'],
+CONTEXT=  483|            cruza_medianoche=siguiente_turno['cruza_medianoche'],
+CONTEXT=  484|            timezone="America/Mexico_City",
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:483|CLASS=STRING_REVIEW_REQUIRED|VALUE=cruza_medianoche
+CONTEXT=  481|            window_start_mx=siguiente_turno['hora_inicio'],
+CONTEXT=  482|            window_end_mx=siguiente_turno['hora_fin'],
+CONTEXT=>>483|            cruza_medianoche=siguiente_turno['cruza_medianoche'],
+CONTEXT=  484|            timezone="America/Mexico_City",
+CONTEXT=  485|            metodo_fecha_operacion=metodo,
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:496|CLASS=STRING_REVIEW_REQUIRED|VALUE=hora_inicio
+CONTEXT=  494|            turno_operativo_codigo="DESPUES_CIERRE",
+CONTEXT=  495|            turno_nombre="Después del Cierre",
+CONTEXT=>>496|            window_start_mx=ultimo_turno['hora_inicio'],
+CONTEXT=  497|            window_end_mx=ultimo_turno['hora_fin'],
+CONTEXT=  498|            cruza_medianoche=ultimo_turno['cruza_medianoche'],
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:497|CLASS=STRING_REVIEW_REQUIRED|VALUE=hora_fin
+CONTEXT=  495|            turno_nombre="Después del Cierre",
+CONTEXT=  496|            window_start_mx=ultimo_turno['hora_inicio'],
+CONTEXT=>>497|            window_end_mx=ultimo_turno['hora_fin'],
+CONTEXT=  498|            cruza_medianoche=ultimo_turno['cruza_medianoche'],
+CONTEXT=  499|            timezone="America/Mexico_City",
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:498|CLASS=STRING_REVIEW_REQUIRED|VALUE=cruza_medianoche
+CONTEXT=  496|            window_start_mx=ultimo_turno['hora_inicio'],
+CONTEXT=  497|            window_end_mx=ultimo_turno['hora_fin'],
+CONTEXT=>>498|            cruza_medianoche=ultimo_turno['cruza_medianoche'],
+CONTEXT=  499|            timezone="America/Mexico_City",
+CONTEXT=  500|            metodo_fecha_operacion="DESPUES_ULTIMO_TURNO",
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:399|CLASS=STRING_REVIEW_REQUIRED|VALUE=hora_fin
+CONTEXT=  397|        ):
+CONTEXT=  398|            # Encontramos el turno activo
+CONTEXT=>>399|            if turno['cruza_medianoche'] and hora_actual < turno['hora_fin']:
+CONTEXT=  400|                # Estamos en la madrugada (00:00 - hora_fin): pertenece al día ANTERIOR
+CONTEXT=  401|                fecha_operacion = fecha_calendario - timedelta(days=1)
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:417|CLASS=STRING_REVIEW_REQUIRED|VALUE=turno_codigo
+CONTEXT=  415|                unidad_negocio_pk=unidad_negocio_pk,
+CONTEXT=  416|                fecha_operacion=fecha_operacion,
+CONTEXT=>>417|                turno_operativo_codigo=turno['turno_codigo'],
+CONTEXT=  418|                turno_nombre=turno['turno_nombre'],
+CONTEXT=  419|                window_start_mx=turno['hora_inicio'],
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:418|CLASS=STRING_REVIEW_REQUIRED|VALUE=turno_nombre
+CONTEXT=  416|                fecha_operacion=fecha_operacion,
+CONTEXT=  417|                turno_operativo_codigo=turno['turno_codigo'],
+CONTEXT=>>418|                turno_nombre=turno['turno_nombre'],
+CONTEXT=  419|                window_start_mx=turno['hora_inicio'],
+CONTEXT=  420|                window_end_mx=turno['hora_fin'],
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:419|CLASS=STRING_REVIEW_REQUIRED|VALUE=hora_inicio
+CONTEXT=  417|                turno_operativo_codigo=turno['turno_codigo'],
+CONTEXT=  418|                turno_nombre=turno['turno_nombre'],
+CONTEXT=>>419|                window_start_mx=turno['hora_inicio'],
+CONTEXT=  420|                window_end_mx=turno['hora_fin'],
+CONTEXT=  421|                cruza_medianoche=turno['cruza_medianoche'],
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:420|CLASS=STRING_REVIEW_REQUIRED|VALUE=hora_fin
+CONTEXT=  418|                turno_nombre=turno['turno_nombre'],
+CONTEXT=  419|                window_start_mx=turno['hora_inicio'],
+CONTEXT=>>420|                window_end_mx=turno['hora_fin'],
+CONTEXT=  421|                cruza_medianoche=turno['cruza_medianoche'],
+CONTEXT=  422|                timezone="America/Mexico_City",
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:421|CLASS=STRING_REVIEW_REQUIRED|VALUE=cruza_medianoche
+CONTEXT=  419|                window_start_mx=turno['hora_inicio'],
+CONTEXT=  420|                window_end_mx=turno['hora_fin'],
+CONTEXT=>>421|                cruza_medianoche=turno['cruza_medianoche'],
+CONTEXT=  422|                timezone="America/Mexico_City",
+CONTEXT=  423|                metodo_fecha_operacion=metodo,
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:501|CLASS=STRING_REVIEW_REQUIRED|VALUE=DESPUES_HORARIO_OPERATIVO
+CONTEXT=  499|            timezone="America/Mexico_City",
+CONTEXT=  500|            metodo_fecha_operacion="DESPUES_ULTIMO_TURNO",
+CONTEXT=>>501|            alertas=alertas + ["DESPUES_HORARIO_OPERATIVO"],
+CONTEXT=  502|            timestamp_consulta=timestamp
+CONTEXT=  503|        )
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:410|CLASS=STRING_REVIEW_REQUIRED|VALUE=turno_codigo
+CONTEXT=  408|            logger.info(
+CONTEXT=  409|                f"[OPERATIONAL_WINDOW] {unidad_negocio_pk}: "
+CONTEXT=>>410|                f"turno={turno['turno_codigo']}, hora={hora_actual.strftime('%H:%M')}, "
+CONTEXT=  411|                f"fecha_operacion={fecha_operacion}, metodo={metodo}"
+CONTEXT=  412|            )
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:410|CLASS=STRING_REVIEW_REQUIRED|VALUE=%H:%M
+CONTEXT=  408|            logger.info(
+CONTEXT=  409|                f"[OPERATIONAL_WINDOW] {unidad_negocio_pk}: "
+CONTEXT=>>410|                f"turno={turno['turno_codigo']}, hora={hora_actual.strftime('%H:%M')}, "
+CONTEXT=  411|                f"fecha_operacion={fecha_operacion}, metodo={metodo}"
+CONTEXT=  412|            )
+LITERAL=backend/core/utils/operational_window.py:get_operational_window:480|CLASS=STRING_REVIEW_REQUIRED|VALUE=turno_nombre
+CONTEXT=  478|            fecha_operacion=fecha_operacion,
+CONTEXT=  479|            turno_operativo_codigo=siguiente_turno['turno_codigo'],
+CONTEXT=>>480|            turno_nombre=f"Esperando {siguiente_turno['turno_nombre']}",
+CONTEXT=  481|            window_start_mx=siguiente_turno['hora_inicio'],
+CONTEXT=  482|            window_end_mx=siguiente_turno['hora_fin'],
+FUNCTION=backend/modules/comercial_v2/mappers.py:calcular_hash_origen|LINES=35-63|FORMULAS=pax_total,propinas_total,tickets_total,ventas_sin_propina,ventas_total|DATE_OPERATIONAL=NO|CANONICAL_CONNECTION=NO|MONGO=NO
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen:43|CLASS=STRING_REVIEW_REQUIRED|VALUE=0
+CONTEXT=  41|    pax_total: int,
+CONTEXT=  42|    ventas_sin_propina: Decimal | None = None,
+CONTEXT=>>43|    propinas_total: Decimal = Decimal("0"),
+CONTEXT=  44|) -> str:
+CONTEXT=  45|    """
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen:58|CLASS=STRING_REVIEW_REQUIRED|VALUE=|
+CONTEXT=  56|    )
+CONTEXT=  57|    data_string = (
+CONTEXT=>>58|        f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
+CONTEXT=  59|        f"{ventas_total}|{venta_visible}|{propinas_total}|"
+CONTEXT=  60|        f"{tickets_total}|{pax_total}|"
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen:58|CLASS=STRING_REVIEW_REQUIRED|VALUE=|
+CONTEXT=  56|    )
+CONTEXT=  57|    data_string = (
+CONTEXT=>>58|        f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
+CONTEXT=  59|        f"{ventas_total}|{venta_visible}|{propinas_total}|"
+CONTEXT=  60|        f"{tickets_total}|{pax_total}|"
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen:58|CLASS=STRING_REVIEW_REQUIRED|VALUE=|
+CONTEXT=  56|    )
+CONTEXT=  57|    data_string = (
+CONTEXT=>>58|        f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
+CONTEXT=  59|        f"{ventas_total}|{venta_visible}|{propinas_total}|"
+CONTEXT=  60|        f"{tickets_total}|{pax_total}|"
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen:58|CLASS=STRING_REVIEW_REQUIRED|VALUE=|
+CONTEXT=  56|    )
+CONTEXT=  57|    data_string = (
+CONTEXT=>>58|        f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
+CONTEXT=  59|        f"{ventas_total}|{venta_visible}|{propinas_total}|"
+CONTEXT=  60|        f"{tickets_total}|{pax_total}|"
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen:58|CLASS=STRING_REVIEW_REQUIRED|VALUE=|
+CONTEXT=  56|    )
+CONTEXT=  57|    data_string = (
+CONTEXT=>>58|        f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
+CONTEXT=  59|        f"{ventas_total}|{venta_visible}|{propinas_total}|"
+CONTEXT=  60|        f"{tickets_total}|{pax_total}|"
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen:58|CLASS=STRING_REVIEW_REQUIRED|VALUE=|
+CONTEXT=  56|    )
+CONTEXT=  57|    data_string = (
+CONTEXT=>>58|        f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
+CONTEXT=  59|        f"{ventas_total}|{venta_visible}|{propinas_total}|"
+CONTEXT=  60|        f"{tickets_total}|{pax_total}|"
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen:58|CLASS=STRING_REVIEW_REQUIRED|VALUE=|
+CONTEXT=  56|    )
+CONTEXT=  57|    data_string = (
+CONTEXT=>>58|        f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
+CONTEXT=  59|        f"{ventas_total}|{venta_visible}|{propinas_total}|"
+CONTEXT=  60|        f"{tickets_total}|{pax_total}|"
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen:58|CLASS=STRING_REVIEW_REQUIRED|VALUE=|kpi_ventas_sin_propina_v3
+CONTEXT=  56|    )
+CONTEXT=  57|    data_string = (
+CONTEXT=>>58|        f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
+CONTEXT=  59|        f"{ventas_total}|{venta_visible}|{propinas_total}|"
+CONTEXT=  60|        f"{tickets_total}|{pax_total}|"
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen:63|CLASS=HASH_STORAGE_LENGTH_CONTRACT|VALUE=32
+CONTEXT=  61|        "kpi_ventas_sin_propina_v3"
+CONTEXT=  62|    )
+CONTEXT=>>63|    return hashlib.sha256(data_string.encode('utf-8')).hexdigest()[:32]
+CONTEXT=  64|
+CONTEXT=  65|def calcular_hash_origen_mpro(
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen:63|CLASS=STRING_REVIEW_REQUIRED|VALUE=utf-8
+CONTEXT=  61|        "kpi_ventas_sin_propina_v3"
+CONTEXT=  62|    )
+CONTEXT=>>63|    return hashlib.sha256(data_string.encode('utf-8')).hexdigest()[:32]
+CONTEXT=  64|
+CONTEXT=  65|def calcular_hash_origen_mpro(
+FORMULA_EXPR=backend/modules/comercial_v2/mappers.py:calcular_hash_origen:52|venta_visible = ( ventas_sin_propina if ventas_sin_propina is not None else ventas_total )
+FORMULA_EXPR=backend/modules/comercial_v2/mappers.py:calcular_hash_origen:57|data_string = ( f"{server_id}|{sucursal_id}|{fecha.isoformat()}|" f"{ventas_total}|{venta_visible}|{propinas_total}|" f"{tickets_total}|{pax_total}|" "kpi_ventas_sin_propina_v3" )
+FUNCTION=backend/modules/comercial_v2/mappers.py:calcular_hash_origen_mpro|LINES=65-89|FORMULAS=pax_total,propinas_total,tickets_total,ventas_total|DATE_OPERATIONAL=NO|CANONICAL_CONNECTION=NO|MONGO=NO
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen_mpro:81|CLASS=STRING_REVIEW_REQUIRED|VALUE=|
+CONTEXT=  79|    """
+CONTEXT=  80|    data_string = (
+CONTEXT=>>81|        f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
+CONTEXT=  82|        f"{ventas_total}|{propinas_total}|"
+CONTEXT=  83|        f"{tickets_total}|{pax_total}|"
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen_mpro:81|CLASS=STRING_REVIEW_REQUIRED|VALUE=|
+CONTEXT=  79|    """
+CONTEXT=  80|    data_string = (
+CONTEXT=>>81|        f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
+CONTEXT=  82|        f"{ventas_total}|{propinas_total}|"
+CONTEXT=  83|        f"{tickets_total}|{pax_total}|"
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen_mpro:81|CLASS=STRING_REVIEW_REQUIRED|VALUE=|
+CONTEXT=  79|    """
+CONTEXT=  80|    data_string = (
+CONTEXT=>>81|        f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
+CONTEXT=  82|        f"{ventas_total}|{propinas_total}|"
+CONTEXT=  83|        f"{tickets_total}|{pax_total}|"
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen_mpro:81|CLASS=STRING_REVIEW_REQUIRED|VALUE=|
+CONTEXT=  79|    """
+CONTEXT=  80|    data_string = (
+CONTEXT=>>81|        f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
+CONTEXT=  82|        f"{ventas_total}|{propinas_total}|"
+CONTEXT=  83|        f"{tickets_total}|{pax_total}|"
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen_mpro:81|CLASS=STRING_REVIEW_REQUIRED|VALUE=|
+CONTEXT=  79|    """
+CONTEXT=  80|    data_string = (
+CONTEXT=>>81|        f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
+CONTEXT=  82|        f"{ventas_total}|{propinas_total}|"
+CONTEXT=  83|        f"{tickets_total}|{pax_total}|"
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen_mpro:81|CLASS=STRING_REVIEW_REQUIRED|VALUE=|
+CONTEXT=  79|    """
+CONTEXT=  80|    data_string = (
+CONTEXT=>>81|        f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
+CONTEXT=  82|        f"{ventas_total}|{propinas_total}|"
+CONTEXT=  83|        f"{tickets_total}|{pax_total}|"
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen_mpro:81|CLASS=SEMANTIC_VERSION_CONTRACT|VALUE=|kpi_mpro_ventas_total_propinas_v3
+CONTEXT=  79|    """
+CONTEXT=  80|    data_string = (
+CONTEXT=>>81|        f"{server_id}|{sucursal_id}|{fecha.isoformat()}|"
+CONTEXT=  82|        f"{ventas_total}|{propinas_total}|"
+CONTEXT=  83|        f"{tickets_total}|{pax_total}|"
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen_mpro:89|CLASS=HASH_STORAGE_LENGTH_CONTRACT|VALUE=32
+CONTEXT=  87|    return hashlib.sha256(
+CONTEXT=  88|        data_string.encode("utf-8")
+CONTEXT=>>89|    ).hexdigest()[:32]
+CONTEXT=  90|
+CONTEXT=  91|def calcular_hash_ventas_abiertas(
+LITERAL=backend/modules/comercial_v2/mappers.py:calcular_hash_origen_mpro:88|CLASS=STRING_REVIEW_REQUIRED|VALUE=utf-8
+CONTEXT=  86|
+CONTEXT=  87|    return hashlib.sha256(
+CONTEXT=>>88|        data_string.encode("utf-8")
+CONTEXT=  89|    ).hexdigest()[:32]
+CONTEXT=  90|
+FORMULA_EXPR=backend/modules/comercial_v2/mappers.py:calcular_hash_origen_mpro:80|data_string = ( f"{server_id}|{sucursal_id}|{fecha.isoformat()}|" f"{ventas_total}|{propinas_total}|" f"{tickets_total}|{pax_total}|" "kpi_mpro_ventas_total_propinas_v3" )
+FUNCTION=backend/modules/comercial_v2/mappers.py:map_mpro_ventas_cerradas|LINES=253-328|FORMULAS=pax_promedio,pax_total,propinas_total,ticket_promedio,tickets_total,ventas_sin_propina,ventas_total|DATE_OPERATIONAL=SI|CANONICAL_CONNECTION=NO|MONGO=NO
+LITERAL=backend/modules/comercial_v2/mappers.py:map_mpro_ventas_cerradas:268|CLASS=STRING_REVIEW_REQUIRED|VALUE=fecha
+CONTEXT=  266|    - total_personas: int (PAX desde Comanda)
+CONTEXT=  267|    """
+CONTEXT=>>268|    fecha = row.get('fecha')
+CONTEXT=  269|    if isinstance(fecha, str):
+CONTEXT=  270|        fecha = datetime.strptime(fecha, '%Y-%m-%d').date()
+LITERAL=backend/modules/comercial_v2/mappers.py:map_mpro_ventas_cerradas:282|CLASS=STRING_REVIEW_REQUIRED|VALUE=0
+CONTEXT=  280|    
+CONTEXT=  281|    # Calcular métricas derivadas
+CONTEXT=>>282|    ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
+CONTEXT=  283|    pax_promedio = ventas_total / pax if pax > 0 else Decimal("0")
+CONTEXT=  284|    # Hash para idempotencia
+LITERAL=backend/modules/comercial_v2/mappers.py:map_mpro_ventas_cerradas:283|CLASS=STRING_REVIEW_REQUIRED|VALUE=0
+CONTEXT=  281|    # Calcular métricas derivadas
+CONTEXT=  282|    ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
+CONTEXT=>>283|    pax_promedio = ventas_total / pax if pax > 0 else Decimal("0")
+CONTEXT=  284|    # Hash para idempotencia
+CONTEXT=  285|    hash_origen = calcular_hash_origen_mpro(
+LITERAL=backend/modules/comercial_v2/mappers.py:map_mpro_ventas_cerradas:278|CLASS=STRING_REVIEW_REQUIRED|VALUE=num_folios
+CONTEXT=  276|    ventas_sin_propina = ventas_total
+CONTEXT=  277|    propinas = Decimal(str(row.get('propinas', 0) or 0))
+CONTEXT=>>278|    tickets = int(row.get('num_folios', 0) or 0)
+CONTEXT=  279|    pax = int(row.get('total_personas', 0) or 0)
+CONTEXT=  280|    
+LITERAL=backend/modules/comercial_v2/mappers.py:map_mpro_ventas_cerradas:279|CLASS=STRING_REVIEW_REQUIRED|VALUE=total_personas
+CONTEXT=  277|    propinas = Decimal(str(row.get('propinas', 0) or 0))
+CONTEXT=  278|    tickets = int(row.get('num_folios', 0) or 0)
+CONTEXT=>>279|    pax = int(row.get('total_personas', 0) or 0)
+CONTEXT=  280|    
+CONTEXT=  281|    # Calcular métricas derivadas
+LITERAL=backend/modules/comercial_v2/mappers.py:map_mpro_ventas_cerradas:316|CLASS=STRING_REVIEW_REQUIRED|VALUE=0
+CONTEXT=  314|        pax_promedio=pax_promedio,
+CONTEXT=  315|        ventas_cerradas=ventas_total,
+CONTEXT=>>316|        ventas_abiertas=Decimal("0"),
+CONTEXT=  317|        total_estimado_dia=ventas_total,
+CONTEXT=  318|        
+LITERAL=backend/modules/comercial_v2/mappers.py:map_mpro_ventas_cerradas:270|CLASS=STRING_REVIEW_REQUIRED|VALUE=%Y-%m-%d
+CONTEXT=  268|    fecha = row.get('fecha')
+CONTEXT=  269|    if isinstance(fecha, str):
+CONTEXT=>>270|        fecha = datetime.strptime(fecha, '%Y-%m-%d').date()
+CONTEXT=  271|    
+CONTEXT=  272|    # MPRO expone la propina en Comanda.Co_Propina.
+LITERAL=backend/modules/comercial_v2/mappers.py:map_mpro_ventas_cerradas:274|CLASS=STRING_REVIEW_REQUIRED|VALUE=Vn_Precio_Neto_Importe
+CONTEXT=  272|    # MPRO expone la propina en Comanda.Co_Propina.
+CONTEXT=  273|    ventas_total = Decimal(
+CONTEXT=>>274|        str(row.get('Vn_Precio_Neto_Importe', 0) or 0)
+CONTEXT=  275|    )
+CONTEXT=  276|    ventas_sin_propina = ventas_total
+LITERAL=backend/modules/comercial_v2/mappers.py:map_mpro_ventas_cerradas:277|CLASS=STRING_REVIEW_REQUIRED|VALUE=propinas
+CONTEXT=  275|    )
+CONTEXT=  276|    ventas_sin_propina = ventas_total
+CONTEXT=>>277|    propinas = Decimal(str(row.get('propinas', 0) or 0))
+CONTEXT=  278|    tickets = int(row.get('num_folios', 0) or 0)
+CONTEXT=  279|    pax = int(row.get('total_personas', 0) or 0)
+FORMULA_EXPR=backend/modules/comercial_v2/mappers.py:map_mpro_ventas_cerradas:273|ventas_total = Decimal( str(row.get('Vn_Precio_Neto_Importe', 0) or 0) )
+FORMULA_EXPR=backend/modules/comercial_v2/mappers.py:map_mpro_ventas_cerradas:276|ventas_sin_propina = ventas_total
+FORMULA_EXPR=backend/modules/comercial_v2/mappers.py:map_mpro_ventas_cerradas:282|ticket_promedio = ventas_total / tickets if tickets > 0 else Decimal("0")
+FORMULA_EXPR=backend/modules/comercial_v2/mappers.py:map_mpro_ventas_cerradas:283|pax_promedio = ventas_total / pax if pax > 0 else Decimal("0")
+FORMULA_EXPR=backend/modules/comercial_v2/mappers.py:map_mpro_ventas_cerradas:285|hash_origen = calcular_hash_origen_mpro( config.server_id, config.sucursal_id, fecha, ventas_total, propinas, tickets, pax )
+FUNCTION=backend/modules/comercial_v2/mappers.py:map_softrestaurant_ventas_cerradas|LINES=109-195|FORMULAS=pax_promedio,pax_total,propinas_total,ticket_promedio,tickets_total,ventas_sin_propina,ventas_total|DATE_OPERATIONAL=SI|CANONICAL_CONNECTION=NO|MONGO=NO
+LITERAL=backend/modules/comercial_v2/mappers.py:map_softrestaurant_ventas_cerradas:124|CLASS=STRING_REVIEW_REQUIRED|VALUE=fecha
+CONTEXT=  122|    - num_personas: int
+CONTEXT=  123|    """
+CONTEXT=>>124|    fecha = row.get('fecha')
+CONTEXT=  125|    if isinstance(fecha, str):
+CONTEXT=  126|        fecha = datetime.strptime(fecha, '%Y-%m-%d').date()
+LITERAL=backend/modules/comercial_v2/mappers.py:map_softrestaurant_ventas_cerradas:143|CLASS=STRING_REVIEW_REQUIRED|VALUE=0
+CONTEXT=  141|        ventas_total / tickets
+CONTEXT=  142|        if tickets > 0
+CONTEXT=>>143|        else Decimal("0")
+CONTEXT=  144|    )
+CONTEXT=  145|    pax_promedio = (
+LITERAL=backend/modules/comercial_v2/mappers.py:map_softrestaurant_ventas_cerradas:148|CLASS=STRING_REVIEW_REQUIRED|VALUE=0
+CONTEXT=  146|        ventas_total / pax
+CONTEXT=  147|        if pax > 0
+CONTEXT=>>148|        else Decimal("0")
+CONTEXT=  149|    )
+CONTEXT=  150|    # Hash para idempotencia
+LITERAL=backend/modules/comercial_v2/mappers.py:map_softrestaurant_ventas_cerradas:136|CLASS=STRING_REVIEW_REQUIRED|VALUE=num_cheques
+CONTEXT=  134|    ventas_sin_propina = ventas_brutas
+CONTEXT=  135|    ventas_total = ventas_brutas
+CONTEXT=>>136|    tickets = int(row.get('num_cheques', 0) or 0)
+CONTEXT=  137|    pax = int(row.get('num_personas', 0) or 0)
+CONTEXT=  138|
+LITERAL=backend/modules/comercial_v2/mappers.py:map_softrestaurant_ventas_cerradas:137|CLASS=STRING_REVIEW_REQUIRED|VALUE=num_personas
+CONTEXT=  135|    ventas_total = ventas_brutas
+CONTEXT=  136|    tickets = int(row.get('num_cheques', 0) or 0)
+CONTEXT=>>137|    pax = int(row.get('num_personas', 0) or 0)
+CONTEXT=  138|
+CONTEXT=  139|    # KPIs visibles: IVA incluido y propina excluida.
+LITERAL=backend/modules/comercial_v2/mappers.py:map_softrestaurant_ventas_cerradas:183|CLASS=STRING_REVIEW_REQUIRED|VALUE=0
+CONTEXT=  181|        pax_promedio=pax_promedio,
+CONTEXT=  182|        ventas_cerradas=ventas_total,
+CONTEXT=>>183|        ventas_abiertas=Decimal("0"),
+CONTEXT=  184|        total_estimado_dia=ventas_total,
+CONTEXT=  185|        
+LITERAL=backend/modules/comercial_v2/mappers.py:map_softrestaurant_ventas_cerradas:126|CLASS=STRING_REVIEW_REQUIRED|VALUE=%Y-%m-%d
+CONTEXT=  124|    fecha = row.get('fecha')
+CONTEXT=  125|    if isinstance(fecha, str):
+CONTEXT=>>126|        fecha = datetime.strptime(fecha, '%Y-%m-%d').date()
+CONTEXT=  127|    
+CONTEXT=  128|    ventas_brutas = Decimal(
+LITERAL=backend/modules/comercial_v2/mappers.py:map_softrestaurant_ventas_cerradas:129|CLASS=STRING_REVIEW_REQUIRED|VALUE=ventas_total
+CONTEXT=  127|    
+CONTEXT=  128|    ventas_brutas = Decimal(
+CONTEXT=>>129|        str(row.get('ventas_total', 0) or 0)
+CONTEXT=  130|    )
+CONTEXT=  131|    propinas = Decimal(str(row.get('propinas', 0) or 0))
+LITERAL=backend/modules/comercial_v2/mappers.py:map_softrestaurant_ventas_cerradas:131|CLASS=STRING_REVIEW_REQUIRED|VALUE=propinas
+CONTEXT=  129|        str(row.get('ventas_total', 0) or 0)
+CONTEXT=  130|    )
+CONTEXT=>>131|    propinas = Decimal(str(row.get('propinas', 0) or 0))
+CONTEXT=  132|    # SoftRestaurant entrega total con impuestos y sin propina.
+CONTEXT=  133|    # La propina ya viene separada en su propia columna.
+FORMULA_EXPR=backend/modules/comercial_v2/mappers.py:map_softrestaurant_ventas_cerradas:128|ventas_brutas = Decimal( str(row.get('ventas_total', 0) or 0) )
+FORMULA_EXPR=backend/modules/comercial_v2/mappers.py:map_softrestaurant_ventas_cerradas:134|ventas_sin_propina = ventas_brutas
+FORMULA_EXPR=backend/modules/comercial_v2/mappers.py:map_softrestaurant_ventas_cerradas:135|ventas_total = ventas_brutas
+FORMULA_EXPR=backend/modules/comercial_v2/mappers.py:map_softrestaurant_ventas_cerradas:140|ticket_promedio = ( ventas_total / tickets if tickets > 0 else Decimal("0") )
+FORMULA_EXPR=backend/modules/comercial_v2/mappers.py:map_softrestaurant_ventas_cerradas:145|pax_promedio = ( ventas_total / pax if pax > 0 else Decimal("0") )
+FORMULA_EXPR=backend/modules/comercial_v2/mappers.py:map_softrestaurant_ventas_cerradas:151|hash_origen = calcular_hash_origen( config.server_id, config.sucursal_id, fecha, ventas_brutas, tickets, pax, ventas_sin_propina=ventas_sin_propina, propinas_total=propinas, )
+FUNCTION=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log|LINES=628-665|FORMULAS=NINGUNA|DATE_OPERATIONAL=NO|CANONICAL_CONNECTION=NO|MONGO=NO
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:629|CLASS=STRING_REVIEW_REQUIRED|VALUE=Inserta un registro en el log de sincronización
+CONTEXT=  627|
+CONTEXT=  628|def insert_sync_log(log: SyncLogV2) -> str:
+CONTEXT=>>629|    """Inserta un registro en el log de sincronización"""
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=',         '
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+CONTEXT=>>632|    insert_query = f"""
+CONTEXT=  633|    INSERT INTO Comercial_SyncLog_v2 (
+CONTEXT=  634|        id, run_id, run_timestamp, run_type,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=',         SYSUTCDATETIME(),         '
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+CONTEXT=>>632|    insert_query = f"""
+CONTEXT=  633|    INSERT INTO Comercial_SyncLog_v2 (
+CONTEXT=  634|        id, run_id, run_timestamp, run_type,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=',         
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+CONTEXT=>>632|    insert_query = f"""
+CONTEXT=  633|    INSERT INTO Comercial_SyncLog_v2 (
+CONTEXT=  634|        id, run_id, run_timestamp, run_type,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=,         
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+CONTEXT=>>632|    insert_query = f"""
+CONTEXT=  633|    INSERT INTO Comercial_SyncLog_v2 (
+CONTEXT=  634|        id, run_id, run_timestamp, run_type,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=,         
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+CONTEXT=>>632|    insert_query = f"""
+CONTEXT=  633|    INSERT INTO Comercial_SyncLog_v2 (
+CONTEXT=  634|        id, run_id, run_timestamp, run_type,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=,         
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+CONTEXT=>>632|    insert_query = f"""
+CONTEXT=  633|    INSERT INTO Comercial_SyncLog_v2 (
+CONTEXT=  634|        id, run_id, run_timestamp, run_type,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=,         
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+CONTEXT=>>632|    insert_query = f"""
+CONTEXT=  633|    INSERT INTO Comercial_SyncLog_v2 (
+CONTEXT=  634|        id, run_id, run_timestamp, run_type,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=,         '
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+CONTEXT=>>632|    insert_query = f"""
+CONTEXT=  633|    INSERT INTO Comercial_SyncLog_v2 (
+CONTEXT=  634|        id, run_id, run_timestamp, run_type,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=',         
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+CONTEXT=>>632|    insert_query = f"""
+CONTEXT=  633|    INSERT INTO Comercial_SyncLog_v2 (
+CONTEXT=  634|        id, run_id, run_timestamp, run_type,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=,         
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+CONTEXT=>>632|    insert_query = f"""
+CONTEXT=  633|    INSERT INTO Comercial_SyncLog_v2 (
+CONTEXT=  634|        id, run_id, run_timestamp, run_type,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=,         
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+CONTEXT=>>632|    insert_query = f"""
+CONTEXT=  633|    INSERT INTO Comercial_SyncLog_v2 (
+CONTEXT=  634|        id, run_id, run_timestamp, run_type,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=,         
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+CONTEXT=>>632|    insert_query = f"""
+CONTEXT=  633|    INSERT INTO Comercial_SyncLog_v2 (
+CONTEXT=  634|        id, run_id, run_timestamp, run_type,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=,         
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+CONTEXT=>>632|    insert_query = f"""
+CONTEXT=  633|    INSERT INTO Comercial_SyncLog_v2 (
+CONTEXT=  634|        id, run_id, run_timestamp, run_type,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=,         
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+CONTEXT=>>632|    insert_query = f"""
+CONTEXT=  633|    INSERT INTO Comercial_SyncLog_v2 (
+CONTEXT=  634|        id, run_id, run_timestamp, run_type,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=,         
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+CONTEXT=>>632|    insert_query = f"""
+CONTEXT=  633|    INSERT INTO Comercial_SyncLog_v2 (
+CONTEXT=  634|        id, run_id, run_timestamp, run_type,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=,         
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+CONTEXT=>>632|    insert_query = f"""
+CONTEXT=  633|    INSERT INTO Comercial_SyncLog_v2 (
+CONTEXT=  634|        id, run_id, run_timestamp, run_type,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=,         
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+CONTEXT=>>632|    insert_query = f"""
+CONTEXT=  633|    INSERT INTO Comercial_SyncLog_v2 (
+CONTEXT=  634|        id, run_id, run_timestamp, run_type,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=,         SYSUTCDATETIME()     )     
+CONTEXT=  630|    new_id = str(uuid.uuid4())
+CONTEXT=  631|    
+CONTEXT=>>632|    insert_query = f"""
+CONTEXT=  633|    INSERT INTO Comercial_SyncLog_v2 (
+CONTEXT=  634|        id, run_id, run_timestamp, run_type,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:646|CLASS=STRING_REVIEW_REQUIRED|VALUE=NULL
+CONTEXT=  644|        SYSUTCDATETIME(),
+CONTEXT=  645|        '{log.run_type}',
+CONTEXT=>>646|        {f"'{log.unidad_negocio_pk}'" if log.unidad_negocio_pk else 'NULL'},
+CONTEXT=  647|        {f"'{log.server_id}'" if log.server_id else 'NULL'},
+CONTEXT=  648|        {f"'{log.sucursal_id}'" if log.sucursal_id else 'NULL'},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:647|CLASS=STRING_REVIEW_REQUIRED|VALUE=NULL
+CONTEXT=  645|        '{log.run_type}',
+CONTEXT=  646|        {f"'{log.unidad_negocio_pk}'" if log.unidad_negocio_pk else 'NULL'},
+CONTEXT=>>647|        {f"'{log.server_id}'" if log.server_id else 'NULL'},
+CONTEXT=  648|        {f"'{log.sucursal_id}'" if log.sucursal_id else 'NULL'},
+CONTEXT=  649|        {f"'{log.fecha_inicio.isoformat()}'" if log.fecha_inicio else 'NULL'},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:648|CLASS=STRING_REVIEW_REQUIRED|VALUE=NULL
+CONTEXT=  646|        {f"'{log.unidad_negocio_pk}'" if log.unidad_negocio_pk else 'NULL'},
+CONTEXT=  647|        {f"'{log.server_id}'" if log.server_id else 'NULL'},
+CONTEXT=>>648|        {f"'{log.sucursal_id}'" if log.sucursal_id else 'NULL'},
+CONTEXT=  649|        {f"'{log.fecha_inicio.isoformat()}'" if log.fecha_inicio else 'NULL'},
+CONTEXT=  650|        {f"'{log.fecha_fin.isoformat()}'" if log.fecha_fin else 'NULL'},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:649|CLASS=STRING_REVIEW_REQUIRED|VALUE=NULL
+CONTEXT=  647|        {f"'{log.server_id}'" if log.server_id else 'NULL'},
+CONTEXT=  648|        {f"'{log.sucursal_id}'" if log.sucursal_id else 'NULL'},
+CONTEXT=>>649|        {f"'{log.fecha_inicio.isoformat()}'" if log.fecha_inicio else 'NULL'},
+CONTEXT=  650|        {f"'{log.fecha_fin.isoformat()}'" if log.fecha_fin else 'NULL'},
+CONTEXT=  651|        '{log.status}',
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:650|CLASS=STRING_REVIEW_REQUIRED|VALUE=NULL
+CONTEXT=  648|        {f"'{log.sucursal_id}'" if log.sucursal_id else 'NULL'},
+CONTEXT=  649|        {f"'{log.fecha_inicio.isoformat()}'" if log.fecha_inicio else 'NULL'},
+CONTEXT=>>650|        {f"'{log.fecha_fin.isoformat()}'" if log.fecha_fin else 'NULL'},
+CONTEXT=  651|        '{log.status}',
+CONTEXT=  652|        {log.records_processed},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:657|CLASS=STRING_REVIEW_REQUIRED|VALUE=NULL
+CONTEXT=  655|        {log.records_skipped},
+CONTEXT=  656|        {log.records_errored},
+CONTEXT=>>657|        {f"'{log.error_code}'" if log.error_code else 'NULL'},
+CONTEXT=  658|        {f"'{str(log.error_message)[:500]}'" if log.error_message else 'NULL'},
+CONTEXT=  659|        {log.duration_seconds if log.duration_seconds else 'NULL'},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:658|CLASS=STRING_REVIEW_REQUIRED|VALUE=NULL
+CONTEXT=  656|        {log.records_errored},
+CONTEXT=  657|        {f"'{log.error_code}'" if log.error_code else 'NULL'},
+CONTEXT=>>658|        {f"'{str(log.error_message)[:500]}'" if log.error_message else 'NULL'},
+CONTEXT=  659|        {log.duration_seconds if log.duration_seconds else 'NULL'},
+CONTEXT=  660|        {f"'{log.source_connection_status}'" if log.source_connection_status else 'NULL'},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:659|CLASS=STRING_REVIEW_REQUIRED|VALUE=NULL
+CONTEXT=  657|        {f"'{log.error_code}'" if log.error_code else 'NULL'},
+CONTEXT=  658|        {f"'{str(log.error_message)[:500]}'" if log.error_message else 'NULL'},
+CONTEXT=>>659|        {log.duration_seconds if log.duration_seconds else 'NULL'},
+CONTEXT=  660|        {f"'{log.source_connection_status}'" if log.source_connection_status else 'NULL'},
+CONTEXT=  661|        SYSUTCDATETIME()
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:660|CLASS=STRING_REVIEW_REQUIRED|VALUE=NULL
+CONTEXT=  658|        {f"'{str(log.error_message)[:500]}'" if log.error_message else 'NULL'},
+CONTEXT=  659|        {log.duration_seconds if log.duration_seconds else 'NULL'},
+CONTEXT=>>660|        {f"'{log.source_connection_status}'" if log.source_connection_status else 'NULL'},
+CONTEXT=  661|        SYSUTCDATETIME()
+CONTEXT=  662|    )
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:646|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  644|        SYSUTCDATETIME(),
+CONTEXT=  645|        '{log.run_type}',
+CONTEXT=>>646|        {f"'{log.unidad_negocio_pk}'" if log.unidad_negocio_pk else 'NULL'},
+CONTEXT=  647|        {f"'{log.server_id}'" if log.server_id else 'NULL'},
+CONTEXT=  648|        {f"'{log.sucursal_id}'" if log.sucursal_id else 'NULL'},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:646|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  644|        SYSUTCDATETIME(),
+CONTEXT=  645|        '{log.run_type}',
+CONTEXT=>>646|        {f"'{log.unidad_negocio_pk}'" if log.unidad_negocio_pk else 'NULL'},
+CONTEXT=  647|        {f"'{log.server_id}'" if log.server_id else 'NULL'},
+CONTEXT=  648|        {f"'{log.sucursal_id}'" if log.sucursal_id else 'NULL'},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:647|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  645|        '{log.run_type}',
+CONTEXT=  646|        {f"'{log.unidad_negocio_pk}'" if log.unidad_negocio_pk else 'NULL'},
+CONTEXT=>>647|        {f"'{log.server_id}'" if log.server_id else 'NULL'},
+CONTEXT=  648|        {f"'{log.sucursal_id}'" if log.sucursal_id else 'NULL'},
+CONTEXT=  649|        {f"'{log.fecha_inicio.isoformat()}'" if log.fecha_inicio else 'NULL'},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:647|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  645|        '{log.run_type}',
+CONTEXT=  646|        {f"'{log.unidad_negocio_pk}'" if log.unidad_negocio_pk else 'NULL'},
+CONTEXT=>>647|        {f"'{log.server_id}'" if log.server_id else 'NULL'},
+CONTEXT=  648|        {f"'{log.sucursal_id}'" if log.sucursal_id else 'NULL'},
+CONTEXT=  649|        {f"'{log.fecha_inicio.isoformat()}'" if log.fecha_inicio else 'NULL'},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:648|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  646|        {f"'{log.unidad_negocio_pk}'" if log.unidad_negocio_pk else 'NULL'},
+CONTEXT=  647|        {f"'{log.server_id}'" if log.server_id else 'NULL'},
+CONTEXT=>>648|        {f"'{log.sucursal_id}'" if log.sucursal_id else 'NULL'},
+CONTEXT=  649|        {f"'{log.fecha_inicio.isoformat()}'" if log.fecha_inicio else 'NULL'},
+CONTEXT=  650|        {f"'{log.fecha_fin.isoformat()}'" if log.fecha_fin else 'NULL'},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:648|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  646|        {f"'{log.unidad_negocio_pk}'" if log.unidad_negocio_pk else 'NULL'},
+CONTEXT=  647|        {f"'{log.server_id}'" if log.server_id else 'NULL'},
+CONTEXT=>>648|        {f"'{log.sucursal_id}'" if log.sucursal_id else 'NULL'},
+CONTEXT=  649|        {f"'{log.fecha_inicio.isoformat()}'" if log.fecha_inicio else 'NULL'},
+CONTEXT=  650|        {f"'{log.fecha_fin.isoformat()}'" if log.fecha_fin else 'NULL'},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:649|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  647|        {f"'{log.server_id}'" if log.server_id else 'NULL'},
+CONTEXT=  648|        {f"'{log.sucursal_id}'" if log.sucursal_id else 'NULL'},
+CONTEXT=>>649|        {f"'{log.fecha_inicio.isoformat()}'" if log.fecha_inicio else 'NULL'},
+CONTEXT=  650|        {f"'{log.fecha_fin.isoformat()}'" if log.fecha_fin else 'NULL'},
+CONTEXT=  651|        '{log.status}',
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:649|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  647|        {f"'{log.server_id}'" if log.server_id else 'NULL'},
+CONTEXT=  648|        {f"'{log.sucursal_id}'" if log.sucursal_id else 'NULL'},
+CONTEXT=>>649|        {f"'{log.fecha_inicio.isoformat()}'" if log.fecha_inicio else 'NULL'},
+CONTEXT=  650|        {f"'{log.fecha_fin.isoformat()}'" if log.fecha_fin else 'NULL'},
+CONTEXT=  651|        '{log.status}',
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:650|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  648|        {f"'{log.sucursal_id}'" if log.sucursal_id else 'NULL'},
+CONTEXT=  649|        {f"'{log.fecha_inicio.isoformat()}'" if log.fecha_inicio else 'NULL'},
+CONTEXT=>>650|        {f"'{log.fecha_fin.isoformat()}'" if log.fecha_fin else 'NULL'},
+CONTEXT=  651|        '{log.status}',
+CONTEXT=  652|        {log.records_processed},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:650|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  648|        {f"'{log.sucursal_id}'" if log.sucursal_id else 'NULL'},
+CONTEXT=  649|        {f"'{log.fecha_inicio.isoformat()}'" if log.fecha_inicio else 'NULL'},
+CONTEXT=>>650|        {f"'{log.fecha_fin.isoformat()}'" if log.fecha_fin else 'NULL'},
+CONTEXT=  651|        '{log.status}',
+CONTEXT=  652|        {log.records_processed},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:657|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  655|        {log.records_skipped},
+CONTEXT=  656|        {log.records_errored},
+CONTEXT=>>657|        {f"'{log.error_code}'" if log.error_code else 'NULL'},
+CONTEXT=  658|        {f"'{str(log.error_message)[:500]}'" if log.error_message else 'NULL'},
+CONTEXT=  659|        {log.duration_seconds if log.duration_seconds else 'NULL'},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:657|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  655|        {log.records_skipped},
+CONTEXT=  656|        {log.records_errored},
+CONTEXT=>>657|        {f"'{log.error_code}'" if log.error_code else 'NULL'},
+CONTEXT=  658|        {f"'{str(log.error_message)[:500]}'" if log.error_message else 'NULL'},
+CONTEXT=  659|        {log.duration_seconds if log.duration_seconds else 'NULL'},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:658|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  656|        {log.records_errored},
+CONTEXT=  657|        {f"'{log.error_code}'" if log.error_code else 'NULL'},
+CONTEXT=>>658|        {f"'{str(log.error_message)[:500]}'" if log.error_message else 'NULL'},
+CONTEXT=  659|        {log.duration_seconds if log.duration_seconds else 'NULL'},
+CONTEXT=  660|        {f"'{log.source_connection_status}'" if log.source_connection_status else 'NULL'},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:658|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  656|        {log.records_errored},
+CONTEXT=  657|        {f"'{log.error_code}'" if log.error_code else 'NULL'},
+CONTEXT=>>658|        {f"'{str(log.error_message)[:500]}'" if log.error_message else 'NULL'},
+CONTEXT=  659|        {log.duration_seconds if log.duration_seconds else 'NULL'},
+CONTEXT=  660|        {f"'{log.source_connection_status}'" if log.source_connection_status else 'NULL'},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:660|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  658|        {f"'{str(log.error_message)[:500]}'" if log.error_message else 'NULL'},
+CONTEXT=  659|        {log.duration_seconds if log.duration_seconds else 'NULL'},
+CONTEXT=>>660|        {f"'{log.source_connection_status}'" if log.source_connection_status else 'NULL'},
+CONTEXT=  661|        SYSUTCDATETIME()
+CONTEXT=  662|    )
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:insert_sync_log:660|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  658|        {f"'{str(log.error_message)[:500]}'" if log.error_message else 'NULL'},
+CONTEXT=  659|        {log.duration_seconds if log.duration_seconds else 'NULL'},
+CONTEXT=>>660|        {f"'{log.source_connection_status}'" if log.source_connection_status else 'NULL'},
+CONTEXT=  661|        SYSUTCDATETIME()
+CONTEXT=  662|    )
+FUNCTION=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario|LINES=223-351|FORMULAS=pax_promedio,pax_total,propinas_total,ticket_promedio,tickets_total,ventas_sin_propina,ventas_total|DATE_OPERATIONAL=SI|CANONICAL_CONNECTION=NO|MONGO=NO
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:270|CLASS=STRING_REVIEW_REQUIRED|VALUE='       AND sucursal_id = '
+CONTEXT=  268|
+CONTEXT=  269|    # Verificar si existe
+CONTEXT=>>270|    check_query = f"""
+CONTEXT=  271|    SELECT id, hash_origen, version, fuente_original
+CONTEXT=  272|    FROM dbo.Comercial_KPIs_Diarios_v2
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:270|CLASS=STRING_REVIEW_REQUIRED|VALUE='       AND fecha_operacion = '
+CONTEXT=  268|
+CONTEXT=  269|    # Verificar si existe
+CONTEXT=>>270|    check_query = f"""
+CONTEXT=  271|    SELECT id, hash_origen, version, fuente_original
+CONTEXT=  272|    FROM dbo.Comercial_KPIs_Diarios_v2
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:270|CLASS=STRING_REVIEW_REQUIRED|VALUE='     
+CONTEXT=  268|
+CONTEXT=  269|    # Verificar si existe
+CONTEXT=>>270|    check_query = f"""
+CONTEXT=  271|    SELECT id, hash_origen, version, fuente_original
+CONTEXT=  272|    FROM dbo.Comercial_KPIs_Diarios_v2
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:263|CLASS=STRING_REVIEW_REQUIRED|VALUE=0.01
+CONTEXT=  261|    )
+CONTEXT=  262|
+CONTEXT=>>263|    if abs(kpi.ventas_total - ventas_sin_propina) > Decimal("0.01"):
+CONTEXT=  264|        raise ValueError(
+CONTEXT=  265|            "Contrato de ventas inválido: ventas_total debe ser "
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:265|CLASS=STRING_REVIEW_REQUIRED|VALUE=Contrato de ventas inválido: ventas_total debe ser igual a ventas_sin_propina
+CONTEXT=  263|    if abs(kpi.ventas_total - ventas_sin_propina) > Decimal("0.01"):
+CONTEXT=  264|        raise ValueError(
+CONTEXT=>>265|            "Contrato de ventas inválido: ventas_total debe ser "
+CONTEXT=  266|            "igual a ventas_sin_propina"
+CONTEXT=  267|        )
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=',              '
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=',              '
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=',             '
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=',             '
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=',              '
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=',             
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=,             '
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=',             '
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=',             
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=, 
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=, 
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=,             
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=, 
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=,             
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=,             
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=, 
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=,             
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=, 
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=,             
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=, 
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=, 
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=,             
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=,             
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=,             
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=,             
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=,             '
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=',             
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=,             '
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=',             '
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|CLASS=STRING_REVIEW_REQUIRED|VALUE=',             SYSUTCDATETIME(), SYSUTCDATETIME(), SYSUTCDATETIME(), 1         )         
+CONTEXT=  311|        # No existe, insertar
+CONTEXT=  312|        new_id = str(uuid.uuid4())
+CONTEXT=>>313|        insert_query = f"""
+CONTEXT=  314|        INSERT INTO dbo.Comercial_KPIs_Diarios_v2 (
+CONTEXT=  315|            id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id,
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:351|CLASS=STRING_REVIEW_REQUIRED|VALUE=action
+CONTEXT=  349|        """
+CONTEXT=  350|        _execute_query(insert_query)
+CONTEXT=>>351|        return {'action': 'INSERT', 'id': new_id}
+CONTEXT=  352|
+CONTEXT=  353|
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:351|CLASS=STRING_REVIEW_REQUIRED|VALUE=id
+CONTEXT=  349|        """
+CONTEXT=  350|        _execute_query(insert_query)
+CONTEXT=>>351|        return {'action': 'INSERT', 'id': new_id}
+CONTEXT=  352|
+CONTEXT=  353|
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:351|CLASS=STRING_REVIEW_REQUIRED|VALUE=INSERT
+CONTEXT=  349|        """
+CONTEXT=  350|        _execute_query(insert_query)
+CONTEXT=>>351|        return {'action': 'INSERT', 'id': new_id}
+CONTEXT=  352|
+CONTEXT=  353|
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:252|CLASS=STRING_REVIEW_REQUIRED|VALUE=Unidad comercial no encontrada para unidad_negocio_pk=
+CONTEXT=  250|    if not unidad_codigo:
+CONTEXT=  251|        raise ValueError(
+CONTEXT=>>252|            "Unidad comercial no encontrada para "
+CONTEXT=  253|            f"unidad_negocio_pk={kpi.unidad_negocio_pk}"
+CONTEXT=  254|        )
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:284|CLASS=STRING_REVIEW_REQUIRED|VALUE=action
+CONTEXT=  282|        if record.get('hash_origen') == kpi.hash_origen and str(record.get('fuente_original') or '') == str(kpi.fuente_original):
+CONTEXT=  283|            # Mismos datos, no actualizar
+CONTEXT=>>284|            return {'action': 'SKIP', 'id': record.get('id')}
+CONTEXT=  285|        else:
+CONTEXT=  286|            # Datos diferentes, actualizar
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:284|CLASS=STRING_REVIEW_REQUIRED|VALUE=id
+CONTEXT=  282|        if record.get('hash_origen') == kpi.hash_origen and str(record.get('fuente_original') or '') == str(kpi.fuente_original):
+CONTEXT=  283|            # Mismos datos, no actualizar
+CONTEXT=>>284|            return {'action': 'SKIP', 'id': record.get('id')}
+CONTEXT=  285|        else:
+CONTEXT=  286|            # Datos diferentes, actualizar
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:284|CLASS=STRING_REVIEW_REQUIRED|VALUE=SKIP
+CONTEXT=  282|        if record.get('hash_origen') == kpi.hash_origen and str(record.get('fuente_original') or '') == str(kpi.fuente_original):
+CONTEXT=  283|            # Mismos datos, no actualizar
+CONTEXT=>>284|            return {'action': 'SKIP', 'id': record.get('id')}
+CONTEXT=  285|        else:
+CONTEXT=  286|            # Datos diferentes, actualizar
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:288|CLASS=STRING_REVIEW_REQUIRED|VALUE=             UPDATE dbo.Comercial_KPIs_Diarios_v2 SET                 ventas_total = 
+CONTEXT=  286|            # Datos diferentes, actualizar
+CONTEXT=  287|            new_version = (record.get('version') or 1) + 1
+CONTEXT=>>288|            update_query = f"""
+CONTEXT=  289|            UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
+CONTEXT=  290|                ventas_total = {kpi.ventas_total},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:288|CLASS=STRING_REVIEW_REQUIRED|VALUE=,                 ventas_sin_propina = 
+CONTEXT=  286|            # Datos diferentes, actualizar
+CONTEXT=  287|            new_version = (record.get('version') or 1) + 1
+CONTEXT=>>288|            update_query = f"""
+CONTEXT=  289|            UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
+CONTEXT=  290|                ventas_total = {kpi.ventas_total},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:288|CLASS=STRING_REVIEW_REQUIRED|VALUE=,                 propinas_total = 
+CONTEXT=  286|            # Datos diferentes, actualizar
+CONTEXT=  287|            new_version = (record.get('version') or 1) + 1
+CONTEXT=>>288|            update_query = f"""
+CONTEXT=  289|            UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
+CONTEXT=  290|                ventas_total = {kpi.ventas_total},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:288|CLASS=STRING_REVIEW_REQUIRED|VALUE=,                 tickets_total = 
+CONTEXT=  286|            # Datos diferentes, actualizar
+CONTEXT=  287|            new_version = (record.get('version') or 1) + 1
+CONTEXT=>>288|            update_query = f"""
+CONTEXT=  289|            UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
+CONTEXT=  290|                ventas_total = {kpi.ventas_total},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:288|CLASS=STRING_REVIEW_REQUIRED|VALUE=,                 pax_total = 
+CONTEXT=  286|            # Datos diferentes, actualizar
+CONTEXT=  287|            new_version = (record.get('version') or 1) + 1
+CONTEXT=>>288|            update_query = f"""
+CONTEXT=  289|            UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
+CONTEXT=  290|                ventas_total = {kpi.ventas_total},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:288|CLASS=STRING_REVIEW_REQUIRED|VALUE=,                 ticket_promedio = 
+CONTEXT=  286|            # Datos diferentes, actualizar
+CONTEXT=  287|            new_version = (record.get('version') or 1) + 1
+CONTEXT=>>288|            update_query = f"""
+CONTEXT=  289|            UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
+CONTEXT=  290|                ventas_total = {kpi.ventas_total},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:288|CLASS=STRING_REVIEW_REQUIRED|VALUE=,                 pax_promedio = 
+CONTEXT=  286|            # Datos diferentes, actualizar
+CONTEXT=  287|            new_version = (record.get('version') or 1) + 1
+CONTEXT=>>288|            update_query = f"""
+CONTEXT=  289|            UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
+CONTEXT=  290|                ventas_total = {kpi.ventas_total},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:288|CLASS=STRING_REVIEW_REQUIRED|VALUE=,                 ventas_cerradas = 
+CONTEXT=  286|            # Datos diferentes, actualizar
+CONTEXT=  287|            new_version = (record.get('version') or 1) + 1
+CONTEXT=>>288|            update_query = f"""
+CONTEXT=  289|            UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
+CONTEXT=  290|                ventas_total = {kpi.ventas_total},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:288|CLASS=STRING_REVIEW_REQUIRED|VALUE=,                 ventas_abiertas = 
+CONTEXT=  286|            # Datos diferentes, actualizar
+CONTEXT=  287|            new_version = (record.get('version') or 1) + 1
+CONTEXT=>>288|            update_query = f"""
+CONTEXT=  289|            UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
+CONTEXT=  290|                ventas_total = {kpi.ventas_total},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:288|CLASS=STRING_REVIEW_REQUIRED|VALUE=,                 total_estimado_dia = 
+CONTEXT=  286|            # Datos diferentes, actualizar
+CONTEXT=  287|            new_version = (record.get('version') or 1) + 1
+CONTEXT=>>288|            update_query = f"""
+CONTEXT=  289|            UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
+CONTEXT=  290|                ventas_total = {kpi.ventas_total},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:288|CLASS=STRING_REVIEW_REQUIRED|VALUE=,                 es_corte_cerrado = 
+CONTEXT=  286|            # Datos diferentes, actualizar
+CONTEXT=  287|            new_version = (record.get('version') or 1) + 1
+CONTEXT=>>288|            update_query = f"""
+CONTEXT=  289|            UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
+CONTEXT=  290|                ventas_total = {kpi.ventas_total},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:288|CLASS=STRING_REVIEW_REQUIRED|VALUE=,                 fuente_original = '
+CONTEXT=  286|            # Datos diferentes, actualizar
+CONTEXT=  287|            new_version = (record.get('version') or 1) + 1
+CONTEXT=>>288|            update_query = f"""
+CONTEXT=  289|            UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
+CONTEXT=  290|                ventas_total = {kpi.ventas_total},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:288|CLASS=STRING_REVIEW_REQUIRED|VALUE=',                 hash_origen = '
+CONTEXT=  286|            # Datos diferentes, actualizar
+CONTEXT=  287|            new_version = (record.get('version') or 1) + 1
+CONTEXT=>>288|            update_query = f"""
+CONTEXT=  289|            UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
+CONTEXT=  290|                ventas_total = {kpi.ventas_total},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:288|CLASS=STRING_REVIEW_REQUIRED|VALUE=',                 sync_run_id = '
+CONTEXT=  286|            # Datos diferentes, actualizar
+CONTEXT=  287|            new_version = (record.get('version') or 1) + 1
+CONTEXT=>>288|            update_query = f"""
+CONTEXT=  289|            UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
+CONTEXT=  290|                ventas_total = {kpi.ventas_total},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:288|CLASS=STRING_REVIEW_REQUIRED|VALUE=             WHERE id = '
+CONTEXT=  286|            # Datos diferentes, actualizar
+CONTEXT=  287|            new_version = (record.get('version') or 1) + 1
+CONTEXT=>>288|            update_query = f"""
+CONTEXT=  289|            UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
+CONTEXT=  290|                ventas_total = {kpi.ventas_total},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:288|CLASS=STRING_REVIEW_REQUIRED|VALUE='             
+CONTEXT=  286|            # Datos diferentes, actualizar
+CONTEXT=  287|            new_version = (record.get('version') or 1) + 1
+CONTEXT=>>288|            update_query = f"""
+CONTEXT=  289|            UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
+CONTEXT=  290|                ventas_total = {kpi.ventas_total},
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:309|CLASS=STRING_REVIEW_REQUIRED|VALUE=action
+CONTEXT=  307|            """
+CONTEXT=  308|            _execute_query(update_query)
+CONTEXT=>>309|            return {'action': 'UPDATE', 'id': record.get('id')}
+CONTEXT=  310|    else:
+CONTEXT=  311|        # No existe, insertar
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:309|CLASS=STRING_REVIEW_REQUIRED|VALUE=id
+CONTEXT=  307|            """
+CONTEXT=  308|            _execute_query(update_query)
+CONTEXT=>>309|            return {'action': 'UPDATE', 'id': record.get('id')}
+CONTEXT=  310|    else:
+CONTEXT=  311|        # No existe, insertar
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:309|CLASS=STRING_REVIEW_REQUIRED|VALUE=UPDATE
+CONTEXT=  307|            """
+CONTEXT=  308|            _execute_query(update_query)
+CONTEXT=>>309|            return {'action': 'UPDATE', 'id': record.get('id')}
+CONTEXT=  310|    else:
+CONTEXT=  311|        # No existe, insertar
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:284|CLASS=STRING_REVIEW_REQUIRED|VALUE=id
+CONTEXT=  282|        if record.get('hash_origen') == kpi.hash_origen and str(record.get('fuente_original') or '') == str(kpi.fuente_original):
+CONTEXT=  283|            # Mismos datos, no actualizar
+CONTEXT=>>284|            return {'action': 'SKIP', 'id': record.get('id')}
+CONTEXT=  285|        else:
+CONTEXT=  286|            # Datos diferentes, actualizar
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:309|CLASS=STRING_REVIEW_REQUIRED|VALUE=id
+CONTEXT=  307|            """
+CONTEXT=  308|            _execute_query(update_query)
+CONTEXT=>>309|            return {'action': 'UPDATE', 'id': record.get('id')}
+CONTEXT=  310|    else:
+CONTEXT=  311|        # No existe, insertar
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:330|CLASS=STRING_REVIEW_REQUIRED|VALUE=NULL
+CONTEXT=  328|            '{kpi.server_id}', 
+CONTEXT=  329|            '{kpi.sucursal_id}',
+CONTEXT=>>330|            {f"'{sucursal_normalizada}'" if sucursal_normalizada else 'NULL'},
+CONTEXT=  331|            '{kpi.sistema_origen}',
+CONTEXT=  332|            '{kpi.fecha_operacion.isoformat()}',
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:344|CLASS=STRING_REVIEW_REQUIRED|VALUE=NULL
+CONTEXT=  342|            {1 if kpi.activo else 0},
+CONTEXT=  343|            '{kpi.fuente_original}',
+CONTEXT=>>344|            {f"'{kpi.id_origen}'" if kpi.id_origen else 'NULL'},
+CONTEXT=  345|            '{kpi.hash_origen}',
+CONTEXT=  346|            '{kpi.sync_run_id}',
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:248|CLASS=STRING_REVIEW_REQUIRED|VALUE=codigo
+CONTEXT=  246|    _unidad_info = UnidadesService.get_by_pk(kpi.unidad_negocio_pk)
+CONTEXT=  247|    unidad_codigo = str(
+CONTEXT=>>248|        (_unidad_info or {}).get("codigo") or ""
+CONTEXT=  249|    ).strip()
+CONTEXT=  250|    if not unidad_codigo:
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:287|CLASS=STRING_REVIEW_REQUIRED|VALUE=version
+CONTEXT=  285|        else:
+CONTEXT=  286|            # Datos diferentes, actualizar
+CONTEXT=>>287|            new_version = (record.get('version') or 1) + 1
+CONTEXT=  288|            update_query = f"""
+CONTEXT=  289|            UPDATE dbo.Comercial_KPIs_Diarios_v2 SET
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:306|CLASS=STRING_REVIEW_REQUIRED|VALUE=id
+CONTEXT=  304|                fecha_ultima_actualizacion = SYSUTCDATETIME(),
+CONTEXT=  305|                version = {new_version}
+CONTEXT=>>306|            WHERE id = '{record.get("id")}'
+CONTEXT=  307|            """
+CONTEXT=  308|            _execute_query(update_query)
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:330|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  328|            '{kpi.server_id}', 
+CONTEXT=  329|            '{kpi.sucursal_id}',
+CONTEXT=>>330|            {f"'{sucursal_normalizada}'" if sucursal_normalizada else 'NULL'},
+CONTEXT=  331|            '{kpi.sistema_origen}',
+CONTEXT=  332|            '{kpi.fecha_operacion.isoformat()}',
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:330|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  328|            '{kpi.server_id}', 
+CONTEXT=  329|            '{kpi.sucursal_id}',
+CONTEXT=>>330|            {f"'{sucursal_normalizada}'" if sucursal_normalizada else 'NULL'},
+CONTEXT=  331|            '{kpi.sistema_origen}',
+CONTEXT=  332|            '{kpi.fecha_operacion.isoformat()}',
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:344|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  342|            {1 if kpi.activo else 0},
+CONTEXT=  343|            '{kpi.fuente_original}',
+CONTEXT=>>344|            {f"'{kpi.id_origen}'" if kpi.id_origen else 'NULL'},
+CONTEXT=  345|            '{kpi.hash_origen}',
+CONTEXT=  346|            '{kpi.sync_run_id}',
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:344|CLASS=STRING_REVIEW_REQUIRED|VALUE='
+CONTEXT=  342|            {1 if kpi.activo else 0},
+CONTEXT=  343|            '{kpi.fuente_original}',
+CONTEXT=>>344|            {f"'{kpi.id_origen}'" if kpi.id_origen else 'NULL'},
+CONTEXT=  345|            '{kpi.hash_origen}',
+CONTEXT=  346|            '{kpi.sync_run_id}',
+LITERAL=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:282|CLASS=STRING_REVIEW_REQUIRED|VALUE=fuente_original
+CONTEXT=  280|    if existing:
+CONTEXT=  281|        record = existing[0]
+CONTEXT=>>282|        if record.get('hash_origen') == kpi.hash_origen and str(record.get('fuente_original') or '') == str(kpi.fuente_original):
+CONTEXT=  283|            # Mismos datos, no actualizar
+CONTEXT=  284|            return {'action': 'SKIP', 'id': record.get('id')}
+FORMULA_EXPR=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:257|ventas_sin_propina = ( kpi.ventas_sin_propina if kpi.ventas_sin_propina is not None else kpi.ventas_total )
+FORMULA_EXPR=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:313|insert_query = f""" INSERT INTO dbo.Comercial_KPIs_Diarios_v2 ( id, unidad_negocio_pk, unidad_negocio_id, unidad_negocio_nombre, server_id, sucursal_id, sucursal_nombre, sistema_origen, fecha_operacion, anio, mes, dia, ventas_total, ventas_sin_propina, propinas_total, tickets_total, pax_total, ticket_promedio, pax_promedio, ventas_cerradas, ventas_abiertas, total_estimado_dia, es_venta_abierta, es_corte_cerrado, es_demo, activo, fuente_original, id_origen, hash_origen, sync_run_id, fecha_sincronizacion, fecha_alta, fecha_ultima_actualizacion, version ) VALUES ( '{new_id}', '{kpi.unidad_negocio_pk}', '{unidad_codigo}', '{nombre_normalizado}', '{kpi.server_id}', '{kpi.sucursal_id}', {f"'{sucursal_normalizada}'" if sucursal_normalizada else 'NULL'}, '{kpi.sistema_origen}', '{kpi.fecha_operacion.isoformat()}', {kpi.anio}, {kpi.mes}, {kpi.dia}, {kpi.ventas_total}, {ventas_sin_propina}, {kpi.propinas_total}, {kpi.tickets_total}, {kpi.pax_total}, {kpi.ticket_promedio}, {kpi.pax_promedio}, {kpi.ventas_cerradas}, {kpi.ventas_abiertas}, {kpi.total_estimado_dia}, {1 if kpi.es_venta_abierta else 0}, {1 if kpi.es_corte_cerrado else 0}, {1 if kpi.es_demo else 0}, {1 if kpi.activo else 0}, '{kpi.fuente_original}', {f"'{kpi.id_origen}'" if kpi.id_origen else 'NULL'}, '{kpi.hash_origen}', '{kpi.sync_run_id}', SYSUTCDATETIME(), SYSUTCDATETIME(), SYSUTCDATETIME(), 1 ) """
+FORMULA_EXPR=backend/modules/comercial_v2/repository_comercial_edarsahub.py:upsert_kpi_diario:288|update_query = f""" UPDATE dbo.Comercial_KPIs_Diarios_v2 SET ventas_total = {kpi.ventas_total}, ventas_sin_propina = {ventas_sin_propina}, propinas_total = {kpi.propinas_total}, tickets_total = {kpi.tickets_total}, pax_total = {kpi.pax_total}, ticket_promedio = {kpi.ticket_promedio}, pax_promedio = {kpi.pax_promedio}, ventas_cerradas = {kpi.ventas_cerradas}, ventas_abiertas = {kpi.ventas_abiertas}, total_estimado_dia = {kpi.total_estimado_dia}, es_corte_cerrado = {1 if kpi.es_corte_cerrado else 0}, fuente_original = '{kpi.fuente_original}', hash_origen = '{kpi.hash_origen}', sync_run_id = '{kpi.sync_run_id}', fecha_ultima_actualizacion = SYSUTCDATETIME(), version = {new_version} WHERE id = '{record.get("id")}' """
+FUNCTION=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion|LINES=666-766|FORMULAS=NINGUNA|DATE_OPERATIONAL=SI|CANONICAL_CONNECTION=NO|MONGO=NO
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:732|CLASS=STRING_REVIEW_REQUIRED|VALUE=fecha_hora_min
+CONTEXT=  730|
+CONTEXT=  731|        target = agrupadas[fecha_operacion]
+CONTEXT=>>732|        target["fecha_hora_min"] = min(target["fecha_hora_min"], fecha_hora)
+CONTEXT=  733|        target["fecha_hora_max"] = max(target["fecha_hora_max"], fecha_hora)
+CONTEXT=  734|
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:733|CLASS=STRING_REVIEW_REQUIRED|VALUE=fecha_hora_max
+CONTEXT=  731|        target = agrupadas[fecha_operacion]
+CONTEXT=  732|        target["fecha_hora_min"] = min(target["fecha_hora_min"], fecha_hora)
+CONTEXT=>>733|        target["fecha_hora_max"] = max(target["fecha_hora_max"], fecha_hora)
+CONTEXT=  734|
+CONTEXT=  735|        soft_folio = _normalizar_distinct_key(row_dict.get("folio"))
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:739|CLASS=STRING_REVIEW_REQUIRED|VALUE=Vn_Folio
+CONTEXT=  737|            target.setdefault("_distinct_num_cheques", set()).add(soft_folio)
+CONTEXT=  738|
+CONTEXT=>>739|        mpro_folio_value = row_dict.get("Vn_Folio")
+CONTEXT=  740|        if mpro_folio_value is None:
+CONTEXT=  741|            mpro_folio_value = row_dict.get("vn_folio")
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:756|CLASS=STRING_REVIEW_REQUIRED|VALUE=_distinct_num_cheques
+CONTEXT=  754|    rows_agrupadas = []
+CONTEXT=  755|    for row in agrupadas.values():
+CONTEXT=>>756|        distinct_num_cheques = row.pop("_distinct_num_cheques", None)
+CONTEXT=  757|        if distinct_num_cheques is not None:
+CONTEXT=  758|            row["num_cheques"] = len(distinct_num_cheques)
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:760|CLASS=STRING_REVIEW_REQUIRED|VALUE=_distinct_num_folios
+CONTEXT=  758|            row["num_cheques"] = len(distinct_num_cheques)
+CONTEXT=  759|
+CONTEXT=>>760|        distinct_num_folios = row.pop("_distinct_num_folios", None)
+CONTEXT=  761|        if distinct_num_folios is not None:
+CONTEXT=  762|            row["num_folios"] = len(distinct_num_folios)
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:681|CLASS=STRING_REVIEW_REQUIRED|VALUE=fecha_hora
+CONTEXT=  679|
+CONTEXT=  680|        fecha_hora = (
+CONTEXT=>>681|            row_dict.get("fecha_hora")
+CONTEXT=  682|            or row_dict.get("fecha")
+CONTEXT=  683|            or row_dict.get("Vn_Fecha")
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:682|CLASS=STRING_REVIEW_REQUIRED|VALUE=fecha
+CONTEXT=  680|        fecha_hora = (
+CONTEXT=  681|            row_dict.get("fecha_hora")
+CONTEXT=>>682|            or row_dict.get("fecha")
+CONTEXT=  683|            or row_dict.get("Vn_Fecha")
+CONTEXT=  684|            or row_dict.get("vn_fecha")
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:683|CLASS=STRING_REVIEW_REQUIRED|VALUE=Vn_Fecha
+CONTEXT=  681|            row_dict.get("fecha_hora")
+CONTEXT=  682|            or row_dict.get("fecha")
+CONTEXT=>>683|            or row_dict.get("Vn_Fecha")
+CONTEXT=  684|            or row_dict.get("vn_fecha")
+CONTEXT=  685|        )
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:684|CLASS=STRING_REVIEW_REQUIRED|VALUE=vn_fecha
+CONTEXT=  682|            or row_dict.get("fecha")
+CONTEXT=  683|            or row_dict.get("Vn_Fecha")
+CONTEXT=>>684|            or row_dict.get("vn_fecha")
+CONTEXT=  685|        )
+CONTEXT=  686|        fecha_hora = _normalizar_fecha_hora_value(fecha_hora)
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:725|CLASS=STRING_REVIEW_REQUIRED|VALUE=fecha
+CONTEXT=  723|                    base[col] = value
+CONTEXT=  724|
+CONTEXT=>>725|            base["fecha"] = fecha_operacion
+CONTEXT=  726|            base["fecha_operacion"] = fecha_operacion
+CONTEXT=  727|            base["fecha_hora_min"] = fecha_hora
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:726|CLASS=STRING_REVIEW_REQUIRED|VALUE=fecha_operacion
+CONTEXT=  724|
+CONTEXT=  725|            base["fecha"] = fecha_operacion
+CONTEXT=>>726|            base["fecha_operacion"] = fecha_operacion
+CONTEXT=  727|            base["fecha_hora_min"] = fecha_hora
+CONTEXT=  728|            base["fecha_hora_max"] = fecha_hora
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:727|CLASS=STRING_REVIEW_REQUIRED|VALUE=fecha_hora_min
+CONTEXT=  725|            base["fecha"] = fecha_operacion
+CONTEXT=  726|            base["fecha_operacion"] = fecha_operacion
+CONTEXT=>>727|            base["fecha_hora_min"] = fecha_hora
+CONTEXT=  728|            base["fecha_hora_max"] = fecha_hora
+CONTEXT=  729|            agrupadas[fecha_operacion] = base
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:728|CLASS=STRING_REVIEW_REQUIRED|VALUE=fecha_hora_max
+CONTEXT=  726|            base["fecha_operacion"] = fecha_operacion
+CONTEXT=  727|            base["fecha_hora_min"] = fecha_hora
+CONTEXT=>>728|            base["fecha_hora_max"] = fecha_hora
+CONTEXT=  729|            agrupadas[fecha_operacion] = base
+CONTEXT=  730|
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:732|CLASS=STRING_REVIEW_REQUIRED|VALUE=fecha_hora_min
+CONTEXT=  730|
+CONTEXT=  731|        target = agrupadas[fecha_operacion]
+CONTEXT=>>732|        target["fecha_hora_min"] = min(target["fecha_hora_min"], fecha_hora)
+CONTEXT=  733|        target["fecha_hora_max"] = max(target["fecha_hora_max"], fecha_hora)
+CONTEXT=  734|
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:733|CLASS=STRING_REVIEW_REQUIRED|VALUE=fecha_hora_max
+CONTEXT=  731|        target = agrupadas[fecha_operacion]
+CONTEXT=  732|        target["fecha_hora_min"] = min(target["fecha_hora_min"], fecha_hora)
+CONTEXT=>>733|        target["fecha_hora_max"] = max(target["fecha_hora_max"], fecha_hora)
+CONTEXT=  734|
+CONTEXT=  735|        soft_folio = _normalizar_distinct_key(row_dict.get("folio"))
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:735|CLASS=STRING_REVIEW_REQUIRED|VALUE=folio
+CONTEXT=  733|        target["fecha_hora_max"] = max(target["fecha_hora_max"], fecha_hora)
+CONTEXT=  734|
+CONTEXT=>>735|        soft_folio = _normalizar_distinct_key(row_dict.get("folio"))
+CONTEXT=  736|        if soft_folio is not None:
+CONTEXT=  737|            target.setdefault("_distinct_num_cheques", set()).add(soft_folio)
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:741|CLASS=STRING_REVIEW_REQUIRED|VALUE=vn_folio
+CONTEXT=  739|        mpro_folio_value = row_dict.get("Vn_Folio")
+CONTEXT=  740|        if mpro_folio_value is None:
+CONTEXT=>>741|            mpro_folio_value = row_dict.get("vn_folio")
+CONTEXT=  742|        mpro_folio = _normalizar_distinct_key(mpro_folio_value)
+CONTEXT=  743|        if mpro_folio is not None:
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:758|CLASS=STRING_REVIEW_REQUIRED|VALUE=num_cheques
+CONTEXT=  756|        distinct_num_cheques = row.pop("_distinct_num_cheques", None)
+CONTEXT=  757|        if distinct_num_cheques is not None:
+CONTEXT=>>758|            row["num_cheques"] = len(distinct_num_cheques)
+CONTEXT=  759|
+CONTEXT=  760|        distinct_num_folios = row.pop("_distinct_num_folios", None)
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:762|CLASS=STRING_REVIEW_REQUIRED|VALUE=num_folios
+CONTEXT=  760|        distinct_num_folios = row.pop("_distinct_num_folios", None)
+CONTEXT=  761|        if distinct_num_folios is not None:
+CONTEXT=>>762|            row["num_folios"] = len(distinct_num_folios)
+CONTEXT=  763|
+CONTEXT=  764|        rows_agrupadas.append(_recalcular_derivados_ventas_cerradas(row))
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:689|CLASS=STRING_REVIEW_REQUIRED|VALUE=Row sin fecha_hora para ventas cerradas V2: 
+CONTEXT=  687|
+CONTEXT=  688|        if fecha_hora is None:
+CONTEXT=>>689|            raise ValueError(f"Row sin fecha_hora para ventas cerradas V2: {row_dict!r}")
+CONTEXT=  690|
+CONTEXT=  691|        sistema_origen = getattr(config, "sistema_origen", None)
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:707|CLASS=STRING_REVIEW_REQUIRED|VALUE=Sistema origen no soportado para resolver fecha_operacion: 
+CONTEXT=  705|        else:
+CONTEXT=  706|            raise ValueError(
+CONTEXT=>>707|                "Sistema origen no soportado para resolver "
+CONTEXT=  708|                f"fecha_operacion: {sistema_origen!r}"
+CONTEXT=  709|            )
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:737|CLASS=STRING_REVIEW_REQUIRED|VALUE=_distinct_num_cheques
+CONTEXT=  735|        soft_folio = _normalizar_distinct_key(row_dict.get("folio"))
+CONTEXT=  736|        if soft_folio is not None:
+CONTEXT=>>737|            target.setdefault("_distinct_num_cheques", set()).add(soft_folio)
+CONTEXT=  738|
+CONTEXT=  739|        mpro_folio_value = row_dict.get("Vn_Folio")
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:744|CLASS=STRING_REVIEW_REQUIRED|VALUE=_distinct_num_folios
+CONTEXT=  742|        mpro_folio = _normalizar_distinct_key(mpro_folio_value)
+CONTEXT=  743|        if mpro_folio is not None:
+CONTEXT=>>744|            target.setdefault("_distinct_num_folios", set()).add(mpro_folio)
+CONTEXT=  745|
+CONTEXT=  746|        for col, value in row_dict.items():
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:722|CLASS=STRING_REVIEW_REQUIRED|VALUE=fecha
+CONTEXT=  720|                if _is_number_for_operational_group(value) and _is_metric_key_for_operational_group(col):
+CONTEXT=  721|                    base[col] = 0
+CONTEXT=>>722|                elif col not in ("fecha", "fecha_hora"):
+CONTEXT=  723|                    base[col] = value
+CONTEXT=  724|
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_agrupar_ventas_cerradas_por_fecha_operacion:722|CLASS=STRING_REVIEW_REQUIRED|VALUE=fecha_hora
+CONTEXT=  720|                if _is_number_for_operational_group(value) and _is_metric_key_for_operational_group(col):
+CONTEXT=  721|                    base[col] = 0
+CONTEXT=>>722|                elif col not in ("fecha", "fecha_hora"):
+CONTEXT=  723|                    base[col] = value
+CONTEXT=  724|
+FUNCTION=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas|LINES=615-663|FORMULAS=ticket_promedio,ventas_total|DATE_OPERATIONAL=NO|CANONICAL_CONNECTION=NO|MONGO=NO
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:617|CLASS=STRING_REVIEW_REQUIRED|VALUE=ventas_total
+CONTEXT=  615|def _recalcular_derivados_ventas_cerradas(row):
+CONTEXT=  616|    total_keys = (
+CONTEXT=>>617|        "ventas_total",
+CONTEXT=  618|        "total_ventas",
+CONTEXT=  619|        "venta_total",
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:618|CLASS=STRING_REVIEW_REQUIRED|VALUE=total_ventas
+CONTEXT=  616|    total_keys = (
+CONTEXT=  617|        "ventas_total",
+CONTEXT=>>618|        "total_ventas",
+CONTEXT=  619|        "venta_total",
+CONTEXT=  620|        "ventas",
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:619|CLASS=STRING_REVIEW_REQUIRED|VALUE=venta_total
+CONTEXT=  617|        "ventas_total",
+CONTEXT=  618|        "total_ventas",
+CONTEXT=>>619|        "venta_total",
+CONTEXT=  620|        "ventas",
+CONTEXT=  621|        "importe_total",
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:620|CLASS=STRING_REVIEW_REQUIRED|VALUE=ventas
+CONTEXT=  618|        "total_ventas",
+CONTEXT=  619|        "venta_total",
+CONTEXT=>>620|        "ventas",
+CONTEXT=  621|        "importe_total",
+CONTEXT=  622|        "total",
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:621|CLASS=STRING_REVIEW_REQUIRED|VALUE=importe_total
+CONTEXT=  619|        "venta_total",
+CONTEXT=  620|        "ventas",
+CONTEXT=>>621|        "importe_total",
+CONTEXT=  622|        "total",
+CONTEXT=  623|        "Vn_Precio_Neto_Importe",
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:622|CLASS=STRING_REVIEW_REQUIRED|VALUE=total
+CONTEXT=  620|        "ventas",
+CONTEXT=  621|        "importe_total",
+CONTEXT=>>622|        "total",
+CONTEXT=  623|        "Vn_Precio_Neto_Importe",
+CONTEXT=  624|    )
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:623|CLASS=STRING_REVIEW_REQUIRED|VALUE=Vn_Precio_Neto_Importe
+CONTEXT=  621|        "importe_total",
+CONTEXT=  622|        "total",
+CONTEXT=>>623|        "Vn_Precio_Neto_Importe",
+CONTEXT=  624|    )
+CONTEXT=  625|    ticket_keys = (
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:626|CLASS=STRING_REVIEW_REQUIRED|VALUE=num_cheques
+CONTEXT=  624|    )
+CONTEXT=  625|    ticket_keys = (
+CONTEXT=>>626|        "num_cheques",
+CONTEXT=  627|        "num_folios",
+CONTEXT=  628|        "tickets",
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:627|CLASS=STRING_REVIEW_REQUIRED|VALUE=num_folios
+CONTEXT=  625|    ticket_keys = (
+CONTEXT=  626|        "num_cheques",
+CONTEXT=>>627|        "num_folios",
+CONTEXT=  628|        "tickets",
+CONTEXT=  629|        "total_tickets",
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:628|CLASS=STRING_REVIEW_REQUIRED|VALUE=tickets
+CONTEXT=  626|        "num_cheques",
+CONTEXT=  627|        "num_folios",
+CONTEXT=>>628|        "tickets",
+CONTEXT=  629|        "total_tickets",
+CONTEXT=  630|        "cantidad_tickets",
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:629|CLASS=STRING_REVIEW_REQUIRED|VALUE=total_tickets
+CONTEXT=  627|        "num_folios",
+CONTEXT=  628|        "tickets",
+CONTEXT=>>629|        "total_tickets",
+CONTEXT=  630|        "cantidad_tickets",
+CONTEXT=  631|        "num_tickets",
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:630|CLASS=STRING_REVIEW_REQUIRED|VALUE=cantidad_tickets
+CONTEXT=  628|        "tickets",
+CONTEXT=  629|        "total_tickets",
+CONTEXT=>>630|        "cantidad_tickets",
+CONTEXT=  631|        "num_tickets",
+CONTEXT=  632|        "numero_tickets",
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:631|CLASS=STRING_REVIEW_REQUIRED|VALUE=num_tickets
+CONTEXT=  629|        "total_tickets",
+CONTEXT=  630|        "cantidad_tickets",
+CONTEXT=>>631|        "num_tickets",
+CONTEXT=  632|        "numero_tickets",
+CONTEXT=  633|        "transacciones",
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:632|CLASS=STRING_REVIEW_REQUIRED|VALUE=numero_tickets
+CONTEXT=  630|        "cantidad_tickets",
+CONTEXT=  631|        "num_tickets",
+CONTEXT=>>632|        "numero_tickets",
+CONTEXT=  633|        "transacciones",
+CONTEXT=  634|        "total_transacciones",
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:633|CLASS=STRING_REVIEW_REQUIRED|VALUE=transacciones
+CONTEXT=  631|        "num_tickets",
+CONTEXT=  632|        "numero_tickets",
+CONTEXT=>>633|        "transacciones",
+CONTEXT=  634|        "total_transacciones",
+CONTEXT=  635|    )
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:634|CLASS=STRING_REVIEW_REQUIRED|VALUE=total_transacciones
+CONTEXT=  632|        "numero_tickets",
+CONTEXT=  633|        "transacciones",
+CONTEXT=>>634|        "total_transacciones",
+CONTEXT=  635|    )
+CONTEXT=  636|    promedio_keys = (
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:637|CLASS=STRING_REVIEW_REQUIRED|VALUE=ticket_promedio
+CONTEXT=  635|    )
+CONTEXT=  636|    promedio_keys = (
+CONTEXT=>>637|        "ticket_promedio",
+CONTEXT=  638|        "promedio_ticket",
+CONTEXT=  639|        "avg_ticket",
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:638|CLASS=STRING_REVIEW_REQUIRED|VALUE=promedio_ticket
+CONTEXT=  636|    promedio_keys = (
+CONTEXT=  637|        "ticket_promedio",
+CONTEXT=>>638|        "promedio_ticket",
+CONTEXT=  639|        "avg_ticket",
+CONTEXT=  640|        "average_ticket",
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:639|CLASS=STRING_REVIEW_REQUIRED|VALUE=avg_ticket
+CONTEXT=  637|        "ticket_promedio",
+CONTEXT=  638|        "promedio_ticket",
+CONTEXT=>>639|        "avg_ticket",
+CONTEXT=  640|        "average_ticket",
+CONTEXT=  641|    )
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:640|CLASS=STRING_REVIEW_REQUIRED|VALUE=average_ticket
+CONTEXT=  638|        "promedio_ticket",
+CONTEXT=  639|        "avg_ticket",
+CONTEXT=>>640|        "average_ticket",
+CONTEXT=  641|    )
+CONTEXT=  642|
+FORMULA_EXPR=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:616|total_keys = ( "ventas_total", "total_ventas", "venta_total", "ventas", "importe_total", "total", "Vn_Precio_Neto_Importe", )
+FORMULA_EXPR=backend/modules/comercial_v2/sync_comercial_edarsahub.py:_recalcular_derivados_ventas_cerradas:636|promedio_keys = ( "ticket_promedio", "promedio_ticket", "avg_ticket", "average_ticket", )
+FUNCTION=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server|LINES=176-409|FORMULAS=NINGUNA|DATE_OPERATIONAL=NO|CANONICAL_CONNECTION=NO|MONGO=NO
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:179|CLASS=STRING_REVIEW_REQUIRED|VALUE=web
+CONTEXT=  177|    server_config: Dict[str, Any],
+CONTEXT=  178|    query: str,
+CONTEXT=>>179|    context: str = "web",
+CONTEXT=  180|) -> Tuple[List[Dict], ConnectionStatus]:
+CONTEXT=  181|    """Ejecuta SELECT comerciales con selección de driver.
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:393|CLASS=STRING_REVIEW_REQUIRED|VALUE=Todas las estrategias POS fallaron para %s:%s/%s: %s
+CONTEXT=  391|
+CONTEXT=  392|    logger.warning(
+CONTEXT=>>393|        "Todas las estrategias POS fallaron para "
+CONTEXT=  394|        "%s:%s/%s: %s",
+CONTEXT=  395|        host,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:202|CLASS=TECHNICAL_SQL_DEFAULT_PORT|VALUE=1433
+CONTEXT=  200|
+CONTEXT=  201|    port = int(
+CONTEXT=>>202|        server_config.get("port") or 1433
+CONTEXT=  203|    )
+CONTEXT=  204|
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:234|CLASS=STRING_REVIEW_REQUIRED|VALUE=Configuración POS comercial incompleta: host/database/username/password requeridos
+CONTEXT=  232|    ):
+CONTEXT=  233|        logger.error(
+CONTEXT=>>234|            "Configuración POS comercial incompleta: "
+CONTEXT=  235|            "host/database/username/password requeridos"
+CONTEXT=  236|        )
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:386|CLASS=STRING_REVIEW_REQUIRED|VALUE= | 
+CONTEXT=  384|                    pass
+CONTEXT=  385|
+CONTEXT=>>386|    error_text = " | ".join(
+CONTEXT=  387|        f"{item['strategy']}="
+CONTEXT=  388|        f"{item['type']}: {item['message']}"
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:404|CLASS=STRING_REVIEW_REQUIRED|VALUE=timeout
+CONTEXT=  402|
+CONTEXT=  403|    if (
+CONTEXT=>>404|        "timeout" in normalized
+CONTEXT=  405|        or "timed out" in normalized
+CONTEXT=  406|    ):
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:405|CLASS=STRING_REVIEW_REQUIRED|VALUE=timed out
+CONTEXT=  403|    if (
+CONTEXT=  404|        "timeout" in normalized
+CONTEXT=>>405|        or "timed out" in normalized
+CONTEXT=  406|    ):
+CONTEXT=  407|        return [], ConnectionStatus.TIMEOUT
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:202|CLASS=STRING_REVIEW_REQUIRED|VALUE=port
+CONTEXT=  200|
+CONTEXT=  201|    port = int(
+CONTEXT=>>202|        server_config.get("port") or 1433
+CONTEXT=  203|    )
+CONTEXT=  204|
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:222|CLASS=STRING_REVIEW_REQUIRED|VALUE=password
+CONTEXT=  220|
+CONTEXT=  221|    password = str(
+CONTEXT=>>222|        server_config.get("password") or ""
+CONTEXT=  223|    )
+CONTEXT=  224|
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:242|CLASS=STRING_REVIEW_REQUIRED|VALUE=label
+CONTEXT=  240|        candidates = [
+CONTEXT=  241|            {
+CONTEXT=>>242|                "label": "PYTDS_DIRECT_PORT",
+CONTEXT=  243|                "driver": "pytds",
+CONTEXT=  244|                "server": host,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:243|CLASS=STRING_REVIEW_REQUIRED|VALUE=driver
+CONTEXT=  241|            {
+CONTEXT=  242|                "label": "PYTDS_DIRECT_PORT",
+CONTEXT=>>243|                "driver": "pytds",
+CONTEXT=  244|                "server": host,
+CONTEXT=  245|                "port": port,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:244|CLASS=STRING_REVIEW_REQUIRED|VALUE=server
+CONTEXT=  242|                "label": "PYTDS_DIRECT_PORT",
+CONTEXT=  243|                "driver": "pytds",
+CONTEXT=>>244|                "server": host,
+CONTEXT=  245|                "port": port,
+CONTEXT=  246|            },
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:245|CLASS=STRING_REVIEW_REQUIRED|VALUE=port
+CONTEXT=  243|                "driver": "pytds",
+CONTEXT=  244|                "server": host,
+CONTEXT=>>245|                "port": port,
+CONTEXT=  246|            },
+CONTEXT=  247|            {
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:242|CLASS=STRING_REVIEW_REQUIRED|VALUE=PYTDS_DIRECT_PORT
+CONTEXT=  240|        candidates = [
+CONTEXT=  241|            {
+CONTEXT=>>242|                "label": "PYTDS_DIRECT_PORT",
+CONTEXT=  243|                "driver": "pytds",
+CONTEXT=  244|                "server": host,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:243|CLASS=STRING_REVIEW_REQUIRED|VALUE=pytds
+CONTEXT=  241|            {
+CONTEXT=  242|                "label": "PYTDS_DIRECT_PORT",
+CONTEXT=>>243|                "driver": "pytds",
+CONTEXT=  244|                "server": host,
+CONTEXT=  245|                "port": port,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:248|CLASS=STRING_REVIEW_REQUIRED|VALUE=label
+CONTEXT=  246|            },
+CONTEXT=  247|            {
+CONTEXT=>>248|                "label": "PYTDS_NAMED_INSTANCE",
+CONTEXT=  249|                "driver": "pytds",
+CONTEXT=  250|                "server": f"{host}\\{instance}",
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:249|CLASS=STRING_REVIEW_REQUIRED|VALUE=driver
+CONTEXT=  247|            {
+CONTEXT=  248|                "label": "PYTDS_NAMED_INSTANCE",
+CONTEXT=>>249|                "driver": "pytds",
+CONTEXT=  250|                "server": f"{host}\\{instance}",
+CONTEXT=  251|                "port": None,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:250|CLASS=STRING_REVIEW_REQUIRED|VALUE=server
+CONTEXT=  248|                "label": "PYTDS_NAMED_INSTANCE",
+CONTEXT=  249|                "driver": "pytds",
+CONTEXT=>>250|                "server": f"{host}\\{instance}",
+CONTEXT=  251|                "port": None,
+CONTEXT=  252|            },
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:251|CLASS=STRING_REVIEW_REQUIRED|VALUE=port
+CONTEXT=  249|                "driver": "pytds",
+CONTEXT=  250|                "server": f"{host}\\{instance}",
+CONTEXT=>>251|                "port": None,
+CONTEXT=  252|            },
+CONTEXT=  253|            {
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:248|CLASS=STRING_REVIEW_REQUIRED|VALUE=PYTDS_NAMED_INSTANCE
+CONTEXT=  246|            },
+CONTEXT=  247|            {
+CONTEXT=>>248|                "label": "PYTDS_NAMED_INSTANCE",
+CONTEXT=  249|                "driver": "pytds",
+CONTEXT=  250|                "server": f"{host}\\{instance}",
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:249|CLASS=STRING_REVIEW_REQUIRED|VALUE=pytds
+CONTEXT=  247|            {
+CONTEXT=  248|                "label": "PYTDS_NAMED_INSTANCE",
+CONTEXT=>>249|                "driver": "pytds",
+CONTEXT=  250|                "server": f"{host}\\{instance}",
+CONTEXT=  251|                "port": None,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:254|CLASS=STRING_REVIEW_REQUIRED|VALUE=label
+CONTEXT=  252|            },
+CONTEXT=  253|            {
+CONTEXT=>>254|                "label": "PYMSSQL_DIRECT_PORT",
+CONTEXT=  255|                "driver": "pymssql",
+CONTEXT=  256|                "server": host,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:255|CLASS=STRING_REVIEW_REQUIRED|VALUE=driver
+CONTEXT=  253|            {
+CONTEXT=  254|                "label": "PYMSSQL_DIRECT_PORT",
+CONTEXT=>>255|                "driver": "pymssql",
+CONTEXT=  256|                "server": host,
+CONTEXT=  257|                "port": port,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:256|CLASS=STRING_REVIEW_REQUIRED|VALUE=server
+CONTEXT=  254|                "label": "PYMSSQL_DIRECT_PORT",
+CONTEXT=  255|                "driver": "pymssql",
+CONTEXT=>>256|                "server": host,
+CONTEXT=  257|                "port": port,
+CONTEXT=  258|            },
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:257|CLASS=STRING_REVIEW_REQUIRED|VALUE=port
+CONTEXT=  255|                "driver": "pymssql",
+CONTEXT=  256|                "server": host,
+CONTEXT=>>257|                "port": port,
+CONTEXT=  258|            },
+CONTEXT=  259|        ]
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:254|CLASS=STRING_REVIEW_REQUIRED|VALUE=PYMSSQL_DIRECT_PORT
+CONTEXT=  252|            },
+CONTEXT=  253|            {
+CONTEXT=>>254|                "label": "PYMSSQL_DIRECT_PORT",
+CONTEXT=  255|                "driver": "pymssql",
+CONTEXT=  256|                "server": host,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:255|CLASS=STRING_REVIEW_REQUIRED|VALUE=pymssql
+CONTEXT=  253|            {
+CONTEXT=  254|                "label": "PYMSSQL_DIRECT_PORT",
+CONTEXT=>>255|                "driver": "pymssql",
+CONTEXT=  256|                "server": host,
+CONTEXT=  257|                "port": port,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:263|CLASS=STRING_REVIEW_REQUIRED|VALUE=label
+CONTEXT=  261|        candidates = [
+CONTEXT=  262|            {
+CONTEXT=>>263|                "label": "PYMSSQL_DIRECT_PORT",
+CONTEXT=  264|                "driver": "pymssql",
+CONTEXT=  265|                "server": host,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:264|CLASS=STRING_REVIEW_REQUIRED|VALUE=driver
+CONTEXT=  262|            {
+CONTEXT=  263|                "label": "PYMSSQL_DIRECT_PORT",
+CONTEXT=>>264|                "driver": "pymssql",
+CONTEXT=  265|                "server": host,
+CONTEXT=  266|                "port": port,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:265|CLASS=STRING_REVIEW_REQUIRED|VALUE=server
+CONTEXT=  263|                "label": "PYMSSQL_DIRECT_PORT",
+CONTEXT=  264|                "driver": "pymssql",
+CONTEXT=>>265|                "server": host,
+CONTEXT=  266|                "port": port,
+CONTEXT=  267|            },
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:266|CLASS=STRING_REVIEW_REQUIRED|VALUE=port
+CONTEXT=  264|                "driver": "pymssql",
+CONTEXT=  265|                "server": host,
+CONTEXT=>>266|                "port": port,
+CONTEXT=  267|            },
+CONTEXT=  268|            {
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:263|CLASS=STRING_REVIEW_REQUIRED|VALUE=PYMSSQL_DIRECT_PORT
+CONTEXT=  261|        candidates = [
+CONTEXT=  262|            {
+CONTEXT=>>263|                "label": "PYMSSQL_DIRECT_PORT",
+CONTEXT=  264|                "driver": "pymssql",
+CONTEXT=  265|                "server": host,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:264|CLASS=STRING_REVIEW_REQUIRED|VALUE=pymssql
+CONTEXT=  262|            {
+CONTEXT=  263|                "label": "PYMSSQL_DIRECT_PORT",
+CONTEXT=>>264|                "driver": "pymssql",
+CONTEXT=  265|                "server": host,
+CONTEXT=  266|                "port": port,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:269|CLASS=STRING_REVIEW_REQUIRED|VALUE=label
+CONTEXT=  267|            },
+CONTEXT=  268|            {
+CONTEXT=>>269|                "label": "PYTDS_DIRECT_PORT",
+CONTEXT=  270|                "driver": "pytds",
+CONTEXT=  271|                "server": host,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:270|CLASS=STRING_REVIEW_REQUIRED|VALUE=driver
+CONTEXT=  268|            {
+CONTEXT=  269|                "label": "PYTDS_DIRECT_PORT",
+CONTEXT=>>270|                "driver": "pytds",
+CONTEXT=  271|                "server": host,
+CONTEXT=  272|                "port": port,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:271|CLASS=STRING_REVIEW_REQUIRED|VALUE=server
+CONTEXT=  269|                "label": "PYTDS_DIRECT_PORT",
+CONTEXT=  270|                "driver": "pytds",
+CONTEXT=>>271|                "server": host,
+CONTEXT=  272|                "port": port,
+CONTEXT=  273|            },
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:272|CLASS=STRING_REVIEW_REQUIRED|VALUE=port
+CONTEXT=  270|                "driver": "pytds",
+CONTEXT=  271|                "server": host,
+CONTEXT=>>272|                "port": port,
+CONTEXT=  273|            },
+CONTEXT=  274|        ]
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:269|CLASS=STRING_REVIEW_REQUIRED|VALUE=PYTDS_DIRECT_PORT
+CONTEXT=  267|            },
+CONTEXT=  268|            {
+CONTEXT=>>269|                "label": "PYTDS_DIRECT_PORT",
+CONTEXT=  270|                "driver": "pytds",
+CONTEXT=  271|                "server": host,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:270|CLASS=STRING_REVIEW_REQUIRED|VALUE=pytds
+CONTEXT=  268|            {
+CONTEXT=  269|                "label": "PYTDS_DIRECT_PORT",
+CONTEXT=>>270|                "driver": "pytds",
+CONTEXT=  271|                "server": host,
+CONTEXT=  272|                "port": port,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:283|CLASS=STRING_REVIEW_REQUIRED|VALUE=pymssql
+CONTEXT=  281|
+CONTEXT=  282|        try:
+CONTEXT=>>283|            if candidate["driver"] == "pymssql":
+CONTEXT=  284|                connection = pymssql.connect(
+CONTEXT=  285|                    server=candidate["server"],
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:348|CLASS=STRING_REVIEW_REQUIRED|VALUE=Conexión POS comercial exitosa: server=%s, estrategia=%s
+CONTEXT=  346|
+CONTEXT=  347|            logger.info(
+CONTEXT=>>348|                "Conexión POS comercial exitosa: "
+CONTEXT=  349|                "server=%s, estrategia=%s",
+CONTEXT=  350|                host,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:387|CLASS=STRING_REVIEW_REQUIRED|VALUE==
+CONTEXT=  385|
+CONTEXT=  386|    error_text = " | ".join(
+CONTEXT=>>387|        f"{item['strategy']}="
+CONTEXT=  388|        f"{item['type']}: {item['message']}"
+CONTEXT=  389|        for item in errors
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:387|CLASS=STRING_REVIEW_REQUIRED|VALUE=: 
+CONTEXT=  385|
+CONTEXT=  386|    error_text = " | ".join(
+CONTEXT=>>387|        f"{item['strategy']}="
+CONTEXT=  388|        f"{item['type']}: {item['message']}"
+CONTEXT=  389|        for item in errors
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:250|CLASS=STRING_REVIEW_REQUIRED|VALUE=\
+CONTEXT=  248|                "label": "PYTDS_NAMED_INSTANCE",
+CONTEXT=  249|                "driver": "pytds",
+CONTEXT=>>250|                "server": f"{host}\\{instance}",
+CONTEXT=  251|                "port": None,
+CONTEXT=  252|            },
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:283|CLASS=STRING_REVIEW_REQUIRED|VALUE=driver
+CONTEXT=  281|
+CONTEXT=  282|        try:
+CONTEXT=>>283|            if candidate["driver"] == "pymssql":
+CONTEXT=  284|                connection = pymssql.connect(
+CONTEXT=  285|                    server=candidate["server"],
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:295|CLASS=STRING_REVIEW_REQUIRED|VALUE=pytds
+CONTEXT=  293|                )
+CONTEXT=  294|
+CONTEXT=>>295|            elif candidate["driver"] == "pytds":
+CONTEXT=  296|                params = {
+CONTEXT=  297|                    "server": candidate["server"],
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:351|CLASS=STRING_REVIEW_REQUIRED|VALUE=label
+CONTEXT=  349|                "server=%s, estrategia=%s",
+CONTEXT=  350|                host,
+CONTEXT=>>351|                candidate["label"],
+CONTEXT=  352|            )
+CONTEXT=  353|
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:198|CLASS=STRING_REVIEW_REQUIRED|VALUE=host
+CONTEXT=  196|
+CONTEXT=  197|    host = str(
+CONTEXT=>>198|        server_config.get("host") or ""
+CONTEXT=  199|    ).strip()
+CONTEXT=  200|
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:206|CLASS=STRING_REVIEW_REQUIRED|VALUE=instance
+CONTEXT=  204|
+CONTEXT=  205|    instance = str(
+CONTEXT=>>206|        server_config.get("instance") or ""
+CONTEXT=  207|    ).strip()
+CONTEXT=  208|
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:210|CLASS=STRING_REVIEW_REQUIRED|VALUE=database_name
+CONTEXT=  208|
+CONTEXT=  209|    database = str(
+CONTEXT=>>210|        server_config.get("database_name")
+CONTEXT=  211|        or server_config.get("database")
+CONTEXT=  212|        or ""
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:211|CLASS=STRING_REVIEW_REQUIRED|VALUE=database
+CONTEXT=  209|    database = str(
+CONTEXT=  210|        server_config.get("database_name")
+CONTEXT=>>211|        or server_config.get("database")
+CONTEXT=  212|        or ""
+CONTEXT=  213|    ).strip()
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:216|CLASS=STRING_REVIEW_REQUIRED|VALUE=username
+CONTEXT=  214|
+CONTEXT=  215|    username = str(
+CONTEXT=>>216|        server_config.get("username")
+CONTEXT=  217|        or server_config.get("user")
+CONTEXT=  218|        or ""
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:217|CLASS=STRING_REVIEW_REQUIRED|VALUE=user
+CONTEXT=  215|    username = str(
+CONTEXT=  216|        server_config.get("username")
+CONTEXT=>>217|        or server_config.get("user")
+CONTEXT=  218|        or ""
+CONTEXT=  219|    ).strip()
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:290|CLASS=CONTEXT_REVIEW_REQUIRED|VALUE=20
+CONTEXT=  288|                    password=password,
+CONTEXT=  289|                    database=database,
+CONTEXT=>>290|                    login_timeout=20,
+CONTEXT=  291|                    timeout=60,
+CONTEXT=  292|                    as_dict=True,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:295|CLASS=STRING_REVIEW_REQUIRED|VALUE=driver
+CONTEXT=  293|                )
+CONTEXT=  294|
+CONTEXT=>>295|            elif candidate["driver"] == "pytds":
+CONTEXT=  296|                params = {
+CONTEXT=  297|                    "server": candidate["server"],
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:297|CLASS=STRING_REVIEW_REQUIRED|VALUE=server
+CONTEXT=  295|            elif candidate["driver"] == "pytds":
+CONTEXT=  296|                params = {
+CONTEXT=>>297|                    "server": candidate["server"],
+CONTEXT=  298|                    "database": database,
+CONTEXT=  299|                    "user": username,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:298|CLASS=STRING_REVIEW_REQUIRED|VALUE=database
+CONTEXT=  296|                params = {
+CONTEXT=  297|                    "server": candidate["server"],
+CONTEXT=>>298|                    "database": database,
+CONTEXT=  299|                    "user": username,
+CONTEXT=  300|                    "password": password,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:299|CLASS=STRING_REVIEW_REQUIRED|VALUE=user
+CONTEXT=  297|                    "server": candidate["server"],
+CONTEXT=  298|                    "database": database,
+CONTEXT=>>299|                    "user": username,
+CONTEXT=  300|                    "password": password,
+CONTEXT=  301|                    "timeout": 60,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:300|CLASS=STRING_REVIEW_REQUIRED|VALUE=password
+CONTEXT=  298|                    "database": database,
+CONTEXT=  299|                    "user": username,
+CONTEXT=>>300|                    "password": password,
+CONTEXT=  301|                    "timeout": 60,
+CONTEXT=  302|                    "login_timeout": 20,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:301|CLASS=STRING_REVIEW_REQUIRED|VALUE=timeout
+CONTEXT=  299|                    "user": username,
+CONTEXT=  300|                    "password": password,
+CONTEXT=>>301|                    "timeout": 60,
+CONTEXT=  302|                    "login_timeout": 20,
+CONTEXT=  303|                    "bytes_to_unicode": True,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:302|CLASS=STRING_REVIEW_REQUIRED|VALUE=login_timeout
+CONTEXT=  300|                    "password": password,
+CONTEXT=  301|                    "timeout": 60,
+CONTEXT=>>302|                    "login_timeout": 20,
+CONTEXT=  303|                    "bytes_to_unicode": True,
+CONTEXT=  304|                }
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:303|CLASS=STRING_REVIEW_REQUIRED|VALUE=bytes_to_unicode
+CONTEXT=  301|                    "timeout": 60,
+CONTEXT=  302|                    "login_timeout": 20,
+CONTEXT=>>303|                    "bytes_to_unicode": True,
+CONTEXT=  304|                }
+CONTEXT=  305|
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:302|CLASS=CONTEXT_REVIEW_REQUIRED|VALUE=20
+CONTEXT=  300|                    "password": password,
+CONTEXT=  301|                    "timeout": 60,
+CONTEXT=>>302|                    "login_timeout": 20,
+CONTEXT=  303|                    "bytes_to_unicode": True,
+CONTEXT=  304|                }
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:362|CLASS=STRING_REVIEW_REQUIRED|VALUE=<REDACTED>
+CONTEXT=  360|                message = message.replace(
+CONTEXT=  361|                    password,
+CONTEXT=>>362|                    "<REDACTED>",
+CONTEXT=  363|                )
+CONTEXT=  364|
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:367|CLASS=STRING_REVIEW_REQUIRED|VALUE=strategy
+CONTEXT=  365|            errors.append(
+CONTEXT=  366|                {
+CONTEXT=>>367|                    "strategy": candidate["label"],
+CONTEXT=  368|                    "type": type(exc).__name__,
+CONTEXT=  369|                    "message": message[:500],
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:368|CLASS=STRING_REVIEW_REQUIRED|VALUE=type
+CONTEXT=  366|                {
+CONTEXT=  367|                    "strategy": candidate["label"],
+CONTEXT=>>368|                    "type": type(exc).__name__,
+CONTEXT=  369|                    "message": message[:500],
+CONTEXT=  370|                }
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:369|CLASS=STRING_REVIEW_REQUIRED|VALUE=message
+CONTEXT=  367|                    "strategy": candidate["label"],
+CONTEXT=  368|                    "type": type(exc).__name__,
+CONTEXT=>>369|                    "message": message[:500],
+CONTEXT=  370|                }
+CONTEXT=  371|            )
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:387|CLASS=STRING_REVIEW_REQUIRED|VALUE=strategy
+CONTEXT=  385|
+CONTEXT=  386|    error_text = " | ".join(
+CONTEXT=>>387|        f"{item['strategy']}="
+CONTEXT=  388|        f"{item['type']}: {item['message']}"
+CONTEXT=  389|        for item in errors
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:388|CLASS=STRING_REVIEW_REQUIRED|VALUE=type
+CONTEXT=  386|    error_text = " | ".join(
+CONTEXT=  387|        f"{item['strategy']}="
+CONTEXT=>>388|        f"{item['type']}: {item['message']}"
+CONTEXT=  389|        for item in errors
+CONTEXT=  390|    )
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:388|CLASS=STRING_REVIEW_REQUIRED|VALUE=message
+CONTEXT=  386|    error_text = " | ".join(
+CONTEXT=  387|        f"{item['strategy']}="
+CONTEXT=>>388|        f"{item['type']}: {item['message']}"
+CONTEXT=  389|        for item in errors
+CONTEXT=  390|    )
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:285|CLASS=STRING_REVIEW_REQUIRED|VALUE=server
+CONTEXT=  283|            if candidate["driver"] == "pymssql":
+CONTEXT=  284|                connection = pymssql.connect(
+CONTEXT=>>285|                    server=candidate["server"],
+CONTEXT=  286|                    port=int(candidate["port"]),
+CONTEXT=  287|                    user=username,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:297|CLASS=STRING_REVIEW_REQUIRED|VALUE=server
+CONTEXT=  295|            elif candidate["driver"] == "pytds":
+CONTEXT=  296|                params = {
+CONTEXT=>>297|                    "server": candidate["server"],
+CONTEXT=  298|                    "database": database,
+CONTEXT=  299|                    "user": username,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:306|CLASS=STRING_REVIEW_REQUIRED|VALUE=port
+CONTEXT=  304|                }
+CONTEXT=  305|
+CONTEXT=>>306|                if candidate["port"] is not None:
+CONTEXT=  307|                    params["port"] = int(
+CONTEXT=  308|                        candidate["port"]
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:307|CLASS=STRING_REVIEW_REQUIRED|VALUE=port
+CONTEXT=  305|
+CONTEXT=  306|                if candidate["port"] is not None:
+CONTEXT=>>307|                    params["port"] = int(
+CONTEXT=  308|                        candidate["port"]
+CONTEXT=  309|                    )
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:317|CLASS=STRING_REVIEW_REQUIRED|VALUE=Driver comercial no soportado: 
+CONTEXT=  315|            else:
+CONTEXT=  316|                raise RuntimeError(
+CONTEXT=>>317|                    "Driver comercial no soportado: "
+CONTEXT=  318|                    f"{candidate['driver']}"
+CONTEXT=  319|                )
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:336|CLASS=STRING_REVIEW_REQUIRED|VALUE=_asdict
+CONTEXT=  334|                    if isinstance(row, dict):
+CONTEXT=  335|                        rows.append(dict(row))
+CONTEXT=>>336|                    elif hasattr(row, "_asdict"):
+CONTEXT=  337|                        rows.append(
+CONTEXT=  338|                            dict(row._asdict())
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:367|CLASS=STRING_REVIEW_REQUIRED|VALUE=label
+CONTEXT=  365|            errors.append(
+CONTEXT=  366|                {
+CONTEXT=>>367|                    "strategy": candidate["label"],
+CONTEXT=  368|                    "type": type(exc).__name__,
+CONTEXT=  369|                    "message": message[:500],
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:286|CLASS=STRING_REVIEW_REQUIRED|VALUE=port
+CONTEXT=  284|                connection = pymssql.connect(
+CONTEXT=  285|                    server=candidate["server"],
+CONTEXT=>>286|                    port=int(candidate["port"]),
+CONTEXT=  287|                    user=username,
+CONTEXT=  288|                    password=password,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:308|CLASS=STRING_REVIEW_REQUIRED|VALUE=port
+CONTEXT=  306|                if candidate["port"] is not None:
+CONTEXT=  307|                    params["port"] = int(
+CONTEXT=>>308|                        candidate["port"]
+CONTEXT=  309|                    )
+CONTEXT=  310|
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:execute_query_on_server:318|CLASS=STRING_REVIEW_REQUIRED|VALUE=driver
+CONTEXT=  316|                raise RuntimeError(
+CONTEXT=  317|                    "Driver comercial no soportado: "
+CONTEXT=>>318|                    f"{candidate['driver']}"
+CONTEXT=  319|                )
+CONTEXT=  320|
+FUNCTION=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config|LINES=61-172|FORMULAS=NINGUNA|DATE_OPERATIONAL=NO|CANONICAL_CONNECTION=SI|MONGO=NO
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:158|CLASS=STRING_REVIEW_REQUIRED|VALUE=id
+CONTEXT=  156|
+CONTEXT=  157|    return {
+CONTEXT=>>158|        "id": context.server_id,
+CONTEXT=  159|        "nombre": context.unidad_nombre,
+CONTEXT=  160|        "host": context.host,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:159|CLASS=STRING_REVIEW_REQUIRED|VALUE=nombre
+CONTEXT=  157|    return {
+CONTEXT=  158|        "id": context.server_id,
+CONTEXT=>>159|        "nombre": context.unidad_nombre,
+CONTEXT=  160|        "host": context.host,
+CONTEXT=  161|        "host_raw": external.get("host"),
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:160|CLASS=STRING_REVIEW_REQUIRED|VALUE=host
+CONTEXT=  158|        "id": context.server_id,
+CONTEXT=  159|        "nombre": context.unidad_nombre,
+CONTEXT=>>160|        "host": context.host,
+CONTEXT=  161|        "host_raw": external.get("host"),
+CONTEXT=  162|        "port": context.port,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:161|CLASS=STRING_REVIEW_REQUIRED|VALUE=host_raw
+CONTEXT=  159|        "nombre": context.unidad_nombre,
+CONTEXT=  160|        "host": context.host,
+CONTEXT=>>161|        "host_raw": external.get("host"),
+CONTEXT=  162|        "port": context.port,
+CONTEXT=  163|        "instance": context.instance,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:162|CLASS=STRING_REVIEW_REQUIRED|VALUE=port
+CONTEXT=  160|        "host": context.host,
+CONTEXT=  161|        "host_raw": external.get("host"),
+CONTEXT=>>162|        "port": context.port,
+CONTEXT=  163|        "instance": context.instance,
+CONTEXT=  164|        "database_name": context.database,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:163|CLASS=STRING_REVIEW_REQUIRED|VALUE=instance
+CONTEXT=  161|        "host_raw": external.get("host"),
+CONTEXT=  162|        "port": context.port,
+CONTEXT=>>163|        "instance": context.instance,
+CONTEXT=  164|        "database_name": context.database,
+CONTEXT=  165|        "username": context.username,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:164|CLASS=STRING_REVIEW_REQUIRED|VALUE=database_name
+CONTEXT=  162|        "port": context.port,
+CONTEXT=  163|        "instance": context.instance,
+CONTEXT=>>164|        "database_name": context.database,
+CONTEXT=  165|        "username": context.username,
+CONTEXT=  166|        "password": context.password,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:165|CLASS=STRING_REVIEW_REQUIRED|VALUE=username
+CONTEXT=  163|        "instance": context.instance,
+CONTEXT=  164|        "database_name": context.database,
+CONTEXT=>>165|        "username": context.username,
+CONTEXT=  166|        "password": context.password,
+CONTEXT=  167|        "system_type": context.system_type,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:166|CLASS=STRING_REVIEW_REQUIRED|VALUE=password
+CONTEXT=  164|        "database_name": context.database,
+CONTEXT=  165|        "username": context.username,
+CONTEXT=>>166|        "password": context.password,
+CONTEXT=  167|        "system_type": context.system_type,
+CONTEXT=  168|        "activo": True,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:167|CLASS=STRING_REVIEW_REQUIRED|VALUE=system_type
+CONTEXT=  165|        "username": context.username,
+CONTEXT=  166|        "password": context.password,
+CONTEXT=>>167|        "system_type": context.system_type,
+CONTEXT=  168|        "activo": True,
+CONTEXT=  169|        "unidad_negocio_pk": context.unidad_negocio_pk,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:168|CLASS=STRING_REVIEW_REQUIRED|VALUE=activo
+CONTEXT=  166|        "password": context.password,
+CONTEXT=  167|        "system_type": context.system_type,
+CONTEXT=>>168|        "activo": True,
+CONTEXT=  169|        "unidad_negocio_pk": context.unidad_negocio_pk,
+CONTEXT=  170|        "unidad_codigo": context.unidad_codigo,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:169|CLASS=STRING_REVIEW_REQUIRED|VALUE=unidad_negocio_pk
+CONTEXT=  167|        "system_type": context.system_type,
+CONTEXT=  168|        "activo": True,
+CONTEXT=>>169|        "unidad_negocio_pk": context.unidad_negocio_pk,
+CONTEXT=  170|        "unidad_codigo": context.unidad_codigo,
+CONTEXT=  171|        "sucursal_id": context.sucursal_origen_id,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:170|CLASS=STRING_REVIEW_REQUIRED|VALUE=unidad_codigo
+CONTEXT=  168|        "activo": True,
+CONTEXT=  169|        "unidad_negocio_pk": context.unidad_negocio_pk,
+CONTEXT=>>170|        "unidad_codigo": context.unidad_codigo,
+CONTEXT=  171|        "sucursal_id": context.sucursal_origen_id,
+CONTEXT=  172|    }
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:171|CLASS=STRING_REVIEW_REQUIRED|VALUE=sucursal_id
+CONTEXT=  169|        "unidad_negocio_pk": context.unidad_negocio_pk,
+CONTEXT=  170|        "unidad_codigo": context.unidad_codigo,
+CONTEXT=>>171|        "sucursal_id": context.sucursal_origen_id,
+CONTEXT=  172|    }
+CONTEXT=  173|
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:93|CLASS=STRING_REVIEW_REQUIRED|VALUE=server_id vacío al resolver conexión POS comercial
+CONTEXT=  91|    if not server_id_normalizado:
+CONTEXT=  92|        logger.error(
+CONTEXT=>>93|            "server_id vacío al resolver conexión POS comercial"
+CONTEXT=  94|        )
+CONTEXT=  95|        return None
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:135|CLASS=STRING_REVIEW_REQUIRED|VALUE=Relación POS no única: server_id=%s, unidad_negocio_pk=%s, coincidencias=%s
+CONTEXT=  133|    if len(matches) != 1:
+CONTEXT=  134|        logger.error(
+CONTEXT=>>135|            "Relación POS no única: server_id=%s, "
+CONTEXT=  136|            "unidad_negocio_pk=%s, coincidencias=%s",
+CONTEXT=  137|            server_id,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:161|CLASS=STRING_REVIEW_REQUIRED|VALUE=host
+CONTEXT=  159|        "nombre": context.unidad_nombre,
+CONTEXT=  160|        "host": context.host,
+CONTEXT=>>161|        "host_raw": external.get("host"),
+CONTEXT=  162|        "port": context.port,
+CONTEXT=  163|        "instance": context.instance,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:151|CLASS=STRING_REVIEW_REQUIRED|VALUE=No se pudo construir conexión POS para %s: %s
+CONTEXT=  149|    except Exception as exc:
+CONTEXT=  150|        logger.error(
+CONTEXT=>>151|            "No se pudo construir conexión POS para %s: %s",
+CONTEXT=  152|            context.unidad_codigo,
+CONTEXT=  153|            exc,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:100|CLASS=CANONICAL_SYSTEM_TYPE|VALUE=SOFTRESTAURANT
+CONTEXT=  98|        contexts = list_pos_runtime_contexts(
+CONTEXT=  99|            system_types=(
+CONTEXT=>>100|                "SOFTRESTAURANT",
+CONTEXT=  101|                "MPRO",
+CONTEXT=  102|            )
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:get_server_connection_config:101|CLASS=CANONICAL_SYSTEM_TYPE|VALUE=MPRO
+CONTEXT=  99|            system_types=(
+CONTEXT=  100|                "SOFTRESTAURANT",
+CONTEXT=>>101|                "MPRO",
+CONTEXT=  102|            )
+CONTEXT=  103|        )
+FUNCTION=backend/modules/comercial_v2/sync_comercial_edarsahub.py:sync_mpro_ventas_cerradas|LINES=951-1078|FORMULAS=NINGUNA|DATE_OPERATIONAL=SI|CANONICAL_CONNECTION=NO|MONGO=NO
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:sync_mpro_ventas_cerradas:976|CLASS=STRING_REVIEW_REQUIRED|VALUE=No se encontró configuración para server_id 
+CONTEXT=  974|        )
+CONTEXT=  975|        if not server_config:
+CONTEXT=>>976|            result.error_message = f"No se encontró configuración para server_id {config.server_id}"
+CONTEXT=  977|            return result
+CONTEXT=  978|        
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:sync_mpro_ventas_cerradas:989|CLASS=STRING_REVIEW_REQUIRED|VALUE=Conexión fallida: 
+CONTEXT=  987|        
+CONTEXT=  988|        if conn_status != ConnectionStatus.ONLINE:
+CONTEXT=>>989|            result.error_message = f"Conexión fallida: {conn_status}"
+CONTEXT=  990|            log = SyncLogV2(
+CONTEXT=  991|                run_id=run_id,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:sync_mpro_ventas_cerradas:1034|CLASS=STRING_REVIEW_REQUIRED|VALUE=INSERT
+CONTEXT=  1032|                upsert_result = upsert_kpi_diario(kpi)
+CONTEXT=  1033|                
+CONTEXT=>>1034|                if upsert_result['action'] == 'INSERT':
+CONTEXT=  1035|                    inserted += 1
+CONTEXT=  1036|                elif upsert_result['action'] == 'UPDATE':
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:sync_mpro_ventas_cerradas:1034|CLASS=STRING_REVIEW_REQUIRED|VALUE=action
+CONTEXT=  1032|                upsert_result = upsert_kpi_diario(kpi)
+CONTEXT=  1033|                
+CONTEXT=>>1034|                if upsert_result['action'] == 'INSERT':
+CONTEXT=  1035|                    inserted += 1
+CONTEXT=  1036|                elif upsert_result['action'] == 'UPDATE':
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:sync_mpro_ventas_cerradas:1036|CLASS=STRING_REVIEW_REQUIRED|VALUE=UPDATE
+CONTEXT=  1034|                if upsert_result['action'] == 'INSERT':
+CONTEXT=  1035|                    inserted += 1
+CONTEXT=>>1036|                elif upsert_result['action'] == 'UPDATE':
+CONTEXT=  1037|                    updated += 1
+CONTEXT=  1038|                else:
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:sync_mpro_ventas_cerradas:1036|CLASS=STRING_REVIEW_REQUIRED|VALUE=action
+CONTEXT=  1034|                if upsert_result['action'] == 'INSERT':
+CONTEXT=  1035|                    inserted += 1
+CONTEXT=>>1036|                elif upsert_result['action'] == 'UPDATE':
+CONTEXT=  1037|                    updated += 1
+CONTEXT=  1038|                else:
+FUNCTION=backend/modules/comercial_v2/sync_comercial_edarsahub.py:sync_softrestaurant_ventas_cerradas|LINES=837-948|FORMULAS=NINGUNA|DATE_OPERATIONAL=SI|CANONICAL_CONNECTION=NO|MONGO=NO
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:sync_softrestaurant_ventas_cerradas:843|CLASS=STRING_REVIEW_REQUIRED|VALUE=     Sincroniza ventas cerradas de SoftRestaurant hacia EDARSAHUB v2.     
+CONTEXT=  841|    run_id: str
+CONTEXT=  842|) -> SyncResult:
+CONTEXT=>>843|    """
+CONTEXT=  844|    Sincroniza ventas cerradas de SoftRestaurant hacia EDARSAHUB v2.
+CONTEXT=  845|    """
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:sync_softrestaurant_ventas_cerradas:860|CLASS=STRING_REVIEW_REQUIRED|VALUE=No se encontró configuración para server_id 
+CONTEXT=  858|        )
+CONTEXT=  859|        if not server_config:
+CONTEXT=>>860|            result.error_message = f"No se encontró configuración para server_id {config.server_id}"
+CONTEXT=  861|            return result
+CONTEXT=  862|        
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:sync_softrestaurant_ventas_cerradas:872|CLASS=STRING_REVIEW_REQUIRED|VALUE=Conexión fallida: 
+CONTEXT=  870|        
+CONTEXT=  871|        if conn_status != ConnectionStatus.ONLINE:
+CONTEXT=>>872|            result.error_message = f"Conexión fallida: {conn_status}"
+CONTEXT=  873|            log = SyncLogV2(
+CONTEXT=  874|                run_id=run_id,
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:sync_softrestaurant_ventas_cerradas:905|CLASS=STRING_REVIEW_REQUIRED|VALUE=INSERT
+CONTEXT=  903|                upsert_result = upsert_kpi_diario(kpi)
+CONTEXT=  904|                
+CONTEXT=>>905|                if upsert_result['action'] == 'INSERT':
+CONTEXT=  906|                    inserted += 1
+CONTEXT=  907|                elif upsert_result['action'] == 'UPDATE':
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:sync_softrestaurant_ventas_cerradas:905|CLASS=STRING_REVIEW_REQUIRED|VALUE=action
+CONTEXT=  903|                upsert_result = upsert_kpi_diario(kpi)
+CONTEXT=  904|                
+CONTEXT=>>905|                if upsert_result['action'] == 'INSERT':
+CONTEXT=  906|                    inserted += 1
+CONTEXT=  907|                elif upsert_result['action'] == 'UPDATE':
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:sync_softrestaurant_ventas_cerradas:907|CLASS=STRING_REVIEW_REQUIRED|VALUE=UPDATE
+CONTEXT=  905|                if upsert_result['action'] == 'INSERT':
+CONTEXT=  906|                    inserted += 1
+CONTEXT=>>907|                elif upsert_result['action'] == 'UPDATE':
+CONTEXT=  908|                    updated += 1
+CONTEXT=  909|                else:
+LITERAL=backend/modules/comercial_v2/sync_comercial_edarsahub.py:sync_softrestaurant_ventas_cerradas:907|CLASS=STRING_REVIEW_REQUIRED|VALUE=action
+CONTEXT=  905|                if upsert_result['action'] == 'INSERT':
+CONTEXT=  906|                    inserted += 1
+CONTEXT=>>907|                elif upsert_result['action'] == 'UPDATE':
+CONTEXT=  908|                    updated += 1
+CONTEXT=  909|                else:
+OWNED_CONTRACT_AUDIT=PASS
+
+===== 3. DECISION =====
+RESULTADO=PASS
+AUDITORIA_PROPIETARIA_COMERCIAL_V2=PASS
+FUNCIONES_AUDITADAS=16
+FALSOS_POSITIVOS_VENDOR=ELIMINADOS
+FUNCIONES_CON_MONGO=0
+LITERALES_NO_CLASIFICADOS=381
+FORMULAS_SOFT=pax_promedio,pax_total,propinas_total,ticket_promedio,tickets_total,ventas_sin_propina,ventas_total
+FORMULAS_MPRO=pax_promedio,pax_total,propinas_total,ticket_promedio,tickets_total,ventas_sin_propina,ventas_total
+FECHA_OPERATIVA_CANONICA=SI
+DECISION=QUEDAN_LITERALES_REALES_POR_CLASIFICAR
+SIGUIENTE_PASO=REVISAR_SOLO_CONTEXTOS_REPORTADOS_ANTES_DE_PROPONER_CAMBIO
+LEGACY_INTELIGENCIA_SYNC_REACTIVAR=NO
+EJECUTAR_SYNC_CANONICO_AHORA=NO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+
+===== 4. INTEGRIDAD FINAL =====
+RESULTADO=PASS
+AUDITORIA_PROPIETARIA_COMERCIAL_V2=PASS
+FUNCIONES_AUDITADAS=16
+FALSOS_POSITIVOS_VENDOR=ELIMINADOS
+FUNCIONES_CON_MONGO=0
+LITERALES_NO_CLASIFICADOS=381
+FORMULAS_SOFT=pax_promedio,pax_total,propinas_total,ticket_promedio,tickets_total,ventas_sin_propina,ventas_total
+FORMULAS_MPRO=pax_promedio,pax_total,propinas_total,ticket_promedio,tickets_total,ventas_sin_propina,ventas_total
+FECHA_OPERATIVA_CANONICA=SI
+DECISION=QUEDAN_LITERALES_REALES_POR_CLASIFICAR
+SIGUIENTE_PASO=REVISAR_SOLO_CONTEXTOS_REPORTADOS_ANTES_DE_PROPONER_CAMBIO
+LEGACY_INTELIGENCIA_SYNC_REACTIVAR=NO
+EJECUTAR_SYNC_CANONICO_AHORA=NO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+CODIGO_MODIFICADO=NO
+SQL_EJECUTADO=NO
+SQL_DDL_DML=NO
+DATOS_MODIFICADOS=NO
+JOB_EJECUTADO=NO
+JSON=/app/edarsahub_comercial_v2_owned_contract_20260805T155006Z.json
+DETAIL=/app/edarsahub_comercial_v2_owned_contract_20260805T155006Z_detail.txt
+REPORT=/app/edarsahub_comercial_v2_owned_contract_20260805T155006Z.txt
