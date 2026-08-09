@@ -16292,6 +16292,17 @@ except Exception as e:
 
 
 # =============================================================================
+# ECONOMÍA - DOMINIO ECONÓMICO CANÓNICO
+# =============================================================================
+try:
+    from modules.economia.routes import router as economia_router
+    app.include_router(economia_router)
+    logger.info("Economía router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Economía router: {e}")
+
+
+# =============================================================================
 # MÓDULOS SQL-FIRST (Migración MongoDB Legacy)
 # =============================================================================
 try:

@@ -140,7 +140,7 @@ class JobLogger:
             run_id=log_entry.run_id,
             accion="FINISH",
             detalles=detalles,
-            exito=(status == "success"),
+            exito=(status in {"success", "completed"}),
             mensaje_error=error_detail
         )
 

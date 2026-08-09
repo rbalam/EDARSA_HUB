@@ -112,6 +112,21 @@ class SchedulerConfig(BaseModel):
         vtiger_sync_interval = int(os.environ.get("SCHEDULER_VTIGER_SYNC_INTERVAL_SECONDS", "900"))  # 15 minutos
         vtiger_sync_enabled = os.environ.get("SCHEDULER_VTIGER_SYNC_ENABLED", "true").lower() == "true"
         
+        # Economía WorldClass - sincronización canónica
+        economia_sync_interval = int(
+            os.environ.get(
+                "SCHEDULER_ECONOMIA_SYNC_INTERVAL_SECONDS",
+                "86400",
+            )
+        )
+        economia_sync_enabled = (
+            os.environ.get(
+                "SCHEDULER_ECONOMIA_SYNC_ENABLED",
+                "false",
+            ).lower()
+            == "true"
+        )
+
         # NetPay Sync Diario (posterior al corte operativo)
         netpay_sync_cron = os.environ.get("SCHEDULER_NETPAY_SYNC_CRON", "30 6 * * *")  # 06:30 diario
         netpay_sync_enabled = os.environ.get("SCHEDULER_NETPAY_SYNC_ENABLED", "true").lower() == "true"
@@ -297,6 +312,16 @@ class SchedulerConfig(BaseModel):
                 interval_seconds=vtiger_sync_interval,
                 batch_size=500,
                 timeout_seconds=300  # 5 minutos max
+            ),
+            # Economía WorldClass: sincronización de indicadores
+            "economia_sync": JobConfig(
+                job_id="economia_sync",
+                job_name="Economía - Sync Indicadores",
+                description="Sincroniza series económicas activas mediante proveedores canónicos",
+                enabled=economia_sync_enabled,
+                interval_seconds=economia_sync_interval,
+                batch_size=500,
+                timeout_seconds=1800
             ),
             # Inteligencia Comercial: Sincronización de ventas desde POS
             # NetPay: Sincronización diaria de reportes conciliables

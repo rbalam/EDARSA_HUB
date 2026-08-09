@@ -886,6 +886,93 @@ class SchedulerManager:
         finally:
             await lock.release()
     
+    async def _run_economia_sync_job(self):
+        """Sincroniza las series económicas activas."""
+        job_config = self.config.jobs.get("economia_sync")
+        if not job_config or not job_config.enabled:
+            logger.debug("[ECONOMIA_SYNC] Deshabilitado por configuración")
+            return
+
+        from modules.economia.service import EconomiaService
+
+        lock_manager = get_lock_manager(self.db)
+        lock = lock_manager.get_lock("economia_sync")
+        lock_acquired = await lock.acquire(
+            timeout_seconds=job_config.timeout_seconds
+        )
+
+        if not lock_acquired:
+            logger.warning(
+                "[ECONOMIA_SYNC] No se pudo obtener lock"
+            )
+            return
+
+        job_logger = get_job_logger()
+        log_entry = await job_logger.start_execution(
+            "economia_sync"
+        )
+
+        procesadas = 0
+        exitosas = 0
+        errores = []
+
+        try:
+            series = EconomiaService.listar_series(
+                activo=True,
+                limite=job_config.batch_size,
+            )
+
+            for serie in series:
+                procesadas += 1
+                serie_id = serie["id"]
+
+                try:
+                    await EconomiaService.sincronizar_serie(
+                        serie_id
+                    )
+                    exitosas += 1
+                except Exception as exc:
+                    errores.append({
+                        "serie_id": serie_id,
+                        "error": str(exc),
+                    })
+                    logger.error(
+                        "[ECONOMIA_SYNC] Error serie %s: %s",
+                        serie_id,
+                        exc,
+                    )
+
+            status = (
+                "completed"
+                if not errores
+                else "partial"
+            )
+
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status=status,
+                processed_count=procesadas,
+                success_count=exitosas,
+                message=(
+                    f"Series procesadas: {procesadas}, "
+                    f"exitosas: {exitosas}, "
+                    f"errores: {len(errores)}"
+                ),
+                extra_metadata={
+                    "errores_count": len(errores)
+                },
+            )
+
+        except Exception as exc:
+            logger.error("[ECONOMIA_SYNC] Error: %s", exc)
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status="failed",
+                error_detail=str(exc),
+            )
+        finally:
+            await lock.release()
+
     async def _run_inteligencia_comercial_sync_job(self):
         """
         Wrapper async para sincronización de Inteligencia Comercial.
@@ -1402,6 +1489,34 @@ class SchedulerManager:
 
         
         # ========================================
+        # Economía WorldClass
+        # ========================================
+        economia_config = self.config.jobs.get("economia_sync")
+        if economia_config and economia_config.enabled:
+            if economia_config.cron_expression:
+                trigger = CronTrigger.from_crontab(
+                    economia_config.cron_expression
+                )
+            else:
+                trigger = IntervalTrigger(
+                    seconds=economia_config.interval_seconds
+                )
+
+            self._scheduler.add_job(
+                self._run_economia_sync_job,
+                trigger=trigger,
+                id="economia_sync",
+                name="Economía - Sync Indicadores",
+                replace_existing=True,
+                max_instances=economia_config.max_instances,
+                coalesce=economia_config.coalesce,
+            )
+            self._jobs["economia_sync"] = economia_config
+            logger.info(
+                "Job ECONOMIA_SYNC registrado"
+            )
+
+        # ========================================
         # NetPay: Sincronización diaria conciliable
         # ========================================
         netpay_sync_config = self.config.jobs.get("netpay_sync_diario")
@@ -1572,6 +1687,9 @@ class SchedulerManager:
             return {"status": "executed", "job_id": job_id}
         elif job_id == "inteligencia_comercial_sync":
             await self._run_inteligencia_comercial_sync_job()
+            return {"status": "executed", "job_id": job_id}
+        elif job_id == "economia_sync":
+            await self._run_economia_sync_job()
             return {"status": "executed", "job_id": job_id}
         elif job_id == "netpay_sync_diario":
             await self._run_netpay_sync_diario_job()
