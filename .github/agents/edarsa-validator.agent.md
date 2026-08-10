@@ -127,3 +127,22 @@ Documento normativo:
 `docs/operacion/MODO_TRABAJO_CAMBIOS_ATOMICOS.md`
 
 <!-- EDARSAHUB_ATOMIC_WORKFLOW_END -->
+
+## Validación obligatoria de artefactos del repositorio
+
+Antes de emitir `APROBADO`, ejecutar:
+
+`scripts/agent_guardrails/validate_repository_artifacts.py --staged`
+
+El Validator debe emitir `BLOQUEADO` si:
+
+- el guard devuelve código distinto de cero;
+- hay un artefacto generado prohibido en raíz;
+- un archivo supera 5 MiB sin una excepción explícita previamente auditada;
+- el cambio agrega más de 25 MiB;
+- el cambio agrega más de 50 archivos;
+- se detectan dumps, backups, traces, logs o outputs reproducibles incorporados
+  al repositorio sin justificación;
+- una automatización usa staging masivo en lugar de archivos explícitos.
+
+No se permite aprobar confiando únicamente en `.gitignore`.

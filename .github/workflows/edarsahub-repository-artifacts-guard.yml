@@ -1,0 +1,62 @@
+name: EDARSAHUB Repository Artifact Guard
+
+on:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+  pull_request:
+    branches:
+      - Edarsahub_Desarrollo
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repository-artifact-guard:
+    name: Repository artifact policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Resolve validation range
+        id: range
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin "${{ github.base_ref }}"
+            BASE="$(git merge-base HEAD "origin/${{ github.base_ref }}")"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            BEFORE="${{ github.event.before }}"
+            ZERO="0000000000000000000000000000000000000000"
+
+            if [ "$BEFORE" = "$ZERO" ]; then
+              BASE="$(git rev-parse HEAD^)"
+            else
+              BASE="$BEFORE"
+            fi
+          else
+            BASE="$(git rev-parse HEAD^)"
+          fi
+
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
+          echo "head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Enforce repository artifact policy
+        run: |
+          set -euo pipefail
+
+          python scripts/agent_guardrails/validate_repository_artifacts.py \
+            --range \
+            "${{ steps.range.outputs.base }}" \
+            "${{ steps.range.outputs.head }}"

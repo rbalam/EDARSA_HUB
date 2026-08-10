@@ -119,3 +119,19 @@ Reglas del HANDOFF:
 - No usar `STATUS: Ready for Validator` como sustituto.
 - No poner texto después del bloque `HANDOFF`.
 - Si falta `HANDOFF` exacto, el siguiente Validator debe marcar `BLOQUEADO`.
+
+## Candado obligatorio antes de commit
+
+El Committer debe:
+
+1. Stagear únicamente los archivos explícitamente aprobados por Validator.
+2. No usar `git add .`, `git add -A` ni `git add --all`.
+3. Después del stage y antes del commit ejecutar:
+
+   `scripts/agent_guardrails/validate_repository_artifacts.py --staged`
+
+4. Abortará el commit si el guard no devuelve `PASS`.
+5. No puede usar `--no-verify` para evadir esta política.
+6. No puede crear una excepción al límite de artefactos por decisión propia.
+7. Una excepción requiere autorización explícita, evidencia y revisión del
+   Validator.

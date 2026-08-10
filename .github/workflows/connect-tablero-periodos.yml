@@ -58,6 +58,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add frontend/src/pages/TableroEjecutivo.js
+          python scripts/agent_guardrails/validate_repository_artifacts.py --staged
           if git diff --cached --quiet; then
             echo "NO_CHANGES=1"
             exit 0

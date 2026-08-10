@@ -67,3 +67,52 @@ grep -RInE "EDARSA Committer|edarsa-committer|HANDOFF|Flujo autonomo" \
   AGENTS.md \
   .github/copilot-instructions.md >/dev/null
 echo "OK: committer y workflow autonomo configurados"
+
+echo
+echo "===== REPOSITORY ARTIFACT GUARD ====="
+test -f scripts/agent_guardrails/validate_repository_artifacts.py
+test -x scripts/agent_guardrails/validate_repository_artifacts.py
+test -f .github/workflows/edarsahub-repository-artifacts-guard.yml
+
+python scripts/agent_guardrails/validate_repository_artifacts.py --staged
+
+echo "OK: repository artifact guard instalado"
+
+echo
+echo "===== REPOSITORY ARTIFACT POLICY IN AGENTS ====="
+
+grep -q \
+  "EDARSAHUB_REPOSITORY_ARTIFACT_GUARD_START" \
+  AGENTS.md
+
+grep -q \
+  "validate_repository_artifacts.py --staged" \
+  .github/agents/edarsa-validator.agent.md
+
+grep -q \
+  "validate_repository_artifacts.py --staged" \
+  .github/agents/edarsa-committer.agent.md
+
+grep -q \
+  "validate_repository_artifacts.py --staged" \
+  .agents/skills/edarsa-validator/SKILL.md
+
+grep -q \
+  "validate_repository_artifacts.py --staged" \
+  .agents/skills/edarsa-committer/SKILL.md
+
+grep -q \
+  "validate_repository_artifacts.py --staged" \
+  .github/workflows/connect-tablero-periodos.yml
+
+if grep -RInE \
+  'git add[[:space:]]+\.$|git add[[:space:]]+-A([[:space:]]|$)|git add[[:space:]]+--all([[:space:]]|$)' \
+  .github .agents scripts \
+  --exclude-dir=node_modules \
+  2>/dev/null
+then
+  echo "BLOQUEADO: staging masivo detectado"
+  exit 1
+fi
+
+echo "OK: politicas de artefactos integradas en agentes y automatizaciones"

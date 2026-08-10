@@ -251,3 +251,43 @@ Documento normativo:
 `docs/operacion/MODO_TRABAJO_CAMBIOS_ATOMICOS.md`
 
 <!-- EDARSAHUB_ATOMIC_WORKFLOW_END -->
+
+<!-- EDARSAHUB_REPOSITORY_ARTIFACT_GUARD_START -->
+
+## Candado canónico de artefactos del repositorio
+
+Todo humano, agente autónomo, Copilot, Codex, Emergent, workflow o proceso
+automatizado que prepare cambios para EDARSAHUB debe respetar
+`scripts/agent_guardrails/validate_repository_artifacts.py`.
+
+Reglas fail-closed:
+
+1. Prohibido `git add .`, `git add -A` y `git add --all` en automatizaciones.
+   El stage debe declarar archivos explícitos.
+2. Auditorías, dumps, traces, patches, logs y salidas reproducibles deben
+   generarse en `/tmp` por defecto.
+3. Nuevos `.txt`, `.json`, `.patch`, `.sql`, `.log` y `.csv` en la raíz del
+   repositorio están bloqueados.
+4. Patrones de outputs generados como `edarsahub_*`, `v1_*`, `auditoria_*`,
+   `AUDITORIA_*`, `economia_*` y `joblogger_*` no pueden incorporarse en raíz.
+5. Archivo staged mayor a 5 MiB: bloqueado.
+6. Archivo staged mayor a 20 MiB: bloqueo fuerte.
+7. Más de 25 MiB agregados por cambio: bloqueado.
+8. Más de 50 archivos nuevos por cambio: bloqueado.
+9. Respaldos, dumps, outputs de herramientas y artefactos reproducibles no
+   deben versionarse salvo excepción explícita, documentada y auditada.
+10. Validator debe ejecutar el guard antes de aprobar.
+11. Committer debe ejecutar el guard sobre el index antes de commit.
+12. Automatizaciones que creen commits deben ejecutar el mismo guard después
+    del stage y antes del commit.
+13. Pre-commit y pre-push locales son capas adicionales; CI debe volver a
+    validar porque los hooks locales pueden omitirse con `--no-verify`.
+14. Una excepción nunca puede ser silenciosa ni introducir secretos,
+    credenciales, `.env`, dumps de datos sensibles o archivos operativos
+    protegidos.
+15. NetPay y su `.vendor` existente no se modifican ni eliminan como parte de
+    esta política sin una migración aislada previamente validada.
+
+El candado debe fallar cerrado ante una condición no reconocida.
+
+<!-- EDARSAHUB_REPOSITORY_ARTIFACT_GUARD_END -->
