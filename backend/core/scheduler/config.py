@@ -134,6 +134,14 @@ class SchedulerConfig(BaseModel):
         # SYNC Compras integral (inventarios, requisiciones, almacenes, existencias, movimientos, pedidos, ordenes, recepciones)
         sync_compras_interval = int(os.environ.get("SCHEDULER_SYNC_COMPRAS_INTERVAL_SECONDS", "1800"))  # 30 minutos
         sync_compras_enabled = os.environ.get("SCHEDULER_SYNC_COMPRAS_ENABLED", "true").lower() == "true"
+
+        # Notificador de Excepciones Críticas (WhatsApp + Email) — parametrizable, sin hardcode
+        alertas_exc_interval = int(os.environ.get("SCHEDULER_ALERTAS_EXCEPCIONES_INTERVAL_SECONDS", "3600"))  # 1 hora
+        alertas_exc_enabled = os.environ.get("SCHEDULER_ALERTAS_EXCEPCIONES_ENABLED", "true").lower() == "true"
+
+        # Resumen Diario Ejecutivo de Excepciones (correo matutino)
+        resumen_diario_exc_cron = os.environ.get("SCHEDULER_RESUMEN_DIARIO_EXC_CRON", "0 8 * * *")  # 08:00 diario
+        resumen_diario_exc_enabled = os.environ.get("SCHEDULER_RESUMEN_DIARIO_EXC_ENABLED", "true").lower() == "true"
         
         jobs = {
             "sla_processor": JobConfig(
@@ -344,6 +352,27 @@ class SchedulerConfig(BaseModel):
                 interval_seconds=3600,  # Fallback: 1 hora
                 batch_size=500,
                 timeout_seconds=600  # 10 minutos max
+            ),
+            # Notificador de Excepciones Críticas (WhatsApp Twilio + Email SMTP)
+            "alertas_excepciones_notifier": JobConfig(
+                job_id="alertas_excepciones_notifier",
+                job_name="Notificador Excepciones Críticas",
+                description="Revisa excepciones estratégicas (rentabilidad, compras sin detalle) y notifica las nuevas por WhatsApp y Email. Destinatarios/severidades/intervalo desde .env.",
+                enabled=alertas_exc_enabled,
+                interval_seconds=alertas_exc_interval,
+                batch_size=500,
+                timeout_seconds=300
+            ),
+            # Resumen Diario Ejecutivo de Excepciones (correo matutino)
+            "resumen_diario_excepciones": JobConfig(
+                job_id="resumen_diario_excepciones",
+                job_name="Resumen Diario de Excepciones",
+                description="Envía cada mañana un correo a dirección con el conteo de excepciones por unidad y severidad (cron parametrizable).",
+                enabled=resumen_diario_exc_enabled,
+                cron_expression=resumen_diario_exc_cron,
+                interval_seconds=86400,
+                batch_size=1000,
+                timeout_seconds=300
             )
         }
         

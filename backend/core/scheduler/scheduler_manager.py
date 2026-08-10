@@ -53,6 +53,10 @@ from .jobs.sync_compras_job import (
     get_job_config as get_sync_compras_job_config,
     run_sync_compras_job,
 )
+# Notificador de Excepciones Críticas (WhatsApp Twilio + Email SMTP)
+from .jobs.alertas_excepciones_job import execute_alertas_excepciones_notifier
+# Resumen Diario Ejecutivo de Excepciones (correo matutino)
+from .jobs.resumen_diario_excepciones_job import execute_resumen_diario_excepciones
 
 logger = logging.getLogger(__name__)
 
@@ -1059,6 +1063,72 @@ class SchedulerManager:
         finally:
             await lock.release()
 
+    async def _run_alertas_excepciones_notifier_job(self):
+        """Wrapper async: notifica excepciones críticas nuevas por WhatsApp + Email."""
+        job_config = self.config.jobs.get("alertas_excepciones_notifier")
+        if not job_config or not job_config.enabled:
+            logger.debug("[ALERTAS_EXC] Deshabilitado por configuración")
+            return
+
+        lock_manager = get_lock_manager(self.db)
+        lock = lock_manager.get_lock("alertas_excepciones_notifier")
+        if not await lock.acquire(timeout_seconds=job_config.timeout_seconds):
+            logger.warning("[ALERTAS_EXC] Lock ocupado - ejecución en progreso")
+            return
+
+        job_logger = get_job_logger()
+        log_entry = await job_logger.start_execution("alertas_excepciones_notifier")
+        try:
+            result = await execute_alertas_excepciones_notifier()
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status="success" if not result.get("errores") else "partial",
+                processed_count=result.get("total_evaluadas", 0),
+                success_count=result.get("notificadas", 0),
+                message=f"Nuevas: {result.get('nuevas', 0)}, Notificadas: {result.get('notificadas', 0)}, "
+                        f"Email: {result.get('email_enviado')}, WhatsApp: {result.get('whatsapp_enviado')}",
+                extra_metadata={"result_summary": result},
+            )
+            logger.info(f"[ALERTAS_EXC] Completado: {result.get('notificadas', 0)} notificadas")
+        except Exception as e:
+            logger.error(f"[ALERTAS_EXC] Error: {e}")
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+        finally:
+            await lock.release()
+
+    async def _run_resumen_diario_excepciones_job(self):
+        """Wrapper async: envía el resumen diario ejecutivo de excepciones por correo."""
+        job_config = self.config.jobs.get("resumen_diario_excepciones")
+        if not job_config or not job_config.enabled:
+            logger.debug("[RESUMEN_DIARIO_EXC] Deshabilitado por configuración")
+            return
+
+        lock_manager = get_lock_manager(self.db)
+        lock = lock_manager.get_lock("resumen_diario_excepciones")
+        if not await lock.acquire(timeout_seconds=job_config.timeout_seconds):
+            logger.warning("[RESUMEN_DIARIO_EXC] Lock ocupado - ejecución en progreso")
+            return
+
+        job_logger = get_job_logger()
+        log_entry = await job_logger.start_execution("resumen_diario_excepciones")
+        try:
+            result = await execute_resumen_diario_excepciones()
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status="success" if not result.get("errores") else "partial",
+                processed_count=result.get("total", 0),
+                success_count=result.get("unidades", 0),
+                message=f"Total: {result.get('total', 0)}, Unidades: {result.get('unidades', 0)}, "
+                        f"Email: {result.get('email_enviado')}",
+                extra_metadata={"result_summary": result},
+            )
+            logger.info(f"[RESUMEN_DIARIO_EXC] Completado: {result.get('total', 0)} excepciones")
+        except Exception as e:
+            logger.error(f"[RESUMEN_DIARIO_EXC] Error: {e}")
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+        finally:
+            await lock.release()
+
     def register_jobs(self):
         """Registra todos los jobs configurados."""
         if self._scheduler is None:
@@ -1537,6 +1607,50 @@ class SchedulerManager:
             )
             self._jobs["netpay_sync_diario"] = netpay_sync_config
             logger.info(f"Job NETPAY_SYNC registrado: cron={netpay_sync_config.cron_expression or 'interval'}")
+
+        # ========================================
+        # Notificador de Excepciones Críticas (WhatsApp + Email)
+        # ========================================
+        alertas_exc_config = self.config.jobs.get("alertas_excepciones_notifier")
+        if alertas_exc_config and alertas_exc_config.enabled:
+            if alertas_exc_config.cron_expression:
+                trigger = CronTrigger.from_crontab(alertas_exc_config.cron_expression)
+            else:
+                trigger = IntervalTrigger(seconds=alertas_exc_config.interval_seconds)
+
+            self._scheduler.add_job(
+                self._run_alertas_excepciones_notifier_job,
+                trigger=trigger,
+                id="alertas_excepciones_notifier",
+                name="Notificador Excepciones Críticas",
+                replace_existing=True,
+                max_instances=1,
+                coalesce=True
+            )
+            self._jobs["alertas_excepciones_notifier"] = alertas_exc_config
+            logger.info(f"Job ALERTAS_EXC registrado: intervalo={alertas_exc_config.interval_seconds}s")
+
+        # ========================================
+        # Resumen Diario Ejecutivo de Excepciones (correo matutino)
+        # ========================================
+        resumen_diario_config = self.config.jobs.get("resumen_diario_excepciones")
+        if resumen_diario_config and resumen_diario_config.enabled:
+            if resumen_diario_config.cron_expression:
+                trigger = CronTrigger.from_crontab(resumen_diario_config.cron_expression)
+            else:
+                trigger = IntervalTrigger(seconds=resumen_diario_config.interval_seconds)
+
+            self._scheduler.add_job(
+                self._run_resumen_diario_excepciones_job,
+                trigger=trigger,
+                id="resumen_diario_excepciones",
+                name="Resumen Diario de Excepciones",
+                replace_existing=True,
+                max_instances=1,
+                coalesce=True
+            )
+            self._jobs["resumen_diario_excepciones"] = resumen_diario_config
+            logger.info(f"Job RESUMEN_DIARIO_EXC registrado: cron={resumen_diario_config.cron_expression}")
     
     async def start(self):
         """Inicia el scheduler."""

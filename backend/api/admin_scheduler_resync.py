@@ -505,6 +505,33 @@ async def validar_resync(
     }
 
 
+
+def _registrar_resync_log(request, current_user, estado: str, mensaje: str, unidad: dict = None, registros: int = None):
+    """Registra el resultado de un re-sync en Sistema_Sync_ResyncLog (para bandeja de tareas + reintento)."""
+    try:
+        import json as _json
+        from core.sql_first.db import get_edarsahub_connection as _get_conn
+        server_id = (unidad or {}).get('server_id') if unidad else None
+        payload = _json.dumps({
+            "tipo_sync": request.tipo_sync,
+            "unidad_negocio_id": request.unidad_negocio_id,
+            "fecha_inicio": str(getattr(request, 'fecha_inicio', '')),
+            "fecha_fin": str(getattr(request, 'fecha_fin', '')),
+            "motivo": getattr(request, 'motivo', None),
+        })
+        conn = _get_conn(); cur = conn.cursor()
+        cur.execute(
+            """INSERT INTO dbo.Sistema_Sync_ResyncLog
+               (TipoSync, ServerID, UnidadCodigo, Estado, Mensaje, Payload, RegistrosAfectados, SolicitadoPor)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+            (request.tipo_sync, str(server_id) if server_id else None, request.unidad_negocio_id,
+             estado, (mensaje or "")[:1990], payload, registros, current_user.get('email', 'unknown')),
+        )
+        conn.commit(); conn.close()
+    except Exception as _e:
+        logger.warning(f"[RESYNC-LOG] No se pudo registrar: {_e}")
+
+
 @router.post("/resync/execute", response_model=ResyncResponse)
 async def ejecutar_resync(
     request: ResyncExecuteRequest,
@@ -699,6 +726,7 @@ async def ejecutar_resync(
             error_mensaje=error_msg
         )
         
+        _registrar_resync_log(request, current_user, "FAILED", error_msg, unidad)
         return ResyncResponse(
             success=False,
             ejecucion_id=ejecucion_id,
@@ -788,6 +816,14 @@ async def ejecutar_resync(
         error_mensaje=resultado.get('error_message')
     )
     
+    _registrar_resync_log(
+        request, current_user,
+        "SUCCESS" if resultado.get('success') else "FAILED",
+        resultado.get('error_message') or resultado.get('message') or ("OK" if resultado.get('success') else "Fallo en re-sync"),
+        unidad,
+        resultado.get('records_synced') or resultado.get('records_processed'),
+    )
+
     logger.info(f"[RESYNC] Completado: {resultado}")
     
     return ResyncResponse(
@@ -986,6 +1022,140 @@ async def listar_catalogo_sync(
         'grupos': get_catalogo_agrupado(incluir_inactivos),
         'tipos': get_catalogo(incluir_inactivos),
     }
+
+
+@router.post("/resync/retry/{log_id}")
+def listar_resync_fallidos_pendientes(
+    limite: int = 100,
+) -> List[Dict[str, Any]]:
+    """Lista re-sync fallidos pendientes de resolución."""
+    safe_limit = max(1, min(int(limite), 500))
+
+    rows = _execute_edarsahub_query(
+        """
+        SELECT TOP (%s)
+            ResyncLogID,
+            TipoSync,
+            ServerID,
+            UnidadCodigo,
+            Estado,
+            Mensaje,
+            Payload,
+            FechaEjecucion
+        FROM dbo.Sistema_Sync_ResyncLog
+        WHERE
+            Estado = 'FAILED'
+            AND ISNULL(Resuelto, 0) = 0
+        ORDER BY FechaEjecucion DESC
+        """,
+        (safe_limit,),
+        fetch=True,
+    )
+
+    return rows or []
+
+
+async def reintentar_resync_fallido(
+    log_id: int,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN"))
+):
+    """Reintenta un re-sync previamente FALLIDO (desde la bandeja Mis Tareas)."""
+    import json as _json
+    from datetime import date as _date, timedelta as _td
+    from core.sql_first.db import get_edarsahub_connection as _get_conn
+
+    conn = _get_conn(); cur = conn.cursor(as_dict=True)
+    cur.execute("SELECT * FROM dbo.Sistema_Sync_ResyncLog WHERE ResyncLogID = %s", (log_id,))
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Registro de re-sync no encontrado")
+
+    payload = _json.loads(row.get("Payload") or "{}")
+
+    def _parse_fecha(v, default):
+        try:
+            return _date.fromisoformat(str(v)[:10])
+        except Exception:
+            return default
+
+    hoy = _date.today()
+    fi = _parse_fecha(payload.get("fecha_inicio"), hoy - _td(days=60))
+    ff = _parse_fecha(payload.get("fecha_fin"), hoy)
+    motivo_orig = payload.get("motivo") or ""
+    motivo = f"Reintento desde Mis Tareas (log {log_id}). {motivo_orig}".strip()
+    if len(motivo) < 10:
+        motivo = f"Reintento manual de re-sync fallido (log {log_id})."
+
+    req = ResyncExecuteRequest(
+        tipo_sync=payload.get("tipo_sync") or row.get("TipoSync"),
+        unidad_negocio_id=payload.get("unidad_negocio_id") or row.get("UnidadCodigo"),
+        fecha_inicio=fi,
+        fecha_fin=ff,
+        motivo=motivo,
+        dry_run=False,
+    )
+
+    resp = await ejecutar_resync(req, background_tasks, current_user)
+
+    # Marcar el log original como resuelto si el reintento fue exitoso
+    if getattr(resp, "success", False):
+        try:
+            conn2 = _get_conn(); cur2 = conn2.cursor()
+            cur2.execute(
+                """UPDATE dbo.Sistema_Sync_ResyncLog
+                   SET Resuelto = 1, ResueltoPor = %s, FechaResuelto = SYSUTCDATETIME()
+                   WHERE ResyncLogID = %s""",
+                (current_user.get("email", "unknown"), log_id),
+            )
+            conn2.commit(); conn2.close()
+        except Exception as _e:
+            logger.warning(f"[RESYNC-RETRY] No se pudo marcar resuelto: {_e}")
+
+    return resp
+
+
+
+class RetryAllRequest(BaseModel):
+    unidad_negocio_id: Optional[str] = None
+
+
+@router.post("/resync/retry-all")
+async def reintentar_todos_resync_fallidos(
+    body: RetryAllRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN"))
+):
+    """Reintenta TODOS los re-syncs FALLIDOS no resueltos (opcionalmente de una unidad)."""
+    from core.sql_first.db import get_edarsahub_connection as _get_conn
+
+    conn = _get_conn(); cur = conn.cursor(as_dict=True)
+    if body.unidad_negocio_id:
+        cur.execute(
+            "SELECT ResyncLogID FROM dbo.Sistema_Sync_ResyncLog WHERE Estado='FAILED' AND ISNULL(Resuelto,0)=0 AND UnidadCodigo=%s ORDER BY FechaEjecucion DESC",
+            (body.unidad_negocio_id,),
+        )
+    else:
+        cur.execute(
+            "SELECT ResyncLogID FROM dbo.Sistema_Sync_ResyncLog WHERE Estado='FAILED' AND ISNULL(Resuelto,0)=0 ORDER BY FechaEjecucion DESC"
+        )
+    ids = [r["ResyncLogID"] for r in (cur.fetchall() or [])]
+    conn.close()
+
+    resultados = {"total": len(ids), "exitosos": 0, "fallidos": 0, "detalle": []}
+    for lid in ids:
+        try:
+            resp = await reintentar_resync_fallido(lid, background_tasks, current_user)
+            ok = bool(getattr(resp, "success", False))
+            resultados["exitosos" if ok else "fallidos"] += 1
+            resultados["detalle"].append({"log_id": lid, "success": ok})
+        except Exception as e:
+            resultados["fallidos"] += 1
+            resultados["detalle"].append({"log_id": lid, "success": False, "error": str(e)[:200]})
+
+    return {"success": resultados["fallidos"] == 0, **resultados}
+
 
 
 @router.post("/resync/catalogo")
