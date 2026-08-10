@@ -4698,31 +4698,31 @@ async def generate_inventory_analysis(report_params: Dict, current_user: Dict = 
             h_exec_started = perf_counter()
             cursor.execute(
                 f"""
-	SELECT
-	    folio,
-	    fecha,
-	    almacen,
-	    almacen_id,
-	    sucursal,
-	    sucursal_id,
-	    sync_status
-	FROM (
-	    SELECT
-	        folio,
-	        fecha,
-	        almacen,
-	        almacen_id,
-	        sucursal,
-	        sucursal_id,
-	        sync_status,
-	        ROW_NUMBER() OVER (
-	            PARTITION BY server_id, sucursal_id, almacen_id, folio
-	            ORDER BY CASE WHEN sync_status = 'ACTIVE' THEN 0 ELSE 1 END, sync_timestamp DESC
-	        ) AS _rn
-	    FROM Compras_Inventarios_Fisicos_Sync
-	    WHERE {' AND '.join(header_filters)}
-	) t
-	WHERE t._rn = 1
+        SELECT
+            folio,
+            fecha,
+            almacen,
+            almacen_id,
+            sucursal,
+            sucursal_id,
+            sync_status
+        FROM (
+            SELECT
+                folio,
+                fecha,
+                almacen,
+                almacen_id,
+                sucursal,
+                sucursal_id,
+                sync_status,
+                ROW_NUMBER() OVER (
+                    PARTITION BY server_id, sucursal_id, almacen_id, folio
+                    ORDER BY CASE WHEN sync_status = 'ACTIVE' THEN 0 ELSE 1 END, sync_timestamp DESC
+                ) AS _rn
+            FROM Compras_Inventarios_Fisicos_Sync
+            WHERE {' AND '.join(header_filters)}
+        ) t
+        WHERE t._rn = 1
 ORDER BY fecha, folio
 """,
                 tuple(header_params),
@@ -5620,16 +5620,34 @@ GROUP BY Codigo
                     len([p for p in productos.values() if _as_float(p.get('Rendimiento')) > 1]),
                 )
 
+            def _matches_filter_set(code_val, name_val, filter_set):
+                if not filter_set:
+                    return True
+                code_text = _as_text(code_val)
+                name_text = _as_text(name_val).upper()
+                if code_text in filter_set or name_text in filter_set:
+                    return True
+                if code_text.isdigit():
+                    num = int(code_text)
+                    if (
+                        str(num) in filter_set
+                        or f"{num:02d}" in filter_set
+                        or f"{num:03d}" in filter_set
+                        or f"{num:04d}" in filter_set
+                    ):
+                        return True
+                return False
+
             if selected_categoria_codes or selected_familia_codes or selected_subfamilia_codes:
                 before_filter_count = len(all_codes)
 
                 def _passes_soft_catalog_filters(codigo):
                     prod = productos.get(codigo, {})
-                    if selected_categoria_codes and _as_text(prod.get('CategoriaCodigo')) not in selected_categoria_codes:
+                    if selected_categoria_codes and not _matches_filter_set(prod.get('CategoriaCodigo'), prod.get('Categoria'), selected_categoria_codes):
                         return False
-                    if selected_familia_codes and _as_text(prod.get('FamiliaCodigo')) not in selected_familia_codes:
+                    if selected_familia_codes and not _matches_filter_set(prod.get('FamiliaCodigo'), prod.get('Familia'), selected_familia_codes):
                         return False
-                    if selected_subfamilia_codes and _as_text(prod.get('SubFamiliaCodigo')) not in selected_subfamilia_codes:
+                    if selected_subfamilia_codes and not _matches_filter_set(prod.get('SubFamiliaCodigo'), prod.get('SubFamilia'), selected_subfamilia_codes):
                         return False
                     return True
 
@@ -7689,10 +7707,34 @@ def _compras_clean_almacenes(almacenes: Any) -> List[str]:
 def _compras_apply_almacen_filter(filters: List[str], params: List[Any], almacenes: List[str]) -> None:
     if not almacenes:
         return
-    placeholders = ",".join(["%s"] * len(almacenes))
-    filters.append(f"(almacen_id IN ({placeholders}) OR almacen IN ({placeholders}))")
-    params.extend(almacenes)
-    params.extend(almacenes)
+
+    candidates = set()
+
+    for almacen in almacenes:
+        text = _compras_as_text(almacen)
+
+        if not text:
+            continue
+
+        candidates.add(text)
+
+        if text.isdigit():
+            number = int(text)
+            candidates.add(f"{number:02d}")
+            candidates.add(f"{number:03d}")
+            candidates.add(f"{number:04d}")
+
+    items = sorted(candidates)
+
+    if not items:
+        return
+
+    placeholders = ",".join(["%s"] * len(items))
+    filters.append(
+        f"(almacen_id IN ({placeholders}) OR almacen IN ({placeholders}))"
+    )
+    params.extend(items)
+    params.extend(items)
 
 
 def _compras_almacenes_scope(context: Dict[str, Any], server_id: str, requested: Any) -> List[str]:
