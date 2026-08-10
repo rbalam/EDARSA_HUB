@@ -1,5 +1,0 @@
-===== CONTROL =====
-RAMA=Edarsahub_Desarrollo
-HEAD=b81a1d52e2c9d2b54422bd618f49eea729012305
-
-===== REFERENCIAS ACTIVAS =====

@@ -594,3 +594,28 @@ graphify-out/
 # Graphify generated outputs
 **/.graphify_analysis.json
 **/.graphify_labels.json
+
+# EDARSAHUB GENERATED ROOT ARTIFACTS - START
+# Outputs de auditoria/diagnostico deben generarse en /tmp.
+# Estas reglas solo aplican a la raiz del repositorio.
+/edarsahub_*.txt
+/edarsahub_*.json
+/edarsahub_*.patch
+/edarsahub_*.sql
+/edarsahub_*.log
+/edarsahub_*.csv
+/v1_*.txt
+/v1_*.json
+/v1_*.patch
+/v1_*.sql
+/economia_*.txt
+/economia_*.json
+/economia_*.patch
+/economia_*.sql
+/joblogger_*.txt
+/auditoria_*.txt
+/auditoria_*.json
+/AUDITORIA_*.txt
+/AUDITORIA_*.json
+/repository_guard_*.txt
+# EDARSAHUB GENERATED ROOT ARTIFACTS - END
