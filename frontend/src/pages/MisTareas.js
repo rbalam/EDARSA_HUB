@@ -13,7 +13,7 @@ import {
   RefreshCw, Eye, Check, X, FileText, Users, Settings,
   Plus, ChevronRight, Lock, AlertTriangle, Filter, History,
   Edit, RotateCcw, Layers, ArrowRight, Building2, Mail, Phone,
-  ExternalLink, Search
+  ExternalLink, Search, Send, BellOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { isAdminRole } from '../lib/roleUtils';
@@ -30,19 +30,15 @@ export default function MisTareas() {
     total_en_proceso: Number(data?.total_en_proceso || 0),
     solicitudes_pendientes_aprobar: Number(data?.solicitudes_pendientes_aprobar || 0),
   });
-  const normalizePendientes = (data) => ({
-    urgentes: ensureArray(data?.urgentes),
-    catalogos: ensureArray(data?.catalogos),
-    proveedores: ensureArray(data?.proveedores),
-    nominas: ensureArray(data?.nominas),
-    contadores: {
-      urgentes: Number(data?.contadores?.urgentes || 0),
-      catalogos: Number(data?.contadores?.catalogos || 0),
-      proveedores: Number(data?.contadores?.proveedores || 0),
-      nominas: Number(data?.contadores?.nominas || 0),
-      total: Number(data?.contadores?.total || 0),
-    }
-  });
+  const normalizePendientes = (data) => {
+    const cats = ['urgentes','catalogos','proveedores','nominas','fecha_operativa','auditorias','alertas','excepciones','sincronizaciones'];
+    const out = {};
+    cats.forEach(k => { out[k] = ensureArray(data?.[k]); });
+    out.contadores = {};
+    cats.forEach(k => { out.contadores[k] = Number(data?.contadores?.[k] || 0); });
+    out.contadores.total = Number(data?.contadores?.total || 0);
+    return out;
+  };
   const [loading, setLoading] = useState(true);
   const [tareas, setTareas] = useState({
     pendientes: [],
@@ -64,7 +60,12 @@ export default function MisTareas() {
     catalogos: [],
     proveedores: [],
     nominas: [],
-    contadores: { urgentes: 0, catalogos: 0, proveedores: 0, nominas: 0, total: 0 }
+    fecha_operativa: [],
+    auditorias: [],
+    alertas: [],
+    excepciones: [],
+    sincronizaciones: [],
+    contadores: { urgentes: 0, catalogos: 0, proveedores: 0, nominas: 0, fecha_operativa: 0, auditorias: 0, alertas: 0, excepciones: 0, sincronizaciones: 0, total: 0 }
   });
   
   // Estados Portal Proveedores
@@ -615,6 +616,19 @@ export default function MisTareas() {
     );
   
   const proveedoresPendientesCount = ensureArray(proveedores).filter(s => s?.status === 'pending').length;
+
+  // Config de categorías de la bandeja unificada (clases explícitas para Tailwind JIT)
+  const CATEGORIAS = [
+    { key: 'catalogos', label: 'Catálogos', Icon: FileText, card: 'bg-purple-50 border-purple-200', text: 'text-purple-700', num: 'text-purple-800', icon: 'text-purple-500', head: 'bg-purple-50 text-purple-800', headIcon: 'text-purple-600', border: 'border-purple-200', hover: 'hover:bg-purple-50/50' },
+    { key: 'proveedores', label: 'Proveedores', Icon: Building2, card: 'bg-blue-50 border-blue-200', text: 'text-blue-700', num: 'text-blue-800', icon: 'text-blue-500', head: 'bg-blue-50 text-blue-800', headIcon: 'text-blue-600', border: 'border-blue-200', hover: 'hover:bg-blue-50/50' },
+    { key: 'nominas', label: 'Nóminas', Icon: Users, card: 'bg-amber-50 border-amber-200', text: 'text-amber-700', num: 'text-amber-800', icon: 'text-amber-500', head: 'bg-amber-50 text-amber-800', headIcon: 'text-amber-600', border: 'border-amber-200', hover: 'hover:bg-amber-50/50' },
+    { key: 'fecha_operativa', label: 'Fecha Operativa', Icon: Clock, card: 'bg-cyan-50 border-cyan-200', text: 'text-cyan-700', num: 'text-cyan-800', icon: 'text-cyan-500', head: 'bg-cyan-50 text-cyan-800', headIcon: 'text-cyan-600', border: 'border-cyan-200', hover: 'hover:bg-cyan-50/50' },
+    { key: 'auditorias', label: 'Auditorías', Icon: ClipboardList, card: 'bg-indigo-50 border-indigo-200', text: 'text-indigo-700', num: 'text-indigo-800', icon: 'text-indigo-500', head: 'bg-indigo-50 text-indigo-800', headIcon: 'text-indigo-600', border: 'border-indigo-200', hover: 'hover:bg-indigo-50/50' },
+    { key: 'alertas', label: 'Alertas', Icon: Bell, card: 'bg-orange-50 border-orange-200', text: 'text-orange-700', num: 'text-orange-800', icon: 'text-orange-500', head: 'bg-orange-50 text-orange-800', headIcon: 'text-orange-600', border: 'border-orange-200', hover: 'hover:bg-orange-50/50' },
+    { key: 'excepciones', label: 'Excepciones', Icon: AlertTriangle, card: 'bg-rose-50 border-rose-200', text: 'text-rose-700', num: 'text-rose-800', icon: 'text-rose-500', head: 'bg-rose-50 text-rose-800', headIcon: 'text-rose-600', border: 'border-rose-200', hover: 'hover:bg-rose-50/50' },
+    { key: 'sincronizaciones', label: 'Sincronizaciones', Icon: RefreshCw, card: 'bg-teal-50 border-teal-200', text: 'text-teal-700', num: 'text-teal-800', icon: 'text-teal-500', head: 'bg-teal-50 text-teal-800', headIcon: 'text-teal-600', border: 'border-teal-200', hover: 'hover:bg-teal-50/50' },
+  ];
+
   
   // Aprobar proveedor
   const handleAprobarProveedor = async () => {
@@ -659,6 +673,83 @@ export default function MisTareas() {
       toast.error(error.response?.data?.detail || 'Error al rechazar');
     }
   };
+
+  // Reintentar re-sync fallido (desde bandeja Mis Tareas)
+  const handleReintentarSync = async (item) => {
+    if (!confirm(`¿Reintentar la sincronización "${item?.tipo_sync || item?.titulo}"?`)) return;
+    try {
+      toast.loading('Reintentando sincronización...', { id: `retry-${item.id}` });
+      const resp = await api.post(`/admin/scheduler/resync/retry/${item.id}`);
+      if (resp.data?.success) {
+        toast.success('Re-sync reintentado con éxito', { id: `retry-${item.id}` });
+      } else {
+        toast.error(resp.data?.error_message || 'El reintento no fue exitoso', { id: `retry-${item.id}` });
+      }
+      loadData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error al reintentar', { id: `retry-${item.id}` });
+    }
+  };
+
+  // Reintentar TODAS las sincronizaciones fallidas
+  const handleReintentarTodo = async () => {
+    if (!confirm('¿Reintentar TODAS las sincronizaciones fallidas pendientes?')) return;
+    try {
+      toast.loading('Reintentando todas las sincronizaciones...', { id: 'retry-all' });
+      const resp = await api.post('/admin/scheduler/resync/retry-all', {});
+      const r = resp.data || {};
+      toast.success(`Reintentos: ${r.exitosos || 0} OK, ${r.fallidos || 0} con error (de ${r.total || 0})`, { id: 'retry-all' });
+      loadData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error al reintentar en masa', { id: 'retry-all' });
+    }
+  };
+
+  // Marcar una excepción estratégica como revisada (sale de la bandeja)
+  const handleRevisarExcepcion = async (item) => {
+    try {
+      await api.post('/sistema/excepciones/revisar', {
+        excepcion_key: item.id,
+        titulo: item.titulo,
+        server_id: item.data?.server_id || null,
+      });
+      toast.success('Excepción marcada como revisada');
+      loadData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'No se pudo marcar como revisada');
+    }
+  };
+
+  // Enviar prueba de notificaciones (Email + WhatsApp) al instante
+  const handleEnviarPrueba = async () => {
+    try {
+      toast.loading('Enviando prueba de notificaciones...', { id: 'notif-prueba' });
+      const resp = await api.post('/sistema/excepciones/notificar-ahora?modo=prueba', {});
+      const r = resp.data || {};
+      const partes = [];
+      partes.push(`Correo: ${r.email_enviado ? 'OK ✅' : 'falló ❌'}`);
+      partes.push(`WhatsApp: ${r.whatsapp_enviado ? 'OK ✅' : 'falló ❌'}`);
+      toast.success(`Prueba enviada — ${partes.join(' · ')}`, { id: 'notif-prueba', duration: 8000 });
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'No se pudo enviar la prueba', { id: 'notif-prueba' });
+    }
+  };
+
+  // Silenciar backlog inicial de excepciones (pre-marcar como notificadas)
+  const handleSilenciarBacklog = async () => {
+    if (!confirm('¿Pre-marcar como notificadas TODAS las excepciones actuales? Solo se avisarán las nuevas de aquí en adelante.')) return;
+    try {
+      toast.loading('Silenciando backlog...', { id: 'notif-backlog' });
+      const resp = await api.post('/sistema/excepciones/silenciar-backlog', {});
+      const r = resp.data || {};
+      toast.success(`Backlog silenciado: ${r.silenciadas || 0} excepciones pre-marcadas`, { id: 'notif-backlog', duration: 8000 });
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'No se pudo silenciar el backlog', { id: 'notif-backlog' });
+    }
+  };
+
+
+
   
   // Abrir modal de aprobación de proveedor
   const openProveedorModal = (supplier) => {
@@ -710,6 +801,18 @@ export default function MisTareas() {
             <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
             Actualizar
           </Button>
+          {isAdmin && (
+            <Button variant="outline" size="sm" onClick={handleEnviarPrueba} data-testid="btn-enviar-prueba-notif">
+              <Send className="h-4 w-4 mr-1" />
+              Enviar prueba ahora
+            </Button>
+          )}
+          {isAdmin && (
+            <Button variant="outline" size="sm" onClick={handleSilenciarBacklog} data-testid="btn-silenciar-backlog">
+              <BellOff className="h-4 w-4 mr-1" />
+              Silenciar backlog
+            </Button>
+          )}
           {(misPermisos.puede_solicitar || isAdmin) && (
             <Button size="sm" onClick={handleNuevaSolicitud} data-testid="btn-nueva-solicitud">
               <Plus className="h-4 w-4 mr-1" />
@@ -720,8 +823,8 @@ export default function MisTareas() {
       </div>
 
       {/* KPIs - BANDEJA UNIFICADA */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className={`border-2 ${pendientesUnificados.contadores.urgentes > 0 ? 'bg-red-50 border-red-300' : 'bg-zinc-50 border-zinc-200'}`}>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <Card className={`border-2 ${pendientesUnificados.contadores.urgentes > 0 ? 'bg-red-50 border-red-300' : 'bg-zinc-50 border-zinc-200'}`} data-testid="kpi-urgentes">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -734,44 +837,22 @@ export default function MisTareas() {
             </div>
           </CardContent>
         </Card>
-        
-        <Card className="bg-purple-50 border-purple-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-purple-700">Catálogos</p>
-                <p className="text-2xl font-bold text-purple-800">{pendientesUnificados.contadores.catalogos}</p>
+
+        {CATEGORIAS.map(({ key, label, Icon, card, text, num, icon }) => (
+          <Card key={key} className={card} data-testid={`kpi-${key}`}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm ${text}`}>{label}</p>
+                  <p className={`text-2xl font-bold ${num}`}>{pendientesUnificados.contadores[key] || 0}</p>
+                </div>
+                <Icon className={`h-8 w-8 ${icon}`} />
               </div>
-              <FileText className="h-8 w-8 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-blue-700">Proveedores</p>
-                <p className="text-2xl font-bold text-blue-800">{pendientesUnificados.contadores.proveedores}</p>
-              </div>
-              <Building2 className="h-8 w-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-amber-50 border-amber-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-amber-700">Nóminas</p>
-                <p className="text-2xl font-bold text-amber-800">{pendientesUnificados.contadores.nominas}</p>
-              </div>
-              <Users className="h-8 w-8 text-amber-500" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-green-50 border-green-200">
+            </CardContent>
+          </Card>
+        ))}
+
+        <Card className="bg-green-50 border-green-200" data-testid="kpi-total">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -988,118 +1069,109 @@ export default function MisTareas() {
         )}
       </div>
 
-      {/* ===== SECCIONES AGRUPADAS POR TIPO ===== */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* CATÁLOGOS PENDIENTES */}
-        <Card className="border-purple-200">
-          <CardHeader className="py-3 bg-purple-50">
-            <CardTitle className="text-base font-medium flex items-center gap-2 text-purple-800">
-              <FileText className="h-5 w-5 text-purple-600" />
-              Catálogos ({pendientesUnificados.contadores.catalogos})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 max-h-[350px] overflow-y-auto">
-            {pendientesUnificados.catalogos.length === 0 ? (
-              <div className="p-6 text-center text-zinc-500">
-                <CheckCircle2 className="h-10 w-10 mx-auto mb-2 text-green-300" />
-                <p className="text-sm">Sin pendientes</p>
-              </div>
-            ) : (
-              <div className="divide-y">
-                {pendientesUnificados.catalogos.map((item) => (
-                  <div key={item.id} className="p-3 hover:bg-purple-50/50">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm text-zinc-800 truncate">{item.titulo}</p>
-                        <p className="text-xs text-zinc-500 truncate">{item.descripcion}</p>
-                        <p className="text-xs text-zinc-400 mt-1">Por: {item.solicitante}</p>
-                      </div>
-                      <Button size="sm" variant="ghost" onClick={() => {
-                        setSolicitudSeleccionada(item.data);
-                        setModalAprobar(true);
-                      }}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
+      {/* ===== SECCIONES AGRUPADAS POR TIPO (dinámico, todas las categorías) ===== */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {CATEGORIAS.map(({ key, label, Icon, head, headIcon, border, hover }) => {
+          const items = pendientesUnificados[key] || [];
+          const count = pendientesUnificados.contadores[key] || 0;
+          const onItem = (item) => {
+            if (key === 'catalogos' || key === 'fecha_operativa') {
+              setSolicitudSeleccionada(item.data); setModalAprobar(true);
+            } else if (key === 'proveedores') {
+              openProveedorModal(item.data);
+            } else if (key === 'nominas') {
+              window.location.href = '/recursos-humanos';
+            } else if (key === 'auditorias') {
+              window.location.href = '/auditorias-programadas';
+            } else if (key === 'alertas') {
+              window.location.href = '/alertas';
+            } else if (key === 'excepciones') {
+              window.location.href = '/admin/centro-excepciones';
+            }
+          };
+          return (
+            <Card key={key} className={border} data-testid={`seccion-${key}`}>
+              <CardHeader className={`py-3 ${head}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle className="text-base font-medium flex items-center gap-2">
+                    <Icon className={`h-5 w-5 ${headIcon}`} />
+                    {label} ({count})
+                  </CardTitle>
+                  {key === 'sincronizaciones' && count > 0 && (
+                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleReintentarTodo} data-testid="reintentar-todo-btn">
+                      <RefreshCw className="h-3 w-3 mr-1" /> Reintentar todo
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="p-0 max-h-[350px] overflow-y-auto">
+                {items.length === 0 ? (
+                  <div className="p-6 text-center text-zinc-500">
+                    <CheckCircle2 className="h-10 w-10 mx-auto mb-2 text-green-300" />
+                    <p className="text-sm">Sin pendientes</p>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        
-        {/* PROVEEDORES PENDIENTES */}
-        <Card className="border-blue-200">
-          <CardHeader className="py-3 bg-blue-50">
-            <CardTitle className="text-base font-medium flex items-center gap-2 text-blue-800">
-              <Building2 className="h-5 w-5 text-blue-600" />
-              Proveedores ({pendientesUnificados.contadores.proveedores})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 max-h-[350px] overflow-y-auto">
-            {pendientesUnificados.proveedores.length === 0 ? (
-              <div className="p-6 text-center text-zinc-500">
-                <CheckCircle2 className="h-10 w-10 mx-auto mb-2 text-green-300" />
-                <p className="text-sm">Sin pendientes</p>
-              </div>
-            ) : (
-              <div className="divide-y">
-                {pendientesUnificados.proveedores.map((item) => (
-                  <div key={item.id} className="p-3 hover:bg-blue-50/50">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm text-zinc-800 truncate">{item.titulo}</p>
-                        <p className="text-xs text-zinc-500 truncate">{item.descripcion}</p>
-                        <p className="text-xs text-zinc-400 mt-1">Hace {item.horas_pendiente}h</p>
+                ) : (
+                  <div className="divide-y">
+                    {items.map((item) => (
+                      <div key={`${key}-${item.id}`} className={`p-3 ${hover}`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm text-zinc-800 truncate">{item.titulo}</p>
+                            <p className="text-xs text-zinc-500 truncate">{item.descripcion}</p>
+                            {item.solicitante && <p className="text-xs text-zinc-400 mt-1 truncate">Por: {item.solicitante}</p>}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {(key === 'catalogos' || key === 'fecha_operativa') && (
+                              <>
+                                <Button size="sm" variant="ghost" className="text-green-600 hover:bg-green-50 h-8 px-2" title="Aprobar"
+                                  onClick={() => { setSolicitudSeleccionada(item.data); setModalAprobar(true); }} data-testid={`aprobar-${key}-${item.id}`}>
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="text-red-600 hover:bg-red-50 h-8 px-2" title="Rechazar"
+                                  onClick={() => handleAbrirRechazar(item.data)} data-testid={`rechazar-${key}-${item.id}`}>
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+                            {key === 'proveedores' && (
+                              <>
+                                <Button size="sm" variant="ghost" className="text-green-600 hover:bg-green-50 h-8 px-2" title="Aprobar"
+                                  onClick={() => openProveedorModal(item.data)} data-testid={`aprobar-proveedor-${item.id}`}>
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="text-red-600 hover:bg-red-50 h-8 px-2" title="Rechazar"
+                                  onClick={() => handleRechazarProveedor(item.data)} data-testid={`rechazar-proveedor-${item.id}`}>
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+                            {key === 'sincronizaciones' && (
+                              <Button size="sm" variant="ghost" className="text-teal-600 hover:bg-teal-50 h-8 px-2" title="Reintentar"
+                                onClick={() => handleReintentarSync(item)} data-testid={`reintentar-sync-${item.id}`}>
+                                <RefreshCw className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {key === 'excepciones' && (
+                              <Button size="sm" variant="ghost" className="text-emerald-600 hover:bg-emerald-50 h-8 px-2" title="Marcar revisada"
+                                onClick={() => handleRevisarExcepcion(item)} data-testid={`revisar-excepcion-${item.id}`}>
+                                <CheckCircle2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {['nominas','auditorias','alertas','excepciones'].includes(key) && (
+                              <Button size="sm" variant="ghost" onClick={() => onItem(item)} data-testid={`accion-${key}-${item.id}`}>
+                                <ArrowRight className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <Button size="sm" variant="ghost" onClick={() => openProveedorModal(item.data)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        
-        {/* NÓMINAS PENDIENTES */}
-        <Card className="border-amber-200">
-          <CardHeader className="py-3 bg-amber-50">
-            <CardTitle className="text-base font-medium flex items-center gap-2 text-amber-800">
-              <Users className="h-5 w-5 text-amber-600" />
-              Nóminas ({pendientesUnificados.contadores.nominas})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 max-h-[350px] overflow-y-auto">
-            {pendientesUnificados.nominas.length === 0 ? (
-              <div className="p-6 text-center text-zinc-500">
-                <CheckCircle2 className="h-10 w-10 mx-auto mb-2 text-green-300" />
-                <p className="text-sm">Sin pendientes</p>
-              </div>
-            ) : (
-              <div className="divide-y">
-                {pendientesUnificados.nominas.map((item) => (
-                  <div key={item.id} className="p-3 hover:bg-amber-50/50">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm text-zinc-800 truncate">{item.titulo}</p>
-                        <p className="text-xs text-zinc-500 truncate">{item.descripcion}</p>
-                        <p className="text-xs text-zinc-400 mt-1">
-                          {item.deadline ? `Límite: ${new Date(item.deadline).toLocaleString('es-MX', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'})}` : ''}
-                        </p>
-                      </div>
-                      <Button size="sm" variant="ghost" onClick={() => window.location.href = '/recursos-humanos'}>
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Mis Solicitudes - Para ver estado y corregir rechazadas */}

@@ -47,6 +47,11 @@ async def compat_get_usuarios_asignables(current_user: Dict = Depends(get_curren
 async def compat_get_solicitudes_catalogo(current_user: Dict = Depends(get_current_user)):
     return repo.listar_solicitudes_catalogo()
 
+@router.get("/sistema/solicitudes")
+async def compat_list_solicitudes_workflow(current_user: Dict = Depends(get_current_user)):
+    """Lista normalizada de solicitudes de catálogo para Mis Tareas."""
+    return {"solicitudes": repo.listar_solicitudes_workflow()}
+
 @router.get("/sistema/solicitudes/{solicitud_id}")
 async def compat_get_solicitud(solicitud_id: int, current_user: Dict = Depends(get_current_user)):
     row = repo.get_solicitud_catalogo(solicitud_id)

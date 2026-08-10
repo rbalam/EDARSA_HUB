@@ -14696,16 +14696,54 @@ async def sql_server_test_query(
         }
 
 
+from core.rbac.middleware import (
+    get_current_user_with_permissions as _get_current_user_with_permissions,
+)
+
+
 @api_router.get("/sistema/pendientes-unificados")
-async def obtener_pendientes_unificados(current_user: Dict = Depends(get_current_user)):
+async def obtener_pendientes_unificados(
+    current_user: Dict = Depends(_get_current_user_with_permissions),
+):
     """
     Obtiene TODOS los pendientes del usuario en una bandeja unificada.
     Incluye: Solicitudes de catálogos, Proveedores, Nóminas, etc.
     Ordenados por: Urgentes/Vencidos primero, luego agrupados por tipo.
     """
     current_user.get("id")
-    user_role = current_user.get("role")
     ahora = datetime.now(timezone.utc)
+
+    _permisos = {
+        str(permiso).strip().upper()
+        for permiso in (current_user.get("permisos") or [])
+        if permiso
+    }
+
+    def _tiene_alguno(*codigos):
+        return any(
+            str(codigo).strip().upper() in _permisos
+            for codigo in codigos
+        )
+
+    # ===== SCOPE POR UNIDAD / PERMISOS =====
+    # Admin/SuperAdmin ven todas las unidades. Roles operativos solo sus servers permitidos.
+    from core.security import es_admin as _es_admin, es_superadmin as _es_superadmin, get_user_empresas_permitidas, get_servers_for_empresas
+    is_admin_view = _es_admin(current_user) or _es_superadmin(current_user)
+    allowed_servers = set()
+    if not is_admin_view:
+        try:
+            _emp = await get_user_empresas_permitidas(current_user)
+            allowed_servers = set((s or "").lower() for s in await get_servers_for_empresas(_emp))
+        except Exception as _e:
+            logging.warning(f"[pendientes-unificados] scope unidad: {_e}")
+
+    def _pasa_unidad(server_id):
+        """True si el ítem es visible para el usuario según su unidad/permisos."""
+        if is_admin_view:
+            return True
+        if not server_id:
+            return True  # ítems sin unidad asociada no se filtran
+        return str(server_id).lower() in allowed_servers
 
     urgentes = []  # Vencidos y próximos a vencer (< 24h)
     pendientes_catalogos = []
@@ -14713,13 +14751,29 @@ async def obtener_pendientes_unificados(current_user: Dict = Depends(get_current
     pendientes_nominas = []
 
     # ===== 1. SOLICITUDES DE CATÁLOGOS =====
-    if user_role in ['Supervisor', 'Administrador']:
-        # SQL-FIRST: legacy Mongo neutralizado.
-        # Pendiente mapeo canónico funcional para solicitudes de catálogos.
-        solicitudes = []
+    if _tiene_alguno('CATALOGOS_VER', 'CATALOGO_VER'):
+        # SQL-FIRST: solicitudes canónicas desde Sistema_CatalogosSolicitudes
+        try:
+            from modules.catalogos_workflow_sql.repository import CatalogosWorkflowSQLRepository
+            _wf_repo = CatalogosWorkflowSQLRepository()
+            _todas = _wf_repo.listar_solicitudes_workflow()
+            solicitudes = [
+                s for s in _todas
+                if ((s.get("estatus") or "").startswith("Pendiente") or s.get("estatus") == "Reenviada")
+                and s.get("catalogo_id") != "fecha_operativa"
+            ]
+        except Exception as _e:
+            logging.warning(f"[pendientes-unificados] catálogos: {_e}")
+            solicitudes = []
 
         for sol in solicitudes:
-            fecha_sol = datetime.fromisoformat(sol.get("fecha_solicitud", ahora.isoformat()).replace("Z", "+00:00"))
+            _fs = sol.get("fecha_solicitud") or ahora.isoformat()
+            try:
+                fecha_sol = datetime.fromisoformat(str(_fs).replace("Z", "+00:00"))
+                if fecha_sol.tzinfo is None:
+                    fecha_sol = fecha_sol.replace(tzinfo=timezone.utc)
+            except Exception:
+                fecha_sol = ahora
             horas_pendiente = (ahora - fecha_sol).total_seconds() / 3600
 
             item = {
@@ -14741,137 +14795,307 @@ async def obtener_pendientes_unificados(current_user: Dict = Depends(get_current
                 pendientes_catalogos.append(item)
 
     # ===== 2. PROVEEDORES PENDIENTES DE APROBAR =====
-    if user_role in ['Supervisor', 'Administrador']:
-        # SQL-FIRST: legacy Mongo neutralizado.
-        # Pendiente mapeo canónico funcional para proveedores pendientes.
-        proveedores = []
+    # Fail-closed: este dominio todavía no dispone de un permiso RBAC
+    # canónico demostrado para esta bandeja. No se consulta ni se expone
+    # hasta formalizar dicho permiso.
 
-        for prov in proveedores:
-            fecha_reg = prov.get("fecha_registro")
-            if fecha_reg:
-                try:
-                    fecha_prov = datetime.fromisoformat(fecha_reg.replace("Z", "+00:00"))
-                    horas_pendiente = (ahora - fecha_prov).total_seconds() / 3600
-                except Exception:
-                    horas_pendiente = 0
-            else:
-                horas_pendiente = 0
-
-            item = {
-                "id": prov.get("id"),
-                "tipo": "proveedor",
-                "titulo": f"Proveedor: {prov.get('razon_social', 'Sin nombre')}",
-                "descripcion": f"RFC: {prov.get('rfc', 'N/A')} - {prov.get('email', '')}",
-                "solicitante": prov.get("razon_social"),
-                "fecha": fecha_reg,
-                "horas_pendiente": round(horas_pendiente, 1),
-                "vencido": horas_pendiente > 72,  # Más de 72h = vencido
-                "proximo_vencer": 48 < horas_pendiente <= 72,
-                "data": prov
-            }
-
-            if item["vencido"] or item["proximo_vencer"]:
-                urgentes.append(item)
-            else:
-                pendientes_proveedores.append(item)
-
-    # ===== 3. NÓMINAS PENDIENTES POR ROL =====
-    # Mapeo de etapas a roles
-    etapas_por_rol = {
-        "Administrador": ["headcount", "incidencias", "validacion_rh", "maquilador", "autorizacion", "tesoreria"],
-        "Supervisor": ["headcount", "incidencias", "validacion_rh", "autorizacion"],
-        "Gerente": ["headcount", "incidencias", "autorizacion"],
-        "Maquilador": ["maquilador"],
-        "Tesoreria": ["tesoreria"],
-        "RH": ["validacion_rh"]
-    }
-
-    etapas_usuario = etapas_por_rol.get(user_role, [])
-
-    if etapas_usuario:
-        # SQL-FIRST: pendientes de nómina legacy neutralizados; flujo canónico vive en /rrhh/nominas/flujo.
-        ciclos = []
-
-        # Obtener configuración para calcular vencimientos
-        # SQL-FIRST: configuración legacy /nomina neutralizada.
-        config = None
-        {
-            "headcount": config.get("horario_headcount", "10:00") if config else "10:00",
-            "incidencias": config.get("horario_headcount", "10:00") if config else "10:00",
-            "validacion_rh": config.get("horario_autorizacion", "11:00") if config else "11:00",
-            "autorizacion": config.get("horario_autorizacion", "11:00") if config else "11:00",
-            "maquilador": config.get("horario_maquilador", "12:00") if config else "12:00",
-            "tesoreria": config.get("horario_tesoreria", "14:00") if config else "14:00"
-        }
-
-        etapa_nombres = {
-            "headcount": "Headcount",
-            "incidencias": "Incidencias",
-            "validacion_rh": "Validación RH",
-            "maquilador": "Maquilador",
-            "autorizacion": "Autorización",
-            "tesoreria": "Tesorería"
-        }
-
-        for ciclo in ciclos:
-            etapa = ciclo.get("etapa_actual", "")
-            fecha_corte = ciclo.get("fecha_corte", "")
-            sucursal = ciclo.get("sucursal_nombre", "Sucursal")
-
-            # Calcular si está vencido basado en deadline
-            try:
-                deadline_str = ciclo.get(f"deadline_{etapa}")
-                if deadline_str:
-                    deadline = datetime.fromisoformat(deadline_str.replace("Z", "+00:00"))
-                    horas_restantes = (deadline - ahora).total_seconds() / 3600
-                    vencido = horas_restantes < 0
-                    proximo_vencer = 0 <= horas_restantes < 24
+    # ===== 3. NÓMINAS PENDIENTES =====
+    if _tiene_alguno('RH_VER', 'RECURSOS_HUMANOS_VER'):
+        try:
+            from modules.rh.service import rh_flujo_nomina_service as _nom_svc
+            _res = await _nom_svc.listar_flujos()
+            _flujos = _res.get("flujos", []) if isinstance(_res, dict) else []
+            _cerrados = {"Pagado", "Cancelado", "Cerrado"}
+            for f in _flujos:
+                est = (f.get("estatus") or f.get("Estatus") or "").strip()
+                if est in _cerrados:
+                    continue
+                if not _pasa_unidad(f.get("server_id") or f.get("ServerID")):
+                    continue
+                suc = f.get("sucursal_nombre") or f.get("SucursalNombre") or f.get("sucursal_id") or "Sucursal"
+                sem = f.get("semana_anio") or f.get("SemanaAnio") or ""
+                fcrea = f.get("fecha_creacion") or f.get("FechaCreacion") or f.get("created_at")
+                _venc = est.startswith("Rechazado")
+                item = {
+                    "id": f.get("id") or f.get("FlujoID") or f.get("flujo_id"),
+                    "tipo": "nomina",
+                    "titulo": f"Nómina {suc} - {est or 'En proceso'}",
+                    "descripcion": f"Semana {sem}",
+                    "solicitante": str(suc),
+                    "fecha": str(fcrea) if fcrea else None,
+                    "estatus": est,
+                    "vencido": _venc,
+                    "proximo_vencer": False,
+                    "data": f,
+                }
+                if _venc:
+                    urgentes.append(item)
                 else:
-                    horas_restantes = 0
-                    vencido = True
-                    proximo_vencer = False
-            except Exception:
-                horas_restantes = 0
-                vencido = True
-                proximo_vencer = False
+                    pendientes_nominas.append(item)
+        except Exception as _e:
+            logging.warning(f"[pendientes-unificados] nominas: {_e}")
 
-            item = {
-                "id": ciclo.get("id"),
-                "tipo": "nomina",
-                "subtipo": etapa,
-                "titulo": f"Nómina {sucursal} - {etapa_nombres.get(etapa, etapa)}",
-                "descripcion": f"Corte: {fecha_corte} | {ciclo.get('tipo_nomina', 'Quincenal')}",
-                "solicitante": sucursal,
-                "fecha": ciclo.get("fecha_creacion"),
-                "deadline": ciclo.get(f"deadline_{etapa}"),
-                "horas_restantes": round(horas_restantes, 1),
-                "vencido": vencido,
-                "proximo_vencer": proximo_vencer,
-                "data": ciclo
-            }
+    # ===== 4. FECHA OPERATIVA (RBAC) PENDIENTE DE AUTORIZAR =====
+    pendientes_fecha_operativa = []
 
-            if item["vencido"] or item["proximo_vencer"]:
-                urgentes.append(item)
-            else:
-                pendientes_nominas.append(item)
+    try:
+        from modules.catalogos_workflow_sql.repository import (
+            CatalogosWorkflowSQLRepository as _WFR,
+        )
+
+        _fecha_repo = _WFR()
+
+        for s in _fecha_repo.listar_solicitudes_fecha_operativa_autorizables(
+            current_user
+        ):
+            d = s.get("datos") or {}
+
+            pendientes_fecha_operativa.append({
+                "id": s.get("id"),
+                "tipo": "fecha_operativa",
+                "titulo": (
+                    "Cambio fecha operativa · "
+                    f"{d.get('dominio', d.get('modulo', ''))}"
+                ),
+                "descripcion": (
+                    f"{d.get('tabla_origen', '')} → "
+                    f"{d.get('valor_propuesto', '')}"
+                ),
+                "solicitante": s.get("solicitante_nombre"),
+                "fecha": s.get("fecha_solicitud"),
+                "data": s,
+            })
+    except Exception as _e:
+        logging.warning(
+            f"[pendientes-unificados] fecha_operativa: {_e}"
+        )
+
+    # ===== 5. AUDITORÍAS PROGRAMADAS PENDIENTES DE REVISIÓN =====
+    pendientes_auditorias = []
+    if _tiene_alguno('AUDITORIA_VER', 'AUTOMATIZACIONES_VER'):
+        try:
+            from modules.fase2_operativo.routes.dashboard_routes import get_db as _get_db
+            from modules.fase2_operativo.services.auditoria_programada_service import AuditoriaProgramadaService as _APS
+            _svc = _APS(_get_db())
+            _list = None
+            for _m in ("listar_pendientes_revision", "listar_pendientes", "listar_auditorias", "listar"):
+                if hasattr(_svc, _m):
+                    _res = getattr(_svc, _m)()
+                    _res = await _res if hasattr(_res, "__await__") else _res
+                    _list = _res.get("auditorias", _res) if isinstance(_res, dict) else _res
+                    break
+            for a in (_list or []):
+                est = (a.get("estado") or a.get("Estado") or a.get("estatus") or "").upper()
+                if est in ("COMPLETADA", "CERRADA", "CANCELADA"):
+                    continue
+                if not _pasa_unidad(a.get("server_id") or a.get("ServerID")):
+                    continue
+                pendientes_auditorias.append({
+                    "id": a.get("id") or a.get("AuditoriaID") or a.get("auditoria_id"),
+                    "tipo": "auditoria",
+                    "titulo": a.get("nombre") or a.get("titulo") or "Auditoría programada",
+                    "descripcion": a.get("descripcion") or est,
+                    "solicitante": a.get("unidad_negocio") or a.get("creado_por") or "",
+                    "fecha": str(a.get("fecha_programada") or a.get("created_at") or ""),
+                    "data": a,
+                })
+        except Exception as _e:
+            logging.warning(f"[pendientes-unificados] auditorias: {_e}")
+
+    # ===== 6. ALERTAS ACTIVAS DEL SISTEMA =====
+    pendientes_alertas = []
+    if _tiene_alguno('ALERTAS_VER'):
+        try:
+            from modules.fase2_operativo.routes.dashboard_routes import get_db as _get_db2
+            from modules.fase2_operativo.services.operativo_service import OperativoService as _OpSvc
+            _alertas = await _OpSvc(_get_db2()).obtener_alertas_activas()
+            for al in (_alertas or []):
+                if not _pasa_unidad(al.get("server_id") or al.get("ServerID")):
+                    continue
+                sev = (al.get("severidad") or al.get("nivel") or al.get("tipo") or "").upper()
+                item = {
+                    "id": al.get("id") or al.get("alerta_id"),
+                    "tipo": "alerta",
+                    "titulo": al.get("titulo") or al.get("mensaje") or "Alerta",
+                    "descripcion": al.get("descripcion") or al.get("detalle") or "",
+                    "solicitante": al.get("unidad_negocio") or al.get("sucursal") or "",
+                    "fecha": str(al.get("fecha") or al.get("created_at") or ""),
+                    "severidad": sev,
+                    "vencido": sev in ("CRITICA", "CRITICO", "ALTA", "ALTO"),
+                    "proximo_vencer": False,
+                    "data": al,
+                }
+                if item["vencido"]:
+                    urgentes.append(item)
+                else:
+                    pendientes_alertas.append(item)
+        except Exception as _e:
+            logging.warning(f"[pendientes-unificados] alertas: {_e}")
+
+    # ===== 7. EXCEPCIONES ESTRATÉGICAS (Balanced Scorecard) =====
+    # Fuente real: mismo motor que /api/alertas-estrategicas/resumen (rentabilidad,
+    # compras sin detalle, inventarios a revisar). NO-LIVE: lee tablas canónicas SQL.
+    pendientes_excepciones = []
+    if _tiene_alguno('ALERTAS_VER'):
+        try:
+            from modules.alertas_estrategicas.routes import resumen_alertas as _resumen_exc
+            # Excepciones ya marcadas como REVISADA (para ocultarlas de la bandeja)
+            _revisadas = set()
+            try:
+                from core.scheduler.jobs.alertas_excepciones_job import (
+                    obtener_excepciones_revisadas,
+                )
+
+                _revisadas = obtener_excepciones_revisadas()
+            except Exception as _e:
+                logging.warning(
+                    "[pendientes-unificados] estado excepciones: %s",
+                    _e,
+                )
+            _exc = await _resumen_exc(server_id="", limite=200, current_user=current_user)
+            for a in (_exc.get("alertas", []) if isinstance(_exc, dict) else []):
+                if not _pasa_unidad(a.get("server_id")):
+                    continue
+                sev = (a.get("severidad") or "").upper()
+                _key = f"{a.get('tipo_alerta','EXC')}-{a.get('entidad_id') or a.get('entidad_codigo') or a.get('server_id')}"
+                if _key in _revisadas:
+                    continue
+                item = {
+                    "id": _key,
+                    "tipo": "excepcion",
+                    "titulo": f"{a.get('tipo_alerta','Excepción')} · {a.get('descripcion') or a.get('entidad_codigo') or ''}",
+                    "descripcion": a.get("accion_sugerida") or a.get("perspectiva_bsc") or "",
+                    "solicitante": a.get("unidad") or "",
+                    "fecha": ahora.isoformat(),
+                    "severidad": sev,
+                    "vencido": False,
+                    "proximo_vencer": False,
+                    "data": a,
+                }
+                pendientes_excepciones.append(item)
+        except Exception as _e:
+            logging.warning(f"[pendientes-unificados] excepciones: {_e}")
+
+    # ===== 8. SINCRONIZACIONES FALLIDAS (con reintento) =====
+    pendientes_sincronizaciones = []
+    if _tiene_alguno('SCHEDULER_VER'):
+        try:
+            from api.admin_scheduler_resync import (
+                listar_resync_fallidos_pendientes,
+            )
+
+            for r in listar_resync_fallidos_pendientes(limite=100):
+                if not _pasa_unidad(r.get("ServerID")):
+                    continue
+                _fe = r.get("FechaEjecucion")
+                pendientes_sincronizaciones.append({
+                    "id": r.get("ResyncLogID"),
+                    "tipo": "sincronizacion",
+                    "titulo": f"Re-sync fallido: {r.get('TipoSync')}",
+                    "descripcion": (r.get("Mensaje") or "")[:180],
+                    "solicitante": r.get("UnidadCodigo") or "",
+                    "fecha": _fe.isoformat() if hasattr(_fe, "isoformat") else str(_fe or ""),
+                    "tipo_sync": r.get("TipoSync"),
+                    "server_id": r.get("ServerID"),
+                    "unidad_codigo": r.get("UnidadCodigo"),
+                    "data": r,
+                })
+        except Exception as _e:
+            logging.warning(f"[pendientes-unificados] sincronizaciones: {_e}")
 
     # ===== ORDENAR URGENTES =====
     # Primero los vencidos (más antiguos primero), luego próximos a vencer
-    urgentes.sort(key=lambda x: (not x["vencido"], x.get("horas_restantes", 0) if x["tipo"] == "nomina" else -x.get("horas_pendiente", 0)))
+    urgentes.sort(key=lambda x: (not x.get("vencido"), x.get("horas_restantes", 0) if x.get("tipo") == "nomina" else -x.get("horas_pendiente", 0)))
 
-    return {
+    _cats = {
         "urgentes": urgentes,
         "catalogos": pendientes_catalogos,
         "proveedores": pendientes_proveedores,
         "nominas": pendientes_nominas,
-        "contadores": {
-            "urgentes": len(urgentes),
-            "catalogos": len(pendientes_catalogos),
-            "proveedores": len(pendientes_proveedores),
-            "nominas": len(pendientes_nominas),
-            "total": len(urgentes) + len(pendientes_catalogos) + len(pendientes_proveedores) + len(pendientes_nominas)
-        }
+        "fecha_operativa": pendientes_fecha_operativa,
+        "auditorias": pendientes_auditorias,
+        "alertas": pendientes_alertas,
+        "excepciones": pendientes_excepciones,
+        "sincronizaciones": pendientes_sincronizaciones,
     }
+    _contadores = {k: len(v) for k, v in _cats.items()}
+    _contadores["total"] = sum(len(v) for v in _cats.values())
+    return {**_cats, "contadores": _contadores}
+
+
+class RevisarExcepcionRequest(BaseModel):
+    excepcion_key: str
+    titulo: Optional[str] = None
+    server_id: Optional[str] = None
+
+
+@api_router.post("/sistema/excepciones/revisar")
+async def marcar_excepcion_revisada(body: RevisarExcepcionRequest, current_user: Dict = Depends(get_current_user)):
+    """Marca una excepción estratégica como REVISADA para que salga de la bandeja Mis Tareas."""
+    if not body.excepcion_key:
+        raise HTTPException(status_code=400, detail="excepcion_key requerido")
+    try:
+        from core.scheduler.jobs.alertas_excepciones_job import (
+            marcar_excepcion_revisada_estado,
+        )
+
+        marcar_excepcion_revisada_estado(
+            key=body.excepcion_key,
+            titulo=body.titulo,
+            server_id=body.server_id,
+            revisado_por=current_user.get("email", "unknown"),
+        )
+
+        return {
+            "success": True,
+            "excepcion_key": body.excepcion_key,
+            "estado": "REVISADA",
+        }
+    except Exception as e:
+        logging.error(f"[excepciones/revisar] {e}")
+        raise HTTPException(status_code=500, detail=f"No se pudo marcar como revisada: {e}")
+
+
+@api_router.post("/sistema/excepciones/silenciar-backlog")
+async def silenciar_backlog_excepciones_endpoint(current_user: Dict = Depends(get_current_user)):
+    """Pre-marca como notificadas todas las excepciones actuales (solo admin)."""
+    if not es_admin(current_user):
+        raise HTTPException(status_code=403, detail="Solo administradores")
+    try:
+        from core.scheduler.jobs.alertas_excepciones_job import silenciar_backlog_excepciones
+        r = await silenciar_backlog_excepciones()
+        return {"success": True, **r}
+    except Exception as e:
+        logging.error(f"[excepciones/silenciar-backlog] {e}")
+        raise HTTPException(status_code=500, detail=f"No se pudo silenciar el backlog: {e}")
+
+
+@api_router.post("/sistema/excepciones/notificar-ahora")
+async def notificar_excepciones_ahora_endpoint(
+    modo: str = "prueba",
+    current_user: Dict = Depends(get_current_user),
+):
+    """
+    Dispara el notificador manualmente (solo admin).
+    - modo=prueba (default): envía un mensaje de prueba a los canales para validarlos al instante.
+    - modo=real: ejecuta el notificador real (solo envía excepciones nuevas no notificadas).
+    """
+    if not es_admin(current_user):
+        raise HTTPException(status_code=403, detail="Solo administradores")
+    try:
+        if modo == "real":
+            from core.scheduler.jobs.alertas_excepciones_job import execute_alertas_excepciones_notifier
+            r = await execute_alertas_excepciones_notifier()
+        else:
+            from core.scheduler.jobs.alertas_excepciones_job import enviar_prueba_canales
+            r = await enviar_prueba_canales()
+        return {"success": True, "modo": modo, **r}
+    except Exception as e:
+        logging.error(f"[excepciones/notificar-ahora] {e}")
+        raise HTTPException(status_code=500, detail=f"No se pudo notificar: {e}")
+
+
+
 async def marcar_tarea_leida(tarea_id: str, current_user: Dict = Depends(get_current_user)):
     """Marca una tarea/notificación como leída"""
     # SQL-FIRST: tarea legacy Mongo neutralizada; pendiente mapeo canónico CRM_Tareas/Operativo_TareasCompras.

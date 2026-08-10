@@ -305,6 +305,110 @@ class CatalogosWorkflowSQLRepository:
             cols = [c[0] for c in cur.description]
             return [dict(zip(cols, r)) for r in cur.fetchall()]
 
+    def listar_solicitudes_workflow(self):
+        """Devuelve las solicitudes de catálogo normalizadas al shape que consume
+        el frontend de Mis Tareas ({solicitudes:[...]})."""
+        sql = """
+        SELECT
+            s.CatalogoSolicitudID, s.CodigoCatalogo, s.TipoSolicitud, s.EstadoSolicitud,
+            s.Prioridad, s.DatosSolicitudJSON, s.Comentarios, s.FechaSolicitud,
+            s.NivelAprobacionActual, s.TotalNivelesAprobacion, s.MotivoRechazo,
+            s.SolicitadoPorUsuarioID, s.AprobacionMetadataJSON,
+            c.NombreCatalogo, c.TipoConfiguracion,
+            u.NombreCompleto AS SolicitanteNombre, u.Email AS SolicitanteEmail
+        FROM Sistema_CatalogosSolicitudes s
+        LEFT JOIN Sistema_CatalogosConfig c ON c.CodigoCatalogo = s.CodigoCatalogo
+        LEFT JOIN Usuario_Catalogo u ON u.UsuarioID = s.SolicitadoPorUsuarioID
+        ORDER BY s.FechaSolicitud DESC
+        """
+        with get_sql_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(sql)
+            cols = [c[0] for c in cur.description]
+            rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+
+        out = []
+        for r in rows:
+            datos = json_loads(r.get("DatosSolicitudJSON")) or {}
+            aprobaciones = json_loads(r.get("AprobacionMetadataJSON")) or []
+            if not isinstance(aprobaciones, list):
+                aprobaciones = []
+            fecha = r.get("FechaSolicitud")
+            out.append({
+                "id": r.get("CatalogoSolicitudID"),
+                "catalogo_id": (r.get("CodigoCatalogo") or "").lower(),
+                "catalogo_nombre": r.get("NombreCatalogo") or r.get("CodigoCatalogo"),
+                "modulo": r.get("TipoConfiguracion") or "",
+                "tipo_solicitud": r.get("TipoSolicitud"),
+                "datos": datos if isinstance(datos, dict) else {},
+                "estatus": r.get("EstadoSolicitud"),
+                "prioridad": r.get("Prioridad"),
+                "nivel_actual": r.get("NivelAprobacionActual") or 1,
+                "niveles_requeridos": r.get("TotalNivelesAprobacion") or 1,
+                "version": len(aprobaciones) + 1 if r.get("EstadoSolicitud") == "Reenviada" else 1,
+                "aprobaciones": aprobaciones,
+                "solicitante_id": r.get("SolicitadoPorUsuarioID"),
+                "solicitante_nombre": r.get("SolicitanteNombre") or r.get("SolicitanteEmail") or f"Usuario {r.get('SolicitadoPorUsuarioID')}",
+                "motivo_rechazo": r.get("MotivoRechazo"),
+                "notas": r.get("Comentarios"),
+                "fecha_solicitud": fecha.isoformat() if hasattr(fecha, "isoformat") else fecha,
+            })
+        return out
+
+    def listar_solicitudes_fecha_operativa_autorizables(
+        self,
+        current_user,
+    ):
+        """
+        Devuelve únicamente solicitudes de Fecha Operativa que el usuario
+        actual puede autorizar según el flujo y RBAC canónicos.
+        """
+        solicitudes = self.listar_solicitudes_workflow()
+
+        candidatas = [
+            solicitud
+            for solicitud in solicitudes
+            if solicitud.get("catalogo_id") == "fecha_operativa"
+            and (
+                (solicitud.get("estatus") or "").startswith("Pendiente")
+                or solicitud.get("estatus") == "Reenviada"
+            )
+        ]
+
+        if not candidatas:
+            return []
+
+        autorizables = []
+
+        with get_sql_connection() as conn:
+            cur = conn.cursor()
+
+            for solicitud in candidatas:
+                payload = solicitud.get("datos") or {}
+
+                if not isinstance(payload, dict):
+                    continue
+
+                try:
+                    target = get_target_from_payload(payload)
+                except (TypeError, ValueError, KeyError):
+                    continue
+
+                module_code = target.get("module")
+
+                if not module_code:
+                    continue
+
+                if can_authorize_fecha_operativa(
+                    cur,
+                    current_user,
+                    module_code,
+                ):
+                    autorizables.append(solicitud)
+
+        return autorizables
+
+
     def get_solicitud_catalogo(self, solicitud_id):
         sql = """
         SELECT TOP 1 *
