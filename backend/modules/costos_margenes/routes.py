@@ -226,7 +226,7 @@ async def obtener_resumen(
     - Metadata de sincronización
     """
     permission = _verify_costos_margenes_access(current_user)
-    _, _, access_denied, unidad_pk = await _resolve_servidor_filtro(
+    servidor_id_filtro, _, access_denied, unidad_pk = await _resolve_servidor_filtro(
         current_user,
         unidad or unidad_negocio_pk,
         None,
@@ -251,7 +251,7 @@ async def obtener_resumen(
         )
     
     try:
-        data = get_resumen_costos_margenes(unidad_negocio_pk=unidad_pk)
+        data = get_resumen_costos_margenes(servidor_id=servidor_id_filtro)
         
         return CostosMargenesResumen(
             total_productos=data.get('total_productos', 0),
@@ -333,7 +333,7 @@ async def listar_productos(
     try:
         productos_data, total = get_productos_con_costos(
             empresa_id=empresa_id,
-            unidad_negocio_pk=unidad_pk_filtro,
+            unidad_negocio_pk=None,
             servidor_id=servidor_id_filtro,
             servidores_ids=servidores_ids_filtro,  # Nuevo parámetro para RBAC
             sistema_origen=sistema_origen,
@@ -688,7 +688,7 @@ async def listar_familias(
         familias = get_familias_productos(
             servidor_id_filtro,
             servidores_ids_filtro,
-            unidad_negocio_pk=unidad_pk,
+            unidad_negocio_pk=None,
         )
         return {
             "familias": familias,
@@ -731,7 +731,7 @@ async def listar_subfamilias(
         subfamilias = get_subfamilias_productos(
             familia,
             servidor_id_filtro,
-            unidad_negocio_pk=unidad_pk,
+            unidad_negocio_pk=None,
         )
         return {
             "subfamilias": subfamilias,
@@ -792,7 +792,7 @@ async def exportar_productos_csv(
     try:
         # Obtener datos (máximo 10,000 para evitar sobrecarga)
         productos, total = get_productos_con_costos(
-            unidad_negocio_pk=unidad_pk_filtro,
+            unidad_negocio_pk=None,
             servidor_id=servidor_id_filtro,
             servidores_ids=servidores_ids_filtro,
             page=1,

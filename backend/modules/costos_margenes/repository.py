@@ -38,6 +38,7 @@ def _safe_decimal(value: Any, default: Optional[float] = None) -> Optional[float
 
 def get_resumen_costos_margenes(
     unidad_negocio_pk: Optional[str] = None,
+    servidor_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Obtiene resumen general de costos y márgenes.
@@ -46,7 +47,10 @@ def get_resumen_costos_margenes(
     conn = _get_edarsahub_connection()
     params: List[Any] = []
     unidad_where = ""
-    if unidad_negocio_pk:
+    if servidor_id:
+        unidad_where = "AND CAST(p.ServerID AS NVARCHAR(36)) = %s"
+        params.append(str(servidor_id))
+    elif unidad_negocio_pk:
         unidad_where = "AND CONVERT(varchar(36), p.UnidadNegocioID) = %s"
         params.append(str(unidad_negocio_pk))
     
@@ -69,7 +73,46 @@ def get_resumen_costos_margenes(
     """
     productos_result = execute_sql_query_params(*conn, productos_query, tuple(params))
     
-    if unidad_negocio_pk:
+    if servidor_id:
+        insumos_query = """
+        SELECT COUNT(DISTINCT i.InsumoID) as total
+        FROM Sync_Productos_Insumos i
+        WHERE i.ServerID = %s
+          AND EXISTS (
+              SELECT 1
+              FROM Sync_Productos p
+              WHERE p.ServerID = i.ServerID
+                AND (p.Activo = 1 OR p.Activo IS NULL)
+          )
+        """
+        recetas_query = """
+        SELECT COUNT(DISTINCT r.RecetaDetalleID) as total
+        FROM Sync_Productos_Recetas r
+        WHERE r.ServerID = %s
+          AND EXISTS (
+              SELECT 1
+              FROM Sync_Productos p
+              WHERE p.ServerID = r.ServerID
+                AND p.CodigoFuente = r.ProductoCodigoFuente
+                AND (p.Activo = 1 OR p.Activo IS NULL)
+          )
+        """
+        elaborados_query = """
+        SELECT COUNT(DISTINCT e.ElaboradoDetalleID) as total
+        FROM Sync_Productos_Elaborados e
+        WHERE e.ServerID = %s
+          AND EXISTS (
+              SELECT 1
+              FROM Sync_Productos p
+              WHERE p.ServerID = e.ServerID
+                AND (p.Activo = 1 OR p.Activo IS NULL)
+          )
+        """
+        sid = str(servidor_id)
+        insumos_result = execute_sql_query_params(*conn, insumos_query, (sid,))
+        recetas_result = execute_sql_query_params(*conn, recetas_query, (sid,))
+        elaborados_result = execute_sql_query_params(*conn, elaborados_query, (sid,))
+    elif unidad_negocio_pk:
         insumos_query = """
         SELECT COUNT(DISTINCT i.InsumoID) as total
         FROM Sync_Productos_Insumos i
@@ -104,9 +147,10 @@ def get_resumen_costos_margenes(
               AND (p.Activo = 1 OR p.Activo IS NULL)
         )
         """
-        insumos_result = execute_sql_query_params(*conn, insumos_query, (str(unidad_negocio_pk),))
-        recetas_result = execute_sql_query_params(*conn, recetas_query, (str(unidad_negocio_pk),))
-        elaborados_result = execute_sql_query_params(*conn, elaborados_query, (str(unidad_negocio_pk),))
+        uid = str(unidad_negocio_pk)
+        insumos_result = execute_sql_query_params(*conn, insumos_query, (uid,))
+        recetas_result = execute_sql_query_params(*conn, recetas_query, (uid,))
+        elaborados_result = execute_sql_query_params(*conn, elaborados_query, (uid,))
     else:
         insumos_result = execute_sql_query(*conn, "SELECT COUNT(*) as total FROM Sync_Productos_Insumos")
         recetas_result = execute_sql_query(*conn, "SELECT COUNT(*) as total FROM Sync_Productos_Recetas")

@@ -1612,7 +1612,7 @@ const TabProductos = ({ onSimularPrecio }) => {
           value={resumen?.productos_con_receta?.toLocaleString() || '-'}
           icon={List}
           color="green"
-          subtitle={resumen ? `${((resumen.productos_con_receta / resumen.total_productos) * 100).toFixed(1)}% del total` : ''}
+          subtitle={resumen ? `${resumen.total_productos > 0 ? ((resumen.productos_con_receta / resumen.total_productos) * 100).toFixed(1) : '0.0'}% del total` : ''}
         />
         <SummaryCard
           title="Total Recetas"
