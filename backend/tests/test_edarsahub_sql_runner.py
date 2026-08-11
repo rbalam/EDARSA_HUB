@@ -250,3 +250,128 @@ def test_validate_sigue_bloqueando_sql_ejecutable(sql):
             sql,
             "validate",
         )
+
+
+def test_migrate_hace_driver_commit_y_no_rollback(monkeypatch):
+    events = []
+
+    class FakeCursor:
+        description = None
+        rowcount = 1
+
+        def execute(self, sql):
+            events.append(("execute", sql))
+
+        def close(self):
+            events.append(("cursor_close", None))
+
+    class FakeConnection:
+        def cursor(self, as_dict=False):
+            events.append(("cursor", as_dict))
+            return FakeCursor()
+
+        def commit(self):
+            events.append(("commit", None))
+
+        def rollback(self):
+            events.append(("rollback", None))
+
+        def close(self):
+            events.append(("connection_close", None))
+
+    connection = FakeConnection()
+
+    monkeypatch.setattr(
+        runner,
+        "get_connection",
+        lambda mode: connection,
+    )
+
+    result = runner.execute_sql(
+        "UPDATE dbo.Tabla SET Activo = 0 WHERE Id = 1;",
+        "migrate",
+    )
+
+    assert result["success"] is True
+    assert result["mode"] == "migrate"
+
+    names = [event[0] for event in events]
+
+    assert "execute" in names
+    assert "commit" in names
+    assert "rollback" not in names
+    assert names.index("execute") < names.index("commit")
+    assert names.index("commit") < names.index("connection_close")
+
+
+def test_migrate_hace_rollback_si_falla_batch(monkeypatch):
+    events = []
+
+    class FakeCursor:
+        description = None
+        rowcount = 0
+
+        def execute(self, sql):
+            events.append(("execute", sql))
+            raise RuntimeError("fallo controlado")
+
+        def close(self):
+            events.append(("cursor_close", None))
+
+    class FakeConnection:
+        def cursor(self, as_dict=False):
+            events.append(("cursor", as_dict))
+            return FakeCursor()
+
+        def commit(self):
+            events.append(("commit", None))
+
+        def rollback(self):
+            events.append(("rollback", None))
+
+        def close(self):
+            events.append(("connection_close", None))
+
+    connection = FakeConnection()
+
+    monkeypatch.setattr(
+        runner,
+        "get_connection",
+        lambda mode: connection,
+    )
+
+    with pytest.raises(RuntimeError):
+        runner.execute_sql(
+            "UPDATE dbo.Tabla SET Activo = 0 WHERE Id = 1;",
+            "migrate",
+        )
+
+    names = [event[0] for event in events]
+
+    assert "execute" in names
+    assert "rollback" in names
+    assert "commit" not in names
+    assert names.index("execute") < names.index("rollback")
+    assert names.index("rollback") < names.index("connection_close")
+
+
+def test_get_connection_migrate_usa_autocommit_false(monkeypatch):
+    calls = []
+
+    monkeypatch.setattr(
+        runner,
+        "get_int_env",
+        lambda name, default: default,
+    )
+
+    monkeypatch.setattr(
+        runner,
+        "get_edarsahub_pymssql_connection",
+        lambda **kwargs: calls.append(kwargs) or object(),
+    )
+
+    connection = runner.get_connection("migrate")
+
+    assert connection is not None
+    assert len(calls) == 1
+    assert calls[0]["autocommit"] is False

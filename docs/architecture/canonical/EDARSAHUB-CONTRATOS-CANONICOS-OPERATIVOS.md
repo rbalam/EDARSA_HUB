@@ -517,3 +517,81 @@ EDARSAHUB debe operar con:
 - cambios más pequeños;
 - menor riesgo;
 - trazabilidad completa.
+
+
+---
+
+# 14. Contrato transaccional del SQL Runner
+
+## Alcance
+
+Este contrato aplica a backend/tools/edarsahub_sql_runner.py y a las
+migraciones ejecutadas mediante la conexión EDARSAHUB basada en pymssql.
+
+## Evidencia confirmada
+
+La conexión canónica opera con autocommit=False.
+
+En el runtime actual se comprobó que una conexión recién abierta puede
+mantener una transacción exterior administrada por el driver.
+
+Evidencia observada:
+
+- AFTER_OPEN: TRANCOUNT=1, XACT_STATE=1
+- después de BEGIN TRANSACTION: TRANCOUNT=2
+- después de COMMIT TRANSACTION del script: TRANCOUNT=1
+
+Por tanto, el COMMIT TRANSACTION contenido dentro de un archivo SQL no
+constituye por sí mismo la frontera final de persistencia de la conexión
+pymssql.
+
+## Regla obligatoria
+
+En modo migrate deben completarse las dos capas transaccionales:
+
+1. ejecutar correctamente el SQL;
+2. validar el resultado del script;
+3. ejecutar conn.commit() en la conexión pymssql.
+
+La operación no debe considerarse persistida hasta que conn.commit()
+termine correctamente.
+
+Si existe una excepción antes de esa confirmación, debe ejecutarse
+conn.rollback() antes de cerrar la conexión.
+
+Los modos diagnostic y validate no deben persistir modificaciones.
+
+## Implementación canónica vigente
+
+backend/tools/edarsahub_sql_runner.py ya cumple este contrato:
+
+- las conexiones se abren con autocommit=False;
+- execute_sql(..., mode="migrate") ejecuta conn.commit();
+- los demás modos terminan mediante conn.rollback();
+- ante una excepción se intenta conn.rollback();
+- posteriormente se cierra la conexión.
+
+No deben crearse runners paralelos para evitar esta semántica.
+
+## Pruebas obligatorias
+
+El contrato debe conservar pruebas de regresión que demuestren:
+
+1. migrate ejecuta commit;
+2. migrate no ejecuta rollback cuando termina correctamente;
+3. un error antes del commit ejecuta rollback;
+4. un error no ejecuta commit;
+5. migrate abre la conexión con autocommit=False.
+
+## Regla de futuras auditorías
+
+No volver a diagnosticar esta semántica desde cero salvo evidencia de que
+cambió alguno de estos elementos:
+
+- el driver SQL;
+- get_edarsahub_pymssql_connection;
+- get_connection;
+- execute_sql;
+- la configuración autocommit;
+- una prueba contractual;
+- el comportamiento transaccional observado.
