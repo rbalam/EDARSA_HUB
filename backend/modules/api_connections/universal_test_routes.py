@@ -40,6 +40,11 @@ import logging
 import re
 from core.config.edarsahub_config import get_edarsahub_sql_config
 from core.sql_first.db import get_sql_connection
+from core.auth.sql_user_identity import resolve_sql_usuario_id
+from core.rbac_sql.runtime import (
+    can_access_empresa_sql,
+    can_access_permission_sql,
+)
 _edarsa_cfg = get_edarsahub_sql_config()
 
 
@@ -227,57 +232,80 @@ def get_api_connection_with_secret(connection_id: str) -> Optional[Dict]:
 # VALIDACIÓN DE AUTORIZACIÓN
 # ============================================================================
 
-async def validate_api_connection_access(current_user: Dict, connection_raw: Dict) -> bool:
+async def validate_api_connection_access(
+    current_user: Dict,
+    connection_raw: Dict,
+) -> bool:
     """
-    Valida que el usuario tiene acceso a la conexión API.
-    
-    Reglas:
-    - SuperAdministrador: acceso total
-    - Administrador: acceso a conexiones de su empresa
-    - Usuario: acceso según allowed_servers o empresa asignada
+    Valida acceso a una conexión API mediante RBAC SQL canónico.
+
+    Requisitos:
+    - identidad UsuarioID SQL resoluble;
+    - permiso funcional SERVIDORES_VER;
+    - conexión asociada a una EmpresaID;
+    - alcance efectivo sobre esa empresa.
+
+    No autoriza por nombre de rol, JWT ni allowed_servers.
+    Fail-closed ante identidad, permiso, alcance o datos inválidos.
     """
-    user_role = current_user.get('role', '')
-    user_email = current_user.get('email', '')
-    
-    # SuperAdministrador: acceso total
-    if user_role == 'SuperAdministrador':
-        logger.info(f"[API-UQT] SuperAdmin {user_email} accede a conexión {connection_raw.get('id')}")
-        return True
-    
-    # Obtener EmpresaID de la conexión
-    connection_empresa_id = connection_raw.get('EmpresaID')
-    
-    # Si la conexión no tiene empresa asignada, solo SuperAdmin puede acceder
-    if connection_empresa_id is None:
-        logger.warning(f"[API-UQT] Conexión {connection_raw.get('id')} sin EmpresaID. Denegado para {user_email}")
-        return False
-    
-    # Obtener contexto del usuario
-    user_empresas = current_user.get('empresas', [])
-    user_allowed_servers = current_user.get('allowed_servers', [])
-    
-    # Convertir EmpresaID a int para comparación
+    user_email = current_user.get("email", "unknown")
+    connection_id = connection_raw.get("id")
+
     try:
-        connection_empresa_int = int(connection_empresa_id)
-    except (ValueError, TypeError):
-        connection_empresa_int = None
-    
-    # Administrador: verificar empresa
-    if user_role == 'Administrador':
-        if connection_empresa_int in user_empresas or str(connection_empresa_id) in [str(e) for e in user_empresas]:
-            return True
-        logger.warning(f"[API-UQT] Admin {user_email} sin acceso a empresa {connection_empresa_id}")
+        usuario_id = resolve_sql_usuario_id(current_user)
+
+        if not usuario_id:
+            logger.warning(
+                "[API-UQT] Identidad SQL no resoluble para %s",
+                user_email,
+            )
+            return False
+
+        if not can_access_permission_sql(
+            usuario_id,
+            "SERVIDORES_VER",
+        ):
+            logger.warning(
+                "[API-UQT] Usuario SQL %s sin SERVIDORES_VER",
+                usuario_id,
+            )
+            return False
+
+        connection_empresa_id = connection_raw.get("EmpresaID")
+
+        if connection_empresa_id is None:
+            logger.warning(
+                "[API-UQT] Conexión %s sin EmpresaID",
+                connection_id,
+            )
+            return False
+
+        if not can_access_empresa_sql(
+            usuario_id,
+            connection_empresa_id,
+        ):
+            logger.warning(
+                "[API-UQT] Usuario SQL %s sin acceso a empresa %s",
+                usuario_id,
+                connection_empresa_id,
+            )
+            return False
+
+        logger.info(
+            "[API-UQT] Acceso autorizado usuario SQL %s "
+            "a conexión %s",
+            usuario_id,
+            connection_id,
+        )
+        return True
+
+    except Exception as exc:
+        logger.error(
+            "[API-UQT] Error validando RBAC SQL para conexión %s: %s",
+            connection_id,
+            exc,
+        )
         return False
-    
-    # Usuario normal: verificar allowed_servers o empresa
-    connection_id_str = str(connection_raw.get('id', ''))
-    if connection_id_str in user_allowed_servers:
-        return True
-    if connection_empresa_int in user_empresas or str(connection_empresa_id) in [str(e) for e in user_empresas]:
-        return True
-    
-    logger.warning(f"[API-UQT] Usuario {user_email} sin acceso a conexión {connection_raw.get('id')}")
-    return False
 
 # ============================================================================
 # FUNCIONES DE SEGURIDAD - ENMASCARAMIENTO
@@ -894,36 +922,50 @@ async def test_api_connectivity_simple(
     Test SIMPLE de conectividad para Conexiones API.
     
     DIFERENCIA con /test-connection:
-    - NO requiere validación de permisos por EmpresaID
-    - Solo requiere autenticación JWT válida
-    - Útil para administradores probando conexiones sin restricciones
+    - Ejecuta una consulta mínima de conectividad
+    - Requiere autenticación y autorización sobre la conexión
+    - Mantiene la API key únicamente para uso interno
     
     Query fija: SELECT 1 AS test
     
     SEGURIDAD:
     - Autenticación obligatoria
+    - Autorización obligatoria antes de obtener secretos
     - SQL hardcodeado en backend
     - API key obtenida internamente
     - Response NO expone secretos
     """
     start_time = time.time()
     
-    # 1. AUTENTICACIÓN OBLIGATORIA (pero sin validación de permisos estricta)
+    # 1. AUTENTICACIÓN OBLIGATORIA
     current_user = get_current_user(credentials)
     user_email = current_user.get('email', 'unknown')
     
     logger.info(f"[API-SEC1-SIMPLE] Usuario {user_email} solicita test-connectivity para {connection_id}")
     
-    # 2. Obtener conexión con secreto
-    connection = get_api_connection_with_secret(connection_id)
-    if not connection:
+    # 2. Obtener conexión RAW antes de acceder a secretos
+    connection_raw = get_api_connection_raw_for_auth(connection_id)
+    if not connection_raw:
         raise HTTPException(status_code=404, detail="Conexión API no encontrada")
     
-    # 3. Validar que esté activa
-    if not connection.get('activo'):
+    # 3. AUTORIZACIÓN OBLIGATORIA
+    if not await validate_api_connection_access(current_user, connection_raw):
+        raise HTTPException(status_code=403, detail="Sin permiso para acceder a esta conexión API")
+
+    # 4. Validar que esté activa
+    if not connection_raw.get('activo'):
         raise HTTPException(status_code=400, detail="Conexión API inactiva")
     
-    # 4. Obtener URL y API key
+    # 5. Validar tipo de conexión
+    if connection_raw.get('tipo_conexion') != 'API_LOCAL':
+        raise HTTPException(status_code=400, detail="Esta conexión no es de tipo API_LOCAL")
+
+    # 6. Obtener conexión con secreto solo después de autorizar
+    connection = get_api_connection_with_secret(connection_id)
+    if not connection:
+        raise HTTPException(status_code=500, detail="Error obteniendo configuración de conexión")
+
+    # 7. Obtener URL y API key
     base_url = connection.get('url', '')
     api_key = connection.get('api_key', '')
     
