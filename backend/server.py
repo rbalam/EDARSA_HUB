@@ -239,7 +239,6 @@ async def dashboard_comercial_v2_fallback():
 #   - get_current_user()
 #   - user_has_server_access()
 #   - filter_servers_by_permissions()
-#   - filter_sucursales_by_permissions()
 #   - JWT_SECRET, JWT_ALGORITHM, JWT_EXPIRATION_HOURS
 #   - security (HTTPBearer)
 #
@@ -262,9 +261,6 @@ from core.security import (
     # Dependency
     get_current_user,
     # Permisos - Legacy
-    user_has_server_access,
-    filter_servers_by_permissions,
-    filter_sucursales_by_permissions,
     # Permisos - FASE 3 (nuevo modelo)
     get_user_empresas_permitidas,
     get_servers_for_empresas,
@@ -3403,92 +3399,76 @@ async def get_sucursales(server_id: str, include_hidden: bool = False, current_u
     # (SoftRestaurant) el sync no trae sucursal → se usa la virtual "Principal".
     sucursales_raw = _derive_sucursales_from_sync(server_id)
     if not sucursales_raw:
-        sucursales_raw = [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
-    sucursales_filtradas = filter_sucursales_by_permissions(sucursales_raw, current_user, server_id)
-    if not include_hidden:
-        sucursales_filtradas = await filter_sucursales_by_config(sucursales_filtradas, server_id)
-    logging.info(f"[NO-LIVE] Sucursales (sync EDARSAHUB) server={server_id}: {len(sucursales_filtradas)}")
-    return sucursales_filtradas
+        sucursales_raw = [
+            {
+                "id": "default",
+                "nombre": server.get("name", "Principal"),
+                "codigo": "default",
+            }
+        ]
 
-    try:
-        sucursales_raw = []
+    context = await resolve_user_access_context(current_user)
 
-        if is_mpro_system(server.get('system_type')):
-            # Intentar obtener sucursales de MPRO
-            query = "SELECT Sc_Cve_Sucursal as id, Sc_Descripcion as nombre FROM Sucursal WHERE Es_Cve_Estado <> 'BA'"
-            try:
-                logging.info(f"[MPRO Sucursales] Consultando sucursales para {server['name']}...")
-                results = execute_sql_query(
-                    server['host'],
-                    server['port'],
-                    server['database'],
-                    server['username'],
-                    server['password'],
-                    query
-                )
-                logging.info(f"[MPRO Sucursales] Resultado: {len(results) if results else 0} sucursales")
-                if results and len(results) > 0:
-                    sucursales_raw = results
-            except Exception as e:
-                logging.warning(f"MPRO Sucursales query failed: {e}")
+    if not has_server_access(context, server_id):
+        logging.warning(
+            "[RBAC-SUCURSALES] Usuario %s sin acceso al servidor %s",
+            current_user.get("email"),
+            server_id,
+        )
+        raise HTTPException(
+            status_code=403,
+            detail="No tiene acceso a este servidor",
+        )
 
-            # Si no hay sucursales en la tabla Sucursal, intentar usar Almacenes
-            if not sucursales_raw:
-                try:
-                    query_almacen = "SELECT DISTINCT Al_Cve_Almacen as id, Al_Descripcion as nombre FROM Almacen WHERE Es_Cve_Estado <> 'BA'"
-                    almacenes = execute_sql_query(
-                        server['host'],
-                        server['port'],
-                        server['database'],
-                        server['username'],
-                        server['password'],
-                        query_almacen
-                    )
-                    if almacenes and len(almacenes) > 0:
-                        sucursales_raw = almacenes
-                except Exception as e:
-                    logging.warning(f"MPRO Almacenes query failed: {e}")
+    if context.tiene_acceso_global:
+        sucursales_filtradas = sucursales_raw
+    else:
+        server_key = server_id.lower()
+        sucursales_permitidas = context.sucursales_por_server.get(
+            server_key,
+            [],
+        )
 
-            # Si no hay nada, devolver sucursal virtual "Principal"
-            if not sucursales_raw:
-                sucursales_raw = [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
-
-        elif is_softrestaurant_system(server.get('system_type')):
-            # SoftRestaurant NO tiene tabla Sucursal - devolvemos una sucursal virtual con el nombre del servidor
-            sucursales_raw = [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
+        if not sucursales_permitidas:
+            logging.warning(
+                "[RBAC-SUCURSALES] Usuario %s sin sucursales "
+                "asignadas para servidor %s",
+                current_user.get("email"),
+                server_id,
+            )
+            sucursales_filtradas = []
         else:
-            # Query genérica para otros sistemas - también con fallback
-            try:
-                query = "SELECT DISTINCT Sc_Cve_Sucursal as id, Sc_Descripcion as nombre FROM Sucursal"
-                results = execute_sql_query(
-                    server['host'],
-                    server['port'],
-                    server['database'],
-                    server['username'],
-                    server['password'],
-                    query
-                )
-                if results and len(results) > 0:
-                    sucursales_raw = results
-            except Exception:
-                pass
-            # Fallback: sucursal virtual
-            if not sucursales_raw:
-                sucursales_raw = [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
+            permitidas = {
+                str(codigo).strip().lower()
+                for codigo in sucursales_permitidas
+                if codigo is not None
+            }
 
-        # Aplicar filtro de permisos de usuario
-        sucursales_filtradas = filter_sucursales_by_permissions(sucursales_raw, current_user, server_id)
+            sucursales_filtradas = [
+                sucursal
+                for sucursal in sucursales_raw
+                if str(
+                    sucursal.get("codigo")
+                    or sucursal.get("id")
+                    or ""
+                ).strip().lower()
+                in permitidas
+            ]
 
-        # Aplicar filtro de configuración de visibilidad (si no se pide include_hidden)
-        if not include_hidden:
-            sucursales_filtradas = await filter_sucursales_by_config(sucursales_filtradas, server_id)
+    if not include_hidden:
+        sucursales_filtradas = await filter_sucursales_by_config(
+            sucursales_filtradas,
+            server_id,
+        )
 
-        return sucursales_filtradas
+    logging.info(
+        "[NO-LIVE] Sucursales (sync EDARSAHUB) "
+        "server=%s total=%s",
+        server_id,
+        len(sucursales_filtradas),
+    )
 
-    except Exception as e:
-        logging.error(f"Error obteniendo sucursales: {str(e)}")
-        # En caso de error, devolver sucursal virtual en lugar de array vacío
-        return [{"id": "default", "nombre": server.get('name', 'Principal'), "codigo": "default"}]
+    return sucursales_filtradas
 
 @api_router.get("/servers/{server_id}/almacenes")
 async def get_almacenes(server_id: str, sucursal_id: Optional[str] = None, sucursal: Optional[str] = None, current_user: Dict = Depends(get_current_user)):
