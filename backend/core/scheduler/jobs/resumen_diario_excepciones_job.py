@@ -55,8 +55,10 @@ async def execute_resumen_diario_excepciones() -> Dict[str, Any]:
     resultado = {"total": 0, "unidades": 0, "email_enviado": False, "errores": []}
 
     try:
-        from modules.alertas_estrategicas.routes import resumen_alertas
-        data = await resumen_alertas(server_id="", limite=1000, current_user={})
+        from core.auth.sql_user_identity import resolve_alertas_scheduler_current_user
+        from modules.alertas_estrategicas.service import obtener_resumen_alertas
+        scheduler_user = resolve_alertas_scheduler_current_user()
+        data = await obtener_resumen_alertas(server_id="", limite=1000, current_user=scheduler_user)
         alertas = data.get("alertas", []) if isinstance(data, dict) else []
     except Exception as e:
         logger.error(f"[RESUMEN_DIARIO_EXC] Error obteniendo excepciones: {e}")

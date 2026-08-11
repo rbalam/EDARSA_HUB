@@ -204,8 +204,10 @@ async def execute_alertas_excepciones_notifier() -> Dict[str, Any]:
 
     # 1) Obtener excepciones desde el motor canónico (NO-LIVE)
     try:
-        from modules.alertas_estrategicas.routes import resumen_alertas
-        data = await resumen_alertas(server_id="", limite=500, current_user={})
+        from core.auth.sql_user_identity import resolve_alertas_scheduler_current_user
+        from modules.alertas_estrategicas.service import obtener_resumen_alertas
+        scheduler_user = resolve_alertas_scheduler_current_user()
+        data = await obtener_resumen_alertas(server_id="", limite=500, current_user=scheduler_user)
         alertas = data.get("alertas", []) if isinstance(data, dict) else []
     except Exception as e:
         logger.error(f"[ALERTAS_EXC] Error obteniendo excepciones: {e}")
@@ -282,8 +284,10 @@ async def execute_alertas_excepciones_notifier() -> Dict[str, Any]:
 async def _obtener_excepciones_por_severidad() -> List[Dict[str, Any]]:
     """Devuelve las excepciones actuales filtradas por las severidades configuradas."""
     severidades = _severidades_configuradas()
-    from modules.alertas_estrategicas.routes import resumen_alertas
-    data = await resumen_alertas(server_id="", limite=500, current_user={})
+    from core.auth.sql_user_identity import resolve_alertas_scheduler_current_user
+    from modules.alertas_estrategicas.service import obtener_resumen_alertas
+    scheduler_user = resolve_alertas_scheduler_current_user()
+    data = await obtener_resumen_alertas(server_id="", limite=500, current_user=scheduler_user)
     alertas = data.get("alertas", []) if isinstance(data, dict) else []
     return [a for a in alertas if (a.get("severidad") or "").upper() in severidades]
 
