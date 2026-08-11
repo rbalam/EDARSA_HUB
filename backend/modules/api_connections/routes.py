@@ -117,8 +117,8 @@ async def list_apis(credentials: HTTPAuthorizationCredentials = Depends(security
     try:
         apis = await list_api_connections()
         return {
-            "success": True, 
-            "data": apis, 
+            "success": True,
+            "data": apis,
             "count": len(apis),
             "source": "EDARSAHUB_SQL"
         }
@@ -170,8 +170,8 @@ async def create_api(
             created_by=user.get('email', 'system')
         )
         return {
-            "success": True, 
-            "data": api, 
+            "success": True,
+            "data": api,
             "message": "Conexión API creada en EDARSAHUB SQL",
             "source": "EDARSAHUB_SQL"
         }
@@ -197,21 +197,21 @@ async def update_api(
     DESTINO: EDARSAHUB SQL (autoritativo), luego caché MongoDB.
     """
     user = get_current_user(credentials)
-    
+
     try:
         # Filtrar solo campos proporcionados
         update_data = {k: v for k, v in data.model_dump().items() if v is not None}
         if not update_data:
             raise HTTPException(status_code=400, detail="No se proporcionaron campos para actualizar")
-        
+
         api = await update_api_connection(
             api_id,
             update_data,
             updated_by=user.get('email', 'system')
         )
         return {
-            "success": True, 
-            "data": api, 
+            "success": True,
+            "data": api,
             "message": "Conexión API actualizada en EDARSAHUB SQL",
             "source": "EDARSAHUB_SQL"
         }
@@ -231,11 +231,11 @@ async def delete_api(api_id: str, credentials: HTTPAuthorizationCredentials = De
     DESTINO: EDARSAHUB SQL (autoritativo).
     """
     user = get_current_user(credentials)
-    
+
     try:
         await delete_api_connection(api_id, deleted_by=user.get('email', 'system'))
         return {
-            "success": True, 
+            "success": True,
             "message": "Conexión API eliminada de EDARSAHUB SQL",
             "source": "EDARSAHUB_SQL"
         }
@@ -280,15 +280,17 @@ async def test_connection_by_id(
 @router.post("/sync-cache")
 async def sync_to_mongo(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
-    Sincroniza conexiones API de EDARSAHUB SQL a MongoDB caché.
-    FLUJO: EDARSAHUB SQL → MongoDB (caché).
+    Mantiene compatibilidad del endpoint de conexiones API.
+
+    EDARSAHUB SQL es la única fuente canónica.
+    No existe sincronización secundaria MongoDB.
     """
     get_current_user(credentials)
     try:
         result = await sync_all_to_mongo_cache()
         return {
-            "success": True, 
-            "message": "Sincronización EDARSAHUB SQL → MongoDB completada", 
+            "success": True,
+            "message": "Conexiones API verificadas en EDARSAHUB SQL",
             **result
         }
     except RuntimeError as e:
@@ -308,7 +310,7 @@ async def check_dup(
     get_current_user(credentials)
     if not name and not url:
         raise HTTPException(status_code=400, detail="Proporciona name o url")
-    
+
     duplicate = check_duplicate_api(name or '', url or '')
     return {
         "exists": duplicate is not None,
@@ -328,23 +330,23 @@ async def test_query_by_connection(
 ):
     """
     Prueba una consulta SQL contra una conexión API existente.
-    
+
     SEGURIDAD:
     - Valida SQL (solo SELECT permitido)
     - Usa credenciales cifradas de la conexión
     - No requiere API key en request
     - Registra auditoría
-    
+
     RESTRICCIONES:
     - Solo usuarios autenticados
     - Solo consultas SELECT
     - Bloquea: DELETE, UPDATE, INSERT, DROP, ALTER, TRUNCATE, EXEC, xp_, sp_
     """
     user = get_current_user(credentials)
-    
+
     # Importar función de ejecución
     from .repository import execute_test_query
-    
+
     try:
         result = await execute_test_query(
             api_id=api_id,
@@ -352,14 +354,14 @@ async def test_query_by_connection(
             timeout=data.timeout,
             executed_by=user.get('email', 'anonymous')
         )
-        
+
         # Agregar metadata
         result['connection_id'] = api_id
         result['tipo_uso'] = data.tipo_uso
         result['nombre_consulta'] = data.nombre_consulta
-        
+
         return result
-        
+
     except Exception as e:
         logging.error(f"[API_CONNECTIONS][TEST-QUERY] Error: {e}")
         raise HTTPException(status_code=500, detail="Error ejecutando consulta")
@@ -372,9 +374,9 @@ async def test_query_draft(
 ):
     """
     Prueba una consulta SQL sin conexión guardada (para alta nueva).
-    
+
     Requiere URL y opcionalmente API key.
-    
+
     SEGURIDAD:
     - Valida SQL (solo SELECT permitido)
     - No guarda credenciales
@@ -383,13 +385,13 @@ async def test_query_draft(
     import time
     import requests
     from modules.consultas_sql.validator import get_validator
-    
+
     user = get_current_user(credentials)
-    
+
     # 1. Validar SQL
     validator = get_validator()
     validation = validator.validate_sql_text(data.sql_query, strict_mode=True)
-    
+
     if not validation.is_valid:
         errors = [e['message'] for e in validation.errors]
         return {
@@ -398,29 +400,29 @@ async def test_query_draft(
             "validation_errors": errors,
             "sql_blocked": True
         }
-    
+
     # 2. Ejecutar consulta
     start_time = time.time()
-    
+
     try:
         headers = {"x-api-key": data.api_key} if data.api_key else {}
-        
+
         response = requests.get(
             data.url,
             headers=headers,
             params={"sql": data.sql_query},
             timeout=data.timeout
         )
-        
+
         elapsed_ms = round((time.time() - start_time) * 1000, 2)
-        
+
         if response.status_code == 200:
             try:
                 response_data = response.json()
-                
+
                 rows = []
                 columns = []
-                
+
                 if isinstance(response_data, list):
                     rows = response_data[:20]
                     if rows and isinstance(rows[0], dict):
@@ -432,7 +434,7 @@ async def test_query_draft(
                         rows = response_data['results'][:20] if isinstance(response_data['results'], list) else []
                     if rows and isinstance(rows[0], dict):
                         columns = list(rows[0].keys())
-                
+
                 return {
                     "success": True,
                     "status_code": 200,
@@ -442,7 +444,7 @@ async def test_query_draft(
                     "preview_data": rows,
                     "message": f"Consulta ejecutada ({len(rows)} filas)"
                 }
-                
+
             except:
                 return {
                     "success": True,
@@ -457,7 +459,7 @@ async def test_query_draft(
                 "response_time_ms": elapsed_ms,
                 "error": f"HTTP {response.status_code}"
             }
-            
+
     except requests.exceptions.Timeout:
         return {
             "success": False,

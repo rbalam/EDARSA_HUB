@@ -184,11 +184,6 @@ class EventoAuditoria:
             self.resultado, self.motivo, self.observaciones, self.nivel_riesgo
         ]
     
-    def to_mongo_doc(self) -> dict:
-        """Retorna documento para MongoDB."""
-        doc = asdict(self)
-        doc['_sync_pending'] = True
-        return doc
 
 
 # ============================================
@@ -199,7 +194,7 @@ class ServicioAuditoria:
     """
     Servicio centralizado de auditoría financiera.
     Registra en SQL Server EDARSA HUB.
-    Fallback a MongoDB si SQL no está disponible.
+    Sin fallback productivo: EDARSAHUB SQL es la única persistencia.
     """
     
     SQL_INSERT = """
@@ -220,9 +215,6 @@ class ServicioAuditoria:
         self._sql_available = None
         self._mongo_db = None
     
-    async def _get_mongo_db(self):
-        """P5-3D: MongoDB retirado (NO-MONGO). La auditoría persiste en SQL. Retorna None."""
-        return None
     
     def _get_sql_connection(self):
         """Obtiene conexión a SQL Server EDARSA HUB"""
@@ -391,9 +383,6 @@ class ServicioAuditoria:
         finally:
             conn.close()
     
-    async def _guardar_mongo(self, evento: EventoAuditoria) -> bool:
-        """Compatibilidad legacy desactivada: auditoría opera SQL-only."""
-        return False
 
     async def registrar_params(self, params: AuditoriaParams) -> bool:
         """
@@ -408,11 +397,10 @@ class ServicioAuditoria:
             
             if await self._guardar_sql(evento):
                 return True
-            
-            if await self._guardar_mongo(evento):
-                return True
-            
-            logger.warning("No hay backend de auditoría disponible")
+
+            logger.warning(
+                "No fue posible persistir auditoría en EDARSAHUB SQL"
+            )
             return False
             
         except Exception as e:

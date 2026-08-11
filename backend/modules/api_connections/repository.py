@@ -238,7 +238,7 @@ def check_duplicate_api(name: str, url: str, exclude_id: str = None) -> Optional
 
 
 # ============================================================================
-# ESCRITURA - PRIMERO EDARSAHUB SQL, LUEGO CACHÉ MONGODB
+# ESCRITURA - EDARSAHUB SQL COMO FUENTE UNICA
 # ============================================================================
 
 async def create_api_connection(data: Dict, created_by: str = "system") -> Dict:
@@ -250,7 +250,7 @@ async def create_api_connection(data: Dict, created_by: str = "system") -> Dict:
     2. Cifrar API key
     3. INSERT en EDARSAHUB SQL
     4. Registrar en bitácora
-    5. Actualizar caché MongoDB (opcional, no bloquea)
+    5. Finalizar operación en EDARSAHUB SQL
     
     Si EDARSAHUB SQL falla, NO se guarda nada.
     """
@@ -323,8 +323,7 @@ async def create_api_connection(data: Dict, created_by: str = "system") -> Dict:
     # 5. Registrar en bitácora
     _log_operation(api_id, 'CREATE', None, data, created_by)
     
-    # 6. Actualizar caché MongoDB (no bloquea si falla)
-    await _sync_to_mongo_cache(api_id)
+    # 6. Sin persistencia secundaria: SQL es fuente única
     
     # 7. Retornar datos guardados
     return get_api_connection_sql(api_id)
@@ -340,7 +339,7 @@ async def update_api_connection(api_id: str, data: Dict, updated_by: str = "syst
     3. Cifrar API key si se proporciona
     4. UPDATE en EDARSAHUB SQL
     5. Registrar en bitácora
-    6. Actualizar caché MongoDB
+    6. Finalizar operación en EDARSAHUB SQL
     """
     # 1. Verificar que existe
     existing = get_api_connection_sql(api_id)
@@ -418,8 +417,7 @@ async def update_api_connection(api_id: str, data: Dict, updated_by: str = "syst
     # 6. Registrar en bitácora
     _log_operation(api_id, 'UPDATE', existing, data, updated_by)
     
-    # 7. Actualizar caché MongoDB
-    await _sync_to_mongo_cache(api_id)
+    # 7. Sin persistencia secundaria: SQL es fuente única
     
     return get_api_connection_sql(api_id)
 
@@ -464,35 +462,40 @@ async def delete_api_connection(api_id: str, deleted_by: str = "system") -> bool
 
 
 # ============================================================================
-# SINCRONIZACIÓN EDARSAHUB SQL → MONGODB (CACHÉ)
+# COMPATIBILIDAD PUBLICA LEGACY SQL-ONLY
 # ============================================================================
 
-async def _sync_to_mongo_cache(api_id: str) -> bool:
-    """P5-3C: caché Mongo retirada (NO-MONGO). EDARSAHUB SQL es la única fuente. No-op."""
-    return False
 
 
 async def sync_all_to_mongo_cache() -> Dict:
     """
-    Sincroniza todas las conexiones API de EDARSAHUB SQL a MongoDB caché.
+    Compatibilidad pública legacy para /api-connections/sync-cache.
+
+    EDARSAHUB SQL es la única fuente canónica.
+    No existe caché ni sincronización secundaria MongoDB.
+    Esta función valida las conexiones activas presentes en SQL
+    sin realizar IO adicional.
     """
     try:
-        apis = list_api_connections_sql(include_inactive=False)
-        synced = 0
-        errors = 0
-        
-        for api in apis:
-            success = await _sync_to_mongo_cache(api['id'])
-            if success:
-                synced += 1
-            else:
-                errors += 1
-        
-        logging.info(f"[API_CONNECTIONS] Sincronización completa: {synced} OK, {errors} errores")
-        return {"synced": synced, "errors": errors, "total": len(apis)}
+        apis = list_api_connections_sql(
+            include_inactive=False
+        )
+        total = len(apis)
+
+        return {
+            "synced": total,
+            "errors": 0,
+            "total": total,
+        }
+
     except Exception as e:
-        logging.error(f"[API_CONNECTIONS] Error en sincronización masiva: {e}")
-        raise RuntimeError(f"Error sincronizando: {e}")
+        logging.error(
+            "[API_CONNECTIONS] Error consultando "
+            f"conexiones SQL: {e}"
+        )
+        raise RuntimeError(
+            f"Error consultando conexiones API: {e}"
+        )
 
 
 # ============================================================================
@@ -502,7 +505,7 @@ async def sync_all_to_mongo_cache() -> Dict:
 async def test_api_connection_health(api_id: str = None, url: str = None, api_key: str = None) -> Dict:
     """
     Prueba la conexión a una API local.
-    Guarda el resultado en MongoDB como log de estado.
+    Devuelve el resultado de salud sin persistencia MongoDB.
     """
     import requests
     
