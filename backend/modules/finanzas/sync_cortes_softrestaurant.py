@@ -20,6 +20,7 @@ Autor: E1 Agent
 Fecha: 1 Mayo 2026
 Fase: Finanzas Fase 2 - Control de Ingresos
 """
+from modules.finanzas.canonical_sync_units import get_canonical_finance_sync_unit_names
 
 import os
 import hashlib
@@ -52,7 +53,6 @@ EDARSAHUB_CONFIG = {
 }
 
 # Unidades SoftRestaurant autorizadas
-UNIDADES_SR_AUTORIZADAS = ['130° MERIDA', 'CIENFUEGOS', 'LA ESTELAR']
 
 
 # ============================================================================
@@ -591,7 +591,7 @@ def sincronizar_unidad_softrestaurant(
     Sincroniza cortes de caja de una unidad SoftRestaurant específica.
     
     Args:
-        unidad_nombre: Nombre de la unidad (debe estar en UNIDADES_SR_AUTORIZADAS)
+        unidad_nombre: Nombre de la unidad (debe estar en unidades_autorizadas)
         fecha_desde: Fecha inicio (opcional, default: dias_atras antes de hoy)
         fecha_hasta: Fecha fin (opcional, default: hoy)
         dias_atras: Días hacia atrás si no se especifica fecha_desde
@@ -600,9 +600,10 @@ def sincronizar_unidad_softrestaurant(
         Dict con resultado de sincronización
     """
     # Validar unidad autorizada
-    if unidad_nombre not in UNIDADES_SR_AUTORIZADAS:
+    unidades_autorizadas = get_canonical_finance_sync_unit_names('SOFTRESTAURANT')
+    if unidad_nombre not in unidades_autorizadas:
         raise ValueError(f"Unidad no autorizada: {unidad_nombre}. "
-                        f"Autorizadas: {UNIDADES_SR_AUTORIZADAS}")
+                        f"Autorizadas: {unidades_autorizadas}")
     
     # Establecer fechas
     if fecha_hasta is None:
@@ -701,7 +702,7 @@ def sincronizar_todas_unidades_softrestaurant(
     """
     resultados = []
     
-    for unidad in UNIDADES_SR_AUTORIZADAS:
+    for unidad in get_canonical_finance_sync_unit_names('SOFTRESTAURANT'):
         logger.info(f"[SYNC_SR] === Iniciando sincronización: {unidad} ===")
         try:
             resultado = sincronizar_unidad_softrestaurant(

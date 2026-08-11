@@ -19,6 +19,7 @@ Autor: E1 Agent
 Fecha: 1 Mayo 2026
 Fase: Finanzas Fase 2 - Control de Ingresos
 """
+from modules.finanzas.canonical_sync_units import get_canonical_finance_sync_unit_names
 
 import os
 import hashlib
@@ -49,10 +50,6 @@ EDARSAHUB_CONFIG = {
 }
 
 # Unidades MPRO autorizadas con su mapeo de sucursal
-UNIDADES_MPRO_AUTORIZADAS = {
-    '130° QUERETARO': '0021',
-    'ORIGEN': '0023'
-}
 
 
 # ============================================================================
@@ -520,9 +517,10 @@ def sincronizar_unidad_mpro(
     Sincroniza cortes de caja de una unidad MPRO específica.
     """
     # Validar unidad autorizada
-    if unidad_nombre not in UNIDADES_MPRO_AUTORIZADAS:
+    unidades_autorizadas = get_canonical_finance_sync_unit_names('MANAGEMENTPRO')
+    if unidad_nombre not in unidades_autorizadas:
         raise ValueError(f"Unidad no autorizada: {unidad_nombre}. "
-                        f"Autorizadas: {list(UNIDADES_MPRO_AUTORIZADAS.keys())}")
+                        f"Autorizadas: {list(unidades_autorizadas)}")
     
     # Establecer fechas
     if fecha_hasta is None:
@@ -615,7 +613,7 @@ def sincronizar_todas_unidades_mpro(
     """
     resultados = []
     
-    for unidad in UNIDADES_MPRO_AUTORIZADAS.keys():
+    for unidad in get_canonical_finance_sync_unit_names('MANAGEMENTPRO'):
         logger.info(f"[SYNC_MPRO] === Iniciando sincronización: {unidad} ===")
         try:
             resultado = sincronizar_unidad_mpro(

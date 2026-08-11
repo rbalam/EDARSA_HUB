@@ -12,10 +12,8 @@ Fuente:
 - tabla `Comanda_Pago` campo `Cp_Propina`
 - filtrado por `Forma_Pago.Fp_Tipo = '04'` (tarjetas)
 
-Formas de pago tarjeta:
-- 0004: T DE CREDITO
-- 0005: T DE DEBITO
-- 0006: T AMEX
+Clasificación de tarjeta:
+- Determinada por Forma_Pago.Fp_Tipo = '04' en MPRO.
 
 Destino:
 - EDARSAHUB.propinas_tpv_control
@@ -25,6 +23,7 @@ Autor: E1 Agent
 Fecha: 1 Mayo 2026
 Fase: Finanzas Fase 3 - Propinas TPV
 """
+from modules.finanzas.canonical_sync_units import get_canonical_finance_sync_unit_names
 
 import os
 import hashlib
@@ -76,10 +75,6 @@ EDARSAHUB_CONFIG = {
 }
 
 # Unidades MPRO autorizadas
-UNIDADES_MPRO_AUTORIZADAS = ['130° QUERETARO', 'ORIGEN']
-
-# Formas de pago tarjeta en MPRO (Tipo '04')
-FORMAS_PAGO_TARJETA = ['0004', '0005', '0006']  # Crédito, Débito, AMEX
 
 
 # ============================================================================
@@ -108,6 +103,7 @@ def get_unidad_mpro_connection_info(unidad_nombre: str) -> Optional[Dict]:
                 u.nombre as unidad_nombre,
                 u.codigo as unidad_codigo,
                 u.server_id,
+                u.sucursal_origen_id,
                 s.nombre as servidor_nombre,
                 s.host,
                 s.port,
@@ -129,25 +125,23 @@ def get_unidad_mpro_connection_info(unidad_nombre: str) -> Optional[Dict]:
             logger.warning(f"[SYNC_PROPINAS_MPRO] Unidad MPRO no encontrada: {unidad_nombre}")
             return None
         
-        # Mapeo de unidades MPRO a códigos de empresa en CENTRAL2020
-        # Validado: Empresa.Em_Cve_Empresa
-        # 0004 = 130° QUERETARO (Sucursal 0021)
-        # 0006 = ORIGEN (Sucursal 0023)
-        EMPRESA_MAPPING = {
-            '130° QUERETARO': '0004',  # Código empresa en CENTRAL2020
-            'ORIGEN': '0006',           # Código empresa en CENTRAL2020
-        }
-        
-        empresa_codigo = EMPRESA_MAPPING.get(unidad_nombre)
+        sucursal_origen_id = str(
+            unidad.get('sucursal_origen_id') or ''
+        ).strip()
+
+        if not sucursal_origen_id:
+            raise ValueError(
+                f"Unidad MPRO sin sucursal_origen_id canónica: {unidad_nombre}"
+            )
         
         return {
             'unidad_negocio_id': str(unidad['unidad_negocio_id']),
             'unidad_nombre': unidad['unidad_nombre'],
             'unidad_codigo': unidad['unidad_codigo'],
             'server_id': str(unidad['server_id']),
+            'sucursal_origen_id': sucursal_origen_id,
             'servidor_nombre': unidad['servidor_nombre'],
             'empresa_id': None,
-            'empresa_codigo': empresa_codigo,
             'empresa_nombre': unidad_nombre,
             'host': unidad['host'] or os.getenv('EDARSAHUB_SQL_HOST'),
             'port': unidad['port'] or 1433,
@@ -230,8 +224,15 @@ def extraer_propinas_tpv_mpro(
     cursor = mpro_conn.cursor(as_dict=True)
     
     try:
-        # Obtener el código de empresa para filtrar
-        empresa_codigo = conn_info.get('empresa_codigo')
+        sucursal_origen_id = str(
+            conn_info.get('sucursal_origen_id') or ''
+        ).strip()
+
+        if not sucursal_origen_id:
+            raise ValueError(
+                "sucursal_origen_id canónica requerida para "
+                f"{conn_info['unidad_nombre']}"
+            )
         
         # Query para extraer propinas TPV de MPRO
         # Solo formas de pago tipo '04' (tarjetas)
@@ -265,10 +266,9 @@ def extraer_propinas_tpv_mpro(
         
         params = [fecha_desde, fecha_hasta]
         
-        # Filtrar por empresa usando la relación Sucursal.Em_Cve_Empresa
-        if empresa_codigo:
-            query += " AND s.Em_Cve_Empresa = %s"
-            params.append(empresa_codigo)
+        # Filtrar por la sucursal canónica de la unidad MPRO.
+        query += " AND c.Sc_Cve_Sucursal = %s"
+        params.append(sucursal_origen_id)
         
         query += " ORDER BY c.Co_Fecha, cp.Co_Folio, cp.Fp_Cve_Forma_Pago"
         
@@ -552,11 +552,12 @@ def sincronizar_propinas_mpro(
     
     inicio = datetime.now()
     
-    if unidad_nombre not in UNIDADES_MPRO_AUTORIZADAS:
+    unidades_autorizadas = get_canonical_finance_sync_unit_names('MANAGEMENTPRO')
+    if unidad_nombre not in unidades_autorizadas:
         return {
             'unidad': unidad_nombre,
             'estatus': 'ERROR',
-            'error': f'Unidad no autorizada: {unidad_nombre}. Autorizadas: {UNIDADES_MPRO_AUTORIZADAS}'
+            'error': f'Unidad no autorizada: {unidad_nombre}. Autorizadas: {unidades_autorizadas}'
         }
     
     if fecha_hasta is None:
@@ -690,7 +691,7 @@ def sincronizar_todas_unidades_mpro(
         'detalle': []
     }
     
-    for unidad in UNIDADES_MPRO_AUTORIZADAS:
+    for unidad in get_canonical_finance_sync_unit_names('MANAGEMENTPRO'):
         resultado = sincronizar_propinas_mpro(
             unidad, fecha_desde, fecha_hasta, dias_atras
         )
@@ -721,5 +722,4 @@ def sincronizar_todas_unidades_mpro(
 __all__ = [
     'sincronizar_propinas_mpro',
     'sincronizar_todas_unidades_mpro',
-    'UNIDADES_MPRO_AUTORIZADAS'
 ]

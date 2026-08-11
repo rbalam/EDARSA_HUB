@@ -22,6 +22,7 @@ Autor: E1 Agent
 Fecha: 1 Mayo 2026
 Fase: Finanzas Fase 3 - Propinas TPV
 """
+from modules.finanzas.canonical_sync_units import get_canonical_finance_sync_unit_names
 
 import os
 import hashlib
@@ -74,7 +75,6 @@ EDARSAHUB_CONFIG = {
 }
 
 # Unidades SoftRestaurant autorizadas para Propinas TPV
-UNIDADES_SR_AUTORIZADAS = ['130° MERIDA', 'CIENFUEGOS', 'LA ESTELAR']
 
 
 # ============================================================================
@@ -613,11 +613,12 @@ def sincronizar_propinas_softrestaurant(
     inicio = datetime.now()
     
     # Validar unidad autorizada
-    if unidad_nombre not in UNIDADES_SR_AUTORIZADAS:
+    unidades_autorizadas = get_canonical_finance_sync_unit_names('SOFTRESTAURANT')
+    if unidad_nombre not in unidades_autorizadas:
         return {
             'unidad': unidad_nombre,
             'estatus': 'ERROR',
-            'error': f'Unidad no autorizada: {unidad_nombre}. Autorizadas: {UNIDADES_SR_AUTORIZADAS}'
+            'error': f'Unidad no autorizada: {unidad_nombre}. Autorizadas: {unidades_autorizadas}'
         }
     
     # Calcular rango de fechas
@@ -739,7 +740,7 @@ def sincronizar_todas_unidades_sr(
         'detalle': []
     }
     
-    for unidad in UNIDADES_SR_AUTORIZADAS:
+    for unidad in get_canonical_finance_sync_unit_names('SOFTRESTAURANT'):
         resultado = sincronizar_propinas_softrestaurant(
             unidad, fecha_desde, fecha_hasta, dias_atras
         )
@@ -770,5 +771,4 @@ def sincronizar_todas_unidades_sr(
 __all__ = [
     'sincronizar_propinas_softrestaurant',
     'sincronizar_todas_unidades_sr',
-    'UNIDADES_SR_AUTORIZADAS'
 ]
