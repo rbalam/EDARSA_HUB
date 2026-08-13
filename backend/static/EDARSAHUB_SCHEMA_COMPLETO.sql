@@ -2432,6 +2432,46 @@ CREATE TABLE [dbo].[Compras_Inventarios_Fisicos_Sync] (
 GO
 
 -- ============================================================
+-- TABLA: [dbo].[Compras_Inventarios_Fisicos_Detalle_Sync]
+-- ============================================================
+CREATE TABLE [dbo].[Compras_Inventarios_Fisicos_Detalle_Sync] (
+    [id] BIGINT IDENTITY(1,1) NOT NULL,
+    [inventario_sync_id] INT NULL,
+    [unidad_negocio_id] VARCHAR(64) NOT NULL,
+    [unidad_negocio_codigo] VARCHAR(100) NULL,
+    [server_id] VARCHAR(64) NOT NULL,
+    [system_type] VARCHAR(80) NULL,
+    [folio] VARCHAR(100) NOT NULL,
+    [fecha] DATETIME NULL,
+    [almacen] VARCHAR(255) NULL,
+    [almacen_id] VARCHAR(100) NULL,
+    [sucursal] VARCHAR(255) NULL,
+    [sucursal_id] VARCHAR(100) NULL,
+    [codigo_producto] VARCHAR(100) NOT NULL,
+    [nombre_producto] NVARCHAR(500) NULL,
+    [unidad] NVARCHAR(50) NULL,
+    [existencia_teorica] DECIMAL(18,6) NULL,
+    [existencia_fisica] DECIMAL(18,6) NULL,
+    [diferencia] DECIMAL(18,6) NULL,
+    [costo_unitario] DECIMAL(18,6) NULL,
+    [diferencia_costo] DECIMAL(18,6) NULL,
+    [source_table] VARCHAR(100) NULL,
+    [source_row_hash] VARBINARY(32) NULL,
+    [sync_source] VARCHAR(50) NULL
+        CONSTRAINT [DF_CIFDS_sync_source] DEFAULT ('SYNC'),
+    [sync_timestamp] DATETIME NOT NULL
+        CONSTRAINT [DF_CIFDS_sync_timestamp] DEFAULT (getdate()),
+    [sync_status] VARCHAR(50) NULL
+        CONSTRAINT [DF_CIFDS_sync_status] DEFAULT ('ACTIVE'),
+    [created_at] DATETIME NOT NULL
+        CONSTRAINT [DF_CIFDS_created_at] DEFAULT (getdate()),
+    [updated_at] DATETIME NULL,
+    CONSTRAINT [PK_Compras_Inventarios_Fisicos_Detalle_Sync]
+        PRIMARY KEY CLUSTERED ([id])
+);
+GO
+
+-- ============================================================
 -- TABLA: [dbo].[Compras_KPIs_Historico]
 -- ============================================================
 CREATE TABLE [dbo].[Compras_KPIs_Historico] (
@@ -11609,8 +11649,32 @@ GO
 CREATE NONCLUSTERED INDEX [IX_InvFisico_Unidad]
     ON [dbo].[Compras_Inventarios_Fisicos_Sync] (unidad_negocio_id);
 GO
-CREATE UNIQUE NONCLUSTERED INDEX [UQ_InvFisico_Folio_Server]
-    ON [dbo].[Compras_Inventarios_Fisicos_Sync] (folio, server_id);
+CREATE UNIQUE NONCLUSTERED INDEX [UQ_InvFisico_ServerUnidadFolio]
+    ON [dbo].[Compras_Inventarios_Fisicos_Sync]
+       (server_id, unidad_negocio_id, folio);
+GO
+CREATE NONCLUSTERED INDEX [IX_CIFDS_AlmacenFecha]
+    ON [dbo].[Compras_Inventarios_Fisicos_Detalle_Sync]
+       (server_id, almacen_id, fecha);
+GO
+CREATE NONCLUSTERED INDEX [IX_CIFDS_Folio]
+    ON [dbo].[Compras_Inventarios_Fisicos_Detalle_Sync]
+       (server_id, folio);
+GO
+CREATE NONCLUSTERED INDEX [IX_CIFDS_Producto]
+    ON [dbo].[Compras_Inventarios_Fisicos_Detalle_Sync]
+       (server_id, codigo_producto);
+GO
+CREATE UNIQUE NONCLUSTERED INDEX
+    [UX_CIFDS_ServerUnidadFolioAlmacenProducto]
+    ON [dbo].[Compras_Inventarios_Fisicos_Detalle_Sync]
+       (
+           server_id,
+           unidad_negocio_id,
+           folio,
+           almacen_id,
+           codigo_producto
+       );
 GO
 CREATE NONCLUSTERED INDEX [IX_Compras_KPIs_Fecha]
     ON [dbo].[Compras_KPIs_Historico] (fecha);

@@ -204,11 +204,12 @@ def test_sync_skips_headers_without_matching_detail(monkeypatch):
         fake_execute,
     )
 
-    assert result["status"] == "PARTIAL"
-    assert result["records_synced"] == 1
+    assert result["status"] == "ERROR"
+    assert result["records_synced"] == 0
     assert result["detail_errors"] == 1
-    assert "omitidos por falta de detalle" in result["error"]
-    assert fake_conn.cursor_obj.header_folios == ["3844"]
+    assert "sin detalle coincidente" in result["error"]
+    assert "Snapshot anterior preservado" in result["error"]
+    assert fake_conn.cursor_obj.header_folios == []
 
 
 def test_detail_sync_bulk_upserts_existing_keys():
@@ -245,8 +246,19 @@ def test_detail_sync_bulk_upserts_existing_keys():
                     ]
                 ]
                 return
-            if "SELECT [server_id], [folio], [codigo_producto], [almacen_id]" in query:
-                self._rows = [("server-1", "3844", "INS-1", "2")]
+            if (
+                "SELECT [server_id], [unidad_negocio_id], [folio], "
+                "[codigo_producto], [almacen_id]"
+            ) in query:
+                self._rows = [
+                    (
+                        "server-1",
+                        "unidad-1",
+                        "3844",
+                        "INS-1",
+                        "2",
+                    )
+                ]
                 return
             if "UPDATE target" in query:
                 self.updated_params.append(params)

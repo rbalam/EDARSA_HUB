@@ -110,9 +110,10 @@ def _inventory_header_detail_key(row: Dict[str, Any]) -> tuple[str, str]:
     return (_as_text(row.get("folio"), 50), _as_text(row.get("almacen_id"), 50))
 
 
-def _inventory_detail_key(row: Dict[str, Any]) -> tuple[str, str, str, str]:
+def _inventory_detail_key(row: Dict[str, Any]) -> tuple[str, str, str, str, str]:
     return (
         _as_text(row.get("server_id"), 100),
+        _as_text(row.get("unidad_negocio_id"), 64),
         _as_text(row.get("folio"), 50),
         _as_text(row.get("codigo_producto"), 100),
         _as_text(row.get("almacen_id"), 50),
@@ -161,11 +162,30 @@ def _fetch_table_columns(cursor, table_name: str) -> Dict[str, str]:
 def _inventarios_fisicos_detalle_query(
     system_type: str,
     folios: Optional[List[Any]] = None,
+    sucursal_origen_id: Optional[str] = None,
 ) -> Optional[str]:
     from core.system_type_utils import is_mpro_system, is_softrestaurant_system
 
     if is_mpro_system(system_type):
         folio_filter = _folio_in_filter("F.Fi_Folio", folios)
+
+        if not sucursal_origen_id:
+            raise ValueError(
+                "MPRO requiere sucursal_origen_id canónica "
+                "para consultar detalle de inventarios"
+            )
+
+        safe_sucursal_origen = (
+            str(sucursal_origen_id)
+            .strip()
+            .replace("'", "''")
+        )
+
+        sucursal_filter = (
+            f"AND F.Sc_Cve_Sucursal = "
+            f"'{safe_sucursal_origen}'"
+        )
+
         return f"""
             SELECT
                 CAST(F.Fi_Folio AS VARCHAR(50)) as folio,
@@ -184,6 +204,7 @@ def _inventarios_fisicos_detalle_query(
             LEFT JOIN Producto P ON P.Pr_Cve_Producto = F.Pr_Cve_Producto
             WHERE F.Fi_Fecha >= DATEADD(MONTH, -6, GETDATE())
               AND ISNULL(F.Es_Cve_Estado, '') <> 'CA'
+              {sucursal_filter}
               {folio_filter}
             ORDER BY F.Fi_Fecha DESC, F.Fi_Folio, F.Pr_Cve_Producto
         """
@@ -307,12 +328,17 @@ def _detail_insert_statement(columns: Dict[str, str]) -> tuple[str, List[str]]:
 
 
 def _detail_update_statement(columns: Dict[str, str]) -> tuple[Optional[str], List[str]]:
-    key_names = ["server_id", "folio", "codigo_producto", "almacen_id"]
+    key_names = [
+        "server_id",
+        "unidad_negocio_id",
+        "folio",
+        "codigo_producto",
+        "almacen_id",
+    ]
     if any(not columns.get(key) for key in key_names):
         return None, []
 
     update_names = [
-        "unidad_negocio_id",
         "unidad_negocio_codigo",
         "system_type",
         "nombre_producto",
@@ -395,12 +421,17 @@ def _bulk_update_detail_values(
     if not values_list:
         return 0
 
-    key_names = ["server_id", "folio", "codigo_producto", "almacen_id"]
+    key_names = [
+        "server_id",
+        "unidad_negocio_id",
+        "folio",
+        "codigo_producto",
+        "almacen_id",
+    ]
     if any(not columns.get(key) for key in key_names):
         return 0
 
     update_names = [
-        "unidad_negocio_id",
         "unidad_negocio_codigo",
         "system_type",
         "nombre_producto",
@@ -475,11 +506,21 @@ def _fetch_existing_detail_keys(
     if not values_list:
         return set()
 
-    key_names = ["server_id", "folio", "codigo_producto", "almacen_id"]
+    key_names = [
+        "server_id",
+        "unidad_negocio_id",
+        "folio",
+        "codigo_producto",
+        "almacen_id",
+    ]
     if any(not columns.get(key) for key in key_names):
         return set()
 
     server_id = _as_text(values_list[0].get("server_id"), 100)
+    unidad_negocio_id = _as_text(
+        values_list[0].get("unidad_negocio_id"),
+        64,
+    )
     folios = []
     seen_folios = set()
     for values in values_list:
@@ -487,11 +528,12 @@ def _fetch_existing_detail_keys(
         if folio and folio not in seen_folios:
             seen_folios.add(folio)
             folios.append(folio)
-    if not server_id or not folios:
+    if not server_id or not unidad_negocio_id or not folios:
         return set()
 
     existing = set()
     server_column = _sql_identifier(columns["server_id"])
+    unidad_column = _sql_identifier(columns["unidad_negocio_id"])
     folio_column = _sql_identifier(columns["folio"])
     select_columns = ", ".join(_sql_identifier(columns[key]) for key in key_names)
     batch_size = 500
@@ -503,22 +545,23 @@ def _fetch_existing_detail_keys(
                 SELECT {select_columns}
                 FROM dbo.Compras_Inventarios_Fisicos_Detalle_Sync
                 WHERE {server_column} = %s
+                  AND {unidad_column} = %s
                   AND CAST({folio_column} AS VARCHAR(50)) IN ({placeholders})
             """,
-            tuple([server_id] + batch),
+            tuple([server_id, unidad_negocio_id] + batch),
         )
         for row in cursor.fetchall():
             if isinstance(row, dict):
                 key = tuple(_as_text(row.get(columns[name]) or row.get(name), 100) for name in key_names)
             else:
-                key = tuple(_as_text(row[index], 100) for index in range(4))
+                key = tuple(_as_text(row[index], 100) for index in range(5))
             existing.add(key)
     return existing
 
 
 def _collapse_detail_values_by_key(values_list: List[Dict[str, Any]]) -> tuple[List[Dict[str, Any]], int]:
     ordered_keys = []
-    by_key: Dict[tuple[str, str, str, str], Dict[str, Any]] = {}
+    by_key: Dict[tuple[str, str, str, str, str], Dict[str, Any]] = {}
     duplicates = 0
     for values in values_list:
         key = _inventory_detail_key(values)
@@ -592,8 +635,9 @@ def _sync_inventarios_fisicos_detalle(
         UPDATE dbo.Compras_Inventarios_Fisicos_Detalle_Sync
         SET sync_status = 'REPLACED'
         WHERE server_id = %s
+          AND unidad_negocio_id = %s
           AND sync_status = 'ACTIVE'
-    """, (server_id,))
+    """, (server_id, unidad_id))
 
     values_list = []
     detail_errors = 0
@@ -1019,14 +1063,42 @@ def sync_inventarios_fisicos_from_server(
     system_type = server_info.get('system_type', '')
     unidad_id = unidad_info.get('id')
     unidad_codigo = unidad_info.get('codigo')
+    sucursal_origen_id = (
+        (unidad_info or {}).get('sucursal_origen_id')
+    )
+
+    if is_mpro_system(system_type):
+        sucursal_origen_id = str(
+            sucursal_origen_id or ""
+        ).strip()
+
+        if not sucursal_origen_id:
+            return {
+                "status": "ERROR",
+                "records_synced": 0,
+                "details_synced": 0,
+                "details_updated": 0,
+                "detail_errors": 0,
+                "error": (
+                    "MPRO requiere sucursal_origen_id canónica "
+                    "para sincronizar inventarios sin mezclar unidades"
+                ),
+            }
     
     logger.info(f"[SYNC] Iniciando sync inventarios: {unidad_codigo} ({system_type})")
     
     try:
         # Query según tipo de sistema
         if is_mpro_system(system_type):
-            # MPRO usa tabla "Fisico" (no Fisico_Inventario)
-            query = """
+            # MPRO es multisucursal. La unidad se delimita mediante
+            # sucursal_origen_id canónica de Unidades_Negocio.
+            safe_sucursal_origen = (
+                str(sucursal_origen_id)
+                .strip()
+                .replace("'", "''")
+            )
+
+            query = f"""
                 SELECT 
                     F.Fi_Folio as folio,
                     F.Fi_Fecha as fecha,
@@ -1042,6 +1114,8 @@ def sync_inventarios_fisicos_from_server(
                 INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = F.Sc_Cve_Sucursal
                 LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
                 WHERE F.Fi_Fecha >= DATEADD(MONTH, -6, GETDATE())
+                  AND ISNULL(F.Es_Cve_Estado, '') <> 'CA'
+                  AND F.Sc_Cve_Sucursal = '{safe_sucursal_origen}'
                 GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion, A.Al_Cve_Almacen, S.Sc_Descripcion, A.Sc_Cve_Sucursal
                 ORDER BY F.Fi_Fecha DESC
             """
@@ -1092,7 +1166,11 @@ def sync_inventarios_fisicos_from_server(
         source_header_count = len(rows)
         # Ejecutar detalle físico en servidor origen. El endpoint de análisis
         # consume esta tabla canónica y no debe conectarse live al POS.
-        detail_query = _inventarios_fisicos_detalle_query(system_type, [])
+        detail_query = _inventarios_fisicos_detalle_query(
+            system_type,
+            [],
+            sucursal_origen_id,
+        )
         detail_rows = []
         if detail_query:
             batch_size = _inventory_detail_batch_size()
@@ -1104,7 +1182,11 @@ def sync_inventarios_fisicos_from_server(
                 batch_size,
             )
             for batch_index, folios_batch in enumerate(folio_batches, 1):
-                batch_query = _inventarios_fisicos_detalle_query(system_type, folios_batch)
+                batch_query = _inventarios_fisicos_detalle_query(
+                    system_type,
+                    folios_batch,
+                    sucursal_origen_id,
+                )
                 batch_rows = execute_sql_query_func(
                     server_info['host'],
                     server_info['port'],
@@ -1160,10 +1242,21 @@ def sync_inventarios_fisicos_from_server(
                     ),
                 }
             if headers_without_detail:
-                logger.warning(
-                    "[SYNC] Inventarios físicos omitidos por falta de detalle coincidente: %s",
+                logger.error(
+                    "[SYNC] Snapshot rechazado: %s inventarios físicos sin detalle coincidente",
                     headers_without_detail,
                 )
+                return {
+                    "status": "ERROR",
+                    "records_synced": 0,
+                    "details_synced": 0,
+                    "details_updated": 0,
+                    "detail_errors": headers_without_detail,
+                    "error": (
+                        f"{headers_without_detail} inventarios físicos sin detalle coincidente. "
+                        "Snapshot anterior preservado; no se actualiza EDARSAHUB."
+                    ),
+                }
         else:
             headers_without_detail = 0
         
@@ -1187,26 +1280,35 @@ def sync_inventarios_fisicos_from_server(
                 str(unidad_id or ""),
                 str(unidad_codigo or ""),
             )
-            if detail_result["status"] == "ERROR":
+            if detail_result.get("status") != "OK":
+                conn.rollback()
                 conn.close()
                 return {
                     "status": "ERROR",
                     "records_synced": 0,
-                    "details_synced": detail_result.get("details_synced", 0),
-                    "details_updated": detail_result.get("details_updated", 0),
+                    "details_synced": 0,
+                    "details_updated": 0,
                     "detail_errors": detail_result.get("detail_errors", 0),
-                    "error": detail_result.get("error"),
+                    "error": (
+                        detail_result.get("error")
+                        or "Detalle de inventario incompleto; snapshot anterior preservado"
+                    ),
                 }
         
         # Marcar registros anteriores como inactivos
         cursor.execute("""
-            UPDATE Compras_Inventarios_Fisicos_Sync 
-            SET sync_status = 'REPLACED' 
-            WHERE server_id = %s AND sync_status = 'ACTIVE'
-        """, (server_id,))
-        
-        # Insertar nuevos registros
+            UPDATE Compras_Inventarios_Fisicos_Sync
+            SET sync_status = 'REPLACED'
+            WHERE server_id = %s
+              AND unidad_negocio_id = %s
+              AND sync_status = 'ACTIVE'
+        """, (server_id, unidad_id))
+
+        # Insertar nuevos registros.
+        # La fotografia solo puede confirmarse si TODAS las cabeceras validas
+        # quedan persistidas. Cualquier fallo provoca rollback completo.
         records_synced = 0
+        header_errors = 0
         for row in rows:
             try:
                 cursor.execute("""
@@ -1249,6 +1351,7 @@ def sync_inventarios_fisicos_from_server(
                             sync_timestamp = GETDATE(),
                             sync_status = 'ACTIVE'
                         WHERE server_id = %s
+                          AND unidad_negocio_id = %s
                           AND folio = %s
                     """, (
                         unidad_id,
@@ -1264,6 +1367,7 @@ def sync_inventarios_fisicos_from_server(
                         row.get('total_productos', 0),
                         (row.get('comentario') or '')[:50],
                         str(server_id or ''),
+                        str(unidad_id or ''),
                         str(row.get('folio', '')),
                     ))
                     if cursor.rowcount:
@@ -1275,8 +1379,32 @@ def sync_inventarios_fisicos_from_server(
                         row.get('folio'),
                         update_error,
                     )
-                logger.warning(f"[SYNC] Error insertando inventario {row.get('folio')}: {insert_error}")
-        
+                header_errors += 1
+                logger.warning(
+                    "[SYNC] Error persistiendo inventario folio=%s insert_error=%s",
+                    row.get("folio"),
+                    insert_error,
+                )
+
+        if header_errors or records_synced != len(rows):
+            expected_headers = len(rows)
+            persisted_headers = records_synced
+            conn.rollback()
+            conn.close()
+            return {
+                "status": "ERROR",
+                "records_synced": 0,
+                "details_synced": 0,
+                "details_updated": 0,
+                "detail_errors": int(detail_result.get("detail_errors") or 0),
+                "error": (
+                    "Snapshot de inventarios incompleto; rollback aplicado. "
+                    f"cabeceras_esperadas={expected_headers} "
+                    f"cabeceras_persistidas={persisted_headers} "
+                    f"errores_cabecera={header_errors}"
+                ),
+            }
+
         conn.commit()
         conn.close()
         
