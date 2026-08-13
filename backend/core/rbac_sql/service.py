@@ -42,7 +42,6 @@ class RBACSQLService:
         return fetch_all_dict("""
             SELECT
                 UsuarioID,
-                EmpresaID,
                 ServidorID,
                 SucursalCodigo
             FROM dbo.Usuario_SucursalesAsignacion
@@ -61,29 +60,120 @@ class RBACSQLService:
 
     @staticmethod
     def get_unidades(usuario_id):
-        """
-        Unidad de negocio derivada desde sucursales/servidores.
-        No crear Usuario_UnidadesAsignacion si el modelo actual usa sucursales/servidores.
-        """
-        return fetch_all_dict("""
-            SELECT DISTINCT
-                COALESCE(
-                    TRY_CONVERT(NVARCHAR(100), sc.UnidadNegocioID),
-                    TRY_CONVERT(NVARCHAR(100), sc.unidad_negocio_id),
-                    TRY_CONVERT(NVARCHAR(100), sc.unidad_negocio_pk)
-                ) AS UnidadNegocioID
-            FROM dbo.Usuario_SucursalesAsignacion usa
-            LEFT JOIN dbo.Sistema_Sucursales sc
-                ON TRY_CONVERT(NVARCHAR(100), sc.ServidorID) = TRY_CONVERT(NVARCHAR(100), usa.ServidorID)
-               AND TRY_CONVERT(NVARCHAR(100), sc.SucursalCodigo) = TRY_CONVERT(NVARCHAR(100), usa.SucursalCodigo)
-            WHERE usa.UsuarioID = %s
-              AND ISNULL(usa.Activo, 1) = 1
-              AND COALESCE(
-                    TRY_CONVERT(NVARCHAR(100), sc.UnidadNegocioID),
-                    TRY_CONVERT(NVARCHAR(100), sc.unidad_negocio_id),
-                    TRY_CONVERT(NVARCHAR(100), sc.unidad_negocio_pk)
-              ) IS NOT NULL
-        """, [usuario_id])
+            """
+            Resuelve unidades de negocio desde el scope RBAC explícito
+            y dbo.Unidades_Negocio.
+
+            Política:
+            - servidor dedicado: una asignación exacta de servidor
+              puede resolver su única unidad activa;
+            - servidor compartido: requiere asignación exacta
+              servidor + sucursal;
+            - una asignación de servidor por sí sola nunca concede
+              todas las unidades de un servidor compartido;
+            - asignaciones que no proyectan a una unidad canónica
+              activa no conceden acceso.
+            """
+            return fetch_all_dict("""
+                WITH ActiveUnits AS (
+                    SELECT
+                        TRY_CONVERT(
+                            NVARCHAR(100),
+                            u.id
+                        ) AS UnidadNegocioID,
+                        TRY_CONVERT(
+                            NVARCHAR(100),
+                            u.server_id
+                        ) AS ServidorID,
+                        NULLIF(
+                            LTRIM(RTRIM(
+                                TRY_CONVERT(
+                                    NVARCHAR(100),
+                                    u.sucursal_origen_id
+                                )
+                            )),
+                            ''
+                        ) AS SucursalOrigenID,
+                        COUNT_BIG(*) OVER (
+                            PARTITION BY u.server_id
+                        ) AS ActiveUnitsOnServer
+                    FROM dbo.Unidades_Negocio AS u
+                    WHERE ISNULL(u.activo, 0) = 1
+                ),
+                ExplicitScope AS (
+                    SELECT
+                        usa.UsuarioID,
+                        TRY_CONVERT(
+                            NVARCHAR(100),
+                            usa.ServidorID
+                        ) AS ServidorID,
+                        CAST(NULL AS NVARCHAR(100))
+                            AS SucursalCodigo,
+                        CAST('SERVER' AS VARCHAR(10))
+                            AS ScopeType
+                    FROM dbo.Usuario_ServidoresAsignacion AS usa
+                    WHERE usa.UsuarioID = %s
+                      AND ISNULL(usa.Activo, 1) = 1
+
+                    UNION ALL
+
+                    SELECT
+                        usa.UsuarioID,
+                        TRY_CONVERT(
+                            NVARCHAR(100),
+                            usa.ServidorID
+                        ) AS ServidorID,
+                        NULLIF(
+                            LTRIM(RTRIM(
+                                TRY_CONVERT(
+                                    NVARCHAR(100),
+                                    usa.SucursalCodigo
+                                )
+                            )),
+                            ''
+                        ) AS SucursalCodigo,
+                        CAST('BRANCH' AS VARCHAR(10))
+                            AS ScopeType
+                    FROM dbo.Usuario_SucursalesAsignacion AS usa
+                    WHERE usa.UsuarioID = %s
+                      AND ISNULL(usa.Activo, 1) = 1
+                )
+                SELECT DISTINCT
+                    au.UnidadNegocioID
+                FROM ActiveUnits AS au
+                INNER JOIN ExplicitScope AS es
+                    ON LOWER(au.ServidorID) =
+                       LOWER(es.ServidorID)
+                   AND (
+                        (
+                            au.ActiveUnitsOnServer = 1
+                            AND es.ScopeType = 'SERVER'
+                        )
+                        OR
+                        (
+                            au.ActiveUnitsOnServer = 1
+                            AND es.ScopeType = 'BRANCH'
+                        )
+                        OR
+                        (
+                            au.ActiveUnitsOnServer > 1
+                            AND es.ScopeType = 'BRANCH'
+                            AND au.SucursalOrigenID IS NOT NULL
+                            AND es.SucursalCodigo IS NOT NULL
+                            AND UPPER(
+                                LTRIM(RTRIM(
+                                    au.SucursalOrigenID
+                                ))
+                            ) =
+                            UPPER(
+                                LTRIM(RTRIM(
+                                    es.SucursalCodigo
+                                ))
+                            )
+                        )
+                   )
+                WHERE au.UnidadNegocioID IS NOT NULL
+            """, [usuario_id, usuario_id])
 
     @staticmethod
     def build_context(usuario_id):
@@ -129,26 +219,36 @@ class RBACSQLService:
 
     @staticmethod
     def can_access_unidad(usuario_id, unidad_id):
-        row = fetch_one_dict("""
-            SELECT TOP 1 1 AS permitido
-            FROM (
-                SELECT DISTINCT
-                    usa.UsuarioID,
-                    COALESCE(
-                        TRY_CONVERT(NVARCHAR(100), sc.UnidadNegocioID),
-                        TRY_CONVERT(NVARCHAR(100), sc.unidad_negocio_id),
-                        TRY_CONVERT(NVARCHAR(100), sc.unidad_negocio_pk)
-                    ) AS UnidadNegocioID
-                FROM dbo.Usuario_SucursalesAsignacion usa
-                LEFT JOIN dbo.Sistema_Sucursales sc
-                    ON TRY_CONVERT(NVARCHAR(100), sc.ServidorID) = TRY_CONVERT(NVARCHAR(100), usa.ServidorID)
-                   AND TRY_CONVERT(NVARCHAR(100), sc.SucursalCodigo) = TRY_CONVERT(NVARCHAR(100), usa.SucursalCodigo)
-                WHERE ISNULL(usa.Activo, 1) = 1
-            ) x
-            WHERE x.UsuarioID = %s
-              AND x.UnidadNegocioID = %s
-        """, [usuario_id, str(unidad_id)])
-        return bool(row)
+            """
+            Verifica acceso de scope a una unidad canónica activa.
+
+            No concede acceso por servidor compartido sin sucursal
+            exacta y usa exclusivamente el scope SQL canónico.
+            """
+            if not usuario_id or not unidad_id:
+                return False
+
+            try:
+                unidades = RBACSQLService.get_unidades(
+                    usuario_id
+                )
+            except Exception:
+                return False
+
+            objetivo = str(unidad_id).strip().lower()
+
+            if not objetivo:
+                return False
+
+            for row in unidades or []:
+                resolved = str(
+                    row.get("UnidadNegocioID") or ""
+                ).strip().lower()
+
+                if resolved and resolved == objetivo:
+                    return True
+
+            return False
 
     @staticmethod
     def get_permission_scope_by_code(
@@ -220,6 +320,56 @@ class RBACSQLService:
                 row.get("restriccion_sucursal")
             ),
         }
+
+    @staticmethod
+    def get_effective_permissions(usuario_id):
+        """
+        Enumera permisos funcionales efectivos activos
+        del usuario desde RBAC SQL canónico.
+
+        No deriva autorización desde nombres de rol,
+        JWT ni fuentes legacy o reglas hardcodeadas.
+        """
+        if not usuario_id:
+            return []
+
+        rows = fetch_all_dict("""
+            SELECT DISTINCT
+                CONCAT(
+                    m.CodigoModulo,
+                    '_',
+                    a.CodigoAccion
+                ) AS PermissionCode
+            FROM dbo.Usuario_RolesAsignacion AS ura
+            INNER JOIN dbo.Usuario_Roles AS r
+                ON r.RolID = ura.RolID
+            INNER JOIN dbo.Usuario_PermisosRolModulo AS prm
+                ON prm.RolID = r.RolID
+            INNER JOIN dbo.Usuario_Modulos AS m
+                ON m.ModuloID = prm.ModuloID
+            INNER JOIN dbo.Usuario_Acciones AS a
+                ON a.AccionID = prm.AccionID
+            WHERE ura.UsuarioID = %s
+              AND ISNULL(ura.Activo, 1) = 1
+              AND ISNULL(r.Activo, 1) = 1
+              AND ISNULL(prm.Activo, 1) = 1
+              AND ISNULL(prm.Permitido, 0) = 1
+              AND ISNULL(m.Activo, 1) = 1
+              AND ISNULL(a.Activo, 1) = 1
+            ORDER BY PermissionCode
+        """, [usuario_id])
+
+        permisos = []
+
+        for row in rows or []:
+            code = str(
+                row.get("PermissionCode") or ""
+            ).strip()
+
+            if code:
+                permisos.append(code)
+
+        return permisos
 
     @staticmethod
     def can_access_permission(

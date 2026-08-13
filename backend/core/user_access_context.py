@@ -68,6 +68,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import logging
 import pymssql
+from core.rbac_sql.service import RBACSQLService
 
 logger = logging.getLogger(__name__)
 
@@ -327,150 +328,261 @@ def _get_user_almacenes_sql(cursor, usuario_id: int) -> Dict[str, List[str]]:
 # FUNCIÓN CENTRAL
 # =========================================================================
 
-async def resolve_user_access_context(user: Dict[str, Any]) -> UserAccessContext:
+async def resolve_user_access_context(
+    user: Dict[str, Any],
+) -> UserAccessContext:
     """
-    FUNCIÓN CENTRAL: Resuelve el contexto de acceso efectivo de un usuario.
-    
-    MIGRACIÓN FASE 3-D: Ahora lee desde EDARSAHUB SQL en lugar de MongoDB.
-    
-    Esta función es la ÚNICA fuente de verdad para determinar:
-    - A qué empresas tiene acceso
-    - A qué servidores puede consultar
-    - Qué almacenes puede ver
-    - Qué permisos funcionales tiene
-    
-    Args:
-        user: Diccionario del usuario (como viene de get_current_user)
-        
-    Returns:
-        UserAccessContext con todo el acceso efectivo calculado
-    
-    IMPORTANTE: El backend SIEMPRE debe usar esta función para validar acceso.
-    NUNCA confiar en parámetros enviados por el frontend.
+    Adapta el contexto SQL canónico a la API histórica.
+
+    El scope efectivo proviene exclusivamente de RBACSQLService.
+    No deriva autorización desde nombres de rol, MongoDB,
+    mapeos legacy ni parámetros del frontend.
     """
     context = UserAccessContext(
-        user_id=user.get('id', ''),
-        email=user.get('email', ''),
-        nombre=user.get('name', user.get('nombre', ''))
+        user_id=user.get("id", ""),
+        email=user.get("email", ""),
+        nombre=user.get(
+            "name",
+            user.get("nombre", ""),
+        ),
     )
-    
-    role_legacy = user.get('role', '')
-    role_upper = str(role_legacy).upper() if role_legacy else ''
-    
-    # =========================================================================
-    # PASO 1: Verificar acceso global (SuperAdministrador / Administrador)
-    # =========================================================================
-    if role_legacy == 'SuperAdministrador' or role_upper == 'SUPERADMIN':
-        context.tiene_acceso_global = True
-        context.fuente_acceso = "SUPERADMIN"
-        _resolver_acceso_global_sql(context)
-        logger.info(f"[AccessContext] {context.email}: Acceso GLOBAL (SuperAdmin)")
+
+    public_uuid = str(
+        context.user_id or ""
+    ).strip()
+
+    if not public_uuid:
         return context
-    
-    if role_legacy == 'Administrador' or role_upper == 'ADMIN':
-        context.tiene_acceso_global = True
-        context.fuente_acceso = "ADMIN"
-        _resolver_acceso_global_sql(context)
-        logger.info(f"[AccessContext] {context.email}: Acceso GLOBAL (Admin)")
-        return context
-    
-    # =========================================================================
-    # PASO 2: Resolver por modelo RBAC desde SQL
-    # =========================================================================
+
     conn = _get_sql_connection()
+
     try:
         cursor = conn.cursor()
-        
-        # Obtener UsuarioID SQL
-        usuario_id = _get_user_id_sql(cursor, context.user_id)
-        
-        if usuario_id:
-            # Obtener empresas asignadas
-            empresas_rbac, empresa_default = _get_user_empresas_sql(cursor, usuario_id)
-            
-            if empresas_rbac:
-                context.empresas_ids = empresas_rbac
-                context.empresa_default_id = empresa_default
-                context.fuente_acceso = "RBAC"
-                
-                # Traducir empresas a servidores via mapeos SQL
-                servers_from_empresas = _get_servers_from_empresas_sql(cursor, empresas_rbac)
-                context.servers_ids = servers_from_empresas
-            
-            # =========================================================================
-            # PASO 3: Complementar con servidores asignados directamente
-            # =========================================================================
-            servers_directos = _get_user_servers_sql(cursor, usuario_id)
-            
-            if servers_directos:
-                # Agregar servidores directos que no estén ya incluidos
-                servers_existentes = set(context.servers_ids)
-                for srv in servers_directos:
-                    if srv not in servers_existentes:
-                        context.servers_ids.append(srv)
-                
-                # Actualizar fuente si hay servidores directos además de RBAC
-                if not empresas_rbac:
-                    context.fuente_acceso = "LEGACY"
-                elif servers_directos:
-                    context.fuente_acceso = "MIXTO"
-            
-            # =========================================================================
-            # PASO 4: Resolver sucursales permitidas desde SQL
-            # =========================================================================
-            sucursales = _get_user_sucursales_sql(cursor, usuario_id)
-            for server_id, suc_list in sucursales.items():
-                if suc_list:
-                    context.sucursales_por_server[server_id] = suc_list
-            
-            # =========================================================================
-            # PASO 5: Resolver almacenes permitidos desde SQL
-            # =========================================================================
-            almacenes = _get_user_almacenes_sql(cursor, usuario_id)
-            for server_id, alm_list in almacenes.items():
-                if alm_list:
-                    context.almacenes_por_server[server_id] = alm_list
-        
+
+        usuario_id = _get_user_id_sql(
+            cursor,
+            public_uuid,
+        )
     finally:
         conn.close()
-    
-    # =========================================================================
-    # PASO 6: Resolver permisos funcionales desde user dict
-    # (Los sec_roles y sec_permisos vienen del usuario ya resuelto)
-    # =========================================================================
-    sec_roles = user.get('sec_roles') or []
-    sec_permisos_directos = user.get('sec_permisos') or []
-    
-    context.sec_roles = sec_roles
-    context.sec_perfil = user.get('sec_perfil')
-    
-    # Agregar permisos directos
-    permisos_set: Set[str] = set(sec_permisos_directos)
-    
-    # Los permisos de roles se resuelven desde el user dict que ya viene poblado
-    # Si se necesita resolver desde SQL, se agregaría aquí
-    context.permisos = list(permisos_set)
-    
-    # =========================================================================
-    # PASO 7: Otros atributos del usuario
-    # =========================================================================
-    context.permisos_catalogos = user.get('permisos_catalogos') or []
-    context.puede_autorizar = user.get('puede_autorizar', False)
-    context.puede_solicitar = user.get('puede_solicitar', False)
-    context.puede_liberar = user.get('puede_liberar', False)
-    
-    # =========================================================================
-    # LOG FINAL
-    # =========================================================================
-    logger.info(
-        f"[AccessContext] {context.email}: "
-        f"Fuente={context.fuente_acceso}, "
-        f"Empresas={len(context.empresas_ids)}, "
-        f"Servers={len(context.servers_ids)}, "
-        f"Permisos={len(context.permisos)}"
+
+    if not usuario_id:
+        return context
+
+    try:
+        canonical = (
+            build_user_access_context_sql(
+                usuario_id
+            )
+            or {}
+        )
+    except Exception:
+        logger.exception(
+            "[AccessContext] Error RBAC SQL "
+            "para UsuarioID=%s",
+            usuario_id,
+        )
+        return context
+
+    if not isinstance(
+        canonical,
+        dict,
+    ):
+        return context
+
+    def _extract_ids(
+        rows,
+        *keys,
+    ):
+        values = []
+
+        for row in rows or []:
+
+            if isinstance(row, dict):
+                resolved = None
+
+                for key in keys:
+                    candidate = row.get(
+                        key
+                    )
+
+                    if candidate not in (
+                        None,
+                        "",
+                    ):
+                        resolved = candidate
+                        break
+            else:
+                resolved = row
+
+            if resolved is None:
+                continue
+
+            value = str(
+                resolved
+            ).strip()
+
+            if value:
+                values.append(value)
+
+        return list(
+            dict.fromkeys(values)
+        )
+
+    context.empresas_ids = _extract_ids(
+        canonical.get("empresas"),
+        "EmpresaID",
+        "empresa_id",
+        "id",
     )
-    
+
+    context.servers_ids = _extract_ids(
+        canonical.get("servidores"),
+        "ServidorID",
+        "server_id",
+        "id",
+    )
+
+    unidades_ids = _extract_ids(
+        canonical.get(
+            "unidades_negocio"
+        ),
+        "UnidadNegocioID",
+        "unidad_id",
+        "id",
+    )
+
+    sucursales_por_server = {}
+
+    for row in (
+        canonical.get("sucursales")
+        or []
+    ):
+        if not isinstance(
+            row,
+            dict,
+        ):
+            continue
+
+        server_id = (
+            row.get("ServidorID")
+            or row.get("server_id")
+        )
+
+        branch = (
+            row.get("SucursalCodigo")
+            or row.get(
+                "sucursal_codigo"
+            )
+        )
+
+        if not server_id or not branch:
+            continue
+
+        server_key = str(
+            server_id
+        ).strip().lower()
+
+        branch_value = str(
+            branch
+        ).strip()
+
+        if not server_key or not branch_value:
+            continue
+
+        sucursales_por_server.setdefault(
+            server_key,
+            [],
+        )
+
+        if (
+            branch_value
+            not in sucursales_por_server[
+                server_key
+            ]
+        ):
+            sucursales_por_server[
+                server_key
+            ].append(
+                branch_value
+            )
+
+    context.sucursales_por_server = (
+        sucursales_por_server
+    )
+
+    context.tiene_acceso_global = False
+
+    context.fuente_acceso = (
+        "RBAC"
+        if (
+            context.empresas_ids
+            or context.servers_ids
+            or context.sucursales_por_server
+            or unidades_ids
+        )
+        else "SIN_ACCESO"
+    )
+
+    # Compatibilidad temporal:
+    # permisos y almacenes se migran en pasos independientes.
+    context.sec_roles = (
+        user.get("sec_roles")
+        or []
+    )
+
+    context.sec_perfil = user.get(
+        "sec_perfil"
+    )
+
+    try:
+        context.permisos = RBACSQLService.get_effective_permissions(
+            context.user_id
+        )
+    except Exception:
+        context.permisos = []
+
+    context.permisos_catalogos = (
+        user.get(
+            "permisos_catalogos"
+        )
+        or []
+    )
+
+    context.puede_autorizar = bool(
+        user.get(
+            "puede_autorizar",
+            False,
+        )
+    )
+
+    context.puede_solicitar = bool(
+        user.get(
+            "puede_solicitar",
+            False,
+        )
+    )
+
+    context.puede_liberar = bool(
+        user.get(
+            "puede_liberar",
+            False,
+        )
+    )
+
+    logger.info(
+        "[AccessContext] %s: "
+        "Fuente=%s, Empresas=%s, "
+        "Servers=%s, Unidades=%s",
+        context.email,
+        context.fuente_acceso,
+        len(context.empresas_ids),
+        len(context.servers_ids),
+        len(unidades_ids),
+    )
+
     return context
+
 
 
 def _resolver_acceso_global_sql(context: UserAccessContext) -> None:
