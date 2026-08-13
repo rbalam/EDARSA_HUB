@@ -850,34 +850,70 @@ def get_edarsahub_connection():
 
 def _get_edarsahub_context(server_info: Dict, unidad_info: Dict) -> Dict:
     """
-    Resuelve el contexto EDARSAHUB (EmpresaID, SucursalID) a partir de server_info y unidad_info.
-    
-    REGLA: No usar ServerID ni OrigenSistema en tablas canónicas.
-    Las tablas canónicas EDARSAHUB usan EmpresaID + SucursalID como contexto.
+    Resuelve identidad canónica EDARSAHUB para sincronizaciones de Compras.
+
+    Contrato:
+    - unidad_negocio_pk proviene directamente de dbo.Unidades_Negocio.id.
+    - EmpresaID y SucursalID se resuelven con el resolver canónico existente.
+    - No existen defaults ni IDs inventados.
+    - Si alguna dimensión no puede resolverse, falla cerrado.
     """
-    # EmpresaID viene de Servidores_Conexiones.EmpresaID
-    empresa_id = server_info.get('EmpresaID') or server_info.get('empresa_id')
-    
-    # SucursalID: intentar de unidad_info.sucursal_origen_id, sino usar 1 como default
-    sucursal_id = None
-    if unidad_info:
-        sucursal_origen = unidad_info.get('sucursal_origen_id')
-        if sucursal_origen and str(sucursal_origen).isdigit():
-            sucursal_id = int(sucursal_origen)
-    
-    # Fallback: usar un ID derivado del código de unidad o 1
-    if not sucursal_id:
-        sucursal_id = 1  # Default si no hay mapeo
-    
-    if not empresa_id:
-        empresa_id = 1  # Default si no hay mapeo
-    
+    from core.inventarios.resolver_canonico import (
+        resolver_empresa_id,
+        resolver_sucursal_id,
+    )
+
+    unidad_info = unidad_info or {}
+    server_info = server_info or {}
+
+    unidad_negocio_pk = str(unidad_info.get('id') or '').strip()
+    unidad_codigo = str(unidad_info.get('codigo') or '').strip()
+    server_id = str(
+        server_info.get('id') or server_info.get('server_id') or ''
+    ).strip()
+    sucursal_origen_id = unidad_info.get('sucursal_origen_id')
+
+    if not unidad_negocio_pk:
+        raise ValueError(
+            "UNIDAD_NEGOCIO_PK_NO_RESUELTA: "
+            "unidad_info.id canónico es obligatorio"
+        )
+
+    if not unidad_codigo:
+        raise ValueError(
+            "UNIDAD_CODIGO_NO_RESUELTO: "
+            "unidad_info.codigo canónico es obligatorio"
+        )
+
+    if not server_id:
+        raise ValueError(
+            "SERVER_ID_NO_RESUELTO: requerido para resolver sucursal canónica"
+        )
+
+    emp = resolver_empresa_id(unidad_codigo)
+    suc = resolver_sucursal_id(server_id, sucursal_origen_id)
+
+    if not emp.resuelto:
+        raise ValueError(
+            f"EMPRESA_CANONICA_NO_RESUELTA:{emp.motivo}"
+        )
+
+    if not suc.resuelto:
+        raise ValueError(
+            f"SUCURSAL_CANONICA_NO_RESUELTA:{suc.motivo}"
+        )
+
     return {
-        'empresa_id': int(empresa_id),
-        'sucursal_id': int(sucursal_id),
+        'empresa_id': int(emp.canonical_id),
+        'sucursal_id': int(suc.canonical_id),
+        'unidad_negocio_pk': unidad_negocio_pk,
         'system_type': server_info.get('system_type', 'UNKNOWN'),
-        'server_name': server_info.get('nombre', 'UNKNOWN'),
-        'unidad_codigo': unidad_info.get('codigo', '') if unidad_info else ''
+        'server_name': (
+            server_info.get('nombre')
+            or server_info.get('name')
+            or 'UNKNOWN'
+        ),
+        'unidad_codigo': unidad_codigo,
     }
 
 
@@ -1963,17 +1999,18 @@ def sync_pedidos_from_server(
     """
     Sincroniza pedidos de compra desde servidor físico a EDARSAHUB.
     Destino: Compras_Pedidos + Compras_PedidosDetalle
-    
+
     Llave MERGE Encabezado: EmpresaID + SucursalID + FolioPedido
     Llave MERGE Detalle: PedidoCompraID + ProductoID (o renglon)
     """
     ctx = _get_edarsahub_context(server_info, unidad_info)
     empresa_id = ctx['empresa_id']
     sucursal_id = ctx['sucursal_id']
+    unidad_negocio_pk = ctx['unidad_negocio_pk']
     system_type = ctx['system_type']
-    
+
     logger.info(f"[SYNC] Iniciando sync pedidos: Empresa={empresa_id}, Sucursal={sucursal_id}")
-    
+
     try:
         if 'MPRO' in system_type.upper() or 'MANAGEMENT' in system_type.upper():
             query_encabezado = f"""
@@ -1988,7 +2025,7 @@ def sync_pedidos_from_server(
                 WHERE Pc_Fecha >= DATEADD(DAY, -{dias_atras}, GETDATE())
             """
             query_detalle = f"""
-                SELECT 
+                SELECT
                     Pc_Folio AS folio_pedido,
                     Ar_Cve_Articulo AS producto_id,
                     Pcd_Cantidad AS cantidad,
@@ -2010,7 +2047,7 @@ def sync_pedidos_from_server(
                 WHERE p.fechacaptura >= DATEADD(DAY, -{dias_atras}, GETDATE())
             """
             query_detalle = f"""
-                SELECT 
+                SELECT
                     CAST(p.folio AS VARCHAR(50)) AS folio_pedido,
                     CAST(d.idinsumo AS INT) AS producto_id,
                     ISNULL(d.cantidad, 0) AS cantidad,
@@ -2019,60 +2056,60 @@ def sync_pedidos_from_server(
                 INNER JOIN pedidosdetalle d ON d.idpedido = p.idpedido
                 WHERE p.fechacaptura >= DATEADD(DAY, -{dias_atras}, GETDATE())
             """
-        
+
         # Obtener encabezados
         result_enc = execute_sql_fn(
             server_info['host'], server_info['port'], server_info['database'],
             server_info['username'], server_info['password'], query_encabezado
         )
-        
+
         if result_enc is None:
             return {"status": "ERROR", "error": "Timeout conexión encabezados", "encabezados_synced": 0, "detalles_synced": 0}
-        
+
         if not result_enc:
             return {"status": "OK", "encabezados_synced": 0, "detalles_synced": 0, "message": "Sin pedidos en origen"}
-        
+
         # Obtener detalles
         result_det = execute_sql_fn(
             server_info['host'], server_info['port'], server_info['database'],
             server_info['username'], server_info['password'], query_detalle
         ) or []
-        
+
         conn = get_edarsahub_connection()
         cursor = conn.cursor()
-        
+
         enc_synced = 0
         det_synced = 0
-        
+
         for enc in result_enc:
             try:
                 folio = str(enc.get('folio_pedido', ''))[:50]
                 fecha = enc.get('fecha_pedido')
                 total = float(enc.get('total') or 0)
-                
+
                 # MERGE encabezado
                 cursor.execute("""
                     MERGE INTO Compras_Pedidos AS target
-                    USING (SELECT %s AS EmpresaID, %s AS SucursalID, %s AS FolioPedido) AS source 
-                    ON target.EmpresaID = source.EmpresaID 
-                       AND target.SucursalID = source.SucursalID 
+                    USING (SELECT %s AS EmpresaID, %s AS SucursalID, %s AS FolioPedido) AS source
+                    ON target.EmpresaID = source.EmpresaID
+                       AND target.SucursalID = source.SucursalID
                        AND target.FolioPedido = source.FolioPedido
-                    WHEN MATCHED THEN 
-                        UPDATE SET Total = %s, ModifiedAt = GETDATE()
-                    WHEN NOT MATCHED THEN 
-                        INSERT (FolioPedido, EmpresaID, SucursalID, FechaPedido, SolicitanteUsuarioID, 
+                    WHEN MATCHED THEN
+                        UPDATE SET Total = %s, unidad_negocio_pk = %s, ModifiedAt = GETDATE()
+                    WHEN NOT MATCHED THEN
+                        INSERT (FolioPedido, EmpresaID, SucursalID, unidad_negocio_pk, FechaPedido, SolicitanteUsuarioID,
                                 Prioridad, MotivoCompra, EstatusPedidoCompraID, Total, Activo, CreatedAt, TipoCambio, Subtotal, DescuentoTotal, ImpuestoTotal)
-                        VALUES (%s, %s, %s, %s, 1, 'MEDIA', 'SYNC', 1, %s, 1, GETDATE(), 1, %s, 0, 0);
+                        VALUES (%s, %s, %s, %s, %s, 1, 'MEDIA', 'SYNC', 1, %s, 1, GETDATE(), 1, %s, 0, 0);
                 """, (
                     empresa_id, sucursal_id, folio,
-                    total,
-                    folio, empresa_id, sucursal_id, fecha, total, total
+                    total, unidad_negocio_pk,
+                    folio, empresa_id, sucursal_id, unidad_negocio_pk, fecha, total, total
                 ))
                 enc_synced += 1
-                
+
             except Exception as e:
                 logger.warning(f"[SYNC] Error insertando pedido {enc.get('folio_pedido')}: {e}")
-        
+
         # P3-01E FIX: insertar detalles Compras_PedidosDetalle
         if result_det:
             for det in result_det:
@@ -2080,39 +2117,39 @@ def sync_pedidos_from_server(
                     folio_det = str(det.get('folio_pedido') or det.get('folio') or '').strip()
                     if not folio_det:
                         continue
-                    
+
                     producto_id = det.get('producto_id') or det.get('ProductoID') or 0
                     cantidad = float(det.get('cantidad') or det.get('Cantidad') or 0)
                     precio = float(det.get('precio_unitario') or det.get('precio') or det.get('costo') or 0)
-                    
+
                     # Buscar PedidoCompraID por folio
                     cursor.execute("""
-                        SELECT TOP 1 PedidoCompraID 
-                        FROM Compras_Pedidos 
+                        SELECT TOP 1 PedidoCompraID
+                        FROM Compras_Pedidos
                         WHERE FolioPedido = %s AND EmpresaID = %s AND SucursalID = %s
                     """, (folio_det, empresa_id, sucursal_id))
-                    
+
                     row = cursor.fetchone()
                     if not row:
                         continue
-                    
+
                     pedido_compra_id = row[0]
-                    
+
                     # Verificar si ya existe el detalle
                     cursor.execute("""
-                        SELECT COUNT(*) FROM Compras_PedidosDetalle 
+                        SELECT COUNT(*) FROM Compras_PedidosDetalle
                         WHERE PedidoCompraID = %s AND ProductoID = %s
                     """, (pedido_compra_id, producto_id))
-                    
+
                     if cursor.fetchone()[0] > 0:
                         continue
-                    
+
                     # Calcular totales línea
                     subtotal = cantidad * precio
                     tasa_impuesto = 16.0
                     impuesto = subtotal * tasa_impuesto / 100
                     total_linea = subtotal + impuesto
-                    
+
                     # Insertar detalle
                     cursor.execute("""
                         INSERT INTO Compras_PedidosDetalle (
@@ -2132,10 +2169,10 @@ def sync_pedidos_from_server(
                         impuesto, total_linea
                     ))
                     det_synced += 1
-                    
+
                 except Exception as det_err:
                     logger.warning(f"[SYNC] Error detalle pedido: {det_err}")
-            
+
             # Actualizar totales de encabezados
             cursor.execute("""
                 UPDATE p SET
@@ -2155,12 +2192,12 @@ def sync_pedidos_from_server(
                 WHERE p.EmpresaID = %s AND p.SucursalID = %s
                   AND (p.Total = 0 OR p.Total IS NULL)
             """, (empresa_id, sucursal_id))
-        
+
         conn.commit()
         conn.close()
-        
+
         return {"status": "OK", "encabezados_synced": enc_synced, "detalles_synced": det_synced}
-        
+
     except Exception as e:
         logger.error(f"[SYNC] Error en sync_pedidos: {e}")
         return {"status": "ERROR", "error": str(e), "encabezados_synced": 0, "detalles_synced": 0}
@@ -2177,16 +2214,17 @@ def sync_ordenes_from_server(
     """
     Sincroniza órdenes de compra desde servidor físico a EDARSAHUB.
     Destino: Compras_Ordenes + Compras_OrdenesDetalle
-    
+
     Llave MERGE: EmpresaID + SucursalID + FolioOrden
     """
     ctx = _get_edarsahub_context(server_info, unidad_info)
     empresa_id = ctx['empresa_id']
     sucursal_id = ctx['sucursal_id']
+    unidad_negocio_pk = ctx['unidad_negocio_pk']
     system_type = ctx['system_type']
-    
+
     logger.info(f"[SYNC] Iniciando sync ordenes: Empresa={empresa_id}, Sucursal={sucursal_id}")
-    
+
     try:
         if 'MPRO' in system_type.upper() or 'MANAGEMENT' in system_type.upper():
             query_encabezado = f"""
@@ -2210,57 +2248,57 @@ def sync_ordenes_from_server(
                 FROM ordenescompra o
                 WHERE o.fechacaptura >= DATEADD(DAY, -{dias_atras}, GETDATE())
             """
-        
+
         result_enc = execute_sql_fn(
             server_info['host'], server_info['port'], server_info['database'],
             server_info['username'], server_info['password'], query_encabezado
         )
-        
+
         if result_enc is None:
             return {"status": "ERROR", "error": "Timeout conexión", "encabezados_synced": 0, "detalles_synced": 0}
-        
+
         if not result_enc:
             return {"status": "OK", "encabezados_synced": 0, "detalles_synced": 0, "message": "Sin ordenes en origen"}
-        
+
         conn = get_edarsahub_connection()
         cursor = conn.cursor()
-        
+
         enc_synced = 0
-        
+
         for enc in result_enc:
             try:
                 folio = str(enc.get('folio_orden', ''))[:50]
                 fecha = enc.get('fecha_orden')
                 proveedor_id = enc.get('proveedor_id') or 1
                 total = float(enc.get('total') or 0)
-                
+
                 cursor.execute("""
                     MERGE INTO Compras_Ordenes AS target
-                    USING (SELECT %s AS EmpresaID, %s AS SucursalID, %s AS FolioOrden) AS source 
-                    ON target.EmpresaID = source.EmpresaID 
-                       AND target.SucursalID = source.SucursalID 
+                    USING (SELECT %s AS EmpresaID, %s AS SucursalID, %s AS FolioOrden) AS source
+                    ON target.EmpresaID = source.EmpresaID
+                       AND target.SucursalID = source.SucursalID
                        AND target.FolioOrden = source.FolioOrden
-                    WHEN MATCHED THEN 
-                        UPDATE SET Total = %s, ModifiedAt = GETDATE()
-                    WHEN NOT MATCHED THEN 
-                        INSERT (FolioOrden, EmpresaID, SucursalID, FechaOrden, ProveedorID, CompradorUsuarioID,
+                    WHEN MATCHED THEN
+                        UPDATE SET Total = %s, unidad_negocio_pk = %s, ModifiedAt = GETDATE()
+                    WHEN NOT MATCHED THEN
+                        INSERT (FolioOrden, EmpresaID, SucursalID, unidad_negocio_pk, FechaOrden, ProveedorID, CompradorUsuarioID,
                                 MonedaID, TipoCambio, EstatusOrdenCompraID, Total, Activo, CreatedAt, Subtotal, DescuentoTotal, ImpuestoTotal)
-                        VALUES (%s, %s, %s, %s, %s, 1, 1, 1, 1, %s, 1, GETDATE(), %s, 0, 0);
+                        VALUES (%s, %s, %s, %s, %s, %s, 1, 1, 1, 1, %s, 1, GETDATE(), %s, 0, 0);
                 """, (
                     empresa_id, sucursal_id, folio,
-                    total,
-                    folio, empresa_id, sucursal_id, fecha, proveedor_id, total, total
+                    total, unidad_negocio_pk,
+                    folio, empresa_id, sucursal_id, unidad_negocio_pk, fecha, proveedor_id, total, total
                 ))
                 enc_synced += 1
-                
+
             except Exception as e:
                 logger.warning(f"[SYNC] Error insertando orden {enc.get('folio_orden')}: {e}")
-        
+
         conn.commit()
         conn.close()
-        
+
         return {"status": "OK", "encabezados_synced": enc_synced, "detalles_synced": 0}
-        
+
     except Exception as e:
         logger.error(f"[SYNC] Error en sync_ordenes: {e}")
         return {"status": "ERROR", "error": str(e), "encabezados_synced": 0, "detalles_synced": 0}
@@ -2278,16 +2316,17 @@ def sync_recepciones_from_server(
     Sincroniza recepciones de compra desde servidor físico a EDARSAHUB.
     Origen SR: tabla 'compras' (recepciones de mercancía)
     Destino: Compras_Recepciones + Compras_RecepcionesDetalle
-    
+
     Llave MERGE: EmpresaID + SucursalID + FolioRecepcion
     """
     ctx = _get_edarsahub_context(server_info, unidad_info)
     empresa_id = ctx['empresa_id']
     sucursal_id = ctx['sucursal_id']
+    unidad_negocio_pk = ctx['unidad_negocio_pk']
     system_type = ctx['system_type']
-    
+
     logger.info(f"[SYNC] Iniciando sync recepciones: Empresa={empresa_id}, Sucursal={sucursal_id}")
-    
+
     try:
         if 'MPRO' in system_type.upper() or 'MANAGEMENT' in system_type.upper():
             query_encabezado = f"""
@@ -2313,23 +2352,23 @@ def sync_recepciones_from_server(
                 WHERE c.fechaaplicacion >= DATEADD(DAY, -{dias_atras}, GETDATE())
                   AND ISNULL(c.cancelado, 0) = 0
             """
-        
+
         result_enc = execute_sql_fn(
             server_info['host'], server_info['port'], server_info['database'],
             server_info['username'], server_info['password'], query_encabezado
         )
-        
+
         if result_enc is None:
             return {"status": "ERROR", "error": "Timeout conexión", "encabezados_synced": 0, "detalles_synced": 0}
-        
+
         if not result_enc:
             return {"status": "OK", "encabezados_synced": 0, "detalles_synced": 0, "message": "Sin recepciones en origen"}
-        
+
         conn = get_edarsahub_connection()
         cursor = conn.cursor()
-        
+
         enc_synced = 0
-        
+
         for enc in result_enc:
             try:
                 folio = str(enc.get('folio_recepcion', ''))[:50]
@@ -2337,34 +2376,34 @@ def sync_recepciones_from_server(
                 proveedor_id = enc.get('proveedor_id') or 1
                 almacen_id = enc.get('almacen_id') or 1
                 total = float(enc.get('total') or 0)
-                
+
                 cursor.execute("""
                     MERGE INTO Compras_Recepciones AS target
-                    USING (SELECT %s AS EmpresaID, %s AS SucursalID, %s AS FolioRecepcion) AS source 
-                    ON target.EmpresaID = source.EmpresaID 
-                       AND target.SucursalID = source.SucursalID 
+                    USING (SELECT %s AS EmpresaID, %s AS SucursalID, %s AS FolioRecepcion) AS source
+                    ON target.EmpresaID = source.EmpresaID
+                       AND target.SucursalID = source.SucursalID
                        AND target.FolioRecepcion = source.FolioRecepcion
-                    WHEN MATCHED THEN 
-                        UPDATE SET Total = %s, ModifiedAt = GETDATE()
-                    WHEN NOT MATCHED THEN 
-                        INSERT (FolioRecepcion, EmpresaID, SucursalID, AlmacenID, ProveedorID, FechaRecepcion,
+                    WHEN MATCHED THEN
+                        UPDATE SET Total = %s, unidad_negocio_pk = %s, ModifiedAt = GETDATE()
+                    WHEN NOT MATCHED THEN
+                        INSERT (FolioRecepcion, EmpresaID, SucursalID, unidad_negocio_pk, AlmacenID, ProveedorID, FechaRecepcion,
                                 EstatusRecepcionID, Total, Activo, CreatedAt, Subtotal, ImpuestoTotal, TieneIncidencias)
-                        VALUES (%s, %s, %s, %s, %s, %s, 1, %s, 1, GETDATE(), %s, 0, 0);
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, 1, %s, 1, GETDATE(), %s, 0, 0);
                 """, (
                     empresa_id, sucursal_id, folio,
-                    total,
-                    folio, empresa_id, sucursal_id, almacen_id, proveedor_id, fecha, total, total
+                    total, unidad_negocio_pk,
+                    folio, empresa_id, sucursal_id, unidad_negocio_pk, almacen_id, proveedor_id, fecha, total, total
                 ))
                 enc_synced += 1
-                
+
             except Exception as e:
                 logger.warning(f"[SYNC] Error insertando recepcion {enc.get('folio_recepcion')}: {e}")
-        
+
         conn.commit()
         conn.close()
-        
+
         return {"status": "OK", "encabezados_synced": enc_synced, "detalles_synced": 0}
-        
+
     except Exception as e:
         logger.error(f"[SYNC] Error en sync_recepciones: {e}")
         return {"status": "ERROR", "error": str(e), "encabezados_synced": 0, "detalles_synced": 0}
