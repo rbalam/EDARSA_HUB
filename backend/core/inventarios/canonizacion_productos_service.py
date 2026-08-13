@@ -25,6 +25,7 @@ from typing import Dict, List
 
 from core.sql_first.db import get_sql_connection
 from core.server_registry import list_unidades_negocio
+from core.inventarios.resolver_canonico import resolver_sucursal_id
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +71,7 @@ def calcular_cobertura_dry_run() -> Dict:
         codigo = u.get("codigo", "")
         server_id = u.get("server_id") or u.get("id")
         system_type = u.get("system_type", "")
+        sucursal_origen_id = u.get("sucursal_origen_id")
 
         cov = CoberturaUnidad(
             unidad_codigo=codigo,
@@ -91,25 +93,20 @@ def calcular_cobertura_dry_run() -> Dict:
         )
         cov.insumos_pendientes = cov.insumos_origen - cov.insumos_canonizables
 
-        # Sucursal canónica (Sistema_SucursalServidorMapeo)
-        cur.execute(
-            "SELECT SucursalID, SucursalOrigenID FROM Sistema_SucursalServidorMapeo "
-            "WHERE ServidorID = %s AND Activo = 1",
-            (str(server_id),),
+        # Resolver sucursal mediante la capa canónica central.
+        resolucion_sucursal = resolver_sucursal_id(
+            str(server_id),
+            sucursal_origen_id,
         )
-        filas_suc = cur.fetchall()
-        if len(filas_suc) == 1:
-            cov.sucursal_resuelta = True
-            cov.sucursal_motivo = f"SucursalID={filas_suc[0][0]}"
-            suc_id = filas_suc[0][0]
-        elif len(filas_suc) > 1:
-            cov.sucursal_resuelta = False
-            cov.sucursal_motivo = "AMBIGUO_MULTISUCURSAL (SucursalOrigenID NULL en mapeo)"
-            suc_id = None
-        else:
-            cov.sucursal_resuelta = False
-            cov.sucursal_motivo = "SIN_MAPEO_SERVIDOR_SUCURSAL"
-            suc_id = None
+
+        cov.sucursal_resuelta = resolucion_sucursal.resuelto
+        cov.sucursal_motivo = resolucion_sucursal.motivo
+
+        suc_id = (
+            resolucion_sucursal.canonical_id
+            if resolucion_sucursal.resuelto
+            else None
+        )
 
         # Almacenes canónicos para esa sucursal
         if suc_id is not None:

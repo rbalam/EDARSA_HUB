@@ -275,65 +275,134 @@ def resolver_empresa_id(unidad_codigo: str) -> ResultadoResolucion:
 # Resolución de SUCURSAL (ServerID + sucursal_origen -> SucursalID int)
 # ---------------------------------------------------------------------------
 
-def resolver_sucursal_id(servidor_id: str, sucursal_origen_id: Optional[str] = None) -> ResultadoResolucion:
+def resolver_sucursal_id(
+    servidor_id: str,
+    sucursal_origen_id: Optional[str] = None,
+) -> ResultadoResolucion:
     """
-    Resuelve SucursalID canónico (RH_Cat_Sucursales) por unidad, derivando de tablas
-    canónicas (sin POS):
+    Resuelve el SucursalID operativo desde las fuentes SQL canónicas.
 
-    1. `Sistema_SucursalServidorMapeo` por ServidorID:
-       - 1 sola fila (servidor dedicado SR) -> esa SucursalID.
-       - varias filas (servidor MPRO compartido) -> desambigua por SucursalOrigenID.
-    2. Si el mapeo no trae SucursalOrigenID (NULL) pero hay `sucursal_origen_id`, intenta
-       confirmar la sucursal de origen vía `Sistema_EmpresasServidores.NumeroSucursalSistema`.
-       Si aún no se puede mapear a una SucursalID(RH) única -> AMBIGUO (no adivina).
+    Contrato:
+      1. La unidad se identifica en `Unidades_Negocio`.
+      2. En servidores con una sola unidad activa, esa unidad es inequívoca.
+      3. En servidores con múltiples unidades activas, `sucursal_origen_id`
+         es obligatoria y debe coincidir exactamente con la configuración
+         canónica de la unidad.
+      4. `Sistema_Empresas.CodigoEmpresa` relaciona la unidad con la empresa.
+      5. `Sistema_Sucursales.EmpresaID` entrega el SucursalID operativo.
+
+    Utiliza exclusivamente fuentes SQL canónicas y configuración de unidad;
+    no usa nombres de servidor, IDs hardcodeados ni fallbacks heurísticos.
     """
     if not servidor_id:
         return ResultadoResolucion.pendiente("SIN_DIMENSION")
 
-    ckey = (str(servidor_id), str(sucursal_origen_id) if sucursal_origen_id is not None else None)
+    server = str(servidor_id).strip()
+    origen = (
+        str(sucursal_origen_id).strip()
+        if sucursal_origen_id is not None
+        else None
+    )
+
+    ckey = (server, origen)
+
     cached = _sucursal_cache.get(ckey)
     if cached is not None:
         return cached
 
-    filas = _fetchall(
-        """SELECT SucursalID, SucursalOrigenID FROM Sistema_SucursalServidorMapeo
-           WHERE ServidorID = %s AND Activo = 1""",
-        (str(servidor_id),),
+    unidades = _fetchall(
+        """
+        SELECT
+            u.codigo AS UnidadCodigo,
+            u.sucursal_origen_id AS SucursalOrigenID
+        FROM dbo.Unidades_Negocio u
+        WHERE CONVERT(varchar(36), u.server_id) = %s
+          AND ISNULL(u.activo, 0) = 1
+        ORDER BY u.codigo
+        """,
+        (server,),
         as_dict=True,
     )
-    if not filas:
-        res = ResultadoResolucion.pendiente("PENDIENTE_SIN_MAPEO")
+
+    if not unidades:
+        res = ResultadoResolucion.pendiente(
+            "PENDIENTE_SIN_MAPEO"
+        )
         _sucursal_cache[ckey] = res
         return res
 
-    if len(filas) == 1:
-        res = ResultadoResolucion.ok(filas[0]["SucursalID"])
+    if len(unidades) == 1:
+        unidad = unidades[0]
+    else:
+        if not origen:
+            res = ResultadoResolucion.pendiente(
+                "AMBIGUO_MULTISUCURSAL"
+            )
+            _sucursal_cache[ckey] = res
+            return res
+
+        candidatas = [
+            u
+            for u in unidades
+            if (
+                u.get("SucursalOrigenID") is not None
+                and str(
+                    u.get("SucursalOrigenID")
+                ).strip() == origen
+            )
+        ]
+
+        if len(candidatas) != 1:
+            res = ResultadoResolucion.pendiente(
+                "PENDIENTE_SIN_MAPEO"
+                if len(candidatas) == 0
+                else "AMBIGUO_MULTISUCURSAL"
+            )
+            _sucursal_cache[ckey] = res
+            return res
+
+        unidad = candidatas[0]
+
+    unidad_codigo = str(
+        unidad.get("UnidadCodigo") or ""
+    ).strip()
+
+    if not unidad_codigo:
+        res = ResultadoResolucion.pendiente(
+            "PENDIENTE_SIN_MAPEO"
+        )
         _sucursal_cache[ckey] = res
         return res
 
-    # Servidor compartido (MPRO): intentar desambiguar por SucursalOrigenID del mapeo.
-    if sucursal_origen_id:
-        try:
-            origen_norm = int(str(sucursal_origen_id).lstrip("0") or "0")
-        except ValueError:
-            origen_norm = None
-        for f in filas:
-            soi = f.get("SucursalOrigenID")
-            if soi is not None and str(soi).strip() == str(sucursal_origen_id).strip():
-                res = ResultadoResolucion.ok(f["SucursalID"])
-                _sucursal_cache[ckey] = res
-                return res
-            if soi is not None and origen_norm is not None:
-                try:
-                    if int(str(soi).lstrip("0") or "0") == origen_norm:
-                        res = ResultadoResolucion.ok(f["SucursalID"])
-                        _sucursal_cache[ckey] = res
-                        return res
-                except ValueError:
-                    pass
+    sucursales = _fetchall(
+        """
+        SELECT
+            s.SucursalID
+        FROM dbo.Sistema_Empresas e
+        INNER JOIN dbo.Sistema_Sucursales s
+            ON s.EmpresaID = e.EmpresaID
+           AND ISNULL(s.Activo, 0) = 1
+        WHERE UPPER(LTRIM(RTRIM(e.CodigoEmpresa))) =
+              UPPER(LTRIM(RTRIM(%s)))
+          AND ISNULL(e.Activo, 0) = 1
+        ORDER BY s.SucursalID
+        """,
+        (unidad_codigo,),
+    )
 
-    # Mapeo MPRO sin SucursalOrigenID confiable -> no adivinar.
-    res = ResultadoResolucion.pendiente("AMBIGUO_MULTISUCURSAL")
+    if len(sucursales) == 1:
+        res = ResultadoResolucion.ok(
+            sucursales[0][0]
+        )
+    elif len(sucursales) == 0:
+        res = ResultadoResolucion.pendiente(
+            "PENDIENTE_SIN_MAPEO"
+        )
+    else:
+        res = ResultadoResolucion.pendiente(
+            "AMBIGUO_MULTISUCURSAL"
+        )
+
     _sucursal_cache[ckey] = res
     return res
 
