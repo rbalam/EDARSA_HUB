@@ -18,6 +18,10 @@ from typing import Dict, List, Optional, Tuple
 from zoneinfo import ZoneInfo
 
 from core.db import execute_sql_query
+from core.sql_first.connection_factory import (
+    get_edarsahub_pymssql_connection,
+    get_external_sql_connection,
+)
 from core.server_registry import (
     EDARSAHUB_CONFIG, 
     _get_server_by_id_from_sql, 
@@ -148,7 +152,15 @@ def _ejecutar_sync(config: SyncRecetasConfig) -> SyncRecetasResult:
                 if server_result.get('warnings'):
                     result.warnings.extend(server_result['warnings'])
                 
-                result.servidores_exitosos += 1
+                server_error_count = int(
+                    server_result.get('errores_count', 0) or 0
+                )
+                server_errors = server_result.get('errores') or []
+
+                if server_error_count > 0 or server_errors:
+                    result.servidores_con_error += 1
+                else:
+                    result.servidores_exitosos += 1
                 
             except Exception as e:
                 result.servidores_con_error += 1
@@ -158,7 +170,11 @@ def _ejecutar_sync(config: SyncRecetasConfig) -> SyncRecetasResult:
                     'system_type': system_type
                 }
         
-        result.success = result.servidores_exitosos > 0
+        result.success = (
+            result.servidores_exitosos > 0
+            and result.servidores_con_error == 0
+            and result.registros_error == 0
+        )
         
     except Exception as e:
         result.errores.append(f"Error general: {str(e)}")
@@ -293,7 +309,7 @@ def _sync_softrestaurant(
         recetas = _obtener_recetas_sr(host, port, database, username, password)
         result['lineas_receta'] = len(recetas)
         
-        if not config.dry_run and recetas:
+        if not config.dry_run:
             _guardar_recetas(server_id, system_type, recetas, sync_run_id, result)
     
     # 6. Sincronizar Elaborados (sub-recetas)
@@ -446,10 +462,70 @@ def _obtener_productos_sr(host, port, database, username, password) -> List[Prod
     return productos
 
 
+def _execute_pos_query_strict(
+    host,
+    port,
+    database,
+    username,
+    password,
+    query,
+):
+    """
+    Ejecuta SQL contra POS con semantica fail-closed.
+
+    Una consulta valida sin filas devuelve [].
+    Un fallo de conexion o de SQL propaga excepcion.
+    """
+    connection = get_external_sql_connection({
+        "host": host,
+        "port": port,
+        "database": database,
+        "username": username,
+        "password": password,
+        "login_timeout": 10,
+        "timeout": 240,
+        "as_dict": True,
+    })
+
+    try:
+        try:
+            cursor = connection.cursor(as_dict=True)
+        except TypeError:
+            cursor = connection.cursor()
+
+        cursor.execute(query)
+        rows = cursor.fetchall() or []
+
+        if not rows:
+            return []
+
+        if isinstance(rows[0], dict):
+            return [dict(row) for row in rows]
+
+        columns = [
+            column[0]
+            for column in cursor.description
+        ]
+
+        return [
+            dict(zip(columns, row))
+            for row in rows
+        ]
+    finally:
+        connection.close()
+
+
 def _contar_productos_con_receta_sr(host, port, database, username, password) -> int:
     """Cuenta productos que tienen receta en tabla 'costos'."""
     query = "SELECT COUNT(DISTINCT idproducto) as cnt FROM costos"
-    rows = execute_sql_query(host, port, database, username, password, query) or []
+    rows = _execute_pos_query_strict(
+        host,
+        port,
+        database,
+        username,
+        password,
+        query,
+    )
     return int(rows[0].get('cnt', 0)) if rows else 0
 
 
@@ -468,7 +544,14 @@ def _obtener_recetas_sr(host, port, database, username, password) -> List[Receta
     WHERE c.cantidad > 0
     ORDER BY c.idproducto, c.idinsumo
     """
-    rows = execute_sql_query(host, port, database, username, password, query) or []
+    rows = _execute_pos_query_strict(
+        host,
+        port,
+        database,
+        username,
+        password,
+        query,
+    )
     
     result = []
     for r in rows:
@@ -758,7 +841,7 @@ def _sync_mpro(
         recetas = _obtener_recetas_mpro(host, port, database, username, password)
         result['lineas_receta'] = len(recetas)
         
-        if not config.dry_run and recetas:
+        if not config.dry_run:
             _guardar_recetas(server_id, system_type, recetas, sync_run_id, result)
 
     # 6. Sincronizar Productos Compuestos (Producto_Kit)
@@ -1028,7 +1111,14 @@ def _obtener_productos_mpro(host, port, database, username, password) -> List[Pr
 def _contar_productos_con_receta_mpro(host, port, database, username, password) -> int:
     """Cuenta productos con fórmula de producción en MPRO."""
     query = "SELECT COUNT(DISTINCT Pr_Cve_Producto) as cnt FROM Formula_Produccion WHERE Es_Cve_Estado = 'AC'"
-    rows = execute_sql_query(host, port, database, username, password, query) or []
+    rows = _execute_pos_query_strict(
+        host,
+        port,
+        database,
+        username,
+        password,
+        query,
+    )
     return int(rows[0].get('cnt', 0)) if rows else 0
 
 
@@ -1061,7 +1151,14 @@ def _obtener_recetas_mpro(host, port, database, username, password) -> List[Rece
       AND fpd.Fpd_Cantidad > 0
     ORDER BY fpd.Pr_Cve_Producto, fpd.Fpd_Producto
     """
-    rows = execute_sql_query(host, port, database, username, password, query) or []
+    rows = _execute_pos_query_strict(
+        host,
+        port,
+        database,
+        username,
+        password,
+        query,
+    )
 
     def _dec(value, default='0'):
         if value is None:
@@ -1347,97 +1444,213 @@ def _guardar_productos(server_id: str, system_type: str, productos: List[Product
                 result['errores'].append(f"Error producto {prod.codigo_fuente}: {str(e)[:80]}")
 
 
-def _guardar_recetas(server_id: str, system_type: str, recetas: List[RecetaLineaSync],
-                     sync_run_id: str, result: Dict) -> None:
-    """Guarda líneas de receta en EDARSAHUB SQL."""
-    productos_actualizados = set()
-    
-    for rec in recetas:
-        try:
-            nombre_escaped = rec.insumo_nombre.replace("'", "''")
-            
-            query = f"""
-            MERGE Sync_Productos_Recetas AS target
-            USING (SELECT '{server_id}' as ServerID, 
-                          '{rec.producto_codigo_fuente}' as ProductoCodigoFuente,
-                          '{rec.insumo_codigo_fuente}' as ComponenteCodigoFuente) AS source
-            ON target.ServerID = CAST(source.ServerID AS UNIQUEIDENTIFIER) 
-               AND target.ProductoCodigoFuente = source.ProductoCodigoFuente
-               AND target.ComponenteCodigoFuente = source.ComponenteCodigoFuente
-            WHEN MATCHED THEN
-                UPDATE SET 
-                    ComponenteNombre = N'{nombre_escaped}',
-                    TipoComponente = 'INSUMO',
-                    Cantidad = {rec.cantidad},
-                    UnidadMedida = '{rec.unidad_medida}',
-                    CostoUnitario = {rec.costo_unitario},
-                    CostoTotal = {rec.costo_total},
-                    EsElaborado = {1 if rec.es_elaborado else 0},
-                    RendimientoElaborado = {rec.rendimiento_elaborado if rec.rendimiento_elaborado else 'NULL'},
-                    SystemType = '{system_type}',
-                    SyncRunID = '{sync_run_id}',
-                    SyncedAtMexico = SYSDATETIME(),
-                    FechaModificacion = SYSDATETIME()
-            WHEN NOT MATCHED THEN
-                INSERT (ProductoID, ServerID, ProductoCodigoFuente, ComponenteCodigoFuente,
-                        ComponenteNombre, TipoComponente, Cantidad, UnidadMedida,
-                        CostoUnitario, CostoTotal, EsElaborado, RendimientoElaborado,
-                        SystemType, SyncRunID, Activo)
-                VALUES (
-                    NEWID(),
-                    CAST('{server_id}' AS UNIQUEIDENTIFIER),
-                    '{rec.producto_codigo_fuente}',
-                    '{rec.insumo_codigo_fuente}',
-                    N'{nombre_escaped}',
-                    'INSUMO',
-                    {rec.cantidad}, '{rec.unidad_medida}',
-                    {rec.costo_unitario}, {rec.costo_total},
-                    {1 if rec.es_elaborado else 0},
-                    {rec.rendimiento_elaborado if rec.rendimiento_elaborado else 'NULL'},
-                    '{system_type}',
-                    '{sync_run_id}',
-                    1
-                );
-            """
-            execute_sql_query(
-                EDARSAHUB_CONFIG['host'],
-                EDARSAHUB_CONFIG['port'],
-                EDARSAHUB_CONFIG['database'],
-                EDARSAHUB_CONFIG['username'],
-                EDARSAHUB_CONFIG['password'],
-                query
+def _guardar_recetas(
+    server_id: str,
+    system_type: str,
+    recetas: List[RecetaLineaSync],
+    sync_run_id: str,
+    result: Dict,
+) -> None:
+    """
+    Persiste el snapshot vigente de recetas para un ServerID.
+
+    Garantías:
+    - una única transacción por servidor;
+    - líneas vistas quedan Activo=1;
+    - líneas previamente activas no vistas quedan Activo=0;
+    - TieneReceta y CantidadComponentesReceta se recalculan
+      exclusivamente desde líneas activas;
+    - cualquier fallo provoca rollback completo.
+    """
+    conn = get_edarsahub_pymssql_connection(
+        timeout=240,
+        login_timeout=10,
+        autocommit=False,
+    )
+
+    processed = 0
+
+    try:
+        cursor = conn.cursor(as_dict=True)
+
+        merge_sql = """
+        MERGE dbo.Sync_Productos_Recetas AS target
+        USING (
+            SELECT
+                CAST(%s AS UNIQUEIDENTIFIER) AS ServerID,
+                %s AS ProductoCodigoFuente,
+                %s AS ComponenteCodigoFuente
+        ) AS source
+        ON target.ServerID = source.ServerID
+           AND target.ProductoCodigoFuente =
+               source.ProductoCodigoFuente
+           AND target.ComponenteCodigoFuente =
+               source.ComponenteCodigoFuente
+
+        WHEN MATCHED THEN
+            UPDATE SET
+                ComponenteNombre = %s,
+                TipoComponente = 'INSUMO',
+                Cantidad = %s,
+                UnidadMedida = %s,
+                CostoUnitario = %s,
+                CostoTotal = %s,
+                EsElaborado = %s,
+                RendimientoElaborado = %s,
+                SystemType = %s,
+                SyncRunID = %s,
+                Activo = 1,
+                SyncedAtMexico = SYSDATETIME(),
+                FechaModificacion = SYSDATETIME()
+
+        WHEN NOT MATCHED THEN
+            INSERT (
+                ProductoID,
+                ServerID,
+                ProductoCodigoFuente,
+                ComponenteCodigoFuente,
+                ComponenteNombre,
+                TipoComponente,
+                Cantidad,
+                UnidadMedida,
+                CostoUnitario,
+                CostoTotal,
+                EsElaborado,
+                RendimientoElaborado,
+                SystemType,
+                SyncRunID,
+                Activo
             )
-            result['insertados'] += 1
-            productos_actualizados.add(rec.producto_codigo_fuente)
-        except Exception as e:
-            result['errores_count'] += 1
-            if len(result['errores']) < 10:
-                result['errores'].append(f"Error receta {rec.producto_codigo_fuente}: {str(e)[:80]}")
-    
-    # Actualizar flag TieneReceta en productos
-    for prod_codigo in productos_actualizados:
-        try:
-            update_query = f"""
-            UPDATE Sync_Productos 
-            SET TieneReceta = 1, 
-                CantidadComponentesReceta = (
-                    SELECT COUNT(*) FROM Sync_Productos_Recetas 
-                    WHERE ServerID = CAST('{server_id}' AS UNIQUEIDENTIFIER)
-                    AND ProductoCodigoFuente = '{prod_codigo}'
-                )
-            WHERE ServerID = CAST('{server_id}' AS UNIQUEIDENTIFIER)
-            AND CodigoFuente = '{prod_codigo}'
-            """
-            execute_sql_query(
-                EDARSAHUB_CONFIG['host'],
-                EDARSAHUB_CONFIG['port'],
-                EDARSAHUB_CONFIG['database'],
-                EDARSAHUB_CONFIG['username'],
-                EDARSAHUB_CONFIG['password'],
-                update_query
+            VALUES (
+                NEWID(),
+                source.ServerID,
+                source.ProductoCodigoFuente,
+                source.ComponenteCodigoFuente,
+                %s,
+                'INSUMO',
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                1
+            );
+        """
+
+        for rec in recetas:
+            params = (
+                str(server_id),
+                str(rec.producto_codigo_fuente),
+                str(rec.insumo_codigo_fuente),
+
+                str(rec.insumo_nombre),
+                rec.cantidad,
+                str(rec.unidad_medida),
+                rec.costo_unitario,
+                rec.costo_total,
+                1 if rec.es_elaborado else 0,
+                rec.rendimiento_elaborado,
+                str(system_type),
+                str(sync_run_id),
+
+                str(rec.insumo_nombre),
+                rec.cantidad,
+                str(rec.unidad_medida),
+                rec.costo_unitario,
+                rec.costo_total,
+                1 if rec.es_elaborado else 0,
+                rec.rendimiento_elaborado,
+                str(system_type),
+                str(sync_run_id),
             )
-        except:
+
+            cursor.execute(
+                merge_sql,
+                params,
+            )
+
+            processed += 1
+
+        # Una línea que sigue vigente recibió el SyncRunID actual.
+        # Solo después de completar todos los UPSERT se inactivan
+        # las líneas antiguas del mismo servidor no vistas en este run.
+        cursor.execute(
+            """
+            UPDATE dbo.Sync_Productos_Recetas
+            SET
+                Activo = 0,
+                FechaModificacion = SYSDATETIME()
+            WHERE ServerID = CAST(%s AS UNIQUEIDENTIFIER)
+              AND Activo = 1
+              AND (
+                    SyncRunID IS NULL
+                    OR SyncRunID <> %s
+                  );
+            """,
+            (
+                str(server_id),
+                str(sync_run_id),
+            ),
+        )
+
+        # Recalcular la verdad actual de receta para TODOS los productos
+        # del servidor, incluyendo los que ahora tienen cero componentes.
+        cursor.execute(
+            """
+            UPDATE p
+            SET
+                TieneReceta =
+                    CASE
+                        WHEN ISNULL(r.ComponentesActivos, 0) > 0
+                        THEN 1
+                        ELSE 0
+                    END,
+                CantidadComponentesReceta =
+                    ISNULL(r.ComponentesActivos, 0),
+                FechaModificacion = SYSDATETIME()
+            FROM dbo.Sync_Productos p
+            OUTER APPLY (
+                SELECT
+                    COUNT(*) AS ComponentesActivos
+                FROM dbo.Sync_Productos_Recetas rr
+                WHERE rr.ServerID = p.ServerID
+                  AND rr.ProductoCodigoFuente = p.CodigoFuente
+                  AND rr.Activo = 1
+            ) r
+            WHERE p.ServerID = CAST(%s AS UNIQUEIDENTIFIER);
+            """,
+            (
+                str(server_id),
+            ),
+        )
+
+        conn.commit()
+
+        result["insertados"] += processed
+
+    except Exception as exc:
+        try:
+            conn.rollback()
+        except Exception:
             pass
+
+        result["errores_count"] += 1
+
+        if len(result["errores"]) < 10:
+            result["errores"].append(
+                "Error transaccional recetas "
+                f"ServerID={server_id}: {str(exc)[:160]}"
+            )
+
+        raise
+
+    finally:
+        conn.close()
+
+
 
 
 
