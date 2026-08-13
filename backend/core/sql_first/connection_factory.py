@@ -149,6 +149,16 @@ def get_external_sql_connection(config: dict):
             "host/database/username/password requeridos"
         )
 
+    # Import local intencional:
+    # evita ciclo connection_factory -> core.db
+    # -> core.sql_first.db -> connection_factory.
+    from core.db import parse_sql_server_host
+
+    host, port, _instance = parse_sql_server_host(
+        str(host),
+        port,
+    )
+
     try:
         import pymssql
 
