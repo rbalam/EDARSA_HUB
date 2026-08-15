@@ -48,8 +48,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  CorporateFiltersProvider,
+  CorporateFilterSelect,
+  useCorporateFilters,
+} from '../../filters';
+import { useAccessContext } from '../../hooks/useAccessContext';
 
-const EMPRESA_ID = '19E076FB-C6DE-4EA5-84AB-1CAA9E86082C';
+
 
 const TIPOS_BEBIDA = [
   { value: 'VINO_TINTO', label: 'Vino Tinto' },
@@ -66,9 +72,12 @@ const TIPOS_BEBIDA = [
   { value: 'OTRO', label: 'Otro' }
 ];
 
-export default function SocioDetail() {
+function SocioDetailContent() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { selected, loading: filtersLoading } = useCorporateFilters();
+  const { context, loading: contextLoading, error: contextError } = useAccessContext();
+  const unidadNegocioPk = selected?.unidades_negocio || context?.unidad_activa || '';
   
   const [socio, setSocio] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -100,23 +109,34 @@ export default function SocioDetail() {
 
   const [enviandoReporte, setEnviandoReporte] = useState(false);
 
-  const fetchSocio = async () => {
+  const fetchSocio = useCallback(async () => {
+    if (filtersLoading || contextLoading) return;
+    if (!unidadNegocioPk) {
+      setSocio(null);
+      setError('Selecciona una unidad de negocio autorizada para consultar Cavas.');
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
-      const response = await api.get(`/cava-socios/socios/${id}`);
+      const response = await api.get(`/cava-socios/socios/${id}?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`);
       setSocio(response.data);
       setError(null);
     } catch (err) {
       console.error('Error fetching socio:', err);
-      setError('Error cargando datos del socio');
+      setError(
+        err?.response?.status === 403
+          ? 'No tienes permiso para consultar Cavas en esta unidad.'
+          : 'Error cargando datos del socio'
+      );
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, unidadNegocioPk, filtersLoading, contextLoading]);
 
   useEffect(() => {
     fetchSocio();
-  }, [id]);
+  }, [fetchSocio]);
 
   const getEstatusColor = (estatus) => {
     const colors = {
@@ -149,10 +169,14 @@ export default function SocioDetail() {
       toast.error('El nombre del producto es requerido');
       return;
     }
+    if (!unidadNegocioPk) {
+      toast.error('Selecciona una unidad de negocio autorizada.');
+      return;
+    }
     
     setSavingBotella(true);
     try {
-      await api.post(`/cava-socios/socios/${id}/botellas?empresa_id=${EMPRESA_ID}`, botellaForm);
+      await api.post(`/cava-socios/socios/${id}/botellas?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`, botellaForm);
       toast.success('Botella registrada correctamente');
       setShowBotellaDialog(false);
       setBotellaForm({
@@ -176,10 +200,14 @@ export default function SocioDetail() {
 
   const handleConsumo = async () => {
     if (!selectedBotella) return;
+    if (!unidadNegocioPk) {
+      toast.error('Selecciona una unidad de negocio autorizada.');
+      return;
+    }
     
     setSavingConsumo(true);
     try {
-      await api.post(`/cava-socios/botellas/${selectedBotella.botella_id}/consumo`, consumoForm);
+      await api.post(`/cava-socios/botellas/${selectedBotella.botella_id}/consumo?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`, consumoForm);
       toast.success('Consumo registrado correctamente');
       setShowConsumoDialog(false);
       setSelectedBotella(null);
@@ -206,10 +234,14 @@ export default function SocioDetail() {
 
   // Funciones de descarga de reportes PDF
   const descargarReporte = async (tipo) => {
+    if (!unidadNegocioPk) {
+      toast.error('Selecciona una unidad de negocio autorizada.');
+      return;
+    }
     try {
       toast.loading(`Generando ${tipo}...`, { id: 'pdf-loading' });
       
-      const response = await api.get(`/cava-socios/reportes/socio/${id}/${tipo}`, {
+      const response = await api.get(`/cava-socios/reportes/socio/${id}/${tipo}?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`, {
         responseType: 'blob'
       });
       
@@ -234,6 +266,10 @@ export default function SocioDetail() {
   // Función para enviar reportes por Email o WhatsApp
   const enviarReporte = async (tipoReporte, canales) => {
     if (!socio) return;
+    if (!unidadNegocioPk) {
+      toast.error('Selecciona una unidad de negocio autorizada.');
+      return;
+    }
     
     // Validaciones previas
     if (canales.includes('email') && !socio.email) {
@@ -251,7 +287,7 @@ export default function SocioDetail() {
     try {
       toast.loading(`Enviando ${tipoReporte} por ${canalTexto}...`, { id: 'envio-reporte' });
       
-      const response = await api.post(`/cava-socios/socios/${id}/enviar-reporte`, {
+      const response = await api.post(`/cava-socios/socios/${id}/enviar-reporte?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`, {
         tipo_reporte: tipoReporte,
         canales: canales
       });
@@ -282,6 +318,10 @@ export default function SocioDetail() {
   // Enviar todos los reportes
   const enviarTodosReportes = async (canales) => {
     if (!socio) return;
+    if (!unidadNegocioPk) {
+      toast.error('Selecciona una unidad de negocio autorizada.');
+      return;
+    }
     
     if (canales.includes('email') && !socio.email) {
       toast.error('El socio no tiene email registrado');
@@ -298,7 +338,7 @@ export default function SocioDetail() {
       toast.loading('Enviando todos los reportes...', { id: 'envio-todos' });
       
       const response = await api.post(
-        `/cava-socios/socios/${id}/enviar-todos-reportes?canales=${canales.join('&canales=')}`,
+        `/cava-socios/socios/${id}/enviar-todos-reportes?canales=${canales.join('&canales=')}&unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`,
         {}
       );
       
@@ -316,6 +356,7 @@ export default function SocioDetail() {
       setEnviandoReporte(false);
     }
   };
+
 
   if (loading) {
     return (
@@ -361,11 +402,19 @@ export default function SocioDetail() {
             </p>
           </div>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-end">
+          <div className="min-w-[240px]">
+            <CorporateFilterSelect
+              filterKey="unidades_negocio"
+              label="Unidad de negocio"
+              placeholder="Selecciona una unidad"
+            />
+          </div>
           {/* Dropdown de Reportes y Envío */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" disabled={enviandoReporte} data-testid="btn-reportes-menu">
+
                 {enviandoReporte ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
@@ -809,3 +858,12 @@ export default function SocioDetail() {
     </div>
   );
 }
+
+export default function SocioDetail() {
+  return (
+    <CorporateFiltersProvider scope="cava_socios">
+      <SocioDetailContent />
+    </CorporateFiltersProvider>
+  );
+}
+

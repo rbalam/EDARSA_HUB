@@ -23,40 +23,66 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  CorporateFiltersProvider,
+  CorporateFilterSelect,
+  useCorporateFilters,
+} from '../../filters';
+import { useAccessContext } from '../../hooks/useAccessContext';
 
-// ID de empresa por defecto (en producción vendría del contexto)
-const EMPRESA_ID = '19E076FB-C6DE-4EA5-84AB-1CAA9E86082C';
 
-export default function CavaSociosDashboard() {
+function CavaSociosDashboardContent() {
   const navigate = useNavigate();
+  const { selected, loading: filtersLoading } = useCorporateFilters();
+  const { context, loading: contextLoading, error: contextError } = useAccessContext();
   const [dashboard, setDashboard] = useState(null);
   const [socios, setSocios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const unidadNegocioPk = selected?.unidades_negocio || context?.unidad_activa || '';
+
   const fetchData = async () => {
+    if (!unidadNegocioPk) {
+      setDashboard(null);
+      setSocios([]);
+      setError('Selecciona una unidad de negocio autorizada para consultar Cavas.');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
+      const scope = `unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`;
       const [dashboardRes, sociosRes] = await Promise.all([
-        api.get(`/cava-socios/dashboard?empresa_id=${EMPRESA_ID}`),
-        api.get(`/cava-socios/socios?empresa_id=${EMPRESA_ID}&limit=10`)
+        api.get(`/cava-socios/dashboard?${scope}`),
+        api.get(`/cava-socios/socios?${scope}&limit=10`)
       ]);
-      
+
       setDashboard(dashboardRes.data);
       setSocios(sociosRes.data?.socios || []);
       setError(null);
     } catch (err) {
       console.error('Error fetching cava data:', err);
-      setError('Error cargando datos de Cava de Socios');
+      const status = err?.response?.status;
+      setDashboard(null);
+      setSocios([]);
+      setError(
+        status === 403
+          ? 'No tienes permiso para consultar Cavas en esta unidad.'
+          : 'Error cargando datos de Cavas.'
+      );
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    if (filtersLoading || contextLoading) return;
     fetchData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unidadNegocioPk, filtersLoading, contextLoading]);
 
   const getEstatusColor = (estatus) => {
     const colors = {
@@ -85,7 +111,7 @@ export default function CavaSociosDashboard() {
     }).format(amount || 0);
   };
 
-  if (loading) {
+  if (loading || filtersLoading || contextLoading) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[400px]">
         <RefreshCw className="h-8 w-8 animate-spin text-zinc-400" />
@@ -107,6 +133,13 @@ export default function CavaSociosDashboard() {
           </p>
         </div>
         <div className="flex gap-2">
+          <div className="min-w-[260px]">
+            <CorporateFilterSelect
+              filterKey="unidades_negocio"
+              label="Unidad de negocio"
+              placeholder="Selecciona una unidad"
+            />
+          </div>
           <Button variant="outline" size="sm" onClick={fetchData}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar
@@ -118,10 +151,10 @@ export default function CavaSociosDashboard() {
         </div>
       </div>
 
-      {error && (
+      {(error || contextError) && (
         <div className="p-4 rounded-lg bg-red-50 text-red-700 flex items-center gap-2">
           <AlertCircle className="h-5 w-5" />
-          {error}
+          {error || contextError?.message || 'No se pudo resolver el contexto de acceso.'}
         </div>
       )}
 
@@ -278,7 +311,7 @@ export default function CavaSociosDashboard() {
                     <TableCell className="text-center">
                       <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">
                         <Wine className="h-3 w-3" />
-                        {socio.botellas_en_cava || 0} / {socio.maximo_botellas || 12}
+                        {socio.botellas_en_cava ?? 0} / {socio.maximo_botellas ?? '—'}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -303,7 +336,7 @@ export default function CavaSociosDashboard() {
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               <Wine className="h-12 w-12 mx-auto mb-4 opacity-20" />
-              <p>No hay socios registrados aún</p>
+              <p>{error ? 'Datos no disponibles' : 'No hay socios registrados aún'}</p>
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -319,7 +352,7 @@ export default function CavaSociosDashboard() {
       </Card>
 
       {/* Quick Links */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Link to="/cava-socios/socios">
           <Card className="hover:bg-zinc-50 transition-colors cursor-pointer">
             <CardContent className="p-4 flex items-center gap-3">
@@ -331,40 +364,15 @@ export default function CavaSociosDashboard() {
             </CardContent>
           </Card>
         </Link>
-        <Link to="/cava-socios/botellas">
-          <Card className="hover:bg-zinc-50 transition-colors cursor-pointer">
-            <CardContent className="p-4 flex items-center gap-3">
-              <Wine className="h-8 w-8 text-blue-500" />
-              <div>
-                <div className="font-medium">Botellas</div>
-                <div className="text-xs text-muted-foreground">Inventario</div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link to="/cava-socios/consumos">
-          <Card className="hover:bg-zinc-50 transition-colors cursor-pointer">
-            <CardContent className="p-4 flex items-center gap-3">
-              <Package className="h-8 w-8 text-green-500" />
-              <div>
-                <div className="font-medium">Consumos</div>
-                <div className="text-xs text-muted-foreground">Registrar</div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link to="/cava-socios/reportes">
-          <Card className="hover:bg-zinc-50 transition-colors cursor-pointer">
-            <CardContent className="p-4 flex items-center gap-3">
-              <TrendingUp className="h-8 w-8 text-orange-500" />
-              <div>
-                <div className="font-medium">Reportes</div>
-                <div className="text-xs text-muted-foreground">Exportar</div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
       </div>
     </div>
+  );
+}
+
+export default function CavaSociosDashboard() {
+  return (
+    <CorporateFiltersProvider scope="cava_socios">
+      <CavaSociosDashboardContent />
+    </CorporateFiltersProvider>
   );
 }

@@ -1,5 +1,3 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
 """
 EDARSA HUB - Cava de Socios Routes
 ===================================
@@ -16,10 +14,50 @@ import io
 import logging
 
 from .service import get_cava_socios_service
-from core.security import get_current_user
+from core.auth.sql_user_identity import enrich_current_user_with_sql_id
+from core.rbac import require_explicit_permission
+from modules.rbac_context_sql.context_service import RBACContextService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/cava-socios", tags=["Cava de Socios"])
+context_service = RBACContextService()
+
+
+def _resolve_cava_scope(
+    current_user: Dict,
+    unidad_negocio_pk: Optional[str],
+) -> Dict[str, Any]:
+    """Resuelve unidad y empresa exclusivamente desde el contexto RBAC SQL."""
+    user_with_sql_id = enrich_current_user_with_sql_id(current_user)
+    context = context_service.get_user_context(
+        user_with_sql_id,
+        unidad_negocio_id=unidad_negocio_pk,
+    )
+
+    if not context:
+        raise HTTPException(status_code=403, detail="Contexto Cavas no autorizado")
+
+    active_unit = str(context.get("unidad_activa") or "").strip()
+    allowed_units = context.get("unidades_permitidas") or []
+    selected = next(
+        (
+            unit for unit in allowed_units
+            if str(unit.get("UnidadNegocioID") or "").strip() == active_unit
+        ),
+        None,
+    )
+
+    if not selected:
+        raise HTTPException(status_code=403, detail="Unidad de negocio no autorizada")
+
+    empresa_id = selected.get("EmpresaID")
+    if empresa_id in (None, ""):
+        raise HTTPException(
+            status_code=409,
+            detail="La unidad no tiene empresa canónica configurada para Cavas",
+        )
+
+    return {"empresa_id": empresa_id, "unidad_negocio_pk": active_unit}
 
 
 # ==================== SCHEMAS ====================
@@ -36,6 +74,21 @@ class SocioCreate(BaseModel):
     fecha_vencimiento: Optional[str] = None
     maximo_botellas: int = 12
     observaciones: Optional[str] = None
+
+
+class SocioUpdate(BaseModel):
+    """Schema para actualizar socio."""
+    nombre_completo: str = Field(..., min_length=3, max_length=200)
+    numero_socio: Optional[str] = None
+    email: Optional[str] = None
+    telefono: Optional[str] = None
+    cliente_crm_id: Optional[str] = None
+    tipo_membresia: Optional[str] = None
+    fecha_vencimiento: Optional[str] = None
+    maximo_botellas: Optional[int] = None
+    estatus: Optional[str] = None
+    observaciones: Optional[str] = None
+
 
 
 class BotellaCreate(BaseModel):
@@ -68,17 +121,18 @@ class ConsumoCreate(BaseModel):
 
 @router.get("/dashboard")
 async def get_dashboard(
-    empresa_id: str = Query(..., description="ID de empresa"),
-    current_user: Dict = Depends(get_current_user)
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_VER"))
 ):
     """
     Obtiene dashboard del módulo Cava de Socios.
     
     Permisos: CAVA_SOCIOS_VER
     """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
     try:
         service = get_cava_socios_service()
-        return service.obtener_dashboard(empresa_id)
+        return service.obtener_dashboard(scope["empresa_id"])
     except Exception as e:
         logger.error(f"[CavaSocios] Error en dashboard: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -86,20 +140,21 @@ async def get_dashboard(
 
 @router.get("/socios")
 async def listar_socios(
-    empresa_id: str = Query(...),
+    unidad_negocio_pk: Optional[str] = Query(None),
     estatus: Optional[str] = None,
     skip: int = 0,
     limit: int = 50,
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_VER"))
 ):
     """
     Lista socios de cava con paginación.
     
     Permisos: CAVA_SOCIOS_VER
     """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
     try:
         service = get_cava_socios_service()
-        return service.listar_socios(empresa_id, estatus, skip, limit)
+        return service.listar_socios(scope["empresa_id"], estatus, skip, limit)
     except Exception as e:
         logger.error(f"[CavaSocios] Error listando socios: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -108,16 +163,18 @@ async def listar_socios(
 @router.get("/socios/{socio_id}")
 async def obtener_socio(
     socio_id: str,
-    current_user: Dict = Depends(get_current_user)
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_VER"))
 ):
     """
     Obtiene detalle de un socio con sus botellas.
     
     Permisos: CAVA_SOCIOS_VER
     """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
     try:
         service = get_cava_socios_service()
-        socio = service.obtener_socio(socio_id)
+        socio = service.obtener_socio(socio_id, scope["empresa_id"])
         if not socio:
             raise HTTPException(status_code=404, detail="Socio no encontrado")
         return socio
@@ -130,19 +187,20 @@ async def obtener_socio(
 
 @router.post("/socios")
 async def crear_socio(
-    empresa_id: str = Query(...),
-    data: SocioCreate = ...,
-    current_user: Dict = Depends(get_current_user)
+    data: SocioCreate,
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_CREAR"))
 ):
     """
     Crea un nuevo socio de cava.
     
     Permisos: CAVA_SOCIOS_CREAR
     """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
     try:
         service = get_cava_socios_service()
         usuario_id = current_user.get('public_uuid') or current_user.get('id', '')
-        return service.crear_socio(empresa_id, data.model_dump(), usuario_id)
+        return service.crear_socio(scope["empresa_id"], data.model_dump(), usuario_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -150,24 +208,55 @@ async def crear_socio(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.put("/socios/{socio_id}")
+async def actualizar_socio(
+    socio_id: str,
+    data: SocioUpdate,
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_EDITAR"))
+):
+    """
+    Actualiza datos de un socio existente.
+    
+    Permisos: CAVA_SOCIOS_EDITAR
+    """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
+    try:
+        service = get_cava_socios_service()
+        usuario_id = current_user.get('public_uuid') or current_user.get('id', '')
+        return service.actualizar_socio(socio_id, scope["empresa_id"], data.model_dump(), usuario_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error actualizando socio: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 # ==================== ENDPOINTS BOTELLAS ====================
 
 @router.post("/socios/{socio_id}/botellas")
 async def registrar_botella(
     socio_id: str,
-    empresa_id: str = Query(...),
-    data: BotellaCreate = ...,
-    current_user: Dict = Depends(get_current_user)
+    data: BotellaCreate,
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_CREAR"))
 ):
     """
     Registra una botella nueva en la cava del socio.
     
     Permisos: CAVA_SOCIOS_CREAR
     """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
     try:
         service = get_cava_socios_service()
         usuario_id = current_user.get('public_uuid') or current_user.get('id', '')
-        return service.registrar_botella(socio_id, empresa_id, data.model_dump(), usuario_id)
+        return service.registrar_botella(
+            socio_id,
+            scope["empresa_id"],
+            data.model_dump(),
+            usuario_id,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -178,18 +267,25 @@ async def registrar_botella(
 @router.post("/botellas/{botella_id}/consumo")
 async def registrar_consumo(
     botella_id: str,
-    data: ConsumoCreate = ...,
-    current_user: Dict = Depends(get_current_user)
+    data: ConsumoCreate,
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_EDITAR"))
 ):
     """
     Registra un consumo parcial o total de una botella.
     
     Permisos: CAVA_SOCIOS_EDITAR
     """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
     try:
         service = get_cava_socios_service()
         usuario_id = current_user.get('public_uuid') or current_user.get('id', '')
-        return service.registrar_consumo(botella_id, data.model_dump(), usuario_id)
+        return service.registrar_consumo(
+            botella_id,
+            scope["empresa_id"],
+            data.model_dump(),
+            usuario_id,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -205,7 +301,8 @@ from .report_service import get_cava_report_service
 @router.get("/reportes/socio/{socio_id}/ficha", summary="Descargar Ficha de Socio PDF")
 async def descargar_ficha_socio(
     socio_id: str,
-    current_user: Dict = Depends(get_current_user)
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_VER"))
 ):
     """
     Genera y descarga la ficha completa del socio en PDF.
@@ -217,10 +314,11 @@ async def descargar_ficha_socio(
     
     Permisos: CAVA_SOCIOS_VER
     """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
     try:
         # Obtener datos del socio
         cava_service = get_cava_socios_service()
-        socio = cava_service.obtener_socio(socio_id)
+        socio = cava_service.obtener_socio(socio_id, scope["empresa_id"])
         
         if not socio:
             raise HTTPException(status_code=404, detail="Socio no encontrado")
@@ -249,7 +347,8 @@ async def descargar_ficha_socio(
 @router.get("/reportes/socio/{socio_id}/consumos", summary="Descargar Historial de Consumos PDF")
 async def descargar_historial_consumos(
     socio_id: str,
-    current_user: Dict = Depends(get_current_user)
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_VER"))
 ):
     """
     Genera y descarga el historial de consumos del socio en PDF.
@@ -261,15 +360,19 @@ async def descargar_historial_consumos(
     
     Permisos: CAVA_SOCIOS_VER
     """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
     try:
         cava_service = get_cava_socios_service()
-        socio = cava_service.obtener_socio(socio_id)
+        socio = cava_service.obtener_socio(socio_id, scope["empresa_id"])
         
         if not socio:
             raise HTTPException(status_code=404, detail="Socio no encontrado")
         
         # Obtener movimientos del socio
-        movimientos = cava_service.obtener_movimientos_socio(socio_id)
+        movimientos = cava_service.obtener_movimientos_socio(
+            socio_id,
+            scope["empresa_id"],
+        )
         
         # Generar PDF
         report_service = get_cava_report_service()
@@ -294,7 +397,8 @@ async def descargar_historial_consumos(
 @router.get("/reportes/socio/{socio_id}/estado-cuenta", summary="Descargar Estado de Cuenta PDF")
 async def descargar_estado_cuenta(
     socio_id: str,
-    current_user: Dict = Depends(get_current_user)
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_VER"))
 ):
     """
     Genera y descarga el estado de cuenta del socio en PDF.
@@ -306,15 +410,19 @@ async def descargar_estado_cuenta(
     
     Permisos: CAVA_SOCIOS_VER
     """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
     try:
         cava_service = get_cava_socios_service()
-        socio = cava_service.obtener_socio(socio_id)
+        socio = cava_service.obtener_socio(socio_id, scope["empresa_id"])
         
         if not socio:
             raise HTTPException(status_code=404, detail="Socio no encontrado")
         
         # Obtener cargos del socio
-        cargos = cava_service.obtener_cargos_socio(socio_id)
+        cargos = cava_service.obtener_cargos_socio(
+            socio_id,
+            scope["empresa_id"],
+        )
         
         # Generar PDF
         report_service = get_cava_report_service()
@@ -353,7 +461,8 @@ class EnvioReporteRequest(BaseModel):
 async def enviar_reporte_socio(
     socio_id: str,
     data: EnvioReporteRequest,
-    current_user: Dict = Depends(get_current_user)
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_VER"))
 ):
     """
     Genera y envía un reporte PDF al socio por Email y/o WhatsApp.
@@ -369,9 +478,10 @@ async def enviar_reporte_socio(
     
     Permisos: CAVA_SOCIOS_VER
     """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
     try:
         cava_service = get_cava_socios_service()
-        socio = cava_service.obtener_socio(socio_id)
+        socio = cava_service.obtener_socio(socio_id, scope["empresa_id"])
         
         if not socio:
             raise HTTPException(status_code=404, detail="Socio no encontrado")
@@ -394,10 +504,16 @@ async def enviar_reporte_socio(
         if data.tipo_reporte == 'ficha':
             pdf_bytes = report_service.generar_ficha_socio(socio)
         elif data.tipo_reporte == 'consumos':
-            movimientos = cava_service.obtener_movimientos_socio(socio_id)
+            movimientos = cava_service.obtener_movimientos_socio(
+                socio_id,
+                scope["empresa_id"],
+            )
             pdf_bytes = report_service.generar_historial_consumos(socio, movimientos)
         elif data.tipo_reporte == 'estado_cuenta':
-            cargos = cava_service.obtener_cargos_socio(socio_id)
+            cargos = cava_service.obtener_cargos_socio(
+                socio_id,
+                scope["empresa_id"],
+            )
             pdf_bytes = report_service.generar_estado_cuenta(socio, cargos)
         else:
             raise HTTPException(status_code=400, detail=f"Tipo de reporte inválido: {data.tipo_reporte}")
@@ -426,7 +542,8 @@ async def enviar_reporte_socio(
 async def enviar_todos_reportes_socio(
     socio_id: str,
     canales: List[str] = Query(default=["email"], description="Canales: email, whatsapp"),
-    current_user: Dict = Depends(get_current_user)
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_VER"))
 ):
     """
     Genera y envía los 3 reportes (Ficha, Consumos, Estado de Cuenta) al socio.
@@ -435,9 +552,10 @@ async def enviar_todos_reportes_socio(
     
     Permisos: CAVA_SOCIOS_VER
     """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
     try:
         cava_service = get_cava_socios_service()
-        socio = cava_service.obtener_socio(socio_id)
+        socio = cava_service.obtener_socio(socio_id, scope["empresa_id"])
         
         if not socio:
             raise HTTPException(status_code=404, detail="Socio no encontrado")
@@ -458,14 +576,20 @@ async def enviar_todos_reportes_socio(
         )
         
         # 2. Historial de Consumos
-        movimientos = cava_service.obtener_movimientos_socio(socio_id)
+        movimientos = cava_service.obtener_movimientos_socio(
+            socio_id,
+            scope["empresa_id"],
+        )
         pdf_consumos = report_service.generar_historial_consumos(socio, movimientos)
         resultados["reportes"]["consumos"] = notification_service.enviar_reporte_multicanal(
             socio=socio, tipo_reporte='consumos', pdf_bytes=pdf_consumos, canales=canales
         )
         
         # 3. Estado de Cuenta
-        cargos = cava_service.obtener_cargos_socio(socio_id)
+        cargos = cava_service.obtener_cargos_socio(
+            socio_id,
+            scope["empresa_id"],
+        )
         pdf_estado = report_service.generar_estado_cuenta(socio, cargos)
         resultados["reportes"]["estado_cuenta"] = notification_service.enviar_reporte_multicanal(
             socio=socio, tipo_reporte='estado_cuenta', pdf_bytes=pdf_estado, canales=canales

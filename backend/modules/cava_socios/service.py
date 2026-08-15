@@ -1,6 +1,3 @@
-from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection, get_edarsahub_connection
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
 """
 EDARSA HUB - Cava de Socios Service
 ====================================
@@ -14,13 +11,12 @@ Funcionalidades:
 - Reportes e historial
 """
 
-import pymssql
-import os
 import logging
 import uuid
-from datetime import datetime, date
-from decimal import Decimal
+from datetime import date
 from typing import Dict, List, Optional, Any
+
+from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +24,12 @@ logger = logging.getLogger(__name__)
 class CavaSociosService:
     """Servicio principal para el módulo Cava de Socios."""
     
-    def __init__(self, db_config: Dict[str, Any]):
-        self.db_config = db_config
-    
     def _get_connection(self):
-        return get_external_sql_connection(self.db_config)
+        """Abre exclusivamente la conexión SQL canónica de EDARSAHUB."""
+        return get_edarsahub_pymssql_connection(
+            timeout=30,
+            login_timeout=10,
+        )
     
     # ==================== SOCIOS ====================
     
@@ -90,15 +87,16 @@ class CavaSociosService:
         finally:
             conn.close()
     
-    def obtener_socio(self, socio_id: str) -> Optional[Dict[str, Any]]:
+    def obtener_socio(self, socio_id: str, empresa_id: str) -> Optional[Dict[str, Any]]:
         """Obtiene detalle de un socio con sus botellas."""
         conn = self._get_connection()
         try:
             cursor = conn.cursor(as_dict=True)
             
             cursor.execute("""
-                SELECT * FROM CavaSocios_Socios WHERE SocioID = %s
-            """, (socio_id,))
+                SELECT * FROM CavaSocios_Socios
+                WHERE SocioID = %s AND EmpresaID = %s
+            """, (socio_id, empresa_id))
             
             socio = cursor.fetchone()
             if not socio:
@@ -107,9 +105,9 @@ class CavaSociosService:
             # Obtener botellas
             cursor.execute("""
                 SELECT * FROM CavaSocios_Botellas 
-                WHERE SocioID = %s
+                WHERE SocioID = %s AND EmpresaID = %s
                 ORDER BY FechaIngreso DESC
-            """, (socio_id,))
+            """, (socio_id, empresa_id))
             
             botellas = []
             valor_total = 0
@@ -134,8 +132,10 @@ class CavaSociosService:
             cursor.execute("""
                 SELECT SUM(Total) as total_pendiente
                 FROM CavaSocios_Cargos 
-                WHERE SocioID = %s AND EstatusCargo = 'PENDIENTE'
-            """, (socio_id,))
+                WHERE SocioID = %s
+                  AND EmpresaID = %s
+                  AND EstatusCargo = 'PENDIENTE'
+            """, (socio_id, empresa_id))
             
             cargos = cursor.fetchone()
             
@@ -206,6 +206,66 @@ class CavaSociosService:
             raise
         finally:
             conn.close()
+
+    def actualizar_socio(self, socio_id: str, empresa_id: str, data: Dict[str, Any], 
+                         usuario_id: str) -> Dict[str, Any]:
+        """Actualiza un socio de cava existente."""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            
+            # Verificar existencia y pertenecia a la empresa
+            cursor.execute("""
+                SELECT SocioID FROM CavaSocios_Socios
+                WHERE SocioID = %s AND EmpresaID = %s
+            """, (socio_id, empresa_id))
+            if not cursor.fetchone():
+                raise ValueError("Socio no encontrado o no pertenece a esta empresa")
+            
+            cursor.execute("""
+                UPDATE CavaSocios_Socios
+                SET NombreCompleto = %s,
+                    NumeroSocio = COALESCE(%s, NumeroSocio),
+                    Email = %s,
+                    Telefono = %s,
+                    TipoMembresia = COALESCE(%s, TipoMembresia),
+                    MaximoBotellas = COALESCE(%s, MaximoBotellas),
+                    FechaVencimientoMembresia = %s,
+                    Observaciones = %s,
+                    Estatus = COALESCE(%s, Estatus),
+                    FechaModificacion = GETUTCDATE(),
+                    UsuarioModificacionID = %s
+                WHERE SocioID = %s AND EmpresaID = %s
+            """, (
+                data['nombre_completo'],
+                data.get('numero_socio'),
+                data.get('email'),
+                data.get('telefono'),
+                data.get('tipo_membresia'),
+                data.get('maximo_botellas'),
+                data.get('fecha_vencimiento') or None,
+                data.get('observaciones'),
+                data.get('estatus'),
+                usuario_id,
+                socio_id,
+                empresa_id
+            ))
+            
+            conn.commit()
+            logger.info(f"[CavaSocios] Socio {socio_id} actualizado por usuario {usuario_id}")
+            
+            return {
+                "socio_id": socio_id,
+                "mensaje": "Socio actualizado exitosamente"
+            }
+            
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"[CavaSocios] Error actualizando socio: {e}")
+            raise
+        finally:
+            conn.close()
+
     
     def _generar_numero_socio(self, cursor, empresa_id: str) -> str:
         """Genera número de socio secuencial."""
@@ -296,8 +356,8 @@ class CavaSociosService:
         finally:
             conn.close()
     
-    def registrar_consumo(self, botella_id: str, data: Dict[str, Any],
-                          usuario_id: str) -> Dict[str, Any]:
+    def registrar_consumo(self, botella_id: str, empresa_id: str,
+                          data: Dict[str, Any], usuario_id: str) -> Dict[str, Any]:
         """Registra un consumo parcial o total de botella."""
         conn = self._get_connection()
         try:
@@ -308,8 +368,8 @@ class CavaSociosService:
                 SELECT b.*, s.SocioID, s.EmpresaID 
                 FROM CavaSocios_Botellas b
                 INNER JOIN CavaSocios_Socios s ON b.SocioID = s.SocioID
-                WHERE b.BotellaID = %s
-            """, (botella_id,))
+                WHERE b.BotellaID = %s AND s.EmpresaID = %s
+            """, (botella_id, empresa_id))
             
             botella = cursor.fetchone()
             if not botella:
@@ -503,7 +563,7 @@ class CavaSociosService:
     
     # ==================== MÉTODOS PARA REPORTES ====================
     
-    def obtener_movimientos_socio(self, socio_id: str) -> List[Dict]:
+    def obtener_movimientos_socio(self, socio_id: str, empresa_id: str) -> List[Dict]:
         """Obtiene todos los movimientos (consumos) de un socio."""
         conn = self._get_connection()
         try:
@@ -523,16 +583,16 @@ class CavaSociosService:
                     b.Marca
                 FROM CavaSocios_Movimientos m
                 INNER JOIN CavaSocios_Botellas b ON m.BotellaID = b.BotellaID
-                WHERE m.SocioID = %s
+                WHERE m.SocioID = %s AND m.EmpresaID = %s
                 ORDER BY m.FechaMovimiento DESC
-            """, (socio_id,))
+            """, (socio_id, empresa_id))
             
             return cursor.fetchall() or []
             
         finally:
             conn.close()
     
-    def obtener_cargos_socio(self, socio_id: str) -> List[Dict]:
+    def obtener_cargos_socio(self, socio_id: str, empresa_id: str) -> List[Dict]:
         """Obtiene todos los cargos de un socio."""
         conn = self._get_connection()
         try:
@@ -550,9 +610,9 @@ class CavaSociosService:
                     c.FechaCargo as fecha_cargo,
                     c.FechaPago as fecha_pago
                 FROM CavaSocios_Cargos c
-                WHERE c.SocioID = %s
+                WHERE c.SocioID = %s AND c.EmpresaID = %s
                 ORDER BY c.FechaCargo DESC
-            """, (socio_id,))
+            """, (socio_id, empresa_id))
             
             return cursor.fetchall() or []
             
@@ -561,14 +621,5 @@ class CavaSociosService:
 
 
 def get_cava_socios_service() -> CavaSociosService:
-    """Factory para obtener instancia del servicio (P2-01: Config centralizado)."""
-    from core.config.edarsahub_config import get_edarsahub_sql_config
-    cfg = get_edarsahub_sql_config()
-    db_config = {
-        'host': cfg.host,
-        'port': cfg.port,
-        'database': cfg.database,
-        'username': cfg.user,
-        'password': cfg.password
-    }
-    return CavaSociosService(db_config)
+    """Factory del dominio integrado Cavas sobre EDARSAHUB SQL."""
+    return CavaSociosService()

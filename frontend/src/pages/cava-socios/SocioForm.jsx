@@ -23,8 +23,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  CorporateFiltersProvider,
+  CorporateFilterSelect,
+  useCorporateFilters,
+} from '../../filters';
+import { useAccessContext } from '../../hooks/useAccessContext';
 
-const EMPRESA_ID = '19E076FB-C6DE-4EA5-84AB-1CAA9E86082C';
+
 
 const TIPOS_MEMBRESIA = [
   { value: 'ESTANDAR', label: 'Estándar (12 botellas)' },
@@ -40,10 +46,13 @@ const MEMBRESIA_BOTELLAS = {
   'CORPORATIVO': 100
 };
 
-export default function SocioForm() {
+function SocioFormContent() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditing = !!id && id !== 'nuevo';
+  const { selected, loading: filtersLoading } = useCorporateFilters();
+  const { context, loading: contextLoading, error: contextError } = useAccessContext();
+  const unidadNegocioPk = selected?.unidades_negocio || context?.unidad_activa || '';
   
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -61,15 +70,19 @@ export default function SocioForm() {
   });
 
   useEffect(() => {
+    if (filtersLoading || contextLoading) return;
     if (isEditing) {
       loadSocio();
+    } else if (!unidadNegocioPk) {
+      setError('Selecciona una unidad de negocio autorizada para registrar socios.');
     }
-  }, [id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, isEditing, unidadNegocioPk, filtersLoading, contextLoading]);
 
   const loadSocio = async () => {
     setLoading(true);
     try {
-      const response = await api.get(`/cava-socios/socios/${id}`);
+      const response = await api.get(`/cava-socios/socios/${id}?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`);
       const socio = response.data;
       setFormData({
         nombre_completo: socio.nombre_completo || '',
@@ -104,6 +117,11 @@ export default function SocioForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!unidadNegocioPk) {
+      toast.error('Selecciona una unidad de negocio autorizada.');
+      return;
+    }
+
     
     if (!formData.nombre_completo.trim()) {
       toast.error('El nombre es requerido');
@@ -113,10 +131,10 @@ export default function SocioForm() {
     setSaving(true);
     try {
       if (isEditing) {
-        await api.put(`/cava-socios/socios/${id}`, formData);
+        await api.put(`/cava-socios/socios/${id}?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`, formData);
         toast.success('Socio actualizado correctamente');
       } else {
-        await api.post(`/cava-socios/socios?empresa_id=${EMPRESA_ID}`, formData);
+        await api.post(`/cava-socios/socios?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`, formData);
         toast.success('Socio creado correctamente');
       }
       navigate('/cava-socios/socios');
@@ -128,7 +146,7 @@ export default function SocioForm() {
     }
   };
 
-  if (loading) {
+  if (loading || filtersLoading || contextLoading) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
@@ -154,10 +172,17 @@ export default function SocioForm() {
         </div>
       </div>
 
-      {error && (
+        <div className="ml-auto min-w-[260px]">
+          <CorporateFilterSelect
+            filterKey="unidades_negocio"
+            label="Unidad de negocio"
+            placeholder="Selecciona una unidad"
+          />
+        </div>
+      {(error || contextError) && (
         <div className="p-4 rounded-lg bg-red-50 text-red-700 flex items-center gap-2">
           <AlertCircle className="h-5 w-5" />
-          {error}
+          {error || contextError?.message || 'No se pudo resolver el contexto de acceso.'}
         </div>
       )}
 
@@ -293,7 +318,7 @@ export default function SocioForm() {
               </Button>
               <Button
                 type="submit"
-                disabled={saving}
+                disabled={saving || !unidadNegocioPk}
                 data-testid="submit-socio"
               >
                 {saving ? (
@@ -313,5 +338,13 @@ export default function SocioForm() {
         </Card>
       </form>
     </div>
+  );
+}
+
+export default function SocioForm() {
+  return (
+    <CorporateFiltersProvider scope="cava_socios">
+      <SocioFormContent />
+    </CorporateFiltersProvider>
   );
 }

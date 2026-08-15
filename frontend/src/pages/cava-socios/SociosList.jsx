@@ -29,12 +29,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  CorporateFiltersProvider,
+  CorporateFilterSelect,
+  useCorporateFilters,
+} from '../../filters';
+import { useAccessContext } from '../../hooks/useAccessContext';
 
-const EMPRESA_ID = '19E076FB-C6DE-4EA5-84AB-1CAA9E86082C';
+
 const PAGE_SIZE = 15;
 
-export default function SociosList() {
+function SociosListContent() {
   const navigate = useNavigate();
+  const { selected, loading: filtersLoading } = useCorporateFilters();
+  const { context, loading: contextLoading, error: contextError } = useAccessContext();
   const [socios, setSocios] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -43,11 +51,21 @@ export default function SociosList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [estatusFilter, setEstatusFilter] = useState('todos');
 
+  const unidadNegocioPk = selected?.unidades_negocio || context?.unidad_activa || '';
   const fetchSocios = useCallback(async () => {
     setLoading(true);
+    if (filtersLoading || contextLoading) return;
+    if (!unidadNegocioPk) {
+      setSocios([]);
+      setTotal(0);
+      setError('Selecciona una unidad de negocio autorizada para consultar Cavas.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const params = new URLSearchParams({
-        empresa_id: EMPRESA_ID,
+        unidad_negocio_pk: unidadNegocioPk,
         skip: page * PAGE_SIZE,
         limit: PAGE_SIZE
       });
@@ -62,11 +80,17 @@ export default function SociosList() {
       setError(null);
     } catch (err) {
       console.error('Error fetching socios:', err);
-      setError('Error cargando lista de socios');
+      setSocios([]);
+      setTotal(0);
+      setError(
+        err?.response?.status === 403
+          ? 'No tienes permiso para consultar Cavas en esta unidad.'
+          : 'Error cargando lista de socios.'
+      );
     } finally {
       setLoading(false);
     }
-  }, [page, estatusFilter]);
+  }, [page, estatusFilter, unidadNegocioPk, filtersLoading, contextLoading]);
 
   useEffect(() => {
     fetchSocios();
@@ -112,7 +136,14 @@ export default function SociosList() {
             Gestión completa de socios y membresías
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-end">
+          <div className="min-w-[260px]">
+            <CorporateFilterSelect
+              filterKey="unidades_negocio"
+              label="Unidad de negocio"
+              placeholder="Selecciona una unidad"
+            />
+          </div>
           <Button variant="outline" size="sm" onClick={fetchSocios}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar
@@ -124,10 +155,10 @@ export default function SociosList() {
         </div>
       </div>
 
-      {error && (
+      {(error || contextError) && (
         <div className="p-4 rounded-lg bg-red-50 text-red-700 flex items-center gap-2">
           <AlertCircle className="h-5 w-5" />
-          {error}
+          {error || contextError?.message || 'No se pudo resolver el contexto de acceso.'}
         </div>
       )}
 
@@ -172,7 +203,7 @@ export default function SociosList() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {loading || filtersLoading || contextLoading ? (
             <div className="flex items-center justify-center py-12">
               <RefreshCw className="h-8 w-8 animate-spin text-zinc-400" />
             </div>
@@ -306,5 +337,13 @@ export default function SociosList() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function SociosList() {
+  return (
+    <CorporateFiltersProvider scope="cava_socios">
+      <SociosListContent />
+    </CorporateFiltersProvider>
   );
 }
