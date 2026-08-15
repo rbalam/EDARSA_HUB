@@ -93,20 +93,51 @@ class EstructuraService:
 
             sucursales = self._sql_rows("""
                 SELECT
-                    SucursalID,
-                    CodigoSucursal,
-                    NombreSucursal,
-                    EmpresaID,
-                    UnidadNegocioID,
-                    MongoUUID
-                FROM dbo.Sistema_Sucursales
-                WHERE Activo=1
-                ORDER BY NombreSucursal
+                    s.SucursalID,
+                    s.CodigoSucursal,
+                    s.NombreSucursal,
+                    s.EmpresaID,
+                    s.MongoUUID,
+                    u.id AS UnidadNegocioPK
+                FROM dbo.Sistema_Sucursales s
+                INNER JOIN dbo.Sistema_SucursalServidorMapeo m
+                  ON m.SucursalID = s.SucursalID
+                 AND ISNULL(m.Activo,0)=1
+                INNER JOIN dbo.Unidades_Negocio u
+                  ON LOWER(CONVERT(nvarchar(100), u.server_id))
+                     =
+                     LOWER(CONVERT(nvarchar(100), m.ServidorID))
+                 AND (
+                        NULLIF(
+                            LTRIM(RTRIM(CONVERT(nvarchar(50), u.sucursal_origen_id))),
+                            ''
+                        )
+                        =
+                        NULLIF(
+                            LTRIM(RTRIM(CONVERT(nvarchar(50), m.SucursalOrigenID))),
+                            ''
+                        )
+                        OR (
+                            NULLIF(
+                                LTRIM(RTRIM(CONVERT(nvarchar(50), u.sucursal_origen_id))),
+                                ''
+                            ) IS NULL
+                            AND
+                            NULLIF(
+                                LTRIM(RTRIM(CONVERT(nvarchar(50), m.SucursalOrigenID))),
+                                ''
+                            ) IS NULL
+                        )
+                     )
+                WHERE
+                    ISNULL(s.Activo,0)=1
+                    AND ISNULL(u.activo,1)=1
+                ORDER BY s.NombreSucursal
             """)
 
             sucursales_por_unidad = {}
             for suc in sucursales:
-                key = str(suc.get("UnidadNegocioID") or "")
+                key = str(suc.get("UnidadNegocioPK") or "")
                 sucursales_por_unidad.setdefault(key, []).append({
                     "id": suc.get("SucursalID"),
                     "codigo": suc.get("CodigoSucursal"),
@@ -168,9 +199,37 @@ class EstructuraService:
                     s.CodigoSucursal,
                     s.NombreSucursal,
                     s.EmpresaID,
-                    s.UnidadNegocioID
+                    u.id AS UnidadNegocioPK
                 FROM dbo.Sistema_SucursalServidorMapeo m
-                LEFT JOIN dbo.Sistema_Sucursales s ON s.SucursalID=m.SucursalID
+                LEFT JOIN dbo.Sistema_Sucursales s
+                  ON s.SucursalID=m.SucursalID
+                LEFT JOIN dbo.Unidades_Negocio u
+                  ON LOWER(CONVERT(nvarchar(100), u.server_id))
+                     =
+                     LOWER(CONVERT(nvarchar(100), m.ServidorID))
+                 AND (
+                        NULLIF(
+                            LTRIM(RTRIM(CONVERT(nvarchar(50), u.sucursal_origen_id))),
+                            ''
+                        )
+                        =
+                        NULLIF(
+                            LTRIM(RTRIM(CONVERT(nvarchar(50), m.SucursalOrigenID))),
+                            ''
+                        )
+                        OR (
+                            NULLIF(
+                                LTRIM(RTRIM(CONVERT(nvarchar(50), u.sucursal_origen_id))),
+                                ''
+                            ) IS NULL
+                            AND
+                            NULLIF(
+                                LTRIM(RTRIM(CONVERT(nvarchar(50), m.SucursalOrigenID))),
+                                ''
+                            ) IS NULL
+                        )
+                     )
+                 AND ISNULL(u.activo,1)=1
                 WHERE m.Activo=1
                 ORDER BY s.NombreSucursal
             """)
@@ -184,7 +243,11 @@ class EstructuraService:
                     "sucursal_id": r.get("SucursalID"),
                     "sucursal_origen_id": r.get("SucursalOrigenID"),
                     "sucursal_nombre": r.get("NombreSucursal"),
-                    "unidad_negocio_pk": r.get("UnidadNegocioID"),
+                    "unidad_negocio_pk": (
+                        str(r.get("UnidadNegocioPK"))
+                        if r.get("UnidadNegocioPK")
+                        else None
+                    ),
                     "empresa_id": r.get("EmpresaID"),
                     "mongo_sucursal_uuid": r.get("MongoSucursalUUID")
                 })
