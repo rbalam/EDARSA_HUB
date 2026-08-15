@@ -490,6 +490,18 @@ const Layout = () => {
           href: '/cava-socios/socios',
           icon: Users,
           roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Inventario Cavas',
+          href: '/cava-socios/inventario',
+          icon: Package,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
+        },
+        {
+          name: 'Consumos',
+          href: '/cava-socios/consumos',
+          icon: ClipboardList,
+          roles: ['Usuario', 'Supervisor', 'Administrador']
         }
       ]
     },

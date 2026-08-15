@@ -61,7 +61,7 @@ import OrdenesPage from '@/pages/tablajeria/OrdenesPage';
 import CapturaDirectaPage from '@/pages/tablajeria/CapturaDirectaPage';
 
 // Cava de Socios
-import { CavaSociosDashboard, SociosList, SocioDetail, SocioForm } from '@/pages/cava-socios';
+import { CavaSociosDashboard, SociosList, SocioDetail, SocioForm, InventarioCava, ConsumosCava } from '@/pages/cava-socios';
 
 // Costos y Márgenes (FASE 1C-3D)
 import CostosMargenes from '@/pages/comercial/CostosMargenes';
@@ -176,6 +176,8 @@ function App() {
               <Route path="cava-socios/socios/nuevo" element={<SocioForm />} />
               <Route path="cava-socios/socios/:id" element={<SocioDetail />} />
               <Route path="cava-socios/socios/:id/editar" element={<SocioForm />} />
+              <Route path="cava-socios/inventario" element={<InventarioCava />} />
+              <Route path="cava-socios/consumos" element={<ConsumosCava />} />
               <Route path="recursos-humanos" element={<RecursosHumanos />} />
               <Route path="importador-rh" element={<ImportadorRH />} />
               <Route path="reportes-bi" element={<ReportesBI />} />

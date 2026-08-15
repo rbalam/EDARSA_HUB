@@ -144,14 +144,6 @@ export const enterpriseMenuGroups = [
         icon: "Contact",
         section: "Relaciones",
         keywords: ["crm", "clientes", "relaciones"]
-      },
-      {
-        id: "cava-socios",
-        label: "Cava de Socios",
-        path: "/cava-socios",
-        icon: "Wine",
-        section: "Socios",
-        keywords: ["cava", "socios", "vino"]
       }
     ]
   },
@@ -404,6 +396,15 @@ export const enterpriseMenuGroups = [
     description: "Aplicaciones operativas satélite conectadas a EDARSAHUB",
     satelliteGroup: true,
     children: [
+      {
+        id: "cava-socios",
+        label: "Cavas",
+        path: "/cava-socios",
+        icon: "Wine",
+        section: "Cavas",
+        satellite: true,
+        keywords: ["cava", "cavas", "socios", "vino"]
+      },
       {
         id: "comandero-restaurantero",
         label: "Comandero Restaurantero",

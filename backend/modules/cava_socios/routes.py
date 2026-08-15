@@ -98,7 +98,8 @@ class BotellaCreate(BaseModel):
     marca: Optional[str] = None
     tipo_bebida: Optional[str] = None  # VINO_TINTO, WHISKY, etc
     añada: Optional[str] = None
-    capacidad: float = 750  # ml
+    capacidad: float = 1.0  # 1.0 PZ (Puntaje de botella)
+    nivel_actual: float = 100.0  # 100% = 1.0 PZ
     ubicacion: Optional[str] = None
     valor_declarado: float = 0
     foto_url: Optional[str] = None
@@ -106,8 +107,8 @@ class BotellaCreate(BaseModel):
 
 
 class ConsumoCreate(BaseModel):
-    """Schema para registrar consumo."""
-    porcentaje_consumido: float = Field(100, ge=0, le=100)
+    """Schema para registrar consumo en puntaje de botella (PZ)."""
+    porcentaje_consumido: float = Field(100, ge=0, le=100)  # % de botella (100% = 1.0 PZ, 50% = 0.5 PZ)
     motivo: Optional[str] = None
     reservacion_id: Optional[str] = None
     mesero_id: Optional[str] = None
@@ -115,6 +116,61 @@ class ConsumoCreate(BaseModel):
     monto_descorche: float = 350
     foto_evidencia: Optional[str] = None
     observaciones: Optional[str] = None
+
+
+class PromoverClienteCreate(BaseModel):
+    """Schema para promover cliente del catálogo maestro a Socio de Cava."""
+    cliente_id: Optional[str] = None
+    cliente_crm_id: Optional[str] = None
+    nombre_completo: str
+    email: Optional[str] = None
+    telefono: Optional[str] = None
+    tipo_membresia: str = "ESTANDAR"
+    maximo_botellas: int = 12
+    fecha_alta: Optional[str] = None
+    fecha_vencimiento: Optional[str] = None
+    observaciones: Optional[str] = None
+
+
+class SincronizarClientesRequest(BaseModel):
+    """Schema para sincronización de clientes canónicos."""
+    cliente_ids: Optional[List[int]] = None
+
+
+class InventarioInicialBotellaItem(BaseModel):
+    """Detalle de botella para inventario inicial en PZ."""
+    producto_nombre: str = Field(..., min_length=2)
+    producto_codigo: Optional[str] = None
+    marca: Optional[str] = None
+    tipo_bebida: Optional[str] = None
+    añada: Optional[str] = None
+    ubicacion: Optional[str] = None
+    valor_declarado: float = 0.0
+    puntaje_inicial_pct: float = Field(100.0, ge=1, le=100)  # % de botella (100% = 1.0 PZ)
+    cantidad_piezas: int = Field(1, ge=1, le=50)  # Piezas (PZ)
+    foto_url: Optional[str] = None
+    observaciones: Optional[str] = None
+
+
+class InventarioInicialCreate(BaseModel):
+    """Schema para registrar carga de inventario inicial."""
+    socio_id: str
+    botellas: List[InventarioInicialBotellaItem]
+
+
+class InventarioFisicoItem(BaseModel):
+    """Registro de conteo de botella física."""
+    botella_id: str
+    nivel_fisico_pct: float = Field(100.0, ge=0, le=100)
+    encontrada: bool = True
+    observaciones: Optional[str] = None
+
+
+class InventarioFisicoAplicarRequest(BaseModel):
+    """Schema para conciliar y aplicar ajustes de inventario físico al Kardex."""
+    conteos: List[InventarioFisicoItem]
+    observaciones_generales: Optional[str] = "Auditoría física de cava"
+
 
 
 # ==================== ENDPOINTS SOCIOS ====================
@@ -126,7 +182,7 @@ async def get_dashboard(
 ):
     """
     Obtiene dashboard del módulo Cava de Socios.
-    
+
     Permisos: CAVA_SOCIOS_VER
     """
     scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
@@ -148,7 +204,7 @@ async def listar_socios(
 ):
     """
     Lista socios de cava con paginación.
-    
+
     Permisos: CAVA_SOCIOS_VER
     """
     scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
@@ -168,7 +224,7 @@ async def obtener_socio(
 ):
     """
     Obtiene detalle de un socio con sus botellas.
-    
+
     Permisos: CAVA_SOCIOS_VER
     """
     scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
@@ -193,7 +249,7 @@ async def crear_socio(
 ):
     """
     Crea un nuevo socio de cava.
-    
+
     Permisos: CAVA_SOCIOS_CREAR
     """
     scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
@@ -217,7 +273,7 @@ async def actualizar_socio(
 ):
     """
     Actualiza datos de un socio existente.
-    
+
     Permisos: CAVA_SOCIOS_EDITAR
     """
     scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
@@ -232,6 +288,271 @@ async def actualizar_socio(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/clientes-canonicos")
+async def listar_clientes_canonicos(
+    search: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_VER"))
+):
+    """
+    Consulta catálogo maestro de clientes disponibles para promover a Cava de Socios.
+
+    Permisos: CAVA_SOCIOS_VER
+    """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
+    try:
+        service = get_cava_socios_service()
+        return service.listar_clientes_canonicos(scope["empresa_id"], search, skip, limit)
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error buscando clientes canónicos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/socios/promover-cliente")
+async def promover_cliente_canonico(
+    data: PromoverClienteCreate,
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_CREAR"))
+):
+    """
+    Convierte/promueve un cliente del catálogo canónico a Socio de Cava.
+
+    Permisos: CAVA_SOCIOS_CREAR
+    """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
+    try:
+        service = get_cava_socios_service()
+        usuario_id = current_user.get('public_uuid') or current_user.get('id', '')
+        return service.promover_cliente_canonico(scope["empresa_id"], data.model_dump(), usuario_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error promoviendo cliente a socio: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/clientes-canonicos/sync")
+async def sincronizar_clientes_canonicos(
+    data: SincronizarClientesRequest,
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_CREAR"))
+):
+    """
+    Sincroniza masiva o individualmente clientes del catálogo canónico a Cava de Socios.
+
+    Permisos: CAVA_SOCIOS_CREAR
+    """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
+    try:
+        service = get_cava_socios_service()
+        usuario_id = current_user.get('public_uuid') or current_user.get('id', '')
+        return service.sincronizar_clientes_canonicos(scope["empresa_id"], data.cliente_ids, usuario_id)
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error sincronizando clientes canónicos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/inventario-inicial")
+async def registrar_inventario_inicial(
+    data: InventarioInicialCreate,
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_CREAR"))
+):
+    """
+    Registra carga masiva o individual de inventario inicial de botellas en custodia (PZ / puntaje de botella).
+
+    Permisos: CAVA_SOCIOS_CREAR
+    """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
+    try:
+        service = get_cava_socios_service()
+        usuario_id = current_user.get('public_uuid') or current_user.get('id', '')
+        botellas_dict = [b.model_dump() for b in data.botellas]
+        return service.registrar_inventario_inicial(
+            empresa_id=scope["empresa_id"],
+            socio_id=data.socio_id,
+            botellas=botellas_dict,
+            usuario_id=usuario_id
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error registrando inventario inicial: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/kardex")
+async def obtener_kardex(
+    socio_id: Optional[str] = Query(None),
+    botella_id: Optional[str] = Query(None),
+    fecha_inicio: Optional[str] = Query(None),
+    fecha_fin: Optional[str] = Query(None),
+    tipo_movimiento: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_VER"))
+):
+    """
+    Consulta el Kardex general de Cavas con ecuación de balance en PZ.
+
+    Permisos: CAVA_SOCIOS_VER
+    """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
+    try:
+        service = get_cava_socios_service()
+        return service.obtener_kardex(
+            empresa_id=scope["empresa_id"],
+            socio_id=socio_id,
+            botella_id=botella_id,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+            tipo_movimiento=tipo_movimiento,
+            skip=skip,
+            limit=limit
+        )
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error consultando Kardex: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/inventario-fisico/hoja")
+async def obtener_hoja_inventario_fisico(
+    ubicacion: Optional[str] = Query(None),
+    socio_id: Optional[str] = Query(None),
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_VER"))
+):
+    """
+    Genera hoja de conteo para auditoría física con stock teórico esperado.
+
+    Permisos: CAVA_SOCIOS_VER
+    """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
+    try:
+        service = get_cava_socios_service()
+        return service.obtener_hoja_inventario_fisico(
+            empresa_id=scope["empresa_id"],
+            ubicacion=ubicacion,
+            socio_id=socio_id
+        )
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error generando hoja de inventario físico: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/inventario-fisico/aplicar")
+async def aplicar_ajustes_inventario_fisico(
+    data: InventarioFisicoAplicarRequest,
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_EDITAR"))
+):
+    """
+    Concilia auditoría física vs stock teórico y aplica ajustes automáticos al Kardex.
+
+    Permisos: CAVA_SOCIOS_EDITAR
+    """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
+    try:
+        service = get_cava_socios_service()
+        usuario_id = current_user.get('public_uuid') or current_user.get('id', '')
+        conteos_dict = [c.model_dump() for c in data.conteos]
+        return service.aplicar_ajustes_inventario_fisico(
+            empresa_id=scope["empresa_id"],
+            conteos=conteos_dict,
+            observaciones_generales=data.observaciones_generales or "Auditoría física de cava",
+            usuario_id=usuario_id
+        )
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error aplicando ajustes de inventario físico: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/inventario")
+async def obtener_inventario(
+    ubicacion: Optional[str] = Query(None),
+    tipo_bebida: Optional[str] = Query(None),
+    estatus: Optional[str] = Query(None),
+    socio_id: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_VER"))
+):
+    """
+    Inventario global consolidado de botellas en custodia por casillero/cava.
+
+    Permisos: CAVA_SOCIOS_VER
+    """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
+    try:
+        service = get_cava_socios_service()
+        return service.obtener_inventario_global(
+            empresa_id=scope["empresa_id"],
+            ubicacion=ubicacion,
+            tipo_bebida=tipo_bebida,
+            estatus=estatus,
+            socio_id=socio_id,
+            skip=skip,
+            limit=limit
+        )
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error consultando inventario global: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/consumos")
+async def obtener_consumos(
+    socio_id: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_VER"))
+):
+    """
+    Historial operativo global de consumos y movimientos de cava.
+
+    Permisos: CAVA_SOCIOS_VER
+    """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
+    try:
+        service = get_cava_socios_service()
+        return service.obtener_historial_consumos_global(
+            empresa_id=scope["empresa_id"],
+            socio_id=socio_id,
+            skip=skip,
+            limit=limit
+        )
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error consultando consumos globales: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/botellas/{botella_id}/etiqueta")
+async def obtener_etiqueta_botella(
+    botella_id: str,
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_VER"))
+):
+    """
+    Datos para la ficha/etiqueta de resguardo físico de la botella.
+
+    Permisos: CAVA_SOCIOS_VER
+    """
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
+    try:
+        service = get_cava_socios_service()
+        return service.obtener_etiqueta_botella(botella_id, scope["empresa_id"])
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error obteniendo etiqueta de botella: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 
 # ==================== ENDPOINTS BOTELLAS ====================
 
@@ -244,7 +565,7 @@ async def registrar_botella(
 ):
     """
     Registra una botella nueva en la cava del socio.
-    
+
     Permisos: CAVA_SOCIOS_CREAR
     """
     scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
@@ -273,7 +594,7 @@ async def registrar_consumo(
 ):
     """
     Registra un consumo parcial o total de una botella.
-    
+
     Permisos: CAVA_SOCIOS_EDITAR
     """
     scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
@@ -306,12 +627,12 @@ async def descargar_ficha_socio(
 ):
     """
     Genera y descarga la ficha completa del socio en PDF.
-    
+
     Incluye:
     - Datos personales y membresía
     - Resumen de cava
     - Lista de botellas en resguardo
-    
+
     Permisos: CAVA_SOCIOS_VER
     """
     scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
@@ -319,17 +640,17 @@ async def descargar_ficha_socio(
         # Obtener datos del socio
         cava_service = get_cava_socios_service()
         socio = cava_service.obtener_socio(socio_id, scope["empresa_id"])
-        
+
         if not socio:
             raise HTTPException(status_code=404, detail="Socio no encontrado")
-        
+
         # Generar PDF
         report_service = get_cava_report_service()
         pdf_bytes = report_service.generar_ficha_socio(socio)
-        
+
         # Nombre del archivo
         filename = f"ficha_socio_{socio.get('numero_socio', socio_id)}.pdf"
-        
+
         return StreamingResponse(
             io.BytesIO(pdf_bytes),
             media_type="application/pdf",
@@ -352,34 +673,34 @@ async def descargar_historial_consumos(
 ):
     """
     Genera y descarga el historial de consumos del socio en PDF.
-    
+
     Incluye:
     - Datos resumidos del socio
     - Lista de todos los consumos
     - Total de cargos por descorche
-    
+
     Permisos: CAVA_SOCIOS_VER
     """
     scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
     try:
         cava_service = get_cava_socios_service()
         socio = cava_service.obtener_socio(socio_id, scope["empresa_id"])
-        
+
         if not socio:
             raise HTTPException(status_code=404, detail="Socio no encontrado")
-        
+
         # Obtener movimientos del socio
         movimientos = cava_service.obtener_movimientos_socio(
             socio_id,
             scope["empresa_id"],
         )
-        
+
         # Generar PDF
         report_service = get_cava_report_service()
         pdf_bytes = report_service.generar_historial_consumos(socio, movimientos)
-        
+
         filename = f"consumos_socio_{socio.get('numero_socio', socio_id)}.pdf"
-        
+
         return StreamingResponse(
             io.BytesIO(pdf_bytes),
             media_type="application/pdf",
@@ -402,34 +723,34 @@ async def descargar_estado_cuenta(
 ):
     """
     Genera y descarga el estado de cuenta del socio en PDF.
-    
+
     Incluye:
     - Resumen financiero
     - Detalle de cargos (pagados y pendientes)
     - Saldo total
-    
+
     Permisos: CAVA_SOCIOS_VER
     """
     scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
     try:
         cava_service = get_cava_socios_service()
         socio = cava_service.obtener_socio(socio_id, scope["empresa_id"])
-        
+
         if not socio:
             raise HTTPException(status_code=404, detail="Socio no encontrado")
-        
+
         # Obtener cargos del socio
         cargos = cava_service.obtener_cargos_socio(
             socio_id,
             scope["empresa_id"],
         )
-        
+
         # Generar PDF
         report_service = get_cava_report_service()
         pdf_bytes = report_service.generar_estado_cuenta(socio, cargos)
-        
+
         filename = f"estado_cuenta_{socio.get('numero_socio', socio_id)}.pdf"
-        
+
         return StreamingResponse(
             io.BytesIO(pdf_bytes),
             media_type="application/pdf",
@@ -466,41 +787,41 @@ async def enviar_reporte_socio(
 ):
     """
     Genera y envía un reporte PDF al socio por Email y/o WhatsApp.
-    
+
     Tipos de reporte disponibles:
     - ficha: Ficha completa del socio
     - consumos: Historial de consumos
     - estado_cuenta: Estado de cuenta con cargos
-    
+
     Canales disponibles:
     - email: Envía el PDF como adjunto
     - whatsapp: Envía mensaje con información del reporte
-    
+
     Permisos: CAVA_SOCIOS_VER
     """
     scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
     try:
         cava_service = get_cava_socios_service()
         socio = cava_service.obtener_socio(socio_id, scope["empresa_id"])
-        
+
         if not socio:
             raise HTTPException(status_code=404, detail="Socio no encontrado")
-        
+
         # Sobrescribir email/teléfono si se proporcionan alternativos
         if data.email_alternativo:
             socio['email'] = data.email_alternativo
         if data.telefono_alternativo:
             socio['telefono'] = data.telefono_alternativo
-        
+
         # Validar que tenga al menos un medio de contacto
         if 'email' in data.canales and not socio.get('email'):
             raise HTTPException(status_code=400, detail="El socio no tiene email registrado")
         if 'whatsapp' in data.canales and not socio.get('telefono'):
             raise HTTPException(status_code=400, detail="El socio no tiene teléfono registrado")
-        
+
         # Generar PDF según tipo
         report_service = get_cava_report_service()
-        
+
         if data.tipo_reporte == 'ficha':
             pdf_bytes = report_service.generar_ficha_socio(socio)
         elif data.tipo_reporte == 'consumos':
@@ -517,7 +838,7 @@ async def enviar_reporte_socio(
             pdf_bytes = report_service.generar_estado_cuenta(socio, cargos)
         else:
             raise HTTPException(status_code=400, detail=f"Tipo de reporte inválido: {data.tipo_reporte}")
-        
+
         # Enviar por canales seleccionados
         notification_service = get_notification_service()
         resultado = notification_service.enviar_reporte_multicanal(
@@ -526,11 +847,11 @@ async def enviar_reporte_socio(
             pdf_bytes=pdf_bytes,
             canales=data.canales
         )
-        
+
         logger.info(f"[CavaSocios] Reporte {data.tipo_reporte} enviado al socio {socio_id} via {data.canales}")
-        
+
         return resultado
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -547,34 +868,34 @@ async def enviar_todos_reportes_socio(
 ):
     """
     Genera y envía los 3 reportes (Ficha, Consumos, Estado de Cuenta) al socio.
-    
+
     Útil para envío mensual automático o solicitud completa del socio.
-    
+
     Permisos: CAVA_SOCIOS_VER
     """
     scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
     try:
         cava_service = get_cava_socios_service()
         socio = cava_service.obtener_socio(socio_id, scope["empresa_id"])
-        
+
         if not socio:
             raise HTTPException(status_code=404, detail="Socio no encontrado")
-        
+
         report_service = get_cava_report_service()
         notification_service = get_notification_service()
-        
+
         resultados = {
             "socio_id": socio_id,
             "numero_socio": socio.get('numero_socio'),
             "reportes": {}
         }
-        
+
         # 1. Ficha de Socio
         pdf_ficha = report_service.generar_ficha_socio(socio)
         resultados["reportes"]["ficha"] = notification_service.enviar_reporte_multicanal(
             socio=socio, tipo_reporte='ficha', pdf_bytes=pdf_ficha, canales=canales
         )
-        
+
         # 2. Historial de Consumos
         movimientos = cava_service.obtener_movimientos_socio(
             socio_id,
@@ -584,7 +905,7 @@ async def enviar_todos_reportes_socio(
         resultados["reportes"]["consumos"] = notification_service.enviar_reporte_multicanal(
             socio=socio, tipo_reporte='consumos', pdf_bytes=pdf_consumos, canales=canales
         )
-        
+
         # 3. Estado de Cuenta
         cargos = cava_service.obtener_cargos_socio(
             socio_id,
@@ -594,16 +915,16 @@ async def enviar_todos_reportes_socio(
         resultados["reportes"]["estado_cuenta"] = notification_service.enviar_reporte_multicanal(
             socio=socio, tipo_reporte='estado_cuenta', pdf_bytes=pdf_estado, canales=canales
         )
-        
+
         # Resumen
         exitos = sum(1 for r in resultados["reportes"].values() if r.get("success"))
         resultados["exitos"] = exitos
         resultados["total_reportes"] = 3
-        
+
         logger.info(f"[CavaSocios] Todos los reportes enviados al socio {socio_id}: {exitos}/3 exitosos")
-        
+
         return resultados
-        
+
     except HTTPException:
         raise
     except Exception as e:

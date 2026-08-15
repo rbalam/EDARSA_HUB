@@ -10,7 +10,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { 
   Wine, Users, Package, TrendingUp, AlertCircle,
-  RefreshCw, Plus, Eye, Search, Clock
+  RefreshCw, Plus, Eye, Search, Clock, TrendingDown, Layers
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
@@ -132,7 +132,7 @@ function CavaSociosDashboardContent() {
             Gestión de botellas en resguardo para clientes VIP
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-end">
           <div className="min-w-[260px]">
             <CorporateFilterSelect
               filterKey="unidades_negocio"
@@ -140,6 +140,14 @@ function CavaSociosDashboardContent() {
               placeholder="Selecciona una unidad"
             />
           </div>
+          <Button variant="outline" size="sm" onClick={() => navigate('/cava-socios/inventario')}>
+            <Wine className="h-4 w-4 mr-2" />
+            Inventario
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate('/cava-socios/consumos')}>
+            <TrendingDown className="h-4 w-4 mr-2" />
+            Consumos
+          </Button>
           <Button variant="outline" size="sm" onClick={fetchData}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar

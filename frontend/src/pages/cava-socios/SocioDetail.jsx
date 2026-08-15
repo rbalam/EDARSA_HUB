@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { 
   Users, Wine, ArrowLeft, Edit, Plus, RefreshCw, 
   AlertCircle, Mail, Phone, Calendar, Package, Trash2,
-  FileDown, FileText, Receipt, Send, MessageSquare, Loader2
+  FileDown, FileText, Receipt, Send, MessageSquare, Loader2,
+  QrCode, Printer
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '@/lib/api';
@@ -84,6 +85,8 @@ function SocioDetailContent() {
   const [error, setError] = useState(null);
   const [showBotellaDialog, setShowBotellaDialog] = useState(false);
   const [showConsumoDialog, setShowConsumoDialog] = useState(false);
+  const [showEtiquetaDialog, setShowEtiquetaDialog] = useState(false);
+  const [selectedEtiqueta, setSelectedEtiqueta] = useState(null);
   const [selectedBotella, setSelectedBotella] = useState(null);
   const [savingBotella, setSavingBotella] = useState(false);
   const [savingConsumo, setSavingConsumo] = useState(false);
@@ -230,6 +233,21 @@ function SocioDetailContent() {
   const openConsumoDialog = (botella) => {
     setSelectedBotella(botella);
     setShowConsumoDialog(true);
+  };
+
+  const handleVerEtiqueta = async (botella) => {
+    try {
+      const resp = await api.get(`/cava-socios/botellas/${botella.botella_id}/etiqueta?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`);
+      setSelectedEtiqueta(resp.data || botella);
+      setShowEtiquetaDialog(true);
+    } catch (err) {
+      setSelectedEtiqueta({
+        ...botella,
+        socio_nombre: socio?.nombre_completo,
+        numero_socio: socio?.numero_socio
+      });
+      setShowEtiquetaDialog(true);
+    }
   };
 
   // Funciones de descarga de reportes PDF
@@ -736,15 +754,25 @@ function SocioDetailContent() {
                       {formatCurrency(botella.valor_declarado)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openConsumoDialog(botella)}
-                        data-testid={`consumir-${botella.botella_id}`}
-                      >
-                        <Package className="h-4 w-4 mr-1" />
-                        Consumir
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Ver Etiqueta QR"
+                          onClick={() => handleVerEtiqueta(botella)}
+                        >
+                          <QrCode className="h-4 w-4 text-zinc-700" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openConsumoDialog(botella)}
+                          data-testid={`consumir-${botella.botella_id}`}
+                        >
+                          <Package className="h-4 w-4 mr-1" />
+                          Consumir
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -758,6 +786,68 @@ function SocioDetailContent() {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal Etiqueta de Custodia con QR */}
+      <Dialog open={showEtiquetaDialog} onOpenChange={setShowEtiquetaDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5 text-amber-600" />
+              Etiqueta de Resguardo / QR Cava
+            </DialogTitle>
+            <DialogDescription>
+              Ficha para identificación física de la botella en el casillero
+            </DialogDescription>
+          </DialogHeader>
+          {selectedEtiqueta && (
+            <div className="border-2 border-dashed border-zinc-300 p-6 rounded-lg bg-zinc-50 space-y-4 text-center">
+              <div className="text-xs uppercase font-bold tracking-wider text-zinc-500">
+                EDARSA HUB • CONTROL DE CAVA
+              </div>
+              <div className="font-bold text-lg text-zinc-900">
+                {selectedEtiqueta.producto_nombre}
+              </div>
+              <div className="text-sm text-zinc-600">
+                {selectedEtiqueta.marca} {selectedEtiqueta.añada ? `• Añada ${selectedEtiqueta.añada}` : ''}
+              </div>
+              <div className="inline-block p-4 bg-white rounded-lg shadow-sm border border-zinc-200">
+                <div className="w-32 h-32 flex flex-col items-center justify-center bg-zinc-900 text-white rounded font-mono text-[10px] p-2 leading-tight">
+                  <QrCode className="h-16 w-16 mb-1 text-white" />
+                  <span>ID: {selectedEtiqueta.botella_id?.slice(0, 8)}</span>
+                  <span>SOCIO: #{selectedEtiqueta.numero_socio || socio?.numero_socio}</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-left text-xs pt-2 border-t">
+                <div>
+                  <span className="text-zinc-500">Socio:</span>
+                  <p className="font-semibold text-zinc-800">{selectedEtiqueta.socio_nombre || socio?.nombre_completo}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Casillero / Ubicación:</span>
+                  <p className="font-semibold text-zinc-800">{selectedEtiqueta.ubicacion || 'Sin asignar'}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Valor Declarado:</span>
+                  <p className="font-semibold text-zinc-800">{formatCurrency(selectedEtiqueta.valor_declarado)}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Fecha Ingreso:</span>
+                  <p className="font-semibold text-zinc-800">{formatDate(selectedEtiqueta.fecha_ingreso)}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEtiquetaDialog(false)}>
+              Cerrar
+            </Button>
+            <Button onClick={() => window.print()}>
+              <Printer className="h-4 w-4 mr-2" />
+              Imprimir Etiqueta
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog de Consumo */}
       <Dialog open={showConsumoDialog} onOpenChange={setShowConsumoDialog}>

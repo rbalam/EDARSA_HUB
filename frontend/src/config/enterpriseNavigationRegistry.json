@@ -630,6 +630,26 @@
       "cluster": "Cava de Socios",
       "legacy": true
     },
+    "cava.inventario": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "Inventario Cavas",
+      "expectedPath": "/cava-socios/inventario",
+      "order": 30,
+      "status": "active",
+      "cluster": "Cava de Socios",
+      "releasedAt": "2026-08-15"
+    },
+    "cava.consumos": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "Consumos y Movimientos",
+      "expectedPath": "/cava-socios/consumos",
+      "order": 40,
+      "status": "active",
+      "cluster": "Cava de Socios",
+      "releasedAt": "2026-08-15"
+    },
     "finanzas.dashboard": {
       "groupId": "finanzas-rentabilidad",
       "sectionId": "direccion-financiera",
