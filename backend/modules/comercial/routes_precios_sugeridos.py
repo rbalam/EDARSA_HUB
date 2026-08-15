@@ -1,4 +1,3 @@
-from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
 """
 Rutas de Precios Sugeridos para Costos y Márgenes.
@@ -18,6 +17,12 @@ from typing import Optional
 from pydantic import BaseModel, Field
 from core.security import get_current_user
 from core.rbac.middleware import require_permission
+from core.corporate_filters.request_resolver import (
+    resolve_authorized_unidad_scope,
+)
+from modules.costos_margenes.configuracion_repository import (
+    resolver_configuracion_efectiva,
+)
 
 from modules.comercial.services.precios_sugeridos_consolidado_service import (
     obtener_precios_sugeridos,
@@ -78,13 +83,18 @@ async def get_precios_sugeridos(
     solo_fuera_rango: bool = Query(False, description="Solo productos fuera de rango"),
     solo_requiere_revision: bool = Query(False, description="Solo productos que requieren revision"),
     fuente: Optional[str] = Query(None, description="Filtrar por fuente sugerencia"),
-    margen_bajo: bool = Query(False, description="Solo productos con margen < 20%"),
+    margen_bajo: bool = Query(
+        False,
+        description=(
+            "Solo productos cuyo margen actual está por debajo "
+            "del margen efectivo canónico"
+        ),
+    ),
     solo_con_receta: bool = Query(False, description="Solo productos con receta"),
     incluir_inactivos: bool = Query(False, description="Incluir productos inactivos/dados de baja"),
     search: Optional[str] = Query(None, description="Buscar por nombre o codigo"),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
-    margen_objetivo: float = Query(0.35, ge=0.01, le=0.99, description="Margen objetivo para calculo"),
     current_user: dict = Depends(get_current_user),
     _auth: dict = Depends(require_permission(_PERMISO_PRECIOS_SUGERIDOS))
 ):
@@ -99,16 +109,99 @@ async def get_precios_sugeridos(
     
     NO modifica precios oficiales. Solo muestra recomendaciones.
     """
-    # CANÓNICO: resolver 'unidad' (codigo/id) → server_id. 'server_id' DEPRECATED.
-    if unidad and not server_id:
-        try:
-            u = UnidadesService.get_by_codigo(unidad) or UnidadesService.get_by_pk(unidad)
-            if u:
-                server_id = u.get('server_id')
-        except Exception:
-            pass
+    if not unidad:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "UNIDAD_CANONICA_REQUERIDA",
+                "mensaje": (
+                    "Precios Sugeridos requiere una unidad "
+                    "canónica para resolver configuración efectiva"
+                ),
+            },
+        )
+
+    scope = await resolve_authorized_unidad_scope(
+        current_user,
+        _PERMISO_PRECIOS_SUGERIDOS,
+        unidad,
+    )
+
+    if scope.access_denied or not scope.unidad_pk:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "ALCANCE_DENEGADO",
+                "mensaje": "No tiene acceso a la unidad solicitada",
+                "permiso_requerido": _PERMISO_PRECIOS_SUGERIDOS,
+            },
+        )
+
+    usuario_value = (
+        (current_user or {}).get("_sql_usuario_id")
+        or (current_user or {}).get("UsuarioID")
+        or (current_user or {}).get("usuario_id")
+    )
+
+    if isinstance(usuario_value, bool):
+        usuario_value = None
+
+    try:
+        usuario_id = int(usuario_value)
+    except (TypeError, ValueError):
+        usuario_id = None
+
+    if not usuario_id or usuario_id <= 0:
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "error": "SQL_USUARIO_NO_RESUELTO",
+                "mensaje": (
+                    "No existe identidad SQL canónica para "
+                    "resolver configuración de Precios Sugeridos"
+                ),
+            },
+        )
+
+    try:
+        configuracion_efectiva = (
+            resolver_configuracion_efectiva(
+                str(scope.unidad_pk),
+                usuario_id=usuario_id,
+            )
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "CONFIGURACION_EFECTIVA_NO_RESUELTA",
+                "mensaje": str(exc),
+            },
+        ) from exc
+
+    multiplo_redondeo = configuracion_efectiva.get(
+        "multiplo_redondeo"
+    )
+    metodo_redondeo = configuracion_efectiva.get(
+        "metodo_redondeo"
+    )
+
+    if (
+        multiplo_redondeo is None
+        or metodo_redondeo is None
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "REDONDEO_NO_CONFIGURADO",
+                "mensaje": (
+                    "La configuración efectiva no define "
+                    "múltiplo y método de redondeo"
+                ),
+            },
+        )
     result = obtener_precios_sugeridos(
-        server_id=server_id,
+        server_id=scope.server_id,
         familia=familia,
         subfamilia=subfamilia,
         solo_vinos=solo_vinos,
@@ -121,7 +214,13 @@ async def get_precios_sugeridos(
         search=search,
         page=page,
         page_size=page_size,
-        margen_objetivo=margen_objetivo
+        empresa_id=configuracion_efectiva.get(
+            "empresa_id"
+        ),
+        unidad_negocio_pk=str(scope.unidad_pk),
+        usuario_id=usuario_id,
+        multiplo_redondeo=multiplo_redondeo,
+        metodo_redondeo=metodo_redondeo,
     )
     return result
 
