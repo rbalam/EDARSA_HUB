@@ -167,7 +167,8 @@ def _obtener_datos_producto(codigo_producto: str, server_id: str) -> Dict[str, A
     conn = _get_conn()
     
     query = f"""
-    SELECT 
+    SELECT
+        CAST(sp.ProductoID AS NVARCHAR(36)) as ProductoID,
         sp.Nombre,
         sp.FamiliaNombre,
         sp.SubfamiliaNombre,
@@ -212,6 +213,7 @@ def _obtener_datos_producto(codigo_producto: str, server_id: str) -> Dict[str, A
     
     return {
         'existe': True,
+        'producto_id': row.get('ProductoID'),
         'codigo': codigo_producto,
         'nombre': row.get('Nombre', 'Sin nombre'),
         'familia': row.get('FamiliaNombre'),
@@ -821,7 +823,7 @@ Responde en formato JSON con esta estructura:
         
         # 11. Guardar análisis en SQL
         analisis_id = _guardar_analisis_ia(
-            producto_id=None,  # No tenemos UUID del producto
+            producto_id=datos_producto.get('producto_id'),
             codigo_producto=codigo_producto,
             server_id=server_id,
             empresa_id=empresa_id,
@@ -876,7 +878,7 @@ Responde en formato JSON con esta estructura:
         
         # Guardar error
         analisis_id = _guardar_analisis_ia(
-            producto_id=None,
+            producto_id=datos_producto.get('producto_id'),
             codigo_producto=codigo_producto,
             server_id=server_id,
             empresa_id=empresa_id,
@@ -1029,7 +1031,7 @@ Máximo 5 comparables más relevantes."""
         
         # Guardar análisis
         analisis_id = _guardar_analisis_ia(
-            producto_id=None,
+            producto_id=datos_producto.get('producto_id'),
             codigo_producto=codigo_producto,
             server_id=server_id,
             empresa_id=empresa_id,
@@ -1182,7 +1184,7 @@ Responde en JSON:
         
         # Guardar
         analisis_id = _guardar_analisis_ia(
-            producto_id=None,
+            producto_id=datos_producto.get('producto_id'),
             codigo_producto=codigo_producto,
             server_id=server_id,
             empresa_id=empresa_id,
