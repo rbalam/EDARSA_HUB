@@ -7,8 +7,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  Users, Wine, ArrowLeft, Edit, Plus, RefreshCw, 
+import {
+  Users, Wine, ArrowLeft, Edit, Plus, RefreshCw,
   AlertCircle, Mail, Phone, Calendar, Package, Trash2,
   FileDown, FileText, Receipt, Send, MessageSquare, Loader2,
   QrCode, Printer
@@ -79,7 +79,7 @@ function SocioDetailContent() {
   const { selected, loading: filtersLoading } = useCorporateFilters();
   const { context, loading: contextLoading, error: contextError } = useAccessContext();
   const unidadNegocioPk = selected?.unidades_negocio || context?.unidad_activa || '';
-  
+
   const [socio, setSocio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -90,7 +90,7 @@ function SocioDetailContent() {
   const [selectedBotella, setSelectedBotella] = useState(null);
   const [savingBotella, setSavingBotella] = useState(false);
   const [savingConsumo, setSavingConsumo] = useState(false);
-  
+
   const [botellaForm, setBotellaForm] = useState({
     producto_nombre: '',
     marca: '',
@@ -176,7 +176,7 @@ function SocioDetailContent() {
       toast.error('Selecciona una unidad de negocio autorizada.');
       return;
     }
-    
+
     setSavingBotella(true);
     try {
       await api.post(`/cava-socios/socios/${id}/botellas?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`, botellaForm);
@@ -207,7 +207,7 @@ function SocioDetailContent() {
       toast.error('Selecciona una unidad de negocio autorizada.');
       return;
     }
-    
+
     setSavingConsumo(true);
     try {
       await api.post(`/cava-socios/botellas/${selectedBotella.botella_id}/consumo?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`, consumoForm);
@@ -258,11 +258,11 @@ function SocioDetailContent() {
     }
     try {
       toast.loading(`Generando ${tipo}...`, { id: 'pdf-loading' });
-      
+
       const response = await api.get(`/cava-socios/reportes/socio/${id}/${tipo}?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`, {
         responseType: 'blob'
       });
-      
+
       // Crear URL del blob y descargar
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
@@ -273,7 +273,7 @@ function SocioDetailContent() {
       link.click();
       if (link && link.parentNode) { link.parentNode.removeChild(link); }
       window.URL.revokeObjectURL(url);
-      
+
       toast.success('Reporte descargado', { id: 'pdf-loading' });
     } catch (err) {
       console.error('Error descargando reporte:', err);
@@ -288,7 +288,7 @@ function SocioDetailContent() {
       toast.error('Selecciona una unidad de negocio autorizada.');
       return;
     }
-    
+
     // Validaciones previas
     if (canales.includes('email') && !socio.email) {
       toast.error('El socio no tiene email registrado');
@@ -298,29 +298,29 @@ function SocioDetailContent() {
       toast.error('El socio no tiene teléfono registrado');
       return;
     }
-    
+
     setEnviandoReporte(true);
     const canalTexto = canales.join(' y ');
-    
+
     try {
       toast.loading(`Enviando ${tipoReporte} por ${canalTexto}...`, { id: 'envio-reporte' });
-      
+
       const response = await api.post(`/cava-socios/socios/${id}/enviar-reporte?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`, {
         tipo_reporte: tipoReporte,
         canales: canales
       });
-      
+
       if (response.data.success) {
         const resultados = response.data.canales;
         let mensaje = `Reporte enviado`;
-        
+
         if (resultados.email?.success) {
           mensaje += ` por Email`;
         }
         if (resultados.whatsapp?.success) {
           mensaje += resultados.email?.success ? ` y WhatsApp` : ` por WhatsApp`;
         }
-        
+
         toast.success(mensaje, { id: 'envio-reporte' });
       } else {
         toast.error('Error parcial en el envío', { id: 'envio-reporte' });
@@ -340,7 +340,7 @@ function SocioDetailContent() {
       toast.error('Selecciona una unidad de negocio autorizada.');
       return;
     }
-    
+
     if (canales.includes('email') && !socio.email) {
       toast.error('El socio no tiene email registrado');
       return;
@@ -349,19 +349,19 @@ function SocioDetailContent() {
       toast.error('El socio no tiene teléfono registrado');
       return;
     }
-    
+
     setEnviandoReporte(true);
-    
+
     try {
       toast.loading('Enviando todos los reportes...', { id: 'envio-todos' });
-      
+
       const response = await api.post(
         `/cava-socios/socios/${id}/enviar-todos-reportes?canales=${canales.join('&canales=')}&unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`,
         {}
       );
-      
+
       const { exitos, total_reportes } = response.data;
-      
+
       if (exitos === total_reportes) {
         toast.success(`${exitos} reportes enviados exitosamente`, { id: 'envio-todos' });
       } else {
@@ -455,60 +455,60 @@ function SocioDetailContent() {
                 <Receipt className="h-4 w-4 mr-2" />
                 Descargar Estado Cuenta
               </DropdownMenuItem>
-              
+
               <DropdownMenuSeparator />
-              
+
               {/* Enviar por Email */}
-              <DropdownMenuItem 
-                onClick={() => enviarReporte('ficha', ['email'])} 
+              <DropdownMenuItem
+                onClick={() => enviarReporte('ficha', ['email'])}
                 disabled={!socio?.email}
                 data-testid="menu-email-ficha"
               >
                 <Mail className="h-4 w-4 mr-2" />
                 Enviar Ficha por Email
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => enviarReporte('consumos', ['email'])} 
+              <DropdownMenuItem
+                onClick={() => enviarReporte('consumos', ['email'])}
                 disabled={!socio?.email}
                 data-testid="menu-email-consumos"
               >
                 <Mail className="h-4 w-4 mr-2" />
                 Enviar Consumos por Email
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => enviarReporte('estado_cuenta', ['email'])} 
+              <DropdownMenuItem
+                onClick={() => enviarReporte('estado_cuenta', ['email'])}
                 disabled={!socio?.email}
                 data-testid="menu-email-cuenta"
               >
                 <Mail className="h-4 w-4 mr-2" />
                 Enviar Edo. Cuenta por Email
               </DropdownMenuItem>
-              
+
               <DropdownMenuSeparator />
-              
+
               {/* Enviar por WhatsApp */}
-              <DropdownMenuItem 
-                onClick={() => enviarReporte('ficha', ['whatsapp'])} 
+              <DropdownMenuItem
+                onClick={() => enviarReporte('ficha', ['whatsapp'])}
                 disabled={!socio?.telefono}
                 data-testid="menu-wa-ficha"
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Enviar Ficha por WhatsApp
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => enviarReporte('estado_cuenta', ['whatsapp'])} 
+              <DropdownMenuItem
+                onClick={() => enviarReporte('estado_cuenta', ['whatsapp'])}
                 disabled={!socio?.telefono}
                 data-testid="menu-wa-cuenta"
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Enviar Edo. Cuenta por WhatsApp
               </DropdownMenuItem>
-              
+
               <DropdownMenuSeparator />
-              
+
               {/* Enviar Todos */}
-              <DropdownMenuItem 
-                onClick={() => enviarTodosReportes(['email'])} 
+              <DropdownMenuItem
+                onClick={() => enviarTodosReportes(['email'])}
                 disabled={!socio?.email}
                 className="font-medium"
                 data-testid="menu-email-todos"
@@ -516,8 +516,8 @@ function SocioDetailContent() {
                 <Send className="h-4 w-4 mr-2 text-purple-600" />
                 Enviar TODO por Email
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => enviarTodosReportes(['email', 'whatsapp'])} 
+              <DropdownMenuItem
+                onClick={() => enviarTodosReportes(['email', 'whatsapp'])}
                 disabled={!socio?.email || !socio?.telefono}
                 className="font-medium"
                 data-testid="menu-multicanal-todos"
@@ -654,7 +654,7 @@ function SocioDetailContent() {
                     </div>
                     <div className="space-y-2">
                       <Label>Tipo de Bebida</Label>
-                      <Select 
+                      <Select
                         value={botellaForm.tipo_bebida}
                         onValueChange={(v) => setBotellaForm(f => ({...f, tipo_bebida: v}))}
                       >
@@ -861,7 +861,7 @@ function SocioDetailContent() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Porcentaje Consumido</Label>
-              <Select 
+              <Select
                 value={String(consumoForm.porcentaje_consumido)}
                 onValueChange={(v) => setConsumoForm(f => ({...f, porcentaje_consumido: parseInt(v)}))}
               >
@@ -956,4 +956,3 @@ export default function SocioDetail() {
     </CorporateFiltersProvider>
   );
 }
-

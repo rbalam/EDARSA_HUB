@@ -53,7 +53,7 @@ def get_resumen_costos_margenes(
     elif unidad_negocio_pk:
         unidad_where = "AND CONVERT(varchar(36), p.UnidadNegocioID) = %s"
         params.append(str(unidad_negocio_pk))
-    
+
     # Resumen canónico:
     # - mismo universo comercial que el listado
     # - solo productos activos
@@ -188,7 +188,7 @@ def get_resumen_costos_margenes(
         productos_query,
         tuple(params),
     )
-    
+
     if servidor_id:
         insumos_query = """
         SELECT COUNT(DISTINCT i.InsumoID) as total
@@ -271,9 +271,9 @@ def get_resumen_costos_margenes(
         insumos_result = execute_sql_query(*conn, "SELECT COUNT(*) as total FROM Sync_Productos_Insumos")
         recetas_result = execute_sql_query(*conn, "SELECT COUNT(*) as total FROM Sync_Productos_Recetas")
         elaborados_result = execute_sql_query(*conn, "SELECT COUNT(*) as total FROM Sync_Productos_Elaborados")
-    
+
     p = productos_result[0] if productos_result else {}
-    
+
     return {
         'total_productos': p.get('total_productos', 0) or 0,
         'productos_con_receta': p.get('productos_con_receta', 0) or 0,
@@ -348,30 +348,30 @@ def get_productos_con_costos(
     """
     Obtiene lista de productos con costos y márgenes.
     Fuente: EDARSAHUB SQL (NO-LIVE)
-    
+
     FASE P2: Nuevo parámetro servidores_ids para RBAC por Unidad de Negocio.
     Si se proporciona, filtra productos que pertenezcan a cualquiera de esos servidores.
-    
+
     BUG-COSTOS-001: Por defecto solo muestra productos activos.
     Usar incluir_inactivos=True para ver también productos inactivos/dados de baja.
-    
+
     BUG-COSTOS-001-R2: El filtro correcto es SOLO Activo = 1.
     NO usar PrecioVenta > 0 como criterio de activo.
     Productos con precio $0 pueden ser activos.
     """
     conn = _get_edarsahub_connection()
-    
+
     # BUG-COSTOS-001-R2: Solo usar Activo = 1, NO PrecioVenta > 0
     if not incluir_inactivos:
         where_clauses = ["p.Activo = 1"]
     else:
         where_clauses = ["1=1"]
     query_params: List[Any] = []
-    
+
     if servidor_id:
         where_clauses.append("CAST(p.ServerID AS NVARCHAR(36)) = %s")
         query_params.append(str(servidor_id))
-    
+
     # FASE P2: RBAC - Filtrar por múltiples servidores permitidos
     if servidores_ids and len(servidores_ids) > 0:
         servers = [str(s) for s in servidores_ids if str(s).strip()]
@@ -383,7 +383,7 @@ def get_productos_con_costos(
             query_params.extend(servers)
         else:
             where_clauses.append("1=0")
-    
+
     receta_real_sql = """EXISTS (
         SELECT 1
         FROM Sync_Productos_Recetas r_chk
@@ -451,13 +451,13 @@ def get_productos_con_costos(
         query_params.extend([busqueda_like, busqueda_like])
     if solo_con_receta:
         where_clauses.append(receta_comercial_sql)
-    
+
     # MARGEN BAJO: Filtrar productos con margen < umbral configurado
     # El costo real viene de Sync_Productos_Recetas (no de p.CostoReceta)
     # Requiere: receta, precio > 0, costo calculado > 0, margen < umbral
-    
+
     where_sql = " AND ".join(where_clauses)
-    
+
     # Query de conteo total
     count_query = f"""
     SELECT COUNT(*) as total
@@ -467,14 +467,14 @@ def get_productos_con_costos(
     """
     count_result = execute_sql_query_params(*conn, count_query, tuple(query_params))
     total = count_result[0].get('total', 0) if count_result else 0
-    
+
     # Query de datos con paginación
     # NOTA: CostoReceta en Sync_Productos puede estar en 0, así que calculamos
     # el costo real sumando CostoTotal de Sync_Productos_Recetas
     offset = (page - 1) * page_size
     # FASE 1C-3G-B: Incluir TasaImpuesto para validación de pricing
     data_query = f"""
-    SELECT 
+    SELECT
         CAST(p.ProductoID AS NVARCHAR(36)) as producto_id,
         pmo.ProductoID as producto_id_canonico,
         p.CodigoFuente as id_producto_origen,
@@ -553,9 +553,9 @@ def get_productos_con_costos(
     ORDER BY p.Nombre
     OFFSET {offset} ROWS FETCH NEXT {page_size} ROWS ONLY
     """
-    
+
     data_result = execute_sql_query_params(*conn, data_query, tuple(query_params)) or []
-    
+
     # Procesar resultados y calcular márgenes dinámicamente
     productos = []
     for row in data_result:
@@ -582,10 +582,10 @@ def get_productos_con_costos(
         else:
             margen_pesos = None
             margen_porcentaje = None
-        
+
         # FASE 1C-3G-B: Obtener tasa de impuesto
         tasa_impuesto_raw = _safe_decimal(row.get('tasa_impuesto'))
-        
+
         # Determinar estado de impuesto:
         # -1 = IMPUESTO_NO_CONFIGURADO (no permite cálculo de precio)
         # 0 = Tasa cero válida (alimentos)
@@ -596,7 +596,7 @@ def get_productos_con_costos(
             tasa_impuesto = None  # No mostrar -1 en UI
         else:
             tasa_impuesto = tasa_impuesto_raw
-        
+
         productos.append({
             'producto_id': row.get('producto_id', ''),
             'producto_id_canonico': row.get('producto_id_canonico'),
@@ -629,7 +629,7 @@ def get_productos_con_costos(
             # BUG-COSTOS-001-R2: Campo activo para badges en UI
             'activo': bool(row.get('activo', 1)),
         })
-    
+
     return productos, total
 
 
@@ -883,13 +883,13 @@ def get_insumos_producto(producto_id: str, server_id: Optional[str] = None) -> T
     Fuente: EDARSAHUB SQL (NO-LIVE)
     """
     producto, componentes = get_receta_producto(producto_id, server_id)
-    
+
     if not producto:
         return None, []
-    
+
     # Consolidar insumos por código fuente
     insumos_consolidados = {}
-    
+
     for comp in componentes:
         codigo = comp['codigo_fuente']
         if codigo not in insumos_consolidados:
@@ -906,16 +906,16 @@ def get_insumos_producto(producto_id: str, server_id: Optional[str] = None) -> T
                 'nivel_origen': comp['nivel_jerarquico'],
                 'es_elaborado': comp['es_elaborado'],
             }
-        
+
         insumos_consolidados[codigo]['cantidad_total'] += comp['cantidad'] or 0
         insumos_consolidados[codigo]['costo_total'] += comp['costo_total'] or 0
-    
+
     # Calcular porcentajes
     costo_total_general = sum(i['costo_total'] for i in insumos_consolidados.values())
     for ins in insumos_consolidados.values():
         if costo_total_general > 0:
             ins['porcentaje_costo_total'] = round((ins['costo_total'] / costo_total_general) * 100, 2)
-    
+
     return producto, list(insumos_consolidados.values())
 
 
@@ -927,7 +927,7 @@ def get_sync_status() -> Dict[str, Any]:
     Fuente: EDARSAHUB SQL
     """
     conn = _get_edarsahub_connection()
-    
+
     # Último sync
     sync_query = """
     SELECT TOP 1 SyncRunID, SyncedAtMexico
@@ -935,7 +935,7 @@ def get_sync_status() -> Dict[str, Any]:
     ORDER BY SyncedAtMexico DESC
     """
     sync_result = execute_sql_query(*conn, sync_query)
-    
+
     # Conteos por tabla
     tablas = [
         'Sync_Productos',
@@ -945,7 +945,7 @@ def get_sync_status() -> Dict[str, Any]:
         'Sync_Productos_Recetas',
         'Sync_Productos_Elaborados'
     ]
-    
+
     conteos_tabla = []
     total_registros = 0
     for tabla in tablas:
@@ -954,7 +954,7 @@ def get_sync_status() -> Dict[str, Any]:
         cnt = result[0].get('cnt', 0) if result else 0
         total_registros += cnt
         conteos_tabla.append({'tabla': tabla, 'registros': cnt})
-    
+
     # Conteos por sistema
     sistema_query = """
     SELECT SystemType as sistema, COUNT(*) as cnt
@@ -963,10 +963,10 @@ def get_sync_status() -> Dict[str, Any]:
     """
     sistema_result = execute_sql_query(*conn, sistema_query) or []
     conteos_sistema = [{'sistema': r['sistema'], 'registros': r['cnt']} for r in sistema_result]
-    
+
     # Conteos por servidor
     servidor_query = """
-    SELECT 
+    SELECT
         CAST(p.ServerID AS NVARCHAR(36)) as servidor_id,
         p.SystemType as sistema,
         COUNT(*) as cnt
@@ -980,12 +980,12 @@ def get_sync_status() -> Dict[str, Any]:
             'servidor_nombre': None,  # Podría obtenerse de tabla Servidores
             'sistema': r['sistema'],
             'registros': r['cnt']
-        } 
+        }
         for r in servidor_result
     ]
-    
+
     sync_info = sync_result[0] if sync_result else {}
-    
+
     # Determinar estado
     estado = 'EDARSAHUB_SQL'
     if total_registros == 0:
@@ -1001,7 +1001,7 @@ def get_sync_status() -> Dict[str, Any]:
                         estado = 'STALE_EDARSAHUB_SQL'
             except (TypeError, AttributeError):
                 pass
-    
+
     return {
         'ultimo_sync_run_id': sync_info.get('SyncRunID'),
         'fecha_ultima_sincronizacion': sync_info.get('SyncedAtMexico'),
@@ -1021,14 +1021,14 @@ def get_sync_status() -> Dict[str, Any]:
 def get_unidades_negocio() -> List[Dict[str, Any]]:
     """
     Obtiene lista de unidades de negocio activas desde EDARSAHUB.
-    
+
     Fuente: Tabla Unidades_Negocio en EDARSAHUB SQL
     NO-LIVE: No consulta sistemas externos.
     """
     conn = _get_edarsahub_connection()
-    
+
     query = """
-    SELECT 
+    SELECT
         id,
         codigo,
         nombre,
@@ -1041,9 +1041,9 @@ def get_unidades_negocio() -> List[Dict[str, Any]]:
     WHERE activo = 1
     ORDER BY orden, nombre
     """
-    
+
     result = execute_sql_query(*conn, query)
-    
+
     unidades = []
     for row in result or []:
         unidades.append({
@@ -1055,7 +1055,7 @@ def get_unidades_negocio() -> List[Dict[str, Any]]:
             'system_type': row.get('system_type', ''),
             'orden': row.get('orden', 0)
         })
-    
+
     return unidades
 
 
@@ -1068,16 +1068,16 @@ def get_familias_productos(
 ) -> List[Dict[str, Any]]:
     """
     Obtiene lista de familias únicas de productos desde EDARSAHUB.
-    
+
     Args:
         servidor_id: Filtrar por unidad de negocio específica (ServerID)
         servidores_ids: FASE P2 RBAC - Lista de servidores permitidos
-    
+
     Fuente: Tabla Sync_Productos en EDARSAHUB SQL
     NO-LIVE: No consulta sistemas externos.
     """
     conn = _get_edarsahub_connection()
-    
+
     where_clause = (
         "WHERE p.FamiliaNombre IS NOT NULL "
         "AND p.FamiliaNombre != '' "
@@ -1091,7 +1091,7 @@ def get_familias_productos(
     elif servidor_id:
         where_clause += " AND CAST(p.ServerID AS NVARCHAR(36)) = %s"
         params.append(str(servidor_id))
-    
+
     # FASE P2: RBAC - Filtrar por múltiples servidores permitidos
     if servidores_ids and len(servidores_ids) > 0 and not servidor_id and not unidad_negocio_pk:
         servers = [str(s) for s in servidores_ids if str(s).strip()]
@@ -1101,9 +1101,9 @@ def get_familias_productos(
             params.extend(servers)
         else:
             where_clause += " AND 1=0"
-    
+
     query = f"""
-    SELECT 
+    SELECT
         FamiliaNombre as familia,
         COUNT(*) as total_productos
     FROM Sync_Productos p
@@ -1111,9 +1111,9 @@ def get_familias_productos(
     GROUP BY FamiliaNombre
     ORDER BY FamiliaNombre
     """
-    
+
     result = execute_sql_query_params(*conn, query, tuple(params))
-    
+
     familias = []
     for row in result or []:
         familias.append({
@@ -1121,7 +1121,7 @@ def get_familias_productos(
             'codigo': '',
             'total_productos': row.get('total_productos', 0)
         })
-    
+
     return familias
 
 
@@ -1132,16 +1132,16 @@ def get_subfamilias_productos(
 ) -> List[Dict[str, Any]]:
     """
     Obtiene lista de subfamilias de productos desde EDARSAHUB.
-    
+
     Args:
         familia: Filtrar por familia
         servidor_id: Filtrar por unidad de negocio (ServerID)
-    
+
     Fuente: Tabla Sync_Productos en EDARSAHUB SQL
     NO-LIVE: No consulta sistemas externos.
     """
     conn = _get_edarsahub_connection()
-    
+
     where_clause = (
         "WHERE p.SubFamiliaNombre IS NOT NULL "
         "AND p.SubFamiliaNombre != '' "
@@ -1158,9 +1158,9 @@ def get_subfamilias_productos(
     elif servidor_id:
         where_clause += " AND CAST(p.ServerID AS NVARCHAR(36)) = %s"
         params.append(str(servidor_id))
-    
+
     query = f"""
-    SELECT 
+    SELECT
         FamiliaNombre as familia,
         SubFamiliaNombre as subfamilia,
         COUNT(*) as total_productos
@@ -1169,9 +1169,9 @@ def get_subfamilias_productos(
     GROUP BY FamiliaNombre, SubFamiliaNombre
     ORDER BY FamiliaNombre, SubFamiliaNombre
     """
-    
+
     result = execute_sql_query_params(*conn, query, tuple(params))
-    
+
     subfamilias = []
     for row in result or []:
         subfamilias.append({
@@ -1180,5 +1180,5 @@ def get_subfamilias_productos(
             'codigo': '',
             'total_productos': row.get('total_productos', 0)
         })
-    
+
     return subfamilias

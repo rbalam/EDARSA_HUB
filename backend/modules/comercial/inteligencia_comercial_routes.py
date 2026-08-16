@@ -353,10 +353,10 @@ async def get_sync_status_inteligencia(current_user: Dict[str, Any] = Depends(ge
     Fuente: dbo.Sp_Validar_Inteligencia_Comercial_Status (SP canónico)
     """
     _require_permission(current_user)
-    
+
     # Usar el SP canónico
     rows = _exec_sp("Sp_Validar_Inteligencia_Comercial_Status")
-    
+
     return {
         "source": "Sp_Validar_Inteligencia_Comercial_Status",
         "data": rows
@@ -420,4 +420,3 @@ async def get_kpis_por_unidad(
         "source": "KPIsCanonicosService",
         "data": data,
     }
-

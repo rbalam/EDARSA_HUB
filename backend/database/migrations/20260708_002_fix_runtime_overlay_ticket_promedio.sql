@@ -197,4 +197,3 @@ snapshot_only AS (
 SELECT * FROM base_overlay
 UNION ALL
 SELECT * FROM snapshot_only;
-
