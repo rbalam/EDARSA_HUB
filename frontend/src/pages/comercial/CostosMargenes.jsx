@@ -1355,7 +1355,7 @@ const TabProductos = ({ onSimularPrecio }) => {
   const [subfamilia, setSubfamilia] = useState('');
   const [soloConReceta, setSoloConReceta] = useState(false);
   const [margenBajo, setMargenBajo] = useState(false);
-  const [umbralMargenBajo, setUmbralMargenBajo] = useState(20); // Umbral editable
+  const [configuracionEfectiva, setConfiguracionEfectiva] = useState(null);
   const [incluirInactivos, setIncluirInactivos] = useState(false); // BUG-COSTOS-001
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -1490,7 +1490,6 @@ const TabProductos = ({ onSimularPrecio }) => {
         if (soloConReceta) params.append('solo_con_receta', 'true');
         if (margenBajo) {
           params.append('margen_bajo', 'true');
-          params.append('umbral_margen', umbralMargenBajo.toString());
         }
         if (incluirInactivos) params.append('incluir_inactivos', 'true');
 
@@ -1514,6 +1513,10 @@ const TabProductos = ({ onSimularPrecio }) => {
         setProductos(productosCompletos);
         setTotalProductos(total);
         setTotalPages(1);
+
+        const config = firstRes.data.configuracion_efectiva || null;
+        setConfiguracionEfectiva(config);
+
       } else {
         const params = buildParams(page, pageSize);
         const res = await api.get(`/costos-margenes/productos?${params}`);
@@ -1521,13 +1524,17 @@ const TabProductos = ({ onSimularPrecio }) => {
         setProductos(res.data.productos || []);
         setTotalProductos(res.data.total || 0);
         setTotalPages(res.data.total_pages || 1);
+
+        const config = res.data.configuracion_efectiva || null;
+        setConfiguracionEfectiva(config);
+
       }
     } catch (err) {
       setError(err.response?.data?.detail || err.message);
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, pageSizeAgrupado, vistaAgrupada, busqueda, unidadNegocio, familia, subfamilia, soloConReceta, margenBajo, umbralMargenBajo, incluirInactivos]);
+  }, [page, pageSize, pageSizeAgrupado, vistaAgrupada, busqueda, unidadNegocio, familia, subfamilia, soloConReceta, margenBajo, incluirInactivos]);
   
   useEffect(() => {
     loadResumen();
@@ -1603,26 +1610,26 @@ const TabProductos = ({ onSimularPrecio }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <SummaryCard
           title="Total Productos"
-          value={resumen?.total_productos?.toLocaleString() || '-'}
+          value={resumen?.total_productos != null ? resumen.total_productos.toLocaleString() : '-'}
           icon={Package}
           color="blue"
         />
         <SummaryCard
           title="Con Receta"
-          value={resumen?.productos_con_receta?.toLocaleString() || '-'}
+          value={resumen?.productos_con_receta != null ? resumen.productos_con_receta.toLocaleString() : '-'}
           icon={List}
           color="green"
           subtitle={resumen ? `${resumen.total_productos > 0 ? ((resumen.productos_con_receta / resumen.total_productos) * 100).toFixed(1) : '0.0'}% del total` : ''}
         />
         <SummaryCard
           title="Total Recetas"
-          value={resumen?.total_recetas?.toLocaleString() || '-'}
+          value={resumen?.total_recetas != null ? resumen.total_recetas.toLocaleString() : '-'}
           icon={BarChart2}
           color="purple"
         />
         <SummaryCard
           title="Total Insumos"
-          value={resumen?.total_insumos?.toLocaleString() || '-'}
+          value={resumen?.total_insumos != null ? resumen.total_insumos.toLocaleString() : '-'}
           icon={Database}
           color="orange"
         />
@@ -1713,21 +1720,12 @@ const TabProductos = ({ onSimularPrecio }) => {
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             <span className="text-sm text-gray-600 flex items-center gap-1">
-              Margen bajo (&lt;
-              <input
-                type="number"
-                value={umbralMargenBajo}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value) || 20;
-                  setUmbralMargenBajo(Math.min(100, Math.max(0, val)));
-                }}
-                onBlur={() => { if (margenBajo) setPage(1); }}
-                className="w-12 px-1 py-0.5 border rounded text-center text-sm"
-                min="0"
-                max="100"
-                disabled={!margenBajo}
-              />
-              %)
+              Margen bajo
+              {configuracionEfectiva?.margen_minimo_porcentaje != null && (
+                <span className="text-xs text-gray-500">
+                  (ref. {Number(configuracionEfectiva.margen_minimo_porcentaje).toFixed(2)}%)
+                </span>
+              )}
             </span>
           </label>
           
@@ -2667,7 +2665,7 @@ const TabPreciosSugeridos = () => {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className={`text-xs ${p.margen_porcentaje < 20 ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
-                        {p.margen_porcentaje ? `${p.margen_porcentaje.toFixed(1)}%` : '-'}
+                        {p.margen_porcentaje != null ? `${p.margen_porcentaje.toFixed(1)}%` : '-'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right font-mono font-medium text-purple-700">
@@ -2757,7 +2755,9 @@ const TabPreciosSugeridos = () => {
                 </div>
                 <div>
                   <p className="text-gray-500">Margen Actual</p>
-                  <p className="font-medium">{detalleModal.producto.margen_porcentaje?.toFixed(1)}%</p>
+                  <p className="font-medium">{detalleModal.producto.margen_porcentaje != null
+                    ? `${detalleModal.producto.margen_porcentaje.toFixed(1)}%`
+                    : '-'}</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Fuente Sugerencia</p>
@@ -3478,7 +3478,7 @@ const CostosMargenesContent = () => {
       )}
       
       {activeTab === 'reglas-margen' && (
-        <TabReglasMargen />
+        <TabReglasMargen unidad={unidadNegocio} />
       )}
       
       {/* Modal de simulación */}

@@ -79,7 +79,7 @@ class ProductoCostoMargen(BaseModel):
     sistema_origen: str
     server_id: str
     empresa_id: Optional[int] = None
-    unidad_negocio_pk: Optional[int] = None
+    unidad_negocio_pk: Optional[str] = None
     
     # Clasificación
     familia: Optional[str] = None
@@ -100,6 +100,8 @@ class ProductoCostoMargen(BaseModel):
     margen_pesos: Optional[float] = None
     margen_porcentaje: Optional[float] = None
     margen_objetivo: Optional[float] = None
+    margen_efectivo: Optional[float] = None
+    fuente_margen_efectivo: Optional[str] = None
     
     # Receta
     tiene_receta: bool = False
@@ -122,6 +124,7 @@ class ProductosListResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
+    configuracion_efectiva: Optional[dict] = None
     source_type: SourceType = SourceType.EDARSAHUB_SQL
     
     class Config:
@@ -218,6 +221,22 @@ class InsumosProductoResponse(BaseModel):
     
     class Config:
         use_enum_values = True
+
+
+
+
+
+class ConfiguracionCostosMargenesUsuarioPatch(BaseModel):
+    """
+    PATCH de configuración personal.
+
+    Campo omitido conserva el override existente.
+    None explícito elimina únicamente ese override.
+    """
+
+    margen_minimo_porcentaje: Optional[float] = None
+    multiplo_redondeo: Optional[float] = None
+    metodo_redondeo: Optional[str] = None
 
 
 # ==================== SYNC STATUS ====================

@@ -53,6 +53,7 @@ class UnidadScope:
     unidad_codigo: Optional[str] = None
     unidad_nombre: Optional[str] = None
     unidad_pk: Optional[str] = None
+    empresa_id: Optional[int] = None
     server_id: Optional[str] = None
     sucursal_origen_id: Optional[str] = None
     system_type: Optional[str] = None
@@ -350,6 +351,7 @@ async def resolve_authorized_unidad_scope(
             unidad_pk=metadata.get(
                 "unidad_negocio_pk"
             ),
+            empresa_id=metadata.get("empresa_id"),
             server_id=metadata.get("server_id"),
             sucursal_origen_id=metadata.get(
                 "sucursal_origen_id"

@@ -77,9 +77,19 @@ def obtener_datos_producto_para_simulacion(
         p.FamiliaCodigoFuente,
         p.FamiliaNombre,
         p.PrecioVenta,
-        p.CostoReceta,
-        p.MargenBrutoPesos,
-        p.MargenBrutoPorcentaje,
+        p.PrecioSinImpuestos,
+        p.TasaImpuesto,
+        COALESCE(
+            (
+                SELECT SUM(r.CostoTotal)
+                FROM Sync_Productos_Recetas r
+                WHERE r.ProductoCodigoFuente = p.CodigoFuente
+                  AND r.ServerID = p.ServerID
+                  AND ISNULL(r.Activo, 1) = 1
+            ),
+            p.CostoReceta,
+            0
+        ) AS CostoRecetaReal,
         p.MargenObjetivo,
         p.SyncRunID
     FROM Sync_Productos p
@@ -103,9 +113,31 @@ def obtener_datos_producto_para_simulacion(
         'familia_codigo': r.get('FamiliaCodigoFuente'),
         'familia_nombre': r.get('FamiliaNombre'),
         'precio_actual': _safe_decimal(r.get('PrecioVenta', 0)),
-        'costo_actual': _safe_decimal(r.get('CostoReceta', 0)),
-        'margen_actual_pesos': _safe_decimal(r.get('MargenBrutoPesos', 0)),
-        'margen_actual_porcentaje': _safe_decimal(r.get('MargenBrutoPorcentaje', 0)),
+        'precio_sin_impuestos': _safe_decimal(r.get('PrecioSinImpuestos', 0)),
+        'tasa_impuesto': (
+            None
+            if r.get('TasaImpuesto') is None
+            else _safe_decimal(r.get('TasaImpuesto'))
+        ),
+        'costo_actual': _safe_decimal(r.get('CostoRecetaReal', 0)),
+        'margen_actual_pesos': (
+            _safe_decimal(r.get('PrecioSinImpuestos', 0))
+            - _safe_decimal(r.get('CostoRecetaReal', 0))
+            if _safe_decimal(r.get('PrecioSinImpuestos', 0)) > 0
+            else None
+        ),
+        'margen_actual_porcentaje': (
+            (
+                (
+                    _safe_decimal(r.get('PrecioSinImpuestos', 0))
+                    - _safe_decimal(r.get('CostoRecetaReal', 0))
+                )
+                / _safe_decimal(r.get('PrecioSinImpuestos', 0))
+            )
+            * 100
+            if _safe_decimal(r.get('PrecioSinImpuestos', 0)) > 0
+            else None
+        ),
         'margen_objetivo': _safe_decimal(r.get('MargenObjetivo')) if r.get('MargenObjetivo') else None,
         'sync_run_id': r.get('SyncRunID'),
         'fecha_datos_costo': None,
@@ -116,61 +148,216 @@ def calcular_simulacion(
     precio_actual: float,
     costo_actual: float,
     precio_nuevo: float,
-    margen_objetivo: Optional[float] = None
+    margen_objetivo: Optional[float] = None,
+    precio_actual_neto: Optional[float] = None,
+    tasa_impuesto: Optional[float] = None,
 ) -> Dict:
     """
-    Calcula los valores de una simulación de precio.
-    NO modifica ningún dato en BD.
+    Calcula una simulación sin modificar BD.
+
+    Contrato:
+    - precio_actual y precio_nuevo son precios públicos finales.
+    - el margen se calcula siempre sobre precio neto sin impuestos.
+    - la tasa de impuesto proviene del producto canónico.
     """
-    # Márgenes actuales
-    margen_actual_pesos = precio_actual - costo_actual
-    margen_actual_porcentaje = (margen_actual_pesos / precio_actual * 100) if precio_actual > 0 else 0
-    
-    # Márgenes simulados
-    margen_simulado_pesos = precio_nuevo - costo_actual
-    margen_simulado_porcentaje = (margen_simulado_pesos / precio_nuevo * 100) if precio_nuevo > 0 else 0
-    
-    # Variación
-    variacion_pesos = precio_nuevo - precio_actual
-    variacion_porcentaje = (variacion_pesos / precio_actual * 100) if precio_actual > 0 else 0
-    
-    # Recomendación
-    if costo_actual <= 0:
+    precio_actual = _safe_decimal(precio_actual)
+    costo_actual = _safe_decimal(costo_actual)
+    precio_nuevo = _safe_decimal(precio_nuevo)
+
+    precio_actual_neto = (
+        _safe_decimal(precio_actual_neto)
+        if precio_actual_neto is not None
+        else None
+    )
+
+    tasa = (
+        _safe_decimal(tasa_impuesto)
+        if tasa_impuesto is not None
+        else None
+    )
+
+    if (
+        tasa is not None
+        and tasa >= 0
+    ):
+        factor_impuesto = (
+            1.0
+            + (
+                tasa
+                / 100.0
+            )
+        )
+    else:
+        factor_impuesto = None
+
+    precio_nuevo_neto = (
+        precio_nuevo
+        / factor_impuesto
+        if (
+            precio_nuevo > 0
+            and factor_impuesto is not None
+            and factor_impuesto > 0
+        )
+        else None
+    )
+
+    if (
+        precio_actual_neto is not None
+        and precio_actual_neto > 0
+    ):
+        margen_actual_pesos = (
+            precio_actual_neto
+            - costo_actual
+        )
+
+        margen_actual_porcentaje = (
+            margen_actual_pesos
+            / precio_actual_neto
+            * 100
+        )
+    else:
+        margen_actual_pesos = None
+        margen_actual_porcentaje = None
+
+    if (
+        precio_nuevo_neto is not None
+        and precio_nuevo_neto > 0
+    ):
+        margen_simulado_pesos = (
+            precio_nuevo_neto
+            - costo_actual
+        )
+
+        margen_simulado_porcentaje = (
+            margen_simulado_pesos
+            / precio_nuevo_neto
+            * 100
+        )
+    else:
+        margen_simulado_pesos = None
+        margen_simulado_porcentaje = None
+
+    variacion_pesos = (
+        precio_nuevo
+        - precio_actual
+    )
+
+    variacion_porcentaje = (
+        variacion_pesos
+        / precio_actual
+        * 100
+        if precio_actual > 0
+        else 0
+    )
+
+    if factor_impuesto is None:
         recomendacion = "SIN_DATOS"
-        impacto = "Sin datos de costo para análisis"
+        impacto = (
+            "Tasa de impuesto no configurada; "
+            "margen neto no calculable"
+        )
+
+    elif costo_actual <= 0:
+        recomendacion = "SIN_DATOS"
+        impacto = (
+            "Sin datos de costo para análisis"
+        )
+
+    elif margen_simulado_pesos is None:
+        recomendacion = "SIN_DATOS"
+        impacto = (
+            "Margen neto no calculable"
+        )
+
     elif margen_simulado_pesos < 0:
         recomendacion = "MARGEN_NEGATIVO"
-        impacto = f"ALERTA: Precio por debajo del costo. Pérdida de ${abs(margen_simulado_pesos):.2f} por unidad"
-    elif margen_objetivo and margen_simulado_porcentaje < margen_objetivo:
+        impacto = (
+            "ALERTA: Precio neto por debajo del costo. "
+            f"Pérdida de ${abs(margen_simulado_pesos):.2f} "
+            "por unidad"
+        )
+
+    elif (
+        margen_objetivo is not None
+        and margen_simulado_porcentaje is not None
+        and margen_simulado_porcentaje
+            < margen_objetivo
+    ):
         recomendacion = "MARGEN_BAJO"
-        diferencia = margen_objetivo - margen_simulado_porcentaje
-        impacto = f"Margen {diferencia:.1f}% por debajo del objetivo ({margen_objetivo:.1f}%)"
+
+        diferencia = (
+            margen_objetivo
+            - margen_simulado_porcentaje
+        )
+
+        impacto = (
+            f"Margen {diferencia:.1f}% "
+            "por debajo del objetivo "
+            f"({margen_objetivo:.1f}%)"
+        )
+
     elif variacion_porcentaje > 15:
         recomendacion = "REVISAR_COSTO"
-        impacto = f"Aumento significativo ({variacion_porcentaje:.1f}%). Verificar competitividad"
+        impacto = (
+            f"Aumento significativo "
+            f"({variacion_porcentaje:.1f}%). "
+            "Verificar competitividad"
+        )
+
     elif variacion_porcentaje < -15:
         recomendacion = "REVISAR_COSTO"
-        impacto = f"Reducción significativa ({variacion_porcentaje:.1f}%). Verificar rentabilidad"
+        impacto = (
+            f"Reducción significativa "
+            f"({variacion_porcentaje:.1f}%). "
+            "Verificar rentabilidad"
+        )
+
     elif variacion_pesos > 0:
         recomendacion = "AUMENTAR"
-        impacto = f"Mejora de margen: +${variacion_pesos:.2f} por unidad (+{variacion_porcentaje:.1f}%)"
+        impacto = (
+            "Precio público aumenta "
+            f"${variacion_pesos:.2f} "
+            f"({variacion_porcentaje:.1f}%)"
+        )
+
     elif variacion_pesos < 0:
         recomendacion = "REDUCIR"
-        impacto = f"Reducción de margen: ${variacion_pesos:.2f} por unidad ({variacion_porcentaje:.1f}%)"
+        impacto = (
+            "Precio público disminuye "
+            f"${abs(variacion_pesos):.2f} "
+            f"({variacion_porcentaje:.1f}%)"
+        )
+
     else:
         recomendacion = "MANTENER"
         impacto = "Sin cambio en precio"
-    
+
     return {
         'precio_simulado': precio_nuevo,
-        'margen_simulado_pesos': margen_simulado_pesos,
-        'margen_simulado_porcentaje': margen_simulado_porcentaje,
-        'variacion_pesos': variacion_pesos,
-        'variacion_porcentaje': variacion_porcentaje,
+        'precio_simulado_neto': (
+            precio_nuevo_neto
+        ),
+        'margen_actual_pesos': (
+            margen_actual_pesos
+        ),
+        'margen_actual_porcentaje': (
+            margen_actual_porcentaje
+        ),
+        'margen_simulado_pesos': (
+            margen_simulado_pesos
+        ),
+        'margen_simulado_porcentaje': (
+            margen_simulado_porcentaje
+        ),
+        'variacion_pesos': (
+            variacion_pesos
+        ),
+        'variacion_porcentaje': (
+            variacion_porcentaje
+        ),
         'recomendacion': recomendacion,
         'impacto_estimado': impacto,
     }
-
 
 def guardar_simulacion(
     producto_id: str,
@@ -265,7 +452,17 @@ def crear_solicitud_cambio_precio(
         datos_producto['precio_actual'],
         datos_producto['costo_actual'],
         precio_solicitado,
-        datos_producto.get('margen_objetivo')
+        datos_producto.get('margen_objetivo'),
+        precio_actual_neto=(
+            datos_producto.get(
+                'precio_sin_impuestos'
+            )
+        ),
+        tasa_impuesto=(
+            datos_producto.get(
+                'tasa_impuesto'
+            )
+        ),
     )
 
     solicitud_id = str(uuid.uuid4())

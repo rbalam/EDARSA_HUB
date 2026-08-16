@@ -1,25 +1,26 @@
-from core.unidades_service import UnidadesService
-from core.corporate_filters.service import CorporateFilterService
 """
-EDARSA HUB - Módulo Costos y Márgenes
-=====================================
-FASE 1C-3C: Endpoints NO-LIVE para análisis de costos y márgenes.
+EDARSA HUB - Dominio Costos y Margenes.
 
-Características:
-- Lee EXCLUSIVAMENTE de tablas Sync_Productos* en EDARSAHUB SQL
-- NO realiza conexiones live a sistemas externos
-- NO usa MongoDB
-- Respeta RBAC y permisos por empresa/unidad
+El paquete no importa routes durante su inicializacion.
 
-Source Types Permitidos:
-- EDARSAHUB_SQL
-- STALE_EDARSAHUB_SQL
-- SIN_DATOS_EDARSAHUB
+Esto permite que repositories y services del propio dominio puedan
+importarse sin provocar ciclos por efectos secundarios del package import.
 
-Autor: Sistema EDARSA HUB
-Fecha: 24 Mayo 2026
+Compatibilidad:
+    from modules.costos_margenes import router
+
+continua soportado mediante __getattr__.
 """
 
-from modules.costos_margenes.routes import router
+__all__ = ["router"]
 
-__all__ = ['router']
+
+def __getattr__(name):
+    if name == "router":
+        from modules.costos_margenes.routes import router
+
+        return router
+
+    raise AttributeError(
+        f"module {__name__!r} has no attribute {name!r}"
+    )

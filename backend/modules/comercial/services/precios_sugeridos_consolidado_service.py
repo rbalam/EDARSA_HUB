@@ -22,6 +22,12 @@ from enum import Enum
 
 from core.db import execute_sql_query, execute_sql_query_params
 from core.server_registry import EDARSAHUB_CONFIG
+from modules.costos_margenes.redondeo import (
+    redondear_a_multiplo,
+)
+from modules.costos_margenes.reglas_margen_service import (
+    resolver_margenes_esperados_batch,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +93,12 @@ def _obtener_rangos_vinos() -> List[Dict]:
     return result or []
 
 
-def _calcular_precio_vino(costo_botella: float, rangos: List[Dict]) -> Tuple[Optional[float], Optional[str], Optional[float]]:
+def _calcular_precio_vino(
+    costo_botella: float,
+    rangos: List[Dict],
+    multiplo_redondeo,
+    metodo_redondeo: str,
+) -> Tuple[Optional[float], Optional[str], Optional[float]]:
     """
     Calcula el precio sugerido para un vino usando VINOS_RANGOS.
     
@@ -104,8 +115,15 @@ def _calcular_precio_vino(costo_botella: float, rangos: List[Dict]) -> Tuple[Opt
         
         if limite_inf <= costo_botella <= limite_sup:
             precio_sugerido = costo_botella * multiplicador
-            # Redondear a múltiplo de 5
-            precio_sugerido = round(precio_sugerido / 5) * 5
+            # La tabulación VINOS_RANGOS_MX permanece intacta.
+            # Solo el redondeo accesorio usa configuración canónica.
+            precio_sugerido = float(
+                redondear_a_multiplo(
+                    precio_sugerido,
+                    multiplo_redondeo,
+                    metodo_redondeo,
+                )
+            )
             rango_desc = rango.get('Descripcion', f"${limite_inf:.0f} - ${limite_sup:.0f}")
             return precio_sugerido, rango_desc, multiplicador
     
@@ -133,7 +151,11 @@ def obtener_precios_sugeridos(
     search: str = None,
     page: int = 1,
     page_size: int = 50,
-    margen_objetivo: float = 0.35
+    empresa_id: Optional[int] = None,
+    unidad_negocio_pk: Optional[str] = None,
+    usuario_id: Optional[int] = None,
+    multiplo_redondeo=None,
+    metodo_redondeo: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Obtiene lista de productos con precios sugeridos calculados.
@@ -142,12 +164,25 @@ def obtener_precios_sugeridos(
     Para otros: Usa COSTO_MARGEN o MARGEN_OBJETIVO
     
     BUG-COSTOS-001: Por defecto solo muestra productos activos.
+
+    Redondeo:
+    - multiplo_redondeo y metodo_redondeo deben venir ya resueltos
+      desde configuración efectiva canónica.
+    - este servicio no inventa defaults funcionales.
     BUG-COSTOS-001-R2: El filtro correcto es SOLO Activo = 1.
     NO usar PrecioVenta > 0 como criterio de activo.
     Productos con precio $0 pueden ser activos.
     
     NO modifica precios oficiales.
     """
+    if (
+        multiplo_redondeo is None
+        or metodo_redondeo is None
+    ):
+        raise ValueError(
+            "REDONDEO_EFECTIVO_NO_CONFIGURADO"
+        )
+
     conn = _get_conn()
 
     # Obtener rangos de vinos una vez
@@ -180,23 +215,6 @@ def obtener_precios_sugeridos(
     if solo_con_receta:
         where_clauses.append("p.TieneReceta = 1")
 
-    if margen_bajo:
-        where_clauses.append("""(
-            p.TieneReceta = 1
-            AND p.PrecioVenta > 0
-            AND COALESCE(
-                (SELECT SUM(r.CostoTotal) FROM Sync_Productos_Recetas r
-                 WHERE r.ProductoCodigoFuente = p.CodigoFuente AND r.ServerID = p.ServerID),
-                p.CostoReceta, 0
-            ) > 0
-            AND (
-                (p.PrecioVenta - COALESCE(
-                    (SELECT SUM(r.CostoTotal) FROM Sync_Productos_Recetas r
-                     WHERE r.ProductoCodigoFuente = p.CodigoFuente AND r.ServerID = p.ServerID),
-                    p.CostoReceta, 0
-                )) / p.PrecioVenta * 100
-            ) < 20
-        )""")
 
     if search:
         like = f"%{search}%"
@@ -211,12 +229,17 @@ def obtener_precios_sugeridos(
     query = f"""
     SELECT 
         p.CodigoFuente as producto_id,
+        pmo.ProductoID as producto_id_canonico,
         p.CodigoFuente as clave,
         p.Nombre as nombre,
         p.FamiliaNombre as familia,
         p.SubfamiliaNombre as subfamilia,
+        p.FamiliaCodigoFuente as familia_codigo,
+        p.SubFamiliaCodigoFuente as subfamilia_codigo,
+        cp.Codigo as grupo_codigo,
         sc.nombre as unidad,
         p.PrecioVenta as precio_actual,
+        p.PrecioSinImpuestos as precio_sin_impuestos,
         COALESCE(
             (SELECT SUM(r.CostoTotal) FROM Sync_Productos_Recetas r 
              WHERE r.ProductoCodigoFuente = p.CodigoFuente AND r.ServerID = p.ServerID),
@@ -227,7 +250,18 @@ def obtener_precios_sugeridos(
         p.CostoReceta as costo_botella,
         p.Activo
     FROM Sync_Productos p
-    LEFT JOIN Servidores_Conexiones sc ON CAST(p.ServerID AS NVARCHAR(36)) = CAST(sc.id AS NVARCHAR(36))
+    LEFT JOIN dbo.Producto_MapeoOrigen pmo
+        ON pmo.ServerID = p.ServerID
+       AND UPPER(LTRIM(RTRIM(pmo.SystemType)))
+            = UPPER(LTRIM(RTRIM(p.SystemType)))
+       AND pmo.CodigoFuente = p.CodigoFuente
+       AND pmo.Activo = 1
+    LEFT JOIN Servidores_Conexiones sc
+        ON CAST(p.ServerID AS NVARCHAR(36))
+         = CAST(sc.id AS NVARCHAR(36))
+    LEFT JOIN dbo.Comercial_ClasificacionesProducto cp
+        ON cp.ClasificacionProductoID = p.ClasificacionProductoID
+       AND cp.Activo = 1
     WHERE {where_sql}
     ORDER BY p.Nombre
     OFFSET {offset} ROWS FETCH NEXT {page_size} ROWS ONLY
@@ -240,23 +274,132 @@ def obtener_precios_sugeridos(
     WHERE {where_sql}
     """
     
-    productos_raw = execute_sql_query_params(*conn, query, tuple(params)) or []
-    count_result = execute_sql_query_params(*conn, count_query, tuple(params))
-    total = count_result[0]['total'] if count_result else 0
-    
+    productos_raw = execute_sql_query_params(
+        *conn,
+        query,
+        tuple(params),
+    ) or []
+
+    count_result = execute_sql_query_params(
+        *conn,
+        count_query,
+        tuple(params),
+    )
+
+    total = (
+        count_result[0]["total"]
+        if count_result
+        else 0
+    )
+
+    if not unidad_negocio_pk:
+        raise ValueError(
+            "UNIDAD_NEGOCIO_PK_REQUERIDA_PARA_MARGEN"
+        )
+
+    if (
+        not isinstance(usuario_id, int)
+        or isinstance(usuario_id, bool)
+        or usuario_id <= 0
+    ):
+        raise ValueError(
+            "USUARIO_ID_REQUERIDO_PARA_MARGEN"
+        )
+
+    indices_no_vino = []
+    entradas_margen = []
+
+    for indice, item in enumerate(productos_raw):
+        familia_item = item.get("familia") or ""
+
+        if _es_vino(familia_item):
+            continue
+
+        indices_no_vino.append(indice)
+
+        entradas_margen.append(
+            {
+                "producto_id":
+                    item.get("producto_id_canonico"),
+                "producto_clave":
+                    item.get("clave"),
+                "subfamilia_codigo":
+                    item.get("subfamilia_codigo"),
+                "familia_codigo":
+                    item.get("familia_codigo"),
+                "grupo_codigo":
+                    item.get("grupo_codigo"),
+            }
+        )
+
+    resultados_margen = (
+        resolver_margenes_esperados_batch(
+            entradas_margen,
+            empresa_id=empresa_id,
+            sucursal_id=None,
+            server_id=server_id,
+            unidad_negocio_pk=str(
+                unidad_negocio_pk
+            ),
+            usuario_id=usuario_id,
+        )
+    )
+
+    if (
+        len(resultados_margen)
+        != len(indices_no_vino)
+    ):
+        raise RuntimeError(
+            "CARDINALIDAD_MARGEN_INCONSISTENTE"
+        )
+
+    for indice, resultado_margen in zip(
+        indices_no_vino,
+        resultados_margen,
+    ):
+        productos_raw[indice][
+            "_margen_efectivo"
+        ] = resultado_margen.get(
+            "margen_efectivo"
+        )
+
+        productos_raw[indice][
+            "_fuente_margen_efectivo"
+        ] = resultado_margen.get(
+            "fuente_margen_efectivo"
+        )
+
     # Procesar productos y calcular precios sugeridos
     productos = []
     
     for p in productos_raw:
         precio_actual = float(p.get('precio_actual') or 0)
+        precio_sin_impuestos = float(
+            p.get('precio_sin_impuestos') or 0
+        )
         costo_receta = float(p.get('costo_receta') or 0)
         costo_botella = float(p.get('costo_botella') or 0)
         familia_prod = p.get('familia') or ''
         es_vino = _es_vino(familia_prod)
-        
-        # Calcular margen actual
-        margen_monto = precio_actual - costo_receta if precio_actual > 0 and costo_receta > 0 else 0
-        margen_porcentaje = (margen_monto / precio_actual * 100) if precio_actual > 0 else 0
+
+        # Margen actual canónico:
+        # siempre contra precio neto sin impuestos.
+        if (
+            precio_sin_impuestos > 0
+            and costo_receta > 0
+        ):
+            margen_monto = (
+                precio_sin_impuestos
+                - costo_receta
+            )
+            margen_porcentaje = (
+                margen_monto
+                / precio_sin_impuestos
+                * 100
+            )
+        else:
+            margen_monto = 0
+            margen_porcentaje = 0
         
         # Inicializar valores
         precio_sugerido = None
@@ -271,7 +414,14 @@ def obtener_precios_sugeridos(
             # VINOS: Usar VINOS_RANGOS
             costo_base = costo_botella if costo_botella > 0 else costo_receta
             if costo_base > 0:
-                precio_sugerido, rango_aplicado, multiplicador = _calcular_precio_vino(costo_base, rangos_vinos)
+                precio_sugerido, rango_aplicado, multiplicador = (
+                    _calcular_precio_vino(
+                        costo_base,
+                        rangos_vinos,
+                        multiplo_redondeo,
+                        metodo_redondeo,
+                    )
+                )
                 if precio_sugerido:
                     fuente_sugerencia = FuenteSugerencia.VINOS_RANGOS.value
                     regla_aplicada = "VINOS_RANGOS_MX"
@@ -279,16 +429,84 @@ def obtener_precios_sugeridos(
                     fuente_sugerencia = FuenteSugerencia.SIN_DATOS.value
                     rango_aplicado = "COSTO_FUERA_DE_RANGOS"
         else:
-            # NO VINOS: Usar COSTO_MARGEN
-            if costo_receta > 0 and margen_objetivo > 0 and margen_objetivo < 1:
-                # precio = costo / (1 - margen)
-                precio_minimo = costo_receta / (1 - margen_objetivo)
-                # Redondear a múltiplo de 5
-                precio_sugerido = round(precio_minimo / 5) * 5
-                fuente_sugerencia = FuenteSugerencia.COSTO_MARGEN.value
-                regla_aplicada = f"MARGEN_{int(margen_objetivo*100)}%"
+            # NO VINOS:
+            # margen resuelto exclusivamente por el
+            # resolver canónico de Costos/Márgenes.
+            margen_efectivo = p.get(
+                "_margen_efectivo"
+            )
+
+            fuente_margen_efectivo = p.get(
+                "_fuente_margen_efectivo"
+            )
+
+            if (
+                costo_receta > 0
+                and margen_efectivo is not None
+            ):
+                margen_pct = float(
+                    margen_efectivo
+                )
+
+                if (
+                    margen_pct <= 0
+                    or margen_pct >= 100
+                ):
+                    raise ValueError(
+                        "MARGEN_EFECTIVO_FUERA_RANGO:"
+                        f"{margen_pct}"
+                    )
+
+                margen_factor = (
+                    margen_pct / 100.0
+                )
+
+                precio_minimo = (
+                    costo_receta
+                    / (1 - margen_factor)
+                )
+
+                precio_sugerido = float(
+                    redondear_a_multiplo(
+                        precio_minimo,
+                        multiplo_redondeo,
+                        metodo_redondeo,
+                    )
+                )
+
+                fuente_sugerencia = (
+                    FuenteSugerencia
+                    .COSTO_MARGEN
+                    .value
+                )
+
+                regla_aplicada = (
+                    "MARGEN_CANONICO_"
+                    + str(
+                        fuente_margen_efectivo
+                        or "SIN_FUENTE"
+                    )
+                )
+
             elif costo_receta <= 0:
-                fuente_sugerencia = FuenteSugerencia.SIN_DATOS.value
+                fuente_sugerencia = (
+                    FuenteSugerencia
+                    .SIN_DATOS
+                    .value
+                )
+                regla_aplicada = (
+                    "COSTO_NO_DISPONIBLE"
+                )
+
+            else:
+                fuente_sugerencia = (
+                    FuenteSugerencia
+                    .SIN_DATOS
+                    .value
+                )
+                regla_aplicada = (
+                    "MARGEN_EFECTIVO_NO_CONFIGURADO"
+                )
         
         # Calcular diferencias
         diferencia_monto = None
@@ -312,6 +530,45 @@ def obtener_precios_sugeridos(
         else:
             estado_revision = EstadoRevision.REQUIERE_REVISION.value
         
+        # MARGEN BAJO CANÓNICO:
+        # exclusivamente NO VINOS.
+        #
+        # No existe umbral independiente.
+        # Se compara el margen actual neto contra el
+        # margen efectivo resuelto por producto.
+        if margen_bajo:
+            if es_vino:
+                continue
+
+            margen_efectivo_filtro = p.get(
+                "_margen_efectivo"
+            )
+
+            if margen_efectivo_filtro is None:
+                continue
+
+            margen_efectivo_filtro = float(
+                margen_efectivo_filtro
+            )
+
+            if (
+                margen_efectivo_filtro <= 0
+                or margen_efectivo_filtro >= 100
+            ):
+                raise ValueError(
+                    "MARGEN_EFECTIVO_FUERA_RANGO:"
+                    f"{margen_efectivo_filtro}"
+                )
+
+            if precio_sin_impuestos <= 0:
+                continue
+
+            if not (
+                margen_porcentaje
+                < margen_efectivo_filtro
+            ):
+                continue
+
         # Aplicar filtros de fuente/estado si corresponde
         if fuente and fuente_sugerencia != fuente:
             continue
@@ -328,9 +585,22 @@ def obtener_precios_sugeridos(
             'subfamilia': p.get('subfamilia'),
             'unidad': p.get('unidad'),
             'precio_actual': precio_actual,
+            'precio_sin_impuestos': precio_sin_impuestos,
             'costo_receta': costo_receta,
             'margen_monto': round(margen_monto, 2),
             'margen_porcentaje': round(margen_porcentaje, 2),
+            'margen_efectivo': (
+                None
+                if es_vino
+                else p.get("_margen_efectivo")
+            ),
+            'fuente_margen_efectivo': (
+                None
+                if es_vino
+                else p.get(
+                    "_fuente_margen_efectivo"
+                )
+            ),
             'precio_sugerido': round(precio_sugerido, 2) if precio_sugerido else None,
             'fuente_sugerencia': fuente_sugerencia,
             'diferencia_monto': round(diferencia_monto, 2) if diferencia_monto else None,
@@ -359,7 +629,8 @@ def obtener_precios_sugeridos(
         'page_size': page_size,
         'total_pages': (total + page_size - 1) // page_size,
         'rangos_vinos_configurados': len(rangos_vinos),
-        'margen_objetivo_usado': margen_objetivo,
+        'margen_resolucion':
+            'CANONICA_POR_PRODUCTO',
         'fuente': 'EDARSAHUB_SQL'
     }
 

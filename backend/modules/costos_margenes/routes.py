@@ -34,6 +34,7 @@ from modules.costos_margenes.schemas import (
     ConteoPorSistema,
     ConteoPorServidor,
     SourceType,
+    ConfiguracionCostosMargenesUsuarioPatch,
 )
 from modules.costos_margenes.repository import (
     get_resumen_costos_margenes,
@@ -47,6 +48,10 @@ from modules.costos_margenes.repository import (
     get_subfamilias_productos,
 )
 from core.security import get_current_user
+from modules.costos_margenes.configuracion_repository import (
+    resolver_configuracion_efectiva,
+    guardar_configuracion_usuario,
+)
 from core.rbac_sql.service import RBACSQLService
 from core.rbac_helper_sql import tiene_acceso_lectura_comercial
 from core.corporate_filters.request_resolver import (
@@ -61,7 +66,8 @@ router = APIRouter(prefix="/costos-margenes", tags=["Costos y Márgenes"])
 
 # ==================== RBAC HELPERS ====================
 
-COSTOS_MARGENES_VER = "COMERCIAL_VER"
+COSTOS_MARGENES_VER = "comercial.costos_margenes_VER"
+COSTOS_MARGENES_CONFIGURAR = "comercial.costos_margenes_CONFIGURAR"
 
 
 def _check_admin_or_comercial(user: dict) -> bool:
@@ -128,6 +134,51 @@ def _verify_costos_margenes_access(
         )
 
     return permission
+
+
+def _resolve_configuracion_efectiva(
+    current_user: dict,
+    unidad_pk: Optional[str],
+) -> Optional[dict]:
+    """
+    Resuelve configuración efectiva únicamente cuando existe
+    una unidad canónica autorizada.
+
+    Precedencia:
+        usuario > unidad > empresa
+
+    La ausencia de unidad o configuración no inventa defaults.
+    """
+    if not unidad_pk:
+        return None
+
+    usuario_id = _get_sql_usuario_id(current_user)
+
+    if usuario_id is None:
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "error": "SQL_USUARIO_NO_RESUELTO",
+                "mensaje": (
+                    "No existe identidad SQL canónica para "
+                    "resolver configuración de Costos y Márgenes"
+                ),
+            },
+        )
+
+    try:
+        return resolver_configuracion_efectiva(
+            str(unidad_pk),
+            usuario_id=usuario_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "CONFIGURACION_EFECTIVA_NO_RESUELTA",
+                "mensaje": str(exc),
+            },
+        ) from exc
 
 
 async def _resolve_servidor_filtro(
@@ -203,6 +254,282 @@ async def _resolve_receta_servidor_filtro(
 
 
 
+
+def _resolver_margen_efectivo_productos(
+    productos,
+    *,
+    empresa_id,
+    servidor_id,
+    unidad_pk,
+    usuario_id,
+):
+    """
+    Enriquece productos con el unico margen efectivo canonico.
+
+    No implementa una segunda cascada. Delega toda precedencia
+    al resolver batch del dominio.
+    """
+    items = list(productos or [])
+
+    if not items:
+        return items
+
+    if not unidad_pk:
+        for item in items:
+            item["margen_efectivo"] = None
+            item["fuente_margen_efectivo"] = None
+            item["margen_objetivo"] = None
+        return items
+
+    entradas_margen = [
+        {
+            "producto_id":
+                item.get("producto_id_canonico"),
+            "producto_clave":
+                item.get("id_producto_origen"),
+            "subfamilia_codigo":
+                item.get("subfamilia_codigo"),
+            "familia_codigo":
+                item.get("familia_codigo"),
+            "grupo_codigo":
+                item.get("grupo_codigo"),
+        }
+        for item in items
+    ]
+
+    from modules.costos_margenes.reglas_margen_service import (
+        resolver_margenes_esperados_batch,
+    )
+
+    resultados = resolver_margenes_esperados_batch(
+        entradas_margen,
+        empresa_id=empresa_id,
+        sucursal_id=None,
+        server_id=servidor_id,
+        unidad_negocio_pk=unidad_pk,
+        usuario_id=usuario_id,
+    )
+
+    if len(resultados) != len(items):
+        raise HTTPException(
+            status_code=500,
+            detail="CARDINALIDAD_MARGEN_INCONSISTENTE",
+        )
+
+    for item, resultado in zip(
+        items,
+        resultados,
+    ):
+        item["margen_efectivo"] = (
+            resultado.get("margen_efectivo")
+        )
+        item["fuente_margen_efectivo"] = (
+            resultado.get(
+                "fuente_margen_efectivo"
+            )
+        )
+        item["margen_objetivo"] = (
+            item["margen_efectivo"]
+        )
+
+    return items
+
+
+def _contar_productos_margen_bajo_canonico(
+    *,
+    empresa_id,
+    unidad_pk,
+    servidor_id,
+    servidores_ids,
+    usuario_id,
+    page_size=200,
+):
+    """
+    Cuenta productos cuyo margen neto actual es menor que
+    su margen efectivo canonico.
+
+    Lee por paginas acotadas. No usa umbrales fijos.
+    """
+    if not unidad_pk:
+        return 0
+
+    page = 1
+    total_revisados = 0
+    total_margen_bajo = 0
+
+    while True:
+        productos, total = get_productos_con_costos(
+            empresa_id=empresa_id,
+            unidad_negocio_pk=unidad_pk,
+            servidor_id=servidor_id,
+            servidores_ids=servidores_ids,
+            margen_bajo=False,
+            incluir_inactivos=False,
+            page=page,
+            page_size=page_size,
+        )
+
+        if not productos:
+            break
+
+        _resolver_margen_efectivo_productos(
+            productos,
+            empresa_id=empresa_id,
+            servidor_id=servidor_id,
+            unidad_pk=unidad_pk,
+            usuario_id=usuario_id,
+        )
+
+        for item in productos:
+            margen_real = item.get(
+                "margen_porcentaje"
+            )
+            margen_efectivo = item.get(
+                "margen_efectivo"
+            )
+
+            if (
+                margen_real is not None
+                and margen_efectivo is not None
+                and float(margen_real)
+                < float(margen_efectivo)
+            ):
+                total_margen_bajo += 1
+
+        total_revisados += len(productos)
+
+        if total_revisados >= total:
+            break
+
+        page += 1
+
+    return total_margen_bajo
+
+
+
+# ==================== CONFIGURACION PERSONAL ====================
+
+@router.patch("/configuracion/usuario")
+async def actualizar_configuracion_personal(
+    payload: ConfiguracionCostosMargenesUsuarioPatch,
+    unidad: str = Query(
+        ...,
+        description="Unidad de negocio canónica para resolver configuración efectiva",
+    ),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Guarda únicamente overrides personales del usuario autenticado.
+
+    Requiere comercial.costos_margenes_CONFIGURAR.
+    """
+    permission = _verify_costos_margenes_access(
+        current_user,
+        COSTOS_MARGENES_CONFIGURAR,
+    )
+
+    scope = await resolve_authorized_unidad_scope(
+        current_user,
+        COSTOS_MARGENES_CONFIGURAR,
+        unidad,
+    )
+
+    if scope.access_denied or not scope.unidad_pk:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "ALCANCE_DENEGADO",
+                "mensaje": "No tiene acceso a la unidad solicitada",
+                "permiso_requerido": COSTOS_MARGENES_CONFIGURAR,
+            },
+        )
+
+    usuario_id = _get_sql_usuario_id(current_user)
+
+    if usuario_id is None:
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "error": "SQL_USUARIO_NO_RESUELTO",
+                "mensaje": (
+                    "No existe identidad SQL canónica para "
+                    "guardar configuración personal"
+                ),
+            },
+        )
+
+    campos = {
+        "margen_minimo_porcentaje":
+            "MargenMinimoPorcentaje",
+        "multiplo_redondeo":
+            "MultiploRedondeo",
+        "metodo_redondeo":
+            "MetodoRedondeo",
+    }
+
+    fields_set = getattr(
+        payload,
+        "model_fields_set",
+        getattr(payload, "__fields_set__", set()),
+    )
+
+    cambios = {
+        sql_name: getattr(payload, api_name)
+        for api_name, sql_name in campos.items()
+        if api_name in fields_set
+    }
+
+    if not cambios:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "SIN_CAMBIOS_CONFIGURACION",
+                "mensaje": (
+                    "Debe proporcionar al menos un campo "
+                    "de configuración personal"
+                ),
+            },
+        )
+
+    try:
+        guardar_configuracion_usuario(
+            usuario_id,
+            cambios,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "CONFIGURACION_PERSONAL_INVALIDA",
+                "mensaje": str(exc),
+            },
+        ) from exc
+    except Exception as exc:
+        logger.error(
+            "[COSTOS_MARGENES_CONFIG_USUARIO] Error guardando configuración: %s",
+            exc,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "CONFIGURACION_PERSONAL_NO_GUARDADA",
+                "mensaje": (
+                    "No fue posible guardar la configuración personal"
+                ),
+            },
+        ) from exc
+
+    efectiva = resolver_configuracion_efectiva(
+        str(scope.unidad_pk),
+        usuario_id=usuario_id,
+    )
+
+    return {
+        "ok": True,
+        "configuracion_efectiva": efectiva,
+    }
+
+
 # ==================== RESUMEN ====================
 
 @router.get("/resumen", response_model=CostosMargenesResumen)
@@ -251,7 +578,52 @@ async def obtener_resumen(
         )
     
     try:
-        data = get_resumen_costos_margenes(servidor_id=servidor_id_filtro)
+        data = get_resumen_costos_margenes(
+            servidor_id=servidor_id_filtro
+        )
+
+        productos_margen_bajo = 0
+
+        if unidad_pk:
+            usuario_id = _get_sql_usuario_id(
+                current_user
+            )
+
+            if usuario_id is None:
+                raise HTTPException(
+                    status_code=401,
+                    detail={
+                        "error":
+                            "SQL_USUARIO_NO_RESUELTO",
+                        "mensaje": (
+                            "No existe identidad SQL "
+                            "canonica para resolver margen"
+                        ),
+                    },
+                )
+
+            config_efectiva = (
+                _resolve_configuracion_efectiva(
+                    current_user,
+                    unidad_pk,
+                )
+            )
+
+            empresa_id_margen = (
+                config_efectiva.get("empresa_id")
+                if config_efectiva
+                else None
+            )
+
+            productos_margen_bajo = (
+                _contar_productos_margen_bajo_canonico(
+                    empresa_id=empresa_id_margen,
+                    unidad_pk=unidad_pk,
+                    servidor_id=servidor_id_filtro,
+                    servidores_ids=None,
+                    usuario_id=usuario_id,
+                )
+            )
         
         return CostosMargenesResumen(
             total_productos=data.get('total_productos', 0),
@@ -262,7 +634,7 @@ async def obtener_resumen(
             total_subrecetas=data.get('total_subrecetas', 0),
             costo_promedio_general=data.get('costo_promedio_general'),
             margen_promedio_porcentaje=data.get('margen_promedio_porcentaje'),
-            productos_margen_bajo=data.get('productos_margen_bajo', 0),
+            productos_margen_bajo=productos_margen_bajo,
             productos_sin_costo=data.get('productos_sin_costo', 0),
             productos_sin_precio=data.get('productos_sin_precio', 0),
             ultima_sincronizacion=data.get('ultima_sincronizacion'),
@@ -287,7 +659,6 @@ async def listar_productos(
     busqueda: Optional[str] = Query(None, description="Buscar por nombre o código"),
     solo_con_receta: bool = Query(False, description="Solo productos con receta"),
     margen_bajo: bool = Query(False, description="Solo productos con margen bajo"),
-    umbral_margen: int = Query(20, ge=0, le=100, description="Umbral de margen bajo (%)"),
     incluir_inactivos: bool = Query(False, description="Incluir productos inactivos/dados de baja"),
     page: int = Query(1, ge=1, description="Página"),
     page_size: int = Query(50, ge=1, le=200, description="Tamaño de página"),
@@ -324,29 +695,141 @@ async def listar_productos(
         servidor_id,
         permission,
     )
+
+    config_efectiva = _resolve_configuracion_efectiva(
+        current_user,
+        unidad_pk_filtro,
+    )
+
     if _acc_denied:
         return ProductosListResponse(
-            productos=[], total=0, page=page, page_size=page_size,
-            total_pages=1, source_type=SourceType.EDARSAHUB_SQL
+            productos=[],
+            total=0,
+            page=page,
+            page_size=page_size,
+            total_pages=1,
+            configuracion_efectiva=None,
+            source_type=SourceType.EDARSAHUB_SQL,
         )
     
     try:
-        productos_data, total = get_productos_con_costos(
-            empresa_id=empresa_id,
-            unidad_negocio_pk=None,
-            servidor_id=servidor_id_filtro,
-            servidores_ids=servidores_ids_filtro,  # Nuevo parámetro para RBAC
-            sistema_origen=sistema_origen,
-            familia=familia,
-            subfamilia=subfamilia,
-            busqueda=busqueda,
-            solo_con_receta=solo_con_receta,
-            margen_bajo=margen_bajo,
-            umbral_margen=umbral_margen,  # Umbral editable
-            incluir_inactivos=incluir_inactivos,  # BUG-COSTOS-001
-            page=page,
-            page_size=page_size
+        usuario_id_margen = _get_sql_usuario_id(
+            current_user
         )
+
+        if unidad_pk_filtro and usuario_id_margen is None:
+            raise HTTPException(
+                status_code=401,
+                detail={
+                    "error": "SQL_USUARIO_NO_RESUELTO",
+                    "mensaje": (
+                        "No existe identidad SQL canonica "
+                        "para resolver margen efectivo"
+                    ),
+                },
+            )
+
+        def _fetch_productos(
+            fetch_page: int,
+            fetch_page_size: int,
+        ):
+            return get_productos_con_costos(
+                empresa_id=empresa_id,
+                unidad_negocio_pk=unidad_pk_filtro,
+                servidor_id=servidor_id_filtro,
+                servidores_ids=servidores_ids_filtro,
+                sistema_origen=sistema_origen,
+                familia=familia,
+                subfamilia=subfamilia,
+                busqueda=busqueda,
+                solo_con_receta=solo_con_receta,
+                margen_bajo=False,
+                incluir_inactivos=incluir_inactivos,
+                page=fetch_page,
+                page_size=fetch_page_size,
+            )
+
+        if margen_bajo and not unidad_pk_filtro:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error": "UNIDAD_CANONICA_REQUERIDA",
+                    "mensaje": (
+                        "El filtro margen_bajo requiere "
+                        "Unidad de Negocio canonica"
+                    ),
+                },
+            )
+
+        if margen_bajo:
+            _, candidatos_total = _fetch_productos(
+                1,
+                1,
+            )
+
+            productos_data = []
+
+            if candidatos_total > 0:
+                productos_data, _ = _fetch_productos(
+                    1,
+                    candidatos_total,
+                )
+
+            total = candidatos_total
+
+        else:
+            productos_data, total = _fetch_productos(
+                page,
+                page_size,
+            )
+
+        empresa_id_margen = (
+            empresa_id
+            or (
+                config_efectiva.get("empresa_id")
+                if config_efectiva
+                else None
+            )
+        )
+
+        _resolver_margen_efectivo_productos(
+            productos_data,
+            empresa_id=empresa_id_margen,
+            servidor_id=servidor_id_filtro,
+            unidad_pk=unidad_pk_filtro,
+            usuario_id=usuario_id_margen,
+        )
+
+        if margen_bajo:
+            filtrados = []
+
+            for item in productos_data:
+                margen_real = item.get(
+                    "margen_porcentaje"
+                )
+
+                margen_efectivo = item.get(
+                    "margen_efectivo"
+                )
+
+                if (
+                    margen_real is not None
+                    and margen_efectivo is not None
+                    and float(margen_real)
+                        < float(margen_efectivo)
+                ):
+                    filtrados.append(item)
+
+            total = len(filtrados)
+
+            inicio = (
+                page - 1
+            ) * page_size
+
+            productos_data = filtrados[
+                inicio:
+                inicio + page_size
+            ]
         
         productos = [
             ProductoCostoMargen(
@@ -368,7 +851,9 @@ async def listar_productos(
                 costo_promedio=p.get('costo_promedio'),
                 margen_pesos=p.get('margen_pesos'),
                 margen_porcentaje=p.get('margen_porcentaje'),
-                margen_objetivo=p.get('margen_objetivo'),
+                margen_objetivo=p.get('margen_efectivo'),
+                margen_efectivo=p.get('margen_efectivo'),
+                fuente_margen_efectivo=p.get('fuente_margen_efectivo'),
                 tiene_receta=p.get('tiene_receta', False),
                 tiene_subrecetas=p.get('tiene_subrecetas', False),
                 numero_insumos=p.get('numero_insumos', 0),
@@ -386,7 +871,8 @@ async def listar_productos(
             page=page,
             page_size=page_size,
             total_pages=total_pages,
-            source_type=SourceType.EDARSAHUB_SQL
+            configuracion_efectiva=config_efectiva,
+            source_type=SourceType.EDARSAHUB_SQL,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error obteniendo productos: {str(e)}")
@@ -688,7 +1174,7 @@ async def listar_familias(
         familias = get_familias_productos(
             servidor_id_filtro,
             servidores_ids_filtro,
-            unidad_negocio_pk=None,
+            unidad_negocio_pk=unidad_pk,
         )
         return {
             "familias": familias,
@@ -731,7 +1217,7 @@ async def listar_subfamilias(
         subfamilias = get_subfamilias_productos(
             familia,
             servidor_id_filtro,
-            unidad_negocio_pk=None,
+            unidad_negocio_pk=unidad_pk,
         )
         return {
             "subfamilias": subfamilias,
@@ -792,7 +1278,7 @@ async def exportar_productos_csv(
     try:
         # Obtener datos (máximo 10,000 para evitar sobrecarga)
         productos, total = get_productos_con_costos(
-            unidad_negocio_pk=None,
+            unidad_negocio_pk=unidad_pk_filtro,
             servidor_id=servidor_id_filtro,
             servidores_ids=servidores_ids_filtro,
             page=1,
@@ -871,4 +1357,3 @@ async def exportar_productos_csv(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generando exportación: {str(e)}")
-

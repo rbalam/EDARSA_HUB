@@ -118,13 +118,170 @@ const StatCard = ({ title, value, icon: Icon, color = 'blue', subtitle }) => (
   </div>
 );
 
+
+const ProductoCanonicoSelector = ({
+  value,
+  onSelect,
+  unidad
+}) => {
+  const [busqueda, setBusqueda] = useState('');
+  const [productos, setProductos] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const termino = busqueda.trim();
+
+    if (termino.length < 2) {
+      setProductos([]);
+      setError(null);
+      return undefined;
+    }
+
+    if (!unidad) {
+      setProductos([]);
+      setError('Seleccione una unidad de negocio para buscar productos');
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const params = new URLSearchParams({
+          busqueda: termino,
+          page: '1',
+          page_size: '25'
+        });
+        params.append('unidad', unidad);
+
+        const response = await api.get(
+          `/costos-margenes/productos?${params.toString()}`
+        );
+
+        if (cancelled) return;
+
+        const encontrados = (
+          response.data?.productos || []
+        ).filter(
+          (producto) =>
+            producto.producto_id_canonico != null
+        );
+
+        setProductos(encontrados);
+      } catch (err) {
+        if (cancelled) return;
+
+        setProductos([]);
+
+        setError(
+          err.response?.data?.detail?.mensaje ||
+          err.response?.data?.detail ||
+          'Error al buscar productos'
+        );
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [busqueda, unidad]);
+
+  return (
+    <div className="space-y-2">
+      <input
+        type="text"
+        value={busqueda}
+        onChange={(e) => {
+          setBusqueda(e.target.value);
+          onSelect(null);
+        }}
+        placeholder="Buscar producto por nombre o código"
+        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+        data-testid="input-buscar-producto-canonico"
+      />
+
+      {loading && (
+        <div className="text-xs text-gray-500">
+          Buscando productos...
+        </div>
+      )}
+
+      {error && (
+        <div className="text-xs text-red-600">
+          {String(error)}
+        </div>
+      )}
+
+      {productos.length > 0 && (
+        <div
+          className="border rounded-lg max-h-56 overflow-y-auto bg-white"
+          data-testid="lista-productos-canonicos"
+        >
+          {productos.map((producto) => (
+            <button
+              key={String(
+                producto.producto_id_canonico
+              )}
+              type="button"
+              className="w-full text-left px-3 py-2 border-b last:border-b-0 hover:bg-orange-50"
+              onClick={() => {
+                onSelect(producto);
+                setBusqueda(
+                  producto.nombre || ''
+                );
+                setProductos([]);
+              }}
+              data-producto-id-canonico={String(
+                producto.producto_id_canonico
+              )}
+            >
+              <div className="font-medium text-sm text-gray-800">
+                {producto.nombre || 'Producto sin nombre'}
+              </div>
+
+              <div className="text-xs text-gray-500">
+                ID canónico: {
+                  producto.producto_id_canonico
+                }
+                {producto.familia
+                  ? ` · ${producto.familia}`
+                  : ''}
+                {producto.subfamilia
+                  ? ` / ${producto.subfamilia}`
+                  : ''}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {value != null && (
+        <div className="text-xs text-green-700">
+          Producto seleccionado · ID canónico {value}
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 // ==================== MODAL CREAR/EDITAR REGLA ====================
 
-const ModalRegla = ({ isOpen, onClose, regla, onSave, loading }) => {
+const ModalRegla = ({ isOpen, onClose, regla, onSave, loading, unidad }) => {
   const [form, setForm] = useState({
     nivel_aplicacion: 'GRUPO',
     entidad_codigo: '',
-    margen_esperado: 30,
+    producto_id: null,
+    margen_esperado: null,
     severidad_base: 'MEDIA',
     descripcion: '',
     activo: true
@@ -135,7 +292,8 @@ const ModalRegla = ({ isOpen, onClose, regla, onSave, loading }) => {
       setForm({
         nivel_aplicacion: regla.nivel_aplicacion || 'GRUPO',
         entidad_codigo: regla.entidad_codigo || '',
-        margen_esperado: regla.margen_esperado || 30,
+        producto_id: regla.producto_id ?? null,
+        margen_esperado: regla.margen_esperado ?? null,
         severidad_base: regla.severidad_base || 'MEDIA',
         descripcion: regla.descripcion || '',
         activo: regla.activo !== false
@@ -144,7 +302,8 @@ const ModalRegla = ({ isOpen, onClose, regla, onSave, loading }) => {
       setForm({
         nivel_aplicacion: 'GRUPO',
         entidad_codigo: '',
-        margen_esperado: 30,
+        producto_id: null,
+        margen_esperado: null,
         severidad_base: 'MEDIA',
         descripcion: '',
         activo: true
@@ -156,6 +315,22 @@ const ModalRegla = ({ isOpen, onClose, regla, onSave, loading }) => {
   
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    if (
+      form.nivel_aplicacion === 'PRODUCTO' &&
+      !form.producto_id
+    ) {
+      return;
+    }
+
+    if (
+      form.margen_esperado === null ||
+      form.margen_esperado === undefined ||
+      form.margen_esperado === ''
+    ) {
+      return;
+    }
+
     onSave(form);
   };
   
@@ -204,7 +379,12 @@ const ModalRegla = ({ isOpen, onClose, regla, onSave, loading }) => {
                   <button
                     key={nivel.value}
                     type="button"
-                    onClick={() => setForm({ ...form, nivel_aplicacion: nivel.value })}
+                    onClick={() => setForm({
+                      ...form,
+                      nivel_aplicacion: nivel.value,
+                      entidad_codigo: '',
+                      producto_id: null
+                    })}
                     className={`p-3 rounded-lg border-2 text-left transition-all ${
                       isSelected
                         ? `border-${nivel.color}-500 bg-${nivel.color}-50`
@@ -224,23 +404,55 @@ const ModalRegla = ({ isOpen, onClose, regla, onSave, loading }) => {
             </div>
           </div>
           
-          {/* Código de entidad */}
+          {/* Entidad */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Código de {nivelConfig.label} *
+              {form.nivel_aplicacion === 'PRODUCTO'
+                ? 'Producto *'
+                : `Código de ${nivelConfig.label} *`}
             </label>
-            <input
-              type="text"
-              value={form.entidad_codigo}
-              onChange={(e) => setForm({ ...form, entidad_codigo: e.target.value.toUpperCase() })}
-              placeholder={`Ej: ${form.nivel_aplicacion === 'GRUPO' ? 'ALIMENTOS' : form.nivel_aplicacion === 'FAMILIA' ? 'CARNES' : form.nivel_aplicacion === 'PRODUCTO' ? 'RIB-EYE-500G' : 'CORTES-PREMIUM'}`}
-              required
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 uppercase"
-              data-testid="input-entidad-codigo"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Debe coincidir exactamente con el código en el sistema
-            </p>
+
+            {form.nivel_aplicacion === 'PRODUCTO' ? (
+              <ProductoCanonicoSelector
+                value={form.producto_id}
+                unidad={unidad}
+                onSelect={(producto) => {
+                  setForm({
+                    ...form,
+                    producto_id:
+                      producto?.producto_id_canonico ?? null,
+                    entidad_codigo:
+                      producto?.nombre || ''
+                  });
+                }}
+              />
+            ) : (
+              <>
+                <input
+                  type="text"
+                  value={form.entidad_codigo}
+                  onChange={(e) => setForm({
+                    ...form,
+                    entidad_codigo:
+                      e.target.value.toUpperCase()
+                  })}
+                  placeholder={`Ej: ${
+                    form.nivel_aplicacion === 'GRUPO'
+                      ? 'ALIMENTOS'
+                      : form.nivel_aplicacion === 'FAMILIA'
+                        ? 'CARNES'
+                        : 'CORTES-PREMIUM'
+                  }`}
+                  required
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 uppercase"
+                  data-testid="input-entidad-codigo"
+                />
+
+                <p className="text-xs text-gray-500 mt-1">
+                  Debe coincidir exactamente con el código en el sistema
+                </p>
+              </>
+            )}
           </div>
           
           {/* Margen esperado */}
@@ -332,7 +544,14 @@ const ModalRegla = ({ isOpen, onClose, regla, onSave, loading }) => {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={loading || !form.entidad_codigo}
+            disabled={
+              loading ||
+              (
+                form.nivel_aplicacion === 'PRODUCTO'
+                  ? !form.producto_id
+                  : !form.entidad_codigo
+              )
+            }
             className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             data-testid="btn-guardar-regla"
           >
@@ -347,7 +566,7 @@ const ModalRegla = ({ isOpen, onClose, regla, onSave, loading }) => {
 
 // ==================== MODAL RESOLVER REGLA ====================
 
-const ModalResolverRegla = ({ isOpen, onClose }) => {
+const ModalResolverRegla = ({ isOpen, onClose, unidad }) => {
   const [form, setForm] = useState({
     producto_clave: '',
     subfamilia_codigo: '',
@@ -365,6 +584,7 @@ const ModalResolverRegla = ({ isOpen, onClose }) => {
     
     try {
       const params = new URLSearchParams();
+      params.append('unidad', unidad);
       if (form.producto_clave) params.append('producto_clave', form.producto_clave);
       if (form.subfamilia_codigo) params.append('subfamilia_codigo', form.subfamilia_codigo);
       if (form.familia_codigo) params.append('familia_codigo', form.familia_codigo);
@@ -444,7 +664,7 @@ const ModalResolverRegla = ({ isOpen, onClose }) => {
           
           <button
             onClick={handleResolver}
-            disabled={loading}
+            disabled={loading || !unidad}
             className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
@@ -504,7 +724,7 @@ const ModalResolverRegla = ({ isOpen, onClose }) => {
 
 // ==================== MODAL EVALUAR MARGEN ====================
 
-const ModalEvaluarMargen = ({ isOpen, onClose }) => {
+const ModalEvaluarMargen = ({ isOpen, onClose, unidad }) => {
   const [form, setForm] = useState({
     margen_actual: 25,
     producto_clave: '',
@@ -521,7 +741,9 @@ const ModalEvaluarMargen = ({ isOpen, onClose }) => {
     setResultado(null);
     
     try {
-      const response = await api.post('/comercial/alertas-margen/evaluar', {
+      const params = new URLSearchParams();
+      params.append('unidad', unidad);
+      const response = await api.post(`/comercial/alertas-margen/evaluar?${params.toString()}`, {
         margen_actual: form.margen_actual,
         producto_clave: form.producto_clave || undefined,
         familia_codigo: form.familia_codigo || undefined,
@@ -609,7 +831,7 @@ const ModalEvaluarMargen = ({ isOpen, onClose }) => {
           
           <button
             onClick={handleEvaluar}
-            disabled={loading}
+            disabled={loading || !unidad}
             className="w-full py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
@@ -682,7 +904,7 @@ const ModalEvaluarMargen = ({ isOpen, onClose }) => {
 
 // ==================== COMPONENTE PRINCIPAL ====================
 
-const TabReglasMargen = () => {
+const TabReglasMargen = ({ unidad }) => {
   const [reglas, setReglas] = useState([]);
   const [estadisticas, setEstadisticas] = useState(null);
   const [umbrales, setUmbrales] = useState([]);
@@ -701,12 +923,26 @@ const TabReglasMargen = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
+
+    if (!unidad) {
+      setReglas([]);
+      setEstadisticas(null);
+      setUmbrales([]);
+      setError('Seleccione una unidad de negocio para consultar reglas de margen');
+      setLoading(false);
+      return;
+    }
     
     try {
+      const params = new URLSearchParams({
+        unidad,
+        page_size: '100'
+      });
+      const unidadQuery = new URLSearchParams({ unidad }).toString();
       const [reglasRes, statsRes, umbralesRes] = await Promise.all([
-        api.get('/comercial/alertas-margen/reglas?page_size=100'),
-        api.get('/comercial/alertas-margen/estadisticas'),
-        api.get('/comercial/alertas-margen/umbrales')
+        api.get(`/comercial/alertas-margen/reglas?${params.toString()}`),
+        api.get(`/comercial/alertas-margen/estadisticas?${unidadQuery}`),
+        api.get(`/comercial/alertas-margen/umbrales?${unidadQuery}`)
       ]);
       
       setReglas(reglasRes.data.reglas || []);
@@ -717,7 +953,7 @@ const TabReglasMargen = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [unidad]);
   
   useEffect(() => {
     fetchData();
@@ -725,13 +961,18 @@ const TabReglasMargen = () => {
   
   // Guardar regla
   const handleSaveRegla = async (form) => {
+    if (!unidad) {
+      alert('Seleccione una unidad de negocio antes de guardar una regla');
+      return;
+    }
+
     setSavingRegla(true);
     
     try {
       if (modalRegla.regla) {
-        await api.put(`/comercial/alertas-margen/reglas/${modalRegla.regla.regla_id}`, form);
+        await api.put(`/comercial/alertas-margen/reglas/${modalRegla.regla.regla_id}?unidad=${encodeURIComponent(unidad)}`, form);
       } else {
-        await api.post('/comercial/alertas-margen/reglas', form);
+        await api.post(`/comercial/alertas-margen/reglas?unidad=${encodeURIComponent(unidad)}`, form);
       }
       
       setModalRegla({ open: false, regla: null });
@@ -746,9 +987,14 @@ const TabReglasMargen = () => {
   // Desactivar regla
   const handleDesactivarRegla = async (regla) => {
     if (!window.confirm(`¿Desactivar regla "${regla.entidad_codigo}"?`)) return;
+
+    if (!unidad) {
+      alert('Seleccione una unidad de negocio antes de desactivar una regla');
+      return;
+    }
     
     try {
-      await api.delete(`/comercial/alertas-margen/reglas/${regla.regla_id}`);
+      await api.delete(`/comercial/alertas-margen/reglas/${regla.regla_id}?unidad=${encodeURIComponent(unidad)}`);
       fetchData();
     } catch (err) {
       alert(err.response?.data?.detail || 'Error al desactivar regla');
@@ -758,7 +1004,12 @@ const TabReglasMargen = () => {
   // Filtrar reglas
   const reglasFiltradas = reglas.filter(r => {
     if (filtroNivel && r.nivel_aplicacion !== filtroNivel) return false;
-    if (busqueda && !r.entidad_codigo.toLowerCase().includes(busqueda.toLowerCase())) return false;
+    if (
+      busqueda &&
+      !String(r.entidad_codigo || '')
+        .toLowerCase()
+        .includes(busqueda.toLowerCase())
+    ) return false;
     return true;
   });
   
@@ -1017,16 +1268,19 @@ const TabReglasMargen = () => {
         regla={modalRegla.regla}
         onSave={handleSaveRegla}
         loading={savingRegla}
+        unidad={unidad}
       />
       
       <ModalResolverRegla
         isOpen={modalResolver}
         onClose={() => setModalResolver(false)}
+        unidad={unidad}
       />
       
       <ModalEvaluarMargen
         isOpen={modalEvaluar}
         onClose={() => setModalEvaluar(false)}
+        unidad={unidad}
       />
     </div>
   );

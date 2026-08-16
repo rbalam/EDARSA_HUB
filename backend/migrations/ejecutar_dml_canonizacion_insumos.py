@@ -1,21 +1,49 @@
+"""Canonización controlada de insumos hacia catálogo y puente canónicos.
+
+Por defecto solo audita. La escritura exige --apply más el conteo y fingerprint
+obtenidos en el dry-run previo.
 """
-PASO 2 (Ruta B) - Canonización de insumos: Sync_Productos_Insumos -> Producto_Catalogo + puente.
-Set-based, idempotente. SKU = GUID (InsumoID). CodigoProducto = 'INS-#######' secuencial.
-Alcance: solo insumos con CodigoFuente válido. descartados = 0 (no resueltos no se fuerzan).
-Valida y reporta. No imprime secretos.
-"""
+
+import argparse
+import hashlib
+import logging
 import sys
-from pathlib import Path
-from dotenv import load_dotenv
+
 sys.path.insert(0, "/app/backend")
-load_dotenv(Path("/app/backend/.env"))
-import logging; logging.disable(logging.CRITICAL)
+logging.disable(logging.CRITICAL)
+
 from core.sql_first.db import get_sql_connection
 
+
+TARGETS_SQL = """
+SELECT
+    s.InsumoID,
+    s.ServerID,
+    UPPER(LTRIM(RTRIM(s.SystemType))) AS SystemType,
+    LTRIM(RTRIM(s.CodigoFuente)) AS CodigoFuente,
+    LTRIM(RTRIM(s.Nombre)) AS Nombre,
+    LTRIM(RTRIM(s.UnidadMedida)) AS UnidadMedida
+FROM dbo.Sync_Productos_Insumos s {sync_lock}
+WHERE s.Activo = 1
+  AND s.CodigoFuente IS NOT NULL
+  AND LTRIM(RTRIM(s.CodigoFuente)) <> ''
+  AND NOT EXISTS (
+      SELECT 1
+      FROM dbo.Producto_MapeoOrigen m {mapping_lock}
+      WHERE m.OrigenInsumoID = s.InsumoID
+        AND m.Activo = 1
+  )
+ORDER BY s.InsumoID
+"""
+
+
 INSERT_CATALOGO = """
-DECLARE @base INT = ISNULL((SELECT MAX(CAST(SUBSTRING(CodigoProducto,5,7) AS INT))
-                            FROM Producto_Catalogo WHERE CodigoProducto LIKE 'INS-%'),0);
-INSERT INTO Producto_Catalogo
+DECLARE @base INT = ISNULL((
+    SELECT MAX(TRY_CONVERT(INT, SUBSTRING(CodigoProducto, 5, 7)))
+    FROM dbo.Producto_Catalogo WITH (UPDLOCK, HOLDLOCK)
+    WHERE CodigoProducto LIKE 'INS-%'
+), 0);
+INSERT INTO dbo.Producto_Catalogo
    (CodigoProducto, SKU, NombreProducto, NombreCorto, Descripcion, MonedaID, TipoProducto,
     EsInventariable, EsServicio, PermiteVenta, PermiteCompra, PermiteVentaSinExistencia,
     UnidadInventario, UnidadVenta, UnidadCompra, PrecioVentaBase, PrecioCostoBase, TasaImpuesto,
@@ -32,68 +60,194 @@ SELECT
     LEFT(ISNULL(NULLIF(LTRIM(RTRIM(s.UnidadMedida)),''),'PZA'),30),
     0, CASE WHEN COALESCE(s.CostoPromedio, s.UltimoCosto, s.Costo, 0) < 0 THEN 0
             ELSE COALESCE(s.CostoPromedio, s.UltimoCosto, s.Costo, 0) END, 0, 0, 0,
-    ISNULL(s.Activo,1), GETDATE()
-FROM Sync_Productos_Insumos s
-WHERE s.CodigoFuente IS NOT NULL AND LTRIM(RTRIM(s.CodigoFuente)) <> ''
-  AND NOT EXISTS (SELECT 1 FROM Producto_MapeoOrigen m WHERE m.OrigenInsumoID = s.InsumoID);
+    1, GETDATE()
+FROM dbo.Sync_Productos_Insumos s WITH (UPDLOCK, HOLDLOCK)
+WHERE s.Activo = 1
+  AND s.CodigoFuente IS NOT NULL
+  AND LTRIM(RTRIM(s.CodigoFuente)) <> ''
+  AND NOT EXISTS (
+      SELECT 1
+      FROM dbo.Producto_MapeoOrigen m WITH (UPDLOCK, HOLDLOCK)
+      WHERE m.OrigenInsumoID = s.InsumoID
+        AND m.Activo = 1
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM dbo.Producto_Catalogo pc WITH (UPDLOCK, HOLDLOCK)
+      WHERE pc.SKU = CONVERT(varchar(36), s.InsumoID)
+  );
 """
+
 
 INSERT_PUENTE = """
-INSERT INTO Producto_MapeoOrigen (ServerID, SystemType, CodigoFuente, ProductoID, OrigenInsumoID)
-SELECT s.ServerID, LEFT(s.SystemType,40), LEFT(s.CodigoFuente,100), pc.ProductoID, s.InsumoID
-FROM Sync_Productos_Insumos s
-JOIN Producto_Catalogo pc ON pc.SKU = CONVERT(varchar(36), s.InsumoID)
-WHERE s.CodigoFuente IS NOT NULL AND LTRIM(RTRIM(s.CodigoFuente)) <> ''
-  AND NOT EXISTS (SELECT 1 FROM Producto_MapeoOrigen m WHERE m.OrigenInsumoID = s.InsumoID);
+INSERT INTO dbo.Producto_MapeoOrigen
+    (ServerID, SystemType, CodigoFuente, ProductoID, OrigenInsumoID)
+SELECT
+    s.ServerID,
+    LEFT(s.SystemType, 40),
+    LEFT(s.CodigoFuente, 100),
+    pc.ProductoID,
+    s.InsumoID
+FROM dbo.Sync_Productos_Insumos s WITH (UPDLOCK, HOLDLOCK)
+JOIN dbo.Producto_Catalogo pc WITH (UPDLOCK, HOLDLOCK)
+  ON pc.SKU = CONVERT(varchar(36), s.InsumoID)
+WHERE s.Activo = 1
+  AND s.CodigoFuente IS NOT NULL
+  AND LTRIM(RTRIM(s.CodigoFuente)) <> ''
+  AND NOT EXISTS (
+      SELECT 1
+      FROM dbo.Producto_MapeoOrigen m WITH (UPDLOCK, HOLDLOCK)
+      WHERE m.OrigenInsumoID = s.InsumoID
+        AND m.Activo = 1
+  );
 """
 
 
-def scalar(cur, q, p=()):
-    cur.execute(q, p); return cur.fetchone()[0]
+def scalar(cur, query, params=()):
+    cur.execute(query, params)
+    return cur.fetchone()[0]
+
+
+def _parse_args():
+    parser = argparse.ArgumentParser(
+        description="Canoniza insumos con dry-run obligatorio por defecto."
+    )
+    parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--expected-count", type=int)
+    parser.add_argument("--expected-fingerprint")
+    return parser.parse_args()
+
+
+def _fetch_targets(conn, lock=False):
+    lock_hint = "WITH (UPDLOCK, HOLDLOCK)" if lock else ""
+    cur = conn.cursor(as_dict=True)
+    cur.execute(
+        TARGETS_SQL.format(sync_lock=lock_hint, mapping_lock=lock_hint)
+    )
+    return list(cur.fetchall())
+
+
+def _target_fingerprint(rows):
+    payload = "\n".join(
+        "|".join(
+            (
+                str(row["InsumoID"]).upper(),
+                str(row["ServerID"]).upper(),
+                str(row["SystemType"] or "").upper(),
+                str(row["CodigoFuente"] or "").strip(),
+            )
+        )
+        for row in rows
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _print_dry_run(conn, rows, fingerprint):
+    cur = conn.cursor()
+    base = scalar(
+        cur,
+        """SELECT ISNULL(MAX(TRY_CONVERT(INT, SUBSTRING(CodigoProducto, 5, 7))), 0)
+           FROM dbo.Producto_Catalogo
+           WHERE CodigoProducto LIKE 'INS-%'""",
+    )
+    print(f"[DRY-RUN] objetivos={len(rows)} fingerprint={fingerprint}")
+    for position, row in enumerate(rows, start=1):
+        code = f"INS-{base + position:07d}"
+        print(
+            f"  {code} | {str(row['InsumoID']).upper()} | "
+            f"{row['SystemType']} | {row['CodigoFuente']} | {row['Nombre']}"
+        )
+
+
+def _validate_apply_args(args, rows, fingerprint):
+    if args.expected_count is None or not args.expected_fingerprint:
+        raise RuntimeError(
+            "--apply requiere --expected-count y --expected-fingerprint del dry-run"
+        )
+    if len(rows) != args.expected_count:
+        raise RuntimeError(
+            f"Alcance cambió: esperado={args.expected_count}, actual={len(rows)}"
+        )
+    if fingerprint.lower() != args.expected_fingerprint.lower():
+        raise RuntimeError("Alcance cambió: fingerprint no coincide")
 
 
 def main():
+    args = _parse_args()
     conn = get_sql_connection()
     cur = conn.cursor()
-
-    elegibles = scalar(cur, "SELECT COUNT(*) FROM Sync_Productos_Insumos WHERE CodigoFuente IS NOT NULL AND LTRIM(RTRIM(CodigoFuente))<>''")
-    cat_antes = scalar(cur, "SELECT COUNT(*) FROM Producto_Catalogo")
-    puente_antes = scalar(cur, "SELECT COUNT(*) FROM Producto_MapeoOrigen")
-    print(f"[PRE] insumos elegibles={elegibles} | Producto_Catalogo={cat_antes} | puente={puente_antes}")
-
     try:
+        if not args.apply:
+            rows = _fetch_targets(conn)
+            fingerprint = _target_fingerprint(rows)
+            _print_dry_run(conn, rows, fingerprint)
+            conn.rollback()
+            return 0
+
+        cur.execute(
+            "SET XACT_ABORT ON; "
+            "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;"
+        )
+        rows = _fetch_targets(conn, lock=True)
+        fingerprint = _target_fingerprint(rows)
+        _validate_apply_args(args, rows, fingerprint)
+
+        target_skus = [str(row["InsumoID"]) for row in rows]
+        if target_skus:
+            placeholders = ", ".join(["%s"] * len(target_skus))
+            existing_catalog = scalar(
+                cur,
+                f"""SELECT COUNT(*)
+                    FROM dbo.Producto_Catalogo WITH (UPDLOCK, HOLDLOCK)
+                    WHERE SKU IN ({placeholders})""",
+                tuple(target_skus),
+            )
+            if existing_catalog:
+                raise RuntimeError(
+                    f"Existen {existing_catalog} SKU objetivo sin puente; requiere auditoría"
+                )
+
+        cat_antes = scalar(cur, "SELECT COUNT(*) FROM dbo.Producto_Catalogo")
+        puente_antes = scalar(cur, "SELECT COUNT(*) FROM dbo.Producto_MapeoOrigen")
         cur.execute(INSERT_CATALOGO)
         cur.execute(INSERT_PUENTE)
+
+        cat_post = scalar(cur, "SELECT COUNT(*) FROM dbo.Producto_Catalogo")
+        puente_post = scalar(cur, "SELECT COUNT(*) FROM dbo.Producto_MapeoOrigen")
+        catalogo_insertado = cat_post - cat_antes
+        puente_insertado = puente_post - puente_antes
+        huerfanos = scalar(
+            cur,
+            """SELECT COUNT(*)
+               FROM dbo.Producto_MapeoOrigen m
+               WHERE NOT EXISTS (
+                   SELECT 1
+                   FROM dbo.Producto_Catalogo pc
+                   WHERE pc.ProductoID = m.ProductoID
+               )""",
+        )
+        if (
+            catalogo_insertado != args.expected_count
+            or puente_insertado != args.expected_count
+            or huerfanos != 0
+        ):
+            raise RuntimeError(
+                "Postcondición inválida; se revierte la transacción completa"
+            )
+
         conn.commit()
-        print("[OK] DML ejecutado y commit.")
-    except Exception as e:
+        print(
+            f"[OK] catalogo={catalogo_insertado} puente={puente_insertado} "
+            f"fingerprint={fingerprint}"
+        )
+        return 0
+    except Exception as exc:
         conn.rollback()
-        print(f"[ERROR] rollback. {str(e)[:200]}")
-        conn.close(); return
-
-    # Validaciones
-    cat_post = scalar(cur, "SELECT COUNT(*) FROM Producto_Catalogo")
-    puente_post = scalar(cur, "SELECT COUNT(*) FROM Producto_MapeoOrigen")
-    print(f"\n[POST] Producto_Catalogo={cat_post} (+{cat_post-cat_antes}) | puente={puente_post} (+{puente_post-puente_antes})")
-
-    huerfanos = scalar(cur, "SELECT COUNT(*) FROM Producto_MapeoOrigen m WHERE NOT EXISTS (SELECT 1 FROM Producto_Catalogo pc WHERE pc.ProductoID=m.ProductoID)")
-    print(f"[FK] puente->catalogo huérfanos: {huerfanos} (debe ser 0)")
-
-    dup_cod = scalar(cur, "SELECT COUNT(*) FROM (SELECT CodigoProducto FROM Producto_Catalogo GROUP BY CodigoProducto HAVING COUNT(*)>1) t")
-    dup_sku = scalar(cur, "SELECT COUNT(*) FROM (SELECT SKU FROM Producto_Catalogo GROUP BY SKU HAVING COUNT(*)>1) t")
-    print(f"[UNIQUE] CodigoProducto dups={dup_cod} | SKU dups={dup_sku} (deben ser 0)")
-
-    descartados = elegibles - (puente_post - puente_antes)
-    print(f"[COBERTURA] elegibles={elegibles} mapeados={puente_post-puente_antes} descartados={descartados} (debe ser 0)")
-
-    print("\n[POR SERVER] mapeos en puente:")
-    cur2 = conn.cursor(as_dict=True)
-    cur2.execute("SELECT ServerID, SystemType, COUNT(*) n FROM Producto_MapeoOrigen GROUP BY ServerID, SystemType ORDER BY n DESC")
-    for r in cur2.fetchall():
-        print(f"   {r['ServerID']} {r['SystemType']}: {r['n']}")
-
-    conn.close()
+        print(f"[ERROR] rollback. {str(exc)[:200]}")
+        return 1
+    finally:
+        conn.close()
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

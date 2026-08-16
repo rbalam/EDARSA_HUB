@@ -54,24 +54,140 @@ def get_resumen_costos_margenes(
         unidad_where = "AND CONVERT(varchar(36), p.UnidadNegocioID) = %s"
         params.append(str(unidad_negocio_pk))
     
-    # Query principal de productos
+    # Resumen canónico:
+    # - mismo universo comercial que el listado
+    # - solo productos activos
+    # - receta = componentes activos reales
+    # - costo = suma de componentes activos
+    # - margen = PrecioSinImpuestos - costo
+    # - PrecioSinImpuestos <= 0 => margen no calculable
+    comercial_where = _mpro_comercial_where('p')
+    menu_pos_where = _mpro_menu_pos_where('p')
+
     productos_query = f"""
-    SELECT 
-        COUNT(*) as total_productos,
-        SUM(CASE WHEN p.TieneReceta = 1 THEN 1 ELSE 0 END) as productos_con_receta,
-        SUM(CASE WHEN p.TieneReceta = 0 OR p.TieneReceta IS NULL THEN 1 ELSE 0 END) as productos_sin_receta,
-        AVG(CASE WHEN p.CostoReceta > 0 THEN p.CostoReceta END) as costo_promedio,
-        AVG(CASE WHEN p.MargenBrutoPorcentaje IS NOT NULL AND p.PrecioVenta > 0 THEN p.MargenBrutoPorcentaje END) as margen_promedio,
-        SUM(CASE WHEN p.MargenBrutoPorcentaje < 20 AND p.MargenBrutoPorcentaje IS NOT NULL THEN 1 ELSE 0 END) as margen_bajo,
-        SUM(CASE WHEN p.CostoReceta IS NULL OR p.CostoReceta = 0 THEN 1 ELSE 0 END) as sin_costo,
-        SUM(CASE WHEN p.PrecioVenta IS NULL OR p.PrecioVenta = 0 THEN 1 ELSE 0 END) as sin_precio,
-        MAX(p.SyncedAtMexico) as ultima_sync,
-        MAX(p.SyncRunID) as sync_run_id
-    FROM Sync_Productos p
-    WHERE (p.Activo = 1 OR p.Activo IS NULL)
-      {unidad_where}
+    WITH receta_activa AS (
+        SELECT
+            r.ServerID,
+            r.ProductoCodigoFuente,
+            COUNT_BIG(*) AS componentes,
+            SUM(
+                ISNULL(
+                    r.CostoTotal,
+                    0
+                )
+            ) AS costo_receta
+        FROM Sync_Productos_Recetas r
+        WHERE ISNULL(r.Activo, 1) = 1
+        GROUP BY
+            r.ServerID,
+            r.ProductoCodigoFuente
+    ),
+    base AS (
+        SELECT
+            p.ServerID,
+            p.CodigoFuente,
+            p.PrecioSinImpuestos,
+            p.SyncedAtMexico,
+            p.SyncRunID,
+            ISNULL(
+                ra.componentes,
+                0
+            ) AS componentes,
+            ISNULL(
+                ra.costo_receta,
+                0
+            ) AS costo_receta,
+            CASE
+                WHEN p.PrecioSinImpuestos > 0
+                THEN
+                    (
+                        p.PrecioSinImpuestos
+                        -
+                        ISNULL(
+                            ra.costo_receta,
+                            0
+                        )
+                    )
+                    /
+                    NULLIF(
+                        p.PrecioSinImpuestos,
+                        0
+                    )
+                    * 100
+                ELSE NULL
+            END AS margen_porcentaje
+        FROM Sync_Productos p
+        LEFT JOIN receta_activa ra
+          ON ra.ServerID = p.ServerID
+         AND ra.ProductoCodigoFuente =
+             p.CodigoFuente
+        WHERE p.Activo = 1
+          AND {comercial_where}
+          AND {menu_pos_where}
+          {unidad_where}
+    )
+    SELECT
+        COUNT_BIG(*) AS total_productos,
+
+        SUM(
+            CASE
+                WHEN componentes > 0
+                THEN 1 ELSE 0
+            END
+        ) AS productos_con_receta,
+
+        SUM(
+            CASE
+                WHEN componentes = 0
+                THEN 1 ELSE 0
+            END
+        ) AS productos_sin_receta,
+
+        AVG(
+            CASE
+                WHEN componentes > 0
+                 AND costo_receta > 0
+                THEN costo_receta
+                ELSE NULL
+            END
+        ) AS costo_promedio,
+
+        AVG(
+            margen_porcentaje
+        ) AS margen_promedio,
+
+        SUM(
+            CASE
+                WHEN componentes = 0
+                  OR costo_receta <= 0
+                THEN 1 ELSE 0
+            END
+        ) AS sin_costo,
+
+        SUM(
+            CASE
+                WHEN PrecioSinImpuestos IS NULL
+                  OR PrecioSinImpuestos <= 0
+                THEN 1 ELSE 0
+            END
+        ) AS sin_precio,
+
+        MAX(
+            SyncedAtMexico
+        ) AS ultima_sync,
+
+        MAX(
+            SyncRunID
+        ) AS sync_run_id
+
+    FROM base
     """
-    productos_result = execute_sql_query_params(*conn, productos_query, tuple(params))
+
+    productos_result = execute_sql_query_params(
+        *conn,
+        productos_query,
+        tuple(params),
+    )
     
     if servidor_id:
         insumos_query = """
@@ -82,7 +198,7 @@ def get_resumen_costos_margenes(
               SELECT 1
               FROM Sync_Productos p
               WHERE p.ServerID = i.ServerID
-                AND (p.Activo = 1 OR p.Activo IS NULL)
+                AND p.Activo = 1
           )
         """
         recetas_query = """
@@ -94,7 +210,7 @@ def get_resumen_costos_margenes(
               FROM Sync_Productos p
               WHERE p.ServerID = r.ServerID
                 AND p.CodigoFuente = r.ProductoCodigoFuente
-                AND (p.Activo = 1 OR p.Activo IS NULL)
+                AND p.Activo = 1
           )
         """
         elaborados_query = """
@@ -105,7 +221,7 @@ def get_resumen_costos_margenes(
               SELECT 1
               FROM Sync_Productos p
               WHERE p.ServerID = e.ServerID
-                AND (p.Activo = 1 OR p.Activo IS NULL)
+                AND p.Activo = 1
           )
         """
         sid = str(servidor_id)
@@ -121,7 +237,7 @@ def get_resumen_costos_margenes(
             FROM Sync_Productos p
             WHERE p.ServerID = i.ServerID
               AND CONVERT(varchar(36), p.UnidadNegocioID) = %s
-              AND (p.Activo = 1 OR p.Activo IS NULL)
+              AND p.Activo = 1
         )
         """
         recetas_query = """
@@ -133,7 +249,7 @@ def get_resumen_costos_margenes(
             WHERE p.ServerID = r.ServerID
               AND p.CodigoFuente = r.ProductoCodigoFuente
               AND CONVERT(varchar(36), p.UnidadNegocioID) = %s
-              AND (p.Activo = 1 OR p.Activo IS NULL)
+              AND p.Activo = 1
         )
         """
         elaborados_query = """
@@ -144,7 +260,7 @@ def get_resumen_costos_margenes(
             FROM Sync_Productos p
             WHERE p.ServerID = e.ServerID
               AND CONVERT(varchar(36), p.UnidadNegocioID) = %s
-              AND (p.Activo = 1 OR p.Activo IS NULL)
+              AND p.Activo = 1
         )
         """
         uid = str(unidad_negocio_pk)
@@ -225,7 +341,6 @@ def get_productos_con_costos(
     busqueda: Optional[str] = None,
     solo_con_receta: bool = False,
     margen_bajo: bool = False,
-    umbral_margen: int = 20,  # Umbral editable para margen bajo
     incluir_inactivos: bool = False,  # BUG-COSTOS-001: Por defecto excluir inactivos
     page: int = 1,
     page_size: int = 50,
@@ -253,12 +368,6 @@ def get_productos_con_costos(
         where_clauses = ["1=1"]
     query_params: List[Any] = []
     
-    if empresa_id:
-        where_clauses.append("p.EmpresaID = %s")
-        query_params.append(empresa_id)
-    if unidad_negocio_pk:
-        where_clauses.append("CONVERT(varchar(36), p.UnidadNegocioID) = %s")
-        query_params.append(str(unidad_negocio_pk))
     if servidor_id:
         where_clauses.append("CAST(p.ServerID AS NVARCHAR(36)) = %s")
         query_params.append(str(servidor_id))
@@ -280,6 +389,7 @@ def get_productos_con_costos(
         FROM Sync_Productos_Recetas r_chk
         WHERE r_chk.ProductoCodigoFuente = p.CodigoFuente
           AND r_chk.ServerID = p.ServerID
+          AND ISNULL(r_chk.Activo, 1) = 1
     )"""
 
     receta_comercial_sql = f"""(
@@ -312,6 +422,7 @@ def get_productos_con_costos(
             OR EXISTS (
                 SELECT 1
                 FROM Sync_Productos pfam
+                LEFT JOIN dbo.Comercial_ClasificacionesProducto cp ON cp.ClasificacionProductoID = p.ClasificacionProductoID AND cp.Activo = 1
                 WHERE pfam.ServerID = p.ServerID
                   AND pfam.SystemType = p.SystemType
                   AND ISNULL(pfam.Activo, 1) = 1
@@ -344,24 +455,6 @@ def get_productos_con_costos(
     # MARGEN BAJO: Filtrar productos con margen < umbral configurado
     # El costo real viene de Sync_Productos_Recetas (no de p.CostoReceta)
     # Requiere: receta, precio > 0, costo calculado > 0, margen < umbral
-    if margen_bajo:
-        where_clauses.append(f"""(
-            {receta_real_sql}
-            AND p.PrecioVenta > 0 
-            AND COALESCE(
-                (SELECT SUM(r.CostoTotal) FROM Sync_Productos_Recetas r 
-                 WHERE r.ProductoCodigoFuente = p.CodigoFuente AND r.ServerID = p.ServerID),
-                p.CostoReceta, 0
-            ) > 0
-            AND (
-                (p.PrecioVenta - COALESCE(
-                    (SELECT SUM(r.CostoTotal) FROM Sync_Productos_Recetas r 
-                     WHERE r.ProductoCodigoFuente = p.CodigoFuente AND r.ServerID = p.ServerID),
-                    p.CostoReceta, 0
-                )) / p.PrecioVenta * 100
-            ) < %s
-        )""")
-        query_params.append(umbral_margen)
     
     where_sql = " AND ".join(where_clauses)
     
@@ -369,6 +462,7 @@ def get_productos_con_costos(
     count_query = f"""
     SELECT COUNT(*) as total
     FROM Sync_Productos p
+    LEFT JOIN dbo.Comercial_ClasificacionesProducto cp ON cp.ClasificacionProductoID = p.ClasificacionProductoID AND cp.Activo = 1
     WHERE {where_sql}
     """
     count_result = execute_sql_query_params(*conn, count_query, tuple(query_params))
@@ -382,6 +476,7 @@ def get_productos_con_costos(
     data_query = f"""
     SELECT 
         CAST(p.ProductoID AS NVARCHAR(36)) as producto_id,
+        pmo.ProductoID as producto_id_canonico,
         p.CodigoFuente as id_producto_origen,
         p.Nombre as nombre,
         p.NombreCorto as nombre_corto,
@@ -391,14 +486,18 @@ def get_productos_con_costos(
         p.UnidadNegocioID as unidad_negocio_pk,
         COALESCE(p.FamiliaNombre, 'Sin clasificar') as familia,
         p.SubFamiliaNombre as subfamilia,
+        p.FamiliaCodigoFuente as familia_codigo,
+        p.SubFamiliaCodigoFuente as subfamilia_codigo,
+        cp.Codigo as grupo_codigo,
         p.PrecioVenta as precio_venta,
         p.PrecioSinImpuestos as precio_sin_impuestos,
         p.TasaImpuesto as tasa_impuesto,
         COALESCE(
-            (SELECT SUM(r.CostoTotal) 
-             FROM Sync_Productos_Recetas r 
-             WHERE r.ProductoCodigoFuente = p.CodigoFuente 
-             AND r.ServerID = p.ServerID),
+            (SELECT SUM(r.CostoTotal)
+             FROM Sync_Productos_Recetas r
+             WHERE r.ProductoCodigoFuente = p.CodigoFuente
+             AND r.ServerID = p.ServerID
+             AND ISNULL(r.Activo, 1) = 1),
             p.CostoReceta,
             0
         ) as costo_receta,
@@ -436,12 +535,20 @@ def get_productos_con_costos(
             (SELECT COUNT(1)
              FROM Sync_Productos_Recetas r_cnt
              WHERE r_cnt.ProductoCodigoFuente = p.CodigoFuente
-               AND r_cnt.ServerID = p.ServerID),
+               AND r_cnt.ServerID = p.ServerID
+               AND ISNULL(r_cnt.Activo, 1) = 1),
             0
         ) as numero_insumos,
         p.SyncedAtMexico as ultima_sincronizacion,
         p.Activo as activo
     FROM Sync_Productos p
+    LEFT JOIN dbo.Producto_MapeoOrigen pmo
+        ON pmo.ServerID = p.ServerID
+       AND UPPER(LTRIM(RTRIM(pmo.SystemType)))
+            = UPPER(LTRIM(RTRIM(p.SystemType)))
+       AND pmo.CodigoFuente = p.CodigoFuente
+       AND pmo.Activo = 1
+    LEFT JOIN dbo.Comercial_ClasificacionesProducto cp ON cp.ClasificacionProductoID = p.ClasificacionProductoID AND cp.Activo = 1
     WHERE {where_sql}
     ORDER BY p.Nombre
     OFFSET {offset} ROWS FETCH NEXT {page_size} ROWS ONLY
@@ -453,19 +560,28 @@ def get_productos_con_costos(
     productos = []
     for row in data_result:
         precio_venta = _safe_decimal(row.get('precio_venta'), 0) or 0
+        precio_base = _safe_decimal(
+            row.get('precio_sin_impuestos'),
+            0,
+        ) or 0
         costo_receta = _safe_decimal(row.get('costo_receta'), 0) or 0
-        
-        # Calcular margen dinámicamente si no está en la BD
-        margen_pesos_bd = _safe_decimal(row.get('margen_pesos'))
-        margen_porcentaje_bd = _safe_decimal(row.get('margen_porcentaje'))
-        
-        # Si los márgenes de BD son 0 o None, calcularlos
-        if (margen_pesos_bd is None or margen_pesos_bd == 0) and precio_venta > 0 and costo_receta > 0:
-            margen_pesos = round(precio_venta - costo_receta, 2)
-            margen_porcentaje = round((margen_pesos / precio_venta) * 100, 2) if precio_venta > 0 else 0
+
+        # Contrato canónico Costos/Márgenes:
+        # margen sobre precio sin impuestos.
+        # Un precio base <= 0 no produce un porcentaje
+        # económicamente interpretable.
+        if precio_base > 0:
+            margen_pesos = round(
+                precio_base - costo_receta,
+                2,
+            )
+            margen_porcentaje = round(
+                (margen_pesos / precio_base) * 100,
+                2,
+            )
         else:
-            margen_pesos = margen_pesos_bd
-            margen_porcentaje = margen_porcentaje_bd
+            margen_pesos = None
+            margen_porcentaje = None
         
         # FASE 1C-3G-B: Obtener tasa de impuesto
         tasa_impuesto_raw = _safe_decimal(row.get('tasa_impuesto'))
@@ -483,6 +599,7 @@ def get_productos_con_costos(
         
         productos.append({
             'producto_id': row.get('producto_id', ''),
+            'producto_id_canonico': row.get('producto_id_canonico'),
             'id_producto_origen': row.get('id_producto_origen', ''),
             'nombre': row.get('nombre', ''),
             'nombre_corto': row.get('nombre_corto'),
@@ -493,6 +610,9 @@ def get_productos_con_costos(
             'unidad_negocio_pk': row.get('unidad_negocio_pk'),
             'familia': row.get('familia'),
             'subfamilia': row.get('subfamilia'),
+            'familia_codigo': row.get('familia_codigo'),
+            'subfamilia_codigo': row.get('subfamilia_codigo'),
+            'grupo_codigo': row.get('grupo_codigo'),
             'precio_venta': precio_venta if precio_venta > 0 else _safe_decimal(row.get('precio_venta')),
             'precio_sin_impuestos': _safe_decimal(row.get('precio_sin_impuestos')),
             'tasa_impuesto': tasa_impuesto,

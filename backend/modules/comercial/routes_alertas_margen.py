@@ -18,12 +18,16 @@ Endpoints bajo /api/comercial/alertas-margen:
 """
 
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Query, Depends, HTTPException
 from pydantic import BaseModel, Field
 import logging
 
 from core.security import get_current_user
+from core.corporate_filters.request_resolver import (
+    UnidadScope,
+    resolve_authorized_unidad_scope,
+)
 from modules.comercial.alertas_margen_service import (
     listar_reglas_margen,
     obtener_regla,
@@ -41,6 +45,98 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/comercial/alertas-margen", tags=["Alertas de Margen"])
 
+COSTOS_MARGENES_VER = "comercial.costos_margenes_VER"
+COSTOS_MARGENES_CONFIGURAR = "comercial.costos_margenes_CONFIGURAR"
+
+
+async def _resolve_scope(
+    current_user: dict,
+    unidad: str,
+    permission_code: str,
+) -> UnidadScope:
+    scope = await resolve_authorized_unidad_scope(
+        current_user,
+        permission_code,
+        unidad,
+    )
+    if scope.access_denied or not scope.unidad_pk:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "ALCANCE_DENEGADO",
+                "mensaje": "No tiene acceso a la unidad solicitada",
+                "permiso_requerido": permission_code,
+            },
+        )
+    return scope
+
+
+def _sql_usuario_id(current_user: dict) -> Optional[int]:
+    value = (
+        (current_user or {}).get("_sql_usuario_id")
+        or (current_user or {}).get("UsuarioID")
+        or (current_user or {}).get("usuario_id")
+    )
+    if isinstance(value, bool):
+        return None
+    try:
+        value = int(value)
+    except (TypeError, ValueError):
+        return None
+    return value if value > 0 else None
+
+
+def _rule_is_global(regla: Dict[str, Any]) -> bool:
+    return not any(
+        regla.get(field)
+        for field in ("empresa_id", "sucursal_id", "server_id")
+    )
+
+
+def _rule_is_in_scope(regla: Dict[str, Any], scope: UnidadScope) -> bool:
+    empresa_id = getattr(scope, "empresa_id", None)
+    scope_values = {
+        "empresa_id": empresa_id,
+        "sucursal_id": scope.sucursal_origen_id,
+        "server_id": scope.server_id,
+    }
+    return all(
+        regla.get(field) is None
+        or (
+            scope_value is not None
+            and str(regla.get(field)) == str(scope_value)
+        )
+        for field, scope_value in scope_values.items()
+    )
+
+
+async def _get_scoped_rule(
+    regla_id: str,
+    current_user: dict,
+    unidad: str,
+    permission_code: str,
+    allow_global: bool = True,
+) -> Dict[str, Any]:
+    scope = await _resolve_scope(current_user, unidad, permission_code)
+    regla = obtener_regla(regla_id)
+    if not _rule_is_in_scope(regla, scope):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": "REGLA_NO_ENCONTRADA",
+                "mensaje": "Regla no encontrada",
+            },
+        )
+    if not allow_global and _rule_is_global(regla):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "REGLA_GLOBAL_SOLO_LECTURA",
+                "mensaje": "Las reglas globales no pueden modificarse desde una unidad",
+            },
+        )
+    return regla
+
 
 # =============================================================================
 # MODELOS PYDANTIC
@@ -50,14 +146,12 @@ class ReglaMargenCreate(BaseModel):
     """Modelo para crear una regla de margen."""
     nivel_aplicacion: str = Field(..., description="GRUPO, FAMILIA, SUBFAMILIA, PRODUCTO")
     entidad_codigo: str = Field(..., description="Código de la entidad según el nivel")
+    producto_id: Optional[int] = Field(None, gt=0, description="ProductoID canónico para nivel PRODUCTO")
     margen_esperado: float = Field(..., ge=0, le=100, description="Margen esperado (%)")
     costo_maximo: Optional[float] = Field(None, ge=0, le=100, description="Costo máximo (%)")
     utilidad_minima: Optional[float] = Field(None, ge=-100, le=100, description="Utilidad mínima (%)")
     severidad_base: str = Field('MEDIA', description="INFORMATIVA, MEDIA, ALTA, CRITICA")
     descripcion: Optional[str] = Field(None, max_length=500)
-    empresa_id: Optional[int] = None
-    sucursal_id: Optional[int] = None
-    server_id: Optional[str] = None
     fecha_inicio: Optional[datetime] = None
     fecha_fin: Optional[datetime] = None
 
@@ -75,15 +169,13 @@ class ReglaMargenUpdate(BaseModel):
 class EvaluarMargenRequest(BaseModel):
     """Modelo para evaluar margen de un producto."""
     margen_actual: float = Field(..., description="Margen actual del producto (%)")
+    producto_id: Optional[int] = None
     producto_clave: Optional[str] = None
     subfamilia_codigo: Optional[str] = None
     familia_codigo: Optional[str] = None
     grupo_codigo: Optional[str] = None
     precio_venta: Optional[float] = None
     costo_receta: Optional[float] = None
-    empresa_id: Optional[int] = None
-    sucursal_id: Optional[int] = None
-    server_id: Optional[str] = None
 
 
 # =============================================================================
@@ -92,10 +184,9 @@ class EvaluarMargenRequest(BaseModel):
 
 @router.get("/reglas")
 async def listar_reglas_endpoint(
+    unidad: str = Query(..., min_length=1),
     nivel_aplicacion: Optional[str] = Query(None, description="GRUPO, FAMILIA, SUBFAMILIA, PRODUCTO"),
     solo_activas: bool = Query(True, description="Solo reglas activas"),
-    empresa_id: Optional[int] = Query(None),
-    sucursal_id: Optional[int] = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
     current_user: dict = Depends(get_current_user)
@@ -106,15 +197,23 @@ async def listar_reglas_endpoint(
     Permite filtrar por nivel de aplicación, estado, empresa y sucursal.
     """
     try:
+        scope = await _resolve_scope(
+            current_user,
+            unidad,
+            COSTOS_MARGENES_VER,
+        )
         resultado = listar_reglas_margen(
             nivel_aplicacion=nivel_aplicacion,
             solo_activas=solo_activas,
-            empresa_id=empresa_id,
-            sucursal_id=sucursal_id,
+            empresa_id=scope.empresa_id,
+            sucursal_id=scope.sucursal_origen_id,
+            server_id=scope.server_id,
             page=page,
             page_size=page_size
         )
         return resultado
+    except HTTPException:
+        raise
     except AlertasMargenError as e:
         raise HTTPException(status_code=400, detail={'error': e.codigo, 'mensaje': e.mensaje})
     except Exception as e:
@@ -125,6 +224,7 @@ async def listar_reglas_endpoint(
 @router.post("/reglas")
 async def crear_regla_endpoint(
     regla: ReglaMargenCreate,
+    unidad: str = Query(..., min_length=1),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -137,22 +237,30 @@ async def crear_regla_endpoint(
     - Vigencias coherentes
     """
     try:
+        scope = await _resolve_scope(
+            current_user,
+            unidad,
+            COSTOS_MARGENES_CONFIGURAR,
+        )
         resultado = crear_regla_margen(
             nivel_aplicacion=regla.nivel_aplicacion,
             entidad_codigo=regla.entidad_codigo,
             margen_esperado=regla.margen_esperado,
+            producto_id=regla.producto_id,
             costo_maximo=regla.costo_maximo,
             utilidad_minima=regla.utilidad_minima,
             severidad_base=regla.severidad_base,
             descripcion=regla.descripcion,
-            empresa_id=regla.empresa_id,
-            sucursal_id=regla.sucursal_id,
-            server_id=regla.server_id,
+            empresa_id=scope.empresa_id,
+            sucursal_id=scope.sucursal_origen_id,
+            server_id=scope.server_id,
             fecha_inicio=regla.fecha_inicio,
             fecha_fin=regla.fecha_fin,
             creado_por=current_user.get('email', 'SISTEMA')
         )
         return resultado
+    except HTTPException:
+        raise
     except AlertasMargenError as e:
         raise HTTPException(status_code=400, detail={'error': e.codigo, 'mensaje': e.mensaje})
     except Exception as e:
@@ -163,11 +271,19 @@ async def crear_regla_endpoint(
 @router.get("/reglas/{regla_id}")
 async def obtener_regla_endpoint(
     regla_id: str,
+    unidad: str = Query(..., min_length=1),
     current_user: dict = Depends(get_current_user)
 ):
     """Obtiene una regla por su ID."""
     try:
-        return obtener_regla(regla_id)
+        return await _get_scoped_rule(
+            regla_id,
+            current_user,
+            unidad,
+            COSTOS_MARGENES_VER,
+        )
+    except HTTPException:
+        raise
     except AlertasMargenError as e:
         raise HTTPException(status_code=404, detail={'error': e.codigo, 'mensaje': e.mensaje})
     except Exception as e:
@@ -179,6 +295,7 @@ async def obtener_regla_endpoint(
 async def actualizar_regla_endpoint(
     regla_id: str,
     regla: ReglaMargenUpdate,
+    unidad: str = Query(..., min_length=1),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -187,6 +304,13 @@ async def actualizar_regla_endpoint(
     Solo actualiza los campos proporcionados.
     """
     try:
+        await _get_scoped_rule(
+            regla_id,
+            current_user,
+            unidad,
+            COSTOS_MARGENES_CONFIGURAR,
+            allow_global=False,
+        )
         resultado = actualizar_regla_margen(
             regla_id=regla_id,
             margen_esperado=regla.margen_esperado,
@@ -198,6 +322,8 @@ async def actualizar_regla_endpoint(
             modificado_por=current_user.get('email', 'SISTEMA')
         )
         return resultado
+    except HTTPException:
+        raise
     except AlertasMargenError as e:
         status = 404 if e.codigo == 'REGLA_NO_ENCONTRADA' else 400
         raise HTTPException(status_code=status, detail={'error': e.codigo, 'mensaje': e.mensaje})
@@ -209,6 +335,7 @@ async def actualizar_regla_endpoint(
 @router.delete("/reglas/{regla_id}")
 async def desactivar_regla_endpoint(
     regla_id: str,
+    unidad: str = Query(..., min_length=1),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -217,7 +344,16 @@ async def desactivar_regla_endpoint(
     La regla desactivada ya no participa en la resolución de jerarquía.
     """
     try:
+        await _get_scoped_rule(
+            regla_id,
+            current_user,
+            unidad,
+            COSTOS_MARGENES_CONFIGURAR,
+            allow_global=False,
+        )
         return desactivar_regla_margen(regla_id, current_user.get('email', 'SISTEMA'))
+    except HTTPException:
+        raise
     except AlertasMargenError as e:
         raise HTTPException(status_code=404, detail={'error': e.codigo, 'mensaje': e.mensaje})
     except Exception as e:
@@ -231,13 +367,12 @@ async def desactivar_regla_endpoint(
 
 @router.get("/resolver-regla")
 async def resolver_regla_endpoint(
+    unidad: str = Query(..., min_length=1),
+    producto_id: Optional[int] = Query(None, description="ProductoID canónico"),
     producto_clave: Optional[str] = Query(None, description="Clave del producto"),
     subfamilia_codigo: Optional[str] = Query(None, description="Código de subfamilia"),
     familia_codigo: Optional[str] = Query(None, description="Código de familia"),
     grupo_codigo: Optional[str] = Query(None, description="Código de grupo"),
-    empresa_id: Optional[int] = Query(None),
-    sucursal_id: Optional[int] = Query(None),
-    server_id: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -255,15 +390,25 @@ async def resolver_regla_endpoint(
     - Si no hay ninguna, devuelve SIN_REGLA_MARGEN_ESPERADO
     """
     try:
+        scope = await _resolve_scope(
+            current_user,
+            unidad,
+            COSTOS_MARGENES_VER,
+        )
         return resolver_margen_esperado(
+            producto_id=producto_id,
             producto_clave=producto_clave,
             subfamilia_codigo=subfamilia_codigo,
             familia_codigo=familia_codigo,
             grupo_codigo=grupo_codigo,
-            empresa_id=empresa_id,
-            sucursal_id=sucursal_id,
-            server_id=server_id
+            empresa_id=scope.empresa_id,
+            sucursal_id=scope.sucursal_origen_id,
+            server_id=scope.server_id,
+            unidad_negocio_pk=scope.unidad_pk,
+            usuario_id=_sql_usuario_id(current_user),
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"[ALERTAS_MARGEN] Error resolviendo regla: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -272,6 +417,7 @@ async def resolver_regla_endpoint(
 @router.post("/evaluar")
 async def evaluar_margen_endpoint(
     request: EvaluarMargenRequest,
+    unidad: str = Query(..., min_length=1),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -284,18 +430,28 @@ async def evaluar_margen_endpoint(
     se implementará en COSTOS-ALERTAS-001-E.
     """
     try:
+        scope = await _resolve_scope(
+            current_user,
+            unidad,
+            COSTOS_MARGENES_VER,
+        )
         return evaluar_margen_producto(
             margen_actual=request.margen_actual,
+            producto_id=request.producto_id,
             producto_clave=request.producto_clave,
             subfamilia_codigo=request.subfamilia_codigo,
             familia_codigo=request.familia_codigo,
             grupo_codigo=request.grupo_codigo,
             precio_venta=request.precio_venta,
             costo_receta=request.costo_receta,
-            empresa_id=request.empresa_id,
-            sucursal_id=request.sucursal_id,
-            server_id=request.server_id
+            empresa_id=scope.empresa_id,
+            sucursal_id=scope.sucursal_origen_id,
+            server_id=scope.server_id,
+            unidad_negocio_pk=scope.unidad_pk,
+            usuario_id=_sql_usuario_id(current_user),
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"[ALERTAS_MARGEN] Error evaluando margen: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -307,6 +463,7 @@ async def evaluar_margen_endpoint(
 
 @router.get("/umbrales")
 async def obtener_umbrales_endpoint(
+    unidad: str = Query(..., min_length=1),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -317,7 +474,14 @@ async def obtener_umbrales_endpoint(
     el margen esperado y el margen actual.
     """
     try:
+        await _resolve_scope(
+            current_user,
+            unidad,
+            COSTOS_MARGENES_VER,
+        )
         return {'umbrales': obtener_umbrales()}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"[ALERTAS_MARGEN] Error obteniendo umbrales: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -325,6 +489,7 @@ async def obtener_umbrales_endpoint(
 
 @router.get("/estadisticas")
 async def obtener_estadisticas_endpoint(
+    unidad: str = Query(..., min_length=1),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -337,7 +502,14 @@ async def obtener_estadisticas_endpoint(
     - Margen promedio configurado
     """
     try:
+        await _resolve_scope(
+            current_user,
+            unidad,
+            COSTOS_MARGENES_VER,
+        )
         return obtener_estadisticas()
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"[ALERTAS_MARGEN] Error obteniendo estadísticas: {e}")
         raise HTTPException(status_code=500, detail=str(e))

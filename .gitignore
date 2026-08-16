@@ -619,3 +619,11 @@ graphify-out/
 /AUDITORIA_*.json
 /repository_guard_*.txt
 # EDARSAHUB GENERATED ROOT ARTIFACTS - END
+
+
+# EDARSAHUB - Artefactos que NO deben versionarse (limpieza 2026-06)
+backups/
+docs/reports/
+.config/
+.copilot/
+.emergent/markers/
