@@ -654,7 +654,7 @@ class CavaSociosService:
                     s.NumeroSocio as ya_afiliado_numero_socio,
                     CAST(s.SocioID AS VARCHAR(36)) as ya_afiliado_socio_id
                 FROM dbo.Cliente_Catalogo cc
-                LEFT JOIN dbo.CavaSocios_Socios s 
+                LEFT JOIN dbo.CavaSocios_Socios s
                     ON (s.ClienteCRMID = cc.PublicUUID OR (s.Email = cc.EmailPrincipal AND cc.EmailPrincipal <> ''))
                     AND s.EmpresaID = %s
                 WHERE {where_clause}
@@ -705,7 +705,7 @@ class CavaSociosService:
                     cc.TelefonoPrincipal as Telefono,
                     cc.PublicUUID
                 FROM dbo.Cliente_Catalogo cc
-                LEFT JOIN dbo.CavaSocios_Socios s 
+                LEFT JOIN dbo.CavaSocios_Socios s
                     ON (s.ClienteCRMID = cc.PublicUUID OR (s.Email = cc.EmailPrincipal AND cc.EmailPrincipal <> ''))
                     AND s.EmpresaID = %s
                 WHERE {where_clause}
@@ -964,7 +964,7 @@ class CavaSociosService:
             botellas = cursor.fetchall() or []
 
             cursor.execute(f"""
-                SELECT COUNT(*) as total, 
+                SELECT COUNT(*) as total,
                        SUM(b.ValorDeclarado) as valor_total,
                        SUM(b.NivelActual / 100.0) as total_volumen_pz
                 FROM CavaSocios_Botellas b

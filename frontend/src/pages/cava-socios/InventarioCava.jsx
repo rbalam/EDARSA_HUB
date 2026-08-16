@@ -12,8 +12,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { 
-  Wine, Search, Filter, RefreshCw, AlertCircle, 
+import {
+  Wine, Search, Filter, RefreshCw, AlertCircle,
   ChevronLeft, ChevronRight, QrCode, Eye, Package,
   Layers, DollarSign, Printer, Plus, Trash2, CheckCircle2,
   ArrowRightLeft, ClipboardCheck, ArrowUpRight, Save, User
@@ -228,7 +228,7 @@ function InventarioCavaContent() {
       const res = await api.get(`/cava-socios/inventario-fisico/hoja?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`);
       const items = res.data?.hoja_conteo || [];
       setHojaFisico(items);
-      
+
       // Inicializar conteos con el nivel teórico
       const initialMap = {};
       items.forEach(item => {
@@ -597,7 +597,7 @@ function InventarioCavaContent() {
                           {b.marca && <div className="text-xs text-muted-foreground">{b.marca}</div>}
                         </TableCell>
                         <TableCell>
-                          <div 
+                          <div
                             className="font-medium text-purple-700 hover:underline cursor-pointer flex items-center gap-1"
                             onClick={() => navigate(`/cava-socios/socios/${b.socio_id}`)}
                           >
@@ -1252,7 +1252,7 @@ function InventarioCavaContent() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Porcentaje / Puntaje a Consumir</Label>
-              <Select 
+              <Select
                 value={String(consumoForm.porcentaje_consumido)}
                 onValueChange={(v) => setConsumoForm(f => ({...f, porcentaje_consumido: parseInt(v)}))}
               >
