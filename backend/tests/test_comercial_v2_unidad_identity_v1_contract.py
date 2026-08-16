@@ -198,53 +198,48 @@ def test_sync_comercial_resuelve_por_pk_y_server():
 
 # V1.0-COMERCIAL-PYTDS-POS
 
-def test_sync_comercial_usa_drivers_sql_sin_odbc():
+def test_sync_comercial_usa_factory_sql_externo_canonico():
     block = _function_block(
         SYNC,
         "execute_query_on_server",
     )
 
-    assert "import pytds" in block
-    assert "import pymssql" in block
-    assert "pytds.connect" in block
+    assert (
+        "core.sql_first.connection_factory"
+        in block
+    )
+    assert "get_external_sql_connection" in block
 
-    assert '"PYTDS_DIRECT_PORT"' in block
-    assert '"PYTDS_NAMED_INSTANCE"' in block
-    assert '"PYMSSQL_DIRECT_PORT"' in block
-
-    assert "pyodbc" not in block
-    assert "pymssql.connect" in block
-    assert "execute_sql_query" not in block
+    assert "pymssql.connect" not in block
+    assert "pytds.connect" not in block
+    assert "pyodbc.connect" not in block
 
 
-def test_sync_comercial_no_combina_instancia_y_puerto():
+def test_sync_comercial_no_reimplementa_topologia_sql():
     block = _function_block(
         SYNC,
         "execute_query_on_server",
     )
 
-    assert 'f"{host}\\\\{instance}"' in block
-    assert '"port": None' in block
+    assert "parse_sql_server_host" not in block
+    assert '"PYTDS_DIRECT_PORT"' not in block
+    assert '"PYTDS_NAMED_INSTANCE"' not in block
+    assert '"PYMSSQL_DIRECT_PORT"' not in block
+    assert 'f"{host}\\\\{instance}"' not in block
 
 
 # V1.0-COMERCIAL-HYBRID-DRIVER
 
-def test_sync_comercial_selecciona_driver_por_topologia():
+def test_sync_comercial_delega_driver_y_topologia_al_factory():
     block = _function_block(
         SYNC,
         "execute_query_on_server",
     )
 
-    assert '"PYTDS_DIRECT_PORT"' in block
-    assert '"PYTDS_NAMED_INSTANCE"' in block
-    assert '"PYMSSQL_DIRECT_PORT"' in block
-
-    assert "if instance:" in block
-    assert "pymssql.connect" in block
-    assert "pytds.connect" in block
-
-    assert "pyodbc" not in block
-    assert "execute_sql_query" not in block
+    assert "get_external_sql_connection" in block
+    assert "pymssql.connect" not in block
+    assert "pytds.connect" not in block
+    assert "pyodbc.connect" not in block
 
 
 # V1.0-COMERCIAL-SQL-DATE-112

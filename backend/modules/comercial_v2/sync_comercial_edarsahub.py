@@ -178,235 +178,74 @@ def execute_query_on_server(
     query: str,
     context: str = "web",
 ) -> Tuple[List[Dict], ConnectionStatus]:
-    """Ejecuta SELECT comerciales con selección de driver.
-
-    Compatibilidad V1.0:
-
-    - Servidores con instancia nombrada:
-      pytds directo por puerto, pytds por instancia y pymssql.
-    - Servidores sin instancia:
-      pymssql directo y pytds como recuperación.
-    - ODBC no participa en el flujo comercial.
-    """
+    """Ejecuta SELECT comercial usando el adaptador SQL externo canónico."""
 
     del context
 
-    import pymssql
-    import pytds
-
-    host = str(
-        server_config.get("host") or ""
-    ).strip()
-
-    port = int(
-        server_config.get("port") or 1433
+    from core.sql_first.connection_factory import (
+        get_external_sql_connection,
     )
 
-    instance = str(
-        server_config.get("instance") or ""
-    ).strip()
+    connection = None
+    cursor = None
 
-    database = str(
-        server_config.get("database_name")
-        or server_config.get("database")
-        or ""
-    ).strip()
-
-    username = str(
-        server_config.get("username")
-        or server_config.get("user")
-        or ""
-    ).strip()
-
-    password = str(
-        server_config.get("password") or ""
-    )
-
-    if not all(
-        (
-            host,
-            database,
-            username,
-            password,
+    try:
+        config = dict(server_config or {})
+        config["as_dict"] = True
+        config["login_timeout"] = int(
+            config.get("login_timeout") or 20
         )
-    ):
+        config["timeout"] = int(
+            config.get("timeout") or 60
+        )
+
+        connection = get_external_sql_connection(config)
+        cursor = connection.cursor()
+        cursor.execute(query)
+
+        if not cursor.description:
+            return [], ConnectionStatus.ONLINE
+
+        columns = [
+            description[0]
+            for description in cursor.description
+        ]
+
+        rows = []
+        for row in cursor.fetchall() or []:
+            if isinstance(row, dict):
+                rows.append(dict(row))
+            elif hasattr(row, "_asdict"):
+                rows.append(dict(row._asdict()))
+            else:
+                rows.append(
+                    {
+                        columns[index]: row[index]
+                        for index in range(len(columns))
+                    }
+                )
+
+        return rows, ConnectionStatus.ONLINE
+
+    except Exception as exc:
         logger.error(
-            "Configuración POS comercial incompleta: "
-            "host/database/username/password requeridos"
+            "Error consultando POS mediante factory canónico: %s",
+            type(exc).__name__,
         )
         return [], ConnectionStatus.OFFLINE
 
-    if instance:
-        candidates = [
-            {
-                "label": "PYTDS_DIRECT_PORT",
-                "driver": "pytds",
-                "server": host,
-                "port": port,
-            },
-            {
-                "label": "PYTDS_NAMED_INSTANCE",
-                "driver": "pytds",
-                "server": f"{host}\\{instance}",
-                "port": None,
-            },
-            {
-                "label": "PYMSSQL_DIRECT_PORT",
-                "driver": "pymssql",
-                "server": host,
-                "port": port,
-            },
-        ]
-    else:
-        candidates = [
-            {
-                "label": "PYMSSQL_DIRECT_PORT",
-                "driver": "pymssql",
-                "server": host,
-                "port": port,
-            },
-            {
-                "label": "PYTDS_DIRECT_PORT",
-                "driver": "pytds",
-                "server": host,
-                "port": port,
-            },
-        ]
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception:
+                pass
 
-    errors = []
-
-    for candidate in candidates:
-        connection = None
-        cursor = None
-
-        try:
-            if candidate["driver"] == "pymssql":
-                connection = pymssql.connect(
-                    server=candidate["server"],
-                    port=int(candidate["port"]),
-                    user=username,
-                    password=password,
-                    database=database,
-                    login_timeout=20,
-                    timeout=60,
-                    as_dict=True,
-                )
-
-            elif candidate["driver"] == "pytds":
-                params = {
-                    "server": candidate["server"],
-                    "database": database,
-                    "user": username,
-                    "password": password,
-                    "timeout": 60,
-                    "login_timeout": 20,
-                    "bytes_to_unicode": True,
-                }
-
-                if candidate["port"] is not None:
-                    params["port"] = int(
-                        candidate["port"]
-                    )
-
-                connection = pytds.connect(
-                    **params
-                )
-
-            else:
-                raise RuntimeError(
-                    "Driver comercial no soportado: "
-                    f"{candidate['driver']}"
-                )
-
-            cursor = connection.cursor()
-            cursor.execute(query)
-
-            if cursor.description:
-                columns = [
-                    description[0]
-                    for description in cursor.description
-                ]
-
-                raw_rows = cursor.fetchall()
-                rows = []
-
-                for row in raw_rows:
-                    if isinstance(row, dict):
-                        rows.append(dict(row))
-                    elif hasattr(row, "_asdict"):
-                        rows.append(
-                            dict(row._asdict())
-                        )
-                    else:
-                        rows.append(
-                            dict(zip(columns, row))
-                        )
-            else:
-                rows = []
-
-            logger.info(
-                "Conexión POS comercial exitosa: "
-                "server=%s, estrategia=%s",
-                host,
-                candidate["label"],
-            )
-
-            return rows, ConnectionStatus.ONLINE
-
-        except Exception as exc:
-            message = str(exc)
-
-            if password:
-                message = message.replace(
-                    password,
-                    "<REDACTED>",
-                )
-
-            errors.append(
-                {
-                    "strategy": candidate["label"],
-                    "type": type(exc).__name__,
-                    "message": message[:500],
-                }
-            )
-
-        finally:
-            if cursor is not None:
-                try:
-                    cursor.close()
-                except Exception:
-                    pass
-
-            if connection is not None:
-                try:
-                    connection.close()
-                except Exception:
-                    pass
-
-    error_text = " | ".join(
-        f"{item['strategy']}="
-        f"{item['type']}: {item['message']}"
-        for item in errors
-    )
-
-    logger.warning(
-        "Todas las estrategias POS fallaron para "
-        "%s:%s/%s: %s",
-        host,
-        port,
-        database,
-        error_text,
-    )
-
-    normalized = error_text.lower()
-
-    if (
-        "timeout" in normalized
-        or "timed out" in normalized
-    ):
-        return [], ConnectionStatus.TIMEOUT
-
-    return [], ConnectionStatus.OFFLINE
+        if connection is not None:
+            try:
+                connection.close()
+            except Exception:
+                pass
 
 # ============================================================
 # AGREGACION CANONICA POR FECHA_OPERACION
