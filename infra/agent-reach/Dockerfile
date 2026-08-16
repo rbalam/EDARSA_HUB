@@ -91,7 +91,7 @@ RUN python -m venv "$VIRTUAL_ENV" \
         "Agent Reach v${AGENT_REACH_VERSION}" \
     && test "$("$VIRTUAL_ENV/bin/yt-dlp" --version)" = \
         "${YTDLP_VERSION}" \
-    && test "$(deno --version | sed -n '1s/^deno //p')" = \
+    && test "$(deno --version | awk 'NR==1 {print $2}')" = \
         "${DENO_VERSION}" \
     && ffmpeg -version >/dev/null 2>&1 \
     && ffprobe -version >/dev/null 2>&1
