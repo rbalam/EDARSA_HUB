@@ -555,6 +555,7 @@ from modules.inteligencia_comercial.routes import router as inteligencia_router
 from routes.portal_inteligencia import router as portal_intel_router, intel_portal_guard
 from modules.inteligencia_comercial.iscam_routes import iscam_router
 from fastapi import Depends as _DependsIntel
+from core.rbac.middleware import require_explicit_permission
 # Módulo de inteligencia comercial ya incluye su propia configuración.
 # Guard DUAL: usuarios internos del CRM (acceso completo) O externos del portal
 # de inteligencia (restringidos a sus unidades asignadas).
@@ -1915,7 +1916,7 @@ async def send_email_with_attachment(recipient_emails: List[str], subject: str, 
 # ============= SERVERS =============
 
 @api_router.post("/servers")
-async def create_server(server_data: ServerCreate, current_user: Dict = Depends(get_current_user)):
+async def create_server(server_data: ServerCreate, current_user: Dict = Depends(get_current_user), _rbac: dict = Depends(require_explicit_permission("SERVIDORES_CREAR"))):
     """
     FASE 3B.1: Crea servidor en EDARSAHUB SQL primero, NO sincroniza a MongoDB.
 
@@ -1923,11 +1924,9 @@ async def create_server(server_data: ServerCreate, current_user: Dict = Depends(
     - MongoDB no se usa en flujo productivo
     - No existe sync Mongo en flujo productivo
 
-    RBAC: Solo SuperAdministrador o Administrador pueden crear servidores.
+    RBAC: Requiere permiso explícito SERVIDORES_CREAR.
     """
     # FASE 3B.2: Validación RBAC corregida - permitir SuperAdministrador y Administrador
-    if current_user['role'] not in ['SuperAdministrador', 'Administrador']:
-        raise HTTPException(status_code=403, detail="No autorizado. Requiere rol SuperAdministrador o Administrador.")
 
     from core.server_registry import create_server as registry_create_server
 
@@ -1972,7 +1971,7 @@ async def create_server(server_data: ServerCreate, current_user: Dict = Depends(
     }
 
 @api_router.get("/servers", response_model=List[Server])
-async def get_servers(current_user: Dict = Depends(get_current_user)):
+async def get_servers(current_user: Dict = Depends(get_current_user), _rbac: dict = Depends(require_explicit_permission("SERVIDORES_VER"))):
     """
     FASE 3B: Listado de servidores usando Server Registry Central.
 
@@ -1999,7 +1998,7 @@ async def get_servers(current_user: Dict = Depends(get_current_user)):
     return servers
 
 @api_router.get("/servers/{server_id}")
-async def get_server(server_id: str, current_user: Dict = Depends(get_current_user)):
+async def get_server(server_id: str, current_user: Dict = Depends(get_current_user), _rbac: dict = Depends(require_explicit_permission("SERVIDORES_VER"))):
     """
     FASE 3B: Obtener servidor por ID usando Server Registry Central.
 
@@ -2026,7 +2025,7 @@ async def get_server(server_id: str, current_user: Dict = Depends(get_current_us
     return server
 
 @api_router.put("/servers/{server_id}")
-async def update_server(server_id: str, server_data: Dict, current_user: Dict = Depends(get_current_user)):
+async def update_server(server_id: str, server_data: Dict, current_user: Dict = Depends(get_current_user), _rbac: dict = Depends(require_explicit_permission("SERVIDORES_EDITAR"))):
     """
     FASE 3B.1: Actualiza servidor en EDARSAHUB SQL primero, NO sincroniza a MongoDB.
 
@@ -2035,12 +2034,10 @@ async def update_server(server_id: str, server_data: Dict, current_user: Dict = 
     - No existe sync Mongo en flujo productivo
     - Passwords enmascarados no sobrescriben el real
 
-    RBAC: Solo SuperAdministrador o Administrador pueden actualizar servidores.
+    RBAC: Requiere permiso explícito SERVIDORES_EDITAR.
     Protección CORE: Ni SuperAdministrador ni Administrador pueden modificar conexiones CORE.
     """
     # FASE 3B.2: Validación RBAC corregida - permitir SuperAdministrador y Administrador
-    if current_user['role'] not in ['SuperAdministrador', 'Administrador']:
-        raise HTTPException(status_code=403, detail="No autorizado. Requiere rol SuperAdministrador o Administrador.")
 
     from core.server_registry import update_server as registry_update_server, get_server_by_id
 
@@ -2084,7 +2081,7 @@ async def update_server(server_id: str, server_data: Dict, current_user: Dict = 
     }
 
 @api_router.delete("/servers/{server_id}")
-async def delete_server(server_id: str, current_user: Dict = Depends(get_current_user)):
+async def delete_server(server_id: str, current_user: Dict = Depends(get_current_user), _rbac: dict = Depends(require_explicit_permission("SERVIDORES_ELIMINAR"))):
     """
     FASE 3B.1: Desactiva servidor en EDARSAHUB SQL primero, NO sincroniza a MongoDB.
 
@@ -2093,12 +2090,10 @@ async def delete_server(server_id: str, current_user: Dict = Depends(get_current
     - MongoDB no se usa en flujo productivo
     - No existe sync Mongo en flujo productivo
 
-    RBAC: Solo SuperAdministrador o Administrador pueden eliminar servidores.
+    RBAC: Requiere permiso explícito SERVIDORES_ELIMINAR.
     Protección CORE: Ni SuperAdministrador ni Administrador pueden eliminar conexiones CORE.
     """
     # FASE 3B.2: Validación RBAC corregida - permitir SuperAdministrador y Administrador
-    if current_user['role'] not in ['SuperAdministrador', 'Administrador']:
-        raise HTTPException(status_code=403, detail="No autorizado. Requiere rol SuperAdministrador o Administrador.")
 
     from core.server_registry import delete_server as registry_delete_server, get_server_by_id
 

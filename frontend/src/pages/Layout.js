@@ -541,7 +541,6 @@ const Layout = () => {
   
   const sistema = [
     { name: 'Centro de Control', href: '/centro-control', icon: Shield, roles: ['SuperAdministrador', 'SUPERADMIN', 'Administrador', 'ADMIN', 'Supervisor', 'Director'] },
-    { name: 'Servidores', href: '/servidores', icon: Server, roles: ['SuperAdministrador', 'SUPERADMIN', 'Administrador', 'ADMIN'] },
     { name: 'Programación', href: '/scheduler', icon: Clock, roles: ['SuperAdministrador', 'SUPERADMIN', 'Administrador', 'ADMIN', 'Supervisor'] },
     { name: 'Automatizaciones', href: '/automatizaciones', icon: CalendarCheck, roles: ['SuperAdministrador', 'SUPERADMIN', 'Administrador', 'ADMIN', 'Supervisor', 'Gerente', 'Director', 'Auditor'] },
     { name: 'Asignaciones', href: '/configuracion/asignaciones', icon: UserCog, roles: ['SuperAdministrador', 'SUPERADMIN', 'Administrador', 'ADMIN'] },
