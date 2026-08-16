@@ -73,7 +73,7 @@ def listar_reglas(
 ) -> Tuple[List[Dict], int]:
     """
     Lista reglas de margen con filtros opcionales.
-    
+
     Args:
         nivel_aplicacion: GRUPO, FAMILIA, SUBFAMILIA, PRODUCTO
         solo_activas: Si True, solo reglas activas y vigentes
@@ -81,28 +81,28 @@ def listar_reglas(
         sucursal_id: Filtrar por sucursal
         page: Página
         page_size: Tamaño de página
-    
+
     Returns:
         Tupla (lista de reglas, total)
     """
     conn = _get_conn()
-    
+
     where_clauses = ["1=1"]
     params: List[Any] = []
-    
+
     if nivel_aplicacion:
         where_clauses.append("NivelAplicacion = %s")
         params.append(nivel_aplicacion)
-    
+
     if solo_activas:
         where_clauses.append("Activo = 1")
         where_clauses.append("(FechaFinVigencia IS NULL OR FechaFinVigencia > GETDATE())")
         where_clauses.append("FechaInicioVigencia <= GETDATE()")
-    
+
     if empresa_id is not None:
         where_clauses.append("(EmpresaID IS NULL OR EmpresaID = %s)")
         params.append(empresa_id)
-    
+
     if sucursal_id is not None:
         where_clauses.append("(SucursalID IS NULL OR SucursalID = %s)")
         params.append(sucursal_id)
@@ -112,18 +112,18 @@ def listar_reglas(
             "(ServerID IS NULL OR ServerID = CAST(%s AS UNIQUEIDENTIFIER))"
         )
         params.append(server_id)
-    
+
     where_sql = " AND ".join(where_clauses)
     offset = (page - 1) * page_size
-    
+
     # Contar total
     count_query = f"SELECT COUNT(*) as total FROM Comercial_AlertasMargenReglas WHERE {where_sql}"
     count_result = execute_sql_query_params(*conn, count_query, tuple(params))
     total = count_result[0].get('total', 0) if count_result else 0
-    
+
     # Obtener datos
     data_query = f"""
-    SELECT 
+    SELECT
         CAST(ReglaMargenID AS NVARCHAR(36)) as regla_id,
         NivelAplicacion as nivel_aplicacion,
         GrupoCodigo as grupo_codigo,
@@ -148,8 +148,8 @@ def listar_reglas(
         ModificadoPor as modificado_por
     FROM Comercial_AlertasMargenReglas
     WHERE {where_sql}
-    ORDER BY 
-        CASE NivelAplicacion 
+    ORDER BY
+        CASE NivelAplicacion
             WHEN 'PRODUCTO' THEN 1
             WHEN 'SUBFAMILIA' THEN 2
             WHEN 'FAMILIA' THEN 3
@@ -158,13 +158,13 @@ def listar_reglas(
         FechaCreacion DESC
     OFFSET %s ROWS FETCH NEXT %s ROWS ONLY
     """
-    
+
     rows = execute_sql_query_params(
         *conn,
         data_query,
         tuple(params + [offset, page_size]),
     ) or []
-    
+
     reglas = []
     for row in rows:
         reglas.append({
@@ -206,24 +206,24 @@ def listar_reglas(
                 row.get('grupo_codigo')
             )
         })
-    
+
     return reglas, total
 
 
 def obtener_regla_por_id(regla_id: str) -> Optional[Dict]:
     """
     Obtiene una regla de margen por su ID.
-    
+
     Args:
         regla_id: UUID de la regla
-    
+
     Returns:
         Dict con la regla o None si no existe
     """
     conn = _get_conn()
-    
+
     query = """
-    SELECT 
+    SELECT
         CAST(ReglaMargenID AS NVARCHAR(36)) as regla_id,
         NivelAplicacion as nivel_aplicacion,
         GrupoCodigo as grupo_codigo,
@@ -249,11 +249,11 @@ def obtener_regla_por_id(regla_id: str) -> Optional[Dict]:
     FROM Comercial_AlertasMargenReglas
     WHERE ReglaMargenID = %s
     """
-    
+
     rows = execute_sql_query_params(*conn, query, (regla_id,))
     if not rows:
         return None
-    
+
     row = rows[0]
     return {
         'regla_id': row.get('regla_id'),
@@ -523,7 +523,7 @@ def actualizar_regla(
 ) -> Optional[Dict]:
     """
     Actualiza una regla de margen existente.
-    
+
     Args:
         regla_id: UUID de la regla
         margen_esperado: Nuevo margen esperado
@@ -533,86 +533,86 @@ def actualizar_regla(
         descripcion: Nueva descripción
         fecha_fin: Nueva fecha de fin
         modificado_por: Usuario que modifica
-    
+
     Returns:
         Dict con la regla actualizada o None si no existe
     """
     conn = _get_conn()
-    
+
     # Verificar que existe
     regla_actual = obtener_regla_por_id(regla_id)
     if not regla_actual:
         return None
-    
+
     set_clauses = ["FechaModificacion = GETDATE()", "ModificadoPor = %s"]
     params: List[Any] = [modificado_por]
-    
+
     if margen_esperado is not None:
         set_clauses.append("MargenPorcentajeEsperado = %s")
         params.append(margen_esperado)
-    
+
     if costo_maximo is not None:
         set_clauses.append("CostoMaximoPorcentaje = %s")
         params.append(costo_maximo)
-    
+
     if utilidad_minima is not None:
         set_clauses.append("UtilidadMinimaPorcentaje = %s")
         params.append(utilidad_minima)
-    
+
     if severidad_base:
         set_clauses.append("SeveridadBase = %s")
         params.append(severidad_base)
-    
+
     if descripcion is not None:
         set_clauses.append("Descripcion = %s")
         params.append(descripcion)
-    
+
     if fecha_fin:
         set_clauses.append("FechaFinVigencia = %s")
         params.append(fecha_fin)
-    
+
     set_sql = ", ".join(set_clauses)
-    
+
     query = (
         "UPDATE Comercial_AlertasMargenReglas "
         f"SET {set_sql} WHERE ReglaMargenID = %s"
     )
     execute_sql_query_params(*conn, query, tuple(params + [regla_id]))
-    
+
     logger.info(f"[ALERTAS_MARGEN] Regla actualizada: {regla_id}")
-    
+
     return obtener_regla_por_id(regla_id)
 
 
 def desactivar_regla(regla_id: str, modificado_por: str = 'SISTEMA') -> bool:
     """
     Desactiva una regla de margen (no la elimina).
-    
+
     Args:
         regla_id: UUID de la regla
         modificado_por: Usuario que desactiva
-    
+
     Returns:
         True si se desactivó, False si no existe
     """
     conn = _get_conn()
-    
+
     # Verificar que existe
     regla_actual = obtener_regla_por_id(regla_id)
     if not regla_actual:
         return False
-    
+
     query = """
-    UPDATE Comercial_AlertasMargenReglas 
-    SET Activo = 0, 
+    UPDATE Comercial_AlertasMargenReglas
+    SET Activo = 0,
         FechaModificacion = GETDATE(),
         ModificadoPor = %s
     WHERE ReglaMargenID = %s
     """
     execute_sql_query_params(*conn, query, (modificado_por, regla_id))
-    
+
     logger.info(f"[ALERTAS_MARGEN] Regla desactivada: {regla_id}")
-    
+
     return True
 
 
@@ -869,14 +869,14 @@ def resolver_regla_aplicable(
 def obtener_umbrales_severidad() -> List[Dict]:
     """
     Obtiene los umbrales de severidad configurados.
-    
+
     Returns:
         Lista de umbrales ordenados por orden
     """
     conn = _get_conn()
-    
+
     query = """
-    SELECT 
+    SELECT
         CAST(UmbralID AS NVARCHAR(36)) as umbral_id,
         Severidad as Severidad,
         PuntosDesde as puntos_desde,
@@ -891,9 +891,9 @@ def obtener_umbrales_severidad() -> List[Dict]:
     WHERE Activo = 1
     ORDER BY Orden
     """
-    
+
     rows = execute_sql_query(*conn, query) or []
-    
+
     return [
         {
             'umbral_id': row.get('umbral_id'),
@@ -914,33 +914,33 @@ def obtener_umbrales_severidad() -> List[Dict]:
 def determinar_severidad(diferencia_puntos: float, utilidad_negativa: bool = False, costo_mayor_precio: bool = False) -> str:
     """
     Determina la severidad de una alerta basada en la diferencia de margen.
-    
+
     Args:
         diferencia_puntos: Diferencia en puntos porcentuales (margen_esperado - margen_actual)
         utilidad_negativa: Si la utilidad es negativa
         costo_mayor_precio: Si el costo es mayor al precio
-    
+
     Returns:
         Severidad: INFORMATIVA, MEDIA, ALTA, CRITICA
     """
     umbrales = obtener_umbrales_severidad()
-    
+
     # Primero verificar condiciones críticas
     if utilidad_negativa or costo_mayor_precio:
         for u in umbrales:
             if u['incluir_utilidad_negativa'] or u['incluir_costo_mayor_precio']:
                 return u['severidad']
         return 'CRITICA'  # Default si no hay umbral configurado
-    
+
     # Buscar umbral por puntos
     for u in umbrales:
         if u['puntos_desde'] <= diferencia_puntos <= u['puntos_hasta']:
             return u['severidad']
-    
+
     # Si excede todos los umbrales, es crítica
     if diferencia_puntos > 10:
         return 'CRITICA'
-    
+
     return 'INFORMATIVA'
 
 
@@ -951,14 +951,14 @@ def determinar_severidad(diferencia_puntos: float, utilidad_negativa: bool = Fal
 def obtener_estadisticas_reglas() -> Dict:
     """
     Obtiene estadísticas generales de las reglas configuradas.
-    
+
     Returns:
         Dict con estadísticas
     """
     conn = _get_conn()
-    
+
     query = """
-    SELECT 
+    SELECT
         COUNT(*) as total_reglas,
         SUM(CASE WHEN Activo = 1 THEN 1 ELSE 0 END) as reglas_activas,
         SUM(CASE WHEN NivelAplicacion = 'GRUPO' AND Activo = 1 THEN 1 ELSE 0 END) as reglas_grupo,
@@ -968,9 +968,9 @@ def obtener_estadisticas_reglas() -> Dict:
         AVG(CASE WHEN Activo = 1 THEN MargenPorcentajeEsperado ELSE NULL END) as margen_promedio
     FROM Comercial_AlertasMargenReglas
     """
-    
+
     rows = execute_sql_query(*conn, query)
-    
+
     if not rows:
         return {
             'total_reglas': 0,
@@ -983,7 +983,7 @@ def obtener_estadisticas_reglas() -> Dict:
             },
             'margen_promedio': None
         }
-    
+
     row = rows[0]
     return {
         'total_reglas': row.get('total_reglas', 0),

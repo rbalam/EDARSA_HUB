@@ -559,4 +559,3 @@ def test_obtener_regla_expone_productoid_canonico(monkeypatch):
         "ProductoID as producto_id"
         in captured["query"]
     )
-

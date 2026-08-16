@@ -129,7 +129,7 @@ def listar_reglas_margen(
 ) -> Dict:
     """
     Lista reglas de margen con filtros.
-    
+
     Args:
         nivel_aplicacion: Filtrar por nivel (GRUPO, FAMILIA, SUBFAMILIA, PRODUCTO)
         solo_activas: Solo reglas activas y vigentes
@@ -137,13 +137,13 @@ def listar_reglas_margen(
         sucursal_id: Filtrar por sucursal
         page: Página
         page_size: Tamaño de página
-    
+
     Returns:
         Dict con reglas y metadatos de paginación
     """
     if nivel_aplicacion:
         _validar_nivel_aplicacion(nivel_aplicacion)
-    
+
     reglas, total = listar_reglas(
         nivel_aplicacion=nivel_aplicacion,
         solo_activas=solo_activas,
@@ -153,9 +153,9 @@ def listar_reglas_margen(
         page=page,
         page_size=page_size
     )
-    
+
     total_pages = (total + page_size - 1) // page_size if page_size > 0 else 1
-    
+
     return {
         'reglas': reglas,
         'total': total,
@@ -168,13 +168,13 @@ def listar_reglas_margen(
 def obtener_regla(regla_id: str) -> Dict:
     """
     Obtiene una regla por su ID.
-    
+
     Args:
         regla_id: UUID de la regla
-    
+
     Returns:
         Dict con la regla
-    
+
     Raises:
         AlertasMargenError si no existe
     """
@@ -202,7 +202,7 @@ def crear_regla_margen(
 ) -> Dict:
     """
     Crea una nueva regla de margen esperado.
-    
+
     Args:
         nivel_aplicacion: GRUPO, FAMILIA, SUBFAMILIA, PRODUCTO
         entidad_codigo: Código de la entidad según el nivel
@@ -217,10 +217,10 @@ def crear_regla_margen(
         fecha_inicio: Fecha de inicio de vigencia
         fecha_fin: Fecha de fin de vigencia
         creado_por: Usuario que crea
-    
+
     Returns:
         Dict con la regla creada
-    
+
     Raises:
         AlertasMargenError si hay error de validación
     """
@@ -228,15 +228,15 @@ def crear_regla_margen(
     _validar_nivel_aplicacion(nivel_aplicacion)
     _validar_severidad(severidad_base)
     _validar_porcentaje(margen_esperado, 'Margen esperado')
-    
+
     if costo_maximo is not None:
         _validar_porcentaje(costo_maximo, 'Costo máximo')
-    
+
     if utilidad_minima is not None:
         _validar_porcentaje(utilidad_minima, 'Utilidad mínima', minimo=-100)
-    
+
     _validar_vigencia(fecha_inicio, fecha_fin)
-    
+
     if nivel_aplicacion == 'PRODUCTO':
         if producto_id is None or int(producto_id) <= 0:
             raise AlertasMargenError(
@@ -280,7 +280,7 @@ def crear_regla_margen(
             f"Ya existe una regla activa para {nivel_aplicacion}={entidad_codigo}",
             'REGLA_DUPLICADA'
         )
-    
+
     # Crear regla
     regla = crear_regla(
         nivel_aplicacion=nivel_aplicacion,
@@ -298,9 +298,9 @@ def crear_regla_margen(
         fecha_fin=fecha_fin,
         creado_por=creado_por
     )
-    
+
     logger.info(f"[ALERTAS_MARGEN_SERVICE] Regla creada: {regla['regla_id']} - {nivel_aplicacion}={entidad_codigo}")
-    
+
     return regla
 
 
@@ -316,7 +316,7 @@ def actualizar_regla_margen(
 ) -> Dict:
     """
     Actualiza una regla de margen existente.
-    
+
     Args:
         regla_id: UUID de la regla
         margen_esperado: Nuevo margen esperado
@@ -326,10 +326,10 @@ def actualizar_regla_margen(
         descripcion: Nueva descripción
         fecha_fin: Nueva fecha de fin
         modificado_por: Usuario que modifica
-    
+
     Returns:
         Dict con la regla actualizada
-    
+
     Raises:
         AlertasMargenError si hay error
     """
@@ -337,20 +337,20 @@ def actualizar_regla_margen(
     regla_actual = obtener_regla_por_id(regla_id)
     if not regla_actual:
         raise AlertasMargenError(f"Regla no encontrada: {regla_id}", 'REGLA_NO_ENCONTRADA')
-    
+
     # Validaciones
     if margen_esperado is not None:
         _validar_porcentaje(margen_esperado, 'Margen esperado')
-    
+
     if costo_maximo is not None:
         _validar_porcentaje(costo_maximo, 'Costo máximo')
-    
+
     if utilidad_minima is not None:
         _validar_porcentaje(utilidad_minima, 'Utilidad mínima', minimo=-100)
-    
+
     if severidad_base:
         _validar_severidad(severidad_base)
-    
+
     # Actualizar
     regla = actualizar_regla(
         regla_id=regla_id,
@@ -362,31 +362,31 @@ def actualizar_regla_margen(
         fecha_fin=fecha_fin,
         modificado_por=modificado_por
     )
-    
+
     logger.info(f"[ALERTAS_MARGEN_SERVICE] Regla actualizada: {regla_id}")
-    
+
     return regla
 
 
 def desactivar_regla_margen(regla_id: str, modificado_por: str = 'SISTEMA') -> Dict:
     """
     Desactiva una regla de margen.
-    
+
     Args:
         regla_id: UUID de la regla
         modificado_por: Usuario que desactiva
-    
+
     Returns:
         Dict con mensaje de éxito
-    
+
     Raises:
         AlertasMargenError si no existe
     """
     if not desactivar_regla(regla_id, modificado_por):
         raise AlertasMargenError(f"Regla no encontrada: {regla_id}", 'REGLA_NO_ENCONTRADA')
-    
+
     logger.info(f"[ALERTAS_MARGEN_SERVICE] Regla desactivada: {regla_id}")
-    
+
     return {'mensaje': 'Regla desactivada correctamente', 'regla_id': regla_id}
 
 
@@ -655,10 +655,10 @@ def evaluar_margen_producto(
 ) -> Dict:
     """
     Evalúa el margen de un producto contra su margen esperado y determina severidad.
-    
+
     NOTA: Este es un endpoint de prueba. El motor de evaluación masiva
     se implementará en COSTOS-ALERTAS-001-E.
-    
+
     Args:
         margen_actual: Margen actual del producto (%)
         producto_clave: Clave del producto
@@ -670,7 +670,7 @@ def evaluar_margen_producto(
         empresa_id: Empresa
         sucursal_id: Sucursal
         server_id: Servidor
-    
+
     Returns:
         Dict con evaluación completa
     """
@@ -687,7 +687,7 @@ def evaluar_margen_producto(
         unidad_negocio_pk=unidad_negocio_pk,
         usuario_id=usuario_id,
     )
-    
+
     # Si no hay regla, no hay evaluación
     if regla_resultado['fuente'] == 'SIN_REGLA':
         return {
@@ -701,34 +701,34 @@ def evaluar_margen_producto(
             'regla_aplicada': None,
             'fuente_regla': 'SIN_REGLA'
         }
-    
+
     margen_esperado = regla_resultado['margen_esperado']
     diferencia_puntos = margen_esperado - margen_actual
-    
+
     # Determinar si hay alerta
     tiene_alerta = diferencia_puntos > 0  # Margen actual está debajo del esperado
-    
+
     # Calcular condiciones especiales
     utilidad_negativa = False
     costo_mayor_precio = False
-    
+
     if precio_venta is not None and costo_receta is not None:
         utilidad = precio_venta - costo_receta
         utilidad_negativa = utilidad < 0
         costo_mayor_precio = costo_receta > precio_venta
-    
+
     # Determinar severidad
     severidad = None
     if tiene_alerta:
         severidad = determinar_severidad(diferencia_puntos, utilidad_negativa, costo_mayor_precio)
-    
+
     # Calcular pérdida por unidad
     perdida_por_unidad = None
     if tiene_alerta and precio_venta and costo_receta:
         utilidad_actual = precio_venta - costo_receta
         utilidad_esperada = precio_venta * (margen_esperado / 100)
         perdida_por_unidad = utilidad_esperada - utilidad_actual
-    
+
     return {
         'tiene_alerta': tiene_alerta,
         'estado': 'ALERTA_MARGEN_BAJO' if tiene_alerta else 'MARGEN_OK',
@@ -752,7 +752,7 @@ def evaluar_margen_producto(
 def obtener_umbrales() -> List[Dict]:
     """
     Obtiene los umbrales de severidad configurados.
-    
+
     Returns:
         Lista de umbrales
     """
@@ -762,7 +762,7 @@ def obtener_umbrales() -> List[Dict]:
 def obtener_estadisticas() -> Dict:
     """
     Obtiene estadísticas de las reglas configuradas.
-    
+
     Returns:
         Dict con estadísticas
     """
