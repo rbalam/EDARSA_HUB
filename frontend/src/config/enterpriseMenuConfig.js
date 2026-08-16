@@ -398,12 +398,39 @@ export const enterpriseMenuGroups = [
     children: [
       {
         id: "cava-socios",
-        label: "Cavas",
+        label: "Cavas - Dashboard",
         path: "/cava-socios",
         icon: "Wine",
         section: "Cavas",
         satellite: true,
-        keywords: ["cava", "cavas", "socios", "vino"]
+        keywords: ["cava", "cavas", "socios", "vino", "dashboard"]
+      },
+      {
+        id: "cava-socios-directorio",
+        label: "Cavas - Socios",
+        path: "/cava-socios/socios",
+        icon: "Users",
+        section: "Cavas",
+        satellite: true,
+        keywords: ["cava", "socios", "membresias", "clientes"]
+      },
+      {
+        id: "cava-socios-inventario",
+        label: "Cavas - Inventario & Kardex",
+        path: "/cava-socios/inventario",
+        icon: "Package",
+        section: "Cavas",
+        satellite: true,
+        keywords: ["cava", "inventario", "kardex", "auditoria", "custodia", "botellas"]
+      },
+      {
+        id: "cava-socios-consumos",
+        label: "Cavas - Consumos",
+        path: "/cava-socios/consumos",
+        icon: "TrendingDown",
+        section: "Cavas",
+        satellite: true,
+        keywords: ["cava", "consumos", "descorches", "movimientos"]
       },
       {
         id: "comandero-restaurantero",

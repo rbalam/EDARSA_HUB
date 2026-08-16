@@ -31,6 +31,9 @@ import {
 import { useAccessContext } from '../../hooks/useAccessContext';
 
 
+import CavaNavHeader from './CavaNavHeader';
+
+
 function CavaSociosDashboardContent() {
   const navigate = useNavigate();
   const { selected, loading: filtersLoading } = useCorporateFilters();
@@ -111,53 +114,15 @@ function CavaSociosDashboardContent() {
     }).format(amount || 0);
   };
 
-  if (loading || filtersLoading || contextLoading) {
-    return (
-      <div className="p-6 flex items-center justify-center min-h-[400px]">
-        <RefreshCw className="h-8 w-8 animate-spin text-zinc-400" />
-      </div>
-    );
-  }
-
   return (
     <div className="p-6 space-y-6" data-testid="cava-socios-dashboard">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Wine className="h-7 w-7 text-purple-600" />
-            Cava de Socios
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gestión de botellas en resguardo para clientes VIP
-          </p>
-        </div>
-        <div className="flex gap-2 items-end">
-          <div className="min-w-[260px]">
-            <CorporateFilterSelect
-              filterKey="unidades_negocio"
-              label="Unidad de negocio"
-              placeholder="Selecciona una unidad"
-            />
-          </div>
-          <Button variant="outline" size="sm" onClick={() => navigate('/cava-socios/inventario')}>
-            <Wine className="h-4 w-4 mr-2" />
-            Inventario
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate('/cava-socios/consumos')}>
-            <TrendingDown className="h-4 w-4 mr-2" />
-            Consumos
-          </Button>
-          <Button variant="outline" size="sm" onClick={fetchData}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Actualizar
-          </Button>
-          <Button size="sm" onClick={() => navigate('/cava-socios/socios/nuevo')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo Socio
-          </Button>
-        </div>
-      </div>
+      {/* Header with Navigation Tabs */}
+      <CavaNavHeader
+        title="Dashboard de Cava de Socios"
+        subtitle="Métricas clave, socios activos y botellas en resguardo"
+        onRefresh={fetchData}
+        loading={loading}
+      />
 
       {(error || contextError) && (
         <div className="p-4 rounded-lg bg-red-50 text-red-700 flex items-center gap-2">

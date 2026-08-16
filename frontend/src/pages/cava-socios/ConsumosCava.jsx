@@ -32,6 +32,8 @@ import { useAccessContext } from '../../hooks/useAccessContext';
 
 const PAGE_SIZE = 20;
 
+import CavaNavHeader from './CavaNavHeader';
+
 function ConsumosCavaContent() {
   const navigate = useNavigate();
   const { selected, loading: filtersLoading } = useCorporateFilters();
@@ -118,35 +120,13 @@ function ConsumosCavaContent() {
 
   return (
     <div className="p-6 space-y-6" data-testid="consumos-cava-page">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <TrendingDown className="h-7 w-7 text-purple-600" />
-            Consumos y Movimientos de Cava
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Bitácora de descorches, consumos parciales y retiros de botellas
-          </p>
-        </div>
-        <div className="flex gap-2 items-end">
-          <div className="min-w-[260px]">
-            <CorporateFilterSelect
-              filterKey="unidades_negocio"
-              label="Unidad de negocio"
-              placeholder="Selecciona una unidad"
-            />
-          </div>
-          <Button variant="outline" size="sm" onClick={fetchConsumos}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Actualizar
-          </Button>
-          <Button size="sm" onClick={() => navigate('/cava-socios/inventario')}>
-            <Wine className="h-4 w-4 mr-2" />
-            Ver Inventario
-          </Button>
-        </div>
-      </div>
+      {/* Header with Navigation Tabs */}
+      <CavaNavHeader
+        title="Bitácora de Consumos y Descorches"
+        subtitle="Registro operativo de consumos parciales, descorches en mesa y retiros de botellas"
+        onRefresh={fetchConsumos}
+        loading={loading}
+      />
 
       {(error || contextError) && (
         <div className="p-4 rounded-lg bg-red-50 text-red-700 flex items-center gap-2">

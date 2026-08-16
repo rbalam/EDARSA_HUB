@@ -180,20 +180,39 @@ function SociosListContent() {
       }, 1500);
     } catch (err) {
       console.error('Error promoviendo cliente:', err);
-      alert(err?.response?.data?.detail || 'Error promoviendo cliente a socio');
+      alert(err?.response?.data?.detail || 'Error promoviendo cliente');
     } finally {
       setSavingPromocion(false);
     }
   };
 
-  const getEstatusColor = (estatus) => {
-    const colors = {
-      'ACTIVO': 'text-green-700 bg-green-100',
-      'INACTIVO': 'text-gray-600 bg-gray-100',
-      'VENCIDO': 'text-red-600 bg-red-100',
-      'PENDIENTE': 'text-yellow-600 bg-yellow-100'
+  const getEstatusBadge = (estatus) => {
+    const styles = {
+      'ACTIVO': 'bg-green-100 text-green-800',
+      'INACTIVO': 'bg-zinc-100 text-zinc-800',
+      'VENCIDO': 'bg-red-100 text-red-800',
+      'PENDIENTE': 'bg-amber-100 text-amber-800',
+      'SUSPENDIDO': 'bg-orange-100 text-orange-800'
     };
-    return colors[estatus] || 'text-gray-600 bg-gray-100';
+    return (
+      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${styles[estatus] || 'bg-zinc-100 text-zinc-800'}`}>
+        {estatus}
+      </span>
+    );
+  };
+
+  const getTipoMembresiaBadge = (tipo) => {
+    const styles = {
+      'ESTANDAR': 'bg-blue-50 text-blue-700 border border-blue-200',
+      'PREMIUM': 'bg-purple-50 text-purple-700 border border-purple-200',
+      'VIP': 'bg-amber-50 text-amber-800 border border-amber-200',
+      'BLACK': 'bg-zinc-900 text-white'
+    };
+    return (
+      <span className={`px-2 py-0.5 rounded text-xs font-bold ${styles[tipo] || 'bg-zinc-100 text-zinc-700'}`}>
+        {tipo}
+      </span>
+    );
   };
 
   const formatDate = (dateStr) => {
@@ -215,46 +234,13 @@ function SociosListContent() {
 
   return (
     <div className="p-6 space-y-6" data-testid="socios-list-page">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Users className="h-7 w-7 text-purple-600" />
-            Socios de Cava
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gestión de socios, vinculación canónica y control de membresías
-          </p>
-        </div>
-        <div className="flex gap-2 items-end">
-          <div className="min-w-[260px]">
-            <CorporateFilterSelect
-              filterKey="unidades_negocio"
-              label="Unidad de negocio"
-              placeholder="Selecciona una unidad"
-            />
-          </div>
-          <Button variant="outline" size="sm" onClick={() => navigate('/cava-socios/inventario')}>
-            <Wine className="h-4 w-4 mr-2" />
-            Inventario Cavas
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate('/cava-socios/consumos')}>
-            <TrendingDown className="h-4 w-4 mr-2" />
-            Consumos
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => {
-            setShowPromoverDialog(true);
-            handleBuscarCanonicos();
-          }}>
-            <UserCheck className="h-4 w-4 mr-2 text-indigo-600" />
-            Promover Cliente
-          </Button>
-          <Button size="sm" onClick={() => navigate('/cava-socios/socios/nuevo')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo Socio
-          </Button>
-        </div>
-      </div>
+      {/* Shared Header with Tabs */}
+      <CavaNavHeader
+        title="Directorio de Socios de Cava"
+        subtitle="Membresías activas, vinculación canónica de clientes y control de casilleros"
+        onRefresh={fetchSocios}
+        loading={loading}
+      />
 
       {(error || contextError) && (
         <div className="p-4 rounded-lg bg-red-50 text-red-700 flex items-center gap-2">
