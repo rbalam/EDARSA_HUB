@@ -36,7 +36,7 @@ require_command curl
     fail "EDARSA_YTDLP_EJS_VERSION no definido"
 
 AGENT_VERSION="$(agent-reach version)"
-DENO_VERSION="$(deno --version | sed -n '1s/^deno //p')"
+DENO_VERSION="$(deno --version | awk 'NR==1 {print $2}')"
 YTDLP_VERSION="$(yt-dlp --version)"
 
 [ "$AGENT_VERSION" = \
