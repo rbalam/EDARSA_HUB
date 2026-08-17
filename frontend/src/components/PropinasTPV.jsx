@@ -188,7 +188,7 @@ function PropinasTPVContent() {
   const cargarConfigs = useCallback(async () => {
     setLoadingConfigs(true);
     try {
-      const res = await authedFetch(`${API_URL}/api/finanzas/propinas/config/all`, {
+      const res = await authedFetch(`${API_URL}/api/finanzas/propinas/v2/config/all`, {
         credentials: 'include'
       });
       if (res.ok) {
@@ -286,8 +286,8 @@ function PropinasTPVContent() {
     
     try {
       const url = isNew 
-        ? `${API_URL}/api/finanzas/propinas/config`
-        : `${API_URL}/api/finanzas/propinas/config/${configData.id}`;
+        ? `${API_URL}/api/finanzas/propinas/v2/config`
+        : `${API_URL}/api/finanzas/propinas/v2/config/${configData.id}`;
       
       const res = await fetch(url, {
         method: isNew ? 'POST' : 'PUT',
