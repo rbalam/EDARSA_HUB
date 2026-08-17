@@ -129,3 +129,25 @@ def test_lookup_y_enumerador_comparten_tablas():
     ):
         assert token in enum_src
         assert token in lookup_src
+
+
+def test_context_enumera_permisos_con_usuario_id_sql():
+    src = CONTEXT.read_text(
+        encoding="utf-8"
+    )
+
+    expected = (
+        "RBACSQLService.get_effective_permissions(\n"
+        "            usuario_id\n"
+        "        )"
+    )
+
+    assert expected in src
+
+    forbidden = (
+        "RBACSQLService.get_effective_permissions(\n"
+        "            context.user_id\n"
+        "        )"
+    )
+
+    assert forbidden not in src

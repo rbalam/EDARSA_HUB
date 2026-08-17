@@ -537,7 +537,7 @@ async def resolve_user_access_context(
 
     try:
         context.permisos = RBACSQLService.get_effective_permissions(
-            context.user_id
+            usuario_id
         )
     except Exception:
         context.permisos = []
