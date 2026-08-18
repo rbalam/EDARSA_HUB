@@ -291,3 +291,36 @@ Reglas fail-closed:
 El candado debe fallar cerrado ante una condición no reconocida.
 
 <!-- EDARSAHUB_REPOSITORY_ARTIFACT_GUARD_END -->
+
+<!-- EDARSAHUB_SCHEDULER_LESSONS_START -->
+
+## Scheduler — memoria técnica obligatoria
+
+Antes de modificar Scheduler, pausa/reanudación, startup, jobs o referencias
+legacy/Mongo, leer:
+
+- `.agents/rules/edarsa-scheduler-lessons.md`
+- `docs/ARQUITECTURA_SCHEDULER_PERSISTENCIA_ADMINISTRATIVA.md`
+- `docs/operacion/RETROSPECTIVA_SCHEDULER_PERSISTENCIA_20260818.md`
+- `docs/operacion/MONGO_REFERENCIAS_SCHEDULER_CLASIFICADAS.md`
+
+Estas fuentes existen para impedir que se repitan auditorías ya cerradas,
+falsos positivos por referencias textuales y errores de arquitectura ya
+corregidos.
+
+<!-- EDARSAHUB_SCHEDULER_LESSONS_END -->
+
+<!-- EDARSAHUB_INVENTORY_PURCHASES_LESSONS_START -->
+
+## Operaciones / Inventarios / Compras — memoria técnica obligatoria
+
+Antes de modificar Operaciones, Análisis de Inventarios, inventarios físicos,
+movimientos, sincronización de Compras o Auditoría Operativa de Compras, leer:
+
+- `.agents/rules/edarsa-inventarios-compras-lessons.md`
+- `docs/operacion/MEMORIA_ERRORES_CORREGIDOS_INVENTARIOS_COMPRAS_OPERACIONES.md`
+- `docs/operacion/CONTRATOS_CANONICOS_INVENTARIOS_Y_AUDITORIA_COMPRAS.md`
+
+No reabrir decisiones históricas ya clasificadas sin evidencia positiva nueva.
+
+<!-- EDARSAHUB_INVENTORY_PURCHASES_LESSONS_END -->
