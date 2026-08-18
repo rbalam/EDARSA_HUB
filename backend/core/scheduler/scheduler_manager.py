@@ -58,6 +58,7 @@ from .jobs.alertas_excepciones_job import execute_alertas_excepciones_notifier
 # Resumen Diario Ejecutivo de Excepciones (correo matutino)
 from .jobs.resumen_diario_excepciones_job import execute_resumen_diario_excepciones
 
+from .persistent_state_repository import SchedulerPersistentStateRepository
 logger = logging.getLogger(__name__)
 
 
@@ -1674,7 +1675,40 @@ class SchedulerManager:
         
         # Registrar jobs
         self.register_jobs()
-        
+
+        # Restaurar pausas administrativas persistentes antes de iniciar.
+        # Fail-closed: si SQL no puede entregar el estado persistente,
+        # el scheduler no debe arrancar ignorando decisiones administrativas.
+        paused_job_ids = (
+            SchedulerPersistentStateRepository.get_paused_job_ids()
+        )
+
+        registered_job_ids = {
+            job.id
+            for job in self._scheduler.get_jobs()
+        }
+
+        unknown_paused_job_ids = sorted(
+            set(paused_job_ids) - registered_job_ids
+        )
+
+        if unknown_paused_job_ids:
+            logger.warning(
+                "Estados de pausa persistentes sin job runtime registrado: %s",
+                unknown_paused_job_ids,
+            )
+
+        for job_id in paused_job_ids:
+            if job_id not in registered_job_ids:
+                continue
+
+            self._scheduler.pause_job(job_id)
+
+            logger.info(
+                "Pausa administrativa restaurada al iniciar: %s",
+                job_id,
+            )
+
         # Iniciar scheduler
         self._scheduler.start()
         self._running = True
@@ -1812,27 +1846,93 @@ class SchedulerManager:
             return {"status": "error", "message": f"Job desconocido: {job_id}"}
     
     def pause_job(self, job_id: str) -> bool:
-        """Pausa un job."""
+        """Pausa un job y persiste la decisión administrativa."""
         if self._scheduler is None:
             return False
+
         try:
             self._scheduler.pause_job(job_id)
-            logger.info(f"Job pausado: {job_id}")
+
+            try:
+                persisted = SchedulerPersistentStateRepository.set_paused(
+                    job_id,
+                    True,
+                )
+            except Exception:
+                try:
+                    self._scheduler.resume_job(job_id)
+                except Exception:
+                    logger.exception(
+                        "No fue posible revertir pausa runtime de %s",
+                        job_id,
+                    )
+                raise
+
+            if not persisted:
+                try:
+                    self._scheduler.resume_job(job_id)
+                except Exception:
+                    logger.exception(
+                        "No fue posible revertir pausa runtime de %s",
+                        job_id,
+                    )
+
+                logger.error(
+                    "No existe registro persistente para job %s",
+                    job_id,
+                )
+                return False
+
+            logger.info("Job pausado administrativamente: %s", job_id)
             return True
+
         except Exception as e:
-            logger.error(f"Error pausando job {job_id}: {e}")
+            logger.error("Error pausando job %s: %s", job_id, e)
             return False
     
     def resume_job(self, job_id: str) -> bool:
-        """Reanuda un job pausado."""
+        """Reanuda un job y elimina la pausa administrativa persistente."""
         if self._scheduler is None:
             return False
+
         try:
             self._scheduler.resume_job(job_id)
-            logger.info(f"Job reanudado: {job_id}")
+
+            try:
+                persisted = SchedulerPersistentStateRepository.set_paused(
+                    job_id,
+                    False,
+                )
+            except Exception:
+                try:
+                    self._scheduler.pause_job(job_id)
+                except Exception:
+                    logger.exception(
+                        "No fue posible revertir reanudación runtime de %s",
+                        job_id,
+                    )
+                raise
+
+            if not persisted:
+                try:
+                    self._scheduler.pause_job(job_id)
+                except Exception:
+                    logger.exception(
+                        "No fue posible revertir reanudación runtime de %s",
+                        job_id,
+                    )
+
+                logger.error(
+                    "No existe registro persistente para job %s",
+                    job_id,
+                )
+                return False
+
+            logger.info("Job reanudado administrativamente: %s", job_id)
             return True
+
         except Exception as e:
-            logger.error(f"Error reanudando job {job_id}: {e}")
+            logger.error("Error reanudando job %s: %s", job_id, e)
             return False
 
 

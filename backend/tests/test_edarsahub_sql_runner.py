@@ -375,3 +375,62 @@ def test_get_connection_migrate_usa_autocommit_false(monkeypatch):
     assert connection is not None
     assert len(calls) == 1
     assert calls[0]["autocommit"] is False
+
+
+def test_runner_carga_env_desde_bootstrap_canonico():
+    text = RUNNER_PATH.read_text(
+        encoding="utf-8",
+    )
+
+    assert (
+        "from core.config.env_bootstrap import "
+        "load_edarsahub_environment"
+    ) in text
+
+    assert "load_edarsahub_environment()" in text
+
+    assert "load_dotenv(" not in text
+
+
+def test_bootstrap_no_sobrescribe_entorno_existente(
+    monkeypatch,
+    tmp_path,
+):
+    from core.config.env_bootstrap import (
+        load_edarsahub_environment,
+    )
+
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "EDARSAHUB_BOOTSTRAP_TEST=desde_archivo\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setenv(
+        "EDARSAHUB_BOOTSTRAP_TEST",
+        "desde_proceso",
+    )
+
+    load_edarsahub_environment(env_file)
+
+    assert (
+        os.environ["EDARSAHUB_BOOTSTRAP_TEST"]
+        == "desde_proceso"
+    )
+
+
+def test_bootstrap_tolera_env_inexistente(
+    tmp_path,
+):
+    from core.config.env_bootstrap import (
+        load_edarsahub_environment,
+    )
+
+    missing = tmp_path / "no_existe.env"
+
+    result = load_edarsahub_environment(
+        missing
+    )
+
+    assert result == missing
+    assert not missing.exists()

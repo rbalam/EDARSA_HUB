@@ -26,6 +26,7 @@ import sys
 from pathlib import Path
 
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.config.env_bootstrap import load_edarsahub_environment
 from core.connections.edarsahub_readonly_repository import (
     validate_readonly_identity,
 )
@@ -37,6 +38,8 @@ from core.sql_first.connection_factory import (
 )
 
 
+
+load_edarsahub_environment()
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 REPORT_DIR = ROOT_DIR / "docs" / "reports" / "sql_runner_logs"
