@@ -236,58 +236,261 @@ async def create_user(user_data: Dict[str, Any]) -> str:
         conn.close()
 
 async def update_user(user_id: str, update_data: Dict[str, Any]) -> bool:
-    """Actualiza usuario en SQL (compatibilidad legacy)."""
+    """
+    Actualiza un usuario y su rol principal en SQL canónico.
+
+    Garantías:
+    - Usuario_Catalogo + Usuario_RolesAsignacion en una sola transacción.
+    - El rol se resuelve desde dbo.Usuario_Roles.
+    - Sin mapas hardcodeados ni fallback implícito.
+    - Exactly one active primary role cuando se solicita role.
+    - Fail-closed y rollback ante cualquier inconsistencia.
+    """
     conn = get_sql_connection()
     cur = conn.cursor()
-    
+
     try:
+        # Resolver UsuarioID canónico.
+        cur.execute(
+            """
+            SELECT TOP 2 UsuarioID
+            FROM dbo.Usuario_Catalogo
+            WHERE UsuarioID = TRY_CONVERT(INT, %s)
+               OR LOWER(CAST(MongoLegacyID AS NVARCHAR(128))) = LOWER(%s)
+               OR LOWER(CAST(PublicUUID AS NVARCHAR(128))) = LOWER(%s)
+            ORDER BY UsuarioID
+            """,
+            (user_id, user_id, user_id),
+        )
+        user_rows = cur.fetchall()
+
+        if len(user_rows) != 1:
+            raise ValueError(
+                f"Usuario no encontrado o ambiguo para identificador {user_id}"
+            )
+
+        usuario_id = user_rows[0][0]
+
+        requested_role_id = None
+
+        if "role" in update_data:
+            requested_role = str(update_data.get("role") or "").strip()
+            if not requested_role:
+                raise ValueError("Rol vacío no permitido")
+
+            cur.execute(
+                """
+                SELECT TOP 2 RolID
+                FROM dbo.Usuario_Roles
+                WHERE Activo = 1
+                  AND (
+                        LOWER(CodigoRol) = LOWER(%s)
+                     OR LOWER(NombreRol) = LOWER(%s)
+                  )
+                ORDER BY RolID
+                """,
+                (requested_role, requested_role),
+            )
+            role_rows = cur.fetchall()
+
+            if len(role_rows) != 1:
+                raise ValueError(
+                    f"Rol inexistente, inactivo o ambiguo: {requested_role}"
+                )
+
+            requested_role_id = role_rows[0][0]
+
         sets = []
         params = []
-        
+
         if "nombre" in update_data or "name" in update_data:
-            nombre = update_data.get("nombre") or update_data.get("name", "")
+            nombre_completo = (
+                update_data.get("nombre")
+                or update_data.get("name")
+                or ""
+            ).strip()
+
+            nombre = nombre_completo
             apellidos = ""
-            if nombre and " " in nombre:
-                parts = nombre.split(" ", 1)
-                nombre = parts[0]
-                apellidos = parts[1]
-            sets.append("Nombre = %s")
-            sets.append("Apellidos = %s")
+
+            if nombre_completo and " " in nombre_completo:
+                nombre, apellidos = nombre_completo.split(" ", 1)
+
+            sets.extend([
+                "Nombre = %s",
+                "Apellidos = %s",
+            ])
             params.extend([nombre, apellidos])
-        
+
         if "email" in update_data:
             sets.append("Email = %s")
             params.append(update_data["email"])
-        
+
         if "password_hash" in update_data:
-            sets.append("PasswordHashTexto = %s")
+            sets.extend([
+                "PasswordHashTexto = %s",
+                "PasswordHash = NULL",
+                "PasswordTemporal = 0",
+                "DebeCambiarPassword = 0",
+                "UltimoCambioPassword = SYSUTCDATETIME()",
+            ])
             params.append(update_data["password_hash"])
-            sets.append("PasswordHash = NULL")
-            sets.append("PasswordTemporal = 0")
-            sets.append("DebeCambiarPassword = 0")
-            sets.append("UltimoCambioPassword = SYSUTCDATETIME()")
-        
+
         if "active" in update_data:
             sets.append("Activo = %s")
             params.append(1 if update_data["active"] else 0)
-        
-        if not sets:
-            return True
-        
-        sets.append("FechaModificacion = GETDATE()")
-        params.append(user_id)
-        
-        # P5-10B: Usar TRY_CONVERT para manejar tanto INT como UUID
-        sql = f"UPDATE dbo.Usuario_Catalogo SET {', '.join(sets)} WHERE UsuarioID = TRY_CONVERT(INT, %s) OR LOWER(MongoLegacyID) = LOWER(%s) OR LOWER(PublicUUID) = LOWER(%s)"
-        params.extend([user_id, user_id])
-        
-        cur.execute(sql, tuple(params))
+
+        if sets:
+            sets.append("FechaModificacion = GETDATE()")
+            params.append(usuario_id)
+
+            cur.execute(
+                f"""
+                UPDATE dbo.Usuario_Catalogo
+                SET {', '.join(sets)}
+                WHERE UsuarioID = %s
+                """,
+                tuple(params),
+            )
+
+            if cur.rowcount != 1:
+                raise RuntimeError(
+                    f"Usuario_Catalogo update inesperado: rowcount={cur.rowcount}"
+                )
+
+        if requested_role_id is not None:
+            # Buscar asignación reutilizable exacta.
+            cur.execute(
+                """
+                SELECT TOP 2 UsuarioRolAsignacionID
+                FROM dbo.Usuario_RolesAsignacion
+                WHERE UsuarioID = %s
+                  AND RolID = %s
+                ORDER BY
+                    CASE WHEN Activo = 1 AND EsPrincipal = 1 THEN 0 ELSE 1 END,
+                    UsuarioRolAsignacionID DESC
+                """,
+                (usuario_id, requested_role_id),
+            )
+            reusable_rows = cur.fetchall()
+
+            if len(reusable_rows) > 1:
+                # Más de una fila histórica compatible no impide operar,
+                # pero elegimos una única fila determinista y desactivamos el resto.
+                reusable_id = reusable_rows[0][0]
+            elif len(reusable_rows) == 1:
+                reusable_id = reusable_rows[0][0]
+            else:
+                reusable_id = None
+
+            # Desactivar cualquier principal activo distinto.
+            cur.execute(
+                """
+                UPDATE dbo.Usuario_RolesAsignacion
+                SET Activo = 0,
+                    EsPrincipal = 0
+                WHERE UsuarioID = %s
+                  AND Activo = 1
+                  AND EsPrincipal = 1
+                  AND RolID <> %s
+                """,
+                (usuario_id, requested_role_id),
+            )
+
+            if reusable_id is not None:
+                # Desactivar duplicados históricos del mismo rol.
+                cur.execute(
+                    """
+                    UPDATE dbo.Usuario_RolesAsignacion
+                    SET Activo = 0,
+                        EsPrincipal = 0
+                    WHERE UsuarioID = %s
+                      AND RolID = %s
+                      AND UsuarioRolAsignacionID <> %s
+                    """,
+                    (usuario_id, requested_role_id, reusable_id),
+                )
+
+                cur.execute(
+                    """
+                    UPDATE dbo.Usuario_RolesAsignacion
+                    SET Activo = 1,
+                        EsPrincipal = 1
+                    WHERE UsuarioRolAsignacionID = %s
+                    """,
+                    (reusable_id,),
+                )
+
+                if cur.rowcount != 1:
+                    raise RuntimeError(
+                        "No se pudo reactivar la asignación de rol solicitada"
+                    )
+            else:
+                cur.execute(
+                    """
+                    INSERT INTO dbo.Usuario_RolesAsignacion
+                    (
+                        UsuarioID,
+                        RolID,
+                        EsPrincipal,
+                        Activo,
+                        FechaInicio,
+                        CreatedAt
+                    )
+                    VALUES
+                    (
+                        %s,
+                        %s,
+                        1,
+                        1,
+                        GETDATE(),
+                        GETDATE()
+                    )
+                    """,
+                    (usuario_id, requested_role_id),
+                )
+
+                if cur.rowcount != 1:
+                    raise RuntimeError(
+                        "No se pudo insertar la asignación de rol solicitada"
+                    )
+
+            # Invariante: exactamente un rol principal activo.
+            cur.execute(
+                """
+                SELECT
+                    COUNT(*) AS total,
+                    MAX(CASE WHEN RolID = %s THEN 1 ELSE 0 END) AS requested_present
+                FROM dbo.Usuario_RolesAsignacion
+                WHERE UsuarioID = %s
+                  AND Activo = 1
+                  AND EsPrincipal = 1
+                """,
+                (requested_role_id, usuario_id),
+            )
+            invariant_row = cur.fetchone()
+
+            total_primary = int(invariant_row[0] or 0)
+            requested_present = int(invariant_row[1] or 0)
+
+            if total_primary != 1 or requested_present != 1:
+                raise RuntimeError(
+                    "Invariante de rol principal violada"
+                )
+
+        if not sets and requested_role_id is None:
+            raise ValueError("No hay cambios válidos para persistir")
+
         conn.commit()
-        return cur.rowcount > 0
-        
-    except Exception as e:
-        logging.error(f"[AuthRepository] Error update_user: {e}")
-        return False
+        return True
+
+    except Exception:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        raise
+
     finally:
         conn.close()
 

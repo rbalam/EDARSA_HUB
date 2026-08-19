@@ -322,7 +322,13 @@ async def update_user(user_id: str, user_data: Dict, current_user: Dict) -> Dict
             raise HTTPException(status_code=400, detail=password_error)
         update_data['password_hash'] = hash_password(user_data['password'])
     
-    await repo.update_user(user_id, update_data)
+    updated = await repo.update_user(user_id, update_data)
+    if updated is not True:
+        raise HTTPException(
+            status_code=500,
+            detail="No fue posible persistir la actualización del usuario"
+        )
+
     return {"message": "Usuario actualizado"}
 
 
