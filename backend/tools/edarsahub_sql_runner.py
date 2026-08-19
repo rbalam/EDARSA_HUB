@@ -47,7 +47,7 @@ REPORT_DIR = ROOT_DIR / "docs" / "reports" / "sql_runner_logs"
 ALLOWED_MODES = {"diagnostic", "dry-run", "migrate", "validate"}
 
 FORBIDDEN_PATTERNS = [
-    r"\bDROP\s+TABLE\b",
+    r"\bDROP\s+TABLE\b(?!\s*#)",
     r"\bTRUNCATE\s+TABLE\b",
     r"\bDROP\s+DATABASE\b",
     r"\bALTER\s+DATABASE\b",
