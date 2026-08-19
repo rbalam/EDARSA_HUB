@@ -365,7 +365,17 @@ const Usuarios = () => {
       const rolesData = Array.isArray(response.data) ? response.data : [];
       setRoles(rolesData.map(role => ({
         ...role,
-        permisos: Array.from(new Set((role.permisos || []).map(String)))
+        permisos: (role.permisos || [])
+          .filter((permiso) =>
+            permiso &&
+            permiso.modulo_id != null &&
+            permiso.accion_id != null
+          )
+          .map((permiso) => ({
+            modulo_id: String(permiso.modulo_id),
+            accion_id: Number(permiso.accion_id),
+            accion_codigo: permiso.accion_codigo || ''
+          }))
       })));
     } catch (error) {
       logger.error('Error loading roles:', error);
@@ -396,7 +406,17 @@ const Usuarios = () => {
       setRoleFormData({
         nombre: role.nombre,
         descripcion: role.descripcion || '',
-        permisos: Array.from(new Set((role.permisos || []).map(String)))
+        permisos: (role.permisos || [])
+          .filter((permiso) =>
+            permiso &&
+            permiso.modulo_id != null &&
+            permiso.accion_id != null
+          )
+          .map((permiso) => ({
+            modulo_id: String(permiso.modulo_id),
+            accion_id: Number(permiso.accion_id),
+            accion_codigo: permiso.accion_codigo || ''
+          }))
       });
     } else {
       setEditingRole(null);
@@ -449,16 +469,41 @@ const Usuarios = () => {
     }
   };
 
-  const togglePermiso = (moduloId) => {
-    const id = String(moduloId);
-    const current = Array.from(new Set((roleFormData.permisos || []).map(String)));
-    const idx = current.indexOf(id);
-    if (idx > -1) {
-      current.splice(idx, 1);
-    } else {
-      current.push(id);
-    }
-    setRoleFormData({ ...roleFormData, permisos: current });
+  const hasRolePermission = (moduloId, accionId) => {
+    return (roleFormData.permisos || []).some(
+      (permiso) =>
+        String(permiso.modulo_id) === String(moduloId) &&
+        Number(permiso.accion_id) === Number(accionId)
+    );
+  };
+
+  const togglePermiso = (modulo, accion) => {
+    const moduloId = String(modulo.id);
+    const accionId = Number(accion.accion_id);
+
+    const exists = hasRolePermission(moduloId, accionId);
+
+    const permisos = exists
+      ? (roleFormData.permisos || []).filter(
+          (permiso) =>
+            !(
+              String(permiso.modulo_id) === moduloId &&
+              Number(permiso.accion_id) === accionId
+            )
+        )
+      : [
+          ...(roleFormData.permisos || []),
+          {
+            modulo_id: moduloId,
+            accion_id: accionId,
+            accion_codigo: accion.accion_codigo || ''
+          }
+        ];
+
+    setRoleFormData({
+      ...roleFormData,
+      permisos
+    });
   };
 
   // ============= FUNCIONES USUARIOS =============
@@ -1156,43 +1201,57 @@ const Usuarios = () => {
 
                       <div className="mb-3">
                         {(() => {
-                          const selectedIds = Array.from(new Set((role.permisos || []).map(String)));
-                          const selectedSet = new Set(selectedIds);
-                          const childrenByParentId = new Map();
+                          const permisos = (role.permisos || []).filter(
+                            (permiso) =>
+                              permiso &&
+                              permiso.modulo_id != null &&
+                              permiso.accion_id != null
+                          );
 
-                          modulos.forEach((modulo) => {
-                            const parentRaw = modulo.modulo_padre_id ?? modulo.ModuloPadreID ?? modulo.moduloPadreId;
-                            const parentId = parentRaw === null || parentRaw === undefined || parentRaw === '' ? null : String(parentRaw);
+                          const displayPermissions = permisos.map((permiso) => {
+                            const modulo = modulos.find(
+                              (item) =>
+                                String(item.id) === String(permiso.modulo_id)
+                            );
 
-                            if (parentId) {
-                              if (!childrenByParentId.has(parentId)) {
-                                childrenByParentId.set(parentId, []);
-                              }
-                              childrenByParentId.get(parentId).push(modulo);
-                            }
-                          });
+                            const accion = (modulo?.acciones || []).find(
+                              (item) =>
+                                Number(item.accion_id) ===
+                                Number(permiso.accion_id)
+                            );
 
-                          const displayPermissions = selectedIds.filter((permId) => {
-                            const selectedChildren = childrenByParentId.get(String(permId)) || [];
-                            return !selectedChildren.some((child) => selectedSet.has(String(child.id)));
+                            return {
+                              key: `${permiso.modulo_id}-${permiso.accion_id}`,
+                              label:
+                                `${modulo?.nombre || permiso.modulo_id}: ` +
+                                `${accion?.accion_nombre ||
+                                  permiso.accion_codigo ||
+                                  permiso.accion_id}`
+                            };
                           });
 
                           return (
                             <>
                               <p className="text-xs font-medium text-zinc-500 mb-1">
-                                Permisos ({displayPermissions.length}):
+                                Permisos RBAC ({displayPermissions.length}):
                               </p>
+
                               <div className="flex flex-wrap gap-1">
-                                {displayPermissions.slice(0, 5).map((p) => {
-                                  const modulo = modulos.find((m) => String(m.id) === String(p));
-                                  return (
-                                    <Badge key={p} variant="outline" className="text-xs">
-                                      {modulo?.nombre || p}
-                                    </Badge>
-                                  );
-                                })}
+                                {displayPermissions.slice(0, 5).map((permiso) => (
+                                  <Badge
+                                    key={permiso.key}
+                                    variant="outline"
+                                    className="text-xs"
+                                  >
+                                    {permiso.label}
+                                  </Badge>
+                                ))}
+
                                 {displayPermissions.length > 5 && (
-                                  <Badge variant="outline" className="text-xs bg-zinc-100">
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs bg-zinc-100"
+                                  >
                                     +{displayPermissions.length - 5} más
                                   </Badge>
                                 )}
@@ -1914,75 +1973,90 @@ const Usuarios = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Permisos de Módulos</Label>
-              <p className="text-xs text-zinc-500 mb-2">Selecciona los módulos a los que tendrá acceso este rol</p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-64 overflow-y-auto border rounded-lg p-3">
-                  {(() => {
-                    const byId = new Map(modulos.map((modulo) => [String(modulo.id), modulo]));
-                    const childrenByParent = new Map();
-                    const roots = [];
+              <Label>Permisos RBAC por Módulo y Acción</Label>
+              <p className="text-xs text-zinc-500 mb-2">
+                Selecciona las acciones efectivas permitidas para cada módulo.
+              </p>
 
-                    modulos.forEach((modulo) => {
-                      const parentRaw = modulo.modulo_padre_id ?? modulo.ModuloPadreID ?? modulo.moduloPadreId;
-                      const parentId = parentRaw === null || parentRaw === undefined || parentRaw === '' ? null : String(parentRaw);
+              <div className="max-h-[420px] overflow-auto border rounded-lg">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 z-10 bg-zinc-50 border-b">
+                    <tr>
+                      <th className="text-left px-3 py-2 font-medium">
+                        Módulo
+                      </th>
+                      <th className="text-left px-3 py-2 font-medium">
+                        Acciones RBAC
+                      </th>
+                    </tr>
+                  </thead>
 
-                      if (parentId && byId.has(parentId)) {
-                        if (!childrenByParent.has(parentId)) {
-                          childrenByParent.set(parentId, []);
-                        }
-                        childrenByParent.get(parentId).push(modulo);
-                      } else {
-                        roots.push(modulo);
-                      }
-                    });
-
-                    const renderPermissionItem = (modulo, compactLabel = null) => (
-                      <div key={`perm-item-${modulo.id}`} className="flex items-start gap-2 p-2 rounded hover:bg-zinc-50">
-                        <Checkbox
-                          id={`perm-${modulo.id}`}
-                          checked={roleFormData.permisos.includes(String(modulo.id))}
-                          onCheckedChange={() => togglePermiso(String(modulo.id))}
-                        />
-                        <label htmlFor={`perm-${modulo.id}`} className="cursor-pointer">
-                          <span className="text-sm font-medium">{compactLabel || modulo.nombre}</span>
-                          <p className="text-xs text-zinc-500">{modulo.descripcion}</p>
-                        </label>
-                      </div>
-                    );
-
-                    return roots.map((grupo) => {
-                      const children = childrenByParent.get(String(grupo.id)) || [];
-                      const hasOwnAssignablePermission =
-                        Boolean(grupo.ruta) ||
-                        Boolean(grupo.tiene_permiso_menu_propio) ||
-                        Boolean(grupo.tienePermisoMenuPropio) ||
-                        roleFormData.permisos.includes(String(grupo.id));
-
-                      if (children.length === 0) {
-                        return renderPermissionItem(grupo);
-                      }
-
-                      return (
-                        <div
-                          key={`grupo-${grupo.id}`}
-                          className="col-span-2 md:col-span-3 rounded-lg border border-zinc-100 bg-zinc-50/60 p-2"
+                  <tbody>
+                    {modulos
+                      .filter((modulo) => (modulo.acciones || []).length > 0)
+                      .map((modulo) => (
+                        <tr
+                          key={`rbac-module-${modulo.id}`}
+                          className="border-b align-top"
                         >
-                          <div className="px-2 pb-2">
-                            <p className="text-sm font-semibold text-zinc-900">{grupo.nombre}</p>
-                            <p className="text-xs text-zinc-500">{grupo.descripcion}</p>
-                          </div>
+                          <td className="px-3 py-3 min-w-[220px]">
+                            <p className="font-medium text-zinc-900">
+                              {modulo.nombre}
+                            </p>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            {hasOwnAssignablePermission && renderPermissionItem(grupo, 'Acceso general')}
-                            {children.map((child) => renderPermissionItem(child))}
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
+                            <p className="text-xs text-zinc-500">
+                              {modulo.codigo}
+                            </p>
+
+                            {modulo.padre_nombre && (
+                              <p className="text-xs text-zinc-400 mt-1">
+                                {modulo.padre_nombre}
+                              </p>
+                            )}
+                          </td>
+
+                          <td className="px-3 py-3">
+                            <div className="flex flex-wrap gap-x-4 gap-y-2">
+                              {(modulo.acciones || []).map((accion) => {
+                                const checkboxId =
+                                  `rbac-${modulo.id}-${accion.accion_id}`;
+
+                                return (
+                                  <div
+                                    key={checkboxId}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <Checkbox
+                                      id={checkboxId}
+                                      checked={hasRolePermission(
+                                        modulo.id,
+                                        accion.accion_id
+                                      )}
+                                      onCheckedChange={() =>
+                                        togglePermiso(modulo, accion)
+                                      }
+                                    />
+
+                                    <label
+                                      htmlFor={checkboxId}
+                                      className="cursor-pointer text-xs"
+                                    >
+                                      {accion.accion_nombre ||
+                                        accion.accion_codigo}
+                                    </label>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+
               <p className="text-xs text-zinc-400 mt-1">
-                {roleFormData.permisos.length} módulo(s) seleccionado(s)
+                {roleFormData.permisos.length} permiso(s) módulo/acción seleccionado(s)
               </p>
             </div>
 

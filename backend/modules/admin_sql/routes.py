@@ -1,3 +1,4 @@
+import json
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
 """
@@ -288,6 +289,7 @@ async def get_roles(current_user: dict = Depends(get_current_user)):
     permisos = execute_query("""
     SELECT
         prm.RolID,
+        prm.AccionID,
         m.ModuloID,
         CAST(m.ModuloID AS NVARCHAR(100)) AS modulo_id,
         m.CodigoModulo AS codigo,
@@ -301,19 +303,35 @@ async def get_roles(current_user: dict = Depends(get_current_user)):
       AND ISNULL(prm.Permitido, 1) = 1
     """)
 
-    # Mapear permisos por rol sin duplicar ModuloID.
-    # Un rol puede tener varias acciones por modulo; la UI de roles trabaja a nivel modulo.
+    # RBAC canonico: preservar la granularidad ModuloID + AccionID.
+    # Usuario_PermisosRolModulo es la fuente unica de asignaciones del rol.
     pmap = {}
     for p in permisos:
         rid = p.get("RolID")
         modulo_id = p.get("modulo_id")
-        if rid and modulo_id:
-            pmap.setdefault(rid, set()).add(str(modulo_id))
+        accion_id = p.get("AccionID")
+        accion_codigo = p.get("accion")
 
-    # Enriquecer roles con permisos deduplicados y orden estable
+        if rid is None or modulo_id is None or accion_id is None:
+            continue
+
+        key = (str(modulo_id), int(accion_id))
+        pmap.setdefault(rid, {})[key] = {
+            "modulo_id": str(modulo_id),
+            "accion_id": int(accion_id),
+            "accion_codigo": accion_codigo,
+        }
+
+    # Orden determinista para evitar cambios espurios en frontend/tests.
     for r in roles:
-        permisos_rol = pmap.get(r.get("RolID"), set())
-        r["permisos"] = sorted(permisos_rol, key=lambda x: int(x) if str(x).isdigit() else str(x))
+        permisos_rol = list(pmap.get(r.get("RolID"), {}).values())
+        r["permisos"] = sorted(
+            permisos_rol,
+            key=lambda p: (
+                int(p["modulo_id"]) if str(p["modulo_id"]).isdigit() else str(p["modulo_id"]),
+                int(p["accion_id"]),
+            ),
+        )
 
     return roles
 
@@ -326,7 +344,7 @@ async def get_modulos(current_user: dict = Depends(get_current_user)):
     """
     require_admin(current_user)
 
-    return execute_query("""
+    rows = execute_query("""
       SELECT
           CAST(m.ModuloID AS NVARCHAR(100)) AS id,
           m.ModuloID,
@@ -345,6 +363,24 @@ async def get_modulos(current_user: dict = Depends(get_current_user)):
           m.OrdenMenu AS orden,
           ISNULL(m.EsVisibleMenu, 1) AS visible,
           ISNULL(m.Activo, 1) AS activo,
+          (
+              SELECT
+                  a.AccionID AS accion_id,
+                  a.CodigoAccion AS accion_codigo,
+                  a.NombreAccion AS accion_nombre
+              FROM dbo.Usuario_Acciones a
+              WHERE ISNULL(a.Activo, 1) = 1
+                AND EXISTS (
+                    SELECT 1
+                    FROM dbo.Usuario_PermisosRolModulo prm
+                    WHERE prm.ModuloID = m.ModuloID
+                      AND prm.AccionID = a.AccionID
+                      AND ISNULL(prm.Permitido, 1) = 1
+                      AND ISNULL(prm.Activo, 1) = 1
+                )
+              ORDER BY a.AccionID
+              FOR JSON PATH
+          ) AS acciones_json,
           CASE
               WHEN EXISTS (
                   SELECT 1
@@ -374,6 +410,31 @@ async def get_modulos(current_user: dict = Depends(get_current_user)):
           m.OrdenMenu,
           m.NombreModulo
       """)
+
+    for row in rows:
+        raw_actions = row.pop("acciones_json", None)
+        if not raw_actions:
+            row["acciones"] = []
+            continue
+
+        try:
+            parsed_actions = json.loads(raw_actions)
+        except (TypeError, ValueError, json.JSONDecodeError):
+            parsed_actions = []
+
+        row["acciones"] = [
+            {
+                "accion_id": int(action["accion_id"]),
+                "accion_codigo": str(action["accion_codigo"]),
+                "accion_nombre": str(action["accion_nombre"]),
+            }
+            for action in parsed_actions
+            if action.get("accion_id") is not None
+            and action.get("accion_codigo") is not None
+        ]
+
+    return rows
+
 
 @router.get("/servers")
 async def get_servers(current_user: dict = Depends(get_current_user)):
@@ -484,29 +545,6 @@ async def get_catalogos_disponibles(current_user: dict = Depends(get_current_use
             FROM dbo.Sistema_CatalogosConfig
             WHERE ISNULL(Activo, 1) = 1
               AND NULLIF(LTRIM(RTRIM(CodigoCatalogo)), '') IS NOT NULL
-
-            UNION ALL
-
-            SELECT DISTINCT
-                LTRIM(RTRIM(CodigoCatalogo)) AS CodigoCatalogo,
-                LTRIM(RTRIM(CodigoCatalogo)) AS NombreCatalogo,
-                NULL AS Descripcion,
-                'PERMISOS' AS TipoConfiguracion,
-                N'{}' AS ConfigJSON
-            FROM dbo.Sistema_CatalogosPermisos
-            WHERE ISNULL(Activo, 1) = 1
-              AND NULLIF(LTRIM(RTRIM(CodigoCatalogo)), '') IS NOT NULL
-
-            UNION ALL
-
-            SELECT DISTINCT
-                LTRIM(RTRIM(CodigoCatalogo)) AS CodigoCatalogo,
-                LTRIM(RTRIM(CodigoCatalogo)) AS NombreCatalogo,
-                NULL AS Descripcion,
-                'SOLICITUDES' AS TipoConfiguracion,
-                N'{}' AS ConfigJSON
-            FROM dbo.Sistema_CatalogosSolicitudes
-            WHERE NULLIF(LTRIM(RTRIM(CodigoCatalogo)), '') IS NOT NULL
         )
         SELECT
             CodigoCatalogo AS id,
@@ -614,24 +652,11 @@ async def save_permisos_catalogos(payload: dict, current_user: dict = Depends(ge
                 continue
 
             cur.execute("""
-                WITH CatalogosCanonicos AS (
-                    SELECT LTRIM(RTRIM(CodigoCatalogo)) AS CodigoCatalogo
-                    FROM dbo.Sistema_CatalogosConfig
-                    WHERE ISNULL(Activo, 1) = 1
-
-                    UNION
-
-                    SELECT LTRIM(RTRIM(CodigoCatalogo)) AS CodigoCatalogo
-                    FROM dbo.Sistema_CatalogosPermisos
-
-                    UNION
-
-                    SELECT LTRIM(RTRIM(CodigoCatalogo)) AS CodigoCatalogo
-                    FROM dbo.Sistema_CatalogosSolicitudes
-                )
-                SELECT TOP 1 CodigoCatalogo
-                FROM CatalogosCanonicos
-                WHERE UPPER(LTRIM(RTRIM(CodigoCatalogo))) = %s
+                SELECT TOP 1
+                    LTRIM(RTRIM(CodigoCatalogo)) AS CodigoCatalogo
+                FROM dbo.Sistema_CatalogosConfig
+                WHERE ISNULL(Activo, 1) = 1
+                  AND UPPER(LTRIM(RTRIM(CodigoCatalogo))) = %s
             """, (codigo,))
 
             row = cur.fetchone()
