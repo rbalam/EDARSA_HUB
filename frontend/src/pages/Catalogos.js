@@ -23,6 +23,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Toaster, toast } from 'sonner';
+import AuthorizationMatrixAdmin from '../components/catalogos/AuthorizationMatrixAdmin';
 import {
   Globe,
   Users,
@@ -238,6 +239,48 @@ const Catalogos = () => {
     setModalAdmin(true);
   };
 
+  // Catálogos canónicos para Tipos de Autorización.
+  const [matrizSelectores, setMatrizSelectores] = useState({
+    modulos: [],
+    acciones: [],
+  });
+
+  useEffect(() => {
+    const cargarSelectoresMatriz = async () => {
+      if (
+        !modalAbierto ||
+        catalogoActivo?.tabla !== 'Usuario_TiposAutorizacion'
+      ) {
+        return;
+      }
+
+      try {
+        const response = await api.get(
+          '/catalogos/admin/matriz-autorizacion/catalogos'
+        );
+
+        const data = response?.data || {};
+
+        setMatrizSelectores({
+          modulos: Array.isArray(data.modulos) ? data.modulos : [],
+          acciones: Array.isArray(data.acciones) ? data.acciones : [],
+        });
+      } catch (error) {
+        logger.error(
+          'Error cargando selectores canónicos de autorización:',
+          error
+        );
+
+        setMatrizSelectores({
+          modulos: [],
+          acciones: [],
+        });
+      }
+    };
+
+    cargarSelectoresMatriz();
+  }, [modalAbierto, catalogoActivo?.tabla]);
+
   // Renderizar el contenido del formulario dinámico
   const renderFormulario = () => {
     if (!estructura) return null;
@@ -258,12 +301,100 @@ const Catalogos = () => {
               <Label htmlFor={campo} className="text-sm font-medium">
                 {campo.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim()}
               </Label>
-              {esBool ? (
+              {catalogoActivo?.tabla === 'Usuario_TiposAutorizacion' &&
+              campo === 'ModuloID' ? (
+                <select
+                  id={campo}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={formData[campo] ?? ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      [campo]: e.target.value
+                        ? Number(e.target.value)
+                        : null,
+                    })
+                  }
+                >
+                  <option value="">Selecciona un módulo</option>
+                  {matrizSelectores.modulos.map((modulo) => {
+                    const id =
+                      modulo.ModuloID ??
+                      modulo.modulo_id ??
+                      modulo.id;
+
+                    const codigo =
+                      modulo.CodigoModulo ??
+                      modulo.codigo ??
+                      modulo.codigo_modulo ??
+                      '';
+
+                    const nombre =
+                      modulo.NombreModulo ??
+                      modulo.nombre ??
+                      modulo.nombre_modulo ??
+                      codigo;
+
+                    return (
+                      <option key={id} value={id}>
+                        {nombre}
+                        {codigo && nombre !== codigo
+                          ? ` (${codigo})`
+                          : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+              ) : catalogoActivo?.tabla === 'Usuario_TiposAutorizacion' &&
+                campo === 'AccionID' ? (
+                <select
+                  id={campo}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={formData[campo] ?? ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      [campo]: e.target.value
+                        ? Number(e.target.value)
+                        : null,
+                    })
+                  }
+                >
+                  <option value="">Selecciona una acción</option>
+                  {matrizSelectores.acciones.map((accion) => {
+                    const id =
+                      accion.AccionID ??
+                      accion.accion_id ??
+                      accion.id;
+
+                    const codigo =
+                      accion.CodigoAccion ??
+                      accion.codigo ??
+                      accion.codigo_accion ??
+                      '';
+
+                    const nombre =
+                      accion.NombreAccion ??
+                      accion.nombre ??
+                      accion.nombre_accion ??
+                      codigo;
+
+                    return (
+                      <option key={id} value={id}>
+                        {nombre}
+                        {codigo && nombre !== codigo
+                          ? ` (${codigo})`
+                          : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+              ) : esBool ? (
                 <div className="flex items-center space-x-2">
                   <Switch
                     id={campo}
                     checked={!!formData[campo]}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       setFormData({ ...formData, [campo]: checked })
                     }
                   />
@@ -275,7 +406,7 @@ const Catalogos = () => {
                 <Input
                   id={campo}
                   value={formData[campo] || ''}
-                  onChange={(e) => 
+                  onChange={(e) =>
                     setFormData({ ...formData, [campo]: e.target.value })
                   }
                   placeholder={campo}
@@ -560,7 +691,14 @@ const Catalogos = () => {
 
       {/* Modal de Crear/Editar */}
       <Dialog open={modalAbierto} onOpenChange={setModalAbierto}>
-        <DialogContent className="max-w-lg">
+        <DialogContent
+          className={
+            catalogoActivo?.tabla === 'Usuario_TiposAutorizacion' &&
+            registroEditando?.TipoAutorizacionID
+              ? 'max-w-6xl max-h-[92vh] overflow-y-auto'
+              : 'max-w-lg'
+          }
+        >
           <DialogHeader>
             <DialogTitle>
               {modoEdicion ? 'Editar Registro' : 'Nuevo Registro'}
@@ -573,6 +711,16 @@ const Catalogos = () => {
           </DialogHeader>
           
           {renderFormulario()}
+
+          {catalogoActivo?.tabla === 'Usuario_TiposAutorizacion' &&
+            registroEditando?.TipoAutorizacionID && (
+              <div className="border-t pt-5 mt-2">
+                <AuthorizationMatrixAdmin
+                  apiClient={api}
+                  tipoAutorizacion={registroEditando}
+                />
+              </div>
+            )}
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalAbierto(false)}>

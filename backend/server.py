@@ -443,6 +443,7 @@ from modules.compras.system_type_utils import (
     log_compras_query_result,
     log_compras_error,
 )
+from modules.compras.schemas import AuditoriaOperativaRequest
 
 # Inicializar módulo compras (100% SQL Server)
 init_compras_module(None)  # MongoDB eliminado
@@ -8112,33 +8113,52 @@ async def obtener_inventarios_fisicos(server_id: str, unidad: str = None, sucurs
     NO-LIVE: este endpoint NO consulta POS en vivo.
     FASE 8: Aplica filtro RBAC por almacenes permitidos.
     """
-    # ── Resolución canónica de unidad (puerta única). 'unidad' tiene prioridad;
-    #    si no, se interpreta el path como token (unidad o server_id deprecated).
-    from core.corporate_filters.request_resolver import resolve_unidad_simple, _shared_server
+    from core.corporate_filters.request_resolver import (
+        resolve_authorized_unidad_scope,
+        _shared_server,
+    )
+    from modules.compras.access import COMPRAS_VER
+
     token = unidad or server_id
-    u, matched_by = resolve_unidad_simple(token)
-    if u:
-        server_id = u.get('server_id') or server_id
-        # Desambiguar sucursal SOLO si el token es una unidad canónica (no server_id)
-        if matched_by == 'unidad' and u.get('sucursal_origen_id'):
-            sucursal_id = sucursal_id or u.get('sucursal_origen_id')
-        elif matched_by == 'server' and not unidad:
-            logging.warning(f"[DEPRECATED-PARAM] inventarios-fisicos por server_id directo (deprecated). Migrar a 'unidad'. server_id={server_id}")
+    current_user = await get_current_user(credentials)
 
-    # FASE 3.1: Validar acceso por empresa (RBAC real, aguas abajo de la resolución)
-    access = await validate_server_access_by_empresa(server_id, credentials)
-    server = access["server"]
-    context = access["context"]  # FASE 8: Obtener contexto RBAC
+    canonical_scope = await resolve_authorized_unidad_scope(
+        current_user,
+        COMPRAS_VER,
+        token,
+    )
 
-    from modules.compras.access import require_compras_permission, COMPRAS_VER
-    require_compras_permission(access["user"], COMPRAS_VER)
+    if canonical_scope.access_denied:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "COMPRAS_UNIDAD_NO_AUTORIZADA",
+                "message": "No tiene acceso a esta Unidad de Negocio.",
+            },
+        )
 
-    # FASE 8: Obtener almacenes permitidos
-    almacenes_permitidos = get_almacenes_permitidos(context, server_id)
+    server_id = canonical_scope.server_id
+    sucursal_id = (
+        sucursal_id
+        or canonical_scope.sucursal_origen_id
+    )
+
+    if not server_id:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "COMPRAS_CONTEXTO_CANONICO_INCOMPLETO",
+                "message": "No fue posible resolver el servidor interno de la unidad.",
+            },
+        )
+
+    # El alcance ya fue validado por unidad mediante SQL canónico.
+    # No se aplica nuevamente RBAC legacy por server_id.
+    almacenes_permitidos = []
 
     logging.info(
         f"[COMPRAS-NOLIVE] Inventarios físicos - "
-        f"Usuario={access['user'].get('email')}, Unidad={unidad or '-'}, Server={server_id}, "
+        f"Usuario={current_user.get('email')}, Unidad={token or '-'}, Server={server_id}, "
         f"Sucursal={sucursal_id or sucursal or '-'}, AlmacenesPermitidos={almacenes_permitidos or 'TODOS'}"
     )
 
@@ -8298,22 +8318,57 @@ async def obtener_inventarios_fisicos_sql_first(
 
 @api_router.get("/compras/pedidos-vigentes/{server_id}")
 async def obtener_pedidos_vigentes(server_id: str, sucursal: str = None, credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Obtiene requisiciones/pedidos vigentes exclusivamente desde EDARSAHUB SQL sync."""
-    from core.corporate_filters.request_resolver import canonical_server_id
+    """
+    Obtiene requisiciones/órdenes vigentes desde EDARSAHUB SQL.
 
-    server_id = canonical_server_id(server_id)
-    scope = await _compras_resolve_scope(server_id, sucursal, credentials)
+    El parámetro de ruta conserva el nombre server_id por compatibilidad HTTP,
+    pero el contrato canónico exige que el frontend envíe la Unidad de Negocio
+    (código o PK). server_id y sucursal_origen_id se reconstruyen internamente.
+    """
+    from core.corporate_filters.request_resolver import (
+        resolve_authorized_unidad_scope,
+    )
+    from modules.compras.access import COMPRAS_VER
 
-    from modules.compras.access import require_compras_permission, COMPRAS_VER
-    require_compras_permission(scope["user"], COMPRAS_VER)
+    current_user = await get_current_user(credentials)
 
-    unidad = scope.get("unidad") or {}
-    unidad_negocio_id = unidad.get("unidad_negocio_pk") or unidad.get("id")
+    canonical_scope = await resolve_authorized_unidad_scope(
+        current_user,
+        COMPRAS_VER,
+        server_id,
+    )
+
+    if canonical_scope.access_denied:
+        logging.warning(
+            "[COMPRAS-RBAC-UNIDAD] acceso denegado user=%s unidad=%s reason=%s",
+            current_user.get("email"),
+            server_id,
+            canonical_scope.denial_reason,
+        )
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "COMPRAS_UNIDAD_NO_AUTORIZADA",
+                "message": "No tiene acceso a esta Unidad de Negocio.",
+            },
+        )
+
+    unidad_negocio_id = canonical_scope.unidad_pk
+    resolved_server_id = canonical_scope.server_id
+
+    if not unidad_negocio_id or not resolved_server_id:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "COMPRAS_CONTEXTO_CANONICO_INCOMPLETO",
+                "message": "No fue posible resolver el contexto canónico de la unidad.",
+            },
+        )
 
     requisiciones = obtener_requisiciones_sync(
         unidad_negocio_id=unidad_negocio_id,
-        server_id=scope["server_id"],
-        sucursal=sucursal,
+        server_id=resolved_server_id,
+        sucursal=None,
         limit=500,
     )
     return [{
@@ -8841,23 +8896,6 @@ async def guardar_parametros_compra(params: dict, credentials: HTTPAuthorization
 
 # ============= AUDITORÍA OPERATIVA DE COMPRAS =============
 
-class AuditoriaOperativaRequest(BaseModel):
-    server_id: str
-    sucursal: str
-    almacenes: List[str]
-    folio_inv_inicial: Optional[str] = None  # Legacy: un solo folio
-    folios_inv_inicial: Optional[List[str]] = None  # Nuevo: múltiples folios
-    fecha_inv_inicial: str
-    fecha_auditoria: str  # Fecha del inventario final o actual
-    folio_inv_final: Optional[str] = None  # Legacy: un solo folio
-    folios_inv_final: Optional[List[str]] = None  # Nuevo: múltiples folios
-    folio_requisicion: Optional[str] = None  # Requisición a comparar (una sola)
-    folios_requisiciones: Optional[List[str]] = None  # Múltiples requisiciones
-    inventario_manual: Optional[List[Dict]] = None  # Para captura manual si no hay folio
-    inventario_fisico_actual: Optional[List[Dict]] = None  # Captura manual del inv físico del día del pedido
-    solo_skus_requisicion: bool = True  # Por defecto solo muestra SKUs de las requisiciones
-    dias_objetivo_default: int = 10  # Días de inventario objetivo por defecto
-    dias_objetivo_por_sku: Optional[Dict[str, int]] = None  # Días personalizados por SKU {codigo: dias}
 
 
 class ProductosParaCapturaRequest(BaseModel):
@@ -8873,14 +8911,69 @@ async def obtener_productos_para_captura(request: ProductosParaCapturaRequest, c
 
     NO-LIVE: no consulta POS.
     """
-    from core.corporate_filters.request_resolver import canonical_server_id
+    from core.corporate_filters.request_resolver import (
+        resolve_authorized_unidad_scope,
+    )
+    from core.inventarios.resolver_canonico import (
+        resolver_empresa_id,
+        resolver_sucursal_id,
+    )
     from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
+    from modules.compras.access import COMPRAS_VER
 
-    request.server_id = canonical_server_id(request.server_id)
-    scope = await _compras_resolve_scope(request.server_id, request.sucursal, credentials)
+    unidad_token = request.server_id
+    current_user = await get_current_user(credentials)
 
-    from modules.compras.access import require_compras_permission, COMPRAS_VER
-    require_compras_permission(scope["user"], COMPRAS_VER)
+    canonical_scope = await resolve_authorized_unidad_scope(
+        current_user,
+        COMPRAS_VER,
+        unidad_token,
+    )
+
+    if canonical_scope.access_denied:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "COMPRAS_UNIDAD_NO_AUTORIZADA",
+                "message": "No tiene acceso a esta Unidad de Negocio.",
+            },
+        )
+
+    resolved_server_id = canonical_scope.server_id
+    unidad_codigo = canonical_scope.unidad_codigo
+    sucursal_origen_id = canonical_scope.sucursal_origen_id
+
+    if not resolved_server_id or not unidad_codigo:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "COMPRAS_CONTEXTO_CANONICO_INCOMPLETO",
+                "message": "No fue posible resolver el contexto canónico de la unidad.",
+            },
+        )
+
+    empresa = resolver_empresa_id(unidad_codigo)
+    sucursal_resuelta = resolver_sucursal_id(
+        resolved_server_id,
+        sucursal_origen_id,
+    )
+
+    if not empresa.resuelto or not sucursal_resuelta.resuelto:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "COMPRAS_CONTEXTO_CANONICO_INCOMPLETO",
+                "message": "Falta mapeo canónico Empresa/Sucursal.",
+            },
+        )
+
+    scope = {
+        "user": current_user,
+        "server_id": resolved_server_id,
+        "empresa_id": int(empresa.canonical_id),
+        "sucursal_id": int(sucursal_resuelta.canonical_id),
+        "source": "EDARSAHUB_SQL_CANONICAL",
+    }
 
     conn = None
     try:
@@ -9060,17 +9153,84 @@ async def realizar_auditoria_operativa(request: AuditoriaOperativaRequest, crede
     NO-LIVE: no consulta POS ni usa credenciales de servidor origen.
     """
     from datetime import datetime, timedelta
-    from core.corporate_filters.request_resolver import canonical_server_id
+    from core.corporate_filters.request_resolver import (
+        resolve_authorized_unidad_scope,
+    )
+    from core.inventarios.resolver_canonico import (
+        resolver_empresa_id,
+        resolver_sucursal_id,
+    )
     from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
+    from modules.compras.access import COMPRAS_EJECUTAR
 
-    request.server_id = canonical_server_id(request.server_id)
-    scope = await _compras_resolve_scope(request.server_id, request.sucursal, credentials)
-    server_id = scope["server_id"]
-    context = scope["context"]
-    almacenes = _compras_almacenes_scope(context, server_id, request.almacenes)
+    # El campo server_id se conserva en el schema por compatibilidad,
+    # pero el frontend canónico envía aquí la Unidad de Negocio.
+    unidad_token = request.server_id
+    current_user = await get_current_user(credentials)
 
-    from modules.compras.access import require_compras_permission, COMPRAS_EJECUTAR
-    require_compras_permission(scope["user"], COMPRAS_EJECUTAR)
+    canonical_scope = await resolve_authorized_unidad_scope(
+        current_user,
+        COMPRAS_EJECUTAR,
+        unidad_token,
+    )
+
+    if canonical_scope.access_denied:
+        logging.warning(
+            "[AUDITORIA-COMPRAS-RBAC] acceso denegado user=%s unidad=%s reason=%s",
+            current_user.get("email"),
+            unidad_token,
+            canonical_scope.denial_reason,
+        )
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "COMPRAS_UNIDAD_NO_AUTORIZADA",
+                "message": "No tiene acceso para ejecutar auditorías en esta Unidad de Negocio.",
+            },
+        )
+
+    server_id = canonical_scope.server_id
+    unidad_codigo = canonical_scope.unidad_codigo
+    sucursal_origen_id = canonical_scope.sucursal_origen_id
+
+    if not server_id or not unidad_codigo:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "COMPRAS_CONTEXTO_CANONICO_INCOMPLETO",
+                "message": "No fue posible resolver el contexto canónico de la unidad.",
+            },
+        )
+
+    empresa = resolver_empresa_id(unidad_codigo)
+    sucursal_resuelta = resolver_sucursal_id(
+        server_id,
+        sucursal_origen_id,
+    )
+
+    if not empresa.resuelto or not sucursal_resuelta.resuelto:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "COMPRAS_CONTEXTO_CANONICO_INCOMPLETO",
+                "message": "Falta mapeo canónico Empresa/Sucursal para la auditoría.",
+                "unidad": unidad_codigo,
+                "empresa": empresa.motivo,
+                "sucursal": sucursal_resuelta.motivo,
+            },
+        )
+
+    # Auditoría no expone selector de almacenes.
+    # Los folios seleccionados ya provienen del contexto autorizado de la unidad.
+    almacenes = []
+
+    scope = {
+        "user": current_user,
+        "server_id": server_id,
+        "empresa_id": int(empresa.canonical_id),
+        "sucursal_id": int(sucursal_resuelta.canonical_id),
+        "source": "EDARSAHUB_SQL_CANONICAL",
+    }
 
     try:
         fecha_ini_dt = datetime.strptime(request.fecha_inv_inicial, "%Y-%m-%d")

@@ -26,6 +26,7 @@ from fastapi import APIRouter, Depends, Query
 from typing import Optional, Dict, Any
 
 from core.security import get_current_user
+from core.rbac.middleware import require_explicit_permission
 from core.rbac_helper_sql import es_admin, es_supervisor_o_superior
 from modules.catalogos.service import get_catalogos_service
 from modules.catalogos.schemas import (
@@ -666,6 +667,795 @@ async def activar_registro(
     
     service = get_catalogos_service()
     return await service.activar_registro(tabla, id)
+
+
+# ============================================================================
+# MATRICES DE AUTORIZACION - CONSULTA CANONICA
+# ============================================================================
+
+@router.get("/autorizaciones/tipos/{tipo_autorizacion_id}/matriz")
+async def obtener_matriz_autorizacion(
+    tipo_autorizacion_id: int,
+    current_user: Dict = Depends(
+        require_explicit_permission("SEGURIDAD_CONFIGURAR")
+    ),
+):
+    """
+    Consulta la matriz canonica asociada a un tipo de autorizacion.
+
+    Fuente unica:
+      dbo.Usuario_TiposAutorizacion
+      dbo.Usuario_MatrizAutorizacion
+      dbo.Usuario_Roles
+      dbo.Usuario_Catalogo
+
+    Este endpoint es deliberadamente read-only en esta fase.
+    """
+    from core.connections.hrlectura_connection_factory import (
+        build_hrlectura_connection_factory,
+    )
+
+    conn = build_hrlectura_connection_factory()()
+    cur = conn.cursor(as_dict=True)
+
+    try:
+        cur.execute(
+            """
+            SELECT
+                TA.TipoAutorizacionID,
+                TA.CodigoTipoAutorizacion,
+                TA.NombreTipoAutorizacion,
+                TA.Descripcion,
+                TA.ModuloID,
+                TA.AccionID,
+                TA.RequiereUnidadNegocio,
+                TA.ModoAutorizacion,
+                TA.Activo
+            FROM dbo.Usuario_TiposAutorizacion AS TA
+            WHERE TA.TipoAutorizacionID = %s
+            """,
+            (tipo_autorizacion_id,),
+        )
+
+        tipo = cur.fetchone()
+
+        if not tipo:
+            raise HTTPException(
+                status_code=404,
+                detail="Tipo de autorizacion no encontrado",
+            )
+
+        cur.execute(
+            """
+            SELECT
+                MA.MatrizAutorizacionID,
+                MA.TipoAutorizacionID,
+                MA.NivelAutorizacion,
+                MA.RolID,
+                R.CodigoRol,
+                R.NombreRol,
+                MA.UsuarioID,
+                U.NombreCompleto AS NombreUsuario,
+                U.Email AS EmailUsuario,
+                MA.MontoMinimo,
+                MA.MontoMaximo,
+                MA.Prioridad,
+                MA.RequiereTodosLosNiveles,
+                MA.Activo,
+                MA.FechaAlta,
+                MA.FechaModificacion
+            FROM dbo.Usuario_MatrizAutorizacion AS MA
+            INNER JOIN dbo.Usuario_Roles AS R
+                ON R.RolID = MA.RolID
+            LEFT JOIN dbo.Usuario_Catalogo AS U
+                ON U.UsuarioID = MA.UsuarioID
+            WHERE MA.TipoAutorizacionID = %s
+            ORDER BY
+                MA.NivelAutorizacion,
+                MA.Prioridad,
+                MA.MatrizAutorizacionID
+            """,
+            (tipo_autorizacion_id,),
+        )
+
+        matriz = cur.fetchall() or []
+
+        return {
+            "success": True,
+            "tipo": tipo,
+            "matriz": matriz,
+            "total": len(matriz),
+        }
+
+    finally:
+        conn.close()
+
+
+@router.get("/autorizaciones/catalogos")
+async def obtener_catalogos_matriz_autorizacion(
+    current_user: Dict = Depends(
+        require_explicit_permission("SEGURIDAD_CONFIGURAR")
+    ),
+):
+    """
+    Catalogos canonicos necesarios para construir selectores de la
+    administracion de matrices. No expone IDs para captura manual.
+    """
+    from core.connections.hrlectura_connection_factory import (
+        build_hrlectura_connection_factory,
+    )
+
+    conn = build_hrlectura_connection_factory()()
+    cur = conn.cursor(as_dict=True)
+
+    try:
+        cur.execute(
+            """
+            SELECT
+                RolID,
+                CodigoRol,
+                NombreRol
+            FROM dbo.Usuario_Roles
+            WHERE Activo = 1
+            ORDER BY NombreRol, RolID
+            """
+        )
+        roles = cur.fetchall() or []
+
+        cur.execute(
+            """
+            SELECT
+                ModuloID,
+                CodigoModulo,
+                NombreModulo
+            FROM dbo.Usuario_Modulos
+            WHERE Activo = 1
+            ORDER BY NombreModulo, ModuloID
+            """
+        )
+        modulos = cur.fetchall() or []
+
+        cur.execute(
+            """
+            SELECT
+                AccionID,
+                CodigoAccion,
+                NombreAccion
+            FROM dbo.Usuario_Acciones
+            WHERE Activo = 1
+            ORDER BY NombreAccion, AccionID
+            """
+        )
+        acciones = cur.fetchall() or []
+
+        cur.execute(
+            """
+            SELECT
+                UsuarioID,
+                NombreCompleto,
+                Email
+            FROM dbo.Usuario_Catalogo
+            WHERE Activo = 1
+            ORDER BY NombreCompleto, UsuarioID
+            """
+        )
+        usuarios = cur.fetchall() or []
+
+        return {
+            "success": True,
+            "roles": roles,
+            "modulos": modulos,
+            "acciones": acciones,
+            "usuarios": usuarios,
+        }
+
+    finally:
+        conn.close()
+
+
+
+@router.post("/autorizaciones/tipos/{tipo_autorizacion_id}/matriz")
+async def crear_fila_matriz_autorizacion(
+    tipo_autorizacion_id: int,
+    body: Dict[str, Any],
+    current_user: Dict = Depends(
+        require_explicit_permission("SEGURIDAD_CONFIGURAR")
+    ),
+):
+    """
+    Crea una fila de la matriz canonica de autorizacion.
+
+    Validaciones fail-closed:
+    - tipo activo
+    - rol activo
+    - usuario activo cuando se especifica
+    - usuario compatible con rol
+    - nivel valido
+    - prioridad positiva
+    - rango monetario valido
+    - no duplicidad exacta de nivel/rol
+    - no solapamiento de rangos dentro del mismo tipo
+    """
+    from fastapi import HTTPException
+    from core.db import get_edarsahub_pymssql_connection
+
+    nivel = body.get("NivelAutorizacion")
+    rol_id = body.get("RolID")
+    usuario_id = body.get("UsuarioID")
+    monto_minimo = body.get("MontoMinimo")
+    monto_maximo = body.get("MontoMaximo")
+    prioridad = body.get("Prioridad", 1)
+    requiere_todos = bool(body.get("RequiereTodosLosNiveles", False))
+    activo = bool(body.get("Activo", True))
+
+    if not isinstance(nivel, int) or nivel <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="NivelAutorizacion debe ser entero positivo",
+        )
+
+    if not isinstance(rol_id, int) or rol_id <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="RolID requerido",
+        )
+
+    if not isinstance(prioridad, int) or prioridad <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Prioridad debe ser entero positivo",
+        )
+
+    if monto_minimo is not None:
+        monto_minimo = float(monto_minimo)
+
+    if monto_maximo is not None:
+        monto_maximo = float(monto_maximo)
+
+    if (
+        monto_minimo is not None
+        and monto_maximo is not None
+        and monto_minimo > monto_maximo
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="MontoMinimo no puede ser mayor que MontoMaximo",
+        )
+
+    conn = get_edarsahub_pymssql_connection(
+        timeout=30,
+        login_timeout=10,
+    )
+    cur = conn.cursor(as_dict=True)
+
+    try:
+        cur.execute(
+            """
+            SELECT
+                TipoAutorizacionID,
+                ModoAutorizacion
+            FROM dbo.Usuario_TiposAutorizacion
+            WHERE TipoAutorizacionID = %s
+              AND Activo = 1
+            """,
+            (tipo_autorizacion_id,),
+        )
+        tipo_row = cur.fetchone()
+
+        if not tipo_row:
+            raise HTTPException(
+                status_code=404,
+                detail="Tipo de autorizacion inexistente o inactivo",
+            )
+
+        modo_autorizacion = str(
+            tipo_row.get("ModoAutorizacion")
+            or "ESCALABLE"
+        ).upper()
+
+        if modo_autorizacion not in (
+            "ESCALABLE",
+            "MANCOMUNADA",
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="Modo de autorizacion canonico invalido",
+            )
+
+        if modo_autorizacion == "MANCOMUNADA":
+            requiere_todos = True
+
+        cur.execute(
+            """
+            SELECT RolID
+            FROM dbo.Usuario_Roles
+            WHERE RolID = %s
+              AND Activo = 1
+            """,
+            (rol_id,),
+        )
+        if not cur.fetchone():
+            raise HTTPException(
+                status_code=400,
+                detail="Rol inexistente o inactivo",
+            )
+
+        if usuario_id is not None:
+            if not isinstance(usuario_id, int) or usuario_id <= 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail="UsuarioID invalido",
+                )
+
+            cur.execute(
+                """
+                SELECT UsuarioID
+                FROM dbo.Usuario_Catalogo
+                WHERE UsuarioID = %s
+                  AND Activo = 1
+                """,
+                (usuario_id,),
+            )
+            if not cur.fetchone():
+                raise HTTPException(
+                    status_code=400,
+                    detail="Usuario inexistente o inactivo",
+                )
+
+            cur.execute(
+                """
+                SELECT TOP 1 1 AS ok
+                FROM dbo.Usuario_RolesContexto
+                WHERE UsuarioID = %s
+                  AND RolID = %s
+                  AND Activo = 1
+                  AND (
+                        FechaBaja IS NULL
+                        OR FechaBaja > SYSDATETIME()
+                      )
+                """,
+                (usuario_id, rol_id),
+            )
+            if not cur.fetchone():
+                raise HTTPException(
+                    status_code=400,
+                    detail="UsuarioID no tiene el RolID activo indicado",
+                )
+
+        cur.execute(
+            """
+            SELECT TOP 1 MatrizAutorizacionID
+            FROM dbo.Usuario_MatrizAutorizacion
+            WHERE TipoAutorizacionID = %s
+              AND NivelAutorizacion = %s
+              AND RolID = %s
+              AND Activo = 1
+            """,
+            (
+                tipo_autorizacion_id,
+                nivel,
+                rol_id,
+            ),
+        )
+        if cur.fetchone():
+            raise HTTPException(
+                status_code=409,
+                detail="Ya existe una fila activa para ese nivel y rol",
+            )
+
+        cur.execute(
+            """
+            SELECT TOP 1
+                MatrizAutorizacionID
+            FROM dbo.Usuario_MatrizAutorizacion
+            WHERE TipoAutorizacionID = %s
+              AND Activo = 1
+              AND (
+                    (
+                        %s IS NULL
+                        OR MontoMaximo IS NULL
+                        OR %s <= MontoMaximo
+                    )
+                    AND
+                    (
+                        %s IS NULL
+                        OR MontoMinimo IS NULL
+                        OR %s >= MontoMinimo
+                    )
+                  )
+            """,
+            (
+                tipo_autorizacion_id,
+                monto_minimo,
+                monto_minimo,
+                monto_maximo,
+                monto_maximo,
+            ),
+        )
+        overlap_row = cur.fetchone()
+
+        if (
+            overlap_row
+            and modo_autorizacion == "ESCALABLE"
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="El rango monetario se solapa con una fila activa existente",
+            )
+
+        cur.execute(
+            """
+            SELECT ISNULL(MAX(MatrizAutorizacionID), 0) + 1 AS next_id
+            FROM dbo.Usuario_MatrizAutorizacion WITH (UPDLOCK, HOLDLOCK)
+            """
+        )
+        next_id = int(cur.fetchone()["next_id"])
+
+        cur.execute(
+            """
+            INSERT INTO dbo.Usuario_MatrizAutorizacion (
+                MatrizAutorizacionID,
+                TipoAutorizacionID,
+                NivelAutorizacion,
+                RolID,
+                UsuarioID,
+                MontoMinimo,
+                MontoMaximo,
+                Prioridad,
+                RequiereTodosLosNiveles,
+                Activo,
+                FechaAlta
+            )
+            VALUES (
+                %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s,
+                SYSDATETIME()
+            )
+            """,
+            (
+                next_id,
+                tipo_autorizacion_id,
+                nivel,
+                rol_id,
+                usuario_id,
+                monto_minimo,
+                monto_maximo,
+                prioridad,
+                1 if requiere_todos else 0,
+                1 if activo else 0,
+            ),
+        )
+
+        conn.commit()
+
+        return {
+            "success": True,
+            "MatrizAutorizacionID": next_id,
+        }
+
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as exc:
+        conn.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error creando matriz: {exc}",
+        )
+    finally:
+        conn.close()
+
+
+@router.put("/autorizaciones/matriz/{matriz_autorizacion_id}")
+async def actualizar_fila_matriz_autorizacion(
+    matriz_autorizacion_id: int,
+    body: Dict[str, Any],
+    current_user: Dict = Depends(
+        require_explicit_permission("SEGURIDAD_CONFIGURAR")
+    ),
+):
+    """
+    Actualiza una fila existente de matriz con las mismas
+    validaciones canonicas del alta.
+    """
+    from fastapi import HTTPException
+    from core.db import get_edarsahub_pymssql_connection
+
+    allowed = {
+        "NivelAutorizacion",
+        "RolID",
+        "UsuarioID",
+        "MontoMinimo",
+        "MontoMaximo",
+        "Prioridad",
+        "RequiereTodosLosNiveles",
+        "Activo",
+    }
+
+    payload = {
+        key: value
+        for key, value in body.items()
+        if key in allowed
+    }
+
+    if not payload:
+        raise HTTPException(
+            status_code=400,
+            detail="No hay campos validos para actualizar",
+        )
+
+    conn = get_edarsahub_pymssql_connection(
+        timeout=30,
+        login_timeout=10,
+    )
+    cur = conn.cursor(as_dict=True)
+
+    try:
+        cur.execute(
+            """
+            SELECT
+                MA.*,
+                TA.ModoAutorizacion
+            FROM dbo.Usuario_MatrizAutorizacion AS MA
+            INNER JOIN dbo.Usuario_TiposAutorizacion AS TA
+                ON TA.TipoAutorizacionID = MA.TipoAutorizacionID
+            WHERE MA.MatrizAutorizacionID = %s
+            """,
+            (matriz_autorizacion_id,),
+        )
+        current = cur.fetchone()
+
+        if not current:
+            raise HTTPException(
+                status_code=404,
+                detail="Fila de matriz no encontrada",
+            )
+
+        modo_autorizacion = str(
+            current.get("ModoAutorizacion")
+            or "ESCALABLE"
+        ).upper()
+
+        if modo_autorizacion not in (
+            "ESCALABLE",
+            "MANCOMUNADA",
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="Modo de autorizacion canonico invalido",
+            )
+
+        nivel = payload.get(
+            "NivelAutorizacion",
+            current["NivelAutorizacion"],
+        )
+        rol_id = payload.get(
+            "RolID",
+            current["RolID"],
+        )
+        usuario_id = (
+            payload["UsuarioID"]
+            if "UsuarioID" in payload
+            else current["UsuarioID"]
+        )
+        monto_minimo = (
+            payload["MontoMinimo"]
+            if "MontoMinimo" in payload
+            else current["MontoMinimo"]
+        )
+        monto_maximo = (
+            payload["MontoMaximo"]
+            if "MontoMaximo" in payload
+            else current["MontoMaximo"]
+        )
+        prioridad = payload.get(
+            "Prioridad",
+            current["Prioridad"],
+        )
+        requiere_todos = payload.get(
+            "RequiereTodosLosNiveles",
+            current["RequiereTodosLosNiveles"],
+        )
+
+        if modo_autorizacion == "MANCOMUNADA":
+            requiere_todos = True
+        activo = payload.get(
+            "Activo",
+            current["Activo"],
+        )
+
+        if not isinstance(nivel, int) or nivel <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail="NivelAutorizacion debe ser entero positivo",
+            )
+
+        if not isinstance(rol_id, int) or rol_id <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail="RolID requerido",
+            )
+
+        if not isinstance(prioridad, int) or prioridad <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Prioridad debe ser entero positivo",
+            )
+
+        if monto_minimo is not None:
+            monto_minimo = float(monto_minimo)
+
+        if monto_maximo is not None:
+            monto_maximo = float(monto_maximo)
+
+        if (
+            monto_minimo is not None
+            and monto_maximo is not None
+            and monto_minimo > monto_maximo
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="MontoMinimo no puede ser mayor que MontoMaximo",
+            )
+
+        cur.execute(
+            """
+            SELECT RolID
+            FROM dbo.Usuario_Roles
+            WHERE RolID = %s
+              AND Activo = 1
+            """,
+            (rol_id,),
+        )
+        if not cur.fetchone():
+            raise HTTPException(
+                status_code=400,
+                detail="Rol inexistente o inactivo",
+            )
+
+        if usuario_id is not None:
+            cur.execute(
+                """
+                SELECT TOP 1 1 AS ok
+                FROM dbo.Usuario_Catalogo u
+                INNER JOIN dbo.Usuario_RolesContexto urc
+                    ON urc.UsuarioID = u.UsuarioID
+                   AND urc.RolID = %s
+                   AND urc.Activo = 1
+                   AND (
+                        urc.FechaBaja IS NULL
+                        OR urc.FechaBaja > SYSDATETIME()
+                   )
+                WHERE u.UsuarioID = %s
+                  AND u.Activo = 1
+                """,
+                (
+                    rol_id,
+                    usuario_id,
+                ),
+            )
+            if not cur.fetchone():
+                raise HTTPException(
+                    status_code=400,
+                    detail="UsuarioID no es autorizador activo para el RolID indicado",
+                )
+
+        cur.execute(
+            """
+            SELECT TOP 1 MatrizAutorizacionID
+            FROM dbo.Usuario_MatrizAutorizacion
+            WHERE TipoAutorizacionID = %s
+              AND NivelAutorizacion = %s
+              AND RolID = %s
+              AND MatrizAutorizacionID <> %s
+              AND Activo = 1
+            """,
+            (
+                current["TipoAutorizacionID"],
+                nivel,
+                rol_id,
+                matriz_autorizacion_id,
+            ),
+        )
+        if cur.fetchone():
+            raise HTTPException(
+                status_code=409,
+                detail="Ya existe otra fila activa para ese nivel y rol",
+            )
+
+        cur.execute(
+            """
+            SELECT TOP 1 MatrizAutorizacionID
+            FROM dbo.Usuario_MatrizAutorizacion
+            WHERE TipoAutorizacionID = %s
+              AND MatrizAutorizacionID <> %s
+              AND Activo = 1
+              AND (
+                    (
+                        %s IS NULL
+                        OR MontoMaximo IS NULL
+                        OR %s <= MontoMaximo
+                    )
+                    AND
+                    (
+                        %s IS NULL
+                        OR MontoMinimo IS NULL
+                        OR %s >= MontoMinimo
+                    )
+                  )
+            """,
+            (
+                current["TipoAutorizacionID"],
+                matriz_autorizacion_id,
+                monto_minimo,
+                monto_minimo,
+                monto_maximo,
+                monto_maximo,
+            ),
+        )
+        overlap_row = cur.fetchone()
+
+        if (
+            overlap_row
+            and modo_autorizacion == "ESCALABLE"
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="El rango monetario se solapa con otra fila activa",
+            )
+
+        cur.execute(
+            """
+            UPDATE dbo.Usuario_MatrizAutorizacion
+            SET
+                NivelAutorizacion = %s,
+                RolID = %s,
+                UsuarioID = %s,
+                MontoMinimo = %s,
+                MontoMaximo = %s,
+                Prioridad = %s,
+                RequiereTodosLosNiveles = %s,
+                Activo = %s,
+                FechaModificacion = SYSDATETIME()
+            WHERE MatrizAutorizacionID = %s
+            """,
+            (
+                nivel,
+                rol_id,
+                usuario_id,
+                monto_minimo,
+                monto_maximo,
+                prioridad,
+                1 if bool(requiere_todos) else 0,
+                1 if bool(activo) else 0,
+                matriz_autorizacion_id,
+            ),
+        )
+
+        if cur.rowcount != 1:
+            raise RuntimeError(
+                f"UPDATE_ROWCOUNT={cur.rowcount}"
+            )
+
+        conn.commit()
+
+        return {
+            "success": True,
+            "MatrizAutorizacionID": matriz_autorizacion_id,
+        }
+
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as exc:
+        conn.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error actualizando matriz: {exc}",
+        )
+    finally:
+        conn.close()
+
 
 
 # ============================================================================

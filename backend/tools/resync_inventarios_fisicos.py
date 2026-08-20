@@ -27,6 +27,7 @@ if str(BACKEND_ROOT) not in sys.path:
 from core.guards.server_secret_guard import require_server_secret_key
 from core.secret_manager import is_encryption_available
 from modules.compras.sync_service import (
+    INVENTORY_SYNC_MODE_FULL,
     log_sync_operation,
     sync_inventarios_fisicos_from_server,
 )
@@ -152,6 +153,7 @@ def main() -> int:
             server_info,
             unidad_info,
             sync_job._execute_sql_with_timeout,
+            sync_mode=INVENTORY_SYNC_MODE_FULL,
         )
         sync_end = datetime.now()
         log_sync_operation(

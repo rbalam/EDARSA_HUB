@@ -1368,6 +1368,94 @@ def _insert_rows(rows: List[Dict[str, Any]]) -> int:
     finally:
         conn.close()
 
+
+def sync_detalle_producto_canonico_dia(
+    cfg: Dict[str, Any],
+    dia: date,
+    runtime_row: Dict[str, Any],
+    run_id: str,
+    commit: bool = False,
+    excluir_abiertas: bool = True,
+) -> Dict[str, Any]:
+    """
+    Sincroniza el detalle canónico de producto para una unidad y un día
+    operativo completos.
+
+    Reutiliza exactamente los contratos existentes de extracción POS,
+    validación contra Runtime V2, materialización e inserción.
+
+    No descubre unidades.
+    No calcula rangos.
+    No infiere configuración.
+    No acepta días sin Runtime canónico.
+    """
+
+    sistema = _sistema(cfg)
+    rm = _runtime_metrics(runtime_row)
+
+    if excluir_abiertas and (
+        rm["ventas_abiertas"] > 0
+        or rm["es_abierta"]
+    ):
+        return {
+            "status": "NO_PROBAR_ABIERTO_REAL",
+            "unidad": cfg.get("unidad_codigo"),
+            "fecha_operacion": dia,
+            "ventas_runtime": rm["ventas"],
+            "ventas_abiertas_runtime": rm["ventas_abiertas"],
+            "tickets_runtime": rm["tickets"],
+            "pax_runtime": rm["pax"],
+            "filas_insertadas": 0,
+        }
+
+    if sistema == SystemType.SOFTRESTAURANT.value:
+        src_rows = _extract_soft(cfg, dia)
+    elif sistema == SystemType.MANAGEMENTPRO.value:
+        src_rows = _extract_mpro(cfg, dia)
+    else:
+        raise RuntimeError(
+            "Sistema POS no soportado para extracción: "
+            f"{sistema!r}"
+        )
+
+    validation = _validate(src_rows, rm)
+
+    status = (
+        "OK_HEADER_CANONICO"
+        if validation["ok"]
+        else "NO_CUADRA_REVISAR"
+    )
+
+    item = {
+        "status": status,
+        "unidad": cfg.get("unidad_codigo"),
+        "unidad_nombre": cfg.get("unidad_nombre"),
+        "sistema": sistema,
+        "fecha_operacion": dia,
+        **validation,
+    }
+
+    if status != "OK_HEADER_CANONICO":
+        item["filas_insertadas"] = 0
+        return item
+
+    rows = _materialize_rows(
+        cfg,
+        dia,
+        src_rows,
+        run_id,
+    )
+
+    item["filas_destino_preparadas"] = len(rows)
+
+    if commit:
+        item["filas_insertadas"] = _insert_rows(rows)
+    else:
+        item["filas_insertadas"] = 0
+
+    return item
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--unidad", default=None)
@@ -1430,66 +1518,26 @@ def main() -> int:
                 total_blocked += 1
                 continue
 
-            rm = _runtime_metrics(rt)
-
-            if args.excluir_abiertas and (rm["ventas_abiertas"] > 0 or rm["es_abierta"]):
-                item = {
-                    "status": "NO_PROBAR_ABIERTO_REAL",
-                    "unidad": cfg.get("unidad_codigo"),
-                    "fecha_operacion": dia,
-                    "ventas_runtime": rm["ventas"],
-                    "ventas_abiertas_runtime": rm["ventas_abiertas"],
-                    "tickets_runtime": rm["tickets"],
-                    "pax_runtime": rm["pax"],
-                }
-                resumen.append(item)
-                _safe_print(item)
-                total_blocked += 1
-                continue
-
             try:
-
-                if sistema == SystemType.SOFTRESTAURANT.value:
-                    src_rows = _extract_soft(cfg, dia)
-                elif sistema == SystemType.MANAGEMENTPRO.value:
-                    src_rows = _extract_mpro(cfg, dia)
-                else:
-                    raise RuntimeError(
-                        "Sistema POS no soportado para extracción: "
-                        f"{sistema!r}"
-                    )
-
-                validation = _validate(src_rows, rm)
-                status = "OK_HEADER_CANONICO" if validation["ok"] else "NO_CUADRA_REVISAR"
-
-                item = {
-                    "status": status,
-                    "unidad": cfg.get("unidad_codigo"),
-                    "unidad_nombre": cfg.get("unidad_nombre"),
-                    "sistema": sistema,
-                    "fecha_operacion": dia,
-                    **validation,
-                }
-
-                if status != "OK_HEADER_CANONICO":
-                    resumen.append(item)
-                    _safe_print(item)
-                    total_blocked += 1
-                    continue
-
-                rows = _materialize_rows(cfg, dia, src_rows, run_id)
-                item["filas_destino_preparadas"] = len(rows)
-
-                if args.commit:
-                    inserted = _insert_rows(rows)
-                    item["filas_insertadas"] = inserted
-                    total_insertadas += inserted
-                else:
-                    item["filas_insertadas"] = 0
+                item = sync_detalle_producto_canonico_dia(
+                    cfg=cfg,
+                    dia=dia,
+                    runtime_row=rt,
+                    run_id=run_id,
+                    commit=args.commit,
+                    excluir_abiertas=args.excluir_abiertas,
+                )
 
                 resumen.append(item)
                 _safe_print(item)
-                total_ok += 1
+
+                if item["status"] == "OK_HEADER_CANONICO":
+                    total_ok += 1
+                    total_insertadas += int(
+                        item.get("filas_insertadas") or 0
+                    )
+                else:
+                    total_blocked += 1
 
             except Exception as exc:
                 item = {

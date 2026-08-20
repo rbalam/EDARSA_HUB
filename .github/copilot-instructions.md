@@ -67,3 +67,12 @@ Documento normativo:
 `docs/operacion/MODO_TRABAJO_CAMBIOS_ATOMICOS.md`
 
 <!-- EDARSAHUB_ATOMIC_WORKFLOW_END -->
+
+
+# EDARSAHUB_AGENT_GOVERNANCE
+# Adapter: GitHub Copilot
+
+Read AGENTS.md and docs/agent-governance/AGENT_POLICY.md before modifying anything.
+Read docs/agent-governance/checkpoints/CURRENT.md and continue only from NEXT.
+Run tools/agent_guard/bootstrap_agent_context.sh and tools/agent_guard/preflight_agent.sh.
+Never guess. Audit before creating. Preserve shared workspace.

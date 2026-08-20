@@ -1495,9 +1495,7 @@ function AnalisisCompras({ servers, unidadesNegocio, selectedUnidad, setSelected
 // ============ TAB 4: AUDITORÍA OPERATIVA ============
 function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSelectedUnidad, selectedServer, setSelectedServer, selectedSucursal: parentSucursal, setSelectedSucursal: setParentSucursal, sucursales: parentSucursales }) {
   const [loading, setLoading] = useState(false);
-  const [almacenes, setAlmacenes] = useState([]);
-  const [selectedAlmacenes, setSelectedAlmacenes] = useState([]);
-  const [inventariosFisicos, setInventariosFisicos] = useState([]);
+const [inventariosFisicos, setInventariosFisicos] = useState([]);
   const [pedidosVigentes, setPedidosVigentes] = useState([]);
   
   const [folioInvInicial, setFolioInvInicial] = useState('');
@@ -1687,7 +1685,7 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
       { concepto: 'Requiere Acta', valor: resumen.requiere_acta ? 'SÍ' : 'NO' },
     ] : [];
     const unidadNombre = (unidadesNegocio || []).find(u => String(u.id) === String(selectedUnidad) || u.codigo === selectedUnidad)?.nombre || selectedUnidad || '';
-    const meta = `Unidad: ${unidadNombre}${parentSucursal ? ' · Sucursal: ' + parentSucursal : ''} · Fecha: ${fechaAuditoria}`;
+    const meta = `Unidad: ${unidadNombre} · Fecha: ${fechaAuditoria}`;
 
     const sheets = [
       { name: 'Auditoria Detalle', columns, rows },
@@ -1724,15 +1722,16 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
     }
 
     return { columns, rows, meta, sheets };
-  }, [resultados, resumen, unidadesNegocio, selectedUnidad, parentSucursal, fechaAuditoria, agruparPorProveedor, getCostoSegunUnidad]);
+  }, [resultados, resumen, unidadesNegocio, selectedUnidad, fechaAuditoria, agruparPorProveedor, getCostoSegunUnidad]);
 
   // Cargar filtros guardados al montar
   useEffect(() => {
-    const savedFilters = localStorage.getItem(`auditoria_filters_${selectedServer}_${parentSucursal}`);
+    const savedFilters = localStorage.getItem(
+      `auditoria_filters_${selectedServer}_${selectedUnidad || 'unidad'}`
+    );
     if (savedFilters) {
       try {
         const filters = JSON.parse(savedFilters);
-        if (filters.selectedAlmacenes) setSelectedAlmacenes(filters.selectedAlmacenes);
         if (filters.folioPedido) setFolioPedido(filters.folioPedido);
         if (filters.fechaInicial) setFechaInicial(filters.fechaInicial);
         if (filters.fechaAuditoria) setFechaAuditoria(filters.fechaAuditoria);
@@ -1743,13 +1742,12 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
         logger.warn('Error loading saved filters:', e);
       }
     }
-  }, [selectedServer, parentSucursal]);
+  }, [selectedServer, selectedUnidad]);
 
   // Guardar filtros cuando cambien
   useEffect(() => {
-    if (selectedServer && parentSucursal) {
+    if (selectedServer && selectedUnidad) {
       const filters = {
-        selectedAlmacenes,
         folioPedido,
         fechaInicial,
         fechaAuditoria,
@@ -1757,38 +1755,54 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
         selectedInvFinales,
         usarCapturaManual
       };
-      localStorage.setItem(`auditoria_filters_${selectedServer}_${parentSucursal}`, JSON.stringify(filters));
-    }
-  }, [selectedServer, parentSucursal, selectedAlmacenes, folioPedido, fechaInicial, fechaAuditoria, selectedInvIniciales, selectedInvFinales, usarCapturaManual]);
 
-  // NOTA: fetchAlmacenes, fetchInventariosFisicos, fetchPedidosVigentes usan
-  // selectedServer y parentSucursal del closure. Incluirlas en deps causaría loops infinitos.
+      localStorage.setItem(
+        `auditoria_filters_${selectedServer}_${selectedUnidad}`,
+        JSON.stringify(filters)
+      );
+    }
+  }, [
+    selectedServer,
+    selectedUnidad,
+    folioPedido,
+    fechaInicial,
+    fechaAuditoria,
+    selectedInvIniciales,
+    selectedInvFinales,
+    usarCapturaManual
+  ]);
+
+  // Auditoría se gobierna por Unidad de Negocio.
+  // Sucursal queda como contexto técnico opcional para contratos
+  // backend que todavía conservan el parámetro por compatibilidad.
   useEffect(() => {
-    if (selectedServer && parentSucursal) {
-      fetchAlmacenesLocal();
+    if (selectedServer) {
       fetchInventariosFisicosLocal();
       fetchPedidosVigentesLocal();
     }
+    // Auditoría opera por Unidad de Negocio.
+    // El backend resuelve el contexto canónico de sucursal cuando aplique.
+    // No se expone ni se exige selector de almacén/sucursal en esta pantalla.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedServer, parentSucursal]);
-
-  const fetchAlmacenesLocal = async () => {
-    try {
-      const response = await api.get(`/servers/${selectedServer}/almacenes?sucursal=${encodeURIComponent(parentSucursal)}`);
-      setAlmacenes(response.data);
-    } catch (error) {
-      logger.error('Error cargando almacenes:', error);
-    }
-  };
+  }, [selectedServer, selectedUnidad]);
 
   const fetchInventariosFisicosLocal = async () => {
     setLoadingInventarios(true);
     setErrorConexion(null);  // Reset error
     try {
-      const response = await api.get(`/compras/inventarios-fisicos/${selectedServer}?sucursal=${encodeURIComponent(parentSucursal)}`, {
-        timeout: 30000  // 30 segundos timeout
+      const params = {};
+      if (parentSucursal) {
+        params.sucursal = parentSucursal;
+      }
+
+      const response = await api.get(`/compras/inventarios-fisicos/${selectedUnidad}`, {
+        params,
+        timeout: 30000
       });
-      logger.log(`[Auditoría] Inventarios cargados para sucursal "${parentSucursal}":`, response.data.length);
+      logger.log(
+        `[Auditoría] Inventarios cargados para unidad "${selectedUnidad}":`,
+        response.data.length
+      );
       setInventariosFisicos(response.data);
       if (response.data.length === 0) {
         // Verificar si es un error de conexión o simplemente no hay datos
@@ -1809,10 +1823,19 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
   const fetchPedidosVigentesLocal = async () => {
     setLoadingPedidos(true);
     try {
-      const response = await api.get(`/compras/pedidos-vigentes/${selectedServer}?sucursal=${encodeURIComponent(parentSucursal)}`, {
-        timeout: 30000  // 30 segundos timeout
+      const params = {};
+      if (parentSucursal) {
+        params.sucursal = parentSucursal;
+      }
+
+      const response = await api.get(`/compras/pedidos-vigentes/${selectedUnidad}`, {
+        params,
+        timeout: 30000
       });
-      logger.log(`[Auditoría] Requisiciones cargadas para sucursal "${parentSucursal}":`, response.data.length);
+      logger.log(
+        `[Auditoría] Documentos de compra cargados para unidad "${selectedUnidad}":`,
+        response.data.length
+      );
       setPedidosVigentes(response.data);
     } catch (error) {
       logger.error('Error cargando pedidos:', error);
@@ -1882,8 +1905,8 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
         // Fuente canónica EDARSAHUB; timeout extendido para evitar falsos abortos
         // cuando la consulta agrupa varios folios.
         const response = await api.post(`/compras/productos-para-captura`, {
-          server_id: selectedServer,
-          sucursal: parentSucursal,
+          server_id: selectedUnidad,
+          sucursal: null,
           folios_inv_inicial: [],  // Ignorar inventarios iniciales cuando hay requisiciones
           folios_requisiciones: folioPedido
         }, { timeout: 30000 });
@@ -1917,11 +1940,11 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
     // Si no hay requisiciones pero sí inventarios iniciales, usar esos
     if (selectedInvIniciales.length > 0) {
       try {
-        const foliosIni = selectedInvIniciales.map(inv => inv.folio);
+        const foliosIni = selectedInvIniciales.map(inv => String(inv.folio));
         
         const response = await api.post(`/compras/productos-para-captura`, {
-          server_id: selectedServer,
-          sucursal: parentSucursal,
+          server_id: selectedUnidad,
+          sucursal: null,
           folios_inv_inicial: foliosIni,
           folios_requisiciones: []
         }, { timeout: 30000 });
@@ -2054,7 +2077,7 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
       producto,
       fechaInicio: fechaInicial || selectedInvIniciales[0]?.fecha?.split('T')[0] || fechaAuditoria,
       fechaFin: fechaAuditoria,
-      almacenes: selectedAlmacenes,
+      almacenes: [],
     });
   };
 
@@ -2067,7 +2090,7 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
       producto,
       fechaInicio: fechaInicial || selectedInvIniciales[0]?.fecha?.split('T')[0] || fechaAuditoria,
       fechaFin: fechaAuditoria,
-      almacenes: selectedAlmacenes,
+      almacenes: [],
     });
   };
 
@@ -2080,15 +2103,21 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
   };
 
   const realizarAuditoria = async () => {
-    if (!selectedServer || !parentSucursal) {
-      toast.error('Selecciona unidad de negocio y sucursal');
+    if (!selectedUnidad) {
+      toast.error('Selecciona una unidad de negocio');
       return;
     }
     
     // Usar selectedInvIniciales si hay elementos, sino folioInvInicial
     const tieneInvInicial = selectedInvIniciales.length > 0 || folioInvInicial;
     
-    if (!tieneInvInicial || !fechaInicial || !fechaAuditoria) {
+
+const fechaInvInicialEfectiva =
+  selectedInvIniciales[0]?.fecha?.split('T')[0]
+  || fechaInicial
+  || null;
+
+if (!tieneInvInicial || !fechaInvInicialEfectiva || !fechaAuditoria) {
       toast.error('Completa las fechas y el inventario inicial');
       return;
     }
@@ -2106,21 +2135,25 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
       
       // Determinar los folios de inventario inicial a usar (TODOS los seleccionados)
       const foliosInvInicialToUse = selectedInvIniciales.length > 0 
-        ? selectedInvIniciales.map(inv => inv.folio)
-        : (folioInvInicial ? [folioInvInicial] : []);
+        ? selectedInvIniciales.map(inv => String(inv.folio))
+        : (folioInvInicial ? [String(folioInvInicial)] : []);
       
       // Determinar los folios de inventario final a usar (TODOS los seleccionados)
       const foliosInvFinalToUse = selectedInvFinales.length > 0 
-        ? selectedInvFinales.map(inv => inv.folio)
-        : (folioInvFinal ? [folioInvFinal] : []);
+        ? selectedInvFinales.map(inv => String(inv.folio))
+        : (folioInvFinal ? [String(folioInvFinal)] : []);
       
       const response = await api.post(`/compras/auditoria-operativa`, {
-        server_id: selectedServer,
-        sucursal: parentSucursal,
-        almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes : ['TODOS'],
+        // Contrato canónico: enviar Unidad de Negocio.
+        // Backend resuelve server_id internamente.
+        server_id: selectedUnidad,
+        sucursal: null,
+        // Auditoría no expone selector de almacenes.
+        // TODOS se restringe por el scope autorizado en backend.
+        almacenes: ['TODOS'],
         folio_inv_inicial: foliosInvInicialToUse[0] || null,  // Legacy: primer folio
         folios_inv_inicial: foliosInvInicialToUse,  // Nuevo: todos los folios
-        fecha_inv_inicial: fechaInicial,
+        fecha_inv_inicial: fechaInvInicialEfectiva,
         fecha_auditoria: fechaAuditoria,
         folio_inv_final: usarCapturaManual ? null : (foliosInvFinalToUse[0] || null),  // Legacy
         folios_inv_final: usarCapturaManual ? null : foliosInvFinalToUse,  // Nuevo: todos los folios
@@ -2131,53 +2164,17 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
         dias_objetivo_por_sku: Object.keys(diasObjetivoPorSku).length > 0 ? diasObjetivoPorSku : null
       });
       
-      // === FIX: Recalcular importe_diferencia de forma consistente ===
-      // El backend puede enviar 'costo' inconsistente (a veces insumo, a veces presentación)
-      // Solución: Siempre calcular como (diferencia / rendimiento) * costo_presentacion
-      const resultadosCorregidos = response.data.resultados.map(r => {
-        const rendimiento = Math.max(parseFloat(r.rendimiento) || 1, 1);
-        const diferencia = parseFloat(r.diferencia) || 0;
-        const costoPresentacion = parseFloat(r.costo_presentacion) || parseFloat(r.costo) || 0;
-        
-        // Calcular importe correcto: convertir diferencia a presentaciones × costo presentación
-        const importeCorregido = (diferencia / rendimiento) * costoPresentacion;
-        
-        return {
-          ...r,
-          importe_diferencia: Math.round(importeCorregido * 100) / 100 // Redondear a 2 decimales
-        };
-      });
-      
-      setResultados(resultadosCorregidos);
-      
-      // === FIX: Recalcular resumen completo con valores corregidos ===
-      const resumenCorregido = {
-        ...response.data.resumen,
-        // Recalcular totales monetarios usando (cantidad / rendimiento) * costo_presentacion
-        total_teorico: resultadosCorregidos.reduce((sum, r) => {
-          const rendimiento = Math.max(parseFloat(r.rendimiento) || 1, 1);
-          const teorico = parseFloat(r.existencia_teorica) || 0;
-          const costoPres = parseFloat(r.costo_presentacion) || parseFloat(r.costo) || 0;
-          return sum + (teorico / rendimiento) * costoPres;
-        }, 0),
-        total_fisico: resultadosCorregidos.reduce((sum, r) => {
-          const rendimiento = Math.max(parseFloat(r.rendimiento) || 1, 1);
-          const fisico = parseFloat(r.inv_fisico) || 0;
-          const costoPres = parseFloat(r.costo_presentacion) || parseFloat(r.costo) || 0;
-          return sum + (fisico / rendimiento) * costoPres;
-        }, 0),
-        importe_favor: resultadosCorregidos
-          .filter(r => r.importe_diferencia >= 0)
-          .reduce((sum, r) => sum + r.importe_diferencia, 0),
-        importe_contra: Math.abs(resultadosCorregidos
-          .filter(r => r.importe_diferencia < 0)
-          .reduce((sum, r) => sum + r.importe_diferencia, 0)),
-        total_diferencia: resultadosCorregidos
-          .reduce((sum, r) => sum + r.importe_diferencia, 0)
-      };
-      setResumen(resumenCorregido);
-      
-      if (resumenCorregido?.requiere_acta) {
+      // Backend authoritative: resultados y resumen provienen
+  // exclusivamente del cálculo canónico del servidor.
+  const resultadosBackend = Array.isArray(response.data?.resultados)
+    ? response.data.resultados
+    : [];
+  const resumenBackend = response.data?.resumen || {};
+
+  setResultados(resultadosBackend);
+  setResumen(resumenBackend);
+
+  if (resumenBackend?.requiere_acta) {
         toast.warning('Se detectaron diferencias en contra. Se requiere Acta de Auditoría.');
       } else {
         toast.success('Auditoría completada sin diferencias significativas');
@@ -2246,14 +2243,19 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
             </div>
             {/* BLINDAJE DEFINITIVO: Selector de Sucursal ELIMINADO - Backend resuelve contexto */}
             <div className="space-y-1">
-              <Label className="text-xs">Requisición(es) *</Label>
+              <Label className="text-xs">Requisición(es) / Orden(es) de Compra *</Label>
               <details className="relative">
                 <summary className="flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-2 py-1 text-sm cursor-pointer">
                   <span className="truncate text-left text-xs">
                     {loadingPedidos 
                       ? "Cargando..." 
                       : folioPedido.length === 0 
-                        ? getSelectPlaceholder(pedidosVigentes, "Cargando...", "Sin requisiciones", "Seleccionar")
+                        ? getSelectPlaceholder(
+                            pedidosVigentes,
+                            "Cargando...",
+                            "Sin requisiciones / órdenes",
+                            "Seleccionar folio(s)"
+                          )
                         : `${folioPedido.length} seleccionada(s)`}
                   </span>
                   {loadingPedidos ? (
@@ -2280,8 +2282,16 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
                       </div>
                     ) : pedidosVigentes.length === 0 ? (
                       <div className="py-4 px-3 text-center text-zinc-500">
-                        <p className="text-xs font-medium">No hay requisiciones pendientes</p>
-                        <p className="text-xs mt-1">Sucursal: {parentSucursal || 'No seleccionada'}</p>
+                        <p className="text-xs font-medium">
+                          No hay requisiciones u órdenes de compra disponibles
+                        </p>
+                        <p className="text-xs mt-1">
+                          Unidad: {
+                            unidadesNegocio?.find(
+                              u => String(u.id) === String(selectedUnidad)
+                            )?.nombre || 'No seleccionada'
+                          }
+                        </p>
                       </div>
                     ) : (
                       pedidosVigentes.map(p => (
@@ -2402,7 +2412,13 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
                         ) : inventariosFisicos.length === 0 ? (
                           <div className="py-4 px-3 text-center text-zinc-500">
                             <p className="text-xs font-medium">No hay inventarios físicos</p>
-                            <p className="text-xs mt-1">Sucursal: {parentSucursal || 'No seleccionada'}</p>
+                            <p className="text-xs mt-1">
+                              Unidad: {
+                                unidadesNegocio?.find(
+                                  u => String(u.id) === String(selectedUnidad)
+                                )?.nombre || 'No seleccionada'
+                              }
+                            </p>
                           </div>
                         ) : (
                           inventariosFisicos
@@ -2539,7 +2555,13 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
                           ) : inventariosFinalesFiltrados.length === 0 ? (
                             <div className="py-4 px-3 text-center text-zinc-500">
                               <p className="text-xs font-medium">No hay inventarios finales</p>
-                              <p className="text-xs mt-1">Sucursal: {parentSucursal || 'No seleccionada'}</p>
+                              <p className="text-xs mt-1">
+                              Unidad: {
+                                unidadesNegocio?.find(
+                                  u => String(u.id) === String(selectedUnidad)
+                                )?.nombre || 'No seleccionada'
+                              }
+                            </p>
                             </div>
                           ) : (
                             inventariosFinalesFiltrados
@@ -2646,7 +2668,12 @@ function AuditoriaOperativaTab({ servers, unidadesNegocio, selectedUnidad, setSe
             )}
             
             <div className="ml-auto">
-              <Button onClick={realizarAuditoria} disabled={loading || !selectedServer || !parentSucursal} size="sm" className="h-8">
+              <Button
+                onClick={realizarAuditoria}
+                disabled={loading || !selectedUnidad}
+                size="sm"
+                className="h-8"
+              >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <FileWarning className="h-4 w-4 mr-1" />}
                 Realizar Auditoría
               </Button>
@@ -3437,8 +3464,16 @@ export default function Compras() {
     loadUnidades();
   }, [user, authLoading]);
 
-  // Cargar sucursales cuando cambia la unidad seleccionada
+  // Cargar sucursales cuando cambia la unidad seleccionada.
+  // Auditoría opera exclusivamente por Unidad de Negocio canónica y no
+  // necesita consultar /servers/{server_id}/sucursales.
   useEffect(() => {
+    if (activeTab === 'auditoria') {
+      setSucursales([]);
+      setSelectedSucursal('');
+      return;
+    }
+
     if (selectedUnidad && selectedServer) {
       const fetchSucursales = async () => {
         try {
@@ -3481,7 +3516,7 @@ export default function Compras() {
       setSucursales([]);
       setSelectedSucursal('');
     }
-  }, [selectedUnidad, selectedServer, unidadesNegocio]);
+  }, [selectedUnidad, selectedServer, unidadesNegocio, activeTab]);
   
   // Handler para cambio de unidad (usado en componentes hijos)
   const handleUnidadChange = (unidadId) => {

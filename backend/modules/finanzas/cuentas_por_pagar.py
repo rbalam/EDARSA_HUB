@@ -21,7 +21,7 @@ Datos a mostrar:
 10. Estatus de pago
 """
 
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Dict, Any, List, Optional
 from urllib.parse import unquote
@@ -497,6 +497,414 @@ def _cxp_cancel_queue_pendiente(decision_pago_id: Optional[int]) -> None:
     )
 
 
+
+CXP_AUTHORIZATION_TYPE_CODE = "AUT_TES_PAGOS"
+CXP_AUTHORIZATION_ENTITY_NAME = "FINANZAS_CXP_DECISION_PAGO"
+
+
+def _cxp_authorization_entity_id(
+    decision: Dict[str, Any],
+) -> str:
+    decision_id = decision.get("DecisionPagoID")
+
+    if decision_id is None:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "La decision de pago no tiene "
+                "DecisionPagoID canonico."
+            ),
+        )
+
+    return str(int(decision_id))
+
+
+def _cxp_get_canonical_authorization(
+    decision: Dict[str, Any],
+) -> Optional[Dict[str, Any]]:
+    entidad_id = _cxp_authorization_entity_id(decision)
+
+    rows = fetch_all_dict(
+        """
+        SELECT TOP 2
+            A.AutorizacionID,
+            A.FolioAutorizacion,
+            A.EstatusAutorizacion,
+            A.ModoAutorizacion,
+            A.NivelActual,
+            A.NivelFinalRequerido,
+            A.FechaSolicitud,
+            A.FechaResolucionFinal,
+            A.UsuarioResolucionFinalID,
+            A.EntidadNombre,
+            A.EntidadID,
+            A.FolioReferencia
+        FROM dbo.Usuario_Autorizaciones AS A
+        INNER JOIN dbo.Usuario_TiposAutorizacion AS TA
+            ON TA.TipoAutorizacionID = A.TipoAutorizacionID
+        WHERE TA.CodigoTipoAutorizacion = %s
+          AND TA.Activo = 1
+          AND A.EntidadNombre = %s
+          AND A.EntidadID = %s
+          AND A.Activo = 1
+        ORDER BY A.AutorizacionID DESC;
+        """,
+        (
+            CXP_AUTHORIZATION_TYPE_CODE,
+            CXP_AUTHORIZATION_ENTITY_NAME,
+            entidad_id,
+        ),
+    )
+
+    if not rows:
+        return None
+
+    if len(rows) != 1:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Existe mas de una autorizacion activa "
+                "para la decision de pago."
+            ),
+        )
+
+    return rows[0]
+
+
+
+def _cxp_authorization_visibility(
+    decision: Dict[str, Any],
+    current_user: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """
+    Resuelve visibilidad operativa de AUT_TES_PAGOS.
+
+    FINANZAS_ADMINISTRAR no sustituye al autorizador asignado.
+    La fuente de verdad es Usuario_AutorizacionesDetalle.
+    """
+    authorization = _cxp_get_canonical_authorization(decision)
+
+    empty = {
+        "autorizacion_id": None,
+        "estado_autorizacion_canonica": None,
+        "modo_autorizacion": None,
+        "nivel_actual": None,
+        "nivel_final_requerido": None,
+        "usuario_autorizador_id": None,
+        "nivel_autorizacion": None,
+        "resultado_detalle": None,
+        "es_autorizador_actual": False,
+        "puede_resolver_autorizacion": False,
+    }
+
+    if not authorization:
+        return empty
+
+    usuario_id = (
+        _get_cxp_usuario_id(current_user)
+        if current_user
+        else None
+    )
+
+    autorizacion_id = authorization.get("AutorizacionID")
+
+    if autorizacion_id is None:
+        return {
+            **empty,
+            "estado_autorizacion_canonica":
+                authorization.get("EstatusAutorizacion"),
+            "modo_autorizacion":
+                authorization.get("ModoAutorizacion"),
+            "nivel_actual":
+                authorization.get("NivelActual"),
+            "nivel_final_requerido":
+                authorization.get("NivelFinalRequerido"),
+        }
+
+    rows = fetch_all_dict(
+        """
+        SELECT
+            D.UsuarioAutorizadorID,
+            D.NivelAutorizacion,
+            D.Resultado,
+            D.Activo
+        FROM dbo.Usuario_AutorizacionesDetalle AS D
+        WHERE D.AutorizacionID = %s
+          AND D.Activo = 1
+        ORDER BY
+            D.NivelAutorizacion ASC,
+            D.AutorizacionDetalleID ASC;
+        """,
+        (int(autorizacion_id),),
+    )
+
+    user_row = None
+
+    if usuario_id is not None:
+        for detail in rows:
+            if int(detail.get("UsuarioAutorizadorID") or 0) == int(usuario_id):
+                user_row = detail
+                break
+
+    estado = str(
+        authorization.get("EstatusAutorizacion") or ""
+    ).upper()
+
+    resultado = (
+        str(user_row.get("Resultado") or "").upper()
+        if user_row
+        else None
+    )
+
+    puede_resolver = bool(
+        user_row
+        and resultado == "PENDIENTE"
+        and estado in ("PENDIENTE", "EN_PROCESO")
+    )
+
+    return {
+        "autorizacion_id": autorizacion_id,
+        "estado_autorizacion_canonica":
+            authorization.get("EstatusAutorizacion"),
+        "modo_autorizacion":
+            authorization.get("ModoAutorizacion"),
+        "nivel_actual":
+            authorization.get("NivelActual"),
+        "nivel_final_requerido":
+            authorization.get("NivelFinalRequerido"),
+        "usuario_autorizador_id": (
+            user_row.get("UsuarioAutorizadorID")
+            if user_row
+            else None
+        ),
+        "nivel_autorizacion": (
+            user_row.get("NivelAutorizacion")
+            if user_row
+            else None
+        ),
+        "resultado_detalle": resultado,
+        "es_autorizador_actual": bool(user_row),
+        "puede_resolver_autorizacion": puede_resolver,
+    }
+
+
+def _cxp_create_canonical_authorization(
+    row: Dict[str, Any],
+    decision: Dict[str, Any],
+    current_user: Dict[str, Any],
+) -> Dict[str, Any]:
+    existing = _cxp_get_canonical_authorization(decision)
+
+    if existing:
+        return existing
+
+    usuario_id = _get_cxp_usuario_id(current_user)
+
+    unidad_id = str(
+        row.get("UnidadNegocioIDCanonica") or ""
+    ).strip()
+
+    if not unidad_id:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "La factura no tiene UnidadNegocioID "
+                "canonica resoluble."
+            ),
+        )
+
+    try:
+        importe = Decimal(
+            str(decision.get("ImporteAPagar") or "0")
+        )
+    except InvalidOperation as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="Importe canonico de pago invalido.",
+        ) from exc
+
+    if importe <= 0:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "La decision de pago no tiene importe "
+                "mayor a cero."
+            ),
+        )
+
+    decision_id = _cxp_authorization_entity_id(decision)
+
+    folio_referencia = str(
+        row.get("FolioFactura")
+        or row.get("FolioEntrada")
+        or decision_id
+    ).strip()[:50]
+
+    folio_autorizacion = (
+        f"CXP-{decision_id}-{usuario_id}"
+    )[:30]
+
+    justificacion = (
+        "Autorizacion mancomunada de pago CxP "
+        f"DecisionPagoID={decision_id}"
+    )
+
+    execute_sql(
+        """
+        DECLARE @AutorizacionID BIGINT;
+        DECLARE @UnidadNegocioID UNIQUEIDENTIFIER;
+
+        SET @UnidadNegocioID = CONVERT(
+            UNIQUEIDENTIFIER,
+            %s
+        );
+
+        EXEC dbo.sp_Usuario_CrearAutorizacion
+            @FolioAutorizacion = %s,
+            @TipoAutorizacionCodigo = %s,
+            @EntidadNombre = %s,
+            @EntidadID = %s,
+            @FolioReferencia = %s,
+            @UsuarioSolicitanteID = %s,
+            @Monto = %s,
+            @MonedaID = NULL,
+            @Justificacion = %s,
+            @UnidadNegocioID = @UnidadNegocioID,
+            @AutorizacionID = @AutorizacionID OUTPUT;
+        """,
+        (
+            unidad_id,
+            folio_autorizacion,
+            CXP_AUTHORIZATION_TYPE_CODE,
+            CXP_AUTHORIZATION_ENTITY_NAME,
+            decision_id,
+            folio_referencia,
+            usuario_id,
+            str(importe),
+            justificacion,
+        ),
+    )
+
+    created = _cxp_get_canonical_authorization(decision)
+
+    if not created:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "La autorizacion fue creada pero no "
+                "pudo resolverse posteriormente."
+            ),
+        )
+
+    return created
+
+
+def _cxp_resolve_canonical_authorization(
+    decision: Dict[str, Any],
+    autorizar: bool,
+    comentario: Optional[str],
+    current_user: Dict[str, Any],
+) -> Dict[str, Any]:
+    auth = _cxp_get_canonical_authorization(decision)
+
+    if not auth:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "La decision de pago no tiene una "
+                "autorizacion canonica activa."
+            ),
+        )
+
+    usuario_id = _get_cxp_usuario_id(current_user)
+
+    resultado = (
+        "AUTORIZADA"
+        if autorizar
+        else "RECHAZADA"
+    )
+
+    comentario_normalizado = (
+        (comentario or "").strip()[:2000]
+        or None
+    )
+
+    execute_sql(
+        """
+        EXEC dbo.sp_Usuario_ResolverAutorizacion
+            @AutorizacionID = %s,
+            @UsuarioAutorizadorID = %s,
+            @Resultado = %s,
+            @Comentarios = %s;
+        """,
+        (
+            int(auth["AutorizacionID"]),
+            usuario_id,
+            resultado,
+            comentario_normalizado,
+        ),
+    )
+
+    refreshed = _cxp_get_canonical_authorization(decision)
+
+    if not refreshed:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "No fue posible recuperar la autorizacion "
+                "despues de resolverla."
+            ),
+        )
+
+    return refreshed
+
+
+def _cxp_project_authorization_state(
+    decision: Dict[str, Any],
+    authorization: Dict[str, Any],
+) -> str:
+    auth_state = str(
+        authorization.get("EstatusAutorizacion") or ""
+    ).strip().upper()
+
+    mapping = {
+        "PENDIENTE": "PENDIENTE_AUTORIZACION",
+        "EN_PROCESO": "PENDIENTE_AUTORIZACION",
+        "AUTORIZADA": "AUTORIZADO",
+        "RECHAZADA": "RECHAZADO",
+    }
+
+    projected = mapping.get(auth_state)
+
+    if not projected:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Estado canonico de autorizacion no "
+                f"proyectable: {auth_state!r}."
+            ),
+        )
+
+    execute_sql(
+        """
+        UPDATE dbo.Finanzas_CxP_DecisionesPago
+        SET
+            EstadoAutorizacion = %s,
+            FechaModificacion = SYSUTCDATETIME()
+        WHERE DecisionPagoID = %s
+          AND Activo = 1;
+        """,
+        (
+            projected,
+            int(decision["DecisionPagoID"]),
+        ),
+    )
+
+    return projected
+
+
+# LEGACY_DEPRECATED_CXP_AUTHORIZATION:
+# Conservado temporalmente para rollback controlado.
 def _cxp_update_autorizacion(
     decision: Dict[str, Any],
     autorizar: bool,
@@ -626,7 +1034,7 @@ def _cxp_enqueue_pago_origen(decision: Dict[str, Any], current_user: Dict[str, A
     )
 
 
-def _cxp_factura_dict(r):
+def _cxp_factura_dict(r, current_user=None):
     dias = int(r.get('DiasVencido') or 0)
     saldo = float(r.get('Saldo') or 0)
     fe, fv = r.get('FechaEntrada'), r.get('FechaVencimiento')
@@ -668,6 +1076,28 @@ def _cxp_factura_dict(r):
         "requiere_autorizacion_pago": decision and estado_autorizacion != 'AUTORIZADO',
         "fecha_decision_pago": str(fecha_decision)[:19] if fecha_decision else None,
         "fuente": r.get('Fuente'),
+        **(
+            _cxp_authorization_visibility(
+                {
+                    "DecisionPagoID": r.get("DecisionPagoIDCanonica"),
+                },
+                current_user,
+            )
+            if decision
+            and r.get("DecisionPagoIDCanonica")
+            else {
+                "autorizacion_id": None,
+                "estado_autorizacion_canonica": None,
+                "modo_autorizacion": None,
+                "nivel_actual": None,
+                "nivel_final_requerido": None,
+                "usuario_autorizador_id": None,
+                "nivel_autorizacion": None,
+                "resultado_detalle": None,
+                "es_autorizador_actual": False,
+                "puede_resolver_autorizacion": False,
+            }
+        ),
     }
 
 
@@ -742,6 +1172,640 @@ def _cxp_resumen_canonico(unidad_negocio_pk, unidades_permitidas=None):
             "antiguedad": {"corriente": bk('c'), "vencidas_1_30": bk('v1'), "vencidas_31_60": bk('v2'),
                            "vencidas_61_90": bk('v3'), "vencidas_90_plus": bk('v4'),
                            "total_facturas": n, "total_saldo": round(total, 2)}}
+
+
+def _month_span_inclusive(fecha_inicio: date, fecha_fin: date) -> int:
+    """Cantidad de meses calendario tocados por un rango inclusivo."""
+    if fecha_fin < fecha_inicio:
+        raise HTTPException(
+            status_code=400,
+            detail="fecha_referencia_fin no puede ser anterior a fecha_referencia_inicio.",
+        )
+
+    return (
+        (fecha_fin.year - fecha_inicio.year) * 12
+        + fecha_fin.month
+        - fecha_inicio.month
+        + 1
+    )
+
+
+def _decision_dashboard_period(
+    fecha_referencia_inicio: Optional[str],
+    fecha_referencia_fin: Optional[str],
+):
+    """
+    Default: mes calendario anterior.
+
+    El backend es autoridad del periodo efectivo; frontend no calcula
+    el rango por su cuenta.
+    """
+    if bool(fecha_referencia_inicio) != bool(fecha_referencia_fin):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Debe enviar fecha_referencia_inicio y fecha_referencia_fin "
+                "juntas, o ninguna para usar el mes anterior."
+            ),
+        )
+
+    if fecha_referencia_inicio and fecha_referencia_fin:
+        try:
+            inicio = date.fromisoformat(fecha_referencia_inicio)
+            fin = date.fromisoformat(fecha_referencia_fin)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=400,
+                detail="Las fechas de referencia deben usar formato YYYY-MM-DD.",
+            ) from exc
+    else:
+        hoy = date.today()
+        primer_dia_mes_actual = hoy.replace(day=1)
+        fin = primer_dia_mes_actual - timedelta(days=1)
+        inicio = fin.replace(day=1)
+
+    meses = _month_span_inclusive(inicio, fin)
+
+    return inicio, fin, meses
+
+
+def _decision_dashboard_compras(
+    unidad_negocio_pk,
+    unidades_permitidas,
+    fecha_inicio: date,
+    fecha_fin: date,
+):
+    """
+    Compras históricas materializadas en EDARSAHUB.
+
+    Fuente V1:
+        dbo.Compras_Recepciones
+
+    No LIVE, no MongoDB, no datos demo.
+    """
+    where = [
+        "ISNULL(r.Activo, 1) = 1",
+        "r.FechaRecepcion >= %s",
+        "r.FechaRecepcion < DATEADD(DAY, 1, %s)",
+    ]
+    params = [
+        fecha_inicio.isoformat(),
+        fecha_fin.isoformat(),
+    ]
+
+    if unidad_negocio_pk and str(unidad_negocio_pk).lower() not in (
+        "",
+        "all",
+        "todas",
+    ):
+        where.append("CONVERT(varchar(36), r.unidad_negocio_pk) = %s")
+        params.append(str(unidad_negocio_pk))
+
+    elif unidades_permitidas is not None:
+        allowed = [
+            str(value)
+            for value in unidades_permitidas
+            if value
+        ]
+
+        if allowed:
+            placeholders = ",".join(["%s"] * len(allowed))
+            where.append(
+                "CONVERT(varchar(36), r.unidad_negocio_pk) "
+                f"IN ({placeholders})"
+            )
+            params.extend(allowed)
+        else:
+            where.append("1=0")
+
+    sql = (
+        "SELECT "
+        "  CONVERT(varchar(36), r.unidad_negocio_pk) AS unidad_negocio_pk, "
+        "  u.codigo AS unidad_codigo, "
+        "  u.nombre AS unidad_nombre, "
+        "  COUNT_BIG(*) AS recepciones, "
+        "  SUM(ISNULL(r.Total, 0)) AS total_compras "
+        "FROM dbo.Compras_Recepciones r "
+        "INNER JOIN dbo.Unidades_Negocio u "
+        "  ON u.id = r.unidad_negocio_pk "
+        " AND ISNULL(u.activo, 1) = 1 "
+        "WHERE "
+        + " AND ".join(where)
+        + " GROUP BY r.unidad_negocio_pk, u.codigo, u.nombre "
+          "ORDER BY total_compras DESC"
+    )
+
+    return fetch_all_dict(sql, tuple(params))
+
+
+def _decision_dashboard_canonico(
+    unidad_negocio_pk,
+    unidades_permitidas,
+    fecha_referencia_inicio=None,
+    fecha_referencia_fin=None,
+):
+    inicio, fin, meses = _decision_dashboard_period(
+        fecha_referencia_inicio,
+        fecha_referencia_fin,
+    )
+
+    compras_rows = _decision_dashboard_compras(
+        unidad_negocio_pk,
+        unidades_permitidas,
+        inicio,
+        fin,
+    )
+
+    cxp_rows = _cxp_rows_canonico(
+        unidad_negocio_pk,
+        unidades_permitidas=unidades_permitidas,
+    )
+
+    compras_por_unidad = {}
+
+    for row in compras_rows:
+        unidad_id = str(row.get("unidad_negocio_pk") or "")
+        total_periodo = float(row.get("total_compras") or 0)
+
+        compras_por_unidad[unidad_id] = {
+            "unidad_negocio_pk": unidad_id,
+            "unidad_codigo": row.get("unidad_codigo"),
+            "unidad_nombre": row.get("unidad_nombre"),
+            "recepciones": int(row.get("recepciones") or 0),
+            "compras_periodo": round(total_periodo, 2),
+            "promedio_mensual_compras": round(
+                total_periodo / meses,
+                2,
+            ),
+        }
+
+    comprometido_por_unidad = {}
+    autorizado_por_unidad = {}
+    saldo_por_unidad = {}
+
+    for row in cxp_rows:
+        unidad_id = str(
+            row.get("UnidadNegocioIDCanonica")
+            or ""
+        )
+
+        saldo = float(row.get("Saldo") or 0)
+        saldo_por_unidad[unidad_id] = (
+            saldo_por_unidad.get(unidad_id, 0.0)
+            + saldo
+        )
+
+        if bool(row.get("DecisionPagoCanonica")):
+            importe = float(
+                row.get("ImporteAPagarCanonico")
+                or saldo
+                or 0
+            )
+
+            comprometido_por_unidad[unidad_id] = (
+                comprometido_por_unidad.get(
+                    unidad_id,
+                    0.0,
+                )
+                + importe
+            )
+
+            if (
+                str(
+                    row.get(
+                        "EstadoAutorizacionPago"
+                    )
+                    or ""
+                ).upper()
+                == "AUTORIZADO"
+            ):
+                autorizado_por_unidad[unidad_id] = (
+                    autorizado_por_unidad.get(
+                        unidad_id,
+                        0.0,
+                    )
+                    + importe
+                )
+
+    all_units = set(compras_por_unidad)
+    all_units.update(saldo_por_unidad)
+    all_units.update(comprometido_por_unidad)
+    all_units.update(autorizado_por_unidad)
+
+    unidades = []
+
+    for unidad_id in sorted(all_units):
+        base = compras_por_unidad.get(
+            unidad_id,
+            {
+                "unidad_negocio_pk": unidad_id,
+                "unidad_codigo": None,
+                "unidad_nombre": None,
+                "recepciones": 0,
+                "compras_periodo": 0.0,
+                "promedio_mensual_compras": 0.0,
+            },
+        )
+
+        limite = float(
+            base["promedio_mensual_compras"]
+            or 0
+        )
+
+        comprometido = float(
+            comprometido_por_unidad.get(
+                unidad_id,
+                0.0,
+            )
+        )
+
+        autorizado = float(
+            autorizado_por_unidad.get(
+                unidad_id,
+                0.0,
+            )
+        )
+
+        disponible = max(
+            limite - comprometido,
+            0.0,
+        )
+
+        utilizacion = (
+            (comprometido / limite) * 100
+            if limite > 0
+            else None
+        )
+
+        unidades.append({
+            **base,
+            "saldo_cxp": round(
+                saldo_por_unidad.get(
+                    unidad_id,
+                    0.0,
+                ),
+                2,
+            ),
+            "limite_pago": round(limite, 2),
+            "comprometido": round(
+                comprometido,
+                2,
+            ),
+            "autorizado": round(
+                autorizado,
+                2,
+            ),
+            "disponible": round(
+                disponible,
+                2,
+            ),
+            "porcentaje_utilizado": (
+                round(utilizacion, 2)
+                if utilizacion is not None
+                else None
+            ),
+            "excede_limite": (
+                comprometido > limite
+                if limite > 0
+                else comprometido > 0
+            ),
+        })
+
+    compras_periodo = sum(
+        row["compras_periodo"]
+        for row in unidades
+    )
+    limite_pago = sum(
+        row["limite_pago"]
+        for row in unidades
+    )
+    comprometido = sum(
+        row["comprometido"]
+        for row in unidades
+    )
+    autorizado = sum(
+        row["autorizado"]
+        for row in unidades
+    )
+    saldo_cxp = sum(
+        row["saldo_cxp"]
+        for row in unidades
+    )
+
+    disponible = max(
+        limite_pago - comprometido,
+        0.0,
+    )
+
+    porcentaje = (
+        round(
+            (comprometido / limite_pago) * 100,
+            2,
+        )
+        if limite_pago > 0
+        else None
+    )
+
+    return {
+        "fuente": "CANONICO_EDARSAHUB",
+        "fuente_compras": "dbo.Compras_Recepciones",
+        "fuente_cxp": "dbo.Finanzas_CxP_Sync",
+        "periodo_referencia": {
+            "fecha_inicio": inicio.isoformat(),
+            "fecha_fin": fin.isoformat(),
+            "meses": meses,
+            "default_mes_anterior": (
+                not fecha_referencia_inicio
+                and not fecha_referencia_fin
+            ),
+        },
+        "resumen": {
+            "compras_periodo": round(
+                compras_periodo,
+                2,
+            ),
+            "promedio_mensual_compras": round(
+                limite_pago,
+                2,
+            ),
+            "limite_pago": round(
+                limite_pago,
+                2,
+            ),
+            "saldo_cxp": round(
+                saldo_cxp,
+                2,
+            ),
+            "comprometido": round(
+                comprometido,
+                2,
+            ),
+            "autorizado": round(
+                autorizado,
+                2,
+            ),
+            "disponible": round(
+                disponible,
+                2,
+            ),
+            "porcentaje_utilizado": porcentaje,
+            "excede_limite": (
+                comprometido > limite_pago
+                if limite_pago > 0
+                else comprometido > 0
+            ),
+        },
+        "unidades": unidades,
+        "contrato": {
+            "comprometido": (
+                "Decisiones de pago activas CxP; "
+                "todavia no equivale a pago bancario ejecutado."
+            ),
+            "limite": (
+                "Promedio mensual de compras del periodo "
+                "de referencia."
+            ),
+        },
+    }
+
+
+
+def _decision_dashboard_drilldown(
+    unidad_negocio_pk,
+    unidades_permitidas,
+    fecha_referencia_inicio=None,
+    fecha_referencia_fin=None,
+    proveedor_id=None,
+    limit=200,
+):
+    """
+    Máximo detalle disponible actualmente:
+    recepción/entrada individual de compra.
+
+    No usa Compras_RecepcionesDetalle porque la tabla todavía
+    no tiene cobertura operativa suficiente.
+    """
+    inicio, fin, meses = _decision_dashboard_period(
+        fecha_referencia_inicio,
+        fecha_referencia_fin,
+    )
+
+    where = [
+        "ISNULL(r.Activo, 1) = 1",
+        "r.FechaRecepcion >= %s",
+        "r.FechaRecepcion < DATEADD(DAY, 1, %s)",
+    ]
+
+    params = [
+        inicio.isoformat(),
+        fin.isoformat(),
+    ]
+
+    if unidad_negocio_pk and str(unidad_negocio_pk).lower() not in (
+        "",
+        "all",
+        "todas",
+    ):
+        where.append(
+            "CONVERT(varchar(36), r.unidad_negocio_pk) = %s"
+        )
+        params.append(str(unidad_negocio_pk))
+
+    elif unidades_permitidas is not None:
+        allowed = [
+            str(value)
+            for value in unidades_permitidas
+            if value
+        ]
+
+        if allowed:
+            placeholders = ",".join(["%s"] * len(allowed))
+            where.append(
+                "CONVERT(varchar(36), r.unidad_negocio_pk) "
+                f"IN ({placeholders})"
+            )
+            params.extend(allowed)
+        else:
+            where.append("1=0")
+
+    if proveedor_id not in (None, ""):
+        where.append(
+            "CONVERT(varchar(100), r.ProveedorID) = %s"
+        )
+        params.append(str(proveedor_id))
+
+    safe_limit = max(
+        1,
+        min(int(limit or 200), 500),
+    )
+
+    providers_sql = (
+        "SELECT "
+        " CONVERT(varchar(36), r.unidad_negocio_pk) AS unidad_negocio_pk, "
+        " u.codigo AS unidad_codigo, "
+        " u.nombre AS unidad_nombre, "
+        " CONVERT(varchar(100), r.ProveedorID) AS proveedor_id, "
+        " COALESCE(NULLIF(LTRIM(RTRIM(p.NombreComercial)), ''), "
+        "          NULLIF(LTRIM(RTRIM(p.RazonSocial)), ''), "
+        "          CONCAT('Proveedor ', CONVERT(varchar(100), r.ProveedorID))) "
+        "     AS proveedor_nombre, "
+        " COUNT_BIG(*) AS recepciones, "
+        " SUM(ISNULL(r.Total, 0)) AS total_compras, "
+        " AVG(CAST(ISNULL(r.Total, 0) AS decimal(18,2))) AS ticket_promedio "
+        "FROM dbo.Compras_Recepciones r "
+        "INNER JOIN dbo.Unidades_Negocio u "
+        " ON u.id = r.unidad_negocio_pk "
+        "AND ISNULL(u.activo, 1) = 1 "
+        "LEFT JOIN dbo.Proveedor_Catalogo p "
+        " ON p.ProveedorID = r.ProveedorID "
+        "AND ISNULL(p.Activo, 1) = 1 "
+        "WHERE "
+        + " AND ".join(where)
+        + " GROUP BY "
+          "r.unidad_negocio_pk, u.codigo, u.nombre, r.ProveedorID, "
+          "p.NombreComercial, p.RazonSocial "
+          "ORDER BY total_compras DESC"
+    )
+
+    providers = fetch_all_dict(
+        providers_sql,
+        tuple(params),
+    )
+
+    receipts_sql = (
+        f"SELECT TOP ({safe_limit}) "
+        " CONVERT(varchar(36), r.unidad_negocio_pk) AS unidad_negocio_pk, "
+        " u.codigo AS unidad_codigo, "
+        " u.nombre AS unidad_nombre, "
+        " CONVERT(varchar(100), r.ProveedorID) AS proveedor_id, "
+        " COALESCE(NULLIF(LTRIM(RTRIM(p.NombreComercial)), ''), "
+        "          NULLIF(LTRIM(RTRIM(p.RazonSocial)), ''), "
+        "          CONCAT('Proveedor ', CONVERT(varchar(100), r.ProveedorID))) "
+        "     AS proveedor_nombre, "
+        " r.FolioRecepcion AS folio_recepcion, "
+        " r.FechaRecepcion AS fecha_recepcion, "
+        " ISNULL(r.Subtotal, 0) AS subtotal, "
+        " ISNULL(r.ImpuestoTotal, 0) AS impuesto_total, "
+        " ISNULL(r.Total, 0) AS total, "
+        " r.EstatusRecepcionID AS estatus_recepcion_id, "
+        " r.TieneIncidencias AS tiene_incidencias "
+        "FROM dbo.Compras_Recepciones r "
+        "INNER JOIN dbo.Unidades_Negocio u "
+        " ON u.id = r.unidad_negocio_pk "
+        "AND ISNULL(u.activo, 1) = 1 "
+        "LEFT JOIN dbo.Proveedor_Catalogo p "
+        " ON p.ProveedorID = r.ProveedorID "
+        "AND ISNULL(p.Activo, 1) = 1 "
+        "WHERE "
+        + " AND ".join(where)
+        + " ORDER BY r.FechaRecepcion DESC, r.FolioRecepcion DESC"
+    )
+
+    receipts = fetch_all_dict(
+        receipts_sql,
+        tuple(params),
+    )
+
+    total_periodo = sum(
+        float(row.get("total_compras") or 0)
+        for row in providers
+    )
+
+    return {
+        "fuente": "CANONICO_EDARSAHUB",
+        "fuente_compras": "dbo.Compras_Recepciones",
+        "nivel_maximo": "RECEPCION_COMPRA",
+        "detalle_producto_disponible": False,
+        "periodo_referencia": {
+            "fecha_inicio": inicio.isoformat(),
+            "fecha_fin": fin.isoformat(),
+            "meses": meses,
+        },
+        "filtros": {
+            "unidad_negocio_pk": unidad_negocio_pk,
+            "proveedor_id": proveedor_id,
+        },
+        "resumen": {
+            "proveedores": len(providers),
+            "recepciones_retornadas": len(receipts),
+            "total_compras": round(total_periodo, 2),
+        },
+        "proveedores": [
+            {
+                "unidad_negocio_pk": str(
+                    row.get("unidad_negocio_pk") or ""
+                ),
+                "unidad_codigo": row.get("unidad_codigo"),
+                "unidad_nombre": row.get("unidad_nombre"),
+                "proveedor_id": str(
+                    row.get("proveedor_id") or ""
+                ),
+                "proveedor_nombre": (
+                    row.get("proveedor_nombre")
+                    or f"Proveedor {row.get('proveedor_id')}"
+                ),
+                "recepciones": int(
+                    row.get("recepciones") or 0
+                ),
+                "total_compras": round(
+                    float(row.get("total_compras") or 0),
+                    2,
+                ),
+                "ticket_promedio": round(
+                    float(row.get("ticket_promedio") or 0),
+                    2,
+                ),
+            }
+            for row in providers
+        ],
+        "recepciones": [
+            {
+                "unidad_negocio_pk": str(
+                    row.get("unidad_negocio_pk") or ""
+                ),
+                "unidad_codigo": row.get("unidad_codigo"),
+                "unidad_nombre": row.get("unidad_nombre"),
+                "proveedor_id": str(
+                    row.get("proveedor_id") or ""
+                ),
+                "proveedor_nombre": (
+                    row.get("proveedor_nombre")
+                    or f"Proveedor {row.get('proveedor_id')}"
+                ),
+                "folio_recepcion": row.get("folio_recepcion"),
+                "fecha_recepcion": (
+                    row.get("fecha_recepcion").isoformat()
+                    if hasattr(
+                        row.get("fecha_recepcion"),
+                        "isoformat",
+                    )
+                    else str(
+                        row.get("fecha_recepcion") or ""
+                    )
+                ),
+                "subtotal": round(
+                    float(row.get("subtotal") or 0),
+                    2,
+                ),
+                "impuesto_total": round(
+                    float(row.get("impuesto_total") or 0),
+                    2,
+                ),
+                "total": round(
+                    float(row.get("total") or 0),
+                    2,
+                ),
+                "estatus_recepcion_id": row.get(
+                    "estatus_recepcion_id"
+                ),
+                "tiene_incidencias": bool(
+                    row.get("tiene_incidencias")
+                ),
+            }
+            for row in receipts
+        ],
+    }
+
 
 
 def _cxp_proveedores_canonico(unidad_negocio_pk, unidades_permitidas=None):
@@ -869,6 +1933,165 @@ async def get_resumen_cuentas_por_pagar(
         unidades_permitidas,
     )
 
+@router.get("/decision-dashboard")
+async def get_decision_dashboard(
+    unidad_negocio_pk: Optional[str] = None,
+    fecha_referencia_inicio: Optional[str] = Query(
+        default=None,
+        description="Inicio del periodo histórico YYYY-MM-DD",
+    ),
+    fecha_referencia_fin: Optional[str] = Query(
+        default=None,
+        description="Fin del periodo histórico YYYY-MM-DD",
+    ),
+    aplicar_periodo_como_limite: bool = Query(
+        default=False,
+        description=(
+            "Aplica el periodo solicitado como base efectiva "
+            "del limite de pago. Requiere FINANZAS_ADMINISTRAR."
+        ),
+    ),
+    current_user: Dict = Depends(get_current_user),
+):
+    """
+    Tablero SQL-first de capacidad de pago.
+
+    Default:
+        mes calendario anterior.
+
+    Un periodo alternativo solo puede sustituir el limite
+    efectivo cuando aplicar_periodo_como_limite=True y el
+    usuario posee FINANZAS_ADMINISTRAR.
+
+    No LIVE, no MongoDB, no cálculos financieros en frontend.
+    """
+    require_any_finanzas_permission(
+        current_user,
+        (FINANZAS_VER,),
+    )
+
+    custom_period_requested = bool(
+        fecha_referencia_inicio
+        or fecha_referencia_fin
+    )
+
+    if aplicar_periodo_como_limite:
+        if not (
+            fecha_referencia_inicio
+            and fecha_referencia_fin
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "El override del limite requiere fecha de "
+                    "inicio y fecha de fin."
+                ),
+            )
+
+        require_any_finanzas_permission(
+            current_user,
+            (FINANZAS_ADMINISTRAR,),
+        )
+
+        effective_start = fecha_referencia_inicio
+        effective_end = fecha_referencia_fin
+
+    else:
+        # El endpoint principal nunca cambia silenciosamente
+        # el limite por recibir fechas alternativas.
+        #
+        # Los periodos alternativos sin override autorizado
+        # pertenecen exclusivamente al endpoint drilldown.
+        effective_start = None
+        effective_end = None
+
+    unidad_pk, unidades_permitidas = (
+        resolve_finanzas_unit_filter(
+            current_user,
+            unidad_negocio_pk,
+            permission_code=FINANZAS_VER,
+        )
+    )
+
+    result = _decision_dashboard_canonico(
+        unidad_pk,
+        unidades_permitidas,
+        effective_start,
+        effective_end,
+    )
+
+    periodo = result.setdefault(
+        "periodo_referencia",
+        {},
+    )
+
+    periodo["es_override_efectivo"] = bool(
+        aplicar_periodo_como_limite
+    )
+
+    periodo["requiere_autorizacion_override"] = True
+
+    periodo["permiso_override_v1"] = (
+        FINANZAS_ADMINISTRAR
+    )
+
+    periodo["periodo_alternativo_ignorado"] = bool(
+        custom_period_requested
+        and not aplicar_periodo_como_limite
+    )
+
+    return result
+
+
+
+@router.get("/decision-dashboard/drilldown")
+async def get_decision_dashboard_drilldown(
+    unidad_negocio_pk: Optional[str] = None,
+    proveedor_id: Optional[str] = None,
+    fecha_referencia_inicio: Optional[str] = Query(
+        default=None,
+    ),
+    fecha_referencia_fin: Optional[str] = Query(
+        default=None,
+    ),
+    limit: int = Query(
+        default=200,
+        ge=1,
+        le=500,
+    ),
+    current_user: Dict = Depends(get_current_user),
+):
+    """
+    Drilldown del promedio histórico hasta entrada/recepción individual.
+
+    SQL-first.
+    No LIVE.
+    No MongoDB.
+    """
+    require_any_finanzas_permission(
+        current_user,
+        (FINANZAS_VER,),
+    )
+
+    unidad_pk, unidades_permitidas = (
+        resolve_finanzas_unit_filter(
+            current_user,
+            unidad_negocio_pk,
+            permission_code=FINANZAS_VER,
+        )
+    )
+
+    return _decision_dashboard_drilldown(
+        unidad_pk,
+        unidades_permitidas,
+        fecha_referencia_inicio,
+        fecha_referencia_fin,
+        proveedor_id,
+        limit,
+    )
+
+
+
 @router.get("/proveedores")
 async def listar_proveedores_con_saldo(
     sucursal_id: Optional[str] = None,
@@ -940,14 +2163,52 @@ async def actualizar_decision_pago(
     )
 
     refreshed, _ = _cxp_row_for_ref(factura_id, unidades_permitidas)
+
+    authorization = None
+
+    if data.decision_pago:
+        refreshed_hash = str(
+            refreshed.get("HashOrigen") or ""
+        ).strip().lower()
+
+        refreshed_decision = _cxp_decision_row_for_hash(
+            refreshed_hash
+        )
+
+        authorization = _cxp_create_canonical_authorization(
+            refreshed,
+            refreshed_decision,
+            current_user,
+        )
+
+        _cxp_project_authorization_state(
+            refreshed_decision,
+            authorization,
+        )
+
+        refreshed, _ = _cxp_row_for_ref(
+            factura_id,
+            unidades_permitidas,
+        )
+
     return {
         "success": True,
         "fuente": "CANONICO_EDARSAHUB",
-        "factura_id": _cxp_factura_dict(refreshed)["factura_id"],
+        "factura_id": _cxp_factura_dict(refreshed, current_user)["factura_id"],
         "factura_sync_id": refreshed.get("CxpSyncID"),
         "decision_pago": data.decision_pago,
         "importe_a_pagar": float(importe),
-        "factura": _cxp_factura_dict(refreshed),
+        "autorizacion_id": (
+            authorization.get("AutorizacionID")
+            if authorization
+            else None
+        ),
+        "estado_autorizacion_canonica": (
+            authorization.get("EstatusAutorizacion")
+            if authorization
+            else None
+        ),
+        "factura": _cxp_factura_dict(refreshed, current_user),
     }
 
 
@@ -958,58 +2219,127 @@ async def autorizar_decision_pago(
     current_user: Dict = Depends(get_current_user)
 ):
     """
-    Autorizar o rechazar una decision canonica de pago.
+    Resuelve AUT_TES_PAGOS mediante el motor canonico.
 
-    Si se autoriza, solo se programa una cola canonica para carga a origen;
-    el tablero no abre conexiones live ni escribe directamente al sistema origen.
+    FINANZAS_ADMINISTRAR habilita el acceso al flujo,
+    pero no reemplaza al autorizador asignado por matriz.
     """
     permission = require_any_finanzas_permission(
         current_user,
         (FINANZAS_ADMINISTRAR,),
     )
+
     _cxp_require_decisiones_schema()
-    if data.autorizar and data.programar_envio_origen:
-        _cxp_require_queue_schema()
 
     _, unidades_permitidas = resolve_finanzas_unit_filter(
         current_user,
         permission_code=permission["permission_code"],
     )
-    row, factura_id_decoded = _cxp_row_for_ref(factura_id, unidades_permitidas)
-    hash_origen = str(row.get("HashOrigen") or "").strip().lower()
+
+    row, factura_id_decoded = _cxp_row_for_ref(
+        factura_id,
+        unidades_permitidas,
+    )
+
+    hash_origen = str(
+        row.get("HashOrigen") or ""
+    ).strip().lower()
+
     decision = _cxp_decision_row_for_hash(hash_origen)
 
-    _cxp_update_autorizacion(decision, data.autorizar, data.comentario, current_user)
-    if data.autorizar and data.programar_envio_origen:
-        _cxp_enqueue_pago_origen(decision, current_user)
+    if not bool(decision.get("DecisionPago")):
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "La CxP no esta marcada para pago; "
+                "no puede autorizarse."
+            ),
+        )
+
+    authorization = _cxp_resolve_canonical_authorization(
+        decision,
+        data.autorizar,
+        data.comentario,
+        current_user,
+    )
+
+    projected_state = _cxp_project_authorization_state(
+        decision,
+        authorization,
+    )
+
+    should_enqueue = (
+        projected_state == "AUTORIZADO"
+        and bool(data.programar_envio_origen)
+    )
+
+    if should_enqueue:
+        _cxp_require_queue_schema()
+
+        refreshed_decision = _cxp_decision_row_for_hash(
+            hash_origen
+        )
+
+        _cxp_enqueue_pago_origen(
+            refreshed_decision,
+            current_user,
+        )
 
     from core.auditoria_helpers import registrar_auditoria_cxp
 
     await registrar_auditoria_cxp(
         current_user=current_user,
-        accion='EDIT',
+        accion="EDIT",
         factura_id=factura_id_decoded,
-        factura_folio=row.get('FolioFactura') or row.get('FolioEntrada'),
-        sucursal_id=row.get('UnidadNegocioCodigoCanonico'),
+        factura_folio=(
+            row.get("FolioFactura")
+            or row.get("FolioEntrada")
+        ),
+        sucursal_id=row.get(
+            "UnidadNegocioCodigoCanonico"
+        ),
         valor_anterior={
-            'estado_autorizacion_pago': decision.get('EstadoAutorizacion'),
+            "estado_autorizacion_pago":
+                decision.get("EstadoAutorizacion"),
         },
         valor_nuevo={
-            'estado_autorizacion_pago': 'AUTORIZADO' if data.autorizar else 'RECHAZADO',
-            'programar_envio_origen': bool(data.autorizar and data.programar_envio_origen),
-            'unidad_negocio_pk': row.get('UnidadNegocioIDCanonica'),
+            "autorizacion_id":
+                authorization.get("AutorizacionID"),
+            "estado_autorizacion_canonica":
+                authorization.get("EstatusAutorizacion"),
+            "estado_autorizacion_pago":
+                projected_state,
+            "programar_envio_origen":
+                should_enqueue,
+            "unidad_negocio_pk":
+                row.get("UnidadNegocioIDCanonica"),
         },
-        motivo='Autorizacion canonica de pago CxP',
+        motivo=(
+            "Resolucion AUT_TES_PAGOS mediante "
+            "motor canonico de autorizaciones"
+        ),
     )
 
-    refreshed, _ = _cxp_row_for_ref(factura_id, unidades_permitidas)
+    refreshed, _ = _cxp_row_for_ref(
+        factura_id,
+        unidades_permitidas,
+    )
+
     return {
         "success": True,
         "fuente": "CANONICO_EDARSAHUB",
-        "factura_id": _cxp_factura_dict(refreshed)["factura_id"],
-        "estado_autorizacion_pago": 'AUTORIZADO' if data.autorizar else 'RECHAZADO',
-        "programar_envio_origen": bool(data.autorizar and data.programar_envio_origen),
-        "factura": _cxp_factura_dict(refreshed),
+        "factura_id":
+            _cxp_factura_dict(refreshed, current_user)["factura_id"],
+        "autorizacion_id":
+            authorization.get("AutorizacionID"),
+        "estado_autorizacion_canonica":
+            authorization.get("EstatusAutorizacion"),
+        "estado_autorizacion_pago":
+            projected_state,
+        "programar_envio_origen":
+            should_enqueue,
+        "factura":
+            _cxp_factura_dict(refreshed, current_user),
     }
 
 
@@ -1078,4 +2408,4 @@ async def get_factura_detalle(
         permission_code=FINANZAS_VER,
     )
     row, _ = _cxp_row_for_ref(factura_id, unidades_permitidas)
-    return {"fuente": "CANONICO_EDARSAHUB", "factura": _cxp_factura_dict(row)}
+    return {"fuente": "CANONICO_EDARSAHUB", "factura": _cxp_factura_dict(row, current_user)}

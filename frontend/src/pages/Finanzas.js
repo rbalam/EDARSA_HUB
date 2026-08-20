@@ -24,7 +24,7 @@ import PropinasTPV from '../components/PropinasTPV';
 // MIGRACIÓN SQL-FIRST: Removido fetchUnidadesNegocio, ahora usa Corporate Filters
 import { CorporateFiltersProvider } from '../filters/CorporateFiltersProvider';
 import { useFinanzasCorporateFilters } from '../filters';
-import { FinanzasComprobaciones, FinanzasCuentasPorPagar, FinanzasControlIngresos, FinanzasDashboard, FinanzasPresupuestos } from '../components/finanzas';
+import { FinanzasComprobaciones, FinanzasCuentasPorPagar, FinanzasControlIngresos, FinanzasDashboard, FinanzasDecisionPago, FinanzasPresupuestos } from '../components/finanzas';
 import { CuentasBancariasPage } from '../components/finanzas/cuentas-bancarias';
 import { Landmark } from 'lucide-react';
 
@@ -67,6 +67,7 @@ function FinanzasContent() {
   const { user, loading: authLoading } = useAuth();
   
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [paymentsGroupOpen, setPaymentsGroupOpen] = useState(true);
   const [effectivePermissions, setEffectivePermissions] = useState(null);
   const [effectivePermissionsLoading, setEffectivePermissionsLoading] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -577,11 +578,7 @@ function FinanzasContent() {
               ? {
                   ...factura,
                   ...facturaBackend,
-                  estado_autorizacion_pago: facturaBackend.estado_autorizacion_pago || (
-                    autorizar ? 'AUTORIZADO' : 'RECHAZADO'
-                  ),
-                  requiere_autorizacion_pago: autorizar ? false : factura.requiere_autorizacion_pago
-                }
+}
               : factura
           ))
         }));
@@ -835,7 +832,10 @@ function FinanzasContent() {
       loadDashboard();
     } else if (activeTab === 'presupuestos') {
       loadPresupuestos();
-    } else if (activeTab === 'cxp') {
+    } else if (
+      activeTab === 'cxp' ||
+      activeTab === 'decision-pago'
+    ) {
       loadCuentasPorPagar();
     } else if (activeTab === 'ingresos') {
       loadIngresos();
@@ -844,7 +844,10 @@ function FinanzasContent() {
   
   // FASE 1 CxP: Recargar CxP cuando cambie la unidad de negocio seleccionada
   useEffect(() => {
-    if (activeTab === 'cxp' && selectedUnidad !== undefined) {
+    if (
+      (activeTab === 'cxp' || activeTab === 'decision-pago') &&
+      selectedUnidad !== undefined
+    ) {
       logger.log(`[CxP] Unidad cambiada a: ${selectedUnidad || 'Todas'}, recargando...`);
       loadCuentasPorPagar();
     }
@@ -1075,7 +1078,6 @@ function FinanzasContent() {
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: PieChart },
     { id: 'ingresos', label: 'Control de Ingresos', icon: TrendingUp },
-    { id: 'cxp', label: 'Cuentas por Pagar', icon: CreditCard },
     ...(finanzasPermissions.canView
       ? [{ id: 'comprobaciones', label: 'Comprobaciones', icon: FileCheck2 }]
       : []),
@@ -1093,6 +1095,25 @@ function FinanzasContent() {
     )
   );
   
+  const paymentTabs = [
+    ...(finanzasPermissions.canView
+      ? [{
+          id: 'decision-pago',
+          label: 'Decisión de Pago',
+          icon: BarChart3
+        }]
+      : []),
+    {
+      id: 'cxp',
+      label: 'Cuentas por Pagar',
+      icon: CreditCard
+    },
+  ];
+
+  const isPaymentTabActive = paymentTabs.some(
+    (tab) => tab.id === activeTab
+  );
+
   // Format currency
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('es-MX', {
@@ -1233,7 +1254,6 @@ function FinanzasContent() {
         onDecisionPago={handleDecisionPago}
         onAutorizarDecisionPago={handleAutorizarDecisionPago}
         onTogglePagoProveedor={handleTogglePagoProveedor}
-        canAutorizarPagos={finanzasPermissions.canAdmin}
         formatCurrency={formatCurrency}
         reagruparCxPPorProveedores={reagruparCxPPorProveedores}
         // FASE 1 CxP: Ocultar filtro Sucursal - CxP opera exclusivamente por Unidad de Negocio
@@ -1241,6 +1261,21 @@ function FinanzasContent() {
       />
     );
   };
+
+  const renderDecisionPago = () => (
+    <FinanzasDecisionPago
+      cxpData={cxpData}
+      unidadesNegocio={unidadesNegocio}
+      selectedUnidad={selectedUnidad}
+      loadingUnidades={loadingUnidades}
+      loading={loading}
+      onUnidadChange={setSelectedUnidad}
+      onActualizar={loadCuentasPorPagar}
+      onAbrirCxp={() => setActiveTab('cxp')}
+      canApplyPeriodOverride={finanzasPermissions.canAdmin}
+      formatCurrency={formatCurrency}
+    />
+  );
 
   const renderComprobaciones = () => (
     <FinanzasComprobaciones
@@ -1411,23 +1446,83 @@ function FinanzasContent() {
         <p className="text-zinc-500">Gestión de presupuestos e indicadores financieros - Conectado a EDARSA HUB</p>
       </div>
       
-      {/* Tabs */}
-      <div className="flex gap-2 mb-6 border-b pb-2">
+      {/* Navegación financiera */}
+      <div className="flex flex-wrap items-start gap-2 mb-6 border-b pb-2">
         {tabs.map(tab => {
           const Icon = tab.icon;
+
           return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === tab.id 
-                  ? 'bg-zinc-900 text-white' 
-                  : 'text-zinc-600 hover:bg-zinc-100'
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {tab.label}
-            </button>
+            <React.Fragment key={tab.id}>
+              <button
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? 'bg-zinc-900 text-white'
+                    : 'text-zinc-600 hover:bg-zinc-100'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {tab.label}
+              </button>
+
+              {tab.id === 'ingresos' && paymentTabs.length > 0 && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPaymentsGroupOpen((current) => !current)
+                    }
+                    aria-expanded={paymentsGroupOpen}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isPaymentTabActive
+                        ? 'bg-zinc-900 text-white'
+                        : 'text-zinc-600 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    Pagos y CxP
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${
+                        paymentsGroupOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {paymentsGroupOpen && (
+                    <div
+                      className="
+                        absolute left-0 top-full z-40 mt-1
+                        min-w-56 rounded-lg border border-zinc-200
+                        bg-white p-1 shadow-lg
+                      "
+                    >
+                      {paymentTabs.map((paymentTab) => {
+                        const PaymentIcon = paymentTab.icon;
+
+                        return (
+                          <button
+                            key={paymentTab.id}
+                            type="button"
+                            onClick={() => {
+                              setActiveTab(paymentTab.id);
+                              setPaymentsGroupOpen(false);
+                            }}
+                            className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                              activeTab === paymentTab.id
+                                ? 'bg-zinc-900 text-white'
+                                : 'text-zinc-700 hover:bg-zinc-100'
+                            }`}
+                          >
+                            <PaymentIcon className="h-4 w-4" />
+                            {paymentTab.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </React.Fragment>
           );
         })}
       </div>
@@ -1445,6 +1540,9 @@ function FinanzasContent() {
           {activeTab === 'dashboard' && renderDashboard()}
           {activeTab === 'ingresos' && renderControlIngresos()}
           {activeTab === 'cxp' && renderCuentasPorPagar()}
+          {activeTab === 'decision-pago' &&
+            finanzasPermissions.canView &&
+            renderDecisionPago()}
           {activeTab === 'comprobaciones' && finanzasPermissions.canView && renderComprobaciones()}
           {activeTab === 'propinas' && <PropinasTPV />}
           {activeTab === 'tesoreria' &&

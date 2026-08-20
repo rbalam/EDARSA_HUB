@@ -324,3 +324,26 @@ movimientos, sincronización de Compras o Auditoría Operativa de Compras, leer:
 No reabrir decisiones históricas ya clasificadas sin evidencia positiva nueva.
 
 <!-- EDARSAHUB_INVENTORY_PURCHASES_LESSONS_END -->
+
+
+# EDARSAHUB Universal Agent Instructions
+
+Before working:
+
+1. Read docs/agent-governance/AGENT_POLICY.md
+2. Read docs/agent-governance/checkpoints/CURRENT.md
+3. Read docs/agent-governance/decisions/ACTIVE_DECISIONS.md
+4. Read docs/agent-governance/lessons/ARCHITECTURAL_FAILURES_AND_LESSONS.md
+5. Read applicable EKS documents
+6. Read memory/PRD.md
+
+Then run:
+
+./tools/agent_guard/bootstrap_agent_context.sh
+./tools/agent_guard/preflight_agent.sh
+
+Continue only from NEXT.
+Do not repeat DO_NOT_REPEAT.
+Never guess.
+Audit before creating.
+Preserve shared workspace.

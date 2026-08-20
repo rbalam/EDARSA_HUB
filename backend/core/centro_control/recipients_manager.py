@@ -101,16 +101,76 @@ def get_all_recipients(tipo: Optional[str] = None, solo_activos: bool = True) ->
     return recipients
 
 
+def _normalizar_tel(v: Optional[str]) -> Optional[str]:
+    """Normaliza un teléfono a dígitos + prefijo para deduplicar (no valida)."""
+    if not v:
+        return None
+    s = str(v).strip()
+    return s if s else None
+
+
+def _role_based_recipients(tipo: str) -> List[str]:
+    """
+    Resuelve destinatarios DINÁMICAMENTE desde usuarios con el rol configurado
+    (ALERTAS_RECIPIENTS_ROLE) usando la vista canónica de roles efectivos.
+    - tipo='email'   -> Email del usuario
+    - tipo='whatsapp'-> Celular + Telefono del usuario
+    Sin hardcode: el código de rol viene del entorno.
+    """
+    role = os.environ.get("ALERTAS_RECIPIENTS_ROLE", "ALERTAS_CRITICAS_RECIBIR")
+    if not role:
+        return []
+    if tipo == "email":
+        cols = "v.Email AS a, NULL AS b"
+    else:
+        cols = "u.Celular AS a, u.Telefono AS b"
+    sql = (
+        "SELECT DISTINCT " + cols + " "
+        "FROM dbo.vw_Usuario_RolesContexto_Efectivo v "
+        "JOIN dbo.Usuario_Catalogo u ON u.UsuarioID = v.UsuarioID "
+        "WHERE v.CodigoRol = %s AND v.Activo = 1 AND u.Activo = 1"
+    )
+    out: List[str] = []
+    try:
+        conn = _conn()
+        try:
+            cur = conn.cursor(as_dict=True)
+            cur.execute(sql, (role,))
+            for r in cur.fetchall() or []:
+                for val in (r.get("a"), r.get("b")):
+                    val = _normalizar_tel(val)
+                    if val:
+                        out.append(val)
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.warning(f"[recipients] role-based resolution falló ({tipo}): {type(e).__name__}")
+    return out
+
+
+def _merge_dedup(*lists: List[str]) -> List[str]:
+    """Une varias listas preservando orden y sin duplicados (case-insensitive)."""
+    seen = set()
+    result: List[str] = []
+    for lst in lists:
+        for item in lst or []:
+            key = str(item).strip().lower()
+            if key and key not in seen:
+                seen.add(key)
+                result.append(item)
+    return result
+
+
 def get_email_recipients() -> List[str]:
-    """Obtiene lista de emails activos para alertas"""
-    recipients = get_all_recipients(tipo="email", solo_activos=True)
-    return [r["destinatario"] for r in recipients if r.get("destinatario")]
+    """Emails activos para alertas = lista canónica (Sistema_AlertasDestinatarios) ∪ usuarios con rol."""
+    lista = [r["destinatario"] for r in get_all_recipients(tipo="email", solo_activos=True) if r.get("destinatario")]
+    return _merge_dedup(lista, _role_based_recipients("email"))
 
 
 def get_whatsapp_recipients() -> List[str]:
-    """Obtiene lista de números WhatsApp activos para alertas"""
-    recipients = get_all_recipients(tipo="whatsapp", solo_activos=True)
-    return [r["destinatario"] for r in recipients if r.get("destinatario")]
+    """Números WhatsApp activos = lista canónica (Sistema_AlertasDestinatarios) ∪ Celular/Telefono de usuarios con rol."""
+    lista = [r["destinatario"] for r in get_all_recipients(tipo="whatsapp", solo_activos=True) if r.get("destinatario")]
+    return _merge_dedup(lista, _role_based_recipients("whatsapp"))
 
 
 def add_recipient(

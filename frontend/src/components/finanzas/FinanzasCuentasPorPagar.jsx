@@ -54,7 +54,7 @@ import {
  * @param {Function} props.onToggleProveedor - Callback toggle proveedor
  * @param {Function} props.onDecisionPago - Callback decisión de pago
  * @param {Function} props.onAutorizarDecisionPago - Callback autorización de pago
- * @param {boolean} props.canAutorizarPagos - Permiso para autorizar pago CxP
+ * La capacidad de resolver autorizaciones CxP proviene del backend por factura.
  * @param {Function} props.formatCurrency - Función para formatear moneda
  * @param {Function} props.reagruparCxPPorProveedores - Función para reagrupar datos
  */
@@ -98,7 +98,6 @@ export default function FinanzasCuentasPorPagar({
   onDecisionPago,
   onAutorizarDecisionPago,
   onTogglePagoProveedor,
-  canAutorizarPagos = false,
   formatCurrency,
   reagruparCxPPorProveedores,
   // FASE 1 CxP: Prop para ocultar filtro Sucursal visualmente
@@ -479,7 +478,7 @@ export default function FinanzasCuentasPorPagar({
                           {estadoLabel}
                         </span>
                       )}
-                      {canAutorizarPagos && estadoAutorizacion === 'PENDIENTE_AUTORIZACION' && (
+                      {Boolean(factura.puede_resolver_autorizacion) && (
                         <div className="flex items-center justify-end gap-1">
                           <button
                             type="button"

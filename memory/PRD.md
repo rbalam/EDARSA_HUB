@@ -12,6 +12,24 @@ Construir el CRM COMERCIAL ENTERPRISE y módulos satélite integrados al ecosist
 ### User's Preferred Language
 Spanish (Español)
 
+### Estado (2026-06 · fork) — Destinatarios de alertas por USUARIO + RBAC (NO-HARDCODE)
+- ✅ **Números modelados como datos del usuario** (`dbo.Usuario_Catalogo`), no en código ni listas sueltas:
+  Ricardo Balam (UsuarioID 8) → `Celular` = número personal, `Telefono` = número empresarial EDARSA.
+- ✅ **Rol-tag RBAC `ALERTAS_CRITICAS_RECIBIR`** creado en `dbo.Usuario_Roles` (RolID 42) y asignado SOLO a
+  Ricardo vía `Usuario_RolesAsignacion` (evita notificar a los 4 SUPERADMIN). El rol NO otorga permisos de
+  acceso; es solo etiqueta para resolver destinatarios. Código de rol configurable en `.env`
+  (`ALERTAS_RECIPIENTS_ROLE`).
+- ✅ **`recipients_manager.get_email_recipients()` / `get_whatsapp_recipients()` ahora resuelven la UNIÓN**
+  deduplicada de: (1) lista canónica `Sistema_AlertasDestinatarios` [CONSERVADA por decisión del usuario] +
+  (2) usuarios activos con el rol (Email / Celular + Telefono) + (3) respaldo `.env ALERT_*_TO`. Verificado:
+  2 correos (ricardo@, carlosruz@) y 2 WhatsApp deduplicados.
+- ✅ Todo el notificador (excepciones + resumen diario + prueba) hereda esta resolución automáticamente.
+- ⚠️ **Twilio sigue en 401** (`AUTH_ERROR`): el `TWILIO_AUTH_TOKEN` presente es inválido. El dueño rotará el
+  token desde Twilio Console. Hasta entonces WhatsApp no envía; **el correo sí funciona**.
+- Nota arquitectura: existen 2 capas de roles — `Usuario_Roles` (int, usada por `Usuario_RolesAsignacion` y
+  la vista `vw_Usuario_RolesContexto_Efectivo`) y `Sistema_RBAC_Roles` (GUID). El rol-tag vive en la primera.
+
+
 ### 📋 BACKLOG (pendiente, no implementado)
 ### Estado actualizado (2026-06-13) — Cuentas por Pagar 100% canónico (NO-LIVE) + job en scheduler
 - ✅ **Causa raíz "información demo"**: el worker de subprocess SQL fallaba con `ModuleNotFoundError: core`

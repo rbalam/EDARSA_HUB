@@ -36,6 +36,7 @@ import os
 import uuid
 import logging
 from datetime import datetime, date, timedelta, timezone
+from core.utils.operational_window import get_fecha_operacion
 from typing import Dict, List, Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -98,7 +99,7 @@ def _get_unidades_from_edarsahub() -> tuple:
 # FUNCIÓN PRINCIPAL DEL JOB
 # =============================================================================
 
-async def execute_sync_comercial_v2(db=None) -> Dict[str, Any]:
+async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_unidades: Optional[List[str]] = None) -> Dict[str, Any]:
     """
     Ejecuta sincronización incremental de KPIs comerciales V2.
     
@@ -117,6 +118,13 @@ async def execute_sync_comercial_v2(db=None) -> Dict[str, Any]:
         UnidadNegocioConfig,
         SistemaOrigen
     )
+    from scripts.poblar_ventas_detalle_producto_canonico import (
+        get_unidades_negocio_pos,
+        get_pos_config_for_unidad,
+        _load_runtime_rows,
+        _runtime_for,
+        sync_detalle_producto_canonico_dia,
+    )
     
     logger.info(f"[SYNC_COMERCIAL_V2] Iniciando sincronización incremental ({SYNC_INCREMENTAL_DAYS} días)")
     
@@ -124,16 +132,16 @@ async def execute_sync_comercial_v2(db=None) -> Dict[str, Any]:
     run_id = f"INCR-{start_time.strftime('%Y%m%d-%H%M%S')}-{str(uuid.uuid4())[:4]}"
     
     # Calcular rango de fechas (últimos N días)
-    fecha_fin = date.today()
-    fecha_inicio = fecha_fin - timedelta(days=SYNC_INCREMENTAL_DAYS)
     
     results = {
         "job_name": JOB_NAME,
         "run_id": run_id,
         "tipo_sync": "INCREMENTAL",
         "dias_atras": SYNC_INCREMENTAL_DAYS,
-        "fecha_inicio": fecha_inicio.isoformat(),
-        "fecha_fin": fecha_fin.isoformat(),
+        "fecha_inicio": None,
+        "fecha_fin": None,
+        "rango_fecha_operacion_por_unidad": True,
+        "solo_unidades": [str(x) for x in solo_unidades] if solo_unidades else None,
         "inicio_ejecucion": start_time.isoformat(),
         "unidades_procesadas": 0,
         "unidades_exitosas": 0,
@@ -143,14 +151,229 @@ async def execute_sync_comercial_v2(db=None) -> Dict[str, Any]:
         "total_omitidos": 0,
         "total_errores": 0,
         "detalles_unidades": [],
-        "errores": []
+        "errores": [],
+        "detalle_producto_exitosos": 0,
+        "detalle_producto_fallidos": 0,
+        "detalle_producto_omitidos": 0,
+        "detalle_producto_filas_insertadas": 0,
     }
     
+    def _sync_detalle_post_header(
+        unidad_codigo,
+        dia,
+        detalle_unidad,
+    ):
+        """
+        Ejecuta detalle únicamente después de que el header/KPI
+        canónico de la unidad haya sincronizado correctamente.
+
+        El fallo del detalle se registra de forma independiente.
+        No invalida un header ya confirmado.
+        """
+        try:
+            unidad_rows = get_unidades_negocio_pos(
+                [unidad_codigo]
+            )
+
+            if len(unidad_rows) != 1:
+                raise RuntimeError(
+                    "Contexto POS canónico no único para "
+                    f"unidad={unidad_codigo!r}"
+                )
+
+            cfg = get_pos_config_for_unidad(
+                unidad_rows[0]
+            )
+
+            runtime_rows = _load_runtime_rows(
+                dia,
+                dia + timedelta(days=1),
+                unidad_codigo,
+            )
+
+            runtime_row = _runtime_for(
+                runtime_rows,
+                cfg,
+                dia,
+            )
+
+            if runtime_row is None:
+                raise RuntimeError(
+                    "Runtime V2 no disponible para "
+                    f"unidad={unidad_codigo!r} "
+                    f"fecha_operacion={dia}"
+                )
+
+            detail_result = (
+                sync_detalle_producto_canonico_dia(
+                    cfg=cfg,
+                    dia=dia,
+                    runtime_row=runtime_row,
+                    run_id=run_id,
+                    commit=detail_commit,
+                    excluir_abiertas=True,
+                )
+            )
+
+            status = detail_result.get("status")
+
+            detail_trace = {
+                "fecha_operacion": dia.isoformat(),
+                "status": status,
+                "filas_insertadas": int(
+                    detail_result.get(
+                        "filas_insertadas"
+                    ) or 0
+                ),
+                "filas_preparadas": int(
+                    detail_result.get(
+                        "filas_destino_preparadas"
+                    ) or 0
+                ),
+            }
+
+            detalle_unidad.setdefault(
+                "detalle_producto_dias",
+                [],
+            ).append(detail_trace)
+
+            detalle_unidad[
+                "detalle_producto_status"
+            ] = status
+
+            detalle_unidad[
+                "detalle_producto_filas_insertadas"
+            ] = sum(
+                int(
+                    item.get(
+                        "filas_insertadas"
+                    ) or 0
+                )
+                for item in detalle_unidad[
+                    "detalle_producto_dias"
+                ]
+            )
+
+            if status == "OK_HEADER_CANONICO":
+                results[
+                    "detalle_producto_exitosos"
+                ] += 1
+
+                results[
+                    "detalle_producto_filas_insertadas"
+                ] += detalle_unidad[
+                    "detalle_producto_filas_insertadas"
+                ]
+
+            elif status == "NO_PROBAR_ABIERTO_REAL":
+                results[
+                    "detalle_producto_omitidos"
+                ] += 1
+
+            else:
+                results[
+                    "detalle_producto_fallidos"
+                ] += 1
+
+                detalle_unidad[
+                    "detalle_producto_error"
+                ] = status
+
+        except Exception as exc:
+            results[
+                "detalle_producto_fallidos"
+            ] += 1
+
+            detalle_unidad[
+                "detalle_producto_status"
+            ] = "ERROR"
+
+            detalle_unidad[
+                "detalle_producto_error"
+            ] = str(exc)
+
+            detalle_unidad.setdefault(
+                "detalle_producto_dias",
+                [],
+            ).append({
+                "fecha_operacion": dia.isoformat(),
+                "status": "ERROR",
+                "filas_insertadas": 0,
+                "error": str(exc),
+            })
+
+            logger.exception(
+                "[SYNC_COMERCIAL_V2] "
+                "Fallo detalle producto "
+                "unidad=%s fecha=%s",
+                unidad_codigo,
+                dia,
+            )
+
     # =========================================================================
     # FASE P0: CARGAR UNIDADES DESDE EDARSAHUB (códigos canónicos)
     # =========================================================================
     
     unidades_sr, unidades_mpro = _get_unidades_from_edarsahub()
+
+    if solo_unidades:
+        requested = {
+            str(value).strip().upper()
+            for value in solo_unidades
+            if str(value).strip()
+        }
+
+        if not requested:
+            raise ValueError(
+                "solo_unidades fue proporcionado "
+                "pero no contiene unidades válidas"
+            )
+
+        def _unit_selected(unidad):
+            codigo = str(
+                unidad.get("unidad_negocio_id") or ""
+            ).strip().upper()
+
+            pk = str(
+                unidad.get("unidad_negocio_pk") or ""
+            ).strip().upper()
+
+            return (
+                codigo in requested
+                or pk in requested
+            )
+
+        unidades_sr = [
+            unidad
+            for unidad in unidades_sr
+            if _unit_selected(unidad)
+        ]
+
+        unidades_mpro = [
+            unidad
+            for unidad in unidades_mpro
+            if _unit_selected(unidad)
+        ]
+
+        resolved = {
+            str(
+                unidad.get("unidad_negocio_id") or ""
+            ).strip().upper()
+            for unidad in (
+                unidades_sr + unidades_mpro
+            )
+        }
+
+        unresolved = sorted(
+            requested - resolved
+        )
+
+        if unresolved:
+            raise ValueError(
+                "Unidades solicitadas no resueltas: "
+                + ", ".join(unresolved)
+            )
+
     
     logger.info(f"[SYNC_COMERCIAL_V2] FASE P0: Procesando {len(unidades_sr)} SoftRestaurant + {len(unidades_mpro)} MPRO con códigos canónicos")
     
@@ -163,6 +386,14 @@ async def execute_sync_comercial_v2(db=None) -> Dict[str, Any]:
         unidad_id = unidad["unidad_negocio_id"]
         nombre = unidad["nombre"]
         
+        fecha_fin = get_fecha_operacion(
+            unidad["unidad_negocio_pk"]
+        )
+        fecha_inicio = (
+            fecha_fin
+            - timedelta(days=SYNC_INCREMENTAL_DAYS)
+        )
+
         try:
             logger.info(f"[SYNC_COMERCIAL_V2] Sincronizando {nombre} (SoftRestaurant)...")
             
@@ -189,6 +420,8 @@ async def execute_sync_comercial_v2(db=None) -> Dict[str, Any]:
                 "unidad_negocio_id": unidad_id,
                 "unidad": nombre,
                 "sistema": "SoftRestaurant",
+                "fecha_inicio": fecha_inicio.isoformat(),
+                "fecha_fin": fecha_fin.isoformat(),
                 "estatus": "SUCCESS" if resultado.success else "FAILED",
                 "procesados": resultado.records_processed,
                 "insertados": resultado.records_inserted,
@@ -202,6 +435,20 @@ async def execute_sync_comercial_v2(db=None) -> Dict[str, Any]:
             results["detalles_unidades"].append(detalle)
             
             if resultado.success:
+                for detail_day_offset in range(
+                    (fecha_fin - fecha_inicio).days + 1
+                ):
+                    detail_day = (
+                        fecha_inicio
+                        + timedelta(days=detail_day_offset)
+                    )
+
+                    _sync_detalle_post_header(
+                        unidad_id,
+                        detail_day,
+                        detalle,
+                    )
+
                 results["unidades_exitosas"] += 1
                 results["total_insertados"] += resultado.records_inserted
                 results["total_actualizados"] += resultado.records_updated
@@ -242,6 +489,14 @@ async def execute_sync_comercial_v2(db=None) -> Dict[str, Any]:
         nombre = unidad["nombre"]
         sucursal_id = unidad["sucursal_id"]
         
+        fecha_fin = get_fecha_operacion(
+            unidad["unidad_negocio_pk"]
+        )
+        fecha_inicio = (
+            fecha_fin
+            - timedelta(days=SYNC_INCREMENTAL_DAYS)
+        )
+
         try:
             logger.info(f"[SYNC_COMERCIAL_V2] Sincronizando {nombre} (MPRO sucursal={sucursal_id})...")
             
@@ -269,6 +524,8 @@ async def execute_sync_comercial_v2(db=None) -> Dict[str, Any]:
                 "unidad_negocio_id": unidad_id,
                 "unidad": nombre,
                 "sistema": "MPRO",
+                "fecha_inicio": fecha_inicio.isoformat(),
+                "fecha_fin": fecha_fin.isoformat(),
                 "sucursal_id": sucursal_id,
                 "estatus": "SUCCESS" if resultado.success else "FAILED",
                 "procesados": resultado.records_processed,
@@ -283,6 +540,20 @@ async def execute_sync_comercial_v2(db=None) -> Dict[str, Any]:
             results["detalles_unidades"].append(detalle)
             
             if resultado.success:
+                for detail_day_offset in range(
+                    (fecha_fin - fecha_inicio).days + 1
+                ):
+                    detail_day = (
+                        fecha_inicio
+                        + timedelta(days=detail_day_offset)
+                    )
+
+                    _sync_detalle_post_header(
+                        unidad_id,
+                        detail_day,
+                        detalle,
+                    )
+
                 results["unidades_exitosas"] += 1
                 results["total_insertados"] += resultado.records_inserted
                 results["total_actualizados"] += resultado.records_updated
@@ -350,32 +621,93 @@ def run_sync_comercial_v2_manual(
     solo_unidades: Optional[List[str]] = None
 ) -> Dict[str, Any]:
     """
-    Ejecuta sincronización manual para pruebas.
-    
+    Ejecuta sincronización manual controlada.
+
+    Usa el mismo lock distribuido canónico que el scheduler
+    automático para impedir solapamientos.
+
     Args:
-        dias_atras: Número de días hacia atrás para sincronizar
-        solo_unidades: Lista opcional de unidad_negocio_id para filtrar
-        
+        dias_atras: Número de días hacia atrás para sincronizar.
+        solo_unidades: Lista opcional de unidad_negocio_id
+            para filtrar.
+
     Returns:
-        Dict con resultados
+        Dict con resultados.
+
+    Raises:
+        RuntimeError: si el lock canónico está ocupado o no
+            puede adquirirse.
     """
     import asyncio
-    
-    # Temporalmente sobreescribir variable de entorno
+
+    from core.scheduler.locks import get_lock_manager
+
     global SYNC_INCREMENTAL_DAYS
+
+    previous_incremental_days = SYNC_INCREMENTAL_DAYS
     SYNC_INCREMENTAL_DAYS = dias_atras
-    
-    logger.info(f"[SYNC_COMERCIAL_V2] Ejecución manual: {dias_atras} días, unidades={solo_unidades or 'TODAS'}")
-    
-    # Ejecutar async en loop
+
+    logger.info(
+        "[SYNC_COMERCIAL_V2] Ejecución manual: "
+        "%s días, unidades=%s",
+        dias_atras,
+        solo_unidades or "TODAS",
+    )
+
+    async def _run_manual_locked() -> Dict[str, Any]:
+        lock_manager = get_lock_manager()
+        lock = lock_manager.get_lock(
+            "sync_comercial_v2"
+        )
+
+        acquired = await lock.acquire(
+            timeout_seconds=600
+        )
+
+        if not acquired:
+            raise RuntimeError(
+                "No se pudo adquirir el lock canónico "
+                "sync_comercial_v2; existe otra ejecución "
+                "en progreso o el mecanismo de lock falló."
+            )
+
+        heartbeat_started = False
+
+        try:
+            await lock.start_heartbeat_loop(
+                interval_seconds=30,
+                extend_seconds=600,
+            )
+            heartbeat_started = True
+
+            return await execute_sync_comercial_v2(
+                solo_unidades=solo_unidades,
+            )
+
+        finally:
+            if heartbeat_started:
+                await lock.stop_heartbeat_loop()
+
+            await lock.release()
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
+
     try:
-        result = loop.run_until_complete(execute_sync_comercial_v2())
+        return loop.run_until_complete(
+            _run_manual_locked()
+        )
+
     finally:
-        loop.close()
-    
-    return result
+        SYNC_INCREMENTAL_DAYS = (
+            previous_incremental_days
+        )
+
+        try:
+            asyncio.set_event_loop(None)
+        finally:
+            loop.close()
+
 
 
 # =============================================================================

@@ -10,3 +10,4 @@ export { default as FinanzasComprobaciones } from './FinanzasComprobaciones';
 export { default as FinanzasControlIngresos } from './FinanzasControlIngresos';
 export { default as FinanzasDashboard } from './FinanzasDashboard';
 export { default as FinanzasPresupuestos } from './FinanzasPresupuestos';
+export { default as FinanzasDecisionPago } from './FinanzasDecisionPago';

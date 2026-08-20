@@ -40,7 +40,7 @@ class CalculoPedidoRequest(BaseModel):
 class AuditoriaOperativaRequest(BaseModel):
     """Request para auditoría operativa de compras."""
     server_id: str
-    sucursal: str
+    sucursal: Optional[str] = None
     almacenes: List[str]
     folio_inv_inicial: Optional[str] = None  # Legacy: un solo folio
     folios_inv_inicial: Optional[List[str]] = None  # Nuevo: múltiples folios

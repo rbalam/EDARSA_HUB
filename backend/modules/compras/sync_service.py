@@ -159,12 +159,55 @@ def _fetch_table_columns(cursor, table_name: str) -> Dict[str, str]:
     }
 
 
+INVENTORY_SYNC_MODE_ROLLING_6M = "ROLLING_6M"
+INVENTORY_SYNC_MODE_FULL = "FULL"
+
+
+def _inventory_history_filter(
+    column_expression: str,
+    sync_mode: str,
+) -> str:
+    """
+    Ventana temporal canonica de inventarios fisicos.
+
+    FULL:
+        carga inicial, backfill o reconstruccion de todo el historico.
+
+    ROLLING_6M:
+        mantenimiento operativo normal de los ultimos 6 meses.
+    """
+    mode = str(sync_mode or "").strip().upper()
+
+    if mode == INVENTORY_SYNC_MODE_FULL:
+        return f"{column_expression} IS NOT NULL"
+
+    if mode == INVENTORY_SYNC_MODE_ROLLING_6M:
+        return (
+            f"{column_expression} IS NOT NULL "
+            f"AND {column_expression} >= DATEADD(MONTH, -6, GETDATE())"
+        )
+
+    raise ValueError(
+        f"Modo de sincronizacion de inventarios no soportado: {sync_mode!r}"
+    )
+
+
 def _inventarios_fisicos_detalle_query(
     system_type: str,
     folios: Optional[List[Any]] = None,
     sucursal_origen_id: Optional[str] = None,
+    sync_mode: str = INVENTORY_SYNC_MODE_ROLLING_6M,
 ) -> Optional[str]:
     from core.system_type_utils import is_mpro_system, is_softrestaurant_system
+
+    inventory_filter_mpro = _inventory_history_filter(
+        "F.Fi_Fecha",
+        sync_mode,
+    )
+    inventory_filter_softrestaurant = _inventory_history_filter(
+        "FISICO.fecha",
+        sync_mode,
+    )
 
     if is_mpro_system(system_type):
         folio_filter = _folio_in_filter("F.Fi_Folio", folios)
@@ -202,7 +245,7 @@ def _inventarios_fisicos_detalle_query(
                 ON A.Al_Cve_Almacen = F.Al_Cve_Almacen
                AND A.Sc_Cve_Sucursal = F.Sc_Cve_Sucursal
             LEFT JOIN Producto P ON P.Pr_Cve_Producto = F.Pr_Cve_Producto
-            WHERE F.Fi_Fecha >= DATEADD(MONTH, -6, GETDATE())
+            WHERE {inventory_filter_mpro}
               AND ISNULL(F.Es_Cve_Estado, '') <> 'CA'
               {sucursal_filter}
               {folio_filter}
@@ -244,7 +287,7 @@ def _inventarios_fisicos_detalle_query(
             LEFT JOIN insumospresentaciones IP ON IP.idinsumospresentaciones = FMOV.idpresentacion
             LEFT JOIN insumos I_PRES ON I_PRES.idinsumo = IP.idinsumo
             LEFT JOIN insumos I_INS ON I_INS.idinsumo = FMOV.idinsumo
-            WHERE FISICO.fecha >= DATEADD(MONTH, -6, GETDATE())
+            WHERE {inventory_filter_softrestaurant}
               AND ISNULL(FISICO.cancelado, 0) = 0
               {folio_filter}
             ORDER BY FISICO.fecha DESC, FMOV.folio, codigo_producto
@@ -1026,14 +1069,42 @@ def obtener_requisiciones_sync(
         conn = get_edarsahub_connection()
         cursor = conn.cursor(as_dict=True)
         
+        # Compras_Requisiciones_Sync es versionada.
+        # Algunas sincronizaciones dejan la versión más reciente como REPLACED
+        # cuando no existe una fila ACTIVE vigente. No debemos perder el documento
+        # ni devolver todas sus versiones históricas.
+        #
+        # Contrato de lectura:
+        # - una sola fila efectiva por unidad + servidor + tipo + folio;
+        # - ACTIVE tiene prioridad cuando existe;
+        # - en ausencia de ACTIVE se usa la versión sincronizada más reciente.
         query = """
-            SELECT 
+            SELECT
                 tipo, folio, fecha, fecha_entrega, proveedor, proveedor_id,
                 sucursal, sucursal_id, total_productos, importe, estatus,
                 unidad_negocio_id, unidad_negocio_codigo, server_id, system_type,
                 sync_timestamp, sync_status
-            FROM Compras_Requisiciones_Sync
-            WHERE sync_status = 'ACTIVE'
+            FROM (
+                SELECT
+                    id,
+                    tipo, folio, fecha, fecha_entrega, proveedor, proveedor_id,
+                    sucursal, sucursal_id, total_productos, importe, estatus,
+                    unidad_negocio_id, unidad_negocio_codigo, server_id, system_type,
+                    sync_timestamp, sync_status,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY
+                            unidad_negocio_id,
+                            server_id,
+                            tipo,
+                            folio
+                        ORDER BY
+                            CASE WHEN sync_status = 'ACTIVE' THEN 0 ELSE 1 END,
+                            sync_timestamp DESC,
+                            id DESC
+                    ) AS _rn
+                FROM Compras_Requisiciones_Sync
+            ) AS requisiciones_efectivas
+            WHERE _rn = 1
         """
         params = []
         
@@ -1079,7 +1150,8 @@ def obtener_requisiciones_sync(
 def sync_inventarios_fisicos_from_server(
     server_info: Dict,
     unidad_info: Dict,
-    execute_sql_query_func
+    execute_sql_query_func,
+    sync_mode: str = INVENTORY_SYNC_MODE_ROLLING_6M,
 ) -> Dict:
     """
     Sincroniza inventarios físicos desde un servidor físico a EDARSAHUB.
@@ -1097,6 +1169,17 @@ def sync_inventarios_fisicos_from_server(
     
     server_id = server_info.get('id')
     system_type = server_info.get('system_type', '')
+
+    sync_mode = str(sync_mode or "").strip().upper()
+
+    if sync_mode not in {
+        INVENTORY_SYNC_MODE_ROLLING_6M,
+        INVENTORY_SYNC_MODE_FULL,
+    }:
+        raise ValueError(
+            f"Modo de sincronizacion de inventarios no soportado: {sync_mode!r}"
+        )
+
     unidad_id = unidad_info.get('id')
     unidad_codigo = unidad_info.get('codigo')
     sucursal_origen_id = (
@@ -1149,7 +1232,7 @@ def sync_inventarios_fisicos_from_server(
                 FROM Fisico F
                 INNER JOIN Almacen A ON A.Al_Cve_Almacen = F.Al_Cve_Almacen AND A.Sc_Cve_Sucursal = F.Sc_Cve_Sucursal
                 LEFT JOIN Sucursal S ON S.Sc_Cve_Sucursal = A.Sc_Cve_Sucursal
-                WHERE F.Fi_Fecha >= DATEADD(MONTH, -6, GETDATE())
+                WHERE {_inventory_history_filter("F.Fi_Fecha", sync_mode)}
                   AND ISNULL(F.Es_Cve_Estado, '') <> 'CA'
                   AND F.Sc_Cve_Sucursal = '{safe_sucursal_origen}'
                 GROUP BY F.Fi_Folio, F.Fi_Fecha, A.Al_Descripcion, A.Al_Cve_Almacen, S.Sc_Descripcion, A.Sc_Cve_Sucursal
@@ -1158,7 +1241,7 @@ def sync_inventarios_fisicos_from_server(
         elif is_softrestaurant_system(system_type):
             # SoftRestaurant usa tabla "invfisico". El almacen_id debe venir
             # del encabezado del inventario; no depende del LEFT JOIN al catalogo.
-            query = """
+            query = f"""
                 SELECT 
                     CAST(INV.folio AS VARCHAR) as folio,
                     INV.fecha as fecha,
@@ -1172,7 +1255,7 @@ def sync_inventarios_fisicos_from_server(
                     '' as comentario
                 FROM invfisico INV
                 LEFT JOIN almacen A ON A.idalmacen = INV.idalmacen1
-                WHERE INV.fecha >= DATEADD(MONTH, -6, GETDATE())
+                WHERE {_inventory_history_filter("INV.fecha", sync_mode)}
                   AND ISNULL(INV.cancelado, 0) = 0
                 ORDER BY INV.fecha DESC
             """
@@ -1206,6 +1289,7 @@ def sync_inventarios_fisicos_from_server(
             system_type,
             [],
             sucursal_origen_id,
+            sync_mode=sync_mode,
         )
         detail_rows = []
         if detail_query:
@@ -1222,6 +1306,7 @@ def sync_inventarios_fisicos_from_server(
                     system_type,
                     folios_batch,
                     sucursal_origen_id,
+                    sync_mode=sync_mode,
                 )
                 batch_rows = execute_sql_query_func(
                     server_info['host'],
