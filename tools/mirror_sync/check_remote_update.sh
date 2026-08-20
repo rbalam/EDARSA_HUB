@@ -126,6 +126,35 @@ INCOMING_COUNT="$(git diff --name-only "$LOCAL" "$DEV" | wc -l)"
 echo "INCOMING_FILES=$INCOMING_COUNT"
 
 echo
+echo "===== UNTRACKED COLLISION GUARD ====="
+
+COLLISION=0
+
+while IFS= read -r FILE; do
+    [ -n "$FILE" ] || continue
+
+    # Si HEAD local ya conoce el archivo, no es una colision untracked.
+    if git cat-file -e "$LOCAL:$FILE" 2>/dev/null; then
+        continue
+    fi
+
+    # Si existe fisicamente pero HEAD local no lo conoce,
+    # la actualizacion remota lo sobrescribiria.
+    if [ -e "$FILE" ]; then
+        echo "UNTRACKED_COLLISION=$FILE"
+        COLLISION=1
+    fi
+done < <(git diff --name-only "$LOCAL" "$DEV")
+
+if [ "$COLLISION" -ne 0 ]; then
+    echo "DECISION=ABORT_UNTRACKED_WOULD_BE_OVERWRITTEN"
+    echo "WRITE_OPERATION_EXECUTED=NO"
+    exit 33
+fi
+
+echo "UNTRACKED_COLLISIONS=NONE"
+
+echo
 echo "DECISION=SAFE_REMOTE_FAST_FORWARD_AVAILABLE"
 echo "TARGET_HEAD=$DEV"
 echo "LOCAL_UNTRACKED_PRESERVED=$UNTRACKED"
