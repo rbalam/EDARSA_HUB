@@ -1,12 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ENABLE_FLAG="/app/.git/mirror-sync/ENABLED"
-STOP_FLAG="/tmp/edarsahub-mirror-sync/STOP"
+STATE_DIR="/app/.git/mirror-sync"
+
+ENABLE_FLAG="$STATE_DIR/ENABLED"
+PERSISTENT_STOP="$STATE_DIR/STOP"
+
+TEMP_STOP="/tmp/edarsahub-mirror-sync/STOP"
 
 echo "===== EDARSAHUB MIRROR SYNC STATUS ====="
 
-if [ -e "$STOP_FLAG" ]; then
+if [ -e "$PERSISTENT_STOP" ]; then
+    echo "MIRROR_SYNC_ENABLED=NO"
+    echo "EMERGENCY_STOP=ACTIVE"
+    echo "REASON=PERSISTENT_STOP_FLAG"
+elif [ -e "$TEMP_STOP" ]; then
     echo "MIRROR_SYNC_ENABLED=NO"
     echo "EMERGENCY_STOP=ACTIVE"
     echo "REASON=TEMPORARY_STOP_FLAG"
@@ -22,4 +30,5 @@ fi
 
 echo
 echo "ENABLE_FLAG=$ENABLE_FLAG"
-echo "STOP_FLAG=$STOP_FLAG"
+echo "PERSISTENT_STOP_FLAG=$PERSISTENT_STOP"
+echo "TEMPORARY_STOP_FLAG=$TEMP_STOP"
