@@ -12,6 +12,7 @@ test -r "$MIRROR_SYNC_GUARD" || {
 . "$MIRROR_SYNC_GUARD"
 
 mirror_sync_require_enabled || exit $?
+mirror_sync_acquire_global_lock || exit $?
 
 ROOT="/app"
 DEV_BRANCH="Edarsahub_Desarrollo"

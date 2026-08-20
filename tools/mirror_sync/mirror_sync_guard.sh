@@ -22,3 +22,31 @@ mirror_sync_require_enabled() {
     echo "MIRROR_SYNC_ENABLED=YES"
     return 0
 }
+
+MIRROR_SYNC_LOCK_FILE="/app/.git/mirror-sync/runtime.lock"
+
+mirror_sync_acquire_global_lock() {
+    mkdir -p "$MIRROR_SYNC_STATE_DIR"
+
+    command -v flock >/dev/null 2>&1 || {
+        echo "MIRROR_SYNC_LOCK_ACQUIRED=NO"
+        echo "MIRROR_SYNC_LOCK_REASON=FLOCK_NOT_AVAILABLE"
+        echo "WRITE_OPERATION_EXECUTED=NO"
+        return 91
+    }
+
+    exec 9>"$MIRROR_SYNC_LOCK_FILE"
+
+    if ! flock -n 9; then
+        echo "MIRROR_SYNC_LOCK_ACQUIRED=NO"
+        echo "MIRROR_SYNC_LOCK_REASON=ANOTHER_SYNC_PROCESS_ACTIVE"
+        echo "MIRROR_SYNC_LOCK_FILE=$MIRROR_SYNC_LOCK_FILE"
+        echo "WRITE_OPERATION_EXECUTED=NO"
+        return 92
+    fi
+
+    echo "MIRROR_SYNC_LOCK_ACQUIRED=YES"
+    echo "MIRROR_SYNC_LOCK_FILE=$MIRROR_SYNC_LOCK_FILE"
+    return 0
+}
+
