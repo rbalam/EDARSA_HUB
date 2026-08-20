@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+MIRROR_SYNC_GUARD="/app/tools/mirror_sync/mirror_sync_guard.sh"
+
+test -r "$MIRROR_SYNC_GUARD" || {
+    echo "ABORT=MIRROR_SYNC_GUARD_MISSING"
+    echo "WRITE_OPERATION_EXECUTED=NO"
+    exit 90
+}
+
+. "$MIRROR_SYNC_GUARD"
+
+mirror_sync_require_enabled || exit $?
+
 ROOT="/app"
 DEV_BRANCH="Edarsahub_Desarrollo"
 MIRROR_BRANCH="mirror/emergent-live"
