@@ -1,5 +1,6 @@
 name: Comercial Backfill Dry Run
 
+# trigger: 2026-08-21 global validation
 on:
   pull_request:
     branches: [Edarsahub_Desarrollo]
