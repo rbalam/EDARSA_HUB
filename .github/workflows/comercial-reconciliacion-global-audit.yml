@@ -1,6 +1,10 @@
 name: Comercial Reconciliacion Global Audit
 
 on:
+  push:
+    branches: [audit/comercial-reconciliacion-global]
+    paths:
+      - ".github/workflows/comercial-reconciliacion-global-audit.yml"
   pull_request:
     branches: [Edarsahub_Desarrollo]
     paths:
