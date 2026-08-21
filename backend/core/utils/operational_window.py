@@ -86,8 +86,10 @@ def _resolver_unidad_turnos_id(unidad_negocio_pk: str) -> str:
             "Codigo",
         ):
             value = info.get(key)
+
             if value not in (None, ""):
                 value = str(value).strip()
+
                 if value:
                     return value
 
@@ -569,7 +571,6 @@ def debug_operational_window(unidad_negocio_pk: str):
 
 
 
-
 def get_operational_datetime_range_for_fecha_operacion(
     unidad_negocio_pk: str,
     fecha_operacion: date
@@ -579,6 +580,13 @@ def get_operational_datetime_range_for_fecha_operacion(
 
     Usa todos los turnos activos con aplica_ventas_dia=1 desde
     Sistema_TurnosOperativosUnidad. No usa día civil ni Mongo.
+
+    IMPORTANTE:
+    Debe representar exactamente la misma partición temporal que
+    get_operational_window(). El primer turno aplica tolerancia de inicio, por
+    lo que la consulta al POS debe iniciar con esa misma tolerancia y terminar
+    en el inicio canónico del día siguiente. Se usa intervalo [inicio, fin)
+    para evitar huecos y solapamientos entre fechas operativas consecutivas.
     """
     turnos = _get_turnos_unidad(unidad_negocio_pk)
     if not turnos:
@@ -592,12 +600,20 @@ def get_operational_datetime_range_for_fecha_operacion(
 
     hora_inicio = primer_turno["hora_inicio"]
     hora_fin = ultimo_turno["hora_fin"]
+    tolerancia_inicio = int(
+        primer_turno.get("tolerancia_inicio_minutos") or 0
+    )
 
-    inicio = datetime.combine(fecha_operacion, hora_inicio)
-    fin = datetime.combine(fecha_operacion, hora_fin)
+    inicio = (
+        datetime.combine(fecha_operacion, hora_inicio)
+        - timedelta(minutes=tolerancia_inicio)
+    )
 
-    if bool(ultimo_turno.get("cruza_medianoche")) or fin <= inicio:
-        fin = fin + timedelta(days=1)
+    fecha_operacion_siguiente = fecha_operacion + timedelta(days=1)
+    fin = (
+        datetime.combine(fecha_operacion_siguiente, hora_inicio)
+        - timedelta(minutes=tolerancia_inicio)
+    )
 
     metadata = {
         "unidad_negocio_pk": unidad_negocio_pk,
@@ -605,6 +621,7 @@ def get_operational_datetime_range_for_fecha_operacion(
         "turno_fin_codigo": ultimo_turno.get("turno_codigo"),
         "hora_inicio": hora_inicio,
         "hora_fin": hora_fin,
+        "tolerancia_inicio_minutos": tolerancia_inicio,
         "cruza_medianoche": bool(ultimo_turno.get("cruza_medianoche")) or fin.date() > fecha_operacion,
         "turnos_count": len(ordenados),
         "turnos": ordenados,
@@ -616,7 +633,6 @@ def get_operational_datetime_range_for_fecha_operacion(
 # =============================================================================
 # FUNCIONES LEGACY PARA COMPATIBILIDAD
 # =============================================================================
-
 def get_query_date_range(
     unidad_negocio_pk: str,
     timestamp: Optional[datetime] = None
@@ -687,7 +703,6 @@ DEFAULT_CRUZA_MEDIANOCHE = True
 # =============================================================================
 # WRAPPER LEGACY PARA COMPATIBILIDAD CON sync_comercial_abiertas_v2_job
 # =============================================================================
-
 def get_operational_window_legacy(
     unidad_negocio_pk: str,
     timestamp: Optional[datetime] = None
@@ -706,4 +721,3 @@ def get_operational_window_legacy(
         resultado.window_end_mx,
         resultado.cruza_medianoche
     )
-
