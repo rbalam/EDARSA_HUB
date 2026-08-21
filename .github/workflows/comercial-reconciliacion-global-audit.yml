@@ -1,5 +1,6 @@
 name: Comercial Reconciliacion Global Audit
 
+# Trigger técnico de conciliación global 2026-08-21
 on:
   push:
     branches: [audit/comercial-reconciliacion-global]
