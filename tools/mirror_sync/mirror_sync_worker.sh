@@ -10,6 +10,7 @@ PUBLISH="$DIR/publish_local_snapshot.sh"
 FINALIZER="$DIR/finalize_local_snapshot.sh"
 STATUS="$DIR/mirror_sync_status.sh"
 REPORTER="$DIR/mirror_sync_result_reporter.py"
+AUDIT_EXPORTER="$DIR/mirror_sync_audit_exporter.py"
 
 STATE_DIR="$ROOT/.git/mirror-sync"
 ENABLE_FLAG="$STATE_DIR/ENABLED"
@@ -251,23 +252,11 @@ run_cycle() {
     return 0
 }
 
-case "$LOOP_SECONDS" in
-    ''|*[!0-9]*)
-        echo "ABORT=INVALID_LOOP_SECONDS"
-        exit 2
-        ;;
-esac
-
-if [ "$LOOP_SECONDS" -lt 10 ]; then
-    echo "ABORT=LOOP_SECONDS_TOO_LOW"
-    exit 3
-fi
-
-log "MIRROR_WORKER_STARTED=YES"
-log "LOOP_SECONDS=$LOOP_SECONDS"
-
-while [ "$RUNNING" -eq 1 ]; do
-    run_cycle
+run_reporting_pipeline() {
+    local REPORT_OUT=""
+    local REPORT_RC=0
+    local EXPORT_OUT=""
+    local EXPORT_RC=0
 
     if [ -x "$REPORTER" ]; then
         set +e
@@ -285,10 +274,53 @@ while [ "$RUNNING" -eq 1 ]; do
             if [ -n "$REPORT_OUT" ]; then
                 printf '%s\n' "$REPORT_OUT"
             fi
+            return 0
         fi
     else
         log "RESULT_REPORTER_AVAILABLE=NO"
+        return 0
     fi
+
+    if [ -x "$AUDIT_EXPORTER" ]; then
+        set +e
+        EXPORT_OUT="$("$AUDIT_EXPORTER" 2>&1)"
+        EXPORT_RC=$?
+        set -e
+
+        if [ "$EXPORT_RC" -eq 0 ]; then
+            if [ -n "$EXPORT_OUT" ]; then
+                printf '%s\n' "$EXPORT_OUT"
+            fi
+        else
+            log "AUDIT_EXPORTER_ERROR=YES"
+            log "AUDIT_EXPORTER_RC=$EXPORT_RC"
+            if [ -n "$EXPORT_OUT" ]; then
+                printf '%s\n' "$EXPORT_OUT"
+            fi
+        fi
+    else
+        log "AUDIT_EXPORTER_AVAILABLE=NO"
+    fi
+}
+
+case "$LOOP_SECONDS" in
+    ''|*[!0-9]*)
+        echo "ABORT=INVALID_LOOP_SECONDS"
+        exit 2
+        ;;
+esac
+
+if [ "$LOOP_SECONDS" -lt 10 ]; then
+    echo "ABORT=LOOP_SECONDS_TOO_LOW"
+    exit 3
+fi
+
+log "MIRROR_WORKER_STARTED=YES"
+log "LOOP_SECONDS=$LOOP_SECONDS"
+
+while [ "$RUNNING" -eq 1 ]; do
+    run_cycle
+    run_reporting_pipeline
 
     if [ "$RUNNING" -eq 0 ]; then
         break
