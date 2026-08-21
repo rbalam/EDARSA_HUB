@@ -1,0 +1,165 @@
+name: Comercial Reconciliacion Global Audit
+
+on:
+  pull_request:
+    branches: [Edarsahub_Desarrollo]
+    paths:
+      - ".github/workflows/comercial-reconciliacion-global-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reconciliacion:
+    name: KPI vs detalle por sucursal y fecha
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "HRLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install SQL dependency
+        run: python -m pip install pymssql
+
+      - name: Reconcile KPI vs detail read-only
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          import pymssql
+          from decimal import Decimal
+
+          conn = pymssql.connect(
+              server=os.environ["EDARSAHUB_SQL_HOST"],
+              port=int(os.environ["EDARSAHUB_SQL_PORT"]),
+              user=os.environ["EDARSAHUB_SQL_USER"],
+              password=os.environ["EDARSAHUB_SQL_PASSWORD"],
+              database=os.environ["EDARSAHUB_SQL_DATABASE"],
+              login_timeout=20,
+              timeout=60,
+          )
+          cur = conn.cursor(as_dict=True)
+
+          fecha_inicio = "2026-08-01"
+          fecha_fin = "2026-08-21"
+
+          sql = r"""
+          WITH KPI AS (
+              SELECT
+                  unidad_negocio_nombre,
+                  fecha_operacion,
+                  SUM(ISNULL(ventas_total,0)) AS venta_kpi,
+                  SUM(ISNULL(tickets_total,0)) AS tickets_kpi,
+                  SUM(ISNULL(pax_total,0)) AS pax_kpi
+              FROM dbo.Comercial_Inteligencia_VW_KPIsEjecutivos
+              WHERE fecha_operacion BETWEEN %s AND %s
+              GROUP BY unidad_negocio_nombre, fecha_operacion
+          ),
+          DET AS (
+              SELECT
+                  unidad_negocio_nombre,
+                  fecha_operacion,
+                  SUM(ISNULL(importe_neto,0)) AS venta_detalle,
+                  COUNT(DISTINCT numero_ticket) AS tickets_detalle,
+                  COUNT(*) AS lineas_detalle
+              FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
+              WHERE fecha_operacion BETWEEN %s AND %s
+                AND ISNULL(activo,1) = 1
+              GROUP BY unidad_negocio_nombre, fecha_operacion
+          )
+          SELECT
+              k.unidad_negocio_nombre AS sucursal,
+              k.fecha_operacion,
+              k.venta_kpi,
+              ISNULL(d.venta_detalle,0) AS venta_detalle,
+              k.venta_kpi - ISNULL(d.venta_detalle,0) AS delta_venta,
+              k.tickets_kpi,
+              ISNULL(d.tickets_detalle,0) AS tickets_detalle,
+              k.tickets_kpi - ISNULL(d.tickets_detalle,0) AS delta_tickets,
+              k.pax_kpi,
+              ISNULL(d.lineas_detalle,0) AS lineas_detalle,
+              CASE
+                  WHEN d.fecha_operacion IS NULL AND ISNULL(k.venta_kpi,0) > 0
+                      THEN 'CRITICO_SIN_DETALLE'
+                  WHEN ABS(k.venta_kpi - ISNULL(d.venta_detalle,0)) <= 0.05
+                      THEN 'OK'
+                  ELSE 'DIFERENCIA'
+              END AS estado
+          FROM KPI k
+          LEFT JOIN DET d
+            ON d.unidad_negocio_nombre = k.unidad_negocio_nombre
+           AND d.fecha_operacion = k.fecha_operacion
+          ORDER BY k.unidad_negocio_nombre, k.fecha_operacion;
+          """
+
+          cur.execute(sql, (fecha_inicio, fecha_fin, fecha_inicio, fecha_fin))
+          rows = cur.fetchall()
+
+          print("===== RESUMEN GLOBAL =====")
+          summary = {}
+          problemas = []
+          for row in rows:
+              suc = row["sucursal"]
+              item = summary.setdefault(suc, {"dias": 0, "ok": 0, "criticos": 0, "diferencias": 0, "delta_venta": Decimal("0")})
+              item["dias"] += 1
+              estado = row["estado"]
+              if estado == "OK":
+                  item["ok"] += 1
+              elif estado == "CRITICO_SIN_DETALLE":
+                  item["criticos"] += 1
+                  problemas.append(row)
+              else:
+                  item["diferencias"] += 1
+                  problemas.append(row)
+              item["delta_venta"] += Decimal(str(row["delta_venta"] or 0))
+
+          for suc, item in summary.items():
+              print({
+                  "sucursal": suc,
+                  "dias": item["dias"],
+                  "ok": item["ok"],
+                  "criticos": item["criticos"],
+                  "diferencias": item["diferencias"],
+                  "delta_venta_acumulado": str(item["delta_venta"]),
+              })
+
+          print("===== DIAS CON PROBLEMA =====")
+          for row in problemas:
+              print({
+                  "sucursal": row["sucursal"],
+                  "fecha": str(row["fecha_operacion"]),
+                  "estado": row["estado"],
+                  "venta_kpi": str(row["venta_kpi"]),
+                  "venta_detalle": str(row["venta_detalle"]),
+                  "delta_venta": str(row["delta_venta"]),
+                  "tickets_kpi": row["tickets_kpi"],
+                  "tickets_detalle": row["tickets_detalle"],
+                  "delta_tickets": row["delta_tickets"],
+                  "pax_kpi": row["pax_kpi"],
+                  "lineas_detalle": row["lineas_detalle"],
+              })
+
+          print("===== TOTAL =====")
+          print({
+              "filas_evaluadas": len(rows),
+              "problemas": len(problemas),
+              "estado_global": "OK" if not problemas else "PENDIENTES",
+          })
+
+          cur.close()
+          conn.close()
+          PY
