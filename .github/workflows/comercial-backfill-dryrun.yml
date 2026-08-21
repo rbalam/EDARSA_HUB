@@ -1,0 +1,56 @@
+name: Comercial Backfill Dry Run
+
+on:
+  pull_request:
+    branches: [Edarsahub_Desarrollo]
+    paths:
+      - ".github/workflows/comercial-backfill-dryrun.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dryrun:
+    name: Dry run detalle comercial 01-21 agosto
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "HRLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+      SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pymssql cryptography python-dotenv pydantic email-validator passlib bcrypt python-jose
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          test -n "$EDARSAHUB_SQL_PASSWORD"
+          test -n "$SERVER_SECRET_KEY"
+          echo "SECRETS_AVAILABLE=YES"
+
+      - name: Dry run canonical product detail
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          python scripts/poblar_ventas_detalle_producto_canonico.py \
+            --fecha-inicio 2026-08-01 \
+            --fecha-fin 2026-08-22 \
+            --excluir-abiertas
