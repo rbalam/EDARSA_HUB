@@ -9,6 +9,7 @@ APPLY="$DIR/apply_remote_update.sh"
 PUBLISH="$DIR/publish_local_snapshot.sh"
 FINALIZER="$DIR/finalize_local_snapshot.sh"
 STATUS="$DIR/mirror_sync_status.sh"
+REPORTER="$DIR/mirror_sync_result_reporter.py"
 
 STATE_DIR="$ROOT/.git/mirror-sync"
 ENABLE_FLAG="$STATE_DIR/ENABLED"
@@ -267,6 +268,27 @@ log "LOOP_SECONDS=$LOOP_SECONDS"
 
 while [ "$RUNNING" -eq 1 ]; do
     run_cycle
+
+    if [ -x "$REPORTER" ]; then
+        set +e
+        REPORT_OUT="$("$REPORTER" 2>&1)"
+        REPORT_RC=$?
+        set -e
+
+        if [ "$REPORT_RC" -eq 0 ]; then
+            if [ -n "$REPORT_OUT" ]; then
+                printf '%s\n' "$REPORT_OUT"
+            fi
+        else
+            log "RESULT_REPORTER_ERROR=YES"
+            log "RESULT_REPORTER_RC=$REPORT_RC"
+            if [ -n "$REPORT_OUT" ]; then
+                printf '%s\n' "$REPORT_OUT"
+            fi
+        fi
+    else
+        log "RESULT_REPORTER_AVAILABLE=NO"
+    fi
 
     if [ "$RUNNING" -eq 0 ]; then
         break
