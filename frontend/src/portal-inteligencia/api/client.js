@@ -85,11 +85,11 @@ export async function apiGet(path, params) {
   }
 }
 
-/** POST autenticado. Retorna { estado, data, status }. */
-export async function apiPost(path, payload) {
+/** POST autenticado. `config` permite overrides puntuales (p.ej. timeout). */
+export async function apiPost(path, payload, config = {}) {
   if (!haySesion()) return { estado: ESTADO.SIN_SESION, data: null, status: 0 };
   try {
-    const res = await intelApi.post(path, payload);
+    const res = await intelApi.post(path, payload, config);
     return { estado: ESTADO.OK, data: res.data, status: res.status };
   } catch (err) {
     const status = err?.response?.status;
