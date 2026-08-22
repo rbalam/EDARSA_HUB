@@ -64,19 +64,32 @@ def _conciliacion(fi: date, ff: date, unidad: Optional[str]) -> Dict[str, Any]:
           {kpi_filter}
         GROUP BY k.unidad_negocio_id, k.unidad_negocio_nombre, k.fecha_operacion
     ),
-    DET AS (
+    DET_TICKET AS (
         SELECT
             d.unidad_negocio_id,
             d.unidad_negocio_nombre,
             d.fecha_operacion,
-            SUM(ISNULL(d.importe_neto,0)) AS venta_detalle,
-            COUNT(DISTINCT d.numero_ticket) AS tickets_detalle,
-            COUNT(*) AS lineas_detalle
+            d.numero_ticket,
+            SUM(ISNULL(d.importe_neto,0)) AS venta_ticket,
+            MAX(ISNULL(d.pax,0)) AS pax_ticket,
+            COUNT(*) AS lineas_ticket
         FROM dbo.Comercial_Inteligencia_VentasDetalleProducto d
         WHERE d.fecha_operacion BETWEEN %s AND %s
           AND ISNULL(d.activo,1) = 1
           {det_filter}
-        GROUP BY d.unidad_negocio_id, d.unidad_negocio_nombre, d.fecha_operacion
+        GROUP BY d.unidad_negocio_id, d.unidad_negocio_nombre, d.fecha_operacion, d.numero_ticket
+    ),
+    DET AS (
+        SELECT
+            unidad_negocio_id,
+            MAX(unidad_negocio_nombre) AS unidad_negocio_nombre,
+            fecha_operacion,
+            SUM(venta_ticket) AS venta_detalle,
+            COUNT(*) AS tickets_detalle,
+            SUM(pax_ticket) AS pax_detalle,
+            SUM(lineas_ticket) AS lineas_detalle
+        FROM DET_TICKET
+        GROUP BY unidad_negocio_id, fecha_operacion
     )
     SELECT
         k.unidad_negocio_id AS unidad_codigo,
@@ -89,12 +102,15 @@ def _conciliacion(fi: date, ff: date, unidad: Optional[str]) -> Dict[str, Any]:
         ISNULL(d.tickets_detalle,0) AS tickets_detalle,
         k.tickets_kpi - ISNULL(d.tickets_detalle,0) AS delta_tickets,
         k.pax_kpi,
+        ISNULL(d.pax_detalle,0) AS pax_detalle,
+        k.pax_kpi - ISNULL(d.pax_detalle,0) AS delta_pax,
         ISNULL(d.lineas_detalle,0) AS lineas_detalle,
         CASE
             WHEN d.fecha_operacion IS NULL AND ISNULL(k.venta_kpi,0) > 0
                 THEN 'PENDIENTE_SIN_DETALLE'
             WHEN ABS(k.venta_kpi - ISNULL(d.venta_detalle,0)) <= 0.05
                  AND k.tickets_kpi = ISNULL(d.tickets_detalle,0)
+                 AND k.pax_kpi = ISNULL(d.pax_detalle,0)
                 THEN 'SINCRONIZADO'
             ELSE 'NO_CUADRA_REVISAR'
         END AS estado
@@ -139,6 +155,8 @@ def _conciliacion(fi: date, ff: date, unidad: Optional[str]) -> Dict[str, Any]:
             "tickets_detalle": int(row.get("tickets_detalle") or 0),
             "delta_tickets": int(row.get("delta_tickets") or 0),
             "pax_kpi": int(row.get("pax_kpi") or 0),
+            "pax_detalle": int(row.get("pax_detalle") or 0),
+            "delta_pax": int(row.get("delta_pax") or 0),
             "lineas_detalle": int(row.get("lineas_detalle") or 0),
         })
 
