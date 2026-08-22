@@ -32,7 +32,11 @@ export function SyncControlPanel({ unidad, fechaInicio, fechaFin, onUpdated }) {
     if (!fechaInicio || !fechaFin) return;
     setRepairing(true);
     setError('');
-    const res = await apiPost('/inteligencia/sync/sincronizar-pendientes', payload);
+    const res = await apiPost(
+      '/inteligencia/sync/sincronizar-pendientes',
+      payload,
+      { timeout: 300000 },
+    );
     if (res.estado !== ESTADO.OK || !res.data) {
       setError('La sincronización no pudo completarse. Ninguna fecha que no concilie debe escribirse.');
     } else {
