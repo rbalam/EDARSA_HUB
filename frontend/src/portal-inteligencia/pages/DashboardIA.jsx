@@ -14,6 +14,7 @@ import { EstadoVacio } from '../components/EstadoVacio';
 import { PeriodoSelector } from '../components/PeriodoSelector';
 import { ExportButtons } from '../components/ExportButtons';
 import { TicketDrilldownModal } from '../components/TicketDrilldownModal';
+import { SyncControlPanel } from '../components/SyncControlPanel';
 
 const fmtTrend = (t) => (t === null || t === undefined) ? null : `${t >= 0 ? '+' : ''}${Number(t).toFixed(1)}%`;
 
@@ -91,6 +92,8 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
       },
       trends: result.kpis_trends || {},
       periodoLabel: result.filtros?.periodo_label || '',
+      fechaInicio: result.filtros?.fecha_inicio || '',
+      fechaFin: result.filtros?.fecha_fin || '',
       ventasHorario: result.ventas_horario || [],
       topProductos: (result.top_productos || []).map(p => ({ nombre: p.producto, ventas: p.ventas, cantidad: p.cantidad })),
       topCasas: result.casas_distribuidoras || [],
@@ -184,6 +187,13 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
             rows={exportRows} meta={meta} testid="dashboard-export" />
         </div>
       </div>
+
+      <SyncControlPanel
+        unidad={unidadSeleccionada}
+        fechaInicio={data.fechaInicio}
+        fechaFin={data.fechaFin}
+        onUpdated={fetchDashboardData}
+      />
 
       {/* KPIs principales (Ventas + promedios canónicos arriba) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
