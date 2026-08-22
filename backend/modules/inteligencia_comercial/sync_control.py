@@ -46,14 +46,14 @@ def _conciliacion(fi: date, ff: date, unidad: Optional[str]) -> Dict[str, Any]:
     kpi_filter = ""
     det_filter = ""
     if unidad_codigo:
-        kpi_filter = " AND k.unidad_negocio_codigo = %s"
+        kpi_filter = " AND k.unidad_negocio_id = %s"
         det_filter = " AND d.unidad_negocio_id = %s"
         params = [fi, ff, unidad_codigo, fi, ff, unidad_codigo]
 
     sql = f"""
     WITH KPI AS (
         SELECT
-            k.unidad_negocio_codigo,
+            k.unidad_negocio_id,
             k.unidad_negocio_nombre,
             k.fecha_operacion,
             SUM(ISNULL(k.ventas_total,0)) AS venta_kpi,
@@ -62,7 +62,7 @@ def _conciliacion(fi: date, ff: date, unidad: Optional[str]) -> Dict[str, Any]:
         FROM dbo.Comercial_Inteligencia_VW_KPIsEjecutivos k
         WHERE k.fecha_operacion BETWEEN %s AND %s
           {kpi_filter}
-        GROUP BY k.unidad_negocio_codigo, k.unidad_negocio_nombre, k.fecha_operacion
+        GROUP BY k.unidad_negocio_id, k.unidad_negocio_nombre, k.fecha_operacion
     ),
     DET AS (
         SELECT
@@ -79,7 +79,7 @@ def _conciliacion(fi: date, ff: date, unidad: Optional[str]) -> Dict[str, Any]:
         GROUP BY d.unidad_negocio_id, d.unidad_negocio_nombre, d.fecha_operacion
     )
     SELECT
-        k.unidad_negocio_codigo AS unidad_codigo,
+        k.unidad_negocio_id AS unidad_codigo,
         k.unidad_negocio_nombre AS sucursal,
         k.fecha_operacion,
         k.venta_kpi,
@@ -100,7 +100,7 @@ def _conciliacion(fi: date, ff: date, unidad: Optional[str]) -> Dict[str, Any]:
         END AS estado
     FROM KPI k
     LEFT JOIN DET d
-      ON d.unidad_negocio_id = k.unidad_negocio_codigo
+      ON d.unidad_negocio_id = k.unidad_negocio_id
      AND d.fecha_operacion = k.fecha_operacion
     ORDER BY k.unidad_negocio_nombre, k.fecha_operacion
     """
