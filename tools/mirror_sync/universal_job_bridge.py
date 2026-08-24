@@ -2,7 +2,7 @@
 """Universal GitHub queue bridge for the EDARSAHUB worker.
 
 The queue lives in the dedicated `worker/requests` branch. This program only
-receives and validates jobs and materializes them locally for the runtime worker.
+receives and validates jobs and materializes them locally for the dispatcher.
 It deliberately does not execute arbitrary shell supplied by a request.
 """
 
@@ -20,8 +20,10 @@ from typing import Any
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 STATE = ROOT / ".git" / "universal-worker-queue"
 PENDING = STATE / "pending"
+PROCESSING = STATE / "processing"
 REJECTED = STATE / "rejected"
 DONE = STATE / "done"
+RESULTS = STATE / "results"
 REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
 QUEUE_BRANCH = os.environ.get("EDARSAHUB_QUEUE_BRANCH", "worker/requests")
 SCHEMA = "edarsahub.worker-job.v1"
@@ -35,11 +37,12 @@ def git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=check,
+        env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
     )
 
 
 def ensure_dirs() -> None:
-    for path in (PENDING, REJECTED, DONE):
+    for path in (PENDING, PROCESSING, REJECTED, DONE, RESULTS):
         path.mkdir(parents=True, exist_ok=True)
 
 
@@ -72,25 +75,20 @@ def validate(job: Any) -> list[str]:
 def queue_files() -> list[str]:
     git("fetch", "--quiet", REMOTE, QUEUE_BRANCH)
     listing = git("ls-tree", "-r", "--name-only", f"{REMOTE}/{QUEUE_BRANCH}", "worker_queue/inbox")
-    return [
-        line.strip()
-        for line in listing.stdout.splitlines()
-        if line.strip().startswith("worker_queue/inbox/") and line.strip().endswith(".json")
-    ]
+    return [line.strip() for line in listing.stdout.splitlines() if line.strip().startswith("worker_queue/inbox/") and line.strip().endswith(".json")]
 
 
 def read_remote(path: str) -> str:
     return git("show", f"{REMOTE}/{QUEUE_BRANCH}:{path}").stdout
 
 
+def already_claimed(name: str) -> bool:
+    return any((folder / name).exists() for folder in (PENDING, PROCESSING, DONE, REJECTED))
+
+
 def write_rejection(source: str, reason: list[str], raw: str = "") -> None:
     name = Path(source).name
-    payload = {
-        "source": source,
-        "status": "REJECTED",
-        "reasons": reason,
-        "received_at_utc": datetime.now(timezone.utc).isoformat(),
-    }
+    payload = {"source": source, "status": "REJECTED", "reasons": reason, "received_at_utc": datetime.now(timezone.utc).isoformat()}
     (REJECTED / name).write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
     if raw:
         (REJECTED / f"{name}.raw").write_text(raw)
@@ -101,7 +99,7 @@ def receive() -> int:
     accepted = rejected = skipped = 0
     for path in queue_files():
         name = Path(path).name
-        if (PENDING / name).exists() or (DONE / name).exists() or (REJECTED / name).exists():
+        if already_claimed(name):
             skipped += 1
             continue
         raw = read_remote(path)
@@ -116,12 +114,7 @@ def receive() -> int:
             write_rejection(path, errors, raw)
             rejected += 1
             continue
-        envelope = {
-            "received_at_utc": datetime.now(timezone.utc).isoformat(),
-            "queue_branch": QUEUE_BRANCH,
-            "queue_path": path,
-            "job": job,
-        }
+        envelope = {"received_at_utc": datetime.now(timezone.utc).isoformat(), "queue_branch": QUEUE_BRANCH, "queue_path": path, "job": job}
         (PENDING / name).write_text(json.dumps(envelope, ensure_ascii=False, indent=2) + "\n")
         accepted += 1
     print(f"UNIVERSAL_QUEUE_ACCEPTED={accepted}")
@@ -133,8 +126,10 @@ def receive() -> int:
 def status() -> int:
     ensure_dirs()
     print(f"UNIVERSAL_QUEUE_PENDING={len(list(PENDING.glob('*.json')))}")
+    print(f"UNIVERSAL_QUEUE_PROCESSING={len(list(PROCESSING.glob('*.json')))}")
     print(f"UNIVERSAL_QUEUE_REJECTED={len(list(REJECTED.glob('*.json')))}")
     print(f"UNIVERSAL_QUEUE_DONE={len(list(DONE.glob('*.json')))}")
+    print(f"UNIVERSAL_QUEUE_RESULTS={len(list(RESULTS.glob('*.json')))}")
     return 0
 
 
