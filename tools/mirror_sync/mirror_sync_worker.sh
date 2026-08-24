@@ -13,6 +13,7 @@ REPORTER="$DIR/mirror_sync_result_reporter.py"
 AUDIT_EXPORTER="$DIR/mirror_sync_audit_exporter.py"
 UNIVERSAL_BRIDGE="$DIR/universal_job_bridge.py"
 UNIVERSAL_DISPATCHER="$DIR/universal_job_dispatcher.py"
+UNIVERSAL_RESULT_PUBLISHER="$DIR/universal_job_result_publisher.py"
 
 STATE_DIR="$ROOT/.git/mirror-sync"
 ENABLE_FLAG="$STATE_DIR/ENABLED"
@@ -74,6 +75,19 @@ dispatch_universal_jobs() {
     fi
 }
 
+publish_universal_results() {
+    if ! is_authorized; then return 0; fi
+    if [ -f "$UNIVERSAL_RESULT_PUBLISHER" ]; then
+        if run_tool "UNIVERSAL_JOB_RESULT_PUBLISHER" python3 "$UNIVERSAL_RESULT_PUBLISHER"; then
+            log "UNIVERSAL_JOB_RESULT_PUBLISHER_STATE=READY"
+        else
+            log "UNIVERSAL_JOB_RESULT_PUBLISHER_STATE=ERROR"
+        fi
+    else
+        log "UNIVERSAL_JOB_RESULT_PUBLISHER_AVAILABLE=NO"
+    fi
+}
+
 run_cycle() {
     local CHECK_OUT CHECK_RC PUBLISH_OUT PUBLISH_RC SNAPSHOT FINALIZE_RC
     if ! is_authorized; then log "STATE=DISABLED"; return 0; fi
@@ -132,6 +146,7 @@ while [ "$RUNNING" -eq 1 ]; do
     run_cycle
     receive_universal_jobs
     dispatch_universal_jobs
+    publish_universal_results
     run_reporting_pipeline
     [ "$RUNNING" -ne 0 ] || break
     sleep "$LOOP_SECONDS" & wait $! || true
