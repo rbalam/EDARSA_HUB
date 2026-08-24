@@ -1,5 +1,70 @@
 # EDARSAHUB V1.0 — Agent Operating Protocol
 
+## Arquitectura canónica multiagente
+
+Esta sección tiene prioridad cuando una instrucción operativa antigua contradiga el flujo multiagente actual.
+
+### Fuentes de verdad
+
+- Código: `rbalam/EDARSA_HUB`, rama `Edarsahub_Desarrollo`.
+- Evidencia y certificación: `rbalam/EDARSAHUB_AUDIT_EVIDENCE`.
+- Producción: `Edarsahub_Produccion`, fuera del flujo normal de desarrollo y sólo modificable mediante autorización explícita.
+
+`EDARSAHUB_AUDIT_EVIDENCE` NO es un repositorio paralelo de código. No se debe copiar bidireccionalmente el árbol de código entre ambos repositorios.
+
+Flujo canónico:
+
+`solicitud -> agente ejecutor -> Edarsahub_Desarrollo -> pruebas/verificación -> worker -> AUDIT_EVIDENCE -> resumen/certificación`
+
+Nunca:
+
+`AUDIT_EVIDENCE <-> copia de código <-> Edarsahub_Desarrollo`
+
+La evidencia puede referenciar archivos, commits y SHA del código; no debe convertirse en una segunda fuente de verdad del código.
+
+### Regla contra desviaciones
+
+Resolver el objetivo pedido sin cambiarlo por conveniencia técnica.
+
+No detener el trabajo sólo porque no exista acceso directo a `/app`, VS Code, terminal o runtime. Si el agente todavía puede auditar, modificar, revisar o guardar cambios de forma segura mediante GitHub u otro canal autorizado, debe continuar y dejar pendientes únicamente las comprobaciones que requieran realmente el runtime.
+
+No confundir `no tengo acceso a /app` con `no puedo continuar`.
+
+No inventar acceso inexistente. No declarar ejecutada una prueba que no se ejecutó. No crear una arquitectura paralela para evitar una limitación.
+
+### Roles
+
+Los agentes —ChatGPT, Claude, Copilot, Antigravity, Codex u otros— pueden auditar, diseñar, programar y revisar dentro de sus permisos reales.
+
+El worker de mirror es autoridad de integración, sincronización, verificación y apoyo a la certificación; NO es la única herramienta autorizada para programar y NO debe inventar cambios funcionales sólo por observar evidencia.
+
+La programación y la certificación final son responsabilidades separadas.
+
+### Concurrencia
+
+Antes de modificar un archivo, leer su versión actual. Si otro agente lo cambió, volver a leer e integrar sobre la versión vigente. No sobrescribir trabajo válido de otro agente.
+
+Un conflicto no autoriza `force push`, reset destructivo, clean destructivo ni pérdida de trabajo.
+
+### Criterio de terminado
+
+`JOB != DONE` hasta que, para el alcance que corresponda, exista evidencia de:
+
+1. cambio implementado;
+2. pruebas relevantes aprobadas;
+3. commit válido;
+4. ese commit publicado en `Edarsahub_Desarrollo`;
+5. evidencia que referencia esa misma versión;
+6. Producción no tocada salvo promoción explícitamente autorizada.
+
+Si falta una condición obligatoria, informar estado parcial o bloqueado; nunca inventar `DONE`, `CERTIFIED` o `100%`.
+
+### Resumen humano obligatorio
+
+Todo trabajo terminado, parcial o bloqueado debe acompañarse de un resumen en **"español", lenguaje natural**, entendible por una persona común de aproximadamente 13 años sin conocimientos de programación.
+
+Debe explicar: qué se hizo, qué cambió y para qué sirve, qué se comprobó, si funcionó, porcentaje real, qué falta y qué sigue. Los datos técnicos pueden ir al final como referencia y nunca sustituyen la explicación humana.
+
 ## Prioridad de herramientas
 
 Prioridad operativa:
@@ -12,338 +77,89 @@ No usar `.claude/agents` como fuente principal de configuración. Excepción per
 
 ## Rama y entorno
 
-- Trabajar desde la raíz del checkout verificado mediante
-  `git rev-parse --show-toplevel`.
-- En Preview puede usarse `/app`. Cuando `/app` no esté disponible, se permite
-  un checkout limpio en el workspace, siempre que la rama sea
-  `Edarsahub_Desarrollo`, el HEAD haya sido verificado y no se realicen cambios
-  remotos sin autorización explícita.
+- Trabajar desde la raíz del checkout verificado.
+- En Preview puede usarse `/app`. Cuando `/app` no esté disponible, continuar por un checkout limpio o GitHub cuando el canal disponible permita realizar el trabajo de forma segura.
 - Rama obligatoria: `Edarsahub_Desarrollo`.
 - No trabajar directo en `Edarsahub_Produccion`.
-- No hacer push, deploy, redeploy ni cambios remotos sin autorización explícita.
-- Antes de cualquier modificación:
-  - `git branch --show-current`
-  - `git status --short`
+- Antes de modificar, verificar rama, versión y estado por los medios disponibles.
 
-## Roles obligatorios
+## Máximas de arquitectura
 
-### EDARSA Auditor
+- Una sola fuente de verdad por dominio.
+- Auditar y reutilizar fuentes, tablas, servicios, catálogos y conectores canónicos antes de crear otros.
+- No duplicar lógica de negocio.
+- No usar MongoDB como fuente de negocio.
+- No crear conexiones LIVE para endpoints, tableros o reportes salvo excepción expresamente autorizada.
+- Frontend presenta; backend y SQL canónico determinan reglas y datos.
+- RBAC siempre obligatorio.
+- No hardcodes de políticas de negocio que deban ser configurables.
+- No mocks, stubs ni datos falsos como comportamiento productivo.
+- No ampliar el core cuando la funcionalidad pueda vivir en un módulo cohesionado.
+- No tocar Producción sin autorización explícita.
+- Ante incertidumbre de datos, permisos, fuente canónica o seguridad: fallar cerrado; no inventar.
 
-Función:
-- Auditar.
-- Leer código.
-- Leer SQL solo con `SELECT`.
-- Encontrar evidencia.
-- Reportar archivos y líneas exactas.
+## Roles operativos
 
-Prohibido:
-- Modificar archivos.
-- Crear parches.
-- Ejecutar DDL/DML.
-- Crear tablas, columnas, endpoints o fuentes.
-- Asumir estructura sin evidencia.
+### Auditor
+Audita, lee código y encuentra evidencia. No modifica el sistema cuando está actuando exclusivamente como auditor.
 
-Salida mínima:
-- Archivos revisados.
-- Líneas exactas.
-- Fuente de datos detectada.
-- Riesgos.
-- Recomendación sin patch.
-- Scripts de validación sugeridos.
+### Coder
+Implementa cambios mínimos basados en evidencia. No debilita RBAC, no crea fuentes paralelas, no usa mocks ni hardcodes y no toca Producción.
 
-### EDARSA Coder
+### Validator
+Valida independientemente el cambio, pruebas, build, seguridad, RBAC y fuentes canónicas. Puede bloquear un cierre inseguro.
 
-Función:
-- Implementar cambios mínimos basados en evidencia previa.
-- Modificar solo archivos necesarios.
-- Mantener contratos existentes salvo autorización explícita.
-
-Prohibido:
-- Tocar producción.
-- Hacer push/deploy.
-- Crear tablas/columnas/migraciones sin autorización.
-- Tocar backups.
-- Debilitar RBAC.
-- Usar mocks.
-- Usar hardcodes.
-- Usar MongoDB en módulos críticos.
-- Crear fuentes paralelas.
-
-Salida mínima:
-- Archivos modificados.
-- Diff resumido.
-- Validaciones ejecutadas.
-- Riesgos restantes.
-- No hacer commit salvo instrucción explícita.
-
-### EDARSA Validator
-
-Función:
-- Validar de forma independiente.
-- Revisar diff.
-- Ejecutar pruebas/build/checks.
-- Bloquear cambios inseguros.
-
-Prohibido:
-- Implementar features.
-- Modificar archivos salvo autorización explícita.
-- Hacer commit/push/deploy.
-
-Salida mínima:
-- Resultado: APROBADO o BLOQUEADO.
-- Evidencia.
-- Validaciones ejecutadas.
-- Riesgos restantes.
-- Recomendación: commit, corregir o revertir.
+### Committer / integrador
+Sólo integra cambios que hayan superado las validaciones exigidas por el alcance. Nunca usa operaciones destructivas para resolver concurrencia.
 
 ## Base de datos
 
-Regla general:
-- Agentes solo pueden auditar con `SELECT`.
-- Prohibido ejecutar:
-  - `DROP`
-  - `TRUNCATE`
-  - `ALTER`
-  - `CREATE TABLE`
-  - `DELETE`
-  - `UPDATE`
-  - `INSERT`
-  - `MERGE`
-  - `EXEC`
-  - `sp_`
-- No imprimir secretos.
-- No exponer `.env`.
-- No usar credenciales de escritura para agentes.
+Los cambios de base de datos requieren alcance y autorización adecuados. Nunca imprimir secretos ni exponer `.env`. Las auditorías deben preferir lectura. DDL/DML no autorizado queda prohibido.
 
 ## Comercial / Inteligencia / Ejecutivo
 
-Reglas obligatorias:
 - KPI `Ventas` = `ventas_total` con IVA.
 - No usar `ventas_sin_propina`, subtotal, venta neta o venta sin IVA como venta principal.
 - `cheque_promedio` = `ventas_total / tickets_total` o `ventas_total / cheques_total`.
 - Consumo por persona = `ventas_total / pax_total`.
-- No existe KPI válido `pax_promedio = pax / tickets`.
-- Backend calcula KPIs.
-- Frontend solo pinta valores del backend.
+- Backend calcula KPIs; frontend sólo presenta valores del backend.
 
 ## Unidad de negocio
 
-Fuente canónica:
-- `dbo.Unidades_Negocio`.
+Fuente canónica: `dbo.Unidades_Negocio`.
+Servicios canónicos: `core.unidades_service.UnidadesService` y `core.corporate_filters.service.CorporateFilterService`.
+Llave operativa: `unidad_negocio_pk`.
 
-Servicio canónico:
-- `core.unidades_service.UnidadesService`.
-- `core.corporate_filters.service.CorporateFilterService`.
+No derivar unidades desde vistas runtime, ventas, KPIs, `SELECT DISTINCT` operativo ni datos del periodo.
 
-Llave operativa:
-- `unidad_negocio_pk`.
+## Artefactos y seguridad del repositorio
 
-Reglas:
-- `codigo` es compatibilidad/display legacy.
-- `nombre` es display, no llave primaria.
-- No filtrar por `unidad_negocio_nombre` como llave principal.
-- No derivar filtros desde vistas runtime, ventas, KPIs, `SELECT DISTINCT` operativo ni datos del periodo.
-- `ORIGEN` solo puede aparecer si existe activo en `dbo.Unidades_Negocio`.
+Todo agente o automatización debe respetar `scripts/agent_guardrails/validate_repository_artifacts.py`.
 
-## Fuentes prohibidas para módulos críticos
+- No `git add .`, `git add -A` ni `git add --all` en automatizaciones.
+- Auditorías, dumps, traces, patches, logs y salidas reproducibles van a `/tmp` por defecto o al repositorio de evidencia cuando formen parte de una certificación válida.
+- No incorporar respaldos, dumps, temporales, secretos, credenciales ni `.env`.
+- Validator y automatizaciones que creen commits deben ejecutar los guardrails aplicables antes de aprobar o integrar.
 
-- MongoDB.
-- Conexiones live para endpoints/tableros/reportes de usuario.
-- Mocks.
-- Hardcodes.
-- Fuentes paralelas.
-- Tablas duplicadas.
-- Columnas duplicadas.
-- Backups como fuente funcional.
+## Memoria técnica obligatoria
 
-## Flujo obligatorio
+Antes de modificar Scheduler, leer las reglas y documentos vigentes de Scheduler bajo `.agents/rules` y `docs/operacion`.
 
-1. Auditor produce evidencia.
-2. Usuario autoriza alcance.
-3. Coder aplica patch mínimo.
-4. Validator valida.
-5. Usuario decide commit.
-6. Deploy solo con autorización explícita.
+Antes de modificar Operaciones, Inventarios o Compras, leer `.agents/rules/edarsa-inventarios-compras-lessons.md` y los contratos canónicos vigentes en `docs/operacion`.
 
-## Validaciones mínimas
+## Contexto universal antes de trabajar
 
-Siempre que aplique:
-- `git diff --check`
-- `python -m py_compile` en Python modificado
-- build frontend si se tocó frontend
-- revisión de `git diff --stat`
-- revisión de riesgos DB/RBAC/canónico
+Leer cuando estén disponibles:
 
-## Regla de bloqueo
+1. `docs/agent-governance/AGENT_POLICY.md`
+2. `docs/agent-governance/checkpoints/CURRENT.md`
+3. `docs/agent-governance/decisions/ACTIVE_DECISIONS.md`
+4. `docs/agent-governance/lessons/ARCHITECTURAL_FAILURES_AND_LESSONS.md`
+5. documentos EKS aplicables
+6. `memory/PRD.md`
 
-Si hay duda sobre fuente canónica, permisos, RBAC, DB o producción:
-- detener
-- reportar evidencia
-- no modificar
+En un checkout con herramientas locales, ejecutar los preflight/guardrails definidos por el repositorio. Si el agente opera únicamente mediante GitHub y no dispone de shell, no debe fingir haberlos ejecutado: continúa con las acciones seguras disponibles y deja esas comprobaciones para el worker/runtime.
 
+## Regla final de autonomía
 
-## GitHub Copilot / VS Code
-
-GitHub Copilot tambien es agente operativo dentro de VS Code.
-
-### EDARSA Copilot Supervisor
-
-Función:
-- Coordinar Auditor, Coder y Validator.
-- Mantener alcance.
-- Pedir evidencia.
-- Bloquear acciones inseguras.
-
-Prohibido:
-- No modificar archivos.
-- No hacer patch.
-- No commit.
-- No push.
-- No deploy.
-- No SQL destructivo.
-
-Uso recomendado:
-1. Copilot Supervisor recibe la solicitud.
-2. Supervisor manda a Auditor si falta evidencia.
-3. Supervisor manda a Coder solo si hay autorización.
-4. Supervisor manda a Validator para aprobar o bloquear.
-
-### EDARSA Committer
-
-Committer controlado. Solo crea commits locales despues de `EDARSA Validator` con veredicto `APROBADO`.
-
-Reglas:
-
-- No push.
-- No deploy.
-- No Produccion.
-- No reset.
-- No checkout destructivo.
-- No SQL.
-- No secretos.
-- Stage solo archivos aprobados.
-- Commit local con mensaje convencional.
-
-### Flujo autonomo entre agentes
-
-Cadena por defecto:
-
-`Supervisor -> Auditor -> Coder dry-run -> Validator pre-patch -> Coder patch -> Validator final -> Committer -> Supervisor`
-
-Cada agente debe emitir bloque `HANDOFF` con `next_agent`, `reason` y `mode`.
-
-<!-- EDARSAHUB_ATOMIC_WORKFLOW_START -->
-
-## MÁXIMA DE ORO — CAMBIOS ATÓMICOS Y BASE ESTABLE
-
-1. Trabajar sobre una rama, HEAD y workspace verificados.
-2. Un bloque de trabajo corresponde a un solo objetivo funcional.
-3. No mezclar dominios ni restaurar masivamente stashes, recoveries o worktrees.
-4. Si existía una versión funcional, recuperarla y comparar antes de crear lógica nueva.
-5. No parchar sin evidencia exacta de la causa.
-6. Modificar únicamente los archivos declarados en el alcance.
-7. Validar el dominio antes de ampliar el trabajo.
-8. No incorporar respaldos, dumps, archivos temporales ni salidas de herramientas.
-9. Commit, push, deploy y SQL requieren autorización expresa.
-10. Ante una condición inesperada, detenerse y reportar; no improvisar.
-
-Documento normativo:
-`docs/operacion/MODO_TRABAJO_CAMBIOS_ATOMICOS.md`
-
-<!-- EDARSAHUB_ATOMIC_WORKFLOW_END -->
-
-<!-- EDARSAHUB_REPOSITORY_ARTIFACT_GUARD_START -->
-
-## Candado canónico de artefactos del repositorio
-
-Todo humano, agente autónomo, Copilot, Codex, Emergent, workflow o proceso
-automatizado que prepare cambios para EDARSAHUB debe respetar
-`scripts/agent_guardrails/validate_repository_artifacts.py`.
-
-Reglas fail-closed:
-
-1. Prohibido `git add .`, `git add -A` y `git add --all` en automatizaciones.
-   El stage debe declarar archivos explícitos.
-2. Auditorías, dumps, traces, patches, logs y salidas reproducibles deben
-   generarse en `/tmp` por defecto.
-3. Nuevos `.txt`, `.json`, `.patch`, `.sql`, `.log` y `.csv` en la raíz del
-   repositorio están bloqueados.
-4. Patrones de outputs generados como `edarsahub_*`, `v1_*`, `auditoria_*`,
-   `AUDITORIA_*`, `economia_*` y `joblogger_*` no pueden incorporarse en raíz.
-5. Archivo staged mayor a 5 MiB: bloqueado.
-6. Archivo staged mayor a 20 MiB: bloqueo fuerte.
-7. Más de 25 MiB agregados por cambio: bloqueado.
-8. Más de 50 archivos nuevos por cambio: bloqueado.
-9. Respaldos, dumps, outputs de herramientas y artefactos reproducibles no
-   deben versionarse salvo excepción explícita, documentada y auditada.
-10. Validator debe ejecutar el guard antes de aprobar.
-11. Committer debe ejecutar el guard sobre el index antes de commit.
-12. Automatizaciones que creen commits deben ejecutar el mismo guard después
-    del stage y antes del commit.
-13. Pre-commit y pre-push locales son capas adicionales; CI debe volver a
-    validar porque los hooks locales pueden omitirse con `--no-verify`.
-14. Una excepción nunca puede ser silenciosa ni introducir secretos,
-    credenciales, `.env`, dumps de datos sensibles o archivos operativos
-    protegidos.
-15. NetPay y su `.vendor` existente no se modifican ni eliminan como parte de
-    esta política sin una migración aislada previamente validada.
-
-El candado debe fallar cerrado ante una condición no reconocida.
-
-<!-- EDARSAHUB_REPOSITORY_ARTIFACT_GUARD_END -->
-
-<!-- EDARSAHUB_SCHEDULER_LESSONS_START -->
-
-## Scheduler — memoria técnica obligatoria
-
-Antes de modificar Scheduler, pausa/reanudación, startup, jobs o referencias
-legacy/Mongo, leer:
-
-- `.agents/rules/edarsa-scheduler-lessons.md`
-- `docs/ARQUITECTURA_SCHEDULER_PERSISTENCIA_ADMINISTRATIVA.md`
-- `docs/operacion/RETROSPECTIVA_SCHEDULER_PERSISTENCIA_20260818.md`
-- `docs/operacion/MONGO_REFERENCIAS_SCHEDULER_CLASIFICADAS.md`
-
-Estas fuentes existen para impedir que se repitan auditorías ya cerradas,
-falsos positivos por referencias textuales y errores de arquitectura ya
-corregidos.
-
-<!-- EDARSAHUB_SCHEDULER_LESSONS_END -->
-
-<!-- EDARSAHUB_INVENTORY_PURCHASES_LESSONS_START -->
-
-## Operaciones / Inventarios / Compras — memoria técnica obligatoria
-
-Antes de modificar Operaciones, Análisis de Inventarios, inventarios físicos,
-movimientos, sincronización de Compras o Auditoría Operativa de Compras, leer:
-
-- `.agents/rules/edarsa-inventarios-compras-lessons.md`
-- `docs/operacion/MEMORIA_ERRORES_CORREGIDOS_INVENTARIOS_COMPRAS_OPERACIONES.md`
-- `docs/operacion/CONTRATOS_CANONICOS_INVENTARIOS_Y_AUDITORIA_COMPRAS.md`
-
-No reabrir decisiones históricas ya clasificadas sin evidencia positiva nueva.
-
-<!-- EDARSAHUB_INVENTORY_PURCHASES_LESSONS_END -->
-
-
-# EDARSAHUB Universal Agent Instructions
-
-Before working:
-
-1. Read docs/agent-governance/AGENT_POLICY.md
-2. Read docs/agent-governance/checkpoints/CURRENT.md
-3. Read docs/agent-governance/decisions/ACTIVE_DECISIONS.md
-4. Read docs/agent-governance/lessons/ARCHITECTURAL_FAILURES_AND_LESSONS.md
-5. Read applicable EKS documents
-6. Read memory/PRD.md
-
-Then run:
-
-./tools/agent_guard/bootstrap_agent_context.sh
-./tools/agent_guard/preflight_agent.sh
-
-Continue only from NEXT.
-Do not repeat DO_NOT_REPEAT.
-Never guess.
-Audit before creating.
-Preserve shared workspace.
+Avanzar autónomamente dentro de los permisos y herramientas reales disponibles. No pedir al usuario copiar scripts cuando exista un canal autorizado que permita realizar directamente el cambio. No detenerse por una limitación secundaria cuando exista otra ruta segura y canónica para continuar.
