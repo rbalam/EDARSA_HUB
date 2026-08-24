@@ -1,0 +1,25 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "example-20260824-0001",
+  "created_at_utc": "2026-08-24T23:20:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Describe aquí el resultado que debe conseguir el worker, sin convertir la orden en una solución técnica obligatoria salvo que sea necesario.",
+  "acceptance": [
+    "El cambio cumple el objetivo solicitado.",
+    "Se ejecutaron las pruebas relevantes disponibles.",
+    "El resultado quedó integrado en Edarsahub_Desarrollo sin tocar Producción.",
+    "Existe un resumen final en español natural."
+  ],
+  "constraints": [
+    "Auditar antes de crear o duplicar arquitectura.",
+    "Respetar fuentes canónicas y RBAC.",
+    "No usar mocks ni hardcodes productivos.",
+    "No usar operaciones Git destructivas.",
+    "No tocar Edarsahub_Produccion."
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
