@@ -1,0 +1,24 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "bridge-smoke-20260824-001",
+  "created_at_utc": "2026-08-24T23:25:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Validar el nuevo puente universal. No modificar funcionalidad de negocio. Confirmar que el worker puede leer esta orden, aceptarla en su cola local y producir un resultado comprensible. Si alguna parte todavía no está conectada, reportarla sin inventar éxito.",
+  "acceptance": [
+    "El worker detecta esta orden desde la rama worker/requests.",
+    "La orden queda aceptada o rechazada con una razón explícita.",
+    "No se modifica funcionalidad de negocio ni Producción.",
+    "El resultado se explica en español natural."
+  ],
+  "constraints": [
+    "No modificar código de negocio.",
+    "No tocar Edarsahub_Produccion.",
+    "No usar operaciones Git destructivas.",
+    "No declarar éxito si la orden sólo fue recibida pero no procesada."
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
