@@ -12,6 +12,7 @@ STATUS="$DIR/mirror_sync_status.sh"
 REPORTER="$DIR/mirror_sync_result_reporter.py"
 AUDIT_EXPORTER="$DIR/mirror_sync_audit_exporter.py"
 UNIVERSAL_BRIDGE="$DIR/universal_job_bridge.py"
+UNIVERSAL_DISPATCHER="$DIR/universal_job_dispatcher.py"
 
 STATE_DIR="$ROOT/.git/mirror-sync"
 ENABLE_FLAG="$STATE_DIR/ENABLED"
@@ -57,6 +58,19 @@ receive_universal_jobs() {
         fi
     else
         log "UNIVERSAL_JOB_BRIDGE_AVAILABLE=NO"
+    fi
+}
+
+dispatch_universal_jobs() {
+    if ! is_authorized; then return 0; fi
+    if [ -f "$UNIVERSAL_DISPATCHER" ]; then
+        if run_tool "UNIVERSAL_JOB_DISPATCHER" python3 "$UNIVERSAL_DISPATCHER"; then
+            log "UNIVERSAL_JOB_DISPATCHER_STATE=READY"
+        else
+            log "UNIVERSAL_JOB_DISPATCHER_STATE=ERROR"
+        fi
+    else
+        log "UNIVERSAL_JOB_DISPATCHER_AVAILABLE=NO"
     fi
 }
 
@@ -117,6 +131,7 @@ log "MIRROR_WORKER_STARTED=YES"; log "LOOP_SECONDS=$LOOP_SECONDS"
 while [ "$RUNNING" -eq 1 ]; do
     run_cycle
     receive_universal_jobs
+    dispatch_universal_jobs
     run_reporting_pipeline
     [ "$RUNNING" -ne 0 ] || break
     sleep "$LOOP_SECONDS" & wait $! || true
