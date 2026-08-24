@@ -1,0 +1,28 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "bridge-close-loop-20260824-002",
+  "created_at_utc": "2026-08-24T23:58:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Certificar de punta a punta el puente universal ya construido. No cambiar funcionalidad de negocio. Verificar que el worker recibe esta orden, la procesa con el ejecutor autorizado, ejecuta comprobaciones relevantes del propio puente, publica el resultado en worker_queue/results y deja evidencia ligada exactamente al SHA procesado.",
+  "acceptance": [
+    "El worker detecta y acepta esta orden.",
+    "El worker comprueba el puente universal sin cambiar funcionalidad de negocio.",
+    "Las pruebas relevantes terminan en PASS.",
+    "El control de calidad termina en PASS.",
+    "El resultado queda publicado en worker_queue/results/bridge-close-loop-20260824-002.json.",
+    "La evidencia queda ligada al mismo SHA de Edarsahub_Desarrollo.",
+    "El resumen final se escribe en español natural entendible por una persona de 13 años."
+  ],
+  "constraints": [
+    "No modificar funcionalidad de negocio.",
+    "No tocar Produccion.",
+    "No usar operaciones Git destructivas.",
+    "No exponer secretos.",
+    "No declarar terminado si falta resultado, pruebas, control de calidad o coincidencia de SHA."
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
