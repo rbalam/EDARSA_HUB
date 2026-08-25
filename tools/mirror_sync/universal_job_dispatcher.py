@@ -128,7 +128,11 @@ def verify_expected_hash(path: Path, action: dict[str, Any]) -> None:
         raise RuntimeError(f"EXPECTED_SHA256_MISMATCH:{action['path']}:{actual}")
 
 
-def prepare_worktree(job_id: str, base_sha: str) -> tuple[Path, str]:
+def prepare_worktree(
+    job_id: str,
+    base_sha: str,
+    allowed_paths: list[str],
+) -> tuple[Path, str]:
     safe_id = re.sub(r"[^A-Za-z0-9._-]", "-", job_id)
     branch = f"worker/job/{safe_id}"
     path = WORKTREES / safe_id
@@ -144,39 +148,32 @@ def prepare_worktree(job_id: str, base_sha: str) -> tuple[Path, str]:
     if not guard.is_file():
         raise RuntimeError("AGENT_GUARD_NOT_FOUND")
 
-    register = run(
-        [
-            sys.executable,
-            str(guard),
-            "register",
-            "--role",
-            "agent",
-            "--agent-id",
-            agent_id,
-        ],
-        cwd=ROOT,
-    )
-    if register.returncode != 0:
-        raise RuntimeError(
-            f"AGENT_GUARD_REGISTER_FAILED:{register.stdout[-2000:]}"
-        )
+    if not allowed_paths:
+        raise RuntimeError("AGENT_GUARD_PATHS_REQUIRED")
+
+    command = [
+        sys.executable,
+        str(guard),
+        "worktree-create",
+        "--agent-id",
+        agent_id,
+        "--task-id",
+        safe_id,
+        "--description",
+        f"ChatGPT deterministic worker job {job_id}",
+        "--domain",
+        f"worker_job_{safe_id}",
+        "--branch",
+        branch,
+        "--directory",
+        str(path),
+    ]
+
+    for allowed_path in allowed_paths:
+        command.extend(["--path", allowed_path])
 
     created = run(
-        [
-            sys.executable,
-            str(guard),
-            "worktree-create",
-            "--agent-id",
-            agent_id,
-            "--task-id",
-            safe_id,
-            "--description",
-            f"ChatGPT deterministic worker job {job_id}",
-            "--branch",
-            branch,
-            "--directory",
-            str(path),
-        ],
+        command,
         cwd=ROOT,
     )
     if created.returncode != 0:
@@ -370,7 +367,18 @@ def process_one(path: Path) -> int:
         if expected_base and expected_base != base_sha:
             raise RuntimeError(f"BASE_SHA_MISMATCH:expected={expected_base}:actual={base_sha}")
         result["base_sha"] = base_sha
-        worktree, branch = prepare_worktree(job_id, base_sha)
+        requested_paths = sorted(
+            {
+                str(action.get("path"))
+                for action in (job.get("actions") or [])
+                if action.get("path")
+            }
+        )
+        worktree, branch = prepare_worktree(
+            job_id,
+            base_sha,
+            requested_paths,
+        )
         result["job_branch"] = branch
 
         allowed_files: set[str] = set()
