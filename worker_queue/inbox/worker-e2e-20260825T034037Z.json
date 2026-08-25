@@ -1,0 +1,20 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "worker-e2e-20260825T034037Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Crear el archivo docs/audits/worker-e2e-20260825T034037Z.md como evidencia de que esta orden fue ejecutada por el worker autonomo.",
+  "acceptance": [
+    "Crear docs/audits/worker-e2e-20260825T034037Z.md.",
+    "El archivo debe indicar el identificador worker-e2e-20260825T034037Z.",
+    "Realizar la validacion basica correspondiente.",
+    "Registrar el resultado del trabajo.",
+    "Crear un commit del trabajo realizado."
+  ],
+  "constraints": [
+    "El alcance se limita al archivo de evidencia indicado.",
+    "Produccion queda fuera del alcance."
+  ],
+  "human_summary_language": "es"
+}
