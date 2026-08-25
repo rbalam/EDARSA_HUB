@@ -9,12 +9,13 @@ import subprocess
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+import tempfile
 
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 STATE = ROOT / ".git" / "universal-worker-queue"
 REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
 BRANCH = os.environ.get("EDARSAHUB_QUEUE_BRANCH", "worker/requests")
-WT = Path("/tmp/edarsahub-worker-health-publish")
+WT = Path(tempfile.mkdtemp(prefix="edarsahub-worker-health-publish-"))
 MIN_INTERVAL = int(os.environ.get("EDARSAHUB_HEARTBEAT_SECONDS", "60"))
 STALE_SECONDS = int(os.environ.get("EDARSAHUB_JOB_STALE_SECONDS", "180"))
 STAMP = STATE / "last_health_publish_epoch"
