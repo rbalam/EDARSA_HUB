@@ -1,10 +1,10 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "00172b18ba18f098a5a72fcc825da81bc86dfc85",
-  "generated_at_utc": "2026-08-25T06:41:39Z",
+  "generated_at_utc": "2026-08-25T06:42:51Z",
   "jobs": [
     {
-      "age_seconds": 14996,
+      "age_seconds": 15067,
       "job_id": "bridge-canary-20260825T023103Z",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -13,7 +13,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 12869,
+      "age_seconds": 12941,
       "job_id": "bridge-canary-final-20260825T030637Z",
       "reasons": [
         "FORBIDDEN_DESTRUCTIVE_OPERATION_REQUESTED"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden, pero la rechazo porque no cumple las reglas de seguridad o formato. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 14579,
+      "age_seconds": 14651,
       "job_id": "bridge-canary2-20260825T023811Z",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -31,7 +31,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 14313,
+      "age_seconds": 14384,
       "job_id": "bridge-canary3-20260825T024234Z",
       "reasons": [
         "FORBIDDEN_DESTRUCTIVE_OPERATION_REQUESTED"
@@ -40,7 +40,7 @@
       "summary_es": "El worker recibio la orden, pero la rechazo porque no cumple las reglas de seguridad o formato. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 13830,
+      "age_seconds": 13901,
       "job_id": "bridge-canary3-20260825T024915Z",
       "reasons": [
         "FORBIDDEN_DESTRUCTIVE_OPERATION_REQUESTED"
@@ -49,7 +49,7 @@
       "summary_es": "El worker recibio la orden, pero la rechazo porque no cumple las reglas de seguridad o formato. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 20757,
+      "age_seconds": 20828,
       "job_id": "bridge-certification-20260824-004",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -58,7 +58,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 21579,
+      "age_seconds": 21650,
       "job_id": "bridge-close-loop-20260824-002",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -67,7 +67,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 21579,
+      "age_seconds": 21650,
       "job_id": "bridge-smoke-20260824-001",
       "reasons": [
         "FORBIDDEN_OPERATION_REQUESTED"
@@ -76,7 +76,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 9424,
+      "age_seconds": 9495,
       "job_id": "chatgpt-deterministic-cert-20260825-001",
       "reasons": [
         "INVALID_SCHEMA"
@@ -85,7 +85,7 @@
       "summary_es": "El worker recibio la orden, pero la rechazo porque no cumple las reglas de seguridad o formato. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 8311,
+      "age_seconds": 8382,
       "job_id": "chatgpt-deterministic-cert-20260825-002",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -94,7 +94,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 6280,
+      "age_seconds": 6351,
       "job_id": "chatgpt-deterministic-cert-20260825-003",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -103,7 +103,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 2312,
+      "age_seconds": 2384,
       "job_id": "chatgpt-deterministic-cert-20260825-004",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -112,7 +112,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 1632,
+      "age_seconds": 1703,
       "job_id": "chatgpt-deterministic-cert-20260825-005",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -121,7 +121,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 21579,
+      "age_seconds": 21650,
       "job_id": "finanzas-decision-pago-7requests-20260824",
       "reasons": [
         "FORBIDDEN_OPERATION_REQUESTED"
@@ -130,7 +130,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 21579,
+      "age_seconds": 21650,
       "job_id": "runtime-self-heal-20260824-003",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -139,7 +139,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 10787,
+      "age_seconds": 10858,
       "job_id": "worker-e2e-20260825T034037Z",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -148,67 +148,67 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 14994,
+      "age_seconds": 15065,
       "job_id": "bridge-canary-20260825T023103Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 14578,
+      "age_seconds": 14649,
       "job_id": "bridge-canary2-20260825T023811Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 20755,
+      "age_seconds": 20826,
       "job_id": "bridge-certification-20260824-004",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 21575,
+      "age_seconds": 21647,
       "job_id": "bridge-close-loop-20260824-002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 8308,
+      "age_seconds": 8380,
       "job_id": "chatgpt-deterministic-cert-20260825-002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 6279,
+      "age_seconds": 6351,
       "job_id": "chatgpt-deterministic-cert-20260825-003",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2312,
+      "age_seconds": 2383,
       "job_id": "chatgpt-deterministic-cert-20260825-004",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1629,
+      "age_seconds": 1700,
       "job_id": "chatgpt-deterministic-cert-20260825-005",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 378,
+      "age_seconds": 449,
       "job_id": "chatgpt-deterministic-cert-20260825-006",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 21503,
+      "age_seconds": 21574,
       "job_id": "runtime-self-heal-20260824-003",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 10489,
+      "age_seconds": 10560,
       "job_id": "worker-e2e-20260825T034037Z",
       "reason": null,
       "state": "RESULT_READY"
