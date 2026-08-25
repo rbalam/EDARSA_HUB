@@ -93,8 +93,13 @@ echo "===== 4. INCOMING PAYLOAD ====="
 git diff --name-status "$LOCAL_BEFORE" "$TARGET"
 
 INCOMING_COUNT="$(git diff --name-only "$LOCAL_BEFORE" "$TARGET" | wc -l)"
+INCOMING_RUNTIME_CHANGED="NO"
+if git diff --name-only "$LOCAL_BEFORE" "$TARGET" | grep -Eq '^tools/mirror_sync/(mirror_sync_worker\.sh|universal_job_bridge\.py|universal_job_dispatcher\.py|universal_job_result_publisher\.py|runtime_health_publisher\.py|apply_remote_update\.sh)$'; then
+    INCOMING_RUNTIME_CHANGED="YES"
+fi
 
 echo "INCOMING_FILES=$INCOMING_COUNT"
+echo "INCOMING_RUNTIME_CHANGED=$INCOMING_RUNTIME_CHANGED"
 
 echo
 echo "===== 5. PROTECT UNTRACKED COLLISIONS ====="
@@ -268,3 +273,30 @@ echo "STAGED_WORK=NONE"
 echo "UNTRACKED_PRESERVED=YES"
 echo "RECOVERY_REF=$BACKUP_REF"
 echo "PRODUCTION_TOUCHED=NO"
+
+# Bootstrap/self-heal: a long-running bash process keeps the old function bodies
+# in memory even after its file is fast-forwarded on disk. If this apply was
+# launched by the mirror worker and the incoming update changed worker runtime
+# files, terminate only that worker process. Supervisor's autorestart then starts
+# the freshly updated script from disk. Manual invocations are never signalled.
+echo
+echo "===== 13. WORKER RUNTIME RELOAD ====="
+if [ "$INCOMING_RUNTIME_CHANGED" = "YES" ]; then
+    PARENT_CMD="$(tr '\000' ' ' < "/proc/$PPID/cmdline" 2>/dev/null || true)"
+    if printf '%s' "$PARENT_CMD" | grep -q '/app/tools/mirror_sync/mirror_sync_worker.sh'; then
+        echo "WORKER_RUNTIME_RELOAD_REQUIRED=YES"
+        echo "WORKER_RUNTIME_PARENT_PID=$PPID"
+        echo "WORKER_RUNTIME_RELOAD_SIGNAL=HUP"
+        kill -HUP "$PPID" 2>/dev/null || {
+            echo "WORKER_RUNTIME_RELOAD_SIGNAL_FAILED=YES"
+            exit 60
+        }
+        echo "WORKER_RUNTIME_RELOAD_SIGNAL_SENT=YES"
+    else
+        echo "WORKER_RUNTIME_RELOAD_REQUIRED=NO"
+        echo "REASON=APPLY_NOT_LAUNCHED_BY_MIRROR_WORKER"
+    fi
+else
+    echo "WORKER_RUNTIME_RELOAD_REQUIRED=NO"
+    echo "REASON=NO_WORKER_RUNTIME_FILES_CHANGED"
+fi
