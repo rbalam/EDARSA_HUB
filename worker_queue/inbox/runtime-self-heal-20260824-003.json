@@ -1,0 +1,32 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "runtime-self-heal-20260824-003",
+  "created_at_utc": "2026-08-25T00:27:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Cerrar la autocuracion del worker al despertar. Audita primero la infraestructura mirror_sync existente. Integra el publicador tools/mirror_sync/runtime_health_publisher.py al ciclo real del worker, garantiza que despues de incorporar una actualizacion que cambie la infraestructura del propio worker el proceso se recargue de forma segura bajo Supervisor, y corrige el handoff para que Edarsahub_Desarrollo y mirror/emergent-live no vuelvan a quedar divergentes por una integracion del dispatcher. No cambiar funcionalidad de negocio.",
+  "acceptance": [
+    "El ciclo publica un heartbeat sanitario en worker_queue/status/latest.json sin secretos y sin generar commits cada minuto.",
+    "Una orden con mas de 180 segundos sin terminar aparece claramente como BLOCKED en el estado publico.",
+    "El worker recarga codigo nuevo de su propia infraestructura de forma segura despues de una actualizacion remota, sin intervencion manual en ciclos futuros.",
+    "Una integracion valida del dispatcher mantiene Edarsahub_Desarrollo y mirror/emergent-live convergentes o falla cerrada sin dejar una divergencia silenciosa.",
+    "Se agregan o actualizan pruebas automatizadas relevantes y terminan en PASS.",
+    "El control de calidad termina en PASS.",
+    "No se toca Produccion.",
+    "El resumen final se escribe en español natural entendible por una persona de 13 años."
+  ],
+  "constraints": [
+    "Auditar antes de modificar.",
+    "Reutilizar la arquitectura mirror_sync y universal worker existente; no crear un segundo worker paralelo.",
+    "No tocar funcionalidad de negocio.",
+    "No tocar Produccion.",
+    "No usar Git destructivo ni force-push.",
+    "No exponer secretos ni logs crudos en GitHub.",
+    "Mantener fail-closed: JOB no es DONE hasta pruebas PASS, commit, SHA en Edarsahub_Desarrollo y evidencia del mismo SHA.",
+    "No declarar terminado si falta alguna condicion de aceptacion."
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
