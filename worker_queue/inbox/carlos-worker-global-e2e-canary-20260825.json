@@ -1,0 +1,28 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "carlos-worker-global-e2e-canary-20260825",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "0dfb2c353e79dff7642d7caa35c2a6b981cc697d",
+  "objective": "Canario E2E para certificar que el worker autoriza a Carlos Ruiz por RBAC SQL canonico como SUPERADMIN, registra requester_authorization, ejecuta cambios deterministas, integra en Edarsahub_Desarrollo, converge mirror y publica resultado remoto sin tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "global",
+    "chat": "carlos-worker-global-e2e-canary"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/audits/carlos-worker-global-e2e-canary-20260825.md",
+      "content": "# Carlos worker global E2E canary\n\nJob: carlos-worker-global-e2e-canary-20260825\n\nRequester: carlosruz@edarsa.com.mx\n\nObjetivo: certificar el recorrido completo ChatGPT -> worker/requests -> RBAC SQL canonico -> worker determinista -> Edarsahub_Desarrollo -> mirror/emergent-live -> resultado remoto.\n\nProduccion: no tocada.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es"
+}
