@@ -132,12 +132,67 @@ def prepare_worktree(job_id: str, base_sha: str) -> tuple[Path, str]:
     safe_id = re.sub(r"[^A-Za-z0-9._-]", "-", job_id)
     branch = f"worker/job/{safe_id}"
     path = WORKTREES / safe_id
+    agent_id = f"worker-{safe_id}"
+
     if path.exists():
-        shutil.rmtree(path)
+        git("worktree", "remove", "--force", str(path), check=False)
+        shutil.rmtree(path, ignore_errors=True)
+
     git("branch", "-D", branch, check=False)
-    result = git("worktree", "add", "-b", branch, str(path), base_sha, check=False)
-    if result.returncode != 0:
-        raise RuntimeError(f"WORKTREE_CREATE_FAILED:{result.stdout[-2000:]}")
+
+    guard = ROOT / ".git" / "agent-guard" / "bin" / "agent_guard.py"
+    if not guard.is_file():
+        raise RuntimeError("AGENT_GUARD_NOT_FOUND")
+
+    register = run(
+        [
+            sys.executable,
+            str(guard),
+            "register",
+            "--role",
+            "agent",
+            "--agent-id",
+            agent_id,
+        ],
+        cwd=ROOT,
+    )
+    if register.returncode != 0:
+        raise RuntimeError(
+            f"AGENT_GUARD_REGISTER_FAILED:{register.stdout[-2000:]}"
+        )
+
+    created = run(
+        [
+            sys.executable,
+            str(guard),
+            "worktree-create",
+            "--agent-id",
+            agent_id,
+            "--task-id",
+            safe_id,
+            "--description",
+            f"ChatGPT deterministic worker job {job_id}",
+            "--branch",
+            branch,
+            "--directory",
+            str(path),
+        ],
+        cwd=ROOT,
+    )
+    if created.returncode != 0:
+        raise RuntimeError(
+            f"AGENT_GUARD_WORKTREE_CREATE_FAILED:{created.stdout[-2000:]}"
+        )
+
+    if not path.is_dir():
+        raise RuntimeError("AGENT_GUARD_WORKTREE_NOT_CREATED")
+
+    head = git("rev-parse", "HEAD", cwd=path).stdout.strip()
+    if head != base_sha:
+        raise RuntimeError(
+            f"WORKTREE_BASE_MISMATCH:expected={base_sha}:actual={head}"
+        )
+
     return path, branch
 
 
