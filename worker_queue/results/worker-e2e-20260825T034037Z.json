@@ -1,0 +1,22 @@
+{
+  "base_sha": "bac615f7ab86df1a72679a29205b1fc3fc83b861",
+  "blockers": [
+    "missing_worker_result",
+    "no_product_commit"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-25T03:46:50Z",
+  "executor": "codex",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-e2e-20260825T034037Z",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-08-25T04:45:48Z",
+  "schema": "edarsahub.worker-result.v1",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-25T03:41:52Z",
+  "status": "BLOCKED",
+  "work_completion": "NOT_CERTIFIED"
+}
