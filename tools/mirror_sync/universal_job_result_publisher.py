@@ -151,6 +151,36 @@ def prepare_queue_worktree() -> tuple[Path, str]:
 
     git("checkout", "--detach", base, cwd=WORKTREE_ROOT)
 
+    # El clone temporal no hereda la configuracion local de /app.
+    # Copiar explicitamente el helper funcional evita caer en el
+    # helper global de GitHub CLI, que puede no existir en runtime.
+    credential_helper = git(
+        "config",
+        "--local",
+        "--get",
+        "credential.helper",
+        cwd=ROOT,
+        check=False,
+    ).stdout.strip()
+
+    if not credential_helper:
+        raise RuntimeError("QUEUE_CREDENTIAL_HELPER_NOT_FOUND")
+
+    git(
+        "config",
+        "--local",
+        "credential.helper",
+        credential_helper,
+        cwd=WORKTREE_ROOT,
+    )
+    git(
+        "config",
+        "--local",
+        "credential.useHttpPath",
+        "true",
+        cwd=WORKTREE_ROOT,
+    )
+
     return WORKTREE_ROOT, base
 
 
