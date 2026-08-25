@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-rbac-requester-layer-20260825",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "53acb26cd5ea1368ff1d0f496856685082781665",
+  "objective": "Agregar una capa canonica de autorizacion y trazabilidad de requester al bridge del worker, resolviendo usuarios activos y rol SUPERADMIN desde EDARSAHUB SQL sin hardcodes de correo y preservando compatibilidad legacy mientras EDARSAHUB_WORKER_REQUIRE_REQUESTER permanezca desactivado.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "worker-rbac-bootstrap"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "tools/mirror_sync/worker_requester_rbac.py",
+      "content": "#!/usr/bin/env python3\n\"\"\"Canonical SQL-first requester authorization for the ChatGPT worker.\n\nTransport authentication (GitHub) and EDARSAHUB functional authorization are\nseparate concerns. This module resolves the declared requester against the\ncanonical EDARSAHUB SQL user catalog and permits global worker use only for an\nactive SUPERADMIN. It never hardcodes user emails.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport sys\nfrom pathlib import Path\nfrom typing import Any\n\nROOT = Path(__file__).resolve().parents[2]\nBACKEND = ROOT / \"backend\"\nif str(BACKEND) not in sys.path:\n    sys.path.insert(0, str(BACKEND))\n\nfrom modules.auth.repository import AuthRepository\n\nSUPERADMIN_ROLE_CODES = {\"SUPERADMIN\"}\nSUPERADMIN_ROLE_NAMES = {\"SUPERADMINISTRADOR\", \"SUPER ADMINISTRADOR\"}\n\n\ndef _norm(value: Any) -> str:\n    return str(value or \"\").strip().upper()\n\n\ndef authorize_requester(requester: Any) -> dict[str, Any]:\n    if not isinstance(requester, dict):\n        return {\"allowed\": False, \"reason\": \"REQUESTER_REQUIRED\"}\n\n    email = str(requester.get(\"email\") or \"\").strip().lower()\n    if not email or \"@\" not in email:\n        return {\"allowed\": False, \"reason\": \"REQUESTER_EMAIL_INVALID\"}\n\n    try:\n        user = AuthRepository.get_user_by_email(email)\n    except Exception:\n        return {\"allowed\": False, \"reason\": \"REQUESTER_RBAC_LOOKUP_FAILED\"}\n\n    if not user:\n        return {\"allowed\": False, \"reason\": \"REQUESTER_NOT_FOUND\"}\n    if not bool(user.get(\"active\")):\n        return {\"allowed\": False, \"reason\": \"REQUESTER_INACTIVE\"}\n\n    role_code = _norm(user.get(\"role_code\") or user.get(\"_sql_rol_codigo\"))\n    role_name = _norm(user.get(\"role\"))\n    if role_code not in SUPERADMIN_ROLE_CODES and role_name not in SUPERADMIN_ROLE_NAMES:\n        return {\n            \"allowed\": False,\n            \"reason\": \"REQUESTER_NOT_SUPERADMIN\",\n            \"usuario_id\": user.get(\"UsuarioID\") or user.get(\"_sql_usuario_id\"),\n            \"role_code\": role_code,\n            \"role\": role_name,\n        }\n\n    return {\n        \"allowed\": True,\n        \"reason\": \"SUPERADMIN_CANONICAL\",\n        \"usuario_id\": user.get(\"UsuarioID\") or user.get(\"_sql_usuario_id\"),\n        \"email\": str(user.get(\"email\") or email).strip().lower(),\n        \"role_code\": role_code,\n        \"role\": role_name,\n        \"auth_source\": user.get(\"auth_source\") or \"SQL_USUARIO_CATALOGO\",\n        \"request_source\": str(requester.get(\"source\") or \"\").strip(),\n        \"project\": str(requester.get(\"project\") or \"\").strip(),\n        \"chat\": str(requester.get(\"chat\") or \"\").strip(),\n    }\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "expected_count": 1,
+      "old": "MAX_TEXT_BYTES = int(os.environ.get(\"EDARSAHUB_JOB_MAX_TEXT_BYTES\", \"2000000\"))\n",
+      "new": "MAX_TEXT_BYTES = int(os.environ.get(\"EDARSAHUB_JOB_MAX_TEXT_BYTES\", \"2000000\"))\nREQUIRE_REQUESTER = os.environ.get(\"EDARSAHUB_WORKER_REQUIRE_REQUESTER\", \"0\") == \"1\"\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "expected_count": 1,
+      "old": "    if job.get(\"human_summary_language\") != \"es\":\n        errors.append(\"SUMMARY_LANGUAGE_MUST_BE_ES\")\n    actions = job.get(\"actions\")\n",
+      "new": "    if job.get(\"human_summary_language\") != \"es\":\n        errors.append(\"SUMMARY_LANGUAGE_MUST_BE_ES\")\n    requester = job.get(\"requester\")\n    if requester is None:\n        if REQUIRE_REQUESTER:\n            errors.append(\"REQUESTER_REQUIRED\")\n    elif not isinstance(requester, dict):\n        errors.append(\"REQUESTER_MUST_BE_OBJECT\")\n    else:\n        email = str(requester.get(\"email\") or \"\").strip()\n        source = str(requester.get(\"source\") or \"\").strip()\n        if not email or \"@\" not in email:\n            errors.append(\"REQUESTER_EMAIL_INVALID\")\n        if not source:\n            errors.append(\"REQUESTER_SOURCE_REQUIRED\")\n        for field in (\"project\", \"chat\"):\n            value = requester.get(field)\n            if value is not None and not isinstance(value, str):\n                errors.append(f\"REQUESTER_{field.upper()}_MUST_BE_STRING\")\n    actions = job.get(\"actions\")\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "expected_count": 1,
+      "old": "        errors = validate(job)\n        if errors:\n            write_rejection(path, errors, raw)\n            rejected += 1\n            continue\n        envelope = {\n            \"received_at_utc\": datetime.now(timezone.utc).isoformat(),\n            \"queue_branch\": QUEUE_BRANCH,\n            \"queue_path\": path,\n            \"job\": job,\n        }\n",
+      "new": "        errors = validate(job)\n        if errors:\n            write_rejection(path, errors, raw)\n            rejected += 1\n            continue\n\n        requester_authorization = {\n            \"allowed\": True,\n            \"reason\": \"LEGACY_REQUESTER_NOT_ENFORCED\",\n        }\n        if job.get(\"requester\") is not None:\n            try:\n                from worker_requester_rbac import authorize_requester\n                requester_authorization = authorize_requester(job.get(\"requester\"))\n            except Exception:\n                requester_authorization = {\n                    \"allowed\": False,\n                    \"reason\": \"REQUESTER_RBAC_RUNTIME_ERROR\",\n                }\n            if not requester_authorization.get(\"allowed\"):\n                write_rejection(\n                    path,\n                    [f\"REQUESTER_RBAC_DENIED:{requester_authorization.get('reason', 'UNKNOWN')}\"],\n                    raw,\n                )\n                rejected += 1\n                continue\n\n        envelope = {\n            \"received_at_utc\": datetime.now(timezone.utc).isoformat(),\n            \"queue_branch\": QUEUE_BRANCH,\n            \"queue_path\": path,\n            \"requester_authorization\": requester_authorization,\n            \"job\": job,\n        }\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_requester_rbac_contract.py",
+      "content": "from pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\nBRIDGE = ROOT / 'tools/mirror_sync/universal_job_bridge.py'\nRBAC = ROOT / 'tools/mirror_sync/worker_requester_rbac.py'\n\n\ndef read(path):\n    return path.read_text(encoding='utf-8')\n\n\ndef test_worker_requester_rbac_is_sql_first_and_not_email_hardcoded():\n    text = read(RBAC)\n    assert 'AuthRepository.get_user_by_email(email)' in text\n    assert 'SQL_USUARIO_CATALOGO' in text\n    assert 'carlosruz@edarsa.com.mx' not in text\n    assert 'SUPERADMIN_ROLE_CODES' in text\n    assert 'REQUESTER_INACTIVE' in text\n\n\ndef test_bridge_tracks_requester_and_preserves_legacy_compatibility():\n    text = read(BRIDGE)\n    assert 'EDARSAHUB_WORKER_REQUIRE_REQUESTER' in text\n    assert 'requester_authorization' in text\n    assert 'REQUESTER_RBAC_DENIED' in text\n    assert 'LEGACY_REQUESTER_NOT_ENFORCED' in text\n    assert 'production_allowed' in text\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/worker_requester_rbac.py",
+        "backend/tests/test_worker_requester_rbac_contract.py"
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
