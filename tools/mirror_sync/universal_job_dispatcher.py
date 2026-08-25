@@ -144,6 +144,10 @@ def prepare_worktree(
 
     git("branch", "-D", branch, check=False)
 
+    # El job debe ejecutarse exactamente sobre el base_sha autorizado.
+    # No usar implicitamente el HEAD local, que puede estar atras de Desarrollo.
+    git("branch", branch, base_sha)
+
     guard = ROOT / ".git" / "agent-guard" / "bin" / "agent_guard.py"
     if not guard.is_file():
         raise RuntimeError("AGENT_GUARD_NOT_FOUND")
