@@ -1,0 +1,23 @@
+{
+  "base_sha": "d096e23aa1cc03c7a2696a199af43399d46e0911",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:WORKTREE_BASE_MISMATCH:expected=d096e23aa1cc03c7a2696a199af43399d46e0911:actual=00172b18ba18f098a5a72fcc825da81bc86dfc85"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-25T06:48:53Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "chatgpt-post-integration-mirror-fix-20260825-007",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-08-25T07:05:24Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-25T06:48:50Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
