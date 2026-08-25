@@ -1,0 +1,27 @@
+{
+  "base_sha": "9b72bea32e0c3fe58b18215a859f9b79f8cdbfe4",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:GIT_FAILED:-c user.name=EDARSAHUB Worker -c user.email=worker@edarsahub.local commit -m worker(chatgpt-deterministic-cert-20260825-002): apply ChatGPT deterministic changes:.vscode/tasks.json:1:1: error: AGENT_GUARD: worktree no registrado\n"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-25T04:23:10Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/audits/chatgpt-deterministic-worker-cert-20260825-002.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "chatgpt-deterministic-cert-20260825-002",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-08-25T04:45:36Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-25T04:23:08Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
