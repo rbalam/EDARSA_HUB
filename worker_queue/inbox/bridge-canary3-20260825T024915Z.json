@@ -1,0 +1,22 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "bridge-canary3-20260825T024915Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Prueba canario del executor universal. Crear solamente docs/audits/bridge-canary3-20260825T024915Z.md como evidencia de que el worker autonomo ejecuto correctamente. No modificar logica de negocio ni Produccion.",
+  "acceptance": [
+    "Crear solamente docs/audits/bridge-canary3-20260825T024915Z.md como cambio funcional del job.",
+    "Crear .worker-result.json con summary_es, tests PASS, quality_gate PASS, files_changed y blockers vacio.",
+    "Hacer exactamente un commit local cuyo mensaje empiece con worker(bridge-canary3-20260825T024915Z):",
+    "No hacer push desde Codex."
+  ],
+  "constraints": [
+    "No tocar Produccion.",
+    "No modificar otros archivos.",
+    "No force-push.",
+    "No reset --hard.",
+    "No git clean destructivo."
+  ],
+  "human_summary_language": "es"
+}
