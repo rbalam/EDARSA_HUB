@@ -175,6 +175,11 @@ def main() -> int:
         ROOT,
     )
 
+    if not WT.is_dir():
+        raise RuntimeError(
+            "HEALTH_WORKTREE_NOT_CREATED: temporary clone failed"
+        )
+
     git("checkout", "--detach", base, cwd=WT)
     try:
         dst = WT / "worker_queue" / "status" / "latest.json"

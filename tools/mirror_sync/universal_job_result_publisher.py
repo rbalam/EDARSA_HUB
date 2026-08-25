@@ -144,6 +144,11 @@ def prepare_queue_worktree() -> tuple[Path, str]:
         cwd=ROOT,
     )
 
+    if not WORKTREE_ROOT.is_dir():
+        raise RuntimeError(
+            "RESULT_WORKTREE_NOT_CREATED: temporary clone failed"
+        )
+
     git("checkout", "--detach", base, cwd=WORKTREE_ROOT)
 
     return WORKTREE_ROOT, base
