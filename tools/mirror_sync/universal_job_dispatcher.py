@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Fail-closed dispatcher for EDARSAHUB universal worker jobs.
+"""Deterministic dispatcher for EDARSAHUB ChatGPT-controlled worker jobs.
 
-The receiver (`universal_job_bridge.py`) only validates and materializes jobs.
-This dispatcher claims one pending job, runs an allow-listed local executor in an
-isolated git worktree, validates the produced commit, and integrates it into
-Edarsahub_Desarrollo only when the branch has not moved and all declared checks
-pass. Results are written locally for a separate publisher to send back to the
-`worker/requests` branch.
+ChatGPT decides the exact repository changes and sends them as structured
+``edarsahub.worker-job.v2`` actions. This dispatcher applies only those actions,
+runs only allow-listed validations, verifies the exact changed-file scope,
+creates one commit, and integrates it into ``Edarsahub_Desarrollo``.
 
-No command supplied by a job is ever executed.
+No secondary AI executor is called. No shell command supplied by a job is ever
+executed.
 """
 
 from __future__ import annotations
 
 import fcntl
+import hashlib
 import json
 import os
 import re
@@ -36,16 +36,26 @@ WORKTREES = Path(os.environ.get("EDARSAHUB_JOB_WORKTREES", "/tmp/edarsahub-worke
 LOCK_FILE = STATE / "dispatcher.lock"
 REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
 DEV_BRANCH = "Edarsahub_Desarrollo"
-EXECUTOR = os.environ.get("EDARSAHUB_JOB_EXECUTOR", "codex")
 MAX_SECONDS = int(os.environ.get("EDARSAHUB_JOB_MAX_SECONDS", "1800"))
 JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
+ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
+ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build"}
 
 
 def now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def run(args: list[str], cwd: Path | None = None, check: bool = False, timeout: int | None = None):
+def run(
+    args: list[str],
+    cwd: Path | None = None,
+    check: bool = False,
+    timeout: int | None = None,
+    env_extra: dict[str, str] | None = None,
+):
+    env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
+    if env_extra:
+        env.update(env_extra)
     return subprocess.run(
         args,
         cwd=str(cwd or ROOT),
@@ -54,7 +64,7 @@ def run(args: list[str], cwd: Path | None = None, check: bool = False, timeout: 
         stderr=subprocess.STDOUT,
         check=check,
         timeout=timeout,
-        env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+        env=env,
     )
 
 
@@ -88,50 +98,34 @@ def load_envelope(path: Path) -> dict[str, Any]:
     return data
 
 
-def resolve_codex() -> str | None:
-    explicit = os.environ.get("EDARSAHUB_CODEX_BIN")
-    if explicit and Path(explicit).is_file() and os.access(explicit, os.X_OK):
-        return explicit
-    found = shutil.which("codex")
-    if found:
-        return found
-    candidates = sorted(Path("/root/.local/share/code-server/extensions").glob("openai.chatgpt-*/bin/*/codex"))
-    for candidate in reversed(candidates):
-        if candidate.is_file() and os.access(candidate, os.X_OK):
-            return str(candidate)
-    return None
+def safe_path(worktree: Path, relative: str) -> Path:
+    rel = Path(relative)
+    if rel.is_absolute() or ".." in rel.parts or (rel.parts and rel.parts[0] == ".git"):
+        raise ValueError(f"UNSAFE_PATH:{relative}")
+    target = (worktree / rel).resolve()
+    root = worktree.resolve()
+    if target != root and root not in target.parents:
+        raise ValueError(f"PATH_ESCAPES_WORKTREE:{relative}")
+    return target
 
 
-def human_prompt(job: dict[str, Any], base_sha: str, job_id: str) -> str:
-    acceptance = "\n".join(f"- {x}" for x in (job.get("acceptance") or []))
-    constraints = "\n".join(f"- {x}" for x in (job.get("constraints") or []))
-    return f"""EDARSAHUB — trabajo autónomo {job_id}
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
-Objetivo:
-{job.get('objective', '').strip()}
 
-Condiciones para aceptar el trabajo:
-{acceptance or '- Cumplir exactamente el objetivo.'}
-
-Restricciones obligatorias:
-{constraints or '- Respetar AGENTS.md y las reglas canónicas del repositorio.'}
-
-Reglas adicionales obligatorias:
-- Lee AGENTS.md y la documentación de gobierno aplicable antes de modificar.
-- Trabaja únicamente dentro de este checkout aislado.
-- Rama objetivo final: {DEV_BRANCH}.
-- Base exacta al iniciar: {base_sha}.
-- No tocar Producción.
-- No force-push, reset --hard ni clean destructivo.
-- No exponer secretos.
-- Audita antes de crear arquitectura nueva.
-- Ejecuta las pruebas relevantes disponibles para el cambio.
-- Si existe un bloqueo real, no inventes éxito.
-- Al terminar deja TODOS los cambios válidos en un commit local.
-- El mensaje del commit debe comenzar con: worker({job_id}):
-- No empujes a GitHub; el integrador lo hará después de validar.
-- Genera un archivo `.worker-result.json` en la raíz con: summary_es, tests, quality_gate, files_changed, blockers. El resumen debe estar en "español", lenguaje natural, entendible por una persona de 13 años sin conocimientos de programación.
-"""
+def verify_expected_hash(path: Path, action: dict[str, Any]) -> None:
+    expected = action.get("expected_sha256")
+    if expected is None:
+        return
+    if not path.is_file():
+        raise RuntimeError(f"EXPECTED_FILE_MISSING:{action['path']}")
+    actual = sha256_file(path)
+    if actual != expected:
+        raise RuntimeError(f"EXPECTED_SHA256_MISMATCH:{action['path']}:{actual}")
 
 
 def prepare_worktree(job_id: str, base_sha: str) -> tuple[Path, str]:
@@ -147,66 +141,125 @@ def prepare_worktree(job_id: str, base_sha: str) -> tuple[Path, str]:
     return path, branch
 
 
-def execute_codex(worktree: Path, prompt: str) -> tuple[int, str]:
-    codex = resolve_codex()
-    if not codex:
-        return 127, "CODEX_EXECUTOR_NOT_AVAILABLE"
-    # `codex exec` is non-interactive. The prompt is a single argument, never a shell command.
-    cmd = [
-        codex,
-        "exec",
-        "--sandbox",
-        "workspace-write",
-        "-C",
-        str(worktree),
-        prompt,
-    ]
+def apply_action(worktree: Path, action: dict[str, Any]) -> str:
+    kind = str(action.get("type"))
+    if kind not in ALLOWED_ACTIONS:
+        raise ValueError(f"UNSUPPORTED_ACTION:{kind}")
+    relative = str(action.get("path") or "")
+    target = safe_path(worktree, relative)
+    verify_expected_hash(target, action)
+
+    if kind == "replace_text":
+        if not target.is_file():
+            raise RuntimeError(f"REPLACE_TARGET_MISSING:{relative}")
+        old = action["old"]
+        new = action["new"]
+        expected_count = int(action.get("expected_count", 1))
+        text = target.read_text(encoding="utf-8")
+        actual_count = text.count(old)
+        if actual_count != expected_count:
+            raise RuntimeError(
+                f"REPLACE_COUNT_MISMATCH:{relative}:expected={expected_count}:actual={actual_count}"
+            )
+        target.write_text(text.replace(old, new), encoding="utf-8")
+        return relative
+
+    if kind == "write_file":
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(action["content"], encoding="utf-8")
+        return relative
+
+    if kind == "delete_file":
+        if not target.is_file():
+            raise RuntimeError(f"DELETE_TARGET_MISSING:{relative}")
+        target.unlink()
+        return relative
+
+    raise ValueError(f"UNSUPPORTED_ACTION:{kind}")
+
+
+def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
+    kind = str(check.get("type"))
+    started = now()
+    if kind == "git_diff_check":
+        cmd = ["git", "diff", "--check"]
+        cwd = worktree
+    elif kind == "py_compile":
+        paths = [str(p) for p in check.get("paths") or []]
+        cmd = [sys.executable, "-m", "py_compile", *paths]
+        cwd = worktree
+    elif kind == "pytest":
+        paths = [str(p) for p in check.get("paths") or []]
+        cmd = [sys.executable, "-m", "pytest", "-q", *paths]
+        cwd = worktree
+    elif kind == "frontend_build":
+        directory = safe_path(worktree, str(check.get("directory", "frontend")))
+        cmd = ["yarn", "build"]
+        cwd = directory
+    else:
+        raise ValueError(f"UNSUPPORTED_CHECK:{kind}")
+
     try:
-        result = run(cmd, cwd=worktree, timeout=MAX_SECONDS)
-        return result.returncode, result.stdout[-20000:]
+        result = run(cmd, cwd=cwd, timeout=MAX_SECONDS)
+        output = result.stdout[-12000:]
+        return {
+            "type": kind,
+            "status": "PASS" if result.returncode == 0 else "FAIL",
+            "returncode": result.returncode,
+            "started_at_utc": started,
+            "completed_at_utc": now(),
+            "output": output,
+        }
     except subprocess.TimeoutExpired as exc:
-        text = (exc.stdout or "") if isinstance(exc.stdout, str) else ""
-        return 124, f"EXECUTOR_TIMEOUT\n{text[-10000:]}"
+        text = exc.stdout if isinstance(exc.stdout, str) else ""
+        return {
+            "type": kind,
+            "status": "FAIL",
+            "returncode": 124,
+            "started_at_utc": started,
+            "completed_at_utc": now(),
+            "output": f"TIMEOUT\n{text[-8000:]}",
+        }
 
 
-def validate_result_file(worktree: Path) -> tuple[dict[str, Any] | None, list[str]]:
-    path = worktree / ".worker-result.json"
-    if not path.is_file():
-        return None, ["missing_worker_result"]
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        return None, ["invalid_worker_result_json"]
+def changed_files(worktree: Path, base_sha: str) -> list[str]:
+    result = git("diff", "--name-only", base_sha, "--", cwd=worktree)
+    staged_or_untracked = git("status", "--porcelain=v1", cwd=worktree).stdout.splitlines()
+    names = {line.strip() for line in result.stdout.splitlines() if line.strip()}
+    for line in staged_or_untracked:
+        if len(line) >= 4:
+            name = line[3:]
+            if " -> " in name:
+                name = name.split(" -> ", 1)[1]
+            names.add(name)
+    return sorted(names)
+
+
+def validate_scope(worktree: Path, base_sha: str, allowed: set[str]) -> list[str]:
+    actual = set(changed_files(worktree, base_sha))
+    extra = sorted(actual - allowed)
+    missing = sorted(allowed - actual)
     blockers: list[str] = []
-    if not str(data.get("summary_es") or "").strip():
-        blockers.append("missing_spanish_summary")
-    if str(data.get("tests") or "").upper() != "PASS":
-        blockers.append("tests_not_pass")
-    if str(data.get("quality_gate") or "").upper() != "PASS":
-        blockers.append("quality_gate_not_pass")
-    if data.get("blockers"):
-        blockers.append("executor_reported_blockers")
-    return data, blockers
+    if extra:
+        blockers.append("unexpected_files:" + ",".join(extra))
+    if missing:
+        blockers.append("expected_files_unchanged:" + ",".join(missing))
+    return blockers
 
 
-def validate_commit(worktree: Path, base_sha: str, job_id: str) -> tuple[str | None, list[str]]:
-    blockers: list[str] = []
-    status = git("status", "--porcelain=v1", cwd=worktree).stdout.splitlines()
-    # .worker-result.json is metadata and must not enter the product commit.
-    product_dirty = [line for line in status if not line.endswith(" .worker-result.json") and ".worker-result.json" not in line]
-    if product_dirty:
-        blockers.append("uncommitted_product_changes")
-    head = git("rev-parse", "HEAD", cwd=worktree).stdout.strip()
-    if head == base_sha:
-        blockers.append("no_product_commit")
-        return None, blockers
-    parent = git("rev-parse", f"{head}^", cwd=worktree, check=False)
-    if parent.returncode != 0 or parent.stdout.strip() != base_sha:
-        blockers.append("job_commit_not_single_fast_forward")
-    message = git("log", "-1", "--pretty=%s", cwd=worktree).stdout.strip()
-    if not message.startswith(f"worker({job_id}):"):
-        blockers.append("invalid_commit_message")
-    return head, blockers
+def create_commit(worktree: Path, job_id: str, files: list[str]) -> str:
+    git("add", "--", *files, cwd=worktree)
+    staged = git("diff", "--cached", "--name-only", cwd=worktree).stdout.splitlines()
+    if sorted(staged) != sorted(files):
+        raise RuntimeError("STAGED_SCOPE_MISMATCH")
+    message = f"worker({job_id}): apply ChatGPT deterministic changes"
+    git(
+        "-c", "user.name=EDARSAHUB Worker",
+        "-c", "user.email=worker@edarsahub.local",
+        "commit", "-m", message,
+        cwd=worktree,
+    )
+    return git("rev-parse", "HEAD", cwd=worktree).stdout.strip()
 
 
 def integrate(head: str, base_sha: str) -> tuple[bool, str]:
@@ -219,7 +272,11 @@ def integrate(head: str, base_sha: str) -> tuple[bool, str]:
         check = run([sys.executable, str(guard)], cwd=ROOT)
         if check.returncode != 0:
             return False, "repository_artifact_guard_failed"
-    push = run(["git", "push", REMOTE, f"{head}:refs/heads/{DEV_BRANCH}"], cwd=ROOT)
+    push = run(
+        ["git", "push", REMOTE, f"{head}:refs/heads/{DEV_BRANCH}"],
+        cwd=ROOT,
+        env_extra={"EDARSA_ALLOW_PUSH": "1"},
+    )
     if push.returncode != 0:
         return False, f"development_push_failed:{push.stdout[-1000:]}"
     git("fetch", REMOTE, DEV_BRANCH)
@@ -237,65 +294,81 @@ def process_one(path: Path) -> int:
     processing = PROCESSING / path.name
     os.replace(path, processing)
     result: dict[str, Any] = {
-        "schema": "edarsahub.worker-result.v1",
+        "schema": "edarsahub.worker-result.v2",
         "job_id": job_id,
         "started_at_utc": now(),
         "status": "BLOCKED",
-        "executor": EXECUTOR,
+        "executor": "chatgpt-deterministic",
         "production_touched": False,
         "blockers": [],
+        "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
     }
 
     worktree: Path | None = None
     branch = ""
     try:
+        if job.get("schema") != "edarsahub.worker-job.v2":
+            raise ValueError("UNSUPPORTED_JOB_SCHEMA")
         git("fetch", REMOTE, DEV_BRANCH)
         base_sha = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
+        expected_base = job.get("base_sha")
+        if expected_base and expected_base != base_sha:
+            raise RuntimeError(f"BASE_SHA_MISMATCH:expected={expected_base}:actual={base_sha}")
         result["base_sha"] = base_sha
         worktree, branch = prepare_worktree(job_id, base_sha)
         result["job_branch"] = branch
 
-        prompt = human_prompt(job, base_sha, job_id)
-        if EXECUTOR != "codex":
-            result["blockers"].append("unsupported_executor")
-            result["executor_output"] = f"Executor no permitido: {EXECUTOR}"
-        else:
-            rc, output = execute_codex(worktree, prompt)
-            result["executor_rc"] = rc
-            result["executor_output"] = output
-            if rc != 0:
-                result["blockers"].append("executor_failed")
+        allowed_files: set[str] = set()
+        for action in job.get("actions") or []:
+            relative = apply_action(worktree, action)
+            allowed_files.add(relative)
 
-        worker_result, report_blockers = validate_result_file(worktree)
-        result["blockers"].extend(report_blockers)
-        if worker_result:
-            result["summary_es"] = worker_result.get("summary_es")
-            result["tests"] = worker_result.get("tests")
-            result["quality_gate"] = worker_result.get("quality_gate")
-            result["files_changed"] = worker_result.get("files_changed") or []
+        scope_blockers = validate_scope(worktree, base_sha, allowed_files)
+        result["blockers"].extend(scope_blockers)
+        result["files_changed"] = changed_files(worktree, base_sha)
 
-        head, commit_blockers = validate_commit(worktree, base_sha, job_id)
-        result["blockers"].extend(commit_blockers)
-        if head:
+        check_results: list[dict[str, Any]] = []
+        if not result["blockers"]:
+            checks = job.get("checks") or [{"type": "git_diff_check"}]
+            for check in checks:
+                check_result = run_check(worktree, check)
+                check_results.append(check_result)
+                if check_result["status"] != "PASS":
+                    result["blockers"].append(f"check_failed:{check_result['type']}")
+                    break
+        result["checks"] = check_results
+        result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else (
+            "PASS" if not check_results and not result["blockers"] else "FAIL"
+        )
+        result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
+
+        head: str | None = None
+        if not result["blockers"]:
+            head = create_commit(worktree, job_id, sorted(allowed_files))
             result["candidate_sha"] = head
 
-        if not result["blockers"] and head:
+        if head:
             ok, detail = integrate(head, base_sha)
             if ok:
                 result["status"] = "INTEGRATED"
                 result["development_sha"] = head
                 result["percent_complete"] = 95
                 result["certification"] = "PENDING_AUDIT_EVIDENCE"
+                result["summary_es"] = "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada."
             else:
                 result["blockers"].append(detail)
 
         if result["status"] != "INTEGRATED":
-            result["percent_complete"] = 0 if "executor_failed" in result["blockers"] else 80
+            result["percent_complete"] = 80 if result["files_changed"] else 0
             result["certification"] = "NOT_CERTIFIED"
+            result["quality_gate"] = "FAIL"
+            result["summary_es"] = "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion."
     except Exception as exc:
         result["blockers"].append(f"dispatcher_exception:{type(exc).__name__}:{exc}")
         result["percent_complete"] = 0
         result["certification"] = "NOT_CERTIFIED"
+        result["quality_gate"] = "FAIL"
+        result["summary_es"] = "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada."
     finally:
         result["completed_at_utc"] = now()
         write_json(RESULTS / path.name, result)
