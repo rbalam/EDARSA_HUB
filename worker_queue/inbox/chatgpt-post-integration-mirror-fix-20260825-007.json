@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "chatgpt-post-integration-mirror-fix-20260825-007",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "d096e23aa1cc03c7a2696a199af43399d46e0911",
+  "objective": "Corregir la post-integracion para que DEV adelante de mirror por fast-forward sea un estado sincronizable y no una falsa divergencia; el apply debe avanzar mirror de forma fast-forward con revalidacion de concurrencia antes de actualizar el checkout local.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/check_remote_update.sh",
+      "old": "if [ \"$DEV\" != \"$MIRROR\" ]; then\n    echo \"DECISION=ABORT_DEV_MIRROR_DIVERGENCE\"\n    echo \"WRITE_OPERATION_EXECUTED=NO\"\n    exit 32\nfi",
+      "new": "if [ \"$DEV\" != \"$MIRROR\" ]; then\n    if git merge-base --is-ancestor \"$MIRROR\" \"$DEV\"; then\n        echo \"DEV_MIRROR_RELATION=DEV_FAST_FORWARD_AHEAD\"\n        echo \"MIRROR_FAST_FORWARD_REQUIRED=YES\"\n    else\n        echo \"DECISION=ABORT_DEV_MIRROR_TRUE_DIVERGENCE\"\n        echo \"WRITE_OPERATION_EXECUTED=NO\"\n        exit 32\n    fi\nelse\n    echo \"DEV_MIRROR_RELATION=ALIGNED\"\n    echo \"MIRROR_FAST_FORWARD_REQUIRED=NO\"\nfi",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/apply_remote_update.sh",
+      "old": "test \"$REMOTE_DEV\" = \"$REMOTE_MIRROR\" || {\n    echo \"ABORT=DEV_MIRROR_DIVERGENCE\"\n    exit 30\n}\n\nTARGET=\"$REMOTE_DEV\"",
+      "new": "MIRROR_FAST_FORWARD_REQUIRED=NO\nif [ \"$REMOTE_DEV\" != \"$REMOTE_MIRROR\" ]; then\n    git merge-base --is-ancestor \"$REMOTE_MIRROR\" \"$REMOTE_DEV\" || {\n        echo \"ABORT=DEV_MIRROR_TRUE_DIVERGENCE\"\n        exit 30\n    }\n    MIRROR_FAST_FORWARD_REQUIRED=YES\nfi\n\necho \"MIRROR_FAST_FORWARD_REQUIRED=$MIRROR_FAST_FORWARD_REQUIRED\"\nTARGET=\"$REMOTE_DEV\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/apply_remote_update.sh",
+      "old": "test \"$REMOTE_MIRROR_2\" = \"$TARGET\" || {\n    echo \"ABORT=MIRROR_MOVED_DURING_CHECK\"\n    exit 43\n}\n\necho\necho \"===== 9. FAST-FORWARD LOCAL ONLY =====\"",
+      "new": "test \"$REMOTE_MIRROR_2\" = \"$REMOTE_MIRROR\" || {\n    echo \"ABORT=MIRROR_MOVED_DURING_CHECK\"\n    exit 43\n}\n\nif [ \"$REMOTE_MIRROR_2\" != \"$TARGET\" ]; then\n    git merge-base --is-ancestor \"$REMOTE_MIRROR_2\" \"$TARGET\" || {\n        echo \"ABORT=MIRROR_NO_LONGER_FAST_FORWARDABLE\"\n        exit 44\n    }\n    echo\n    echo \"===== 9. FAST-FORWARD REMOTE MIRROR =====\"\n    EDARSA_ALLOW_PUSH=1 git push origin \"$TARGET:refs/heads/$MIRROR_BRANCH\" || {\n        echo \"ABORT=MIRROR_FAST_FORWARD_PUSH_FAILED\"\n        exit 45\n    }\n    git fetch origin \"$MIRROR_BRANCH\"\n    MIRROR_AFTER_PUSH=\"$(git rev-parse origin/$MIRROR_BRANCH)\"\n    echo \"MIRROR_AFTER_PUSH=$MIRROR_AFTER_PUSH\"\n    test \"$MIRROR_AFTER_PUSH\" = \"$TARGET\" || {\n        echo \"ABORT=MIRROR_FAST_FORWARD_VERIFY_FAILED\"\n        exit 46\n    }\nelse\n    echo \"MIRROR_ALREADY_AT_TARGET=YES\"\nfi\n\necho\necho \"===== 10. FAST-FORWARD LOCAL ONLY =====\"",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
