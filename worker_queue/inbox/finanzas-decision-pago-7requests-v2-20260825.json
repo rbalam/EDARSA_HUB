@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "finanzas-decision-pago-7requests-v2-20260825",
+  "created_at_utc": "2026-08-25T07:34:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Auditar y corregir el recorrido completo de solicitudes HTTP al abrir Finanzas > Decision de Pago siguiendo estrictamente la secuencia 1 a 7: (1) corregir la doble invocacion de loadCuentasPorPagar para que exista una sola carga efectiva; (2) hacer que Decision de Pago solicite solo los endpoints necesarios para su tablero; (3) usar decision-dashboard como fuente backend canonica y autoritativa para la carga inicial del tablero; (4) corregir la propagacion de current_user en el listado CxP para que la visibilidad y autorizacion individual use el usuario efectivo; (5) medir y probar decision-dashboard de forma aislada, documentando numero real de consultas y cargas, sin optimizaciones especulativas; (6) solo si la medicion demuestra lentitud residual, revisar SQL e indices manteniendo las fuentes canonicas y sin usar aumento del timeout global como solucion; (7) representar timeout, error o falta de respuesta mediante estados explicitos cargando, error o no disponible, y mostrar cero solo cuando el backend responda validamente con cero. Auditar especificamente los hasta 7 requests observados: dos tandas duplicadas de GET cuentas-por-pagar, resumen y proveedores, mas GET decision-dashboard. Verificar tambien cargas auxiliares iniciales de sucursales y categorias y confirmar cuales pertenecen al tablero. Mantener CxP SQL-first, RBAC, no LIVE, no Mongo, no datos demo y frontend limitado a presentar datos del backend. Trabajar solo sobre Edarsahub_Desarrollo y no desplegar a Produccion.",
+  "acceptance": [
+    "Al abrir Decision de Pago no existen dos tandas duplicadas de cuentas-por-pagar, resumen y proveedores.",
+    "La carga inicial de Decision de Pago usa decision-dashboard como fuente autoritativa y no depende de cxpData para sus KPI principales.",
+    "Saldo pendiente, seleccionado, autorizado, limite, disponible y utilizacion provienen del contrato backend decision-dashboard o muestran estado no disponible/error; nunca se fabrican ceros por falta de respuesta.",
+    "El boton Actualizar del tablero recarga decision-dashboard sin disparar innecesariamente la carga completa de CxP.",
+    "Cuentas por Pagar conserva su carga completa cuando se abre la pestana CxP.",
+    "_cxp_listar_canonico recibe current_user y lo pasa a _cxp_factura_dict; listar_facturas_pendientes propaga current_user.",
+    "Se auditan los 7 requests y se deja evidencia antes/despues del conteo esperado.",
+    "Se ejecutan pruebas backend relevantes y build/pruebas frontend disponibles; no declarar PASS si no corren.",
+    "No se aumenta axios timeout para ocultar el problema.",
+    "No se cambia ninguna fuente canonica: CxP sigue en dbo.Finanzas_CxP_Sync y compras historicas en dbo.Compras_Recepciones.",
+    "Cualquier optimizacion SQL queda sustentada por medicion previa.",
+    "Resumen final en espanol natural con archivos cambiados, pruebas, conteo de requests antes/despues y bloqueos reales."
+  ],
+  "constraints": [
+    "Leer AGENTS.md y gobierno del repositorio antes de modificar.",
+    "No tocar Edarsahub_Produccion ni desplegar a Produccion.",
+    "No usar conexiones LIVE, MongoDB, mocks ni datos demo.",
+    "No duplicar fuentes de verdad ni mover calculos financieros al frontend.",
+    "Respetar RBAC por unidad_negocio_pk y permisos FINANZAS_VER, FINANZAS_EDITAR y FINANZAS_ADMINISTRAR existentes.",
+    "No cambiar el timeout global de api.js como solucion de esta incidencia.",
+    "Preferir correccion minima y cohesionada; no crecer el core.",
+    "Antes de optimizar SQL, demostrar que el flujo de requests ya quedo reducido y medir el endpoint aislado.",
+    "Agregar o actualizar pruebas que detecten regresion de doble carga y falso cero cuando exista error o timeout.",
+    "Preservar trabajo existente no relacionado y evitar operaciones destructivas de git o filesystem."
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
