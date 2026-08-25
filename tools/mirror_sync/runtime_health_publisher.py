@@ -15,7 +15,6 @@ ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 STATE = ROOT / ".git" / "universal-worker-queue"
 REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
 BRANCH = os.environ.get("EDARSAHUB_QUEUE_BRANCH", "worker/requests")
-WT = Path(tempfile.mkdtemp(prefix="edarsahub-worker-health-publish-"))
 MIN_INTERVAL = int(os.environ.get("EDARSAHUB_HEARTBEAT_SECONDS", "60"))
 STALE_SECONDS = int(os.environ.get("EDARSAHUB_JOB_STALE_SECONDS", "180"))
 STAMP = STATE / "last_health_publish_epoch"
@@ -157,10 +156,15 @@ def main() -> int:
 
     git("fetch", REMOTE, BRANCH)
     base = git("rev-parse", f"{REMOTE}/{BRANCH}").stdout.strip()
-    if WT.exists():
-        shutil.rmtree(WT, ignore_errors=True)
 
-    WT.parent.mkdir(parents=True, exist_ok=True)
+    WT = Path(
+        tempfile.mkdtemp(
+            prefix="edarsahub-worker-health-publish-"
+        )
+    )
+
+    # git clone requiere que la ruta destino no exista.
+    shutil.rmtree(WT, ignore_errors=True)
 
     origin_url = git("remote", "get-url", REMOTE).stdout.strip()
 
