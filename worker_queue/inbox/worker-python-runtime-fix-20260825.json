@@ -1,0 +1,34 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-python-runtime-fix-20260825",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "53acb26cd5ea1368ff1d0f496856685082781665",
+  "objective": "Corregir el executor determinista para que py_compile y pytest usen el Python canonico del virtualenv del repositorio cuando exista, con sys.executable solo como fallback, y agregar regresion sin modificar el job CxP v3.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "def now() -> str:\n    return datetime.now(timezone.utc).strftime(\"%Y-%m-%dT%H:%M:%SZ\")\n\n\ndef run(\n",
+      "new": "def now() -> str:\n    return datetime.now(timezone.utc).strftime(\"%Y-%m-%dT%H:%M:%SZ\")\n\n\ndef resolve_python_executable() -> str:\n    repo_python = ROOT / \".venv\" / \"bin\" / \"python\"\n    if repo_python.is_file():\n        return str(repo_python)\n    return sys.executable\n\n\ndef run(\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "    elif kind == \"py_compile\":\n        paths = [str(p) for p in check.get(\"paths\") or []]\n        cmd = [sys.executable, \"-m\", \"py_compile\", *paths]\n        cwd = worktree\n    elif kind == \"pytest\":\n        paths = [str(p) for p in check.get(\"paths\") or []]\n        cmd = [sys.executable, \"-m\", \"pytest\", \"-q\", *paths]\n        cwd = worktree\n",
+      "new": "    elif kind == \"py_compile\":\n        paths = [str(p) for p in check.get(\"paths\") or []]\n        cmd = [resolve_python_executable(), \"-m\", \"py_compile\", *paths]\n        cwd = worktree\n    elif kind == \"pytest\":\n        paths = [str(p) for p in check.get(\"paths\") or []]\n        cmd = [resolve_python_executable(), \"-m\", \"pytest\", \"-q\", *paths]\n        cwd = worktree\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_universal_job_dispatcher_python_runtime.py",
+      "content": "import importlib.util\nimport subprocess\nfrom pathlib import Path\nfrom types import SimpleNamespace\n\nimport pytest\n\n\nROOT = Path(__file__).resolve().parents[2]\nDISPATCHER_PATH = ROOT / 'tools/mirror_sync/universal_job_dispatcher.py'\n\n\ndef load_dispatcher():\n    spec = importlib.util.spec_from_file_location(\n        'universal_job_dispatcher_under_test',\n        DISPATCHER_PATH,\n    )\n    module = importlib.util.module_from_spec(spec)\n    assert spec.loader is not None\n    spec.loader.exec_module(module)\n    return module\n\n\ndef test_repo_virtualenv_python_has_precedence(tmp_path, monkeypatch):\n    dispatcher = load_dispatcher()\n    repo_python = tmp_path / '.venv' / 'bin' / 'python'\n    repo_python.parent.mkdir(parents=True)\n    repo_python.write_text('', encoding='utf-8')\n\n    monkeypatch.setattr(dispatcher, 'ROOT', tmp_path)\n    monkeypatch.setattr(dispatcher.sys, 'executable', '/fallback/python')\n\n    assert dispatcher.resolve_python_executable() == str(repo_python)\n\n\ndef test_sys_executable_is_only_fallback(tmp_path, monkeypatch):\n    dispatcher = load_dispatcher()\n    monkeypatch.setattr(dispatcher, 'ROOT', tmp_path)\n    monkeypatch.setattr(dispatcher.sys, 'executable', '/fallback/python')\n\n    assert dispatcher.resolve_python_executable() == '/fallback/python'\n\n\n@pytest.mark.parametrize(\n    ('kind', 'expected_module'),\n    [('py_compile', 'py_compile'), ('pytest', 'pytest')],\n)\ndef test_python_checks_use_canonical_resolver(\n    tmp_path, monkeypatch, kind, expected_module\n):\n    dispatcher = load_dispatcher()\n    calls = []\n\n    monkeypatch.setattr(\n        dispatcher,\n        'resolve_python_executable',\n        lambda: '/canonical/repo/python',\n    )\n\n    def fake_run(args, cwd=None, check=False, timeout=None, env_extra=None):\n        calls.append((args, cwd))\n        return SimpleNamespace(returncode=0, stdout='ok')\n\n    monkeypatch.setattr(dispatcher, 'run', fake_run)\n\n    result = dispatcher.run_check(\n        tmp_path,\n        {'type': kind, 'paths': ['backend/example.py']},\n    )\n\n    assert result['status'] == 'PASS'\n    assert calls[0][0][0] == '/canonical/repo/python'\n    assert calls[0][0][1:3] == ['-m', expected_module]\n\n\ndef test_app_virtualenv_can_run_pytest_version():\n    repo_python = Path('/app/.venv/bin/python')\n    if not repo_python.is_file():\n        pytest.skip('/app/.venv/bin/python no existe en este runtime')\n\n    result = subprocess.run(\n        [str(repo_python), '-m', 'pytest', '--version'],\n        text=True,\n        stdout=subprocess.PIPE,\n        stderr=subprocess.STDOUT,\n        check=False,\n    )\n\n    assert result.returncode == 0, result.stdout\n    assert 'pytest' in result.stdout.lower()\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
