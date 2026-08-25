@@ -29,6 +29,16 @@ QUEUE_BRANCH = os.environ.get("EDARSAHUB_QUEUE_BRANCH", "worker/requests")
 SCHEMA = "edarsahub.worker-job.v1"
 JOB_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 
+# Only explicit destructive instructions are rejected by text inspection.
+# Production access is governed by the structured fail-closed field
+# `production_allowed`, so phrases such as "NO tocar Produccion" remain valid.
+FORBIDDEN_COMMAND_PATTERNS = (
+    re.compile(r"\bforce[ -]?push\b", re.IGNORECASE),
+    re.compile(r"\bgit\s+push\b[^\n]*(?:--force|-f)\b", re.IGNORECASE),
+    re.compile(r"\bgit\s+reset\s+--hard\b", re.IGNORECASE),
+    re.compile(r"\bgit\s+clean\s+-[A-Za-z]*f", re.IGNORECASE),
+)
+
 
 def git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
@@ -65,17 +75,28 @@ def validate(job: Any) -> list[str]:
         errors.append("OBJECTIVE_REQUIRED")
     if job.get("human_summary_language") != "es":
         errors.append("SUMMARY_LANGUAGE_MUST_BE_ES")
-    raw = json.dumps(job, ensure_ascii=False).lower()
-    forbidden = ("force push", "git reset --hard", "git clean -", "edarsahub_produccion")
-    if any(token in raw for token in forbidden):
-        errors.append("FORBIDDEN_OPERATION_REQUESTED")
+
+    raw = json.dumps(job, ensure_ascii=False)
+    if any(pattern.search(raw) for pattern in FORBIDDEN_COMMAND_PATTERNS):
+        errors.append("FORBIDDEN_DESTRUCTIVE_OPERATION_REQUESTED")
     return errors
 
 
 def queue_files() -> list[str]:
     git("fetch", "--quiet", REMOTE, QUEUE_BRANCH)
-    listing = git("ls-tree", "-r", "--name-only", f"{REMOTE}/{QUEUE_BRANCH}", "worker_queue/inbox")
-    return [line.strip() for line in listing.stdout.splitlines() if line.strip().startswith("worker_queue/inbox/") and line.strip().endswith(".json")]
+    listing = git(
+        "ls-tree",
+        "-r",
+        "--name-only",
+        f"{REMOTE}/{QUEUE_BRANCH}",
+        "worker_queue/inbox",
+    )
+    return [
+        line.strip()
+        for line in listing.stdout.splitlines()
+        if line.strip().startswith("worker_queue/inbox/")
+        and line.strip().endswith(".json")
+    ]
 
 
 def read_remote(path: str) -> str:
@@ -88,10 +109,23 @@ def already_claimed(name: str) -> bool:
 
 def write_rejection(source: str, reason: list[str], raw: str = "") -> None:
     name = Path(source).name
-    payload = {"source": source, "status": "REJECTED", "reasons": reason, "received_at_utc": datetime.now(timezone.utc).isoformat()}
-    (REJECTED / name).write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+    payload = {
+        "schema": "edarsahub.worker-rejection.v1",
+        "job_id": Path(source).stem,
+        "source": source,
+        "status": "REJECTED",
+        "reasons": reason,
+        "summary_es": "El worker recibio la orden, pero la rechazo porque no cumple las reglas de seguridad o formato. Consulta 'reasons' para conocer el motivo exacto.",
+        "received_at_utc": datetime.now(timezone.utc).isoformat(),
+        "production_touched": False,
+    }
+    (REJECTED / name).write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    # Raw payload remains local for diagnosis and is never published by health.
     if raw:
-        (REJECTED / f"{name}.raw").write_text(raw)
+        (REJECTED / f"{name}.raw").write_text(raw, encoding="utf-8")
 
 
 def receive() -> int:
@@ -114,8 +148,16 @@ def receive() -> int:
             write_rejection(path, errors, raw)
             rejected += 1
             continue
-        envelope = {"received_at_utc": datetime.now(timezone.utc).isoformat(), "queue_branch": QUEUE_BRANCH, "queue_path": path, "job": job}
-        (PENDING / name).write_text(json.dumps(envelope, ensure_ascii=False, indent=2) + "\n")
+        envelope = {
+            "received_at_utc": datetime.now(timezone.utc).isoformat(),
+            "queue_branch": QUEUE_BRANCH,
+            "queue_path": path,
+            "job": job,
+        }
+        (PENDING / name).write_text(
+            json.dumps(envelope, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
         accepted += 1
     print(f"UNIVERSAL_QUEUE_ACCEPTED={accepted}")
     print(f"UNIVERSAL_QUEUE_REJECTED={rejected}")
