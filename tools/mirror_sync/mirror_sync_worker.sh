@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="/app"
 DIR="$ROOT/tools/mirror_sync"
+RUNTIME_GENERATION="20260825-bootstrap-v2"
 
 CHECK="$DIR/check_remote_update.sh"
 APPLY="$DIR/apply_remote_update.sh"
@@ -95,7 +96,6 @@ publish_runtime_health() {
         if run_tool "RUNTIME_HEALTH_PUBLISHER" python3 "$RUNTIME_HEALTH_PUBLISHER"; then
             log "RUNTIME_HEALTH_PUBLISHER_STATE=READY"
         else
-            # Health publication must never stop job execution.
             log "RUNTIME_HEALTH_PUBLISHER_STATE=ERROR"
         fi
     else
@@ -156,7 +156,7 @@ run_reporting_pipeline() {
 
 case "$LOOP_SECONDS" in ''|*[!0-9]*) echo "ABORT=INVALID_LOOP_SECONDS"; exit 2;; esac
 if [ "$LOOP_SECONDS" -lt 10 ]; then echo "ABORT=LOOP_SECONDS_TOO_LOW"; exit 3; fi
-log "MIRROR_WORKER_STARTED=YES"; log "LOOP_SECONDS=$LOOP_SECONDS"
+log "MIRROR_WORKER_STARTED=YES"; log "RUNTIME_GENERATION=$RUNTIME_GENERATION"; log "LOOP_SECONDS=$LOOP_SECONDS"
 while [ "$RUNNING" -eq 1 ]; do
     run_cycle
     receive_universal_jobs
