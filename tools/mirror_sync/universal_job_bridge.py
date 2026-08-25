@@ -33,6 +33,7 @@ ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
 ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build"}
 MAX_ACTIONS = int(os.environ.get("EDARSAHUB_JOB_MAX_ACTIONS", "100"))
 MAX_TEXT_BYTES = int(os.environ.get("EDARSAHUB_JOB_MAX_TEXT_BYTES", "2000000"))
+REQUIRE_REQUESTER = os.environ.get("EDARSAHUB_WORKER_REQUIRE_REQUESTER", "0") == "1"
 
 
 def git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -136,6 +137,23 @@ def validate(job: Any) -> list[str]:
         errors.append("OBJECTIVE_REQUIRED")
     if job.get("human_summary_language") != "es":
         errors.append("SUMMARY_LANGUAGE_MUST_BE_ES")
+    requester = job.get("requester")
+    if requester is None:
+        if REQUIRE_REQUESTER:
+            errors.append("REQUESTER_REQUIRED")
+    elif not isinstance(requester, dict):
+        errors.append("REQUESTER_MUST_BE_OBJECT")
+    else:
+        email = str(requester.get("email") or "").strip()
+        source = str(requester.get("source") or "").strip()
+        if not email or "@" not in email:
+            errors.append("REQUESTER_EMAIL_INVALID")
+        if not source:
+            errors.append("REQUESTER_SOURCE_REQUIRED")
+        for field in ("project", "chat"):
+            value = requester.get(field)
+            if value is not None and not isinstance(value, str):
+                errors.append(f"REQUESTER_{field.upper()}_MUST_BE_STRING")
     actions = job.get("actions")
     if not isinstance(actions, list) or not actions:
         errors.append("ACTIONS_REQUIRED")
@@ -210,10 +228,34 @@ def receive() -> int:
             write_rejection(path, errors, raw)
             rejected += 1
             continue
+
+        requester_authorization = {
+            "allowed": True,
+            "reason": "LEGACY_REQUESTER_NOT_ENFORCED",
+        }
+        if job.get("requester") is not None:
+            try:
+                from worker_requester_rbac import authorize_requester
+                requester_authorization = authorize_requester(job.get("requester"))
+            except Exception:
+                requester_authorization = {
+                    "allowed": False,
+                    "reason": "REQUESTER_RBAC_RUNTIME_ERROR",
+                }
+            if not requester_authorization.get("allowed"):
+                write_rejection(
+                    path,
+                    [f"REQUESTER_RBAC_DENIED:{requester_authorization.get('reason', 'UNKNOWN')}"],
+                    raw,
+                )
+                rejected += 1
+                continue
+
         envelope = {
             "received_at_utc": datetime.now(timezone.utc).isoformat(),
             "queue_branch": QUEUE_BRANCH,
             "queue_path": path,
+            "requester_authorization": requester_authorization,
             "job": job,
         }
         (PENDING / name).write_text(json.dumps(envelope, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
