@@ -1,0 +1,20 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "bridge-canary2-20260825T023811Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Prueba canario del executor universal. Crear un archivo de evidencia no funcional en docs/audits/bridge-canary2-20260825T023811Z.md que indique que el worker autonomo ejecuto correctamente esta prueba. No modificar logica de negocio, configuracion de produccion ni otros archivos.",
+  "acceptance": [
+    "Crear solamente docs/audits/bridge-canary2-20260825T023811Z.md como cambio de producto.",
+    "Ejecutar una validacion basica del repositorio.",
+    "Crear .worker-result.json con tests PASS y quality_gate PASS.",
+    "Hacer un unico commit cuyo mensaje empiece exactamente con worker(bridge-canary2-20260825T023811Z):"
+  ],
+  "constraints": [
+    "No tocar Produccion.",
+    "No modificar archivos fuera de docs/audits/bridge-canary2-20260825T023811Z.md salvo .worker-result.json temporal.",
+    "No hacer push; el integrador del worker realiza la integracion."
+  ],
+  "human_summary_language": "es"
+}
