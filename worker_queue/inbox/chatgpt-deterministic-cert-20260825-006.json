@@ -1,0 +1,22 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "chatgpt-deterministic-cert-20260825-006",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "00172b18ba18f098a5a72fcc825da81bc86dfc85",
+  "objective": "Certificar de extremo a extremo el worker determinista controlado por ChatGPT despues de corregir la validacion de repository artifacts por rango base->candidate.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/audits/chatgpt-deterministic-worker-cert-20260825-006.md",
+      "content": "# Certificacion E2E del worker controlado por ChatGPT\n\nJob: chatgpt-deterministic-cert-20260825-006\n\nEsta evidencia fue definida por ChatGPT y debe ser aplicada por el worker determinista de /app en una rama agent/* registrada, con dominio y rutas exactas, validada por repository artifact guard sobre el rango base->candidate, integrada en Edarsahub_Desarrollo y publicada en worker/requests.\n\nNo interviene Codex ni otra inteligencia artificial secundaria.\n\nProduccion: no tocada.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es"
+}
