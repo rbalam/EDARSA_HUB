@@ -1,0 +1,12 @@
+{
+  "schema": "edarsahub.worker.request.v1",
+  "job_id": "bridge-canary-20260825T022456Z",
+  "source": "bridge-certification",
+  "requested_at_utc": "2026-08-25T02:24:56Z",
+  "summary_es": "Prueba final automatica del puente universal. No modificar produccion.",
+  "task": {
+    "type": "certification_canary",
+    "description": "Validar recepcion, ejecucion y publicacion de resultado del worker.",
+    "production_allowed": false
+  }
+}
