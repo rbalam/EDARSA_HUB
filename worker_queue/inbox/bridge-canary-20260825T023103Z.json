@@ -1,0 +1,9 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "bridge-canary-20260825T023103Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Ejecutar una prueba canario no destructiva del worker universal. Validar recepcion, procesamiento y publicacion del resultado sin modificar logica de negocio ni tocar Produccion.",
+  "human_summary_language": "es"
+}
