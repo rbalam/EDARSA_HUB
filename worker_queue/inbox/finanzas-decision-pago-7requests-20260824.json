@@ -1,0 +1,34 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "finanzas-decision-pago-7requests-20260824",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar el recorrido completo de solicitudes HTTP al abrir Finanzas > Decisión de Pago y corregirlo siguiendo estrictamente esta secuencia 1 a 7: (1) eliminar la doble invocación de loadCuentasPorPagar; (2) evitar que Decisión de Pago cargue endpoints CxP que no necesita; (3) hacer que el tablero consuma directamente su backend canónico decision-dashboard como única carga autoritativa inicial; (4) corregir la propagación de current_user en el listado CxP para que la visibilidad/autorización individual use el usuario efectivo; (5) medir y probar decision-dashboard de forma aislada, documentando número real de consultas/cargas y evitando optimizaciones especulativas; (6) solo si las pruebas demuestran que sigue lento, revisar/optimizar SQL e índices sin cambiar fuentes canónicas ni aumentar el timeout global como parche; (7) impedir que timeout/error/sin respuesta se represente como $0 o 'Sin CxP': debe existir estado explícito cargando/error/no-disponible y solo mostrar cero cuando backend respondió válidamente con cero. Auditar específicamente los hasta 7 requests detectados: dos tandas duplicadas de GET cuentas-por-pagar, resumen y proveedores, más GET decision-dashboard. Verificar también cargas iniciales auxiliares de sucursales/categorías y confirmar cuáles pertenecen o no al tablero. Mantener CxP SQL-first, RBAC, no LIVE, no Mongo, no datos demo, frontend solo presenta datos del backend. No modificar Producción.",
+  "acceptance": [
+    "Al abrir Decisión de Pago no se ejecutan las dos tandas duplicadas de cuentas-por-pagar/resumen/proveedores.",
+    "La carga inicial de Decisión de Pago usa decision-dashboard como fuente autoritativa y no depende de cxpData para sus KPI principales.",
+    "Saldo pendiente, seleccionado, autorizado, límite, disponible y utilización provienen del contrato backend decision-dashboard o muestran estado no disponible/error; nunca se fabrican ceros por falta de respuesta.",
+    "El botón Actualizar del tablero recarga el propio decision-dashboard y no dispara la carga completa de CxP.",
+    "Cuentas por Pagar conserva su carga completa cuando se abre la pestaña CxP.",
+    "_cxp_listar_canonico recibe current_user y lo pasa a _cxp_factura_dict; el endpoint listar_facturas_pendientes propaga current_user.",
+    "Se auditan los 7 requests y se deja evidencia antes/después del conteo esperado.",
+    "Se ejecutan pruebas backend relevantes y pruebas/build frontend disponibles; no se declara PASS si no corren.",
+    "No se aumenta axios timeout para ocultar el problema.",
+    "No se cambia ninguna fuente canónica: CxP sigue en dbo.Finanzas_CxP_Sync y compras históricas en dbo.Compras_Recepciones.",
+    "Si se propone optimización SQL, debe estar sustentada por medición; no crear índices/migraciones por intuición.",
+    "Resumen final en español natural, sin jerga innecesaria, incluyendo archivos cambiados, pruebas, conteo de requests antes/después y cualquier bloqueo real."
+  ],
+  "constraints": [
+    "Leer AGENTS.md y gobierno del repositorio antes de modificar.",
+    "No tocar Edarsahub_Produccion ni desplegar a Producción.",
+    "No usar conexiones LIVE, MongoDB, mocks ni datos demo.",
+    "No duplicar fuentes de verdad ni mover cálculos financieros al frontend.",
+    "Respetar RBAC por unidad_negocio_pk y permisos FINANZAS_VER/EDITAR/ADMINISTRAR existentes.",
+    "No cambiar el timeout global de api.js salvo que una medición posterior demuestre una necesidad independiente; no usarlo como solución a esta incidencia.",
+    "Preferir corrección mínima y cohesionada; no crecer el core.",
+    "Antes de optimizar SQL, demostrar que el flujo de requests ya quedó reducido y medir el endpoint aislado.",
+    "Agregar o actualizar pruebas que detecten regresión de doble carga y falso cero cuando exista error/timeout."
+  ]
+}
