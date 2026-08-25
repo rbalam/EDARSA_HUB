@@ -134,7 +134,7 @@ def prepare_worktree(
     allowed_paths: list[str],
 ) -> tuple[Path, str]:
     safe_id = re.sub(r"[^A-Za-z0-9._-]", "-", job_id)
-    branch = f"worker/job/{safe_id}"
+    branch = f"agent/worker/{safe_id}"
     path = WORKTREES / safe_id
     agent_id = f"worker-{safe_id}"
 
