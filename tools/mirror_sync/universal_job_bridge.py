@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Universal GitHub queue bridge for the EDARSAHUB worker.
+"""Universal GitHub queue bridge for the EDARSAHUB ChatGPT-controlled worker.
 
-The queue lives in the dedicated `worker/requests` branch. This program only
-receives and validates jobs and materializes them locally for the dispatcher.
-It deliberately does not execute arbitrary shell supplied by a request.
+The queue lives in the dedicated ``worker/requests`` branch. This program only
+receives and validates deterministic jobs produced by ChatGPT and materializes
+them locally for the dispatcher. It never asks another AI to reinterpret a job
+and it never executes shell text supplied by a request.
 """
 
 from __future__ import annotations
@@ -26,18 +27,12 @@ DONE = STATE / "done"
 RESULTS = STATE / "results"
 REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
 QUEUE_BRANCH = os.environ.get("EDARSAHUB_QUEUE_BRANCH", "worker/requests")
-SCHEMA = "edarsahub.worker-job.v1"
+SCHEMA = "edarsahub.worker-job.v2"
 JOB_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
-
-# Only explicit destructive instructions are rejected by text inspection.
-# Production access is governed by the structured fail-closed field
-# `production_allowed`, so phrases such as "NO tocar Produccion" remain valid.
-FORBIDDEN_COMMAND_PATTERNS = (
-    re.compile(r"\bforce[ -]?push\b", re.IGNORECASE),
-    re.compile(r"\bgit\s+push\b[^\n]*(?:--force|-f)\b", re.IGNORECASE),
-    re.compile(r"\bgit\s+reset\s+--hard\b", re.IGNORECASE),
-    re.compile(r"\bgit\s+clean\s+-[A-Za-z]*f", re.IGNORECASE),
-)
+ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
+ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build"}
+MAX_ACTIONS = int(os.environ.get("EDARSAHUB_JOB_MAX_ACTIONS", "100"))
+MAX_TEXT_BYTES = int(os.environ.get("EDARSAHUB_JOB_MAX_TEXT_BYTES", "2000000"))
 
 
 def git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -54,6 +49,72 @@ def git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
 def ensure_dirs() -> None:
     for path in (PENDING, PROCESSING, REJECTED, DONE, RESULTS):
         path.mkdir(parents=True, exist_ok=True)
+
+
+def safe_repo_path(value: Any) -> bool:
+    if not isinstance(value, str) or not value or "\x00" in value:
+        return False
+    path = Path(value)
+    if path.is_absolute() or ".." in path.parts:
+        return False
+    if path.parts and path.parts[0] == ".git":
+        return False
+    return True
+
+
+def validate_action(action: Any, index: int) -> list[str]:
+    errors: list[str] = []
+    prefix = f"ACTION_{index}"
+    if not isinstance(action, dict):
+        return [f"{prefix}_NOT_OBJECT"]
+    kind = action.get("type")
+    if kind not in ALLOWED_ACTIONS:
+        errors.append(f"{prefix}_INVALID_TYPE")
+        return errors
+    if not safe_repo_path(action.get("path")):
+        errors.append(f"{prefix}_INVALID_PATH")
+    if kind == "replace_text":
+        old = action.get("old")
+        new = action.get("new")
+        if not isinstance(old, str) or not old:
+            errors.append(f"{prefix}_OLD_REQUIRED")
+        if not isinstance(new, str):
+            errors.append(f"{prefix}_NEW_REQUIRED")
+        count = action.get("expected_count", 1)
+        if not isinstance(count, int) or count < 1 or count > 1000:
+            errors.append(f"{prefix}_INVALID_EXPECTED_COUNT")
+    elif kind == "write_file":
+        content = action.get("content")
+        if not isinstance(content, str):
+            errors.append(f"{prefix}_CONTENT_REQUIRED")
+        elif len(content.encode("utf-8")) > MAX_TEXT_BYTES:
+            errors.append(f"{prefix}_CONTENT_TOO_LARGE")
+    elif kind == "delete_file":
+        expected = action.get("expected_sha256")
+        if expected is not None and not re.fullmatch(r"[0-9a-f]{64}", str(expected)):
+            errors.append(f"{prefix}_INVALID_SHA256")
+    expected = action.get("expected_sha256")
+    if expected is not None and not re.fullmatch(r"[0-9a-f]{64}", str(expected)):
+        errors.append(f"{prefix}_INVALID_SHA256")
+    return errors
+
+
+def validate_check(check: Any, index: int) -> list[str]:
+    prefix = f"CHECK_{index}"
+    if not isinstance(check, dict):
+        return [f"{prefix}_NOT_OBJECT"]
+    kind = check.get("type")
+    if kind not in ALLOWED_CHECKS:
+        return [f"{prefix}_INVALID_TYPE"]
+    if kind in {"py_compile", "pytest"}:
+        paths = check.get("paths")
+        if not isinstance(paths, list) or not paths or not all(safe_repo_path(p) for p in paths):
+            return [f"{prefix}_INVALID_PATHS"]
+    if kind == "frontend_build":
+        directory = check.get("directory", "frontend")
+        if not safe_repo_path(directory):
+            return [f"{prefix}_INVALID_DIRECTORY"]
+    return []
 
 
 def validate(job: Any) -> list[str]:
@@ -75,27 +136,32 @@ def validate(job: Any) -> list[str]:
         errors.append("OBJECTIVE_REQUIRED")
     if job.get("human_summary_language") != "es":
         errors.append("SUMMARY_LANGUAGE_MUST_BE_ES")
-
-    raw = json.dumps(job, ensure_ascii=False)
-    if any(pattern.search(raw) for pattern in FORBIDDEN_COMMAND_PATTERNS):
-        errors.append("FORBIDDEN_DESTRUCTIVE_OPERATION_REQUESTED")
+    actions = job.get("actions")
+    if not isinstance(actions, list) or not actions:
+        errors.append("ACTIONS_REQUIRED")
+    elif len(actions) > MAX_ACTIONS:
+        errors.append("TOO_MANY_ACTIONS")
+    else:
+        for index, action in enumerate(actions, 1):
+            errors.extend(validate_action(action, index))
+    checks = job.get("checks", [{"type": "git_diff_check"}])
+    if not isinstance(checks, list):
+        errors.append("CHECKS_MUST_BE_LIST")
+    else:
+        for index, check in enumerate(checks, 1):
+            errors.extend(validate_check(check, index))
     return errors
 
 
 def queue_files() -> list[str]:
     git("fetch", "--quiet", REMOTE, QUEUE_BRANCH)
     listing = git(
-        "ls-tree",
-        "-r",
-        "--name-only",
-        f"{REMOTE}/{QUEUE_BRANCH}",
-        "worker_queue/inbox",
+        "ls-tree", "-r", "--name-only", f"{REMOTE}/{QUEUE_BRANCH}", "worker_queue/inbox"
     )
     return [
         line.strip()
         for line in listing.stdout.splitlines()
-        if line.strip().startswith("worker_queue/inbox/")
-        and line.strip().endswith(".json")
+        if line.strip().startswith("worker_queue/inbox/") and line.strip().endswith(".json")
     ]
 
 
@@ -110,20 +176,16 @@ def already_claimed(name: str) -> bool:
 def write_rejection(source: str, reason: list[str], raw: str = "") -> None:
     name = Path(source).name
     payload = {
-        "schema": "edarsahub.worker-rejection.v1",
+        "schema": "edarsahub.worker-rejection.v2",
         "job_id": Path(source).stem,
         "source": source,
         "status": "REJECTED",
         "reasons": reason,
-        "summary_es": "El worker recibio la orden, pero la rechazo porque no cumple las reglas de seguridad o formato. Consulta 'reasons' para conocer el motivo exacto.",
+        "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto.",
         "received_at_utc": datetime.now(timezone.utc).isoformat(),
         "production_touched": False,
     }
-    (REJECTED / name).write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-    # Raw payload remains local for diagnosis and is never published by health.
+    (REJECTED / name).write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     if raw:
         (REJECTED / f"{name}.raw").write_text(raw, encoding="utf-8")
 
@@ -154,10 +216,7 @@ def receive() -> int:
             "queue_path": path,
             "job": job,
         }
-        (PENDING / name).write_text(
-            json.dumps(envelope, ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8",
-        )
+        (PENDING / name).write_text(json.dumps(envelope, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         accepted += 1
     print(f"UNIVERSAL_QUEUE_ACCEPTED={accepted}")
     print(f"UNIVERSAL_QUEUE_REJECTED={rejected}")
