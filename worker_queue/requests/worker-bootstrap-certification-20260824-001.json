@@ -1,0 +1,32 @@
+{
+  "schema": "edarsahub.worker-request.v1",
+  "job_id": "worker-bootstrap-certification-20260824-001",
+  "created_at_utc": "2026-08-25T01:00:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "execution_mode": "autonomous",
+  "production_allowed": false,
+  "summary_language": "es",
+  "summary_audience": "persona comun de 13 anos, no programador",
+  "objective": "Dejar el worker universal funcional y autocurable, instalar el launcher estable bajo Supervisor y certificar el recorrido completo GitHub -> /app -> worker -> Edarsahub_Desarrollo -> resultado -> evidencia.",
+  "instructions": [
+    "Absorbe primero el HEAD actual de Edarsahub_Desarrollo mediante fast-forward seguro; no descartes trabajo local.",
+    "Instala tools/mirror_sync/supervisor/edarsahub-mirror-sync.conf como /etc/supervisor/conf.d/edarsahub-mirror-sync.conf.",
+    "Ejecuta supervisorctl reread y supervisorctl update; reinicia edarsahub-mirror-sync si es necesario.",
+    "Comprueba que el proceso padre sea mirror_sync_supervisor_entrypoint.sh y que mirror_sync_worker.sh sea su hijo.",
+    "Comprueba que runtime_health_publisher.py publique worker_queue/status/latest.json en worker/requests.",
+    "Ejecuta una orden canaria inocua para demostrar absorcion, ejecucion, resultado y publicacion.",
+    "No toques Edarsahub_Produccion ni bases productivas.",
+    "No declares DONE hasta que pruebas pasen, exista commit, el SHA este en Edarsahub_Desarrollo y la evidencia certifique exactamente ese SHA.",
+    "Publica resumen final en espanol natural, sin jerga tecnica, entendible por una persona de 13 anos."
+  ],
+  "acceptance": {
+    "supervisor_launcher_running": true,
+    "worker_child_running": true,
+    "heartbeat_published": true,
+    "canary_result_published": true,
+    "development_sha_bound": true,
+    "evidence_sha_bound": true,
+    "production_touched": false
+  }
+}
