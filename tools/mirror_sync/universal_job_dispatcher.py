@@ -157,8 +157,6 @@ def execute_codex(worktree: Path, prompt: str) -> tuple[int, str]:
         "exec",
         "--sandbox",
         "workspace-write",
-        "--ask-for-approval",
-        "never",
         "-C",
         str(worktree),
         prompt,
