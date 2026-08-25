@@ -105,12 +105,6 @@ if ! git merge-base --is-ancestor "$LOCAL" "$DEV"; then
     exit 30
 fi
 
-if ! git merge-base --is-ancestor "$LOCAL" "$MIRROR"; then
-    echo "DECISION=ABORT_MIRROR_NOT_FAST_FORWARD_FROM_LOCAL"
-    echo "WRITE_OPERATION_EXECUTED=NO"
-    exit 31
-fi
-
 if [ "$DEV" != "$MIRROR" ]; then
     if git merge-base --is-ancestor "$MIRROR" "$DEV"; then
         echo "DEV_MIRROR_RELATION=DEV_FAST_FORWARD_AHEAD"
