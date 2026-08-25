@@ -14,6 +14,7 @@ AUDIT_EXPORTER="$DIR/mirror_sync_audit_exporter.py"
 UNIVERSAL_BRIDGE="$DIR/universal_job_bridge.py"
 UNIVERSAL_DISPATCHER="$DIR/universal_job_dispatcher.py"
 UNIVERSAL_RESULT_PUBLISHER="$DIR/universal_job_result_publisher.py"
+RUNTIME_HEALTH_PUBLISHER="$DIR/runtime_health_publisher.py"
 
 STATE_DIR="$ROOT/.git/mirror-sync"
 ENABLE_FLAG="$STATE_DIR/ENABLED"
@@ -88,6 +89,20 @@ publish_universal_results() {
     fi
 }
 
+publish_runtime_health() {
+    if ! is_authorized; then return 0; fi
+    if [ -f "$RUNTIME_HEALTH_PUBLISHER" ]; then
+        if run_tool "RUNTIME_HEALTH_PUBLISHER" python3 "$RUNTIME_HEALTH_PUBLISHER"; then
+            log "RUNTIME_HEALTH_PUBLISHER_STATE=READY"
+        else
+            # Health publication must never stop job execution.
+            log "RUNTIME_HEALTH_PUBLISHER_STATE=ERROR"
+        fi
+    else
+        log "RUNTIME_HEALTH_PUBLISHER_AVAILABLE=NO"
+    fi
+}
+
 run_cycle() {
     local CHECK_OUT CHECK_RC PUBLISH_OUT PUBLISH_RC SNAPSHOT FINALIZE_RC
     if ! is_authorized; then log "STATE=DISABLED"; return 0; fi
@@ -121,9 +136,9 @@ run_cycle() {
     if ! is_authorized; then log "STATE=DISABLED_BEFORE_FINALIZE"; return 0; fi
     set +e; "$FINALIZER" "$SNAPSHOT"; FINALIZE_RC=$?; set -e
     log "FINALIZER_RC=$FINALIZE_RC"
-    if [ "$FINALIZE_RC" -eq 0 ]; then log "STATE=LOCAL_REMOTE_MIRROR_CONVERGED"; return 0; fi
-    if [ "$FINALIZE_RC" -eq 90 ]; then log "STATE=DISABLED_DURING_FINALIZE"; return 0; fi
-    if [ "$FINALIZE_RC" -eq 91 ] || [ "$FINALIZE_RC" -eq 92 ]; then log "STATE=LOCK_UNAVAILABLE"; return 0; fi
+    if [ "$FINALIZER_RC" -eq 0 ]; then log "STATE=LOCAL_REMOTE_MIRROR_CONVERGED"; return 0; fi
+    if [ "$FINALIZER_RC" -eq 90 ]; then log "STATE=DISABLED_DURING_FINALIZE"; return 0; fi
+    if [ "$FINALIZER_RC" -eq 91 ] || [ "$FINALIZER_RC" -eq 92 ]; then log "STATE=LOCK_UNAVAILABLE"; return 0; fi
     log "STATE=FINALIZER_ERROR"
 }
 
@@ -147,6 +162,7 @@ while [ "$RUNNING" -eq 1 ]; do
     receive_universal_jobs
     dispatch_universal_jobs
     publish_universal_results
+    publish_runtime_health
     run_reporting_pipeline
     [ "$RUNNING" -ne 0 ] || break
     sleep "$LOOP_SECONDS" & wait $! || true
