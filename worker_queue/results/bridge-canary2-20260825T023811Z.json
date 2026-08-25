@@ -1,0 +1,23 @@
+{
+  "base_sha": "fbb2a7eadc986f5f603d2363f17daf4c4d2363a4",
+  "blockers": [
+    "executor_failed",
+    "missing_worker_result",
+    "no_product_commit"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-25T02:38:41Z",
+  "executor": "codex",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "bridge-canary2-20260825T023811Z",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-08-25T03:19:55Z",
+  "schema": "edarsahub.worker-result.v1",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-25T02:38:40Z",
+  "status": "BLOCKED",
+  "work_completion": "NOT_CERTIFIED"
+}
