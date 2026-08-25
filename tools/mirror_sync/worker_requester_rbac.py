@@ -9,12 +9,28 @@ active SUPERADMIN. It never hardcodes user emails.
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
+
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / "backend"
+
+BACKEND_ENV = Path(
+    os.environ.get(
+        "EDARSAHUB_WORKER_BACKEND_ENV",
+        str(BACKEND / ".env"),
+    )
+)
+
+# El worker corre fuera del bootstrap normal del backend.
+# Reutiliza la configuracion canonica y nunca sobrescribe
+# variables definidas explicitamente por el runtime.
+load_dotenv(BACKEND_ENV, override=False)
+
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 

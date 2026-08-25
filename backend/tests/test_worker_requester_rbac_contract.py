@@ -26,3 +26,12 @@ def test_bridge_tracks_requester_and_preserves_legacy_compatibility():
     assert 'REQUESTER_RBAC_DENIED' in text
     assert 'LEGACY_REQUESTER_NOT_ENFORCED' in text
     assert 'production_allowed' in text
+
+
+def test_worker_requester_rbac_loads_canonical_backend_environment():
+    text = read(RBAC)
+
+    assert 'from dotenv import load_dotenv' in text
+    assert 'EDARSAHUB_WORKER_BACKEND_ENV' in text
+    assert 'str(BACKEND / ".env")' in text
+    assert 'load_dotenv(BACKEND_ENV, override=False)' in text
