@@ -1,0 +1,28 @@
+{
+  "base_sha": "f68e411025991288743fdf940bcd11865f2bfdae",
+  "blockers": [
+    "repository_artifact_guard_failed"
+  ],
+  "candidate_sha": "8662db20720fdbc8445ad25543f36cfc358780c3",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-25T06:14:30Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/audits/chatgpt-deterministic-worker-cert-20260825-005.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "chatgpt-deterministic-cert-20260825-005",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-08-25T06:31:50Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-25T06:14:27Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
