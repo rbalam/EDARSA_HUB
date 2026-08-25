@@ -152,7 +152,17 @@ def execute_codex(worktree: Path, prompt: str) -> tuple[int, str]:
     if not codex:
         return 127, "CODEX_EXECUTOR_NOT_AVAILABLE"
     # `codex exec` is non-interactive. The prompt is a single argument, never a shell command.
-    cmd = [codex, "exec", "--full-auto", "-C", str(worktree), prompt]
+    cmd = [
+        codex,
+        "exec",
+        "--sandbox",
+        "workspace-write",
+        "--ask-for-approval",
+        "never",
+        "-C",
+        str(worktree),
+        prompt,
+    ]
     try:
         result = run(cmd, cwd=worktree, timeout=MAX_SECONDS)
         return result.returncode, result.stdout[-20000:]
