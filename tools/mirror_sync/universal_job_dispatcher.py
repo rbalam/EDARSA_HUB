@@ -321,9 +321,21 @@ def integrate(head: str, base_sha: str) -> tuple[bool, str]:
         return False, f"development_moved:{remote_dev}"
     guard = ROOT / "scripts" / "agent_guardrails" / "validate_repository_artifacts.py"
     if guard.is_file():
-        check = run([sys.executable, str(guard)], cwd=ROOT)
+        check = run(
+            [
+                sys.executable,
+                str(guard),
+                "--range",
+                base_sha,
+                head,
+            ],
+            cwd=ROOT,
+        )
         if check.returncode != 0:
-            return False, "repository_artifact_guard_failed"
+            return False, (
+                "repository_artifact_guard_failed:"
+                + check.stdout[-1000:]
+            )
     push = run(
         ["git", "push", REMOTE, f"{head}:refs/heads/{DEV_BRANCH}"],
         cwd=ROOT,
