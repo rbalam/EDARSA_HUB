@@ -112,9 +112,17 @@ if ! git merge-base --is-ancestor "$LOCAL" "$MIRROR"; then
 fi
 
 if [ "$DEV" != "$MIRROR" ]; then
-    echo "DECISION=ABORT_DEV_MIRROR_DIVERGENCE"
-    echo "WRITE_OPERATION_EXECUTED=NO"
-    exit 32
+    if git merge-base --is-ancestor "$MIRROR" "$DEV"; then
+        echo "DEV_MIRROR_RELATION=DEV_FAST_FORWARD_AHEAD"
+        echo "MIRROR_FAST_FORWARD_REQUIRED=YES"
+    else
+        echo "DECISION=ABORT_DEV_MIRROR_TRUE_DIVERGENCE"
+        echo "WRITE_OPERATION_EXECUTED=NO"
+        exit 32
+    fi
+else
+    echo "DEV_MIRROR_RELATION=ALIGNED"
+    echo "MIRROR_FAST_FORWARD_REQUIRED=NO"
 fi
 
 echo

@@ -67,11 +67,16 @@ test "$TRACKED" -eq 0 || {
 echo
 echo "===== 3. REMOTE CONSISTENCY ====="
 
-test "$REMOTE_DEV" = "$REMOTE_MIRROR" || {
-    echo "ABORT=DEV_MIRROR_DIVERGENCE"
-    exit 30
-}
+MIRROR_FAST_FORWARD_REQUIRED=NO
+if [ "$REMOTE_DEV" != "$REMOTE_MIRROR" ]; then
+    git merge-base --is-ancestor "$REMOTE_MIRROR" "$REMOTE_DEV" || {
+        echo "ABORT=DEV_MIRROR_TRUE_DIVERGENCE"
+        exit 30
+    }
+    MIRROR_FAST_FORWARD_REQUIRED=YES
+fi
 
+echo "MIRROR_FAST_FORWARD_REQUIRED=$MIRROR_FAST_FORWARD_REQUIRED"
 TARGET="$REMOTE_DEV"
 
 if [ "$LOCAL_BEFORE" = "$TARGET" ]; then
@@ -185,13 +190,40 @@ test "$REMOTE_DEV_2" = "$TARGET" || {
     exit 42
 }
 
-test "$REMOTE_MIRROR_2" = "$TARGET" || {
+test "$REMOTE_MIRROR_2" = "$REMOTE_MIRROR" || {
     echo "ABORT=MIRROR_MOVED_DURING_CHECK"
     exit 43
 }
 
+if [ "$REMOTE_MIRROR_2" != "$TARGET" ]; then
+    git merge-base --is-ancestor "$REMOTE_MIRROR_2" "$TARGET" || {
+        echo "ABORT=MIRROR_NO_LONGER_FAST_FORWARDABLE"
+        exit 44
+    }
+
+    echo
+    echo "===== 9. FAST-FORWARD REMOTE MIRROR ====="
+
+    EDARSA_ALLOW_PUSH=1 git push origin       "$TARGET:refs/heads/$MIRROR_BRANCH" || {
+        echo "ABORT=MIRROR_FAST_FORWARD_PUSH_FAILED"
+        exit 45
+    }
+
+    git fetch origin "$MIRROR_BRANCH"
+
+    MIRROR_AFTER_PUSH="$(git rev-parse origin/$MIRROR_BRANCH)"
+    echo "MIRROR_AFTER_PUSH=$MIRROR_AFTER_PUSH"
+
+    test "$MIRROR_AFTER_PUSH" = "$TARGET" || {
+        echo "ABORT=MIRROR_FAST_FORWARD_VERIFY_FAILED"
+        exit 46
+    }
+else
+    echo "MIRROR_ALREADY_AT_TARGET=YES"
+fi
+
 echo
-echo "===== 9. FAST-FORWARD LOCAL ONLY ====="
+echo "===== 10. FAST-FORWARD LOCAL ONLY ====="
 
 git merge --ff-only "$TARGET"
 
