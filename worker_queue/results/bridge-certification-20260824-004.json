@@ -1,0 +1,23 @@
+{
+  "base_sha": "a43d7278e244bd3a149fecb7fae7aa8a337fe006",
+  "blockers": [
+    "executor_failed",
+    "missing_worker_result",
+    "no_product_commit"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-25T00:55:44Z",
+  "executor": "codex",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "bridge-certification-20260824-004",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-08-25T02:16:07Z",
+  "schema": "edarsahub.worker-result.v1",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-25T00:55:42Z",
+  "status": "BLOCKED",
+  "work_completion": "NOT_CERTIFIED"
+}
