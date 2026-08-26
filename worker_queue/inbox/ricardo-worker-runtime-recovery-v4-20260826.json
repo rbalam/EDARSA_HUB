@@ -1,0 +1,28 @@
+{
+  "schema": "edarsahub.worker-request.v1",
+  "job_id": "ricardo-worker-runtime-recovery-v4-20260826",
+  "requester_email": "ricardo@edarsa.com.mx",
+  "request_source": "chatgpt",
+  "project": "global",
+  "source_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b76b75bb99e7e6752079f847fafb3d592ad54f95",
+  "executor": "chatgpt-deterministic",
+  "objective_es": "Diagnosticar y corregir el runtime del worker para garantizar que run_cycle no pueda quedar bloqueado indefinidamente antes de receive_universal_jobs y que la cola worker/requests vuelva a consumirse automaticamente.",
+  "requirements": [
+    "Validar autorizacion del solicitante exclusivamente mediante RBAC SQL canonico; no usar whitelist de emails.",
+    "Auditar el proceso real edarsahub-mirror-sync y localizar exactamente en que subprocess o paso previo a receive_universal_jobs puede quedar detenido.",
+    "Auditar run_cycle, check_remote_update.sh, publish_local_snapshot.sh y cualquier paso anterior a receive_universal_jobs.",
+    "Agregar limites de tiempo deterministas a subprocess potencialmente bloqueantes sin ocultar errores ni convertir fallos reales en PASS.",
+    "Asegurar que un fallo o timeout previo no congele indefinidamente el loop y quede registrado con diagnostico util.",
+    "Preservar receive_universal_jobs -> dispatch -> publish_results -> publish_runtime_health y la semantica canonica existente.",
+    "Agregar pruebas de regresion para bloqueo/timeout y continuidad del ciclo.",
+    "Usar /app/.venv/bin/python como Python canonico cuando exista.",
+    "Ejecutar regresiones completas relevantes del worker y quality gate.",
+    "No tocar Produccion.",
+    "No destruir, resetear ni sobrescribir trabajo local staged/unstaged existente en /app.",
+    "Integrar solamente si todas las pruebas pasan y converger Edarsahub_Desarrollo con mirror/emergent-live.",
+    "Despues del fix, demostrar E2E que un job nuevo de worker/requests es recibido, despachado, ejecutado y su resultado publicado/certificado.",
+    "No reemitir innecesariamente el job CxP mientras no se haya demostrado primero la recuperacion del runtime. Si existe un CxP v4 pendiente, consumir el existente despues de recuperar el loop en lugar de duplicarlo."
+  ],
+  "production_allowed": false
+}
