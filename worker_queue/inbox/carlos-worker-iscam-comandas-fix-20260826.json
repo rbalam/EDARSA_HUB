@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "carlos-worker-iscam-comandas-fix-20260826",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "b76b75bb99e7e6752079f847fafb3d592ad54f95",
+  "objective": "Corregir Reportes ISCAM > Comandas de Venta para que registros historicos con Sync_Sales.items invalido no aborten todo el reporte. Mantener la fuente canonica existente dbo.Sync_Sales y proteger OPENJSON con ISJSON, sin modificar otros reportes ni Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "iscam-comandas-20260826"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "    \"CROSS APPLY OPENJSON(s.items) WITH (\"",
+      "new": "    \"CROSS APPLY OPENJSON(CASE WHEN ISJSON(s.items) = 1 THEN s.items ELSE N'[]' END) WITH (\"",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_comandas_json_guard.py",
+      "content": "from pathlib import Path\n\n\ndef test_iscam_openjson_is_guarded_by_isjson():\n    source = Path('backend/modules/inteligencia_comercial/iscam_routes.py').read_text(encoding='utf-8')\n    assert \"OPENJSON(CASE WHEN ISJSON(s.items) = 1 THEN s.items ELSE N'[]' END)\" in source\n    assert \"OPENJSON(s.items)\" not in source\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/inteligencia_comercial/iscam_routes.py",
+        "backend/tests/test_iscam_comandas_json_guard.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_comandas_json_guard.py"
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
