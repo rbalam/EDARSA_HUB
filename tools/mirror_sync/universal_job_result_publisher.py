@@ -24,6 +24,8 @@ RESULTS = STATE / "results"
 PUBLISHED = STATE / "published"
 QUEUE_BRANCH = os.environ.get("EDARSAHUB_QUEUE_BRANCH", "worker/requests")
 REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
+DEV_BRANCH = "Edarsahub_Desarrollo"
+MIRROR_BRANCH = "mirror/emergent-live"
 REPORT_DIR = Path(os.environ.get("MIRROR_SYNC_REPORT_STATE_DIR", "/app/.git/mirror-sync/reporting"))
 ATTESTATIONS = REPORT_DIR / "test_attestations"
 WORKTREE_ROOT = Path(os.environ.get("EDARSAHUB_QUEUE_PUBLISH_WORKTREE", "/tmp/edarsahub-worker-result-publish"))
@@ -69,6 +71,131 @@ def atomic_json(path: Path, payload: dict[str, Any]) -> None:
     os.replace(temp, path)
 
 
+def valid_sha(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 40
+        and all(ch in "0123456789abcdef" for ch in value.lower())
+    )
+
+
+def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
+    source_sha = result.get("development_sha")
+
+    pending = {
+        "certified": False,
+        "certification": "PENDING_AUDIT_EVIDENCE",
+        "work_completion": "PENDING_CERTIFICATION",
+        "percent_complete": 95,
+    }
+
+    if result.get("status") != "INTEGRATED":
+        return {
+            **pending,
+            "certification": "NOT_CERTIFIED",
+            "work_completion": "NOT_CERTIFIED",
+            "percent_complete": min(
+                int(result.get("percent_complete") or 0),
+                95,
+            ),
+        }
+
+    if str(result.get("tests", "")).upper() != "PASS":
+        return pending
+
+    if str(result.get("quality_gate", "")).upper() != "PASS":
+        return pending
+
+    if result.get("production_touched") is not False:
+        return pending
+
+    if not valid_sha(source_sha):
+        return pending
+
+    attestation_path = (
+        ATTESTATIONS / f"{source_sha}.json"
+    )
+    if not attestation_path.is_file():
+        return pending
+
+    try:
+        attestation = load(attestation_path)
+    except Exception:
+        return pending
+
+    if attestation.get("source_sha") != source_sha:
+        return pending
+    if attestation.get("job_id") != result.get("job_id"):
+        return pending
+    if str(attestation.get("tests", "")).upper() != "PASS":
+        return pending
+    if str(attestation.get("quality_gate", "")).upper() != "PASS":
+        return pending
+    if attestation.get("production_touched") is not False:
+        return pending
+
+    # Certification is allowed against a later converged descendant.
+    # This is necessary when infrastructure fixes are integrated after
+    # a job but the job's own files remain unchanged.
+    git("fetch", REMOTE, DEV_BRANCH)
+    git("fetch", REMOTE, MIRROR_BRANCH)
+
+    development_head = git(
+        "rev-parse",
+        f"{REMOTE}/{DEV_BRANCH}",
+    ).stdout.strip()
+
+    mirror_head = git(
+        "rev-parse",
+        f"{REMOTE}/{MIRROR_BRANCH}",
+    ).stdout.strip()
+
+    if development_head != mirror_head:
+        return pending
+
+    ancestry = git(
+        "merge-base",
+        "--is-ancestor",
+        source_sha,
+        development_head,
+        check=False,
+    )
+    if ancestry.returncode != 0:
+        return pending
+
+    files_changed = [
+        str(value)
+        for value in (result.get("files_changed") or [])
+        if isinstance(value, str) and value
+    ]
+
+    if not files_changed:
+        return pending
+
+    artifact_check = git(
+        "diff",
+        "--quiet",
+        source_sha,
+        development_head,
+        "--",
+        *files_changed,
+        check=False,
+    )
+    if artifact_check.returncode != 0:
+        return pending
+
+    return {
+        "certified": True,
+        "certification": "CERTIFIED",
+        "work_completion": "COMPLETE",
+        "percent_complete": 100,
+        "certified_source_sha": source_sha,
+        "converged_head": development_head,
+        "certification_basis":
+            "SHA_BOUND_ATTESTATION_PLUS_DESCENDANT_CONVERGENCE",
+    }
+
+
 def sanitize(result: dict[str, Any]) -> dict[str, Any]:
     allowed = (
         "schema", "job_id", "started_at_utc", "completed_at_utc", "status",
@@ -82,13 +209,20 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
     public["source_branch"] = "Edarsahub_Desarrollo"
     public["human_summary_language"] = "es"
     public["human_summary_level"] = "13yo-non-programmer"
-    # Normalize status for people and machines.
-    if result.get("status") == "INTEGRATED" and str(result.get("tests", "")).upper() == "PASS" and str(result.get("quality_gate", "")).upper() == "PASS":
-        public["work_completion"] = "PENDING_CERTIFICATION"
-        public["percent_complete"] = 95
-    else:
-        public["work_completion"] = "NOT_CERTIFIED"
-        public["percent_complete"] = min(int(result.get("percent_complete") or 0), 95)
+    evidence = certification_evidence(result)
+
+    public["certification"] = evidence["certification"]
+    public["work_completion"] = evidence["work_completion"]
+    public["percent_complete"] = evidence["percent_complete"]
+
+    for key in (
+        "certified_source_sha",
+        "converged_head",
+        "certification_basis",
+    ):
+        if key in evidence:
+            public[key] = evidence[key]
+
     return public
 
 
@@ -187,11 +321,21 @@ def prepare_queue_worktree() -> tuple[Path, str]:
 def publish_one(path: Path) -> bool:
     PUBLISHED.mkdir(parents=True, exist_ok=True)
     marker = PUBLISHED / path.name
-    if marker.exists():
-        return False
 
     result = load(path)
     public = sanitize(result)
+
+    if marker.exists():
+        marker_text = marker.read_text(
+            encoding="utf-8",
+            errors="replace",
+        )
+        desired = public.get("certification")
+        if (
+            desired == "CERTIFIED"
+            and "certification=CERTIFIED" in marker_text
+        ):
+            return False
     job_id = str(public.get("job_id") or path.stem)
     if not job_id or any(ch not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-" for ch in job_id):
         raise ValueError("INVALID_JOB_ID")
@@ -204,7 +348,11 @@ def publish_one(path: Path) -> bool:
         git("add", "--", str(destination.relative_to(worktree)), cwd=worktree)
         staged = git("diff", "--cached", "--quiet", cwd=worktree, check=False)
         if staged.returncode == 0:
-            marker.write_text(f"already_present={now()}\n", encoding="utf-8")
+            marker.write_text(
+                f"already_present={now()}\n"
+                f"certification={public.get('certification')}\n",
+                encoding="utf-8",
+            )
             create_attestation(public)
             return False
         git("-c", "user.name=EDARSAHUB Worker", "-c", "user.email=worker@edarsahub.local", "commit", "-m", f"worker-result({job_id}): publish execution result", cwd=worktree)
@@ -226,7 +374,12 @@ def publish_one(path: Path) -> bool:
         if push.returncode != 0:
             raise RuntimeError(f"QUEUE_RESULT_PUSH_FAILED:{push.stdout[-1500:]}")
         create_attestation(public)
-        marker.write_text(f"published={now()}\ncommit={commit}\n", encoding="utf-8")
+        marker.write_text(
+            f"published={now()}\n"
+            f"commit={commit}\n"
+            f"certification={public.get('certification')}\n",
+            encoding="utf-8",
+        )
         print(f"UNIVERSAL_RESULT_PUBLISHED={job_id}")
         print(f"QUEUE_RESULT_COMMIT={commit}")
         if public.get("development_sha"):
