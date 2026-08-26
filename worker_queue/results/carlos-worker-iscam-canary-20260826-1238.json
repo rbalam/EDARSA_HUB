@@ -1,0 +1,28 @@
+{
+  "base_sha": "b76b75bb99e7e6752079f847fafb3d592ad54f95",
+  "blockers": [
+    "development_push_failed:/usr/bin/gh auth git-credential get: 1: /usr/bin/gh: not found\nfatal: could not read Username for 'https://github.com/rbalam/EDARSA_HUB.git': terminal prompts disabled\n"
+  ],
+  "candidate_sha": "7191707c0727150ee385bdf327d1f64c9629962f",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-26T18:54:00Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/audits/carlos-worker-iscam-canary-20260826-1238.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "carlos-worker-iscam-canary-20260826-1238",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-08-26T23:22:58Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-26T18:53:56Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
