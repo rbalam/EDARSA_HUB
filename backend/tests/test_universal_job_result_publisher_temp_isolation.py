@@ -55,10 +55,11 @@ def test_clone_result_is_validated():
 def test_each_publication_cleans_its_own_checkout():
     text = source()
 
-    assert (
-        "shutil.rmtree(worktree, ignore_errors=True)"
-        in text
-    )
+    assert "finally:" in text
+    assert "if worktree is not None:" in text
+    assert "shutil.rmtree(" in text
+    assert "worktree," in text
+    assert "ignore_errors=True" in text
 
 
 def test_publisher_propagates_partial_failures():

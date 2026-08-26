@@ -35,6 +35,13 @@ WORKTREE_PARENT = Path(
     )
 )
 
+QUEUE_PUBLISH_MAX_ATTEMPTS = int(
+    os.environ.get(
+        "EDARSAHUB_QUEUE_PUBLISH_MAX_ATTEMPTS",
+        "8",
+    )
+)
+
 
 def now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -354,54 +361,200 @@ def publish_one(path: Path) -> bool:
     if not job_id or any(ch not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-" for ch in job_id):
         raise ValueError("INVALID_JOB_ID")
 
-    worktree, base = prepare_queue_worktree()
-    try:
-        destination = worktree / "worker_queue" / "results" / f"{job_id}.json"
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_text(json.dumps(public, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        git("add", "--", str(destination.relative_to(worktree)), cwd=worktree)
-        staged = git("diff", "--cached", "--quiet", cwd=worktree, check=False)
-        if staged.returncode == 0:
+    last_error = None
+
+    for attempt in range(1, QUEUE_PUBLISH_MAX_ATTEMPTS + 1):
+        worktree = None
+
+        try:
+            worktree, base = prepare_queue_worktree()
+
+            destination = (
+                worktree
+                / "worker_queue"
+                / "results"
+                / f"{job_id}.json"
+            )
+
+            destination.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            destination.write_text(
+                json.dumps(
+                    public,
+                    ensure_ascii=False,
+                    indent=2,
+                    sort_keys=True,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            git(
+                "add",
+                "--",
+                str(destination.relative_to(worktree)),
+                cwd=worktree,
+            )
+
+            staged = git(
+                "diff",
+                "--cached",
+                "--quiet",
+                cwd=worktree,
+                check=False,
+            )
+
+            if staged.returncode == 0:
+                marker.write_text(
+                    f"already_present={now()}\n"
+                    f"certification={public.get('certification')}\n",
+                    encoding="utf-8",
+                )
+
+                create_attestation(public)
+                return False
+
+            git(
+                "-c",
+                "user.name=EDARSAHUB Worker",
+                "-c",
+                "user.email=worker@edarsahub.local",
+                "commit",
+                "-m",
+                f"worker-result({job_id}): publish execution result",
+                cwd=worktree,
+            )
+
+            commit = git(
+                "rev-parse",
+                "HEAD",
+                cwd=worktree,
+            ).stdout.strip()
+
+            git(
+                "fetch",
+                REMOTE,
+                QUEUE_BRANCH,
+                cwd=worktree,
+            )
+
+            current = git(
+                "rev-parse",
+                f"{REMOTE}/{QUEUE_BRANCH}",
+                cwd=worktree,
+            ).stdout.strip()
+
+            if current != base:
+                last_error = (
+                    "QUEUE_BRANCH_MOVED:"
+                    f"attempt={attempt}:"
+                    f"base={base}:"
+                    f"current={current}"
+                )
+
+                print(
+                    "UNIVERSAL_RESULT_PUBLISH_RETRY="
+                    f"{job_id}:"
+                    f"attempt={attempt}:"
+                    "reason=QUEUE_BRANCH_MOVED"
+                )
+
+                continue
+
+            push_env = os.environ.copy()
+            push_env["EDARSA_ALLOW_PUSH"] = "1"
+
+            push = subprocess.run(
+                [
+                    "git",
+                    "push",
+                    REMOTE,
+                    f"{commit}:refs/heads/{QUEUE_BRANCH}",
+                ],
+                cwd=str(worktree),
+                env=push_env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+
+            if push.returncode != 0:
+                output = push.stdout[-1500:]
+
+                # Otro escritor pudo mover worker/requests
+                # entre el recheck y el push. Reintentar
+                # desde el nuevo HEAD es seguro porque el
+                # artefacto se reconstruye en un clone limpio.
+                concurrent_markers = (
+                    "fetch first",
+                    "cannot lock ref",
+                    "non-fast-forward",
+                    "stale info",
+                )
+
+                if any(
+                    marker_text in output
+                    for marker_text in concurrent_markers
+                ):
+                    last_error = (
+                        "QUEUE_RESULT_PUSH_CONCURRENT:"
+                        f"attempt={attempt}:"
+                        + output
+                    )
+
+                    print(
+                        "UNIVERSAL_RESULT_PUBLISH_RETRY="
+                        f"{job_id}:"
+                        f"attempt={attempt}:"
+                        "reason=CONCURRENT_QUEUE_PUSH"
+                    )
+
+                    continue
+
+                raise RuntimeError(
+                    "QUEUE_RESULT_PUSH_FAILED:"
+                    + output
+                )
+
+            create_attestation(public)
+
             marker.write_text(
-                f"already_present={now()}\n"
+                f"published={now()}\n"
+                f"commit={commit}\n"
                 f"certification={public.get('certification')}\n",
                 encoding="utf-8",
             )
-            create_attestation(public)
-            return False
-        git("-c", "user.name=EDARSAHUB Worker", "-c", "user.email=worker@edarsahub.local", "commit", "-m", f"worker-result({job_id}): publish execution result", cwd=worktree)
-        commit = git("rev-parse", "HEAD", cwd=worktree).stdout.strip()
-        git("fetch", REMOTE, QUEUE_BRANCH)
-        current = git("rev-parse", f"{REMOTE}/{QUEUE_BRANCH}").stdout.strip()
-        if current != base:
-            raise RuntimeError(f"QUEUE_BRANCH_MOVED:{current}")
-        push_env = os.environ.copy()
-        push_env["EDARSA_ALLOW_PUSH"] = "1"
-        push = subprocess.run(
-            ["git", "push", REMOTE, f"{commit}:refs/heads/{QUEUE_BRANCH}"],
-            cwd=str(worktree),
-            env=push_env,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-        if push.returncode != 0:
-            raise RuntimeError(f"QUEUE_RESULT_PUSH_FAILED:{push.stdout[-1500:]}")
-        create_attestation(public)
-        marker.write_text(
-            f"published={now()}\n"
-            f"commit={commit}\n"
-            f"certification={public.get('certification')}\n",
-            encoding="utf-8",
-        )
-        print(f"UNIVERSAL_RESULT_PUBLISHED={job_id}")
-        print(f"QUEUE_RESULT_COMMIT={commit}")
-        if public.get("development_sha"):
-            print(f"RESULT_DEVELOPMENT_SHA={public['development_sha']}")
-        return True
-    finally:
-        shutil.rmtree(worktree, ignore_errors=True)
 
+            print(
+                f"UNIVERSAL_RESULT_PUBLISHED={job_id}"
+            )
+            print(
+                f"QUEUE_RESULT_COMMIT={commit}"
+            )
+
+            if public.get("development_sha"):
+                print(
+                    "RESULT_DEVELOPMENT_SHA="
+                    f"{public['development_sha']}"
+                )
+
+            return True
+
+        finally:
+            if worktree is not None:
+                shutil.rmtree(
+                    worktree,
+                    ignore_errors=True,
+                )
+
+    raise RuntimeError(
+        "QUEUE_RESULT_PUBLISH_RETRIES_EXHAUSTED:"
+        f"{job_id}:"
+        f"{last_error or 'UNKNOWN'}"
+    )
 
 def main() -> int:
     RESULTS.mkdir(parents=True, exist_ok=True)
