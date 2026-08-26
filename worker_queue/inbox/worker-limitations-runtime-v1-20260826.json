@@ -1,0 +1,26 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-limitations-runtime-v1-20260826",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b76b75bb99e7e6752079f847fafb3d592ad54f95",
+  "production_allowed": false,
+  "objective": "Corregir EXCLUSIVAMENTE las limitaciones de orquestacion, latencia, bloqueo y observabilidad del universal worker. No ejecutar ni modificar Clientes, CRM, Cavas, CxP ni ningun dominio funcional. Mantener executor determinista y RBAC SQL canonico. Separar el procesamiento de jobs del mirror para que el mirror no pueda impedir receive/dispatch/publish; ciclo de jobs objetivo 10 segundos; agregar timeouts a subprocess externos y evitar bloqueos indefinidos; health remoto con ultima ejecucion, ultima recepcion, pending, processing, done, rejected, PID y runtime generation; implementar mecanismo seguro de wake cuando sea compatible con la arquitectura existente, conservando polling de respaldo; corregir autenticacion/publicacion de health reutilizando el mecanismo GitHub ya canonico sin secretos nuevos; soportar auditorias evidence_only exitosas sin convertir intencionalmente pytest en FAIL; agregar regresiones. No ampliar autonomia del executor ni permitir shell arbitrario. Integrar a Desarrollo y converger mirror solo si todas las pruebas y quality gate pasan.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Worker limitations only"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check",
+      "paths": [
+        "tools/mirror_sync",
+        "backend/tests"
+      ]
+    }
+  ]
+}
