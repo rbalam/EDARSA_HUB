@@ -1,0 +1,10 @@
+{
+  "schema": "edarsahub.worker-job-authorization.v1",
+  "job_id": "iscam-ventas-periodos-canonical-20260826-1426",
+  "requester_email": "carlosruz@edarsa.com.mx",
+  "request_source": "chatgpt",
+  "project": "V1.0",
+  "authorization_intent": "EXECUTE_AND_COMMIT_IF_QUALITY_GATE_PASSES",
+  "production_allowed": false,
+  "notes": "Carlos Ruiz autoriza expresamente que el Worker procese el job existente y genere commit/integracion en Edarsahub_Desarrollo si pasan RBAC SQL canonico, checks y quality gate. Esta autorizacion no sustituye la validacion RBAC del Worker ni permite bypass."
+}
