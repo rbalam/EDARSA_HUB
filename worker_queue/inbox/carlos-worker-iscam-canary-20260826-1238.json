@@ -1,0 +1,28 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "carlos-worker-iscam-canary-20260826-1238",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "b76b75bb99e7e6752079f847fafb3d592ad54f95",
+  "objective": "Canario E2E nuevo previo al trabajo real de Reportes ISCAM para validar que carlosruz@edarsa.com.mx es autorizado por RBAC SQL canonico y que el worker determinista completa cola, agent_guard/worktree, validacion, integracion en Edarsahub_Desarrollo, mirror/emergent-live y resultado remoto sin tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "iscam-comandas-20260826"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/audits/carlos-worker-iscam-canary-20260826-1238.md",
+      "content": "# Carlos Worker ISCAM E2E canary\n\nJob: carlos-worker-iscam-canary-20260826-1238\n\nRequester: carlosruz@edarsa.com.mx\n\nCanario previo al trabajo real de Reportes ISCAM. Debe demostrar autorizacion RBAC SQL canonica, ejecucion determinista, integracion en Edarsahub_Desarrollo, convergencia mirror/emergent-live y publicacion de resultado remoto.\n\nProduccion: no tocada.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es"
+}
