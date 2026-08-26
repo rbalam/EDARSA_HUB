@@ -15,7 +15,7 @@
   "job_id": "carlos-worker-iscam-comandas-fix-20260826",
   "percent_complete": 80,
   "production_touched": false,
-  "published_at_utc": "2026-08-26T23:23:08Z",
+  "published_at_utc": "2026-08-26T23:46:09Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
