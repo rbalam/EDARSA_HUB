@@ -1,0 +1,28 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "carlos-worker-global-e2e-canary-v3-20260826",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "c212e16b167454a1befce66760b7f1c33c5eb081",
+  "objective": "Canario E2E v3 posterior al fix del runtime Python canonico para certificar que Carlos Ruiz es autorizado exclusivamente por RBAC SQL canonico como SUPERADMIN y que el worker completa cola, ejecucion determinista, checks, commit, integracion en Edarsahub_Desarrollo, convergencia mirror/emergent-live y resultado remoto sin tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "global",
+    "chat": "carlos-worker-global-e2e-canary-v3"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/audits/carlos-worker-global-e2e-canary-v3-20260826.md",
+      "content": "# Carlos worker global E2E canary v3\n\nJob: carlos-worker-global-e2e-canary-v3-20260826\n\nRequester: carlosruz@edarsa.com.mx\n\nCanario posterior al fix del runtime Python canonico. Debe demostrar requester presente, autorizacion SUPERADMIN_CANONICAL desde SQL_USUARIO_CATALOGO, ejecucion determinista, checks PASS, integracion en Edarsahub_Desarrollo, convergencia mirror/emergent-live y publicacion de resultado remoto.\n\nProduccion: no tocada.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es"
+}
