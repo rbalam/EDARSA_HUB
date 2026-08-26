@@ -1,0 +1,65 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "000-runtime-self-heal-worker-v2-20260826",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "b76b75bb99e7e6752079f847fafb3d592ad54f95",
+  "objective": "Endurecer el worker para eliminar starvation de la cola universal y evitar que el launcher quede bloqueado indefinidamente en refresh/health. Priorizar receive-dispatch-publish-health antes del mirror cycle y agregar timeouts fail-safe en el launcher. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "worker-self-heal-v2"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "expected_count": 1,
+      "old": "RUNTIME_GENERATION=\"20260826-canonical-python-v1\"",
+      "new": "RUNTIME_GENERATION=\"20260826-queue-priority-timeout-v2\""
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "expected_count": 1,
+      "old": "while [ \"$RUNNING\" -eq 1 ]; do\n    run_cycle\n    receive_universal_jobs\n    dispatch_universal_jobs\n    publish_universal_results\n    publish_runtime_health\n    run_reporting_pipeline\n    [ \"$RUNNING\" -ne 0 ] || break\n    sleep \"$LOOP_SECONDS\" & wait $! || true\ndone",
+      "new": "while [ \"$RUNNING\" -eq 1 ]; do\n    # La cola de ChatGPT es el plano de control: atenderla antes de cualquier\n    # sincronizacion de mirror evita que un check/publish lento deje jobs sin consumir.\n    receive_universal_jobs\n    dispatch_universal_jobs\n    publish_universal_results\n    publish_runtime_health\n    run_cycle\n    run_reporting_pipeline\n    [ \"$RUNNING\" -ne 0 ] || break\n    sleep \"$LOOP_SECONDS\" & wait $! || true\ndone"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_supervisor_entrypoint.sh",
+      "expected_count": 1,
+      "old": "LOOP_SECONDS=\"${MIRROR_LAUNCHER_LOOP_SECONDS:-15}\"\nWORKER_PID=\"\"",
+      "new": "LOOP_SECONDS=\"${MIRROR_LAUNCHER_LOOP_SECONDS:-15}\"\nLAUNCHER_REFRESH_TIMEOUT_SECONDS=\"${MIRROR_LAUNCHER_REFRESH_TIMEOUT_SECONDS:-120}\"\nLAUNCHER_HEALTH_TIMEOUT_SECONDS=\"${MIRROR_LAUNCHER_HEALTH_TIMEOUT_SECONDS:-90}\"\nWORKER_PID=\"\""
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_supervisor_entrypoint.sh",
+      "expected_count": 1,
+      "old": "  \"$CHECK\" >\"$out\" 2>&1\n  rc=$?",
+      "new": "  timeout \"$LAUNCHER_REFRESH_TIMEOUT_SECONDS\" \"$CHECK\" >\"$out\" 2>&1\n  rc=$?"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_supervisor_entrypoint.sh",
+      "expected_count": 1,
+      "old": "    \"$APPLY\"\n    rc=$?",
+      "new": "    timeout \"$LAUNCHER_REFRESH_TIMEOUT_SECONDS\" \"$APPLY\"\n    rc=$?"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_supervisor_entrypoint.sh",
+      "expected_count": 1,
+      "old": "    \"$PYTHON_BIN\" \"$HEALTH\" >/tmp/edarsahub-worker-health-launcher.log 2>&1 || true",
+      "new": "    timeout \"$LAUNCHER_HEALTH_TIMEOUT_SECONDS\" \"$PYTHON_BIN\" \"$HEALTH\" >/tmp/edarsahub-worker-health-launcher.log 2>&1 || true"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es"
+}
