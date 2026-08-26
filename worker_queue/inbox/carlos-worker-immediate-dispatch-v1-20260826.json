@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "carlos-worker-immediate-dispatch-v1-20260826",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "b76b75bb99e7e6752079f847fafb3d592ad54f95",
+  "objective": "Reducir la latencia del Worker para ordenes de ChatGPT sin debilitar RBAC ni auditoria: atender receive-dispatch-publish-health antes del ciclo de mirror, usar intervalo fallback de 10 segundos y agregar un trigger runtime inmediato reutilizable que ejecute el pipeline canonico una sola vez. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "worker-immediate-dispatch-20260826"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "old": "RUNTIME_GENERATION=\"20260826-canonical-python-v1\"",
+      "new": "RUNTIME_GENERATION=\"20260826-immediate-dispatch-v1\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "old": "LOOP_SECONDS=\"${MIRROR_SYNC_LOOP_SECONDS:-60}\"",
+      "new": "LOOP_SECONDS=\"${MIRROR_SYNC_LOOP_SECONDS:-10}\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "old": "while [ \"$RUNNING\" -eq 1 ]; do\n    run_cycle\n    receive_universal_jobs\n    dispatch_universal_jobs\n    publish_universal_results\n    publish_runtime_health\n    run_reporting_pipeline\n    [ \"$RUNNING\" -ne 0 ] || break\n    sleep \"$LOOP_SECONDS\" & wait $! || true\ndone",
+      "new": "while [ \"$RUNNING\" -eq 1 ]; do\n    # ChatGPT jobs are the control plane: consume and execute them before mirror work.\n    receive_universal_jobs\n    dispatch_universal_jobs\n    publish_universal_results\n    publish_runtime_health\n    run_cycle\n    run_reporting_pipeline\n    [ \"$RUNNING\" -ne 0 ] || break\n    sleep \"$LOOP_SECONDS\" & wait $! || true\ndone",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "tools/mirror_sync/trigger_universal_worker_now.sh",
+      "content": "#!/usr/bin/env bash\nset -euo pipefail\n\nROOT=\"${EDARSAHUB_ROOT:-/app}\"\nDIR=\"$ROOT/tools/mirror_sync\"\nPYTHON_BIN=\"$ROOT/.venv/bin/python\"\nif [ ! -x \"$PYTHON_BIN\" ]; then\n  PYTHON_BIN=\"$(command -v python3 2>/dev/null || command -v python 2>/dev/null || true)\"\nfi\nif [ -z \"$PYTHON_BIN\" ] || [ ! -x \"$PYTHON_BIN\" ]; then\n  echo \"ABORT=WORKER_PYTHON_NOT_EXECUTABLE\"\n  exit 4\nfi\n\nSTATE=\"$ROOT/.git/mirror-sync\"\nif [ ! -e \"$STATE/ENABLED\" ] || [ -e \"$STATE/STOP\" ] || [ -e /tmp/edarsahub-mirror-sync/STOP ]; then\n  echo \"ABORT=WORKER_NOT_AUTHORIZED\"\n  exit 90\nfi\n\n\"$PYTHON_BIN\" \"$DIR/universal_job_bridge.py\" receive\n\"$PYTHON_BIN\" \"$DIR/universal_job_dispatcher.py\"\n\"$PYTHON_BIN\" \"$DIR/universal_job_result_publisher.py\"\n\"$PYTHON_BIN\" \"$DIR/runtime_health_publisher.py\"\necho \"UNIVERSAL_WORKER_TRIGGER=COMPLETE\"\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["tools/mirror_sync/universal_job_bridge.py", "tools/mirror_sync/universal_job_dispatcher.py", "tools/mirror_sync/universal_job_result_publisher.py", "tools/mirror_sync/runtime_health_publisher.py"]}
+  ],
+  "human_summary_language": "es"
+}
