@@ -53,17 +53,6 @@ TRACKED="$(git diff --name-only | wc -l)"
 echo "STAGED_COUNT=$STAGED"
 echo "TRACKED_MODIFIED_COUNT=$TRACKED"
 
-test "$STAGED" -eq 0 || {
-    echo "ABORT=STAGED_WORK_PRESENT"
-    exit 20
-}
-
-test "$TRACKED" -eq 0 || {
-    echo "ABORT=LOCAL_TRACKED_CHANGES_PRESENT"
-    git diff --name-status
-    exit 21
-}
-
 echo
 echo "===== 3. REMOTE CONSISTENCY ====="
 
@@ -107,7 +96,35 @@ echo "INCOMING_FILES=$INCOMING_COUNT"
 echo "INCOMING_RUNTIME_CHANGED=$INCOMING_RUNTIME_CHANGED"
 
 echo
-echo "===== 5. PROTECT UNTRACKED COLLISIONS ====="
+echo "===== 5. PROTECT TRACKED LOCAL CHANGES ====="
+
+TRACKED_COLLISION=0
+
+while IFS= read -r FILE; do
+    [ -n "$FILE" ] || continue
+
+    if git diff --cached --name-only -- | grep -Fxq -- "$FILE"; then
+        echo "STAGED_COLLISION=$FILE"
+        TRACKED_COLLISION=1
+    fi
+
+    if git diff --name-only -- | grep -Fxq -- "$FILE"; then
+        echo "UNSTAGED_COLLISION=$FILE"
+        TRACKED_COLLISION=1
+    fi
+done < <(git diff --name-only "$LOCAL_BEFORE" "$TARGET")
+
+test "$TRACKED_COLLISION" -eq 0 || {
+    echo "ABORT=LOCAL_TRACKED_COLLISION"
+    echo "WRITE_OPERATION_EXECUTED=NO"
+    exit 20
+}
+
+echo "STAGED_COLLISIONS=NONE"
+echo "UNSTAGED_COLLISIONS=NONE"
+
+echo
+echo "===== 6. PROTECT UNTRACKED COLLISIONS ====="
 
 COLLISION=0
 
@@ -132,12 +149,26 @@ test "$COLLISION" -eq 0 || {
 echo "UNTRACKED_COLLISIONS=NONE"
 
 echo
-echo "===== 6. PRESERVE UNTRACKED MANIFEST ====="
+echo "===== 7. PRESERVE LOCAL WORK STATE ====="
 
 TS="$(date -u +%Y%m%dT%H%M%SZ)"
 STATE_DIR="/tmp/edarsahub-agents/mirror-sync/$TS"
 
 mkdir -p "$STATE_DIR"
+
+STAGED_PATCH_BEFORE="$STATE_DIR/staged_before.patch"
+STAGED_PATCH_AFTER="$STATE_DIR/staged_after.patch"
+UNSTAGED_PATCH_BEFORE="$STATE_DIR/unstaged_before.patch"
+UNSTAGED_PATCH_AFTER="$STATE_DIR/unstaged_after.patch"
+
+git diff --cached --binary -- > "$STAGED_PATCH_BEFORE"
+git diff --binary -- > "$UNSTAGED_PATCH_BEFORE"
+
+STAGED_PATCH_SHA_BEFORE="$(sha256sum "$STAGED_PATCH_BEFORE" | awk '{print $1}')"
+UNSTAGED_PATCH_SHA_BEFORE="$(sha256sum "$UNSTAGED_PATCH_BEFORE" | awk '{print $1}')"
+
+echo "STAGED_PATCH_SHA_BEFORE=$STAGED_PATCH_SHA_BEFORE"
+echo "UNSTAGED_PATCH_SHA_BEFORE=$UNSTAGED_PATCH_SHA_BEFORE"
 
 UNTRACKED_BEFORE="$STATE_DIR/untracked_before.txt"
 
@@ -223,21 +254,88 @@ else
 fi
 
 echo
-echo "===== 10. FAST-FORWARD LOCAL ONLY ====="
+echo "===== 11. FAST-FORWARD LOCAL WITH INDEX PRESERVATION ====="
 
-git merge --ff-only "$TARGET"
+INDEX_RESTORE_REQUIRED=NO
 
-LOCAL_AFTER="$(git rev-parse HEAD)"
+restore_staged_index() {
+    if [ "$INDEX_RESTORE_REQUIRED" != "YES" ]; then
+        return 0
+    fi
 
-echo "LOCAL_AFTER=$LOCAL_AFTER"
+    if [ -s "$STAGED_PATCH_BEFORE" ]; then
+        git apply --cached --binary "$STAGED_PATCH_BEFORE" || {
+            echo "ABORT=STAGED_INDEX_RESTORE_FAILED"
+            return 1
+        }
+    fi
 
-test "$LOCAL_AFTER" = "$TARGET" || {
-    echo "ABORT=LOCAL_FAST_FORWARD_FAILED"
-    exit 50
+    INDEX_RESTORE_REQUIRED=NO
+    return 0
 }
 
+restore_on_exit() {
+    RC=$?
+
+    if [ "$INDEX_RESTORE_REQUIRED" = "YES" ]; then
+        restore_staged_index || true
+    fi
+
+    exit "$RC"
+}
+
+trap restore_on_exit EXIT
+
+if [ "$LOCAL_BEFORE" != "$TARGET" ]; then
+    if [ "$STAGED" -gt 0 ]; then
+        # Solo limpia temporalmente el indice. El working tree conserva
+        # tanto el contenido staged como el unstaged.
+        git reset --mixed "$LOCAL_BEFORE"
+        INDEX_RESTORE_REQUIRED=YES
+    fi
+
+    git merge --ff-only "$TARGET"
+
+    LOCAL_AFTER="$(git rev-parse HEAD)"
+
+    echo "LOCAL_AFTER=$LOCAL_AFTER"
+
+    test "$LOCAL_AFTER" = "$TARGET" || {
+        echo "ABORT=LOCAL_FAST_FORWARD_FAILED"
+        exit 50
+    }
+
+    restore_staged_index
+else
+    LOCAL_AFTER="$LOCAL_BEFORE"
+    echo "LOCAL_ALREADY_AT_TARGET=YES"
+fi
+
+trap - EXIT
+
 echo
-echo "===== 10. VERIFY TRACKED STATE ====="
+echo "===== 12. VERIFY LOCAL WORK PRESERVATION ====="
+
+git diff --cached --binary -- > "$STAGED_PATCH_AFTER"
+git diff --binary -- > "$UNSTAGED_PATCH_AFTER"
+
+STAGED_PATCH_SHA_AFTER="$(sha256sum "$STAGED_PATCH_AFTER" | awk '{print $1}')"
+UNSTAGED_PATCH_SHA_AFTER="$(sha256sum "$UNSTAGED_PATCH_AFTER" | awk '{print $1}')"
+
+echo "STAGED_PATCH_SHA_AFTER=$STAGED_PATCH_SHA_AFTER"
+echo "UNSTAGED_PATCH_SHA_AFTER=$UNSTAGED_PATCH_SHA_AFTER"
+
+if ! cmp -s "$STAGED_PATCH_BEFORE" "$STAGED_PATCH_AFTER"; then
+    echo "ABORT=STAGED_STATE_CHANGED"
+    diff -u "$STAGED_PATCH_BEFORE" "$STAGED_PATCH_AFTER" || true
+    exit 51
+fi
+
+if ! cmp -s "$UNSTAGED_PATCH_BEFORE" "$UNSTAGED_PATCH_AFTER"; then
+    echo "ABORT=UNSTAGED_STATE_CHANGED"
+    diff -u "$UNSTAGED_PATCH_BEFORE" "$UNSTAGED_PATCH_AFTER" || true
+    exit 52
+fi
 
 TRACKED_AFTER="$(git diff --name-only | wc -l)"
 STAGED_AFTER="$(git diff --cached --name-only | wc -l)"
@@ -245,17 +343,18 @@ STAGED_AFTER="$(git diff --cached --name-only | wc -l)"
 echo "TRACKED_AFTER=$TRACKED_AFTER"
 echo "STAGED_AFTER=$STAGED_AFTER"
 
-test "$TRACKED_AFTER" -eq 0 || {
-    echo "ABORT=TRACKED_DIFF_AFTER_APPLY"
-    git diff --name-status
-    exit 51
+test "$TRACKED_AFTER" -eq "$TRACKED" || {
+    echo "ABORT=UNSTAGED_COUNT_CHANGED"
+    exit 54
 }
 
-test "$STAGED_AFTER" -eq 0 || {
-    echo "ABORT=STAGED_DIFF_AFTER_APPLY"
-    git diff --cached --name-status
-    exit 52
+test "$STAGED_AFTER" -eq "$STAGED" || {
+    echo "ABORT=STAGED_COUNT_CHANGED"
+    exit 55
 }
+
+echo "STAGED_WORK_PRESERVED=YES"
+echo "UNSTAGED_WORK_PRESERVED=YES"
 
 echo
 echo "===== 11. VERIFY UNTRACKED ====="
@@ -300,8 +399,9 @@ echo
 echo "REMOTE_UPDATE_APPLIED=YES"
 echo "FAST_FORWARD_ONLY=YES"
 echo "LOCAL_REMOTE_MIRROR_MATCH=YES"
-echo "TRACKED_WORKTREE_CLEAN=YES"
-echo "STAGED_WORK=NONE"
+echo "LOCAL_WORK_PRESERVED=YES"
+echo "STAGED_WORK_PRESERVED=YES"
+echo "UNSTAGED_WORK_PRESERVED=YES"
 echo "UNTRACKED_PRESERVED=YES"
 echo "RECOVERY_REF=$BACKUP_REF"
 echo "PRODUCTION_TOUCHED=NO"

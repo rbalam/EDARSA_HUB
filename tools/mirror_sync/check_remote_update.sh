@@ -84,21 +84,6 @@ if [ "$DEV" = "$LOCAL" ] && [ "$MIRROR" = "$LOCAL" ]; then
     exit 0
 fi
 
-if [ "$STAGED" -ne 0 ]; then
-    echo "DECISION=ABORT_STAGED_WORK_PRESENT"
-    echo "WRITE_OPERATION_EXECUTED=NO"
-    exit 20
-fi
-
-if [ "$TRACKED" -ne 0 ]; then
-    echo "DECISION=ABORT_LOCAL_TRACKED_CHANGES_PRESENT"
-    echo
-    echo "LOCAL_CHANGED_FILES:"
-    git diff --name-status
-    echo "WRITE_OPERATION_EXECUTED=NO"
-    exit 21
-fi
-
 if ! git merge-base --is-ancestor "$LOCAL" "$DEV"; then
     echo "DECISION=ABORT_DEV_NOT_FAST_FORWARD_FROM_LOCAL"
     echo "WRITE_OPERATION_EXECUTED=NO"
@@ -127,6 +112,34 @@ git diff --name-status "$LOCAL" "$DEV"
 INCOMING_COUNT="$(git diff --name-only "$LOCAL" "$DEV" | wc -l)"
 
 echo "INCOMING_FILES=$INCOMING_COUNT"
+
+echo
+echo "===== TRACKED LOCAL COLLISION GUARDS ====="
+
+TRACKED_COLLISION=0
+
+while IFS= read -r FILE; do
+    [ -n "$FILE" ] || continue
+
+    if git diff --cached --name-only -- | grep -Fxq -- "$FILE"; then
+        echo "STAGED_COLLISION=$FILE"
+        TRACKED_COLLISION=1
+    fi
+
+    if git diff --name-only -- | grep -Fxq -- "$FILE"; then
+        echo "UNSTAGED_COLLISION=$FILE"
+        TRACKED_COLLISION=1
+    fi
+done < <(git diff --name-only "$LOCAL" "$DEV")
+
+if [ "$TRACKED_COLLISION" -ne 0 ]; then
+    echo "DECISION=ABORT_LOCAL_TRACKED_COLLISION"
+    echo "WRITE_OPERATION_EXECUTED=NO"
+    exit 20
+fi
+
+echo "STAGED_COLLISIONS=NONE"
+echo "UNSTAGED_COLLISIONS=NONE"
 
 echo
 echo "===== UNTRACKED COLLISION GUARD ====="
