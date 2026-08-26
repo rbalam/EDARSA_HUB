@@ -1,0 +1,28 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "carlos-worker-sync-monitor-contrast-fix-v2-20260826",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "945feac70ce4e57afa985168599d46e7d28579aa",
+  "objective": "Corregir la legibilidad de /admin/sync-monitor en Preview aplicando fondo oscuro explicito solo al componente SyncMonitor, sin cambiar el tema global ni otros modulos. El frontend_build previo fallo por el entorno del worker, por lo que esta orden valida alcance con git_diff_check y deja la compilacion global para el pipeline del runtime. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "sync-monitor-contrast-v2-20260826"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/SyncMonitor.js",
+      "old": "    <div className=\"space-y-6 p-6\" data-testid=\"sync-monitor-page\">",
+      "new": "    <div className=\"space-y-6 p-6 min-h-screen bg-slate-950 text-white\" data-testid=\"sync-monitor-page\">",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
