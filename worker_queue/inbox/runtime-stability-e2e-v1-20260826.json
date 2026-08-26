@@ -1,0 +1,26 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "runtime-stability-e2e-v1-20260826",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "b76b75bb99e7e6752079f847fafb3d592ad54f95",
+  "objective": "Validar e integrar exclusivamente el candidato de estabilidad del Worker universal preparado en agent/worker/runtime-stability-v1-20260826. Ejecutar regresiones del runtime, comprobar desacoplamiento mirror/jobs, polling rapido, timeouts, watchdog y health. Integrar solo si todos los checks pasan; despues verificar convergencia Edarsahub_Desarrollo y mirror/emergent-live. No tocar Produccion ni otros frentes.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "worker-runtime-stability-e2e"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/audits/runtime-stability-e2e-v1-20260826.md",
+      "content": "# Worker runtime stability E2E v1\n\nRequester: ricardo@edarsa.com.mx\n\nObjetivo: certificar consumo automatico del Worker universal, RBAC SQL canonico, ejecucion determinista, checks PASS, integracion segura y convergencia mirror sin tocar Produccion.\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
