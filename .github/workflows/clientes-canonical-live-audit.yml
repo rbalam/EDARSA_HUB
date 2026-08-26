@@ -13,60 +13,123 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       EDARSAHUB_SQL_HOST: "54.39.104.176"
       EDARSAHUB_SQL_PORT: "1433"
       EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
       EDARSAHUB_SQL_USER: "HRLectura"
       EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
-      EDARSAHUB_SECRET_KEY: ${{ secrets.EDARSAHUB_SECRET_KEY }}
+      SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: python -m pip install pymssql cryptography python-dotenv
-      - name: Audit canonical customer model and configured sources
+      - run: python -m pip install pymssql cryptography python-dotenv pydantic email-validator passlib bcrypt python-jose
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          test -n "$EDARSAHUB_SQL_PASSWORD"
+          test -n "$SERVER_SECRET_KEY"
+          echo "SECRETS_AVAILABLE=YES"
+      - name: Obtain live canonical and POS customer schemas
+        working-directory: backend
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend
         shell: bash
         run: |
           python - <<'PY'
-          import os, sys, json, pymssql
-          sys.path.insert(0, 'backend')
-          from core.secret_manager import decrypt_secret
+          import pymssql
+          from core.sql_first.connection_factory import get_edarsahub_pymssql_connection, get_external_sql_connection
+          from core.connections.pos_runtime_resolver import list_pos_runtime_contexts
 
-          def conn(cfg):
-              return pymssql.connect(server=cfg['host'], port=int(cfg.get('port') or 1433), user=cfg['user'], password=cfg['password'], database=cfg['database'], login_timeout=12, timeout=30)
+          def print_columns(cursor, schema, table):
+              cursor.execute("""
+                  SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, NUMERIC_PRECISION,
+                         NUMERIC_SCALE, IS_NULLABLE, COLUMN_DEFAULT
+                  FROM INFORMATION_SCHEMA.COLUMNS
+                  WHERE TABLE_SCHEMA=%s AND TABLE_NAME=%s
+                  ORDER BY ORDINAL_POSITION
+              """, (schema, table))
+              print('COLUMNS', schema + '.' + table, cursor.fetchall())
 
-          hubcfg={'host':os.environ['EDARSAHUB_SQL_HOST'],'port':os.environ['EDARSAHUB_SQL_PORT'],'user':os.environ['EDARSAHUB_SQL_USER'],'password':os.environ['EDARSAHUB_SQL_PASSWORD'],'database':os.environ['EDARSAHUB_SQL_DATABASE']}
-          hub=conn(hubcfg); c=hub.cursor(as_dict=True)
-          print('=== HUB CUSTOMER TABLES ===')
-          c.execute("SELECT t.name table_name, SUM(p.rows) rows FROM sys.tables t LEFT JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name LIKE '%Cliente%' OR t.name LIKE '%Customer%' GROUP BY t.name ORDER BY t.name")
-          for r in c.fetchall(): print(r)
-          for table in ['Cliente_Catalogo','Cliente_Contactos','Sync_Customers','CavaSocios_Socios']:
-              print('=== COLUMNS',table,'===')
-              c.execute("SELECT COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=%s ORDER BY ORDINAL_POSITION",(table,))
-              for r in c.fetchall(): print(r)
+          hub = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+          hc = hub.cursor(as_dict=True)
+          print('=== HUB CUSTOMER OBJECTS ===')
+          hc.execute("""
+              SELECT s.name schema_name, o.name object_name, o.type_desc,
+                     CASE WHEN o.type='U' THEN SUM(CASE WHEN p.index_id IN (0,1) THEN p.rows ELSE 0 END) ELSE NULL END row_count
+              FROM sys.objects o
+              JOIN sys.schemas s ON s.schema_id=o.schema_id
+              LEFT JOIN sys.partitions p ON p.object_id=o.object_id
+              WHERE o.type IN ('U','V') AND (o.name LIKE '%Cliente%' OR o.name LIKE '%Customer%' OR o.name LIKE '%CRM_Cuenta%')
+              GROUP BY s.name,o.name,o.type_desc,o.type
+              ORDER BY s.name,o.name
+          """)
+          for r in hc.fetchall(): print('HUB_OBJECT', r)
+          for table in ['Cliente_Catalogo','Cliente_Contactos','Cliente_Direcciones','Cliente_Grupos','Sync_Customers','CRM_Cuentas','CavaSocios_Socios']:
+              print_columns(hc, 'dbo', table)
               try:
-                  c.execute('SELECT COUNT(*) n FROM dbo.['+table+']'); print('COUNT',c.fetchone())
-              except Exception as e: print('COUNT_ERROR',type(e).__name__)
-          print('=== CONFIGURED DATA SOURCES ===')
-          c.execute("SELECT CAST(id AS varchar(50)) id,nombre,system_type,host,port,database_name,username,password_encrypted,activo FROM Servidores_Conexiones WHERE activo=1 AND (system_type LIKE '%SOFT%' OR system_type LIKE '%MPRO%' OR system_type LIKE '%MANAGEMENT%') ORDER BY nombre")
-          servers=c.fetchall()
-          for s in servers: print({k:s.get(k) for k in ['id','nombre','system_type','database_name','activo']})
-          for s in servers:
-              print('=== SOURCE',s['nombre'],s['system_type'],'===')
-              try:
-                  pwd=decrypt_secret(s['password_encrypted'])
-                  sc=conn({'host':s['host'],'port':s['port'],'user':s['username'],'password':pwd,'database':s['database_name']}); q=sc.cursor(as_dict=True)
-                  q.execute("SELECT t.name table_name, SUM(p.rows) rows FROM sys.tables t LEFT JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name LIKE '%client%' OR t.name LIKE '%cliente%' OR t.name LIKE '%customer%' GROUP BY t.name ORDER BY t.name")
-                  tabs=q.fetchall(); print('CANDIDATE_TABLES',tabs)
-                  for tr in tabs:
-                      tn=tr['table_name']
-                      q.execute("SELECT COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=%s ORDER BY ORDINAL_POSITION",(tn,))
-                      print('TABLE',tn,'COLUMNS',q.fetchall())
-                  sc.close()
-              except Exception as e:
-                  print('SOURCE_ERROR',s['nombre'],type(e).__name__,str(e)[:180])
+                  hc.execute('SELECT COUNT_BIG(*) n FROM dbo.['+table+']')
+                  print('HUB_COUNT', table, hc.fetchone())
+              except Exception as exc:
+                  print('HUB_COUNT_ERROR', table, type(exc).__name__)
+          print('=== HUB KEYS / INDEXES ===')
+          hc.execute("""
+              SELECT t.name table_name, i.name index_name, i.is_primary_key, i.is_unique,
+                     c.name column_name, ic.key_ordinal
+              FROM sys.tables t
+              JOIN sys.indexes i ON i.object_id=t.object_id
+              JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id
+              JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id
+              WHERE t.name IN ('Cliente_Catalogo','Cliente_Contactos','Sync_Customers','CRM_Cuentas')
+              ORDER BY t.name,i.index_id,ic.key_ordinal
+          """)
+          for r in hc.fetchall(): print('HUB_INDEX', r)
           hub.close()
+
+          print('=== POS LIVE CUSTOMER SCHEMAS ===')
+          contexts = list_pos_runtime_contexts(system_types=('SOFTRESTAURANT','MPRO'))
+          for ctx in contexts:
+              print('SOURCE_BEGIN', {'unidad':ctx.unidad_codigo,'system_type':ctx.system_type,'database':ctx.database,'server_id':ctx.server_id})
+              conn = None
+              try:
+                  cfg = ctx.external_connection_config(as_dict=True)
+                  conn = get_external_sql_connection(cfg)
+                  cur = conn.cursor(as_dict=True)
+                  cur.execute("""
+                      SELECT s.name schema_name, t.name table_name,
+                             SUM(CASE WHEN p.index_id IN (0,1) THEN p.rows ELSE 0 END) row_count
+                      FROM sys.tables t
+                      JOIN sys.schemas s ON s.schema_id=t.schema_id
+                      LEFT JOIN sys.partitions p ON p.object_id=t.object_id
+                      WHERE t.name LIKE '%client%' OR t.name LIKE '%cliente%' OR t.name LIKE '%customer%'
+                         OR EXISTS (
+                             SELECT 1 FROM sys.columns c
+                             WHERE c.object_id=t.object_id
+                               AND (c.name LIKE '%client%' OR c.name LIKE '%cliente%' OR c.name LIKE '%customer%'
+                                    OR c.name LIKE '%rfc%' OR c.name LIKE '%telefono%' OR c.name LIKE '%email%')
+                         )
+                      GROUP BY s.name,t.name
+                      ORDER BY row_count DESC,t.name
+                  """)
+                  tables = cur.fetchall()
+                  print('SOURCE_TABLES', ctx.unidad_codigo, tables)
+                  for tr in tables[:40]:
+                      schema=tr['schema_name']; table=tr['table_name']
+                      cur.execute("""
+                          SELECT COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,IS_NULLABLE
+                          FROM INFORMATION_SCHEMA.COLUMNS
+                          WHERE TABLE_SCHEMA=%s AND TABLE_NAME=%s
+                          ORDER BY ORDINAL_POSITION
+                      """, (schema,table))
+                      cols=cur.fetchall()
+                      print('SOURCE_SCHEMA', ctx.unidad_codigo, schema+'.'+table, cols)
+                  print('SOURCE_END', ctx.unidad_codigo)
+              except Exception as exc:
+                  print('SOURCE_ERROR', ctx.unidad_codigo, type(exc).__name__, str(exc)[:240])
+              finally:
+                  if conn:
+                      conn.close()
           PY
