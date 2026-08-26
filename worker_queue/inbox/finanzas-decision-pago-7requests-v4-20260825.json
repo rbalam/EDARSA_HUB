@@ -1,0 +1,86 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "finanzas-decision-pago-7requests-v4-20260825",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "b76b75bb99e7e6752079f847fafb3d592ad54f95",
+  "objective": "Reemitir sobre el HEAD actual la correccion minima de Finanzas > Decision de Pago: evitar la carga completa y duplicada de CxP al abrir Decision de Pago; usar decision-dashboard como fuente de KPI principales y del boton Actualizar; conservar la carga completa de CxP solo en la pestana CxP; y propagar current_user al listado canonico para visibilidad individual de autorizaciones. No tocar Produccion ni ampliar alcance.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Finanzas.js",
+      "expected_count": 1,
+      "old": "  // Initial load\n  useEffect(() => {\n    loadCategorias();\n    loadCxpSucursales();\n  }, [loadCategorias, loadCxpSucursales]);\n  \n  // Load data on tab change or filter change\n  useEffect(() => {\n    if (activeTab === 'dashboard') {\n      loadDashboard();\n    } else if (activeTab === 'presupuestos') {\n      loadPresupuestos();\n    } else if (\n      activeTab === 'cxp' ||\n      activeTab === 'decision-pago'\n    ) {\n      loadCuentasPorPagar();\n    } else if (activeTab === 'ingresos') {\n      loadIngresos();\n    }\n  }, [activeTab, loadDashboard, loadPresupuestos, loadCuentasPorPagar, loadIngresos]);\n  \n  // FASE 1 CxP: Recargar CxP cuando cambie la unidad de negocio seleccionada\n  useEffect(() => {\n    if (\n      (activeTab === 'cxp' || activeTab === 'decision-pago') &&\n      selectedUnidad !== undefined\n    ) {\n      logger.log(`[CxP] Unidad cambiada a: ${selectedUnidad || 'Todas'}, recargando...`);\n      loadCuentasPorPagar();\n    }\n  }, [selectedUnidad]); // Solo depende de selectedUnidad\n",
+      "new": "  // Categorias generales de Finanzas. Los catalogos CxP se cargan solo en CxP.\n  useEffect(() => {\n    loadCategorias();\n  }, [loadCategorias]);\n\n  useEffect(() => {\n    if (activeTab === 'cxp') {\n      loadCxpSucursales();\n    }\n  }, [activeTab, loadCxpSucursales]);\n  \n  // Decision de Pago consume exclusivamente su decision-dashboard.\n  useEffect(() => {\n    if (activeTab === 'dashboard') {\n      loadDashboard();\n    } else if (activeTab === 'presupuestos') {\n      loadPresupuestos();\n    } else if (activeTab === 'cxp') {\n      loadCuentasPorPagar();\n    } else if (activeTab === 'ingresos') {\n      loadIngresos();\n    }\n  }, [activeTab, loadDashboard, loadPresupuestos, loadCuentasPorPagar, loadIngresos]);\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/finanzas/FinanzasDecisionPago.jsx",
+      "expected_count": 1,
+      "old": "  const [analysisPeriod, setAnalysisPeriod] = useState('previous_month');\n  const [effectivePeriodOverride, setEffectivePeriodOverride] = useState(false);",
+      "new": "  const [analysisPeriod, setAnalysisPeriod] = useState('previous_month');\n  const [effectivePeriodOverride, setEffectivePeriodOverride] = useState(false);\n  const [decisionRefreshKey, setDecisionRefreshKey] = useState(0);"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/finanzas/FinanzasDecisionPago.jsx",
+      "expected_count": 1,
+      "old": "  }, [\n    selectedUnidad,\n    effectivePeriodOverride,\n    analysisPeriod\n  ]);",
+      "new": "  }, [\n    selectedUnidad,\n    effectivePeriodOverride,\n    analysisPeriod,\n    decisionRefreshKey\n  ]);"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/finanzas/FinanzasDecisionPago.jsx",
+      "expected_count": 1,
+      "old": "          <Button\n            variant=\"outline\"\n            onClick={onActualizar}\n            disabled={loading}\n          >\n            <RefreshCw\n              className={`mr-2 h-4 w-4 ${\n                loading ? 'animate-spin' : ''\n              }`}\n            />\n            Actualizar\n          </Button>",
+      "new": "          <Button\n            variant=\"outline\"\n            onClick={() => setDecisionRefreshKey((current) => current + 1)}\n            disabled={decisionLoading}\n          >\n            <RefreshCw\n              className={`mr-2 h-4 w-4 ${\n                decisionLoading ? 'animate-spin' : ''\n              }`}\n            />\n            Actualizar\n          </Button>"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/finanzas/FinanzasDecisionPago.jsx",
+      "expected_count": 1,
+      "old": "              {formatCurrency(metrics.saldo)}",
+      "new": "              {decisionLoading ? 'Cargando...' : decisionDashboard ? formatCurrency(decisionResumen.saldo_cxp ?? 0) : 'No disponible'}"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/finanzas/FinanzasDecisionPago.jsx",
+      "expected_count": 1,
+      "old": "              {formatCurrency(metrics.seleccionado)}",
+      "new": "              {decisionLoading ? 'Cargando...' : decisionDashboard ? formatCurrency(decisionResumen.comprometido ?? 0) : 'No disponible'}"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/finanzas/FinanzasDecisionPago.jsx",
+      "expected_count": 1,
+      "old": "              {formatCurrency(metrics.autorizado)}",
+      "new": "              {decisionLoading ? 'Cargando...' : decisionDashboard ? formatCurrency(decisionResumen.autorizado ?? 0) : 'No disponible'}"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/finanzas/cuentas_por_pagar.py",
+      "expected_count": 1,
+      "old": "def _cxp_listar_canonico(unidad_negocio_pk, tipo, solo_vencidas, solo_decision_pago=False, proveedor_id=None, fecha_corte=None, unidades_permitidas=None):\n    facturas = [\n        _cxp_factura_dict(r)\n        for r in _cxp_rows_canonico(",
+      "new": "def _cxp_listar_canonico(unidad_negocio_pk, tipo, solo_vencidas, solo_decision_pago=False, proveedor_id=None, fecha_corte=None, unidades_permitidas=None, current_user=None):\n    facturas = [\n        _cxp_factura_dict(r, current_user)\n        for r in _cxp_rows_canonico("
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/finanzas/cuentas_por_pagar.py",
+      "expected_count": 1,
+      "old": "        proveedor_id,\n        fecha_corte,\n        unidades_permitidas,\n    )\n\n@router.get(\"/resumen\")",
+      "new": "        proveedor_id,\n        fecha_corte,\n        unidades_permitidas,\n        current_user,\n    )\n\n@router.get(\"/resumen\")"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_cxp_decision_dashboard_request_flow_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nPAGE = ROOT / 'frontend/src/pages/Finanzas.js'\nUI = ROOT / 'frontend/src/components/finanzas/FinanzasDecisionPago.jsx'\nROUTER = ROOT / 'backend/modules/finanzas/cuentas_por_pagar.py'\n\ndef read(path):\n    return path.read_text(encoding='utf-8')\n\ndef test_decision_pago_does_not_load_full_cxp_from_page():\n    page = read(PAGE)\n    assert \"activeTab === 'cxp' || activeTab === 'decision-pago'\" not in page\n    assert \"if (activeTab === 'cxp')\" in page\n\ndef test_decision_dashboard_refresh_is_local():\n    ui = read(UI)\n    assert 'decisionRefreshKey' in ui\n    assert 'setDecisionRefreshKey' in ui\n    assert 'decisionResumen.saldo_cxp' in ui\n    assert 'decisionResumen.comprometido' in ui\n    assert 'decisionResumen.autorizado' in ui\n\ndef test_cxp_full_list_propagates_current_user():\n    router = read(ROUTER)\n    assert 'unidades_permitidas=None, current_user=None):' in router\n    assert '_cxp_factura_dict(r, current_user)' in router\n    start = router.index('async def listar_facturas_pendientes')\n    end = router.index('@router.get(\"/resumen\")', start)\n    block = router[start:end]\n    assert '_cxp_listar_canonico(' in block\n    assert 'current_user,' in block\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/finanzas/cuentas_por_pagar.py", "backend/tests/test_cxp_decision_dashboard_request_flow_contract.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_cxp_decision_dashboard_contract.py", "backend/tests/test_cxp_decision_dashboard_request_flow_contract.py", "backend/tests/test_cxp_authorizer_visibility_contract.py", "backend/tests/test_cxp_canonical_authorization_integration.py"]},
+    {"type": "frontend_build", "directory": "frontend"}
+  ],
+  "human_summary_language": "es"
+}
