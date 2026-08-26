@@ -1,0 +1,55 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "iscam-ventas-periodos-canonical-20260826-1426",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "b76b75bb99e7e6752079f847fafb3d592ad54f95",
+  "objective": "Corregir el reporte ISCAM Ventas por Periodo de Inteligencia Comercial. El total mensual no debe salir de dbo.Sync_Sales porque esa tabla de detalle tiene cobertura historica incompleta y puede contener importes incompatibles con el contrato vigente. Usar la fuente KPI canonica dbo.vw_Comercial_KPIs_Diarios_v2_Runtime, resolver la unidad por unidad_negocio_pk con UnidadesService, sumar ventas_total/tickets_total/pax_total y conservar las formulas cheque_promedio=ventas/cheques y consumo_promedio=ventas/pax. La correccion debe hacer que los meses con KPI canonico disponible vuelvan a aparecer y que el importe mensual use la misma verdad comercial que los otros modulos. No cambiar Produccion ni reactivar el writer legacy de Sync_Sales. Mantener los drill-down de detalle existentes fuera del total agregado.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "iscam-reporte-anual-20260826"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "  1. Ventas a 12 periodos        -> dbo.Sync_Sales  (drill: mes -> productos -> tickets)",
+      "new": "  1. Ventas a 12 periodos        -> dbo.vw_Comercial_KPIs_Diarios_v2_Runtime (KPIs agregados)\n     Drill productos/tickets       -> dbo.Sync_Sales (detalle; no fuente del total mensual)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "@iscam_router.get(\"/ventas-periodos\")\nasync def ventas_periodos(unidad: str = Query(...), desde: Optional[str] = None, hasta: Optional[str] = None,\n                          group_by: str = Query(\"mes\"), meses: int = Query(12, ge=1, le=36)):\n    gb = group_by if group_by in (\"anio\", \"mes\", \"dia\") else \"mes\"\n    pexpr = _period_sql(\"s.FechaHora\", gb)\n    if desde or hasta:\n        d, h = _rango_fechas(desde, hasta)\n        where, params = \"AND s.FechaHora >= %s AND s.FechaHora < %s\", (unidad, d, h)\n    else:\n        where, params = \"AND s.FechaHora >= DATEADD(MONTH, %s, CAST(GETDATE() AS DATE))\", (unidad, -int(meses))\n    rows = _q(\n        f\"\"\"\n        SELECT {pexpr} AS periodo, SUM(s.MontoTotal) AS venta_total,\n               COUNT(*) AS cheques, SUM(s.Pax) AS clientes\n        FROM dbo.Sync_Sales s\n        WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED' {where}\n        GROUP BY {pexpr}\n        ORDER BY periodo DESC\n        \"\"\",\n        params,\n    )\n    data = []\n    for r in rows:\n        venta = _f(r[\"venta_total\"]); cheques = int(r[\"cheques\"] or 0); cli = int(r[\"clientes\"] or 0)\n        data.append({\n            \"periodo\": r[\"periodo\"], \"venta_total\": round(venta, 2), \"cheques\": cheques, \"clientes\": cli,\n            \"cheque_promedio\": round(venta / cheques, 2) if cheques else 0,\n            \"consumo_promedio\": round(venta / cli, 2) if cli else 0,\n        })\n    return {\"success\": True, \"source\": \"Sync_Sales (canónica)\", \"unidad\": unidad,\n            \"group_by\": gb, \"periodos\": data}",
+      "new": "@iscam_router.get(\"/ventas-periodos\")\nasync def ventas_periodos(unidad: str = Query(...), desde: Optional[str] = None, hasta: Optional[str] = None,\n                          group_by: str = Query(\"mes\"), meses: int = Query(12, ge=1, le=36)):\n    # El total agregado de ISCAM debe compartir la misma verdad comercial que\n    # Comercial/Tablero Ejecutivo. Sync_Sales se conserva solo para drill-down\n    # porque es detalle/staging y su cobertura historica puede ser incompleta.\n    unidad_pk = UnidadesService.resolver_pk(unidad)\n    if not unidad_pk:\n        raise HTTPException(status_code=404, detail=f\"No se pudo resolver la unidad '{unidad}'\")\n\n    gb = group_by if group_by in (\"anio\", \"mes\", \"dia\") else \"mes\"\n    pexpr = _period_sql(\"k.fecha_operacion\", gb)\n    if desde or hasta:\n        d, h = _rango_fechas(desde, hasta)\n        where, params = \"AND k.fecha_operacion >= %s AND k.fecha_operacion < %s\", (unidad_pk, d, h)\n    else:\n        where, params = (\n            \"AND k.fecha_operacion >= DATEADD(MONTH, %s, CAST(GETDATE() AS DATE))\",\n            (unidad_pk, -int(meses)),\n        )\n    rows = _q(\n        f\"\"\"\n        SELECT {pexpr} AS periodo,\n               SUM(ISNULL(k.ventas_total, 0)) AS venta_total,\n               SUM(ISNULL(k.tickets_total, 0)) AS cheques,\n               SUM(ISNULL(k.pax_total, 0)) AS clientes\n        FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime k\n        WHERE k.unidad_negocio_pk = %s {where}\n        GROUP BY {pexpr}\n        ORDER BY periodo DESC\n        \"\"\",\n        params,\n    )\n    data = []\n    for r in rows:\n        venta = _f(r[\"venta_total\"]); cheques = int(r[\"cheques\"] or 0); cli = int(r[\"clientes\"] or 0)\n        data.append({\n            \"periodo\": r[\"periodo\"], \"venta_total\": round(venta, 2), \"cheques\": cheques, \"clientes\": cli,\n            \"cheque_promedio\": round(venta / cheques, 2) if cheques else 0,\n            \"consumo_promedio\": round(venta / cli, 2) if cli else 0,\n        })\n    return {\"success\": True, \"source\": \"vw_Comercial_KPIs_Diarios_v2_Runtime (canónica)\", \"unidad\": unidad,\n            \"group_by\": gb, \"periodos\": data}",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_ventas_periodos_canonical.py",
+      "content": "from pathlib import Path\nimport ast\n\n\nROUTES = (\n    Path(__file__).resolve().parents[1]\n    / \"modules\"\n    / \"inteligencia_comercial\"\n    / \"iscam_routes.py\"\n)\n\n\ndef _function_source(name: str) -> str:\n    text = ROUTES.read_text(encoding=\"utf-8\")\n    tree = ast.parse(text)\n    node = next(\n        item\n        for item in tree.body\n        if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))\n        and item.name == name\n    )\n    lines = text.splitlines()\n    return \"\\n\".join(lines[node.lineno - 1 : node.end_lineno])\n\n\ndef test_ventas_periodos_uses_canonical_runtime_kpis_not_sync_sales():\n    source = _function_source(\"ventas_periodos\")\n\n    assert \"UnidadesService.resolver_pk(unidad)\" in source\n    assert \"dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\" in source\n    assert \"SUM(ISNULL(k.ventas_total, 0)) AS venta_total\" in source\n    assert \"SUM(ISNULL(k.tickets_total, 0)) AS cheques\" in source\n    assert \"SUM(ISNULL(k.pax_total, 0)) AS clientes\" in source\n    assert \"k.fecha_operacion\" in source\n    assert \"dbo.Sync_Sales\" not in source\n\n\ndef test_ventas_periodos_preserves_business_average_formulas():\n    source = _function_source(\"ventas_periodos\")\n\n    assert \"round(venta / cheques, 2) if cheques else 0\" in source\n    assert \"round(venta / cli, 2) if cli else 0\" in source\n    assert \"vw_Comercial_KPIs_Diarios_v2_Runtime (canónica)\" in source\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/inteligencia_comercial/iscam_routes.py",
+        "backend/tests/test_iscam_ventas_periodos_canonical.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_ventas_periodos_canonical.py"
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
