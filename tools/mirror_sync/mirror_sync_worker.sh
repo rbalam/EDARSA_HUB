@@ -3,7 +3,23 @@ set -euo pipefail
 
 ROOT="/app"
 DIR="$ROOT/tools/mirror_sync"
-RUNTIME_GENERATION="20260825-bootstrap-v2"
+RUNTIME_GENERATION="20260826-canonical-python-v1"
+
+resolve_worker_python() {
+    if [ -x "$ROOT/.venv/bin/python" ]; then
+        printf '%s\n' "$ROOT/.venv/bin/python"
+        return 0
+    fi
+
+    command -v python3 2>/dev/null || command -v python 2>/dev/null || true
+}
+
+PYTHON_BIN="$(resolve_worker_python)"
+
+if [ -z "$PYTHON_BIN" ] || [ ! -x "$PYTHON_BIN" ]; then
+    echo "ABORT=WORKER_PYTHON_NOT_EXECUTABLE"
+    exit 4
+fi
 
 CHECK="$DIR/check_remote_update.sh"
 APPLY="$DIR/apply_remote_update.sh"
@@ -54,7 +70,7 @@ extract_snapshot() {
 receive_universal_jobs() {
     if ! is_authorized; then return 0; fi
     if [ -f "$UNIVERSAL_BRIDGE" ]; then
-        if run_tool "UNIVERSAL_JOB_BRIDGE" python3 "$UNIVERSAL_BRIDGE" receive; then
+        if run_tool "UNIVERSAL_JOB_BRIDGE" "$PYTHON_BIN" "$UNIVERSAL_BRIDGE" receive; then
             log "UNIVERSAL_JOB_BRIDGE_STATE=READY"
         else
             log "UNIVERSAL_JOB_BRIDGE_STATE=ERROR"
@@ -67,7 +83,7 @@ receive_universal_jobs() {
 dispatch_universal_jobs() {
     if ! is_authorized; then return 0; fi
     if [ -f "$UNIVERSAL_DISPATCHER" ]; then
-        if run_tool "UNIVERSAL_JOB_DISPATCHER" python3 "$UNIVERSAL_DISPATCHER"; then
+        if run_tool "UNIVERSAL_JOB_DISPATCHER" "$PYTHON_BIN" "$UNIVERSAL_DISPATCHER"; then
             log "UNIVERSAL_JOB_DISPATCHER_STATE=READY"
         else
             log "UNIVERSAL_JOB_DISPATCHER_STATE=ERROR"
@@ -80,7 +96,7 @@ dispatch_universal_jobs() {
 publish_universal_results() {
     if ! is_authorized; then return 0; fi
     if [ -f "$UNIVERSAL_RESULT_PUBLISHER" ]; then
-        if run_tool "UNIVERSAL_JOB_RESULT_PUBLISHER" python3 "$UNIVERSAL_RESULT_PUBLISHER"; then
+        if run_tool "UNIVERSAL_JOB_RESULT_PUBLISHER" "$PYTHON_BIN" "$UNIVERSAL_RESULT_PUBLISHER"; then
             log "UNIVERSAL_JOB_RESULT_PUBLISHER_STATE=READY"
         else
             log "UNIVERSAL_JOB_RESULT_PUBLISHER_STATE=ERROR"
@@ -93,7 +109,7 @@ publish_universal_results() {
 publish_runtime_health() {
     if ! is_authorized; then return 0; fi
     if [ -f "$RUNTIME_HEALTH_PUBLISHER" ]; then
-        if run_tool "RUNTIME_HEALTH_PUBLISHER" python3 "$RUNTIME_HEALTH_PUBLISHER"; then
+        if run_tool "RUNTIME_HEALTH_PUBLISHER" "$PYTHON_BIN" "$RUNTIME_HEALTH_PUBLISHER"; then
             log "RUNTIME_HEALTH_PUBLISHER_STATE=READY"
         else
             log "RUNTIME_HEALTH_PUBLISHER_STATE=ERROR"

@@ -42,6 +42,17 @@ ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
 ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build"}
 
 
+def resolve_canonical_python() -> str:
+    """Resolve the interpreter shared by every Python worker subprocess."""
+    repo_python = ROOT / ".venv" / "bin" / "python"
+    if repo_python.is_file() and os.access(repo_python, os.X_OK):
+        return str(repo_python)
+    return sys.executable
+
+
+PYTHON_BIN = resolve_canonical_python()
+
+
 def now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -156,7 +167,7 @@ def prepare_worktree(
         raise RuntimeError("AGENT_GUARD_PATHS_REQUIRED")
 
     command = [
-        sys.executable,
+        PYTHON_BIN,
         str(guard),
         "worktree-create",
         "--agent-id",
@@ -242,11 +253,11 @@ def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
         cwd = worktree
     elif kind == "py_compile":
         paths = [str(p) for p in check.get("paths") or []]
-        cmd = [sys.executable, "-m", "py_compile", *paths]
+        cmd = [PYTHON_BIN, "-m", "py_compile", *paths]
         cwd = worktree
     elif kind == "pytest":
         paths = [str(p) for p in check.get("paths") or []]
-        cmd = [sys.executable, "-m", "pytest", "-q", *paths]
+        cmd = [PYTHON_BIN, "-m", "pytest", "-q", *paths]
         cwd = worktree
     elif kind == "frontend_build":
         directory = safe_path(worktree, str(check.get("directory", "frontend")))
@@ -327,7 +338,7 @@ def integrate(head: str, base_sha: str) -> tuple[bool, str]:
     if guard.is_file():
         check = run(
             [
-                sys.executable,
+                PYTHON_BIN,
                 str(guard),
                 "--range",
                 base_sha,

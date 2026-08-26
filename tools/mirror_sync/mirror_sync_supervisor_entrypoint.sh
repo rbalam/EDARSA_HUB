@@ -4,6 +4,22 @@ set -euo pipefail
 ROOT="/app"
 DIR="$ROOT/tools/mirror_sync"
 WORKER="$DIR/mirror_sync_worker.sh"
+
+resolve_worker_python() {
+  if [ -x "$ROOT/.venv/bin/python" ]; then
+    printf '%s\n' "$ROOT/.venv/bin/python"
+    return 0
+  fi
+
+  command -v python3 2>/dev/null || command -v python 2>/dev/null || true
+}
+
+PYTHON_BIN="$(resolve_worker_python)"
+
+if [ -z "$PYTHON_BIN" ] || [ ! -x "$PYTHON_BIN" ]; then
+  echo "ABORT=WORKER_PYTHON_NOT_EXECUTABLE"
+  exit 4
+fi
 CHECK="$DIR/check_remote_update.sh"
 APPLY="$DIR/apply_remote_update.sh"
 STATUS="$DIR/mirror_sync_status.sh"
@@ -99,7 +115,7 @@ while [ "$RUNNING" -eq 1 ]; do
   # Publish health independently as a second observability path. This keeps
   # status visible even if the child worker is temporarily unhealthy.
   if [ -f "$HEALTH" ]; then
-    python3 "$HEALTH" >/tmp/edarsahub-worker-health-launcher.log 2>&1 || true
+    "$PYTHON_BIN" "$HEALTH" >/tmp/edarsahub-worker-health-launcher.log 2>&1 || true
   fi
 
   sleep "$LOOP_SECONDS" &
