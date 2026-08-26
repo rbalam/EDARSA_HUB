@@ -1,0 +1,27 @@
+{
+  "base_sha": "c212e16b167454a1befce66760b7f1c33c5eb081",
+  "blockers": [],
+  "candidate_sha": "38b39c73e94256f88df5e90e6a2e45e26983a165",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-08-26T03:29:48Z",
+  "development_sha": "38b39c73e94256f88df5e90e6a2e45e26983a165",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/audits/carlos-worker-global-e2e-canary-v3-20260826.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "carlos-worker-global-e2e-canary-v3-20260826",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-08-26T03:35:51Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-26T03:29:43Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
