@@ -12,7 +12,7 @@
   "job_id": "worker-e2e-20260825T034037Z",
   "percent_complete": 80,
   "production_touched": false,
-  "published_at_utc": "2026-08-26T05:10:33Z",
+  "published_at_utc": "2026-08-26T05:14:19Z",
   "schema": "edarsahub.worker-result.v1",
   "source_branch": "Edarsahub_Desarrollo",
   "source_repo": "rbalam/EDARSA_HUB",
