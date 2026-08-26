@@ -13,7 +13,7 @@
   "job_id": "bridge-close-loop-20260824-002",
   "percent_complete": 0,
   "production_touched": false,
-  "published_at_utc": "2026-08-26T04:53:33Z",
+  "published_at_utc": "2026-08-26T05:05:16Z",
   "schema": "edarsahub.worker-result.v1",
   "source_branch": "Edarsahub_Desarrollo",
   "source_repo": "rbalam/EDARSA_HUB",
