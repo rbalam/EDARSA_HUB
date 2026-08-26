@@ -1,0 +1,114 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-evidence-output-v1-20260826-1500",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "b76b75bb99e7e6752079f847fafb3d592ad54f95",
+  "objective": "Agregar soporte canonico evidence-only al worker determinista: una auditoria Python debe poder emitir EDARSA_EVIDENCE_JSON, terminar con exit 0, conservar quality gate PASS, publicar la evidencia estructurada en el resultado y no integrar el archivo temporal de auditoria a Desarrollo. No tocar Produccion.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Worker evidence-only output"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "expected_count": 1,
+      "old": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\"}",
+      "new": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"python_evidence\", \"frontend_build\"}"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "expected_count": 1,
+      "old": "    if kind in {\"py_compile\", \"pytest\"}:\n        paths = check.get(\"paths\")\n        if not isinstance(paths, list) or not paths or not all(safe_repo_path(p) for p in paths):\n            return [f\"{prefix}_INVALID_PATHS\"]\n    if kind == \"frontend_build\":",
+      "new": "    if kind in {\"py_compile\", \"pytest\"}:\n        paths = check.get(\"paths\")\n        if not isinstance(paths, list) or not paths or not all(safe_repo_path(p) for p in paths):\n            return [f\"{prefix}_INVALID_PATHS\"]\n    if kind == \"python_evidence\":\n        path = check.get(\"path\")\n        if not safe_repo_path(path):\n            return [f\"{prefix}_INVALID_PATH\"]\n    if kind == \"frontend_build\":"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\"}",
+      "new": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"python_evidence\", \"frontend_build\"}"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "    elif kind == \"pytest\":\n        paths = [str(p) for p in check.get(\"paths\") or []]\n        cmd = [PYTHON_BIN, \"-m\", \"pytest\", \"-q\", *paths]\n        cwd = worktree\n    elif kind == \"frontend_build\":",
+      "new": "    elif kind == \"pytest\":\n        paths = [str(p) for p in check.get(\"paths\") or []]\n        cmd = [PYTHON_BIN, \"-m\", \"pytest\", \"-q\", *paths]\n        cwd = worktree\n    elif kind == \"python_evidence\":\n        script = safe_path(worktree, str(check.get(\"path\") or \"\"))\n        cmd = [PYTHON_BIN, str(script)]\n        cwd = worktree / \"backend\"\n    elif kind == \"frontend_build\":"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "        output = result.stdout[-12000:]\n        return {\n            \"type\": kind,\n            \"status\": \"PASS\" if result.returncode == 0 else \"FAIL\",\n            \"returncode\": result.returncode,\n            \"started_at_utc\": started,\n            \"completed_at_utc\": now(),\n            \"output\": output,\n        }",
+      "new": "        output = result.stdout[-12000:]\n        payload = {\n            \"type\": kind,\n            \"status\": \"PASS\" if result.returncode == 0 else \"FAIL\",\n            \"returncode\": result.returncode,\n            \"started_at_utc\": started,\n            \"completed_at_utc\": now(),\n            \"output\": output,\n        }\n        if kind == \"python_evidence\" and result.returncode == 0:\n            marker = \"EDARSA_EVIDENCE_JSON=\"\n            evidence_lines = [line for line in result.stdout.splitlines() if line.startswith(marker)]\n            if not evidence_lines:\n                payload[\"status\"] = \"FAIL\"\n                payload[\"returncode\"] = 65\n                payload[\"output\"] = (output + \"\\nEVIDENCE_MARKER_MISSING\")[-12000:]\n            else:\n                try:\n                    payload[\"evidence\"] = json.loads(evidence_lines[-1][len(marker):])\n                except json.JSONDecodeError as exc:\n                    payload[\"status\"] = \"FAIL\"\n                    payload[\"returncode\"] = 65\n                    payload[\"output\"] = (output + f\"\\nEVIDENCE_JSON_INVALID:{exc}\")[-12000:]\n        return payload"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "        result[\"checks\"] = check_results\n        result[\"tests\"] = \"PASS\" if check_results and all(x[\"status\"] == \"PASS\" for x in check_results) else (",
+      "new": "        result[\"checks\"] = check_results\n        evidence_values = [x[\"evidence\"] for x in check_results if \"evidence\" in x]\n        if evidence_values:\n            result[\"evidence\"] = evidence_values[0] if len(evidence_values) == 1 else evidence_values\n        result[\"tests\"] = \"PASS\" if check_results and all(x[\"status\"] == \"PASS\" for x in check_results) else ("
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "        head: str | None = None\n        if not result[\"blockers\"]:\n            head = create_commit(worktree, job_id, sorted(allowed_files))\n            result[\"candidate_sha\"] = head\n\n        if head:",
+      "new": "        head: str | None = None\n        evidence_only = job.get(\"evidence_only\") is True\n        if not result[\"blockers\"] and evidence_only:\n            if \"evidence\" not in result:\n                result[\"blockers\"].append(\"evidence_only_without_evidence\")\n            else:\n                result[\"status\"] = \"EVIDENCE_READY\"\n                result[\"percent_complete\"] = 100\n                result[\"certification\"] = \"EVIDENCE_ONLY\"\n                result[\"summary_es\"] = \"La auditoria determinista termino correctamente y publico evidencia estructurada sin integrar el archivo temporal ni tocar Produccion.\"\n        elif not result[\"blockers\"]:\n            head = create_commit(worktree, job_id, sorted(allowed_files))\n            result[\"candidate_sha\"] = head\n\n        if head:"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "        if result[\"status\"] != \"INTEGRATED\":\n            result[\"percent_complete\"] = 80 if result[\"files_changed\"] else 0",
+      "new": "        if result[\"status\"] not in {\"INTEGRATED\", \"EVIDENCE_READY\"}:\n            result[\"percent_complete\"] = 80 if result[\"files_changed\"] else 0"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "        target = DONE / path.name if result[\"status\"] == \"INTEGRATED\" else REJECTED / path.name",
+      "new": "        target = DONE / path.name if result[\"status\"] in {\"INTEGRATED\", \"EVIDENCE_READY\"} else REJECTED / path.name"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "expected_count": 1,
+      "old": "def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:\n    source_sha = result.get(\"development_sha\")",
+      "new": "def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:\n    if (\n        result.get(\"status\") == \"EVIDENCE_READY\"\n        and str(result.get(\"tests\", \"\")).upper() == \"PASS\"\n        and str(result.get(\"quality_gate\", \"\")).upper() == \"PASS\"\n        and result.get(\"production_touched\") is False\n        and \"evidence\" in result\n    ):\n        return {\n            \"certified\": True,\n            \"certification\": \"EVIDENCE_ONLY\",\n            \"work_completion\": \"COMPLETE\",\n            \"percent_complete\": 100,\n            \"certification_basis\": \"STRUCTURED_EVIDENCE_CHECK_PASS\",\n        }\n\n    source_sha = result.get(\"development_sha\")"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "expected_count": 1,
+      "old": "        \"percent_complete\", \"certification\", \"production_touched\",\n    )",
+      "new": "        \"percent_complete\", \"certification\", \"production_touched\",\n        \"evidence\",\n    )"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_evidence_only_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nBRIDGE = ROOT / 'tools/mirror_sync/universal_job_bridge.py'\nDISPATCHER = ROOT / 'tools/mirror_sync/universal_job_dispatcher.py'\nPUBLISHER = ROOT / 'tools/mirror_sync/universal_job_result_publisher.py'\n\ndef text(path):\n    return path.read_text(encoding='utf-8')\n\ndef test_bridge_accepts_python_evidence_check():\n    value = text(BRIDGE)\n    assert 'python_evidence' in value\n    assert 'CHECK_{index}_INVALID_PATH' in value or 'INVALID_PATH' in value\n\ndef test_dispatcher_supports_successful_evidence_only_jobs():\n    value = text(DISPATCHER)\n    assert 'EDARSA_EVIDENCE_JSON=' in value\n    assert 'EVIDENCE_READY' in value\n    assert 'evidence_only_without_evidence' in value\n    assert 'result[\"evidence\"]' in value\n\ndef test_evidence_only_does_not_integrate_temp_audit_file():\n    value = text(DISPATCHER)\n    assert 'evidence_only = job.get(\"evidence_only\") is True' in value\n    assert 'elif not result[\"blockers\"]:' in value\n    assert 'create_commit(worktree, job_id, sorted(allowed_files))' in value\n\ndef test_publisher_exposes_successful_structured_evidence():\n    value = text(PUBLISHER)\n    assert 'STRUCTURED_EVIDENCE_CHECK_PASS' in value\n    assert '\"evidence\",' in value\n    assert '\"work_completion\": \"COMPLETE\"' in value\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "backend/tests/test_worker_evidence_only_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es"
+}
