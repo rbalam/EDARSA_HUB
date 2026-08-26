@@ -1,10 +1,10 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "b76b75bb99e7e6752079f847fafb3d592ad54f95",
-  "generated_at_utc": "2026-08-26T05:07:15Z",
+  "generated_at_utc": "2026-08-26T05:09:26Z",
   "jobs": [
     {
-      "age_seconds": 95731,
+      "age_seconds": 95862,
       "job_id": "bridge-canary-20260825T023103Z",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -13,7 +13,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 93605,
+      "age_seconds": 93736,
       "job_id": "bridge-canary-final-20260825T030637Z",
       "reasons": [
         "FORBIDDEN_DESTRUCTIVE_OPERATION_REQUESTED"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden, pero la rechazo porque no cumple las reglas de seguridad o formato. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 95315,
+      "age_seconds": 95446,
       "job_id": "bridge-canary2-20260825T023811Z",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -31,7 +31,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 95048,
+      "age_seconds": 95179,
       "job_id": "bridge-canary3-20260825T024234Z",
       "reasons": [
         "FORBIDDEN_DESTRUCTIVE_OPERATION_REQUESTED"
@@ -40,7 +40,7 @@
       "summary_es": "El worker recibio la orden, pero la rechazo porque no cumple las reglas de seguridad o formato. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 94565,
+      "age_seconds": 94696,
       "job_id": "bridge-canary3-20260825T024915Z",
       "reasons": [
         "FORBIDDEN_DESTRUCTIVE_OPERATION_REQUESTED"
@@ -49,7 +49,7 @@
       "summary_es": "El worker recibio la orden, pero la rechazo porque no cumple las reglas de seguridad o formato. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 101492,
+      "age_seconds": 101623,
       "job_id": "bridge-certification-20260824-004",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -58,7 +58,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 102314,
+      "age_seconds": 102445,
       "job_id": "bridge-close-loop-20260824-002",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -67,7 +67,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 102314,
+      "age_seconds": 102445,
       "job_id": "bridge-smoke-20260824-001",
       "reasons": [
         "FORBIDDEN_OPERATION_REQUESTED"
@@ -76,7 +76,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 29383,
+      "age_seconds": 29514,
       "job_id": "carlos-worker-global-e2e-canary-20260825",
       "reasons": [
         "REQUESTER_RBAC_DENIED:REQUESTER_RBAC_RUNTIME_ERROR"
@@ -85,7 +85,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 12534,
+      "age_seconds": 12665,
       "job_id": "carlos-worker-global-e2e-canary-v2-20260825",
       "reasons": [
         "REQUESTER_RBAC_DENIED:REQUESTER_RBAC_RUNTIME_ERROR"
@@ -94,7 +94,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 90160,
+      "age_seconds": 90290,
       "job_id": "chatgpt-deterministic-cert-20260825-001",
       "reasons": [
         "INVALID_SCHEMA"
@@ -103,7 +103,7 @@
       "summary_es": "El worker recibio la orden, pero la rechazo porque no cumple las reglas de seguridad o formato. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 89046,
+      "age_seconds": 89177,
       "job_id": "chatgpt-deterministic-cert-20260825-002",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -112,7 +112,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 87015,
+      "age_seconds": 87146,
       "job_id": "chatgpt-deterministic-cert-20260825-003",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -121,7 +121,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 83048,
+      "age_seconds": 83179,
       "job_id": "chatgpt-deterministic-cert-20260825-004",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -130,7 +130,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 82368,
+      "age_seconds": 82498,
       "job_id": "chatgpt-deterministic-cert-20260825-005",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -139,7 +139,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 80305,
+      "age_seconds": 80436,
       "job_id": "chatgpt-post-integration-mirror-fix-20260825-007",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -148,7 +148,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 102314,
+      "age_seconds": 102445,
       "job_id": "finanzas-decision-pago-7requests-20260824",
       "reasons": [
         "FORBIDDEN_OPERATION_REQUESTED"
@@ -157,7 +157,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 77482,
+      "age_seconds": 77612,
       "job_id": "finanzas-decision-pago-7requests-v2-20260825",
       "reasons": [
         "INVALID_SCHEMA",
@@ -167,7 +167,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 76535,
+      "age_seconds": 76666,
       "job_id": "finanzas-decision-pago-7requests-v3-20260825",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -176,7 +176,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 102314,
+      "age_seconds": 102445,
       "job_id": "runtime-self-heal-20260824-003",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -185,7 +185,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 91522,
+      "age_seconds": 91653,
       "job_id": "worker-e2e-20260825T034037Z",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -194,7 +194,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 75498,
+      "age_seconds": 75629,
       "job_id": "worker-python-runtime-fix-20260825",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -203,7 +203,7 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 46463,
+      "age_seconds": 46594,
       "job_id": "worker-rbac-requester-layer-20260825",
       "reasons": [
         "REJECTION_DETAILS_UNAVAILABLE"
@@ -212,103 +212,103 @@
       "summary_es": "La orden fue rechazada por las reglas del worker."
     },
     {
-      "age_seconds": 95729,
+      "age_seconds": 95860,
       "job_id": "bridge-canary-20260825T023103Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 95313,
+      "age_seconds": 95444,
       "job_id": "bridge-canary2-20260825T023811Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 101491,
+      "age_seconds": 101622,
       "job_id": "bridge-certification-20260824-004",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 102311,
+      "age_seconds": 102442,
       "job_id": "bridge-close-loop-20260824-002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 5846,
+      "age_seconds": 5977,
       "job_id": "carlos-worker-global-e2e-canary-v3-20260826",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 89044,
+      "age_seconds": 89175,
       "job_id": "chatgpt-deterministic-cert-20260825-002",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 87015,
+      "age_seconds": 87146,
       "job_id": "chatgpt-deterministic-cert-20260825-003",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 83047,
+      "age_seconds": 83178,
       "job_id": "chatgpt-deterministic-cert-20260825-004",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 82364,
+      "age_seconds": 82495,
       "job_id": "chatgpt-deterministic-cert-20260825-005",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 81113,
+      "age_seconds": 81244,
       "job_id": "chatgpt-deterministic-cert-20260825-006",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 79320,
+      "age_seconds": 79451,
       "job_id": "chatgpt-deterministic-cert-20260825-008",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 80302,
+      "age_seconds": 80433,
       "job_id": "chatgpt-post-integration-mirror-fix-20260825-007",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 76530,
+      "age_seconds": 76661,
       "job_id": "finanzas-decision-pago-7requests-v3-20260825",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 102238,
+      "age_seconds": 102369,
       "job_id": "runtime-self-heal-20260824-003",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 91225,
+      "age_seconds": 91356,
       "job_id": "worker-e2e-20260825T034037Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 75495,
+      "age_seconds": 75626,
       "job_id": "worker-python-runtime-fix-20260825",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 46457,
+      "age_seconds": 46588,
       "job_id": "worker-rbac-requester-layer-20260825",
       "reason": null,
       "state": "RESULT_READY"
