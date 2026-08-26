@@ -1,0 +1,29 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "carlos-worker-iscam-comandas-fix-v2-20260826",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "b76b75bb99e7e6752079f847fafb3d592ad54f95",
+  "objective": "Aplicar correccion minima en Reportes ISCAM > Comandas de Venta para que OPENJSON no falle cuando Sync_Sales.items no sea JSON valido. Modificar solo iscam_routes.py, validar sintaxis y no tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "iscam-comandas-20260826"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "    \"CROSS APPLY OPENJSON(s.items) WITH (\"",
+      "new": "    \"CROSS APPLY OPENJSON(CASE WHEN ISJSON(s.items) = 1 THEN s.items ELSE N'[]' END) WITH (\"",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/inteligencia_comercial/iscam_routes.py"]}
+  ],
+  "human_summary_language": "es"
+}
