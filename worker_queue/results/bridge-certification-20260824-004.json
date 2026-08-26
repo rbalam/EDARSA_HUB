@@ -13,7 +13,7 @@
   "job_id": "bridge-certification-20260824-004",
   "percent_complete": 0,
   "production_touched": false,
-  "published_at_utc": "2026-08-26T23:31:33Z",
+  "published_at_utc": "2026-08-26T23:45:01Z",
   "schema": "edarsahub.worker-result.v1",
   "source_branch": "Edarsahub_Desarrollo",
   "source_repo": "rbalam/EDARSA_HUB",
