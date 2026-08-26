@@ -16,7 +16,7 @@
   "job_id": "worker-python-runtime-fix-20260825",
   "percent_complete": 80,
   "production_touched": false,
-  "published_at_utc": "2026-08-26T05:07:49Z",
+  "published_at_utc": "2026-08-26T05:10:44Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
