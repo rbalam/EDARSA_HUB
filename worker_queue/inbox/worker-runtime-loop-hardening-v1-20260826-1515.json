@@ -1,0 +1,28 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"worker-runtime-loop-hardening-v1-20260826-1515",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"b76b75bb99e7e6752079f847fafb3d592ad54f95",
+  "production_allowed":false,
+  "objective":"Corregir todos los frentes del runtime universal: priorizar receive/dispatch/publish antes del mirror sync; impedir bloqueo indefinido mediante timeout por herramienta; aislar fallos para que un paso no detenga la cola; hacer timeout tambien en launcher safe_refresh y health; conservar staged local; no tocar Produccion. Validar sintaxis y contratos. Esta orden complementa worker-evidence-output-v1-20260826-1500; si esa orden ya movio Desarrollo, detenerse por BASE_SHA_MISMATCH y reemitir sobre el nuevo HEAD, sin forzar.",
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt","project":"V1.0","chat":"Worker runtime hardening"},
+  "actions":[
+    {"type":"replace_text","path":"tools/mirror_sync/mirror_sync_worker.sh","expected_count":1,"old":"LOOP_SECONDS=\"${MIRROR_SYNC_LOOP_SECONDS:-60}\"\nRUNNING=1","new":"LOOP_SECONDS=\"${MIRROR_SYNC_LOOP_SECONDS:-60}\"\nTOOL_TIMEOUT_SECONDS=\"${MIRROR_SYNC_TOOL_TIMEOUT_SECONDS:-120}\"\nRUNNING=1"},
+    {"type":"replace_text","path":"tools/mirror_sync/mirror_sync_worker.sh","expected_count":1,"old":"    \"$@\" >\"$OUT\" 2>&1\n    RC=$?","new":"    timeout --signal=TERM --kill-after=10 \"${TOOL_TIMEOUT_SECONDS}s\" \"$@\" >\"$OUT\" 2>&1\n    RC=$?"},
+    {"type":"replace_text","path":"tools/mirror_sync/mirror_sync_worker.sh","expected_count":1,"old":"    set +e; \"$CHECK\" >\"$CHECK_OUT\" 2>&1; CHECK_RC=$?; set -e","new":"    set +e; timeout --signal=TERM --kill-after=10 \"${TOOL_TIMEOUT_SECONDS}s\" \"$CHECK\" >\"$CHECK_OUT\" 2>&1; CHECK_RC=$?; set -e"},
+    {"type":"replace_text","path":"tools/mirror_sync/mirror_sync_worker.sh","expected_count":1,"old":"    set +e; \"$PUBLISH\" --publish >\"$PUBLISH_OUT\" 2>&1; PUBLISH_RC=$?; set -e","new":"    set +e; timeout --signal=TERM --kill-after=10 \"${TOOL_TIMEOUT_SECONDS}s\" \"$PUBLISH\" --publish >\"$PUBLISH_OUT\" 2>&1; PUBLISH_RC=$?; set -e"},
+    {"type":"replace_text","path":"tools/mirror_sync/mirror_sync_worker.sh","expected_count":1,"old":"    set +e; \"$FINALIZER\" \"$SNAPSHOT\"; FINALIZE_RC=$?; set -e","new":"    set +e; timeout --signal=TERM --kill-after=10 \"${TOOL_TIMEOUT_SECONDS}s\" \"$FINALIZER\" \"$SNAPSHOT\"; FINALIZE_RC=$?; set -e"},
+    {"type":"replace_text","path":"tools/mirror_sync/mirror_sync_worker.sh","expected_count":1,"old":"while [ \"$RUNNING\" -eq 1 ]; do\n    run_cycle\n    receive_universal_jobs\n    dispatch_universal_jobs\n    publish_universal_results\n    publish_runtime_health\n    run_reporting_pipeline","new":"while [ \"$RUNNING\" -eq 1 ]; do\n    # La cola universal es prioritaria: ningun mirror sync lento debe impedir recibir ordenes.\n    receive_universal_jobs\n    dispatch_universal_jobs\n    publish_universal_results\n    publish_runtime_health\n    run_cycle\n    run_reporting_pipeline"},
+    {"type":"replace_text","path":"tools/mirror_sync/mirror_sync_supervisor_entrypoint.sh","expected_count":1,"old":"LOOP_SECONDS=\"${MIRROR_LAUNCHER_LOOP_SECONDS:-15}\"\nWORKER_PID=\"\"","new":"LOOP_SECONDS=\"${MIRROR_LAUNCHER_LOOP_SECONDS:-15}\"\nLAUNCHER_TOOL_TIMEOUT_SECONDS=\"${MIRROR_LAUNCHER_TOOL_TIMEOUT_SECONDS:-120}\"\nWORKER_PID=\"\""},
+    {"type":"replace_text","path":"tools/mirror_sync/mirror_sync_supervisor_entrypoint.sh","expected_count":1,"old":"  \"$CHECK\" >\"$out\" 2>&1\n  rc=$?","new":"  timeout --signal=TERM --kill-after=10 \"${LAUNCHER_TOOL_TIMEOUT_SECONDS}s\" \"$CHECK\" >\"$out\" 2>&1\n  rc=$?"},
+    {"type":"replace_text","path":"tools/mirror_sync/mirror_sync_supervisor_entrypoint.sh","expected_count":1,"old":"    \"$APPLY\"\n    rc=$?","new":"    timeout --signal=TERM --kill-after=10 \"${LAUNCHER_TOOL_TIMEOUT_SECONDS}s\" \"$APPLY\"\n    rc=$?"},
+    {"type":"replace_text","path":"tools/mirror_sync/mirror_sync_supervisor_entrypoint.sh","expected_count":1,"old":"    \"$PYTHON_BIN\" \"$HEALTH\" >/tmp/edarsahub-worker-health-launcher.log 2>&1 || true","new":"    timeout --signal=TERM --kill-after=10 \"${LAUNCHER_TOOL_TIMEOUT_SECONDS}s\" \"$PYTHON_BIN\" \"$HEALTH\" >/tmp/edarsahub-worker-health-launcher.log 2>&1 || true"},
+    {"type":"write_file","path":"backend/tests/test_worker_runtime_loop_hardening_contract.py","content":"from pathlib import Path\nROOT=Path(__file__).resolve().parents[2]\nWORKER=(ROOT/'tools/mirror_sync/mirror_sync_worker.sh').read_text(encoding='utf-8')\nLAUNCHER=(ROOT/'tools/mirror_sync/mirror_sync_supervisor_entrypoint.sh').read_text(encoding='utf-8')\n\ndef test_queue_runs_before_mirror_cycle():\n    loop=WORKER.split('while [ \\\"$RUNNING\\\" -eq 1 ]; do',1)[-1] if 'while [ \\\"$RUNNING\\\" -eq 1 ]; do' in WORKER else WORKER.split('while [ \"$RUNNING\" -eq 1 ]; do',1)[-1]\n    assert loop.index('receive_universal_jobs') < loop.index('run_cycle')\n    assert loop.index('dispatch_universal_jobs') < loop.index('run_cycle')\n    assert loop.index('publish_universal_results') < loop.index('run_cycle')\n\ndef test_worker_external_steps_have_timeout():\n    assert 'MIRROR_SYNC_TOOL_TIMEOUT_SECONDS' in WORKER\n    assert WORKER.count('timeout --signal=TERM --kill-after=10') >= 4\n\ndef test_launcher_cannot_block_forever():\n    assert 'MIRROR_LAUNCHER_TOOL_TIMEOUT_SECONDS' in LAUNCHER\n    assert LAUNCHER.count('timeout --signal=TERM --kill-after=10') >= 3\n"}
+  ],
+  "checks":[
+    {"type":"py_compile","paths":["backend/tests/test_worker_runtime_loop_hardening_contract.py"]},
+    {"type":"git_diff_check"}
+  ],
+  "human_summary_language":"es"
+}
