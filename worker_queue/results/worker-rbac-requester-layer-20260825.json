@@ -17,7 +17,7 @@
   "job_id": "worker-rbac-requester-layer-20260825",
   "percent_complete": 80,
   "production_touched": false,
-  "published_at_utc": "2026-08-26T04:44:49Z",
+  "published_at_utc": "2026-08-26T04:48:19Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
