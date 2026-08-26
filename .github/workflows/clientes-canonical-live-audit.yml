@@ -1,0 +1,72 @@
+name: Clientes Canonical Live Audit
+
+on:
+  push:
+    branches: [audit/clientes-canonical-live-20260825]
+    paths:
+      - ".github/workflows/clientes-canonical-live-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "HRLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+      EDARSAHUB_SECRET_KEY: ${{ secrets.EDARSAHUB_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pymssql cryptography python-dotenv
+      - name: Audit canonical customer model and configured sources
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os, sys, json, pymssql
+          sys.path.insert(0, 'backend')
+          from core.secret_manager import decrypt_secret
+
+          def conn(cfg):
+              return pymssql.connect(server=cfg['host'], port=int(cfg.get('port') or 1433), user=cfg['user'], password=cfg['password'], database=cfg['database'], login_timeout=12, timeout=30)
+
+          hubcfg={'host':os.environ['EDARSAHUB_SQL_HOST'],'port':os.environ['EDARSAHUB_SQL_PORT'],'user':os.environ['EDARSAHUB_SQL_USER'],'password':os.environ['EDARSAHUB_SQL_PASSWORD'],'database':os.environ['EDARSAHUB_SQL_DATABASE']}
+          hub=conn(hubcfg); c=hub.cursor(as_dict=True)
+          print('=== HUB CUSTOMER TABLES ===')
+          c.execute("SELECT t.name table_name, SUM(p.rows) rows FROM sys.tables t LEFT JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name LIKE '%Cliente%' OR t.name LIKE '%Customer%' GROUP BY t.name ORDER BY t.name")
+          for r in c.fetchall(): print(r)
+          for table in ['Cliente_Catalogo','Cliente_Contactos','Sync_Customers','CavaSocios_Socios']:
+              print('=== COLUMNS',table,'===')
+              c.execute("SELECT COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=%s ORDER BY ORDINAL_POSITION",(table,))
+              for r in c.fetchall(): print(r)
+              try:
+                  c.execute('SELECT COUNT(*) n FROM dbo.['+table+']'); print('COUNT',c.fetchone())
+              except Exception as e: print('COUNT_ERROR',type(e).__name__)
+          print('=== CONFIGURED DATA SOURCES ===')
+          c.execute("SELECT CAST(id AS varchar(50)) id,nombre,system_type,host,port,database_name,username,password_encrypted,activo FROM Servidores_Conexiones WHERE activo=1 AND (system_type LIKE '%SOFT%' OR system_type LIKE '%MPRO%' OR system_type LIKE '%MANAGEMENT%') ORDER BY nombre")
+          servers=c.fetchall()
+          for s in servers: print({k:s.get(k) for k in ['id','nombre','system_type','database_name','activo']})
+          for s in servers:
+              print('=== SOURCE',s['nombre'],s['system_type'],'===')
+              try:
+                  pwd=decrypt_secret(s['password_encrypted'])
+                  sc=conn({'host':s['host'],'port':s['port'],'user':s['username'],'password':pwd,'database':s['database_name']}); q=sc.cursor(as_dict=True)
+                  q.execute("SELECT t.name table_name, SUM(p.rows) rows FROM sys.tables t LEFT JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name LIKE '%client%' OR t.name LIKE '%cliente%' OR t.name LIKE '%customer%' GROUP BY t.name ORDER BY t.name")
+                  tabs=q.fetchall(); print('CANDIDATE_TABLES',tabs)
+                  for tr in tabs:
+                      tn=tr['table_name']
+                      q.execute("SELECT COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=%s ORDER BY ORDINAL_POSITION",(tn,))
+                      print('TABLE',tn,'COLUMNS',q.fetchall())
+                  sc.close()
+              except Exception as e:
+                  print('SOURCE_ERROR',s['nombre'],type(e).__name__,str(e)[:180])
+          hub.close()
+          PY
