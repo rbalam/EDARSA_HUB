@@ -1,0 +1,27 @@
+{
+  "base_sha": "b76b75bb99e7e6752079f847fafb3d592ad54f95",
+  "blockers": [
+    "check_failed:frontend_build"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-26T23:09:47Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "frontend/src/pages/SyncMonitor.js"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "carlos-worker-sync-monitor-contrast-fix-20260826",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-08-26T23:23:30Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-26T23:09:44Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
