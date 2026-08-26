@@ -28,7 +28,12 @@ DEV_BRANCH = "Edarsahub_Desarrollo"
 MIRROR_BRANCH = "mirror/emergent-live"
 REPORT_DIR = Path(os.environ.get("MIRROR_SYNC_REPORT_STATE_DIR", "/app/.git/mirror-sync/reporting"))
 ATTESTATIONS = REPORT_DIR / "test_attestations"
-WORKTREE_ROOT = Path(os.environ.get("EDARSAHUB_QUEUE_PUBLISH_WORKTREE", "/tmp/edarsahub-worker-result-publish"))
+WORKTREE_PARENT = Path(
+    os.environ.get(
+        "EDARSAHUB_QUEUE_PUBLISH_WORKTREE_PARENT",
+        "/tmp",
+    )
+)
 
 
 def now() -> str:
@@ -259,31 +264,40 @@ def prepare_queue_worktree() -> tuple[Path, str]:
     git("fetch", REMOTE, QUEUE_BRANCH)
     base = git("rev-parse", f"{REMOTE}/{QUEUE_BRANCH}").stdout.strip()
 
-    if WORKTREE_ROOT.exists():
-        shutil.rmtree(WORKTREE_ROOT, ignore_errors=True)
+    WORKTREE_PARENT.mkdir(parents=True, exist_ok=True)
 
-    WORKTREE_ROOT.parent.mkdir(parents=True, exist_ok=True)
+    worktree_root = Path(
+        tempfile.mkdtemp(
+            prefix="edarsahub-worker-result-publish-",
+            dir=str(WORKTREE_PARENT),
+        )
+    )
+
+    # git clone requiere que la ruta destino no exista.
+    shutil.rmtree(worktree_root)
 
     origin_url = git("remote", "get-url", REMOTE).stdout.strip()
 
-    run(
+    clone = run(
         [
             "git",
             "clone",
             "--quiet",
             "--no-checkout",
             origin_url,
-            str(WORKTREE_ROOT),
+            str(worktree_root),
         ],
         cwd=ROOT,
     )
 
-    if not WORKTREE_ROOT.is_dir():
+    if clone.returncode != 0 or not worktree_root.is_dir():
+        shutil.rmtree(worktree_root, ignore_errors=True)
         raise RuntimeError(
-            "RESULT_WORKTREE_NOT_CREATED: temporary clone failed"
+            "RESULT_WORKTREE_NOT_CREATED:"
+            + clone.stdout[-1500:]
         )
 
-    git("checkout", "--detach", base, cwd=WORKTREE_ROOT)
+    git("checkout", "--detach", base, cwd=worktree_root)
 
     # El clone temporal no hereda la configuracion local de /app.
     # Copiar explicitamente el helper funcional evita caer en el
@@ -305,17 +319,17 @@ def prepare_queue_worktree() -> tuple[Path, str]:
         "--local",
         "credential.helper",
         credential_helper,
-        cwd=WORKTREE_ROOT,
+        cwd=worktree_root,
     )
     git(
         "config",
         "--local",
         "credential.useHttpPath",
         "true",
-        cwd=WORKTREE_ROOT,
+        cwd=worktree_root,
     )
 
-    return WORKTREE_ROOT, base
+    return worktree_root, base
 
 
 def publish_one(path: Path) -> bool:
@@ -392,14 +406,23 @@ def publish_one(path: Path) -> bool:
 def main() -> int:
     RESULTS.mkdir(parents=True, exist_ok=True)
     count = 0
+    errors = 0
+
     for path in sorted(RESULTS.glob("*.json")):
         try:
             if publish_one(path):
                 count += 1
         except Exception as exc:
-            print(f"UNIVERSAL_RESULT_PUBLISH_ERROR={path.name}:{type(exc).__name__}:{exc}")
+            errors += 1
+            print(
+                f"UNIVERSAL_RESULT_PUBLISH_ERROR="
+                f"{path.name}:{type(exc).__name__}:{exc}"
+            )
+
     print(f"UNIVERSAL_RESULTS_PUBLISHED_COUNT={count}")
-    return 0
+    print(f"UNIVERSAL_RESULTS_PUBLISH_ERROR_COUNT={errors}")
+
+    return 1 if errors else 0
 
 
 if __name__ == "__main__":
