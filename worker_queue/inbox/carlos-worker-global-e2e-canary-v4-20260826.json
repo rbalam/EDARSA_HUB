@@ -1,0 +1,28 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "carlos-worker-global-e2e-canary-v4-20260826",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "b76b75bb99e7e6752079f847fafb3d592ad54f95",
+  "objective": "Canario E2E inocuo solicitado desde ChatGPT para certificar la identidad carlosruz@edarsa.com.mx, source chatgpt y project V1.0 mediante RBAC SQL canonico, consumo real por el worker determinista, validacion, integracion en Edarsahub_Desarrollo, convergencia con mirror/emergent-live y publicacion del resultado, sin tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "carlos-worker-global-e2e-canary-v4"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/audits/carlos-worker-global-e2e-canary-v4-20260826.md",
+      "content": "# Carlos worker global E2E canary v4\n\nJob: carlos-worker-global-e2e-canary-v4-20260826\n\nRequester: carlosruz@edarsa.com.mx\nRequest source: chatgpt\nProject: V1.0\n\nCanario inocuo para comprobar el recorrido canonico completo del worker con autorizacion RBAC SQL. Solo agrega esta evidencia en Desarrollo.\n\nProduccion: no tocada.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es"
+}
