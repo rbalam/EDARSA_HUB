@@ -1,0 +1,16 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"concurrency-e2e-controller-20260827",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Despues de integrar el protocolo worker/job/*, certificar por pruebas automatizadas que el bridge descubre multiples refs de productores sin depender de que worker/requests quede quieta. Agregar una prueba de contrato que modele 20 refs independientes y verifique deduplicacion por job_id, compatibilidad legacy y ausencia de force push.",
+  "human_summary_language":"es",
+  "actions":[
+    {"type":"write_file","path":"backend/tests/test_universal_job_bridge_concurrency_gate_20.py","content":"from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nBRIDGE = ROOT / 'tools' / 'mirror_sync' / 'universal_job_bridge.py'\n\n\ndef test_concurrency_protocol_declares_isolated_job_refs():\n    text = BRIDGE.read_text(encoding='utf-8')\n    assert 'worker/job/' in text\n    assert 'queue_sources' in text\n    assert 'sorted(set(sources))' in text\n\n\ndef test_gate_models_twenty_independent_producers_without_shared_ref():\n    refs = [f'worker/job/concurrency-e2e-{i:02d}' for i in range(1, 21)]\n    assert len(refs) == 20\n    assert len(set(refs)) == 20\n    assert all(ref != 'worker/requests' for ref in refs)\n\n\ndef test_bridge_keeps_legacy_read_only_compatibility():\n    text = BRIDGE.read_text(encoding='utf-8')\n    assert '(QUEUE_BRANCH, line.strip())' in text\n\n\ndef test_bridge_never_uses_force_push_for_job_intake():\n    text = BRIDGE.read_text(encoding='utf-8').lower()\n    assert 'git push --force' not in text\n    assert 'force=true' not in text\n"}
+  ],
+  "checks":[
+    {"type":"git_diff_check"},
+    {"type":"pytest","paths":["backend/tests/test_universal_job_bridge_concurrency_gate_20.py","backend/tests/test_universal_job_bridge_concurrent_producers.py"]}
+  ]
+}
