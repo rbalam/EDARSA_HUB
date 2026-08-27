@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-fix-pytest-runtime-env-v1-20260827",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir el dispatcher determinista para que los checks pytest ejecutados dentro de worktrees temporales reciban las variables de runtime definidas en /app/backend/.env sin hacer source del archivo y sin sobrescribir variables ya presentes en os.environ. Agregar regresion que pruebe propagacion de EDARSAHUB_SQL_* y PYTHONPATH. No tocar Cavas ni Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "PYTHON_BIN = resolve_canonical_python()\n\n\ndef now() -> str:\n",
+      "new": "PYTHON_BIN = resolve_canonical_python()\n\n\ndef load_backend_runtime_env() -> dict[str, str]:\n    \"\"\"Load missing runtime variables from backend/.env without shell evaluation.\"\"\"\n    env_file = ROOT / \"backend\" / \".env\"\n    loaded: dict[str, str] = {}\n    if not env_file.is_file():\n        return loaded\n\n    for raw_line in env_file.read_text(encoding=\"utf-8\").splitlines():\n        line = raw_line.strip()\n        if not line or line.startswith(\"#\"):\n            continue\n        if line.startswith(\"export \"):\n            line = line[len(\"export \"):].lstrip()\n        if \"=\" not in line:\n            continue\n        key, value = line.split(\"=\", 1)\n        key = key.strip()\n        if not re.fullmatch(r\"[A-Za-z_][A-Za-z0-9_]*\", key):\n            continue\n        if key in os.environ:\n            continue\n        value = value.strip()\n        if len(value) >= 2 and value[0] == value[-1] and value[0] in {\"'\", '\"'}:\n            value = value[1:-1]\n        loaded[key] = value\n    return loaded\n\n\ndef now() -> str:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        env_extra = {\"PYTHONPATH\": str(backend)}\n",
+      "new": "        env_extra = {**load_backend_runtime_env(), \"PYTHONPATH\": str(backend)}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_universal_job_dispatcher_python_runtime.py",
+      "old": "    assert \"/usr/bin/python3\" not in text\n    assert \"/usr/local/bin/python3\" not in text\n",
+      "new": "    assert \"/usr/bin/python3\" not in text\n    assert \"/usr/local/bin/python3\" not in text\n\n\ndef test_pytest_loads_missing_backend_runtime_env(tmp_path, monkeypatch):\n    module = load_dispatcher()\n    calls = []\n\n    backend = tmp_path / \"backend\"\n    backend.mkdir()\n    (backend / \".env\").write_text(\n        \"EDARSAHUB_SQL_HOST=db.example\\n\"\n        \"EDARSAHUB_SQL_PORT=1433\\n\"\n        \"EDARSAHUB_SQL_DATABASE=EDARSAHUB\\n\"\n        \"EDARSAHUB_SQL_USER=worker\\n\"\n        \"EDARSAHUB_SQL_PASSWORD=value with spaces\\n\",\n        encoding=\"utf-8\",\n    )\n\n    def fake_run(args, **kwargs):\n        calls.append((args, kwargs))\n        return SimpleNamespace(returncode=0, stdout=\"ok\")\n\n    monkeypatch.setattr(module, \"ROOT\", tmp_path)\n    monkeypatch.setattr(module, \"run\", fake_run)\n    monkeypatch.delenv(\"EDARSAHUB_SQL_HOST\", raising=False)\n    monkeypatch.delenv(\"EDARSAHUB_SQL_PORT\", raising=False)\n    monkeypatch.delenv(\"EDARSAHUB_SQL_DATABASE\", raising=False)\n    monkeypatch.delenv(\"EDARSAHUB_SQL_USER\", raising=False)\n    monkeypatch.delenv(\"EDARSAHUB_SQL_PASSWORD\", raising=False)\n\n    module.run_check(\n        tmp_path,\n        {\"type\": \"pytest\", \"paths\": [\"backend/tests/test_example.py\"]},\n    )\n\n    env_extra = calls[0][1][\"env_extra\"]\n    assert env_extra[\"PYTHONPATH\"] == str(backend)\n    assert env_extra[\"EDARSAHUB_SQL_HOST\"] == \"db.example\"\n    assert env_extra[\"EDARSAHUB_SQL_PORT\"] == \"1433\"\n    assert env_extra[\"EDARSAHUB_SQL_DATABASE\"] == \"EDARSAHUB\"\n    assert env_extra[\"EDARSAHUB_SQL_USER\"] == \"worker\"\n    assert env_extra[\"EDARSAHUB_SQL_PASSWORD\"] == \"value with spaces\"\n\n\ndef test_backend_runtime_env_does_not_override_process_env(tmp_path, monkeypatch):\n    module = load_dispatcher()\n    backend = tmp_path / \"backend\"\n    backend.mkdir()\n    (backend / \".env\").write_text(\n        \"EDARSAHUB_SQL_HOST=file-host\\n\",\n        encoding=\"utf-8\",\n    )\n    monkeypatch.setattr(module, \"ROOT\", tmp_path)\n    monkeypatch.setenv(\"EDARSAHUB_SQL_HOST\", \"process-host\")\n\n    loaded = module.load_backend_runtime_env()\n\n    assert \"EDARSAHUB_SQL_HOST\" not in loaded\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["tools/mirror_sync/universal_job_dispatcher.py", "backend/tests/test_universal_job_dispatcher_python_runtime.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_universal_job_dispatcher_python_runtime.py"]}
+  ],
+  "human_summary_language": "es"
+}
