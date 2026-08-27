@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "carlos-worker-iscam-comandas-final-e2e-20260827-c",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4ebf301a259040a6176d82d37cadb3d2e4675707",
+  "production_allowed": false,
+  "objective": "Certificar E2E final de Carlos Ruz: ISCAM Comandas con ISJSON, Python canonico, pytest aislado al backend del worktree, integracion y publicacion remota.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "ISCAM Comandas final certified E2E"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/audits/carlos-worker-iscam-comandas-final-e2e-20260827-c.md",
+      "content": "# Carlos Ruz - ISCAM Comandas E2E final\n\nCertificacion posterior a la reparacion definitiva del Worker.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_comandas_invalid_json_contract.py",
+        "backend/tests/test_universal_job_dispatcher_python_runtime.py",
+        "backend/tests/test_worker_canonical_python_runtime_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es"
+}
