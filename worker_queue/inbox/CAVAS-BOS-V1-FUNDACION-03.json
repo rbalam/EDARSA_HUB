@@ -1,0 +1,31 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-BOS-V1-FUNDACION-03",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Reejecutar la fundacion Cavas sobre el Worker corregido. Conservar la implementacion canonica existente, aplicar solo la normalizacion de navegacion pendiente y ejecutar gates completos. No tocar Produccion ni crear tablas, columnas, permisos, fuentes, conexiones o catalogos.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/config/enterpriseMenuConfig.js",
+      "old": "label: \"Cavas - Consumos\"",
+      "new": "label: \"Cavas - Movimientos / Consumos\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/CavaNavHeader.jsx",
+      "old": "{ label: 'Bitácora Consumos', path: '/cava-socios/consumos', icon: TrendingDown, active: currentPath === '/cava-socios/consumos' }",
+      "new": "{ label: 'Movimientos / Consumos', path: '/cava-socios/consumos', icon: TrendingDown, active: currentPath === '/cava-socios/consumos' }",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/cava_socios/routes.py", "backend/modules/cava_socios/service.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_cava_socios.py"]},
+    {"type": "frontend_build", "directory": "frontend"}
+  ],
+  "human_summary_language": "es"
+}
