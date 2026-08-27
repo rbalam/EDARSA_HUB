@@ -1,0 +1,22 @@
+{
+  "blockers": [
+    "dispatcher_exception:RuntimeError:BASE_SHA_MISMATCH:expected=84eb24b922ee9fa388406d578af5b91a523907a9:actual=834abb21030dd2963465efeb006f924ba676bef6"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-27T16:04:22Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "carlos-worker-sync-monitor-contrast-fix-v3-20260827",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-08-27T17:39:50Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-27T16:04:22Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
