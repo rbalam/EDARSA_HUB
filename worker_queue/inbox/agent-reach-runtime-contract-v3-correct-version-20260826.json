@@ -1,0 +1,21 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "agent-reach-runtime-contract-v3-correct-version-20260826",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir la prueba de contrato Agent-Reach que fallo por confundir la version de runtime/CLI yt-dlp 2026.07.04 con la version normalizada del paquete Python 2026.7.4. No cambiar el runtime correcto. Crear una prueba de regresion que valide ambas representaciones en sus fuentes canonicas y repetir gate hasta PASS.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_agent_reach_runtime_contract.py",
+      "content": "from pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\nINFRA = ROOT / 'infra' / 'agent-reach'\nWORKFLOW = ROOT / '.github' / 'workflows' / 'agent-reach-runtime-audit.yml'\nVENDORED = ROOT / 'third_party' / 'agent-reach'\n\n\ndef read(path: Path) -> str:\n    return path.read_text(encoding='utf-8')\n\n\ndef test_canonical_agent_reach_files_exist():\n    required = [\n        INFRA / 'Dockerfile',\n        INFRA / 'README.md',\n        INFRA / 'build.sh',\n        INFRA / 'healthcheck.sh',\n        INFRA / 'requirements.lock',\n        INFRA / 'versions.lock',\n        INFRA / 'yt-dlp.conf',\n        WORKFLOW,\n        VENDORED / 'pyproject.toml',\n    ]\n    missing = [str(path.relative_to(ROOT)) for path in required if not path.is_file()]\n    assert not missing, f'Missing canonical Agent-Reach files: {missing}'\n\n\ndef test_versions_are_pinned_and_runtime_isolated():\n    versions = read(INFRA / 'versions.lock')\n    requirements = read(INFRA / 'requirements.lock')\n    assert 'AGENT_REACH_VERSION=1.5.0' in versions\n    assert 'DENO_VERSION=2.9.4' in versions\n    # yt-dlp CLI/runtime preserves the date-style zero padding.\n    assert 'YTDLP_VERSION=2026.07.04' in versions\n    # Python package pins use the normalized PEP 440 representation.\n    assert 'yt-dlp==2026.7.4' in requirements\n    assert 'PIP_VERSION=26.1.2' in versions\n    dockerfile = read(INFRA / 'Dockerfile')\n    assert 'USER edarsa-agent-reach' in dockerfile\n    assert 'VIRTUAL_ENV=/opt/edarsa/agent-reach/venv' in dockerfile\n    assert '/root/.agent-reach' not in dockerfile\n    assert 'ffmpeg' in dockerfile\n    assert 'ffprobe' in dockerfile\n\n\ndef test_healthcheck_enforces_non_root_and_pinned_tools():\n    health = read(INFRA / 'healthcheck.sh')\n    assert '[ \"$(id -u)\" -ne 0 ]' in health\n    for command in ('agent-reach', 'python', 'yt-dlp', 'deno', 'ffmpeg', 'ffprobe', 'curl'):\n        assert f'require_command {command}' in health\n    assert 'AGENT_REACH_HEALTHCHECK=PASS' in health\n\n\ndef test_build_and_ci_do_not_publish_or_deploy():\n    build = read(INFRA / 'build.sh')\n    workflow = read(WORKFLOW)\n    assert 'docker push' not in build\n    assert 'kubectl' not in build\n    assert 'helm ' not in build\n    assert 'IMAGE_PUSHED=0' in build\n    assert 'DEPLOY_EXECUTED=0' in build\n    assert 'contents: read' in workflow\n    assert 'docker push' not in workflow\n    assert 'kubectl' not in workflow\n    assert 'helm ' not in workflow\n    assert 'IMAGE_PUSHED=0' in workflow\n    assert 'DEPLOY_EXECUTED=0' in workflow\n\n\ndef test_runtime_has_no_direct_backend_or_sql_contract():\n    dockerfile = read(INFRA / 'Dockerfile')\n    build = read(INFRA / 'build.sh')\n    combined = dockerfile + '\\n' + build\n    assert 'backend/' not in combined\n    assert 'sqlcmd' not in combined.lower()\n    assert 'mongo' not in combined.lower()\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/tests/test_agent_reach_runtime_contract.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_agent_reach_runtime_contract.py"]}
+  ],
+  "human_summary_language": "es"
+}
