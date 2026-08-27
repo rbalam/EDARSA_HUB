@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-readonly-sql-support-v5-20260827",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Endurecer READ_ONLY_SQL despues de v4 antes de ejecutar GATE 1: eliminar identidad de login/usuario de la evidencia publica, conservar solo identidad de base de datos y agregar regresion que impida reintroducir SUSER_SNAME o USER_NAME. No cambiar el contrato read-only ni tocar Produccion.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Robots-Netpay-Toast-Menu-Servidores-BOS-2"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/sql_readonly_audit.py",
+      "old": "\"SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS database_user\",",
+      "new": "\"SELECT DB_NAME() AS database_name\",",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_universal_worker_readonly_sql.py",
+      "old": "    assert \"ALTER TABLE\" not in upper\n",
+      "new": "    assert \"ALTER TABLE\" not in upper\n    assert \"SUSER_SNAME\" not in upper\n    assert \"USER_NAME()\" not in upper\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["tools/mirror_sync/sql_readonly_audit.py", "backend/tests/test_universal_worker_readonly_sql.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_universal_worker_readonly_sql.py", "backend/tests/test_universal_job_dispatcher_python_runtime.py"]}
+  ],
+  "human_summary_language": "es"
+}
