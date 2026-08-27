@@ -1,0 +1,29 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-agent-guard-release-help-20260827-1541",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "c6f18813779593ca739d89c59f2b48adcbf9c895",
+  "objective": "Obtener mediante el propio Worker la sintaxis exacta de agent_guard release para cerrar el lifecycle sin adivinar argumentos. No tocar Produccion. La prueba falla intencionalmente mostrando stdout de release --help en el resultado del Worker.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "catalogo-ampliado-v1"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_agent_guard_release_help_probe_20260827.py",
+      "content": "from pathlib import Path\nimport subprocess\nimport sys\n\n\ndef test_agent_guard_release_help_probe():\n    guard = Path('/app/.git/agent-guard/bin/agent_guard.py')\n    assert guard.is_file(), 'AGENT_GUARD_NOT_FOUND'\n    proc = subprocess.run(\n        [sys.executable, str(guard), 'release', '--help'],\n        text=True,\n        stdout=subprocess.PIPE,\n        stderr=subprocess.STDOUT,\n        check=False,\n    )\n    assert False, 'AGENT_GUARD_RELEASE_HELP\\n' + proc.stdout\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": ["backend/tests/test_agent_guard_release_help_probe_20260827.py"]
+    }
+  ],
+  "human_summary_language": "es"
+}
