@@ -1,0 +1,55 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-concurrent-producer-branches-v1-20260827",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "84938283f4ddf6b437f96447d322ba7c09273013",
+  "production_allowed": false,
+  "objective": "Eliminar la contencion entre productores y publicaciones del Worker permitiendo jobs append-only en ramas unicas worker/job/<job_id>, manteniendo compatibilidad con worker/requests legacy y agregando pruebas de regresion del protocolo concurrente.",
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "QUEUE_BRANCH = os.environ.get(\"EDARSAHUB_QUEUE_BRANCH\", \"worker/requests\")\nSCHEMA = \"edarsahub.worker-job.v2\"",
+      "new": "QUEUE_BRANCH = os.environ.get(\"EDARSAHUB_QUEUE_BRANCH\", \"worker/requests\")\nJOB_BRANCH_PREFIX = os.environ.get(\"EDARSAHUB_JOB_BRANCH_PREFIX\", \"worker/job/\")\nSCHEMA = \"edarsahub.worker-job.v2\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "def queue_files() -> list[str]:\n    git(\"fetch\", \"--quiet\", REMOTE, QUEUE_BRANCH)\n    listing = git(\n        \"ls-tree\", \"-r\", \"--name-only\", f\"{REMOTE}/{QUEUE_BRANCH}\", \"worker_queue/inbox\"\n    )\n    return [\n        line.strip()\n        for line in listing.stdout.splitlines()\n        if line.strip().startswith(\"worker_queue/inbox/\") and line.strip().endswith(\".json\")\n    ]\n\n\ndef read_remote(path: str) -> str:\n    return git(\"show\", f\"{REMOTE}/{QUEUE_BRANCH}:{path}\").stdout",
+      "new": "def queue_sources() -> list[tuple[str, str]]:\n    \"\"\"Return legacy queue files plus isolated per-job producer refs.\n\n    Each producer may publish to worker/job/<job_id>, so it never races the\n    Worker's result/health commits on worker/requests or another producer's ref.\n    The legacy branch remains readable during migration.\n    \"\"\"\n    sources: list[tuple[str, str]] = []\n\n    git(\"fetch\", \"--quiet\", REMOTE, QUEUE_BRANCH)\n    legacy = git(\n        \"ls-tree\", \"-r\", \"--name-only\", f\"{REMOTE}/{QUEUE_BRANCH}\", \"worker_queue/inbox\"\n    )\n    sources.extend(\n        (QUEUE_BRANCH, line.strip())\n        for line in legacy.stdout.splitlines()\n        if line.strip().startswith(\"worker_queue/inbox/\")\n        and line.strip().endswith(\".json\")\n    )\n\n    refspec = (\n        f\"+refs/heads/{JOB_BRANCH_PREFIX}*:\"\n        f\"refs/remotes/{REMOTE}/{JOB_BRANCH_PREFIX}*\"\n    )\n    git(\"fetch\", \"--quiet\", REMOTE, refspec)\n    refs = git(\n        \"for-each-ref\",\n        \"--format=%(refname:short)\",\n        f\"refs/remotes/{REMOTE}/{JOB_BRANCH_PREFIX}\",\n    )\n    remote_prefix = f\"{REMOTE}/\"\n    for remote_ref in refs.stdout.splitlines():\n        remote_ref = remote_ref.strip()\n        if not remote_ref.startswith(remote_prefix):\n            continue\n        branch = remote_ref[len(remote_prefix):]\n        listing = git(\n            \"ls-tree\", \"-r\", \"--name-only\", remote_ref, \"worker_queue/inbox\"\n        )\n        for line in listing.stdout.splitlines():\n            path = line.strip()\n            if path.startswith(\"worker_queue/inbox/\") and path.endswith(\".json\"):\n                sources.append((branch, path))\n\n    return sorted(set(sources))\n\n\ndef read_remote(branch: str, path: str) -> str:\n    return git(\"show\", f\"{REMOTE}/{branch}:{path}\").stdout",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    for path in queue_files():\n        name = Path(path).name\n        if already_claimed(name):\n            skipped += 1\n            continue\n        raw = read_remote(path)",
+      "new": "    for source_branch, path in queue_sources():\n        name = Path(path).name\n        if already_claimed(name):\n            skipped += 1\n            continue\n        raw = read_remote(source_branch, path)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "            \"queue_branch\": QUEUE_BRANCH,\n            \"queue_path\": path,",
+      "new": "            \"queue_branch\": source_branch,\n            \"queue_path\": path,",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_universal_job_bridge_concurrent_producers.py",
+      "content": "from pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\nBRIDGE = ROOT / \"tools\" / \"mirror_sync\" / \"universal_job_bridge.py\"\n\n\ndef source():\n    return BRIDGE.read_text(encoding=\"utf-8\")\n\n\ndef test_bridge_supports_isolated_per_job_producer_refs():\n    text = source()\n    assert 'JOB_BRANCH_PREFIX = os.environ.get(' in text\n    assert '\"worker/job/\"' in text\n    assert 'def queue_sources() -> list[tuple[str, str]]:' in text\n    assert 'refs/heads/{JOB_BRANCH_PREFIX}*' in text\n    assert 'refs/remotes/{REMOTE}/{JOB_BRANCH_PREFIX}*' in text\n\n\ndef test_legacy_queue_remains_supported_during_migration():\n    text = source()\n    assert '(QUEUE_BRANCH, line.strip())' in text\n    assert 'git(\"fetch\", \"--quiet\", REMOTE, QUEUE_BRANCH)' in text\n\n\ndef test_source_branch_is_preserved_in_claim_envelope():\n    text = source()\n    assert 'for source_branch, path in queue_sources():' in text\n    assert 'raw = read_remote(source_branch, path)' in text\n    assert '\"queue_branch\": source_branch' in text\n\n\ndef test_no_force_push_is_introduced_by_bridge():\n    text = source()\n    assert 'force=true' not in text.lower()\n    assert 'git push --force' not in text.lower()\n"
+    },
+    {
+      "type": "write_file",
+      "path": "docs/worker/CONCURRENT_PRODUCER_PROTOCOL.md",
+      "content": "# Worker concurrent producer protocol\n\n## Canonical submission path\nNew deterministic jobs MUST use a unique branch per job:\n\n`worker/job/<job_id>`\n\nThe branch contains exactly the request file:\n\n`worker_queue/inbox/<job_id>.json`\n\nA producer creates its own branch and therefore never waits for `worker/requests` to stop moving. `worker/requests` remains the result/status publication branch and is retained as a legacy inbox source during migration.\n\n## Safety rules\n- Never force-push.\n- Never reuse a job branch for a different job.\n- `job_id` is the idempotency key.\n- Producers may submit concurrently because each job has an independent Git ref.\n- The Worker discovers both legacy inbox entries and `worker/job/*` refs.\n- Result and heartbeat publication remain independent of job submission.\n- Production remains prohibited unless an explicit later gate authorizes it.\n\n## Required producer sequence\n1. Resolve the current authorized base SHA for the deterministic job.\n2. Create `worker/job/<job_id>` from an existing repository ref/commit.\n3. Create `worker_queue/inbox/<job_id>.json` on that unique branch.\n4. Do not wait for `worker/requests` to become quiet.\n5. Observe result/health on `worker/requests`.\n\n## Acceptance target\nThe infrastructure target is concurrent submission with zero lost jobs, zero force-pushes and zero human waiting caused by the Worker's own publications.\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["tools/mirror_sync/universal_job_bridge.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_universal_job_bridge_concurrent_producers.py"]}
+  ]
+}
