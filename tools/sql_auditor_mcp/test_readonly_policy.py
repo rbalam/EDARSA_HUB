@@ -1,6 +1,41 @@
+import ast
+import re
+from pathlib import Path
+
 import pytest
 
-from server import _validate_readonly_sql
+
+def _load_validator_from_server_source():
+    """Carga solo la politica readonly desde server.py sin importar el backend.
+
+    Este test debe ser puro: no requiere variables EDARSAHUB_SQL_*, no abre
+    conexiones y no toca ninguna base de datos. A la vez, valida la funcion real
+    declarada en server.py para evitar mantener una copia divergente del guard.
+    """
+    source_path = Path(__file__).with_name("server.py")
+    source = source_path.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(source_path))
+
+    selected = []
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            names = [target.id for target in node.targets if isinstance(target, ast.Name)]
+            if "BLOCKED_SQL_WORDS" in names:
+                selected.append(node)
+        elif isinstance(node, ast.FunctionDef) and node.name == "_validate_readonly_sql":
+            selected.append(node)
+
+    if len(selected) != 2:
+        raise RuntimeError("READONLY_POLICY_SOURCE_NOT_FOUND")
+
+    module = ast.Module(body=selected, type_ignores=[])
+    ast.fix_missing_locations(module)
+    namespace = {"re": re}
+    exec(compile(module, str(source_path), "exec"), namespace)
+    return namespace["_validate_readonly_sql"]
+
+
+_validate_readonly_sql = _load_validator_from_server_source()
 
 
 @pytest.mark.parametrize(
