@@ -1,0 +1,412 @@
+#!/usr/bin/env python3
+"""EDARSA SQL Auditor - MCP server de solo lectura.
+
+Agente independiente del Worker de EDARSAHUB.
+
+Seguridad por capas:
+1. Autoriza al requester contra RBAC SQL canonico (Usuario_Catalogo).
+2. Solo acepta una sentencia SELECT/WITH.
+3. Bloquea keywords de escritura/DDL/ejecucion dinamica y comentarios SQL.
+4. Ejecuta en transaccion no-autocommit y hace rollback siempre.
+5. Requiere que las credenciales SQL usadas por los servidores tengan permisos
+   fisicos de solo lectura (SELECT + VIEW DEFINITION) como ultima barrera.
+
+Nunca expone passwords ni API keys en las respuestas MCP.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import hashlib
+import json
+import os
+import re
+import sys
+from datetime import date, datetime
+from decimal import Decimal
+from pathlib import Path
+from typing import Any, Iterable
+
+from mcp.server.fastmcp import FastMCP
+
+ROOT = Path(__file__).resolve().parents[2]
+BACKEND = ROOT / "backend"
+if str(BACKEND) not in sys.path:
+    sys.path.insert(0, str(BACKEND))
+
+from core.server_registry import get_server_connection_info, list_servers
+from core.sql_first.connection_factory import get_external_sql_connection
+from modules.auth.repository import AuthRepository
+
+APP_NAME = "EDARSA SQL Auditor"
+REQUESTER_ENV = "EDARSA_SQL_AUDITOR_REQUESTER_EMAIL"
+MAX_ROWS_HARD = int(os.environ.get("EDARSA_SQL_AUDITOR_MAX_ROWS", "5000"))
+DEFAULT_ROWS = min(500, MAX_ROWS_HARD)
+
+mcp = FastMCP(APP_NAME)
+
+SUPERADMIN_ROLE_CODES = {"SUPERADMIN"}
+SUPERADMIN_ROLE_NAMES = {"SUPERADMINISTRADOR", "SUPER ADMINISTRADOR"}
+
+BLOCKED_SQL_WORDS = {
+    "INSERT", "UPDATE", "DELETE", "MERGE", "DROP", "ALTER", "TRUNCATE",
+    "CREATE", "EXEC", "EXECUTE", "GRANT", "REVOKE", "DENY", "BACKUP",
+    "RESTORE", "DBCC", "BULK", "OPENROWSET", "OPENDATASOURCE", "INTO",
+    "USE", "DECLARE", "SET", "KILL", "SHUTDOWN", "RECONFIGURE",
+}
+
+
+def _norm(value: Any) -> str:
+    return str(value or "").strip().upper()
+
+
+def _authorize() -> dict[str, Any]:
+    """Fail-closed: valida requester configurado contra RBAC SQL canonico."""
+    email = str(os.environ.get(REQUESTER_ENV) or "").strip().lower()
+    if not email or "@" not in email:
+        raise PermissionError(f"{REQUESTER_ENV} no configurado o invalido")
+
+    user = AuthRepository.get_user_by_email(email)
+    if not user:
+        raise PermissionError("REQUESTER_NOT_FOUND")
+    if not bool(user.get("active")):
+        raise PermissionError("REQUESTER_INACTIVE")
+
+    role_code = _norm(user.get("role_code") or user.get("_sql_rol_codigo"))
+    role_name = _norm(user.get("role"))
+    if role_code not in SUPERADMIN_ROLE_CODES and role_name not in SUPERADMIN_ROLE_NAMES:
+        raise PermissionError("REQUESTER_NOT_SUPERADMIN")
+
+    return {
+        "usuario_id": user.get("UsuarioID") or user.get("_sql_usuario_id"),
+        "email": str(user.get("email") or email).strip().lower(),
+        "role_code": role_code,
+        "role": role_name,
+        "auth_source": user.get("auth_source") or "SQL_USUARIO_CATALOGO",
+    }
+
+
+def _validate_readonly_sql(sql: str) -> str:
+    """Acepta una sola sentencia SELECT/WITH y rechaza superficies de escritura."""
+    if not isinstance(sql, str) or not sql.strip():
+        raise ValueError("SQL_REQUIRED")
+
+    text = sql.strip()
+
+    # Comentarios complican el analisis lexical y facilitan bypasses.
+    if "--" in text or "/*" in text or "*/" in text:
+        raise ValueError("SQL_COMMENTS_NOT_ALLOWED")
+
+    # Una sola sentencia. Se permite un unico ; final.
+    without_final = text[:-1].rstrip() if text.endswith(";") else text
+    if ";" in without_final:
+        raise ValueError("MULTI_STATEMENT_SQL_NOT_ALLOWED")
+
+    upper = without_final.upper()
+    if not (upper.startswith("SELECT") or upper.startswith("WITH")):
+        raise ValueError("ONLY_SELECT_OR_WITH_ALLOWED")
+
+    for word in BLOCKED_SQL_WORDS:
+        if re.search(rf"\b{re.escape(word)}\b", upper):
+            raise ValueError(f"BLOCKED_SQL_KEYWORD:{word}")
+
+    # Bloqueo adicional a procedimientos extendidos / system procs.
+    if re.search(r"\b(?:XP_|SP_)[A-Z0-9_]*\b", upper):
+        raise ValueError("SYSTEM_PROCEDURES_NOT_ALLOWED")
+
+    return without_final
+
+
+def _serialize(value: Any) -> Any:
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, Decimal):
+        return str(value)
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, bytes):
+        return "<binary>"
+    return str(value)
+
+
+def _masked_server(server: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": server.get("id"),
+        "name": server.get("name"),
+        "system_type": server.get("system_type"),
+        "system_type_normalized": server.get("system_type_normalized"),
+        "config_origin": server.get("config_origin"),
+    }
+
+
+async def _all_servers_masked() -> list[dict[str, Any]]:
+    servers = await list_servers(mask_secrets=True)
+    return [_masked_server(s) for s in servers]
+
+
+async def _resolve_server(selector: str) -> dict[str, Any]:
+    selector = str(selector or "").strip()
+    if not selector:
+        raise ValueError("SERVER_REQUIRED")
+
+    servers = await list_servers(mask_secrets=True)
+    exact = [
+        s for s in servers
+        if str(s.get("id") or "").lower() == selector.lower()
+        or str(s.get("mongodb_id") or "").lower() == selector.lower()
+        or str(s.get("name") or "").strip().lower() == selector.lower()
+    ]
+    if not exact:
+        raise ValueError(f"SERVER_NOT_FOUND:{selector}")
+    if len(exact) > 1:
+        raise ValueError(f"SERVER_AMBIGUOUS:{selector}")
+
+    info = await get_server_connection_info(str(exact[0]["id"]))
+    if not info:
+        raise ValueError(f"SERVER_CONNECTION_INFO_UNAVAILABLE:{selector}")
+    return info
+
+
+def _connect(server: dict[str, Any]):
+    config = {
+        "host": server.get("host"),
+        "port": server.get("port", 1433),
+        "database": server.get("database"),
+        "username": server.get("username"),
+        "password": server.get("password"),
+        "login_timeout": 10,
+        "timeout": 30,
+        "as_dict": False,
+    }
+    return get_external_sql_connection(config)
+
+
+def _execute_readonly(
+    server: dict[str, Any],
+    sql: str,
+    *,
+    params: Iterable[Any] | None = None,
+    max_rows: int = DEFAULT_ROWS,
+) -> dict[str, Any]:
+    checked_sql = _validate_readonly_sql(sql)
+    max_rows = max(1, min(int(max_rows), MAX_ROWS_HARD))
+    conn = None
+    cursor = None
+    try:
+        conn = _connect(server)
+        cursor = conn.cursor()
+        if params is None:
+            cursor.execute(checked_sql)
+        else:
+            cursor.execute(checked_sql, tuple(params))
+
+        columns = [str(c[0]) for c in (cursor.description or [])]
+        fetched = cursor.fetchmany(max_rows + 1) if cursor.description else []
+        truncated = len(fetched) > max_rows
+        rows = fetched[:max_rows]
+        preview = [
+            {columns[i]: _serialize(value) for i, value in enumerate(row)}
+            for row in rows
+        ]
+        return {
+            "columns": columns,
+            "rows": preview,
+            "rows_returned": len(preview),
+            "truncated": truncated,
+            "max_rows": max_rows,
+        }
+    finally:
+        # Aunque una sentencia peligrosa lograra atravesar el validador, no se
+        # confirma ninguna transaccion desde este agente.
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def _canonical_row(row: dict[str, Any], columns: list[str]) -> str:
+    return json.dumps([row.get(c) for c in columns], ensure_ascii=False, sort_keys=False, default=str)
+
+
+def _digest(rows: list[dict[str, Any]], columns: list[str]) -> str:
+    payload = "\n".join(sorted(_canonical_row(r, columns) for r in rows))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+@mcp.tool()
+async def who_am_i() -> dict[str, Any]:
+    """Valida y muestra la identidad RBAC usada por el SQL Auditor."""
+    return _authorize()
+
+
+@mcp.tool()
+async def list_sql_servers() -> list[dict[str, Any]]:
+    """Lista servidores SQL activos visibles, sin secretos."""
+    _authorize()
+    return await _all_servers_masked()
+
+
+@mcp.tool()
+async def list_tables(server: str, schema: str = "dbo") -> dict[str, Any]:
+    """Lista tablas y vistas de un servidor SQL sin modificar datos."""
+    _authorize()
+    info = await _resolve_server(server)
+    sql = """
+        SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE
+        FROM INFORMATION_SCHEMA.TABLES
+        WHERE TABLE_SCHEMA = %s
+        ORDER BY TABLE_NAME
+    """
+    result = _execute_readonly(info, sql, params=(schema,), max_rows=MAX_ROWS_HARD)
+    return {"server": _masked_server(info), **result}
+
+
+@mcp.tool()
+async def describe_table(server: str, table: str, schema: str = "dbo") -> dict[str, Any]:
+    """Obtiene columnas y tipos de una tabla/vista."""
+    _authorize()
+    info = await _resolve_server(server)
+    sql = """
+        SELECT
+            COLUMN_NAME,
+            DATA_TYPE,
+            CHARACTER_MAXIMUM_LENGTH,
+            NUMERIC_PRECISION,
+            NUMERIC_SCALE,
+            IS_NULLABLE,
+            ORDINAL_POSITION
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s
+        ORDER BY ORDINAL_POSITION
+    """
+    result = _execute_readonly(info, sql, params=(schema, table), max_rows=MAX_ROWS_HARD)
+    return {"server": _masked_server(info), "table": f"{schema}.{table}", **result}
+
+
+@mcp.tool()
+async def search_columns(server: str, text: str, max_rows: int = 500) -> dict[str, Any]:
+    """Busca columnas por nombre para descubrir el esquema de una base."""
+    _authorize()
+    info = await _resolve_server(server)
+    sql = """
+        SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE LOWER(COLUMN_NAME) LIKE LOWER(%s)
+        ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION
+    """
+    pattern = f"%{str(text or '').strip()}%"
+    result = _execute_readonly(info, sql, params=(pattern,), max_rows=max_rows)
+    return {"server": _masked_server(info), **result}
+
+
+@mcp.tool()
+async def run_select(server: str, sql: str, max_rows: int = DEFAULT_ROWS) -> dict[str, Any]:
+    """Ejecuta exclusivamente SELECT/WITH de una sola sentencia."""
+    auth = _authorize()
+    info = await _resolve_server(server)
+    result = _execute_readonly(info, sql, max_rows=max_rows)
+    return {
+        "requester": {"email": auth["email"], "auth_source": auth["auth_source"]},
+        "server": _masked_server(info),
+        **result,
+    }
+
+
+@mcp.tool()
+async def compare_readonly_queries(
+    source_server: str,
+    source_sql: str,
+    hub_server: str,
+    hub_sql: str,
+    key_columns: list[str] | None = None,
+    max_rows: int = MAX_ROWS_HARD,
+) -> dict[str, Any]:
+    """Ejecuta dos SELECT y concilia sus resultados sin modificar ninguna BD.
+
+    Si key_columns se informa, devuelve llaves faltantes y filas diferentes.
+    Si no se informa, compara columnas, cantidad de filas y hash normalizado.
+    """
+    auth = _authorize()
+    source = await _resolve_server(source_server)
+    hub = await _resolve_server(hub_server)
+
+    left = _execute_readonly(source, source_sql, max_rows=max_rows)
+    right = _execute_readonly(hub, hub_sql, max_rows=max_rows)
+
+    common_columns = [c for c in left["columns"] if c in set(right["columns"])]
+    comparison: dict[str, Any] = {
+        "source_rows": left["rows_returned"],
+        "hub_rows": right["rows_returned"],
+        "source_truncated": left["truncated"],
+        "hub_truncated": right["truncated"],
+        "columns_equal": left["columns"] == right["columns"],
+        "common_columns": common_columns,
+        "source_hash": _digest(left["rows"], left["columns"]),
+        "hub_hash": _digest(right["rows"], right["columns"]),
+    }
+
+    keys = [str(k) for k in (key_columns or []) if str(k).strip()]
+    if keys:
+        missing_left = [k for k in keys if k not in left["columns"]]
+        missing_right = [k for k in keys if k not in right["columns"]]
+        if missing_left or missing_right:
+            comparison["key_error"] = {
+                "missing_in_source": missing_left,
+                "missing_in_hub": missing_right,
+            }
+        else:
+            def make_map(rows: list[dict[str, Any]]) -> dict[tuple[Any, ...], dict[str, Any]]:
+                return {tuple(row.get(k) for k in keys): row for row in rows}
+
+            lm = make_map(left["rows"])
+            rm = make_map(right["rows"])
+            only_source = sorted(set(lm) - set(rm), key=str)
+            only_hub = sorted(set(rm) - set(lm), key=str)
+            changed = []
+            for key in sorted(set(lm) & set(rm), key=str):
+                diffs = {
+                    col: {"source": lm[key].get(col), "hub": rm[key].get(col)}
+                    for col in common_columns
+                    if lm[key].get(col) != rm[key].get(col)
+                }
+                if diffs:
+                    changed.append({"key": list(key), "differences": diffs})
+
+            comparison.update({
+                "key_columns": keys,
+                "only_in_source_count": len(only_source),
+                "only_in_hub_count": len(only_hub),
+                "changed_count": len(changed),
+                "only_in_source": [list(k) for k in only_source[:200]],
+                "only_in_hub": [list(k) for k in only_hub[:200]],
+                "changed": changed[:200],
+                "detail_truncated": (
+                    len(only_source) > 200 or len(only_hub) > 200 or len(changed) > 200
+                ),
+            })
+
+    comparison["equal"] = (
+        not left["truncated"]
+        and not right["truncated"]
+        and left["columns"] == right["columns"]
+        and comparison["source_hash"] == comparison["hub_hash"]
+    )
+
+    return {
+        "requester": {"email": auth["email"], "auth_source": auth["auth_source"]},
+        "source_server": _masked_server(source),
+        "hub_server": _masked_server(hub),
+        "comparison": comparison,
+    }
+
+
+if __name__ == "__main__":
+    # Para pruebas locales puede usarse stdio. Para ChatGPT se recomienda
+    # streamable-http detras de HTTPS/tunel seguro.
+    transport = os.environ.get("EDARSA_SQL_AUDITOR_TRANSPORT", "stdio")
+    mcp.run(transport=transport)
