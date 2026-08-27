@@ -1,88 +1,100 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "84938283f4ddf6b437f96447d322ba7c09273013",
-  "generated_at_utc": "2026-08-27T00:24:08Z",
+  "generated_at_utc": "2026-08-27T00:59:12Z",
   "history": {
     "done_total_local": 5,
-    "pending_total_local": 0,
+    "pending_total_local": 1,
     "processing_total_local": 0,
-    "rejected_total_local": 50,
-    "results_total_local": 42
+    "rejected_total_local": 54,
+    "results_total_local": 46
   },
   "jobs": [
     {
-      "age_seconds": 766,
+      "age_seconds": 850,
+      "job_id": "worker-readonly-sql-support-v2-20260826",
+      "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
+      "state": "BLOCKED"
+    },
+    {
+      "age_seconds": 556,
+      "job_id": "agent-guard-cli-probe-v1-20260826",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2869,
       "job_id": "agent-reach-runtime-contract-v1-20260826",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1243,
+      "age_seconds": 1545,
+      "job_id": "bos-executive-daily-brief-v1-kickoff-20260827-001",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3347,
       "job_id": "carlos-worker-chatgpt-wake-endpoint-v1-20260826",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1598,
-      "job_id": "carlos-worker-iscam-comandas-fix-v3-20260826",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1490,
+      "age_seconds": 3594,
       "job_id": "carlos-worker-sync-monitor-contrast-fix-v2-20260826",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1102,
+      "age_seconds": 3205,
       "job_id": "clientes-canonical-live-map-v2-20260826-1803",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 120,
+      "age_seconds": 2223,
       "job_id": "coa-satelite-bootstrap-v2-20260826",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3391,
-      "job_id": "runtime-stability-e2e-v1-20260826",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2163,
-      "job_id": "runtime-stability-e2e-v2-20260826",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1372,
+      "age_seconds": 3476,
       "job_id": "runtime-stability-final-e2e-v3-20260826",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 341,
+      "age_seconds": 2444,
       "job_id": "test-isolation-full-gate-v1-20260826",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 664,
+      "job_id": "worker-agent-guard-cli-probe-20260826-1830",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1351,
+      "job_id": "worker-load-backend-runtime-env-20260826-1824",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
   "production_touched": false,
-  "queue_blocked": 0,
+  "queue_blocked": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 10,
+  "queue_result_ready_recent": 11,
   "queue_running": 0,
   "runtime": {
     "generation": "20260826-universal-job-worker-v1",
-    "last_cycle_utc": "2026-08-27T00:22:34Z",
-    "last_receive_utc": "2026-08-27T00:22:35Z",
-    "pid": "131089"
+    "last_cycle_utc": "2026-08-27T00:59:00Z",
+    "last_receive_utc": "2026-08-27T00:59:00Z",
+    "pid": "31850"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
