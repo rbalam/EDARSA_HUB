@@ -1,0 +1,109 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-readonly-sql-support-v4-20260827",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Habilitar READ_ONLY_SQL determinista en el Worker universal existente una vez reconciliados los claims huérfanos de Agent Guard. Reutilizar readonly_sql_connection canonica; no aceptar SQL arbitrario; no DDL/DML; no shell arbitrario; publicar evidencia sanitizada; mantener compatibilidad con jobs v2 existentes.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Robots-Netpay-Toast-Menu-Servidores-BOS-2"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "tools/mirror_sync/sql_readonly_audit.py",
+      "content": "#!/usr/bin/env python3\n\"\"\"Allow-listed deterministic read-only SQL audits for the universal Worker.\n\nRequests select only a fixed profile. SQL text is never supplied by the job.\nAll DB access uses EDARSAHUB's canonical readonly_sql_connection.\n\"\"\"\nfrom __future__ import annotations\n\nimport argparse\nimport json\nimport sys\nfrom datetime import datetime, timezone\nfrom pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nBACKEND = ROOT / \"backend\"\nif str(BACKEND) not in sys.path:\n    sys.path.insert(0, str(BACKEND))\n\nfrom core.sql_first.db import readonly_sql_connection\n\nPROFILE = \"gate1_connections_internationalization\"\nTARGET_NAMES = {\n    \"Sistema_Capacidades\",\n    \"Sistema_TiposVariantes\",\n    \"Sistema_Sync_Catalogo\",\n    \"Sistema_VersionesSistemas\",\n    \"Sistema_MapeoTablasVersion\",\n    \"Sistema_MapeoColumnasVersion\",\n    \"Servidores_Conexiones\",\n    \"Sistema_TurnosOperativosUnidad\",\n}\nKEYWORDS = (\n    \"empresa\", \"unidad\", \"timezone\", \"zona\", \"pais\", \"moneda\",\n    \"divisa\", \"cambio\", \"idioma\", \"locale\", \"preferencia\",\n    \"credencial\", \"secreto\", \"homolog\", \"layout\", \"evidencia\",\n    \"ejecucion\", \"externo\", \"software\", \"version\", \"sync\",\n    \"capacidad\",\n)\n\n\ndef _rows(cursor):\n    columns = [item[0] for item in cursor.description]\n    return [dict(zip(columns, row)) for row in cursor.fetchall()]\n\n\ndef _select(cursor, statement: str):\n    normalized = \" \".join(statement.strip().split()).upper()\n    if not (normalized.startswith(\"SELECT \") or normalized.startswith(\"WITH \")):\n        raise RuntimeError(\"READ_ONLY_SQL_GUARD_REJECTED\")\n    cursor.execute(statement)\n    return _rows(cursor)\n\n\ndef _safe_ids(values):\n    return \",\".join(str(value) for value in sorted({int(v) for v in values}))\n\n\ndef run_gate1():\n    evidence = {\n        \"schema\": \"edarsahub.sql-readonly-audit.v1\",\n        \"profile\": PROFILE,\n        \"generated_at_utc\": datetime.now(timezone.utc).isoformat(),\n        \"read_only\": True,\n        \"ddl\": False,\n        \"dml\": False,\n    }\n    with readonly_sql_connection() as connection:\n        cursor = connection.cursor()\n        evidence[\"database_identity\"] = _select(\n            cursor,\n            \"SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS database_user\",\n        )\n        all_tables = _select(\n            cursor,\n            \"SELECT s.name AS schema_name, t.name AS object_name, t.object_id, t.create_date, t.modify_date FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id ORDER BY s.name,t.name\",\n        )\n        exact = []\n        related = []\n        for item in all_tables:\n            name = str(item.get(\"object_name\") or \"\")\n            lowered = name.lower()\n            if name in TARGET_NAMES:\n                exact.append(item)\n            if name in TARGET_NAMES or any(keyword in lowered for keyword in KEYWORDS):\n                related.append(item)\n        evidence[\"target_objects\"] = exact\n        evidence[\"related_objects\"] = related[:500]\n        ids = _safe_ids(\n            item[\"object_id\"]\n            for item in evidence[\"related_objects\"]\n            if item.get(\"object_id\") is not None\n        )\n        if ids:\n            evidence[\"columns\"] = _select(cursor, f\"SELECT s.name AS schema_name,t.name AS object_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity,dc.definition AS default_definition FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id WHERE t.object_id IN ({ids}) ORDER BY s.name,t.name,c.column_id\")\n            evidence[\"indexes\"] = _select(cursor, f\"SELECT s.name AS schema_name,t.name AS object_name,i.name AS index_name,i.is_unique,i.is_primary_key,i.type_desc,c.name AS column_name,ic.key_ordinal,ic.is_included_column FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE t.object_id IN ({ids}) ORDER BY s.name,t.name,i.name,ic.key_ordinal,ic.index_column_id\")\n            evidence[\"foreign_keys\"] = _select(cursor, f\"SELECT sch1.name AS schema_name,t1.name AS table_name,fk.name AS fk_name,c1.name AS column_name,sch2.name AS referenced_schema,t2.name AS referenced_table,c2.name AS referenced_column FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.tables t1 ON t1.object_id=fkc.parent_object_id JOIN sys.schemas sch1 ON sch1.schema_id=t1.schema_id JOIN sys.columns c1 ON c1.object_id=t1.object_id AND c1.column_id=fkc.parent_column_id JOIN sys.tables t2 ON t2.object_id=fkc.referenced_object_id JOIN sys.schemas sch2 ON sch2.schema_id=t2.schema_id JOIN sys.columns c2 ON c2.object_id=t2.object_id AND c2.column_id=fkc.referenced_column_id WHERE t1.object_id IN ({ids}) OR t2.object_id IN ({ids}) ORDER BY sch1.name,t1.name,fk.name\")\n        else:\n            evidence[\"columns\"] = []\n            evidence[\"indexes\"] = []\n            evidence[\"foreign_keys\"] = []\n    print(json.dumps(evidence, ensure_ascii=False, default=str, separators=(\",\", \":\")))\n\n\ndef main():\n    parser = argparse.ArgumentParser()\n    parser.add_argument(\"--profile\", required=True)\n    args = parser.parse_args()\n    if args.profile != PROFILE:\n        raise SystemExit(\"UNSUPPORTED_READ_ONLY_AUDIT_PROFILE\")\n    run_gate1()\n\n\nif __name__ == \"__main__\":\n    main()\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\"}",
+      "new": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\", \"sql_readonly_audit\"}",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    if kind == \"frontend_build\":\n        directory = check.get(\"directory\", \"frontend\")\n        if not safe_repo_path(directory):\n            return [f\"{prefix}_INVALID_DIRECTORY\"]\n    return []",
+      "new": "    if kind == \"frontend_build\":\n        directory = check.get(\"directory\", \"frontend\")\n        if not safe_repo_path(directory):\n            return [f\"{prefix}_INVALID_DIRECTORY\"]\n    if kind == \"sql_readonly_audit\":\n        if check.get(\"profile\") != \"gate1_connections_internationalization\":\n            return [f\"{prefix}_INVALID_READ_ONLY_PROFILE\"]\n    return []",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    actions = job.get(\"actions\")\n    if not isinstance(actions, list) or not actions:\n        errors.append(\"ACTIONS_REQUIRED\")\n    elif len(actions) > MAX_ACTIONS:\n        errors.append(\"TOO_MANY_ACTIONS\")\n    else:\n        for index, action in enumerate(actions, 1):\n            errors.extend(validate_action(action, index))\n    checks = job.get(\"checks\", [{\"type\": \"git_diff_check\"}])",
+      "new": "    actions = job.get(\"actions\")\n    read_only_sql = job.get(\"mode\") == \"READ_ONLY_SQL\"\n    if read_only_sql:\n        if actions not in (None, []):\n            errors.append(\"READ_ONLY_ACTIONS_PROHIBITED\")\n    elif not isinstance(actions, list) or not actions:\n        errors.append(\"ACTIONS_REQUIRED\")\n    elif len(actions) > MAX_ACTIONS:\n        errors.append(\"TOO_MANY_ACTIONS\")\n    else:\n        for index, action in enumerate(actions, 1):\n            errors.extend(validate_action(action, index))\n    checks = job.get(\"checks\", [{\"type\": \"git_diff_check\"}])",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    if not isinstance(checks, list):\n        errors.append(\"CHECKS_MUST_BE_LIST\")\n    else:\n        for index, check in enumerate(checks, 1):\n            errors.extend(validate_check(check, index))\n    return errors",
+      "new": "    if not isinstance(checks, list):\n        errors.append(\"CHECKS_MUST_BE_LIST\")\n    else:\n        for index, check in enumerate(checks, 1):\n            errors.extend(validate_check(check, index))\n        if read_only_sql and (not checks or any(not isinstance(check, dict) or check.get(\"type\") != \"sql_readonly_audit\" for check in checks)):\n            errors.append(\"READ_ONLY_CHECK_REQUIRED\")\n    return errors",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\"}",
+      "new": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\", \"sql_readonly_audit\"}",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "    elif kind == \"frontend_build\":\n        directory = safe_path(worktree, str(check.get(\"directory\", \"frontend\")))\n        cmd = [\"yarn\", \"build\"]\n        cwd = directory\n    else:",
+      "new": "    elif kind == \"frontend_build\":\n        directory = safe_path(worktree, str(check.get(\"directory\", \"frontend\")))\n        cmd = [\"yarn\", \"build\"]\n        cwd = directory\n    elif kind == \"sql_readonly_audit\":\n        profile = str(check.get(\"profile\") or \"\")\n        if profile != \"gate1_connections_internationalization\":\n            raise ValueError(\"UNSUPPORTED_READ_ONLY_AUDIT_PROFILE\")\n        cmd = [PYTHON_BIN, str(ROOT / \"tools\" / \"mirror_sync\" / \"sql_readonly_audit.py\"), \"--profile\", profile]\n        cwd = ROOT\n    else:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        output = result.stdout[-12000:]",
+      "new": "        output = result.stdout[-100000:] if kind == \"sql_readonly_audit\" else result.stdout[-12000:]",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        result[\"base_sha\"] = base_sha\n        requested_paths = sorted(",
+      "new": "        result[\"base_sha\"] = base_sha\n        if job.get(\"mode\") == \"READ_ONLY_SQL\":\n            if job.get(\"actions\") not in (None, []):\n                raise RuntimeError(\"READ_ONLY_ACTIONS_PROHIBITED\")\n            checks = job.get(\"checks\") or []\n            if not checks or any(not isinstance(check, dict) or check.get(\"type\") != \"sql_readonly_audit\" for check in checks):\n                raise RuntimeError(\"READ_ONLY_CHECK_REQUIRED\")\n            check_results = []\n            for check in checks:\n                check_result = run_check(ROOT, check)\n                check_results.append(check_result)\n                if check_result[\"status\"] != \"PASS\":\n                    result[\"blockers\"].append(f\"check_failed:{check_result['type']}\")\n                    break\n            result[\"checks\"] = check_results\n            result[\"files_changed\"] = []\n            result[\"tests\"] = \"PASS\" if check_results and all(item[\"status\"] == \"PASS\" for item in check_results) else \"FAIL\"\n            result[\"quality_gate\"] = \"PASS\" if not result[\"blockers\"] else \"FAIL\"\n            if not result[\"blockers\"]:\n                result[\"status\"] = \"READ_ONLY_COMPLETE\"\n                result[\"percent_complete\"] = 100\n                result[\"certification\"] = \"READ_ONLY_EVIDENCE\"\n                result[\"summary_es\"] = \"El Worker universal completo una auditoria SQL determinista usando exclusivamente la conexion read-only canonica. No hubo DDL, DML, cambios de repositorio ni Produccion.\"\n            return 0\n        requested_paths = sorted(",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        target = DONE / path.name if result[\"status\"] == \"INTEGRATED\" else REJECTED / path.name",
+      "new": "        target = DONE / path.name if result[\"status\"] in {\"INTEGRATED\", \"READ_ONLY_COMPLETE\"} else REJECTED / path.name",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "old": "    if result.get(\"status\") != \"INTEGRATED\":\n        return {\n            **pending,\n            \"certification\": \"NOT_CERTIFIED\",\n            \"work_completion\": \"NOT_CERTIFIED\",\n            \"percent_complete\": min(\n                int(result.get(\"percent_complete\") or 0),\n                95,\n            ),\n        }",
+      "new": "    if result.get(\"status\") == \"READ_ONLY_COMPLETE\":\n        return {\n            \"certified\": True,\n            \"certification\": \"READ_ONLY_EVIDENCE\",\n            \"work_completion\": \"COMPLETE\",\n            \"percent_complete\": 100,\n            \"certification_basis\": \"CANONICAL_READ_ONLY_SQL_CONNECTION\",\n        }\n\n    if result.get(\"status\") != \"INTEGRATED\":\n        return {\n            **pending,\n            \"certification\": \"NOT_CERTIFIED\",\n            \"work_completion\": \"NOT_CERTIFIED\",\n            \"percent_complete\": min(\n                int(result.get(\"percent_complete\") or 0),\n                95,\n            ),\n        }",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "old": "        \"quality_gate\", \"files_changed\", \"summary_es\", \"blockers\",\n        \"percent_complete\", \"certification\", \"production_touched\",",
+      "new": "        \"quality_gate\", \"files_changed\", \"summary_es\", \"blockers\", \"checks\",\n        \"percent_complete\", \"certification\", \"production_touched\",",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_universal_worker_readonly_sql.py",
+      "content": "import importlib.util\nfrom pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\n\n\ndef load(name, path):\n    spec = importlib.util.spec_from_file_location(name, ROOT / path)\n    module = importlib.util.module_from_spec(spec)\n    assert spec.loader is not None\n    spec.loader.exec_module(module)\n    return module\n\n\ndef base_job():\n    return {\n        \"schema\": \"edarsahub.worker-job.v2\",\n        \"job_id\": \"readonly-sql-regression\",\n        \"target_repo\": \"rbalam/EDARSA_HUB\",\n        \"target_branch\": \"Edarsahub_Desarrollo\",\n        \"production_allowed\": False,\n        \"objective\": \"test\",\n        \"human_summary_language\": \"es\",\n        \"mode\": \"READ_ONLY_SQL\",\n        \"actions\": [],\n        \"checks\": [{\"type\": \"sql_readonly_audit\", \"profile\": \"gate1_connections_internationalization\"}],\n    }\n\n\ndef test_bridge_accepts_readonly_sql_without_actions():\n    bridge = load(\"bridge_readonly\", \"tools/mirror_sync/universal_job_bridge.py\")\n    assert bridge.validate(base_job()) == []\n\n\ndef test_bridge_rejects_actions_in_readonly_mode():\n    bridge = load(\"bridge_actions\", \"tools/mirror_sync/universal_job_bridge.py\")\n    job = base_job()\n    job[\"actions\"] = [{\"type\": \"write_file\", \"path\": \"x.txt\", \"content\": \"x\"}]\n    assert \"READ_ONLY_ACTIONS_PROHIBITED\" in bridge.validate(job)\n\n\ndef test_bridge_rejects_unknown_profile():\n    bridge = load(\"bridge_profile\", \"tools/mirror_sync/universal_job_bridge.py\")\n    job = base_job()\n    job[\"checks\"][0][\"profile\"] = \"arbitrary\"\n    assert any(\"INVALID_READ_ONLY_PROFILE\" in item for item in bridge.validate(job))\n\n\ndef test_audit_script_uses_canonical_readonly_and_no_sql_argument():\n    text = (ROOT / \"tools/mirror_sync/sql_readonly_audit.py\").read_text(encoding=\"utf-8\")\n    assert \"readonly_sql_connection\" in text\n    assert \"--sql\" not in text\n    upper = text.upper()\n    assert \"INSERT INTO\" not in upper\n    assert \"DELETE FROM\" not in upper\n    assert \"DROP TABLE\" not in upper\n    assert \"ALTER TABLE\" not in upper\n\n\ndef test_publisher_certifies_readonly_evidence():\n    publisher = load(\"publisher_readonly\", \"tools/mirror_sync/universal_job_result_publisher.py\")\n    evidence = publisher.certification_evidence({\"status\": \"READ_ONLY_COMPLETE\", \"percent_complete\": 100})\n    assert evidence[\"certification\"] == \"READ_ONLY_EVIDENCE\"\n    assert evidence[\"percent_complete\"] == 100\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["tools/mirror_sync/universal_job_bridge.py", "tools/mirror_sync/universal_job_dispatcher.py", "tools/mirror_sync/universal_job_result_publisher.py", "tools/mirror_sync/sql_readonly_audit.py", "backend/tests/test_universal_worker_readonly_sql.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_universal_worker_readonly_sql.py", "backend/tests/test_universal_job_dispatcher_python_runtime.py"]}
+  ],
+  "human_summary_language": "es"
+}
