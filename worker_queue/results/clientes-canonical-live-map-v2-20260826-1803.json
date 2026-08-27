@@ -14,7 +14,7 @@
   "job_id": "clientes-canonical-live-map-v2-20260826-1803",
   "percent_complete": 80,
   "production_touched": false,
-  "published_at_utc": "2026-08-27T00:55:20Z",
+  "published_at_utc": "2026-08-27T17:43:44Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
