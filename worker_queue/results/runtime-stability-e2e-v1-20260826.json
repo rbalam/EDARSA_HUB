@@ -15,7 +15,7 @@
   "job_id": "runtime-stability-e2e-v1-20260826",
   "percent_complete": 80,
   "production_touched": false,
-  "published_at_utc": "2026-08-27T00:56:58Z",
+  "published_at_utc": "2026-08-27T23:13:12Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
