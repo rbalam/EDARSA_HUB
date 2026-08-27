@@ -1,619 +1,67 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "945feac70ce4e57afa985168599d46e7d28579aa",
-  "generated_at_utc": "2026-08-26T23:44:33Z",
+  "development_sha": "84938283f4ddf6b437f96447d322ba7c09273013",
+  "generated_at_utc": "2026-08-27T00:02:37Z",
+  "history": {
+    "done_total_local": 5,
+    "pending_total_local": 0,
+    "processing_total_local": 0,
+    "rejected_total_local": 45,
+    "results_total_local": 37
+  },
   "jobs": [
     {
-      "age_seconds": 26,
+      "age_seconds": 306,
+      "job_id": "carlos-worker-iscam-comandas-fix-v3-20260826",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3169,
+      "job_id": "carlos-worker-sync-monitor-contrast-fix-20260826",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 199,
+      "job_id": "carlos-worker-sync-monitor-contrast-fix-v2-20260826",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2099,
+      "job_id": "runtime-stability-e2e-v1-20260826",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 871,
       "job_id": "runtime-stability-e2e-v2-20260826",
       "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 21286,
-      "job_id": "000-runtime-self-heal-worker-v2-20260826",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 162769,
-      "job_id": "bridge-canary-20260825T023103Z",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 160643,
-      "job_id": "bridge-canary-final-20260825T030637Z",
-      "reasons": [
-        "FORBIDDEN_DESTRUCTIVE_OPERATION_REQUESTED"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden, pero la rechazo porque no cumple las reglas de seguridad o formato. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 162353,
-      "job_id": "bridge-canary2-20260825T023811Z",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 162086,
-      "job_id": "bridge-canary3-20260825T024234Z",
-      "reasons": [
-        "FORBIDDEN_DESTRUCTIVE_OPERATION_REQUESTED"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden, pero la rechazo porque no cumple las reglas de seguridad o formato. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 161603,
-      "job_id": "bridge-canary3-20260825T024915Z",
-      "reasons": [
-        "FORBIDDEN_DESTRUCTIVE_OPERATION_REQUESTED"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden, pero la rechazo porque no cumple las reglas de seguridad o formato. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 168530,
-      "job_id": "bridge-certification-20260824-004",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 169352,
-      "job_id": "bridge-close-loop-20260824-002",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 169352,
-      "job_id": "bridge-smoke-20260824-001",
-      "reasons": [
-        "FORBIDDEN_OPERATION_REQUESTED"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 96421,
-      "job_id": "carlos-worker-global-e2e-canary-20260825",
-      "reasons": [
-        "REQUESTER_RBAC_DENIED:REQUESTER_RBAC_RUNTIME_ERROR"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 79572,
-      "job_id": "carlos-worker-global-e2e-canary-v2-20260825",
-      "reasons": [
-        "REQUESTER_RBAC_DENIED:REQUESTER_RBAC_RUNTIME_ERROR"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 25259,
-      "job_id": "carlos-worker-global-e2e-canary-v4-20260826",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 4660,
-      "job_id": "carlos-worker-immediate-dispatch-v1-20260826",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 17436,
-      "job_id": "carlos-worker-iscam-canary-20260826-1238",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 16901,
-      "job_id": "carlos-worker-iscam-comandas-fix-20260826",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 5027,
-      "job_id": "carlos-worker-iscam-comandas-fix-v2-20260826",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 2088,
-      "job_id": "carlos-worker-sync-monitor-contrast-fix-20260826",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 157197,
-      "job_id": "chatgpt-deterministic-cert-20260825-001",
-      "reasons": [
-        "INVALID_SCHEMA"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden, pero la rechazo porque no cumple las reglas de seguridad o formato. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 156084,
-      "job_id": "chatgpt-deterministic-cert-20260825-002",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 154053,
-      "job_id": "chatgpt-deterministic-cert-20260825-003",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 150086,
-      "job_id": "chatgpt-deterministic-cert-20260825-004",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 149405,
-      "job_id": "chatgpt-deterministic-cert-20260825-005",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 147342,
-      "job_id": "chatgpt-post-integration-mirror-fix-20260825-007",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 32716,
-      "job_id": "clientes-canonical-live-map-v1-20260826-0721",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 5842,
-      "job_id": "coa-satelite-bootstrap-v1-20260826",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 169352,
-      "job_id": "finanzas-decision-pago-7requests-20260824",
-      "reasons": [
-        "FORBIDDEN_OPERATION_REQUESTED"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 144519,
-      "job_id": "finanzas-decision-pago-7requests-v2-20260825",
-      "reasons": [
-        "INVALID_SCHEMA",
-        "ACTIONS_REQUIRED"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 143573,
-      "job_id": "finanzas-decision-pago-7requests-v3-20260825",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 63855,
-      "job_id": "finanzas-decision-pago-7requests-v4-20260825",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 6230,
-      "job_id": "iscam-ventas-periodos-canonical-20260826-1426",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 6152,
-      "job_id": "iscam-ventas-periodos-canonical-20260826-1426-authorized",
-      "reasons": [
-        "INVALID_SCHEMA",
-        "INVALID_TARGET_REPO",
-        "INVALID_TARGET_BRANCH",
-        "OBJECTIVE_REQUIRED",
-        "SUMMARY_LANGUAGE_MUST_BE_ES",
-        "ACTIONS_REQUIRED"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 5842,
-      "job_id": "iscam-ventas-periodos-canonical-v2-20260826-1604",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 32715,
-      "job_id": "predeploy-quality-gate-b76b75b-20260826",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 32715,
-      "job_id": "ricardo-worker-runtime-recovery-v4-20260826",
-      "reasons": [
-        "INVALID_SCHEMA",
-        "INVALID_TARGET_REPO",
-        "INVALID_TARGET_BRANCH",
-        "OBJECTIVE_REQUIRED",
-        "SUMMARY_LANGUAGE_MUST_BE_ES",
-        "ACTIONS_REQUIRED"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 169352,
-      "job_id": "runtime-self-heal-20260824-003",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 1021,
-      "job_id": "runtime-stability-e2e-v1-20260826",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 158560,
-      "job_id": "worker-e2e-20260825T034037Z",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 32014,
-      "job_id": "worker-evidence-output-v1-20260826-1500",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 25259,
-      "job_id": "worker-limitations-runtime-v1-20260826",
-      "reasons": [
-        "ACTIONS_REQUIRED"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 142536,
-      "job_id": "worker-python-runtime-fix-20260825",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 113501,
-      "job_id": "worker-rbac-requester-layer-20260825",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 6230,
-      "job_id": "worker-readonly-sql-gate-support-20260826",
-      "reasons": [
-        "INVALID_JSON"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 31686,
-      "job_id": "worker-runtime-loop-hardening-v1-20260826-1515",
-      "reasons": [
-        "REJECTION_DETAILS_UNAVAILABLE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "La orden fue rechazada por las reglas del worker."
-    },
-    {
-      "age_seconds": 21284,
-      "job_id": "000-runtime-self-heal-worker-v2-20260826",
-      "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 162767,
-      "job_id": "bridge-canary-20260825T023103Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 162351,
-      "job_id": "bridge-canary2-20260825T023811Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 168529,
-      "job_id": "bridge-certification-20260824-004",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 169349,
-      "job_id": "bridge-close-loop-20260824-002",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 72884,
-      "job_id": "carlos-worker-global-e2e-canary-v3-20260826",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 25254,
-      "job_id": "carlos-worker-global-e2e-canary-v4-20260826",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 4660,
-      "job_id": "carlos-worker-immediate-dispatch-v1-20260826",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 17432,
-      "job_id": "carlos-worker-iscam-canary-20260826-1238",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 16896,
-      "job_id": "carlos-worker-iscam-comandas-fix-20260826",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 5027,
-      "job_id": "carlos-worker-iscam-comandas-fix-v2-20260826",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2085,
-      "job_id": "carlos-worker-sync-monitor-contrast-fix-20260826",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 156082,
-      "job_id": "chatgpt-deterministic-cert-20260825-002",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 154053,
-      "job_id": "chatgpt-deterministic-cert-20260825-003",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 150085,
-      "job_id": "chatgpt-deterministic-cert-20260825-004",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 149402,
-      "job_id": "chatgpt-deterministic-cert-20260825-005",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 148151,
-      "job_id": "chatgpt-deterministic-cert-20260825-006",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 146358,
-      "job_id": "chatgpt-deterministic-cert-20260825-008",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 147340,
-      "job_id": "chatgpt-post-integration-mirror-fix-20260825-007",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 32711,
-      "job_id": "clientes-canonical-live-map-v1-20260826-0721",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 5837,
-      "job_id": "coa-satelite-bootstrap-v1-20260826",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 143568,
-      "job_id": "finanzas-decision-pago-7requests-v3-20260825",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 63854,
-      "job_id": "finanzas-decision-pago-7requests-v4-20260825",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 6229,
-      "job_id": "iscam-ventas-periodos-canonical-20260826-1426",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 5382,
-      "job_id": "iscam-ventas-periodos-canonical-v2-20260826-1604",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 32311,
-      "job_id": "predeploy-quality-gate-b76b75b-20260826",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 169276,
-      "job_id": "runtime-self-heal-20260824-003",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1015,
-      "job_id": "runtime-stability-e2e-v1-20260826",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 158263,
-      "job_id": "worker-e2e-20260825T034037Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 32014,
-      "job_id": "worker-evidence-output-v1-20260826-1500",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 142533,
-      "job_id": "worker-python-runtime-fix-20260825",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 113495,
-      "job_id": "worker-rbac-requester-layer-20260825",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 31686,
-      "job_id": "worker-runtime-loop-hardening-v1-20260826-1515",
+      "age_seconds": 81,
+      "job_id": "runtime-stability-final-e2e-v3-20260826",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_done_local": 0,
-  "queue_pending": 1,
-  "queue_rejected": 43,
-  "queue_result_ready": 33,
+  "queue_done_local_recent": 0,
+  "queue_pending": 0,
+  "queue_rejected_recent": 0,
+  "queue_result_ready_recent": 6,
   "queue_running": 0,
-  "schema": "edarsahub.worker-health.v2",
-  "summary_es": "El worker esta activo. Este estado muestra ordenes pendientes, trabajando, bloqueadas, rechazadas y terminadas para que el recorrido pueda comprobarse desde GitHub.",
+  "runtime": {
+    "generation": "20260826-universal-job-worker-v1",
+    "last_cycle_utc": "2026-08-27T00:00:21Z",
+    "last_receive_utc": "2026-08-27T00:00:24Z",
+    "pid": "79321"
+  },
+  "schema": "edarsahub.worker-health.v3",
+  "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
+  "terminal_retention_seconds": 3600,
   "worker": "ONLINE"
 }
