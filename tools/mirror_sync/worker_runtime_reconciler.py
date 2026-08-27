@@ -1,0 +1,283 @@
+#!/usr/bin/env python3
+"""Safe self-healing reconciler for the EDARSAHUB universal worker.
+
+This module is intentionally conservative. It never releases an Agent Guard
+claim because it is old alone. A claim is releasable only when the owning work
+is terminal/reconciled, the worktree is clean (or already gone), and no live
+process references that worktree. It also recovers orphaned processing jobs so
+the dispatcher can retry them after a crash.
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+import shutil
+import subprocess
+import tempfile
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
+STATE = ROOT / ".git" / "universal-worker-queue"
+RUNTIME = STATE / "runtime"
+PENDING = STATE / "pending"
+PROCESSING = STATE / "processing"
+DONE = STATE / "done"
+REJECTED = STATE / "rejected"
+RESULTS = STATE / "results"
+REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
+DEV_BRANCH = os.environ.get("EDARSAHUB_DEV_BRANCH", "Edarsahub_Desarrollo")
+ORPHAN_SECONDS = int(os.environ.get("EDARSAHUB_PROCESSING_ORPHAN_SECONDS", "2100"))
+CLAIM_STALE_SECONDS = int(os.environ.get("EDARSAHUB_CLAIM_STALE_SECONDS", "900"))
+GUARD = ROOT / ".git" / "agent-guard" / "bin" / "agent_guard.py"
+PYTHON = ROOT / ".venv" / "bin" / "python"
+
+
+def now() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def run(args: list[str], cwd: Path = ROOT, timeout: int = 30) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        args,
+        cwd=str(cwd),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+        timeout=timeout,
+        env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+    )
+
+
+def git(*args: str, cwd: Path = ROOT) -> subprocess.CompletedProcess[str]:
+    return run(["git", *args], cwd=cwd)
+
+
+def atomic_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
+        json.dump(payload, handle, ensure_ascii=False, indent=2, sort_keys=True)
+        handle.write("\n")
+        temp = handle.name
+    os.replace(temp, path)
+
+
+def process_references(path: Path) -> bool:
+    needle = str(path)
+    proc = Path("/proc")
+    if not proc.is_dir():
+        return True  # fail closed when process evidence is unavailable
+    for child in proc.iterdir():
+        if not child.name.isdigit():
+            continue
+        try:
+            cmdline = (child / "cmdline").read_bytes().replace(b"\0", b" ").decode("utf-8", "replace")
+        except Exception:
+            continue
+        if needle and needle in cmdline:
+            return True
+    return False
+
+
+def dispatcher_running() -> bool:
+    proc = Path("/proc")
+    if not proc.is_dir():
+        return True
+    for child in proc.iterdir():
+        if not child.name.isdigit():
+            continue
+        try:
+            cmdline = (child / "cmdline").read_bytes().replace(b"\0", b" ").decode("utf-8", "replace")
+        except Exception:
+            continue
+        if "universal_job_dispatcher.py" in cmdline:
+            return True
+    return False
+
+
+def age_seconds(path: Path) -> int:
+    return max(0, int(time.time() - path.stat().st_mtime))
+
+
+def load_result(job_id: str) -> dict[str, Any] | None:
+    path = RESULTS / f"{job_id}.json"
+    if not path.is_file():
+        return None
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def recover_orphan_processing() -> list[dict[str, Any]]:
+    recovered: list[dict[str, Any]] = []
+    if not PROCESSING.exists() or dispatcher_running():
+        return recovered
+    PENDING.mkdir(parents=True, exist_ok=True)
+    DONE.mkdir(parents=True, exist_ok=True)
+    REJECTED.mkdir(parents=True, exist_ok=True)
+    for path in PROCESSING.glob("*.json"):
+        if age_seconds(path) < ORPHAN_SECONDS:
+            continue
+        result = load_result(path.stem)
+        if result is not None:
+            destination = DONE / path.name if result.get("status") == "INTEGRATED" else REJECTED / path.name
+            os.replace(path, destination)
+            recovered.append({"job_id": path.stem, "action": "TERMINAL_RECONCILED"})
+            continue
+        os.replace(path, PENDING / path.name)
+        recovered.append({"job_id": path.stem, "action": "REQUEUED_ORPHAN"})
+    return recovered
+
+
+def parse_guard_claims(text: str) -> list[dict[str, Any]]:
+    claims: list[dict[str, Any]] = []
+    for line in text.splitlines():
+        if "ACTIVE_CLAIM" not in line or "=" not in line:
+            continue
+        raw = line.split("=", 1)[1].strip()
+        try:
+            value = json.loads(raw)
+        except Exception:
+            continue
+        if isinstance(value, dict):
+            claims.append(value)
+    return claims
+
+
+def guard_claims() -> list[dict[str, Any]]:
+    if not GUARD.is_file() or not PYTHON.is_file():
+        return []
+    for command in ([str(PYTHON), str(GUARD), "status"], [str(PYTHON), str(GUARD), "claims"]):
+        try:
+            result = run(command, timeout=20)
+        except Exception:
+            continue
+        claims = parse_guard_claims(result.stdout)
+        if claims:
+            return claims
+    return []
+
+
+def parse_iso(value: Any) -> float | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).timestamp()
+    except Exception:
+        return None
+
+
+def branch_is_integrated(branch: str) -> bool:
+    if not branch:
+        return False
+    git("fetch", REMOTE, DEV_BRANCH)
+    head = git("rev-parse", branch)
+    if head.returncode != 0:
+        return False
+    remote = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}")
+    if remote.returncode != 0:
+        return False
+    return git("merge-base", "--is-ancestor", head.stdout.strip(), remote.stdout.strip()).returncode == 0
+
+
+def worktree_clean(path: Path) -> bool:
+    if not path.exists():
+        return True
+    if not (path / ".git").exists():
+        return False
+    status = git("status", "--porcelain=v1", cwd=path)
+    return status.returncode == 0 and not status.stdout.strip()
+
+
+def claim_terminal(claim: dict[str, Any]) -> bool:
+    task_id = str(claim.get("task_id") or "")
+    if task_id:
+        if (DONE / f"{task_id}.json").exists() or (REJECTED / f"{task_id}.json").exists() or (RESULTS / f"{task_id}.json").exists():
+            return True
+    return branch_is_integrated(str(claim.get("branch") or ""))
+
+
+def safe_releasable(claim: dict[str, Any]) -> tuple[bool, str]:
+    heartbeat = parse_iso(claim.get("heartbeat"))
+    if heartbeat is None:
+        return False, "NO_HEARTBEAT_EVIDENCE"
+    if time.time() - heartbeat < CLAIM_STALE_SECONDS:
+        return False, "CLAIM_NOT_STALE"
+    worktree = Path(str(claim.get("worktree") or ""))
+    if not claim_terminal(claim):
+        return False, "WORK_NOT_TERMINAL_OR_INTEGRATED"
+    if process_references(worktree):
+        return False, "LIVE_PROCESS_REFERENCES_WORKTREE"
+    if not worktree_clean(worktree):
+        return False, "WORKTREE_NOT_CLEAN"
+    return True, "SAFE_TERMINAL_RECONCILIATION"
+
+
+def release_claim(claim: dict[str, Any]) -> tuple[bool, str]:
+    if not GUARD.is_file() or not PYTHON.is_file():
+        return False, "AGENT_GUARD_UNAVAILABLE"
+    agent_id = str(claim.get("agent_id") or "")
+    task_id = str(claim.get("task_id") or "")
+    if not agent_id or not task_id:
+        return False, "CLAIM_IDENTITY_INCOMPLETE"
+    attempts = [
+        [str(PYTHON), str(GUARD), "claim-release", "--agent-id", agent_id, "--task-id", task_id],
+        [str(PYTHON), str(GUARD), "release", "--agent-id", agent_id, "--task-id", task_id],
+    ]
+    last = ""
+    for command in attempts:
+        result = run(command, timeout=20)
+        last = result.stdout[-800:]
+        if result.returncode == 0:
+            worktree = Path(str(claim.get("worktree") or ""))
+            if worktree.exists():
+                git("worktree", "remove", "--force", str(worktree))
+                shutil.rmtree(worktree, ignore_errors=True)
+            return True, "CLAIM_RELEASED"
+    return False, "CLAIM_RELEASE_FAILED:" + last
+
+
+def reconcile_claims() -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for claim in guard_claims():
+        ok, reason = safe_releasable(claim)
+        row = {
+            "agent_id": claim.get("agent_id"),
+            "task_id": claim.get("task_id"),
+            "worktree": claim.get("worktree"),
+            "decision": reason,
+        }
+        if ok:
+            released, release_reason = release_claim(claim)
+            row["released"] = released
+            row["release_reason"] = release_reason
+        else:
+            row["released"] = False
+        rows.append(row)
+    return rows
+
+
+def main() -> int:
+    RUNTIME.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema": "edarsahub.worker-runtime-reconciler.v1",
+        "generated_at_utc": now(),
+        "orphan_processing": recover_orphan_processing(),
+        "claims": reconcile_claims(),
+        "production_touched": False,
+    }
+    atomic_json(RUNTIME / "reconciler.json", payload)
+    (RUNTIME / "last_reconcile_utc").write_text(now() + "\n", encoding="utf-8")
+    print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
