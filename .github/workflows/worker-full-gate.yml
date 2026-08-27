@@ -24,10 +24,11 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: backend/requirements.txt
-      - name: Install backend dependencies
+      - name: Install public backend dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r backend/requirements.txt
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-ci.txt
+          python -m pip install -r /tmp/requirements-ci.txt
       - name: Run backend test suite
         env:
           PYTHONPATH: ${{ github.workspace }}/backend
@@ -47,8 +48,6 @@ jobs:
       - name: Install frontend dependencies
         working-directory: frontend
         run: yarn install --frozen-lockfile
-      - name: Build frontend
+      - name: Build frontend using canonical worker command
         working-directory: frontend
-        env:
-          CI: "true"
         run: yarn build
