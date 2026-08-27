@@ -27,7 +27,9 @@ iscam_router = APIRouter(prefix="/inteligencia/iscam", tags=["Reportes ISCAM"])
 
 # Detalle de productos embebido como JSON en Sync_Sales.items
 _OPENJSON_ITEMS = (
-    "CROSS APPLY OPENJSON(s.items) WITH ("
+    "CROSS APPLY OPENJSON("
+    "CASE WHEN ISJSON(s.items) = 1 THEN s.items ELSE N'[]' END"
+    ") WITH ("
     "  prod_id NVARCHAR(60) '$.id',"
     "  prod_name NVARCHAR(250) '$.name',"
     "  cantidad DECIMAL(18,3) '$.quantity',"

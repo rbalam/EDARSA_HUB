@@ -135,6 +135,8 @@ def test_pytest_uses_canonical_python(
         "/canonical/python",
     )
 
+    (tmp_path / "backend").mkdir()
+
     result = module.run_check(
         tmp_path,
         {
@@ -150,7 +152,7 @@ def test_pytest_uses_canonical_python(
         "-m",
         "pytest",
         "-q",
-        "backend/tests/test_example.py",
+        "tests/test_example.py",
     ]
 
 

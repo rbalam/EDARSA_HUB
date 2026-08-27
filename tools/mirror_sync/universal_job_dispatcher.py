@@ -256,9 +256,22 @@ def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
         cmd = [PYTHON_BIN, "-m", "py_compile", *paths]
         cwd = worktree
     elif kind == "pytest":
-        paths = [str(p) for p in check.get("paths") or []]
+        backend = worktree / "backend"
+        if not backend.is_dir():
+            raise RuntimeError("PYTEST_BACKEND_NOT_FOUND")
+
+        paths = []
+        for raw_path in check.get("paths") or []:
+            path = str(raw_path)
+            if path == "backend":
+                path = "."
+            elif path.startswith("backend/"):
+                path = path[len("backend/"):]
+            paths.append(path)
+
         cmd = [PYTHON_BIN, "-m", "pytest", "-q", *paths]
-        cwd = worktree
+        cwd = backend
+        env_extra = {"PYTHONPATH": str(backend)}
     elif kind == "frontend_build":
         directory = safe_path(worktree, str(check.get("directory", "frontend")))
         cmd = ["yarn", "build"]
@@ -267,7 +280,12 @@ def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
         raise ValueError(f"UNSUPPORTED_CHECK:{kind}")
 
     try:
-        result = run(cmd, cwd=cwd, timeout=MAX_SECONDS)
+        result = run(
+            cmd,
+            cwd=cwd,
+            timeout=MAX_SECONDS,
+            env_extra=locals().get("env_extra"),
+        )
         output = result.stdout[-12000:]
         return {
             "type": kind,
