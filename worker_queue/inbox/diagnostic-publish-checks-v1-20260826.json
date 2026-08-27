@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "diagnostic-publish-checks-v1-20260826",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "2ee54326e409a9dbb6765ec900bc8eeb7cdb17fb",
+  "objective": "Publicar diagnostico sanitizado de checks del worker para poder aislar fallos pytest desde ChatGPT clasico sin exponer secretos. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "test-isolation"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "expected_count": 1,
+      "old": "        \"quality_gate\", \"files_changed\", \"summary_es\", \"blockers\",\n        \"percent_complete\", \"certification\", \"production_touched\",\n",
+      "new": "        \"quality_gate\", \"files_changed\", \"summary_es\", \"blockers\",\n        \"percent_complete\", \"certification\", \"production_touched\", \"checks\",\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["tools/mirror_sync/universal_job_result_publisher.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_universal_job_result_publisher_queue_retry.py", "backend/tests/test_universal_job_result_publisher_temp_isolation.py", "backend/tests/test_universal_job_result_lineage_certification.py"]}
+  ],
+  "human_summary_language": "es"
+}
