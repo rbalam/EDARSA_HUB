@@ -1,0 +1,17 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"worker-sla-runtime-activation-20260827",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Activar y certificar el runtime generation 20260827-universal-job-worker-sla-v2 ya integrado en Edarsahub_Desarrollo. Reiniciar de forma segura el servicio supervisor del universal worker para cargar la nueva arquitectura desacoplada, verificar que intake siga ciclando durante un dispatch largo y reportar timestamps de submitted/received/started/completed/published. SLA requerido: intake P95 <=30s, ningun job valido >60s sin claim, heartbeat <=60s, completed->published <=15s. No tocar Produccion.",
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt","project":"Medina Propuestas","chat":"worker-sla"},
+  "human_summary_language":"es",
+  "actions":[
+    {"type":"write_file","path":"docs/worker/SLA_RUNTIME_V2.md","content":"# Universal Worker SLA runtime v2\n\nRuntime generation: `20260827-universal-job-worker-sla-v2`.\n\nTargets:\n- intake cadence default: 10s\n- P95 submitted->received <= 30s\n- hard alert if valid job remains unclaimed > 60s\n- result publisher cadence: 10s\n- completed->published <= 15s target\n- health cadence: 30s, stale after 60s\n- dispatch execution must never block intake, results or health\n\nCertification requires runtime evidence, not source-code presence alone.\n"}
+  ],
+  "checks":[
+    {"type":"git_diff_check"},
+    {"type":"pytest","paths":["backend/tests/test_universal_job_worker_sla_architecture.py"]}
+  ]
+}
