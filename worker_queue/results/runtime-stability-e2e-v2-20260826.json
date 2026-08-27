@@ -2,8 +2,11 @@
   "base_sha": "945feac70ce4e57afa985168599d46e7d28579aa",
   "blockers": [],
   "candidate_sha": "81ad6f5ec4042861402ba07cd3ddaf4ef907dec5",
-  "certification": "PENDING_AUDIT_EVIDENCE",
+  "certification": "CERTIFIED",
+  "certification_basis": "SHA_BOUND_ATTESTATION_PLUS_DESCENDANT_CONVERGENCE",
+  "certified_source_sha": "81ad6f5ec4042861402ba07cd3ddaf4ef907dec5",
   "completed_at_utc": "2026-08-26T23:48:05Z",
+  "converged_head": "84938283f4ddf6b437f96447d322ba7c09273013",
   "development_sha": "81ad6f5ec4042861402ba07cd3ddaf4ef907dec5",
   "executor": "chatgpt-deterministic",
   "files_changed": [
@@ -12,9 +15,9 @@
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "runtime-stability-e2e-v2-20260826",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-08-27T00:08:00Z",
+  "published_at_utc": "2026-08-27T00:57:09Z",
   "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
@@ -23,5 +26,5 @@
   "status": "INTEGRATED",
   "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
   "tests": "PASS",
-  "work_completion": "PENDING_CERTIFICATION"
+  "work_completion": "COMPLETE"
 }
