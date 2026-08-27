@@ -1,0 +1,28 @@
+{
+  "base_sha": "8c85fa5d4a027acb7ef11a9d6d986302e963cb2d",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-27T05:25:14Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_agent_guard_orphan_reconciler.py",
+    "tools/mirror_sync/agent_guard_orphan_reconciler.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-agent-guard-orphan-reconcile-v1-20260827",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-08-27T23:14:50Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-27T05:25:09Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
