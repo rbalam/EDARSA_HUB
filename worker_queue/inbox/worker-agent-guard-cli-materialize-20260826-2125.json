@@ -1,0 +1,34 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-agent-guard-cli-materialize-20260826-2125",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "2ee54326e409a9dbb6765ec900bc8eeb7cdb17fb",
+  "objective": "Materializar temporalmente la ayuda CLI real del Agent Guard local para identificar el comando canonico de liberacion de claims/worktrees. El test escribe la salida en un archivo temporal versionado para inspeccion desde GitHub. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "worker-lifecycle-fix-20260826"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_agent_guard_cli_materialize_20260826.py",
+      "content": "from pathlib import Path\nimport subprocess\nimport sys\n\nOUTPUT = Path(__file__).resolve().parents[2] / 'docs' / 'audits' / 'agent_guard_cli_help_20260826.txt'\n\ndef test_materialize_agent_guard_help():\n    guard = Path('/app/.git/agent-guard/bin/agent_guard.py')\n    assert guard.is_file(), 'AGENT_GUARD_NOT_FOUND'\n    proc = subprocess.run([sys.executable, str(guard), '--help'], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)\n    OUTPUT.parent.mkdir(parents=True, exist_ok=True)\n    OUTPUT.write_text(proc.stdout, encoding='utf-8')\n    assert proc.returncode == 0\n    assert proc.stdout.strip()\n"
+    },
+    {
+      "type": "write_file",
+      "path": "docs/audits/agent_guard_cli_help_20260826.txt",
+      "content": "PENDING_RUNTIME_PROBE\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": ["backend/tests/test_agent_guard_cli_materialize_20260826.py"]
+    }
+  ],
+  "human_summary_language": "es"
+}
