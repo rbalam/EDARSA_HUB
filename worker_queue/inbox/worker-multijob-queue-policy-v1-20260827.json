@@ -1,0 +1,56 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-multijob-queue-policy-v1-20260827",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir la politica operativa del Worker para que varios chats/proyectos puedan encolar jobs sin esperar pending=0. El dispatcher sigue serializando ejecucion e integracion, pero un job puede declarar base_policy=current_at_execution para enlazarse al HEAD vigente cuando sea reclamado; base_policy=exact conserva el candado SHA para trabajos que realmente dependen de una fotografia exacta. Agregar regresiones. No tocar Produccion.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "worker-multijob-queue-policy"
+  },
+  "base_policy": "current_at_execution",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    if job.get(\"human_summary_language\") != \"es\":\n        errors.append(\"SUMMARY_LANGUAGE_MUST_BE_ES\")\n    requester = job.get(\"requester\")\n",
+      "new": "    if job.get(\"human_summary_language\") != \"es\":\n        errors.append(\"SUMMARY_LANGUAGE_MUST_BE_ES\")\n    base_policy = job.get(\"base_policy\")\n    if base_policy is not None and base_policy not in {\"exact\", \"current_at_execution\"}:\n        errors.append(\"INVALID_BASE_POLICY\")\n    if base_policy == \"exact\" and not str(job.get(\"base_sha\") or \"\").strip():\n        errors.append(\"BASE_SHA_REQUIRED_FOR_EXACT_POLICY\")\n    requester = job.get(\"requester\")\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        git(\"fetch\", REMOTE, DEV_BRANCH)\n        base_sha = git(\"rev-parse\", f\"{REMOTE}/{DEV_BRANCH}\").stdout.strip()\n        expected_base = job.get(\"base_sha\")\n        if expected_base and expected_base != base_sha:\n            raise RuntimeError(f\"BASE_SHA_MISMATCH:expected={expected_base}:actual={base_sha}\")\n        result[\"base_sha\"] = base_sha\n",
+      "new": "        git(\"fetch\", REMOTE, DEV_BRANCH)\n        current_dev = git(\"rev-parse\", f\"{REMOTE}/{DEV_BRANCH}\").stdout.strip()\n        expected_base = str(job.get(\"base_sha\") or \"\").strip() or None\n        base_policy = str(job.get(\"base_policy\") or (\"exact\" if expected_base else \"current_at_execution\"))\n        if base_policy not in {\"exact\", \"current_at_execution\"}:\n            raise ValueError(f\"INVALID_BASE_POLICY:{base_policy}\")\n        if base_policy == \"exact\":\n            if not expected_base:\n                raise ValueError(\"BASE_SHA_REQUIRED_FOR_EXACT_POLICY\")\n            if expected_base != current_dev:\n                raise RuntimeError(f\"BASE_SHA_MISMATCH:expected={expected_base}:actual={current_dev}\")\n        base_sha = current_dev\n        result[\"base_sha\"] = base_sha\n        result[\"base_policy\"] = base_policy\n        if expected_base:\n            result[\"requested_base_sha\"] = expected_base\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_universal_job_multijob_queue_policy.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nBRIDGE = ROOT / 'tools/mirror_sync/universal_job_bridge.py'\nDISPATCHER = ROOT / 'tools/mirror_sync/universal_job_dispatcher.py'\nWORKER = ROOT / 'tools/mirror_sync/universal_job_worker.sh'\n\n\ndef test_bridge_supports_explicit_base_policy():\n    text = BRIDGE.read_text(encoding='utf-8')\n    assert 'current_at_execution' in text\n    assert 'BASE_SHA_REQUIRED_FOR_EXACT_POLICY' in text\n    assert 'INVALID_BASE_POLICY' in text\n\n\ndef test_dispatcher_binds_current_policy_at_execution_time():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'base_policy = str(job.get(\"base_policy\")' in text\n    assert 'base_sha = current_dev' in text\n    assert 'result[\"base_policy\"] = base_policy' in text\n    assert 'BASE_SHA_MISMATCH' in text\n\n\ndef test_execution_remains_serialized_even_when_intake_is_multi_job():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'dispatcher.lock' in text\n    worker = WORKER.read_text(encoding='utf-8')\n    assert 'UNIVERSAL_WORKER_LOOP_SECONDS:-10' in worker\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "backend/tests/test_universal_job_multijob_queue_policy.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_universal_job_multijob_queue_policy.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es"
+}
