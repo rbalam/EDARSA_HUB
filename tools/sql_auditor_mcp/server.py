@@ -35,8 +35,10 @@ if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
 from core.server_registry import get_server_connection_info, list_servers
-from core.sql_first.connection_factory import get_external_sql_connection
-from modules.auth.repository import AuthRepository
+from core.sql_first.connection_factory import (
+    get_edarsahub_pymssql_connection,
+    get_external_sql_connection,
+)
 
 APP_NAME = "EDARSA SQL Auditor"
 REQUESTER_ENV = "EDARSA_SQL_AUDITOR_REQUESTER_EMAIL"
@@ -47,6 +49,9 @@ mcp = FastMCP(APP_NAME)
 
 SUPERADMIN_ROLE_CODES = {"SUPERADMIN"}
 SUPERADMIN_ROLE_NAMES = {"SUPERADMINISTRADOR", "SUPER ADMINISTRADOR"}
+EXPECTED_RBAC_DATABASE = "EDARSAHUB"
+EXPECTED_RBAC_LOGIN = "HRLECTURA"
+EXPECTED_RBAC_USER = "HRLECTURA"
 
 BLOCKED_SQL_WORDS = {
     "INSERT", "UPDATE", "DELETE", "MERGE", "DROP", "ALTER", "TRUNCATE",
@@ -60,30 +65,96 @@ def _norm(value: Any) -> str:
     return str(value or "").strip().upper()
 
 
+def _row_to_dict(cursor: Any, row: Any) -> dict[str, Any]:
+    if row is None:
+        return {}
+    columns = [str(item[0]) for item in (cursor.description or [])]
+    return dict(zip(columns, row))
+
+
 def _authorize() -> dict[str, Any]:
-    """Fail-closed: valida requester configurado contra RBAC SQL canonico."""
+    """Fail-closed: valida requester contra RBAC SQL canonico, solo lectura.
+
+    Este agente usa pymssql de forma explicita para el canario RBAC porque sus
+    consultas parametrizadas usan marcadores %s. No modifica el repositorio de
+    autenticacion de EDARSAHUB ni cambia la conexion productiva del backend.
+    """
     email = str(os.environ.get(REQUESTER_ENV) or "").strip().lower()
     if not email or "@" not in email:
         raise PermissionError(f"{REQUESTER_ENV} no configurado o invalido")
 
-    user = AuthRepository.get_user_by_email(email)
-    if not user:
-        raise PermissionError("REQUESTER_NOT_FOUND")
-    if not bool(user.get("active")):
-        raise PermissionError("REQUESTER_INACTIVE")
+    conn = None
+    try:
+        conn = get_edarsahub_pymssql_connection(autocommit=False)
+        cursor = conn.cursor()
 
-    role_code = _norm(user.get("role_code") or user.get("_sql_rol_codigo"))
-    role_name = _norm(user.get("role"))
-    if role_code not in SUPERADMIN_ROLE_CODES and role_name not in SUPERADMIN_ROLE_NAMES:
-        raise PermissionError("REQUESTER_NOT_SUPERADMIN")
+        cursor.execute(
+            "SELECT DB_NAME() AS database_name, "
+            "SUSER_SNAME() AS login_name, USER_NAME() AS database_user"
+        )
+        identity = _row_to_dict(cursor, cursor.fetchone())
+        if (
+            _norm(identity.get("database_name")) != EXPECTED_RBAC_DATABASE
+            or _norm(identity.get("login_name")) != EXPECTED_RBAC_LOGIN
+            or _norm(identity.get("database_user")) != EXPECTED_RBAC_USER
+        ):
+            raise PermissionError("RBAC_SQL_IDENTITY_MISMATCH")
 
-    return {
-        "usuario_id": user.get("UsuarioID") or user.get("_sql_usuario_id"),
-        "email": str(user.get("email") or email).strip().lower(),
-        "role_code": role_code,
-        "role": role_name,
-        "auth_source": user.get("auth_source") or "SQL_USUARIO_CATALOGO",
-    }
+        cursor.execute(
+            """
+            SELECT TOP 1
+                uc.UsuarioID,
+                uc.Email,
+                uc.Username,
+                uc.Activo,
+                ur.CodigoRol,
+                ur.NombreRol
+            FROM dbo.Usuario_Catalogo uc
+            LEFT JOIN dbo.Usuario_RolesAsignacion ura
+                ON ura.UsuarioID = uc.UsuarioID
+               AND ISNULL(ura.Activo,1)=1
+               AND ISNULL(ura.EsPrincipal,0)=1
+            LEFT JOIN dbo.Usuario_Roles ur
+                ON ur.RolID = ura.RolID
+            WHERE LOWER(uc.Email) = LOWER(%s)
+               OR LOWER(uc.Username) = LOWER(%s)
+            """,
+            (email, email),
+        )
+        user = _row_to_dict(cursor, cursor.fetchone())
+
+        if not user:
+            raise PermissionError("REQUESTER_NOT_FOUND")
+        if not bool(user.get("Activo")):
+            raise PermissionError("REQUESTER_INACTIVE")
+
+        role_code = _norm(user.get("CodigoRol"))
+        role_name = _norm(user.get("NombreRol"))
+        if role_code not in SUPERADMIN_ROLE_CODES and role_name not in SUPERADMIN_ROLE_NAMES:
+            raise PermissionError("REQUESTER_NOT_SUPERADMIN")
+
+        return {
+            "usuario_id": user.get("UsuarioID"),
+            "email": str(user.get("Email") or email).strip().lower(),
+            "role_code": role_code,
+            "role": role_name,
+            "auth_source": "SQL_USUARIO_CATALOGO_HRLECTURA",
+            "sql_identity": {
+                "database": identity.get("database_name"),
+                "login": identity.get("login_name"),
+                "user": identity.get("database_user"),
+            },
+        }
+    finally:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 def _validate_readonly_sql(sql: str) -> str:
@@ -198,7 +269,15 @@ def _execute_readonly(
         if params is None:
             cursor.execute(checked_sql)
         else:
-            cursor.execute(checked_sql, tuple(params))
+            # get_external_sql_connection prefiere pymssql; si cae a pyodbc,
+            # adaptar los marcadores internos %s a ? sin alterar SQL del usuario.
+            module_name = str(cursor.__class__.__module__).lower()
+            executable_sql = (
+                checked_sql.replace("%s", "?")
+                if "pyodbc" in module_name
+                else checked_sql
+            )
+            cursor.execute(executable_sql, tuple(params))
 
         columns = [str(c[0]) for c in (cursor.description or [])]
         fetched = cursor.fetchmany(max_rows + 1) if cursor.description else []
